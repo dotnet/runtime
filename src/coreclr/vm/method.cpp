@@ -120,10 +120,10 @@ SIZE_T MethodDesc::SizeOf()
     LIMITED_METHOD_DAC_CONTRACT;
 
     SIZE_T size = s_ClassificationSizeTable[m_wFlags &
-        (mdcClassification
-        | mdcHasNonVtableSlot
-        | mdcMethodImpl
-        | mdcHasNativeCodeSlot)];
+        (mdfClassification
+        | mdfHasNonVtableSlot
+        | mdfMethodImpl
+        | mdfHasNativeCodeSlot)];
 
     return size;
 }
@@ -946,7 +946,7 @@ PTR_PCODE MethodDesc::GetAddrOfNativeCodeSlot()
 
     _ASSERTE(HasNativeCodeSlot());
 
-    SIZE_T size = s_ClassificationSizeTable[m_wFlags & (mdcClassification | mdcHasNonVtableSlot |  mdcMethodImpl)];
+    SIZE_T size = s_ClassificationSizeTable[m_wFlags & (mdfClassification | mdfHasNonVtableSlot |  mdfMethodImpl)];
 
     return (PTR_PCODE)(dac_cast<TADDR>(this) + size);
 }
@@ -2252,7 +2252,7 @@ MethodImpl *MethodDesc::GetMethodImpl()
     }
     CONTRACTL_END
 
-    SIZE_T size = s_ClassificationSizeTable[m_wFlags & (mdcClassification | mdcHasNonVtableSlot)];
+    SIZE_T size = s_ClassificationSizeTable[m_wFlags & (mdfClassification | mdfHasNonVtableSlot)];
 
     return PTR_MethodImpl(dac_cast<TADDR>(this) + size);
 }

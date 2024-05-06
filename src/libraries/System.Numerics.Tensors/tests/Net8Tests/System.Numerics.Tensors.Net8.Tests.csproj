@@ -10,6 +10,7 @@
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <DefineConstants>$(DefineConstants);SNT_NET8_TESTS</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup>
