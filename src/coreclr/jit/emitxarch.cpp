@@ -6681,13 +6681,8 @@ void emitter::emitIns_AR(instruction ins, emitAttr attr, regNumber base, int off
 //    offs        -- The offset from base
 //    instOptions -- The options that modify how the instruction is generated
 //
-void emitter::emitIns_AR_R_R(instruction ins,
-                             emitAttr    attr,
-                             regNumber   op2Reg,
-                             regNumber   op3Reg,
-                             regNumber   base,
-                             int         offs,
-                             insOpts     instOptions)
+void emitter::emitIns_AR_R_R(
+    instruction ins, emitAttr attr, regNumber op2Reg, regNumber op3Reg, regNumber base, int offs, insOpts instOptions)
 {
     assert(IsAvx512OrPriorInstruction(ins));
     assert(IsThreeOperandAVXInstruction(ins));
@@ -9280,8 +9275,7 @@ void emitter::emitIns_S_R(instruction ins, emitAttr attr, regNumber ireg, int va
     emitCurIGsize += sz;
 }
 
-void emitter::emitIns_R_S(
-    instruction ins, emitAttr attr, regNumber ireg, int varx, int offs, insOpts instOptions)
+void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber ireg, int varx, int offs, insOpts instOptions)
 {
     emitAttr size = EA_SIZE(attr);
     noway_assert(emitVerifyEncodable(ins, size, ireg));

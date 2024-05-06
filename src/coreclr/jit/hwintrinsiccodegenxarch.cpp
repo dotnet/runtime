@@ -2966,7 +2966,7 @@ void CodeGen::genBMI1OrBMI2Intrinsic(GenTreeHWIntrinsic* node, insOpts instOptio
         case NI_BMI2_MultiplyNoFlags:
         case NI_BMI2_X64_MultiplyNoFlags:
         {
-            
+
             assert(instOptions == INS_OPTS_NONE);
 
             size_t numArgs = node->GetOperandCount();
