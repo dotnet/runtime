@@ -3376,7 +3376,14 @@ void MethodDesc::SetCodeEntryPoint(PCODE entryPoint)
     }
     else if (!HasStableEntryPoint())
     {
-        SetStableEntryPointInterlocked(entryPoint);
+        if (RequiresStableEntryPoint())
+        {
+            GetOrCreatePrecode()->SetTargetInterlocked(entryPoint);
+        }
+        else
+        {
+            SetStableEntryPointInterlocked(entryPoint);
+        }
     }
 }
 
@@ -3485,6 +3492,7 @@ BOOL MethodDesc::SetStableEntryPointInterlocked(PCODE addr)
     BOOL fResult = InterlockedCompareExchangeT(pSlot, addr, pExpected) == pExpected;
 
     InterlockedUpdateFlags3(enum_flag3_HasStableEntryPoint, TRUE);
+    _ASSERTE(!RequiresStableEntryPoint()); // The RequiresStableEntryPoint scenarios should all result in a stable entry point which is a PreCode, so that it can be replaced and adjusted over time.
 
     return fResult;
 }
