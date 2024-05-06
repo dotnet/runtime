@@ -283,6 +283,38 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
+        public static TheoryData<string, SslPolicyErrors, int> CertificateValidationServersAndExpectedPolicies_Moar
+        {
+            get
+            {
+                TheoryData<string, SslPolicyErrors, int> data = new();
+                for (int i = 0; i < 50; i++)
+                {
+                    data.Add(Configuration.Http.ExpiredCertRemoteServer, SslPolicyErrors.RemoteCertificateChainErrors, i);
+                    data.Add(Configuration.Http.WrongHostNameCertRemoteServer, SslPolicyErrors.RemoteCertificateNameMismatch, i);
+                }
+
+                return data;
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(CertificateValidationServersAndExpectedPolicies_Moar))]
+        public Task UseCallback_BadCertificate_ExpectedPolicyErrors_Inner(string url, SslPolicyErrors expectedErrors, int dummy)
+        {
+            _ = dummy;
+            return UseCallback_BadCertificate_ExpectedPolicyErrors(url, expectedErrors);
+        }
+
+        [OuterLoop("Uses external servers")]
+        [Theory]
+        [MemberData(nameof(CertificateValidationServersAndExpectedPolicies_Moar))]
+        public Task UseCallback_BadCertificate_ExpectedPolicyErrors_Outer(string url, SslPolicyErrors expectedErrors, int dummy)
+        {
+            _ = dummy;
+            return UseCallback_BadCertificate_ExpectedPolicyErrors(url, expectedErrors);
+        }
+
         [OuterLoop("Uses external servers")]
         [Theory]
         [MemberData(nameof(CertificateValidationServersAndExpectedPolicies))]

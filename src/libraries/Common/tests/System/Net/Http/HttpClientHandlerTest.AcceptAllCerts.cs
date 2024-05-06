@@ -93,6 +93,22 @@ namespace System.Net.Http.Functional.Tests
             new object[] { Configuration.Http.WrongHostNameCertRemoteServer },
         };
 
+
+        public static TheoryData<string, int> InvalidCertificateServers_Moar
+        {
+            get
+            {
+                TheoryData<string, int> data = new();
+                for (int i = 0; i < 50; i++)
+                {
+                    data.Add(Configuration.Http.ExpiredCertRemoteServer, i);
+                    data.Add(Configuration.Http.SelfSignedCertRemoteServer, i);
+                    data.Add(Configuration.Http.WrongHostNameCertRemoteServer, i);
+                }
+                return data;
+            }
+        }
+
         [OuterLoop]
         [ConditionalTheory(nameof(ClientSupportsDHECipherSuites))]
         [MemberData(nameof(InvalidCertificateServers))]
@@ -103,6 +119,23 @@ namespace System.Net.Http.Functional.Tests
             {
                 (await client.GetAsync(url)).Dispose();
             }
+        }
+
+        [ConditionalTheory(nameof(ClientSupportsDHECipherSuites))]
+        [MemberData(nameof(InvalidCertificateServers_Moar))]
+        public Task InvalidCertificateServers_CertificateValidationDisabled_Succeeds_Inner(string url, int dummy)
+        {
+            _ = dummy;
+            return InvalidCertificateServers_CertificateValidationDisabled_Succeeds(url);
+        }
+
+        [OuterLoop]
+        [ConditionalTheory(nameof(ClientSupportsDHECipherSuites))]
+        [MemberData(nameof(InvalidCertificateServers_Moar))]
+        public Task InvalidCertificateServers_CertificateValidationDisabled_Succeeds_Outer(string url, int dummy)
+        {
+            _ = dummy;
+            return InvalidCertificateServers_CertificateValidationDisabled_Succeeds(url);
         }
     }
 }
