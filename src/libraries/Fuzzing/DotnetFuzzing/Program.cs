@@ -123,8 +123,7 @@ public static class Program
                     throw new Exception($"Fuzzer '{fuzzer.Name}' is referencing a dictionary '{fuzzer.Dictionary}' that does not exist in the publish directory.");
                 }
 
-                Directory.CreateDirectory(Path.Combine(fuzzerDirectory, "Dictionaries"));
-                File.Copy(Path.Combine(publishDirectory, "Dictionaries", dict), Path.Combine(fuzzerDirectory, "Dictionaries", dict), overwrite: true);
+                File.Copy(Path.Combine(publishDirectory, "Dictionaries", dict), Path.Combine(fuzzerDirectory, "dictionary"), overwrite: true);
             }
 
             InstrumentAssemblies(fuzzer, fuzzerDirectory);
@@ -260,9 +259,13 @@ public static class Program
 
     private static string GenerateOneFuzzConfigJson(IFuzzer fuzzer)
     {
-        string? dictionaryArgument = fuzzer.Dictionary is string dict
-            ? $"\"-dict=Dictionaries/{dict}\""
-            : null;
+        // Temporarily disabled - OneFuzz is launched with a different working directory
+        // and is unable to find the dictionary file.
+
+        //string? dictionaryArgument = fuzzer.Dictionary is not null
+        //    ? "\"-dict=dictionary\""
+        //    : null;
+        string? dictionaryArgument = null;
 
         return
             $$"""
@@ -295,7 +298,7 @@ public static class Program
                     }
                   ],
                   "JobDependencies": [
-                    "*.*"
+                    ".\\*"
                   ],
                   "AdoTemplate": {
                     "Org": "dnceng",
@@ -314,9 +317,9 @@ public static class Program
     {
         string script = $"%~dp0/libfuzzer-dotnet.exe --target_path=%~dp0/DotnetFuzzing.exe --target_arg={fuzzer.Name}";
 
-        if (fuzzer.Dictionary is string dict)
+        if (fuzzer.Dictionary is not null)
         {
-            script += $" -dict=%~dp0Dictionaries/{dict}";
+            script += $" -dict=%~dp0dictionary";
         }
 
         // Pass any additional arguments to the fuzzer.
