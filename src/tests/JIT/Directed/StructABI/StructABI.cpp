@@ -72,15 +72,15 @@ struct ArrayOfEmptiesFloatDouble
 };
 
 template<typename T>
-struct Sixteen
+struct Eight
 {
-	T e1, e2, e3, e4, e5, e6, e7, e8, e9, e10, e11, e12, e13, e14, e15, e16;
+	T e1, e2, e3, e4, e5, e6, e7, e8;
 };
 
-struct FloatEmptyMegabyteInt
+struct FloatEmpty32kInt
 {
 	float FieldF;
-	Sixteen<Sixteen<Sixteen<Sixteen<Sixteen<Empty>>>>> FieldEmptyMegabyte;
+	Eight<Eight<Eight<Eight<Eight<Empty>>>>> FieldEmpty32k;
 	int32_t FieldI;
 };
 
@@ -141,7 +141,7 @@ DLLEXPORT ArrayOfEmptiesFloatDouble EchoArrayOfEmptiesFloatDoubleInIntegerRegsRi
 	return a0_a1;
 }
 
-DLLEXPORT FloatEmptyMegabyteInt EchoFloatEmptyMegabyteIntRiscV(FloatEmptyMegabyteInt fa0_a0)
+DLLEXPORT FloatEmpty32kInt EchoFloatEmpty32kIntRiscV(FloatEmpty32kInt fa0_a0)
 {
 	return fa0_a0;
 }

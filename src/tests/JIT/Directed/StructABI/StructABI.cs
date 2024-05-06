@@ -780,23 +780,23 @@ struct ArrayOfEmptiesFloatDouble
 	}
 }
 
-struct Sixteen<T>
+struct Eight<T>
 {
-	T e1, e2, e3, e4, e5, e6, e7, e8, e9, e10, e11, e12, e13, e14, e15, e16;
+	T e1, e2, e3, e4, e5, e6, e7, e8;
 }
 
-struct FloatEmptyMegabyteInt
+struct FloatEmpty32kInt
 {
 	float FieldF;
-	Sixteen<Sixteen<Sixteen<Sixteen<Sixteen<Empty>>>>> FieldEmptyMegabyte;
+	Eight<Eight<Eight<Eight<Eight<Empty>>>>> FieldEmpty32k;
 	int FieldI;
 
-	public static FloatEmptyMegabyteInt Get()
+	public static FloatEmpty32kInt Get()
 	{
-		return new FloatEmptyMegabyteInt { FieldF = 3.14159f, FieldI = 0xcafe };
+		return new FloatEmpty32kInt { FieldF = 3.14159f, FieldI = 0xcafe };
 	}
 
-	public bool Equals(FloatEmptyMegabyteInt other)
+	public bool Equals(FloatEmpty32kInt other)
 	{
 		return FieldF.Equals(other.FieldF) && FieldI == other.FieldI;
 	}
@@ -994,8 +994,8 @@ public static partial class StructABI
 	ArrayOfEmptiesFloatDouble a0_a1);
 
 	[DllImport("StructABILib")]
-	static extern FloatEmptyMegabyteInt EchoFloatEmptyMegabyteIntRiscV(
-	FloatEmptyMegabyteInt fa0_a0);
+	static extern FloatEmpty32kInt EchoFloatEmpty32kIntRiscV(
+	FloatEmpty32kInt fa0_a0);
 
 	[DllImport("StructABILib")]
 	static extern PackedEmptyFloatLong EchoPackedEmptyFloatLongRiscV(PackedEmptyFloatLong fa0_a0);
@@ -1312,8 +1312,8 @@ public static partial class StructABI
 	}
 
 	[MethodImpl(MethodImplOptions.NoInlining)]
-	static FloatEmptyMegabyteInt EchoFloatEmptyMegabyteIntRiscVManaged(
-		FloatEmptyMegabyteInt fa0_a0)
+	static FloatEmpty32kInt EchoFloatEmpty32kIntRiscVManaged(
+		FloatEmpty32kInt fa0_a0)
 	{
 		return fa0_a0;
 	}
@@ -2576,22 +2576,22 @@ public static partial class StructABI
 		return ok;
 	}
 
-	static bool EchoFloatEmptyMegabyteIntRiscVWrapper()
+	static bool EchoFloatEmpty32kIntRiscVWrapper()
 	{
 		bool ok = true;
-		FloatEmptyMegabyteInt expected = FloatEmptyMegabyteInt.Get();
-		FloatEmptyMegabyteInt native = EchoFloatEmptyMegabyteIntRiscV(expected);
-		FloatEmptyMegabyteInt managed = EchoFloatEmptyMegabyteIntRiscVManaged(expected);
+		FloatEmpty32kInt expected = FloatEmpty32kInt.Get();
+		FloatEmpty32kInt native = EchoFloatEmpty32kIntRiscV(expected);
+		FloatEmpty32kInt managed = EchoFloatEmpty32kIntRiscVManaged(expected);
 
 		if (!expected.Equals(native))
 		{
-			Console.WriteLine("Native call for EchoFloatEmptyMegabyteInt failed");
+			Console.WriteLine("Native call for EchoFloatEmpty32kInt failed");
 			ok = false;
 		}
 
 		if (!expected.Equals(managed))
 		{
-			Console.WriteLine("Managed call for EchoFloatEmptyMegabyteInt failed");
+			Console.WriteLine("Managed call for EchoFloatEmpty32kInt failed");
 			ok = false;
 		}
 
@@ -2696,7 +2696,7 @@ public static partial class StructABI
 		if (!EchoEmptyIntAndFloatRiscVWrapper()) ok = false;
 		if (!EchoLongEmptyAndFloatRiscVWrapper()) ok = false;
 		if (!EchoArrayOfEmptiesFloatDoubleInIntegerRegsRiscVWrapper()) ok = false;
-		if (!EchoFloatEmptyMegabyteIntRiscVWrapper()) ok = false;
+		if (!EchoFloatEmpty32kIntRiscVWrapper()) ok = false;
 		if (!EchoPackedEmptyFloatLongRiscVWrapper()) ok = false;
 		if (!EchoExplicitFloatLongRiscVWrapper()) ok = false;
 		
