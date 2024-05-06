@@ -109,7 +109,7 @@ namespace Internal.TypeSystem
                 ModuleDesc module = _module;
                 if (topLevelTypeName.AssemblyName != null)
                 {
-                    module = _context.ResolveAssembly(typeName.AssemblyName.ToAssemblyName(), throwIfNotFound: _throwIfNotFound);
+                    module = _context.ResolveAssembly(typeName.AssemblyName, throwIfNotFound: _throwIfNotFound);
                     if (module == null)
                         return null;
                 }
