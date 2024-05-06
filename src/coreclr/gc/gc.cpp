@@ -6063,13 +6063,16 @@ void gc_heap::release_segment (heap_segment* sg)
     ptrdiff_t delta = 0;
     FIRE_EVENT(GCFreeSegment_V1, heap_segment_mem(sg));
     size_t reserved_size = (uint8_t*)heap_segment_reserved (sg)-(uint8_t*)sg;
-    virtual_decommit (
+    reduce_committed_bytes (
         sg, 
         (uint8_t*)heap_segment_committed (sg)-(uint8_t*)sg,
         (int) heap_segment_oh (sg)
 #ifdef MULTIPLE_HEAPS
         , heap_segment_heap (sg)->heap_number
+#else
+        , -1
 #endif
+        , true
         );
     virtual_free (sg, reserved_size, sg);
 }
@@ -7395,23 +7398,10 @@ bool gc_heap::virtual_commit (void* address, size_t size, int bucket, int h_numb
     return commit_succeeded_p;
 }
 
-bool gc_heap::virtual_decommit (void* address, size_t size, int bucket, int h_number)
+void gc_heap::reduce_committed_bytes (void* address, size_t size, int bucket, int h_number, bool decommit_succeeded_p)
 {
-    /**
-     * Here are all possible cases for the decommits:
-     *
-     * Case 1: This is for a particular generation - the bucket will be one of the gc_oh_num != unknown, and the h_number will be the right heap
-     * Case 2: This is for bookkeeping - the bucket will be recorded_committed_bookkeeping_bucket, and the h_number will be -1
-     * Case 3: This is for free - the bucket will be recorded_committed_free_bucket, and the h_number will be -1
-     */
-#ifndef HOST_64BIT
-    assert (heap_hard_limit == 0);
-#endif //!HOST_64BIT
-
     assert(0 <= bucket && bucket < recorded_committed_bucket_counts);
     assert(bucket < total_oh_count || h_number == -1);
-
-    bool decommit_succeeded_p = ((bucket != recorded_committed_bookkeeping_bucket) && use_large_pages_p) ? true : GCToOSInterface::VirtualDecommit (address, size);
 
     dprintf(3, ("commit-accounting:  decommit in %d [%p, %p) for heap %d", bucket, address, ((uint8_t*)address + size), h_number));
 
@@ -7439,6 +7429,24 @@ bool gc_heap::virtual_decommit (void* address, size_t size, int bucket, int h_nu
         }
         check_commit_cs.Leave();
     }
+}
+
+bool gc_heap::virtual_decommit (void* address, size_t size, int bucket, int h_number)
+{
+    /**
+     * Here are all possible cases for the decommits:
+     *
+     * Case 1: This is for a particular generation - the bucket will be one of the gc_oh_num != unknown, and the h_number will be the right heap
+     * Case 2: This is for bookkeeping - the bucket will be recorded_committed_bookkeeping_bucket, and the h_number will be -1
+     * Case 3: This is for free - the bucket will be recorded_committed_free_bucket, and the h_number will be -1
+     */
+#ifndef HOST_64BIT
+    assert (heap_hard_limit == 0);
+#endif //!HOST_64BIT
+
+    bool decommit_succeeded_p = ((bucket != recorded_committed_bookkeeping_bucket) && use_large_pages_p) ? true : GCToOSInterface::VirtualDecommit (address, size);
+
+    reduce_committed_bytes (address, size, bucket, h_number, decommit_succeeded_p);
 
     return decommit_succeeded_p;
 }
@@ -9074,7 +9082,7 @@ void gc_heap::destroy_card_table_helper (uint32_t* c_table)
     uint8_t* highest = card_table_highest_address (c_table);    
     get_card_table_element_layout(lowest, highest, card_table_element_layout);
     size_t result = card_table_element_layout[seg_mapping_table_element + 1];
-    gc_heap::virtual_decommit (&card_table_refcount(c_table), result, recorded_committed_bookkeeping_bucket);
+    gc_heap::reduce_committed_bytes (&card_table_refcount(c_table), result, recorded_committed_bookkeeping_bucket, -1, true);
 
     // TODO: Decommit the memory commited for mark array
 }
