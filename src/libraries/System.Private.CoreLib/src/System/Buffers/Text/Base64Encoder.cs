@@ -61,7 +61,7 @@ namespace System.Buffers.Text
 
                 if (maxSrcLength >= 16)
                 {
-                    byte* end = srcMax - 48;
+                    byte* end = srcMax - 64;
                     if (Vector512.IsHardwareAccelerated && Avx512Vbmi.IsSupported && (end >= src))
                     {
                         Avx512Encode<TBase64Encoder>(ref src, ref dest, end, maxSrcLength, destLength, srcBytes, destBytes);

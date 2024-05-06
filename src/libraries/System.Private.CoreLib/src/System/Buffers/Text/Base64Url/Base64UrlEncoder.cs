@@ -44,7 +44,7 @@ namespace System.Buffers.Text
 
             int remainder = bytesLength % 3;
 
-            return bytesLength / 3 * 4 + (remainder > 0 ? remainder + 1 : 0); // if remainder is 1 or 2, the encoded length will be 1 byte longer.
+            return (bytesLength / 3) * 4 + (remainder > 0 ? remainder + 1 : 0); // if remainder is 1 or 2, the encoded length will be 1 byte longer.
         }
 
         /// <summary>
@@ -258,6 +258,7 @@ namespace System.Buffers.Text
         private readonly struct Base64UrlEncoder : IBase64Encoder
         {
             public static ReadOnlySpan<byte> EncodingMap => "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_"u8;
+
             public static sbyte Avx2LutChar62 => -17;  // char '-' diff
 
             public static sbyte Avx2LutChar63 => 32;   // char '_' diff

@@ -13,8 +13,9 @@
     <Compile Include="ArrayBufferWriter\ArrayBufferWriterTests.Char.cs" />
     <Compile Include="ArrayBufferWriter\ArrayBufferWriterTests.String.cs" />
     <Compile Include="ArrayBufferWriter\ArrayBufferWriterTests.T.cs" />
-    <Compile Include="Base64Url\Base64UrlEncoderTests.cs" />
-    <Compile Include="Base64Url\Base64UrlEncodingAPIsTests.cs" />
+    <Compile Include="Base64Url\Base64UrlDecoderUnitTests.cs" />
+    <Compile Include="Base64Url\Base64UrlEncoderUnitTests.cs" />
+    <Compile Include="Base64Url\Base64UrlEncodingAPIsUnitTests.cs" />
     <Compile Include="Base64Url\Base64UrlValidationUnitTests.cs" />
     <Compile Include="MemoryMarshal\AsRef.cs" />
     <Compile Include="MemoryMarshal\AsReadOnlyRef.cs" />

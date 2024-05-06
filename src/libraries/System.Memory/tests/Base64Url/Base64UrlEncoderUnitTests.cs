@@ -7,7 +7,7 @@ using Xunit;
 
 namespace System.Buffers.Text.Tests
 {
-    public class Base64UrlEncoderTests
+    public class Base64UrlEncoderUnitTests
     {
         [Fact]
         public void BasicEncodingAndDecoding()
@@ -25,17 +25,15 @@ namespace System.Buffers.Text.Tests
                 Assert.Equal(OperationStatus.Done, Base64Url.EncodeToUtf8(sourceBytes, encodedBytes, out int consumed, out int encodedBytesCount));
                 Assert.Equal(sourceBytes.Length, consumed);
                 Assert.Equal(encodedBytes.Length, encodedBytesCount);
+                Assert.True(Base64TestHelper.VerifyUrlEncodingCorrectness(sourceBytes.Length, encodedBytes.Length, sourceBytes, encodedBytes));
 
-                string encodedText = Encoding.ASCII.GetString(encodedBytes.ToArray());
-                string expectedText = Convert.ToBase64String(bytes, 0, value + 1).Replace('+', '-').Replace('/', '_').TrimEnd('=');
-                Assert.Equal(expectedText, encodedText);
-
-                /*TODO Assert.Equal(0, encodedBytes.Length % 4);
-                Span<byte> decodedBytes = new byte[Base64.GetMaxDecodedFromUtf8Length(encodedBytes.Length)];
-                Assert.Equal(OperationStatus.Done, Base64.DecodeFromUtf8(encodedBytes, decodedBytes, out consumed, out int decodedByteCount));
+                int decodedLength = Base64Url.GetMaxDecodedLength(encodedBytes.Length);
+                Assert.True(sourceBytes.Length <= decodedLength);
+                Span<byte> decodedBytes = new byte[decodedLength];
+                Assert.Equal(OperationStatus.Done, Base64Url.DecodeFromUtf8(encodedBytes, decodedBytes, out consumed, out int decodedByteCount));
                 Assert.Equal(encodedBytes.Length, consumed);
                 Assert.Equal(sourceBytes.Length, decodedByteCount);
-                Assert.True(sourceBytes.SequenceEqual(decodedBytes.Slice(0, decodedByteCount)));*/
+                Assert.True(sourceBytes.SequenceEqual(decodedBytes.Slice(0, decodedByteCount)));
             }
         }
 
@@ -54,15 +52,8 @@ namespace System.Buffers.Text.Tests
                 Assert.Equal(OperationStatus.Done, result);
                 Assert.Equal(source.Length, consumed);
                 Assert.Equal(encodedBytes.Length, encodedBytesCount);
-                Assert.True(VerifyEncodingCorrectness(source.Length, encodedBytes.Length, source, encodedBytes));
+                Assert.True(Base64TestHelper.VerifyUrlEncodingCorrectness(source.Length, encodedBytes.Length, source, encodedBytes));
             }
-        }
-
-        private static bool VerifyEncodingCorrectness(int expectedConsumed, int expectedWritten, Span<byte> source, Span<byte> encodedBytes)
-        {
-            string expectedText = Convert.ToBase64String(source.Slice(0, expectedConsumed).ToArray()).Replace('+', '-').Replace('/', '_').TrimEnd('=');
-            string encodedText = Encoding.ASCII.GetString(encodedBytes.Slice(0, expectedWritten).ToArray());
-            return expectedText.Equals(encodedText);
         }
 
         [Fact]
@@ -84,7 +75,7 @@ namespace System.Buffers.Text.Tests
                 Assert.Equal(expectedStatus, Base64Url.EncodeToUtf8(source, encodedBytes, out int consumed, out int encodedBytesCount, isFinalBlock: false));
                 Assert.Equal(expectedConsumed, consumed);
                 Assert.Equal(expectedWritten, encodedBytesCount);
-                Assert.True(VerifyEncodingCorrectness(expectedConsumed, expectedWritten, source, encodedBytes));
+                Assert.True(Base64TestHelper.VerifyUrlEncodingCorrectness(expectedConsumed, expectedWritten, source, encodedBytes));
             }
         }
 
@@ -170,7 +161,7 @@ namespace System.Buffers.Text.Tests
                 int expectedConsumed = 3;
                 Assert.Equal(expectedConsumed, consumed);
                 Assert.Equal(encodedBytes.Length, written);
-                Assert.True(VerifyEncodingCorrectness(expectedConsumed, encodedBytes.Length, source, encodedBytes));
+                Assert.True(Base64TestHelper.VerifyUrlEncodingCorrectness(expectedConsumed, encodedBytes.Length, source, encodedBytes));
             }
         }
 
@@ -190,7 +181,7 @@ namespace System.Buffers.Text.Tests
             int expectedConsumed = encodedBytes.Length / 4 * 3;
             Assert.Equal(expectedConsumed, consumed);
             Assert.Equal(encodedBytes.Length, written);
-            Assert.True(VerifyEncodingCorrectness(expectedConsumed, encodedBytes.Length, source, encodedBytes));
+            Assert.True(Base64TestHelper.VerifyUrlEncodingCorrectness(expectedConsumed, encodedBytes.Length, source, encodedBytes));
 
             encodedBytes = new byte[requiredSize - outputSize];
             source = source.Slice(consumed);
@@ -198,7 +189,7 @@ namespace System.Buffers.Text.Tests
             expectedConsumed = encodedBytes.Length / 4 * 3;
             Assert.Equal(expectedConsumed, consumed);
             Assert.Equal(encodedBytes.Length, written);
-            Assert.True(VerifyEncodingCorrectness(expectedConsumed, encodedBytes.Length, source, encodedBytes));
+            Assert.True(Base64TestHelper.VerifyUrlEncodingCorrectness(expectedConsumed, encodedBytes.Length, source, encodedBytes));
         }
 
         [Theory]
@@ -276,12 +267,9 @@ namespace System.Buffers.Text.Tests
 
             for (int numberOfBytesToTest = 0; numberOfBytesToTest <= numberOfBytes; numberOfBytesToTest++)
             {
-                Span<byte> sliced = testBytes.Slice(0, numberOfBytesToTest);
-                Span<byte> dest = new byte[Base64Url.GetEncodedLength(numberOfBytesToTest)];
-                //var expectedText = Convert.ToBase64String(testBytes.Slice(0, numberOfBytesToTest).ToArray()).Replace('+', '-').Replace('/', '_').TrimEnd('=');
-                var status = Base64Url.EncodeToUtf8(sliced, dest, out _, out int _);
-                Assert.Equal(OperationStatus.Done, status);
-                var expectedText = Encoding.ASCII.GetString(dest.ToArray());
+                var expectedText = Convert.ToBase64String(testBytes.Slice(0, numberOfBytesToTest).ToArray())
+                    .Replace('+', '-').Replace('/', '_').TrimEnd('=');
+
                 Assert.True(Base64Url.TryEncodeToUtf8InPlace(testBytes, numberOfBytesToTest, out int bytesWritten));
                 Assert.Equal(Base64Url.GetEncodedLength(numberOfBytesToTest), bytesWritten);
 

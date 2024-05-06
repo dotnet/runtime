@@ -107,5 +107,19 @@ namespace System.Buffers.Text.Tests
 
             string GetRepeatedChar(char charToInsert, int numberOfTimesToInsert) => new string(charToInsert, numberOfTimesToInsert);
         }
+
+        public static IEnumerable<object[]> BasicDecodingWithExtraWhitespaceShouldBeCountedInConsumedBytes_MemberData()
+        {
+            var r = new Random(42);
+            for (int i = 0; i < 5; i++)
+            {
+                yield return new object[] { "AQ==" + new string(r.GetItems<char>(" \n\t\r", i)), 4 + i, 1 };
+            }
+
+            foreach (string s in new[] { "MTIz", "M TIz", "MT Iz", "MTI z", "MTIz ", "M    TI   z", "M T I Z " })
+            {
+                yield return new object[] { s + s + s + s, s.Length * 4, 12 };
+            }
+        }
     }
 }
