@@ -588,7 +588,7 @@ namespace System.Net.Sockets.Tests
 
         [ConditionalFact(typeof(Socket), nameof(Socket.OSSupportsUnixDomainSockets))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/52124", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
-        public void UnixDomainSocket_Receive_GetsCanceledByDispose()
+        public async Task UnixDomainSocket_Receive_GetsCanceledByDispose()
         {
             string path = GetRandomNonExistingFilePath();
             var endPoint = new UnixDomainSocketEndPoint(path);
@@ -619,11 +619,13 @@ namespace System.Net.Sockets.Tests
                         }
                         catch (SocketException)
                         {
+                            await disposeTask;
                             readFailed = true;
                             break;
                         }
                         catch (ObjectDisposedException)
                         {
+                            await disposeTask;
                             // Dispose happened before the operation, retry.
                             msDelay *= 2;
                             continue;
