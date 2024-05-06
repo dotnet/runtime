@@ -3470,7 +3470,7 @@ void emitter::emitDispRegSet(regMaskTP regs)
             continue;
         }
 
-        regs -= curReg;
+        regs ^= curReg;
 
         if (sp)
         {
@@ -3828,8 +3828,8 @@ void emitter::emitDispGCRegDelta(const char* title, regMaskTP prevRegs, regMaskT
     {
         emitDispGCDeltaTitle(title);
         regMaskTP sameRegs    = prevRegs & curRegs;
-        regMaskTP removedRegs = prevRegs - sameRegs;
-        regMaskTP addedRegs   = curRegs - sameRegs;
+        regMaskTP removedRegs = prevRegs ^ sameRegs;
+        regMaskTP addedRegs   = curRegs ^ sameRegs;
         if (removedRegs != RBM_NONE)
         {
             printf(" -");
@@ -8920,7 +8920,7 @@ void emitter::emitUpdateLiveGCregs(GCtype gcType, regMaskTP regs, BYTE* addr)
                 emitGCregDeadUpd(reg, addr);
             }
 
-            chg -= bit;
+            chg ^= bit;
         } while (chg);
 
         assert(emitThisXXrefRegs == regs);

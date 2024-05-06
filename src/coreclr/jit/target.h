@@ -208,8 +208,163 @@ enum _regMask_enum : unsigned
 // In any case, we believe that is OK to freely cast between these types; no information will
 // be lost.
 
-#if defined(TARGET_AMD64) || defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+typedef _regNumber_enum regNumber;
+typedef unsigned char   regNumberSmall;
+
+#if defined(TARGET_AMD64) || defined(TARGET_ARM) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 typedef unsigned __int64 regMaskTP;
+#elif defined(TARGET_ARM64)
+typedef unsigned __int64 regMaskSmall;
+struct _regMaskAll
+{
+    unsigned __int64 low;
+
+    _regMaskAll(unsigned __int64 regMask)
+        : low(regMask)
+    {
+    }
+
+    _regMaskAll()
+        : low(RBM_NONE)
+    {
+    }
+
+    FORCEINLINE operator _regMaskAll() const
+    {
+        return _regMaskAll{static_cast<uint64_t>(low)};
+    }
+
+    FORCEINLINE explicit operator bool() const
+    {
+        return low != 0;
+    }
+
+    FORCEINLINE explicit operator regMaskSmall() const
+    {
+        return (regMaskSmall)low;
+    }
+
+    FORCEINLINE explicit operator unsigned int() const
+    {
+        return (unsigned int)low;
+    }
+
+    FORCEINLINE unsigned __int64 getLow() const
+    {
+        return low;
+    }
+};
+typedef _regMaskAll regMaskTP;
+
+FORCEINLINE static uint32_t PopCount(const _regMaskAll& value)
+{
+    return BitOperations::PopCount(value.getLow());
+}
+
+FORCEINLINE static uint32_t BitScanForward(regMaskTP mask)
+{
+    return BitOperations::BitScanForward(mask.low);
+}
+
+FORCEINLINE regMaskTP operator^(const regMaskTP& first, const regMaskTP& second)
+{
+    regMaskTP result(first.low ^ second.getLow());
+    return result;
+}
+
+FORCEINLINE regMaskTP operator&(const regMaskTP& first, const regMaskTP& second)
+{
+    regMaskTP result(first.low & second.getLow());
+    return result;
+}
+
+FORCEINLINE regMaskTP operator|(const regMaskTP& first, const regMaskTP& second)
+{
+    regMaskTP result(first.low | second.getLow());
+    return result;
+}
+
+FORCEINLINE regMaskTP operator<<(const regMaskTP& first, const int b)
+{
+    regMaskTP result(first.low << b);
+    return result;
+}
+
+FORCEINLINE regMaskTP operator>>(const regMaskTP& first, const int b)
+{
+    regMaskTP result(first.low >> b);
+    return result;
+}
+
+FORCEINLINE regMaskTP& operator>>=(regMaskTP& first, const int b)
+{
+    first = first >> b;
+    return first;
+}
+
+FORCEINLINE regMaskTP& operator|=(regMaskTP& first, const regMaskTP& second)
+{
+    first.low |= second.low;
+    return first;
+}
+
+FORCEINLINE regMaskTP& operator^=(regMaskTP& first, const regMaskTP& second)
+{
+    first.low ^= second.low;
+    return first;
+}
+
+FORCEINLINE regMaskSmall operator^=(regMaskSmall& first, const regMaskTP& second)
+{
+    first ^= second.low;
+    return first;
+}
+
+FORCEINLINE regMaskSmall operator&=(regMaskSmall& first, const regMaskTP& second)
+{
+    first &= second.low;
+    return first;
+}
+
+FORCEINLINE regMaskSmall operator|=(regMaskSmall& first, const regMaskTP& second)
+{
+    first |= second.low;
+    return first;
+}
+
+FORCEINLINE regMaskTP& operator<<=(regMaskTP& first, const regMaskTP& second)
+{
+    first.low <<= second.low;
+    return first;
+}
+
+FORCEINLINE regMaskTP& operator&=(regMaskTP& first, const regMaskTP& second)
+{
+    first.low &= second.low;
+    return first;
+}
+
+FORCEINLINE constexpr bool operator==(const regMaskTP& first, const regMaskTP& second)
+{
+    return (first.low == second.low);
+}
+
+FORCEINLINE constexpr bool operator!=(const regMaskTP& first, const regMaskTP& second)
+{
+    return (first.low != second.low);
+}
+
+FORCEINLINE constexpr bool operator>(const regMaskTP& first, const regMaskTP& second)
+{
+    return (first.low > second.low);
+}
+
+FORCEINLINE regMaskTP operator~(const regMaskTP& first)
+{
+    regMaskTP result(~first.low);
+    return result;
+}
+
 #else
 typedef unsigned regMaskTP;
 #endif
@@ -231,9 +386,6 @@ typedef unsigned __int64 regMaskSmall;
 #define REG_MASK_INT_FMT "%04llX"
 #define REG_MASK_ALL_FMT "%016llX"
 #endif
-
-typedef _regNumber_enum regNumber;
-typedef unsigned char   regNumberSmall;
 
 /*****************************************************************************/
 
@@ -558,7 +710,7 @@ inline bool floatRegCanHoldType(regNumber reg, var_types type)
     }
     else
     {
-        // Can be TYP_STRUCT for HFA. It's not clear that's correct; what about
+        // Can be TYP_STRUCT for HFfirst. It's not clear that's correct; what about
         // HFA of double? We wouldn't be asserting the right alignment, and
         // callers like genRegMaskFloat() wouldn't be generating the right mask.
 

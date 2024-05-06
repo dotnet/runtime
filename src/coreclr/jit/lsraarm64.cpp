@@ -180,7 +180,7 @@ regMaskTP LinearScan::filterConsecutiveCandidates(regMaskTP    candidates,
                                                   unsigned int registersNeeded,
                                                   regMaskTP*   allConsecutiveCandidates)
 {
-    if (BitOperations::PopCount(candidates) < registersNeeded)
+    if (PopCount(candidates) < registersNeeded)
     {
         // There is no way the register demanded can be satisfied for this RefPosition
         // based on the candidates from which it can allocate a register.
@@ -205,7 +205,7 @@ regMaskTP LinearScan::filterConsecutiveCandidates(regMaskTP    candidates,
     do
     {
         // From LSB, find the first available register (bit `1`)
-        regAvailableStartIndex = BitOperations::BitScanForward(static_cast<DWORD64>(currAvailableRegs));
+        regAvailableStartIndex = BitScanForward(currAvailableRegs);
         regMaskTP startMask    = (1ULL << regAvailableStartIndex) - 1;
 
         // Mask all the bits that are processed from LSB thru regAvailableStart until the last `1`.
@@ -223,7 +223,7 @@ regMaskTP LinearScan::filterConsecutiveCandidates(regMaskTP    candidates,
         }
         else
         {
-            regAvailableEndIndex = BitOperations::BitScanForward(static_cast<DWORD64>(maskProcessed));
+            regAvailableEndIndex = BitScanForward(maskProcessed);
         }
         regMaskTP endMask = (1ULL << regAvailableEndIndex) - 1;
 
@@ -335,7 +335,7 @@ regMaskTP LinearScan::filterConsecutiveCandidatesForSpill(regMaskTP consecutiveC
     do
     {
         // From LSB, find the first available register (bit `1`)
-        regAvailableStartIndex = BitOperations::BitScanForward(static_cast<DWORD64>(unprocessedRegs));
+        regAvailableStartIndex = BitScanForward(unprocessedRegs);
 
         // For the current range, find how many registers are free vs. busy
         regMaskTP maskForCurRange        = RBM_NONE;
@@ -370,7 +370,7 @@ regMaskTP LinearScan::filterConsecutiveCandidatesForSpill(regMaskTP consecutiveC
             // In the given range, there are some free registers available. Calculate how many registers
             // will need spilling if this range is picked.
 
-            int curSpillRegs = registersNeeded - BitOperations::PopCount(maskForCurRange);
+            int curSpillRegs = registersNeeded - PopCount(maskForCurRange);
             if (curSpillRegs < maxSpillRegs)
             {
                 consecutiveResultForBusy = 1ULL << regAvailableStartIndex;

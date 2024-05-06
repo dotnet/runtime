@@ -4667,7 +4667,7 @@ void GCInfo::gcInfoRecordGCRegStateChange(GcInfoEncoder* gcInfoEncoder,
         }
 
         // Turn the bit we've just generated off and continue.
-        regMask -= tmpMask; // EAX,ECX,EDX,EBX,---,EBP,ESI,EDI
+        regMask ^= tmpMask; // EAX,ECX,EDX,EBX,---,EBP,ESI,EDI
     }
 }
 

@@ -2898,7 +2898,11 @@ void LinearScan::stressSetRandomParameterPreferences()
 
         // Select a random register from all possible parameter registers
         // (of the right type). Preference this parameter to that register.
+#ifdef TARGET_ARM64
+        unsigned numBits = PopCount(*regs);
+#else
         unsigned numBits = BitOperations::PopCount(*regs);
+#endif
         if (numBits == 0)
         {
             continue;
