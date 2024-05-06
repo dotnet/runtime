@@ -274,7 +274,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 		static void TakesTypesArray (Type[] types) { }
 
-		[ExpectedWarning ("IL2062", nameof (DataFlowTypeExtensions.RequiresPublicMethods), Tool.None, "https://github.com/dotnet/linker/issues/2680")]
+		[ExpectedWarning ("IL2062", nameof (DataFlowTypeExtensions.RequiresPublicFields), Tool.None, "https://github.com/dotnet/linker/issues/2680")]
 		static void TestArrayResetAfterAssignment ()
 		{
 			Type[] arr = new Type[] { typeof (TestType) };
