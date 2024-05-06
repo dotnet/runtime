@@ -5,10 +5,10 @@ using System.Numerics;
 
 namespace System.Net
 {
-    internal static class IPv4AddressHelper
+    internal static class IPv4AddressHelper<TChar>
+        where TChar : unmanaged, IBinaryInteger<TChar>
     {
         internal const int Invalid = -1;
-        internal static unsafe long ParseNonCanonical<TChar>(ReadOnlySpan<TChar> name, ref int bytesConsumed, bool notImplicitFile)
-            where TChar : unmanaged, IBinaryInteger<TChar> => 0;
+        internal static unsafe long ParseNonCanonical(ReadOnlySpan<TChar> name, ref int bytesConsumed, bool notImplicitFile) => 0;
     }
 }

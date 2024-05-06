@@ -11,46 +11,43 @@ using System.Runtime.InteropServices;
 
 namespace System.Net
 {
-    internal static class IPAddressParser
+    internal static class IPAddressParser<TChar>
+        where TChar : unmanaged, IBinaryInteger<TChar>
     {
-        internal static class GenericHelpers<TChar>
-            where TChar : unmanaged, IBinaryInteger<TChar>
-        {
-            public const int Octal = 8;
-            public const int Decimal = 10;
-            public const int Hex = 16;
-
-            // Generic constants which are used for trying to parse a single digit as an integer.
-            private static readonly TChar NumericRangeStartCharacter = TChar.CreateTruncating('0');
-
-            public static bool IsValidInteger(int numericBase, TChar ch)
-            {
-                Debug.Assert(numericBase is Octal or Decimal or Hex);
-
-                return numericBase switch
-                {
-                    > 0 and < 10 => ch >= NumericRangeStartCharacter && ch - NumericRangeStartCharacter < TChar.CreateTruncating(numericBase),
-                    Hex => HexConverter.IsHexChar(int.CreateTruncating(ch)),
-                    _ => false
-                };
-            }
-
-            public static bool TryParseInteger(int numericBase, TChar ch, out int parsedNumber)
-            {
-                bool validNumber = IsValidInteger(numericBase, ch);
-
-                // HexConverter allows digits 1-F to be mapped to integers. The octal/decimal digit range restrictions are performed
-                // in IsValidInteger.
-                parsedNumber = validNumber
-                    ? HexConverter.FromChar(int.CreateTruncating(ch))
-                    : -1;
-
-                return validNumber;
-            }
-        }
+        public const int Octal = 8;
+        public const int Decimal = 10;
+        public const int Hex = 16;
 
         internal const int MaxIPv4StringLength = 15; // 4 numbers separated by 3 periods, with up to 3 digits per number
         internal const int MaxIPv6StringLength = 65;
+
+        // Generic constants which are used for trying to parse a single digit as an integer.
+        private static readonly TChar NumericRangeStartCharacter = TChar.CreateTruncating('0');
+
+        public static bool IsValidInteger(int numericBase, TChar ch)
+        {
+            Debug.Assert(numericBase is Octal or Decimal or Hex);
+
+            return numericBase switch
+            {
+                > 0 and < 10 => ch >= NumericRangeStartCharacter && ch - NumericRangeStartCharacter < TChar.CreateTruncating(numericBase),
+                Hex => HexConverter.IsHexChar(int.CreateTruncating(ch)),
+                _ => false
+            };
+        }
+
+        public static bool TryParseInteger(int numericBase, TChar ch, out int parsedNumber)
+        {
+            bool validNumber = IsValidInteger(numericBase, ch);
+
+            // HexConverter allows digits 1-F to be mapped to integers. The octal/decimal digit range restrictions are performed
+            // in IsValidInteger.
+            parsedNumber = validNumber
+                ? HexConverter.FromChar(int.CreateTruncating(ch))
+                : -1;
+
+            return validNumber;
+        }
 
         internal static IPAddress? Parse(ReadOnlySpan<char> ipSpan, bool tryParse)
         {
@@ -83,9 +80,9 @@ namespace System.Net
             int end = ipSpan.Length;
             long tmpAddr;
 
-            tmpAddr = IPv4AddressHelper.ParseNonCanonical(ipSpan, ref end, notImplicitFile: true);
+            tmpAddr = IPv4AddressHelper<char>.ParseNonCanonical(ipSpan, ref end, notImplicitFile: true);
 
-            if (tmpAddr != IPv4AddressHelper.Invalid && end == ipSpan.Length)
+            if (tmpAddr != IPv4AddressHelper<char>.Invalid && end == ipSpan.Length)
             {
                 // IPv4AddressHelper.ParseNonCanonical returns the bytes in host order.
                 // Convert to network order and return success.
@@ -102,11 +99,11 @@ namespace System.Net
         {
             Debug.Assert(numbersLength >= IPAddressParserStatics.IPv6AddressShorts);
 
-            bool isValid = IPv6AddressHelper.IsValidStrict(ipSpan);
+            bool isValid = IPv6AddressHelper<char>.IsValidStrict(ipSpan);
 
             if (isValid)
             {
-                IPv6AddressHelper.Parse(ipSpan, numbers, out ReadOnlySpan<char> scopeId);
+                IPv6AddressHelper<char>.Parse(ipSpan, numbers, out ReadOnlySpan<char> scopeId);
 
                 if (scopeId.Length > 1)
                 {
@@ -134,7 +131,7 @@ namespace System.Net
             return false;
         }
 
-        internal static int FormatIPv4Address<TChar>(uint address, Span<TChar> addressString) where TChar : unmanaged, IBinaryInteger<TChar>
+        internal static int FormatIPv4Address(uint address, Span<TChar> addressString)
         {
             address = (uint)IPAddress.NetworkToHostOrder(unchecked((int)address));
 
@@ -178,11 +175,11 @@ namespace System.Net
             }
         }
 
-        internal static int FormatIPv6Address<TChar>(ushort[] address, uint scopeId, Span<TChar> destination) where TChar : unmanaged, IBinaryInteger<TChar>
+        internal static int FormatIPv6Address(ushort[] address, uint scopeId, Span<TChar> destination)
         {
             int pos = 0;
 
-            if (IPv6AddressHelper.ShouldHaveIpv4Embedded(address))
+            if (IPv6AddressHelper<TChar>.ShouldHaveIpv4Embedded(address))
             {
                 // We need to treat the last 2 ushorts as a 4-byte IPv4 address,
                 // so output the first 6 ushorts normally, followed by the IPv4 address.
@@ -228,7 +225,7 @@ namespace System.Net
             static void AppendSections(ReadOnlySpan<ushort> address, Span<TChar> destination, ref int offset)
             {
                 // Find the longest sequence of zeros to be combined into a "::"
-                (int zeroStart, int zeroEnd) = IPv6AddressHelper.FindCompressionRange(address);
+                (int zeroStart, int zeroEnd) = IPv6AddressHelper<TChar>.FindCompressionRange(address);
                 bool needsColon = false;
 
                 // Handle a zero sequence if there is one

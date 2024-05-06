@@ -6,21 +6,18 @@ using System.Numerics;
 
 namespace System.Net
 {
-    internal static partial class IPv6AddressHelper
+    internal static partial class IPv6AddressHelper<TChar>
+        where TChar : unmanaged, IBinaryInteger<TChar>
     {
-        internal static class IPv6Constants<TChar>
-            where TChar : unmanaged, IBinaryInteger<TChar>
-        {
-            // IPv6 address-specific generic constants.
-            public static readonly TChar AddressStartCharacter = TChar.CreateTruncating('[');
-            public static readonly TChar AddressEndCharacter = TChar.CreateTruncating(']');
-            public static readonly TChar ComponentSeparator = TChar.CreateTruncating(':');
-            public static readonly TChar ScopeSeparator = TChar.CreateTruncating('%');
-            public static readonly TChar PrefixSeparator = TChar.CreateTruncating('/');
-            public static readonly TChar PortSeparator = TChar.CreateTruncating(':');
-            public static readonly TChar[] HexadecimalPrefix = [TChar.CreateTruncating('0'), TChar.CreateTruncating('x')];
-            public static readonly TChar[] Compressor = [ComponentSeparator, ComponentSeparator];
-        }
+        // IPv6 address-specific generic constants.
+        public static readonly TChar AddressStartCharacter = TChar.CreateTruncating('[');
+        public static readonly TChar AddressEndCharacter = TChar.CreateTruncating(']');
+        public static readonly TChar ComponentSeparator = TChar.CreateTruncating(':');
+        public static readonly TChar ScopeSeparator = TChar.CreateTruncating('%');
+        public static readonly TChar PrefixSeparator = TChar.CreateTruncating('/');
+        public static readonly TChar PortSeparator = TChar.CreateTruncating(':');
+        public static readonly TChar[] HexadecimalPrefix = [TChar.CreateTruncating('0'), TChar.CreateTruncating('x')];
+        public static readonly TChar[] Compressor = [ComponentSeparator, ComponentSeparator];
 
         private const int NumberOfLabels = 8;
 
@@ -108,8 +105,7 @@ namespace System.Net
 
         //  Remarks: MUST NOT be used unless all input indexes are verified and trusted.
         //           start must be next to '[' position, or error is reported
-        internal static bool IsValidStrict<TChar>(ReadOnlySpan<TChar> name)
-            where TChar : unmanaged, IBinaryInteger<TChar>
+        internal static bool IsValidStrict(ReadOnlySpan<TChar> name)
         {
             // Number of components in this IPv6 address
             int sequenceCount = 0;
@@ -124,7 +120,7 @@ namespace System.Net
             bool needsClosingBracket = false;
             int start = 0;
 
-            if (start < name.Length && name[start] == IPv6Constants<TChar>.AddressStartCharacter)
+            if (start < name.Length && name[start] == AddressStartCharacter)
             {
                 start++;
                 needsClosingBracket = true;
@@ -136,7 +132,7 @@ namespace System.Net
             }
 
             // Starting with a colon character is only valid if another colon follows.
-            if (name[start] == IPv6Constants<TChar>.Compressor[0] && (start + 1 >= name.Length || name[start + 1] != IPv6Constants<TChar>.Compressor[1]))
+            if (name[start] == Compressor[0] && (start + 1 >= name.Length || name[start + 1] != Compressor[1]))
             {
                 return false;
             }
@@ -144,7 +140,7 @@ namespace System.Net
             int i;
             for (i = start; i < name.Length; ++i)
             {
-                if (IPAddressParser.GenericHelpers<TChar>.IsValidInteger(IPAddressParser.GenericHelpers<TChar>.Hex, name[i]))
+                if (IPAddressParser<TChar>.IsValidInteger(IPAddressParser<TChar>.Hex, name[i]))
                 {
                     ++sequenceLength;
                     expectingNumber = false;
@@ -162,7 +158,7 @@ namespace System.Net
                         sequenceLength = 0;
                     }
 
-                    if (name[i] == IPv6Constants<TChar>.ScopeSeparator)
+                    if (name[i] == ScopeSeparator)
                     {
                         bool moveToNextCharacter = true;
 
@@ -170,8 +166,8 @@ namespace System.Net
                         {
                             i++;
 
-                            if (name[i] == IPv6Constants<TChar>.AddressEndCharacter
-                                || name[i] == IPv6Constants<TChar>.PrefixSeparator)
+                            if (name[i] == AddressEndCharacter
+                                || name[i] == PrefixSeparator)
                             {
                                 moveToNextCharacter = false;
                                 break;
@@ -184,7 +180,7 @@ namespace System.Net
                         }
                     }
 
-                    if (name[i] == IPv6Constants<TChar>.AddressEndCharacter)
+                    if (name[i] == AddressEndCharacter)
                     {
                         if (!needsClosingBracket)
                         {
@@ -194,39 +190,39 @@ namespace System.Net
 
                         // If there's more after the closing bracket, it must be a port.
                         // We don't use the port, but we still validate it.
-                        if (i + 1 < name.Length && name[i + 1] != IPv6Constants<TChar>.PortSeparator)
+                        if (i + 1 < name.Length && name[i + 1] != PortSeparator)
                         {
                             return false;
                         }
 
-                        int numericBase = IPAddressParser.GenericHelpers<TChar>.Decimal;
+                        int numericBase = IPAddressParser<TChar>.Decimal;
 
                         // Skip past the closing bracket and the port separator.
                         i += 2;
                         // If there is a port, it must either be a hexadecimal or decimal number.
-                        if (i + 1 < name.Length && name.Slice(i).StartsWith(IPv6Constants<TChar>.HexadecimalPrefix.AsSpan()))
+                        if (i + 1 < name.Length && name.Slice(i).StartsWith(HexadecimalPrefix.AsSpan()))
                         {
-                            i += IPv6Constants<TChar>.HexadecimalPrefix.Length;
+                            i += HexadecimalPrefix.Length;
 
-                            numericBase = IPAddressParser.GenericHelpers<TChar>.Hex;
+                            numericBase = IPAddressParser<TChar>.Hex;
                         }
 
                         for (; i < name.Length; i++)
                         {
-                            if (!IPAddressParser.GenericHelpers<TChar>.IsValidInteger(numericBase, name[i]))
+                            if (!IPAddressParser<TChar>.IsValidInteger(numericBase, name[i]))
                             {
                                 return false;
                             }
                         }
                         continue;
                     }
-                    else if (name[i] == IPv6Constants<TChar>.PrefixSeparator)
+                    else if (name[i] == PrefixSeparator)
                     {
                         return false;
                     }
-                    else if (name[i] == IPv6Constants<TChar>.ComponentSeparator)
+                    else if (name[i] == ComponentSeparator)
                     {
-                        if (i > 0 && name.Slice(i - 1, 2).SequenceEqual(IPv6Constants<TChar>.Compressor.AsSpan()))
+                        if (i > 0 && name.Slice(i - 1, 2).SequenceEqual(Compressor.AsSpan()))
                         {
                             if (haveCompressor)
                             {
@@ -244,7 +240,7 @@ namespace System.Net
                         sequenceLength = 0;
                         continue;
                     }
-                    else if (name[i] == IPv4AddressHelper.IPv4Constants<TChar>.ComponentSeparator)
+                    else if (name[i] == IPv4AddressHelper<TChar>.ComponentSeparator)
                     {
                         int ipv4AddressLength = i;
 
@@ -253,7 +249,7 @@ namespace System.Net
                             return false;
                         }
 
-                        if (!IPv4AddressHelper.IsValid(name.Slice(lastSequence), ref ipv4AddressLength, true, false, false))
+                        if (!IPv4AddressHelper<TChar>.IsValid(name.Slice(lastSequence), ref ipv4AddressLength, true, false, false))
                         {
                             return false;
                         }
@@ -316,8 +312,7 @@ namespace System.Net
         //  Nothing
         //
 
-        internal static void Parse<TChar>(ReadOnlySpan<TChar> address, Span<ushort> numbers, out ReadOnlySpan<TChar> scopeId)
-            where TChar : unmanaged, IBinaryInteger<TChar>
+        internal static void Parse(ReadOnlySpan<TChar> address, Span<ushort> numbers, out ReadOnlySpan<TChar> scopeId)
         {
             int number = 0;
             int index = 0;
@@ -325,10 +320,10 @@ namespace System.Net
             bool numberIsValid = true;
 
             scopeId = ReadOnlySpan<TChar>.Empty;
-            for (int i = (address[0] == IPv6Constants<TChar>.AddressStartCharacter ? 1 : 0); i < address.Length && address[i] != IPv6Constants<TChar>.AddressEndCharacter;)
+            for (int i = (address[0] == AddressStartCharacter ? 1 : 0); i < address.Length && address[i] != AddressEndCharacter;)
             {
-                if (address[i] == IPv6Constants<TChar>.ScopeSeparator
-                    || address[i] == IPv6Constants<TChar>.PrefixSeparator)
+                if (address[i] == ScopeSeparator
+                    || address[i] == PrefixSeparator)
                 {
                     if (numberIsValid)
                     {
@@ -336,26 +331,26 @@ namespace System.Net
                         numberIsValid = false;
                     }
 
-                    if (address[i] == IPv6Constants<TChar>.ScopeSeparator)
+                    if (address[i] == ScopeSeparator)
                     {
                         int scopeStart = i;
 
-                        for (++i; i < address.Length && address[i] != IPv6Constants<TChar>.AddressEndCharacter && address[i] != IPv6Constants<TChar>.PrefixSeparator; ++i)
+                        for (++i; i < address.Length && address[i] != AddressEndCharacter && address[i] != PrefixSeparator; ++i)
                         {
                         }
                         scopeId = address.Slice(scopeStart, i - scopeStart);
                     }
                     // ignore prefix if any
-                    for (; i < address.Length && address[i] != IPv6Constants<TChar>.AddressEndCharacter; ++i)
+                    for (; i < address.Length && address[i] != AddressEndCharacter; ++i)
                     {
                     }
                 }
-                else if (address[i] == IPv6Constants<TChar>.ComponentSeparator)
+                else if (address[i] == ComponentSeparator)
                 {
                     numbers[index++] = (ushort)number;
                     number = 0;
                     ++i;
-                    if (address[i] == IPv6Constants<TChar>.Compressor[0])
+                    if (address[i] == Compressor[0])
                     {
                         compressorIndex = index;
                         ++i;
@@ -371,14 +366,14 @@ namespace System.Net
                     // check to see if the upcoming number is really an IPv4
                     // address. If it is, convert it to 2 ushort numbers
                     for (int j = i; j < address.Length &&
-                                    (address[j] != IPv6Constants<TChar>.AddressEndCharacter) &&
-                                    (address[j] != IPv6Constants<TChar>.ComponentSeparator) &&
-                                    (address[j] != IPv6Constants<TChar>.ScopeSeparator) &&
-                                    (address[j] != IPv6Constants<TChar>.PrefixSeparator) &&
+                                    (address[j] != AddressEndCharacter) &&
+                                    (address[j] != ComponentSeparator) &&
+                                    (address[j] != ScopeSeparator) &&
+                                    (address[j] != PrefixSeparator) &&
                                     (j < i + 4); ++j)
                     {
 
-                        if (address[j] == IPv4AddressHelper.IPv4Constants<TChar>.ComponentSeparator)
+                        if (address[j] == IPv4AddressHelper<TChar>.ComponentSeparator)
                         {
                             // we have an IPv4 address. Find the end of it:
                             // we know that since we have a valid IPv6
@@ -386,11 +381,11 @@ namespace System.Net
                             // the IPv4 address are the prefix delimiter '/'
                             // or the end-of-string (which we conveniently
                             // delimited with ']')
-                            while (j < address.Length && (address[j] != IPv6Constants<TChar>.AddressEndCharacter) && (address[j] != IPv6Constants<TChar>.PrefixSeparator) && (address[j] != IPv6Constants<TChar>.ScopeSeparator))
+                            while (j < address.Length && (address[j] != AddressEndCharacter) && (address[j] != PrefixSeparator) && (address[j] != ScopeSeparator))
                             {
                                 ++j;
                             }
-                            number = IPv4AddressHelper.ParseHostNumber(address.Slice(i, j - i));
+                            number = IPv4AddressHelper<TChar>.ParseHostNumber(address.Slice(i, j - i));
                             numbers[index++] = (ushort)(number >> 16);
                             numbers[index++] = (ushort)number;
                             i = j;
@@ -403,9 +398,9 @@ namespace System.Net
                         }
                     }
                 }
-                else if (IPAddressParser.GenericHelpers<TChar>.TryParseInteger(IPAddressParser.GenericHelpers<TChar>.Hex, address[i++], out int digit))
+                else if (IPAddressParser<TChar>.TryParseInteger(IPAddressParser<TChar>.Hex, address[i++], out int digit))
                 {
-                    number = number * IPAddressParser.GenericHelpers<TChar>.Hex + digit;
+                    number = number * IPAddressParser<TChar>.Hex + digit;
                 }
                 else
                 {

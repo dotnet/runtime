@@ -7,18 +7,15 @@ using System.Numerics;
 
 namespace System.Net
 {
-    internal static partial class IPv4AddressHelper
-    {
-        internal static class IPv4Constants<TChar>
+    internal static partial class IPv4AddressHelper<TChar>
             where TChar : unmanaged, IBinaryInteger<TChar>
-        {
-            // IPv4 address-specific generic constants.
-            public static readonly TChar ComponentSeparator = TChar.CreateTruncating('.');
-            public static readonly TChar[] PrefixSeparators = [TChar.CreateTruncating('/'), TChar.CreateTruncating('\\')];
-            public static readonly TChar[] UrlSeparators = [TChar.CreateTruncating(':'), TChar.CreateTruncating('?'), TChar.CreateTruncating('#')];
-            public static readonly TChar[] HexadecimalPrefix = [TChar.CreateTruncating('0'), TChar.CreateTruncating('x')];
-            public static readonly TChar OctalPrefix = HexadecimalPrefix[0];
-        }
+    {
+        // IPv4 address-specific generic constants.
+        public static readonly TChar ComponentSeparator = TChar.CreateTruncating('.');
+        public static readonly TChar[] PrefixSeparators = [TChar.CreateTruncating('/'), TChar.CreateTruncating('\\')];
+        public static readonly TChar[] UrlSeparators = [TChar.CreateTruncating(':'), TChar.CreateTruncating('?'), TChar.CreateTruncating('#')];
+        public static readonly TChar[] HexadecimalPrefix = [TChar.CreateTruncating('0'), TChar.CreateTruncating('x')];
+        public static readonly TChar OctalPrefix = HexadecimalPrefix[0];
 
         internal const long Invalid = -1;
         private const long MaxIPv4Value = uint.MaxValue; // the native parser cannot handle MaxIPv4Value, only MaxIPv4Value - 1
@@ -26,8 +23,7 @@ namespace System.Net
         private const int NumberOfLabels = 4;
 
         // Only called from the IPv6Helper, only parse the canonical format
-        internal static int ParseHostNumber<TChar>(ReadOnlySpan<TChar> str)
-            where TChar : unmanaged, IBinaryInteger<TChar>
+        internal static int ParseHostNumber(ReadOnlySpan<TChar> str)
         {
             Span<byte> numbers = stackalloc byte[NumberOfLabels];
             int start = 0;
@@ -91,8 +87,7 @@ namespace System.Net
         //
 
         //Remark: MUST NOT be used unless all input indexes are verified and trusted.
-        internal static bool IsValid<TChar>(ReadOnlySpan<TChar> name, ref int bytesConsumed, bool allowIPv6, bool notImplicitFile, bool unknownScheme)
-            where TChar : unmanaged, IBinaryInteger<TChar>
+        internal static bool IsValid(ReadOnlySpan<TChar> name, ref int bytesConsumed, bool allowIPv6, bool notImplicitFile, bool unknownScheme)
         {
             // IPv6 can only have canonical IPv4 embedded. Unknown schemes will not attempt parsing of non-canonical IPv4 addresses.
             if (allowIPv6 || unknownScheme)
@@ -118,8 +113,7 @@ namespace System.Net
         //                 / "2" %x30-34 DIGIT     ; 200-249
         //                 / "25" %x30-35          ; 250-255
         //
-        internal static bool IsValidCanonical<TChar>(ReadOnlySpan<TChar> name, ref int bytesConsumed, bool allowIPv6, bool notImplicitFile)
-            where TChar : unmanaged, IBinaryInteger<TChar>
+        internal static bool IsValidCanonical(ReadOnlySpan<TChar> name, ref int bytesConsumed, bool allowIPv6, bool notImplicitFile)
         {
             int dots = 0;
             int number = 0;
@@ -135,19 +129,19 @@ namespace System.Net
                 if (allowIPv6)
                 {
                     // for ipv4 inside ipv6 the terminator is either ScopeId, prefix or ipv6 terminator
-                    if (ch == IPv6AddressHelper.IPv6Constants<TChar>.AddressEndCharacter || ch == IPv6AddressHelper.IPv6Constants<TChar>.PrefixSeparator || ch == IPv6AddressHelper.IPv6Constants<TChar>.ScopeSeparator)
+                    if (ch == IPv6AddressHelper<TChar>.AddressEndCharacter || ch == IPv6AddressHelper<TChar>.PrefixSeparator || ch == IPv6AddressHelper<TChar>.ScopeSeparator)
                         break;
                 }
-                else if (Array.IndexOf(IPv4Constants<TChar>.PrefixSeparators, ch) != -1 || (notImplicitFile && (Array.IndexOf(IPv4Constants<TChar>.UrlSeparators, ch) != -1)))
+                else if (Array.IndexOf(PrefixSeparators, ch) != -1 || (notImplicitFile && (Array.IndexOf(UrlSeparators, ch) != -1)))
                 {
                     break;
                 }
 
-                if (IPAddressParser.GenericHelpers<TChar>.TryParseInteger(IPAddressParser.GenericHelpers<TChar>.Decimal, ch, out int parsedCharacter))
+                if (IPAddressParser<TChar>.TryParseInteger(IPAddressParser<TChar>.Decimal, ch, out int parsedCharacter))
                 {
-                    if (!haveNumber && ch == IPv4Constants<TChar>.OctalPrefix)
+                    if (!haveNumber && ch == OctalPrefix)
                     {
-                        if (current + 1 < name.Length && name[current + 1] == IPv4Constants<TChar>.OctalPrefix)
+                        if (current + 1 < name.Length && name[current + 1] == OctalPrefix)
                         {
                             // 00 is not allowed as a prefix.
                             return false;
@@ -157,13 +151,13 @@ namespace System.Net
                     }
 
                     haveNumber = true;
-                    number = number * IPAddressParser.GenericHelpers<TChar>.Decimal + parsedCharacter;
+                    number = number * IPAddressParser<TChar>.Decimal + parsedCharacter;
                     if (number > byte.MaxValue)
                     {
                         return false;
                     }
                 }
-                else if (ch == IPv4Constants<TChar>.ComponentSeparator)
+                else if (ch == ComponentSeparator)
                 {
                     if (!haveNumber || (number > 0 && firstCharIsZero))
                     {
@@ -192,10 +186,9 @@ namespace System.Net
         // Return Invalid (-1) for failures.
         // If the address has less than three dots, only the rightmost section is assumed to contain the combined value for
         // the missing sections: 0xFF00FFFF == 0xFF.0x00.0xFF.0xFF == 0xFF.0xFFFF
-        internal static long ParseNonCanonical<TChar>(ReadOnlySpan<TChar> name, ref int bytesConsumed, bool notImplicitFile)
-            where TChar : unmanaged, IBinaryInteger<TChar>
+        internal static long ParseNonCanonical(ReadOnlySpan<TChar> name, ref int bytesConsumed, bool notImplicitFile)
         {
-            int numberBase = IPAddressParser.GenericHelpers<TChar>.Decimal;
+            int numberBase = IPAddressParser<TChar>.Decimal;
             Span<long> parts = stackalloc long[4];
             long currentValue = 0;
             bool atLeastOneChar = false;
@@ -210,19 +203,19 @@ namespace System.Net
                 currentValue = 0;
 
                 // Figure out what base this section is in
-                numberBase = IPAddressParser.GenericHelpers<TChar>.Decimal;
-                if (ch == IPv4Constants<TChar>.OctalPrefix)
+                numberBase = IPAddressParser<TChar>.Decimal;
+                if (ch == OctalPrefix)
                 {
-                    numberBase = IPAddressParser.GenericHelpers<TChar>.Octal;
+                    numberBase = IPAddressParser<TChar>.Octal;
                     current++;
                     atLeastOneChar = true;
                     if (current < name.Length)
                     {
                         ch = name[current] | TChar.CreateTruncating(0x20);
 
-                        if (ch == IPv4Constants<TChar>.HexadecimalPrefix[1])
+                        if (ch == HexadecimalPrefix[1])
                         {
-                            numberBase = IPAddressParser.GenericHelpers<TChar>.Hex;
+                            numberBase = IPAddressParser<TChar>.Hex;
                             current++;
                             atLeastOneChar = false;
                         }
@@ -234,7 +227,7 @@ namespace System.Net
                 {
                     ch = name[current];
 
-                    if (!IPAddressParser.GenericHelpers<TChar>.TryParseInteger(numberBase, ch, out int digitValue))
+                    if (!IPAddressParser<TChar>.TryParseInteger(numberBase, ch, out int digitValue))
                     {
                         break; // Invalid/terminator
                     }
@@ -249,7 +242,7 @@ namespace System.Net
                     atLeastOneChar = true;
                 }
 
-                if (current < name.Length && name[current] == IPv4Constants<TChar>.ComponentSeparator)
+                if (current < name.Length && name[current] == ComponentSeparator)
                 {
                     if (dotCount >= 3 // Max of 3 dots and 4 segments
                         || !atLeastOneChar // No empty segmets: 1...1
@@ -276,8 +269,8 @@ namespace System.Net
             {
                 // end of string, allowed
             }
-            else if ((Array.IndexOf(IPv4Constants<TChar>.PrefixSeparators, name[current]) != -1)
-                || (notImplicitFile && (Array.IndexOf(IPv4Constants<TChar>.UrlSeparators, name[current]) != -1)))
+            else if ((Array.IndexOf(PrefixSeparators, name[current]) != -1)
+                || (notImplicitFile && (Array.IndexOf(UrlSeparators, name[current]) != -1)))
             {
                 bytesConsumed = current;
             }

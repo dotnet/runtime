@@ -228,13 +228,13 @@ namespace System.Net
                 return false;
             }
 
-            address = IPAddressParser.Parse(ipString.AsSpan(), tryParse: true);
+            address = IPAddressParser<char>.Parse(ipString.AsSpan(), tryParse: true);
             return (address != null);
         }
 
         public static bool TryParse(ReadOnlySpan<char> ipSpan, [NotNullWhen(true)] out IPAddress? address)
         {
-            address = IPAddressParser.Parse(ipSpan, tryParse: true);
+            address = IPAddressParser<char>.Parse(ipSpan, tryParse: true);
             return (address != null);
         }
 
@@ -252,12 +252,12 @@ namespace System.Net
         {
             ArgumentNullException.ThrowIfNull(ipString);
 
-            return IPAddressParser.Parse(ipString.AsSpan(), tryParse: false)!;
+            return IPAddressParser<char>.Parse(ipString.AsSpan(), tryParse: false)!;
         }
 
         public static IPAddress Parse(ReadOnlySpan<char> ipSpan)
         {
-            return IPAddressParser.Parse(ipSpan, tryParse: false)!;
+            return IPAddressParser<char>.Parse(ipSpan, tryParse: false)!;
         }
 
         /// <inheritdoc/>
@@ -408,10 +408,10 @@ namespace System.Net
             string? toString = _toString;
             if (toString is null)
             {
-                Span<char> span = stackalloc char[IPAddressParser.MaxIPv6StringLength];
+                Span<char> span = stackalloc char[IPAddressParser<char>.MaxIPv6StringLength];
                 int length = IsIPv4 ?
-                    IPAddressParser.FormatIPv4Address(_addressOrScopeId, span) :
-                    IPAddressParser.FormatIPv6Address(_numbers, _addressOrScopeId, span);
+                    IPAddressParser<char>.FormatIPv4Address(_addressOrScopeId, span) :
+                    IPAddressParser<char>.FormatIPv6Address(_numbers, _addressOrScopeId, span);
                 _toString = toString = new string(span.Slice(0, length));
             }
 
@@ -447,27 +447,27 @@ namespace System.Net
         {
             if (IsIPv4)
             {
-                if (destination.Length >= IPAddressParser.MaxIPv4StringLength)
+                if (destination.Length >= IPAddressParser<TChar>.MaxIPv4StringLength)
                 {
-                    charsWritten = IPAddressParser.FormatIPv4Address(_addressOrScopeId, destination);
+                    charsWritten = IPAddressParser<TChar>.FormatIPv4Address(_addressOrScopeId, destination);
                     return true;
                 }
             }
             else
             {
-                if (destination.Length >= IPAddressParser.MaxIPv6StringLength)
+                if (destination.Length >= IPAddressParser<TChar>.MaxIPv6StringLength)
                 {
-                    charsWritten = IPAddressParser.FormatIPv6Address(_numbers, _addressOrScopeId, destination);
+                    charsWritten = IPAddressParser<TChar>.FormatIPv6Address(_numbers, _addressOrScopeId, destination);
                     return true;
                 }
             }
 
-            Span<TChar> tmpDestination = stackalloc TChar[IPAddressParser.MaxIPv6StringLength];
-            Debug.Assert(tmpDestination.Length >= IPAddressParser.MaxIPv4StringLength);
+            Span<TChar> tmpDestination = stackalloc TChar[IPAddressParser<TChar>.MaxIPv6StringLength];
+            Debug.Assert(tmpDestination.Length >= IPAddressParser<TChar>.MaxIPv4StringLength);
 
             int written = IsIPv4 ?
-                IPAddressParser.FormatIPv4Address(PrivateAddress, tmpDestination) :
-                IPAddressParser.FormatIPv6Address(_numbers, PrivateScopeId, tmpDestination);
+                IPAddressParser<TChar>.FormatIPv4Address(PrivateAddress, tmpDestination) :
+                IPAddressParser<TChar>.FormatIPv6Address(_numbers, PrivateScopeId, tmpDestination);
 
             if (tmpDestination.Slice(0, written).TryCopyTo(destination))
             {
