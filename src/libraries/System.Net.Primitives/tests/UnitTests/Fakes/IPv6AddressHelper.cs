@@ -9,6 +9,8 @@ namespace System.Net
     internal static class IPv6AddressHelper<TChar>
         where TChar : unmanaged, IBinaryInteger<TChar>
     {
+        public static readonly TChar ComponentSeparator = TChar.CreateTruncating(':');
+
         internal static unsafe (int longestSequenceStart, int longestSequenceLength) FindCompressionRange(
             ReadOnlySpan<ushort> numbers) => (-1, -1);
         internal static unsafe bool ShouldHaveIpv4Embedded(ReadOnlySpan<ushort> numbers) => false;

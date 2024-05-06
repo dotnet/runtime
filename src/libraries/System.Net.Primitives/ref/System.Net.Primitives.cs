@@ -4,6 +4,8 @@
 // Changes to this file must follow the https://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
+using System.Diagnostics.CodeAnalysis;
+
 namespace System.Net
 {
     [System.FlagsAttribute]
@@ -223,7 +225,7 @@ namespace System.Net
     {
         System.Net.NetworkCredential? GetCredential(string host, int port, string authenticationType);
     }
-    public partial class IPAddress : ISpanFormattable, ISpanParsable<IPAddress>, IUtf8SpanFormattable
+    public partial class IPAddress : ISpanFormattable, ISpanParsable<IPAddress>, IUtf8SpanFormattable, IUtf8SpanParsable<IPAddress>
     {
         public static readonly System.Net.IPAddress Any;
         public static readonly System.Net.IPAddress Broadcast;
@@ -261,6 +263,7 @@ namespace System.Net
         public static long NetworkToHostOrder(long network) { throw null; }
         public static System.Net.IPAddress Parse(System.ReadOnlySpan<char> ipSpan) { throw null; }
         public static System.Net.IPAddress Parse(string ipString) { throw null; }
+        public static System.Net.IPAddress Parse(ReadOnlySpan<byte> utf8Text, IFormatProvider? provider) { throw null; }
         static IPAddress ISpanParsable<IPAddress>.Parse(ReadOnlySpan<char> s, IFormatProvider? provider) { throw null; }
         static IPAddress IParsable<IPAddress>.Parse(string s, IFormatProvider? provider) { throw null; }
         public override string ToString() { throw null; }
@@ -271,6 +274,7 @@ namespace System.Net
         bool System.IUtf8SpanFormattable.TryFormat(System.Span<byte> utf8Destination, out int bytesWritten, System.ReadOnlySpan<char> format, System.IFormatProvider? provider) { throw null; }
         public static bool TryParse(System.ReadOnlySpan<char> ipSpan, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out System.Net.IPAddress? address) { throw null; }
         public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? ipString, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out System.Net.IPAddress? address) { throw null; }
+        public static bool TryParse(System.ReadOnlySpan<byte> utf8Text, System.IFormatProvider? provider, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out System.Net.IPAddress? result) { throw null; }
         static bool ISpanParsable<IPAddress>.TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, out IPAddress result) { throw null; }
         static bool IParsable<IPAddress>.TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, IFormatProvider? provider, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out IPAddress? result) { throw null; }
         public bool TryWriteBytes(System.Span<byte> destination, out int bytesWritten) { throw null; }

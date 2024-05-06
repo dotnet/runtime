@@ -49,9 +49,11 @@ namespace System.Net
             return validNumber;
         }
 
-        internal static IPAddress? Parse(ReadOnlySpan<char> ipSpan, bool tryParse)
+        internal static IPAddress? Parse(ReadOnlySpan<TChar> ipSpan, bool tryParse)
         {
-            if (ipSpan.Contains(':'))
+            Debug.Assert(typeof(TChar) == typeof(byte) || typeof(TChar) == typeof(char));
+
+            if (ipSpan.Contains(IPv6AddressHelper<TChar>.ComponentSeparator))
             {
                 // The address is parsed as IPv6 if and only if it contains a colon. This is valid because
                 // we don't support/parse a port specification at the end of an IPv4 address.
@@ -75,14 +77,14 @@ namespace System.Net
             throw new FormatException(SR.dns_bad_ip_address, new SocketException(SocketError.InvalidArgument));
         }
 
-        private static bool TryParseIpv4(ReadOnlySpan<char> ipSpan, out long address)
+        private static bool TryParseIpv4(ReadOnlySpan<TChar> ipSpan, out long address)
         {
             int end = ipSpan.Length;
             long tmpAddr;
 
-            tmpAddr = IPv4AddressHelper<char>.ParseNonCanonical(ipSpan, ref end, notImplicitFile: true);
+            tmpAddr = IPv4AddressHelper<TChar>.ParseNonCanonical(ipSpan, ref end, notImplicitFile: true);
 
-            if (tmpAddr != IPv4AddressHelper<char>.Invalid && end == ipSpan.Length)
+            if (tmpAddr != IPv4AddressHelper<TChar>.Invalid && end == ipSpan.Length)
             {
                 // IPv4AddressHelper.ParseNonCanonical returns the bytes in host order.
                 // Convert to network order and return success.
@@ -95,24 +97,55 @@ namespace System.Net
             return false;
         }
 
-        private static bool TryParseIPv6(ReadOnlySpan<char> ipSpan, Span<ushort> numbers, int numbersLength, out uint scope)
+        private static bool TryParseIPv6(ReadOnlySpan<TChar> ipSpan, Span<ushort> numbers, int numbersLength, out uint scope)
         {
             Debug.Assert(numbersLength >= IPAddressParserStatics.IPv6AddressShorts);
 
-            bool isValid = IPv6AddressHelper<char>.IsValidStrict(ipSpan);
+            bool isValid = IPv6AddressHelper<TChar>.IsValidStrict(ipSpan);
 
+            scope = 0;
             if (isValid)
             {
-                IPv6AddressHelper<char>.Parse(ipSpan, numbers, out ReadOnlySpan<char> scopeId);
+                IPv6AddressHelper<TChar>.Parse(ipSpan, numbers, out ReadOnlySpan<TChar> scopeIdSpan);
 
-                if (scopeId.Length > 1)
+                if (scopeIdSpan.Length > 1)
                 {
-                    if (uint.TryParse(scopeId.Slice(1), NumberStyles.None, CultureInfo.InvariantCulture, out scope))
+                    string interfaceName = string.Empty;
+                    scopeIdSpan = scopeIdSpan.Slice(1);
+
+                    // scopeId is a numeric value
+                    if (typeof(TChar) == typeof(byte))
                     {
-                        return true; // scopeId is a numeric value
+                        ReadOnlySpan<byte> castScopeIdSpan = MemoryMarshal.Cast<TChar, byte>(scopeIdSpan);
+
+                        if (uint.TryParse(castScopeIdSpan, NumberStyles.None, CultureInfo.InvariantCulture, out scope))
+                        {
+                            return true;
+                        }
+
+                        interfaceName = System.Text.Encoding.UTF8.GetString(castScopeIdSpan);
                     }
 
-                    uint interfaceIndex = InterfaceInfoPal.InterfaceNameToIndex(new string(scopeId));
+                    if (typeof(TChar) == typeof(char))
+                    {
+                        ReadOnlySpan<char> castScopeIdSpan = MemoryMarshal.Cast<TChar, char>(scopeIdSpan);
+
+                        if (uint.TryParse(castScopeIdSpan, NumberStyles.None, CultureInfo.InvariantCulture, out scope))
+                        {
+                            return true;
+                        }
+
+                        interfaceName = new string(castScopeIdSpan);
+                    }
+
+                    // This can only happen if TChar is neither char nor byte. This is protected against by this method's
+                    // only call site.
+                    if (string.IsNullOrEmpty(interfaceName))
+                    {
+                        return false;
+                    }
+
+                    uint interfaceIndex = InterfaceInfoPal.InterfaceNameToIndex(interfaceName);
                     if (interfaceIndex > 0)
                     {
                         scope = interfaceIndex;
@@ -123,11 +156,9 @@ namespace System.Net
                 }
 
                 // scopeId is not presented
-                scope = 0;
                 return true;
             }
 
-            scope = 0;
             return false;
         }
 

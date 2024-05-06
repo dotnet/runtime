@@ -19,7 +19,7 @@ namespace System.Net
     ///     Provides an Internet Protocol (IP) address.
     ///   </para>
     /// </devdoc>
-    public class IPAddress : ISpanFormattable, ISpanParsable<IPAddress>, IUtf8SpanFormattable
+    public class IPAddress : ISpanFormattable, ISpanParsable<IPAddress>, IUtf8SpanFormattable, IUtf8SpanParsable<IPAddress>
     {
         public static readonly IPAddress Any = new ReadOnlyIPAddress([0, 0, 0, 0]);
         public static readonly IPAddress Loopback = new ReadOnlyIPAddress([127, 0, 0, 1]);
@@ -239,6 +239,13 @@ namespace System.Net
         }
 
         /// <inheritdoc/>
+        public static bool TryParse(ReadOnlySpan<byte> utf8Text, IFormatProvider? provider, [NotNullWhen(true)] out IPAddress? result)
+        {
+            result = IPAddressParser<byte>.Parse(utf8Text, tryParse: true);
+            return (result != null);
+        }
+
+        /// <inheritdoc/>
         static bool IParsable<IPAddress>.TryParse([NotNullWhen(true)] string? s, IFormatProvider? provider, [NotNullWhen(true)] out IPAddress? result) =>
             // provider is explicitly ignored
             TryParse(s, out result);
@@ -259,6 +266,11 @@ namespace System.Net
         {
             return IPAddressParser<char>.Parse(ipSpan, tryParse: false)!;
         }
+
+        /// <inheritdoc/>
+        public static IPAddress Parse(ReadOnlySpan<byte> utf8Text, IFormatProvider? provider) =>
+            // provider is explicitly ignored
+            IPAddressParser<byte>.Parse(utf8Text, tryParse: false)!;
 
         /// <inheritdoc/>
         static IPAddress ISpanParsable<IPAddress>.Parse(ReadOnlySpan<char> s, IFormatProvider? provider) =>
