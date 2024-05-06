@@ -497,8 +497,8 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                     {
                         // If `falseReg` is zero, then move the first operand of `intrinEmbMask` in the
                         // destination using /Z.
-                        
-                        assert(targetReg != embMaskOp2Reg);   
+
+                        assert(targetReg != embMaskOp2Reg);
                         GetEmitter()->emitIns_R_R_R(INS_sve_movprfx, emitSize, targetReg, maskReg, embMaskOp1Reg, opt);
 
                         // Finally, perform the actual "predicated" operation so that `targetReg` is the first operand
