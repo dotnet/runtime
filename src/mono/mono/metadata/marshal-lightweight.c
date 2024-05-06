@@ -2369,6 +2369,8 @@ emit_unsafe_accessor_field_wrapper (MonoMethodBuilder *mb, gboolean to_be_inflat
 	if (kind == MONO_UNSAFE_ACCESSOR_FIELD)
 		mono_mb_emit_ldarg (mb, 0);
 	mono_mb_emit_op (mb, kind == MONO_UNSAFE_ACCESSOR_FIELD ? CEE_LDFLDA : CEE_LDSFLDA, target_field);
+	if ((accessor_method->is_generic || to_be_inflated))
+		mono_mb_set_wrapper_data_kind (mb, MONO_MB_ILGEN_WRAPPER_DATA_FIELD);
 	mono_mb_emit_byte (mb, CEE_RET);
 }
 
