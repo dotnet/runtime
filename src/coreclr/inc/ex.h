@@ -827,7 +827,7 @@ Exception *ExThrowWithInnerHelper(Exception *inner);
                 }                                                                       \
                 SCAN_EHMARKER_END_TRY();                                                \
             }                                                                           \
-            PAL_CPP_CATCH_NON_DERIVED (const std::bad_alloc&, __oom)                    \
+            PAL_CPP_CATCH_NON_DERIVED_NOARG (const std::bad_alloc&)                     \
             {                                                                           \
                 SCAN_EHMARKER_CATCH();                                                  \
                 __state.SetCaughtCxx();                                                 \
@@ -889,7 +889,7 @@ Exception *ExThrowWithInnerHelper(Exception *inner);
                 }                                                                   \
                 SCAN_EHMARKER_END_TRY();                                            \
             }                                                                       \
-            PAL_CPP_CATCH_NON_DERIVED (const std::bad_alloc&, __oom)                \
+            PAL_CPP_CATCH_NON_DERIVED_NOARG (const std::bad_alloc&)                 \
             {                                                                       \
                 SCAN_EHMARKER_CATCH();                                              \
                 __state.SetCaughtCxx();                                             \
