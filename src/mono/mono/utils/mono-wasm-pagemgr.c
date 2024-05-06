@@ -6,11 +6,20 @@
 #include <memory.h>
 #include <unistd.h>
 #include <glib.h>
+#include <mono/utils/atomic.h>
+#include <mono/utils/mono-os-mutex.h>
 
 // #define MWPM_LOGGING
 
+typedef enum {
+	MWPM_UNINITIALIZED = 0,
+	MWPM_INITIALIZING = 1,
+	MWPM_INITIALIZED = 2
+} init_state;
+
+static mono_mutex_t mutex;
 static uint8_t page_table[MWPM_MAX_PAGES];
-static uint8_t is_initialized = 0;
+static gint32 is_initialized = MWPM_UNINITIALIZED;
 static uint32_t
 	// The index of the first page that we control. Not all pages after this
 	//  necessarily belong to us, but scans can start here.
@@ -227,30 +236,39 @@ find_n_free_pages (uint32_t page_count) {
 
 static void
 mwpm_init () {
+	if (mono_atomic_cas_i32 (&is_initialized, MWPM_INITIALIZING, MWPM_UNINITIALIZED) != MWPM_UNINITIALIZED)
+		return;
+
+	mono_os_mutex_init_recursive (&mutex);
 	// Set the entire page table to 'unknown state'. As we acquire pages from sbrk, we will
 	//  set those respective ranges in the table to a known state.
 	memset (page_table, MWPM_UNKNOWN, sizeof(page_table));
 	void *first_controlled_page_address = acquire_new_pages_initialized (MWPM_MINIMUM_PAGE_COUNT);
 	g_assert (first_controlled_page_address);
 	first_controlled_page_index = first_page_from_address (first_controlled_page_address);
-	is_initialized = 1;
+	mono_atomic_store_i32 (&is_initialized, MWPM_INITIALIZED);
 }
 
 static inline void
 mwpm_ensure_initialized () {
-	if (is_initialized)
+	if (is_initialized == MWPM_INITIALIZED)
 		return;
 
 	mwpm_init ();
+
+	// FIXME: How do we do a microsleep?
+	while (mono_atomic_load_i32 (&is_initialized) != MWPM_INITIALIZED)
+		;
 }
 
 void *
 mwpm_alloc_range (size_t size, uint8_t zeroed) {
-	mwpm_ensure_initialized ();
-
 	void *result = NULL;
 	if (!size)
 		return result;
+
+	mwpm_ensure_initialized ();
+	mono_os_mutex_lock (&mutex);
 
 	uint32_t page_count = page_count_from_size (size),
 		first_existing_page = find_n_free_pages (page_count),
@@ -271,7 +289,7 @@ mwpm_alloc_range (size_t size, uint8_t zeroed) {
 #ifdef MWPM_LOGGING
 			g_print ("mwpm failed to acquire new pages\n");
 #endif
-			return NULL;
+			goto exit;
 		}
 	} else {
 		result = address_from_page_index (first_existing_page);
@@ -279,7 +297,7 @@ mwpm_alloc_range (size_t size, uint8_t zeroed) {
 	}
 
 	if (!result)
-		return NULL;
+		goto exit;
 
 	uint32_t first_result_page = first_page_from_address (result),
 		zeroed_pages = transition_page_states (MWPM_FREE_ZEROED, MWPM_ALLOCATED, first_result_page, page_count),
@@ -302,6 +320,9 @@ mwpm_alloc_range (size_t size, uint8_t zeroed) {
 #ifdef MWPM_LOGGING
 	g_print ("mwpm allocated %u bytes at %u\n", size, (uint32_t)result);
 #endif
+
+exit:
+	mono_os_mutex_unlock (&mutex);
 	return result;
 }
 
@@ -309,9 +330,11 @@ void
 mwpm_free_range (void *base, size_t size) {
 	mwpm_ensure_initialized ();
 
+	mono_os_mutex_lock (&mutex);
 	uint32_t first_page = first_page_from_address (base),
 		page_count = page_count_from_size (size);
 	free_pages_initialized (first_page, page_count);
+	mono_os_mutex_unlock (&mutex);
 #ifdef MWPM_LOGGING
 	g_print ("mwpm freed %u bytes at %u\n", size, (uint32_t)base);
 #endif
