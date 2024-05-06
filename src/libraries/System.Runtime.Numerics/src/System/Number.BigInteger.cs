@@ -787,15 +787,15 @@ namespace System
             return spanSuccess;
         }
 
-        private const uint kuBase = 1_000_000_000; // 10^9
-        private const int kcchBase = 9;
-
         private static unsafe string? FormatBigInteger(
             bool targetSpan, BigInteger value,
             string? formatString, ReadOnlySpan<char> formatSpan,
             NumberFormatInfo info, Span<char> destination, out int charsWritten, out bool spanSuccess)
         {
             Debug.Assert(formatString == null || formatString.Length == formatSpan.Length);
+
+            const uint TenPowMaxPartial = PowersOf1e9.TenPowMaxPartial;
+            const int MaxPartialDigits = PowersOf1e9.MaxPartialDigits;
 
             int digits = 0;
             char fmt = ParseFormatSpecifier(formatSpan, out digits);
@@ -833,8 +833,8 @@ namespace System
             int cuSrc = value._bits.Length;
             // A quick conservative max length of base 10^9 representation
             // A uint contributes to no more than 10/9 of 10^9 block, +1 for ceiling of division
-            int cuMax = cuSrc * (kcchBase + 1) / kcchBase + 1;
-            Debug.Assert((long)BigInteger.MaxLength * (kcchBase + 1) / kcchBase + 1 < (long)int.MaxValue); // won't overflow
+            int cuMax = cuSrc * (MaxPartialDigits + 1) / MaxPartialDigits + 1;
+            Debug.Assert((long)BigInteger.MaxLength * (MaxPartialDigits + 1) / MaxPartialDigits + 1 < (long)int.MaxValue); // won't overflow
 
             uint[]? bufferToReturn = null;
             Span<uint> base1E9Buffer = cuMax < BigIntegerCalculator.StackAllocThreshold ?
@@ -848,17 +848,17 @@ namespace System
                 uint uCarry = value._bits[iuSrc];
                 for (int iuDst = 0; iuDst < cuDst; iuDst++)
                 {
-                    Debug.Assert(base1E9Buffer[iuDst] < kuBase);
+                    Debug.Assert(base1E9Buffer[iuDst] < TenPowMaxPartial);
 
                     // Use X86Base.DivRem when stable
                     ulong uuRes = NumericsHelpers.MakeUInt64(base1E9Buffer[iuDst], uCarry);
-                    (ulong quo, ulong rem) = Math.DivRem(uuRes, kuBase);
+                    (ulong quo, ulong rem) = Math.DivRem(uuRes, TenPowMaxPartial);
                     uCarry = (uint)quo;
                     base1E9Buffer[iuDst] = (uint)rem;
                 }
                 if (uCarry != 0)
                 {
-                    (uCarry, base1E9Buffer[cuDst++]) = Math.DivRem(uCarry, kuBase);
+                    (uCarry, base1E9Buffer[cuDst++]) = Math.DivRem(uCarry, TenPowMaxPartial);
                     if (uCarry != 0)
                         base1E9Buffer[cuDst++] = uCarry;
                 }
@@ -866,7 +866,7 @@ namespace System
 
             ReadOnlySpan<uint> base1E9Value = base1E9Buffer[..cuDst];
 
-            int valueDigits = (base1E9Value.Length - 1) * kcchBase + FormattingHelpers.CountDigits(base1E9Value[^1]);
+            int valueDigits = (base1E9Value.Length - 1) * MaxPartialDigits + FormattingHelpers.CountDigits(base1E9Value[^1]);
 
             string? strResult;
 
@@ -974,8 +974,8 @@ namespace System
             // The base 10^9 value is in reverse order
             for (int i = 0; i < base1E9Value.Length - 1; i++)
             {
-                bufferEnd = UInt32ToDecChars(bufferEnd, base1E9Value[i], kcchBase);
-                digits -= kcchBase;
+                bufferEnd = UInt32ToDecChars(bufferEnd, base1E9Value[i], PowersOf1e9.MaxPartialDigits);
+                digits -= PowersOf1e9.MaxPartialDigits;
             }
 
             return UInt32ToDecChars(bufferEnd, base1E9Value[^1], digits);
