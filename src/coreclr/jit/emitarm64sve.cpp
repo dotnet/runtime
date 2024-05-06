@@ -377,7 +377,7 @@ emitter::code_t emitter::emitInsCodeSve(instruction ins, insFormat fmt)
     const static insFormat formatEncode2AF[2]  = {IF_SVE_AA_3A, IF_SVE_BD_3A};
     const static insFormat formatEncode2AG[2]  = {IF_SVE_BS_1A, IF_SVE_CZ_4A};
     const static insFormat formatEncode2AH[2]  = {IF_SVE_BQ_2A, IF_SVE_BQ_2B};
-    const static insFormat formatEncode2AI[2]  = {IF_SVE_AM_2A, IF_SVE_EU_3A};
+    const static insFormat formatEncode2AI[2]  = {IF_SVE_AM_2A, IF_SVE_AA_3A};
     const static insFormat formatEncode2AJ[2]  = {IF_SVE_HI_3A, IF_SVE_HT_4A};
     const static insFormat formatEncode2AK[2]  = {IF_SVE_BZ_3A, IF_SVE_BZ_3A_A};
     const static insFormat formatEncode2AL[2]  = {IF_SVE_GG_3A, IF_SVE_GG_3B};
