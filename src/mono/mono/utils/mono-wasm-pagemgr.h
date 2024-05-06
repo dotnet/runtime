@@ -57,14 +57,16 @@
 #define MWPM_MINIMUM_PAGE_COUNT 32
 
 typedef enum {
-	// We don't know the state of this page
-	MWPM_UNKNOWN = 0,
-	// We control this page, it's in use
-	MWPM_ALLOCATED,
 	// We control this page, it's unused, and it's zeroed (fresh pages)
-	MWPM_FREE_ZEROED,
+	MWPM_FREE_ZEROED = 0,
 	// We control this page, it's unused, and it contains garbage
-	MWPM_FREE_DIRTY,
+	MWPM_FREE_DIRTY = 1,
+	// We control this page, it's in use
+	MWPM_ALLOCATED = 2,
+	// We don't know the state of this page
+	MWPM_UNKNOWN = 3,
+	// Values above MWPM_UNKNOWN indicate that the page is followed by more
+	//  UNKNOWN pages and you can skip them by subtracting 3
 } mwpm_page_state;
 
 // Allocate enough pages to hold size bytes of data, optionally ensuring they are zeroed.
