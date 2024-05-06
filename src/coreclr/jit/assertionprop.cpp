@@ -4200,11 +4200,14 @@ AssertionIndex Compiler::optLocalAssertionIsEqualOrNotEqual(
 //      only returned when op1 is a local var with ref type and the assertion
 //      is an exact type equality.
 //
-AssertionIndex Compiler::optGlobalAssertionIsEqualOrNotEqual(ASSERT_VALARG_TP assertions, GenTree* op1, GenTree* op2)
+bool Compiler::optGlobalAssertionIsEqualOrNotEqual(ASSERT_VALARG_TP assertions,
+                                                   GenTree*         op1,
+                                                   GenTree*         op2,
+                                                   bool*            equals)
 {
     if (BitVecOps::IsEmpty(apTraits, assertions) || !optCanPropEqual)
     {
-        return NO_ASSERTION_INDEX;
+        return false;
     }
     BitVecOps::Iter iter(apTraits, assertions);
     unsigned        index = 0;
@@ -4224,7 +4227,17 @@ AssertionIndex Compiler::optGlobalAssertionIsEqualOrNotEqual(ASSERT_VALARG_TP as
         if ((curAssertion->op1.vn == vnStore->VNConservativeNormalValue(op1->gtVNPair)) &&
             (curAssertion->op2.vn == vnStore->VNConservativeNormalValue(op2->gtVNPair)))
         {
-            return assertionIndex;
+            if (curAssertion->assertionKind == OAK_EQUAL)
+            {
+                *equals = true;
+                return true;
+            }
+            if (curAssertion->assertionKind == OAK_NOT_EQUAL)
+            {
+                *equals = false;
+                return true;
+            }
+            return false;
         }
 
         // Look for matching exact type assertions based on vtable accesses. E.g.:
@@ -4240,11 +4253,21 @@ AssertionIndex Compiler::optGlobalAssertionIsEqualOrNotEqual(ASSERT_VALARG_TP as
             if (vnStore->GetVNFunc(vnStore->VNConservativeNormalValue(op1->gtVNPair), &funcApp) &&
                 (funcApp.m_func == VNF_InvariantLoad) && (curAssertion->op1.vn == funcApp.m_args[0]))
             {
-                return assertionIndex;
+                if (curAssertion->assertionKind == OAK_EQUAL)
+                {
+                    *equals = true;
+                    return true;
+                }
+                if (curAssertion->assertionKind == OAK_NOT_EQUAL)
+                {
+                    *equals = false;
+                    return true;
+                }
+                return false;
             }
         }
     }
-    return NO_ASSERTION_INDEX;
+    return false;
 }
 
 /*****************************************************************************
@@ -4253,11 +4276,11 @@ AssertionIndex Compiler::optGlobalAssertionIsEqualOrNotEqual(ASSERT_VALARG_TP as
  *  op == 0 or op != 0
  *
  */
-AssertionIndex Compiler::optGlobalAssertionIsEqualOrNotEqualZero(ASSERT_VALARG_TP assertions, GenTree* op1)
+bool Compiler::optGlobalAssertionIsEqualOrNotEqualZero(ASSERT_VALARG_TP assertions, GenTree* op1, bool* equalsZero)
 {
     if (BitVecOps::IsEmpty(apTraits, assertions) || !optCanPropEqual)
     {
-        return NO_ASSERTION_INDEX;
+        return false;
     }
     BitVecOps::Iter iter(apTraits, assertions);
     unsigned        index = 0;
@@ -4274,13 +4297,25 @@ AssertionIndex Compiler::optGlobalAssertionIsEqualOrNotEqualZero(ASSERT_VALARG_T
             continue;
         }
 
-        if ((curAssertion->op1.vn == vnStore->VNConservativeNormalValue(op1->gtVNPair)) &&
-            (curAssertion->op2.vn == vnStore->VNZeroForType(op1->TypeGet())))
+        if (curAssertion->op2.vn == vnStore->VNZeroForType(op1->TypeGet()))
         {
-            return assertionIndex;
+            if (curAssertion->op1.vn == vnStore->VNConservativeNormalValue(op1->gtVNPair))
+            {
+                if (curAssertion->assertionKind == OAK_EQUAL)
+                {
+                    *equalsZero = true;
+                    return true;
+                }
+                if (curAssertion->assertionKind == OAK_NOT_EQUAL)
+                {
+                    *equalsZero = false;
+                    return true;
+                }
+                return false;
+            }
         }
     }
-    return NO_ASSERTION_INDEX;
+    return false;
 }
 
 /*****************************************************************************
@@ -4331,20 +4366,16 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions, Gen
     GenTree* op2     = tree->AsOp()->gtOp2;
 
     // Look for assertions of the form (tree EQ/NE 0)
-    AssertionIndex index = optGlobalAssertionIsEqualOrNotEqualZero(assertions, tree);
-
-    if (index != NO_ASSERTION_INDEX)
+    bool equalsZero = false;
+    if (optGlobalAssertionIsEqualOrNotEqualZero(assertions, tree, &equalsZero))
     {
-        // We know that this relop is either 0 or != 0 (1)
-        AssertionDsc* curAssertion = optGetAssertion(index);
 
 #ifdef DEBUG
         if (verbose)
         {
             printf("\nVN relop based constant assertion prop in " FMT_BB ":\n", compCurBB->bbNum);
-            printf("Assertion index=#%02u: ", index);
             printTreeID(tree);
-            printf(" %s 0\n", (curAssertion->assertionKind == OAK_EQUAL) ? "==" : "!=");
+            printf(" %s 0\n", equalsZero ? "==" : "!=");
         }
 #endif
 
@@ -4355,7 +4386,7 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions, Gen
             return nullptr;
         }
 
-        if (curAssertion->assertionKind == OAK_EQUAL)
+        if (equalsZero)
         {
             tree->BashToConst(0);
         }
@@ -4387,15 +4418,11 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions, Gen
     }
 
     // Find an equal or not equal assertion involving "op1" and "op2".
-    index = optGlobalAssertionIsEqualOrNotEqual(assertions, op1, op2);
-
-    if (index == NO_ASSERTION_INDEX)
+    bool assertionKindIsEqual = false;
+    if (!optGlobalAssertionIsEqualOrNotEqual(assertions, op1, op2, &assertionKindIsEqual))
     {
         return nullptr;
     }
-
-    AssertionDsc* curAssertion         = optGetAssertion(index);
-    bool          assertionKindIsEqual = (curAssertion->assertionKind == OAK_EQUAL);
 
     // Allow or not to reverse condition for OAK_NOT_EQUAL assertions.
     bool allowReverse = true;
@@ -4408,7 +4435,6 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions, Gen
         if (verbose)
         {
             printf("\nVN relop based constant assertion prop in " FMT_BB ":\n", compCurBB->bbNum);
-            printf("Assertion index=#%02u: ", index);
             printTreeID(op1);
             printf(" %s ", assertionKindIsEqual ? "==" : "!=");
             if (genActualType(op1->TypeGet()) == TYP_INT)
@@ -4527,10 +4553,8 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions, Gen
         if (verbose)
         {
             printf("\nVN relop based copy assertion prop in " FMT_BB ":\n", compCurBB->bbNum);
-            printf("Assertion index=#%02u: V%02d.%02d %s V%02d.%02d\n", index, op1->AsLclVar()->GetLclNum(),
-                   op1->AsLclVar()->GetSsaNum(),
-                   (curAssertion->assertionKind == OAK_EQUAL) ? "==" : "!=", op2->AsLclVar()->GetLclNum(),
-                   op2->AsLclVar()->GetSsaNum());
+            printf("Assertion V%02d.%02d %s V%02d.%02d\n", op1->AsLclVar()->GetLclNum(), op1->AsLclVar()->GetSsaNum(),
+                   (assertionKindIsEqual ? "==" : "!="), op2->AsLclVar()->GetLclNum(), op2->AsLclVar()->GetSsaNum());
             gtDispTree(tree, nullptr, nullptr, true);
         }
 #endif
@@ -4560,7 +4584,7 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions, Gen
     }
 
     // Finally reverse the condition, if we have a not equal assertion.
-    if (allowReverse && curAssertion->assertionKind == OAK_NOT_EQUAL)
+    if (allowReverse && !assertionKindIsEqual)
     {
         gtReverseCond(tree);
     }
@@ -4769,6 +4793,12 @@ GenTree* Compiler::optAssertionProp_Comma(ASSERT_VALARG_TP assertions, GenTree* 
         optRemoveCommaBasedRangeCheck(tree, stmt);
         return optAssertionProp_Update(tree, tree, stmt);
     }
+
+    if ((tree->gtGetOp1()->gtFlags & GTF_ALL_EFFECT) == 0)
+    {
+        return optAssertionProp_Update(tree->gtGetOp2(), tree, stmt);
+    }
+
     return nullptr;
 }
 
@@ -5521,10 +5551,22 @@ GenTree* Compiler::optAssertionProp(ASSERT_VALARG_TP assertions, GenTree* tree, 
         case GT_UDIV:
             return optAssertionProp_ModDiv(assertions, tree->AsOp(), stmt);
 
+        case GT_NULLCHECK:
+        {
+#ifdef DEBUG
+            bool           vnBased = false;
+            AssertionIndex index   = NO_ASSERTION_INDEX;
+#endif
+            if (optAssertionIsNonNull(tree->gtGetOp1(), assertions DEBUGARG(&vnBased) DEBUGARG(&index)))
+            {
+                return optAssertionProp_Update(tree->gtGetOp1(), tree, stmt);
+            }
+            return nullptr;
+        }
+
         case GT_BLK:
         case GT_IND:
         case GT_STOREIND:
-        case GT_NULLCHECK:
             return optAssertionProp_Ind(assertions, tree, stmt);
 
         case GT_BOUNDS_CHECK:
