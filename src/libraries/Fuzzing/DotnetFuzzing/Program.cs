@@ -6,6 +6,7 @@ using System.Buffers;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
+using System.Text;
 
 namespace DotnetFuzzing;
 
@@ -189,6 +190,12 @@ public static class Program
             byte[] current = File.ReadAllBytes(path);
             string previousOriginal = $"{path}.original";
             string previousInstrumented = $"{path}.instrumented";
+
+            if (!string.IsNullOrEmpty(prefixes))
+            {
+                // Don't use the cached assembly if the prefixes have changed.
+                previousInstrumented += Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(prefixes)));
+            }
 
             if (File.Exists(previousOriginal) &&
                 File.Exists(previousInstrumented) &&
