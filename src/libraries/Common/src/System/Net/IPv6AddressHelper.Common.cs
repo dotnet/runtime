@@ -2,11 +2,26 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Numerics;
 
-namespace System
+namespace System.Net
 {
     internal static partial class IPv6AddressHelper
     {
+        internal static class IPv6Constants<TChar>
+            where TChar : unmanaged, IBinaryInteger<TChar>
+        {
+            // IPv6 address-specific generic constants.
+            public static readonly TChar AddressStartCharacter = TChar.CreateTruncating('[');
+            public static readonly TChar AddressEndCharacter = TChar.CreateTruncating(']');
+            public static readonly TChar ComponentSeparator = TChar.CreateTruncating(':');
+            public static readonly TChar ScopeSeparator = TChar.CreateTruncating('%');
+            public static readonly TChar PrefixSeparator = TChar.CreateTruncating('/');
+            public static readonly TChar PortSeparator = TChar.CreateTruncating(':');
+            public static readonly TChar[] HexadecimalPrefix = [TChar.CreateTruncating('0'), TChar.CreateTruncating('x')];
+            public static readonly TChar[] Compressor = [ComponentSeparator, ComponentSeparator];
+        }
+
         private const int NumberOfLabels = 8;
 
         // RFC 5952 Section 4.2.3
@@ -93,17 +108,23 @@ namespace System
 
         //  Remarks: MUST NOT be used unless all input indexes are verified and trusted.
         //           start must be next to '[' position, or error is reported
-        internal static unsafe bool IsValidStrict(char* name, int start, ref int end)
+        internal static bool IsValidStrict<TChar>(ReadOnlySpan<TChar> name)
+            where TChar : unmanaged, IBinaryInteger<TChar>
         {
+            // Number of components in this IPv6 address
             int sequenceCount = 0;
+            // Length of the component currently being constructed
             int sequenceLength = 0;
             bool haveCompressor = false;
             bool haveIPv4Address = false;
             bool expectingNumber = true;
+            // Start position of the previous component
             int lastSequence = 1;
 
             bool needsClosingBracket = false;
-            if (start < end && name[start] == '[')
+            int start = 0;
+
+            if (start < name.Length && name[start] == IPv6Constants<TChar>.AddressStartCharacter)
             {
                 start++;
                 needsClosingBracket = true;
@@ -111,19 +132,19 @@ namespace System
                 // IsValidStrict() is only called if there is a ':' in the name string, i.e.
                 // it is a possible IPv6 address. So, if the string starts with a '[' and
                 // the pointer is advanced here there are still more characters to parse.
-                Debug.Assert(start < end);
+                Debug.Assert(start < name.Length);
             }
 
             // Starting with a colon character is only valid if another colon follows.
-            if (name[start] == ':' && (start + 1 >= end || name[start + 1] != ':'))
+            if (name[start] == IPv6Constants<TChar>.Compressor[0] && (start + 1 >= name.Length || name[start + 1] != IPv6Constants<TChar>.Compressor[1]))
             {
                 return false;
             }
 
             int i;
-            for (i = start; i < end; ++i)
+            for (i = start; i < name.Length; ++i)
             {
-                if (char.IsAsciiHexDigit(name[i]))
+                if (IPAddressParser.GenericHelpers<TChar>.IsValidInteger(IPAddressParser.GenericHelpers<TChar>.Hex, name[i]))
                 {
                     ++sequenceLength;
                     expectingNumber = false;
@@ -140,103 +161,114 @@ namespace System
                         lastSequence = i - sequenceLength;
                         sequenceLength = 0;
                     }
-                    switch (name[i])
+
+                    if (name[i] == IPv6Constants<TChar>.ScopeSeparator)
                     {
-                        case '%':
-                            while (i + 1 < end)
-                            {
-                                i++;
-                                if (name[i] == ']')
-                                {
-                                    goto case ']';
-                                }
-                                else if (name[i] == '/')
-                                {
-                                    goto case '/';
-                                }
-                            }
-                            break;
-                        case ']':
-                            if (!needsClosingBracket)
-                            {
-                                return false;
-                            }
-                            needsClosingBracket = false;
+                        bool moveToNextCharacter = true;
 
-                            // If there's more after the closing bracket, it must be a port.
-                            // We don't use the port, but we still validate it.
-                            if (i + 1 < end && name[i + 1] != ':')
-                            {
-                                return false;
-                            }
+                        while (i + 1 < name.Length)
+                        {
+                            i++;
 
-                            // If there is a port, it must either be a hexadecimal or decimal number.
-                            if (i + 3 < end && name[i + 2] == '0' && name[i + 3] == 'x')
+                            if (name[i] == IPv6Constants<TChar>.AddressEndCharacter
+                                || name[i] == IPv6Constants<TChar>.PrefixSeparator)
                             {
-                                i += 4;
-                                for (; i < end; i++)
-                                {
-                                    if (!char.IsAsciiHexDigit(name[i]))
-                                    {
-                                        return false;
-                                    }
-                                }
+                                moveToNextCharacter = false;
+                                break;
                             }
-                            else
-                            {
-                                i += 2;
-                                for (; i < end; i++)
-                                {
-                                    if (!char.IsAsciiDigit(name[i]))
-                                    {
-                                        return false;
-                                    }
-                                }
-                            }
+                        }
+
+                        if (moveToNextCharacter)
+                        {
                             continue;
-                        case ':':
-                            if ((i > 0) && (name[i - 1] == ':'))
-                            {
-                                if (haveCompressor)
-                                {
-                                    // can only have one per IPv6 address
-                                    return false;
-                                }
-                                haveCompressor = true;
-                                expectingNumber = false;
-                            }
-                            else
-                            {
-                                expectingNumber = true;
-                            }
-                            break;
-
-                        case '/':
-                            return false;
-
-                        case '.':
-                            if (haveIPv4Address)
-                            {
-                                return false;
-                            }
-
-                            i = end;
-                            if (!IPv4AddressHelper.IsValid(name, lastSequence, ref i, true, false, false))
-                            {
-                                return false;
-                            }
-                            // ipv4 address takes 2 slots in ipv6 address, one was just counted meeting the '.'
-                            ++sequenceCount;
-                            lastSequence = i - sequenceLength;
-                            sequenceLength = 0;
-                            haveIPv4Address = true;
-                            --i;            // it will be incremented back on the next loop
-                            break;
-
-                        default:
-                            return false;
+                        }
                     }
-                    sequenceLength = 0;
+
+                    if (name[i] == IPv6Constants<TChar>.AddressEndCharacter)
+                    {
+                        if (!needsClosingBracket)
+                        {
+                            return false;
+                        }
+                        needsClosingBracket = false;
+
+                        // If there's more after the closing bracket, it must be a port.
+                        // We don't use the port, but we still validate it.
+                        if (i + 1 < name.Length && name[i + 1] != IPv6Constants<TChar>.PortSeparator)
+                        {
+                            return false;
+                        }
+
+                        int numericBase = IPAddressParser.GenericHelpers<TChar>.Decimal;
+
+                        // Skip past the closing bracket and the port separator.
+                        i += 2;
+                        // If there is a port, it must either be a hexadecimal or decimal number.
+                        if (i + 1 < name.Length && name.Slice(i).StartsWith(IPv6Constants<TChar>.HexadecimalPrefix.AsSpan()))
+                        {
+                            i += IPv6Constants<TChar>.HexadecimalPrefix.Length;
+
+                            numericBase = IPAddressParser.GenericHelpers<TChar>.Hex;
+                        }
+
+                        for (; i < name.Length; i++)
+                        {
+                            if (!IPAddressParser.GenericHelpers<TChar>.IsValidInteger(numericBase, name[i]))
+                            {
+                                return false;
+                            }
+                        }
+                        continue;
+                    }
+                    else if (name[i] == IPv6Constants<TChar>.PrefixSeparator)
+                    {
+                        return false;
+                    }
+                    else if (name[i] == IPv6Constants<TChar>.ComponentSeparator)
+                    {
+                        if (i > 0 && name.Slice(i - 1, 2).SequenceEqual(IPv6Constants<TChar>.Compressor.AsSpan()))
+                        {
+                            if (haveCompressor)
+                            {
+                                // can only have one per IPv6 address
+                                return false;
+                            }
+                            haveCompressor = true;
+                            expectingNumber = false;
+                        }
+                        else
+                        {
+                            expectingNumber = true;
+                        }
+
+                        sequenceLength = 0;
+                        continue;
+                    }
+                    else if (name[i] == IPv4AddressHelper.IPv4Constants<TChar>.ComponentSeparator)
+                    {
+                        int ipv4AddressLength = i;
+
+                        if (haveIPv4Address)
+                        {
+                            return false;
+                        }
+
+                        if (!IPv4AddressHelper.IsValid(name.Slice(lastSequence), ref ipv4AddressLength, true, false, false))
+                        {
+                            return false;
+                        }
+                        i = lastSequence + ipv4AddressLength;
+                        // ipv4 address takes 2 slots in ipv6 address, one was just counted meeting the '.'
+                        ++sequenceCount;
+                        lastSequence = i - sequenceLength;
+                        sequenceLength = 0;
+                        haveIPv4Address = true;
+                        --i;            // it will be incremented back on the next loop
+
+                        continue;
+                    }
+
+                    return false;
                 }
             }
 
@@ -284,113 +316,100 @@ namespace System
         //  Nothing
         //
 
-        internal static void Parse(ReadOnlySpan<char> address, Span<ushort> numbers, int start, ref string? scopeId)
+        internal static void Parse<TChar>(ReadOnlySpan<TChar> address, Span<ushort> numbers, out ReadOnlySpan<TChar> scopeId)
+            where TChar : unmanaged, IBinaryInteger<TChar>
         {
             int number = 0;
             int index = 0;
             int compressorIndex = -1;
             bool numberIsValid = true;
 
-            //This used to be a class instance member but have not been used so far
-            int PrefixLength = 0;
-            if (address[start] == '[')
+            scopeId = ReadOnlySpan<TChar>.Empty;
+            for (int i = (address[0] == IPv6Constants<TChar>.AddressStartCharacter ? 1 : 0); i < address.Length && address[i] != IPv6Constants<TChar>.AddressEndCharacter;)
             {
-                ++start;
-            }
-
-            for (int i = start; i < address.Length && address[i] != ']';)
-            {
-                switch (address[i])
+                if (address[i] == IPv6Constants<TChar>.ScopeSeparator
+                    || address[i] == IPv6Constants<TChar>.PrefixSeparator)
                 {
-                    case '%':
-                        if (numberIsValid)
-                        {
-                            numbers[index++] = (ushort)number;
-                            numberIsValid = false;
-                        }
-
-                        start = i;
-                        for (++i; i < address.Length && address[i] != ']' && address[i] != '/'; ++i)
-                        {
-                        }
-                        scopeId = new string(address.Slice(start, i - start));
-                        // ignore prefix if any
-                        for (; i < address.Length && address[i] != ']'; ++i)
-                        {
-                        }
-                        break;
-
-                    case ':':
+                    if (numberIsValid)
+                    {
                         numbers[index++] = (ushort)number;
-                        number = 0;
-                        ++i;
-                        if (address[i] == ':')
+                        numberIsValid = false;
+                    }
+
+                    if (address[i] == IPv6Constants<TChar>.ScopeSeparator)
+                    {
+                        int scopeStart = i;
+
+                        for (++i; i < address.Length && address[i] != IPv6Constants<TChar>.AddressEndCharacter && address[i] != IPv6Constants<TChar>.PrefixSeparator; ++i)
                         {
-                            compressorIndex = index;
-                            ++i;
                         }
-                        else if ((compressorIndex < 0) && (index < 6))
+                        scopeId = address.Slice(scopeStart, i - scopeStart);
+                    }
+                    // ignore prefix if any
+                    for (; i < address.Length && address[i] != IPv6Constants<TChar>.AddressEndCharacter; ++i)
+                    {
+                    }
+                }
+                else if (address[i] == IPv6Constants<TChar>.ComponentSeparator)
+                {
+                    numbers[index++] = (ushort)number;
+                    number = 0;
+                    ++i;
+                    if (address[i] == IPv6Constants<TChar>.Compressor[0])
+                    {
+                        compressorIndex = index;
+                        ++i;
+                    }
+                    else if ((compressorIndex < 0) && (index < 6))
+                    {
+                        // no point checking for IPv4 address if we don't
+                        // have a compressor or we haven't seen 6 16-bit
+                        // numbers yet
+                        continue;
+                    }
+
+                    // check to see if the upcoming number is really an IPv4
+                    // address. If it is, convert it to 2 ushort numbers
+                    for (int j = i; j < address.Length &&
+                                    (address[j] != IPv6Constants<TChar>.AddressEndCharacter) &&
+                                    (address[j] != IPv6Constants<TChar>.ComponentSeparator) &&
+                                    (address[j] != IPv6Constants<TChar>.ScopeSeparator) &&
+                                    (address[j] != IPv6Constants<TChar>.PrefixSeparator) &&
+                                    (j < i + 4); ++j)
+                    {
+
+                        if (address[j] == IPv4AddressHelper.IPv4Constants<TChar>.ComponentSeparator)
                         {
-                            // no point checking for IPv4 address if we don't
-                            // have a compressor or we haven't seen 6 16-bit
-                            // numbers yet
+                            // we have an IPv4 address. Find the end of it:
+                            // we know that since we have a valid IPv6
+                            // address, the only things that will terminate
+                            // the IPv4 address are the prefix delimiter '/'
+                            // or the end-of-string (which we conveniently
+                            // delimited with ']')
+                            while (j < address.Length && (address[j] != IPv6Constants<TChar>.AddressEndCharacter) && (address[j] != IPv6Constants<TChar>.PrefixSeparator) && (address[j] != IPv6Constants<TChar>.ScopeSeparator))
+                            {
+                                ++j;
+                            }
+                            number = IPv4AddressHelper.ParseHostNumber(address.Slice(i, j - i));
+                            numbers[index++] = (ushort)(number >> 16);
+                            numbers[index++] = (ushort)number;
+                            i = j;
+
+                            // set this to avoid adding another number to
+                            // the array if there's a prefix
+                            number = 0;
+                            numberIsValid = false;
                             break;
                         }
-
-                        // check to see if the upcoming number is really an IPv4
-                        // address. If it is, convert it to 2 ushort numbers
-                        for (int j = i; j < address.Length &&
-                                        (address[j] != ']') &&
-                                        (address[j] != ':') &&
-                                        (address[j] != '%') &&
-                                        (address[j] != '/') &&
-                                        (j < i + 4); ++j)
-                        {
-
-                            if (address[j] == '.')
-                            {
-                                // we have an IPv4 address. Find the end of it:
-                                // we know that since we have a valid IPv6
-                                // address, the only things that will terminate
-                                // the IPv4 address are the prefix delimiter '/'
-                                // or the end-of-string (which we conveniently
-                                // delimited with ']')
-                                while (j < address.Length && (address[j] != ']') && (address[j] != '/') && (address[j] != '%'))
-                                {
-                                    ++j;
-                                }
-                                number = IPv4AddressHelper.ParseHostNumber(address, i, j);
-                                numbers[index++] = (ushort)(number >> 16);
-                                numbers[index++] = (ushort)number;
-                                i = j;
-
-                                // set this to avoid adding another number to
-                                // the array if there's a prefix
-                                number = 0;
-                                numberIsValid = false;
-                                break;
-                            }
-                        }
-                        break;
-
-                    case '/':
-                        if (numberIsValid)
-                        {
-                            numbers[index++] = (ushort)number;
-                            numberIsValid = false;
-                        }
-
-                        // since we have a valid IPv6 address string, the prefix
-                        // length is the last token in the string
-                        for (++i; address[i] != ']'; ++i)
-                        {
-                            PrefixLength = PrefixLength * 10 + (address[i] - '0');
-                        }
-                        break;
-
-                    default:
-                        number = number * 16 + Uri.FromHex(address[i++]);
-                        break;
+                    }
+                }
+                else if (IPAddressParser.GenericHelpers<TChar>.TryParseInteger(IPAddressParser.GenericHelpers<TChar>.Hex, address[i++], out int digit))
+                {
+                    number = number * IPAddressParser.GenericHelpers<TChar>.Hex + digit;
+                }
+                else
+                {
+                    throw new ArgumentException(null, nameof(digit));
                 }
             }
 

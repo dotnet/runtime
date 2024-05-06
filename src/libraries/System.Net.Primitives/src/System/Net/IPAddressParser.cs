@@ -13,6 +13,42 @@ namespace System.Net
 {
     internal static class IPAddressParser
     {
+        internal static class GenericHelpers<TChar>
+            where TChar : unmanaged, IBinaryInteger<TChar>
+        {
+            public const int Octal = 8;
+            public const int Decimal = 10;
+            public const int Hex = 16;
+
+            // Generic constants which are used for trying to parse a single digit as an integer.
+            private static readonly TChar NumericRangeStartCharacter = TChar.CreateTruncating('0');
+
+            public static bool IsValidInteger(int numericBase, TChar ch)
+            {
+                Debug.Assert(numericBase is Octal or Decimal or Hex);
+
+                return numericBase switch
+                {
+                    > 0 and < 10 => ch >= NumericRangeStartCharacter && ch - NumericRangeStartCharacter < TChar.CreateTruncating(numericBase),
+                    Hex => HexConverter.IsHexChar(int.CreateTruncating(ch)),
+                    _ => false
+                };
+            }
+
+            public static bool TryParseInteger(int numericBase, TChar ch, out int parsedNumber)
+            {
+                bool validNumber = IsValidInteger(numericBase, ch);
+
+                // HexConverter allows digits 1-F to be mapped to integers. The octal/decimal digit range restrictions are performed
+                // in IsValidInteger.
+                parsedNumber = validNumber
+                    ? HexConverter.FromChar(int.CreateTruncating(ch))
+                    : -1;
+
+                return validNumber;
+            }
+        }
+
         internal const int MaxIPv4StringLength = 15; // 4 numbers separated by 3 periods, with up to 3 digits per number
         internal const int MaxIPv6StringLength = 65;
 
@@ -42,15 +78,12 @@ namespace System.Net
             throw new FormatException(SR.dns_bad_ip_address, new SocketException(SocketError.InvalidArgument));
         }
 
-        private static unsafe bool TryParseIpv4(ReadOnlySpan<char> ipSpan, out long address)
+        private static bool TryParseIpv4(ReadOnlySpan<char> ipSpan, out long address)
         {
             int end = ipSpan.Length;
             long tmpAddr;
 
-            fixed (char* ipStringPtr = &MemoryMarshal.GetReference(ipSpan))
-            {
-                tmpAddr = IPv4AddressHelper.ParseNonCanonical(ipStringPtr, 0, ref end, notImplicitFile: true);
-            }
+            tmpAddr = IPv4AddressHelper.ParseNonCanonical(ipSpan, ref end, notImplicitFile: true);
 
             if (tmpAddr != IPv4AddressHelper.Invalid && end == ipSpan.Length)
             {
@@ -65,30 +98,24 @@ namespace System.Net
             return false;
         }
 
-        private static unsafe bool TryParseIPv6(ReadOnlySpan<char> ipSpan, Span<ushort> numbers, int numbersLength, out uint scope)
+        private static bool TryParseIPv6(ReadOnlySpan<char> ipSpan, Span<ushort> numbers, int numbersLength, out uint scope)
         {
             Debug.Assert(numbersLength >= IPAddressParserStatics.IPv6AddressShorts);
 
-            int end = ipSpan.Length;
+            bool isValid = IPv6AddressHelper.IsValidStrict(ipSpan);
 
-            bool isValid = false;
-            fixed (char* ipStringPtr = &MemoryMarshal.GetReference(ipSpan))
+            if (isValid)
             {
-                isValid = IPv6AddressHelper.IsValidStrict(ipStringPtr, 0, ref end);
-            }
-            if (isValid || (end != ipSpan.Length))
-            {
-                string? scopeId = null;
-                IPv6AddressHelper.Parse(ipSpan, numbers, 0, ref scopeId);
+                IPv6AddressHelper.Parse(ipSpan, numbers, out ReadOnlySpan<char> scopeId);
 
-                if (scopeId?.Length > 1)
+                if (scopeId.Length > 1)
                 {
-                    if (uint.TryParse(scopeId.AsSpan(1), NumberStyles.None, CultureInfo.InvariantCulture, out scope))
+                    if (uint.TryParse(scopeId.Slice(1), NumberStyles.None, CultureInfo.InvariantCulture, out scope))
                     {
                         return true; // scopeId is a numeric value
                     }
 
-                    uint interfaceIndex = InterfaceInfoPal.InterfaceNameToIndex(scopeId);
+                    uint interfaceIndex = InterfaceInfoPal.InterfaceNameToIndex(new string(scopeId));
                     if (interfaceIndex > 0)
                     {
                         scope = interfaceIndex;
