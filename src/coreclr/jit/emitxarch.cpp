@@ -10641,11 +10641,14 @@ void emitter::emitDispFrameRef(int varx, int disp, int offs, bool asmfm)
  *
  *  Display the mask for the instruction
  */
-void emitter::emitDispMask(const instrDesc* id, regNumber reg, emitAttr size) const
+void emitter::emitDispMask(const instrDesc* id, regNumber reg) const
 {
-    printf("{%s}", emitRegName(reg, size));
-    // TODO: Handle printing {z} if EVEX.z is set
-    printf(", ");
+    printf(" {%s}", emitRegName(reg));
+
+    if (id->idIsEvexZContextSet())
+    {
+        printf("{z}");
+    }
 }
 
 /*****************************************************************************
@@ -10949,9 +10952,9 @@ void emitter::emitDispInsHex(instrDesc* id, BYTE* code, size_t sz)
 // Arguments:
 //   id - The instruction descriptor
 //
-void emitter::emitDispEmbBroadcastCount(instrDesc* id)
+void emitter::emitDispEmbBroadcastCount(instrDesc* id) const
 {
-    if (!id->idIsEvexbContextSet())
+    if (!IsAvx512OrPriorInstruction(id->idIns()) || !id->idIsEvexbContextSet())
     {
         return;
     }
@@ -10965,7 +10968,7 @@ void emitter::emitDispEmbBroadcastCount(instrDesc* id)
 // Arguments:
 //   id - The instruction descriptor
 //
-void emitter::emitDispEmbRounding(instrDesc* id)
+void emitter::emitDispEmbRounding(instrDesc* id) const
 {
     if (!id->idIsEvexbContextSet())
     {
@@ -10996,8 +10999,13 @@ void emitter::emitDispEmbRounding(instrDesc* id)
 // Arguments:
 //   id - The instruction descriptor
 //
-void emitter::emitDispEmbMasking(instrDesc* id)
+void emitter::emitDispEmbMasking(instrDesc* id) const
 {
+    if (!IsAvx512OrPriorInstruction(id->idIns()))
+    {
+        return;
+    }
+
     regNumber maskReg = static_cast<regNumber>(id->idGetEvexAaaContext() + KBASE);
 
     if (maskReg == REG_K0)
@@ -11005,12 +11013,7 @@ void emitter::emitDispEmbMasking(instrDesc* id)
         return;
     }
 
-    printf(" {%s}", emitRegName(maskReg));
-
-    if (id->idIsEvexZContextSet())
-    {
-        printf(" {z}");
-    }
+    emitDispMask(id, maskReg);
 }
 
 //--------------------------------------------------------------------
@@ -11218,6 +11221,8 @@ void emitter::emitDispIns(
 
         case IF_CNS:
         {
+            assert(!IsAvx512OrPriorInstruction(id->idIns()));
+
             val = emitGetInsSC(id);
 #ifdef TARGET_AMD64
             // no 8-byte immediates allowed here!
@@ -11261,6 +11266,8 @@ void emitter::emitDispIns(
         case IF_AWR:
         case IF_ARW:
         {
+            assert(!IsAvx512OrPriorInstruction(id->idIns()));
+
             if (((ins == INS_call) || (ins == INS_tail_i_jmp)) && id->idIsCallRegPtr())
             {
                 printf("%s", emitRegName(id->idAddr()->iiaAddrMode.amBaseReg));
@@ -11324,8 +11331,11 @@ void emitter::emitDispIns(
                 // This logic ensures that we print `crc32 eax, bx` instead of `crc32 ax, bx`
                 attr = EA_4BYTE;
             }
-            printf("%s, %s", emitRegName(id->idReg1(), attr), sstr);
+            printf("%s", emitRegName(id->idReg1(), attr));
+            emitDispEmbMasking(id);
+            printf(", %s", sstr);
             emitDispAddrMode(id);
+            emitDispEmbBroadcastCount(id);
 
             emitDispCommentForHandle(id->idDebugOnlyInfo()->idMemCookie, 0, id->idDebugOnlyInfo()->idFlags);
             break;
@@ -11335,8 +11345,11 @@ void emitter::emitDispIns(
         case IF_RRW_ARD_CNS:
         case IF_RWR_ARD_CNS:
         {
-            printf("%s, %s", emitRegName(id->idReg1(), attr), sstr);
+            printf("%s", emitRegName(id->idReg1(), attr));
+            emitDispEmbMasking(id);
+            printf(", %s", sstr);
             emitDispAddrMode(id);
+            emitDispEmbBroadcastCount(id);
             emitGetInsAmdCns(id, &cnsVal);
 
             val = cnsVal.cnsVal;
@@ -11388,6 +11401,7 @@ void emitter::emitDispIns(
 
             printf(sstr);
             emitDispAddrMode(id);
+            emitDispEmbMasking(id);
             printf(", %s", emitRegName(id->idReg1(), attr));
 
             emitGetInsAmdCns(id, &cnsVal);
@@ -11429,16 +11443,22 @@ void emitter::emitDispIns(
                 attr = EA_16BYTE;
             }
             sstr = codeGen->genSizeStr(EA_ATTR(4));
-            printf("%s, %s", emitRegName(id->idReg1(), attr), sstr);
+            printf("%s", emitRegName(id->idReg1(), attr));
+            emitDispEmbMasking(id);
+            printf(", %s", sstr);
             emitDispAddrMode(id);
+            emitDispEmbBroadcastCount(id);
             printf(", %s", emitRegName(id->idReg2(), attr));
             break;
         }
 
         case IF_RWR_RRD_ARD_CNS:
         {
-            printf("%s, %s, %s", emitRegName(id->idReg1(), attr), emitRegName(id->idReg2(), attr), sstr);
+            printf("%s", emitRegName(id->idReg1(), attr));
+            emitDispEmbMasking(id);
+            printf(", %s, %s", emitRegName(id->idReg2(), attr), sstr);
             emitDispAddrMode(id);
+            emitDispEmbBroadcastCount(id);
             emitGetInsAmdCns(id, &cnsVal);
 
             val = cnsVal.cnsVal;
@@ -11458,7 +11478,8 @@ void emitter::emitDispIns(
 
         case IF_RWR_RRD_ARD_RRD:
         {
-            printf("%s ", emitRegName(id->idReg1(), attr));
+            printf("%s", emitRegName(id->idReg1(), attr));
+            emitDispEmbMasking(id);
 
             emitGetInsAmdCns(id, &cnsVal);
             regNumber op3Reg     = decodeRegFromIval(cnsVal.cnsVal);
@@ -11466,11 +11487,12 @@ void emitter::emitDispIns(
 
             if (hasMaskReg)
             {
-                emitDispMask(id, op3Reg, attr);
+                emitDispMask(id, op3Reg);
             }
 
-            printf("%s, %s", emitRegName(id->idReg2(), attr), sstr);
+            printf(", %s, %s", emitRegName(id->idReg2(), attr), sstr);
             emitDispAddrMode(id);
+            emitDispEmbBroadcastCount(id);
 
             if (!hasMaskReg)
             {
@@ -11486,6 +11508,7 @@ void emitter::emitDispIns(
         {
             printf("%s", sstr);
             emitDispAddrMode(id);
+            emitDispEmbMasking(id);
             printf(", %s", emitRegName(id->idReg1(), attr));
             break;
         }
@@ -11494,6 +11517,7 @@ void emitter::emitDispIns(
         {
             printf("%s", sstr);
             emitDispAddrMode(id);
+            emitDispEmbMasking(id);
             printf(", %s", emitRegName(id->idReg1(), attr));
             printf(", %s", emitRegName(id->idReg2(), attr));
             break;
@@ -11506,6 +11530,7 @@ void emitter::emitDispIns(
         {
             printf("%s", sstr);
             emitDispAddrMode(id);
+            emitDispEmbMasking(id);
             emitGetInsAmdCns(id, &cnsVal);
             val = cnsVal.cnsVal;
 #ifdef TARGET_AMD64
@@ -11535,6 +11560,7 @@ void emitter::emitDispIns(
         case IF_SWR:
         case IF_SRW:
         {
+            assert(!IsAvx512OrPriorInstruction(id->idIns()));
             printf("%s", sstr);
 
 #if !FEATURE_FIXED_OUT_ARGS
@@ -11563,6 +11589,7 @@ void emitter::emitDispIns(
 
             emitDispFrameRef(id->idAddr()->iiaLclVar.lvaVarNum(), id->idAddr()->iiaLclVar.lvaOffset(),
                              id->idDebugOnlyInfo()->idVarRefOffs, asmfm);
+            emitDispEmbMasking(id);
 
             printf(", %s", emitRegName(id->idReg1(), attr));
             break;
@@ -11577,6 +11604,7 @@ void emitter::emitDispIns(
 
             emitDispFrameRef(id->idAddr()->iiaLclVar.lvaVarNum(), id->idAddr()->iiaLclVar.lvaOffset(),
                              id->idDebugOnlyInfo()->idVarRefOffs, asmfm);
+            emitDispEmbMasking(id);
 
             emitGetInsCns(id, &cnsVal);
             val = cnsVal.cnsVal;
@@ -11614,6 +11642,7 @@ void emitter::emitDispIns(
 
             emitDispFrameRef(id->idAddr()->iiaLclVar.lvaVarNum(), id->idAddr()->iiaLclVar.lvaOffset(),
                              id->idDebugOnlyInfo()->idVarRefOffs, asmfm);
+            emitDispEmbMasking(id);
 
             printf(", %s", emitRegName(id->idReg1(), attr));
 
@@ -11653,9 +11682,12 @@ void emitter::emitDispIns(
                 attr = EA_4BYTE;
             }
 
-            printf("%s, %s", emitRegName(id->idReg1(), attr), sstr);
+            printf("%s", emitRegName(id->idReg1(), attr));
+            emitDispEmbMasking(id);
+            printf(", %s", sstr);
             emitDispFrameRef(id->idAddr()->iiaLclVar.lvaVarNum(), id->idAddr()->iiaLclVar.lvaOffset(),
                              id->idDebugOnlyInfo()->idVarRefOffs, asmfm);
+            emitDispEmbBroadcastCount(id);
 
             break;
         }
@@ -11664,9 +11696,12 @@ void emitter::emitDispIns(
         case IF_RWR_SRD_CNS:
         case IF_RRW_SRD_CNS:
         {
-            printf("%s, %s", emitRegName(id->idReg1(), attr), sstr);
+            printf("%s", emitRegName(id->idReg1(), attr));
+            emitDispEmbMasking(id);
+            printf(", %s", sstr);
             emitDispFrameRef(id->idAddr()->iiaLclVar.lvaVarNum(), id->idAddr()->iiaLclVar.lvaOffset(),
                              id->idDebugOnlyInfo()->idVarRefOffs, asmfm);
+            emitDispEmbBroadcastCount(id);
             emitGetInsCns(id, &cnsVal);
 
             val = cnsVal.cnsVal;
@@ -11699,9 +11734,12 @@ void emitter::emitDispIns(
 
         case IF_RWR_RRD_SRD_CNS:
         {
-            printf("%s, %s, %s", emitRegName(id->idReg1(), attr), emitRegName(id->idReg2(), attr), sstr);
+            printf("%s", emitRegName(id->idReg1(), attr));
+            emitDispEmbMasking(id);
+            printf(", %s, %s", emitRegName(id->idReg2(), attr), sstr);
             emitDispFrameRef(id->idAddr()->iiaLclVar.lvaVarNum(), id->idAddr()->iiaLclVar.lvaOffset(),
                              id->idDebugOnlyInfo()->idVarRefOffs, asmfm);
+            emitDispEmbBroadcastCount(id);
             emitGetInsCns(id, &cnsVal);
 
             val = cnsVal.cnsVal;
@@ -11720,7 +11758,8 @@ void emitter::emitDispIns(
 
         case IF_RWR_RRD_SRD_RRD:
         {
-            printf("%s ", emitRegName(id->idReg1(), attr));
+            printf("%s", emitRegName(id->idReg1(), attr));
+            emitDispEmbMasking(id);
 
             emitGetInsCns(id, &cnsVal);
             regNumber op3Reg     = decodeRegFromIval(cnsVal.cnsVal);
@@ -11728,12 +11767,13 @@ void emitter::emitDispIns(
 
             if (hasMaskReg)
             {
-                emitDispMask(id, op3Reg, attr);
+                emitDispMask(id, op3Reg);
             }
 
-            printf("%s, %s", emitRegName(id->idReg2(), attr), sstr);
+            printf(", %s, %s", emitRegName(id->idReg2(), attr), sstr);
             emitDispFrameRef(id->idAddr()->iiaLclVar.lvaVarNum(), id->idAddr()->iiaLclVar.lvaOffset(),
                              id->idDebugOnlyInfo()->idVarRefOffs, asmfm);
+            emitDispEmbBroadcastCount(id);
 
             if (!hasMaskReg)
             {
@@ -11746,9 +11786,13 @@ void emitter::emitDispIns(
         case IF_RWR_SRD_RRD:
         case IF_RRW_SRD_RRD:
         {
-            printf("%s, %s", emitRegName(id->idReg1(), attr), sstr);
+            printf("%s", emitRegName(id->idReg1(), attr));
+            emitDispEmbMasking(id);
+            printf(", %s", sstr);
+
             emitDispFrameRef(id->idAddr()->iiaLclVar.lvaVarNum(), id->idAddr()->iiaLclVar.lvaOffset(),
                              id->idDebugOnlyInfo()->idVarRefOffs, asmfm);
+            emitDispEmbBroadcastCount(id);
             printf(", %s", emitRegName(id->idReg2(), attr));
             break;
         }
@@ -11758,6 +11802,7 @@ void emitter::emitDispIns(
             printf("%s", sstr);
             emitDispFrameRef(id->idAddr()->iiaLclVar.lvaVarNum(), id->idAddr()->iiaLclVar.lvaOffset(),
                              id->idDebugOnlyInfo()->idVarRefOffs, asmfm);
+            emitDispEmbMasking(id);
             printf(", %s, %s", emitRegName(id->idReg1(), attr), emitRegName(id->idReg2(), attr));
             break;
         }
@@ -11771,6 +11816,7 @@ void emitter::emitDispIns(
             {
                 case INS_pmovmskb:
                 {
+                    assert(id->idGetEvexAaaContext() == 0);
                     printf("%s, %s", emitRegName(id->idReg1(), EA_4BYTE), emitRegName(id->idReg2(), attr));
                     break;
                 }
@@ -11780,7 +11826,8 @@ void emitter::emitDispIns(
                 case INS_cvtsi2ss64:
                 case INS_cvtsi2sd64:
                 {
-                    printf(" %s, %s", emitRegName(id->idReg1(), EA_16BYTE), emitRegName(id->idReg2(), attr));
+                    assert(id->idGetEvexAaaContext() == 0);
+                    printf("%s, %s", emitRegName(id->idReg1(), EA_16BYTE), emitRegName(id->idReg2(), attr));
                     break;
                 }
 
@@ -11797,7 +11844,8 @@ void emitter::emitDispIns(
                 case INS_vcvttss2usi32:
                 case INS_vcvttss2usi64:
                 {
-                    printf(" %s, %s", emitRegName(id->idReg1(), attr), emitRegName(id->idReg2(), EA_16BYTE));
+                    assert(id->idGetEvexAaaContext() == 0);
+                    printf("%s, %s", emitRegName(id->idReg1(), attr), emitRegName(id->idReg2(), EA_16BYTE));
                     break;
                 }
 
@@ -11842,19 +11890,25 @@ void emitter::emitDispIns(
                 case INS_vpbroadcastd_gpr:
                 case INS_vpbroadcastw_gpr:
                 {
-                    printf(" %s, %s", emitRegName(id->idReg1(), attr), emitRegName(id->idReg2(), EA_4BYTE));
+                    printf("%s", emitRegName(id->idReg1(), attr));
+                    emitDispEmbMasking(id);
+                    printf(", %s", emitRegName(id->idReg2(), EA_4BYTE));
                     break;
                 }
 
                 case INS_vpbroadcastq_gpr:
                 {
-                    printf(" %s, %s", emitRegName(id->idReg1(), attr), emitRegName(id->idReg2(), EA_8BYTE));
+                    printf("%s", emitRegName(id->idReg1(), attr));
+                    emitDispEmbMasking(id);
+                    printf(", %s", emitRegName(id->idReg2(), EA_8BYTE));
                     break;
                 }
 
                 default:
                 {
-                    printf("%s, %s", emitRegName(id->idReg1(), attr), emitRegName(id->idReg2(), attr));
+                    printf("%s", emitRegName(id->idReg1(), attr));
+                    emitDispEmbMasking(id);
+                    printf(", %s", emitRegName(id->idReg2(), attr));
                     emitDispEmbRounding(id);
                     break;
                 }
@@ -11869,8 +11923,10 @@ void emitter::emitDispIns(
         {
             assert(IsVexOrEvexEncodableInstruction(ins));
             assert(IsThreeOperandAVXInstruction(ins) || IsKInstruction(ins));
+
             regNumber reg2 = id->idReg2();
             regNumber reg3 = id->idReg3();
+
             if (ins == INS_bextr || ins == INS_bzhi
 #ifdef TARGET_AMD64
                 || ins == INS_shrx || ins == INS_shlx || ins == INS_sarx
@@ -11895,8 +11951,10 @@ void emitter::emitDispIns(
         {
             assert(IsVexOrEvexEncodableInstruction(ins));
             assert(IsThreeOperandAVXInstruction(ins));
-            printf("%s, ", emitRegName(id->idReg1(), attr));
-            printf("%s, ", emitRegName(id->idReg2(), attr));
+
+            printf("%s", emitRegName(id->idReg1(), attr));
+            emitDispEmbMasking(id);
+            printf(", %s", emitRegName(id->idReg2(), attr));
 
             switch (ins)
             {
@@ -11938,7 +11996,7 @@ void emitter::emitDispIns(
                 }
             }
 
-            printf("%s, ", emitRegName(id->idReg3(), attr));
+            printf(", %s, ", emitRegName(id->idReg3(), attr));
             val = emitGetInsSC(id);
             goto PRINT_CONSTANT;
             break;
@@ -11949,18 +12007,17 @@ void emitter::emitDispIns(
             assert(IsVexOrEvexEncodableInstruction(ins));
             assert(UseVEXEncoding());
 
-            printf("%s ", emitRegName(id->idReg1(), attr));
+            printf("%s", emitRegName(id->idReg1(), attr));
 
             regNumber op4Reg     = id->idReg4();
             bool      hasMaskReg = isMaskReg(op4Reg);
 
             if (hasMaskReg)
             {
-                emitDispMask(id, op4Reg, attr);
+                emitDispMask(id, op4Reg);
             }
 
-            printf("%s, ", emitRegName(id->idReg2(), attr));
-            printf("%s", emitRegName(id->idReg3(), attr));
+            printf(", %s, %s", emitRegName(id->idReg2(), attr), emitRegName(id->idReg3(), attr));
 
             if (!hasMaskReg)
             {
@@ -12031,8 +12088,9 @@ void emitter::emitDispIns(
                 }
             }
 
-            printf("%s,", emitRegName(id->idReg1(), tgtAttr));
-            printf(" %s", emitRegName(id->idReg2(), attr));
+            printf("%s", emitRegName(id->idReg1(), tgtAttr));
+            emitDispEmbMasking(id);
+            printf(", %s", emitRegName(id->idReg2(), attr));
             val = emitGetInsSC(id);
 #ifdef TARGET_AMD64
             // no 8-byte immediates allowed here!
@@ -12054,6 +12112,7 @@ void emitter::emitDispIns(
         case IF_RWR:
         case IF_RRW:
         {
+            assert(!IsAvx512OrPriorInstruction(id->idIns()));
             printf("%s", emitRegName(id->idReg1(), attr));
             emitDispShift(ins);
             break;
@@ -12065,6 +12124,7 @@ void emitter::emitDispIns(
         case IF_RRW_SHF:
         {
             printf("%s", emitRegName(id->idReg1(), attr));
+            emitDispEmbMasking(id);
 
             emitGetInsCns(id, &cnsVal);
             val = cnsVal.cnsVal;
@@ -12109,9 +12169,12 @@ void emitter::emitDispIns(
                 // This logic ensures that we print `crc32 eax, bx` instead of `crc32 ax, bx`
                 attr = EA_4BYTE;
             }
-            printf("%s, %s", emitRegName(id->idReg1(), attr), sstr);
+            printf("%s", emitRegName(id->idReg1(), attr));
+            emitDispEmbMasking(id);
+            printf(", %s", sstr);
             offs = emitGetInsDsp(id);
             emitDispClsVar(id->idAddr()->iiaFieldHnd, offs, ID_INFO_DSP_RELOC);
+            emitDispEmbBroadcastCount(id);
             break;
         }
 
@@ -12119,9 +12182,12 @@ void emitter::emitDispIns(
         case IF_RWR_MRD_CNS:
         case IF_RRW_MRD_CNS:
         {
-            printf("%s, %s", emitRegName(id->idReg1(), attr), sstr);
+            printf("%s", emitRegName(id->idReg1(), attr));
+            emitDispEmbMasking(id);
+            printf(", %s", sstr);
             offs = emitGetInsDsp(id);
             emitDispClsVar(id->idAddr()->iiaFieldHnd, offs, ID_INFO_DSP_RELOC);
+            emitDispEmbBroadcastCount(id);
             emitGetInsDcmCns(id, &cnsVal);
 
             val = cnsVal.cnsVal;
@@ -12173,6 +12239,7 @@ void emitter::emitDispIns(
             printf(sstr);
             offs = emitGetInsDsp(id);
             emitDispClsVar(id->idAddr()->iiaFieldHnd, offs, ID_INFO_DSP_RELOC);
+            emitDispEmbMasking(id);
             printf(", %s", emitRegName(id->idReg1(), attr));
             emitGetInsDcmCns(id, &cnsVal);
 
@@ -12207,9 +12274,12 @@ void emitter::emitDispIns(
 
         case IF_RWR_RRD_MRD_CNS:
         {
-            printf("%s, %s, %s", emitRegName(id->idReg1(), attr), emitRegName(id->idReg2(), attr), sstr);
+            printf("%s", emitRegName(id->idReg1(), attr));
+            emitDispEmbMasking(id);
+            printf(", %s, %s", emitRegName(id->idReg2(), attr), sstr);
             offs = emitGetInsDsp(id);
             emitDispClsVar(id->idAddr()->iiaFieldHnd, offs, ID_INFO_DSP_RELOC);
+            emitDispEmbBroadcastCount(id);
             emitGetInsDcmCns(id, &cnsVal);
 
             val = cnsVal.cnsVal;
@@ -12228,7 +12298,7 @@ void emitter::emitDispIns(
 
         case IF_RWR_RRD_MRD_RRD:
         {
-            printf("%s ", emitRegName(id->idReg1(), attr));
+            printf("%s", emitRegName(id->idReg1(), attr));
 
             emitGetInsDcmCns(id, &cnsVal);
             regNumber op3Reg     = decodeRegFromIval(cnsVal.cnsVal);
@@ -12236,12 +12306,13 @@ void emitter::emitDispIns(
 
             if (hasMaskReg)
             {
-                emitDispMask(id, op3Reg, attr);
+                emitDispMask(id, op3Reg);
             }
 
-            printf("%s, %s", emitRegName(id->idReg2(), attr), sstr);
+            printf(", %s, %s", emitRegName(id->idReg2(), attr), sstr);
             offs = emitGetInsDsp(id);
             emitDispClsVar(id->idAddr()->iiaFieldHnd, offs, ID_INFO_DSP_RELOC);
+            emitDispEmbBroadcastCount(id);
 
             if (!hasMaskReg)
             {
@@ -12252,6 +12323,7 @@ void emitter::emitDispIns(
 
         case IF_RWR_MRD_OFF:
         {
+            assert(!IsAvx512OrPriorInstruction(id->idIns()));
             printf("%s, %s", emitRegName(id->idReg1(), attr), "offset");
             offs = emitGetInsDsp(id);
             emitDispClsVar(id->idAddr()->iiaFieldHnd, offs, ID_INFO_DSP_RELOC);
@@ -12266,6 +12338,7 @@ void emitter::emitDispIns(
             printf("%s", sstr);
             offs = emitGetInsDsp(id);
             emitDispClsVar(id->idAddr()->iiaFieldHnd, offs, ID_INFO_DSP_RELOC);
+            emitDispEmbMasking(id);
             printf(", %s", emitRegName(id->idReg1(), attr));
             break;
         }
@@ -12278,6 +12351,7 @@ void emitter::emitDispIns(
             printf("%s", sstr);
             offs = emitGetInsDsp(id);
             emitDispClsVar(id->idAddr()->iiaFieldHnd, offs, ID_INFO_DSP_RELOC);
+            emitDispEmbMasking(id);
             emitGetInsDcmCns(id, &cnsVal);
             val = cnsVal.cnsVal;
 #ifdef TARGET_AMD64
@@ -12304,6 +12378,7 @@ void emitter::emitDispIns(
         case IF_MWR:
         case IF_MRW:
         {
+            assert(!IsAvx512OrPriorInstruction(id->idIns()));
             printf("%s", sstr);
             offs = emitGetInsDsp(id);
             emitDispClsVar(id->idAddr()->iiaFieldHnd, offs, ID_INFO_DSP_RELOC);
@@ -12313,6 +12388,7 @@ void emitter::emitDispIns(
 
         case IF_MRD_OFF:
         {
+            assert(!IsAvx512OrPriorInstruction(id->idIns()));
             printf("offset ");
             offs = emitGetInsDsp(id);
             emitDispClsVar(id->idAddr()->iiaFieldHnd, offs, ID_INFO_DSP_RELOC);
@@ -12323,9 +12399,12 @@ void emitter::emitDispIns(
         case IF_RWR_MRD_RRD:
         case IF_RRW_MRD_RRD:
         {
-            printf("%s, %s", emitRegName(id->idReg1(), attr), sstr);
+            printf("%s", emitRegName(id->idReg1(), attr));
+            emitDispEmbMasking(id);
+            printf(", %s, %s", emitRegName(id->idReg2(), attr), sstr);
             offs = emitGetInsDsp(id);
             emitDispClsVar(id->idAddr()->iiaFieldHnd, offs, ID_INFO_DSP_RELOC);
+            emitDispEmbBroadcastCount(id);
             printf(", %s", emitRegName(id->idReg2(), attr));
             break;
         }
@@ -12333,6 +12412,7 @@ void emitter::emitDispIns(
         case IF_MWR_RRD_RRD:
         {
             printf("%s", sstr);
+            emitDispEmbMasking(id);
             offs = emitGetInsDsp(id);
             emitDispClsVar(id->idAddr()->iiaFieldHnd, offs, ID_INFO_DSP_RELOC);
             printf(", %s, %s", emitRegName(id->idReg1(), attr), emitRegName(id->idReg2(), attr));
@@ -12343,6 +12423,8 @@ void emitter::emitDispIns(
         case IF_RWR_LABEL:
         case IF_SWR_LABEL:
         {
+            assert(!IsAvx512OrPriorInstruction(id->idIns()));
+
             if (ins == INS_lea)
             {
                 printf("%s, ", emitRegName(id->idReg1(), attr));
@@ -12384,6 +12466,7 @@ void emitter::emitDispIns(
         case IF_METHOD:
         case IF_METHPTR:
         {
+            assert(!IsAvx512OrPriorInstruction(id->idIns()));
             methodName = emitComp->eeGetMethodFullName((CORINFO_METHOD_HANDLE)id->idDebugOnlyInfo()->idMemCookie);
 
             if (id->idInsFmt() == IF_METHPTR)
@@ -12403,6 +12486,7 @@ void emitter::emitDispIns(
 
         case IF_NONE:
         {
+            assert(!IsAvx512OrPriorInstruction(id->idIns()));
 #if FEATURE_LOOP_ALIGN
             if (ins == INS_align)
             {

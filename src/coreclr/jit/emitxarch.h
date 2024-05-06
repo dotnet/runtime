@@ -514,7 +514,7 @@ bool isPrefetch(instruction ins)
 /*             Debug-only routines to display instructions              */
 /************************************************************************/
 
-void emitDispMask(const instrDesc* id, regNumber reg, emitAttr size) const;
+void emitDispMask(const instrDesc* id, regNumber reg) const;
 void emitDispReloc(ssize_t value);
 void emitDispAddrMode(instrDesc* id, bool noDetail = false);
 void emitDispShift(instruction ins, int cnt = 0);

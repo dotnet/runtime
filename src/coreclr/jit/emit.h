@@ -2279,9 +2279,9 @@ protected:
     void emitDispInsAddr(const BYTE* code);
     void emitDispInsOffs(unsigned offs, bool doffs);
     void emitDispInsHex(instrDesc* id, BYTE* code, size_t sz);
-    void emitDispEmbBroadcastCount(instrDesc* id);
-    void emitDispEmbRounding(instrDesc* id);
-    void emitDispEmbMasking(instrDesc* id);
+    void emitDispEmbBroadcastCount(instrDesc* id) const;
+    void emitDispEmbRounding(instrDesc* id) const;
+    void emitDispEmbMasking(instrDesc* id) const;
     void emitDispIns(instrDesc* id,
                      bool       isNew,
                      bool       doffs,
