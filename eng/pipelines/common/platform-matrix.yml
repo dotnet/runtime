@@ -43,9 +43,6 @@ jobs:
         buildConfig: ${{ parameters.buildConfig }}
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
         crossBuild: true
-        cxxStandardLibrary: libc++
-        cxxStandardLibraryStatic: true
-        cxxAbiLibrary: libstdc++
         ${{ insert }}: ${{ parameters.jobParameters }}
 
 # Linux armv6
@@ -115,9 +112,6 @@ jobs:
         buildConfig: ${{ parameters.buildConfig }}
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
         crossBuild: true
-        cxxStandardLibrary: libc++
-        cxxStandardLibraryStatic: true
-        cxxAbiLibrary: libstdc++
         ${{ insert }}: ${{ parameters.jobParameters }}
 
 # Linux musl arm
@@ -140,9 +134,6 @@ jobs:
         buildConfig: ${{ parameters.buildConfig }}
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
         crossBuild: true
-        cxxStandardLibrary: libc++
-        cxxStandardLibraryStatic: true
-        cxxAbiLibrary: libstdc++
         ${{ insert }}: ${{ parameters.jobParameters }}
 
 # Linux musl arm64
@@ -165,9 +156,6 @@ jobs:
         buildConfig: ${{ parameters.buildConfig }}
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
         crossBuild: true
-        cxxStandardLibrary: libc++
-        cxxStandardLibraryStatic: true
-        cxxAbiLibrary: libstdc++
         ${{ insert }}: ${{ parameters.jobParameters }}
 
 # Linux Bionic arm
@@ -263,10 +251,6 @@ jobs:
         buildConfig: ${{ parameters.buildConfig }}
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
         crossBuild: true
-        ${{ if eq(parameters.container, '') }}:
-          cxxStandardLibrary: libc++
-          cxxStandardLibraryStatic: true
-          cxxAbiLibrary: libstdc++
         ${{ insert }}: ${{ parameters.jobParameters }}
 
 - ${{ if containsValue(parameters.platforms, 'linux_x64_asan') }}:
