@@ -38,7 +38,15 @@ internal sealed class Thread
 
     public ThreadStoreData GetThreadStoreData()
     {
-        Data.ThreadStore threadStore = new Data.ThreadStore(_target, _threadStoreAddr);
+        Data.ThreadStore? threadStore;
+        if (!_target.ProcessedData.TryGet(_threadStoreAddr.Value, out threadStore))
+        {
+            threadStore = new Data.ThreadStore(_target, _threadStoreAddr);
+
+            // Still okay if processed data is already registered by someone else
+            _ = _target.ProcessedData.TryRegister(_threadStoreAddr.Value, threadStore);
+        }
+
         return new ThreadStoreData(threadStore.ThreadCount, threadStore.FirstThread);
     }
 }

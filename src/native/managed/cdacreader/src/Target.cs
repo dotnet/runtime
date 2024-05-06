@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 
@@ -48,6 +49,8 @@ public sealed unsafe class Target
     private readonly IReadOnlyDictionary<string, (ulong Value, string? Type)> _globals = new Dictionary<string, (ulong, string?)>();
     private readonly Dictionary<DataType, TypeInfo> _knownTypes = [];
     private readonly Dictionary<string, TypeInfo> _types = [];
+
+    internal DataCache ProcessedData { get; } = new DataCache();
 
     public static bool TryCreate(ulong contractDescriptor, delegate* unmanaged<ulong, byte*, uint, void*, int> readFromTarget, void* readContext, out Target? target)
     {
@@ -369,6 +372,36 @@ public sealed unsafe class Target
 
     internal bool TryGetContractVersion(string contractName, out int version)
         => _contracts.TryGetValue(contractName, out version);
+
+    /// <summary>
+    /// Store of addresses that have already been read into corresponding data models
+    /// </summary>
+    internal sealed class DataCache
+    {
+        private readonly Dictionary<ulong, object?> _readDataByAddress = [];
+
+        public bool TryRegister(ulong address, object data)
+        {
+            bool success = _readDataByAddress.TryAdd(address, data);
+            System.Diagnostics.Debug.Assert(success || data.GetType() == _readDataByAddress[address]!.GetType());
+            return success;
+        }
+
+        public bool TryGet<T>(ulong address, [NotNullWhen(true)] out T? data)
+        {
+            data = default;
+            if (!_readDataByAddress.TryGetValue(address, out object? dataObj))
+                return false;
+
+            if (dataObj is T dataMaybe)
+            {
+                data = dataMaybe;
+                return true;
+            }
+
+            return false;
+        }
+    }
 
     private sealed class Reader
     {
