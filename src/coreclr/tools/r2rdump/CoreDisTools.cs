@@ -1230,7 +1230,7 @@ namespace R2RDump
                     auipc
                     addi
                     ld
-                    jarl
+                    jalr
                 , where addi and ld may be repeated many times.
                 Instructions that have no effect on the jump 
                 address calculation are skipped.
