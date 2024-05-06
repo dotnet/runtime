@@ -25,7 +25,7 @@ namespace Microsoft.Interop
                 new PointerTypeInfo(
                     $"{TypeNames.GlobalAlias + TypeNames.System_Runtime_InteropServices_ComWrappers_ComInterfaceDispatch}*",
                     $"{TypeNames.System_Runtime_InteropServices_ComWrappers_ComInterfaceDispatch}*",
-                    isFunctionPointer: false);
+                    IsFunctionPointer: false);
             public IEnumerable<StatementSyntax> Generate(TypePositionInfo info, StubCodeContext context)
             {
                 if (context.CurrentStage != StubCodeContext.Stage.Unmarshal)
