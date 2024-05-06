@@ -2137,6 +2137,16 @@ mb_skip_visibility_ilgen (MonoMethodBuilder *mb)
 }
 
 static void
+mb_inflate_wrapper_data_ilgen (MonoMethodBuilder *mb)
+{
+	g_assert (!mb->dynamic); // dynamic methods with inflated data not implemented yet - needs at least mono_free_method changes, probably more
+	mb->inflate_wrapper_data = TRUE;
+	int idx = mono_mb_add_data (mb, NULL);
+	// note: match index used in create_method_ilgen
+	g_assertf (idx == MONO_MB_ILGEN_INFLATE_WRAPPER_INFO_IDX, "mb_inflate_wrapper_data called after data already added");
+}
+
+static void
 emit_synchronized_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethod *method, MonoGenericContext *ctx, MonoGenericContainer *container, MonoMethod *enter_method, MonoMethod *exit_method, MonoMethod *gettypefromhandle_method)
 {
 	int i, pos, pos2, this_local, taken_local, ret_local = 0;
@@ -3467,6 +3477,7 @@ mono_marshal_lightweight_init (void)
 	cb.emit_return = emit_return_ilgen;
 	cb.emit_vtfixup_ftnptr = emit_vtfixup_ftnptr_ilgen;
 	cb.mb_skip_visibility = mb_skip_visibility_ilgen;
+	cb.mb_inflate_wrapper_data = mb_inflate_wrapper_data_ilgen;
 	cb.mb_emit_exception = mb_emit_exception_ilgen;
 	cb.mb_emit_exception_for_error = mb_emit_exception_for_error_ilgen;
 	cb.mb_emit_byte = mb_emit_byte_ilgen;
