@@ -3,7 +3,7 @@
 
   <ItemGroup>
     <TestConsoleAppSourceFiles Include="QueryableTests.cs">
-      <!-- Queryable is not compatible with AOT -->
+      <!-- https://github.com/dotnet/runtime/issues/101903 -->
       <NativeAotIncompatible>true</NativeAotIncompatible>
     </TestConsoleAppSourceFiles>
   </ItemGroup>
