@@ -4308,6 +4308,66 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe System.Numerics.Vector<long> LoadVectorUInt32ZeroExtendToInt64(System.Numerics.Vector<long> mask, uint* address) { throw null; }
         public static unsafe System.Numerics.Vector<ulong> LoadVectorUInt32ZeroExtendToUInt64(System.Numerics.Vector<ulong> mask, uint* address) { throw null; }
 
+        public static System.Numerics.Vector<byte> Max(System.Numerics.Vector<byte> left, System.Numerics.Vector<byte> right) { throw null; }
+        public static System.Numerics.Vector<double> Max(System.Numerics.Vector<double> left, System.Numerics.Vector<double> right) { throw null; }
+        public static System.Numerics.Vector<short> Max(System.Numerics.Vector<short> left, System.Numerics.Vector<short> right) { throw null; }
+        public static System.Numerics.Vector<int> Max(System.Numerics.Vector<int> left, System.Numerics.Vector<int> right) { throw null; }
+        public static System.Numerics.Vector<long> Max(System.Numerics.Vector<long> left, System.Numerics.Vector<long> right) { throw null; }
+        public static System.Numerics.Vector<sbyte> Max(System.Numerics.Vector<sbyte> left, System.Numerics.Vector<sbyte> right) { throw null; }
+        public static System.Numerics.Vector<float> Max(System.Numerics.Vector<float> left, System.Numerics.Vector<float> right) { throw null; }
+        public static System.Numerics.Vector<ushort> Max(System.Numerics.Vector<ushort> left, System.Numerics.Vector<ushort> right) { throw null; }
+        public static System.Numerics.Vector<uint> Max(System.Numerics.Vector<uint> left, System.Numerics.Vector<uint> right) { throw null; }
+        public static System.Numerics.Vector<ulong> Max(System.Numerics.Vector<ulong> left, System.Numerics.Vector<ulong> right) { throw null; }
+        public static System.Numerics.Vector<byte> MaxAcross(System.Numerics.Vector<byte> value) { throw null; }
+        public static System.Numerics.Vector<double> MaxAcross(System.Numerics.Vector<double> value) { throw null; }
+        public static System.Numerics.Vector<short> MaxAcross(System.Numerics.Vector<short> value) { throw null; }
+        public static System.Numerics.Vector<int> MaxAcross(System.Numerics.Vector<int> value) { throw null; }
+        public static System.Numerics.Vector<long> MaxAcross(System.Numerics.Vector<long> value) { throw null; }
+        public static System.Numerics.Vector<sbyte> MaxAcross(System.Numerics.Vector<sbyte> value) { throw null; }
+        public static System.Numerics.Vector<float> MaxAcross(System.Numerics.Vector<float> value) { throw null; }
+        public static System.Numerics.Vector<ushort> MaxAcross(System.Numerics.Vector<ushort> value) { throw null; }
+        public static System.Numerics.Vector<uint> MaxAcross(System.Numerics.Vector<uint> value) { throw null; }
+        public static System.Numerics.Vector<ulong> MaxAcross(System.Numerics.Vector<ulong> value) { throw null; }
+        public static System.Numerics.Vector<double> MaxNumber(System.Numerics.Vector<double> left, System.Numerics.Vector<double> right) { throw null; }
+        public static System.Numerics.Vector<float> MaxNumber(System.Numerics.Vector<float> left, System.Numerics.Vector<float> right) { throw null; }
+        public static System.Numerics.Vector<double> MaxNumberAcross(System.Numerics.Vector<double> value) { throw null; }
+        public static System.Numerics.Vector<float> MaxNumberAcross(System.Numerics.Vector<float> value) { throw null; }
+        public static System.Numerics.Vector<byte> Min(System.Numerics.Vector<byte> left, System.Numerics.Vector<byte> right) { throw null; }
+        public static System.Numerics.Vector<double> Min(System.Numerics.Vector<double> left, System.Numerics.Vector<double> right) { throw null; }
+        public static System.Numerics.Vector<short> Min(System.Numerics.Vector<short> left, System.Numerics.Vector<short> right) { throw null; }
+        public static System.Numerics.Vector<int> Min(System.Numerics.Vector<int> left, System.Numerics.Vector<int> right) { throw null; }
+        public static System.Numerics.Vector<long> Min(System.Numerics.Vector<long> left, System.Numerics.Vector<long> right) { throw null; }
+        public static System.Numerics.Vector<sbyte> Min(System.Numerics.Vector<sbyte> left, System.Numerics.Vector<sbyte> right) { throw null; }
+        public static System.Numerics.Vector<float> Min(System.Numerics.Vector<float> left, System.Numerics.Vector<float> right) { throw null; }
+        public static System.Numerics.Vector<ushort> Min(System.Numerics.Vector<ushort> left, System.Numerics.Vector<ushort> right) { throw null; }
+        public static System.Numerics.Vector<uint> Min(System.Numerics.Vector<uint> left, System.Numerics.Vector<uint> right) { throw null; }
+        public static System.Numerics.Vector<ulong> Min(System.Numerics.Vector<ulong> left, System.Numerics.Vector<ulong> right) { throw null; }
+        public static System.Numerics.Vector<byte> MinAcross(System.Numerics.Vector<byte> value) { throw null; }
+        public static System.Numerics.Vector<double> MinAcross(System.Numerics.Vector<double> value) { throw null; }
+        public static System.Numerics.Vector<short> MinAcross(System.Numerics.Vector<short> value) { throw null; }
+        public static System.Numerics.Vector<int> MinAcross(System.Numerics.Vector<int> value) { throw null; }
+        public static System.Numerics.Vector<long> MinAcross(System.Numerics.Vector<long> value) { throw null; }
+        public static System.Numerics.Vector<sbyte> MinAcross(System.Numerics.Vector<sbyte> value) { throw null; }
+        public static System.Numerics.Vector<float> MinAcross(System.Numerics.Vector<float> value) { throw null; }
+        public static System.Numerics.Vector<ushort> MinAcross(System.Numerics.Vector<ushort> value) { throw null; }
+        public static System.Numerics.Vector<uint> MinAcross(System.Numerics.Vector<uint> value) { throw null; }
+        public static System.Numerics.Vector<ulong> MinAcross(System.Numerics.Vector<ulong> value) { throw null; }
+        public static System.Numerics.Vector<double> MinNumber(System.Numerics.Vector<double> left, System.Numerics.Vector<double> right) { throw null; }
+        public static System.Numerics.Vector<float> MinNumber(System.Numerics.Vector<float> left, System.Numerics.Vector<float> right) { throw null; }
+        public static System.Numerics.Vector<double> MinNumberAcross(System.Numerics.Vector<double> value) { throw null; }
+        public static System.Numerics.Vector<float> MinNumberAcross(System.Numerics.Vector<float> value) { throw null; }
+
+        public static System.Numerics.Vector<sbyte> Multiply(System.Numerics.Vector<sbyte> left, System.Numerics.Vector<sbyte> right) { throw null; }
+        public static System.Numerics.Vector<short> Multiply(System.Numerics.Vector<short> left, System.Numerics.Vector<short> right) { throw null; }
+        public static System.Numerics.Vector<int> Multiply(System.Numerics.Vector<int> left, System.Numerics.Vector<int> right) { throw null; }
+        public static System.Numerics.Vector<long> Multiply(System.Numerics.Vector<long> left, System.Numerics.Vector<long> right) { throw null; }
+        public static System.Numerics.Vector<byte> Multiply(System.Numerics.Vector<byte> left, System.Numerics.Vector<byte> right) { throw null; }
+        public static System.Numerics.Vector<ushort> Multiply(System.Numerics.Vector<ushort> left, System.Numerics.Vector<ushort> right) { throw null; }
+        public static System.Numerics.Vector<uint> Multiply(System.Numerics.Vector<uint> left, System.Numerics.Vector<uint> right) { throw null; }
+        public static System.Numerics.Vector<ulong> Multiply(System.Numerics.Vector<ulong> left, System.Numerics.Vector<ulong> right) { throw null; }
+        public static System.Numerics.Vector<float> Multiply(System.Numerics.Vector<float> left, System.Numerics.Vector<float> right) { throw null; }
+        public static System.Numerics.Vector<double> Multiply(System.Numerics.Vector<double> left, System.Numerics.Vector<double> right) { throw null; }
+
         public static System.Numerics.Vector<byte> Or(System.Numerics.Vector<byte> left, System.Numerics.Vector<byte> right) { throw null; }
         public static System.Numerics.Vector<short> Or(System.Numerics.Vector<short> left, System.Numerics.Vector<short> right) { throw null; }
         public static System.Numerics.Vector<int> Or(System.Numerics.Vector<int> left, System.Numerics.Vector<int> right) { throw null; }
@@ -4350,17 +4410,6 @@ namespace System.Runtime.Intrinsics.Arm
         public static System.Numerics.Vector<ulong> Subtract(System.Numerics.Vector<ulong> left, System.Numerics.Vector<ulong> right) { throw null; }
         public static System.Numerics.Vector<float> Subtract(System.Numerics.Vector<float> left, System.Numerics.Vector<float> right) { throw null; }
         public static System.Numerics.Vector<double> Subtract(System.Numerics.Vector<double> left, System.Numerics.Vector<double> right) { throw null; }
-
-        public static System.Numerics.Vector<sbyte> Multiply(System.Numerics.Vector<sbyte> left, System.Numerics.Vector<sbyte> right) { throw null; }
-        public static System.Numerics.Vector<short> Multiply(System.Numerics.Vector<short> left, System.Numerics.Vector<short> right) { throw null; }
-        public static System.Numerics.Vector<int> Multiply(System.Numerics.Vector<int> left, System.Numerics.Vector<int> right) { throw null; }
-        public static System.Numerics.Vector<long> Multiply(System.Numerics.Vector<long> left, System.Numerics.Vector<long> right) { throw null; }
-        public static System.Numerics.Vector<byte> Multiply(System.Numerics.Vector<byte> left, System.Numerics.Vector<byte> right) { throw null; }
-        public static System.Numerics.Vector<ushort> Multiply(System.Numerics.Vector<ushort> left, System.Numerics.Vector<ushort> right) { throw null; }
-        public static System.Numerics.Vector<uint> Multiply(System.Numerics.Vector<uint> left, System.Numerics.Vector<uint> right) { throw null; }
-        public static System.Numerics.Vector<ulong> Multiply(System.Numerics.Vector<ulong> left, System.Numerics.Vector<ulong> right) { throw null; }
-        public static System.Numerics.Vector<float> Multiply(System.Numerics.Vector<float> left, System.Numerics.Vector<float> right) { throw null; }
-        public static System.Numerics.Vector<double> Multiply(System.Numerics.Vector<double> left, System.Numerics.Vector<double> right) { throw null; }
 
         public static System.Numerics.Vector<sbyte> UnzipEven(System.Numerics.Vector<sbyte> left, System.Numerics.Vector<sbyte> right) { throw null; }
         public static System.Numerics.Vector<short> UnzipEven(System.Numerics.Vector<short> left, System.Numerics.Vector<short> right) { throw null; }

@@ -3503,24 +3503,34 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
     emitAttr              retSize       = EA_PTRSIZE;
     emitAttr              secondRetSize = EA_UNKNOWN;
 
-    if (call->HasMultiRegRetVal())
+    // unused values are of no interest to GC.
+    if (!call->IsUnusedValue())
     {
-        retSize       = emitTypeSize(pRetTypeDesc->GetReturnRegType(0));
-        secondRetSize = emitTypeSize(pRetTypeDesc->GetReturnRegType(1));
-    }
-    else
-    {
-        assert(call->gtType != TYP_STRUCT);
+        if (call->HasMultiRegRetVal())
+        {
+            retSize       = emitTypeSize(pRetTypeDesc->GetReturnRegType(0));
+            secondRetSize = emitTypeSize(pRetTypeDesc->GetReturnRegType(1));
+        }
+        else
+        {
+            assert(call->gtType != TYP_STRUCT);
 
-        if (call->gtType == TYP_REF)
-        {
-            retSize = EA_GCREF;
-        }
-        else if (call->gtType == TYP_BYREF)
-        {
-            retSize = EA_BYREF;
+            if (call->gtType == TYP_REF)
+            {
+                retSize = EA_GCREF;
+            }
+            else if (call->gtType == TYP_BYREF)
+            {
+                retSize = EA_BYREF;
+            }
         }
     }
+
+#ifdef TARGET_ARM
+    // ARM32 support multireg returns, but only to return 64bit primitives.
+    assert(secondRetSize != EA_GCREF);
+    assert(secondRetSize != EA_BYREF);
+#endif
 
     DebugInfo di;
     // We need to propagate the debug information to the call instruction, so we can emit
