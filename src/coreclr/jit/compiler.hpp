@@ -625,13 +625,12 @@ BasicBlockVisit BasicBlock::VisitEHSuccs(Compiler* comp, TFunc func)
 // Arguments:
 //   comp  - Compiler instance
 //   func  - Callback
-//   useProfile - If true, determines the order of successors visited using profile data
 //
 // Returns:
 //   Whether or not the visiting was aborted.
 //
 template <typename TFunc>
-BasicBlockVisit BasicBlock::VisitAllSuccs(Compiler* comp, TFunc func, const bool useProfile /* = false */)
+BasicBlockVisit BasicBlock::VisitAllSuccs(Compiler* comp, TFunc func)
 {
     switch (bbKind)
     {
@@ -665,22 +664,10 @@ BasicBlockVisit BasicBlock::VisitAllSuccs(Compiler* comp, TFunc func, const bool
             return VisitEHSuccs(comp, func);
 
         case BBJ_COND:
-            if (TrueEdgeIs(GetFalseEdge()))
+            RETURN_ON_ABORT(func(GetFalseTarget()));
+
+            if (!TrueEdgeIs(GetFalseEdge()))
             {
-                RETURN_ON_ABORT(func(GetFalseTarget()));
-            }
-            else if (useProfile && (GetTrueEdge()->getLikelihood() < GetFalseEdge()->getLikelihood()))
-            {
-                // When building an RPO-based block layout, we want to visit the unlikely successor first
-                // so that in the DFS computation, the likely successor will be processed right before this block,
-                // meaning the RPO-based layout will enable fall-through into the likely successor.
-                //
-                RETURN_ON_ABORT(func(GetTrueTarget()));
-                RETURN_ON_ABORT(func(GetFalseTarget()));
-            }
-            else
-            {
-                RETURN_ON_ABORT(func(GetFalseTarget()));
                 RETURN_ON_ABORT(func(GetTrueTarget()));
             }
 
@@ -689,14 +676,6 @@ BasicBlockVisit BasicBlock::VisitAllSuccs(Compiler* comp, TFunc func, const bool
         case BBJ_SWITCH:
         {
             Compiler::SwitchUniqueSuccSet sd = comp->GetDescriptorForSwitch(this);
-
-            if (useProfile)
-            {
-                jitstd::sort(sd.nonDuplicates, (sd.nonDuplicates + sd.numDistinctSuccs),
-                             [](FlowEdge* const lhs, FlowEdge* const rhs) {
-                    return (lhs->getLikelihood() * lhs->getDupCount()) < (rhs->getLikelihood() * rhs->getDupCount());
-                });
-            }
 
             for (unsigned i = 0; i < sd.numDistinctSuccs; i++)
             {
@@ -713,6 +692,62 @@ BasicBlockVisit BasicBlock::VisitAllSuccs(Compiler* comp, TFunc func, const bool
 
         default:
             unreached();
+    }
+}
+
+//------------------------------------------------------------------------------
+// VisitAllSuccsInLikelihoodOrder: Visit all successors (including EH successors) of this block
+// in order of increasing edge likelihood, so that a DFS traversal places the most-likely
+// successor of this block next to it.
+//
+// Arguments:
+//   comp  - Compiler instance
+//   func  - Callback
+//
+// Returns:
+//   Whether or not the visiting was aborted.
+//
+template <typename TFunc>
+BasicBlockVisit BasicBlock::VisitAllSuccsInLikelihoodOrder(Compiler* comp, TFunc func)
+{
+    switch (bbKind)
+    {
+        case BBJ_COND:
+            if (TrueEdgeIs(GetFalseEdge()))
+            {
+                RETURN_ON_ABORT(func(GetFalseTarget()));
+            }
+            else if (GetTrueEdge()->getLikelihood() < GetFalseEdge()->getLikelihood())
+            {
+                RETURN_ON_ABORT(func(GetTrueTarget()));
+                RETURN_ON_ABORT(func(GetFalseTarget()));
+            }
+            else
+            {
+                RETURN_ON_ABORT(func(GetFalseTarget()));
+                RETURN_ON_ABORT(func(GetTrueTarget()));
+            }
+
+            return VisitEHSuccs(comp, func);
+
+        case BBJ_SWITCH:
+        {
+            Compiler::SwitchUniqueSuccSet sd = comp->GetDescriptorForSwitch(this);
+            jitstd::sort(sd.nonDuplicates, (sd.nonDuplicates + sd.numDistinctSuccs),
+                         [](FlowEdge* const lhs, FlowEdge* const rhs) {
+                return (lhs->getLikelihood() * lhs->getDupCount()) < (rhs->getLikelihood() * rhs->getDupCount());
+            });
+
+            for (unsigned i = 0; i < sd.numDistinctSuccs; i++)
+            {
+                RETURN_ON_ABORT(func(sd.nonDuplicates[i]->getDestinationBlock()));
+            }
+
+            return VisitEHSuccs(comp, func);
+        }
+
+        default:
+            return VisitAllSuccs(comp, func);
     }
 }
 
@@ -4789,11 +4824,11 @@ unsigned Compiler::fgRunDfs(VisitPreorder visitPreorder, VisitPostorder visitPos
     unsigned preOrderIndex  = 0;
     unsigned postOrderIndex = 0;
 
-    ArrayStack<AllSuccessorEnumerator> blocks(getAllocator(CMK_DepthFirstSearch));
+    ArrayStack<AllSuccessorEnumerator<useProfile>> blocks(getAllocator(CMK_DepthFirstSearch));
 
     auto dfsFrom = [&](BasicBlock* firstBB) {
         BitVecOps::AddElemD(&traits, visited, firstBB->bbNum);
-        blocks.Emplace(this, firstBB, useProfile);
+        blocks.Emplace(this, firstBB);
         visitPreorder(firstBB, preOrderIndex++);
 
         while (!blocks.Empty())
@@ -4805,7 +4840,7 @@ unsigned Compiler::fgRunDfs(VisitPreorder visitPreorder, VisitPostorder visitPos
             {
                 if (BitVecOps::TryAddElemD(&traits, visited, succ->bbNum))
                 {
-                    blocks.Emplace(this, succ, useProfile);
+                    blocks.Emplace(this, succ);
                     visitPreorder(succ, preOrderIndex++);
                 }
 

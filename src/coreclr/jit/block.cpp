@@ -134,20 +134,22 @@ void FlowEdge::addLikelihood(weight_t addedLikelihood)
 }
 
 //------------------------------------------------------------------------
-//  AllSuccessorEnumerator: Construct an instance of the enumerator.
+// AllSuccessorEnumerator: Construct an instance of the enumerator.
 //
-//  Arguments:
-//     comp       - Compiler instance
-//     block      - The block whose successors are to be iterated
-//     useProfile - If true, determines the order of successors visited using profile data
+// Template Arguments:
+//    useProfile - if true, use edge likelihoods to determine the order
+//    successors are visited in
 //
-AllSuccessorEnumerator::AllSuccessorEnumerator(Compiler* comp, BasicBlock* block, const bool useProfile /* = false */)
+// Arguments:
+//    comp  - Compiler instance
+//    block - The block whose successors are to be iterated
+//
+template <const bool useProfile>
+AllSuccessorEnumerator<useProfile>::AllSuccessorEnumerator(Compiler* const comp, BasicBlock* const block)
     : m_block(block)
 {
-    m_numSuccs = 0;
-    block->VisitAllSuccs(
-        comp,
-        [this](BasicBlock* succ) {
+    m_numSuccs           = 0;
+    auto visitorCallback = [this](BasicBlock* const succ) {
         if (m_numSuccs < ArrLen(m_successors))
         {
             m_successors[m_numSuccs] = succ;
@@ -155,26 +157,43 @@ AllSuccessorEnumerator::AllSuccessorEnumerator(Compiler* comp, BasicBlock* block
 
         m_numSuccs++;
         return BasicBlockVisit::Continue;
-    },
-        useProfile);
+    };
+
+    if (useProfile)
+    {
+        block->VisitAllSuccsInLikelihoodOrder(comp, visitorCallback);
+    }
+    else
+    {
+        block->VisitAllSuccs(comp, visitorCallback);
+    }
 
     if (m_numSuccs > ArrLen(m_successors))
     {
         m_pSuccessors = new (comp, CMK_BasicBlock) BasicBlock*[m_numSuccs];
 
-        unsigned numSuccs = 0;
-        block->VisitAllSuccs(
-            comp,
-            [this, &numSuccs](BasicBlock* succ) {
+        unsigned numSuccs        = 0;
+        auto     visitorCallback = [this, &numSuccs](BasicBlock* const succ) {
             assert(numSuccs < m_numSuccs);
             m_pSuccessors[numSuccs++] = succ;
             return BasicBlockVisit::Continue;
-        },
-            useProfile);
+        };
+
+        if (useProfile)
+        {
+            block->VisitAllSuccsInLikelihoodOrder(comp, visitorCallback);
+        }
+        else
+        {
+            block->VisitAllSuccs(comp, visitorCallback);
+        }
 
         assert(numSuccs == m_numSuccs);
     }
 }
+
+template AllSuccessorEnumerator<false>::AllSuccessorEnumerator(Compiler* const comp, BasicBlock* const block);
+template AllSuccessorEnumerator<true>::AllSuccessorEnumerator(Compiler* const comp, BasicBlock* const block);
 
 //------------------------------------------------------------------------
 // BlockPredsWithEH:

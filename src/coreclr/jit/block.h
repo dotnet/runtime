@@ -1799,7 +1799,10 @@ public:
     BasicBlockVisit VisitEHEnclosedHandlerSecondPassSuccs(Compiler* comp, TFunc func);
 
     template <typename TFunc>
-    BasicBlockVisit VisitAllSuccs(Compiler* comp, TFunc func, const bool useProfile = false);
+    BasicBlockVisit VisitAllSuccs(Compiler* comp, TFunc func);
+
+    template <typename TFunc>
+    BasicBlockVisit VisitAllSuccsInLikelihoodOrder(Compiler* comp, TFunc func);
 
     template <typename TFunc>
     BasicBlockVisit VisitEHSuccs(Compiler* comp, TFunc func);
@@ -2481,6 +2484,7 @@ void* emitCodeGetCookie(const BasicBlock* block);
 // An enumerator of a block's all successors. In some cases (e.g. SsaBuilder::TopologicalSort)
 // using iterators is not exactly efficient, at least because they contain an unnecessary
 // member - a pointer to the Compiler object.
+template <const bool useProfile>
 class AllSuccessorEnumerator
 {
     BasicBlock* m_block;
@@ -2497,7 +2501,7 @@ class AllSuccessorEnumerator
 
 public:
     // Constructs an enumerator of all `block`'s successors.
-    AllSuccessorEnumerator(Compiler* comp, BasicBlock* block, const bool useProfile = false);
+    AllSuccessorEnumerator(Compiler* const comp, BasicBlock* const block);
 
     // Gets the block whose successors are enumerated.
     BasicBlock* Block()
