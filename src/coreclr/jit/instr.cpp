@@ -1168,11 +1168,11 @@ void CodeGen::inst_RV_TT_IV(
     switch (rmOpDesc.GetKind())
     {
         case OperandKind::ClsVar:
-            emit->emitIns_R_C_I(ins, attr, reg1, rmOpDesc.GetFieldHnd(), 0, ival);
+            emit->emitIns_R_C_I(ins, attr, reg1, rmOpDesc.GetFieldHnd(), 0, ival, instOptions);
             break;
 
         case OperandKind::Local:
-            emit->emitIns_R_S_I(ins, attr, reg1, rmOpDesc.GetVarNum(), rmOpDesc.GetLclOffset(), ival);
+            emit->emitIns_R_S_I(ins, attr, reg1, rmOpDesc.GetVarNum(), rmOpDesc.GetLclOffset(), ival, instOptions);
             break;
 
         case OperandKind::Indir:
@@ -1181,12 +1181,12 @@ void CodeGen::inst_RV_TT_IV(
             // temporary GT_IND to generate code with.
             GenTreeIndir  indirForm;
             GenTreeIndir* indir = rmOpDesc.GetIndirForm(&indirForm);
-            emit->emitIns_R_A_I(ins, attr, reg1, indir, ival);
+            emit->emitIns_R_A_I(ins, attr, reg1, indir, ival, instOptions);
         }
         break;
 
         case OperandKind::Reg:
-            emit->emitIns_SIMD_R_R_I(ins, attr, reg1, rmOpDesc.GetReg(), ival);
+            emit->emitIns_SIMD_R_R_I(ins, attr, reg1, rmOpDesc.GetReg(), ival, instOptions);
             break;
 
         default:
@@ -1392,11 +1392,12 @@ void CodeGen::inst_RV_RV_TT_IV(instruction ins,
     switch (op2Desc.GetKind())
     {
         case OperandKind::ClsVar:
-            emit->emitIns_SIMD_R_R_C_I(ins, size, targetReg, op1Reg, op2Desc.GetFieldHnd(), 0, ival);
+            emit->emitIns_SIMD_R_R_C_I(ins, size, targetReg, op1Reg, op2Desc.GetFieldHnd(), 0, ival, instOptions);
             break;
 
         case OperandKind::Local:
-            emit->emitIns_SIMD_R_R_S_I(ins, size, targetReg, op1Reg, op2Desc.GetVarNum(), op2Desc.GetLclOffset(), ival);
+            emit->emitIns_SIMD_R_R_S_I(ins, size, targetReg, op1Reg, op2Desc.GetVarNum(), op2Desc.GetLclOffset(), ival,
+                                       instOptions);
             break;
 
         case OperandKind::Indir:
@@ -1405,7 +1406,7 @@ void CodeGen::inst_RV_RV_TT_IV(instruction ins,
             // temporary GT_IND to generate code with.
             GenTreeIndir  indirForm;
             GenTreeIndir* indir = op2Desc.GetIndirForm(&indirForm);
-            emit->emitIns_SIMD_R_R_A_I(ins, size, targetReg, op1Reg, indir, ival);
+            emit->emitIns_SIMD_R_R_A_I(ins, size, targetReg, op1Reg, indir, ival, instOptions);
         }
         break;
 
@@ -1426,7 +1427,7 @@ void CodeGen::inst_RV_RV_TT_IV(instruction ins,
                 op1Reg = targetReg;
             }
 
-            emit->emitIns_SIMD_R_R_R_I(ins, size, targetReg, op1Reg, op2Reg, ival);
+            emit->emitIns_SIMD_R_R_R_I(ins, size, targetReg, op1Reg, op2Reg, ival, instOptions);
         }
         break;
 
