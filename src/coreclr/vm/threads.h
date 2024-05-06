@@ -4017,15 +4017,19 @@ private:
 public:
     static void StaticInitialize();
 
-#if defined(TARGET_AMD64) && defined(TARGET_WINDOWS)
+#if defined(TARGET_WINDOWS)
     static bool AreCetShadowStacksEnabled()
     {
         LIMITED_METHOD_CONTRACT;
 
+#if defined(TARGET_AMD64)
         // The SSP is null when CET shadow stacks are not enabled. On processors that don't support shadow stacks, this is a
         // no-op and the intrinsic returns 0. CET shadow stacks are enabled or disabled for all threads, so the result is the
         // same from any thread.
         return _rdsspq() != 0;
+#else
+        return false;
+#endif
     }
 #endif
 
