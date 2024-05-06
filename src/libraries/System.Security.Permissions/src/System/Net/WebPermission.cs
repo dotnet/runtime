@@ -8,7 +8,7 @@ using System.Text.RegularExpressions;
 
 namespace System.Net
 {
-#if NETCOREAPP
+#if NET
     [Obsolete(Obsoletions.CodeAccessSecurityMessage, DiagnosticId = Obsoletions.CodeAccessSecurityDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
 #endif
     public sealed class WebPermission : CodeAccessPermission, IUnrestrictedPermission

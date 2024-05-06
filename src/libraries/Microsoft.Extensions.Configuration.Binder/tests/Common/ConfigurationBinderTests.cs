@@ -1971,7 +1971,7 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
 #endif
             Assert.Equal(CultureInfo.GetCultureInfo("yo-NG"), obj.Prop17);
 
-#if NETCOREAPP
+#if NET
             data = @"{
                 ""Prop7"": 9,
                 ""Prop11"": 65500,
@@ -2146,10 +2146,10 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
             TraceSwitch ts = new(displayName: "TraceSwitch", description: "This switch is set via config.");
             ConfigurationBinder.Bind(config, "TraceSwitch", ts);
             Assert.Equal(TraceLevel.Info, ts.Level);
-#if NETCOREAPP
+#if NET
             // Value property is not publicly exposed in .NET Framework.
             Assert.Equal("Info", ts.Value);
-#endif // NETCOREAPP
+#endif // NET
         }
 #endif
 
