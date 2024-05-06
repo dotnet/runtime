@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Collections;
 using System.Collections.Immutable;
 using System.Linq;
 using System.Text;
@@ -36,26 +35,16 @@ namespace Microsoft.Interop
         public override int GetHashCode() => throw new UnreachableException();
     }
 
-    public readonly struct ContainingSyntaxContext : IEquatable<ContainingSyntaxContext>
+    public sealed record ContainingSyntaxContext(ImmutableArray<ContainingSyntax> ContainingSyntax, string? ContainingNamespace)
     {
-        public ImmutableArray<ContainingSyntax> ContainingSyntax { get; }
-        public string? ContainingNamespace { get; }
-
         public ContainingSyntaxContext(MemberDeclarationSyntax memberDeclaration)
+            : this(GetContainingTypes(memberDeclaration), GetContainingNamespace(memberDeclaration))
         {
-            ContainingSyntax = GetContainingTypes(memberDeclaration);
-            ContainingNamespace = GetContainingNamespace(memberDeclaration);
-        }
-
-        private ContainingSyntaxContext(ImmutableArray<ContainingSyntax> containingSyntax, string? containingNamespace)
-        {
-            ContainingSyntax = containingSyntax;
-            ContainingNamespace = containingNamespace;
         }
 
         public ContainingSyntaxContext AddContainingSyntax(ContainingSyntax nestedType)
         {
-            return new ContainingSyntaxContext(ContainingSyntax.Insert(0, nestedType), ContainingNamespace); // this with { ContainingSyntax = ContainingSyntax.Insert(0, nestedType) };
+            return this with { ContainingSyntax = ContainingSyntax.Insert(0, nestedType) };
         }
 
         private static ImmutableArray<ContainingSyntax> GetContainingTypes(MemberDeclarationSyntax memberDeclaration)
@@ -91,11 +80,6 @@ namespace Microsoft.Interop
             }
 
             return containingNamespace?.ToString();
-        }
-
-        public override bool Equals(object? obj)
-        {
-            return obj is ContainingSyntaxContext other && Equals(other);
         }
 
         public bool Equals(ContainingSyntaxContext other)
@@ -165,9 +149,5 @@ namespace Microsoft.Interop
             }
             return wrappedMember;
         }
-
-        public static bool operator == (ContainingSyntaxContext left, ContainingSyntaxContext right) => left.Equals(right);
-
-        public static bool operator != (ContainingSyntaxContext left, ContainingSyntaxContext right) => !(left == right);
     }
 }

@@ -15,13 +15,13 @@ namespace Microsoft.Interop
     /// <summary>
     /// Represents a method that has been determined to be a COM interface method. Only contains info immediately available from an IMethodSymbol and MethodDeclarationSyntax.
     /// </summary>
-    internal sealed class ComMethodInfo : IEquatable<ComMethodInfo>
+    internal sealed record ComMethodInfo
     {
-        public MethodDeclarationSyntax Syntax { get; }
-        public string MethodName { get; }
-        public SequenceEqualImmutableArray<AttributeInfo> Attributes { get; }
+        public MethodDeclarationSyntax Syntax { get; init; }
+        public string MethodName { get; init; }
+        public SequenceEqualImmutableArray<AttributeInfo> Attributes { get; init; }
 
-        public ComMethodInfo(
+        private ComMethodInfo(
             MethodDeclarationSyntax syntax,
             string methodName,
             SequenceEqualImmutableArray<AttributeInfo> attributes)
@@ -30,6 +30,7 @@ namespace Microsoft.Interop
             MethodName = methodName;
             Attributes = attributes;
         }
+
         /// <summary>
         /// Returns a list of tuples of ComMethodInfo, IMethodSymbol, and Diagnostic. If ComMethodInfo is null, Diagnostic will not be null, and vice versa.
         /// </summary>
@@ -136,20 +137,5 @@ namespace Microsoft.Interop
             var comMethodInfo = new ComMethodInfo(comMethodDeclaringSyntax, method.Name, attributeInfos.MoveToImmutable().ToSequenceEqual());
             return DiagnosticOr<(ComMethodInfo, IMethodSymbol)>.From((comMethodInfo, method));
         }
-        public override int GetHashCode()
-        {
-            return HashCode.Combine(Syntax, MethodName, Attributes);
-        }
-
-        public bool Equals(ComMethodInfo other)
-            => Syntax == other.Syntax
-                && MethodName == other.MethodName
-                && Attributes.SequenceEqual(other.Attributes);
-
-        public override bool Equals(object obj) => obj is ComMethodInfo other && Equals(other);
-
-        public static bool operator ==(ComMethodInfo left, ComMethodInfo right) => left.Equals(right);
-
-        public static bool operator !=(ComMethodInfo left, ComMethodInfo right) => !(left == right);
     }
 }

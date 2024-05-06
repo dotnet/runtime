@@ -10,11 +10,11 @@ using Microsoft.CodeAnalysis;
 
 namespace Microsoft.Interop
 {
-    internal sealed class ComInterfaceContext: IEquatable<ComInterfaceContext>
+    internal sealed record ComInterfaceContext
     {
-        internal ComInterfaceInfo Info { get; }
-        internal ComInterfaceContext? Base { get; }
-        internal ComInterfaceOptions Options { get; }
+        internal ComInterfaceInfo Info { get; init; }
+        internal ComInterfaceContext? Base { get; init; }
+        internal ComInterfaceOptions Options { get; init; }
 
         private ComInterfaceContext(ComInterfaceInfo info, ComInterfaceContext? @base, ComInterfaceOptions options)
         {
@@ -88,18 +88,5 @@ namespace Microsoft.Interop
                 currBase = currBase.Base;
             return currBase;
         }
-
-        public bool Equals(ComInterfaceContext other)
-            => other.Info.Equals(Info)
-                && other.Base == Base
-                && other.Options == Options;
-
-
-        public override bool Equals(object obj)
-            => obj is ComInterfaceContext other
-                && Equals(other);
-
-        public override int GetHashCode() => HashCode.Combine(Info, Base, Options);
-
     }
 }

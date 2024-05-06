@@ -337,13 +337,17 @@ namespace Microsoft.Interop
             TypeSyntax unmanagedElementType = elementMarshaller.AsNativeType(elementInfo).Syntax.GetCompatibleGenericTypeParameterSyntax();
             ManagedTypeInfo marshallerType = marshallerData.MarshallerType;
             TypeSyntax marshallerTypeSyntax = ReplacePlaceholderSyntaxWithUnmanagedTypeSyntax(marshallerType.Syntax, marshalInfo, unmanagedElementType);
-            marshallerType = marshallerType.WithName(
-                fullTypeName: marshallerTypeSyntax.ToString(),
-                diagnosticFormattedname: marshallerTypeSyntax.ToString());
+            marshallerType = marshallerType with
+            {
+                FullTypeName = marshallerTypeSyntax.ToString(),
+                DiagnosticFormattedName = marshallerTypeSyntax.ToString()
+            };
             string newNativeTypeName = ReplacePlaceholderSyntaxWithUnmanagedTypeSyntax(marshallerData.NativeType.Syntax, marshalInfo, unmanagedElementType).ToFullString();
-            ManagedTypeInfo nativeType = marshallerData.NativeType.WithName(
-                fullTypeName: newNativeTypeName,
-                diagnosticFormattedname: newNativeTypeName);
+            ManagedTypeInfo nativeType = marshallerData.NativeType with
+            {
+                FullTypeName = newNativeTypeName,
+                DiagnosticFormattedName = newNativeTypeName
+            };
 
             ICustomTypeMarshallingStrategy marshallingStrategy;
             bool elementIsBlittable = elementMarshaller is BlittableMarshaller;

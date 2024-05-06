@@ -14,8 +14,18 @@ namespace Microsoft.Interop
     /// <summary>
     /// Information about a Com interface, but not its methods.
     /// </summary>
-    internal sealed class ComInterfaceInfo
+    internal sealed record ComInterfaceInfo
     {
+        public ManagedTypeInfo Type { get; init; }
+        public string ThisInterfaceKey { get; init; }
+        public string? BaseInterfaceKey { get; init; }
+        public InterfaceDeclarationSyntax Declaration { get; init; }
+        public ContainingSyntaxContext TypeDefinitionContext { get; init; }
+        public ContainingSyntax ContainingSyntax { get; init; }
+        public Guid InterfaceId { get; init; }
+        public ComInterfaceOptions Options { get; init; }
+        public Location DiagnosticLocation { get; init; }
+
         private ComInterfaceInfo(
             ManagedTypeInfo type,
             string thisInterfaceKey,
@@ -37,15 +47,6 @@ namespace Microsoft.Interop
             Options = options;
             DiagnosticLocation = diagnosticLocation;
         }
-        public ManagedTypeInfo Type { get; }
-        public string ThisInterfaceKey { get; }
-        public string? BaseInterfaceKey { get; }
-        public InterfaceDeclarationSyntax Declaration { get; }
-        public ContainingSyntaxContext TypeDefinitionContext { get; }
-        public ContainingSyntax ContainingSyntax { get; }
-        public Guid InterfaceId { get; }
-        public ComInterfaceOptions Options { get; }
-        public Location DiagnosticLocation { get; }
 
         public static DiagnosticOrInterfaceInfo From(INamedTypeSymbol symbol, InterfaceDeclarationSyntax syntax, StubEnvironment env, CancellationToken _)
         {
@@ -279,20 +280,6 @@ namespace Microsoft.Interop
             }
             diagnostic = null;
             return true;
-        }
-
-        public override int GetHashCode()
-        {
-            // ContainingSyntax does not implement GetHashCode
-            return HashCode.Combine(Type, ThisInterfaceKey, BaseInterfaceKey, TypeDefinitionContext, InterfaceId);
-        }
-
-        public bool Equals(ComInterfaceInfo other)
-        {
-            // ContainingSyntax and ContainingSyntaxContext are not used in the hash code
-            return Type == other.Type
-                && TypeDefinitionContext == other.TypeDefinitionContext
-                && InterfaceId == other.InterfaceId;
         }
     }
 }
