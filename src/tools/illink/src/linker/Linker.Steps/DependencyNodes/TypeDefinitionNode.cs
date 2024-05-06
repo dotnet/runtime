@@ -9,7 +9,7 @@ namespace Mono.Linker.Steps
 {
 	public partial class MarkStep
 	{
-		internal sealed class TypeDefinitionNode : DependencyNodeCore<NodeFactory>
+		internal sealed class TypeDefinitionNode : DependencyNodeCore<NodeFactory>, ITracingNode
 		{
 			readonly TypeDefinition type;
 
@@ -34,7 +34,9 @@ namespace Mono.Linker.Steps
 
 			public override IEnumerable<CombinedDependencyListEntry>? GetConditionalStaticDependencies (NodeFactory context) => null;
 			public override IEnumerable<CombinedDependencyListEntry>? SearchDynamicDependencies (List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, NodeFactory context) => null;
-			protected override string GetName (NodeFactory context) => type.GetDisplayName();
+			protected override string GetName (NodeFactory context) => type.GetDisplayName ();
+			object? ITracingNode.DependencyObject => type;
+
 		}
 	}
 }

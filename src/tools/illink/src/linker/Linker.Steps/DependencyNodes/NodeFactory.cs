@@ -2,9 +2,10 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using Mono.Cecil;
+using Mono.Linker.Steps;
 
 namespace Mono.Linker.Steps
 {
@@ -13,9 +14,17 @@ namespace Mono.Linker.Steps
 		internal sealed class NodeFactory (MarkStep markStep)
 		{
 			public MarkStep MarkStep { get; } = markStep;
-			readonly NodeCache<TypeDefinition, TypeDefinitionNode> _typeNodes = new (static t => new TypeDefinitionNode(t));
+
+			public static readonly ImmutableDictionary<string, DependencyKind> StringToDependencyKindMap = Enum.GetValues<DependencyKind> ().ToImmutableDictionary (v => v.ToString ());
+			public static readonly ImmutableDictionary<DependencyKind, string> DependencyKindToStringMap = Enum.GetValues<DependencyKind> ().ToImmutableDictionary (v => v, v => v.ToString ());
+
+			readonly NodeCache<TypeDefinition, TypeDefinitionNode> _typeNodes = new (static t => new TypeDefinitionNode (t));
+
 			readonly NodeCache<MethodDefinition, MethodDefinitionNode> _methodNodes = new (static _ => throw new InvalidOperationException ("Creation of node requires more than the key."));
+
 			readonly NodeCache<TypeDefinition, TypeIsRelevantToVariantCastingNode> _typeIsRelevantToVariantCastingNodes = new (static (t) => new TypeIsRelevantToVariantCastingNode (t));
+
+			readonly NodeCache<(ITracingNode, string, object?), RootTracingNode> _rootTracingNodes = new (static (tup) => new RootTracingNode (tup.Item1, tup.Item2, tup.Item3));
 
 			internal TypeDefinitionNode GetTypeNode (TypeDefinition definition)
 			{
@@ -30,6 +39,11 @@ namespace Mono.Linker.Steps
 			internal TypeIsRelevantToVariantCastingNode GetTypeIsRelevantToVariantCastingNode (TypeDefinition type)
 			{
 				return _typeIsRelevantToVariantCastingNodes.GetOrAdd (type);
+			}
+
+			internal RootTracingNode GetRootTracingNode (ITracingNode newNode, string reason, object? depender)
+			{
+				return _rootTracingNodes.GetOrAdd ((newNode, reason, depender));
 			}
 
 			struct NodeCache<TKey, TValue> where TKey : notnull

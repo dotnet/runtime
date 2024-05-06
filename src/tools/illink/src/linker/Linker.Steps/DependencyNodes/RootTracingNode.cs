@@ -1,24 +1,28 @@
 ﻿// Copyright (c) .NET Foundation and contributors. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
 using System.Collections.Generic;
 using ILCompiler.DependencyAnalysisFramework;
-using Mono.Cecil;
 
 namespace Mono.Linker.Steps
 {
 	public partial class MarkStep
 	{
-		internal sealed class MethodDefinitionNode : DependencyNodeCore<NodeFactory>
+		/// <summary>
+		/// This node represents a dependency from an item that does not yet have a node to an item that does, in order to enable dependency tracing.
+		/// Dependencies from this node and the dependee will be traced in the dependency analyzer, and the logger will forward the dependency (depender > dependee) to the trimmer dependency tracing loggers.
+		/// </summary>
+		internal sealed class RootTracingNode : DependencyNodeCore<NodeFactory>, ITracingNode
 		{
-			readonly MethodDefinition method;
-			readonly DependencyInfo reason;
+			readonly ITracingNode _dependee;
+			readonly string _reason;
+			readonly object? _depender;
 
-			public MethodDefinitionNode (MethodDefinition method, DependencyInfo reason)
+			public RootTracingNode (ITracingNode dep, string reason, object? depender)
 			{
-				this.method = method;
-				this.reason = reason;
+				this._dependee = dep;
+				this._reason = reason;
+				this._depender = depender;
 			}
 
 			public override bool InterestingForDynamicDependencyAnalysis => false;
@@ -31,13 +35,13 @@ namespace Mono.Linker.Steps
 
 			public override IEnumerable<DependencyListEntry>? GetStaticDependencies (NodeFactory context)
 			{
-				context.MarkStep.ProcessMethod (method, reason);
-				return null;
+				return [new DependencyListEntry (_dependee, _reason)];
 			}
 
 			public override IEnumerable<CombinedDependencyListEntry>? GetConditionalStaticDependencies (NodeFactory context) => null;
 			public override IEnumerable<CombinedDependencyListEntry>? SearchDynamicDependencies (List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, NodeFactory context) => null;
-			protected override string GetName (NodeFactory context) => method.GetDisplayName();
+			protected override string GetName (NodeFactory context) => _depender?.ToString () ?? "Unknown";
+			object? ITracingNode.DependencyObject => _depender;
 		}
 	}
 }

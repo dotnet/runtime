@@ -1,6 +1,7 @@
 ﻿// Copyright (c) .NET Foundation and contributors. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System;
 using System.Collections.Generic;
 using ILCompiler.DependencyAnalysisFramework;
 using Mono.Cecil;
@@ -9,10 +10,16 @@ namespace Mono.Linker.Steps
 {
 	public partial class MarkStep
 	{
-		internal sealed class TypeIsRelevantToVariantCastingNode : DependencyNodeCore<NodeFactory>
+		internal sealed class MethodDefinitionNode : DependencyNodeCore<NodeFactory>, ITracingNode
 		{
-			TypeDefinition type;
-			public TypeIsRelevantToVariantCastingNode (TypeDefinition type) => this.type = type;
+			readonly MethodDefinition method;
+			readonly DependencyInfo reason;
+
+			public MethodDefinitionNode (MethodDefinition method, DependencyInfo reason)
+			{
+				this.method = method;
+				this.reason = reason;
+			}
 
 			public override bool InterestingForDynamicDependencyAnalysis => false;
 
@@ -24,16 +31,14 @@ namespace Mono.Linker.Steps
 
 			public override IEnumerable<DependencyListEntry>? GetStaticDependencies (NodeFactory context)
 			{
-				yield break;
+				context.MarkStep.ProcessMethod (method, reason);
+				return null;
 			}
 
 			public override IEnumerable<CombinedDependencyListEntry>? GetConditionalStaticDependencies (NodeFactory context) => null;
 			public override IEnumerable<CombinedDependencyListEntry>? SearchDynamicDependencies (List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, NodeFactory context) => null;
-			protected override string GetName (NodeFactory context) => $"{type.GetDisplayName()} is relevant to variant casting";
-			protected override void OnMarked (NodeFactory context)
-			{
-				context.MarkStep.Annotations.MarkRelevantToVariantCasting (type);
-			}
+			protected override string GetName (NodeFactory context) => method.GetDisplayName ();
+			object ITracingNode.DependencyObject => method;
 		}
 	}
 }

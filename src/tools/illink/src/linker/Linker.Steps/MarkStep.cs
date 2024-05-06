@@ -50,7 +50,6 @@ using Mono.Linker.Dataflow;
 
 namespace Mono.Linker.Steps
 {
-
 	public partial class MarkStep : IStep
 	{
 		LinkContext? _context;
@@ -76,7 +75,7 @@ namespace Mono.Linker.Steps
 		// method body scanner.
 		readonly Dictionary<MethodBody, bool> _compilerGeneratedMethodRequiresScanner;
 		private readonly NodeFactory _nodeFactory;
-		private readonly DependencyAnalyzer<NoLogStrategy<NodeFactory>, NodeFactory> _dependencyGraph;
+		private readonly DependencyAnalyzer<FullGraphLogStrategy<NodeFactory>, NodeFactory> _dependencyGraph;
 
 		MarkStepContext? _markContext;
 		MarkStepContext MarkContext {
@@ -234,7 +233,7 @@ namespace Mono.Linker.Steps
 			_entireTypesMarked = new HashSet<TypeDefinition> ();
 			_compilerGeneratedMethodRequiresScanner = new Dictionary<MethodBody, bool> ();
 			_nodeFactory = new NodeFactory (this);
-			_dependencyGraph = new DependencyAnalyzer<NoLogStrategy<NodeFactory>, NodeFactory> (_nodeFactory, null);
+			_dependencyGraph = new DependencyAnalyzer<FullGraphLogStrategy<NodeFactory>, NodeFactory> (_nodeFactory, null);
 		}
 
 		public AnnotationStore Annotations => Context.Annotations;
@@ -390,6 +389,7 @@ namespace Mono.Linker.Steps
 			_dependencyGraph.ComputeMarkedNodes ();
 
 			ProcessPendingTypeChecks ();
+			_dependencyGraph.VisitLogEdges (new EdgeVisitor (this));
 
 			bool ProcessAllPendingItems ()
 				=> ProcessPrimaryQueue () ||
@@ -1991,7 +1991,9 @@ namespace Mono.Linker.Steps
 				Debug.Assert (Annotations.IsMarked (type));
 				break;
 			default:
-				Annotations.Mark (type, reason, ScopeStack.CurrentScope.Origin);
+#pragma warning disable CS0618 // We will track the reason for the mark in the dependency graph
+				Annotations.Mark (type);
+#pragma warning restore CS0618
 				break;
 			}
 
@@ -2016,7 +2018,9 @@ namespace Mono.Linker.Steps
 			if (type.Scope is ModuleDefinition module)
 				MarkModule (module, new DependencyInfo (DependencyKind.ScopeOfType, type));
 
-			_dependencyGraph.AddRoot (_nodeFactory.GetTypeNode (type), Enum.GetName (reason.Kind));
+			var typeNode = _nodeFactory.GetTypeNode (type);
+			var rootNode = _nodeFactory.GetRootTracingNode (typeNode, NodeFactory.DependencyKindToStringMap[reason.Kind], reason.Source);
+			_dependencyGraph.AddRoot (rootNode, "Tracing Root");
 			return type;
 		}
 
@@ -3015,7 +3019,9 @@ namespace Mono.Linker.Steps
 				Debug.Assert (Annotations.IsMarked (method));
 				break;
 			default:
-				Annotations.Mark (method, reason, origin);
+#pragma warning disable CS0618 // We will track the reason for the mark in the dependency graph
+				Annotations.Mark (method);
+#pragma warning restore CS0618
 				break;
 			}
 
@@ -3035,7 +3041,10 @@ namespace Mono.Linker.Steps
 			// We will only enqueue a method to be processed if it hasn't been processed yet.
 			if (!CheckProcessed (method))
 				_completed = false;
-			_dependencyGraph.AddRoot (_nodeFactory.GetMethodDefinitionNode (method, reason), Enum.GetName (reason.Kind));
+
+			var methodNode = _nodeFactory.GetMethodDefinitionNode (method, reason);
+			var rootNode = _nodeFactory.GetRootTracingNode (methodNode, NodeFactory.DependencyKindToStringMap[reason.Kind], reason.Source);
+			_dependencyGraph.AddRoot (rootNode, Enum.GetName (reason.Kind));
 
 			return method;
 		}
