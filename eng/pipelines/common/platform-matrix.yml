@@ -269,7 +269,7 @@ jobs:
           cxxAbiLibrary: libstdc++
         ${{ insert }}: ${{ parameters.jobParameters }}
 
-- ${{ if or(containsValue(parameters.platforms, 'linux_x64_asan'), containsValue(parameters.platforms, 'CoreClrTestBuildHost'), in(parameters.platformGroup, 'all', 'gcstress')) }}:
+- ${{ if containsValue(parameters.platforms, 'linux_x64_asan') }}:
   - template: xplat-setup.yml
     parameters:
       jobTemplate: ${{ parameters.jobTemplate }}
