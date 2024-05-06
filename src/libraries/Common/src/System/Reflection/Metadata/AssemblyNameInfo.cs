@@ -1,8 +1,6 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
-
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Text;
@@ -21,10 +19,10 @@ namespace System.Reflection.Metadata
     /// It's a more lightweight, immutable version of <seealso cref="AssemblyName"/> that does not pre-allocate <seealso cref="System.Globalization.CultureInfo"/> instances.
     /// </remarks>
     [DebuggerDisplay("{FullName}")]
-#if SYSTEM_PRIVATE_CORELIB
-    internal
-#else
+#if SYSTEM_REFLECTION_METADATA
     public
+#else
+    internal
 #endif
     sealed class AssemblyNameInfo
     {
@@ -182,11 +180,7 @@ namespace System.Reflection.Metadata
         public static AssemblyNameInfo Parse(ReadOnlySpan<char> assemblyName)
             => TryParse(assemblyName, out AssemblyNameInfo? result)
                 ? result!
-#if SYSTEM_REFLECTION_METADATA || SYSTEM_PRIVATE_CORELIB
                 : throw new ArgumentException(SR.InvalidAssemblyName, nameof(assemblyName));
-#else // tools that reference this file as a link
-                : throw new ArgumentException("The given assembly name was invalid.", nameof(assemblyName));
-#endif
 
         /// <summary>
         /// Tries to parse a span of characters into an assembly name.

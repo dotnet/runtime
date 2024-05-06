@@ -140,7 +140,6 @@ public static unsafe class UnsafeAccessorsTestsGenerics
     }
 
     [Fact]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/89439", TestRuntimes.Mono)]
     public static void Verify_Generic_InheritanceMethodResolution()
     {
         string expect = "abc";
@@ -230,7 +229,6 @@ public static unsafe class UnsafeAccessorsTestsGenerics
     }
 
     [Fact]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/89439", TestRuntimes.Mono)]
     public static void Verify_Generic_CallCtor()
     {
         Console.WriteLine($"Running {nameof(Verify_Generic_CallCtor)}");
@@ -312,7 +310,6 @@ public static unsafe class UnsafeAccessorsTestsGenerics
     }
 
     [Fact]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/89439", TestRuntimes.Mono)]
     public static void Verify_Generic_GenericTypeGenericInstanceMethod()
     {
         Console.WriteLine($"Running {nameof(Verify_Generic_GenericTypeGenericInstanceMethod)}");
@@ -366,7 +363,6 @@ public static unsafe class UnsafeAccessorsTestsGenerics
     }
 
     [Fact]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/89439", TestRuntimes.Mono)]
     public static void Verify_Generic_GenericTypeGenericStaticMethod()
     {
         Console.WriteLine($"Running {nameof(Verify_Generic_GenericTypeGenericStaticMethod)}");
@@ -441,7 +437,6 @@ public static unsafe class UnsafeAccessorsTestsGenerics
     }
 
     [Fact]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/89439", TestRuntimes.Mono)]
     public static void Verify_Generic_InvalidUseUnsafeAccessor()
     {
         Console.WriteLine($"Running {nameof(Verify_Generic_InvalidUseUnsafeAccessor)}");

@@ -74,7 +74,7 @@ namespace Test.Cryptography
         // Whether or not the current platform supports RC2
         internal static readonly bool IsRC2Supported = !PlatformDetection.IsAndroid;
 
-#if NETCOREAPP
+#if NET
         internal static readonly bool IsAndroidVersionAtLeast31 = OperatingSystem.IsAndroidVersionAtLeast(31);
 #else
         internal static readonly bool IsAndroidVersionAtLeast31 = false;
