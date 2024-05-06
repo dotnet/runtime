@@ -635,9 +635,7 @@ class EMPTY_BASES_DECL CustomNotificationSHashTraits : public DefaultSHashTraits
     public:
         typedef TypeInModule element_t;
         typedef TypeInModule key_t;
-        static const bool s_supports_autoremove = true;
         static const bool s_NoThrow = false;
-        static const bool s_RemovePerEntryCleanupAction = true;
 
         static BOOL Equals(const TypeInModule &e, const TypeInModule &f)
         {
@@ -650,10 +648,6 @@ class EMPTY_BASES_DECL CustomNotificationSHashTraits : public DefaultSHashTraits
         static INT32 Hash(const TypeInModule &e)
         {
             return e.Hash();
-        }
-        static bool ShouldDelete(const TypeInModule &e)
-        {
-            return e.IsNull();
         }
         static TypeInModule Null()
         {
