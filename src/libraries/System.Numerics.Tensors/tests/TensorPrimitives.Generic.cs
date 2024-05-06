@@ -386,7 +386,12 @@ namespace System.Numerics.Tensors.Tests
             yield return Create(TensorPrimitives.Reciprocal, f => T.One / f);
             yield return Create(TensorPrimitives.ReciprocalEstimate, T.ReciprocalEstimate, T.CreateTruncating(Helpers.DefaultToleranceForEstimates));
             yield return Create(TensorPrimitives.ReciprocalSqrt, f => T.One / T.Sqrt(f));
+
+#if !SNT_NET8_TESTS
+            // Avoid running with the net8 tests due to: https://github.com/dotnet/runtime/issues/101846
             yield return Create(TensorPrimitives.ReciprocalSqrtEstimate, T.ReciprocalSqrtEstimate, T.CreateTruncating(Helpers.DefaultToleranceForEstimates));
+#endif
+
             yield return Create(TensorPrimitives.Round, T.Round);
             yield return Create(TensorPrimitives.Sin, T.Sin, trigTolerance);
             yield return Create(TensorPrimitives.Sinh, T.Sinh, Helpers.DetermineTolerance<T>(doubleTolerance: 1e-14));

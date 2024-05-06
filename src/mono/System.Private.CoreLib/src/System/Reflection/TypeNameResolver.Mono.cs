@@ -4,6 +4,7 @@
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Reflection;
+using System.Reflection.Metadata;
 using System.Runtime.CompilerServices;
 using System.Runtime.Loader;
 using System.Text;
@@ -11,7 +12,7 @@ using System.Threading;
 
 namespace System.Reflection
 {
-    internal unsafe ref partial struct TypeNameParser
+    internal unsafe ref partial struct TypeNameResolver
     {
         private Func<AssemblyName, Assembly?>? _assemblyResolver;
         private Func<Assembly?, string, bool, Type?>? _typeResolver;
@@ -39,13 +40,13 @@ namespace System.Reflection
                 return null;
             }
 
-            Metadata.TypeName? parsed = Metadata.TypeNameParser.Parse(typeName, throwOnError: throwOnError);
+            TypeName? parsed = TypeNameParser.Parse(typeName, throwOnError);
             if (parsed is null)
             {
                 return null;
             }
 
-            return new TypeNameParser()
+            return new TypeNameResolver()
             {
                 _assemblyResolver = assemblyResolver,
                 _typeResolver = typeResolver,
@@ -92,10 +93,10 @@ namespace System.Reflection
         }
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:UnrecognizedReflectionPattern",
-            Justification = "TypeNameParser.GetType is marked as RequiresUnreferencedCode.")]
+            Justification = "TypeNameResolver.GetType is marked as RequiresUnreferencedCode.")]
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-            Justification = "TypeNameParser.GetType is marked as RequiresUnreferencedCode.")]
-        private Type? GetType(string escapedTypeName, ReadOnlySpan<string> nestedTypeNames, Metadata.TypeName parsedName)
+            Justification = "TypeNameResolver.GetType is marked as RequiresUnreferencedCode.")]
+        private Type? GetType(string escapedTypeName, ReadOnlySpan<string> nestedTypeNames, TypeName parsedName)
         {
             Assembly? assembly = (parsedName.AssemblyName is not null) ? ResolveAssembly(parsedName.AssemblyName.ToAssemblyName()) : null;
 
@@ -150,7 +151,7 @@ namespace System.Reflection
                     if (_throwOnError)
                     {
                         throw new TypeLoadException(SR.Format(SR.TypeLoad_ResolveNestedType,
-                            nestedTypeNames[i], (i > 0) ? nestedTypeNames[i - 1] : escapedTypeName));
+                            nestedTypeNames[i], (i > 0) ? nestedTypeNames[i - 1] : TypeNameHelpers.Unescape(escapedTypeName)));
                     }
                     return null;
                 }

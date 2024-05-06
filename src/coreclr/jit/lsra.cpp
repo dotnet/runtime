@@ -7427,7 +7427,6 @@ void LinearScan::insertCopyOrReload(BasicBlock* block, GenTree* tree, unsigned m
     // child needs to be copied or reloaded to that reg.
     if (parent->IsCopyOrReload())
     {
-        noway_assert(parent->OperGet() == oper);
         noway_assert(tree->IsMultiRegNode());
         GenTreeCopyOrReload* copyOrReload = parent->AsCopyOrReload();
         noway_assert(copyOrReload->GetRegNumByIdx(multiRegIdx) == REG_NA);
