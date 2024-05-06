@@ -724,9 +724,9 @@ mono_mb_inflate_generic_wrapper_data (MonoGenericContext *context, gpointer *met
 	int count = 0;
 	while (p->idx != 0) {p++; count++;}
 
-	for (int i = 0; i < count; i++) {
-		int idx = inflate_info[i].idx;
-		uint16_t kind = inflate_info[i].kind;
+	for (int x = 0; x < count; x++) {
+		int idx = inflate_info[x].idx;
+		uint16_t kind = inflate_info[x].kind;
 		gpointer *pdata = &method_data[idx];
 		switch (kind) {
 		case MONO_MB_ILGEN_WRAPPER_DATA_NONE:
