@@ -186,7 +186,7 @@ namespace ILLink.RoslynAnalyzer.Tests
 		}
 
 		[Fact]
-		public Task InterpolatedStringHandlerDataFlow ()
+		public Task InterpolatedStringDataFlow ()
 		{
 			return RunTest ();
 		}
@@ -287,6 +287,12 @@ namespace ILLink.RoslynAnalyzer.Tests
 		public Task MemberTypesRelationships ()
 		{
 			return RunTest (nameof (MemberTypesRelationships));
+		}
+
+		[Fact]
+		public Task MethodOutParameterDataFlow ()
+		{
+			return RunTest ();
 		}
 
 		[Fact]

@@ -743,7 +743,7 @@ namespace Microsoft.Extensions
             public Uri Prop25 { get; set; }
             public Version Prop26 { get; set; }
             public DayOfWeek Prop27 { get; set; }
-#if NETCOREAPP
+#if NET
             public Int128 Prop7 { get; set; }
             public Half Prop11 { get; set; }
             public UInt128 Prop12 { get; set; }
