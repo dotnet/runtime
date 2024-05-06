@@ -981,7 +981,12 @@ inline regNumber genFirstRegNumFromMaskAndToggle(regMaskTP& mask)
 
     /* Convert the mask to a register number */
 
-    regNumber regNum = (regNumber)BitOperations::BitScanForward(mask.getLow());
+#ifdef TARGET_ARM64
+    regNumber regNum = (regNumber)BitScanForward(mask);
+#else
+    regNumber regNum = (regNumber)BitOperations::BitScanForward(mask);
+#endif
+
     mask ^= regNum;
 
     return regNum;
@@ -1003,7 +1008,11 @@ inline regNumber genFirstRegNumFromMask(regMaskTP mask)
 
     /* Convert the mask to a register number */
 
-    regNumber regNum = (regNumber)BitOperations::BitScanForward(mask.getLow());
+#ifdef TARGET_ARM64
+    regNumber regNum = (regNumber)BitScanForward(mask);
+#else
+    regNumber regNum = (regNumber)BitOperations::BitScanForward(mask);
+#endif
 
     return regNum;
 }
