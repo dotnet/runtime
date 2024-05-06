@@ -3015,7 +3015,7 @@ void emitter::emitInsSve_R_R_R(instruction     ins,
             {
                 assert(insScalableOptsNone(sopt));
                 assert(isLowPredicateRegister(reg2));
-                fmt = IF_SVE_AE_3A;
+                fmt = IF_SVE_AA_3A;
             }
             break;
 
