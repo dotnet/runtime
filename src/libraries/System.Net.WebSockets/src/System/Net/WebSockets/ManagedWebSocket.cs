@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
+using System.Buffers.Binary;
 using System.Diagnostics;
 using System.IO;
 using System.Net.WebSockets.Compression;
@@ -649,19 +650,13 @@ namespace System.Net.WebSockets
             else if (payload.Length <= ushort.MaxValue)
             {
                 sendBuffer[1] = 126;
-                sendBuffer[2] = (byte)(payload.Length / 256);
-                sendBuffer[3] = unchecked((byte)payload.Length);
+                BinaryPrimitives.WriteUInt16BigEndian(sendBuffer.AsSpan(2), (ushort)payload.Length);
                 maskOffset = 2 + sizeof(ushort); // additional 2 bytes for 16-bit length
             }
             else
             {
                 sendBuffer[1] = 127;
-                int length = payload.Length;
-                for (int i = 9; i >= 2; i--)
-                {
-                    sendBuffer[i] = unchecked((byte)length);
-                    length /= 256;
-                }
+                BinaryPrimitives.WriteUInt64BigEndian(sendBuffer.AsSpan(2), (ulong)payload.Length);
                 maskOffset = 2 + sizeof(ulong); // additional 8 bytes for 64-bit length
             }
 
@@ -976,7 +971,7 @@ namespace System.Net.WebSockets
                     ApplyMask(_receiveBuffer.Span.Slice(_receiveBufferOffset, (int)header.PayloadLength), header.Mask, 0);
                 }
 
-                closeStatus = (WebSocketCloseStatus)(_receiveBuffer.Span[_receiveBufferOffset] << 8 | _receiveBuffer.Span[_receiveBufferOffset + 1]);
+                closeStatus = (WebSocketCloseStatus)BinaryPrimitives.ReadUInt16BigEndian(_receiveBuffer.Span.Slice(_receiveBufferOffset));
                 if (!IsValidCloseStatus(closeStatus))
                 {
                     await CloseWithReceiveErrorAndThrowAsync(WebSocketCloseStatus.ProtocolError, WebSocketError.Faulted).ConfigureAwait(false);
@@ -1464,7 +1459,7 @@ namespace System.Net.WebSockets
         }
 
         private static int CombineMaskBytes(Span<byte> buffer, int maskOffset) =>
-            BitConverter.ToInt32(buffer.Slice(maskOffset));
+            BinaryPrimitives.ReadInt32LittleEndian(buffer.Slice(maskOffset));
 
         /// <summary>Applies a mask to a portion of a byte array.</summary>
         /// <param name="toMask">The buffer to which the mask should be applied.</param>
@@ -1495,9 +1490,7 @@ namespace System.Net.WebSockets
 
                 if (toMaskEnd - toMaskPtr >= sizeof(int))
                 {
-                    int rolledMask = BitConverter.IsLittleEndian ?
-                        (int)BitOperations.RotateRight((uint)mask, maskIndex * 8) :
-                        (int)BitOperations.RotateLeft((uint)mask, maskIndex * 8);
+                    int rolledMask = (int)BitOperations.RotateRight((uint)mask, maskIndex * 8);
 
                     // Process Vector<byte>.Count bytes at a time.
                     if (Vector.IsHardwareAccelerated && (toMaskEnd - toMaskPtr) >= Vector<byte>.Count)
