@@ -44,7 +44,7 @@ public sealed unsafe class Target
     private readonly Configuration _config;
     private readonly Reader _reader;
 
-    private readonly IReadOnlyDictionary<string, int> _contracts = new Dictionary<string, int>();
+    private readonly Dictionary<string, int> _contracts = [];
     private readonly IReadOnlyDictionary<string, (ulong Value, string? Type)> _globals = new Dictionary<string, (ulong, string?)>();
     private readonly Dictionary<DataType, TypeInfo> _knownTypes = [];
     private readonly Dictionary<string, TypeInfo> _types = [];
@@ -366,6 +366,9 @@ public sealed unsafe class Target
 
         return TryGetTypeInfo(dataType, out typeInfo);
     }
+
+    internal bool TryGetContractVersion(string contractName, out int version)
+        => _contracts.TryGetValue(contractName, out version);
 
     private sealed class Reader
     {
