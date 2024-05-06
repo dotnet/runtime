@@ -244,6 +244,7 @@ operator new(size_t n)
 
     void* result = malloc(n == 0 ? 1 : n);
     if (result == NULL) {
+        ReportOOM(size);
         ThrowOutOfMemory();
     }
     TRASH_LASTERROR;
