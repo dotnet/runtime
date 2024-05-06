@@ -1582,9 +1582,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			}
 
 			[Kept]
-			// https://github.com/dotnet/runtime/issues/93720
-			// https://github.com/dotnet/linker/issues/2755
-			[ExpectedWarning ("IL2072", Tool.Trimmer | Tool.NativeAot, "")]
+			[ExpectedWarning ("IL2072", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/93720")]
 			static void TestIsInstOf (object o)
 			{
 				if (o is Target t) {

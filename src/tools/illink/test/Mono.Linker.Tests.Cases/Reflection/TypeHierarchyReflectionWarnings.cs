@@ -703,7 +703,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 				[RequiresUnreferencedCode ("--RUCOnVirtualMethodDerivedAnnotated.Base.RUCVirtualMethod--")]
 				// Compare to the case above - the only difference is the type of the field
 				// and it causes different warnings to be produced.
-				[MissingWarning ("IL2112", "--RUCOnVirtualMethodDerivedAnnotated.Base.RUCVirtualMethod--", "https://github.com/dotnet/runtime/issues/86580")]
+				[ExpectedWarning ("IL2112", "--RUCOnVirtualMethodDerivedAnnotated.Base.RUCVirtualMethod--", Tool.None, "https://github.com/dotnet/runtime/issues/86580")]
 				public virtual void RUCVirtualMethod () { }
 			}
 

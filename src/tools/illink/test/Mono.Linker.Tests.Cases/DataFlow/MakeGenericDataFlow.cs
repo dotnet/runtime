@@ -125,7 +125,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				typeof (GenericWithPublicFieldsArgument<>).MakeGenericType (type);
 			}
 
-			[MissingWarning ("IL2071", "'T'", "https://github.com/dotnet/linker/issues/2428")]
+			[ExpectedWarning ("IL2071", "'T'", Tool.None, "https://github.com/dotnet/linker/issues/2428")]
 			[ExpectedWarning ("IL2070", "'this'")]
 			static void TestWithRequirementsFromParamWithMismatch (
 				[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] Type type)
@@ -139,7 +139,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				typeof (GenericWithPublicFieldsArgument<>).MakeGenericType (typeof (T));
 			}
 
-			[MissingWarning ("IL2091", "'T'", "https://github.com/dotnet/linker/issues/2428")]
+			[ExpectedWarning ("IL2091", "'T'", Tool.None,"https://github.com/dotnet/linker/issues/2428")]
 			[ExpectedWarning ("IL2090", "'this'")] // Note that this actually produces a warning which should not be possible to produce right now
 			static void TestWithRequirementsFromGenericParamWithMismatch<
 				[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] TInput> ()
