@@ -788,6 +788,9 @@ LinearScan::LinearScan(Compiler* theCompiler)
     regSelector = new (theCompiler, CMK_LSRA) RegisterSelection(this);
 
 #ifdef TARGET_ARM64
+    // Note: one known reason why we exclude LR is because NativeAOT has dependency on not
+    //       using LR as a GPR. See: https://github.com/dotnet/runtime/issues/101932
+    //       Once that is addressed, we may consider allowing LR in availableIntRegs.
     availableIntRegs = (RBM_ALLINT & ~(RBM_PR | RBM_FP | RBM_LR) & ~compiler->codeGen->regSet.rsMaskResvd);
 #elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     availableIntRegs = (RBM_ALLINT & ~(RBM_FP | RBM_RA) & ~compiler->codeGen->regSet.rsMaskResvd);
