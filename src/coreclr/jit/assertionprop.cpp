@@ -4297,22 +4297,20 @@ bool Compiler::optGlobalAssertionIsEqualOrNotEqualZero(ASSERT_VALARG_TP assertio
             continue;
         }
 
-        if (curAssertion->op2.vn == vnStore->VNZeroForType(op1->TypeGet()))
+        if ((curAssertion->op2.vn == vnStore->VNZeroForType(op1->TypeGet())) &&
+            (curAssertion->op1.vn == vnStore->VNConservativeNormalValue(op1->gtVNPair)))
         {
-            if (curAssertion->op1.vn == vnStore->VNConservativeNormalValue(op1->gtVNPair))
+            if (curAssertion->assertionKind == OAK_EQUAL)
             {
-                if (curAssertion->assertionKind == OAK_EQUAL)
-                {
-                    *equalsZero = true;
-                    return true;
-                }
-                if (curAssertion->assertionKind == OAK_NOT_EQUAL)
-                {
-                    *equalsZero = false;
-                    return true;
-                }
-                return false;
+                *equalsZero = true;
+                return true;
             }
+            if (curAssertion->assertionKind == OAK_NOT_EQUAL)
+            {
+                *equalsZero = false;
+                return true;
+            }
+            return false;
         }
     }
     return false;
@@ -4369,7 +4367,6 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions, Gen
     bool equalsZero = false;
     if (optGlobalAssertionIsEqualOrNotEqualZero(assertions, tree, &equalsZero))
     {
-
 #ifdef DEBUG
         if (verbose)
         {
