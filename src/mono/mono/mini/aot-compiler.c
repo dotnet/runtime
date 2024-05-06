@@ -12407,24 +12407,21 @@ emit_file_info (MonoAotCompile *acfg)
 	init_aot_file_info (acfg, info);
 
 	if (acfg->aot_opts.static_link) {
-		char prefix [MAX_SYMBOL_SIZE];
+		char symbol [MAX_SYMBOL_SIZE];
 
 		/*
 		 * Emit a global symbol which can be passed by an embedding app to
 		 * mono_aot_register_module (). The symbol points to a pointer to the file info
 		 * structure.
 		 */
-		snprintf (prefix, MAX_SYMBOL_SIZE, "%smono_aot_module_", acfg->user_symbol_prefix);
-		acfg->static_linking_symbol = mono_fixup_symbol_name (prefix, acfg->image->assembly->aname.name, "_info");
+		snprintf (symbol, MAX_SYMBOL_SIZE, "%smono_aot_module_%s", acfg->user_symbol_prefix, acfg->image->assembly->aname.name);
+		acfg->static_linking_symbol = mono_fixup_symbol_name ("", symbol, "_info");
 	}
 
 	if (acfg->llvm)
 		mono_llvm_emit_aot_file_info (info, acfg->has_jitted_code);
 	else
 		emit_aot_file_info (acfg, info);
-
-	if (acfg->static_linking_symbol != NULL)
-		g_free (acfg->static_linking_symbol);
 }
 
 static void
