@@ -10,8 +10,6 @@ using System.Collections.Immutable;
 
 using static System.Reflection.Metadata.TypeNameParserHelpers;
 
-#nullable enable
-
 namespace System.Reflection.Metadata
 {
     [DebuggerDisplay("{_inputString}")]

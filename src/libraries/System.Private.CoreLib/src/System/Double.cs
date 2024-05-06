@@ -865,9 +865,11 @@ namespace System
         public static double Lerp(double value1, double value2, double amount) => (value1 * (1.0 - amount)) + (value2 * amount);
 
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.ReciprocalEstimate(TSelf)" />
+        [Intrinsic]
         public static double ReciprocalEstimate(double x) => Math.ReciprocalEstimate(x);
 
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.ReciprocalSqrtEstimate(TSelf)" />
+        [Intrinsic]
         public static double ReciprocalSqrtEstimate(double x) => Math.ReciprocalSqrtEstimate(x);
 
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.ScaleB(TSelf, int)" />

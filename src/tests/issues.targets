@@ -2191,6 +2191,9 @@
         <ExcludeList Include = "$(XUnitTestBinBase)/JIT/Directed/Arrays/nintindexoutofrange/**">
             <Issue>https://github.com/dotnet/runtime/issues/71656</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/Swift/SwiftErrorHandling/**">
+            <Issue>Reverse P/Invokes not supported yet</Issue>
+        </ExcludeList>
         <!-- End interpreter issues -->
     </ItemGroup>
 

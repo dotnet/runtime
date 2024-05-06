@@ -555,6 +555,7 @@ int EVP_DigestSqueeze(EVP_MD_CTX *ctx, unsigned char *out, size_t outlen);
     REQUIRED_FUNCTION(SSL_CTX_new) \
     REQUIRED_FUNCTION(SSL_CTX_sess_set_new_cb) \
     REQUIRED_FUNCTION(SSL_CTX_sess_set_remove_cb) \
+    REQUIRED_FUNCTION(SSL_CTX_remove_session) \
     LIGHTUP_FUNCTION(SSL_CTX_set_alpn_protos) \
     LIGHTUP_FUNCTION(SSL_CTX_set_alpn_select_cb) \
     REQUIRED_FUNCTION(SSL_CTX_set_cipher_list) \
@@ -1083,6 +1084,7 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define SSL_CTX_new SSL_CTX_new_ptr
 #define SSL_CTX_sess_set_new_cb SSL_CTX_sess_set_new_cb_ptr
 #define SSL_CTX_sess_set_remove_cb SSL_CTX_sess_set_remove_cb_ptr
+#define SSL_CTX_remove_session SSL_CTX_remove_session_ptr
 #define SSL_CTX_set_alpn_protos SSL_CTX_set_alpn_protos_ptr
 #define SSL_CTX_set_alpn_select_cb SSL_CTX_set_alpn_select_cb_ptr
 #define SSL_CTX_set_cipher_list SSL_CTX_set_cipher_list_ptr

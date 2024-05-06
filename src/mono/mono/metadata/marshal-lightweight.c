@@ -2282,64 +2282,25 @@ emit_unsafe_accessor_field_wrapper (MonoMethodBuilder *mb, gboolean to_be_inflat
 	g_assert (kind == MONO_UNSAFE_ACCESSOR_FIELD || kind == MONO_UNSAFE_ACCESSOR_STATIC_FIELD);
 	g_assert (member_name != NULL);
 
-	MonoType *target_type = sig->params[0]; // params[0] is the field's parent
 
-	// Try to do a static lookup.
-	// if the target type is G<T>  (not just !T or !!T), we can get a field token
-	if ((accessor_method->is_generic || to_be_inflated) &&
-	    (target_type->type == MONO_TYPE_VAR || target_type->type == MONO_TYPE_MVAR)) {
-		// this is the most dynamic version.
-		//
-		// it's not actually legal for fields (although I
-		// guess it might be legal with constraints)
-		//
-		//    [UnsafeAccessor(Field, Name="_x")]
-		//    ref SomeClass GetField<U>(ref U target) where U : BaseClass;
-		//
-		// class BaseClass {
-		//   private SomeClass _x;
-	        // }
+	MonoType *target_type = sig->param_count == 1 ? sig->params[0] : NULL; // params[0] is the field's parent
 
-		// have to do an icall to get the field/method/ctor.
-		// and we need a new IL opcode mono_ldtypeof that takes a MonoClass
-		// and turns it into the runtime MonoClass that has gshared
-		// params replaced by the actual runtime instantiations.
-		//
-		// ldtypeof <klass>
-		//   should turn into:
-		// mini_emit_get_rgctx_klass (cfg, context_used, klass, MONO_RGCTX_INFO_KLASS)
-
-		// Then we can emit this:
-
-		// ldtypeof <sig->params[0]>
-		// ldconst <accessor_kind>
-		// ldstr <target_name>
-		// <for i = 1; i < sig->param_count; i++>
-		//   ldtypeof <sig->params[i]>
-		// <endfor>
-		// icall <mono_marshal_unsafe_accessor_target_icall> // may throw
-		// <if (method||ctor)>
-		//   <for i = is_static ? 1 : 0; i < sig->param_count; i++>
-		//   ldarg <i>
-		//   <endfor>
-		//   calli // FIXME: method is top of stack?
-		//   ret
-		// <else>
-		//   ret // address of fielde
-		// <endif>
-		mono_mb_emit_exception_full (mb, "System", "BadImageFormatException", "UnsafeAccessor_Generics");
-		return;
-	};
-
-	// otherwise target_type is something we can do lookups on.
-	// We can at least find the generic MonoClassField and then
-	// ldflda will handle the generic sharing.
-
-	MonoType *ret_type = sig->ret;
-	if (sig->param_count != 1 || target_type == NULL || sig->ret->type == MONO_TYPE_VOID) {
+	if (sig->param_count != 1 || target_type == NULL || sig->ret->type == MONO_TYPE_VOID || unsafe_accessor_target_type_forbidden (target_type)) {
 		mono_mb_emit_exception_full (mb, "System", "BadImageFormatException", "Invalid usage of UnsafeAccessorAttribute.");
 		return;
 	}
+
+	gboolean inflate_generic_data = FALSE;
+	if ((accessor_method->is_generic || to_be_inflated)) {
+		// We want to do a static lookup: the target type must be G<T> not just !T or !!T,
+		// so that we can get a MonoClassField at compile time
+		g_assert (target_type->type != MONO_TYPE_VAR && target_type->type != MONO_TYPE_MVAR);
+		// If the target is generic, we'll find a generic MonoClassField and then mark it to be
+		// inflated in order to handle instances, or gshared/gsharedvt instances.
+		inflate_generic_data = TRUE;
+	};
+
+	MonoType *ret_type = sig->ret;
 
 	MonoClass *target_class = mono_class_from_mono_type_internal (target_type);
 	gboolean target_byref = m_type_is_byref (target_type);
@@ -2369,7 +2330,7 @@ emit_unsafe_accessor_field_wrapper (MonoMethodBuilder *mb, gboolean to_be_inflat
 	if (kind == MONO_UNSAFE_ACCESSOR_FIELD)
 		mono_mb_emit_ldarg (mb, 0);
 	mono_mb_emit_op (mb, kind == MONO_UNSAFE_ACCESSOR_FIELD ? CEE_LDFLDA : CEE_LDSFLDA, target_field);
-	if ((accessor_method->is_generic || to_be_inflated))
+	if (inflate_generic_data)
 		mono_mb_set_wrapper_data_kind (mb, MONO_MB_ILGEN_WRAPPER_DATA_FIELD);
 	mono_mb_emit_byte (mb, CEE_RET);
 }
@@ -2419,6 +2380,8 @@ unsafe_accessor_target_type_forbidden (MonoType *target_type)
 	case MONO_TYPE_VOID:
 	case MONO_TYPE_PTR:
 	case MONO_TYPE_FNPTR:
+	case MONO_TYPE_VAR:
+	case MONO_TYPE_MVAR:
 		return TRUE;
 	default:
 		return FALSE;
@@ -2486,16 +2449,18 @@ emit_unsafe_accessor_ctor_wrapper (MonoMethodBuilder *mb, MonoMethod *accessor_m
 	}
 
 	MonoType *target_type = sig->ret; // for constructors the return type is the target type
+
 	if (target_type == NULL || m_type_is_byref (target_type) || unsafe_accessor_target_type_forbidden (target_type)) {
 		mono_mb_emit_exception_full (mb, "System", "BadImageFormatException", "Invalid usage of UnsafeAccessorAttribute.");
 		return;
 	}
-
+	
 	MonoClass *target_class = mono_class_from_mono_type_internal (target_type);
 
 	ERROR_DECL(find_method_error);
 	if (accessor_method->is_inflated) {
 		sig =  update_signature(accessor_method);
+		target_type = sig->ret;
 	}
 
 	MonoMethodSignature *member_sig = ctor_sig_from_accessor_sig (mb, sig);
@@ -2531,22 +2496,18 @@ emit_unsafe_accessor_method_wrapper (MonoMethodBuilder *mb, gboolean to_be_infla
 	// We explicitly allow calling a constructor as if it was an instance method, but we need some hacks in a couple of places
 	gboolean ctor_as_method = !strcmp (member_name, ".ctor");
 
-	if (sig->param_count < 1 || sig->params[0] == NULL || unsafe_accessor_target_type_forbidden (sig->params[0])) {
+	
+
+	MonoType *target_type = sig->param_count > 1 ? sig->params[0] : NULL;
+
+	if (sig->param_count < 1 || target_type == NULL || unsafe_accessor_target_type_forbidden (target_type)) {
 		mono_mb_emit_exception_full (mb, "System", "BadImageFormatException", "Invalid usage of UnsafeAccessorAttribute.");
 		return;
 	}
 
-	MonoType *target_type = sig->params[0];
-
-	// Try to do a static lookup.  if the target type is G<T> (not
-	// just !T or !!T), we can get a method.  TODO: if it's !T we
-	// can get some System.Object methods, too.  Also if the type
-	// parameter is constrained we can call some of the methods
-	// from the constraint.
-	if ((accessor_method->is_generic || to_be_inflated) &&
-	    (target_type->type == MONO_TYPE_VAR || target_type->type == MONO_TYPE_MVAR)) {
-		mono_mb_emit_exception_full (mb, "System", "BadImageFormatException", "UnsafeAccessor_Generics");
-		return;
+	if ((accessor_method->is_generic || to_be_inflated)) {
+		// We want to do a static lookup: target type must be G<T>, not just !T or !!T
+		g_assert (target_type->type != MONO_TYPE_VAR && target_type->type != MONO_TYPE_MVAR));
 	};
 
 	gboolean hasthis = kind == MONO_UNSAFE_ACCESSOR_METHOD;
@@ -2558,9 +2519,6 @@ emit_unsafe_accessor_method_wrapper (MonoMethodBuilder *mb, gboolean to_be_infla
 	}
 
 	ERROR_DECL(find_method_error);
-	//if (accessor_method->is_inflated) {
-	//	sig =  update_signature(accessor_method);
-	//}
 
 	MonoMethodSignature *member_sig = method_sig_from_accessor_sig (mb, hasthis, sig);
 
