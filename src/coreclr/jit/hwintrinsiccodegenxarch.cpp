@@ -246,8 +246,11 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 // We don't need to genProduceReg(node) since that will be handled by processing op2
                 // likewise, processing op2 will ensure its own registers are consumed
 
-                // Make sure we consume the registers that are getting specially handled
-                genConsumeReg(op1);
+                if (!mergeWithZero)
+                {
+                    // Make sure we consume the registers that are getting specially handled
+                    genConsumeReg(op1);
+                }
                 embMaskOp = op3;
             }
         }

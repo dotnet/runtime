@@ -12480,7 +12480,6 @@ void emitter::emitDispIns(
 
         case IF_NONE:
         {
-            assert(!IsAvx512OrPriorInstruction(id->idIns()));
 #if FEATURE_LOOP_ALIGN
             if (ins == INS_align)
             {

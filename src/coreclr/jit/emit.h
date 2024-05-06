@@ -1653,21 +1653,30 @@ protected:
         {
             assert(!idIsEvexbContextSet());
 
-            if (instOptions == INS_OPTS_EVEX_eb_er_rd)
+            switch (instOptions & INS_OPTS_EVEX_b_MASK)
             {
-                _idEvexbContext = 1;
-            }
-            else if (instOptions == INS_OPTS_EVEX_er_ru)
-            {
-                _idEvexbContext = 2;
-            }
-            else if (instOptions == INS_OPTS_EVEX_er_rz)
-            {
-                _idEvexbContext = 3;
-            }
-            else
-            {
-                unreached();
+                case INS_OPTS_EVEX_eb_er_rd:
+                {
+                    _idEvexbContext = 1;
+                    break;
+                }
+
+                case INS_OPTS_EVEX_er_ru:
+                {
+                    _idEvexbContext = 2;
+                    break;
+                }
+
+                case INS_OPTS_EVEX_er_rz:
+                {
+                    _idEvexbContext = 3;
+                    break;
+                }
+
+                default:
+                {
+                    unreached();
+                }
             }
         }
 
