@@ -98,10 +98,6 @@ ASMCONSTANTS_C_ASSERT(SIZEOF__ComPrestubMethodFrame
 ASMCONSTANTS_C_ASSERT(SIZEOF__ComMethodFrame
                     == sizeof(ComMethodFrame));
 
-#define               OFFSETOF__ComPlusCallMethodDesc__m_pComPlusCallInfo        DBG_FRE(0x38, 0x10)
-ASMCONSTANTS_C_ASSERT(OFFSETOF__ComPlusCallMethodDesc__m_pComPlusCallInfo
-                    == offsetof(ComPlusCallMethodDesc, m_pComPlusCallInfo));
-
 #define               OFFSETOF__ComPlusCallInfo__m_pILStub                       0x0
 ASMCONSTANTS_C_ASSERT(OFFSETOF__ComPlusCallInfo__m_pILStub
                       == offsetof(ComPlusCallInfo, m_pILStub));
