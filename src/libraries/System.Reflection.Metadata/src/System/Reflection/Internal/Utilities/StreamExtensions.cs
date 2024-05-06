@@ -76,7 +76,7 @@ namespace System.Reflection.Internal
             return totalBytesRead;
         }
 
-#if NETCOREAPP
+#if NET
         internal static int TryReadAll(this Stream stream, Span<byte> buffer)
 #if NET
             => stream.ReadAtLeast(buffer, buffer.Length, throwOnEndOfStream: false);

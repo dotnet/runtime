@@ -15,7 +15,7 @@ namespace Microsoft.Extensions.Logging.Console
         private const string LoglevelPadding = ": ";
         private static readonly string _messagePadding = new string(' ', GetLogLevelString(LogLevel.Information).Length + LoglevelPadding.Length);
         private static readonly string _newLineWithMessagePadding = Environment.NewLine + _messagePadding;
-#if NETCOREAPP
+#if NET
         private static bool IsAndroidOrAppleMobile => OperatingSystem.IsAndroid() ||
                                                       OperatingSystem.IsTvOS() ||
                                                       OperatingSystem.IsIOS(); // returns true on MacCatalyst
@@ -90,7 +90,7 @@ namespace Microsoft.Extensions.Logging.Console
             textWriter.Write(category);
             textWriter.Write('[');
 
-#if NETCOREAPP
+#if NET
             Span<char> span = stackalloc char[10];
             if (eventId.TryFormat(span, out int charsWritten))
                 textWriter.Write(span.Slice(0, charsWritten));

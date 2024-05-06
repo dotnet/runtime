@@ -5640,10 +5640,11 @@ HRESULT MethodContext::repAllocPgoInstrumentationBySchema(
     UINT32 countSchemaItems,
     BYTE** pInstrumentationData)
 {
-    if (repAllocPgoInstrumentationBySchemaRecorded(ftnHnd, pSchema, countSchemaItems, pInstrumentationData))
+    HRESULT result;
+    if (repAllocPgoInstrumentationBySchemaRecorded(ftnHnd, pSchema, countSchemaItems, pInstrumentationData, &result))
     {
         // Matching case: return same layout as recorded EE.
-        return S_OK;
+        return result;
     }
 
     // Do our own layout.
@@ -5676,7 +5677,8 @@ bool MethodContext::repAllocPgoInstrumentationBySchemaRecorded(
     CORINFO_METHOD_HANDLE ftnHnd,
     ICorJitInfo::PgoInstrumentationSchema* pSchema,
     UINT32 countSchemaItems,
-    BYTE** pInstrumentationData)
+    BYTE** pInstrumentationData,
+    HRESULT* result)
 {
     if (AllocPgoInstrumentationBySchema == nullptr)
         return false;
@@ -5716,6 +5718,7 @@ bool MethodContext::repAllocPgoInstrumentationBySchemaRecorded(
     // We assume JIT does not write or read from this buffer, only generate
     // code that uses it.
     *pInstrumentationData = (BYTE*)value.instrumentationDataAddress;
+    *result = value.result;
     return true;
 }
 

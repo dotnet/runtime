@@ -448,14 +448,13 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                         if (intrin.op3->isContained())
                         {
                             assert(intrin.op3->IsVectorZero());
-                            if (intrin.op1->isContained())
+                            if (intrin.op1->isContained() || intrin.op1->IsMaskAllBitsSet())
                             {
                                 // We already skip importing ConditionalSelect if op1 == trueAll, however
                                 // if we still see it here, it is because we wrapped the predicated instruction
                                 // inside ConditionalSelect.
                                 // As such, no need to move the `falseReg` to `targetReg`
                                 // because the predicated instruction will eventually set it.
-                                assert(intrin.op1->IsMaskAllBitsSet());
                             }
                             else
                             {
@@ -548,6 +547,12 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                         }
 
                         // Finally, perform the actual "predicated" operation so that `targetReg` is the first operand
+                        // and `embMaskOp2Reg` is the second operand.
+                        GetEmitter()->emitIns_R_R_R(insEmbMask, emitSize, targetReg, maskReg, embMaskOp2Reg, opt);
+                    }
+                    else
+                    {
+                        // Just perform the actual "predicated" operation so that `targetReg` is the first operand
                         // and `embMaskOp2Reg` is the second operand.
                         GetEmitter()->emitIns_R_R_R(insEmbMask, emitSize, targetReg, maskReg, embMaskOp2Reg, opt);
                     }
