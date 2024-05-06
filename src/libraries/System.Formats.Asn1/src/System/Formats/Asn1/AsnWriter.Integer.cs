@@ -281,7 +281,7 @@ namespace System.Formats.Asn1
             Debug.Assert(!tag.IsConstructed);
             WriteTag(tag);
 
-#if NETCOREAPP2_1_OR_GREATER
+#if NET
             WriteLength(value.GetByteCount());
             // WriteLength ensures the content-space
             value.TryWriteBytes(_buffer.AsSpan(_offset), out int bytesWritten, isBigEndian: true);

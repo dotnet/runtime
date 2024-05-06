@@ -20,15 +20,18 @@ namespace Microsoft.Interop
         public MethodDeclarationSyntax Syntax { get; init; }
         public string MethodName { get; init; }
         public SequenceEqualImmutableArray<AttributeInfo> Attributes { get; init; }
+        public bool IsUserDefinedShadowingMethod { get; init; }
 
         private ComMethodInfo(
             MethodDeclarationSyntax syntax,
             string methodName,
-            SequenceEqualImmutableArray<AttributeInfo> attributes)
+            SequenceEqualImmutableArray<AttributeInfo> attributes,
+            bool isUserDefinedShadowingMethod)
         {
             Syntax = syntax;
             MethodName = methodName;
             Attributes = attributes;
+            IsUserDefinedShadowingMethod = isUserDefinedShadowingMethod;
         }
 
         /// <summary>
@@ -134,7 +137,9 @@ namespace Microsoft.Interop
             {
                 attributeInfos.Add(AttributeInfo.From(attr));
             }
-            var comMethodInfo = new ComMethodInfo(comMethodDeclaringSyntax, method.Name, attributeInfos.MoveToImmutable().ToSequenceEqual());
+
+            bool shadowsBaseMethod = comMethodDeclaringSyntax.Modifiers.Any(SyntaxKind.NewKeyword);
+            var comMethodInfo = new ComMethodInfo(comMethodDeclaringSyntax, method.Name, attributeInfos.MoveToImmutable().ToSequenceEqual(), shadowsBaseMethod);
             return DiagnosticOr<(ComMethodInfo, IMethodSymbol)>.From((comMethodInfo, method));
         }
     }

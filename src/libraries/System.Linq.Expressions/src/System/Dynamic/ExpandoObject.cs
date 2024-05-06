@@ -17,7 +17,7 @@ namespace System.Dynamic
     /// <summary>
     /// Represents an object with members that can be dynamically added and removed at runtime.
     /// </summary>
-    public sealed class ExpandoObject : IDynamicMetaObjectProvider, IDictionary<string, object?>, IReadOnlyDictionary<string, object?>, INotifyPropertyChanged
+    public sealed class ExpandoObject : IDynamicMetaObjectProvider, IDictionary<string, object?>, INotifyPropertyChanged
     {
         private static readonly MethodInfo s_expandoTryGetValue =
             typeof(RuntimeOps).GetMethod(nameof(RuntimeOps.ExpandoTryGetValue))!;
@@ -618,10 +618,6 @@ namespace System.Dynamic
 
         ICollection<object?> IDictionary<string, object?>.Values => new ValueCollection(this);
 
-        IEnumerable<string> IReadOnlyDictionary<string, object?>.Keys => new KeyCollection(this);
-
-        IEnumerable<object?> IReadOnlyDictionary<string, object?>.Values => new ValueCollection(this);
-
         object? IDictionary<string, object?>.this[string key]
         {
             get
@@ -640,33 +636,12 @@ namespace System.Dynamic
             }
         }
 
-        object? IReadOnlyDictionary<string, object?>.this[string key]
-        {
-            get
-            {
-                if (!TryGetValueForKey(key, out object? value))
-                {
-                    throw System.Linq.Expressions.Error.KeyDoesNotExistInExpando(key);
-                }
-                return value;
-            }
-        }
-
         void IDictionary<string, object?>.Add(string key, object? value)
         {
             this.TryAddMember(key, value);
         }
 
         bool IDictionary<string, object?>.ContainsKey(string key)
-        {
-            ArgumentNullException.ThrowIfNull(key);
-
-            ExpandoData data = _data;
-            int index = data.Class.GetValueIndexCaseSensitive(key);
-            return index >= 0 && data[index] != Uninitialized;
-        }
-
-        bool IReadOnlyDictionary<string, object?>.ContainsKey(string key)
         {
             ArgumentNullException.ThrowIfNull(key);
 
@@ -683,11 +658,6 @@ namespace System.Dynamic
         }
 
         bool IDictionary<string, object?>.TryGetValue(string key, out object? value)
-        {
-            return TryGetValueForKey(key, out value);
-        }
-
-        bool IReadOnlyDictionary<string, object?>.TryGetValue(string key, out object? value)
         {
             return TryGetValueForKey(key, out value);
         }
