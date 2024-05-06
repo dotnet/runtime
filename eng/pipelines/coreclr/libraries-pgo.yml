@@ -37,7 +37,6 @@ extends:
                   extraHelixArguments: /maxcpucount:10
                   scenarios:
                     - defaultpgo
-                    - jitrpolayout
 
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
