@@ -11,9 +11,7 @@ namespace Internal.JitInterface
 {
     internal static class RISCV64PassStructInRegister
     {
-        private const int
-            ENREGISTERED_PARAMTYPE_MAXSIZE = 16,
-            TARGET_POINTER_SIZE = 8;
+        private const int TARGET_POINTER_SIZE = 8;
 
         private static bool HandleInlineArray(int elementTypeIndex, int nElements, Span<StructFloatFieldInfoFlags> types, ref int typeIndex)
         {
@@ -90,9 +88,6 @@ namespace Internal.JitInterface
 
         public static uint GetRISCV64PassStructInRegisterFlags(TypeDesc td)
         {
-            if (td.GetElementSize().AsInt > ENREGISTERED_PARAMTYPE_MAXSIZE)
-                return (uint)STRUCT_NO_FLOAT_FIELD;
-
             Span<StructFloatFieldInfoFlags> types = stackalloc StructFloatFieldInfoFlags[] {
                 STRUCT_NO_FLOAT_FIELD, STRUCT_NO_FLOAT_FIELD
             };

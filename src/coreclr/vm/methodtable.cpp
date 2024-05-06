@@ -3567,9 +3567,6 @@ static bool FlattenFieldTypes(TypeHandle th, StructFloatFieldInfoFlags types[2],
 
 int MethodTable::GetRiscV64PassStructInRegisterFlags(TypeHandle th)
 {
-    if (th.GetSize() > ENREGISTERED_PARAMTYPE_MAXSIZE)
-        return STRUCT_NO_FLOAT_FIELD;
-
     StructFloatFieldInfoFlags types[2] = {STRUCT_NO_FLOAT_FIELD, STRUCT_NO_FLOAT_FIELD};
     int nFields = 0;
     if (!FlattenFieldTypes(th, types, nFields) || nFields == 0)
