@@ -648,13 +648,8 @@
                       Condition="'$(TestPackages)' == 'true'" />
 
     <!-- We need to go over these disablements: https://github.com/dotnet/runtime/issues/101228 -->
-    <ProjectExclusions Condition="'$(RunNativeAotTestApps)' == 'true'" Include="$(MSBuildThisFileDirectory)\System.Linq.Queryable\tests\TrimmingTests\System.Linq.Queryable.TrimmingTests.proj" />
     <ProjectExclusions Condition="'$(RunNativeAotTestApps)' == 'true'" Include="$(MSBuildThisFileDirectory)\System.Private.Xml.Linq\tests\TrimmingTests\System.Xml.Linq.TrimmingTests.proj" />
-    <ProjectExclusions Condition="'$(RunNativeAotTestApps)' == 'true'" Include="$(MSBuildThisFileDirectory)\System.Net.Http\tests\TrimmingTests\System.Net.Http.TrimmingTests.proj" />
-    <ProjectExclusions Condition="'$(RunNativeAotTestApps)' == 'true'" Include="$(MSBuildThisFileDirectory)\System.Linq.Expressions\tests\TrimmingTests\System.Linq.Expressions.TrimmingTests.proj" />
     <ProjectExclusions Condition="'$(RunNativeAotTestApps)' == 'true'" Include="$(MSBuildThisFileDirectory)\System.Private.Xml\tests\TrimmingTests\System.Private.Xml.TrimmingTests.proj" />
-    <ProjectExclusions Condition="'$(RunNativeAotTestApps)' == 'true'" Include="$(MSBuildThisFileDirectory)\System.Runtime\tests\System.Runtime.Tests\TrimmingTests\System.Runtime.TrimmingTests.proj" />
-    <ProjectExclusions Condition="'$(RunNativeAotTestApps)' == 'true'" Include="$(MSBuildThisFileDirectory)\System.Text.Json\tests\System.Text.Json.Tests\TrimmingTests\System.Text.Json.TrimmingTests.proj" />
 
     <TrimmingTestProjects Include="$(MSBuildThisFileDirectory)*\tests\**\*.TrimmingTests.proj"
                       Exclude="@(ProjectExclusions)"

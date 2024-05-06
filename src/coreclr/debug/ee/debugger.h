@@ -3613,7 +3613,7 @@ inline void * __cdecl operator new[](size_t n, const InteropSafe&)
     return result;
 }
 
-inline void * __cdecl operator new(size_t n, const InteropSafe&, const NoThrow&) throw()
+inline void * __cdecl operator new(size_t n, const InteropSafe&, const std::nothrow_t&) noexcept
 {
     CONTRACTL
     {
@@ -3632,7 +3632,7 @@ inline void * __cdecl operator new(size_t n, const InteropSafe&, const NoThrow&)
     return result;
 }
 
-inline void * __cdecl operator new[](size_t n, const InteropSafe&, const NoThrow&) throw()
+inline void * __cdecl operator new[](size_t n, const InteropSafe&, const std::nothrow_t&) noexcept
 {
     CONTRACTL
     {
