@@ -115,7 +115,7 @@ jobs:
         value: ''
       - ${{ if ne(parameters.cxxAbiLibrary, '') }}:
         - name: CxxAbiLibraryArg
-          value: /p:TargetCxxAbiLibraryArg=${{ parameters.cxxAbiLibrary }}
+          value: /p:TargetCxxAbiLibrary=${{ parameters.cxxAbiLibrary }}
       
       - name: TargetCxxLibraryConfigurationArgs
         value: $(CxxStandardLibraryArg) $(CxxStandardLibraryStaticArg) $(CxxAbiLibraryArg)

@@ -131,7 +131,7 @@
   <PropertyGroup>
     <TargetCxxLibraryProperties Condition="'$(TargetCxxStandardLibrary)' != ''">CxxStandardLibrary=$(TargetCxxStandardLibrary)</TargetCxxLibraryProperties>
     <TargetCxxLibraryProperties Condition="'$(TargetCxxStandardLibraryStatic)' != ''">$(TargetCxxLibraryProperties);CxxStandardLibraryStatic=$(TargetCxxStandardLibraryStatic)</TargetCxxLibraryProperties>
-    <TargetCxxLibraryProperties Condition="'$(TargetCxxAbiLibrary)' != ''">$(TargetCxxLibraryProperties);CxxAbiLibrary=$(CxxAbiLibrary)</TargetCxxLibraryProperties>
+    <TargetCxxLibraryProperties Condition="'$(TargetCxxAbiLibrary)' != ''">$(TargetCxxLibraryProperties);CxxAbiLibrary=$(TargetCxxAbiLibrary)</TargetCxxLibraryProperties>
   </PropertyGroup>
 
   <ItemGroup>
