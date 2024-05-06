@@ -317,9 +317,9 @@ namespace Internal.StackTraceMetadata
 
                 isStackTraceHidden = data.IsHidden;
 
-                if (data.OwningType.IsNull(_metadataReader))
+                if (data.OwningType.IsNil)
                 {
-                    Debug.Assert(data.Name.IsNull(_metadataReader) && data.Signature.IsNull(_metadataReader));
+                    Debug.Assert(data.Name.IsNil && data.Signature.IsNil);
                     Debug.Assert(isStackTraceHidden);
                     return null;
                 }
