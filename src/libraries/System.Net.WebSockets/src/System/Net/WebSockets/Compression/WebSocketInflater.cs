@@ -3,6 +3,7 @@
 
 using System.Buffers;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 using static System.IO.Compression.ZLibNative;
 
 namespace System.Net.WebSockets.Compression
@@ -210,12 +211,12 @@ namespace System.Net.WebSockets.Compression
             }
         }
 
-        private static unsafe bool IsFinished(ZLibStreamHandle stream, out byte? remainingByte)
+        private static bool IsFinished(ZLibStreamHandle stream, out byte? remainingByte)
         {
             // There is no other way to make sure that we've consumed all data
             // but to try to inflate again with at least one byte of output buffer.
-            byte b;
-            if (Inflate(stream, new Span<byte>(&b, 1), FlushCode.SyncFlush) == 0)
+            byte b = 0;
+            if (Inflate(stream, MemoryMarshal.CreateSpan(ref b, 1), FlushCode.SyncFlush) == 0)
             {
                 remainingByte = null;
                 return true;
