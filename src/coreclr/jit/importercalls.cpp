@@ -3125,7 +3125,15 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
     // To be fixed in https://github.com/dotnet/runtime/pull/77465
     const bool tier0opts = !opts.compDbgCode && !opts.jitFlags->IsSet(JitFlags::JIT_FLAG_MIN_OPT);
 
-    if (!mustExpand && tier0opts)
+    if (tier0opts)
+    {
+        // The *Estimate APIs are allowed to differ in behavior across hardware
+        // so ensure we treat them as "betterToExpand" to get deterministic behavior
+
+        betterToExpand |= (ni == NI_System_Math_ReciprocalEstimate);
+        betterToExpand |= (ni == NI_System_Math_ReciprocalSqrtEstimate);
+    }
+    else if (!mustExpand)
     {
         switch (ni)
         {
@@ -3189,9 +3197,9 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 break;
 
             default:
-                // Unsafe.* are all small enough to prefer expansions.
+                // Various intrinsics are all small enough to prefer expansions.
+                betterToExpand |= ni >= NI_SYSTEM_MATH_START && ni <= NI_SYSTEM_MATH_END;
                 betterToExpand |= ni >= NI_SRCS_UNSAFE_START && ni <= NI_SRCS_UNSAFE_END;
-                // Same for these
                 betterToExpand |= ni >= NI_PRIMITIVE_START && ni <= NI_PRIMITIVE_END;
                 break;
         }
@@ -4143,6 +4151,13 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
             case NI_System_Math_Truncate:
             {
                 retNode = impMathIntrinsic(method, sig, callType, ni, tailCall);
+                break;
+            }
+
+            case NI_System_Math_ReciprocalEstimate:
+            case NI_System_Math_ReciprocalSqrtEstimate:
+            {
+                retNode = impEstimateIntrinsic(method, sig, callJitType, ni, tailCall);
                 break;
             }
 
@@ -7413,13 +7428,15 @@ bool Compiler::IsTargetIntrinsic(NamedIntrinsic intrinsicName)
             // instructions to directly compute round/ceiling/floor/truncate.
 
         case NI_System_Math_Abs:
+        case NI_System_Math_ReciprocalEstimate:
+        case NI_System_Math_ReciprocalSqrtEstimate:
         case NI_System_Math_Sqrt:
             return true;
 
         case NI_System_Math_Ceiling:
         case NI_System_Math_Floor:
-        case NI_System_Math_Truncate:
         case NI_System_Math_Round:
+        case NI_System_Math_Truncate:
             return compOpportunisticallyDependsOn(InstructionSet_SSE41);
 
         case NI_System_Math_FusedMultiplyAdd:
@@ -7434,11 +7451,13 @@ bool Compiler::IsTargetIntrinsic(NamedIntrinsic intrinsicName)
         case NI_System_Math_Abs:
         case NI_System_Math_Ceiling:
         case NI_System_Math_Floor:
-        case NI_System_Math_Truncate:
-        case NI_System_Math_Round:
-        case NI_System_Math_Sqrt:
         case NI_System_Math_Max:
         case NI_System_Math_Min:
+        case NI_System_Math_ReciprocalEstimate:
+        case NI_System_Math_ReciprocalSqrtEstimate:
+        case NI_System_Math_Round:
+        case NI_System_Math_Sqrt:
+        case NI_System_Math_Truncate:
             return true;
 
         case NI_System_Math_FusedMultiplyAdd:
@@ -7513,6 +7532,8 @@ bool Compiler::IsMathIntrinsic(NamedIntrinsic intrinsicName)
         case NI_System_Math_MinMagnitudeNumber:
         case NI_System_Math_MinNumber:
         case NI_System_Math_Pow:
+        case NI_System_Math_ReciprocalEstimate:
+        case NI_System_Math_ReciprocalSqrtEstimate:
         case NI_System_Math_Round:
         case NI_System_Math_Sin:
         case NI_System_Math_Sinh:
@@ -8726,6 +8747,119 @@ void Compiler::impCheckCanInline(GenTreeCall*           call,
     {
         inlineResult->NoteFatal(InlineObservation::CALLSITE_COMPILATION_ERROR);
     }
+}
+
+//------------------------------------------------------------------------
+// impEstimateIntrinsic: Imports one of the *Estimate intrinsics which are
+// explicitly allowed to differ in result based on the hardware they're running
+// against
+//
+// Arguments:
+//   method        - The handle of the method being imported
+//   callType      - The underlying type for the call
+//   intrinsicName - The intrinsic being imported
+//   tailCall      - true if the method is a tail call; otherwise false
+//
+GenTree* Compiler::impEstimateIntrinsic(CORINFO_METHOD_HANDLE method,
+                                        CORINFO_SIG_INFO*     sig,
+                                        CorInfoType           callJitType,
+                                        NamedIntrinsic        intrinsicName,
+                                        bool                  tailCall)
+{
+    var_types callType = JITtype2varType(callJitType);
+
+    assert(varTypeIsFloating(callType));
+    assert(sig->numArgs == 1);
+
+#if defined(FEATURE_HW_INTRINSICS)
+    // We use compExactlyDependsOn since these are estimate APIs where
+    // the behavior is explicitly allowed to differ across machines and
+    // we want to ensure that it gets marked as such in R2R.
+
+    var_types      simdType    = TYP_UNKNOWN;
+    NamedIntrinsic intrinsicId = NI_Illegal;
+
+    switch (intrinsicName)
+    {
+        case NI_System_Math_ReciprocalEstimate:
+        {
+#if defined(TARGET_XARCH)
+            if (compExactlyDependsOn(InstructionSet_AVX512F))
+            {
+                simdType    = TYP_SIMD16;
+                intrinsicId = NI_AVX512F_Reciprocal14Scalar;
+            }
+            else if ((callType == TYP_FLOAT) && compExactlyDependsOn(InstructionSet_SSE))
+            {
+                simdType    = TYP_SIMD16;
+                intrinsicId = NI_SSE_ReciprocalScalar;
+            }
+#elif defined(TARGET_ARM64)
+            if (compExactlyDependsOn(InstructionSet_AdvSimd_Arm64))
+            {
+                simdType    = TYP_SIMD8;
+                intrinsicId = NI_AdvSimd_Arm64_ReciprocalEstimateScalar;
+            }
+#endif // TARGET_ARM64
+            break;
+        }
+
+        case NI_System_Math_ReciprocalSqrtEstimate:
+        {
+#if defined(TARGET_XARCH)
+            if (compExactlyDependsOn(InstructionSet_AVX512F))
+            {
+                simdType    = TYP_SIMD16;
+                intrinsicId = NI_AVX512F_ReciprocalSqrt14Scalar;
+            }
+            else if ((callType == TYP_FLOAT) && compExactlyDependsOn(InstructionSet_SSE))
+            {
+                simdType    = TYP_SIMD16;
+                intrinsicId = NI_SSE_ReciprocalSqrtScalar;
+            }
+#elif defined(TARGET_ARM64)
+            if (compExactlyDependsOn(InstructionSet_AdvSimd_Arm64))
+            {
+                simdType    = TYP_SIMD8;
+                intrinsicId = NI_AdvSimd_Arm64_ReciprocalSquareRootEstimateScalar;
+            }
+#endif // TARGET_ARM64
+            break;
+        }
+
+        default:
+        {
+            unreached();
+        }
+    }
+
+    if (intrinsicId != NI_Illegal)
+    {
+        unsigned simdSize = 0;
+
+        if (simdType == TYP_SIMD8)
+        {
+            simdSize = 8;
+        }
+        else
+        {
+            assert(simdType == TYP_SIMD16);
+            simdSize = 16;
+        }
+
+        GenTree* op1 = impPopStack().val;
+
+        op1 = gtNewSimdCreateScalarUnsafeNode(simdType, op1, callJitType, simdSize);
+        op1 = gtNewSimdHWIntrinsicNode(simdType, op1, intrinsicId, callJitType, simdSize);
+
+        return gtNewSimdToScalarNode(callType, op1, callJitType, simdSize);
+    }
+#endif // FEATURE_HW_INTRINSICS
+
+    // TODO-CQ: Returning this as an intrinsic blocks inlining and is undesirable
+    // return impMathIntrinsic(method, sig, callType, intrinsicName, tailCall);
+
+    return nullptr;
 }
 
 GenTree* Compiler::impMathIntrinsic(CORINFO_METHOD_HANDLE method,
@@ -10337,7 +10471,20 @@ NamedIntrinsic Compiler::lookupPrimitiveFloatNamedIntrinsic(CORINFO_METHOD_HANDL
 
         case 'R':
         {
-            if (strcmp(methodName, "Round") == 0)
+            if (strncmp(methodName, "Reciprocal", 10) == 0)
+            {
+                methodName += 10;
+
+                if (strcmp(methodName, "Estimate") == 0)
+                {
+                    result = NI_System_Math_ReciprocalEstimate;
+                }
+                else if (strcmp(methodName, "SqrtEstimate") == 0)
+                {
+                    result = NI_System_Math_ReciprocalSqrtEstimate;
+                }
+            }
+            else if (strcmp(methodName, "Round") == 0)
             {
                 result = NI_System_Math_Round;
             }

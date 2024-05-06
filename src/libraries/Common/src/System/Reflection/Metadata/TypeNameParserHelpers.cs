@@ -7,8 +7,6 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Text;
 
-#nullable enable
-
 namespace System.Reflection.Metadata
 {
     internal static class TypeNameParserHelpers
