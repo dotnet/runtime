@@ -196,7 +196,7 @@ private:
 
 #if defined(TARGET_WINDOWS)
     static void* g_returnAddressHijackTarget;
-#endif // TARGET_WINDOWS && TARGET_AMD64
+#endif // TARGET_WINDOWS
 
     // This is true iff we're currently in the process of suspending threads.  Once the
     // threads have been suspended, this is false.  This is set via an instance of
