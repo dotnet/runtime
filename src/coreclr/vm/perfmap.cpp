@@ -9,7 +9,6 @@
 #if defined(FEATURE_PERFMAP) && !defined(DACCESS_COMPILE)
 #include <clrconfignocache.h>
 #include "perfmap.h"
-#include "perfinfo.h"
 #include "pal.h"
 
 
@@ -113,7 +112,6 @@ void PerfMap::Enable(PerfMapType type, bool sendExisting)
         while (assemblyIterator.Next(pDomainAssembly.This()))
         {
             CollectibleAssemblyHolder<Assembly *> pAssembly = pDomainAssembly->GetAssembly();
-            PerfMap::LogImageLoad(pAssembly->GetPEAssembly());
 
             // PerfMap does not log R2R methods so only proceed if we are emitting jitdumps
             if (type == PerfMapType::ALL || type == PerfMapType::JITDUMP)
@@ -204,7 +202,6 @@ PerfMap::PerfMap()
 
     // Initialize with no failures.
     m_ErrorEncountered = false;
-    m_PerfInfo = nullptr;
 }
 
 // Clean-up resources.
@@ -214,9 +211,6 @@ PerfMap::~PerfMap()
 
     delete m_FileStream;
     m_FileStream = nullptr;
-
-    delete m_PerfInfo;
-    m_PerfInfo = nullptr;
 }
 
 void PerfMap::OpenFileForPid(int pid, const char* basePath)
@@ -226,8 +220,6 @@ void PerfMap::OpenFileForPid(int pid, const char* basePath)
 
     // Open the map file for writing.
     OpenFile(fullPath);
-
-    m_PerfInfo = new PerfInfo(pid, basePath);
 }
 
 // Open the specified destination map file.
@@ -277,43 +269,6 @@ void PerfMap::WriteLine(SString& line)
             m_ErrorEncountered = true;
         }
 
-    }
-    EX_CATCH{} EX_END_CATCH(SwallowAllExceptions);
-}
-
-void PerfMap::LogImageLoad(PEAssembly * pPEAssembly)
-{
-    CrstHolder ch(&(s_csPerfMap));
-
-    if (s_enabled && s_Current != nullptr)
-    {
-        s_Current->LogImage(pPEAssembly);
-    }
-}
-
-// Log an image load to the map.
-void PerfMap::LogImage(PEAssembly * pPEAssembly)
-{
-    CONTRACTL{
-        THROWS;
-        GC_NOTRIGGER;
-        MODE_PREEMPTIVE;
-        PRECONDITION(pPEAssembly != nullptr);
-    } CONTRACTL_END;
-
-
-    if (m_FileStream == nullptr || m_ErrorEncountered)
-    {
-        // A failure occurred, do not log.
-        return;
-    }
-
-    EX_TRY
-    {
-        CHAR szSignature[GUID_STR_BUFFER_LEN];
-        GetNativeImageSignature(pPEAssembly, szSignature, ARRAY_SIZE(szSignature));
-
-        m_PerfInfo->LogImage(pPEAssembly, szSignature);
     }
     EX_CATCH{} EX_END_CATCH(SwallowAllExceptions);
 }

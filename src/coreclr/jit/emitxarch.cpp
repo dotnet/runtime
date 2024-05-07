@@ -5641,7 +5641,7 @@ void emitter::emitStoreSimd12ToLclOffset(unsigned varNum, unsigned offset, regNu
     }
     else
     {
-        regNumber tmpReg = tmpRegProvider->GetSingleTempReg();
+        regNumber tmpReg = codeGen->internalRegisters.GetSingle(tmpRegProvider);
         assert(isFloatReg(tmpReg));
 
         // Extract upper 4 bytes from data
@@ -9578,6 +9578,28 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
     /* Update the emitter's live GC ref sets */
 
+    // If the method returns a GC ref, mark EAX appropriately
+    if (retSize == EA_GCREF)
+    {
+        gcrefRegs |= RBM_EAX;
+    }
+    else if (retSize == EA_BYREF)
+    {
+        byrefRegs |= RBM_EAX;
+    }
+
+#ifdef UNIX_AMD64_ABI
+    // If is a multi-register return method is called, mark RDX appropriately (for System V AMD64).
+    if (secondRetSize == EA_GCREF)
+    {
+        gcrefRegs |= RBM_RDX;
+    }
+    else if (secondRetSize == EA_BYREF)
+    {
+        byrefRegs |= RBM_RDX;
+    }
+#endif // UNIX_AMD64_ABI
+
     VarSetOps::Assign(emitComp, emitThisGCrefVars, ptrVars);
     emitThisGCrefRegs = gcrefRegs;
     emitThisByrefRegs = byrefRegs;
@@ -9598,7 +9620,8 @@ void emitter::emitIns_Call(EmitCallType          callType,
     }
     id->idIns(ins);
 
-    id->idSetIsNoGC(emitNoGChelper(methHnd));
+    // for the purpose of GC safepointing tail-calls are not real calls
+    id->idSetIsNoGC(isJump || emitNoGChelper(methHnd));
 
     UNATIVE_OFFSET sz;
 
@@ -10102,7 +10125,7 @@ const char* emitter::emitRegName(regNumber reg, emitAttr attr, bool varName) con
                 suffix = 'd';
                 goto APPEND_SUFFIX;
             }
-            rbc        = (rbc + 1) % 2;
+            rbc ^= 1;
             rb[rbc][0] = 'e';
             rb[rbc][1] = rn[1];
             rb[rbc][2] = rn[2];
@@ -10133,7 +10156,7 @@ const char* emitter::emitRegName(regNumber reg, emitAttr attr, bool varName) con
             {
                 suffix = 'b';
             APPEND_SUFFIX:
-                rbc        = (rbc + 1) % 2;
+                rbc ^= 1;
                 rb[rbc][0] = rn[0];
                 rb[rbc][1] = rn[1];
                 if (rn[2])
@@ -10151,7 +10174,7 @@ const char* emitter::emitRegName(regNumber reg, emitAttr attr, bool varName) con
             }
             else
             {
-                rbc        = (rbc + 1) % 2;
+                rbc ^= 1;
                 rb[rbc][0] = rn[1];
                 if (reg < 4)
                 {
@@ -10168,7 +10191,7 @@ const char* emitter::emitRegName(regNumber reg, emitAttr attr, bool varName) con
 #endif // TARGET_AMD64
 
 #if defined(TARGET_X86)
-            rbc        = (rbc + 1) % 2;
+            rbc ^= 1;
             rb[rbc][0] = rn[1];
             rb[rbc][1] = 'l';
             strcpy_s(&rb[rbc][2], sizeof(rb[0]) - 2, rn + 3);
@@ -16496,9 +16519,6 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         case IF_METHOD:
         case IF_METHPTR:
         {
-            // Assume we'll be recording this call
-            recCall = true;
-
             // Get hold of the argument count and field Handle
             args = emitGetInsCDinfo(id);
 
@@ -16524,12 +16544,6 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 
             addr = (BYTE*)id->idAddr()->iiaAddr;
             assert(addr != nullptr);
-
-            // Some helpers don't get recorded in GC tables
-            if (id->idIsNoGC())
-            {
-                recCall = false;
-            }
 
             // What kind of a call do we have here?
             if (id->idInsFmt() == IF_METHPTR)
@@ -16615,6 +16629,15 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             }
 
         DONE_CALL:
+
+            // Assume we'll be recording this call
+            recCall = true;
+
+            // Some helpers don't get recorded in GC tables
+            if (id->idIsNoGC())
+            {
+                recCall = false;
+            }
 
             /* We update the variable (not register) GC info before the call as the variables cannot be
                used by the call. Killing variables before the call helps with
@@ -16987,8 +17010,6 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                         VarSetOps::AssignNoCopy(emitComp, GCvars, VarSetOps::MakeEmpty(emitComp));
                         sz = sizeof(instrDesc);
                     }
-
-                    recCall = true;
 
                     goto DONE_CALL;
 

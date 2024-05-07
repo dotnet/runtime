@@ -47,6 +47,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////
 
+using System.Buffers.Text;
 using System.Diagnostics;
 using System.Text;
 
@@ -114,7 +115,7 @@ namespace System.Globalization
                 if (_zeroes == 0 && _num > MaxFraction)
                     return false;
 
-                int totalDigitsCount = ((int)Math.Floor(Math.Log10(_num))) + 1 + _zeroes;
+                int totalDigitsCount = FormattingHelpers.CountDigits((uint)_num) + _zeroes;
 
                 if (totalDigitsCount == MaxFractionDigits)
                 {
@@ -132,7 +133,7 @@ namespace System.Globalization
                     // .000001  normalize to 10 ticks
                     // .1       normalize to 1,000,000 ticks
 
-                    _num *= (int)Pow10(MaxFractionDigits - totalDigitsCount);
+                    _num *= Pow10UpToMaxFractionDigits(MaxFractionDigits - totalDigitsCount);
                     return true;
                 }
 
@@ -143,7 +144,18 @@ namespace System.Globalization
                 // .099999999   normalize to 1,000,000 ticks
 
                 Debug.Assert(_zeroes > 0); // Already validated that in the condition _zeroes == 0 && _num > MaxFraction
-                _num = (int)Math.Round((double)_num / Pow10(totalDigitsCount - MaxFractionDigits), MidpointRounding.AwayFromZero);
+
+                if (_zeroes > MaxFractionDigits)
+                {
+                    // If there are 8 leading zeroes, it rounds to zero
+                    _num = 0;
+                    return true;
+                }
+
+                Debug.Assert(totalDigitsCount - MaxFractionDigits <= MaxFractionDigits);
+                uint power = (uint)Pow10UpToMaxFractionDigits(totalDigitsCount - MaxFractionDigits);
+                // Unsigned integer division, rounding away from zero
+                _num = (int)(((uint)_num + power / 2) / power);
                 Debug.Assert(_num < MaxFraction);
 
                 return true;
@@ -563,20 +575,21 @@ namespace System.Globalization
             }
         }
 
-        internal static long Pow10(int pow)
+        internal static int Pow10UpToMaxFractionDigits(int pow)
         {
-            return pow switch
-            {
-                0 => 1,
-                1 => 10,
-                2 => 100,
-                3 => 1000,
-                4 => 10000,
-                5 => 100000,
-                6 => 1000000,
-                7 => 10000000,
-                _ => (long)Math.Pow(10, pow),
-            };
+            ReadOnlySpan<int> powersOfTen =
+            [
+                1,
+                10,
+                100,
+                1000,
+                10000,
+                100000,
+                1000000,
+                10000000,
+            ];
+            Debug.Assert(powersOfTen.Length == MaxFractionDigits + 1);
+            return powersOfTen[pow];
         }
 
         private static bool TryTimeToTicks(bool positive, TimeSpanToken days, TimeSpanToken hours, TimeSpanToken minutes, TimeSpanToken seconds, TimeSpanToken fraction, out long result)

@@ -10678,6 +10678,63 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
             INDEBUG(node->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
             return node;
         }
+#if defined(TARGET_ARM64)
+        case NI_Sve_ConvertMaskToVector:
+        {
+            GenTree* op1 = node->Op(1);
+
+            if (!op1->OperIsHWIntrinsic(NI_Sve_ConvertVectorToMask))
+            {
+                break;
+            }
+
+            unsigned            simdBaseTypeSize = genTypeSize(node->GetSimdBaseType());
+            GenTreeHWIntrinsic* cvtOp1           = op1->AsHWIntrinsic();
+
+            if ((genTypeSize(cvtOp1->GetSimdBaseType()) != simdBaseTypeSize))
+            {
+                // We need the operand to be the same kind of mask; otherwise
+                // the bitwise operation can differ in how it performs
+                break;
+            }
+
+            GenTree* vectorNode = op1->AsHWIntrinsic()->Op(1);
+
+            DEBUG_DESTROY_NODE(op1, node);
+            INDEBUG(vectorNode->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
+
+            return vectorNode;
+        }
+
+        case NI_Sve_ConvertVectorToMask:
+        {
+            GenTree* op1 = node->Op(1);
+            GenTree* op2 = node->Op(2);
+
+            if (!op1->OperIsHWIntrinsic(NI_Sve_CreateTrueMaskAll) &&
+                !op2->OperIsHWIntrinsic(NI_Sve_ConvertMaskToVector))
+            {
+                break;
+            }
+
+            unsigned            simdBaseTypeSize = genTypeSize(node->GetSimdBaseType());
+            GenTreeHWIntrinsic* cvtOp2           = op2->AsHWIntrinsic();
+
+            if ((genTypeSize(cvtOp2->GetSimdBaseType()) != simdBaseTypeSize))
+            {
+                // We need the operand to be the same kind of mask; otherwise
+                // the bitwise operation can differ in how it performs
+                break;
+            }
+
+            GenTree* maskNode = op2->AsHWIntrinsic()->Op(1);
+
+            DEBUG_DESTROY_NODE(op2, node);
+            INDEBUG(maskNode->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
+
+            return maskNode;
+        }
+#endif
 #if defined(TARGET_XARCH)
         case NI_AVX512F_And:
         case NI_AVX512DQ_And:

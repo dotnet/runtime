@@ -5136,10 +5136,14 @@ void Compiler::impResetLeaveBlock(BasicBlock* block, unsigned jmpAddr)
         // We are unlikely to be able to repair the profile.
         // For now we don't even try.
         //
-        JITDUMP("\nimpResetLeaveBlock: Profile data could not be locally repaired. Data %s inconsisent.\n",
+        JITDUMP("\nimpResetLeaveBlock: Profile data could not be locally repaired. Data %s inconsistent.\n",
                 fgPgoConsistent ? "is now" : "was already");
-        fgPgoConsistent = false;
-        Metrics.ProfileInconsistentResetLeave++;
+
+        if (fgPgoConsistent)
+        {
+            Metrics.ProfileInconsistentResetLeave++;
+            fgPgoConsistent = false;
+        }
     }
 }
 
@@ -7371,8 +7375,12 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                             {
                                 JITDUMP("Profile data could not be locally repaired. Data %s inconsistent.\n",
                                         fgPgoConsistent ? "is now" : "was already");
-                                fgPgoConsistent = false;
-                                Metrics.ProfileInconsistentImporterBranchFold++;
+
+                                if (fgPgoConsistent)
+                                {
+                                    Metrics.ProfileInconsistentImporterBranchFold++;
+                                    fgPgoConsistent = false;
+                                }
                             }
                         }
                     }
@@ -7657,10 +7665,14 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         // We are unlikely to be able to repair the profile.
                         // For now we don't even try.
                         //
-                        JITDUMP("Profile data could not be locally repaired. Data %s inconsisent.\n",
+                        JITDUMP("Profile data could not be locally repaired. Data %s inconsistent.\n",
                                 fgPgoConsistent ? "is now" : "was already");
-                        fgPgoConsistent = false;
-                        Metrics.ProfileInconsistentImporterSwitchFold++;
+
+                        if (fgPgoConsistent)
+                        {
+                            Metrics.ProfileInconsistentImporterSwitchFold++;
+                            fgPgoConsistent = false;
+                        }
                     }
 
                     // Create a NOP node
