@@ -194,7 +194,7 @@ public:
 private:
     static CLREvent * g_pGCSuspendEvent;
 
-#if defined(TARGET_WINDOWS) && defined(TARGET_AMD64)
+#if defined(TARGET_WINDOWS)
     static void* g_returnAddressHijackTarget;
 #endif // TARGET_WINDOWS && TARGET_AMD64
 
@@ -251,7 +251,7 @@ public:
         return g_pSuspensionThread;
     }
 
-#if defined(TARGET_WINDOWS) && defined(TARGET_AMD64)
+#if defined(TARGET_WINDOWS)
     static void* GetReturnAddressHijackTarget()
     {
         return g_returnAddressHijackTarget;

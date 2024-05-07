@@ -25,7 +25,7 @@ CLREvent* ThreadSuspend::g_pGCSuspendEvent = NULL;
 
 ThreadSuspend::SUSPEND_REASON ThreadSuspend::m_suspendReason;
 
-#if defined(TARGET_WINDOWS) && defined(TARGET_AMD64)
+#if defined(TARGET_WINDOWS)
 void* ThreadSuspend::g_returnAddressHijackTarget = NULL;
 #endif
 
@@ -4747,7 +4747,7 @@ void Thread::HijackThread(ReturnKind returnKind, ExecutionState *esb)
 
     VOID *pvHijackAddr = reinterpret_cast<VOID *>(OnHijackTripThread);
 
-#if defined(TARGET_WINDOWS) && defined(TARGET_AMD64)
+#if defined(TARGET_WINDOWS)
     void* returnAddressHijackTarget = ThreadSuspend::GetReturnAddressHijackTarget();
     if (returnAddressHijackTarget != NULL)
     {
@@ -6062,9 +6062,8 @@ void ThreadSuspend::Initialize()
 #ifdef FEATURE_HIJACK
 #if defined(TARGET_UNIX)
     ::PAL_SetActivationFunction(HandleSuspensionForInterruptedThread, CheckActivationSafePoint);
-#elif defined(TARGET_WINDOWS) && defined(TARGET_AMD64)
-    // Only versions of Windows that have the special user mode APC have a correct implementation of the return address hijack handling
-    if (Thread::UseSpecialUserModeApc())
+#elif defined(TARGET_WINDOWS)
+    if (Thread::AreCetShadowStacksEnabled())
     {
         HMODULE hModNtdll = WszLoadLibrary(W("ntdll.dll"));
         if (hModNtdll != NULL)

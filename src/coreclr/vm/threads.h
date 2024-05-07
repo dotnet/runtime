@@ -4028,6 +4028,7 @@ public:
         // same from any thread.
         return _rdsspq() != 0;
 #else
+        // When implementing AreCetShadowStacksEnabled() on other architectures, review all the places where this is used.
         return false;
 #endif
     }
