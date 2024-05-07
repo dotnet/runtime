@@ -338,13 +338,37 @@ export function mono_wasm_load_bytes_into_heap (bytes: Uint8Array): VoidPtr {
 export function mono_wasm_load_bytes_into_heap_persistent (bytes: Uint8Array): VoidPtr {
     // pad sizes by 16 bytes for simd
     const desiredSize = bytes.length + 16;
-    // wasm memory page size is 64kb. allocations smaller than that are probably best
-    //  serviced by malloc
-    const memoryOffset = (desiredSize < (64 * 1024))
-        ? Module._malloc(desiredSize)
-        : Module._sbrk(desiredSize);
+    const memoryOffset = Module._sbrk(desiredSize);
     const heapBytes = new Uint8Array(localHeapViewU8().buffer, <any>memoryOffset, bytes.length);
     heapBytes.set(bytes);
+    return memoryOffset;
+}
+
+export async function mono_wasm_load_stream_into_heap_persistent (stream: ReadableStream, length: number): Promise<VoidPtr> {
+    // pad sizes by 16 bytes for simd
+    const desiredSize = length + 16;
+    const memoryOffset = Module._sbrk(desiredSize);
+    const heapBytes = new Uint8Array(localHeapViewU8().buffer, <any>memoryOffset, length);
+    let writeOffset = 0;
+    // You would hope you could use ReadableStreamBYOBReader here, but it actually detaches the
+    //  target ArrayBuffer while writing into it, so it's completely unusable for zero-copy loading
+    //  into WASM memory.
+    // mono_log_info("Decoding stream...");
+    const sink : UnderlyingSink<any> = {
+        write: async function (chunk, controller) {
+            <unknown>controller;
+            // mono_log_info(`Stream decoder got chunk: ${chunk} of type ${typeof(chunk)} with length ${chunk.length}`);
+            heapBytes.set(chunk, writeOffset);
+            writeOffset += chunk.length;
+        },
+        abort: function (reason) {
+            throw new Error(`Stream decoding aborted: ${reason}`);
+        },
+    };
+    const writer = new WritableStream(sink);
+    await stream.pipeTo(writer);
+    if (length !== writeOffset)
+        throw new Error(`Failed to decode whole response stream. Decoded ${writeOffset} of ${length} byte(s).`);
     return memoryOffset;
 }
 

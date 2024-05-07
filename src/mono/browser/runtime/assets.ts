@@ -7,15 +7,18 @@ import cwraps from "./cwraps";
 import { mono_wasm_load_icu_data } from "./icu";
 import { Module, loaderHelpers, mono_assert, runtimeHelpers } from "./globals";
 import { mono_log_info, mono_log_debug, parseSymbolMapFile } from "./logging";
-import { mono_wasm_load_bytes_into_heap_persistent } from "./memory";
+import { mono_wasm_load_bytes_into_heap_persistent, mono_wasm_load_stream_into_heap_persistent } from "./memory";
 import { endMeasure, MeasuredBlock, startMeasure } from "./profiler";
 import { AssetEntry } from "./types";
 import { VoidPtr } from "./types/emscripten";
 import { setSegmentationRulesFromJson } from "./hybrid-globalization/grapheme-segmenter";
 
 // this need to be run only after onRuntimeInitialized event, when the memory is ready
-export function instantiate_asset (asset: AssetEntry, url: string, bytes: Uint8Array): void {
-    mono_log_debug(`Loaded:${asset.name} as ${asset.behavior} size ${bytes.length} from ${url}`);
+export async function instantiate_asset (asset: AssetEntry, url: string, bytesOrStream: Uint8Array | [ReadableStream, number]) : Promise<void> {
+    const length = Array.isArray(bytesOrStream)
+        ? bytesOrStream[1]
+        : bytesOrStream.length;
+    mono_log_debug(`Loaded:${asset.name} as ${asset.behavior} size ${length} from ${url}`);
     const mark = startMeasure();
 
     const virtualName: string = typeof (asset.virtualPath) === "string"
@@ -37,7 +40,10 @@ export function instantiate_asset (asset: AssetEntry, url: string, bytes: Uint8A
         // falls through
         case "heap":
         case "icu":
-            offset = mono_wasm_load_bytes_into_heap_persistent(bytes);
+            if (Array.isArray(bytesOrStream))
+                offset = await mono_wasm_load_stream_into_heap_persistent(bytesOrStream[0], bytesOrStream[1]);
+            else
+                offset = mono_wasm_load_bytes_into_heap_persistent(bytesOrStream);
             break;
 
         case "vfs": {
@@ -62,10 +68,12 @@ export function instantiate_asset (asset: AssetEntry, url: string, bytes: Uint8A
             }
 
             mono_log_debug(`Creating file '${fileName}' in directory '${parentDirectory}'`);
+            if (Array.isArray(bytesOrStream))
+                throw new Error("Not implemented: Decode stream into vfs");
 
             Module.FS_createDataFile(
                 parentDirectory, fileName,
-                bytes, true /* canRead */, true /* canWrite */, true /* canOwn */
+                bytesOrStream, true /* canRead */, true /* canWrite */, true /* canOwn */
             );
             break;
         }
@@ -76,19 +84,19 @@ export function instantiate_asset (asset: AssetEntry, url: string, bytes: Uint8A
     if (asset.behavior === "assembly") {
         // this is reading flag inside the DLL about the existence of PDB
         // it doesn't relate to whether the .pdb file is downloaded at all
-        const hasPdb = cwraps.mono_wasm_add_assembly(virtualName, offset!, bytes.length);
+        const hasPdb = cwraps.mono_wasm_add_assembly(virtualName, offset!, length);
 
         if (!hasPdb) {
             const index = loaderHelpers._loaded_files.findIndex(element => element.file == virtualName);
             loaderHelpers._loaded_files.splice(index, 1);
         }
     } else if (asset.behavior === "pdb") {
-        cwraps.mono_wasm_add_assembly(virtualName, offset!, bytes.length);
+        cwraps.mono_wasm_add_assembly(virtualName, offset!, length);
     } else if (asset.behavior === "icu") {
         if (!mono_wasm_load_icu_data(offset!))
             Module.err(`Error loading ICU asset ${asset.name}`);
     } else if (asset.behavior === "resource") {
-        cwraps.mono_wasm_add_satellite_assembly(virtualName, asset.culture || "", offset!, bytes.length);
+        cwraps.mono_wasm_add_satellite_assembly(virtualName, asset.culture || "", offset!, length);
     }
     endMeasure(mark, MeasuredBlock.instantiateAsset, asset.name);
     ++loaderHelpers.actual_instantiated_assets_count;

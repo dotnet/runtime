@@ -284,6 +284,14 @@ export interface AssetEntry {
     buffer?: ArrayBuffer | Promise<ArrayBuffer>,
 
     /**
+     * If provided, fetch was configured to provide a stream instead of a byte array
+     *  to optimize out overhead from asking the browser to create a buffer we will
+     *  then have to copy into the heap. We will read from this stream directly into
+     *  WebAssembly memory.
+     */
+    stream?: [ReadableStream, number] | Promise<[ReadableStream, number]>,
+
+    /**
      * If provided, runtime doesn't have to import it's JavaScript modules.
      * This will not work for multi-threaded runtime.
      */
