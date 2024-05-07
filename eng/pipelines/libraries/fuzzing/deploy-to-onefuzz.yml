@@ -53,10 +53,53 @@ extends:
             publish/DotnetFuzzing.exe prepare-onefuzz deployment
           displayName: Prepare OneFuzz deployment
 
+# Temporary workaround - at the moment OneFuzz can't handle a single deployment where multiple jobs share similar assemblies/pdbs
+#       - task: onefuzz-task@0
+#         inputs:
+#           onefuzzOSes: 'Windows'
+#         env:
+#           onefuzzDropDirectory: $(fuzzerProject)/deployment
+#           SYSTEM_ACCESSTOKEN: $(System.AccessToken)
+#         displayName: Send to OneFuzz
+
+# ONEFUZZ_TASK_WORKAROUND_START
         - task: onefuzz-task@0
           inputs:
             onefuzzOSes: 'Windows'
           env:
-            onefuzzDropDirectory: $(fuzzerProject)/deployment
+            onefuzzDropDirectory: $(fuzzerProject)/deployment/HttpHeadersFuzzer
             SYSTEM_ACCESSTOKEN: $(System.AccessToken)
-          displayName: Send to OneFuzz
+          displayName: Send HttpHeadersFuzzer to OneFuzz
+
+        - task: onefuzz-task@0
+          inputs:
+            onefuzzOSes: 'Windows'
+          env:
+            onefuzzDropDirectory: $(fuzzerProject)/deployment/JsonSerializerFuzzer
+            SYSTEM_ACCESSTOKEN: $(System.AccessToken)
+          displayName: Send JsonSerializerFuzzer to OneFuzz
+
+        - task: onefuzz-task@0
+          inputs:
+            onefuzzOSes: 'Windows'
+          env:
+            onefuzzDropDirectory: $(fuzzerProject)/deployment/SearchValuesByteCharFuzzer
+            SYSTEM_ACCESSTOKEN: $(System.AccessToken)
+          displayName: Send SearchValuesByteCharFuzzer to OneFuzz
+
+        - task: onefuzz-task@0
+          inputs:
+            onefuzzOSes: 'Windows'
+          env:
+            onefuzzDropDirectory: $(fuzzerProject)/deployment/SearchValuesStringFuzzer
+            SYSTEM_ACCESSTOKEN: $(System.AccessToken)
+          displayName: Send SearchValuesStringFuzzer to OneFuzz
+
+        - task: onefuzz-task@0
+          inputs:
+            onefuzzOSes: 'Windows'
+          env:
+            onefuzzDropDirectory: $(fuzzerProject)/deployment/UTF8Fuzzer
+            SYSTEM_ACCESSTOKEN: $(System.AccessToken)
+          displayName: Send UTF8Fuzzer to OneFuzz
+# ONEFUZZ_TASK_WORKAROUND_END

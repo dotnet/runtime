@@ -137,6 +137,8 @@ public static class Program
             Console.WriteLine("Generating local-run.bat");
             File.WriteAllText(Path.Combine(fuzzerDirectory, "local-run.bat"), GenerateLocalRunHelperScript(fuzzer));
         }
+
+        WorkaroundOneFuzzTaskNotAcceptingMultipleJobs(fuzzers);
     }
 
     private static IEnumerable<(string Assembly, string? Prefixes)> GetInstrumentationTargets(IFuzzer fuzzer)
@@ -327,5 +329,45 @@ public static class Program
         script += " %*";
 
         return script;
+    }
+
+    private static void WorkaroundOneFuzzTaskNotAcceptingMultipleJobs(IFuzzer[] fuzzers)
+    {
+        string yamlPath = Environment.CurrentDirectory;
+        while (!File.Exists(Path.Combine(yamlPath, "DotnetFuzzing.sln")))
+        {
+            yamlPath = Path.GetDirectoryName(yamlPath) ?? throw new Exception("Couldn't find DotnetFuzzing.sln");
+        }
+
+        yamlPath = Path.Combine(yamlPath, "../../../eng/pipelines/libraries/fuzzing/deploy-to-onefuzz.yml");
+
+        string yaml = File.ReadAllText(yamlPath);
+
+        // At the moment OneFuzz can't handle a single deployment where multiple jobs share similar assemblies/pdbs.
+        // Generate a separate step for each fuzzer instead as a workaround.
+        string tasks = string.Join("\n\n", fuzzers.Select(fuzzer =>
+        {
+            return
+                $$"""
+                        - task: onefuzz-task@0
+                          inputs:
+                            onefuzzOSes: 'Windows'
+                          env:
+                            onefuzzDropDirectory: $(fuzzerProject)/deployment/{{fuzzer.Name}}
+                            SYSTEM_ACCESSTOKEN: $(System.AccessToken)
+                          displayName: Send {{fuzzer.Name}} to OneFuzz
+                """;
+        }));
+
+        const string StartMarker = "# ONEFUZZ_TASK_WORKAROUND_START";
+        const string EndMarker = "# ONEFUZZ_TASK_WORKAROUND_END";
+
+        int start = yaml.IndexOf(StartMarker, StringComparison.Ordinal) + StartMarker.Length;
+        int end = yaml.IndexOf(EndMarker, start, StringComparison.Ordinal);
+
+        yaml = string.Concat(yaml.AsSpan(0, start), $"\n{tasks}\n", yaml.AsSpan(end));
+        yaml = yaml.ReplaceLineEndings("\r\n");
+
+        File.WriteAllText(yamlPath, yaml);
     }
 }
