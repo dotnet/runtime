@@ -210,6 +210,7 @@ LOCAL_LABEL(LNullThis):
 
         NESTED_END ThePreStub, _TEXT
 
+#ifdef HAS_COMPACT_ENTRYPOINTS
 // ------------------------------------------------------------------
         NESTED_ENTRY ThePreStubCompactARM, _TEXT, NoHandler
 
@@ -228,6 +229,8 @@ LOCAL_LABEL(LNullThis):
         b           C_FUNC(ThePreStub)
 
         NESTED_END ThePreStubCompactARM, _TEXT
+#endif
+
 // ------------------------------------------------------------------
 // This method does nothing. It's just a fixed function for the debugger to put a breakpoint on.
         LEAF_ENTRY ThePreStubPatch, _TEXT

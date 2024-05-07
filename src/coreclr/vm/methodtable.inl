@@ -427,7 +427,7 @@ inline MethodDesc* MethodTable::GetMethodDescForSlot_NoThrow(DWORD slot)
 
     PCODE pCode = GetRestoredSlotIfExists(slot);
 
-    if (pCode == NULL)
+    if (pCode == (PCODE)NULL)
     {
         // This code path should only be hit for methods which have not been overriden
         MethodTable *pMTToSearchForMethodDesc = this->GetCanonicalMethodTable();
