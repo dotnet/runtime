@@ -1195,6 +1195,7 @@ void LoaderAllocator::Init(BaseDomain *pDomain, BYTE *pExecutableHeapMemory)
     }
     else
     {
+        _ASSERTE(m_pHighFrequencyHeap != NULL);
         m_pStaticsHeap = m_pHighFrequencyHeap;
     }
 
@@ -2263,67 +2264,67 @@ void LoaderAllocator::AllocateBytesForStaticVariables(DynamicStaticsInfo* pStati
     }
     CONTRACTL_END;
 
-    if (cbMem > 0)
+    if (cbMem == 0)
+        return;
+
+    if (IsCollectible())
     {
-        if (IsCollectible())
+        GCX_COOP();
+        uint32_t doubleSlots = AlignUp(cbMem, sizeof(double)) / sizeof(double);
+        BASEARRAYREF ptrArray = (BASEARRAYREF)AllocatePrimitiveArray(ELEMENT_TYPE_R8, doubleSlots);
+        GCPROTECT_BEGIN(ptrArray);
+        // Keep this allocation alive till the LoaderAllocator is collected
+        AllocateHandle(ptrArray);
+        CrstHolder cs(&m_crstLoaderAllocator);
         {
-            GCX_COOP();
-            uint32_t doubleSlots = AlignUp(cbMem, sizeof(double)) / sizeof(double);
-            BASEARRAYREF ptrArray = (BASEARRAYREF)AllocatePrimitiveArray(ELEMENT_TYPE_R8, doubleSlots);
-            GCPROTECT_BEGIN(ptrArray);
-            // Keep this allocation alive till the LoaderAllocator is collected
-            AllocateHandle(ptrArray);
-            CrstHolder cs(&m_crstLoaderAllocator);
+            if (pStaticsInfo->GetNonGCStaticsPointer() == NULL)
             {
-                if (pStaticsInfo->GetNonGCStaticsPointer() == NULL)
-                {
-                    GCX_FORBID();
-                    // Allocating a weak interior handle is a tricky thing.
-                    // 1. If there are multiple weak interior handles that point at a given interior pointer location, there will be heap corruption
-                    // 2. If the interior handle is created, but not registered for cleanup, it is a memory leak
-                    // 3. Since the weak interior handle doesn't actually keep the object alive, it needs to be kept alive by some other means
-                    //
-                    // We work around these details by the following means
-                    // 1. We use a LOADERHANDLE to keep the object alive until the LoaderAllocator is freed.
-                    // 2. We hold the crstLoaderAllocatorLock, and double check to wnsure that the data is ready to be filled in
-                    // 3. We create the weak interior handle, and register it for cleanup (which can fail with an OOM) before updating the statics data to have the pointer
-                    // 4. Registration for cleanup cannot trigger a GC
-                    // 5. We then unconditionally set the statics pointer.
-                    WeakInteriorHandleHolder weakHandleHolder = GetAppDomain()->CreateWeakInteriorHandle(ptrArray, &pStaticsInfo->m_pNonGCStatics);
-                    RegisterHandleForCleanupLocked(weakHandleHolder.GetValue());
-                    weakHandleHolder.SuppressRelease();
-                    bool didUpdateStaticsPointer = pStaticsInfo->InterlockedUpdateStaticsPointer(/* isGCPointer */false, (TADDR)ptrArray->GetDataPtr());
-                    _ASSERTE(didUpdateStaticsPointer);
-                }
+                GCX_FORBID();
+                // Allocating a weak interior handle is a tricky thing.
+                // 1. If there are multiple weak interior handles that point at a given interior pointer location, there will be heap corruption
+                // 2. If the interior handle is created, but not registered for cleanup, it is a memory leak
+                // 3. Since the weak interior handle doesn't actually keep the object alive, it needs to be kept alive by some other means
+                //
+                // We work around these details by the following means
+                // 1. We use a LOADERHANDLE to keep the object alive until the LoaderAllocator is freed.
+                // 2. We hold the crstLoaderAllocatorLock, and double check to wnsure that the data is ready to be filled in
+                // 3. We create the weak interior handle, and register it for cleanup (which can fail with an OOM) before updating the statics data to have the pointer
+                // 4. Registration for cleanup cannot trigger a GC
+                // 5. We then unconditionally set the statics pointer.
+                WeakInteriorHandleHolder weakHandleHolder = GetAppDomain()->CreateWeakInteriorHandle(ptrArray, &pStaticsInfo->m_pNonGCStatics);
+                RegisterHandleForCleanupLocked(weakHandleHolder.GetValue());
+                weakHandleHolder.SuppressRelease();
+                bool didUpdateStaticsPointer = pStaticsInfo->InterlockedUpdateStaticsPointer(/* isGCPointer */false, (TADDR)ptrArray->GetDataPtr());
+                _ASSERTE(didUpdateStaticsPointer);
             }
-            GCPROTECT_END();
+        }
+        GCPROTECT_END();
+    }
+    else
+    {
+        uint32_t initialcbMem = cbMem;
+        if (initialcbMem >= 8)
+        {
+            cbMem = ALIGN_UP(cbMem, sizeof(double));
+#ifndef TARGET_64BIT
+            cbMem += 4; // We need to align the memory to 8 bytes so that static doubles, and static int64's work
+                        // and this allocator doesn't guarantee 8 byte alignment, so allocate 4 bytes extra, and alignup.
+                        // Technically this isn't necessary on X86, but it's simpler to do it unconditionally.
+#endif
         }
         else
         {
-            uint32_t initialcbMem = cbMem;
-            if (initialcbMem >= 8)
-            {
-                cbMem = ALIGN_UP(cbMem, sizeof(double));
-#ifndef TARGET_64BIT
-                cbMem += 4; // We need to align the memory to 8 bytes so that static doubles, and static int64's work
-                            // and this allocator doesn't guarantee 8 byte alignment, so allocate 4 bytes extra, and alignup.
-                            // Technically this isn't necessary on X86, but it's simpler to do it unconditionally.
-#endif
-            }
-            else
-            {
-                // Always allocate in multiples of pointer size
-                cbMem = ALIGN_UP(cbMem, sizeof(TADDR));
-            }
-            uint8_t* pbMem = (uint8_t*)(void*)GetStaticsHeap()->AllocMem(S_SIZE_T(cbMem));
-#ifndef TARGET_64BIT // Second part of alignment work
-            if (initialcbMem >= 8)
-            {
-                pbMem = (uint8_t*)ALIGN_UP(pbMem, 8);
-            }
-#endif
-            pStaticsInfo->InterlockedUpdateStaticsPointer(/* isGCPointer */false, (TADDR)pbMem);
+            // Always allocate in multiples of pointer size
+            cbMem = ALIGN_UP(cbMem, sizeof(TADDR));
         }
+        uint8_t* pbMem = (uint8_t*)(void*)GetStaticsHeap()->AllocMem(S_SIZE_T(cbMem));
+#ifndef TARGET_64BIT // Second part of alignment work
+        if (initialcbMem >= 8)
+        {
+            pbMem = (uint8_t*)ALIGN_UP(pbMem, 8);
+        }
+#endif
+        pStaticsInfo->InterlockedUpdateStaticsPointer(/* isGCPointer */false, (TADDR)pbMem);
     }
 }
 
@@ -2337,51 +2338,51 @@ void LoaderAllocator::AllocateGCHandlesBytesForStaticVariables(DynamicStaticsInf
     }
     CONTRACTL_END;
 
-    if (cSlots > 0)
+    if (cSlots == 0)
+        return;
+
+    if (IsCollectible())
     {
-        if (IsCollectible())
+        GCX_COOP();
+        BASEARRAYREF ptrArray = (BASEARRAYREF)AllocateObjectArray(cSlots, g_pObjectClass, /* bAllocateInPinnedHeap = */FALSE);
+        GCPROTECT_BEGIN(ptrArray);
+        if (pMTToFillWithStaticBoxes != NULL)
         {
-            GCX_COOP();
-            BASEARRAYREF ptrArray = (BASEARRAYREF)AllocateObjectArray(cSlots, g_pObjectClass, /* bAllocateInPinnedHeap = */FALSE);
-            GCPROTECT_BEGIN(ptrArray);
-            if (pMTToFillWithStaticBoxes != NULL)
-            {
-                OBJECTREF* pArray = (OBJECTREF*)ptrArray->GetDataPtr();
-                GCPROTECT_BEGININTERIOR(pArray);
-                pMTToFillWithStaticBoxes->AllocateRegularStaticBoxes(&pArray);
-                GCPROTECT_END();
-            }
-            // Keep this allocation alive till the LoaderAllocator is collected
-            AllocateHandle(ptrArray);
-            CrstHolder cs(&m_crstLoaderAllocator);
-            {
-                if (pStaticsInfo->GetGCStaticsPointer() == NULL)
-                {
-                    GCX_FORBID();
-                    // Allocating a weak interior handle is a tricky thing.
-                    // 1. If there are multiple weak interior handles that point at a given interior pointer location, there will be heap corruption
-                    // 2. If the interior handle is created, but not registered for cleanup, it is a memory leak
-                    // 3. Since the weak interior handle doesn't actually keep the object alive, it needs to be kept alive by some other means
-                    //
-                    // We work around these details by the following means
-                    // 1. We use a LOADERHANDLE to keep the object alive until the LoaderAllocator is freed.
-                    // 2. We hold the crstLoaderAllocatorLock, and double check to wnsure that the data is ready to be filled in
-                    // 3. We create the weak interior handle, and register it for cleanup (which can fail with an OOM) before updating the statics data to have the pointer
-                    // 4. Registration for cleanup cannot trigger a GC
-                    // 5. We then unconditionally set the statics pointer.
-                    WeakInteriorHandleHolder weakHandleHolder = GetAppDomain()->CreateWeakInteriorHandle(ptrArray, &pStaticsInfo->m_pGCStatics);
-                    RegisterHandleForCleanupLocked(weakHandleHolder.GetValue());
-                    weakHandleHolder.SuppressRelease();
-                    bool didUpdateStaticsPointer = pStaticsInfo->InterlockedUpdateStaticsPointer(/* isGCPointer */true, (TADDR)ptrArray->GetDataPtr());
-                    _ASSERTE(didUpdateStaticsPointer);
-                }
-            }
+            OBJECTREF* pArray = (OBJECTREF*)ptrArray->GetDataPtr();
+            GCPROTECT_BEGININTERIOR(pArray);
+            pMTToFillWithStaticBoxes->AllocateRegularStaticBoxes(&pArray);
             GCPROTECT_END();
         }
-        else
+        // Keep this allocation alive till the LoaderAllocator is collected
+        AllocateHandle(ptrArray);
+        CrstHolder cs(&m_crstLoaderAllocator);
         {
-            GetDomain()->AllocateObjRefPtrsInLargeTable(cSlots, pStaticsInfo, pMTToFillWithStaticBoxes);
+            if (pStaticsInfo->GetGCStaticsPointer() == NULL)
+            {
+                GCX_FORBID();
+                // Allocating a weak interior handle is a tricky thing.
+                // 1. If there are multiple weak interior handles that point at a given interior pointer location, there will be heap corruption
+                // 2. If the interior handle is created, but not registered for cleanup, it is a memory leak
+                // 3. Since the weak interior handle doesn't actually keep the object alive, it needs to be kept alive by some other means
+                //
+                // We work around these details by the following means
+                // 1. We use a LOADERHANDLE to keep the object alive until the LoaderAllocator is freed.
+                // 2. We hold the crstLoaderAllocatorLock, and double check to wnsure that the data is ready to be filled in
+                // 3. We create the weak interior handle, and register it for cleanup (which can fail with an OOM) before updating the statics data to have the pointer
+                // 4. Registration for cleanup cannot trigger a GC
+                // 5. We then unconditionally set the statics pointer.
+                WeakInteriorHandleHolder weakHandleHolder = GetAppDomain()->CreateWeakInteriorHandle(ptrArray, &pStaticsInfo->m_pGCStatics);
+                RegisterHandleForCleanupLocked(weakHandleHolder.GetValue());
+                weakHandleHolder.SuppressRelease();
+                bool didUpdateStaticsPointer = pStaticsInfo->InterlockedUpdateStaticsPointer(/* isGCPointer */true, (TADDR)ptrArray->GetDataPtr());
+                _ASSERTE(didUpdateStaticsPointer);
+            }
         }
+        GCPROTECT_END();
+    }
+    else
+    {
+        GetDomain()->AllocateObjRefPtrsInLargeTable(cSlots, pStaticsInfo, pMTToFillWithStaticBoxes);
     }
 }
 #endif // !DACCESS_COMPILE

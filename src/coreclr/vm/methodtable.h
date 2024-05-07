@@ -329,7 +329,7 @@ struct MethodTableAuxiliaryData
 
         enum_flag_Initialized             = 0x0001,
         enum_flag_HasCheckedCanCompareBitsOrUseFastGetHashCode   = 0x0002,  // Whether we have checked the overridden Equals or GetHashCode
-        enum_flag_CanCompareBitsOrUseFastGetHashCode       = 0x0004,     // Is any field type or sub field type overrode Equals or GetHashCode
+        enum_flag_CanCompareBitsOrUseFastGetHashCode       = 0x0004,     // Is any field type or sub field type overridden Equals or GetHashCode
 
         enum_flag_HasApproxParent           = 0x0010,
         // enum_unused                      = 0x0020,
@@ -376,6 +376,10 @@ struct MethodTableAuxiliaryData
     DWORD m_dwPadding;               // Just to keep the size a multiple of 8
 #endif
 
+    // These pointers make it easier to examine the various statics structures in the debugger
+    PTR_DynamicStaticsInfo m_debugOnlyDynamicStatics;
+    PTR_GenericsStaticsInfo m_debugOnlyGenericStatics;
+    PTR_ThreadStaticsInfo m_debugOnlyThreadStatics;
 #endif
 
 public:
@@ -525,9 +529,8 @@ public:
     }
 };  // struct MethodTableAuxiliaryData
 
-// Any Generic MethodTable which has static variables has this structure. Note that it ends
-// with a DynamicStatics structure so that lookups for just DynamicStatics will find that structure
-// when looking for statics pointers
+// All MethodTables which have static variables will have one of these. It contains the pointers necessary to
+// find the normal (non-thread) static variables of the type.
 struct DynamicStaticsInfo
 {
 private:
@@ -607,6 +610,11 @@ public:
     return dac_cast<PTR_DynamicStaticsInfo>(dac_cast<TADDR>(pAuxiliaryData) - sizeof(DynamicStaticsInfo));
 }
 
+// Any Generic MethodTable which has static variables has this structure. Note that it ends
+// with a DynamicStatics structure so that lookups for just DynamicStatics will find that structure
+// when looking for statics pointers
+// In addition, for simplicity in access, all MethodTables which have a ThreadStaticsInfo have this structure
+// but it is unitialized and should not be used if the type is not generic
 struct GenericsStaticsInfo
 {
     // Pointer to field descs for statics
@@ -2432,7 +2440,12 @@ public:
     inline PTR_BYTE GetGCThreadStaticsBasePointer();
 #endif //!DACCESS_COMPILE
 
-    // Do not use except in DAC and profiler scenarios
+    // Do not use except in DAC and profiler scenarios.
+    // These apis are difficult to use correctly. Users must
+    // 1. Be aware that a GC may make the address returned invalid
+    // 2. Be aware that a thread shutdown may make the address returned invalid
+    // 3. Be aware that a collectible assembly could be collected, thus rendering the address returned invalid
+    // This is particularly relevant as a problem for profiler developers, but they are given the tools (such as GC events) to be notified of situations where these invariants may not hold
     inline PTR_BYTE GetNonGCThreadStaticsBasePointer(PTR_Thread pThread);
     inline PTR_BYTE GetGCThreadStaticsBasePointer(PTR_Thread pThread);
 

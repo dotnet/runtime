@@ -670,16 +670,31 @@ void MethodTable::AllocateAuxiliaryData(LoaderAllocator *pAllocator, Module *pLo
     pMTAuxiliaryData = (MethodTableAuxiliaryData *)(pAuxiliaryDataRegion + prependedAllocationSpace);
 
     pMTAuxiliaryData->SetLoaderModule(pLoaderModule);
+
+    // NOTE: There is a - sign here making it so that the offset points to BEFORE the MethodTableAuxiliaryData
     pMTAuxiliaryData->SetOffsetToNonVirtualSlots(-sizeofStaticsStructure);
+
     m_pAuxiliaryData = pMTAuxiliaryData;
 
     if (HasFlag(staticsFlags, MethodTableStaticsFlags::Present))
     {
         MethodTableAuxiliaryData::GetDynamicStaticsInfo(pMTAuxiliaryData)->Init(this);
+#ifdef _DEBUG
+        pMTAuxiliaryData->m_debugOnlyDynamicStatics = MethodTableAuxiliaryData::GetDynamicStaticsInfo(pMTAuxiliaryData);
+#endif
     }
+#ifdef _DEBUG
+    if (HasFlag(staticsFlags, MethodTableStaticsFlags::Generic))
+    {
+        pMTAuxiliaryData->m_debugOnlyGenericStatics = MethodTableAuxiliaryData::GetGenericStaticsInfo(pMTAuxiliaryData);
+    }
+#endif
     if (HasFlag(staticsFlags, MethodTableStaticsFlags::Thread))
     {
         MethodTableAuxiliaryData::GetThreadStaticsInfo(pMTAuxiliaryData)->Init();
+#ifdef _DEBUG
+        pMTAuxiliaryData->m_debugOnlyThreadStatics = MethodTableAuxiliaryData::GetThreadStaticsInfo(pMTAuxiliaryData);
+#endif
     }
 }
 
@@ -4341,7 +4356,14 @@ void MethodTable::CheckRunClassInitThrowing()
 
 void MethodTable::EnsureStaticDataAllocated()
 {
-    WRAPPER_NO_CONTRACT;
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        INJECT_FAULT(COMPlusThrowOM());
+    }
+    CONTRACTL_END;
+
     PTR_MethodTableAuxiliaryData pAuxiliaryData = GetAuxiliaryDataForWrite();
     if (!pAuxiliaryData->IsStaticDataAllocated() && IsDynamicStatics())
     {
@@ -4358,6 +4380,14 @@ void MethodTable::EnsureStaticDataAllocated()
 
 void MethodTable::AttemptToPreinit()
 {
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        INJECT_FAULT(COMPlusThrowOM());
+    }
+    CONTRACTL_END;
+
     if (IsClassInited())
         return;
 
@@ -4390,7 +4420,14 @@ void MethodTable::AttemptToPreinit()
 
 void MethodTable::EnsureTlsIndexAllocated()
 {
-    WRAPPER_NO_CONTRACT;
+    CONTRACTL
+    {
+        THROWS;
+        GC_NOTRIGGER;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
     PTR_MethodTableAuxiliaryData pAuxiliaryData = GetAuxiliaryDataForWrite();
     if (!pAuxiliaryData->IsTlsIndexAllocated() && GetNumThreadStaticFields() > 0)
     {
@@ -4413,7 +4450,6 @@ void MethodTable::EnsureTlsIndexAllocated()
                 GetTLSIndexForThreadStatic(this, true, &pThreadStaticsInfo->GCTlsIndex, bytesNeeded);
             }
         }
-            
     }
     pAuxiliaryData->SetIsTlsIndexAllocated();
 }

@@ -100,9 +100,9 @@ class TLSIndexToMethodTableMap
     uint32_t m_collectibleEntries;
     TLSIndexType m_indexType;
 
-    TADDR IsGCFlag() const { return (TADDR)0x1; }
-    TADDR IsCollectibleFlag() const { return (TADDR)0x2; }
-    TADDR UnwrapValue(TADDR input) const { return input & ~3; }
+    TADDR IsGCFlag() const { LIMITED_METHOD_CONTRACT; return (TADDR)0x1; }
+    TADDR IsCollectibleFlag() const { LIMITED_METHOD_CONTRACT; return (TADDR)0x2; }
+    TADDR UnwrapValue(TADDR input) const { LIMITED_METHOD_CONTRACT; return input & ~3; }
 public:
     TLSIndexToMethodTableMap(TLSIndexType indexType) : pMap(dac_cast<PTR_TADDR>(dac_cast<TADDR>(0))), m_maxIndex(0), m_collectibleEntries(0), m_indexType(indexType) { }
 
@@ -182,28 +182,37 @@ public:
         entry m_entry;
         iterator(const TLSIndexToMethodTableMap& pMap, uint32_t currentIndex) : m_pMap(pMap), m_entry(pMap.Lookup(TLSIndex(pMap.m_indexType, currentIndex))) {}
         public:
-        const entry&                           operator*() const { return m_entry; }
-        const entry*                           operator->() const { return &m_entry; }
+        const entry&                           operator*() const { LIMITED_METHOD_CONTRACT; return m_entry; }
+        const entry*                           operator->() const { LIMITED_METHOD_CONTRACT; return &m_entry; }
 
-        bool operator==(const iterator& other) const { return (m_entry.TlsIndex == other.m_entry.TlsIndex); }
-        bool operator!=(const iterator& other) const { return (m_entry.TlsIndex != other.m_entry.TlsIndex); }
+        bool operator==(const iterator& other) const { LIMITED_METHOD_CONTRACT; return (m_entry.TlsIndex == other.m_entry.TlsIndex); }
+        bool operator!=(const iterator& other) const { LIMITED_METHOD_CONTRACT; return (m_entry.TlsIndex != other.m_entry.TlsIndex); }
 
         iterator& operator++()
         {
+            LIMITED_METHOD_CONTRACT;
             m_entry = m_pMap.Lookup(TLSIndex(m_entry.TlsIndex.TLSIndexRawIndex + 1));
             return *this;
         }
-        iterator operator++(int) { iterator tmp = *this; ++(*this); return tmp; }
+        iterator operator++(int)
+        {
+            LIMITED_METHOD_CONTRACT;
+            iterator tmp = *this; 
+            ++(*this); 
+            return tmp;
+        }
     };
 
     iterator begin() const
     {
+        LIMITED_METHOD_CONTRACT;
         iterator it(*this, 0);
         return it;
     }
 
     iterator end() const
     {
+        LIMITED_METHOD_CONTRACT;
         return iterator(*this, m_maxIndex);
     }
 
@@ -222,14 +231,15 @@ public:
             TLSIndexToMethodTableMap::iterator m_current;
             iterator(const TLSIndexToMethodTableMap::iterator& current) : m_current(current) {}
         public:
-            const entry&                           operator*() const { return *m_current; }
-            const entry*                           operator->() const { return m_current.operator->(); }
+            const entry&                           operator*() const { LIMITED_METHOD_CONTRACT; return *m_current; }
+            const entry*                           operator->() const { LIMITED_METHOD_CONTRACT; return m_current.operator->(); }
 
-            bool operator==(const iterator& other) const { return (m_current == other.m_current); }
-            bool operator!=(const iterator& other) const { return (m_current != other.m_current); }
+            bool operator==(const iterator& other) const { LIMITED_METHOD_CONTRACT; return (m_current == other.m_current); }
+            bool operator!=(const iterator& other) const { LIMITED_METHOD_CONTRACT; return (m_current != other.m_current); }
 
             iterator& operator++()
             {
+                LIMITED_METHOD_CONTRACT;
                 TLSIndex oldIndex = m_current->TlsIndex;
                 while (++m_current, m_current->TlsIndex != oldIndex)
                 {
@@ -239,11 +249,18 @@ public:
                 }
                 return *this;
             }
-            iterator operator++(int) { iterator tmp = *this; ++(*this); return tmp; }
+            iterator operator++(int)
+            {
+                LIMITED_METHOD_CONTRACT;
+                iterator tmp = *this;
+                ++(*this);
+                return tmp;
+            }
         };
 
         iterator begin() const
         {
+            LIMITED_METHOD_CONTRACT;
             iterator it(m_pMap.begin());
             if (!(it->IsCollectible))
             {
@@ -254,6 +271,7 @@ public:
 
         iterator end() const
         {
+            LIMITED_METHOD_CONTRACT;
             return iterator(m_pMap.end());
         }
     };
@@ -266,6 +284,7 @@ public:
 
     CollectibleEntriesCollection CollectibleEntries() const
     {
+        LIMITED_METHOD_CONTRACT;
         return CollectibleEntriesCollection(*this);
     }
 
@@ -301,9 +320,9 @@ public:
 };
 
 PTR_VOID GetThreadLocalStaticBaseNoCreate(Thread *pThreadLocalData, TLSIndex index);
-void ScanThreadStaticRoots(Thread* pThread, bool forGC, promote_func* fn, ScanContext* sc);
 
 #ifndef DACCESS_COMPILE
+void ScanThreadStaticRoots(Thread* pThread, bool forGC, promote_func* fn, ScanContext* sc);
 PTR_MethodTable LookupMethodTableForThreadStaticKnownToBeAllocated(TLSIndex index);
 void InitializeThreadStaticData();
 void InitializeCurrentThreadsStaticData(Thread* pThread);

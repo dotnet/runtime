@@ -21,10 +21,30 @@ struct ThreadLocalLoaderAllocator
 };
 typedef DPTR(ThreadLocalLoaderAllocator) PTR_ThreadLocalLoaderAllocator;
 
+#ifndef DACCESS_COMPILE
+static TLSIndexToMethodTableMap *g_pThreadStaticCollectibleTypeIndices;
+static TLSIndexToMethodTableMap *g_pThreadStaticNonCollectibleTypeIndices;
+static PTR_MethodTable g_pMethodTablesForDirectThreadLocalData[offsetof(ThreadLocalData, ExtendedDirectThreadLocalTLSData) - offsetof(ThreadLocalData, ThreadBlockingInfo_First) + EXTENDED_DIRECT_THREAD_LOCAL_SIZE];
+
+static Volatile<uint8_t> s_GCsWhichDoRelocateAndCanEmptyOutTheTLSIndices = 0;
+static uint32_t g_NextTLSSlot = 1;
+static uint32_t g_NextNonCollectibleTlsSlot = NUMBER_OF_TLSOFFSETS_NOT_USED_IN_NONCOLLECTIBLE_ARRAY;
+static uint32_t g_directThreadLocalTLSBytesAvailable = EXTENDED_DIRECT_THREAD_LOCAL_SIZE;
+
+static CrstStatic g_TLSCrst;
+#endif
+
 // This can be used for out of thread access to TLS data.
 PTR_VOID GetThreadLocalStaticBaseNoCreate(Thread* pThread, TLSIndex index)
 {
-    LIMITED_METHOD_CONTRACT;
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_COOPERATIVE;
+    }
+    CONTRACTL_END;
+
 #ifndef DACCESS_COMPILE
     // Since this api can be used from a different thread, we need a lock to keep it all safe
     SpinLockHolder spinLock(&pThread->m_TlsSpinLock);
@@ -76,13 +96,11 @@ PTR_VOID GetThreadLocalStaticBaseNoCreate(Thread* pThread, TLSIndex index)
     return dac_cast<PTR_VOID>(pTLSBaseAddress);
 }
 
-TLSIndexToMethodTableMap *g_pThreadStaticCollectibleTypeIndices;
-TLSIndexToMethodTableMap *g_pThreadStaticNonCollectibleTypeIndices;
-PTR_MethodTable g_pMethodTablesForDirectThreadLocalData[offsetof(ThreadLocalData, ExtendedDirectThreadLocalTLSData) - offsetof(ThreadLocalData, ThreadBlockingInfo_First) + EXTENDED_DIRECT_THREAD_LOCAL_SIZE];
-
+#ifndef DACCESS_COMPILE
 int32_t IndexOffsetToDirectThreadLocalIndex(int32_t indexOffset)
 {
     LIMITED_METHOD_CONTRACT;
+
     int32_t adjustedIndexOffset = indexOffset + OFFSETOF__CORINFO_Array__data;
     _ASSERTE(((uint32_t)adjustedIndexOffset) >= offsetof(ThreadLocalData, ThreadBlockingInfo_First));
     int32_t directThreadLocalIndex = adjustedIndexOffset - offsetof(ThreadLocalData, ThreadBlockingInfo_First);
@@ -90,7 +108,9 @@ int32_t IndexOffsetToDirectThreadLocalIndex(int32_t indexOffset)
     _ASSERTE(directThreadLocalIndex >= 0);
     return directThreadLocalIndex;
 }
+#endif // DACCESS_COMPILE
 
+#ifndef DACCESS_COMPILE
 PTR_MethodTable LookupMethodTableForThreadStaticKnownToBeAllocated(TLSIndex index)
 {
     CONTRACTL
@@ -114,9 +134,9 @@ PTR_MethodTable LookupMethodTableForThreadStaticKnownToBeAllocated(TLSIndex inde
         return g_pThreadStaticCollectibleTypeIndices->LookupTlsIndexKnownToBeAllocated(index);
     }
 }
+#endif // DACCESS_COMPILE
 
-TADDR isGCFlag = 0x1;
-
+#ifndef DACCESS_COMPILE
 PTR_MethodTable LookupMethodTableAndFlagForThreadStatic(TLSIndex index, bool *pIsGCStatic, bool *pIsCollectible)
 {
     CONTRACTL
@@ -144,8 +164,9 @@ PTR_MethodTable LookupMethodTableAndFlagForThreadStatic(TLSIndex index, bool *pI
     }
     return retVal;
 }
+#endif // DACCESS_COMPILE
 
-
+#ifndef DACCESS_COMPILE
 // Report a TLS index to the GC, but if it is no longer in use and should be cleared out, return false
 bool ReportTLSIndexCarefully(TLSIndex index, int32_t cLoaderHandles, PTR_LOADERHANDLE pLoaderHandles, PTR_PTR_Object ppTLSBaseAddress, promote_func* fn, ScanContext* sc)
 {
@@ -156,6 +177,7 @@ bool ReportTLSIndexCarefully(TLSIndex index, int32_t cLoaderHandles, PTR_LOADERH
         MODE_COOPERATIVE;
     }
     CONTRACTL_END;
+
     bool isGCStatic;
     bool isCollectible;
 
@@ -176,11 +198,10 @@ bool ReportTLSIndexCarefully(TLSIndex index, int32_t cLoaderHandles, PTR_LOADERH
     fn(ppTLSBaseAddress, sc, 0 /* could be GC_CALL_INTERIOR or GC_CALL_PINNED */);
     return true;
 }
+#endif // DACCESS_COMPILE
 
 // We use a scheme where the TLS data on each thread will be cleaned up within a GC promotion round or two.
 #ifndef DACCESS_COMPILE
-static Volatile<uint8_t> s_GCsWhichDoRelocateAndCanEmptyOutTheTLSIndices = 0;
-
 void NotifyThreadStaticGCHappened()
 {
     LIMITED_METHOD_CONTRACT;
@@ -188,6 +209,7 @@ void NotifyThreadStaticGCHappened()
 }
 #endif
 
+#ifndef DACCESS_COMPILE
 void ScanThreadStaticRoots(Thread* pThread, bool forGC, promote_func* fn, ScanContext* sc)
 {
     CONTRACTL
@@ -232,7 +254,6 @@ void ScanThreadStaticRoots(Thread* pThread, bool forGC, promote_func* fn, ScanCo
         if (!ReportTLSIndexCarefully(pInFlightData->tlsIndex, cLoaderHandles, pThread->pLoaderHandles, dac_cast<PTR_PTR_Object>(&pInFlightData->pTLSData), fn, sc))
         {
             // TLS index is now dead. We should delete it, as the ReportTLSIndexCarefully function will have already deleted any assocated LOADERHANDLE
-#ifndef DACCESS_COMPILE
             if (forGC)
             {
                 PTR_InFlightTLSData pNext = pInFlightData->pNext;
@@ -240,7 +261,6 @@ void ScanThreadStaticRoots(Thread* pThread, bool forGC, promote_func* fn, ScanCo
                 pInFlightData = pNext;
                 continue;
             }
-#endif
         }
         pInFlightData = pInFlightData->pNext;
     }
@@ -255,12 +275,9 @@ void ScanThreadStaticRoots(Thread* pThread, bool forGC, promote_func* fn, ScanCo
     }
 
     // Report non-collectible object array
-#ifndef DACCESS_COMPILE
     fn(&pThreadLocalData->pNonCollectibleTlsArrayData, sc, 0 /* could be GC_CALL_INTERIOR or GC_CALL_PINNED */);
-#else
-    fn(dac_cast<PTR_PTR_Object>(&pThreadLocalData->pNonCollectibleTlsArrayData), sc, 0 /* could be GC_CALL_INTERIOR or GC_CALL_PINNED */);
-#endif
 }
+#endif // DACCESS_COMPILE
 
 #ifndef DACCESS_COMPILE
 
@@ -330,6 +347,14 @@ void TLSIndexToMethodTableMap::Clear(TLSIndex index, uint8_t whenCleared)
 
 bool TLSIndexToMethodTableMap::FindClearedIndex(uint8_t whenClearedMarkerToAvoid, TLSIndex* pIndex)
 {
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_COOPERATIVE;
+    }
+    CONTRACTL_END;
+
     for (const auto& entry : *this)
     {
         if (entry.IsClearedValue)
@@ -349,10 +374,6 @@ bool TLSIndexToMethodTableMap::FindClearedIndex(uint8_t whenClearedMarkerToAvoid
     }
     return false;
 }
-
-uint32_t g_NextTLSSlot = 1;
-uint32_t g_NextNonCollectibleTlsSlot = NUMBER_OF_TLSOFFSETS_NOT_USED_IN_NONCOLLECTIBLE_ARRAY;
-CrstStatic g_TLSCrst;
 
 void InitializeThreadStaticData()
 {
@@ -457,6 +478,8 @@ void FreeLoaderAllocatorHandlesForTLSData(Thread *pThread)
 
 void AssertThreadStaticDataFreed(ThreadLocalData *pThreadLocalData)
 {
+    LIMITED_METHOD_CONTRACT;
+
     if (!IsAtProcessExit() && !g_fEEShutDown)
     {
         _ASSERTE(pThreadLocalData->pThread == NULL);
@@ -514,6 +537,14 @@ void FreeThreadStaticData(ThreadLocalData *pThreadLocalData, Thread* pThread)
 
 void SetTLSBaseValue(TADDR *ppTLSBaseAddress, TADDR pTLSBaseAddress, bool useGCBarrier)
 {
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_COOPERATIVE;
+    }
+    CONTRACTL_END;
+
     if (useGCBarrier)
     {
         SetObjectReference((OBJECTREF *)ppTLSBaseAddress, (OBJECTREF)ObjectToOBJECTREF((Object*)pTLSBaseAddress));
@@ -523,6 +554,7 @@ void SetTLSBaseValue(TADDR *ppTLSBaseAddress, TADDR pTLSBaseAddress, bool useGCB
         *ppTLSBaseAddress = pTLSBaseAddress;
     }
 }
+
 void* GetThreadLocalStaticBase(TLSIndex index)
 {
     CONTRACTL
@@ -709,11 +741,15 @@ void* GetThreadLocalStaticBase(TLSIndex index)
     return reinterpret_cast<void*>(gcBaseAddresses.pTLSBaseAddress);
 }
 
-static uint32_t g_directThreadLocalTLSBytesAvailable = EXTENDED_DIRECT_THREAD_LOCAL_SIZE;
-
 void GetTLSIndexForThreadStatic(MethodTable* pMT, bool gcStatic, TLSIndex* pIndex, uint32_t bytesNeeded)
 {
-    WRAPPER_NO_CONTRACT;
+    CONTRACTL
+    {
+        THROWS;
+        GC_NOTRIGGER;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
 
     GCX_COOP();
     CrstHolder ch(&g_TLSCrst);
@@ -814,6 +850,8 @@ static void* GetTlsIndexObjectAddress();
 
 bool CanJITOptimizeTLSAccess()
 {
+    LIMITED_METHOD_CONTRACT;
+
     bool optimizeThreadStaticAccess = false;
 #if defined(TARGET_ARM)
     // Optimization is disabled for linux/windows arm
@@ -844,6 +882,8 @@ EXTERN_C uint32_t _tls_index;
 /*********************************************************************/
 static uint32_t ThreadLocalOffset(void* p)
 {
+    LIMITED_METHOD_CONTRACT;
+
     PTEB Teb = NtCurrentTeb();
     uint8_t** pTls = (uint8_t**)Teb->ThreadLocalStoragePointer;
     uint8_t* pOurTls = pTls[_tls_index];
@@ -854,6 +894,8 @@ extern "C" void* GetThreadVarsAddress();
 
 static void* GetThreadVarsSectionAddressFromDesc(uint8_t* p)
 {
+    LIMITED_METHOD_CONTRACT;
+
     _ASSERT(p[0] == 0x48 && p[1] == 0x8d && p[2] == 0x3d);
 
     // At this point, `p` contains the instruction pointer and is pointing to the above opcodes.
@@ -869,6 +911,8 @@ static void* GetThreadVarsSectionAddressFromDesc(uint8_t* p)
 
 static void* GetThreadVarsSectionAddress()
 {
+    LIMITED_METHOD_CONTRACT;
+
 #ifdef TARGET_AMD64
     // On x64, the address is related to rip, so, disassemble the function,
     // read the offset, and then relative to the IP, find the final address of
@@ -890,6 +934,8 @@ extern "C" void* GetTlsIndexObjectDescOffset();
 
 static void* GetThreadStaticDescriptor(uint8_t* p)
 {
+    LIMITED_METHOD_CONTRACT;
+
     if (!(p[0] == 0x66 && p[1] == 0x48 && p[2] == 0x8d && p[3] == 0x3d))
     {
         // The optimization is disabled if coreclr is not compiled in .so format.
@@ -912,6 +958,8 @@ static void* GetThreadStaticDescriptor(uint8_t* p)
 
 static void* GetTlsIndexObjectAddress()
 {
+    LIMITED_METHOD_CONTRACT;
+
     uint8_t* p = reinterpret_cast<uint8_t*>(&GetTlsIndexObjectDescOffset);
     return GetThreadStaticDescriptor(p);
 }
