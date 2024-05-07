@@ -521,14 +521,11 @@ public:
 // structure through the OS TLS slot see code:#RuntimeThreadLocals for more information.
 class Thread
 {
-    friend struct ThreadQueue;  // used to enqueue & dequeue threads onto SyncBlocks
     friend class  ThreadStore;
     friend class  ThreadSuspend;
     friend class  SyncBlock;
     friend struct PendingSync;
-    friend class  AppDomain;
     friend class  ThreadNative;
-    friend class  DeadlockAwareLock;
 #ifdef _DEBUG
     friend class  EEContract;
 #endif
@@ -563,14 +560,10 @@ class Thread
 #endif // DACCESS_COMPILE
     friend class ProfToEEInterfaceImpl;     // HRESULT ProfToEEInterfaceImpl::GetHandleFromThread(ThreadID threadId, HANDLE *phThread);
 
-    friend class CheckAsmOffsets;
-
     friend class ExceptionTracker;
     friend class ThreadExceptionState;
 
     friend class StackFrameIterator;
-
-    friend class ThreadStatics;
 
 public:
     enum SetThreadStackGuaranteeScope { STSGuarantee_Force, STSGuarantee_OnlyIfEnabled };
@@ -1011,13 +1004,6 @@ public:
     Volatile<ULONG>      m_fPreemptiveGCDisabled;
 
     PTR_Frame            m_pFrame;  // The Current Frame
-
-    //-----------------------------------------------------------
-    // If the thread has wandered in from the outside this is
-    // its Domain.
-    //-----------------------------------------------------------
-    PTR_AppDomain       m_pDomain;
-
     // Unique thread id used for thin locks - kept as small as possible, as we have limited space
     // in the object header to store it.
     DWORD                m_ThreadId;
@@ -1669,12 +1655,6 @@ private:
     void ClearContext();
 
 public:
-    PTR_AppDomain GetDomain(INDEBUG(BOOL fMidContextTransitionOK = FALSE))
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-
-        return m_pDomain;
-    }
 
     //---------------------------------------------------------------
     // Track use of the thread block.  See the general comments on

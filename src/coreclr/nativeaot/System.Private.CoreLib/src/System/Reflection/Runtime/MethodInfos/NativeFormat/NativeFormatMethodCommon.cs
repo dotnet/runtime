@@ -116,7 +116,7 @@ namespace System.Reflection.Runtime.MethodInfos.NativeFormat
             _methodHandle = methodHandle;
             _contextTypeInfo = contextTypeInfo;
             _reader = definingTypeInfo.Reader;
-            _method = methodHandle.GetMethod(_reader);
+            _method = _reader.GetMethod(methodHandle);
         }
 
         public MethodAttributes Attributes
@@ -214,7 +214,7 @@ namespace System.Reflection.Runtime.MethodInfos.NativeFormat
         {
             get
             {
-                return _method.Name.GetString(_reader);
+                return _reader.GetString(_method.Name);
             }
         }
 
