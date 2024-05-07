@@ -302,6 +302,7 @@ int HWIntrinsicInfo::lookupImmUpperBound(NamedIntrinsic id)
         case NI_AVX_Compare:
         case NI_AVX_CompareScalar:
         case NI_AVX512F_Compare:
+        case NI_AVX512F_CompareMask:
         {
             assert(!HWIntrinsicInfo::HasFullRangeImm(id));
             return 31; // enum FloatComparisonMode has 32 values

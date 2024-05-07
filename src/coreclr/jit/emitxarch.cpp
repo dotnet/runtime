@@ -10948,7 +10948,7 @@ void emitter::emitDispInsHex(instrDesc* id, BYTE* code, size_t sz)
 //
 void emitter::emitDispEmbBroadcastCount(instrDesc* id) const
 {
-    if (!IsAvx512OrPriorInstruction(id->idIns()) || !id->idIsEvexbContextSet())
+    if (!IsEvexEncodableInstruction(id->idIns()) || !id->idIsEvexbContextSet())
     {
         return;
     }
@@ -10995,7 +10995,7 @@ void emitter::emitDispEmbRounding(instrDesc* id) const
 //
 void emitter::emitDispEmbMasking(instrDesc* id) const
 {
-    if (!IsAvx512OrPriorInstruction(id->idIns()))
+    if (!IsEvexEncodableInstruction(id->idIns()))
     {
         return;
     }
@@ -11215,7 +11215,7 @@ void emitter::emitDispIns(
 
         case IF_CNS:
         {
-            assert(!IsAvx512OrPriorInstruction(id->idIns()));
+            assert(!IsEvexEncodableInstruction(id->idIns()));
 
             val = emitGetInsSC(id);
 #ifdef TARGET_AMD64
@@ -11260,7 +11260,7 @@ void emitter::emitDispIns(
         case IF_AWR:
         case IF_ARW:
         {
-            assert(!IsAvx512OrPriorInstruction(id->idIns()));
+            assert(!IsEvexEncodableInstruction(id->idIns()));
 
             if (((ins == INS_call) || (ins == INS_tail_i_jmp)) && id->idIsCallRegPtr())
             {
@@ -11554,7 +11554,7 @@ void emitter::emitDispIns(
         case IF_SWR:
         case IF_SRW:
         {
-            assert(!IsAvx512OrPriorInstruction(id->idIns()));
+            assert(!IsEvexEncodableInstruction(id->idIns()));
             printf("%s", sstr);
 
 #if !FEATURE_FIXED_OUT_ARGS
@@ -12106,7 +12106,7 @@ void emitter::emitDispIns(
         case IF_RWR:
         case IF_RRW:
         {
-            assert(!IsAvx512OrPriorInstruction(id->idIns()));
+            assert(!IsEvexEncodableInstruction(id->idIns()));
             printf("%s", emitRegName(id->idReg1(), attr));
             emitDispShift(ins);
             break;
@@ -12317,7 +12317,7 @@ void emitter::emitDispIns(
 
         case IF_RWR_MRD_OFF:
         {
-            assert(!IsAvx512OrPriorInstruction(id->idIns()));
+            assert(!IsEvexEncodableInstruction(id->idIns()));
             printf("%s, %s", emitRegName(id->idReg1(), attr), "offset");
             offs = emitGetInsDsp(id);
             emitDispClsVar(id->idAddr()->iiaFieldHnd, offs, ID_INFO_DSP_RELOC);
@@ -12372,7 +12372,7 @@ void emitter::emitDispIns(
         case IF_MWR:
         case IF_MRW:
         {
-            assert(!IsAvx512OrPriorInstruction(id->idIns()));
+            assert(!IsEvexEncodableInstruction(id->idIns()));
             printf("%s", sstr);
             offs = emitGetInsDsp(id);
             emitDispClsVar(id->idAddr()->iiaFieldHnd, offs, ID_INFO_DSP_RELOC);
@@ -12382,7 +12382,7 @@ void emitter::emitDispIns(
 
         case IF_MRD_OFF:
         {
-            assert(!IsAvx512OrPriorInstruction(id->idIns()));
+            assert(!IsEvexEncodableInstruction(id->idIns()));
             printf("offset ");
             offs = emitGetInsDsp(id);
             emitDispClsVar(id->idAddr()->iiaFieldHnd, offs, ID_INFO_DSP_RELOC);
@@ -12417,7 +12417,7 @@ void emitter::emitDispIns(
         case IF_RWR_LABEL:
         case IF_SWR_LABEL:
         {
-            assert(!IsAvx512OrPriorInstruction(id->idIns()));
+            assert(!IsEvexEncodableInstruction(id->idIns()));
 
             if (ins == INS_lea)
             {
@@ -12460,7 +12460,7 @@ void emitter::emitDispIns(
         case IF_METHOD:
         case IF_METHPTR:
         {
-            assert(!IsAvx512OrPriorInstruction(id->idIns()));
+            assert(!IsEvexEncodableInstruction(id->idIns()));
             methodName = emitComp->eeGetMethodFullName((CORINFO_METHOD_HANDLE)id->idDebugOnlyInfo()->idMemCookie);
 
             if (id->idInsFmt() == IF_METHPTR)

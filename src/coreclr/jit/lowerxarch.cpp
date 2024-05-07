@@ -3101,7 +3101,13 @@ GenTree* Lowering::LowerHWIntrinsicTernaryLogic(GenTreeHWIntrinsic* node)
                     }
                 }
 
-                if (!varTypeIsMask(condition))
+                if (condition->OperIsHWIntrinsic(NI_AVX512F_ConvertMaskToVector))
+                {
+                    GenTree* tmp = condition->AsHWIntrinsic()->Op(1);
+                    BlockRange().Remove(condition);
+                    condition = tmp;
+                }
+                else if (!varTypeIsMask(condition))
                 {
                     if (!condition->OperIsHWIntrinsic())
                     {
@@ -3224,22 +3230,21 @@ GenTree* Lowering::LowerHWIntrinsicTernaryLogic(GenTreeHWIntrinsic* node)
                         default:
                         {
                             assert(!HWIntrinsicInfo::ReturnsPerElementMask(cndId));
+                            cndId = NI_Illegal;
                             break;
                         }
+                    }
+
+                    if (cndId == NI_Illegal)
+                    {
+                        break;
                     }
 
                     cndNode->gtType = TYP_MASK;
                     cndNode->ChangeHWIntrinsicId(cndId);
                 }
 
-                if (condition->OperIsHWIntrinsic(NI_AVX512F_ConvertMaskToVector))
-                {
-                    GenTree* tmp = condition->AsHWIntrinsic()->Op(1);
-                    BlockRange().Remove(condition);
-                    condition = tmp;
-                    break;
-                }
-
+                assert(varTypeIsMask(condition));
                 node->ResetHWIntrinsicId(NI_AVX512F_BlendVariableMask, comp, selectFalse, selectTrue, condition);
                 BlockRange().Remove(op4);
                 break;
@@ -8511,6 +8516,7 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
                 case NI_AVX2_ShuffleLow:
                 case NI_AVX512F_AlignRight32:
                 case NI_AVX512F_AlignRight64:
+                case NI_AVX512F_CompareMask:
                 case NI_AVX512F_Fixup:
                 case NI_AVX512F_GetMantissa:
                 case NI_AVX512F_Permute2x64:
@@ -9073,12 +9079,12 @@ void Lowering::TryFoldCnsVecForEmbeddedBroadcast(GenTreeHWIntrinsic* parentNode,
     CorInfoType simdBaseJitType     = parentNode->GetSimdBaseJitType();
     unsigned    simdSize            = parentNode->GetSimdSize();
     bool        isCreatedFromScalar = true;
-    int         elementCount        = GenTreeVecCon::ElementCount(genTypeSize(simdType), simdBaseType);
 
     if (simdType == TYP_MASK)
     {
         simdType = Compiler::getSIMDTypeForSize(simdSize);
     }
+    int elementCount = GenTreeVecCon::ElementCount(genTypeSize(simdType), simdBaseType);
 
     switch (simdBaseType)
     {
@@ -10449,6 +10455,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                         case NI_AVX2_Permute2x128:
                         case NI_AVX512F_AlignRight32:
                         case NI_AVX512F_AlignRight64:
+                        case NI_AVX512F_CompareMask:
                         case NI_AVX512F_GetMantissaScalar:
                         case NI_AVX512F_InsertVector128:
                         case NI_AVX512F_InsertVector256:
