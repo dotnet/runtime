@@ -1,12 +1,25 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <TargetFrameworks>$(NetCoreAppMinimum);$(NetCoreAppCurrent)</TargetFrameworks>
+  </PropertyGroup>
+  <PropertyGroup>
+  <!--
+      The real implementation of this library is built for NetCoreAppMinimum,
+      the NetCoreAppCurrent build has a non-functional copy of BinaryFormatter.
+
+      The NetCoreAppCurrent build is only included in the shared runtime,
+      and should always lose to the package for unification; so it is pinned
+      at an assembly version that will always lose.
+  -->
+    <AssemblyVersion Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">8.1.0.0</AssemblyVersion>
+    <IncludeBuildOutput Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">false</IncludeBuildOutput>
+    <SuppressDependenciesWhenPacking Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">true</SuppressDependenciesWhenPacking>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.Runtime.Serialization.Formatters.cs" />
     <Compile Include="System.Runtime.Serialization.Formatters.Forwards.cs" />
   </ItemGroup>
-  <ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
     <ProjectReference Include="..\..\System.Collections.NonGeneric\ref\System.Collections.NonGeneric.csproj" />
     <ProjectReference Include="..\..\System.Runtime\ref\System.Runtime.csproj" />
   </ItemGroup>

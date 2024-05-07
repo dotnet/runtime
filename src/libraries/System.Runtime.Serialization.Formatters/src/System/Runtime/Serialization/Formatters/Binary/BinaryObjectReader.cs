@@ -77,6 +77,24 @@ namespace System.Runtime.Serialization.Formatters.Binary
 
         [RequiresDynamicCode(ObjectReaderUnreferencedCodeMessage)]
         [RequiresUnreferencedCode("Types might be removed")]
+        private static IDisposable? StartDeserialization()
+        {
+            MethodInfo? targetMethod = typeof(SerializationInfo).GetMethod(
+                "StartDeserialization",
+                BindingFlags.Public | BindingFlags.Static,
+                Type.EmptyTypes);
+
+            // It might have been removed in AoT.
+            if (targetMethod is null)
+            {
+                throw new InvalidOperationException();
+            }
+
+            return (IDisposable?)targetMethod.Invoke(null, null);
+        }
+
+        [RequiresDynamicCode(ObjectReaderUnreferencedCodeMessage)]
+        [RequiresUnreferencedCode("Types might be removed")]
         internal object Deserialize(BinaryParser serParser)
         {
             ArgumentNullException.ThrowIfNull(serParser);
@@ -87,7 +105,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
 
             _isSimpleAssembly = (_formatterEnums._assemblyFormat == FormatterAssemblyStyle.Simple);
 
-            using (DeserializationToken token = SerializationInfo.StartDeserialization())
+            using (StartDeserialization())
             {
                 if (_fullDeserialization)
                 {
