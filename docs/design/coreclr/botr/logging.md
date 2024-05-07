@@ -70,13 +70,13 @@ echo Write the StressLog's to a file instead of memory for cases where you can't
 set DOTNET_StressLogFilename=mystresslog.log
 ```
 
-To write your own messages to the StressLog from C++, you can use the `STRESS_LOG_N(facility, level, msg, ...)` macros, i.e. `STRESS_LOG1(LF_GC, LL_ERROR, "A significant but non-fatal error occurred in the garbage collector! Here's my favorite number: %d\n", 42)` where the first argument is one or more logging facilities (you can combine them using `|` i.e. `LF_GC | LF_GCROOTS`), the second argument is a severity level, and the third argument is the log message format string. See [log facilities and levels](#log-facilities-and-levels), below, for more information.
+To write your own messages to the StressLog from C++, you can use the `STRESS_LOGN(facility, level, msg, ...)` macros, i.e. `STRESS_LOG1(LF_GC, LL_ERROR, "A significant but non-fatal error occurred in the garbage collector! Here's my favorite number: %d\n", 42)` where the first argument is one or more logging facilities (you can combine them using `|` i.e. `LF_GC | LF_GCROOTS`), the second argument is a severity level, and the third argument is the log message format string. See [log facilities and levels](#log-facilities-and-levels), below, for more information.
 
 You can't write your own messages to the StressLog from C#. If for some reason you need to while testing, perhaps you could expose it via a custom qcall.
 
 Traditional .NET Runtime Logging
 --------------------------------
-"Traditional" log messages are only enabled in debug or checked builds of the runtime. To enable them, you can set the `DOTNET_LogEnable` environment variable to `1`, and configure them using environment variables. There are various configuration variables for traditional logging, demonstrated below:
+"Traditional" log messages are only available in debug or checked builds of the runtime. To enable them, you can set the `DOTNET_LogEnable` environment variable to `1`, and configure them using environment variables. There are various configuration variables for traditional logging, demonstrated below:
 
 ```bash
 echo Enable traditional logging
