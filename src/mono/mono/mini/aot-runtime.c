@@ -5117,6 +5117,19 @@ mono_aot_get_method (MonoMethod *method, MonoError *error)
 			method_index = find_aot_method (shared, &amodule);
 			if (method_index != 0xffffff)
 				method = shared;
+			if (method_index == 0xffffff && !mono_method_metadata_has_header (method)) {
+				// replace lookups for unsafe accessor instances by lookups of the wrapper
+				MonoMethod *wrapper = replace_generated_method (method, error);
+				mono_error_assert_ok (error);
+				if (wrapper != NULL) {
+					shared = mini_get_shared_method_full (wrapper, SHARE_MODE_NONE, error);
+					return_val_if_nok (error, NULL);
+
+					method_index = find_aot_method (shared, &amodule);
+					if (method_index != 0xffffff)
+						method = shared;
+				}
+			}
 		}
 
 		if (method_index == 0xffffff && method->is_inflated && mono_method_is_generic_sharable_full (method, FALSE, FALSE, TRUE)) {
