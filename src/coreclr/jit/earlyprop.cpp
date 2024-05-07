@@ -511,18 +511,9 @@ GenTree* Compiler::optFindNullCheckToFold(GenTree* tree, LocalNumberToNullCheckT
 {
     assert(tree->OperIsIndirOrArrMetaData());
 
-    GenTree* addr = tree->GetIndirOrArrMetaDataAddr();
+    GenTree* addr = tree->GetIndirOrArrMetaDataAddr()->gtEffectiveVal();
 
     ssize_t offsetValue = 0;
-
-    // if we have COMMA(NULLCHECK(addr), addr) -> we can fold the nullcheck if addresses are the same
-    GenTreeLclVar* nullcheckAddr = nullptr;
-    if (addr->OperIs(GT_COMMA) && addr->gtGetOp1()->OperIs(GT_NULLCHECK) &&
-        addr->gtGetOp1()->AsIndir()->Addr()->OperIs(GT_LCL_VAR))
-    {
-        nullcheckAddr = addr->gtGetOp1()->AsIndir()->Addr()->AsLclVar();
-        addr          = addr->gtGetOp2();
-    }
 
     if ((addr->OperGet() == GT_ADD) && addr->gtGetOp2()->IsCnsIntOrI())
     {
@@ -530,12 +521,7 @@ GenTree* Compiler::optFindNullCheckToFold(GenTree* tree, LocalNumberToNullCheckT
         addr = addr->gtGetOp1();
     }
 
-    if (!addr->OperIs(GT_LCL_VAR))
-    {
-        return nullptr;
-    }
-
-    if ((nullcheckAddr != nullptr) && !GenTree::Compare(nullcheckAddr, addr))
+    if (addr->OperGet() != GT_LCL_VAR)
     {
         return nullptr;
     }
