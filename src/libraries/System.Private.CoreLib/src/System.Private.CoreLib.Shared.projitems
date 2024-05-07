@@ -778,6 +778,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\TypeDelegator.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\TypeFilter.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\TypeInfo.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\TypeNameResolver.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Metadata\MetadataUpdateHandlerAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\ResolveEventArgs.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\ResolveEventHandler.cs" />
@@ -1475,9 +1476,6 @@
     <Compile Include="$(CommonPath)System\IO\PathInternal.CaseSensitivity.cs">
       <Link>Common\System\IO\PathInternal.CaseSensitivity.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)System\Reflection\TypeNameParser.Helpers.cs">
-      <Link>Common\System\Reflection\TypeNameParser.Helpers</Link>
-    </Compile>
     <Compile Include="$(CommonPath)System\Reflection\AssemblyNameParser.cs">
       <Link>Common\System\Reflection\AssemblyNameParser.cs</Link>
     </Compile>
@@ -1489,6 +1487,9 @@
     </Compile>
     <Compile Include="$(CommonPath)System\Reflection\Metadata\TypeName.cs">
       <Link>Common\System\Reflection\Metadata\TypeName.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)System\Reflection\Metadata\TypeNameHelpers.cs">
+      <Link>Common\System\Reflection\Metadata\TypeNameHelpers.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)System\Reflection\Metadata\TypeNameParser.cs">
       <Link>Common\System\Reflection\Metadata\TypeNameParser.cs</Link>

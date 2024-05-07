@@ -4471,8 +4471,8 @@ void GCInfo::gcMakeRegPtrTable(
             assert(call->u1.cdArgMask == 0 && call->cdArgCnt == 0);
 
             // Other than that, we just have to deal with the regmasks.
-            regMaskSmall gcrefRegMask = call->cdGCrefRegs & RBM_CALLEE_SAVED;
-            regMaskSmall byrefRegMask = call->cdByrefRegs & RBM_CALLEE_SAVED;
+            regMaskSmall gcrefRegMask = call->cdGCrefRegs & RBM_CALL_GC_REGS;
+            regMaskSmall byrefRegMask = call->cdByrefRegs & RBM_CALL_GC_REGS;
 
             assert((gcrefRegMask & byrefRegMask) == 0);
 

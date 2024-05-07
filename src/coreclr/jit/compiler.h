@@ -1024,7 +1024,7 @@ public:
             }
             else
             {
-#ifdef TARGET_XARCH
+#ifdef FEATURE_MASKED_HW_INTRINSICS
                 assert(varTypeUsesIntReg(this) || varTypeUsesMaskReg(this));
 #else
                 assert(varTypeUsesIntReg(this));
@@ -3803,9 +3803,9 @@ public:
     VARSET_TP lvaLongVars; // set of long (64-bit) variables
 #endif
     VARSET_TP lvaFloatVars; // set of floating-point (32-bit and 64-bit) or SIMD variables
-#ifdef TARGET_XARCH
+#ifdef FEATURE_MASKED_HW_INTRINSICS
     VARSET_TP lvaMaskVars; // set of mask variables
-#endif // TARGET_XARCH
+#endif // FEATURE_MASKED_HW_INTRINSICS
 
     unsigned lvaCurEpoch; // VarSets are relative to a specific set of tracked var indices.
                           // It that changes, this changes.  VarSets from different epochs
@@ -6793,11 +6793,11 @@ protected:
         int m_loopVarFPCount;
         int m_hoistedFPExprCount;
 
-#ifdef TARGET_XARCH
+#ifdef FEATURE_MASKED_HW_INTRINSICS
         int m_loopVarInOutMskCount;
         int m_loopVarMskCount;
         int m_hoistedMskExprCount;
-#endif // TARGET_XARCH
+#endif // FEATURE_MASKED_HW_INTRINSICS
 
         // Get the VN cache for current loop
         VNSet* GetHoistedInCurLoop(Compiler* comp)
