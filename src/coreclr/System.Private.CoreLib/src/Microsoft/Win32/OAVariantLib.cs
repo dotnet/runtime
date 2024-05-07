@@ -34,8 +34,6 @@ namespace Microsoft.Win32
 
         private static readonly Dictionary<Type, VarEnum> ClassTypes = new Dictionary<Type, VarEnum>
         {
-            { typeof(Empty), VarEnum.VT_EMPTY },
-            { typeof(void), VarEnum.VT_VOID },
             { typeof(bool), VarEnum.VT_BOOL },
             { typeof(char), VarEnum.VT_I2 },
             { typeof(sbyte), VarEnum.VT_I1 },
@@ -50,7 +48,6 @@ namespace Microsoft.Win32
             { typeof(double), VarEnum.VT_R8 },
             { typeof(string), VarEnum.VT_BSTR },
             { typeof(DateTime), VarEnum.VT_DATE },
-            { typeof(object), VarEnum.VT_UNKNOWN },
             { typeof(decimal), VarEnum.VT_DECIMAL },
         };
 
