@@ -18,7 +18,7 @@ public static class Program
             .Where(t => t.IsClass && !t.IsAbstract)
             .Where(t => t.GetInterfaces().Contains(typeof(IFuzzer)))
             .Select(t => (IFuzzer)Activator.CreateInstance(t)!)
-            .OrderBy(t => t.Name, StringComparer.OrdinalIgnoreCase)
+            .OrderBy(f => f.Name, StringComparer.OrdinalIgnoreCase)
             .ToArray();
 
         void PrintUsage()
