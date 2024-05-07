@@ -1885,6 +1885,42 @@ void Compiler::lvaClassifyParameterABI()
             }
         }
     }
+
+    for (unsigned lclNum = 0; lclNum < info.compArgsCount; lclNum++)
+    {
+        const ABIPassingInformation& abiInfo = lvaGetParameterABIInfo(lclNum);
+
+        if (lvaIsImplicitByRefLocal(lclNum))
+        {
+            assert((abiInfo.NumSegments == 1) && (abiInfo.Segments[0].Size == TARGET_POINTER_SIZE));
+        }
+        else
+        {
+            for (unsigned i = 0; i < abiInfo.NumSegments; i++)
+            {
+                const ABIPassingSegment& segment = abiInfo.Segments[i];
+                assert(segment.Size > 0);
+                assert(segment.Offset + segment.Size <= lvaLclExactSize(lclNum));
+
+                if (i > 0)
+                {
+                    assert(segment.Offset > abiInfo.Segments[i - 1].Offset);
+                }
+
+                for (unsigned j = 0; j < abiInfo.NumSegments; j++)
+                {
+                    if (i == j)
+                    {
+                        continue;
+                    }
+
+                    const ABIPassingSegment& otherSegment = abiInfo.Segments[j];
+                    assert((segment.Offset + segment.Size <= otherSegment.Offset) ||
+                           (segment.Offset >= otherSegment.Offset + otherSegment.Size));
+                }
+            }
+        }
+    }
 #endif // DEBUG
 }
 
@@ -4098,11 +4134,13 @@ void Compiler::lvaSortByRefCount()
                 case TYP_SIMD8:
                 case TYP_SIMD12:
                 case TYP_SIMD16:
-#if defined(TARGET_XARCH)
+#ifdef TARGET_XARCH
                 case TYP_SIMD32:
                 case TYP_SIMD64:
-                case TYP_MASK:
 #endif // TARGET_XARCH
+#ifdef FEATURE_MASKED_HW_INTRINSICS
+                case TYP_MASK:
+#endif // FEATURE_MASKED_HW_INTRINSICS
 #endif // FEATURE_SIMD
                 case TYP_STRUCT:
                     break;

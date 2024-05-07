@@ -55,8 +55,8 @@
 #ifndef FEATURE_EH_FUNCLETS
 #include "excep.h"
 #endif
-
 #include "exinfo.h"
+#include "arraynative.inl"
 
 using std::isfinite;
 using std::isnan;
@@ -4778,21 +4778,6 @@ HCIMPLEND
 //      GC HELPERS
 //
 //========================================================================
-
-/*************************************************************/
-HCIMPL3(VOID, JIT_StructWriteBarrier, void *dest, void* src, CORINFO_CLASS_HANDLE typeHnd_)
-{
-    FCALL_CONTRACT;
-
-    TypeHandle typeHnd(typeHnd_);
-    MethodTable *pMT = typeHnd.AsMethodTable();
-
-    HELPER_METHOD_FRAME_BEGIN_NOPOLL();    // Set up a frame
-    CopyValueClass(dest, src, pMT);
-    HELPER_METHOD_FRAME_END_POLL();
-
-}
-HCIMPLEND
 
 /*************************************************************/
 // Slow helper to tailcall from the fast one

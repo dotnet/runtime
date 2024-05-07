@@ -119,10 +119,10 @@ ASMCONSTANTS_C_ASSERT(OFFSETOF__Thread__m_pFrame
 #define Thread_m_pFrame OFFSETOF__Thread__m_pFrame
 
 
-#define               OFFSET__Thread__m_alloc_context__alloc_ptr 0x50
+#define               OFFSET__Thread__m_alloc_context__alloc_ptr 0x48
 ASMCONSTANTS_C_ASSERT(OFFSET__Thread__m_alloc_context__alloc_ptr == offsetof(Thread, m_alloc_context) + offsetof(gc_alloc_context, alloc_ptr));
 
-#define               OFFSET__Thread__m_alloc_context__alloc_limit 0x58
+#define               OFFSET__Thread__m_alloc_context__alloc_limit 0x50
 ASMCONSTANTS_C_ASSERT(OFFSET__Thread__m_alloc_context__alloc_limit == offsetof(Thread, m_alloc_context) + offsetof(gc_alloc_context, alloc_limit));
 
 #define               OFFSETOF__gc_alloc_context__alloc_ptr 0x0
@@ -277,9 +277,6 @@ ASMCONSTANTS_C_ASSERT(OFFSETOF__LazyMachState__m_CaptureRip
                     == offsetof(LazyMachState, m_CaptureRip));
 ASMCONSTANTS_C_ASSERT(OFFSETOF__LazyMachState__m_CaptureRsp
                     == offsetof(LazyMachState, m_CaptureRsp));
-
-#define               OFFSETOF__MethodDesc__m_wFlags        DBG_FRE(0x2E, 0x06)
-ASMCONSTANTS_C_ASSERT(OFFSETOF__MethodDesc__m_wFlags == offsetof(MethodDesc, m_wFlags));
 
 #define               OFFSETOF__VASigCookie__pNDirectILStub     0x8
 ASMCONSTANTS_C_ASSERT(OFFSETOF__VASigCookie__pNDirectILStub

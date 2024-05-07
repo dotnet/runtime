@@ -97,7 +97,7 @@ namespace System.Text.Json.Reflection
             object?[] parameters)
         {
             ConstructorInfo ctorInfo = type.GetConstructor(BindingFlags.NonPublic | BindingFlags.Instance, null, parameterTypes, null)!;
-#if NETCOREAPP
+#if NET
             return ctorInfo.Invoke(BindingFlags.DoNotWrapExceptions, null, parameters, null);
 #else
             object? result = null;

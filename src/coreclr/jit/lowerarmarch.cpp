@@ -737,6 +737,12 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
 
         if (doCpObj)
         {
+            // Try to use bulk copy helper
+            if (TryLowerBlockStoreAsGcBulkCopyCall(blkNode))
+            {
+                return;
+            }
+
             assert((dstAddr->TypeGet() == TYP_BYREF) || (dstAddr->TypeGet() == TYP_I_IMPL));
             blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindCpObjUnroll;
         }
@@ -3295,6 +3301,10 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
             case NI_Sve_CreateTrueMaskUInt16:
             case NI_Sve_CreateTrueMaskUInt32:
             case NI_Sve_CreateTrueMaskUInt64:
+            case NI_Sve_Count16BitElements:
+            case NI_Sve_Count32BitElements:
+            case NI_Sve_Count64BitElements:
+            case NI_Sve_Count8BitElements:
                 assert(hasImmediateOperand);
                 assert(varTypeIsIntegral(intrin.op1));
                 if (intrin.op1->IsCnsIntOrI())
