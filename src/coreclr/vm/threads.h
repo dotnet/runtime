@@ -2867,7 +2867,6 @@ private:
 
     DWORD           m_Priority;     // initialized to INVALID_THREAD_PRIORITY, set to actual priority when a
                                     // thread does a busy wait for GC, reset to INVALID_THREAD_PRIORITY after wait is over
-    friend class NDirect; // Quick access to thread stub creation
 
 #ifdef HAVE_GCCOVER
     friend void DoGcStress (PT_CONTEXT regs, NativeCodeVersion nativeCodeVersion);  // Needs to call UnhijackThread
@@ -3663,14 +3662,6 @@ public:
 #endif // defined(GCCOVER_TOLERATE_SPURIOUS_AV)
 #endif // HAVE_GCCOVER
 
-public:
-    static BOOL CheckThreadStackSize(SIZE_T *SizeToCommitOrReserve,
-                                      BOOL   isSizeToReserve  // When TRUE, the previous argument is the stack size to reserve.
-                                                              // Otherwise, it is the size to commit.
-                                     );
-
-    static BOOL GetProcessDefaultStackSize(SIZE_T* reserveSize, SIZE_T* commitSize);
-
 private:
 
     // Although this is a pointer, it is used as a flag to indicate the current context is unsafe
@@ -4067,7 +4058,7 @@ struct cdac_offsets<Thread>
     static constexpr size_t ExposedObject = offsetof(Thread, m_ExposedObject);
     static constexpr size_t Link = offsetof(Thread, m_Link);
 };
-    
+
 // End of class Thread
 
 typedef Thread::ForbidSuspendThreadHolder ForbidSuspendThreadHolder;

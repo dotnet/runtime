@@ -2179,66 +2179,6 @@ SIZE_T GetDefaultStackSizeSetting()
     return (SIZE_T) value;
 }
 
-BOOL Thread::GetProcessDefaultStackSize(SIZE_T* reserveSize, SIZE_T* commitSize)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-
-    //
-    // Let's get the stack sizes from the PE file that started process.
-    //
-    static SIZE_T ExeSizeOfStackReserve = 0;
-    static SIZE_T ExeSizeOfStackCommit = 0;
-
-    static BOOL fSizesGot = FALSE;
-
-    if (!fSizesGot)
-    {
-        SIZE_T defaultStackSizeSetting = GetDefaultStackSizeSetting();
-
-        if (defaultStackSizeSetting != 0)
-        {
-            ExeSizeOfStackReserve = defaultStackSizeSetting;
-            ExeSizeOfStackCommit = defaultStackSizeSetting;
-            fSizesGot = TRUE;
-        }
-    }
-
-#ifndef TARGET_UNIX
-    if (!fSizesGot)
-    {
-        HINSTANCE hInst = WszGetModuleHandle(NULL);
-        _ASSERTE(hInst);  // WszGetModuleHandle should never fail on the module that started the process.
-        EX_TRY
-        {
-            PEDecoder pe(hInst);
-            pe.GetEXEStackSizes(&ExeSizeOfStackReserve, &ExeSizeOfStackCommit);
-            fSizesGot = TRUE;
-        }
-        EX_CATCH
-        {
-            fSizesGot = FALSE;
-        }
-        EX_END_CATCH(SwallowAllExceptions);
-    }
-#endif // !TARGET_UNIX
-
-    if (!fSizesGot) {
-        //return some somewhat-reasonable numbers
-        if (NULL != reserveSize) *reserveSize = 256*1024;
-        if (NULL != commitSize) *commitSize = 256*1024;
-        return FALSE;
-    }
-
-    if (NULL != reserveSize) *reserveSize = ExeSizeOfStackReserve;
-    if (NULL != commitSize) *commitSize = ExeSizeOfStackCommit;
-    return TRUE;
-}
-
 BOOL Thread::CreateNewOSThread(SIZE_T sizeToCommitOrReserve, LPTHREAD_START_ROUTINE start, void *args)
 {
     CONTRACTL {
