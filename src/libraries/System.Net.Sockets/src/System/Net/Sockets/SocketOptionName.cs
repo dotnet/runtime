@@ -146,6 +146,7 @@ namespace System.Net.Sockets
         Expedited = 2,
         /// <summary>
         /// This enables TCP Fast Open as defined in RFC-7413. The actual observed behavior depend on OS configuration and state of kernel TCP cookie cache.
+        /// Enabling TFO can impact interoperability and casue connectivity issues.
         /// </summary>
         FastOpen = 15,
         /// <summary>
