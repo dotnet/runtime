@@ -3873,6 +3873,8 @@ encode_method_ref (MonoAotCompile *acfg, MonoMethod *method, guint8 *buf, guint8
 					uint32_t len = (uint32_t) strlen (info->d.unsafe_accessor.member_name);
 					encode_value (len, p, &p);
 					encode_string (info->d.unsafe_accessor.member_name, p, &p);
+				} else {
+					encode_value (0, p, &p);
 				}
 				if (method->is_inflated) {
 					encode_value(1, p, &p);

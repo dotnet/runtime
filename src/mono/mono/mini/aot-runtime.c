@@ -1086,8 +1086,11 @@ decode_method_ref_with_target (MonoAotModule *module, MethodRef *ref, MonoMethod
 					return FALSE;
 				MonoUnsafeAccessorKind kind = (MonoUnsafeAccessorKind) decode_value (p, &p);
 				uint32_t name_len = decode_value (p, &p);
-				const char *member_name = (const char*)p;
-				p += name_len + 1;
+				const char *member_name = NULL;
+				if (name_len > 0) {
+					member_name = (const char*)p;
+					p += name_len + 1;
+				}
 				int32_t inflated = decode_value (p, &p);
 				if (inflated) {
 					MonoGenericContext ctx = {0,};
