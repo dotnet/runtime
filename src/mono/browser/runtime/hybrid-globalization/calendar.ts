@@ -3,7 +3,7 @@
 
 /* eslint-disable no-inner-declarations */
 import { VoidPtrNull } from "../types/internal";
-import { runtimeHelpers } from "../globals";
+import { runtimeHelpers } from "./module-exports";
 import { Int32Ptr, VoidPtr } from "../types/emscripten";
 import { INNER_SEPARATOR, OUTER_SEPARATOR, normalizeSpaces } from "./helpers";
 

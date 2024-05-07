@@ -429,29 +429,31 @@ function importModules () {
         mono_log_debug(`Attempting to import '${jsModuleNativeAsset.resolvedUrl}' for ${jsModuleNativeAsset.name}`);
         jsModuleNativePromise = import(/*! webpackIgnore: true */jsModuleNativeAsset.resolvedUrl!);
     }
-
-    let jsModuleHybridGlobalizationPromise: Promise<NativeModuleExportsInternal> | undefined = undefined;
-    // todo: move it for after runtime startup
-    if (!WasmEnableThreads) {
-        const jsModuleHybridGlobalization = resolve_single_asset_path("js-module-globalization");
-        if (typeof jsModuleHybridGlobalization.moduleExports === "object") {
-            jsModuleHybridGlobalizationPromise = jsModuleHybridGlobalization.moduleExports;
-        } else {
-            mono_log_debug(`Attempting to import '${jsModuleHybridGlobalization.resolvedUrl}' for ${jsModuleHybridGlobalization.name}`);
-            jsModuleHybridGlobalizationPromise = import(/*! webpackIgnore: true */jsModuleHybridGlobalization.resolvedUrl!);
-        }
-    }
-
-    return [jsModuleRuntimePromise, jsModuleNativePromise, jsModuleHybridGlobalizationPromise];
+    return [jsModuleRuntimePromise, jsModuleNativePromise];
 }
 
-async function initializeModules (es6Modules: [RuntimeModuleExportsInternal, NativeModuleExportsInternal, HybridGlobalizationModuleExportsInternal]) {
+async function getHybridModuleExports () : Promise<HybridGlobalizationModuleExportsInternal> {
+    let jsModuleHybridGlobalizationPromise: Promise<NativeModuleExportsInternal> | undefined = undefined;
+    // todo: move it for after runtime startup
+    const jsModuleHybridGlobalization = resolve_single_asset_path("js-module-globalization");
+    if (typeof jsModuleHybridGlobalization.moduleExports === "object") {
+        jsModuleHybridGlobalizationPromise = jsModuleHybridGlobalization.moduleExports;
+    } else {
+        mono_log_debug(`Attempting to import '${jsModuleHybridGlobalization.resolvedUrl}' for ${jsModuleHybridGlobalization.name}`);
+        jsModuleHybridGlobalizationPromise = import(/*! webpackIgnore: true */jsModuleHybridGlobalization.resolvedUrl!);
+    }
+    const hybridModule = await jsModuleHybridGlobalizationPromise;
+    return hybridModule as any;
+}
+
+async function initializeModules (es6Modules: [RuntimeModuleExportsInternal, NativeModuleExportsInternal]) {
     const { initializeExports, initializeReplacements, configureRuntimeStartup, configureEmscriptenStartup, configureWorkerStartup, setRuntimeGlobals, passEmscriptenInternals } = es6Modules[0];
     const { default: emscriptenFactory } = es6Modules[1];
     setRuntimeGlobals(globalObjectsRoot);
     initializeExports(globalObjectsRoot);
     if (!WasmEnableThreads) {
-        const { initHybrid } = es6Modules[2];
+        const hybridModule = await getHybridModuleExports();
+        const { initHybrid } = hybridModule;
         initHybrid(runtimeHelpers);
     }
     await configureRuntimeStartup(emscriptenModule);

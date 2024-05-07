@@ -5,6 +5,8 @@ import { mono_wasm_compare_string, mono_wasm_starts_with, mono_wasm_ends_with, m
 import { mono_wasm_get_culture_info } from "./culture-info";
 import { mono_wasm_get_locale_info, mono_wasm_get_first_day_of_week, mono_wasm_get_first_week_of_year } from "./locales";
 
+export let runtimeHelpers: RuntimeHelpers;
+
 export function initHybrid (rh: RuntimeHelpers) {
     rh.mono_wasm_change_case_invariant = mono_wasm_change_case_invariant;
     rh.mono_wasm_change_case = mono_wasm_change_case;
@@ -17,5 +19,6 @@ export function initHybrid (rh: RuntimeHelpers) {
     rh.mono_wasm_get_locale_info = mono_wasm_get_locale_info;
     rh.mono_wasm_get_first_day_of_week = mono_wasm_get_first_day_of_week;
     rh.mono_wasm_get_first_week_of_year = mono_wasm_get_first_week_of_year;
+    runtimeHelpers = rh;
 }
 

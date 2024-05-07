@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import { VoidPtrNull } from "../types/internal";
-import { runtimeHelpers } from "../globals";
+import { runtimeHelpers } from "./module-exports";
 import { Int32Ptr, VoidPtr } from "../types/emscripten";
 import { GraphemeSegmenter } from "./grapheme-segmenter";
 
