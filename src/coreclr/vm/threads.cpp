@@ -371,13 +371,9 @@ void SetThread(Thread* t)
     {
         EnsureTlsDestructionMonitor();
     }
-}
 
-void SetAppDomain(AppDomain* ad)
-{
-    LIMITED_METHOD_CONTRACT
-
-    gCurrentThreadInfo.m_pAppDomain = ad;
+    // Clear or set the app domain to the one domain based on if the thread is being nulled out or set
+    gCurrentThreadInfo.m_pAppDomain = t == NULL ? NULL : AppDomain::GetCurrentDomain();
 }
 
 BOOL Thread::Alert ()
@@ -594,7 +590,6 @@ static void DeleteThread(Thread* pThread)
 
     //_ASSERTE (pThread == GetThread());
     SetThread(NULL);
-    SetAppDomain(NULL);
 
     if (pThread->HasThreadStateNC(Thread::TSNC_ExistInThreadStore))
     {
@@ -727,7 +722,6 @@ Thread* SetupThread()
     ThreadStore::AddThread(pThread);
 
     SetThread(pThread);
-    SetAppDomain(pThread->GetDomain());
 
 #ifdef FEATURE_INTEROP_DEBUGGING
     // Ensure that debugger word slot is allocated
@@ -1010,7 +1004,6 @@ HRESULT Thread::DetachThread(BOOL fDLLThreadDetach)
 
     // We need to make sure that TLS are touched last here.
     SetThread(NULL);
-    SetAppDomain(NULL);
 
     SetThreadState((Thread::ThreadState)(Thread::TS_Detached | Thread::TS_ReportDead));
     // Do not touch Thread object any more.  It may be destroyed.
@@ -1585,8 +1578,6 @@ Thread::Thread()
 
     m_monitorLockContentionCount = 0;
 
-    m_pDomain = SystemDomain::System()->DefaultDomain();
-
     // Do not expose thread until it is fully constructed
     g_pThinLockThreadIdDispenser->NewId(this, this->m_ThreadId);
 
@@ -1846,7 +1837,6 @@ BOOL Thread::HasStarted()
         PrepareApartmentAndContext();
 
         SetThread(this);
-        SetAppDomain(m_pDomain);
 
         ThreadStore::TransferStartedThread(this);
 
@@ -1945,7 +1935,6 @@ FAILURE:
     ThreadStore::CheckForEEShutdown();
     DecExternalCount(/*holdingLock*/ HasThreadStateNC(Thread::TSNC_TSLTakenForStartup));
     SetThread(NULL);
-    SetAppDomain(NULL);
     return FALSE;
 }
 
@@ -3092,7 +3081,6 @@ void Thread::OnThreadTerminate(BOOL holdingLock)
             // right thread.  But this will only happen during a shutdown.  And we've made
             // a "best effort" to reduce to a single thread before we begin the shutdown.
             SetThread(NULL);
-            SetAppDomain(NULL);
         }
 
         if (!holdingLock)
@@ -3309,7 +3297,7 @@ DWORD Thread::DoAppropriateAptStateWait(int numWaiters, HANDLE* pHandles, BOOL b
     BOOL alertable = (mode & WaitMode_Alertable) != 0;
 
 #ifdef FEATURE_COMINTEROP_APARTMENT_SUPPORT
-    if (alertable && !GetDomain()->MustForceTrivialWaitOperations())
+    if (alertable && !AppDomain::GetCurrentDomain()->MustForceTrivialWaitOperations())
     {
         ApartmentState as = GetFinalApartment();
         if (AS_InMTA != as)
@@ -3389,7 +3377,7 @@ DWORD Thread::DoAppropriateWaitWorker(int countHandles, HANDLE *handles, BOOL wa
     // which will make mode != WaitMode_Alertable.
     BOOL ignoreSyncCtx = (mode != WaitMode_Alertable);
 
-    if (GetDomain()->MustForceTrivialWaitOperations())
+    if (AppDomain::GetCurrentDomain()->MustForceTrivialWaitOperations())
         ignoreSyncCtx = TRUE;
 
     // Unless the ignoreSyncCtx flag is set, first check to see if there is a synchronization
@@ -3693,7 +3681,7 @@ DWORD Thread::DoAppropriateWaitWorker(AppropriateWaitFunc func, void *args,
         option = WAIT_ALERTABLE;
 #ifdef FEATURE_COMINTEROP_APARTMENT_SUPPORT
         ApartmentState as = GetFinalApartment();
-        if ((AS_InMTA != as) && !GetDomain()->MustForceTrivialWaitOperations())
+        if ((AS_InMTA != as) && !AppDomain::GetCurrentDomain()->MustForceTrivialWaitOperations())
         {
             option |= WAIT_MSGPUMP;
         }
@@ -4408,7 +4396,7 @@ void Thread::SetLastThrownObject(OBJECTREF throwable, BOOL isUnhandled)
         }
         else
         {
-            m_LastThrownObjectHandle = GetDomain()->CreateHandle(throwable);
+            m_LastThrownObjectHandle = AppDomain::GetCurrentDomain()->CreateHandle(throwable);
         }
 
         _ASSERTE(m_LastThrownObjectHandle != NULL);
@@ -7129,11 +7117,6 @@ void Thread::ClearContext()
         if (GetThreadNULLOk()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
     }
     CONTRACTL_END;
-
-    if (!m_pDomain)
-        return;
-
-    m_pDomain = NULL;
 #ifdef FEATURE_COMINTEROP
     m_fDisableComObjectEagerCleanup = false;
 #endif //FEATURE_COMINTEROP
@@ -8276,10 +8259,7 @@ Thread::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
     DAC_ENUM_DTHIS();
     if (flags != CLRDATA_ENUM_MEM_MINI && flags != CLRDATA_ENUM_MEM_TRIAGE && flags != CLRDATA_ENUM_MEM_HEAP2)
     {
-        if (m_pDomain.IsValid())
-        {
-            m_pDomain->EnumMemoryRegions(flags, true);
-        }
+        AppDomain::GetCurrentDomain()->EnumMemoryRegions(flags, true);
     }
 
     if (m_debuggerFilterContext.IsValid())
