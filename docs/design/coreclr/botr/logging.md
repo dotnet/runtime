@@ -60,11 +60,11 @@ set DOTNET_LogLevel=3
 
 echo If the buffer is filling too quickly, it can be helpful to set large buffer sizes.
 echo But if you have many threads, you may want to set a low limit to avoid exhausting memory.
-echo Set a per-thread size limit for StressLog of 20MB
-set DOTNET_StressLogSize=20971520
+echo Set a per-thread size limit for StressLog of 20MB. Config settings default to hex.
+set DOTNET_StressLogSize=1400000
 
-echo Set a process-wide size limit for all StressLogs (combined) of 400MB
-set DOTNET_TotalStressLogSize=419430400
+echo Set a process-wide size limit for all StressLogs (combined) of 400MB. Config settings default to hex.
+set DOTNET_TotalStressLogSize=18000000
 
 echo Write the StressLog's to a file instead of memory for cases where you can't attach a debugger or get a dump file.
 set DOTNET_StressLogFilename=mystresslog.log
