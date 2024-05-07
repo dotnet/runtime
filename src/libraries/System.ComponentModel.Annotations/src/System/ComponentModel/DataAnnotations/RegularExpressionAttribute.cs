@@ -28,12 +28,12 @@ namespace System.ComponentModel.DataAnnotations
         /// <summary>
         ///     Constructor that accepts the regular expression pattern
         /// </summary>
-        /// <param name="pattern">The regular expression to use.  It cannot be null.</param>
-        public RegularExpressionAttribute(Regex pattern)
+        /// <param name="regex">The regular expression to use.  It cannot be null.</param>
+        public RegularExpressionAttribute(Regex regex)
             : base(() => SR.RegexAttribute_ValidationError)
         {
-            Regex = pattern;
-            Pattern = pattern.ToString();
+            Regex = regex;
+            Pattern = regex.ToString();
             MatchTimeoutInMilliseconds = 2000;
         }
 
