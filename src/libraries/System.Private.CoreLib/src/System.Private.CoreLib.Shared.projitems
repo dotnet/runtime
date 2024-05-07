@@ -1482,19 +1482,19 @@
     <Compile Include="$(CommonPath)System\Reflection\AssemblyNameFormatter.cs">
       <Link>Common\System\Reflection\AssemblyNameFormatter.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)System\Reflection\Metadata\AssemblyNameInfo.cs">
+    <Compile Include="$(LibrariesProjectRoot)System.Reflection.Metadata\src\System\Reflection\Metadata\AssemblyNameInfo.cs">
       <Link>Common\System\Reflection\Metadata\AssemblyNameInfo.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)System\Reflection\Metadata\TypeName.cs">
+    <Compile Include="$(LibrariesProjectRoot)System.Reflection.Metadata\src\System\Reflection\Metadata\TypeName.cs">
       <Link>Common\System\Reflection\Metadata\TypeName.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)System\Reflection\Metadata\TypeNameHelpers.cs">
       <Link>Common\System\Reflection\Metadata\TypeNameHelpers.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)System\Reflection\Metadata\TypeNameParser.cs">
+    <Compile Include="$(LibrariesProjectRoot)System.Reflection.Metadata\src\System\Reflection\Metadata\TypeNameParser.cs">
       <Link>Common\System\Reflection\Metadata\TypeNameParser.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)System\Reflection\Metadata\TypeNameParserHelpers.cs">
+    <Compile Include="$(LibrariesProjectRoot)System.Reflection.Metadata\src\System\Reflection\Metadata\TypeNameParserHelpers.cs">
       <Link>Common\System\Reflection\Metadata\TypeNameParserHelpers.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)System\Runtime\Versioning\NonVersionableAttribute.cs">
