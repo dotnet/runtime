@@ -34,7 +34,7 @@ namespace ILCompiler
             return false;
         }
 
-        public static void AddRuntimeRequiredIsaFlagsToBuilder(InstructionSetSupportBuilder builder, int flags)
+        public static void AddRuntimeRequiredIsaFlagsToBuilder(InstructionSetSupportBuilder builder, long flags)
         {
             switch (builder.Architecture)
             {
@@ -85,7 +85,7 @@ namespace ILCompiler
             public const int Avx10v1_v256 = 0x8000000;
             public const int Avx10v1_v512 = 0x10000000;
 
-            public static void AddToBuilder(InstructionSetSupportBuilder builder, int flags)
+            public static void AddToBuilder(InstructionSetSupportBuilder builder, long flags)
             {
                 if ((flags & Aes) != 0)
                     builder.AddSupportedInstructionSet("aes");
@@ -145,9 +145,11 @@ namespace ILCompiler
                     builder.AddSupportedInstructionSet("avx10v1_v256");
                 if ((flags & Avx10v1_v512) != 0)
                     builder.AddSupportedInstructionSet("avx10v1_v512");
+                if ((flags & Apx) != 0)
+                    builder.AddSupportedInstructionSet("apx");
             }
 
-            public static int FromInstructionSet(InstructionSet instructionSet)
+            public static long FromInstructionSet(InstructionSet instructionSet)
             {
                 Debug.Assert(InstructionSet.X64_AES == InstructionSet.X86_AES);
                 Debug.Assert(InstructionSet.X64_SSE41 == InstructionSet.X86_SSE41);
@@ -249,7 +251,7 @@ namespace ILCompiler
             public const int Rcpc2 = 0x0200;
             public const int Sve = 0x0400;
 
-            public static void AddToBuilder(InstructionSetSupportBuilder builder, int flags)
+            public static void AddToBuilder(InstructionSetSupportBuilder builder, long flags)
             {
                 if ((flags & AdvSimd) != 0)
                     builder.AddSupportedInstructionSet("neon");
@@ -275,7 +277,7 @@ namespace ILCompiler
                     builder.AddSupportedInstructionSet("sve");
             }
 
-            public static int FromInstructionSet(InstructionSet instructionSet)
+            public static long FromInstructionSet(InstructionSet instructionSet)
             {
                 return instructionSet switch
                 {

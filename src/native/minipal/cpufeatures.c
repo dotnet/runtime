@@ -72,6 +72,10 @@ static uint32_t xmmYmmStateSupport()
 #define XSTATE_MASK_AVX512 (0xE0) /* 0b1110_0000 */
 #endif // XSTATE_MASK_AVX512
 
+#ifndef XSTATE_MASK_APX
+#define XSTATE_MASK_APX (0x80000)
+#endif // XSTATE_MASK_APX 
+
 static uint32_t avx512StateSupport()
 {
 #if defined(HOST_APPLE)
@@ -99,12 +103,32 @@ static uint32_t avx512StateSupport()
 #endif
 }
 
+static uint32_t apxStateSupport()
+{
+#if defined(HOST_APPLE)
+    return false;
+#else
+    uint32_t eax;
+    __asm("  xgetbv\n" \
+        : "=a"(eax) /*output in eax*/\
+        : "c"(0) /*inputs - 0 in ecx*/\
+        : "edx" /* registers that are clobbered*/
+      );
+    return ((eax & 0x80000) == 0x80000) ? 1 : 0;
+#endif
+}
+
 static bool IsAvxEnabled()
 {
     return true;
 }
 
 static bool IsAvx512Enabled()
+{
+    return true;
+}
+
+static bool IsApxEnabled()
 {
     return true;
 }
@@ -137,12 +161,23 @@ static bool IsAvx512Enabled()
     return ((FeatureMask & XSTATE_MASK_AVX512) != 0);
 }
 
+static bool IsApxEnabled()
+{
+    DWORD64 FeatureMask = GetEnabledXStateFeatures();
+    return ((FeatureMask & XSTATE_MASK_APX) != 0);
+}
+
+static uint32_t apxStateSupport()
+{
+    return ((_xgetbv(0) & 0x80000) == 0x80000) ? 1 : 0;
+}
+
 #endif // defined(HOST_X86) || defined(HOST_AMD64)
 #endif // HOST_WINDOWS
 
-int minipal_getcpufeatures(void)
+long long minipal_getcpufeatures(void)
 {
-    int result = 0;
+    long long result = 0;
 
 #if defined(HOST_X86) || defined(HOST_AMD64)
 
@@ -273,10 +308,18 @@ int minipal_getcpufeatures(void)
 
                                     __cpuidex(cpuidInfo, 0x00000007, 0x00000001);
 
-                                    if ((cpuidInfo[CPUID_EAX] & (1 << 4)) != 0)                                 // AVX-VNNI
-                                    {
-                                        result |= XArchIntrinsicConstants_AvxVnni;
-                                    }
+                                            if ((cpuidInfo[CPUID_EAX] & (1 << 4)) != 0)                                 // AVX-VNNI
+                                            {
+                                                result |= XArchIntrinsicConstants_AvxVnni;
+                                            }
+
+                                            if (IsApxEnabled() && apxStateSupport())
+                                            {
+                                                if ((cpuidInfo[CPUID_EDX] & (1 << 21)) != 0)                                // APX_F
+                                                {
+                                                    result |= XArchIntrinsicConstants_Apx;
+                                                }
+                                            }
 
                                     if ((cpuidInfo[CPUID_EDX] & (1 << 19)) != 0)                                // Avx10
                                     {

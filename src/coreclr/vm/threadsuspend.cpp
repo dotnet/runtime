@@ -1961,14 +1961,15 @@ CONTEXT* AllocateOSContextHelper(BYTE** contextBuffer)
     // Determine if the processor supports AVX so we could
     // retrieve extended registers
     DWORD64 FeatureMask = GetEnabledXStateFeatures();
-    if ((FeatureMask & (XSTATE_MASK_AVX | XSTATE_MASK_AVX512)) != 0)
+    if ((FeatureMask & (XSTATE_MASK_AVX | XSTATE_MASK_AVX512 | XSTATE_MASK_APX)) != 0)
     {
         context = context | CONTEXT_XSTATE;
     }
 
     // Retrieve contextSize by passing NULL for Buffer
     DWORD contextSize = 0;
-    ULONG64 xStateCompactionMask = XSTATE_MASK_LEGACY | XSTATE_MASK_AVX | XSTATE_MASK_MPX | XSTATE_MASK_AVX512;
+    // Ruihan TODO: MPX and APX cannot and will not co-exist, will setting the mask in this way be an issue?
+    ULONG64 xStateCompactionMask = XSTATE_MASK_LEGACY | XSTATE_MASK_AVX | XSTATE_MASK_MPX | XSTATE_MASK_AVX512 | XSTATE_MASK_APX;
     // The initialize call should fail but return contextSize
     BOOL success = g_pfnInitializeContext2 ?
         g_pfnInitializeContext2(NULL, context, NULL, &contextSize, xStateCompactionMask) :
@@ -2902,7 +2903,7 @@ BOOL Thread::RedirectThreadAtHandledJITCase(PFN_REDIRECTTARGET pTgt)
     // This should not normally fail.
     // The system silently ignores any feature specified in the FeatureMask
     // which is not enabled on the processor.
-    SetXStateFeaturesMask(pCtx, (XSTATE_MASK_AVX | XSTATE_MASK_AVX512));
+    SetXStateFeaturesMask(pCtx, (XSTATE_MASK_AVX | XSTATE_MASK_AVX512 | XSTATE_MASK_APX));
 #endif //defined(TARGET_X86) || defined(TARGET_AMD64)
 
     // Make sure we specify CONTEXT_EXCEPTION_REQUEST to detect "trap frame reporting".
@@ -3038,7 +3039,7 @@ BOOL Thread::RedirectCurrentThreadAtHandledJITCase(PFN_REDIRECTTARGET pTgt, CONT
     // Get may return 0 if no XState is set, which Set would not accept.
     if (srcFeatures != 0)
     {
-        success = SetXStateFeaturesMask(pCurrentThreadCtx, srcFeatures & (XSTATE_MASK_AVX | XSTATE_MASK_AVX512));
+        success = SetXStateFeaturesMask(pCurrentThreadCtx, srcFeatures & (XSTATE_MASK_AVX | XSTATE_MASK_AVX512 | XSTATE_MASK_APX));
         _ASSERTE(success);
         if (!success)
             return FALSE;
