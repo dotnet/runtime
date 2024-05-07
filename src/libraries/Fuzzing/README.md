@@ -3,7 +3,7 @@
 This project contains fuzzing targets for various .NET libraries, as well as supporting code for generating OneFuzz deployments from them.
 Targets are instrumented using [SharpFuzz](https://github.com/Metalnem/sharpfuzz), and ran using [libFuzzer](https://llvm.org/docs/LibFuzzer.html).
 
-The runtime and fuzzing targets are rebuilt once a day and published to OneFuzz via [deploy-to-onefuzz.yml](../../../eng/pipelines/libraries/fuzzing/deploy-to-onefuzz.yml).
+The runtime and fuzzing targets are periodically rebuilt and published to OneFuzz via [deploy-to-onefuzz.yml](../../../eng/pipelines/libraries/fuzzing/deploy-to-onefuzz.yml).
 
 Useful links:
 - [libFuzzer documentation](https://llvm.org/docs/LibFuzzer.html)
@@ -74,11 +74,12 @@ As an example, let's test that `IPAddress.TryParse` never throws on invalid inpu
 internal sealed class IPAddressFuzzer : IFuzzer
 {
     public string BlameAlias => "your-alias";
-    public string[] TargetAssemblies => ["System.Net.Primitives"];
+    public string[] TargetAssemblies => ["System.Net.Primitives"]; // Assembly where IPAddress lives
     public string[] TargetCoreLibPrefixes => [];
 
     public void FuzzTarget(ReadOnlySpan<byte> bytes)
     {
+        // PooledBoundedMemory is a helper class that ensures reading past the end of the buffer will trigger an access violation.
         using var chars = PooledBoundedMemory<char>.Rent(MemoryMarshal.Cast<byte, char>(bytes), PoisonPagePlacement.After);
 
         _ = IPAddress.TryParse(chars.Span, out _);

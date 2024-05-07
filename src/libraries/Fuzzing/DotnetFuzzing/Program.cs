@@ -268,7 +268,7 @@ public static class Program
         //    : null;
         string? dictionaryArgument = null;
 
-        // Avoid name conflicts between long-running CI jobs and short-lived test submissions.
+        // Make it easier to distinguish between long-running CI jobs and short-lived test submissions.
         string nameSuffix = Environment.GetEnvironmentVariable("TF_BUILD") is null ? "-local" : "";
 
         return
@@ -323,7 +323,7 @@ public static class Program
 
         if (fuzzer.Dictionary is not null)
         {
-            script += $" -dict=%~dp0dictionary";
+            script += " -dict=%~dp0dictionary";
         }
 
         // Pass any additional arguments to the fuzzer.
