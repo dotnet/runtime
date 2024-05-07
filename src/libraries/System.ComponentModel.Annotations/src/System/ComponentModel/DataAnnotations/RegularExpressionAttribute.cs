@@ -26,6 +26,18 @@ namespace System.ComponentModel.DataAnnotations
         }
 
         /// <summary>
+        ///     Constructor that accepts the regular expression pattern
+        /// </summary>
+        /// <param name="pattern">The regular expression to use.  It cannot be null.</param>
+        public RegularExpressionAttribute(Regex pattern)
+            : base(() => SR.RegexAttribute_ValidationError)
+        {
+            Regex = pattern;
+            Pattern = pattern.ToString();
+            MatchTimeoutInMilliseconds = 2000;
+        }
+
+        /// <summary>
         ///     Gets or sets the timeout to use when matching the regular expression pattern (in milliseconds)
         ///     (-1 means never timeout).
         /// </summary>
