@@ -1354,6 +1354,7 @@ HRESULT CodeVersionManager::GetOrCreateMethodDescVersioningState(MethodDesc* pMe
     CONTRACTL
     {
         NOTHROW;
+        GC_NOTRIGGER;
         PRECONDITION(pMethod != NULL);
         PRECONDITION(ppMethodVersioningState != NULL);
     }
