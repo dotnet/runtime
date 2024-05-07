@@ -85,15 +85,22 @@ public: // IDispatch
             }
             case 3:
             {
-                return ReturnToManaged_Missing_Dispatch(pDispParams, pVarResult);
+                return BoolToString_Dispatch(pDispParams, pVarResult);
             }
             case 4:
             {
-                return ReturnToManaged_DBNull_Dispatch(pDispParams, pVarResult);
+                return ReturnToManaged_Void_Dispatch(pDispParams, pVarResult);
             }
             case 5:
+            case 6:
+            case 7:
+            case 8:
+            case 9:
+            case 10:
+            case 11:
+            case 12:
             {
-                return BoolToString_Dispatch(pDispParams, pVarResult);
+                return ReturnToManaged_Any_Dispatch(pDispParams, pVarResult);
             }
             }
 
@@ -209,7 +216,7 @@ private:
         return S_OK;
     }
 
-    HRESULT ReturnToManaged_Missing_Dispatch(_In_ DISPPARAMS *pDispParams, _Inout_ VARIANT *pVarResult)
+    HRESULT ReturnToManaged_Void_Dispatch(_In_ DISPPARAMS *pDispParams, _Inout_ VARIANT *pVarResult)
     {
         HRESULT hr;
 
@@ -224,7 +231,7 @@ private:
         return S_OK;
     }
 
-    HRESULT ReturnToManaged_DBNull_Dispatch(_In_ DISPPARAMS *pDispParams, _Inout_ VARIANT *pVarResult)
+    HRESULT ReturnToManaged_Any_Dispatch(_In_ DISPPARAMS *pDispParams, _Inout_ VARIANT *pVarResult)
     {
         HRESULT hr;
 
@@ -270,9 +277,15 @@ const WCHAR * const DispatchCoerceTesting::Names[] =
     W("__RESERVED__"),
     W("ReturnToManaged"),
     W("ManagedArgument"),
+    W("BoolToString"),
+    W("ReturnToManaged_Void"),
+    W("ReturnToManaged_Double"),
+    W("ReturnToManaged_String"),
+    W("ReturnToManaged_Decimal"),
+    W("ReturnToManaged_DateTime"),
+    W("ReturnToManaged_Color"),
     W("ReturnToManaged_Missing"),
     W("ReturnToManaged_DBNull"),
-    W("BoolToString")
 };
 
 const int DispatchCoerceTesting::NamesCount = ARRAY_SIZE(DispatchCoerceTesting::Names);

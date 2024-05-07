@@ -245,17 +245,55 @@ namespace NetClient
                 Assert.Equal(expected, result);
             }
 
-            // Invalid: Rejected before reaching coerce
-            Console.WriteLine("Invalid variant type should throw InvalidOleVariantTypeException.");
-            var variantException = Assert.Throws<InvalidOleVariantTypeException>(() => dispatchCoerceTesting.ReturnToManaged(0x7FFF));
-            Assert.Equal(unchecked((int)0x80131531), variantException.HResult);
-
             // Not supported source or destination type: COMException { HResult: 0x80020005 }
 
             // DISP_E_PARAMNOTFOUND: Converts to Missing
             Console.WriteLine("Converting from VT_ERROR with DISP_E_PARAMNOTFOUND should be rejected.");
             var comException = Assert.Throws<COMException>(() => dispatchCoerceTesting.ReturnToManaged(unchecked((short)((short)VarEnum.VT_ERROR | 0x8000))));
             Assert.Equal(unchecked((int)0x80020005), comException.HResult);
+
+            // Types rejected by OAVariantLib
+            VarEnum[] unsupportedTypes = 
+            {
+                VarEnum.VT_ERROR | (VarEnum)0x8000,
+            };
+
+            // Types rejected by VariantChangeTypeEx
+            VarEnum[] invalidCastTypes = 
+            {
+                VarEnum.VT_UNKNOWN,
+                VarEnum.VT_NULL,
+            };
+
+            foreach (var vt in invalidCastTypes)
+            {
+                Console.WriteLine($"Converting {vt} to int should fail from VariantChangeTypeEx.");
+                Assert.Throws<InvalidCastException>(() => dispatchCoerceTesting.ReturnToManaged((short)vt));
+            }
+
+            // Invalid: Rejected before reaching coerce
+            Console.WriteLine("Invalid variant type should throw InvalidOleVariantTypeException.");
+            var variantException = Assert.Throws<InvalidOleVariantTypeException>(() => dispatchCoerceTesting.ReturnToManaged(0x7FFF));
+            Assert.Equal(unchecked((int)0x80131531), variantException.HResult);
+
+            Console.WriteLine("Invoking void-returning method should not allocate return buffer.");
+            // E_POINTER translates to NullReferenceException
+            Assert.Throws<NullReferenceException>(() => dispatchCoerceTesting.ReturnToManaged_Void());
+
+            Console.WriteLine("Converting int to double should be supported.");
+            Assert.Equal(1234d, dispatchCoerceTesting.ReturnToManaged_Double());
+
+            Console.WriteLine("Converting int to string should be supported.");
+            Assert.Equal("1234", dispatchCoerceTesting.ReturnToManaged_String());
+
+            Console.WriteLine("Converting int to decimal should be supported.");
+            Assert.Equal(1234m, dispatchCoerceTesting.ReturnToManaged_Decimal());
+
+            Console.WriteLine("Converting int to DateTime should be supported.");
+            Assert.Equal(new DateTime(1903, 5, 18, 0, 0, 0), dispatchCoerceTesting.ReturnToManaged_DateTime());
+
+            Console.WriteLine("Converting int to System.Drawing.Color should be supported.");
+            Assert.Equal(System.Drawing.Color.FromArgb(210, 4, 0), dispatchCoerceTesting.ReturnToManaged_Color());
 
             Console.WriteLine("Converting int to VT_MISSING should be rejected.");
             comException = Assert.Throws<COMException>(() => dispatchCoerceTesting.ReturnToManaged_Missing());
@@ -264,12 +302,6 @@ namespace NetClient
             Console.WriteLine("Converting int to VT_NULL should be rejected.");
             comException = Assert.Throws<COMException>(() => dispatchCoerceTesting.ReturnToManaged_DBNull());
             Assert.Equal(unchecked((int)0x80020005), comException.HResult);
-
-            // Rejected by VariantChangeTypeEx
-            Console.WriteLine("Converting VT_UNKNOWN to int should fail from VariantChangeTypeEx.");
-            Assert.Throws<InvalidCastException>(() => dispatchCoerceTesting.ReturnToManaged((short)VarEnum.VT_UNKNOWN));
-            Console.WriteLine("Converting VT_NULL to int should fail from VariantChangeTypeEx.");
-            Assert.Throws<InvalidCastException>(() => dispatchCoerceTesting.ReturnToManaged((short)VarEnum.VT_NULL));
 
             // LOCAL_BOOL
             Console.WriteLine("VARIANT_BOOL should convert to non-numeric string.");
