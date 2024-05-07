@@ -2853,10 +2853,9 @@ private:
 
         Thread *pThread = g_pEEInterface->GetThread();
         AppDomain *pAppDomain = NULL;
-
         if (pThread)
         {
-            pAppDomain = pThread->GetDomain();
+            pAppDomain = AppDomain::GetCurrentDomain();
         }
 
         InitIPCEvent(ipce,
