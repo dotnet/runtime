@@ -295,9 +295,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			}
 
 			[Kept]
-			// https://github.com/dotnet/runtime/issues/93718
-			// This should not warn
-			[ExpectedWarning ("IL2075", "GetMethod", Tool.Trimmer | Tool.NativeAot, "")]
+			[UnexpectedWarning ("IL2075", "GetMethod", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/93718")]
 			static void TestStruct (BasicAnnotatedStruct instance)
 			{
 				instance.GetType ().GetMethod ("UsedMethod");
@@ -1408,8 +1406,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			static IEnumerable<AnnotatedBase> GetInstances () => new AnnotatedBase[] { new Derived () };
 
 			[Kept]
-			// https://github.com/dotnet/runtime/issues/93719
-			[ExpectedWarning ("IL2075", nameof (Type.GetType), Tool.Trimmer | Tool.NativeAot, "")]
+			[UnexpectedWarning ("IL2075", nameof (Type.GetType), Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/93719")]
 			public static void Test ()
 			{
 				foreach (var instance in GetInstances ()) {
@@ -1584,7 +1581,6 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			}
 
 			[Kept]
-			// https://github.com/dotnet/runtime/issues/93720
 			[ExpectedWarning ("IL2072")]
 			static void TestIsInstOf (object o)
 			{

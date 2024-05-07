@@ -1032,7 +1032,8 @@ namespace Mono.Linker.Tests.TestCasesRunner
 								.Where (d => d.Target.ToLowerInvariant ().Contains (expectedTarget.ToLowerInvariant ()))
 								.Select (d => "\t" + DependencyToString (d)));
 							string sourceCandidates = string.Join (Environment.NewLine, dependencyRecorder.Dependencies
-								.Where (d => d.Source.ToLowerInvariant ().Contains (expectedSource.ToLowerInvariant ()))
+								.Where (d =>
+								d.Source.ToLowerInvariant ().Contains (expectedSource.ToLowerInvariant ()))
 								.Select (d => "\t" + DependencyToString (d)));
 
 							Assert.Fail (
