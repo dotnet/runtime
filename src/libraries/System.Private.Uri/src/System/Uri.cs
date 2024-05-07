@@ -7,6 +7,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.Net;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
@@ -1275,17 +1276,17 @@ namespace System
                     if (name.StartsWith('[') && name.EndsWith(']'))
                     {
                         // we require that _entire_ name is recognized as ipv6 address
-                        if (IPv6AddressHelper.IsValid(fixedName, 1, ref end) && end == name.Length)
+                        if (IPv6AddressHelper<char>.IsValid(fixedName, 1, ref end) && end == name.Length)
                         {
                             return UriHostNameType.IPv6;
                         }
                     }
+                }
 
-                    end = name.Length;
-                    if (IPv4AddressHelper.IsValid(fixedName, 0, ref end, false, false, false) && end == name.Length)
-                    {
-                        return UriHostNameType.IPv4;
-                    }
+                end = name.Length;
+                if (IPv4AddressHelper<char>.IsValid(name.AsSpan(), ref end, false, false, false) && end == name.Length)
+                {
+                    return UriHostNameType.IPv4;
                 }
 
                 if (DomainNameHelper.IsValid(name, iri: false, notImplicitFile: false, out int length) && length == name.Length)
@@ -1304,7 +1305,7 @@ namespace System
                 name = "[" + name + "]";
                 fixed (char* newFixedName = name)
                 {
-                    if (IPv6AddressHelper.IsValid(newFixedName, 1, ref end) && end == name.Length)
+                    if (IPv6AddressHelper<char>.IsValid(newFixedName, 1, ref end) && end == name.Length)
                     {
                         return UriHostNameType.IPv6;
                     }
@@ -2514,11 +2515,12 @@ namespace System
 
                 case Flags.IPv6HostType:
                     // The helper will return [...] string that is not suited for Dns.Resolve()
-                    host = IPv6AddressHelper.ParseCanonicalName(str, idx, ref loopback, ref scopeId);
+                    host = IPv6AddressHelper<char>.ParseCanonicalName(str.AsSpan(idx), ref loopback, out ReadOnlySpan<char> scopeIdSpan);
+                    scopeId = scopeIdSpan.IsEmpty ? null : new string(scopeIdSpan);
                     break;
 
                 case Flags.IPv4HostType:
-                    host = IPv4AddressHelper.ParseCanonicalName(str, idx, end, ref loopback);
+                    host = IPv4AddressHelper<char>.ParseCanonicalName(str.AsSpan(idx, end - idx), ref loopback);
                     break;
 
                 case Flags.UncHostType:
@@ -3850,7 +3852,7 @@ namespace System
             }
 
             if (ch == '[' && syntax.InFact(UriSyntaxFlags.AllowIPv6Host) &&
-                IPv6AddressHelper.IsValid(pString, start + 1, ref end))
+                IPv6AddressHelper<char>.IsValid(pString, start + 1, ref end))
             {
                 flags |= Flags.IPv6HostType;
 
@@ -3860,7 +3862,7 @@ namespace System
                 }
             }
             else if (char.IsAsciiDigit(ch) && syntax.InFact(UriSyntaxFlags.AllowIPv4Host) &&
-                IPv4AddressHelper.IsValid(pString, start, ref end, false, StaticNotAny(flags, Flags.ImplicitFile), syntax.InFact(UriSyntaxFlags.V1_UnknownUri)))
+                IPv4AddressHelper<char>.IsValid(new ReadOnlySpan<char>(pString + start, end - start), ref end, false, StaticNotAny(flags, Flags.ImplicitFile), syntax.InFact(UriSyntaxFlags.V1_UnknownUri)))
             {
                 flags |= Flags.IPv4HostType;
 

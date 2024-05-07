@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-unix;$(NetCoreAppCurrent)-browser;$(NetCoreAppCurrent)-wasi;$(NetCoreAppCurrent)</TargetFrameworks>
@@ -33,7 +33,10 @@
     <Compile Include="System\Net\ICredentialsByHost.cs" />
     <Compile Include="System\Net\IPAddress.cs" />
     <Compile Include="System\Net\IPNetwork.cs" />
-    <Compile Include="System\Net\IPAddressParser.cs" />
+    <Compile Include="$(CommonPath)System\Net\IPAddressParser.Common.cs"
+             Link="System\Net\IPAddressParser.cs" />
+    <Compile Include="System\Net\IPAddressParser.cs"
+             Link="System\Net\IPAddressParser.cs" />
     <Compile Include="System\Net\IPEndPoint.cs" />
     <Compile Include="$(CommonPath)System\Net\IPv4AddressHelper.Common.cs"
              Link="System\Net\IPv4AddressHelper.Common.cs" />

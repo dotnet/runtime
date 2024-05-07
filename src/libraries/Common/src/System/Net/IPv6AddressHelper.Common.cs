@@ -312,7 +312,7 @@ namespace System.Net
         //  Nothing
         //
 
-        internal static void Parse(ReadOnlySpan<TChar> address, Span<ushort> numbers, out ReadOnlySpan<TChar> scopeId)
+        internal static void Parse(ReadOnlySpan<TChar> address, scoped Span<ushort> numbers, out ReadOnlySpan<TChar> scopeId)
         {
             int number = 0;
             int index = 0;

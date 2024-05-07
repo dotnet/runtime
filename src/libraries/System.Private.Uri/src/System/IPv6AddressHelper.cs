@@ -3,17 +3,17 @@
 
 using System.Diagnostics;
 
-namespace System
+namespace System.Net
 {
     // The class designed as to keep minimal the working set of Uri class.
     // The idea is to stay with static helper methods and strings
-    internal static partial class IPv6AddressHelper
+    internal static partial class IPv6AddressHelper<TChar>
     {
-        internal static unsafe string ParseCanonicalName(string str, int start, ref bool isLoopback, ref string? scopeId)
+        internal static string ParseCanonicalName(ReadOnlySpan<TChar> str, ref bool isLoopback, out ReadOnlySpan<TChar> scopeId)
         {
             Span<ushort> numbers = stackalloc ushort[NumberOfLabels];
             numbers.Clear();
-            Parse(str, numbers, start, ref scopeId);
+            Parse(str, numbers, out scopeId);
             isLoopback = IsLoopback(numbers);
 
             // RFC 5952 Sections 4 & 5 - Compressed, lower case, with possible embedded IPv4 addresses.
@@ -87,7 +87,7 @@ namespace System
             return new string(stackSpace.Slice(0, pos));
         }
 
-        private static unsafe bool IsLoopback(ReadOnlySpan<ushort> numbers)
+        private static bool IsLoopback(ReadOnlySpan<ushort> numbers)
         {
             //
             // is the address loopback? Loopback is defined as one of:
@@ -238,18 +238,21 @@ namespace System
                             break;
 
                         case '.':
+                            int ipv4AddressLength = i;
+
                             if (haveIPv4Address)
                             {
                                 return false;
                             }
 
-                            i = end;
-                            if (!IPv4AddressHelper.IsValid(name, lastSequence, ref i, true, false, false))
+                            if (!IPv4AddressHelper<TChar>.IsValid(new ReadOnlySpan<TChar>(name + lastSequence, i - lastSequence), ref ipv4AddressLength, true, false, false))
                             {
                                 return false;
                             }
+                            i = lastSequence + ipv4AddressLength;
                             // ipv4 address takes 2 slots in ipv6 address, one was just counted meeting the '.'
                             ++sequenceCount;
+                            lastSequence = i - sequenceLength;
                             haveIPv4Address = true;
                             --i;            // it will be incremented back on the next loop
                             break;

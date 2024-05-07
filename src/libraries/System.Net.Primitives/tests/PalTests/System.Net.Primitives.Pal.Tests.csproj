@@ -20,6 +20,8 @@
              Link="ProductionCode\System\Net\Sockets\SocketError.cs" />
     <Compile Include="..\..\src\System\Net\IPAddress.cs"
              Link="ProductionCode\System\Net\IPAddress.cs" />
+    <Compile Include="$(CommonPath)System\Net\IPAddressParser.Common.cs"
+             Link="System\Net\IPAddressParser.cs" />
     <Compile Include="..\..\src\System\Net\IPAddressParser.cs"
              Link="ProductionCode\System\Net\IPAddressParser.cs" />
     <Compile Include="$(CommonPath)System\Net\IPv4AddressHelper.Common.cs"
