@@ -29,9 +29,9 @@ namespace JitTest
         }
 
         [Fact]
-            [OuterLoop]
-            [ActiveIssue("https://github.com/dotnet/runtime/issues/10478", TestPlatforms.AnyUnix)]
-            public static int TestEntryPoint()
+        [OuterLoop]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/10478", TestPlatforms.AnyUnix)]
+        public static int TestEntryPoint()
         {
             try
             {

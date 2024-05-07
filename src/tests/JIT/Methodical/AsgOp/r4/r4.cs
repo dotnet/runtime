@@ -186,8 +186,8 @@ public class test
 
 
     [Fact]
-        [OuterLoop]
-        public static int TestEntryPoint()
+    [OuterLoop]
+    public static int TestEntryPoint()
     {
         float x;
         bool pass = true;

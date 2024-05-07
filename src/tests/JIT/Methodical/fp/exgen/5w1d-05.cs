@@ -22,8 +22,8 @@ public unsafe class testout1
     }
 
     [Fact]
-        [OuterLoop]
-        public static int TestEntryPoint()
+    [OuterLoop]
+    public static int TestEntryPoint()
     {
         s_arr1d_0[0] = -3996.0F;
 

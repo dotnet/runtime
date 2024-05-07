@@ -28,8 +28,8 @@ public class Class1
         testLog = new TestUtil.TestLog(expectedOut);
     }
     [Fact]
-        [OuterLoop]
-        public static int TestEntryPoint()
+    [OuterLoop]
+    public static int TestEntryPoint()
     {
         //Start recording
         testLog.StartRecording();
@@ -59,7 +59,7 @@ public class Class1
 
                 Console.WriteLine("Will never see this code, jumping over it!");
 
-                LABEL:
+            LABEL:
                 Console.WriteLine("Back in inner try 1...");
 
             }

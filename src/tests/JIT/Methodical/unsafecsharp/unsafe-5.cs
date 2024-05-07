@@ -274,8 +274,8 @@ public class TestApp
         return AA.get_bv1(((B*)((p >> 4) | s))) != 100 ? 99 : 100;
     }
     [Fact]
-        [OuterLoop]
-        public static unsafe int TestEntryPoint()
+    [OuterLoop]
+    public static unsafe int TestEntryPoint()
     {
         AA loc_x = new AA(0, 100);
         AA.init_all(0);

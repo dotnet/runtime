@@ -26,8 +26,8 @@ public unsafe class testout1
     }
 
     [Fact]
-        [OuterLoop]
-        public static int TestEntryPoint()
+    [OuterLoop]
+    public static int TestEntryPoint()
     {
         int retval;
         retval = Convert.ToInt32(Func_0());

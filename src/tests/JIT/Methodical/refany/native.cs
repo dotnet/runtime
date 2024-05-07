@@ -12,8 +12,8 @@ namespace JitTest
     public class Test
     {
         [Fact]
-            [OuterLoop]
-            public static int TestEntryPoint()
+        [OuterLoop]
+        public static int TestEntryPoint()
         {
             int N = 0x1492;
             TypedReference _ref = __makeref(N);

@@ -9,8 +9,8 @@ namespace Test_i4flat_cs
 public class test
 {
     [Fact]
-        [OuterLoop]
-        public static int TestEntryPoint()
+    [OuterLoop]
+    public static int TestEntryPoint()
     {
         int x;
         int y;

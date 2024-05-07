@@ -51,8 +51,8 @@ public unsafe class testout1
     }
 
     [Fact]
-        [OuterLoop]
-        public static int TestEntryPoint()
+    [OuterLoop]
+    public static int TestEntryPoint()
     {
         vtstatic_0.arr2d_0[2, 0] = -2.125;
         vtstatic_0.arr2d_0[2, 2] = -68.0;

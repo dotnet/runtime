@@ -52,7 +52,7 @@ namespace strswitch_switchincatch_cs
             for (int i = 0; i < s.Length; i++)
             {
 
-                beginloop:
+            beginloop:
                 try
                 {
                     try
@@ -87,11 +87,11 @@ namespace strswitch_switchincatch_cs
                     Console.WriteLine("In outer finally\n");
                 }
 
-                continueloop:
+            continueloop:
                 Console.WriteLine("Continuing");
 
             }
-            finish:
+        finish:
             // stop recoding
             testLog.StopRecording();
             return testLog.VerifyOutput();

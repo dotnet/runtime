@@ -26,7 +26,7 @@ namespace JitTest
 		SimpleStruct ss1;
 		SimpleStruct ss2;
 	}
-	
+
 	struct ComplexStruct2
 	{
 		ComplexStruct x1;
@@ -52,8 +52,8 @@ namespace JitTest
 	public struct Test
 	{
 		[Fact]
-            [OuterLoop]
-            public static unsafe int TestEntryPoint()
+		[OuterLoop]
+		public static unsafe int TestEntryPoint()
 		{
 			if (sizeof(SimpleStruct) != 32)
 			{

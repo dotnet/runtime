@@ -88,8 +88,8 @@ namespace JitTest
         }
 
         [Fact]
-            [OuterLoop]
-            public static void TestEntryPoint()
+        [OuterLoop]
+        public static void TestEntryPoint()
         {
             RunTests(Single.NaN, Single.PositiveInfinity, Single.NegativeInfinity);
             Console.WriteLine("=== PASSED ===");

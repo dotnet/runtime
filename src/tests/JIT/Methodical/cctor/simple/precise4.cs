@@ -38,8 +38,8 @@ internal class test
 public class Driver
 {
     [Fact]
-        [OuterLoop]
-        public static int TestEntryPoint()
+    [OuterLoop]
+    public static int TestEntryPoint()
     {
         try
         {
