@@ -6,7 +6,7 @@ import numpy as np
 
 from .method_context import JitType, MethodContext
 from .superpmi import SuperPmi, SuperPmiContext
-from .constants import (INVALID_ACTION_PENALTY, INVALID_ACTION_LIMIT, MAX_CSE, is_acceptable_method)
+from .constants import (INVALID_ACTION_PENALTY, INVALID_ACTION_LIMIT, MAX_CSE, is_acceptable_for_cse)
 
 # observation space
 JITTYPE_ONEHOT_SIZE = 6
@@ -60,13 +60,8 @@ class JitCseEnv(gym.Env):
         while True:
             index = self.__select_method()
             no_cse = self._jit_method_with_cleanup(index, JitMetrics=1, JitRLHook=1, JitRLHookCSEDecisions=[])
-            if no_cse is None:
-                continue
-
-            if is_acceptable_method(no_cse):
-                original_heuristic = self._jit_method_with_cleanup(index, JitMetrics=1)
-                if original_heuristic is None:
-                    continue
+            original_heuristic = self._jit_method_with_cleanup(index, JitMetrics=1)
+            if no_cse and original_heuristic:
                 break
 
             failure_count += 1
@@ -184,7 +179,7 @@ class JitCseEnv(gym.Env):
 
             # one-hot encode the type
             one_hot = [0.0] * 6
-            one_hot[cse.type.value - 1] = 1.0
+            one_hot[cse.type - 1] = 1.0
             tensor.extend(one_hot)
 
             # boolean features
@@ -227,7 +222,7 @@ class JitCseEnv(gym.Env):
     def __select_method(self):
         if self.methods is None:
             superpmi = self.__get_or_create_superpmi()
-            self.methods = [x.index for x in superpmi.enumerate_methods() if is_acceptable_method(x)]
+            self.methods = [x.index for x in superpmi.enumerate_methods() if is_acceptable_for_cse(x)]
 
         return np.random.choice(self.methods)
 

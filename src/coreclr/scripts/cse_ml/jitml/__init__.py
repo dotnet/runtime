@@ -4,6 +4,7 @@ from .superpmi import SuperPmi, SuperPmiContext
 from .jit_cse import JitCseEnv
 from .machine_learning import JitCseModel
 from .wrappers import OptimalCseWrapper, NormalizeFeaturesWrapper
+from .constants import is_acceptable_for_cse, split_for_cse
 
 __all__ = [
     SuperPmi.__name__,
@@ -15,4 +16,6 @@ __all__ = [
     JitType.__name__,
     OptimalCseWrapper.__name__,
     NormalizeFeaturesWrapper.__name__,
+    is_acceptable_for_cse.__name__,
+    split_for_cse.__name__,
 ]

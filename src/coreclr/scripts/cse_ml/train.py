@@ -4,7 +4,7 @@
 import os
 import argparse
 
-from jitml import SuperPmiContext, JitCseModel, OptimalCseWrapper, NormalizeFeaturesWrapper
+from jitml import SuperPmiContext, JitCseModel, OptimalCseWrapper, NormalizeFeaturesWrapper, split_for_cse
 
 def validate_core_root(core_root):
     """Validates and returns the core_root directory."""
@@ -44,11 +44,11 @@ def main(args):
         ctx = SuperPmiContext.load(spmi_file)
     else:
         print(f"Creating SuperPmiContext '{spmi_file}', this may take several minutes...")
-        ctx = SuperPmiContext(core_root=args.core_root, mch=args.mch)
-        ctx.find_methods_and_split(args.test_percent)
+        ctx = SuperPmiContext.create_from_mch(args.mch, args.core_root)
         ctx.save(spmi_file)
 
-    print(f"Training with {len(ctx.training_methods)} methods, holding back {len(ctx.test_methods)} for testing.")
+    test_methods, training_methods = split_for_cse(ctx.methods, 0.1)
+    print(f"Training with {len(training_methods)} methods, holding back {len(test_methods)} for testing.")
 
     # Define our own environment (with wrappers) if requested.
 
@@ -63,7 +63,7 @@ def main(args):
         wrappers.append(NormalizeFeaturesWrapper)
 
     iterations = args.iterations if args.iterations is not None else 1_000_000
-    path = rl.train(ctx, output_dir, iterations=iterations, parallel=args.parallel, wrappers=wrappers)
+    path = rl.train(ctx, training_methods, output_dir, iterations=iterations, parallel=args.parallel, wrappers=wrappers)
     print(f"Model saved to: {path}")
 
 if __name__ == "__main__":

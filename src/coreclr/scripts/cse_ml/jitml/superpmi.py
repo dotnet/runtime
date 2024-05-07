@@ -5,10 +5,8 @@ import os
 import subprocess
 import re
 from typing import Iterable, List, Optional
-import numpy as np
 from pydantic import BaseModel, field_validator
 
-from .constants import is_acceptable_method
 from .method_context import MethodContext
 
 class SuperPmiContext(BaseModel):
@@ -18,8 +16,7 @@ class SuperPmiContext(BaseModel):
     core_root : str
     mch : str
     jit : Optional[str] = None
-    test_methods : Optional[List[int]] = []
-    training_methods : Optional[List[int]] = []
+    methods : Optional[List[MethodContext]] = []
 
     @field_validator('core_root', 'mch', mode='before')
     @classmethod
@@ -37,36 +34,23 @@ class SuperPmiContext(BaseModel):
 
         return v
 
-    def resplit_data(self, test_percent:float):
-        """Splits the data into training and testing sets."""
-        if not self.test_methods and not self.training_methods:
-            raise ValueError("No methods to split.  Try calling 'find_methods_and_split' first.")
-
-        all_methods = self.test_methods + self.training_methods
-        np.random.shuffle(all_methods)
-        self.test_methods = all_methods[:int(len(all_methods) * test_percent)]
-        self.training_methods = all_methods[len(self.test_methods):]
-
-    def find_methods_and_split(self, test_percent:float) -> None:
+    @staticmethod
+    def create_from_mch(mch : str, core_root : str,  jit : Optional[str] = None) -> 'SuperPmiContext':
         """Loads the SuperPmiContext from the specified arguments."""
-        suitable_methods = []
-        with SuperPmi(self) as superpmi:
-            for method in superpmi.enumerate_methods():
-                if is_acceptable_method(method):
-                    suitable_methods.append(method.index)
+        result = SuperPmiContext(core_root=core_root, mch=mch, jit=jit)
 
-        self.test_methods = suitable_methods
-        self.resplit_data(test_percent)
+        methods = []
+        with SuperPmi(result) as superpmi:
+            for method in superpmi.enumerate_methods():
+                methods.append(method)
+
+        result.methods = methods
+        return result
 
     def save(self, file_path:str):
         """Saves the SuperPmiContext to a file."""
         with open(file_path, 'w', encoding="utf8") as f:
             json.dump(self.model_dump(), f)
-
-
-    def create_superpmi(self, verbosity:str = 'q'):
-        """Creates a SuperPmi object from this context."""
-        return SuperPmi(self, verbosity)
 
     @staticmethod
     def load(file_path:str):
@@ -78,13 +62,15 @@ class SuperPmiContext(BaseModel):
             data = json.load(f)
             return SuperPmiContext(**data)
 
+    def create_superpmi(self, verbosity:str = 'q'):
+        """Creates a SuperPmi object from this context."""
+        return SuperPmi(self, verbosity)
 
 class SuperPmi:
     """Controls one instance of superpmi."""
     def __init__(self, context : SuperPmiContext, verbosity:str = 'q'):
         """Constructor.
         core_root is the path to the coreclr build, usually at [repo]/artifiacts/bin/coreclr/[arch]/.
-        jit is the full path to the jit to use. Default is None.
         verbosity is the verbosity level of the superpmi process. Default is 'q'."""
         self._process = None
         self._feature_names = None

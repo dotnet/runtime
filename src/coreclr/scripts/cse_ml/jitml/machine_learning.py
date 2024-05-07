@@ -17,6 +17,7 @@ from stable_baselines3.common.env_util import make_vec_env
 from stable_baselines3.common.vec_env import SubprocVecEnv
 import gymnasium as gym
 
+from .method_context import MethodContext
 from .jit_cse import JitCseEnv
 from .superpmi import SuperPmiContext
 
@@ -60,12 +61,14 @@ class JitCseModel:
         probs = action_distribution.distribution.probs
         return probs.cpu().detach().numpy()[0]
 
-    def train(self, pmi_context : SuperPmiContext, output_dir : str, iterations = None, parallel = None,
-              progress_bar = True, wrappers : Optional[List[gym.Wrapper]] = None) -> str:
+    def train(self, pmi_context : SuperPmiContext, training_methods : List[MethodContext], output_dir : str,
+              iterations = None, parallel = None, progress_bar = True,
+              wrappers : Optional[List[gym.Wrapper]] = None) -> str:
         """Trains a model from scratch.
 
         Args:
             pmi_context: The SuperPmiContext to use for training.
+            training_methods : The methods to train on.
             output_dir: The directory to save the model to.
             iterations: The number of iterations to train for.  Defaults to 100,000.
             parallel: The number of parallel environments to use.  Defaults to single-process (None).
@@ -74,10 +77,11 @@ class JitCseModel:
         Returns:
             The full path to the trained model.
         """
+        training_methods = [m.index for m in training_methods]
         os.makedirs(output_dir, exist_ok=True)
 
         def default_make_env():
-            env = JitCseEnv(pmi_context, pmi_context.training_methods)
+            env = JitCseEnv(pmi_context, training_methods)
             if wrappers:
                 for wrapper in wrappers:
                     env = wrapper(env)

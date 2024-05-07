@@ -9,7 +9,7 @@ import numpy as np
 import pandas
 import tqdm
 
-from jitml import SuperPmi, SuperPmiContext, JitCseModel, MethodContext, JitCseEnv
+from jitml import SuperPmi, SuperPmiContext, JitCseModel, MethodContext, JitCseEnv, split_for_cse
 from train import validate_core_root
 
 class ModelResult(Enum):
@@ -109,9 +109,6 @@ def test_model(superpmi : SuperPmi, jitrl : JitCseModel, method_ids, model_name)
 
 def evaluate(superpmi, jitrl, methods, model_name, csv_file) -> pandas.DataFrame:
     """Evaluate the model and save to the specified CSV file."""
-    print(csv_file)
-    print(model_name)
-    print(len(methods))
     if os.path.exists(csv_file):
         return pandas.read_csv(csv_file)
 
@@ -200,9 +197,10 @@ def main(args):
         spmi_context = SuperPmiContext.load(spmi_file)
     else:
         print(f"Creating SuperPmiContext '{spmi_file}', this may take several minutes...")
-        spmi_context = SuperPmiContext(core_root=args.core_root, mch=args.mch)
-        spmi_context.find_methods_and_split(0.1)
+        spmi_context = SuperPmiContext.create_from_mch(args.mch, args.core_root)
         spmi_context.save(spmi_file)
+
+    test_methods, training_methods = split_for_cse(spmi_context.methods, 0.1)
 
     for file in enumerate_models(dir_or_path):
         print(file)
@@ -216,11 +214,11 @@ def main(args):
             model_name = os.path.splitext(file)[0]
 
             filename = os.path.join(dir_or_path, f"{model_name}_test.csv")
-            result = evaluate(superpmi, jitrl, spmi_context.test_methods, model_name, filename)
+            result = evaluate(superpmi, jitrl, test_methods, model_name, filename)
             print_result(result, model_name, "Test")
 
             filename = os.path.join(dir_or_path, f"{model_name}_train.csv")
-            result = evaluate(superpmi, jitrl, spmi_context.training_methods, model_name, filename)
+            result = evaluate(superpmi, jitrl, training_methods, model_name, filename)
             print_result(result, model_name, "Train")
 
 if __name__ == "__main__":
