@@ -8,7 +8,8 @@ internal interface IFuzzer
     /// <summary>Friendly name to identify this fuzz target in OneFuzz configuration.</summary>
     string Name => GetType().Name;
 
-    /// <summary>Alias to assign crash report work items to.</summary>
+    /// <summary>Alias to assign crash report work items to.
+    /// This is a Microsoft alias, not your GitHub username.</summary>
     string BlameAlias { get; }
 
     /// <summary>List of assemblies that should be instrumented.
