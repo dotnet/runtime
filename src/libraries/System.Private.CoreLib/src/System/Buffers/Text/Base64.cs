@@ -65,6 +65,7 @@ namespace System.Buffers.Text
             static abstract ReadOnlySpan<uint> Vector128LutShift { get; }
             static abstract int SrcLength(bool isFinalBlock, int utf8Length);
             static abstract int GetMaxDecodedLength(int utf8Length);
+            static abstract bool IsInValidLength(int bufferLength);
             static abstract bool TryDecode128Core(
                 Vector128<byte> str,
                 Vector128<byte> hiNibbles,

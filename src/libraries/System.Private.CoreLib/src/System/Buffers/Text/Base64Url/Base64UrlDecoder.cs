@@ -75,128 +75,72 @@ namespace System.Buffers.Text
             return bytesWritten;
         }
 
-        private static unsafe OperationStatus DecodeFromUtf8InPlace<TBase64Decoder>(Span<byte> buffer, out int bytesWritten, bool ignoreWhiteSpace)
-            where TBase64Decoder : IBase64Decoder
+        public static int DecodeFromUtf8(ReadOnlySpan<byte> source, Span<byte> destination)
         {
-            if (buffer.IsEmpty)
+            OperationStatus status = DecodeFromUtf8(source, destination, out _, out int bytesWritten);
+
+            if (OperationStatus.Done == status)
             {
-                bytesWritten = 0;
-                return OperationStatus.Done;
+                return bytesWritten;
             }
 
-            fixed (byte* bufferBytes = &MemoryMarshal.GetReference(buffer))
+            if (OperationStatus.DestinationTooSmall == status)
             {
-                uint bufferLength = (uint)buffer.Length;
-                uint sourceIndex = 0;
-                uint destIndex = 0;
-
-                ref sbyte decodingMap = ref MemoryMarshal.GetReference(TBase64Decoder.DecodingMap);
-
-                while (sourceIndex + 4 < bufferLength)
-                {
-                    int result = Decode(bufferBytes + sourceIndex, ref decodingMap);
-                    if (result < 0)
-                    {
-                        goto InvalidExit;
-                    }
-
-                    WriteThreeLowOrderBytes(bufferBytes + destIndex, result);
-                    destIndex += 3;
-                    sourceIndex += 4;
-                }
-
-                uint t0;
-                uint t1;
-                uint t2;
-                uint t3;
-
-                switch (bufferLength - sourceIndex)
-                {
-                    case 2:
-                        t0 = bufferBytes[bufferLength - 2];
-                        t1 = bufferBytes[bufferLength - 1];
-                        t2 = EncodingPad;
-                        t3 = EncodingPad;
-                        break;
-                    case 3:
-                        t0 = bufferBytes[bufferLength - 3];
-                        t1 = bufferBytes[bufferLength - 2];
-                        t2 = bufferBytes[bufferLength - 1];
-                        t3 = EncodingPad;
-                        break;
-                    case 4:
-                        t0 = bufferBytes[bufferLength - 4];
-                        t1 = bufferBytes[bufferLength - 3];
-                        t2 = bufferBytes[bufferLength - 2];
-                        t3 = bufferBytes[bufferLength - 1];
-                        break;
-                    default:
-                        goto InvalidExit;
-                }
-
-                int i0 = Unsafe.Add(ref decodingMap, t0);
-                int i1 = Unsafe.Add(ref decodingMap, t1);
-
-                i0 <<= 18;
-                i1 <<= 12;
-
-                i0 |= i1;
-
-                if (t3 != EncodingPad)
-                {
-                    int i2 = Unsafe.Add(ref decodingMap, t2);
-                    int i3 = Unsafe.Add(ref decodingMap, t3);
-
-                    i2 <<= 6;
-
-                    i0 |= i3;
-                    i0 |= i2;
-
-                    if (i0 < 0)
-                    {
-                        goto InvalidExit;
-                    }
-
-                    WriteThreeLowOrderBytes(bufferBytes + destIndex, i0);
-                    destIndex += 3;
-                }
-                else if (t2 != EncodingPad)
-                {
-                    int i2 = Unsafe.Add(ref decodingMap, t2);
-
-                    i2 <<= 6;
-
-                    i0 |= i2;
-
-                    if (i0 < 0)
-                    {
-                        goto InvalidExit;
-                    }
-
-                    bufferBytes[destIndex] = (byte)(i0 >> 16);
-                    bufferBytes[destIndex + 1] = (byte)(i0 >> 8);
-                    destIndex += 2;
-                }
-                else
-                {
-                    if (i0 < 0)
-                    {
-                        goto InvalidExit;
-                    }
-
-                    bufferBytes[destIndex] = (byte)(i0 >> 16);
-                    destIndex += 1;
-                }
-
-                bytesWritten = (int)destIndex;
-                return OperationStatus.Done;
-
-            InvalidExit:
-                bytesWritten = (int)destIndex;
-                return ignoreWhiteSpace ?
-                    DecodeWithWhiteSpaceFromUtf8InPlace<TBase64Decoder>(buffer, ref bytesWritten, sourceIndex) : // The input may have whitespace, attempt to decode while ignoring whitespace.
-                    OperationStatus.InvalidData;
+                throw new ArgumentException("DestinationTooSmall", nameof(destination));
             }
+
+            throw new InvalidOperationException("InvalidData");
+        }
+
+        public static bool TryDecodeFromUtf8(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten)
+        {
+            OperationStatus status = DecodeFromUtf8(source, destination, out _, out bytesWritten);
+
+            return status == OperationStatus.Done;
+        }
+
+        public static byte[] DecodeFromUtf8(ReadOnlySpan<byte> source)
+        {
+            Span<byte> destination = stackalloc byte[GetMaxDecodedLength(source.Length)];
+            OperationStatus status = DecodeFromUtf8(source, destination, out _, out int bytesWritten);
+
+            return OperationStatus.Done == status ? destination.Slice(0, bytesWritten).ToArray() :
+                throw new InvalidOperationException("InvalidData");
+        }
+
+        public static OperationStatus DecodeFromChars(ReadOnlySpan<char> source, Span<byte> destination,
+            out int charsConsumed, out int bytesWritten, bool isFinalBlock = true) =>
+            DecodeFromUtf8(MemoryMarshal.AsBytes(source), destination, out charsConsumed, out bytesWritten, isFinalBlock);
+
+        public static int DecodeFromChars(ReadOnlySpan<char> source, Span<byte> destination)
+        {
+            OperationStatus status = DecodeFromChars(source, destination, out _, out int bytesWritten);
+
+            if (OperationStatus.Done == status)
+            {
+                return bytesWritten;
+            }
+
+            if (OperationStatus.DestinationTooSmall == status)
+            {
+                throw new ArgumentException("DestinationTooSmall", nameof(destination));
+            }
+
+            throw new InvalidOperationException("InvalidData");
+        }
+
+        public static bool TryDecodeFromChars(ReadOnlySpan<char> source, Span<byte> destination, out int bytesWritten)
+        {
+            return TryDecodeFromUtf8(MemoryMarshal.AsBytes(source), destination, out bytesWritten);
+        }
+
+        public static byte[] DecodeFromChars(ReadOnlySpan<char> source)
+        {
+            Span<byte> destination = stackalloc byte[GetMaxDecodedLength(source.Length)];
+            OperationStatus status = DecodeFromChars(source, destination, out _, out int bytesWritten);
+
+            return OperationStatus.Done == status ? destination.Slice(0, bytesWritten).ToArray() :
+                throw new InvalidOperationException("InvalidData");
         }
 
         private readonly struct Base64UrlDecoder : IBase64Decoder
@@ -282,6 +226,9 @@ namespace System.Buffers.Text
             public static ReadOnlySpan<uint> Vector128LutShift => [0x04110000, 0xb9b9bfbf, 0x00000000, 0x00000000];
 
             public static int GetMaxDecodedLength(int utf8Length) => Base64Url.GetMaxDecodedLength(utf8Length);
+
+            public static bool IsInValidLength(int bufferLength) => bufferLength % 4 == 1; // Should we fail here? One byte cannot be decoded completely
+
             public static int SrcLength(bool isFinalBlock, int utf8Length) => isFinalBlock ? utf8Length : utf8Length & ~0x3;
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]

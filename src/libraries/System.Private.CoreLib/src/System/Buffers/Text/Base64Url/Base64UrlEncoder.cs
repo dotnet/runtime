@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
@@ -28,7 +29,8 @@ namespace System.Buffers.Text
         /// It does not return InvalidData since that is not possible for base64 encoding.
         /// </returns>
         /// <remarks>The output will not be padded even if the input is not a multiple of 3.</remarks>
-        public static unsafe OperationStatus EncodeToUtf8(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesConsumed, out int bytesWritten, bool isFinalBlock = true) =>
+        public static unsafe OperationStatus EncodeToUtf8(ReadOnlySpan<byte> source,
+            Span<byte> destination, out int bytesConsumed, out int bytesWritten, bool isFinalBlock = true) =>
             EncodeToUtf8<Base64UrlEncoder>(source, destination, out bytesConsumed, out bytesWritten, isFinalBlock);
 
         /// <summary>
@@ -40,7 +42,9 @@ namespace System.Buffers.Text
         public static int GetEncodedLength(int bytesLength)
         {
             if ((uint)bytesLength > Base64.MaximumEncodeLength)
+            {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.length);
+            }
 
             int remainder = bytesLength % 3;
 
@@ -56,9 +60,20 @@ namespace System.Buffers.Text
         /// <remarks>The output will not be padded even if the input is not a multiple of 3.</remarks>
         public static int EncodeToUtf8(ReadOnlySpan<byte> source, Span<byte> destination)
         {
-            EncodeToUtf8(source, destination, out _, out int written);
+            OperationStatus status = EncodeToUtf8(source, destination, out _, out int bytesWritten);
 
-            return written;
+            if (OperationStatus.Done == status)
+            {
+                return bytesWritten;
+            }
+
+            if (OperationStatus.DestinationTooSmall == status)
+            {
+                throw new ArgumentException("DestinationTooSmall", nameof(destination));
+            }
+
+            Debug.Fail("Unreachable code");
+            return 0;
         }
 
         /// <summary>
@@ -69,15 +84,11 @@ namespace System.Buffers.Text
         /// <remarks>The output will not be padded even if the input is not a multiple of 3.</remarks>
         public static byte[] EncodeToUtf8(ReadOnlySpan<byte> source)
         {
-            if (source.Length == 0)
-            {
-                return Array.Empty<byte>();
-            }
+            Span<byte> destination = stackalloc byte[GetEncodedLength(source.Length)];
+            OperationStatus status = EncodeToUtf8(source, destination, out _, out int bytesWritten);
 
-            Span<byte> destination = stackalloc byte[GetEncodedLength(source.Length)]; // or new byte[GetEncodedLength(source.Length)]
-            EncodeToUtf8(source, destination, out _, out int written);
-
-            return destination.Slice(0, written).ToArray();
+            return OperationStatus.Done == status ? destination.Slice(0, bytesWritten).ToArray() :
+                throw new InvalidOperationException("InvalidData");
         }
 
         /// <summary>
@@ -98,17 +109,9 @@ namespace System.Buffers.Text
         /// It does not return InvalidData since that is not possible for base64 encoding.
         /// </returns>
         /// <remarks>The output will not be padded even if the input is not a multiple of 3.</remarks>
-        public static OperationStatus EncodeToChars(ReadOnlySpan<byte> source, Span<char> destination, out int bytesConsumed, out int charsWritten, bool isFinalBlock = true)
-        {
-            if (source.Length == 0)
-            {
-                bytesConsumed = 0;
-                charsWritten = 0;
-                return OperationStatus.Done;
-            }
-
-            return EncodeToUtf8(source, MemoryMarshal.AsBytes(destination), out bytesConsumed, out charsWritten, isFinalBlock);
-        }
+        public static OperationStatus EncodeToChars(ReadOnlySpan<byte> source, Span<char> destination,
+            out int bytesConsumed, out int charsWritten, bool isFinalBlock = true) =>
+            EncodeToUtf8(source, MemoryMarshal.AsBytes(destination), out bytesConsumed, out charsWritten, isFinalBlock);
 
         /// <summary>
         /// Encode the span of binary data into UTF-8 encoded chars represented as Base64Url.
@@ -119,8 +122,20 @@ namespace System.Buffers.Text
         /// <remarks>The output will not be padded even if the input is not a multiple of 3.</remarks>
         public static int EncodeToChars(ReadOnlySpan<byte> source, Span<char> destination)
         {
-            EncodeToUtf8(source, MemoryMarshal.AsBytes(destination), out _, out int written);
-            return written;
+            OperationStatus status = EncodeToUtf8(source, MemoryMarshal.AsBytes(destination), out _, out int charsWritten);
+
+            if (OperationStatus.Done == status)
+            {
+                return charsWritten;
+            }
+
+            if (OperationStatus.DestinationTooSmall == status)
+            {
+                throw new ArgumentException("DestinationTooSmall", nameof(destination));
+            }
+
+            Debug.Fail("Unreachable code");
+            return 0;
         }
 
         /// <summary>
@@ -181,12 +196,12 @@ namespace System.Buffers.Text
         /// </summary>
         /// <param name="source">The input span which contains binary data that needs to be encoded.</param>
         /// <param name="destination">The output span which contains the result of the operation, i.e. the UTF-8 encoded text in Base64Url.</param>
-        /// <param name="charsWritten">The number of chars written into the output span. This can be used to slice the output for subsequent calls, if necessary.</param>
+        /// <param name="bytesWritten">The number of chars written into the output span. This can be used to slice the output for subsequent calls, if necessary.</param>
         /// <returns><see langword="true"/> if bytes encoded successfully, otherwise <see langword="false"/>.</returns>
         /// <remarks>The output will not be padded even if the input is not a multiple of 3.</remarks>
-        public static bool TryEncodeToUtf8(ReadOnlySpan<byte> source, Span<byte> destination, out int charsWritten)
+        public static bool TryEncodeToUtf8(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten)
         {
-            OperationStatus status = EncodeToUtf8(source, destination, out _, out charsWritten);
+            OperationStatus status = EncodeToUtf8(source, destination, out _, out bytesWritten);
 
             return status == OperationStatus.Done;
         }

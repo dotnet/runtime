@@ -381,7 +381,7 @@ namespace System.Buffers.Text
         public static OperationStatus DecodeFromUtf8InPlace(Span<byte> buffer, out int bytesWritten) =>
             DecodeFromUtf8InPlace<Base64Decoder>(buffer, out bytesWritten, ignoreWhiteSpace: true);
 
-        private static unsafe OperationStatus DecodeFromUtf8InPlace<TBase64Decoder>(Span<byte> buffer, out int bytesWritten, bool ignoreWhiteSpace)
+        internal static unsafe OperationStatus DecodeFromUtf8InPlace<TBase64Decoder>(Span<byte> buffer, out int bytesWritten, bool ignoreWhiteSpace)
             where TBase64Decoder : IBase64Decoder
         {
             if (buffer.IsEmpty)
@@ -396,15 +396,14 @@ namespace System.Buffers.Text
                 uint sourceIndex = 0;
                 uint destIndex = 0;
 
-                // only decode input if it is a multiple of 4
-                if (bufferLength % 4 != 0)
+                if (TBase64Decoder.IsInValidLength(buffer.Length))
                 {
                     goto InvalidExit;
                 }
 
                 ref sbyte decodingMap = ref MemoryMarshal.GetReference(TBase64Decoder.DecodingMap);
 
-                while (sourceIndex < bufferLength - 4)
+                while (sourceIndex + 4 < bufferLength)
                 {
                     int result = Decode(bufferBytes + sourceIndex, ref decodingMap);
                     if (result < 0)
@@ -417,10 +416,34 @@ namespace System.Buffers.Text
                     sourceIndex += 4;
                 }
 
-                uint t0 = bufferBytes[bufferLength - 4];
-                uint t1 = bufferBytes[bufferLength - 3];
-                uint t2 = bufferBytes[bufferLength - 2];
-                uint t3 = bufferBytes[bufferLength - 1];
+                uint t0;
+                uint t1;
+                uint t2;
+                uint t3;
+
+                switch (bufferLength - sourceIndex)
+                {
+                    case 2:
+                        t0 = bufferBytes[bufferLength - 2];
+                        t1 = bufferBytes[bufferLength - 1];
+                        t2 = EncodingPad;
+                        t3 = EncodingPad;
+                        break;
+                    case 3:
+                        t0 = bufferBytes[bufferLength - 3];
+                        t1 = bufferBytes[bufferLength - 2];
+                        t2 = bufferBytes[bufferLength - 1];
+                        t3 = EncodingPad;
+                        break;
+                    case 4:
+                        t0 = bufferBytes[bufferLength - 4];
+                        t1 = bufferBytes[bufferLength - 3];
+                        t2 = bufferBytes[bufferLength - 2];
+                        t3 = bufferBytes[bufferLength - 1];
+                        break;
+                    default:
+                        goto InvalidExit;
+                }
 
                 int i0 = Unsafe.Add(ref decodingMap, t0);
                 int i1 = Unsafe.Add(ref decodingMap, t1);
@@ -1156,6 +1179,9 @@ namespace System.Buffers.Text
             public static ReadOnlySpan<uint> Vector128LutShift => [0x04131000, 0xb9b9bfbf, 0x00000000, 0x00000000];
 
             public static int GetMaxDecodedLength(int utf8Length) => Base64.GetMaxDecodedFromUtf8Length(utf8Length);
+
+            public static bool IsInValidLength(int bufferLength) => bufferLength % 4 != 0; // only decode input if it is a multiple of 4
+
             public static int SrcLength(bool _, int utf8Length) => utf8Length & ~0x3;  // only decode input up to the closest multiple of 4.
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
