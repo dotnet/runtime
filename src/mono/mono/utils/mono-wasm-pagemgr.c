@@ -8,15 +8,10 @@
 #include <glib.h>
 #include <mono/utils/atomic.h>
 #include <mono/utils/mono-os-mutex.h>
+#include <threads.h>
 
 // #define MWPM_LOGGING
 // #define MWPM_STATS
-
-typedef enum {
-	MWPM_UNINITIALIZED = 0,
-	MWPM_INITIALIZING = 1,
-	MWPM_INITIALIZED = 2
-} init_state;
 
 typedef enum {
 	MWPM_MARK_DEAD_PAGES,
@@ -35,7 +30,7 @@ typedef uint8_t mwpm_page_state;
 
 static mono_mutex_t mutex;
 static uint8_t page_table[MWPM_MAX_PAGES];
-static gint32 is_initialized = MWPM_UNINITIALIZED;
+static once_flag is_initialized = ONCE_FLAG_INIT;
 static uint32_t
 	// The index of the first page that we control. Not all pages after this
 	//  necessarily belong to us, but scans can start here.
@@ -72,6 +67,14 @@ last_page_of_range (void *addr, size_t size) {
 
 static inline mwpm_page_state
 encode_page_state (uint8_t bits, uint32_t skip_count) {
+	// We encode state into the page table like so:
+	// The top two bits are the free bit and the meta bit.
+	// For a free page, the meta bit indicates whether it is zeroed.
+	// For an occupied page, the meta bit indicates whether we control it.
+	// The remaining 6 bits encode the "skip count", which is a promise that
+	//  the following N pages have the same state as the current page.
+	// The skip count allows us to jump forward safely during scans for free
+	//  pages so that we don't have to do a full linear scan of the page table.
 	if (skip_count > MWPM_SKIP_MASK)
 		skip_count = MWPM_SKIP_MASK;
 
@@ -319,9 +322,6 @@ find_n_free_pages (uint32_t page_count) {
 
 static void
 mwpm_init () {
-	if (mono_atomic_cas_i32 (&is_initialized, MWPM_INITIALIZING, MWPM_UNINITIALIZED) != MWPM_UNINITIALIZED)
-		return;
-
 	mono_os_mutex_init_recursive (&mutex);
 	// Set the entire page table to 'unknown state'. As we acquire pages from sbrk, we will
 	//  set those respective ranges in the table to a known state.
@@ -329,19 +329,11 @@ mwpm_init () {
 	void *first_controlled_page_address = acquire_new_pages_initialized (MWPM_MINIMUM_PAGE_COUNT);
 	g_assert (first_controlled_page_address);
 	first_controlled_page_index = first_page_from_address (first_controlled_page_address);
-	mono_atomic_store_i32 (&is_initialized, MWPM_INITIALIZED);
 }
 
 static inline void
 mwpm_ensure_initialized () {
-	if (is_initialized == MWPM_INITIALIZED)
-		return;
-
-	mwpm_init ();
-
-	// FIXME: How do we do a microsleep?
-	while (mono_atomic_load_i32 (&is_initialized) != MWPM_INITIALIZED)
-		;
+	call_once (&is_initialized, mwpm_init);
 }
 
 void *
