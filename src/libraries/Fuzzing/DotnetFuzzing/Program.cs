@@ -267,6 +267,9 @@ public static class Program
         //    : null;
         string? dictionaryArgument = null;
 
+        // Avoid name conflicts between long-running CI jobs and short-lived test submissions.
+        string nameSuffix = Environment.GetEnvironmentVariable("TF_BUILD") is null ? "-local" : "";
+
         return
             $$"""
             {
@@ -287,7 +290,7 @@ public static class Program
                   "OneFuzzJobs": [
                     {
                       "ProjectName": "DotnetFuzzing",
-                      "TargetName": "{{fuzzer.Name}}",
+                      "TargetName": "{{fuzzer.Name}}{{nameSuffix}}",
                       "TargetOptions": [
                         "--target_path=DotnetFuzzing.exe",
                         "--target_arg={{fuzzer.Name}}"
