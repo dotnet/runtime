@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Runtime.Versioning;
@@ -130,8 +130,8 @@ namespace System.Runtime.InteropServices.JavaScript
         /// <summary>
         /// Marshal as JavaScript <see href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Function">Function</see> type.
         /// </summary>
-        /// <typeparam name="T">The type of marshaled parameter or result.</typeparam>
-        public sealed class Function<T> : JSType where T : JSType
+        /// <typeparam name="TInOut">Type of marshaled parameter or result.</typeparam>
+        public sealed class Function<TInOut> : JSType where TInOut : JSType
         {
             internal Function() { }
         }
@@ -139,9 +139,9 @@ namespace System.Runtime.InteropServices.JavaScript
         /// <summary>
         /// Marshal as JavaScript <see href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Function">Function</see> type.
         /// </summary>
-        /// <typeparam name="T1">The type of marshaled parameter or result.</typeparam>
-        /// <typeparam name="T2">Type of marshaled parameter.</typeparam>
-        public sealed class Function<T1, T2> : JSType where T1 : JSType where T2 : JSType
+        /// <typeparam name="T1">Type of marshaled parameter.</typeparam>
+        /// <typeparam name="TInOut">Type of marshaled parameter or result.</typeparam>
+        public sealed class Function<TIn, TInOut> : JSType where TIn : JSType where TInOut : JSType
         {
             internal Function() { }
         }
@@ -149,10 +149,10 @@ namespace System.Runtime.InteropServices.JavaScript
         /// <summary>
         /// Marshal as JavaScript <see href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Function">Function</see> type.
         /// </summary>
-        /// <typeparam name="T1">The type of marshaled parameter or result.</typeparam>
-        /// <typeparam name="T2">Type of marshaled parameter.</typeparam>
-        /// <typeparam name="T3">Type of marshaled parameter.</typeparam>
-        public sealed class Function<T1, T2, T3> : JSType where T1 : JSType where T2 : JSType where T3 : JSType
+        /// <typeparam name="TIn1">Type of marshaled parameter.</typeparam>
+        /// <typeparam name="TIn2">Type of marshaled parameter.</typeparam>
+        /// <typeparam name="TInOut">Type of marshaled parameter or result.</typeparam>
+        public sealed class Function<TIn1, TIn2, TInOut> : JSType where TIn1 : JSType where TIn2 : JSType where TInOut : JSType
         {
             internal Function() { }
         }
@@ -160,11 +160,11 @@ namespace System.Runtime.InteropServices.JavaScript
         /// <summary>
         /// Marshal as JavaScript <see href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Function">Function</see> type.
         /// </summary>
-        /// <typeparam name="T1">The type of marshaled parameter or result.</typeparam>
-        /// <typeparam name="T2">Type of marshaled parameter.</typeparam>
-        /// <typeparam name="T3">Type of marshaled parameter.</typeparam>
-        /// <typeparam name="T4">Type of marshaled parameter.</typeparam>
-        public sealed class Function<T1, T2, T3, T4> : JSType where T1 : JSType where T2 : JSType where T3 : JSType where T4 : JSType
+        /// <typeparam name="TIn1">Type of marshaled parameter.</typeparam>
+        /// <typeparam name="TIn2">Type of marshaled parameter.</typeparam>
+        /// <typeparam name="TIn3">Type of marshaled parameter.</typeparam>
+        /// <typeparam name="TInOut">Type of marshaled parameter or result.</typeparam>
+        public sealed class Function<TIn1, TIn2, TIn3, TInOut> : JSType where TIn1 : JSType where TIn2 : JSType where TIn3 : JSType where TInOut : JSType
         {
             internal Function() { }
         }
