@@ -16583,7 +16583,7 @@ void emitter::getInsSveExecutionCharacteristics(instrDesc* id, insExecutionChara
             result.insLatency    = PERFSCORE_LATENCY_1C;    // need to fix
             break;
 
-        case IF_SVE_AT_3A:   // ........xx.mmmmm ......nnnnnddddd
+        case IF_SVE_AT_3A: // ........xx.mmmmm ......nnnnnddddd
             switch (ins)
             {
                 case INS_sve_tbxq:
