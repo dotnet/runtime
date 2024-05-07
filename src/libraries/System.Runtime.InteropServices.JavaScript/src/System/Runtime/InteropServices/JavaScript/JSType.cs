@@ -139,7 +139,7 @@ namespace System.Runtime.InteropServices.JavaScript
         /// <summary>
         /// Marshal as JavaScript <see href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Function">Function</see> type.
         /// </summary>
-        /// <typeparam name="T1">Type of marshaled parameter.</typeparam>
+        /// <typeparam name="TIn">Type of marshaled parameter.</typeparam>
         /// <typeparam name="TInOut">Type of marshaled parameter or result.</typeparam>
         public sealed class Function<TIn, TInOut> : JSType where TIn : JSType where TInOut : JSType
         {
