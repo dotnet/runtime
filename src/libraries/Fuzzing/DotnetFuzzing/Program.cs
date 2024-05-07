@@ -105,12 +105,15 @@ public static class Program
 
         foreach (IFuzzer fuzzer in fuzzers)
         {
+            Console.WriteLine();
             Console.WriteLine($"Preparing {fuzzer.Name} ...");
 
             string fuzzerDirectory = Path.Combine(outputDirectory, fuzzer.Name);
             Directory.CreateDirectory(fuzzerDirectory);
 
             Console.WriteLine($"Copying artifacts to {fuzzerDirectory}");
+            // NOTE: The expected fuzzer directory structure is currently flat.
+            // If we ever need to support subdirectories, OneFuzzConfig.json must also be updated to use PreservePathsJobDependencies.
             foreach (string file in Directory.GetFiles(publishDirectory))
             {
                 File.Copy(file, Path.Combine(fuzzerDirectory, Path.GetFileName(file)), overwrite: true);
@@ -133,8 +136,6 @@ public static class Program
 
             Console.WriteLine("Generating local-run.bat");
             File.WriteAllText(Path.Combine(fuzzerDirectory, "local-run.bat"), GenerateLocalRunHelperScript(fuzzer));
-
-            Console.WriteLine();
         }
     }
 

@@ -14,6 +14,9 @@ internal sealed class JsonSerializerFuzzer : IFuzzer
     public string[] TargetCoreLibPrefixes => [];
     public string Dictionary => "json.dict";
 
+    private static readonly ArrayBufferWriter<byte> s_writeBuffer = new();
+    private static readonly Utf8JsonWriter s_writer = new(s_writeBuffer);
+
     public void FuzzTarget(ReadOnlySpan<byte> bytes)
     {
         using var poisonAfter = PooledBoundedMemory<byte>.Rent(bytes, PoisonPagePlacement.After);
@@ -27,9 +30,13 @@ internal sealed class JsonSerializerFuzzer : IFuzzer
 
         if (item is not null)
         {
-            string json = JsonSerializer.Serialize(item);
-            Item? item2 = JsonSerializer.Deserialize<Item>(json);
+            // Test that we can roundtrip the serialization.
+            s_writeBuffer.ResetWrittenCount();
+            s_writer.Reset();
 
+            JsonSerializer.Serialize(s_writer, item);
+
+            Item? item2 = JsonSerializer.Deserialize<Item>(s_writeBuffer.WrittenSpan);
             item.AssertEqual(item2);
         }
     }
