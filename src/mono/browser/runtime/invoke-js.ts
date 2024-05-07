@@ -89,7 +89,8 @@ function bind_js_import (signature: JSFunctionSignature): Function {
     const js_module_name = get_signature_module_name(signature)!;
     const function_handle = get_signature_handle(signature);
 
-    mono_log_debug(`Binding [JSImport] ${js_function_name} from ${js_module_name} module`);
+    if (runtimeHelpers.diagnosticTracing)
+        mono_log_debug(`Binding [JSImport] ${js_function_name} from ${js_module_name} module`);
 
     const fn = mono_wasm_lookup_js_import(js_function_name, js_module_name);
     const args_count = get_signature_argument_count(signature);

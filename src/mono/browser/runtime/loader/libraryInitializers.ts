@@ -3,7 +3,7 @@
 
 import { mono_log_debug, mono_log_warn } from "./logging";
 import { appendUniqueQuery } from "./assets";
-import { loaderHelpers } from "./globals";
+import { loaderHelpers, runtimeHelpers } from "./globals";
 import { mono_exit } from "./exit";
 import { ResourceList } from "../types";
 
@@ -18,7 +18,8 @@ export async function importLibraryInitializers (libraryInitializers: ResourceLi
     async function importInitializer (path: string): Promise<void> {
         try {
             const adjustedPath = appendUniqueQuery(loaderHelpers.locateFile(path), "js-module-library-initializer");
-            mono_log_debug(`Attempting to import '${adjustedPath}' for ${path}`);
+            if (runtimeHelpers.diagnosticTracing)
+                mono_log_debug(`Attempting to import '${adjustedPath}' for ${path}`);
             const initializer = await import(/*! webpackIgnore: true */ adjustedPath);
 
             loaderHelpers.libraryInitializers!.push({ scriptName: path, exports: initializer });

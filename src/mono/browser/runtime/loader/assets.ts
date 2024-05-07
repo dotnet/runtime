@@ -505,9 +505,11 @@ async function start_asset_download_sources (asset: AssetEntryInternal): Promise
 
         const attemptUrl = resolve_path(asset, sourcePrefix);
         if (asset.name === attemptUrl) {
-            mono_log_debug(`Attempting to download '${attemptUrl}'`);
+            if (runtimeHelpers.diagnosticTracing)
+                mono_log_debug(`Attempting to download '${attemptUrl}'`);
         } else {
-            mono_log_debug(`Attempting to download '${attemptUrl}' for ${asset.name}`);
+            if (runtimeHelpers.diagnosticTracing)
+                mono_log_debug(`Attempting to download '${attemptUrl}' for ${asset.name}`);
         }
         try {
             asset.resolvedUrl = attemptUrl;
