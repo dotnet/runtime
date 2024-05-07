@@ -1,11 +1,11 @@
 trigger: none
 
-#schedules:
-#- cron: "0 10 * * *" # 10 AM UTC
-#  displayName: OneFuzz deployment nightly run
-#  branches:
-#    include:
-#    - main
+schedules:
+- cron: "0 10 * * *" # 10 AM UTC
+  displayName: OneFuzz deployment nightly run
+  branches:
+    include:
+    - main
 
 variables:
   - template: ../variables.yml
