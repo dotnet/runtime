@@ -1,8 +1,6 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
-
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Text;
@@ -156,7 +154,6 @@ namespace System.Reflection.Metadata
 #else
             if (!PublicKeyOrToken.IsDefault)
             {
-#pragma warning disable RS0030 // TypeSystem does not allow System.Linq, but we need to use System.Linq.ImmutableArrayExtensions.ToArray
                 // A copy of the array needs to be created, as AssemblyName allows for the mutation of provided array.
                 if ((Flags & AssemblyNameFlags.PublicKey) != 0)
                 {
@@ -166,7 +163,6 @@ namespace System.Reflection.Metadata
                 {
                     assemblyName.SetPublicKeyToken(PublicKeyOrToken.ToArray());
                 }
-#pragma warning restore RS0030
             }
 #endif
 

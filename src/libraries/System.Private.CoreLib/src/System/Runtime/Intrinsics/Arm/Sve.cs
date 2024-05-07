@@ -240,6 +240,306 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<ulong> AddAcross(Vector<ulong> value) => AddAcross(value);
 
 
+        ///  And : Bitwise AND
+
+        /// <summary>
+        /// svuint8_t svand[_u8]_m(svbool_t pg, svuint8_t op1, svuint8_t op2)
+        /// svuint8_t svand[_u8]_x(svbool_t pg, svuint8_t op1, svuint8_t op2)
+        /// svuint8_t svand[_u8]_z(svbool_t pg, svuint8_t op1, svuint8_t op2)
+        ///   AND Ztied1.B, Pg/M, Ztied1.B, Zop2.B
+        ///   AND Zresult.D, Zop1.D, Zop2.D
+        /// svbool_t svand[_b]_z(svbool_t pg, svbool_t op1, svbool_t op2)
+        ///   AND Presult.B, Pg/Z, Pop1.B, Pop2.B
+        /// </summary>
+        public static unsafe Vector<byte> And(Vector<byte> left, Vector<byte> right) => And(left, right);
+
+        /// <summary>
+        /// svint16_t svand[_s16]_m(svbool_t pg, svint16_t op1, svint16_t op2)
+        /// svint16_t svand[_s16]_x(svbool_t pg, svint16_t op1, svint16_t op2)
+        /// svint16_t svand[_s16]_z(svbool_t pg, svint16_t op1, svint16_t op2)
+        ///   AND Ztied1.H, Pg/M, Ztied1.H, Zop2.H
+        ///   AND Zresult.D, Zop1.D, Zop2.D
+        /// svbool_t svand[_b]_z(svbool_t pg, svbool_t op1, svbool_t op2)
+        ///   AND Presult.B, Pg/Z, Pop1.B, Pop2.B
+        /// </summary>
+        public static unsafe Vector<short> And(Vector<short> left, Vector<short> right) => And(left, right);
+
+        /// <summary>
+        /// svint32_t svand[_s32]_m(svbool_t pg, svint32_t op1, svint32_t op2)
+        /// svint32_t svand[_s32]_x(svbool_t pg, svint32_t op1, svint32_t op2)
+        /// svint32_t svand[_s32]_z(svbool_t pg, svint32_t op1, svint32_t op2)
+        ///   AND Ztied1.S, Pg/M, Ztied1.S, Zop2.S
+        ///   AND Zresult.D, Zop1.D, Zop2.D
+        /// svbool_t svand[_b]_z(svbool_t pg, svbool_t op1, svbool_t op2)
+        ///   AND Presult.B, Pg/Z, Pop1.B, Pop2.B
+        /// </summary>
+        public static unsafe Vector<int> And(Vector<int> left, Vector<int> right) => And(left, right);
+
+        /// <summary>
+        /// svint64_t svand[_s64]_m(svbool_t pg, svint64_t op1, svint64_t op2)
+        /// svint64_t svand[_s64]_x(svbool_t pg, svint64_t op1, svint64_t op2)
+        /// svint64_t svand[_s64]_z(svbool_t pg, svint64_t op1, svint64_t op2)
+        ///   AND Ztied1.D, Pg/M, Ztied1.D, Zop2.D
+        ///   AND Zresult.D, Zop1.D, Zop2.D
+        /// svbool_t svand[_b]_z(svbool_t pg, svbool_t op1, svbool_t op2)
+        ///   AND Presult.B, Pg/Z, Pop1.B, Pop2.B
+        /// </summary>
+        public static unsafe Vector<long> And(Vector<long> left, Vector<long> right) => And(left, right);
+
+        /// <summary>
+        /// svint8_t svand[_s8]_m(svbool_t pg, svint8_t op1, svint8_t op2)
+        /// svint8_t svand[_s8]_x(svbool_t pg, svint8_t op1, svint8_t op2)
+        /// svint8_t svand[_s8]_z(svbool_t pg, svint8_t op1, svint8_t op2)
+        ///   AND Ztied1.B, Pg/M, Ztied1.B, Zop2.B
+        ///   AND Zresult.D, Zop1.D, Zop2.D
+        /// svbool_t svand[_b]_z(svbool_t pg, svbool_t op1, svbool_t op2)
+        ///   AND Presult.B, Pg/Z, Pop1.B, Pop2.B
+        /// </summary>
+        public static unsafe Vector<sbyte> And(Vector<sbyte> left, Vector<sbyte> right) => And(left, right);
+
+        /// <summary>
+        /// svuint16_t svand[_u16]_m(svbool_t pg, svuint16_t op1, svuint16_t op2)
+        /// svuint16_t svand[_u16]_x(svbool_t pg, svuint16_t op1, svuint16_t op2)
+        /// svuint16_t svand[_u16]_z(svbool_t pg, svuint16_t op1, svuint16_t op2)
+        ///   AND Ztied1.H, Pg/M, Ztied1.H, Zop2.H
+        ///   AND Zresult.D, Zop1.D, Zop2.D
+        /// svbool_t svand[_b]_z(svbool_t pg, svbool_t op1, svbool_t op2)
+        ///   AND Presult.B, Pg/Z, Pop1.B, Pop2.B
+        /// </summary>
+        public static unsafe Vector<ushort> And(Vector<ushort> left, Vector<ushort> right) => And(left, right);
+
+        /// <summary>
+        /// svuint32_t svand[_u32]_m(svbool_t pg, svuint32_t op1, svuint32_t op2)
+        /// svuint32_t svand[_u32]_x(svbool_t pg, svuint32_t op1, svuint32_t op2)
+        /// svuint32_t svand[_u32]_z(svbool_t pg, svuint32_t op1, svuint32_t op2)
+        ///   AND Ztied1.S, Pg/M, Ztied1.S, Zop2.S
+        ///   AND Zresult.D, Zop1.D, Zop2.D
+        /// svbool_t svand[_b]_z(svbool_t pg, svbool_t op1, svbool_t op2)
+        ///   AND Presult.B, Pg/Z, Pop1.B, Pop2.B
+        /// </summary>
+        public static unsafe Vector<uint> And(Vector<uint> left, Vector<uint> right) => And(left, right);
+
+        /// <summary>
+        /// svuint64_t svand[_u64]_m(svbool_t pg, svuint64_t op1, svuint64_t op2)
+        /// svuint64_t svand[_u64]_x(svbool_t pg, svuint64_t op1, svuint64_t op2)
+        /// svuint64_t svand[_u64]_z(svbool_t pg, svuint64_t op1, svuint64_t op2)
+        ///   AND Ztied1.D, Pg/M, Ztied1.D, Zop2.D
+        ///   AND Zresult.D, Zop1.D, Zop2.D
+        /// svbool_t svand[_b]_z(svbool_t pg, svbool_t op1, svbool_t op2)
+        ///   AND Presult.B, Pg/Z, Pop1.B, Pop2.B
+        /// </summary>
+        public static unsafe Vector<ulong> And(Vector<ulong> left, Vector<ulong> right) => And(left, right);
+
+
+        ///  AndAcross : Bitwise AND reduction to scalar
+
+        /// <summary>
+        /// uint8_t svandv[_u8](svbool_t pg, svuint8_t op)
+        ///   ANDV Bresult, Pg, Zop.B
+        /// </summary>
+        public static unsafe Vector<byte> AndAcross(Vector<byte> value) => AndAcross(value);
+
+        /// <summary>
+        /// int16_t svandv[_s16](svbool_t pg, svint16_t op)
+        ///   ANDV Hresult, Pg, Zop.H
+        /// </summary>
+        public static unsafe Vector<short> AndAcross(Vector<short> value) => AndAcross(value);
+
+        /// <summary>
+        /// int32_t svandv[_s32](svbool_t pg, svint32_t op)
+        ///   ANDV Sresult, Pg, Zop.S
+        /// </summary>
+        public static unsafe Vector<int> AndAcross(Vector<int> value) => AndAcross(value);
+
+        /// <summary>
+        /// int64_t svandv[_s64](svbool_t pg, svint64_t op)
+        ///   ANDV Dresult, Pg, Zop.D
+        /// </summary>
+        public static unsafe Vector<long> AndAcross(Vector<long> value) => AndAcross(value);
+
+        /// <summary>
+        /// int8_t svandv[_s8](svbool_t pg, svint8_t op)
+        ///   ANDV Bresult, Pg, Zop.B
+        /// </summary>
+        public static unsafe Vector<sbyte> AndAcross(Vector<sbyte> value) => AndAcross(value);
+
+        /// <summary>
+        /// uint16_t svandv[_u16](svbool_t pg, svuint16_t op)
+        ///   ANDV Hresult, Pg, Zop.H
+        /// </summary>
+        public static unsafe Vector<ushort> AndAcross(Vector<ushort> value) => AndAcross(value);
+
+        /// <summary>
+        /// uint32_t svandv[_u32](svbool_t pg, svuint32_t op)
+        ///   ANDV Sresult, Pg, Zop.S
+        /// </summary>
+        public static unsafe Vector<uint> AndAcross(Vector<uint> value) => AndAcross(value);
+
+        /// <summary>
+        /// uint64_t svandv[_u64](svbool_t pg, svuint64_t op)
+        ///   ANDV Dresult, Pg, Zop.D
+        /// </summary>
+        public static unsafe Vector<ulong> AndAcross(Vector<ulong> value) => AndAcross(value);
+
+
+        ///  BitwiseClear : Bitwise clear
+
+        /// <summary>
+        /// svuint8_t svbic[_u8]_m(svbool_t pg, svuint8_t op1, svuint8_t op2)
+        /// svuint8_t svbic[_u8]_x(svbool_t pg, svuint8_t op1, svuint8_t op2)
+        /// svuint8_t svbic[_u8]_z(svbool_t pg, svuint8_t op1, svuint8_t op2)
+        ///   BIC Ztied1.B, Pg/M, Ztied1.B, Zop2.B
+        ///   BIC Zresult.D, Zop1.D, Zop2.D
+        /// svbool_t svbic[_b]_z(svbool_t pg, svbool_t op1, svbool_t op2)
+        ///   BIC Presult.B, Pg/Z, Pop1.B, Pop2.B
+        /// </summary>
+        public static unsafe Vector<byte> BitwiseClear(Vector<byte> left, Vector<byte> right) => BitwiseClear(left, right);
+
+        /// <summary>
+        /// svint16_t svbic[_s16]_m(svbool_t pg, svint16_t op1, svint16_t op2)
+        /// svint16_t svbic[_s16]_x(svbool_t pg, svint16_t op1, svint16_t op2)
+        /// svint16_t svbic[_s16]_z(svbool_t pg, svint16_t op1, svint16_t op2)
+        ///   BIC Ztied1.H, Pg/M, Ztied1.H, Zop2.H
+        ///   BIC Zresult.D, Zop1.D, Zop2.D
+        /// svbool_t svbic[_b]_z(svbool_t pg, svbool_t op1, svbool_t op2)
+        ///   BIC Presult.B, Pg/Z, Pop1.B, Pop2.B
+        /// </summary>
+        public static unsafe Vector<short> BitwiseClear(Vector<short> left, Vector<short> right) => BitwiseClear(left, right);
+
+        /// <summary>
+        /// svint32_t svbic[_s32]_m(svbool_t pg, svint32_t op1, svint32_t op2)
+        /// svint32_t svbic[_s32]_x(svbool_t pg, svint32_t op1, svint32_t op2)
+        /// svint32_t svbic[_s32]_z(svbool_t pg, svint32_t op1, svint32_t op2)
+        ///   BIC Ztied1.S, Pg/M, Ztied1.S, Zop2.S
+        ///   BIC Zresult.D, Zop1.D, Zop2.D
+        /// svbool_t svbic[_b]_z(svbool_t pg, svbool_t op1, svbool_t op2)
+        ///   BIC Presult.B, Pg/Z, Pop1.B, Pop2.B
+        /// </summary>
+        public static unsafe Vector<int> BitwiseClear(Vector<int> left, Vector<int> right) => BitwiseClear(left, right);
+
+        /// <summary>
+        /// svint64_t svbic[_s64]_m(svbool_t pg, svint64_t op1, svint64_t op2)
+        /// svint64_t svbic[_s64]_x(svbool_t pg, svint64_t op1, svint64_t op2)
+        /// svint64_t svbic[_s64]_z(svbool_t pg, svint64_t op1, svint64_t op2)
+        ///   BIC Ztied1.D, Pg/M, Ztied1.D, Zop2.D
+        ///   BIC Zresult.D, Zop1.D, Zop2.D
+        /// svbool_t svbic[_b]_z(svbool_t pg, svbool_t op1, svbool_t op2)
+        ///   BIC Presult.B, Pg/Z, Pop1.B, Pop2.B
+        /// </summary>
+        public static unsafe Vector<long> BitwiseClear(Vector<long> left, Vector<long> right) => BitwiseClear(left, right);
+
+        /// <summary>
+        /// svint8_t svbic[_s8]_m(svbool_t pg, svint8_t op1, svint8_t op2)
+        /// svint8_t svbic[_s8]_x(svbool_t pg, svint8_t op1, svint8_t op2)
+        /// svint8_t svbic[_s8]_z(svbool_t pg, svint8_t op1, svint8_t op2)
+        ///   BIC Ztied1.B, Pg/M, Ztied1.B, Zop2.B
+        ///   BIC Zresult.D, Zop1.D, Zop2.D
+        /// svbool_t svbic[_b]_z(svbool_t pg, svbool_t op1, svbool_t op2)
+        ///   BIC Presult.B, Pg/Z, Pop1.B, Pop2.B
+        /// </summary>
+        public static unsafe Vector<sbyte> BitwiseClear(Vector<sbyte> left, Vector<sbyte> right) => BitwiseClear(left, right);
+
+        /// <summary>
+        /// svuint16_t svbic[_u16]_m(svbool_t pg, svuint16_t op1, svuint16_t op2)
+        /// svuint16_t svbic[_u16]_x(svbool_t pg, svuint16_t op1, svuint16_t op2)
+        /// svuint16_t svbic[_u16]_z(svbool_t pg, svuint16_t op1, svuint16_t op2)
+        ///   BIC Ztied1.H, Pg/M, Ztied1.H, Zop2.H
+        ///   BIC Zresult.D, Zop1.D, Zop2.D
+        /// svbool_t svbic[_b]_z(svbool_t pg, svbool_t op1, svbool_t op2)
+        ///   BIC Presult.B, Pg/Z, Pop1.B, Pop2.B
+        /// </summary>
+        public static unsafe Vector<ushort> BitwiseClear(Vector<ushort> left, Vector<ushort> right) => BitwiseClear(left, right);
+
+        /// <summary>
+        /// svuint32_t svbic[_u32]_m(svbool_t pg, svuint32_t op1, svuint32_t op2)
+        /// svuint32_t svbic[_u32]_x(svbool_t pg, svuint32_t op1, svuint32_t op2)
+        /// svuint32_t svbic[_u32]_z(svbool_t pg, svuint32_t op1, svuint32_t op2)
+        ///   BIC Ztied1.S, Pg/M, Ztied1.S, Zop2.S
+        ///   BIC Zresult.D, Zop1.D, Zop2.D
+        /// svbool_t svbic[_b]_z(svbool_t pg, svbool_t op1, svbool_t op2)
+        ///   BIC Presult.B, Pg/Z, Pop1.B, Pop2.B
+        /// </summary>
+        public static unsafe Vector<uint> BitwiseClear(Vector<uint> left, Vector<uint> right) => BitwiseClear(left, right);
+
+        /// <summary>
+        /// svuint64_t svbic[_u64]_m(svbool_t pg, svuint64_t op1, svuint64_t op2)
+        /// svuint64_t svbic[_u64]_x(svbool_t pg, svuint64_t op1, svuint64_t op2)
+        /// svuint64_t svbic[_u64]_z(svbool_t pg, svuint64_t op1, svuint64_t op2)
+        ///   BIC Ztied1.D, Pg/M, Ztied1.D, Zop2.D
+        ///   BIC Zresult.D, Zop1.D, Zop2.D
+        /// svbool_t svbic[_b]_z(svbool_t pg, svbool_t op1, svbool_t op2)
+        ///   BIC Presult.B, Pg/Z, Pop1.B, Pop2.B
+        /// </summary>
+        public static unsafe Vector<ulong> BitwiseClear(Vector<ulong> left, Vector<ulong> right) => BitwiseClear(left, right);
+
+
+        ///  BooleanNot : Logically invert boolean condition
+
+        /// <summary>
+        /// svuint8_t svcnot[_u8]_m(svuint8_t inactive, svbool_t pg, svuint8_t op)
+        /// svuint8_t svcnot[_u8]_x(svbool_t pg, svuint8_t op)
+        /// svuint8_t svcnot[_u8]_z(svbool_t pg, svuint8_t op)
+        ///   CNOT Ztied.B, Pg/M, Zop.B
+        /// </summary>
+        public static unsafe Vector<byte> BooleanNot(Vector<byte> value) => BooleanNot(value);
+
+        /// <summary>
+        /// svint16_t svcnot[_s16]_m(svint16_t inactive, svbool_t pg, svint16_t op)
+        /// svint16_t svcnot[_s16]_x(svbool_t pg, svint16_t op)
+        /// svint16_t svcnot[_s16]_z(svbool_t pg, svint16_t op)
+        ///   CNOT Ztied.H, Pg/M, Zop.H
+        /// </summary>
+        public static unsafe Vector<short> BooleanNot(Vector<short> value) => BooleanNot(value);
+
+        /// <summary>
+        /// svint32_t svcnot[_s32]_m(svint32_t inactive, svbool_t pg, svint32_t op)
+        /// svint32_t svcnot[_s32]_x(svbool_t pg, svint32_t op)
+        /// svint32_t svcnot[_s32]_z(svbool_t pg, svint32_t op)
+        ///   CNOT Ztied.S, Pg/M, Zop.S
+        /// </summary>
+        public static unsafe Vector<int> BooleanNot(Vector<int> value) => BooleanNot(value);
+
+        /// <summary>
+        /// svint64_t svcnot[_s64]_m(svint64_t inactive, svbool_t pg, svint64_t op)
+        /// svint64_t svcnot[_s64]_x(svbool_t pg, svint64_t op)
+        /// svint64_t svcnot[_s64]_z(svbool_t pg, svint64_t op)
+        ///   CNOT Ztied.D, Pg/M, Zop.D
+        /// </summary>
+        public static unsafe Vector<long> BooleanNot(Vector<long> value) => BooleanNot(value);
+
+        /// <summary>
+        /// svint8_t svcnot[_s8]_m(svint8_t inactive, svbool_t pg, svint8_t op)
+        /// svint8_t svcnot[_s8]_x(svbool_t pg, svint8_t op)
+        /// svint8_t svcnot[_s8]_z(svbool_t pg, svint8_t op)
+        ///   CNOT Ztied.B, Pg/M, Zop.B
+        /// </summary>
+        public static unsafe Vector<sbyte> BooleanNot(Vector<sbyte> value) => BooleanNot(value);
+
+        /// <summary>
+        /// svuint16_t svcnot[_u16]_m(svuint16_t inactive, svbool_t pg, svuint16_t op)
+        /// svuint16_t svcnot[_u16]_x(svbool_t pg, svuint16_t op)
+        /// svuint16_t svcnot[_u16]_z(svbool_t pg, svuint16_t op)
+        ///   CNOT Ztied.H, Pg/M, Zop.H
+        /// </summary>
+        public static unsafe Vector<ushort> BooleanNot(Vector<ushort> value) => BooleanNot(value);
+
+        /// <summary>
+        /// svuint32_t svcnot[_u32]_m(svuint32_t inactive, svbool_t pg, svuint32_t op)
+        /// svuint32_t svcnot[_u32]_x(svbool_t pg, svuint32_t op)
+        /// svuint32_t svcnot[_u32]_z(svbool_t pg, svuint32_t op)
+        ///   CNOT Ztied.S, Pg/M, Zop.S
+        /// </summary>
+        public static unsafe Vector<uint> BooleanNot(Vector<uint> value) => BooleanNot(value);
+
+        /// <summary>
+        /// svuint64_t svcnot[_u64]_m(svuint64_t inactive, svbool_t pg, svuint64_t op)
+        /// svuint64_t svcnot[_u64]_x(svbool_t pg, svuint64_t op)
+        /// svuint64_t svcnot[_u64]_z(svbool_t pg, svuint64_t op)
+        ///   CNOT Ztied.D, Pg/M, Zop.D
+        /// </summary>
+        public static unsafe Vector<ulong> BooleanNot(Vector<ulong> value) => BooleanNot(value);
+
+
         ///  ConditionalSelect : Conditionally select elements
 
         /// <summary>
@@ -985,6 +1285,389 @@ namespace System.Runtime.Intrinsics.Arm
         /// </summary>
         public static unsafe Vector<ulong> LoadVectorUInt32ZeroExtendToUInt64(Vector<ulong> mask, uint* address) => LoadVectorUInt32ZeroExtendToUInt64(mask, address);
 
+        ///  Max : Maximum
+
+        /// <summary>
+        /// svuint8_t svmax[_u8]_m(svbool_t pg, svuint8_t op1, svuint8_t op2)
+        /// svuint8_t svmax[_u8]_x(svbool_t pg, svuint8_t op1, svuint8_t op2)
+        /// svuint8_t svmax[_u8]_z(svbool_t pg, svuint8_t op1, svuint8_t op2)
+        ///   UMAX Ztied1.B, Pg/M, Ztied1.B, Zop2.B
+        ///   UMAX Ztied2.B, Pg/M, Ztied2.B, Zop1.B
+        /// </summary>
+        public static unsafe Vector<byte> Max(Vector<byte> left, Vector<byte> right) => Max(left, right);
+
+        /// <summary>
+        /// svfloat64_t svmax[_f64]_m(svbool_t pg, svfloat64_t op1, svfloat64_t op2)
+        /// svfloat64_t svmax[_f64]_x(svbool_t pg, svfloat64_t op1, svfloat64_t op2)
+        /// svfloat64_t svmax[_f64]_z(svbool_t pg, svfloat64_t op1, svfloat64_t op2)
+        ///   FMAX Ztied1.D, Pg/M, Ztied1.D, Zop2.D
+        ///   FMAX Ztied2.D, Pg/M, Ztied2.D, Zop1.D
+        /// </summary>
+        public static unsafe Vector<double> Max(Vector<double> left, Vector<double> right) => Max(left, right);
+
+        /// <summary>
+        /// svint16_t svmax[_s16]_m(svbool_t pg, svint16_t op1, svint16_t op2)
+        /// svint16_t svmax[_s16]_x(svbool_t pg, svint16_t op1, svint16_t op2)
+        /// svint16_t svmax[_s16]_z(svbool_t pg, svint16_t op1, svint16_t op2)
+        ///   SMAX Ztied1.H, Pg/M, Ztied1.H, Zop2.H
+        ///   SMAX Ztied2.H, Pg/M, Ztied2.H, Zop1.H
+        /// </summary>
+        public static unsafe Vector<short> Max(Vector<short> left, Vector<short> right) => Max(left, right);
+
+        /// <summary>
+        /// svint32_t svmax[_s32]_m(svbool_t pg, svint32_t op1, svint32_t op2)
+        /// svint32_t svmax[_s32]_x(svbool_t pg, svint32_t op1, svint32_t op2)
+        /// svint32_t svmax[_s32]_z(svbool_t pg, svint32_t op1, svint32_t op2)
+        ///   SMAX Ztied1.S, Pg/M, Ztied1.S, Zop2.S
+        ///   SMAX Ztied2.S, Pg/M, Ztied2.S, Zop1.S
+        /// </summary>
+        public static unsafe Vector<int> Max(Vector<int> left, Vector<int> right) => Max(left, right);
+
+        /// <summary>
+        /// svint64_t svmax[_s64]_m(svbool_t pg, svint64_t op1, svint64_t op2)
+        /// svint64_t svmax[_s64]_x(svbool_t pg, svint64_t op1, svint64_t op2)
+        /// svint64_t svmax[_s64]_z(svbool_t pg, svint64_t op1, svint64_t op2)
+        ///   SMAX Ztied1.D, Pg/M, Ztied1.D, Zop2.D
+        ///   SMAX Ztied2.D, Pg/M, Ztied2.D, Zop1.D
+        /// </summary>
+        public static unsafe Vector<long> Max(Vector<long> left, Vector<long> right) => Max(left, right);
+
+        /// <summary>
+        /// svint8_t svmax[_s8]_m(svbool_t pg, svint8_t op1, svint8_t op2)
+        /// svint8_t svmax[_s8]_x(svbool_t pg, svint8_t op1, svint8_t op2)
+        /// svint8_t svmax[_s8]_z(svbool_t pg, svint8_t op1, svint8_t op2)
+        ///   SMAX Ztied1.B, Pg/M, Ztied1.B, Zop2.B
+        ///   SMAX Ztied2.B, Pg/M, Ztied2.B, Zop1.B
+        /// </summary>
+        public static unsafe Vector<sbyte> Max(Vector<sbyte> left, Vector<sbyte> right) => Max(left, right);
+
+        /// <summary>
+        /// svfloat32_t svmax[_f32]_m(svbool_t pg, svfloat32_t op1, svfloat32_t op2)
+        /// svfloat32_t svmax[_f32]_x(svbool_t pg, svfloat32_t op1, svfloat32_t op2)
+        /// svfloat32_t svmax[_f32]_z(svbool_t pg, svfloat32_t op1, svfloat32_t op2)
+        ///   FMAX Ztied1.S, Pg/M, Ztied1.S, Zop2.S
+        ///   FMAX Ztied2.S, Pg/M, Ztied2.S, Zop1.S
+        /// </summary>
+        public static unsafe Vector<float> Max(Vector<float> left, Vector<float> right) => Max(left, right);
+
+        /// <summary>
+        /// svuint16_t svmax[_u16]_m(svbool_t pg, svuint16_t op1, svuint16_t op2)
+        /// svuint16_t svmax[_u16]_x(svbool_t pg, svuint16_t op1, svuint16_t op2)
+        /// svuint16_t svmax[_u16]_z(svbool_t pg, svuint16_t op1, svuint16_t op2)
+        ///   UMAX Ztied1.H, Pg/M, Ztied1.H, Zop2.H
+        ///   UMAX Ztied2.H, Pg/M, Ztied2.H, Zop1.H
+        /// </summary>
+        public static unsafe Vector<ushort> Max(Vector<ushort> left, Vector<ushort> right) => Max(left, right);
+
+        /// <summary>
+        /// svuint32_t svmax[_u32]_m(svbool_t pg, svuint32_t op1, svuint32_t op2)
+        /// svuint32_t svmax[_u32]_x(svbool_t pg, svuint32_t op1, svuint32_t op2)
+        /// svuint32_t svmax[_u32]_z(svbool_t pg, svuint32_t op1, svuint32_t op2)
+        ///   UMAX Ztied1.S, Pg/M, Ztied1.S, Zop2.S
+        ///   UMAX Ztied2.S, Pg/M, Ztied2.S, Zop1.S
+        /// </summary>
+        public static unsafe Vector<uint> Max(Vector<uint> left, Vector<uint> right) => Max(left, right);
+
+        /// <summary>
+        /// svuint64_t svmax[_u64]_m(svbool_t pg, svuint64_t op1, svuint64_t op2)
+        /// svuint64_t svmax[_u64]_x(svbool_t pg, svuint64_t op1, svuint64_t op2)
+        /// svuint64_t svmax[_u64]_z(svbool_t pg, svuint64_t op1, svuint64_t op2)
+        ///   UMAX Ztied1.D, Pg/M, Ztied1.D, Zop2.D
+        ///   UMAX Ztied2.D, Pg/M, Ztied2.D, Zop1.D
+        /// </summary>
+        public static unsafe Vector<ulong> Max(Vector<ulong> left, Vector<ulong> right) => Max(left, right);
+
+
+        ///  MaxAcross : Maximum reduction to scalar
+
+        /// <summary>
+        /// uint8_t svmaxv[_u8](svbool_t pg, svuint8_t op)
+        ///   UMAXV Bresult, Pg, Zop.B
+        /// </summary>
+        public static unsafe Vector<byte> MaxAcross(Vector<byte> value) => MaxAcross(value);
+
+        /// <summary>
+        /// float64_t svmaxv[_f64](svbool_t pg, svfloat64_t op)
+        ///   FMAXV Dresult, Pg, Zop.D
+        /// </summary>
+        public static unsafe Vector<double> MaxAcross(Vector<double> value) => MaxAcross(value);
+
+        /// <summary>
+        /// int16_t svmaxv[_s16](svbool_t pg, svint16_t op)
+        ///   SMAXV Hresult, Pg, Zop.H
+        /// </summary>
+        public static unsafe Vector<short> MaxAcross(Vector<short> value) => MaxAcross(value);
+
+        /// <summary>
+        /// int32_t svmaxv[_s32](svbool_t pg, svint32_t op)
+        ///   SMAXV Sresult, Pg, Zop.S
+        /// </summary>
+        public static unsafe Vector<int> MaxAcross(Vector<int> value) => MaxAcross(value);
+
+        /// <summary>
+        /// int64_t svmaxv[_s64](svbool_t pg, svint64_t op)
+        ///   SMAXV Dresult, Pg, Zop.D
+        /// </summary>
+        public static unsafe Vector<long> MaxAcross(Vector<long> value) => MaxAcross(value);
+
+        /// <summary>
+        /// int8_t svmaxv[_s8](svbool_t pg, svint8_t op)
+        ///   SMAXV Bresult, Pg, Zop.B
+        /// </summary>
+        public static unsafe Vector<sbyte> MaxAcross(Vector<sbyte> value) => MaxAcross(value);
+
+        /// <summary>
+        /// float32_t svmaxv[_f32](svbool_t pg, svfloat32_t op)
+        ///   FMAXV Sresult, Pg, Zop.S
+        /// </summary>
+        public static unsafe Vector<float> MaxAcross(Vector<float> value) => MaxAcross(value);
+
+        /// <summary>
+        /// uint16_t svmaxv[_u16](svbool_t pg, svuint16_t op)
+        ///   UMAXV Hresult, Pg, Zop.H
+        /// </summary>
+        public static unsafe Vector<ushort> MaxAcross(Vector<ushort> value) => MaxAcross(value);
+
+        /// <summary>
+        /// uint32_t svmaxv[_u32](svbool_t pg, svuint32_t op)
+        ///   UMAXV Sresult, Pg, Zop.S
+        /// </summary>
+        public static unsafe Vector<uint> MaxAcross(Vector<uint> value) => MaxAcross(value);
+
+        /// <summary>
+        /// uint64_t svmaxv[_u64](svbool_t pg, svuint64_t op)
+        ///   UMAXV Dresult, Pg, Zop.D
+        /// </summary>
+        public static unsafe Vector<ulong> MaxAcross(Vector<ulong> value) => MaxAcross(value);
+
+
+        ///  MaxNumber : Maximum number
+
+        /// <summary>
+        /// svfloat64_t svmaxnm[_f64]_m(svbool_t pg, svfloat64_t op1, svfloat64_t op2)
+        /// svfloat64_t svmaxnm[_f64]_x(svbool_t pg, svfloat64_t op1, svfloat64_t op2)
+        /// svfloat64_t svmaxnm[_f64]_z(svbool_t pg, svfloat64_t op1, svfloat64_t op2)
+        ///   FMAXNM Ztied1.D, Pg/M, Ztied1.D, Zop2.D
+        ///   FMAXNM Ztied2.D, Pg/M, Ztied2.D, Zop1.D
+        /// </summary>
+        public static unsafe Vector<double> MaxNumber(Vector<double> left, Vector<double> right) => MaxNumber(left, right);
+
+        /// <summary>
+        /// svfloat32_t svmaxnm[_f32]_m(svbool_t pg, svfloat32_t op1, svfloat32_t op2)
+        /// svfloat32_t svmaxnm[_f32]_x(svbool_t pg, svfloat32_t op1, svfloat32_t op2)
+        /// svfloat32_t svmaxnm[_f32]_z(svbool_t pg, svfloat32_t op1, svfloat32_t op2)
+        ///   FMAXNM Ztied1.S, Pg/M, Ztied1.S, Zop2.S
+        ///   FMAXNM Ztied2.S, Pg/M, Ztied2.S, Zop1.S
+        /// </summary>
+        public static unsafe Vector<float> MaxNumber(Vector<float> left, Vector<float> right) => MaxNumber(left, right);
+
+
+        ///  MaxNumberAcross : Maximum number reduction to scalar
+
+        /// <summary>
+        /// float64_t svmaxnmv[_f64](svbool_t pg, svfloat64_t op)
+        ///   FMAXNMV Dresult, Pg, Zop.D
+        /// </summary>
+        public static unsafe Vector<double> MaxNumberAcross(Vector<double> value) => MaxNumberAcross(value);
+
+        /// <summary>
+        /// float32_t svmaxnmv[_f32](svbool_t pg, svfloat32_t op)
+        ///   FMAXNMV Sresult, Pg, Zop.S
+        /// </summary>
+        public static unsafe Vector<float> MaxNumberAcross(Vector<float> value) => MaxNumberAcross(value);
+
+
+        ///  Min : Minimum
+
+        /// <summary>
+        /// svuint8_t svmin[_u8]_m(svbool_t pg, svuint8_t op1, svuint8_t op2)
+        /// svuint8_t svmin[_u8]_x(svbool_t pg, svuint8_t op1, svuint8_t op2)
+        /// svuint8_t svmin[_u8]_z(svbool_t pg, svuint8_t op1, svuint8_t op2)
+        ///   UMIN Ztied1.B, Pg/M, Ztied1.B, Zop2.B
+        ///   UMIN Ztied2.B, Pg/M, Ztied2.B, Zop1.B
+        /// </summary>
+        public static unsafe Vector<byte> Min(Vector<byte> left, Vector<byte> right) => Min(left, right);
+
+        /// <summary>
+        /// svfloat64_t svmin[_f64]_m(svbool_t pg, svfloat64_t op1, svfloat64_t op2)
+        /// svfloat64_t svmin[_f64]_x(svbool_t pg, svfloat64_t op1, svfloat64_t op2)
+        /// svfloat64_t svmin[_f64]_z(svbool_t pg, svfloat64_t op1, svfloat64_t op2)
+        ///   FMIN Ztied1.D, Pg/M, Ztied1.D, Zop2.D
+        ///   FMIN Ztied2.D, Pg/M, Ztied2.D, Zop1.D
+        /// </summary>
+        public static unsafe Vector<double> Min(Vector<double> left, Vector<double> right) => Min(left, right);
+
+        /// <summary>
+        /// svint16_t svmin[_s16]_m(svbool_t pg, svint16_t op1, svint16_t op2)
+        /// svint16_t svmin[_s16]_x(svbool_t pg, svint16_t op1, svint16_t op2)
+        /// svint16_t svmin[_s16]_z(svbool_t pg, svint16_t op1, svint16_t op2)
+        ///   SMIN Ztied1.H, Pg/M, Ztied1.H, Zop2.H
+        ///   SMIN Ztied2.H, Pg/M, Ztied2.H, Zop1.H
+        /// </summary>
+        public static unsafe Vector<short> Min(Vector<short> left, Vector<short> right) => Min(left, right);
+
+        /// <summary>
+        /// svint32_t svmin[_s32]_m(svbool_t pg, svint32_t op1, svint32_t op2)
+        /// svint32_t svmin[_s32]_x(svbool_t pg, svint32_t op1, svint32_t op2)
+        /// svint32_t svmin[_s32]_z(svbool_t pg, svint32_t op1, svint32_t op2)
+        ///   SMIN Ztied1.S, Pg/M, Ztied1.S, Zop2.S
+        ///   SMIN Ztied2.S, Pg/M, Ztied2.S, Zop1.S
+        /// </summary>
+        public static unsafe Vector<int> Min(Vector<int> left, Vector<int> right) => Min(left, right);
+
+        /// <summary>
+        /// svint64_t svmin[_s64]_m(svbool_t pg, svint64_t op1, svint64_t op2)
+        /// svint64_t svmin[_s64]_x(svbool_t pg, svint64_t op1, svint64_t op2)
+        /// svint64_t svmin[_s64]_z(svbool_t pg, svint64_t op1, svint64_t op2)
+        ///   SMIN Ztied1.D, Pg/M, Ztied1.D, Zop2.D
+        ///   SMIN Ztied2.D, Pg/M, Ztied2.D, Zop1.D
+        /// </summary>
+        public static unsafe Vector<long> Min(Vector<long> left, Vector<long> right) => Min(left, right);
+
+        /// <summary>
+        /// svint8_t svmin[_s8]_m(svbool_t pg, svint8_t op1, svint8_t op2)
+        /// svint8_t svmin[_s8]_x(svbool_t pg, svint8_t op1, svint8_t op2)
+        /// svint8_t svmin[_s8]_z(svbool_t pg, svint8_t op1, svint8_t op2)
+        ///   SMIN Ztied1.B, Pg/M, Ztied1.B, Zop2.B
+        ///   SMIN Ztied2.B, Pg/M, Ztied2.B, Zop1.B
+        /// </summary>
+        public static unsafe Vector<sbyte> Min(Vector<sbyte> left, Vector<sbyte> right) => Min(left, right);
+
+        /// <summary>
+        /// svfloat32_t svmin[_f32]_m(svbool_t pg, svfloat32_t op1, svfloat32_t op2)
+        /// svfloat32_t svmin[_f32]_x(svbool_t pg, svfloat32_t op1, svfloat32_t op2)
+        /// svfloat32_t svmin[_f32]_z(svbool_t pg, svfloat32_t op1, svfloat32_t op2)
+        ///   FMIN Ztied1.S, Pg/M, Ztied1.S, Zop2.S
+        ///   FMIN Ztied2.S, Pg/M, Ztied2.S, Zop1.S
+        /// </summary>
+        public static unsafe Vector<float> Min(Vector<float> left, Vector<float> right) => Min(left, right);
+
+        /// <summary>
+        /// svuint16_t svmin[_u16]_m(svbool_t pg, svuint16_t op1, svuint16_t op2)
+        /// svuint16_t svmin[_u16]_x(svbool_t pg, svuint16_t op1, svuint16_t op2)
+        /// svuint16_t svmin[_u16]_z(svbool_t pg, svuint16_t op1, svuint16_t op2)
+        ///   UMIN Ztied1.H, Pg/M, Ztied1.H, Zop2.H
+        ///   UMIN Ztied2.H, Pg/M, Ztied2.H, Zop1.H
+        /// </summary>
+        public static unsafe Vector<ushort> Min(Vector<ushort> left, Vector<ushort> right) => Min(left, right);
+
+        /// <summary>
+        /// svuint32_t svmin[_u32]_m(svbool_t pg, svuint32_t op1, svuint32_t op2)
+        /// svuint32_t svmin[_u32]_x(svbool_t pg, svuint32_t op1, svuint32_t op2)
+        /// svuint32_t svmin[_u32]_z(svbool_t pg, svuint32_t op1, svuint32_t op2)
+        ///   UMIN Ztied1.S, Pg/M, Ztied1.S, Zop2.S
+        ///   UMIN Ztied2.S, Pg/M, Ztied2.S, Zop1.S
+        /// </summary>
+        public static unsafe Vector<uint> Min(Vector<uint> left, Vector<uint> right) => Min(left, right);
+
+        /// <summary>
+        /// svuint64_t svmin[_u64]_m(svbool_t pg, svuint64_t op1, svuint64_t op2)
+        /// svuint64_t svmin[_u64]_x(svbool_t pg, svuint64_t op1, svuint64_t op2)
+        /// svuint64_t svmin[_u64]_z(svbool_t pg, svuint64_t op1, svuint64_t op2)
+        ///   UMIN Ztied1.D, Pg/M, Ztied1.D, Zop2.D
+        ///   UMIN Ztied2.D, Pg/M, Ztied2.D, Zop1.D
+        /// </summary>
+        public static unsafe Vector<ulong> Min(Vector<ulong> left, Vector<ulong> right) => Min(left, right);
+
+
+        ///  MinAcross : Minimum reduction to scalar
+
+        /// <summary>
+        /// uint8_t svminv[_u8](svbool_t pg, svuint8_t op)
+        ///   UMINV Bresult, Pg, Zop.B
+        /// </summary>
+        public static unsafe Vector<byte> MinAcross(Vector<byte> value) => MinAcross(value);
+
+        /// <summary>
+        /// float64_t svminv[_f64](svbool_t pg, svfloat64_t op)
+        ///   FMINV Dresult, Pg, Zop.D
+        /// </summary>
+        public static unsafe Vector<double> MinAcross(Vector<double> value) => MinAcross(value);
+
+        /// <summary>
+        /// int16_t svminv[_s16](svbool_t pg, svint16_t op)
+        ///   SMINV Hresult, Pg, Zop.H
+        /// </summary>
+        public static unsafe Vector<short> MinAcross(Vector<short> value) => MinAcross(value);
+
+        /// <summary>
+        /// int32_t svminv[_s32](svbool_t pg, svint32_t op)
+        ///   SMINV Sresult, Pg, Zop.S
+        /// </summary>
+        public static unsafe Vector<int> MinAcross(Vector<int> value) => MinAcross(value);
+
+        /// <summary>
+        /// int64_t svminv[_s64](svbool_t pg, svint64_t op)
+        ///   SMINV Dresult, Pg, Zop.D
+        /// </summary>
+        public static unsafe Vector<long> MinAcross(Vector<long> value) => MinAcross(value);
+
+        /// <summary>
+        /// int8_t svminv[_s8](svbool_t pg, svint8_t op)
+        ///   SMINV Bresult, Pg, Zop.B
+        /// </summary>
+        public static unsafe Vector<sbyte> MinAcross(Vector<sbyte> value) => MinAcross(value);
+
+        /// <summary>
+        /// float32_t svminv[_f32](svbool_t pg, svfloat32_t op)
+        ///   FMINV Sresult, Pg, Zop.S
+        /// </summary>
+        public static unsafe Vector<float> MinAcross(Vector<float> value) => MinAcross(value);
+
+        /// <summary>
+        /// uint16_t svminv[_u16](svbool_t pg, svuint16_t op)
+        ///   UMINV Hresult, Pg, Zop.H
+        /// </summary>
+        public static unsafe Vector<ushort> MinAcross(Vector<ushort> value) => MinAcross(value);
+
+        /// <summary>
+        /// uint32_t svminv[_u32](svbool_t pg, svuint32_t op)
+        ///   UMINV Sresult, Pg, Zop.S
+        /// </summary>
+        public static unsafe Vector<uint> MinAcross(Vector<uint> value) => MinAcross(value);
+
+        /// <summary>
+        /// uint64_t svminv[_u64](svbool_t pg, svuint64_t op)
+        ///   UMINV Dresult, Pg, Zop.D
+        /// </summary>
+        public static unsafe Vector<ulong> MinAcross(Vector<ulong> value) => MinAcross(value);
+
+
+        ///  MinNumber : Minimum number
+
+        /// <summary>
+        /// svfloat64_t svminnm[_f64]_m(svbool_t pg, svfloat64_t op1, svfloat64_t op2)
+        /// svfloat64_t svminnm[_f64]_x(svbool_t pg, svfloat64_t op1, svfloat64_t op2)
+        /// svfloat64_t svminnm[_f64]_z(svbool_t pg, svfloat64_t op1, svfloat64_t op2)
+        ///   FMINNM Ztied1.D, Pg/M, Ztied1.D, Zop2.D
+        ///   FMINNM Ztied2.D, Pg/M, Ztied2.D, Zop1.D
+        /// </summary>
+        public static unsafe Vector<double> MinNumber(Vector<double> left, Vector<double> right) => MinNumber(left, right);
+
+        /// <summary>
+        /// svfloat32_t svminnm[_f32]_m(svbool_t pg, svfloat32_t op1, svfloat32_t op2)
+        /// svfloat32_t svminnm[_f32]_x(svbool_t pg, svfloat32_t op1, svfloat32_t op2)
+        /// svfloat32_t svminnm[_f32]_z(svbool_t pg, svfloat32_t op1, svfloat32_t op2)
+        ///   FMINNM Ztied1.S, Pg/M, Ztied1.S, Zop2.S
+        ///   FMINNM Ztied2.S, Pg/M, Ztied2.S, Zop1.S
+        /// </summary>
+        public static unsafe Vector<float> MinNumber(Vector<float> left, Vector<float> right) => MinNumber(left, right);
+
+
+        ///  MinNumberAcross : Minimum number reduction to scalar
+
+        /// <summary>
+        /// float64_t svminnmv[_f64](svbool_t pg, svfloat64_t op)
+        ///   FMINNMV Dresult, Pg, Zop.D
+        /// </summary>
+        public static unsafe Vector<double> MinNumberAcross(Vector<double> value) => MinNumberAcross(value);
+
+        /// <summary>
+        /// float32_t svminnmv[_f32](svbool_t pg, svfloat32_t op)
+        ///   FMINNMV Sresult, Pg, Zop.S
+        /// </summary>
+        public static unsafe Vector<float> MinNumberAcross(Vector<float> value) => MinNumberAcross(value);
+
 
         /// <summary>
         /// svint8_t svmul[_s8]_m(svbool_t pg, svint8_t op1, svint8_t op2)
@@ -1127,6 +1810,149 @@ namespace System.Runtime.Intrinsics.Arm
         ///   MOVPRFX Zresult.D, Pg/Z, Zop2.D; FMUL Zresult.D, Pg/M, Zresult.D, Zop1.D
         /// </summary>
         public static unsafe Vector<double> Multiply(Vector<double> left, Vector<double> right) => Multiply(left, right);
+
+
+        ///  Or : Bitwise inclusive OR
+
+        /// <summary>
+        /// svuint8_t svorr[_u8]_m(svbool_t pg, svuint8_t op1, svuint8_t op2)
+        /// svuint8_t svorr[_u8]_x(svbool_t pg, svuint8_t op1, svuint8_t op2)
+        /// svuint8_t svorr[_u8]_z(svbool_t pg, svuint8_t op1, svuint8_t op2)
+        ///   ORR Ztied1.B, Pg/M, Ztied1.B, Zop2.B
+        ///   ORR Zresult.D, Zop1.D, Zop2.D
+        /// svbool_t svorr[_b]_z(svbool_t pg, svbool_t op1, svbool_t op2)
+        ///   ORR Presult.B, Pg/Z, Pop1.B, Pop2.B
+        /// </summary>
+        public static unsafe Vector<byte> Or(Vector<byte> left, Vector<byte> right) => Or(left, right);
+
+        /// <summary>
+        /// svint16_t svorr[_s16]_m(svbool_t pg, svint16_t op1, svint16_t op2)
+        /// svint16_t svorr[_s16]_x(svbool_t pg, svint16_t op1, svint16_t op2)
+        /// svint16_t svorr[_s16]_z(svbool_t pg, svint16_t op1, svint16_t op2)
+        ///   ORR Ztied1.H, Pg/M, Ztied1.H, Zop2.H
+        ///   ORR Zresult.D, Zop1.D, Zop2.D
+        /// svbool_t svorr[_b]_z(svbool_t pg, svbool_t op1, svbool_t op2)
+        ///   ORR Presult.B, Pg/Z, Pop1.B, Pop2.B
+        /// </summary>
+        public static unsafe Vector<short> Or(Vector<short> left, Vector<short> right) => Or(left, right);
+
+        /// <summary>
+        /// svint32_t svorr[_s32]_m(svbool_t pg, svint32_t op1, svint32_t op2)
+        /// svint32_t svorr[_s32]_x(svbool_t pg, svint32_t op1, svint32_t op2)
+        /// svint32_t svorr[_s32]_z(svbool_t pg, svint32_t op1, svint32_t op2)
+        ///   ORR Ztied1.S, Pg/M, Ztied1.S, Zop2.S
+        ///   ORR Zresult.D, Zop1.D, Zop2.D
+        /// svbool_t svorr[_b]_z(svbool_t pg, svbool_t op1, svbool_t op2)
+        ///   ORR Presult.B, Pg/Z, Pop1.B, Pop2.B
+        /// </summary>
+        public static unsafe Vector<int> Or(Vector<int> left, Vector<int> right) => Or(left, right);
+
+        /// <summary>
+        /// svint64_t svorr[_s64]_m(svbool_t pg, svint64_t op1, svint64_t op2)
+        /// svint64_t svorr[_s64]_x(svbool_t pg, svint64_t op1, svint64_t op2)
+        /// svint64_t svorr[_s64]_z(svbool_t pg, svint64_t op1, svint64_t op2)
+        ///   ORR Ztied1.D, Pg/M, Ztied1.D, Zop2.D
+        ///   ORR Zresult.D, Zop1.D, Zop2.D
+        /// svbool_t svorr[_b]_z(svbool_t pg, svbool_t op1, svbool_t op2)
+        ///   ORR Presult.B, Pg/Z, Pop1.B, Pop2.B
+        /// </summary>
+        public static unsafe Vector<long> Or(Vector<long> left, Vector<long> right) => Or(left, right);
+
+        /// <summary>
+        /// svint8_t svorr[_s8]_m(svbool_t pg, svint8_t op1, svint8_t op2)
+        /// svint8_t svorr[_s8]_x(svbool_t pg, svint8_t op1, svint8_t op2)
+        /// svint8_t svorr[_s8]_z(svbool_t pg, svint8_t op1, svint8_t op2)
+        ///   ORR Ztied1.B, Pg/M, Ztied1.B, Zop2.B
+        ///   ORR Zresult.D, Zop1.D, Zop2.D
+        /// svbool_t svorr[_b]_z(svbool_t pg, svbool_t op1, svbool_t op2)
+        ///   ORR Presult.B, Pg/Z, Pop1.B, Pop2.B
+        /// </summary>
+        public static unsafe Vector<sbyte> Or(Vector<sbyte> left, Vector<sbyte> right) => Or(left, right);
+
+        /// <summary>
+        /// svuint16_t svorr[_u16]_m(svbool_t pg, svuint16_t op1, svuint16_t op2)
+        /// svuint16_t svorr[_u16]_x(svbool_t pg, svuint16_t op1, svuint16_t op2)
+        /// svuint16_t svorr[_u16]_z(svbool_t pg, svuint16_t op1, svuint16_t op2)
+        ///   ORR Ztied1.H, Pg/M, Ztied1.H, Zop2.H
+        ///   ORR Zresult.D, Zop1.D, Zop2.D
+        /// svbool_t svorr[_b]_z(svbool_t pg, svbool_t op1, svbool_t op2)
+        ///   ORR Presult.B, Pg/Z, Pop1.B, Pop2.B
+        /// </summary>
+        public static unsafe Vector<ushort> Or(Vector<ushort> left, Vector<ushort> right) => Or(left, right);
+
+        /// <summary>
+        /// svuint32_t svorr[_u32]_m(svbool_t pg, svuint32_t op1, svuint32_t op2)
+        /// svuint32_t svorr[_u32]_x(svbool_t pg, svuint32_t op1, svuint32_t op2)
+        /// svuint32_t svorr[_u32]_z(svbool_t pg, svuint32_t op1, svuint32_t op2)
+        ///   ORR Ztied1.S, Pg/M, Ztied1.S, Zop2.S
+        ///   ORR Zresult.D, Zop1.D, Zop2.D
+        /// svbool_t svorr[_b]_z(svbool_t pg, svbool_t op1, svbool_t op2)
+        ///   ORR Presult.B, Pg/Z, Pop1.B, Pop2.B
+        /// </summary>
+        public static unsafe Vector<uint> Or(Vector<uint> left, Vector<uint> right) => Or(left, right);
+
+        /// <summary>
+        /// svuint64_t svorr[_u64]_m(svbool_t pg, svuint64_t op1, svuint64_t op2)
+        /// svuint64_t svorr[_u64]_x(svbool_t pg, svuint64_t op1, svuint64_t op2)
+        /// svuint64_t svorr[_u64]_z(svbool_t pg, svuint64_t op1, svuint64_t op2)
+        ///   ORR Ztied1.D, Pg/M, Ztied1.D, Zop2.D
+        ///   ORR Zresult.D, Zop1.D, Zop2.D
+        /// svbool_t svorr[_b]_z(svbool_t pg, svbool_t op1, svbool_t op2)
+        ///   ORR Presult.B, Pg/Z, Pop1.B, Pop2.B
+        /// </summary>
+        public static unsafe Vector<ulong> Or(Vector<ulong> left, Vector<ulong> right) => Or(left, right);
+
+
+        ///  OrAcross : Bitwise inclusive OR reduction to scalar
+
+        /// <summary>
+        /// uint8_t svorv[_u8](svbool_t pg, svuint8_t op)
+        ///   ORV Bresult, Pg, Zop.B
+        /// </summary>
+        public static unsafe Vector<byte> OrAcross(Vector<byte> value) => OrAcross(value);
+
+        /// <summary>
+        /// int16_t svorv[_s16](svbool_t pg, svint16_t op)
+        ///   ORV Hresult, Pg, Zop.H
+        /// </summary>
+        public static unsafe Vector<short> OrAcross(Vector<short> value) => OrAcross(value);
+
+        /// <summary>
+        /// int32_t svorv[_s32](svbool_t pg, svint32_t op)
+        ///   ORV Sresult, Pg, Zop.S
+        /// </summary>
+        public static unsafe Vector<int> OrAcross(Vector<int> value) => OrAcross(value);
+
+        /// <summary>
+        /// int64_t svorv[_s64](svbool_t pg, svint64_t op)
+        ///   ORV Dresult, Pg, Zop.D
+        /// </summary>
+        public static unsafe Vector<long> OrAcross(Vector<long> value) => OrAcross(value);
+
+        /// <summary>
+        /// int8_t svorv[_s8](svbool_t pg, svint8_t op)
+        ///   ORV Bresult, Pg, Zop.B
+        /// </summary>
+        public static unsafe Vector<sbyte> OrAcross(Vector<sbyte> value) => OrAcross(value);
+
+        /// <summary>
+        /// uint16_t svorv[_u16](svbool_t pg, svuint16_t op)
+        ///   ORV Hresult, Pg, Zop.H
+        /// </summary>
+        public static unsafe Vector<ushort> OrAcross(Vector<ushort> value) => OrAcross(value);
+
+        /// <summary>
+        /// uint32_t svorv[_u32](svbool_t pg, svuint32_t op)
+        ///   ORV Sresult, Pg, Zop.S
+        /// </summary>
+        public static unsafe Vector<uint> OrAcross(Vector<uint> value) => OrAcross(value);
+
+        /// <summary>
+        /// uint64_t svorv[_u64](svbool_t pg, svuint64_t op)
+        ///   ORV Dresult, Pg, Zop.D
+        /// </summary>
+        public static unsafe Vector<ulong> OrAcross(Vector<ulong> value) => OrAcross(value);
+
 
         ///  SignExtend16 : Sign-extend the low 16 bits
 
@@ -1513,6 +2339,149 @@ namespace System.Runtime.Intrinsics.Arm
         ///   UZP2 Presult.D, Pop1.D, Pop2.D
         /// </summary>
         public static unsafe Vector<ulong> UnzipOdd(Vector<ulong> left, Vector<ulong> right) => UnzipOdd(left, right);
+
+
+        ///  Xor : Bitwise exclusive OR
+
+        /// <summary>
+        /// svuint8_t sveor[_u8]_m(svbool_t pg, svuint8_t op1, svuint8_t op2)
+        /// svuint8_t sveor[_u8]_x(svbool_t pg, svuint8_t op1, svuint8_t op2)
+        /// svuint8_t sveor[_u8]_z(svbool_t pg, svuint8_t op1, svuint8_t op2)
+        ///   EOR Ztied1.B, Pg/M, Ztied1.B, Zop2.B
+        ///   EOR Zresult.D, Zop1.D, Zop2.D
+        /// svbool_t sveor[_b]_z(svbool_t pg, svbool_t op1, svbool_t op2)
+        ///   EOR Presult.B, Pg/Z, Pop1.B, Pop2.B
+        /// </summary>
+        public static unsafe Vector<byte> Xor(Vector<byte> left, Vector<byte> right) => Xor(left, right);
+
+        /// <summary>
+        /// svint16_t sveor[_s16]_m(svbool_t pg, svint16_t op1, svint16_t op2)
+        /// svint16_t sveor[_s16]_x(svbool_t pg, svint16_t op1, svint16_t op2)
+        /// svint16_t sveor[_s16]_z(svbool_t pg, svint16_t op1, svint16_t op2)
+        ///   EOR Ztied1.H, Pg/M, Ztied1.H, Zop2.H
+        ///   EOR Zresult.D, Zop1.D, Zop2.D
+        /// svbool_t sveor[_b]_z(svbool_t pg, svbool_t op1, svbool_t op2)
+        ///   EOR Presult.B, Pg/Z, Pop1.B, Pop2.B
+        /// </summary>
+        public static unsafe Vector<short> Xor(Vector<short> left, Vector<short> right) => Xor(left, right);
+
+        /// <summary>
+        /// svint32_t sveor[_s32]_m(svbool_t pg, svint32_t op1, svint32_t op2)
+        /// svint32_t sveor[_s32]_x(svbool_t pg, svint32_t op1, svint32_t op2)
+        /// svint32_t sveor[_s32]_z(svbool_t pg, svint32_t op1, svint32_t op2)
+        ///   EOR Ztied1.S, Pg/M, Ztied1.S, Zop2.S
+        ///   EOR Zresult.D, Zop1.D, Zop2.D
+        /// svbool_t sveor[_b]_z(svbool_t pg, svbool_t op1, svbool_t op2)
+        ///   EOR Presult.B, Pg/Z, Pop1.B, Pop2.B
+        /// </summary>
+        public static unsafe Vector<int> Xor(Vector<int> left, Vector<int> right) => Xor(left, right);
+
+        /// <summary>
+        /// svint64_t sveor[_s64]_m(svbool_t pg, svint64_t op1, svint64_t op2)
+        /// svint64_t sveor[_s64]_x(svbool_t pg, svint64_t op1, svint64_t op2)
+        /// svint64_t sveor[_s64]_z(svbool_t pg, svint64_t op1, svint64_t op2)
+        ///   EOR Ztied1.D, Pg/M, Ztied1.D, Zop2.D
+        ///   EOR Zresult.D, Zop1.D, Zop2.D
+        /// svbool_t sveor[_b]_z(svbool_t pg, svbool_t op1, svbool_t op2)
+        ///   EOR Presult.B, Pg/Z, Pop1.B, Pop2.B
+        /// </summary>
+        public static unsafe Vector<long> Xor(Vector<long> left, Vector<long> right) => Xor(left, right);
+
+        /// <summary>
+        /// svint8_t sveor[_s8]_m(svbool_t pg, svint8_t op1, svint8_t op2)
+        /// svint8_t sveor[_s8]_x(svbool_t pg, svint8_t op1, svint8_t op2)
+        /// svint8_t sveor[_s8]_z(svbool_t pg, svint8_t op1, svint8_t op2)
+        ///   EOR Ztied1.B, Pg/M, Ztied1.B, Zop2.B
+        ///   EOR Zresult.D, Zop1.D, Zop2.D
+        /// svbool_t sveor[_b]_z(svbool_t pg, svbool_t op1, svbool_t op2)
+        ///   EOR Presult.B, Pg/Z, Pop1.B, Pop2.B
+        /// </summary>
+        public static unsafe Vector<sbyte> Xor(Vector<sbyte> left, Vector<sbyte> right) => Xor(left, right);
+
+        /// <summary>
+        /// svuint16_t sveor[_u16]_m(svbool_t pg, svuint16_t op1, svuint16_t op2)
+        /// svuint16_t sveor[_u16]_x(svbool_t pg, svuint16_t op1, svuint16_t op2)
+        /// svuint16_t sveor[_u16]_z(svbool_t pg, svuint16_t op1, svuint16_t op2)
+        ///   EOR Ztied1.H, Pg/M, Ztied1.H, Zop2.H
+        ///   EOR Zresult.D, Zop1.D, Zop2.D
+        /// svbool_t sveor[_b]_z(svbool_t pg, svbool_t op1, svbool_t op2)
+        ///   EOR Presult.B, Pg/Z, Pop1.B, Pop2.B
+        /// </summary>
+        public static unsafe Vector<ushort> Xor(Vector<ushort> left, Vector<ushort> right) => Xor(left, right);
+
+        /// <summary>
+        /// svuint32_t sveor[_u32]_m(svbool_t pg, svuint32_t op1, svuint32_t op2)
+        /// svuint32_t sveor[_u32]_x(svbool_t pg, svuint32_t op1, svuint32_t op2)
+        /// svuint32_t sveor[_u32]_z(svbool_t pg, svuint32_t op1, svuint32_t op2)
+        ///   EOR Ztied1.S, Pg/M, Ztied1.S, Zop2.S
+        ///   EOR Zresult.D, Zop1.D, Zop2.D
+        /// svbool_t sveor[_b]_z(svbool_t pg, svbool_t op1, svbool_t op2)
+        ///   EOR Presult.B, Pg/Z, Pop1.B, Pop2.B
+        /// </summary>
+        public static unsafe Vector<uint> Xor(Vector<uint> left, Vector<uint> right) => Xor(left, right);
+
+        /// <summary>
+        /// svuint64_t sveor[_u64]_m(svbool_t pg, svuint64_t op1, svuint64_t op2)
+        /// svuint64_t sveor[_u64]_x(svbool_t pg, svuint64_t op1, svuint64_t op2)
+        /// svuint64_t sveor[_u64]_z(svbool_t pg, svuint64_t op1, svuint64_t op2)
+        ///   EOR Ztied1.D, Pg/M, Ztied1.D, Zop2.D
+        ///   EOR Zresult.D, Zop1.D, Zop2.D
+        /// svbool_t sveor[_b]_z(svbool_t pg, svbool_t op1, svbool_t op2)
+        ///   EOR Presult.B, Pg/Z, Pop1.B, Pop2.B
+        /// </summary>
+        public static unsafe Vector<ulong> Xor(Vector<ulong> left, Vector<ulong> right) => Xor(left, right);
+
+
+        ///  XorAcross : Bitwise exclusive OR reduction to scalar
+
+        /// <summary>
+        /// uint8_t sveorv[_u8](svbool_t pg, svuint8_t op)
+        ///   EORV Bresult, Pg, Zop.B
+        /// </summary>
+        public static unsafe Vector<byte> XorAcross(Vector<byte> value) => XorAcross(value);
+
+        /// <summary>
+        /// int16_t sveorv[_s16](svbool_t pg, svint16_t op)
+        ///   EORV Hresult, Pg, Zop.H
+        /// </summary>
+        public static unsafe Vector<short> XorAcross(Vector<short> value) => XorAcross(value);
+
+        /// <summary>
+        /// int32_t sveorv[_s32](svbool_t pg, svint32_t op)
+        ///   EORV Sresult, Pg, Zop.S
+        /// </summary>
+        public static unsafe Vector<int> XorAcross(Vector<int> value) => XorAcross(value);
+
+        /// <summary>
+        /// int64_t sveorv[_s64](svbool_t pg, svint64_t op)
+        ///   EORV Dresult, Pg, Zop.D
+        /// </summary>
+        public static unsafe Vector<long> XorAcross(Vector<long> value) => XorAcross(value);
+
+        /// <summary>
+        /// int8_t sveorv[_s8](svbool_t pg, svint8_t op)
+        ///   EORV Bresult, Pg, Zop.B
+        /// </summary>
+        public static unsafe Vector<sbyte> XorAcross(Vector<sbyte> value) => XorAcross(value);
+
+        /// <summary>
+        /// uint16_t sveorv[_u16](svbool_t pg, svuint16_t op)
+        ///   EORV Hresult, Pg, Zop.H
+        /// </summary>
+        public static unsafe Vector<ushort> XorAcross(Vector<ushort> value) => XorAcross(value);
+
+        /// <summary>
+        /// uint32_t sveorv[_u32](svbool_t pg, svuint32_t op)
+        ///   EORV Sresult, Pg, Zop.S
+        /// </summary>
+        public static unsafe Vector<uint> XorAcross(Vector<uint> value) => XorAcross(value);
+
+        /// <summary>
+        /// uint64_t sveorv[_u64](svbool_t pg, svuint64_t op)
+        ///   EORV Dresult, Pg, Zop.D
+        /// </summary>
+        public static unsafe Vector<ulong> XorAcross(Vector<ulong> value) => XorAcross(value);
+
 
         ///  ZeroExtend16 : Zero-extend the low 16 bits
 
