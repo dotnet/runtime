@@ -69,7 +69,7 @@ deployment/HttpHeadersFuzzer/local-run.bat header-inputs -timeout=30 -max_total_
 To create a new fuzzing target, you need to create a new class that implements the `IFuzzer` interface.
 See existing implementations in the `Fuzzers` directory for reference.
 
-As an example, let's test that `IPAddress.TryParse` never throws on invalid input:
+As an example, let's test that `IPAddress.TryParse` never throws on invalid input, and doesn't access any bytes after the end of `bytes`:
 ```c#
 internal sealed class IPAddressFuzzer : IFuzzer
 {
@@ -79,7 +79,9 @@ internal sealed class IPAddressFuzzer : IFuzzer
 
     public void FuzzTarget(ReadOnlySpan<byte> bytes)
     {
-        _ = IPAddress.TryParse(MemoryMarshal.Cast<byte, char>(bytes), out _);
+        using var chars = PooledBoundedMemory<char>.Rent(MemoryMarshal.Cast<byte, char>(bytes), PoisonPagePlacement.After);
+
+        _ = IPAddress.TryParse(chars.Span, out _);
     }
 }
 ```
