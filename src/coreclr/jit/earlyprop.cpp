@@ -175,7 +175,7 @@ GenTree* Compiler::optEarlyPropRewriteTree(GenTree* tree, LocalNumberToNullCheck
     optPropKind propKind     = optPropKind::OPK_INVALID;
     bool        folded       = false;
 
-    if (tree->OperIsIndirOrArrMetaData())
+    if (tree->OperIsIndirOrArrMetaData() || tree->OperIsAtomicOp())
     {
         // optFoldNullCheck takes care of updating statement info if a null check is removed.
         folded = optFoldNullCheck(tree, nullCheckMap);
@@ -503,17 +503,37 @@ bool Compiler::optFoldNullCheck(GenTree* tree, LocalNumberToNullCheckTreeMap* nu
 //       or
 //       indir(add(x, const2))
 //
-//       (indir is any node for which OperIsIndirOrArrMetaData() is true.)
+//       (indir is any node for which OperIsIndirOrArrMetaData() or OperIsAtomicOp() is true.)
 //
 //     2.  const1 + const2 if sufficiently small.
 
 GenTree* Compiler::optFindNullCheckToFold(GenTree* tree, LocalNumberToNullCheckTreeMap* nullCheckMap)
 {
-    assert(tree->OperIsIndirOrArrMetaData());
-
-    GenTree* addr = tree->GetIndirOrArrMetaDataAddr();
+    GenTree* addr;
+    if (tree->OperIsAtomicOp())
+    {
+        addr = tree->AsIndir()->Addr();
+    }
+    else
+    {
+        assert(tree->OperIsIndirOrArrMetaData());
+        addr = tree->GetIndirOrArrMetaDataAddr();
+    }
 
     ssize_t offsetValue = 0;
+
+    // if we have COMMA(NULLCHECK(addr), addr) -> we can fold the nullcheck if addresses are the same
+    GenTreeLclVar* nullcheckAddr = nullptr;
+    if (addr->OperIs(GT_COMMA) && addr->gtGetOp1()->OperIs(GT_NULLCHECK) &&
+        addr->gtGetOp1()->AsIndir()->Addr()->OperIs(GT_LCL_VAR))
+    {
+        nullcheckAddr = addr->gtGetOp1()->AsIndir()->Addr()->AsLclVar();
+        addr          = addr->gtGetOp2();
+    }
+    else
+    {
+        return nullptr;
+    }
 
     if ((addr->OperGet() == GT_ADD) && addr->gtGetOp2()->IsCnsIntOrI())
     {
@@ -521,7 +541,12 @@ GenTree* Compiler::optFindNullCheckToFold(GenTree* tree, LocalNumberToNullCheckT
         addr = addr->gtGetOp1();
     }
 
-    if (addr->OperGet() != GT_LCL_VAR)
+    if (!addr->OperIs(GT_LCL_VAR))
+    {
+        return nullptr;
+    }
+
+    if ((nullcheckAddr != nullptr) && !GenTree::Compare(nullcheckAddr, addr))
     {
         return nullptr;
     }
