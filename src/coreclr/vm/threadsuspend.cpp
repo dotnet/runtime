@@ -4753,7 +4753,7 @@ void Thread::HijackThread(ReturnKind returnKind, ExecutionState *esb)
     {
         pvHijackAddr = returnAddressHijackTarget;
     }
-#endif // TARGET_WINDOWS && TARGET_AMD64
+#endif // TARGET_WINDOWS
 
 #ifdef TARGET_X86
     if (returnKind == RT_Float)
@@ -6076,7 +6076,7 @@ void ThreadSuspend::Initialize()
             }
         }
     }
-#endif // TARGET_WINDOWS && TARGET_AMD64
+#endif // TARGET_WINDOWS
 #endif // FEATURE_HIJACK
 }
 

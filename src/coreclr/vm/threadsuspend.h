@@ -256,7 +256,7 @@ public:
     {
         return g_returnAddressHijackTarget;
     }
-#endif // TARGET_WINDOWS && TARGET_AMD64
+#endif // TARGET_WINDOWS
 
 private:
     static LONG m_DebugWillSyncCount;
