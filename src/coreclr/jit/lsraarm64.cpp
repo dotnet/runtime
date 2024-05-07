@@ -1758,10 +1758,31 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 *pDstCount = dstCount;
                 break;
             }
+
             default:
                 noway_assert(!"Not a supported as multiple consecutive register intrinsic");
         }
         return srcCount;
+    }
+
+    else if ((intrin.id == NI_Sve_ConditionalSelect) && (intrin.op2->IsEmbMaskOp()) &&
+             (intrin.op2->isRMWHWIntrinsic(compiler)))
+    {
+        // For ConditionalSelect, if there is an embedded operation, and the operation has RMW semantics
+        // then record delay-free for operands as well as the "merge" value
+        GenTreeHWIntrinsic* intrinEmbOp2 = intrin.op2->AsHWIntrinsic();
+        size_t              numArgs      = intrinEmbOp2->GetOperandCount();
+        assert((numArgs == 1) || (numArgs == 2));
+        tgtPrefUse = BuildUse(intrinEmbOp2->Op(1));
+        srcCount += 1;
+
+        for (size_t argNum = 2; argNum <= numArgs; argNum++)
+        {
+            srcCount += BuildDelayFreeUses(intrinEmbOp2->Op(argNum), intrinEmbOp2->Op(1));
+        }
+
+        assert(intrin.op3 != nullptr);
+        srcCount += BuildDelayFreeUses(intrin.op3, intrinEmbOp2->Op(1));
     }
 
     else if (intrin.op2 != nullptr)
@@ -1794,13 +1815,32 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
             }
         }
 
-        if (forceOp2DelayFree)
+        if ((intrin.id == NI_Sve_ConditionalSelect) && (intrin.op2->IsEmbMaskOp()) &&
+            (intrin.op2->isRMWHWIntrinsic(compiler)))
         {
-            srcCount += BuildDelayFreeUses(intrin.op2);
+            // For ConditionalSelect, if there is an embedded operation, and the operation has RMW semantics
+            // then record delay-free for them.
+            GenTreeHWIntrinsic* intrinEmbOp2 = intrin.op2->AsHWIntrinsic();
+            size_t              numArgs      = intrinEmbOp2->GetOperandCount();
+            assert((numArgs == 1) || (numArgs == 2));
+            tgtPrefUse = BuildUse(intrinEmbOp2->Op(1));
+            srcCount += 1;
+
+            for (size_t argNum = 2; argNum <= numArgs; argNum++)
+            {
+                srcCount += BuildDelayFreeUses(intrinEmbOp2->Op(argNum), intrinEmbOp2->Op(1));
+            }
         }
         else
         {
-            srcCount += isRMW ? BuildDelayFreeUses(intrin.op2, intrin.op1) : BuildOperandUses(intrin.op2);
+            if (forceOp2DelayFree)
+            {
+                srcCount += BuildDelayFreeUses(intrin.op2);
+            }
+            else
+            {
+                srcCount += isRMW ? BuildDelayFreeUses(intrin.op2, intrin.op1) : BuildOperandUses(intrin.op2);
+            }
         }
 
         if (intrin.op3 != nullptr)
