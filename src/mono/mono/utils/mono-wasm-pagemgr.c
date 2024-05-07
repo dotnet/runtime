@@ -10,12 +10,28 @@
 #include <mono/utils/mono-os-mutex.h>
 
 // #define MWPM_LOGGING
+// #define MWPM_STATS
 
 typedef enum {
 	MWPM_UNINITIALIZED = 0,
 	MWPM_INITIALIZING = 1,
 	MWPM_INITIALIZED = 2
 } init_state;
+
+typedef enum {
+	MWPM_MARK_DEAD_PAGES,
+	MWPM_MARK_NEW_PAGES,
+	MWPM_FREE_TO_ALLOCATED,
+	MWPM_FREE_TO_ALLOCATED_ZEROED,
+	MWPM_ALLOCATED_TO_FREE,
+} page_action;
+
+#define is_page_free(state) (state & MWPM_FREE_BIT)
+#define is_page_owned(state) (state & MWPM_STATE_MASK)
+#define is_page_in_use(state) ((state & MWPM_STATE_MASK) == MWPM_ALLOCATED)
+#define get_page_skip_count(state) (state & MWPM_SKIP_MASK) + 1
+
+typedef uint8_t mwpm_page_state;
 
 static mono_mutex_t mutex;
 static uint8_t page_table[MWPM_MAX_PAGES];
@@ -54,49 +70,74 @@ last_page_of_range (void *addr, size_t size) {
 	return first_page + page_count_rounded_up - 1;
 }
 
-// returns the number of pages in the range that were successfully transitioned.
-static uint32_t
-transition_page_states (mwpm_page_state from_state, mwpm_page_state to_state, uint32_t first_page, uint32_t page_count) {
-	if (page_count == 0)
-		return 0;
+static inline mwpm_page_state
+encode_page_state (uint8_t bits, uint32_t skip_count) {
+	if (skip_count > MWPM_SKIP_MASK)
+		skip_count = MWPM_SKIP_MASK;
 
-	if (first_page >= MWPM_MAX_PAGES)
-		return 0;
+	return (bits & MWPM_STATE_MASK) | (skip_count & MWPM_SKIP_MASK);
+}
+
+static void
+transition_page_states (page_action action, uint32_t first_page, uint32_t page_count) {
+	if (page_count == 0)
+		return;
+
+	g_assert (first_page < MWPM_MAX_PAGES);
 
 	uint32_t last_page = first_page + (page_count - 1);
 	g_assert (last_page >= first_page);
 
-	if (last_page >= MWPM_MAX_PAGES)
-		return 0;
+	g_assert (last_page < MWPM_MAX_PAGES);
 
-	uint32_t result = 0;
 	// POSIX specifies that munmap () on an address range that isn't mapped has no,
 	//  effect, so we need to make sure that it's harmless to try and unmap pages we
 	//  don't control. We can't use memset since it might trample UNKNOWN pages.
-	for (uint32_t i = first_page; i <= last_page; i++) {
+	for (uint32_t i = first_page, skip_value = page_count - 1; i <= last_page; i++) {
 		mwpm_page_state page_state = page_table[i];
-		// Normalize skip data
-		if (page_state > MWPM_UNKNOWN)
-			page_state = MWPM_UNKNOWN;
 
-		if (page_state != from_state)
-			continue;
-
-		page_table[i] = to_state;
-		result++;
+		// TODO: Remove the duplication in here
+		switch (action) {
+			case MWPM_MARK_DEAD_PAGES:
+				g_assert (!is_page_owned (page_state));
+				page_table[i] = encode_page_state (MWPM_EXTERNAL, skip_value--);
+				break;
+			case MWPM_MARK_NEW_PAGES:
+				g_assert (!is_page_owned (page_state));
+				page_table[i] = encode_page_state (MWPM_FREE_ZEROED, skip_value--);
+				break;
+			case MWPM_FREE_TO_ALLOCATED:
+				g_assert (is_page_free (page_state));
+				page_table[i] = encode_page_state (MWPM_ALLOCATED, skip_value--);
+				break;
+			case MWPM_FREE_TO_ALLOCATED_ZEROED:
+				g_assert (is_page_free (page_state));
+				page_table[i] = encode_page_state (MWPM_ALLOCATED, skip_value--);
+				if (!(page_state & MWPM_META_BIT))
+					// TODO: Don't recalculate the address from scratch each time
+					memset (address_from_page_index (i), 0, MWPM_PAGE_SIZE);
+				break;
+			case MWPM_ALLOCATED_TO_FREE:
+				// FIXME: Can we generate correct skip_value here? This is used
+				//  by munmap, which is valid to call even on pages that are not mapped
+				if (is_page_in_use (page_state))
+					page_table[i] = encode_page_state (MWPM_FREE_DIRTY, 0);
+				break;
+			default:
+				g_assert_not_reached ();
+				break;
+		}
 	}
-
-	return result;
 }
 
 static void
 print_stats () {
-#ifdef MWPM_LOGGING
+#if defined(MWPM_LOGGING) || defined(MWPM_STATS)
 	uint32_t in_use = 0, free = 0, unallocated = 0,
 		max_run = 0, current_run = 0;
 
 	for (uint32_t i = first_controlled_page_index; i <= last_controlled_page_index; i++) {
-		switch (page_table[i]) {
+		switch (page_table[i] & MWPM_STATE_MASK) {
 			case MWPM_ALLOCATED:
 				in_use++;
 				current_run = 0;
@@ -123,28 +164,6 @@ print_stats () {
 		(uint32_t)sbrk(0), in_use, in_use * 100.0 / total, free, unallocated, max_run
 	);
 #endif
-}
-
-static void
-optimize_unknown_pages (uint8_t *start, uint8_t *end) {
-	g_assert (end > start);
-
-	uint32_t first_page = first_page_from_address (start),
-		page_count = page_count_from_size (end - start);
-
-	for (uint32_t i = 0, skip_count = page_count - 1; i < page_count; i++, skip_count--) {
-		uint32_t j = i + first_page, skip_value = MWPM_UNKNOWN + skip_count;
-		if (skip_value > 255)
-			skip_value = 255;
-		g_assert (page_table[j] >= MWPM_UNKNOWN);
-		g_print (
-			"#%u = %u ",
-			j, skip_value
-		);
-		page_table[j] = skip_value;
-	}
-
-	g_print ("\n");
 }
 
 static void *
@@ -175,7 +194,11 @@ acquire_new_pages_initialized (uint32_t page_count) {
 		recovered_bytes = allocation - prev_waste_start;
 		allocation = prev_waste_start;
 	} else {
-		optimize_unknown_pages (prev_waste_end, allocation);
+		// Update the dead pages that were allocated by someone else via sbrk()
+		//  so that they have skip data
+		uint32_t first_dead_page = first_page_from_address (prev_waste_end),
+			dead_page_count = page_count_from_size (allocation - prev_waste_end);
+		transition_page_states (MWPM_MARK_DEAD_PAGES, first_dead_page, dead_page_count);
 	}
 
 	uint8_t *result = allocation;
@@ -205,9 +228,8 @@ acquire_new_pages_initialized (uint32_t page_count) {
 	}
 
 	// g_print ("mwpm allocated %u bytes (%u pages) starting at @%u (%u recovered)\n", (uint32_t)bytes, page_count, (uint32_t)allocation, recovered_bytes);
-	uint32_t pages_transitioned = transition_page_states (MWPM_UNKNOWN, MWPM_FREE_ZEROED, first_page_index, page_count);
+	transition_page_states (MWPM_MARK_NEW_PAGES, first_page_index, page_count);
 	print_stats ();
-	g_assert (pages_transitioned == page_count);
 	last_controlled_page_index = last_page_index;
 	return result;
 }
@@ -217,7 +239,23 @@ free_pages_initialized (uint32_t first_page, uint32_t page_count) {
 	// expected behavior: freeing UNKNOWN pages leaves them unknown.
 	// freeing FREE_ZEROED pages leaves them zeroed.
 	// freeing ALLOCATED or FREE_DIRTY pages makes them FREE_DIRTY.
-	transition_page_states (MWPM_ALLOCATED, MWPM_FREE_DIRTY, first_page, page_count);
+	transition_page_states (MWPM_ALLOCATED_TO_FREE, first_page, page_count);
+}
+
+static inline const char *
+get_state_name (uint8_t state) {
+	switch (state & MWPM_STATE_MASK) {
+		case MWPM_EXTERNAL:
+			return "external";
+		case MWPM_FREE_DIRTY:
+			return "dirty";
+		case MWPM_FREE_ZEROED:
+			return "zeroed";
+		case MWPM_ALLOCATED:
+			return "in use";
+		default:
+			g_assert_not_reached ();
+	}
 }
 
 static uint32_t
@@ -233,22 +271,27 @@ find_n_free_pages_in_range (uint32_t start_scan_where, uint32_t end_scan_where, 
 		if (j > last_controlled_page_index)
 			break;
 
+		// TODO: If we find a free page with a skip count in it, that would indicate
+		//  that there are N sequential free pages left we can claim without doing
+		//  the scan below.
+
 		// Scan backwards from the last candidate page to look for any non-free pages
 		//  the first non-free page we find is the next place we will search from.
 		for (; j >= i; j--) {
 			mwpm_page_state page_state = page_table[j];
-			if (page_state > MWPM_UNKNOWN) {
+
+			if (!is_page_free (page_state)) {
 				// Skip multiple pages
-				uint32_t skip_count = page_state - MWPM_UNKNOWN;
+				uint32_t skip_count = get_page_skip_count (page_state);
 				i = j + skip_count;
-				g_print (
-					"scan skipping %u unknown page(s); new page is #%u with state %u\n",
-					skip_count, i, page_table[i]
-				);
-				found_obstruction = 1;
-				break;
-			} else if (page_state >= MWPM_ALLOCATED) {
-				i = j + 1;
+#ifdef MWPM_LOGGING
+				if (skip_count > 1)
+					g_print (
+						"scan skipping %u %s page(s); new page is #%u with state %s\n",
+						skip_count, get_state_name (page_state),
+						i, get_state_name (page_table[i])
+					);
+#endif
 				found_obstruction = 1;
 				break;
 			}
@@ -282,7 +325,7 @@ mwpm_init () {
 	mono_os_mutex_init_recursive (&mutex);
 	// Set the entire page table to 'unknown state'. As we acquire pages from sbrk, we will
 	//  set those respective ranges in the table to a known state.
-	memset (page_table, MWPM_UNKNOWN, sizeof(page_table));
+	memset (page_table, MWPM_EXTERNAL, sizeof(page_table));
 	void *first_controlled_page_address = acquire_new_pages_initialized (MWPM_MINIMUM_PAGE_COUNT);
 	g_assert (first_controlled_page_address);
 	first_controlled_page_index = first_page_from_address (first_controlled_page_address);
@@ -339,23 +382,8 @@ mwpm_alloc_range (size_t size, uint8_t zeroed) {
 	if (!result)
 		goto exit;
 
-	uint32_t first_result_page = first_page_from_address (result),
-		zeroed_pages = transition_page_states (MWPM_FREE_ZEROED, MWPM_ALLOCATED, first_result_page, page_count),
-		nonzeroed_pages = 0;
-	// FIXME: Do this in one pass instead of two
-	if (zeroed_pages != page_count) {
-		// g_print ("only %u of %u page(s) were zeroed\n", zeroed_pages, page_count);
-		// If we got here, not all of the pages in our allocation were in FREE_ZEROED state, so we need to
-		//  zero at least one of them.
-		if (zeroed) {
-			// g_print ("mwpm zeroing %u bytes at %u\n", size, (uint32_t)result);
-			// FIXME: Only zero the dirty pages instead of the whole region.
-			memset (result, 0, size);
-		}
-	}
-	nonzeroed_pages = transition_page_states (MWPM_FREE_DIRTY, MWPM_ALLOCATED, first_result_page, page_count);
-
-	g_assert ((nonzeroed_pages + zeroed_pages) == page_count);
+	uint32_t first_result_page = first_page_from_address (result);
+	transition_page_states (zeroed ? MWPM_FREE_TO_ALLOCATED_ZEROED : MWPM_FREE_TO_ALLOCATED, first_result_page, page_count);
 
 #ifdef MWPM_LOGGING
 	g_print ("mwpm allocated %u bytes at %u\n", size, (uint32_t)result);

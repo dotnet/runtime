@@ -56,18 +56,15 @@
 // 256  12281 256
 #define MWPM_MINIMUM_PAGE_COUNT 32
 
-typedef enum {
-	// We control this page, it's unused, and it's zeroed (fresh pages)
-	MWPM_FREE_ZEROED = 0,
-	// We control this page, it's unused, and it contains garbage
-	MWPM_FREE_DIRTY = 1,
-	// We control this page, it's in use
-	MWPM_ALLOCATED = 2,
-	// We don't know the state of this page
-	MWPM_UNKNOWN = 3,
-	// Values above MWPM_UNKNOWN indicate that the page is followed by more
-	//  UNKNOWN pages and you can skip them by subtracting 3
-} mwpm_page_state;
+#define MWPM_FREE_BIT   0b10000000
+#define MWPM_META_BIT   0b01000000
+#define MWPM_STATE_MASK 0b11000000
+#define MWPM_SKIP_MASK  0b00111111
+
+#define MWPM_FREE_ZEROED (uint8_t)(MWPM_FREE_BIT | MWPM_META_BIT)
+#define MWPM_FREE_DIRTY  (uint8_t)(MWPM_FREE_BIT)
+#define MWPM_ALLOCATED   (uint8_t)(MWPM_META_BIT)
+#define MWPM_EXTERNAL    (uint8_t)(0)
 
 // Allocate enough pages to hold size bytes of data, optionally ensuring they are zeroed.
 // Zeroing memory on wasm is somewhat expensive, so use this option wisely!
