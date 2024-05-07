@@ -260,13 +260,10 @@ public static class Program
 
     private static string GenerateOneFuzzConfigJson(IFuzzer fuzzer)
     {
-        // Temporarily disabled - OneFuzz is launched with a different working directory
-        // and is unable to find the dictionary file.
-
-        //string? dictionaryArgument = fuzzer.Dictionary is not null
-        //    ? "\"-dict=dictionary\""
-        //    : null;
-        string? dictionaryArgument = null;
+        // {setup_dir} is replaced by OneFuzz with the path to the fuzzer directory.
+        string? dictionaryArgument = fuzzer.Dictionary is not null
+            ? "\"-dict={setup_dir}/dictionary\""
+            : null;
 
         // Make it easier to distinguish between long-running CI jobs and short-lived test submissions.
         string nameSuffix = Environment.GetEnvironmentVariable("TF_BUILD") is null ? "-local" : "";
