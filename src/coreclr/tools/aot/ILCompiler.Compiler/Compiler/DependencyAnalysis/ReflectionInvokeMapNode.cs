@@ -63,6 +63,11 @@ namespace ILCompiler.DependencyAnalysis
             if (method.OwningType.IsValueType && !method.Signature.IsStatic)
                 dependencies.Add(factory.MethodEntrypoint(method, unboxingStub: true), "Reflection unboxing stub");
 
+            if (!method.IsAbstract)
+            {
+                dependencies.Add(factory.AddressTakenMethodEntrypoint(method), "Body of a reflectable method");
+            }
+
             // If the method is defined in a different module than this one, a metadata token isn't known for performing the reference
             // Use a name/sig reference instead.
             if (!factory.MetadataManager.WillUseMetadataTokenToReferenceMethod(method))
@@ -201,7 +206,7 @@ namespace ILCompiler.DependencyAnalysis
                 {
                     vertex = writer.GetTuple(vertex,
                         writer.GetUnsignedConstant(_externalReferences.GetIndex(
-                            factory.MethodEntrypoint(method,
+                            factory.AddressTakenMethodEntrypoint(method,
                             unboxingStub: method.OwningType.IsValueType && !method.Signature.IsStatic))));
                 }
 

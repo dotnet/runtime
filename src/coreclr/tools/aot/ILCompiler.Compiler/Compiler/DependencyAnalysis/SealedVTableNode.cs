@@ -132,7 +132,13 @@ namespace ILCompiler.DependencyAnalysis
 
                 if (implMethod.CanMethodBeInSealedVTable(factory))
                 {
-                    IMethodNode node = factory.MethodEntrypoint(implMethod.GetCanonMethodTarget(CanonicalFormKind.Specific), unboxingStub: !implMethod.Signature.IsStatic && declType.IsValueType);
+                    IMethodNode node;
+
+                    if (factory.DelegateTargetVirtualMethod(virtualSlots[i].GetCanonMethodTarget(CanonicalFormKind.Specific)).Marked)
+                        node = factory.AddressTakenMethodEntrypoint(implMethod.GetCanonMethodTarget(CanonicalFormKind.Specific), unboxingStub: !implMethod.Signature.IsStatic && declType.IsValueType);
+                    else
+                        node = factory.MethodEntrypoint(implMethod.GetCanonMethodTarget(CanonicalFormKind.Specific), unboxingStub: !implMethod.Signature.IsStatic && declType.IsValueType);
+
                     _sealedVTableEntries.Add(SealedVTableEntry.FromVirtualMethod(implMethod, node));
                 }
             }
@@ -186,6 +192,7 @@ namespace ILCompiler.DependencyAnalysis
 
                             if (targetMethod.CanMethodBeInSealedVTable(factory) || implMethod.Signature.IsStatic)
                             {
+                                // BUGBUG
                                 IMethodNode node = factory.MethodEntrypoint(targetMethod.GetCanonMethodTarget(CanonicalFormKind.Specific), unboxingStub: !targetMethod.Signature.IsStatic && declType.IsValueType);
                                 _sealedVTableEntries.Add(SealedVTableEntry.FromVirtualMethod(targetMethod, node));
                             }
@@ -215,7 +222,12 @@ namespace ILCompiler.DependencyAnalysis
                                     _nonRelocationDependencies.Add(factory.InterfaceUse(declTypeRuntimeInterfaces[i].GetTypeDefinition()), "Interface with shared default methods folows this");
                                 }
                             }
-                            IMethodNode node = factory.MethodEntrypoint(canonImplMethod, unboxingStub: implMethod.OwningType.IsValueType && !implMethod.Signature.IsStatic);
+
+                            IMethodNode node;
+                            if (factory.DelegateTargetVirtualMethod(declMethod.GetCanonMethodTarget(CanonicalFormKind.Specific)).Marked)
+                                node = factory.AddressTakenMethodEntrypoint(canonImplMethod, unboxingStub: implMethod.OwningType.IsValueType && !implMethod.Signature.IsStatic);
+                            else
+                                node = factory.MethodEntrypoint(canonImplMethod, unboxingStub: implMethod.OwningType.IsValueType && !implMethod.Signature.IsStatic);
 
                             _sealedVTableEntries.Add(SealedVTableEntry.FromDefaultInterfaceMethod(implMethod, providingInterfaceDefinitionType, node));
                         }

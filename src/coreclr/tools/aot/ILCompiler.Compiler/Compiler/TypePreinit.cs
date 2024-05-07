@@ -2824,7 +2824,7 @@ namespace ILCompiler
                     builder.EmitZeroPointer();
 
                     // _functionPointer
-                    builder.EmitPointerReloc(factory.CanonicalEntrypoint(_methodPointed));
+                    builder.EmitPointerReloc(creationInfo.GetTargetNode(factory));
                 }
             }
 

@@ -395,12 +395,16 @@ namespace ILCompiler.ObjectWriter
                 if (node.ShouldSkipEmittingObjectNode(_nodeFactory))
                     continue;
 
+                ISymbolNode symbolNode = node as ISymbolNode;
+                if (_nodeFactory.ObjectInterner.GetDeduplicatedSymbol(symbolNode) != symbolNode)
+                    continue;
+
                 ObjectData nodeContents = node.GetData(_nodeFactory);
 
                 dumper?.DumpObjectNode(_nodeFactory, node, nodeContents);
 
                 string currentSymbolName = null;
-                if (node is ISymbolNode symbolNode)
+                if (symbolNode != null)
                 {
                     currentSymbolName = GetMangledName(symbolNode);
                 }
@@ -454,7 +458,9 @@ namespace ILCompiler.ObjectWriter
             {
                 foreach (Relocation reloc in blockToRelocate.Relocations)
                 {
-                    string relocSymbolName = GetMangledName(reloc.Target);
+                    ISymbolNode relocTarget = _nodeFactory.ObjectInterner.GetDeduplicatedSymbol(reloc.Target);
+
+                    string relocSymbolName = GetMangledName(relocTarget);
 
                     EmitOrResolveRelocation(
                         blockToRelocate.SectionIndex,
@@ -462,10 +468,10 @@ namespace ILCompiler.ObjectWriter
                         blockToRelocate.Data.AsSpan(reloc.Offset),
                         reloc.RelocType,
                         relocSymbolName,
-                        reloc.Target.Offset);
+                        relocTarget.Offset);
 
                     if (_options.HasFlag(ObjectWritingOptions.ControlFlowGuard) &&
-                        reloc.Target is IMethodNode or AssemblyStubNode)
+                        relocTarget is IMethodNode or AssemblyStubNode)
                     {
                         // For now consider all method symbols address taken.
                         // We could restrict this in the future to those that are referenced from

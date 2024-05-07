@@ -426,6 +426,10 @@ namespace ILCompiler.DependencyAnalysis
                             factory.TentativeMethodEntrypoint(canonImpl, impl.OwningType.IsValueType) :
                             factory.MethodEntrypoint(canonImpl, impl.OwningType.IsValueType);
                         result.Add(new CombinedDependencyListEntry(implNode, factory.VirtualMethodUse(decl), "Virtual method"));
+
+                        result.Add(new CombinedDependencyListEntry(
+                            factory.AddressTakenMethodEntrypoint(canonImpl, impl.OwningType.IsValueType),
+                            factory.DelegateTargetVirtualMethod(decl.GetCanonMethodTarget(CanonicalFormKind.Specific)), "Slot is a delegate target"));
                     }
 
                     if (impl.OwningType == defType)
@@ -497,12 +501,19 @@ namespace ILCompiler.DependencyAnalysis
                                 MethodDesc defaultIntfMethod = implMethod.GetCanonMethodTarget(CanonicalFormKind.Specific);
 
                                 // If the interface method is used virtually, the implementation body is used
+                                // BUGBUG: static virtual delegates?
                                 result.Add(new CombinedDependencyListEntry(factory.MethodEntrypoint(defaultIntfMethod), factory.VirtualMethodUse(interfaceMethod), "Interface method"));
                             }
                             else
                             {
                                 // If the interface method is used virtually, the slot is used virtually
                                 result.Add(new CombinedDependencyListEntry(factory.VirtualMethodUse(implMethod), factory.VirtualMethodUse(interfaceMethod), "Interface method"));
+
+                                // If the interface method is virtual delegate target, the slot is virtual delegate target
+                                result.Add(new CombinedDependencyListEntry(
+                                    factory.DelegateTargetVirtualMethod(implMethod.GetCanonMethodTarget(CanonicalFormKind.Specific)),
+                                    factory.DelegateTargetVirtualMethod(interfaceMethod.GetCanonMethodTarget(CanonicalFormKind.Specific)),
+                                    "Interface slot is delegate target"));
                             }
 
                             // If any of the implemented interfaces have variance, calls against compatible interface methods
@@ -549,6 +560,11 @@ namespace ILCompiler.DependencyAnalysis
                                     }
                                 }
                                 result.Add(new CombinedDependencyListEntry(factory.MethodEntrypoint(defaultIntfMethod), factory.VirtualMethodUse(interfaceMethod), "Interface method"));
+
+                                result.Add(new CombinedDependencyListEntry(
+                                    factory.AddressTakenMethodEntrypoint(defaultIntfMethod),
+                                    factory.DelegateTargetVirtualMethod(interfaceMethod.GetCanonMethodTarget(CanonicalFormKind.Specific)),
+                                    "Slot is delegate target"));
 
                                 factory.MetadataManager.NoteOverridingMethod(interfaceMethod, implMethod);
 
@@ -1103,9 +1119,14 @@ namespace ILCompiler.DependencyAnalysis
                         && implMethod.OwningType is MetadataType mdImplMethodType && mdImplMethodType.IsAbstract
                         && factory.CompilationModuleGroup.AllowVirtualMethodOnAbstractTypeOptimization(canonImplMethod);
 
-                    IMethodNode implSymbol = canUseTentativeEntrypoint ?
-                        factory.TentativeMethodEntrypoint(canonImplMethod, implMethod.OwningType.IsValueType) :
-                        factory.MethodEntrypoint(canonImplMethod, implMethod.OwningType.IsValueType);
+                    IMethodNode implSymbol;
+                    if (canUseTentativeEntrypoint)
+                        implSymbol = factory.TentativeMethodEntrypoint(canonImplMethod, implMethod.OwningType.IsValueType);
+                    else if (factory.DelegateTargetVirtualMethod(declMethod.GetCanonMethodTarget(CanonicalFormKind.Specific)).Marked)
+                        implSymbol = factory.AddressTakenMethodEntrypoint(canonImplMethod, implMethod.OwningType.IsValueType);
+                    else
+                        implSymbol = factory.MethodEntrypoint(canonImplMethod, implMethod.OwningType.IsValueType);
+
                     objData.EmitPointerReloc(implSymbol);
                 }
                 else
