@@ -2,9 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import BuildConfiguration from "consts:configuration";
-import WasmEnableThreads from "consts:wasmEnableThreads";
 
-import type { MonoConfig, DotnetHostBuilder, DotnetModuleConfig, RuntimeAPI, LoadBootResourceCallback } from "../types";
+import { type MonoConfig, type DotnetHostBuilder, type DotnetModuleConfig, type RuntimeAPI, type LoadBootResourceCallback, GlobalizationMode } from "../types";
 import type { EmscriptenModuleInternal, RuntimeModuleExportsInternal, NativeModuleExportsInternal, HybridGlobalizationModuleExportsInternal, } from "../types/internal";
 
 import { ENVIRONMENT_IS_WEB, ENVIRONMENT_IS_WORKER, emscriptenModule, exportedRuntimeAPI, globalObjectsRoot, monoConfig, mono_assert } from "./globals";
@@ -451,7 +450,7 @@ async function initializeModules (es6Modules: [RuntimeModuleExportsInternal, Nat
     const { default: emscriptenFactory } = es6Modules[1];
     setRuntimeGlobals(globalObjectsRoot);
     initializeExports(globalObjectsRoot);
-    if (!WasmEnableThreads) {
+    if (loaderHelpers.config.globalizationMode === GlobalizationMode.Hybrid) {
         const hybridModule = await getHybridModuleExports();
         const { initHybrid } = hybridModule;
         initHybrid(runtimeHelpers);

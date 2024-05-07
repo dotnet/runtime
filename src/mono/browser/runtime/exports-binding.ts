@@ -143,7 +143,7 @@ function mono_wasm_get_first_week_of_year (culture: number, cultureLength: numbe
     return runtimeHelpers.mono_wasm_get_first_week_of_year(culture, cultureLength, resultPtr);
 }
 
-export const mono_wasm_hybrid_globalization_imports = WasmEnableThreads ? [] : [ // ToDo: change it to rely on HybridGlobalization
+export const mono_wasm_hybrid_globalization_imports = [
     mono_wasm_change_case_invariant,
     mono_wasm_change_case,
     mono_wasm_compare_string,

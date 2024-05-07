@@ -283,10 +283,10 @@ const allConfigs = [
     runtimeConfig,
     wasmImportsConfig,
     typesConfig,
+    hybridGlobalizationConfig,
 ]
     .concat(workerConfigs)
-    .concat(diagnosticMockTypesConfig ? [diagnosticMockTypesConfig] : [])
-    .concat(wasmEnableThreads ? [] : [hybridGlobalizationConfig]); // ToDo: change it to use hybridGlobalization switch, not MT
+    .concat(diagnosticMockTypesConfig ? [diagnosticMockTypesConfig] : []);
 export default defineConfig(allConfigs);
 
 function evalCodePlugin () {
