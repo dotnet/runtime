@@ -256,29 +256,9 @@
     <!-- installer version, for testing workloads -->
     <MicrosoftDotnetSdkInternalVersion>9.0.100-preview.4.24215.2</MicrosoftDotnetSdkInternalVersion>
     <SdkVersionForWorkloadTesting>$(MicrosoftDotnetSdkInternalVersion)</SdkVersionForWorkloadTesting>
-    <EmsdkPackageVersion>9.0.0-preview.4.24175.6</EmsdkPackageVersion>
-    <NodePackageVersion>9.0.0-alpha.1.24175.1</NodePackageVersion>
+    <runtimewinx64MicrosoftNETCoreRuntimeWasmNodeTransportPackageVersion>9.0.0-alpha.1.24175.1</runtimewinx64MicrosoftNETCoreRuntimeWasmNodeTransportPackageVersion>
+    <EmsdkPackageVersion>$(MicrosoftNETRuntimeEmscriptenVersion)</EmsdkPackageVersion>
+    <NodePackageVersion>$(runtimewinx64MicrosoftNETCoreRuntimeWasmNodeTransportPackageVersion)</NodePackageVersion>
     <EmsdkVersion>3.1.34</EmsdkVersion>
-    <MicrosoftNETRuntimeEmscripten3134Nodeosxarm64Version>$(EmsdkPackageVersion)</MicrosoftNETRuntimeEmscripten3134Nodeosxarm64Version>
-    <MicrosoftNETRuntimeEmscripten3134Sdkosxarm64Version>$(EmsdkPackageVersion)</MicrosoftNETRuntimeEmscripten3134Sdkosxarm64Version>
-    <MicrosoftNETRuntimeEmscripten3134Sdkosxx64Version>$(EmsdkPackageVersion)</MicrosoftNETRuntimeEmscripten3134Sdkosxx64Version>
-    <MicrosoftNETRuntimeEmscripten3134Sdkwinx64Version>$(EmsdkPackageVersion)</MicrosoftNETRuntimeEmscripten3134Sdkwinx64Version>
-    <MicrosoftNETRuntimeEmscripten3134Sdkwinarm64Version>$(EmsdkPackageVersion)</MicrosoftNETRuntimeEmscripten3134Sdkwinarm64Version>
-    <MicrosoftNETRuntimeEmscripten3134Sdklinuxx64Version>$(EmsdkPackageVersion)</MicrosoftNETRuntimeEmscripten3134Sdklinuxx64Version>
-    <MicrosoftNETRuntimeEmscripten3134Sdklinuxarm64Version>$(EmsdkPackageVersion)</MicrosoftNETRuntimeEmscripten3134Sdklinuxarm64Version>
-    <MicrosoftNETRuntimeEmscripten3134Cachelinuxx64Version>$(EmsdkPackageVersion)</MicrosoftNETRuntimeEmscripten3134Cachelinuxx64Version>
-    <MicrosoftNETRuntimeEmscripten3134Cachelinuxarm64Version>$(EmsdkPackageVersion)</MicrosoftNETRuntimeEmscripten3134Cachelinuxarm64Version>
-    <MicrosoftNETRuntimeEmscripten3134Cacheosxx64Version>$(EmsdkPackageVersion)</MicrosoftNETRuntimeEmscripten3134Cacheosxx64Version>
-    <MicrosoftNETRuntimeEmscripten3134Cacheosxarm64Version>$(EmsdkPackageVersion)</MicrosoftNETRuntimeEmscripten3134Cacheosxarm64Version>
-    <MicrosoftNETRuntimeEmscripten3134Cachewinx64Version>$(EmsdkPackageVersion)</MicrosoftNETRuntimeEmscripten3134Cachewinx64Version>
-    <MicrosoftNETRuntimeEmscripten3134Cachewinarm64Version>$(EmsdkPackageVersion)</MicrosoftNETRuntimeEmscripten3134Cachewinarm64Version>
-    <runtimelinuxarm64NodePackageVersion>$(NodePackageVersion)</runtimelinuxarm64NodePackageVersion>
-    <runtimelinuxmuslarm64NodePackageVersion>$(NodePackageVersion)</runtimelinuxmuslarm64NodePackageVersion>
-    <runtimelinuxx64NodePackageVersion>$(NodePackageVersion)</runtimelinuxx64NodePackageVersion>
-    <runtimelinuxmuslx64NodePackageVersion>$(NodePackageVersion)</runtimelinuxmuslx64NodePackageVersion>
-    <runtimeosxarm64NodePackageVersion>$(NodePackageVersion)</runtimeosxarm64NodePackageVersion>
-    <runtimeosxx64NodePackageVersion>$(NodePackageVersion)</runtimeosxx64NodePackageVersion>
-    <runtimewinarm64NodePackageVersion>$(NodePackageVersion)</runtimewinarm64NodePackageVersion>
-    <runtimewinx64NodePackageVersion>$(NodePackageVersion)</runtimewinx64NodePackageVersion>
   </PropertyGroup>
 </Project>
