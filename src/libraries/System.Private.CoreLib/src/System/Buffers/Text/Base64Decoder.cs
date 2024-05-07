@@ -888,7 +888,8 @@ namespace System.Buffers.Text
             //   255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255
             //   255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,  62, 255, 255,  63
             //    0,  255,   0,   1,   2,   3,   4,   5,   6,   7,   8,   9,  10,  11,  12,  13
-            var decLutOne = (Vector128<byte>.AllBitsSet, Vector128<byte>.AllBitsSet,
+            var decLutOne = (Vector128<byte>.AllBitsSet,
+                             Vector128<byte>.AllBitsSet,
                              Vector128.Create(0xFFFFFFFF, 0xFFFFFFFF, 0x3EFFFFFF, 0x3FFFFFFF).AsByte(),
                              Vector128.Create(0x37363534, 0x3B3A3938, 0xFFFF3D3C, 0xFFFFFFFF).AsByte());
 
