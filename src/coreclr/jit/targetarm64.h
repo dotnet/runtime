@@ -42,7 +42,6 @@
                                            // need to track stack depth, but this is currently necessary to get GC information reported at call sites.
   #define TARGET_POINTER_SIZE      8       // equal to sizeof(void*) and the managed pointer size in bytes for this target
   #define FEATURE_EH               1       // To aid platform bring-up, eliminate exceptional EH clauses (catch, filter, filter-handler, fault) and directly execute 'finally' clauses.
-  #define FEATURE_EH_CALLFINALLY_THUNKS 1  // Generate call-to-finally code in "thunks" in the enclosing EH region, protected by "cloned finally" clauses.
   #define ETW_EBP_FRAMED           1       // if 1 we cannot use REG_FP as a scratch register and must setup the frame pointer for most methods
   #define CSE_CONSTS               1       // Enable if we want to CSE constants
 
@@ -91,7 +90,8 @@
                                    REG_R6, REG_R7, REG_R8, REG_R9, REG_R10,        \
                                    REG_R11, REG_R13, REG_R14,                      \
                                    REG_R12, REG_R15, REG_IP0, REG_IP1,             \
-                                   REG_CALLEE_SAVED_ORDER, REG_LR
+                                   REG_R19,REG_R20,REG_R21,REG_R22,REG_R23,REG_R24,REG_R25,REG_R26,REG_R27,REG_R28,\
+                                   REG_LR
 
   #define REG_VAR_ORDER_FLT        REG_V16, REG_V17, REG_V18, REG_V19, \
                                    REG_V20, REG_V21, REG_V22, REG_V23, \
@@ -102,15 +102,18 @@
                                    REG_V12, REG_V13, REG_V14, REG_V15, \
                                    REG_V3,  REG_V2, REG_V1,  REG_V0
 
-  #define REG_CALLEE_SAVED_ORDER   REG_R19,REG_R20,REG_R21,REG_R22,REG_R23,REG_R24,REG_R25,REG_R26,REG_R27,REG_R28
-  #define RBM_CALLEE_SAVED_ORDER   RBM_R19,RBM_R20,RBM_R21,RBM_R22,RBM_R23,RBM_R24,RBM_R25,RBM_R26,RBM_R27,RBM_R28
+  #define RBM_CALL_GC_REGS_ORDER   RBM_R19,RBM_R20,RBM_R21,RBM_R22,RBM_R23,RBM_R24,RBM_R25,RBM_R26,RBM_R27,RBM_R28,RBM_INTRET,RBM_INTRET_1
+  #define RBM_CALL_GC_REGS         (RBM_R19|RBM_R20|RBM_R21|RBM_R22|RBM_R23|RBM_R24|RBM_R25|RBM_R26|RBM_R27|RBM_R28|RBM_INTRET|RBM_INTRET_1)
 
   #define CNT_CALLEE_SAVED        (11)
   #define CNT_CALLEE_TRASH        (17)
   #define CNT_CALLEE_ENREG        (CNT_CALLEE_SAVED-1)
+  #define CNT_CALL_GC_REGS        (CNT_CALLEE_SAVED+2)
 
   #define CNT_CALLEE_SAVED_FLOAT  (8)
   #define CNT_CALLEE_TRASH_FLOAT  (24)
+  #define CNT_CALLEE_SAVED_MASK   (4)
+  #define CNT_CALLEE_TRASH_MASK   (8)
 
   #define CALLEE_SAVED_REG_MAXSZ    (CNT_CALLEE_SAVED * REGSIZE_BYTES)
   #define CALLEE_SAVED_FLOAT_MAXSZ  (CNT_CALLEE_SAVED_FLOAT * FPSAVE_REGSIZE_BYTES)
@@ -154,8 +157,8 @@
   // ARM64 write barrier ABI (see vm\arm64\asmhelpers.asm, vm\arm64\asmhelpers.S):
   // CORINFO_HELP_ASSIGN_REF (JIT_WriteBarrier), CORINFO_HELP_CHECKED_ASSIGN_REF (JIT_CheckedWriteBarrier):
   //     On entry:
-  //       x14: the destination address (LHS of the assignment)
-  //       x15: the object reference (RHS of the assignment)
+  //       x14: the destination address of the store
+  //       x15: the object reference to be stored
   //     On exit:
   //       x12: trashed
   //       x14: incremented by 8

@@ -167,6 +167,7 @@ namespace Microsoft.Extensions.Configuration
         /// <param name="defaultValue">The default value to use if no value is found.</param>
         /// <returns>The converted value.</returns>
         [RequiresUnreferencedCode(TrimmingWarningMessage)]
+        [return: NotNullIfNotNull(nameof(defaultValue))]
         public static T? GetValue<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>(this IConfiguration configuration, string key, T defaultValue)
         {
             return (T?)GetValue(configuration, typeof(T), key, defaultValue);
@@ -198,6 +199,7 @@ namespace Microsoft.Extensions.Configuration
         /// <param name="defaultValue">The default value to use if no value is found.</param>
         /// <returns>The converted value.</returns>
         [RequiresUnreferencedCode(TrimmingWarningMessage)]
+        [return: NotNullIfNotNull(nameof(defaultValue))]
         public static object? GetValue(
             this IConfiguration configuration,
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
@@ -950,7 +952,7 @@ namespace Microsoft.Extensions.Configuration
 
             Type genericTypeDefinition = type.GetGenericTypeDefinition();
             return genericTypeDefinition == typeof(ISet<>)
-#if NETCOREAPP
+#if NET
                    || genericTypeDefinition == typeof(IReadOnlySet<>)
 #endif
                    ;

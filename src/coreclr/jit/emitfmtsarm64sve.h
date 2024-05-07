@@ -137,12 +137,9 @@ IF_DEF(SVE_2BS, IS_NONE, NONE) // Instruction has 2  possible encoding types, ty
 *           x       -- element size
 *****************************************************************************/
 
-IF_DEF(SVE_AA_3A,   IS_NONE, NONE) // SVE_AA_3A  ........xx...... ...gggmmmmmddddd  -- SVE bitwise logical operations (predicated)
-IF_DEF(SVE_AB_3A,   IS_NONE, NONE) // SVE_AB_3A  ........xx...... ...gggmmmmmddddd  -- SVE integer add/subtract vectors (predicated)
+IF_DEF(SVE_AA_3A,   IS_NONE, NONE) // SVE_AA_3A  ........xx...... ...gggmmmmmddddd  -- SVE bitwise logical operations + SVE integer add/subtract/multiply vectors + SVE integer min/max/difference + SVE bitwise shift by vector + SVE2 integer halving add/subtract + SVE2 integer pairwise arithmetic + SVE2 saturating add/subtract + SVE2 saturating/rounding bitwise shift left (predicated)
 IF_DEF(SVE_AB_3B,   IS_NONE, NONE) // SVE_AB_3B  ................ ...gggmmmmmddddd  -- SVE integer add/subtract vectors (predicated)
 IF_DEF(SVE_AC_3A,   IS_NONE, NONE) // SVE_AC_3A  ........xx...... ...gggmmmmmddddd  -- SVE integer divide vectors (predicated)
-IF_DEF(SVE_AD_3A,   IS_NONE, NONE) // SVE_AD_3A  ........xx...... ...gggmmmmmddddd  -- SVE integer min/max/difference (predicated)
-IF_DEF(SVE_AE_3A,   IS_NONE, NONE) // SVE_AE_3A  ........xx...... ...gggmmmmmddddd  -- SVE integer multiply vectors (predicated)
 IF_DEF(SVE_AF_3A,   IS_NONE, NONE) // SVE_AF_3A  ........xx...... ...gggnnnnnddddd  -- SVE bitwise logical reduction (predicated)
 IF_DEF(SVE_AG_3A,   IS_NONE, NONE) // SVE_AG_3A  ........xx...... ...gggnnnnnddddd  -- SVE bitwise logical reduction (quadwords)
 IF_DEF(SVE_AH_3A,   IS_NONE, NONE) // SVE_AH_3A  ........xx.....M ...gggnnnnnddddd  -- SVE constructive prefix (predicated)
@@ -151,7 +148,6 @@ IF_DEF(SVE_AJ_3A,   IS_NONE, NONE) // SVE_AJ_3A  ........xx...... ...gggnnnnnddd
 IF_DEF(SVE_AK_3A,   IS_NONE, NONE) // SVE_AK_3A  ........xx...... ...gggnnnnnddddd  -- SVE integer min/max reduction (predicated)
 IF_DEF(SVE_AL_3A,   IS_NONE, NONE) // SVE_AL_3A  ........xx...... ...gggnnnnnddddd  -- SVE integer min/max reduction (quadwords)
 IF_DEF(SVE_AM_2A,   IS_NONE, NONE) // SVE_AM_2A  ........xx...... ...gggxxiiiddddd  -- SVE bitwise shift by immediate (predicated)
-IF_DEF(SVE_AN_3A,   IS_NONE, NONE) // SVE_AN_3A  ........xx...... ...gggmmmmmddddd  -- SVE bitwise shift by vector (predicated)
 IF_DEF(SVE_AO_3A,   IS_NONE, NONE) // SVE_AO_3A  ........xx...... ...gggmmmmmddddd  -- SVE bitwise shift by wide elements (predicated)
 IF_DEF(SVE_AP_3A,   IS_NONE, NONE) // SVE_AP_3A  ........xx...... ...gggnnnnnddddd  -- SVE bitwise unary operations (predicated)
 IF_DEF(SVE_AQ_3A,   IS_NONE, NONE) // SVE_AQ_3A  ........xx...... ...gggnnnnnddddd  -- SVE integer unary operations (predicated)
@@ -284,12 +280,8 @@ IF_DEF(SVE_EL_3A,   IS_NONE, NONE) // SVE_EL_3A  ........xx.mmmmm ......nnnnnddd
 IF_DEF(SVE_EM_3A,   IS_NONE, NONE) // SVE_EM_3A  ........xx.mmmmm ......nnnnnddddd  -- SVE2 saturating multiply-add high
 IF_DEF(SVE_EN_3A,   IS_NONE, NONE) // SVE_EN_3A  ........xx.mmmmm ......nnnnnddddd  -- SVE2 saturating multiply-add interleaved long
 IF_DEF(SVE_EO_3A,   IS_NONE, NONE) // SVE_EO_3A  ........xx.mmmmm ......nnnnnddddd  -- SVE2 saturating multiply-add long
-IF_DEF(SVE_EP_3A,   IS_NONE, NONE) // SVE_EP_3A  ........xx...... ...gggmmmmmddddd  -- SVE2 integer halving add/subtract (predicated)
 IF_DEF(SVE_EQ_3A,   IS_NONE, NONE) // SVE_EQ_3A  ........xx...... ...gggnnnnnddddd  -- SVE2 integer pairwise add and accumulate long
-IF_DEF(SVE_ER_3A,   IS_NONE, NONE) // SVE_ER_3A  ........xx...... ...gggmmmmmddddd  -- SVE2 integer pairwise arithmetic
 IF_DEF(SVE_ES_3A,   IS_NONE, NONE) // SVE_ES_3A  ........xx...... ...gggnnnnnddddd  -- SVE2 integer unary operations (predicated)
-IF_DEF(SVE_ET_3A,   IS_NONE, NONE) // SVE_ET_3A  ........xx...... ...gggmmmmmddddd  -- SVE2 saturating add/subtract
-IF_DEF(SVE_EU_3A,   IS_NONE, NONE) // SVE_EU_3A  ........xx...... ...gggmmmmmddddd  -- SVE2 saturating/rounding bitwise shift left (predicated)
 IF_DEF(SVE_EV_3A,   IS_NONE, NONE) // SVE_EV_3A  ........xx.mmmmm ......nnnnnddddd  -- SVE integer clamp
 IF_DEF(SVE_EW_3A,   IS_NONE, NONE) // SVE_EW_3A  ...........mmmmm ......nnnnnddddd  -- SVE2 multiply-add (checked pointer)
 IF_DEF(SVE_EW_3B,   IS_NONE, NONE) // SVE_EW_3B  ...........mmmmm ......aaaaaddddd  -- SVE2 multiply-add (checked pointer)

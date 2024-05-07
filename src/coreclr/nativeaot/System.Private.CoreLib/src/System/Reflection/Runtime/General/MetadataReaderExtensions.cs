@@ -55,7 +55,7 @@ namespace System.Reflection.Runtime.General
         // Useful for namespace Name string which can be a null handle.
         public static string GetStringOrNull(this ConstantStringValueHandle handle, MetadataReader reader)
         {
-            if (reader.IsNull(handle))
+            if (handle.IsNil)
                 return null;
             return reader.GetConstantStringValue(handle).Value;
         }

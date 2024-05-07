@@ -316,10 +316,10 @@ _Ret_bytecap_(n) void * __cdecl
 operator new[](size_t n);
 
 void __cdecl
-operator delete(void *p) NOEXCEPT;
+operator delete(void *p) noexcept;
 
 void __cdecl
-operator delete[](void *p) NOEXCEPT;
+operator delete[](void *p) noexcept;
 
 #ifdef _DEBUG_IMPL
 HRESULT _OutOfMemory(LPCSTR szFile, int iLine);
@@ -1742,7 +1742,7 @@ public:
         HASHFIND    *psSrch)            // Search object.
     {
         WRAPPER_NO_CONTRACT;
-        if (m_piBuckets == 0)
+        if (m_piBuckets == nullptr)
             return (0);
         psSrch->iBucket = 1;
         psSrch->iNext = m_piBuckets[0];
@@ -3715,37 +3715,6 @@ namespace util
         return util::lower_bound( begin, end, val, util::less< T >() );
     }
 }
-
-
-/* ------------------------------------------------------------------------ *
- * Overloaded operators for the executable heap
- * ------------------------------------------------------------------------ */
-
-#ifdef HOST_WINDOWS
-
-struct CExecutable { int x; };
-extern const CExecutable executable;
-
-void * __cdecl operator new(size_t n, const CExecutable&);
-void * __cdecl operator new[](size_t n, const CExecutable&);
-void * __cdecl operator new(size_t n, const CExecutable&, const NoThrow&);
-void * __cdecl operator new[](size_t n, const CExecutable&, const NoThrow&);
-
-
-//
-// Executable heap delete to match the executable heap new above.
-//
-template<class T> void DeleteExecutable(T *p)
-{
-    if (p != NULL)
-    {
-        p->T::~T();
-
-        HeapFree(ClrGetProcessExecutableHeap(), 0, p);
-    }
-}
-
-#endif // HOST_WINDOWS
 
 INDEBUG(BOOL DbgIsExecutable(LPVOID lpMem, SIZE_T length);)
 

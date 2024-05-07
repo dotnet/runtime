@@ -915,6 +915,8 @@ Debugger::Debugger()
     m_unrecoverableError(FALSE),
     m_ignoreThreadDetach(FALSE),
     m_pMethodInfos(NULL),
+    m_pForceCatchHandlerFoundEventsTable(NULL),
+    m_pCustomNotificationTable(NULL),
     m_mutex(CrstDebuggerMutex, (CrstFlags)(CRST_UNSAFE_ANYMODE | CRST_REENTRANCY | CRST_DEBUGGER_THREAD)),
 #ifdef _DEBUG
     m_mutexOwner(0),
@@ -956,10 +958,8 @@ Debugger::Debugger()
 
     m_processId = GetCurrentProcessId();
 
-    // Initialize these in ctor because we free them in dtor.
-    // And we can't set them to some safe uninited value (like NULL).
-
-
+    m_pForceCatchHandlerFoundEventsTable = new ForceCatchHandlerFoundTable();
+    m_pCustomNotificationTable = new CustomNotificationTable();
 
     //------------------------------------------------------------------------------
     // Metadata data structure version numbers
@@ -1353,7 +1353,7 @@ DebuggerEval::DebuggerEval(CONTEXT * pContext, DebuggerIPCE_FuncEvalInfo * pEval
     m_debuggerModule = g_pDebugger->LookupOrCreateModule(pEvalInfo->vmDomainAssembly);
     m_funcEvalKey = pEvalInfo->funcEvalKey;
     m_argCount = pEvalInfo->argCount;
-    m_targetCodeAddr = NULL;
+    m_targetCodeAddr = (TADDR)NULL;
     m_stringSize = pEvalInfo->stringSize;
     m_arrayRank = pEvalInfo->arrayRank;
     m_genericArgsCount = pEvalInfo->genericArgsCount;
@@ -2238,7 +2238,7 @@ DebuggerLazyInit::DebuggerLazyInit() :
     m_exAttachEvent(NULL),
     m_exUnmanagedAttachEvent(NULL),
     m_garbageCollectionBlockerEvent(NULL),
-    m_DebuggerHandlingCtrlC(NULL)
+    m_DebuggerHandlingCtrlC(FALSE)
 {
 }
 
@@ -2724,7 +2724,7 @@ DebuggerJitInfo *Debugger::GetJitInfoWorker(MethodDesc *fd, const BYTE *pbAddr, 
     else
     {
         PCODE startAddr = g_pEEInterface->GetNativeCodeStartAddress((PCODE)pbAddr);
-        if (startAddr == NULL)
+        if (startAddr == (PCODE)NULL)
         {
             LOG((LF_CORDB,LL_INFO1000,"D::GJIW: Couldn't find a DJI by address 0x%p, "
                 "so it might be a stub or thunk\n", pbAddr));
@@ -2748,7 +2748,7 @@ DebuggerJitInfo *Debugger::GetJitInfoWorker(MethodDesc *fd, const BYTE *pbAddr, 
 #endif // LOGGING
         }
 
-        if (startAddr != NULL)
+        if (startAddr != (PCODE)NULL)
         {
             dji = dmi->FindOrCreateInitAndAddJitInfo(fd, startAddr);
         }
@@ -3488,7 +3488,7 @@ HRESULT Debugger::SetIP( bool fCanSetIPOnly, Thread *thread,Module *module,
     BOOL exact;
     SIZE_T offsetNatTo;
 
-    PCODE    pbDest = NULL;
+    PCODE    pbDest = (PCODE)NULL;
     BYTE    *pbBase = NULL;
     CONTEXT *pCtx   = NULL;
     DWORD    dwSize = 0;
@@ -7448,8 +7448,8 @@ void Debugger::SendExceptionEventsWorker(
                     g_pDebugger->IncThreadsAtUnsafePlaces();
                 }
             } // end of GCX_CCOP_EEINTERFACE();
-        } //end if (m_sendExceptionsOutsideOfJMC && !SentDebugFirstChance())
 
+        } //end if (m_sendExceptionsOutsideOfJMC && !SentDebugFirstChance())
         //
         // If this is a JMC function, then we send a USER's first chance as well.
         //
@@ -7846,11 +7846,14 @@ void Debugger::FirstChanceManagedExceptionCatcherFound(Thread *pThread,
         }
     }
 
+    BOOL forceSendCatchHandlerFound = FALSE;
+    {
+        GCX_COOP_EEINTERFACE();
+        forceSendCatchHandlerFound = ShouldSendCatchHandlerFound(pThread);
+    }
     // Here we check if debugger opted-out of receiving exception related events from outside of JMC methods
     // or this exception ever crossed JMC frame (in this case we have already sent user first chance event)
-    if (m_sendExceptionsOutsideOfJMC ||
-        isInJMCFunction ||
-        pThread->GetExceptionState()->GetFlags()->SentDebugUserFirstChance())
+    if (isInJMCFunction || forceSendCatchHandlerFound)
     {
         if (pDebugJitInfo != NULL)
         {
@@ -7979,9 +7982,15 @@ LONG Debugger::NotifyOfCHFFilter(EXCEPTION_POINTERS* pExceptionPointers, PVOID p
                       pExceptionPointers);
     }
 
+    BOOL forceSendCatchHandlerFound = FALSE;
+    {
+        GCX_COOP_EEINTERFACE();
+        forceSendCatchHandlerFound = ShouldSendCatchHandlerFound(pThread);
+    }
+
     // Here we check if debugger opted-out of receiving exception related events from outside of JMC methods
     // or this exception ever crossed JMC frame (in this case we have already sent user first chance event)
-    if (m_sendExceptionsOutsideOfJMC || pExState->GetFlags()->SentDebugUserFirstChance())
+    if (forceSendCatchHandlerFound)
     {
         SendCatchHandlerFound(pThread, fp, offset, dwFlags);
     }
@@ -8008,6 +8017,48 @@ LONG Debugger::NotifyOfCHFFilter(EXCEPTION_POINTERS* pExceptionPointers, PVOID p
     return EXCEPTION_CONTINUE_SEARCH;
 }
 
+BOOL Debugger::ShouldSendCatchHandlerFound(Thread* pThread)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_NOTRIGGER;
+        MODE_COOPERATIVE;
+    }
+    CONTRACTL_END;
+
+    ThreadExceptionState* pExState = pThread->GetExceptionState();
+    if (m_sendExceptionsOutsideOfJMC || pExState->GetFlags()->SentDebugUserFirstChance())
+    {
+        return TRUE;
+    }
+    else
+    {
+        BOOL forceSendCatchHandlerFound = FALSE;
+        OBJECTHANDLE objHandle = pThread->GetThrowableAsHandle();
+        OBJECTHANDLE retrievedHandle = m_pForceCatchHandlerFoundEventsTable->Lookup(objHandle); //destroy handle
+        if (retrievedHandle != NULL)
+        {
+            forceSendCatchHandlerFound = TRUE;
+        }
+        return forceSendCatchHandlerFound;
+    }
+}
+
+BOOL Debugger::ShouldSendCustomNotification(DomainAssembly *pAssembly, mdTypeDef typeDef)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_NOTRIGGER;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+    Module *pModule = pAssembly->GetModule();
+    TypeInModule tim(pModule, typeDef);
+    return !(m_pCustomNotificationTable->Lookup(tim).IsNull());
+}
 
 // Actually send the catch handler found event.
 // This can be used to send CHF for both regular managed catchers as well
@@ -8546,8 +8597,8 @@ LONG Debugger::LastChanceManagedException(EXCEPTION_POINTERS * pExceptionInfo,
             // attach stuff out here and not bother with the flag.
             hr = SendException(thread,
                           FALSE,
-                          ((pContext != NULL) ? (SIZE_T)GetIP(pContext) : NULL),
-                          ((pContext != NULL) ? (SIZE_T)GetSP(pContext) : NULL),
+                          ((pContext != NULL) ? (SIZE_T)GetIP(pContext) : 0),
+                          ((pContext != NULL) ? (SIZE_T)GetSP(pContext) : 0),
                           continuable,
                           !!jitAttachRequested,  // If we are JIT attaching on an unhandled exceptioin, we force
                           !!jitAttachRequested,  // the exception to be uninterceptable.
@@ -10418,6 +10469,47 @@ bool Debugger::HandleIPCEvent(DebuggerIPCEvent * pEvent)
 
             InitIPCEvent(pIPCResult,
                          DB_IPCE_DISABLE_OPTS_RESULT,
+                         g_pEEInterface->GetThread(),
+                         pEvent->vmAppDomain);
+
+            pIPCResult->hr = hr;
+
+            m_pRCThread->SendIPCReply();
+        }
+        break;
+
+    case DB_IPCE_FORCE_CATCH_HANDLER_FOUND:
+        {
+            BOOL enableEvents = pEvent->ForceCatchHandlerFoundData.enableEvents;
+            AppDomain *pAppDomain = pEvent->vmAppDomain.GetRawPtr();
+            OBJECTREF exObj = ObjectToOBJECTREF(pEvent->ForceCatchHandlerFoundData.vmObj.GetRawPtr());
+            HRESULT hr = E_INVALIDARG;
+
+            hr = UpdateForceCatchHandlerFoundTable(enableEvents, exObj, pAppDomain);
+
+            DebuggerIPCEvent * pIPCResult = m_pRCThread->GetIPCEventReceiveBuffer();
+            InitIPCEvent(pIPCResult,
+                         DB_IPCE_CATCH_HANDLER_FOUND_RESULT,
+                         g_pEEInterface->GetThread(),
+                         pEvent->vmAppDomain);
+
+            pIPCResult->hr = hr;
+
+            m_pRCThread->SendIPCReply();
+        }
+        break;
+
+    case DB_IPCE_SET_ENABLE_CUSTOM_NOTIFICATION:
+        {
+            Module * pModule = pEvent->CustomNotificationData.vmModule.GetRawPtr();
+            mdTypeDef classToken = pEvent->CustomNotificationData.classMetadataToken;
+            BOOL enabled = pEvent->CustomNotificationData.Enabled;
+
+            HRESULT hr = UpdateCustomNotificationTable(pModule, classToken, enabled);
+
+            DebuggerIPCEvent * pIPCResult = m_pRCThread->GetIPCEventReceiveBuffer();
+            InitIPCEvent(pIPCResult,
+                         DB_IPCE_SET_ENABLE_CUSTOM_NOTIFICATION_RESULT,
                          g_pEEInterface->GetThread(),
                          pEvent->vmAppDomain);
 
@@ -12350,6 +12442,73 @@ HRESULT Debugger::IsMethodDeoptimized(Module *pModule, mdMethodDef methodDef, BO
     return S_OK;
 }
 
+HRESULT Debugger::UpdateCustomNotificationTable(Module *pModule, mdTypeDef classToken, BOOL enabled)
+{
+    CONTRACTL
+    {
+        THROWS;
+        CAN_TAKE_LOCK;
+        GC_NOTRIGGER;
+    }
+    CONTRACTL_END;
+
+    TypeInModule tim(pModule, classToken);
+    if (enabled)
+    {
+        if (m_pCustomNotificationTable->Lookup(tim).IsNull())
+        {
+            m_pCustomNotificationTable->Add(tim);
+        }
+    }
+    else
+    {
+        if (!(m_pCustomNotificationTable->Lookup(tim).IsNull()))
+        {
+            m_pCustomNotificationTable->Remove(tim);
+        }
+    }
+
+    return S_OK;
+}
+
+HRESULT Debugger::UpdateForceCatchHandlerFoundTable(BOOL enableEvents, OBJECTREF exObj, AppDomain *pAppDomain)
+{
+    CONTRACTL
+    {
+        THROWS;
+        CAN_TAKE_LOCK;
+        GC_NOTRIGGER;
+    }
+    CONTRACTL_END;
+
+    OBJECTHANDLE objHandle = pAppDomain->CreateLongWeakHandle(exObj);
+    if (objHandle == NULL)
+    {
+        return E_INVALIDARG;
+    }
+    if (enableEvents)
+    {
+        OBJECTHANDLE objHandleFound = m_pForceCatchHandlerFoundEventsTable->Lookup(objHandle);
+        if (objHandleFound == NULL)
+        {
+            m_pForceCatchHandlerFoundEventsTable->Add(objHandle);
+        }
+        else
+        {
+            DestroyLongWeakHandle(objHandle);
+        }
+    }
+    else
+    {
+        if (m_pForceCatchHandlerFoundEventsTable->Lookup(objHandle) != NULL)
+        {
+            m_pForceCatchHandlerFoundEventsTable->Remove(objHandle);
+        }
+        DestroyLongWeakHandle(objHandle);
+    }
+    return S_OK;
+}
+
 //
 // UnrecoverableError causes the Left Side to enter a state where no more
 // debugging can occur and we leave around enough information for the
@@ -13984,7 +14143,7 @@ bool Debugger::GetILOffsetFromNative (MethodDesc *pFunc, const BYTE *pbAddr,
     }
 
     PCODE methodStartAddress = g_pEEInterface->GetNativeCodeStartAddress((PCODE)pbAddr);
-    if (methodStartAddress == NULL)
+    if (methodStartAddress == (PCODE)NULL)
     {
         return false;
     }
@@ -14487,7 +14646,7 @@ void Debugger::SendCustomDebuggerNotification(Thread * pThread,
     Thread *curThread = g_pEEInterface->GetThread();
     SENDIPCEVENT_BEGIN(this, curThread);
 
-    if (CORDebuggerAttached())
+    if (CORDebuggerAttached() && ShouldSendCustomNotification(pDomain, classToken))
     {
         DebuggerIPCEvent* ipce = m_pRCThread->GetIPCEventSendBuffer();
         InitIPCEvent(ipce,

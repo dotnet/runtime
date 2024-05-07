@@ -1746,7 +1746,7 @@ void HelperCallProperties::init()
             case CORINFO_HELP_CHECKED_ASSIGN_REF:
             case CORINFO_HELP_ASSIGN_REF_ENSURE_NONHEAP:
             case CORINFO_HELP_ASSIGN_BYREF:
-            case CORINFO_HELP_ASSIGN_STRUCT:
+            case CORINFO_HELP_BULK_WRITEBARRIER:
 
                 mutatesHeap = true;
                 break;
@@ -3439,11 +3439,6 @@ uint32_t BitOperations::Log2(uint64_t value)
 // Return Value:
 //    The population count (number of bits set) of value
 //
-#if defined(_MSC_VER)
-// Disable optimizations for PopCount to avoid the compiler from generating intrinsics
-// not supported on all platforms.
-#pragma optimize("", off)
-#endif // _MSC_VER
 uint32_t BitOperations::PopCount(uint32_t value)
 {
 #if defined(_MSC_VER)
@@ -3496,9 +3491,6 @@ uint32_t BitOperations::PopCount(uint64_t value)
     return static_cast<uint32_t>(result);
 #endif
 }
-#if defined(_MSC_VER)
-#pragma optimize("", on)
-#endif // _MSC_VER
 
 //------------------------------------------------------------------------
 // BitOperations::ReverseBits: Reverses the bits in an integer value

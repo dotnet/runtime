@@ -117,7 +117,7 @@ namespace Internal.TypeSystem.NoMetadata
             }
 
             // Otherwise, find its equivalent on the type definition of the owning type
-            return Context.ResolveRuntimeMethod(UnboxingStub, (DefType)owningTypeDefinition, _nameAndSignature, IntPtr.Zero, false);
+            return Context.ResolveRuntimeMethod(UnboxingStub, (DefType)owningTypeDefinition, _nameAndSignature);
         }
 
         public override MethodDesc InstantiateSignature(Instantiation typeInstantiation, Instantiation methodInstantiation)
@@ -127,7 +127,7 @@ namespace Internal.TypeSystem.NoMetadata
             TypeDesc owningType = method.OwningType;
             TypeDesc instantiatedOwningType = owningType.InstantiateSignature(typeInstantiation, methodInstantiation);
             if (owningType != instantiatedOwningType)
-                method = instantiatedOwningType.Context.ResolveRuntimeMethod(UnboxingStub, (DefType)instantiatedOwningType, _nameAndSignature, IntPtr.Zero, false);
+                method = instantiatedOwningType.Context.ResolveRuntimeMethod(UnboxingStub, (DefType)instantiatedOwningType, _nameAndSignature);
 
             Instantiation instantiation = method.Instantiation;
             TypeDesc[] clone = null;

@@ -234,10 +234,8 @@ enum insGroupPlaceholderType : unsigned char
 {
     IGPT_PROLOG, // currently unused
     IGPT_EPILOG,
-#if defined(FEATURE_EH_FUNCLETS)
     IGPT_FUNCLET_PROLOG,
     IGPT_FUNCLET_EPILOG,
-#endif // FEATURE_EH_FUNCLETS
 };
 
 #if defined(_MSC_VER) && defined(TARGET_ARM)
@@ -317,15 +315,11 @@ struct insGroup
 // Mask of IGF_* flags that should be propagated to new blocks when they are created.
 // This allows prologs and epilogs to be any number of IGs, but still be
 // automatically marked properly.
-#if defined(FEATURE_EH_FUNCLETS)
 #ifdef DEBUG
 #define IGF_PROPAGATE_MASK (IGF_EPILOG | IGF_FUNCLET_PROLOG | IGF_FUNCLET_EPILOG)
 #else // DEBUG
 #define IGF_PROPAGATE_MASK (IGF_EPILOG | IGF_FUNCLET_PROLOG)
 #endif // DEBUG
-#else  // !FEATURE_EH_FUNCLETS
-#define IGF_PROPAGATE_MASK (IGF_EPILOG)
-#endif // !FEATURE_EH_FUNCLETS
 
     // Try to do better packing based on how large regMaskSmall is (8, 16, or 64 bits).
 
@@ -544,8 +538,6 @@ protected:
         return (ig != nullptr) && ((ig->igFlags & IGF_EPILOG) != 0);
     }
 
-#if defined(FEATURE_EH_FUNCLETS)
-
     bool emitIGisInFuncletProlog(const insGroup* ig)
     {
         return (ig != nullptr) && ((ig->igFlags & IGF_FUNCLET_PROLOG) != 0);
@@ -555,8 +547,6 @@ protected:
     {
         return (ig != nullptr) && ((ig->igFlags & IGF_FUNCLET_EPILOG) != 0);
     }
-
-#endif // FEATURE_EH_FUNCLETS
 
     void emitRecomputeIGoffsets();
 
@@ -772,10 +762,10 @@ protected:
         // loongarch64: 28 bits
         // risc-v:      28 bits
 
-        unsigned _idSmallDsc  : 1; // is this a "small" descriptor?
-        unsigned _idLargeCns  : 1; // does a large constant     follow?
-        unsigned _idLargeDsp  : 1; // does a large displacement follow?
-        unsigned _idLargeCall : 1; // large call descriptor used
+        unsigned _idSmallDsc : 1; // is this a "small" descriptor?
+        unsigned _idLargeCns : 1; // does a large constant     follow? (or if large call descriptor used)
+        unsigned _idLargeDsp : 1; // does a large displacement follow?
+        unsigned _idCall     : 1; // this is a call
 
         // We have several pieces of information we need to encode but which are only applicable
         // to a subset of instrDescs. To accommodate that, we define a several _idCustom# bitfields
@@ -1575,7 +1565,7 @@ protected:
 
         bool idIsLargeCns() const
         {
-            return _idLargeCns != 0;
+            return _idLargeCns != 0 && !idIsCall();
         }
         void idSetIsLargeCns()
         {
@@ -1595,13 +1585,23 @@ protected:
             _idLargeDsp = 0;
         }
 
+        bool idIsCall() const
+        {
+            return _idCall != 0;
+        }
+        void idSetIsCall()
+        {
+            _idCall = 1;
+        }
+
         bool idIsLargeCall() const
         {
-            return _idLargeCall != 0;
+            return idIsCall() && _idLargeCns == 1;
         }
         void idSetIsLargeCall()
         {
-            _idLargeCall = 1;
+            idSetIsCall();
+            _idLargeCns = 1;
         }
 
         bool idIsBound() const
@@ -2356,15 +2356,11 @@ public:
     void emitBegFnEpilog(insGroup* igPh);
     void emitEndFnEpilog();
 
-#if defined(FEATURE_EH_FUNCLETS)
-
     void emitBegFuncletProlog(insGroup* igPh);
     void emitEndFuncletProlog();
 
     void emitBegFuncletEpilog(insGroup* igPh);
     void emitEndFuncletEpilog();
-
-#endif // FEATURE_EH_FUNCLETS
 
     /************************************************************************/
     /*    Methods to record a code position and later convert to offset     */
@@ -2871,9 +2867,11 @@ private:
     // Mark this instruction group as having a label; return the new instruction group.
     // Sets the emitter's record of the currently live GC variables
     // and registers.
-    void* emitAddLabel(VARSET_VALARG_TP    GCvars,
-                       regMaskTP           gcrefRegs,
-                       regMaskTP byrefRegs DEBUG_ARG(BasicBlock* block = nullptr));
+    // prevBlock is passed when starting a new block.
+    void* emitAddLabel(VARSET_VALARG_TP GCvars,
+                       regMaskTP        gcrefRegs,
+                       regMaskTP        byrefRegs,
+                       BasicBlock*      prevBlock = nullptr);
 
     // Same as above, except the label is added and is conceptually "inline" in
     // the current block. Thus it extends the previous block and the emitter
@@ -3203,6 +3201,8 @@ public:
     void emitStackKillArgs(BYTE* addr, unsigned count, unsigned char callInstrSize);
 
     void emitRecordGCcall(BYTE* codePos, unsigned char callInstrSize);
+
+    bool emitLastInsIsCallWithGC();
 
     // Helpers for the above
 
@@ -4034,6 +4034,8 @@ emitAttr emitter::emitGetBaseMemOpSize(instrDesc* id) const
         case INS_subss:
         case INS_ucomiss:
         case INS_vbroadcastss:
+        case INS_vcvttss2usi32:
+        case INS_vcvttss2usi64:
         case INS_vfmadd132ss:
         case INS_vfmadd213ss:
         case INS_vfmadd231ss:
@@ -4081,6 +4083,8 @@ emitAttr emitter::emitGetBaseMemOpSize(instrDesc* id) const
         case INS_subsd:
         case INS_ucomisd:
         case INS_vbroadcastsd:
+        case INS_vcvttsd2usi32:
+        case INS_vcvttsd2usi64:
         case INS_vfmadd132sd:
         case INS_vfmadd213sd:
         case INS_vfmadd231sd:

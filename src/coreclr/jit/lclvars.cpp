@@ -48,9 +48,9 @@ void Compiler::lvaInit()
     lvaTrackedFixed = false; // false: We can still add new tracked variables
 
     lvaDoneFrameLayout = NO_FRAME_LAYOUT;
-#if !defined(FEATURE_EH_FUNCLETS)
+#if defined(FEATURE_EH_WINDOWS_X86)
     lvaShadowSPslotsVar = BAD_VAR_NUM;
-#endif // !FEATURE_EH_FUNCLETS
+#endif // FEATURE_EH_WINDOWS_X86
     lvaInlinedPInvokeFrameVar = BAD_VAR_NUM;
     lvaReversePInvokeFrameVar = BAD_VAR_NUM;
 #if FEATURE_FIXED_OUT_ARGS
@@ -79,9 +79,7 @@ void Compiler::lvaInit()
     lvaInlineeReturnSpillTemp = BAD_VAR_NUM;
 
     gsShadowVarInfo = nullptr;
-#if defined(FEATURE_EH_FUNCLETS)
-    lvaPSPSym = BAD_VAR_NUM;
-#endif
+    lvaPSPSym       = BAD_VAR_NUM;
 #if FEATURE_SIMD
     lvaSIMDInitTempVarNum = BAD_VAR_NUM;
 #endif // FEATURE_SIMD
@@ -1441,7 +1439,6 @@ bool Compiler::lvaInitSpecialSwiftParam(CORINFO_ARG_LIST_HANDLE argHnd,
         compArgSize += TARGET_POINTER_SIZE;
 
         lvaSwiftSelfArg = varDscInfo->varNum;
-        lvaSetVarDoNotEnregister(lvaSwiftSelfArg DEBUGARG(DoNotEnregisterReason::NonStandardParameter));
         return true;
     }
 
@@ -1469,7 +1466,6 @@ bool Compiler::lvaInitSpecialSwiftParam(CORINFO_ARG_LIST_HANDLE argHnd,
         // Instead, all usages of the SwiftError* parameter will be redirected to this pseudolocal.
         lvaSwiftErrorLocal = lvaGrabTempWithImplicitUse(false DEBUGARG("SwiftError pseudolocal"));
         lvaSetStruct(lvaSwiftErrorLocal, typeHnd, false);
-        lvaSetVarAddrExposed(lvaSwiftErrorLocal DEBUGARG(AddressExposedReason::ESCAPE_ADDRESS));
         return true;
     }
 
@@ -1723,7 +1719,7 @@ void Compiler::lvaClassifyParameterABI(Classifier& classifier)
 #ifdef DEBUG
         if (verbose)
         {
-            printf("Parameter #%u ABI info: ", i);
+            printf("Parameter V%02u ABI info: ", i);
             lvaParameterPassingInfo[i].Dump();
         }
 #endif
@@ -1761,7 +1757,7 @@ void Compiler::lvaClassifyParameterABI()
         for (unsigned lclNum = 0; lclNum < info.compArgsCount; lclNum++)
         {
             LclVarDsc*                   dsc     = lvaGetDesc(lclNum);
-            const ABIPassingInformation& abiInfo = lvaParameterPassingInfo[lclNum];
+            const ABIPassingInformation& abiInfo = lvaGetParameterABIInfo(lclNum);
 
             if (dsc->TypeGet() == TYP_STRUCT)
             {
@@ -1808,12 +1804,10 @@ void Compiler::lvaClassifyParameterABI()
     }
     else
 #endif
-#if defined(TARGET_X86) || defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_ARM)
     {
         PlatformClassifier classifier(cInfo);
         lvaClassifyParameterABI(classifier);
     }
-#endif
 
 #ifdef DEBUG
     if (lvaParameterPassingInfo == nullptr)
@@ -1824,7 +1818,7 @@ void Compiler::lvaClassifyParameterABI()
     for (unsigned lclNum = 0; lclNum < info.compArgsCount; lclNum++)
     {
         LclVarDsc*                   dsc     = lvaGetDesc(lclNum);
-        const ABIPassingInformation& abiInfo = lvaParameterPassingInfo[lclNum];
+        const ABIPassingInformation& abiInfo = lvaGetParameterABIInfo(lclNum);
 
         assert(abiInfo.NumSegments > 0);
 
@@ -1891,6 +1885,42 @@ void Compiler::lvaClassifyParameterABI()
             }
         }
     }
+
+    for (unsigned lclNum = 0; lclNum < info.compArgsCount; lclNum++)
+    {
+        const ABIPassingInformation& abiInfo = lvaGetParameterABIInfo(lclNum);
+
+        if (lvaIsImplicitByRefLocal(lclNum))
+        {
+            assert((abiInfo.NumSegments == 1) && (abiInfo.Segments[0].Size == TARGET_POINTER_SIZE));
+        }
+        else
+        {
+            for (unsigned i = 0; i < abiInfo.NumSegments; i++)
+            {
+                const ABIPassingSegment& segment = abiInfo.Segments[i];
+                assert(segment.Size > 0);
+                assert(segment.Offset + segment.Size <= lvaLclExactSize(lclNum));
+
+                if (i > 0)
+                {
+                    assert(segment.Offset > abiInfo.Segments[i - 1].Offset);
+                }
+
+                for (unsigned j = 0; j < abiInfo.NumSegments; j++)
+                {
+                    if (i == j)
+                    {
+                        continue;
+                    }
+
+                    const ABIPassingSegment& otherSegment = abiInfo.Segments[j];
+                    assert((segment.Offset + segment.Size <= otherSegment.Offset) ||
+                           (segment.Offset >= otherSegment.Offset + otherSegment.Size));
+                }
+            }
+        }
+    }
 #endif // DEBUG
 }
 
@@ -1912,7 +1942,7 @@ bool Compiler::lvaHasAnySwiftStackParamToReassemble()
 
     for (unsigned lclNum = 0; lclNum < info.compArgsCount; lclNum++)
     {
-        const ABIPassingInformation& abiInfo = lvaParameterPassingInfo[lclNum];
+        const ABIPassingInformation& abiInfo = lvaGetParameterABIInfo(lclNum);
         if (abiInfo.HasAnyStackSegment() && !abiInfo.HasExactlyOneStackSegment())
         {
             return true;
@@ -2616,7 +2646,7 @@ bool Compiler::StructPromotionHelper::ShouldPromoteStructVar(unsigned lclNum)
     //
     // TODO: Ideally we would want to consider the impact of whether the struct is
     // passed as a parameter or assigned the return value of a call. Because once promoted,
-    // struct copying is done by field by field assignment instead of a more efficient
+    // struct copying is done by field by field store instead of a more efficient
     // rep.stos or xmm reg based copy.
     if (structPromotionInfo.fieldCnt > 3 && !varDsc->lvFieldAccessed)
     {
@@ -3174,14 +3204,47 @@ void Compiler::lvaSetVarDoNotEnregister(unsigned varNum DEBUGARG(DoNotEnregister
             JITDUMP("Promoted struct used by a SIMD/HWI node\n");
             break;
 
-        case DoNotEnregisterReason::NonStandardParameter:
-            JITDUMP("Non-standard parameter\n");
-            break;
-
         default:
             unreached();
             break;
     }
+#endif
+}
+
+//------------------------------------------------------------------------
+// lvaIsArgAccessedViaVarArgsCookie: Check if a parameter has to be accessed
+// indirectly via the varargs cookie.
+//
+// Arguments:
+//    lclNum - The local in question
+//
+// Return Value:
+//    True if it does.
+//
+// Remarks:
+//    Parameters passed on the stack in x86 varargs methods require special
+//    treatment for accesses and GC as their offsets are not known at compile
+//    time.
+//
+bool Compiler::lvaIsArgAccessedViaVarArgsCookie(unsigned lclNum)
+{
+#ifdef TARGET_X86
+    if (!info.compIsVarArgs)
+    {
+        return false;
+    }
+
+    LclVarDsc* varDsc = lvaGetDesc(lclNum);
+    if (!varDsc->lvIsParam || (lclNum == lvaVarargsHandleArg))
+    {
+        return false;
+    }
+
+    const ABIPassingInformation& abiInfo = lvaGetParameterABIInfo(lclNum);
+    assert(abiInfo.HasExactlyOneStackSegment() || abiInfo.HasExactlyOneRegisterSegment());
+    return abiInfo.HasExactlyOneStackSegment();
+#else
+    return false;
 #endif
 }
 
@@ -3572,7 +3635,7 @@ void Compiler::lvaSetClass(unsigned varNum, GenTree* tree, CORINFO_CLASS_HANDLE 
 //
 // Notes:
 //
-//    This method models the type update rule for an assignment.
+//    This method models the type update rule for a store.
 //
 //    Updates currently should only happen for single-def user args or
 //    locals, when we are processing the expression actually being
@@ -4038,8 +4101,9 @@ void Compiler::lvaSortByRefCount()
         {
             lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::NoRegVars));
         }
-#if defined(JIT32_GCENCODER) && defined(FEATURE_EH_FUNCLETS)
-        if (lvaIsOriginalThisArg(lclNum) && (info.compMethodInfo->options & CORINFO_GENERICS_CTXT_FROM_THIS) != 0)
+#if defined(JIT32_GCENCODER)
+        if (UsesFunclets() && lvaIsOriginalThisArg(lclNum) &&
+            (info.compMethodInfo->options & CORINFO_GENERICS_CTXT_FROM_THIS) != 0)
         {
             // For x86/Linux, we need to track "this".
             // However we cannot have it in tracked variables, so we set "this" pointer always untracked
@@ -4070,11 +4134,13 @@ void Compiler::lvaSortByRefCount()
                 case TYP_SIMD8:
                 case TYP_SIMD12:
                 case TYP_SIMD16:
-#if defined(TARGET_XARCH)
+#ifdef TARGET_XARCH
                 case TYP_SIMD32:
                 case TYP_SIMD64:
-                case TYP_MASK:
 #endif // TARGET_XARCH
+#ifdef FEATURE_MASKED_HW_INTRINSICS
+                case TYP_MASK:
+#endif // FEATURE_MASKED_HW_INTRINSICS
 #endif // FEATURE_SIMD
                 case TYP_STRUCT:
                     break;
@@ -4690,11 +4756,11 @@ PhaseStatus Compiler::lvaMarkLocalVars()
 
     unsigned const lvaCountOrig = lvaCount;
 
-#if !defined(FEATURE_EH_FUNCLETS)
+#if defined(FEATURE_EH_WINDOWS_X86)
 
     // Grab space for exception handling
 
-    if (ehNeedsShadowSPslots())
+    if (!UsesFunclets() && ehNeedsShadowSPslots())
     {
         // The first slot is reserved for ICodeManager::FixContext(ppEndRegion)
         // ie. the offset of the end-of-last-executed-filter
@@ -4717,20 +4783,18 @@ PhaseStatus Compiler::lvaMarkLocalVars()
         lvaSetVarAddrExposed(lvaShadowSPslotsVar DEBUGARG(AddressExposedReason::EXTERNALLY_VISIBLE_IMPLICITLY));
     }
 
-#endif // !FEATURE_EH_FUNCLETS
+#endif // FEATURE_EH_WINDOWS_X86
 
     // PSPSym is not used by the NativeAOT ABI
     if (!IsTargetAbi(CORINFO_NATIVEAOT_ABI))
     {
-#if defined(FEATURE_EH_FUNCLETS)
-        if (ehNeedsPSPSym())
+        if (UsesFunclets() && ehNeedsPSPSym())
         {
             lvaPSPSym            = lvaGrabTempWithImplicitUse(false DEBUGARG("PSPSym"));
             LclVarDsc* lclPSPSym = lvaGetDesc(lvaPSPSym);
             lclPSPSym->lvType    = TYP_I_IMPL;
             lvaSetVarDoNotEnregister(lvaPSPSym DEBUGARG(DoNotEnregisterReason::VMNeedsStackAddr));
         }
-#endif // FEATURE_EH_FUNCLETS
     }
 
 #ifdef JIT32_GCENCODER
@@ -4837,7 +4901,7 @@ void Compiler::lvaComputeRefCounts(bool isRecompute, bool setSlotNumbers)
             // and not tracked.
             for (lclNum = 0, varDsc = lvaTable; lclNum < lvaCount; lclNum++, varDsc++)
             {
-                const bool isSpecialVarargsParam = varDsc->lvIsParam && raIsVarargsStackArg(lclNum);
+                const bool isSpecialVarargsParam = varDsc->lvIsParam && lvaIsArgAccessedViaVarArgsCookie(lclNum);
 
                 if (isSpecialVarargsParam)
                 {
@@ -4869,7 +4933,7 @@ void Compiler::lvaComputeRefCounts(bool isRecompute, bool setSlotNumbers)
 
             // Special case for some varargs params ... these must
             // remain unreferenced.
-            const bool isSpecialVarargsParam = varDsc->lvIsParam && raIsVarargsStackArg(lclNum);
+            const bool isSpecialVarargsParam = varDsc->lvIsParam && lvaIsArgAccessedViaVarArgsCookie(lclNum);
 
             if (!isSpecialVarargsParam)
             {
@@ -5017,7 +5081,7 @@ void Compiler::lvaComputeRefCounts(bool isRecompute, bool setSlotNumbers)
             // to track them for GC info (which is not possible since we
             // don't know their offset in the stack).  See the assert at the
             // end of raMarkStkVars and bug #28949 for more info.
-            if (!raIsVarargsStackArg(lclNum))
+            if (!lvaIsArgAccessedViaVarArgsCookie(lclNum))
             {
                 varDsc->lvImplicitlyReferenced = 1;
             }
@@ -5596,7 +5660,7 @@ void Compiler::lvaFixVirtualFrameOffsets()
 {
     LclVarDsc* varDsc;
 
-#if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_AMD64)
+#if defined(TARGET_AMD64)
     if (lvaPSPSym != BAD_VAR_NUM)
     {
         // We need to fix the offset of the PSPSym so there is no padding between it and the outgoing argument space.
@@ -5643,23 +5707,52 @@ void Compiler::lvaFixVirtualFrameOffsets()
         // We set FP to be after LR, FP
         delta += 2 * REGSIZE_BYTES;
     }
-#elif defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+#elif defined(TARGET_AMD64) || defined(TARGET_ARM64)
     else
     {
         // FP is used.
         JITDUMP("--- delta bump %d for FP frame\n", codeGen->genTotalFrameSize() - codeGen->genSPtoFPdelta());
         delta += codeGen->genTotalFrameSize() - codeGen->genSPtoFPdelta();
     }
-#endif // TARGET_AMD64 || TARGET_ARM64 || TARGET_LOONGARCH64 || TARGET_RISCV64
+#elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+    else
+    {
+        // FP is used.
+        delta += (compCalleeRegsPushed << 3);
+
+        if ((lvaMonAcquired != BAD_VAR_NUM) && !opts.IsOSR())
+        {
+            int offset = lvaTable[lvaMonAcquired].GetStackOffset() + delta;
+            lvaTable[lvaMonAcquired].SetStackOffset(offset);
+
+            if (lvaPSPSym != BAD_VAR_NUM)
+            {
+                int offset = lvaTable[lvaPSPSym].GetStackOffset() + delta;
+                lvaTable[lvaPSPSym].SetStackOffset(offset);
+                delta += TARGET_POINTER_SIZE;
+            }
+
+            delta += lvaLclSize(lvaMonAcquired);
+        }
+        else if (lvaPSPSym != BAD_VAR_NUM)
+        {
+            int offset = lvaTable[lvaPSPSym].GetStackOffset() + delta;
+            lvaTable[lvaPSPSym].SetStackOffset(offset);
+            delta += TARGET_POINTER_SIZE;
+        }
+
+        JITDUMP("--- delta bump %d for FP frame\n", delta);
+    }
+#endif // !TARGET_LOONGARCH64 || !TARGET_RISCV64
 
     if (opts.IsOSR())
     {
-#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
         // Stack offset includes Tier0 frame.
         //
         JITDUMP("--- delta bump %d for OSR + Tier0 frame\n", info.compPatchpointInfo->TotalFrameSize());
         delta += info.compPatchpointInfo->TotalFrameSize();
-#endif
+#endif // TARGET_AMD64 || TARGET_ARM64
     }
 
     JITDUMP("--- virtual stack offset to actual stack offset delta is %d\n", delta);
@@ -5749,26 +5842,20 @@ void Compiler::lvaFixVirtualFrameOffsets()
 
 #endif // FEATURE_FIXED_OUT_ARGS
 
-#if defined(TARGET_ARM64)
+#if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     // We normally add alignment below the locals between them and the outgoing
     // arg space area. When we store fp/lr(ra) at the bottom, however, this will
     // be below the alignment. So we should not apply the alignment adjustment to
     // them. It turns out we always store these at +0 and +8 of the FP,
     // so instead of dealing with skipping adjustment just for them we just set
     // them here always.
+    // For LoongArch64 and RISCV64, the RA is always at fp+8.
     assert(codeGen->isFramePointerUsed());
     if (lvaRetAddrVar != BAD_VAR_NUM)
     {
         lvaTable[lvaRetAddrVar].SetStackOffset(REGSIZE_BYTES);
     }
-#elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-    assert(codeGen->isFramePointerUsed());
-    if (lvaRetAddrVar != BAD_VAR_NUM)
-    {
-        // For LoongArch64 and RISCV64, the RA is below the fp. see the `genPushCalleeSavedRegisters`
-        lvaTable[lvaRetAddrVar].SetStackOffset(-REGSIZE_BYTES);
-    }
-#endif // !TARGET_LOONGARCH64
+#endif // !TARGET_ARM64 || !TARGET_LOONGARCH64 || !TARGET_RISCV64
 }
 
 #ifdef TARGET_ARM
@@ -5878,7 +5965,7 @@ void Compiler::lvaAssignVirtualFrameOffsetsToArgs()
         for (unsigned lclNum = 0; lclNum < info.compArgsCount; lclNum++)
         {
             LclVarDsc*                   dsc     = lvaGetDesc(lclNum);
-            const ABIPassingInformation& abiInfo = lvaParameterPassingInfo[lclNum];
+            const ABIPassingInformation& abiInfo = lvaGetParameterABIInfo(lclNum);
 
             if (abiInfo.HasExactlyOneStackSegment())
             {
@@ -6522,9 +6609,13 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
     //
     if (opts.IsOSR())
     {
+#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+        originalFrameStkOffs = info.compPatchpointInfo->TotalFrameSize();
+#else
         originalFrameSize    = info.compPatchpointInfo->TotalFrameSize();
         originalFrameStkOffs = stkOffs;
         stkOffs -= originalFrameSize;
+#endif
     }
 
 #ifdef TARGET_XARCH
@@ -6580,7 +6671,8 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
 
 #elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 
-    assert(compCalleeRegsPushed >= 2);
+    assert(compCalleeRegsPushed >= 2); // always FP/RA.
+    stkOffs -= (compCalleeRegsPushed << 3);
 
 #else // !TARGET_LOONGARCH64 && !TARGET_RISCV64
 #ifdef TARGET_ARM
@@ -6705,7 +6797,7 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
         }
     }
 
-#if defined(FEATURE_EH_FUNCLETS) && (defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64))
+#if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     if (lvaPSPSym != BAD_VAR_NUM)
     {
         // On ARM/ARM64, if we need a PSPSym we allocate it early since funclets
@@ -6714,7 +6806,7 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
         noway_assert(codeGen->isFramePointerUsed()); // We need an explicit frame pointer
         stkOffs = lvaAllocLocalAndSetVirtualOffset(lvaPSPSym, TARGET_POINTER_SIZE, stkOffs);
     }
-#endif // FEATURE_EH_FUNCLETS && (TARGET_ARMARCH || TARGET_LOONGARCH64 || TARGET_RISCV64)
+#endif // TARGET_ARMARCH || TARGET_LOONGARCH64 || TARGET_RISCV64
 
     if (mustDoubleAlign)
     {
@@ -6809,9 +6901,9 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
     }
 #endif
 
-#if !defined(FEATURE_EH_FUNCLETS)
+#if defined(FEATURE_EH_WINDOWS_X86)
     /* If we need space for slots for shadow SP, reserve it now */
-    if (ehNeedsShadowSPslots())
+    if (!UsesFunclets() && ehNeedsShadowSPslots())
     {
         noway_assert(codeGen->isFramePointerUsed()); // else offsets of locals of frameless methods will be incorrect
         if (!lvaReportParamTypeArg())
@@ -6828,7 +6920,7 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
         }
         stkOffs = lvaAllocLocalAndSetVirtualOffset(lvaShadowSPslotsVar, lvaLclSize(lvaShadowSPslotsVar), stkOffs);
     }
-#endif // !FEATURE_EH_FUNCLETS
+#endif // FEATURE_EH_WINDOWS_X86
 
     if (compGSReorderStackLayout)
     {
@@ -7029,12 +7121,10 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
 
             // These need to be located as the very first variables (highest memory address)
             // and so they have already been assigned an offset
-            if (
-#if defined(FEATURE_EH_FUNCLETS)
-                lclNum == lvaPSPSym ||
-#else
+            if (lclNum == lvaPSPSym ||
+#if defined(FEATURE_EH_WINDOWS_X86)
                 lclNum == lvaShadowSPslotsVar ||
-#endif // FEATURE_EH_FUNCLETS
+#endif // FEATURE_EH_WINDOWS_X86
 #ifdef JIT32_GCENCODER
                 lclNum == lvaLocAllocSPvar ||
 #endif // JIT32_GCENCODER
@@ -7271,7 +7361,7 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
         }
     }
 
-#if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_AMD64)
+#if defined(TARGET_AMD64)
     if (lvaPSPSym != BAD_VAR_NUM)
     {
         // On AMD64, if we need a PSPSym, allocate it last, immediately above the outgoing argument
@@ -7280,7 +7370,7 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
         noway_assert(codeGen->isFramePointerUsed()); // We need an explicit frame pointer
         stkOffs = lvaAllocLocalAndSetVirtualOffset(lvaPSPSym, TARGET_POINTER_SIZE, stkOffs);
     }
-#endif // FEATURE_EH_FUNCLETS && defined(TARGET_AMD64)
+#endif // TARGET_AMD64
 
 #ifdef TARGET_ARM64
     if (!codeGen->IsSaveFpLrWithAllCalleeSavedRegisters() && isFramePointerUsed()) // Note that currently we always have
@@ -7307,14 +7397,9 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
     }
 #endif // FEATURE_FIXED_OUT_ARGS
 
-#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-    // For LoongArch64 and RISCV64, CalleeSavedRegs are at bottom.
-    int pushedCount = 0;
-#else
     // compLclFrameSize equals our negated virtual stack offset minus the pushed registers and return address
     // and the pushed frame pointer register which for some strange reason isn't part of 'compCalleeRegsPushed'.
     int pushedCount = compCalleeRegsPushed;
-#endif
 
 #ifdef TARGET_ARM64
     if (info.compIsVarArgs)
@@ -7352,7 +7437,7 @@ bool Compiler::lvaParamHasLocalStackSpace(unsigned lclNum)
 
 #ifdef SWIFT_SUPPORT
     if ((info.compCallConv == CorInfoCallConvExtension::Swift) && !lvaIsImplicitByRefLocal(lclNum) &&
-        !lvaParameterPassingInfo[lclNum].HasExactlyOneStackSegment())
+        !lvaGetParameterABIInfo(lclNum).HasExactlyOneStackSegment())
     {
         return true;
     }

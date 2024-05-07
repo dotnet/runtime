@@ -25,8 +25,6 @@ parameters:
   useContinueOnErrorDuringBuild: false
   shouldContinueOnError: false
   isOfficialBuild: false
-  isSourceBuild: false
-  isNonPortableSourceBuild: false
   runtimeFlavor: 'coreclr'
   runtimeVariant: ''
   helixQueues: ''
@@ -34,12 +32,9 @@ parameters:
   testResultsFormat: ''
   postBuildSteps: []
   extraVariablesTemplates: []
-  isManualCodeQLBuild: false
   preBuildSteps: []
-  enableRichCodeNavigation: false
-  richCodeNavigationLanguage: 'csharp'
-  disableComponentGovernance: ''
   templatePath: 'templates'
+  templateContext: ''
 
 jobs:
 - template: /eng/common/${{ parameters.templatePath }}/job/job.yml
@@ -57,8 +52,16 @@ jobs:
     enablePublishTestResults: ${{ parameters.enablePublishTestResults }}
     testResultsFormat: ${{ parameters.testResultsFormat }}
 
-    enableRichCodeNavigation: ${{ parameters.enableRichCodeNavigation }}
-    richCodeNavigationLanguage: ${{ parameters.richCodeNavigationLanguage }}
+    ${{ if ne(parameters.templateContext, '') }}:
+      templateContext: ${{ parameters.templateContext }}
+
+    artifacts:
+      publish:
+        logs:
+          ${{ if notin(parameters.osGroup, 'browser', 'wasi') }}:
+            name: Logs_Build_Attempt$(System.JobAttempt)_${{ parameters.osGroup }}_${{ parameters.osSubGroup }}_${{ parameters.archType }}_${{ parameters.buildConfig }}_${{ parameters.nameSuffix }}
+          ${{ if in(parameters.osGroup, 'browser', 'wasi') }}:
+            name: Logs_Build_Attempt$(System.JobAttempt)_${{ parameters.osGroup }}_${{ parameters.archType }}_${{ parameters.hostedOs }}_${{ parameters.buildConfig }}_${{ parameters.nameSuffix }}
 
     # Component governance does not work on musl machines
     ${{ if eq(parameters.osSubGroup, '_musl') }}:
@@ -146,10 +149,7 @@ jobs:
 
     - checkout: self
       clean: true
-      # If running in source build mode, a git stash will be used for the inner clone. Avoid setting a fetch depth,
-      # as a stash of a shallow cloned repo is not currently supported.
-      ${{ if ne(parameters.isSourceBuild, true) }}:
-        fetchDepth: $(checkoutFetchDepth)
+      fetchDepth: $(checkoutFetchDepth)
 
     - ${{ if and(eq(parameters.isOfficialBuild, true), notin(parameters.osGroup, 'osx', 'maccatalyst', 'ios', 'iossimulator', 'tvos', 'tvossimulator')) }}:
       - template: /eng/pipelines/common/restore-internal-tools.yml
@@ -178,16 +178,6 @@ jobs:
         inputs:
           artifact: Mono_Offsets_${{monoCrossAOTTargetOS}}
           path: '$(Build.SourcesDirectory)/artifacts/obj/mono/offsetfiles'
-
-    - ${{ if eq(parameters.isSourceBuild, true) }}:
-      - template: /eng/common/${{ parameters.templatePath }}/steps/source-build.yml
-        parameters:
-          platform:
-            baseOS: ${{ parameters.baseOS }}
-            buildScript: $(Build.SourcesDirectory)$(dir)build$(scriptExt)
-            nonPortable: ${{ parameters.isNonPortableSourceBuild }}
-            targetRID: ${{ parameters.targetRid }}
-            name: ${{ parameters.platform }}
 
     - ${{ if in(parameters.osGroup, 'osx', 'maccatalyst', 'ios', 'iossimulator', 'tvos', 'tvossimulator') }}:
       - script: $(Build.SourcesDirectory)/eng/install-native-dependencies.sh ${{ parameters.osGroup }}
@@ -220,7 +210,6 @@ jobs:
               targetRid: ${{ parameters.targetRid }}
               nameSuffix: ${{ parameters.nameSuffix }}
               platform: ${{ parameters.platform }}
-              pgoType: ${{ parameters.pgoType }}
               shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
               ${{ if ne(preBuildStep.forwardedParameters, '') }}:
                 ${{ each parameter in preBuildStep.forwardedParameters }}:
@@ -231,21 +220,11 @@ jobs:
           - ${{ preBuildStep }}
 
     # Build
-    - ${{ if eq(parameters.isSourceBuild, false) }}:
-      - ${{ if eq(parameters.isManualCodeQLBuild, true) }}:
-        - task: CodeQL3000Init@0
-          displayName: Initialize CodeQL (manually-injected)
-
-      - template: /eng/pipelines/common/templates/global-build-step.yml
-        parameters:
-          buildArgs: ${{ parameters.buildArgs }}
-          useContinueOnErrorDuringBuild: ${{ parameters.useContinueOnErrorDuringBuild }}
-          shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
-
-      - ${{ if eq(parameters.isManualCodeQLBuild, true) }}:
-        - task: CodeQL3000Finalize@0
-          displayName: Finalize CodeQL (manually-injected)
-    #endif isSourceBuild
+    - template: /eng/pipelines/common/templates/global-build-step.yml
+      parameters:
+        buildArgs: ${{ parameters.buildArgs }}
+        useContinueOnErrorDuringBuild: ${{ parameters.useContinueOnErrorDuringBuild }}
+        shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
 
     - ${{ if in(parameters.osGroup, 'osx', 'ios', 'tvos', 'android') }}:
       - script: |
@@ -283,17 +262,3 @@ jobs:
         - powershell: ./eng/collect_vsinfo.ps1 -ArchiveRunName postbuild_log
           displayName: Collect vslogs on exit
           condition: always()
-
-    - template: /eng/pipelines/common/templates/publish-build-artifacts.yml
-      parameters:
-        isOfficialBuild: ${{ parameters.isOfficialBuild }}
-        displayName: Publish Logs
-        inputs:
-          PathtoPublish: '$(Build.SourcesDirectory)/artifacts/log/'
-          PublishLocation: Container
-          ${{ if notin(parameters.osGroup, 'browser', 'wasi') }}:
-            ArtifactName: Logs_Build_Attempt$(System.JobAttempt)_${{ parameters.osGroup }}_${{ parameters.osSubGroup }}_${{ parameters.archType }}_${{ parameters.buildConfig }}_${{ parameters.nameSuffix }}
-          ${{ if in(parameters.osGroup, 'browser', 'wasi') }}:
-            ArtifactName: Logs_Build_Attempt$(System.JobAttempt)_${{ parameters.osGroup }}_${{ parameters.archType }}_${{ parameters.hostedOs }}_${{ parameters.buildConfig }}_${{ parameters.nameSuffix }}
-          continueOnError: true
-        condition: always()

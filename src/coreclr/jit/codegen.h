@@ -101,6 +101,16 @@ private:
         }
     }
 
+#if defined(TARGET_ARM64)
+    regNumber getNextSIMDRegWithWraparound(regNumber reg)
+    {
+        regNumber nextReg = REG_NEXT(reg);
+
+        // Wraparound if necessary, REG_V0 comes next after REG_V31.
+        return (nextReg > REG_V31) ? REG_V0 : nextReg;
+    }
+#endif // defined(TARGET_ARM64)
+
     static GenTreeIndir    indirForm(var_types type, GenTree* base);
     static GenTreeStoreInd storeIndirForm(var_types type, GenTree* base, GenTree* data);
 
@@ -261,20 +271,22 @@ protected:
     // Prolog functions and data (there are a few exceptions for more generally used things)
     //
 
-    void genEstablishFramePointer(int delta, bool reportUnwindData);
-#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-    void genFnPrologCalleeRegArgs();
-#else
-    void genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbered, RegState* regState);
-#endif
-    void genEnregisterIncomingStackArgs();
+    void      genEstablishFramePointer(int delta, bool reportUnwindData);
+    void      genHomeRegisterParams(regNumber initReg, bool* initRegStillZeroed);
+    regMaskTP genGetParameterHomingTempRegisterCandidates();
+
+    var_types genParamStackStoreType(LclVarDsc* dsc, const ABIPassingSegment& seg);
+    void      genSpillOrAddRegisterParam(unsigned lclNum, class RegGraph* graph);
+    void      genEnregisterIncomingStackArgs();
 #if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     void genEnregisterOSRArgsAndLocals(regNumber initReg, bool* pInitRegZeroed);
 #else
     void genEnregisterOSRArgsAndLocals();
 #endif
 
+    void genHomeStackSegment(unsigned lclNum, const ABIPassingSegment& seg, regNumber initReg, bool* pInitRegZeroed);
     void genHomeSwiftStructParameters(bool handleStack);
+    void genHomeStackPartOfSplitParameter(regNumber initReg, bool* initRegStillZeroed);
 
     void genCheckUseBlockInit();
 #if defined(UNIX_AMD64_ABI) && defined(FEATURE_SIMD)
@@ -437,7 +449,7 @@ protected:
 
     FuncletFrameInfoDsc genFuncletInfo;
 
-#elif defined(TARGET_LOONGARCH64)
+#elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 
     // A set of information that is used by funclet prolog and epilog generation.
     // It is collected once, before funclet prologs and epilogs are generated,
@@ -448,26 +460,6 @@ protected:
         int fiFunction_CallerSP_to_FP_delta; // Delta between caller SP and the frame pointer in the parent function
                                              // (negative)
         int fiSP_to_CalleeSaved_delta;       // CalleeSaved register save offset from SP (positive)
-        int fiCalleeSavedPadding;            // CalleeSaved offset padding (positive)
-        int fiSP_to_PSP_slot_delta;          // PSP slot offset from SP (positive)
-        int fiCallerSP_to_PSP_slot_delta;    // PSP slot offset from Caller SP (negative)
-        int fiSpDelta;                       // Stack pointer delta (negative)
-    };
-
-    FuncletFrameInfoDsc genFuncletInfo;
-
-#elif defined(TARGET_RISCV64)
-
-    // A set of information that is used by funclet prolog and epilog generation.
-    // It is collected once, before funclet prologs and epilogs are generated,
-    // and used by all funclet prologs and epilogs, which must all be the same.
-    struct FuncletFrameInfoDsc
-    {
-        regMaskTP fiSaveRegs;                // Set of callee-saved registers saved in the funclet prolog (includes RA)
-        int fiFunction_CallerSP_to_FP_delta; // Delta between caller SP and the frame pointer in the parent function
-                                             // (negative)
-        int fiSP_to_CalleeSaved_delta;       // CalleeSaved register save offset from SP (positive)
-        int fiCalleeSavedPadding;            // CalleeSaved offset padding (positive)
         int fiSP_to_PSP_slot_delta;          // PSP slot offset from SP (positive)
         int fiCallerSP_to_PSP_slot_delta;    // PSP slot offset from Caller SP (negative)
         int fiSpDelta;                       // Stack pointer delta (negative)
@@ -559,8 +551,6 @@ protected:
     void genFnProlog();
     void genFnEpilog(BasicBlock* block);
 
-#if defined(FEATURE_EH_FUNCLETS)
-
     void genReserveFuncletProlog(BasicBlock* block);
     void genReserveFuncletEpilog(BasicBlock* block);
     void genFuncletProlog(BasicBlock* block);
@@ -642,16 +632,6 @@ protected:
     void genSetPSPSym(regNumber initReg, bool* pInitRegZeroed);
 
     void genUpdateCurrentFunclet(BasicBlock* block);
-
-#else // !FEATURE_EH_FUNCLETS
-
-    // This is a no-op when there are no funclets!
-    void genUpdateCurrentFunclet(BasicBlock* block)
-    {
-        return;
-    }
-
-#endif // !FEATURE_EH_FUNCLETS
 
     void genGeneratePrologsAndEpilogs();
 
@@ -747,9 +727,7 @@ public:
     void siOpenScopesForNonTrackedVars(const BasicBlock* block, unsigned int lastBlockILEndOffset);
 
 protected:
-#if defined(FEATURE_EH_FUNCLETS)
     bool siInFuncletRegion; // Have we seen the start of the funclet region?
-#endif                      // FEATURE_EH_FUNCLETS
 
     IL_OFFSET siLastEndOffs; // IL offset of the (exclusive) end of the last block processed
 
@@ -1286,7 +1264,6 @@ protected:
     void        genJmpMethod(GenTree* jmp);
     BasicBlock* genCallFinally(BasicBlock* block);
 #if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-    // TODO: refactor for LA.
     void genCodeForJumpCompare(GenTreeOpCC* tree);
 #endif
 #if defined(TARGET_ARM64)
@@ -1294,11 +1271,10 @@ protected:
     void genCodeForBfiz(GenTreeOp* tree);
 #endif // TARGET_ARM64
 
-#if defined(FEATURE_EH_FUNCLETS)
     void genEHCatchRet(BasicBlock* block);
-#else  // !FEATURE_EH_FUNCLETS
+#if defined(FEATURE_EH_WINDOWS_X86)
     void genEHFinallyOrFilterRet(BasicBlock* block);
-#endif // !FEATURE_EH_FUNCLETS
+#endif // FEATURE_EH_WINDOWS_X86
 
     void genMultiRegStoreToSIMDLocal(GenTreeLclVar* lclNode);
     void genMultiRegStoreToLocal(GenTreeLclVar* lclNode);
@@ -1323,6 +1299,10 @@ protected:
 #endif // TARGET_ARM64 || TARGET_LOONGARCH64 || TARGET_RISCV64
 
     void genReturn(GenTree* treeNode);
+
+#ifdef SWIFT_SUPPORT
+    void genSwiftErrorReturn(GenTree* treeNode);
+#endif // SWIFT_SUPPORT
 
 #ifdef TARGET_XARCH
     void           genStackPointerConstantAdjustment(ssize_t spDelta, bool trackSpAdjustments);

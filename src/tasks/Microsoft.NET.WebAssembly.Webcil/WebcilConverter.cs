@@ -213,7 +213,7 @@ public class WebcilConverter
         WriteStructure(s, sectionHeader);
     }
 
-#if NETCOREAPP2_1_OR_GREATER
+#if NET
     private static void WriteStructure<T>(Stream s, T structure)
         where T : unmanaged
     {
@@ -256,7 +256,7 @@ public class WebcilConverter
         }
     }
 
-#if NETCOREAPP2_1_OR_GREATER
+#if NET
     private static void ReadExactly(FileStream s, Span<byte> buffer)
     {
         s.ReadExactly(buffer);

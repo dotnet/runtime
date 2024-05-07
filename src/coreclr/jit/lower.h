@@ -154,7 +154,7 @@ private:
     bool       TryLowerConditionToFlagsNode(GenTree* parent, GenTree* condition, GenCondition* code);
     GenTreeCC* LowerNodeCC(GenTree* node, GenCondition condition);
     void       LowerJmpMethod(GenTree* jmp);
-    void       LowerRet(GenTreeUnOp* ret);
+    void       LowerRet(GenTreeOp* ret);
     void       LowerStoreLocCommon(GenTreeLclVarCommon* lclVar);
     void       LowerRetStruct(GenTreeUnOp* ret);
     void       LowerRetSingleRegStructLclVar(GenTreeUnOp* ret);
@@ -242,16 +242,16 @@ private:
         GenTree* oldUseNode = use.Def();
         if ((oldUseNode->gtOper != GT_LCL_VAR) || (tempNum != BAD_VAR_NUM))
         {
-            GenTree* assign;
-            use.ReplaceWithLclVar(comp, tempNum, &assign);
+            GenTree* store;
+            use.ReplaceWithLclVar(comp, tempNum, &store);
 
             GenTree* newUseNode = use.Def();
             ContainCheckRange(oldUseNode->gtNext, newUseNode);
 
-            // We need to lower the LclVar and assignment since there may be certain
+            // We need to lower the LclVar and store since there may be certain
             // types or scenarios, such as TYP_SIMD12, that need special handling
 
-            LowerNode(assign);
+            LowerNode(store);
             LowerNode(newUseNode);
 
             return newUseNode->AsLclVar();
@@ -315,6 +315,35 @@ private:
     }
 #endif // defined(TARGET_XARCH)
 
+    struct LoadStoreCoalescingData
+    {
+        var_types targetType;
+        GenTree*  baseAddr;
+        GenTree*  index;
+        GenTree*  value;
+        uint32_t  scale;
+        int       offset;
+        GenTree*  rangeStart;
+        GenTree*  rangeEnd;
+
+        bool IsStore() const
+        {
+            return value != nullptr;
+        }
+
+        bool IsAddressEqual(const LoadStoreCoalescingData& other, bool ignoreOffset) const
+        {
+            if ((scale != other.scale) || (targetType != other.targetType) ||
+                !GenTree::Compare(baseAddr, other.baseAddr) || !GenTree::Compare(index, other.index))
+            {
+                return false;
+            }
+            return ignoreOffset || (offset == other.offset);
+        }
+    };
+
+    bool GetLoadStoreCoalescingData(GenTreeIndir* ind, LoadStoreCoalescingData* data) const;
+
     // Per tree node member functions
     void     LowerStoreIndirCommon(GenTreeStoreInd* ind);
     GenTree* LowerIndir(GenTreeIndir* ind);
@@ -323,7 +352,7 @@ private:
     void     MarkTree(GenTree* root);
     void     UnmarkTree(GenTree* root);
     void     LowerStoreIndir(GenTreeStoreInd* node);
-    void     LowerStoreIndirCoalescing(GenTreeStoreInd* node);
+    void     LowerStoreIndirCoalescing(GenTreeIndir* node);
     GenTree* LowerAdd(GenTreeOp* node);
     GenTree* LowerMul(GenTreeOp* mul);
     bool     TryLowerAndNegativeOne(GenTreeOp* node, GenTree** nextNode);
@@ -334,6 +363,7 @@ private:
     void     LowerBlockStore(GenTreeBlk* blkNode);
     void     LowerBlockStoreCommon(GenTreeBlk* blkNode);
     void     LowerBlockStoreAsHelperCall(GenTreeBlk* blkNode);
+    bool     TryLowerBlockStoreAsGcBulkCopyCall(GenTreeBlk* blkNode);
     void     LowerLclHeap(GenTree* node);
     void     ContainBlockStoreAddress(GenTreeBlk* blkNode, unsigned size, GenTree* addr, GenTree* addrParent);
     void     LowerPutArgStkOrSplit(GenTreePutArgStk* putArgNode);

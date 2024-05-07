@@ -623,12 +623,13 @@ BasicBlockVisit BasicBlock::VisitEHSuccs(Compiler* comp, TFunc func)
 // Arguments:
 //   comp  - Compiler instance
 //   func  - Callback
+//   useProfile - If true, determines the order of successors visited using profile data
 //
 // Returns:
 //   Whether or not the visiting was aborted.
 //
 template <typename TFunc>
-BasicBlockVisit BasicBlock::VisitAllSuccs(Compiler* comp, TFunc func)
+BasicBlockVisit BasicBlock::VisitAllSuccs(Compiler* comp, TFunc func, const bool useProfile /* = false */)
 {
     switch (bbKind)
     {
@@ -662,10 +663,22 @@ BasicBlockVisit BasicBlock::VisitAllSuccs(Compiler* comp, TFunc func)
             return VisitEHSuccs(comp, func);
 
         case BBJ_COND:
-            RETURN_ON_ABORT(func(GetFalseTarget()));
-
-            if (!TrueEdgeIs(GetFalseEdge()))
+            if (TrueEdgeIs(GetFalseEdge()))
             {
+                RETURN_ON_ABORT(func(GetFalseTarget()));
+            }
+            else if (useProfile && (GetTrueEdge()->getLikelihood() < GetFalseEdge()->getLikelihood()))
+            {
+                // When building an RPO-based block layout, we want to visit the unlikely successor first
+                // so that in the DFS computation, the likely successor will be processed right before this block,
+                // meaning the RPO-based layout will enable fall-through into the likely successor.
+                //
+                RETURN_ON_ABORT(func(GetTrueTarget()));
+                RETURN_ON_ABORT(func(GetFalseTarget()));
+            }
+            else
+            {
+                RETURN_ON_ABORT(func(GetFalseTarget()));
                 RETURN_ON_ABORT(func(GetTrueTarget()));
             }
 
@@ -696,8 +709,8 @@ BasicBlockVisit BasicBlock::VisitAllSuccs(Compiler* comp, TFunc func)
 // VisitRegularSuccs: Visit regular successors of this block.
 //
 // Arguments:
-//   comp  - Compiler instance
-//   func  - Callback
+//   comp - Compiler instance
+//   func - Callback
 //
 // Returns:
 //   Whether or not the visiting was aborted.
@@ -789,8 +802,6 @@ inline bool BasicBlock::HasPotentialEHSuccs(Compiler* comp)
     return hndDesc->InFilterRegionBBRange(this);
 }
 
-#if defined(FEATURE_EH_FUNCLETS)
-
 /*****************************************************************************
  *  Get the FuncInfoDsc for the funclet we are currently generating code for.
  *  This is only valid during codegen.
@@ -798,7 +809,14 @@ inline bool BasicBlock::HasPotentialEHSuccs(Compiler* comp)
  */
 inline FuncInfoDsc* Compiler::funCurrentFunc()
 {
-    return funGetFunc(compCurrFuncIdx);
+    if (UsesFunclets())
+    {
+        return funGetFunc(compCurrFuncIdx);
+    }
+    else
+    {
+        return &compFuncInfoRoot;
+    }
 }
 
 /*****************************************************************************
@@ -808,10 +826,17 @@ inline FuncInfoDsc* Compiler::funCurrentFunc()
  */
 inline void Compiler::funSetCurrentFunc(unsigned funcIdx)
 {
-    assert(fgFuncletsCreated);
-    assert(FitsIn<unsigned short>(funcIdx));
-    noway_assert(funcIdx < compFuncInfoCount);
-    compCurrFuncIdx = (unsigned short)funcIdx;
+    if (UsesFunclets())
+    {
+        assert(fgFuncletsCreated);
+        assert(FitsIn<unsigned short>(funcIdx));
+        noway_assert(funcIdx < compFuncInfoCount);
+        compCurrFuncIdx = (unsigned short)funcIdx;
+    }
+    else
+    {
+        assert(funcIdx == 0);
+    }
 }
 
 /*****************************************************************************
@@ -821,9 +846,17 @@ inline void Compiler::funSetCurrentFunc(unsigned funcIdx)
  */
 inline FuncInfoDsc* Compiler::funGetFunc(unsigned funcIdx)
 {
-    assert(fgFuncletsCreated);
-    assert(funcIdx < compFuncInfoCount);
-    return &compFuncInfos[funcIdx];
+    if (UsesFunclets())
+    {
+        assert(fgFuncletsCreated);
+        assert(funcIdx < compFuncInfoCount);
+        return &compFuncInfos[funcIdx];
+    }
+    else
+    {
+        assert(funcIdx == 0);
+        return &compFuncInfoRoot;
+    }
 }
 
 /*****************************************************************************
@@ -836,70 +869,32 @@ inline FuncInfoDsc* Compiler::funGetFunc(unsigned funcIdx)
  */
 inline unsigned Compiler::funGetFuncIdx(BasicBlock* block)
 {
-    assert(fgFuncletsCreated);
-    assert(block->HasFlag(BBF_FUNCLET_BEG));
-
-    EHblkDsc*    eh      = ehGetDsc(block->getHndIndex());
-    unsigned int funcIdx = eh->ebdFuncIndex;
-    if (eh->ebdHndBeg != block)
+    if (UsesFunclets())
     {
-        // If this is a filter EH clause, but we want the funclet
-        // for the filter (not the filter handler), it is the previous one
-        noway_assert(eh->HasFilter());
-        noway_assert(eh->ebdFilter == block);
-        assert(funGetFunc(funcIdx)->funKind == FUNC_HANDLER);
-        assert(funGetFunc(funcIdx)->funEHIndex == funGetFunc(funcIdx - 1)->funEHIndex);
-        assert(funGetFunc(funcIdx - 1)->funKind == FUNC_FILTER);
-        funcIdx--;
+        assert(fgFuncletsCreated);
+        assert(block->HasFlag(BBF_FUNCLET_BEG));
+
+        EHblkDsc*    eh      = ehGetDsc(block->getHndIndex());
+        unsigned int funcIdx = eh->ebdFuncIndex;
+        if (eh->ebdHndBeg != block)
+        {
+            // If this is a filter EH clause, but we want the funclet
+            // for the filter (not the filter handler), it is the previous one
+            noway_assert(eh->HasFilter());
+            noway_assert(eh->ebdFilter == block);
+            assert(funGetFunc(funcIdx)->funKind == FUNC_HANDLER);
+            assert(funGetFunc(funcIdx)->funEHIndex == funGetFunc(funcIdx - 1)->funEHIndex);
+            assert(funGetFunc(funcIdx - 1)->funKind == FUNC_FILTER);
+            funcIdx--;
+        }
+
+        return funcIdx;
     }
-
-    return funcIdx;
+    else
+    {
+        return 0;
+    }
 }
-
-#else // !FEATURE_EH_FUNCLETS
-
-/*****************************************************************************
- *  Get the FuncInfoDsc for the funclet we are currently generating code for.
- *  This is only valid during codegen.  For non-funclet platforms, this is
- *  always the root function.
- *
- */
-inline FuncInfoDsc* Compiler::funCurrentFunc()
-{
-    return &compFuncInfoRoot;
-}
-
-/*****************************************************************************
- *  Change which funclet we are currently generating code for.
- *  This is only valid after funclets are created.
- *
- */
-inline void Compiler::funSetCurrentFunc(unsigned funcIdx)
-{
-    assert(funcIdx == 0);
-}
-
-/*****************************************************************************
- *  Get the FuncInfoDsc for the givven funclet.
- *  This is only valid after funclets are created.
- *
- */
-inline FuncInfoDsc* Compiler::funGetFunc(unsigned funcIdx)
-{
-    assert(funcIdx == 0);
-    return &compFuncInfoRoot;
-}
-
-/*****************************************************************************
- *  No funclets, so always 0.
- *
- */
-inline unsigned Compiler::funGetFuncIdx(BasicBlock* block)
-{
-    return 0;
-}
-
-#endif // !FEATURE_EH_FUNCLETS
 
 //------------------------------------------------------------------------------
 // genRegNumFromMask : Maps a single register mask to a register number.
@@ -1402,10 +1397,17 @@ inline GenTree* Compiler::gtNewIconEmbFldHndNode(CORINFO_FIELD_HANDLE fldHnd)
 inline GenTreeCall* Compiler::gtNewHelperCallNode(
     unsigned helper, var_types type, GenTree* arg1, GenTree* arg2, GenTree* arg3)
 {
-    GenTreeFlags flags  = s_helperCallProperties.NoThrow((CorInfoHelpFunc)helper) ? GTF_EMPTY : GTF_EXCEPT;
-    GenTreeCall* result = gtNewCallNode(CT_HELPER, eeFindHelper(helper), type);
-    result->gtFlags |= flags;
+    GenTreeCall* const result = gtNewCallNode(CT_HELPER, eeFindHelper(helper), type);
 
+    if (!s_helperCallProperties.NoThrow((CorInfoHelpFunc)helper))
+    {
+        result->gtFlags |= GTF_EXCEPT;
+
+        if (s_helperCallProperties.AlwaysThrow((CorInfoHelpFunc)helper))
+        {
+            setCallDoesNotReturn(result);
+        }
+    }
 #if DEBUG
     // Helper calls are never candidates.
 
@@ -3566,8 +3568,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 /*****************************************************************************
  *
- *  The following resets the value assignment table
- *  used only during local assertion prop
+ *  The following resets the assertions table used only during local assertion prop
  */
 
 inline void Compiler::optAssertionReset(AssertionIndex limit)
@@ -3620,7 +3621,7 @@ inline void Compiler::optAssertionReset(AssertionIndex limit)
 
 /*****************************************************************************
  *
- *  The following removes the i-th entry in the value assignment table
+ *  The following removes the i-th entry in the assertions table
  *  used only during local assertion prop
  */
 
@@ -3766,7 +3767,7 @@ inline bool Compiler::IsStaticHelperEligibleForExpansion(GenTree* tree, bool* is
 
 inline bool Compiler::IsSharedStaticHelper(GenTree* tree)
 {
-    if (tree->gtOper != GT_CALL || tree->AsCall()->gtCallType != CT_HELPER)
+    if (!tree->OperIs(GT_CALL) || !tree->AsCall()->IsHelperCall())
     {
         return false;
     }
@@ -4114,9 +4115,7 @@ bool Compiler::fgVarIsNeverZeroInitializedInProlog(unsigned varNum)
     result = result || (varNum == lvaOutgoingArgSpaceVar);
 #endif
 
-#if defined(FEATURE_EH_FUNCLETS)
     result = result || (varNum == lvaPSPSym);
-#endif
 
     return result;
 }
@@ -4233,9 +4232,9 @@ void GenTree::VisitOperands(TVisitor visitor)
         case GT_START_NONGC:
         case GT_START_PREEMPTGC:
         case GT_PROF_HOOK:
-#if !defined(FEATURE_EH_FUNCLETS)
+#if defined(FEATURE_EH_WINDOWS_X86)
         case GT_END_LFIN:
-#endif // !FEATURE_EH_FUNCLETS
+#endif // FEATURE_EH_WINDOWS_X86
         case GT_PHI_ARG:
         case GT_JMPTABLE:
         case GT_PHYSREG:
@@ -4759,6 +4758,7 @@ inline bool Compiler::compCanHavePatchpoints(const char** reason)
 //   VisitPreorder  - Functor type that takes a BasicBlock* and its preorder number
 //   VisitPostorder - Functor type that takes a BasicBlock* and its postorder number
 //   VisitEdge      - Functor type that takes two BasicBlock*.
+//   useProfile     - If true, determines order of successors visited using profile data
 //
 // Parameters:
 //   visitPreorder  - Functor to visit block in its preorder
@@ -4769,7 +4769,7 @@ inline bool Compiler::compCanHavePatchpoints(const char** reason)
 // Returns:
 //   Number of blocks visited.
 //
-template <typename VisitPreorder, typename VisitPostorder, typename VisitEdge>
+template <typename VisitPreorder, typename VisitPostorder, typename VisitEdge, const bool useProfile /* = false */>
 unsigned Compiler::fgRunDfs(VisitPreorder visitPreorder, VisitPostorder visitPostorder, VisitEdge visitEdge)
 {
     BitVecTraits traits(fgBBNumMax + 1, this);
@@ -4782,7 +4782,7 @@ unsigned Compiler::fgRunDfs(VisitPreorder visitPreorder, VisitPostorder visitPos
 
     auto dfsFrom = [&](BasicBlock* firstBB) {
         BitVecOps::AddElemD(&traits, visited, firstBB->bbNum);
-        blocks.Emplace(this, firstBB);
+        blocks.Emplace(this, firstBB, useProfile);
         visitPreorder(firstBB, preOrderIndex++);
 
         while (!blocks.Empty())
@@ -4794,7 +4794,7 @@ unsigned Compiler::fgRunDfs(VisitPreorder visitPreorder, VisitPostorder visitPos
             {
                 if (BitVecOps::TryAddElemD(&traits, visited, succ->bbNum))
                 {
-                    blocks.Emplace(this, succ);
+                    blocks.Emplace(this, succ, useProfile);
                     visitPreorder(succ, preOrderIndex++);
                 }
 

@@ -185,8 +185,8 @@ public:
         unsigned short rpdIsThis : 1;                       // is it the 'this' pointer
         unsigned short rpdCall   : 1;                       // is this a true call site?
         unsigned short           : 1;                       // Padding bit, so next two start on a byte boundary
-        unsigned short rpdCallGCrefRegs : CNT_CALLEE_SAVED; // Callee-saved registers containing GC pointers.
-        unsigned short rpdCallByrefRegs : CNT_CALLEE_SAVED; // Callee-saved registers containing byrefs.
+        unsigned short rpdCallGCrefRegs : CNT_CALL_GC_REGS; // Callee-saved and return registers containing GC pointers.
+        unsigned short rpdCallByrefRegs : CNT_CALL_GC_REGS; // Callee-saved and return registers containing byrefs.
 
 #ifndef JIT32_GCENCODER
         bool rpdIsCallInstr()
@@ -365,8 +365,6 @@ private:
 
 #endif // JIT32_GCENCODER
 
-#if !defined(JIT32_GCENCODER) || defined(FEATURE_EH_FUNCLETS)
-
     // This method expands the tracked stack variables lifetimes so that any lifetimes within filters
     // are reported as pinned.
     void gcMarkFilterVarsPinned();
@@ -377,8 +375,6 @@ private:
 #ifdef DEBUG
     void gcDumpVarPtrDsc(varPtrDsc* desc);
 #endif // DEBUG
-
-#endif // !defined(JIT32_GCENCODER) || defined(FEATURE_EH_FUNCLETS)
 
 #if DUMP_GC_TABLES
 
