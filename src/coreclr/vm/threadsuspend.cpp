@@ -4569,14 +4569,6 @@ void Thread::SysResumeFromDebug(AppDomain *pAppDomain)
 
     while ((thread = ThreadStore::GetThreadList(thread)) != NULL)
     {
-        // Only consider resuming threads if they're in the correct appdomain
-        if (pAppDomain != NULL && thread->GetDomain() != pAppDomain)
-        {
-            LOG((LF_CORDB, LL_INFO1000, "RESUME: Not resuming thread 0x%x, since it's "
-                "in appdomain 0x%x.\n", thread, pAppDomain));
-            continue;
-        }
-
         // If the user wants to keep the thread suspended, then
         // don't release the thread.
         if (!(thread->m_StateNC & TSNC_DebuggerUserSuspend))

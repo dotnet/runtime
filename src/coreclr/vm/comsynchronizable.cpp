@@ -507,7 +507,7 @@ FCIMPL1(void, ThreadNative::Initialize, ThreadBaseObject* pThisUNSAFE)
 
     PREFIX_ASSUME(unstarted != NULL);
 
-    if (GetThread()->GetDomain()->IgnoreUnhandledExceptions())
+    if (AppDomain::GetCurrentDomain()->IgnoreUnhandledExceptions())
     {
         unstarted->SetThreadStateNC(Thread::TSNC_IgnoreUnhandledExceptions);
     }
