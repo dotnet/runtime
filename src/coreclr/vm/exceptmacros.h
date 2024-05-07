@@ -353,7 +353,7 @@ VOID DECLSPEC_NORETURN DispatchManagedException(PAL_SEHException& ex, bool isHar
             DEBUG_ASSURE_NO_RETURN_END(IUACH)                                               \
             SCAN_EHMARKER_END_TRY();                                                        \
         }                                                                                   \
-        PAL_CPP_CATCH_NON_DERIVED_NOARG (const std::bad_alloc&,)                            \
+        PAL_CPP_CATCH_NON_DERIVED_NOARG (const std::bad_alloc&)                             \
         {                                                                                   \
             SCAN_EHMARKER_CATCH();                                                          \
             __pUnCException = Exception::GetOOMException();                                 \
