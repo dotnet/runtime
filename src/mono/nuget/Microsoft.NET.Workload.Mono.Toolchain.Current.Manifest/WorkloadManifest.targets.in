@@ -70,6 +70,7 @@
     <UsingBrowserRuntimeWorkload Condition="'$(RuntimeIdentifier)' == 'browser-wasm'">false</UsingBrowserRuntimeWorkload>
     <UsingWasiRuntimeWorkload Condition="'$(RuntimeIdentifier)' == 'wasi-wasm'">false</UsingWasiRuntimeWorkload>
     <UseAppHost>false</UseAppHost>
+    <OverrideImportRuntimeIlcPackageTarget>false</OverrideImportRuntimeIlcPackageTarget>
     <WasmExperimentalNativeAOTLLVMILCompilerVersion Condition="'$(WasmExperimentalNativeAOTLLVMILCompilerVersion)' == ''">${WasmExperimentalNativeAOTLLVMILCompilerVersion}</WasmExperimentalNativeAOTLLVMILCompilerVersion>
     <RestoreAdditionalProjectSources>$(RestoreAdditionalProjectSources);https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-experimental/nuget/v3/index.json</RestoreAdditionalProjectSources>
   </PropertyGroup>
