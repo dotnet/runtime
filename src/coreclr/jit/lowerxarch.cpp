@@ -3159,6 +3159,14 @@ GenTree* Lowering::LowerHWIntrinsicTernaryLogic(GenTreeHWIntrinsic* node)
                         case NI_AVX_CompareLessThan:
                         case NI_AVX2_CompareLessThan:
                         {
+                            if (varTypeIsIntegral(cndNode->GetSimdBaseType()))
+                            {
+                                // CompareLessThan isn't supported in hardware prior to AVX512, as such
+                                // the lowering of the node will have already swapped these around so that
+                                // it would be treated as CompareGreaterThan instead. This swaps the operands
+                                // back since it can be natively supported here instead
+                                std::swap(selectFalse, selectTrue);
+                            }
                             cndId = NI_AVX512F_CompareLessThanMask;
                             break;
                         }
