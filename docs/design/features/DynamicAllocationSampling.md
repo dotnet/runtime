@@ -38,7 +38,7 @@ For all of this section assume that we enabled the AllocationSampling events and
 
 #### Estimating the total number of bytes allocated on a thread up to when the last event is emitted
 
-Let n be the total number of bytes which has been allocated for managed objects on this thread. For a given execution of the program and observed set of sample events this variable has a fixed value, we just don't know what it is and we want to estimate it. A good estimate without any error bounds, `n_estimate`, is `sq/p + u`. 
+Let n be the total number of bytes which has been allocated for managed objects on this thread. For a given execution of the program and observed set of sample events this variable has a fixed value, we just don't know what it is and we want to estimate it. A good estimate without any error bounds, `n_estimate`, is `sq/p + u`.
 
 #### Including error bounds in the estimate
 
@@ -47,7 +47,7 @@ Some tools will likely ignore sampling error entirely or perhaps adopt simple st
 1. Decide on some probability `C` that the actual number of allocated bytes n should fall within the interval. You can pick a probability arbitrarily close to 1 however the higher the probability is the wider the estimated interval will be. For the remaining `1-C` probability that `n` is not within the interval we will pick the upper and lower bounds so that there is a `(1-C)/2` chance that `n` is below the interval and `(1-C)/2` chance that `n` is above the interval. We think `C=0.95` would be a reasonable choice for many tools which means there would be a 2.5% chance the actual value is below the lower bound, a 95% chance it is between the lower and upper bound, and a 2.5% chance it is above the upper bound.
 
 2. Implement some method to calculate the Negative Binomial [CDF](https://en.wikipedia.org/wiki/Cumulative_distribution_function). Unfortunately there is no trivial formula for this but there are a couple potential approaches:
-    a. The Negative Binomial Distribution has a CDF defined based on the [regularized incomplete beta function](https://en.wikipedia.org/wiki/Beta_function#Incomplete_beta_function). There are various numerical libraries such as scipy in Python that will calculate this for you. Alternately you could directly implement numerical approximation techniques to evaluate the function, either approximating the integral form or approximating the continued fraction expansion. 
+    a. The Negative Binomial Distribution has a CDF defined based on the [regularized incomplete beta function](https://en.wikipedia.org/wiki/Beta_function#Incomplete_beta_function). There are various numerical libraries such as scipy in Python that will calculate this for you. Alternately you could directly implement numerical approximation techniques to evaluate the function, either approximating the integral form or approximating the continued fraction expansion.
     b. The Camp-Paulson approximation described in [Barko(66)](https://www.stat.cmu.edu/technometrics/59-69/VOL-08-02/v0802345.pdf). We validated that for p=0.00001 this approximation was within ~0.01 of the true CDF for any number of failures at s=1, within ~0.001 of the true CDF at s=5, and continues to get more accurate as the sample count increases.
 
 3. Do binary search on the CDF to locate the input number of failures for which `CDF(failures, s, p)` is closest to `(1-C)/2` and `C + (1-C)/2`. Assuming that `CDF(low_failures, s, p) = (1-C)/2` and `CDF(high_failures, s, p) = C + (1-C)/2` then the confidence interval for `n` is `[low_failures+u, high_failures+u]`.
@@ -56,33 +56,33 @@ For example if we select `C=0.95`, observed 8 samples and `u=10,908` then we'd u
 
 To get a rough idea of the error in proportion to the number of samples, here is table of calculated Negative Binomial failures for the 0.025 and 0.975 thresholds of the CDF:
 
-| # of samples (successes) | CDF() = 0.025           | CDF() = 0.975
-------------------------------------------------------------------------------
-1                          | 2530                    | 368885
-2                          | 24219                   | 557160
-3                          | 61864                   | 722463
-4                          | 108983                  | 876720
-5                          | 162344                  | 1024150
-6                          | 220184                  | 1166823
-7                          | 281430                  | 1305936
-8                          | 345376                  | 1442255
-9                          | 411530                  | 1576306
-10                         | 479530                  | 1708466
-20                         | 1221635                 | 2967060
-30                         | 2024061                 | 4164847
-40                         | 2857623                 | 5331381
-50                         | 3711052                 | 6478001
-100                        | 8136307                 | 12052784
-200                        | 17323901                | 22865059
-300                        | 26700643                | 33488139
-400                        | 36175248                | 44013346
-500                        | 45712378                | 54476022
-1000                       | 93896331                | 106291083
-2000                       | 191327913               | 208857508
-3000                       | 289356914               | 310826509
-4000                       | 387695145               | 412486279
-5000                       | 486230987               | 513948438
-10000                      | 980485343               | 1019684083
+| # of samples (successes)   | CDF() = 0.025           | CDF() = 0.975 |
+| --------------------------- | ----------------------- | --------------------------- |
+| 1                          | 2530                    | 368885 |
+| 2                          | 24219                   | 557160 |
+| 3                          | 61864                   | 722463 |
+| 4                          | 108983                  | 876720 |
+| 5                          | 162344                  | 1024150 |
+| 6                          | 220184                  | 1166823 |
+| 7                          | 281430                  | 1305936 |
+| 8                          | 345376                  | 1442255 |
+| 9                          | 411530                  | 1576306 |
+| 10                         | 479530                  | 1708466 |
+| 20                         | 1221635                 | 2967060 |
+| 30                         | 2024061                 | 4164847 |
+| 40                         | 2857623                 | 5331381 |
+| 50                         | 3711052                 | 6478001 |
+| 100                        | 8136307                 | 12052784 |
+| 200                        | 17323901                | 22865059 |
+| 300                        | 26700643                | 33488139 |
+| 400                        | 36175248                | 44013346 |
+| 500                        | 45712378                | 54476022 |
+| 1000                       | 93896331                | 106291083 |
+| 2000                       | 191327913               | 208857508 |
+| 3000                       | 289356914               | 310826509 |
+| 4000                       | 387695145               | 412486279 |
+| 5000                       | 486230987               | 513948438 |
+| 10000                      | 980485343               | 1019684083 |
 
 Notice that if we compare the expected total number of trials (100K*# of samples) to the estimated ranges, at 10 samples the error bars extend more than 50% in each direction showing the predictions on so few samples are very imprecise. However at 1,000 samples the error is ~6% in each direction and at 10,000 samples ~2% in each direction.
 
@@ -295,7 +295,7 @@ The pseudo-code and concepts we've been describing here are now close to matchin
 2. The alloc_sampling field is a member of ee_alloc_context rather than alloc_context. This was done to avoid creating a breaking change in the EE<->GC interface. The ee_alloc_context contains an alloc_context within it as well as any additional fields we want to add that are only visible to the EE.
 
 3. In order to reduce the number of per-thread fields being managed the real implementation doesn't have an explicit `sampling_limit`. Instead this only exists as the transient calculation of `alloc_ptr + CalculateGeometricRandom()` that is used when computing an updated value for `alloc_sampling`. Whenever `alloc_sampling < alloc_limit` then it is implied that `sampling_limit = alloc_sampling` and `_cachedFailedTrials = alloc_sampling - alloc_ptr`. However if `alloc_sampling == alloc_limit` that represents one of two possible states:
-- Sampling is disabled 
+- Sampling is disabled
 - Sampling is enabled and we have a batch of cached failed trials with size `alloc_limit - alloc_ptr`. In the examples above our batches were N failures followed by a success but this is just N failures without any success at the end. This means no objects allocated in the current AC are going to be sampled and whenever we allocate the N+1st byte we'll need to generate a new batch of trial results to determine whether that byte was sampled.
 If it turns out to be easier to track `sampling_limit` with an explicit field when sampling is enabled we could do that, it just requires an extra pointer per-thread. As memory overhead its not much, but it will probably land in the L1 cache and wind up evicting some other field on the Thread object that now no longer fits in the cache line. The current implementation tries to minimize this cache impact.
 
