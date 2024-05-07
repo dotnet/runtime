@@ -11,7 +11,6 @@ import { mono_wasm_load_bytes_into_heap_persistent } from "./memory";
 import { endMeasure, MeasuredBlock, startMeasure } from "./profiler";
 import { AssetEntry } from "./types";
 import { VoidPtr } from "./types/emscripten";
-import { setSegmentationRulesFromJson } from "./hybrid-globalization/grapheme-segmenter";
 
 // this need to be run only after onRuntimeInitialized event, when the memory is ready
 export function instantiate_asset (asset: AssetEntry, url: string, bytes: Uint8Array): void {
@@ -109,7 +108,7 @@ export async function instantiate_segmentation_rules_asset (pendingAsset: AssetE
     try {
         const response = await pendingAsset.pendingDownloadInternal!.response;
         const json = await response.json();
-        setSegmentationRulesFromJson(json);
+        runtimeHelpers.setSegmentationRulesFromJson(json);
     } catch (error: any) {
         mono_log_info(`Error loading static json asset ${pendingAsset.name}: ${JSON.stringify(error)}`);
     }
