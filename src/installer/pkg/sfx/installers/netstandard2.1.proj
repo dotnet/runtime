@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.Build.NoTargets">
   <PropertyGroup>
     <SkipBuild Condition="'$(RuntimeFlavor)' != '$(PrimaryRuntimeFlavor)' or '$(TargetsMobile)' == 'true'">true</SkipBuild>
-    <GenerateInstallers>true</GenerateInstallers>
+    <GenerateInstallers Condition="'$(BuildRpmPackage)' != 'true'">false</GenerateInstallers>
     <InstallerName>netstandard-targeting-pack-2.1</InstallerName>
     <PackageBrandNameSuffix>NETStandard.Library.Ref</PackageBrandNameSuffix>
     <ProductBrandName>NETStandard.Library.Ref 2.1.0</ProductBrandName>
