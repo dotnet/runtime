@@ -523,10 +523,6 @@ GenTree* Compiler::optFindNullCheckToFold(GenTree* tree, LocalNumberToNullCheckT
         nullcheckAddr = addr->gtGetOp1()->AsIndir()->Addr()->AsLclVar();
         addr          = addr->gtGetOp2();
     }
-    else
-    {
-        return nullptr;
-    }
 
     if ((addr->OperGet() == GT_ADD) && addr->gtGetOp2()->IsCnsIntOrI())
     {
