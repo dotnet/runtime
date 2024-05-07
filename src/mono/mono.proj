@@ -285,7 +285,7 @@
     <ItemGroup Condition="'$(HostOS)' == 'Linux' and '$(MonoEnableLLVM)' == 'true' and '$(TargetArchitecture)' != 'wasm' and '$(MonoUseLibCxx)' == 'true'">
       <_MonoCXXFLAGS Include="-I$(MonoLLVMDir)\$(_MonoLLVMTargetArchitecture)\include\c++\v1" />
       <_MonoCXXFLAGS Include="-L$(MonoLLVMDir)\$(_MonoLLVMTargetArchitecture)\lib" />
-      <_MonoCXXFLAGS Include="-stdlib=libc++" />
+      <_MonoCXXFLAGS Include="-lc++;-lc++abi" />
       <_MonoCMakeArgs Include="-DMONO_SET_RPATH_ORIGIN=true" />
     </ItemGroup>
 
