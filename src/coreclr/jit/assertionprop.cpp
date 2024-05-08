@@ -795,11 +795,6 @@ void Compiler::optPrintAssertion(AssertionDsc* curAssertion, AssertionIndex asse
         printf("Const_Loop_Bnd_Un");
         vnStore->vnDump(this, curAssertion->op1.vn);
     }
-    else if (curAssertion->op1.kind == O1K_VALUE_NUMBER)
-    {
-        printf("Value_Number");
-        vnStore->vnDump(this, curAssertion->op1.vn);
-    }
     else
     {
         printf("?op1.kind?");
@@ -897,18 +892,7 @@ void Compiler::optPrintAssertion(AssertionDsc* curAssertion, AssertionIndex asse
                 }
                 else
                 {
-                    var_types op1Type;
-
-                    if (curAssertion->op1.kind == O1K_VALUE_NUMBER)
-                    {
-                        op1Type = vnStore->TypeOfVN(curAssertion->op1.vn);
-                    }
-                    else
-                    {
-                        unsigned lclNum = curAssertion->op1.lcl.lclNum;
-                        op1Type         = lvaGetDesc(lclNum)->lvType;
-                    }
-
+                    var_types op1Type = lvaGetDesc(curAssertion->op1.lcl.lclNum)->lvType;
                     if (op1Type == TYP_REF)
                     {
                         if (curAssertion->op2.u1.iconVal == 0)
@@ -1175,63 +1159,22 @@ AssertionIndex Compiler::optCreateAssertion(GenTree*         op1,
 
         ValueNum vn;
 
-        //
-        // We only perform null-checks on GC refs
-        // so only make non-null assertions about GC refs or byrefs if we can't determine
-        // the corresponding ref.
-        //
-        if (lclVar->TypeGet() != TYP_REF)
+        // We only perform null-checks on byrefs and GC refs
+        if (!varTypeIsGC(lclVar->TypeGet()))
         {
-            if (optLocalAssertionProp || (lclVar->TypeGet() != TYP_BYREF))
-            {
-                goto DONE_ASSERTION; // Don't make an assertion
-            }
-
-            vn = optConservativeNormalVN(op1);
-            VNFuncApp funcAttr;
-
-            // Try to get value number corresponding to the GC ref of the indirection
-            while (vnStore->GetVNFunc(vn, &funcAttr) && (funcAttr.m_func == (VNFunc)GT_ADD) &&
-                   (vnStore->TypeOfVN(vn) == TYP_BYREF))
-            {
-                if (vnStore->IsVNConstant(funcAttr.m_args[1]) &&
-                    varTypeIsIntegral(vnStore->TypeOfVN(funcAttr.m_args[1])))
-                {
-                    offset += vnStore->CoercedConstantValue<ssize_t>(funcAttr.m_args[1]);
-                    vn = funcAttr.m_args[0];
-                }
-                else if (vnStore->IsVNConstant(funcAttr.m_args[0]) &&
-                         varTypeIsIntegral(vnStore->TypeOfVN(funcAttr.m_args[0])))
-                {
-                    offset += vnStore->CoercedConstantValue<ssize_t>(funcAttr.m_args[0]);
-                    vn = funcAttr.m_args[1];
-                }
-                else
-                {
-                    break;
-                }
-            }
-
-            if (fgIsBigOffset(offset))
-            {
-                goto DONE_ASSERTION; // Don't make an assertion
-            }
-
-            assertion.op1.kind = O1K_VALUE_NUMBER;
+            goto DONE_ASSERTION; // Don't make an assertion
         }
-        else
+
+        //  If the local variable has its address exposed then bail
+        if (lclVar->IsAddressExposed())
         {
-            //  If the local variable has its address exposed then bail
-            if (lclVar->IsAddressExposed())
-            {
-                goto DONE_ASSERTION; // Don't make an assertion
-            }
-
-            assertion.op1.kind       = O1K_LCLVAR;
-            assertion.op1.lcl.lclNum = lclNum;
-            assertion.op1.lcl.ssaNum = op1->AsLclVarCommon()->GetSsaNum();
-            vn                       = optConservativeNormalVN(op1);
+            goto DONE_ASSERTION; // Don't make an assertion
         }
+
+        assertion.op1.kind       = O1K_LCLVAR;
+        assertion.op1.lcl.lclNum = lclNum;
+        assertion.op1.lcl.ssaNum = op1->AsLclVarCommon()->GetSsaNum();
+        vn                       = optConservativeNormalVN(op1);
 
         assertion.op1.vn         = vn;
         assertion.assertionKind  = assertionKind;
@@ -1597,7 +1540,7 @@ AssertionIndex Compiler::optFinalizeCreatingAssertion(AssertionDsc* assertion)
         }
 
         // TODO: only copy assertions rely on valid SSA number so we could generate more assertions here
-        if ((assertion->op1.kind != O1K_VALUE_NUMBER) && (assertion->op1.lcl.ssaNum == SsaConfig::RESERVED_SSA_NUM))
+        if (assertion->op1.lcl.ssaNum == SsaConfig::RESERVED_SSA_NUM)
         {
             return NO_ASSERTION_INDEX;
         }
@@ -1866,7 +1809,6 @@ void Compiler::optDebugCheckAssertion(AssertionDsc* assertion)
         case O1K_BOUND_LOOP_BND:
         case O1K_CONSTANT_LOOP_BND:
         case O1K_CONSTANT_LOOP_BND_UN:
-        case O1K_VALUE_NUMBER:
             assert(!optLocalAssertionProp);
             break;
         default:
@@ -1886,9 +1828,6 @@ void Compiler::optDebugCheckAssertion(AssertionDsc* assertion)
                 case O1K_LCLVAR:
                     assert((lvaGetDesc(assertion->op1.lcl.lclNum)->lvType != TYP_REF) ||
                            (assertion->op2.u1.iconVal == 0) || doesMethodHaveFrozenObjects());
-                    break;
-                case O1K_VALUE_NUMBER:
-                    assert((vnStore->TypeOfVN(assertion->op1.vn) != TYP_REF) || (assertion->op2.u1.iconVal == 0));
                     break;
                 default:
                     break;
@@ -5680,8 +5619,7 @@ void Compiler::optImpliedByTypeOfAssertions(ASSERT_TP& activeAssertions)
             }
 
             // impAssertion must be a Non Null assertion on lclNum
-            if ((impAssertion->assertionKind != OAK_NOT_EQUAL) ||
-                ((impAssertion->op1.kind != O1K_LCLVAR) && (impAssertion->op1.kind != O1K_VALUE_NUMBER)) ||
+            if ((impAssertion->assertionKind != OAK_NOT_EQUAL) || (impAssertion->op1.kind != O1K_LCLVAR) ||
                 (impAssertion->op2.kind != O2K_CONST_INT) || (impAssertion->op1.vn != chkAssertion->op1.vn))
             {
                 continue;

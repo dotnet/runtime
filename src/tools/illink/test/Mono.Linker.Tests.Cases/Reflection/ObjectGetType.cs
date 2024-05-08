@@ -1581,7 +1581,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			}
 
 			[Kept]
-			[ExpectedWarning ("IL2072")]
+			[UnexpectedWarning ("IL2072", Tool.TrimmerAnalyzerAndNativeAot, "https://github.com/dotnet/runtime/issues/93720")]
 			static void TestIsInstOf (object o)
 			{
 				if (o is Target t) {
