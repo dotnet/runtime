@@ -13,7 +13,7 @@
 DEFINE_DACGFN(DACNotifyCompilationFinished)
 DEFINE_DACGFN(ThePreStub)
 
-#if defined(HAS_COMPACT_ENTRYPOINTS) && definded(TARGET_ARM)
+#if defined(HAS_COMPACT_ENTRYPOINTS) && defined(TARGET_ARM)
 DEFINE_DACGFN(ThePreStubCompactARM)
 #endif
 
