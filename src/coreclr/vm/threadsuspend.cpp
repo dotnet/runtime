@@ -6074,6 +6074,11 @@ void ThreadSuspend::Initialize()
             {
                 g_returnAddressHijackTarget = (void*)pfnRtlGetReturnAddressHijackTarget();
             }
+
+            if (g_returnAddressHijackTarget == NULL)
+            {
+                _ASSERTE_ALL_BUILDS(!"RtlGetReturnAddressHijackTarget must provide a target when both FEATURE_HIJACK and CET are enabled");
+            }
         }
     }
 #endif // TARGET_WINDOWS
