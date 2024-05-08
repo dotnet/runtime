@@ -215,23 +215,17 @@ typedef unsigned char   regNumberSmall;
 typedef unsigned __int64 regMaskTP;
 #elif defined(TARGET_ARM64)
 typedef unsigned __int64 regMaskSmall;
-struct _regMaskAll
+struct regMaskTP
 {
     unsigned __int64 low;
 
-    _regMaskAll(unsigned __int64 regMask)
+    regMaskTP(unsigned __int64 regMask)
         : low(regMask)
     {
     }
 
-    _regMaskAll()
-        : low(RBM_NONE)
+    regMaskTP()
     {
-    }
-
-    FORCEINLINE operator _regMaskAll() const
-    {
-        return _regMaskAll{static_cast<uint64_t>(low)};
     }
 
     FORCEINLINE explicit operator bool() const
@@ -254,112 +248,111 @@ struct _regMaskAll
         return low;
     }
 };
-typedef _regMaskAll regMaskTP;
 
-FORCEINLINE static uint32_t PopCount(const _regMaskAll& value)
+static uint32_t PopCount(const regMaskTP& value)
 {
     return BitOperations::PopCount(value.getLow());
 }
 
-FORCEINLINE static uint32_t BitScanForward(regMaskTP mask)
+static uint32_t BitScanForward(regMaskTP mask)
 {
     return BitOperations::BitScanForward(mask.low);
 }
 
-FORCEINLINE regMaskTP operator^(const regMaskTP& first, const regMaskTP& second)
+static regMaskTP operator^(const regMaskTP& first, const regMaskTP& second)
 {
     regMaskTP result(first.low ^ second.getLow());
     return result;
 }
 
-FORCEINLINE regMaskTP operator&(const regMaskTP& first, const regMaskTP& second)
+static regMaskTP operator&(const regMaskTP& first, const regMaskTP& second)
 {
     regMaskTP result(first.low & second.getLow());
     return result;
 }
 
-FORCEINLINE regMaskTP operator|(const regMaskTP& first, const regMaskTP& second)
+static regMaskTP operator|(const regMaskTP& first, const regMaskTP& second)
 {
     regMaskTP result(first.low | second.getLow());
     return result;
 }
 
-FORCEINLINE regMaskTP operator<<(const regMaskTP& first, const int b)
+static regMaskTP operator<<(const regMaskTP& first, const int b)
 {
     regMaskTP result(first.low << b);
     return result;
 }
 
-FORCEINLINE regMaskTP operator>>(const regMaskTP& first, const int b)
+static regMaskTP operator>>(const regMaskTP& first, const int b)
 {
     regMaskTP result(first.low >> b);
     return result;
 }
 
-FORCEINLINE regMaskTP& operator>>=(regMaskTP& first, const int b)
+static regMaskTP& operator>>=(regMaskTP& first, const int b)
 {
     first = first >> b;
     return first;
 }
 
-FORCEINLINE regMaskTP& operator|=(regMaskTP& first, const regMaskTP& second)
+static regMaskTP& operator|=(regMaskTP& first, const regMaskTP& second)
 {
     first.low |= second.low;
     return first;
 }
 
-FORCEINLINE regMaskTP& operator^=(regMaskTP& first, const regMaskTP& second)
+static regMaskTP& operator^=(regMaskTP& first, const regMaskTP& second)
 {
     first.low ^= second.low;
     return first;
 }
 
-FORCEINLINE regMaskSmall operator^=(regMaskSmall& first, const regMaskTP& second)
+static regMaskSmall operator^=(regMaskSmall& first, const regMaskTP& second)
 {
     first ^= second.low;
     return first;
 }
 
-FORCEINLINE regMaskSmall operator&=(regMaskSmall& first, const regMaskTP& second)
+static regMaskSmall operator&=(regMaskSmall& first, const regMaskTP& second)
 {
     first &= second.low;
     return first;
 }
 
-FORCEINLINE regMaskSmall operator|=(regMaskSmall& first, const regMaskTP& second)
+static regMaskSmall operator|=(regMaskSmall& first, const regMaskTP& second)
 {
     first |= second.low;
     return first;
 }
 
-FORCEINLINE regMaskTP& operator<<=(regMaskTP& first, const regMaskTP& second)
+static regMaskTP& operator<<=(regMaskTP& first, const regMaskTP& second)
 {
     first.low <<= second.low;
     return first;
 }
 
-FORCEINLINE regMaskTP& operator&=(regMaskTP& first, const regMaskTP& second)
+static regMaskTP& operator&=(regMaskTP& first, const regMaskTP& second)
 {
     first.low &= second.low;
     return first;
 }
 
-FORCEINLINE constexpr bool operator==(const regMaskTP& first, const regMaskTP& second)
+static constexpr bool operator==(const regMaskTP& first, const regMaskTP& second)
 {
     return (first.low == second.low);
 }
 
-FORCEINLINE constexpr bool operator!=(const regMaskTP& first, const regMaskTP& second)
+static constexpr bool operator!=(const regMaskTP& first, const regMaskTP& second)
 {
     return (first.low != second.low);
 }
 
-FORCEINLINE constexpr bool operator>(const regMaskTP& first, const regMaskTP& second)
+static constexpr bool operator>(const regMaskTP& first, const regMaskTP& second)
 {
     return (first.low > second.low);
 }
 
-FORCEINLINE regMaskTP operator~(const regMaskTP& first)
+static regMaskTP operator~(const regMaskTP& first)
 {
     regMaskTP result(~first.low);
     return result;
