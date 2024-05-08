@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
+using System.Diagnostics;
 using System.Linq;
 using System.Runtime.CompilerServices;
 
@@ -51,30 +52,44 @@ namespace System.Collections.Generic
             int segmentsCount = _segmentsCount;
             if (segmentsCount != 0)
             {
-                ReadOnlySpan<T[]> segments = _segments;
+                ReturnArrays(segmentsCount);
+            }
+        }
 
-                // We need to return all rented arrays to the pool, and if the arrays contain any references,
-                // we want to clear them first so that the pool doesn't artificially root contained objects.
-                if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
+        private void ReturnArrays(int segmentsCount)
+        {
+            Debug.Assert(segmentsCount > 0);
+            ReadOnlySpan<T[]> segments = _segments;
+
+            // We need to return all rented arrays to the pool, and if the arrays contain any references,
+            // we want to clear them first so that the pool doesn't artificially root contained objects.
+            if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
+            {
+                // Return all but the last segment. All of these are full and need to be entirely cleared.
+                segmentsCount--;
+                foreach (T[] segment in segments.Slice(0, segmentsCount))
                 {
-                    // Return all but the last segment. All of these are full and need to be entirely cleared.
-                    foreach (T[] segment in segments.Slice(0, segmentsCount - 1))
-                    {
-                        ArrayPool<T>.Shared.Return(segment, clearArray: true);
-                    }
-
-                    // For the last segment, we can clear only what we know was used.
-                    T[] currentSegment = segments[segmentsCount - 1];
-                    Array.Clear(currentSegment, 0, _countInCurrentSegment);
-                    ArrayPool<T>.Shared.Return(currentSegment);
+                    Array.Clear(segment);
+                    ArrayPool<T>.Shared.Return(segment);
                 }
-                else
+
+                // For the last segment, we can clear only what we know was used.
+                T[] currentSegment = segments[segmentsCount];
+                Array.Clear(currentSegment, 0, _countInCurrentSegment);
+                ArrayPool<T>.Shared.Return(currentSegment);
+            }
+            else
+            {
+                // Return every rented array without clearing.
+                for (int i = 0; i < segments.Length; i++)
                 {
-                    // Return every rented array without clearing.
-                    foreach (T[] segment in segments.Slice(0, segmentsCount))
+                    T[] segment = segments[i];
+                    if (segment is null)
                     {
-                        ArrayPool<T>.Shared.Return(segment);
+                        break;
                     }
+
+                    ArrayPool<T>.Shared.Return(segment);
                 }
             }
         }
@@ -193,7 +208,7 @@ namespace System.Collections.Generic
         /// and ICollection and thus doesn't bother checking to see if it is.
         /// </remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private void AddNonICollectionRangeInlined(IEnumerable<T> source)
+        internal void AddNonICollectionRangeInlined(IEnumerable<T> source)
         {
             Span<T> currentSegment = _currentSegment;
             int countInCurrentSegment = _countInCurrentSegment;
@@ -218,16 +233,39 @@ namespace System.Collections.Generic
         }
 
         /// <summary>Creates an array containing all of the elements in the builder.</summary>
-        /// <param name="additionalLength">The number of extra elements of room to allocate in the resulting array.</param>
-        public T[] ToArray(int additionalLength = 0)
+        public readonly T[] ToArray()
         {
-            T[] result = [];
+            T[] result;
+            int count = Count;
 
-            int count = checked(Count + additionalLength);
             if (count != 0)
             {
                 result = GC.AllocateUninitializedArray<T>(count);
-                ToSpan(result);
+                ToSpanInlined(result);
+            }
+            else
+            {
+                result = [];
+            }
+
+            return result;
+        }
+
+        /// <summary>Creates an array containing all of the elements in the builder.</summary>
+        /// <param name="additionalLength">The number of extra elements of room to allocate in the resulting array.</param>
+        public readonly T[] ToArray(int additionalLength)
+        {
+            T[] result;
+            int count = checked(Count + additionalLength);
+
+            if (count != 0)
+            {
+                result = GC.AllocateUninitializedArray<T>(count);
+                ToSpanInlined(result);
+            }
+            else
+            {
+                result = [];
             }
 
             return result;
@@ -235,7 +273,13 @@ namespace System.Collections.Generic
 
         /// <summary>Populates the destination span with all of the elements in the builder.</summary>
         /// <param name="destination">The destination span.</param>
-        public void ToSpan(Span<T> destination)
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public readonly void ToSpan(Span<T> destination) => ToSpanInlined(destination);
+
+        /// <summary>Populates the destination span with all of the elements in the builder.</summary>
+        /// <param name="destination">The destination span.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private readonly void ToSpanInlined(Span<T> destination)
         {
             int segmentsCount = _segmentsCount;
             if (segmentsCount != 0)
@@ -247,11 +291,14 @@ namespace System.Collections.Generic
 
                 // Copy the 0..N-1 segments
                 segmentsCount--;
-                foreach (T[] arr in ((ReadOnlySpan<T[]>)_segments).Slice(0, segmentsCount))
+                if (segmentsCount != 0)
                 {
-                    ReadOnlySpan<T> segment = arr;
-                    segment.CopyTo(destination);
-                    destination = destination.Slice(segment.Length);
+                    foreach (T[] arr in ((ReadOnlySpan<T[]>)_segments).Slice(0, segmentsCount))
+                    {
+                        ReadOnlySpan<T> segment = arr;
+                        segment.CopyTo(destination);
+                        destination = destination.Slice(segment.Length);
+                    }
                 }
             }
 

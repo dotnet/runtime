@@ -78,15 +78,15 @@ namespace System.Net.Http
                     last = encoding;
                 }
 
-                if (GZipEnabled && last == Gzip)
+                if (GZipEnabled && string.Equals(last, Gzip, StringComparison.OrdinalIgnoreCase))
                 {
                     response.Content = new GZipDecompressedContent(response.Content);
                 }
-                else if (DeflateEnabled && last == Deflate)
+                else if (DeflateEnabled && string.Equals(last, Deflate, StringComparison.OrdinalIgnoreCase))
                 {
                     response.Content = new DeflateDecompressedContent(response.Content);
                 }
-                else if (BrotliEnabled && last == Brotli)
+                else if (BrotliEnabled && string.Equals(last, Brotli, StringComparison.OrdinalIgnoreCase))
                 {
                     response.Content = new BrotliDecompressedContent(response.Content);
                 }
@@ -229,7 +229,7 @@ namespace System.Net.Http
             private sealed class ZLibOrDeflateStream : HttpBaseStream
             {
                 // As described in RFC 2616, the deflate content-coding is the "zlib" format (RFC 1950) in combination with
-                // the "deflate" compression algrithm (RFC 1951). Thus, the right stream to use here is ZLibStream.  However,
+                // the "deflate" compression algorithm (RFC 1951). Thus, the right stream to use here is ZLibStream.  However,
                 // some servers incorrectly interpret "deflate" to mean the raw, unwrapped deflate protocol.  To account for
                 // that, this switches between using ZLibStream (correct) and DeflateStream (incorrect) in order to maximize
                 // compatibility with servers.

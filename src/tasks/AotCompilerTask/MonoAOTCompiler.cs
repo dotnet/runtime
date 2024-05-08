@@ -293,7 +293,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
 
     private List<string> _fileWrites = new();
 
-    private IList<ITaskItem>? _assembliesToCompile;
+    private List<ITaskItem>? _assembliesToCompile;
     private ConcurrentDictionary<string, ITaskItem> compiledAssemblies = new();
     private BuildPropertiesTable? _propertiesTable;
 
@@ -1200,7 +1200,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
         }
     }
 
-    private void CheckExportSymbolsFile(IList<ITaskItem> assemblies)
+    private void CheckExportSymbolsFile(List<ITaskItem> assemblies)
     {
         if (!EnableUnmanagedCallersOnlyMethodsExport)
             return;
@@ -1215,7 +1215,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
         }
     }
 
-    private static List<ITaskItem> ConvertAssembliesDictToOrderedList(ConcurrentDictionary<string, ITaskItem> dict, IList<ITaskItem> originalAssemblies)
+    private static List<ITaskItem> ConvertAssembliesDictToOrderedList(ConcurrentDictionary<string, ITaskItem> dict, List<ITaskItem> originalAssemblies)
     {
         List<ITaskItem> outItems = new(originalAssemblies.Count);
         foreach (ITaskItem item in originalAssemblies)
@@ -1237,26 +1237,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
         if (_symbolNameFixups.TryGetValue(name, out string? fixedName))
             return fixedName;
 
-        UTF8Encoding utf8 = new();
-        byte[] bytes = utf8.GetBytes(name);
-        StringBuilder sb = new();
-
-        foreach (byte b in bytes)
-        {
-            if ((b >= (byte)'0' && b <= (byte)'9') ||
-                (b >= (byte)'a' && b <= (byte)'z') ||
-                (b >= (byte)'A' && b <= (byte)'Z') ||
-                (b == (byte)'_'))
-            {
-                sb.Append((char)b);
-            }
-            else
-            {
-                sb.Append('_');
-            }
-        }
-
-        fixedName = sb.ToString();
+        fixedName = Utils.FixupSymbolName(name);
         _symbolNameFixups[name] = fixedName;
         return fixedName;
     }

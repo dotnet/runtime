@@ -899,7 +899,7 @@ namespace System.Runtime.Serialization
             if (knownTypeDictionary == null)
                 return null;
 
-            ICollection<DataContract>? knownTypeContracts = knownTypeDictionary.Values;
+            DataContractDictionary.ValueCollection? knownTypeContracts = knownTypeDictionary.Values;
             if (knownTypeContracts == null || knownTypeContracts.Count == 0)
                 return null;
 

@@ -705,10 +705,10 @@ namespace System.Net.WebSockets
             try
             {
                 await _receiveMutex.EnterAsync(cancellationToken).ConfigureAwait(false);
-                ObjectDisposedException.ThrowIf(_disposed, typeof(WebSocket));
-
                 try
                 {
+                    ObjectDisposedException.ThrowIf(_disposed, typeof(WebSocket));
+
                     while (true) // in case we get control frames that should be ignored from the user's perspective
                     {
                         // Get the last received header.  If its payload length is non-zero, that means we previously
@@ -1308,7 +1308,6 @@ namespace System.Net.WebSockets
                                 {
                                     receiveTask = ReceiveAsyncPrivate<ValueWebSocketReceiveResult>(closeBuffer, cancellationToken);
                                 }
-
                             }
                             finally
                             {

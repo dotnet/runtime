@@ -294,7 +294,9 @@ namespace System.Linq.Parallel
             private readonly QueryOperatorEnumerator<Pair<TInputOutput, NoKeyMemoizationRequired>, TLeftKey> _leftSource; // Left data source.
             private readonly QueryOperatorEnumerator<Pair<TInputOutput, NoKeyMemoizationRequired>, TRightKey> _rightSource; // Right data source.
             private readonly IComparer<ConcatKey<TLeftKey, TRightKey>> _keyComparer; // Comparer for compound order keys.
+#pragma warning disable CA1859
             private IEnumerator<KeyValuePair<Wrapper<TInputOutput>, Pair<TInputOutput, ConcatKey<TLeftKey, TRightKey>>>>? _outputEnumerator; // Enumerator over the output of the union.
+#pragma warning restore
             private readonly bool _leftOrdered; // Whether the left data source is ordered.
             private readonly bool _rightOrdered; // Whether the right data source is ordered.
             private readonly IEqualityComparer<TInputOutput>? _comparer; // Comparer for the elements.

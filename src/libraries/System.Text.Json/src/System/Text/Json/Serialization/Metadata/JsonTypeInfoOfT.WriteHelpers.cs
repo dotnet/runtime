@@ -37,7 +37,7 @@ namespace System.Text.Json.Serialization.Metadata
                 writer.Flush();
             }
             else if (
-#if NETCOREAPP
+#if NET
                 !typeof(T).IsValueType &&
 #endif
                 Converter.CanBePolymorphic &&
@@ -114,7 +114,7 @@ namespace System.Text.Json.Serialization.Metadata
                 await serializationContext.FlushAsync(cancellationToken).ConfigureAwait(false);
             }
             else if (
-#if NETCOREAPP
+#if NET
                 !typeof(T).IsValueType &&
 #endif
                 Converter.CanBePolymorphic &&
@@ -240,7 +240,7 @@ namespace System.Text.Json.Serialization.Metadata
                 }
             }
             else if (
-#if NETCOREAPP
+#if NET
                 !typeof(T).IsValueType &&
 #endif
                 Converter.CanBePolymorphic &&

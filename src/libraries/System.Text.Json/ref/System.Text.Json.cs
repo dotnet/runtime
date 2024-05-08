@@ -190,10 +190,10 @@ namespace System.Text.Json
         public System.Text.Json.JsonCommentHandling CommentHandling { readonly get { throw null; } set { } }
         public int MaxDepth { readonly get { throw null; } set { } }
     }
-    public partial struct JsonReaderState
+    public readonly partial struct JsonReaderState
     {
-        private object _dummy;
-        private int _dummyPrimitive;
+        private readonly object _dummy;
+        private readonly int _dummyPrimitive;
         public JsonReaderState(System.Text.Json.JsonReaderOptions options = default(System.Text.Json.JsonReaderOptions)) { throw null; }
         public System.Text.Json.JsonReaderOptions Options { get { throw null; } }
     }
@@ -377,6 +377,7 @@ namespace System.Text.Json
         public JsonSerializerOptions() { }
         public JsonSerializerOptions(System.Text.Json.JsonSerializerDefaults defaults) { }
         public JsonSerializerOptions(System.Text.Json.JsonSerializerOptions options) { }
+        public bool AllowOutOfOrderMetadataProperties { get { throw null; } set { } }
         public bool AllowTrailingCommas { get { throw null; } set { } }
         public System.Collections.Generic.IList<System.Text.Json.Serialization.JsonConverter> Converters { get { throw null; } }
         public static System.Text.Json.JsonSerializerOptions Default { [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("JSON serialization and deserialization might require types that cannot be statically analyzed and might need runtime code generation. Use System.Text.Json source generation for native AOT applications."), System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("JSON serialization and deserialization might require types that cannot be statically analyzed. Use the overload that takes a JsonTypeInfo or JsonSerializerContext, or make sure all of the required types are preserved.")] get { throw null; } }
@@ -393,6 +394,7 @@ namespace System.Text.Json
         public bool IncludeFields { get { throw null; } set { } }
         public bool IsReadOnly { get { throw null; } }
         public int MaxDepth { get { throw null; } set { } }
+        public string NewLine { get { throw null; } set { } }
         public System.Text.Json.Serialization.JsonNumberHandling NumberHandling { get { throw null; } set { } }
         public System.Text.Json.Serialization.JsonObjectCreationHandling PreferredObjectCreationHandling { get { throw null; } set { } }
         public bool PropertyNameCaseInsensitive { get { throw null; } set { } }
@@ -453,6 +455,7 @@ namespace System.Text.Json
         public bool Indented { get { throw null; } set { } }
         public char IndentCharacter { get { throw null; } set { } }
         public int IndentSize { get { throw null; } set { } }
+        public string NewLine { get { throw null; } set { } }
         public int MaxDepth { readonly get { throw null; } set { } }
         public bool SkipValidation { get { throw null; } set { } }
     }
@@ -665,7 +668,9 @@ namespace System.Text.Json.Nodes
     public sealed partial class JsonArray : System.Text.Json.Nodes.JsonNode, System.Collections.Generic.ICollection<System.Text.Json.Nodes.JsonNode?>, System.Collections.Generic.IEnumerable<System.Text.Json.Nodes.JsonNode?>, System.Collections.Generic.IList<System.Text.Json.Nodes.JsonNode?>, System.Collections.IEnumerable
     {
         public JsonArray(System.Text.Json.Nodes.JsonNodeOptions? options = default(System.Text.Json.Nodes.JsonNodeOptions?)) { }
+        public JsonArray(System.Text.Json.Nodes.JsonNodeOptions options, System.ReadOnlySpan<System.Text.Json.Nodes.JsonNode?> items) { }
         public JsonArray(System.Text.Json.Nodes.JsonNodeOptions options, params System.Text.Json.Nodes.JsonNode?[] items) { }
+        public JsonArray(System.ReadOnlySpan<System.Text.Json.Nodes.JsonNode?> items) { }
         public JsonArray(params System.Text.Json.Nodes.JsonNode?[] items) { }
         public int Count { get { throw null; } }
         bool System.Collections.Generic.ICollection<System.Text.Json.Nodes.JsonNode?>.IsReadOnly { get { throw null; } }
@@ -986,7 +991,7 @@ namespace System.Text.Json.Serialization
         KebabCaseLower = 4,
         KebabCaseUpper = 5,
     }
-    public sealed partial class JsonNumberEnumConverter<TEnum> : System.Text.Json.Serialization.JsonConverterFactory where TEnum : struct
+    public sealed partial class JsonNumberEnumConverter<TEnum> : System.Text.Json.Serialization.JsonConverterFactory where TEnum : struct, System.Enum
     {
         public JsonNumberEnumConverter() { }
         public override bool CanConvert(System.Type typeToConvert) { throw null; }
@@ -1069,6 +1074,7 @@ namespace System.Text.Json.Serialization
     {
         public JsonSourceGenerationOptionsAttribute() { }
         public JsonSourceGenerationOptionsAttribute(System.Text.Json.JsonSerializerDefaults defaults) { }
+        public bool AllowOutOfOrderMetadataProperties { get { throw null; } set { } }
         public bool AllowTrailingCommas { get { throw null; } set { } }
         public System.Type[]? Converters { get { throw null; } set { } }
         public int DefaultBufferSize { get { throw null; } set { } }
@@ -1079,6 +1085,7 @@ namespace System.Text.Json.Serialization
         public bool IgnoreReadOnlyProperties { get { throw null; } set { } }
         public bool IncludeFields { get { throw null; } set { } }
         public int MaxDepth { get { throw null; } set { } }
+        public string? NewLine { get { throw null; } set { } }
         public System.Text.Json.Serialization.JsonNumberHandling NumberHandling { get { throw null; } set { } }
         public System.Text.Json.Serialization.JsonObjectCreationHandling PreferredObjectCreationHandling { get { throw null; } set { } }
         public bool PropertyNameCaseInsensitive { get { throw null; } set { } }
@@ -1356,6 +1363,7 @@ namespace System.Text.Json.Serialization.Metadata
     }
     public static partial class JsonTypeInfoResolver
     {
+        public static System.Text.Json.Serialization.Metadata.IJsonTypeInfoResolver Combine(System.ReadOnlySpan<System.Text.Json.Serialization.Metadata.IJsonTypeInfoResolver?> resolvers) { throw null; }
         public static System.Text.Json.Serialization.Metadata.IJsonTypeInfoResolver Combine(params System.Text.Json.Serialization.Metadata.IJsonTypeInfoResolver?[] resolvers) { throw null; }
         public static System.Text.Json.Serialization.Metadata.IJsonTypeInfoResolver WithAddedModifier(this System.Text.Json.Serialization.Metadata.IJsonTypeInfoResolver resolver, System.Action<System.Text.Json.Serialization.Metadata.JsonTypeInfo> modifier) { throw null; }
     }

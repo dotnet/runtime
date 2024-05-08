@@ -21,9 +21,6 @@
 #undef _XOPEN_SOURCE
 #endif
 #include <pthread.h>
-#if defined(TARGET_OSX)
-#define _XOPEN_SOURCE
-#endif
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // LowLevelMonitor - Represents a non-recursive mutex and condition
@@ -232,6 +229,14 @@ int32_t SystemNative_CreateThread(uintptr_t stackSize, void *(*startAddress)(voi
 
     error = pthread_attr_setdetachstate(&attrs, PTHREAD_CREATE_DETACHED);
     assert(error == 0);
+
+#ifdef HOST_APPLE
+    // Match Windows stack size
+    if (stackSize == 0)
+    {
+        stackSize = 1536 * 1024;
+    }
+#endif
 
     if (stackSize > 0)
     {

@@ -22,6 +22,7 @@ namespace System.Net
 
         int QueryContextChannelBinding(SafeDeleteContext phContext, Interop.SspiCli.ContextAttribute attribute, out SafeFreeContextBufferChannelBinding refHandle);
         int QueryContextAttributes(SafeDeleteContext phContext, Interop.SspiCli.ContextAttribute attribute, Span<byte> buffer, Type? handleType, out SafeHandle? refHandle);
+        unsafe int QueryContextAttributes(SafeDeleteContext phContext, Interop.SspiCli.ContextAttribute attribute, IntPtr* refHandle);
         int QuerySecurityContextToken(SafeDeleteContext phContext, out SecurityContextTokenHandle phToken);
         int CompleteAuthToken(ref SafeDeleteSslContext? refContext, in InputSecurityBuffer inputBuffer);
         int ApplyControlToken(ref SafeDeleteSslContext? refContext, in SecurityBuffer inputBuffer);

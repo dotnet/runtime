@@ -1,18 +1,17 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import MonoWasmThreads from "consts:monoWasmThreads";
+import WasmEnableThreads from "consts:wasmEnableThreads";
 import { NativePointer, ManagedPointer, VoidPtr } from "./types/emscripten";
-import { Module, mono_assert, runtimeHelpers, linkerRunAOTCompilation } from "./globals";
+import { Module, mono_assert, runtimeHelpers } from "./globals";
 import { WasmOpcode, WasmSimdOpcode, WasmValtype } from "./jiterpreter-opcodes";
 import { MintOpcode } from "./mintops";
 import cwraps from "./cwraps";
 import { mono_log_error, mono_log_info } from "./logging";
 import { localHeapViewU8, localHeapViewU32 } from "./memory";
-import { utf8ToString } from "./strings";
 import {
     JiterpNumberMode, BailoutReason, JiterpreterTable,
-    JiterpCounter, JiterpMember
+    JiterpCounter, JiterpMember, OpcodeInfoType
 } from "./jiterpreter-enums";
 
 export const maxFailures = 2,
@@ -104,18 +103,19 @@ export class WasmBuilder {
     backBranchOffsets: Array<MintOpcodePtr> = [];
     callHandlerReturnAddresses: Array<MintOpcodePtr> = [];
     nextConstantSlot = 0;
+    backBranchTraceLevel = 0;
 
     compressImportNames = false;
     lockImports = false;
 
-    constructor(constantSlotCount: number) {
+    constructor (constantSlotCount: number) {
         this.stack = [new BlobBuilder()];
         this.clear(constantSlotCount);
         this.cfg = new Cfg(this);
         this.defineType("__cpp_exception", { "ptr": WasmValtype.i32 }, WasmValtype.void, true);
     }
 
-    clear(constantSlotCount: number) {
+    clear (constantSlotCount: number) {
         this.options = getOptions();
         this.stackSize = 1;
         this.inSection = false;
@@ -155,14 +155,14 @@ export class WasmBuilder {
         this.allowNullCheckOptimization = this.options.eliminateNullChecks;
     }
 
-    _push() {
+    _push () {
         this.stackSize++;
         if (this.stackSize >= this.stack.length)
             this.stack.push(new BlobBuilder());
         this.current.clear();
     }
 
-    _pop(writeToOutput: boolean) {
+    _pop (writeToOutput: boolean) {
         if (this.stackSize <= 1)
             throw new Error("Stack empty");
 
@@ -177,21 +177,21 @@ export class WasmBuilder {
             return current.getArrayView(false).slice(0, current.size);
     }
 
-    setImportFunction(name: string, value: Function) {
+    setImportFunction (name: string, value: Function) {
         const imp = this.importedFunctions[name];
         if (!imp)
             throw new Error("No import named " + name);
         imp.func = value;
     }
 
-    getExceptionTag(): any {
+    getExceptionTag (): any {
         const exceptionTag = (<any>Module)["asm"]["__cpp_exception"];
         if (typeof (exceptionTag) !== "undefined")
             mono_assert(exceptionTag instanceof (<any>WebAssembly).Tag, () => `expected __cpp_exception export from dotnet.wasm to be WebAssembly.Tag but was ${exceptionTag}`);
         return exceptionTag;
     }
 
-    getWasmImports(): WebAssembly.Imports {
+    getWasmImports (): WebAssembly.Imports {
         const memory = runtimeHelpers.getMemory();
         mono_assert(memory instanceof WebAssembly.Memory, () => `expected heap import to be WebAssembly.Memory but was ${memory}`);
 
@@ -224,7 +224,7 @@ export class WasmBuilder {
     // HACK: Approximate amount of space we need to generate the full module at present
     // FIXME: This does not take into account any other functions already generated if they weren't
     //  emitted into the module immediately
-    get bytesGeneratedSoFar() {
+    get bytesGeneratedSoFar () {
         const importSize = this.compressImportNames
             // mod (2 bytes) name (2-3 bytes) type (1 byte) typeidx (1-2 bytes)
             ? 8
@@ -241,74 +241,74 @@ export class WasmBuilder {
             this.estimatedExportBytes;
     }
 
-    get current() {
+    get current () {
         return this.stack[this.stackSize - 1];
     }
 
-    get size() {
+    get size () {
         return this.current.size;
     }
 
-    appendU8(value: number | WasmOpcode) {
+    appendU8 (value: number | WasmOpcode) {
         if ((value != value >>> 0) || (value > 255))
             throw new Error(`Byte out of range: ${value}`);
         return this.current.appendU8(value);
     }
 
-    appendSimd(value: WasmSimdOpcode, allowLoad?: boolean) {
+    appendSimd (value: WasmSimdOpcode, allowLoad?: boolean) {
         this.current.appendU8(WasmOpcode.PREFIX_simd);
         // Yes that's right. We're using LEB128 to encode 8-bit opcodes. Why? I don't know
         mono_assert(((value | 0) !== 0) || ((value === WasmSimdOpcode.v128_load) && (allowLoad === true)), "Expected non-v128_load simd opcode or allowLoad==true");
         return this.current.appendULeb(value);
     }
 
-    appendU32(value: number) {
+    appendU32 (value: number) {
         return this.current.appendU32(value);
     }
 
-    appendF32(value: number) {
+    appendF32 (value: number) {
         return this.current.appendF32(value);
     }
 
-    appendF64(value: number) {
+    appendF64 (value: number) {
         return this.current.appendF64(value);
     }
 
-    appendBoundaryValue(bits: number, sign: number) {
+    appendBoundaryValue (bits: number, sign: number) {
         return this.current.appendBoundaryValue(bits, sign);
     }
 
-    appendULeb(value: number | MintOpcodePtr) {
+    appendULeb (value: number | MintOpcodePtr) {
         return this.current.appendULeb(<any>value);
     }
 
-    appendLeb(value: number) {
+    appendLeb (value: number) {
         return this.current.appendLeb(value);
     }
 
-    appendLebRef(sourceAddress: VoidPtr, signed: boolean) {
+    appendLebRef (sourceAddress: VoidPtr, signed: boolean) {
         return this.current.appendLebRef(sourceAddress, signed);
     }
 
-    appendBytes(bytes: Uint8Array) {
+    appendBytes (bytes: Uint8Array) {
         return this.current.appendBytes(bytes);
     }
 
-    appendName(text: string) {
+    appendName (text: string) {
         return this.current.appendName(text);
     }
 
-    ret(ip: MintOpcodePtr) {
+    ret (ip: MintOpcodePtr) {
         this.ip_const(ip);
         this.appendU8(WasmOpcode.return_);
     }
 
-    i32_const(value: number | ManagedPointer | NativePointer) {
+    i32_const (value: number | ManagedPointer | NativePointer) {
         this.appendU8(WasmOpcode.i32_const);
         this.appendLeb(<any>value);
     }
 
-    ptr_const(pointer: number | ManagedPointer | NativePointer) {
+    ptr_const (pointer: number | ManagedPointer | NativePointer) {
         let idx = this.options.useConstants ? this.constantSlots.indexOf(<any>pointer) : -1;
         if (
             this.options.useConstants &&
@@ -327,17 +327,17 @@ export class WasmBuilder {
         }
     }
 
-    ip_const(value: MintOpcodePtr) {
+    ip_const (value: MintOpcodePtr) {
         this.appendU8(WasmOpcode.i32_const);
         this.appendLeb(<any>value - <any>this.base);
     }
 
-    i52_const(value: number) {
+    i52_const (value: number) {
         this.appendU8(WasmOpcode.i64_const);
         this.appendLeb(value);
     }
 
-    v128_const(value: 0 | Uint8Array) {
+    v128_const (value: 0 | Uint8Array) {
         if (value === 0) {
             // This encoding is much smaller than a v128_const
             // But v8 doesn't optimize it :-((((((
@@ -366,7 +366,7 @@ export class WasmBuilder {
         }
     }
 
-    defineType(
+    defineType (
         name: string, parameters: { [name: string]: WasmValtype }, returnType: WasmValtype,
         permanent: boolean
     ) {
@@ -415,7 +415,7 @@ export class WasmBuilder {
         return index;
     }
 
-    generateTypeSection() {
+    generateTypeSection () {
         this.beginSection(1);
         this.appendULeb(this.functionTypeCount);
         /*
@@ -441,7 +441,7 @@ export class WasmBuilder {
         this.endSection();
     }
 
-    getImportedFunctionTable(): any {
+    getImportedFunctionTable (): any {
         const imports: any = {};
         for (const k in this.importedFunctions) {
             const f = this.importedFunctions[k];
@@ -451,7 +451,7 @@ export class WasmBuilder {
         return imports;
     }
 
-    getCompressedName(ifi: ImportedFunctionInfo) {
+    getCompressedName (ifi: ImportedFunctionInfo) {
         if (!this.compressImportNames || typeof (ifi.index) !== "number")
             return ifi.name;
 
@@ -461,7 +461,7 @@ export class WasmBuilder {
         return result;
     }
 
-    getImportsToEmit() {
+    getImportsToEmit () {
         const result = [];
         for (const k in this.importedFunctions) {
             const v = this.importedFunctions[k];
@@ -474,7 +474,7 @@ export class WasmBuilder {
         return result;
     }
 
-    _generateImportSection(includeFunctionTable?: boolean) {
+    _generateImportSection (includeFunctionTable?: boolean) {
         const importsToEmit = this.getImportsToEmit();
         this.lockImports = true;
 
@@ -513,7 +513,7 @@ export class WasmBuilder {
         // import the native heap
         this.appendName("m");
         this.appendName("h");
-        if (MonoWasmThreads) {
+        if (WasmEnableThreads) {
             // memtype (limits = 0x03 n:u32 m:u32    => {min n, max m, shared})
             this.appendU8(0x02);
             this.appendU8(0x03);
@@ -553,7 +553,7 @@ export class WasmBuilder {
         }
     }
 
-    defineImportedFunction(
+    defineImportedFunction (
         module: string, name: string, functionTypeName: string,
         permanent: boolean, func?: Function | number
     ): ImportedFunctionInfo {
@@ -582,7 +582,7 @@ export class WasmBuilder {
         return result;
     }
 
-    markImportAsUsed(name: string) {
+    markImportAsUsed (name: string) {
         const func = this.importedFunctions[name];
         if (!func)
             throw new Error("No imported function named " + name);
@@ -590,14 +590,14 @@ export class WasmBuilder {
             func.index = this.importedFunctionCount++;
     }
 
-    getTypeIndex(name: string) {
+    getTypeIndex (name: string) {
         const type = this.functionTypes[name];
         if (!type)
             throw new Error("No type named " + name);
         return type[0];
     }
 
-    defineFunction(
+    defineFunction (
         options: {
             type: string,
             name: string,
@@ -622,7 +622,7 @@ export class WasmBuilder {
         return rec;
     }
 
-    emitImportsAndFunctions(includeFunctionTable?: boolean) {
+    emitImportsAndFunctions (includeFunctionTable?: boolean) {
         let exportCount = 0;
         for (let i = 0; i < this.functions.length; i++) {
             const func = this.functions[i];
@@ -681,7 +681,7 @@ export class WasmBuilder {
         this.endSection();
     }
 
-    call_indirect(/* functionTypeName: string, tableIndex: number */) {
+    call_indirect (/* functionTypeName: string, tableIndex: number */) {
         throw new Error("call_indirect unavailable");
         /*
         const type = this.functionTypes[functionTypeName];
@@ -694,7 +694,7 @@ export class WasmBuilder {
         */
     }
 
-    callImport(name: string) {
+    callImport (name: string) {
         const func = this.importedFunctions[name];
         if (!func)
             throw new Error("No imported function named " + name);
@@ -707,7 +707,7 @@ export class WasmBuilder {
         this.appendULeb(func.index);
     }
 
-    beginSection(type: number) {
+    beginSection (type: number) {
         if (this.inSection)
             this._pop(true);
         this.appendU8(type);
@@ -715,7 +715,7 @@ export class WasmBuilder {
         this.inSection = true;
     }
 
-    endSection() {
+    endSection () {
         if (!this.inSection)
             throw new Error("Not in section");
         if (this.inFunction)
@@ -734,7 +734,7 @@ export class WasmBuilder {
         return result;
     };
 
-    _assignLocalIndices(
+    _assignLocalIndices (
         counts: any, locals: { [name: string]: WasmValtype },
         base: number, localGroupCount: number
     ) {
@@ -793,7 +793,7 @@ export class WasmBuilder {
         return localGroupCount;
     }
 
-    beginFunction(
+    beginFunction (
         type: string,
         locals?: { [name: string]: WasmValtype }
     ) {
@@ -837,7 +837,7 @@ export class WasmBuilder {
         this.inFunction = true;
     }
 
-    endFunction(writeToOutput: boolean) {
+    endFunction (writeToOutput: boolean) {
         if (!this.inFunction)
             throw new Error("Not in function");
         if (this.activeBlocks > 0)
@@ -847,7 +847,7 @@ export class WasmBuilder {
         return result;
     }
 
-    block(type?: WasmValtype, opcode?: WasmOpcode) {
+    block (type?: WasmValtype, opcode?: WasmOpcode) {
         const result = this.appendU8(opcode || WasmOpcode.block);
         if (type)
             this.appendU8(type);
@@ -857,14 +857,14 @@ export class WasmBuilder {
         return result;
     }
 
-    endBlock() {
+    endBlock () {
         if (this.activeBlocks <= 0)
             throw new Error("No blocks active");
         this.activeBlocks--;
         this.appendU8(WasmOpcode.end);
     }
 
-    arg(name: string | number, opcode?: WasmOpcode) {
+    arg (name: string | number, opcode?: WasmOpcode) {
         const index = typeof (name) === "string"
             ? (this.locals.has(name) ? this.locals.get(name)! : undefined)
             : name;
@@ -875,7 +875,7 @@ export class WasmBuilder {
         this.appendULeb(index);
     }
 
-    local(name: string | number, opcode?: WasmOpcode) {
+    local (name: string | number, opcode?: WasmOpcode) {
         const index = typeof (name) === "string"
             ? (this.locals.has(name) ? this.locals.get(name)! : undefined)
             : name + this.argumentCount;
@@ -888,7 +888,7 @@ export class WasmBuilder {
         this.appendULeb(index);
     }
 
-    appendMemarg(offset: number, alignPower: number) {
+    appendMemarg (offset: number, alignPower: number) {
         this.appendULeb(alignPower);
         this.appendULeb(offset);
     }
@@ -896,7 +896,7 @@ export class WasmBuilder {
     /*
         generates either (u32)get_local(ptr) + offset or (u32)ptr1 + offset
     */
-    lea(ptr1: string | number, offset: number) {
+    lea (ptr1: string | number, offset: number) {
         if (typeof (ptr1) === "string")
             this.local(ptr1);
         else
@@ -907,13 +907,13 @@ export class WasmBuilder {
         this.appendU8(WasmOpcode.i32_add);
     }
 
-    getArrayView(fullCapacity?: boolean) {
+    getArrayView (fullCapacity?: boolean) {
         if (this.stackSize > 1)
             throw new Error("Jiterpreter block stack not empty");
         return this.stack[0].getArrayView(fullCapacity);
     }
 
-    getConstants() {
+    getConstants () {
         const result: { [key: string]: number } = {};
         for (let i = 0; i < this.constantSlots.length; i++)
             result[i.toString(shortNameBase)] = this.constantSlots[i];
@@ -928,7 +928,7 @@ export class BlobBuilder {
     encoder?: TextEncoder;
     textBuf = new Uint8Array(1024);
 
-    constructor() {
+    constructor () {
         this.capacity = 16 * 1024;
         this.buffer = <any>Module._malloc(this.capacity);
         localHeapViewU8().fill(0, this.buffer, this.buffer + this.capacity);
@@ -938,11 +938,11 @@ export class BlobBuilder {
             this.encoder = new TextEncoder();
     }
 
-    clear() {
+    clear () {
         this.size = 0;
     }
 
-    appendU8(value: number | WasmOpcode) {
+    appendU8 (value: number | WasmOpcode) {
         if (this.size >= this.capacity)
             throw new Error("Buffer full");
 
@@ -951,35 +951,35 @@ export class BlobBuilder {
         return result;
     }
 
-    appendU32(value: number) {
+    appendU32 (value: number) {
         const result = this.size;
         cwraps.mono_jiterp_write_number_unaligned(<any>this.buffer + this.size, value, JiterpNumberMode.U32);
         this.size += 4;
         return result;
     }
 
-    appendI32(value: number) {
+    appendI32 (value: number) {
         const result = this.size;
         cwraps.mono_jiterp_write_number_unaligned(<any>this.buffer + this.size, value, JiterpNumberMode.I32);
         this.size += 4;
         return result;
     }
 
-    appendF32(value: number) {
+    appendF32 (value: number) {
         const result = this.size;
         cwraps.mono_jiterp_write_number_unaligned(<any>this.buffer + this.size, value, JiterpNumberMode.F32);
         this.size += 4;
         return result;
     }
 
-    appendF64(value: number) {
+    appendF64 (value: number) {
         const result = this.size;
         cwraps.mono_jiterp_write_number_unaligned(<any>this.buffer + this.size, value, JiterpNumberMode.F64);
         this.size += 8;
         return result;
     }
 
-    appendBoundaryValue(bits: number, sign: number) {
+    appendBoundaryValue (bits: number, sign: number) {
         if (this.size + 8 >= this.capacity)
             throw new Error("Buffer full");
 
@@ -990,7 +990,7 @@ export class BlobBuilder {
         return bytesWritten;
     }
 
-    appendULeb(value: number) {
+    appendULeb (value: number) {
         mono_assert(typeof (value) === "number", () => `appendULeb expected number but got ${value}`);
         mono_assert(value >= 0, "cannot pass negative value to appendULeb");
         if (value < 0x7F) {
@@ -1011,7 +1011,7 @@ export class BlobBuilder {
         return bytesWritten;
     }
 
-    appendLeb(value: number) {
+    appendLeb (value: number) {
         mono_assert(typeof (value) === "number", () => `appendLeb expected number but got ${value}`);
         if (this.size + 8 >= this.capacity)
             throw new Error("Buffer full");
@@ -1023,7 +1023,7 @@ export class BlobBuilder {
         return bytesWritten;
     }
 
-    appendLebRef(sourceAddress: VoidPtr, signed: boolean) {
+    appendLebRef (sourceAddress: VoidPtr, signed: boolean) {
         if (this.size + 8 >= this.capacity)
             throw new Error("Buffer full");
 
@@ -1034,7 +1034,7 @@ export class BlobBuilder {
         return bytesWritten;
     }
 
-    copyTo(destination: BlobBuilder, count?: number) {
+    copyTo (destination: BlobBuilder, count?: number) {
         if (typeof (count) !== "number")
             count = this.size;
 
@@ -1042,7 +1042,7 @@ export class BlobBuilder {
         destination.size += count;
     }
 
-    appendBytes(bytes: Uint8Array, count?: number) {
+    appendBytes (bytes: Uint8Array, count?: number) {
         const result = this.size;
         const heapU8 = localHeapViewU8();
         if (bytes.buffer === heapU8.buffer) {
@@ -1062,7 +1062,7 @@ export class BlobBuilder {
         return result;
     }
 
-    appendName(text: string) {
+    appendName (text: string) {
         let count = text.length;
         // TextEncoder overhead is significant for short strings, and lots of our strings
         //  are single-character import names, so add a fast path for single characters
@@ -1097,7 +1097,7 @@ export class BlobBuilder {
             this.appendBytes(this.textBuf, count);
     }
 
-    getArrayView(fullCapacity?: boolean) {
+    getArrayView (fullCapacity?: boolean) {
         return new Uint8Array(localHeapViewU8().buffer, this.buffer, fullCapacity ? this.capacity : this.size);
     }
 }
@@ -1139,8 +1139,11 @@ class Cfg {
     backBranchTargets: Uint16Array | null = null;
     base!: MintOpcodePtr;
     ip!: MintOpcodePtr;
+    // The address of the prepare point
     entryIp!: MintOpcodePtr;
     exitIp!: MintOpcodePtr;
+    // The address of the first actual opcode in the trace
+    firstOpcodeIp!: MintOpcodePtr;
     lastSegmentStartIp!: MintOpcodePtr;
     lastSegmentEnd = 0;
     overheadBytes = 0;
@@ -1148,31 +1151,34 @@ class Cfg {
     blockStack: Array<MintOpcodePtr> = [];
     backDispatchOffsets: Array<MintOpcodePtr> = [];
     dispatchTable = new Map<MintOpcodePtr, number>();
-    observedBranchTargets = new Set<MintOpcodePtr>();
+    observedBackBranchTargets = new Set<MintOpcodePtr>();
     trace = 0;
 
-    constructor(builder: WasmBuilder) {
+    constructor (builder: WasmBuilder) {
         this.builder = builder;
     }
 
-    initialize(startOfBody: MintOpcodePtr, backBranchTargets: Uint16Array | null, trace: number) {
+    initialize (startOfBody: MintOpcodePtr, backBranchTargets: Uint16Array | null, trace: number) {
         this.segments.length = 0;
         this.blockStack.length = 0;
         this.startOfBody = startOfBody;
         this.backBranchTargets = backBranchTargets;
         this.base = this.builder.base;
-        this.ip = this.lastSegmentStartIp = this.builder.base;
+        this.ip = this.lastSegmentStartIp = this.firstOpcodeIp = this.builder.base;
         this.lastSegmentEnd = 0;
         this.overheadBytes = 10; // epilogue
         this.dispatchTable.clear();
-        this.observedBranchTargets.clear();
+        this.observedBackBranchTargets.clear();
         this.trace = trace;
         this.backDispatchOffsets.length = 0;
     }
 
     // We have a header containing the table of locals and we need to preserve it
-    entry(ip: MintOpcodePtr) {
+    entry (ip: MintOpcodePtr) {
         this.entryIp = ip;
+        // Skip over the enter opcode
+        const enterSizeU16 = cwraps.mono_jiterp_get_opcode_info(MintOpcode.MINT_TIER_ENTER_JITERPRETER, OpcodeInfoType.Length);
+        this.firstOpcodeIp = ip + <any>(enterSizeU16 * 2);
         this.appendBlob();
         mono_assert(this.segments.length === 1, "expected 1 segment");
         mono_assert(this.segments[0].type === "blob", "expected blob");
@@ -1183,9 +1189,10 @@ class Cfg {
             this.overheadBytes += 20; // some extra padding for the dispatch br_table
             this.overheadBytes += this.backBranchTargets.length; // one byte for each target in the table
         }
+        return this.firstOpcodeIp;
     }
 
-    appendBlob() {
+    appendBlob () {
         if (this.builder.current.size === this.lastSegmentEnd)
             return;
 
@@ -1201,7 +1208,7 @@ class Cfg {
         this.overheadBytes += 2;
     }
 
-    startBranchBlock(ip: MintOpcodePtr, isBackBranchTarget: boolean) {
+    startBranchBlock (ip: MintOpcodePtr, isBackBranchTarget: boolean) {
         this.appendBlob();
         this.segments.push({
             type: "branch-block-header",
@@ -1211,8 +1218,10 @@ class Cfg {
         this.overheadBytes += 1; // each branch block just costs us an end
     }
 
-    branch(target: MintOpcodePtr, isBackward: boolean, branchType: CfgBranchType) {
-        this.observedBranchTargets.add(target);
+    branch (target: MintOpcodePtr, isBackward: boolean, branchType: CfgBranchType) {
+        if (isBackward)
+            this.observedBackBranchTargets.add(target);
+
         this.appendBlob();
         this.segments.push({
             type: "branch",
@@ -1224,31 +1233,31 @@ class Cfg {
         // some branches will generate bailouts instead so we allocate 4 bytes per branch
         //  to try and balance this out and avoid underestimating too much
         this.overheadBytes += 4; // forward branches are a constant br + depth (optimally 2 bytes)
+
         if (isBackward) {
-            // get_local <cinfo>
-            // i32_const 1
-            // i32_store 0 0
             // i32.const <n>
             // set_local <disp>
-            this.overheadBytes += 11;
+            this.overheadBytes += 4;
         }
 
-        // Account for the size of the safepoint
-        if (
-            (branchType === CfgBranchType.SafepointConditional) ||
-            (branchType === CfgBranchType.SafepointUnconditional)
-        ) {
-            this.overheadBytes += 17;
+        if (WasmEnableThreads) {
+            // Account for the size of the safepoint
+            if (
+                (branchType === CfgBranchType.SafepointConditional) ||
+                (branchType === CfgBranchType.SafepointUnconditional)
+            ) {
+                this.overheadBytes += 17;
+            }
         }
     }
 
-    emitBlob(segment: CfgBlob, source: Uint8Array) {
+    emitBlob (segment: CfgBlob, source: Uint8Array) {
         // mono_log_info(`segment @${(<any>segment.ip).toString(16)} ${segment.start}-${segment.start + segment.length}`);
         const view = source.subarray(segment.start, segment.start + segment.length);
         this.builder.appendBytes(view);
     }
 
-    generate(): Uint8Array {
+    generate (): Uint8Array {
         // HACK: Make sure any remaining bytes are inserted into a trailing segment
         this.appendBlob();
 
@@ -1266,8 +1275,9 @@ class Cfg {
         // We wrap the entire trace in a loop that starts with a dispatch br_table in order to support
         //  backwards branches.
         if (this.backBranchTargets) {
-            this.builder.i32_const(0);
-            this.builder.local("disp", WasmOpcode.set_local);
+            // unnecessary, the local is default initialized to zero
+            // this.builder.i32_const(0);
+            // this.builder.local("disp", WasmOpcode.set_local);
             this.builder.block(WasmValtype.void, WasmOpcode.loop);
         }
 
@@ -1298,7 +1308,7 @@ class Cfg {
                 const breakDepth = this.blockStack.indexOf(offset);
                 if (breakDepth < 0)
                     continue;
-                if (!this.observedBranchTargets.has(offset))
+                if (!this.observedBackBranchTargets.has(offset))
                     continue;
 
                 this.dispatchTable.set(offset, this.backDispatchOffsets.length + 1);
@@ -1316,17 +1326,22 @@ class Cfg {
                         mono_log_info(`Exactly one back dispatch offset and it was 0x${(<any>this.backDispatchOffsets[0]).toString(16)}`);
                 }
 
-                // if (disp) goto back_branch_target else fallthrough
+                // if (disp)
+                //    goto back_branch_target;
                 this.builder.local("disp");
                 this.builder.appendU8(WasmOpcode.br_if);
                 this.builder.appendULeb(this.blockStack.indexOf(this.backDispatchOffsets[0]));
             } else {
+                if (this.trace > 0)
+                    mono_log_info(`${this.backDispatchOffsets.length} back branch offsets after filtering.`);
+
                 // the loop needs to start with a br_table that performs dispatch based on the current value
                 //  of the dispatch index local
                 // br_table has to be surrounded by a block in order for a depth of 0 to be fallthrough
                 // We wrap it in an additional block so we can have a trap for unexpected disp values
                 this.builder.block(WasmValtype.void);
                 this.builder.block(WasmValtype.void);
+                // switch (disp) {
                 this.builder.local("disp");
                 this.builder.appendU8(WasmOpcode.br_table);
 
@@ -1376,23 +1391,16 @@ class Cfg {
                 case "branch": {
                     const lookupTarget = segment.isBackward ? dispatchIp : segment.target;
                     let indexInStack = this.blockStack.indexOf(lookupTarget),
-                        successfulBackBranch = false;
+                        successfulBackBranch = false,
+                        disp : number | undefined = undefined;
 
                     // Back branches will target the dispatcher loop so we need to update the dispatch index
                     //  which will be used by the loop dispatch br_table to jump to the correct location
                     if (segment.isBackward) {
                         if (this.dispatchTable.has(segment.target)) {
-                            const disp = this.dispatchTable.get(segment.target)!;
+                            disp = this.dispatchTable.get(segment.target)!;
                             if (this.trace > 1)
                                 mono_log_info(`backward br from ${(<any>segment.from).toString(16)} to ${(<any>segment.target).toString(16)}: disp=${disp}`);
-
-                            // Set the back branch taken flag local so it will get flushed on monitoring exit
-                            this.builder.i32_const(1);
-                            this.builder.local("backbranched", WasmOpcode.set_local);
-
-                            // set the dispatch index for the br_table
-                            this.builder.i32_const(disp);
-                            this.builder.local("disp", WasmOpcode.set_local);
                             successfulBackBranch = true;
                         } else {
                             if (this.trace > 0)
@@ -1406,20 +1414,40 @@ class Cfg {
                         switch (segment.branchType) {
                             case CfgBranchType.SafepointUnconditional:
                                 append_safepoint(this.builder, segment.from);
+                                if (disp !== undefined) {
+                                    this.builder.i32_const(disp);
+                                    this.builder.local("disp", WasmOpcode.set_local);
+                                }
                                 this.builder.appendU8(WasmOpcode.br);
                                 break;
                             case CfgBranchType.SafepointConditional:
                                 // Wrap the safepoint + branch in an if
                                 this.builder.block(WasmValtype.void, WasmOpcode.if_);
                                 append_safepoint(this.builder, segment.from);
+                                if (disp !== undefined) {
+                                    this.builder.i32_const(disp);
+                                    this.builder.local("disp", WasmOpcode.set_local);
+                                }
                                 this.builder.appendU8(WasmOpcode.br);
                                 offset = 1;
                                 break;
                             case CfgBranchType.Unconditional:
+                                if (disp !== undefined) {
+                                    this.builder.i32_const(disp);
+                                    this.builder.local("disp", WasmOpcode.set_local);
+                                }
                                 this.builder.appendU8(WasmOpcode.br);
                                 break;
                             case CfgBranchType.Conditional:
-                                this.builder.appendU8(WasmOpcode.br_if);
+                                if (disp !== undefined) {
+                                    this.builder.block(WasmValtype.void, WasmOpcode.if_);
+                                    this.builder.i32_const(disp);
+                                    this.builder.local("disp", WasmOpcode.set_local);
+                                    offset = 1;
+                                    this.builder.appendU8(WasmOpcode.br);
+                                } else {
+                                    this.builder.appendU8(WasmOpcode.br_if);
+                                }
                                 break;
                             default:
                                 throw new Error("Unimplemented branch type");
@@ -1488,7 +1516,10 @@ export const _now = (globalThis.performance && globalThis.performance.now)
 
 let scratchBuffer: NativePointer = <any>0;
 
-export function append_safepoint(builder: WasmBuilder, ip: MintOpcodePtr) {
+export function append_safepoint (builder: WasmBuilder, ip: MintOpcodePtr) {
+    // safepoints are never triggered in a single-threaded build
+    if (!WasmEnableThreads)
+        return;
     // Check whether a safepoint is required
     builder.ptr_const(cwraps.mono_jiterp_get_polling_required_address());
     builder.appendU8(WasmOpcode.i32_load);
@@ -1502,7 +1533,7 @@ export function append_safepoint(builder: WasmBuilder, ip: MintOpcodePtr) {
     builder.endBlock();
 }
 
-export function append_bailout(builder: WasmBuilder, ip: MintOpcodePtr, reason: BailoutReason) {
+export function append_bailout (builder: WasmBuilder, ip: MintOpcodePtr, reason: BailoutReason) {
     builder.ip_const(ip);
     if (builder.options.countBailouts) {
         builder.i32_const(builder.traceIndex);
@@ -1513,20 +1544,32 @@ export function append_bailout(builder: WasmBuilder, ip: MintOpcodePtr, reason: 
 }
 
 // generate a bailout that is recorded for the monitoring phase as a possible early exit.
-export function append_exit(builder: WasmBuilder, ip: MintOpcodePtr, opcodeCounter: number, reason: BailoutReason) {
+export function append_exit (builder: WasmBuilder, ip: MintOpcodePtr, opcodeCounter: number, reason: BailoutReason) {
+    /*
+     * disp will always be nonzero once we've taken at least one backward branch.
+     * if (cinfo) {
+     *   cinfo->backward_branch_taken = disp;
+     *   if (opcodeCounter <= threshold)
+     *     cinfo->opcode_count = opcodeCounter;
+     * }
+     */
+
+    builder.local("cinfo");
+    builder.block(WasmValtype.void, WasmOpcode.if_);
+
+    builder.local("cinfo");
+    builder.local("disp");
+    builder.appendU8(WasmOpcode.i32_store);
+    builder.appendMemarg(getMemberOffset(JiterpMember.BackwardBranchTaken), 0);
+
     if (opcodeCounter <= (builder.options.monitoringLongDistance + 2)) {
         builder.local("cinfo");
         builder.i32_const(opcodeCounter);
         builder.appendU8(WasmOpcode.i32_store);
-        builder.appendMemarg(4, 0); // bailout_opcode_count
-        // flush the backward branch taken flag into the cinfo so that the monitoring phase
-        //  knows we took a backward branch. this is unfortunate but unavoidable overhead
-        // we just make it a flag instead of an increment to reduce the cost
-        builder.local("cinfo");
-        builder.local("backbranched");
-        builder.appendU8(WasmOpcode.i32_store);
-        builder.appendMemarg(0, 0); // JiterpreterCallInfo.backward_branch_taken
+        builder.appendMemarg(getMemberOffset(JiterpMember.BailoutOpcodeCount), 0);
     }
+
+    builder.endBlock();
 
     builder.ip_const(ip);
     if (builder.options.countBailouts) {
@@ -1537,7 +1580,7 @@ export function append_exit(builder: WasmBuilder, ip: MintOpcodePtr, opcodeCount
     builder.appendU8(WasmOpcode.return_);
 }
 
-export function copyIntoScratchBuffer(src: NativePointer, size: number): NativePointer {
+export function copyIntoScratchBuffer (src: NativePointer, size: number): NativePointer {
     if (!scratchBuffer)
         scratchBuffer = Module._malloc(64);
     if (size > 64)
@@ -1547,7 +1590,7 @@ export function copyIntoScratchBuffer(src: NativePointer, size: number): NativeP
     return scratchBuffer;
 }
 
-export function getWasmFunctionTable() {
+export function getWasmFunctionTable () {
     if (!wasmTable)
         wasmTable = runtimeHelpers.getWasmIndirectFunctionTable();
     if (!wasmTable)
@@ -1555,9 +1598,8 @@ export function getWasmFunctionTable() {
     return wasmTable;
 }
 
-export function addWasmFunctionPointer(table: JiterpreterTable, f: Function) {
+export function addWasmFunctionPointer (table: JiterpreterTable, f: Function) {
     mono_assert(f, "Attempting to set null function into table");
-    mono_assert(!runtimeHelpers.storeMemorySnapshotPending, "Attempting to set function into table during creation of memory snapshot");
 
     const index = cwraps.mono_jiterp_allocate_table_entry(table);
     if (index > 0) {
@@ -1570,7 +1612,7 @@ export function addWasmFunctionPointer(table: JiterpreterTable, f: Function) {
     return index;
 }
 
-export function try_append_memset_fast(builder: WasmBuilder, localOffset: number, value: number, count: number, destOnStack: boolean) {
+export function try_append_memset_fast (builder: WasmBuilder, localOffset: number, value: number, count: number, destOnStack: boolean) {
     if (count <= 0) {
         if (destOnStack)
             builder.appendU8(WasmOpcode.drop);
@@ -1641,7 +1683,7 @@ export function try_append_memset_fast(builder: WasmBuilder, localOffset: number
     return true;
 }
 
-export function append_memset_dest(builder: WasmBuilder, value: number, count: number) {
+export function append_memset_dest (builder: WasmBuilder, value: number, count: number) {
     // spec: pop n, pop val, pop d, fill from d[0] to d[n] with value val
     if (try_append_memset_fast(builder, 0, value, count, true))
         return;
@@ -1653,7 +1695,7 @@ export function append_memset_dest(builder: WasmBuilder, value: number, count: n
     builder.appendU8(0);
 }
 
-export function try_append_memmove_fast(
+export function try_append_memmove_fast (
     builder: WasmBuilder, destLocalOffset: number, srcLocalOffset: number,
     count: number, addressesOnStack: boolean, destLocal?: string, srcLocal?: string
 ) {
@@ -1753,7 +1795,7 @@ export function try_append_memmove_fast(
 }
 
 // expects dest then source to have been pushed onto wasm stack
-export function append_memmove_dest_src(builder: WasmBuilder, count: number) {
+export function append_memmove_dest_src (builder: WasmBuilder, count: number) {
     if (try_append_memmove_fast(builder, 0, 0, count, true))
         return true;
 
@@ -1767,7 +1809,7 @@ export function append_memmove_dest_src(builder: WasmBuilder, count: number) {
     return true;
 }
 
-export function recordFailure(): void {
+export function recordFailure (): void {
     const result = modifyCounter(JiterpCounter.Failures, 1);
     if (result >= maxFailures) {
         mono_log_info(`Disabling jiterpreter after ${result} failures`);
@@ -1781,7 +1823,7 @@ export function recordFailure(): void {
 
 const memberOffsets: { [index: number]: number } = {};
 
-export function getMemberOffset(member: JiterpMember) {
+export function getMemberOffset (member: JiterpMember) {
     const cached = memberOffsets[member];
     if (cached === undefined)
         return memberOffsets[member] = cwraps.mono_jiterp_get_member_offset(<any>member);
@@ -1789,7 +1831,7 @@ export function getMemberOffset(member: JiterpMember) {
         return cached;
 }
 
-export function getRawCwrap(name: string): Function {
+export function getRawCwrap (name: string): Function {
     const result = (<any>Module)["asm"][name];
     if (typeof (result) !== "function")
         throw new Error(`raw cwrap ${name} not found`);
@@ -1798,18 +1840,18 @@ export function getRawCwrap(name: string): Function {
 
 const opcodeTableCache: { [opcode: number]: number } = {};
 
-export function getOpcodeTableValue(opcode: MintOpcode) {
+export function getOpcodeTableValue (opcode: MintOpcode) {
     let result = opcodeTableCache[opcode];
     if (typeof (result) !== "number")
         result = opcodeTableCache[opcode] = cwraps.mono_jiterp_get_opcode_value_table_entry(<any>opcode);
     return result;
 }
 
-export function importDef(name: string, fn: Function): [string, string, Function] {
+export function importDef (name: string, fn: Function): [string, string, Function] {
     return [name, name, fn];
 }
 
-export function bytesFromHex(hex: string): Uint8Array {
+export function bytesFromHex (hex: string): Uint8Array {
     const bytes = new Uint8Array(hex.length / 2);
     for (let i = 0; i < hex.length; i += 2)
         bytes[i / 2] = parseInt(hex.substring(i, i + 2), 16);
@@ -1818,10 +1860,10 @@ export function bytesFromHex(hex: string): Uint8Array {
 
 let observedTaintedZeroPage: boolean | undefined;
 
-export function isZeroPageReserved(): boolean {
+export function isZeroPageReserved (): boolean {
     // FIXME: This check will always return true on worker threads.
     // Right now the jiterpreter is disabled when threading is active, so that's not an issue.
-    if (MonoWasmThreads)
+    if (WasmEnableThreads)
         return false;
 
     if (!cwraps.mono_wasm_is_zero_page_reserved())
@@ -1859,6 +1901,7 @@ export type JiterpreterOptions = {
     enableWasmEh: boolean;
     enableSimd: boolean;
     zeroPageOptimization: boolean;
+    cprop: boolean;
     // For locations where the jiterpreter heuristic says we will be unable to generate
     //  a trace, insert an entry point opcode anyway. This enables collecting accurate
     //  stats for options like estimateHeat, but raises overhead.
@@ -1904,6 +1947,7 @@ const optionNames: { [jsName: string]: string } = {
     "enableWasmEh": "jiterpreter-wasm-eh-enabled",
     "enableSimd": "jiterpreter-simd-enabled",
     "zeroPageOptimization": "jiterpreter-zero-page-optimization",
+    "cprop": "jiterpreter-constant-propagation",
     "enableStats": "jiterpreter-stats-enabled",
     "disableHeuristic": "jiterpreter-disable-heuristic",
     "estimateHeat": "jiterpreter-estimate-heat",
@@ -1933,7 +1977,7 @@ let optionsVersion = -1;
 let optionTable: JiterpreterOptions = <any>{};
 
 // applies one or more jiterpreter options to change the current jiterpreter configuration.
-export function applyOptions(options: JiterpreterOptions) {
+export function applyOptions (options: JiterpreterOptions) {
     for (const k in options) {
         const info = optionNames[k];
         if (!info) {
@@ -1951,16 +1995,16 @@ export function applyOptions(options: JiterpreterOptions) {
     }
 }
 
-export function getCounter(counter: JiterpCounter): number {
+export function getCounter (counter: JiterpCounter): number {
     return cwraps.mono_jiterp_get_counter(counter);
 }
 
-export function modifyCounter(counter: JiterpCounter, delta: number): number {
+export function modifyCounter (counter: JiterpCounter, delta: number): number {
     return cwraps.mono_jiterp_modify_counter(counter, delta);
 }
 
 // returns the current jiterpreter configuration. do not mutate the return value!
-export function getOptions() {
+export function getOptions () {
     const currentVersion = cwraps.mono_jiterp_get_options_version();
     if (currentVersion !== optionsVersion) {
         updateOptions();
@@ -1969,20 +2013,18 @@ export function getOptions() {
     return optionTable;
 }
 
-function updateOptions() {
-    const pJson = cwraps.mono_jiterp_get_options_as_json();
-    const json = utf8ToString(<any>pJson);
-    Module._free(<any>pJson);
-    const blob = JSON.parse(json);
-
+function updateOptions () {
     optionTable = <any>{};
     for (const k in optionNames) {
-        const info = optionNames[k];
-        (<any>optionTable)[k] = blob[info];
+        const value = cwraps.mono_jiterp_get_option_as_int(optionNames[k]);
+        if (value > -2147483647)
+            (<any>optionTable)[k] = value;
+        else
+            mono_log_info(`Failed to retrieve value of option ${optionNames[k]}`);
     }
 }
 
-function jiterpreter_allocate_table(type: JiterpreterTable, base: number, size: number, fillValue: Function) {
+function jiterpreter_allocate_table (type: JiterpreterTable, base: number, size: number, fillValue: Function) {
     const wasmTable = getWasmFunctionTable();
     const firstIndex = base, lastIndex = firstIndex + size - 1;
     mono_assert(lastIndex < wasmTable.length, () => `Last index out of range: ${lastIndex} >= ${wasmTable.length}`);
@@ -1991,7 +2033,7 @@ function jiterpreter_allocate_table(type: JiterpreterTable, base: number, size: 
     // In threaded builds we need to populate all the reserved slots with safe placeholder functions
     // This operation is expensive in v8, so avoid doing it in single-threaded builds (which SHOULD
     //  be safe, since it was previously not necessary)
-    if (MonoWasmThreads) {
+    if (WasmEnableThreads) {
         // HACK: If possible, we want to copy any backing state associated with the first placeholder item,
         //  so that additional work doesn't have to be done by the runtime for the following table sets
         const preparedValue = wasmTable.get(firstIndex);
@@ -2006,7 +2048,7 @@ function jiterpreter_allocate_table(type: JiterpreterTable, base: number, size: 
 // we need to ensure we only ever initialize tables once on each js worker.
 let jiterpreter_tables_allocated = false;
 
-export function jiterpreter_allocate_tables() {
+export function jiterpreter_allocate_tables () {
     if (jiterpreter_tables_allocated)
         return;
     jiterpreter_tables_allocated = true;
@@ -2017,8 +2059,8 @@ export function jiterpreter_allocate_tables() {
     //  then create special placeholder functions that examine the rmethod to determine which kind
     //  of method is being called.
     const traceTableSize = options.tableSize,
-        jitCallTableSize = linkerRunAOTCompilation ? options.tableSize : 1,
-        interpEntryTableSize = linkerRunAOTCompilation ? options.aotTableSize : 1,
+        jitCallTableSize = runtimeHelpers.emscriptenBuildOptions.runAOTCompilation ? options.tableSize : 1,
+        interpEntryTableSize = runtimeHelpers.emscriptenBuildOptions.runAOTCompilation ? options.aotTableSize : 1,
         numInterpEntryTables = JiterpreterTable.LAST - JiterpreterTable.InterpEntryStatic0 + 1,
         totalSize = traceTableSize + jitCallTableSize + (numInterpEntryTables * interpEntryTableSize) + 1,
         wasmTable = getWasmFunctionTable();

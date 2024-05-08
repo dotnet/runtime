@@ -1,24 +1,21 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>$(TargetFrameworkForNETCoreTasks);$(TargetFrameworkForNETFrameworkTasks)</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppToolCurrent);$(NetFrameworkToolCurrent)</TargetFrameworks>
     <Description>Abstractions for modifying .NET webcil binary images</Description>
     <EnableDefaultItems>true</EnableDefaultItems>
     <Nullable>enable</Nullable>
     <IncludeSymbols>true</IncludeSymbols>
     <Serviceable>true</Serviceable>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <IsShipping>true</IsShipping>
-    <!-- this assembly should not produce a public package, rather it's meant to be shipped by the
-          WasmAppBuilder task and the BrowserDebugProxy -->
-    <IsShippingPackage>false</IsShippingPackage>
+    <IsShipping>false</IsShipping>
+    <IsPackable>true</IsPackable>
   </PropertyGroup>
 
-  <ItemGroup>
-    <!-- we need to keep the version of System.Reflection.Metadata in sync with dotnet/msbuild and dotnet/sdk -->
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
     <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" /> 
-    <PackageReference Include="System.Reflection.Metadata" Version="$(SystemReflectionMetadataVersion)" />
-    <PackageReference Include="System.Collections.Immutable" Version="$(SystemCollectionsImmutableVersion)" />
+    <PackageReference Include="System.Reflection.Metadata" Version="$(SystemReflectionMetadataToolsetVersion)" />
+    <PackageReference Include="System.Collections.Immutable" Version="$(SystemCollectionsImmutableToolsetVersion)" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">

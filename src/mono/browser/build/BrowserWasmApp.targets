@@ -28,7 +28,7 @@
       _WasmGenerateRunV8Script;
     </WasmGenerateAppBundleDependsOn>
 
-    <WasmEnableJsInteropByValue Condition="'$(WasmEnableJsInteropByValue)' == '' and ( '$(WasmEnableThreads)' == 'true' or '$(MonoWasmBuildVariant)' == 'multithread' )">true</WasmEnableJsInteropByValue>
+    <WasmEnableJsInteropByValue Condition="'$(WasmEnableJsInteropByValue)' == '' and '$(WasmEnableThreads)' == 'true'">true</WasmEnableJsInteropByValue>
     <WasmEnableJsInteropByValue Condition="'$(WasmEnableJsInteropByValue)' == ''">false</WasmEnableJsInteropByValue>
 
     <!-- Temporarily `false`, till sdk gets a fix for supporting the new file -->
@@ -64,7 +64,6 @@
 
     <_BoolPropertiesThatTriggerRelinking Include="WasmEnableSIMD" DefaultValueInRuntimePack="true" />
     <_BoolPropertiesThatTriggerRelinking Include="WasmEnableExceptionHandling" DefaultValueInRuntimePack="true" />
-    <_BoolPropertiesThatTriggerRelinking Include="WasmNativeStrip" DefaultValueInRuntimePack="true" />
   </ItemGroup>
 
   <Target Name="_GetWasmGenerateAppBundleDependencies">
@@ -120,9 +119,9 @@
           Condition="'$(WasmGenerateAppBundle)' == 'true'">
 
     <PropertyGroup>
-      <_WasmAppIncludeThreadsWorker Condition="'$(WasmEnableThreads)' == 'true' or '$(MonoWasmBuildVariant)' == 'multithread'">true</_WasmAppIncludeThreadsWorker>
       <!-- TODO: set this from some user-facing property?  -1 means use the default baked into dotnet.native.js -->
-      <_WasmPThreadPoolSize Condition="'$(_WasmPThreadPoolSize)' == ''">-1</_WasmPThreadPoolSize>
+      <_WasmPThreadPoolInitialSize Condition="'$(_WasmPThreadPoolInitialSize)' == ''">-1</_WasmPThreadPoolInitialSize>
+      <_WasmPThreadPoolUnusedSize Condition="'$(_WasmPThreadPoolUnusedSize)' == ''">-1</_WasmPThreadPoolUnusedSize>
     </PropertyGroup>
 
     <ItemGroup>
@@ -148,8 +147,9 @@
       ExtraConfig="@(WasmExtraConfig)"
       NativeAssets="@(WasmNativeAsset)"
       DebugLevel="$(WasmDebugLevel)"
-      IncludeThreadsWorker="$(_WasmAppIncludeThreadsWorker)"
-      PThreadPoolSize="$(_WasmPThreadPoolSize)"
+      IncludeThreadsWorker="$(WasmEnableThreads)"
+      PThreadPoolInitialSize="$(_WasmPThreadPoolInitialSize)"
+      PThreadPoolUnusedSize="$(_WasmPThreadPoolUnusedSize)"
       UseWebcil="$(WasmEnableWebcil)"
       WasmIncludeFullIcuData="$(WasmIncludeFullIcuData)"
       WasmIcuDataFileName="$(WasmIcuDataFileName)"
@@ -260,6 +260,8 @@
       <EmccCompileOptimizationFlag Condition="'$(EmccCompileOptimizationFlag)' == ''">$(_EmccOptimizationFlagDefault)</EmccCompileOptimizationFlag>
       <!-- FIXME: which one should take precedence? -->
       <WasmCompileOptimizationFlag>$(EmccCompileOptimizationFlag)</WasmCompileOptimizationFlag>
+      <WasmBitcodeCompileOptimizationFlag Condition="'$(WasmBitcodeCompileOptimizationFlag)' == '' and '$(Configuration)' == 'Release'">-O2</WasmBitcodeCompileOptimizationFlag>
+      <WasmBitcodeCompileOptimizationFlag Condition="'$(WasmBitcodeCompileOptimizationFlag)' == '' ">$(WasmCompileOptimizationFlag)</WasmBitcodeCompileOptimizationFlag>
       <EmccLinkOptimizationFlag    Condition="'$(EmccLinkOptimizationFlag)' == '' and '$(Configuration)' == 'Release'">-O2</EmccLinkOptimizationFlag>
       <EmccLinkOptimizationFlag    Condition="'$(EmccLinkOptimizationFlag)' == ''"   >$(WasmCompileOptimizationFlag)</EmccLinkOptimizationFlag>
       <WasmLinkOptimizationFlag>$(EmccLinkOptimizationFlag)</WasmLinkOptimizationFlag>
@@ -333,7 +335,7 @@
 
       <_WasmRuntimePackSrcFile ObjectFile="$(_WasmIntermediateOutputPath)%(FileName).o" />
 
-      <!-- See src\mono\wasm\runtime\modularize-dotnet.md -->
+      <!-- See src\mono\browser\runtime\modularize-dotnet.md -->
       <JSFileType Include="extpre.js"  Kind="extern-pre-js" />
       <JSFileType Include="iffe.js"    Kind="extern-pre-js" />
       <JSFileType Include="pre.js"     Kind="pre-js" />
@@ -406,8 +408,9 @@
 
   <Target Name="_BrowserWasmBeforeWriteCompileBitcodeRsp" BeforeTargets="_WasmWriteRspForCompilingBitcode">
     <ItemGroup>
-      <_BitcodeLDFlags Include="@(_EmccLDFlags)" />
-      <_BitcodeLDFlags Include="$(EmccExtraBitcodeLDFlags)" />
+      <_BitcodeCompileFlags Include="$(WasmBitcodeCompileOptimizationFlag)" />
+      <_BitcodeCompileFlags Include="@(_EmccCommonFlags)" />
+      <_BitcodeCompileFlags Include="$(EmccExtraBitcodeCompilationFlags)" />
     </ItemGroup>
   </Target>
 

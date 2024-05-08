@@ -38,7 +38,7 @@ public:
         BOOL fSharedByGenericInstantiations; // TRUE if this is canonical type shared by instantiations
         BOOL fContainsGenericVariables; // TRUE if this is an open type
 
-        inline bmtGenericsInfo() { LIMITED_METHOD_CONTRACT; memset((void *)this, NULL, sizeof(*this)); }
+        inline bmtGenericsInfo() { LIMITED_METHOD_CONTRACT; memset((void *)this, 0, sizeof(*this)); }
         inline DWORD GetNumGenericArgs() const { LIMITED_METHOD_CONTRACT; return typeContext.m_classInst.GetNumArgs(); }
         inline BOOL HasInstantiation() const { LIMITED_METHOD_CONTRACT; return typeContext.m_classInst.GetNumArgs() != 0; }
         inline BOOL IsTypicalTypeDefinition() const { LIMITED_METHOD_CONTRACT; return !HasInstantiation() || fTypicalInstantiation; }
@@ -209,8 +209,6 @@ private:
     void SetModuleDynamicID(DWORD x) { WRAPPER_NO_CONTRACT; GetHalfBakedClass()->SetModuleDynamicID(x); }
     void SetNumHandleRegularStatics(WORD x) { WRAPPER_NO_CONTRACT; GetHalfBakedClass()->SetNumHandleRegularStatics(x); }
     void SetNumHandleThreadStatics(WORD x) { WRAPPER_NO_CONTRACT; GetHalfBakedClass()->SetNumHandleThreadStatics(x); }
-    void SetNumBoxedRegularStatics(WORD x) { WRAPPER_NO_CONTRACT; GetHalfBakedClass()->SetNumBoxedRegularStatics(x); }
-    void SetNumBoxedThreadStatics(WORD x) { WRAPPER_NO_CONTRACT; GetHalfBakedClass()->SetNumBoxedThreadStatics(x); }
     void SetAlign8Candidate() { WRAPPER_NO_CONTRACT; GetHalfBakedClass()->SetAlign8Candidate(); }
     void SetHasOverlaidFields() { WRAPPER_NO_CONTRACT; GetHalfBakedClass()->SetHasOverlaidFields(); }
     void SetNonGCRegularStaticFieldBytes(DWORD x) { WRAPPER_NO_CONTRACT; GetHalfBakedClass()->SetNonGCRegularStaticFieldBytes(x); }
@@ -1302,7 +1300,7 @@ private:
         DWORD dwNonGCRegularStaticFieldBytes;
         DWORD dwNonGCThreadStaticFieldBytes;
 
-        inline bmtProperties() { LIMITED_METHOD_CONTRACT; memset((void *)this, NULL, sizeof(*this)); }
+        inline bmtProperties() { LIMITED_METHOD_CONTRACT; memset((void *)this, 0, sizeof(*this)); }
     };  // struct bmtProperties
 
     // --------------------------------------------------------------------------------------------
@@ -1554,7 +1552,7 @@ private:
         DWORD NumParentPointerSeries;
         MethodNameHash *pParentMethodHash;
 
-        inline bmtParentInfo() { LIMITED_METHOD_CONTRACT; memset((void *)this, NULL, sizeof(*this)); }
+        inline bmtParentInfo() { LIMITED_METHOD_CONTRACT; memset((void *)this, 0, sizeof(*this)); }
     };  // struct bmtParentInfo
 
     // --------------------------------------------------------------------------------------------
@@ -1836,7 +1834,7 @@ private:
 
         //-----------------------------------------------------------------------------------------
         // Constructor
-        inline bmtInterfaceInfo() { LIMITED_METHOD_CONTRACT; memset((void *)this, NULL, sizeof(*this)); }
+        inline bmtInterfaceInfo() { LIMITED_METHOD_CONTRACT; memset((void *)this, 0, sizeof(*this)); }
     };  // struct bmtInterfaceInfo
 
     // --------------------------------------------------------------------------------------------
@@ -1865,7 +1863,7 @@ private:
         inline bmtEnumFieldInfo(IMDInternalImport *pInternalImport)
         {
             LIMITED_METHOD_CONTRACT;
-            memset((void *)this, NULL, sizeof(*this));
+            memset((void *)this, 0, sizeof(*this));
             m_pInternalImport = pInternalImport;
         }
     };  // struct bmtEnumFieldInfo
@@ -1888,7 +1886,7 @@ private:
         //-----------------------------------------------------------------------------------------
         // Constructor
         inline bmtMethodInfo()
-            { LIMITED_METHOD_CONTRACT; memset((void *)this, NULL, sizeof(*this)); }
+            { LIMITED_METHOD_CONTRACT; memset((void *)this, 0, sizeof(*this)); }
 
         //-----------------------------------------------------------------------------------------
         // Add a declared method to the array
@@ -1968,7 +1966,7 @@ private:
         bool fHasCovariantOverride;
 
         //-----------------------------------------------------------------------------------------
-        inline bmtMetaDataInfo() { LIMITED_METHOD_CONTRACT; memset((void *)this, NULL, sizeof(*this)); }
+        inline bmtMetaDataInfo() { LIMITED_METHOD_CONTRACT; memset((void *)this, 0, sizeof(*this)); }
     };  // struct bmtMetaDataInfo
 
     // --------------------------------------------------------------------------------------------
@@ -1981,7 +1979,7 @@ private:
 
 
         //-----------------------------------------------------------------------------------------
-        inline bmtMethAndFieldDescs() { LIMITED_METHOD_CONTRACT; memset((void *)this, NULL, sizeof(*this)); }
+        inline bmtMethAndFieldDescs() { LIMITED_METHOD_CONTRACT; memset((void *)this, 0, sizeof(*this)); }
     };  // struct bmtMethAndFieldDescs
 
     // --------------------------------------------------------------------------------------------
@@ -2040,7 +2038,7 @@ private:
 
         //-----------------------------------------------------------------------------------------
         // Constructor
-        inline bmtInternalInfo() { LIMITED_METHOD_CONTRACT; memset((void *)this, NULL, sizeof(*this)); }
+        inline bmtInternalInfo() { LIMITED_METHOD_CONTRACT; memset((void *)this, 0, sizeof(*this)); }
     };  // struct bmtInternalInfo
 
 
@@ -2143,7 +2141,7 @@ private:
         //-----------------------------------------------------------------------------------------
         // Constructor
         inline bmtMethodImplInfo()
-            { LIMITED_METHOD_CONTRACT; memset((void*) this, NULL, sizeof(*this)); }
+            { LIMITED_METHOD_CONTRACT; memset((void*) this, 0, sizeof(*this)); }
 
         //-----------------------------------------------------------------------------------------
         // Returns TRUE if tok acts as a body for any methodImpl entry. FALSE, otherwise.
@@ -2401,7 +2399,7 @@ public:
         Substitution * pInterfaceSubstitution;
         SigTypeContext typeContext;     // Exact type context used to supply final instantiation to substitution chains
 
-        inline bmtExactInterfaceInfo() { LIMITED_METHOD_CONTRACT; memset((void *)this, NULL, sizeof(*this)); }
+        inline bmtExactInterfaceInfo() { LIMITED_METHOD_CONTRACT; memset((void *)this, 0, sizeof(*this)); }
     };  // struct bmtExactInterfaceInfo
 
 private:
@@ -2451,7 +2449,7 @@ public:
         Substitution **ppInterfaceSubstitutionChains;
         SigTypeContext typeContext;
 
-        inline bmtInterfaceAmbiguityCheckInfo() { LIMITED_METHOD_CONTRACT; memset((void *)this, NULL, sizeof(*this)); }
+        inline bmtInterfaceAmbiguityCheckInfo() { LIMITED_METHOD_CONTRACT; memset((void *)this, 0, sizeof(*this)); }
     };  // struct bmtInterfaceAmbiguityCheckInfo
 
     static void

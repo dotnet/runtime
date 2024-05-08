@@ -2245,4 +2245,50 @@ namespace DebuggerTests
             Console.WriteLine(dt);
         }
     }
+    public unsafe struct EvaluateValueTypeWithFixedArray
+    {
+        private fixed int myIntArray[4];
+        private fixed char myCharArray[3];
+        double myDouble;
+        public EvaluateValueTypeWithFixedArray()
+        {
+            myDouble = 10;
+            myIntArray[0] = 1;
+            myIntArray[1] = 2;
+            myCharArray[2] = 'a';
+        }
+        public int MyMethod()
+        {
+            Console.WriteLine(myDouble);
+            return myIntArray[0] + myIntArray[1] + (int)myDouble;
+        }
+        public static void run()
+        {
+            var myVar = new EvaluateValueTypeWithFixedArray();
+            Console.WriteLine("pause here");
+            myVar.MyMethod();
+        }
+    }
+
+    public struct EvaluateValueTypeWithObjectValueType
+    {
+        private object myObject;
+        double myDouble;
+        public EvaluateValueTypeWithObjectValueType()
+        {
+            myObject = new int();
+            myDouble = 10;
+        }
+        public int MyMethod()
+        {
+            Console.WriteLine(myDouble);
+            return (int)myObject + (int)myDouble;
+        }
+        public static void run()
+        {
+            var myVar = new EvaluateValueTypeWithObjectValueType();
+            Console.WriteLine("pause here");
+            myVar.MyMethod();
+        }
+    }
 }

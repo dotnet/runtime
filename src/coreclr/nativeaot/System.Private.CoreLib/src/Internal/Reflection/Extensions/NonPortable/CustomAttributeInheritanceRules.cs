@@ -18,7 +18,7 @@ using Internal.Reflection.Augments;
 
 namespace Internal.Reflection.Extensions.NonPortable
 {
-    public static class CustomAttributeInheritanceRules
+    internal static class CustomAttributeInheritanceRules
     {
         //==============================================================================================================================
         // Api helpers: Computes the effective set of custom attributes for various Reflection elements and returns them

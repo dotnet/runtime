@@ -598,10 +598,12 @@ namespace Microsoft.WebAssembly.Diagnostics
             foreach ((ParameterInfo paramInfo, object indexObj) in paramInfos.Zip(indexObjects))
             {
                 string argumentType = "", argumentClassName = "";
+                bool isArray = false;
                 if (indexObj is JObject indexJObj)
                 {
                     argumentType = indexJObj["type"]?.Value<string>();
                     argumentClassName = indexJObj["className"]?.Value<string>();
+                    isArray = indexJObj["subtype"]?.Value<string>()?.Equals("array") == true;
                 }
                 else if (indexObj is LiteralExpressionSyntax literal)
                 {
@@ -628,13 +630,13 @@ namespace Microsoft.WebAssembly.Diagnostics
                             continue;
                     }
                 }
-                if (!CheckParameterCompatibility(paramInfo.TypeCode, argumentType, argumentClassName))
+                if (!CheckParameterCompatibility(paramInfo.TypeCode, argumentType, argumentClassName, isArray))
                     return false;
             }
             return true;
         }
 
-        private static bool CheckParameterCompatibility(ElementType? paramTypeCode, string argumentType, string argumentClassName="")
+        private static bool CheckParameterCompatibility(ElementType? paramTypeCode, string argumentType, string argumentClassName, bool isArray)
         {
             if (!paramTypeCode.HasValue)
                 return true;
@@ -642,7 +644,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             switch (paramTypeCode.Value)
             {
                 case ElementType.Object:
-                    if (argumentType != "object")
+                    if (argumentType != "object" || isArray)
                         return false;
                     break;
                 case ElementType.I2:

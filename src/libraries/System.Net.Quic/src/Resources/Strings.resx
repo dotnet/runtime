@@ -233,5 +233,8 @@
   <data name="net_quic_callback_error" xml:space="preserve">
     <value>User configured callback failed.</value>
   </data>
+  <data name="net_auth_ephemeral" xml:space="preserve">
+    <value>Authentication failed because the platform does not support ephemeral keys.</value>
+  </data>
 </root>
 

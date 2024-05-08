@@ -52,12 +52,12 @@
     </ItemGroup>
 
     <ItemGroup Condition="'$(ContinuousIntegrationBuild)' == 'true' and '$(DebuggerHost)' == 'chrome'">
-      <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export BROWSER_PATH_FOR_TESTS=$HELIX_CORRELATION_PAYLOAD/chrome-linux/chrome" />
-      <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set BROWSER_PATH_FOR_TESTS=%HELIX_CORRELATION_PAYLOAD%\chrome-win\chrome.exe" />
+      <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export CHROME_PATH_FOR_TESTS=$HELIX_CORRELATION_PAYLOAD/chrome-linux/chrome" />
+      <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set CHROME_PATH_FOR_TESTS=%HELIX_CORRELATION_PAYLOAD%\chrome-win\chrome.exe" />
     </ItemGroup>
 
     <ItemGroup Condition="'$(ContinuousIntegrationBuild)' == 'true' and '$(DebuggerHost)' == 'firefox'">
-      <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export BROWSER_PATH_FOR_TESTS=$HELIX_CORRELATION_PAYLOAD/firefox/firefox" />
+      <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export FIREFOX_PATH_FOR_TESTS=$HELIX_CORRELATION_PAYLOAD/firefox/firefox" />
     </ItemGroup>
 
     <ItemGroup Label="Don't log to console on CI" Condition="'$(ContinuousIntegrationBuild)' == 'true'">
@@ -70,7 +70,7 @@
       <_DotnetCommand Condition="'$(OS)' == 'Windows_NT'">dotnet.exe</_DotnetCommand>
 
       <RunScriptCommand>$(_DotnetCommand) test DebuggerTestSuite/DebuggerTestSuite.dll</RunScriptCommand>
-      <RunScriptCommand Condition="'$(MonoWasmBuildVariant)' == 'multithread'">$(RunScriptCommand) /e:WASM_TESTS_USING_VARIANT=multithreaded</RunScriptCommand>
+      <RunScriptCommand>$(RunScriptCommand) /e:WasmEnableThreads=$(WasmEnableThreads)</RunScriptCommand>
       <RunScriptCommand>$(RunScriptCommand) &quot;-l:trx%3BLogFileName=testResults.trx&quot;</RunScriptCommand>
       <RunScriptCommand Condition="'$(ContinuousIntegrationBuild)' == 'true'">$(RunScriptCommand) &quot;-l:console%3BVerbosity=normal&quot;</RunScriptCommand>
 

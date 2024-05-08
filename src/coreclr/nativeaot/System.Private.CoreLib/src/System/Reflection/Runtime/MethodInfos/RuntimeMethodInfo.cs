@@ -23,10 +23,6 @@ namespace System.Reflection.Runtime.MethodInfos
     //
     internal abstract partial class RuntimeMethodInfo : MethodInfo
     {
-        protected RuntimeMethodInfo()
-        {
-        }
-
         public abstract override MethodAttributes Attributes
         {
             get;
@@ -189,7 +185,7 @@ namespace System.Reflection.Runtime.MethodInfos
         [RequiresUnreferencedCode("If some of the generic arguments are annotated (either with DynamicallyAccessedMembersAttribute, or generic constraints), trimming can't validate that the requirements of those annotations are met.")]
         public abstract override MethodInfo MakeGenericMethod(params Type[] typeArguments);
 
-        public abstract override MethodBase MetadataDefinitionMethod { get; }
+        internal abstract override MethodBase MetadataDefinitionMethod { get; }
 
         public abstract override int MetadataToken
         {

@@ -13,12 +13,14 @@ namespace System.Text.Json
     internal static partial class JsonHelpers
     {
         /// <summary>
-        /// Returns the span for the given reader.
+        /// Returns the unescaped span for the given reader.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static ReadOnlySpan<byte> GetSpan(this scoped ref Utf8JsonReader reader)
+        public static ReadOnlySpan<byte> GetUnescapedSpan(this scoped ref Utf8JsonReader reader)
         {
-            return reader.HasValueSequence ? reader.ValueSequence.ToArray() : reader.ValueSpan;
+            Debug.Assert(reader.TokenType is JsonTokenType.String or JsonTokenType.PropertyName);
+            ReadOnlySpan<byte> span = reader.HasValueSequence ? reader.ValueSequence.ToArray() : reader.ValueSpan;
+            return reader.ValueIsEscaped ? JsonReaderHelper.GetUnescapedSpan(span) : span;
         }
 
         /// <summary>
@@ -53,7 +55,7 @@ namespace System.Text.Json
                 if (tokenType is JsonTokenType.StartObject or JsonTokenType.StartArray)
                 {
                     // Attempt to skip to make sure we have all the data we need.
-                    bool complete = reader.TrySkipPartial(targetDepth: reader.CurrentDepth);
+                    bool complete = reader.TrySkipPartial();
 
                     // We need to restore the state in all cases as we need to be positioned back before
                     // the current token to either attempt to skip again or to actually read the value.
@@ -74,7 +76,7 @@ namespace System.Text.Json
             }
         }
 
-#if !NETCOREAPP
+#if !NET
         /// <summary>
         /// Returns <see langword="true"/> if <paramref name="value"/> is a valid Unicode scalar
         /// value, i.e., is in [ U+0000..U+D7FF ], inclusive; or [ U+E000..U+10FFFF ], inclusive.
@@ -141,13 +143,29 @@ namespace System.Text.Json
         }
 
         /// <summary>
+        /// Performs a TrySkip() with a Debug.Assert verifying the reader did not return false.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void SkipWithVerify(this ref Utf8JsonReader reader)
+        {
+            bool success = reader.TrySkipPartial(reader.CurrentDepth);
+            Debug.Assert(success, "The skipped value should have already been buffered.");
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool TrySkipPartial(this ref Utf8JsonReader reader)
+        {
+            return reader.TrySkipPartial(reader.CurrentDepth);
+        }
+
+        /// <summary>
         /// Calls Encoding.UTF8.GetString that supports netstandard.
         /// </summary>
         /// <param name="bytes">The utf8 bytes to convert.</param>
         /// <returns></returns>
         public static string Utf8GetString(ReadOnlySpan<byte> bytes)
         {
-#if NETCOREAPP
+#if NET
             return Encoding.UTF8.GetString(bytes);
 #else
             if (bytes.Length == 0)
@@ -173,7 +191,7 @@ namespace System.Text.Json
             IEqualityComparer<TKey> comparer)
             where TKey : notnull
         {
-#if !NETCOREAPP
+#if !NET
             var dictionary = new Dictionary<TKey, TValue>(comparer);
 
             foreach (KeyValuePair<TKey, TValue> item in collection)
@@ -189,7 +207,7 @@ namespace System.Text.Json
 
         public static bool IsFinite(double value)
         {
-#if NETCOREAPP
+#if NET
             return double.IsFinite(value);
 #else
             return !(double.IsNaN(value) || double.IsInfinity(value));
@@ -198,7 +216,7 @@ namespace System.Text.Json
 
         public static bool IsFinite(float value)
         {
-#if NETCOREAPP
+#if NET
             return float.IsFinite(value);
 #else
             return !(float.IsNaN(value) || float.IsInfinity(value));
@@ -236,7 +254,7 @@ namespace System.Text.Json
         private const string IntegerRegexPattern = @"^\s*(\+|\-)?[0-9]+\s*$";
         private const int IntegerRegexTimeoutMs = 200;
 
-#if NETCOREAPP
+#if NET
         [GeneratedRegex(IntegerRegexPattern, RegexOptions.None, matchTimeoutMilliseconds: IntegerRegexTimeoutMs)]
         private static partial Regex CreateIntegerRegex();
 #else

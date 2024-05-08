@@ -64,7 +64,7 @@ inline
 void LookupMap<SIZE_T>::SetValueAt(PTR_TADDR pValue, SIZE_T value, TADDR flags)
 {
     WRAPPER_NO_CONTRACT;
-    VolatileStore(pValue, value | flags);
+    VolatileStore(pValue, dac_cast<TADDR>(value | flags));
 }
 #endif // DACCESS_COMPILE
 
@@ -76,7 +76,7 @@ TYPE LookupMap<TYPE>::GetElement(DWORD rid, TADDR* pFlags)
     SUPPORTS_DAC;
 
     PTR_TADDR pElement = GetElementPtr(rid);
-    return (pElement != NULL) ? GetValueAt(pElement, pFlags, supportedFlags) : NULL;
+    return (pElement != NULL) ? GetValueAt(pElement, pFlags, supportedFlags) : (TYPE)(TADDR)0;
 }
 
 // Stores an association in a map that has been previously grown to
@@ -117,7 +117,7 @@ BOOL LookupMap<TYPE>::TrySetElement(DWORD rid, TYPE value, TADDR flags)
     _ASSERTE(oldValue == NULL || (oldValue == value && oldFlags == flags));
 #endif
     // Avoid unnecessary writes - do not overwrite existing value
-    if (*pElement == NULL)
+    if (*pElement == 0)
     {
         SetValueAt(pElement, value, flags);
     }
@@ -149,7 +149,7 @@ void LookupMap<TYPE>::AddElement(ModuleBase * pModule, DWORD rid, TYPE value, TA
     _ASSERTE(oldValue == NULL || (oldValue == value && oldFlags == flags));
 #endif
     // Avoid unnecessary writes - do not overwrite existing value
-    if (*pElement == NULL)
+    if (*pElement == 0)
     {
         SetValueAt(pElement, value, flags);
     }
@@ -463,14 +463,14 @@ inline MethodTable* Module::GetDynamicClassMT(DWORD dynamicClassID)
 {
     LIMITED_METHOD_CONTRACT;
     _ASSERTE(m_cDynamicEntries > dynamicClassID);
-    return m_pDynamicStaticsInfo[dynamicClassID].pEnclosingMT;
+    return VolatileLoadWithoutBarrier(&m_pDynamicStaticsInfo)[dynamicClassID].pEnclosingMT;
 }
 
 #ifdef FEATURE_CODE_VERSIONING
 inline CodeVersionManager * Module::GetCodeVersionManager()
 {
     LIMITED_METHOD_CONTRACT;
-    return GetDomain()->GetCodeVersionManager();
+    return AppDomain::GetCurrentDomain()->GetCodeVersionManager();
 }
 #endif // FEATURE_CODE_VERSIONING
 

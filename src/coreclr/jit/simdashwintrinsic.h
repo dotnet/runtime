@@ -13,9 +13,7 @@ enum class SimdAsHWIntrinsicClassId
     Vector3,
     Vector4,
     Vector,
-    VectorT128,
-    VectorT256,
-    VectorT512,
+    VectorT,
 };
 
 enum class SimdAsHWIntrinsicFlag : unsigned int

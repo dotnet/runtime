@@ -61,6 +61,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         {
             JsonSerializerOptions expected = new(JsonSerializerDefaults.Web)
             {
+                AllowOutOfOrderMetadataProperties = true,
                 AllowTrailingCommas = true,
                 Converters = { new JsonStringEnumConverter<BindingFlags>(), new JsonStringEnumConverter<JsonIgnoreCondition>() },
                 DefaultBufferSize = 128,
@@ -70,6 +71,7 @@ namespace System.Text.Json.SourceGeneration.Tests
                 IgnoreReadOnlyProperties = true,
                 IncludeFields = true,
                 MaxDepth = 1024,
+                NewLine = "\n",
                 NumberHandling = JsonNumberHandling.WriteAsString,
                 PreferredObjectCreationHandling = JsonObjectCreationHandling.Replace,
                 PropertyNameCaseInsensitive = true,
@@ -90,8 +92,9 @@ namespace System.Text.Json.SourceGeneration.Tests
         }
 
         [JsonSourceGenerationOptions(JsonSerializerDefaults.Web,
+            AllowOutOfOrderMetadataProperties = true,
             AllowTrailingCommas = true,
-            Converters = new[] { typeof(JsonStringEnumConverter<BindingFlags>), typeof(JsonStringEnumConverter<JsonIgnoreCondition>) },
+            Converters = [typeof(JsonStringEnumConverter<BindingFlags>), typeof(JsonStringEnumConverter<JsonIgnoreCondition>)],
             DefaultBufferSize = 128,
             DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingDefault,
             DictionaryKeyPolicy = JsonKnownNamingPolicy.SnakeCaseUpper,
@@ -99,6 +102,7 @@ namespace System.Text.Json.SourceGeneration.Tests
             IgnoreReadOnlyProperties = true,
             IncludeFields = true,
             MaxDepth = 1024,
+            NewLine = "\n",
             NumberHandling = JsonNumberHandling.WriteAsString,
             PreferredObjectCreationHandling = JsonObjectCreationHandling.Replace,
             PropertyNameCaseInsensitive = true,

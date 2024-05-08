@@ -33,7 +33,6 @@ Abstract:
 #ifndef __PAL_H__
 #define __PAL_H__
 
-#ifdef PAL_STDCPP_COMPAT
 #include <float.h>
 #include <limits.h>
 #include <stddef.h>
@@ -42,11 +41,22 @@ Abstract:
 #include <stdarg.h>
 #include <stdint.h>
 #include <string.h>
+#include <math.h>
+#include <strings.h>
 #include <errno.h>
 #include <ctype.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <wctype.h>
+
+#ifdef __cplusplus
+extern "C++"
+{
+
+#include <new>
+
+}
 #endif
 
 #ifdef  __cplusplus
@@ -174,86 +184,6 @@ extern bool g_arm64_atomics_present;
 #define __has_cpp_attribute(x) (0)
 #endif
 
-#ifndef FALLTHROUGH
-#if __has_cpp_attribute(fallthrough)
-#define FALLTHROUGH [[fallthrough]]
-#else // __has_cpp_attribute(fallthrough)
-#define FALLTHROUGH
-#endif // __has_cpp_attribute(fallthrough)
-#endif // FALLTHROUGH
-
-#ifndef PAL_STDCPP_COMPAT
-
-#if __GNUC__
-
-typedef __builtin_va_list va_list;
-
-/* We should consider if the va_arg definition here is actually necessary.
-   Could we use the standard va_arg definition? */
-
-#define va_start    __builtin_va_start
-#define va_arg      __builtin_va_arg
-
-#define va_copy     __builtin_va_copy
-#define va_end      __builtin_va_end
-
-#define VOID void
-
-#else // __GNUC__
-
-typedef char * va_list;
-
-#define _INTSIZEOF(n)   ( (sizeof(n) + sizeof(int) - 1) & ~(sizeof(int) - 1) )
-
-#if _MSC_VER >= 1400
-
-#ifdef  __cplusplus
-#define _ADDRESSOF(v)   ( &reinterpret_cast<const char &>(v) )
-#else
-#define _ADDRESSOF(v)   ( &(v) )
-#endif
-
-#define _crt_va_start(ap,v)  ( ap = (va_list)_ADDRESSOF(v) + _INTSIZEOF(v) )
-#define _crt_va_arg(ap,t)    ( *(t *)((ap += _INTSIZEOF(t)) - _INTSIZEOF(t)) )
-#define _crt_va_end(ap)      ( ap = (va_list)0 )
-
-#define va_start _crt_va_start
-#define va_arg _crt_va_arg
-#define va_end _crt_va_end
-
-#else  // _MSC_VER
-
-#define va_start(ap,v)    (ap = (va_list) (&(v)) + _INTSIZEOF(v))
-#define va_arg(ap,t)    ( *(t *)((ap += _INTSIZEOF(t)) - _INTSIZEOF(t)) )
-#define va_end(ap)
-
-#endif // _MSC_VER
-
-#define va_copy(dest,src) (dest = src)
-
-#endif // __GNUC__
-
-#define CHAR_BIT      8
-
-#define SCHAR_MIN   (-128)
-#define SCHAR_MAX     127
-#define UCHAR_MAX     0xff
-
-#define SHRT_MIN    (-32768)
-#define SHRT_MAX      32767
-#define USHRT_MAX     0xffff
-
-#define INT_MIN     (-2147483647 - 1)
-#define INT_MAX       2147483647
-#define UINT_MAX      0xffffffff
-
-// LONG_MIN, LONG_MAX, ULONG_MAX -- use INT32_MIN etc. instead.
-
-#define FLT_MAX 3.402823466e+38F
-#define DBL_MAX 1.7976931348623157e+308
-
-#endif // !PAL_STDCPP_COMPAT
-
 /******************* PAL-Specific Entrypoints *****************************/
 
 #define IsDebuggerPresent PAL_IsDebuggerPresent
@@ -262,44 +192,6 @@ PALIMPORT
 BOOL
 PALAPI
 PAL_IsDebuggerPresent();
-
-/* minimum signed 64 bit value */
-#define _I64_MIN    (I64(-9223372036854775807) - 1)
-/* maximum signed 64 bit value */
-#define _I64_MAX      I64(9223372036854775807)
-/* maximum unsigned 64 bit value */
-#define _UI64_MAX     UI64(0xffffffffffffffff)
-
-#define _I8_MAX   SCHAR_MAX
-#define _I8_MIN   SCHAR_MIN
-#define _I16_MAX  SHRT_MAX
-#define _I16_MIN  SHRT_MIN
-#define _I32_MAX  INT_MAX
-#define _I32_MIN  INT_MIN
-#define _UI8_MAX  UCHAR_MAX
-#define _UI8_MIN  UCHAR_MIN
-#define _UI16_MAX USHRT_MAX
-#define _UI16_MIN USHRT_MIN
-#define _UI32_MAX UINT_MAX
-#define _UI32_MIN UINT_MIN
-
-#undef NULL
-
-#if defined(__cplusplus)
-#define NULL    0
-#else
-#define NULL    ((PVOID)0)
-#endif
-
-#if defined(PAL_STDCPP_COMPAT) && !defined(__cplusplus)
-#define nullptr NULL
-#endif // defined(PAL_STDCPP_COMPAT) && !defined(__cplusplus)
-
-#ifndef PAL_STDCPP_COMPAT
-
-typedef __int64 time_t;
-#define _TIME_T_DEFINED
-#endif // !PAL_STDCPP_COMPAT
 
 #define DLL_PROCESS_ATTACH 1
 #define DLL_THREAD_ATTACH  2
@@ -3447,7 +3339,7 @@ BitScanReverse64(
 
 FORCEINLINE void PAL_InterlockedOperationBarrier()
 {
-#if defined(HOST_ARM64) || defined(HOST_LOONGARCH64) || defined(HOST_RISCV64)
+#if (defined(HOST_ARM64) && !defined(LSE_INSTRUCTIONS_ENABLED_BY_DEFAULT) && !defined(__clang__)) || defined(HOST_LOONGARCH64) || defined(HOST_RISCV64)
     // On arm64, most of the __sync* functions generate a code sequence like:
     //   loop:
     //     ldaxr (load acquire exclusive)
@@ -3642,12 +3534,33 @@ Define_InterlockMethod(
     __atomic_exchange_n(Target, Value, __ATOMIC_ACQ_REL)
 )
 
+#if defined(HOST_X86)
+
+// 64-bit __atomic_exchange_n is not expanded as a compiler intrinsic on Linux x86.
+// Use inline implementation instead.
+
+inline LONGLONG InterlockedExchange64(LONGLONG volatile * Target, LONGLONG Value)
+{
+    LONGLONG Old;
+
+    do {
+        Old = *Target;
+    } while (__sync_val_compare_and_swap(Target, Old, Value) != Old);
+
+    return Old;
+}
+
+#else
+
 Define_InterlockMethod(
     LONGLONG,
     InterlockedExchange64(IN OUT LONGLONG volatile *Target, IN LONGLONG Value),
     InterlockedExchange64(Target, Value),
     __atomic_exchange_n(Target, Value, __ATOMIC_ACQ_REL)
 )
+
+#endif
+
 
 /*++
 Function:
@@ -3685,7 +3598,6 @@ Define_InterlockMethod(
 #define InterlockedCompareExchangeAcquire InterlockedCompareExchange
 #define InterlockedCompareExchangeRelease InterlockedCompareExchange
 
-// See the 32-bit variant in interlock2.s
 Define_InterlockMethod(
     LONGLONG,
     InterlockedCompareExchange64(IN OUT LONGLONG volatile *Destination, IN LONGLONG Exchange, IN LONGLONG Comperand),
@@ -3921,73 +3833,6 @@ PAL_GetCurrentThreadAffinitySet(SIZE_T size, UINT_PTR* data);
 #endif //FEATURE_PAL_ANSI
 /******************* C Runtime Entrypoints *******************************/
 
-/* Some C runtime functions needs to be reimplemented by the PAL.
-   To avoid name collisions, those functions have been renamed using
-   defines */
-#ifndef PAL_STDCPP_COMPAT
-#define exit          PAL_exit
-#define realloc       PAL_realloc
-#define fopen         PAL_fopen
-#define strtok        PAL_strtok
-#define strtoul       PAL_strtoul
-#define strtoull      PAL_strtoull
-#define fprintf       PAL_fprintf
-#define vfprintf      PAL_vfprintf
-#define rand          PAL_rand
-#define time          PAL_time
-#define getenv        PAL_getenv
-#define fgets         PAL_fgets
-#define qsort         PAL_qsort
-#define bsearch       PAL_bsearch
-#define ferror        PAL_ferror
-#define fread         PAL_fread
-#define fwrite        PAL_fwrite
-#define ftell         PAL_ftell
-#define fclose        PAL_fclose
-#define fflush        PAL_fflush
-#define fputs         PAL_fputs
-#define fseek         PAL_fseek
-#define fgetpos       PAL_fgetpos
-#define fsetpos       PAL_fsetpos
-#define setvbuf       PAL_setvbuf
-#define acos          PAL_acos
-#define asin          PAL_asin
-#define atan2         PAL_atan2
-#define exp           PAL_exp
-#define ilogb         PAL_ilogb
-#define log           PAL_log
-#define log10         PAL_log10
-#define pow           PAL_pow
-#define sincos        PAL_sincos
-#define acosf         PAL_acosf
-#define asinf         PAL_asinf
-#define atan2f        PAL_atan2f
-#define expf          PAL_expf
-#define ilogbf        PAL_ilogbf
-#define logf          PAL_logf
-#define log10f        PAL_log10f
-#define powf          PAL_powf
-#define sincosf       PAL_sincosf
-#define malloc        PAL_malloc
-#define free          PAL_free
-#define _strdup       PAL__strdup
-#define _open         PAL__open
-#define _pread        PAL__pread
-#define _close        PAL__close
-#define _flushall     PAL__flushall
-#define strnlen       PAL_strnlen
-
-#ifdef HOST_AMD64
-#define _mm_getcsr    PAL__mm_getcsr
-#define _mm_setcsr    PAL__mm_setcsr
-#endif // HOST_AMD64
-
-// Forward declare functions that are in header files we can't include yet
-int printf(const char *, ...);
-int vprintf(const char *, va_list);
-
-#endif // !PAL_STDCPP_COMPAT
-
 #ifndef _CONST_RETURN
 #ifdef  __cplusplus
 #define _CONST_RETURN  const
@@ -4000,70 +3845,16 @@ int vprintf(const char *, va_list);
 /* For backwards compatibility */
 #define _WConst_return _CONST_RETURN
 
-#define EOF     (-1)
-
-typedef int errno_t;
-
-#if defined(__WINT_TYPE__)
-typedef __WINT_TYPE__ wint_t;
-#else
-typedef unsigned int wint_t;
-#endif
-
-#ifndef PAL_STDCPP_COMPAT
-PALIMPORT void * __cdecl memcpy(void *, const void *, size_t);
-PALIMPORT int    __cdecl memcmp(const void *, const void *, size_t);
-PALIMPORT void * __cdecl memset(void *, int, size_t);
-PALIMPORT void * __cdecl memmove(void *, const void *, size_t);
-PALIMPORT void * __cdecl memchr(const void *, int, size_t);
-PALIMPORT long long int __cdecl atoll(const char *) MATH_THROW_DECL;
-PALIMPORT size_t __cdecl strlen(const char *);
-PALIMPORT int __cdecl strcmp(const char*, const char *);
-PALIMPORT int __cdecl strncmp(const char*, const char *, size_t);
-PALIMPORT int __cdecl _strnicmp(const char *, const char *, size_t);
-PALIMPORT char * __cdecl strcat(char *, const char *);
-PALIMPORT char * __cdecl strncat(char *, const char *, size_t);
-PALIMPORT char * __cdecl strcpy(char *, const char *);
-PALIMPORT char * __cdecl strncpy(char *, const char *, size_t);
-PALIMPORT char * __cdecl strchr(const char *, int);
-PALIMPORT char * __cdecl strrchr(const char *, int);
-PALIMPORT char * __cdecl strpbrk(const char *, const char *);
-PALIMPORT char * __cdecl strstr(const char *, const char *);
-PALIMPORT char * __cdecl strtok(char *, const char *);
-PALIMPORT int __cdecl atoi(const char *);
-PALIMPORT ULONG __cdecl strtoul(const char *, char **, int);
-PALIMPORT ULONGLONG __cdecl strtoull(const char *, char **, int);
-PALIMPORT double __cdecl atof(const char *);
-PALIMPORT double __cdecl strtod(const char *, char **);
-PALIMPORT int __cdecl isprint(int);
-PALIMPORT int __cdecl isspace(int);
-PALIMPORT int __cdecl isalpha(int);
-PALIMPORT int __cdecl isalnum(int);
-PALIMPORT int __cdecl isdigit(int);
-PALIMPORT int __cdecl isxdigit(int);
-PALIMPORT int __cdecl tolower(int);
-PALIMPORT int __cdecl toupper(int);
-PALIMPORT int __cdecl iswalpha(wint_t);
-PALIMPORT int __cdecl iswdigit(wint_t);
-PALIMPORT int __cdecl iswupper(wint_t);
-PALIMPORT int __cdecl iswprint(wint_t);
-PALIMPORT int __cdecl iswspace(wint_t);
-PALIMPORT int __cdecl iswxdigit(wint_t);
-PALIMPORT wint_t __cdecl towupper(wint_t);
-PALIMPORT wint_t __cdecl towlower(wint_t);
-PALIMPORT int remove(const char*);
-#endif // PAL_STDCPP_COMPAT
-
 /* _TRUNCATE */
 #if !defined(_TRUNCATE)
 #define _TRUNCATE ((size_t)-1)
 #endif
 
+// errno_t is only defined when the Secure CRT Extensions library is available (which no standard library that we build with implements anyway)
+typedef int errno_t;
+
 PALIMPORT DLLEXPORT errno_t __cdecl memcpy_s(void *, size_t, const void *, size_t) THROW_DECL;
 PALIMPORT errno_t __cdecl memmove_s(void *, size_t, const void *, size_t);
-PALIMPORT DLLEXPORT int __cdecl _stricmp(const char *, const char *);
-PALIMPORT char * __cdecl _gcvt_s(char *, int, double, int);
-PALIMPORT int __cdecl __iscsym(int);
 PALIMPORT DLLEXPORT int __cdecl _wcsicmp(const WCHAR *, const WCHAR*);
 PALIMPORT int __cdecl _wcsnicmp(const WCHAR *, const WCHAR *, size_t);
 PALIMPORT DLLEXPORT int __cdecl _vsnprintf_s(char *, size_t, size_t, const char *, va_list);
@@ -4090,6 +3881,26 @@ PALIMPORT DLLEXPORT double __cdecl PAL_wcstod(const WCHAR *, WCHAR **);
 PALIMPORT errno_t __cdecl _wcslwr_s(WCHAR *, size_t sz);
 PALIMPORT DLLEXPORT errno_t __cdecl _i64tow_s(long long, WCHAR *, size_t, int);
 PALIMPORT int __cdecl _wtoi(const WCHAR *);
+PALIMPORT FILE * __cdecl _wfopen(const WCHAR *, const WCHAR *);
+
+inline int _stricmp(const char* a, const char* b)
+{
+    return strcasecmp(a, b);
+}
+
+inline int _strnicmp(const char* a, const char* b, size_t c)
+{
+    return strncasecmp(a, b, c);
+}
+
+inline char* _strdup(const char* a)
+{
+    return strdup(a);
+}
+
+// Define the MSVC implementation of the alloca concept.
+// As this allocates on the current stack frame, use a macro instead of an inline function.
+#define _alloca(x) alloca(x)
 
 #ifdef __cplusplus
 extern "C++" {
@@ -4124,11 +3935,6 @@ unsigned int __cdecl _rotl(unsigned int value, int shift)
 }
 #endif // !__has_builtin(_rotl)
 
-// On 64 bit unix, make the long an int.
-#ifdef HOST_64BIT
-#define _lrotl _rotl
-#endif
-
 #if !__has_builtin(_rotr)
 
 /*++
@@ -4151,209 +3957,7 @@ unsigned int __cdecl _rotr(unsigned int value, int shift)
 
 #endif // !__has_builtin(_rotr)
 
-PALIMPORT int __cdecl abs(int);
-// clang complains if this is declared with __int64
-PALIMPORT long long __cdecl llabs(long long);
-#ifndef PAL_STDCPP_COMPAT
-
-PALIMPORT int __cdecl _finite(double);
-PALIMPORT int __cdecl _isnan(double);
-PALIMPORT double __cdecl _copysign(double, double);
-PALIMPORT double __cdecl acos(double);
-PALIMPORT double __cdecl acosh(double) MATH_THROW_DECL;
-PALIMPORT double __cdecl asin(double);
-PALIMPORT double __cdecl asinh(double) MATH_THROW_DECL;
-PALIMPORT double __cdecl atan(double) MATH_THROW_DECL;
-PALIMPORT double __cdecl atanh(double) MATH_THROW_DECL;
-PALIMPORT double __cdecl atan2(double, double);
-PALIMPORT double __cdecl cbrt(double) MATH_THROW_DECL;
-PALIMPORT double __cdecl ceil(double);
-PALIMPORT double __cdecl cos(double);
-PALIMPORT double __cdecl cosh(double);
-PALIMPORT double __cdecl exp(double);
-PALIMPORT double __cdecl fabs(double);
-PALIMPORT double __cdecl floor(double);
-PALIMPORT double __cdecl fmod(double, double);
-PALIMPORT double __cdecl fma(double, double, double) MATH_THROW_DECL;
-PALIMPORT int __cdecl ilogb(double);
-PALIMPORT double __cdecl log(double);
-PALIMPORT double __cdecl log2(double) MATH_THROW_DECL;
-PALIMPORT double __cdecl log10(double);
-PALIMPORT double __cdecl modf(double, double*);
-PALIMPORT double __cdecl pow(double, double);
-PALIMPORT double __cdecl sin(double);
-PALIMPORT void __cdecl sincos(double, double*, double*);
-PALIMPORT double __cdecl sinh(double);
-PALIMPORT double __cdecl sqrt(double);
-PALIMPORT double __cdecl tan(double);
-PALIMPORT double __cdecl tanh(double);
-PALIMPORT double __cdecl trunc(double);
-
-PALIMPORT int __cdecl _finitef(float);
-PALIMPORT int __cdecl _isnanf(float);
-PALIMPORT float __cdecl _copysignf(float, float);
-PALIMPORT float __cdecl acosf(float);
-PALIMPORT float __cdecl acoshf(float) MATH_THROW_DECL;
-PALIMPORT float __cdecl asinf(float);
-PALIMPORT float __cdecl asinhf(float) MATH_THROW_DECL;
-PALIMPORT float __cdecl atanf(float) MATH_THROW_DECL;
-PALIMPORT float __cdecl atanhf(float) MATH_THROW_DECL;
-PALIMPORT float __cdecl atan2f(float, float);
-PALIMPORT float __cdecl cbrtf(float) MATH_THROW_DECL;
-PALIMPORT float __cdecl ceilf(float);
-PALIMPORT float __cdecl cosf(float);
-PALIMPORT float __cdecl coshf(float);
-PALIMPORT float __cdecl expf(float);
-PALIMPORT float __cdecl fabsf(float);
-PALIMPORT float __cdecl floorf(float);
-PALIMPORT float __cdecl fmodf(float, float);
-PALIMPORT float __cdecl fmaf(float, float, float) MATH_THROW_DECL;
-PALIMPORT int __cdecl ilogbf(float);
-PALIMPORT float __cdecl logf(float);
-PALIMPORT float __cdecl log2f(float) MATH_THROW_DECL;
-PALIMPORT float __cdecl log10f(float);
-PALIMPORT float __cdecl modff(float, float*);
-PALIMPORT float __cdecl powf(float, float);
-PALIMPORT float __cdecl sinf(float);
-PALIMPORT void __cdecl sincosf(float, float*, float*);
-PALIMPORT float __cdecl sinhf(float);
-PALIMPORT float __cdecl sqrtf(float);
-PALIMPORT float __cdecl tanf(float);
-PALIMPORT float __cdecl tanhf(float);
-PALIMPORT float __cdecl truncf(float);
-#endif // !PAL_STDCPP_COMPAT
-
-#ifndef PAL_STDCPP_COMPAT
-
-#ifdef __cplusplus
-extern "C++" {
-
-inline __int64 abs(__int64 _X) {
-    return llabs(_X);
-}
-
-#ifdef __APPLE__
-inline __int64 abs(SSIZE_T _X) {
-    return llabs((__int64)_X);
-}
-#endif
-
-}
-#endif
-
-PALIMPORT DLLEXPORT void * __cdecl malloc(size_t);
-PALIMPORT DLLEXPORT void   __cdecl free(void *);
-PALIMPORT DLLEXPORT void * __cdecl realloc(void *, size_t);
-PALIMPORT char * __cdecl _strdup(const char *);
-
-#if defined(_MSC_VER)
-#define alloca _alloca
-#else
-#define _alloca alloca
-#endif //_MSC_VER
-
-#define alloca  __builtin_alloca
-
-#define max(a, b) (((a) > (b)) ? (a) : (b))
-#define min(a, b) (((a) < (b)) ? (a) : (b))
-
-#endif // !PAL_STDCPP_COMPAT
-
-PALIMPORT PAL_NORETURN void __cdecl exit(int);
-
-#ifndef PAL_STDCPP_COMPAT
-
-PALIMPORT DLLEXPORT void __cdecl qsort(void *, size_t, size_t, int(__cdecl *)(const void *, const void *));
-PALIMPORT DLLEXPORT void * __cdecl bsearch(const void *, const void *, size_t, size_t,
-    int(__cdecl *)(const void *, const void *));
-
-PALIMPORT time_t __cdecl time(time_t *);
-
-#endif // !PAL_STDCPP_COMPAT
-
-PALIMPORT DLLEXPORT int __cdecl _open(const char *szPath, int nFlags, ...);
-PALIMPORT DLLEXPORT size_t __cdecl _pread(int fd, void *buf, size_t nbytes, ULONG64 offset);
-PALIMPORT DLLEXPORT int __cdecl _close(int);
-PALIMPORT DLLEXPORT int __cdecl _flushall();
-
-#ifdef PAL_STDCPP_COMPAT
-
-struct _PAL_FILE;
-typedef struct _PAL_FILE PAL_FILE;
-
-#else // PAL_STDCPP_COMPAT
-
-struct _FILE;
-typedef struct _FILE FILE;
-typedef struct _FILE PAL_FILE;
-
-#define SEEK_SET    0
-#define SEEK_CUR    1
-#define SEEK_END    2
-
-/* Locale categories */
-#define LC_ALL          0
-#define LC_COLLATE      1
-#define LC_CTYPE        2
-#define LC_MONETARY     3
-#define LC_NUMERIC      4
-#define LC_TIME         5
-
-#define _IOFBF  0       /* setvbuf should set fully buffered */
-#define _IOLBF  1       /* setvbuf should set line buffered */
-#define _IONBF  2       /* setvbuf should set unbuffered */
-
-#endif // PAL_STDCPP_COMPAT
-
-PALIMPORT int __cdecl PAL_fclose(PAL_FILE *);
-PALIMPORT DLLEXPORT int __cdecl PAL_fflush(PAL_FILE *);
-PALIMPORT size_t __cdecl PAL_fwrite(const void *, size_t, size_t, PAL_FILE *);
-PALIMPORT size_t __cdecl PAL_fread(void *, size_t, size_t, PAL_FILE *);
-PALIMPORT char * __cdecl PAL_fgets(char *, int, PAL_FILE *);
-PALIMPORT int __cdecl PAL_fputs(const char *, PAL_FILE *);
-PALIMPORT DLLEXPORT int __cdecl PAL_fprintf(PAL_FILE *, const char *, ...);
-PALIMPORT int __cdecl PAL_vfprintf(PAL_FILE *, const char *, va_list);
-PALIMPORT int __cdecl PAL_fseek(PAL_FILE *, LONG, int);
-PALIMPORT LONG __cdecl PAL_ftell(PAL_FILE *);
-PALIMPORT int __cdecl PAL_ferror(PAL_FILE *);
-PALIMPORT PAL_FILE * __cdecl PAL_fopen(const char *, const char *);
-PALIMPORT int __cdecl PAL_setvbuf(PAL_FILE *stream, char *, int, size_t);
-
-PALIMPORT PAL_FILE * __cdecl _wfopen(const WCHAR *, const WCHAR *);
-
-/* Maximum value that can be returned by the rand function. */
-
-#ifndef PAL_STDCPP_COMPAT
-#define RAND_MAX 0x7fff
-#endif // !PAL_STDCPP_COMPAT
-
-PALIMPORT int __cdecl rand(void);
-PALIMPORT void __cdecl srand(unsigned int);
-
-#ifdef _MSC_VER
-#define PAL_get_caller _MSC_VER
-#else
-#define PAL_get_caller 0
-#endif
-
-PALIMPORT DLLEXPORT PAL_FILE * __cdecl PAL_get_stdout(int caller);
-PALIMPORT PAL_FILE * __cdecl PAL_get_stdin(int caller);
-PALIMPORT DLLEXPORT PAL_FILE * __cdecl PAL_get_stderr(int caller);
-PALIMPORT DLLEXPORT int * __cdecl PAL_errno(int caller);
-
-#ifdef PAL_STDCPP_COMPAT
-#define PAL_stdout (PAL_get_stdout(PAL_get_caller))
-#define PAL_stdin  (PAL_get_stdin(PAL_get_caller))
-#define PAL_stderr (PAL_get_stderr(PAL_get_caller))
-#define PAL_errno   (*PAL_errno(PAL_get_caller))
-#else // PAL_STDCPP_COMPAT
-#define stdout (PAL_get_stdout(PAL_get_caller))
-#define stdin  (PAL_get_stdin(PAL_get_caller))
-#define stderr (PAL_get_stderr(PAL_get_caller))
-#define errno  (*PAL_errno(PAL_get_caller))
-#endif // PAL_STDCPP_COMPAT
-
-PALIMPORT DLLEXPORT char * __cdecl getenv(const char *);
+PALIMPORT DLLEXPORT char * __cdecl PAL_getenv(const char *);
 PALIMPORT DLLEXPORT int __cdecl _putenv(const char *);
 
 #define ERANGE          34
@@ -4384,15 +3988,7 @@ PALAPI
 PAL_GetCpuTickCount();
 #endif // PAL_PERF
 
-/******************* PAL functions for SIMD extensions *****************/
-
-PALIMPORT
-unsigned int _mm_getcsr(void);
-
-PALIMPORT
-void _mm_setcsr(unsigned int i);
-
-/******************* PAL functions for CPU capability detection *******/
+/******************* PAL functions for exceptions *******/
 
 #ifdef __cplusplus
 

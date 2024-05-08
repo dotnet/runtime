@@ -40,10 +40,10 @@ namespace System.Text.Json.Serialization.Converters
                 {
                     if (jsonTypeInfo.CreateObject == null)
                     {
-                        ThrowHelper.ThrowNotSupportedException_DeserializeNoConstructor(jsonTypeInfo.Type, ref reader, ref state);
+                        ThrowHelper.ThrowNotSupportedException_DeserializeNoConstructor(jsonTypeInfo, ref reader, ref state);
                     }
 
-                    obj = jsonTypeInfo.CreateObject()!;
+                    obj = jsonTypeInfo.CreateObject();
                 }
 
                 PopulatePropertiesFastPath(obj, jsonTypeInfo, options, ref reader, ref state);
@@ -116,10 +116,10 @@ namespace System.Text.Json.Serialization.Converters
                     {
                         if (jsonTypeInfo.CreateObject == null)
                         {
-                            ThrowHelper.ThrowNotSupportedException_DeserializeNoConstructor(jsonTypeInfo.Type, ref reader, ref state);
+                            ThrowHelper.ThrowNotSupportedException_DeserializeNoConstructor(jsonTypeInfo, ref reader, ref state);
                         }
 
-                        obj = jsonTypeInfo.CreateObject()!;
+                        obj = jsonTypeInfo.CreateObject();
                     }
 
                     if ((state.Current.MetadataPropertyNames & MetadataPropertyName.Id) != 0)
@@ -171,7 +171,15 @@ namespace System.Text.Json.Serialization.Converters
                         // Read method would have thrown if otherwise.
                         Debug.Assert(tokenType == JsonTokenType.PropertyName);
 
-                        ReadOnlySpan<byte> unescapedPropertyName = JsonSerializer.GetPropertyName(ref state, ref reader);
+                        ReadOnlySpan<byte> unescapedPropertyName = JsonSerializer.GetPropertyName(ref state, ref reader, options, out bool isAlreadyReadMetadataProperty);
+                        if (isAlreadyReadMetadataProperty)
+                        {
+                            Debug.Assert(options.AllowOutOfOrderMetadataProperties);
+                            reader.SkipWithVerify();
+                            state.Current.EndProperty();
+                            continue;
+                        }
+
                         jsonPropertyInfo = JsonSerializer.LookupProperty(
                             obj,
                             unescapedPropertyName,
@@ -258,9 +266,7 @@ namespace System.Text.Json.Serialization.Converters
         }
 
         // This method is using aggressive inlining to avoid extra stack frame for deep object graphs.
-#if !DEBUG
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-#endif
         internal static void PopulatePropertiesFastPath(object obj, JsonTypeInfo jsonTypeInfo, JsonSerializerOptions options, ref Utf8JsonReader reader, scoped ref ReadStack state)
         {
             jsonTypeInfo.OnDeserializing?.Invoke(obj);
@@ -282,7 +288,9 @@ namespace System.Text.Json.Serialization.Converters
                 // Read method would have thrown if otherwise.
                 Debug.Assert(tokenType == JsonTokenType.PropertyName);
 
-                ReadOnlySpan<byte> unescapedPropertyName = JsonSerializer.GetPropertyName(ref state, ref reader);
+                ReadOnlySpan<byte> unescapedPropertyName = JsonSerializer.GetPropertyName(ref state, ref reader, options, out bool isAlreadyReadMetadataProperty);
+                Debug.Assert(!isAlreadyReadMetadataProperty, "Only possible for types that can read metadata, which do not call into the fast-path method.");
+
                 JsonPropertyInfo jsonPropertyInfo = JsonSerializer.LookupProperty(
                     obj,
                     unescapedPropertyName,

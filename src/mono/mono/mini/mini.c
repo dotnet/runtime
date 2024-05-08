@@ -602,7 +602,7 @@ mono_decompose_op_imm (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *ins)
 	mono_bblock_insert_before_ins (bb, ins, temp);
 
 	if (opcode2 == -1)
-		g_error ("mono_op_imm_to_op failed for %s\n", mono_inst_name (ins->opcode));
+		g_error ("mono_op_imm_to_op failed for " M_PRI_INST "\n", mono_inst_name (ins->opcode));
 	ins->opcode = GINT_TO_OPCODE (opcode2);
 
 	if (ins->opcode == OP_LOCALLOC)
@@ -1756,7 +1756,7 @@ mono_empty_compile (MonoCompile *cfg)
 	cfg->headers_to_free = NULL;
 
 	if (cfg->mempool) {
-	//mono_mempool_stats (cfg->mempool);
+		//mono_mempool_stats (cfg->mempool);
 		mono_mempool_destroy (cfg->mempool);
 		cfg->mempool = NULL;
 	}
@@ -1787,6 +1787,10 @@ mono_destroy_compile (MonoCompile *cfg)
 	g_hash_table_destroy (cfg->abs_patches);
 
 	mono_debug_free_method (cfg);
+
+	g_free (cfg->asm_symbol);
+	g_free (cfg->asm_debug_symbol);
+	g_free (cfg->llvm_method_name);
 
 	g_free (cfg->varinfo);
 	g_free (cfg->vars);
@@ -3034,6 +3038,9 @@ is_simd_supported (MonoCompile *cfg)
 #ifdef DISABLE_SIMD
     return FALSE;
 #endif
+#ifndef MONO_ARCH_SIMD_INTRINSICS
+	return FALSE;
+#endif
 	// FIXME: Clean this up
 #ifdef TARGET_WASM
 	if ((mini_get_cpu_features (cfg) & MONO_CPU_WASM_SIMD) == 0)
@@ -3549,8 +3556,6 @@ mini_method_compile (MonoMethod *method, guint32 opts, JitFlags flags, int parts
 		}
 
 		cfg->opt &= ~MONO_OPT_LINEARS;
-
-		cfg->opt &= ~MONO_OPT_BRANCH;
 	}
 
 	cfg->after_method_to_ir = TRUE;
@@ -3975,7 +3980,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, JitFlags flags, int parts
 	if (!cfg->compile_aot)
 		mono_lldb_save_method_info (cfg);
 
-	if (cfg->verbose_level >= 2) {
+	if (cfg->verbose_level >= 2 && !cfg->llvm_only) {
 		char *id =  mono_method_full_name (cfg->method, TRUE);
 		g_print ("\n*** ASM for %s ***\n", id);
 		mono_disassemble_code (cfg, cfg->native_code, cfg->code_len, id + 3);
@@ -4317,6 +4322,7 @@ mini_handle_call_res_devirt (MonoMethod *cmethod)
 
 		inst = mono_class_inflate_generic_class_checked (mono_class_get_iequatable_class (), &ctx, error);
 		mono_error_assert_ok (error);
+		g_assert (inst);
 
 		// EqualityComparer<T>.Default returns specific types depending on T
 		// FIXME: Special case more types: byte, string, nullable, enum ?
@@ -4591,6 +4597,10 @@ mini_get_simd_type_info (MonoClass *klass, guint32 *nelems)
 	} else if (!strcmp (klass_name, "Vector2")) {
 		*nelems = 2;
 		return MONO_TYPE_R4;
+	} else if (!strcmp (klass_name, "Vector3")) {
+		// For LLVM SIMD support, Vector3 is treated as a 4-element vector (three elements + zero).
+		*nelems = 4;
+		return MONO_TYPE_R4;
 	} else if (!strcmp (klass_name, "Vector`1") || !strcmp (klass_name, "Vector64`1") || !strcmp (klass_name, "Vector128`1") || !strcmp (klass_name, "Vector256`1") || !strcmp (klass_name, "Vector512`1")) {
 		MonoType *etype = mono_class_get_generic_class (klass)->context.class_inst->type_argv [0];
 		int size = mono_class_value_size (klass, NULL);
@@ -4602,3 +4612,4 @@ mini_get_simd_type_info (MonoClass *klass, guint32 *nelems)
 		return MONO_TYPE_VOID;
 	}
 }
+

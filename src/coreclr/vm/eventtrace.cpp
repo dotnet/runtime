@@ -264,11 +264,6 @@ ETW::SamplingLog::EtwStackWalkStatus ETW::SamplingLog::GetCurrentThreadsCallStac
     }
     CONTRACTL_END;
 
-    // The stack walk performed below can cause allocations (thus entering the host). But
-    // this is acceptable, since we're not supporting the use of SQL/F1 profiling and
-    // full-blown ETW CLR stacks (which would be redundant).
-    PERMANENT_CONTRACT_VIOLATION(HostViolation, ReasonUnsupportedForSQLF1Profiling);
-
     m_FrameCount = 0;
     ETW::SamplingLog::EtwStackWalkStatus stackwalkStatus = SaveCurrentStack();
 
@@ -582,7 +577,7 @@ VOID ETW::ThreadLog::FireThreadCreated(Thread * pThread)
 
     FireEtwThreadCreated(
         (ULONGLONG)pThread,
-        (ULONGLONG)pThread->GetDomain(),
+        (ULONGLONG)AppDomain::GetCurrentDomain(),
         GetEtwThreadFlags(pThread),
         pThread->GetThreadId(),
         pThread->GetOSThreadId(),
@@ -595,7 +590,7 @@ VOID ETW::ThreadLog::FireThreadDC(Thread * pThread)
 
     FireEtwThreadDC(
         (ULONGLONG)pThread,
-        (ULONGLONG)pThread->GetDomain(),
+        (ULONGLONG)AppDomain::GetCurrentDomain(),
         GetEtwThreadFlags(pThread),
         pThread->GetThreadId(),
         pThread->GetOSThreadId(),
@@ -648,7 +643,7 @@ public:
     static bool IsNull(const element_t &e)
     {
         LIMITED_METHOD_CONTRACT;
-        return (e.th.AsTAddr() == NULL);
+        return (e.th.AsTAddr() == 0);
     }
 
     static const element_t Null()
@@ -1254,10 +1249,6 @@ VOID ETW::TypeSystemLog::LogTypeAndParametersIfNecessary(BulkTypeEventLogger * p
     }
 
     TypeHandle th = TypeHandle::FromTAddr((TADDR) thAsAddr);
-    if (!th.IsRestored())
-    {
-        return;
-    }
 
     // Check to see if we've already logged this type.  If so, bail immediately.
     // Otherwise, mark that it's getting logged (by adding it to the hash), and fall
@@ -4075,7 +4066,7 @@ VOID ETW::LoaderLog::SendAssemblyEvent(Assembly *pAssembly, DWORD dwEventOptions
     BOOL bIsReadyToRun = pAssembly->GetPEAssembly()->IsReadyToRun();
 
     ULONGLONG ullAssemblyId = (ULONGLONG)pAssembly;
-    ULONGLONG ullDomainId = (ULONGLONG)pAssembly->GetDomain();
+    ULONGLONG ullDomainId = (ULONGLONG)AppDomain::GetCurrentDomain();
     ULONGLONG ullBindingID = 0;
     ULONG ulAssemblyFlags = ((bIsDynamicAssembly ? ETW::LoaderLog::LoaderStructs::DynamicAssembly : 0) |
                              (bIsCollectibleAssembly ? ETW::LoaderLog::LoaderStructs::CollectibleAssembly : 0) |
@@ -4220,7 +4211,7 @@ static void GetCodeViewInfo(Module * pModule, CV_INFO_PDB70 * pCvInfoIL, CV_INFO
 
         // Some compilers set PointerToRawData but not AddressOfRawData as they put the
         // data at the end of the file in an unmapped part of the file
-        RVA rvaOfRawData = (rgDebugEntries[i].AddressOfRawData != NULL) ?
+        RVA rvaOfRawData = (rgDebugEntries[i].AddressOfRawData != 0) ?
             rgDebugEntries[i].AddressOfRawData :
             pLayout->OffsetToRva(rgDebugEntries[i].PointerToRawData);
 
@@ -4327,7 +4318,6 @@ VOID ETW::LoaderLog::SendModuleEvent(Module *pModule, DWORD dwEventOptions, BOOL
     PCWSTR szDtraceOutput1=W(""),szDtraceOutput2=W("");
     BOOL bIsDynamicAssembly = pModule->GetAssembly()->IsDynamic();
     BOOL bIsManifestModule = pModule->IsManifest();
-    ULONGLONG ullAppDomainId = 0; // This is used only with DomainModule events
     ULONGLONG ullModuleId = (ULONGLONG)(TADDR) pModule;
     ULONGLONG ullAssemblyId = (ULONGLONG)pModule->GetAssembly();
     BOOL bIsIbcOptimized = FALSE;
@@ -4352,11 +4342,6 @@ VOID ETW::LoaderLog::SendModuleEvent(Module *pModule, DWORD dwEventOptions, BOOL
     GetCodeViewInfo(pModule, &cvInfoIL, &cvInfoNative);
 
     PWCHAR ModuleILPath=(PWCHAR)W(""), ModuleNativePath=(PWCHAR)W("");
-
-    if(bFireDomainModuleEvents)
-    {
-        ullAppDomainId = (ULONGLONG)pModule->GetDomainAssembly()->GetAppDomain();
-    }
 
     LPCWSTR pEmptyString = W("");
     SString moduleName{ SString::Empty() };
@@ -4385,6 +4370,7 @@ VOID ETW::LoaderLog::SendModuleEvent(Module *pModule, DWORD dwEventOptions, BOOL
 
     if(bFireDomainModuleEvents)
     {
+        ULONGLONG ullAppDomainId = (ULONGLONG)AppDomain::GetCurrentDomain();
         if(dwEventOptions & ETW::EnumerationLog::EnumerationStructs::DomainAssemblyModuleLoad)
         {
             FireEtwDomainModuleLoad_V1(ullModuleId, ullAssemblyId, ullAppDomainId, ulFlags, ulReservedFlags, szDtraceOutput1, szDtraceOutput2, GetClrInstanceId());
@@ -5527,11 +5513,8 @@ VOID ETW::EnumerationLog::IterateAssembly(Assembly *pAssembly, DWORD enumeration
         if((enumerationOptions & ETW::EnumerationLog::EnumerationStructs::DomainAssemblyModuleDCEnd) ||
            (enumerationOptions & ETW::EnumerationLog::EnumerationStructs::DomainAssemblyModuleDCStart))
         {
-            if(pAssembly->GetDomain()->IsAppDomain())
-            {
-                Module* pModule = pAssembly->GetDomainAssembly()->GetModule();
-                ETW::LoaderLog::SendModuleEvent(pModule, enumerationOptions, TRUE);
-            }
+            Module* pModule = pAssembly->GetDomainAssembly()->GetModule();
+            ETW::LoaderLog::SendModuleEvent(pModule, enumerationOptions, TRUE);
         }
 
         // DC End or Unload events for Assembly

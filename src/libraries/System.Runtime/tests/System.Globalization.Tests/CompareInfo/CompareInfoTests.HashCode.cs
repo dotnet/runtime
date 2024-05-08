@@ -12,45 +12,22 @@ namespace System.Globalization.Tests
 {
     public class CompareInfoHashCodeTests : CompareInfoTestsBase
     {
-        public class CustomComparer : StringComparer
-        {
-            private readonly CompareInfo _compareInfo;
-            private readonly CompareOptions _compareOptions;
-
-            public CustomComparer(CompareInfo cmpInfo, CompareOptions cmpOptions)
-            {
-                _compareInfo = cmpInfo;
-                _compareOptions = cmpOptions;
-            }
-
-            public override int Compare(string x, string y) =>
-                _compareInfo.Compare(x, y, _compareOptions);
-
-            public override bool Equals(string x, string y) =>
-                _compareInfo.Compare(x, y, _compareOptions) == 0;
-
-            public override int GetHashCode(string obj)
-            {
-                return _compareInfo.GetHashCode(obj, _compareOptions);
-            }
-        }
-
         public static IEnumerable<object[]> HashCodeLocalized_TestData()
         {
             yield return new object[] { s_invariantCompare, "foo", "Foo", CompareOptions.IgnoreCase };
-            yield return new object[] { s_invariantCompare, "igloo", "\u0130GLOO", CompareOptions.IgnoreCase }; // FAILS
+            yield return new object[] { s_invariantCompare, "igloo", "\u0130GLOO", CompareOptions.IgnoreCase };
+            yield return new object[] { s_invariantCompare, "igloo", "\u0130GLOO", CompareOptions.None };
             yield return new object[] { s_invariantCompare, "igloo", "IGLOO", CompareOptions.IgnoreCase };
-            yield return new object[] { new CultureInfo("pl-PL").CompareInfo, "igloo", "\u0130GLOO", CompareOptions.IgnoreCase }; // FAILS
+            yield return new object[] { new CultureInfo("pl-PL").CompareInfo, "igloo", "\u0130GLOO", CompareOptions.IgnoreCase };
             yield return new object[] { new CultureInfo("pl-PL").CompareInfo, "igloo", "IGLOO", CompareOptions.IgnoreCase };
             yield return new object[] { new CultureInfo("tr-TR").CompareInfo, "igloo", "\u0130GLOO", CompareOptions.IgnoreCase };
-            yield return new object[] { new CultureInfo("tr-TR").CompareInfo, "igloo", "IGLOO", CompareOptions.IgnoreCase }; // FAILS
+            yield return new object[] { new CultureInfo("tr-TR").CompareInfo, "igloo", "IGLOO", CompareOptions.IgnoreCase };
 
             if (!PlatformDetection.IsHybridGlobalizationOnBrowser)
             {
-                // ActiveIssue: https://github.com/dotnet/runtime/issues/96400
-                yield return new object[] { new CultureInfo("en-GB").CompareInfo, "100", "100!", CompareOptions.IgnoreSymbols }; // HG: equal: True, hashCodesEqual: False
+                if (PlatformDetection.IsNotHybridGlobalizationOnApplePlatform)
+                    yield return new object[] { new CultureInfo("en-GB").CompareInfo, "100", "100!", CompareOptions.IgnoreSymbols }; // HG: equal: True, hashCodesEqual: False
                 yield return new object[] { new CultureInfo("ja-JP").CompareInfo, "\u30A2", "\u3042", CompareOptions.IgnoreKanaType }; // HG: equal: True, hashCodesEqual: False
-                yield return new object[] { new CultureInfo("en-GB").CompareInfo, "caf\u00E9", "cafe\u0301", CompareOptions.IgnoreNonSpace | CompareOptions.IgnoreKanaType }; // HG: equal: True, hashCodesEqual: False
                 yield return new object[] { new CultureInfo("en-GB").CompareInfo, "caf\u00E9", "cafe\u0301", CompareOptions.IgnoreNonSpace | CompareOptions.IgnoreKanaType }; // HG: equal: True, hashCodesEqual: False
             }
         }
@@ -123,6 +100,7 @@ namespace System.Globalization.Tests
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsIcuGlobalization))]
         [MemberData(nameof(CheckHashingOfSkippedChars_TestData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/95338", typeof(PlatformDetection), nameof(PlatformDetection.IsHybridGlobalizationOnApplePlatform))]
         public void CheckHashingOfSkippedChars(char character, CompareInfo cmpInfo)
         {
             string str1 = $"a{character}b";
@@ -134,6 +112,68 @@ namespace System.Globalization.Tests
             Assert.True(areHashCodesEqual);
             StringComparer stringComparer = new CustomComparer(cmpInfo, options);
             TryAddToCustomDictionary(stringComparer, str1, str2, areHashCodesEqual);
+        }
+
+        public static IEnumerable<object[]> GetHashCodeTestData => new[]
+        {
+            new object[] { "abc", CompareOptions.OrdinalIgnoreCase, "ABC", CompareOptions.OrdinalIgnoreCase, true },
+            new object[] { "abc", CompareOptions.Ordinal, "ABC", CompareOptions.Ordinal, false },
+            new object[] { "abc", CompareOptions.Ordinal, "abc", CompareOptions.Ordinal, true },
+            new object[] { "abc", CompareOptions.None, "abc", CompareOptions.None, true },
+            new object[] { "", CompareOptions.None, "\u200c", CompareOptions.None, true }, // see comment at bottom of SortKey_TestData
+        };
+
+        [Theory]
+        [MemberData(nameof(GetHashCodeTestData))]
+        public void GetHashCodeTest(string source1, CompareOptions options1, string source2, CompareOptions options2, bool expected)
+        {
+            CompareInfo invariantCompare = CultureInfo.InvariantCulture.CompareInfo;
+            Assert.Equal(expected, invariantCompare.GetHashCode(source1, options1).Equals(invariantCompare.GetHashCode(source2, options2)));
+        }
+
+        [Theory]
+        [MemberData(nameof(GetHashCodeTestData))]
+        public void GetHashCode_Span(string source1, CompareOptions options1, string source2, CompareOptions options2, bool expectSameHashCode)
+        {
+            CompareInfo invariantCompare = CultureInfo.InvariantCulture.CompareInfo;
+
+            int hashOfSource1AsString = invariantCompare.GetHashCode(source1, options1);
+            int hashOfSource1AsSpan = invariantCompare.GetHashCode(source1.AsSpan(), options1);
+            Assert.Equal(hashOfSource1AsString, hashOfSource1AsSpan);
+
+            int hashOfSource2AsString = invariantCompare.GetHashCode(source2, options2);
+            int hashOfSource2AsSpan = invariantCompare.GetHashCode(source2.AsSpan(), options2);
+            Assert.Equal(hashOfSource2AsString, hashOfSource2AsSpan);
+
+            Assert.Equal(expectSameHashCode, hashOfSource1AsSpan == hashOfSource2AsSpan);
+        }
+
+        [Fact]
+        public void GetHashCode_Invalid()
+        {
+            AssertExtensions.Throws<ArgumentNullException>("source", () => CultureInfo.InvariantCulture.CompareInfo.GetHashCode(null, CompareOptions.None));
+
+            AssertExtensions.Throws<ArgumentException>("options", () => CultureInfo.InvariantCulture.CompareInfo.GetHashCode("Test", CompareOptions.OrdinalIgnoreCase | CompareOptions.IgnoreCase));
+            AssertExtensions.Throws<ArgumentException>("options", () => CultureInfo.InvariantCulture.CompareInfo.GetHashCode("Test", CompareOptions.Ordinal | CompareOptions.IgnoreSymbols));
+            AssertExtensions.Throws<ArgumentException>("options", () => CultureInfo.InvariantCulture.CompareInfo.GetHashCode("Test", (CompareOptions)(-1)));
+        }
+
+        [Fact]
+        public void GetHashCode_NullAndEmptySpan()
+        {
+            // Ensure that null spans and non-null empty spans produce the same hash code.
+
+            int hashCodeOfNullSpan = CultureInfo.InvariantCulture.CompareInfo.GetHashCode(ReadOnlySpan<char>.Empty, CompareOptions.None);
+            int hashCodeOfNotNullEmptySpan = CultureInfo.InvariantCulture.CompareInfo.GetHashCode("".AsSpan(), CompareOptions.None);
+            Assert.Equal(hashCodeOfNullSpan, hashCodeOfNotNullEmptySpan);
+        }
+
+        [Fact]
+        public void GetHashCode_Span_Invalid()
+        {
+            AssertExtensions.Throws<ArgumentException>("options", () => CultureInfo.InvariantCulture.CompareInfo.GetHashCode("Test".AsSpan(), CompareOptions.OrdinalIgnoreCase | CompareOptions.IgnoreCase));
+            AssertExtensions.Throws<ArgumentException>("options", () => CultureInfo.InvariantCulture.CompareInfo.GetHashCode("Test".AsSpan(), CompareOptions.Ordinal | CompareOptions.IgnoreSymbols));
+            AssertExtensions.Throws<ArgumentException>("options", () => CultureInfo.InvariantCulture.CompareInfo.GetHashCode("Test".AsSpan(), (CompareOptions)(-1)));
         }
     }
 }

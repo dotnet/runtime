@@ -5,6 +5,8 @@
     <CrossGenTest>false</CrossGenTest>
     <!-- https://github.com/dotnet/runtime/issues/73138 -->
     <IlasmRoundTripIncompatible>true</IlasmRoundTripIncompatible>
+    <!-- This test launches crossgen2 with dotnet, so we would need a non-sanitzed jitinterface library. To simplify our infrastructure, we'll instead skip this test. -->
+    <CLRTestTargetUnsupported Condition="'$(EnableNativeSanitizers)' != ''">true</CLRTestTargetUnsupported>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="fieldgetter.ilproj" />
@@ -156,7 +158,7 @@ export DOTNET_GCName DOTNET_GCStress DOTNET_HeapVerify DOTNET_ReadyToRun
 ]]></CLRTestBashPreCommands>
   </PropertyGroup>
 
-  <Target Name="CopyTestAssemblyToOutputs" AfterTargets="Build">
+  <Target Name="CopyTestAssemblyToOutputs" AfterTargets="Build" Condition="'$(CLRTestTargetUnsupported)' != 'true'">
     <PropertyGroup>
       <TestAssemblyName>test.dll</TestAssemblyName>
       <TestAssemblySourcePath>$(OutputPath)/../testv1/test/</TestAssemblySourcePath>

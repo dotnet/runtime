@@ -123,48 +123,22 @@ FCIMPL1(INT32, ObjectNative::TryGetHashCode, Object* obj) {
 }
 FCIMPLEND
 
-//
-// Compare by ref for normal classes, by value for value types.
-//
-// <TODO>@todo: it would be nice to customize this method based on the
-// defining class rather than doing a runtime check whether it is
-// a value type.</TODO>
-//
-
-FCIMPL2(FC_BOOL_RET, ObjectNative::Equals, Object *pThisRef, Object *pCompareRef)
+FCIMPL2(FC_BOOL_RET, ObjectNative::ContentEquals, Object *pThisRef, Object *pCompareRef)
 {
-    CONTRACTL
-    {
-        FCALL_CHECK;
-        INJECT_FAULT(FCThrow(kOutOfMemoryException););
-    }
-    CONTRACTL_END;
+    FCALL_CONTRACT;
 
-    if (pThisRef == pCompareRef)
-        FC_RETURN_BOOL(TRUE);
-
-    // Since we are in FCALL, we must handle NULL specially.
-    if (pThisRef == NULL || pCompareRef == NULL)
-        FC_RETURN_BOOL(FALSE);
+    // Should be ensured by caller
+    _ASSERTE(pThisRef != NULL);
+    _ASSERTE(pCompareRef != NULL);
+    _ASSERTE(pThisRef->GetMethodTable() == pCompareRef->GetMethodTable());
 
     MethodTable *pThisMT = pThisRef->GetMethodTable();
 
-    // If it's not a value class, don't compare by value
-    if (!pThisMT->IsValueType())
-        FC_RETURN_BOOL(FALSE);
-
-    // Make sure they are the same type.
-    if (pThisMT != pCompareRef->GetMethodTable())
-        FC_RETURN_BOOL(FALSE);
-
-    // Compare the contents (size - vtable - sync block index).
-    DWORD dwBaseSize = pThisMT->GetBaseSize();
-    if(pThisMT == g_pStringClass)
-        dwBaseSize -= sizeof(WCHAR);
+    // Compare the contents
     BOOL ret = memcmp(
-        (void *) (pThisRef+1),
-        (void *) (pCompareRef+1),
-        dwBaseSize - sizeof(Object) - sizeof(int)) == 0;
+        pThisRef->GetData(),
+        pCompareRef->GetData(),
+        pThisMT->GetNumInstanceFieldBytes()) == 0;
 
     FC_GC_POLL_RET();
 
@@ -215,36 +189,34 @@ FCIMPL1(Object*, ObjectNative::GetClass, Object* pThis)
 }
 FCIMPLEND
 
-FCIMPL1(Object*, ObjectNative::AllocateUninitializedClone, Object* pObjUNSAFE)
+extern "C" void QCALLTYPE ObjectNative_AllocateUninitializedClone(QCall::ObjectHandleOnStack objHandle)
 {
-    FCALL_CONTRACT;
+    QCALL_CONTRACT;
 
-    // Delegate error handling to managed side (it will throw NullReferenceException)
-    if (pObjUNSAFE == NULL)
-        return NULL;
+    BEGIN_QCALL;
 
-    OBJECTREF refClone  = ObjectToOBJECTREF(pObjUNSAFE);
+    GCX_COOP();
 
-    HELPER_METHOD_FRAME_BEGIN_RET_1(refClone);
-
+    OBJECTREF refClone = objHandle.Get();
+    _ASSERTE(refClone != NULL); // Should be handled at managed side
     MethodTable* pMT = refClone->GetMethodTable();
-
+    
     // assert that String has overloaded the Clone() method
     _ASSERTE(pMT != g_pStringClass);
-
-    if (pMT->IsArray()) {
-        refClone = DupArrayForCloning((BASEARRAYREF)refClone);
-    } else {
+    
+    if (pMT->IsArray())
+    {
+        objHandle.Set(DupArrayForCloning((BASEARRAYREF)refClone));
+    }
+    else
+    {
         // We don't need to call the <cinit> because we know
         //  that it has been called....(It was called before this was created)
-        refClone = AllocateObject(pMT);
+        objHandle.Set(AllocateObject(pMT));
     }
 
-    HELPER_METHOD_FRAME_END();
-
-    return OBJECTREFToObject(refClone);
+    END_QCALL;
 }
-FCIMPLEND
 
 extern "C" BOOL QCALLTYPE Monitor_Wait(QCall::ObjectHandleOnStack pThis, INT32 Timeout)
 {

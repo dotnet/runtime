@@ -52,11 +52,11 @@ void ThreadLocalBlock::FreeTLM(SIZE_T i, BOOL isThreadShuttingdown)
                         ThreadLocalModule::CollectibleDynamicEntry *entry = (ThreadLocalModule::CollectibleDynamicEntry*)pThreadLocalModule->m_pDynamicClassTable[k].m_pDynamicEntry;
                         PTR_LoaderAllocator pLoaderAllocator = entry->m_pLoaderAllocator;
 
-                        if (entry->m_hGCStatics != NULL)
+                        if (entry->m_hGCStatics != 0)
                         {
                             pLoaderAllocator->FreeHandle(entry->m_hGCStatics);
                         }
-                        if (entry->m_hNonGCStatics != NULL)
+                        if (entry->m_hNonGCStatics != 0)
                         {
                             pLoaderAllocator->FreeHandle(entry->m_hNonGCStatics);
                         }
@@ -125,7 +125,7 @@ void ThreadLocalBlock::EnsureModuleIndex(ModuleIndex index)
         return;
     }
 
-    SIZE_T aModuleIndices = max(16, m_TLMTableSize);
+    SIZE_T aModuleIndices = max((SIZE_T)16, m_TLMTableSize);
     while (aModuleIndices <= index.m_dwIndex)
     {
         aModuleIndices *= 2;
@@ -355,7 +355,7 @@ void ThreadLocalBlock::AllocateThreadStaticBoxes(MethodTable * pMT)
         THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
-        PRECONDITION(pMT->GetNumBoxedThreadStatics() > 0);
+        PRECONDITION(pMT->HasBoxedThreadStatics());
         INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
@@ -411,7 +411,7 @@ void    ThreadLocalModule::EnsureDynamicClassIndex(DWORD dwID)
         return;
     }
 
-    SIZE_T aDynamicEntries = max(16, m_aDynamicEntries);
+    SIZE_T aDynamicEntries = max((SIZE_T)16, m_aDynamicEntries);
     while (aDynamicEntries <= dwID)
     {
         aDynamicEntries *= 2;
@@ -566,7 +566,7 @@ void ThreadLocalModule::PopulateClass(MethodTable *pMT)
     // We need to allocate boxes any value-type statics that are not
     // primitives or enums, because these statics may contain references
     // to objects on the GC heap
-    if (pMT->GetNumBoxedThreadStatics() > 0)
+    if (pMT->HasBoxedThreadStatics())
     {
         PTR_ThreadLocalBlock pThreadLocalBlock = ThreadStatics::GetCurrentTLB();
         _ASSERTE(pThreadLocalBlock != NULL);

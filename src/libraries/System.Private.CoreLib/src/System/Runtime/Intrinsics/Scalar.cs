@@ -277,6 +277,64 @@ namespace System.Runtime.Intrinsics
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static T Convert(int value)
+        {
+            if (typeof(T) == typeof(byte))
+            {
+                return (T)(object)(byte)value;
+            }
+            else if (typeof(T) == typeof(double))
+            {
+                return (T)(object)(double)value;
+            }
+            else if (typeof(T) == typeof(short))
+            {
+                return (T)(object)(short)value;
+            }
+            else if (typeof(T) == typeof(int))
+            {
+                return (T)(object)value;
+            }
+            else if (typeof(T) == typeof(long))
+            {
+                return (T)(object)(long)value;
+            }
+            else if (typeof(T) == typeof(nint))
+            {
+                return (T)(object)(nint)value;
+            }
+            else if (typeof(T) == typeof(nuint))
+            {
+                return (T)(object)(nuint)value;
+            }
+            else if (typeof(T) == typeof(sbyte))
+            {
+                return (T)(object)(sbyte)value;
+            }
+            else if (typeof(T) == typeof(float))
+            {
+                return (T)(object)(float)value;
+            }
+            else if (typeof(T) == typeof(ushort))
+            {
+                return (T)(object)(ushort)value;
+            }
+            else if (typeof(T) == typeof(uint))
+            {
+                return (T)(object)(uint)value;
+            }
+            else if (typeof(T) == typeof(ulong))
+            {
+                return (T)(object)(ulong)value;
+            }
+            else
+            {
+                ThrowHelper.ThrowNotSupportedException(ExceptionResource.Arg_TypeNotSupported);
+                return default!;
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static T Divide(T left, T right)
         {
             if (typeof(T) == typeof(byte))

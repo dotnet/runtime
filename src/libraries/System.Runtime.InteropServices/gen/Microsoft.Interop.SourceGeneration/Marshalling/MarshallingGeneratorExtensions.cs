@@ -105,7 +105,7 @@ namespace Microsoft.Interop
         private static ParameterSyntax GenerateForwardingParameter(TypePositionInfo info, string identifier)
         {
             ParameterSyntax param = Parameter(Identifier(identifier))
-                .WithModifiers(TokenList(Token(info.RefKindSyntax)))
+                .WithModifiers(MarshallerHelpers.GetManagedParameterModifiers(info))
                 .WithType(info.ManagedType.Syntax);
 
             List<AttributeSyntax> rehydratedAttributes = new();
@@ -143,7 +143,7 @@ namespace Microsoft.Interop
             return generator.GetValueBoundaryBehavior(info, context) switch
             {
                 ValueBoundaryBehavior.ManagedIdentifier when !info.IsByRef => Argument(IdentifierName(managedIdentifier)),
-                ValueBoundaryBehavior.ManagedIdentifier when info.IsByRef => Argument(IdentifierName(managedIdentifier)).WithRefKindKeyword(Token(info.RefKindSyntax)),
+                ValueBoundaryBehavior.ManagedIdentifier when info.IsByRef => Argument(IdentifierName(managedIdentifier)).WithRefKindKeyword(MarshallerHelpers.GetManagedArgumentRefKindKeyword(info)),
                 ValueBoundaryBehavior.NativeIdentifier => Argument(IdentifierName(nativeIdentifier)),
                 ValueBoundaryBehavior.AddressOfNativeIdentifier => Argument(PrefixUnaryExpression(SyntaxKind.AddressOfExpression, IdentifierName(nativeIdentifier))),
                 ValueBoundaryBehavior.CastNativeIdentifier => Argument(CastExpression(generator.AsParameter(info, context).Type, IdentifierName(nativeIdentifier))),
@@ -156,7 +156,7 @@ namespace Microsoft.Interop
             var (managedIdentifier, _) = context.GetIdentifiers(info);
             if (info.IsByRef)
             {
-                return Argument(IdentifierName(managedIdentifier)).WithRefKindKeyword(Token(info.RefKindSyntax));
+                return Argument(IdentifierName(managedIdentifier)).WithRefKindKeyword(MarshallerHelpers.GetManagedArgumentRefKindKeyword(info));
             }
             return Argument(IdentifierName(managedIdentifier));
         }

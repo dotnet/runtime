@@ -1253,7 +1253,7 @@ namespace System.Text.Json.Serialization.Metadata
 
         private static bool IsByRefLike(Type type)
         {
-#if NETCOREAPP
+#if NET
             return type.IsByRefLike;
 #else
             if (!type.IsValueType)

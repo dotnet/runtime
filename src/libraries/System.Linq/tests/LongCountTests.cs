@@ -45,7 +45,7 @@ namespace System.Linq.Tests
         [MemberData(nameof(LongCount_TestData))]
         public static void LongCount(IEnumerable<int> source, Func<int, bool> predicate, long expected)
         {
-            if (predicate == null)
+            if (predicate is null)
             {
                 Assert.Equal(expected, source.LongCount());
             }
@@ -59,7 +59,7 @@ namespace System.Linq.Tests
         [MemberData(nameof(LongCount_TestData))]
         public static void LongCountRunOnce(IEnumerable<int> source, Func<int, bool> predicate, long expected)
         {
-            if (predicate == null)
+            if (predicate is null)
             {
                 Assert.Equal(expected, source.RunOnce().LongCount());
             }

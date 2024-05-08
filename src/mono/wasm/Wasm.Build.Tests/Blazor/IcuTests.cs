@@ -26,7 +26,6 @@ public class IcuTests : BlazorWasmTestBase
     [InlineData("Release", false)]
     [InlineData("Release", true)]
     [InlineData("Release", null)]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/97054")]
     public async Task HybridWithInvariant(string config, bool? invariant)
     {
         string id = $"blz_hybrid_{config}_{GetRandomId()}";
@@ -65,7 +64,6 @@ public class IcuTests : BlazorWasmTestBase
     [InlineData("Release", false)]
     [InlineData("Release", true)]
     [InlineData("Release", null)]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/97054")]
     public async Task HybridWithFullIcuFromRuntimePack(string config, bool? fullIcu)
     {
         string id = $"blz_hybrid_{config}_{GetRandomId()}";
@@ -103,7 +101,6 @@ public class IcuTests : BlazorWasmTestBase
     [InlineData("Release", false)]
     [InlineData("Release", true)]
     [InlineData("Release", null)]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/97054")]
     public async Task FullIcuFromRuntimePackWithInvariant(string config, bool? invariant)
     {
         string id = $"blz_hybrid_{config}_{GetRandomId()}";

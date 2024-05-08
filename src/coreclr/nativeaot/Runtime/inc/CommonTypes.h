@@ -44,6 +44,7 @@ typedef void* LPVOID;
 typedef uint32_t UINT;
 typedef void* PVOID;
 typedef uint64_t ULONGLONG;
+typedef uintptr_t ULONG_PTR;
 #ifdef _MSC_VER
 typedef unsigned long ULONG;
 #else

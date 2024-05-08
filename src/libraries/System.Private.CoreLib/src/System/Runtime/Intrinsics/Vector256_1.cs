@@ -58,6 +58,26 @@ namespace System.Runtime.Intrinsics
             }
         }
 
+        /// <summary>Gets a new <see cref="Vector256{T}" /> with the elements set to their index.</summary>
+        /// <exception cref="NotSupportedException">The type of the vector (<typeparamref name="T" />) is not supported.</exception>
+        public static Vector256<T> Indices
+        {
+            [Intrinsic]
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get
+            {
+                ThrowHelper.ThrowForUnsupportedIntrinsicsVector256BaseType<T>();
+                Unsafe.SkipInit(out Vector256<T> result);
+
+                for (int i = 0; i < Count; i++)
+                {
+                    result.SetElementUnsafe(i, Scalar<T>.Convert(i));
+                }
+
+                return result;
+            }
+        }
+
         /// <summary>Gets <c>true</c> if <typeparamref name="T" /> is supported; otherwise, <c>false</c>.</summary>
         /// <returns><c>true</c> if <typeparamref name="T" /> is supported; otherwise, <c>false</c>.</returns>
         public static bool IsSupported
@@ -661,6 +681,16 @@ namespace System.Runtime.Intrinsics
         //
         // New Surface Area
         //
+
+        static bool ISimdVector<Vector256<T>, T>.AnyWhereAllBitsSet(Vector256<T> vector)
+        {
+            return Vector256.EqualsAny(vector, Vector256<T>.AllBitsSet);
+        }
+
+        static bool ISimdVector<Vector256<T>, T>.Any(Vector256<T> vector, T value)
+        {
+            return Vector256.EqualsAny(vector, Vector256.Create((T)value));
+        }
 
         static int ISimdVector<Vector256<T>, T>.IndexOfLastMatch(Vector256<T> vector)
         {

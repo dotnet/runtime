@@ -59,15 +59,6 @@ namespace Internal.Runtime.CompilerServices
                 s_lazyGvmLookupForSlot = &TypeLoaderExports.GVMLookupForSlot;
         }
 
-        public OpenMethodResolver(RuntimeTypeHandle declaringType, IntPtr codePointer, GCHandle readerGCHandle, int handle)
-        {
-            _resolveType = OpenNonVirtualResolve;
-            _nonVirtualOpenInvokeCodePointer = _methodHandleOrSlotOrCodePointer = codePointer;
-            _declaringType = declaringType.ToMethodTable();
-            _handle = handle;
-            _readerGCHandle = readerGCHandle;
-        }
-
         public OpenMethodResolver(RuntimeTypeHandle declaringType, IntPtr codePointer, GCHandle readerGCHandle, int handle, short resolveType)
         {
             _resolveType = resolveType;

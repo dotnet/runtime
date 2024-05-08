@@ -23,11 +23,9 @@
     <Import Project="Sdk.targets" Sdk="Microsoft.NET.Runtime.MonoTargets.Sdk.net8" />
   </ImportGroup>
   <ImportGroup Condition="'$(TargetsNet8)' == 'true' and '$(TargetPlatformIdentifier)' == 'ios' and $([MSBuild]::IsOSPlatform('osx'))">
-    <Import Project="Sdk.props" Sdk="Microsoft.NETCore.App.Runtime.AOT.Cross.net8.ios-arm" />
     <Import Project="Sdk.props" Sdk="Microsoft.NETCore.App.Runtime.AOT.Cross.net8.ios-arm64" />
     <Import Project="Sdk.props" Sdk="Microsoft.NETCore.App.Runtime.AOT.Cross.net8.iossimulator-arm64" />
     <Import Project="Sdk.props" Sdk="Microsoft.NETCore.App.Runtime.AOT.Cross.net8.iossimulator-x64" />
-    <Import Project="Sdk.props" Sdk="Microsoft.NETCore.App.Runtime.AOT.Cross.net8.iossimulator-x86" />
   </ImportGroup>
 
   <ImportGroup Condition="'$(TargetsNet8)' == 'true' and '$(TargetPlatformIdentifier)' == 'maccatalyst'">

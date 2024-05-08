@@ -146,8 +146,11 @@ NESTED_ENTRY RhpWaitForGC, _TEXT, NoHandler
     ldr         x2, [sp, #OFFSETOF__PInvokeTransitionFrame__m_Flags]
     tbnz        x2, #PTFF_THREAD_ABORT_BIT, LOCAL_LABEL(ThrowThreadAbort)
 
+    .cfi_remember_state
     POP_PROBE_FRAME
     EPILOG_RETURN
+
+    .cfi_restore_state
 LOCAL_LABEL(ThrowThreadAbort):
     POP_PROBE_FRAME
     mov w0, #STATUS_REDHAWK_THREAD_ABORT

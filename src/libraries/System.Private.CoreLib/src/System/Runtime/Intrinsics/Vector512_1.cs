@@ -58,6 +58,26 @@ namespace System.Runtime.Intrinsics
             }
         }
 
+        /// <summary>Gets a new <see cref="Vector512{T}" /> with the elements set to their index.</summary>
+        /// <exception cref="NotSupportedException">The type of the vector (<typeparamref name="T" />) is not supported.</exception>
+        public static Vector512<T> Indices
+        {
+            [Intrinsic]
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get
+            {
+                ThrowHelper.ThrowForUnsupportedIntrinsicsVector512BaseType<T>();
+                Unsafe.SkipInit(out Vector512<T> result);
+
+                for (int i = 0; i < Count; i++)
+                {
+                    result.SetElementUnsafe(i, Scalar<T>.Convert(i));
+                }
+
+                return result;
+            }
+        }
+
         /// <summary>Gets <c>true</c> if <typeparamref name="T" /> is supported; otherwise, <c>false</c>.</summary>
         /// <returns><c>true</c> if <typeparamref name="T" /> is supported; otherwise, <c>false</c>.</returns>
         public static bool IsSupported
@@ -661,6 +681,16 @@ namespace System.Runtime.Intrinsics
         //
         // New Surface Area
         //
+
+        static bool ISimdVector<Vector512<T>, T>.AnyWhereAllBitsSet(Vector512<T> vector)
+        {
+            return Vector512.EqualsAny(vector, Vector512<T>.AllBitsSet);
+        }
+
+        static bool ISimdVector<Vector512<T>, T>.Any(Vector512<T> vector, T value)
+        {
+            return Vector512.EqualsAny(vector, Vector512.Create((T)value));
+        }
 
         static int ISimdVector<Vector512<T>, T>.IndexOfLastMatch(Vector512<T> vector)
         {

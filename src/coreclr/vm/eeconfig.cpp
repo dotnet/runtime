@@ -113,10 +113,8 @@ HRESULT EEConfig::Init()
     fJitEnableOptionalRelocs = false;
     fPInvokeRestoreEsp = (DWORD)-1;
 
-    fNgenBindOptimizeNonGac = false;
     fStressLog = false;
     fForceEnc = false;
-    fProbeForStackOverflow = true;
 
     INDEBUG(fStressLog = true;)
 
@@ -178,12 +176,6 @@ HRESULT EEConfig::Init()
 #ifdef FEATURE_DOUBLE_ALIGNMENT_HINT
     DoubleArrayToLargeObjectHeapThreshold = 1000;
 #endif
-
-#if defined(TARGET_X86) || defined(TARGET_AMD64)
-    dwDisableStackwalkCache = 0;
-#else // TARGET_X86
-    dwDisableStackwalkCache = 1;
-#endif // TARGET_X86
 
 #ifdef _DEBUG
     // interop logging
@@ -482,9 +474,6 @@ HRESULT EEConfig::sync()
     DoubleArrayToLargeObjectHeapThreshold = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_DoubleArrayToLargeObjectHeap, DoubleArrayToLargeObjectHeapThreshold);
 #endif
 
-    dwDisableStackwalkCache = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_DisableStackwalkCache, dwDisableStackwalkCache);
-
-
 #ifdef _DEBUG
     IfFailRet (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_BreakOnClassLoad, (LPWSTR*) &pszBreakOnClassLoad));
     pszBreakOnClassLoad = NarrowWideChar((LPWSTR)pszBreakOnClassLoad);
@@ -644,15 +633,6 @@ HRESULT EEConfig::sync()
 #if defined(_DEBUG) && defined(STUBLINKER_GENERATES_UNWIND_INFO)
     fStubLinkerUnwindInfoVerificationOn = (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_StubLinkerUnwindInfoVerificationOn) != 0);
 #endif
-
-    if (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_UseMethodDataCache) != 0) {
-        MethodTable::AllowMethodDataCaching();
-    }
-
-    if (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_UseParentMethodData) != 0) {
-        MethodTable::AllowParentMethodDataCopy();
-    }
-
 
 #if defined(_DEBUG) && defined(TARGET_AMD64)
     m_cGenerateLongJumpDispatchStubRatio = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_GenerateLongJumpDispatchStubRatio,

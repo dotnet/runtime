@@ -14,11 +14,11 @@ namespace System.Threading
         public long CurrentPhaseNumber { get { throw null; } }
         public int ParticipantCount { get { throw null; } }
         public int ParticipantsRemaining { get { throw null; } }
-#if !FEATURE_WASM_THREADS
+#if !FEATURE_WASM_MANAGED_THREADS
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
 #endif
         public long AddParticipant() { throw null; }
-#if !FEATURE_WASM_THREADS
+#if !FEATURE_WASM_MANAGED_THREADS
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
 #endif
         public long AddParticipants(int participantCount) { throw null; }
@@ -26,27 +26,27 @@ namespace System.Threading
         protected virtual void Dispose(bool disposing) { }
         public void RemoveParticipant() { }
         public void RemoveParticipants(int participantCount) { }
-#if !FEATURE_WASM_THREADS
+#if !FEATURE_WASM_MANAGED_THREADS
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
 #endif
         public void SignalAndWait() { }
-#if !FEATURE_WASM_THREADS
+#if !FEATURE_WASM_MANAGED_THREADS
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
 #endif
         public bool SignalAndWait(int millisecondsTimeout) { throw null; }
-#if !FEATURE_WASM_THREADS
+#if !FEATURE_WASM_MANAGED_THREADS
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
 #endif
         public bool SignalAndWait(int millisecondsTimeout, System.Threading.CancellationToken cancellationToken) { throw null; }
-#if !FEATURE_WASM_THREADS
+#if !FEATURE_WASM_MANAGED_THREADS
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
 #endif
         public void SignalAndWait(System.Threading.CancellationToken cancellationToken) { }
-#if !FEATURE_WASM_THREADS
+#if !FEATURE_WASM_MANAGED_THREADS
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
 #endif
         public bool SignalAndWait(System.TimeSpan timeout) { throw null; }
-#if !FEATURE_WASM_THREADS
+#if !FEATURE_WASM_MANAGED_THREADS
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
 #endif
         public bool SignalAndWait(System.TimeSpan timeout, System.Threading.CancellationToken cancellationToken) { throw null; }
@@ -78,27 +78,27 @@ namespace System.Threading
         public bool Signal(int signalCount) { throw null; }
         public bool TryAddCount() { throw null; }
         public bool TryAddCount(int signalCount) { throw null; }
-#if !FEATURE_WASM_THREADS
+#if !FEATURE_WASM_MANAGED_THREADS
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
 #endif
         public void Wait() { }
-#if !FEATURE_WASM_THREADS
+#if !FEATURE_WASM_MANAGED_THREADS
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
 #endif
         public bool Wait(int millisecondsTimeout) { throw null; }
-#if !FEATURE_WASM_THREADS
+#if !FEATURE_WASM_MANAGED_THREADS
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
 #endif
         public bool Wait(int millisecondsTimeout, System.Threading.CancellationToken cancellationToken) { throw null; }
-#if !FEATURE_WASM_THREADS
+#if !FEATURE_WASM_MANAGED_THREADS
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
 #endif
         public void Wait(System.Threading.CancellationToken cancellationToken) { }
-#if !FEATURE_WASM_THREADS
+#if !FEATURE_WASM_MANAGED_THREADS
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
 #endif
         public bool Wait(System.TimeSpan timeout) { throw null; }
-#if !FEATURE_WASM_THREADS
+#if !FEATURE_WASM_MANAGED_THREADS
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
 #endif
         public bool Wait(System.TimeSpan timeout, System.Threading.CancellationToken cancellationToken) { throw null; }
@@ -250,6 +250,12 @@ namespace System.Threading
         [System.CLSCompliantAttribute(false)]
         public static ulong And(ref ulong location1, ulong value) { throw null; }
         public static double CompareExchange(ref double location1, double value, double comparand) { throw null; }
+        public static byte CompareExchange(ref byte location1, byte value, byte comparand) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static sbyte CompareExchange(ref sbyte location1, sbyte value, sbyte comparand) { throw null; }
+        public static short CompareExchange(ref short location1, short value, short comparand) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static ushort CompareExchange(ref ushort location1, ushort value, ushort comparand) { throw null; }
         public static int CompareExchange(ref int location1, int value, int comparand) { throw null; }
         public static long CompareExchange(ref long location1, long value, long comparand) { throw null; }
         public static System.IntPtr CompareExchange(ref System.IntPtr location1, System.IntPtr value, System.IntPtr comparand) { throw null; }
@@ -271,6 +277,12 @@ namespace System.Threading
         [System.CLSCompliantAttribute(false)]
         public static ulong Decrement(ref ulong location) { throw null; }
         public static double Exchange(ref double location1, double value) { throw null; }
+        public static byte Exchange(ref byte location1, byte value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static sbyte Exchange(ref sbyte location1, sbyte value) { throw null; }
+        public static short Exchange(ref short location1, short value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static ushort Exchange(ref ushort location1, ushort value) { throw null; }
         public static int Exchange(ref int location1, int value) { throw null; }
         public static long Exchange(ref long location1, long value) { throw null; }
         public static System.IntPtr Exchange(ref System.IntPtr location1, System.IntPtr value) { throw null; }
@@ -341,27 +353,27 @@ namespace System.Threading
         protected virtual void Dispose(bool disposing) { }
         public void Reset() { }
         public void Set() { }
-#if !FEATURE_WASM_THREADS
+#if !FEATURE_WASM_MANAGED_THREADS
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
 #endif
         public void Wait() { }
-#if !FEATURE_WASM_THREADS
+#if !FEATURE_WASM_MANAGED_THREADS
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
 #endif
         public bool Wait(int millisecondsTimeout) { throw null; }
-#if !FEATURE_WASM_THREADS
+#if !FEATURE_WASM_MANAGED_THREADS
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
 #endif
         public bool Wait(int millisecondsTimeout, System.Threading.CancellationToken cancellationToken) { throw null; }
-#if !FEATURE_WASM_THREADS
+#if !FEATURE_WASM_MANAGED_THREADS
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
 #endif
         public void Wait(System.Threading.CancellationToken cancellationToken) { }
-#if !FEATURE_WASM_THREADS
+#if !FEATURE_WASM_MANAGED_THREADS
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
 #endif
         public bool Wait(System.TimeSpan timeout) { throw null; }
-#if !FEATURE_WASM_THREADS
+#if !FEATURE_WASM_MANAGED_THREADS
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
 #endif
         public bool Wait(System.TimeSpan timeout, System.Threading.CancellationToken cancellationToken) { throw null; }
@@ -381,23 +393,23 @@ namespace System.Threading
         public static void TryEnter(object obj, int millisecondsTimeout, ref bool lockTaken) { }
         public static bool TryEnter(object obj, System.TimeSpan timeout) { throw null; }
         public static void TryEnter(object obj, System.TimeSpan timeout, ref bool lockTaken) { }
-#if !FEATURE_WASM_THREADS
+#if !FEATURE_WASM_MANAGED_THREADS
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
 #endif
         public static bool Wait(object obj) { throw null; }
-#if !FEATURE_WASM_THREADS
+#if !FEATURE_WASM_MANAGED_THREADS
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
 #endif
         public static bool Wait(object obj, int millisecondsTimeout) { throw null; }
-#if !FEATURE_WASM_THREADS
+#if !FEATURE_WASM_MANAGED_THREADS
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
 #endif
         public static bool Wait(object obj, int millisecondsTimeout, bool exitContext) { throw null; }
-#if !FEATURE_WASM_THREADS
+#if !FEATURE_WASM_MANAGED_THREADS
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
 #endif
         public static bool Wait(object obj, System.TimeSpan timeout) { throw null; }
-#if !FEATURE_WASM_THREADS
+#if !FEATURE_WASM_MANAGED_THREADS
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
 #endif
         public static bool Wait(object obj, System.TimeSpan timeout, bool exitContext) { throw null; }

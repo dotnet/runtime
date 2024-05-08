@@ -236,12 +236,15 @@ typedef enum {
 	ArgNone, // only in void return type
 	ArgInIReg = 0x01,
 	ArgInFReg,
+	ArgR4InIReg,
+	ArgR8InIReg,
 #ifdef TARGET_RISCV64
 	ArgInFRegR4,
 #endif
 	ArgOnStack,
 	ArgOnStackR4,
 	ArgOnStackR8,
+	ArgHFA,
 
 	/*
 	 * Vtype passed in consecutive int registers.
@@ -258,11 +261,18 @@ typedef struct {
 	/* ArgVtypeInIRegs */
 	guint8 reg;
 	int size;
-	guint8 is_regpair;
+	/* ArgVtypeInIRegs/ArgHFA */
+	guint8 nregs;
 	/* ArgOnStack */
 	int slot_size;
 	gint32 offset;
 	guint8 is_signed : 1;
+	/* ArgHFA */
+	int esize;
+	/* The offsets of the float values inside the arg */
+	guint16 foffsets [4];
+	int nfregs_to_skip;
+	gboolean hfa;
 } ArgInfo;
 
 struct CallInfo {

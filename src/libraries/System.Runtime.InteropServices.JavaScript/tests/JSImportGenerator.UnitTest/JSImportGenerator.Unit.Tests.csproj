@@ -19,6 +19,12 @@
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp.CodeFix.Testing" Version="$(CompilerPlatformTestingVersion)" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.InteropServices\tests\Ancillary.Interop\Ancillary.Interop.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.InteropServices.JavaScript\gen\JSImportGenerator\JSImportGenerator.csproj" />
+
+    <!-- Upgrade transitive references of Microsoft.CodeAnalysis.Analyzer.Testing which bring in NS 1.x deps -->
+    <PackageReference Include="DiffPlex" Version="$(CompilerPlatformTestingDiffPlexVersion)" />
+    <PackageReference Include="Microsoft.VisualBasic" Version="$(CompilerPlatformTestingMicrosoftVisualBasicVersion)" />
+    <PackageReference Include="Microsoft.VisualStudio.Composition" Version="$(CompilerPlatformTestingMicrosoftVisualStudioCompositionVersion)" />
+
     <None Include="$(RepoRoot)/NuGet.config" Link="NuGet.config" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>

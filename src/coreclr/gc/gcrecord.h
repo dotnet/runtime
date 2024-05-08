@@ -73,7 +73,8 @@ enum gc_condemn_reason_condition
     gen_joined_servo_postpone = 27,
     gen_joined_stress_mix = 28,
     gen_joined_stress = 29,
-    gcrc_max = 30
+    gen_joined_aggressive = 30,
+    gcrc_max = 31
 };
 
 #ifdef DT_LOG

@@ -24,7 +24,7 @@ namespace ILCompiler.DependencyAnalysis
             Debug.Assert(!type.IsCanonicalDefinitionType(CanonicalFormKind.Any));
             Debug.Assert(type.IsCanonicalSubtype(CanonicalFormKind.Any));
             Debug.Assert(type == type.ConvertToCanonForm(CanonicalFormKind.Specific));
-            Debug.Assert(!type.IsMdArray || factory.Target.Abi == TargetAbi.CppCodegen);
+            Debug.Assert(!type.IsMdArray);
         }
 
         public override bool StaticDependenciesAreComputed => true;
@@ -96,8 +96,12 @@ namespace ILCompiler.DependencyAnalysis
 
         protected override void OutputInterfaceMap(NodeFactory factory, ref ObjectDataBuilder objData)
         {
-            for (int i = 0; i < _type.RuntimeInterfaces.Length; i++)
+            foreach (DefType intface in _type.RuntimeInterfaces)
             {
+                // If the interface was optimized away, skip it
+                if (!factory.InterfaceUse(intface.GetTypeDefinition()).Marked)
+                    continue;
+
                 // Interface omitted for canonical instantiations (constructed at runtime for dynamic types from the native layout info)
                 objData.EmitZeroPointer();
             }

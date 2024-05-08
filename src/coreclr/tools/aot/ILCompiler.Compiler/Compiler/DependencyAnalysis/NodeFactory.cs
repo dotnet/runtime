@@ -39,7 +39,8 @@ namespace ILCompiler.DependencyAnalysis
             DictionaryLayoutProvider dictionaryLayoutProvider,
             InlinedThreadStatics inlinedThreadStatics,
             ImportedNodeProvider importedNodeProvider,
-            PreinitializationManager preinitializationManager)
+            PreinitializationManager preinitializationManager,
+            DevirtualizationManager devirtualizationManager)
         {
             _target = context.Target;
             _context = context;
@@ -54,6 +55,7 @@ namespace ILCompiler.DependencyAnalysis
             LazyGenericsPolicy = lazyGenericsPolicy;
             _importedNodeProvider = importedNodeProvider;
             PreinitializationManager = preinitializationManager;
+            DevirtualizationManager = devirtualizationManager;
         }
 
         public void SetMarkingComplete()
@@ -99,6 +101,11 @@ namespace ILCompiler.DependencyAnalysis
         }
 
         public PreinitializationManager PreinitializationManager
+        {
+            get;
+        }
+
+        public DevirtualizationManager DevirtualizationManager
         {
             get;
         }
@@ -354,9 +361,14 @@ namespace ILCompiler.DependencyAnalysis
             {
                 // We don't need to track virtual method uses for types that have a vtable with a known layout.
                 // It's a waste of CPU time and memory.
-                Debug.Assert(!VTable(method.OwningType).HasFixedSlots);
+                Debug.Assert(method.OwningType.IsGenericDefinition || !VTable(method.OwningType).HasKnownVirtualMethodUse);
 
                 return new VariantInterfaceMethodUseNode(method);
+            });
+
+            _interfaceUses = new NodeCache<TypeDesc, InterfaceUseNode>((TypeDesc type) =>
+            {
+                return new InterfaceUseNode(type);
             });
 
             _readyToRunHelpers = new NodeCache<ReadyToRunHelperKey, ISymbolNode>(CreateReadyToRunHelperNode);
@@ -814,6 +826,12 @@ namespace ILCompiler.DependencyAnalysis
             return _externSymbols.GetOrAdd(name);
         }
 
+        public ISortableSymbolNode ExternVariable(string name)
+        {
+            string mangledName = NameMangler.NodeMangler.ExternVariable(name);
+            return _externSymbols.GetOrAdd(mangledName);
+        }
+
         private NodeCache<string, ExternSymbolNode> _externIndirectSymbols;
 
         public ISortableSymbolNode ExternIndirectSymbol(string name)
@@ -1141,7 +1159,7 @@ namespace ILCompiler.DependencyAnalysis
             {
                 // We don't need to track virtual method uses for types that have a vtable with a known layout.
                 // It's a waste of CPU time and memory.
-                Debug.Assert(!_factory.VTable(key.OwningType).HasFixedSlots);
+                Debug.Assert(!_factory.VTable(key.OwningType).HasKnownVirtualMethodUse);
                 return new VirtualMethodUseNode(key);
             }
             protected override int GetKeyHashCode(MethodDesc key) => key.GetHashCode();
@@ -1160,6 +1178,13 @@ namespace ILCompiler.DependencyAnalysis
         public DependencyNodeCore<NodeFactory> VariantInterfaceMethodUse(MethodDesc decl)
         {
             return _variantMethods.GetOrAdd(decl);
+        }
+
+        private NodeCache<TypeDesc, InterfaceUseNode> _interfaceUses;
+
+        public DependencyNodeCore<NodeFactory> InterfaceUse(TypeDesc type)
+        {
+            return _interfaceUses.GetOrAdd(type);
         }
 
         private NodeCache<ReadyToRunHelperKey, ISymbolNode> _readyToRunHelpers;

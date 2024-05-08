@@ -1,11 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import MonoWasmThreads from "consts:monoWasmThreads";
+import WasmEnableThreads from "consts:wasmEnableThreads";
 import type { EmscriptenReplacements } from "./types/internal";
 import type { TypedArray } from "./types/emscripten";
 import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_WORKER, INTERNAL, Module, loaderHelpers, runtimeHelpers } from "./globals";
-import { replaceEmscriptenPThreadLibrary } from "./pthreads/shared/emscripten-replacements";
+import { replaceEmscriptenTLSInit } from "./pthreads";
+import { replaceEmscriptenPThreadUI } from "./pthreads";
 
 const dummyPerformance = {
     now: function () {
@@ -13,7 +14,7 @@ const dummyPerformance = {
     }
 };
 
-export function initializeReplacements(replacements: EmscriptenReplacements): void {
+export function initializeReplacements (replacements: EmscriptenReplacements): void {
     // performance.now() is used by emscripten and doesn't work in JSC
     if (typeof globalThis.performance === "undefined") {
         globalThis.performance = dummyPerformance as any;
@@ -33,25 +34,29 @@ export function initializeReplacements(replacements: EmscriptenReplacements): vo
     replacements.ENVIRONMENT_IS_WORKER = ENVIRONMENT_IS_WORKER;
 
     // threads
-    if (MonoWasmThreads && replacements.modulePThread) {
-        replaceEmscriptenPThreadLibrary(replacements.modulePThread);
+    if (WasmEnableThreads && replacements.modulePThread) {
+        if (ENVIRONMENT_IS_WORKER) {
+            replaceEmscriptenTLSInit(replacements.modulePThread);
+        } else {
+            replaceEmscriptenPThreadUI(replacements.modulePThread);
+        }
     }
 }
 
-export async function init_polyfills_async(): Promise<void> {
+export async function init_polyfills_async (): Promise<void> {
     // v8 shell doesn't have Event and EventTarget
-    if (MonoWasmThreads && typeof globalThis.Event === "undefined") {
+    if (WasmEnableThreads && typeof globalThis.Event === "undefined") {
         globalThis.Event = class Event {
             readonly type: string;
-            constructor(type: string) {
+            constructor (type: string) {
                 this.type = type;
             }
         } as any;
     }
-    if (MonoWasmThreads && typeof globalThis.EventTarget === "undefined") {
+    if (WasmEnableThreads && typeof globalThis.EventTarget === "undefined") {
         globalThis.EventTarget = class EventTarget {
             private subscribers = new Map<string, Array<{ listener: EventListenerOrEventListenerObject, oneShot: boolean }>>();
-            addEventListener(type: string, listener: EventListenerOrEventListenerObject | null, options?: boolean | AddEventListenerOptions) {
+            addEventListener (type: string, listener: EventListenerOrEventListenerObject | null, options?: boolean | AddEventListenerOptions) {
                 if (listener === undefined || listener == null)
                     return;
                 let oneShot = false;
@@ -73,7 +78,7 @@ export async function init_polyfills_async(): Promise<void> {
                 }
                 listeners.push({ listener, oneShot });
             }
-            removeEventListener(type: string, listener: EventListenerOrEventListenerObject | null, options?: boolean | EventListenerOptions) {
+            removeEventListener (type: string, listener: EventListenerOrEventListenerObject | null, options?: boolean | EventListenerOptions) {
                 if (listener === undefined || listener == null)
                     return;
                 if (options !== undefined) {
@@ -97,7 +102,7 @@ export async function init_polyfills_async(): Promise<void> {
                     subscribers.splice(index, 1);
                 }
             }
-            dispatchEvent(event: Event) {
+            dispatchEvent (event: Event) {
                 if (!this.subscribers.has(event.type)) {
                     return true;
                 }

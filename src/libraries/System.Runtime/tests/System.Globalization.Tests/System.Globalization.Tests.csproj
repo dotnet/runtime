@@ -11,6 +11,8 @@
   </PropertyGroup>
   <ItemGroup>
     <RdXmlFile Include="default.rd.xml" />
+    <!-- Apple mobile trimming descriptor for Mono runtime -->
+    <TrimmerRootDescriptor Condition="'$(TargetsAppleMobile)' == 'true' and '$(EnableAggressiveTrimming)' == 'true' and '$(UseNativeAotRuntime)' != 'true'" Include="$(MSBuildThisFileDirectory)ILLink.Descriptors.xml" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AssemblyInfo.cs" />
@@ -23,6 +25,7 @@
     <Compile Include="CompareInfo\CompareInfoTests.IsSuffix.cs" />
     <Compile Include="CompareInfo\CompareInfoTests.LastIndexOf.cs" />
     <Compile Include="CompareInfo\CompareInfoTests.HashCode.cs" />
+    <Compile Include="CompareInfo\CompareInfoTests.SortKey.cs" />
     <Compile Include="NumberFormatInfo\NumberFormatInfoCurrentInfo.cs" />
     <Compile Include="NumberFormatInfo\NumberFormatInfoValidateParseStyle.cs" />
     <Compile Include="NumberFormatInfo\NumberFormatInfoData.cs" />

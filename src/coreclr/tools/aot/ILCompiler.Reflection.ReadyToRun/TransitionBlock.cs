@@ -34,7 +34,7 @@ namespace ILCompiler.Reflection.ReadyToRun
                 case Machine.LoongArch64:
                     return LoongArch64TransitionBlock.Instance;
 
-                case (Machine)0x5064: /* TODO: update with RiscV64 */
+                case Machine.RiscV64:
                     return RiscV64TransitionBlock.Instance;
 
                 default:

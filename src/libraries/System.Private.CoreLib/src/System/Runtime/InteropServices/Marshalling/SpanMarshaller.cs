@@ -170,7 +170,11 @@ namespace System.Runtime.InteropServices.Marshalling
             /// <summary>
             /// Returns the unmanaged value representing the array.
             /// </summary>
-            public TUnmanagedElement* ToUnmanaged() => (TUnmanagedElement*)Unsafe.AsPointer(ref GetPinnableReference());
+            public TUnmanagedElement* ToUnmanaged()
+            {
+                // Unsafe.AsPointer is safe since buffer must be pinned
+                return (TUnmanagedElement*)Unsafe.AsPointer(ref GetPinnableReference());
+            }
 
             /// <summary>
             /// Frees resources.

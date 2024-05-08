@@ -71,6 +71,7 @@ typedef mono_unichar2 *mono_unichar2_ptr;
 typedef mono_unichar4 *mono_unichar4_ptr;
 typedef MonoSpanOfObjects *MonoSpanOfObjects_ref;
 
+typedef char    *char_ref;
 typedef char **char_ptr_ref;
 typedef gint32  *gint32_ref;
 typedef gint64  *gint64_ref;
@@ -173,6 +174,7 @@ typedef MonoStringHandle MonoStringOutHandle;
 #define MONO_HANDLE_TYPE_WRAP_int_ref  			ICALL_HANDLES_WRAP_VALUETYPE_REF
 #define MONO_HANDLE_TYPE_WRAP_gint32_ref  			ICALL_HANDLES_WRAP_VALUETYPE_REF
 #define MONO_HANDLE_TYPE_WRAP_int_ptr_ref  		ICALL_HANDLES_WRAP_VALUETYPE_REF
+#define MONO_HANDLE_TYPE_WRAP_char_ref		ICALL_HANDLES_WRAP_VALUETYPE_REF
 #define MONO_HANDLE_TYPE_WRAP_char_ptr_ref		ICALL_HANDLES_WRAP_VALUETYPE_REF
 #define MONO_HANDLE_TYPE_WRAP_guint8_ptr_ref		ICALL_HANDLES_WRAP_VALUETYPE_REF
 #define MONO_HANDLE_TYPE_WRAP_MonoResolveTokenError_ref	ICALL_HANDLES_WRAP_VALUETYPE_REF
@@ -202,7 +204,6 @@ typedef MonoStringHandle MonoStringOutHandle;
 #define MONO_HANDLE_TYPE_WRAP_MonoArray				ICALL_HANDLES_WRAP_OBJ
 #define MONO_HANDLE_TYPE_WRAP_MonoAsyncResult			ICALL_HANDLES_WRAP_OBJ
 #define MONO_HANDLE_TYPE_WRAP_MonoCalendarData		ICALL_HANDLES_WRAP_OBJ
-#define MONO_HANDLE_TYPE_WRAP_MonoComInteropProxy		ICALL_HANDLES_WRAP_OBJ
 #define MONO_HANDLE_TYPE_WRAP_MonoComObject			ICALL_HANDLES_WRAP_OBJ
 #define MONO_HANDLE_TYPE_WRAP_MonoCultureData		ICALL_HANDLES_WRAP_OBJ
 #define MONO_HANDLE_TYPE_WRAP_MonoCultureInfo		ICALL_HANDLES_WRAP_OBJ

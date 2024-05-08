@@ -3,8 +3,6 @@
 
 using System;
 
-using Internal.Reflection.Core.NonPortable;
-
 namespace Internal.Runtime.CompilerHelpers
 {
     /// <summary>

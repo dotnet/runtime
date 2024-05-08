@@ -47,11 +47,11 @@ namespace System.Text.Json
         private SequencePosition _currentPosition;
         private readonly ReadOnlySequence<byte> _sequence;
 
-        private bool IsLastSpan => _isFinalBlock && (!_isMultiSegment || _isLastSegment);
+        private readonly bool IsLastSpan => _isFinalBlock && (!_isMultiSegment || _isLastSegment);
 
-        internal ReadOnlySequence<byte> OriginalSequence => _sequence;
+        internal readonly ReadOnlySequence<byte> OriginalSequence => _sequence;
 
-        internal ReadOnlySpan<byte> OriginalSpan => _sequence.IsEmpty ? _buffer : default;
+        internal readonly ReadOnlySpan<byte> OriginalSpan => _sequence.IsEmpty ? _buffer : default;
 
         internal readonly int ValueLength => HasValueSequence ? checked((int)ValueSequence.Length) : ValueSpan.Length;
 
@@ -184,18 +184,18 @@ namespace System.Text.Json
         /// in more data asynchronously before continuing with a new instance of the <see cref="Utf8JsonReader"/>.
         /// </summary>
         public readonly JsonReaderState CurrentState => new JsonReaderState
-        {
-            _lineNumber = _lineNumber,
-            _bytePositionInLine = _bytePositionInLine,
-            _inObject = _inObject,
-            _isNotPrimitive = _isNotPrimitive,
-            _valueIsEscaped = ValueIsEscaped,
-            _trailingCommaBeforeComment = _trailingCommaBeforeComment,
-            _tokenType = _tokenType,
-            _previousTokenType = _previousTokenType,
-            _readerOptions = _readerOptions,
-            _bitStack = _bitStack,
-        };
+        (
+            lineNumber: _lineNumber,
+            bytePositionInLine: _bytePositionInLine,
+            inObject: _inObject,
+            isNotPrimitive: _isNotPrimitive,
+            valueIsEscaped: ValueIsEscaped,
+            trailingCommaBeforeComment: _trailingCommaBeforeComment,
+            tokenType: _tokenType,
+            previousTokenType: _previousTokenType,
+            readerOptions: _readerOptions,
+            bitStack: _bitStack
+        );
 
         /// <summary>
         /// Constructs a new <see cref="Utf8JsonReader"/> instance.

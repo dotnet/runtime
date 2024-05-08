@@ -32,24 +32,26 @@ namespace Internal.Runtime.CompilerHelpers
             throw new NotSupportedException(SR.Format(SR.StructMarshalling_MissingInteropData, structureType));
         }
 
-        public static int GetStructUnsafeStructSize(RuntimeTypeHandle structureTypeHandle)
+        public static unsafe int GetStructUnsafeStructSize(RuntimeTypeHandle structureTypeHandle)
         {
             if (TryGetStructUnsafeStructSize(structureTypeHandle, out int size))
             {
                 return size;
             }
 
+            MethodTable* structureMT = structureTypeHandle.ToMethodTable();
+
             // IsBlittable() checks whether the type contains GC references. It is approximate check with false positives.
             // This fallback path will return incorrect answer for types that do not contain GC references, but that are
             // not actually blittable; e.g. for types with bool fields.
-            if (structureTypeHandle.IsBlittable() && structureTypeHandle.IsValueType())
+            if (structureTypeHandle.IsBlittable() && structureMT->IsValueType)
             {
-                return structureTypeHandle.GetValueTypeSize();
+                return (int)structureMT->ValueTypeSize;
             }
 
             // If the type is an interface or a generic type, the reason is likely that.
             Type structureType = Type.GetTypeFromHandle(structureTypeHandle)!;
-            if (structureTypeHandle.IsInterface() || structureTypeHandle.IsGenericType())
+            if (structureMT->IsInterface || structureMT->IsGeneric)
             {
                 throw new ArgumentException(SR.Format(SR.Arg_CannotMarshal, structureType));
             }

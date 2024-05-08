@@ -26,6 +26,7 @@ class DeadCodeElimination
         TestUnmodifiableStaticFieldOptimization.Run();
         TestUnmodifiableInstanceFieldOptimization.Run();
         TestGetMethodOptimization.Run();
+        TestTypeOfCodegenBranchElimination.Run();
 
         return 100;
     }
@@ -340,6 +341,8 @@ class DeadCodeElimination
 
     class TestTypeEquals
     {
+        sealed class Gen<T> { }
+
         sealed class Never { }
 
         static Type s_type = null;
@@ -349,6 +352,9 @@ class DeadCodeElimination
             // This was asserting the BCL because Never would not have reflection metadata
             // despite the typeof
             Console.WriteLine(s_type == typeof(Never));
+
+            // This was a compiler crash
+            Console.WriteLine(typeof(object) == typeof(Gen<>));
 
 #if !DEBUG
             ThrowIfPresent(typeof(TestTypeEquals), nameof(Never));
@@ -636,6 +642,132 @@ class DeadCodeElimination
                 if (del.GetMethodInfo() != mi)
                     throw new Exception();
             }
+        }
+    }
+
+    class TestTypeOfCodegenBranchElimination
+    {
+        class Never1 { }
+        class Never2 { }
+        class Never3 { }
+        class Never4<T> { }
+        class Never5<T> { }
+        class Never6<T> { }
+
+        class Canary1 { }
+        class Canary2 { }
+        class Canary3 { }
+        class Canary4 { }
+        class Canary5 { }
+        class Canary6 { }
+
+        class Maybe1<T> { }
+
+        class Marker1 { }
+
+        class Atom1 { }
+
+        interface IDynamicCastableImplemented { void A(); }
+        [DynamicInterfaceCastableImplementation]
+        interface IDynamicCastableImplementedImpl : IDynamicCastableImplemented { void IDynamicCastableImplemented.A() { } }
+        class DynamicInterfaceCastable : IDynamicInterfaceCastable
+        {
+            RuntimeTypeHandle IDynamicInterfaceCastable.GetInterfaceImplementation(RuntimeTypeHandle interfaceType) => typeof(IDynamicCastableImplementedImpl).TypeHandle;
+            bool IDynamicInterfaceCastable.IsInterfaceImplemented(RuntimeTypeHandle interfaceType, bool throwIfNotImplemented) => true;
+        }
+
+        [UnconditionalSuppressMessage("AotAnalysis", "IL3050:UnrecognizedAotPattern",
+            Justification = "That's the point")]
+        public static void Run()
+        {
+            if (GetUnknownType().GetType() == typeof(Never1))
+            {
+                Consume(new Canary1());
+            }
+#if !DEBUG
+            ThrowIfPresentWithUsableMethodTable(typeof(TestTypeOfCodegenBranchElimination), nameof(Canary1));
+#endif
+
+            if (GetUnknownType() is Never2)
+            {
+                Consume(new Canary2());
+            }
+#if !DEBUG
+            ThrowIfPresentWithUsableMethodTable(typeof(TestTypeOfCodegenBranchElimination), nameof(Canary2));
+#endif
+
+            IsNever3<object>(new object());
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            static void IsNever3<T>(object o)
+            {
+                if (typeof(T) == typeof(Never3))
+                {
+                    Consume(new Canary3());
+                }
+            }
+#if false // This optimization is disabled for now, don't check.
+            ThrowIfPresentWithUsableMethodTable(typeof(TestTypeOfCodegenBranchElimination), nameof(Canary3));
+#endif
+
+            // *********
+
+            if (GetUnknownType().GetType() == typeof(Never4<object>))
+            {
+                Consume(new Canary4());
+            }
+#if !DEBUG
+            ThrowIfPresentWithUsableMethodTable(typeof(TestTypeOfCodegenBranchElimination), nameof(Canary4));
+#endif
+
+            if (GetUnknownType() is Never5<object>)
+            {
+                Consume(new Canary5());
+            }
+#if !DEBUG
+            ThrowIfPresentWithUsableMethodTable(typeof(TestTypeOfCodegenBranchElimination), nameof(Canary5));
+#endif
+
+            IsNever6<object>(new object());
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            static void IsNever6<T>(object o)
+            {
+                if (typeof(T) == typeof(Never6<object>))
+                {
+                    Consume(new Canary6());
+                }
+            }
+#if false // This optimization is disabled for now, don't check.
+            ThrowIfPresentWithUsableMethodTable(typeof(TestTypeOfCodegenBranchElimination), nameof(Canary6));
+#endif
+
+            // ************
+
+            Activator.CreateInstance(typeof(Maybe1<>).MakeGenericType(GetAtom1()));
+
+            if (GetUnknownType().GetType() == typeof(Maybe1<object>))
+            {
+                // This should not be optimized away because Maybe1<object> is possible
+                // with the type loader template for MakeGeneric above.
+                Consume(new Marker1());
+            }
+            ThrowIfNotPresent(typeof(TestTypeOfCodegenBranchElimination), nameof(Marker1));
+
+            // ************
+
+            if (GetDynamicInterfaceCastableType() is not IDynamicCastableImplemented)
+               throw new Exception();
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            static object GetDynamicInterfaceCastableType() => new DynamicInterfaceCastable();
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            static void Consume(object o) { }
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            static object GetUnknownType() => new object();
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            static Type GetAtom1() => typeof(Atom1);
         }
     }
 

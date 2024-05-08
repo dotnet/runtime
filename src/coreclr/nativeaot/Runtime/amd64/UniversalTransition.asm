@@ -126,7 +126,7 @@ endif ; TRASH_SAVED_ARGUMENT_REGISTERS
         lea  rcx, [rsp + DISTANCE_FROM_CHILDSP_TO_RETURN_BLOCK]
         call r10
 
-        EXPORT_POINTER_TO_ADDRESS PointerToReturnFrom&FunctionName
+ALTERNATE_ENTRY ReturnFrom&FunctionName
 
         ; We cannot make the label public as that tricks DIA stackwalker into thinking
         ; it's the beginning of a method. For this reason we export the address

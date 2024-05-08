@@ -30,27 +30,10 @@ namespace System.Reflection.Runtime.General
         public static bool StringOrNullEquals(this ConstantStringValueHandle handle, string valueOrNull, MetadataReader reader)
         {
             if (valueOrNull == null)
-                return handle.IsNull(reader);
-            if (handle.IsNull(reader))
+                return handle.IsNil;
+            if (handle.IsNil)
                 return false;
             return handle.StringEquals(valueOrNull, reader);
-        }
-
-        // Needed for RuntimeMappingTable access
-        public static int AsInt(this TypeDefinitionHandle typeDefinitionHandle)
-        {
-            unsafe
-            {
-                return *(int*)&typeDefinitionHandle;
-            }
-        }
-
-        public static TypeDefinitionHandle AsTypeDefinitionHandle(this int i)
-        {
-            unsafe
-            {
-                return *(TypeDefinitionHandle*)&i;
-            }
         }
 
         public static int AsInt(this MethodHandle methodHandle)
@@ -60,31 +43,6 @@ namespace System.Reflection.Runtime.General
                 return *(int*)&methodHandle;
             }
         }
-
-        public static MethodHandle AsMethodHandle(this int i)
-        {
-            unsafe
-            {
-                return *(MethodHandle*)&i;
-            }
-        }
-
-        public static int AsInt(this FieldHandle fieldHandle)
-        {
-            unsafe
-            {
-                return *(int*)&fieldHandle;
-            }
-        }
-
-        public static FieldHandle AsFieldHandle(this int i)
-        {
-            unsafe
-            {
-                return *(FieldHandle*)&i;
-            }
-        }
-
 
         public static bool IsNamespaceDefinitionHandle(this Handle handle, MetadataReader reader)
         {
@@ -99,37 +57,11 @@ namespace System.Reflection.Runtime.General
         }
 
         // Conversion where a invalid handle type indicates bad metadata rather a mistake by the caller.
-        public static ScopeReferenceHandle ToExpectedScopeReferenceHandle(this Handle handle, MetadataReader reader)
-        {
-            try
-            {
-                return handle.ToScopeReferenceHandle(reader);
-            }
-            catch (ArgumentException)
-            {
-                throw new BadImageFormatException();
-            }
-        }
-
-        // Conversion where a invalid handle type indicates bad metadata rather a mistake by the caller.
         public static NamespaceReferenceHandle ToExpectedNamespaceReferenceHandle(this Handle handle, MetadataReader reader)
         {
             try
             {
                 return handle.ToNamespaceReferenceHandle(reader);
-            }
-            catch (ArgumentException)
-            {
-                throw new BadImageFormatException();
-            }
-        }
-
-        // Conversion where a invalid handle type indicates bad metadata rather a mistake by the caller.
-        public static TypeDefinitionHandle ToExpectedTypeDefinitionHandle(this Handle handle, MetadataReader reader)
-        {
-            try
-            {
-                return handle.ToTypeDefinitionHandle(reader);
             }
             catch (ArgumentException)
             {
@@ -187,16 +119,6 @@ namespace System.Reflection.Runtime.General
             return handle.ToMethodSignatureHandle(reader).GetMethodSignature(reader);
         }
 
-        public static FieldSignature ParseFieldSignature(this Handle handle, MetadataReader reader)
-        {
-            return handle.ToFieldSignatureHandle(reader).GetFieldSignature(reader);
-        }
-
-        public static PropertySignature ParsePropertySignature(this Handle handle, MetadataReader reader)
-        {
-            return handle.ToPropertySignatureHandle(reader).GetPropertySignature(reader);
-        }
-
         //
         // Used to split methods between DeclaredMethods and DeclaredConstructors.
         //
@@ -219,9 +141,9 @@ namespace System.Reflection.Runtime.General
             return nameHandle.StringEquals(ConstructorInfo.ConstructorName, reader) || nameHandle.StringEquals(ConstructorInfo.TypeConstructorName, reader);
         }
 
-        private static Exception ParseBoxedEnumConstantValue(this ConstantBoxedEnumValueHandle handle, MetadataReader reader, out object value)
+        private static Exception ParseEnumConstantValue(this ConstantEnumValueHandle handle, MetadataReader reader, out object value)
         {
-            ConstantBoxedEnumValue record = handle.GetConstantBoxedEnumValue(reader);
+            ConstantEnumValue record = handle.GetConstantEnumValue(reader);
 
             Exception? exception = null;
             Type? enumType = record.Type.TryResolve(reader, new TypeContext(null, null), ref exception)?.ToType();
@@ -395,9 +317,9 @@ namespace System.Reflection.Runtime.General
                 case HandleType.ConstantReferenceValue:
                     value = null;
                     return null;
-                case HandleType.ConstantBoxedEnumValue:
+                case HandleType.ConstantEnumValue:
                     {
-                        return handle.ToConstantBoxedEnumValueHandle(reader).ParseBoxedEnumConstantValue(reader, out value);
+                        return handle.ToConstantEnumValueHandle(reader).ParseEnumConstantValue(reader, out value);
                     }
                 default:
                     {

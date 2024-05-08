@@ -194,9 +194,9 @@ public:
 private:
     static CLREvent * g_pGCSuspendEvent;
 
-#if defined(TARGET_WINDOWS) && defined(TARGET_AMD64)
+#if defined(TARGET_WINDOWS)
     static void* g_returnAddressHijackTarget;
-#endif // TARGET_WINDOWS && TARGET_AMD64
+#endif // TARGET_WINDOWS
 
     // This is true iff we're currently in the process of suspending threads.  Once the
     // threads have been suspended, this is false.  This is set via an instance of
@@ -251,12 +251,12 @@ public:
         return g_pSuspensionThread;
     }
 
-#if defined(TARGET_WINDOWS) && defined(TARGET_AMD64)
+#if defined(TARGET_WINDOWS)
     static void* GetReturnAddressHijackTarget()
     {
         return g_returnAddressHijackTarget;
     }
-#endif // TARGET_WINDOWS && TARGET_AMD64
+#endif // TARGET_WINDOWS
 
 private:
     static LONG m_DebugWillSyncCount;

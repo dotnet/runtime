@@ -354,7 +354,7 @@ namespace Microsoft.Extensions
             public ISet<string> InstantiatedISet { get; set; } = s_instantiatedISet;
             public bool IsSameInstantiatedISet() => object.ReferenceEquals(s_instantiatedISet, InstantiatedISet);
 
-#if NETCOREAPP
+#if NET
             private static IReadOnlySet<string> s_instantiatedIReadOnlySet = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "a", "A", "b" };
             public IReadOnlySet<string> InstantiatedIReadOnlySet { get; set; } = s_instantiatedIReadOnlySet;
             public bool IsSameInstantiatedIReadOnlySet() => object.ReferenceEquals(s_instantiatedIReadOnlySet, InstantiatedIReadOnlySet);
@@ -376,6 +376,17 @@ namespace Microsoft.Extensions
             public IEnumerable<string> UnInstantiatedIEnumerable { get; set; }
             public IList<string> UnInstantiatedIList { get; set; }
             public IReadOnlyList<string> UnInstantiatedIReadOnlyList { get; set; }
+        }
+
+        public class CollectionContainer
+        {
+            public string Name { get; set; }
+            public List<Element> Elements { get; set; }
+        }
+
+        public class Element
+        {
+            public string Type { get; set; }
         }
     }
 }

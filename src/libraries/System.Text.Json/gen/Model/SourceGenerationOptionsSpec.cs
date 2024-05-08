@@ -16,6 +16,8 @@ namespace System.Text.Json.SourceGeneration
 
         public required JsonSerializerDefaults? Defaults { get; init; }
 
+        public required bool? AllowOutOfOrderMetadataProperties { get; init; }
+
         public required bool? AllowTrailingCommas { get; init; }
 
         public required ImmutableEquatableArray<TypeRef>? Converters { get; init; }
@@ -33,6 +35,8 @@ namespace System.Text.Json.SourceGeneration
         public required bool? IncludeFields { get; init; }
 
         public required int? MaxDepth { get; init; }
+
+        public required string? NewLine { get; init; }
 
         public required JsonNumberHandling? NumberHandling { get; init; }
 

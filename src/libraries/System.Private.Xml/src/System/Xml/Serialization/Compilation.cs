@@ -21,8 +21,8 @@ namespace System.Xml.Serialization
         internal const string GeneratedAssemblyNamespace = "Microsoft.Xml.Serialization.GeneratedAssembly";
         private readonly Assembly? _assembly;
         private XmlSerializerImplementation? _contract;
-        private IDictionary? _writerMethods;
-        private IDictionary? _readerMethods;
+        private Hashtable? _writerMethods;
+        private Hashtable? _readerMethods;
         private TempMethodDictionary? _methods;
 
         internal sealed class TempMethod

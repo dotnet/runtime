@@ -66,7 +66,7 @@
     <PackageToInclude Include="Microsoft.DotNet.XUnitAssert" />
 
     <PackageReference Include="Microsoft.CodeAnalysis.Compilers" Version="$(MicrosoftCodeAnalysisVersion_LatestVS)" />
-    <PackageReference Include="CommandLineParser" Version="2.1.1-beta" />
+    <PackageReference Include="CommandLineParser" Version="$(CommandLineParserVersion)" />
     <PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent" Version="$(TraceEventVersion)" />
     <PackageReference Include="Newtonsoft.Json" Version="$(NewtonsoftJsonVersion)" />
     <PackageReference Include="Newtonsoft.Json.Bson" Version="$(NewtonsoftJsonBsonVersion)" />

@@ -97,11 +97,7 @@ if (CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
     endif ()
 else ()
     set(CMAKE_SHARED_LIBRARY_PREFIX "")
-
-    # we only need to build System.Globalization.Native when building static libs.
-    if (STATIC_LIBS_ONLY)
-        add_subdirectory(System.Globalization.Native)
-    endif ()
+    add_subdirectory(System.Globalization.Native)
 endif ()
 
 add_subdirectory(System.IO.Compression.Native)
@@ -113,7 +109,7 @@ if (CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
         add_subdirectory(System.IO.Ports.Native)
     endif ()
 
-    if (CMAKE_C_COMPILER_ID STREQUAL Clang)
+    if (CMAKE_C_COMPILER_ID MATCHES "Clang")
         add_compile_options(-Weverything)
         add_compile_options(-Wno-format-nonliteral)
         add_compile_options(-Wno-disabled-macro-expansion)

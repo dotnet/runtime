@@ -29,12 +29,6 @@ namespace Internal.JitInterface
                 return (uint)StructFloatFieldInfoFlags.STRUCT_NO_FLOAT_FIELD;
             }
 
-            //// The SIMD Intrinsic types are meant to be handled specially and should not be passed as struct registers
-            if (typeDesc.IsIntrinsic)
-            {
-                throw new NotImplementedException("For LoongArch64, SIMD would be implemented later");
-            }
-
             MetadataType mdType = typeDesc as MetadataType;
             Debug.Assert(mdType != null);
 
@@ -55,11 +49,7 @@ namespace Internal.JitInterface
             int fieldIndex = 0;
             foreach (FieldDesc field in typeDesc.GetFields())
             {
-                if (fieldIndex > 1)
-                {
-                    return (uint)StructFloatFieldInfoFlags.STRUCT_NO_FLOAT_FIELD;
-                }
-                else if (field.IsStatic)
+                if (field.IsStatic)
                 {
                     continue;
                 }
@@ -162,6 +152,11 @@ namespace Internal.JitInterface
 
                     default:
                     {
+                        if ((numIntroducedFields == 2) && (field.FieldType.Category == TypeFlags.Class))
+                        {
+                            return (uint)StructFloatFieldInfoFlags.STRUCT_NO_FLOAT_FIELD;
+                        }
+
                         if (field.FieldType.GetElementSize().AsInt == 8)
                         {
                             if (numIntroducedFields > 1)

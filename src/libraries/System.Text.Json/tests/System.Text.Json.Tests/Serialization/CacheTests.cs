@@ -353,6 +353,7 @@ namespace System.Text.Json.Serialization.Tests
 
             static IEnumerable<(PropertyInfo, object)> GetPropertiesWithSettersAndNonDefaultValues()
             {
+                yield return (GetProp(nameof(JsonSerializerOptions.AllowOutOfOrderMetadataProperties)), true);
                 yield return (GetProp(nameof(JsonSerializerOptions.AllowTrailingCommas)), true);
                 yield return (GetProp(nameof(JsonSerializerOptions.DefaultBufferSize)), 42);
                 yield return (GetProp(nameof(JsonSerializerOptions.Encoder)), JavaScriptEncoder.UnsafeRelaxedJsonEscaping);
@@ -366,6 +367,7 @@ namespace System.Text.Json.Serialization.Tests
                 yield return (GetProp(nameof(JsonSerializerOptions.IgnoreReadOnlyFields)), true);
                 yield return (GetProp(nameof(JsonSerializerOptions.IncludeFields)), true);
                 yield return (GetProp(nameof(JsonSerializerOptions.MaxDepth)), 11);
+                yield return (GetProp(nameof(JsonSerializerOptions.NewLine)), Environment.NewLine.Length is 1 ? "\r\n" : "\n");
                 yield return (GetProp(nameof(JsonSerializerOptions.PropertyNamingPolicy)), JsonNamingPolicy.CamelCase);
                 yield return (GetProp(nameof(JsonSerializerOptions.PropertyNameCaseInsensitive)), true);
                 yield return (GetProp(nameof(JsonSerializerOptions.ReadCommentHandling)), JsonCommentHandling.Skip);

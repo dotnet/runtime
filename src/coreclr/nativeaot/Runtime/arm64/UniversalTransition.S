@@ -132,7 +132,7 @@
         // We cannot make the label public as that tricks DIA stackwalker into thinking
         // it's the beginning of a method. For this reason we export an auxiliary variable
         // holding the address instead.
-        EXPORT_POINTER_TO_ADDRESS PointerToReturnFrom\FunctionName
+ALTERNATE_ENTRY ReturnFrom\FunctionName
 
         // Move the result (the target address) to x12 so it doesn't get overridden when we restore the
         // argument registers.

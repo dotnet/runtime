@@ -16,7 +16,7 @@
     <!-- running aot-helix tests locally, so we can test with the same project file as CI -->
     <_AOTBuildCommand Condition="'$(ContinuousIntegrationBuild)' != 'true'">$(_AOTBuildCommand) /p:RuntimeSrcDir=$(RepoRoot) /p:RuntimeConfig=$(Configuration)</_AOTBuildCommand>
     <!-- The command below sets default properties for runtime and library tests -->
-    <_AOTBuildCommand>$(_AOTBuildCommand) /p:XHARNESS_EXECUTION_DIR=&quot;$XHARNESS_EXECUTION_DIR&quot; /p:RunAOTCompilation=$(RunAOTCompilation) /p:UseNativeAOTRuntime=$(UseNativeAOTRuntime) /p:TargetOS=$(TargetOS) /p:TargetArchitecture=$(TargetArchitecture) /p:MonoForceInterpreter=$(MonoForceInterpreter) /p:MonoEnableLLVM=true /p:DevTeamProvisioning=$(DevTeamProvisioning) /p:UsePortableRuntimePack=true /p:Configuration=$(Configuration)</_AOTBuildCommand>
+    <_AOTBuildCommand>$(_AOTBuildCommand) /p:XHARNESS_EXECUTION_DIR=&quot;$XHARNESS_EXECUTION_DIR&quot; /p:RunAOTCompilation=$(RunAOTCompilation) /p:UseNativeAOTRuntime=$(UseNativeAOTRuntime) /p:TargetOS=$(TargetOS) /p:TargetArchitecture=$(TargetArchitecture) /p:MonoForceInterpreter=$(MonoForceInterpreter) /p:MonoEnableLLVM=true /p:DevTeamProvisioning=$(DevTeamProvisioning) /p:UsePortableRuntimePack=true /p:Configuration=$(Configuration) /p:EnableAggressiveTrimming=$(EnableAggressiveTrimming)</_AOTBuildCommand>
     <_AOTBuildCommand Condition="'$(NativeLib)' != ''">$(_AOTBuildCommand) /p:NativeLib=$(NativeLib) /p:BundlesResources=$(BundlesResources) /p:ForceLibraryModeGenerateAppBundle=$(ForceLibraryModeGenerateAppBundle)</_AOTBuildCommand>
     <_AOTBuildCommand>$(_AOTBuildCommand) </_AOTBuildCommand>
 
@@ -46,11 +46,11 @@
 
   <PropertyGroup>
     <AppleBuildDependsOn>PrepareForAppleBuildApp;$(AppleBuildDependsOn);_CopyTestArchive</AppleBuildDependsOn>
-  
+
     <BundleTestAppleAppDependsOn Condition="'$(BuildTestsOn)' == 'local'">AppleBuild</BundleTestAppleAppDependsOn>
     <BundleTestAppleAppDependsOn Condition="'$(BuildTestsOnHelix)' == 'true'">$(BundleTestAppleAppDependsOn);_BundleAOTTestAppleAppForHelix;_CopyTestArchive</BundleTestAppleAppDependsOn>
   </PropertyGroup>
-  
+
   <Target Name="BundleTestAppleApp" DependsOnTargets="$(BundleTestAppleAppDependsOn)" />
 
   <UsingTask Condition="'$(BuildTestsOnHelix)' == 'true'"
@@ -61,7 +61,7 @@
     <PropertyGroup>
       <AppBundlePath>$(BundleDir)publish</AppBundlePath>
     </PropertyGroup>
-    
+
     <PropertyGroup>
       <_MainAssemblyPath Condition="'%(AppleAssembliesToBundle.FileName)' == $(AssemblyName) and '%(AppleAssembliesToBundle.Extension)' == '.dll'">%(AppleAssembliesToBundle.Identity)</_MainAssemblyPath>
       <RuntimeConfigFilePath>$([System.IO.Path]::ChangeExtension($(_MainAssemblyPath), '.runtimeconfig.json'))</RuntimeConfigFilePath>
@@ -76,6 +76,8 @@
       <BundleFiles Include="$(MonoProjectRoot)\msbuild\apple\data\*" TargetDir="publish" />
       <ExtraFiles Condition="'%(AppleAssembliesToBundle._IsNative)' == 'true'"
                    Include="@(AppleAssembliesToBundle)"          TargetDir="extraFiles\%(AppleAssembliesToBundle.RecursiveDir)" />
+      <ExtraFiles Condition="Exists(%(TrimmerRootDescriptor.Identity))"
+                   Include="@(TrimmerRootDescriptor)"            TargetDir="extraFiles" />
     </ItemGroup>
 
     <ItemGroup Condition="'$(UseNativeAOTRuntime)' == 'true' and '$(HybridGlobalization)' == 'false'" >
@@ -104,39 +106,61 @@
 
       <_RuntimePackFiles Include="$(MicrosoftNetCoreAppRuntimePackRidLibTfmDir)**\*.*" />
       <_RuntimePackFiles Include="$(MicrosoftNetCoreAppRuntimePackNativeDir)*.*" />
-      
+
       <_UnusedRuntimePackFiles Include="@(_PublishBundleFiles)" Exclude="@(_RuntimePackFiles->'$(AppBundlePath)/%(FileName)%(Extension)')" />
       <_UsedRuntimePackFiles Include="@(_PublishBundleFiles)" Exclude="@(_UnusedRuntimePackFiles)" />
-      
+
       <_RuntimePackFilesToDelete Include="@(_RuntimePackFiles->'$(AppBundlePath)/%(FileName)%(Extension)')" />
+      <!-- ILLink properties -->
+      <AppleReferenceSharedPathFiles Include="%(ReferencePath.Identity)" Condition="Exists('@(ReferencePath->'$(LibrariesSharedFrameworkBinArtifactsPath)%(FileName)%(Extension)')')" />
+      <ReferenceExtraPathFiles Include="%(ReferencePath.Identity)" Condition="!Exists('@(ReferencePath->'$(LibrariesSharedFrameworkBinArtifactsPath)%(FileName)%(Extension)')')" />
     </ItemGroup>
 
     <!-- Remove the runtime pack parts from the self contained app.  We'll restore on helix -->
     <Delete Condition="'$(UsePortableRuntimePack)' == 'true'" Files="@(_RuntimePackFilesToDelete)" />
+    <!-- Copy ILLink.Substitutions files -->
+    <Copy SourceFiles="%(ReferenceExtraPathFiles.Identity)" DestinationFolder="$(BundleDir)\extraFiles" />
 
     <!-- To recreate the original project on helix, we need to set the apple properties also, same as the
          library test project. Eg. $(InvariantGlobalization) -->
     <ItemGroup>
-      <_ApplePropertyNames Include="InvariantGlobalization" />
-      <_ApplePropertyNames Include="HybridGlobalization" />
+      <!-- Configuration properties -->
       <_ApplePropertyNames Include="AssemblyName" />
-      <_ApplePropertyNames Include="MonoEnableLLVM" />
+      <_ApplePropertyNames Include="IncludesTestRunner" />
       <_ApplePropertyNames Include="MainLibraryFileName" />
+      <_ApplePropertyNames Include="MonoEnableLLVM" />
+      <_ApplePropertyNames Include="ShouldILStrip" />
       <_ApplePropertyNames Include="UseConsoleUITemplate" />
       <_ApplePropertyNames Include="UseRuntimeComponents" />
-      <_ApplePropertyNames Include="IncludesTestRunner" />
+      <_ApplePropertyNames Include="_NetCoreAppToolCurrent" />
+
+      <!-- Globalization properties -->
+      <_ApplePropertyNames Include="HybridGlobalization" />
+      <_ApplePropertyNames Include="InvariantGlobalization" />
+
+      <_AppleUsedRuntimePackFiles
+                         Include="@(_UsedRuntimePackFiles->'%(FileName)%(Extension)')"
+                         RemoveMetadata="_IsNative;TargetDir" />
 
       <_ApplePropertiesToPass
-        Include="$(%(_ApplePropertyNames.Identity))"
-        Name="%(_ApplePropertyNames.Identity)"
-        ConditionToUse__="%(_ApplePropertyNames.ConditionToUse__)" />
+                         Include="$(%(_ApplePropertyNames.Identity))"
+                         Name="%(_ApplePropertyNames.Identity)"
+                         ConditionToUse__="%(_ApplePropertyNames.ConditionToUse__)" />
 
-      <_AppleUsedRuntimePackFiles 
-        Include="@(_UsedRuntimePackFiles->'%(FileName)%(Extension)')" 
-        RemoveMetadata="_IsNative;TargetDir" />
-      
       <_AppleItemsToPass Include="@(_AppleUsedRuntimePackFiles)"
                          OriginalItemName__="_AppleUsedRuntimePackFiles" />
+
+      <_AppleItemsToPass Include="@(AppleReferenceSharedPathFiles->'%(FileName)%(Extension)')"
+                         OriginalItemName__="AppleReferenceSharedPathFiles" />
+
+      <_AppleItemsToPass Include="@(ReferenceExtraPathFiles->'%(FileName)%(Extension)')"
+                         OriginalItemName__="AppleReferenceExtraPathFiles" />
+
+      <_AppleItemsToPass Include="@(RuntimeHostConfigurationOption)"
+                         OriginalItemName__="_AppleUsedRuntimeHostConfigurationOption" />
+
+      <_AppleItemsToPass Include="@(TrimmerRootAssembly)"
+                         OriginalItemName__="TrimmerRootAssembly" />
 
       <!-- Example of passing items to the project
 
@@ -163,7 +187,7 @@
       <IncludesTestRunner Condition="'$(IncludesTestRunner)' == ''">true</IncludesTestRunner>
       <Optimized Condition="'$(Configuration)' == 'Release'">true</Optimized>
       <MainLibraryFileName Condition="'$(MainLibraryFileName)' == '' and '$(IsRuntimeTests)' != 'true' and '$(IncludesTestRunner)' == 'true'">AppleTestRunner.dll</MainLibraryFileName>
-    
+
       <AppleBuildDir>$(PublishDir)</AppleBuildDir>
       <AppleBundleDir>$(BundleDir)</AppleBundleDir>
     </PropertyGroup>
@@ -180,7 +204,7 @@
         <_InternalForceInterpret>true</_InternalForceInterpret>
         <_IsNative>true</_IsNative>
       </AppleAssembliesToBundle>
-      
+
       <_PublishAssemblies Include="$(PublishDir)\**\*.dll" Exclude="$(PublishDir)\**\*.resources.dll" />
       <_SatelliteAssemblies Include="$(PublishDir)\**\*.resources.dll" />
 

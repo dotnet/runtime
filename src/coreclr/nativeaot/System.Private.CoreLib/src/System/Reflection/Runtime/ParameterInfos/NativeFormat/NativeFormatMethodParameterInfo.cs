@@ -20,11 +20,9 @@ namespace System.Reflection.Runtime.ParameterInfos.NativeFormat
     //
     internal sealed partial class NativeFormatMethodParameterInfo : RuntimeFatMethodParameterInfo
     {
-        private NativeFormatMethodParameterInfo(MethodBase member, MethodHandle methodHandle, int position, ParameterHandle parameterHandle, QSignatureTypeHandle qualifiedParameterTypeHandle, TypeContext typeContext)
+        private NativeFormatMethodParameterInfo(MethodBase member, int position, ParameterHandle parameterHandle, QSignatureTypeHandle qualifiedParameterTypeHandle, TypeContext typeContext)
             : base(member, position, qualifiedParameterTypeHandle, typeContext)
         {
-            _methodHandle = methodHandle;
-            _parameterHandle = parameterHandle;
             _parameter = parameterHandle.GetParameter(Reader);
         }
 
@@ -69,8 +67,6 @@ namespace System.Reflection.Runtime.ParameterInfos.NativeFormat
                 || DefaultValueParser.GetDefaultValueFromAttributeIfAny(CustomAttributes, raw, out defaultValue);
         }
 
-        private readonly MethodHandle _methodHandle;
-        private readonly ParameterHandle _parameterHandle;
         private readonly Parameter _parameter;
     }
 }

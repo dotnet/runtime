@@ -62,6 +62,10 @@
 #if HAVE_SYS_FILIO_H
 #include <sys/filio.h>
 #endif
+#if HAVE_LINUX_ERRQUEUE_H
+#include <linux/errqueue.h>
+#endif
+
 
 #if HAVE_KQUEUE
 #if KEVENT_HAS_VOID_UDATA
@@ -1325,7 +1329,11 @@ int32_t SystemNative_SetSendTimeout(intptr_t socket, int32_t millisecondsTimeout
 
 static int8_t ConvertSocketFlagsPalToPlatform(int32_t palFlags, int* platformFlags)
 {
-    const int32_t SupportedFlagsMask = SocketFlags_MSG_OOB | SocketFlags_MSG_PEEK | SocketFlags_MSG_DONTROUTE | SocketFlags_MSG_TRUNC | SocketFlags_MSG_CTRUNC;
+    const int32_t SupportedFlagsMask =
+#ifdef MSG_ERRQUEUE
+                        SocketFlags_MSG_ERRQUEUE |
+#endif
+                        SocketFlags_MSG_OOB | SocketFlags_MSG_PEEK | SocketFlags_MSG_DONTROUTE | SocketFlags_MSG_TRUNC | SocketFlags_MSG_CTRUNC | SocketFlags_MSG_DONTWAIT;
 
     if ((palFlags & ~SupportedFlagsMask) != 0)
     {
@@ -1335,9 +1343,15 @@ static int8_t ConvertSocketFlagsPalToPlatform(int32_t palFlags, int* platformFla
     *platformFlags = ((palFlags & SocketFlags_MSG_OOB) == 0 ? 0 : MSG_OOB) |
                      ((palFlags & SocketFlags_MSG_PEEK) == 0 ? 0 : MSG_PEEK) |
                      ((palFlags & SocketFlags_MSG_DONTROUTE) == 0 ? 0 : MSG_DONTROUTE) |
+                     ((palFlags & SocketFlags_MSG_DONTWAIT) == 0 ? 0 : MSG_DONTWAIT) |
                      ((palFlags & SocketFlags_MSG_TRUNC) == 0 ? 0 : MSG_TRUNC) |
                      ((palFlags & SocketFlags_MSG_CTRUNC) == 0 ? 0 : MSG_CTRUNC);
-
+#ifdef MSG_ERRQUEUE
+    if ((palFlags & SocketFlags_MSG_ERRQUEUE) != 0)
+    {
+        *platformFlags |= MSG_ERRQUEUE;
+    }
+#endif
     return true;
 }
 
@@ -1378,6 +1392,51 @@ int32_t SystemNative_Receive(intptr_t socket, void* buffer, int32_t bufferLen, i
     }
 
     *received = 0;
+    return SystemNative_ConvertErrorPlatformToPal(errno);
+}
+
+int32_t SystemNative_ReceiveSocketError(intptr_t socket, MessageHeader* messageHeader)
+{
+    int fd = ToFileDescriptor(socket);
+    ssize_t res;
+
+#if HAVE_LINUX_ERRQUEUE_H
+    char buffer[sizeof(struct sock_extended_err) + sizeof(struct sockaddr_storage)];
+    messageHeader->ControlBufferLen = sizeof(buffer);
+    messageHeader->ControlBuffer = (void*)buffer;
+
+    struct msghdr header;
+    ConvertMessageHeaderToMsghdr(&header, messageHeader, fd);
+
+    while ((res = recvmsg(fd, &header, SocketFlags_MSG_DONTWAIT | SocketFlags_MSG_ERRQUEUE)) < 0 && errno == EINTR);
+
+    struct cmsghdr *cmsg;
+    for (cmsg = CMSG_FIRSTHDR(&header); cmsg; cmsg = GET_CMSG_NXTHDR(&header, cmsg))
+    {
+        if (cmsg->cmsg_level == SOL_IP && cmsg->cmsg_type == IP_RECVERR)
+        {
+            struct sock_extended_err *e = (struct sock_extended_err *)CMSG_DATA(cmsg);
+            if (e->ee_origin == SO_EE_ORIGIN_ICMP)
+            {
+                int size = (int)(cmsg->cmsg_len - sizeof(struct sock_extended_err));
+                messageHeader->SocketAddressLen = size < messageHeader->SocketAddressLen ? size : messageHeader->SocketAddressLen;
+                memcpy(messageHeader->SocketAddress, (struct sockaddr_in*)(e+1), (size_t)messageHeader->SocketAddressLen);
+                return Error_SUCCESS;
+            }
+        }
+    }
+#else
+    res = -1;
+    errno = ENOTSUP;
+#endif
+
+    messageHeader->SocketAddressLen = 0;
+
+    if (res != -1)
+    {
+        return Error_SUCCESS;
+    }
+
     return SystemNative_ConvertErrorPlatformToPal(errno);
 }
 
@@ -1795,6 +1854,12 @@ static bool TryGetPlatformSocketOption(int32_t socketOptionLevel, int32_t socket
                     return true;
 #endif
 
+#ifdef IP_DONTFRAG
+                case SocketOptionName_SO_IP_DONTFRAGMENT:
+                    *optName = IP_DONTFRAG;
+                    return true;
+#endif
+
 #ifdef IP_ADD_SOURCE_MEMBERSHIP
                 case SocketOptionName_SO_IP_ADD_SOURCE_MEMBERSHIP:
                     *optName = IP_ADD_SOURCE_MEMBERSHIP;
@@ -2011,7 +2076,7 @@ int32_t SystemNative_GetSockOpt(
             }
 
             struct socket_fdinfo fdi;
-            if (proc_pidfdinfo(getpid(), fd, PROC_PIDFDSOCKETINFO, &fdi, sizeof(fdi)) < sizeof(fdi))
+            if (proc_pidfdinfo(getpid(), fd, PROC_PIDFDSOCKETINFO, &fdi, sizeof(fdi)) < (int)sizeof(fdi))
             {
                 return SystemNative_ConvertErrorPlatformToPal(errno);
             }
@@ -2524,7 +2589,7 @@ int32_t SystemNative_GetSocketType(intptr_t socket, int32_t* addressFamily, int3
 
 #if HAVE_SYS_PROCINFO_H
     struct socket_fdinfo fdi;
-    if (proc_pidfdinfo(getpid(), fd, PROC_PIDFDSOCKETINFO, &fdi, sizeof(fdi)) < sizeof(fdi))
+    if (proc_pidfdinfo(getpid(), fd, PROC_PIDFDSOCKETINFO, &fdi, sizeof(fdi)) < (int)sizeof(fdi))
     {
         return Error_EFAULT;
     }
@@ -3153,8 +3218,8 @@ int32_t SystemNative_SendFile(intptr_t out_fd, intptr_t in_fd, int64_t offset, i
     char* buffer = NULL;
 
     // Save the original input file position and seek to the offset position
-    off_t inputFileOrigOffset = lseek(in_fd, 0, SEEK_CUR);
-    if (inputFileOrigOffset == -1 || lseek(in_fd, offtOffset, SEEK_SET) == -1)
+    off_t inputFileOrigOffset = lseek(infd, 0, SEEK_CUR);
+    if (inputFileOrigOffset == -1 || lseek(infd, offtOffset, SEEK_SET) == -1)
     {
         goto error;
     }
@@ -3174,7 +3239,7 @@ int32_t SystemNative_SendFile(intptr_t out_fd, intptr_t in_fd, int64_t offset, i
 
         // Read up to what will fit in our buffer.  We're done if we get back 0 bytes or read 'count' bytes
         ssize_t bytesRead;
-        while ((bytesRead = read(in_fd, buffer, numBytesToRead)) < 0 && errno == EINTR);
+        while ((bytesRead = read(infd, buffer, numBytesToRead)) < 0 && errno == EINTR);
         if (bytesRead == -1)
         {
             goto error;
@@ -3190,7 +3255,7 @@ int32_t SystemNative_SendFile(intptr_t out_fd, intptr_t in_fd, int64_t offset, i
         while (bytesRead > 0)
         {
             ssize_t bytesWritten;
-            while ((bytesWritten = write(out_fd, buffer + writeOffset, (size_t)bytesRead)) < 0 && errno == EINTR);
+            while ((bytesWritten = write(outfd, buffer + writeOffset, (size_t)bytesRead)) < 0 && errno == EINTR);
             if (bytesWritten == -1)
             {
                 goto error;
@@ -3204,7 +3269,7 @@ int32_t SystemNative_SendFile(intptr_t out_fd, intptr_t in_fd, int64_t offset, i
     }
 
     // Restore the original input file position
-    if (lseek(in_fd, inputFileOrigOffset, SEEK_SET) == -1)
+    if (lseek(infd, inputFileOrigOffset, SEEK_SET) == -1)
     {
         goto error;
     }

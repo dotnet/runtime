@@ -22,6 +22,11 @@
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp.CodeFix.Testing" Version="$(CompilerPlatformTestingVersion)" />
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="$(MicrosoftCodeAnalysisVersion)" />
 
+    <!-- Upgrade transitive references of Microsoft.CodeAnalysis.Analyzer.Testing which bring in NS 1.x deps -->
+    <PackageReference Include="DiffPlex" Version="$(CompilerPlatformTestingDiffPlexVersion)" />
+    <PackageReference Include="Microsoft.VisualBasic" Version="$(CompilerPlatformTestingMicrosoftVisualBasicVersion)" />
+    <PackageReference Include="Microsoft.VisualStudio.Composition" Version="$(CompilerPlatformTestingMicrosoftVisualStudioCompositionVersion)" />
+
     <ProjectReference Include="..\..\src\ILLink.CodeFix\ILLink.CodeFixProvider.csproj" />
     <ProjectReference Include="..\..\src\ILLink.RoslynAnalyzer\ILLink.RoslynAnalyzer.csproj" />
     <ProjectReference Include="..\Mono.Linker.Tests.Cases\**\*.csproj" />

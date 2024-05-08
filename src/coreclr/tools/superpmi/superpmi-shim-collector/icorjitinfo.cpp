@@ -259,11 +259,12 @@ CORINFO_CLASS_HANDLE interceptor_ICJI::getDefaultEqualityComparerClass(CORINFO_C
 }
 
 void interceptor_ICJI::expandRawHandleIntrinsic(CORINFO_RESOLVED_TOKEN*       pResolvedToken,
+                                                CORINFO_METHOD_HANDLE         callerHandle,
                                                 CORINFO_GENERICHANDLE_RESULT* pResult)
 {
     mc->cr->AddCall("expandRawHandleIntrinsic");
-    original_ICorJitInfo->expandRawHandleIntrinsic(pResolvedToken, pResult);
-    mc->recExpandRawHandleIntrinsic(pResolvedToken, pResult);
+    original_ICorJitInfo->expandRawHandleIntrinsic(pResolvedToken, callerHandle, pResult);
+    mc->recExpandRawHandleIntrinsic(pResolvedToken, callerHandle, pResult);
 }
 
 // Is the given type in System.Private.Corelib and marked with IntrinsicAttribute?
@@ -475,18 +476,6 @@ bool interceptor_ICJI::isValueClass(CORINFO_CLASS_HANDLE cls)
     mc->cr->AddCall("isValueClass");
     bool temp = original_ICorJitInfo->isValueClass(cls);
     mc->recIsValueClass(cls, temp);
-    return temp;
-}
-
-// Decides how the JIT should do the optimization to inline the check for
-//     GetTypeFromHandle(handle) == obj.GetType() (for CORINFO_INLINE_TYPECHECK_SOURCE_VTABLE)
-//     GetTypeFromHandle(X) == GetTypeFromHandle(Y) (for CORINFO_INLINE_TYPECHECK_SOURCE_TOKEN)
-CorInfoInlineTypeCheck interceptor_ICJI::canInlineTypeCheck(CORINFO_CLASS_HANDLE         cls,
-                                                            CorInfoInlineTypeCheckSource source)
-{
-    mc->cr->AddCall("canInlineTypeCheck");
-    CorInfoInlineTypeCheck temp = original_ICorJitInfo->canInlineTypeCheck(cls, source);
-    mc->recCanInlineTypeCheck(cls, source, temp);
     return temp;
 }
 
@@ -792,22 +781,24 @@ CORINFO_CLASS_HANDLE interceptor_ICJI::getObjectType(CORINFO_OBJECT_HANDLE typeO
 bool interceptor_ICJI::getReadyToRunHelper(CORINFO_RESOLVED_TOKEN* pResolvedToken,
                                            CORINFO_LOOKUP_KIND*    pGenericLookupKind,
                                            CorInfoHelpFunc         id,
+                                           CORINFO_METHOD_HANDLE   callerHandle,
                                            CORINFO_CONST_LOOKUP*   pLookup)
 {
     mc->cr->AddCall("getReadyToRunHelper");
-    bool result = original_ICorJitInfo->getReadyToRunHelper(pResolvedToken, pGenericLookupKind, id, pLookup);
-    mc->recGetReadyToRunHelper(pResolvedToken, pGenericLookupKind, id, pLookup, result);
+    bool result = original_ICorJitInfo->getReadyToRunHelper(pResolvedToken, pGenericLookupKind, id, callerHandle, pLookup);
+    mc->recGetReadyToRunHelper(pResolvedToken, pGenericLookupKind, id, callerHandle, pLookup, result);
     return result;
 }
 
 void interceptor_ICJI::getReadyToRunDelegateCtorHelper(CORINFO_RESOLVED_TOKEN* pTargetMethod,
                                                        mdToken                 targetConstraint,
                                                        CORINFO_CLASS_HANDLE    delegateType,
+                                                       CORINFO_METHOD_HANDLE   callerHandle,
                                                        CORINFO_LOOKUP*         pLookup)
 {
     mc->cr->AddCall("getReadyToRunDelegateCtorHelper");
-    original_ICorJitInfo->getReadyToRunDelegateCtorHelper(pTargetMethod, targetConstraint, delegateType, pLookup);
-    mc->recGetReadyToRunDelegateCtorHelper(pTargetMethod, targetConstraint, delegateType, pLookup);
+    original_ICorJitInfo->getReadyToRunDelegateCtorHelper(pTargetMethod, targetConstraint, delegateType, callerHandle, pLookup);
+    mc->recGetReadyToRunDelegateCtorHelper(pTargetMethod, targetConstraint, delegateType, callerHandle, pLookup);
 }
 
 // This function tries to initialize the class (run the class constructor).
@@ -911,6 +902,24 @@ bool interceptor_ICJI::isMoreSpecificType(CORINFO_CLASS_HANDLE cls1, CORINFO_CLA
     mc->cr->AddCall("isMoreSpecificType");
     bool temp = original_ICorJitInfo->isMoreSpecificType(cls1, cls2);
     mc->recIsMoreSpecificType(cls1, cls2, temp);
+    return temp;
+}
+
+// Returns true if a class handle can only describe values of exactly one type.
+bool interceptor_ICJI::isExactType(CORINFO_CLASS_HANDLE cls)
+{
+    mc->cr->AddCall("isExactType");
+    bool temp = original_ICorJitInfo->isExactType(cls);
+    mc->recIsExactType(cls, temp);
+    return temp;
+}
+
+// Returns whether a class handle represents a Nullable type, if that can be statically determined.
+TypeCompareState interceptor_ICJI::isNullableType(CORINFO_CLASS_HANDLE cls)
+{
+    mc->cr->AddCall("isNullableType");
+    TypeCompareState temp = original_ICorJitInfo->isNullableType(cls);
+    mc->recIsNullableType(cls, temp);
     return temp;
 }
 
@@ -1196,6 +1205,12 @@ void interceptor_ICJI::reportRichMappings(ICorDebugInfo::InlineTreeNode*    inli
     original_ICorJitInfo->reportRichMappings(inlineTreeNodes, numInlineTreeNodes, mappings, numMappings);
 }
 
+void interceptor_ICJI::reportMetadata(const char* key, const void* value, size_t length)
+{
+    mc->cr->AddCall("reportMetadata");
+    original_ICorJitInfo->reportMetadata(key, value, length);
+}
+
 /*-------------------------- Misc ---------------------------------------*/
 // Used to allocate memory that needs to handed to the EE.
 // For eg, use this to allocated memory for reporting debug info,
@@ -1388,6 +1403,13 @@ bool interceptor_ICJI::getSystemVAmd64PassStructInRegisterDescriptor(
     return result;
 }
 
+void interceptor_ICJI::getSwiftLowering(CORINFO_CLASS_HANDLE structHnd, CORINFO_SWIFT_LOWERING* pLowering)
+{
+    mc->cr->AddCall("getSwiftLowering");
+    original_ICorJitInfo->getSwiftLowering(structHnd, pLowering);
+    mc->recGetSwiftLowering(structHnd, pLowering);
+}
+
 uint32_t interceptor_ICJI::getLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE structHnd)
 {
     mc->cr->AddCall("getLoongArch64PassStructInRegisterFlags");
@@ -1520,11 +1542,12 @@ CORINFO_FIELD_HANDLE interceptor_ICJI::embedFieldHandle(CORINFO_FIELD_HANDLE han
 void interceptor_ICJI::embedGenericHandle(CORINFO_RESOLVED_TOKEN* pResolvedToken,
                                           bool fEmbedParent, // TRUE - embeds parent type handle of the field/method
                                                              // handle
+                                          CORINFO_METHOD_HANDLE callerHandle,
                                           CORINFO_GENERICHANDLE_RESULT* pResult)
 {
     mc->cr->AddCall("embedGenericHandle");
-    original_ICorJitInfo->embedGenericHandle(pResolvedToken, fEmbedParent, pResult);
-    mc->recEmbedGenericHandle(pResolvedToken, fEmbedParent, pResult);
+    original_ICorJitInfo->embedGenericHandle(pResolvedToken, fEmbedParent, callerHandle, pResult);
+    mc->recEmbedGenericHandle(pResolvedToken, fEmbedParent, callerHandle, pResult);
 }
 
 // Return information used to locate the exact enclosing type of the current method.
@@ -1924,11 +1947,12 @@ HRESULT interceptor_ICJI::getPgoInstrumentationResults(CORINFO_METHOD_HANDLE    
                                                        PgoInstrumentationSchema **pSchema,                    // pointer to the schema table which describes the instrumentation results (pointer will not remain valid after jit completes)
                                                        uint32_t *                 pCountSchemaItems,          // pointer to the count schema items
                                                        uint8_t **                 pInstrumentationData,       // pointer to the actual instrumentation data (pointer will not remain valid after jit completes)
-                                                       PgoSource*                 pPgoSource)
+                                                       PgoSource*                 pPgoSource,
+                                                       bool*                      pDynamicPgo)
 {
     mc->cr->AddCall("getPgoInstrumentationResults");
-    HRESULT temp = original_ICorJitInfo->getPgoInstrumentationResults(ftnHnd, pSchema, pCountSchemaItems, pInstrumentationData, pPgoSource);
-    mc->recGetPgoInstrumentationResults(ftnHnd, pSchema, pCountSchemaItems, pInstrumentationData, pPgoSource, temp);
+    HRESULT temp = original_ICorJitInfo->getPgoInstrumentationResults(ftnHnd, pSchema, pCountSchemaItems, pInstrumentationData, pPgoSource, pDynamicPgo);
+    mc->recGetPgoInstrumentationResults(ftnHnd, pSchema, pCountSchemaItems, pInstrumentationData, pPgoSource, pDynamicPgo, temp);
     return temp;
 }
 

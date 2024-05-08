@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#if FEATURE_WASM_THREADS
+#if FEATURE_WASM_MANAGED_THREADS
 
 using System.Threading;
 using System.Threading.Channels;
@@ -44,13 +44,28 @@ namespace System.Runtime.InteropServices.JavaScript
         }
 
         // this need to be called from JSWebWorker or UI thread
-        public static JSSynchronizationContext InstallWebWorkerInterop(bool isMainThread, CancellationToken cancellationToken)
+        public static unsafe JSSynchronizationContext InstallWebWorkerInterop(bool isMainThread, CancellationToken cancellationToken)
         {
             var ctx = new JSSynchronizationContext(isMainThread, cancellationToken);
             ctx.previousSynchronizationContext = SynchronizationContext.Current;
             SynchronizationContext.SetSynchronizationContext(ctx);
 
+            if (!isMainThread)
+            {
+                if (JSProxyContext.ThreadBlockingMode == JSHostImplementation.JSThreadBlockingMode.ThrowWhenBlockingWait)
+                {
+                    Thread.ThrowOnBlockingWaitOnJSInteropThread = true;
+                }
+                else if (JSProxyContext.ThreadBlockingMode == JSHostImplementation.JSThreadBlockingMode.WarnWhenBlockingWait
+                    || JSProxyContext.ThreadBlockingMode == JSHostImplementation.JSThreadBlockingMode.PreventSynchronousJSExport
+                    )
+                {
+                    Thread.WarnOnBlockingWaitOnJSInteropThread = true;
+                }
+            }
+
             var proxyContext = ctx.ProxyContext;
+            proxyContext.AsyncTaskScheduler = new JSAsyncTaskScheduler(ctx);
             JSProxyContext.CurrentThreadContext = proxyContext;
             JSProxyContext.ExecutionContext = proxyContext;
             if (isMainThread)
@@ -60,7 +75,10 @@ namespace System.Runtime.InteropServices.JavaScript
 
             ctx.AwaitNewData();
 
-            Interop.Runtime.InstallWebWorkerInterop(proxyContext.ContextHandle);
+            Interop.Runtime.InstallWebWorkerInterop(proxyContext.ContextHandle,
+                (delegate* unmanaged[Cdecl]<JSMarshalerArgument*, void>)&JavaScriptExports.BeforeSyncJSExport,
+                (delegate* unmanaged[Cdecl]<JSMarshalerArgument*, void>)&JavaScriptExports.AfterSyncJSExport,
+                (delegate* unmanaged[Cdecl]<void>)&PumpHandler);
 
             return ctx;
         }
@@ -89,12 +107,12 @@ namespace System.Runtime.InteropServices.JavaScript
 
             // this will runtimeKeepalivePop()
             // and later maybeExit() -> __emscripten_thread_exit()
+            // this will also call JSSynchronizationContext.Dispose() on this instance
             jsProxyContext.Dispose();
 
             JSProxyContext.CurrentThreadContext = null;
             JSProxyContext.ExecutionContext = null;
             _isRunning = false;
-            Dispose();
         }
 
         public JSSynchronizationContext(bool isMainThread, CancellationToken cancellationToken)
@@ -162,7 +180,7 @@ namespace System.Runtime.InteropServices.JavaScript
         {
             // While we COULD pump here, we don't want to. We want the pump to happen on the next event loop turn.
             // Otherwise we could get a chain where a pump generates a new work item and that makes us pump again, forever.
-            TargetThreadScheduleBackgroundJob(ProxyContext.NativeTID, (void*)(delegate* unmanaged[Cdecl]<void>)&BackgroundJobHandler);
+            ScheduleSynchronizationContext(ProxyContext.NativeTID);
         }
 
         public override void Post(SendOrPostCallback d, object? state)
@@ -200,6 +218,8 @@ namespace System.Runtime.InteropServices.JavaScript
                 return;
             }
 
+            Thread.AssureBlockingPossible();
+
             using (var signal = new ManualResetEventSlim(false))
             {
                 var workItem = new WorkItem(d, state, signal);
@@ -226,13 +246,13 @@ namespace System.Runtime.InteropServices.JavaScript
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern unsafe void TargetThreadScheduleBackgroundJob(IntPtr targetTID, void* callback);
+        internal static extern unsafe void ScheduleSynchronizationContext(IntPtr targetTID);
 
 #pragma warning disable CS3016 // Arrays as attribute arguments is not CLS-compliant
         [UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvCdecl) })]
 #pragma warning restore CS3016
         // this callback will arrive on the target thread, called from mono_background_exec
-        private static void BackgroundJobHandler()
+        private static void PumpHandler()
         {
             var ctx = JSProxyContext.AssertIsInteropThread();
             ctx.SynchronizationContext.Pump();
@@ -247,6 +267,10 @@ namespace System.Runtime.InteropServices.JavaScript
             }
             try
             {
+                if (SynchronizationContext.Current == null)
+                {
+                    SetSynchronizationContext(this);
+                }
                 while (Queue.Reader.TryRead(out var item))
                 {
                     try
@@ -272,28 +296,26 @@ namespace System.Runtime.InteropServices.JavaScript
             }
             catch (Exception e)
             {
-                Environment.FailFast($"JSSynchronizationContext.BackgroundJobHandler failed, ManagedThreadId: {Environment.CurrentManagedThreadId}. {Environment.NewLine} {e.StackTrace}");
+                Environment.FailFast($"JSSynchronizationContext.Pump failed, ManagedThreadId: {Environment.CurrentManagedThreadId}. {Environment.NewLine} {e.StackTrace}");
             }
         }
 
-        private void Dispose(bool disposing)
+
+        internal void Dispose()
         {
             if (!_isDisposed)
             {
-                if (disposing)
+                _isCancellationRequested = true;
+                Queue.Writer.TryComplete();
+                while (Queue.Reader.TryRead(out var item))
                 {
-                    Queue.Writer.TryComplete();
+                    // the Post is checking _isCancellationRequested after .Wait()
+                    item.Signal?.Set();
                 }
                 _isDisposed = true;
                 _cancellationTokenRegistration.Dispose();
                 previousSynchronizationContext = null;
             }
-        }
-
-        internal void Dispose()
-        {
-            Dispose(disposing: true);
-            GC.SuppressFinalize(this);
         }
     }
 }

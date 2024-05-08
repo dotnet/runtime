@@ -1,8 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import type { MonoThreadMessage } from "../../pthreads/shared";
-import { isMonoThreadMessage } from "../../pthreads/shared";
+import { isMonoThreadMessage } from "../../pthreads";
+import type { MonoThreadMessage } from "../../types/internal";
 
 // Messages from the main thread to the diagnostic server thread
 export interface DiagnosticMessage extends MonoThreadMessage {
@@ -10,7 +10,7 @@ export interface DiagnosticMessage extends MonoThreadMessage {
     cmd: string;
 }
 
-export function isDiagnosticMessage(x: unknown): x is DiagnosticMessage {
+export function isDiagnosticMessage (x: unknown): x is DiagnosticMessage {
     return isMonoThreadMessage(x) && x.type === "diagnostic_server";
 }
 
@@ -29,7 +29,7 @@ export type DiagnosticServerControlCommandStart = DiagnosticServerControlCommand
 export type DiagnosticServerControlCommandStop = DiagnosticServerControlCommandSpecific<"stop">;
 export type DiagnosticServerControlCommandAttachToRuntime = DiagnosticServerControlCommandSpecific<"attach_to_runtime">;
 
-export function makeDiagnosticServerControlCommand<T extends DiagnosticServerControlCommand["cmd"]>(cmd: T): DiagnosticServerControlCommandSpecific<T> {
+export function makeDiagnosticServerControlCommand<T extends DiagnosticServerControlCommand["cmd"]> (cmd: T): DiagnosticServerControlCommandSpecific<T> {
     return {
         type: "diagnostic_server",
         cmd: cmd,

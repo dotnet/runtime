@@ -412,7 +412,7 @@ namespace System.Text.Json
             string message = ex.Message;
 
             // Insert the "Path" portion before "LineNumber" and "BytePositionInLine".
-#if NETCOREAPP
+#if NET
             int iPos = message.AsSpan().LastIndexOf(" LineNumber: ");
 #else
             int iPos = message.LastIndexOf(" LineNumber: ", StringComparison.Ordinal);
@@ -589,13 +589,25 @@ namespace System.Text.Json
         }
 
         [DoesNotReturn]
-        public static void ThrowNotSupportedException_DeserializeNoConstructor(Type type, ref Utf8JsonReader reader, scoped ref ReadStack state)
+        public static void ThrowNotSupportedException_DeserializeNoConstructor(JsonTypeInfo typeInfo, ref Utf8JsonReader reader, scoped ref ReadStack state)
         {
+            Type type = typeInfo.Type;
             string message;
 
-            if (type.IsInterface)
+            if (type.IsInterface || type.IsAbstract)
             {
-                message = SR.Format(SR.DeserializePolymorphicInterface, type);
+                if (typeInfo.PolymorphicTypeResolver?.UsesTypeDiscriminators is true)
+                {
+                    message = SR.Format(SR.DeserializationMustSpecifyTypeDiscriminator, type);
+                }
+                else if (typeInfo.Kind is JsonTypeInfoKind.Enumerable or JsonTypeInfoKind.Dictionary)
+                {
+                    message = SR.Format(SR.CannotPopulateCollection, type);
+                }
+                else
+                {
+                    message = SR.Format(SR.DeserializeInterfaceOrAbstractType, type);
+                }
             }
             else
             {
@@ -662,10 +674,10 @@ namespace System.Text.Json
         }
 
         [DoesNotReturn]
-        public static void ThrowJsonException_MetadataIdIsNotFirstProperty(ReadOnlySpan<byte> propertyName, scoped ref ReadStack state)
+        public static void ThrowJsonException_MetadataIdCannotBeCombinedWithRef(ReadOnlySpan<byte> propertyName, scoped ref ReadStack state)
         {
             state.Current.JsonPropertyName = propertyName.ToArray();
-            ThrowJsonException(SR.MetadataIdIsNotFirstProperty);
+            ThrowJsonException(SR.MetadataIdCannotBeCombinedWithRef);
         }
 
         [DoesNotReturn]
@@ -698,9 +710,9 @@ namespace System.Text.Json
         }
 
         [DoesNotReturn]
-        public static void ThrowJsonException_MetadataDuplicateTypeProperty()
+        public static void ThrowJsonException_DuplicateMetadataProperty(ReadOnlySpan<byte> utf8PropertyName)
         {
-            ThrowJsonException(SR.MetadataDuplicateTypeProperty);
+            ThrowJsonException(SR.Format(SR.DuplicateMetadataProperty, JsonHelpers.Utf8GetString(utf8PropertyName)));
         }
 
         [DoesNotReturn]

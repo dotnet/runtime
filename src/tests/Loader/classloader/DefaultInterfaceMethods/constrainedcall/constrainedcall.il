@@ -77,113 +77,117 @@
   ret
 }
 
-.method public hidebysig static int32 Main()
+.class public auto ansi abstract sealed beforefieldinit constrainedcall
+    extends [mscorlib]System.Object
 {
-    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
-        01 00 00 00
-    )
-    .entrypoint
+  .method public hidebysig static int32 Main()
+  {
+      .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+          01 00 00 00
+      )
+      .entrypoint
 
-    .locals init (
-      valuetype Adder`1<object>,
-      int32,
-      valuetype Adder`1<valuetype Atom>
-    )
+      .locals init (
+        valuetype Adder`1<object>,
+        int32,
+        valuetype Adder`1<valuetype Atom>
+      )
 
-    // This will end up calling the implementation of IAdder<IGen1<object>>.PlusPlus
-    // provided by the Adder valuetype.
-    // The sum returned by the Check method will be 2+4 = 6.
-    ldloc.0
-    call int32 Check<valuetype Adder`1<object>,class IGen1`1<object>>(!!0)
-    ldc.i4.6
-    ceq
-    brtrue IGen1_OK
-
-    ldc.i4.1
-    ret
-
-IGen1_OK:
-
-    // This will end up calling the implementation of IAdder<IGen2<object>>.PlusPlus
-    // provided by the Adder valuetype.
-    // The sum returned by the Check method will be 3+6 = 9.
-    ldloca 0
-    initobj valuetype Adder`1<object>
-    ldloc.0
-    call int32 Check<valuetype Adder`1<object>,class IGen2`1<object>>(!!0)
-    ldc.i4 9
-    ceq
-    brtrue IGen2_OK
-
-    ldc.i4.2
-    ret
-
-IGen2_OK:
-
-    ldstr "Constrained calls that require runtime lookup are OK"
-    call void [mscorlib]System.Console::WriteLine(string)
-
-
-    // Store a successful result in case the implementation throws.
-    // We consider both a throw and a successful dispatch a success.
-    // The throwing behavior is an implementation limitation.
-    // Successful dispatch is what the spec mandates.
-    ldc.i4.2
-    stloc.1
-
-    ldloca 0
-    initobj valuetype Adder`1<object>
-
-    // This will end up calling the default implementation of IAdder<IGen3<object>>.PlusPlus
-    // Since each constrained call in Check is going to box, the sum will end up 1+1 = 2.
-    .try
-    {
+      // This will end up calling the implementation of IAdder<IGen1<object>>.PlusPlus
+      // provided by the Adder valuetype.
+      // The sum returned by the Check method will be 2+4 = 6.
       ldloc.0
-      call int32 Check<valuetype Adder`1<object>,class IGen3`1<object>>(!!0)
-      stloc.1
+      call int32 Check<valuetype Adder`1<object>,class IGen1`1<object>>(!!0)
+      ldc.i4.6
+      ceq
+      brtrue IGen1_OK
 
-      ldstr "Runtime supports lookups with runtime determined boxing"
+      ldc.i4.1
+      ret
+
+  IGen1_OK:
+
+      // This will end up calling the implementation of IAdder<IGen2<object>>.PlusPlus
+      // provided by the Adder valuetype.
+      // The sum returned by the Check method will be 3+6 = 9.
+      ldloca 0
+      initobj valuetype Adder`1<object>
+      ldloc.0
+      call int32 Check<valuetype Adder`1<object>,class IGen2`1<object>>(!!0)
+      ldc.i4 9
+      ceq
+      brtrue IGen2_OK
+
+      ldc.i4.2
+      ret
+
+  IGen2_OK:
+
+      ldstr "Constrained calls that require runtime lookup are OK"
       call void [mscorlib]System.Console::WriteLine(string)
 
-      leave AfterBoxingCall
-    }
-    catch [mscorlib]System.Exception
-    {
-      pop
-      leave AfterFailedBoxingCall
-    }
 
-AfterFailedBoxingCall:
-    ldstr "Runtime does not support lookups with runtime determined boxing"
-    call void [mscorlib]System.Console::WriteLine(string)
+      // Store a successful result in case the implementation throws.
+      // We consider both a throw and a successful dispatch a success.
+      // The throwing behavior is an implementation limitation.
+      // Successful dispatch is what the spec mandates.
+      ldc.i4.2
+      stloc.1
 
-AfterBoxingCall:
-    ldloc.1
-    ldc.i4.2
-    ceq
-    brtrue IGen3_OK
+      ldloca 0
+      initobj valuetype Adder`1<object>
 
-    ldc.i4.3
-    ret
+      // This will end up calling the default implementation of IAdder<IGen3<object>>.PlusPlus
+      // Since each constrained call in Check is going to box, the sum will end up 1+1 = 2.
+      .try
+      {
+        ldloc.0
+        call int32 Check<valuetype Adder`1<object>,class IGen3`1<object>>(!!0)
+        stloc.1
 
-IGen3_OK:
+        ldstr "Runtime supports lookups with runtime determined boxing"
+        call void [mscorlib]System.Console::WriteLine(string)
 
-    ldloca 0
-    initobj valuetype Adder`1<valuetype Atom>
+        leave AfterBoxingCall
+      }
+      catch [mscorlib]System.Exception
+      {
+        pop
+        leave AfterFailedBoxingCall
+      }
 
-    ldloc.0
-    call int32 Check<valuetype Adder`1<valuetype Atom>,valuetype Atom>(!!0)
-    ldc.i4 2
-    ceq
-    brtrue AllOK
+  AfterFailedBoxingCall:
+      ldstr "Runtime does not support lookups with runtime determined boxing"
+      call void [mscorlib]System.Console::WriteLine(string)
 
-    ldc.i4.4
-    ret
+  AfterBoxingCall:
+      ldloc.1
+      ldc.i4.2
+      ceq
+      brtrue IGen3_OK
 
-AllOK:
-    ldstr "Compile time constraint resolution to default interface method OK"
-    call void [mscorlib]System.Console::WriteLine(string)
+      ldc.i4.3
+      ret
 
-    ldc.i4 100
-    ret
+  IGen3_OK:
+
+      ldloca 0
+      initobj valuetype Adder`1<valuetype Atom>
+
+      ldloc.0
+      call int32 Check<valuetype Adder`1<valuetype Atom>,valuetype Atom>(!!0)
+      ldc.i4 2
+      ceq
+      brtrue AllOK
+
+      ldc.i4.4
+      ret
+
+  AllOK:
+      ldstr "Compile time constraint resolution to default interface method OK"
+      call void [mscorlib]System.Console::WriteLine(string)
+
+      ldc.i4 100
+      ret
+  }
 }

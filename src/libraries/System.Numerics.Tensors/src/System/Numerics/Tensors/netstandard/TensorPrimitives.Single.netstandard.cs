@@ -808,9 +808,11 @@ namespace System.Numerics.Tensors
 
         private static readonly int[] s_0through7 = [0, 1, 2, 3, 4, 5, 6, 7];
 
-        private static int IndexOfMinMaxCore<TIndexOfMinMaxOperator>(ReadOnlySpan<float> x, TIndexOfMinMaxOperator op = default)
+        private static int IndexOfMinMaxCore<T, TIndexOfMinMaxOperator>(ReadOnlySpan<float> x, TIndexOfMinMaxOperator op = default)
             where TIndexOfMinMaxOperator : struct, IIndexOfOperator
         {
+            Debug.Assert(typeof(T) == typeof(float), "The generic parameter exists only to provide the same signature as the generic implementation.");
+
             if (x.IsEmpty)
             {
                 return -1;
@@ -829,7 +831,7 @@ namespace System.Numerics.Tensors
                 ref float xRef = ref MemoryMarshal.GetReference(x);
 
                 Vector<int> resultIndex = new Vector<int>(s_0through7);
-                Vector<int> curIndex = resultIndex;
+                Vector<int> currentIndex = resultIndex;
                 Vector<int> increment = new Vector<int>(Vector<int>.Count);
 
                 // Load the first vector as the initial set of results, and bail immediately
@@ -845,21 +847,21 @@ namespace System.Numerics.Tensors
                     {
                         // Load the next vector, and early exit on NaN.
                         current = AsVector(ref xRef, i);
-                        curIndex = Vector.Add(curIndex, increment);
+                        currentIndex = Vector.Add(currentIndex, increment);
 
                         if (!Vector.EqualsAll(current, current))
                         {
                             goto Scalar;
                         }
 
-                        op.Invoke(ref resultVector, current, ref resultIndex, curIndex);
+                        op.Invoke(ref resultVector, current, ref resultIndex, currentIndex);
                         i += Vector<float>.Count;
                     }
 
                     // If any elements remain, handle them in one final vector.
                     if (i != x.Length)
                     {
-                        curIndex = Vector.Add(curIndex, new Vector<int>(x.Length - i));
+                        currentIndex = Vector.Add(currentIndex, new Vector<int>(x.Length - i));
 
                         current = AsVector(ref xRef, x.Length - Vector<float>.Count);
                         if (!Vector.EqualsAll(current, current))
@@ -867,7 +869,7 @@ namespace System.Numerics.Tensors
                             goto Scalar;
                         }
 
-                        op.Invoke(ref resultVector, current, ref resultIndex, curIndex);
+                        op.Invoke(ref resultVector, current, ref resultIndex, currentIndex);
                     }
 
                     result = op.Invoke(resultVector, resultIndex);
@@ -2966,278 +2968,315 @@ namespace System.Numerics.Tensors
 
         private interface IIndexOfOperator
         {
-            int Invoke(ref float result, float current, int resultIndex, int curIndex);
+            int Invoke(ref float result, float current, int resultIndex, int currentIndex);
             int Invoke(Vector<float> result, Vector<int> resultIndex);
-            void Invoke(ref Vector<float> result, Vector<float> current, ref Vector<int> resultIndex, Vector<int> curIndex);
+            void Invoke(ref Vector<float> result, Vector<float> current, ref Vector<int> resultIndex, Vector<int> currentIndex);
         }
 
         /// <summary>Returns the index of MathF.Max(x, y)</summary>
         private readonly struct IndexOfMaxOperator_Single : IIndexOfOperator
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public int Invoke(Vector<float> result, Vector<int> resultIndex)
-            {
-                float curMax = result[0];
-                int curIn = resultIndex[0];
-                for (int i = 1; i < Vector<float>.Count; i++)
-                {
-                    if (result[i] == curMax && IsNegative(curMax) && !IsNegative(result[i]))
-                    {
-                        curMax = result[i];
-                        curIn = resultIndex[i];
-                    }
-                    else if (result[i] > curMax)
-                    {
-                        curMax = result[i];
-                        curIn = resultIndex[i];
-                    }
-                }
-
-                return curIn;
-            }
-
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public void Invoke(ref Vector<float> result, Vector<float> current, ref Vector<int> resultIndex, Vector<int> curIndex)
-            {
-                Vector<int> lessThanMask = Vector.GreaterThan(result, current);
-
-                Vector<int> equalMask = Vector.Equals(result, current);
-
-                if (equalMask != Vector<int>.Zero)
-                {
-                    Vector<float> negativeMask = IsNegative(current);
-                    Vector<int> lessThanIndexMask = Vector.LessThan(resultIndex, curIndex);
-
-                    lessThanMask |= ((Vector<int>)~negativeMask & equalMask) | ((Vector<int>)IsNegative(result) & equalMask & lessThanIndexMask);
-                }
-
-                result = Vector.ConditionalSelect(lessThanMask, result, current);
-
-                resultIndex = Vector.ConditionalSelect(lessThanMask, resultIndex, curIndex);
-            }
-
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public int Invoke(ref float result, float current, int resultIndex, int curIndex)
+            public int Invoke(ref float result, float current, int resultIndex, int currentIndex)
             {
                 if (result == current)
                 {
-                    if (IsNegative(result) && !IsNegative(current))
+                    bool resultNegative = IsNegative(result);
+                    if ((resultNegative == IsNegative(current)) ? (currentIndex < resultIndex) : resultNegative)
                     {
                         result = current;
-                        return curIndex;
+                        return currentIndex;
                     }
                 }
                 else if (current > result)
                 {
                     result = current;
-                    return curIndex;
+                    return currentIndex;
                 }
 
                 return resultIndex;
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public int Invoke(Vector<float> current, Vector<int> currentIndex)
+            {
+                float result = current[0];
+                int resultIndex = currentIndex[0];
+
+                for (int i = 1; i < Vector<float>.Count; i++)
+                {
+                    if (current[i] == result)
+                    {
+                        bool resultNegative = IsNegative(result);
+                        if ((resultNegative == IsNegative(current[i])) ? (currentIndex[i] < resultIndex) : resultNegative)
+                        {
+                            result = current[i];
+                            resultIndex = currentIndex[i];
+                        }
+                    }
+                    else if (current[i] > result)
+                    {
+                        result = current[i];
+                        resultIndex = currentIndex[i];
+                    }
+                }
+
+                return resultIndex;
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public void Invoke(ref Vector<float> result, Vector<float> current, ref Vector<int> resultIndex, Vector<int> currentIndex)
+            {
+                Vector<int> useResult = Vector.GreaterThan(result, current);
+                Vector<int> equalMask = Vector.Equals(result, current);
+
+                if (equalMask != Vector<int>.Zero)
+                {
+                    // bool useResult = equal && ((IsNegative(result) == IsNegative(current)) ? (resultIndex < currentIndex) : IsNegative(current));
+                    Vector<float> currentNegative = IsNegative(current);
+                    useResult |=
+                        equalMask &
+                        Vector.ConditionalSelect(Vector.Equals(IsNegative(result), currentNegative),
+                            Vector.LessThan(resultIndex, currentIndex),
+                            (Vector<int>)currentNegative);
+                }
+
+                result = Vector.ConditionalSelect(useResult, result, current);
+                resultIndex = Vector.ConditionalSelect(useResult, resultIndex, currentIndex);
             }
         }
 
         private readonly struct IndexOfMaxMagnitudeOperator_Single : IIndexOfOperator
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public int Invoke(ref float result, float current, int resultIndex, int curIndex)
+            public int Invoke(ref float result, float current, int resultIndex, int currentIndex)
             {
-                float curMaxAbs = MathF.Abs(result);
+                float resultAbs = MathF.Abs(result);
                 float currentAbs = MathF.Abs(current);
 
-                if (curMaxAbs == currentAbs)
+                if (resultAbs == currentAbs)
                 {
-                    if (IsNegative(result) && !IsNegative(current))
+                    bool resultNegative = IsNegative(result);
+                    if ((resultNegative == IsNegative(current)) ? (currentIndex < resultIndex) : resultNegative)
                     {
                         result = current;
-                        return curIndex;
+                        return currentIndex;
                     }
                 }
-                else if (currentAbs > curMaxAbs)
+                else if (currentAbs > resultAbs)
                 {
                     result = current;
-                    return curIndex;
+                    return currentIndex;
                 }
 
                 return resultIndex;
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public int Invoke(Vector<float> result, Vector<int> maxIndex)
+            public int Invoke(Vector<float> current, Vector<int> currentIndex)
             {
-                float curMax = result[0];
-                int curIn = maxIndex[0];
+                float result = current[0];
+                float resultAbs = MathF.Abs(result);
+                int resultIndex = currentIndex[0];
+
                 for (int i = 1; i < Vector<float>.Count; i++)
                 {
-                    if (MathF.Abs(result[i]) == MathF.Abs(curMax) && IsNegative(curMax) && !IsNegative(result[i]))
+                    float currentAbs = MathF.Abs(current[i]);
+
+                    if (resultAbs == currentAbs)
                     {
-                        curMax = result[i];
-                        curIn = maxIndex[i];
+                        bool resultNegative = IsNegative(result);
+                        if ((resultNegative == IsNegative(current[i])) ? (currentIndex[i] < resultIndex) : resultNegative)
+                        {
+                            result = current[i];
+                            resultAbs = currentAbs;
+                            resultIndex = currentIndex[i];
+                        }
                     }
-                    else if (MathF.Abs(result[i]) > MathF.Abs(curMax))
+                    else if (currentAbs > resultAbs)
                     {
-                        curMax = result[i];
-                        curIn = maxIndex[i];
+                        result = current[i];
+                        resultAbs = currentAbs;
+                        resultIndex = currentIndex[i];
                     }
                 }
 
-                return curIn;
+                return resultIndex;
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public void Invoke(ref Vector<float> result, Vector<float> current, ref Vector<int> resultIndex, Vector<int> curIndex)
+            public void Invoke(ref Vector<float> result, Vector<float> current, ref Vector<int> resultIndex, Vector<int> currentIndex)
             {
-                Vector<float> maxMag = Vector.Abs(result), currentMag = Vector.Abs(current);
-
-                Vector<int> lessThanMask = Vector.GreaterThan(maxMag, currentMag);
-
-                Vector<int> equalMask = Vector.Equals(result, current);
+                Vector<float> resultMag = Vector.Abs(result), currentMag = Vector.Abs(current);
+                Vector<int> useResult = Vector.GreaterThan(resultMag, currentMag);
+                Vector<int> equalMask = Vector.Equals(resultMag, currentMag);
 
                 if (equalMask != Vector<int>.Zero)
                 {
-                    Vector<float> negativeMask = IsNegative(current);
-                    Vector<int> lessThanIndexMask = Vector.LessThan(resultIndex, curIndex);
-
-                    lessThanMask |= ((Vector<int>)~negativeMask & equalMask) | ((Vector<int>)IsNegative(result) & equalMask & lessThanIndexMask);
+                    // bool useResult = equal && ((IsNegative(result) == IsNegative(current)) ? (resultIndex < currentIndex) : IsNegative(current));
+                    Vector<float> currentNegative = IsNegative(current);
+                    useResult |=
+                        equalMask &
+                        Vector.ConditionalSelect(Vector.Equals(IsNegative(result), currentNegative),
+                            Vector.LessThan(resultIndex, currentIndex),
+                            (Vector<int>)currentNegative);
                 }
 
-                result = Vector.ConditionalSelect(lessThanMask, result, current);
-
-                resultIndex = Vector.ConditionalSelect(lessThanMask, resultIndex, curIndex);
+                result = Vector.ConditionalSelect(useResult, result, current);
+                resultIndex = Vector.ConditionalSelect(useResult, resultIndex, currentIndex);
             }
         }
 
         private readonly struct IndexOfMinOperator_Single : IIndexOfOperator
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public int Invoke(ref float result, float current, int resultIndex, int curIndex)
+            public int Invoke(ref float result, float current, int resultIndex, int currentIndex)
             {
                 if (result == current)
                 {
-                    if (IsPositive(result) && !IsPositive(current))
+                    bool currentNegative = IsNegative(current);
+                    if ((IsNegative(result) == currentNegative) ? (currentIndex < resultIndex) : currentNegative)
                     {
                         result = current;
-                        return curIndex;
+                        return currentIndex;
                     }
                 }
                 else if (current < result)
                 {
                     result = current;
-                    return curIndex;
+                    return currentIndex;
                 }
 
                 return resultIndex;
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public int Invoke(Vector<float> result, Vector<int> resultIndex)
+            public int Invoke(Vector<float> current, Vector<int> currentIndex)
             {
-                float curMin = result[0];
-                int curIn = resultIndex[0];
+                float result = current[0];
+                int resultIndex = currentIndex[0];
+
                 for (int i = 1; i < Vector<float>.Count; i++)
                 {
-                    if (result[i] == curMin && IsPositive(curMin) && !IsPositive(result[i]))
+                    if (current[i] == result)
                     {
-                        curMin = result[i];
-                        curIn = resultIndex[i];
+                        bool currentNegative = IsNegative(current[i]);
+                        if ((IsNegative(result) == currentNegative) ? (currentIndex[i] < resultIndex) : currentNegative)
+                        {
+                            result = current[i];
+                            resultIndex = currentIndex[i];
+                        }
                     }
-                    else if (result[i] < curMin)
+                    else if (current[i] < result)
                     {
-                        curMin = result[i];
-                        curIn = resultIndex[i];
+                        result = current[i];
+                        resultIndex = currentIndex[i];
                     }
                 }
 
-                return curIn;
+                return resultIndex;
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public void Invoke(ref Vector<float> result, Vector<float> current, ref Vector<int> resultIndex, Vector<int> curIndex)
+            public void Invoke(ref Vector<float> result, Vector<float> current, ref Vector<int> resultIndex, Vector<int> currentIndex)
             {
-                Vector<int> lessThanMask = Vector.LessThan(result, current);
-
+                Vector<int> useResult = Vector.LessThan(result, current);
                 Vector<int> equalMask = Vector.Equals(result, current);
 
                 if (equalMask != Vector<int>.Zero)
                 {
-                    Vector<float> negativeMask = IsNegative(current);
-                    Vector<int> lessThanIndexMask = Vector.LessThan(resultIndex, curIndex);
-
-                    lessThanMask |= ((Vector<int>)negativeMask & equalMask) | (~(Vector<int>)IsNegative(result) & equalMask & lessThanIndexMask);
+                    // bool useResult = equal && ((IsNegative(result) == IsNegative(current)) ? (resultIndex < currentIndex) : IsNegative(result));
+                    Vector<float> resultNegative = IsNegative(result);
+                    useResult |=
+                        equalMask &
+                        Vector.ConditionalSelect(Vector.Equals(resultNegative, IsNegative(current)),
+                            Vector.LessThan(resultIndex, currentIndex),
+                            (Vector<int>)resultNegative);
                 }
 
-                result = Vector.ConditionalSelect(lessThanMask, result, current);
-
-                resultIndex = Vector.ConditionalSelect(lessThanMask, resultIndex, curIndex);
+                result = Vector.ConditionalSelect(useResult, result, current);
+                resultIndex = Vector.ConditionalSelect(useResult, resultIndex, currentIndex);
             }
         }
 
         private readonly struct IndexOfMinMagnitudeOperator_Single : IIndexOfOperator
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public int Invoke(ref float result, float current, int resultIndex, int curIndex)
+            public int Invoke(ref float result, float current, int resultIndex, int currentIndex)
             {
-                float curMinAbs = MathF.Abs(result);
+                float resultAbs = MathF.Abs(result);
                 float currentAbs = MathF.Abs(current);
-                if (curMinAbs == currentAbs)
+
+                if (resultAbs == currentAbs)
                 {
-                    if (IsPositive(result) && !IsPositive(current))
+                    bool currentNegative = IsNegative(current);
+                    if ((IsNegative(result) == currentNegative) ? (currentIndex < resultIndex) : currentNegative)
                     {
                         result = current;
-                        return curIndex;
+                        return currentIndex;
                     }
                 }
-                else if (currentAbs < curMinAbs)
+                else if (currentAbs < resultAbs)
                 {
                     result = current;
-                    return curIndex;
+                    return currentIndex;
                 }
 
                 return resultIndex;
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public int Invoke(Vector<float> result, Vector<int> resultIndex)
+            public int Invoke(Vector<float> current, Vector<int> currentIndex)
             {
-                float curMin = result[0];
-                int curIn = resultIndex[0];
+                float result = current[0];
+                float resultAbs = MathF.Abs(result);
+                int resultIndex = currentIndex[0];
+
                 for (int i = 1; i < Vector<float>.Count; i++)
                 {
-                    if (MathF.Abs(result[i]) == MathF.Abs(curMin) && IsPositive(curMin) && !IsPositive(result[i]))
+                    float currentAbs = MathF.Abs(current[i]);
+
+                    if (resultAbs == currentAbs)
                     {
-                        curMin = result[i];
-                        curIn = resultIndex[i];
+                        bool currentNegative = IsNegative(current[i]);
+                        if ((IsNegative(result) == currentNegative) ? (currentIndex[i] < resultIndex) : currentNegative)
+                        {
+                            result = current[i];
+                            resultAbs = currentAbs;
+                            resultIndex = currentIndex[i];
+                        }
                     }
-                    else if (MathF.Abs(result[i]) < MathF.Abs(curMin))
+                    else if (currentAbs < resultAbs)
                     {
-                        curMin = result[i];
-                        curIn = resultIndex[i];
+                        result = current[i];
+                        resultAbs = currentAbs;
+                        resultIndex = currentIndex[i];
                     }
                 }
 
-                return curIn;
+                return resultIndex;
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public void Invoke(ref Vector<float> result, Vector<float> current, ref Vector<int> resultIndex, Vector<int> curIndex)
+            public void Invoke(ref Vector<float> result, Vector<float> current, ref Vector<int> resultIndex, Vector<int> currentIndex)
             {
-                Vector<float> minMag = Vector.Abs(result), currentMag = Vector.Abs(current);
-
-                Vector<int> lessThanMask = Vector.LessThan(minMag, currentMag);
-
-                Vector<int> equalMask = Vector.Equals(result, current);
+                Vector<float> resultMag = Vector.Abs(result), currentMag = Vector.Abs(current);
+                Vector<int> useResult = Vector.LessThan(resultMag, currentMag);
+                Vector<int> equalMask = Vector.Equals(resultMag, currentMag);
 
                 if (equalMask != Vector<int>.Zero)
                 {
-                    Vector<float> negativeMask = IsNegative(current);
-                    Vector<int> lessThanIndexMask = Vector.LessThan(resultIndex, curIndex);
-
-                    lessThanMask |= ((Vector<int>)negativeMask & equalMask) | (~(Vector<int>)IsNegative(result) & equalMask & lessThanIndexMask);
+                    // bool useResult = equal && ((IsNegative(result) == IsNegative(current)) ? (resultIndex < currentIndex) : IsNegative(result));
+                    Vector<float> resultNegative = IsNegative(result);
+                    useResult |=
+                        equalMask &
+                        Vector.ConditionalSelect(Vector.Equals(resultNegative, IsNegative(current)),
+                            Vector.LessThan(resultIndex, currentIndex),
+                            (Vector<int>)resultNegative);
                 }
 
-                result = Vector.ConditionalSelect(lessThanMask, result, current);
-
-                resultIndex = Vector.ConditionalSelect(lessThanMask, resultIndex, curIndex);
+                result = Vector.ConditionalSelect(useResult, result, current);
+                resultIndex = Vector.ConditionalSelect(useResult, resultIndex, currentIndex);
             }
         }
 

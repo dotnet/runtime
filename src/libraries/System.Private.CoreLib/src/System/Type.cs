@@ -125,9 +125,25 @@ namespace System
         public virtual bool IsEnum { [Intrinsic] get => IsSubclassOf(typeof(Enum)); }
         public bool IsMarshalByRef => IsMarshalByRefImpl();
         protected virtual bool IsMarshalByRefImpl() => false;
-        public bool IsPrimitive { [Intrinsic] get => IsPrimitiveImpl(); }
+        public bool IsPrimitive
+        {
+#if NATIVEAOT
+            // https://github.com/dotnet/runtime/issues/97272
+            [MethodImpl(MethodImplOptions.NoOptimization)]
+#endif
+            [Intrinsic]
+            get => IsPrimitiveImpl();
+        }
         protected abstract bool IsPrimitiveImpl();
-        public bool IsValueType { [Intrinsic] get => IsValueTypeImpl(); }
+        public bool IsValueType
+        {
+#if NATIVEAOT
+            // https://github.com/dotnet/runtime/issues/97272
+            [MethodImpl(MethodImplOptions.NoOptimization)]
+#endif
+            [Intrinsic]
+            get => IsValueTypeImpl();
+        }
         protected virtual bool IsValueTypeImpl() => IsSubclassOf(typeof(ValueType));
 
         [Intrinsic]
@@ -689,20 +705,12 @@ namespace System
         [Obsolete(Obsoletions.ReflectionOnlyLoadingMessage, DiagnosticId = Obsoletions.ReflectionOnlyLoadingDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public static Type? ReflectionOnlyGetType(string typeName, bool throwIfNotFound, bool ignoreCase) => throw new PlatformNotSupportedException(SR.PlatformNotSupported_ReflectionOnly);
 
-        public static Binder DefaultBinder
-        {
-            get
-            {
-                if (s_defaultBinder == null)
-                {
-                    DefaultBinder binder = new DefaultBinder();
-                    Interlocked.CompareExchange<Binder?>(ref s_defaultBinder, binder, null);
-                }
-                return s_defaultBinder!;
-            }
-        }
+        public static Binder DefaultBinder =>
+            s_defaultBinder ??
+            Interlocked.CompareExchange(ref s_defaultBinder, new DefaultBinder(), null) ??
+            s_defaultBinder;
 
-        private static volatile Binder? s_defaultBinder;
+        private static Binder? s_defaultBinder;
 
         public static readonly char Delimiter = '.';
         public static readonly Type[] EmptyTypes = Array.Empty<Type>();

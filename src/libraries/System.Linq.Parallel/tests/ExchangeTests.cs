@@ -90,7 +90,6 @@ namespace System.Linq.Parallel.Tests
 
         [ConditionalTheory]
         [MemberData(nameof(PartitioningData), new[] { 0, 1, 2, 16, 1024 })]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/91541", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
         public static void Partitioning_Default(Labeled<ParallelQuery<int>> labeled, int count, int partitions)
         {
             if (partitions > 1 && !PlatformDetection.IsThreadingSupported)

@@ -1,13 +1,14 @@
 <Project>
-  <Target Name="_GetNugetsForAOT" Returns="@(_NuGetsToBuild)">
+  <Target Name="_GetNugetsForAOT" Returns="@(NuGetsToBuildForWorkloadTesting)">
     <Error Condition="'$(RIDForWorkload)' == ''" Text="$(RIDForWorkload) is unset" />
     <PropertyGroup>
+      <GetNuGetsToBuildForWorkloadTestingDependsOn>_GetNuGetToBuildForTargetingPack;$(GetNuGetsToBuildForWorkloadTestingDependsOn)</GetNuGetsToBuildForWorkloadTestingDependsOn>
       <!-- Eg. Microsoft.NETCore.App.Runtime.AOT.osx-x64.Cross.browser-wasm.6.0.0-dev.nupkg -->
       <_AOTCrossNuGetPath>$(LibrariesShippingPackagesDir)Microsoft.NETCore.App.Runtime.AOT.$(NETCoreSdkRuntimeIdentifier).Cross.$(RIDForWorkload).$(PackageVersionForWorkloadManifests).nupkg</_AOTCrossNuGetPath>
     </PropertyGroup>
 
     <ItemGroup>
-      <_NuGetsToBuild Include="$(LibrariesShippingPackagesDir)Microsoft.NETCore.App.Ref.$(PackageVersionForWorkloadManifests).nupkg"
+      <NuGetsToBuildForWorkloadTesting Include="$(LibrariesShippingPackagesDir)Microsoft.NETCore.App.Ref.$(PackageVersionForWorkloadManifests).nupkg"
                       Project="$(InstallerProjectRoot)pkg/sfx/Microsoft.NETCore.App\Microsoft.NETCore.App.Ref.sfxproj"
                       Properties="@(_DefaultPropsForNuGetBuild, ';')"
                       Descriptor="Ref pack"/>
@@ -19,7 +20,7 @@
       <_PropsForAOTCrossBuild Include="TargetCrossRid=$(RIDForWorkload)" />
       <_PropsForAOTCrossBuild Include="DisableSourceLink=true" />
 
-      <_NuGetsToBuild Include="$(_AOTCrossNuGetPath)"
+      <NuGetsToBuildForWorkloadTesting Include="$(_AOTCrossNuGetPath)"
                       Project="$(InstallerProjectRoot)pkg/sfx/Microsoft.NETCore.App\Microsoft.NETCore.App.MonoCrossAOT.sfxproj"
                       Properties="@(_PropsForAOTCrossBuild,';')"
                       Descriptor="AOT Cross compiler"/>

@@ -6,7 +6,6 @@ using System.IO;
 using System.Runtime.Serialization;
 
 using Internal.Reflection.Augments;
-using Internal.Reflection.Core.NonPortable;
 
 namespace System.Reflection
 {

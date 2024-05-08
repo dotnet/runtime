@@ -261,7 +261,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             private string GetIncrementalIdentifier(string prefix) => $"{prefix}{_valueSuffixIndex++}";
 
-            private static string GetInitalizeMethodDisplayString(ObjectSpec type) =>
+            private static string GetInitializeMethodDisplayString(ObjectSpec type) =>
                 $"{nameof(MethodsToGen_CoreBindingHelper.Initialize)}{type.IdentifierCompatibleSubstring}";
         }
     }

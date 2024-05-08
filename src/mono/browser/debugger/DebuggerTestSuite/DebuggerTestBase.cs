@@ -45,7 +45,7 @@ namespace DebuggerTests
 #else
             => false;
 #endif
-        public static bool WasmMultiThreaded => EnvironmentVariables.WasmTestsUsingVariant == "multithreaded";
+        public static bool WasmMultiThreaded => EnvironmentVariables.WasmEnableThreads;
 
         public static bool WasmSingleThreaded => !WasmMultiThreaded;
 
@@ -228,6 +228,10 @@ namespace DebuggerTests
                 dbgUrl = arrStr[0] + "/" + arrStr[1] + "/" + arrStr[2] + "/" + arrStr[arrStr.Length - 1];
                 dicScriptsIdToUrl[script_id] = dbgUrl;
                 dicFileToUrl[dbgUrl] = args["url"]?.Value<string>();
+            }
+            else if (url.StartsWith("cdp://"))
+            {
+                //ignore them as it's done by the browser and vscode-js-debug
             }
             else if (!String.IsNullOrEmpty(url))
             {

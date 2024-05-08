@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 namespace System.Linq
@@ -11,39 +11,50 @@ namespace System.Linq
     {
         public static TSource[] ToArray<TSource>(this IEnumerable<TSource> source)
         {
-            if (source is null)
+#if !OPTIMIZE_FOR_SIZE
+            if (source is Iterator<TSource> iterator)
             {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
+                return iterator.ToArray();
             }
-
-            if (source is IIListProvider<TSource> arrayProvider)
-            {
-                return arrayProvider.ToArray();
-            }
+#endif
 
             if (source is ICollection<TSource> collection)
             {
-                int count = collection.Count;
-                if (count != 0)
+                return ICollectionToArray(collection);
+            }
+
+            return EnumerableToArray(source);
+
+            [MethodImpl(MethodImplOptions.NoInlining)] // avoid large stack allocation impacting other paths
+            static TSource[] EnumerableToArray(IEnumerable<TSource> source)
+            {
+                if (source is null)
                 {
-                    var result = new TSource[count];
-                    collection.CopyTo(result, 0);
-                    return result;
+                    ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
                 }
 
-                return [];
-            }
-            else
-            {
                 SegmentedArrayBuilder<TSource>.ScratchBuffer scratch = default;
                 SegmentedArrayBuilder<TSource> builder = new(scratch);
 
-                builder.AddNonICollectionRange(source);
+                builder.AddNonICollectionRangeInlined(source);
                 TSource[] result = builder.ToArray();
 
                 builder.Dispose();
                 return result;
             }
+        }
+
+        private static TSource[] ICollectionToArray<TSource>(ICollection<TSource> collection)
+        {
+            int count = collection.Count;
+            if (count != 0)
+            {
+                var result = new TSource[count];
+                collection.CopyTo(result, 0);
+                return result;
+            }
+
+            return [];
         }
 
         public static List<TSource> ToList<TSource>(this IEnumerable<TSource> source)
@@ -53,10 +64,12 @@ namespace System.Linq
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
 
-            if (source is IIListProvider<TSource> listProvider)
+#if !OPTIMIZE_FOR_SIZE
+            if (source is Iterator<TSource> iterator)
             {
-                return listProvider.ToList();
+                return iterator.ToList();
             }
+#endif
 
             return new List<TSource>(source);
         }
@@ -251,12 +264,5 @@ namespace System.Linq
         /// <summary>Default initial capacity to use when creating sets for internal temporary storage.</summary>
         /// <remarks>This is based on the implicit size used in previous implementations, which used a custom Set type.</remarks>
         private const int DefaultInternalSetCapacity = 7;
-
-        private static TSource[] HashSetToArray<TSource>(HashSet<TSource> set)
-        {
-            var result = new TSource[set.Count];
-            set.CopyTo(result);
-            return result;
-        }
     }
 }

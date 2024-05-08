@@ -73,13 +73,6 @@ namespace System.Reflection.Runtime.Assemblies.NativeFormat
             public MetadataReader Reader { get { return _reader; } }
             public ScopeDefinitionHandle Handle { get { return _handle; } }
             public IEnumerable<QScopeDefinition> Overflows { get { return _overflows; } }
-            public ScopeDefinition ScopeDefinition
-            {
-                get
-                {
-                    return _handle.GetScopeDefinition(_reader);
-                }
-            }
 
             public override bool Equals(object obj)
             {
@@ -176,9 +169,9 @@ namespace System.Reflection.Runtime.ParameterInfos.NativeFormat
     //-----------------------------------------------------------------------------------------------------------
     internal sealed partial class NativeFormatMethodParameterInfo
     {
-        internal static NativeFormatMethodParameterInfo GetNativeFormatMethodParameterInfo(MethodBase member, MethodHandle methodHandle, int position, ParameterHandle parameterHandle, QSignatureTypeHandle qualifiedParameterType, TypeContext typeContext)
+        internal static NativeFormatMethodParameterInfo GetNativeFormatMethodParameterInfo(MethodBase member, int position, ParameterHandle parameterHandle, QSignatureTypeHandle qualifiedParameterType, TypeContext typeContext)
         {
-            return new NativeFormatMethodParameterInfo(member, methodHandle, position, parameterHandle, qualifiedParameterType, typeContext);
+            return new NativeFormatMethodParameterInfo(member, position, parameterHandle, qualifiedParameterType, typeContext);
         }
     }
 }

@@ -7,6 +7,7 @@ using System.Globalization;
 using System.IO;
 using System.Net.Http;
 using System.Reflection;
+using System.Reflection.Emit;
 using System.Resources;
 using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
@@ -512,9 +513,14 @@ namespace System.Tests
         {
             RemoteExecutor.Invoke(() => {
                 bool AssemblyLoadFlag = false;
+                bool isMono = PlatformDetection.IsMonoRuntime;
                 AssemblyLoadEventHandler handler = (sender, args) =>
                 {
-                    Assert.Equal(AppDomain.CurrentDomain, sender);
+                    if (isMono)
+                        Assert.True(AppDomain.CurrentDomain == sender);
+                    else
+                        Assert.Equal(AppDomain.CurrentDomain, sender);
+
                     Assert.NotNull(args);
                     Assert.NotNull(args.LoadedAssembly);
 
@@ -646,6 +652,24 @@ namespace System.Tests
                 {
                     CultureInfo.CurrentUICulture = previousUICulture;
                 }
+            }).Dispose();
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void AssemblyResolve_IgnoresStrongNameMismatches()
+        {
+            RemoteExecutor.Invoke(() =>
+            {
+                AppDomain.CurrentDomain.AssemblyResolve +=
+                    (sender, e) =>
+                    {
+                        if (!e.Name.StartsWith("MyAssembly"))
+                            return null;
+
+                        return AssemblyBuilder.DefineDynamicAssembly(
+                            new AssemblyName("MyAssembly"), AssemblyBuilderAccess.Run);
+                    };
+                Assembly.Load("MyAssembly, PublicKeyToken=1234567890ABCDEF");
             }).Dispose();
         }
 

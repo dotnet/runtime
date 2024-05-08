@@ -230,30 +230,12 @@ C_FUNC(\Name):
 
 .endm
 
-.macro EXPORT_POINTER_TO_ADDRESS Name
-
-// NOTE: The label is intentionally left as 2 - otherwise on OSX 0b or 1b will be incorrectly interpreted as binary integers
-
-2:
-
-        .data
-        .align      8
-C_FUNC(\Name):
-        .quad       2b
-        .global     C_FUNC(\Name)
-        .text
-
-.endm
-
 //
 // CONSTANTS -- INTEGER
 //
 #define TSF_Attached                    0x01
 #define TSF_SuppressGcStress            0x08
 #define TSF_DoNotTriggerGc              0x10
-
-// This must match HwExceptionCode.STATUS_REDHAWK_THREAD_ABORT
-#define STATUS_REDHAWK_THREAD_ABORT     0x43
 
 //
 // Rename fields of nested structs

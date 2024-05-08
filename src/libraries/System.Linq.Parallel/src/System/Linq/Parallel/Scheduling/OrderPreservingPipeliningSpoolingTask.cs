@@ -18,7 +18,7 @@ using System.Threading.Tasks;
 
 namespace System.Linq.Parallel
 {
-#if !FEATURE_WASM_THREADS
+#if !FEATURE_WASM_MANAGED_THREADS
     [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
 #endif
     internal sealed class OrderPreservingPipeliningSpoolingTask<TOutput, TKey> : SpoolingTaskBase

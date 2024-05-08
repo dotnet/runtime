@@ -330,7 +330,7 @@ bool Thread::DetectHandleILStubsForDebugger()
             // Check for M2U transition frames.  See the comment at the beginning of this function.
             else if (pFrame->GetFrameType() == Frame::TYPE_EXIT)
             {
-                if (pFrame->GetReturnAddress() == NULL)
+                if (pFrame->GetReturnAddress() == (PCODE)NULL)
                 {
                     // If the return address is NULL, then the frame has not been initialized yet.
                     // We may see InlinedCallFrame in ordinary methods as well. Have to do
@@ -371,13 +371,9 @@ void SetThread(Thread* t)
     {
         EnsureTlsDestructionMonitor();
     }
-}
 
-void SetAppDomain(AppDomain* ad)
-{
-    LIMITED_METHOD_CONTRACT
-
-    gCurrentThreadInfo.m_pAppDomain = ad;
+    // Clear or set the app domain to the one domain based on if the thread is being nulled out or set
+    gCurrentThreadInfo.m_pAppDomain = t == NULL ? NULL : AppDomain::GetCurrentDomain();
 }
 
 BOOL Thread::Alert ()
@@ -594,7 +590,6 @@ static void DeleteThread(Thread* pThread)
 
     //_ASSERTE (pThread == GetThread());
     SetThread(NULL);
-    SetAppDomain(NULL);
 
     if (pThread->HasThreadStateNC(Thread::TSNC_ExistInThreadStore))
     {
@@ -727,7 +722,6 @@ Thread* SetupThread()
     ThreadStore::AddThread(pThread);
 
     SetThread(pThread);
-    SetAppDomain(pThread->GetDomain());
 
 #ifdef FEATURE_INTEROP_DEBUGGING
     // Ensure that debugger word slot is allocated
@@ -1010,7 +1004,6 @@ HRESULT Thread::DetachThread(BOOL fDLLThreadDetach)
 
     // We need to make sure that TLS are touched last here.
     SetThread(NULL);
-    SetAppDomain(NULL);
 
     SetThreadState((Thread::ThreadState)(Thread::TS_Detached | Thread::TS_ReportDead));
     // Do not touch Thread object any more.  It may be destroyed.
@@ -1513,7 +1506,6 @@ Thread::Thread()
     m_TraceCallCount = 0;
     m_ThrewControlForThread = 0;
     m_ThreadTasks = (ThreadTasks)0;
-    m_pLoadLimiter= NULL;
 
     // The state and the tasks must be 32-bit aligned for atomicity to be guaranteed.
     _ASSERTE((((size_t) &m_State) & 3) == 0);
@@ -1548,16 +1540,10 @@ Thread::Thread()
     m_RedirectContextInUse = false;
 #endif
 
-#ifdef FEATURE_COMINTEROP
-    m_pRCWStack = new RCWStackHeader();
-#endif
-
 #ifdef _DEBUG
     m_bGCStressing = FALSE;
     m_bUniqueStacking = FALSE;
 #endif
-
-    m_pPendingTypeLoad = NULL;
 
     m_dwAVInRuntimeImplOkayCount = 0;
 
@@ -1591,8 +1577,6 @@ Thread::Thread()
 #endif // FEATURE_EH_FUNCLETS
 
     m_monitorLockContentionCount = 0;
-
-    m_pDomain = SystemDomain::System()->DefaultDomain();
 
     // Do not expose thread until it is fully constructed
     g_pThinLockThreadIdDispenser->NewId(this, this->m_ThreadId);
@@ -1745,8 +1729,6 @@ void Thread::InitThread()
 
     _ASSERTE(HasValidThreadHandle());
 
-    m_random.Init();
-
     // Set floating point mode to round to nearest
 #ifndef TARGET_UNIX
     (void) _controlfp_s( NULL, _RC_NEAR, _RC_CHOP|_RC_UP|_RC_DOWN|_RC_NEAR );
@@ -1855,7 +1837,6 @@ BOOL Thread::HasStarted()
         PrepareApartmentAndContext();
 
         SetThread(this);
-        SetAppDomain(m_pDomain);
 
         ThreadStore::TransferStartedThread(this);
 
@@ -1954,7 +1935,6 @@ FAILURE:
     ThreadStore::CheckForEEShutdown();
     DecExternalCount(/*holdingLock*/ HasThreadStateNC(Thread::TSNC_TSLTakenForStartup));
     SetThread(NULL);
-    SetAppDomain(NULL);
     return FALSE;
 }
 
@@ -2648,11 +2628,6 @@ Thread::~Thread()
     MarkRedirectContextInUse(m_pSavedRedirectContext);
     m_pSavedRedirectContext = NULL;
 
-#ifdef FEATURE_COMINTEROP
-    if (m_pRCWStack)
-        delete m_pRCWStack;
-#endif
-
     if (m_pExceptionDuringStartup)
     {
         Exception::Delete (m_pExceptionDuringStartup);
@@ -3106,7 +3081,6 @@ void Thread::OnThreadTerminate(BOOL holdingLock)
             // right thread.  But this will only happen during a shutdown.  And we've made
             // a "best effort" to reduce to a single thread before we begin the shutdown.
             SetThread(NULL);
-            SetAppDomain(NULL);
         }
 
         if (!holdingLock)
@@ -3323,7 +3297,7 @@ DWORD Thread::DoAppropriateAptStateWait(int numWaiters, HANDLE* pHandles, BOOL b
     BOOL alertable = (mode & WaitMode_Alertable) != 0;
 
 #ifdef FEATURE_COMINTEROP_APARTMENT_SUPPORT
-    if (alertable && !GetDomain()->MustForceTrivialWaitOperations())
+    if (alertable && !AppDomain::GetCurrentDomain()->MustForceTrivialWaitOperations())
     {
         ApartmentState as = GetFinalApartment();
         if (AS_InMTA != as)
@@ -3403,7 +3377,7 @@ DWORD Thread::DoAppropriateWaitWorker(int countHandles, HANDLE *handles, BOOL wa
     // which will make mode != WaitMode_Alertable.
     BOOL ignoreSyncCtx = (mode != WaitMode_Alertable);
 
-    if (GetDomain()->MustForceTrivialWaitOperations())
+    if (AppDomain::GetCurrentDomain()->MustForceTrivialWaitOperations())
         ignoreSyncCtx = TRUE;
 
     // Unless the ignoreSyncCtx flag is set, first check to see if there is a synchronization
@@ -3707,7 +3681,7 @@ DWORD Thread::DoAppropriateWaitWorker(AppropriateWaitFunc func, void *args,
         option = WAIT_ALERTABLE;
 #ifdef FEATURE_COMINTEROP_APARTMENT_SUPPORT
         ApartmentState as = GetFinalApartment();
-        if ((AS_InMTA != as) && !GetDomain()->MustForceTrivialWaitOperations())
+        if ((AS_InMTA != as) && !AppDomain::GetCurrentDomain()->MustForceTrivialWaitOperations())
         {
             option |= WAIT_MSGPUMP;
         }
@@ -4422,7 +4396,7 @@ void Thread::SetLastThrownObject(OBJECTREF throwable, BOOL isUnhandled)
         }
         else
         {
-            m_LastThrownObjectHandle = GetDomain()->CreateHandle(throwable);
+            m_LastThrownObjectHandle = AppDomain::GetCurrentDomain()->CreateHandle(throwable);
         }
 
         _ASSERTE(m_LastThrownObjectHandle != NULL);
@@ -5167,7 +5141,6 @@ Thread::ApartmentState Thread::SetApartment(ApartmentState state)
 ThreadStore::ThreadStore()
            : m_Crst(CrstThreadStore, (CrstFlags) (CRST_UNSAFE_ANYMODE | CRST_DEBUGGER_THREAD)),
              m_ThreadCount(0),
-             m_MaxThreadCount(0),
              m_UnstartedThreadCount(0),
              m_BackgroundThreadCount(0),
              m_PendingThreadCount(0),
@@ -5286,8 +5259,6 @@ void ThreadStore::AddThread(Thread *newThread)
     s_pThreadStore->m_ThreadList.InsertTail(newThread);
 
     s_pThreadStore->m_ThreadCount++;
-    if (s_pThreadStore->m_MaxThreadCount < s_pThreadStore->m_ThreadCount)
-        s_pThreadStore->m_MaxThreadCount = s_pThreadStore->m_ThreadCount;
 
     if (newThread->IsUnstarted())
         s_pThreadStore->m_UnstartedThreadCount++;
@@ -7050,12 +7021,12 @@ bool Thread::InitRegDisplay(const PREGDISPLAY pRD, PT_CONTEXT pctx, bool validCo
 }
 
 
-void Thread::FillRegDisplay(const PREGDISPLAY pRD, PT_CONTEXT pctx)
+void Thread::FillRegDisplay(const PREGDISPLAY pRD, PT_CONTEXT pctx, bool fLightUnwind)
 {
     WRAPPER_NO_CONTRACT;
     SUPPORTS_DAC;
 
-    ::FillRegDisplay(pRD, pctx);
+    ::FillRegDisplay(pRD, pctx, NULL, fLightUnwind);
 
 #if defined(DEBUG_REGDISPLAY) && !defined(TARGET_X86)
     CONSISTENCY_CHECK(!pRD->_pThread || pRD->_pThread == this);
@@ -7146,13 +7117,6 @@ void Thread::ClearContext()
         if (GetThreadNULLOk()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
     }
     CONTRACTL_END;
-
-    if (!m_pDomain)
-        return;
-
-    // must set exposed context to null first otherwise object verification
-    // checks will fail AV when m_Context is null
-    m_pDomain = NULL;
 #ifdef FEATURE_COMINTEROP
     m_fDisableComObjectEagerCleanup = false;
 #endif //FEATURE_COMINTEROP
@@ -7667,7 +7631,7 @@ TADDR Thread::GetStaticFieldAddrNoCreate(FieldDesc *pFD)
     }
 
     if (base == NULL)
-        return NULL;
+        return (TADDR)NULL;
 
     DWORD offset = pFD->GetOffset();
     _ASSERTE(offset <= FIELD_OFFSET_LAST_REAL_OFFSET);
@@ -7681,7 +7645,7 @@ TADDR Thread::GetStaticFieldAddrNoCreate(FieldDesc *pFD)
         _ASSERTE(result != NULL);
         PTR_Object obj = *PTR_UNCHECKED_OBJECTREF(result);
         if (obj == NULL)
-            return NULL;
+            return (TADDR)NULL;
         result = dac_cast<TADDR>(obj->GetData());
     }
 
@@ -7786,7 +7750,7 @@ OBJECTREF Thread::GetCulture(BOOL bUICulture)
 
     // This is the case when we're building CoreLib and haven't yet created
     // the system assembly.
-    if (SystemDomain::System()->SystemAssembly()==NULL || g_fForbidEnterEE) {
+    if (SystemDomain::System()->SystemAssembly()==NULL) {
         return NULL;
     }
 
@@ -7906,32 +7870,6 @@ INT32 Thread::ResetManagedThreadObjectInCoopMode(INT32 nPriority)
     }
 
     return nPriority;
-}
-
-BOOL Thread::IsRealThreadPoolResetNeeded()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_COOPERATIVE;
-    }
-    CONTRACTL_END;
-
-    if(!IsBackground())
-        return TRUE;
-
-    THREADBASEREF pObject = (THREADBASEREF)ObjectFromHandle(m_ExposedObject);
-
-    if(pObject != NULL)
-    {
-        INT32 nPriority = pObject->GetPriority();
-
-        if(nPriority != ThreadNative::PRIORITY_NORMAL)
-            return TRUE;
-    }
-
-    return FALSE;
 }
 
 void Thread::InternalReset(BOOL fNotFinalizerThread, BOOL fThreadObjectResetNeeded, BOOL fResetAbort)
@@ -8243,8 +8181,8 @@ void Thread::StaticInitialize()
 #ifdef FEATURE_SPECIAL_USER_MODE_APC
     InitializeSpecialUserModeApc();
 
-    // When CET shadow stacks are enabled, support for special user-mode APCs with the necessary functionality is required
-    _ASSERTE_ALL_BUILDS(!AreCetShadowStacksEnabled() || UseSpecialUserModeApc());
+    // When shadow stacks are enabled, support for special user-mode APCs with the necessary functionality is required
+    _ASSERTE_ALL_BUILDS(!AreShadowStacksEnabled() || UseSpecialUserModeApc());
 #endif
 }
 
@@ -8278,12 +8216,7 @@ void Thread::InitializeSpecialUserModeApc()
         return;
     }
 
-    // In the future, once code paths using the special user-mode APC get some bake time, it should be used regardless of
-    // whether CET shadow stacks are enabled
-    if (AreCetShadowStacksEnabled())
-    {
-        s_pfnQueueUserAPC2Proc = pfnQueueUserAPC2Proc;
-    }
+    s_pfnQueueUserAPC2Proc = pfnQueueUserAPC2Proc;
 }
 
 #endif // FEATURE_SPECIAL_USER_MODE_APC
@@ -8326,10 +8259,7 @@ Thread::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
     DAC_ENUM_DTHIS();
     if (flags != CLRDATA_ENUM_MEM_MINI && flags != CLRDATA_ENUM_MEM_TRIAGE && flags != CLRDATA_ENUM_MEM_HEAP2)
     {
-        if (m_pDomain.IsValid())
-        {
-            m_pDomain->EnumMemoryRegions(flags, true);
-        }
+        AppDomain::GetCurrentDomain()->EnumMemoryRegions(flags, true);
     }
 
     if (m_debuggerFilterContext.IsValid())

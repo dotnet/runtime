@@ -1564,7 +1564,7 @@ CorUnix::InternalSetThreadDescription(
         goto InternalSetThreadDescriptionExit;
     }
 
-    nameBuf = (char *)PAL_malloc(nameSize);
+    nameBuf = (char *)malloc(nameSize);
     if (nameBuf == NULL)
     {
         palError = ERROR_OUTOFMEMORY;
@@ -1616,7 +1616,7 @@ InternalSetThreadDescriptionExit:
     }
 
     if (NULL != nameBuf) {
-        PAL_free(nameBuf);
+        free(nameBuf);
     }
 
 #endif //defined(__linux__) || defined(__APPLE__) || defined(__FreeBSD__)
@@ -2220,12 +2220,6 @@ CPalThread::RunPreCreateInitializers(
         goto RunPreCreateInitializersExit;
     }
 
-    palError = crtInfo.InitializePreCreate();
-    if (NO_ERROR != palError)
-    {
-        goto RunPreCreateInitializersExit;
-    }
-
 RunPreCreateInitializersExit:
 
     return palError;
@@ -2313,12 +2307,6 @@ CPalThread::RunPostCreateInitializers(
     }
 
     palError = apcInfo.InitializePostCreate(this, m_threadId, m_dwLwpId);
-    if (NO_ERROR != palError)
-    {
-        goto RunPostCreateInitializersExit;
-    }
-
-    palError = crtInfo.InitializePostCreate(this, m_threadId, m_dwLwpId);
     if (NO_ERROR != palError)
     {
         goto RunPostCreateInitializersExit;

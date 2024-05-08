@@ -325,7 +325,7 @@ namespace System.Numerics
             }
         }
 
-        /// <summary>Converts a <see cref="Vector{Single}" /> to a <see cref="Vector{Int32}" />.</summary>
+        /// <summary>Converts a <see cref="Vector{Single}" /> to a <see cref="Vector{Int32}" /> using saturation on overflow.</summary>
         /// <param name="value">The vector to convert.</param>
         /// <returns>The converted vector.</returns>
         [Intrinsic]
@@ -342,7 +342,13 @@ namespace System.Numerics
             return result;
         }
 
-        /// <summary>Converts a <see cref="Vector{Double}" /> to a <see cref="Vector{Int64}" />.</summary>
+        /// <summary>Converts a <see cref="Vector{Single}" /> to a <see cref="Vector{Int32}" /> using platform specific behavior on overflow.</summary>
+        /// <param name="value">The vector to convert.</param>
+        /// <returns>The converted vector.</returns>
+        [Intrinsic]
+        public static Vector<int> ConvertToInt32Native(Vector<float> value) => ConvertToInt32(value);
+
+        /// <summary>Converts a <see cref="Vector{Double}" /> to a <see cref="Vector{Int64}" /> using saturation on overflow.</summary>
         /// <param name="value">The vector to convert.</param>
         /// <returns>The converted vector.</returns>
         [Intrinsic]
@@ -358,6 +364,12 @@ namespace System.Numerics
 
             return result;
         }
+
+        /// <summary>Converts a <see cref="Vector{Double}" /> to a <see cref="Vector{Int64}" /> using platform specific behavior on overflow.</summary>
+        /// <param name="value">The vector to convert.</param>
+        /// <returns>The converted vector.</returns>
+        [Intrinsic]
+        public static Vector<long> ConvertToInt64Native(Vector<double> value) => ConvertToInt64(value);
 
         /// <summary>Converts a <see cref="Vector{Int32}" /> to a <see cref="Vector{Single}" />.</summary>
         /// <param name="value">The vector to convert.</param>
@@ -396,7 +408,7 @@ namespace System.Numerics
             }
         }
 
-        /// <summary>Converts a <see cref="Vector{Single}" /> to a <see cref="Vector{UInt32}" />.</summary>
+        /// <summary>Converts a <see cref="Vector{Single}" /> to a <see cref="Vector{UInt32}" /> using saturation on overflow.</summary>
         /// <param name="value">The vector to convert.</param>
         /// <returns>The converted vector.</returns>
         [Intrinsic]
@@ -414,7 +426,14 @@ namespace System.Numerics
             return result;
         }
 
-        /// <summary>Converts a <see cref="Vector{Double}" /> to a <see cref="Vector{UInt64}" />.</summary>
+        /// <summary>Converts a <see cref="Vector{Single}" /> to a <see cref="Vector{UInt32}" /> using platform specific behavior on overflow.</summary>
+        /// <param name="value">The vector to convert.</param>
+        /// <returns>The converted vector.</returns>
+        [Intrinsic]
+        [CLSCompliant(false)]
+        public static Vector<uint> ConvertToUInt32Native(Vector<float> value) => ConvertToUInt32(value);
+
+        /// <summary>Converts a <see cref="Vector{Double}" /> to a <see cref="Vector{UInt64}" /> using saturation on overflow.</summary>
         /// <param name="value">The vector to convert.</param>
         /// <returns>The converted vector.</returns>
         [Intrinsic]
@@ -431,6 +450,22 @@ namespace System.Numerics
 
             return result;
         }
+
+        /// <summary>Converts a <see cref="Vector{Double}" /> to a <see cref="Vector{UInt64}" /> using platform specific behavior on overflow.</summary>
+        /// <param name="value">The vector to convert.</param>
+        /// <returns>The converted vector.</returns>
+        [Intrinsic]
+        [CLSCompliant(false)]
+        public static Vector<ulong> ConvertToUInt64Native(Vector<double> value) => ConvertToUInt64(value);
+
+        /// <summary>Creates a new <see cref="Vector{T}" /> instance where the elements begin at a specified value and which are spaced apart according to another specified value.</summary>
+        /// <typeparam name="T">The type of the elements in the vector.</typeparam>
+        /// <param name="start">The value that element 0 will be initialized to.</param>
+        /// <param name="step">The value that indicates how far apart each element should be from the previous.</param>
+        /// <returns>A new <see cref="Vector{T}" /> instance with the first element initialized to <paramref name="start" /> and each subsequent element initialized to the the value of the previous element plus <paramref name="step" />.</returns>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector<T> CreateSequence<T>(T start, T step) => (Vector<T>.Indices * step) + new Vector<T>(start);
 
         /// <summary>Divides two vectors to compute their quotient.</summary>
         /// <param name="left">The vector that will be divided by <paramref name="right" />.</param>

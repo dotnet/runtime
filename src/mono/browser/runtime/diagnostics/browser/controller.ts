@@ -1,15 +1,16 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import MonoWasmThreads from "consts:monoWasmThreads";
+import WasmEnableThreads from "consts:wasmEnableThreads";
 
 import { threads_c_functions as cwraps } from "../../cwraps";
 import { INTERNAL, mono_assert } from "../../globals";
 import { mono_log_info, mono_log_debug, mono_log_warn } from "../../logging";
 import { withStackAlloc, getI32 } from "../../memory";
-import { Thread, waitForThread } from "../../pthreads/browser";
+import { waitForThread } from "../../pthreads";
 import { isDiagnosticMessage, makeDiagnosticServerControlCommand } from "../shared/controller-commands";
 import monoDiagnosticsMock from "consts:monoDiagnosticsMock";
+import { PThreadPtr, Thread } from "../../types/internal";
 
 /// An object that can be used to control the diagnostic server.
 export interface ServerController {
@@ -17,23 +18,23 @@ export interface ServerController {
 }
 
 class ServerControllerImpl implements ServerController {
-    constructor(private server: Thread) {
+    constructor (private server: Thread) {
         server.port.addEventListener("message", this.onServerReply.bind(this));
     }
-    start(): void {
+    start (): void {
         mono_log_debug("signaling the diagnostic server to start");
         this.server.postMessageToWorker(makeDiagnosticServerControlCommand("start"));
     }
-    stop(): void {
+    stop (): void {
         mono_log_debug("signaling the diagnostic server to stop");
         this.server.postMessageToWorker(makeDiagnosticServerControlCommand("stop"));
     }
-    postServerAttachToRuntime(): void {
+    postServerAttachToRuntime (): void {
         mono_log_debug("signal the diagnostic server to attach to the runtime");
         this.server.postMessageToWorker(makeDiagnosticServerControlCommand("attach_to_runtime"));
     }
 
-    onServerReply(event: MessageEvent): void {
+    onServerReply (event: MessageEvent): void {
         const d = event.data;
         if (isDiagnosticMessage(d)) {
             switch (d.cmd) {
@@ -47,20 +48,20 @@ class ServerControllerImpl implements ServerController {
 
 let serverController: ServerController | null = null;
 
-export function getController(): ServerController {
+export function getController (): ServerController {
     if (serverController)
         return serverController;
     throw new Error("unexpected no server controller");
 }
 
-export async function startDiagnosticServer(websocket_url: string): Promise<ServerController | null> {
-    mono_assert(MonoWasmThreads, "The diagnostic server requires threads to be enabled during build time.");
+export async function startDiagnosticServer (websocket_url: string): Promise<ServerController | null> {
+    mono_assert(WasmEnableThreads, "The diagnostic server requires threads to be enabled during build time.");
     const sizeOfPthreadT = 4;
     mono_log_info(`starting the diagnostic server url: ${websocket_url}`);
-    const result: number | undefined = withStackAlloc(sizeOfPthreadT, (pthreadIdPtr) => {
+    const result: PThreadPtr | undefined = withStackAlloc(sizeOfPthreadT, (pthreadIdPtr) => {
         if (!cwraps.mono_wasm_diagnostic_server_create_thread(websocket_url, pthreadIdPtr))
             return undefined;
-        const pthreadId = getI32(pthreadIdPtr);
+        const pthreadId = getI32(pthreadIdPtr) as any as PThreadPtr;
         return pthreadId;
     });
     if (result === undefined) {

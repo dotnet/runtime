@@ -20,7 +20,13 @@ namespace System.ComponentModel
     public sealed class TypeDescriptor
     {
         internal const DynamicallyAccessedMemberTypes ReflectTypesDynamicallyAccessedMembers = DynamicallyAccessedMemberTypes.PublicParameterlessConstructor | DynamicallyAccessedMemberTypes.PublicFields;
-        internal const string EditorRequiresUnreferencedCode = "Editors registered in TypeDescriptor.AddEditorTable may be trimmed.";
+        internal const string DesignTimeAttributeTrimmed = "Design-time attributes are not preserved when trimming. Types referenced by attributes like EditorAttribute and DesignerAttribute may not be available after trimming.";
+
+        [FeatureSwitchDefinition("System.ComponentModel.TypeDescriptor.IsComObjectDescriptorSupported")]
+        [FeatureGuard(typeof(RequiresUnreferencedCodeAttribute))]
+#pragma warning disable IL4000 // MSBuild logic will ensure that the switch is disabled in trimmed scenarios.
+        internal static bool IsComObjectDescriptorSupported => AppContext.TryGetSwitch("System.ComponentModel.TypeDescriptor.IsComObjectDescriptorSupported", out bool isEnabled) ? isEnabled : true;
+#pragma warning restore IL4000
 
         // Note: this is initialized at class load because we
         // lock on it for thread safety. It is used from nearly
@@ -33,7 +39,6 @@ namespace System.ComponentModel
                                                                                           // A value of `null` indicates initialization is in progress.
                                                                                           // A value of s_initializedDefaultProvider indicates the provider is initialized.
         private static readonly object s_initializedDefaultProvider = new object();
-        private static readonly object s_defaultProviderSyncObject = new object();
 
         private static WeakHashtable? s_associationTable;
         private static int s_metadataVersion;                          // a version stamp for our metadata. Used by property descriptors to know when to rebuild attributes.
@@ -271,7 +276,10 @@ namespace System.ComponentModel
                 return;
             }
 
-            lock (s_defaultProviderSyncObject)
+            // Lock on s_providerTable even though s_providerTable is not modified here.
+            // Using a single lock prevents deadlocks since other methods that call into or are called
+            // by this method also lock on s_providerTable and the ordering of the locks may be different.
+            lock (s_providerTable)
             {
                 AddDefaultProvider(type);
             }
@@ -279,7 +287,7 @@ namespace System.ComponentModel
 
         /// <summary>
         /// Add the default provider, if it exists.
-        /// For threading, this is always called under a 'lock (s_defaultProviderSyncObject)'.
+        /// For threading, this is always called under a 'lock (s_providerTable)'.
         /// </summary>
         private static void AddDefaultProvider(Type type)
         {
@@ -326,11 +334,11 @@ namespace System.ComponentModel
         }
 
         /// <summary>
-        /// The CreateAssocation method creates an association between two objects.
+        /// The CreateAssociation method creates an association between two objects.
         /// Once an association is created, a designer or other filtering mechanism
         /// can add properties that route to either object into the primary object's
         /// property set. When a property invocation is made against the primary
-        /// object, GetAssocation will be called to resolve the actual object
+        /// object, GetAssociation will be called to resolve the actual object
         /// instance that is related to its type parameter.
         /// </summary>
         [EditorBrowsable(EditorBrowsableState.Advanced)]
@@ -931,7 +939,7 @@ namespace System.ComponentModel
         /// Gets an editor with the specified base type for the
         /// specified component.
         /// </summary>
-        [RequiresUnreferencedCode(EditorRequiresUnreferencedCode + " The Type of component cannot be statically discovered.")]
+        [RequiresUnreferencedCode(DesignTimeAttributeTrimmed + " The Type of component cannot be statically discovered.")]
         public static object? GetEditor(object component, Type editorBaseType)
         {
             return GetEditor(component, editorBaseType, false);
@@ -942,7 +950,7 @@ namespace System.ComponentModel
         /// specified component.
         /// </summary>
         [EditorBrowsable(EditorBrowsableState.Advanced)]
-        [RequiresUnreferencedCode(EditorRequiresUnreferencedCode + " The Type of component cannot be statically discovered.")]
+        [RequiresUnreferencedCode(DesignTimeAttributeTrimmed + " The Type of component cannot be statically discovered.")]
         public static object? GetEditor(object component, Type editorBaseType, bool noCustomTypeDesc)
         {
             ArgumentNullException.ThrowIfNull(editorBaseType);
@@ -953,7 +961,7 @@ namespace System.ComponentModel
         /// <summary>
         /// Gets an editor with the specified base type for the specified type.
         /// </summary>
-        [RequiresUnreferencedCode(EditorRequiresUnreferencedCode)]
+        [RequiresUnreferencedCode(DesignTimeAttributeTrimmed)]
         public static object? GetEditor(
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type,
             Type editorBaseType)
@@ -1554,11 +1562,19 @@ namespace System.ComponentModel
 
                 if (type.IsCOMObject)
                 {
+                    if (!IsComObjectDescriptorSupported)
+                    {
+                        throw new NotSupportedException(SR.ComObjectDescriptorsNotSupported);
+                    }
                     type = ComObjectType;
                 }
                 else if (OperatingSystem.IsWindows()
                     && ComWrappers.TryGetComInstance(instance, out nint unknown))
                 {
+                    if (!IsComObjectDescriptorSupported)
+                    {
+                        throw new NotSupportedException(SR.ComObjectDescriptorsNotSupported);
+                    }
                     // ComObjectType uses the Windows Forms provided ComNativeDescriptor. It currently has hard Win32
                     // API dependencies. Even though ComWrappers work with other platforms, restricting to Windows until
                     // such time that the ComNativeDescriptor can handle basic COM types on other platforms.
@@ -2336,11 +2352,12 @@ namespace System.ComponentModel
         [EditorBrowsable(EditorBrowsableState.Advanced)]
         public static Type ComObjectType
         {
+            [RequiresUnreferencedCode("COM type descriptors are not trim-compatible.")]
             [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
             get => typeof(TypeDescriptorComObject);
         }
 
-        [RequiresUnreferencedCode("The Type of component cannot be statically discovered.")]
+        [RequiresUnreferencedCode(DesignTimeAttributeTrimmed)]
         public static IDesigner? CreateDesigner(IComponent component, Type designerBaseType)
         {
             Type? type = null;
@@ -2383,6 +2400,7 @@ namespace System.ComponentModel
         [DisallowNull]
         public static IComNativeDescriptorHandler? ComNativeDescriptorHandler
         {
+            [RequiresUnreferencedCode("COM type descriptors are not trim-compatible.")]
             get
             {
                 TypeDescriptionNode? typeDescriptionNode = NodeFor(ComObjectType);
@@ -2395,6 +2413,7 @@ namespace System.ComponentModel
                 while (typeDescriptionNode != null && comNativeDescriptionProvider == null);
                 return comNativeDescriptionProvider?.Handler;
             }
+            [RequiresUnreferencedCode("COM type descriptors are not trim-compatible.")]
             set
             {
                 TypeDescriptionNode? typeDescriptionNode = NodeFor(ComObjectType);
@@ -2633,7 +2652,7 @@ namespace System.ComponentModel
                     return _handler.GetDefaultProperty(_instance);
                 }
 
-                [RequiresUnreferencedCode(EditorRequiresUnreferencedCode)]
+                [RequiresUnreferencedCode(DesignTimeAttributeTrimmed)]
                 object ICustomTypeDescriptor.GetEditor(Type editorBaseType)
                 {
                     return _handler.GetEditor(_instance, editorBaseType);
@@ -2848,6 +2867,11 @@ namespace System.ComponentModel
 
             public ComNativeDescriptorProxy()
             {
+                if (!IsComObjectDescriptorSupported)
+                {
+                    throw new NotSupportedException(SR.ComObjectDescriptorsNotSupported);
+                }
+
                 Type realComNativeDescriptor = Type.GetType("System.Windows.Forms.ComponentModel.Com2Interop.ComNativeDescriptor, System.Windows.Forms", throwOnError: true)!;
                 _comNativeDescriptor = (TypeDescriptionProvider)Activator.CreateInstance(realComNativeDescriptor)!;
             }
@@ -2942,7 +2966,7 @@ namespace System.ComponentModel
             /// <summary>
             /// ICustomTypeDescriptor implementation.
             /// </summary>
-            [RequiresUnreferencedCode(EditorRequiresUnreferencedCode)]
+            [RequiresUnreferencedCode(DesignTimeAttributeTrimmed)]
             object? ICustomTypeDescriptor.GetEditor(Type editorBaseType)
             {
                 ArgumentNullException.ThrowIfNull(editorBaseType);
@@ -3305,7 +3329,7 @@ namespace System.ComponentModel
                 /// <summary>
                 /// ICustomTypeDescriptor implementation.
                 /// </summary>
-                [RequiresUnreferencedCode(EditorRequiresUnreferencedCode)]
+                [RequiresUnreferencedCode(DesignTimeAttributeTrimmed)]
                 object? ICustomTypeDescriptor.GetEditor(Type editorBaseType)
                 {
                     ArgumentNullException.ThrowIfNull(editorBaseType);
@@ -3630,7 +3654,7 @@ namespace System.ComponentModel
             /// <summary>
             /// ICustomTypeDescriptor implementation.
             /// </summary>
-            [RequiresUnreferencedCode(EditorRequiresUnreferencedCode)]
+            [RequiresUnreferencedCode(DesignTimeAttributeTrimmed)]
             public object? GetEditor(Type editorBaseType)
             {
                 ArgumentNullException.ThrowIfNull(editorBaseType);

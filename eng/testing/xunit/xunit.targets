@@ -1,11 +1,4 @@
 <Project>
-  <ItemGroup>
-    <!-- Upgrade the NETStandard.Library transitive xunit dependency to avoid transitive 1.x NS dependencies. -->
-    <PackageReference Include="NETStandard.Library"
-                      Version="$(NetStandardLibraryVersion)"
-                      Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'" />
-  </ItemGroup>
-
   <PropertyGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
     <AutoGenerateBindingRedirects Condition="'$(AutoGenerateBindingRedirects)' == ''">true</AutoGenerateBindingRedirects>
     <GenerateBindingRedirectsOutputType Condition="'$(GenerateBindingRedirectsOutputType)' == ''">true</GenerateBindingRedirectsOutputType>

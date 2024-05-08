@@ -398,29 +398,5 @@ namespace Internal.Runtime.TypeLoader
             return (callingConvention.HasFlag(MethodCallingConvention.Static) == _isStatic) &&
                 (callingConvention.HasFlag(MethodCallingConvention.Generic) == _isGeneric);
         }
-
-        private static bool CanGetTypeHandle(Type type)
-        {
-            if (type.HasElementType)
-            {
-                return CanGetTypeHandle(type.GetElementType());
-            }
-            else if (type.IsConstructedGenericType)
-            {
-                foreach (var typeArg in type.GenericTypeArguments)
-                {
-                    if (!CanGetTypeHandle(typeArg))
-                    {
-                        return false;
-                    }
-                }
-            }
-            else if (type.IsGenericParameter)
-            {
-                return false;
-            }
-
-            return true;
-        }
     }
 }

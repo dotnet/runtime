@@ -531,7 +531,8 @@ extern "C" int _cdecl wmain(int argc, _In_ WCHAR **argv)
                     else
                     {
                     InvalidOption:
-                        fprintf(stderr, "Error : Invalid Option: %LS\n", argv[i]);
+                        MAKE_UTF8PTR_FROMWIDE_NOTHROW(invalidOpt, argv[i]);
+                        fprintf(stderr, "Error : Invalid Option: %s\n", invalidOpt);
                         goto ErrorExit;
                     }
                 }

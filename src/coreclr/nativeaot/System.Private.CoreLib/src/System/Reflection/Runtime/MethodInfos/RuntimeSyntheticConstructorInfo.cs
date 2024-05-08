@@ -60,7 +60,7 @@ namespace System.Reflection.Runtime.MethodInfos
             }
         }
 
-        public sealed override MethodBase MetadataDefinitionMethod
+        internal sealed override MethodBase MetadataDefinitionMethod
         {
             get
             {

@@ -483,7 +483,6 @@ namespace System.Collections.Concurrent.Tests
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [InlineData(100, 1, 10)]
         [InlineData(4, 100000, 10)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/91538", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
         public void BlockingCollection_WrappingCollection_ExpectedElementsTransferred(int numThreadsPerConsumerProducer, int numItemsPerThread, int producerSpin)
         {
             var bc = new BlockingCollection<int>(CreateProducerConsumerCollection());

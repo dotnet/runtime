@@ -26,10 +26,9 @@ public class BuildPublishTests : BlazorWasmTestBase
     [Theory, TestCategory("no-workload")]
     [InlineData("Debug")]
     [InlineData("Release")]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/97054")]
     public async Task DefaultTemplate_WithoutWorkload(string config)
     {
-        string id = $"blz_no_workload_{config}_{GetRandomId()}_{s_unicodeChar}";
+        string id = $"blz_no_workload_{config}_{GetRandomId()}_{s_unicodeChars}";
         CreateBlazorWasmTemplateProject(id);
 
         BlazorBuild(new BlazorBuildOptions(id, config));
@@ -64,7 +63,7 @@ public class BuildPublishTests : BlazorWasmTestBase
     public void DefaultTemplate_NoAOT_WithWorkload(string config, bool testUnicode)
     {
         string id = testUnicode ?
-            $"blz_no_aot_{config}_{GetRandomId()}_{s_unicodeChar}" :
+            $"blz_no_aot_{config}_{GetRandomId()}_{s_unicodeChars}" :
             $"blz_no_aot_{config}_{GetRandomId()}";
         CreateBlazorWasmTemplateProject(id);
 
@@ -85,7 +84,7 @@ public class BuildPublishTests : BlazorWasmTestBase
     public void DefaultTemplate_AOT_WithWorkload(string config, bool testUnicode)
     {
         string id = testUnicode ?
-            $"blz_aot_{config}_{GetRandomId()}_{s_unicodeChar}" :
+            $"blz_aot_{config}_{GetRandomId()}_{s_unicodeChars}" :
             $"blz_aot_{config}_{GetRandomId()}";
         CreateBlazorWasmTemplateProject(id);
 
@@ -178,7 +177,6 @@ public class BuildPublishTests : BlazorWasmTestBase
     [Theory]
     [InlineData("", true)] // Default case
     [InlineData("false", false)] // the other case
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/97054")]
     public async Task Test_WasmStripILAfterAOT(string stripILAfterAOT, bool expectILStripping)
     {
         string config = "Release";

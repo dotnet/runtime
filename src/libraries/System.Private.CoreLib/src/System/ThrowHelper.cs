@@ -54,6 +54,12 @@ namespace System
     internal static class ThrowHelper
     {
         [DoesNotReturn]
+        internal static void ThrowArithmeticException(string message)
+        {
+            throw new ArithmeticException(message);
+        }
+
+        [DoesNotReturn]
         internal static void ThrowAccessViolationException()
         {
             throw new AccessViolationException();
@@ -63,6 +69,18 @@ namespace System
         internal static void ThrowArrayTypeMismatchException()
         {
             throw new ArrayTypeMismatchException();
+        }
+
+        [DoesNotReturn]
+        internal static void ThrowArrayTypeMismatchException_CantAssignType()
+        {
+            throw new ArrayTypeMismatchException(SR.ArrayTypeMismatch_CantAssignType);
+        }
+
+        [DoesNotReturn]
+        internal static void ThrowInvalidCastException_DownCastArrayElement()
+        {
+            throw new InvalidCastException(SR.InvalidCast_DownCastArrayElement);
         }
 
         [DoesNotReturn]
@@ -93,6 +111,12 @@ namespace System
         internal static void ThrowArgumentException_InvalidTimeSpanStyles()
         {
             throw new ArgumentException(SR.Argument_InvalidTimeSpanStyles, "styles");
+        }
+
+        [DoesNotReturn]
+        internal static void ThrowArgumentException_InvalidEnumValue<TEnum>(TEnum value, [CallerArgumentExpression(nameof(value))] string argumentName = "")
+        {
+            throw new ArgumentException(SR.Format(SR.Argument_InvalidEnumValue, value, typeof(TEnum).Name), argumentName);
         }
 
         [DoesNotReturn]
@@ -216,6 +240,18 @@ namespace System
         internal static void ThrowArgumentOutOfRange_TimeSpanTooLong()
         {
             throw new ArgumentOutOfRangeException(null, SR.Overflow_TimeSpanTooLong);
+        }
+
+        [DoesNotReturn]
+        internal static void ThrowArgumentOutOfRange_RoundingDigits(string name)
+        {
+            throw new ArgumentOutOfRangeException(name, SR.ArgumentOutOfRange_RoundingDigits);
+        }
+
+        [DoesNotReturn]
+        internal static void ThrowArgumentOutOfRange_RoundingDigits_MathF(string name)
+        {
+            throw new ArgumentOutOfRangeException(name, SR.ArgumentOutOfRange_RoundingDigits_MathF);
         }
 
         [DoesNotReturn]

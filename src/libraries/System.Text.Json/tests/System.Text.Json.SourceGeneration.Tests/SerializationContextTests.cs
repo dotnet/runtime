@@ -35,7 +35,7 @@ namespace System.Text.Json.SourceGeneration.Tests
     [JsonSerializable(typeof(JsonElement))]
     [JsonSerializable(typeof(RealWorldContextTests.ClassWithEnumAndNullable))]
     [JsonSerializable(typeof(RealWorldContextTests.ClassWithNullableProperties))]
-#if NETCOREAPP
+#if NET
     [JsonSerializable(typeof(RealWorldContextTests.ClassWithDateOnlyAndTimeOnlyValues))]
 #endif
     [JsonSerializable(typeof(ClassWithCustomConverter))]
@@ -55,6 +55,7 @@ namespace System.Text.Json.SourceGeneration.Tests
     [JsonSerializable(typeof(TypeWithDerivedAttribute))]
     [JsonSerializable(typeof(PolymorphicClass))]
     [JsonSerializable(typeof(PocoWithNumberHandlingAttr))]
+    [JsonSerializable(typeof(PocoWithMixedVisibilityMembers))]
     internal partial class SerializationContext : JsonSerializerContext, ITestContext
     {
         public JsonSourceGenerationMode JsonSourceGenerationMode => JsonSourceGenerationMode.Serialization;
@@ -87,7 +88,7 @@ namespace System.Text.Json.SourceGeneration.Tests
     [JsonSerializable(typeof(JsonElement), GenerationMode = JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(RealWorldContextTests.ClassWithEnumAndNullable), GenerationMode = JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(RealWorldContextTests.ClassWithNullableProperties), GenerationMode = JsonSourceGenerationMode.Serialization)]
-#if NETCOREAPP
+#if NET
     [JsonSerializable(typeof(RealWorldContextTests.ClassWithDateOnlyAndTimeOnlyValues), GenerationMode = JsonSourceGenerationMode.Serialization)]
 #endif
     [JsonSerializable(typeof(ClassWithCustomConverter), GenerationMode = JsonSourceGenerationMode.Serialization)]
@@ -109,6 +110,7 @@ namespace System.Text.Json.SourceGeneration.Tests
     [JsonSerializable(typeof(TypeWithDerivedAttribute), GenerationMode = JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(PolymorphicClass), GenerationMode = JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(PocoWithNumberHandlingAttr), GenerationMode = JsonSourceGenerationMode.Serialization)]
+    [JsonSerializable(typeof(PocoWithMixedVisibilityMembers), GenerationMode = JsonSourceGenerationMode.Serialization)]
     internal partial class SerializationWithPerTypeAttributeContext : JsonSerializerContext, ITestContext
     {
         public JsonSourceGenerationMode JsonSourceGenerationMode => JsonSourceGenerationMode.Serialization;
@@ -142,7 +144,7 @@ namespace System.Text.Json.SourceGeneration.Tests
     [JsonSerializable(typeof(JsonElement), GenerationMode = JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(RealWorldContextTests.ClassWithEnumAndNullable), GenerationMode = JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(RealWorldContextTests.ClassWithNullableProperties), GenerationMode = JsonSourceGenerationMode.Serialization)]
-#if NETCOREAPP
+#if NET
     [JsonSerializable(typeof(RealWorldContextTests.ClassWithDateOnlyAndTimeOnlyValues), GenerationMode = JsonSourceGenerationMode.Serialization)]
 #endif
     [JsonSerializable(typeof(ClassWithCustomConverter), GenerationMode = JsonSourceGenerationMode.Serialization)]
@@ -162,6 +164,7 @@ namespace System.Text.Json.SourceGeneration.Tests
     [JsonSerializable(typeof(TypeWithDerivedAttribute), GenerationMode = JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(PolymorphicClass), GenerationMode = JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(PocoWithNumberHandlingAttr), GenerationMode = JsonSourceGenerationMode.Serialization)]
+    [JsonSerializable(typeof(PocoWithMixedVisibilityMembers), GenerationMode = JsonSourceGenerationMode.Serialization)]
     internal partial class SerializationContextWithCamelCase : JsonSerializerContext, ITestContext
     {
         public JsonSourceGenerationMode JsonSourceGenerationMode => JsonSourceGenerationMode.Serialization;
@@ -479,7 +482,7 @@ namespace System.Text.Json.SourceGeneration.Tests
             }
         }
 
-#if NETCOREAPP
+#if NET
         [Fact]
         public override void ClassWithDateOnlyAndTimeOnlyValues_Roundtrip()
         {

@@ -101,7 +101,6 @@ namespace System.Threading.Tasks.Tests
         /// </summary>
         /// <param name="length"></param>
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/91541", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
         public static void IterationsWithDependency()
         {
             static void iterationsWithDependency(int length, int dependencyIndex)
@@ -167,7 +166,6 @@ namespace System.Threading.Tasks.Tests
         /// Exception is expected and the enumerators are disposed
         /// </summary>
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/91581", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
         public static void ExceptionOnMoveNext()
         {
             static void exceptionOnMoveNext(int length, int indexToThrow, bool isOrderable)

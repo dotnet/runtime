@@ -35,12 +35,6 @@
 #define __has_cpp_attribute(x) (0)
 #endif
 
-#if __has_cpp_attribute(fallthrough)
-#define FALLTHROUGH [[fallthrough]]
-#else
-#define FALLTHROUGH
-#endif
-
 #include <algorithm>
 
 #if HAVE_SYS_TIME_H
@@ -220,6 +214,13 @@ AffinitySet g_processAffinitySet;
 extern "C" int g_highestNumaNode;
 extern "C" bool g_numaAvailable;
 
+static int64_t g_totalPhysicalMemSize = 0;
+
+#ifdef TARGET_APPLE
+static int *g_kern_memorystatus_level_mib = NULL;
+static size_t g_kern_memorystatus_level_mib_length = 0;
+#endif
+
 // Initialize the interface implementation
 // Return:
 //  true if it has succeeded, false if it has failed
@@ -316,6 +317,55 @@ bool GCToOSInterface::Initialize()
 #endif // HAVE_SCHED_GETAFFINITY
 
     NUMASupportInitialize();
+
+#ifdef TARGET_APPLE
+    const char* mem_free_name = "kern.memorystatus_level";
+    int rc = sysctlnametomib(mem_free_name, NULL, &g_kern_memorystatus_level_mib_length);
+    if (rc != 0)
+    {
+        return false;
+    }
+
+    g_kern_memorystatus_level_mib = (int*)malloc(g_kern_memorystatus_level_mib_length * sizeof(int));
+    if (g_kern_memorystatus_level_mib == NULL)
+    {
+        return false;
+    }
+
+    rc = sysctlnametomib(mem_free_name, g_kern_memorystatus_level_mib, &g_kern_memorystatus_level_mib_length);
+    if (rc != 0)
+    {
+        free(g_kern_memorystatus_level_mib);
+        g_kern_memorystatus_level_mib = NULL;
+        g_kern_memorystatus_level_mib_length = 0;
+        return false;
+    }
+#endif
+
+    // Get the physical memory size
+#if HAVE_SYSCONF && HAVE__SC_PHYS_PAGES
+    long pages = sysconf(_SC_PHYS_PAGES);
+    if (pages == -1)
+    {
+        return false;
+    }
+
+    g_totalPhysicalMemSize = (uint64_t)pages * (uint64_t)g_pageSizeUnixInl;
+#elif HAVE_SYSCTL
+    int mib[2];
+    mib[0] = CTL_HW;
+    mib[1] = HW_MEMSIZE;
+    size_t length = sizeof(INT64);
+    int rc = sysctl(mib, 2, &g_totalPhysicalMemSize, &length, NULL, 0);
+    if (rc == 0)
+    {
+        return false;
+    }
+#else // HAVE_SYSCTL
+#error "Don't know how to get total physical memory on this platform"
+#endif // HAVE_SYSCTL
+
+    assert(g_totalPhysicalMemSize != 0);
 
     return true;
 }
@@ -812,29 +862,30 @@ done:
     return result;
 }
 
-#define UPDATE_CACHE_SIZE_AND_LEVEL(NEW_CACHE_SIZE, NEW_CACHE_LEVEL) if (NEW_CACHE_SIZE > cacheSize) { cacheSize = NEW_CACHE_SIZE; cacheLevel = NEW_CACHE_LEVEL; }
-
 static size_t GetLogicalProcessorCacheSizeFromOS()
 {
     size_t cacheLevel = 0;
     size_t cacheSize = 0;
-    size_t size;
 
-#ifdef _SC_LEVEL1_DCACHE_SIZE
-    size = ( size_t) sysconf(_SC_LEVEL1_DCACHE_SIZE);
-    UPDATE_CACHE_SIZE_AND_LEVEL(size, 1)
-#endif
-#ifdef _SC_LEVEL2_CACHE_SIZE
-    size = ( size_t) sysconf(_SC_LEVEL2_CACHE_SIZE);
-    UPDATE_CACHE_SIZE_AND_LEVEL(size, 2)
-#endif
-#ifdef _SC_LEVEL3_CACHE_SIZE
-    size = ( size_t) sysconf(_SC_LEVEL3_CACHE_SIZE);
-    UPDATE_CACHE_SIZE_AND_LEVEL(size, 3)
-#endif
-#ifdef _SC_LEVEL4_CACHE_SIZE
-    size = ( size_t) sysconf(_SC_LEVEL4_CACHE_SIZE);
-    UPDATE_CACHE_SIZE_AND_LEVEL(size, 4)
+#if defined(_SC_LEVEL1_DCACHE_SIZE) || defined(_SC_LEVEL2_CACHE_SIZE) || defined(_SC_LEVEL3_CACHE_SIZE) || defined(_SC_LEVEL4_CACHE_SIZE)
+    const int cacheLevelNames[] =
+    {
+        _SC_LEVEL1_DCACHE_SIZE,
+        _SC_LEVEL2_CACHE_SIZE,
+        _SC_LEVEL3_CACHE_SIZE,
+        _SC_LEVEL4_CACHE_SIZE,
+    };
+
+    for (int i = ARRAY_SIZE(cacheLevelNames) - 1; i >= 0; i--)
+    {
+        long size = sysconf(cacheLevelNames[i]);
+        if (size > 0)
+        {
+            cacheSize = (size_t)size;
+            cacheLevel = i + 1;
+            break;
+        }
+    }
 #endif
 
 #if defined(TARGET_LINUX) && !defined(HOST_ARM) && !defined(HOST_X86)
@@ -856,48 +907,19 @@ static size_t GetLogicalProcessorCacheSizeFromOS()
         {
             path_to_size_file[index] = (char)(48 + i);
 
-            if (ReadMemoryValueFromFile(path_to_size_file, &size))
-            {
-                path_to_level_file[index] = (char)(48 + i);
+            uint64_t cache_size_from_sys_file = 0;
 
+            if (ReadMemoryValueFromFile(path_to_size_file, &cache_size_from_sys_file))
+            {
+                cacheSize = std::max(cacheSize, (size_t)cache_size_from_sys_file);
+
+                path_to_level_file[index] = (char)(48 + i);
                 if (ReadMemoryValueFromFile(path_to_level_file, &level))
                 {
-                    UPDATE_CACHE_SIZE_AND_LEVEL(size, level)
-                }
-                else
-                {
-                    cacheSize = std::max(cacheSize, size);
+                    cacheLevel = level;
                 }
             }
         }
-    }
-#endif
-
-#if (defined(HOST_ARM64) || defined(HOST_LOONGARCH64)) && !defined(TARGET_APPLE)
-    if (cacheSize == 0)
-    {
-        // We expect to get the L3 cache size for Arm64 but currently expected to be missing that info
-        // from most of the machines.
-        //
-        // _SC_LEVEL*_*CACHE_SIZE is not yet present.  Work is in progress to enable this for arm64
-        //
-        // /sys/devices/system/cpu/cpu*/cache/index*/ is also not yet present in most systems.
-        // Arm64 patch is in Linux kernel tip.
-        //
-        // midr_el1 is available in "/sys/devices/system/cpu/cpu0/regs/identification/midr_el1",
-        // but without an exhaustive list of ARM64 processors any decode of midr_el1
-        // Would likely be incomplete
-
-        // Published information on ARM64 architectures is limited.
-        // If we use recent high core count chips as a guide for state of the art, we find
-        // total L3 cache to be 1-2MB/core.  As always, there are exceptions.
-
-        // Estimate cache size based on CPU count
-        // Assume lower core count are lighter weight parts which are likely to have smaller caches
-        // Assume L3$/CPU grows linearly from 256K to 1.5M/CPU as logicalCPUs grows from 2 to 12 CPUs
-        DWORD logicalCPUs = g_processAffinitySet.Count();
-
-        cacheSize = logicalCPUs * std::min(1536, std::max(256, (int)logicalCPUs * 128)) * 1024;
     }
 #endif
 
@@ -918,7 +940,7 @@ static size_t GetLogicalProcessorCacheSizeFromOS()
         if (success)
         {
             assert(cacheSizeFromSysctl > 0);
-            cacheSize = ( size_t) cacheSizeFromSysctl;
+            cacheSize = (size_t) cacheSizeFromSysctl;
         }
     }
 #endif
@@ -1211,34 +1233,7 @@ uint64_t GCToOSInterface::GetPhysicalMemoryLimit(bool* is_restricted)
         return restricted_limit;
     }
 
-    // Get the physical memory size
-#if HAVE_SYSCONF && HAVE__SC_PHYS_PAGES
-    long pages = sysconf(_SC_PHYS_PAGES);
-    if (pages == -1)
-    {
-        return 0;
-    }
-
-    long pageSize = sysconf(_SC_PAGE_SIZE);
-    if (pageSize == -1)
-    {
-        return 0;
-    }
-
-    return (uint64_t)pages * (uint64_t)pageSize;
-#elif HAVE_SYSCTL
-    int mib[3];
-    mib[0] = CTL_HW;
-    mib[1] = HW_MEMSIZE;
-    int64_t physical_memory = 0;
-    size_t length = sizeof(INT64);
-    int rc = sysctl(mib, 2, &physical_memory, &length, NULL, 0);
-    assert(rc == 0);
-
-    return physical_memory;
-#else // HAVE_SYSCTL
-#error "Don't know how to get total physical memory on this platform"
-#endif // HAVE_SYSCTL
+    return g_totalPhysicalMemSize;
 }
 
 // Get amount of physical memory available for use in the system
@@ -1248,20 +1243,15 @@ uint64_t GetAvailablePhysicalMemory()
 
     // Get the physical memory available.
 #if defined(__APPLE__)
-    vm_size_t page_size;
-    mach_port_t mach_port;
-    mach_msg_type_number_t count;
-    vm_statistics_data_t vm_stats;
-    mach_port = mach_host_self();
-    count = sizeof(vm_stats) / sizeof(natural_t);
-    if (KERN_SUCCESS == host_page_size(mach_port, &page_size))
+    uint32_t mem_free = 0;
+    size_t mem_free_length = sizeof(uint32_t);
+    assert(g_kern_memorystatus_level_mib != NULL);
+    int rc = sysctl(g_kern_memorystatus_level_mib, g_kern_memorystatus_level_mib_length, &mem_free, &mem_free_length, NULL, 0);
+    assert(rc == 0);
+    if (rc == 0)
     {
-        if (KERN_SUCCESS == host_statistics(mach_port, HOST_VM_INFO, (host_info_t)&vm_stats, &count))
-        {
-            available = (int64_t)vm_stats.free_count * (int64_t)page_size;
-        }
+        available = (int64_t)mem_free * g_totalPhysicalMemSize / 100;
     }
-    mach_port_deallocate(mach_task_self(), mach_port);
 #elif defined(__FreeBSD__)
     size_t inactive_count = 0, laundry_count = 0, free_count = 0;
     size_t sz = sizeof(inactive_count);
@@ -1279,7 +1269,7 @@ uint64_t GetAvailablePhysicalMemory()
 
     if (tryReadMemInfo)
     {
-        // Ensure that we don't try to read the /proc/meminfo in successive calls to the GlobalMemoryStatusEx
+        // Ensure that we don't try to read the /proc/meminfo in successive calls to the GetAvailablePhysicalMemory
         // if we have failed to access the file or the file didn't contain the MemAvailable value.
         tryReadMemInfo = ReadMemAvailable(&available);
     }

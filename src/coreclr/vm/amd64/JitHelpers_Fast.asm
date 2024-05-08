@@ -56,9 +56,14 @@ extern JIT_InternalThrow:proc
 ;   RDI - address of ref-field (assigned to)
 ;   RSI - address of the data  (source)
 ;   RCX is trashed
-;   RAX is trashed when FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP is defined
+;   RAX is trashed
+;
+;   NOTE: Keep in sync with RBM_CALLEE_TRASH_WRITEBARRIER_BYREF and RBM_CALLEE_GCTRASH_WRITEBARRIER_BYREF
+;         if you add more trashed registers.
+;
 ; Exit:
 ;   RDI, RSI are incremented by SIZEOF(LPVOID)
+;
 LEAF_ENTRY JIT_ByRefWriteBarrier, _TEXT
         mov     rcx, [rsi]
 
@@ -151,8 +156,6 @@ endif
         cmp     rcx, [g_ephemeral_high]
         jnb     Exit
 
-        ; do the following checks only if we are allowed to trash rax
-        ; otherwise we don't have enough registers
 ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
         mov     rax, rcx
 
