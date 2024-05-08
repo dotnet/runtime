@@ -112,7 +112,7 @@ inline regMaskTP genFindLowestBit(regMaskTP value)
 
 inline bool genMaxOneBit(regMaskTP value)
 {
-    return PopCount(value) <= 1;
+    return genMaxOneBit(value.low);
 }
 
 /*****************************************************************************
@@ -122,7 +122,7 @@ inline bool genMaxOneBit(regMaskTP value)
 
 inline bool genExactlyOneBit(regMaskTP value)
 {
-    return PopCount(value) == 1;
+    return genExactlyOneBit(value.low);
 }
 #endif
 
