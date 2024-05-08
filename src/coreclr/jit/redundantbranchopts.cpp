@@ -510,23 +510,41 @@ void Compiler::optRelopImpliesRelop(RelopImplicationInfo* rii)
         }
 
         // Given R(x, cns1) and R*(x, cns2) see if we can infer R* from R.
-        // We assume cns1 and cns2 are always on the RHS of the compare.
-        if ((treeApp.m_args[0] == domApp.m_args[0]) && vnStore->IsVNConstant(treeApp.m_args[1]) &&
-            vnStore->IsVNConstant(domApp.m_args[1]) && varTypeIsIntOrI(vnStore->TypeOfVN(treeApp.m_args[1])) &&
-            vnStore->TypeOfVN(domApp.m_args[0]) == vnStore->TypeOfVN(treeApp.m_args[1]) &&
-            vnStore->TypeOfVN(domApp.m_args[1]) == vnStore->TypeOfVN(treeApp.m_args[1]))
+        // First try to put constants on the right.
+        VNFunc   domFunc = domApp.m_func;
+        ValueNum domOp1  = domApp.m_args[0];
+        ValueNum domOp2  = domApp.m_args[1];
+
+        VNFunc   treeFunc = treeApp.m_func;
+        ValueNum treeOp1  = treeApp.m_args[0];
+        ValueNum treeOp2  = treeApp.m_args[1];
+
+        if (vnStore->IsVNConstant(domOp1))
+        {
+            std::swap(domOp1, domOp2);
+            domFunc = ValueNumStore::SwapRelop(domFunc);
+        }
+
+        if (vnStore->IsVNConstant(treeOp1))
+        {
+            std::swap(treeOp1, treeOp2);
+            treeFunc = ValueNumStore::SwapRelop(treeFunc);
+        }
+
+        if ((treeOp1 == domOp1) && vnStore->IsVNConstant(treeOp2) && vnStore->IsVNConstant(domOp2) &&
+            varTypeIsIntOrI(vnStore->TypeOfVN(treeOp1)) && vnStore->TypeOfVN(domOp1) == vnStore->TypeOfVN(treeOp2) &&
+            vnStore->TypeOfVN(domOp2) == vnStore->TypeOfVN(treeOp2))
         {
             // We currently don't handle VNF_relop_UN funcs here
-            if (ValueNumStore::VNFuncIsSignedComparison(domApp.m_func) &&
-                ValueNumStore::VNFuncIsSignedComparison(treeApp.m_func))
+            if (ValueNumStore::VNFuncIsSignedComparison(domFunc) && ValueNumStore::VNFuncIsSignedComparison(treeFunc))
             {
                 // Dominating "X relop CNS"
-                const genTreeOps     domOper = static_cast<genTreeOps>(domApp.m_func);
-                const target_ssize_t domCns  = vnStore->CoercedConstantValue<target_ssize_t>(domApp.m_args[1]);
+                const genTreeOps     domOper = static_cast<genTreeOps>(domFunc);
+                const target_ssize_t domCns  = vnStore->CoercedConstantValue<target_ssize_t>(domOp2);
 
                 // Dominated "X relop CNS"
-                const genTreeOps     treeOper = static_cast<genTreeOps>(treeApp.m_func);
-                const target_ssize_t treeCns  = vnStore->CoercedConstantValue<target_ssize_t>(treeApp.m_args[1]);
+                const genTreeOps     treeOper = static_cast<genTreeOps>(treeFunc);
+                const target_ssize_t treeCns  = vnStore->CoercedConstantValue<target_ssize_t>(treeOp2);
 
                 // Example:
                 //
