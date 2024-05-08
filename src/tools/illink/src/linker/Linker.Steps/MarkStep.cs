@@ -3044,7 +3044,7 @@ namespace Mono.Linker.Steps
 
 			var methodNode = _nodeFactory.GetMethodDefinitionNode (method, reason);
 			var rootNode = _nodeFactory.GetRootTracingNode (methodNode, NodeFactory.DependencyKindToStringMap[reason.Kind], reason.Source);
-			_dependencyGraph.AddRoot (rootNode, Enum.GetName (reason.Kind));
+			_dependencyGraph.AddRoot (rootNode, "Tracing Root");
 
 			return method;
 		}
