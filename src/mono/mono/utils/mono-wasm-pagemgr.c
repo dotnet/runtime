@@ -121,11 +121,13 @@ cleanup_preceding_pages (uint32_t successor_page) {
 		if (get_page_skip_count (page_state) <= maximum_skip_value)
 			continue;
 
+#if defined(MWPM_LOGGING)
 		g_print (
 			"Repairing invalid skip value in predecessor page %u: %s %u -> %u\n",
 			i, get_state_name (page_state), get_page_skip_count (page_state),
 			maximum_skip_value
 		);
+#endif
 		page_table[i] = encode_page_state (page_state & MWPM_STATE_MASK, maximum_skip_value);
 	}
 }
