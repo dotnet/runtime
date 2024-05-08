@@ -1816,7 +1816,8 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
             }
         }
 
-        if ((intrin.id == NI_Sve_FusedMultiplyAddBySelectedScalar) || (intrin.id == NI_Sve_FusedMultiplySubtractBySelectedScalar))
+        if ((intrin.id == NI_Sve_FusedMultiplyAddBySelectedScalar) ||
+            (intrin.id == NI_Sve_FusedMultiplySubtractBySelectedScalar))
         {
             // If this is common pattern, then we will add a flag in the table, but for now, just check for specific
             // intrinsics

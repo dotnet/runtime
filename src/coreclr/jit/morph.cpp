@@ -10717,7 +10717,7 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
                 break;
             }
 
-            unsigned            simdBaseTypeSize = genTypeSize(node->GetSimdBaseType());
+            unsigned simdBaseTypeSize = genTypeSize(node->GetSimdBaseType());
 
             if (!op2->OperIsHWIntrinsic() || (genTypeSize(op2->AsHWIntrinsic()->GetSimdBaseType()) != simdBaseTypeSize))
             {

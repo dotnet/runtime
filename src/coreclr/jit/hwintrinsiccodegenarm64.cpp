@@ -587,7 +587,8 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
 
                         // Finally, perform the actual "predicated" operation so that `targetReg` is the first operand
                         // `embMaskOp2Reg` is the second operand and `embMaskOp3Reg` is the third operand.
-                        GetEmitter()->emitIns_R_R_R_R(insEmbMask, emitSize, targetReg, maskReg, embMaskOp2Reg, embMaskOp3Reg, opt);
+                        GetEmitter()->emitIns_R_R_R_R(insEmbMask, emitSize, targetReg, maskReg, embMaskOp2Reg,
+                                                      embMaskOp3Reg, opt);
                     }
                     else
                     {
@@ -603,7 +604,8 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                             GetEmitter()->emitIns_R_R(INS_sve_movprfx, EA_SCALABLE, targetReg, embMaskOp1Reg);
                         }
 
-                        GetEmitter()->emitIns_R_R_R_R(insEmbMask, emitSize, targetReg, maskReg, embMaskOp2Reg,embMaskOp3Reg, opt);
+                        GetEmitter()->emitIns_R_R_R_R(insEmbMask, emitSize, targetReg, maskReg, embMaskOp2Reg,
+                                                      embMaskOp3Reg, opt);
 
                         GetEmitter()->emitIns_R_R_R_R(INS_sve_sel, emitSize, targetReg, maskReg, targetReg, falseReg,
                                                       opt, INS_SCALABLE_OPTS_UNPREDICATED);
