@@ -1570,10 +1570,10 @@ private:
 
 #ifdef VERIFY_HEAP
     PER_HEAP_METHOD void verify_free_lists();
-#if defined (USE_REGIONS) && defined (_DEBUG)
+#if defined (USE_REGIONS)
     PER_HEAP_METHOD void verify_regions (int gen_number, bool can_verify_gen_num, bool can_verify_tail);
     PER_HEAP_METHOD void verify_regions (bool can_verify_gen_num, bool concurrent_p);
-#endif //USE_REGIONS && _DEBUG
+#endif //USE_REGIONS
     PER_HEAP_ISOLATED_METHOD void enter_gc_lock_for_verify_heap();
     PER_HEAP_ISOLATED_METHOD void leave_gc_lock_for_verify_heap();
     PER_HEAP_METHOD void verify_heap (BOOL begin_gc_p);
@@ -3900,11 +3900,10 @@ private:
     PER_HEAP_FIELD_DIAG_ONLY int gchist_index_per_heap;
     PER_HEAP_FIELD_DIAG_ONLY gc_history gchist_per_heap[max_history_count];
 
-#ifdef MULTIPLE_HEAPS
+#if defined(MULTIPLE_HEAPS) && defined(_DEBUG)
     PER_HEAP_FIELD_DIAG_ONLY size_t committed_by_oh_per_heap[total_oh_count];
     PER_HEAP_FIELD_DIAG_ONLY size_t committed_by_oh_per_heap_refresh[total_oh_count];
-#else //MULTIPLE_HEAPS
-#endif //MULTIPLE_HEAPS
+#endif // MULTIPLE_HEAPS && _DEBUG
 
 #ifdef BACKGROUND_GC
     PER_HEAP_FIELD_DIAG_ONLY gc_history_per_heap bgc_data_per_heap;
