@@ -13,10 +13,12 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Net.Security;
 using System.Net.Sockets;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
+using System.Security.Principal;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -122,6 +124,7 @@ namespace System.Net
             public readonly CookieContainer? CookieContainer;
             public readonly ServicePoint? ServicePoint;
             public readonly TimeSpan ContinueTimeout;
+            public readonly TokenImpersonationLevel ImpersonationLevel;
 
             public HttpClientParameters(HttpWebRequest webRequest, bool async)
             {
@@ -144,6 +147,7 @@ namespace System.Net
                 CookieContainer = webRequest._cookieContainer;
                 ServicePoint = webRequest._servicePoint;
                 ContinueTimeout = TimeSpan.FromMilliseconds(webRequest.ContinueTimeout);
+                ImpersonationLevel = webRequest.ImpersonationLevel;
             }
 
             public bool Matches(HttpClientParameters requestParameters)
@@ -164,7 +168,8 @@ namespace System.Net
                     && ReferenceEquals(ServerCertificateValidationCallback, requestParameters.ServerCertificateValidationCallback)
                     && ReferenceEquals(ClientCertificates, requestParameters.ClientCertificates)
                     && ReferenceEquals(CookieContainer, requestParameters.CookieContainer)
-                    && ReferenceEquals(ServicePoint, requestParameters.ServicePoint);
+                    && ReferenceEquals(ServicePoint, requestParameters.ServicePoint)
+                    && ImpersonationLevel == requestParameters.ImpersonationLevel;
             }
 
             public bool AreParametersAcceptableForCaching()
@@ -1650,6 +1655,7 @@ namespace System.Net
             return CreateHttpClient(parameters, this);
         }
 
+        [UnconditionalSuppressMessage("AssemblyLoadTrimming", "IL2075:")]
         private static HttpClient CreateHttpClient(HttpClientParameters parameters, HttpWebRequest? request)
         {
             HttpClient? client = null;
@@ -1665,6 +1671,35 @@ namespace System.Net
                 handler.PreAuthenticate = parameters.PreAuthenticate;
                 handler.Expect100ContinueTimeout = parameters.ContinueTimeout;
                 client.Timeout = parameters.Timeout;
+
+                if (request != null && request.ImpersonationLevel != TokenImpersonationLevel.Delegation)
+                {
+                    // This is legacy hack.
+                    //var setting = //typeof(handler).GetMember("_setting:, Reflection.BindingFlags.NonPublic | Reflection.BindingFlags.Instance);
+                    var setting = typeof(SocketsHttpHandler).InvokeMember("_settings", BindingFlags.GetField | BindingFlags.NonPublic | BindingFlags.Instance, null, handler, null);
+                    //
+                    if (setting != null)
+                    {
+                        Type type = setting.GetType();
+                        foreach (var m in type.GetMembers(BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public))
+                        {
+                        //    Console.WriteLine(m);
+                        }
+                        Console.WriteLine("Memmbers dfone !!!!");
+                        var field = type.InvokeMember("_impersonationLevel", BindingFlags.GetField | BindingFlags.NonPublic | BindingFlags.Instance, null, setting, null);
+
+                        //var filed = type.InvokeMember("_impersonationLevel", Reflection.BindingFlags.GetField | Reflection.BindingFlags.NonPublic | Reflection.BindingFlags.Instance, null, setting, null);
+                        //FieldInfo? field = setting.GetType().GetField("_impersonationLevel", BindingFlags.NonPublic | BindingFlags.Instance);
+                        //setting.GetType().InvokeMember("_impersonationLevel", Reflection.BindingFlags.SetField | Reflection.BindingFlags.NonPublic | Reflection.BindingFlags.Instance, null, setting,
+                        Console.WriteLine("Setting: {0} {1}", setting, field);
+
+                        type.InvokeMember("_impersonationLevel", BindingFlags.SetField | BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance, null, setting, new object[] { request!.ImpersonationLevel });
+
+                        field = type.InvokeMember("_impersonationLevel", BindingFlags.GetField | BindingFlags.NonPublic | BindingFlags.Instance, null, setting, null);
+                        Console.WriteLine("Setting: {0} {1}", setting, field);
+
+                    }
+                }
 
                 if (parameters.CookieContainer != null)
                 {
