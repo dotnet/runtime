@@ -576,11 +576,11 @@ namespace System
                 throw new ArgumentException(SR.Arg_MustBeDateTimeOffset);
             }
 
-            return CompareTo(other);
+            return DateTime.Compare(UtcDateTime, other.UtcDateTime);
         }
 
         public int CompareTo(DateTimeOffset other) =>
-            UtcDateTime.CompareTo(other.UtcDateTime);
+            DateTime.Compare(UtcDateTime, other.UtcDateTime);
 
         // Checks if this DateTimeOffset is equal to a given object. Returns
         // true if the given object is a boxed DateTimeOffset and its value
