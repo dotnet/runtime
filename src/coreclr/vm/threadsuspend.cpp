@@ -6060,7 +6060,13 @@ void ThreadSuspend::Initialize()
         HMODULE hModNtdll = WszLoadLibrary(W("ntdll.dll"));
         if (hModNtdll != NULL)
         {
-            g_returnAddressHijackTarget = (void*)GetProcAddress(hModNtdll, "RtlGetReturnAddressHijackTarget");
+            typedef void* (*PFN_RtlGetReturnAddressHijackTarget)(void);
+
+            void* rtlGetReturnAddressHijackTarget = GetProcAddress(hModNtdll, "RtlGetReturnAddressHijackTarget");
+            if (rtlGetReturnAddressHijackTarget != NULL)
+            {
+                g_returnAddressHijackTarget = ((PFN_RtlGetReturnAddressHijackTarget)rtlGetReturnAddressHijackTarget)();
+            }
         }
         if (g_returnAddressHijackTarget == NULL)
         {
