@@ -71,8 +71,8 @@ extends:
       linux_musl_x64_dev_innerloop:
         image: mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.19-WithNode
 
-      linux_x64_asan:
-        image: mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-cross-amd64-net9.0-asan
+      linux_x64_sanitizer:
+        image: mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-cross-amd64-net9.0-sanitizer
         env:
           ROOTFS_DIR: /crossrootfs/x64
 
