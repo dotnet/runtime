@@ -14,6 +14,12 @@
 #ifndef __MONO_UTILS_WASM_PAGEMGR_H__
 #define __MONO_UTILS_WASM_PAGEMGR_H__
 
+#ifdef HOST_WASI
+#ifndef DISABLE_THREADS
+#error MWPM does not support multithreaded WASI due to lack of call_once
+#endif
+#endif
+
 #include <stddef.h>
 #include <stdint.h>
 

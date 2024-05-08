@@ -8,7 +8,10 @@
 #include <glib.h>
 #include <mono/utils/atomic.h>
 #include <mono/utils/mono-os-mutex.h>
+
+#ifndef DISABLE_THREADS
 #include <threads.h>
+#endif
 
 // #define MWPM_LOGGING
 // #define MWPM_STATS
@@ -30,7 +33,11 @@ typedef uint8_t mwpm_page_state;
 
 static mono_mutex_t mutex;
 static uint8_t page_table[MWPM_MAX_PAGES];
+#ifdef DISABLE_THREADS
+static uint8_t is_initialized = 0;
+#else
 static once_flag is_initialized = ONCE_FLAG_INIT;
+#endif
 static uint32_t
 	// The index of the first page that we control. Not all pages after this
 	//  necessarily belong to us, but scans can start here.
@@ -182,7 +189,7 @@ acquire_new_pages_initialized (uint32_t page_count) {
 	uint8_t *allocation = sbrk ((uint32_t)bytes),
 		*allocation_end = allocation + bytes;
 
-	if (!allocation) {
+	if (!allocation || (allocation == (uint8_t *)-1)) {
 #ifdef MWPM_LOGGING
 		g_print ("mwpm failed to acquire memory\n");
 #endif
@@ -333,7 +340,14 @@ mwpm_init () {
 
 static inline void
 mwpm_ensure_initialized () {
+#ifdef DISABLE_THREADS
+	if (is_initialized)
+		return;
+	is_initialized = 1;
+	mwpm_init ();
+#else
 	call_once (&is_initialized, mwpm_init);
+#endif
 }
 
 void *
