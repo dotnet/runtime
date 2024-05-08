@@ -196,7 +196,7 @@ This is enforced via an extensive and complicated set of enforcements within the
 ## Static variables
 
 Static variables in CoreCLR are handled by a combination of getting the "static base", and then adjusting it by an offset to get a pointer to the actual value.
-We define the statics base as either non-gc or gc for each field. 
+We define the statics base as either non-gc or gc for each field.
 Currently non-gc statics are any statics which are represented by primitive types (byte, sbyte, char, int, uint, long, ulong, float, double, pointers of various forms), and enums.
 GC statics are any statics which are represented by classes or by user defined structures.
 For user defined structure statics, the static variable is actually a pointer to a boxed instance of the structure.
@@ -309,7 +309,7 @@ This is the pattern that the JIT will use to access a thread static which is on 
 2. Add the index offset to the start of the ThreadLocalData structure `pTLSBaseAddress = ((uint8_t*)pThreadLocalData) + index.GetIndexOffset()`
 
 #### Lifetime management for thread static variables
-We distinguish between collectible and non-collectible thread static variables for efficiency purposes. 
+We distinguish between collectible and non-collectible thread static variables for efficiency purposes.
 
 A non-collectible thread static is a thread static defined on a type which cannot be collected by the runtime.
 This describes most thread statics in actual observed practice.
