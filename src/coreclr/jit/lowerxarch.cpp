@@ -1919,6 +1919,68 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
             }
 
             // pre-AVX doesn't actually support these intrinsics in hardware so we need to swap the operands around
+            NamedIntrinsic newIntrinsicId = NI_Illegal;
+
+            switch (intrinsicId)
+            {
+                case NI_SSE_CompareGreaterThan:
+                {
+                    newIntrinsicId = NI_SSE_CompareLessThan;
+                    break;
+                }
+
+                case NI_SSE_CompareGreaterThanOrEqual:
+                {
+                    newIntrinsicId = NI_SSE_CompareLessThanOrEqual;
+                    break;
+                }
+
+                case NI_SSE_CompareNotGreaterThan:
+                {
+                    newIntrinsicId = NI_SSE_CompareNotLessThan;
+                    break;
+                }
+
+                case NI_SSE_CompareNotGreaterThanOrEqual:
+                {
+                    newIntrinsicId = NI_SSE_CompareNotLessThanOrEqual;
+                    break;
+                }
+
+                case NI_SSE2_CompareGreaterThan:
+                {
+                    newIntrinsicId = NI_SSE2_CompareLessThan;
+                    break;
+                }
+
+                case NI_SSE2_CompareGreaterThanOrEqual:
+                {
+                    newIntrinsicId = NI_SSE2_CompareLessThanOrEqual;
+                    break;
+                }
+
+                case NI_SSE2_CompareNotGreaterThan:
+                {
+                    newIntrinsicId = NI_SSE2_CompareNotLessThan;
+                    break;
+                }
+
+                case NI_SSE2_CompareNotGreaterThanOrEqual:
+                {
+                    newIntrinsicId = NI_SSE2_CompareNotLessThanOrEqual;
+                    break;
+                }
+
+                default:
+                {
+                    unreached();
+                }
+            }
+
+            assert(newIntrinsicId != NI_Illegal);
+            assert(intrinsicId != newIntrinsicId);
+
+            node->ChangeHWIntrinsicId(newIntrinsicId);
             std::swap(node->Op(1), node->Op(2));
             break;
         }
@@ -1933,7 +1995,39 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
             }
             assert(varTypeIsIntegral(node->GetSimdBaseType()));
 
-            // this isn't actually supported in hardware so we need to swap the operands around
+            // pre-AVX512 doesn't actually support these intrinsics in hardware so we need to swap the operands around
+            NamedIntrinsic newIntrinsicId = NI_Illegal;
+
+            switch (intrinsicId)
+            {
+                case NI_SSE2_CompareLessThan:
+                {
+                    newIntrinsicId = NI_SSE2_CompareGreaterThan;
+                    break;
+                }
+
+                case NI_SSE42_CompareLessThan:
+                {
+                    newIntrinsicId = NI_SSE42_CompareGreaterThan;
+                    break;
+                }
+
+                case NI_AVX2_CompareLessThan:
+                {
+                    newIntrinsicId = NI_AVX2_CompareGreaterThan;
+                    break;
+                }
+
+                default:
+                {
+                    unreached();
+                }
+            }
+
+            assert(newIntrinsicId != NI_Illegal);
+            assert(intrinsicId != newIntrinsicId);
+
+            node->ChangeHWIntrinsicId(newIntrinsicId);
             std::swap(node->Op(1), node->Op(2));
             break;
         }
@@ -3158,14 +3252,6 @@ GenTree* Lowering::LowerHWIntrinsicTernaryLogic(GenTreeHWIntrinsic* node)
                         case NI_AVX_CompareLessThan:
                         case NI_AVX2_CompareLessThan:
                         {
-                            if (varTypeIsIntegral(cndNode->GetSimdBaseType()))
-                            {
-                                // CompareLessThan isn't supported in hardware prior to AVX512, as such
-                                // the lowering of the node will have already swapped these around so that
-                                // it would be treated as CompareGreaterThan instead. This swaps the operands
-                                // back since it can be natively supported here instead
-                                std::swap(selectFalse, selectTrue);
-                            }
                             cndId = NI_AVX512F_CompareLessThanMask;
                             break;
                         }
