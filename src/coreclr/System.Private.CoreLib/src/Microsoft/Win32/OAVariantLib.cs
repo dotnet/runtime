@@ -21,8 +21,6 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
 
-#pragma warning disable CA1416 // COM interop is only supported on Windows
-
 namespace Microsoft.Win32
 {
     internal static unsafe partial class OAVariantLib
@@ -183,9 +181,6 @@ namespace Microsoft.Win32
                 VarEnum.VT_UI8 => input.As<ulong>(),
                 VarEnum.VT_R4 => input.As<float>(),
                 VarEnum.VT_R8 => input.As<double>(),
-                VarEnum.VT_EMPTY => null,
-                VarEnum.VT_UNKNOWN or VarEnum.VT_VARIANT => Marshal.GetObjectForIUnknown(input.GetRawDataRef<IntPtr>()),
-                VarEnum.VT_VOID => null,
                 _ => throw new NotSupportedException(SR.NotSupported_ChangeType),
             };
 
