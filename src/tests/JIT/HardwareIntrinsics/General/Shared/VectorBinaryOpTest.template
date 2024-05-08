@@ -32,8 +32,11 @@ namespace JIT.HardwareIntrinsics.General
             // Validates broadcast functionality works
             test.RunBroadcastScenario();
 
-            // Validates masking functionality works
-            test.RunMaskingScenario();
+            // Validates masking with a value functionality works
+            test.RunMaskingValueScenario();
+
+            // Validates masking with zero functionality works
+            test.RunMaskingZeroScenario();
 
             // Validates broadcast + masking functionality works
             test.RunBroadcastAndMaskingScenario();
@@ -242,9 +245,29 @@ namespace JIT.HardwareIntrinsics.General
             ValidateResult(_dataTable.inArray1Ptr, _dataTable.inArray2Ptr, _dataTable.outArrayPtr, isBroadcast: true);
         }
 
-        public void RunMaskingScenario()
+        public void RunMaskingValueScenario()
         {
-            TestLibrary.TestFramework.BeginScenario(nameof(RunMaskingScenario));
+            TestLibrary.TestFramework.BeginScenario(nameof(RunMaskingValueScenario));
+
+            var op1 = Unsafe.Read<{Op1VectorType}<{Op1BaseType}>>(_dataTable.inArray1Ptr);
+
+            var result = {RetVectorType}.ConditionalSelect(
+                {RetVectorType}.Equals<{RetBaseType}>(op1, {RetVectorType}<{RetBaseType}>.Zero),
+                {Isa}.{Method}(
+                    op1,
+                    Unsafe.Read<{Op2VectorType}<{Op2BaseType}>>(_dataTable.inArray2Ptr)
+                ),
+                {RetVectorType}.Create<{RetBaseType}>(1)
+            );
+
+            Unsafe.Write(_dataTable.outArrayPtr, result);
+            ValidateResult(_dataTable.inArray1Ptr, _dataTable.inArray2Ptr, _dataTable.outArrayPtr, mask: 1);
+        }
+
+
+        public void RunMaskingZeroScenario()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunMaskingZeroScenario));
 
             var op1 = Unsafe.Read<{Op1VectorType}<{Op1BaseType}>>(_dataTable.inArray1Ptr);
 
@@ -258,7 +281,7 @@ namespace JIT.HardwareIntrinsics.General
             );
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
-            ValidateResult(_dataTable.inArray1Ptr, _dataTable.inArray2Ptr, _dataTable.outArrayPtr, isMasking: true);
+            ValidateResult(_dataTable.inArray1Ptr, _dataTable.inArray2Ptr, _dataTable.outArrayPtr, mask: 0);
         }
 
         public void RunBroadcastAndMaskingScenario()
@@ -277,7 +300,7 @@ namespace JIT.HardwareIntrinsics.General
             );
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
-            ValidateResult(_dataTable.inArray1Ptr, _dataTable.inArray2Ptr, _dataTable.outArrayPtr, isBroadcast: true, isMasking: true);
+            ValidateResult(_dataTable.inArray1Ptr, _dataTable.inArray2Ptr, _dataTable.outArrayPtr, isBroadcast: true, mask: 0);
         }
 
         public void RunClsVarScenario()
@@ -345,7 +368,7 @@ namespace JIT.HardwareIntrinsics.General
             test.RunStructFldScenario(this);
         }
 
-        private void ValidateResult({Op1VectorType}<{Op1BaseType}> op1, {Op2VectorType}<{Op2BaseType}> op2, void* result, bool isBroadcast = false, bool isMasking = false, [CallerMemberName] string method = "")
+        private void ValidateResult({Op1VectorType}<{Op1BaseType}> op1, {Op2VectorType}<{Op2BaseType}> op2, void* result, bool isBroadcast = false, {RetBaseType}? mask = null, [CallerMemberName] string method = "")
         {
             {Op1BaseType}[] inArray1 = new {Op1BaseType}[Op1ElementCount];
             {Op2BaseType}[] inArray2 = new {Op2BaseType}[Op2ElementCount];
@@ -355,10 +378,10 @@ namespace JIT.HardwareIntrinsics.General
             Unsafe.WriteUnaligned(ref Unsafe.As<{Op2BaseType}, byte>(ref inArray2[0]), op2);
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<{RetBaseType}, byte>(ref outArray[0]), ref Unsafe.AsRef<byte>(result), (uint)Unsafe.SizeOf<{RetVectorType}<{RetBaseType}>>());
 
-            ValidateResult(inArray1, inArray2, outArray, isBroadcast, isMasking, method);
+            ValidateResult(inArray1, inArray2, outArray, isBroadcast, mask, method);
         }
 
-        private void ValidateResult(void* op1, void* op2, void* result, bool isBroadcast = false, bool isMasking = false, [CallerMemberName] string method = "")
+        private void ValidateResult(void* op1, void* op2, void* result, bool isBroadcast = false, {RetBaseType}? mask = null, [CallerMemberName] string method = "")
         {
             {Op1BaseType}[] inArray1 = new {Op1BaseType}[Op1ElementCount];
             {Op2BaseType}[] inArray2 = new {Op2BaseType}[Op2ElementCount];
@@ -368,10 +391,10 @@ namespace JIT.HardwareIntrinsics.General
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op2BaseType}, byte>(ref inArray2[0]), ref Unsafe.AsRef<byte>(op2), (uint)Unsafe.SizeOf<{Op2VectorType}<{Op2BaseType}>>());
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<{RetBaseType}, byte>(ref outArray[0]), ref Unsafe.AsRef<byte>(result), (uint)Unsafe.SizeOf<{RetVectorType}<{RetBaseType}>>());
 
-            ValidateResult(inArray1, inArray2, outArray, isBroadcast, isMasking, method);
+            ValidateResult(inArray1, inArray2, outArray, isBroadcast, mask, method);
         }
 
-        private void ValidateResult({Op1BaseType}[] left, {Op2BaseType}[] right, {RetBaseType}[] result, bool isBroadcast, bool isMasking, [CallerMemberName] string method = "")
+        private void ValidateResult({Op1BaseType}[] left, {Op2BaseType}[] right, {RetBaseType}[] result, bool isBroadcast, {RetBaseType}? mask, [CallerMemberName] string method = "")
         {
             bool succeeded = true;
 
@@ -380,7 +403,7 @@ namespace JIT.HardwareIntrinsics.General
                 right.AsSpan().Fill(right[0]);
             }
 
-            if ({ValidateFirstResult} && (!isMasking || ((left[0] != default) && result[0] != default)))
+            if ({ValidateFirstResult} && (!mask.HasValue || ((left[0] != default) && result[0] != mask.Value)))
             {
                 succeeded = false;
             }
@@ -388,7 +411,7 @@ namespace JIT.HardwareIntrinsics.General
             {
                 for (var i = 1; i < RetElementCount; i++)
                 {
-                    if ({ValidateRemainingResults} && (!isMasking || ((left[i] != default) && result[i] != default)))
+                    if ({ValidateRemainingResults} && (!mask.HasValue || ((left[i] != default) && result[i] != mask.Value)))
                     {
                         succeeded = false;
                         break;

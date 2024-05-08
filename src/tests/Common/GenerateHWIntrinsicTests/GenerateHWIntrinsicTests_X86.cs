@@ -24,13 +24,13 @@ using System.Linq;
 
 const string AlternatingBinOpTest_ValidationLogic = @"for (var i = 0; i < RetElementCount; i += 2)
             {
-                if ({ValidateFirstResult} && (!isMasking || ((left[i] != default) && result[i] != default)))
+                if ({ValidateFirstResult} && (!mask.HasValue || ((left[i] != default) && result[i] != mask.Value)))
                 {
                     succeeded = false;
                     break;
                 }
 
-                if ({ValidateRemainingResults} && (!isMasking || ((left[i + 1] != default) && result[i + 1] != default)))
+                if ({ValidateRemainingResults} && (!mask.HasValue || ((left[i + 1] != default) && result[i + 1] != mask.Value)))
                 {
                     succeeded = false;
                     break;
@@ -39,13 +39,13 @@ const string AlternatingBinOpTest_ValidationLogic = @"for (var i = 0; i < RetEle
 
 const string AlternatingTernOpTest_ValidationLogic = @"for (var i = 0; i < RetElementCount; i += 2)
             {
-                if ({ValidateFirstResult} && (!isMasking || ((firstOp[0] != default) && result[0] != default)))
+                if ({ValidateFirstResult} && (!mask.HasValue || ((firstOp[0] != default) && result[0] != mask.Value)))
                 {
                     succeeded = false;
                     break;
                 }
 
-                if ({ValidateRemainingResults} && (!isMasking || ((firstOp[i] != default) && result[i] != default)))
+                if ({ValidateRemainingResults} && (!mask.HasValue || ((firstOp[i] != default) && result[i] != mask.Value)))
                 {
                     succeeded = false;
                     break;
@@ -91,29 +91,13 @@ const string HorizontalOpTest_ValidationLogic = @"for (var outer = 0; outer < (L
                     var i2 = i1 + (8 / sizeof({RetBaseType}));
                     var i3 = (outer * (16 / sizeof({RetBaseType}))) + (inner * 2);
 
-                    if ({ValidateFirstResult} && (!isMasking || ((left[i1] != default) && result[i1] != default)))
+                    if ({ValidateFirstResult} && (!mask.HasValue || ((left[i1] != default) && result[i1] != mask.Value)))
                     {
                         succeeded = false;
                         break;
                     }
 
-                    if ({ValidateRemainingResults} && (!isMasking || ((left[i2] != default) && result[i2] != default)))
-                    {
-                        succeeded = false;
-                        break;
-                    }
-                }
-            }";
-
-const string SimpleUnOpTest_ValidationLogic = @"if ({ValidateFirstResult} && (!isMasking || ((firstOp[0] != default) && result[0] != default)))
-            {
-                succeeded = false;
-            }
-            else
-            {
-                for (var i = 1; i < RetElementCount; i++)
-                {
-                    if ({ValidateRemainingResults} && (!isMasking || ((firstOp[i] != default) && result[i] != default)))
+                    if ({ValidateRemainingResults} && (!mask.HasValue || ((left[i2] != default) && result[i2] != mask.Value)))
                     {
                         succeeded = false;
                         break;
@@ -121,7 +105,7 @@ const string SimpleUnOpTest_ValidationLogic = @"if ({ValidateFirstResult} && (!i
                 }
             }";
 
-const string SimpleBinOpTest_ValidationLogic = @"if ({ValidateFirstResult} && (!isMasking || ((left[0] != default) && result[0] != default)))
+const string SimpleUnOpTest_ValidationLogic = @"if ({ValidateFirstResult} && (!mask.HasValue || ((firstOp[0] != default) && result[0] != mask.Value)))
             {
                 succeeded = false;
             }
@@ -129,7 +113,7 @@ const string SimpleBinOpTest_ValidationLogic = @"if ({ValidateFirstResult} && (!
             {
                 for (var i = 1; i < RetElementCount; i++)
                 {
-                    if ({ValidateRemainingResults} && (!isMasking || ((left[i] != default) && result[i] != default)))
+                    if ({ValidateRemainingResults} && (!mask.HasValue || ((firstOp[i] != default) && result[i] != mask.Value)))
                     {
                         succeeded = false;
                         break;
@@ -137,7 +121,7 @@ const string SimpleBinOpTest_ValidationLogic = @"if ({ValidateFirstResult} && (!
                 }
             }";
 
-const string SimpleTernOpTest_ValidationLogic = @"if ({ValidateFirstResult} && (!isMasking || ((firstOp[0] != default) && result[0] != default)))
+const string SimpleBinOpTest_ValidationLogic = @"if ({ValidateFirstResult} && (!mask.HasValue || ((left[0] != default) && result[0] != mask.Value)))
             {
                 succeeded = false;
             }
@@ -145,7 +129,23 @@ const string SimpleTernOpTest_ValidationLogic = @"if ({ValidateFirstResult} && (
             {
                 for (var i = 1; i < RetElementCount; i++)
                 {
-                    if ({ValidateRemainingResults} && (!isMasking || ((firstOp[i] != default) && result[i] != default)))
+                    if ({ValidateRemainingResults} && (!mask.HasValue || ((left[i] != default) && result[i] != mask.Value)))
+                    {
+                        succeeded = false;
+                        break;
+                    }
+                }
+            }";
+
+const string SimpleTernOpTest_ValidationLogic = @"if ({ValidateFirstResult} && (!mask.HasValue || ((firstOp[0] != default) && result[0] != mask.Value)))
+            {
+                succeeded = false;
+            }
+            else
+            {
+                for (var i = 1; i < RetElementCount; i++)
+                {
+                    if ({ValidateRemainingResults} && (!mask.HasValue || ((firstOp[i] != default) && result[i] != mask.Value)))
                     {
                         succeeded = false;
                         break;
