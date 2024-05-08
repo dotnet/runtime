@@ -58,10 +58,10 @@ HRESULT InitializeStandaloneGC()
     return GCHeapUtilities::InitializeStandaloneGC();
 }
 
-//  Validate that the name used to load the JIT/GC is just a simple file name
+//  Validate that the name used to load the GC is just a simple file name
 //  and does not contain something that could be used in a non-qualified path.
-//  For example, using the string "..\..\..\myjit.dll" we might attempt to
-//  load a JIT from the root of the drive.
+//  For example, using the string "..\..\..\clrgc.dll" we might attempt to
+//  load a GC from the root of the drive.
 //
 //  The minimal set of characters that we must check for and exclude are:
 //  On all platforms:
