@@ -8181,8 +8181,8 @@ void Thread::StaticInitialize()
 #ifdef FEATURE_SPECIAL_USER_MODE_APC
     InitializeSpecialUserModeApc();
 
-    // When CET shadow stacks are enabled, support for special user-mode APCs with the necessary functionality is required
-    _ASSERTE_ALL_BUILDS(!AreCetShadowStacksEnabled() || UseSpecialUserModeApc());
+    // When shadow stacks are enabled, support for special user-mode APCs with the necessary functionality is required
+    _ASSERTE_ALL_BUILDS(!AreShadowStacksEnabled() || UseSpecialUserModeApc());
 #endif
 }
 
