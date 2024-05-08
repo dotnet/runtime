@@ -14,6 +14,7 @@ namespace Microsoft.Interop
         public ContainingSyntaxContext ContainingSyntaxContext { get; init; }
         public ContainingSyntax ClassSyntax { get; init; }
         public SequenceEqualImmutableArray<string> ImplementedInterfacesNames { get; init; }
+
         private ComClassInfo(string className, ContainingSyntaxContext containingSyntaxContext, ContainingSyntax classSyntax, SequenceEqualImmutableArray<string> implementedInterfacesNames)
         {
             ClassName = className;
@@ -65,6 +66,19 @@ namespace Microsoft.Interop
                     new ContainingSyntaxContext(syntax),
                     new ContainingSyntax(syntax.Modifiers, syntax.Kind(), syntax.Identifier, syntax.TypeParameterList),
                     new(names.ToImmutable())));
+        }
+
+        public bool Equals(ComClassInfo? other)
+        {
+            return other is not null
+                && ClassName == other.ClassName
+                && ContainingSyntaxContext.Equals(other.ContainingSyntaxContext)
+                && ImplementedInterfacesNames.SequenceEqual(other.ImplementedInterfacesNames);
+        }
+
+        public override int GetHashCode()
+        {
+            return HashCode.Combine(ClassName, ContainingSyntaxContext, ImplementedInterfacesNames);
         }
     }
 }

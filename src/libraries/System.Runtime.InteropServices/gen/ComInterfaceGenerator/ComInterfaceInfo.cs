@@ -281,5 +281,19 @@ namespace Microsoft.Interop
             diagnostic = null;
             return true;
         }
+
+        public override int GetHashCode()
+        {
+            // ContainingSyntax does not implement GetHashCode
+            return HashCode.Combine(Type, ThisInterfaceKey, BaseInterfaceKey, TypeDefinitionContext, InterfaceId);
+        }
+
+        public bool Equals(ComInterfaceInfo other)
+        {
+            // ContainingSyntax and ContainingSyntaxContext are not used in the hash code
+            return Type == other.Type
+                && TypeDefinitionContext == other.TypeDefinitionContext
+                && InterfaceId == other.InterfaceId;
+        }
     }
 }
