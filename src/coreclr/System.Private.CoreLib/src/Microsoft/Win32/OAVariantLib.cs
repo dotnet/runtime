@@ -72,9 +72,9 @@ namespace Microsoft.Win32
 
             if (Variant.IsSystemDrawingColor(targetClass))
             {
-                if (source.GetType() == typeof(int) || source.GetType() == typeof(uint))
+                if (source is int || source is uint)
                 {
-                    uint sourceData = source.GetType() == typeof(int) ? (uint)(int)source : (uint)source;
+                    uint sourceData = source is int ? (uint)(int)source : (uint)source;
                     // Int32/UInt32 can be converted to System.Drawing.Color
                     Variant.ConvertOleColorToSystemColor(ObjectHandleOnStack.Create(ref result), sourceData, targetClass.TypeHandle.Value);
                     Debug.Assert(result != null);
@@ -83,7 +83,9 @@ namespace Microsoft.Win32
             }
 
             if (!ClassTypes.TryGetValue(targetClass, out VarEnum vt))
+            {
                 throw new NotSupportedException(SR.NotSupported_ChangeType);
+            }
 
             ComVariant vOp = ToOAVariant(source);
             ComVariant ret = default;
@@ -94,7 +96,9 @@ namespace Microsoft.Win32
             using (ret)
             {
                 if (hr < 0)
+                {
                     OAFailed(hr);
+                }
 
                 result = FromOAVariant(ret);
                 if (targetClass == typeof(char))
