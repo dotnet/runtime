@@ -13792,7 +13792,7 @@ is_local_inst (MonoGenericInst *inst, MonoImage *image)
 {
 	for (guint i = 0; i < inst->type_argc; ++i) {
 		MonoClass *k = mono_class_from_mono_type_internal (inst->type_argv [i]);
-		if (!MONO_TYPE_IS_PRIMITIVE (inst->type_argv [i]) && m_class_get_image (k) != image)
+		if ((m_class_get_image (k) != mono_defaults.corlib) && (m_class_get_image (k) != image))
 			return FALSE;
 	}
 	return TRUE;
