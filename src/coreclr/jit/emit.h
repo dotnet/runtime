@@ -1685,6 +1685,11 @@ protected:
             return _idEvexbContext;
         }
 
+        bool idIsEvexAaaContextSet() const
+        {
+            return idGetEvexAaaContext() != 0;
+        }
+
         unsigned idGetEvexAaaContext() const
         {
             assert(IsAvx512OrPriorInstruction(_idIns));

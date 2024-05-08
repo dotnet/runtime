@@ -1226,13 +1226,9 @@ bool emitter::TakesEvexPrefix(const instrDesc* id) const
         return true;
     }
 
-    if (HasEmbeddedBroadcast(id))
+    if (HasEmbeddedBroadcast(id) || HasEmbeddedMask(id))
     {
         // Requires the EVEX encoding due to embedded functionality
-        //
-        // TODO-XArch-AVX512: This needs to return true when the id includes:
-        // * embedded rounding control
-        // * other EVEX specific functionality
         return true;
     }
 
@@ -1369,7 +1365,7 @@ emitter::code_t emitter::AddEvexPrefix(const instrDesc* id, code_t code, emitAtt
     {
         case IF_RWR_RRD_ARD_RRD:
         {
-            assert(id->idGetEvexAaaContext() == 0);
+            assert(!id->idIsEvexAaaContextSet());
 
             CnsVal cnsVal;
             emitGetInsAmdCns(id, &cnsVal);
@@ -1380,7 +1376,7 @@ emitter::code_t emitter::AddEvexPrefix(const instrDesc* id, code_t code, emitAtt
 
         case IF_RWR_RRD_MRD_RRD:
         {
-            assert(id->idGetEvexAaaContext() == 0);
+            assert(!id->idIsEvexAaaContextSet());
 
             CnsVal cnsVal;
             emitGetInsDcmCns(id, &cnsVal);
@@ -1391,7 +1387,7 @@ emitter::code_t emitter::AddEvexPrefix(const instrDesc* id, code_t code, emitAtt
 
         case IF_RWR_RRD_SRD_RRD:
         {
-            assert(id->idGetEvexAaaContext() == 0);
+            assert(!id->idIsEvexAaaContextSet());
 
             CnsVal cnsVal;
             emitGetInsCns(id, &cnsVal);
@@ -1402,7 +1398,7 @@ emitter::code_t emitter::AddEvexPrefix(const instrDesc* id, code_t code, emitAtt
 
         case IF_RWR_RRD_RRD_RRD:
         {
-            assert(id->idGetEvexAaaContext() == 0);
+            assert(!id->idIsEvexAaaContextSet());
             maskReg = id->idReg4();
             break;
         }
@@ -11810,7 +11806,7 @@ void emitter::emitDispIns(
             {
                 case INS_pmovmskb:
                 {
-                    assert(id->idGetEvexAaaContext() == 0);
+                    assert(!id->idIsEvexAaaContextSet());
                     printf("%s, %s", emitRegName(id->idReg1(), EA_4BYTE), emitRegName(id->idReg2(), attr));
                     break;
                 }
@@ -11820,7 +11816,7 @@ void emitter::emitDispIns(
                 case INS_cvtsi2ss64:
                 case INS_cvtsi2sd64:
                 {
-                    assert(id->idGetEvexAaaContext() == 0);
+                    assert(!id->idIsEvexAaaContextSet());
                     printf("%s, %s", emitRegName(id->idReg1(), EA_16BYTE), emitRegName(id->idReg2(), attr));
                     break;
                 }
@@ -11838,7 +11834,7 @@ void emitter::emitDispIns(
                 case INS_vcvttss2usi32:
                 case INS_vcvttss2usi64:
                 {
-                    assert(id->idGetEvexAaaContext() == 0);
+                    assert(!id->idIsEvexAaaContextSet());
                     printf("%s, %s", emitRegName(id->idReg1(), attr), emitRegName(id->idReg2(), EA_16BYTE));
                     break;
                 }

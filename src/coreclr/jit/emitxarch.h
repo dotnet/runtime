@@ -1071,6 +1071,20 @@ inline bool HasEmbeddedBroadcast(const instrDesc* id) const
     return id->idIsEvexbContextSet();
 }
 
+//------------------------------------------------------------------------
+// HasEmbeddedBroadcast: Do we consider embedded broadcast while encoding.
+//
+// Arguments:
+//    id - Instruction descriptor.
+//
+// Returns:
+//    `true` if the instruction does embedded broadcast.
+//
+inline bool HasEmbeddedMask(const instrDesc* id) const
+{
+    return id->idIsEvexAaaContextSet();
+}
+
 inline bool HasHighSIMDReg(const instrDesc* id) const;
 
 inline bool HasMaskReg(const instrDesc* id) const;
