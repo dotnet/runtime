@@ -453,8 +453,7 @@ namespace Mono.Linker.Tests.Cases.Warnings.WarningSuppression
 			static void TestSuppressionOnLambda ()
 			{
 				var lambda =
-				// https://github.com/dotnet/roslyn/issues/59746
-				[ExpectedWarning ("IL2026", Tool.Analyzer, "")]
+				[UnexpectedWarning ("IL2026", Tool.Analyzer, "https://github.com/dotnet/roslyn/issues/59746")]
 				[UnconditionalSuppressMessage ("Test", "IL2026")]
 				() => RequiresUnreferencedCodeMethod ();
 
@@ -465,8 +464,7 @@ namespace Mono.Linker.Tests.Cases.Warnings.WarningSuppression
 			static void TestSuppressionOnOuterAndLambda ()
 			{
 				var lambda =
-				// https://github.com/dotnet/roslyn/issues/59746
-				[ExpectedWarning ("IL2026", Tool.Analyzer, "")]
+				[UnexpectedWarning ("IL2026", Tool.Analyzer, "https://github.com/dotnet/roslyn/issues/59746")]
 				[UnconditionalSuppressMessage ("Test", "IL2026")]
 				(Type unknownType) => {
 					RequiresUnreferencedCodeMethod ();
@@ -576,9 +574,8 @@ namespace Mono.Linker.Tests.Cases.Warnings.WarningSuppression
 
 			static event EventHandler TestEvent;
 
-			// https://github.com/dotnet/runtime/issues/82956 - the suppression is ignored
-			[ExpectedWarning ("IL2026", Tool.Trimmer | Tool.NativeAot, "", CompilerGeneratedCode = true)]
-			[ExpectedWarning ("IL2121", Tool.Trimmer, "", CompilerGeneratedCode = true)]
+			[UnexpectedWarning ("IL2026", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/82956", CompilerGeneratedCode = true)]
+			[UnexpectedWarning ("IL2121", Tool.Trimmer, "https://github.com/dotnet/runtime/issues/82956", CompilerGeneratedCode = true)]
 			static void TestLambdaInLocalFunction ()
 			{
 				LocalFunction ();
@@ -592,10 +589,9 @@ namespace Mono.Linker.Tests.Cases.Warnings.WarningSuppression
 				}
 			}
 
-			// https://github.com/dotnet/runtime/issues/82956 - the suppression is ignored
-			// https://github.com/dotnet/roslyn/issues/59746
-			[ExpectedWarning ("IL2026", CompilerGeneratedCode = true)]
-			[ExpectedWarning ("IL2121", Tool.Trimmer, "", CompilerGeneratedCode = true)]
+			// The suppression on the lambda is ignored
+			[UnexpectedWarning ("IL2026", Tool.TrimmerAnalyzerAndNativeAot, "https://github.com/dotnet/roslyn/issues/59746 https://github.com/dotnet/roslyn/issues/82956", CompilerGeneratedCode = true)]
+			[UnexpectedWarning ("IL2121", Tool.Trimmer, "https://github.com/dotnet/runtime/issues/82956", CompilerGeneratedCode = true)]
 			static void TestLocalFunctionInLambda ()
 			{
 				TestEvent +=

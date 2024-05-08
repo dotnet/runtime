@@ -92,6 +92,8 @@ public class DblArray1
     }
 
     [Fact]
+    [SkipOnCoreClr("This test is not compatible with GCStress.", RuntimeTestModes.AnyGCStress)]
+    [OuterLoop]
     public static int TestEntryPoint()
     {
         if (RuntimeInformation.ProcessArchitecture == Architecture.X86)
