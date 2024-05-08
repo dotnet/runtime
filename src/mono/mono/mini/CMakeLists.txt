@@ -84,6 +84,9 @@ set(mini_common_sources
     aot-compiler.h
     aot-compiler.c
     aot-runtime.c
+    # metadata_amodule->method_ref_to_method
+    ../../../native/containers/dn-simdhash.c
+    ../../../native/containers/dn-simdhash-ptr-ptr.c
     aot-runtime-wasm.c
     graph.c
     mini-codegen.c
