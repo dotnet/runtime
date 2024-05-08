@@ -280,7 +280,7 @@ ThreadLocalInfo : byte[N] ExtendedDirectThreadLocalTLSData
 
 InFlightTLSData : InFlightTLSData* pNext
 InFlightTLSData : TLSIndex tlsIndex
-InFlightTLSData : void* pTLSData
+InFlightTLSData : OBJECTHANDLE hTLSData
 
 ThreadLocalInfo --> InFlightTLSData : For TLS statics which have their memory allocated, but have not been accessed since the class finished running its class constructor
 InFlightTLSData --> InFlightTLSData : linked list
@@ -294,12 +294,14 @@ This is the pattern that the JIT will use to access a thread static which is not
 1. Get TLS pointer to OS managed TLS block for the current thread ie. `pThreadLocalData = &t_ThreadStatics`
 2. Read 1 integer value `pThreadLocalData->cCollectibleTlsData OR pThreadLocalData->cNonCollectibleTlsData`
 3. Compare cTlsData against the index we're looking up `if (cTlsData < index.GetIndexOffset())`
-4. If the index is not within range, jump to step 9.
+4. If the index is not within range, jump to step 11.
 5. Read 1 pointer value from TLS block `pThreadLocalData->pCollectibleTlsArrayData` OR `pThreadLocalData->pNonCollectibleTlsArrayData`
 6. Read 1 pointer from within the TLS Array. `pTLSBaseAddress = *(intptr_t*)(((uint8_t*)pTlsArrayData) + index.GetIndexOffset()`
-7. If pointer is NULL jump to step 9 `if pTLSBaseAddress == NULL`
-8. Return pTLSBaseAddress
-9. Tail-call a helper `return GetThreadLocalStaticBase(index)`
+7. If pointer is NULL jump to step 11 `if pTLSBaseAddress == NULL`
+8. If TLS index not a Collectible index, return pTLSBaseAddress
+9. if `ObjectFromHandle((OBJECTHANDLE)pTLSBaseAddress)` is NULL, jump to step 11
+10. Return `ObjectFromHandle((OBJECTHANDLE)pTLSBaseAddress)`
+11. Tail-call a helper `return GetThreadLocalStaticBase(index)`
 
 This is the pattern that the JIT will use to access a thread static which is on `DirectOnThreadLocalData`
 0. Get the TLS index somehow
@@ -323,6 +325,13 @@ At GC scan time, each managed object must individually be kept alive only if the
 2. If a thread static variable associated with a collectible assembly refers to the collectible assembly `LoaderAllocator` via a series of object references, it must not provide a reason for the collectible assembly to be considered referenced.
 3. If a collectible assembly is collected, then the associated static variables no longer exist, and the TLSIndex values associated with that collectible assembly becomre re-useable.
 4. If a thread is no longer executing, then all thread statics associated with that thread are no longer kept alive.
+
+The approach chosen is to use a pair of different handle types.
+For efficient access, the handle type stored in the dynamically adjusted array is a WeakTrackResurrection GCHandle.
+This handle instance is associated with the slot in the TLS data, not with the exact instantiation, so it can be re-used when the if the associated collectible assembly is collected, and then the slot is re-used.
+In addition, each slot that is in use will have a `LOADERHANDLE` which will keep the object alive until the `LoaderAllocator` is freed.
+This `LOADERHANDLE` will be abandoned if the `LoaderAllocator` is collected, but that's ok, as `LOADERHANDLE` only needs to be cleaned up if the `LoaderAllocator` isn't collected.
+On thread destroy, for each collectible slot in the tls array, we will explicitly free the `LOADERHANDLE` on the correct `LoaderAllocator`.
 
 Physical Architecture
 =====================

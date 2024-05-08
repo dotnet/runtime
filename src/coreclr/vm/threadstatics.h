@@ -10,12 +10,14 @@
 // 1. Get TLS pointer to OS managed TLS block for the current thread ie. pThreadLocalData = &t_ThreadStatics
 // 2. Read 1 integer value (pThreadLocalData->cCollectibleTlsData OR pThreadLocalData->cNonCollectibleTlsData)
 // 3. Compare cTlsData against the index we're looking up (if (cTlsData < index.GetIndexOffset()))
-// 4. If the index is not within range, jump to step 9.
+// 4. If the index is not within range, jump to step 11.
 // 5. Read 1 pointer value from TLS block (pThreadLocalData->pCollectibleTlsArrayData OR pThreadLocalData->pNonCollectibleTlsArrayData)
 // 6. Read 1 pointer from within the TLS Array. (pTLSBaseAddress = *(intptr_t*)(((uint8_t*)pTlsArrayData) + index.GetIndexOffset());
-// 7. If pointer is NULL jump to step 9 (if pTLSBaseAddress == NULL)
-// 8. Return pTLSBaseAddress
-// 9. Tail-call a helper (return GetThreadLocalStaticBase(index))
+// 7. If pointer is NULL jump to step 11 (if pTLSBaseAddress == NULL)
+// 8. If TLS index not a Collectible index, return pTLSBaseAddress
+// 9. if ObjectFromHandle((OBJECTHANDLE)pTLSBaseAddress) is NULL, jump to step 11
+// 10. Return ObjectFromHandle((OBJECTHANDLE)pTLSBaseAddress)
+// 11. Tail-call a helper (return GetThreadLocalStaticBase(index))
 //
 // In addition, we support accessing a TLS static that is directly on the ThreadLocalData structure. This is used for scenarios where the
 // runtime native code needs to share a TLS variable between native and managed code, and for the first few TLS slots that are used by non-collectible, non-GC statics.
@@ -74,8 +76,8 @@ struct ThreadLocalData
     int32_t cNonCollectibleTlsData; // Size of offset into the non-collectible TLS array which is valid, NOTE: this is relative to the start of the pNonCollectibleTlsArrayData object, not the start of the data in the array
     int32_t cCollectibleTlsData; // Size of offset into the TLS array which is valid
     PTR_Object pNonCollectibleTlsArrayData;
-    TADDR pCollectibleTlsArrayData; // Points at the Thread local array data.
-    Thread *pThread;
+    DPTR(OBJECTHANDLE) pCollectibleTlsArrayData; // Points at the Thread local array data.
+    PTR_Thread pThread;
     PTR_InFlightTLSData pInFlightData; // Points at the in-flight TLS data (TLS data that exists before the class constructor finishes running)
     TADDR ThreadBlockingInfo_First; // System.Threading.ThreadBlockingInfo.First, This starts the region of ThreadLocalData which is referenceable by TLSIndexType::DirectOnThreadLocalData
     BYTE ExtendedDirectThreadLocalTLSData[EXTENDED_DIRECT_THREAD_LOCAL_SIZE];
@@ -322,7 +324,7 @@ public:
 PTR_VOID GetThreadLocalStaticBaseNoCreate(Thread *pThreadLocalData, TLSIndex index);
 
 #ifndef DACCESS_COMPILE
-void ScanThreadStaticRoots(Thread* pThread, bool forGC, promote_func* fn, ScanContext* sc);
+void ScanThreadStaticRoots(Thread* pThread, promote_func* fn, ScanContext* sc);
 PTR_MethodTable LookupMethodTableForThreadStaticKnownToBeAllocated(TLSIndex index);
 void InitializeThreadStaticData();
 void InitializeCurrentThreadsStaticData(Thread* pThread);
@@ -334,7 +336,6 @@ void FreeTLSIndicesForLoaderAllocator(LoaderAllocator *pLoaderAllocator);
 void* GetThreadLocalStaticBase(TLSIndex index);
 void GetThreadLocalStaticBlocksInfo (CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo);
 bool CanJITOptimizeTLSAccess();
-void NotifyThreadStaticGCHappened();
 #else
 void EnumThreadMemoryRegions(ThreadLocalData* pThreadLocalData, CLRDataEnumMemoryFlags flags);
 #endif

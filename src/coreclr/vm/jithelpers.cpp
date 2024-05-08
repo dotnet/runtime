@@ -1430,8 +1430,12 @@ FORCEINLINE void* GetThreadLocalStaticBaseIfExistsAndInitialized(TLSIndex index)
             return NULL;
         }
 
-        TADDR pCollectibleTlsArrayData = t_ThreadStatics.pCollectibleTlsArrayData;
-        pTLSBaseAddress = *reinterpret_cast<TADDR*>(reinterpret_cast<uintptr_t*>(pCollectibleTlsArrayData) + index.GetIndexOffset());
+        OBJECTHANDLE* pCollectibleTlsArrayData = t_ThreadStatics.pCollectibleTlsArrayData;
+        pCollectibleTlsArrayData += index.GetIndexOffset();
+        OBJECTHANDLE objHandle = *pCollectibleTlsArrayData;
+        if (IsHandleNullUnchecked(objHandle))
+            return NULL;
+        pTLSBaseAddress = dac_cast<TADDR>(OBJECTREFToObject(ObjectFromHandle(objHandle)));
     }
     return reinterpret_cast<void*>(pTLSBaseAddress);
 }

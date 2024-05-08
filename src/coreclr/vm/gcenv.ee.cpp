@@ -302,19 +302,13 @@ void GCToEEInterface::GcScanRoots(promote_func* fn, int condemned, int max_gen, 
 #endif // FEATURE_EVENT_TRACE
             ScanStackRoots(pThread, fn, sc);
             ScanTailCallArgBufferRoots(pThread, fn, sc);
-            ScanThreadStaticRoots(pThread, /*forGC*/ true, fn, sc);
+            ScanThreadStaticRoots(pThread, fn, sc);
 #ifdef FEATURE_EVENT_TRACE
             sc->dwEtwRootKind = kEtwGCRootKindOther;
 #endif // FEATURE_EVENT_TRACE
 
             STRESS_LOG2(LF_GC | LF_GCROOTS, LL_INFO100, "Ending scan of Thread %p ID = 0x%x }\n", pThread, pThread->GetThreadId());
         }
-    }
-
-    if (sc->thread_number == 0 || !GCHeapUtilities::IsServerHeap())
-    {
-        // This function must be called once per run of calls to ScanThreadStaticRoots
-        NotifyThreadStaticGCHappened();
     }
 
     // In server GC, we should be competing for marking the statics
@@ -627,7 +621,7 @@ void GcScanRootsForProfilerAndETW(promote_func* fn, int condemned, int max_gen, 
 #endif // FEATURE_EVENT_TRACE
         ScanStackRoots(pThread, fn, sc);
         ScanTailCallArgBufferRoots(pThread, fn, sc);
-        ScanThreadStaticRoots(pThread, /*forGC*/ false, fn, sc);
+        ScanThreadStaticRoots(pThread, fn, sc);
 #ifdef FEATURE_EVENT_TRACE
         sc->dwEtwRootKind = kEtwGCRootKindOther;
 #endif // FEATURE_EVENT_TRACE
