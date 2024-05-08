@@ -2159,11 +2159,18 @@ GenTree* Lowering::LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cm
     //   node = *  HWINTRINSIC   simd   T op_Equality
 
     GenTree*     op1    = node->Op(1);
+    GenTree*     op1Msk = op1;
     GenTree*     op2    = node->Op(2);
     GenCondition cmpCnd = (cmpOp == GT_EQ) ? GenCondition::EQ : GenCondition::NE;
 
+    if (op1Msk->OperIsHWIntrinsic(NI_AVX512F_ConvertMaskToVector))
+    {
+        op1Msk = op1Msk->AsHWIntrinsic()->Op(1);
+        assert(varTypeIsMask(op1Msk));
+    }
+
     if (!varTypeIsFloating(simdBaseType) && (simdSize != 64) && op2->IsVectorZero() &&
-        comp->compOpportunisticallyDependsOn(InstructionSet_SSE41) && !varTypeIsMask(op1))
+        comp->compOpportunisticallyDependsOn(InstructionSet_SSE41) && !varTypeIsMask(op1Msk))
     {
         // On SSE4.1 or higher we can optimize comparisons against zero to
         // just use PTEST. We can't support it for floating-point, however,
@@ -2357,7 +2364,7 @@ GenTree* Lowering::LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cm
         // This works since the upper bits are implicitly zero and so by inverting matches also become
         // zero, which in turn means that `AllBitsSet` will become `Zero` and other cases become non-zero
 
-        if (varTypeIsMask(op1) && op2->IsCnsVec())
+        if (varTypeIsMask(op1Msk) && op2->IsCnsVec())
         {
             // We want to specially handle the common cases of `mask op Zero` and `mask op AllBitsSet`
             //
@@ -2366,15 +2373,7 @@ GenTree* Lowering::LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cm
             // simply consume the mask directly and preserve the intended comparison by tweaking the
             // compare condition passed down into `KORTEST`
 
-            if (op1->OperIsHWIntrinsic(NI_AVX512F_ConvertMaskToVector))
-            {
-                maskNode = op1->AsHWIntrinsic()->Op(1);
-            }
-            else
-            {
-                maskNode = op1;
-            }
-
+            maskNode = op1Msk;
             assert(maskNode->TypeIs(TYP_MASK));
 
             bool           isHandled = false;
@@ -2558,7 +2557,7 @@ GenTree* Lowering::LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cm
 
                 BlockRange().Remove(op2);
 
-                if (op1->OperIsHWIntrinsic(NI_AVX512F_ConvertMaskToVector))
+                if (op1Msk != op1)
                 {
                     BlockRange().Remove(op1);
                 }
