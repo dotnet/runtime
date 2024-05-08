@@ -498,7 +498,7 @@ extends:
           jobParameters:
             testScope: innerloop
             nameSuffix: CoreCLR_NonPortable
-            buildArgs: -s clr.native+clr.tools+clr.corelib+clr.nativecorelib+clr.aot+clr.packages -c $(_BuildConfig) /p:PortableBuild=false
+            buildArgs: -s clr.native+clr.tools+clr.corelib+clr.nativecorelib+clr.aot+clr.packages --outputrid tizen.9.0.0-armel -c $(_BuildConfig) /p:PortableBuild=false
             timeoutInMinutes: 120
             condition: >-
               or(
@@ -888,7 +888,6 @@ extends:
             - browser_wasm
             - browser_wasm_win
             - wasi_wasm
-            - wasi_wasm_win
           nameSuffix: _Smoke_AOT
           runAOT: true
           shouldRunSmokeOnly: true

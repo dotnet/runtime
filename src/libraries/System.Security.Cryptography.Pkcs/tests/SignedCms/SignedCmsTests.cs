@@ -562,7 +562,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
             Assert.NotSame(cms.Certificates[0], firstSigner.Certificate);
             Assert.Equal(cms.Certificates[0], firstSigner.Certificate);
 
-#if NETCOREAPP
+#if NET
             byte[] signature = firstSigner.GetSignature();
             Assert.NotEmpty(signature);
             // DSA PKIX signature format is a DER SEQUENCE.
@@ -581,7 +581,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
             Assert.Equal(identifierType, cms.SignerInfos[0].SignerIdentifier.Type);
             Assert.Equal(firstSigner.Certificate, cms.SignerInfos[0].Certificate);
 
-#if NETCOREAPP
+#if NET
             byte[] sig2 = cms.SignerInfos[0].GetSignature();
             Assert.Equal(signature, sig2);
 #endif
@@ -633,7 +633,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
             Assert.NotSame(cms.Certificates[0], firstSigner.Certificate);
             Assert.Equal(cms.Certificates[0], firstSigner.Certificate);
 
-#if NETCOREAPP
+#if NET
             byte[] signature = firstSigner.GetSignature();
             Assert.NotEmpty(signature);
             // ECDSA PKIX signature format is a DER SEQUENCE.
@@ -655,7 +655,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
             Assert.Equal(identifierType, cms.SignerInfos[0].SignerIdentifier.Type);
             Assert.Equal(firstSigner.Certificate, cms.SignerInfos[0].Certificate);
 
-#if NETCOREAPP
+#if NET
             byte[] sig2 = cms.SignerInfos[0].GetSignature();
             Assert.Equal(signature, sig2);
 #endif
@@ -1165,7 +1165,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
 
             // CheckSignature doesn't read the public mutable data
             contentInfo.Content[0] ^= 0xFF;
-#if !NETCOREAPP
+#if !NET
             contentInfo.ContentType.Value = Oids.Pkcs7Hashed;
 #endif
             cms.CheckSignature(true);

@@ -106,7 +106,7 @@ namespace Microsoft.Extensions.Caching.Memory
             }
         }
 
-#if NET6_0_OR_GREATER
+#if NET
         [Fact]
         public void GetCurrentStatistics_DIMReturnsNull()
         {
