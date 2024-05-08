@@ -27,7 +27,7 @@ typedef enum {
 #define is_page_free(state) (state & MWPM_FREE_BIT)
 #define is_page_owned(state) (state & MWPM_STATE_MASK)
 #define is_page_in_use(state) ((state & MWPM_STATE_MASK) == MWPM_ALLOCATED)
-#define get_page_skip_count(state) (state & MWPM_SKIP_MASK) + 1
+#define get_page_skip_count(state) (state & MWPM_SKIP_MASK)
 
 typedef uint8_t mwpm_page_state;
 
@@ -72,6 +72,22 @@ last_page_of_range (void *addr, size_t size) {
 	return first_page + page_count_rounded_up - 1;
 }
 
+static inline const char *
+get_state_name (uint8_t state) {
+	switch (state & MWPM_STATE_MASK) {
+		case MWPM_EXTERNAL:
+			return "external";
+		case MWPM_FREE_DIRTY:
+			return "dirty";
+		case MWPM_FREE_ZEROED:
+			return "zeroed";
+		case MWPM_ALLOCATED:
+			return "in use";
+		default:
+			g_assert_not_reached ();
+	}
+}
+
 static inline mwpm_page_state
 encode_page_state (uint8_t bits, uint32_t skip_count) {
 	// We encode state into the page table like so:
@@ -86,6 +102,32 @@ encode_page_state (uint8_t bits, uint32_t skip_count) {
 		skip_count = MWPM_SKIP_MASK;
 
 	return (bits & MWPM_STATE_MASK) | (skip_count & MWPM_SKIP_MASK);
+}
+
+static void
+cleanup_preceding_pages (uint32_t successor_page) {
+	uint32_t first_page = successor_page > 64
+		? successor_page - 64
+		: 0;
+
+	for (uint32_t i = first_page; i < successor_page; i++) {
+		mwpm_page_state page_state = page_table[i];
+		// for a skip_count of 0 we will skip exactly one page (otherwise we would
+		//  get stuck on pages with a 0 skip count). so the maximum skip value is
+		//  distance - 1 to produce an actual skip of distance pages
+		uint32_t maximum_skip_value = successor_page - i - 1;
+		if (maximum_skip_value > MWPM_SKIP_MASK)
+			maximum_skip_value = MWPM_SKIP_MASK;
+		if (get_page_skip_count (page_state) <= maximum_skip_value)
+			continue;
+
+		g_print (
+			"Repairing invalid skip value in predecessor page %u: %s %u -> %u\n",
+			i, get_state_name (page_state), get_page_skip_count (page_state),
+			maximum_skip_value
+		);
+		page_table[i] = encode_page_state (page_state & MWPM_STATE_MASK, maximum_skip_value);
+	}
 }
 
 static void
@@ -138,6 +180,9 @@ transition_page_states (page_action action, uint32_t first_page, uint32_t page_c
 				break;
 		}
 	}
+
+	if (action == MWPM_ALLOCATED_TO_FREE)
+		cleanup_preceding_pages (first_page);
 }
 
 static void
@@ -180,16 +225,20 @@ static void *
 acquire_new_pages_initialized (uint32_t page_count) {
 	if (page_count < 1)
 		return NULL;
+	// Pad the allocation with an extra page, this will create waste bytes at the
+	//  start and end we can use to align the resulting allocation. We will try
+	//  to recover the waste if possible
 	uint64_t bytes = (page_count + 1) * MWPM_PAGE_SIZE;
 	uint32_t recovered_bytes = 0;
 	if (bytes >= UINT32_MAX)
 		return NULL;
-	// We know that on WASM, sbrk grows the heap by a set number of pages,
-	//  and returns the start of the new allocation.
+
+	// We know that on WASM, sbrk grows the heap as necessary in order to return,
+	//  a region of N zeroed bytes, which isn't necessarily aligned or page-sized
 	uint8_t *allocation = sbrk ((uint32_t)bytes),
 		*allocation_end = allocation + bytes;
 
-	if (!allocation || (allocation == (uint8_t *)-1)) {
+	if (allocation == (uint8_t *)-1) {
 #ifdef MWPM_LOGGING
 		g_print ("mwpm failed to acquire memory\n");
 #endif
@@ -252,22 +301,6 @@ free_pages_initialized (uint32_t first_page, uint32_t page_count) {
 	transition_page_states (MWPM_ALLOCATED_TO_FREE, first_page, page_count);
 }
 
-static inline const char *
-get_state_name (uint8_t state) {
-	switch (state & MWPM_STATE_MASK) {
-		case MWPM_EXTERNAL:
-			return "external";
-		case MWPM_FREE_DIRTY:
-			return "dirty";
-		case MWPM_FREE_ZEROED:
-			return "zeroed";
-		case MWPM_ALLOCATED:
-			return "in use";
-		default:
-			g_assert_not_reached ();
-	}
-}
-
 static uint32_t
 find_n_free_pages_in_range (uint32_t start_scan_where, uint32_t end_scan_where, uint32_t page_count) {
 	if (page_count == 0)
@@ -281,6 +314,31 @@ find_n_free_pages_in_range (uint32_t start_scan_where, uint32_t end_scan_where, 
 		if (j > last_controlled_page_index)
 			break;
 
+		// Avoid worst case scenario of starting on an occupied page, then scanning
+		//  backwards through a bunch of free pages to arrive at the occupied one
+		mwpm_page_state page_state = page_table[i];
+		if (!is_page_free (page_state)) {
+			uint32_t skip_count = get_page_skip_count (page_state) + 1;
+			if (skip_count < 1)
+				skip_count = 1;
+			i += skip_count;
+
+#ifdef ENABLE_CHECKED_BUILD
+			g_assert (!is_page_free (page_table[i - 1]));
+#endif
+
+#ifdef MWPM_LOGGING
+			if (skip_count > 1)
+				g_print (
+					"scan skipping %u %s page(s) (head); new page is #%u with state %s\n",
+					skip_count, get_state_name (page_state),
+					i, get_state_name (page_table[i])
+				);
+#endif
+
+			continue;
+		}
+
 		// TODO: If we find a free page with a skip count in it, that would indicate
 		//  that there are N sequential free pages left we can claim without doing
 		//  the scan below.
@@ -288,16 +346,23 @@ find_n_free_pages_in_range (uint32_t start_scan_where, uint32_t end_scan_where, 
 		// Scan backwards from the last candidate page to look for any non-free pages
 		//  the first non-free page we find is the next place we will search from.
 		for (; j >= i; j--) {
-			mwpm_page_state page_state = page_table[j];
+			page_state = page_table[j];
 
 			if (!is_page_free (page_state)) {
 				// Skip multiple pages
-				uint32_t skip_count = get_page_skip_count (page_state);
+				uint32_t skip_count = get_page_skip_count (page_state) + 1;
+				if (skip_count < 1)
+					skip_count = 1;
 				i = j + skip_count;
+
+#ifdef ENABLE_CHECKED_BUILD
+				g_assert (!is_page_free (page_table[i - 1]));
+#endif
+
 #ifdef MWPM_LOGGING
 				if (skip_count > 1)
 					g_print (
-						"scan skipping %u %s page(s); new page is #%u with state %s\n",
+						"scan skipping %u %s page(s) (tail); new page is #%u with state %s\n",
 						skip_count, get_state_name (page_state),
 						i, get_state_name (page_table[i])
 					);
