@@ -4018,7 +4018,7 @@ public:
     static void StaticInitialize();
 
 #if defined(TARGET_WINDOWS)
-    static bool AreCetShadowStacksEnabled()
+    static bool AreShadowStacksEnabled()
     {
         LIMITED_METHOD_CONTRACT;
 
@@ -4028,7 +4028,7 @@ public:
         // same from any thread.
         return _rdsspq() != 0;
 #else
-        // When implementing AreCetShadowStacksEnabled() on other architectures, review all the places where this is used.
+        // When implementing AreShadowStacksEnabled() on other architectures, review all the places where this is used.
         return false;
 #endif
     }

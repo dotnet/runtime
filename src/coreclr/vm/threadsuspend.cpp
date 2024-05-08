@@ -6063,7 +6063,7 @@ void ThreadSuspend::Initialize()
 #if defined(TARGET_UNIX)
     ::PAL_SetActivationFunction(HandleSuspensionForInterruptedThread, CheckActivationSafePoint);
 #elif defined(TARGET_WINDOWS)
-    if (Thread::AreCetShadowStacksEnabled())
+    if (Thread::AreShadowStacksEnabled())
     {
         HMODULE hModNtdll = WszLoadLibrary(W("ntdll.dll"));
         if (hModNtdll != NULL)

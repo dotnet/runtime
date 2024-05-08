@@ -6778,8 +6778,8 @@ VEH_ACTION WINAPI CLRVectoredExceptionHandler(PEXCEPTION_POINTERS pExceptionInfo
         hijackArgs.Rax = pExceptionInfo->ContextRecord->Rax;
         hijackArgs.Rsp = pExceptionInfo->ContextRecord->Rsp;
 
-        bool areCetShadowStacksEnabled = Thread::AreCetShadowStacksEnabled();
-        if (areCetShadowStacksEnabled)
+        bool areShadowStacksEnabled = Thread::AreShadowStacksEnabled();
+        if (areShadowStacksEnabled)
         {
             // When the CET is enabled, the return address is still on stack, so we need to set the Rsp as
             // if it was popped.
@@ -6797,7 +6797,7 @@ VEH_ACTION WINAPI CLRVectoredExceptionHandler(PEXCEPTION_POINTERS pExceptionInfo
         #undef CALLEE_SAVED_REGISTER
         pExceptionInfo->ContextRecord->Rax = hijackArgs.Rax;
 
-        if (areCetShadowStacksEnabled)
+        if (areShadowStacksEnabled)
         {
             // The context refers to the return instruction
             // Set the return address on the stack to the original one

@@ -8199,7 +8199,7 @@ void Thread::StaticInitialize()
     InitializeSpecialUserModeApc();
 
     // When CET shadow stacks are enabled, support for special user-mode APCs with the necessary functionality is required
-    _ASSERTE_ALL_BUILDS(!AreCetShadowStacksEnabled() || UseSpecialUserModeApc());
+    _ASSERTE_ALL_BUILDS(!AreShadowStacksEnabled() || UseSpecialUserModeApc());
 #endif
 }
 
