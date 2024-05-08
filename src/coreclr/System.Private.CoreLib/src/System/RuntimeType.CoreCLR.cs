@@ -1454,10 +1454,8 @@ namespace System
             private static CerHashtable<RuntimeMethodInfo, RuntimeMethodInfo> s_methodInstantiations;
             private static object? s_methodInstantiationsLock;
             private string? m_defaultMemberName;
-            // Generic cache for rare scenario specific data. Used for:
-            // - Enum names and values (EnumInfo)
-            // - Activator.CreateInstance (ActivatorCache)
-            // - Array.Initialize (ArrayInitializeCache)
+            // Generic cache for rare scenario specific data.
+            // See IGenericCacheEntry for more information.
             private object? m_genericCache;
             private object[]? _emptyArray; // Object array cache for Attribute.GetCustomAttributes() pathological no-result case.
             private RuntimeType? _genericTypeDefinition;
