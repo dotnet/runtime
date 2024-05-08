@@ -42,6 +42,7 @@ namespace test2
         /// The main entry point for the application.
         /// </summary>
         [Fact]
+        [OuterLoop]
         public static int TestEntryPoint()
         {
             int[] ar = new int[] { 1, 2, 3, 4, 5 };

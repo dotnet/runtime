@@ -1140,17 +1140,15 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			{
 				public static RequiresAll<T> field;
 
-				// https://github.com/dotnet/linker/issues/3142
 				// Instance fields get generic warnings but static fields don't.
-				[ExpectedWarning ("IL2091", Tool.Trimmer, "")]
+				[UnexpectedWarning ("IL2091", Tool.Trimmer, "https://github.com/dotnet/linker/issues/3142")]
 				public RequiresAll<T> instanceField;
 
 				[RequiresOnCtor]
 				public static int fieldWithAttribute;
 
-				// https://github.com/dotnet/linker/issues/3140
 				// Instance fields get attribute warnings but static fields don't.
-				[ExpectedWarning ("IL2026", "--RequiresOnCtorAttribute--", Tool.Trimmer, "")]
+				[ExpectedWarning ("IL2026", "--RequiresOnCtorAttribute--", Tool.Trimmer, "https://github.com/dotnet/linker/issues/3140")]
 				[RequiresOnCtor]
 				public int instanceFieldWithAttribute;
 
@@ -1183,23 +1181,20 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			}
 
 			// This warning should ideally be suppressed by the RUC on the type:
-			// https://github.com/dotnet/linker/issues/3142
-			[ExpectedWarning ("IL2091")]
+			[UnexpectedWarning ("IL2091", Tool.TrimmerAnalyzerAndNativeAot, "https://github.com/dotnet/linker/issues/3142")]
 			[RequiresUnreferencedCode ("--GenericClassWithWarningWithRequires--")]
 			public class GenericClassWithWarningWithRequires<U> : RequiresAll<U>
 			{
 			}
 
 			// This warning should ideally be suppressed by the RUC on the type:
-			// https://github.com/dotnet/linker/issues/3142
-			[ExpectedWarning ("IL2091")]
+			[UnexpectedWarning ("IL2091", Tool.TrimmerAnalyzerAndNativeAot, "https://github.com/dotnet/linker/issues/3142")]
 			[RequiresUnreferencedCode ("--ClassWithWarningWithRequires--")]
 			public class ClassWithWarningWithRequires : RequiresAll<T>
 			{
 			}
 
-			// https://github.com/dotnet/linker/issues/3142
-			[ExpectedWarning ("IL2091")]
+			[UnexpectedWarning ("IL2091", Tool.TrimmerAnalyzerAndNativeAot, "https://github.com/dotnet/linker/issues/3142")]
 			[RequiresUnreferencedCode ("--GenericAnnotatedWithWarningWithRequires--")]
 			public class GenericAnnotatedWithWarningWithRequires<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] TFields> : RequiresAll<TFields>
 			{

@@ -701,18 +701,16 @@ namespace Mono.Linker.Tests.Cases.Reflection
 				[Kept]
 				[KeptAttributeAttribute (typeof (RequiresUnreferencedCodeAttribute))]
 				[RequiresUnreferencedCode ("--RUCOnVirtualMethodDerivedAnnotated.Base.RUCVirtualMethod--")]
-				// https://github.com/dotnet/runtime/issues/86580
 				// Compare to the case above - the only difference is the type of the field
 				// and it causes different warnings to be produced.
-				// [ExpectedSharedWarning ("IL2112", "--RUCOnVirtualMethodDerivedAnnotated.Base.RUCVirtualMethod--")]
+				[ExpectedWarning ("IL2112", "--RUCOnVirtualMethodDerivedAnnotated.Base.RUCVirtualMethod--", Tool.None, "https://github.com/dotnet/runtime/issues/86580")]
 				public virtual void RUCVirtualMethod () { }
 			}
 
 			[Kept]
 			[KeptMember (".ctor()")]
 			[KeptBaseType (typeof (Base))]
-			// https://github.com/dotnet/runtime/issues/86580
-			[ExpectedWarning ("IL2113", "--RUCOnVirtualMethodDerivedAnnotated.Base.RUCVirtualMethod--", Tool.Trimmer, "")]
+			[UnexpectedWarning ("IL2113", "--RUCOnVirtualMethodDerivedAnnotated.Base.RUCVirtualMethod--", Tool.Trimmer, "https://github.com/dotnet/runtime/issues/86580")]
 			public class Derived : Base
 			{
 				[Kept]
@@ -755,8 +753,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			[Kept]
 			[KeptBaseType (typeof (AnnotatedBase))]
 			[KeptMember (".ctor()")]
-			// https://github.com/dotnet/runtime/issues/86580
-			[ExpectedWarning ("IL2113", "--AnnotatedBase.VirtualMethodWithRequires--", Tool.Trimmer, "")]
+			[UnexpectedWarning ("IL2113", "--AnnotatedBase.VirtualMethodWithRequires--", Tool.Trimmer, "https://github.com/dotnet/runtime/issues/86580")]
 			class Derived : AnnotatedBase
 			{
 				[Kept]
