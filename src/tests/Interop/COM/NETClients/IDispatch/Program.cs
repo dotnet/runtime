@@ -215,6 +215,67 @@ namespace NetClient
             }
         }
 
+        static void Validate_ValueCoerce_ReturnToManaged()
+        {
+            var dispatchCoerceTesting = (DispatchCoerceTesting)new DispatchCoerceTestingClass();
+
+            Console.WriteLine($"Calling {nameof(DispatchCoerceTesting.ReturnToManaged)} ...");
+
+            // Supported types
+            // See returned values in DispatchCoerceTesting.h
+            (VarEnum type, int expectedValue)[] supportedTypes =
+            {
+                (VarEnum.VT_EMPTY, 0),
+                (VarEnum.VT_I2, 123),
+                (VarEnum.VT_I4, 123),
+                (VarEnum.VT_R4, 1),
+                (VarEnum.VT_R8, 1),
+                (VarEnum.VT_CY, 123),
+                (VarEnum.VT_DATE, 1),
+                (VarEnum.VT_BSTR, 123),
+                (VarEnum.VT_ERROR, 123),
+                (VarEnum.VT_BOOL, -1),
+                (VarEnum.VT_DECIMAL, 123),
+            };
+
+            foreach (var (vt, expected) in supportedTypes)
+            {
+                Console.WriteLine($"Converting {vt} to int should be supported.");
+                int result = dispatchCoerceTesting.ReturnToManaged((short)vt);
+                Assert.Equal(expected, result);
+            }
+
+            // Invalid: Rejected before reaching coerce
+            Console.WriteLine("Invalid variant type should throw InvalidOleVariantTypeException.");
+            var variantException = Assert.Throws<InvalidOleVariantTypeException>(() => dispatchCoerceTesting.ReturnToManaged(0x7FFF));
+            Assert.Equal(unchecked((int)0x80131531), variantException.HResult);
+
+            // Not supported source or destination type: COMException { HResult: 0x80020005 }
+
+            // DISP_E_PARAMNOTFOUND: Converts to Missing
+            Console.WriteLine("Converting from VT_ERROR with DISP_E_PARAMNOTFOUND should be rejected.");
+            var comException = Assert.Throws<COMException>(() => dispatchCoerceTesting.ReturnToManaged(unchecked((short)((short)VarEnum.VT_ERROR | 0x8000))));
+            Assert.Equal(unchecked((int)0x80020005), comException.HResult);
+
+            Console.WriteLine("Converting int to VT_MISSING should be rejected.");
+            comException = Assert.Throws<COMException>(() => dispatchCoerceTesting.ReturnToManaged_Missing());
+            Assert.Equal(unchecked((int)0x80020005), comException.HResult);
+
+            Console.WriteLine("Converting int to VT_NULL should be rejected.");
+            comException = Assert.Throws<COMException>(() => dispatchCoerceTesting.ReturnToManaged_DBNull());
+            Assert.Equal(unchecked((int)0x80020005), comException.HResult);
+
+            // Rejected by VariantChangeTypeEx
+            Console.WriteLine("Converting VT_UNKNOWN to int should fail from VariantChangeTypeEx.");
+            Assert.Throws<InvalidCastException>(() => dispatchCoerceTesting.ReturnToManaged((short)VarEnum.VT_UNKNOWN));
+            Console.WriteLine("Converting VT_NULL to int should fail from VariantChangeTypeEx.");
+            Assert.Throws<InvalidCastException>(() => dispatchCoerceTesting.ReturnToManaged((short)VarEnum.VT_NULL));
+
+            // LOCAL_BOOL
+            Console.WriteLine("VARIANT_BOOL should convert to non-numeric string.");
+            Assert.Equal("True", dispatchCoerceTesting.BoolToString());
+        }
+
         [Fact]
         public static int TestEntryPoint()
         {
@@ -233,6 +294,7 @@ namespace NetClient
                 Validate_StructNotSupported();
                 Validate_LCID_Marshaled();
                 Validate_Enumerator();
+                Validate_ValueCoerce_ReturnToManaged();
             }
             catch (Exception e)
             {

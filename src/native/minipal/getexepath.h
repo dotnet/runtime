@@ -37,7 +37,11 @@ static inline char* minipal_getexepath(void)
         return NULL;
     }
 
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Walloca"
     char* path_buf = (char*)alloca(path_length);
+#pragma clang diagnostic pop
+
     if (_NSGetExecutablePath(path_buf, &path_length) != 0)
     {
         errno = EINVAL;
