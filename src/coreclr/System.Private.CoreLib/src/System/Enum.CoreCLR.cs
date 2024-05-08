@@ -105,7 +105,7 @@ namespace System
 
         internal sealed partial class EnumInfo<TStorage> : RuntimeType.IGenericCacheEntry<EnumInfo<TStorage>>
         {
-            public static RuntimeType.IGenericCacheEntry.GenericCacheKind Kind => RuntimeType.IGenericCacheEntry.GenericCacheKind.EnumInfo;
+            static RuntimeType.IGenericCacheEntry.GenericCacheKind RuntimeType.IGenericCacheEntry.Kind => RuntimeType.IGenericCacheEntry.GenericCacheKind.EnumInfo;
 
             [MethodImpl(MethodImplOptions.NoInlining)]
             public static EnumInfo<TStorage> CreateWithNames(RuntimeType type)

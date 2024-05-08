@@ -1509,7 +1509,7 @@ namespace System
 
             private sealed class FunctionPointerCache : IGenericCacheEntry<FunctionPointerCache>
             {
-                public static IGenericCacheEntry.GenericCacheKind Kind => IGenericCacheEntry.GenericCacheKind.FunctionPointer;
+                static IGenericCacheEntry.GenericCacheKind IGenericCacheEntry.Kind => IGenericCacheEntry.GenericCacheKind.FunctionPointer;
 
                 public Type[] FunctionPointerReturnAndParameterTypes { get; }
 

@@ -14,7 +14,7 @@ namespace System
         /// </summary>
         private sealed unsafe partial class CreateUninitializedCache : IGenericCacheEntry<CreateUninitializedCache>
         {
-            public static IGenericCacheEntry.GenericCacheKind Kind => IGenericCacheEntry.GenericCacheKind.CreateUninitialized;
+            static IGenericCacheEntry.GenericCacheKind IGenericCacheEntry.Kind => IGenericCacheEntry.GenericCacheKind.CreateUninitialized;
             public static CreateUninitializedCache Create(RuntimeType type) => new CreateUninitializedCache(type);
 
             // The managed calli to the newobj allocator, plus its first argument (MethodTable*).

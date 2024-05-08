@@ -28,7 +28,7 @@ namespace System
             private readonly RuntimeType _originalRuntimeType;
 #endif
 
-            public static IGenericCacheEntry.GenericCacheKind Kind => IGenericCacheEntry.GenericCacheKind.Activator;
+            static IGenericCacheEntry.GenericCacheKind IGenericCacheEntry.Kind => IGenericCacheEntry.GenericCacheKind.Activator;
 
             public static ActivatorCache Create(RuntimeType type) => new ActivatorCache(type);
 

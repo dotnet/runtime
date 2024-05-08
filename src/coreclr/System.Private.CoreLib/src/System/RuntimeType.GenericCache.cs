@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -17,68 +18,56 @@ namespace System
             /// <summary>
             /// The different kinds of entries that can be stored in <see cref="RuntimeType.GenericCache"/>.
             /// </summary>
-            public enum GenericCacheKind
+            protected enum GenericCacheKind
             {
                 ArrayInitialize,
                 EnumInfo,
                 Activator,
                 CreateUninitialized,
-                FunctionPointer
+                FunctionPointer,
+                /// <summary>
+                /// The number of different kinds of cache entries. This should always be the last entry.
+                /// </summary>
+                Count
             }
 
-            public abstract GenericCacheKind CacheKind { get; }
+            protected abstract GenericCacheKind CacheKind { get; }
 
-            public static abstract GenericCacheKind Kind { get; }
+            protected static abstract GenericCacheKind Kind { get; }
 
             /// <summary>
             /// A composite cache entry that can store multiple cache entries of different kinds.
             /// </summary>
-            /// <remarks>
-            /// For better performance, each entry is stored as a separate field instead of something like a dictionary.
-            /// </remarks>
-            protected sealed class CompositeCacheEntry
+            [InlineArray((int)GenericCacheKind.Count)]
+            protected struct CompositeCacheEntry
             {
-                private IGenericCacheEntry? _arrayInitializeCache;
-                private IGenericCacheEntry? _enumInfoCache;
-                private IGenericCacheEntry? _activatorCache;
-                private IGenericCacheEntry? _createUninitializedCache;
-                private IGenericCacheEntry? _functionPointerCache;
+                // Typed as object as interfaces with static abstracts can't be
+                // used directly as generic types.
+                private object? _field;
 
-                private ref IGenericCacheEntry? GetCacheFieldForKind(IGenericCacheEntry.GenericCacheKind kind)
+                [UnscopedRef]
+                private ref object? GetCacheFieldForKind(IGenericCacheEntry.GenericCacheKind kind)
                 {
-                    switch (kind)
-                    {
-                        case IGenericCacheEntry.GenericCacheKind.ArrayInitialize:
-                            return ref _arrayInitializeCache;
-                        case IGenericCacheEntry.GenericCacheKind.EnumInfo:
-                            return ref _enumInfoCache;
-                        case IGenericCacheEntry.GenericCacheKind.Activator:
-                            return ref _activatorCache;
-                        case IGenericCacheEntry.GenericCacheKind.CreateUninitialized:
-                            return ref _createUninitializedCache;
-                        case IGenericCacheEntry.GenericCacheKind.FunctionPointer:
-                            return ref _functionPointerCache;
-                        default:
-                            throw new ArgumentOutOfRangeException(nameof(kind));
-                    }
+                    Span<object?> entries = this;
+                    return ref entries[(int)kind];
                 }
 
                 public static CompositeCacheEntry Create(IGenericCacheEntry cache)
                 {
-                    var composite = new CompositeCacheEntry();
+                    CompositeCacheEntry composite = default;
                     composite.GetCacheFieldForKind(cache.CacheKind) = cache;
                     return composite;
                 }
 
                 public IGenericCacheEntry GetNestedCache(IGenericCacheEntry.GenericCacheKind kind)
                 {
-                    return GetCacheFieldForKind(kind)!;
+                    return (IGenericCacheEntry)GetCacheFieldForKind(kind)!;
                 }
 
                 public IGenericCacheEntry OverwriteNestedCache<T>(T cache)
                     where T : IGenericCacheEntry
                 {
-                    return GetCacheFieldForKind(T.Kind) = cache;
+                    return (IGenericCacheEntry)(GetCacheFieldForKind(T.Kind) = cache);
                 }
             }
         }
@@ -103,9 +92,9 @@ namespace System
                     type.GenericCache = newCache;
                     return newCache;
                 }
-                else if (type.GenericCache is IGenericCacheEntry existing && existing.CacheKind == TCache.Kind)
+                else if (type.GenericCache is TCache existing)
                 {
-                    return (TCache)type.GenericCache;
+                    return existing;
                 }
 
                 if (type.GenericCache is not CompositeCacheEntry composite)
@@ -129,9 +118,9 @@ namespace System
                 {
                     return null;
                 }
-                else if (type.GenericCache is IGenericCacheEntry existing && existing.CacheKind == TCache.Kind)
+                else if (type.GenericCache is TCache existing)
                 {
-                    return (TCache)type.GenericCache;
+                    return existing;
                 }
                 else if (type.GenericCache is CompositeCacheEntry composite)
                 {
@@ -150,7 +139,7 @@ namespace System
                     type.GenericCache = cache;
                     return;
                 }
-                else if (type.GenericCache is IGenericCacheEntry existing && existing.CacheKind == TCache.Kind)
+                else if (type.GenericCache is TCache)
                 {
                     type.GenericCache = cache;
                     return;
