@@ -77,27 +77,14 @@ namespace System.ComponentModel
         /// to the corresponding property on the object. If there is no matching
         /// property the resource will be ignored.
         /// </summary>
-        public virtual void ApplyResources<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>(T value, string objectName, CultureInfo? culture)
-        {
-            ArgumentNullException.ThrowIfNull(value);
-            ArgumentNullException.ThrowIfNull(objectName);
-
-            if (typeof(T) == typeof(object))
-            {
-                throw new ArgumentException("todo: The T parameter cannot be the System.Object type.", nameof(value));
-            }
-
-            ApplyResources(value, typeof(T), objectName, culture);
-        }
-
         public virtual void ApplyResourcesToRegisteredType(object value, string objectName, CultureInfo? culture)
         {
             ArgumentNullException.ThrowIfNull(value);
             ArgumentNullException.ThrowIfNull(objectName);
 
-            // todo: validate object is a known type.
-
-            ApplyResources(value, value.GetType(), objectName, culture);
+            Type typeFromValue = value.GetType();
+            TypeDescriptor.ValidateRegisteredType(typeFromValue);
+            ApplyResources(value, typeFromValue, objectName, culture);
         }
 
         private void ApplyResources(object value, Type typeFromValue, string objectName, CultureInfo? culture)

@@ -245,7 +245,6 @@ namespace System.ComponentModel
         public void ApplyResources(object value, string objectName) { }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The Type of value cannot be statically discovered.")]
         public virtual void ApplyResources(object value, string objectName, System.Globalization.CultureInfo? culture) { }
-        public virtual void ApplyResources<[System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)] T>(T value, string objectName, System.Globalization.CultureInfo? culture) { }
         public virtual void ApplyResourcesToRegisteredType(object value, string objectName, System.Globalization.CultureInfo? culture) { }
     }
     public partial class Container : System.ComponentModel.IContainer, System.IDisposable
@@ -309,7 +308,7 @@ namespace System.ComponentModel
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("PropertyDescriptor's PropertyType cannot be statically discovered. The public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type.")]
         public virtual System.ComponentModel.PropertyDescriptorCollection GetProperties(System.Attribute[]? attributes) { throw null; }
         public virtual object? GetPropertyOwner(System.ComponentModel.PropertyDescriptor? pd) { throw null; }
-        public virtual bool SupportsRegisteredTypes { get { throw null; } }
+        public virtual bool? RequireRegisteredTypes { get { throw null; } }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Class)]
     public sealed partial class DataObjectAttribute : System.Attribute
@@ -607,7 +606,7 @@ namespace System.ComponentModel
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("PropertyDescriptor's PropertyType cannot be statically discovered. The public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type.")]
         System.ComponentModel.PropertyDescriptorCollection GetProperties(System.Attribute[]? attributes);
         System.ComponentModel.PropertyDescriptorCollection GetPropertiesFromRegisteredType() { throw null; }
-        bool SupportsRegisteredTypes => throw null!;
+        bool? RequireRegisteredTypes => throw null!;
         object? GetPropertyOwner(System.ComponentModel.PropertyDescriptor? pd);
     }
     public partial interface IDataErrorInfo
@@ -1398,7 +1397,7 @@ namespace System.ComponentModel
         protected TypeDescriptionProvider() { }
         protected TypeDescriptionProvider(System.ComponentModel.TypeDescriptionProvider parent) { }
         public virtual void RegisterType<[System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicFields | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.Interfaces | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicProperties | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicMethods | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicEvents)] T>() { }
-        public virtual bool SupportsRegisteredTypes { get { throw null; } }
+        public virtual bool? RequireRegisteredTypes { get { throw null; } }
         public virtual object? CreateInstance(System.IServiceProvider? provider, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)] System.Type objectType, System.Type[]? argTypes, object?[]? args) { throw null; }
         public virtual System.Collections.IDictionary? GetCache(object instance) { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The Type of instance cannot be statically discovered.")]
@@ -1419,6 +1418,8 @@ namespace System.ComponentModel
         public System.ComponentModel.ICustomTypeDescriptor? GetTypeDescriptor([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)] System.Type objectType) { throw null; }
         public virtual System.ComponentModel.ICustomTypeDescriptor? GetTypeDescriptor([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)] System.Type objectType, object? instance) { throw null; }
         public System.ComponentModel.ICustomTypeDescriptor? GetTypeDescriptorFromRegisteredType(object instance) { throw null; }
+        public System.ComponentModel.ICustomTypeDescriptor? GetTypeDescriptorFromRegisteredType(Type objectType) { throw null; }
+        public virtual System.ComponentModel.ICustomTypeDescriptor? GetTypeDescriptorFromRegisteredType(Type objectType, object? instance) { throw null; }
         public virtual bool IsRegisteredType(System.Type type) { throw null; }
         public virtual bool IsSupportedType(System.Type type) { throw null; }
     }

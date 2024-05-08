@@ -63,14 +63,16 @@ namespace System.ComponentModel
                 return _parent.GetAttributesFromRegisteredType();
             }
 
-            if (SupportsRegisteredTypes)
+            if (RequireRegisteredTypes is null)
             {
-                return AttributeCollection.Empty;
+                if (TypeDescriptor.RequireRegisteredTypes)
+                {
+                    TypeDescriptor.ThrowHelper.ThrowNotSupportedException_RegisteredTypeMemberCalledOnLegacyProvider(nameof(GetAttributesFromRegisteredType));
+                }
             }
-
-            if (TypeDescriptor.IsTrimmable)
+            else if (RequireRegisteredTypes == true)
             {
-                TypeDescriptor.ThrowHelper.ThrowNotSupportedException_RegisteredTypeMemberCalledOnLegacyProvider(nameof(GetAttributesFromRegisteredType));
+                throw new NotImplementedException();
             }
 
             return GetAttributes();
@@ -116,20 +118,22 @@ namespace System.ComponentModel
                 return _parent.GetConverterFromRegisteredType();
             }
 
-            if (SupportsRegisteredTypes)
+            if (RequireRegisteredTypes is null)
             {
-                return new TypeConverter(); // todo: add SupportsRegisteredTypes property?
+                if (TypeDescriptor.RequireRegisteredTypes)
+                {
+                    TypeDescriptor.ThrowHelper.ThrowNotSupportedException_RegisteredTypeMemberCalledOnLegacyProvider(nameof(GetConverterFromRegisteredType));
+                }
             }
-
-            if (TypeDescriptor.IsTrimmable)
+            else if (RequireRegisteredTypes == true)
             {
-                TypeDescriptor.ThrowHelper.ThrowNotSupportedException_RegisteredTypeMemberCalledOnLegacyProvider(nameof(GetConverterFromRegisteredType));
+                throw new NotImplementedException();
             }
 
             return FallBackToLegacyProvider();
 
             [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-                Justification = "Chaining from known type provider to legacy provider is supported when TypeDescriptor.IsTrimmable is false.")]
+                Justification = "Chaining from registered type provider to legacy provider is supported when TypeDescriptor.RequireRegisteredTypes is false.")]
             TypeConverter? FallBackToLegacyProvider() => GetConverter();
         }
 
@@ -203,14 +207,16 @@ namespace System.ComponentModel
                 return _parent.GetEventsFromRegisteredType();
             }
 
-            if (SupportsRegisteredTypes)
+            if (RequireRegisteredTypes is null)
             {
-                return EventDescriptorCollection.Empty;
+                if (TypeDescriptor.RequireRegisteredTypes)
+                {
+                    TypeDescriptor.ThrowHelper.ThrowNotSupportedException_RegisteredTypeMemberCalledOnLegacyProvider(nameof(GetEventsFromRegisteredType));
+                }
             }
-
-            if (TypeDescriptor.IsTrimmable)
+            else if (RequireRegisteredTypes == true)
             {
-                TypeDescriptor.ThrowHelper.ThrowNotSupportedException_RegisteredTypeMemberCalledOnLegacyProvider(nameof(GetEventsFromRegisteredType));
+                throw new NotImplementedException();
             }
 
             return GetEvents();
@@ -248,20 +254,22 @@ namespace System.ComponentModel
                 return _parent.GetPropertiesFromRegisteredType();
             }
 
-            if (SupportsRegisteredTypes)
+            if (RequireRegisteredTypes is null)
             {
-                return PropertyDescriptorCollection.Empty;
+                if (TypeDescriptor.RequireRegisteredTypes)
+                {
+                    TypeDescriptor.ThrowHelper.ThrowNotSupportedException_RegisteredTypeMemberCalledOnLegacyProvider(nameof(GetPropertiesFromRegisteredType));
+                }
             }
-
-            if (TypeDescriptor.IsTrimmable)
+            else if (RequireRegisteredTypes == true)
             {
-                TypeDescriptor.ThrowHelper.ThrowNotSupportedException_RegisteredTypeMemberCalledOnLegacyProvider(nameof(GetPropertiesFromRegisteredType));
+                throw new NotImplementedException();
             }
 
             return FallBackToLegacyProvider();
 
             [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-                Justification = "Chaining from known type provider to legacy provider is supported when TypeDescriptor.IsTrimmable is false.")]
+                Justification = "Chaining from registered type provider to legacy provider is supported when TypeDescriptor.RequireRegisteredTypes is false.")]
             PropertyDescriptorCollection FallBackToLegacyProvider() => GetProperties();
         }
 
@@ -295,13 +303,13 @@ namespace System.ComponentModel
         /// <summary>
         /// todo
         /// </summary>
-        public virtual bool SupportsRegisteredTypes
+        public virtual bool? RequireRegisteredTypes
         {
             get
             {
                 if (_parent != null)
                 {
-                    return _parent.SupportsRegisteredTypes;
+                    return _parent.RequireRegisteredTypes;
                 }
 
                 return false;

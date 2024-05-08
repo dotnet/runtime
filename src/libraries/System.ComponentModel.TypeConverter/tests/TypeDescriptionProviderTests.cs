@@ -49,7 +49,7 @@ namespace System.ComponentModel.Tests
                 .Returns(result)
                 .Verifiable();
             mockParentProvider
-                .Setup(p => p.SupportsRegisteredTypes)
+                .Setup(p => p.RequireRegisteredTypes)
                 .CallBase();
             var provider = new SubTypeDescriptionProvider(mockParentProvider.Object);
             Assert.Same(result, provider.CreateInstance(serviceProvider, objectType, argTypes, args));
@@ -602,7 +602,7 @@ namespace System.ComponentModel.Tests
                 .Setup(p => p.GetTypeDescriptor(objectType, null))
                 .CallBase();
             mockProvider
-                .Setup(p => p.SupportsRegisteredTypes)
+                .Setup(p => p.RequireRegisteredTypes)
                 .CallBase();
             TypeDescriptionProvider provider = mockProvider.Object;
             CustomTypeDescriptor result1 = Assert.IsAssignableFrom<CustomTypeDescriptor>(provider.GetTypeDescriptor(objectType));
@@ -667,7 +667,7 @@ namespace System.ComponentModel.Tests
                 .Setup(p => p.GetTypeDescriptor(instance.GetType(), instance))
                 .CallBase();
             mockProvider
-                .Setup(p => p.SupportsRegisteredTypes)
+                .Setup(p => p.RequireRegisteredTypes)
                 .CallBase();
             TypeDescriptionProvider provider = mockProvider.Object;
             CustomTypeDescriptor result1 = Assert.IsAssignableFrom<CustomTypeDescriptor>(provider.GetTypeDescriptor(instance));

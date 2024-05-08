@@ -91,24 +91,24 @@ namespace System.ComponentModel
         AttributeCollection GetAttributesFromRegisteredType() => throw TypeDescriptor.ThrowHelper.GetNotSupportedException_CustomTypeProviderMustImplememtMember(nameof(GetAttributesFromRegisteredType));
 
         /// <summary>
-        /// Gets a type converter for this object that may be registered as a known type.
+        /// Gets a type converter for this object that may be registered.
         /// </summary>
         TypeConverter? GetConverterFromRegisteredType() => throw TypeDescriptor.ThrowHelper.GetNotSupportedException_CustomTypeProviderMustImplememtMember(nameof(GetConverterFromRegisteredType));
 
         /// <summary>
-        /// Gets the events for this instance of a component that may be registered as a known type.
+        /// Gets the events for this instance of a component that may be registered.
         /// </summary>
         EventDescriptorCollection GetEventsFromRegisteredType() => throw TypeDescriptor.ThrowHelper.GetNotSupportedException_CustomTypeProviderMustImplememtMember(nameof(GetEventsFromRegisteredType));
 
         /// <summary>
-        /// Gets the properties for this instance of a component that may be registered as a known type..
+        /// Gets the properties for this instance of a component that may be registered.
         /// </summary>
         PropertyDescriptorCollection GetPropertiesFromRegisteredType() => throw TypeDescriptor.ThrowHelper.GetNotSupportedException_CustomTypeProviderMustImplememtMember(nameof(GetPropertiesFromRegisteredType));
 
         /// <summary>
         /// Whether this type provider supports known types.
         /// </summary>
-        bool SupportsRegisteredTypes => false;
+        bool? RequireRegisteredTypes => null;
 
         #endregion
     }

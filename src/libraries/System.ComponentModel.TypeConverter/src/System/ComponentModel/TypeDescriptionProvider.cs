@@ -264,13 +264,6 @@ namespace System.ComponentModel
             return GetTypeDescriptor(instance.GetType(), instance);
         }
 
-        public ICustomTypeDescriptor? GetTypeDescriptorFromRegisteredType(object instance)
-        {
-            ArgumentNullException.ThrowIfNull(instance);
-
-            return GetTypeDescriptorFromRegisteredType(instance.GetType(), instance);
-        }
-
         /// <summary>
         /// This method returns a custom type descriptor for the given type / object.
         /// The objectType parameter is always valid, but the instance parameter may
@@ -295,35 +288,68 @@ namespace System.ComponentModel
             return _emptyDescriptor ??= new EmptyCustomTypeDescriptor();
         }
 
-        internal virtual ICustomTypeDescriptor? GetTypeDescriptorFromRegisteredType(Type objectType, object? instance)
+        public ICustomTypeDescriptor? GetTypeDescriptorFromRegisteredType(Type objectType)
         {
+            ArgumentNullException.ThrowIfNull(objectType);
+
+            if (_parent != null)
+            {
+                return _parent.GetTypeDescriptorFromRegisteredType(objectType);
+            }
+
+            return GetTypeDescriptorFromRegisteredType(objectType, instance: null);
+        }
+
+        public ICustomTypeDescriptor? GetTypeDescriptorFromRegisteredType(object instance)
+        {
+            ArgumentNullException.ThrowIfNull(instance);
+
+            if (_parent != null)
+            {
+                return _parent.GetTypeDescriptorFromRegisteredType(instance);
+            }
+
+            return GetTypeDescriptorFromRegisteredType(instance.GetType(), instance);
+        }
+
+        public virtual ICustomTypeDescriptor? GetTypeDescriptorFromRegisteredType(Type objectType, object? instance)
+        {
+            ArgumentNullException.ThrowIfNull(objectType);
+
             if (_parent != null)
             {
                 return _parent.GetTypeDescriptorFromRegisteredType(objectType, instance);
             }
 
-            if (SupportsRegisteredTypes)
+            if (RequireRegisteredTypes is null)
             {
-                return _emptyDescriptor ??= new EmptyCustomTypeDescriptor();
+                if (TypeDescriptor.RequireRegisteredTypes)
+                {
+                    TypeDescriptor.ThrowHelper.ThrowNotSupportedException_RegisteredTypeMemberCalledOnLegacyProvider(nameof(GetTypeDescriptorFromRegisteredType));
+                }
+            }
+            else if (RequireRegisteredTypes == true)
+            {
+                throw new NotImplementedException();
             }
 
             return FallBackToLegacyProvider();
 
-            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2067:RequiresUnreferencedCode",
-                Justification = "Chaining from known type provider to legacy provider is supported.")]
+            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2067:UnrecognizedReflectionPattern",
+                Justification = "Chaining from registered type provider to legacy provider is supported.")]
             ICustomTypeDescriptor? FallBackToLegacyProvider() => GetTypeDescriptor(objectType, instance);
         }
 
-        public virtual bool SupportsRegisteredTypes
+        public virtual bool? RequireRegisteredTypes
         {
             get
             {
                 if (_parent != null)
                 {
-                    return _parent.SupportsRegisteredTypes;
+                    return _parent.RequireRegisteredTypes;
                 }
 
-                return false;
+                return null;
             }
         }
 

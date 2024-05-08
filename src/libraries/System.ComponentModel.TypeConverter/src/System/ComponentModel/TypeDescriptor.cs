@@ -139,37 +139,45 @@ namespace System.ComponentModel
         /// </summary>
         public static event RefreshEventHandler? Refreshed;
 
-        private static readonly bool s_isTrimmable =
+        private static readonly bool s_requireRegisteredTypes =
             AppContext.TryGetSwitch(
-                switchName: "System.ComponentModel.TypeDescriptor.IsTrimmable",
+                switchName: "System.ComponentModel.TypeDescriptor.RequireRegisteredTypes",
                 isEnabled: out bool isEnabled)
             ? isEnabled : false;
 
         /// <summary>
-        /// Indicates whether this and related classes support trimming.
+        /// Indicates whether types require registeration in order to be used with <see cref="TypeDescriptor"/>.
         /// </summary>
         /// <remarks>
-        /// The value of the property is backed by the "System.ComponentModel.TypeDescriptor.IsTrimmable"
+        /// The value of the property is backed by the "System.ComponentModel.TypeDescriptor.RequireRegisteredTypes"
         /// <see cref="AppContext"/> setting and defaults to <see langword="false"/> if unset.
+        /// If <see langword="true"/>, a custom <see cref="TypeDescriptionProvider"/> must implement
+        /// <see cref="TypeDescriptionProvider.RequireRegisteredTypes"/> to return <see langword="true"/> or <see langword="false"/>.
+        /// If <see langword="true"/> is returned, then the custom provider must also implement
+        /// <see cref="TypeDescriptionProvider.IsRegisteredType(Type)"/> and
+        /// <see cref="TypeDescriptionProvider.GetTypeDescriptorFromRegisteredType(Type, object?)"/>
+        /// <br/>
+        /// If <see langword="true"/>, a custom <see cref="ICustomTypeDescriptor"/> must implement
+        /// <see cref="ICustomTypeDescriptor.RequireRegisteredTypes"/> to return <see langword="true"/> or <see langword="false"/>.
+        /// If <see langword="true"/> is returned, then the custom descriptor must also implement
+        /// <see cref="ICustomTypeDescriptor.GetAttributesFromRegisteredType()"/>,
+        /// <see cref="ICustomTypeDescriptor.GetConverterFromRegisteredType()"/>,
+        /// <see cref="ICustomTypeDescriptor.GetEventsFromRegisteredType()"/> and
+        /// <see cref="ICustomTypeDescriptor.GetPropertiesFromRegisteredType()"/>.
         /// </remarks>
-        [FeatureSwitchDefinition("System.ComponentModel.TypeDescriptor.IsTrimmable")]
-        internal static bool IsTrimmable => s_isTrimmable;
-
-        internal static bool IsRegisteredType(Type type)
-        {
-            TypeDescriptionProvider provider = GetProvider(type);
-            return provider.SupportsRegisteredTypes && provider.IsSupportedType(type);
-        }
+        [FeatureSwitchDefinition("System.ComponentModel.TypeDescriptor.RequireRegisteredTypes")]
+        internal static bool RequireRegisteredTypes => s_requireRegisteredTypes;
 
         internal static void ValidateRegisteredType(Type type)
         {
-#if DEBUG
-            // To avoid a performance hit, only validate in Debug build.
-            if (!TypeDescriptor.IsRegisteredType(type))
+            TypeDescriptionProvider provider = GetProvider(type);
+            if (provider.RequireRegisteredTypes == true)
             {
-                throw new InvalidOperationException("todo: type should be a known type.");
+                if (!provider.IsRegisteredType(type))
+                {
+                    ThrowHelper.ThrowInvalidOperationException_RegisterTypeRequired(type);
+                }
             }
-#endif
         }
 
         /// <summary>
@@ -877,7 +885,7 @@ namespace System.ComponentModel
         }
 
         /// <summary>
-        /// Gets a type converter for the specified known type.
+        /// Gets a type converter for the specified registered type.
         /// </summary>
         public static TypeConverter GetConverterFromRegisteredType(Type type)
         {
@@ -1544,7 +1552,7 @@ namespace System.ComponentModel
         [EditorBrowsable(EditorBrowsableState.Advanced)]
         public static TypeDescriptionProvider GetProvider(object instance)
         {
-            if (!IsTrimmable)
+            if (!RequireRegisteredTypes)
             {
                 ArgumentNullException.ThrowIfNull(instance);
 
@@ -3300,7 +3308,7 @@ namespace System.ComponentModel
             /// Implements GetExtendedTypeDescriptor. This creates a custom type
             /// descriptor that walks the linked list for each of its calls.
             /// </summary>
-            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode", Justification = "The object is verified here to be a known type.")]
+            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode", Justification = "The object is verified here to be a registered type.")]
             public override ICustomTypeDescriptor GetExtendedTypeDescriptorFromRegisteredType(object instance)
             {
                 ArgumentNullException.ThrowIfNull(instance);
@@ -3375,6 +3383,31 @@ namespace System.ComponentModel
                 return new DefaultTypeDescriptor(this, objectType, instance);
             }
 
+            /// <summary>
+            /// Implements GetTypeDescriptor. This creates a custom type
+            /// descriptor that walks the linked list for each of its calls.
+            /// </summary>
+            public override ICustomTypeDescriptor GetTypeDescriptorFromRegisteredType(Type objectType, object? instance)
+            {
+                ArgumentNullException.ThrowIfNull(objectType);
+
+                if (instance != null && !objectType.IsInstanceOfType(instance))
+                {
+                    throw new ArgumentException(nameof(instance));
+                }
+
+                if (!IsRegisteredType(objectType))
+                {
+                    ThrowHelper.ThrowInvalidOperationException_RegisterTypeRequired(objectType);
+                }
+
+                return FallBack();
+
+                [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2067:UnrecognizedReflectionPattern",
+                    Justification = "Calling the equivalent DynamicallyAccessedMembers method is supported when types are registered.")]
+                ICustomTypeDescriptor FallBack() => new DefaultTypeDescriptor(this, objectType, instance);
+            }
+
             internal DefaultTypeDescriptor GetDefaultTypeDescriptor([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type objectType)
             {
                 return new DefaultTypeDescriptor(this, objectType, instance: null);
@@ -3386,6 +3419,10 @@ namespace System.ComponentModel
 
                 return Provider.IsSupportedType(type);
             }
+
+            public override bool? RequireRegisteredTypes => Provider.RequireRegisteredTypes;
+
+            public override bool IsRegisteredType(Type type) => Provider.IsRegisteredType(type);
 
             /// <summary>
             /// A type descriptor for extended types. This type descriptor
@@ -4211,10 +4248,11 @@ namespace System.ComponentModel
             internal static NotSupportedException GetNotSupportedException_CustomTypeProviderMustImplememtMember(string memberName) => new NotSupportedException($"todo: custom type providers must implement member {memberName}.");
 
             [DoesNotReturn]
-            internal static void ThrowNotSupportedException_RegisteredTypeMemberCalledOnLegacyProvider(string memberName) => throw new NotSupportedException($"todo: the member {memberName} was called on a provider that returned 'false' for SupportsRegisteredTypes.");
+            internal static void ThrowNotSupportedException_RegisteredTypeMemberCalledOnLegacyProvider(string memberName) => throw new NotSupportedException($"todo: the member {memberName} was called on a provider that returned 'false' for RequireRegisteredTypes.");
 
             [DoesNotReturn]
-            internal static void ThrowInvalidOperationException_RegisterTypeRequired(Type type) => throw new InvalidOperationException($"todo: the Type {type.FullName} must be registered with TypeDescriptor.RegisterType().");
+            internal static void ThrowInvalidOperationException_RegisterTypeRequired(Type type) =>
+                throw new InvalidOperationException(SR.Format(SR.TypeIsNotRegistered, type.FullName, TypeDescriptor.GetProvider(type).GetType().FullName));
         }
     }
 }

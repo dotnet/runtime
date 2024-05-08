@@ -120,7 +120,7 @@
     <Compile Include="SByteConverterTests.cs" />
     <Compile Include="SingleConverterTests.cs" />
     <Compile Include="HalfConverterTests.cs" />
-    <Compile Include="RegisteredTypes.cs" />
+    <Compile Include="RegisteredTypesTests.cs" />
     <Compile Include="StringConverterTests.cs" />
     <Compile Include="Timers\TimersDescriptionAttributeTests.cs" />
     <Compile Include="TimeOnlyConverterTests.cs" />

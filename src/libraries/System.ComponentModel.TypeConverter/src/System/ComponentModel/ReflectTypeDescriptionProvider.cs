@@ -279,7 +279,7 @@ namespace System.ComponentModel
             return obj ?? Activator.CreateInstance(objectType, args);
         }
 
-        public override bool SupportsRegisteredTypes => true;
+        public override bool? RequireRegisteredTypes => true;
         public override bool IsRegisteredType(Type type) => _typeData != null ? _typeData.ContainsKey(type) : false;
 
         /// <summary>
@@ -545,7 +545,7 @@ namespace System.ComponentModel
         /// Retrieves the properties for this type.
         /// </summary>
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-            Justification = "Instance is verified to be a known type.")]
+            Justification = "Instance is verified to be registered.")]
         internal PropertyDescriptorCollection GetExtendedPropertiesFromRegisteredType(object instance) => GetExtendedProperties(instance);
 
         /// <summary>
@@ -823,6 +823,12 @@ namespace System.ComponentModel
             return null;
         }
 
+        public override ICustomTypeDescriptor? GetTypeDescriptorFromRegisteredType(Type objectType, object? instance)
+        {
+            Debug.Fail("This should never be invoked. TypeDescriptionNode should wrap for us.");
+            return null;
+        }
+
         /// <summary>
         /// The name of the specified component, or null if the component has no name.
         /// In many cases this will return the same value as GetComponentName. If the
@@ -934,7 +940,7 @@ namespace System.ComponentModel
                     return td;
                 }
 
-                if (TypeDescriptor.IsTrimmable && !IsIntrinsicType(type))
+                if (TypeDescriptor.RequireRegisteredTypes && !IsIntrinsicType(type))
                 {
                     TypeDescriptor.ThrowHelper.ThrowInvalidOperationException_RegisterTypeRequired(type);
                 }

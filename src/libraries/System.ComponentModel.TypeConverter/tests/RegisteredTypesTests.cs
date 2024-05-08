@@ -6,15 +6,15 @@ using Xunit;
 
 namespace System.ComponentModel.Tests
 {
-    public class RegisteredTypes
+    public class RegisteredTypesTests
     {
-        private const string TypeDescriptorIsTrimmableSwitchName = "System.ComponentModel.TypeDescriptor.IsTrimmable";
+        private const string TypeDescriptorRequireRegisteredTypesSwitchName = "System.ComponentModel.TypeDescriptor.RequireRegisteredTypes";
 
         [Fact]
         public static void NullableGetConverterUnderlyingType()
         {
             RemoteInvokeOptions options = new RemoteInvokeOptions();
-            options.RuntimeConfigurationOptions[TypeDescriptorIsTrimmableSwitchName] = bool.TrueString;
+            options.RuntimeConfigurationOptions[TypeDescriptorRequireRegisteredTypesSwitchName] = bool.TrueString;
 
             RemoteExecutor.Invoke(() =>
             {
@@ -46,6 +46,27 @@ namespace System.ComponentModel.Tests
         }
 
         [Fact]
+        public static void GetAttributesWithRegisteredType_NotRegistered()
+        {
+            RemoteExecutor.Invoke(() =>
+            {
+                ComponentResourceManager resourceManager = new(typeof(global::Resources.TestResx));
+                Assert.Throws<InvalidOperationException>(() => resourceManager.ApplyResourcesToRegisteredType(new C1(), "SomeName", null));
+            }).Dispose();
+        }
+
+        [Fact]
+        public static void GetAttributesWithRegisteredType_Registered()
+        {
+            RemoteExecutor.Invoke(() =>
+            {
+                TypeDescriptor.RegisterType<C1>();
+                ComponentResourceManager resourceManager = new(typeof(global::Resources.TestResx));
+                resourceManager.ApplyResourcesToRegisteredType(new C1(), "SomeName", null);
+            }).Dispose();
+        }
+
+        [Fact]
         public static void GetMembersWithRegisteredType_NotRegistered()
         {
             RemoteExecutor.Invoke(() =>
@@ -66,7 +87,7 @@ namespace System.ComponentModel.Tests
         public static void GetMembers_NotRegistered_Trimmed_Throws()
         {
             RemoteInvokeOptions options = new RemoteInvokeOptions();
-            options.RuntimeConfigurationOptions[TypeDescriptorIsTrimmableSwitchName] = bool.TrueString;
+            options.RuntimeConfigurationOptions[TypeDescriptorRequireRegisteredTypesSwitchName] = bool.TrueString;
 
             RemoteExecutor.Invoke(() =>
             {
@@ -81,7 +102,7 @@ namespace System.ComponentModel.Tests
         public static void GetMembersFromRegisteredType_Registered_Trimmed()
         {
             RemoteInvokeOptions options = new RemoteInvokeOptions();
-            options.RuntimeConfigurationOptions[TypeDescriptorIsTrimmableSwitchName] = bool.TrueString;
+            options.RuntimeConfigurationOptions[TypeDescriptorRequireRegisteredTypesSwitchName] = bool.TrueString;
 
             RemoteExecutor.Invoke(() =>
             {
@@ -99,7 +120,7 @@ namespace System.ComponentModel.Tests
         public static void GetMembersFromRegisteredType_ChildRegistered_Trimmed()
         {
             RemoteInvokeOptions options = new RemoteInvokeOptions();
-            options.RuntimeConfigurationOptions[TypeDescriptorIsTrimmableSwitchName] = bool.TrueString;
+            options.RuntimeConfigurationOptions[TypeDescriptorRequireRegisteredTypesSwitchName] = bool.TrueString;
 
             RemoteExecutor.Invoke(() =>
             {
@@ -115,7 +136,7 @@ namespace System.ComponentModel.Tests
         public static void GetMembersFromRegisteredType_ChildUnregistered_Trimmed()
         {
             RemoteInvokeOptions options = new RemoteInvokeOptions();
-            options.RuntimeConfigurationOptions[TypeDescriptorIsTrimmableSwitchName] = bool.TrueString;
+            options.RuntimeConfigurationOptions[TypeDescriptorRequireRegisteredTypesSwitchName] = bool.TrueString;
 
             RemoteExecutor.Invoke(() =>
             {
@@ -130,7 +151,7 @@ namespace System.ComponentModel.Tests
         public static void GetMembersFromRegisteredType_BaseClassUnregistered_Trimmed()
         {
             RemoteInvokeOptions options = new RemoteInvokeOptions();
-            options.RuntimeConfigurationOptions[TypeDescriptorIsTrimmableSwitchName] = bool.TrueString;
+            options.RuntimeConfigurationOptions[TypeDescriptorRequireRegisteredTypesSwitchName] = bool.TrueString;
 
             RemoteExecutor.Invoke(() =>
             {
@@ -168,7 +189,7 @@ namespace System.ComponentModel.Tests
         public static void GetPropertiesFromRegisteredTypeInstance_Trimmed()
         {
             RemoteInvokeOptions options = new RemoteInvokeOptions();
-            options.RuntimeConfigurationOptions[TypeDescriptorIsTrimmableSwitchName] = bool.TrueString;
+            options.RuntimeConfigurationOptions[TypeDescriptorRequireRegisteredTypesSwitchName] = bool.TrueString;
 
             RemoteExecutor.Invoke(() =>
             {
@@ -180,7 +201,7 @@ namespace System.ComponentModel.Tests
         public static void GetPropertiesFromRegisteredTypeInstance_Unregistered_Trimmed()
         {
             RemoteInvokeOptions options = new RemoteInvokeOptions();
-            options.RuntimeConfigurationOptions[TypeDescriptorIsTrimmableSwitchName] = bool.TrueString;
+            options.RuntimeConfigurationOptions[TypeDescriptorRequireRegisteredTypesSwitchName] = bool.TrueString;
 
             RemoteExecutor.Invoke(() =>
             {
