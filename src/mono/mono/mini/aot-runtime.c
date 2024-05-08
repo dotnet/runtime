@@ -5140,11 +5140,26 @@ mono_aot_get_method (MonoMethod *method, MonoError *error)
 			/* gsharedvt */
 			/* Use the all-vt shared method since this is what was AOTed */
 			shared = mini_get_shared_method_full (method, SHARE_MODE_GSHAREDVT, error);
+			if (shared && !mono_method_metadata_has_header (shared)) {
+				MonoMethod *wrapper = replace_generated_method (shared, error);
+				mono_error_assert_ok (error);
+				if (wrapper != NULL) {
+					shared = mini_get_shared_method_full (wrapper, SHARE_MODE_GSHAREDVT, error);
+					return_val_if_nok (error, NULL);
+
+					if (shared) {
+						method = wrapper;
+					}
+				}
+			}
+
 			if (!shared)
 				return NULL;
 
 			method_index = find_aot_method (shared, &amodule);
 			if (method_index != 0xffffff) {
+				// XXX AK: I don't understand why we call mini_get_shared_method_full twice
+				// in the gshared case, above, we just say method = shared, which seems right.
 				method = mini_get_shared_method_full (method, SHARE_MODE_GSHAREDVT, error);
 				if (!method)
 					return NULL;
