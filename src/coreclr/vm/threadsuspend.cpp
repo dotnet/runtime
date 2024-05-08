@@ -6072,7 +6072,7 @@ void ThreadSuspend::Initialize()
         }
         if (g_returnAddressHijackTarget == NULL)
         {
-            _ASSERTE_ALL_BUILDS(!"RtlGetReturnAddressHijackTarget must provide a target when both FEATURE_HIJACK and CET are enabled");
+            _ASSERTE_ALL_BUILDS(!"RtlGetReturnAddressHijackTarget must provide a target when shadow stacks are enabled");
         }
     }
 #endif // TARGET_WINDOWS
