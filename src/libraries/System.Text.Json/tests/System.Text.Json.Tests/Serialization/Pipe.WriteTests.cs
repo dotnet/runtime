@@ -39,13 +39,22 @@ namespace System.Text.Json.Serialization.Tests
         public async Task CompletedPipeWithExceptionThrowsFromSerialize()
         {
             Pipe pipe = new Pipe();
-            pipe.Reader.Complete(new Exception());
+            pipe.Reader.Complete(new FormatException());
 
-            await Assert.ThrowsAsync<Exception>(() => JsonSerializer.SerializeAsync(pipe.Writer, 1));
+            await Assert.ThrowsAsync<FormatException>(() => JsonSerializer.SerializeAsync(pipe.Writer, 1));
         }
 
         [Fact]
-        public async Task CancelPendingFlushDuringBackpressureReturns()
+        public async Task CompletedPipeThrowsFromSerialize()
+        {
+            Pipe pipe = new Pipe();
+            pipe.Reader.Complete();
+
+            await Assert.ThrowsAsync<OperationCanceledException>(() => JsonSerializer.SerializeAsync(pipe.Writer, 1));
+        }
+
+        [Fact]
+        public async Task CancelPendingFlushDuringBackpressureThrows()
         {
             Pipe pipe = new Pipe(new PipeOptions(pauseWriterThreshold: 10, resumeWriterThreshold: 5));
             await pipe.Writer.WriteAsync("123456789"u8.ToArray());
@@ -54,9 +63,11 @@ namespace System.Text.Json.Serialization.Tests
 
             pipe.Writer.CancelPendingFlush();
 
-            await serializeTask;
+            await Assert.ThrowsAsync<OperationCanceledException>(() => serializeTask);
 
             ReadResult result = await pipe.Reader.ReadAsync();
+
+            // Technically this check is not needed, but helps confirm behavior, that Pipe had written but was waiting for flush to continue.
             // result.Buffer: 123456789[0
             Assert.Equal(11, result.Buffer.Length);
             pipe.Reader.AdvanceTo(result.Buffer.End);
