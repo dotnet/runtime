@@ -10,16 +10,16 @@ using System.Threading.Tasks;
 
 namespace System.Numerics.Tensors
 {
-    internal sealed class SpanNDDebugView<T>
+    internal sealed class TensorSpanDebugView<T>
     {
         private readonly T[] _array;
 
-        public SpanNDDebugView(SpanND<T> span)
+        public TensorSpanDebugView(TensorSpan<T> span)
         {
             _array = span.ToArray();
         }
 
-        public SpanNDDebugView(ReadOnlySpanND<T> span)
+        public TensorSpanDebugView(ReadOnlyTensorSpan<T> span)
         {
             _array = span.ToArray();
         }

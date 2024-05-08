@@ -26,7 +26,6 @@ namespace System.Numerics.Tensors
 {
     public sealed class Tensor<T>
         : ITensor<Tensor<T>, T>
-        where T : IEquatable<T>
     {
         /// <summary>A byref or a native ptr.</summary>
         internal readonly T[] _values;
@@ -54,24 +53,24 @@ namespace System.Numerics.Tensors
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal Tensor(T[] values, ReadOnlySpan<nint> lengths, bool isPinned)
         {
-            _linearLength = SpanNDHelpers.CalculateTotalLength(lengths);
+            _linearLength = TensorSpanHelpers.CalculateTotalLength(lengths);
 
             _values = values;
             _lengths = lengths.ToArray();
-            _strides = SpanNDHelpers.CalculateStrides(_lengths);
+            _strides = TensorSpanHelpers.CalculateStrides(_lengths);
             _isPinned = isPinned;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal Tensor(T[] values, ReadOnlySpan<nint> lengths, nint[] strides, bool isPinned)
         {
-            _linearLength = SpanNDHelpers.CalculateTotalLength(lengths);
+            _linearLength = TensorSpanHelpers.CalculateTotalLength(lengths);
 
             _values = values;
             _lengths = lengths.ToArray();
             _strides = strides.ToArray();
             if (strides == Array.Empty<nint>())
-                _strides = SpanNDHelpers.CalculateStrides(lengths);
+                _strides = TensorSpanHelpers.CalculateStrides(lengths);
             _isPinned = isPinned;
 
         }
@@ -163,15 +162,15 @@ namespace System.Numerics.Tensors
             }
         }
 
-        public static implicit operator SpanND<T>(Tensor<T> value) => new SpanND<T>(ref MemoryMarshal.GetArrayDataReference(value._values), value._lengths, value._strides, value._isPinned);
+        public static implicit operator TensorSpan<T>(Tensor<T> value) => new TensorSpan<T>(ref MemoryMarshal.GetArrayDataReference(value._values), value._lengths, value._strides, value._isPinned);
 
-        public static implicit operator ReadOnlySpanND<T>(Tensor<T> value) => new ReadOnlySpanND<T>(ref MemoryMarshal.GetArrayDataReference(value._values), value._lengths, value._strides, value._isPinned);
+        public static implicit operator ReadOnlyTensorSpan<T>(Tensor<T> value) => new ReadOnlyTensorSpan<T>(ref MemoryMarshal.GetArrayDataReference(value._values), value._lengths, value._strides, value._isPinned);
 
 
-        public SpanND<T> AsSpanND() => new SpanND<T>(ref MemoryMarshal.GetArrayDataReference(_values), _lengths, _strides, _isPinned);
-        public ReadOnlySpanND<T> AsReadOnlySpanND() => new ReadOnlySpanND<T>(ref MemoryMarshal.GetArrayDataReference(_values), _lengths, _strides, _isPinned);
-        public SpanND<T> AsSpanND(params ReadOnlySpan<NativeRange> ranges) => AsSpanND().Slice(ranges);
-        public ReadOnlySpanND<T> AsReadOnlySpanND(params ReadOnlySpan<NativeRange> ranges) => AsSpanND().Slice(ranges);
+        public TensorSpan<T> AsSpanND() => new TensorSpan<T>(ref MemoryMarshal.GetArrayDataReference(_values), _lengths, _strides, _isPinned);
+        public ReadOnlyTensorSpan<T> AsReadOnlySpanND() => new ReadOnlyTensorSpan<T>(ref MemoryMarshal.GetArrayDataReference(_values), _lengths, _strides, _isPinned);
+        public TensorSpan<T> AsSpanND(params ReadOnlySpan<NRange> ranges) => AsSpanND().Slice(ranges);
+        public ReadOnlyTensorSpan<T> AsReadOnlySpanND(params ReadOnlySpan<NRange> ranges) => AsSpanND().Slice(ranges);
 
         /// <summary>
         /// Returns a reference to the 0th element of the Tensor. If the Tensor is empty, returns null reference.
@@ -186,7 +185,7 @@ namespace System.Numerics.Tensors
         /// <param name="ranges">The ranges for the slice</param>
         // REVIEW: CURRENTLY DOES A COPY.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public Tensor<T> Slice(params ReadOnlySpan<NativeRange> ranges)
+        public Tensor<T> Slice(params ReadOnlySpan<NRange> ranges)
         {
             if (ranges.Length != Shape.Length)
                 throw new ArgumentOutOfRangeException(nameof(ranges), "Number of dimensions to slice does not equal the number of dimensions in the span");
@@ -211,10 +210,10 @@ namespace System.Numerics.Tensors
         /// </summary>
         /// <param name="destination">The span to copy items into.</param>
         /// <exception cref="ArgumentException">
-        /// Thrown when the destination SpanND is shorter than the source Tensor.
+        /// Thrown when the destination TensorSpan is shorter than the source Tensor.
         /// </exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void CopyTo(SpanND<T> destination) => AsSpanND().CopyTo(destination);
+        public void CopyTo(TensorSpan<T> destination) => AsSpanND().CopyTo(destination);
 
         /// <summary>
         /// Fills the contents of this span with the given value.
@@ -230,13 +229,12 @@ namespace System.Numerics.Tensors
         /// <param name="destination">The span to copy items into.</param>
         /// <returns>If the destination span is shorter than the source tensor, this method
         /// return false and no data is written to the destination.</returns>
-        public bool TryCopyTo(SpanND<T> destination) => AsSpanND().TryCopyTo(destination);
+        public bool TryCopyTo(TensorSpan<T> destination) => AsSpanND().TryCopyTo(destination);
 
         // IEnumerable
         public IEnumerator<T> GetEnumerator() => new Enumerator(this);
         IEnumerator IEnumerable.GetEnumerator() => new Enumerator(this);
 
-        // REVIEW: PROBABLY REMOVE.
         // IEquatable
         public bool Equals(Tensor<T>? other) => throw new NotImplementedException();
 
@@ -272,7 +270,7 @@ namespace System.Numerics.Tensors
             /// <summary>Advances the enumerator to the next element of the span.</summary>
             public bool MoveNext()
             {
-                SpanNDHelpers.AdjustIndices(_tensor.Rank - 1, 1, ref _curIndices, _tensor.Shape);
+                TensorSpanHelpers.AdjustIndices(_tensor.Rank - 1, 1, ref _curIndices, _tensor.Shape);
 
                 _items++;
                 return _items < _tensor.LinearLength;
@@ -303,16 +301,16 @@ namespace System.Numerics.Tensors
             /// <summary>
             ///
             /// </summary>
-            object IEnumerator.Current => _tensor[_curIndices];
+            object? IEnumerator.Current => _tensor[_curIndices];
         }
 
-        // REVIEW: PROBABLY REMOVE.
+        // REVIEW: PENDING API REVIEW TO DETERMINE IMPLEMENTATION
         public override bool Equals(object? obj)
         {
-            return Equals(obj as Tensor<T>);
+            return obj is Tensor<T> tensor && Equals(tensor);
         }
 
-        // REVIEW: PROBABLY REMOVE.
+        // REVIEW: PENDING API REVIEW TO DETERMINE IMPLEMENTATION
         public override int GetHashCode()
         {
             throw new NotImplementedException();

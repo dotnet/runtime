@@ -12,25 +12,25 @@ namespace System.Tests
         [Fact]
         public static void CreationTest()
         {
-            NativeRange NativeRange = new NativeRange(new NativeIndex(10, fromEnd: false), new NativeIndex(2, fromEnd: true));
+            NRange NativeRange = new NRange(new NIndex(10, fromEnd: false), new NIndex(2, fromEnd: true));
             Assert.Equal(10, NativeRange.Start.Value);
             Assert.False(NativeRange.Start.IsFromEnd);
             Assert.Equal(2, NativeRange.End.Value);
             Assert.True(NativeRange.End.IsFromEnd);
 
-            NativeRange = NativeRange.StartAt(new NativeIndex(7, fromEnd: false));
+            NativeRange = NRange.StartAt(new NIndex(7, fromEnd: false));
             Assert.Equal(7, NativeRange.Start.Value);
             Assert.False(NativeRange.Start.IsFromEnd);
             Assert.Equal(0, NativeRange.End.Value);
             Assert.True(NativeRange.End.IsFromEnd);
 
-            NativeRange = NativeRange.EndAt(new NativeIndex(3, fromEnd: true));
+            NativeRange = NRange.EndAt(new NIndex(3, fromEnd: true));
             Assert.Equal(0, NativeRange.Start.Value);
             Assert.False(NativeRange.Start.IsFromEnd);
             Assert.Equal(3, NativeRange.End.Value);
             Assert.True(NativeRange.End.IsFromEnd);
 
-            NativeRange = NativeRange.All;
+            NativeRange = NRange.All;
             Assert.Equal(0, NativeRange.Start.Value);
             Assert.False(NativeRange.Start.IsFromEnd);
             Assert.Equal(0, NativeRange.End.Value);
@@ -43,7 +43,7 @@ namespace System.Tests
             Assert.Equal(2, NativeRange.End.Value);
             Assert.True(NativeRange.End.IsFromEnd);
 
-            NativeRange = new NativeRange(new Index(10, fromEnd: false), new Index(2, fromEnd: true));
+            NativeRange = new NRange(new Index(10, fromEnd: false), new Index(2, fromEnd: true));
             Assert.Equal(10, NativeRange.Start.Value);
             Assert.False(NativeRange.Start.IsFromEnd);
             Assert.Equal(2, NativeRange.End.Value);
@@ -53,7 +53,7 @@ namespace System.Tests
         [Fact]
         public static void GetOffsetAndLengthTest()
         {
-            NativeRange NativeRange = NativeRange.StartAt(new NativeIndex(5));
+            NRange NativeRange = NRange.StartAt(new NIndex(5));
             (nint offset, nint length) = NativeRange.GetOffsetAndLength(20);
             Assert.Equal(5, offset);
             Assert.Equal(15, length);
@@ -69,7 +69,7 @@ namespace System.Tests
 
             Assert.Throws<ArgumentOutOfRangeException>(() => NativeRange.GetOffsetAndLength(4));
 
-            NativeRange = NativeRange.EndAt(new NativeIndex(4));
+            NativeRange = NRange.EndAt(new NIndex(4));
             (offset, length) = NativeRange.GetOffsetAndLength(20);
             Assert.Equal(0, offset);
             Assert.Equal(4, length);
@@ -79,16 +79,16 @@ namespace System.Tests
         [Fact]
         public static void EqualityTest()
         {
-            NativeRange NativeRange1 = new NativeRange(new NativeIndex(10, fromEnd: false), new NativeIndex(20, fromEnd: false));
-            NativeRange NativeRange2 = new NativeRange(new NativeIndex(10, fromEnd: false), new NativeIndex(20, fromEnd: false));
+            NRange NativeRange1 = new NRange(new NIndex(10, fromEnd: false), new NIndex(20, fromEnd: false));
+            NRange NativeRange2 = new NRange(new NIndex(10, fromEnd: false), new NIndex(20, fromEnd: false));
             Assert.True(NativeRange1.Equals(NativeRange2));
             Assert.True(NativeRange1.Equals((object)NativeRange2));
 
-            NativeRange2 = new NativeRange(new NativeIndex(10, fromEnd: false), new NativeIndex(20, fromEnd: true));
+            NativeRange2 = new NRange(new NIndex(10, fromEnd: false), new NIndex(20, fromEnd: true));
             Assert.False(NativeRange1.Equals(NativeRange2));
             Assert.False(NativeRange1.Equals((object)NativeRange2));
 
-            NativeRange2 = new NativeRange(new NativeIndex(10, fromEnd: false), new NativeIndex(21, fromEnd: false));
+            NativeRange2 = new NRange(new NIndex(10, fromEnd: false), new NIndex(21, fromEnd: false));
             Assert.False(NativeRange1.Equals(NativeRange2));
             Assert.False(NativeRange1.Equals((object)NativeRange2));
         }
@@ -96,24 +96,24 @@ namespace System.Tests
         [Fact]
         public static void HashCodeTest()
         {
-            NativeRange NativeRange1 = new NativeRange(new NativeIndex(10, fromEnd: false), new NativeIndex(20, fromEnd: false));
-            NativeRange NativeRange2 = new NativeRange(new NativeIndex(10, fromEnd: false), new NativeIndex(20, fromEnd: false));
+            NRange NativeRange1 = new NRange(new NIndex(10, fromEnd: false), new NIndex(20, fromEnd: false));
+            NRange NativeRange2 = new NRange(new NIndex(10, fromEnd: false), new NIndex(20, fromEnd: false));
             Assert.Equal(NativeRange1.GetHashCode(), NativeRange2.GetHashCode());
 
-            NativeRange2 = new NativeRange(new NativeIndex(10, fromEnd: false), new NativeIndex(20, fromEnd: true));
+            NativeRange2 = new NRange(new NIndex(10, fromEnd: false), new NIndex(20, fromEnd: true));
             Assert.NotEqual(NativeRange1.GetHashCode(), NativeRange2.GetHashCode());
 
-            NativeRange2 = new NativeRange(new NativeIndex(10, fromEnd: false), new NativeIndex(21, fromEnd: false));
+            NativeRange2 = new NRange(new NIndex(10, fromEnd: false), new NIndex(21, fromEnd: false));
             Assert.NotEqual(NativeRange1.GetHashCode(), NativeRange2.GetHashCode());
         }
 
         [Fact]
         public static void ToStringTest()
         {
-            NativeRange NativeRange1 = new NativeRange(new NativeIndex(10, fromEnd: false), new NativeIndex(20, fromEnd: false));
+            NRange NativeRange1 = new NRange(new NIndex(10, fromEnd: false), new NIndex(20, fromEnd: false));
             Assert.Equal(10.ToString() + ".." + 20.ToString(), NativeRange1.ToString());
 
-            NativeRange1 = new NativeRange(new NativeIndex(10, fromEnd: false), new NativeIndex(20, fromEnd: true));
+            NativeRange1 = new NRange(new NIndex(10, fromEnd: false), new NIndex(20, fromEnd: true));
             Assert.Equal(10.ToString() + "..^" + 20.ToString(), NativeRange1.ToString());
         }
 
@@ -123,17 +123,17 @@ namespace System.Tests
             CustomNativeRangeTester crt = new CustomNativeRangeTester(new int[] { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 });
             for (int i = 0; i < crt.Length; i++)
             {
-                Assert.Equal(crt[i], crt[(int)NativeIndex.FromStart(i).Value]);
+                Assert.Equal(crt[i], crt[(int)NIndex.FromStart(i).Value]);
                 Assert.Equal(crt[crt.Length - i - 1], crt[^(i + 1)]);
 
-                Assert.True(crt.Slice(i, crt.Length - i).Equals(crt[i..^0]), $"NativeIndex = {i} and {crt.Slice(i, crt.Length - i)} != {crt[i..^0]}");
+                Assert.True(crt.Slice(i, crt.Length - i).Equals(crt[i..^0]), $"NIndex = {i} and {crt.Slice(i, crt.Length - i)} != {crt[i..^0]}");
             }
         }
 
         // CustomNativeRangeTester is a custom class which containing the members Length, Slice and int NativeIndexer.
         // Having these members allow the C# compiler to support
-        //      this[NativeIndex]
-        //      this[NativeRange]
+        //      this[NIndex]
+        //      this[NRange]
         private class CustomNativeRangeTester : IEquatable<CustomNativeRangeTester>
         {
             private int[] _data;

@@ -17,7 +17,7 @@ namespace System.Numerics.Tensors.Tests
         public static void IntArrayAsSpanND()
         {
             int[] a = { 91, 92, -93, 94 };
-            SpanND<int> spanInt = a.AsSpanND(4);
+            TensorSpan<int> spanInt = a.AsSpanND(4);
             Assert.Equal(1, spanInt.Rank);
 
             Assert.Equal(1, spanInt.Shape.Length);
@@ -46,7 +46,6 @@ namespace System.Numerics.Tensors.Tests
             spanInt = a.AsSpanND(2, 2);
             Assert.Equal(a, spanInt.ToArray());
             Assert.Equal(2, spanInt.Rank);
-            //Assert.Equal(4, spanInt.Length);
             Assert.Equal(2, spanInt.Shape.Length);
             Assert.Equal(2, spanInt.Shape[0]);
             Assert.Equal(2, spanInt.Shape[1]);
@@ -73,7 +72,7 @@ namespace System.Numerics.Tensors.Tests
         public static void SpanNDFillTest()
         {
             int[] a = [1, 2, 3, 4, 5, 6, 7, 8, 9];
-            SpanND<int> spanInt = a.AsSpanND(3, 3);
+            TensorSpan<int> spanInt = a.AsSpanND(3, 3);
             spanInt.Fill(-1);
             var enumerator = spanInt.GetEnumerator();
             while (enumerator.MoveNext())
@@ -145,7 +144,7 @@ namespace System.Numerics.Tensors.Tests
         public static void SpanNDClearTest()
         {
             int[] a = [1, 2, 3, 4, 5, 6, 7, 8, 9];
-            SpanND<int> spanInt = a.AsSpanND(3, 3);
+            TensorSpan<int> spanInt = a.AsSpanND(3, 3);
 
             var slice = spanInt.Slice(0..2, 0..2);
             slice.Clear();
@@ -240,8 +239,8 @@ namespace System.Numerics.Tensors.Tests
         {
             int[] leftData = [1, 2, 3, 4, 5, 6, 7, 8, 9];
             int[] rightData = new int[9];
-            SpanND<int> leftSpan = leftData.AsSpanND(3, 3);
-            SpanND<int> rightSpan = rightData.AsSpanND(3, 3);
+            TensorSpan<int> leftSpan = leftData.AsSpanND(3, 3);
+            TensorSpan<int> rightSpan = rightData.AsSpanND(3, 3);
             leftSpan.CopyTo(rightSpan);
             var leftEnum = leftSpan.GetEnumerator();
             var rightEnum = rightSpan.GetEnumerator();
@@ -290,7 +289,7 @@ namespace System.Numerics.Tensors.Tests
             Assert.Throws<ArgumentException>(() =>
             {
                 var l = leftData.AsSpanND(3, 3, 3);
-                var r = new SpanND<int>();
+                var r = new TensorSpan<int>();
                 l.CopyTo(r);
             });
         }
@@ -300,8 +299,8 @@ namespace System.Numerics.Tensors.Tests
         {
             int[] leftData = [1, 2, 3, 4, 5, 6, 7, 8, 9];
             int[] rightData = new int[9];
-            SpanND<int> leftSpan = leftData.AsSpanND(3, 3);
-            SpanND<int> rightSpan = rightData.AsSpanND(3, 3);
+            TensorSpan<int> leftSpan = leftData.AsSpanND(3, 3);
+            TensorSpan<int> rightSpan = rightData.AsSpanND(3, 3);
             var success = leftSpan.TryCopyTo(rightSpan);
             Assert.True(success);
             var leftEnum = leftSpan.GetEnumerator();
@@ -351,7 +350,7 @@ namespace System.Numerics.Tensors.Tests
             }
 
             var l = leftData.AsSpanND(3, 3, 3);
-            var r = new SpanND<int>();
+            var r = new TensorSpan<int>();
             success = l.TryCopyTo(r);
             Assert.False(success);
         }
@@ -360,7 +359,7 @@ namespace System.Numerics.Tensors.Tests
         public static void SpanNDSliceTest()
         {
             int[] a = [1, 2, 3, 4, 5, 6, 7, 8, 9];
-            SpanND<int> spanInt = a.AsSpanND(3, 3);
+            TensorSpan<int> spanInt = a.AsSpanND(3, 3);
 
             Assert.Throws<ArgumentOutOfRangeException>(() => a.AsSpanND(2, 3).Slice(0..1));
             Assert.Throws<ArgumentOutOfRangeException>(() => a.AsSpanND(2, 3).Slice(1..2));
@@ -476,7 +475,7 @@ namespace System.Numerics.Tensors.Tests
         public static void LongArrayAsSpanND()
         {
             long[] b = { 91, -92, 93, 94, -95 };
-            SpanND<long> spanLong = b.AsSpanND(5);
+            TensorSpan<long> spanLong = b.AsSpanND(5);
             Assert.Equal(91, spanLong[0]);
             Assert.Equal(-92, spanLong[1]);
             Assert.Equal(93, spanLong[2]);
@@ -488,7 +487,7 @@ namespace System.Numerics.Tensors.Tests
         public static void NullArrayAsSpanND()
         {
             int[] a = null;
-            SpanND<int> span = a.AsSpanND();
+            TensorSpan<int> span = a.AsSpanND();
             Assert.True(span == default);
         }
     }

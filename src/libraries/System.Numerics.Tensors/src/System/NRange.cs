@@ -15,33 +15,33 @@ namespace System
     /// int[] subArray2 = someArray[1..^0]; // { 2, 3, 4, 5 }
     /// </code>
     /// </remarks>
-    public readonly struct NativeRange : IEquatable<NativeRange>
+    public readonly struct NRange : IEquatable<NRange>
     {
-        /// <summary>Represent the inclusive start NativeIndex of the NativeRange.</summary>
-        public NativeIndex Start { get; }
+        /// <summary>Represent the inclusive start NIndex of the NRange.</summary>
+        public NIndex Start { get; }
 
-        /// <summary>Represent the exclusive end NativeIndex of the NativeRange.</summary>
-        public NativeIndex End { get; }
+        /// <summary>Represent the exclusive end NIndex of the NRange.</summary>
+        public NIndex End { get; }
 
-        /// <summary>Construct a NativeRange object using the start and end NativeIndexes.</summary>
-        /// <param name="start">Represent the inclusive start NativeIndex of the NativeRange.</param>
-        /// <param name="end">Represent the exclusive end NativeIndex of the NativeRange.</param>
-        public NativeRange(NativeIndex start, NativeIndex end)
+        /// <summary>Construct a NRange object using the start and end NativeIndexes.</summary>
+        /// <param name="start">Represent the inclusive start NIndex of the NRange.</param>
+        /// <param name="end">Represent the exclusive end NIndex of the NRange.</param>
+        public NRange(NIndex start, NIndex end)
         {
             Start = start;
             End = end;
         }
 
-        /// <summary>Indicates whether the current NativeRange object is equal to another object of the same type.</summary>
+        /// <summary>Indicates whether the current NRange object is equal to another object of the same type.</summary>
         /// <param name="value">An object to compare with this object</param>
         public override bool Equals([NotNullWhen(true)] object? value) =>
-            value is NativeRange r &&
+            value is NRange r &&
             r.Start.Equals(Start) &&
             r.End.Equals(End);
 
-        /// <summary>Indicates whether the current NativeRange object is equal to another NativeRange object.</summary>
+        /// <summary>Indicates whether the current NRange object is equal to another NRange object.</summary>
         /// <param name="other">An object to compare with this object</param>
-        public bool Equals(NativeRange other) => other.Start.Equals(Start) && other.End.Equals(End);
+        public bool Equals(NRange other) => other.Start.Equals(Start) && other.End.Equals(End);
 
         /// <summary>Returns the hash code for this instance.</summary>
         public override int GetHashCode()
@@ -49,10 +49,10 @@ namespace System
             return HashCode.Combine(Start.GetHashCode(), End.GetHashCode());
         }
 
-        /// <summary>Converts the value of the current NativeRange object to its equivalent string representation.</summary>
+        /// <summary>Converts the value of the current NRange object to its equivalent string representation.</summary>
         public override string ToString()
         {
-            Span<char> span = stackalloc char[2 + 2 * 21]; // 2 for "..", then for each NativeIndex 1 for '^' and 20 for longest possible nuint
+            Span<char> span = stackalloc char[2 + 2 * 21]; // 2 for "..", then for each NIndex 1 for '^' and 20 for longest possible nuint
             int pos = 0;
 
             if (Start.IsFromEnd)
@@ -78,21 +78,21 @@ namespace System
             return new string(span.Slice(0, pos));
         }
 
-        /// <summary>Create a NativeRange object starting from start NativeIndex to the end of the collection.</summary>
-        public static NativeRange StartAt(NativeIndex start) => new NativeRange(start, NativeIndex.End);
+        /// <summary>Create a NRange object starting from start NIndex to the end of the collection.</summary>
+        public static NRange StartAt(NIndex start) => new NRange(start, NIndex.End);
 
-        /// <summary>Create a NativeRange object starting from first element in the collection to the end NativeIndex.</summary>
-        public static NativeRange EndAt(NativeIndex end) => new NativeRange(NativeIndex.Start, end);
+        /// <summary>Create a NRange object starting from first element in the collection to the end NIndex.</summary>
+        public static NRange EndAt(NIndex end) => new NRange(NIndex.Start, end);
 
-        /// <summary>Create a NativeRange object starting from first element to the end.</summary>
-        public static NativeRange All => new NativeRange(NativeIndex.Start, NativeIndex.End);
+        /// <summary>Create a NRange object starting from first element to the end.</summary>
+        public static NRange All => new NRange(NIndex.Start, NIndex.End);
 
-        /// <summary>Calculate the start offset and length of NativeRange object using a collection length.</summary>
-        /// <param name="length">The length of the collection that the NativeRange will be used with. length has to be a positive value.</param>
+        /// <summary>Calculate the start offset and length of NRange object using a collection length.</summary>
+        /// <param name="length">The length of the collection that the NRange will be used with. length has to be a positive value.</param>
         /// <remarks>
         /// For performance reason, we don't validate the input length parameter against negative values.
-        /// It is expected NativeRange will be used with collections which always have non negative length/count.
-        /// We validate the NativeRange is inside the length scope though.
+        /// It is expected NRange will be used with collections which always have non negative length/count.
+        /// We validate the NRange is inside the length scope though.
         /// </remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public (nint Offset, nint Length) GetOffsetAndLength(nint length)
@@ -113,9 +113,9 @@ namespace System
             throw new ArgumentOutOfRangeException("length");
         }
 
-        public static implicit operator NativeRange(Range range)
+        public static implicit operator NRange(Range range)
         {
-            return new NativeRange(range.Start, range.End);
+            return new NRange(range.Start, range.End);
         }
     }
 }

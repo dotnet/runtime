@@ -11,23 +11,23 @@ using System.Threading.Tasks;
 
 namespace System.Numerics.Tensors
 {
-    public static class SpanNDExtensions
+    public static class TensorSpanExtensions
     {
         /// <summary>
         /// Determines whether two sequences are equal by comparing the elements using IEquatable{T}.Equals(T).
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe bool SequenceEqual<T>(this SpanND<T> span, SpanND<T> other) where T : IEquatable<T>? => span.LinearLength == other.LinearLength && span.Shape.SequenceEqual(other.Shape) && SpanNDHelpers.SequenceEqual(ref span.GetPinnableReference(), ref other.GetPinnableReference(), (nuint)span.LinearLength);
+        public static unsafe bool SequenceEqual<T>(this TensorSpan<T> span, TensorSpan<T> other) where T : IEquatable<T>? => span.LinearLength == other.LinearLength && span.Shape.SequenceEqual(other.Shape) && TensorSpanHelpers.SequenceEqual(ref span.GetPinnableReference(), ref other.GetPinnableReference(), (nuint)span.LinearLength);
 
         // Doing a copy here for shape because otherwise I get a CS8347 about potentially exposing it beyond its lifetime. In this case that would never happen
         // because we were always doing a copy of the shape in the constructor anyways, but I couldn't figure out another way around it.
         /// <summary>
-        /// Extension method to more easily create a SpanND from an array.
+        /// Extension method to more easily create a TensorSpan from an array.
         /// </summary>
         /// <typeparam name="T">The type of the elements in the array</typeparam>
         /// <param name="array">The <see cref="System.Array"/> with the data</param>
-        /// <param name="shape">The shape for the <see cref="SpanND{T}"/></param>
+        /// <param name="shape">The shape for the <see cref="TensorSpan{T}"/></param>
         /// <returns></returns>
-        public static SpanND<T> AsSpanND<T>(this T[]? array, params ReadOnlySpan<nint> shape) => new(array, shape.ToArray());
+        public static TensorSpan<T> AsSpanND<T>(this T[]? array, params scoped ReadOnlySpan<nint> shape) => new(array, shape.ToArray());
     }
 }

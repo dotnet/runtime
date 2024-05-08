@@ -14,18 +14,18 @@ namespace System
     /// int lastElement = someArray[^1]; // lastElement = 5
     /// </code>
     /// </remarks>
-    public readonly struct NativeIndex : IEquatable<NativeIndex>
+    public readonly struct NIndex : IEquatable<NIndex>
     {
         private readonly nint _value;
 
-        /// <summary>Construct a NativeIndex using a value and indicating if the NativeIndex is from the start or from the end.</summary>
+        /// <summary>Construct a NIndex using a value and indicating if the NIndex is from the start or from the end.</summary>
         /// <param name="value">The index value. it has to be zero or positive number.</param>
         /// <param name="fromEnd">Indicating if the index is from the start or from the end.</param>
         /// <remarks>
-        /// If the NativeIndex constructed from the end, index value 1 means pointing at the last element and index value 0 means pointing at beyond last element.
+        /// If the NIndex constructed from the end, index value 1 means pointing at the last element and index value 0 means pointing at beyond last element.
         /// </remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public NativeIndex(nint value, bool fromEnd = false)
+        public NIndex(nint value, bool fromEnd = false)
         {
             if (value < 0)
             {
@@ -39,44 +39,44 @@ namespace System
         }
 
         // The following private constructor exists to skip the checks in the public ctor
-        private NativeIndex(nint value)
+        private NIndex(nint value)
         {
             _value = value;
         }
 
-        /// <summary>Create a NativeIndex pointing at first element.</summary>
-        public static NativeIndex Start => new NativeIndex(0);
+        /// <summary>Create a NIndex pointing at first element.</summary>
+        public static NIndex Start => new NIndex(0);
 
-        /// <summary>Create a NativeIndex pointing at beyond last element.</summary>
-        public static NativeIndex End => new NativeIndex(~0);
+        /// <summary>Create a NIndex pointing at beyond last element.</summary>
+        public static NIndex End => new NIndex(~0);
 
-        /// <summary>Create a NativeIndex from the start at the position indicated by the value.</summary>
+        /// <summary>Create a NIndex from the start at the position indicated by the value.</summary>
         /// <param name="value">The index value from the start.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static NativeIndex FromStart(nint value)
+        public static NIndex FromStart(nint value)
         {
             if (value < 0)
             {
                 ThrowHelper.ThrowValueArgumentOutOfRange_NeedNonNegNumException();
             }
 
-            return new NativeIndex(value);
+            return new NIndex(value);
         }
 
-        /// <summary>Create a NativeIndex from the end at the position indicated by the value.</summary>
+        /// <summary>Create a NIndex from the end at the position indicated by the value.</summary>
         /// <param name="value">The index value from the end.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static NativeIndex FromEnd(nint value)
+        public static NIndex FromEnd(nint value)
         {
             if (value < 0)
             {
                 ThrowHelper.ThrowValueArgumentOutOfRange_NeedNonNegNumException();
             }
 
-            return new NativeIndex(~value);
+            return new NIndex(~value);
         }
 
-        /// <summary>Returns the NativeIndex value.</summary>
+        /// <summary>Returns the NIndex value.</summary>
         public nint Value
         {
             get
@@ -88,16 +88,16 @@ namespace System
             }
         }
 
-        /// <summary>Indicates whether the NativeIndex is from the start or the end.</summary>
+        /// <summary>Indicates whether the NIndex is from the start or the end.</summary>
         public bool IsFromEnd => _value < 0;
 
         /// <summary>Calculate the offset from the start using the giving collection length.</summary>
-        /// <param name="length">The length of the collection that the NativeIndex will be used with. length has to be a positive value</param>
+        /// <param name="length">The length of the collection that the NIndex will be used with. length has to be a positive value</param>
         /// <remarks>
         /// For performance reason, we don't validate the input length parameter and the returned offset value against negative values.
         /// we don't validate either the returned offset is greater than the input length.
-        /// It is expected NativeIndex will be used with collections which always have non negative length/count. If the returned offset is negative and
-        /// then used to NativeIndex a collection will get out of range exception which will be same affect as the validation.
+        /// It is expected NIndex will be used with collections which always have non negative length/count. If the returned offset is negative and
+        /// then used to NIndex a collection will get out of range exception which will be same affect as the validation.
         /// </remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public nint GetOffset(nint length)
@@ -114,24 +114,24 @@ namespace System
             return offset;
         }
 
-        /// <summary>Indicates whether the current NativeIndex object is equal to another object of the same type.</summary>
+        /// <summary>Indicates whether the current NIndex object is equal to another object of the same type.</summary>
         /// <param name="value">An object to compare with this object</param>
-        public override bool Equals([NotNullWhen(true)] object? value) => value is NativeIndex other && _value == other._value;
+        public override bool Equals([NotNullWhen(true)] object? value) => value is NIndex other && _value == other._value;
 
-        /// <summary>Indicates whether the current NativeIndex object is equal to another NativeIndex object.</summary>
+        /// <summary>Indicates whether the current NIndex object is equal to another NIndex object.</summary>
         /// <param name="other">An object to compare with this object</param>
-        public bool Equals(NativeIndex other) => _value == other._value;
+        public bool Equals(NIndex other) => _value == other._value;
 
         /// <summary>Returns the hash code for this instance.</summary>
         public override int GetHashCode() => _value.GetHashCode();
 
-        /// <summary>Converts integer number to a NativeIndex.</summary>
-        public static implicit operator NativeIndex(int value) => FromStart(value);
+        /// <summary>Converts integer number to a NIndex.</summary>
+        public static implicit operator NIndex(int value) => FromStart(value);
 
-        /// <summary>Converts native integer number to a NativeIndex.</summary>
-        public static implicit operator NativeIndex(nint value) => FromStart(value);
+        /// <summary>Converts native integer number to a NIndex.</summary>
+        public static implicit operator NIndex(nint value) => FromStart(value);
 
-        /// <summary>Converts the value of the current NativeIndex object to its equivalent string representation.</summary>
+        /// <summary>Converts the value of the current NIndex object to its equivalent string representation.</summary>
         public override string ToString()
         {
             if (IsFromEnd)
@@ -150,12 +150,12 @@ namespace System
         }
 
         /// <summary>
-        /// Converts Index to a NativeIndex.
+        /// Converts Index to a NIndex.
         /// </summary>
         /// <param name="index">The Index to convert.</param>
-        public static implicit operator NativeIndex(Index index)
+        public static implicit operator NIndex(Index index)
         {
-            return new NativeIndex(index.Value, index.IsFromEnd);
+            return new NIndex(index.Value, index.IsFromEnd);
         }
     }
 }

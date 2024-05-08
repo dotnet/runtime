@@ -823,7 +823,7 @@ namespace System.Numerics.Tensors.Tests
         public static void IntArrayAsTensor()
         {
             int[] a = [91, 92, -93, 94];
-            SpanND<int> spanInt = a.AsSpanND(4);
+            TensorSpan<int> spanInt = a.AsSpanND(4);
             nint[] dims = [4];
             var tensor = Tensor.CreateUninitialized<int>(false, dims.AsSpan());
             spanInt.CopyTo(tensor);
@@ -957,7 +957,7 @@ namespace System.Numerics.Tensors.Tests
         public static void TensorClearTest()
         {
             int[] a = [1, 2, 3, 4, 5, 6, 7, 8, 9];
-            SpanND<int> spanInt = a.AsSpanND(3, 3);
+            TensorSpan<int> spanInt = a.AsSpanND(3, 3);
             var tensor = Tensor.CreateUninitialized<int>(false, [3, 3]);
             spanInt.CopyTo(tensor);
             var slice = tensor.Slice(0..2, 0..2);
@@ -1122,7 +1122,7 @@ namespace System.Numerics.Tensors.Tests
 
             // Make sure it works with reference types.
             object[] o = [new object(), new object(), new object(), new object(), new object(), new object(), new object(), new object(), new object()];
-            SpanND<object> spanObj = o.AsSpanND(3, 3);
+            TensorSpan<object> spanObj = o.AsSpanND(3, 3);
             spanObj.Clear();
 
             var oSpanEnumerator = spanObj.GetEnumerator();
@@ -1201,9 +1201,9 @@ namespace System.Numerics.Tensors.Tests
             int[] leftData = [1, 2, 3, 4, 5, 6, 7, 8, 9];
             int[] rightData = new int[9];
             nint[] dims = [3, 3];
-            SpanND<int> leftSpan = leftData.AsSpanND(3, 3);
+            TensorSpan<int> leftSpan = leftData.AsSpanND(3, 3);
             var tensor = Tensor.CreateUninitialized<int>(false, dims.AsSpan());
-            SpanND<int> rightSpan = rightData.AsSpanND(3, 3);
+            TensorSpan<int> rightSpan = rightData.AsSpanND(3, 3);
             leftSpan.CopyTo(tensor);
             var leftEnum = leftSpan.GetEnumerator();
             var tensorEnum = tensor.GetEnumerator();
@@ -1245,7 +1245,7 @@ namespace System.Numerics.Tensors.Tests
             Assert.Throws<ArgumentOutOfRangeException>(() =>
             {
                 var l = leftData.AsSpanND(3, 3, 3);
-                var r = new SpanND<int>();
+                var r = new TensorSpan<int>();
                 l.CopyTo(r);
             });
         }
@@ -1255,10 +1255,10 @@ namespace System.Numerics.Tensors.Tests
         {
             int[] leftData = [1, 2, 3, 4, 5, 6, 7, 8, 9];
             int[] rightData = new int[9];
-            SpanND<int> leftSpan = leftData.AsSpanND(3, 3);
+            TensorSpan<int> leftSpan = leftData.AsSpanND(3, 3);
             nint[] dims = [3, 3];
             var tensor = Tensor.CreateUninitialized<int>(false, dims.AsSpan());
-            SpanND<int> rightSpan = rightData.AsSpanND(3, 3);
+            TensorSpan<int> rightSpan = rightData.AsSpanND(3, 3);
             var success = leftSpan.TryCopyTo(tensor);
             Assert.True(success);
             success = tensor.TryCopyTo(rightSpan);
@@ -1299,7 +1299,7 @@ namespace System.Numerics.Tensors.Tests
             var l = leftData.AsSpanND(3, 3, 3);
             dims = [2, 2];
             tensor = Tensor.Create<int>(false, dims.AsSpan());
-            var r = new SpanND<int>();
+            var r = new TensorSpan<int>();
             success = l.TryCopyTo(tensor);
             Assert.False(success);
             success = tensor.TryCopyTo(r);

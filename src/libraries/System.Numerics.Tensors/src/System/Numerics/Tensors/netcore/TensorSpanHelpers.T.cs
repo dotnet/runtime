@@ -14,7 +14,7 @@ using System.Xml.Serialization;
 
 namespace System.Numerics.Tensors
 {
-    internal static partial class SpanNDHelpers // .T
+    internal static partial class TensorSpanHelpers // .T
     {
         public static unsafe void Memmove<T>(Span<T> destination, ReadOnlySpan<T> source, nint length, nint dstOffset = 0)
         {

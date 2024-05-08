@@ -91,10 +91,10 @@ namespace System.Numerics.Tensors.Tests
         }
 
 #if NETCOREAPP
-        public delegate void AssertThrowsAction<T>(SpanND<T> span);
+        public delegate void AssertThrowsAction<T>(TensorSpan<T> span);
 
         // Cannot use standard Assert.Throws() when testing Span - Span and closures don't get along.
-        public static void AssertThrows<E, T>(SpanND<T> span, AssertThrowsAction<T> action) where E : Exception
+        public static void AssertThrows<E, T>(TensorSpan<T> span, AssertThrowsAction<T> action) where E : Exception
         {
             try
             {

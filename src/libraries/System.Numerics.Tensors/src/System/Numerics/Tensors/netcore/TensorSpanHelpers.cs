@@ -13,27 +13,8 @@ using Microsoft.VisualBasic;
 
 namespace System.Numerics.Tensors
 {
-    internal static partial class SpanNDHelpers
+    internal static partial class TensorSpanHelpers
     {
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static nint CalculateTotalLength(ref nint[] lengths)
-        {
-            nuint totalLength = 0;
-
-            if (lengths.Length != 0)
-            {
-                totalLength = (nuint)lengths[0];
-
-                for (int i = 1; i < lengths.Length; i++)
-                {
-                    nuint length = (nuint)lengths[i]; // We don't need to check this, since the multiplication and final cast will handle it instead
-                    totalLength = checked(totalLength * length);
-                }
-            }
-
-            return checked((nint)totalLength);
-        }
-
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static nint CalculateTotalLength(ReadOnlySpan<nint> lengths)
         {
@@ -97,7 +78,7 @@ namespace System.Numerics.Tensors
         /// <param name="curIndex">The current index from the indices we are on.</param>
         /// <param name="addend">How much we are adding to the <paramref name="curIndex"/></param>
         /// <param name="curIndices">The current indices</param>
-        /// <param name="shape">The shape of the SpanND we are iterating over.</param>
+        /// <param name="shape">The shape of the TensorSpan we are iterating over.</param>
         public static void AdjustIndices(int curIndex, nint addend, ref Span<nint> curIndices, ReadOnlySpan<nint> shape)
         {
             if (addend <= 0 || curIndex < 0)
@@ -117,7 +98,7 @@ namespace System.Numerics.Tensors
         /// <param name="curIndex">The current index from the indices we are on.</param>
         /// <param name="addend">How much we are adding to the <paramref name="curIndex"/></param>
         /// <param name="curIndices">The current indices</param>
-        /// <param name="shape">The shape of the SpanND we are iterating over.</param>
+        /// <param name="shape">The shape of the TensorSpan we are iterating over.</param>
         public static void AdjustIndices(int curIndex, nint addend, ref nint[] curIndices, ReadOnlySpan<nint> shape)
         {
             if (addend <= 0 || curIndex < 0)
@@ -137,7 +118,7 @@ namespace System.Numerics.Tensors
         /// <param name="curIndex">The current index from the indices we are on.</param>
         /// <param name="addend">How much we are subtracting from the <paramref name="curIndex"/></param>
         /// <param name="curIndices">The current indices</param>
-        /// <param name="shape">The shape of the SpanND we are iterating over.</param>
+        /// <param name="shape">The shape of the TensorSpan we are iterating over.</param>
         public static void AdjustIndicesDown(int curIndex, nint addend, ref Span<nint> curIndices, ReadOnlySpan<nint> shape)
         {
             if (addend <= 0 || curIndex < 0)

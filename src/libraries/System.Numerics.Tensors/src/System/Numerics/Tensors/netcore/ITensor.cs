@@ -14,7 +14,6 @@ namespace System.Numerics.Tensors
           IEquatable<TSelf>,
           IEqualityOperators<TSelf, TSelf, bool>
         where TSelf : ITensor<TSelf, T>
-        where T : IEquatable<T>
     {
         // TODO: Determine if we can implement `IEqualityOperators<TSelf, T, bool>`.
         // It looks like C#/.NET currently hits limitations here as it believes TSelf and T could be the same type
@@ -25,22 +24,23 @@ namespace System.Numerics.Tensors
         bool IsEmpty { get; }
         bool IsPinned { get; }
         int Rank { get; }
+        // THIS IS GOING TO PEND A DISCUSSION WITH THE LANGUAGE TEAM
         ReadOnlySpan<nint> Strides { get; }
 
-        ref T this[params ReadOnlySpan<nint> indices] { get; }
+        ref T this[params scoped ReadOnlySpan<nint> indices] { get; }
 
-        static abstract implicit operator SpanND<T>(TSelf value);
-        static abstract implicit operator ReadOnlySpanND<T>(TSelf value);
+        static abstract implicit operator TensorSpan<T>(TSelf value);
+        static abstract implicit operator ReadOnlyTensorSpan<T>(TSelf value);
 
-        SpanND<T> AsSpanND(params ReadOnlySpan<NativeRange> ranges);
-        ReadOnlySpanND<T> AsReadOnlySpanND(params ReadOnlySpan<NativeRange> ranges);
+        TensorSpan<T> AsSpanND(params scoped ReadOnlySpan<NRange> ranges);
+        ReadOnlyTensorSpan<T> AsReadOnlySpanND(params scoped ReadOnlySpan<NRange> ranges);
         ref T GetPinnableReference();
-        TSelf Slice(params ReadOnlySpan<NativeRange> ranges);
+        TSelf Slice(params scoped ReadOnlySpan<NRange> ranges);
 
         void Clear();
-        void CopyTo(SpanND<T> destination);
+        void CopyTo(TensorSpan<T> destination);
         void Fill(T value);
-        bool TryCopyTo(SpanND<T> destination);
+        bool TryCopyTo(TensorSpan<T> destination);
 
         // IEqualityOperators
 

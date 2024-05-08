@@ -22,7 +22,7 @@ namespace System.Numerics.Tensors
         public static Tensor<T> Create<T>(bool mustPin, ReadOnlySpan<nint> lengths)
             where T : IEquatable<T>
         {
-            nint linearLength = SpanNDHelpers.CalculateTotalLength(lengths);
+            nint linearLength = TensorSpanHelpers.CalculateTotalLength(lengths);
             T[] values = mustPin ? GC.AllocateArray<T>((int)linearLength, mustPin) : (new T[linearLength]);
             return new Tensor<T>(values, lengths.ToArray(), mustPin);
         }
@@ -38,7 +38,7 @@ namespace System.Numerics.Tensors
         public static Tensor<T> Create<T>(bool mustPin, ReadOnlySpan<nint> lengths, ReadOnlySpan<nint> strides)
             where T : IEquatable<T>
         {
-            nint linearLength = SpanNDHelpers.CalculateTotalLength(lengths);
+            nint linearLength = TensorSpanHelpers.CalculateTotalLength(lengths);
             T[] values = mustPin ? GC.AllocateArray<T>((int)linearLength, mustPin) : (new T[linearLength]);
             return new Tensor<T>(values, lengths.ToArray(), strides.ToArray(), mustPin);
         }
@@ -54,7 +54,7 @@ namespace System.Numerics.Tensors
         public static Tensor<T> Create<T>(T[] values, ReadOnlySpan<nint> lengths)
             where T : IEquatable<T>
         {
-            nint linearLength = SpanNDHelpers.CalculateTotalLength(lengths);
+            nint linearLength = TensorSpanHelpers.CalculateTotalLength(lengths);
             if (linearLength != values.Length)
                 ThrowHelper.ThrowArgument_LengthsMustEqualArrayLength();
 
@@ -73,7 +73,7 @@ namespace System.Numerics.Tensors
         public static Tensor<T> Create<T>(T[] values, ReadOnlySpan<nint> lengths, ReadOnlySpan<nint> strides)
             where T : IEquatable<T>
         {
-            nint linearLength = SpanNDHelpers.CalculateTotalLength(lengths);
+            nint linearLength = TensorSpanHelpers.CalculateTotalLength(lengths);
             if (linearLength != values.Length)
                 ThrowHelper.ThrowArgument_LengthsMustEqualArrayLength();
 
@@ -90,7 +90,7 @@ namespace System.Numerics.Tensors
         public static Tensor<T> CreateUninitialized<T>(bool mustPin, ReadOnlySpan<nint> lengths)
             where T : IEquatable<T>
         {
-            nint linearLength = SpanNDHelpers.CalculateTotalLength(lengths);
+            nint linearLength = TensorSpanHelpers.CalculateTotalLength(lengths);
             T[] values = GC.AllocateUninitializedArray<T>((int)linearLength, mustPin);
             return new Tensor<T>(values, lengths.ToArray(), mustPin);
         }
@@ -106,7 +106,7 @@ namespace System.Numerics.Tensors
         public static Tensor<T> CreateUninitialized<T>(bool mustPin, ReadOnlySpan<nint> lengths, ReadOnlySpan<nint> strides)
             where T : IEquatable<T>
         {
-            nint linearLength = SpanNDHelpers.CalculateTotalLength(lengths);
+            nint linearLength = TensorSpanHelpers.CalculateTotalLength(lengths);
             T[] values = GC.AllocateUninitializedArray<T>((int)linearLength, mustPin);
             return new Tensor<T>(values, lengths.ToArray(), strides.ToArray(), mustPin);
         }
@@ -130,14 +130,14 @@ namespace System.Numerics.Tensors
         /// <typeparam name="T"></typeparam>
         /// <param name="lengths"></param>
         /// <returns></returns>
-        public static Tensor<T> CreateAndFillUniform<T>(params ReadOnlySpan<nint> lengths)
+        public static Tensor<T> CreateAndFillUniformDistribution<T>(params ReadOnlySpan<nint> lengths)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IFloatingPoint<T>
         {
-            var linearLength = SpanNDHelpers.CalculateTotalLength(lengths);
+            var linearLength = TensorSpanHelpers.CalculateTotalLength(lengths);
             T[] values = new T[linearLength];
             Random rand = Random.Shared;
             for (int i = 0; i < values.Length; i++)
-                values[i] = T.CreateChecked(rand.NextSingle());
+                values[i] = T.CreateChecked(rand.NextDouble());
 
             return new Tensor<T>(values, lengths, false);
         }
@@ -149,10 +149,10 @@ namespace System.Numerics.Tensors
         /// <typeparam name="T"></typeparam>
         /// <param name="lengths"></param>
         /// <returns></returns>
-        public static Tensor<T> CreateAndFillGaussianNormal<T>(params ReadOnlySpan<nint> lengths)
+        public static Tensor<T> CreateAndFillGaussianNormalDistribution<T>(params ReadOnlySpan<nint> lengths)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IFloatingPoint<T>
         {
-            var linearLength = SpanNDHelpers.CalculateTotalLength(lengths);
+            var linearLength = TensorSpanHelpers.CalculateTotalLength(lengths);
             T[] values = new T[linearLength];
             GaussianDistribution(ref values, linearLength);
             return new Tensor<T>(values, lengths, false);
