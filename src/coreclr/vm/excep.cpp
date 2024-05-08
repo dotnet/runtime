@@ -4742,7 +4742,7 @@ LONG InternalUnhandledExceptionFilter_Worker(
             // ignoring unhandled exceptions cannot be set on the default domain.
 
             if (IsFinalizerThread() || (pParam->pThread->IsThreadPoolThread()))
-                fIsProcessTerminating = !(pParam->pThread->GetDomain()->IgnoreUnhandledExceptions());
+                fIsProcessTerminating = !(AppDomain::GetCurrentDomain()->IgnoreUnhandledExceptions());
             else
                 fIsProcessTerminating = !(pParam->pThread->HasThreadStateNC(Thread::TSNC_IgnoreUnhandledExceptions));
 

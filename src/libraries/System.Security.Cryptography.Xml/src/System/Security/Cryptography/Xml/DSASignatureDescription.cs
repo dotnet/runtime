@@ -17,7 +17,7 @@ namespace System.Security.Cryptography.Xml
             DigestAlgorithm = "SHA1";
         }
 
-#if NETCOREAPP
+#if NET
         [RequiresUnreferencedCode("CreateDeformatter is not trim compatible because the algorithm implementation referenced by DeformatterAlgorithm might be removed.")]
 #endif
         public sealed override AsymmetricSignatureDeformatter CreateDeformatter(AsymmetricAlgorithm key)
@@ -28,7 +28,7 @@ namespace System.Security.Cryptography.Xml
             return item;
         }
 
-#if NETCOREAPP
+#if NET
         [RequiresUnreferencedCode("CreateFormatter is not trim compatible because the algorithm implementation referenced by FormatterAlgorithm might be removed.")]
 #endif
         public sealed override AsymmetricSignatureFormatter CreateFormatter(AsymmetricAlgorithm key)

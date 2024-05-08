@@ -578,7 +578,8 @@ void Thread::GcScanRootsWorker(ScanFunc * pfnEnumCallback, ScanContext * pvCallb
 
 #ifndef DACCESS_COMPILE
 
-EXTERN_C void FASTCALL RhpSuspendRedirected();
+#ifdef FEATURE_HIJACK
+
 EXTERN_C void FASTCALL RhpGcProbeHijack();
 EXTERN_C void FASTCALL RhpGcStressHijack();
 
@@ -815,6 +816,7 @@ void Thread::HijackReturnAddressWorker(StackFrameIterator* frameIterator, Hijack
             GetPalThreadIdForLogging(), frameIterator->GetRegisterSet()->GetIP());
     }
 }
+#endif // FEATURE_HIJACK
 
 NATIVE_CONTEXT* Thread::GetInterruptedContext()
 {
@@ -832,6 +834,16 @@ NATIVE_CONTEXT* Thread::EnsureRedirectionContext()
     }
 
     return m_interruptedContext;
+}
+
+EXTERN_C NOINLINE void FASTCALL RhpSuspendRedirected()
+{
+    Thread* pThread = ThreadStore::GetCurrentThread();
+    pThread->WaitForGC(INTERRUPTED_THREAD_MARKER);
+
+    // restore execution at interrupted location
+    PalRestoreContext(pThread->GetInterruptedContext());
+    UNREACHABLE();
 }
 
 bool Thread::Redirect()
@@ -861,6 +873,7 @@ bool Thread::Redirect()
 }
 #endif //FEATURE_SUSPEND_REDIRECTION
 
+#ifdef FEATURE_HIJACK
 bool Thread::InlineSuspend(NATIVE_CONTEXT* interruptedContext)
 {
     ASSERT(!IsDoNotTriggerGcSet());
@@ -948,6 +961,7 @@ void* Thread::GetHijackedReturnAddress()
     ASSERT(ThreadStore::GetCurrentThread() == this);
     return m_pvHijackedReturnAddress;
 }
+#endif // FEATURE_HIJACK
 
 void Thread::SetState(ThreadStateFlags flags)
 {
@@ -1020,20 +1034,6 @@ EXTERN_C NOINLINE void FASTCALL RhpGcPoll2(PInvokeTransitionFrame* pFrame)
 
     RhpWaitForGC2(pFrame);
 }
-
-#ifdef FEATURE_SUSPEND_REDIRECTION
-
-EXTERN_C NOINLINE void FASTCALL RhpSuspendRedirected()
-{
-    Thread* pThread = ThreadStore::GetCurrentThread();
-    pThread->WaitForGC(INTERRUPTED_THREAD_MARKER);
-
-    // restore execution at interrupted location
-    PalRestoreContext(pThread->GetInterruptedContext());
-    UNREACHABLE();
-}
-
-#endif //FEATURE_SUSPEND_REDIRECTION
 
 void Thread::PushExInfo(ExInfo * pExInfo)
 {

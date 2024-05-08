@@ -6,7 +6,7 @@ using System.Security.Policy;
 
 namespace System.Security
 {
-#if NETCOREAPP
+#if NET
     [Obsolete(Obsoletions.CodeAccessSecurityMessage, DiagnosticId = Obsoletions.CodeAccessSecurityDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
 #endif
     public static partial class SecurityManager

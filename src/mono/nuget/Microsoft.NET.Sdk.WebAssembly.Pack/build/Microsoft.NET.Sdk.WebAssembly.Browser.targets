@@ -123,8 +123,9 @@ Copyright (c) .NET Foundation. All rights reserved.
 
     <!-- Wasm -->
     <AddWasmStaticWebAssetsDependsOn>
-      $(AddWasmStaticWebAssetsDependsOn);
       ResolveWasmOutputs;
+      _GenerateBuildWasmBootJson;
+      $(AddWasmStaticWebAssetsDependsOn);
     </AddWasmStaticWebAssetsDependsOn>
     <GenerateBuildWasmBootJsonDependsOn>
       $(GenerateBuildWasmBootJsonDependsOn);
@@ -278,10 +279,19 @@ Copyright (c) .NET Foundation. All rights reserved.
       <Output TaskParameter="Assets" ItemName="_WasmJsConfigStaticWebAsset" />
     </DefineStaticWebAssets>
 
+    <DefineStaticWebAssetEndpoints
+      CandidateAssets="@(_WasmJsConfigStaticWebAsset)"
+      ExistingEndpoints="@(StaticWebAssetEndpoint)"
+      ContentTypeMappings="@(StaticWebAssetContentTypeMapping)"
+    >
+      <Output TaskParameter="Endpoints" ItemName="_WasmJsConfigStaticWebAssetEndpoint" />
+    </DefineStaticWebAssetEndpoints>
+
     <ItemGroup>
       <!-- Update the boot config static web asset since we've given it a trait -->
       <StaticWebAsset Remove="@(_WasmJsConfigStaticWebAsset)" />
       <StaticWebAsset Include="@(_WasmJsConfigStaticWebAsset)" />
+      <StaticWebAssetEndpoint Include="@(_WasmJsConfigStaticWebAssetEndpoint)" />
 
       <ReferenceCopyLocalPaths Remove="@(_WasmBuildFilesToRemove)" />
     </ItemGroup>
@@ -292,6 +302,8 @@ Copyright (c) .NET Foundation. All rights reserved.
     <ItemGroup>
       <StaticWebAsset Include="@(WasmStaticWebAsset)" />
       <StaticWebAsset Include="@(_BuildWasmBootJsonStaticWebAsset)" />
+      <StaticWebAssetEndpoint Include="@(WasmStaticWebAssetEndpoint)" />
+      <StaticWebAssetEndpoint Include="@(_BuildWasmBootJsonStaticWebAssetEndpoint)" />
     </ItemGroup>
   </Target>
 
@@ -375,6 +387,22 @@ Copyright (c) .NET Foundation. All rights reserved.
       <Output TaskParameter="Assets" ItemName="_BuildWasmBootJsonStaticWebAsset" />
     </DefineStaticWebAssets>
 
+    <DefineStaticWebAssetEndpoints
+      CandidateAssets="@(_BuildWasmBootJsonStaticWebAsset)"
+      ExistingEndpoints="@(StaticWebAssetEndpoint)"
+      ContentTypeMappings="@(StaticWebAssetContentTypeMapping)"
+    >
+      <Output TaskParameter="Endpoints" ItemName="_BuildWasmBootJsonStaticWebAssetEndpoint" />
+    </DefineStaticWebAssetEndpoints>
+
+    <DefineStaticWebAssetEndpoints
+      CandidateAssets="@(WasmStaticWebAsset)"
+      ExistingEndpoints="@(StaticWebAssetEndpoint)"
+      ContentTypeMappings="@(StaticWebAssetContentTypeMapping)"
+    >
+      <Output TaskParameter="Endpoints" ItemName="WasmStaticWebAssetEndpoint" />
+    </DefineStaticWebAssetEndpoints>
+
   </Target>
 
   <!-- Publish starts here -->
@@ -449,8 +477,8 @@ Copyright (c) .NET Foundation. All rights reserved.
     <!-- _NewWebCilPublishStaticWebAssetsCandidates contain the `Fingerprint` and the `Integrity` from the old assets.
          Remove them and call DefineStaticWebAssets so that they can get re-computed appropriately.
     -->
-    <ItemGroup>    
-      <_NewWebCilPublishStaticWebAssetsCandidatesNoMetadata 
+    <ItemGroup>
+      <_NewWebCilPublishStaticWebAssetsCandidatesNoMetadata
         Include="@(_NewWebCilPublishStaticWebAssetsCandidates)"
         RemoveMetadata="Integrity;Fingerprint" />
     </ItemGroup>
@@ -459,9 +487,18 @@ Copyright (c) .NET Foundation. All rights reserved.
       <Output TaskParameter="Assets" ItemName="_NewWebCilPublishStaticWebAssets" />
     </DefineStaticWebAssets>
 
+    <DefineStaticWebAssetEndpoints
+      CandidateAssets="@(_NewWebCilPublishStaticWebAssets)"
+      ExistingEndpoints="@(StaticWebAssetEndpoint)"
+      ContentTypeMappings="@(StaticWebAssetContentTypeMapping)"
+    >
+      <Output TaskParameter="Endpoints" ItemName="_NewWebCilPublishStaticWebAssetsEndpoint" />
+    </DefineStaticWebAssetEndpoints>
+
     <ItemGroup>
       <ResolvedFileToPublish Remove="@(_PublishResolvedFilesToRemove)" />
       <StaticWebAsset Include="@(_NewWebCilPublishStaticWebAssets)" />
+      <StaticWebAssetEndpoint Include="@(_NewWebCilPublishStaticWebAssetsEndpoint)" />
 
       <!-- TODO: Probably doesn't do anything as of now, original https://github.com/dotnet/aspnetcore/pull/34798 -->
       <PublishBlazorBootStaticWebAsset
@@ -499,6 +536,14 @@ Copyright (c) .NET Foundation. All rights reserved.
       <Output TaskParameter="Assets" ItemName="_BlazorExtensionsCandidatesForPublish" />
       <Output TaskParameter="Assets" ItemName="AssetToCompress" />
     </DefineStaticWebAssets>
+
+    <DefineStaticWebAssetEndpoints
+      CandidateAssets="@(_BlazorExtensionsCandidatesForPublish)"
+      ExistingEndpoints="@(StaticWebAssetEndpoint)"
+      ContentTypeMappings="@(StaticWebAssetContentTypeMapping)"
+    >
+      <Output TaskParameter="Endpoints" ItemName="StaticWebAssetEndpoint" />
+    </DefineStaticWebAssetEndpoints>
   </Target>
 
   <Target Name="_AddWasmWebConfigFile" AfterTargets="ILLink">
@@ -511,7 +556,7 @@ Copyright (c) .NET Foundation. All rights reserved.
     </ItemGroup>
   </Target>
 
-  <Target Name="_AddPublishWasmBootJsonToStaticWebAssets">
+  <Target Name="_AddPublishWasmBootJsonToStaticWebAssets" DependsOnTargets="GeneratePublishWasmBootJson">
     <ItemGroup>
       <_PublishWasmBootJson
         Include="$(IntermediateOutputPath)blazor.publish.boot.json"
@@ -532,7 +577,17 @@ Copyright (c) .NET Foundation. All rights reserved.
       BasePath="$(StaticWebAssetBasePath)"
     >
       <Output TaskParameter="Assets" ItemName="StaticWebAsset" />
+      <Output TaskParameter="Assets" ItemName="_PublishWasmBootJsonStaticWebAsset" />
     </DefineStaticWebAssets>
+
+    <DefineStaticWebAssetEndpoints
+      CandidateAssets="@(_PublishWasmBootJsonStaticWebAsset)"
+      ExistingEndpoints="@(StaticWebAssetEndpoint)"
+      ContentTypeMappings="@(StaticWebAssetContentTypeMapping)"
+    >
+      <Output TaskParameter="Endpoints" ItemName="StaticWebAssetEndpoint" />
+    </DefineStaticWebAssetEndpoints>
+
   </Target>
 
   <Target Name="GeneratePublishWasmBootJson" DependsOnTargets="$(GeneratePublishWasmBootJsonDependsOn)">

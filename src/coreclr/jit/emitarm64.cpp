@@ -4248,6 +4248,28 @@ void emitter::emitIns_Mov(
             break;
         }
 
+        case INS_sve_mov:
+        {
+            if (isPredicateRegister(dstReg) && isPredicateRegister(srcReg))
+            {
+                assert(insOptsNone(opt));
+
+                opt  = INS_OPTS_SCALABLE_B;
+                attr = EA_SCALABLE;
+
+                if (IsRedundantMov(ins, size, dstReg, srcReg, canSkip))
+                {
+                    return;
+                }
+                fmt = IF_SVE_CZ_4A_L;
+            }
+            else
+            {
+                unreached();
+            }
+
+            break;
+        }
         default:
         {
             unreached();
@@ -9020,11 +9042,32 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
     /* Update the emitter's live GC ref sets */
 
+    // If the method returns a GC ref, mark RBM_INTRET appropriately
+    if (retSize == EA_GCREF)
+    {
+        gcrefRegs |= RBM_INTRET;
+    }
+    else if (retSize == EA_BYREF)
+    {
+        byrefRegs |= RBM_INTRET;
+    }
+
+    // If is a multi-register return method is called, mark RBM_INTRET_1 appropriately
+    if (secondRetSize == EA_GCREF)
+    {
+        gcrefRegs |= RBM_INTRET_1;
+    }
+    else if (secondRetSize == EA_BYREF)
+    {
+        byrefRegs |= RBM_INTRET_1;
+    }
+
     VarSetOps::Assign(emitComp, emitThisGCrefVars, ptrVars);
     emitThisGCrefRegs = gcrefRegs;
     emitThisByrefRegs = byrefRegs;
 
-    id->idSetIsNoGC(emitNoGChelper(methHnd));
+    // for the purpose of GC safepointing tail-calls are not real calls
+    id->idSetIsNoGC(isJump || emitNoGChelper(methHnd));
 
     /* Set the instruction - special case jumping a function */
     instruction ins;
@@ -14243,7 +14286,7 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
 
             if (offset != 0)
             {
-                regNumber tmpReg = indir->GetSingleTempReg();
+                regNumber tmpReg = codeGen->internalRegisters.GetSingle(indir);
 
                 emitAttr addType = varTypeIsGC(memBase) ? EA_BYREF : EA_PTRSIZE;
 
@@ -14350,7 +14393,7 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
             else
             {
                 // We require a tmpReg to hold the offset
-                regNumber tmpReg = indir->GetSingleTempReg();
+                regNumber tmpReg = codeGen->internalRegisters.GetSingle(indir);
 
                 // First load/store tmpReg with the large offset constant
                 codeGen->instGen_Set_Reg_To_Imm(EA_PTRSIZE, tmpReg, offset);
@@ -14490,7 +14533,7 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
     {
         if (isMulOverflow)
         {
-            regNumber extraReg = dst->GetSingleTempReg();
+            regNumber extraReg = codeGen->internalRegisters.GetSingle(dst);
             assert(extraReg != dst->GetRegNum());
 
             if ((dst->gtFlags & GTF_UNSIGNED) != 0)
@@ -16352,6 +16395,7 @@ bool emitter::IsMovInstruction(instruction ins)
         case INS_sxtw:
         case INS_uxtb:
         case INS_uxth:
+        case INS_sve_mov:
         {
             return true;
         }
@@ -16400,7 +16444,7 @@ bool emitter::IsMovInstruction(instruction ins)
 
 bool emitter::IsRedundantMov(instruction ins, emitAttr size, regNumber dst, regNumber src, bool canSkip)
 {
-    assert(ins == INS_mov);
+    assert((ins == INS_mov) || (ins == INS_sve_mov));
 
     if (canSkip && (dst == src))
     {
@@ -16996,7 +17040,7 @@ void emitter::emitStoreSimd12ToLclOffset(unsigned varNum, unsigned offset, regNu
     emitIns_S_R(INS_str, EA_8BYTE, dataReg, varNum, offset);
 
     // Extract upper 4-bytes from data
-    regNumber tmpReg = tmpRegProvider->GetSingleTempReg();
+    regNumber tmpReg = codeGen->internalRegisters.GetSingle(tmpRegProvider);
     emitIns_R_R_I(INS_mov, EA_4BYTE, tmpReg, dataReg, 2);
 
     // 4-byte write
