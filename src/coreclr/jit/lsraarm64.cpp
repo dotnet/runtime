@@ -1772,7 +1772,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
         // then record delay-free for operands as well as the "merge" value
         GenTreeHWIntrinsic* intrinEmbOp2 = intrin.op2->AsHWIntrinsic();
         size_t              numArgs      = intrinEmbOp2->GetOperandCount();
-        assert((numArgs == 1) || (numArgs == 2));
+        assert((numArgs == 1) || (numArgs == 2) || (numArgs == 3));
         tgtPrefUse = BuildUse(intrinEmbOp2->Op(1));
         srcCount += 1;
 
@@ -1792,7 +1792,8 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
 
         assert(intrin.op1 != nullptr);
 
-        bool forceOp2DelayFree = false;
+        bool      forceOp2DelayFree = false;
+        regMaskTP candidates        = RBM_NONE;
         if ((intrin.id == NI_Vector64_GetElement) || (intrin.id == NI_Vector128_GetElement))
         {
             if (!intrin.op2->IsCnsIntOrI() && (!intrin.op1->isContained() || intrin.op1->OperIsLocal()))
@@ -1812,6 +1813,21 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 // we will use the SIMD temp location to store the vector.
                 var_types requiredSimdTempType = (intrin.id == NI_Vector64_GetElement) ? TYP_SIMD8 : TYP_SIMD16;
                 compiler->getSIMDInitTempVarNum(requiredSimdTempType);
+            }
+        }
+
+        if ((intrin.id == NI_Sve_FusedMultiplyAddBySelectedScalar) || (intrin.id == NI_Sve_FusedMultiplySubtractBySelectedScalar))
+        {
+            // If this is common pattern, then we will add a flag in the table, but for now, just check for specific
+            // intrinsics
+            if (intrin.baseType == TYP_DOUBLE)
+            {
+                candidates = RBM_SVE_INDEXED_D_ELEMENT_ALLOWED_REGS;
+            }
+            else
+            {
+                assert(intrin.baseType == TYP_FLOAT);
+                candidates = RBM_SVE_INDEXED_S_ELEMENT_ALLOWED_REGS;
             }
         }
 
@@ -1845,7 +1861,8 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
 
         if (intrin.op3 != nullptr)
         {
-            srcCount += isRMW ? BuildDelayFreeUses(intrin.op3, intrin.op1) : BuildOperandUses(intrin.op3);
+            srcCount += isRMW ? BuildDelayFreeUses(intrin.op3, intrin.op1, candidates)
+                              : BuildOperandUses(intrin.op3, candidates);
 
             if (intrin.op4 != nullptr)
             {
