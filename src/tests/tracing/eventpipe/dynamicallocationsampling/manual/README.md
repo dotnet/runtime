@@ -45,4 +45,60 @@ Tag  SCount  TCount       SSize       TSize  UnitSize  UpscaledSize  UpscaledCou
  ST       2       2    16777264    16777280   8388632      16777264              2  Object0[]
 ```
 
+
+A dedicated `AllocationsRunEventSource` has been created to allow monitoring multiple allocation runs and compute percentiles:
+```
+> starts 10 iterations allocating 1000000 instances
+0|
+Tag  SCount  TCount       SSize       TSize  UnitSize  UpscaledSize  UpscaledCount  Name
+-------------------------------------------------------------------------------------------
+ ST     246     224        5904        5376        24      25193352        1049723  Allocate.WithFinalizer
+ ST       5       7         320         448        64        512160           8002  System.RuntimeFieldInfoStub
+ ST     702     719       50544       51768        72      71910074         998751  System.Int32[,]
+ ST     946     859       90816       82464        96      96915815        1009539  System.String
+ ST    1842    1887      362874      377400       197     188802295         958387  System.Byte[]
+ ST       3       3    56000072    56000096  18666690      56000072              3  System.Object[]
+1|
+Tag  SCount  TCount       SSize       TSize  UnitSize  UpscaledSize  UpscaledCount  Name
+-------------------------------------------------------------------------------------------
+ ST     283     224        6792        5376        24      28982596        1207608  Allocate.WithFinalizer
+ ST     675     711       48600       51192        72      69144302         960337  System.Int32[,]
+ ST     974     867       93504       83232        96      99784359        1039420  System.String
+ ST    1861    1888      366617      377600       197     190749767         968272  System.Byte[]
+ ST       3       3    56000072    56000096  18666690      56000072              3  System.Object[]
+2|
+Tag  SCount  TCount       SSize       TSize  UnitSize  UpscaledSize  UpscaledCount  Name
+-------------------------------------------------------------------------------------------
+ ST     215     236        5160        5664        24      22018580         917440  Allocate.WithFinalizer
+ ST       1       1          64          64        64        102432           1600  System.RuntimeFieldInfoStub
+ ST     697     650       50184       46800        72      71397894         991637  System.Int32[,]
+ ST     927     917       88992       88032        96      94969302         989263  System.String
+ ST    1895    1886      373315      377200       197     194234717         985963  System.Byte[]
+ ST       3       3    56000072    56000096  18666690      56000072              3  System.Object[]
+  T       0       1           0         288       288             0              0  System.GCMemoryInfoData
+3|
+...
+8|
+Tag  SCount  TCount       SSize       TSize  UnitSize  UpscaledSize  UpscaledCount  Name
+-------------------------------------------------------------------------------------------
+ ST     244     213        5856        5112        24      24988528        1041188  Allocate.WithFinalizer
+ ST     710     681       51120       49032        72      72729562        1010132  System.Int32[,]
+ ST     974     918       93504       88128        96      99784359        1039420  System.String
+ ST    1920    1875      378240      375000       197     196797180         998970  System.Byte[]
+ ST       3       3    56000072    56000096  18666690      56000072              3  System.Object[]
+9|
+Tag  SCount  TCount       SSize       TSize  UnitSize  UpscaledSize  UpscaledCount  Name
+-------------------------------------------------------------------------------------------
+ ST     236     219        5664        5256        24      24169232        1007051  Allocate.WithFinalizer
+ ST     698     682       50256       49104        72      71500330         993060  System.Int32[,]
+ ST     940     913       90240       87648        96      96301127        1003136  System.String
+ ST    1982    1874      390454      374800       197     203152089        1031228  System.Byte[]
+ ST       3       3    56000072    56000096  18666690      56000072              3  System.Object[]
+
+< run stops
+```
+
+**TODO: I guess the Pxx should be computed on the ***UpscaledCount*** column. TO BE CONFIRMED.**
+
+
 Feel free to allocate the patterns you want in other methods of the **_Allocate_** project and use the _DynamicAllocationSampling_ events listener to get a synthetic view of the different allocation events.

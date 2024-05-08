@@ -4,6 +4,7 @@ using Microsoft.Diagnostics.Tracing;
 using System.Diagnostics.Tracing;
 using Microsoft.Diagnostics.Tracing.Parsers.Clr;
 using System.Text;
+using Microsoft.Diagnostics.Tracing.AutomatedAnalysis;
 
 namespace DynamicAllocationSampling
 {
@@ -17,6 +18,8 @@ namespace DynamicAllocationSampling
 
     internal class Program
     {
+        // TODO: for percentiles, we will need to keep track of all results
+        //       but which value should be used to compute the percentile? probably the count but for AllocationTick or AllocationSampled? Both?
         private static Dictionary<string, TypeInfo> _sampledTypes = new Dictionary<string, TypeInfo>();
         private static Dictionary<string, TypeInfo> _tickTypes = new Dictionary<string, TypeInfo>();
 
@@ -55,6 +58,10 @@ namespace DynamicAllocationSampling
                         EventLevel.Verbose, // verbose is required for AllocationTick
                         (long)0x80000000001 // new AllocationSamplingKeyword + GCKeyword
                         ),
+                new EventPipeProvider(
+                        "Allocations-Run",
+                        EventLevel.Informational
+                        ),
             };
             var client = new DiagnosticsClient(processId);
 
@@ -67,7 +74,7 @@ namespace DynamicAllocationSampling
                     var source = new EventPipeEventSource(session.EventStream);
                     ClrTraceEventParser clrParser = new ClrTraceEventParser(source);
                     clrParser.GCAllocationTick += OnAllocationTick;
-                    source.Dynamic.All += OnAllocationSampled;
+                    source.Dynamic.All += OnEvents;
 
                     try
                     {
@@ -90,7 +97,77 @@ namespace DynamicAllocationSampling
 
                 Task.WaitAny(streamTask, inputTask);
             }
+        }
 
+        private const long SAMPLING_MEAN = 100 * 1024;
+
+        private static long UpscaleSize(long totalSize, int count, long mean)
+        {
+            var averageSize = (double)totalSize / (double)count;
+            var scale = 1 / (1 - Math.Exp(-averageSize / mean));
+            return (long)(totalSize * scale);
+        }
+
+        private static void OnAllocationTick(GCAllocationTickTraceData payload)
+        {
+            if (!_tickTypes.TryGetValue(payload.TypeName, out TypeInfo typeInfo))
+            {
+                typeInfo = new TypeInfo() { TypeName = payload.TypeName, Count = 0, Size = (int)payload.ObjectSize, TotalSize = 0 };
+                _tickTypes.Add(payload.TypeName, typeInfo);
+            }
+            typeInfo.Count++;
+            typeInfo.TotalSize += (int)payload.ObjectSize;
+        }
+
+        private static void OnEvents(TraceEvent eventData)
+        {
+            if (eventData.ID == (TraceEventID)303)
+            {
+                AllocationSampledData payload = new AllocationSampledData(eventData, 8); // assume 64-bit pointers
+
+                if (!_sampledTypes.TryGetValue(payload.TypeName, out TypeInfo typeInfo))
+                {
+                    typeInfo = new TypeInfo() { TypeName = payload.TypeName, Count = 0, Size = (int)payload.ObjectSize, TotalSize = 0 };
+                    _sampledTypes.Add(payload.TypeName, typeInfo);
+                }
+                typeInfo.Count++;
+                typeInfo.TotalSize += (int)payload.ObjectSize;
+
+                return;
+            }
+
+            if (eventData.ID == (TraceEventID)600)
+            {
+                AllocationsRunData payload = new AllocationsRunData(eventData);
+                Console.WriteLine($"> starts {payload.Iterations} iterations allocating {payload.Count} instances");
+                return;
+            }
+
+            if (eventData.ID == (TraceEventID)601)
+            {
+                Console.WriteLine("\n< run stops\n");
+                return;
+            }
+
+            if (eventData.ID == (TraceEventID)602)
+            {
+                AllocationsRunIterationData payload = new AllocationsRunIterationData(eventData);
+                Console.Write($"{payload.Iteration}");
+                _sampledTypes.Clear();
+                _tickTypes.Clear();
+                return;
+            }
+
+            if (eventData.ID == (TraceEventID)603)
+            {
+                Console.WriteLine("|");
+                ShowResults();
+                return;
+            }
+        }
+
+        private static void ShowResults()
+        {
             // TODO: need to compute the mean size in case of array types
             // print the sampled types for both AllocationTick and AllocationSampled
             Console.WriteLine("Tag  SCount  TCount       SSize       TSize  UnitSize  UpscaledSize  UpscaledCount  Name");
@@ -103,24 +180,24 @@ namespace DynamicAllocationSampling
                     tag += "T";
                 }
 
-                Console.Write($"{tag, 3}  {type.Count, 6}");
+                Console.Write($"{tag,3}  {type.Count,6}");
                 if (tag == "S")
                 {
-                    Console.Write($"  {0, 6}");
+                    Console.Write($"  {0,6}");
                 }
                 else
                 {
-                    Console.Write($"  {tickType.Count, 6}");
+                    Console.Write($"  {tickType.Count,6}");
                 }
 
-                Console.Write($"  {type.TotalSize, 10}");
+                Console.Write($"  {type.TotalSize,10}");
                 if (tag == "S")
                 {
-                    Console.Write($"  {0, 10}");
+                    Console.Write($"  {0,10}");
                 }
                 else
                 {
-                    Console.Write($"  {tickType.TotalSize, 10}");
+                    Console.Write($"  {tickType.TotalSize,10}");
                 }
 
                 if (type.Count != 0)
@@ -139,48 +216,6 @@ namespace DynamicAllocationSampling
                 }
             }
         }
-
-        private const long SAMPLING_MEAN = 100 * 1024;
-
-        private static long UpscaleSize(long totalSize, int count, long mean)
-        {
-            var averageSize = (double)totalSize / (double)count;
-            var scale = 1 / (1 - Math.Exp(-averageSize / mean));
-            return (long)(totalSize * scale);
-        }
-
-        private static void OnAllocationTick(GCAllocationTickTraceData payload)
-        {
-            //Console.WriteLine($"  {payload.HeapIndex} - {payload.AllocationKind} | ({payload.ObjectSize}) {payload.TypeName}  = 0x{payload.Address}");
-
-            if (!_tickTypes.TryGetValue(payload.TypeName, out TypeInfo typeInfo))
-            {
-                typeInfo = new TypeInfo() { TypeName = payload.TypeName, Count = 0, Size = (int)payload.ObjectSize, TotalSize = 0 };
-                _tickTypes.Add(payload.TypeName, typeInfo);
-            }
-            typeInfo.Count++;
-            typeInfo.TotalSize += (int)payload.ObjectSize;
-        }
-
-        private static void OnAllocationSampled(TraceEvent eventData)
-        {
-            //Console.WriteLine($"{eventData.Opcode,4} - {eventData.OpcodeName} {eventData.EventDataLength} bytes");
-            //Console.WriteLine(eventData.Dump());
-
-            if (eventData.ID == (TraceEventID)303)
-            {
-                AllocationSampledData payload = new AllocationSampledData(eventData, 8); // assume 64-bit pointers
-                //Console.WriteLine($"{payload.HeapIndex} - {payload.AllocationKind} | ({payload.ObjectSize}) {payload.TypeName}  = 0x{payload.Address}");
-
-                if (!_sampledTypes.TryGetValue(payload.TypeName, out TypeInfo typeInfo))
-                {
-                    typeInfo = new TypeInfo() { TypeName = payload.TypeName, Count = 0, Size = (int)payload.ObjectSize, TotalSize = 0 };
-                    _sampledTypes.Add(payload.TypeName, typeInfo);
-                }
-                typeInfo.Count++;
-                typeInfo.TotalSize += (int)payload.ObjectSize;
-            }
-        }
     }
 
 
@@ -191,6 +226,7 @@ namespace DynamicAllocationSampling
     //  <data name="HeapIndex" inType="win:UInt32" />
     //  <data name="Address" inType="win:Pointer" />
     //  <data name="ObjectSize" inType="win:UInt64" outType="win:HexInt64" />
+    //  <data name="SamplingBudget" inType="win:UInt64" outType="win:HexInt64" />
     class AllocationSampledData
     {
         const int EndOfStringCharLength = 2;
@@ -212,6 +248,7 @@ namespace DynamicAllocationSampling
         public int HeapIndex;
         public UInt64 Address;
         public long ObjectSize;
+        public long SamplingBudget;
 
         private void ComputeFields()
         {
@@ -221,10 +258,51 @@ namespace DynamicAllocationSampling
             AllocationKind = (GCAllocationKind)BitConverter.ToInt32(data.Slice(0, 4));
             ClrInstanceID = BitConverter.ToInt16(data.Slice(4, 2));
             TypeID = BitConverter.ToUInt64(data.Slice(6, _pointerSize));                                                    //   \0 should not be included for GetString to work
-            TypeName = Encoding.Unicode.GetString(data.Slice(offsetBeforeString, _payload.EventDataLength - offsetBeforeString - EndOfStringCharLength - 4 - _pointerSize - 8));
+            TypeName = Encoding.Unicode.GetString(data.Slice(offsetBeforeString, _payload.EventDataLength - offsetBeforeString - EndOfStringCharLength - 4 - _pointerSize - 8 - 8));
             HeapIndex = BitConverter.ToInt32(data.Slice(offsetBeforeString + TypeName.Length * 2 + EndOfStringCharLength, 4));
             Address = BitConverter.ToUInt64(data.Slice(offsetBeforeString + TypeName.Length * 2 + EndOfStringCharLength + 4, _pointerSize));
             ObjectSize = BitConverter.ToInt64(data.Slice(offsetBeforeString + TypeName.Length * 2 + EndOfStringCharLength + 4 + 8, 8));
+            SamplingBudget = BitConverter.ToInt64(data.Slice(offsetBeforeString + TypeName.Length * 2 + EndOfStringCharLength + 4 + 8 + 8, 8));
+        }
+    }
+
+    class AllocationsRunData
+    {
+        private TraceEvent _payload;
+        public AllocationsRunData(TraceEvent payload)
+        {
+            _payload = payload;
+
+            ComputeFields();
+        }
+
+        public int Iterations;
+        public int Count;
+
+        private void ComputeFields()
+        {
+            Span<byte> data = _payload.EventData().AsSpan();
+            Iterations = BitConverter.ToInt32(data.Slice(0, 4));
+            Count = BitConverter.ToInt32(data.Slice(4, 4));
+        }
+    }
+
+    class AllocationsRunIterationData
+    {
+        private TraceEvent _payload;
+        public AllocationsRunIterationData(TraceEvent payload)
+        {
+            _payload = payload;
+
+            ComputeFields();
+        }
+
+        public int Iteration;
+
+        private void ComputeFields()
+        {
+            Span<byte> data = _payload.EventData().AsSpan();
+            Iteration = BitConverter.ToInt32(data.Slice(0, 4));
         }
     }
 }

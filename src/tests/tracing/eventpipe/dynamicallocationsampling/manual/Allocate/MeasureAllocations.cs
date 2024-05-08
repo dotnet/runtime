@@ -8,20 +8,20 @@ namespace Allocate
 {
     public class MeasureAllocations
     {
-        public void Allocate()
+        public void Allocate(int count)
         {
             Dictionary<string, AllocStats> allocations = Initialize();
             List<Object0> objects = new List<Object0>(1024 * 1024);
 
-            AllocateSmallThenBig(100_000, objects, allocations);
+            AllocateSmallThenBig(count, objects, allocations);
             Console.WriteLine();
-            AllocateBigThenSmall(100_000, objects, allocations);
+            AllocateBigThenSmall(count, objects, allocations);
             Console.WriteLine();
         }
 
-        private void AllocateSmallThenBig(int iterations, List<Object0> objects, Dictionary<string, AllocStats> allocations)
+        private void AllocateSmallThenBig(int count, List<Object0> objects, Dictionary<string, AllocStats> allocations)
         {
-            for (int i = 0; i < iterations; i++)
+            for (int i = 0; i < count; i++)
             {
                 // allocate from smaller to larger
                 objects.Add(new Object8());
@@ -31,25 +31,25 @@ namespace Allocate
                 objects.Add(new Object128());
             }
 
-            allocations[nameof(Object8)].Count = iterations;
-            allocations[nameof(Object8)].Size = iterations * 24;
-            allocations[nameof(Object16)].Count = iterations;
-            allocations[nameof(Object16)].Size = iterations * 32;
-            allocations[nameof(Object32)].Count = iterations;
-            allocations[nameof(Object32)].Size = iterations * 48;
-            allocations[nameof(Object64)].Count = iterations;
-            allocations[nameof(Object64)].Size = iterations * 80;
-            allocations[nameof(Object128)].Count = iterations;
-            allocations[nameof(Object128)].Size = iterations * 144;
+            allocations[nameof(Object8)].Count = count;
+            allocations[nameof(Object8)].Size = count * 24;
+            allocations[nameof(Object16)].Count = count;
+            allocations[nameof(Object16)].Size = count * 32;
+            allocations[nameof(Object32)].Count = count;
+            allocations[nameof(Object32)].Size = count * 48;
+            allocations[nameof(Object64)].Count = count;
+            allocations[nameof(Object64)].Size = count * 80;
+            allocations[nameof(Object128)].Count = count;
+            allocations[nameof(Object128)].Size = count * 144;
 
             DumpAllocations(allocations);
             Clear(allocations);
             objects.Clear();
         }
 
-        private void AllocateBigThenSmall(int iterations, List<Object0> objects, Dictionary<string, AllocStats> allocations)
+        private void AllocateBigThenSmall(int count, List<Object0> objects, Dictionary<string, AllocStats> allocations)
         {
-            for (int i = 0; i < iterations; i++)
+            for (int i = 0; i < count; i++)
             {
                 // allocate from larger to smaller
                 objects.Add(new Object128());
@@ -59,16 +59,16 @@ namespace Allocate
                 objects.Add(new Object8());
             }
 
-            allocations[nameof(Object8)].Count = iterations;
-            allocations[nameof(Object8)].Size = iterations * 24;
-            allocations[nameof(Object16)].Count = iterations;
-            allocations[nameof(Object16)].Size = iterations * 32;
-            allocations[nameof(Object32)].Count = iterations;
-            allocations[nameof(Object32)].Size = iterations * 48;
-            allocations[nameof(Object64)].Count = iterations;
-            allocations[nameof(Object64)].Size = iterations * 80;
-            allocations[nameof(Object128)].Count = iterations;
-            allocations[nameof(Object128)].Size = iterations * 144;
+            allocations[nameof(Object8)].Count = count;
+            allocations[nameof(Object8)].Size = count * 24;
+            allocations[nameof(Object16)].Count = count;
+            allocations[nameof(Object16)].Size = count * 32;
+            allocations[nameof(Object32)].Count = count;
+            allocations[nameof(Object32)].Size = count * 48;
+            allocations[nameof(Object64)].Count = count;
+            allocations[nameof(Object64)].Size = count * 80;
+            allocations[nameof(Object128)].Count = count;
+            allocations[nameof(Object128)].Size = count * 144;
 
             DumpAllocations(allocations);
             Clear(allocations);
@@ -102,37 +102,37 @@ namespace Allocate
             allocations[nameof(Object128)].Size = 0;
         }
 
-        private (Object0 Instance, long Size) Allocate(int type)
-        {
-            if (type == 0)
-            {
-                return (new Object8(), 24);
-            }
-            else
-            if (type == 1)
-            {
-                return (new Object16(), 32);
-            }
-            else
-            if (type == 2)
-            {
-                return (new Object32(), 48);
-            }
-            else
-            if (type == 3)
-            {
-                return (new Object64(), 80);
-            }
-            else
-            if (type == 4)
-            {
-                return (new Object128(), 144);
-            }
-            else
-            {
-                throw new ArgumentOutOfRangeException("type", type, "Type cannot be greater than 128");
-            }
-        }
+        //private (Object0 Instance, long Size) Allocate(int type)
+        //{
+        //    if (type == 0)
+        //    {
+        //        return (new Object8(), 24);
+        //    }
+        //    else
+        //    if (type == 1)
+        //    {
+        //        return (new Object16(), 32);
+        //    }
+        //    else
+        //    if (type == 2)
+        //    {
+        //        return (new Object32(), 48);
+        //    }
+        //    else
+        //    if (type == 3)
+        //    {
+        //        return (new Object64(), 80);
+        //    }
+        //    else
+        //    if (type == 4)
+        //    {
+        //        return (new Object128(), 144);
+        //    }
+        //    else
+        //    {
+        //        throw new ArgumentOutOfRangeException("type", type, "Type cannot be greater than 128");
+        //    }
+        //}
 
         private void DumpAllocations(Dictionary<string, AllocStats> objects)
         {

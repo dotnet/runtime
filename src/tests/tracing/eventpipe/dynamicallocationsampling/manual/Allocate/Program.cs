@@ -12,10 +12,11 @@ namespace Allocate
 
             if (args.Length > 1)
             {
-                Console.WriteLine("Usage: Allocate [1|2|3]");
+                Console.WriteLine("Usage: Allocate [1|2|3|4]");
                 Console.WriteLine("  1: small and big allocations");
                 Console.WriteLine("  2: allocations per thread");
                 Console.WriteLine("  3: arrays of double (for x86)");
+                Console.WriteLine("  4: different types of objects");
                 return;
             }
 
@@ -32,6 +33,9 @@ namespace Allocate
                     case "3":
                         MeasureDoubleAllocations();
                         break;
+                    case "4":
+                        MeasureDifferentTypes();
+                        break;
                     default:
                         Console.WriteLine($"Invalid argument: '{args[0]}'");
                         break;
@@ -43,12 +47,37 @@ namespace Allocate
             MeasureSmallAndBigAllocations();
         }
 
+        // used to compute percentiles
+        const int Iterations = 10;
+
+        // number of objects to allocate
+        const int Count = 1_000_000;
+
+        private static void MeasureDifferentTypes()
+        {
+            var ma = new MeasureDifferentTypes();
+            Stopwatch clock = new Stopwatch();
+            clock.Start();
+
+            AllocationsRunEventSource.Log.StartRun(Iterations, Count);
+            for (int i = 0; i < Iterations; i++)
+            {
+                AllocationsRunEventSource.Log.StartIteration(i);
+                ma.Allocate(Count);
+                AllocationsRunEventSource.Log.StopIteration(i);
+            }
+            AllocationsRunEventSource.Log.StopRun();
+
+            clock.Stop();
+            Console.WriteLine($"Duration = {clock.ElapsedMilliseconds} ms");
+        }
+
         private static void MeasureDoubleAllocations()
         {
             var ma = new MeasureDoubles();
             Stopwatch clock = new Stopwatch();
             clock.Start();
-            ma.Allocate();
+            ma.Allocate(Count);
             clock.Stop();
             Console.WriteLine($"Duration = {clock.ElapsedMilliseconds} ms");
         }
@@ -58,7 +87,7 @@ namespace Allocate
             var ma = new MeasureThreadAllocations();
             Stopwatch clock = new Stopwatch();
             clock.Start();
-            ma.Allocate();
+            ma.Allocate(Count);
             clock.Stop();
             Console.WriteLine($"Duration = {clock.ElapsedMilliseconds} ms");
         }
@@ -69,7 +98,7 @@ namespace Allocate
 
             Stopwatch clock = new Stopwatch();
             clock.Start();
-            ma.Allocate();
+            ma.Allocate(Count);
             clock.Stop();
             Console.WriteLine($"Duration = {clock.ElapsedMilliseconds} ms");
         }

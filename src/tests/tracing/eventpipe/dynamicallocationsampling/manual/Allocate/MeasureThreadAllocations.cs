@@ -9,16 +9,14 @@ namespace Allocate
 {
     public class MeasureThreadAllocations
     {
-        const int Iterations = 200_000;
-
-        public void Allocate()
+        public void Allocate(int count)
         {
             List<Object0> objects1 = new List<Object0>(1024 * 1024);
             List<Object0> objects2 = new List<Object0>(1024 * 1024);
 
             Thread[] threads = new Thread[2];
-            threads[0] = new Thread(() => Allocate1(Iterations, objects1));
-            threads[1] = new Thread(() => Allocate2(Iterations, objects2));
+            threads[0] = new Thread(() => Allocate1(count, objects1));
+            threads[1] = new Thread(() => Allocate2(count, objects2));
 
             for (int i = 0; i < threads.Length; i++) { threads[i].Start(); }
             for (int i = 0; i < threads.Length; i++) { threads[i].Join(); }
@@ -26,9 +24,9 @@ namespace Allocate
             Console.WriteLine($"Allocated {objects1.Count + objects2.Count} objects");
         }
 
-        private void Allocate1(int iterations, List<Object0> objects)
+        private void Allocate1(int count, List<Object0> objects)
         {
-            for (int i = 0; i < iterations; i++)
+            for (int i = 0; i < count; i++)
             {
                 objects.Add(new Object24());
                 objects.Add(new Object48());
@@ -36,9 +34,9 @@ namespace Allocate
             }
         }
 
-        private void Allocate2(int iterations, List<Object0> objects)
+        private void Allocate2(int count, List<Object0> objects)
         {
-            for (int i = 0; i < iterations; i++)
+            for (int i = 0; i < count; i++)
             {
                 objects.Add(new Object32());
                 objects.Add(new Object64());

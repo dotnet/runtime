@@ -6,13 +6,11 @@ namespace Allocate
 {
     public class MeasureDoubles
     {
-        const int Iterations = 200_000;
-
-        public void Allocate()
+        public void Allocate(int count)
         {
-            List<double[]> arrays = new List<double[]>(Iterations);
+            List<double[]> arrays = new List<double[]>(count);
 
-            for (int i = 0; i < Iterations; i++)
+            for (int i = 0; i < count; i++)
             {
                 arrays.Add(new double[1] { i });
             }
