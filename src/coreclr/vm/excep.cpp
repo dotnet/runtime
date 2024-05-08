@@ -6767,6 +6767,13 @@ VEH_ACTION WINAPI CLRVectoredExceptionHandler(PEXCEPTION_POINTERS pExceptionInfo
 
     if (pExceptionInfo->ExceptionRecord->ExceptionCode == STATUS_RETURN_ADDRESS_HIJACK_ATTEMPT)
     {
+        if (pThread == NULL || !pThread->PreemptiveGCDisabled())
+        {
+            // We are not running managed code, so this cannot be our hijack
+            // Perhaps some other runtime is responsible.
+            return VEH_CONTINUE_SEARCH;
+        }
+
         HijackArgs hijackArgs;
         hijackArgs.Rax = pExceptionInfo->ContextRecord->Rax;
         hijackArgs.Rsp = pExceptionInfo->ContextRecord->Rsp;
