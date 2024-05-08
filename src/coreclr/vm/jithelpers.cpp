@@ -5282,7 +5282,7 @@ void JIT_Patchpoint(int* counter, int ilOffset)
         DWORD contextSize = 0;
         ULONG64 xStateCompactionMask = 0;
         DWORD contextFlags = CONTEXT_FULL;
-        if (Thread::AreCetShadowStacksEnabled())
+        if (Thread::AreShadowStacksEnabled())
         {
             xStateCompactionMask = XSTATE_MASK_CET_U;
             contextFlags |= CONTEXT_XSTATE;
@@ -5310,7 +5310,7 @@ void JIT_Patchpoint(int* counter, int ilOffset)
         RtlCaptureContext(pFrameContext);
 
 #if defined(TARGET_WINDOWS) && defined(TARGET_AMD64)
-        if (Thread::AreCetShadowStacksEnabled())
+        if (Thread::AreShadowStacksEnabled())
         {
             pFrameContext->ContextFlags |= CONTEXT_XSTATE;
             SetXStateFeaturesMask(pFrameContext, xStateCompactionMask);
