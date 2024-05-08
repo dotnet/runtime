@@ -6068,17 +6068,11 @@ void ThreadSuspend::Initialize()
         HMODULE hModNtdll = WszLoadLibrary(W("ntdll.dll"));
         if (hModNtdll != NULL)
         {
-            typedef ULONG_PTR (NTAPI *PFN_RtlGetReturnAddressHijackTarget)();
-            PFN_RtlGetReturnAddressHijackTarget pfnRtlGetReturnAddressHijackTarget = (PFN_RtlGetReturnAddressHijackTarget)GetProcAddress(hModNtdll, "RtlGetReturnAddressHijackTarget");
-            if (pfnRtlGetReturnAddressHijackTarget != NULL)
-            {
-                g_returnAddressHijackTarget = (void*)pfnRtlGetReturnAddressHijackTarget();
-            }
-
-            if (g_returnAddressHijackTarget == NULL)
-            {
-                _ASSERTE_ALL_BUILDS(!"RtlGetReturnAddressHijackTarget must provide a target when both FEATURE_HIJACK and CET are enabled");
-            }
+            g_returnAddressHijackTarget = (void*)GetProcAddress(hModNtdll, "RtlGetReturnAddressHijackTarget");
+        }
+        if (g_returnAddressHijackTarget == NULL)
+        {
+            _ASSERTE_ALL_BUILDS(!"RtlGetReturnAddressHijackTarget must provide a target when both FEATURE_HIJACK and CET are enabled");
         }
     }
 #endif // TARGET_WINDOWS
