@@ -2451,6 +2451,10 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
             case NI_AVX512F_FusedMultiplySubtractAdd:
             case NI_AVX512F_FusedMultiplySubtractNegated:
             case NI_AVX512F_FusedMultiplySubtractNegatedScalar:
+            case NI_AVX10v1_FusedMultiplyAddScalar:
+            case NI_AVX10v1_FusedMultiplyAddNegatedScalar:
+            case NI_AVX10v1_FusedMultiplySubtractScalar:
+            case NI_AVX10v1_FusedMultiplySubtractNegatedScalar:
             {
                 assert((numArgs == 3) || (intrinsicTree->OperIsEmbRoundingEnabled()));
                 assert(isRMW);
@@ -2617,6 +2621,14 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
             case NI_AVX512VBMI_PermuteVar64x8x2:
             case NI_AVX512VBMI_VL_PermuteVar16x8x2:
             case NI_AVX512VBMI_VL_PermuteVar32x8x2:
+            case NI_AVX10v1_PermuteVar16x8x2:
+            case NI_AVX10v1_PermuteVar2x64x2:
+            case NI_AVX10v1_PermuteVar4x32x2:
+            case NI_AVX10v1_PermuteVar8x16x2:
+            case NI_AVX10v1_V256_PermuteVar32x8x2:
+            case NI_AVX10v1_V256_PermuteVar4x64x2:
+            case NI_AVX10v1_V256_PermuteVar8x32x2:
+            case NI_AVX10v1_V256_PermuteVar16x16x2:
             {
                 assert(numArgs == 3);
                 assert(isRMW);
