@@ -1501,30 +1501,35 @@ namespace System
 
             #region Internal Members
 
-
-            /// <summary>
-            /// Generic cache for rare scenario specific data. It is used to cache either Enum names, Enum values,
-            /// the Activator cache or function pointer parameters.
-            /// </summary>
             internal object? GenericCache
             {
                 get => m_genericCache;
                 set => m_genericCache = value;
             }
 
+            private sealed class FunctionPointerCache : IGenericCacheEntry<FunctionPointerCache>
+            {
+                public static IGenericCacheEntry.GenericCacheKind Kind => IGenericCacheEntry.GenericCacheKind.FunctionPointer;
+
+                public Type[] FunctionPointerReturnAndParameterTypes { get; }
+
+                private FunctionPointerCache(Type[] functionPointerReturnAndParameterTypes)
+                {
+                    FunctionPointerReturnAndParameterTypes = functionPointerReturnAndParameterTypes;
+                }
+
+                public static FunctionPointerCache Create(RuntimeType type)
+                {
+                    Debug.Assert(type.IsFunctionPointer);
+                    return new(RuntimeTypeHandle.GetArgumentTypesFromFunctionPointer(type));
+                }
+            }
+
             internal Type[] FunctionPointerReturnAndParameterTypes
             {
                 get
                 {
-                    Debug.Assert(m_runtimeType.IsFunctionPointer);
-                    Type[]? value = (Type[]?)GenericCache;
-                    if (value == null)
-                    {
-                        GenericCache = value = RuntimeTypeHandle.GetArgumentTypesFromFunctionPointer(m_runtimeType);
-                        Debug.Assert(value.Length > 0);
-                    }
-
-                    return value;
+                    return m_runtimeType.GetOrCreateCacheEntry<FunctionPointerCache>().FunctionPointerReturnAndParameterTypes;
                 }
             }
 
@@ -1930,10 +1935,32 @@ namespace System
             return retval;
         }
 
+        /// <summary>
+        /// Generic cache for rare scenario specific data. See <see cref="IGenericCacheEntry" /> for more information on what data can be cached here.
+        /// </summary>
         internal object? GenericCache
         {
             get => CacheIfExists?.GenericCache;
             set => Cache.GenericCache = value;
+        }
+
+        internal T GetOrCreateCacheEntry<T>()
+            where T : class, IGenericCacheEntry<T>
+        {
+            return IGenericCacheEntry<T>.GetOrCreate(this);
+        }
+
+        internal T? FindCacheEntry<T>()
+            where T : class, IGenericCacheEntry<T>
+        {
+            return IGenericCacheEntry<T>.Find(this);
+        }
+
+        internal T OverwriteCacheEntry<T>(T entry)
+            where T : class, IGenericCacheEntry<T>
+        {
+            IGenericCacheEntry<T>.Overwrite(this, entry);
+            return entry;
         }
 
         internal static FieldInfo GetFieldInfo(IRuntimeFieldInfo fieldHandle)
@@ -3886,22 +3913,7 @@ namespace System
         [DebuggerHidden]
         internal object GetUninitializedObject()
         {
-            object? genericCache = GenericCache;
-
-            if (genericCache is not CreateUninitializedCache cache)
-            {
-                if (genericCache is ActivatorCache activatorCache)
-                {
-                    cache = activatorCache.GetCreateUninitializedCache(this);
-                }
-                else
-                {
-                    cache = new CreateUninitializedCache(this);
-                    GenericCache = cache;
-                }
-            }
-
-            return cache.CreateUninitializedObject(this);
+            return GetOrCreateCacheEntry<CreateUninitializedCache>().CreateUninitializedObject(this);
         }
 
         /// <summary>
@@ -3914,11 +3926,7 @@ namespace System
             // Get or create the cached factory. Creating the cache will fail if one
             // of our invariant checks fails; e.g., no appropriate ctor found.
 
-            if (GenericCache is not ActivatorCache cache)
-            {
-                cache = new ActivatorCache(this);
-                GenericCache = cache;
-            }
+            ActivatorCache cache = GetOrCreateCacheEntry<ActivatorCache>();
 
             if (!cache.CtorIsPublic && publicOnly)
             {
@@ -3947,18 +3955,14 @@ namespace System
         [DebuggerHidden]
         internal object? CreateInstanceOfT()
         {
-            if (GenericCache is not ActivatorCache cache)
-            {
-                cache = new ActivatorCache(this);
-                GenericCache = cache;
-            }
+            ActivatorCache cache = GetOrCreateCacheEntry<ActivatorCache>();
 
             if (!cache.CtorIsPublic)
             {
                 throw new MissingMethodException(SR.Format(SR.Arg_NoDefCTor, this));
             }
 
-            object? obj = cache.CreateUninitializedObject(this);
+            object? obj = GetOrCreateCacheEntry<CreateUninitializedCache>().CreateUninitializedObject(this);
             try
             {
                 cache.CallConstructor(obj);

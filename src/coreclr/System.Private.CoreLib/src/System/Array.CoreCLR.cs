@@ -642,11 +642,7 @@ namespace System
 
             RuntimeType arrayType = (RuntimeType)GetType();
 
-            if (arrayType.GenericCache is not ArrayInitializeCache cache)
-            {
-                cache = new ArrayInitializeCache(arrayType);
-                arrayType.GenericCache = cache;
-            }
+            ArrayInitializeCache cache = arrayType.GetOrCreateCacheEntry<ArrayInitializeCache>();
 
             delegate*<ref byte, void> constructorFtn = cache.ConstructorEntrypoint;
             ref byte arrayRef = ref MemoryMarshal.GetArrayDataReference(this);
@@ -659,16 +655,23 @@ namespace System
             }
         }
 
-        private sealed unsafe partial class ArrayInitializeCache
+        internal sealed unsafe partial class ArrayInitializeCache : RuntimeType.IGenericCacheEntry<ArrayInitializeCache>
         {
             internal readonly delegate*<ref byte, void> ConstructorEntrypoint;
 
             [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Array_GetElementConstructorEntrypoint")]
             private static partial delegate*<ref byte, void> GetElementConstructorEntrypoint(QCallTypeHandle arrayType);
 
-            public ArrayInitializeCache(RuntimeType arrayType)
+            public static RuntimeType.IGenericCacheEntry.GenericCacheKind Kind => RuntimeType.IGenericCacheEntry.GenericCacheKind.ArrayInitialize;
+
+            private ArrayInitializeCache(delegate*<ref byte, void> constructorEntrypoint)
             {
-                ConstructorEntrypoint = GetElementConstructorEntrypoint(new QCallTypeHandle(ref arrayType));
+                ConstructorEntrypoint = constructorEntrypoint;
+            }
+
+            public static ArrayInitializeCache Create(RuntimeType arrayType)
+            {
+                return new(GetElementConstructorEntrypoint(new QCallTypeHandle(ref arrayType)));
             }
         }
     }

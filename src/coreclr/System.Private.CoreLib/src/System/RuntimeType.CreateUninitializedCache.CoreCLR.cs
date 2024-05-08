@@ -12,8 +12,11 @@ namespace System
         /// <summary>
         /// A cache which allows optimizing <see cref="RuntimeHelpers.GetUninitializedObject(Type)"/>.
         /// </summary>
-        private sealed unsafe partial class CreateUninitializedCache
+        private sealed unsafe partial class CreateUninitializedCache : IGenericCacheEntry<CreateUninitializedCache>
         {
+            public static IGenericCacheEntry.GenericCacheKind Kind => IGenericCacheEntry.GenericCacheKind.CreateUninitialized;
+            public static CreateUninitializedCache Create(RuntimeType type) => new CreateUninitializedCache(type);
+
             // The managed calli to the newobj allocator, plus its first argument (MethodTable*).
             private readonly delegate*<void*, object> _pfnAllocator;
             private readonly void* _allocatorFirstArg;
@@ -22,7 +25,7 @@ namespace System
             private readonly RuntimeType _originalRuntimeType;
 #endif
 
-            internal CreateUninitializedCache(RuntimeType rt)
+            private CreateUninitializedCache(RuntimeType rt)
             {
                 Debug.Assert(rt != null);
 

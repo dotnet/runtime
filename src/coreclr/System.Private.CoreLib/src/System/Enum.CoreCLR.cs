@@ -87,30 +87,62 @@ namespace System
                 typeof(TStorage) == typeof(nuint) || typeof(TStorage) == typeof(float) || typeof(TStorage) == typeof(double) || typeof(TStorage) == typeof(char),
                 $"Unexpected {nameof(TStorage)} == {typeof(TStorage)}");
 
-            return enumType.GenericCache is EnumInfo<TStorage> info && (!getNames || info.Names is not null) ?
+            return enumType.FindCacheEntry<EnumInfo<TStorage>>() is {} info && (!getNames || info.Names is not null) ?
                 info :
                 InitializeEnumInfo(enumType, getNames);
 
             [MethodImpl(MethodImplOptions.NoInlining)]
             static EnumInfo<TStorage> InitializeEnumInfo(RuntimeType enumType, bool getNames)
             {
+                // If we're asked to get the cache with names,
+                // force that copy into the cache even if we already have a cache entry without names
+                // so we don't have to recompute the names if asked again.
+                return getNames
+                    ? enumType.OverwriteCacheEntry(EnumInfo<TStorage>.CreateWithNames(enumType))
+                    : enumType.GetOrCreateCacheEntry<EnumInfo<TStorage>>();
+            }
+        }
+
+        internal sealed partial class EnumInfo<TStorage> : RuntimeType.IGenericCacheEntry<EnumInfo<TStorage>>
+        {
+            public static RuntimeType.IGenericCacheEntry.GenericCacheKind Kind => RuntimeType.IGenericCacheEntry.GenericCacheKind.EnumInfo;
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            public static EnumInfo<TStorage> CreateWithNames(RuntimeType type)
+            {
                 TStorage[]? values = null;
                 string[]? names = null;
 
                 GetEnumValuesAndNames(
-                    new QCallTypeHandle(ref enumType),
+                    new QCallTypeHandle(ref type),
                     ObjectHandleOnStack.Create(ref values),
                     ObjectHandleOnStack.Create(ref names),
-                    getNames ? Interop.BOOL.TRUE : Interop.BOOL.FALSE);
+                    Interop.BOOL.TRUE);
 
                 Debug.Assert(values!.GetType() == typeof(TStorage[]));
-                Debug.Assert(!getNames || names!.GetType() == typeof(string[]));
 
-                bool hasFlagsAttribute = enumType.IsDefined(typeof(FlagsAttribute), inherit: false);
+                bool hasFlagsAttribute = type.IsDefined(typeof(FlagsAttribute), inherit: false);
 
-                var entry = new EnumInfo<TStorage>(hasFlagsAttribute, values, names!);
-                enumType.GenericCache = entry;
-                return entry;
+                return new EnumInfo<TStorage>(hasFlagsAttribute, values, names!);
+            }
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            public static EnumInfo<TStorage> Create(RuntimeType type)
+            {
+                TStorage[]? values = null;
+                string[]? names = null;
+
+                GetEnumValuesAndNames(
+                    new QCallTypeHandle(ref type),
+                    ObjectHandleOnStack.Create(ref values),
+                    ObjectHandleOnStack.Create(ref names),
+                    Interop.BOOL.FALSE);
+
+                Debug.Assert(values!.GetType() == typeof(TStorage[]));
+
+                bool hasFlagsAttribute = type.IsDefined(typeof(FlagsAttribute), inherit: false);
+
+                return new EnumInfo<TStorage>(hasFlagsAttribute, values, null!);
             }
         }
     }
