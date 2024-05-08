@@ -3792,6 +3792,7 @@ public:
     unsigned   lvaTableCnt; // lvaTable size (>= lvaCount)
 
     ABIPassingInformation* lvaParameterPassingInfo;
+    unsigned lvaParameterStackSize;
 
     unsigned lvaTrackedCount;             // actual # of locals being tracked
     unsigned lvaTrackedCountInSizeTUnits; // min # of size_t's sufficient to hold a bit for all the locals being tracked
@@ -3939,11 +3940,7 @@ public:
     void lvaUpdateArgWithInitialReg(LclVarDsc* varDsc);
     void lvaUpdateArgsWithInitialReg();
     void lvaAssignVirtualFrameOffsetsToArgs();
-#ifdef UNIX_AMD64_ABI
-    int lvaAssignVirtualFrameOffsetToArg(unsigned lclNum, unsigned argSize, int argOffs, int* callerArgOffset);
-#else  // !UNIX_AMD64_ABI
-    int lvaAssignVirtualFrameOffsetToArg(unsigned lclNum, unsigned argSize, int argOffs);
-#endif // !UNIX_AMD64_ABI
+    bool lvaGetRelativeOffsetToCallerAllocatedSpaceForParameter(unsigned lclNum, int* offset);
     void lvaAssignVirtualFrameOffsetsToLocals();
     bool lvaParamHasLocalStackSpace(unsigned lclNum);
     int lvaAllocLocalAndSetVirtualOffset(unsigned lclNum, unsigned size, int stkOffs);
