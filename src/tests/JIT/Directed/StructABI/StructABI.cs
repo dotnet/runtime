@@ -820,7 +820,7 @@ struct PackedEmptyFloatLong
 	}
 }
 
-[StructLayout(LayoutKind.Explicit)]
+[StructLayout(LayoutKind.Explicit, Pack=1)]
 struct ExplicitFloatLong
 {
 	[FieldOffset(1)] float FieldF;
