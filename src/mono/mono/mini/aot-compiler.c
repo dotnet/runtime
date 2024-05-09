@@ -14284,6 +14284,7 @@ acfg_free (MonoAotCompile *acfg)
 	g_free (acfg->static_linking_symbol);
 	g_free (acfg->got_symbol);
 	g_free (acfg->plt_symbol);
+	g_free (acfg->global_prefix);
 	g_free (acfg->assembly_name_sym);
 	g_ptr_array_free (acfg->methods, TRUE);
 	g_ptr_array_free (acfg->image_table, TRUE);
