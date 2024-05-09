@@ -152,16 +152,5 @@ namespace System.Net.WebSockets
             ArgumentOutOfRangeException.ThrowIfNegative(arraySegment.Count, countParameterName);
             ArgumentOutOfRangeException.ThrowIfGreaterThan(arraySegment.Count, arraySegment.Array.Length - arraySegment.Offset, countParameterName);
         }
-
-        internal static void ValidateBuffer(byte[] buffer, int offset, int count)
-        {
-            ArgumentNullException.ThrowIfNull(buffer);
-
-            ArgumentOutOfRangeException.ThrowIfNegative(offset);
-            ArgumentOutOfRangeException.ThrowIfGreaterThan(offset, buffer.Length);
-
-            ArgumentOutOfRangeException.ThrowIfNegative(count);
-            ArgumentOutOfRangeException.ThrowIfGreaterThan(count, buffer.Length - offset);
-        }
     }
 }
