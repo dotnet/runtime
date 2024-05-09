@@ -88,11 +88,6 @@ namespace Mono.Linker.Steps
 			return new LocalScope (scope, this);
 		}
 
-		internal ParentScope PopToParentScope ()
-		{
-			return new ParentScope (this);
-		}
-
 		public IDisposable PushScope (in MessageOrigin origin)
 		{
 			return new LocalScope (origin, this);

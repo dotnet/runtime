@@ -25,7 +25,7 @@ CLREvent* ThreadSuspend::g_pGCSuspendEvent = NULL;
 
 ThreadSuspend::SUSPEND_REASON ThreadSuspend::m_suspendReason;
 
-#if defined(TARGET_WINDOWS) && defined(TARGET_AMD64)
+#if defined(TARGET_WINDOWS)
 void* ThreadSuspend::g_returnAddressHijackTarget = NULL;
 #endif
 
@@ -4569,14 +4569,6 @@ void Thread::SysResumeFromDebug(AppDomain *pAppDomain)
 
     while ((thread = ThreadStore::GetThreadList(thread)) != NULL)
     {
-        // Only consider resuming threads if they're in the correct appdomain
-        if (pAppDomain != NULL && thread->GetDomain() != pAppDomain)
-        {
-            LOG((LF_CORDB, LL_INFO1000, "RESUME: Not resuming thread 0x%x, since it's "
-                "in appdomain 0x%x.\n", thread, pAppDomain));
-            continue;
-        }
-
         // If the user wants to keep the thread suspended, then
         // don't release the thread.
         if (!(thread->m_StateNC & TSNC_DebuggerUserSuspend))
@@ -4747,13 +4739,13 @@ void Thread::HijackThread(ReturnKind returnKind, ExecutionState *esb)
 
     VOID *pvHijackAddr = reinterpret_cast<VOID *>(OnHijackTripThread);
 
-#if defined(TARGET_WINDOWS) && defined(TARGET_AMD64)
+#if defined(TARGET_WINDOWS)
     void* returnAddressHijackTarget = ThreadSuspend::GetReturnAddressHijackTarget();
     if (returnAddressHijackTarget != NULL)
     {
         pvHijackAddr = returnAddressHijackTarget;
     }
-#endif // TARGET_WINDOWS && TARGET_AMD64
+#endif // TARGET_WINDOWS
 
 #ifdef TARGET_X86
     if (returnKind == RT_Float)
@@ -6062,22 +6054,26 @@ void ThreadSuspend::Initialize()
 #ifdef FEATURE_HIJACK
 #if defined(TARGET_UNIX)
     ::PAL_SetActivationFunction(HandleSuspensionForInterruptedThread, CheckActivationSafePoint);
-#elif defined(TARGET_WINDOWS) && defined(TARGET_AMD64)
-    // Only versions of Windows that have the special user mode APC have a correct implementation of the return address hijack handling
-    if (Thread::UseSpecialUserModeApc())
+#elif defined(TARGET_WINDOWS)
+    if (Thread::AreShadowStacksEnabled())
     {
         HMODULE hModNtdll = WszLoadLibrary(W("ntdll.dll"));
         if (hModNtdll != NULL)
         {
-            typedef ULONG_PTR (NTAPI *PFN_RtlGetReturnAddressHijackTarget)();
-            PFN_RtlGetReturnAddressHijackTarget pfnRtlGetReturnAddressHijackTarget = (PFN_RtlGetReturnAddressHijackTarget)GetProcAddress(hModNtdll, "RtlGetReturnAddressHijackTarget");
-            if (pfnRtlGetReturnAddressHijackTarget != NULL)
+            typedef void* (*PFN_RtlGetReturnAddressHijackTarget)(void);
+
+            void* rtlGetReturnAddressHijackTarget = GetProcAddress(hModNtdll, "RtlGetReturnAddressHijackTarget");
+            if (rtlGetReturnAddressHijackTarget != NULL)
             {
-                g_returnAddressHijackTarget = (void*)pfnRtlGetReturnAddressHijackTarget();
+                g_returnAddressHijackTarget = ((PFN_RtlGetReturnAddressHijackTarget)rtlGetReturnAddressHijackTarget)();
             }
         }
+        if (g_returnAddressHijackTarget == NULL)
+        {
+            _ASSERTE_ALL_BUILDS(!"RtlGetReturnAddressHijackTarget must provide a target when shadow stacks are enabled");
+        }
     }
-#endif // TARGET_WINDOWS && TARGET_AMD64
+#endif // TARGET_WINDOWS
 #endif // FEATURE_HIJACK
 }
 
