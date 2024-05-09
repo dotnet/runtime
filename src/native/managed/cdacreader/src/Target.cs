@@ -50,6 +50,7 @@ public sealed unsafe class Target
     private readonly Dictionary<DataType, TypeInfo> _knownTypes = [];
     private readonly Dictionary<string, TypeInfo> _types = [];
 
+    internal Contracts.Registry Contracts { get; }
     internal DataCache ProcessedData { get; } = new DataCache();
 
     public static bool TryCreate(ulong contractDescriptor, delegate* unmanaged<ulong, byte*, uint, void*, int> readFromTarget, void* readContext, out Target? target)
@@ -67,6 +68,7 @@ public sealed unsafe class Target
 
     private Target(Configuration config, ContractDescriptorParser.ContractDescriptor descriptor, TargetPointer[] pointerData, Reader reader)
     {
+        Contracts = new Contracts.Registry(this);
         _config = config;
         _reader = reader;
 

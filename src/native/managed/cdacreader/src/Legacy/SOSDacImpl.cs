@@ -109,7 +109,8 @@ internal sealed partial class SOSDacImpl : ISOSDacInterface, ISOSDacInterface9
 
     public unsafe int GetThreadStoreData(DacpThreadStoreData* data)
     {
-        if (!Contracts.Thread.TryCreate(_target, out Contracts.Thread? thread))
+        Contracts.Thread thread = _target.Contracts.Thread;
+        if (thread == Contracts.Thread.NotImplemented)
             return HResults.E_NOTIMPL;
 
         Contracts.ThreadStoreData threadStoreData = thread.GetThreadStoreData();

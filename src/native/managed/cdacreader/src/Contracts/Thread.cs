@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Diagnostics.CodeAnalysis;
+using System;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
@@ -10,33 +10,40 @@ public record struct ThreadStoreData(
     int ThreadCount,
     TargetPointer FirstThread);
 
-internal sealed class Thread
+internal class Thread : IContract
 {
-    private readonly Target _target;
-    private readonly int _version;
-    private readonly TargetPointer _threadStoreAddr;
+    public static Thread NotImplemented = new Thread();
 
-    public static bool TryCreate(Target target, [NotNullWhen(true)] out Thread? thread)
+    public static IContract Create(Target target)
     {
-        thread = default;
         if (!target.TryGetContractVersion(nameof(Thread), out int version))
-            return false;
+            return NotImplemented;
 
         if (!target.TryReadGlobalPointer(Constants.Globals.ThreadStore, out TargetPointer threadStore))
-            return false;
+            return NotImplemented;
 
-        thread = new Thread(target, version, threadStore);
-        return true;
+        return version switch
+        {
+            1 => new Thread_1(target, threadStore),
+            _ => NotImplemented,
+        };
     }
 
-    private Thread(Target target, int version, TargetPointer threadStore)
+    public virtual ThreadStoreData GetThreadStoreData() => throw new NotImplementedException();
+}
+
+internal sealed class Thread_1 : Thread
+{
+    private readonly Target _target;
+    private readonly TargetPointer _threadStoreAddr;
+
+    internal Thread_1(Target target, TargetPointer threadStore)
     {
         _target = target;
-        _version = version;
         _threadStoreAddr = threadStore;
     }
 
-    public ThreadStoreData GetThreadStoreData()
+    public override ThreadStoreData GetThreadStoreData()
     {
         Data.ThreadStore? threadStore;
         if (!_target.ProcessedData.TryGet(_threadStoreAddr.Value, out threadStore))
