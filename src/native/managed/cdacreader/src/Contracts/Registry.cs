@@ -8,8 +8,10 @@ namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
 internal sealed class Registry
 {
-    public Dictionary<Type, IContract> _contracts = [];
-    public Target _target;
+    // Contracts that have already been created for a target.
+    // Items should not be removed from this, only added.
+    private readonly Dictionary<Type, IContract> _contracts = [];
+    private readonly Target _target;
 
     public Registry(Target target)
     {
@@ -18,15 +20,20 @@ internal sealed class Registry
 
     public Thread Thread => GetContract<Thread>();
 
-    private T GetContract<T>() where T : IContract
+    private T GetContract<T>() where T : IContract, new()
     {
         if (_contracts.TryGetValue(typeof(T), out IContract? contractMaybe))
             return (T)contractMaybe;
 
-        IContract contract = T.Create(_target);
+        if (!_target.TryGetContractVersion(T.Name, out int version))
+            return new T();
 
-        // Still okay if contract was already registered by someone else
-        _ = _contracts.TryAdd(typeof(T), contract);
-        return (T)contract;
+        // Create and register the contract
+        IContract contract = T.Create(_target, version);
+        if (_contracts.TryAdd(typeof(T), contract))
+            return (T)contract;
+
+        // Contract was already registered by someone else
+        return (T)_contracts[typeof(T)];
     }
 }

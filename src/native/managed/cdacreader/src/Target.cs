@@ -376,10 +376,12 @@ public sealed unsafe class Target
         => _contracts.TryGetValue(contractName, out version);
 
     /// <summary>
-    /// Store of addresses that have already been read into corresponding data models
+    /// Store of addresses that have already been read into corresponding data models.
+    /// This is simply used to avoid re-processing data on every request.
     /// </summary>
     internal sealed class DataCache
     {
+        // TODO: [cdac] We may want to allow different types for the same address
         private readonly Dictionary<ulong, object?> _readDataByAddress = [];
 
         public bool TryRegister(ulong address, object data)

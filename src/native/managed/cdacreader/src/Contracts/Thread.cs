@@ -14,11 +14,10 @@ internal class Thread : IContract
 {
     public static Thread NotImplemented = new Thread();
 
-    public static IContract Create(Target target)
-    {
-        if (!target.TryGetContractVersion(nameof(Thread), out int version))
-            return NotImplemented;
+    public static string Name { get; } = nameof(Thread);
 
+    public static IContract Create(Target target, int version)
+    {
         if (!target.TryReadGlobalPointer(Constants.Globals.ThreadStore, out TargetPointer threadStore))
             return NotImplemented;
 
