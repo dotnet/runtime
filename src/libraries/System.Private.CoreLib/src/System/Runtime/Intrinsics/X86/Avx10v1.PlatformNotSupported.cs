@@ -1745,6 +1745,13 @@ namespace System.Runtime.Intrinsics.X86
         public static Vector256<byte> PermuteVar32x8x2(Vector256<byte> lower, Vector256<byte> indices, Vector256<byte> upper) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
+        /// __m256i _mm256_permutex2var_epi8 (__m256i a, __m256i idx, __m256i b)
+        ///   VPERMI2B ymm1 {k1}{z}, ymm2, ymm3/m256
+        ///   VPERMT2B ymm1 {k1}{z}, ymm2, ymm3/m256
+        /// </summary>
+        public static Vector256<sbyte> PermuteVar32x8x2(Vector256<sbyte> lower, Vector256<sbyte> indices, Vector256<sbyte> upper) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
         /// __m128 _mm_permutex2var_ps (__m128 a, __m128i idx, __m128i b)
         ///   VPERMI2PS xmm1 {k1}{z}, xmm2, xmm3/m128/m32bcst
         ///   VPERMT2PS xmm1 {k1}{z}, xmm2, xmm3/m128/m32bcst
