@@ -588,7 +588,7 @@ void emitter::emitIns_R_R(
 {
     code_t code = emitInsCode(ins);
 
-    if (INS_mov == ins)
+    if (INS_mov == ins || INS_sext_w == ins)
     {
         assert(isGeneralRegisterOrR0(reg1));
         assert(isGeneralRegisterOrR0(reg2));
@@ -4936,13 +4936,11 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
                 {
                     if (src1->gtType == TYP_INT)
                     {
-                        emitIns_R_R_I(INS_slli, EA_8BYTE, regOp1, regOp1, 32);
-                        emitIns_R_R_I(INS_srli, EA_8BYTE, regOp1, regOp1, 32);
+                        emitIns_R_R(INS_sext_w, EA_8BYTE, src1Reg, src1Reg);
                     }
                     if (src2->gtType == TYP_INT)
                     {
-                        emitIns_R_R_I(INS_slli, EA_8BYTE, regOp2, regOp2, 32);
-                        emitIns_R_R_I(INS_srli, EA_8BYTE, regOp2, regOp2, 32);
+                        emitIns_R_R(INS_sext_w, EA_8BYTE, src2Reg, src2Reg);
                     }
                 }
 
