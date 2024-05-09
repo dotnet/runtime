@@ -11,6 +11,7 @@ namespace Precise
     public class Driver_assemname
     {
         [Fact]
+        [OuterLoop]
         public static int TestEntryPoint()
         {
             try

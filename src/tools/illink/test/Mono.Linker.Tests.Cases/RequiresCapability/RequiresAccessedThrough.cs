@@ -40,11 +40,9 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 		{
 		}
 
-		// https://github.com/dotnet/linker/issues/2739 - the discussion there explains why (at least for now) we don't produce
-		// RAF and RDC warnings from the analyzer in these cases.
 		[ExpectedWarning ("IL2026", "--RequiresOnlyThroughReflection--")]
-		[ExpectedWarning ("IL3002", "--RequiresOnlyThroughReflection--", Tool.NativeAot, "")]
-		[ExpectedWarning ("IL3050", "--RequiresOnlyThroughReflection--", Tool.NativeAot, "")]
+		[ExpectedWarning ("IL3002", "--RequiresOnlyThroughReflection--", Tool.NativeAot, "https://github.com/dotnet/linker/issues/2739")]
+		[ExpectedWarning ("IL3050", "--RequiresOnlyThroughReflection--", Tool.NativeAot, "https://github.com/dotnet/linker/issues/2739")]
 		static void TestRequiresOnlyThroughReflection ()
 		{
 			typeof (RequiresAccessedThrough)
@@ -74,8 +72,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 
 		class AccessThroughSpecialAttribute
 		{
-			// https://github.com/dotnet/linker/issues/1873
-			// [ExpectedSharedWarning ("IL2026", "--DebuggerProxyType.Method--")]
+			[ExpectedWarning ("IL2026", "--DebuggerProxyType.Method--", Tool.None, "https://github.com/dotnet/linker/issues/1873")]
 			[DebuggerDisplay ("Some{*}value")]
 			class TypeWithDebuggerDisplay
 			{
@@ -103,8 +100,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				public PInvokeReturnType () { }
 			}
 
-			// https://github.com/mono/linker/issues/2116
-			[ExpectedWarning ("IL2026", "--PInvokeReturnType.ctor--", Tool.Trimmer, "")]
+			[ExpectedWarning ("IL2026", "--PInvokeReturnType.ctor--", Tool.Trimmer, "https://github.com/mono/linker/issues/2116")]
 			[DllImport ("nonexistent")]
 			static extern PInvokeReturnType PInvokeReturnsType ();
 
