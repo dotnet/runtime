@@ -9477,6 +9477,16 @@ private:
 #endif
     }
 
+    bool canUseEmbeddedBroadcast() const
+    {
+        return JitConfig.EnableEmbeddedBroadcast();
+    }
+
+    bool canUseEmbeddedMasking() const
+    {
+        return JitConfig.EnableEmbeddedMasking();
+    }
+
 #ifdef TARGET_XARCH
 public:
     bool canUseVexEncoding() const

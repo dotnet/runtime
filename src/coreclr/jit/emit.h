@@ -1663,27 +1663,41 @@ protected:
         {
             assert(!idIsEvexbContextSet());
 
-            if (instOptions == INS_OPTS_EVEX_eb_er_rd)
+            switch (instOptions & INS_OPTS_EVEX_b_MASK)
             {
-                _idEvexbContext = 1;
-            }
-            else if (instOptions == INS_OPTS_EVEX_er_ru)
-            {
-                _idEvexbContext = 2;
-            }
-            else if (instOptions == INS_OPTS_EVEX_er_rz)
-            {
-                _idEvexbContext = 3;
-            }
-            else
-            {
-                unreached();
+                case INS_OPTS_EVEX_eb_er_rd:
+                {
+                    _idEvexbContext = 1;
+                    break;
+                }
+
+                case INS_OPTS_EVEX_er_ru:
+                {
+                    _idEvexbContext = 2;
+                    break;
+                }
+
+                case INS_OPTS_EVEX_er_rz:
+                {
+                    _idEvexbContext = 3;
+                    break;
+                }
+
+                default:
+                {
+                    unreached();
+                }
             }
         }
 
         unsigned idGetEvexbContext() const
         {
             return _idEvexbContext;
+        }
+
+        bool idIsEvexAaaContextSet() const
+        {
+            return idGetEvexAaaContext() != 0;
         }
 
         unsigned idGetEvexAaaContext() const
@@ -2289,9 +2303,9 @@ protected:
     void emitDispInsAddr(const BYTE* code);
     void emitDispInsOffs(unsigned offs, bool doffs);
     void emitDispInsHex(instrDesc* id, BYTE* code, size_t sz);
-    void emitDispEmbBroadcastCount(instrDesc* id);
-    void emitDispEmbRounding(instrDesc* id);
-    void emitDispEmbMasking(instrDesc* id);
+    void emitDispEmbBroadcastCount(instrDesc* id) const;
+    void emitDispEmbRounding(instrDesc* id) const;
+    void emitDispEmbMasking(instrDesc* id) const;
     void emitDispIns(instrDesc* id,
                      bool       isNew,
                      bool       doffs,
