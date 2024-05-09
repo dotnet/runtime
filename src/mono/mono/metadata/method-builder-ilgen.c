@@ -738,7 +738,10 @@ mono_mb_inflate_generic_wrapper_data (MonoGenericContext *context, gpointer *met
 				return FALSE;
 
 			MonoClass *inflated_class = mono_class_from_mono_type_internal (inflated_type);
-			// TODO: EnC metadata-update
+			// TODO: EnC metadata-update.  But note:
+			//    error ENC0025: Adding an extern method requires restarting the application.
+			// So for UnsafeAccessor methods we don't need to handle this.  But if we
+			// have other kinds of generic wrappers, it might become an issue.
 			g_assert (!m_field_is_from_update (field));
 			int i = GPTRDIFF_TO_INT (field - m_class_get_fields (m_field_get_parent (field)));
 			gpointer dummy = NULL;
