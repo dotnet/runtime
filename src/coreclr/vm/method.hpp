@@ -1441,7 +1441,7 @@ public:
         WRAPPER_NO_CONTRACT;
         EnsureTemporaryEntryPoint(GetLoaderAllocator());
         PCODE *pSlot = GetAddrOfSlot();
-        if (*pSlot == NULL)
+        if (*pSlot == (PCODE)NULL)
         {
             if (RequiresStableEntryPoint())
             {
