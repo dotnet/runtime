@@ -348,7 +348,6 @@ export async function mono_wasm_load_stream_into_heap_persistent (stream: Readab
     // pad sizes by 16 bytes for simd
     const desiredSize = length + 16;
     const memoryOffset = Module._sbrk(desiredSize);
-    const heapBytes = new Uint8Array(localHeapViewU8().buffer, <any>memoryOffset, length);
     let writeOffset = 0;
     // You would hope you could use ReadableStreamBYOBReader here, but it actually detaches the
     //  target ArrayBuffer while writing into it, so it's completely unusable for zero-copy loading
@@ -358,7 +357,9 @@ export async function mono_wasm_load_stream_into_heap_persistent (stream: Readab
         write: async function (chunk, controller) {
             <unknown>controller;
             // mono_log_info(`Stream decoder got chunk: ${chunk} of type ${typeof(chunk)} with length ${chunk.length}`);
-            heapBytes.set(chunk, writeOffset);
+            const destOffset = <any>memoryOffset + writeOffset;
+            mono_assert((writeOffset + chunk.length) <= length, () => `Got more than ${length} bytes of data when loading stream into heap (${writeOffset + chunk.length}).`);
+            localHeapViewU8().set(chunk, destOffset);
             writeOffset += chunk.length;
         },
         abort: function (reason) {
