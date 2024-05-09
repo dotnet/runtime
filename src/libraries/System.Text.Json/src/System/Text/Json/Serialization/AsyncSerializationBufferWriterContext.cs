@@ -74,7 +74,7 @@ namespace System.Text.Json.Serialization
                     ThrowHelper.ThrowOperationCanceledException_PipeWriteCanceled();
                 }
 
-                ThrowHelper.ThrowOperationCanceledException_PipeWriteCanceled();
+                ThrowHelper.ThrowOperationCanceledException_PipeWriteCompleted();
             }
         }
 
