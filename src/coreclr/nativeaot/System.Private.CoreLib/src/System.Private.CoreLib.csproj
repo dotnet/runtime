@@ -1,8 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
-    <!-- AD0001 : https://github.com/dotnet/runtime/issues/90356 -->
-    <NoWarn>$(NoWarn);AD0001</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
@@ -176,15 +174,12 @@
     <Compile Include="System\Diagnostics\StackFrame.NativeAot.cs" />
     <Compile Include="System\Diagnostics\StackFrameExtensions.cs" />
     <Compile Include="System\Diagnostics\StackTrace.NativeAot.cs" />
-    <Compile Include="System\Diagnostics\Eventing\EventPipe.NativeAot.cs" />
-    <Compile Include="System\Diagnostics\Eventing\NativeRuntimeEventSource.Threading.NativeSinks.NativeAot.cs" Condition="'$(FeaturePerfTracing)' == 'true'" />
     <Compile Include="System\Enum.NativeAot.cs" />
     <Compile Include="System\Environment.NativeAot.cs" />
     <Compile Include="System\GC.NativeAot.cs" />
     <Compile Include="System\Math.NativeAot.cs" />
     <Compile Include="System\MathF.NativeAot.cs" />
     <Compile Include="System\Object.NativeAot.cs" />
-    <Compile Include="System\Resources\ManifestBasedResourceGroveler.NativeAot.cs" />
     <Compile Include="System\RuntimeArgumentHandle.cs" />
     <Compile Include="System\RuntimeType.cs" />
     <Compile Include="System\Runtime\ControlledExecution.NativeAot.cs" />
@@ -251,11 +246,21 @@
     </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)'=='true'">
+    <Compile Include="System\EventReporter.cs" />
     <Compile Include="Internal\Runtime\FrozenObjectHeapManager.Windows.cs" />
     <Compile Include="System\Runtime\InteropServices\NativeLibrary.NativeAot.Windows.cs" />
     <Compile Include="System\Runtime\InteropServices\PInvokeMarshal.Windows.cs" />
     <Compile Include="$(CommonPath)\System\Runtime\InteropServices\BuiltInVariantExtensions.cs">
       <Link>System\Runtime\InteropServices\BuiltInVariantExtensions.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.RegisterEventSource_IntPtr.cs">
+      <Link>Interop\Windows\Advapi32\Interop.RegisterEventSource_IntPtr.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.DeregisterEventSource.cs">
+      <Link>Interop\Windows\Advapi32\Interop.DeregisterEventSource.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.ReportEvent_IntPtr.cs">
+      <Link>Common\Interop\Windows\Advapi32\Interop.ReportEvent_IntPtr.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.IsDebuggerPresent.cs">
       <Link>Interop\Windows\Kernel32\Interop.IsDebuggerPresent.cs</Link>
@@ -488,7 +493,7 @@
     <Compile Include="System\Reflection\Runtime\TypeInfos\RuntimeTypeInfo.CoreGetDeclared.cs" />
     <Compile Include="System\Reflection\Runtime\TypeInfos\RuntimeTypeInfo.InvokeMember.cs" />
     <Compile Include="System\Reflection\Runtime\TypeInfos\RuntimeTypeInfo.TypeComponentsCache.cs" />
-    <Compile Include="System\Reflection\TypeNameParser.NativeAot.cs" />
+    <Compile Include="System\Reflection\TypeNameResolver.NativeAot.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Internal\Reflection\Core\AssemblyBinder.cs" />

@@ -49,6 +49,18 @@ PALTEST(c_runtime__vsnprintf_s_test1_paltest_vsnprintf_test1, "c_runtime/_vsnpri
         Fail("ERROR: expected %s (up to %d chars), got %s\n", checkstr, 8, buf);
     }
 
+    char buf8[8] = {0};
+
+    ret = Testvsnprintf(buf8, 8, "abcdefgh");
+    if (ret >= 0)
+    {
+        Fail("ERROR: expected negative return value, got %d", ret);
+    }
+    if (memcmp(buf8, "abcdefg\0", 8) != 0)
+    {
+        Fail("ERROR: Expected 7 chars + null terminator");
+    }
+
     PAL_Terminate();
     return PASS;
 }

@@ -96,7 +96,7 @@ void CodeGen::genStoreIndTypeSimd12(GenTreeStoreInd* treeNode)
     }
     else
     {
-        regNumber tmpReg = treeNode->GetSingleTempReg();
+        regNumber tmpReg = internalRegisters.GetSingle(treeNode);
 
         // Extract upper 4 bytes from data
         emit->emitIns_R_R(INS_movhlps, EA_16BYTE, tmpReg, dataReg);
@@ -168,7 +168,7 @@ void CodeGen::genLoadIndTypeSimd12(GenTreeIndir* treeNode)
     {
         // Load and insert upper 4 bytes, 0x20 inserts to index 2 and 0x8 zeros index 3
         GenTreeIndir indir = indirForm(TYP_SIMD16, addr);
-        emit->emitIns_SIMD_R_R_A_I(INS_insertps, EA_16BYTE, tgtReg, tgtReg, &indir, 0x28);
+        emit->emitIns_SIMD_R_R_A_I(INS_insertps, EA_16BYTE, tgtReg, tgtReg, &indir, 0x28, INS_OPTS_NONE);
     }
     else
     {
@@ -295,7 +295,7 @@ void CodeGen::genEmitStoreLclTypeSimd12(GenTree* store, unsigned lclNum, unsigne
     }
     else
     {
-        regNumber tmpReg = store->GetSingleTempReg();
+        regNumber tmpReg = internalRegisters.GetSingle(store);
 
         // Extract upper 4 bytes from data
         emit->emitIns_R_R(INS_movhlps, EA_16BYTE, tmpReg, dataReg);
@@ -323,7 +323,7 @@ void CodeGen::genEmitLoadLclTypeSimd12(regNumber tgtReg, unsigned lclNum, unsign
         emit->emitIns_R_S(INS_movsd_simd, EA_8BYTE, tgtReg, lclNum, offset);
 
         // Load and insert upper 4 byte, 0x20 inserts to index 2 and 0x8 zeros index 3
-        emit->emitIns_SIMD_R_R_S_I(INS_insertps, EA_16BYTE, tgtReg, tgtReg, lclNum, offset + 8, 0x28);
+        emit->emitIns_SIMD_R_R_S_I(INS_insertps, EA_16BYTE, tgtReg, tgtReg, lclNum, offset + 8, 0x28, INS_OPTS_NONE);
     }
     else
     {
@@ -391,7 +391,7 @@ void CodeGen::genPutArgStkSimd12(GenTreePutArgStk* treeNode)
     regNumber dataReg = genConsumeReg(data);
 
     // Need an additional Xmm register to extract upper 4 bytes from data.
-    regNumber tmpReg = treeNode->GetSingleTempReg();
+    regNumber tmpReg = internalRegisters.GetSingle(treeNode);
 
     genStoreSimd12ToStack(dataReg, tmpReg);
 }
@@ -530,7 +530,8 @@ void CodeGen::genSimd12UpperClear(regNumber tgtReg)
         // COUNT_D: 0b11   - Insert into element 3
         // COUNT_S: 0b11   - Insert from element 3
 
-        GetEmitter()->emitIns_SIMD_R_R_R_I(INS_insertps, EA_16BYTE, tgtReg, tgtReg, tgtReg, static_cast<int8_t>(0xF8));
+        GetEmitter()->emitIns_SIMD_R_R_R_I(INS_insertps, EA_16BYTE, tgtReg, tgtReg, tgtReg, static_cast<int8_t>(0xF8),
+                                           INS_OPTS_NONE);
     }
     else
     {
@@ -548,7 +549,7 @@ void CodeGen::genSimd12UpperClear(regNumber tgtReg)
             zroSimd12Elm3 = GetEmitter()->emitSimd16Const(constValue);
         }
 
-        GetEmitter()->emitIns_SIMD_R_R_C(INS_andps, EA_16BYTE, tgtReg, tgtReg, zroSimd12Elm3, 0);
+        GetEmitter()->emitIns_SIMD_R_R_C(INS_andps, EA_16BYTE, tgtReg, tgtReg, zroSimd12Elm3, 0, INS_OPTS_NONE);
     }
 }
 

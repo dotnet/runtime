@@ -43,27 +43,30 @@ ThreadStore *   RuntimeInstance::GetThreadStore()
     return m_pThreadStore;
 }
 
-COOP_PINVOKE_HELPER(uint8_t *, RhGetCrashInfoBuffer, (int32_t* pcbMaxSize))
+FCIMPL1(uint8_t *, RhGetCrashInfoBuffer, int32_t* pcbMaxSize)
 {
     *pcbMaxSize = MAX_CRASHINFOBUFFER_SIZE;
     return g_CrashInfoBuffer;
 }
+FCIMPLEND
 
 #if TARGET_UNIX
 #include "PalCreateDump.h"
-COOP_PINVOKE_HELPER(void, RhCreateCrashDumpIfEnabled, (PEXCEPTION_RECORD pExceptionRecord, PCONTEXT pExContext))
+FCIMPL2(void, RhCreateCrashDumpIfEnabled, PEXCEPTION_RECORD pExceptionRecord, PCONTEXT pExContext)
 {
     PalCreateCrashDumpIfEnabled(pExceptionRecord, pExContext);
 }
+FCIMPLEND
 #endif
 
-COOP_PINVOKE_HELPER(uint8_t *, RhGetRuntimeVersion, (int32_t* pcbLength))
+FCIMPL1(uint8_t *, RhGetRuntimeVersion, int32_t* pcbLength)
 {
     *pcbLength = sizeof(CLR_PRODUCT_VERSION) - 1;           // don't include the terminating null
     return (uint8_t*)&CLR_PRODUCT_VERSION;
 }
+FCIMPLEND
 
-COOP_PINVOKE_HELPER(uint8_t *, RhFindMethodStartAddress, (void * codeAddr))
+FCIMPL1(uint8_t *, RhFindMethodStartAddress, void * codeAddr)
 {
     uint8_t *startAddress = dac_cast<uint8_t *>(GetRuntimeInstance()->FindMethodStartAddress(dac_cast<PTR_VOID>(codeAddr)));
 #if TARGET_ARM
@@ -72,6 +75,7 @@ COOP_PINVOKE_HELPER(uint8_t *, RhFindMethodStartAddress, (void * codeAddr))
     return startAddress;
 #endif
 }
+FCIMPLEND
 
 PTR_uint8_t RuntimeInstance::FindMethodStartAddress(PTR_VOID ControlPC)
 {
@@ -269,15 +273,16 @@ bool RuntimeInstance::RegisterTypeManager(TypeManager * pTypeManager)
     return true;
 }
 
-COOP_PINVOKE_HELPER(TypeManagerHandle, RhpCreateTypeManager, (HANDLE osModule, void* pModuleHeader, PTR_PTR_VOID pClasslibFunctions, uint32_t nClasslibFunctions))
+FCIMPL4(TypeManagerHandle, RhpCreateTypeManager, HANDLE osModule, void* pModuleHeader, PTR_PTR_VOID pClasslibFunctions, uint32_t nClasslibFunctions)
 {
     TypeManager * typeManager = TypeManager::Create(osModule, pModuleHeader, pClasslibFunctions, nClasslibFunctions);
     GetRuntimeInstance()->RegisterTypeManager(typeManager);
 
     return TypeManagerHandle::Create(typeManager);
 }
+FCIMPLEND
 
-COOP_PINVOKE_HELPER(void*, RhpRegisterOsModule, (HANDLE hOsModule))
+FCIMPL1(void*, RhpRegisterOsModule, HANDLE hOsModule)
 {
     RuntimeInstance::OsModuleEntry * pEntry = new (nothrow) RuntimeInstance::OsModuleEntry();
     if (NULL == pEntry)
@@ -289,6 +294,7 @@ COOP_PINVOKE_HELPER(void*, RhpRegisterOsModule, (HANDLE hOsModule))
 
     return hOsModule; // Return non-null on success
 }
+FCIMPLEND
 
 RuntimeInstance::TypeManagerList& RuntimeInstance::GetTypeManagerList()
 {
@@ -344,9 +350,9 @@ bool RuntimeInstance::ShouldHijackCallsiteForGcStress(uintptr_t CallsiteIP)
 }
 
 #ifdef FEATURE_CACHED_INTERFACE_DISPATCH
-EXTERN_C void RhpInitialDynamicInterfaceDispatch();
+EXTERN_C void F_CALL_CONV RhpInitialDynamicInterfaceDispatch();
 
-COOP_PINVOKE_HELPER(void *, RhNewInterfaceDispatchCell, (MethodTable * pInterface, int32_t slotNumber))
+FCIMPL2(void *, RhNewInterfaceDispatchCell, MethodTable * pInterface, int32_t slotNumber)
 {
     InterfaceDispatchCell * pCell = new (nothrow) InterfaceDispatchCell[2];
     if (pCell == NULL)
@@ -364,6 +370,7 @@ COOP_PINVOKE_HELPER(void *, RhNewInterfaceDispatchCell, (MethodTable * pInterfac
 
     return pCell;
 }
+FCIMPLEND
 #endif // FEATURE_CACHED_INTERFACE_DISPATCH
 
 #endif // DACCESS_COMPILE

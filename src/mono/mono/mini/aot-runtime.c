@@ -108,7 +108,7 @@ struct MonoAotModule {
 	/* Maps methods to their code */
 	GHashTable *method_to_code;
 	/* Maps pointers into the method info to the methods themselves */
-	GHashTable *method_ref_to_method;
+	dn_simdhash_ptr_ptr_t *method_ref_to_method;
 	MonoAssemblyName *image_names;
 	char **image_guids;
 	MonoAssembly *assembly;
@@ -1971,6 +1971,12 @@ load_aot_module (MonoAssemblyLoadContext *alc, MonoAssembly *assembly, gpointer 
 	if (mono_aot_mode == MONO_AOT_MODE_NONE)
 		return;
 
+#ifdef HOST_BROWSER
+	// This indicates that we were not built for AOT, so there's no need to probe for AOT modules.
+	if (mono_aot_mode == MONO_AOT_MODE_INTERP_ONLY)
+		return;
+#endif
+
 	if (assembly->image->aot_module)
 		/*
 		 * Already loaded. This can happen because the assembly loading code might invoke
@@ -2480,7 +2486,7 @@ load_container_amodule (MonoAssemblyLoadContext *alc)
 
 	mono_loader_lock ();
 	// There might be several threads that passed the first check
-	// Adding another check to ensure single load of a container assembly due to race condition 
+	// Adding another check to ensure single load of a container assembly due to race condition
 	if (!container_amodule) {
 		ERROR_DECL (error);
 
@@ -4507,7 +4513,7 @@ find_aot_method_in_amodule (MonoAotModule *code_amodule, MonoMethod *method, gui
 
 	index = 0xffffff;
 	while (TRUE) {
-		MonoMethod *m;
+		MonoMethod *m = NULL;
 		guint8 *p, *orig_p;
 
 		key = decode_uint_with_len (key_len, entry);
@@ -4522,8 +4528,9 @@ find_aot_method_in_amodule (MonoAotModule *code_amodule, MonoMethod *method, gui
 
 		amodule_lock (metadata_amodule);
 		if (!metadata_amodule->method_ref_to_method)
-			metadata_amodule->method_ref_to_method = g_hash_table_new (NULL, NULL);
-		m = (MonoMethod *)g_hash_table_lookup (metadata_amodule->method_ref_to_method, p);
+			// FIXME: Select a better initial capacity.
+			metadata_amodule->method_ref_to_method = dn_simdhash_ptr_ptr_new (4096, NULL);
+		dn_simdhash_ptr_ptr_try_get_value (metadata_amodule->method_ref_to_method, p, (void **)&m);
 		amodule_unlock (metadata_amodule);
 		if (!m) {
 			m = decode_resolve_method_ref_with_target (code_amodule, method, p, &p, error);
@@ -4534,7 +4541,7 @@ find_aot_method_in_amodule (MonoAotModule *code_amodule, MonoMethod *method, gui
 			 */
 			if (m && m->wrapper_type != MONO_WRAPPER_RUNTIME_INVOKE) {
 				amodule_lock (metadata_amodule);
-				g_hash_table_insert (metadata_amodule->method_ref_to_method, orig_p, m);
+				dn_simdhash_ptr_ptr_try_add (metadata_amodule->method_ref_to_method, orig_p, m);
 				amodule_unlock (metadata_amodule);
 			}
 		}

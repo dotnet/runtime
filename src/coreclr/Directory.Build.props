@@ -1,6 +1,6 @@
 <Project>
   <PropertyGroup>
-    <InferPlatformFromTargetArchitecture>true</InferPlatformFromTargetArchitecture>
+    <InferPlatformFromTargetArchitecture Condition="'$(InferPlatformFromTargetArchitecture)' == ''">true</InferPlatformFromTargetArchitecture>
 
     <!-- TODO: Clean-up casing and remove __BuildType to remove this block. -->
     <Configuration Condition="'$(Configuration)' == ''">$(__BuildType)</Configuration>

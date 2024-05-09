@@ -2,11 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection.Metadata;
+using ILCompiler.DependencyAnalysis;
+using ILCompiler.DependencyAnalysisFramework;
 using ILCompiler.Logging;
 using ILLink.Shared;
 using ILLink.Shared.TrimAnalysis;
@@ -115,18 +118,19 @@ namespace ILCompiler.Dataflow
             if (!methodBody.OwningMethod.Signature.ReturnType.IsVoid)
             {
                 var method = methodBody.OwningMethod;
-                var methodReturnValue = _annotations.GetMethodReturnValue(method);
+                var methodReturnValue = _annotations.GetMethodReturnValue(method, isNewObj: false);
                 if (methodReturnValue.DynamicallyAccessedMemberTypes != 0)
                     HandleAssignmentPattern(_origin, ReturnValue, methodReturnValue, method.GetDisplayName());
             }
         }
 
-        public static DependencyList ScanAndProcessReturnValue(NodeFactory factory, FlowAnnotations annotations, Logger logger, MethodIL methodBody)
+        public static DependencyList ScanAndProcessReturnValue(NodeFactory factory, FlowAnnotations annotations, Logger logger, MethodIL methodBody, out List<INodeWithRuntimeDeterminedDependencies> runtimeDependencies)
         {
             var scanner = new ReflectionMethodBodyScanner(factory, annotations, logger, new MessageOrigin(methodBody.OwningMethod));
 
             scanner.InterproceduralScan(methodBody);
 
+            runtimeDependencies = scanner._reflectionMarker.RuntimeDeterminedDependencies;
             return scanner._reflectionMarker.Dependencies;
         }
 
@@ -257,7 +261,7 @@ namespace ILCompiler.Dataflow
             ProcessGenericArgumentDataFlow(accessedField);
         }
 
-        public override bool HandleCall(MethodIL callingMethodBody, MethodDesc calledMethod, ILOpcode operation, int offset, ValueNodeList methodParams, out MultiValue methodReturnValue)
+        public override MultiValue HandleCall(MethodIL callingMethodBody, MethodDesc calledMethod, ILOpcode operation, int offset, ValueNodeList methodParams)
         {
             Debug.Assert(callingMethodBody.OwningMethod == _origin.MemberDefinition);
 
@@ -296,394 +300,32 @@ namespace ILCompiler.Dataflow
                 instanceValue,
                 arguments,
                 diagnosticContext,
-                _reflectionMarker,
-                out methodReturnValue);
+                _reflectionMarker);
         }
 
-        public static bool HandleCall(
+        public static MultiValue HandleCall(
             MethodIL callingMethodBody,
             MethodDesc calledMethod,
             ILOpcode operation,
             MultiValue instanceValue,
             ImmutableArray<MultiValue> argumentValues,
             DiagnosticContext diagnosticContext,
-            ReflectionMarker reflectionMarker,
-            out MultiValue methodReturnValue)
+            ReflectionMarker reflectionMarker)
         {
             var callingMethodDefinition = callingMethodBody.OwningMethod;
             Debug.Assert(callingMethodDefinition == diagnosticContext.Origin.MemberDefinition);
 
-            var annotatedMethodReturnValue = reflectionMarker.Annotations.GetMethodReturnValue(calledMethod);
+            bool isNewObj = operation == ILOpcode.newobj;
+            var annotatedMethodReturnValue = reflectionMarker.Annotations.GetMethodReturnValue(calledMethod, isNewObj);
             Debug.Assert(
                 RequiresReflectionMethodBodyScannerForCallSite(reflectionMarker.Annotations, calledMethod) ||
                 annotatedMethodReturnValue.DynamicallyAccessedMemberTypes == DynamicallyAccessedMemberTypes.None);
 
-            MultiValue? maybeMethodReturnValue = null;
-
-            var handleCallAction = new HandleCallAction(reflectionMarker.Annotations, reflectionMarker, diagnosticContext, callingMethodDefinition, calledMethod.GetDisplayName());
-
+            var handleCallAction = new HandleCallAction(reflectionMarker.Annotations, operation, reflectionMarker, diagnosticContext, callingMethodDefinition, calledMethod.GetDisplayName());
             var intrinsicId = Intrinsics.GetIntrinsicIdForMethod(calledMethod);
-            switch (intrinsicId)
-            {
-                case IntrinsicId.IntrospectionExtensions_GetTypeInfo:
-                case IntrinsicId.TypeInfo_AsType:
-                case IntrinsicId.Type_get_UnderlyingSystemType:
-                case IntrinsicId.Type_GetTypeFromHandle:
-                case IntrinsicId.Type_get_TypeHandle:
-                case IntrinsicId.Type_GetInterface:
-                case IntrinsicId.Type_get_AssemblyQualifiedName:
-                case IntrinsicId.RuntimeHelpers_RunClassConstructor:
-                case IntrinsicId.Type_GetConstructors__BindingFlags:
-                case IntrinsicId.Type_GetMethods__BindingFlags:
-                case IntrinsicId.Type_GetFields__BindingFlags:
-                case IntrinsicId.Type_GetProperties__BindingFlags:
-                case IntrinsicId.Type_GetEvents__BindingFlags:
-                case IntrinsicId.Type_GetNestedTypes__BindingFlags:
-                case IntrinsicId.Type_GetMembers__BindingFlags:
-                case IntrinsicId.Type_GetField:
-                case IntrinsicId.Type_GetProperty:
-                case IntrinsicId.Type_GetEvent:
-                case IntrinsicId.RuntimeReflectionExtensions_GetRuntimeEvent:
-                case IntrinsicId.RuntimeReflectionExtensions_GetRuntimeField:
-                case IntrinsicId.RuntimeReflectionExtensions_GetRuntimeMethod:
-                case IntrinsicId.RuntimeReflectionExtensions_GetRuntimeProperty:
-                case IntrinsicId.Type_GetMember:
-                case IntrinsicId.Type_GetMethod:
-                case IntrinsicId.Type_GetNestedType:
-                case IntrinsicId.Nullable_GetUnderlyingType:
-                case IntrinsicId.Expression_Property:
-                case IntrinsicId.Expression_Field:
-                case IntrinsicId.Type_get_BaseType:
-                case IntrinsicId.Type_GetConstructor:
-                case IntrinsicId.MethodBase_GetMethodFromHandle:
-                case IntrinsicId.MethodBase_get_MethodHandle:
-                case IntrinsicId.Type_MakeGenericType:
-                case IntrinsicId.MethodInfo_MakeGenericMethod:
-                case IntrinsicId.Expression_Call:
-                case IntrinsicId.Expression_New:
-                case IntrinsicId.Type_GetType:
-                case IntrinsicId.Activator_CreateInstance__Type:
-                case IntrinsicId.Activator_CreateInstance__AssemblyName_TypeName:
-                case IntrinsicId.Activator_CreateInstanceFrom:
-                case IntrinsicId.AppDomain_CreateInstance:
-                case IntrinsicId.AppDomain_CreateInstanceAndUnwrap:
-                case IntrinsicId.AppDomain_CreateInstanceFrom:
-                case IntrinsicId.AppDomain_CreateInstanceFromAndUnwrap:
-                case IntrinsicId.Assembly_CreateInstance:
-                    {
-                        bool result = handleCallAction.Invoke(calledMethod, instanceValue, argumentValues, intrinsicId, out methodReturnValue);
-
-                        // Special case some intrinsics for AOT handling (on top of the trimming handling done in the HandleCallAction)
-                        switch (intrinsicId)
-                        {
-                            case IntrinsicId.Type_MakeGenericType:
-                            case IntrinsicId.MethodInfo_MakeGenericMethod:
-                                CheckAndReportRequires(diagnosticContext, calledMethod, DiagnosticUtilities.RequiresDynamicCodeAttribute);
-                                break;
-                        }
-
-                        return result;
-                    }
-
-                case IntrinsicId.None:
-                    {
-                        if (IsPInvokeDangerous(calledMethod, out bool comDangerousMethod, out bool aotUnsafeDelegate))
-                        {
-                            if (aotUnsafeDelegate)
-                            {
-                                diagnosticContext.AddDiagnostic(DiagnosticId.CorrectnessOfAbstractDelegatesCannotBeGuaranteed, calledMethod.GetDisplayName());
-                            }
-
-                            if (comDangerousMethod)
-                            {
-                                diagnosticContext.AddDiagnostic(DiagnosticId.CorrectnessOfCOMCannotBeGuaranteed, calledMethod.GetDisplayName());
-                            }
-                        }
-
-                        CheckAndReportAllRequires(diagnosticContext, calledMethod);
-
-                        return handleCallAction.Invoke(calledMethod, instanceValue, argumentValues, intrinsicId, out methodReturnValue);
-                    }
-
-                case IntrinsicId.TypeDelegator_Ctor:
-                    {
-                        // This is an identity function for analysis purposes
-                        if (operation == ILOpcode.newobj)
-                            AddReturnValue(argumentValues[0]);
-                    }
-                    break;
-
-                case IntrinsicId.Array_Empty:
-                    {
-                        AddReturnValue(ArrayValue.Create(0, calledMethod.Instantiation[0]));
-                    }
-                    break;
-
-                //
-                // System.Enum
-                //
-                // static GetValues (Type)
-                //
-                case IntrinsicId.Enum_GetValues:
-                    {
-                        // Enum.GetValues returns System.Array, but it's the array of the enum type under the hood
-                        // and people depend on this undocumented detail (could have returned enum of the underlying
-                        // type instead).
-                        //
-                        // At least until we have shared enum code, this needs extra handling to get it right.
-                        foreach (var value in argumentValues[0].AsEnumerable ())
-                        {
-                            if (value is SystemTypeValue systemTypeValue
-                                && !systemTypeValue.RepresentedType.Type.IsGenericDefinition
-                                && !systemTypeValue.RepresentedType.Type.ContainsSignatureVariables(treatGenericParameterLikeSignatureVariable: true))
-                            {
-                                if (systemTypeValue.RepresentedType.Type.IsEnum)
-                                {
-                                    reflectionMarker.Dependencies.Add(reflectionMarker.Factory.ReflectedType(systemTypeValue.RepresentedType.Type.MakeArrayType()), "Enum.GetValues");
-                                }
-                            }
-                            else
-                                CheckAndReportRequires(diagnosticContext, calledMethod, DiagnosticUtilities.RequiresDynamicCodeAttribute);
-                        }
-                    }
-                    break;
-
-                //
-                // System.Runtime.InteropServices.Marshal
-                //
-                // static SizeOf (Type)
-                // static PtrToStructure (IntPtr, Type)
-                // static DestroyStructure (IntPtr, Type)
-                // static OffsetOf (Type, string)
-                //
-                case IntrinsicId.Marshal_SizeOf:
-                case IntrinsicId.Marshal_PtrToStructure:
-                case IntrinsicId.Marshal_DestroyStructure:
-                case IntrinsicId.Marshal_OffsetOf:
-                    {
-                        int paramIndex = intrinsicId == IntrinsicId.Marshal_SizeOf
-                            || intrinsicId == IntrinsicId.Marshal_OffsetOf
-                            ? 0 : 1;
-
-                        // We need the data to do struct marshalling.
-                        foreach (var value in argumentValues[paramIndex].AsEnumerable ())
-                        {
-                            if (value is SystemTypeValue systemTypeValue
-                                && !systemTypeValue.RepresentedType.Type.IsGenericDefinition
-                                && !systemTypeValue.RepresentedType.Type.ContainsSignatureVariables(treatGenericParameterLikeSignatureVariable: true))
-                            {
-                                if (systemTypeValue.RepresentedType.Type.IsDefType)
-                                {
-                                    reflectionMarker.Dependencies.Add(reflectionMarker.Factory.StructMarshallingData((DefType)systemTypeValue.RepresentedType.Type), "Marshal API");
-                                    if (intrinsicId == IntrinsicId.Marshal_PtrToStructure
-                                        && systemTypeValue.RepresentedType.Type.GetParameterlessConstructor() is MethodDesc ctorMethod
-                                        && !reflectionMarker.Factory.MetadataManager.IsReflectionBlocked(ctorMethod))
-                                    {
-                                        reflectionMarker.Dependencies.Add(reflectionMarker.Factory.ReflectedMethod(ctorMethod.GetCanonMethodTarget(CanonicalFormKind.Specific)), "Marshal API");
-                                    }
-                                }
-                            }
-                            else
-                                CheckAndReportRequires(diagnosticContext, calledMethod, DiagnosticUtilities.RequiresDynamicCodeAttribute);
-                        }
-                    }
-                    break;
-
-                //
-                // System.Runtime.InteropServices.Marshal
-                //
-                // static GetDelegateForFunctionPointer (IntPtr, Type)
-                //
-                case IntrinsicId.Marshal_GetDelegateForFunctionPointer:
-                    {
-                        // We need the data to do delegate marshalling.
-                        foreach (var value in argumentValues[1].AsEnumerable ())
-                        {
-                            if (value is SystemTypeValue systemTypeValue
-                                && !systemTypeValue.RepresentedType.Type.IsGenericDefinition
-                                && !systemTypeValue.RepresentedType.Type.ContainsSignatureVariables(treatGenericParameterLikeSignatureVariable: true))
-                            {
-                                if (systemTypeValue.RepresentedType.Type.IsDelegate)
-                                {
-                                    reflectionMarker.Dependencies.Add(reflectionMarker.Factory.DelegateMarshallingData((DefType)systemTypeValue.RepresentedType.Type), "Marshal API");
-                                }
-                            }
-                            else
-                                CheckAndReportRequires(diagnosticContext, calledMethod, DiagnosticUtilities.RequiresDynamicCodeAttribute);
-                        }
-                    }
-                    break;
-
-                //
-                // System.Delegate
-                //
-                // get_Method ()
-                //
-                // System.Reflection.RuntimeReflectionExtensions
-                //
-                // GetMethodInfo (System.Delegate)
-                //
-                case IntrinsicId.RuntimeReflectionExtensions_GetMethodInfo:
-                case IntrinsicId.Delegate_get_Method:
-                    {
-                        // Find the parameter: first is an instance method, second is an extension method.
-                        MultiValue param = intrinsicId == IntrinsicId.RuntimeReflectionExtensions_GetMethodInfo
-                            ? argumentValues[0] : instanceValue;
-
-                        // If this is Delegate.Method accessed from RuntimeReflectionExtensions.GetMethodInfo, ignore
-                        // because we handle the callsites to that one here as well.
-                        if (Intrinsics.GetIntrinsicIdForMethod(callingMethodDefinition) == IntrinsicId.RuntimeReflectionExtensions_GetMethodInfo)
-                            break;
-
-                        foreach (var valueNode in param.AsEnumerable())
-                        {
-                            TypeDesc? staticType = (valueNode as IValueWithStaticType)?.StaticType?.Type;
-                            if (staticType is null || !staticType.IsDelegate)
-                            {
-                                // The static type is unknown or something useless like Delegate or MulticastDelegate.
-                                reflectionMarker.Dependencies.Add(reflectionMarker.Factory.ReflectedDelegate(null), "Delegate.Method access on unknown delegate type");
-                            }
-                            else
-                            {
-                                if (staticType.ContainsSignatureVariables(treatGenericParameterLikeSignatureVariable: true))
-                                    reflectionMarker.Dependencies.Add(reflectionMarker.Factory.ReflectedDelegate(staticType.GetTypeDefinition()), "Delegate.Method access (on inexact type)");
-                                else
-                                    reflectionMarker.Dependencies.Add(reflectionMarker.Factory.ReflectedDelegate(staticType.ConvertToCanonForm(CanonicalFormKind.Specific)), "Delegate.Method access");
-                            }
-                        }
-                    }
-                    break;
-
-                //
-                // System.Object
-                //
-                // GetType()
-                //
-                case IntrinsicId.Object_GetType:
-                    {
-                        foreach (var valueNode in instanceValue.AsEnumerable ())
-                        {
-                            // Note that valueNode can be statically typed in IL as some generic argument type.
-                            // For example:
-                            //   void Method<T>(T instance) { instance.GetType().... }
-                            // Currently this case will end up with null StaticType - since there's no typedef for the generic argument type.
-                            // But it could be that T is annotated with for example PublicMethods:
-                            //   void Method<[DAM(PublicMethods)] T>(T instance) { instance.GetType().GetMethod("Test"); }
-                            // In this case it's in theory possible to handle it, by treating the T basically as a base class
-                            // for the actual type of "instance". But the analysis for this would be pretty complicated (as the marking
-                            // has to happen on the callsite, which doesn't know that GetType() will be used...).
-                            // For now we're intentionally ignoring this case - it will produce a warning.
-                            // The counter example is:
-                            //   Method<Base>(new Derived);
-                            // In this case to get correct results, trimmer would have to mark all public methods on Derived. Which
-                            // currently it won't do.
-
-                            TypeDesc? staticType = (valueNode as IValueWithStaticType)?.StaticType?.Type;
-                            if (staticType is null || (!staticType.IsDefType && !staticType.IsArray))
-                            {
-                                // We don't know anything about the type GetType was called on. Track this as a usual "result of a method call without any annotations"
-                                AddReturnValue(reflectionMarker.Annotations.GetMethodReturnValue(calledMethod));
-                            }
-                            else if (staticType.IsSealed() || staticType.IsTypeOf("System", "Delegate"))
-                            {
-                                // We can treat this one the same as if it was a typeof() expression
-
-                                // We can allow Object.GetType to be modeled as System.Delegate because we keep all methods
-                                // on delegates anyway so reflection on something this approximation would miss is actually safe.
-
-                                // We ignore the fact that the type can be annotated (see below for handling of annotated types)
-                                // This means the annotations (if any) won't be applied - instead we rely on the exact knowledge
-                                // of the type. So for example even if the type is annotated with PublicMethods
-                                // but the code calls GetProperties on it - it will work - mark properties, don't mark methods
-                                // since we ignored the fact that it's annotated.
-                                // This can be seen a little bit as a violation of the annotation, but we already have similar cases
-                                // where a parameter is annotated and if something in the method sets a specific known type to it
-                                // we will also make it just work, even if the annotation doesn't match the usage.
-                                AddReturnValue(new SystemTypeValue(staticType));
-                            }
-                            else
-                            {
-                                Debug.Assert(staticType is MetadataType || staticType.IsArray);
-                                MetadataType closestMetadataType = staticType is MetadataType mdType ?
-                                    mdType : (MetadataType)reflectionMarker.Factory.TypeSystemContext.GetWellKnownType(Internal.TypeSystem.WellKnownType.Array);
-
-                                var annotation = reflectionMarker.Annotations.GetTypeAnnotation(staticType);
-
-                                if (annotation != default)
-                                {
-                                    reflectionMarker.Dependencies.Add(reflectionMarker.Factory.ObjectGetTypeFlowDependencies(closestMetadataType), "GetType called on this type");
-                                }
-
-                                // Return a value which is "unknown type" with annotation. For now we'll use the return value node
-                                // for the method, which means we're loosing the information about which staticType this
-                                // started with. For now we don't need it, but we can add it later on.
-                                AddReturnValue(reflectionMarker.Annotations.GetMethodReturnValue(calledMethod, annotation));
-                            }
-                        }
-                    }
-                    break;
-
-                //
-                // string System.Reflection.Assembly.Location getter
-                // string System.Reflection.AssemblyName.CodeBase getter
-                // string System.Reflection.AssemblyName.EscapedCodeBase getter
-                //
-                case IntrinsicId.Assembly_get_Location:
-                case IntrinsicId.AssemblyName_get_CodeBase:
-                case IntrinsicId.AssemblyName_get_EscapedCodeBase:
-                    diagnosticContext.AddDiagnostic(DiagnosticId.AvoidAssemblyLocationInSingleFile, calledMethod.GetDisplayName());
-                    break;
-
-                //
-                // string System.Reflection.Assembly.GetFile(string)
-                // string System.Reflection.Assembly.GetFiles()
-                // string System.Reflection.Assembly.GetFiles(bool)
-                //
-                case IntrinsicId.Assembly_GetFile:
-                case IntrinsicId.Assembly_GetFiles:
-                    diagnosticContext.AddDiagnostic(DiagnosticId.AvoidAssemblyGetFilesInSingleFile, calledMethod.GetDisplayName());
-                    break;
-
-                default:
-                    throw new NotImplementedException("Unhandled intrinsic");
-            }
-
-            // If we get here, we handled this as an intrinsic.  As a convenience, if the code above
-            // didn't set the return value (and the method has a return value), we will set it to be an
-            // unknown value with the return type of the method.
-            bool returnsVoid = calledMethod.Signature.ReturnType.IsVoid;
-            methodReturnValue = maybeMethodReturnValue ?? (returnsVoid ?
-                MultiValueLattice.Top :
-                annotatedMethodReturnValue);
-
-            // Validate that the return value has the correct annotations as per the method return value annotations
-            if (annotatedMethodReturnValue.DynamicallyAccessedMemberTypes != 0)
-            {
-                foreach (var uniqueValue in methodReturnValue.AsEnumerable ())
-                {
-                    if (uniqueValue is ValueWithDynamicallyAccessedMembers methodReturnValueWithMemberTypes)
-                    {
-                        if (!methodReturnValueWithMemberTypes.DynamicallyAccessedMemberTypes.HasFlag(annotatedMethodReturnValue.DynamicallyAccessedMemberTypes))
-                            throw new InvalidOperationException($"Internal trimming error: processing of call from {callingMethodDefinition.GetDisplayName()} to {calledMethod.GetDisplayName()} returned value which is not correctly annotated with the expected dynamic member access kinds.");
-                    }
-                    else if (uniqueValue is SystemTypeValue)
-                    {
-                        // SystemTypeValue can fulfill any requirement, so it's always valid
-                        // The requirements will be applied at the point where it's consumed (passed as a method parameter, set as field value, returned from the method)
-                    }
-                    else
-                    {
-                        throw new InvalidOperationException($"Internal trimming error: processing of call from {callingMethodDefinition.GetDisplayName()} to {calledMethod.GetDisplayName()} returned value which is not correctly annotated with the expected dynamic member access kinds.");
-                    }
-                }
-            }
-
-            return true;
-
-            void AddReturnValue(MultiValue value)
-            {
-                maybeMethodReturnValue = (maybeMethodReturnValue is null) ? value : MultiValueLattice.Meet((MultiValue)maybeMethodReturnValue, value);
-            }
+            if (!handleCallAction.Invoke(calledMethod, instanceValue, argumentValues, intrinsicId, out MultiValue methodReturnValue))
+                throw new NotImplementedException($"Unhandled intrinsic {intrinsicId}");
+            return methodReturnValue;
         }
 
         private static bool IsAotUnsafeDelegate(TypeDesc parameterType)
@@ -816,7 +458,7 @@ namespace ILCompiler.Dataflow
             }
         }
 
-        private static bool IsPInvokeDangerous(MethodDesc calledMethod, out bool comDangerousMethod, out bool aotUnsafeDelegate)
+        internal static bool IsPInvokeDangerous(MethodDesc calledMethod, out bool comDangerousMethod, out bool aotUnsafeDelegate)
         {
             if (!calledMethod.IsPInvoke)
             {

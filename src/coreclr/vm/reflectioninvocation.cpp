@@ -25,8 +25,9 @@
 #include "dbginterface.h"
 #include "argdestination.h"
 
-FCIMPL5(Object*, RuntimeFieldHandle::GetValue, ReflectFieldObject *pFieldUNSAFE, Object *instanceUNSAFE, ReflectClassBaseObject *pFieldTypeUNSAFE, ReflectClassBaseObject *pDeclaringTypeUNSAFE, CLR_BOOL *pDomainInitialized) {
-    CONTRACTL {
+FCIMPL5(Object*, RuntimeFieldHandle::GetValue, ReflectFieldObject *pFieldUNSAFE, Object *instanceUNSAFE, ReflectClassBaseObject *pFieldTypeUNSAFE, ReflectClassBaseObject *pDeclaringTypeUNSAFE, CLR_BOOL *pIsClassInitialized) {
+    CONTRACTL
+    {
         FCALL_CHECK;
     }
     CONTRACTL_END;
@@ -50,22 +51,11 @@ FCIMPL5(Object*, RuntimeFieldHandle::GetValue, ReflectFieldObject *pFieldUNSAFE,
     TypeHandle fieldType = gc.pFieldType->GetType();
     TypeHandle declaringType = (gc.pDeclaringType != NULL) ? gc.pDeclaringType->GetType() : TypeHandle();
 
-    Assembly *pAssem;
-    if (declaringType.IsNull())
-    {
-        // global field
-        pAssem = gc.refField->GetField()->GetModule()->GetAssembly();
-    }
-    else
-    {
-        pAssem = declaringType.GetAssembly();
-    }
-
     OBJECTREF rv = NULL; // not protected
 
     HELPER_METHOD_FRAME_BEGIN_RET_PROTECT(gc);
     // There can be no GC after this until the Object is returned.
-    rv = InvokeUtil::GetFieldValue(gc.refField->GetField(), fieldType, &gc.target, declaringType, pDomainInitialized);
+    rv = InvokeUtil::GetFieldValue(gc.refField->GetField(), fieldType, &gc.target, declaringType, pIsClassInitialized);
     HELPER_METHOD_FRAME_END();
 
     return OBJECTREFToObject(rv);
@@ -73,7 +63,8 @@ FCIMPL5(Object*, RuntimeFieldHandle::GetValue, ReflectFieldObject *pFieldUNSAFE,
 FCIMPLEND
 
 FCIMPL2(FC_BOOL_RET, ReflectionInvocation::CanValueSpecialCast, ReflectClassBaseObject *pValueTypeUNSAFE, ReflectClassBaseObject *pTargetTypeUNSAFE) {
-    CONTRACTL {
+    CONTRACTL
+    {
         FCALL_CHECK;
         PRECONDITION(CheckPointer(pValueTypeUNSAFE));
         PRECONDITION(CheckPointer(pTargetTypeUNSAFE));
@@ -122,55 +113,9 @@ FCIMPL2(FC_BOOL_RET, ReflectionInvocation::CanValueSpecialCast, ReflectClassBase
 }
 FCIMPLEND
 
-/// <summary>
-///  Allocate the value type and copy the optional value into it.
-/// </summary>
-FCIMPL2(Object*, ReflectionInvocation::AllocateValueType, ReflectClassBaseObject *pTargetTypeUNSAFE, Object *valueUNSAFE) {
-    CONTRACTL {
-        FCALL_CHECK;
-        PRECONDITION(CheckPointer(pTargetTypeUNSAFE));
-        PRECONDITION(CheckPointer(valueUNSAFE, NULL_OK));
-    }
-    CONTRACTL_END;
-
-    struct _gc
+FCIMPL6(void, RuntimeFieldHandle::SetValue, ReflectFieldObject *pFieldUNSAFE, Object *targetUNSAFE, Object *valueUNSAFE, ReflectClassBaseObject *pFieldTypeUNSAFE, ReflectClassBaseObject *pDeclaringTypeUNSAFE, CLR_BOOL *pIsClassInitialized) {
+    CONTRACTL
     {
-        REFLECTCLASSBASEREF refTargetType;
-        OBJECTREF value;
-        OBJECTREF obj;
-    }gc;
-
-    gc.value = ObjectToOBJECTREF(valueUNSAFE);
-    gc.obj = gc.value;
-    gc.refTargetType = (REFLECTCLASSBASEREF)ObjectToOBJECTREF(pTargetTypeUNSAFE);
-
-    HELPER_METHOD_FRAME_BEGIN_RET_PROTECT(gc);
-
-    TypeHandle targetType = gc.refTargetType->GetType();
-
-    // This method is only intended for value types; it is not called directly by any public APIs
-    // so we don't expect validation issues here.
-    _ASSERTE(targetType.IsValueType());
-
-    MethodTable* allocMT = targetType.AsMethodTable();
-    _ASSERTE(!allocMT->IsByRefLike());
-
-    gc.obj = allocMT->Allocate();
-    _ASSERTE(gc.obj != NULL);
-
-    if (gc.value != NULL) {
-        _ASSERTE(allocMT->IsEquivalentTo(gc.value->GetMethodTable()));
-        CopyValueClass(gc.obj->UnBox(), gc.value->UnBox(), allocMT);
-    }
-
-    HELPER_METHOD_FRAME_END();
-
-    return OBJECTREFToObject(gc.obj);
-}
-FCIMPLEND
-
-FCIMPL7(void, RuntimeFieldHandle::SetValue, ReflectFieldObject *pFieldUNSAFE, Object *targetUNSAFE, Object *valueUNSAFE, ReflectClassBaseObject *pFieldTypeUNSAFE, DWORD attr, ReflectClassBaseObject *pDeclaringTypeUNSAFE, CLR_BOOL *pDomainInitialized) {
-    CONTRACTL {
         FCALL_CHECK;
     }
     CONTRACTL_END;
@@ -195,24 +140,13 @@ FCIMPL7(void, RuntimeFieldHandle::SetValue, ReflectFieldObject *pFieldUNSAFE, Ob
     TypeHandle fieldType = gc.fieldType->GetType();
     TypeHandle declaringType = gc.declaringType != NULL ? gc.declaringType->GetType() : TypeHandle();
 
-    Assembly *pAssem;
-    if (declaringType.IsNull())
-    {
-        // global field
-        pAssem = gc.refField->GetField()->GetModule()->GetAssembly();
-    }
-    else
-    {
-        pAssem = declaringType.GetAssembly();
-    }
-
     FC_GC_POLL_NOT_NEEDED();
 
     FieldDesc* pFieldDesc = gc.refField->GetField();
 
     HELPER_METHOD_FRAME_BEGIN_PROTECT(gc);
 
-    InvokeUtil::SetValidField(fieldType.GetVerifierCorElementType(), fieldType, pFieldDesc, &gc.target, &gc.value, declaringType, pDomainInitialized);
+    InvokeUtil::SetValidField(fieldType.GetVerifierCorElementType(), fieldType, pFieldDesc, &gc.target, &gc.value, declaringType, pIsClassInitialized);
 
     HELPER_METHOD_FRAME_END();
 }
@@ -225,7 +159,8 @@ extern "C" void QCALLTYPE RuntimeTypeHandle_CreateInstanceForAnotherGenericParam
     QCall::ObjectHandleOnStack pInstantiatedObject
 )
 {
-    CONTRACTL{
+    CONTRACTL
+    {
         QCALL_CHECK;
         PRECONDITION(!pTypeHandle.AsTypeHandle().IsNull());
         PRECONDITION(cInstArray >= 0);
@@ -310,7 +245,8 @@ FCIMPLEND
 
 static OBJECTREF InvokeArrayConstructor(TypeHandle th, PVOID* args, int argCnt)
 {
-    CONTRACTL {
+    CONTRACTL
+    {
         THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
@@ -344,7 +280,8 @@ static OBJECTREF InvokeArrayConstructor(TypeHandle th, PVOID* args, int argCnt)
 
 static BOOL IsActivationNeededForMethodInvoke(MethodDesc * pMD)
 {
-    CONTRACTL {
+    CONTRACTL
+    {
         THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
@@ -875,7 +812,8 @@ struct SkipStruct {
 // This method is called by the GetMethod function and will crawl backward
 //  up the stack for integer methods.
 static StackWalkAction SkipMethods(CrawlFrame* frame, VOID* data) {
-    CONTRACTL {
+    CONTRACTL
+    {
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
@@ -899,45 +837,39 @@ static StackWalkAction SkipMethods(CrawlFrame* frame, VOID* data) {
     if (!frame->IsInCalleesFrames(pSkip->pStackMark))
         return SWA_CONTINUE;
 
-    if (pFunc->RequiresInstMethodDescArg())
-    {
-        pSkip->pMeth = (MethodDesc *) frame->GetParamTypeArg();
-        if (pSkip->pMeth == NULL)
-            pSkip->pMeth = pFunc;
-    }
-    else
-        pSkip->pMeth = pFunc;
+    pSkip->pMeth = pFunc;
     return SWA_ABORT;
 }
 
 // Return the MethodInfo that represents the current method (two above this one)
-FCIMPL1(ReflectMethodObject*, RuntimeMethodHandle::GetCurrentMethod, StackCrawlMark* stackMark) {
-    FCALL_CONTRACT;
-    REFLECTMETHODREF pRet = NULL;
+extern "C" MethodDesc* QCALLTYPE MethodBase_GetCurrentMethod(QCall::StackCrawlMarkHandle stackMark) {
 
-    HELPER_METHOD_FRAME_BEGIN_RET_0();
+    QCALL_CONTRACT;
+
+    MethodDesc* pRet = nullptr;
+
+    BEGIN_QCALL;
+
     SkipStruct skip;
     skip.pStackMark = stackMark;
     skip.pMeth = 0;
-    StackWalkFunctions(GetThread(), SkipMethods, &skip);
+    GetThread()->StackWalkFrames(SkipMethods, &skip, FUNCTIONSONLY | LIGHTUNWIND);
 
-    // If C<Foo>.m<Bar> was called, the stack walker returns C<object>.m<object>. We cannot
+    // If C<Foo>.m<Bar> was called, the stack walker returns C<__Canon>.m<__Canon>. We cannot
     // get know that the instantiation used Foo or Bar at that point. So the next best thing
     // is to return C<T>.m<P> and that's what LoadTypicalMethodDefinition will do for us.
 
     if (skip.pMeth != NULL)
-        pRet = skip.pMeth->LoadTypicalMethodDefinition()->GetStubMethodInfo();
-    else
-        pRet = NULL;
+        pRet = skip.pMeth->LoadTypicalMethodDefinition();
 
-    HELPER_METHOD_FRAME_END();
+    END_QCALL;
 
-    return (ReflectMethodObject*)OBJECTREFToObject(pRet);
+    return pRet;
 }
-FCIMPLEND
 
-static OBJECTREF DirectObjectFieldGet(FieldDesc *pField, TypeHandle fieldType, TypeHandle enclosingType, TypedByRef *pTarget, CLR_BOOL *pDomainInitialized) {
-    CONTRACTL {
+static OBJECTREF DirectObjectFieldGet(FieldDesc *pField, TypeHandle fieldType, TypeHandle enclosingType, TypedByRef *pTarget, CLR_BOOL *pIsClassInitialized) {
+    CONTRACTL
+    {
         THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
@@ -954,13 +886,14 @@ static OBJECTREF DirectObjectFieldGet(FieldDesc *pField, TypeHandle fieldType, T
     }
 
     InvokeUtil::ValidateObjectTarget(pField, enclosingType, &objref);
-    refRet = InvokeUtil::GetFieldValue(pField, fieldType, &objref, enclosingType, pDomainInitialized);
+    refRet = InvokeUtil::GetFieldValue(pField, fieldType, &objref, enclosingType, pIsClassInitialized);
     GCPROTECT_END();
     return refRet;
 }
 
 FCIMPL4(Object*, RuntimeFieldHandle::GetValueDirect, ReflectFieldObject *pFieldUNSAFE, ReflectClassBaseObject *pFieldTypeUNSAFE, TypedByRef *pTarget, ReflectClassBaseObject *pDeclaringTypeUNSAFE) {
-    CONTRACTL {
+    CONTRACTL
+    {
         FCALL_CHECK;
     }
     CONTRACTL_END;
@@ -994,9 +927,9 @@ FCIMPL4(Object*, RuntimeFieldHandle::GetValueDirect, ReflectFieldObject *pFieldU
     _ASSERTE(gc.refDeclaringType == NULL || !gc.refDeclaringType->GetType().IsTypeDesc());
     MethodTable *pEnclosingMT = (gc.refDeclaringType != NULL ? gc.refDeclaringType->GetType() : TypeHandle()).AsMethodTable();
 
-    CLR_BOOL domainInitialized = FALSE;
+    CLR_BOOL isClassInitialized = FALSE;
     if (pField->IsStatic() || !targetType.IsValueType()) {
-        refRet = DirectObjectFieldGet(pField, fieldType, TypeHandle(pEnclosingMT), pTarget, &domainInitialized);
+        refRet = DirectObjectFieldGet(pField, fieldType, TypeHandle(pEnclosingMT), pTarget, &isClassInitialized);
         goto lExit;
     }
 
@@ -1059,8 +992,9 @@ lExit: ;
 }
 FCIMPLEND
 
-static void DirectObjectFieldSet(FieldDesc *pField, TypeHandle fieldType, TypeHandle enclosingType, TypedByRef *pTarget, OBJECTREF *pValue, CLR_BOOL *pDomainInitialized) {
-    CONTRACTL {
+static void DirectObjectFieldSet(FieldDesc *pField, TypeHandle fieldType, TypeHandle enclosingType, TypedByRef *pTarget, OBJECTREF *pValue, CLR_BOOL *pIsClassInitialized) {
+    CONTRACTL
+    {
         THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
@@ -1078,12 +1012,13 @@ static void DirectObjectFieldSet(FieldDesc *pField, TypeHandle fieldType, TypeHa
     // Validate the target/fld type relationship
     InvokeUtil::ValidateObjectTarget(pField, enclosingType, &objref);
 
-    InvokeUtil::SetValidField(pField->GetFieldType(), fieldType, pField, &objref, pValue, enclosingType, pDomainInitialized);
+    InvokeUtil::SetValidField(pField->GetFieldType(), fieldType, pField, &objref, pValue, enclosingType, pIsClassInitialized);
     GCPROTECT_END();
 }
 
 FCIMPL5(void, RuntimeFieldHandle::SetValueDirect, ReflectFieldObject *pFieldUNSAFE, ReflectClassBaseObject *pFieldTypeUNSAFE, TypedByRef *pTarget, Object *valueUNSAFE, ReflectClassBaseObject *pContextTypeUNSAFE) {
-    CONTRACTL {
+    CONTRACTL
+    {
         FCALL_CHECK;
     }
     CONTRACTL_END;
@@ -1112,7 +1047,7 @@ FCIMPL5(void, RuntimeFieldHandle::SetValueDirect, ReflectFieldObject *pFieldUNSA
     Assembly *pAssem = pField->GetModule()->GetAssembly();
 
     BYTE           *pDst = NULL;
-    ARG_SLOT        value = NULL;
+    ARG_SLOT        value = 0;
     CorElementType  fieldElType;
 
     HELPER_METHOD_FRAME_BEGIN_PROTECT(gc);
@@ -1124,9 +1059,9 @@ FCIMPL5(void, RuntimeFieldHandle::SetValueDirect, ReflectFieldObject *pFieldUNSA
     // Verify that the value passed can be widened into the target
     InvokeUtil::ValidField(fieldType, &gc.oValue);
 
-    CLR_BOOL domainInitialized = FALSE;
+    CLR_BOOL isClassInitialized = FALSE;
     if (pField->IsStatic() || !targetType.IsValueType()) {
-        DirectObjectFieldSet(pField, fieldType, TypeHandle(pEnclosingMT), pTarget, &gc.oValue, &domainInitialized);
+        DirectObjectFieldSet(pField, fieldType, TypeHandle(pEnclosingMT), pTarget, &gc.oValue, &isClassInitialized);
         goto lExit;
     }
 
@@ -1243,6 +1178,85 @@ lExit: ;
 }
 FCIMPLEND
 
+static bool IsFastPathSupportedHelper(FieldDesc* pFieldDesc)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_ANY;
+        PRECONDITION(CheckPointer(pFieldDesc));
+    }
+    CONTRACTL_END;
+
+    return !pFieldDesc->IsThreadStatic() &&
+        !pFieldDesc->IsEnCNew() &&
+        !(pFieldDesc->IsCollectible() && pFieldDesc->IsStatic());
+}
+
+FCIMPL1(FC_BOOL_RET, RuntimeFieldHandle::IsFastPathSupported, ReflectFieldObject *pFieldUNSAFE)
+{
+    FCALL_CONTRACT;
+
+    REFLECTFIELDREF refField = (REFLECTFIELDREF)ObjectToOBJECTREF(pFieldUNSAFE);
+    _ASSERTE(refField != NULL);
+
+    FieldDesc* pFieldDesc = refField->GetField();
+    return IsFastPathSupportedHelper(pFieldDesc) ? TRUE : FALSE;
+}
+FCIMPLEND
+
+FCIMPL1(INT32, RuntimeFieldHandle::GetInstanceFieldOffset, ReflectFieldObject *pFieldUNSAFE)
+{
+    CONTRACTL
+    {
+        FCALL_CHECK;
+        PRECONDITION(CheckPointer(pFieldUNSAFE));
+    }
+    CONTRACTL_END;
+
+    REFLECTFIELDREF refField = (REFLECTFIELDREF)ObjectToOBJECTREF(pFieldUNSAFE);
+    _ASSERTE(refField != NULL);
+
+    FieldDesc* pFieldDesc = refField->GetField();
+    _ASSERTE(!pFieldDesc->IsStatic());
+
+    // IsFastPathSupported needs to checked before calling this method.
+    _ASSERTE(IsFastPathSupportedHelper(pFieldDesc));
+
+    return pFieldDesc->GetOffset();
+}
+FCIMPLEND
+
+FCIMPL1(void*, RuntimeFieldHandle::GetStaticFieldAddress, ReflectFieldObject *pFieldUNSAFE)
+{
+    CONTRACTL
+    {
+        FCALL_CHECK;
+        PRECONDITION(CheckPointer(pFieldUNSAFE));
+    }
+    CONTRACTL_END;
+
+    REFLECTFIELDREF refField = (REFLECTFIELDREF)ObjectToOBJECTREF(pFieldUNSAFE);
+    _ASSERTE(refField != NULL);
+
+    FieldDesc* pFieldDesc = refField->GetField();
+    _ASSERTE(pFieldDesc->IsStatic());
+
+    // IsFastPathSupported needs to checked before calling this method.
+    _ASSERTE(IsFastPathSupportedHelper(pFieldDesc));
+
+    PTR_BYTE base = 0;
+    if (!pFieldDesc->IsRVA())
+    {
+        // For RVA the base is ignored and offset is used.
+        base = pFieldDesc->GetBase();
+    }
+
+    return PTR_VOID(base + pFieldDesc->GetOffset());
+}
+FCIMPLEND
+
 extern "C" void QCALLTYPE ReflectionInvocation_CompileMethod(MethodDesc * pMD)
 {
     QCALL_CONTRACT;
@@ -1313,7 +1327,8 @@ static void PrepareMethodHelper(MethodDesc * pMD)
 // It does not walk a subset of callgraph to provide CER guarantees.
 extern "C" void QCALLTYPE ReflectionInvocation_PrepareMethod(MethodDesc *pMD, TypeHandle *pInstantiation, UINT32 cInstantiation)
 {
-    CONTRACTL {
+    CONTRACTL
+    {
         QCALL_CHECK;
         PRECONDITION(pMD != NULL);
         PRECONDITION(CheckPointer(pInstantiation, NULL_OK));
@@ -1366,7 +1381,8 @@ extern "C" void QCALLTYPE ReflectionInvocation_PrepareMethod(MethodDesc *pMD, Ty
 // was prepared prior to the Combine.
 FCIMPL1(void, ReflectionInvocation::PrepareDelegate, Object* delegateUNSAFE)
 {
-    CONTRACTL {
+    CONTRACTL
+    {
         FCALL_CHECK;
         PRECONDITION(CheckPointer(delegateUNSAFE, NULL_OK));
     }
@@ -1427,7 +1443,8 @@ FCIMPLEND
 
 FCIMPL4(void, ReflectionInvocation::MakeTypedReference, TypedByRef * value, Object* targetUNSAFE, ArrayBase* fldsUNSAFE, ReflectClassBaseObject *pFieldTypeUNSAFE)
 {
-    CONTRACTL {
+    CONTRACTL
+    {
         FCALL_CHECK;
         PRECONDITION(CheckPointer(targetUNSAFE));
         PRECONDITION(CheckPointer(fldsUNSAFE));
@@ -1467,24 +1484,6 @@ FCIMPL4(void, ReflectionInvocation::MakeTypedReference, TypedByRef * value, Obje
 
     GCPROTECT_END();
     HELPER_METHOD_FRAME_END();
-}
-FCIMPLEND
-
-FCIMPL2_IV(Object*, ReflectionInvocation::CreateEnum, ReflectClassBaseObject *pTypeUNSAFE, INT64 value) {
-    FCALL_CONTRACT;
-
-    REFLECTCLASSBASEREF refType = (REFLECTCLASSBASEREF)ObjectToOBJECTREF(pTypeUNSAFE);
-
-    TypeHandle typeHandle = refType->GetType();
-    _ASSERTE(typeHandle.IsEnum());
-    OBJECTREF obj = NULL;
-    HELPER_METHOD_FRAME_BEGIN_RET_1(refType);
-    MethodTable *pEnumMT = typeHandle.AsMethodTable();
-    obj = pEnumMT->Box(ArgSlotEndiannessFixup ((ARG_SLOT*)&value,
-                                             pEnumMT->GetNumInstanceFieldBytes()));
-
-    HELPER_METHOD_FRAME_END();
-    return OBJECTREFToObject(obj);
 }
 FCIMPLEND
 
@@ -1699,7 +1698,8 @@ extern "C" void QCALLTYPE RuntimeTypeHandle_GetActivationInfo(
     BOOL* pfCtorIsPublic
 )
 {
-    CONTRACTL{
+    CONTRACTL
+    {
         QCALL_CHECK;
         PRECONDITION(CheckPointer(ppfnAllocator));
         PRECONDITION(CheckPointer(pvAllocatorFirstArg));
@@ -1769,9 +1769,9 @@ extern "C" void QCALLTYPE RuntimeTypeHandle_GetActivationInfo(
     if (pMT->IsNullable())
     {
         // CreateInstance returns null given Nullable<T>
-        *ppfnAllocator = NULL;
+        *ppfnAllocator = (PCODE)NULL;
         *pvAllocatorFirstArg = NULL;
-        *ppfnCtor = NULL;
+        *ppfnCtor = (PCODE)NULL;
         *pfCtorIsPublic = TRUE; // no ctor call needed => assume 'public' equivalent
     }
     else
@@ -1789,14 +1789,14 @@ extern "C" void QCALLTYPE RuntimeTypeHandle_GetActivationInfo(
             _ASSERTE(pMD != NULL);
 
             PCODE pCode = pMD->GetMultiCallableAddrOfCode();
-            _ASSERTE(pCode != NULL);
+            _ASSERTE(pCode != (PCODE)NULL);
 
             *ppfnCtor = pCode;
             *pfCtorIsPublic = pMD->IsPublic();
         }
         else if (pMT->IsValueType())
         {
-            *ppfnCtor = NULL; // no ctor call needed; we're creating a boxed default(T)
+            *ppfnCtor = (PCODE)NULL; // no ctor call needed; we're creating a boxed default(T)
             *pfCtorIsPublic = TRUE; // no ctor call needed => assume 'public' equivalent
         }
         else
@@ -1818,7 +1818,8 @@ extern "C" void QCALLTYPE RuntimeTypeHandle_GetActivationInfo(
 FCIMPL1(Object*, RuntimeTypeHandle::AllocateComObject,
     void* pClassFactory)
 {
-    CONTRACTL{
+    CONTRACTL
+    {
         FCALL_CHECK;
         PRECONDITION(CheckPointer(pClassFactory));
     }
@@ -1867,7 +1868,8 @@ extern "C" void QCALLTYPE ReflectionSerialization_GetCreateUninitializedObjectIn
     PCODE* ppfnAllocator,
     void** pvAllocatorFirstArg)
 {
-    CONTRACTL{
+    CONTRACTL
+    {
         QCALL_CHECK;
         PRECONDITION(CheckPointer(ppfnAllocator));
         PRECONDITION(CheckPointer(pvAllocatorFirstArg));
@@ -1897,7 +1899,7 @@ extern "C" void QCALLTYPE ReflectionSerialization_GetCreateUninitializedObjectIn
     bool fHasSideEffectsUnused;
     *ppfnAllocator = CEEJitInfo::getHelperFtnStatic(CEEInfo::getNewHelperStatic(pMT, &fHasSideEffectsUnused));
     *pvAllocatorFirstArg = pMT;
-    
+
     pMT->EnsureInstanceActive();
 
     if (pMT->HasPreciseInitCctors())
@@ -1982,6 +1984,7 @@ extern "C" void QCALLTYPE Enum_GetValuesAndNames(QCall::TypeHandle pEnumType, QC
 
         MDDefaultValue defaultValue = { };
         IfFailThrow(pImport->GetDefaultValue(field, &defaultValue));
+        _ASSERTE(defaultValue.m_bType != ELEMENT_TYPE_STRING); // Strings in metadata are little-endian.
 
         // The following code assumes that the address of all union members is the same.
         static_assert_no_msg(offsetof(MDDefaultValue, m_byteValue) == offsetof(MDDefaultValue, m_usValue));
@@ -2037,18 +2040,15 @@ extern "C" void QCALLTYPE Enum_GetValuesAndNames(QCall::TypeHandle pEnumType, QC
     END_QCALL;
 }
 
-FCIMPL2_IV(Object*, ReflectionEnum::InternalBoxEnum, ReflectClassBaseObject* target, INT64 value) {
-    FCALL_CONTRACT;
+extern "C" int32_t QCALLTYPE ReflectionInvocation_SizeOf(QCall::TypeHandle pType)
+{
+    QCALL_CONTRACT_NO_GC_TRANSITION;
 
-    VALIDATEOBJECT(target);
-    OBJECTREF ret = NULL;
+    TypeHandle handle = pType.AsTypeHandle();
 
-    MethodTable* pMT = target->GetType().AsMethodTable();
-    HELPER_METHOD_FRAME_BEGIN_RET_0();
+    // -1 is the same sentinel value returned by GetSize for an invalid type.
+    if (handle.ContainsGenericVariables())
+        return -1;
 
-    ret = pMT->Box(ArgSlotEndiannessFixup((ARG_SLOT*)&value, pMT->GetNumInstanceFieldBytes()));
-
-    HELPER_METHOD_FRAME_END();
-    return OBJECTREFToObject(ret);
+    return handle.GetSize();
 }
-FCIMPLEND

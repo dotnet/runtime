@@ -313,7 +313,7 @@ OBJECTREF* PinnedHeapHandleTable::AllocateHandles(DWORD nRequested)
     // Retrieve the remaining number of handles in the bucket.
     DWORD numRemainingHandlesInBucket = (m_pHead != NULL) ? m_pHead->GetNumRemainingHandles() : 0;
     PTRARRAYREF pinnedHandleArrayObj = NULL;
-    DWORD nextBucketSize = min(m_NextBucketSize * 2, MAX_BUCKETSIZE);
+    DWORD nextBucketSize = min<DWORD>(m_NextBucketSize * 2, MAX_BUCKETSIZE);
 
     // create a new block if this request doesn't fit in the current block
     if (nRequested > numRemainingHandlesInBucket)
@@ -1158,6 +1158,13 @@ void SystemDomain::Init()
 
         // Finish loading CoreLib now.
         m_pSystemAssembly->GetDomainAssembly()->EnsureActive();
+
+        // Set AwareLock's offset of the holding OS thread ID field into ThreadBlockingInfo's static field. That can be used
+        // when doing managed debugging to get the OS ID of the thread holding the lock. The offset is currently not zero, and
+        // zero is used in managed code to determine if the static variable has been initialized.
+        _ASSERTE(AwareLock::GetOffsetOfHoldingOSThreadId() != 0);
+        CoreLibBinder::GetField(FIELD__THREAD_BLOCKING_INFO__OFFSET_OF_LOCK_OWNER_OS_THREAD_ID)
+            ->SetStaticValue32(AwareLock::GetOffsetOfHoldingOSThreadId());
     }
 
 #ifdef _DEBUG
@@ -1352,7 +1359,7 @@ void SystemDomain::LoadBaseSystemClasses()
         // further loading of nonprimitive types may need casting support.
         // initialize cast cache here.
         CastCache::Initialize();
-        ECall::PopulateManagedCastHelpers();
+        ECall::PopulateManagedHelpers();
 
         // used by IsImplicitInterfaceOfSZArray
         CoreLibBinder::GetClass(CLASS__IENUMERABLEGENERIC);
@@ -1413,9 +1420,6 @@ void SystemDomain::LoadBaseSystemClasses()
         // all base system classes need to be loaded before profilers can trigger the type loading.
         g_profControlBlock.fBaseSystemClassesLoaded = TRUE;
     #endif // PROFILING_SUPPORTED
-
-        // Perform any once-only SafeHandle initialization.
-        SafeHandle::Init();
 
     #if defined(_DEBUG)
         g_CoreLib.Check();
@@ -2608,15 +2612,19 @@ void AppDomain::LoadDomainAssembly(DomainAssembly *pFile,
 
 #ifndef DACCESS_COMPILE
 
-FileLoadLevel AppDomain::GetThreadFileLoadLevel()
-{
-    WRAPPER_NO_CONTRACT;
-    if (GetThread()->GetLoadLevelLimiter() == NULL)
-        return FILE_ACTIVE;
-    else
-        return (FileLoadLevel)(GetThread()->GetLoadLevelLimiter()->GetLoadLevel()-1);
-}
+thread_local LoadLevelLimiter* LoadLevelLimiter::t_currentLoadLevelLimiter = nullptr;
 
+namespace
+{
+    FileLoadLevel GetCurrentFileLoadLevel()
+    {
+        WRAPPER_NO_CONTRACT;
+        if (LoadLevelLimiter::GetCurrent() == NULL)
+            return FILE_ACTIVE;
+        else
+            return (FileLoadLevel)(LoadLevelLimiter::GetCurrent()->GetLoadLevel()-1);
+    }
+}
 
 Assembly *AppDomain::LoadAssembly(AssemblySpec* pIdentity,
                                   PEAssembly * pPEAssembly,
@@ -2710,7 +2718,7 @@ DomainAssembly *AppDomain::LoadDomainAssemblyInternal(AssemblySpec* pIdentity,
         PRECONDITION(CheckPointer(pPEAssembly));
         PRECONDITION(::GetAppDomain()==this);
         POSTCONDITION(CheckPointer(RETVAL));
-        POSTCONDITION(RETVAL->GetLoadLevel() >= GetThreadFileLoadLevel()
+        POSTCONDITION(RETVAL->GetLoadLevel() >= GetCurrentFileLoadLevel()
                       || RETVAL->GetLoadLevel() >= targetLevel);
         POSTCONDITION(RETVAL->CheckNoError(targetLevel));
         INJECT_FAULT(COMPlusThrowOM(););
@@ -2817,7 +2825,7 @@ DomainAssembly *AppDomain::LoadDomainAssembly(FileLoadLock *pLock, FileLoadLevel
         STANDARD_VM_CHECK;
         PRECONDITION(CheckPointer(pLock));
         PRECONDITION(AppDomain::GetCurrentDomain() == this);
-        POSTCONDITION(RETVAL->GetLoadLevel() >= GetThreadFileLoadLevel()
+        POSTCONDITION(RETVAL->GetLoadLevel() >= GetCurrentFileLoadLevel()
                       || RETVAL->GetLoadLevel() >= targetLevel);
         POSTCONDITION(RETVAL->CheckNoError(targetLevel));
     }
@@ -3853,8 +3861,6 @@ AppDomain::RaiseUnhandledExceptionEvent(OBJECTREF *pThrowable, BOOL isTerminatin
 
     _ASSERTE(pThrowable != NULL && IsProtectedByGCFrame(pThrowable));
 
-    _ASSERTE(this == GetThread()->GetDomain());
-
     OBJECTREF orDelegate = CoreLibBinder::GetField(FIELD__APPCONTEXT__UNHANDLED_EXCEPTION)->GetStaticOBJECTREF();
     if (orDelegate == NULL)
         return FALSE;
@@ -4176,7 +4182,7 @@ void DomainLocalModule::EnsureDynamicClassIndex(DWORD dwID)
         return;
     }
 
-    SIZE_T aDynamicEntries = max(16, oldDynamicEntries);
+    SIZE_T aDynamicEntries = max<SIZE_T>(16, oldDynamicEntries);
     while (aDynamicEntries <= dwID)
     {
         aDynamicEntries *= 2;
@@ -4526,13 +4532,6 @@ AppDomain::RaiseAssemblyResolveEvent(
         }
     }
     GCPROTECT_END();
-
-    if (pAssembly != NULL)
-    {
-        // Check that the public key token matches the one specified in the spec
-        // MatchPublicKeys throws as appropriate
-        pSpec->MatchPublicKeys(pAssembly);
-    }
 
     RETURN pAssembly;
 } // AppDomain::RaiseAssemblyResolveEvent

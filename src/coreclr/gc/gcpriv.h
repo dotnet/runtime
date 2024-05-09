@@ -140,10 +140,10 @@ inline void FATAL_GC_ERROR()
 //
 // This means any empty regions can be freely used for any generation. For
 // Server GC we will balance regions between heaps.
-// For now disable regions for StandAlone GC, NativeAOT and MacOS builds
+// For now disable regions for standalone GC and macOS builds
 #if defined (HOST_64BIT) && !defined (BUILD_AS_STANDALONE) && !defined(__APPLE__)
 #define USE_REGIONS
-#endif //HOST_64BIT && BUILD_AS_STANDALONE
+#endif //HOST_64BIT && BUILD_AS_STANDALONE && !__APPLE__
 
 //#define SPINLOCK_HISTORY
 //#define RECORD_LOH_STATE
@@ -1752,6 +1752,8 @@ private:
 
     PER_HEAP_ISOLATED_METHOD void add_to_history();
 
+    PER_HEAP_ISOLATED_METHOD void get_and_reset_uoh_alloc_info();
+
 #ifdef BGC_SERVO_TUNING
     // Currently BGC servo tuning is an experimental feature.
     class bgc_tuning
@@ -1997,7 +1999,6 @@ private:
     };
 
     PER_HEAP_ISOLATED_METHOD void check_and_adjust_bgc_tuning (int gen_number, size_t physical_size, ptrdiff_t virtual_fl_size);
-    PER_HEAP_ISOLATED_METHOD void get_and_reset_loh_alloc_info();
 #endif //BGC_SERVO_TUNING
 
 #ifndef USE_REGIONS
@@ -2230,6 +2231,8 @@ private:
     PER_HEAP_METHOD BOOL bgc_loh_allocate_spin();
 
     PER_HEAP_METHOD BOOL bgc_poh_allocate_spin();
+
+    PER_HEAP_METHOD void bgc_record_uoh_allocation(int gen_number, size_t size);
 #endif //BACKGROUND_GC
 
     PER_HEAP_METHOD void add_saved_spinlock_info (
@@ -2555,8 +2558,6 @@ private:
 
     // re-initialize a heap in preparation to putting it back into service
     PER_HEAP_METHOD void recommission_heap();
-
-    PER_HEAP_ISOLATED_METHOD size_t get_num_completed_gcs();
 
     PER_HEAP_ISOLATED_METHOD int calculate_new_heap_count();
 
@@ -3347,8 +3348,8 @@ private:
         size_t new_current_total_committed);
 
 #ifdef USE_REGIONS
-    PER_HEAP_ISOLATED_METHOD void compute_committed_bytes(size_t& total_committed, size_t& committed_decommit, size_t& committed_free, 
-                                  size_t& committed_bookkeeping, size_t& new_current_total_committed, size_t& new_current_total_committed_bookkeeping, 
+    PER_HEAP_ISOLATED_METHOD void compute_committed_bytes(size_t& total_committed, size_t& committed_decommit, size_t& committed_free,
+                                  size_t& committed_bookkeeping, size_t& new_current_total_committed, size_t& new_current_total_committed_bookkeeping,
                                   size_t* new_committed_by_oh);
 #endif
 
@@ -3438,6 +3439,11 @@ private:
 
     PER_HEAP_FIELD_SINGLE_GC uint8_t* next_sweep_obj;
     PER_HEAP_FIELD_SINGLE_GC uint8_t* current_sweep_pos;
+
+    PER_HEAP_FIELD_SINGLE_GC size_t uoh_a_no_bgc[uoh_generation_count];
+    PER_HEAP_FIELD_SINGLE_GC size_t uoh_a_bgc_marking[uoh_generation_count];
+    PER_HEAP_FIELD_SINGLE_GC size_t uoh_a_bgc_planning[uoh_generation_count];
+
 #ifdef DOUBLY_LINKED_FL
     PER_HEAP_FIELD_SINGLE_GC heap_segment* current_sweep_seg;
 #endif //DOUBLY_LINKED_FL
@@ -3463,9 +3469,6 @@ private:
 #endif //SNOOP_STATS
 
 #ifdef BGC_SERVO_TUNING
-    PER_HEAP_FIELD_SINGLE_GC uint64_t   loh_a_no_bgc;
-    PER_HEAP_FIELD_SINGLE_GC uint64_t   loh_a_bgc_marking;
-    PER_HEAP_FIELD_SINGLE_GC uint64_t   loh_a_bgc_planning;
     PER_HEAP_FIELD_SINGLE_GC size_t     bgc_maxgen_end_fl_size;
 #endif //BGC_SERVO_TUNING
 #endif //BACKGROUND_GC
@@ -4099,11 +4102,9 @@ private:
 
     PER_HEAP_ISOLATED_FIELD_SINGLE_GC GCEvent bgc_start_event;
 
-#ifdef BGC_SERVO_TUNING
     // Total allocated last BGC's plan + between last and this bgc +
     // this bgc's mark
-    PER_HEAP_ISOLATED_FIELD_SINGLE_GC uint64_t   total_loh_a_last_bgc;
-#endif //BGC_SERVO_TUNING
+    PER_HEAP_ISOLATED_FIELD_SINGLE_GC uint64_t   total_uoh_a_last_bgc;
 #endif //BACKGROUND_GC
 
 #ifdef USE_REGIONS
@@ -4228,7 +4229,7 @@ private:
 
 #ifdef DYNAMIC_HEAP_COUNT
     // Sample collection -
-    // 
+    //
     // For every GC, we collect the msl wait time + GC pause duration info and use both to calculate the
     // throughput cost percentage. We will also be using the wait time and the GC pause duration separately
     // for other purposes in the future.
@@ -4238,21 +4239,224 @@ private:
     struct dynamic_heap_count_data_t
     {
         static const int sample_size = 3;
+        static const int recorded_tcp_array_size = 64;
 
         struct sample
         {
             uint64_t    elapsed_between_gcs;    // time between gcs in microseconds (this should really be between_pauses)
             uint64_t    gc_pause_time;          // pause time for this GC
             uint64_t    msl_wait_time;
+            size_t      gc_survived_size;
         };
 
         uint32_t        sample_index;
         sample          samples[sample_size];
-        size_t          prev_num_completed_gcs;
+
+        size_t          current_samples_count;
+        size_t          processed_samples_count;
+
+        //
+        // We need to observe the history of tcp's so record them in a small buffer.
+        //
+        float           recorded_tcp_rearranged[recorded_tcp_array_size];
+        float           recorded_tcp[recorded_tcp_array_size];
+        int             recorded_tcp_index;
+        int             total_recorded_tcp;
+
+        int add_to_recorded_tcp (float tcp)
+        {
+            total_recorded_tcp++;
+
+            recorded_tcp[recorded_tcp_index] = tcp;
+            recorded_tcp_index++;
+            if (recorded_tcp_index == recorded_tcp_array_size)
+            {
+                recorded_tcp_index = 0;
+            }
+
+            return recorded_tcp_index;
+        }
+
+        int rearrange_recorded_tcp ()
+        {
+            int count = recorded_tcp_array_size;
+            int copied_count = 0;
+
+            if (total_recorded_tcp >= recorded_tcp_array_size)
+            {
+                int earlier_entry_size = recorded_tcp_array_size - recorded_tcp_index;
+                memcpy (recorded_tcp_rearranged, (recorded_tcp + recorded_tcp_index), (earlier_entry_size * sizeof (float)));
+
+                copied_count = earlier_entry_size;
+            }
+
+            if (recorded_tcp_index)
+            {
+                memcpy ((recorded_tcp_rearranged + copied_count), recorded_tcp, (recorded_tcp_index * sizeof (float)));
+                copied_count += recorded_tcp_index;
+            }
+
+            return copied_count;
+        }
+
+        int highest_avg_recorded_tcp (int count, float avg, float* highest_avg)
+        {
+            float highest_sum = 0.0;
+            int highest_count = 0;
+
+            for (int i = 0; i < count; i++)
+            {
+                if (recorded_tcp_rearranged[i] > avg)
+                {
+                    highest_count++;
+                    highest_sum += recorded_tcp_rearranged[i];
+                }
+            }
+
+            if (highest_count)
+            {
+                *highest_avg = highest_sum / highest_count;
+            }
+
+            return highest_count;
+        }
+
+        void init_recorded_tcp ()
+        {
+            total_recorded_tcp = 0;
+            recorded_tcp_index = 0;
+            dprintf (6666, ("INIT tcp buffer"));
+        }
+
+        int get_recorded_tcp_count () { return total_recorded_tcp; }
+
+        //
+        // Maintain some info about last time we did change heap count.
+        //
+        size_t          last_changed_gc_index;
+        // This is intentionally kept as a float for precision.
+        float           last_changed_count;
+        float           last_changed_stcp;
+
+        //
+        // For tuning above/below target tcp.
+        //
+        // If we just increased the heap count and immediately need to grow again, that counts as a failure.
+        // The higher the failure count, the more aggressive we should grow.
+        int             inc_failure_count;
+
+        // If we are trending up and the tcp is already close enough to target, we need this many samples
+        // before we adjust.
+        int             inc_recheck_threshold;
+
+        // If we shrink and the stcp doesn't change much, that counts as a failure. For the below target case
+        // it's fine to stay here for a while. Either it'll naturally change and break out of this situation
+        // or we wait for a while before we re-evaluate. How long we wait is defined by dec_recheck_threshold
+        // each time our calculation tells us to shrink.
+        int             dec_failure_count;
+        int             dec_failure_recheck_threshold;
+
+        // If we continue to be below target for an extended period of time, ie, we've accumulated more than
+        // below_target_threshold, we want to reduce the heap count.
+        float           below_target_accumulation;
+        float           below_target_threshold;
+
+        // TODO: we should refactor this and the inc checks into a utility class.
+        bool            dec_by_one_scheduled;
+        int             dec_by_one_count;
+
+        // Currently only used for dprintf.
+        size_t          first_below_target_gc_index;
+
+        float get_range_upper (float t)
+        {
+            return (t * 1.2f);
+        }
+
+        bool is_tcp_in_range (float diff_pct, float slope)
+        {
+            return ((diff_pct <= 0.2) && (diff_pct >= -0.2) && (slope <= 0.1) && (slope >= -0.1));
+        }
+
+        bool is_tcp_far_below (float diff_pct)
+        {
+            return (diff_pct >= 0.4);
+        }
+
+        bool is_close_to_max (int new_n, int max)
+        {
+            return ((max - new_n) <= (max / 10));
+        }
+
+        bool should_dec_by_one()
+        {
+            if (!dec_by_one_scheduled)
+            {
+                dec_by_one_scheduled = true;
+            }
+
+            if (dec_by_one_scheduled)
+            {
+                dec_by_one_count++;
+                dprintf (6666, ("scheduled to dec by 1 heap %d times", dec_by_one_count));
+            }
+
+            return (dec_by_one_count >= 5);
+        }
+
+        void reset_dec_by_one()
+        {
+            dec_by_one_scheduled = false;
+            dec_by_one_count = 0;
+        }
+
+        size_t          max_gen0_new_allocation;
+        size_t          min_gen0_new_allocation;
+
+        size_t compute_gen0_new_allocation (size_t total_old_gen_size)
+        {
+            assert (total_old_gen_size > 0);
+
+            // TODO: adjust these based on conserve_mem_setting.
+            double old_gen_growth_factor = 16.0 / sqrt ((double)total_old_gen_size / 1000.0 / 1000.0);
+            double saved_old_gen_growth_factor = old_gen_growth_factor;
+            old_gen_growth_factor = min (10.0, old_gen_growth_factor);
+            old_gen_growth_factor = max (0.1, old_gen_growth_factor);
+
+            size_t total_new_allocation_old_gen = (size_t)(old_gen_growth_factor * (double)total_old_gen_size);
+            size_t new_allocation_old_gen = total_new_allocation_old_gen / n_heaps;
+
+            dprintf (6666, ("total gen2 %Id (%.3fmb), factor %.3f=>%.3f -> total gen0 new_alloc %Id (%Id/heap, %.3fmb)",
+                total_old_gen_size, ((double)total_old_gen_size / 1000.0 / 1000.0),
+                saved_old_gen_growth_factor, old_gen_growth_factor, total_new_allocation_old_gen,
+                new_allocation_old_gen, ((double)new_allocation_old_gen / 1000.0 / 1000.0)));
+
+            new_allocation_old_gen = min (max_gen0_new_allocation, new_allocation_old_gen);
+            new_allocation_old_gen = max (min_gen0_new_allocation, new_allocation_old_gen);
+
+            return new_allocation_old_gen;
+        }
+
+        //
+        // gen2 GCs are handled separately only as a backstop.
+        //
+        struct gen2_sample
+        {
+            // Recording the gen2 GC indices so we know how far apart they are. Currently unused
+            // but we should consider how much value there is if they are very far apart.
+            size_t gc_index;
+            // This is (gc_elapsed_time / time inbetween this and the last gen2 GC)
+            float gc_percent;
+        };
 
         uint32_t        gen2_sample_index;
-        // This is (gc_elapsed_time / time inbetween this and the last gen2 GC)
-        float           gen2_gc_percents[sample_size];
+        gen2_sample     gen2_samples[sample_size];
+
+        size_t          current_gen2_samples_count;
+        size_t          processed_gen2_samples_count;
+
+        // This records the stcp last time we processed ephemeral samples. We use it
+        float           last_processed_stcp;
 
         float median_throughput_cost_percent;          // estimated overhead of allocator + gc
         float smoothed_median_throughput_cost_percent; // exponentially smoothed version
@@ -4271,14 +4475,13 @@ private:
 
         bool            should_change_heap_count;
         int             heap_count_to_change_to;
-        int             heap_count_change_count;
 #ifdef STRESS_DYNAMIC_HEAP_COUNT
         int             lowest_heap_with_msl_uoh;
 #endif //STRESS_DYNAMIC_HEAP_COUNT
 
         float get_median_gen2_gc_percent()
         {
-            return median_of_3 (gen2_gc_percents[0], gen2_gc_percents[1], gen2_gc_percents[2]);
+            return median_of_3 (gen2_samples[0].gc_percent, gen2_samples[1].gc_percent, gen2_samples[2].gc_percent);
         }
     };
     PER_HEAP_ISOLATED_FIELD_MAINTAINED dynamic_heap_count_data_t dynamic_heap_count_data;
@@ -4475,6 +4678,9 @@ private:
     // at the beginning of a BGC and the PM triggered full GCs
     // fall into this case.
     PER_HEAP_ISOLATED_FIELD_DIAG_ONLY uint64_t suspended_start_time;
+    // Right now this is diag only but may be used functionally later.
+    PER_HEAP_ISOLATED_FIELD_DIAG_ONLY uint64_t change_heap_count_time;
+    // TEMP END
     PER_HEAP_ISOLATED_FIELD_DIAG_ONLY uint64_t end_gc_time;
     PER_HEAP_ISOLATED_FIELD_DIAG_ONLY uint64_t total_suspended_time;
     PER_HEAP_ISOLATED_FIELD_DIAG_ONLY uint64_t process_start_time;
@@ -5816,3 +6022,6 @@ public:
 #else
 #define THIS_ARG
 #endif // FEATURE_CARD_MARKING_STEALING
+
+using std::min;
+using std::max;

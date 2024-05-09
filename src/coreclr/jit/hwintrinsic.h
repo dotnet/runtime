@@ -82,9 +82,8 @@ enum HWIntrinsicFlag : unsigned int
     // - should be transformed in the compiler front-end, cannot reach CodeGen
     HW_Flag_NoCodeGen = 0x2,
 
-    // Multi-instruction
-    // - that one intrinsic can generate multiple instructions
-    HW_Flag_MultiIns = 0x4,
+    // The intrinsic is invalid as the ID of a gtNode
+    HW_Flag_InvalidNodeId = 0x4,
 
     // Select base type using the first argument type
     HW_Flag_BaseTypeFromFirstArg = 0x8,
@@ -175,6 +174,28 @@ enum HWIntrinsicFlag : unsigned int
 
     // The intrinsic needs consecutive registers
     HW_Flag_NeedsConsecutiveRegisters = 0x4000,
+
+    // The intrinsic uses scalable registers
+    HW_Flag_Scalable = 0x8000,
+
+    // Returns Per-Element Mask
+    // the intrinsic returns a vector containing elements that are either "all bits set" or "all bits clear"
+    // this output can be used as a per-element mask
+    HW_Flag_ReturnsPerElementMask = 0x10000,
+
+    // The intrinsic uses a mask in arg1 to select elements present in the result
+    HW_Flag_ExplicitMaskedOperation = 0x20000,
+
+    // The intrinsic uses a mask in arg1 to select elements present in the result, and must use a low register.
+    HW_Flag_LowMaskedOperation = 0x40000,
+
+    // The intrinsic can optionally use a mask in arg1 to select elements present in the result, which is not present in
+    // the API call
+    HW_Flag_OptionalEmbeddedMaskedOperation = 0x80000,
+
+    // The intrinsic uses a mask in arg1 to select elements present in the result, which is not present in the API call
+    HW_Flag_EmbeddedMaskedOperation = 0x100000,
+
 #else
 #error Unsupported platform
 #endif
@@ -207,8 +228,13 @@ enum HWIntrinsicFlag : unsigned int
     // The intrinsic is an embedded rounding compatible intrinsic
     HW_Flag_EmbRoundingCompatible = 0x10000000,
 
-    // The intrinsic is an embedded masking incompatible intrinsic
-    HW_Flag_EmbMaskingIncompatible = 0x20000000,
+    // The intrinsic is an embedded masking compatible intrinsic
+    HW_Flag_EmbMaskingCompatible = 0x20000000,
+#elif defined(TARGET_ARM64)
+
+    // The intrinsic has an enum operand. Using this implies HW_Flag_HasImmediateOperand.
+    HW_Flag_HasEnumOperand = 0x1000000,
+
 #endif // TARGET_XARCH
 
     HW_Flag_CanBenefitFromConstantProp = 0x80000000,
@@ -435,13 +461,13 @@ struct TernaryLogicInfo
     // We have 256 entries, so we compress as much as possible
     // This gives us 3-bytes per entry (21-bits)
 
-    TernaryLogicOperKind oper1 : 4;
+    TernaryLogicOperKind oper1    : 4;
     TernaryLogicUseFlags oper1Use : 3;
 
-    TernaryLogicOperKind oper2 : 4;
+    TernaryLogicOperKind oper2    : 4;
     TernaryLogicUseFlags oper2Use : 3;
 
-    TernaryLogicOperKind oper3 : 4;
+    TernaryLogicOperKind oper3    : 4;
     TernaryLogicUseFlags oper3Use : 3;
 
     static const TernaryLogicInfo& lookup(uint8_t control);
@@ -475,11 +501,11 @@ struct HWIntrinsicInfo
 
     static const HWIntrinsicInfo& lookup(NamedIntrinsic id);
 
-    static NamedIntrinsic lookupId(Compiler*         comp,
-                                   CORINFO_SIG_INFO* sig,
-                                   const char*       className,
-                                   const char*       methodName,
-                                   const char*       enclosingClassName);
+    static NamedIntrinsic         lookupId(Compiler*         comp,
+                                           CORINFO_SIG_INFO* sig,
+                                           const char*       className,
+                                           const char*       methodName,
+                                           const char*       enclosingClassName);
     static CORINFO_InstructionSet lookupIsa(const char* className, const char* enclosingClassName);
 
     static unsigned lookupSimdSize(Compiler* comp, NamedIntrinsic id, CORINFO_SIG_INFO* sig);
@@ -498,7 +524,7 @@ struct HWIntrinsicInfo
     static bool isScalarIsa(CORINFO_InstructionSet isa);
 
 #ifdef TARGET_XARCH
-    static bool isAVX2GatherIntrinsic(NamedIntrinsic id);
+    static bool                isAVX2GatherIntrinsic(NamedIntrinsic id);
     static FloatComparisonMode lookupFloatComparisonModeForSwappedArgs(FloatComparisonMode comparison);
 #endif
 
@@ -605,22 +631,7 @@ struct HWIntrinsicInfo
     static bool IsEmbMaskingCompatible(NamedIntrinsic id)
     {
         HWIntrinsicFlag flags = lookupFlags(id);
-        return (flags & HW_Flag_EmbMaskingIncompatible) == 0;
-    }
-
-    static size_t EmbRoundingArgPos(NamedIntrinsic id)
-    {
-        // This helper function returns the expected position,
-        // where the embedded rounding control argument should be.
-        assert(IsEmbRoundingCompatible(id));
-        switch (id)
-        {
-            case NI_AVX512F_Add:
-                return 3;
-
-            default:
-                unreached();
-        }
+        return (flags & HW_Flag_EmbMaskingCompatible) != 0;
     }
 #endif // TARGET_XARCH
 
@@ -645,13 +656,7 @@ struct HWIntrinsicInfo
     static bool RequiresCodegen(NamedIntrinsic id)
     {
         HWIntrinsicFlag flags = lookupFlags(id);
-        return (flags & HW_Flag_NoCodeGen) == 0;
-    }
-
-    static bool GeneratesMultipleIns(NamedIntrinsic id)
-    {
-        HWIntrinsicFlag flags = lookupFlags(id);
-        return (flags & HW_Flag_MultiIns) != 0;
+        return (flags & (HW_Flag_NoCodeGen | HW_Flag_InvalidNodeId)) == 0;
     }
 
     static bool SupportsContainment(NamedIntrinsic id)
@@ -669,10 +674,8 @@ struct HWIntrinsicInfo
     static bool ReturnsPerElementMask(NamedIntrinsic id)
     {
         HWIntrinsicFlag flags = lookupFlags(id);
-#if defined(TARGET_XARCH)
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
         return (flags & HW_Flag_ReturnsPerElementMask) != 0;
-#elif defined(TARGET_ARM64)
-        unreached();
 #else
 #error Unsupported platform
 #endif
@@ -787,7 +790,13 @@ struct HWIntrinsicInfo
     static bool HasSpecialImport(NamedIntrinsic id)
     {
         HWIntrinsicFlag flags = lookupFlags(id);
-        return (flags & HW_Flag_SpecialImport) != 0;
+        return (flags & (HW_Flag_SpecialImport | HW_Flag_InvalidNodeId)) != 0;
+    }
+
+    static bool IsInvalidNodeId(NamedIntrinsic id)
+    {
+        HWIntrinsicFlag flags = lookupFlags(id);
+        return (flags & HW_Flag_InvalidNodeId) != 0;
     }
 
     static bool IsMultiReg(NamedIntrinsic id)
@@ -861,8 +870,51 @@ struct HWIntrinsicInfo
     static bool HasImmediateOperand(NamedIntrinsic id)
     {
         const HWIntrinsicFlag flags = lookupFlags(id);
-        return (flags & HW_Flag_HasImmediateOperand) != 0;
+        return ((flags & HW_Flag_HasImmediateOperand) != 0) || HasEnumOperand(id);
     }
+
+    static bool IsScalable(NamedIntrinsic id)
+    {
+        const HWIntrinsicFlag flags = lookupFlags(id);
+        return (flags & HW_Flag_Scalable) != 0;
+    }
+
+    static bool IsMaskedOperation(NamedIntrinsic id)
+    {
+        const HWIntrinsicFlag flags = lookupFlags(id);
+        return IsLowMaskedOperation(id) || IsOptionalEmbeddedMaskedOperation(id) || IsExplicitMaskedOperation(id);
+    }
+
+    static bool IsLowMaskedOperation(NamedIntrinsic id)
+    {
+        const HWIntrinsicFlag flags = lookupFlags(id);
+        return (flags & HW_Flag_LowMaskedOperation) != 0;
+    }
+
+    static bool IsOptionalEmbeddedMaskedOperation(NamedIntrinsic id)
+    {
+        const HWIntrinsicFlag flags = lookupFlags(id);
+        return (flags & HW_Flag_OptionalEmbeddedMaskedOperation) != 0;
+    }
+
+    static bool IsEmbeddedMaskedOperation(NamedIntrinsic id)
+    {
+        const HWIntrinsicFlag flags = lookupFlags(id);
+        return (flags & HW_Flag_EmbeddedMaskedOperation) != 0;
+    }
+
+    static bool IsExplicitMaskedOperation(NamedIntrinsic id)
+    {
+        const HWIntrinsicFlag flags = lookupFlags(id);
+        return (flags & HW_Flag_ExplicitMaskedOperation) != 0;
+    }
+
+    static bool HasEnumOperand(NamedIntrinsic id)
+    {
+        const HWIntrinsicFlag flags = lookupFlags(id);
+        return (flags & HW_Flag_HasEnumOperand) != 0;
+    }
+
 #endif // TARGET_ARM64
 
     static bool HasSpecialSideEffect(NamedIntrinsic id)
@@ -909,7 +961,12 @@ struct HWIntrinsicInfo
 struct HWIntrinsic final
 {
     HWIntrinsic(const GenTreeHWIntrinsic* node)
-        : op1(nullptr), op2(nullptr), op3(nullptr), op4(nullptr), numOperands(0), baseType(TYP_UNDEF)
+        : op1(nullptr)
+        , op2(nullptr)
+        , op3(nullptr)
+        , op4(nullptr)
+        , numOperands(0)
+        , baseType(TYP_UNDEF)
     {
         assert(node != nullptr);
 
@@ -922,11 +979,11 @@ struct HWIntrinsic final
         InitializeBaseType(node);
     }
 
-    bool IsTableDriven() const
+    bool codeGenIsTableDriven() const
     {
         // TODO-Arm64-Cleanup - make more categories to the table-driven framework
         bool isTableDrivenCategory = category != HW_Category_Helper;
-        bool isTableDrivenFlag = !HWIntrinsicInfo::GeneratesMultipleIns(id) && !HWIntrinsicInfo::HasSpecialCodegen(id);
+        bool isTableDrivenFlag     = !HWIntrinsicInfo::HasSpecialCodegen(id);
 
         return isTableDrivenCategory && isTableDrivenFlag;
     }

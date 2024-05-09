@@ -479,7 +479,7 @@ void emitter::emitIns_R_I(instruction ins, emitAttr attr, regNumber reg, ssize_t
         case INS_auipc:
             assert(reg != REG_R0);
             assert(isGeneralRegister(reg));
-            assert((((size_t)imm) >> 20) == 0);
+            assert(isValidSimm20(imm));
 
             code |= reg << 7;
             code |= (imm & 0xfffff) << 12;
@@ -625,7 +625,8 @@ void emitter::emitIns_R_R(
         assert(isGeneralRegisterOrR0(reg2));
         code |= (reg1 & 0x1f) << 7;
         code |= reg2 << 15;
-        code |= 0x7 << 12;
+        if (INS_fcvt_d_w != ins && INS_fcvt_d_wu != ins) // fcvt.d.w[u] always produces an exact result
+            code |= 0x7 << 12;                           // round according to frm status register
     }
     else if (INS_fcvt_s_d == ins || INS_fcvt_d_s == ins)
     {
@@ -633,7 +634,8 @@ void emitter::emitIns_R_R(
         assert(isFloatReg(reg2));
         code |= (reg1 & 0x1f) << 7;
         code |= (reg2 & 0x1f) << 15;
-        code |= 0x7 << 12;
+        if (INS_fcvt_d_s != ins) // fcvt.d.s never rounds
+            code |= 0x7 << 12;   // round according to frm status register
     }
     else
     {
@@ -691,7 +693,7 @@ void emitter::emitIns_R_R_I(
         code |= ((imm >> 5) & 0x3f) << 25;
         code |= ((imm >> 12) & 0x1) << 31;
         // TODO-RISCV64: Move jump logic to emitIns_J
-        id->idAddr()->iiaSetInstrCount(imm / sizeof(code_t));
+        id->idAddr()->iiaSetInstrCount(static_cast<int>(imm / sizeof(code_t)));
     }
     else if (ins == INS_csrrs || ins == INS_csrrw || ins == INS_csrrc)
     {
@@ -986,9 +988,9 @@ void emitter::emitIns_R_AR(instruction ins, emitAttr attr, regNumber ireg, regNu
 }
 
 // This computes address from the immediate which is relocatable.
-void emitter::emitIns_R_AI(instruction ins,
-                           emitAttr    attr,
-                           regNumber   reg,
+void emitter::emitIns_R_AI(instruction  ins,
+                           emitAttr     attr,
+                           regNumber    reg,
                            ssize_t addr DEBUGARG(size_t targetHandle) DEBUGARG(GenTreeFlags gtFlags))
 {
     assert(EA_IS_RELOC(attr)); // EA_PTR_DSP_RELOC
@@ -1251,7 +1253,7 @@ void emitter::emitLoadImmediate(emitAttr size, regNumber reg, ssize_t imm)
     // Since ADDIW use sign extension fo immediate
     // we have to adjust higher 19 bit loaded by LUI
     // for case when low part is bigger than 0x800.
-    UINT32 high19 = (high31 + 0x800) >> 12;
+    INT32 high19 = ((int32_t)(high31 + 0x800)) >> 12;
 
     emitIns_R_I(INS_lui, size, reg, high19);
     emitIns_R_R_I(INS_addiw, size, reg, reg, high31 & 0xFFF);
@@ -1288,8 +1290,8 @@ void emitter::emitLoadImmediate(emitAttr size, regNumber reg, ssize_t imm)
 void emitter::emitIns_Call(EmitCallType          callType,
                            CORINFO_METHOD_HANDLE methHnd,
                            INDEBUG_LDISASM_COMMA(CORINFO_SIG_INFO* sigInfo) // used to report call sites to the EE
-                           void*    addr,
-                           ssize_t  argSize,
+                           void*            addr,
+                           ssize_t          argSize,
                            emitAttr retSize MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(emitAttr secondRetSize),
                            VARSET_VALARG_TP ptrVars,
                            regMaskTP        gcrefRegs,
@@ -1371,11 +1373,32 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
     /* Update the emitter's live GC ref sets */
 
+    // If the method returns a GC ref, mark RBM_INTRET appropriately
+    if (retSize == EA_GCREF)
+    {
+        gcrefRegs |= RBM_INTRET;
+    }
+    else if (retSize == EA_BYREF)
+    {
+        byrefRegs |= RBM_INTRET;
+    }
+
+    // If is a multi-register return method is called, mark RBM_INTRET_1 appropriately
+    if (secondRetSize == EA_GCREF)
+    {
+        gcrefRegs |= RBM_INTRET_1;
+    }
+    else if (secondRetSize == EA_BYREF)
+    {
+        byrefRegs |= RBM_INTRET_1;
+    }
+
     VarSetOps::Assign(emitComp, emitThisGCrefVars, ptrVars);
     emitThisGCrefRegs = gcrefRegs;
     emitThisByrefRegs = byrefRegs;
 
-    id->idSetIsNoGC(emitNoGChelper(methHnd));
+    // for the purpose of GC safepointing tail-calls are not real calls
+    id->idSetIsNoGC(isJump || emitNoGChelper(methHnd));
 
     /* Set the instruction - special case jumping a function */
     instruction ins;
@@ -1446,10 +1469,13 @@ void emitter::emitIns_Call(EmitCallType          callType,
                    VarSetOps::ToString(emitComp, ((instrDescCGCA*)id)->idcGCvars));
         }
     }
-
-    id->idDebugOnlyInfo()->idMemCookie = (size_t)methHnd; // method token
-    id->idDebugOnlyInfo()->idCallSig   = sigInfo;
 #endif // DEBUG
+
+    if (m_debugInfoSize > 0)
+    {
+        INDEBUG(id->idDebugOnlyInfo()->idCallSig = sigInfo);
+        id->idDebugOnlyInfo()->idMemCookie = reinterpret_cast<size_t>(methHnd); // method token
+    }
 
 #ifdef LATE_DISASM
     if (addr != nullptr)
@@ -1758,9 +1784,9 @@ void emitter::emitJumpDistBind()
         emitCounts_INS_OPTS_J * (6 << 2); // the max placeholder sizeof(INS_OPTS_JALR) - sizeof(INS_OPTS_J)
     NATIVE_OFFSET psd = B_DIST_SMALL_MAX_POS - maxPlaceholderSize;
 
-/*****************************************************************************/
-/* If the default small encoding is not enough, we start again here.     */
-/*****************************************************************************/
+    /*****************************************************************************/
+    /* If the default small encoding is not enough, we start again here.     */
+    /*****************************************************************************/
 
 AGAIN:
 
@@ -1791,7 +1817,7 @@ AGAIN:
         UNATIVE_OFFSET dstOffs;
         NATIVE_OFFSET  jmpDist; // the relative jump distance, as it will be encoded
 
-/* Make sure the jumps are properly ordered */
+        /* Make sure the jumps are properly ordered */
 
 #ifdef DEBUG
         assert(lastSJ == nullptr || lastIG != jmp->idjIG || lastSJ->idjOffs < (jmp->idjOffs + adjSJ));
@@ -1845,7 +1871,6 @@ AGAIN:
         jmp->idjOffs += adjSJ;
 
         // If this is a jump via register, the instruction size does not change, so we are done.
-        CLANG_FORMAT_COMMENT_ANCHOR;
 
         /* Have we bound this jump's target already? */
 
@@ -1866,7 +1891,6 @@ AGAIN:
         else
         {
             /* First time we've seen this label, convert its target */
-            CLANG_FORMAT_COMMENT_ANCHOR;
 
             tgtIG = (insGroup*)emitCodeGetCookie(jmp->idAddr()->iiaBBlabel);
 
@@ -1946,8 +1970,8 @@ AGAIN:
                 instruction ins = jmp->idIns();
                 assert((INS_jal <= ins) && (ins <= INS_bgeu));
 
-                if (ins > INS_jalr ||
-                    (ins < INS_jalr && ins > INS_j)) // jal < beqz < bnez < jalr < beq/bne/blt/bltu/bge/bgeu
+                if (ins > INS_jalr || (ins < INS_jalr && ins > INS_j)) // jal < beqz < bnez < jalr <
+                                                                       // beq/bne/blt/bltu/bge/bgeu
                 {
                     if (isValidSimm13(jmpDist + maxPlaceholderSize))
                     {
@@ -2020,8 +2044,8 @@ AGAIN:
                 instruction ins = jmp->idIns();
                 assert((INS_jal <= ins) && (ins <= INS_bgeu));
 
-                if (ins > INS_jalr ||
-                    (ins < INS_jalr && ins > INS_j)) // jal < beqz < bnez < jalr < beq/bne/blt/bltu/bge/bgeu
+                if (ins > INS_jalr || (ins < INS_jalr && ins > INS_j)) // jal < beqz < bnez < jalr <
+                                                                       // beq/bne/blt/bltu/bge/bgeu
                 {
                     if (isValidSimm13(jmpDist + maxPlaceholderSize))
                     {
@@ -2118,12 +2142,12 @@ AGAIN:
 unsigned emitter::emitOutput_Instr(BYTE* dst, code_t code) const
 {
     assert(dst != nullptr);
-    assert(sizeof(code_t) == 4);
-    memcpy(dst + writeableOffset, &code, sizeof(code_t));
+    static_assert(sizeof(code_t) == 4, "code_t must be 4 bytes");
+    memcpy(dst + writeableOffset, &code, sizeof(code));
     return sizeof(code_t);
 }
 
-static inline void assertCodeLength(unsigned code, uint8_t size)
+static inline void assertCodeLength(size_t code, uint8_t size)
 {
     assert((code >> size) == 0);
 }
@@ -2298,7 +2322,9 @@ static inline void assertCodeLength(unsigned code, uint8_t size)
 
 static constexpr unsigned kInstructionOpcodeMask = 0x7f;
 static constexpr unsigned kInstructionFunct3Mask = 0x7000;
+static constexpr unsigned kInstructionFunct5Mask = 0xf8000000;
 static constexpr unsigned kInstructionFunct7Mask = 0xfe000000;
+static constexpr unsigned kInstructionFunct2Mask = 0x06000000;
 
 #ifdef DEBUG
 
@@ -2338,33 +2364,43 @@ static constexpr unsigned kInstructionFunct7Mask = 0xfe000000;
             assert(isGeneralRegisterOrR0(rs1));
             assert(isGeneralRegisterOrR0(rs2));
             break;
-        case INS_fadd_s:
-        case INS_fsub_s:
-        case INS_fmul_s:
-        case INS_fdiv_s:
         case INS_fsgnj_s:
         case INS_fsgnjn_s:
         case INS_fsgnjx_s:
         case INS_fmin_s:
         case INS_fmax_s:
-        case INS_feq_s:
-        case INS_flt_s:
-        case INS_fle_s:
-        case INS_fadd_d:
-        case INS_fsub_d:
-        case INS_fmul_d:
-        case INS_fdiv_d:
         case INS_fsgnj_d:
         case INS_fsgnjn_d:
         case INS_fsgnjx_d:
         case INS_fmin_d:
         case INS_fmax_d:
-        case INS_feq_d:
-        case INS_flt_d:
-        case INS_fle_d:
             assert(isFloatReg(rd));
             assert(isFloatReg(rs1));
             assert(isFloatReg(rs2));
+            break;
+        case INS_feq_s:
+        case INS_feq_d:
+        case INS_flt_d:
+        case INS_flt_s:
+        case INS_fle_s:
+        case INS_fle_d:
+            assert(isGeneralRegisterOrR0(rd));
+            assert(isFloatReg(rs1));
+            assert(isFloatReg(rs2));
+            break;
+        case INS_fmv_w_x:
+        case INS_fmv_d_x:
+            assert(isFloatReg(rd));
+            assert(isGeneralRegisterOrR0(rs1));
+            assert(rs2 == 0);
+            break;
+        case INS_fmv_x_d:
+        case INS_fmv_x_w:
+        case INS_fclass_s:
+        case INS_fclass_d:
+            assert(isGeneralRegisterOrR0(rd));
+            assert(isFloatReg(rs1));
+            assert(rs2 == 0);
             break;
         default:
             NO_WAY("Illegal ins within emitOutput_RTypeInstr!");
@@ -2377,6 +2413,7 @@ static constexpr unsigned kInstructionFunct7Mask = 0xfe000000;
 {
     switch (ins)
     {
+        case INS_mov:
         case INS_jalr:
         case INS_lb:
         case INS_lh:
@@ -2392,7 +2429,6 @@ static constexpr unsigned kInstructionFunct7Mask = 0xfe000000;
         case INS_lwu:
         case INS_ld:
         case INS_addiw:
-        case INS_fence_i:
         case INS_csrrw:
         case INS_csrrs:
         case INS_csrrc:
@@ -2427,6 +2463,15 @@ static constexpr unsigned kInstructionFunct7Mask = 0xfe000000;
             assert(rs1 < 32);
             assert((opcode & kInstructionFunct7Mask) == 0);
             break;
+        case INS_fence:
+        {
+            assert(rd == REG_ZERO);
+            assert(rs1 == REG_ZERO);
+            ssize_t format = immediate >> 8;
+            assert((format == 0) || (format == 0x8));
+            assert((opcode & kInstructionFunct7Mask) == 0);
+        }
+        break;
         default:
             NO_WAY("Illegal ins within emitOutput_ITypeInstr!");
             break;
@@ -2725,48 +2770,48 @@ ssize_t emitter::emitOutputInstrJumpDistance(const BYTE* src, const insGroup* ig
     return distVal;
 }
 
-static constexpr size_t NBitMask(uint8_t bits)
+static inline constexpr unsigned WordMask(uint8_t bits)
 {
-    return (static_cast<size_t>(1) << bits) - 1;
+    return static_cast<unsigned>((1ull << bits) - 1);
 }
 
 template <uint8_t MaskSize>
-static ssize_t LowerNBitsOfWord(ssize_t word)
+static unsigned LowerNBitsOfWord(ssize_t word)
 {
     static_assert(MaskSize < 32, "Given mask size is bigger than the word itself");
     static_assert(MaskSize > 0, "Given mask size cannot be zero");
 
-    static constexpr size_t kMask = NBitMask(MaskSize);
+    static constexpr unsigned kMask = WordMask(MaskSize);
 
-    return word & kMask;
+    return static_cast<unsigned>(word & kMask);
 }
 
 template <uint8_t MaskSize>
-static ssize_t UpperNBitsOfWord(ssize_t word)
+static unsigned UpperNBitsOfWord(ssize_t word)
 {
-    static constexpr size_t kShift = 32 - MaskSize;
+    static constexpr unsigned kShift = 32 - MaskSize;
 
     return LowerNBitsOfWord<MaskSize>(word >> kShift);
 }
 
 template <uint8_t MaskSize>
-static ssize_t UpperNBitsOfWordSignExtend(ssize_t word)
+static unsigned UpperNBitsOfWordSignExtend(ssize_t word)
 {
     static constexpr unsigned kSignExtend = 1 << (31 - MaskSize);
 
     return UpperNBitsOfWord<MaskSize>(word + kSignExtend);
 }
 
-static ssize_t UpperWordOfDoubleWord(ssize_t immediate)
+static unsigned UpperWordOfDoubleWord(ssize_t immediate)
 {
-    return immediate >> 32;
+    return static_cast<unsigned>(immediate >> 32);
 }
 
-static ssize_t LowerWordOfDoubleWord(ssize_t immediate)
+static unsigned LowerWordOfDoubleWord(ssize_t immediate)
 {
-    static constexpr size_t kWordMask = NBitMask(32);
+    static constexpr size_t kWordMask = WordMask(32);
 
-    return immediate & kWordMask;
+    return static_cast<unsigned>(immediate & kWordMask);
 }
 
 template <uint8_t UpperMaskSize, uint8_t LowerMaskSize>
@@ -2792,28 +2837,28 @@ static ssize_t UpperWordOfDoubleWordDoubleSignExtend(ssize_t doubleWord)
     return UpperWordOfDoubleWord(DoubleWordSignExtend<UpperMaskSize, LowerMaskSize>(doubleWord));
 }
 
-/*static*/ unsigned emitter::TrimSignedToImm12(int imm12)
+/*static*/ unsigned emitter::TrimSignedToImm12(ssize_t imm12)
 {
     assert(isValidSimm12(imm12));
 
     return static_cast<unsigned>(LowerNBitsOfWord<12>(imm12));
 }
 
-/*static*/ unsigned emitter::TrimSignedToImm13(int imm13)
+/*static*/ unsigned emitter::TrimSignedToImm13(ssize_t imm13)
 {
     assert(isValidSimm13(imm13));
 
     return static_cast<unsigned>(LowerNBitsOfWord<13>(imm13));
 }
 
-/*static*/ unsigned emitter::TrimSignedToImm20(int imm20)
+/*static*/ unsigned emitter::TrimSignedToImm20(ssize_t imm20)
 {
     assert(isValidSimm20(imm20));
 
     return static_cast<unsigned>(LowerNBitsOfWord<20>(imm20));
 }
 
-/*static*/ unsigned emitter::TrimSignedToImm21(int imm21)
+/*static*/ unsigned emitter::TrimSignedToImm21(ssize_t imm21)
 {
     assert(isValidSimm21(imm21));
 
@@ -2867,8 +2912,8 @@ BYTE* emitter::emitOutputInstr_OptsI8(BYTE* dst, const instrDesc* id, ssize_t im
     if (id->idReg2())
     {
         // special for INT64_MAX or UINT32_MAX
-        dst += emitOutput_ITypeInstr(dst, INS_addi, reg1, REG_R0, 0xfff);
-        const ssize_t shiftValue = (immediate == INT64_MAX) ? 1 : 32;
+        dst += emitOutput_ITypeInstr(dst, INS_addi, reg1, REG_R0, WordMask(12));
+        const unsigned shiftValue = (immediate == INT64_MAX) ? 1 : 32;
         dst += emitOutput_ITypeInstr(dst, INS_srli, reg1, reg1, shiftValue);
     }
     else
@@ -2881,10 +2926,10 @@ BYTE* emitter::emitOutputInstr_OptsI8(BYTE* dst, const instrDesc* id, ssize_t im
 
 BYTE* emitter::emitOutputInstr_OptsI32(BYTE* dst, ssize_t immediate, regNumber reg1)
 {
-    ssize_t upperWord = UpperWordOfDoubleWord(immediate);
+    const unsigned upperWord = UpperWordOfDoubleWord(immediate);
     dst += emitOutput_UTypeInstr(dst, INS_lui, reg1, UpperNBitsOfWordSignExtend<20>(upperWord));
     dst += emitOutput_ITypeInstr(dst, INS_addi, reg1, reg1, LowerNBitsOfWord<12>(upperWord));
-    ssize_t lowerWord = LowerWordOfDoubleWord(immediate);
+    const unsigned lowerWord = LowerWordOfDoubleWord(immediate);
     dst += emitOutput_ITypeInstr(dst, INS_slli, reg1, reg1, 11);
     dst += emitOutput_ITypeInstr(dst, INS_addi, reg1, reg1, LowerNBitsOfWord<11>(lowerWord >> 21));
     dst += emitOutput_ITypeInstr(dst, INS_slli, reg1, reg1, 11);
@@ -2899,39 +2944,37 @@ BYTE* emitter::emitOutputInstr_OptsRc(BYTE* dst, const instrDesc* id, instructio
     assert(id->idAddr()->iiaIsJitDataOffset());
     assert(id->idGCref() == GCT_NONE);
 
-    int dataOffs = id->idAddr()->iiaGetJitDataOffset();
+    const int dataOffs = id->idAddr()->iiaGetJitDataOffset();
     assert(dataOffs >= 0);
 
-    ssize_t immediate = emitGetInsSC(id);
+    const ssize_t immediate = emitGetInsSC(id);
     assert((immediate >= 0) && (immediate < 0x4000)); // 0x4000 is arbitrary, currently 'imm' is always 0.
 
-    unsigned offset = static_cast<unsigned>(dataOffs + immediate);
+    const unsigned offset = static_cast<unsigned>(dataOffs + immediate);
     assert(offset < emitDataSize());
 
-    *ins           = id->idIns();
-    regNumber reg1 = id->idReg1();
+    *ins                 = id->idIns();
+    const regNumber reg1 = id->idReg1();
 
     if (id->idIsReloc())
     {
-        return emitOutputInstr_OptsRcReloc(dst, ins, reg1);
+        return emitOutputInstr_OptsRcReloc(dst, ins, offset, reg1);
     }
     return emitOutputInstr_OptsRcNoReloc(dst, ins, offset, reg1);
 }
 
-BYTE* emitter::emitOutputInstr_OptsRcReloc(BYTE* dst, instruction* ins, regNumber reg1)
+BYTE* emitter::emitOutputInstr_OptsRcReloc(BYTE* dst, instruction* ins, unsigned offset, regNumber reg1)
 {
-    ssize_t immediate = emitConsBlock - dst;
-    assert(immediate > 0);
-    assert((immediate & 0x03) == 0);
+    const ssize_t immediate = (emitConsBlock - dst) + offset;
+    assert((immediate > 0) && ((immediate & 0x03) == 0));
 
-    regNumber rsvdReg = codeGen->rsGetRsvdReg();
+    const regNumber rsvdReg = codeGen->rsGetRsvdReg();
     dst += emitOutput_UTypeInstr(dst, INS_auipc, rsvdReg, UpperNBitsOfWordSignExtend<20>(immediate));
 
     instruction lastIns = *ins;
 
     if (*ins == INS_jal)
     {
-        assert(isGeneralRegister(reg1));
         *ins = lastIns = INS_addi;
     }
     dst += emitOutput_ITypeInstr(dst, lastIns, reg1, rsvdReg, LowerNBitsOfWord<12>(immediate));
@@ -2940,12 +2983,12 @@ BYTE* emitter::emitOutputInstr_OptsRcReloc(BYTE* dst, instruction* ins, regNumbe
 
 BYTE* emitter::emitOutputInstr_OptsRcNoReloc(BYTE* dst, instruction* ins, unsigned offset, regNumber reg1)
 {
-    ssize_t immediate = reinterpret_cast<ssize_t>(emitConsBlock) + offset;
-    assert((immediate >> 40) == 0);
-    regNumber rsvdReg = codeGen->rsGetRsvdReg();
+    const ssize_t immediate = reinterpret_cast<ssize_t>(emitConsBlock) + offset;
+    assertCodeLength(static_cast<size_t>(immediate), 40);
+    const regNumber rsvdReg = codeGen->rsGetRsvdReg();
 
-    instruction lastIns = (*ins == INS_jal) ? (*ins = INS_addi) : *ins;
-    UINT32      high = immediate >> 11;
+    const instruction lastIns = (*ins == INS_jal) ? (*ins = INS_addi) : *ins;
+    const ssize_t     high    = immediate >> 11;
 
     dst += emitOutput_UTypeInstr(dst, INS_lui, rsvdReg, UpperNBitsOfWordSignExtend<20>(high));
     dst += emitOutput_ITypeInstr(dst, INS_addi, rsvdReg, rsvdReg, LowerNBitsOfWord<12>(high));
@@ -2959,9 +3002,8 @@ BYTE* emitter::emitOutputInstr_OptsRl(BYTE* dst, instrDesc* id, instruction* ins
     insGroup* targetInsGroup = static_cast<insGroup*>(emitCodeGetCookie(id->idAddr()->iiaBBlabel));
     id->idAddr()->iiaIGlabel = targetInsGroup;
 
-    regNumber reg1 = id->idReg1();
-    assert(isGeneralRegister(reg1));
-    ssize_t igOffs = targetInsGroup->igOffs;
+    const regNumber reg1   = id->idReg1();
+    const ssize_t   igOffs = targetInsGroup->igOffs;
 
     if (id->idIsReloc())
     {
@@ -2974,7 +3016,7 @@ BYTE* emitter::emitOutputInstr_OptsRl(BYTE* dst, instrDesc* id, instruction* ins
 
 BYTE* emitter::emitOutputInstr_OptsRlReloc(BYTE* dst, ssize_t igOffs, regNumber reg1)
 {
-    ssize_t immediate = (emitCodeBlock - dst) + igOffs;
+    const ssize_t immediate = (emitCodeBlock - dst) + igOffs;
     assert((immediate & 0x03) == 0);
 
     dst += emitOutput_UTypeInstr(dst, INS_auipc, reg1, UpperNBitsOfWordSignExtend<20>(immediate));
@@ -2984,11 +3026,11 @@ BYTE* emitter::emitOutputInstr_OptsRlReloc(BYTE* dst, ssize_t igOffs, regNumber 
 
 BYTE* emitter::emitOutputInstr_OptsRlNoReloc(BYTE* dst, ssize_t igOffs, regNumber reg1)
 {
-    ssize_t immediate = reinterpret_cast<ssize_t>(emitCodeBlock) + igOffs;
-    assert((immediate >> (32 + 20)) == 0);
+    const ssize_t immediate = reinterpret_cast<ssize_t>(emitCodeBlock) + igOffs;
+    assertCodeLength(static_cast<size_t>(immediate), 32 + 20);
 
-    regNumber rsvdReg      = codeGen->rsGetRsvdReg();
-    ssize_t   upperSignExt = UpperWordOfDoubleWordDoubleSignExtend<32, 52>(immediate);
+    const regNumber rsvdReg      = codeGen->rsGetRsvdReg();
+    const ssize_t   upperSignExt = UpperWordOfDoubleWordDoubleSignExtend<32, 52>(immediate);
 
     dst += emitOutput_UTypeInstr(dst, INS_lui, rsvdReg, UpperNBitsOfWordSignExtend<20>(immediate));
     dst += emitOutput_ITypeInstr(dst, INS_addi, rsvdReg, rsvdReg, LowerNBitsOfWord<12>(immediate));
@@ -3000,32 +3042,32 @@ BYTE* emitter::emitOutputInstr_OptsRlNoReloc(BYTE* dst, ssize_t igOffs, regNumbe
 
 BYTE* emitter::emitOutputInstr_OptsJalr(BYTE* dst, instrDescJmp* jmp, const insGroup* ig, instruction* ins)
 {
-    ssize_t immediate = emitOutputInstrJumpDistance(dst, ig, jmp) - 4;
+    const ssize_t immediate = emitOutputInstrJumpDistance(dst, ig, jmp) - 4;
     assert((immediate & 0x03) == 0);
 
     *ins = jmp->idIns();
-    assert(jmp->idCodeSize() > 4); // The original INS_OPTS_JALR: not used by now!!!
     switch (jmp->idCodeSize())
     {
         case 8:
-            return emitOutputInstr_OptsJalr8(dst, jmp, *ins, immediate);
+            return emitOutputInstr_OptsJalr8(dst, jmp, immediate);
         case 24:
-            assert((*ins == INS_jal) || (*ins == INS_j));
+            assert(jmp->idInsIs(INS_jal, INS_j));
             return emitOutputInstr_OptsJalr24(dst, immediate);
         case 28:
-            return emitOutputInstr_OptsJalr28(dst, jmp, *ins, immediate);
+            return emitOutputInstr_OptsJalr28(dst, jmp, immediate);
         default:
+            // case 0 - 4: The original INS_OPTS_JALR: not used by now!!!
             break;
     }
     unreached();
     return nullptr;
 }
 
-BYTE* emitter::emitOutputInstr_OptsJalr8(BYTE* dst, const instrDescJmp* jmp, instruction ins, ssize_t immediate)
+BYTE* emitter::emitOutputInstr_OptsJalr8(BYTE* dst, const instrDescJmp* jmp, ssize_t immediate)
 {
-    regNumber reg2 = ((ins != INS_beqz) && (ins != INS_bnez)) ? jmp->idReg2() : REG_R0;
+    const regNumber reg2 = jmp->idInsIs(INS_beqz, INS_bnez) ? REG_R0 : jmp->idReg2();
 
-    dst += emitOutput_BTypeInstr_InvertComparation(dst, ins, jmp->idReg1(), reg2, 0x8);
+    dst += emitOutput_BTypeInstr_InvertComparation(dst, jmp->idIns(), jmp->idReg1(), reg2, 0x8);
     dst += emitOutput_JTypeInstr(dst, INS_jal, REG_ZERO, TrimSignedToImm21(immediate));
     return dst;
 }
@@ -3034,14 +3076,14 @@ BYTE* emitter::emitOutputInstr_OptsJalr24(BYTE* dst, ssize_t immediate)
 {
     // Make target address with offset, then jump (JALR) with the target address
     immediate -= 2 * 4;
-    ssize_t high = UpperWordOfDoubleWordSingleSignExtend<0>(immediate);
+    const ssize_t high = UpperWordOfDoubleWordSingleSignExtend<0>(immediate);
 
     dst += emitOutput_UTypeInstr(dst, INS_lui, REG_RA, UpperNBitsOfWordSignExtend<20>(high));
     dst += emitOutput_ITypeInstr(dst, INS_addi, REG_RA, REG_RA, LowerNBitsOfWord<12>(high));
     dst += emitOutput_ITypeInstr(dst, INS_slli, REG_RA, REG_RA, 32);
 
-    regNumber rsvdReg = codeGen->rsGetRsvdReg();
-    ssize_t   low     = LowerWordOfDoubleWord(immediate);
+    const regNumber rsvdReg = codeGen->rsGetRsvdReg();
+    const ssize_t   low     = LowerWordOfDoubleWord(immediate);
 
     dst += emitOutput_UTypeInstr(dst, INS_auipc, rsvdReg, UpperNBitsOfWordSignExtend<20>(low));
     dst += emitOutput_RTypeInstr(dst, INS_add, rsvdReg, REG_RA, rsvdReg);
@@ -3050,17 +3092,18 @@ BYTE* emitter::emitOutputInstr_OptsJalr24(BYTE* dst, ssize_t immediate)
     return dst;
 }
 
-BYTE* emitter::emitOutputInstr_OptsJalr28(BYTE* dst, const instrDescJmp* jmp, instruction ins, ssize_t immediate)
+BYTE* emitter::emitOutputInstr_OptsJalr28(BYTE* dst, const instrDescJmp* jmp, ssize_t immediate)
 {
-    regNumber reg2 = ((ins != INS_beqz) && (ins != INS_bnez)) ? jmp->idReg2() : REG_R0;
-    dst += emitOutput_BTypeInstr_InvertComparation(dst, ins, jmp->idReg1(), reg2, 0x1c);
+    regNumber reg2 = jmp->idInsIs(INS_beqz, INS_bnez) ? REG_R0 : jmp->idReg2();
+
+    dst += emitOutput_BTypeInstr_InvertComparation(dst, jmp->idIns(), jmp->idReg1(), reg2, 0x1c);
 
     return emitOutputInstr_OptsJalr24(dst, immediate);
 }
 
 BYTE* emitter::emitOutputInstr_OptsJCond(BYTE* dst, instrDesc* id, const insGroup* ig, instruction* ins)
 {
-    ssize_t immediate = emitOutputInstrJumpDistance(dst, ig, static_cast<instrDescJmp*>(id));
+    const ssize_t immediate = emitOutputInstrJumpDistance(dst, ig, static_cast<instrDescJmp*>(id));
 
     *ins = id->idIns();
 
@@ -3070,7 +3113,7 @@ BYTE* emitter::emitOutputInstr_OptsJCond(BYTE* dst, instrDesc* id, const insGrou
 
 BYTE* emitter::emitOutputInstr_OptsJ(BYTE* dst, instrDesc* id, const insGroup* ig, instruction* ins)
 {
-    ssize_t immediate = emitOutputInstrJumpDistance(dst, ig, static_cast<instrDescJmp*>(id));
+    const ssize_t immediate = emitOutputInstrJumpDistance(dst, ig, static_cast<instrDescJmp*>(id));
     assert((immediate & 0x03) == 0);
 
     *ins = id->idIns();
@@ -3133,11 +3176,12 @@ BYTE* emitter::emitOutputInstr_OptsC(BYTE* dst, instrDesc* id, const insGroup* i
 size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 {
     BYTE*             dst  = *dp;
+    BYTE*             dst2 = dst + 4;
     const BYTE* const odst = *dp;
     instruction       ins;
     size_t            sz = 0;
 
-    assert(REG_NA == static_cast<int>(REG_NA));
+    static_assert(REG_NA == static_cast<int>(REG_NA), "REG_NA must fit in an int");
 
     insOpts insOp = id->idInsOpt();
 
@@ -3174,8 +3218,9 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             sz  = sizeof(instrDescJmp);
             break;
         case INS_OPTS_C:
-            dst = emitOutputInstr_OptsC(dst, id, ig, &sz);
-            ins = INS_nop;
+            dst  = emitOutputInstr_OptsC(dst, id, ig, &sz);
+            dst2 = dst;
+            ins  = INS_nop;
             break;
         default: // case INS_OPTS_NONE:
             dst += emitOutput_Instr(dst, id->idAddr()->iiaGetInstrEncode());
@@ -3193,11 +3238,11 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         // We assume that "idReg1" is the primary destination register for all instructions
         if (id->idGCref() != GCT_NONE)
         {
-            emitGCregLiveUpd(id->idGCref(), id->idReg1(), dst);
+            emitGCregLiveUpd(id->idGCref(), id->idReg1(), dst2);
         }
         else
         {
-            emitGCregDeadUpd(id->idReg1(), dst);
+            emitGCregDeadUpd(id->idReg1(), dst2);
         }
     }
 
@@ -3211,7 +3256,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         int      adr = emitComp->lvaFrameAddress(varNum, &FPbased);
         if (id->idGCref() != GCT_NONE)
         {
-            emitGCvarLiveUpd(adr + ofs, varNum, id->idGCref(), dst DEBUG_ARG(varNum));
+            emitGCvarLiveUpd(adr + ofs, varNum, id->idGCref(), dst2 DEBUG_ARG(varNum));
         }
         else
         {
@@ -3228,7 +3273,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 vt              = tmpDsc->tdTempType();
             }
             if (vt == TYP_REF || vt == TYP_BYREF)
-                emitGCvarDeadUpd(adr + ofs, dst DEBUG_ARG(varNum));
+                emitGCvarDeadUpd(adr + ofs, dst2 DEBUG_ARG(varNum));
         }
         // if (emitInsWritesToLclVarStackLocPair(id))
         //{
@@ -4439,7 +4484,7 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
 
             if (offset != 0)
             {
-                regNumber tmpReg = indir->GetSingleTempReg();
+                regNumber tmpReg = codeGen->internalRegisters.GetSingle(indir);
 
                 if (isValidSimm12(offset))
                 {
@@ -4472,7 +4517,7 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
                     noway_assert(emitInsIsLoad(ins) || (tmpReg != dataReg));
                     noway_assert(tmpReg != index->GetRegNum());
 
-                    regNumber scaleReg = indir->GetSingleTempReg();
+                    regNumber scaleReg = codeGen->internalRegisters.GetSingle(indir);
                     // Then load/store dataReg from/to [tmpReg + index*scale]
                     emitIns_R_R_I(INS_slli, addType, scaleReg, index->GetRegNum(), lsl);
                     emitIns_R_R_R(INS_add, addType, tmpReg, tmpReg, scaleReg);
@@ -4581,7 +4626,7 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
             else
             {
                 // We require a tmpReg to hold the offset
-                regNumber tmpReg = indir->GetSingleTempReg();
+                regNumber tmpReg = codeGen->internalRegisters.GetSingle(indir);
 
                 // First load/store tmpReg with the large offset constant
                 emitLoadImmediate(EA_PTRSIZE, tmpReg, offset);
@@ -4747,7 +4792,7 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
 
         assert(ins == INS_addi || ins == INS_addiw || ins == INS_andi || ins == INS_ori || ins == INS_xori);
 
-        regNumber tempReg = needCheckOv ? dst->ExtractTempReg() : REG_NA;
+        regNumber tempReg = needCheckOv ? codeGen->internalRegisters.Extract(dst) : REG_NA;
 
         if (needCheckOv)
         {
@@ -4799,7 +4844,7 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
     }
     else
     {
-        regNumber tempReg = needCheckOv ? dst->ExtractTempReg() : REG_NA;
+        regNumber tempReg = needCheckOv ? codeGen->internalRegisters.Extract(dst) : REG_NA;
 
         switch (dst->OperGet())
         {
@@ -4873,7 +4918,7 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
                         }
                         else
                         {
-                            regNumber tempReg2 = dst->ExtractTempReg();
+                            regNumber tempReg2 = codeGen->internalRegisters.Extract(dst);
                             assert(tempReg2 != dstReg);
                             assert(tempReg2 != src1Reg);
                             assert(tempReg2 != src2Reg);
@@ -4979,7 +5024,7 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
                     else
                     {
                         tempReg1 = REG_RA;
-                        tempReg2 = dst->ExtractTempReg();
+                        tempReg2 = codeGen->internalRegisters.Extract(dst);
                         assert(tempReg1 != tempReg2);
                         assert(tempReg1 != saveOperReg1);
                         assert(tempReg2 != saveOperReg2);

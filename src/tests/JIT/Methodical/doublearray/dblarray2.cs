@@ -281,6 +281,8 @@ public class DblArray
     }
 
     [Fact]
+    [SkipOnCoreClr("This test is not compatible with GCStress.", RuntimeTestModes.AnyGCStress)]
+    [SkipOnMono("Needs triage")]
     public static int TestEntryPoint()
     {
         if (RuntimeInformation.ProcessArchitecture == Architecture.X86)

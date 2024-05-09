@@ -141,6 +141,7 @@
     <GenerateRuntimeConfigurationFiles>false</GenerateRuntimeConfigurationFiles>
     <CopyLocalLockFileAssemblies>false</CopyLocalLockFileAssemblies>
     <UseAppHost>false</UseAppHost>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
   <!-- Set arch specific properties -->
@@ -161,11 +162,6 @@
   <!-- Don't reference the mscorlib facade -->
   <PropertyGroup>
     <ExcludeMscorlibFacade>true</ExcludeMscorlibFacade>
-  </PropertyGroup>
-
-  <!-- Set default ZapRequire level (used only when CrossGen is enabled) -->
-  <PropertyGroup>
-    <ZapRequire Condition="'$(ZapRequire)' == ''">2</ZapRequire>
   </PropertyGroup>
 
   <!-- Don't append the RID to the output path for our test tree. Our test builds are already separated by RID
@@ -217,6 +213,7 @@
 
   <PropertyGroup Condition="'$(RuntimeFlavor)' == 'coreclr' and '$(TargetsAppleMobile)' == 'true'">
     <_targetOS>$(TargetOS)</_targetOS>
+    <_targetArchitecture>$(TargetArchitecture)</_targetArchitecture>
     <UseNativeAOTRuntime>true</UseNativeAOTRuntime>
     <NativeLib>static</NativeLib>
     <CustomNativeMain>true</CustomNativeMain>

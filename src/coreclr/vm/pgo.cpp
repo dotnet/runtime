@@ -205,7 +205,7 @@ void PgoManager::WritePgoData()
         return;
     }
 
-    FILE* const pgoDataFile = _wfopen(fileName, W("w"));
+    FILE* const pgoDataFile = _wfopen(fileName, W("wb"));
 
     if (pgoDataFile == NULL)
     {
@@ -238,7 +238,7 @@ void PgoManager::WritePgoData()
         unsigned lastOffset  = 0;
         auto lambda = [data, pgoDataFile] (const ICorJitInfo::PgoInstrumentationSchema &schema)
         {
-            fprintf(pgoDataFile, s_RecordString, schema.InstrumentationKind, schema.ILOffset, schema.Count, schema.Other);
+            fprintf(pgoDataFile, s_RecordString, (unsigned int)schema.InstrumentationKind, schema.ILOffset, schema.Count, schema.Other);
             for (int32_t iEntry = 0; iEntry < schema.Count; iEntry++)
             {
                 size_t entryOffset = schema.Offset + iEntry * InstrumentationKindToSize(schema.InstrumentationKind);
@@ -367,7 +367,7 @@ void PgoManager::ReadPgoData()
         return;
     }
 
-    FILE* const pgoDataFile = _wfopen(fileName, W("r"));
+    FILE* const pgoDataFile = _wfopen(fileName, W("rb"));
 
     if (pgoDataFile == NULL)
     {

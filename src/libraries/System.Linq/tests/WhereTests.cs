@@ -1016,7 +1016,7 @@ namespace System.Linq.Tests
             var iterator = NumberRangeGuaranteedNotCollectionType(0, 3).Where(i => true);
             // Don't insist on this behaviour, but check it's correct if it happens
             var en = iterator as IEnumerator<int>;
-            Assert.False(en != null && en.MoveNext());
+            Assert.False(en is not null && en.MoveNext());
         }
 
         [Fact]
@@ -1024,7 +1024,7 @@ namespace System.Linq.Tests
         {
             var iterator = NumberRangeGuaranteedNotCollectionType(0, 3).ToArray().Where(i => true);
             var en = iterator as IEnumerator<int>;
-            Assert.False(en != null && en.MoveNext());
+            Assert.False(en is not null && en.MoveNext());
         }
 
         [Fact]
@@ -1032,7 +1032,7 @@ namespace System.Linq.Tests
         {
             var iterator = NumberRangeGuaranteedNotCollectionType(0, 3).ToList().Where(i => true);
             var en = iterator as IEnumerator<int>;
-            Assert.False(en != null && en.MoveNext());
+            Assert.False(en is not null && en.MoveNext());
         }
 
         [Fact]
@@ -1040,7 +1040,7 @@ namespace System.Linq.Tests
         {
             var iterator = NumberRangeGuaranteedNotCollectionType(0, 3).Where((e, i) => true);
             var en = iterator as IEnumerator<int>;
-            Assert.False(en != null && en.MoveNext());
+            Assert.False(en is not null && en.MoveNext());
         }
 
         [Fact]
@@ -1048,7 +1048,7 @@ namespace System.Linq.Tests
         {
             var iterator = NumberRangeGuaranteedNotCollectionType(0, 3).Where(i => true).Select(i => i);
             var en = iterator as IEnumerator<int>;
-            Assert.False(en != null && en.MoveNext());
+            Assert.False(en is not null && en.MoveNext());
         }
 
         [Fact]
@@ -1056,7 +1056,7 @@ namespace System.Linq.Tests
         {
             var iterator = NumberRangeGuaranteedNotCollectionType(0, 3).ToArray().Where(i => true).Select(i => i);
             var en = iterator as IEnumerator<int>;
-            Assert.False(en != null && en.MoveNext());
+            Assert.False(en is not null && en.MoveNext());
         }
 
         [Fact]
@@ -1064,7 +1064,7 @@ namespace System.Linq.Tests
         {
             var iterator = NumberRangeGuaranteedNotCollectionType(0, 3).ToList().Where(i => true).Select(i => i);
             var en = iterator as IEnumerator<int>;
-            Assert.False(en != null && en.MoveNext());
+            Assert.False(en is not null && en.MoveNext());
         }
 
         [Theory]
@@ -1092,6 +1092,50 @@ namespace System.Linq.Tests
                     Assert.Equal(0, en.Current);
                 }
             }
+        }
+
+        [Fact]
+        public void WhereFirstLast()
+        {
+            Assert.All(IdentityTransforms<int>(), transform =>
+            {
+                IEnumerable<int> data = transform(Enumerable.Range(0, 10));
+
+                Assert.Equal(3, data.Where(i => i == 3).First());
+                Assert.Equal(0, data.Where(i => i % 2 == 0).First());
+
+                Assert.Equal(3, data.Where(i => i == 3).Last());
+                Assert.Equal(8, data.Where(i => i % 2 == 0).Last());
+
+                Assert.Equal(3, data.Where(i => i == 3).ElementAt(0));
+                Assert.Equal(8, data.Where(i => i % 2 == 0).ElementAt(4));
+
+                Assert.Throws<InvalidOperationException>(() => data.Where(i => i == 10).First());
+                Assert.Throws<InvalidOperationException>(() => data.Where(i => i == 10).Last());
+                Assert.Throws<ArgumentOutOfRangeException>(() => data.Where(i => i == 10).ElementAt(0));
+            });
+        }
+
+        [Fact]
+        public void WhereSelectFirstLast()
+        {
+            Assert.All(IdentityTransforms<int>(), transform =>
+            {
+                IEnumerable<int> data = transform(Enumerable.Range(0, 10));
+
+                Assert.Equal(6, data.Where(i => i == 3).Select(i => i * 2).First());
+                Assert.Equal(0, data.Where(i => i % 2 == 0).Select(i => i * 2).First());
+
+                Assert.Equal(6, data.Where(i => i == 3).Select(i => i * 2).Last());
+                Assert.Equal(16, data.Where(i => i % 2 == 0).Select(i => i * 2).Last());
+
+                Assert.Equal(6, data.Where(i => i == 3).Select(i => i * 2).ElementAt(0));
+                Assert.Equal(16, data.Where(i => i % 2 == 0).Select(i => i * 2).ElementAt(4));
+
+                Assert.Throws<InvalidOperationException>(() => data.Where(i => i == 10).Select(i => i * 2).First());
+                Assert.Throws<InvalidOperationException>(() => data.Where(i => i == 10).Select(i => i * 2).Last());
+                Assert.Throws<ArgumentOutOfRangeException>(() => data.Where(i => i == 10).Select(i => i * 2).ElementAt(0));
+            });
         }
 
         public static IEnumerable<object[]> ToCollectionData()

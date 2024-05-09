@@ -63,7 +63,9 @@ public abstract class BlazorWasmTestBase : WasmTemplateTestBase
         (CommandResult res, string logPath) = BlazorBuildInternal(options.Id, options.Config, publish: false, setWasmDevel: false, expectSuccess: options.ExpectSuccess, extraArgs);
 
         if (options.ExpectSuccess && options.AssertAppBundle)
+        {
             AssertBundle(res.Output, options with { IsPublish = false });
+        }
 
         return (res, logPath);
     }
@@ -77,6 +79,10 @@ public abstract class BlazorWasmTestBase : WasmTemplateTestBase
 
         if (options.ExpectSuccess && options.AssertAppBundle)
         {
+            // Because we do relink in Release publish by default
+            if (options.Config == "Release")
+                options = options with { ExpectedFileType = NativeFilesType.Relinked };
+
             AssertBundle(res.Output, options with { IsPublish = true });
         }
 
@@ -185,14 +191,24 @@ public abstract class BlazorWasmTestBase : WasmTemplateTestBase
     {
         if (!string.IsNullOrEmpty(runOptions.ExtraArgs))
             runArgs += $" {runOptions.ExtraArgs}";
+
+        runOptions.ServerEnvironment?.ToList().ForEach(
+            kv => s_buildEnv.EnvVars[kv.Key] = kv.Value);
+
         using var runCommand = new RunCommand(s_buildEnv, _testOutput)
                                     .WithWorkingDirectory(workingDirectory);
 
         await using var runner = new BrowserRunner(_testOutput);
-        var page = await runner.RunAsync(runCommand, runArgs, onConsoleMessage: OnConsoleMessage, onError: OnErrorMessage, modifyBrowserUrl: browserUrl => browserUrl + runOptions.QueryString);
+        var page = await runner.RunAsync(
+            runCommand,
+            runArgs,
+            onConsoleMessage: OnConsoleMessage,
+            onServerMessage: runOptions.OnServerMessage,
+            onError: OnErrorMessage,
+            modifyBrowserUrl: browserUrl => new Uri(new Uri(browserUrl), runOptions.BrowserPath + runOptions.QueryString).ToString());
 
         _testOutput.WriteLine("Waiting for page to load");
-        await page.WaitForLoadStateAsync(LoadState.DOMContentLoaded);
+        await page.WaitForLoadStateAsync(LoadState.DOMContentLoaded, new () { Timeout = 1 * 60 * 1000 });
 
         if (runOptions.CheckCounter)
         {
@@ -201,6 +217,7 @@ public abstract class BlazorWasmTestBase : WasmTemplateTestBase
             Assert.Equal("Current count: 0", txt);
 
             await page.Locator("text=\"Click me\"").ClickAsync();
+            await Task.Delay(300);
             txt = await page.Locator("p[role='status']").InnerHTMLAsync();
             Assert.Equal("Current count: 1", txt);
         }
@@ -211,11 +228,11 @@ public abstract class BlazorWasmTestBase : WasmTemplateTestBase
         _testOutput.WriteLine($"Waiting for additional 10secs to see if any errors are reported");
         await Task.Delay(10_000);
 
-        void OnConsoleMessage(IConsoleMessage msg)
+        void OnConsoleMessage(IPage page, IConsoleMessage msg)
         {
             _testOutput.WriteLine($"[{msg.Type}] {msg.Text}");
 
-            runOptions.OnConsoleMessage?.Invoke(msg);
+            runOptions.OnConsoleMessage?.Invoke(page, msg);
 
             if (runOptions.DetectRuntimeFailures)
             {
@@ -231,6 +248,12 @@ public abstract class BlazorWasmTestBase : WasmTemplateTestBase
         }
     }
 
-    public string FindBlazorBinFrameworkDir(string config, bool forPublish, string framework = DefaultTargetFrameworkForBlazor)
-        => _provider.FindBinFrameworkDir(config: config, forPublish: forPublish, framework: framework);
+    public string FindBlazorBinFrameworkDir(string config, bool forPublish, string framework = DefaultTargetFrameworkForBlazor, string? projectDir = null)
+        => _provider.FindBinFrameworkDir(config: config, forPublish: forPublish, framework: framework, projectDir: projectDir);
+
+    public string FindBlazorHostedBinFrameworkDir(string config, bool forPublish, string clientDirRelativeToProjectDir, string framework = DefaultTargetFrameworkForBlazor)
+    {
+        string? clientProjectDir = _projectDir == null ? null : Path.Combine(_projectDir, clientDirRelativeToProjectDir);
+        return _provider.FindBinFrameworkDir(config: config, forPublish: forPublish, framework: framework, projectDir: clientProjectDir);
+    }
 }

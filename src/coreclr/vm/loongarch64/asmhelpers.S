@@ -822,13 +822,13 @@ NESTED_ENTRY OnHijackTripThread, _TEXT, NoHandler
     PROLOG_SAVE_REG_PAIR   25, 26, 32
     PROLOG_SAVE_REG_PAIR   27, 28, 48
     PROLOG_SAVE_REG_PAIR   29, 30, 64
-    PROLOG_SAVE_REG 31, 80
+    PROLOG_SAVE_REG_PAIR   31, 2, 80
 
     // save any integral return value(s)
     st.d  $a0, $sp, 96
     st.d  $a1, $sp, 104
 
-    // save any FP/HFA return value(s)
+    // save any FP return value(s)
     fst.d  $f0, $sp, 112
     fst.d  $f1, $sp, 120
 
@@ -841,15 +841,15 @@ NESTED_ENTRY OnHijackTripThread, _TEXT, NoHandler
     ld.d  $a0, $sp, 96
     ld.d  $a1, $sp, 104
 
-    // restore any FP/HFA return value(s)
-    fst.d  $f0, $sp, 112
-    fst.d  $f1, $sp, 120
+    // restore any FP return value(s)
+    fld.d  $f0, $sp, 112
+    fld.d  $f1, $sp, 120
 
     EPILOG_RESTORE_REG_PAIR   23, 24, 16
     EPILOG_RESTORE_REG_PAIR   25, 26, 32
     EPILOG_RESTORE_REG_PAIR   27, 28, 48
     EPILOG_RESTORE_REG_PAIR   29, 30, 64
-    EPILOG_RESTORE_REG  31, 80
+    EPILOG_RESTORE_REG_PAIR   31, 2,  80
     //                              $fp,$ra
     EPILOG_RESTORE_REG_PAIR_INDEXED  22, 1, 0x80
     EPILOG_RETURN

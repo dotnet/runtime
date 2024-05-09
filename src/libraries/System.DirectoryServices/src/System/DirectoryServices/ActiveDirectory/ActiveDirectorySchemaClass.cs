@@ -1429,7 +1429,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 // get the properties of the auxiliary classes
                 foreach (string auxSchemaClassName in GetValuesFromCache(PropertyManager.AuxiliaryClass))
                 {
-                    ActiveDirectorySchemaClass auxSchemaClass = new ActiveDirectorySchemaClass(_context, auxSchemaClassName, (DirectoryEntry?)null, null);
+                    using ActiveDirectorySchemaClass auxSchemaClass = new ActiveDirectorySchemaClass(_context, auxSchemaClassName, (DirectoryEntry?)null, null);
 
                     foreach (string property in auxSchemaClass.GetPropertyValuesRecursively(propertyNames))
                     {
@@ -1441,8 +1441,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 }
                 foreach (string auxSchemaClassName in GetValuesFromCache(PropertyManager.SystemAuxiliaryClass))
                 {
-                    ActiveDirectorySchemaClass auxSchemaClass = new ActiveDirectorySchemaClass(_context, auxSchemaClassName, (DirectoryEntry?)null, null);
-
+                    using ActiveDirectorySchemaClass auxSchemaClass = new ActiveDirectorySchemaClass(_context, auxSchemaClassName, (DirectoryEntry?)null, null);
                     foreach (string property in auxSchemaClass.GetPropertyValuesRecursively(propertyNames))
                     {
                         if (!values.Contains(property))

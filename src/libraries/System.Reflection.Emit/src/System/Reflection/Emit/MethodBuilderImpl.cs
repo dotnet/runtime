@@ -252,7 +252,21 @@ namespace System.Reflection.Emit
         public override int MetadataToken => _handle == default ? 0 : MetadataTokens.GetToken(_handle);
         public override RuntimeMethodHandle MethodHandle => throw new NotSupportedException(SR.NotSupported_DynamicModule);
         public override Type? ReflectedType => DeclaringType;
-        public override ParameterInfo ReturnParameter { get => throw new NotImplementedException(); }
+        public override ParameterInfo ReturnParameter
+        {
+            get
+            {
+                if (_parameterBuilders == null || _parameterBuilders[0] == null)
+                {
+                    return new ParameterInfoWrapper(new ParameterBuilderImpl(this, 0, ParameterAttributes.Retval, null), _returnType);
+                }
+                else
+                {
+                    return new ParameterInfoWrapper(_parameterBuilders[0], _returnType);
+                }
+            }
+        }
+
         public override Type ReturnType => _returnType;
         public override ICustomAttributeProvider ReturnTypeCustomAttributes { get => throw new NotImplementedException(); }
 

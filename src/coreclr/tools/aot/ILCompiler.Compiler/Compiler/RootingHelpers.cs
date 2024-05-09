@@ -227,6 +227,16 @@ namespace ILCompiler
                     ((MetadataType)owningType).MakeInstantiatedType(inst));
             }
 
+            try
+            {
+                // Make sure we're not putting something into the graph that will crash later.
+                factory.TypeSystemContext.EnsureLoadableType(field.FieldType);
+            }
+            catch (TypeSystemException)
+            {
+                return false;
+            }
+
             dependencies.Add(factory.ReflectedField(field), reason);
 
             return true;

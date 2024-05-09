@@ -371,21 +371,22 @@ GenTree* Compiler::optPropGetValueRec(unsigned lclNum, unsigned ssaNum, optPropK
     {
         assert(ssaDefStore->OperIsLocalStore());
 
-        GenTree* data = ssaDefStore->Data();
+        GenTree* defValue = ssaDefStore->Data();
 
-        // Recursively track the Rhs for "entire" stores.
-        if (ssaDefStore->OperIs(GT_STORE_LCL_VAR) && (ssaDefStore->GetLclNum() == lclNum) && data->OperIs(GT_LCL_VAR))
+        // Recursively track the value for "entire" stores.
+        if (ssaDefStore->OperIs(GT_STORE_LCL_VAR) && (ssaDefStore->GetLclNum() == lclNum) &&
+            defValue->OperIs(GT_LCL_VAR))
         {
-            unsigned dataLclNum = data->AsLclVarCommon()->GetLclNum();
-            unsigned dataSsaNum = data->AsLclVarCommon()->GetSsaNum();
+            unsigned defValueLclNum = defValue->AsLclVar()->GetLclNum();
+            unsigned defValueSsaNum = defValue->AsLclVar()->GetSsaNum();
 
-            value = optPropGetValueRec(dataLclNum, dataSsaNum, valueKind, walkDepth + 1);
+            value = optPropGetValueRec(defValueLclNum, defValueSsaNum, valueKind, walkDepth + 1);
         }
         else
         {
             if (valueKind == optPropKind::OPK_ARRAYLEN)
             {
-                value = getArrayLengthFromAllocation(data DEBUGARG(ssaVarDsc->GetBlock()));
+                value = getArrayLengthFromAllocation(defValue DEBUGARG(ssaVarDsc->GetBlock()));
                 if (value != nullptr)
                 {
                     if (!value->IsCnsIntOrI())
@@ -510,7 +511,7 @@ GenTree* Compiler::optFindNullCheckToFold(GenTree* tree, LocalNumberToNullCheckT
 {
     assert(tree->OperIsIndirOrArrMetaData());
 
-    GenTree* addr = tree->GetIndirOrArrMetaDataAddr();
+    GenTree* addr = tree->GetIndirOrArrMetaDataAddr()->gtEffectiveVal();
 
     ssize_t offsetValue = 0;
 

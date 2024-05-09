@@ -2558,7 +2558,7 @@ BOOL IsMethodVisibleFromCom(MethodDesc *pMD)
     mdMethodDef md = pMD->GetMemberDef();
 
     // See if there is property information for this member.
-    hr = pMD->GetModule()->GetPropertyInfoForMethodDef(md, &pd, &pPropName, &uSemantic);
+    hr = pMD->GetMDImport()->GetPropertyInfoForMethodDef(md, &pd, &pPropName, &uSemantic);
     IfFailThrow(hr);
 
     if (hr == S_OK)
@@ -3026,11 +3026,11 @@ FORCEINLINE void DispParamHolderRelease(VARIANT* value)
     }
 }
 
-class DispParamHolder : public Wrapper<VARIANT*, DispParamHolderDoNothing, DispParamHolderRelease, NULL>
+class DispParamHolder : public Wrapper<VARIANT*, DispParamHolderDoNothing, DispParamHolderRelease, 0>
 {
 public:
     DispParamHolder(VARIANT* p = NULL)
-        : Wrapper<VARIANT*, DispParamHolderDoNothing, DispParamHolderRelease, NULL>(p)
+        : Wrapper<VARIANT*, DispParamHolderDoNothing, DispParamHolderRelease, 0>(p)
     {
         WRAPPER_NO_CONTRACT;
     }
@@ -3038,7 +3038,7 @@ public:
     FORCEINLINE void operator=(VARIANT* p)
     {
         WRAPPER_NO_CONTRACT;
-        Wrapper<VARIANT*, DispParamHolderDoNothing, DispParamHolderRelease, NULL>::operator=(p);
+        Wrapper<VARIANT*, DispParamHolderDoNothing, DispParamHolderRelease, 0>::operator=(p);
     }
 };
 

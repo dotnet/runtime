@@ -125,7 +125,7 @@ namespace System
         public static bool IsCaseInsensitiveOS => IsWindows || IsOSX || IsMacCatalyst;
         public static bool IsCaseSensitiveOS => !IsCaseInsensitiveOS;
 
-#if NETCOREAPP
+#if NET
         public static bool FileCreateCaseSensitive => IsCaseSensitiveOS && !RuntimeInformation.RuntimeIdentifier.StartsWith("iossimulator")
                                                                         && !RuntimeInformation.RuntimeIdentifier.StartsWith("tvossimulator");
 #else
@@ -135,6 +135,10 @@ namespace System
         public static bool IsThreadingSupported => (!IsWasi && !IsBrowser) || IsWasmThreadingSupported;
         public static bool IsWasmThreadingSupported => IsBrowser && IsEnvironmentVariableTrue("IsBrowserThreadingSupported");
         public static bool IsNotWasmThreadingSupported => !IsWasmThreadingSupported;
+        public static bool IsWasmBackgroundExec => IsBrowser && IsEnvironmentVariableTrue("IsWasmBackgroundExec");
+        public static bool IsThreadingSupportedNotBrowserBackgroundExec => IsWasmThreadingSupported && !IsWasmBackgroundExec;
+        public static bool IsWasmBackgroundExecOrSingleThread => IsWasmBackgroundExec || IsNotWasmThreadingSupported;
+        public static bool IsThreadingSupportedOrBrowserBackgroundExec => IsWasmBackgroundExec || !IsBrowser;
         public static bool IsBinaryFormatterSupported => IsNotMobile && !IsNativeAot;
 
         public static bool IsStartingProcessesSupported => !IsiOS && !IstvOS;
@@ -148,6 +152,8 @@ namespace System
         public static bool IsNotBrowserDomSupported => !IsBrowserDomSupported;
         public static bool IsWebSocketSupported => IsEnvironmentVariableTrue("IsWebSocketSupported");
         public static bool IsNodeJS => IsEnvironmentVariableTrue("IsNodeJS");
+        public static bool IsFirefox => IsEnvironmentVariableTrue("IsFirefox");
+        public static bool IsChromium => IsEnvironmentVariableTrue("IsChromium");
         public static bool IsNotNodeJS => !IsNodeJS;
         public static bool IsNodeJSOnWindows => GetNodeJSPlatform() == "win32";
         public static bool LocalEchoServerIsNotAvailable => !LocalEchoServerIsAvailable;
@@ -175,7 +181,7 @@ namespace System
         public static bool IsNotInContainer => !IsInContainer;
         public static bool SupportsComInterop => IsWindows && IsNotMonoRuntime && !IsNativeAot; // matches definitions in clr.featuredefines.props
 
-#if NETCOREAPP
+#if NET
         public static bool IsBuiltInComEnabled => SupportsComInterop
                                             && (AppContext.TryGetSwitch("System.Runtime.InteropServices.BuiltInComInterop.IsSupported", out bool isEnabled)
                                                 ? isEnabled
@@ -192,7 +198,7 @@ namespace System
         public static bool SupportsSsl3 => GetSsl3Support();
         public static bool SupportsSsl2 => IsWindows && !PlatformDetection.IsWindows10Version1607OrGreater;
 
-#if NETCOREAPP
+#if NET
         public static bool IsReflectionEmitSupported => RuntimeFeature.IsDynamicCodeSupported;
         public static bool IsNotReflectionEmitSupported => !IsReflectionEmitSupported;
 #else
@@ -279,7 +285,7 @@ namespace System
         public static bool UsesMobileAppleCrypto => IsMacCatalyst || IsiOS || IstvOS;
 
         // Changed to `true` when trimming
-        public static bool IsBuiltWithAggressiveTrimming => IsNativeAot;
+        public static bool IsBuiltWithAggressiveTrimming => IsNativeAot || IsAppleMobile;
         public static bool IsNotBuiltWithAggressiveTrimming => !IsBuiltWithAggressiveTrimming;
         public static bool IsTrimmedWithILLink => IsBuiltWithAggressiveTrimming && !IsNativeAot;
 
@@ -662,7 +668,7 @@ namespace System
 
         private static bool GetIsRunningOnMonoInterpreter()
         {
-#if NETCOREAPP
+#if NET
             return IsMonoRuntime && RuntimeFeature.IsDynamicCodeSupported && !RuntimeFeature.IsDynamicCodeCompiled;
 #else
             return false;

@@ -21,17 +21,20 @@
     <Compile Include="System\Number.Polyfill.cs" />
     <Compile Include="System\Numerics\NumericsHelpers.cs" />
     <Compile Include="System\Numerics\Complex.cs" />
-    <Compile Include="System\Globalization\FormatProvider.BigInteger.cs" />
-    <Compile Include="System\Globalization\FormatProvider.Number.cs" />
-    <Compile Include="System\Globalization\FormatProvider.NumberBuffer.cs" />
     <Compile Include="Properties\InternalsVisibleTo.cs" />
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="$(CoreLibSharedDir)System\Buffers\Text\FormattingHelpers.CountDigits.cs"
+             Link="CoreLib\System\Buffers\Text\FormattingHelpers.CountDigits.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Collections\Generic\ValueListBuilder.cs"
+             Link="CoreLib\System\Collections\Generic\ValueListBuilder.cs" />
     <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.cs"
              Link="CoreLib\System\Text\ValueStringBuilder.cs" />
     <Compile Include="$(CommonPath)System\HexConverter.cs"
              Link="Common\System\HexConverter.cs" />
+    <Compile Include="$(CommonPath)System\Number.Formatting.Common.cs"
+             Link="Common\System\Number.Formatting.Common.cs" />
     <Compile Include="$(CommonPath)System\Number.NumberBuffer.cs"
              Link="Common\System\Number.NumberBuffer.cs" />
     <Compile Include="$(CommonPath)System\Number.Parsing.Common.cs"

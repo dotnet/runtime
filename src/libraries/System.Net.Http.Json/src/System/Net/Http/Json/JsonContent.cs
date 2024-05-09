@@ -114,7 +114,7 @@ namespace System.Net.Http.Json
         private async Task SerializeToStreamAsyncTranscoding(Stream targetStream, bool async, Encoding targetEncoding, CancellationToken cancellationToken)
         {
             // Wrap provided stream into a transcoding stream that buffers the data transcoded from utf-8 to the targetEncoding.
-#if NETCOREAPP
+#if NET
             Stream transcodingStream = Encoding.CreateTranscodingStream(targetStream, targetEncoding, Encoding.UTF8, leaveOpen: true);
             try
             {

@@ -21,12 +21,6 @@ internal static partial class Interop
 {
     internal static partial class OpenSsl
     {
-#if DEBUG
-        private static readonly string? s_keyLogFile = Environment.GetEnvironmentVariable("SSLKEYLOGFILE");
-        private static readonly FileStream? s_fileStream = s_keyLogFile != null ? File.Open(s_keyLogFile, FileMode.Append, FileAccess.Write, FileShare.ReadWrite) : null;
-#endif
-        private const string DisableTlsResumeCtxSwitch = "System.Net.Security.DisableTlsResume";
-        private const string DisableTlsResumeEnvironmentVariable = "DOTNET_SYSTEM_NET_SECURITY_DISABLETLSRESUME";
         private const string TlsCacheSizeCtxName = "System.Net.Security.TlsCacheSize";
         private const string TlsCacheSizeEnvironmentVariable = "DOTNET_SYSTEM_NET_SECURITY_TLSCACHESIZE";
         private const SslProtocols FakeAlpnSslProtocol = (SslProtocols)1;   // used to distinguish server sessions with ALPN
@@ -57,35 +51,6 @@ internal static partial class Interop
         }
 
         private static readonly int s_cacheSize = GetCacheSize();
-
-        private static volatile int s_disableTlsResume = -1;
-
-        private static bool DisableTlsResume
-        {
-            get
-            {
-                int disableTlsResume = s_disableTlsResume;
-                if (disableTlsResume != -1)
-                {
-                    return disableTlsResume != 0;
-                }
-
-                // First check for the AppContext switch, giving it priority over the environment variable.
-                if (AppContext.TryGetSwitch(DisableTlsResumeCtxSwitch, out bool value))
-                {
-                    s_disableTlsResume = value ? 1 : 0;
-                }
-                else
-                {
-                    // AppContext switch wasn't used. Check the environment variable.
-                    s_disableTlsResume =
-                        Environment.GetEnvironmentVariable(DisableTlsResumeEnvironmentVariable) is string envVar &&
-                        (envVar == "1" || envVar.Equals("true", StringComparison.OrdinalIgnoreCase)) ? 1 : 0;
-                }
-
-                return s_disableTlsResume != 0;
-            }
-        }
 
         private static int GetCacheSize()
         {
@@ -240,12 +205,10 @@ internal static partial class Interop
                         Ssl.SslCtxSetDefaultOcspCallback(sslCtx);
                     }
                 }
-#if DEBUG
-                if (s_fileStream != null)
+                if (SslKeyLogger.IsEnabled)
                 {
                     Ssl.SslCtxSetKeylogCallback(sslCtx, &KeyLogCallback);
                 }
-#endif
             }
             catch
             {
@@ -298,7 +261,7 @@ internal static partial class Interop
             SafeSslContextHandle? newCtxHandle = null;
             SslProtocols protocols = CalculateEffectiveProtocols(sslAuthenticationOptions);
             bool hasAlpn = sslAuthenticationOptions.ApplicationProtocols != null && sslAuthenticationOptions.ApplicationProtocols.Count != 0;
-            bool cacheSslContext = sslAuthenticationOptions.AllowTlsResume && !DisableTlsResume && sslAuthenticationOptions.EncryptionPolicy == EncryptionPolicy.RequireEncryption && sslAuthenticationOptions.CipherSuitesPolicy == null;
+            bool cacheSslContext = sslAuthenticationOptions.AllowTlsResume && !SslStream.DisableTlsResume && sslAuthenticationOptions.EncryptionPolicy == EncryptionPolicy.RequireEncryption && sslAuthenticationOptions.CipherSuitesPolicy == null;
 
             if (cacheSslContext)
             {
@@ -692,9 +655,6 @@ internal static partial class Interop
                 return Ssl.SSL_TLSEXT_ERR_ALERT_FATAL;
             }
 
-            // reset application data to avoid dangling pointer.
-            Ssl.SslSetData(ssl, IntPtr.Zero);
-
             GCHandle protocolHandle = GCHandle.FromIntPtr(sslData);
             if (!(protocolHandle.Target is List<SslApplicationProtocol> protocolList))
             {
@@ -788,26 +748,15 @@ internal static partial class Interop
 
             IntPtr name = Ssl.SessionGetHostname(session);
             Debug.Assert(name != IntPtr.Zero);
-            ctxHandle.RemoveSession(name);
+            ctxHandle.RemoveSession(name, session);
         }
 
-#if DEBUG
         [UnmanagedCallersOnly]
         private static unsafe void KeyLogCallback(IntPtr ssl, char* line)
         {
-            Debug.Assert(s_fileStream != null);
             ReadOnlySpan<byte> data = MemoryMarshal.CreateReadOnlySpanFromNullTerminated((byte*)line);
-            if (data.Length > 0)
-            {
-                lock (s_fileStream)
-                {
-                    s_fileStream.Write(data);
-                    s_fileStream.WriteByte((byte)'\n');
-                    s_fileStream.Flush();
-                }
-            }
+            SslKeyLogger.WriteLineRaw(data);
         }
-#endif
 
         private static int BioRead(SafeBioHandle bio, Span<byte> buffer, int count)
         {

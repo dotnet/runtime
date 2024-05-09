@@ -151,6 +151,7 @@ namespace System
             throw new OverflowException(SR.Overflow_NegateTwosCompNum);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static unsafe ulong BigMul(uint a, uint b)
         {
 #if TARGET_32BIT
@@ -233,6 +234,16 @@ namespace System
             ulong high = BigMul((ulong)a, (ulong)b, out ulong ulow);
             low = (long)ulow;
             return (long)high - ((a >> 63) & b) - ((b >> 63) & a);
+        }
+
+        /// <summary>Produces the full product of two 64-bit numbers.</summary>
+        /// <param name="a">The first number to multiply.</param>
+        /// <param name="b">The second number to multiply.</param>
+        /// <returns>The full product of the specified numbers.</returns>
+        internal static Int128 BigMul(long a, long b)
+        {
+            long high = Math.BigMul(a, b, out long low);
+            return new Int128((ulong)high, (ulong)low);
         }
 
         public static double BitDecrement(double x)
@@ -1184,19 +1195,11 @@ namespace System
         ///    <para>On ARM64 hardware this may use the <c>FRECPE</c> instruction which performs a single Newton-Raphson iteration.</para>
         ///    <para>On hardware without specialized support, this may just return <c>1.0 / d</c>.</para>
         /// </remarks>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static double ReciprocalEstimate(double d)
         {
-            // x86 doesn't provide an estimate instruction for double-precision reciprocal
-
-            if (AdvSimd.Arm64.IsSupported)
-            {
-                return AdvSimd.Arm64.ReciprocalEstimateScalar(Vector64.CreateScalar(d)).ToScalar();
-            }
-            else
-            {
-                return 1.0 / d;
-            }
+            return 1.0 / d;
         }
 
         /// <summary>Returns an estimate of the reciprocal square root of a specified number.</summary>
@@ -1206,19 +1209,11 @@ namespace System
         ///    <para>On ARM64 hardware this may use the <c>FRSQRTE</c> instruction which performs a single Newton-Raphson iteration.</para>
         ///    <para>On hardware without specialized support, this may just return <c>1.0 / Sqrt(d)</c>.</para>
         /// </remarks>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static double ReciprocalSqrtEstimate(double d)
         {
-            // x86 doesn't provide an estimate instruction for double-precision reciprocal square root
-
-            if (AdvSimd.Arm64.IsSupported)
-            {
-                return AdvSimd.Arm64.ReciprocalSquareRootEstimateScalar(Vector64.CreateScalar(d)).ToScalar();
-            }
-            else
-            {
-                return 1.0 / Sqrt(d);
-            }
+            return 1.0 / Sqrt(d);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

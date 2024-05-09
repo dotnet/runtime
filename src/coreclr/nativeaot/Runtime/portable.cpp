@@ -33,7 +33,7 @@
 #include "GCMemoryHelpers.inl"
 
 #if defined(USE_PORTABLE_HELPERS)
-EXTERN_C NATIVEAOT_API void* REDHAWK_CALLCONV RhpGcAlloc(MethodTable *pEEType, uint32_t uFlags, uintptr_t numElements, void * pTransitionFrame);
+EXTERN_C void* F_CALL_CONV RhpGcAlloc(MethodTable *pEEType, uint32_t uFlags, uintptr_t numElements, void * pTransitionFrame);
 
 static Object* AllocateObject(MethodTable* pEEType, uint32_t uFlags, uintptr_t numElements)
 {
@@ -55,7 +55,7 @@ struct gc_alloc_context
 //
 // Allocations
 //
-COOP_PINVOKE_HELPER(Object *, RhpNewFast, (MethodTable* pEEType))
+FCIMPL1(Object *, RhpNewFast, MethodTable* pEEType)
 {
     ASSERT(!pEEType->HasFinalizer());
 
@@ -75,18 +75,20 @@ COOP_PINVOKE_HELPER(Object *, RhpNewFast, (MethodTable* pEEType))
 
     return AllocateObject(pEEType, 0, 0);
 }
+FCIMPLEND
 
 #define GC_ALLOC_FINALIZE    0x1 // TODO: Defined in gc.h
 #define GC_ALLOC_ALIGN8_BIAS 0x4 // TODO: Defined in gc.h
 #define GC_ALLOC_ALIGN8      0x8 // TODO: Defined in gc.h
 
-COOP_PINVOKE_HELPER(Object *, RhpNewFinalizable, (MethodTable* pEEType))
+FCIMPL1(Object *, RhpNewFinalizable, MethodTable* pEEType)
 {
     ASSERT(pEEType->HasFinalizer());
     return AllocateObject(pEEType, GC_ALLOC_FINALIZE, 0);
 }
+FCIMPLEND
 
-COOP_PINVOKE_HELPER(Array *, RhpNewArray, (MethodTable * pArrayEEType, int numElements))
+FCIMPL2(Array *, RhpNewArray, MethodTable * pArrayEEType, int numElements)
 {
     Thread * pCurThread = ThreadStore::GetCurrentThread();
     gc_alloc_context * acontext = pCurThread->GetAllocContext();
@@ -122,13 +124,15 @@ COOP_PINVOKE_HELPER(Array *, RhpNewArray, (MethodTable * pArrayEEType, int numEl
 
     return (Array*)AllocateObject(pArrayEEType, 0, numElements);
 }
+FCIMPLEND
 
-COOP_PINVOKE_HELPER(String *, RhNewString, (MethodTable * pArrayEEType, int numElements))
+FCIMPL2(String *, RhNewString, MethodTable * pArrayEEType, int numElements)
 {
     // TODO: Implement. We tail call to RhpNewArray for now since there's a bunch of TODOs in the places
     // that matter anyway.
     return (String*)RhpNewArray(pArrayEEType, numElements);
 }
+FCIMPLEND
 
 #endif
 #if defined(USE_PORTABLE_HELPERS)
@@ -136,13 +140,14 @@ COOP_PINVOKE_HELPER(String *, RhNewString, (MethodTable * pArrayEEType, int numE
 
 GPTR_DECL(MethodTable, g_pFreeObjectEEType);
 
-COOP_PINVOKE_HELPER(Object *, RhpNewFinalizableAlign8, (MethodTable* pEEType))
+FCIMPL1(Object *, RhpNewFinalizableAlign8, MethodTable* pEEType)
 {
     return AllocateObject(pEEType, GC_ALLOC_FINALIZE | GC_ALLOC_ALIGN8, 0);
 }
+FCIMPLEND
 
 #ifndef HOST_64BIT
-COOP_PINVOKE_HELPER(Object*, RhpNewFastAlign8, (MethodTable* pEEType))
+FCIMPL1(Object*, RhpNewFastAlign8, MethodTable* pEEType)
 {
     ASSERT(!pEEType->HasFinalizer());
 
@@ -177,8 +182,9 @@ COOP_PINVOKE_HELPER(Object*, RhpNewFastAlign8, (MethodTable* pEEType))
 
     return AllocateObject(pEEType, GC_ALLOC_ALIGN8, 0);
 }
+FCIMPLEND
 
-COOP_PINVOKE_HELPER(Object*, RhpNewFastMisalign, (MethodTable* pEEType))
+FCIMPL1(Object*, RhpNewFastMisalign, MethodTable* pEEType)
 {
     Thread* pCurThread = ThreadStore::GetCurrentThread();
     gc_alloc_context* acontext = pCurThread->GetAllocContext();
@@ -210,8 +216,9 @@ COOP_PINVOKE_HELPER(Object*, RhpNewFastMisalign, (MethodTable* pEEType))
 
     return AllocateObject(pEEType, GC_ALLOC_ALIGN8 | GC_ALLOC_ALIGN8_BIAS, 0);
 }
+FCIMPLEND
 
-COOP_PINVOKE_HELPER(Array*, RhpNewArrayAlign8, (MethodTable* pArrayEEType, int numElements))
+FCIMPL2(Array*, RhpNewArrayAlign8, MethodTable* pArrayEEType, int numElements)
 {
     Thread* pCurThread = ThreadStore::GetCurrentThread();
     gc_alloc_context* acontext = pCurThread->GetAllocContext();
@@ -259,53 +266,63 @@ COOP_PINVOKE_HELPER(Array*, RhpNewArrayAlign8, (MethodTable* pArrayEEType, int n
 
     return (Array*)AllocateObject(pArrayEEType, GC_ALLOC_ALIGN8, numElements);
 }
+FCIMPLEND
 #endif // !HOST_64BIT
 #endif // defined(HOST_ARM) || defined(HOST_WASM)
 
-COOP_PINVOKE_HELPER(void, RhpInitialDynamicInterfaceDispatch, ())
+FCIMPL0(void, RhpInitialDynamicInterfaceDispatch)
 {
     ASSERT_UNCONDITIONALLY("NYI");
 }
+FCIMPLEND
 
-COOP_PINVOKE_HELPER(void, RhpInterfaceDispatch1, ())
+FCIMPL0(void, RhpInterfaceDispatch1)
 {
     ASSERT_UNCONDITIONALLY("NYI");
 }
+FCIMPLEND
 
-COOP_PINVOKE_HELPER(void, RhpInterfaceDispatch2, ())
+FCIMPL0(void, RhpInterfaceDispatch2)
 {
     ASSERT_UNCONDITIONALLY("NYI");
 }
+FCIMPLEND
 
-COOP_PINVOKE_HELPER(void, RhpInterfaceDispatch4, ())
+FCIMPL0(void, RhpInterfaceDispatch4)
 {
     ASSERT_UNCONDITIONALLY("NYI");
 }
+FCIMPLEND
 
-COOP_PINVOKE_HELPER(void, RhpInterfaceDispatch8, ())
+FCIMPL0(void, RhpInterfaceDispatch8)
 {
     ASSERT_UNCONDITIONALLY("NYI");
 }
+FCIMPLEND
 
-COOP_PINVOKE_HELPER(void, RhpInterfaceDispatch16, ())
+FCIMPL0(void, RhpInterfaceDispatch16)
 {
     ASSERT_UNCONDITIONALLY("NYI");
 }
+FCIMPLEND
 
-COOP_PINVOKE_HELPER(void, RhpInterfaceDispatch32, ())
+FCIMPL0(void, RhpInterfaceDispatch32)
 {
     ASSERT_UNCONDITIONALLY("NYI");
 }
+FCIMPLEND
 
-COOP_PINVOKE_HELPER(void, RhpInterfaceDispatch64, ())
+FCIMPL0(void, RhpInterfaceDispatch64)
 {
     ASSERT_UNCONDITIONALLY("NYI");
 }
+FCIMPLEND
 
-COOP_PINVOKE_HELPER(void, RhpVTableOffsetDispatch, ())
+FCIMPL0(void, RhpVTableOffsetDispatch)
 {
     ASSERT_UNCONDITIONALLY("NYI");
 }
+FCIMPLEND
 
 // @TODO Implement UniversalTransition
 EXTERN_C void * ReturnFromUniversalTransition;
@@ -315,143 +332,113 @@ void * ReturnFromUniversalTransition;
 EXTERN_C void * ReturnFromUniversalTransition_DebugStepTailCall;
 void * ReturnFromUniversalTransition_DebugStepTailCall;
 
-#endif // USE_PORTABLE_HELPERS
-
-#if defined(USE_PORTABLE_HELPERS)
-//
-// Return address hijacking
-//
-COOP_PINVOKE_HELPER(void, RhpGcStressHijack, ())
-{
-    ASSERT_UNCONDITIONALLY("NYI");
-}
-
-COOP_PINVOKE_HELPER(void, RhpGcProbeHijack, ())
-{
-    ASSERT_UNCONDITIONALLY("NYI");
-}
-
-#endif // defined(USE_PORTABLE_HELPERS) || defined(TARGET_UNIX)
-
-#if defined(USE_PORTABLE_HELPERS)
-
 #if !defined (HOST_ARM64)
-COOP_PINVOKE_HELPER(void, RhpAssignRef, (Object ** dst, Object * ref))
+FCIMPL2(void, RhpAssignRef, Object ** dst, Object * ref)
 {
     // @TODO: USE_PORTABLE_HELPERS - Null check
     *dst = ref;
     InlineWriteBarrier(dst, ref);
 }
+FCIMPLEND
 
-COOP_PINVOKE_HELPER(void, RhpCheckedAssignRef, (Object ** dst, Object * ref))
+FCIMPL2(void, RhpCheckedAssignRef, Object ** dst, Object * ref)
 {
     // @TODO: USE_PORTABLE_HELPERS - Null check
     *dst = ref;
     InlineCheckedWriteBarrier(dst, ref);
 }
+FCIMPLEND
 #endif
 
-COOP_PINVOKE_HELPER(Object *, RhpCheckedLockCmpXchg, (Object ** location, Object * value, Object * comparand))
+FCIMPL3(Object *, RhpCheckedLockCmpXchg, Object ** location, Object * value, Object * comparand)
 {
-    // @TODO: USE_PORTABLE_HELPERS - Null check
     Object * ret = (Object *)PalInterlockedCompareExchangePointer((void * volatile *)location, value, comparand);
     InlineCheckedWriteBarrier(location, value);
     return ret;
 }
+FCIMPLEND
 
-COOP_PINVOKE_HELPER(Object *, RhpCheckedXchg, (Object ** location, Object * value))
+FCIMPL2(Object *, RhpCheckedXchg, Object ** location, Object * value)
 {
     // @TODO: USE_PORTABLE_HELPERS - Null check
     Object * ret = (Object *)PalInterlockedExchangePointer((void * volatile *)location, value);
     InlineCheckedWriteBarrier(location, value);
     return ret;
 }
+FCIMPLEND
 
-COOP_PINVOKE_HELPER(uint8_t, RhpLockCmpXchg8, (uint8_t * location, uint8_t value, uint8_t comparand))
+FCIMPL0(void*, RhAllocateThunksMapping)
+{
+    return NULL;
+}
+FCIMPLEND
+
+FCIMPL0(void *, RhpGetThunksBase)
+{
+    return NULL;
+}
+FCIMPLEND
+
+FCIMPL0(int, RhpGetNumThunkBlocksPerMapping)
 {
     ASSERT_UNCONDITIONALLY("NYI");
     return 0;
 }
+FCIMPLEND
 
-COOP_PINVOKE_HELPER(int16_t, RhpLockCmpXchg16, (int16_t * location, int16_t value, int16_t comparand))
+FCIMPL0(int, RhpGetNumThunksPerBlock)
 {
     ASSERT_UNCONDITIONALLY("NYI");
     return 0;
 }
+FCIMPLEND
 
-COOP_PINVOKE_HELPER(int32_t, RhpLockCmpXchg32, (int32_t * location, int32_t value, int32_t comparand))
-{
-    // @TODO: USE_PORTABLE_HELPERS - Null check
-    return PalInterlockedCompareExchange(location, value, comparand);
-}
-
-COOP_PINVOKE_HELPER(int64_t, RhpLockCmpXchg64, (int64_t * location, int64_t value, int64_t comparand))
-{
-    // @TODO: USE_PORTABLE_HELPERS - Null check
-    return PalInterlockedCompareExchange64(location, value, comparand);
-}
-
-EXTERN_C NATIVEAOT_API void* __cdecl RhAllocateThunksMapping()
-{
-    return NULL;
-}
-
-COOP_PINVOKE_HELPER(void *, RhpGetThunksBase, ())
-{
-    return NULL;
-}
-
-COOP_PINVOKE_HELPER(int, RhpGetNumThunkBlocksPerMapping, ())
+FCIMPL0(int, RhpGetThunkSize)
 {
     ASSERT_UNCONDITIONALLY("NYI");
     return 0;
 }
+FCIMPLEND
 
-COOP_PINVOKE_HELPER(int, RhpGetNumThunksPerBlock, ())
+FCIMPL1(void*, RhpGetThunkDataBlockAddress, void* pThunkStubAddress)
+{
+    ASSERT_UNCONDITIONALLY("NYI");
+    return NULL;
+}
+FCIMPLEND
+
+FCIMPL1(void*, RhpGetThunkStubsBlockAddress, void* pThunkDataAddress)
+{
+    ASSERT_UNCONDITIONALLY("NYI");
+    return NULL;
+}
+FCIMPLEND
+
+FCIMPL0(int, RhpGetThunkBlockSize)
 {
     ASSERT_UNCONDITIONALLY("NYI");
     return 0;
 }
+FCIMPLEND
 
-COOP_PINVOKE_HELPER(int, RhpGetThunkSize, ())
-{
-    ASSERT_UNCONDITIONALLY("NYI");
-    return 0;
-}
-
-COOP_PINVOKE_HELPER(void*, RhpGetThunkDataBlockAddress, (void* pThunkStubAddress))
+FCIMPL0(void *, RhGetCommonStubAddress)
 {
     ASSERT_UNCONDITIONALLY("NYI");
     return NULL;
 }
+FCIMPLEND
 
-COOP_PINVOKE_HELPER(void*, RhpGetThunkStubsBlockAddress, (void* pThunkDataAddress))
+FCIMPL0(void *, RhGetCurrentThunkContext)
 {
     ASSERT_UNCONDITIONALLY("NYI");
     return NULL;
 }
+FCIMPLEND
 
-COOP_PINVOKE_HELPER(int, RhpGetThunkBlockSize, ())
-{
-    ASSERT_UNCONDITIONALLY("NYI");
-    return 0;
-}
-
-COOP_PINVOKE_HELPER(void *, RhGetCommonStubAddress, ())
-{
-    ASSERT_UNCONDITIONALLY("NYI");
-    return NULL;
-}
-
-COOP_PINVOKE_HELPER(void *, RhGetCurrentThunkContext, ())
-{
-    ASSERT_UNCONDITIONALLY("NYI");
-    return NULL;
-}
-
-COOP_PINVOKE_HELPER(void, RhpGcPoll, ())
+FCIMPL0(void, RhpGcPoll)
 {
     // TODO: implement
 }
+FCIMPLEND
 
 #endif
