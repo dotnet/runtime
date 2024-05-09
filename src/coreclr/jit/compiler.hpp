@@ -5076,11 +5076,11 @@ BasicBlockVisit FlowGraphNaturalLoop::VisitRegularExitBlocks(TFunc func)
     return BasicBlockVisit::Continue;
 }
 
-//regMaskTP operator^(const regMaskTP& first, const regMaskTP& second)
+// regMaskTP operator^(const regMaskTP& first, const regMaskTP& second)
 //{
-//    regMaskTP result(first.low ^ second.getLow());
-//    return result;
-//}
+//     regMaskTP result(first.low ^ second.getLow());
+//     return result;
+// }
 
 /*****************************************************************************/
 #endif //_COMPILER_HPP_
