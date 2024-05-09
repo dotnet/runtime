@@ -160,7 +160,6 @@ namespace System.ComponentModel
         /// If <see langword="true"/>, a custom <see cref="ICustomTypeDescriptor"/> must implement
         /// <see cref="ICustomTypeDescriptor.RequireRegisteredTypes"/> to return <see langword="true"/> or <see langword="false"/>.
         /// If <see langword="true"/> is returned, then the custom descriptor must also implement
-        /// <see cref="ICustomTypeDescriptor.GetAttributesFromRegisteredType()"/>,
         /// <see cref="ICustomTypeDescriptor.GetConverterFromRegisteredType()"/>,
         /// <see cref="ICustomTypeDescriptor.GetEventsFromRegisteredType()"/> and
         /// <see cref="ICustomTypeDescriptor.GetPropertiesFromRegisteredType()"/>.
@@ -690,17 +689,6 @@ namespace System.ComponentModel
             }
 
             AttributeCollection attributes = GetDescriptor(componentType, nameof(componentType)).GetAttributes();
-            return attributes;
-        }
-
-        /// <summary>
-        /// Gets a collection of attributes for the specified type of component.
-        /// </summary>
-        public static AttributeCollection GetAttributesFromRegisteredType(Type componentType)
-        {
-            ArgumentNullException.ThrowIfNull(componentType);
-
-            AttributeCollection attributes = GetDescriptorFromRegisteredType(componentType, nameof(componentType)).GetAttributesFromRegisteredType();
             return attributes;
         }
 
@@ -3827,30 +3815,6 @@ namespace System.ComponentModel
                     attrs = desc.GetAttributes();
                     if (attrs == null)
                         throw new InvalidOperationException(SR.Format(SR.TypeDescriptorProviderError, _node.Provider.GetType().FullName, "GetAttributes"));
-                }
-
-                return attrs;
-            }
-
-            public AttributeCollection GetAttributesFromRegisteredType()
-            {
-                // Check to see if the provider we get is a ReflectTypeDescriptionProvider.
-                // If so, we can call on it directly rather than creating another
-                // custom type descriptor
-                TypeDescriptionProvider p = _node.Provider;
-                AttributeCollection attrs;
-                if (p is ReflectTypeDescriptionProvider rp)
-                {
-                    attrs = rp.GetAttributesFromRegisteredType(_objectType);
-                }
-                else
-                {
-                    ICustomTypeDescriptor? desc = p.GetTypeDescriptor(_objectType, _instance);
-                    if (desc == null)
-                        throw new InvalidOperationException(SR.Format(SR.TypeDescriptorProviderError, _node.Provider.GetType().FullName, "GetTypeDescriptor"));
-                    attrs = desc.GetAttributesFromRegisteredType();
-                    if (attrs == null)
-                        throw new InvalidOperationException(SR.Format(SR.TypeDescriptorProviderError, _node.Provider.GetType().FullName, "GetAttributesFromRegisteredType"));
                 }
 
                 return attrs;

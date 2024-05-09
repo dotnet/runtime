@@ -305,15 +305,6 @@ namespace System.ComponentModel
         }
 
         /// <summary>
-        /// Retrieves custom attributes.
-        /// </summary>
-        internal AttributeCollection GetAttributesFromRegisteredType(Type type)
-        {
-            ReflectedTypeData td = GetTypeDataFromRegisteredType(type);
-            return td.GetAttributes();
-        }
-
-        /// <summary>
         /// Our implementation of GetCache sits on top of IDictionaryService.
         /// </summary>
         public override IDictionary? GetCache(object instance)

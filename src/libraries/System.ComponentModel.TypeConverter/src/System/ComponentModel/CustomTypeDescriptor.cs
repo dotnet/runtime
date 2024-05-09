@@ -52,33 +52,6 @@ namespace System.ComponentModel
         }
 
         /// <summary>
-        /// The GetAttributes method returns the type-level attributes for
-        /// the type this custom type descriptor is providing information for.
-        /// You must always return a valid collection from this method.
-        /// </summary>
-        public virtual AttributeCollection GetAttributesFromRegisteredType()
-        {
-            if (_parent != null)
-            {
-                return _parent.GetAttributesFromRegisteredType();
-            }
-
-            if (RequireRegisteredTypes is null)
-            {
-                if (TypeDescriptor.RequireRegisteredTypes)
-                {
-                    TypeDescriptor.ThrowHelper.ThrowNotImplementedException_CustomTypeProviderMustImplememtMember(nameof(GetAttributesFromRegisteredType));
-                }
-            }
-            else if (RequireRegisteredTypes == true)
-            {
-                TypeDescriptor.ThrowHelper.ThrowNotImplementedException_CustomTypeProviderMustImplememtMember(nameof(GetAttributesFromRegisteredType));
-            }
-
-            return GetAttributes();
-        }
-
-        /// <summary>
         /// The GetClassName method returns the fully qualified name of the
         /// class this type descriptor is representing. Returning null from
         /// this method causes the TypeDescriptor object to return the

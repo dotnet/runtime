@@ -79,32 +79,6 @@ namespace System.ComponentModel
         /// </summary>
         object? GetPropertyOwner(PropertyDescriptor? pd);
 
-        #region Known type DIMs
-
-        /// <summary>
-        /// Gets a collection of type <see cref='System.Attribute'/> with the attributes
-        /// for this object.
-        /// </summary>
-        /// <remarks>
-        /// todo: if trimmable, th
-        /// </remarks>
-        AttributeCollection GetAttributesFromRegisteredType()
-        {
-            if (RequireRegisteredTypes is null)
-            {
-                if (TypeDescriptor.RequireRegisteredTypes)
-                {
-                    TypeDescriptor.ThrowHelper.ThrowNotImplementedException_CustomTypeProviderMustImplememtMember(nameof(GetAttributesFromRegisteredType));
-                }
-            }
-            else if (RequireRegisteredTypes == true)
-            {
-                TypeDescriptor.ThrowHelper.ThrowNotImplementedException_CustomTypeProviderMustImplememtMember(nameof(GetAttributesFromRegisteredType));
-            }
-
-            return GetAttributes();
-        }
-
         /// <summary>
         /// Gets a type converter for this object that may be registered.
         /// </summary>
@@ -177,7 +151,5 @@ namespace System.ComponentModel
         /// Whether this type provider supports known types.
         /// </summary>
         bool? RequireRegisteredTypes => null;
-
-        #endregion
     }
 }

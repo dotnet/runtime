@@ -286,7 +286,6 @@ namespace System.ComponentModel
         protected CustomTypeDescriptor() { }
         protected CustomTypeDescriptor(System.ComponentModel.ICustomTypeDescriptor? parent) { }
         public virtual System.ComponentModel.AttributeCollection GetAttributes() { throw null; }
-        public virtual System.ComponentModel.AttributeCollection GetAttributesFromRegisteredType() { throw null; }
         public virtual string? GetClassName() { throw null; }
         public virtual string? GetComponentName() { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Generic TypeConverters may require the generic types to be annotated. For example, NullableConverter requires the underlying type to be DynamicallyAccessedMembers All.")]
@@ -585,7 +584,6 @@ namespace System.ComponentModel
     public partial interface ICustomTypeDescriptor
     {
         System.ComponentModel.AttributeCollection GetAttributes();
-        System.ComponentModel.AttributeCollection GetAttributesFromRegisteredType() { throw null; }
         string? GetClassName();
         string? GetComponentName();
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Generic TypeConverters may require the generic types to be annotated. For example, NullableConverter requires the underlying type to be DynamicallyAccessedMembers All.")]
@@ -1477,7 +1475,6 @@ namespace System.ComponentModel
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The Type of component cannot be statically discovered.")]
         public static System.ComponentModel.AttributeCollection GetAttributes(object component, bool noCustomTypeDesc) { throw null; }
         public static System.ComponentModel.AttributeCollection GetAttributes([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)] System.Type componentType) { throw null; }
-        public static System.ComponentModel.AttributeCollection GetAttributesFromRegisteredType(System.Type componentType) { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The Type of component cannot be statically discovered.")]
         public static string? GetClassName(object component) { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
