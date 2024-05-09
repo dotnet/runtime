@@ -284,6 +284,7 @@ CONFIG_DWORD_INFO(INTERNAL_GcStressOnDirectCalls, W("GcStressOnDirectCalls"), 0,
 RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_HeapVerify, W("HeapVerify"), 0, "When set verifies the integrity of the managed heap on entry and exit of each GC")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_GCCpuGroup, W("GCCpuGroup"), 0, "Specifies if to enable GC to support CPU groups")
 RETAIL_CONFIG_STRING_INFO(EXTERNAL_GCName, W("GCName"), "")
+RETAIL_CONFIG_STRING_INFO(EXTERNAL_GCPath, W("GCPath"), "")
 /**
  * This flag allows us to force the runtime to use global allocation context on Windows x86/amd64 instead of thread allocation context just for testing purpose.
  * The flag is unsafe for a subtle reason. Although the access to the g_global_alloc_context is protected under a lock. The implementation of
