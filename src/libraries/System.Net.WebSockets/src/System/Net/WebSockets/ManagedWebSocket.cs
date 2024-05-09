@@ -30,6 +30,15 @@ namespace System.Net.WebSockets
         /// <summary>Encoding for the payload of text messages: UTF-8 encoding that throws if invalid bytes are discovered, per the RFC.</summary>
         private static readonly UTF8Encoding s_textEncoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
 
+        /// <summary>Valid states to be in when calling SendAsync.</summary>
+        private static readonly WebSocketState[] s_validSendStates = { WebSocketState.Open, WebSocketState.CloseReceived };
+        /// <summary>Valid states to be in when calling ReceiveAsync.</summary>
+        private static readonly WebSocketState[] s_validReceiveStates = { WebSocketState.Open, WebSocketState.CloseSent };
+        /// <summary>Valid states to be in when calling CloseOutputAsync.</summary>
+        private static readonly WebSocketState[] s_validCloseOutputStates = { WebSocketState.Open, WebSocketState.CloseReceived };
+        /// <summary>Valid states to be in when calling CloseAsync.</summary>
+        private static readonly WebSocketState[] s_validCloseStates = { WebSocketState.Open, WebSocketState.CloseReceived, WebSocketState.CloseSent };
+
         /// <summary>The maximum size in bytes of a message frame header that includes mask bytes.</summary>
         internal const int MaxMessageHeaderLength = 14;
         /// <summary>The maximum size of a control message payload.</summary>
@@ -256,7 +265,7 @@ namespace System.Net.WebSockets
                     nameof(messageType));
             }
 
-            WebSocketValidate.ValidateArraySegment(buffer);
+            WebSocketValidate.ValidateArraySegment(buffer, nameof(buffer));
 
             return SendAsync(buffer, messageType, endOfMessage ? WebSocketMessageFlags.EndOfMessage : default, cancellationToken).AsTask();
         }
@@ -276,7 +285,7 @@ namespace System.Net.WebSockets
 
             try
             {
-                WebSocketValidate.ThrowIfInvalidSendState(_state, _disposed);
+                WebSocketValidate.ThrowIfInvalidState(_state, _disposed, s_validSendStates);
             }
             catch (Exception exc)
             {
@@ -309,11 +318,11 @@ namespace System.Net.WebSockets
 
         public override Task<WebSocketReceiveResult> ReceiveAsync(ArraySegment<byte> buffer, CancellationToken cancellationToken)
         {
-            WebSocketValidate.ValidateArraySegment(buffer);
+            WebSocketValidate.ValidateArraySegment(buffer, nameof(buffer));
 
             try
             {
-                WebSocketValidate.ThrowIfInvalidReceiveState(_state, _disposed);
+                WebSocketValidate.ThrowIfInvalidState(_state, _disposed, s_validReceiveStates);
 
                 return ReceiveAsyncPrivate<WebSocketReceiveResult>(buffer, cancellationToken).AsTask();
             }
@@ -327,7 +336,7 @@ namespace System.Net.WebSockets
         {
             try
             {
-                WebSocketValidate.ThrowIfInvalidReceiveState(_state, _disposed);
+                WebSocketValidate.ThrowIfInvalidState(_state, _disposed, s_validReceiveStates);
 
                 return ReceiveAsyncPrivate<ValueWebSocketReceiveResult>(buffer, cancellationToken);
             }
@@ -343,7 +352,7 @@ namespace System.Net.WebSockets
 
             try
             {
-                WebSocketValidate.ThrowIfInvalidCloseState(_state, _disposed);
+                WebSocketValidate.ThrowIfInvalidState(_state, _disposed, s_validCloseStates);
             }
             catch (Exception exc)
             {
@@ -361,7 +370,7 @@ namespace System.Net.WebSockets
 
         private async Task CloseOutputAsyncCore(WebSocketCloseStatus closeStatus, string? statusDescription, CancellationToken cancellationToken)
         {
-            WebSocketValidate.ThrowIfInvalidCloseOutputState(_state, _disposed);
+            WebSocketValidate.ThrowIfInvalidState(_state, _disposed, s_validCloseOutputStates);
 
             await SendCloseFrameAsync(closeStatus, statusDescription, cancellationToken).ConfigureAwait(false);
 

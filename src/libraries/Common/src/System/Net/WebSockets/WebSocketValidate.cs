@@ -3,22 +3,12 @@
 
 using System.Buffers;
 using System.Diagnostics;
-using System.Runtime.CompilerServices;
 using System.Text;
 
 namespace System.Net.WebSockets
 {
     internal static partial class WebSocketValidate
     {
-        /// <summary>Valid states to be in when calling SendAsync.</summary>
-        private static readonly WebSocketState[] s_validSendStates = [WebSocketState.Open, WebSocketState.CloseReceived];
-        /// <summary>Valid states to be in when calling ReceiveAsync.</summary>
-        private static readonly WebSocketState[] s_validReceiveStates = [WebSocketState.Open, WebSocketState.CloseSent];
-        /// <summary>Valid states to be in when calling CloseOutputAsync.</summary>
-        private static readonly WebSocketState[] s_validCloseOutputStates = [WebSocketState.Open, WebSocketState.CloseReceived];
-        /// <summary>Valid states to be in when calling CloseAsync.</summary>
-        private static readonly WebSocketState[] s_validCloseStates = [WebSocketState.Open, WebSocketState.CloseReceived, WebSocketState.CloseSent];
-
         /// <summary>
         /// The minimum value for window bits that the websocket per-message-deflate extension can support.<para />
         /// For the current implementation of deflate(), a windowBits value of 8 (a window size of 256 bytes) is not supported.
@@ -47,19 +37,7 @@ namespace System.Net.WebSockets
         private static readonly SearchValues<char> s_validSubprotocolChars =
             SearchValues.Create("!#$%&'*+-.0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ^_`abcdefghijklmnopqrstuvwxyz|~");
 
-        internal static void ThrowIfInvalidSendState(WebSocketState currentState, bool isDisposed)
-            => ThrowIfInvalidState(currentState, isDisposed, s_validSendStates);
-
-        internal static void ThrowIfInvalidReceiveState(WebSocketState currentState, bool isDisposed)
-            => ThrowIfInvalidState(currentState, isDisposed, s_validReceiveStates);
-
-        internal static void ThrowIfInvalidCloseOutputState(WebSocketState currentState, bool isDisposed)
-            => ThrowIfInvalidState(currentState, isDisposed, s_validCloseOutputStates);
-
-        internal static void ThrowIfInvalidCloseState(WebSocketState currentState, bool isDisposed)
-            => ThrowIfInvalidState(currentState, isDisposed, s_validCloseStates);
-
-        private static void ThrowIfInvalidState(WebSocketState currentState, bool isDisposed, WebSocketState[] validStates)
+        internal static void ThrowIfInvalidState(WebSocketState currentState, bool isDisposed, WebSocketState[] validStates)
         {
             string validStatesText = string.Empty;
 
@@ -138,20 +116,22 @@ namespace System.Net.WebSockets
             }
         }
 
-        internal static void ValidateArraySegment(ArraySegment<byte> arraySegment, [CallerArgumentExpression(nameof(arraySegment))] string? parameterName = null)
+        internal static void ValidateArraySegment(ArraySegment<byte> arraySegment, string parameterName)
         {
             Debug.Assert(!string.IsNullOrEmpty(parameterName), "'parameterName' MUST NOT be NULL or string.Empty");
 
-            string arrayParameterName = parameterName + "." + nameof(arraySegment.Array);
-            ArgumentNullException.ThrowIfNull(arraySegment.Array, arrayParameterName);
-
-            string offsetParameterName = parameterName + "." + nameof(arraySegment.Offset);
-            ArgumentOutOfRangeException.ThrowIfNegative(arraySegment.Offset, offsetParameterName);
-            ArgumentOutOfRangeException.ThrowIfGreaterThan(arraySegment.Offset, arraySegment.Array.Length, offsetParameterName);
-
-            string countParameterName = parameterName + "." + nameof(arraySegment.Count);
-            ArgumentOutOfRangeException.ThrowIfNegative(arraySegment.Count, countParameterName);
-            ArgumentOutOfRangeException.ThrowIfGreaterThan(arraySegment.Count, arraySegment.Array.Length - arraySegment.Offset, countParameterName);
+            if (arraySegment.Array == null)
+            {
+                throw new ArgumentNullException(parameterName + "." + nameof(arraySegment.Array));
+            }
+            if (arraySegment.Offset < 0 || arraySegment.Offset > arraySegment.Array.Length)
+            {
+                throw new ArgumentOutOfRangeException(parameterName + "." + nameof(arraySegment.Offset));
+            }
+            if (arraySegment.Count < 0 || arraySegment.Count > (arraySegment.Array.Length - arraySegment.Offset))
+            {
+                throw new ArgumentOutOfRangeException(parameterName + "." + nameof(arraySegment.Count));
+            }
         }
 
         internal static void ValidateBuffer(byte[] buffer, int offset, int count)
