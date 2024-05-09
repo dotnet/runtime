@@ -461,7 +461,7 @@ namespace System.Net.WebSockets
                 return ValueTask.FromException(
                     exc is OperationCanceledException ? exc :
                     _state == WebSocketState.Aborted ? CreateOperationCanceledException(exc) :
-                    new WebSocketException(WebSocketError.ConnectionClosedPrematurely, exc)));
+                    new WebSocketException(WebSocketError.ConnectionClosedPrematurely, exc));
             }
             finally
             {
