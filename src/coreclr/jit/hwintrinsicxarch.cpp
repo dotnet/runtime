@@ -379,8 +379,6 @@ int HWIntrinsicInfo::lookupImmUpperBound(NamedIntrinsic id)
         case NI_AVX10v1_GetMantissaScalar:
         case NI_AVX10v1_Range:
         case NI_AVX10v1_RangeScalar:
-        case NI_AVX10v1_V256_GetMantissa:
-        case NI_AVX10v1_V256_Range:
         case NI_AVX10v1_V512_Range:
         {
             assert(!HWIntrinsicInfo::HasFullRangeImm(id));
@@ -962,7 +960,6 @@ GenTree* Compiler::impNonConstFallback(NamedIntrinsic intrinsic, var_types simdT
         case NI_AVX512BW_ShiftRightArithmetic:
         case NI_AVX512BW_ShiftRightLogical:
         case NI_AVX10v1_ShiftRightArithmetic:
-        case NI_AVX10v1_V256_ShiftRightArithmetic:
         {
             // These intrinsics have overloads that take op2 in a simd register and just read the lowest 8-bits
 
@@ -982,8 +979,6 @@ GenTree* Compiler::impNonConstFallback(NamedIntrinsic intrinsic, var_types simdT
         case NI_AVX512F_VL_RotateRight:
         case NI_AVX10v1_RotateLeft:
         case NI_AVX10v1_RotateRight:
-        case NI_AVX10v1_V256_RotateLeft:
-        case NI_AVX10v1_V256_RotateRight:
         {
             var_types simdBaseType = JitType2PreciseVarType(simdBaseJitType);
 
@@ -994,10 +989,8 @@ GenTree* Compiler::impNonConstFallback(NamedIntrinsic intrinsic, var_types simdT
             static_assert_no_msg(NI_AVX512F_RotateRightVariable == (NI_AVX512F_RotateRight + 1));
             static_assert_no_msg(NI_AVX512F_VL_RotateLeftVariable == (NI_AVX512F_VL_RotateLeft + 1));
             static_assert_no_msg(NI_AVX10v1_RotateLeftVariable == (NI_AVX10v1_RotateLeft + 1));
-            static_assert_no_msg(NI_AVX10v1_V256_RotateLeftVariable == (NI_AVX10v1_V256_RotateLeft + 1));
             static_assert_no_msg(NI_AVX512F_VL_RotateRightVariable == (NI_AVX512F_VL_RotateRight + 1));
             static_assert_no_msg(NI_AVX10v1_RotateRightVariable == (NI_AVX10v1_RotateRight + 1));
-            static_assert_no_msg(NI_AVX10v1_V256_RotateRightVariable == (NI_AVX10v1_V256_RotateRight + 1));
 
             impSpillSideEffect(true,
                                verCurrentState.esStackDepth - 2 DEBUGARG("Spilling op1 side effects for HWIntrinsic"));
@@ -3656,9 +3649,9 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         case NI_AVX512VBMI_VL_PermuteVar32x8:
         case NI_AVX10v1_PermuteVar16x8:
         case NI_AVX10v1_PermuteVar8x16:
-        case NI_AVX10v1_V256_PermuteVar16x16:
-        case NI_AVX10v1_V256_PermuteVar32x8:
-        case NI_AVX10v1_V256_PermuteVar4x64:
+        case NI_AVX10v1_PermuteVar16x16:
+        case NI_AVX10v1_PermuteVar32x8:
+        case NI_AVX10v1_PermuteVar4x64:
         {
             simdBaseJitType = getBaseJitTypeOfSIMDType(sig->retTypeSigClass);
 
@@ -3677,7 +3670,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         case NI_AVX512F_FixupScalar:
         case NI_AVX512F_VL_Fixup:
         case NI_AVX10v1_Fixup:
-        case NI_AVX10v1_V256_Fixup:
         {
             assert(sig->numArgs == 4);
 
@@ -3712,7 +3704,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         case NI_AVX512F_TernaryLogic:
         case NI_AVX512F_VL_TernaryLogic:
         case NI_AVX10v1_TernaryLogic:
-        case NI_AVX10v1_V256_TernaryLogic:
         {
             assert(sig->numArgs == 4);
 
@@ -4300,7 +4291,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         case NI_AVX512F_CompareGreaterThan:
         case NI_AVX512F_VL_CompareGreaterThan:
         case NI_AVX10v1_CompareGreaterThan:
-        case NI_AVX10v1_V256_CompareGreaterThan:
         case NI_AVX512BW_CompareGreaterThan:
         case NI_AVX512BW_VL_CompareGreaterThan:
         {
@@ -4322,7 +4312,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         case NI_AVX512BW_CompareGreaterThanOrEqual:
         case NI_AVX512BW_VL_CompareGreaterThanOrEqual:
         case NI_AVX10v1_CompareGreaterThanOrEqual:
-        case NI_AVX10v1_V256_CompareGreaterThanOrEqual:
         {
             assert(sig->numArgs == 2);
 
@@ -4342,7 +4331,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         case NI_AVX512BW_CompareLessThan:
         case NI_AVX512BW_VL_CompareLessThan:
         case NI_AVX10v1_CompareLessThan:
-        case NI_AVX10v1_V256_CompareLessThan:
         {
             assert(sig->numArgs == 2);
 
@@ -4362,7 +4350,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         case NI_AVX512BW_CompareLessThanOrEqual:
         case NI_AVX512BW_VL_CompareLessThanOrEqual:
         case NI_AVX10v1_CompareLessThanOrEqual:
-        case NI_AVX10v1_V256_CompareLessThanOrEqual:
         {
             assert(sig->numArgs == 2);
 
@@ -4382,7 +4369,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         case NI_AVX512BW_CompareNotEqual:
         case NI_AVX512BW_VL_CompareNotEqual:
         case NI_AVX10v1_CompareNotEqual:
-        case NI_AVX10v1_V256_CompareNotEqual:
         {
             assert(sig->numArgs == 2);
 

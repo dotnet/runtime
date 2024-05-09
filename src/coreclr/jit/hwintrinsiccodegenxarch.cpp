@@ -1277,7 +1277,7 @@ void CodeGen::genHWIntrinsic_R_R_R_RM_I(
 
 #if defined(DEBUG)
             NamedIntrinsic intrinsicId = node->GetHWIntrinsicId();
-            assert((intrinsicId == NI_AVX512F_TernaryLogic) || (intrinsicId == NI_AVX512F_VL_TernaryLogic) || (intrinsicId == NI_AVX10v1_TernaryLogic) || (intrinsicId == NI_AVX10v1_V256_TernaryLogic));
+            assert((intrinsicId == NI_AVX512F_TernaryLogic) || (intrinsicId == NI_AVX512F_VL_TernaryLogic) || (intrinsicId == NI_AVX10v1_TernaryLogic));
 
             uint8_t                 control  = static_cast<uint8_t>(ival);
             const TernaryLogicInfo& info     = TernaryLogicInfo::lookup(control);
@@ -2847,8 +2847,6 @@ void CodeGen::genAvxFamilyIntrinsic(GenTreeHWIntrinsic* node, insOpts instOption
         case NI_AVX512F_VL_ConvertToVector128UInt32WithSaturation:
         case NI_AVX10v1_ConvertToVector128UInt32:
         case NI_AVX10v1_ConvertToVector128UInt32WithSaturation:
-        case NI_AVX10v1_V256_ConvertToVector128UInt32:
-        case NI_AVX10v1_V256_ConvertToVector128UInt32WithSaturation:
         {
             if (varTypeIsFloating(baseType))
             {
@@ -2901,16 +2899,6 @@ void CodeGen::genAvxFamilyIntrinsic(GenTreeHWIntrinsic* node, insOpts instOption
         case NI_AVX10v1_ConvertToVector128SByteWithSaturation:
         case NI_AVX10v1_ConvertToVector128UInt16:
         case NI_AVX10v1_ConvertToVector128UInt16WithSaturation:
-        case NI_AVX10v1_V256_ConvertToVector128Byte:
-        case NI_AVX10v1_V256_ConvertToVector128ByteWithSaturation:
-        case NI_AVX10v1_V256_ConvertToVector128Int16:
-        case NI_AVX10v1_V256_ConvertToVector128Int16WithSaturation:
-        case NI_AVX10v1_V256_ConvertToVector128Int32:
-        case NI_AVX10v1_V256_ConvertToVector128Int32WithSaturation:
-        case NI_AVX10v1_V256_ConvertToVector128SByte:
-        case NI_AVX10v1_V256_ConvertToVector128SByteWithSaturation:
-        case NI_AVX10v1_V256_ConvertToVector128UInt16:
-        case NI_AVX10v1_V256_ConvertToVector128UInt16WithSaturation:
         {
             instruction ins = HWIntrinsicInfo::lookupIns(intrinsicId, baseType);
 

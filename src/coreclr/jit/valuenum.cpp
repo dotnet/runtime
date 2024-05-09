@@ -7326,7 +7326,6 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunUnary(var_types      type,
             case NI_AVX512CD_LeadingZeroCount:
             case NI_AVX512CD_VL_LeadingZeroCount:
             case NI_AVX10v1_V512_LeadingZeroCount:
-            case NI_AVX10v1_V256_LeadingZeroCount:
             case NI_AVX10v1_LeadingZeroCount:
             {
                 return EvaluateUnarySimd(this, GT_LZCNT, /* scalar */ false, type, baseType, arg0VN);
@@ -7624,7 +7623,7 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(var_types      type,
             case NI_AVX512BW_MultiplyLow:
             case NI_AVX512DQ_MultiplyLow:
             case NI_AVX512DQ_VL_MultiplyLow:
-            case NI_AVX10v1_V256_MultiplyLow:
+            case NI_AVX10v1_MultiplyLow:
             case NI_AVX10v1_V512_MultiplyLow:
 #endif
             {
@@ -7660,7 +7659,6 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(var_types      type,
             case NI_AVX512F_RotateLeft:
             case NI_AVX512F_VL_RotateLeft:
             case NI_AVX10v1_RotateLeft:
-            case NI_AVX10v1_V256_RotateLeft:
             {
                 return EvaluateBinarySimd(this, GT_ROL, /* scalar */ false, type, baseType, arg0VN, arg1VN);
             }
@@ -7668,7 +7666,6 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(var_types      type,
             case NI_AVX512F_RotateRight:
             case NI_AVX512F_VL_RotateRight:
             case NI_AVX10v1_RotateRight:
-            case NI_AVX10v1_V256_RotateRight:
             {
                 return EvaluateBinarySimd(this, GT_ROR, /* scalar */ false, type, baseType, arg0VN, arg1VN);
             }
@@ -7720,7 +7717,6 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(var_types      type,
             case NI_AVX512F_VL_ShiftRightArithmetic:
             case NI_AVX512BW_ShiftRightArithmetic:
             case NI_AVX10v1_ShiftRightArithmetic:
-            case NI_AVX10v1_V256_ShiftRightArithmetic:
 #endif
             {
 #ifdef TARGET_XARCH
@@ -8040,7 +8036,7 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(var_types      type,
             case NI_AVX512BW_MultiplyLow:
             case NI_AVX512DQ_MultiplyLow:
             case NI_AVX512DQ_VL_MultiplyLow:
-            case NI_AVX10v1_V256_MultiplyLow:
+            case NI_AVX10v1_MultiplyLow:
             case NI_AVX10v1_V512_MultiplyLow:
 #endif
             {
@@ -8125,7 +8121,6 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(var_types      type,
             case NI_AVX512BW_ShiftRightArithmetic:
             case NI_AVX512BW_ShiftRightLogical:
             case NI_AVX10v1_ShiftRightArithmetic:
-            case NI_AVX10v1_V256_ShiftRightArithmetic:
 #endif
             {
                 // Handle `x <<  0 == x` and `0 <<  x == 0`

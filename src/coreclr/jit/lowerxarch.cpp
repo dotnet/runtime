@@ -2216,7 +2216,6 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
         case NI_AVX512F_TernaryLogic:
         case NI_AVX512F_VL_TernaryLogic:
         case NI_AVX10v1_TernaryLogic:
-        case NI_AVX10v1_V256_TernaryLogic:
         {
             return LowerHWIntrinsicTernaryLogic(node);
         }
@@ -7445,8 +7444,6 @@ void Lowering::ContainCheckStoreIndir(GenTreeStoreInd* node)
                 case NI_AVX512F_VL_ConvertToVector128UInt32WithSaturation:
                 case NI_AVX10v1_ConvertToVector128UInt32:
                 case NI_AVX10v1_ConvertToVector128UInt32WithSaturation:
-                case NI_AVX10v1_V256_ConvertToVector128UInt32:
-                case NI_AVX10v1_V256_ConvertToVector128UInt32WithSaturation:
                 {
                     if (varTypeIsFloating(simdBaseType))
                     {
@@ -7497,16 +7494,6 @@ void Lowering::ContainCheckStoreIndir(GenTreeStoreInd* node)
                 case NI_AVX10v1_ConvertToVector128SByteWithSaturation:
                 case NI_AVX10v1_ConvertToVector128UInt16:
                 case NI_AVX10v1_ConvertToVector128UInt16WithSaturation:
-                case NI_AVX10v1_V256_ConvertToVector128Byte:
-                case NI_AVX10v1_V256_ConvertToVector128ByteWithSaturation:
-                case NI_AVX10v1_V256_ConvertToVector128Int16:
-                case NI_AVX10v1_V256_ConvertToVector128Int16WithSaturation:
-                case NI_AVX10v1_V256_ConvertToVector128Int32:
-                case NI_AVX10v1_V256_ConvertToVector128Int32WithSaturation:
-                case NI_AVX10v1_V256_ConvertToVector128SByte:
-                case NI_AVX10v1_V256_ConvertToVector128SByteWithSaturation:
-                case NI_AVX10v1_V256_ConvertToVector128UInt16:
-                case NI_AVX10v1_V256_ConvertToVector128UInt16WithSaturation:
                 {
                     // These intrinsics are "ins reg/mem, xmm"
                     instruction  ins       = HWIntrinsicInfo::lookupIns(intrinsicId, simdBaseType);
@@ -8543,7 +8530,7 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
                 case NI_AVX512F_VL_ConvertToVector128Double:
                 case NI_AVX512F_VL_ConvertToVector256Double:
                 case NI_AVX10v1_ConvertToVector128Double:
-                case NI_AVX10v1_V256_ConvertToVector256Double:
+                case NI_AVX10v1_ConvertToVector256Double:
                 {
                     assert(!supportsSIMDScalarLoads);
 
@@ -8694,19 +8681,7 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
                 case NI_AVX10v1_ShiftRightArithmetic:
                 case NI_AVX10v1_SumAbsoluteDifferencesInBlock32:
                 case NI_AVX10v1_TernaryLogic:
-                case NI_AVX10v1_V256_AlignRight32:
-                case NI_AVX10v1_V256_AlignRight64:
-                case NI_AVX10v1_V256_Fixup:
-                case NI_AVX10v1_V256_GetMantissa:
-                case NI_AVX10v1_V256_Range:
-                case NI_AVX10v1_V256_Reduce:
-                case NI_AVX10v1_V256_RotateLeft:
-                case NI_AVX10v1_V256_RotateRight:
-                case NI_AVX10v1_V256_RoundScale:
-                case NI_AVX10v1_V256_ShiftRightArithmetic:
-                case NI_AVX10v1_V256_TernaryLogic:
-                case NI_AVX10v1_V256_Shuffle2x128:
-                case NI_AVX10v1_V256_SumAbsoluteDifferencesInBlock32:
+                case NI_AVX10v1_Shuffle2x128:
                 case NI_AVX10v1_V512_Range:
                 case NI_AVX10v1_V512_Reduce:
                 {
@@ -9088,8 +9063,6 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
         case NI_AVX512F_VL_ConvertToVector128UInt32WithSaturation:
         case NI_AVX10v1_ConvertToVector128UInt32:
         case NI_AVX10v1_ConvertToVector128UInt32WithSaturation:
-        case NI_AVX10v1_V256_ConvertToVector128UInt32:
-        case NI_AVX10v1_V256_ConvertToVector128UInt32WithSaturation:
         {
             // These ones are not containable as stores when the base
             // type is a floating-point type
@@ -9157,16 +9130,6 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
         case NI_AVX10v1_ConvertToVector128SByteWithSaturation:
         case NI_AVX10v1_ConvertToVector128UInt16:
         case NI_AVX10v1_ConvertToVector128UInt16WithSaturation:
-        case NI_AVX10v1_V256_ConvertToVector128Byte:
-        case NI_AVX10v1_V256_ConvertToVector128ByteWithSaturation:
-        case NI_AVX10v1_V256_ConvertToVector128Int16:
-        case NI_AVX10v1_V256_ConvertToVector128Int16WithSaturation:
-        case NI_AVX10v1_V256_ConvertToVector128Int32:
-        case NI_AVX10v1_V256_ConvertToVector128Int32WithSaturation:
-        case NI_AVX10v1_V256_ConvertToVector128SByte:
-        case NI_AVX10v1_V256_ConvertToVector128SByteWithSaturation:
-        case NI_AVX10v1_V256_ConvertToVector128UInt16:
-        case NI_AVX10v1_V256_ConvertToVector128UInt16WithSaturation:
         case NI_AVX10v1_V512_ExtractVector128:
         case NI_AVX10v1_V512_ExtractVector256:
         {
@@ -9714,8 +9677,6 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                     case NI_AVX512F_VL_ConvertToVector128UInt32WithSaturation:
                     case NI_AVX10v1_ConvertToVector128UInt32:
                     case NI_AVX10v1_ConvertToVector128UInt32WithSaturation:
-                    case NI_AVX10v1_V256_ConvertToVector128UInt32:
-                    case NI_AVX10v1_V256_ConvertToVector128UInt32WithSaturation:
                     {
                         if (varTypeIsFloating(simdBaseType))
                         {
@@ -9768,16 +9729,6 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                     case NI_AVX10v1_ConvertToVector128SByteWithSaturation:
                     case NI_AVX10v1_ConvertToVector128UInt16:
                     case NI_AVX10v1_ConvertToVector128UInt16WithSaturation:
-                    case NI_AVX10v1_V256_ConvertToVector128Byte:
-                    case NI_AVX10v1_V256_ConvertToVector128ByteWithSaturation:
-                    case NI_AVX10v1_V256_ConvertToVector128Int16:
-                    case NI_AVX10v1_V256_ConvertToVector128Int16WithSaturation:
-                    case NI_AVX10v1_V256_ConvertToVector128Int32:
-                    case NI_AVX10v1_V256_ConvertToVector128Int32WithSaturation:
-                    case NI_AVX10v1_V256_ConvertToVector128SByte:
-                    case NI_AVX10v1_V256_ConvertToVector128SByteWithSaturation:
-                    case NI_AVX10v1_V256_ConvertToVector128UInt16:
-                    case NI_AVX10v1_V256_ConvertToVector128UInt16WithSaturation:
                     {
                         // These intrinsics are "ins reg/mem, xmm" and get
                         // contained by the relevant store operation instead.
@@ -9942,9 +9893,6 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                         case NI_AVX10v1_RotateLeft:
                         case NI_AVX10v1_RotateRight:
                         case NI_AVX10v1_ShiftRightArithmetic:
-                        case NI_AVX10v1_V256_RotateLeft:
-                        case NI_AVX10v1_V256_RotateRight:
-                        case NI_AVX10v1_V256_ShiftRightArithmetic:
                         {
                             // These intrinsics can have op2 be imm or reg/mem
 
@@ -10069,9 +10017,6 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                         case NI_AVX10v1_GetMantissa:
                         case NI_AVX10v1_Reduce:
                         case NI_AVX10v1_RoundScale:
-                        case NI_AVX10v1_V256_GetMantissa:
-                        case NI_AVX10v1_V256_Reduce:
-                        case NI_AVX10v1_V256_RoundScale:
                         case NI_AVX10v1_V512_Reduce:
                         {
                             if (!isContainedImm)
@@ -10717,11 +10662,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                         case NI_AVX10v1_ReduceScalar:
                         case NI_AVX10v1_RoundScaleScalar:
                         case NI_AVX10v1_SumAbsoluteDifferencesInBlock32:
-                        case NI_AVX10v1_V256_AlignRight32:
-                        case NI_AVX10v1_V256_AlignRight64:
-                        case NI_AVX10v1_V256_Range:
-                        case NI_AVX10v1_V256_Shuffle2x128:
-                        case NI_AVX10v1_V256_SumAbsoluteDifferencesInBlock32:
+                        case NI_AVX10v1_Shuffle2x128:
                         case NI_AVX10v1_V512_InsertVector128:
                         case NI_AVX10v1_V512_InsertVector256:
                         case NI_AVX10v1_V512_Range:
@@ -10860,7 +10801,6 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                         case NI_AVX512F_FixupScalar:
                         case NI_AVX512F_VL_Fixup:
                         case NI_AVX10v1_Fixup:
-                        case NI_AVX10v1_V256_Fixup:
                         {
                             if (!isContainedImm)
                             {
@@ -10892,7 +10832,6 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                         case NI_AVX512F_TernaryLogic:
                         case NI_AVX512F_VL_TernaryLogic:
                         case NI_AVX10v1_TernaryLogic:
-                        case NI_AVX10v1_V256_TernaryLogic:
                         {
                             if (!isContainedImm)
                             {
