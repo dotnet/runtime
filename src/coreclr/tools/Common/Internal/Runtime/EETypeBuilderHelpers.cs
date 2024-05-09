@@ -194,7 +194,7 @@ namespace Internal.Runtime
             if ((padding == 0) && (alignment == targetPointerSize))
                 return 0;
 
-            uint alignmentLog2 = (uint)BitOperations.Log2(alignment);
+            uint alignmentLog2 = (uint)BitOperations.LeadingZeroCount(alignment);
 
             Debug.Assert(ValueTypePaddingMax >= padding);
 
