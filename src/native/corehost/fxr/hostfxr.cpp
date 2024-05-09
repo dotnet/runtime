@@ -679,7 +679,7 @@ SHARED_API int32_t HOSTFXR_CALLTYPE hostfxr_resolve_frameworks_for_runtime_confi
 
         const hostfxr_resolve_frameworks_result result
         {
-            sizeof(hostfxr_resolve_frameworks_result),
+            sizeof(result),
             resolved.size(),
             resolved.empty() ? nullptr : resolved.data(),
             unresolved.size(),
