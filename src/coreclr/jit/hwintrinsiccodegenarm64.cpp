@@ -572,10 +572,62 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 case 3:
                 {
                     assert(instrIsRMW);
-                    assert(targetReg != falseReg);
-                    assert(targetReg != embMaskOp2Reg);
-                    assert(targetReg != embMaskOp3Reg);
                     assert(!HWIntrinsicInfo::IsOptionalEmbeddedMaskedOperation(intrinEmbMask.id));
+
+                    if (HWIntrinsicInfo::IsFmaIntrinsic(intrinEmbMask.id))
+                    {
+                        bool useAddend = true;
+                        if (targetReg == embMaskOp2Reg)
+                        {
+                            useAddend = false;
+                            std::swap(embMaskOp1Reg, embMaskOp2Reg);
+                        }
+                        else if (targetReg == embMaskOp3Reg)
+                        {
+                            useAddend = false;
+                            std::swap(embMaskOp1Reg, embMaskOp3Reg);
+                        }
+                        else
+                        {
+                            // Nothing to do here
+                        }
+
+                        switch (intrinEmbMask.id)
+                        {
+                            case NI_Sve_FusedMultiplyAdd:
+                                insEmbMask = useAddend ? INS_sve_fmla : INS_sve_fmad;
+                                break;
+
+                            case NI_Sve_FusedMultiplyAddNegated:
+                                insEmbMask = useAddend ? INS_sve_fnmla : INS_sve_fnmad;
+                                break;
+
+                            case NI_Sve_FusedMultiplySubtract:
+                                insEmbMask = useAddend ? INS_sve_fmls : INS_sve_fmsb;
+                                break;
+
+                            case NI_Sve_FusedMultiplySubtractNegated:
+                                insEmbMask = useAddend ? INS_sve_fnmls : INS_sve_fnmsb;
+                                break;
+
+                            case NI_Sve_MultiplyAdd:
+                                insEmbMask = useAddend ? INS_sve_mla : INS_sve_mad;
+                                break;
+
+                            case NI_Sve_MultiplySubtract:
+                                insEmbMask = useAddend ? INS_sve_mls : INS_sve_msb;
+                                break;
+
+                            default:
+                                unreached();
+                        }
+                    }
+                    else
+                    {
+                        assert(targetReg != falseReg);
+                        assert(targetReg != embMaskOp2Reg);
+                        assert(targetReg != embMaskOp3Reg);
+                    }
 
                     if (intrin.op3->IsVectorZero())
                     {
@@ -584,32 +636,27 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
 
                         assert(targetReg != embMaskOp2Reg);
                         GetEmitter()->emitIns_R_R_R(INS_sve_movprfx, emitSize, targetReg, maskReg, embMaskOp1Reg, opt);
-
-                        // Finally, perform the actual "predicated" operation so that `targetReg` is the first operand
-                        // `embMaskOp2Reg` is the second operand and `embMaskOp3Reg` is the third operand.
-                        GetEmitter()->emitIns_R_R_R_R(insEmbMask, emitSize, targetReg, maskReg, embMaskOp2Reg,
-                                                      embMaskOp3Reg, opt);
                     }
                     else
                     {
-                        // If the instruction just has "predicated" version, then move the "embMaskOp1Reg"
-                        // into targetReg. Next, do the predicated operation on the targetReg and last,
-                        // use "sel" to select the active lanes based on mask, and set inactive lanes
-                        // to falseReg.
-
-                        assert(HWIntrinsicInfo::IsEmbeddedMaskedOperation(intrinEmbMask.id));
-
                         if (targetReg != embMaskOp1Reg)
                         {
-                            GetEmitter()->emitIns_R_R(INS_sve_movprfx, EA_SCALABLE, targetReg, embMaskOp1Reg);
+                            // Since this is RMW node, we need to move `embMaskOp1Reg -> targetReg` first.
+                            GetEmitter()->emitIns_Mov(INS_sve_mov, emitSize, targetReg, embMaskOp1Reg,
+                                                      true /* canSkip */, opt);
                         }
 
-                        GetEmitter()->emitIns_R_R_R_R(insEmbMask, emitSize, targetReg, maskReg, embMaskOp2Reg,
-                                                      embMaskOp3Reg, opt);
-
-                        GetEmitter()->emitIns_R_R_R_R(INS_sve_sel, emitSize, targetReg, maskReg, targetReg, falseReg,
-                                                      opt, INS_SCALABLE_OPTS_UNPREDICATED);
+                        if (targetReg != falseReg)
+                        {
+                            // Next, if `falseReg` is not same as `targetReg`, merge it with `target`
+                            GetEmitter()->emitIns_R_R_R(INS_sve_movprfx, emitSize, targetReg, maskReg, falseReg,
+                                                        opt, INS_SCALABLE_OPTS_PREDICATE_MERGE);
+                        }
                     }
+
+                    // `targetReg` is same as `falseReg`. Just generate the predicated version of instruction
+                    GetEmitter()->emitIns_R_R_R_R(insEmbMask, emitSize, targetReg, maskReg, embMaskOp2Reg,
+                                                  embMaskOp3Reg, opt);
                     break;
                 }
                 default:
