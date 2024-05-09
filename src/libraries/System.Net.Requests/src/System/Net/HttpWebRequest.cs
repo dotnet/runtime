@@ -1674,9 +1674,13 @@ namespace System.Net
 
                 if (request != null && request.ImpersonationLevel != TokenImpersonationLevel.None)
                 {
-                    // This is legacy hack. We want to deal with it only if explicitly set.
-                    var setting = typeof(SocketsHttpHandler).InvokeMember("_settings", BindingFlags.GetField | BindingFlags.NonPublic | BindingFlags.Instance, null, handler, null);
-                    setting?.GetType().InvokeMember("_impersonationLevel", BindingFlags.SetField | BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance, null, setting, new object[] { request!.ImpersonationLevel });
+                    // This is legacy feature and we don't have public API at the moment.
+                    // So we want to process it only if explicitly set.
+                    var settings = typeof(SocketsHttpHandler).GetField("_settings", BindingFlags.NonPublic | BindingFlags.Instance)?.GetValue(handler);
+                    Debug.Assert(settings != null);
+                    FieldInfo? fi = settings?.GetType().GetField("_impersonationLevel", BindingFlags.NonPublic | BindingFlags.Instance);
+                    Debug.Assert(fi != null);
+                    fi.SetValue(settings, request!.ImpersonationLevel);
                 }
 
                 if (parameters.CookieContainer != null)
