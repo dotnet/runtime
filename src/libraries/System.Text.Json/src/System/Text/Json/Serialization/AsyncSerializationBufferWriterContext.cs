@@ -44,6 +44,7 @@ namespace System.Text.Json.Serialization
 
         public IBufferWriter<byte> BufferWriter => _bufferWriter;
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Dispose()
         {
             _bufferWriter.Dispose();
@@ -78,6 +79,7 @@ namespace System.Text.Json.Serialization
             }
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Dispose() { }
     }
 }

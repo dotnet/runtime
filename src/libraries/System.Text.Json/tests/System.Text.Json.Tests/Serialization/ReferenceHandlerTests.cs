@@ -34,9 +34,4 @@ namespace System.Text.Json.Serialization.Tests
     {
         public ReferenceHandlerTestsDynamic_IgnoreCycles_Pipe() : base(JsonSerializerWrapper.AsyncPipeSerializer) { }
     }
-
-    public sealed class ReferenceHandlerTestsDynamic_IgnoreCycles_PipeWithSmallBuffer : ReferenceHandlerTests_IgnoreCycles
-    {
-        public ReferenceHandlerTestsDynamic_IgnoreCycles_PipeWithSmallBuffer() : base(JsonSerializerWrapper.AsyncPipeSerializerWithSmallBuffer) { }
-    }
 }

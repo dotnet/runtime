@@ -101,6 +101,7 @@ namespace System.Text.Json.Serialization.Metadata
                 {
                     SerializeHandler(writer, rootValue!);
                     writer.Flush();
+                    await serializationContext.FlushAsync(cancellationToken).ConfigureAwait(false);
                 }
                 finally
                 {
@@ -109,9 +110,8 @@ namespace System.Text.Json.Serialization.Metadata
                     OnRootLevelAsyncSerializationCompleted(writer.BytesCommitted + writer.BytesPending);
 
                     Utf8JsonWriterCache.ReturnWriter(writer);
+                    serializationContext.Dispose();
                 }
-
-                await serializationContext.FlushAsync(cancellationToken).ConfigureAwait(false);
             }
             else if (
 #if NET
@@ -135,9 +135,7 @@ namespace System.Text.Json.Serialization.Metadata
 
                 state.CancellationToken = cancellationToken;
 
-                // Bufferwriter must be disposed after Utf8JsonWriter, use an unnamed variable to use cleaner using syntax.
-                using TSerializationContext _ = serializationContext;
-                using var writer = new Utf8JsonWriter(serializationContext.BufferWriter, Options.GetWriterOptions());
+                var writer = new Utf8JsonWriter(serializationContext.BufferWriter, Options.GetWriterOptions());
 
                 try
                 {
@@ -187,6 +185,15 @@ namespace System.Text.Json.Serialization.Metadata
                         }
 
                     } while (!isFinalBlock);
+
+                    if (CanUseSerializeHandler)
+                    {
+                        // On successful serialization, record the serialization size
+                        // to determine potential suitability of the type for
+                        // fast-path serialization in streaming methods.
+                        Debug.Assert(writer.BytesPending == 0);
+                        OnRootLevelAsyncSerializationCompleted(writer.BytesCommitted);
+                    }
                 }
                 catch
                 {
@@ -194,14 +201,10 @@ namespace System.Text.Json.Serialization.Metadata
                     await state.DisposePendingDisposablesOnExceptionAsync().ConfigureAwait(false);
                     throw;
                 }
-
-                if (CanUseSerializeHandler)
+                finally
                 {
-                    // On successful serialization, record the serialization size
-                    // to determine potential suitability of the type for
-                    // fast-path serialization in streaming methods.
-                    Debug.Assert(writer.BytesPending == 0);
-                    OnRootLevelAsyncSerializationCompleted(writer.BytesCommitted);
+                    writer.Dispose();
+                    serializationContext.Dispose();
                 }
             }
         }
