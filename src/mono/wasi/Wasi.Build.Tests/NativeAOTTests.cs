@@ -5,13 +5,14 @@ using System;
 using System.IO;
 using System.Text;
 using System.Threading.Tasks;
+using Wasm.Build.Tests;
 using Xunit;
 using Xunit.Abstractions;
 using Xunit.Sdk;
 
 #nullable enable
 
-namespace Wasm.Build.Tests;
+namespace Wasi.Build.Tests;
 
 public class NativeAOTTests : BuildTestBase
 {
@@ -27,7 +28,10 @@ public class NativeAOTTests : BuildTestBase
         string id = $"nativeaot_{GetRandomId()}";
         string projectFile = CreateWasmTemplateProject(id, "wasiconsole");
         string projectName = Path.GetFileNameWithoutExtension(projectFile);
-        File.Copy(Path.Combine(BuildEnvironment.TestAssetsPath, "SimpleMainWithArgs.cs"), Path.Combine(_projectDir!, "Program.cs"), true);
+
+        string programCsContent = File.ReadAllText(Path.Combine(BuildEnvironment.TestAssetsPath, "SimpleMainWithArgs.cs"));
+        programCsContent = programCsContent.Replace("return 42;", "return 0;");
+        File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), programCsContent);
         File.Delete(Path.Combine(_projectDir!, "runtimeconfig.template.json"));
 
         var buildArgs = ExpandBuildArgs(new BuildArgs(projectName, config, AOT: false, id, null));
