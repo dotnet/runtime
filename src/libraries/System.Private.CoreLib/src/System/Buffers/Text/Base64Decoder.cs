@@ -879,25 +879,25 @@ namespace System.Buffers.Text
             // After mapping, each value falls between 0-63. Consequently, the last six bits of each byte now hold a valid value.
             // We then compress four such bytes (with valid 4 * 6 = 24 bits) to three UTF8 bytes (3 * 8 = 24 bits).
             // For faster decoding, we use SIMD operations that allow the processing of multiple bytes together.
-            // However, the compress operation on adjacent values of a vector could be slower. Thus, we de-interleave while reading the input bytes that store adjacent
-            // bytes in separate vectors. This later simplifies the compress step with the help of logical operations.
-            // This requires interleaving while storing the decoded result.
+            // However, the compress operation on adjacent values of a vector could be slower. Thus, we de-interleave while reading
+            // the input bytes that store adjacent bytes in separate vectors. This later simplifies the compress step with the help
+            // of logical operations. This requires interleaving while storing the decoded result.
 
-            // Values in 'decLutOne'
+            // Values in 'decLutOne' maps input values from 0 to 63.
             //   255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255
             //   255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255
-            //   255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,  62, 255, 255,  63
-            //    0,  255,   0,   1,   2,   3,   4,   5,   6,   7,   8,   9,  10,  11,  12,  13
+            //   255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,  62, 255, 255, 255,  63
+            //    52,  53,  54,  55,  56,  57,  58,  59,  60,  61, 255, 255, 255, 255, 255, 255
             var decLutOne = (Vector128<byte>.AllBitsSet,
                              Vector128<byte>.AllBitsSet,
                              Vector128.Create(0xFFFFFFFF, 0xFFFFFFFF, 0x3EFFFFFF, 0x3FFFFFFF).AsByte(),
                              Vector128.Create(0x37363534, 0x3B3A3938, 0xFFFF3D3C, 0xFFFFFFFF).AsByte());
 
-            // Values in 'decLutTwo'
+            // Values in 'decLutTwo' maps input values from 63 to 127.
+            //    0, 255,   0,   1,   2,   3,   4,   5,   6,   7,   8,   9,  10,  11,  12,  13
             //   14,  15,  16,  17,  18,  19,  20,  21,  22,  23,  24,  25, 255, 255, 255, 255
             //  255, 255,  26,  27,  28,  29,  30,  31,  32,  33,  34,  35,  36,  37,  38,  39
             //   40,  41,  42,  43,  44,  45,  46,  47,  48,  49,  50,  51, 255, 255, 255, 255
-            //   52,  53,  54,  55,  56,  57,  58,  59,  60,  61, 255, 255, 255, 255, 255, 255
             var decLutTwo = (Vector128.Create(0x0100FF00, 0x05040302, 0x09080706, 0x0D0C0B0A).AsByte(),
                              Vector128.Create(0x11100F0E, 0x15141312, 0x19181716, 0xFFFFFFFF).AsByte(),
                              Vector128.Create(0x1B1AFFFF, 0x1F1E1D1C, 0x23222120, 0x27262524).AsByte(),
