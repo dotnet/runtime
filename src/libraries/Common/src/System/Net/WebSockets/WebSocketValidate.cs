@@ -142,7 +142,8 @@ namespace System.Net.WebSockets
         {
             Debug.Assert(!string.IsNullOrEmpty(parameterName), "'parameterName' MUST NOT be NULL or string.Empty");
 
-            ArgumentNullException.ThrowIfNull(arraySegment.Array);
+            string arrayParameterName = parameterName + "." + nameof(arraySegment.Array);
+            ArgumentNullException.ThrowIfNull(arraySegment.Array, arrayParameterName);
 
             string offsetParameterName = parameterName + "." + nameof(arraySegment.Offset);
             ArgumentOutOfRangeException.ThrowIfNegative(arraySegment.Offset, offsetParameterName);
