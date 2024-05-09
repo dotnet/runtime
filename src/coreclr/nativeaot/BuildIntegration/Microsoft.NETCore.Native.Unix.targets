@@ -30,7 +30,7 @@ The .NET Foundation licenses this file to you under the MIT license.
 
     <PropertyGroup>
       <FullRuntimeName>libRuntime.WorkstationGC</FullRuntimeName>
-      <FullRuntimeName Condition="'$(ServerGarbageCollection)' == 'true'">libRuntime.ServerGC</FullRuntimeName>
+      <FullRuntimeName Condition="'$(ServerGarbageCollection)' == 'true' or '$(IlcLinkServerGC)' == 'true'">libRuntime.ServerGC</FullRuntimeName>
 
       <CrossCompileRid />
       <CrossCompileRid Condition="'$(_hostOS)' != '$(_originalTargetOS)' or '$(_hostArchitecture)' != '$(_targetArchitecture)'">$(RuntimeIdentifier)</CrossCompileRid>
