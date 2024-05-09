@@ -1453,7 +1453,7 @@ namespace System.Net.WebSockets
         }
 
         private static int CombineMaskBytes(Span<byte> buffer, int maskOffset) =>
-            BinaryPrimitives.ReadInt32LittleEndian(buffer.Slice(maskOffset));
+            BitConverter.ToInt32(buffer.Slice(maskOffset));
 
         /// <summary>Applies a mask to a portion of a byte array.</summary>
         /// <param name="toMask">The buffer to which the mask should be applied.</param>
@@ -1484,7 +1484,9 @@ namespace System.Net.WebSockets
 
                 if (toMaskEnd - toMaskPtr >= sizeof(int))
                 {
-                    int rolledMask = (int)BitOperations.RotateRight((uint)mask, maskIndex * 8);
+                    int rolledMask = BitConverter.IsLittleEndian ?
+                        (int)BitOperations.RotateRight((uint)mask, maskIndex * 8) :
+                        (int)BitOperations.RotateLeft((uint)mask, maskIndex * 8);
 
                     // Process Vector<byte>.Count bytes at a time.
                     if (Vector.IsHardwareAccelerated && (toMaskEnd - toMaskPtr) >= Vector<byte>.Count)
