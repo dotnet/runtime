@@ -542,7 +542,9 @@ private:
     void SizeofSlotStateVarLengthVector(const BitArray& vector, UINT32 baseSkip, UINT32 baseRun, UINT32 * pSizeofSimple, UINT32 * pSizeofRLE, UINT32 * pSizeofRLENeg);
     UINT32 WriteSlotStateVarLengthVector(BitStreamWriter &writer, const BitArray& vector, UINT32 baseSkip, UINT32 baseRun);
 
-    bool IsAlwaysScratch(GcSlotDesc &slot);
+#ifdef PARTIALLY_INTERRUPTIBLE_GC_SUPPORTED
+    bool DoNotTrackInPartiallyInterruptible(GcSlotDesc &slot);
+#endif // PARTIALLY_INTERRUPTIBLE_GC_SUPPORTED
 
     // Assumes that "*ppTransitions" is has size "numTransitions", is sorted by CodeOffset then by SlotId,
     // and that "*ppEndTransitions" points one beyond the end of the array.  If "*ppTransitions" contains
