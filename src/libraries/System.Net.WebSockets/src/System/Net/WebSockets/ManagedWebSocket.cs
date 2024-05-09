@@ -1153,7 +1153,7 @@ namespace System.Net.WebSockets
             if (header.PayloadLength == 126)
             {
                 Debug.Assert(_receiveBufferCount >= 2, "Expected to have two bytes for the payload length.");
-                header.PayloadLength = BinaryPrimitives.ReadInt16BigEndian(receiveBufferSpan.Slice(_receiveBufferOffset));
+                header.PayloadLength = BinaryPrimitives.ReadUInt16BigEndian(receiveBufferSpan.Slice(_receiveBufferOffset));
                 ConsumeFromBuffer(2);
             }
             else if (header.PayloadLength == 127)
