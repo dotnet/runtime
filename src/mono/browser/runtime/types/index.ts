@@ -217,6 +217,8 @@ export interface ResourceGroups {
 
     extensions?: ResourceExtensions
     vfs?: { [virtualPath: string]: ResourceList };
+
+    knownLengths?: { [name: string]: number };
 }
 
 /**
@@ -276,7 +278,11 @@ export interface AssetEntry {
     /**
      * If true, the runtime startup would not fail if the asset download was not successful.
      */
-    isOptional?: boolean
+    isOptional?: boolean,
+    /**
+     * If set, enables the runtime to stream the asset into memory as it downloads.
+     */
+    knownLength?: number,
     /**
      * If provided, runtime doesn't have to fetch the data.
      * Runtime would set the buffer to null after instantiation to free the memory.

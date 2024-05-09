@@ -268,6 +268,12 @@ export function prepareAssets () {
         }
     } else if (config.resources) {
         const resources = config.resources;
+        const getKnownLength = (name: string) => {
+            if (resources.knownLengths)
+                return resources.knownLengths[name] || 0;
+            else
+                return 0;
+        };
 
         mono_assert(resources.wasmNative, "resources.wasmNative must be defined");
         mono_assert(resources.jsModuleNative, "resources.jsModuleNative must be defined");
@@ -285,7 +291,8 @@ export function prepareAssets () {
                 assetsToLoad.push({
                     name,
                     hash: resources.assembly[name],
-                    behavior: "assembly"
+                    behavior: "assembly",
+                    knownLength: getKnownLength(name),
                 });
             }
         }
@@ -295,7 +302,8 @@ export function prepareAssets () {
                 assetsToLoad.push({
                     name,
                     hash: resources.pdb[name],
-                    behavior: "pdb"
+                    behavior: "pdb",
+                    knownLength: getKnownLength(name),
                 });
             }
         }
@@ -307,7 +315,8 @@ export function prepareAssets () {
                         name,
                         hash: resources.satelliteResources[culture][name],
                         behavior: "resource",
-                        culture
+                        culture,
+                        knownLength: getKnownLength(name),
                     });
                 }
             }
@@ -320,7 +329,8 @@ export function prepareAssets () {
                         name,
                         hash: resources.vfs[virtualPath][name],
                         behavior: "vfs",
-                        virtualPath
+                        virtualPath,
+                        knownLength: getKnownLength(name),
                     });
                 }
             }
@@ -334,13 +344,15 @@ export function prepareAssets () {
                         name,
                         hash: resources.icu[name],
                         behavior: "icu",
-                        loadRemote: true
+                        loadRemote: true,
+                        knownLength: getKnownLength(name),
                     });
                 } else if (name === "segmentation-rules.json") {
                     assetsToLoad.push({
                         name,
                         hash: resources.icu[name],
                         behavior: "segmentation-rules",
+                        knownLength: getKnownLength(name),
                     });
                 }
             }
@@ -351,7 +363,8 @@ export function prepareAssets () {
                 assetsToLoad.push({
                     name,
                     hash: resources.wasmSymbols[name],
-                    behavior: "symbols"
+                    behavior: "symbols",
+                    knownLength: getKnownLength(name),
                 });
             }
         }
@@ -462,16 +475,15 @@ async function start_asset_download_with_throttle (asset: AssetEntryInternal): P
         if (skipBuffer) {
             return asset;
         }
-        const lengthHeader = Number(response.headers.get("content-length"));
         if (
             (asset.behavior !== "vfs") && // vfs needs an arraybuffer so just use .arrayBuffer()
-            !Number.isNaN(lengthHeader) && lengthHeader && // the response needs a length so we can pre-allocate the buffer
-            ("body" in response) && response.body // in some cases response.body can be missing or null
+            ("body" in response) && response.body && // in some cases response.body can be missing or null
+            asset.knownLength
         ) {
-            asset.stream = [response.body!, lengthHeader];
+            asset.stream = [response.body!, asset.knownLength];
         } else {
             if (asset.behavior !== "vfs")
-                mono_log_warn(`Could not stream resource ${asset.resolvedUrl} with length header ${lengthHeader} and behavior ${asset.behavior}.`);
+                mono_log_warn(`Could not stream resource ${asset.resolvedUrl} with length ${asset.knownLength} and behavior ${asset.behavior}.`);
             asset.buffer = await response.arrayBuffer();
         }
         ++loaderHelpers.actual_downloaded_assets_count;

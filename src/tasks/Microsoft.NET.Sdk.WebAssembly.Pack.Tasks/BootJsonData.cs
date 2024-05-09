@@ -206,6 +206,9 @@ public class ResourcesData
 
     [DataMember(EmitDefaultValue = false)]
     public List<string> remoteSources { get; set; }
+
+    [DataMember(EmitDefaultValue = false)]
+    public Dictionary<string, long> knownLengths { get; set; }
 }
 
 public enum GlobalizationMode : int
@@ -247,4 +250,7 @@ public class AdditionalAsset
 
     [DataMember(Name = "behavior")]
     public string behavior { get; set; }
+
+    [DataMember(Name = "knownLength")]
+    public long knownLength { get; set; }
 }

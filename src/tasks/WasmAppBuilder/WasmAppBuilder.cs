@@ -93,6 +93,13 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
         return GlobalizationMode.Sharded;
     }
 
+    private static void RecordLength (BootJsonData bootConfig, string name, string fullPath)
+    {
+        var fi = new FileInfo(fullPath);
+        bootConfig.resources.knownLengths ??= new Dictionary<string, long>();
+        bootConfig.resources.knownLengths[name] = fi.Length;
+    }
+
     protected override bool ExecuteInternal()
     {
         var helper = new BootJsonBuilderHelper(Log);
@@ -179,6 +186,7 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
             Dictionary<string, string>? resourceList = helper.GetNativeResourceTargetInBootConfig(bootConfig, name);
             if (resourceList != null)
                 resourceList[name] = itemHash;
+            RecordLength(bootConfig, name, dest);
         }
 
         string packageJsonPath = Path.Combine(AppDir, "package.json");
@@ -207,6 +215,7 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
                 }
 
                 bootConfig.resources.assembly[Path.GetFileName(assemblyPath)] = Utils.ComputeIntegrity(bytes);
+                RecordLength(bootConfig, Path.GetFileName(assemblyPath), assemblyPath);
                 if (DebugLevel != 0)
                 {
                     var pdb = Path.ChangeExtension(assembly, ".pdb");
