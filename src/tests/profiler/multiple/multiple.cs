@@ -13,13 +13,19 @@ namespace Profiler.Tests
         static readonly Guid MultipleProfilerGuid = new Guid("BFA8EF13-E144-49B9-B95C-FC1C150C7651");
         static readonly string ProfilerPath = ProfilerTestRunner.GetProfilerPath();
 
+        static ManualResetEvent _profilerDone = new ManualResetEvent(false);
+
         [DllImport("Profiler")]
         private static extern void PassCallbackToProfiler(ProfilerCallback callback);
 
+        private static void ProfilerDone()
+        {
+            _profilerDone.Set();
+        }
+
         public static int RunTest(String[] args)
         {
-            ManualResetEvent _profilerDone = new ManualResetEvent(false);
-            PassCallbackToProfiler(() => _profilerDone.Set());
+            PassCallbackToProfiler(ProfilerDone);
 
             ProfilerControlHelpers.AttachProfilerToSelf(MultipleProfilerGuid, ProfilerPath);
 
