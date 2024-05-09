@@ -2193,7 +2193,7 @@ const char* Compiler::compRegVarName(regNumber reg, bool displayVar, bool isFloa
                                                                 // consecutive calls before printing
             static int index = 0;                               // for circular index into the name array
 
-            index = (index + 1) % 2; // circular reuse of index
+            index ^= 1; // circular reuse of index
             sprintf_s(nameVarReg[index], NAME_VAR_REG_BUFFER_LEN, "%s'%s'", getRegName(reg), VarNameToStr(varName));
 
             return nameVarReg[index];
@@ -2791,11 +2791,13 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     fgPgoHaveWeights = false;
     fgPgoSynthesized = false;
     fgPgoConsistent  = false;
+    fgPgoDynamic     = false;
 
     if (jitFlags->IsSet(JitFlags::JIT_FLAG_BBOPT))
     {
-        fgPgoQueryResult = info.compCompHnd->getPgoInstrumentationResults(info.compMethodHnd, &fgPgoSchema,
-                                                                          &fgPgoSchemaCount, &fgPgoData, &fgPgoSource);
+        fgPgoQueryResult =
+            info.compCompHnd->getPgoInstrumentationResults(info.compMethodHnd, &fgPgoSchema, &fgPgoSchemaCount,
+                                                           &fgPgoData, &fgPgoSource, &fgPgoDynamic);
 
         // a failed result that also has a non-NULL fgPgoSchema
         // indicates that the ILSize for the method no longer matches
@@ -2818,6 +2820,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
             fgPgoData        = nullptr;
             fgPgoSchema      = nullptr;
             fgPgoDisabled    = true;
+            fgPgoDynamic     = false;
         }
 #ifdef DEBUG
         // Optionally, enable use of profile data for only some methods.
@@ -3757,7 +3760,7 @@ void Compiler::dumpRegMask(regMaskTP regs) const
     {
         printf("[allDouble]");
     }
-#ifdef TARGET_XARCH
+#ifdef FEATURE_MASKED_HW_INTRINSICS
     else if (regs == RBM_ALLMASK)
     {
         printf("[allMask]");
@@ -4085,7 +4088,18 @@ _SetMinOpts:
     {
         info.compCompHnd->setMethodAttribs(info.compMethodHnd, CORINFO_FLG_SWITCHED_TO_MIN_OPT);
         opts.jitFlags->Clear(JitFlags::JIT_FLAG_TIER1);
+        opts.jitFlags->Clear(JitFlags::JIT_FLAG_BBOPT);
         compSwitchedToMinOpts = true;
+
+        // We may have read PGO data. Clear it out because we won't be using it.
+        //
+        fgPgoFailReason  = "method switched to min-opts";
+        fgPgoQueryResult = E_FAIL;
+        fgPgoHaveWeights = false;
+        fgPgoData        = nullptr;
+        fgPgoSchema      = nullptr;
+        fgPgoDisabled    = true;
+        fgPgoDynamic     = false;
     }
 
 #ifdef DEBUG
@@ -4683,11 +4697,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         return;
     }
 
-    // Drop back to just checking profile likelihoods.
-    //
-    activePhaseChecks &= ~PhaseChecks::CHECK_PROFILE;
-    activePhaseChecks |= PhaseChecks::CHECK_LIKELIHOODS;
-
     // At this point in the phase list, all the inlinee phases have
     // been run, and inlinee compiles have exited, so we should only
     // get this far if we are jitting the root method.
@@ -4703,6 +4712,11 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 
     // Record "start" values for post-inlining cycles and elapsed time.
     RecordStateAtEndOfInlining();
+
+    // Drop back to just checking profile likelihoods.
+    //
+    activePhaseChecks &= ~PhaseChecks::CHECK_PROFILE;
+    activePhaseChecks |= PhaseChecks::CHECK_LIKELIHOODS;
 
     // Transform each GT_ALLOCOBJ node into either an allocation helper call or
     // local variable allocation on the stack.
@@ -8053,6 +8067,7 @@ if (!inlineInfo &&
     compileFlags->Set(JitFlags::JIT_FLAG_MIN_OPT);
     compileFlags->Clear(JitFlags::JIT_FLAG_SIZE_OPT);
     compileFlags->Clear(JitFlags::JIT_FLAG_SPEED_OPT);
+    compileFlags->Clear(JitFlags::JIT_FLAG_BBOPT);
 
     goto START;
 }

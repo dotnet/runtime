@@ -9,9 +9,9 @@ namespace System.Collections.Generic
 {
     // Base interface for all collections, defining enumerators, size, and
     // synchronization methods.
-    public interface ICollection<T> : IReadOnlyCollection<T>
+    public interface ICollection<T> : IEnumerable<T>
     {
-        new int Count
+        int Count
         {
 #if MONO
             [DynamicDependency(nameof(Array.InternalArray__ICollection_get_Count), typeof(Array))]
@@ -53,7 +53,5 @@ namespace System.Collections.Generic
         [DynamicDependency(nameof(Array.InternalArray__ICollection_Remove) + "``1", typeof(Array))]
 #endif
         bool Remove(T item);
-
-        int IReadOnlyCollection<T>.Count => Count;
     }
 }

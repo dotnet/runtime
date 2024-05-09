@@ -348,7 +348,7 @@ void CodeGen::genCodeForBBlist()
             // Mark a label and update the current set of live GC refs
 
             block->bbEmitCookie = GetEmitter()->emitAddLabel(gcInfo.gcVarPtrSetCur, gcInfo.gcRegGCrefSetCur,
-                                                             gcInfo.gcRegByrefSetCur DEBUG_ARG(block));
+                                                             gcInfo.gcRegByrefSetCur, block->Prev());
         }
 
         if (block->IsFirstColdBlock(compiler))
@@ -714,8 +714,7 @@ void CodeGen::genCodeForBBlist()
                 }
                 // Do likewise for blocks that end in DOES_NOT_RETURN calls
                 // that were not caught by the above rules. This ensures that
-                // gc register liveness doesn't change across call instructions
-                // in fully-interruptible mode.
+                // gc register liveness doesn't change to some random state after call instructions
                 else
                 {
                     GenTree* call = block->lastNode();
@@ -1905,7 +1904,7 @@ void CodeGen::genSetBlockSize(GenTreeBlk* blkNode, regNumber sizeReg)
 {
     if (sizeReg != REG_NA)
     {
-        assert((blkNode->gtRsvdRegs & genRegMask(sizeReg)) != 0);
+        assert((internalRegisters.GetAll(blkNode) & genRegMask(sizeReg)) != 0);
         // This can go via helper which takes the size as a native uint.
         instGen_Set_Reg_To_Imm(EA_PTRSIZE, sizeReg, blkNode->Size());
     }
