@@ -18,7 +18,7 @@ namespace System.Net.WebSockets
         public ValueWebSocketReceiveResult(int count, WebSocketMessageType messageType, bool endOfMessage)
         {
             ArgumentOutOfRangeException.ThrowIfNegative(count);
-            ArgumentOutOfRangeException.ThrowIfGreaterThan((uint)messageType, (uint)WebSocketMessageType.Close, nameof(messageType));
+            if ((uint)messageType > (uint)WebSocketMessageType.Close) ThrowMessageTypeOutOfRange();
 
             _countAndEndOfMessage = (uint)count | (uint)(endOfMessage ? 1 << 31 : 0);
             _messageType = messageType;
@@ -31,5 +31,7 @@ namespace System.Net.WebSockets
         public int Count => (int)(_countAndEndOfMessage & 0x7FFFFFFF);
         public bool EndOfMessage => (_countAndEndOfMessage & 0x80000000) == 0x80000000;
         public WebSocketMessageType MessageType => _messageType;
+
+        private static void ThrowMessageTypeOutOfRange() => throw new ArgumentOutOfRangeException("messageType");
     }
 }
