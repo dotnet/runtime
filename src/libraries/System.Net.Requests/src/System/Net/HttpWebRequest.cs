@@ -1655,7 +1655,6 @@ namespace System.Net
             return CreateHttpClient(parameters, this);
         }
 
-        [UnconditionalSuppressMessage("AssemblyLoadTrimming", "IL2075:")]
         private static HttpClient CreateHttpClient(HttpClientParameters parameters, HttpWebRequest? request)
         {
             HttpClient? client = null;
@@ -1678,9 +1677,9 @@ namespace System.Net
                     // So we want to process it only if explicitly set.
                     var settings = typeof(SocketsHttpHandler).GetField("_settings", BindingFlags.NonPublic | BindingFlags.Instance)?.GetValue(handler);
                     Debug.Assert(settings != null);
-                    FieldInfo? fi = settings?.GetType().GetField("_impersonationLevel", BindingFlags.NonPublic | BindingFlags.Instance);
+                    FieldInfo? fi = Type.GetType("System.Net.Http.HttpConnectionSettings, System.Net.Http")?.GetField("_impersonationLevel", BindingFlags.NonPublic | BindingFlags.Instance);
                     Debug.Assert(fi != null);
-                    fi.SetValue(settings, request!.ImpersonationLevel);
+                    fi.SetValue(settings, request.ImpersonationLevel);
                 }
 
                 if (parameters.CookieContainer != null)
