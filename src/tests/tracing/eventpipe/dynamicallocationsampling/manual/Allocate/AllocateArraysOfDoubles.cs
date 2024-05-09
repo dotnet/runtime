@@ -4,7 +4,7 @@ using System.Linq;
 
 namespace Allocate
 {
-    public class MeasureDoubles
+    public class AllocateArraysOfDoubles : IAllocations
     {
         public void Allocate(int count)
         {

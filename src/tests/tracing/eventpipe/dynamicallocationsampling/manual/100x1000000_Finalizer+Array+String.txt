@@ -1,0 +1,1250 @@
+> starts 100 iterations allocating 1000000 instances
+0|
+Tag  SCount  TCount       SSize       TSize  UnitSize  UpscaledSize  UpscaledCount  Name
+-------------------------------------------------------------------------------------------
+ ST     235     219        5640        5256        24      24066820        1002784  Allocate.WithFinalizer
+ ST       8       6         512         384        64        819456          12804  System.RuntimeFieldInfoStub
+ ST     678     699       48816       50328        72      69451610         964605  System.Int32[,]
+ ST     905     893       86880       85728        96      92715446         965785  System.String
+ ST    1925    1879      379225      375800       197     197309673        1001571  System.Byte[]
+ ST       3       3    56000072    56000096  18666690      56000072              3  System.Object[]
+1|
+Tag  SCount  TCount       SSize       TSize  UnitSize  UpscaledSize  UpscaledCount  Name
+-------------------------------------------------------------------------------------------
+ ST     233     218        5592        5232        24      23861996         994249  Allocate.WithFinalizer
+  S       1       0          64           0        64        102432           1600  System.RuntimeFieldInfoStub
+ ST     763     680       54936       48960        72      78158671        1085537  System.Int32[,]
+ ST     901     918       86496       88128        96      92305654         961517  System.String
+ ST    1891    1873      372527      374600       197     193824723         983881  System.Byte[]
+ ST       3       3    56000072    56000096  18666690      56000072              3  System.Object[]
+  T       0       1           0         288       288             0              0  System.GCMemoryInfoData
+2|
+Tag  SCount  TCount       SSize       TSize  UnitSize  UpscaledSize  UpscaledCount  Name
+-------------------------------------------------------------------------------------------
+ ST     251     233        6024        5592        24      25705412        1071058  Allocate.WithFinalizer
+ ST     673     655       48456       47160        72      68939430         957492  System.Int32[,]
+ ST     947     910       90912       87360        96      97018263        1010606  System.String
+ ST    1899    1891      374103      378200       197     194644711         988044  System.Byte[]
+ ST       3       3    56000072    56000096  18666690      56000072              3  System.Object[]
+  T       0       1           0          64        64             0              0  System.RuntimeFieldInfoStub
+3|
+Tag  SCount  TCount       SSize       TSize  UnitSize  UpscaledSize  UpscaledCount  Name
+-------------------------------------------------------------------------------------------
+ ST     263     215        6312        5160        24      26934356        1122264  Allocate.WithFinalizer
+ ST       8       5         512         320        64        819456          12804  System.RuntimeFieldInfoStub
+ ST     691     709       49752       51048        72      70783278         983101  System.Int32[,]
+ ST     911     892       87456       85632        96      93330134         972188  System.String
+ ST    1965    1874      387105      374800       197     201409614        1022383  System.Byte[]
+ ST       3       3    56000072    56000096  18666690      56000072              3  System.Object[]
+  T       0       1           0         288       288             0              0  System.GCMemoryInfoData
+4|
+Tag  SCount  TCount       SSize       TSize  UnitSize  UpscaledSize  UpscaledCount  Name
+-------------------------------------------------------------------------------------------
+ ST     215     237        5160        5688        24      22018580         917440  Allocate.WithFinalizer
+ ST     686     674       49392       48528        72      70271098         975987  System.Int32[,]
+ ST     889     907       85344       87072        96      91076278         948711  System.String
+ ST    1963    1871      386711      374200       197     201204617        1021343  System.Byte[]
+ ST       3       3    56000072    56000088  18666690      56000072              3  System.Object[]
+  T       0       1           0          64        64             0              0  System.RuntimeFieldInfoStub
+5|
+Tag  SCount  TCount       SSize       TSize  UnitSize  UpscaledSize  UpscaledCount  Name
+-------------------------------------------------------------------------------------------
+ ST     245     230        5880        5520        24      25090940        1045455  Allocate.WithFinalizer
+ ST     704     678       50688       48816        72      72114946        1001596  System.Int32[,]
+ ST     912     888       87552       85248        96      93432582         973256  System.String
+ ST    1849    1893      364253      378600       197     189519784         962029  System.Byte[]
+ ST       3       3    56000072    56000088  18666690      56000072              3  System.Object[]
+  T       0       1           0         288       288             0              0  System.GCMemoryInfoData
+6|
+Tag  SCount  TCount       SSize       TSize  UnitSize  UpscaledSize  UpscaledCount  Name
+-------------------------------------------------------------------------------------------
+ ST     229     215        5496        5160        24      23452348         977181  Allocate.WithFinalizer
+ ST     720     726       51840       52272        72      73753923        1024360  System.Int32[,]
+ ST     919     890       88224       85440        96      94149718         980726  System.String
+ ST    1934    1857      380998      371400       197     198232160        1006254  System.Byte[]
+ ST       3       3    56000072    56000096  18666690      56000072              3  System.Object[]
+  T       0       1           0         288       288             0              0  System.GCMemoryInfoData
+7|
+Tag  SCount  TCount       SSize       TSize  UnitSize  UpscaledSize  UpscaledCount  Name
+-------------------------------------------------------------------------------------------
+ ST     235     211        5640        5064        24      24066820        1002784  Allocate.WithFinalizer
+ ST     672     700       48384       50400        72      68836994         956069  System.Int32[,]
+ ST     932     895       89472       85920        96      95481542         994599  System.String
+ ST    1867    1883      367799      376600       197     191364758         971394  System.Byte[]
+ ST       3       3    56000072    56000096  18666690      56000072              3  System.Object[]
+  T       0       1           0         288       288             0              0  System.GCMemoryInfoData
+8|
+Tag  SCount  TCount       SSize       TSize  UnitSize  UpscaledSize  UpscaledCount  Name
+-------------------------------------------------------------------------------------------
+ ST     240     230        5760        5520        24      24578880        1024120  Allocate.WithFinalizer
+ ST     693     709       49896       51048        72      70988150         985946  System.Int32[,]
+ ST     912     888       87552       85248        96      93432582         973256  System.String
+ ST    1934    1862      380998      372400       197     198232160        1006254  System.Byte[]
+ ST       3       3    56000072    56000088  18666690      56000072              3  System.Object[]
+  T       0       1           0         288       288             0              0  System.GCMemoryInfoData
+9|
+Tag  SCount  TCount       SSize       TSize  UnitSize  UpscaledSize  UpscaledCount  Name
+-------------------------------------------------------------------------------------------
+ ST     252     205        6048        4920        24      25807824        1075326  Allocate.WithFinalizer
+ ST     663     680       47736       48960        72      67915070         943264  System.Int32[,]
+ ST     990     932       95040       89472        96     101423527        1056495  System.String
+ ST    1920    1873      378240      374600       197     196797180         998970  System.Byte[]
+ ST       3       3    56000072    56000096  18666690      56000072              3  System.Object[]
+10|
+Tag  SCount  TCount       SSize       TSize  UnitSize  UpscaledSize  UpscaledCount  Name
+-------------------------------------------------------------------------------------------
+ ST     243     226        5832        5424        24      24886116        1036921  Allocate.WithFinalizer
+ ST     713     669       51336       48168        72      73036871        1014400  System.Int32[,]
+ ST     942     929       90432       89184        96      96506023        1005271  System.String
+ ST    1942    1866      382574      373200       197     199052148        1010416  System.Byte[]
+ ST       3       3    56000072    56000096  18666690      56000072              3  System.Object[]
+11|
+Tag  SCount  TCount       SSize       TSize  UnitSize  UpscaledSize  UpscaledCount  Name
+-------------------------------------------------------------------------------------------
+ ST     219     226        5256        5424        24      22428228         934509  Allocate.WithFinalizer
+ ST     711     716       51192       51552        72      72831998        1011555  System.Int32[,]
+ ST     932     864       89472       82944        96      95481542         994599  System.String
+ ST    1923    1883      378831      376600       197     197104676        1000531  System.Byte[]
+ ST       3       3    56000072    56000096  18666690      56000072              3  System.Object[]
+  T       0       1           0         288       288             0              0  System.GCMemoryInfoData
+12|
+Tag  SCount  TCount       SSize       TSize  UnitSize  UpscaledSize  UpscaledCount  Name
+-------------------------------------------------------------------------------------------
+ ST     236     225        5664        5400        24      24169232        1007051  Allocate.WithFinalizer
+ ST     667     706       48024       50832        72      68324814         948955  System.Int32[,]
+ ST     947     883       90912       84768        96      97018263        1010606  System.String
+ ST    1877    1875      369769      375000       197     192389743         976597  System.Byte[]
+ ST       3       3    56000072    56000096  18666690      56000072              3  System.Object[]
+13|
+Tag  SCount  TCount       SSize       TSize  UnitSize  UpscaledSize  UpscaledCount  Name
+-------------------------------------------------------------------------------------------
+ ST     230     219        5520        5256        24      23554760         981448  Allocate.WithFinalizer
+ ST     742     689       53424       49608        72      76007515        1055659  System.Int32[,]
+ ST     898     913       86208       87648        96      91998310         958315  System.String
+ ST    1863    1867      367011      373400       197     190954764         969313  System.Byte[]
+ ST       3       3    56000072    56000096  18666690      56000072              3  System.Object[]
+  T       0       1           0         288       288             0              0  System.GCMemoryInfoData
+14|
+Tag  SCount  TCount       SSize       TSize  UnitSize  UpscaledSize  UpscaledCount  Name
+-------------------------------------------------------------------------------------------
+ ST     222     225        5328        5400        24      22735464         947311  Allocate.WithFinalizer
+ ST     696     684       50112       49248        72      71295458         990214  System.Int32[,]
+ ST     888     879       85248       84384        96      90973830         947644  System.String
+ ST    1954    1901      384938      380200       197     200282130        1016660  System.Byte[]
+ ST       3       3    56000072    56000096  18666690      56000072              3  System.Object[]
+15|
+Tag  SCount  TCount       SSize       TSize  UnitSize  UpscaledSize  UpscaledCount  Name
+-------------------------------------------------------------------------------------------
+ ST     252     202        6048        4848        24      25807824        1075326  Allocate.WithFinalizer
+ ST     715     710       51480       51120        72      73241743        1017246  System.Int32[,]
+ ST     902     892       86592       85632        96      92408102         962584  System.String
+ ST    1932    1885      380604      377000       197     198027163        1005214  System.Byte[]
+ ST       3       3    56000072    56000096  18666690      56000072              3  System.Object[]
+16|
+Tag  SCount  TCount       SSize       TSize  UnitSize  UpscaledSize  UpscaledCount  Name
+-------------------------------------------------------------------------------------------
+ ST     251     209        6024        5016        24      25705412        1071058  Allocate.WithFinalizer
+ ST     692     657       49824       47304        72      70885714         984523  System.Int32[,]
+ ST     942     952       90432       91392        96      96506023        1005271  System.String
+ ST    1932    1871      380604      374200       197     198027163        1005214  System.Byte[]
+ ST       3       3    56000072    56000096  18666690      56000072              3  System.Object[]
+17|
+Tag  SCount  TCount       SSize       TSize  UnitSize  UpscaledSize  UpscaledCount  Name
+-------------------------------------------------------------------------------------------
+ ST     262     214        6288        5136        24      26831944        1117997  Allocate.WithFinalizer
+ ST     636     690       45792       49680        72      65149298         904851  System.Int32[,]
+ ST     936     922       89856       88512        96      95891335         998868  System.String
+ ST    1927    1862      379619      372400       197     197514670        1002612  System.Byte[]
+ ST       3       3    56000072    56000088  18666690      56000072              3  System.Object[]
+18|
+Tag  SCount  TCount       SSize       TSize  UnitSize  UpscaledSize  UpscaledCount  Name
+-------------------------------------------------------------------------------------------
+ ST     236     212        5664        5088        24      24169232        1007051  Allocate.WithFinalizer
+ ST     690     706       49680       50832        72      70680842         981678  System.Int32[,]
+ ST     930     934       89280       89664        96      95276646         992465  System.String
+ ST    1918    1838      377846      367600       197     196592183         997929  System.Byte[]
+ ST       3       3    56000072    56000096  18666690      56000072              3  System.Object[]
+19|
+Tag  SCount  TCount       SSize       TSize  UnitSize  UpscaledSize  UpscaledCount  Name
+-------------------------------------------------------------------------------------------
+ ST     220     231        5280        5544        24      22530640         938776  Allocate.WithFinalizer
+ ST     762     699       54864       50328        72      78056235        1084114  System.Int32[,]
+ ST     967     883       92832       84768        96      99067223        1031950  System.String
+ ST    1887    1875      371739      375000       197     193414729         981800  System.Byte[]
+ ST       3       3    56000072    56000096  18666690      56000072              3  System.Object[]
+20|
+Tag  SCount  TCount       SSize       TSize  UnitSize  UpscaledSize  UpscaledCount  Name
+-------------------------------------------------------------------------------------------
+ ST     250     219        6000        5256        24      25603000        1066791  Allocate.WithFinalizer
+ ST     698     673       50256       48456        72      71500330         993060  System.Int32[,]
+ ST     943     944       90528       90624        96      96608471        1006338  System.String
+ ST    1963    1853      386711      370600       197     201204617        1021343  System.Byte[]
+ ST       3       3    56000072    56000088  18666690      56000072              3  System.Object[]
+  T       0       1           0         288       288             0              0  System.GCMemoryInfoData
+21|
+Tag  SCount  TCount       SSize       TSize  UnitSize  UpscaledSize  UpscaledCount  Name
+-------------------------------------------------------------------------------------------
+ ST     254     221        6096        5304        24      26012648        1083860  Allocate.WithFinalizer
+ ST     666     692       47952       49824        72      68222378         947533  System.Int32[,]
+ ST     951     907       91296       87072        96      97428055        1014875  System.String
+ ST    1986    1869      391242      373800       197     203562083        1033310  System.Byte[]
+ ST       3       3    56000072    56000096  18666690      56000072              3  System.Object[]
+22|
+Tag  SCount  TCount       SSize       TSize  UnitSize  UpscaledSize  UpscaledCount  Name
+-------------------------------------------------------------------------------------------
+ ST     259     217        6216        5208        24      26524708        1105196  Allocate.WithFinalizer
+ ST     712     667       51264       48024        72      72934435        1012978  System.Int32[,]
+ ST     964     932       92544       89472        96      98759879        1028748  System.String
+ ST    1900    1874      374300      374800       197     194747210         988564  System.Byte[]
+ ST       3       3    56000072    56000096  18666690      56000072              3  System.Object[]
+23|
+Tag  SCount  TCount       SSize       TSize  UnitSize  UpscaledSize  UpscaledCount  Name
+-------------------------------------------------------------------------------------------
+ ST     235     226        5640        5424        24      24066820        1002784  Allocate.WithFinalizer
+ ST     695     686       50040       49392        72      71193022         988791  System.Int32[,]
+ ST     923     926       88608       88896        96      94559510         984994  System.String
+ ST    1921    1851      378437      370200       197     196899679         999490  System.Byte[]
+ ST       3       3    56000072    56000096  18666690      56000072              3  System.Object[]
+  T       0       1           0         288       288             0              0  System.GCMemoryInfoData
+24|
+Tag  SCount  TCount       SSize       TSize  UnitSize  UpscaledSize  UpscaledCount  Name
+-------------------------------------------------------------------------------------------
+ ST     238     233        5712        5592        24      24374056        1015585  Allocate.WithFinalizer
+ ST     723     669       52056       48168        72      74061231        1028628  System.Int32[,]
+ ST     915     892       87840       85632        96      93739926         976457  System.String
+ ST    1909    1894      376073      378800       197     195669696         993247  System.Byte[]
+ ST       3       3    56000072    56000088  18666690      56000072              3  System.Object[]
+  T       0       1           0         288       288             0              0  System.GCMemoryInfoData
+25|
+Tag  SCount  TCount       SSize       TSize  UnitSize  UpscaledSize  UpscaledCount  Name
+-------------------------------------------------------------------------------------------
+ ST     240     225        5760        5400        24      24578880        1024120  Allocate.WithFinalizer
+ ST     722     670       51984       48240        72      73958795        1027205  System.Int32[,]
+ ST     974     923       93504       88608        96      99784359        1039420  System.String
+ ST    2002    1873      394394      374600       197     205202060        1041634  System.Byte[]
+  S       1       0         288           0       288        102544            356  System.GCMemoryInfoData
+ ST       3       3    56000072    56000096  18666690      56000072              3  System.Object[]
+26|
+Tag  SCount  TCount       SSize       TSize  UnitSize  UpscaledSize  UpscaledCount  Name
+-------------------------------------------------------------------------------------------
+ ST     242     235        5808        5640        24      24783704        1032654  Allocate.WithFinalizer
+ ST     696     719       50112       51768        72      71295458         990214  System.Int32[,]
+ ST     892     830       85632       79680        96      91383622         951912  System.String
+ ST    1925    1903      379225      380600       197     197309673        1001571  System.Byte[]
+ ST       3       3    56000072    56000096  18666690      56000072              3  System.Object[]
+  T       0       1           0         288       288             0              0  System.GCMemoryInfoData
+27|
+Tag  SCount  TCount       SSize       TSize  UnitSize  UpscaledSize  UpscaledCount  Name
+-------------------------------------------------------------------------------------------
+ ST     237     228        5688        5472        24      24271644        1011318  Allocate.WithFinalizer
+ ST     740     685       53280       49320        72      75802643        1052814  System.Int32[,]
+ ST     990     893       95040       85728        96     101423527        1056495  System.String
+ ST    1945    1881      383165      376200       197     199359643        1011977  System.Byte[]
+ ST       3       3    56000072    56000096  18666690      56000072              3  System.Object[]
+  T       0       1           0         288       288             0              0  System.GCMemoryInfoData
+28|
+Tag  SCount  TCount       SSize       TSize  UnitSize  UpscaledSize  UpscaledCount  Name
+-------------------------------------------------------------------------------------------
+ ST     231     229        5544        5496        24      23657172         985715  Allocate.WithFinalizer
+ ST     711     688       51192       49536        72      72831998        1011555  System.Int32[,]
+ ST     951     899       91296       86304        96      97428055        1014875  System.String
+ ST    1929    1872      380013      374400       197     197719667        1003653  System.Byte[]
+ ST       3       3    56000072    56000096  18666690      56000072              3  System.Object[]
+29|
+Tag  SCount  TCount       SSize       TSize  UnitSize  UpscaledSize  UpscaledCount  Name
+-------------------------------------------------------------------------------------------
+ ST     253     218        6072        5232        24      25910236        1079593  Allocate.WithFinalizer
+ ST     683     703       49176       50616        72      69963790         971719  System.Int32[,]
+ ST     873     876       83808       84096        96      89437110         931636  System.String
+ ST    1980    1892      390060      378400       197     202947092        1030188  System.Byte[]
+ ST       3       3    56000072    56000096  18666690      56000072              3  System.Object[]
+30|
+Tag  SCount  TCount       SSize       TSize  UnitSize  UpscaledSize  UpscaledCount  Name
+-------------------------------------------------------------------------------------------
+ ST     237     222        5688        5328        24      24271644        1011318  Allocate.WithFinalizer
+  S       1       0          48           0        48        102424           2133  Enumerator[System.Buffers.SharedArrayPoolThreadLocalArray[],System.Object]
+ ST     683     674       49176       48528        72      69963790         971719  System.Int32[,]
+ ST     915     909       87840       87264        96      93739926         976457  System.String
+ ST    1941    1882      382377      376400       197     198949649        1009896  System.Byte[]
+ ST       3       3    56000072    56000096  18666690      56000072              3  System.Object[]
+31|
+Tag  SCount  TCount       SSize       TSize  UnitSize  UpscaledSize  UpscaledCount  Name
+-------------------------------------------------------------------------------------------
+ ST     230     212        5520        5088        24      23554760         981448  Allocate.WithFinalizer
+ ST     734     708       52848       50976        72      75188027        1044278  System.Int32[,]
+ ST     953     877       91488       84192        96      97632951        1017009  System.String
+ ST    1958    1890      385726      378000       197     200692124        1018741  System.Byte[]
+ ST       3       3    56000072    56000096  18666690      56000072              3  System.Object[]
+32|
+Tag  SCount  TCount       SSize       TSize  UnitSize  UpscaledSize  UpscaledCount  Name
+-------------------------------------------------------------------------------------------
+ ST     237     218        5688        5232        24      24271644        1011318  Allocate.WithFinalizer
+ ST     714     694       51408       49968        72      73139307        1015823  System.Int32[,]
+ ST     949     908       91104       87168        96      97223159        1012741  System.String
+ ST    1957    1870      385529      374000       197     200589626        1018221  System.Byte[]
+ ST       3       3    56000072    56000088  18666690      56000072              3  System.Object[]
+33|
+Tag  SCount  TCount       SSize       TSize  UnitSize  UpscaledSize  UpscaledCount  Name
+-------------------------------------------------------------------------------------------
+ ST     225     221        5400        5304        24      23042700         960112  Allocate.WithFinalizer
+ ST     661     707       47592       50904        72      67710198         940419  System.Int32[,]
+ ST     901     874       86496       83904        96      92305654         961517  System.String
+ ST    1883    1885      370951      377000       197     193004734         979719  System.Byte[]
+ ST       3       3    56000072    56000096  18666690      56000072              3  System.Object[]
+34|
+Tag  SCount  TCount       SSize       TSize  UnitSize  UpscaledSize  UpscaledCount  Name
+-------------------------------------------------------------------------------------------
+ ST     212     222        5088        5328        24      21711344         904639  Allocate.WithFinalizer
+ ST     698     666       50256       47952        72      71500330         993060  System.Int32[,]
+ ST     979     948       93984       91008        96     100296599        1044756  System.String
+ ST    1934    1853      380998      370600       197     198232160        1006254  System.Byte[]
+ ST       3       3    56000072    56000096  18666690      56000072              3  System.Object[]
+35|
+Tag  SCount  TCount       SSize       TSize  UnitSize  UpscaledSize  UpscaledCount  Name
+-------------------------------------------------------------------------------------------
+ ST     220     217        5280        5208        24      22530640         938776  Allocate.WithFinalizer
+ ST     695     685       50040       49320        72      71193022         988791  System.Int32[,]
+ ST     964     890       92544       85440        96      98759879        1028748  System.String
+ ST    1933    1896      380801      379200       197     198129661        1005734  System.Byte[]
+ ST       3       3    56000072    56000096  18666690      56000072              3  System.Object[]
+36|
+Tag  SCount  TCount       SSize       TSize  UnitSize  UpscaledSize  UpscaledCount  Name
+-------------------------------------------------------------------------------------------
+ ST     214     220        5136        5280        24      21916168         913173  Allocate.WithFinalizer
+ ST     715     676       51480       48672        72      73241743        1017246  System.Int32[,]
+ ST     968     934       92928       89664        96      99169671        1033017  System.String
+ ST    1948    1858      383756      371600       197     199667139        1013538  System.Byte[]
+ ST       3       3    56000072    56000096  18666690      56000072              3  System.Object[]
+37|
+Tag  SCount  TCount       SSize       TSize  UnitSize  UpscaledSize  UpscaledCount  Name
+-------------------------------------------------------------------------------------------
+ ST     243     231        5832        5544        24      24886116        1036921  Allocate.WithFinalizer
+ ST     730     671       52560       48312        72      74778283        1038587  System.Int32[,]
+ ST     899     922       86304       88512        96      92100758         959382  System.String
+ ST    1915    1865      377255      373000       197     196284687         996368  System.Byte[]
+ ST       3       3    56000072    56000096  18666690      56000072              3  System.Object[]
+38|
+Tag  SCount  TCount       SSize       TSize  UnitSize  UpscaledSize  UpscaledCount  Name
+-------------------------------------------------------------------------------------------
+ ST     239     220        5736        5280        24      24476468        1019852  Allocate.WithFinalizer
+ ST     659     691       47448       49752        72      67505326         937573  System.Int32[,]
+ ST     992     902       95232       86592        96     101628423        1058629  System.String
+ ST    1904    1874      375088      374800       197     195157204         990645  System.Byte[]
+ ST       3       3    56000072    56000096  18666690      56000072              3  System.Object[]
+39|
+Tag  SCount  TCount       SSize       TSize  UnitSize  UpscaledSize  UpscaledCount  Name
+-------------------------------------------------------------------------------------------
+ ST     240     229        5760        5496        24      24578880        1024120  Allocate.WithFinalizer
+ ST     695     687       50040       49464        72      71193022         988791  System.Int32[,]
+ ST     897     903       86112       86688        96      91895862         957248  System.String
+ ST    1851    1869      364647      373800       197     189724781         963069  System.Byte[]
+ ST       3       3    56000072    56000096  18666690      56000072              3  System.Object[]
+40|
+Tag  SCount  TCount       SSize       TSize  UnitSize  UpscaledSize  UpscaledCount  Name
+-------------------------------------------------------------------------------------------
+ ST     248     226        5952        5424        24      25398176        1058257  Allocate.WithFinalizer
+ ST     715     676       51480       48672        72      73241743        1017246  System.Int32[,]
+ ST     953     940       91488       90240        96      97632951        1017009  System.String
+ ST    1797    1843      354009      368600       197     184189861         934973  System.Byte[]
+ ST       3       3    56000072    56000096  18666690      56000072              3  System.Object[]
+  T       0       1           0         288       288             0              0  System.GCMemoryInfoData
+41|
+Tag  SCount  TCount       SSize       TSize  UnitSize  UpscaledSize  UpscaledCount  Name
+-------------------------------------------------------------------------------------------
+ ST     230     234        5520        5616        24      23554760         981448  Allocate.WithFinalizer
+ ST     705     657       50760       47304        72      72217382        1003019  System.Int32[,]
+ ST     893     915       85728       87840        96      91486070         952979  System.String
+ ST    1976    1882      389272      376400       197     202537098        1028107  System.Byte[]
+ ST       3       3    56000072    56000096  18666690      56000072              3  System.Object[]
+  T       0       1           0         288       288             0              0  System.GCMemoryInfoData
+42|
+Tag  SCount  TCount       SSize       TSize  UnitSize  UpscaledSize  UpscaledCount  Name
+-------------------------------------------------------------------------------------------
+ ST     217     220        5208        5280        24      22223404         925975  Allocate.WithFinalizer
+ ST     694     689       49968       49608        72      71090586         987369  System.Int32[,]
+ ST     932     909       89472       87264        96      95481542         994599  System.String
+ ST    1916    1873      377452      374600       197     196387186         996889  System.Byte[]
+ ST       3       3    56000072    56000096  18666690      56000072              3  System.Object[]
+43|
+Tag  SCount  TCount       SSize       TSize  UnitSize  UpscaledSize  UpscaledCount  Name
+-------------------------------------------------------------------------------------------
+ ST     233     221        5592        5304        24      23861996         994249  Allocate.WithFinalizer
+ ST     752     715       54144       51480        72      77031875        1069887  System.Int32[,]
+ ST     977     891       93792       85536        96     100091703        1042621  System.String
+ ST    1915    1861      377255      372200       197     196284687         996368  System.Byte[]
+ ST       3       3    56000072    56000096  18666690      56000072              3  System.Object[]
+44|
+Tag  SCount  TCount       SSize       TSize  UnitSize  UpscaledSize  UpscaledCount  Name
+-------------------------------------------------------------------------------------------
+ ST     229     232        5496        5568        24      23452348         977181  Allocate.WithFinalizer
+ ST     694     706       49968       50832        72      71090586         987369  System.Int32[,]
+ ST    1001     868       96096       83328        96     102550455        1068233  System.String
+ ST    1881    1883      370557      376600       197     192799737         978678  System.Byte[]
+ ST       3       3    56000072    56000096  18666690      56000072              3  System.Object[]
+45|
+Tag  SCount  TCount       SSize       TSize  UnitSize  UpscaledSize  UpscaledCount  Name
+-------------------------------------------------------------------------------------------
+ ST     219     230        5256        5520        24      22428228         934509  Allocate.WithFinalizer
+ ST     682     709       49104       51048        72      69861354         970296  System.Int32[,]
+ ST     894     858       85824       82368        96      91588518         954047  System.String
+ ST    1913    1893      376861      378600       197     196079690         995328  System.Byte[]
+ ST       3       3    56000072    56000096  18666690      56000072              3  System.Object[]
+46|
+Tag  SCount  TCount       SSize       TSize  UnitSize  UpscaledSize  UpscaledCount  Name
+-------------------------------------------------------------------------------------------
+ ST     253     216        6072        5184        24      25910236        1079593  Allocate.WithFinalizer
+ ST     743     704       53496       50688        72      76109951        1057082  System.Int32[,]
+ ST     953     883       91488       84768        96      97632951        1017009  System.String
+ ST    1921    1885      378437      377000       197     196899679         999490  System.Byte[]
+ ST       3       3    56000072    56000096  18666690      56000072              3  System.Object[]
+  T       0       1           0         288       288             0              0  System.GCMemoryInfoData
+47|
+Tag  SCount  TCount       SSize       TSize  UnitSize  UpscaledSize  UpscaledCount  Name
+-------------------------------------------------------------------------------------------
+ ST     218     220        5232        5280        24      22325816         930242  Allocate.WithFinalizer
+ ST     700     708       50400       50976        72      71705202         995905  System.Int32[,]
+ ST     963     905       92448       86880        96      98657431        1027681  System.String
+ ST    1946    1855      383362      371000       197     199462142        1012498  System.Byte[]
+ ST       3       3    56000072    56000096  18666690      56000072              3  System.Object[]
+48|
+Tag  SCount  TCount       SSize       TSize  UnitSize  UpscaledSize  UpscaledCount  Name
+-------------------------------------------------------------------------------------------
+ ST     216     219        5184        5256        24      22120992         921708  Allocate.WithFinalizer
+ ST     687     690       49464       49680        72      70373534         977410  System.Int32[,]
+ ST     975     893       93600       85728        96      99886807        1040487  System.String
+ ST    1913    1887      376861      377400       197     196079690         995328  System.Byte[]
+ ST       3       3    56000072    56000096  18666690      56000072              3  System.Object[]
+49|
+Tag  SCount  TCount       SSize       TSize  UnitSize  UpscaledSize  UpscaledCount  Name
+-------------------------------------------------------------------------------------------
+ ST     226     233        5424        5592        24      23145112         964379  Allocate.WithFinalizer
+ ST     715     654       51480       47088        72      73241743        1017246  System.Int32[,]
+ ST     896     932       86016       89472        96      91793414         956181  System.String
+ ST    1902    1869      374694      373800       197     194952207         989605  System.Byte[]
+ ST       3       3    56000072    56000096  18666690      56000072              3  System.Object[]
+  T       0       1           0         288       288             0              0  System.GCMemoryInfoData
+50|
+Tag  SCount  TCount       SSize       TSize  UnitSize  UpscaledSize  UpscaledCount  Name
+-------------------------------------------------------------------------------------------
+ ST     239     229        5736        5496        24      24476468        1019852  Allocate.WithFinalizer
+ ST     704     675       50688       48600        72      72114946        1001596  System.Int32[,]
+ ST     993     919       95328       88224        96     101730871        1059696  System.String
+ ST    1977    1867      389469      373400       197     202639596        1028627  System.Byte[]
+ ST       3       3    56000072    56000096  18666690      56000072              3  System.Object[]
+51|
+Tag  SCount  TCount       SSize       TSize  UnitSize  UpscaledSize  UpscaledCount  Name
+-------------------------------------------------------------------------------------------
+ ST     216     215        5184        5160        24      22120992         921708  Allocate.WithFinalizer
+ ST     692     704       49824       50688        72      70885714         984523  System.Int32[,]
+ ST     959     896       92064       86016        96      98247639        1023412  System.String
+ ST    1923    1875      378831      375000       197     197104676        1000531  System.Byte[]
+ ST       3       3    56000072    56000096  18666690      56000072              3  System.Object[]
+52|
+Tag  SCount  TCount       SSize       TSize  UnitSize  UpscaledSize  UpscaledCount  Name
+-------------------------------------------------------------------------------------------
+ ST     204     207        4896        4968        24      20892048         870502  Allocate.WithFinalizer
+ ST     706     685       50832       49320        72      72319818        1004441  System.Int32[,]
+ ST     961     933       92256       89568        96      98452535        1025547  System.String
+ ST    1959    1863      385923      372600       197     200794623        1019262  System.Byte[]
+ ST       3       3    56000072    56000096  18666690      56000072              3  System.Object[]
+53|
+Tag  SCount  TCount       SSize       TSize  UnitSize  UpscaledSize  UpscaledCount  Name
+-------------------------------------------------------------------------------------------
+ ST     231     234        5544        5616        24      23657172         985715  Allocate.WithFinalizer
+ ST     686     675       49392       48600        72      70271098         975987  System.Int32[,]
+ ST     871     918       83616       88128        96      89232214         929502  System.String
+ ST    1961    1862      386317      372400       197     200999620        1020302  System.Byte[]
+ ST       3       3    56000072    56000096  18666690      56000072              3  System.Object[]
+54|
+Tag  SCount  TCount       SSize       TSize  UnitSize  UpscaledSize  UpscaledCount  Name
+-------------------------------------------------------------------------------------------
+ ST     249     234        5976        5616        24      25500588        1062524  Allocate.WithFinalizer
+ ST     678     662       48816       47664        72      69451610         964605  System.Int32[,]
+ ST     939     920       90144       88320        96      96198679        1002069  System.String
+ ST    1929    1869      380013      373800       197     197719667        1003653  System.Byte[]
+ ST       3       3    56000072    56000096  18666690      56000072              3  System.Object[]
+  T       0       2           0         576       288             0              0  System.GCMemoryInfoData
+55|
+Tag  SCount  TCount       SSize       TSize  UnitSize  UpscaledSize  UpscaledCount  Name
+-------------------------------------------------------------------------------------------
+ ST     248     218        5952        5232        24      25398176        1058257  Allocate.WithFinalizer
+ ST     722     697       51984       50184        72      73958795        1027205  System.Int32[,]
+ ST    1012     886       97152       85056        96     103677383        1079972  System.String
+ ST    1885    1889      371345      377800       197     193209732         980760  System.Byte[]
+ ST       3       3    56000072    56000096  18666690      56000072              3  System.Object[]
+56|
+Tag  SCount  TCount       SSize       TSize  UnitSize  UpscaledSize  UpscaledCount  Name
+-------------------------------------------------------------------------------------------
+ ST     254     220        6096        5280        24      26012648        1083860  Allocate.WithFinalizer
+ ST     706     671       50832       48312        72      72319818        1004441  System.Int32[,]
+ ST     952     918       91392       88128        96      97530503        1015942  System.String
+ ST    1883    1878      370951      375600       197     193004734         979719  System.Byte[]
+ ST       3       3    56000072    56000096  18666690      56000072              3  System.Object[]
+57|
+Tag  SCount  TCount       SSize       TSize  UnitSize  UpscaledSize  UpscaledCount  Name
+-------------------------------------------------------------------------------------------
+ ST     252     226        6048        5424        24      25807824        1075326  Allocate.WithFinalizer
+ ST     681     691       49032       49752        72      69758918         968873  System.Int32[,]
+ ST     956     893       91776       85728        96      97940295        1020211  System.String
+ ST    1868    1876      367996      375200       197     191467256         971915  System.Byte[]
+ ST       3       3    56000072    56000096  18666690      56000072              3  System.Object[]
+58|
+Tag  SCount  TCount       SSize       TSize  UnitSize  UpscaledSize  UpscaledCount  Name
+-------------------------------------------------------------------------------------------
+ ST     232     220        5568        5280        24      23759584         989982  Allocate.WithFinalizer
+ ST     683     691       49176       49752        72      69963790         971719  System.Int32[,]
+ ST     958     916       91968       87936        96      98145191        1022345  System.String
+ ST    2004    1861      394788      372200       197     205407057        1042675  System.Byte[]
+ ST       3       3    56000072    56000096  18666690      56000072              3  System.Object[]
+59|
+Tag  SCount  TCount       SSize       TSize  UnitSize  UpscaledSize  UpscaledCount  Name
+-------------------------------------------------------------------------------------------
+ ST     241     229        5784        5496        24      24681292        1028387  Allocate.WithFinalizer
+ ST     677     691       48744       49752        72      69349174         963182  System.Int32[,]
+ ST     913     892       87648       85632        96      93535030         974323  System.String
+ ST    1974    1876      388878      375200       197     202332101        1027066  System.Byte[]
+ ST       3       3    56000072    56000096  18666690      56000072              3  System.Object[]
+60|
+Tag  SCount  TCount       SSize       TSize  UnitSize  UpscaledSize  UpscaledCount  Name
+-------------------------------------------------------------------------------------------
+ ST     236     223        5664        5352        24      24169232        1007051  Allocate.WithFinalizer
+ ST     659     691       47448       49752        72      67505326         937573  System.Int32[,]
+ ST     973     882       93408       84672        96      99681911        1038353  System.String
+ ST    1910    1890      376270      378000       197     195772195         993767  System.Byte[]
+ ST       3       3    56000072    56000096  18666690      56000072              3  System.Object[]
+61|
+Tag  SCount  TCount       SSize       TSize  UnitSize  UpscaledSize  UpscaledCount  Name
+-------------------------------------------------------------------------------------------
+ ST     236     231        5664        5544        24      24169232        1007051  Allocate.WithFinalizer
+ ST     697     681       50184       49032        72      71397894         991637  System.Int32[,]
+ ST     974     906       93504       86976        96      99784359        1039420  System.String
+ ST    1902    1870      374694      374000       197     194952207         989605  System.Byte[]
+ ST       3       3    56000072    56000096  18666690      56000072              3  System.Object[]
+62|
+Tag  SCount  TCount       SSize       TSize  UnitSize  UpscaledSize  UpscaledCount  Name
+-------------------------------------------------------------------------------------------
+ ST     228     220        5472        5280        24      23349936         972914  Allocate.WithFinalizer
+ ST     717     685       51624       49320        72      73446615        1020091  System.Int32[,]
+ ST     940     911       90240       87456        96      96301127        1003136  System.String
+ ST    1886    1871      371542      374200       197     193312230         981280  System.Byte[]
+ ST       3       3    56000072    56000096  18666690      56000072              3  System.Object[]
+63|
+Tag  SCount  TCount       SSize       TSize  UnitSize  UpscaledSize  UpscaledCount  Name
+-------------------------------------------------------------------------------------------
+ ST     217     218        5208        5232        24      22223404         925975  Allocate.WithFinalizer
+ ST     728     680       52416       48960        72      74573411        1035741  System.Int32[,]
+ ST     930     910       89280       87360        96      95276646         992465  System.String
+ ST    1964    1879      386908      375800       197     201307116        1021863  System.Byte[]
+ ST       3       3    56000072    56000096  18666690      56000072              3  System.Object[]
+  T       0       1           0         288       288             0              0  System.GCMemoryInfoData
+64|
+Tag  SCount  TCount       SSize       TSize  UnitSize  UpscaledSize  UpscaledCount  Name
+-------------------------------------------------------------------------------------------
+ ST     253     214        6072        5136        24      25910236        1079593  Allocate.WithFinalizer
+ ST     698     696       50256       50112        72      71500330         993060  System.Int32[,]
+ ST     940     910       90240       87360        96      96301127        1003136  System.String
+ ST    1892    1867      372724      373400       197     193927221         984402  System.Byte[]
+ ST       3       3    56000072    56000096  18666690      56000072              3  System.Object[]
+65|
+Tag  SCount  TCount       SSize       TSize  UnitSize  UpscaledSize  UpscaledCount  Name
+-------------------------------------------------------------------------------------------
+ ST     244     215        5856        5160        24      24988528        1041188  Allocate.WithFinalizer
+ ST     693     695       49896       50040        72      70988150         985946  System.Int32[,]
+ ST     997     893       95712       85728        96     102140663        1063965  System.String
+ ST    1886    1883      371542      376600       197     193312230         981280  System.Byte[]
+ ST       3       3    56000072    56000096  18666690      56000072              3  System.Object[]
+66|
+Tag  SCount  TCount       SSize       TSize  UnitSize  UpscaledSize  UpscaledCount  Name
+-------------------------------------------------------------------------------------------
+ ST     235     219        5640        5256        24      24066820        1002784  Allocate.WithFinalizer
+ ST     714     678       51408       48816        72      73139307        1015823  System.Int32[,]
+ ST     947     908       90912       87168        96      97018263        1010606  System.String
+ ST    1883    1881      370951      376200       197     193004734         979719  System.Byte[]
+ ST       3       3    56000072    56000096  18666690      56000072              3  System.Object[]
+67|
+Tag  SCount  TCount       SSize       TSize  UnitSize  UpscaledSize  UpscaledCount  Name
+-------------------------------------------------------------------------------------------
+ ST     241     226        5784        5424        24      24681292        1028387  Allocate.WithFinalizer
+ ST     701     671       50472       48312        72      71807638         997328  System.Int32[,]
+ ST     951     904       91296       86784        96      97428055        1014875  System.String
+ ST    2028    1886      399516      377200       197     207867022        1055162  System.Byte[]
+ ST       3       3    56000072    56000096  18666690      56000072              3  System.Object[]
+68|
+Tag  SCount  TCount       SSize       TSize  UnitSize  UpscaledSize  UpscaledCount  Name
+-------------------------------------------------------------------------------------------
+ ST     231     215        5544        5160        24      23657172         985715  Allocate.WithFinalizer
+ ST     675     683       48600       49176        72      69144302         960337  System.Int32[,]
+ ST     894     923       85824       88608        96      91588518         954047  System.String
+ ST    1926    1866      379422      373200       197     197412171        1002092  System.Byte[]
+ ST       3       3    56000072    56000096  18666690      56000072              3  System.Object[]
+69|
+Tag  SCount  TCount       SSize       TSize  UnitSize  UpscaledSize  UpscaledCount  Name
+-------------------------------------------------------------------------------------------
+ ST     235     234        5640        5616        24      24066820        1002784  Allocate.WithFinalizer
+ ST     675     670       48600       48240        72      69144302         960337  System.Int32[,]
+ ST     994     884       95424       84864        96     101833319        1060763  System.String
+ ST    1907    1899      375679      379800       197     195464699         992206  System.Byte[]
+ ST       3       3    56000072    56000096  18666690      56000072              3  System.Object[]
+70|
+Tag  SCount  TCount       SSize       TSize  UnitSize  UpscaledSize  UpscaledCount  Name
+-------------------------------------------------------------------------------------------
+ ST     221     210        5304        5040        24      22633052         943043  Allocate.WithFinalizer
+ ST     700     712       50400       51264        72      71705202         995905  System.Int32[,]
+ ST     965     890       92640       85440        96      98862327        1029815  System.String
+ ST    1898    1877      373906      375400       197     194542212         987523  System.Byte[]
+ ST       3       3    56000072    56000096  18666690      56000072              3  System.Object[]
+71|
+Tag  SCount  TCount       SSize       TSize  UnitSize  UpscaledSize  UpscaledCount  Name
+-------------------------------------------------------------------------------------------
+ ST     252     222        6048        5328        24      25807824        1075326  Allocate.WithFinalizer
+ ST     753     699       54216       50328        72      77134311        1071309  System.Int32[,]
+ ST     958     898       91968       86208        96      98145191        1022345  System.String
+ ST    1977    1869      389469      373800       197     202639596        1028627  System.Byte[]
+ ST       3       3    56000072    56000096  18666690      56000072              3  System.Object[]
+72|
+Tag  SCount  TCount       SSize       TSize  UnitSize  UpscaledSize  UpscaledCount  Name
+-------------------------------------------------------------------------------------------
+ ST     231     228        5544        5472        24      23657172         985715  Allocate.WithFinalizer
+ ST     679     656       48888       47232        72      69554046         966028  System.Int32[,]
+ ST     902     932       86592       89472        96      92408102         962584  System.String
+ ST    1953    1871      384741      374200       197     200179632        1016140  System.Byte[]
+ ST       3       3    56000072    56000096  18666690      56000072              3  System.Object[]
+  T       0       1           0         288       288             0              0  System.GCMemoryInfoData
+73|
+Tag  SCount  TCount       SSize       TSize  UnitSize  UpscaledSize  UpscaledCount  Name
+-------------------------------------------------------------------------------------------
+ ST     215     216        5160        5184        24      22018580         917440  Allocate.WithFinalizer
+ ST     645     702       46440       50544        72      66071222         917655  System.Int32[,]
+ ST     939     910       90144       87360        96      96198679        1002069  System.String
+ ST    1923    1860      378831      372000       197     197104676        1000531  System.Byte[]
+ ST       3       3    56000072    56000096  18666690      56000072              3  System.Object[]
+74|
+Tag  SCount  TCount       SSize       TSize  UnitSize  UpscaledSize  UpscaledCount  Name
+-------------------------------------------------------------------------------------------
+ ST     233     224        5592        5376        24      23861996         994249  Allocate.WithFinalizer
+ ST     697     695       50184       50040        72      71397894         991637  System.Int32[,]
+ ST     925     888       88800       85248        96      94764406         987129  System.String
+ ST    1920    1880      378240      376000       197     196797180         998970  System.Byte[]
+ ST       3       3    56000072    56000096  18666690      56000072              3  System.Object[]
+75|
+Tag  SCount  TCount       SSize       TSize  UnitSize  UpscaledSize  UpscaledCount  Name
+-------------------------------------------------------------------------------------------
+ ST     234     220        5616        5280        24      23964408         998517  Allocate.WithFinalizer
+ ST     683     713       49176       51336        72      69963790         971719  System.Int32[,]
+ ST     879     870       84384       83520        96      90051798         938039  System.String
+ ST    1880    1885      370360      377000       197     192697239         978158  System.Byte[]
+ ST       3       3    56000072    56000096  18666690      56000072              3  System.Object[]
+76|
+Tag  SCount  TCount       SSize       TSize  UnitSize  UpscaledSize  UpscaledCount  Name
+-------------------------------------------------------------------------------------------
+ ST     207     212        4968        5088        24      21199284         883303  Allocate.WithFinalizer
+ ST     652     712       46944       51264        72      66788274         927614  System.Int32[,]
+ ST     913     889       87648       85344        96      93535030         974323  System.String
+ ST    1937    1874      381589      374800       197     198539655        1007815  System.Byte[]
+ ST       3       3    56000072    56000096  18666690      56000072              3  System.Object[]
+  T       0       1           0         288       288             0              0  System.GCMemoryInfoData
+77|
+Tag  SCount  TCount       SSize       TSize  UnitSize  UpscaledSize  UpscaledCount  Name
+-------------------------------------------------------------------------------------------
+ ST     233     225        5592        5400        24      23861996         994249  Allocate.WithFinalizer
+ ST     701     682       50472       49104        72      71807638         997328  System.Int32[,]
+ ST     939     880       90144       84480        96      96198679        1002069  System.String
+ ST    1893    1898      372921      379600       197     194029720         984922  System.Byte[]
+ ST       3       3    56000072    56000096  18666690      56000072              3  System.Object[]
+78|
+Tag  SCount  TCount       SSize       TSize  UnitSize  UpscaledSize  UpscaledCount  Name
+-------------------------------------------------------------------------------------------
+ ST     221     217        5304        5208        24      22633052         943043  Allocate.WithFinalizer
+ ST     719     678       51768       48816        72      73651487        1022937  System.Int32[,]
+ ST     907     924       87072       88704        96      92920342         967920  System.String
+ ST    1867    1868      367799      373600       197     191364758         971394  System.Byte[]
+ ST       3       3    56000072    56000096  18666690      56000072              3  System.Object[]
+79|
+Tag  SCount  TCount       SSize       TSize  UnitSize  UpscaledSize  UpscaledCount  Name
+-------------------------------------------------------------------------------------------
+ ST     216     225        5184        5400        24      22120992         921708  Allocate.WithFinalizer
+ ST     732     679       52704       48888        72      74983155        1041432  System.Int32[,]
+ ST     939     896       90144       86016        96      96198679        1002069  System.String
+ ST    1847    1886      363859      377200       197     189314787         960988  System.Byte[]
+ ST       3       3    56000072    56000096  18666690      56000072              3  System.Object[]
+80|
+Tag  SCount  TCount       SSize       TSize  UnitSize  UpscaledSize  UpscaledCount  Name
+-------------------------------------------------------------------------------------------
+ ST     234     208        5616        4992        24      23964408         998517  Allocate.WithFinalizer
+ ST     734     700       52848       50400        72      75188027        1044278  System.Int32[,]
+ ST     953     896       91488       86016        96      97632951        1017009  System.String
+ ST    1978    1883      389666      376600       197     202742095        1029147  System.Byte[]
+ ST       3       3    56000072    56000096  18666690      56000072              3  System.Object[]
+81|
+Tag  SCount  TCount       SSize       TSize  UnitSize  UpscaledSize  UpscaledCount  Name
+-------------------------------------------------------------------------------------------
+ ST     236     225        5664        5400        24      24169232        1007051  Allocate.WithFinalizer
+ ST     725     664       52200       47808        72      74266103        1031473  System.Int32[,]
+ ST     882     931       84672       89376        96      90359142         941241  System.String
+ ST    1887    1868      371739      373600       197     193414729         981800  System.Byte[]
+ ST       3       3    56000072    56000096  18666690      56000072              3  System.Object[]
+82|
+Tag  SCount  TCount       SSize       TSize  UnitSize  UpscaledSize  UpscaledCount  Name
+-------------------------------------------------------------------------------------------
+ ST     231     222        5544        5328        24      23657172         985715  Allocate.WithFinalizer
+ ST     671     666       48312       47952        72      68734558         954646  System.Int32[,]
+ ST     937     936       89952       89856        96      95993783         999935  System.String
+ ST    1930    1866      380210      373200       197     197822165        1004173  System.Byte[]
+ ST       3       3    56000072    56000096  18666690      56000072              3  System.Object[]
+83|
+Tag  SCount  TCount       SSize       TSize  UnitSize  UpscaledSize  UpscaledCount  Name
+-------------------------------------------------------------------------------------------
+ ST     253     223        6072        5352        24      25910236        1079593  Allocate.WithFinalizer
+ ST     763     688       54936       49536        72      78158671        1085537  System.Int32[,]
+ ST    1010     887       96960       85152        96     103472487        1077838  System.String
+ ST    1921    1890      378437      378000       197     196899679         999490  System.Byte[]
+ ST       3       3    56000072    56000096  18666690      56000072              3  System.Object[]
+84|
+Tag  SCount  TCount       SSize       TSize  UnitSize  UpscaledSize  UpscaledCount  Name
+-------------------------------------------------------------------------------------------
+ ST     255     205        6120        4920        24      26115060        1088127  Allocate.WithFinalizer
+ ST     699     713       50328       51336        72      71602766         994482  System.Int32[,]
+ ST     958     903       91968       86688        96      98145191        1022345  System.String
+ ST    1917    1867      377649      373400       197     196489685         997409  System.Byte[]
+ ST       3       3    56000072    56000096  18666690      56000072              3  System.Object[]
+85|
+Tag  SCount  TCount       SSize       TSize  UnitSize  UpscaledSize  UpscaledCount  Name
+-------------------------------------------------------------------------------------------
+ ST     222     223        5328        5352        24      22735464         947311  Allocate.WithFinalizer
+ ST     679     683       48888       49176        72      69554046         966028  System.Int32[,]
+ ST     907     912       87072       87552        96      92920342         967920  System.String
+ ST    1959    1870      385923      374000       197     200794623        1019262  System.Byte[]
+ ST       3       3    56000072    56000096  18666690      56000072              3  System.Object[]
+  T       0       1           0         288       288             0              0  System.GCMemoryInfoData
+86|
+Tag  SCount  TCount       SSize       TSize  UnitSize  UpscaledSize  UpscaledCount  Name
+-------------------------------------------------------------------------------------------
+ ST     226     212        5424        5088        24      23145112         964379  Allocate.WithFinalizer
+ ST     664     696       47808       50112        72      68017506         944687  System.Int32[,]
+ ST     955     904       91680       86784        96      97837847        1019144  System.String
+ ST    1917    1873      377649      374600       197     196489685         997409  System.Byte[]
+ ST       3       3    56000072    56000096  18666690      56000072              3  System.Object[]
+  T       0       1           0         288       288             0              0  System.GCMemoryInfoData
+87|
+Tag  SCount  TCount       SSize       TSize  UnitSize  UpscaledSize  UpscaledCount  Name
+-------------------------------------------------------------------------------------------
+ ST     243     232        5832        5568        24      24886116        1036921  Allocate.WithFinalizer
+ ST     722     667       51984       48024        72      73958795        1027205  System.Int32[,]
+ ST     928     870       89088       83520        96      95071750         990330  System.String
+ ST    1910    1918      376270      383600       197     195772195         993767  System.Byte[]
+ ST       3       3    56000072    56000096  18666690      56000072              3  System.Object[]
+  T       0       1           0         288       288             0              0  System.GCMemoryInfoData
+88|
+Tag  SCount  TCount       SSize       TSize  UnitSize  UpscaledSize  UpscaledCount  Name
+-------------------------------------------------------------------------------------------
+ ST     210     220        5040        5280        24      21506520         896105  Allocate.WithFinalizer
+ ST     659     698       47448       50256        72      67505326         937573  System.Int32[,]
+ ST     909     877       87264       84192        96      93125238         970054  System.String
+ ST    1836    1893      361692      378600       197     188187303         955265  System.Byte[]
+ ST       3       3    56000072    56000096  18666690      56000072              3  System.Object[]
+89|
+Tag  SCount  TCount       SSize       TSize  UnitSize  UpscaledSize  UpscaledCount  Name
+-------------------------------------------------------------------------------------------
+ ST     259     215        6216        5160        24      26524708        1105196  Allocate.WithFinalizer
+ ST     701     712       50472       51264        72      71807638         997328  System.Int32[,]
+ ST     964     889       92544       85344        96      98759879        1028748  System.String
+ ST    1916    1868      377452      373600       197     196387186         996889  System.Byte[]
+ ST       3       3    56000072    56000096  18666690      56000072              3  System.Object[]
+  T       0       1           0         288       288             0              0  System.GCMemoryInfoData
+90|
+Tag  SCount  TCount       SSize       TSize  UnitSize  UpscaledSize  UpscaledCount  Name
+-------------------------------------------------------------------------------------------
+ ST     220     220        5280        5280        24      22530640         938776  Allocate.WithFinalizer
+ ST     678     665       48816       47880        72      69451610         964605  System.Int32[,]
+ ST     962     941       92352       90336        96      98554983        1026614  System.String
+ ST    1948    1859      383756      371800       197     199667139        1013538  System.Byte[]
+ ST       3       3    56000072    56000096  18666690      56000072              3  System.Object[]
+  T       0       1           0         288       288             0              0  System.GCMemoryInfoData
+91|
+Tag  SCount  TCount       SSize       TSize  UnitSize  UpscaledSize  UpscaledCount  Name
+-------------------------------------------------------------------------------------------
+ ST     250     221        6000        5304        24      25603000        1066791  Allocate.WithFinalizer
+ ST     726     697       52272       50184        72      74368539        1032896  System.Int32[,]
+ ST     891     898       85536       86208        96      91281174         950845  System.String
+ ST    1840    1871      362480      374200       197     188597298         957346  System.Byte[]
+ ST       3       3    56000072    56000096  18666690      56000072              3  System.Object[]
+92|
+Tag  SCount  TCount       SSize       TSize  UnitSize  UpscaledSize  UpscaledCount  Name
+-------------------------------------------------------------------------------------------
+ ST     216     221        5184        5304        24      22120992         921708  Allocate.WithFinalizer
+ ST     697     680       50184       48960        72      71397894         991637  System.Int32[,]
+ ST     970     930       93120       89280        96      99374567        1035151  System.String
+ ST    1968    1855      387696      371000       197     201717110        1023944  System.Byte[]
+ ST       3       3    56000072    56000096  18666690      56000072              3  System.Object[]
+93|
+Tag  SCount  TCount       SSize       TSize  UnitSize  UpscaledSize  UpscaledCount  Name
+-------------------------------------------------------------------------------------------
+ ST     255     222        6120        5328        24      26115060        1088127  Allocate.WithFinalizer
+ ST     703     697       50616       50184        72      72012510        1000173  System.Int32[,]
+ ST     954     888       91584       85248        96      97735399        1018077  System.String
+ ST    1962    1881      386514      376200       197     201102118        1020822  System.Byte[]
+ ST       3       3    56000072    56000096  18666690      56000072              3  System.Object[]
+94|
+Tag  SCount  TCount       SSize       TSize  UnitSize  UpscaledSize  UpscaledCount  Name
+-------------------------------------------------------------------------------------------
+ ST     206     222        4944        5328        24      21096872         879036  Allocate.WithFinalizer
+ ST     733     699       52776       50328        72      75085591        1042855  System.Int32[,]
+ ST     905     880       86880       84480        96      92715446         965785  System.String
+ ST    1922    1887      378634      377400       197     197002177        1000011  System.Byte[]
+ ST       3       3    56000072    56000096  18666690      56000072              3  System.Object[]
+95|
+Tag  SCount  TCount       SSize       TSize  UnitSize  UpscaledSize  UpscaledCount  Name
+-------------------------------------------------------------------------------------------
+ ST     239     215        5736        5160        24      24476468        1019852  Allocate.WithFinalizer
+ ST     712     684       51264       49248        72      72934435        1012978  System.Int32[,]
+ ST     981     903       94176       86688        96     100501495        1046890  System.String
+ ST    1937    1881      381589      376200       197     198539655        1007815  System.Byte[]
+ ST       3       3    56000072    56000096  18666690      56000072              3  System.Object[]
+  T       0       1           0         288       288             0              0  System.GCMemoryInfoData
+96|
+Tag  SCount  TCount       SSize       TSize  UnitSize  UpscaledSize  UpscaledCount  Name
+-------------------------------------------------------------------------------------------
+ ST     207     225        4968        5400        24      21199284         883303  Allocate.WithFinalizer
+ ST     635     713       45720       51336        72      65046862         903428  System.Int32[,]
+ ST     951     888       91296       85248        96      97428055        1014875  System.String
+ ST    1960    1864      386120      372800       197     200897121        1019782  System.Byte[]
+ ST       3       3    56000072    56000096  18666690      56000072              3  System.Object[]
+97|
+Tag  SCount  TCount       SSize       TSize  UnitSize  UpscaledSize  UpscaledCount  Name
+-------------------------------------------------------------------------------------------
+ ST     240     222        5760        5328        24      24578880        1024120  Allocate.WithFinalizer
+ ST     674     703       48528       50616        72      69041866         958914  System.Int32[,]
+ ST     987     878       94752       84288        96     101116183        1053293  System.String
+ ST    1860    1878      366420      375600       197     190647268         967752  System.Byte[]
+ ST       3       3    56000072    56000096  18666690      56000072              3  System.Object[]
+  T       0       1           0         288       288             0              0  System.GCMemoryInfoData
+98|
+Tag  SCount  TCount       SSize       TSize  UnitSize  UpscaledSize  UpscaledCount  Name
+-------------------------------------------------------------------------------------------
+ ST     205     222        4920        5328        24      20994460         874769  Allocate.WithFinalizer
+ ST     682     689       49104       49608        72      69861354         970296  System.Int32[,]
+ ST     967     902       92832       86592        96      99067223        1031950  System.String
+ ST    1966    1872      387302      374400       197     201512113        1022904  System.Byte[]
+ ST       3       3    56000072    56000096  18666690      56000072              3  System.Object[]
+99|
+Tag  SCount  TCount       SSize       TSize  UnitSize  UpscaledSize  UpscaledCount  Name
+-------------------------------------------------------------------------------------------
+ ST     236     227        5664        5448        24      24169232        1007051  Allocate.WithFinalizer
+ ST     727     666       52344       47952        72      74470975        1034319  System.Int32[,]
+ ST     938     903       90048       86688        96      96096231        1001002  System.String
+ ST    1824    1889      359328      377800       197     186957321         949021  System.Byte[]
+ ST       3       3    56000072    56000096  18666690      56000072              3  System.Object[]
+
+< run stops
+
+Allocate.WithFinalizer
+-------------------------
+ -12.9 %
+ -12.5 %
+ -12.1 %
+ -11.7 %
+ -11.7 %
+ -10.4 %
+  -9.5 %
+  -8.7 %
+  -8.3 %
+  -8.3 %
+  -7.8 %
+  -7.8 %
+  -7.8 %
+  -7.8 %
+  -7.4 %
+  -7.4 %
+  -7.0 %
+  -6.5 %
+  -6.5 %
+  -6.1 %
+  -6.1 %
+  -6.1 %
+  -5.7 %
+  -5.7 %
+  -5.3 %
+  -5.3 %
+  -4.0 %
+  -3.6 %
+  -3.6 %
+  -2.7 %
+  -2.3 %
+  -2.3 %
+  -1.9 %
+  -1.9 %
+  -1.9 %
+  -1.4 %
+  -1.4 %
+  -1.4 %
+  -1.4 %
+  -1.4 %
+  -1.0 %
+  -0.6 %
+  -0.6 %
+  -0.6 %
+  -0.6 %
+  -0.1 %
+  -0.1 %
+   0.3 %
+   0.3 %
+   0.3 %
+   0.3 %
+   0.3 %
+   0.7 %
+   0.7 %
+   0.7 %
+   0.7 %
+   0.7 %
+   0.7 %
+   1.1 %
+   1.1 %
+   1.1 %
+   1.6 %
+   2.0 %
+   2.0 %
+   2.0 %
+   2.4 %
+   2.4 %
+   2.4 %
+   2.4 %
+   2.8 %
+   2.8 %
+   3.3 %
+   3.7 %
+   3.7 %
+   3.7 %
+   4.1 %
+   4.5 %
+   5.8 %
+   5.8 %
+   6.3 %
+   6.7 %
+   6.7 %
+   7.1 %
+   7.1 %
+   7.5 %
+   7.5 %
+   7.5 %
+   7.5 %
+   8.0 %
+   8.0 %
+   8.0 %
+   8.0 %
+   8.4 %
+   8.4 %
+   8.8 %
+   8.8 %
+  10.5 %
+  10.5 %
+  11.8 %
+  12.2 %
+
+System.Int32[,]
+-------------------------
+  -9.7 %
+  -9.5 %
+  -8.2 %
+  -7.2 %
+  -6.2 %
+  -6.2 %
+  -6.2 %
+  -6.0 %
+  -5.7 %
+  -5.5 %
+  -5.2 %
+  -5.1 %
+  -4.5 %
+  -4.4 %
+  -4.3 %
+  -4.1 %
+  -4.0 %
+  -4.0 %
+  -3.7 %
+  -3.5 %
+  -3.5 %
+  -3.5 %
+  -3.4 %
+  -3.4 %
+  -3.1 %
+  -3.0 %
+  -3.0 %
+  -2.8 %
+  -2.8 %
+  -2.8 %
+  -2.8 %
+  -2.4 %
+  -2.4 %
+  -2.3 %
+  -1.8 %
+  -1.7 %
+  -1.5 %
+  -1.5 %
+  -1.4 %
+  -1.4 %
+  -1.3 %
+  -1.3 %
+  -1.1 %
+  -1.1 %
+  -1.1 %
+  -1.0 %
+  -1.0 %
+  -0.8 %
+  -0.8 %
+  -0.8 %
+  -0.7 %
+  -0.7 %
+  -0.7 %
+  -0.6 %
+  -0.4 %
+  -0.4 %
+  -0.3 %
+  -0.3 %
+  -0.3 %
+   0.0 %
+   0.2 %
+   0.2 %
+   0.3 %
+   0.4 %
+   0.4 %
+   1.2 %
+   1.2 %
+   1.3 %
+   1.3 %
+   1.4 %
+   1.6 %
+   1.6 %
+   1.7 %
+   1.7 %
+   1.7 %
+   1.7 %
+   2.0 %
+   2.3 %
+   2.4 %
+   2.7 %
+   2.7 %
+   2.7 %
+   2.9 %
+   3.1 %
+   3.3 %
+   3.4 %
+   3.6 %
+   3.9 %
+   4.1 %
+   4.3 %
+   4.4 %
+   4.4 %
+   5.3 %
+   5.6 %
+   5.7 %
+   7.0 %
+   7.1 %
+   8.4 %
+   8.6 %
+   8.6 %
+
+System.String
+-------------------------
+  -7.0 %
+  -6.8 %
+  -6.2 %
+  -5.9 %
+  -5.2 %
+  -5.1 %
+  -4.9 %
+  -4.8 %
+  -4.7 %
+  -4.6 %
+  -4.6 %
+  -4.4 %
+  -4.3 %
+  -4.2 %
+  -4.1 %
+  -3.8 %
+  -3.8 %
+  -3.7 %
+  -3.7 %
+  -3.4 %
+  -3.4 %
+  -3.2 %
+  -3.2 %
+  -3.0 %
+  -2.8 %
+  -2.7 %
+  -2.7 %
+  -2.6 %
+  -2.6 %
+  -2.4 %
+  -2.4 %
+  -1.9 %
+  -1.5 %
+  -1.3 %
+  -1.0 %
+  -0.8 %
+  -0.8 %
+  -0.5 %
+  -0.5 %
+  -0.5 %
+  -0.1 %
+  -0.0 %
+   0.1 %
+   0.2 %
+   0.2 %
+   0.2 %
+   0.2 %
+   0.3 %
+   0.3 %
+   0.5 %
+   0.5 %
+   0.6 %
+   1.1 %
+   1.1 %
+   1.1 %
+   1.3 %
+   1.5 %
+   1.5 %
+   1.5 %
+   1.5 %
+   1.6 %
+   1.7 %
+   1.7 %
+   1.7 %
+   1.7 %
+   1.8 %
+   1.9 %
+   2.0 %
+   2.2 %
+   2.2 %
+   2.2 %
+   2.3 %
+   2.6 %
+   2.7 %
+   2.8 %
+   2.9 %
+   2.9 %
+   2.9 %
+   3.0 %
+   3.2 %
+   3.2 %
+   3.3 %
+   3.5 %
+   3.8 %
+   3.9 %
+   3.9 %
+   4.0 %
+   4.3 %
+   4.5 %
+   4.7 %
+   5.3 %
+   5.6 %
+   5.6 %
+   5.9 %
+   6.0 %
+   6.1 %
+   6.4 %
+   6.8 %
+   7.8 %
+   8.0 %
+
+System.Byte[]
+-------------------------
+  -6.5 %
+  -5.1 %
+  -4.5 %
+  -4.3 %
+  -3.9 %
+  -3.8 %
+  -3.7 %
+  -3.2 %
+  -3.1 %
+  -2.9 %
+  -2.9 %
+  -2.8 %
+  -2.3 %
+  -2.2 %
+  -2.1 %
+  -2.0 %
+  -2.0 %
+  -2.0 %
+  -1.9 %
+  -1.9 %
+  -1.9 %
+  -1.8 %
+  -1.8 %
+  -1.6 %
+  -1.6 %
+  -1.5 %
+  -1.2 %
+  -1.2 %
+  -1.1 %
+  -1.0 %
+  -1.0 %
+  -0.9 %
+  -0.8 %
+  -0.7 %
+  -0.6 %
+  -0.6 %
+  -0.5 %
+  -0.5 %
+  -0.4 %
+  -0.4 %
+  -0.3 %
+  -0.3 %
+  -0.3 %
+  -0.3 %
+  -0.2 %
+  -0.1 %
+  -0.1 %
+  -0.1 %
+  -0.1 %
+  -0.1 %
+   0.0 %
+   0.1 %
+   0.1 %
+   0.1 %
+   0.2 %
+   0.2 %
+   0.2 %
+   0.3 %
+   0.4 %
+   0.4 %
+   0.4 %
+   0.5 %
+   0.5 %
+   0.6 %
+   0.6 %
+   0.6 %
+   0.6 %
+   0.8 %
+   0.8 %
+   1.0 %
+   1.0 %
+   1.2 %
+   1.2 %
+   1.4 %
+   1.4 %
+   1.6 %
+   1.7 %
+   1.8 %
+   1.9 %
+   1.9 %
+   1.9 %
+   2.0 %
+   2.0 %
+   2.1 %
+   2.1 %
+   2.1 %
+   2.2 %
+   2.2 %
+   2.3 %
+   2.4 %
+   2.7 %
+   2.8 %
+   2.9 %
+   2.9 %
+   2.9 %
+   3.0 %
+   3.3 %
+   4.2 %
+   4.3 %
+   5.5 %

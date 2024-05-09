@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace Allocate
 {
-    public class MeasureDifferentTypes
+    public class AllocateDifferentTypes : IAllocations
     {
         public void Allocate(int count)
         {

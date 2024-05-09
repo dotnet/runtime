@@ -7,7 +7,7 @@ using System.Threading;
 
 namespace Allocate
 {
-    public class MeasureThreadAllocations
+    public class ThreadedAllocations : IAllocations
     {
         public void Allocate(int count)
         {

@@ -3,104 +3,124 @@ using System.Diagnostics;
 
 namespace Allocate
 {
+    public enum Scenario
+    {
+        SmallAndBig                  = 1,
+        PerThread                    = 2,
+        ArrayOfDouble                = 3,
+        FinalizerAndArraysAndStrings = 4,
+        RatioSizedArrays             = 5,
+    }
+
+
     internal class Program
     {
         static void Main(string[] args)
         {
+            if (args.Length < 1)
+            {
+                Console.WriteLine("Usage: Allocate --scenario (1|2|3|4|5) [--iterations (number of iterations)] [--allocations (allocations count)]");
+                Console.WriteLine("                     1: small and big allocations");
+                Console.WriteLine("                     2: allocations per thread");
+                Console.WriteLine("                     3: arrays of double (for x86)");
+                Console.WriteLine("                     4: different types of objects");
+                Console.WriteLine("                     5: ratio sized arrays");
+                return;
+            }
+            ParseCommandLine(args, out Scenario scenario, out int allocationsCount, out int iterations);
+
+            IAllocations allocationsRun = null;
+            switch(scenario)
+            {
+                case Scenario.SmallAndBig:
+                    allocationsRun = new AllocateSmallAndBig();
+                    break;
+                case Scenario.PerThread:
+                    allocationsRun = new ThreadedAllocations();
+                    break;
+                case Scenario.ArrayOfDouble:
+                    allocationsRun = new AllocateArraysOfDoubles();
+                    break;
+                case Scenario.FinalizerAndArraysAndStrings:
+                    allocationsRun = new AllocateDifferentTypes();
+                    break;
+                case Scenario.RatioSizedArrays:
+                    allocationsRun = new AllocateRatioSizedArrays();
+                    break;
+                default:
+                    Console.WriteLine($"Invalid scenario: '{scenario}'");
+                    return;
+            }
+
             Console.WriteLine($"pid = {Process.GetCurrentProcess().Id}");
             Console.ReadLine();
 
-            if (args.Length > 1)
+            if (allocationsRun != null)
             {
-                Console.WriteLine("Usage: Allocate [1|2|3|4]");
-                Console.WriteLine("  1: small and big allocations");
-                Console.WriteLine("  2: allocations per thread");
-                Console.WriteLine("  3: arrays of double (for x86)");
-                Console.WriteLine("  4: different types of objects");
-                return;
-            }
+                Stopwatch clock = new Stopwatch();
+                clock.Start();
 
-            if (args.Length == 1)
-            {
-                switch(args[0])
+                AllocationsRunEventSource.Log.StartRun(iterations, allocationsCount);
+                for (int i = 0; i < iterations; i++)
                 {
-                    case "1":
-                        MeasureSmallAndBigAllocations();
-                        break;
-                    case "2":
-                        MeasureAllocationsPerThread();
-                        break;
-                    case "3":
-                        MeasureDoubleAllocations();
-                        break;
-                    case "4":
-                        MeasureDifferentTypes();
-                        break;
-                    default:
-                        Console.WriteLine($"Invalid argument: '{args[0]}'");
-                        break;
+                    AllocationsRunEventSource.Log.StartIteration(i);
+                    allocationsRun.Allocate(allocationsCount);
+                    AllocationsRunEventSource.Log.StopIteration(i);
                 }
-                return;
-            }
+                AllocationsRunEventSource.Log.StopRun();
 
-            // default behavior
-            MeasureSmallAndBigAllocations();
+                clock.Stop();
+                Console.WriteLine($"Duration = {clock.ElapsedMilliseconds} ms");
+            }
         }
 
-        // used to compute percentiles
-        const int Iterations = 10;
-
-        // number of objects to allocate
-        const int Count = 1_000_000;
-
-        private static void MeasureDifferentTypes()
+        private static void ParseCommandLine(string[] args, out Scenario scenario, out int allocationsCount, out int iterations)
         {
-            var ma = new MeasureDifferentTypes();
-            Stopwatch clock = new Stopwatch();
-            clock.Start();
+            iterations = 100;
+            allocationsCount = 1_000_000;
+            scenario = Scenario.SmallAndBig;
 
-            AllocationsRunEventSource.Log.StartRun(Iterations, Count);
-            for (int i = 0; i < Iterations; i++)
+            for (int i = 0; i < args.Length; i++)
             {
-                AllocationsRunEventSource.Log.StartIteration(i);
-                ma.Allocate(Count);
-                AllocationsRunEventSource.Log.StopIteration(i);
+                string arg = args[i];
+
+                if ("--scenario".Equals(arg, StringComparison.OrdinalIgnoreCase))
+                {
+                    int valueOffset = i + 1;
+                    if (valueOffset < args.Length && int.TryParse(args[valueOffset], out var number))
+                    {
+                        scenario = (Scenario)number;
+                    }
+                }
+                else
+                if ("--iterations".Equals(arg, StringComparison.OrdinalIgnoreCase))
+                {
+                    int valueOffset = i + 1;
+                    if (valueOffset < args.Length && int.TryParse(args[valueOffset], out var number))
+                    {
+                        if (number <= 0)
+                        {
+                            throw new ArgumentOutOfRangeException($"Invalid iterations count '{number}': must be > 0");
+                        }
+
+                        iterations = number;
+                    }
+                }
+                else
+                if ("--allocations".Equals(arg, StringComparison.OrdinalIgnoreCase))
+                {
+                    int valueOffset = i + 1;
+                    if (valueOffset < args.Length && int.TryParse(args[valueOffset], out var number))
+                    {
+                        if (number <= 0)
+                        {
+                            throw new ArgumentOutOfRangeException($"Invalid numbers of allocations '{number}: must be > 0");
+                        }
+
+                        allocationsCount = number;
+                    }
+                }
             }
-            AllocationsRunEventSource.Log.StopRun();
-
-            clock.Stop();
-            Console.WriteLine($"Duration = {clock.ElapsedMilliseconds} ms");
-        }
-
-        private static void MeasureDoubleAllocations()
-        {
-            var ma = new MeasureDoubles();
-            Stopwatch clock = new Stopwatch();
-            clock.Start();
-            ma.Allocate(Count);
-            clock.Stop();
-            Console.WriteLine($"Duration = {clock.ElapsedMilliseconds} ms");
-        }
-
-        private static void MeasureAllocationsPerThread()
-        {
-            var ma = new MeasureThreadAllocations();
-            Stopwatch clock = new Stopwatch();
-            clock.Start();
-            ma.Allocate(Count);
-            clock.Stop();
-            Console.WriteLine($"Duration = {clock.ElapsedMilliseconds} ms");
-        }
-
-        static void MeasureSmallAndBigAllocations()
-        {
-            var ma = new MeasureAllocations();
-
-            Stopwatch clock = new Stopwatch();
-            clock.Start();
-            ma.Allocate(Count);
-            clock.Stop();
-            Console.WriteLine($"Duration = {clock.ElapsedMilliseconds} ms");
         }
     }
 }

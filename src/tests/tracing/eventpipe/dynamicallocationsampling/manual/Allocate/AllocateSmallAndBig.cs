@@ -6,7 +6,7 @@ using System.Collections.Generic;
 
 namespace Allocate
 {
-    public class MeasureAllocations
+    public class AllocateSmallAndBig : IAllocations
     {
         public void Allocate(int count)
         {
@@ -101,38 +101,6 @@ namespace Allocate
             allocations[nameof(Object128)].Count = 0;
             allocations[nameof(Object128)].Size = 0;
         }
-
-        //private (Object0 Instance, long Size) Allocate(int type)
-        //{
-        //    if (type == 0)
-        //    {
-        //        return (new Object8(), 24);
-        //    }
-        //    else
-        //    if (type == 1)
-        //    {
-        //        return (new Object16(), 32);
-        //    }
-        //    else
-        //    if (type == 2)
-        //    {
-        //        return (new Object32(), 48);
-        //    }
-        //    else
-        //    if (type == 3)
-        //    {
-        //        return (new Object64(), 80);
-        //    }
-        //    else
-        //    if (type == 4)
-        //    {
-        //        return (new Object128(), 144);
-        //    }
-        //    else
-        //    {
-        //        throw new ArgumentOutOfRangeException("type", type, "Type cannot be greater than 128");
-        //    }
-        //}
 
         private void DumpAllocations(Dictionary<string, AllocStats> objects)
         {
