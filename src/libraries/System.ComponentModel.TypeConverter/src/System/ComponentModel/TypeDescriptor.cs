@@ -4245,10 +4245,11 @@ namespace System.ComponentModel
 
         internal static class ThrowHelper
         {
-            internal static NotSupportedException GetNotSupportedException_CustomTypeProviderMustImplememtMember(string memberName) => new NotSupportedException($"todo: custom type providers must implement member {memberName}.");
+            internal static NotImplementedException ThrowNotImplementedException_CustomTypeProviderMustImplememtMember(string memberName) => throw new NotImplementedException($"todo: custom type providers must implement member {memberName}.");
 
+            // TODO: remove this
             [DoesNotReturn]
-            internal static void ThrowNotSupportedException_RegisteredTypeMemberCalledOnLegacyProvider(string memberName) => throw new NotSupportedException($"todo: the member {memberName} was called on a provider that returned 'false' for RequireRegisteredTypes.");
+            internal static void ThrowNotImplementedException_RegisteredTypeMemberCalledOnLegacyProvider(string memberName) => throw new NotImplementedException($"todo: the member {memberName} was called on a provider that returned 'false' for RequireRegisteredTypes.");
 
             [DoesNotReturn]
             internal static void ThrowInvalidOperationException_RegisterTypeRequired(Type type) =>

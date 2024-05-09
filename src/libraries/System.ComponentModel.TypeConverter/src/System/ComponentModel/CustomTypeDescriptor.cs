@@ -67,12 +67,12 @@ namespace System.ComponentModel
             {
                 if (TypeDescriptor.RequireRegisteredTypes)
                 {
-                    TypeDescriptor.ThrowHelper.ThrowNotSupportedException_RegisteredTypeMemberCalledOnLegacyProvider(nameof(GetAttributesFromRegisteredType));
+                    TypeDescriptor.ThrowHelper.ThrowNotImplementedException_CustomTypeProviderMustImplememtMember(nameof(GetAttributesFromRegisteredType));
                 }
             }
             else if (RequireRegisteredTypes == true)
             {
-                throw new NotImplementedException();
+                TypeDescriptor.ThrowHelper.ThrowNotImplementedException_CustomTypeProviderMustImplememtMember(nameof(GetAttributesFromRegisteredType));
             }
 
             return GetAttributes();
@@ -122,7 +122,7 @@ namespace System.ComponentModel
             {
                 if (TypeDescriptor.RequireRegisteredTypes)
                 {
-                    TypeDescriptor.ThrowHelper.ThrowNotSupportedException_RegisteredTypeMemberCalledOnLegacyProvider(nameof(GetConverterFromRegisteredType));
+                    TypeDescriptor.ThrowHelper.ThrowNotImplementedException_RegisteredTypeMemberCalledOnLegacyProvider(nameof(GetConverterFromRegisteredType));
                 }
             }
             else if (RequireRegisteredTypes == true)
@@ -130,11 +130,11 @@ namespace System.ComponentModel
                 throw new NotImplementedException();
             }
 
-            return FallBackToLegacyProvider();
+            return FallBack();
 
             [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-                Justification = "Chaining from registered type provider to legacy provider is supported when TypeDescriptor.RequireRegisteredTypes is false.")]
-            TypeConverter? FallBackToLegacyProvider() => GetConverter();
+                Justification = "Chaining from registered type provider to legacy provider is supported.")]
+            TypeConverter? FallBack() => GetConverter();
         }
 
         /// <summary>
@@ -211,7 +211,7 @@ namespace System.ComponentModel
             {
                 if (TypeDescriptor.RequireRegisteredTypes)
                 {
-                    TypeDescriptor.ThrowHelper.ThrowNotSupportedException_RegisteredTypeMemberCalledOnLegacyProvider(nameof(GetEventsFromRegisteredType));
+                    TypeDescriptor.ThrowHelper.ThrowNotImplementedException_RegisteredTypeMemberCalledOnLegacyProvider(nameof(GetEventsFromRegisteredType));
                 }
             }
             else if (RequireRegisteredTypes == true)
@@ -258,7 +258,7 @@ namespace System.ComponentModel
             {
                 if (TypeDescriptor.RequireRegisteredTypes)
                 {
-                    TypeDescriptor.ThrowHelper.ThrowNotSupportedException_RegisteredTypeMemberCalledOnLegacyProvider(nameof(GetPropertiesFromRegisteredType));
+                    TypeDescriptor.ThrowHelper.ThrowNotImplementedException_RegisteredTypeMemberCalledOnLegacyProvider(nameof(GetPropertiesFromRegisteredType));
                 }
             }
             else if (RequireRegisteredTypes == true)
@@ -266,11 +266,11 @@ namespace System.ComponentModel
                 throw new NotImplementedException();
             }
 
-            return FallBackToLegacyProvider();
+            return FallBack();
 
             [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-                Justification = "Chaining from registered type provider to legacy provider is supported when TypeDescriptor.RequireRegisteredTypes is false.")]
-            PropertyDescriptorCollection FallBackToLegacyProvider() => GetProperties();
+                Justification = "Chaining from registered type provider to legacy provider is supported.")]
+            PropertyDescriptorCollection FallBack() => GetProperties();
         }
 
         /// <summary>
@@ -312,7 +312,7 @@ namespace System.ComponentModel
                     return _parent.RequireRegisteredTypes;
                 }
 
-                return false;
+                return null;
             }
         }
     }

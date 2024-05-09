@@ -88,22 +88,90 @@ namespace System.ComponentModel
         /// <remarks>
         /// todo: if trimmable, th
         /// </remarks>
-        AttributeCollection GetAttributesFromRegisteredType() => throw TypeDescriptor.ThrowHelper.GetNotSupportedException_CustomTypeProviderMustImplememtMember(nameof(GetAttributesFromRegisteredType));
+        AttributeCollection GetAttributesFromRegisteredType()
+        {
+            if (RequireRegisteredTypes is null)
+            {
+                if (TypeDescriptor.RequireRegisteredTypes)
+                {
+                    TypeDescriptor.ThrowHelper.ThrowNotImplementedException_CustomTypeProviderMustImplememtMember(nameof(GetAttributesFromRegisteredType));
+                }
+            }
+            else if (RequireRegisteredTypes == true)
+            {
+                TypeDescriptor.ThrowHelper.ThrowNotImplementedException_CustomTypeProviderMustImplememtMember(nameof(GetAttributesFromRegisteredType));
+            }
+
+            return GetAttributes();
+        }
 
         /// <summary>
         /// Gets a type converter for this object that may be registered.
         /// </summary>
-        TypeConverter? GetConverterFromRegisteredType() => throw TypeDescriptor.ThrowHelper.GetNotSupportedException_CustomTypeProviderMustImplememtMember(nameof(GetConverterFromRegisteredType));
+        TypeConverter? GetConverterFromRegisteredType()
+        {
+            if (RequireRegisteredTypes is null)
+            {
+                if (TypeDescriptor.RequireRegisteredTypes)
+                {
+                    TypeDescriptor.ThrowHelper.ThrowNotImplementedException_CustomTypeProviderMustImplememtMember(nameof(GetConverterFromRegisteredType));
+                }
+            }
+            else if (RequireRegisteredTypes == true)
+            {
+                TypeDescriptor.ThrowHelper.ThrowNotImplementedException_CustomTypeProviderMustImplememtMember(nameof(GetConverterFromRegisteredType));
+            }
+
+            return FallBack();
+
+            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+                Justification = "Chaining from registered type provider to legacy provider is supported.")]
+            TypeConverter? FallBack() => GetConverter();
+        }
 
         /// <summary>
         /// Gets the events for this instance of a component that may be registered.
         /// </summary>
-        EventDescriptorCollection GetEventsFromRegisteredType() => throw TypeDescriptor.ThrowHelper.GetNotSupportedException_CustomTypeProviderMustImplememtMember(nameof(GetEventsFromRegisteredType));
+        EventDescriptorCollection GetEventsFromRegisteredType()
+        {
+            if (RequireRegisteredTypes is null)
+            {
+                if (TypeDescriptor.RequireRegisteredTypes)
+                {
+                    TypeDescriptor.ThrowHelper.ThrowNotImplementedException_RegisteredTypeMemberCalledOnLegacyProvider(nameof(GetEventsFromRegisteredType));
+                }
+            }
+            else if (RequireRegisteredTypes == true)
+            {
+                throw new NotImplementedException();
+            }
+
+            return GetEvents();
+        }
 
         /// <summary>
         /// Gets the properties for this instance of a component that may be registered.
         /// </summary>
-        PropertyDescriptorCollection GetPropertiesFromRegisteredType() => throw TypeDescriptor.ThrowHelper.GetNotSupportedException_CustomTypeProviderMustImplememtMember(nameof(GetPropertiesFromRegisteredType));
+        PropertyDescriptorCollection GetPropertiesFromRegisteredType()
+        {
+            if (RequireRegisteredTypes is null)
+            {
+                if (TypeDescriptor.RequireRegisteredTypes)
+                {
+                    TypeDescriptor.ThrowHelper.ThrowNotImplementedException_RegisteredTypeMemberCalledOnLegacyProvider(nameof(GetPropertiesFromRegisteredType));
+                }
+            }
+            else if (RequireRegisteredTypes == true)
+            {
+                throw new NotImplementedException();
+            }
+
+            return FallBack();
+
+            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+                Justification = "Chaining from registered type provider to legacy provider is supported.")]
+            PropertyDescriptorCollection FallBack() => GetProperties();
+        }
 
         /// <summary>
         /// Whether this type provider supports known types.

@@ -312,6 +312,11 @@ namespace System.ComponentModel
             return GetTypeDescriptorFromRegisteredType(instance.GetType(), instance);
         }
 
+        // This method doesn't contain [DynamicallyAccessedMembers(All)] unlike GetTypeDescriptor(). It does this to
+        // prevent trim errors similar to other "FromRegisteredType" methods. However, unlike those other methods,
+        // it does not validate that the type is registered so it could be ubused by the caller.
+        // However, validation still occurs during subsequent calls to Get*FromRegisteredType() which validate that the type
+        // was registered and also for subsequent calls to Get*() for the reflection provider if the feature switch is on.
         public virtual ICustomTypeDescriptor? GetTypeDescriptorFromRegisteredType(Type objectType, object? instance)
         {
             ArgumentNullException.ThrowIfNull(objectType);
@@ -319,18 +324,6 @@ namespace System.ComponentModel
             if (_parent != null)
             {
                 return _parent.GetTypeDescriptorFromRegisteredType(objectType, instance);
-            }
-
-            if (RequireRegisteredTypes is null)
-            {
-                if (TypeDescriptor.RequireRegisteredTypes)
-                {
-                    TypeDescriptor.ThrowHelper.ThrowNotSupportedException_RegisteredTypeMemberCalledOnLegacyProvider(nameof(GetTypeDescriptorFromRegisteredType));
-                }
-            }
-            else if (RequireRegisteredTypes == true)
-            {
-                throw new NotImplementedException();
             }
 
             return FallBackToLegacyProvider();

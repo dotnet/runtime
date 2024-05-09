@@ -3,6 +3,7 @@
 
 using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
+using static System.ComponentModel.Tests.TypeDescriptorTests;
 
 namespace System.ComponentModel.Tests
 {
@@ -11,42 +12,7 @@ namespace System.ComponentModel.Tests
         private const string TypeDescriptorRequireRegisteredTypesSwitchName = "System.ComponentModel.TypeDescriptor.RequireRegisteredTypes";
 
         [Fact]
-        public static void NullableGetConverterUnderlyingType()
-        {
-            RemoteInvokeOptions options = new RemoteInvokeOptions();
-            options.RuntimeConfigurationOptions[TypeDescriptorRequireRegisteredTypesSwitchName] = bool.TrueString;
-
-            RemoteExecutor.Invoke(() =>
-            {
-                TypeDescriptor.RegisterType<ClassWithGenericProperty>();
-                TypeDescriptor.RegisterType<MyStruct>();
-                TypeDescriptor.RegisterType<MyStructWithCustomConverter>();
-
-                // Intrinsic type
-                NullableConverter nullableConverter = (NullableConverter)TypeDescriptor.GetConverter(typeof(byte?));
-                Assert.IsType<ByteConverter>(nullableConverter.UnderlyingTypeConverter);
-                Assert.Equal(typeof(byte), nullableConverter.UnderlyingType);
-
-                // Custom type
-                TypeConverter typeConverter = TypeDescriptor.GetConverter(typeof(ClassWithGenericProperty));
-                Assert.IsType<TypeConverter>(typeConverter);
-                PropertyDescriptorCollection properties = TypeDescriptor.GetProperties(typeof(ClassWithGenericProperty));
-                // Ensure the inner type is not trimmed.
-                Assert.Equal("NullableStruct", properties[0].Name);
-                typeConverter = properties[0].Converter;
-                Assert.IsType<NullableConverter>(typeConverter);
-                Assert.True(typeConverter.CanConvertTo(typeof(MyStruct)));
-                // Ensure the inner type is not trimmed. Todo: add test where the inner type has its own provider
-                Assert.Equal("NullableStructWithCustomConverter", properties[1].Name);
-                typeConverter = properties[1].Converter;
-                Assert.IsType<NullableConverter>(typeConverter);
-                Assert.True(typeConverter.CanConvertTo(typeof(MyStructWithCustomConverter)));
-
-            }, options).Dispose();
-        }
-
-        [Fact]
-        public static void GetAttributesWithRegisteredType_NotRegistered()
+        public static void ApplyResourcesToRegisteredType_NotRegistered()
         {
             RemoteExecutor.Invoke(() =>
             {
@@ -56,7 +22,7 @@ namespace System.ComponentModel.Tests
         }
 
         [Fact]
-        public static void GetAttributesWithRegisteredType_Registered()
+        public static void ApplyResourcesToRegisteredType_Registered()
         {
             RemoteExecutor.Invoke(() =>
             {
@@ -84,7 +50,7 @@ namespace System.ComponentModel.Tests
         }
 
         [Fact]
-        public static void GetMembers_NotRegistered_Trimmed_Throws()
+        public static void GetMembers_NotRegistered_SwitchOn()
         {
             RemoteInvokeOptions options = new RemoteInvokeOptions();
             options.RuntimeConfigurationOptions[TypeDescriptorRequireRegisteredTypesSwitchName] = bool.TrueString;
@@ -99,7 +65,23 @@ namespace System.ComponentModel.Tests
         }
 
         [Fact]
-        public static void GetMembersFromRegisteredType_Registered_Trimmed()
+        public static void GetMembers_NotRegistered()
+        {
+            RemoteInvokeOptions options = new RemoteInvokeOptions();
+
+            RemoteExecutor.Invoke(() =>
+            {
+                TypeDescriptionProvider provider = TypeDescriptor.GetProvider(typeof(C1));
+                PropertyDescriptorCollection properties = TypeDescriptor.GetProperties(typeof(C1));
+                Assert.Equal(2, properties.Count);
+                Assert.Equal("System.ComponentModel.Int32Converter", properties[0].Converter.ToString());
+                Assert.Equal(2, TypeDescriptor.GetEvents(typeof(C1)).Count);
+                Assert.IsType<TypeConverter>(TypeDescriptor.GetConverter(typeof(C1)));
+            }, options).Dispose();
+        }
+
+        [Fact]
+        public static void GetMembers_FromRegisteredType_Registered_FullCoverage()
         {
             RemoteInvokeOptions options = new RemoteInvokeOptions();
             options.RuntimeConfigurationOptions[TypeDescriptorRequireRegisteredTypesSwitchName] = bool.TrueString;
@@ -109,15 +91,42 @@ namespace System.ComponentModel.Tests
                 TypeDescriptor.RegisterType<C1>();
                 TypeDescriptionProvider provider = TypeDescriptor.GetProvider(typeof(C1));
 
-                PropertyDescriptorCollection properties = TypeDescriptor.GetPropertiesFromRegisteredType(typeof(C1));
-                Assert.Equal(2, properties.Count);
-                Assert.Equal("System.ComponentModel.Int32Converter", properties[0].ConverterFromRegisteredType.ToString());
-                Assert.Equal(2, TypeDescriptor.GetEventsFromRegisteredType(typeof(C1)).Count);
+                Test_PropertyDescriptorCollection(TypeDescriptor.GetPropertiesFromRegisteredType(typeof(C1)));
+                Test_PropertyDescriptorCollection(provider.GetTypeDescriptor(typeof(C1)).GetPropertiesFromRegisteredType());
+                Test_PropertyDescriptorCollection(provider.GetTypeDescriptor(new C1()).GetPropertiesFromRegisteredType());
+                Test_PropertyDescriptorCollection(provider.GetTypeDescriptor(typeof(C1), new C1()).GetPropertiesFromRegisteredType());
+
+                static void Test_PropertyDescriptorCollection(PropertyDescriptorCollection collection)
+                {
+                    Assert.Equal(2, collection.Count);
+                    Assert.Equal("System.ComponentModel.Int32Converter", collection[0].ConverterFromRegisteredType.ToString());
+                }
+
+                Test_EventDescriptorCollection(TypeDescriptor.GetEventsFromRegisteredType(typeof(C1)));
+                Test_EventDescriptorCollection(provider.GetTypeDescriptor(typeof(C1)).GetEventsFromRegisteredType());
+                Test_EventDescriptorCollection(provider.GetTypeDescriptor(new C1()).GetEventsFromRegisteredType());
+                Test_EventDescriptorCollection(provider.GetTypeDescriptor(typeof(C1), new C1()).GetEventsFromRegisteredType());
+
+                static void Test_EventDescriptorCollection(EventDescriptorCollection collection)
+                {
+                    Assert.Equal(2, collection.Count);
+                }
+
+                Test_GetConverter(TypeDescriptor.GetConverterFromRegisteredType(typeof(C1)));
+                Test_GetConverter(provider.GetTypeDescriptor(typeof(C1)).GetConverterFromRegisteredType());
+                Test_GetConverter(provider.GetTypeDescriptor(new C1()).GetConverterFromRegisteredType());
+                Test_GetConverter(provider.GetTypeDescriptor(typeof(C1), new C1()).GetConverterFromRegisteredType());
+                static void Test_GetConverter(TypeConverter converter)
+                {
+                    // The default type converter returns null.
+                    Assert.Null(converter.GetProperties(null, new C1()));
+                }
+
             }, options).Dispose();
         }
 
         [Fact]
-        public static void GetMembersFromRegisteredType_ChildRegistered_Trimmed()
+        public static void GetMembersFromRegisteredType_ChildRegistered_SwitchOn()
         {
             RemoteInvokeOptions options = new RemoteInvokeOptions();
             options.RuntimeConfigurationOptions[TypeDescriptorRequireRegisteredTypesSwitchName] = bool.TrueString;
@@ -133,7 +142,7 @@ namespace System.ComponentModel.Tests
         }
 
         [Fact]
-        public static void GetMembersFromRegisteredType_ChildUnregistered_Trimmed()
+        public static void GetMembersFromRegisteredType_ChildUnregistered_SwitchOn()
         {
             RemoteInvokeOptions options = new RemoteInvokeOptions();
             options.RuntimeConfigurationOptions[TypeDescriptorRequireRegisteredTypesSwitchName] = bool.TrueString;
@@ -148,7 +157,7 @@ namespace System.ComponentModel.Tests
         }
 
         [Fact]
-        public static void GetMembersFromRegisteredType_BaseClassUnregistered_Trimmed()
+        public static void GetMembersFromRegisteredType_BaseClassUnregistered_SwitchOn()
         {
             RemoteInvokeOptions options = new RemoteInvokeOptions();
             options.RuntimeConfigurationOptions[TypeDescriptorRequireRegisteredTypesSwitchName] = bool.TrueString;
@@ -164,7 +173,7 @@ namespace System.ComponentModel.Tests
                 Assert.Equal(2, properties[1].GetChildProperties().Count);
                 Assert.Equal("Bool", properties[1].GetChildProperties()[0].Name);
 
-                // Even though C1.Class.Base is not registered, we should still be able to get the properties of Base.
+                // Even though C1.Class.Base is not explictely registered, we should still be able to get the properties of Base.
                 Assert.Equal("String", properties[1].GetChildProperties()[1].Name);
             }, options).Dispose();
         }
@@ -181,7 +190,7 @@ namespace System.ComponentModel.Tests
             Assert.Equal(2, properties[1].GetChildProperties().Count);
             Assert.Equal("Bool", properties[1].GetChildProperties()[0].Name);
 
-            // Even though C1.Class.Base is not registered, we should still be able to get the properties of Base.
+            // Even though C1.Class.Base is not explictely registered, we should still be able to get the properties of Base.
             Assert.Equal("String", properties[1].GetChildProperties()[1].Name);
         }
 
@@ -209,6 +218,62 @@ namespace System.ComponentModel.Tests
             }, options).Dispose();
         }
 
+        [Fact]
+        public static void LegacyProviders_ThrowOnFeatureSwitch_ICustomTypeDescriptor()
+        {
+            RemoteInvokeOptions options = new RemoteInvokeOptions();
+            options.RuntimeConfigurationOptions[TypeDescriptorRequireRegisteredTypesSwitchName] = bool.TrueString;
+
+            RemoteExecutor.Invoke(() =>
+            {
+                EmptyPropertiesTypeProvider provider = new();
+
+                // This uses the ICustomTypeDescriptor DIM implementation.
+                Test(provider.GetTypeDescriptor(typeof(C1)));
+
+                // This uses the CustomTypeDescriptor implementation.
+                Test(new EmptyCustomTypeDescriptor());
+
+                void Test(ICustomTypeDescriptor ictd)
+                {
+                    Exception ex;
+
+                    ex = Assert.Throws<NotImplementedException>(() => ictd.GetPropertiesFromRegisteredType());
+                    Assert.Contains("GetPropertiesFromRegisteredType", ex.Message);
+
+                    ex = Assert.Throws<NotImplementedException>(() => ictd.GetEventsFromRegisteredType());
+                    Assert.Contains("GetEventsFromRegisteredType", ex.Message);
+
+                    ex = Assert.Throws<NotImplementedException>(() => ictd.GetConverterFromRegisteredType());
+                    Assert.Contains("GetConverterFromRegisteredType", ex.Message);
+                }
+            }, options).Dispose();
+        }
+
+        [Fact]
+        public static void LegacyProviders_DotNotThrowWhenNoFeatureSwitch()
+        {
+            RemoteExecutor.Invoke(() =>
+            {
+                EmptyPropertiesTypeProvider provider = new();
+
+                // This uses the ICustomTypeDescriptor DIM implementation.
+                Test(provider.GetTypeDescriptor(typeof(C1)));
+
+                // This uses the CustomTypeDescriptor implementation.
+                Test(new EmptyCustomTypeDescriptor());
+
+                void Test(ICustomTypeDescriptor ictd)
+                {
+                    ictd.GetPropertiesFromRegisteredType();
+                    ictd.GetEventsFromRegisteredType();
+                    ictd.GetConverterFromRegisteredType();
+                }
+            }).Dispose();
+        }
+
+        private sealed class EmptyCustomTypeDescriptor : CustomTypeDescriptor { }
+
         private class C1
         {
             public int Int32 { get; set; }
@@ -235,28 +300,6 @@ namespace System.ComponentModel.Tests
         private class Base
         {
             public string String { get; set; }
-        }
-
-        private class ClassWithGenericProperty
-        {
-            public MyStruct? NullableStruct { get; set; }
-            public MyStructWithCustomConverter? NullableStructWithCustomConverter { get; set; }
-        }
-
-        private struct MyStruct
-        {
-            public int Int32 { get; set; }
-        }
-
-        [TypeConverter(typeof(MyStructConverter))]
-        private struct MyStructWithCustomConverter
-        {
-            public int Int32 { get; set; }
-        }
-
-        internal class MyStructConverter : TypeConverter
-        {
-            public override bool CanConvertTo(ITypeDescriptorContext context, Type destinationType) => destinationType == typeof(MyStructWithCustomConverter);
         }
     }
 }
