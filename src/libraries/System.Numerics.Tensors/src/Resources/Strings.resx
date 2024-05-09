@@ -142,13 +142,13 @@
     <value>Destination is too short.</value>
   </data>
   <data name="NotSupported_CannotCallEqualsOnSpan" xml:space="preserve">
-    <value>Equals() on SpanND and ReadOnlySpanND is not supported. Use operator== instead.</value>
+    <value>Equals() on TensorSpan and ReadOnlyTensorSpan is not supported. Use operator== instead.</value>
   </data>
   <data name="NotSupported_CannotCallGetHashCodeOnSpan" xml:space="preserve">
-    <value>GetHashCode() on SpanND and ReadOnlySpanND is not supported.</value>
+    <value>GetHashCode() on TensorSpan and ReadOnlyTensorSpan is not supported.</value>
   </data>
   <data name="ThrowArgument_IndicesLengthMustEqualRank" xml:space="preserve">
-    <value>Number of Indices must equal the rank of the SpanND.</value>
+    <value>Number of Indices must equal the rank of the TensorSpan.</value>
   </data>
   <data name="ThrowArgument_LengthsMustEqualArrayLength" xml:space="preserve">
     <value>The total length specified by the lengths must equal the length of the array.</value>

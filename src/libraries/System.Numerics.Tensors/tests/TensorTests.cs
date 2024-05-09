@@ -191,7 +191,7 @@ namespace System.Numerics.Tensors.Tests
             Assert.Equal(2, t2[2, 1]);
             Assert.Equal(2, t2[2, 2]);
 
-            var s1 = t2.AsSpanND();
+            var s1 = t2.AsTensorSpan();
             Assert.Equal(0, s1[0, 0]);
             Assert.Equal(0, s1[0, 1]);
             Assert.Equal(0, s1[0, 2]);
@@ -823,7 +823,7 @@ namespace System.Numerics.Tensors.Tests
         public static void IntArrayAsTensor()
         {
             int[] a = [91, 92, -93, 94];
-            TensorSpan<int> spanInt = a.AsSpanND(4);
+            TensorSpan<int> spanInt = a.AsTensorSpan(4);
             nint[] dims = [4];
             var tensor = Tensor.CreateUninitialized<int>(false, dims.AsSpan());
             spanInt.CopyTo(tensor);
@@ -852,7 +852,7 @@ namespace System.Numerics.Tensors.Tests
             a[1] = 92;
             a[2] = -93;
             a[3] = 94;
-            spanInt = a.AsSpanND(2, 2);
+            spanInt = a.AsTensorSpan(2, 2);
             dims = [2, 2];
             tensor = Tensor.CreateUninitialized<int>(false, dims.AsSpan());
             spanInt.CopyTo(tensor);
@@ -957,7 +957,7 @@ namespace System.Numerics.Tensors.Tests
         public static void TensorClearTest()
         {
             int[] a = [1, 2, 3, 4, 5, 6, 7, 8, 9];
-            TensorSpan<int> spanInt = a.AsSpanND(3, 3);
+            TensorSpan<int> spanInt = a.AsTensorSpan(3, 3);
             var tensor = Tensor.CreateUninitialized<int>(false, [3, 3]);
             spanInt.CopyTo(tensor);
             var slice = tensor.Slice(0..2, 0..2);
@@ -987,7 +987,7 @@ namespace System.Numerics.Tensors.Tests
             }
 
             a = [1, 2, 3, 4, 5, 6, 7, 8, 9];
-            spanInt = a.AsSpanND(9);
+            spanInt = a.AsTensorSpan(9);
             tensor = Tensor.CreateUninitialized<int>(false, [9]);
             spanInt.CopyTo(tensor);
             slice = tensor.Slice(0..1);
@@ -1014,7 +1014,7 @@ namespace System.Numerics.Tensors.Tests
             }
 
             a = [.. Enumerable.Range(0, 27)];
-            spanInt = a.AsSpanND(3, 3, 3);
+            spanInt = a.AsTensorSpan(3, 3, 3);
             tensor = Tensor.CreateUninitialized<int>(false, [3, 3, 3]);
             spanInt.CopyTo(tensor);
             tensor.Clear();
@@ -1025,7 +1025,7 @@ namespace System.Numerics.Tensors.Tests
             }
 
             a = [.. Enumerable.Range(0, 12)];
-            spanInt = a.AsSpanND(3, 2, 2);
+            spanInt = a.AsTensorSpan(3, 2, 2);
             tensor = Tensor.CreateUninitialized<int>(false, [3, 2, 2]);
             spanInt.CopyTo(tensor);
             tensor.Clear();
@@ -1036,7 +1036,7 @@ namespace System.Numerics.Tensors.Tests
             }
 
             a = [.. Enumerable.Range(0, 16)];
-            spanInt = a.AsSpanND(2, 2, 2, 2);
+            spanInt = a.AsTensorSpan(2, 2, 2, 2);
             tensor = Tensor.CreateUninitialized<int>(false, [2, 2, 2, 2]);
             spanInt.CopyTo(tensor);
             tensor.Clear();
@@ -1047,7 +1047,7 @@ namespace System.Numerics.Tensors.Tests
             }
 
             a = [.. Enumerable.Range(0, 24)];
-            spanInt = a.AsSpanND(3, 2, 2, 2);
+            spanInt = a.AsTensorSpan(3, 2, 2, 2);
             tensor = Tensor.CreateUninitialized<int>(false, [3, 2, 2, 2]);
             spanInt.CopyTo(tensor);
             tensor.Clear();
@@ -1059,7 +1059,7 @@ namespace System.Numerics.Tensors.Tests
 
             // Make sure clearing a slice of a SPan doesn't clear the whole thing.
             a = [.. Enumerable.Range(0, 9)];
-            spanInt = a.AsSpanND(3, 3);
+            spanInt = a.AsTensorSpan(3, 3);
             var spanSlice = spanInt.Slice(0..1, 0..3);
             spanSlice.Clear();
             var spanEnumerator = spanSlice.GetEnumerator();
@@ -1080,7 +1080,7 @@ namespace System.Numerics.Tensors.Tests
 
             // Make sure clearing a slice from the middle of a SPan doesn't clear the whole thing.
             a = [.. Enumerable.Range(0, 9)];
-            spanInt = a.AsSpanND(3, 3);
+            spanInt = a.AsTensorSpan(3, 3);
             spanSlice = spanInt.Slice(1..2, 0..3);
             spanSlice.Clear();
             spanEnumerator = spanSlice.GetEnumerator();
@@ -1101,7 +1101,7 @@ namespace System.Numerics.Tensors.Tests
 
             // Make sure clearing a slice from the end of a SPan doesn't clear the whole thing.
             a = [.. Enumerable.Range(0, 9)];
-            spanInt = a.AsSpanND(3, 3);
+            spanInt = a.AsTensorSpan(3, 3);
             spanSlice = spanInt.Slice(2..3, 0..3);
             spanSlice.Clear();
             spanEnumerator = spanSlice.GetEnumerator();
@@ -1122,7 +1122,7 @@ namespace System.Numerics.Tensors.Tests
 
             // Make sure it works with reference types.
             object[] o = [new object(), new object(), new object(), new object(), new object(), new object(), new object(), new object(), new object()];
-            TensorSpan<object> spanObj = o.AsSpanND(3, 3);
+            TensorSpan<object> spanObj = o.AsTensorSpan(3, 3);
             spanObj.Clear();
 
             var oSpanEnumerator = spanObj.GetEnumerator();
@@ -1133,7 +1133,7 @@ namespace System.Numerics.Tensors.Tests
 
             // Make sure clearing a slice of a SPan with references it doesn't clear the whole thing.
             o = [new object(), new object(), new object(), new object(), new object(), new object(), new object(), new object(), new object()];
-            spanObj = o.AsSpanND(3, 3);
+            spanObj = o.AsTensorSpan(3, 3);
             var oSpanSlice = spanObj.Slice(0..1, 0..3);
             oSpanSlice.Clear();
             oSpanEnumerator = oSpanSlice.GetEnumerator();
@@ -1154,7 +1154,7 @@ namespace System.Numerics.Tensors.Tests
 
             // Make sure clearing a slice of a SPan with references it doesn't clear the whole thing.
             o = [new object(), new object(), new object(), new object(), new object(), new object(), new object(), new object(), new object()];
-            spanObj = o.AsSpanND(3, 3);
+            spanObj = o.AsTensorSpan(3, 3);
             oSpanSlice = spanObj.Slice(1..2, 0..3);
             oSpanSlice.Clear();
             oSpanEnumerator = oSpanSlice.GetEnumerator();
@@ -1175,7 +1175,7 @@ namespace System.Numerics.Tensors.Tests
 
             // Make sure clearing a slice of a SPan with references it doesn't clear the whole thing.
             o = [new object(), new object(), new object(), new object(), new object(), new object(), new object(), new object(), new object()];
-            spanObj = o.AsSpanND(3, 3);
+            spanObj = o.AsTensorSpan(3, 3);
             oSpanSlice = spanObj.Slice(2..3, 0..3);
             oSpanSlice.Clear();
             oSpanEnumerator = oSpanSlice.GetEnumerator();
@@ -1201,9 +1201,9 @@ namespace System.Numerics.Tensors.Tests
             int[] leftData = [1, 2, 3, 4, 5, 6, 7, 8, 9];
             int[] rightData = new int[9];
             nint[] dims = [3, 3];
-            TensorSpan<int> leftSpan = leftData.AsSpanND(3, 3);
+            TensorSpan<int> leftSpan = leftData.AsTensorSpan(3, 3);
             var tensor = Tensor.CreateUninitialized<int>(false, dims.AsSpan());
-            TensorSpan<int> rightSpan = rightData.AsSpanND(3, 3);
+            TensorSpan<int> rightSpan = rightData.AsTensorSpan(3, 3);
             leftSpan.CopyTo(tensor);
             var leftEnum = leftSpan.GetEnumerator();
             var tensorEnum = tensor.GetEnumerator();
@@ -1226,7 +1226,7 @@ namespace System.Numerics.Tensors.Tests
 
             leftData = [1, 2, 3, 4, 5, 6, 7, 8, 9];
             dims = [15];
-            leftSpan = leftData.AsSpanND(9);
+            leftSpan = leftData.AsTensorSpan(9);
             tensor = Tensor.Create<int>(false, dims.AsSpan());
             leftSpan.CopyTo(tensor);
             leftEnum = leftSpan.GetEnumerator();
@@ -1244,7 +1244,7 @@ namespace System.Numerics.Tensors.Tests
 
             Assert.Throws<ArgumentOutOfRangeException>(() =>
             {
-                var l = leftData.AsSpanND(3, 3, 3);
+                var l = leftData.AsTensorSpan(3, 3, 3);
                 var r = new TensorSpan<int>();
                 l.CopyTo(r);
             });
@@ -1255,10 +1255,10 @@ namespace System.Numerics.Tensors.Tests
         {
             int[] leftData = [1, 2, 3, 4, 5, 6, 7, 8, 9];
             int[] rightData = new int[9];
-            TensorSpan<int> leftSpan = leftData.AsSpanND(3, 3);
+            TensorSpan<int> leftSpan = leftData.AsTensorSpan(3, 3);
             nint[] dims = [3, 3];
             var tensor = Tensor.CreateUninitialized<int>(false, dims.AsSpan());
-            TensorSpan<int> rightSpan = rightData.AsSpanND(3, 3);
+            TensorSpan<int> rightSpan = rightData.AsTensorSpan(3, 3);
             var success = leftSpan.TryCopyTo(tensor);
             Assert.True(success);
             success = tensor.TryCopyTo(rightSpan);
@@ -1278,7 +1278,7 @@ namespace System.Numerics.Tensors.Tests
 
             leftData = [1, 2, 3, 4, 5, 6, 7, 8, 9];
             dims = [15];
-            leftSpan = leftData.AsSpanND(9);
+            leftSpan = leftData.AsTensorSpan(9);
             tensor = Tensor.Create<int>(false, dims.AsSpan());
             success = leftSpan.TryCopyTo(tensor);
             leftEnum = leftSpan.GetEnumerator();
@@ -1296,7 +1296,7 @@ namespace System.Numerics.Tensors.Tests
             }
 
             leftData = [.. Enumerable.Range(0, 27)];
-            var l = leftData.AsSpanND(3, 3, 3);
+            var l = leftData.AsTensorSpan(3, 3, 3);
             dims = [2, 2];
             tensor = Tensor.Create<int>(false, dims.AsSpan());
             var r = new TensorSpan<int>();
@@ -1315,8 +1315,8 @@ namespace System.Numerics.Tensors.Tests
             //Assert.Throws<ArgumentOutOfRangeException>(() => tensor.Slice(0..1));
             //Assert.Throws<ArgumentOutOfRangeException>(() => tensor.Slice(1..2));
             //Assert.Throws<ArgumentOutOfRangeException>(() => tensor.Slice(0..1, 5..6));
-            var intSpan = a.AsSpanND(3, 3);
-            intSpan.CopyTo(tensor.AsSpanND());
+            var intSpan = a.AsTensorSpan(3, 3);
+            intSpan.CopyTo(tensor.AsTensorSpan());
 
             var sp = tensor.Slice(1..3, 1..3);
             Assert.Equal(5, sp[0, 0]);
@@ -1352,7 +1352,7 @@ namespace System.Numerics.Tensors.Tests
 
             sp = tensor.Slice(0..1, 0..1);
             Assert.Equal(1, sp[0, 0]);
-            Assert.Throws<IndexOutOfRangeException>(() => a.AsSpanND(3, 3).Slice(0..1, 0..1)[0, 1]);
+            Assert.Throws<IndexOutOfRangeException>(() => a.AsTensorSpan(3, 3).Slice(0..1, 0..1)[0, 1]);
             slice = [1];
             Assert.Equal(slice, sp.ToArray());
             enumerator = sp.GetEnumerator();
@@ -1377,9 +1377,9 @@ namespace System.Numerics.Tensors.Tests
             }
 
             int[] numbers = [.. Enumerable.Range(0, 27)];
-            intSpan = numbers.AsSpanND(3, 3, 3);
+            intSpan = numbers.AsTensorSpan(3, 3, 3);
             tensor = Tensor.CreateUninitialized<int>(false, [3, 3, 3]);
-            intSpan.CopyTo(tensor.AsSpanND());
+            intSpan.CopyTo(tensor.AsTensorSpan());
             sp = tensor.Slice(1..2, 1..2, 1..2);
             Assert.Equal(13, sp[0, 0, 0]);
             slice = [13];
@@ -1410,9 +1410,9 @@ namespace System.Numerics.Tensors.Tests
             }
 
             numbers = [.. Enumerable.Range(0, 16)];
-            intSpan = numbers.AsSpanND(2, 2, 2, 2);
+            intSpan = numbers.AsTensorSpan(2, 2, 2, 2);
             tensor = Tensor.CreateUninitialized<int>(false, [2, 2, 2, 2]);
-            intSpan.CopyTo(tensor.AsSpanND());
+            intSpan.CopyTo(tensor.AsTensorSpan());
             sp = tensor.Slice(1..2, 0..2, 1..2, 0..2);
             Assert.Equal(10, sp[0, 0, 0, 0]);
             Assert.Equal(11, sp[0, 0, 0, 1]);
@@ -1434,7 +1434,7 @@ namespace System.Numerics.Tensors.Tests
             int[] a = [1, 2, 3, 4, 5, 6, 7, 8, 9];
             nint[] dims = [9];
             var tensor = Tensor.CreateUninitialized<int>(false, dims.AsSpan());
-            var span = a.AsSpanND(dims);
+            var span = a.AsTensorSpan(dims);
             span.CopyTo(tensor);
 
             Assert.Equal(1, tensor.Rank);

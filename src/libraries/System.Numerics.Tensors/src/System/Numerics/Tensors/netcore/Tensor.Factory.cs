@@ -13,12 +13,10 @@ namespace System.Numerics.Tensors
     public static partial class Tensor
     {
         /// <summary>
-        ///
+        /// Creates a <see cref="Tensor{T}"/> and initializes it with the default value of T. If <paramref name="mustPin"/> is true, the memory will be pinned.
         /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="mustPin"></param>
-        /// <param name="lengths"></param>
-        /// <returns></returns>
+        /// <param name="mustPin">A <see cref="bool"/> whether the underlying data should be pinned or not.</param>
+        /// <param name="lengths">A <see cref="ReadOnlySpan{T}"/> indicating the lengths of each dimension.</param>
         public static Tensor<T> Create<T>(bool mustPin, ReadOnlySpan<nint> lengths)
             where T : IEquatable<T>
         {
@@ -28,13 +26,11 @@ namespace System.Numerics.Tensors
         }
 
         /// <summary>
-        ///
+        /// Creates a <see cref="Tensor{T}"/> and initializes it with the default value of T. If <paramref name="mustPin"/> is true, the memory will be pinned.
         /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="mustPin"></param>
-        /// <param name="lengths"></param>
-        /// <param name="strides"></param>
-        /// <returns></returns>
+        /// <param name="mustPin">A <see cref="bool"/> whether the underlying data should be pinned or not.</param>
+        /// <param name="lengths">A <see cref="ReadOnlySpan{T}"/> indicating the lengths of each dimension.</param>
+        /// <param name="strides">A <see cref="ReadOnlySpan{T}"/> indicating the strides of each dimension.</param>
         public static Tensor<T> Create<T>(bool mustPin, ReadOnlySpan<nint> lengths, ReadOnlySpan<nint> strides)
             where T : IEquatable<T>
         {
@@ -44,13 +40,12 @@ namespace System.Numerics.Tensors
         }
 
         /// <summary>
-        ///
+        /// Creates a <see cref="Tensor{T}"/> from the provided <paramref name="values"/>. If the product of the
+        /// <paramref name="lengths"/> does not equal the length of the <paramref name="values"/> array, an exception will be thrown.
         /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="values"></param>
-        /// <param name="lengths"></param>
-        /// <returns></returns>
-        /// <exception cref="Exception"></exception>
+        /// <param name="values">An array of the backing memory.</param>
+        /// <param name="lengths">A <see cref="ReadOnlySpan{T}"/> indicating the lengths of each dimension.</param>
+        /// <exception cref="ArgumentOutOfRangeException"></exception>
         public static Tensor<T> Create<T>(T[] values, ReadOnlySpan<nint> lengths)
             where T : IEquatable<T>
         {
@@ -62,14 +57,13 @@ namespace System.Numerics.Tensors
         }
 
         /// <summary>
-        ///
+        /// Creates a <see cref="Tensor{T}"/> from the provided <paramref name="values"/>. If the product of the
+        /// <paramref name="lengths"/> does not equal the length of the <paramref name="values"/> array, an exception will be thrown.
         /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="values"></param>
-        /// <param name="lengths"></param>
-        /// <param name="strides"></param>
-        /// <returns></returns>
-        /// <exception cref="Exception"></exception>
+        /// <param name="values">An array of the backing memory.</param>
+        /// <param name="lengths">A <see cref="ReadOnlySpan{T}"/> indicating the lengths of each dimension.</param>
+        /// <param name="strides">A <see cref="ReadOnlySpan{T}"/> indicating the strides of each dimension.</param>
+        /// <exception cref="ArgumentOutOfRangeException"></exception>
         public static Tensor<T> Create<T>(T[] values, ReadOnlySpan<nint> lengths, ReadOnlySpan<nint> strides)
             where T : IEquatable<T>
         {
@@ -81,12 +75,10 @@ namespace System.Numerics.Tensors
         }
 
         /// <summary>
-        ///
+        /// Creates a <see cref="Tensor{T}"/> and does not initialize it. If <paramref name="mustPin"/> is true, the memory will be pinned.
         /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="mustPin"></param>
-        /// <param name="lengths"></param>
-        /// <returns></returns>
+        /// <param name="mustPin">A <see cref="bool"/> whether the underlying data should be pinned or not.</param>
+        /// <param name="lengths">A <see cref="ReadOnlySpan{T}"/> indicating the lengths of each dimension.</param>
         public static Tensor<T> CreateUninitialized<T>(bool mustPin, ReadOnlySpan<nint> lengths)
             where T : IEquatable<T>
         {
@@ -96,13 +88,11 @@ namespace System.Numerics.Tensors
         }
 
         /// <summary>
-        ///
+        /// Creates a <see cref="Tensor{T}"/> and does not initialize it. If <paramref name="mustPin"/> is true, the memory will be pinned.
         /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="mustPin"></param>
-        /// <param name="lengths"></param>
-        /// <param name="strides"></param>
-        /// <returns></returns>
+        /// <param name="mustPin">A <see cref="bool"/> whether the underlying data should be pinned or not.</param>
+        /// <param name="lengths">A <see cref="ReadOnlySpan{T}"/> indicating the lengths of each dimension.</param>
+        /// <param name="strides">A <see cref="ReadOnlySpan{T}"/> indicating the strides of each dimension.</param>
         public static Tensor<T> CreateUninitialized<T>(bool mustPin, ReadOnlySpan<nint> lengths, ReadOnlySpan<nint> strides)
             where T : IEquatable<T>
         {
@@ -112,11 +102,9 @@ namespace System.Numerics.Tensors
         }
 
         /// <summary>
-        ///
+        /// Creates a <see cref="Tensor{T}"/> and initializes it with the data from <paramref name="data"/>.
         /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="data"></param>
-        /// <returns></returns>
+        /// <param name="data">A <see cref="IEnumerable{T}"/> with the data to use for the initialization.</param>
         public static Tensor<T> CreateFromEnumerable<T>(IEnumerable<T> data)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>
         {
@@ -125,15 +113,13 @@ namespace System.Numerics.Tensors
         }
 
         /// <summary>
-        ///
+        /// Creates a <see cref="Tensor{T}"/> and initializes it with random data uniformly distributed.
         /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="lengths"></param>
-        /// <returns></returns>
+        /// <param name="lengths">A <see cref="ReadOnlySpan{T}"/> indicating the lengths of each dimension.</param>
         public static Tensor<T> CreateAndFillUniformDistribution<T>(params ReadOnlySpan<nint> lengths)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IFloatingPoint<T>
         {
-            var linearLength = TensorSpanHelpers.CalculateTotalLength(lengths);
+            nint linearLength = TensorSpanHelpers.CalculateTotalLength(lengths);
             T[] values = new T[linearLength];
             Random rand = Random.Shared;
             for (int i = 0; i < values.Length; i++)
@@ -144,15 +130,13 @@ namespace System.Numerics.Tensors
 
         #region Normal
         /// <summary>
-        ///
+        /// Creates a <see cref="Tensor{T}"/> and initializes it with random data in a gaussian normal distribution.
         /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="lengths"></param>
-        /// <returns></returns>
+        /// <param name="lengths">A <see cref="ReadOnlySpan{T}"/> indicating the lengths of each dimension.</param>
         public static Tensor<T> CreateAndFillGaussianNormalDistribution<T>(params ReadOnlySpan<nint> lengths)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IFloatingPoint<T>
         {
-            var linearLength = TensorSpanHelpers.CalculateTotalLength(lengths);
+            nint linearLength = TensorSpanHelpers.CalculateTotalLength(lengths);
             T[] values = new T[linearLength];
             GaussianDistribution(ref values, linearLength);
             return new Tensor<T>(values, lengths, false);

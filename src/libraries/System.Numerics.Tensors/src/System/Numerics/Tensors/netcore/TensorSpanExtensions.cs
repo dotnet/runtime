@@ -28,6 +28,6 @@ namespace System.Numerics.Tensors
         /// <param name="array">The <see cref="System.Array"/> with the data</param>
         /// <param name="shape">The shape for the <see cref="TensorSpan{T}"/></param>
         /// <returns></returns>
-        public static TensorSpan<T> AsSpanND<T>(this T[]? array, params scoped ReadOnlySpan<nint> shape) => new(array, shape.ToArray());
+        public static TensorSpan<T> AsTensorSpan<T>(this T[]? array, params scoped ReadOnlySpan<nint> shape) => new(array, shape.ToArray());
     }
 }

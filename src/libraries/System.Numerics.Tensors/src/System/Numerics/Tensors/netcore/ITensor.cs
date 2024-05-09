@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -32,8 +33,8 @@ namespace System.Numerics.Tensors
         static abstract implicit operator TensorSpan<T>(TSelf value);
         static abstract implicit operator ReadOnlyTensorSpan<T>(TSelf value);
 
-        TensorSpan<T> AsSpanND(params scoped ReadOnlySpan<NRange> ranges);
-        ReadOnlyTensorSpan<T> AsReadOnlySpanND(params scoped ReadOnlySpan<NRange> ranges);
+        TensorSpan<T> AsTensorSpan(params scoped ReadOnlySpan<NRange> ranges);
+        ReadOnlyTensorSpan<T> AsReadOnlyTensorSpan(params scoped ReadOnlySpan<NRange> ranges);
         ref T GetPinnableReference();
         TSelf Slice(params scoped ReadOnlySpan<NRange> ranges);
 

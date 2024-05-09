@@ -18,29 +18,17 @@ namespace System.Numerics.Tensors
     {
         public static unsafe void Memmove<T>(Span<T> destination, ReadOnlySpan<T> source, nint length, nint dstOffset = 0)
         {
-            fixed (T* dst = destination)
-            fixed (T* src = source)
-            {
-                NativeMemory.Copy(src, dst + dstOffset, (nuint)length * (nuint)sizeof(T));
-            }
+            source.Slice(0, checked((int)length)).CopyTo(destination.Slice(checked((int)dstOffset)));
         }
 
         public static unsafe void Memmove<T>(ref T[] destination, ref T source, nint length)
         {
-            fixed (T* dst = destination)
-            fixed (T* src = &source)
-            {
-                NativeMemory.Copy(src, dst, (nuint)length * (nuint)sizeof(T));
-            }
+            MemoryMarshal.CreateSpan(ref source, checked((int)length)).CopyTo(destination);
         }
 
         public static unsafe void Memmove<T>(ref T destination, ref T source, nint length)
         {
-            fixed (T* dst = &destination)
-            fixed (T* src = &source)
-            {
-                NativeMemory.Copy(src, dst, (nuint)length * (nuint)sizeof(T));
-            }
+            MemoryMarshal.CreateSpan(ref source, checked((int)length)).CopyTo(MemoryMarshal.CreateSpan(ref destination, checked((int)length)));
         }
 
         public static void Clear<T>(ref T dest, nuint len)

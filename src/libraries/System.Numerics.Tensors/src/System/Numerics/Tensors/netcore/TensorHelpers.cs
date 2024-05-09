@@ -45,8 +45,8 @@ namespace System.Numerics.Tensors
 
         internal static bool AreShapesBroadcastCompatible(ReadOnlySpan<nint> shape1, ReadOnlySpan<nint> shape2)
         {
-            var shape1Index = shape1.Length - 1;
-            var shape2Index = shape2.Length - 1;
+            int shape1Index = shape1.Length - 1;
+            int shape2Index = shape2.Length - 1;
 
             bool areCompatible = true;
 
@@ -97,8 +97,8 @@ namespace System.Numerics.Tensors
 
         internal static nint[] GetIntermediateShape(ReadOnlySpan<nint> shape1, int shape2Length)
         {
-            var shape1Index = shape1.Length - 1;
-            var newShapeIndex = Math.Max(shape1.Length, shape2Length) - 1;
+            int shape1Index = shape1.Length - 1;
+            int newShapeIndex = Math.Max(shape1.Length, shape2Length) - 1;
             nint[] newShape = new nint[Math.Max(shape1.Length, shape2Length)];
 
             while (newShapeIndex >= 0)

@@ -9,6 +9,8 @@ using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using Microsoft.VisualBasic;
 using System.Text;
+using System.Buffers;
+using System.Xml.Linq;
 
 #pragma warning disable CS8601 // Possible null reference assignment.
 #pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
@@ -20,12 +22,38 @@ namespace System.Numerics.Tensors
     {
         #region ToString
         // REVIEW: WHAT SHOULD WE NAME THIS? WHERE DO WE WANT IT TO LIVE?
+        /// <summary>
+        /// Creates a <see cref="string"/> representation of the <see cref="TensorSpan{T}"/>."/>
+        /// </summary>
+        /// <param name="span">The <see cref="TensorSpan{T}"/> you want to represent as a string.</param>
+        /// <param name="maxRows">Max rows to show.</param>
+        /// <param name="maxColumns">Max columns to show.</param>
+        /// <returns>A <see cref="string"/> representation of the <paramref name="span"/></returns>
         public static string ToString<T>(this TensorSpan<T> span, int maxRows, int maxColumns) => ((ReadOnlyTensorSpan<T>)span).ToString(maxRows, maxColumns);
 
+        /// <summary>
+        /// Creates a <see cref="string"/> representation of the <see cref="ReadOnlyTensorSpan{T}"/>."/>
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="span">The <see cref="ReadOnlyTensorSpan{T}"/> you want to represent as a string.</param>
+        /// <param name="maxRows">Max rows to show.</param>
+        /// <param name="maxColumns">Max columns to show.</param>
         public static string ToString<T>(this ReadOnlyTensorSpan<T> span, int maxRows, int maxColumns)
         {
             var sb = new StringBuilder();
-            Span<nint> curIndices = stackalloc nint[span.Rank];
+            scoped Span<nint> curIndices;
+            nint[]? curIndicesArray;
+            if (span.Rank > 6)
+            {
+                curIndicesArray = ArrayPool<nint>.Shared.Rent(span.Rank);
+                curIndices = curIndicesArray;
+            }
+            else
+            {
+                curIndicesArray = null;
+                curIndices = stackalloc nint[span.Rank];
+            }
+
             nint copiedValues = 0;
             while (copiedValues < span._linearLength)
             {
@@ -38,19 +66,28 @@ namespace System.Numerics.Tensors
                 copiedValues += span.Shape[span.Rank - 1];
             }
 
+            if (curIndicesArray != null)
+                ArrayPool<nint>.Shared.Return(curIndicesArray);
+
             return sb.ToString();
         }
         #endregion
 
         #region Resize
+        /// <summary>
+        /// Creates a new <see cref="Tensor{T}"/>, allocates new memory, and copies the data from <paramref name="input"/>. If the final shape is smaller all data after
+        /// that point is ignored.
+        /// </summary>
+        /// <param name="input">Input <see cref="Tensor{T}"/>.</param>
+        /// <param name="shape"><see cref="ReadOnlySpan{T}"/> of the desired new shape.</param>
         public static Tensor<T> Resize<T>(Tensor<T> input, ReadOnlySpan<nint> shape)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>
         {
-            var newSize = TensorSpanHelpers.CalculateTotalLength(shape);
+            nint newSize = TensorSpanHelpers.CalculateTotalLength(shape);
             T[] values = input.IsPinned ? GC.AllocateArray<T>((int)newSize, input.IsPinned) : (new T[newSize]);
             Tensor<T> output = new Tensor<T>(values, shape.ToArray(), input.IsPinned);
-            ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref input.AsSpanND()._reference, (int)input.LinearLength);
-            Span<T> ospan = MemoryMarshal.CreateSpan(ref output.AsSpanND()._reference, (int)output.LinearLength);
+            ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref input.AsTensorSpan()._reference, (int)input.LinearLength);
+            Span<T> ospan = MemoryMarshal.CreateSpan(ref output.AsTensorSpan()._reference, (int)output.LinearLength);
             if (newSize > input.LinearLength)
                 TensorSpanHelpers.Memmove(ospan, span, input.LinearLength);
             else
@@ -59,10 +96,15 @@ namespace System.Numerics.Tensors
             return output;
         }
 
+        /// <summary>
+        /// Creates a new <see cref="TensorSpan{T}"/>, allocates new managed memory, and copies the data from <paramref name="input"/>. If the final shape is smaller all data after
+        /// </summary>
+        /// <param name="input">Input <see cref="TensorSpan{T}"/>.</param>
+        /// <param name="shape"><see cref="ReadOnlySpan{T}"/> of the desired new shape.</param>
         public static TensorSpan<T> Resize<T>(TensorSpan<T> input, ReadOnlySpan<nint> shape)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>
         {
-            var newSize = TensorSpanHelpers.CalculateTotalLength(shape);
+            nint newSize = TensorSpanHelpers.CalculateTotalLength(shape);
             T[] values = input.IsPinned ? GC.AllocateArray<T>((int)newSize, input.IsPinned) : (new T[newSize]);
             TensorSpan<T> output = new TensorSpan<T>(values, shape, input.IsPinned);
             ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref input._reference, (int)input.LinearLength);
@@ -77,7 +119,13 @@ namespace System.Numerics.Tensors
         #endregion
 
         #region Broadcast
-
+        /// <summary>
+        /// Broadcast the data from <paramref name="input"/> to the new shape <paramref name="shape"/>. Creates a new <see cref="Tensor{T}"/> and allocates new memory.
+        /// If the shape of the <paramref name="input"/> is not compatible with the new shape, an exception is thrown.
+        /// </summary>
+        /// <param name="input">Input <see cref="Tensor{T}"/>.</param>
+        /// <param name="shape"><see cref="ReadOnlySpan{T}"/> of the desired new shape.</param>
+        /// <exception cref="ArgumentException">Thrown when the shapes are not broadcast compatible.</exception>
         public static Tensor<T> Broadcast<T>(Tensor<T> input, ReadOnlySpan<nint> shape)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>
         {
@@ -86,6 +134,14 @@ namespace System.Numerics.Tensors
         }
 
         // Lazy/non-copy broadcasting, internal only for now.
+        /// <summary>
+        /// Broadcast the data from <paramref name="input"/> to the new shape <paramref name="shape"/>. Creates a new <see cref="Tensor{T}"/>
+        /// but no memory is allocated. It manipulates the strides to achieve this affect.
+        /// If the shape of the <paramref name="input"/> is not compatible with the new shape, an exception is thrown.
+        /// </summary>
+        /// <param name="input">Input <see cref="Tensor{T}"/>.</param>
+        /// <param name="shape"><see cref="ReadOnlySpan{T}"/> of the desired new shape.</param>
+        /// <exception cref="ArgumentException">Thrown when the shapes are not broadcast compatible.</exception>
         internal static Tensor<T> BroadcastTo<T>(Tensor<T> input, ReadOnlySpan<nint> shape)
         where T : IEquatable<T>, IEqualityOperators<T, T, bool>
         {
@@ -95,12 +151,12 @@ namespace System.Numerics.Tensors
             if (!TensorHelpers.AreShapesBroadcastCompatible(input.Shape, shape))
                 ThrowHelper.ThrowArgument_ShapesNotBroadcastCompatible();
 
-            var newSize = TensorSpanHelpers.CalculateTotalLength(shape);
+            nint newSize = TensorSpanHelpers.CalculateTotalLength(shape);
 
             if (newSize == input.LinearLength)
                 return Reshape(input, shape);
 
-            var intermediateShape = TensorHelpers.GetIntermediateShape(input.Shape, shape.Length);
+            nint[] intermediateShape = TensorHelpers.GetIntermediateShape(input.Shape, shape.Length);
             nint[] strides = new nint[shape.Length];
 
             nint stride = 1;
@@ -121,6 +177,15 @@ namespace System.Numerics.Tensors
             return output;
         }
 
+        // Lazy/non-copy broadcasting, internal only for now.
+        /// <summary>
+        /// Broadcast the data from <paramref name="input"/> to the new shape <paramref name="shape"/>. Creates a new <see cref="Tensor{T}"/>
+        /// but no memory is allocated. It manipulates the strides to achieve this affect.
+        /// If the shape of the <paramref name="input"/> is not compatible with the new shape, an exception is thrown.
+        /// </summary>
+        /// <param name="input">Input <see cref="TensorSpan{T}"/>.</param>
+        /// <param name="shape"><see cref="ReadOnlySpan{T}"/> of the desired new shape.</param>
+        /// <exception cref="ArgumentException">Thrown when the shapes are not broadcast compatible.</exception>
         internal static TensorSpan<T> BroadcastTo<T>(TensorSpan<T> input, ReadOnlySpan<nint> shape)
         where T : IEquatable<T>, IEqualityOperators<T, T, bool>
         {
@@ -130,12 +195,12 @@ namespace System.Numerics.Tensors
             if (!TensorHelpers.AreShapesBroadcastCompatible(input.Shape, shape))
                 ThrowHelper.ThrowArgument_ShapesNotBroadcastCompatible();
 
-            var newSize = TensorSpanHelpers.CalculateTotalLength(shape);
+            nint newSize = TensorSpanHelpers.CalculateTotalLength(shape);
 
             if (newSize == input.LinearLength)
                 return Reshape(input, shape);
 
-            var intermediateShape = TensorHelpers.GetIntermediateShape(input.Shape, shape.Length);
+            nint[] intermediateShape = TensorHelpers.GetIntermediateShape(input.Shape, shape.Length);
             nint[] strides = new nint[shape.Length];
 
             nint stride = 1;
@@ -158,6 +223,12 @@ namespace System.Numerics.Tensors
         #endregion
 
         #region Reverse
+        /// <summary>
+        /// Reverse the order of elements in the <paramref name="input"/> along the given axis. The shape of the tensor is preserved, but the elements are reordered.
+        /// <paramref name="axis"/> defaults to -1 when not provided, which reverses the entire tensor.
+        /// </summary>
+        /// <param name="input">Input <see cref="Tensor{T}"/>.</param>
+        /// <param name="axis">Axis along which to reverse over. The default, -1, will reverse over all of the axes of the left tensor.</param>
         public static Tensor<T> Reverse<T>(Tensor<T> input, nint axis = -1)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>
         {
@@ -182,13 +253,29 @@ namespace System.Numerics.Tensors
                 }
                 copyLength /= input.Shape[(int)axis];
 
-                Span<nint> oIndices = stackalloc nint[input.Rank];
-                Span<nint> iIndices = stackalloc nint[input.Rank];
+                scoped Span<nint> oIndices;
+                nint[]? oIndicesArray;
+                scoped Span<nint> iIndices;
+                nint[]? iIndicesArray;
+                if (input.Rank > 6)
+                {
+                    oIndicesArray = ArrayPool<nint>.Shared.Rent(input.Rank);
+                    oIndices = oIndicesArray;
+                    iIndicesArray = ArrayPool<nint>.Shared.Rent(input.Rank);
+                    iIndices = iIndicesArray;
+                }
+                else
+                {
+                    oIndicesArray = null;
+                    oIndices = stackalloc nint[input.Rank];
+                    iIndicesArray = null;
+                    iIndices = stackalloc nint[input.Rank];
+                }
 
                 iIndices[(int)axis] = input.Shape[(int)axis] - 1;
                 nint copiedValues = 0;
-                var islice = input.AsSpanND().Slice(input.Shape);
-                var oslice = output.AsSpanND().Slice(output._lengths);
+                TensorSpan<T> islice = input.AsTensorSpan().Slice(input.Shape);
+                TensorSpan<T> oslice = output.AsTensorSpan().Slice(output._lengths);
                 while (copiedValues < input._linearLength)
                 {
                     TensorSpanHelpers.Memmove(ref Unsafe.Add(ref oslice._reference, TensorSpanHelpers.ComputeLinearIndex(oIndices, input.Strides, input.Shape)), ref Unsafe.Add(ref islice._reference, TensorSpanHelpers.ComputeLinearIndex(iIndices, islice.Strides, islice.Shape)), copyLength);
@@ -196,11 +283,23 @@ namespace System.Numerics.Tensors
                     TensorSpanHelpers.AdjustIndicesDown((int)axis, 1, ref iIndices, input._lengths);
                     copiedValues += copyLength;
                 }
+
+                if (oIndicesArray != null && iIndicesArray != null)
+                {
+                    ArrayPool<nint>.Shared.Return(oIndicesArray);
+                    ArrayPool<nint>.Shared.Return(iIndicesArray);
+                }
             }
 
             return output;
         }
 
+        /// <summary>
+        /// Reverse the order of elements in the <paramref name="input"/> along the given axis. The shape of the tensor is preserved, but the elements are reordered.
+        /// <paramref name="axis"/> defaults to -1 when not provided, which reverses the entire span.
+        /// </summary>
+        /// <param name="input">Input <see cref="TensorSpan{T}"/>.</param>
+        /// <param name="axis">Axis along which to reverse over. The default, -1, will reverse over all of the axes of the left span.</param>
         public static TensorSpan<T> Reverse<T>(TensorSpan<T> input, nint axis = -1)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>
         {
@@ -227,12 +326,28 @@ namespace System.Numerics.Tensors
                 }
                 copyLength /= input.Shape[(int)axis];
 
-                Span<nint> oIndices = stackalloc nint[input.Rank];
-                Span<nint> iIndices = stackalloc nint[input.Rank];
+                scoped Span<nint> oIndices;
+                nint[]? oIndicesArray;
+                scoped Span<nint> iIndices;
+                nint[]? iIndicesArray;
+                if (input.Rank > 6)
+                {
+                    oIndicesArray = ArrayPool<nint>.Shared.Rent(input.Rank);
+                    oIndices = oIndicesArray;
+                    iIndicesArray = ArrayPool<nint>.Shared.Rent(input.Rank);
+                    iIndices = iIndicesArray;
+                }
+                else
+                {
+                    oIndicesArray = null;
+                    oIndices = stackalloc nint[input.Rank];
+                    iIndicesArray = null;
+                    iIndices = stackalloc nint[input.Rank];
+                }
 
                 iIndices[(int)axis] = input.Shape[(int)axis] - 1;
                 nint copiedValues = 0;
-                var islice = input.Slice(input.Shape);
+                TensorSpan<T> islice = input.Slice(input.Shape);
                 while (copiedValues < input.LinearLength)
                 {
                     TensorSpanHelpers.Memmove(ref Unsafe.Add(ref values, TensorSpanHelpers.ComputeLinearIndex(oIndices, input.Strides, input.Shape)), ref Unsafe.Add(ref islice._reference, TensorSpanHelpers.ComputeLinearIndex(iIndices, islice.Strides, islice.Shape)), copyLength);
@@ -241,14 +356,26 @@ namespace System.Numerics.Tensors
                     copiedValues += copyLength;
                 }
                 TensorSpanHelpers.Memmove(ref input._reference, ref values[0], input.LinearLength);
+
+                if (oIndicesArray != null && iIndicesArray != null)
+                {
+                    ArrayPool<nint>.Shared.Return(oIndicesArray);
+                    ArrayPool<nint>.Shared.Return(iIndicesArray);
+                }
             }
 
             return input;
         }
-
         #endregion
 
         #region Split
+        /// <summary>
+        /// Split a <see cref="Tensor{T}"/> into <paramref name="numSplits"/> along the given <paramref name="axis"/>. If the tensor cannot be split
+        /// evenly on the given <paramref name="axis"/> an exception is thrown.
+        /// </summary>
+        /// <param name="input">Input <see cref="Tensor{T}"/>.</param>
+        /// <param name="numSplits">How many times to split the <paramref name="input"/></param>
+        /// <param name="axis">The axis to split on.</param>
         public static Tensor<T>[] Split<T>(Tensor<T> input, nint numSplits, nint axis)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>
         {
@@ -267,8 +394,24 @@ namespace System.Numerics.Tensors
             nint[] newShape = input.Shape.ToArray();
             newShape[(int)axis] = newShape[(int)axis] / numSplits;
 
-            Span<nint> oIndices = stackalloc nint[input.Rank];
-            Span<nint> iIndices = stackalloc nint[input.Rank];
+            scoped Span<nint> oIndices;
+            nint[]? oIndicesArray;
+            scoped Span<nint> iIndices;
+            nint[]? iIndicesArray;
+            if (input.Rank > 6)
+            {
+                oIndicesArray = ArrayPool<nint>.Shared.Rent(input.Rank);
+                oIndices = oIndicesArray;
+                iIndicesArray = ArrayPool<nint>.Shared.Rent(input.Rank);
+                iIndices = iIndicesArray;
+            }
+            else
+            {
+                oIndicesArray = null;
+                oIndices = stackalloc nint[input.Rank];
+                iIndicesArray = null;
+                iIndices = stackalloc nint[input.Rank];
+            }
 
             for (int i = 0; i < outputs.Length; i++)
             {
@@ -278,8 +421,8 @@ namespace System.Numerics.Tensors
                 iIndices.Clear();
 
                 iIndices[(int)axis] = i;
-                var islice = input.AsSpanND().Slice(input.Shape);
-                var oslice = outputs[i].AsSpanND().Slice(outputs[i]._lengths);
+                TensorSpan<T> islice = input.AsTensorSpan().Slice(input.Shape);
+                TensorSpan<T> oslice = outputs[i].AsTensorSpan().Slice(outputs[i]._lengths);
 
                 nint copiedValues = 0;
                 while (copiedValues < totalToCopy)
@@ -291,12 +434,24 @@ namespace System.Numerics.Tensors
                 }
             }
 
+            if (oIndicesArray != null && iIndicesArray != null)
+            {
+                ArrayPool<nint>.Shared.Return(oIndicesArray);
+                ArrayPool<nint>.Shared.Return(iIndicesArray);
+            }
+
             return outputs;
         }
         #endregion
 
         #region SetSlice
         // REVIEW: WHAT DO WE WANT TO CALL THIS? COPYTO? IT DOES FIT IN WITH THE EXISTING COPY TO CONVENTIONS FOR VECTOR (albeit backwards).
+        /// <summary>
+        /// Sets a slice of the given <paramref name="tensor"/> with the provided <paramref name="values"/> for the given <paramref name="ranges"/>
+        /// </summary>
+        /// <param name="tensor">Input <see cref="Tensor{T}"/>.</param>
+        /// <param name="values">The values you want to set in the <paramref name="tensor"/>.</param>
+        /// <param name="ranges">The ranges you want to set.</param>
         public static Tensor<T> SetSlice<T>(this Tensor<T> tensor, Tensor<T> values, params ReadOnlySpan<NRange> ranges)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>
         {
@@ -305,15 +460,15 @@ namespace System.Numerics.Tensors
             {
                 if (!tensor.Shape.SequenceEqual(values.Shape))
                     ThrowHelper.ThrowArgument_SetSliceNoRange(nameof(values));
-                srcSpan = tensor.AsSpanND().Slice(tensor.Shape);
+                srcSpan = tensor.AsTensorSpan().Slice(tensor.Shape);
             }
             else
-                srcSpan = tensor.AsSpanND().Slice(ranges);
+                srcSpan = tensor.AsTensorSpan().Slice(ranges);
 
             if (!srcSpan.Shape.SequenceEqual(values.Shape))
                 ThrowHelper.ThrowArgument_SetSliceInvalidShapes(nameof(values));
 
-            values.AsSpanND().CopyTo(srcSpan);
+            values.AsTensorSpan().CopyTo(srcSpan);
 
             return tensor;
         }
@@ -323,14 +478,20 @@ namespace System.Numerics.Tensors
         // REVIEW: PYTORCH/NUMPY DO THIS.
         //  t0[t0 < 2] = -1;
         //  OR SHOULD THIS BE AN OVERLOAD OF FILL THAT TAKES IN A FUNC TO KNOW WHICH ONE TO UPDATE?
-        public static Tensor<T> FilteredUpdate<T>(Tensor<T> left, Tensor<bool> filter, T value)
+        /// <summary>
+        /// Updates the <paramref name="tensor"/> tensor with the <paramref name="value"/> where the <paramref name="filter"/> is true.
+        /// </summary>
+        /// <param name="tensor">Input <see cref="Tensor{T}"/>.</param>
+        /// <param name="filter">Input filter where if the index is true then it will update the <paramref name="tensor"/>.</param>
+        /// <param name="value">Value to update in the <paramref name="tensor"/>.</param>
+        public static Tensor<T> FilteredUpdate<T>(Tensor<T> tensor, Tensor<bool> filter, T value)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>
         {
-            if (filter.Shape.Length != left.Shape.Length)
+            if (filter.Shape.Length != tensor.Shape.Length)
                 ThrowHelper.ThrowArgument_DimensionsNotSame(nameof(filter));
 
-            var srcSpan = MemoryMarshal.CreateSpan(ref left._values[0], (int)left._linearLength);
-            var filterSpan = MemoryMarshal.CreateSpan(ref filter._values[0], (int)left._linearLength);
+            Span<T> srcSpan = MemoryMarshal.CreateSpan(ref tensor._values[0], (int)tensor._linearLength);
+            Span<bool> filterSpan = MemoryMarshal.CreateSpan(ref filter._values[0], (int)tensor._linearLength);
 
             for (int i = 0; i < filterSpan.Length; i++)
             {
@@ -340,13 +501,20 @@ namespace System.Numerics.Tensors
                 }
             }
 
-            return left;
+            return tensor;
         }
 
-        public static Tensor<T> FilteredUpdate<T>(Tensor<T> left, Tensor<bool> filter, Tensor<T> values)
+        /// <summary>
+        /// Updates the <paramref name="tensor"/> tensor with the <paramref name="values"/> where the <paramref name="filter"/> is true.
+        /// If dmesions are not the same an exception is thrown.
+        /// </summary>
+        /// <param name="tensor">Input <see cref="Tensor{T}"/>.</param>
+        /// <param name="filter">Input filter where if the index is true then it will update the <paramref name="tensor"/>.</param>
+        /// <param name="values">Values to update in the <paramref name="tensor"/>.</param>
+        public static Tensor<T> FilteredUpdate<T>(Tensor<T> tensor, Tensor<bool> filter, Tensor<T> values)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>
         {
-            if (filter.Shape.Length != left.Shape.Length)
+            if (filter.Shape.Length != tensor.Shape.Length)
                 ThrowHelper.ThrowArgument_DimensionsNotSame(nameof(filter));
             if (values.Rank != 1)
                 ThrowHelper.ThrowArgument_1DTensorRequired(nameof(values));
@@ -355,8 +523,8 @@ namespace System.Numerics.Tensors
             if (numTrueElements != values._linearLength)
                 ThrowHelper.ThrowArgument_IncorrectNumberOfFilterItems(nameof(values));
 
-            Span<T> dstSpan = MemoryMarshal.CreateSpan(ref left._values[0], (int)left._linearLength);
-            Span<bool> filterSpan = MemoryMarshal.CreateSpan(ref filter._values[0], (int)left._linearLength);
+            Span<T> dstSpan = MemoryMarshal.CreateSpan(ref tensor._values[0], (int)tensor._linearLength);
+            Span<bool> filterSpan = MemoryMarshal.CreateSpan(ref filter._values[0], (int)tensor._linearLength);
             Span<T> valuesSpan = MemoryMarshal.CreateSpan(ref values._values[0], (int)values._linearLength);
 
             int index = 0;
@@ -368,11 +536,18 @@ namespace System.Numerics.Tensors
                 }
             }
 
-            return left;
+            return tensor;
         }
         #endregion
 
         #region SequenceEqual
+        /// <summary>
+        /// Compares the elements of two <see cref="Tensor{T}"/> for equality. If the shapes are not the same, the tensors are broadcasted to the smallest broadcastable size
+        /// before they are compared. It returns a <see cref="Tensor{Boolean}"/> where the value is true if the elements are equal and false if they are not."/>
+        /// </summary>
+        /// <param name="left">First <see cref="Tensor{T}"/> to compare.</param>
+        /// <param name="right">Second <see cref="Tensor{T}"/> to compare.</param>
+        /// <returns>A <see cref="Tensor{Boolean}"/> where the value is true if the elements are equal and false if they are not.</returns>
         public static Tensor<bool> SequenceEqual<T>(Tensor<T> left, Tensor<T> right)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>
         {
@@ -390,14 +565,31 @@ namespace System.Numerics.Tensors
             {
                 nint[] newSize = TensorHelpers.GetSmallestBroadcastableSize(left.Shape, right.Shape);
                 result = Tensor.Create<bool>(false, newSize);
-                var broadcastedLeft = BroadcastTo(left, newSize);
-                var broadcastedRight = BroadcastTo(right, newSize);
-                Span<nint> curIndex = stackalloc nint[broadcastedRight.Shape.Length];
+                Tensor<T> broadcastedLeft = BroadcastTo(left, newSize);
+                Tensor<T> broadcastedRight = BroadcastTo(right, newSize);
+
+                scoped Span<nint> curIndex;
+                nint[]? curIndexArray;
+
+                if (broadcastedRight.Shape.Length > 6)
+                {
+                    curIndexArray = ArrayPool<nint>.Shared.Rent(broadcastedRight.Shape.Length);
+                    curIndex = curIndexArray;
+                }
+                else
+                {
+                    curIndexArray = null;
+                    curIndex = stackalloc nint[broadcastedRight.Shape.Length];
+                }
+
                 for (int i = 0; i < broadcastedLeft.LinearLength; i++)
                 {
                     result._values[i] = broadcastedLeft[curIndex] == broadcastedRight[curIndex];
                     TensorSpanHelpers.AdjustIndices(broadcastedRight.Rank - 1, 1, ref curIndex, broadcastedRight.Shape);
                 }
+
+                if (curIndexArray != null)
+                    ArrayPool<nint>.Shared.Return(curIndexArray);
             }
 
             return result;
@@ -405,6 +597,16 @@ namespace System.Numerics.Tensors
         #endregion
 
         #region LessThan
+        /// <summary>
+        /// Compares the elements of two <see cref="Tensor{T}"/> to see which elements of <paramref name="left"/> are less than <paramref name="right"/>.
+        /// If the shapes are not the same, the tensors are broadcasted to the smallest broadcastable size before they are compared.
+        /// It returns a <see cref="Tensor{Boolean}"/> where the value is true if the elements in <paramref name="left"/> are less than <paramref name="right"/>
+        /// and false if they are not."/>
+        /// </summary>
+        /// <param name="left">First <see cref="Tensor{T}"/> to compare.</param>
+        /// <param name="right">Second <see cref="Tensor{T}"/> to compare.</param>
+        /// <returns>A <see cref="Tensor{Boolean}"/> where the value is true if the elements in <paramref name="left"/> are less than <paramref name="right"/> and
+        /// false if they are not.</returns>
         public static Tensor<bool> LessThan<T>(Tensor<T> left, Tensor<T> right)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IComparisonOperators<T, T, bool>
         {
@@ -422,19 +624,45 @@ namespace System.Numerics.Tensors
             {
                 nint[] newSize = TensorHelpers.GetSmallestBroadcastableSize(left.Shape, right.Shape);
                 result = Tensor.Create<bool>(false, newSize);
-                var broadcastedLeft = BroadcastTo(left, newSize);
-                var broadcastedRight = BroadcastTo(right, newSize);
-                Span<nint> curIndex = stackalloc nint[broadcastedRight.Shape.Length];
+                Tensor<T> broadcastedLeft = BroadcastTo(left, newSize);
+                Tensor<T> broadcastedRight = BroadcastTo(right, newSize);
+
+                scoped Span<nint> curIndex;
+                nint[]? curIndexArray;
+
+                if (broadcastedRight.Shape.Length > 6)
+                {
+                    curIndexArray = ArrayPool<nint>.Shared.Rent(broadcastedRight.Shape.Length);
+                    curIndex = curIndexArray;
+                }
+                else
+                {
+                    curIndexArray = null;
+                    curIndex = stackalloc nint[broadcastedRight.Shape.Length];
+                }
+
                 for (int i = 0; i < broadcastedLeft.LinearLength; i++)
                 {
                     result._values[i] = broadcastedLeft[curIndex] < broadcastedRight[curIndex];
                     TensorSpanHelpers.AdjustIndices(broadcastedRight.Rank - 1, 1, ref curIndex, broadcastedRight.Shape);
                 }
+
+                if (curIndexArray != null)
+                    ArrayPool<nint>.Shared.Return(curIndexArray);
             }
 
             return result;
         }
 
+        /// <summary>
+        /// Compares the elements of a <see cref="Tensor{T}"/> to see which elements are less than <paramref name="right"/>.
+        /// It returns a <see cref="Tensor{Boolean}"/> where the value is true if the elements in <paramref name="left"/> are less than <paramref name="right"/>
+        /// and false if they are not."/>
+        /// </summary>
+        /// <param name="left"><see cref="Tensor{T}"/> to compare.</param>
+        /// <param name="right"><typeparamref name="T"/> to compare against <paramref name="left"/>.</param>
+        /// <returns><see cref="Tensor{Boolean}"/> where the value is true if the elements in <paramref name="left"/> are less than <paramref name="right"/>
+        /// and false if they are not.</returns>
         public static Tensor<bool> LessThan<T>(Tensor<T> left, T right)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IComparisonOperators<T, T, bool>
         {
@@ -447,6 +675,14 @@ namespace System.Numerics.Tensors
             return result;
         }
 
+        /// <summary>
+        /// Compares the elements of two <see cref="Tensor{T}"/> to see if any elements of <paramref name="left"/> are less than <paramref name="right"/>.
+        /// If the shapes are not the same, the tensors are broadcasted to the smallest broadcastable size before they are compared.
+        /// It returns a <see cref="bool"/> where the value is true if any elements in <paramref name="left"/> are less than <paramref name="right"/>.
+        /// </summary>
+        /// <param name="left">First <see cref="Tensor{T}"/> to compare.</param>
+        /// <param name="right">Second <see cref="Tensor{T}"/> to compare against.</param>
+        /// <returns><see cref="bool"/> where the value is true if any elements in <paramref name="left"/> are less than <paramref name="right"/>.</returns>
         public static bool LessThanAny<T>(Tensor<T> left, Tensor<T> right)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IComparisonOperators<T, T, bool>
         {
@@ -461,20 +697,45 @@ namespace System.Numerics.Tensors
             else
             {
                 nint[] newSize = TensorHelpers.GetSmallestBroadcastableSize(left.Shape, right.Shape);
-                var broadcastedLeft = BroadcastTo(left, newSize);
-                var broadcastedRight = BroadcastTo(right, newSize);
-                Span<nint> curIndex = stackalloc nint[broadcastedRight.Shape.Length];
+                Tensor<T> broadcastedLeft = BroadcastTo(left, newSize);
+                Tensor<T> broadcastedRight = BroadcastTo(right, newSize);
+
+                scoped Span<nint> curIndex;
+                nint[]? curIndexArray;
+
+                if (broadcastedRight.Shape.Length > 6)
+                {
+                    curIndexArray = ArrayPool<nint>.Shared.Rent(broadcastedRight.Shape.Length);
+                    curIndex = curIndexArray;
+                }
+                else
+                {
+                    curIndexArray = null;
+                    curIndex = stackalloc nint[broadcastedRight.Shape.Length];
+                }
+
                 for (int i = 0; i < broadcastedLeft.LinearLength; i++)
                 {
                     if (broadcastedLeft[curIndex] < broadcastedRight[curIndex])
                         return true;
                     TensorSpanHelpers.AdjustIndices(broadcastedRight.Rank - 1, 1, ref curIndex, broadcastedRight.Shape);
                 }
+
+                if (curIndexArray != null)
+                    ArrayPool<nint>.Shared.Return(curIndexArray);
             }
 
             return false;
         }
 
+        /// <summary>
+        /// Compares the elements of two <see cref="Tensor{T}"/> to see if all elements of <paramref name="left"/> are less than <paramref name="right"/>.
+        /// If the shapes are not the same, the tensors are broadcasted to the smallest broadcastable size before they are compared.
+        /// It returns a <see cref="bool"/> where the value is true if all elements in <paramref name="left"/> are less than <paramref name="right"/>.
+        /// </summary>
+        /// <param name="left">First <see cref="Tensor{T}"/> to compare.</param>
+        /// <param name="right">Second <see cref="Tensor{T}"/> to compare against.</param>
+        /// <returns><see cref="bool"/> where the value is true if all elements in <paramref name="left"/> are less than <paramref name="right"/>.</returns>
         public static bool LessThanAll<T>(Tensor<T> left, Tensor<T> right)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IComparisonOperators<T, T, bool>
         {
@@ -489,21 +750,48 @@ namespace System.Numerics.Tensors
             else
             {
                 nint[] newSize = TensorHelpers.GetSmallestBroadcastableSize(left.Shape, right.Shape);
-                var broadcastedLeft = BroadcastTo(left, newSize);
-                var broadcastedRight = BroadcastTo(right, newSize);
-                Span<nint> curIndex = stackalloc nint[broadcastedRight.Shape.Length];
+                Tensor<T> broadcastedLeft = BroadcastTo(left, newSize);
+                Tensor<T> broadcastedRight = BroadcastTo(right, newSize);
+
+                scoped Span<nint> curIndex;
+                nint[]? curIndexArray;
+
+                if (broadcastedRight.Shape.Length > 6)
+                {
+                    curIndexArray = ArrayPool<nint>.Shared.Rent(broadcastedRight.Shape.Length);
+                    curIndex = curIndexArray;
+                }
+                else
+                {
+                    curIndexArray = null;
+                    curIndex = stackalloc nint[broadcastedRight.Shape.Length];
+                }
+
                 for (int i = 0; i < broadcastedLeft.LinearLength; i++)
                 {
                     if (broadcastedLeft[curIndex] > broadcastedRight[curIndex])
                         return false;
                     TensorSpanHelpers.AdjustIndices(broadcastedRight.Rank - 1, 1, ref curIndex, broadcastedRight.Shape);
                 }
+
+                if (curIndexArray != null)
+                    ArrayPool<nint>.Shared.Return(curIndexArray);
             }
             return true;
         }
         #endregion
 
         #region GreaterThan
+        /// <summary>
+        /// Compares the elements of two <see cref="Tensor{T}"/> to see which elements of <paramref name="left"/> are greater than <paramref name="right"/>.
+        /// If the shapes are not the same, the tensors are broadcasted to the smallest broadcastable size before they are compared.
+        /// It returns a <see cref="Tensor{Boolean}"/> where the value is true if the elements in <paramref name="left"/> are greater than <paramref name="right"/>
+        /// and false if they are not."/>
+        /// </summary>
+        /// <param name="left">First <see cref="Tensor{T}"/> to compare.</param>
+        /// <param name="right">Second <see cref="Tensor{T}"/> to compare.</param>
+        /// <returns>A <see cref="Tensor{Boolean}"/> where the value is true if the elements in <paramref name="left"/> are greater than <paramref name="right"/> and
+        /// false if they are not.</returns>
         public static Tensor<bool> GreaterThan<T>(Tensor<T> left, Tensor<T> right)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IComparisonOperators<T, T, bool>
         {
@@ -521,19 +809,45 @@ namespace System.Numerics.Tensors
             {
                 nint[] newSize = TensorHelpers.GetSmallestBroadcastableSize(left.Shape, right.Shape);
                 result = Tensor.Create<bool>(false, newSize);
-                var broadcastedLeft = BroadcastTo(left, newSize);
-                var broadcastedRight = BroadcastTo(right, newSize);
-                Span<nint> curIndex = stackalloc nint[broadcastedRight.Shape.Length];
+                Tensor<T> broadcastedLeft = BroadcastTo(left, newSize);
+                Tensor<T> broadcastedRight = BroadcastTo(right, newSize);
+
+                scoped Span<nint> curIndex;
+                nint[]? curIndexArray;
+
+                if (broadcastedRight.Shape.Length > 6)
+                {
+                    curIndexArray = ArrayPool<nint>.Shared.Rent(broadcastedRight.Shape.Length);
+                    curIndex = curIndexArray;
+                }
+                else
+                {
+                    curIndexArray = null;
+                    curIndex = stackalloc nint[broadcastedRight.Shape.Length];
+                }
+
                 for (int i = 0; i < broadcastedLeft.LinearLength; i++)
                 {
                     result._values[i] = broadcastedLeft[curIndex] > broadcastedRight[curIndex];
                     TensorSpanHelpers.AdjustIndices(broadcastedRight.Rank - 1, 1, ref curIndex, broadcastedRight.Shape);
                 }
+
+                if (curIndexArray != null)
+                    ArrayPool<nint>.Shared.Return(curIndexArray);
             }
 
             return result;
         }
 
+        /// <summary>
+        /// Compares the elements of a <see cref="Tensor{T}"/> to see which elements are greater than <paramref name="right"/>.
+        /// It returns a <see cref="Tensor{Boolean}"/> where the value is true if the elements in <paramref name="left"/> are greater than <paramref name="right"/>
+        /// and false if they are not."/>
+        /// </summary>
+        /// <param name="left"><see cref="Tensor{T}"/> to compare.</param>
+        /// <param name="right"><typeparamref name="T"/> to compare against <paramref name="left"/>.</param>
+        /// <returns><see cref="Tensor{Boolean}"/> where the value is true if the elements in <paramref name="left"/> are greater than <paramref name="right"/>
+        /// and false if they are not.</returns>
         public static Tensor<bool> GreaterThan<T>(Tensor<T> left, T right)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IComparisonOperators<T, T, bool>
         {
@@ -546,6 +860,14 @@ namespace System.Numerics.Tensors
             return result;
         }
 
+        /// <summary>
+        /// Compares the elements of two <see cref="Tensor{T}"/> to see if any elements of <paramref name="left"/> are greater than <paramref name="right"/>.
+        /// If the shapes are not the same, the tensors are broadcasted to the smallest broadcastable size before they are compared.
+        /// It returns a <see cref="bool"/> where the value is true if any elements in <paramref name="left"/> are greater than <paramref name="right"/>.
+        /// </summary>
+        /// <param name="left">First <see cref="Tensor{T}"/> to compare.</param>
+        /// <param name="right">Second <see cref="Tensor{T}"/> to compare against.</param>
+        /// <returns><see cref="bool"/> where the value is true if any elements in <paramref name="left"/> are greater than <paramref name="right"/>.</returns>
         public static bool GreaterThanAny<T>(Tensor<T> left, Tensor<T> right)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IComparisonOperators<T, T, bool>
         {
@@ -561,19 +883,44 @@ namespace System.Numerics.Tensors
             else
             {
                 nint[] newSize = TensorHelpers.GetSmallestBroadcastableSize(left.Shape, right.Shape);
-                var broadcastedLeft = BroadcastTo(left, newSize);
-                var broadcastedRight = BroadcastTo(right, newSize);
-                Span<nint> curIndex = stackalloc nint[broadcastedRight.Shape.Length];
+                Tensor<T> broadcastedLeft = BroadcastTo(left, newSize);
+                Tensor<T> broadcastedRight = BroadcastTo(right, newSize);
+
+                scoped Span<nint> curIndex;
+                nint[]? curIndexArray;
+
+                if (broadcastedRight.Shape.Length > 6)
+                {
+                    curIndexArray = ArrayPool<nint>.Shared.Rent(broadcastedRight.Shape.Length);
+                    curIndex = curIndexArray;
+                }
+                else
+                {
+                    curIndexArray = null;
+                    curIndex = stackalloc nint[broadcastedRight.Shape.Length];
+                }
+
                 for (int i = 0; i < broadcastedLeft.LinearLength; i++)
                 {
                     if (broadcastedLeft[curIndex] > broadcastedRight[curIndex])
                         return true;
                     TensorSpanHelpers.AdjustIndices(broadcastedRight.Rank - 1, 1, ref curIndex, broadcastedRight.Shape);
                 }
+
+                if (curIndexArray != null)
+                    ArrayPool<nint>.Shared.Return(curIndexArray);
             }
             return false;
         }
 
+        /// <summary>
+        /// Compares the elements of two <see cref="Tensor{T}"/> to see if all elements of <paramref name="left"/> are greater than <paramref name="right"/>.
+        /// If the shapes are not the same, the tensors are broadcasted to the smallest broadcastable size before they are compared.
+        /// It returns a <see cref="bool"/> where the value is true if all elements in <paramref name="left"/> are greater than <paramref name="right"/>.
+        /// </summary>
+        /// <param name="left">First <see cref="Tensor{T}"/> to compare.</param>
+        /// <param name="right">Second <see cref="Tensor{T}"/> to compare against.</param>
+        /// <returns><see cref="bool"/> where the value is true if all elements in <paramref name="left"/> are greater than <paramref name="right"/>.</returns>
         public static bool GreaterThanAll<T>(Tensor<T> left, Tensor<T> right)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IComparisonOperators<T, T, bool>
         {
@@ -589,15 +936,32 @@ namespace System.Numerics.Tensors
             else
             {
                 nint[] newSize = TensorHelpers.GetSmallestBroadcastableSize(left.Shape, right.Shape);
-                var broadcastedLeft = BroadcastTo(left, newSize);
-                var broadcastedRight = BroadcastTo(right, newSize);
-                Span<nint> curIndex = stackalloc nint[broadcastedRight.Shape.Length];
+                Tensor<T> broadcastedLeft = BroadcastTo(left, newSize);
+                Tensor<T> broadcastedRight = BroadcastTo(right, newSize);
+
+                scoped Span<nint> curIndex;
+                nint[]? curIndexArray;
+
+                if (broadcastedRight.Shape.Length > 6)
+                {
+                    curIndexArray = ArrayPool<nint>.Shared.Rent(broadcastedRight.Shape.Length);
+                    curIndex = curIndexArray;
+                }
+                else
+                {
+                    curIndexArray = null;
+                    curIndex = stackalloc nint[broadcastedRight.Shape.Length];
+                }
+
                 for (int i = 0; i < broadcastedLeft.LinearLength; i++)
                 {
                     if (broadcastedLeft[curIndex] < broadcastedRight[curIndex])
                         return false;
                     TensorSpanHelpers.AdjustIndices(broadcastedRight.Rank - 1, 1, ref curIndex, broadcastedRight.Shape);
                 }
+
+                if (curIndexArray != null)
+                    ArrayPool<nint>.Shared.Return(curIndexArray);
             }
             return true;
         }
@@ -606,6 +970,12 @@ namespace System.Numerics.Tensors
         #region Stack
         // REVIEW: NEEDS A DIFFERENT NAME?
         // JUST AN OVERLOAD FOR CONCATENATE?
+        /// <summary>
+        /// Join an array of <see cref="Tensor{T}"/> along a new axis. The axis parameter specifies the index of the new axis in the dimensions of the result and
+        /// defaults to 0. All tensors must have the same shape.
+        /// </summary>
+        /// <param name="input">Array of <see cref="Tensor{T}"/>.</param>
+        /// <param name="axis">Index of where the new axis will be. Defaults to 0.</param>
         public static Tensor<T> Stack<T>(Tensor<T>[] input, int axis = 0)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>
         {
@@ -625,16 +995,23 @@ namespace System.Numerics.Tensors
 
         #region Reshape
         // REVIEW: SENTINAL VALUE? CONSTANT VALUE FOR -1 WILDCARD?
+        /// <summary>
+        /// Reshapes the <paramref name="input"/> tensor to the specified <paramref name="lengths"/>. If one of the lengths is -1, it will be calculated automatically.
+        /// Does not change the length of the underlying memory nor does it allocate new memory. If the new shape is not compatible with the old shape,
+        /// an exception is thrown.
+        /// </summary>
+        /// <param name="input"><see cref="Tensor{T}"/> you want to reshape.</param>
+        /// <param name="lengths"><see cref="ReadOnlySpan{T}"/> with the new dimensions.</param>
         public static Tensor<T> Reshape<T>(this Tensor<T> input, params ReadOnlySpan<nint> lengths)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>
         {
-            var arrLengths = lengths.ToArray();
+            nint[] arrLengths = lengths.ToArray();
             // Calculate wildcard info.
             if (lengths.Contains(-1))
             {
                 if (lengths.Count(-1) > 1)
                     ThrowHelper.ThrowArgument_OnlyOneWildcard();
-                var tempTotal = input._linearLength;
+                nint tempTotal = input._linearLength;
                 for (int i = 0; i < lengths.Length; i++)
                 {
                     if (lengths[i] != -1)
@@ -653,16 +1030,23 @@ namespace System.Numerics.Tensors
             return new Tensor<T>(input._values, arrLengths, strides, input.IsPinned);
         }
 
+        /// <summary>
+        /// Reshapes the <paramref name="input"/> tensor to the specified <paramref name="lengths"/>. If one of the lengths is -1, it will be calculated automatically.
+        /// Does not change the length of the underlying memory nor does it allocate new memory. If the new shape is not compatible with the old shape,
+        /// an exception is thrown.
+        /// </summary>
+        /// <param name="input"><see cref="TensorSpan{T}"/> you want to reshape.</param>
+        /// <param name="lengths"><see cref="ReadOnlySpan{T}"/> with the new dimensions.</param>
         public static TensorSpan<T> Reshape<T>(this TensorSpan<T> input, params ReadOnlySpan<nint> lengths)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>
         {
-            var arrLengths = lengths.ToArray();
+            nint[] arrLengths = lengths.ToArray();
             // Calculate wildcard info.
             if (lengths.Contains(-1))
             {
                 if (lengths.Count(-1) > 1)
                     ThrowHelper.ThrowArgument_OnlyOneWildcard();
-                var tempTotal = input.LinearLength;
+                nint tempTotal = input.LinearLength;
                 for (int i = 0; i < lengths.Length; i++)
                 {
                     if (lengths[i] != -1)
@@ -674,16 +1058,22 @@ namespace System.Numerics.Tensors
 
             }
 
-            var tempLinear = TensorSpanHelpers.CalculateTotalLength(arrLengths);
+            nint tempLinear = TensorSpanHelpers.CalculateTotalLength(arrLengths);
             if (tempLinear != input.LinearLength)
                 ThrowHelper.ThrowArgument_InvalidReshapeDimensions();
-            var strides = TensorSpanHelpers.CalculateStrides(arrLengths);
+            nint[] strides = TensorSpanHelpers.CalculateStrides(arrLengths);
             return new TensorSpan<T>(ref input._reference, arrLengths, strides, input.IsPinned);
         }
         #endregion
 
         #region Squeeze
         // REVIEW: NAME?
+        /// <summary>
+        /// Removes axis of length one from the <paramref name="input"/>. <paramref name="axis"/> defaults to -1 and will remove all axis with length of 1.
+        /// If <paramref name="axis"/> is specified, it will only remove that axis and if it is not of length one it will throw an exception.
+        /// </summary>
+        /// <param name="input">The <see cref="Tensor{T}"/> to remove axis of length 1.</param>
+        /// <param name="axis">The axis to remove. Defaults to -1 which removes all axis of length 1.</param>
         public static Tensor<T> Squeeze<T>(Tensor<T> input, int axis = -1)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>
         {
@@ -729,6 +1119,11 @@ namespace System.Numerics.Tensors
 
         #region Unsqueeze
         // REVIEW: NAME? NUMPY CALLS THIS expand_dims.
+        /// <summary>
+        /// Insert a new axis of length 1 that will appear at the axis position.
+        /// </summary>
+        /// <param name="input">The <see cref="Tensor{T}"/> to remove axis of length 1.</param>
+        /// <param name="axis">The axis to add.</param>
         public static Tensor<T> Unsqueeze<T>(Tensor<T> input, int axis)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>
         {
@@ -739,8 +1134,8 @@ namespace System.Numerics.Tensors
 
             List<nint> tempLengths = input._lengths.ToList();
             tempLengths.Insert(axis, 1);
-            var lengths = tempLengths.ToArray();
-            var strides = TensorSpanHelpers.CalculateStrides(lengths);
+            nint[] lengths = tempLengths.ToArray();
+            nint[] strides = TensorSpanHelpers.CalculateStrides(lengths);
             return new Tensor<T>(input._values, lengths, strides, input.IsPinned);
         }
         #endregion
@@ -749,10 +1144,8 @@ namespace System.Numerics.Tensors
         /// <summary>
         /// Join a sequence of tensors along an existing axis.
         /// </summary>
-        /// <typeparam name="T"></typeparam>
         /// <param name="tensors">The tensors must have the same shape, except in the dimension corresponding to axis (the first, by default).</param>
         /// <param name="axis">The axis along which the tensors will be joined. If axis is -1, arrays are flattened before use. Default is 0.</param>
-        /// <returns></returns>
         public static Tensor<T> Concatenate<T>(ReadOnlySpan<Tensor<T>> tensors, int axis = 0)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>
         {
@@ -789,9 +1182,22 @@ namespace System.Numerics.Tensors
             }
 
             T[] values = tensors[0].IsPinned ? GC.AllocateArray<T>((int)totalLength, tensors[0].IsPinned) : (new T[totalLength]);
-            var dstSpan = MemoryMarshal.CreateSpan(ref values[0], (int)totalLength);
+            Span<T> dstSpan = MemoryMarshal.CreateSpan(ref values[0], (int)totalLength);
             nint valuesCopied = 0;
-            Span<nint> indices = stackalloc nint[tensors[0].Rank];
+
+            scoped Span<nint> curIndex;
+            nint[]? curIndexArray;
+
+            if (tensors[0].Rank > 6)
+            {
+                curIndexArray = ArrayPool<nint>.Shared.Rent(tensors[0].Rank);
+                curIndex = curIndexArray;
+            }
+            else
+            {
+                curIndexArray = null;
+                curIndex = stackalloc nint[tensors[0].Rank];
+            }
             nint srcIndex;
             nint copyLength;
 
@@ -799,13 +1205,13 @@ namespace System.Numerics.Tensors
             {
                 for (int i = 0; i < tensors.Length; i++)
                 {
-                    srcIndex = TensorSpanHelpers.ComputeLinearIndex(indices, tensors[i].Strides, tensors[i].Shape);
+                    srcIndex = TensorSpanHelpers.ComputeLinearIndex(curIndex, tensors[i].Strides, tensors[i].Shape);
                     copyLength = CalculateCopyLength(tensors[i].Shape, axis);
-                    var srcSpan = MemoryMarshal.CreateSpan(ref tensors[i]._values[srcIndex], (int)copyLength);
+                    Span<T> srcSpan = MemoryMarshal.CreateSpan(ref tensors[i]._values[srcIndex], (int)copyLength);
                     TensorSpanHelpers.Memmove(dstSpan, srcSpan, copyLength, valuesCopied);
                     valuesCopied += copyLength;
                 }
-                TensorSpanHelpers.AdjustIndices(axis - 1, 1, ref indices, tensors[0].Shape);
+                TensorSpanHelpers.AdjustIndices(axis - 1, 1, ref curIndex, tensors[0].Shape);
             }
 
             Tensor<T> tensor;
@@ -820,6 +1226,9 @@ namespace System.Numerics.Tensors
                 lengths[axis] = sumOfAxis;
                 tensor = new Tensor<T>(values, lengths, tensors[0].IsPinned);
             }
+
+            if (curIndexArray != null)
+                ArrayPool<nint>.Shared.Return(curIndexArray);
 
             return tensor;
         }
@@ -839,14 +1248,18 @@ namespace System.Numerics.Tensors
         #endregion
 
         #region StdDev
-        // REVIEW: ADD IN ONES THAT TAKE AXIS.
+        /// <summary>
+        /// Returns the standard deviation of the elements in the <paramref name="input"/> tensor.
+        /// </summary>
+        /// <param name="input">The <see cref="Tensor{T}"/> to take the standard deviation of.</param>
+        /// <returns><typeparamref name="T"/> representing the standard deviation.</returns>
         public static T StdDev<T>(Tensor<T> input)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IFloatingPoint<T>, IPowerFunctions<T>, IAdditionOperators<T, T, T>, IAdditiveIdentity<T, T>
 
         {
             T mean = Mean(input);
-            var span = MemoryMarshal.CreateSpan(ref input._values[0], (int)input._linearLength);
-            var output = new T[input._linearLength].AsSpan();
+            Span<T> span = MemoryMarshal.CreateSpan(ref input._values[0], (int)input._linearLength);
+            Span<T> output = new T[input._linearLength].AsSpan();
             TensorPrimitives.Subtract(span, mean, output);
             TensorPrimitives.Abs(output, output);
             TensorPrimitives.Pow((ReadOnlySpan<T>)output, T.CreateChecked(2), output);
@@ -854,6 +1267,11 @@ namespace System.Numerics.Tensors
             return T.CreateChecked(sum / T.CreateChecked(input.LinearLength));
         }
 
+        /// <summary>
+        /// Return the standard deviation of the elements in the <paramref name="input"/> tensor. Casts the return value to <typeparamref name="TResult"/>.
+        /// </summary>
+        /// <param name="input">The <see cref="Tensor{T}"/> to take the standard deviation of.</param>
+        /// <returns><typeparamref name="TResult"/> representing the standard deviation.</returns>
         public static TResult StdDev<T, TResult>(Tensor<T> input)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>, INumber<T>
             where TResult : IEquatable<TResult>, IEqualityOperators<TResult, TResult, bool>, IFloatingPoint<TResult>
@@ -866,7 +1284,11 @@ namespace System.Numerics.Tensors
         #endregion
 
         #region Mean
-        // REVIEW: OTHER MATH OPERATIONS LIKE MEDIAN/MODE.
+        /// <summary>
+        /// Returns the mean of the elements in the <paramref name="input"/> tensor.
+        /// </summary>
+        /// <param name="input">The <see cref="Tensor{T}"/> to take the mean of.</param>
+        /// <returns><typeparamref name="T"/> representing the mean.</returns>
         public static T Mean<T>(Tensor<T> input)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IFloatingPoint<T>
 
@@ -875,6 +1297,11 @@ namespace System.Numerics.Tensors
             return T.CreateChecked(sum / T.CreateChecked(input.LinearLength));
         }
 
+        /// <summary>
+        /// Return the mean of the elements in the <paramref name="input"/> tensor. Casts the return value to <typeparamref name="TResult"/>.
+        /// </summary>
+        /// <param name="input">The <see cref="Tensor{T}"/> to take the mean of.</param>
+        /// <returns><typeparamref name="TResult"/> representing the mean.</returns>
         public static TResult Mean<T, TResult>(Tensor<T> input)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>, INumber<T>
             where TResult : IEquatable<TResult>, IEqualityOperators<TResult, TResult, bool>, IFloatingPoint<TResult>
@@ -887,18 +1314,29 @@ namespace System.Numerics.Tensors
         #endregion
 
         #region Permute/Transpose
+        /// <summary>
+        /// Swaps the last two dimensions of the <paramref name="input"/> tensor.
+        /// </summary>
+        /// <param name="input">Input <see cref="Tensor{T}"/>.</param>
         public static Tensor<T> Transpose<T>(Tensor<T> input)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>
         {
             if (input.Shape.Length < 2)
                 ThrowHelper.ThrowArgument_TransposeTooFewDimensions();
-            var axis = Enumerable.Range(0, input.Rank).ToArray();
-            var temp = axis[input.Rank - 1];
+            int[] axis = Enumerable.Range(0, input.Rank).ToArray();
+            int temp = axis[input.Rank - 1];
             axis[input.Rank - 1] = axis[input.Rank - 2];
             axis[input.Rank - 2] = temp;
             return Permute(input, axis.AsSpan());
         }
 
+        /// <summary>
+        /// Swaps the dimensions of the <paramref name="input"/> tensor according to the <paramref name="axis"/> parameter.
+        /// If <paramref name="input"/> is a 1D tensor, it will return <paramref name="input"/>. Otherwise it creates a new <see cref="Tensor{T}"/>
+        /// with the new axis ordering by allocating new memory.
+        /// </summary>
+        /// <param name="input">Input <see cref="Tensor{T}"/></param>
+        /// <param name="axis"><see cref="ReadOnlySpan{T}"/> with the new axis ordering.</param>
         public static Tensor<T> Permute<T>(Tensor<T> input, params ReadOnlySpan<int> axis)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>
         {
@@ -929,16 +1367,40 @@ namespace System.Numerics.Tensors
                     permutation = axis.ToArray();
                 }
                 tensor = new Tensor<T>(values, lengths, Array.Empty<nint>(), input._isPinned);
-                Span<nint> permutedIndices = stackalloc nint[tensor.Rank];
 
-                ospan = tensor.AsSpanND();
-                ispan = input.AsSpanND();
-                Span<nint> indices = stackalloc nint[tensor.Rank];
+                ospan = tensor.AsTensorSpan();
+                ispan = input.AsTensorSpan();
+
+                scoped Span<nint> indices;
+                nint[]? indicesArray;
+                scoped Span<nint> permutedIndices;
+                nint[]? permutedIndicesArray;
+                if (tensor.Rank > 6)
+                {
+                    indicesArray = ArrayPool<nint>.Shared.Rent(tensor.Rank);
+                    indices = indicesArray;
+                    permutedIndicesArray = ArrayPool<nint>.Shared.Rent(tensor.Rank);
+                    permutedIndices = permutedIndicesArray;
+                }
+                else
+                {
+                    indicesArray = null;
+                    indices = stackalloc nint[tensor.Rank];
+                    permutedIndicesArray = null;
+                    permutedIndices = stackalloc nint[tensor.Rank];
+                }
+
                 for (int i = 0; i < input._linearLength; i++)
                 {
                     TensorHelpers.PermuteIndices(indices, permutedIndices, permutation);
                     ospan[permutedIndices] = ispan[indices];
                     TensorSpanHelpers.AdjustIndices(tensor.Rank - 1, 1, ref indices, input._lengths);
+                }
+
+                if (indicesArray != null && permutedIndicesArray != null)
+                {
+                    ArrayPool<nint>.Shared.Return(indicesArray);
+                    ArrayPool<nint>.Shared.Return(permutedIndicesArray);
                 }
 
                 return tensor;
@@ -948,6 +1410,11 @@ namespace System.Numerics.Tensors
 
         #region TensorPrimitives
         #region Multiply
+        /// <summary>
+        /// Multiplies each element of <paramref name="input"/> with <paramref name="val"/> and returns a new <see cref="Tensor{T}"/> with the result.
+        /// </summary>
+        /// <param name="input">Input <see cref="Tensor{T}"/></param>
+        /// <param name="val"><typeparamref name="T"/> value to multiply by.</param>
         public static Tensor<T> Multiply<T>(Tensor<T> input, T val)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IMultiplyOperators<T, T, T>, IMultiplicativeIdentity<T, T>
         {
@@ -958,6 +1425,11 @@ namespace System.Numerics.Tensors
             return output;
         }
 
+        /// <summary>
+        /// Multiplies each element of <paramref name="input"/> with <paramref name="val"/> in place.
+        /// </summary>
+        /// <param name="input">Input <see cref="Tensor{T}"/></param>
+        /// <param name="val"><typeparamref name="T"/> value to multiply by.</param>
         public static Tensor<T> MultiplyInPlace<T>(Tensor<T> input, T val)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IMultiplyOperators<T, T, T>, IMultiplicativeIdentity<T, T>
         {
@@ -968,18 +1440,35 @@ namespace System.Numerics.Tensors
             return output;
         }
 
+        /// <summary>
+        /// Multiplies each element of <paramref name="left"/> with <paramref name="right"/> and returns a new <see cref="Tensor{T}"/> with the result.
+        /// If the shapes are not the same they are broadcast to the smallest compatible shape.
+        /// </summary>
+        /// <param name="left">Left <see cref="Tensor{T}"/> for multiplication.</param>
+        /// <param name="right">Right <see cref="Tensor{T}"/> for multiplication.</param>
         public static Tensor<T> Multiply<T>(Tensor<T> left, Tensor<T> right)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IMultiplyOperators<T, T, T>, IMultiplicativeIdentity<T, T>
         {
             return TensorPrimitivesHelperT1T2(left, right, TensorPrimitives.Multiply);
         }
 
-        public static Tensor<T> MultiplyInPlace<T>(Tensor<T> input, Tensor<T> other)
+        /// <summary>
+        /// Multiplies each element of <paramref name="left"/> with <paramref name="right"/> in place.
+        /// If the shapes are not the same they are broadcast to the smallest compatible shape.
+        /// </summary>
+        /// <param name="left">Left <see cref="Tensor{T}"/> for multiplication.</param>
+        /// <param name="right">Right <see cref="Tensor{T}"/> for multiplication.</param>
+        public static Tensor<T> MultiplyInPlace<T>(Tensor<T> left, Tensor<T> right)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IMultiplyOperators<T, T, T>, IMultiplicativeIdentity<T, T>
         {
-            return TensorPrimitivesHelperT1T2(input, other, TensorPrimitives.Multiply, true);
+            return TensorPrimitivesHelperT1T2(left, right, TensorPrimitives.Multiply, true);
         }
 
+        /// <summary>
+        /// Multiplies each element of <paramref name="input"/> with <paramref name="val"/> and returns a new <see cref="TensorSpan{T}"/> with the result.
+        /// </summary>
+        /// <param name="input">Input <see cref="TensorSpan{T}"/></param>
+        /// <param name="val"><typeparamref name="T"/> value to multiply by.</param>
         public static TensorSpan<T> Multiply<T>(TensorSpan<T> input, T val)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IMultiplyOperators<T, T, T>, IMultiplicativeIdentity<T, T>
         {
@@ -991,6 +1480,11 @@ namespace System.Numerics.Tensors
             return output;
         }
 
+        /// <summary>
+        /// Multiplies each element of <paramref name="input"/> with <paramref name="val"/> in place.
+        /// </summary>
+        /// <param name="input">Input <see cref="TensorSpan{T}"/></param>
+        /// <param name="val"><typeparamref name="T"/> value to multiply by.</param>
         public static TensorSpan<T> MultiplyInPlace<T>(TensorSpan<T> input, T val)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IMultiplyOperators<T, T, T>, IMultiplicativeIdentity<T, T>
         {
@@ -1001,20 +1495,37 @@ namespace System.Numerics.Tensors
             return output;
         }
 
-        public static TensorSpan<T> Multiply<T>(TensorSpan<T> input, Tensor<T> other)
+        /// <summary>
+        /// Multiplies each element of <paramref name="left"/> with <paramref name="right"/> and returns a new <see cref="TensorSpan{T}"/> with the result.
+        /// If the shapes are not the same they are broadcast to the smallest compatible shape.
+        /// </summary>
+        /// <param name="left">Left <see cref="TensorSpan{T}"/> for multiplication.</param>
+        /// <param name="right">Right <see cref="TensorSpan{T}"/> for multiplication.</param>
+        public static TensorSpan<T> Multiply<T>(TensorSpan<T> left, TensorSpan<T> right)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IMultiplyOperators<T, T, T>, IMultiplicativeIdentity<T, T>
         {
-            return TensorPrimitivesHelperT1T2(input, other, TensorPrimitives.Multiply);
+            return TensorPrimitivesHelperT1T2(left, right, TensorPrimitives.Multiply);
         }
 
-        public static TensorSpan<T> MultiplyInPlace<T>(TensorSpan<T> input, Tensor<T> other)
+        /// <summary>
+        /// Multiplies each element of <paramref name="left"/> with <paramref name="right"/> in place.
+        /// If the shapes are not the same they are broadcast to the smallest compatible shape.
+        /// </summary>
+        /// <param name="left">Left <see cref="TensorSpan{T}"/> for multiplication.</param>
+        /// <param name="right">Right <see cref="TensorSpan{T}"/> for multiplication.</param>
+        public static TensorSpan<T> MultiplyInPlace<T>(TensorSpan<T> left, TensorSpan<T> right)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IMultiplyOperators<T, T, T>, IMultiplicativeIdentity<T, T>
         {
-            return TensorPrimitivesHelperT1T2(input, other, TensorPrimitives.Multiply, true);
+            return TensorPrimitivesHelperT1T2(left, right, TensorPrimitives.Multiply, true);
         }
         #endregion
 
         #region Divide
+        /// <summary>
+        /// Divides each element of <paramref name="input"/> by <paramref name="val"/> and returns a new <see cref="Tensor{T}"/> with the result.
+        /// </summary>
+        /// <param name="input">Input <see cref="Tensor{T}"/>.</param>
+        /// <param name="val">The divisor</param>
         public static Tensor<T> Divide<T>(Tensor<T> input, T val)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IDivisionOperators<T, T, T>
         {
@@ -1025,6 +1536,11 @@ namespace System.Numerics.Tensors
             return output;
         }
 
+        /// <summary>
+        /// Divides each element of <paramref name="input"/> by <paramref name="val"/> in place.
+        /// </summary>
+        /// <param name="input">Input <see cref="Tensor{T}"/>.</param>
+        /// <param name="val">The divisor.</param>
         public static Tensor<T> DivideInPlace<T>(Tensor<T> input, T val)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IDivisionOperators<T, T, T>
         {
@@ -1035,6 +1551,11 @@ namespace System.Numerics.Tensors
             return output;
         }
 
+        /// <summary>
+        /// Divides <paramref name="val"/> by each element of <paramref name="input"/> and returns a new <see cref="Tensor{T}"/> with the result."/>
+        /// </summary>
+        /// <param name="val">The value to be divided.</param>
+        /// <param name="input">The <see cref="Tensor{T}"/> divisor.</param>
         public static Tensor<T> Divide<T>(T val, Tensor<T> input)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IDivisionOperators<T, T, T>
         {
@@ -1045,6 +1566,11 @@ namespace System.Numerics.Tensors
             return output;
         }
 
+        /// <summary>
+        /// Divides <paramref name="val"/> by each element of <paramref name="input"/> in place.
+        /// </summary>
+        /// <param name="val">The value to be divided.</param>
+        /// <param name="input">The <see cref="Tensor{T}"/> divisor.</param>
         public static Tensor<T> DivideInPlace<T>(T val, Tensor<T> input)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IDivisionOperators<T, T, T>
         {
@@ -1055,18 +1581,34 @@ namespace System.Numerics.Tensors
             return output;
         }
 
-        public static Tensor<T> Divide<T>(Tensor<T> input, Tensor<T> other)
+        /// <summary>
+        /// Divides each element of <paramref name="left"/> by its corresponding element in <paramref name="right"/> and returns
+        /// a new <see cref="Tensor{T}"/> with the result.
+        /// </summary>
+        /// <param name="left">The <see cref="Tensor{T}"/> to be divided.</param>
+        /// <param name="right">The <see cref="Tensor{T}"/> divisor.</param>
+        public static Tensor<T> Divide<T>(Tensor<T> left, Tensor<T> right)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IDivisionOperators<T, T, T>
         {
-            return TensorPrimitivesHelperT1T2(input, other, TensorPrimitives.Divide);
+            return TensorPrimitivesHelperT1T2(left, right, TensorPrimitives.Divide);
         }
 
-        public static Tensor<T> DivideInPlace<T>(Tensor<T> input, Tensor<T> other)
+        /// <summary>
+        /// Divides each element of <paramref name="left"/> by its corresponding element in <paramref name="right"/> in place.
+        /// </summary>
+        /// <param name="left">The <see cref="Tensor{T}"/> to be divided.</param>
+        /// <param name="right">The <see cref="Tensor{T}"/> divisor.</param>
+        public static Tensor<T> DivideInPlace<T>(Tensor<T> left, Tensor<T> right)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IDivisionOperators<T, T, T>
         {
-            return TensorPrimitivesHelperT1T2(input, other, TensorPrimitives.Divide, true);
+            return TensorPrimitivesHelperT1T2(left, right, TensorPrimitives.Divide, true);
         }
 
+        /// <summary>
+        /// Divides each element of <paramref name="input"/> by <paramref name="val"/> and returns a new <see cref="TensorSpan{T}"/> with the result.
+        /// </summary>
+        /// <param name="input">Input <see cref="TensorSpan{T}"/>.</param>
+        /// <param name="val">The divisor</param>
         public static TensorSpan<T> Divide<T>(TensorSpan<T> input, T val)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IDivisionOperators<T, T, T>
         {
@@ -1078,6 +1620,11 @@ namespace System.Numerics.Tensors
             return output;
         }
 
+        /// <summary>
+        /// Divides each element of <paramref name="input"/> by <paramref name="val"/> in place.
+        /// </summary>
+        /// <param name="input">Input <see cref="TensorSpan{T}"/>.</param>
+        /// <param name="val">The divisor</param>
         public static TensorSpan<T> DivideInPlace<T>(TensorSpan<T> input, T val)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IDivisionOperators<T, T, T>
         {
@@ -1088,6 +1635,11 @@ namespace System.Numerics.Tensors
             return output;
         }
 
+        /// <summary>
+        /// Divides <paramref name="val"/> by each element of <paramref name="input"/> and returns a new <see cref="TensorSpan{T}"/> with the result."/>
+        /// </summary>
+        /// <param name="val">The value to be divided.</param>
+        /// <param name="input">The <see cref="TensorSpan{T}"/> divisor.</param>
         public static TensorSpan<T> Divide<T>(T val, TensorSpan<T> input)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IDivisionOperators<T, T, T>
         {
@@ -1099,6 +1651,11 @@ namespace System.Numerics.Tensors
             return output;
         }
 
+        /// <summary>
+        /// Divides <paramref name="val"/> by each element of <paramref name="input"/> in place.
+        /// </summary>
+        /// <param name="val">The value to be divided.</param>
+        /// <param name="input">The <see cref="TensorSpan{T}"/> divisor.</param>
         public static TensorSpan<T> DivideInPlace<T>(T val, TensorSpan<T> input)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IDivisionOperators<T, T, T>
         {
@@ -1109,21 +1666,37 @@ namespace System.Numerics.Tensors
             return output;
         }
 
-        public static TensorSpan<T> Divide<T>(TensorSpan<T> input, TensorSpan<T> other)
+        /// <summary>
+        /// Divides each element of <paramref name="left"/> by its corresponding element in <paramref name="right"/> and returns
+        /// a new <see cref="TensorSpan{T}"/> with the result.
+        /// </summary>
+        /// <param name="left">The <see cref="TensorSpan{T}"/> to be divided.</param>
+        /// <param name="right">The <see cref="TensorSpan{T}"/> divisor.</param>
+        public static TensorSpan<T> Divide<T>(TensorSpan<T> left, TensorSpan<T> right)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IDivisionOperators<T, T, T>
         {
-            return TensorPrimitivesHelperT1T2(input, other, TensorPrimitives.Divide);
+            return TensorPrimitivesHelperT1T2(left, right, TensorPrimitives.Divide);
         }
 
-        public static TensorSpan<T> DivideInPlace<T>(TensorSpan<T> input, TensorSpan<T> other)
+        /// <summary>
+        /// Divides each element of <paramref name="left"/> by its corresponding element in <paramref name="right"/> in place.
+        /// </summary>
+        /// <param name="left">The <see cref="TensorSpan{T}"/> to be divided.</param>
+        /// <param name="right">The <see cref="TensorSpan{T}"/> divisor.</param>
+        public static TensorSpan<T> DivideInPlace<T>(TensorSpan<T> left, TensorSpan<T> right)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IDivisionOperators<T, T, T>
         {
-            return TensorPrimitivesHelperT1T2(input, other, TensorPrimitives.Divide, true);
+            return TensorPrimitivesHelperT1T2(left, right, TensorPrimitives.Divide, true);
         }
 
         #endregion
 
         #region Subtract
+        /// <summary>
+        /// Subtracts <paramref name="val"/> from each element of <paramref name="input"/> and returns a new <see cref="Tensor{T}"/> with the result.
+        /// </summary>
+        /// <param name="input">The <see cref="Tensor{T}"/>.</param>
+        /// <param name="val">The <typeparamref name="T"/> to subtract.</param>
         public static Tensor<T> Subtract<T>(Tensor<T> input, T val)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>, ISubtractionOperators<T, T, T>
         {
@@ -1134,6 +1707,11 @@ namespace System.Numerics.Tensors
             return output;
         }
 
+        /// <summary>
+        /// Subtracts <paramref name="val"/> from each element of <paramref name="input"/> in place.
+        /// </summary>
+        /// <param name="input">The <see cref="Tensor{T}"/>.</param>
+        /// <param name="val">The <typeparamref name="T"/> to subtract.</param>
         public static Tensor<T> SubtractInPlace<T>(Tensor<T> input, T val)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>, ISubtractionOperators<T, T, T>
         {
@@ -1144,6 +1722,11 @@ namespace System.Numerics.Tensors
             return output;
         }
 
+        /// <summary>
+        /// Subtracts each element of <paramref name="input"/> from <paramref name="val"/> and returns a new <see cref="Tensor{T}"/> with the result.
+        /// </summary>
+        /// <param name="val">The <typeparamref name="T"/> to be subtracted from.</param>
+        /// <param name="input">The <see cref="Tensor{T}"/> of values to subtract.</param>
         public static Tensor<T> Subtract<T>(T val, Tensor<T> input)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>, ISubtractionOperators<T, T, T>
         {
@@ -1154,6 +1737,11 @@ namespace System.Numerics.Tensors
             return output;
         }
 
+        /// <summary>
+        /// Subtracts each element of <paramref name="input"/> from <paramref name="val"/> in place.
+        /// </summary>
+        /// <param name="val">The <typeparamref name="T"/> to be subtracted from.</param>
+        /// <param name="input">The <see cref="Tensor{T}"/> of values to subtract.</param>
         public static Tensor<T> SubtractInPlace<T>(T val, Tensor<T> input)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>, ISubtractionOperators<T, T, T>
         {
@@ -1164,18 +1752,33 @@ namespace System.Numerics.Tensors
             return output;
         }
 
-        public static Tensor<T> Subtract<T>(Tensor<T> input, Tensor<T> other)
+        /// <summary>
+        /// Subtracts each element of <paramref name="left"/> from <paramref name="right"/> and returns a new <see cref="Tensor{T}"/> with the result.
+        /// </summary>
+        /// <param name="left">The <see cref="Tensor{T}"/> with values to be subtracted from.</param>
+        /// <param name="right">The <see cref="Tensor{T}"/> with values to subtract.</param>
+        public static Tensor<T> Subtract<T>(Tensor<T> left, Tensor<T> right)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>, ISubtractionOperators<T, T, T>
         {
-            return TensorPrimitivesHelperT1T2(input, other, TensorPrimitives.Subtract);
+            return TensorPrimitivesHelperT1T2(left, right, TensorPrimitives.Subtract);
         }
 
-        public static Tensor<T> SubtractInPlace<T>(Tensor<T> input, Tensor<T> other)
+        /// <summary>
+        /// Subtracts each element of <paramref name="left"/> from <paramref name="right"/> in place.
+        /// </summary>
+        /// <param name="left">The <see cref="Tensor{T}"/> with values to be subtracted from.</param>
+        /// <param name="right">The <see cref="Tensor{T}"/> with values to subtract.</param>
+        public static Tensor<T> SubtractInPlace<T>(Tensor<T> left, Tensor<T> right)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>, ISubtractionOperators<T, T, T>
         {
-            return TensorPrimitivesHelperT1T2(input, other, TensorPrimitives.Subtract, true);
+            return TensorPrimitivesHelperT1T2(left, right, TensorPrimitives.Subtract, true);
         }
 
+        /// <summary>
+        /// Subtracts <paramref name="val"/> from each element of <paramref name="input"/> and returns a new <see cref="TensorSpan{T}"/> with the result.
+        /// </summary>
+        /// <param name="input">The <see cref="TensorSpan{T}"/> with values to be subtracted from.</param>
+        /// <param name="val">The <typeparamref name="T"/> value to subtract.</param>
         public static TensorSpan<T> Subtract<T>(TensorSpan<T> input, T val)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>, ISubtractionOperators<T, T, T>
         {
@@ -1187,6 +1790,11 @@ namespace System.Numerics.Tensors
             return output;
         }
 
+        /// <summary>
+        /// Subtracts <paramref name="val"/> from each element of <paramref name="input"/> in place.
+        /// </summary>
+        /// <param name="input">The <see cref="TensorSpan{T}"/> with values to be subtracted from.</param>
+        /// <param name="val">The <typeparamref name="T"/> value to subtract.</param>
         public static TensorSpan<T> SubtractInPlace<T>(TensorSpan<T> input, T val)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>, ISubtractionOperators<T, T, T>
         {
@@ -1197,6 +1805,11 @@ namespace System.Numerics.Tensors
             return output;
         }
 
+        /// <summary>
+        /// Subtracts each element of <paramref name="input"/> from <paramref name="val"/> and returns a new <see cref="TensorSpan{T}"/> with the result.
+        /// </summary>
+        /// <param name="val">The <typeparamref name="T"/> value to be subtracted from.</param>
+        /// <param name="input">The <see cref="TensorSpan{T}"/> values to subtract.</param>
         public static TensorSpan<T> Subtract<T>(T val, TensorSpan<T> input)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>, ISubtractionOperators<T, T, T>
         {
@@ -1208,6 +1821,11 @@ namespace System.Numerics.Tensors
             return output;
         }
 
+        /// <summary>
+        /// Subtracts each element of <paramref name="input"/> from <paramref name="val"/> in place.
+        /// </summary>
+        /// <param name="val">The <typeparamref name="T"/> value to be subtracted from.</param>
+        /// <param name="input">The <see cref="TensorSpan{T}"/> values to subtract.</param>
         public static TensorSpan<T> SubtractInPlace<T>(T val, TensorSpan<T> input)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>, ISubtractionOperators<T, T, T>
         {
@@ -1218,22 +1836,36 @@ namespace System.Numerics.Tensors
             return output;
         }
 
-        public static TensorSpan<T> Subtract<T>(TensorSpan<T> input, Tensor<T> other)
+        /// <summary>
+        /// Subtracts each element of <paramref name="left"/> from <paramref name="right"/> and returns a new <see cref="TensorSpan{T}"/> with the result.
+        /// </summary>
+        /// <param name="left">The <see cref="TensorSpan{T}"/> of values to be subtracted from.</param>
+        /// <param name="right">The <see cref="TensorSpan{T}"/>of values to subtract.</param>
+        public static TensorSpan<T> Subtract<T>(TensorSpan<T> left, TensorSpan<T> right)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>, ISubtractionOperators<T, T, T>
         {
-            return TensorPrimitivesHelperT1T2(input, other, TensorPrimitives.Subtract);
+            return TensorPrimitivesHelperT1T2(left, right, TensorPrimitives.Subtract);
         }
 
-        public static TensorSpan<T> SubtractInPlace<T>(TensorSpan<T> input, Tensor<T> other)
+        /// <summary>
+        /// Subtracts each element of <paramref name="left"/> from <paramref name="right"/> in place.
+        /// </summary>
+        /// <param name="left">The <see cref="TensorSpan{T}"/> of values to be subtracted from.</param>
+        /// <param name="right">The <see cref="TensorSpan{T}"/>of values to subtract.</param>
+        public static TensorSpan<T> SubtractInPlace<T>(TensorSpan<T> left, TensorSpan<T> right)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>, ISubtractionOperators<T, T, T>
         {
-            return TensorPrimitivesHelperT1T2(input, other, TensorPrimitives.Subtract, true);
+            return TensorPrimitivesHelperT1T2(left, right, TensorPrimitives.Subtract, true);
         }
 
         #endregion
 
         #region Sum
 
+        /// <summary>
+        /// Sums all the elements of the <see cref="Tensor{T}"/> and returns the result.
+        /// </summary>
+        /// <param name="input">The <see cref="Tensor{T}"/> to sum.</param>
         public static T Sum<T>(Tensor<T> input)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IAdditionOperators<T, T, T>, IAdditiveIdentity<T, T>
         {
@@ -1241,6 +1873,10 @@ namespace System.Numerics.Tensors
             return TensorPrimitives.Sum(span);
         }
 
+        /// <summary>
+        /// Sums all the elements of the <see cref="TensorSpan{T}"/> and returns the result.
+        /// </summary>
+        /// <param name="input">The <see cref="TensorSpan{T}"/> to sum.</param>
         public static T Sum<T>(TensorSpan<T> input)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IAdditionOperators<T, T, T>, IAdditiveIdentity<T, T>
         {
@@ -1251,18 +1887,33 @@ namespace System.Numerics.Tensors
         #endregion
 
         #region Add
-        public static Tensor<T> Add<T>(Tensor<T> input, Tensor<T> other)
+        /// <summary>
+        /// Adds each element of <paramref name="left"/> to each element of <paramref name="right"/> and returns a new <see cref="Tensor{T}"/> with the result.
+        /// </summary>
+        /// <param name="left">The <see cref="Tensor{T}"/> of values to add.</param>
+        /// <param name="right">The second <see cref="Tensor{T}"/> of values to add.</param>
+        public static Tensor<T> Add<T>(Tensor<T> left, Tensor<T> right)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IAdditionOperators<T, T, T>, IAdditiveIdentity<T, T>
         {
-            return TensorPrimitivesHelperT1T2(input, other, TensorPrimitives.Add);
+            return TensorPrimitivesHelperT1T2(left, right, TensorPrimitives.Add);
         }
 
-        public static Tensor<T> AddInPlace<T>(Tensor<T> input, Tensor<T> other)
+        /// <summary>
+        /// Adds each element of <paramref name="left"/> to each element of <paramref name="right"/> in place.
+        /// </summary>
+        /// <param name="left">The <see cref="Tensor{T}"/> of values to add.</param>
+        /// <param name="right">The second <see cref="Tensor{T}"/> of values to add.</param>
+        public static Tensor<T> AddInPlace<T>(Tensor<T> left, Tensor<T> right)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IAdditionOperators<T, T, T>, IAdditiveIdentity<T, T>
         {
-            return TensorPrimitivesHelperT1T2(input, other, TensorPrimitives.Add, true);
+            return TensorPrimitivesHelperT1T2(left, right, TensorPrimitives.Add, true);
         }
 
+        /// <summary>
+        /// Adds <paramref name="val"/> to each element of <paramref name="input"/> and returns a new <see cref="Tensor{T}"/> with the result.
+        /// </summary>
+        /// <param name="input">The <see cref="Tensor{T}"/> of values to add.</param>
+        /// <param name="val">The <typeparamref name="T"/> to add to each element of <paramref name="input"/>.</param>
         public static Tensor<T> Add<T>(Tensor<T> input, T val)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IAdditionOperators<T, T, T>, IAdditiveIdentity<T, T>
         {
@@ -1273,6 +1924,11 @@ namespace System.Numerics.Tensors
             return output;
         }
 
+        /// <summary>
+        /// Adds <paramref name="val"/> to each element of <paramref name="input"/> in place.
+        /// </summary>
+        /// <param name="input">The <see cref="Tensor{T}"/> of values to add.</param>
+        /// <param name="val">The <typeparamref name="T"/> to add to each element of <paramref name="input"/>.</param>
         public static Tensor<T> AddInPlace<T>(Tensor<T> input, T val)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IAdditionOperators<T, T, T>, IAdditiveIdentity<T, T>
         {
@@ -1283,18 +1939,33 @@ namespace System.Numerics.Tensors
             return output;
         }
 
-        public static TensorSpan<T> Add<T>(TensorSpan<T> input, TensorSpan<T> other)
+        /// <summary>
+        /// Adds each element of <paramref name="left"/> to each element of <paramref name="right"/> and returns a new <see cref="TensorSpan{T}"/> with the result.
+        /// </summary>
+        /// <param name="left">The first <see cref="TensorSpan{T}"/> of elements to add.</param>
+        /// <param name="right">The second <see cref="TensorSpan{T}"/> of elements to add.</param>
+        public static TensorSpan<T> Add<T>(TensorSpan<T> left, TensorSpan<T> right)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IAdditionOperators<T, T, T>, IAdditiveIdentity<T, T>
         {
-            return TensorPrimitivesHelperT1T2(input, other, TensorPrimitives.Add);
+            return TensorPrimitivesHelperT1T2(left, right, TensorPrimitives.Add);
         }
 
-        public static TensorSpan<T> AddInPlace<T>(TensorSpan<T> input, TensorSpan<T> other)
+        /// <summary>
+        /// Adds each element of <paramref name="left"/> to each element of <paramref name="right"/> in place.
+        /// </summary>
+        /// <param name="left">The first <see cref="TensorSpan{T}"/> of values to add.</param>
+        /// <param name="right">The second <see cref="TensorSpan{T}"/> of values to add.</param>
+        public static TensorSpan<T> AddInPlace<T>(TensorSpan<T> left, TensorSpan<T> right)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IAdditionOperators<T, T, T>, IAdditiveIdentity<T, T>
         {
-            return TensorPrimitivesHelperT1T2(input, other, TensorPrimitives.Add, true);
+            return TensorPrimitivesHelperT1T2(left, right, TensorPrimitives.Add, true);
         }
 
+        /// <summary>
+        /// Adds <paramref name="val"/> to each element of <paramref name="input"/> and returns a new <see cref="TensorSpan{T}"/> with the result.
+        /// </summary>
+        /// <param name="input">The <see cref="TensorSpan{T}"/> of values to add.</param>
+        /// <param name="val">The <typeparamref name="T"/> value to add to each element of <paramref name="input"/>.</param>
         public static TensorSpan<T> Add<T>(TensorSpan<T> input, T val)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IAdditionOperators<T, T, T>, IAdditiveIdentity<T, T>
         {
@@ -1306,6 +1977,11 @@ namespace System.Numerics.Tensors
             return output;
         }
 
+        /// <summary>
+        /// Adds <paramref name="val"/> to each element of <paramref name="input"/> in place.
+        /// </summary>
+        /// <param name="input">The <see cref="TensorSpan{T}"/> of values to add.</param>
+        /// <param name="val">The <typeparamref name="T"/> value to add to each element of <paramref name="input"/>.</param>
         public static TensorSpan<T> AddInPlace<T>(TensorSpan<T> input, T val)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IAdditionOperators<T, T, T>, IAdditiveIdentity<T, T>
         {
@@ -1319,6 +1995,10 @@ namespace System.Numerics.Tensors
         #endregion
 
         #region Norm
+        /// <summary>
+        /// Takes the norm of the <see cref="Tensor{T}"/> and returns the result.
+        /// </summary>
+        /// <param name="input">The <see cref="Tensor{T}"/> to take the norm of.</param>
         public static T Norm<T>(Tensor<T> input)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IRootFunctions<T>
         {
@@ -1326,6 +2006,10 @@ namespace System.Numerics.Tensors
             return TensorPrimitives.Norm(span);
         }
 
+        /// <summary>
+        ///  Takes the norm of the <see cref="TensorSpan{T}"/> and returns the result.
+        /// </summary>
+        /// <param name="input">The <see cref="TensorSpan{T}"/> to take the norm of.</param>
         public static T Norm<T>(TensorSpan<T> input)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IRootFunctions<T>
         {
@@ -1336,24 +2020,40 @@ namespace System.Numerics.Tensors
         #endregion
 
         #region Cos
+        /// <summary>
+        /// Takes the cosine of each element of the <see cref="Tensor{T}"/> and returns a new <see cref="Tensor{T}"/> with the result.
+        /// </summary>
+        /// <param name="input">The <see cref="Tensor{T}"/> to take the cosine of.</param>
         public static Tensor<T> Cos<T>(Tensor<T> input)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>, ITrigonometricFunctions<T>
         {
             return TensorPrimitivesHelperT1(input, TensorPrimitives.Cos);
         }
 
+        /// <summary>
+        /// Takes the cosine of each element of the <see cref="TensorSpan{T}"/> and returns a new <see cref="TensorSpan{T}"/> with the result.
+        /// </summary>
+        /// <param name="input">The <see cref="TensorSpan{T}"/> to take the cosine of.</param>
         public static TensorSpan<T> Cos<T>(TensorSpan<T> input)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>, ITrigonometricFunctions<T>
         {
             return TensorPrimitivesHelperT1(input, TensorPrimitives.Cos);
         }
 
+        /// <summary>
+        /// Takes the cosine of each element of the <see cref="Tensor{T}"/> in place.
+        /// </summary>
+        /// <param name="input">The <see cref="Tensor{T}"/> to take the cosine of.</param>
         public static Tensor<T> CosInPlace<T>(Tensor<T> input)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>, ITrigonometricFunctions<T>
         {
             return TensorPrimitivesHelperT1(input, TensorPrimitives.Cos, true);
         }
 
+        /// <summary>
+        /// Takes the cosine of each element of the <see cref="TensorSpan{T}"/> in place.
+        /// </summary>
+        /// <param name="input">The <see cref="TensorSpan{T}"/> to take the cosine of.</param>
         public static TensorSpan<T> CosInPlace<T>(TensorSpan<T> input)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>, ITrigonometricFunctions<T>
         {
@@ -1363,24 +2063,40 @@ namespace System.Numerics.Tensors
         #endregion
 
         #region Sin
+        /// <summary>
+        /// Takes the sin of each element of the <see cref="Tensor{T}"/> and returns a new <see cref="Tensor{T}"/> with the result.
+        /// </summary>
+        /// <param name="input">The <see cref="Tensor{T}"/> to take the sin of.</param>
         public static Tensor<T> Sin<T>(Tensor<T> input)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>, ITrigonometricFunctions<T>
         {
             return TensorPrimitivesHelperT1(input, TensorPrimitives.Sin);
         }
 
+        /// <summary>
+        /// Takes the sin of each element of the <see cref="TensorSpan{T}"/> and returns a new <see cref="TensorSpan{T}"/> with the result.
+        /// </summary>
+        /// <param name="input">The <see cref="TensorSpan{T}"/> to take the sin of.</param>
         public static TensorSpan<T> Sin<T>(TensorSpan<T> input)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>, ITrigonometricFunctions<T>
         {
             return TensorPrimitivesHelperT1(input, TensorPrimitives.Sin);
         }
 
+        /// <summary>
+        /// Takes the sin of each element of the <see cref="Tensor{T}"/> in place.
+        /// </summary>
+        /// <param name="input">The <see cref="Tensor{T}"/> to take the sin of.</param>
         public static Tensor<T> SinInPlace<T>(Tensor<T> input)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>, ITrigonometricFunctions<T>
         {
             return TensorPrimitivesHelperT1(input, TensorPrimitives.Sin, true);
         }
 
+        /// <summary>
+        /// Takes the sin of each element of the <see cref="TensorSpan{T}"/> in place.
+        /// </summary>
+        /// <param name="input">The <see cref="TensorSpan{T}"/> to take the sin of.</param>
         public static TensorSpan<T> SinInPlace<T>(TensorSpan<T> input)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>, ITrigonometricFunctions<T>
         {
@@ -1390,24 +2106,40 @@ namespace System.Numerics.Tensors
         #endregion
 
         #region Sqrt
+        /// <summary>
+        /// Takes the square root of each element of the <see cref="Tensor{T}"/> and returns a new <see cref="Tensor{T}"/> with the result.
+        /// </summary>
+        /// <param name="input">The <see cref="Tensor{T}"/> to take the square root of.</param>
         public static Tensor<T> Sqrt<T>(Tensor<T> input)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IRootFunctions<T>
         {
             return TensorPrimitivesHelperT1(input, TensorPrimitives.Sqrt);
         }
 
+        /// <summary>
+        /// Takes the square root of each element of the <see cref="TensorSpan{T}"/> and returns a new <see cref="TensorSpan{T}"/> with the result.
+        /// </summary>
+        /// <param name="input">The <see cref="TensorSpan{T}"/> to take the square root of.</param>
         public static TensorSpan<T> Sqrt<T>(TensorSpan<T> input)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IRootFunctions<T>
         {
             return TensorPrimitivesHelperT1(input, TensorPrimitives.Sqrt);
         }
 
+        /// <summary>
+        /// Takes the square root of each element of the <see cref="Tensor{T}"/> in place.
+        /// </summary>
+        /// <param name="input">The <see cref="Tensor{T}"/> to take the square root of.</param>
         public static Tensor<T> SqrtInPlace<T>(Tensor<T> input)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IRootFunctions<T>
         {
             return TensorPrimitivesHelperT1(input, TensorPrimitives.Sqrt, true);
         }
 
+        /// <summary>
+        /// Takes the square root of each element of the <see cref="TensorSpan{T}"/> in place.
+        /// </summary>
+        /// <param name="input">The <see cref="TensorSpan{T}"/> to take the square root of.</param>
         public static TensorSpan<T> SqrtInPlace<T>(TensorSpan<T> input)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IRootFunctions<T>
         {
@@ -1417,24 +2149,40 @@ namespace System.Numerics.Tensors
         #endregion
 
         #region Log
+        /// <summary>
+        /// Takes the natural logarithm of each element of the <see cref="Tensor{T}"/> and returns a new <see cref="Tensor{T}"/> with the result.
+        /// </summary>
+        /// <param name="input">The <see cref="Tensor{T}"/> to take the natural logarithm of.</param>
         public static Tensor<T> Log<T>(Tensor<T> input)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>, ILogarithmicFunctions<T>
         {
             return TensorPrimitivesHelperT1(input, TensorPrimitives.Log);
         }
 
+        /// <summary>
+        /// Takes the natural logarithm of each element of the <see cref="TensorSpan{T}"/> and returns a new <see cref="TensorSpan{T}"/> with the result.
+        /// </summary>
+        /// <param name="input">The <see cref="TensorSpan{T}"/> to take the natural logarithm of.</param>
         public static TensorSpan<T> Log<T>(TensorSpan<T> input)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>, ILogarithmicFunctions<T>
         {
             return TensorPrimitivesHelperT1(input, TensorPrimitives.Log);
         }
 
+        /// <summary>
+        /// Takes the natural logarithm of each element of the <see cref="Tensor{T}"/> in place.
+        /// </summary>
+        /// <param name="input">The <see cref="Tensor{T}"/> to take the natural logarithm of.</param>
         public static Tensor<T> LogInPlace<T>(Tensor<T> input)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>, ILogarithmicFunctions<T>
         {
             return TensorPrimitivesHelperT1(input, TensorPrimitives.Log, true);
         }
 
+        /// <summary>
+        /// Takes the natural logarithm of each element of the <see cref="TensorSpan{T}"/> in place.
+        /// </summary>
+        /// <param name="input">The <see cref="TensorSpan{T}"/> to take the natural logarithm of.</param>
         public static TensorSpan<T> LogInPlace<T>(TensorSpan<T> input)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>, ILogarithmicFunctions<T>
         {
@@ -1444,24 +2192,40 @@ namespace System.Numerics.Tensors
         #endregion
 
         #region Log10
+        /// <summary>
+        /// Takes the base 10 logarithm of each element of the <see cref="Tensor{T}"/> and returns a new <see cref="Tensor{T}"/> with the result.
+        /// </summary>
+        /// <param name="input">The <see cref="Tensor{T}"/> to take the base 10 logarithm of.</param>
         public static Tensor<T> Log10<T>(Tensor<T> input)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>, ILogarithmicFunctions<T>
         {
             return TensorPrimitivesHelperT1(input, TensorPrimitives.Log10);
         }
 
+        /// <summary>
+        /// Takes the base 10 logarithm of each element of the <see cref="TensorSpan{T}"/> and returns a new <see cref="TensorSpan{T}"/> with the result.
+        /// </summary>
+        /// <param name="input">The <see cref="TensorSpan{T}"/> to take the base 10 logarithm of.</param>
         public static TensorSpan<T> Log10<T>(TensorSpan<T> input)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>, ILogarithmicFunctions<T>
         {
             return TensorPrimitivesHelperT1(input, TensorPrimitives.Log10);
         }
 
+        /// <summary>
+        /// Takes the base 10 logarithm of each element of the <see cref="Tensor{T}"/> in place.
+        /// </summary>
+        /// <param name="input">The <see cref="Tensor{T}"/> to take the base 10 logarithm of.</param>
         public static Tensor<T> Log10InPlace<T>(Tensor<T> input)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>, ILogarithmicFunctions<T>
         {
             return TensorPrimitivesHelperT1(input, TensorPrimitives.Log10, true);
         }
 
+        /// <summary>
+        /// Takes the base 10 logarithm of each element of the <see cref="TensorSpan{T}"/> in place.
+        /// </summary>
+        /// <param name="input">The <see cref="TensorSpan{T}"/> to take the base 10 logarithm of.</param>
         public static TensorSpan<T> Log10InPlace<T>(TensorSpan<T> input)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>, ILogarithmicFunctions<T>
         {
@@ -1470,24 +2234,40 @@ namespace System.Numerics.Tensors
         #endregion
 
         #region Log2
+        /// <summary>
+        /// Takes the base 2 logarithm of each element of the <see cref="Tensor{T}"/> and returns a new <see cref="Tensor{T}"/> with the result.
+        /// </summary>
+        /// <param name="input">The <see cref="Tensor{T}"/> to take the base 2 logarithm of.</param>
         public static Tensor<T> Log2<T>(Tensor<T> input)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>, ILogarithmicFunctions<T>
         {
             return TensorPrimitivesHelperT1(input, TensorPrimitives.Log2);
         }
 
+        /// <summary>
+        /// Takes the base 2 logarithm of each element of the <see cref="TensorSpan{T}"/> and returns a new <see cref="TensorSpan{T}"/> with the result.
+        /// </summary>
+        /// <param name="input">The <see cref="TensorSpan{T}"/> to take the base 2 logarithm of.</param>
         public static TensorSpan<T> Log2<T>(TensorSpan<T> input)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>, ILogarithmicFunctions<T>
         {
             return TensorPrimitivesHelperT1(input, TensorPrimitives.Log2);
         }
 
+        /// <summary>
+        /// Takes the base 2 logarithm of each element of the <see cref="Tensor{T}"/> in place.
+        /// </summary>
+        /// <param name="input">The <see cref="Tensor{T}"/> to take the base 2 logarithm of.</param>
         public static Tensor<T> Log2InPlace<T>(Tensor<T> input)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>, ILogarithmicFunctions<T>
         {
             return TensorPrimitivesHelperT1(input, TensorPrimitives.Log2, true);
         }
 
+        /// <summary>
+        /// Takes the base 2 logarithm of each element of the <see cref="TensorSpan{T}"/> in place.
+        /// </summary>
+        /// <param name="input">The <see cref="TensorSpan{T}"/> to take the base 2 logarithm of.</param>
         public static TensorSpan<T> Log2InPlace<T>(TensorSpan<T> input)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>, ILogarithmicFunctions<T>
         {
@@ -1542,10 +2322,10 @@ namespace System.Numerics.Tensors
             // If not in place but sizes are the same.
             else if (left.Shape.SequenceEqual(right.Shape))
             {
-                ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref left.AsSpanND()._reference, (int)left.LinearLength);
-                ReadOnlySpan<T> rspan = MemoryMarshal.CreateSpan(ref right.AsSpanND()._reference, (int)right.LinearLength);
+                ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref left.AsTensorSpan()._reference, (int)left.LinearLength);
+                ReadOnlySpan<T> rspan = MemoryMarshal.CreateSpan(ref right.AsTensorSpan()._reference, (int)right.LinearLength);
                 output = Create<T>(left.IsPinned, left.Shape);
-                Span<T> ospan = MemoryMarshal.CreateSpan(ref output.AsSpanND()._reference, (int)output.LinearLength);
+                Span<T> ospan = MemoryMarshal.CreateSpan(ref output.AsTensorSpan()._reference, (int)output.LinearLength);
                 performCalculation(span, rspan, ospan);
                 return output;
             }
@@ -1554,7 +2334,7 @@ namespace System.Numerics.Tensors
             {
                 // Have a couple different possible cases here.
                 // 1 - Both tensors have row contiguous memory (i.e. a 1x5 being broadcast to a 5x5)
-                // 2 - One tensor has row contiguous memory and the other has column contiguous memory (i.e. a 1x5 and a 5x1)
+                // 2 - One tensor has row contiguous memory and the right has column contiguous memory (i.e. a 1x5 and a 5x1)
 
                 nint[] newSize = TensorHelpers.GetSmallestBroadcastableSize(left.Shape, right.Shape);
 
@@ -1562,23 +2342,36 @@ namespace System.Numerics.Tensors
                 var broadcastedRight = Tensor.BroadcastTo(right, newSize);
 
                 output = Create<T>(left.IsPinned, newSize);
-                var rowLength = newSize[^1];
+                nint rowLength = newSize[^1];
                 Span<T> ospan;
                 Span<T> ispan;
                 Span<T> buffer = new T[rowLength];
-                Span<nint> curIndex = stackalloc nint[newSize.Length];
+
+                scoped Span<nint> curIndices;
+                nint[]? curIndicesArray;
+                if (newSize.Length> 6)
+                {
+                    curIndicesArray = ArrayPool<nint>.Shared.Rent(newSize.Length);
+                    curIndices = curIndicesArray;
+                }
+                else
+                {
+                    curIndicesArray = null;
+                    curIndices = stackalloc nint[newSize.Length];
+                }
+
                 int outputOffset = 0;
-                // left not row contiguous
+                // tensor not row contiguous
                 if (broadcastedLeft.Strides[^1] == 0)
                 {
                     while (outputOffset < output.LinearLength)
                     {
                         ospan = MemoryMarshal.CreateSpan(ref output._values[outputOffset], (int)rowLength);
-                        buffer.Fill(broadcastedLeft[curIndex]);
-                        ispan = MemoryMarshal.CreateSpan(ref broadcastedRight[curIndex], (int)rowLength);
+                        buffer.Fill(broadcastedLeft[curIndices]);
+                        ispan = MemoryMarshal.CreateSpan(ref broadcastedRight[curIndices], (int)rowLength);
                         performCalculation(buffer, ispan, ospan);
                         outputOffset += (int)rowLength;
-                        TensorSpanHelpers.AdjustIndices(broadcastedLeft.Rank - 2, 1, ref curIndex, broadcastedLeft.Shape);
+                        TensorSpanHelpers.AdjustIndices(broadcastedLeft.Rank - 2, 1, ref curIndices, broadcastedLeft.Shape);
                     }
                 }
                 // right now row contiguous
@@ -1587,11 +2380,11 @@ namespace System.Numerics.Tensors
                     while (outputOffset < output.LinearLength)
                     {
                         ospan = MemoryMarshal.CreateSpan(ref output._values[outputOffset], (int)rowLength);
-                        buffer.Fill(broadcastedRight[curIndex]);
-                        ispan = MemoryMarshal.CreateSpan(ref broadcastedLeft[curIndex], (int)rowLength);
+                        buffer.Fill(broadcastedRight[curIndices]);
+                        ispan = MemoryMarshal.CreateSpan(ref broadcastedLeft[curIndices], (int)rowLength);
                         performCalculation(ispan, buffer, ospan);
                         outputOffset += (int)rowLength;
-                        TensorSpanHelpers.AdjustIndices(broadcastedLeft.Rank - 2, 1, ref curIndex, broadcastedLeft.Shape);
+                        TensorSpanHelpers.AdjustIndices(broadcastedLeft.Rank - 2, 1, ref curIndices, broadcastedLeft.Shape);
                     }
                 }
                 // both row contiguous
@@ -1601,14 +2394,18 @@ namespace System.Numerics.Tensors
                     while (outputOffset < output.LinearLength)
                     {
                         ospan = MemoryMarshal.CreateSpan(ref output._values[outputOffset], (int)rowLength);
-                        ispan = MemoryMarshal.CreateSpan(ref broadcastedLeft[curIndex], (int)rowLength);
-                        rspan = MemoryMarshal.CreateSpan(ref broadcastedRight[curIndex], (int)rowLength);
+                        ispan = MemoryMarshal.CreateSpan(ref broadcastedLeft[curIndices], (int)rowLength);
+                        rspan = MemoryMarshal.CreateSpan(ref broadcastedRight[curIndices], (int)rowLength);
                         performCalculation(ispan, rspan, ospan);
                         outputOffset += (int)rowLength;
-                        TensorSpanHelpers.AdjustIndices(broadcastedLeft.Rank - 2, 1, ref curIndex, broadcastedLeft.Shape);
+                        TensorSpanHelpers.AdjustIndices(broadcastedLeft.Rank - 2, 1, ref curIndices, broadcastedLeft.Shape);
                     }
                 }
+
+                if (curIndicesArray != null)
+                    ArrayPool<nint>.Shared.Return(curIndicesArray);
             }
+
             return output;
         }
 
@@ -1618,9 +2415,9 @@ namespace System.Numerics.Tensors
             if (inPlace && left.Shape != right.Shape)
                 ThrowHelper.ThrowArgument_InPlaceInvalidShape();
 
-            //ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref left._reference, (int)left.LinearLength);
+            //ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref tensor._reference, (int)tensor.LinearLength);
             //ReadOnlySpan<T> rspan = MemoryMarshal.CreateSpan(ref right._reference, (int)right.LinearLength);
-            //TensorSpan<T> output = inPlace ? left : Create<T>(left.IsPinned, left.Lengths);
+            //TensorSpan<T> output = inPlace ? tensor : Create<T>(tensor.IsPinned, tensor.Lengths);
             //Span<T> ospan = MemoryMarshal.CreateSpan(ref output._reference, (int)output.LinearLength);
             //performCalculation(span, rspan, ospan);
             //return output;
@@ -1649,22 +2446,35 @@ namespace System.Numerics.Tensors
             {
                 // Have a couple different possible cases here.
                 // 1 - Both tensors have row contiguous memory (i.e. a 1x5 being broadcast to a 5x5)
-                // 2 - One tensor has row contiguous memory and the other has column contiguous memory (i.e. a 1x5 and a 5x1)
+                // 2 - One tensor has row contiguous memory and the right has column contiguous memory (i.e. a 1x5 and a 5x1)
 
                 nint[] newSize = TensorHelpers.GetSmallestBroadcastableSize(left.Shape, right.Shape);
 
-                var broadcastedLeft = Tensor.BroadcastTo(left, newSize);
-                var broadcastedRight = Tensor.BroadcastTo(right, newSize);
+                TensorSpan<T> broadcastedLeft = Tensor.BroadcastTo(left, newSize);
+                TensorSpan<T> broadcastedRight = Tensor.BroadcastTo(right, newSize);
 
                 output = Create<T>(left.IsPinned, newSize);
-                var rowLength = newSize[^1];
+                nint rowLength = newSize[^1];
                 Span<T> ospan;
                 Span<T> ispan;
                 Span<T> buffer = new T[rowLength];
-                Span<nint> curIndex = stackalloc nint[newSize.Length];
+
+                scoped Span<nint> curIndex;
+                nint[]? curIndexArray;
+                if (newSize.Length > 6)
+                {
+                    curIndexArray = ArrayPool<nint>.Shared.Rent(newSize.Length);
+                    curIndex = curIndexArray;
+                }
+                else
+                {
+                    curIndexArray = null;
+                    curIndex = stackalloc nint[newSize.Length];
+                }
+
                 int outputOffset = 0;
                 // ADD IN CASE WHERE NEITHER ARE ROW CONTIGUOUS
-                // left not row contiguous
+                // tensor not row contiguous
                 if (broadcastedLeft.Strides[^1] == 0)
                 {
                     while (outputOffset < output.LinearLength)
@@ -1704,6 +2514,9 @@ namespace System.Numerics.Tensors
                         TensorSpanHelpers.AdjustIndices(broadcastedLeft.Rank - 2, 1, ref curIndex, broadcastedLeft.Shape);
                     }
                 }
+
+                if (curIndexArray != null)
+                    ArrayPool<nint>.Shared.Return(curIndexArray);
             }
             return output;
         }

@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.Diagnostics;
 using System.Linq;
 using System.Runtime.CompilerServices;
@@ -11,7 +12,7 @@ using System.Text;
 using EditorBrowsableAttribute = System.ComponentModel.EditorBrowsableAttribute;
 using EditorBrowsableState = System.ComponentModel.EditorBrowsableState;
 
-#pragma warning disable 0809  //warning CS0809: Obsolete member 'Span<T>.Equals(object)' overrides non-obsolete member 'object.Equals(object)'
+#pragma warning disable 0809  //warning CS0809: Obsolete member 'ReadOnlyTensorSpan<T>.Equals(object)' overrides non-obsolete member 'object.Equals(object)'
 
 namespace System.Numerics.Tensors
 {
@@ -82,19 +83,20 @@ namespace System.Numerics.Tensors
                 return; // returns default
             }
 
-#if TARGET_64BIT
-            // See comment in SpanND<T>.Slice for how this works.
-            if ((ulong)(uint)start + (ulong)(uint)length > (ulong)(uint)array.Length)
-                ThrowHelper.ThrowArgumentOutOfRangeException();
-#else
-            if ((uint)start > (uint)array.Length || (uint)_linearLength > (uint)(array.Length - start))
-                ThrowHelper.ThrowArgumentOutOfRangeException();
-#endif
+            if (Environment.Is64BitProcess)
+            {
+                // See comment in Span<T>.Slice for how this works.
+                if ((ulong)(uint)start + (ulong)(uint)_linearLength > (ulong)(uint)array.Length)
+                    ThrowHelper.ThrowArgumentOutOfRangeException();
+            }
+            else
+            {
+                if ((uint)start > (uint)array.Length || (uint)_linearLength > (uint)(array.Length - start))
+                    ThrowHelper.ThrowArgumentOutOfRangeException();
+            }
 
             if (linearLength != array.Length)
                 ThrowHelper.ThrowArgument_LengthsMustEqualArrayLength();
-
-
 
             _linearLength = linearLength;
             _reference = ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(array), (nint)(uint)start /* force zero-extension */);
@@ -142,7 +144,7 @@ namespace System.Numerics.Tensors
 
         // Constructor for internal use only. It is not safe to expose publicly, and is instead exposed via the unsafe MemoryMarshal.CreateReadOnlySpan.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal ReadOnlyTensorSpan(ref T reference, ReadOnlySpan<nint> lengths, ReadOnlySpan<nint> strides, bool isPinned)
+        internal ReadOnlyTensorSpan(ref T reference, scoped ReadOnlySpan<nint> lengths, scoped ReadOnlySpan<nint> strides, bool isPinned)
         {
             nint linearLength = TensorSpanHelpers.CalculateTotalLength(lengths);
 
@@ -268,7 +270,7 @@ namespace System.Numerics.Tensors
         /// <summary>Gets an enumerator for this span.</summary>
         public Enumerator GetEnumerator() => new Enumerator(this);
 
-        /// <summary>Enumerates the elements of a <see cref="ReadOnlySpan{T}"/>.</summary>
+        /// <summary>Enumerates the elements of a <see cref="ReadOnlyTensorSpan{T}"/>.</summary>
         public ref struct Enumerator
         {
             /// <summary>The span being enumerated.</summary>
@@ -310,7 +312,7 @@ namespace System.Numerics.Tensors
         }
 
         /// <summary>
-        /// Returns a reference to the 0th element of the Span. If the Span is empty, returns null reference.
+        /// Returns a reference to the 0th element of the ReadOnlyTensorSpan. If the ReadOnlyTensorSpan is empty, returns null reference.
         /// It can be used for pinning and is required to support the use of span within a fixed statement.
         /// </summary>
         [EditorBrowsable(EditorBrowsableState.Never)]
@@ -329,7 +331,7 @@ namespace System.Numerics.Tensors
         /// </summary>
         /// <param name="destination">The span to copy items into.</param>
         /// <exception cref="ArgumentException">
-        /// Thrown when the destination Span is shorter than the source Span.
+        /// Thrown when the destination ReadOnlyTensorSpan is shorter than the source ReadOnlyTensorSpan.
         /// </exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void CopyTo(TensorSpan<T> destination)
@@ -339,7 +341,19 @@ namespace System.Numerics.Tensors
             // we can optimize by performing the check once ourselves then calling Memmove directly.
             if (_linearLength <= destination.LinearLength)
             {
-                Span<nint> curIndices = stackalloc nint[Rank];
+                scoped Span<nint> curIndices;
+                nint[]? curIndicesArray;
+                if (Rank > 6)
+                {
+                    curIndicesArray = ArrayPool<nint>.Shared.Rent(Rank);
+                    curIndices = curIndicesArray;
+                }
+                else
+                {
+                    curIndicesArray = null;
+                    curIndices = stackalloc nint[Rank];
+                }
+
                 nint copiedValues = 0;
                 TensorSpan<T> slice = destination.Slice(_lengths);
                 while (copiedValues < _linearLength)
@@ -349,6 +363,9 @@ namespace System.Numerics.Tensors
                     copiedValues += Shape[Rank - 1];
                 }
                 Debug.Assert(copiedValues == _linearLength, "Didn't copy the right amount to the array.");
+
+                if (curIndicesArray != null)
+                    ArrayPool<nint>.Shared.Return(curIndicesArray);
             }
             else
             {
@@ -370,7 +387,19 @@ namespace System.Numerics.Tensors
 
             if (_linearLength <= destination.LinearLength)
             {
-                Span<nint> curIndices = stackalloc nint[Rank];
+                scoped Span<nint> curIndices;
+                nint[]? curIndicesArray;
+                if (Rank > 6)
+                {
+                    curIndicesArray = ArrayPool<nint>.Shared.Rent(Rank);
+                    curIndices = curIndicesArray;
+                }
+                else
+                {
+                    curIndicesArray = null;
+                    curIndices = stackalloc nint[Rank];
+                }
+
                 nint copiedValues = 0;
                 TensorSpan<T> slice = destination.Slice(_lengths);
                 while (copiedValues < _linearLength)
@@ -381,14 +410,16 @@ namespace System.Numerics.Tensors
                 }
                 retVal = true;
                 Debug.Assert(copiedValues == _linearLength, "Didn't copy the right amount to the array.");
+
+                if (curIndicesArray != null)
+                    ArrayPool<nint>.Shared.Return(curIndicesArray);
             }
 
             return retVal;
         }
 
         /// <summary>
-        /// For <see cref="ReadOnlyTensorSpan{Char}"/>, returns a new instance of string that represents the characters pointed to by the span.
-        /// Otherwise, returns a <see cref="string"/> with the name of the type and the number of elements.
+        /// Returns a <see cref="string"/> with the name of the type and the number of elements.
         /// </summary>
         public override string ToString() => $"System.Numerics.Tensors.ReadOnlyTensorSpan<{typeof(T).Name}>[{_linearLength}]";
 
@@ -419,9 +450,18 @@ namespace System.Numerics.Tensors
             if (ranges.Length != Shape.Length)
                 throw new ArgumentOutOfRangeException(nameof(ranges), "Number of dimensions to slice does not equal the number of dimensions in the span");
 
-            // TODO: FIX THIS. THIS IS A TEMPORARY WORKAROUND TO GET RID OF THE ERROR
-            Span<nint> shape = new nint[ranges.Length];
-            Span<nint> offsets = stackalloc nint[ranges.Length];
+            scoped Span<nint> shape;
+            scoped Span<nint> offsets;
+            if (Rank > 6)
+            {
+                shape = stackalloc nint[Rank];
+                offsets = stackalloc nint[Rank];
+            }
+            else
+            {
+                shape = new nint[Rank];
+                offsets = new nint[Rank];
+            }
 
             for (int i = 0; i < ranges.Length; i++)
             {
@@ -451,7 +491,19 @@ namespace System.Numerics.Tensors
             T[] destination = new T[_linearLength];
             ref T dstRef = ref MemoryMarshal.GetArrayDataReference(destination);
 
-            Span<nint> curIndices = stackalloc nint[Rank];
+            scoped Span<nint> curIndices;
+            nint[]? curIndicesArray;
+            if (Rank > 6)
+            {
+                curIndicesArray = ArrayPool<nint>.Shared.Rent(Rank);
+                curIndices = curIndicesArray;
+            }
+            else
+            {
+                curIndicesArray = null;
+                curIndices = stackalloc nint[Rank];
+            }
+
             nint copiedValues = 0;
             while (copiedValues < _linearLength)
             {
@@ -460,6 +512,9 @@ namespace System.Numerics.Tensors
                 copiedValues += Shape[Rank - 1];
             }
             Debug.Assert(copiedValues == _linearLength, "Didn't copy the right amount to the array.");
+
+            if (curIndicesArray != null)
+                ArrayPool<nint>.Shared.Return(curIndicesArray);
 
             return destination;
         }

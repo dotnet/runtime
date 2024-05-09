@@ -10,7 +10,7 @@ using Xunit;
 
 namespace System.Numerics.Tensors.Tests
 {
-    public class ReadOnlySpanNDTests
+    public class ReadOnlyTensorSpanTests
     {
         //public static IEnumerable<object[]> MemoryExtensionsToUpperLowerOverlapping()
         //{

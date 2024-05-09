@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
@@ -119,14 +120,17 @@ namespace System.Numerics.Tensors
             if (!typeof(T).IsValueType && array.GetType() != typeof(T[]))
                 ThrowHelper.ThrowArrayTypeMismatchException();
 
-#if TARGET_64BIT
-            // See comment in SpanND<T>.Slice for how this works.
-            if ((ulong)(uint)start + (ulong)(uint)length > (ulong)(uint)array.Length)
-                ThrowHelper.ThrowArgumentOutOfRangeException();
-#else
-            if ((uint)start > (uint)array.Length || (uint)_linearLength > (uint)(array.Length - start))
-                ThrowHelper.ThrowArgumentOutOfRangeException();
-#endif
+            if (Environment.Is64BitProcess)
+            {
+                // See comment in Span<T>.Slice for how this works.
+                if ((ulong)(uint)start + (ulong)(uint)_linearLength > (ulong)(uint)array.Length)
+                    ThrowHelper.ThrowArgumentOutOfRangeException();
+            }
+            else
+            {
+                if ((uint)start > (uint)array.Length || (uint)_linearLength > (uint)(array.Length - start))
+                    ThrowHelper.ThrowArgumentOutOfRangeException();
+            }
 
             _linearLength = linearLength;
             _reference = ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(array), (nint)(uint)start /* force zero-extension */);
@@ -185,7 +189,7 @@ namespace System.Numerics.Tensors
         }
 
         /// <summary>
-        /// Returns a reference to specified element of the Span.
+        /// Returns a reference to specified element of the TensorSpan.
         /// </summary>
         /// <param name="indices"></param>
         /// <returns></returns>
@@ -327,6 +331,7 @@ namespace System.Numerics.Tensors
                 _span = span;
                 _items = -1;
                 _curIndices = new nint[_span.Rank];
+
                 _curIndices[_span.Rank - 1] = -1;
             }
 
@@ -351,7 +356,7 @@ namespace System.Numerics.Tensors
         }
 
         /// <summary>
-        /// Returns a reference to the 0th element of the Span. If the TensorSpan is empty, returns null reference.
+        /// Returns a reference to the 0th element of the TensorSpan. If the TensorSpan is empty, returns null reference.
         /// It can be used for pinning and is required to support the use of span within a fixed statement.
         /// </summary>
         [EditorBrowsable(EditorBrowsableState.Never)]
@@ -369,7 +374,19 @@ namespace System.Numerics.Tensors
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public unsafe void Clear()
         {
-            Span<nint> curIndices = stackalloc nint[Rank];
+            scoped Span<nint> curIndices;
+            nint[]? curIndicesArray;
+            if (Rank > 6)
+            {
+                curIndicesArray = ArrayPool<nint>.Shared.Rent(Rank);
+                curIndices = curIndicesArray;
+            }
+            else
+            {
+                curIndicesArray = null;
+                curIndices = stackalloc nint[Rank];
+            }
+
             nint clearedValues = 0;
             while (clearedValues < _linearLength)
             {
@@ -378,6 +395,9 @@ namespace System.Numerics.Tensors
                 clearedValues += Shape[Rank - 1];
             }
             Debug.Assert(clearedValues == _linearLength, "Didn't clear the right amount");
+
+            if (curIndicesArray != null)
+                ArrayPool<nint>.Shared.Return(curIndicesArray);
         }
 
         /// <summary>
@@ -417,7 +437,19 @@ namespace System.Numerics.Tensors
             // we can optimize by performing the check once ourselves then calling Memmove directly.
             if (_linearLength <= destination.LinearLength)
             {
-                Span<nint> curIndices = stackalloc nint[Rank];
+                scoped Span<nint> curIndices;
+                nint[]? curIndicesArray;
+                if (Rank > 6)
+                {
+                    curIndicesArray = ArrayPool<nint>.Shared.Rent(Rank);
+                    curIndices = curIndicesArray;
+                }
+                else
+                {
+                    curIndicesArray = null;
+                    curIndices = stackalloc nint[Rank];
+                }
+
                 nint copiedValues = 0;
                 TensorSpan<T> slice = destination.Slice(_lengths);
                 while (copiedValues < _linearLength)
@@ -427,6 +459,9 @@ namespace System.Numerics.Tensors
                     copiedValues += Shape[Rank - 1];
                 }
                 Debug.Assert(copiedValues == _linearLength, "Didn't copy the right amount to the array.");
+
+                if (curIndicesArray != null)
+                    ArrayPool<nint>.Shared.Return(curIndicesArray);
             }
             else
             {
@@ -448,7 +483,19 @@ namespace System.Numerics.Tensors
 
             if (_linearLength <= destination.LinearLength)
             {
-                Span<nint> curIndices = stackalloc nint[Rank];
+                scoped Span<nint> curIndices;
+                nint[]? curIndicesArray;
+                if (Rank > 6)
+                {
+                    curIndicesArray = ArrayPool<nint>.Shared.Rent(Rank);
+                    curIndices = curIndicesArray;
+                }
+                else
+                {
+                    curIndicesArray = null;
+                    curIndices = stackalloc nint[Rank];
+                }
+
                 nint copiedValues = 0;
                 TensorSpan<T> slice = destination.Slice(_lengths);
                 while (copiedValues < _linearLength)
@@ -459,6 +506,9 @@ namespace System.Numerics.Tensors
                 }
                 retVal = true;
                 Debug.Assert(copiedValues == _linearLength, "Didn't copy the right amount to the array.");
+
+                if (curIndicesArray != null)
+                    ArrayPool<nint>.Shared.Return(curIndicesArray);
             }
             return retVal;
         }
@@ -482,7 +532,7 @@ namespace System.Numerics.Tensors
         /// <returns>A <see cref="ReadOnlyTensorSpan{T}"/> based on the provided <paramref name="lengths"/></returns>
         internal TensorSpan<T> Slice(scoped ReadOnlySpan<nint> lengths)
         {
-            var ranges = new NRange[lengths.Length];
+            NRange[] ranges = new NRange[lengths.Length];
             for(int i = 0; i < lengths.Length; i++)
             {
                 ranges[i] = new NRange(0, lengths[i]);
@@ -529,10 +579,22 @@ namespace System.Numerics.Tensors
             if (_linearLength == 0)
                 return Array.Empty<T>();
 
-            var destination = new T[_linearLength];
+            T[] destination = new T[_linearLength];
             ref T dstRef = ref MemoryMarshal.GetArrayDataReference(destination);
 
-            Span<nint> curIndices = stackalloc nint[Rank];
+            scoped Span<nint> curIndices;
+            nint[]? curIndicesArray;
+            if (Rank > 6)
+            {
+                curIndicesArray = ArrayPool<nint>.Shared.Rent(Rank);
+                curIndices = curIndicesArray;
+            }
+            else
+            {
+                curIndicesArray = null;
+                curIndices = stackalloc nint[Rank];
+            }
+
             nint copiedValues = 0;
             while (copiedValues < _linearLength)
             {
@@ -540,6 +602,9 @@ namespace System.Numerics.Tensors
                 TensorSpanHelpers.AdjustIndices(Rank - 2, 1, ref curIndices, _lengths);
                 copiedValues += Shape[Rank - 1];
             }
+
+            if (curIndicesArray != null)
+                ArrayPool<nint>.Shared.Return(curIndicesArray);
 
             return destination;
         }

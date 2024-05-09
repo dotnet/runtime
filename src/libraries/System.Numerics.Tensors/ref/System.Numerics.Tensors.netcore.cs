@@ -6,47 +6,56 @@
 
 #pragma warning disable 8500 // address / sizeof of managed types
 
-namespace System
+namespace System.Buffers
 {
-    public readonly partial struct NativeIndex : System.IEquatable<System.NativeIndex>
+    public readonly partial struct NIndex : System.IEquatable<System.Buffers.NIndex>
     {
         private readonly int _dummyPrimitive;
-        public NativeIndex(nint value, bool fromEnd = false) { throw null; }
-        public static System.NativeIndex End { get { throw null; } }
+        public NIndex(System.Index index) { throw null; }
+        public NIndex(nint value, bool fromEnd = false) { throw null; }
+        public static System.Buffers.NIndex End { get { throw null; } }
         public bool IsFromEnd { get { throw null; } }
-        public static System.NativeIndex Start { get { throw null; } }
+        public static System.Buffers.NIndex Start { get { throw null; } }
         public nint Value { get { throw null; } }
-        public bool Equals(System.NativeIndex other) { throw null; }
+        public bool Equals(System.Buffers.NIndex other) { throw null; }
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? value) { throw null; }
-        public static System.NativeIndex FromEnd(nint value) { throw null; }
-        public static System.NativeIndex FromStart(nint value) { throw null; }
+        public static System.Buffers.NIndex FromEnd(nint value) { throw null; }
+        public static System.Buffers.NIndex FromStart(nint value) { throw null; }
         public override int GetHashCode() { throw null; }
         public nint GetOffset(nint length) { throw null; }
-        public static implicit operator System.NativeIndex (System.Index index) { throw null; }
-        public static implicit operator System.NativeIndex (int value) { throw null; }
-        public static implicit operator System.NativeIndex (nint value) { throw null; }
+        public static explicit operator checked System.Index (System.Buffers.NIndex value) { throw null; }
+        public static explicit operator System.Index (System.Buffers.NIndex value) { throw null; }
+        public static implicit operator System.Buffers.NIndex (System.Index value) { throw null; }
+        public static implicit operator System.Buffers.NIndex (nint value) { throw null; }
+        public System.Index ToIndex() { throw null; }
+        public System.Index ToIndexUnchecked() { throw null; }
         public override string ToString() { throw null; }
     }
-    public readonly partial struct NativeRange : System.IEquatable<System.NativeRange>
+    public readonly partial struct NRange : System.IEquatable<System.Buffers.NRange>
     {
         private readonly int _dummyPrimitive;
-        public NativeRange(System.NativeIndex start, System.NativeIndex end) { throw null; }
-        public static System.NativeRange All { get { throw null; } }
-        public System.NativeIndex End { get { throw null; } }
-        public System.NativeIndex Start { get { throw null; } }
-        public static System.NativeRange EndAt(System.NativeIndex end) { throw null; }
-        public bool Equals(System.NativeRange other) { throw null; }
+        public NRange(System.Buffers.NIndex start, System.Buffers.NIndex end) { throw null; }
+        public NRange(System.Range range) { throw null; }
+        public static System.Buffers.NRange All { get { throw null; } }
+        public System.Buffers.NIndex End { get { throw null; } }
+        public System.Buffers.NIndex Start { get { throw null; } }
+        public static System.Buffers.NRange EndAt(System.Buffers.NIndex end) { throw null; }
+        public bool Equals(System.Buffers.NRange other) { throw null; }
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? value) { throw null; }
         public override int GetHashCode() { throw null; }
         public (nint Offset, nint Length) GetOffsetAndLength(nint length) { throw null; }
-        public static implicit operator System.NativeRange (System.Range range) { throw null; }
-        public static System.NativeRange StartAt(System.NativeIndex start) { throw null; }
+        public static explicit operator checked System.Range (System.Buffers.NRange value) { throw null; }
+        public static explicit operator System.Range (System.Buffers.NRange value) { throw null; }
+        public static implicit operator System.Buffers.NRange (System.Range range) { throw null; }
+        public static System.Buffers.NRange StartAt(System.Buffers.NIndex start) { throw null; }
+        public System.Range ToRange() { throw null; }
+        public System.Range ToRangeUnchecked() { throw null; }
         public override string ToString() { throw null; }
     }
 }
 namespace System.Numerics.Tensors
 {
-    public partial interface ITensor<TSelf, T> : System.Collections.Generic.IEnumerable<T>, System.Collections.IEnumerable, System.IEquatable<TSelf>, System.Numerics.IEqualityOperators<TSelf, TSelf, bool> where TSelf : System.Numerics.Tensors.ITensor<TSelf, T> where T : System.IEquatable<T>
+    public partial interface ITensor<TSelf, T> : System.Collections.Generic.IEnumerable<T>, System.Collections.IEnumerable, System.IEquatable<TSelf>, System.Numerics.IEqualityOperators<TSelf, TSelf, bool> where TSelf : System.Numerics.Tensors.ITensor<TSelf, T>
     {
         static TSelf? Empty { get { throw null; } }
         bool IsEmpty { get; }
@@ -54,58 +63,58 @@ namespace System.Numerics.Tensors
         ref T this[scoped System.ReadOnlySpan<nint> indices] { get; }
         int Rank { get; }
         System.ReadOnlySpan<nint> Strides { get; }
-        System.Numerics.Tensors.ReadOnlySpanND<T> AsReadOnlySpanND(scoped System.ReadOnlySpan<System.NativeRange> ranges);
-        System.Numerics.Tensors.SpanND<T> AsSpanND(scoped System.ReadOnlySpan<System.NativeRange> ranges);
+        System.Numerics.Tensors.ReadOnlyTensorSpan<T> AsReadOnlyTensorSpan(scoped System.ReadOnlySpan<System.Buffers.NRange> ranges);
+        System.Numerics.Tensors.TensorSpan<T> AsTensorSpan(scoped System.ReadOnlySpan<System.Buffers.NRange> ranges);
         void Clear();
-        void CopyTo(System.Numerics.Tensors.SpanND<T> destination);
+        void CopyTo(System.Numerics.Tensors.TensorSpan<T> destination);
         void Fill(T value);
         ref T GetPinnableReference();
         static abstract bool operator ==(TSelf left, TSelf right);
         static abstract bool operator ==(TSelf left, T right);
-        static abstract implicit operator System.Numerics.Tensors.ReadOnlySpanND<T> (TSelf value);
-        static abstract implicit operator System.Numerics.Tensors.SpanND<T> (TSelf value);
+        static abstract implicit operator System.Numerics.Tensors.ReadOnlyTensorSpan<T> (TSelf value);
+        static abstract implicit operator System.Numerics.Tensors.TensorSpan<T> (TSelf value);
         static abstract bool operator !=(TSelf left, TSelf right);
         static abstract bool operator !=(TSelf left, T right);
-        TSelf Slice(scoped System.ReadOnlySpan<System.NativeRange> ranges);
-        bool TryCopyTo(System.Numerics.Tensors.SpanND<T> destination);
+        TSelf Slice(scoped System.ReadOnlySpan<System.Buffers.NRange> ranges);
+        bool TryCopyTo(System.Numerics.Tensors.TensorSpan<T> destination);
     }
-    public readonly ref partial struct ReadOnlySpanND<T>
+    public readonly ref partial struct ReadOnlyTensorSpan<T>
     {
         private readonly object _dummy;
         private readonly int _dummyPrimitive;
         [System.CLSCompliantAttribute(false)]
-        public unsafe ReadOnlySpanND(void* pointer, System.ReadOnlySpan<nint> lengths, bool isPinned, System.ReadOnlySpan<nint> strides = default(System.ReadOnlySpan<nint>)) { throw null; }
-        public ReadOnlySpanND(T[]? array, nint start, System.ReadOnlySpan<nint> lengths) { throw null; }
-        public ReadOnlySpanND(T[]? array, System.ReadOnlySpan<nint> lengths) { throw null; }
-        public static System.Numerics.Tensors.ReadOnlySpanND<T> Empty { get { throw null; } }
+        public unsafe ReadOnlyTensorSpan(void* pointer, System.ReadOnlySpan<nint> lengths, System.ReadOnlySpan<nint> strides = default(System.ReadOnlySpan<nint>)) { throw null; }
+        public ReadOnlyTensorSpan(T[]? array, nint start, System.ReadOnlySpan<nint> lengths) { throw null; }
+        public ReadOnlyTensorSpan(T[]? array, System.ReadOnlySpan<nint> lengths) { throw null; }
+        public static System.Numerics.Tensors.ReadOnlyTensorSpan<T> Empty { get { throw null; } }
         public bool IsEmpty { get { throw null; } }
         public bool IsPinned { get { throw null; } }
         public ref readonly T this[scoped System.ReadOnlySpan<nint> indices] { get { throw null; } }
-        public nint Length { get { throw null; } }
+        public nint LinearLength { get { throw null; } }
         public int Rank { get { throw null; } }
         public System.ReadOnlySpan<nint> Shape { get { throw null; } }
         public System.ReadOnlySpan<nint> Strides { get { throw null; } }
-        public static System.Numerics.Tensors.ReadOnlySpanND<T> CastUp<TDerived>(System.Numerics.Tensors.ReadOnlySpanND<TDerived> items) where TDerived : class?, T? { throw null; }
-        public void CopyTo(System.Numerics.Tensors.SpanND<T> destination) { }
+        public static System.Numerics.Tensors.ReadOnlyTensorSpan<T> CastUp<TDerived>(System.Numerics.Tensors.ReadOnlyTensorSpan<TDerived> items) where TDerived : class?, T? { throw null; }
+        public void CopyTo(System.Numerics.Tensors.TensorSpan<T> destination) { }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.ObsoleteAttribute("Equals() on ReadOnlySpanND will always throw an exception. Use the equality operator instead.")]
+        [System.ObsoleteAttribute("Equals() on ReadOnlyTensorSpan will always throw an exception. Use the equality operator instead.")]
 #pragma warning disable CS0809 // Obsolete member overrides non-obsolete member
         public override bool Equals(object? obj) { throw null; }
 #pragma warning restore CS0809 // Obsolete member overrides non-obsolete member
-        public System.Numerics.Tensors.ReadOnlySpanND<T>.Enumerator GetEnumerator() { throw null; }
+        public System.Numerics.Tensors.ReadOnlyTensorSpan<T>.Enumerator GetEnumerator() { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.ObsoleteAttribute("GetHashCode() on ReadOnlySpanND will always throw an exception.")]
 #pragma warning disable CS0809 // Obsolete member overrides non-obsolete member
+        [System.ObsoleteAttribute("GetHashCode() on ReadOnlyTensorSpan will always throw an exception.")]
         public override int GetHashCode() { throw null; }
 #pragma warning restore CS0809 // Obsolete member overrides non-obsolete member
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public ref readonly T GetPinnableReference() { throw null; }
-        public static bool operator ==(System.Numerics.Tensors.ReadOnlySpanND<T> left, System.Numerics.Tensors.ReadOnlySpanND<T> right) { throw null; }
-        public static bool operator !=(System.Numerics.Tensors.ReadOnlySpanND<T> left, System.Numerics.Tensors.ReadOnlySpanND<T> right) { throw null; }
-        public System.Numerics.Tensors.ReadOnlySpanND<T> Slice(scoped System.ReadOnlySpan<System.NativeRange> ranges) { throw null; }
+        public static bool operator ==(System.Numerics.Tensors.ReadOnlyTensorSpan<T> left, System.Numerics.Tensors.ReadOnlyTensorSpan<T> right) { throw null; }
+        public static bool operator !=(System.Numerics.Tensors.ReadOnlyTensorSpan<T> left, System.Numerics.Tensors.ReadOnlyTensorSpan<T> right) { throw null; }
+        public System.Numerics.Tensors.ReadOnlyTensorSpan<T> Slice(scoped System.ReadOnlySpan<System.Buffers.NRange> ranges) { throw null; }
         public T[] ToArray() { throw null; }
         public override string ToString() { throw null; }
-        public bool TryCopyTo(System.Numerics.Tensors.SpanND<T> destination) { throw null; }
+        public bool TryCopyTo(System.Numerics.Tensors.TensorSpan<T> destination) { throw null; }
         public ref partial struct Enumerator
         {
             private object _dummy;
@@ -114,107 +123,45 @@ namespace System.Numerics.Tensors
             public bool MoveNext() { throw null; }
         }
     }
-    public static partial class SpanNDExtensions
-    {
-        public static System.Numerics.Tensors.SpanND<T> AsSpanND<T>(this T[]? array, scoped System.ReadOnlySpan<nint> shape) { throw null; }
-        public static bool SequenceEqual<T>(this System.Numerics.Tensors.SpanND<T> span, System.Numerics.Tensors.SpanND<T> other) where T : System.IEquatable<T>? { throw null; }
-    }
-    public readonly ref partial struct SpanND<T>
-    {
-        private readonly object _dummy;
-        private readonly int _dummyPrimitive;
-        [System.CLSCompliantAttribute(false)]
-        public unsafe SpanND(void* pointer, System.ReadOnlySpan<nint> lengths, bool isPinned, System.ReadOnlySpan<nint> strides = default(System.ReadOnlySpan<nint>)) { throw null; }
-        public SpanND(T[]? array, nint start, System.ReadOnlySpan<nint> lengths) { throw null; }
-        public SpanND(T[]? array, System.ReadOnlySpan<nint> lengths) { throw null; }
-        public SpanND(T[]? array, System.ReadOnlySpan<nint> lengths, bool isPinned) { throw null; }
-        public static System.Numerics.Tensors.SpanND<T> Empty { get { throw null; } }
-        public bool IsEmpty { get { throw null; } }
-        public bool IsPinned { get { throw null; } }
-        public ref T this[scoped System.ReadOnlySpan<nint> indices] { get { throw null; } }
-        public System.Numerics.Tensors.SpanND<T> this[scoped System.ReadOnlySpan<System.NativeRange> indices] { get { throw null; } set { } }
-        public nint Length { get { throw null; } }
-        public int Rank { get { throw null; } }
-        public System.ReadOnlySpan<nint> Shape { get { throw null; } }
-        public System.ReadOnlySpan<nint> Strides { get { throw null; } }
-        public void Clear() { }
-        public void CopyTo(System.Numerics.Tensors.SpanND<T> destination) { }
-        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.ObsoleteAttribute("Equals() on SpanND will always throw an exception. Use the equality operator instead.")]
-#pragma warning disable CS0809 // Obsolete member overrides non-obsolete member
-        public override bool Equals(object? obj) { throw null; }
-#pragma warning restore CS0809 // Obsolete member overrides non-obsolete member
-        public void Fill(T value) { }
-        public System.Numerics.Tensors.SpanND<T>.Enumerator GetEnumerator() { throw null; }
-        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.ObsoleteAttribute("GetHashCode() on SpanND will always throw an exception.")]
-#pragma warning disable CS0809 // Obsolete member overrides non-obsolete member
-        public override int GetHashCode() { throw null; }
-#pragma warning restore CS0809 // Obsolete member overrides non-obsolete member
-        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        public ref T GetPinnableReference() { throw null; }
-        public static bool operator ==(System.Numerics.Tensors.SpanND<T> left, System.Numerics.Tensors.SpanND<T> right) { throw null; }
-        public static implicit operator System.Numerics.Tensors.ReadOnlySpanND<T> (System.Numerics.Tensors.SpanND<T> span) { throw null; }
-        public static bool operator !=(System.Numerics.Tensors.SpanND<T> left, System.Numerics.Tensors.SpanND<T> right) { throw null; }
-        public System.Numerics.Tensors.SpanND<T> Slice(scoped System.ReadOnlySpan<System.NativeRange> ranges) { throw null; }
-        public T[] ToArray() { throw null; }
-        public override string ToString() { throw null; }
-        public bool TryCopyTo(System.Numerics.Tensors.SpanND<T> destination) { throw null; }
-        public ref partial struct Enumerator
-        {
-            private object _dummy;
-            private int _dummyPrimitive;
-            public ref T Current { get { throw null; } }
-            public bool MoveNext() { throw null; }
-        }
-    }
     public static partial class Tensor
     {
-        public static System.Numerics.Tensors.SpanND<T> AddInPlace<T>(System.Numerics.Tensors.SpanND<T> input, System.Numerics.Tensors.SpanND<T> other) where T : System.IEquatable<T>, System.Numerics.IEqualityOperators<T, T, bool>, System.Numerics.IAdditionOperators<T, T, T>, System.Numerics.IAdditiveIdentity<T, T> { throw null; }
-        public static System.Numerics.Tensors.SpanND<T> AddInPlace<T>(System.Numerics.Tensors.SpanND<T> input, T val) where T : System.IEquatable<T>, System.Numerics.IEqualityOperators<T, T, bool>, System.Numerics.IAdditionOperators<T, T, T>, System.Numerics.IAdditiveIdentity<T, T> { throw null; }
-        public static System.Numerics.Tensors.Tensor<T> AddInPlace<T>(System.Numerics.Tensors.Tensor<T> input, System.Numerics.Tensors.Tensor<T> other) where T : System.IEquatable<T>, System.Numerics.IEqualityOperators<T, T, bool>, System.Numerics.IAdditionOperators<T, T, T>, System.Numerics.IAdditiveIdentity<T, T> { throw null; }
+        public static System.Numerics.Tensors.TensorSpan<T> AddInPlace<T>(System.Numerics.Tensors.TensorSpan<T> left, System.Numerics.Tensors.TensorSpan<T> right) where T : System.IEquatable<T>, System.Numerics.IEqualityOperators<T, T, bool>, System.Numerics.IAdditionOperators<T, T, T>, System.Numerics.IAdditiveIdentity<T, T> { throw null; }
+        public static System.Numerics.Tensors.TensorSpan<T> AddInPlace<T>(System.Numerics.Tensors.TensorSpan<T> input, T val) where T : System.IEquatable<T>, System.Numerics.IEqualityOperators<T, T, bool>, System.Numerics.IAdditionOperators<T, T, T>, System.Numerics.IAdditiveIdentity<T, T> { throw null; }
+        public static System.Numerics.Tensors.Tensor<T> AddInPlace<T>(System.Numerics.Tensors.Tensor<T> left, System.Numerics.Tensors.Tensor<T> right) where T : System.IEquatable<T>, System.Numerics.IEqualityOperators<T, T, bool>, System.Numerics.IAdditionOperators<T, T, T>, System.Numerics.IAdditiveIdentity<T, T> { throw null; }
         public static System.Numerics.Tensors.Tensor<T> AddInPlace<T>(System.Numerics.Tensors.Tensor<T> input, T val) where T : System.IEquatable<T>, System.Numerics.IEqualityOperators<T, T, bool>, System.Numerics.IAdditionOperators<T, T, T>, System.Numerics.IAdditiveIdentity<T, T> { throw null; }
-        public static System.Numerics.Tensors.SpanND<T> Add<T>(System.Numerics.Tensors.SpanND<T> input, System.Numerics.Tensors.SpanND<T> other) where T : System.IEquatable<T>, System.Numerics.IEqualityOperators<T, T, bool>, System.Numerics.IAdditionOperators<T, T, T>, System.Numerics.IAdditiveIdentity<T, T> { throw null; }
-        public static System.Numerics.Tensors.SpanND<T> Add<T>(System.Numerics.Tensors.SpanND<T> input, T val) where T : System.IEquatable<T>, System.Numerics.IEqualityOperators<T, T, bool>, System.Numerics.IAdditionOperators<T, T, T>, System.Numerics.IAdditiveIdentity<T, T> { throw null; }
-        public static System.Numerics.Tensors.Tensor<T> Add<T>(System.Numerics.Tensors.Tensor<T> input, System.Numerics.Tensors.Tensor<T> other) where T : System.IEquatable<T>, System.Numerics.IEqualityOperators<T, T, bool>, System.Numerics.IAdditionOperators<T, T, T>, System.Numerics.IAdditiveIdentity<T, T> { throw null; }
+        public static System.Numerics.Tensors.TensorSpan<T> Add<T>(System.Numerics.Tensors.TensorSpan<T> left, System.Numerics.Tensors.TensorSpan<T> right) where T : System.IEquatable<T>, System.Numerics.IEqualityOperators<T, T, bool>, System.Numerics.IAdditionOperators<T, T, T>, System.Numerics.IAdditiveIdentity<T, T> { throw null; }
+        public static System.Numerics.Tensors.TensorSpan<T> Add<T>(System.Numerics.Tensors.TensorSpan<T> input, T val) where T : System.IEquatable<T>, System.Numerics.IEqualityOperators<T, T, bool>, System.Numerics.IAdditionOperators<T, T, T>, System.Numerics.IAdditiveIdentity<T, T> { throw null; }
+        public static System.Numerics.Tensors.Tensor<T> Add<T>(System.Numerics.Tensors.Tensor<T> left, System.Numerics.Tensors.Tensor<T> right) where T : System.IEquatable<T>, System.Numerics.IEqualityOperators<T, T, bool>, System.Numerics.IAdditionOperators<T, T, T>, System.Numerics.IAdditiveIdentity<T, T> { throw null; }
         public static System.Numerics.Tensors.Tensor<T> Add<T>(System.Numerics.Tensors.Tensor<T> input, T val) where T : System.IEquatable<T>, System.Numerics.IEqualityOperators<T, T, bool>, System.Numerics.IAdditionOperators<T, T, T>, System.Numerics.IAdditiveIdentity<T, T> { throw null; }
         public static System.Numerics.Tensors.Tensor<T> Broadcast<T>(System.Numerics.Tensors.Tensor<T> input, System.ReadOnlySpan<nint> shape) where T : System.IEquatable<T>, System.Numerics.IEqualityOperators<T, T, bool> { throw null; }
         public static System.Numerics.Tensors.Tensor<T> Concatenate<T>(System.ReadOnlySpan<System.Numerics.Tensors.Tensor<T>> tensors, int axis = 0) where T : System.IEquatable<T>, System.Numerics.IEqualityOperators<T, T, bool> { throw null; }
-        public static System.Numerics.Tensors.SpanND<T> CosInPlace<T>(System.Numerics.Tensors.SpanND<T> input) where T : System.IEquatable<T>, System.Numerics.IEqualityOperators<T, T, bool>, System.Numerics.ITrigonometricFunctions<T> { throw null; }
+        public static System.Numerics.Tensors.TensorSpan<T> CosInPlace<T>(System.Numerics.Tensors.TensorSpan<T> input) where T : System.IEquatable<T>, System.Numerics.IEqualityOperators<T, T, bool>, System.Numerics.ITrigonometricFunctions<T> { throw null; }
         public static System.Numerics.Tensors.Tensor<T> CosInPlace<T>(System.Numerics.Tensors.Tensor<T> input) where T : System.IEquatable<T>, System.Numerics.IEqualityOperators<T, T, bool>, System.Numerics.ITrigonometricFunctions<T> { throw null; }
-        public static System.Numerics.Tensors.SpanND<T> Cos<T>(System.Numerics.Tensors.SpanND<T> input) where T : System.IEquatable<T>, System.Numerics.IEqualityOperators<T, T, bool>, System.Numerics.ITrigonometricFunctions<T> { throw null; }
+        public static System.Numerics.Tensors.TensorSpan<T> Cos<T>(System.Numerics.Tensors.TensorSpan<T> input) where T : System.IEquatable<T>, System.Numerics.IEqualityOperators<T, T, bool>, System.Numerics.ITrigonometricFunctions<T> { throw null; }
         public static System.Numerics.Tensors.Tensor<T> Cos<T>(System.Numerics.Tensors.Tensor<T> input) where T : System.IEquatable<T>, System.Numerics.IEqualityOperators<T, T, bool>, System.Numerics.ITrigonometricFunctions<T> { throw null; }
+        public static System.Numerics.Tensors.Tensor<T> CreateAndFillGaussianNormalDistribution<T>(scoped System.ReadOnlySpan<nint> lengths) where T : System.IEquatable<T>, System.Numerics.IEqualityOperators<T, T, bool>, System.Numerics.IFloatingPoint<T> { throw null; }
+        public static System.Numerics.Tensors.Tensor<T> CreateAndFillUniformDistribution<T>(scoped System.ReadOnlySpan<nint> lengths) where T : System.IEquatable<T>, System.Numerics.IEqualityOperators<T, T, bool>, System.Numerics.IFloatingPoint<T> { throw null; }
         public static System.Numerics.Tensors.Tensor<T> CreateFromEnumerable<T>(System.Collections.Generic.IEnumerable<T> data) where T : System.IEquatable<T>, System.Numerics.IEqualityOperators<T, T, bool> { throw null; }
-        public static System.Numerics.Tensors.Tensor<T> CreateGaussianNormal<T>(scoped System.ReadOnlySpan<nint> lengths) where T : System.IEquatable<T>, System.Numerics.IEqualityOperators<T, T, bool>, System.Numerics.IFloatingPoint<T> { throw null; }
-        [System.CLSCompliantAttribute(false)]
-        public unsafe static System.Numerics.Tensors.ReadOnlySpanND<T> CreateReadOnlySpan<T>(T* address, System.ReadOnlySpan<nint> lengths) { throw null; }
-        [System.CLSCompliantAttribute(false)]
-        public unsafe static System.Numerics.Tensors.ReadOnlySpanND<T> CreateReadOnlySpan<T>(T* address, System.ReadOnlySpan<nint> lengths, System.ReadOnlySpan<nint> strides) { throw null; }
-        [System.CLSCompliantAttribute(false)]
-        public unsafe static System.Numerics.Tensors.SpanND<T> CreateSpan<T>(T* address, System.ReadOnlySpan<nint> lengths) { throw null; }
-        [System.CLSCompliantAttribute(false)]
-        public unsafe static System.Numerics.Tensors.SpanND<T> CreateSpan<T>(T* address, System.ReadOnlySpan<nint> lengths, System.ReadOnlySpan<nint> strides) { throw null; }
-        public static System.Numerics.Tensors.Tensor<T> CreateUniform<T>(scoped System.ReadOnlySpan<nint> lengths) where T : System.IEquatable<T>, System.Numerics.IEqualityOperators<T, T, bool>, System.Numerics.IFloatingPoint<T> { throw null; }
         public static System.Numerics.Tensors.Tensor<T> CreateUninitialized<T>(bool mustPin, System.ReadOnlySpan<nint> lengths) where T : System.IEquatable<T> { throw null; }
         public static System.Numerics.Tensors.Tensor<T> CreateUninitialized<T>(bool mustPin, System.ReadOnlySpan<nint> lengths, System.ReadOnlySpan<nint> strides) where T : System.IEquatable<T> { throw null; }
         public static System.Numerics.Tensors.Tensor<T> Create<T>(bool mustPin, System.ReadOnlySpan<nint> lengths) where T : System.IEquatable<T> { throw null; }
         public static System.Numerics.Tensors.Tensor<T> Create<T>(bool mustPin, System.ReadOnlySpan<nint> lengths, System.ReadOnlySpan<nint> strides) where T : System.IEquatable<T> { throw null; }
         public static System.Numerics.Tensors.Tensor<T> Create<T>(T[] values, System.ReadOnlySpan<nint> lengths) where T : System.IEquatable<T> { throw null; }
         public static System.Numerics.Tensors.Tensor<T> Create<T>(T[] values, System.ReadOnlySpan<nint> lengths, System.ReadOnlySpan<nint> strides) where T : System.IEquatable<T> { throw null; }
-        public static System.Numerics.Tensors.SpanND<T> DivideInPlace<T>(System.Numerics.Tensors.SpanND<T> input, System.Numerics.Tensors.SpanND<T> other) where T : System.IEquatable<T>, System.Numerics.IEqualityOperators<T, T, bool>, System.Numerics.IDivisionOperators<T, T, T> { throw null; }
-        public static System.Numerics.Tensors.SpanND<T> DivideInPlace<T>(System.Numerics.Tensors.SpanND<T> input, T val) where T : System.IEquatable<T>, System.Numerics.IEqualityOperators<T, T, bool>, System.Numerics.IDivisionOperators<T, T, T> { throw null; }
-        public static System.Numerics.Tensors.Tensor<T> DivideInPlace<T>(System.Numerics.Tensors.Tensor<T> input, System.Numerics.Tensors.Tensor<T> other) where T : System.IEquatable<T>, System.Numerics.IEqualityOperators<T, T, bool>, System.Numerics.IDivisionOperators<T, T, T> { throw null; }
+        public static System.Numerics.Tensors.TensorSpan<T> DivideInPlace<T>(System.Numerics.Tensors.TensorSpan<T> left, System.Numerics.Tensors.TensorSpan<T> right) where T : System.IEquatable<T>, System.Numerics.IEqualityOperators<T, T, bool>, System.Numerics.IDivisionOperators<T, T, T> { throw null; }
+        public static System.Numerics.Tensors.TensorSpan<T> DivideInPlace<T>(System.Numerics.Tensors.TensorSpan<T> input, T val) where T : System.IEquatable<T>, System.Numerics.IEqualityOperators<T, T, bool>, System.Numerics.IDivisionOperators<T, T, T> { throw null; }
+        public static System.Numerics.Tensors.Tensor<T> DivideInPlace<T>(System.Numerics.Tensors.Tensor<T> left, System.Numerics.Tensors.Tensor<T> right) where T : System.IEquatable<T>, System.Numerics.IEqualityOperators<T, T, bool>, System.Numerics.IDivisionOperators<T, T, T> { throw null; }
         public static System.Numerics.Tensors.Tensor<T> DivideInPlace<T>(System.Numerics.Tensors.Tensor<T> input, T val) where T : System.IEquatable<T>, System.Numerics.IEqualityOperators<T, T, bool>, System.Numerics.IDivisionOperators<T, T, T> { throw null; }
-        public static System.Numerics.Tensors.SpanND<T> DivideInPlace<T>(T val, System.Numerics.Tensors.SpanND<T> input) where T : System.IEquatable<T>, System.Numerics.IEqualityOperators<T, T, bool>, System.Numerics.IDivisionOperators<T, T, T> { throw null; }
+        public static System.Numerics.Tensors.TensorSpan<T> DivideInPlace<T>(T val, System.Numerics.Tensors.TensorSpan<T> input) where T : System.IEquatable<T>, System.Numerics.IEqualityOperators<T, T, bool>, System.Numerics.IDivisionOperators<T, T, T> { throw null; }
         public static System.Numerics.Tensors.Tensor<T> DivideInPlace<T>(T val, System.Numerics.Tensors.Tensor<T> input) where T : System.IEquatable<T>, System.Numerics.IEqualityOperators<T, T, bool>, System.Numerics.IDivisionOperators<T, T, T> { throw null; }
-        public static System.Numerics.Tensors.SpanND<T> Divide<T>(System.Numerics.Tensors.SpanND<T> input, System.Numerics.Tensors.SpanND<T> other) where T : System.IEquatable<T>, System.Numerics.IEqualityOperators<T, T, bool>, System.Numerics.IDivisionOperators<T, T, T> { throw null; }
-        public static System.Numerics.Tensors.SpanND<T> Divide<T>(System.Numerics.Tensors.SpanND<T> input, T val) where T : System.IEquatable<T>, System.Numerics.IEqualityOperators<T, T, bool>, System.Numerics.IDivisionOperators<T, T, T> { throw null; }
-        public static System.Numerics.Tensors.Tensor<T> Divide<T>(System.Numerics.Tensors.Tensor<T> input, System.Numerics.Tensors.Tensor<T> other) where T : System.IEquatable<T>, System.Numerics.IEqualityOperators<T, T, bool>, System.Numerics.IDivisionOperators<T, T, T> { throw null; }
+        public static System.Numerics.Tensors.TensorSpan<T> Divide<T>(System.Numerics.Tensors.TensorSpan<T> left, System.Numerics.Tensors.TensorSpan<T> right) where T : System.IEquatable<T>, System.Numerics.IEqualityOperators<T, T, bool>, System.Numerics.IDivisionOperators<T, T, T> { throw null; }
+        public static System.Numerics.Tensors.TensorSpan<T> Divide<T>(System.Numerics.Tensors.TensorSpan<T> input, T val) where T : System.IEquatable<T>, System.Numerics.IEqualityOperators<T, T, bool>, System.Numerics.IDivisionOperators<T, T, T> { throw null; }
+        public static System.Numerics.Tensors.Tensor<T> Divide<T>(System.Numerics.Tensors.Tensor<T> left, System.Numerics.Tensors.Tensor<T> right) where T : System.IEquatable<T>, System.Numerics.IEqualityOperators<T, T, bool>, System.Numerics.IDivisionOperators<T, T, T> { throw null; }
         public static System.Numerics.Tensors.Tensor<T> Divide<T>(System.Numerics.Tensors.Tensor<T> input, T val) where T : System.IEquatable<T>, System.Numerics.IEqualityOperators<T, T, bool>, System.Numerics.IDivisionOperators<T, T, T> { throw null; }
-        public static System.Numerics.Tensors.SpanND<T> Divide<T>(T val, System.Numerics.Tensors.SpanND<T> input) where T : System.IEquatable<T>, System.Numerics.IEqualityOperators<T, T, bool>, System.Numerics.IDivisionOperators<T, T, T> { throw null; }
+        public static System.Numerics.Tensors.TensorSpan<T> Divide<T>(T val, System.Numerics.Tensors.TensorSpan<T> input) where T : System.IEquatable<T>, System.Numerics.IEqualityOperators<T, T, bool>, System.Numerics.IDivisionOperators<T, T, T> { throw null; }
         public static System.Numerics.Tensors.Tensor<T> Divide<T>(T val, System.Numerics.Tensors.Tensor<T> input) where T : System.IEquatable<T>, System.Numerics.IEqualityOperators<T, T, bool>, System.Numerics.IDivisionOperators<T, T, T> { throw null; }
-        public static System.Numerics.Tensors.Tensor<T> FilteredUpdate<T>(System.Numerics.Tensors.Tensor<T> left, System.Numerics.Tensors.Tensor<bool> filter, System.Numerics.Tensors.Tensor<T> values) where T : System.IEquatable<T>, System.Numerics.IEqualityOperators<T, T, bool> { throw null; }
-        public static System.Numerics.Tensors.Tensor<T> FilteredUpdate<T>(System.Numerics.Tensors.Tensor<T> left, System.Numerics.Tensors.Tensor<bool> filter, T value) where T : System.IEquatable<T>, System.Numerics.IEqualityOperators<T, T, bool> { throw null; }
+        public static System.Numerics.Tensors.Tensor<T> FilteredUpdate<T>(System.Numerics.Tensors.Tensor<T> tensor, System.Numerics.Tensors.Tensor<bool> filter, System.Numerics.Tensors.Tensor<T> values) where T : System.IEquatable<T>, System.Numerics.IEqualityOperators<T, T, bool> { throw null; }
+        public static System.Numerics.Tensors.Tensor<T> FilteredUpdate<T>(System.Numerics.Tensors.Tensor<T> tensor, System.Numerics.Tensors.Tensor<bool> filter, T value) where T : System.IEquatable<T>, System.Numerics.IEqualityOperators<T, T, bool> { throw null; }
         public static bool GreaterThanAll<T>(System.Numerics.Tensors.Tensor<T> left, System.Numerics.Tensors.Tensor<T> right) where T : System.IEquatable<T>, System.Numerics.IEqualityOperators<T, T, bool>, System.Numerics.IComparisonOperators<T, T, bool> { throw null; }
         public static bool GreaterThanAny<T>(System.Numerics.Tensors.Tensor<T> left, System.Numerics.Tensors.Tensor<T> right) where T : System.IEquatable<T>, System.Numerics.IEqualityOperators<T, T, bool>, System.Numerics.IComparisonOperators<T, T, bool> { throw null; }
         public static System.Numerics.Tensors.Tensor<bool> GreaterThan<T>(System.Numerics.Tensors.Tensor<T> left, System.Numerics.Tensors.Tensor<T> right) where T : System.IEquatable<T>, System.Numerics.IEqualityOperators<T, T, bool>, System.Numerics.IComparisonOperators<T, T, bool> { throw null; }
@@ -223,68 +170,68 @@ namespace System.Numerics.Tensors
         public static bool LessThanAny<T>(System.Numerics.Tensors.Tensor<T> left, System.Numerics.Tensors.Tensor<T> right) where T : System.IEquatable<T>, System.Numerics.IEqualityOperators<T, T, bool>, System.Numerics.IComparisonOperators<T, T, bool> { throw null; }
         public static System.Numerics.Tensors.Tensor<bool> LessThan<T>(System.Numerics.Tensors.Tensor<T> left, System.Numerics.Tensors.Tensor<T> right) where T : System.IEquatable<T>, System.Numerics.IEqualityOperators<T, T, bool>, System.Numerics.IComparisonOperators<T, T, bool> { throw null; }
         public static System.Numerics.Tensors.Tensor<bool> LessThan<T>(System.Numerics.Tensors.Tensor<T> left, T right) where T : System.IEquatable<T>, System.Numerics.IEqualityOperators<T, T, bool>, System.Numerics.IComparisonOperators<T, T, bool> { throw null; }
-        public static System.Numerics.Tensors.SpanND<T> Log10InPlace<T>(System.Numerics.Tensors.SpanND<T> input) where T : System.IEquatable<T>, System.Numerics.IEqualityOperators<T, T, bool>, System.Numerics.ILogarithmicFunctions<T> { throw null; }
+        public static System.Numerics.Tensors.TensorSpan<T> Log10InPlace<T>(System.Numerics.Tensors.TensorSpan<T> input) where T : System.IEquatable<T>, System.Numerics.IEqualityOperators<T, T, bool>, System.Numerics.ILogarithmicFunctions<T> { throw null; }
         public static System.Numerics.Tensors.Tensor<T> Log10InPlace<T>(System.Numerics.Tensors.Tensor<T> input) where T : System.IEquatable<T>, System.Numerics.IEqualityOperators<T, T, bool>, System.Numerics.ILogarithmicFunctions<T> { throw null; }
-        public static System.Numerics.Tensors.SpanND<T> Log10<T>(System.Numerics.Tensors.SpanND<T> input) where T : System.IEquatable<T>, System.Numerics.IEqualityOperators<T, T, bool>, System.Numerics.ILogarithmicFunctions<T> { throw null; }
+        public static System.Numerics.Tensors.TensorSpan<T> Log10<T>(System.Numerics.Tensors.TensorSpan<T> input) where T : System.IEquatable<T>, System.Numerics.IEqualityOperators<T, T, bool>, System.Numerics.ILogarithmicFunctions<T> { throw null; }
         public static System.Numerics.Tensors.Tensor<T> Log10<T>(System.Numerics.Tensors.Tensor<T> input) where T : System.IEquatable<T>, System.Numerics.IEqualityOperators<T, T, bool>, System.Numerics.ILogarithmicFunctions<T> { throw null; }
-        public static System.Numerics.Tensors.SpanND<T> Log2InPlace<T>(System.Numerics.Tensors.SpanND<T> input) where T : System.IEquatable<T>, System.Numerics.IEqualityOperators<T, T, bool>, System.Numerics.ILogarithmicFunctions<T> { throw null; }
+        public static System.Numerics.Tensors.TensorSpan<T> Log2InPlace<T>(System.Numerics.Tensors.TensorSpan<T> input) where T : System.IEquatable<T>, System.Numerics.IEqualityOperators<T, T, bool>, System.Numerics.ILogarithmicFunctions<T> { throw null; }
         public static System.Numerics.Tensors.Tensor<T> Log2InPlace<T>(System.Numerics.Tensors.Tensor<T> input) where T : System.IEquatable<T>, System.Numerics.IEqualityOperators<T, T, bool>, System.Numerics.ILogarithmicFunctions<T> { throw null; }
-        public static System.Numerics.Tensors.SpanND<T> Log2<T>(System.Numerics.Tensors.SpanND<T> input) where T : System.IEquatable<T>, System.Numerics.IEqualityOperators<T, T, bool>, System.Numerics.ILogarithmicFunctions<T> { throw null; }
+        public static System.Numerics.Tensors.TensorSpan<T> Log2<T>(System.Numerics.Tensors.TensorSpan<T> input) where T : System.IEquatable<T>, System.Numerics.IEqualityOperators<T, T, bool>, System.Numerics.ILogarithmicFunctions<T> { throw null; }
         public static System.Numerics.Tensors.Tensor<T> Log2<T>(System.Numerics.Tensors.Tensor<T> input) where T : System.IEquatable<T>, System.Numerics.IEqualityOperators<T, T, bool>, System.Numerics.ILogarithmicFunctions<T> { throw null; }
-        public static System.Numerics.Tensors.SpanND<T> LogInPlace<T>(System.Numerics.Tensors.SpanND<T> input) where T : System.IEquatable<T>, System.Numerics.IEqualityOperators<T, T, bool>, System.Numerics.ILogarithmicFunctions<T> { throw null; }
+        public static System.Numerics.Tensors.TensorSpan<T> LogInPlace<T>(System.Numerics.Tensors.TensorSpan<T> input) where T : System.IEquatable<T>, System.Numerics.IEqualityOperators<T, T, bool>, System.Numerics.ILogarithmicFunctions<T> { throw null; }
         public static System.Numerics.Tensors.Tensor<T> LogInPlace<T>(System.Numerics.Tensors.Tensor<T> input) where T : System.IEquatable<T>, System.Numerics.IEqualityOperators<T, T, bool>, System.Numerics.ILogarithmicFunctions<T> { throw null; }
-        public static System.Numerics.Tensors.SpanND<T> Log<T>(System.Numerics.Tensors.SpanND<T> input) where T : System.IEquatable<T>, System.Numerics.IEqualityOperators<T, T, bool>, System.Numerics.ILogarithmicFunctions<T> { throw null; }
+        public static System.Numerics.Tensors.TensorSpan<T> Log<T>(System.Numerics.Tensors.TensorSpan<T> input) where T : System.IEquatable<T>, System.Numerics.IEqualityOperators<T, T, bool>, System.Numerics.ILogarithmicFunctions<T> { throw null; }
         public static System.Numerics.Tensors.Tensor<T> Log<T>(System.Numerics.Tensors.Tensor<T> input) where T : System.IEquatable<T>, System.Numerics.IEqualityOperators<T, T, bool>, System.Numerics.ILogarithmicFunctions<T> { throw null; }
         public static T Mean<T>(System.Numerics.Tensors.Tensor<T> input) where T : System.IEquatable<T>, System.Numerics.IEqualityOperators<T, T, bool>, System.Numerics.IFloatingPoint<T> { throw null; }
         public static TResult Mean<T, TResult>(System.Numerics.Tensors.Tensor<T> input) where T : System.IEquatable<T>, System.Numerics.IEqualityOperators<T, T, bool>, System.Numerics.INumber<T> where TResult : System.IEquatable<TResult>, System.Numerics.IEqualityOperators<TResult, TResult, bool>, System.Numerics.IFloatingPoint<TResult> { throw null; }
-        public static System.Numerics.Tensors.SpanND<T> MultiplyInPlace<T>(System.Numerics.Tensors.SpanND<T> input, System.Numerics.Tensors.Tensor<T> other) where T : System.IEquatable<T>, System.Numerics.IEqualityOperators<T, T, bool>, System.Numerics.IMultiplyOperators<T, T, T>, System.Numerics.IMultiplicativeIdentity<T, T> { throw null; }
-        public static System.Numerics.Tensors.SpanND<T> MultiplyInPlace<T>(System.Numerics.Tensors.SpanND<T> input, T val) where T : System.IEquatable<T>, System.Numerics.IEqualityOperators<T, T, bool>, System.Numerics.IMultiplyOperators<T, T, T>, System.Numerics.IMultiplicativeIdentity<T, T> { throw null; }
-        public static System.Numerics.Tensors.Tensor<T> MultiplyInPlace<T>(System.Numerics.Tensors.Tensor<T> input, System.Numerics.Tensors.Tensor<T> other) where T : System.IEquatable<T>, System.Numerics.IEqualityOperators<T, T, bool>, System.Numerics.IMultiplyOperators<T, T, T>, System.Numerics.IMultiplicativeIdentity<T, T> { throw null; }
+        public static System.Numerics.Tensors.TensorSpan<T> MultiplyInPlace<T>(System.Numerics.Tensors.TensorSpan<T> left, System.Numerics.Tensors.TensorSpan<T> right) where T : System.IEquatable<T>, System.Numerics.IEqualityOperators<T, T, bool>, System.Numerics.IMultiplyOperators<T, T, T>, System.Numerics.IMultiplicativeIdentity<T, T> { throw null; }
+        public static System.Numerics.Tensors.TensorSpan<T> MultiplyInPlace<T>(System.Numerics.Tensors.TensorSpan<T> input, T val) where T : System.IEquatable<T>, System.Numerics.IEqualityOperators<T, T, bool>, System.Numerics.IMultiplyOperators<T, T, T>, System.Numerics.IMultiplicativeIdentity<T, T> { throw null; }
+        public static System.Numerics.Tensors.Tensor<T> MultiplyInPlace<T>(System.Numerics.Tensors.Tensor<T> left, System.Numerics.Tensors.Tensor<T> right) where T : System.IEquatable<T>, System.Numerics.IEqualityOperators<T, T, bool>, System.Numerics.IMultiplyOperators<T, T, T>, System.Numerics.IMultiplicativeIdentity<T, T> { throw null; }
         public static System.Numerics.Tensors.Tensor<T> MultiplyInPlace<T>(System.Numerics.Tensors.Tensor<T> input, T val) where T : System.IEquatable<T>, System.Numerics.IEqualityOperators<T, T, bool>, System.Numerics.IMultiplyOperators<T, T, T>, System.Numerics.IMultiplicativeIdentity<T, T> { throw null; }
-        public static System.Numerics.Tensors.SpanND<T> Multiply<T>(System.Numerics.Tensors.SpanND<T> input, System.Numerics.Tensors.Tensor<T> other) where T : System.IEquatable<T>, System.Numerics.IEqualityOperators<T, T, bool>, System.Numerics.IMultiplyOperators<T, T, T>, System.Numerics.IMultiplicativeIdentity<T, T> { throw null; }
-        public static System.Numerics.Tensors.SpanND<T> Multiply<T>(System.Numerics.Tensors.SpanND<T> input, T val) where T : System.IEquatable<T>, System.Numerics.IEqualityOperators<T, T, bool>, System.Numerics.IMultiplyOperators<T, T, T>, System.Numerics.IMultiplicativeIdentity<T, T> { throw null; }
+        public static System.Numerics.Tensors.TensorSpan<T> Multiply<T>(System.Numerics.Tensors.TensorSpan<T> left, System.Numerics.Tensors.TensorSpan<T> right) where T : System.IEquatable<T>, System.Numerics.IEqualityOperators<T, T, bool>, System.Numerics.IMultiplyOperators<T, T, T>, System.Numerics.IMultiplicativeIdentity<T, T> { throw null; }
+        public static System.Numerics.Tensors.TensorSpan<T> Multiply<T>(System.Numerics.Tensors.TensorSpan<T> input, T val) where T : System.IEquatable<T>, System.Numerics.IEqualityOperators<T, T, bool>, System.Numerics.IMultiplyOperators<T, T, T>, System.Numerics.IMultiplicativeIdentity<T, T> { throw null; }
         public static System.Numerics.Tensors.Tensor<T> Multiply<T>(System.Numerics.Tensors.Tensor<T> left, System.Numerics.Tensors.Tensor<T> right) where T : System.IEquatable<T>, System.Numerics.IEqualityOperators<T, T, bool>, System.Numerics.IMultiplyOperators<T, T, T>, System.Numerics.IMultiplicativeIdentity<T, T> { throw null; }
         public static System.Numerics.Tensors.Tensor<T> Multiply<T>(System.Numerics.Tensors.Tensor<T> input, T val) where T : System.IEquatable<T>, System.Numerics.IEqualityOperators<T, T, bool>, System.Numerics.IMultiplyOperators<T, T, T>, System.Numerics.IMultiplicativeIdentity<T, T> { throw null; }
-        public static T Norm<T>(System.Numerics.Tensors.SpanND<T> input) where T : System.IEquatable<T>, System.Numerics.IEqualityOperators<T, T, bool>, System.Numerics.IRootFunctions<T> { throw null; }
+        public static T Norm<T>(System.Numerics.Tensors.TensorSpan<T> input) where T : System.IEquatable<T>, System.Numerics.IEqualityOperators<T, T, bool>, System.Numerics.IRootFunctions<T> { throw null; }
         public static T Norm<T>(System.Numerics.Tensors.Tensor<T> input) where T : System.IEquatable<T>, System.Numerics.IEqualityOperators<T, T, bool>, System.Numerics.IRootFunctions<T> { throw null; }
         public static System.Numerics.Tensors.Tensor<T> Permute<T>(System.Numerics.Tensors.Tensor<T> input, scoped System.ReadOnlySpan<int> axis) where T : System.IEquatable<T>, System.Numerics.IEqualityOperators<T, T, bool> { throw null; }
-        public static System.Numerics.Tensors.SpanND<T> Reshape<T>(this System.Numerics.Tensors.SpanND<T> input, scoped System.ReadOnlySpan<nint> lengths) where T : System.IEquatable<T>, System.Numerics.IEqualityOperators<T, T, bool> { throw null; }
+        public static System.Numerics.Tensors.TensorSpan<T> Reshape<T>(this System.Numerics.Tensors.TensorSpan<T> input, scoped System.ReadOnlySpan<nint> lengths) where T : System.IEquatable<T>, System.Numerics.IEqualityOperators<T, T, bool> { throw null; }
         public static System.Numerics.Tensors.Tensor<T> Reshape<T>(this System.Numerics.Tensors.Tensor<T> input, scoped System.ReadOnlySpan<nint> lengths) where T : System.IEquatable<T>, System.Numerics.IEqualityOperators<T, T, bool> { throw null; }
-        public static System.Numerics.Tensors.SpanND<T> Resize<T>(System.Numerics.Tensors.SpanND<T> input, System.ReadOnlySpan<nint> shape) where T : System.IEquatable<T>, System.Numerics.IEqualityOperators<T, T, bool> { throw null; }
+        public static System.Numerics.Tensors.TensorSpan<T> Resize<T>(System.Numerics.Tensors.TensorSpan<T> input, System.ReadOnlySpan<nint> shape) where T : System.IEquatable<T>, System.Numerics.IEqualityOperators<T, T, bool> { throw null; }
         public static System.Numerics.Tensors.Tensor<T> Resize<T>(System.Numerics.Tensors.Tensor<T> input, System.ReadOnlySpan<nint> shape) where T : System.IEquatable<T>, System.Numerics.IEqualityOperators<T, T, bool> { throw null; }
-        public static System.Numerics.Tensors.SpanND<T> Reverse<T>(System.Numerics.Tensors.SpanND<T> input, nint axis = -1) where T : System.IEquatable<T>, System.Numerics.IEqualityOperators<T, T, bool> { throw null; }
+        public static System.Numerics.Tensors.TensorSpan<T> Reverse<T>(System.Numerics.Tensors.TensorSpan<T> input, nint axis = -1) where T : System.IEquatable<T>, System.Numerics.IEqualityOperators<T, T, bool> { throw null; }
         public static System.Numerics.Tensors.Tensor<T> Reverse<T>(System.Numerics.Tensors.Tensor<T> input, nint axis = -1) where T : System.IEquatable<T>, System.Numerics.IEqualityOperators<T, T, bool> { throw null; }
         public static System.Numerics.Tensors.Tensor<bool> SequenceEqual<T>(System.Numerics.Tensors.Tensor<T> left, System.Numerics.Tensors.Tensor<T> right) where T : System.IEquatable<T>, System.Numerics.IEqualityOperators<T, T, bool> { throw null; }
-        public static System.Numerics.Tensors.Tensor<T> SetSlice<T>(this System.Numerics.Tensors.Tensor<T> tensor, System.Numerics.Tensors.Tensor<T> values, scoped System.ReadOnlySpan<System.NativeRange> ranges) where T : System.IEquatable<T>, System.Numerics.IEqualityOperators<T, T, bool> { throw null; }
-        public static System.Numerics.Tensors.SpanND<T> SinInPlace<T>(System.Numerics.Tensors.SpanND<T> input) where T : System.IEquatable<T>, System.Numerics.IEqualityOperators<T, T, bool>, System.Numerics.ITrigonometricFunctions<T> { throw null; }
+        public static System.Numerics.Tensors.Tensor<T> SetSlice<T>(this System.Numerics.Tensors.Tensor<T> tensor, System.Numerics.Tensors.Tensor<T> values, scoped System.ReadOnlySpan<System.Buffers.NRange> ranges) where T : System.IEquatable<T>, System.Numerics.IEqualityOperators<T, T, bool> { throw null; }
+        public static System.Numerics.Tensors.TensorSpan<T> SinInPlace<T>(System.Numerics.Tensors.TensorSpan<T> input) where T : System.IEquatable<T>, System.Numerics.IEqualityOperators<T, T, bool>, System.Numerics.ITrigonometricFunctions<T> { throw null; }
         public static System.Numerics.Tensors.Tensor<T> SinInPlace<T>(System.Numerics.Tensors.Tensor<T> input) where T : System.IEquatable<T>, System.Numerics.IEqualityOperators<T, T, bool>, System.Numerics.ITrigonometricFunctions<T> { throw null; }
-        public static System.Numerics.Tensors.SpanND<T> Sin<T>(System.Numerics.Tensors.SpanND<T> input) where T : System.IEquatable<T>, System.Numerics.IEqualityOperators<T, T, bool>, System.Numerics.ITrigonometricFunctions<T> { throw null; }
+        public static System.Numerics.Tensors.TensorSpan<T> Sin<T>(System.Numerics.Tensors.TensorSpan<T> input) where T : System.IEquatable<T>, System.Numerics.IEqualityOperators<T, T, bool>, System.Numerics.ITrigonometricFunctions<T> { throw null; }
         public static System.Numerics.Tensors.Tensor<T> Sin<T>(System.Numerics.Tensors.Tensor<T> input) where T : System.IEquatable<T>, System.Numerics.IEqualityOperators<T, T, bool>, System.Numerics.ITrigonometricFunctions<T> { throw null; }
         public static System.Numerics.Tensors.Tensor<T>[] Split<T>(System.Numerics.Tensors.Tensor<T> input, nint numSplits, nint axis) where T : System.IEquatable<T>, System.Numerics.IEqualityOperators<T, T, bool> { throw null; }
-        public static System.Numerics.Tensors.SpanND<T> SqrtInPlace<T>(System.Numerics.Tensors.SpanND<T> input) where T : System.IEquatable<T>, System.Numerics.IEqualityOperators<T, T, bool>, System.Numerics.IRootFunctions<T> { throw null; }
+        public static System.Numerics.Tensors.TensorSpan<T> SqrtInPlace<T>(System.Numerics.Tensors.TensorSpan<T> input) where T : System.IEquatable<T>, System.Numerics.IEqualityOperators<T, T, bool>, System.Numerics.IRootFunctions<T> { throw null; }
         public static System.Numerics.Tensors.Tensor<T> SqrtInPlace<T>(System.Numerics.Tensors.Tensor<T> input) where T : System.IEquatable<T>, System.Numerics.IEqualityOperators<T, T, bool>, System.Numerics.IRootFunctions<T> { throw null; }
-        public static System.Numerics.Tensors.SpanND<T> Sqrt<T>(System.Numerics.Tensors.SpanND<T> input) where T : System.IEquatable<T>, System.Numerics.IEqualityOperators<T, T, bool>, System.Numerics.IRootFunctions<T> { throw null; }
+        public static System.Numerics.Tensors.TensorSpan<T> Sqrt<T>(System.Numerics.Tensors.TensorSpan<T> input) where T : System.IEquatable<T>, System.Numerics.IEqualityOperators<T, T, bool>, System.Numerics.IRootFunctions<T> { throw null; }
         public static System.Numerics.Tensors.Tensor<T> Sqrt<T>(System.Numerics.Tensors.Tensor<T> input) where T : System.IEquatable<T>, System.Numerics.IEqualityOperators<T, T, bool>, System.Numerics.IRootFunctions<T> { throw null; }
         public static System.Numerics.Tensors.Tensor<T> Squeeze<T>(System.Numerics.Tensors.Tensor<T> input, int axis = -1) where T : System.IEquatable<T>, System.Numerics.IEqualityOperators<T, T, bool> { throw null; }
         public static System.Numerics.Tensors.Tensor<T> Stack<T>(System.Numerics.Tensors.Tensor<T>[] input, int axis = 0) where T : System.IEquatable<T>, System.Numerics.IEqualityOperators<T, T, bool> { throw null; }
         public static T StdDev<T>(System.Numerics.Tensors.Tensor<T> input) where T : System.IEquatable<T>, System.Numerics.IEqualityOperators<T, T, bool>, System.Numerics.IFloatingPoint<T>, System.Numerics.IPowerFunctions<T>, System.Numerics.IAdditionOperators<T, T, T>, System.Numerics.IAdditiveIdentity<T, T> { throw null; }
         public static TResult StdDev<T, TResult>(System.Numerics.Tensors.Tensor<T> input) where T : System.IEquatable<T>, System.Numerics.IEqualityOperators<T, T, bool>, System.Numerics.INumber<T> where TResult : System.IEquatable<TResult>, System.Numerics.IEqualityOperators<TResult, TResult, bool>, System.Numerics.IFloatingPoint<TResult> { throw null; }
-        public static System.Numerics.Tensors.SpanND<T> SubtractInPlace<T>(System.Numerics.Tensors.SpanND<T> input, System.Numerics.Tensors.Tensor<T> other) where T : System.IEquatable<T>, System.Numerics.IEqualityOperators<T, T, bool>, System.Numerics.ISubtractionOperators<T, T, T> { throw null; }
-        public static System.Numerics.Tensors.SpanND<T> SubtractInPlace<T>(System.Numerics.Tensors.SpanND<T> input, T val) where T : System.IEquatable<T>, System.Numerics.IEqualityOperators<T, T, bool>, System.Numerics.ISubtractionOperators<T, T, T> { throw null; }
-        public static System.Numerics.Tensors.Tensor<T> SubtractInPlace<T>(System.Numerics.Tensors.Tensor<T> input, System.Numerics.Tensors.Tensor<T> other) where T : System.IEquatable<T>, System.Numerics.IEqualityOperators<T, T, bool>, System.Numerics.ISubtractionOperators<T, T, T> { throw null; }
+        public static System.Numerics.Tensors.TensorSpan<T> SubtractInPlace<T>(System.Numerics.Tensors.TensorSpan<T> left, System.Numerics.Tensors.TensorSpan<T> right) where T : System.IEquatable<T>, System.Numerics.IEqualityOperators<T, T, bool>, System.Numerics.ISubtractionOperators<T, T, T> { throw null; }
+        public static System.Numerics.Tensors.TensorSpan<T> SubtractInPlace<T>(System.Numerics.Tensors.TensorSpan<T> input, T val) where T : System.IEquatable<T>, System.Numerics.IEqualityOperators<T, T, bool>, System.Numerics.ISubtractionOperators<T, T, T> { throw null; }
+        public static System.Numerics.Tensors.Tensor<T> SubtractInPlace<T>(System.Numerics.Tensors.Tensor<T> left, System.Numerics.Tensors.Tensor<T> right) where T : System.IEquatable<T>, System.Numerics.IEqualityOperators<T, T, bool>, System.Numerics.ISubtractionOperators<T, T, T> { throw null; }
         public static System.Numerics.Tensors.Tensor<T> SubtractInPlace<T>(System.Numerics.Tensors.Tensor<T> input, T val) where T : System.IEquatable<T>, System.Numerics.IEqualityOperators<T, T, bool>, System.Numerics.ISubtractionOperators<T, T, T> { throw null; }
-        public static System.Numerics.Tensors.SpanND<T> SubtractInPlace<T>(T val, System.Numerics.Tensors.SpanND<T> input) where T : System.IEquatable<T>, System.Numerics.IEqualityOperators<T, T, bool>, System.Numerics.ISubtractionOperators<T, T, T> { throw null; }
+        public static System.Numerics.Tensors.TensorSpan<T> SubtractInPlace<T>(T val, System.Numerics.Tensors.TensorSpan<T> input) where T : System.IEquatable<T>, System.Numerics.IEqualityOperators<T, T, bool>, System.Numerics.ISubtractionOperators<T, T, T> { throw null; }
         public static System.Numerics.Tensors.Tensor<T> SubtractInPlace<T>(T val, System.Numerics.Tensors.Tensor<T> input) where T : System.IEquatable<T>, System.Numerics.IEqualityOperators<T, T, bool>, System.Numerics.ISubtractionOperators<T, T, T> { throw null; }
-        public static System.Numerics.Tensors.SpanND<T> Subtract<T>(System.Numerics.Tensors.SpanND<T> input, System.Numerics.Tensors.Tensor<T> other) where T : System.IEquatable<T>, System.Numerics.IEqualityOperators<T, T, bool>, System.Numerics.ISubtractionOperators<T, T, T> { throw null; }
-        public static System.Numerics.Tensors.SpanND<T> Subtract<T>(System.Numerics.Tensors.SpanND<T> input, T val) where T : System.IEquatable<T>, System.Numerics.IEqualityOperators<T, T, bool>, System.Numerics.ISubtractionOperators<T, T, T> { throw null; }
-        public static System.Numerics.Tensors.Tensor<T> Subtract<T>(System.Numerics.Tensors.Tensor<T> input, System.Numerics.Tensors.Tensor<T> other) where T : System.IEquatable<T>, System.Numerics.IEqualityOperators<T, T, bool>, System.Numerics.ISubtractionOperators<T, T, T> { throw null; }
+        public static System.Numerics.Tensors.TensorSpan<T> Subtract<T>(System.Numerics.Tensors.TensorSpan<T> left, System.Numerics.Tensors.TensorSpan<T> right) where T : System.IEquatable<T>, System.Numerics.IEqualityOperators<T, T, bool>, System.Numerics.ISubtractionOperators<T, T, T> { throw null; }
+        public static System.Numerics.Tensors.TensorSpan<T> Subtract<T>(System.Numerics.Tensors.TensorSpan<T> input, T val) where T : System.IEquatable<T>, System.Numerics.IEqualityOperators<T, T, bool>, System.Numerics.ISubtractionOperators<T, T, T> { throw null; }
+        public static System.Numerics.Tensors.Tensor<T> Subtract<T>(System.Numerics.Tensors.Tensor<T> left, System.Numerics.Tensors.Tensor<T> right) where T : System.IEquatable<T>, System.Numerics.IEqualityOperators<T, T, bool>, System.Numerics.ISubtractionOperators<T, T, T> { throw null; }
         public static System.Numerics.Tensors.Tensor<T> Subtract<T>(System.Numerics.Tensors.Tensor<T> input, T val) where T : System.IEquatable<T>, System.Numerics.IEqualityOperators<T, T, bool>, System.Numerics.ISubtractionOperators<T, T, T> { throw null; }
-        public static System.Numerics.Tensors.SpanND<T> Subtract<T>(T val, System.Numerics.Tensors.SpanND<T> input) where T : System.IEquatable<T>, System.Numerics.IEqualityOperators<T, T, bool>, System.Numerics.ISubtractionOperators<T, T, T> { throw null; }
+        public static System.Numerics.Tensors.TensorSpan<T> Subtract<T>(T val, System.Numerics.Tensors.TensorSpan<T> input) where T : System.IEquatable<T>, System.Numerics.IEqualityOperators<T, T, bool>, System.Numerics.ISubtractionOperators<T, T, T> { throw null; }
         public static System.Numerics.Tensors.Tensor<T> Subtract<T>(T val, System.Numerics.Tensors.Tensor<T> input) where T : System.IEquatable<T>, System.Numerics.IEqualityOperators<T, T, bool>, System.Numerics.ISubtractionOperators<T, T, T> { throw null; }
-        public static T Sum<T>(System.Numerics.Tensors.SpanND<T> input) where T : System.IEquatable<T>, System.Numerics.IEqualityOperators<T, T, bool>, System.Numerics.IAdditionOperators<T, T, T>, System.Numerics.IAdditiveIdentity<T, T> { throw null; }
+        public static T Sum<T>(System.Numerics.Tensors.TensorSpan<T> input) where T : System.IEquatable<T>, System.Numerics.IEqualityOperators<T, T, bool>, System.Numerics.IAdditionOperators<T, T, T>, System.Numerics.IAdditiveIdentity<T, T> { throw null; }
         public static T Sum<T>(System.Numerics.Tensors.Tensor<T> input) where T : System.IEquatable<T>, System.Numerics.IEqualityOperators<T, T, bool>, System.Numerics.IAdditionOperators<T, T, T>, System.Numerics.IAdditiveIdentity<T, T> { throw null; }
-        public static string ToString<T>(this System.Numerics.Tensors.ReadOnlySpanND<T> span, int maxRows, int maxColumns) { throw null; }
-        public static string ToString<T>(this System.Numerics.Tensors.SpanND<T> span, int maxRows, int maxColumns) { throw null; }
+        public static string ToString<T>(this System.Numerics.Tensors.ReadOnlyTensorSpan<T> span, int maxRows, int maxColumns) { throw null; }
+        public static string ToString<T>(this System.Numerics.Tensors.TensorSpan<T> span, int maxRows, int maxColumns) { throw null; }
         public static System.Numerics.Tensors.Tensor<T> Transpose<T>(System.Numerics.Tensors.Tensor<T> input) where T : System.IEquatable<T>, System.Numerics.IEqualityOperators<T, T, bool> { throw null; }
         public static System.Numerics.Tensors.Tensor<T> Unsqueeze<T>(System.Numerics.Tensors.Tensor<T> input, int axis) where T : System.IEquatable<T>, System.Numerics.IEqualityOperators<T, T, bool> { throw null; }
     }
@@ -439,7 +386,61 @@ namespace System.Numerics.Tensors
         public static void Xor<T>(System.ReadOnlySpan<T> x, System.ReadOnlySpan<T> y, System.Span<T> destination) where T : System.Numerics.IBitwiseOperators<T, T, T> { }
         public static void Xor<T>(System.ReadOnlySpan<T> x, T y, System.Span<T> destination) where T : System.Numerics.IBitwiseOperators<T, T, T> { }
     }
-    public sealed partial class Tensor<T> : System.Collections.Generic.IEnumerable<T>, System.Collections.IEnumerable, System.IEquatable<System.Numerics.Tensors.Tensor<T>>, System.Numerics.IEqualityOperators<System.Numerics.Tensors.Tensor<T>, System.Numerics.Tensors.Tensor<T>, bool>, System.Numerics.Tensors.ITensor<System.Numerics.Tensors.Tensor<T>, T> where T : System.IEquatable<T>
+    public static partial class TensorSpanExtensions
+    {
+        public static System.Numerics.Tensors.TensorSpan<T> AsTensorSpan<T>(this T[]? array, scoped System.ReadOnlySpan<nint> shape) { throw null; }
+        public static bool SequenceEqual<T>(this System.Numerics.Tensors.TensorSpan<T> span, System.Numerics.Tensors.TensorSpan<T> other) where T : System.IEquatable<T>? { throw null; }
+    }
+    public readonly ref partial struct TensorSpan<T>
+    {
+        private readonly object _dummy;
+        private readonly int _dummyPrimitive;
+        [System.CLSCompliantAttribute(false)]
+        public unsafe TensorSpan(void* pointer, System.ReadOnlySpan<nint> lengths, bool isPinned, System.ReadOnlySpan<nint> strides = default(System.ReadOnlySpan<nint>)) { throw null; }
+        public TensorSpan(T[]? array, nint start, System.ReadOnlySpan<nint> lengths) { throw null; }
+        public TensorSpan(T[]? array, System.ReadOnlySpan<nint> lengths) { throw null; }
+        public TensorSpan(T[]? array, System.ReadOnlySpan<nint> lengths, bool isPinned) { throw null; }
+        public static System.Numerics.Tensors.TensorSpan<T> Empty { get { throw null; } }
+        public bool IsEmpty { get { throw null; } }
+        public bool IsPinned { get { throw null; } }
+        public System.Numerics.Tensors.TensorSpan<T> this[scoped System.ReadOnlySpan<System.Buffers.NRange> indices] { get { throw null; } set { } }
+        public ref T this[scoped System.ReadOnlySpan<nint> indices] { get { throw null; } }
+        public nint LinearLength { get { throw null; } }
+        public int Rank { get { throw null; } }
+        public System.ReadOnlySpan<nint> Shape { get { throw null; } }
+        public System.ReadOnlySpan<nint> Strides { get { throw null; } }
+        public void Clear() { }
+        public void CopyTo(System.Numerics.Tensors.TensorSpan<T> destination) { }
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+        [System.ObsoleteAttribute("Equals() on TensorSpan will always throw an exception. Use the equality operator instead.")]
+#pragma warning disable CS0809 // Obsolete member overrides non-obsolete member
+        public override bool Equals(object? obj) { throw null; }
+#pragma warning restore CS0809 // Obsolete member overrides non-obsolete member
+        public void Fill(T value) { }
+        public System.Numerics.Tensors.TensorSpan<T>.Enumerator GetEnumerator() { throw null; }
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+        [System.ObsoleteAttribute("GetHashCode() on TensorSpan will always throw an exception.")]
+#pragma warning disable CS0809 // Obsolete member overrides non-obsolete member
+        public override int GetHashCode() { throw null; }
+#pragma warning restore CS0809 // Obsolete member overrides non-obsolete member
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+        public ref T GetPinnableReference() { throw null; }
+        public static bool operator ==(System.Numerics.Tensors.TensorSpan<T> left, System.Numerics.Tensors.TensorSpan<T> right) { throw null; }
+        public static implicit operator System.Numerics.Tensors.ReadOnlyTensorSpan<T> (System.Numerics.Tensors.TensorSpan<T> span) { throw null; }
+        public static bool operator !=(System.Numerics.Tensors.TensorSpan<T> left, System.Numerics.Tensors.TensorSpan<T> right) { throw null; }
+        public System.Numerics.Tensors.TensorSpan<T> Slice(scoped System.ReadOnlySpan<System.Buffers.NRange> ranges) { throw null; }
+        public T[] ToArray() { throw null; }
+        public override string ToString() { throw null; }
+        public bool TryCopyTo(System.Numerics.Tensors.TensorSpan<T> destination) { throw null; }
+        public ref partial struct Enumerator
+        {
+            private object _dummy;
+            private int _dummyPrimitive;
+            public ref T Current { get { throw null; } }
+            public bool MoveNext() { throw null; }
+        }
+    }
+    public sealed partial class Tensor<T> : System.Collections.Generic.IEnumerable<T>, System.Collections.IEnumerable, System.IEquatable<System.Numerics.Tensors.Tensor<T>>, System.Numerics.IEqualityOperators<System.Numerics.Tensors.Tensor<T>, System.Numerics.Tensors.Tensor<T>, bool>, System.Numerics.Tensors.ITensor<System.Numerics.Tensors.Tensor<T>, T>
     {
         internal Tensor() { }
         public static System.Numerics.Tensors.Tensor<T> Empty { get { throw null; } }
@@ -447,16 +448,16 @@ namespace System.Numerics.Tensors
         public bool IsPinned { get { throw null; } }
         public System.Numerics.Tensors.Tensor<T> this[System.Numerics.Tensors.Tensor<bool> filter] { get { throw null; } }
         public ref T this[scoped System.ReadOnlySpan<nint> indices] { get { throw null; } }
-        public nint Length { get { throw null; } }
+        public nint LinearLength { get { throw null; } }
         public int Rank { get { throw null; } }
         public System.ReadOnlySpan<nint> Shape { get { throw null; } }
         public System.ReadOnlySpan<nint> Strides { get { throw null; } }
-        public System.Numerics.Tensors.ReadOnlySpanND<T> AsReadOnlySpanND() { throw null; }
-        public System.Numerics.Tensors.ReadOnlySpanND<T> AsReadOnlySpanND(scoped System.ReadOnlySpan<System.NativeRange> ranges) { throw null; }
-        public System.Numerics.Tensors.SpanND<T> AsSpanND() { throw null; }
-        public System.Numerics.Tensors.SpanND<T> AsSpanND(scoped System.ReadOnlySpan<System.NativeRange> ranges) { throw null; }
+        public System.Numerics.Tensors.ReadOnlyTensorSpan<T> AsReadOnlyTensorSpan() { throw null; }
+        public System.Numerics.Tensors.ReadOnlyTensorSpan<T> AsReadOnlyTensorSpan(scoped System.ReadOnlySpan<System.Buffers.NRange> ranges) { throw null; }
+        public System.Numerics.Tensors.TensorSpan<T> AsTensorSpan() { throw null; }
+        public System.Numerics.Tensors.TensorSpan<T> AsTensorSpan(scoped System.ReadOnlySpan<System.Buffers.NRange> ranges) { throw null; }
         public void Clear() { }
-        public void CopyTo(System.Numerics.Tensors.SpanND<T> destination) { }
+        public void CopyTo(System.Numerics.Tensors.TensorSpan<T> destination) { }
         public bool Equals(System.Numerics.Tensors.Tensor<T>? other) { throw null; }
         public override bool Equals(object? obj) { throw null; }
         public void Fill(T value) { }
@@ -466,13 +467,13 @@ namespace System.Numerics.Tensors
         public ref T GetPinnableReference() { throw null; }
         public static bool operator ==(System.Numerics.Tensors.Tensor<T>? left, System.Numerics.Tensors.Tensor<T>? right) { throw null; }
         public static bool operator ==(System.Numerics.Tensors.Tensor<T> left, T right) { throw null; }
-        public static implicit operator System.Numerics.Tensors.ReadOnlySpanND<T> (System.Numerics.Tensors.Tensor<T> value) { throw null; }
-        public static implicit operator System.Numerics.Tensors.SpanND<T> (System.Numerics.Tensors.Tensor<T> value) { throw null; }
+        public static implicit operator System.Numerics.Tensors.ReadOnlyTensorSpan<T> (System.Numerics.Tensors.Tensor<T> value) { throw null; }
+        public static implicit operator System.Numerics.Tensors.TensorSpan<T> (System.Numerics.Tensors.Tensor<T> value) { throw null; }
         public static bool operator !=(System.Numerics.Tensors.Tensor<T>? left, System.Numerics.Tensors.Tensor<T>? right) { throw null; }
         public static bool operator !=(System.Numerics.Tensors.Tensor<T> left, T right) { throw null; }
-        public System.Numerics.Tensors.Tensor<T> Slice(scoped System.ReadOnlySpan<System.NativeRange> ranges) { throw null; }
+        public System.Numerics.Tensors.Tensor<T> Slice(scoped System.ReadOnlySpan<System.Buffers.NRange> ranges) { throw null; }
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }
         public string ToString(int maxRows, int maxColumns) { throw null; }
-        public bool TryCopyTo(System.Numerics.Tensors.SpanND<T> destination) { throw null; }
+        public bool TryCopyTo(System.Numerics.Tensors.TensorSpan<T> destination) { throw null; }
     }
 }

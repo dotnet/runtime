@@ -5,7 +5,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 
-namespace System
+namespace System.Buffers
 {
     /// <summary>Represent a range that has start and end indices.</summary>
     /// <remarks>
@@ -23,13 +23,23 @@ namespace System
         /// <summary>Represent the exclusive end NIndex of the NRange.</summary>
         public NIndex End { get; }
 
-        /// <summary>Construct a NRange object using the start and end NativeIndexes.</summary>
+        /// <summary>Construct an NRange object using the start and end NIndexes.</summary>
         /// <param name="start">Represent the inclusive start NIndex of the NRange.</param>
         /// <param name="end">Represent the exclusive end NIndex of the NRange.</param>
         public NRange(NIndex start, NIndex end)
         {
             Start = start;
             End = end;
+        }
+
+        /// <summary>
+        /// Construct a <see cref="NRange"/> object using a <see cref="Range"/>.
+        /// </summary>
+        /// <param name="range">The <see cref="Range"/> to use.</param>
+        public NRange(Range range)
+        {
+            Start = range.Start;
+            End = range.End;
         }
 
         /// <summary>Indicates whether the current NRange object is equal to another object of the same type.</summary>
@@ -78,13 +88,13 @@ namespace System
             return new string(span.Slice(0, pos));
         }
 
-        /// <summary>Create a NRange object starting from start NIndex to the end of the collection.</summary>
+        /// <summary>Create an NRange object starting from start NIndex to the end of the collection.</summary>
         public static NRange StartAt(NIndex start) => new NRange(start, NIndex.End);
 
-        /// <summary>Create a NRange object starting from first element in the collection to the end NIndex.</summary>
+        /// <summary>Create an NRange object starting from first element in the collection to the end NIndex.</summary>
         public static NRange EndAt(NIndex end) => new NRange(NIndex.Start, end);
 
-        /// <summary>Create a NRange object starting from first element to the end.</summary>
+        /// <summary>Create an NRange object starting from first element to the end.</summary>
         public static NRange All => new NRange(NIndex.Start, NIndex.End);
 
         /// <summary>Calculate the start offset and length of NRange object using a collection length.</summary>
@@ -108,14 +118,14 @@ namespace System
             return (start, end - start);
         }
 
-        private static void ThrowArgumentOutOfRangeException()
-        {
-            throw new ArgumentOutOfRangeException("length");
-        }
+        private static void ThrowArgumentOutOfRangeException() => throw new ArgumentOutOfRangeException("length");
 
-        public static implicit operator NRange(Range range)
-        {
-            return new NRange(range.Start, range.End);
-        }
+        public static implicit operator NRange(Range range) => new NRange(range.Start, range.End);
+
+        public static explicit operator Range(NRange value) => new Range((Index)value.Start, (Index)value.End);
+        public static explicit operator checked Range(NRange value) => new Range(checked((Index)value.Start), checked((Index)value.End));
+
+        public Range ToRange() => new Range(checked((Index)Start), checked((Index)End));
+        public Range ToRangeUnchecked() => new Range((Index)Start, (Index)End);
     }
 }
