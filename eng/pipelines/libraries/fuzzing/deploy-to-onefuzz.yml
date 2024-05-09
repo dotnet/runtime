@@ -75,9 +75,9 @@ extends:
           inputs:
             onefuzzOSes: 'Windows'
           env:
-            onefuzzDropDirectory: $(fuzzerProject)/deployment/JsonSerializerFuzzer
+            onefuzzDropDirectory: $(fuzzerProject)/deployment/JsonDocumentFuzzer
             SYSTEM_ACCESSTOKEN: $(System.AccessToken)
-          displayName: Send JsonSerializerFuzzer to OneFuzz
+          displayName: Send JsonDocumentFuzzer to OneFuzz
 
         - task: onefuzz-task@0
           inputs:

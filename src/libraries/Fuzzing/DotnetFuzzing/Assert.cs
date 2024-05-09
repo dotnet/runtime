@@ -8,7 +8,13 @@ namespace DotnetFuzzing;
 
 internal static class Assert
 {
-    // Feel free to add any other helpers you need.
+    // Feel free to add any other helpers as needed.
+
+    public static void True(bool actual) =>
+        Equal(true, actual);
+
+    public static void False(bool actual) =>
+        Equal(false, actual);
 
     public static void Equal<T>(T expected, T actual)
     {
