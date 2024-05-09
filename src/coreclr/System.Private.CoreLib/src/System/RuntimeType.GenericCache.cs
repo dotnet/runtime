@@ -84,6 +84,23 @@ namespace System
 
             public static abstract TCache Create(RuntimeType type);
 
+            private static CompositeCacheEntry GetOrUpgradeToCompositeCache(RuntimeType type)
+            {
+                // We may have multiple threads racing to add a new entry to the cache, causing an upgrade to a composite cache.
+                // If we lose the race, it's okay (we'll re-create the missing entry again on another thread)
+                // and trying to make the code resilient to this would be more expensive.
+                // Just make sure we read the cache field once and set it if we need to update it.
+                var maybeCompositeCache = type.GenericCache;
+                if (maybeCompositeCache is not CompositeCacheEntry composite)
+                {
+                    // Convert the current cache into a composite cache.
+                    composite = CompositeCacheEntry.Create((IGenericCacheEntry)maybeCompositeCache);
+                    type.GenericCache = composite;
+                }
+
+                return composite;
+            }
+
             public static TCache GetOrCreate(RuntimeType type)
             {
                 if (type.GenericCache is null)
@@ -97,12 +114,7 @@ namespace System
                     return existing;
                 }
 
-                if (type.GenericCache is not CompositeCacheEntry composite)
-                {
-                    // Convert the current cache into a composite cache.
-                    composite = CompositeCacheEntry.Create((IGenericCacheEntry)type.GenericCache);
-                    type.GenericCache = composite;
-                }
+                CompositeCacheEntry composite = GetOrUpgradeToCompositeCache(type);
 
                 if (composite.GetNestedCache(TCache.Kind) is TCache cache)
                 {
@@ -139,18 +151,13 @@ namespace System
                     type.GenericCache = cache;
                     return;
                 }
-                else if (type.GenericCache is TCache)
-                {
-                    type.GenericCache = cache;
-                    return;
-                }
 
-                if (type.GenericCache is not CompositeCacheEntry composite)
-                {
-                    // Convert the current cache into a composite cache.
-                    composite = CompositeCacheEntry.Create((IGenericCacheEntry)type.GenericCache);
-                    type.GenericCache = composite;
-                }
+                // Always upgrade to a composite cache here.
+                // We would like to be able to avoid this when the GenericCache is the same type as the current cache,
+                // but we can't easily do a lock-free CompareExchange with the current design,
+                // and we can't assume that we won't have one thread adding another item to the cache
+                // while another is trying to overwrite the (currently) only entry in the cache.
+                CompositeCacheEntry composite = GetOrUpgradeToCompositeCache(type);
 
                 composite.OverwriteNestedCache(cache);
             }
