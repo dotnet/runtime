@@ -23,11 +23,11 @@ namespace ILCompiler
             _factory = factory;
 
             var symbolRemapping = new Dictionary<ISymbolNode, ISymbolNode>();
-            var methodHash = new HashSet<MethodInternKey>();
+            var methodHash = new HashSet<MethodInternKey>(new MethodInternComparer(factory));
 
             foreach (IMethodBodyNode body in factory.MetadataManager.GetCompiledMethodBodies())
             {
-                var key = new MethodInternKey(body, this);
+                var key = new MethodInternKey(body, factory);
                 if (methodHash.TryGetValue(key, out MethodInternKey found))
                 {
                     symbolRemapping.Add(body, found.Method);
@@ -50,17 +50,14 @@ namespace ILCompiler
             return _symbolRemapping.TryGetValue(target, out ISymbolNode result) ? result : original;
         }
 
-        private sealed class MethodInternKey : IEquatable<MethodInternKey>
+        private sealed class MethodInternKey
         {
-            private readonly ObjectDataInterner _parent;
-            private readonly IMethodBodyNode _node;
-            private readonly int _hashCode;
+            public IMethodBodyNode Method { get; }
+            public int HashCode { get; }
 
-            public IMethodBodyNode Method => _node;
-
-            public MethodInternKey(IMethodBodyNode node, ObjectDataInterner parent)
+            public MethodInternKey(IMethodBodyNode node, NodeFactory factory)
             {
-                ObjectNode.ObjectData data = ((ObjectNode)node).GetData(parent._factory, relocsOnly: false);
+                ObjectNode.ObjectData data = ((ObjectNode)node).GetData(factory, relocsOnly: false);
 
                 var hashCode = default(HashCode);
                 hashCode.AddBytes(data.Data);
@@ -72,19 +69,24 @@ namespace ILCompiler
                 foreach (FrameInfo fi in nodeWithCodeInfo.FrameInfos)
                     hashCode.Add(fi.GetHashCode());
 
-                ObjectNode.ObjectData ehData = nodeWithCodeInfo.EHInfo?.GetData(parent._factory, relocsOnly: false);
+                ObjectNode.ObjectData ehData = nodeWithCodeInfo.EHInfo?.GetData(factory, relocsOnly: false);
 
                 if (ehData is not null)
                     hashCode.AddBytes(ehData.Data);
 
-                _parent = parent;
-                _hashCode = hashCode.ToHashCode();
-                _node = node;
+                HashCode = hashCode.ToHashCode();
+                Method = node;
             }
+        }
 
-            public override bool Equals(object obj) => obj is MethodInternKey other && Equals(other);
+        private sealed class MethodInternComparer : IEqualityComparer<MethodInternKey>
+        {
+            private readonly NodeFactory _factory;
 
-            public override int GetHashCode() => _hashCode;
+            public MethodInternComparer(NodeFactory factory)
+                => (_factory) = (factory);
+
+            public int GetHashCode(MethodInternKey key) => key.HashCode;
 
             private static bool AreSame(ReadOnlySpan<byte> o1, ReadOnlySpan<byte> o2) => o1.SequenceEqual(o2);
 
@@ -111,19 +113,19 @@ namespace ILCompiler
                 return false;
             }
 
-            public bool Equals(MethodInternKey other)
+            public bool Equals(MethodInternKey a, MethodInternKey b)
             {
-                if (other._hashCode != _hashCode)
+                if (a.HashCode != b.HashCode)
                     return false;
 
-                ObjectNode.ObjectData o1data = ((ObjectNode)_node).GetData(_parent._factory, relocsOnly: false);
-                ObjectNode.ObjectData o2data = ((ObjectNode)other._node).GetData(_parent._factory, relocsOnly: false);
+                ObjectNode.ObjectData o1data = ((ObjectNode)a.Method).GetData(_factory, relocsOnly: false);
+                ObjectNode.ObjectData o2data = ((ObjectNode)b.Method).GetData(_factory, relocsOnly: false);
 
                 if (!AreSame(o1data, o2data))
                     return false;
 
-                var o1codeinfo = (INodeWithCodeInfo)_node;
-                var o2codeinfo = (INodeWithCodeInfo)other._node;
+                var o1codeinfo = (INodeWithCodeInfo)a.Method;
+                var o2codeinfo = (INodeWithCodeInfo)b.Method;
                 if (!AreSame(o1codeinfo.GCInfo, o2codeinfo.GCInfo))
                     return false;
 
@@ -147,7 +149,7 @@ namespace ILCompiler
                 if (o1eh == null || o2eh == null)
                     return false;
 
-                return AreSame(o1eh.GetData(_parent._factory, relocsOnly: false), o2eh.GetData(_parent._factory, relocsOnly: false));
+                return AreSame(o1eh.GetData(_factory, relocsOnly: false), o2eh.GetData(_factory, relocsOnly: false));
             }
         }
     }
