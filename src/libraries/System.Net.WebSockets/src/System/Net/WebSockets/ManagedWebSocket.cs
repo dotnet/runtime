@@ -1153,17 +1153,13 @@ namespace System.Net.WebSockets
             if (header.PayloadLength == 126)
             {
                 Debug.Assert(_receiveBufferCount >= 2, "Expected to have two bytes for the payload length.");
-                header.PayloadLength = (receiveBufferSpan[_receiveBufferOffset] << 8) | receiveBufferSpan[_receiveBufferOffset + 1];
+                header.PayloadLength = BinaryPrimitives.ReadInt16BigEndian(receiveBufferSpan.Slice(_receiveBufferOffset));
                 ConsumeFromBuffer(2);
             }
             else if (header.PayloadLength == 127)
             {
                 Debug.Assert(_receiveBufferCount >= 8, "Expected to have eight bytes for the payload length.");
-                header.PayloadLength = 0;
-                for (int i = 0; i < 8; i++)
-                {
-                    header.PayloadLength = (header.PayloadLength << 8) | receiveBufferSpan[_receiveBufferOffset + i];
-                }
+                header.PayloadLength = BinaryPrimitives.ReadInt64BigEndian(receiveBufferSpan.Slice(_receiveBufferOffset));
                 ConsumeFromBuffer(8);
             }
 
@@ -1358,9 +1354,7 @@ namespace System.Net.WebSockets
                     Debug.Assert(count - 2 == encodedLength, $"{nameof(s_textEncoding.GetByteCount)} and {nameof(s_textEncoding.GetBytes)} encoded count didn't match");
                 }
 
-                ushort closeStatusValue = (ushort)closeStatus;
-                buffer[0] = (byte)(closeStatusValue >> 8);
-                buffer[1] = (byte)(closeStatusValue & 0xFF);
+                BinaryPrimitives.WriteUInt16BigEndian(buffer, (ushort)closeStatus);
 
                 await SendFrameAsync(MessageOpcode.Close, endOfMessage: true, disableCompression: true, new Memory<byte>(buffer, 0, count), cancellationToken).ConfigureAwait(false);
             }
