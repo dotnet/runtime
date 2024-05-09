@@ -121,20 +121,21 @@ namespace Internal.TypeSystem
 
         public AssemblyReferenceHandle GetAssemblyRef(AssemblyNameInfo name)
         {
+            // References use a public key token instead of full public key.
+            if ((name.Flags & AssemblyNameFlags.PublicKey) != 0)
+            {
+                // Use AssemblyName to convert PublicKey to PublicKeyToken to avoid calling crypto APIs directly
+                AssemblyName an = new();
+                an.SetPublicKey(ImmutableCollectionsMarshal.AsArray<byte>(name.PublicKeyOrToken));
+                name = new AssemblyNameInfo(name.Name, name.Version, name.CultureName, name.Flags & ~AssemblyNameFlags.PublicKey, ImmutableCollectionsMarshal.AsImmutableArray<byte>(an.GetPublicKeyToken()));
+            }
+
             if (!_assemblyRefNameHandles.TryGetValue(name.FullName, out var handle))
             {
                 StringHandle assemblyName = _metadataBuilder.GetOrAddString(name.Name);
                 StringHandle cultureName = (name.CultureName != null) ? _metadataBuilder.GetOrAddString(name.CultureName) : default(StringHandle);
 
-                ImmutableArray<byte> publicKeyOrToken = name.PublicKeyOrToken;
-                if ((name.Flags & AssemblyNameFlags.PublicKey) != 0)
-                {
-                    // Use AssemblyName to convert PublicKey to PublicKeyToken to avoid calling crypto APIs directly
-                    AssemblyName an = new();
-                    an.SetPublicKey(ImmutableCollectionsMarshal.AsArray<byte>(publicKeyOrToken));
-                    publicKeyOrToken = ImmutableCollectionsMarshal.AsImmutableArray<byte>(an.GetPublicKeyToken());
-                }
-                BlobHandle publicTokenBlob = publicKeyOrToken.IsDefault ? default : _metadataBuilder.GetOrAddBlob(publicKeyOrToken);
+                BlobHandle publicTokenBlob = name.PublicKeyOrToken.IsDefault ? default : _metadataBuilder.GetOrAddBlob(name.PublicKeyOrToken);
 
                 AssemblyFlags flags = (AssemblyFlags)name.Flags & (AssemblyFlags.Retargetable | AssemblyFlags.ContentTypeMask);
 
