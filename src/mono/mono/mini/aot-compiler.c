@@ -4833,7 +4833,7 @@ mono_aot_can_enter_interp (MonoMethod *method)
 }
 
 static MonoMethod*
-instantiate_wrapper_like_decl (MonoMethod *extern_method_inst, MonoUnsafeAccessorKind accessor_kind, const char *member_name, MonoError *error)
+inflate_unsafe_accessor_like_decl (MonoMethod *extern_method_inst, MonoUnsafeAccessorKind accessor_kind, const char *member_name, MonoError *error)
 {
 	g_assert (extern_method_inst->is_inflated);
 	MonoMethodInflated *infl = (MonoMethodInflated*)extern_method_inst;
@@ -4868,7 +4868,7 @@ replace_generated_method (MonoAotCompile *acfg, MonoMethod *method, MonoError *e
 	if (mono_method_get_unsafe_accessor_attr_data (method, &accessor_kind, &member_name, error)) {
 		MonoMethod *wrapper = NULL;
 		if (method->is_inflated) {
-			wrapper = instantiate_wrapper_like_decl (method, (MonoUnsafeAccessorKind)accessor_kind, member_name, error);
+			wrapper = inflate_unsafe_accessor_like_decl (method, (MonoUnsafeAccessorKind)accessor_kind, member_name, error);
 		} else {
 			wrapper = mono_marshal_get_unsafe_accessor_wrapper (method, (MonoUnsafeAccessorKind)accessor_kind, member_name);
 		}

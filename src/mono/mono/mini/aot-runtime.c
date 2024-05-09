@@ -942,7 +942,7 @@ typedef struct {
 } MethodRef;
 
 static MonoMethod*
-instantiate_unsafe_accessor_wrapper (MonoMethod *extern_decl, MonoGenericContext *ctx, MonoUnsafeAccessorKind accessor_kind, const char *member_name, MonoError *error)
+inflate_unsafe_accessor_wrapper (MonoMethod *extern_decl, MonoGenericContext *ctx, MonoUnsafeAccessorKind accessor_kind, const char *member_name, MonoError *error)
 {
 	MonoMethod *generic_wrapper = mono_marshal_get_unsafe_accessor_wrapper (extern_decl, accessor_kind, member_name);
 	MonoMethod *inflated_wrapper = mono_class_inflate_generic_method_checked (generic_wrapper, ctx, error);
@@ -1096,7 +1096,7 @@ decode_method_ref_with_target (MonoAotModule *module, MethodRef *ref, MonoMethod
 					MonoGenericContext ctx = {0,};
 					decode_generic_context (module, &ctx, p, &p, error);
 					mono_error_assert_ok (error);
-					ref->method = instantiate_unsafe_accessor_wrapper (m, &ctx, kind, member_name, error);
+					ref->method = inflate_unsafe_accessor_wrapper (m, &ctx, kind, member_name, error);
 					if (!is_ok (error))
 						return FALSE;
 				} else {
@@ -4610,7 +4610,7 @@ inst_is_private (MonoGenericInst *inst)
 }
 
 static MonoMethod*
-instantiate_wrapper_like_decl (MonoMethod *extern_method_inst, MonoUnsafeAccessorKind accessor_kind, const char *member_name, MonoError *error)
+inflate_unsafe_accessor_like_decl (MonoMethod *extern_method_inst, MonoUnsafeAccessorKind accessor_kind, const char *member_name, MonoError *error)
 {
 	g_assert (extern_method_inst->is_inflated);
 	MonoMethodInflated *infl = (MonoMethodInflated*)extern_method_inst;
@@ -4635,7 +4635,7 @@ replace_generated_method (MonoMethod *method, MonoError *error)
 	if (mono_method_get_unsafe_accessor_attr_data (method, &accessor_kind, &member_name, error)) {
 		MonoMethod *wrapper = NULL;
 		if (method->is_inflated) {
-			wrapper = instantiate_wrapper_like_decl (method, (MonoUnsafeAccessorKind)accessor_kind, member_name, error);
+			wrapper = inflate_unsafe_accessor_like_decl (method, (MonoUnsafeAccessorKind)accessor_kind, member_name, error);
 		} else {
 			wrapper = mono_marshal_get_unsafe_accessor_wrapper (method, (MonoUnsafeAccessorKind)accessor_kind, member_name);
 		}
