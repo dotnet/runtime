@@ -93,23 +93,28 @@ namespace System.Text.Json.Serialization.Metadata
                 Debug.Assert(CanUseSerializeHandler);
                 Debug.Assert(Converter is JsonMetadataServicesConverter<T>);
 
-                // Bufferwriter must be disposed after Utf8JsonWriter, use an unnamed variable to use cleaner using syntax.
-                using TSerializationContext _ = serializationContext;
                 Utf8JsonWriter writer = Utf8JsonWriterCache.RentWriter(Options, serializationContext.BufferWriter);
 
                 try
                 {
-                    SerializeHandler(writer, rootValue!);
-                    writer.Flush();
+                    try
+                    {
+                        SerializeHandler(writer, rootValue!);
+                        writer.Flush();
+                    }
+                    finally
+                    {
+                        // Record the serialization size in both successful and failed operations,
+                        // since we want to immediately opt out of the fast path if it exceeds the threshold.
+                        OnRootLevelAsyncSerializationCompleted(writer.BytesCommitted + writer.BytesPending);
+
+                        Utf8JsonWriterCache.ReturnWriter(writer);
+                    }
+
                     await serializationContext.FlushAsync(cancellationToken).ConfigureAwait(false);
                 }
                 finally
                 {
-                    // Record the serialization size in both successful and failed operations,
-                    // since we want to immediately opt out of the fast path if it exceeds the threshold.
-                    OnRootLevelAsyncSerializationCompleted(writer.BytesCommitted + writer.BytesPending);
-
-                    Utf8JsonWriterCache.ReturnWriter(writer);
                     serializationContext.Dispose();
                 }
             }
