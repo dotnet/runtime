@@ -91,10 +91,12 @@ namespace System
                 // and trying to make the code resilient to this would be more expensive.
                 // Just make sure we read the cache field once and set it if we need to update it.
                 var maybeCompositeCache = type.GenericCache;
+
+                Debug.Assert(maybeCompositeCache is not null);
                 if (maybeCompositeCache is not CompositeCacheEntry composite)
                 {
                     // Convert the current cache into a composite cache.
-                    composite = CompositeCacheEntry.Create((IGenericCacheEntry)maybeCompositeCache);
+                    composite = CompositeCacheEntry.Create((IGenericCacheEntry)maybeCompositeCache!);
                     type.GenericCache = composite;
                 }
 
