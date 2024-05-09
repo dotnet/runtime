@@ -280,7 +280,7 @@ namespace System.Net.WebSockets
             }
             catch (Exception exc)
             {
-                return new ValueTask(Task.FromException(exc));
+                return ValueTask.FromException(exc);
             }
 
             bool endOfMessage = messageFlags.HasFlag(WebSocketMessageFlags.EndOfMessage);
@@ -458,7 +458,7 @@ namespace System.Net.WebSockets
             }
             catch (Exception exc)
             {
-                return new ValueTask(Task.FromException(
+                return ValueTask.FromException(
                     exc is OperationCanceledException ? exc :
                     _state == WebSocketState.Aborted ? CreateOperationCanceledException(exc) :
                     new WebSocketException(WebSocketError.ConnectionClosedPrematurely, exc)));
@@ -485,7 +485,7 @@ namespace System.Net.WebSockets
                     await _stream.FlushAsync().ConfigureAwait(false);
                 }
             }
-            catch (Exception exc) when (!(exc is OperationCanceledException))
+            catch (Exception exc) when (exc is not OperationCanceledException)
             {
                 throw _state == WebSocketState.Aborted ?
                     CreateOperationCanceledException(exc) :
@@ -510,7 +510,7 @@ namespace System.Net.WebSockets
                     await _stream.FlushAsync(cancellationToken).ConfigureAwait(false);
                 }
             }
-            catch (Exception exc) when (!(exc is OperationCanceledException))
+            catch (Exception exc) when (exc is not OperationCanceledException)
             {
                 throw _state == WebSocketState.Aborted ?
                     CreateOperationCanceledException(exc, cancellationToken) :
