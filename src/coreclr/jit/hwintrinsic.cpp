@@ -1273,6 +1273,8 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
             return useFallback ? impNonConstFallback(intrinsic, retType, simdBaseJitType) : nullptr;
         }
     }
+#else
+    assert(immOp2 == nullptr);
 #endif
 
     // Validate the first immediate
