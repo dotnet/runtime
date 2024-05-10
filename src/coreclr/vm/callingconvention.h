@@ -1777,59 +1777,37 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
 
     return argOfs;
 #elif defined(TARGET_RISCV64)
-
+    assert(!this->IsVarArg()); // Varargs on RISC-V not supported yet
     int cFPRegs = 0;
     int flags = 0;
 
     switch (argType)
     {
-
     case ELEMENT_TYPE_R4:
-        // 32-bit floating point argument.
-        cFPRegs = 1;
-        break;
-
     case ELEMENT_TYPE_R8:
-        // 64-bit floating point argument.
+        // Floating point argument
         cFPRegs = 1;
         break;
 
     case ELEMENT_TYPE_VALUETYPE:
-    {
-        // Handle struct which containing floats or doubles that can be passed
-        // in FP registers if possible.
-
-        // Composite greater than 16bytes should be passed by reference
-        if (argSize > ENREGISTERED_PARAMTYPE_MAXSIZE)
+        flags = MethodTable::GetRiscV64PassStructInRegisterFlags(thValueType);
+        if (flags != STRUCT_NO_FLOAT_FIELD)
         {
-            argSize = sizeof(TADDR);
+            // Struct may be passed according to hardware floating-point calling convention
+            cFPRegs = (flags & STRUCT_FLOAT_FIELD_ONLY_TWO) ? 2 : 1;
         }
-        else
-        {
-            flags = MethodTable::GetRiscV64PassStructInRegisterFlags(thValueType);
-            if (flags & STRUCT_HAS_FLOAT_FIELDS_MASK)
-            {
-                cFPRegs = (flags & STRUCT_FLOAT_FIELD_ONLY_TWO) ? 2 : 1;
-            }
-        }
-
         break;
-    }
 
     default:
         break;
     }
 
-    const bool isValueType = (argType == ELEMENT_TYPE_VALUETYPE);
-    const bool isFloatHfa = thValueType.IsFloatHfa();
-    const int cbArg = StackElemSize(argSize, isValueType, isFloatHfa);
-
-    if (cFPRegs > 0 && !this->IsVarArg())
+    if (cFPRegs > 0)
     {
+        // Pass according to hardware floating-point calling convention iff the argument can be fully enregistered
         if (flags & (STRUCT_FLOAT_FIELD_FIRST | STRUCT_FLOAT_FIELD_SECOND))
         {
             assert(cFPRegs == 1);
-            assert((STRUCT_FLOAT_FIELD_FIRST == (flags & STRUCT_HAS_FLOAT_FIELDS_MASK)) || (STRUCT_FLOAT_FIELD_SECOND == (flags & STRUCT_HAS_FLOAT_FIELDS_MASK)));
 
             if ((1 + m_idxFPReg <= NUM_ARGUMENT_REGISTERS) && (m_idxGenReg + 1 <= NUM_ARGUMENT_REGISTERS))
             {
@@ -1868,25 +1846,36 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
         }
     }
 
+    // Pass according to integer calling convention
+
+    if (argSize > ENREGISTERED_PARAMTYPE_MAXSIZE)
+        argSize = sizeof(TADDR); // pass by implicit reference
+
+    const bool isValueType = (argType == ELEMENT_TYPE_VALUETYPE);
+    const bool isFloatHfa = thValueType.IsFloatHfa();
+    const int cbArg = StackElemSize(argSize, isValueType, isFloatHfa);
+
+    const int regSlots = ALIGN_UP(cbArg, TARGET_POINTER_SIZE) / TARGET_POINTER_SIZE;
+    assert(regSlots <= 2);
+    if (m_idxGenReg + regSlots <= NUM_ARGUMENT_REGISTERS) // pass in register(s)
     {
-        const int regSlots = ALIGN_UP(cbArg, TARGET_POINTER_SIZE) / TARGET_POINTER_SIZE;
-        if (m_idxGenReg + regSlots <= NUM_ARGUMENT_REGISTERS)
-        {
-            int argOfs = TransitionBlock::GetOffsetOfArgumentRegisters() + m_idxGenReg * 8;
-            m_idxGenReg += regSlots;
-            return argOfs;
-        }
-        else if (m_idxGenReg < NUM_ARGUMENT_REGISTERS)
-        {
-            int argOfs = TransitionBlock::GetOffsetOfArgumentRegisters() + m_idxGenReg * 8;
-            m_ofsStack += (m_idxGenReg + regSlots - NUM_ARGUMENT_REGISTERS)*8;
-            assert(m_ofsStack == 8);
-            m_idxGenReg = NUM_ARGUMENT_REGISTERS;
-            return argOfs;
-        }
+        int argOfs = TransitionBlock::GetOffsetOfArgumentRegisters() + m_idxGenReg * 8;
+        m_idxGenReg += regSlots;
+        return argOfs;
+    }
+    else if (m_idxGenReg < NUM_ARGUMENT_REGISTERS) // pass split; head in register, tail on stack
+    {
+        assert(m_idxGenReg + 1 == NUM_ARGUMENT_REGISTERS); // last argument register should be free
+        assert((m_idxGenReg + regSlots - NUM_ARGUMENT_REGISTERS) == 1); // one stack slot needed
+        assert(m_ofsStack == 0); // tail of a split argument should be the first slot on the stack
+
+        int argOfs = TransitionBlock::GetOffsetOfArgumentRegisters() + m_idxGenReg * 8;
+        m_ofsStack = 8;
+        m_idxGenReg = NUM_ARGUMENT_REGISTERS;
+        return argOfs;
     }
 
-    int argOfs = TransitionBlock::GetOffsetOfArgs() + m_ofsStack;
+    int argOfs = TransitionBlock::GetOffsetOfArgs() + m_ofsStack; // pass entirely on stack
     m_ofsStack += ALIGN_UP(cbArg, TARGET_POINTER_SIZE);
 
     return argOfs;

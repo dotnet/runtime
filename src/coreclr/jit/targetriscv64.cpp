@@ -65,11 +65,7 @@ ABIPassingInformation RiscV64Classifier::Classify(Compiler*    comp,
     if (varTypeIsStruct(type))
     {
         passedSize = structLayout->GetSize();
-        if (passedSize > MAX_PASS_MULTIREG_BYTES)
-        {
-            passedSize = TARGET_POINTER_SIZE; // pass by reference
-        }
-        else if (!structLayout->IsBlockLayout())
+        if (!structLayout->IsBlockLayout())
         {
             flags = (StructFloatFieldInfoFlags)comp->info.compCompHnd->getRISCV64PassStructInRegisterFlags(
                 structLayout->GetClassHandle());
@@ -153,6 +149,9 @@ ABIPassingInformation RiscV64Classifier::Classify(Compiler*    comp,
                 return seg;
             }
         };
+
+        if (passedSize > MAX_PASS_MULTIREG_BYTES)
+            passedSize = TARGET_POINTER_SIZE; // pass by implicit reference
 
         if (passedSize <= TARGET_POINTER_SIZE)
         {
