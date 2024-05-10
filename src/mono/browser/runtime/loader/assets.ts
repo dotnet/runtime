@@ -482,7 +482,7 @@ async function start_asset_download_with_throttle (asset: AssetEntryInternal): P
         ) {
             asset.stream = [response.body!, asset.knownLength];
         } else {
-            if (asset.behavior !== "vfs")
+            if ((asset.behavior !== "vfs") && ENVIRONMENT_IS_WEB)
                 mono_log_warn(`Could not stream resource ${asset.resolvedUrl} with length ${asset.knownLength} and behavior ${asset.behavior}.`);
             asset.buffer = await response.arrayBuffer();
         }
