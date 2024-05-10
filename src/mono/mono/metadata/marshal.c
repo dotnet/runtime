@@ -5257,9 +5257,6 @@ mono_marshal_get_unsafe_accessor_wrapper (MonoMethod *accessor_method, MonoUnsaf
 	}
 
 	if (accessor_method->is_generic) {
-		// FullAOT compilation with gshared or gsharedvt will get here.
-		/* got a generic method definition. need to make a generic method definition wrapper */
-		g_assert (!accessor_method->is_inflated);
 		generic_wrapper = TRUE;
 	}
 

@@ -2295,9 +2295,6 @@ emit_unsafe_accessor_field_wrapper (MonoMethodBuilder *mb, gboolean to_be_inflat
 
 	gboolean inflate_generic_data = FALSE;
 	if ((accessor_method->is_generic || to_be_inflated)) {
-		// We want to do a static lookup: the target type must be G<T> not just !T or !!T,
-		// so that we can get a MonoClassField at compile time
-		g_assert (target_type->type != MONO_TYPE_VAR && target_type->type != MONO_TYPE_MVAR);
 		// If the target is generic, we'll find a generic MonoClassField and then mark it to be
 		// inflated in order to handle instances, or gshared/gsharedvt instances.
 		inflate_generic_data = TRUE;
@@ -2438,11 +2435,8 @@ emit_unsafe_accessor_ctor_wrapper (MonoMethodBuilder *mb, gboolean to_be_inflate
 	
 	gboolean inflate_generic_data = FALSE;
 	if ((accessor_method->is_generic || to_be_inflated)) {
-		// We want to do a static lookup: target type must be G<T>, not just !T or !!T
-		g_assert (target_type->type != MONO_TYPE_VAR && target_type->type != MONO_TYPE_MVAR);
 		// If the target is generic, we'll find a generic MonoMethod* and then mark it to be
 		// inflated in order to handle instances, or gshared/gsharedvt instances.
-
 		inflate_generic_data = TRUE;
 	};
 
@@ -2452,7 +2446,7 @@ emit_unsafe_accessor_ctor_wrapper (MonoMethodBuilder *mb, gboolean to_be_inflate
 
 	MonoMethodSignature *member_sig = ctor_sig_from_accessor_sig (mb, sig);
 	
-	MonoClass *in_class = target_class; // mono_class_get_generic_type_definition (target_class);
+	MonoClass *in_class = target_class;
 
 	MonoMethod *target_method = mono_unsafe_accessor_find_ctor (in_class, member_sig, target_class, find_method_error);
 	if (!is_ok (find_method_error) || target_method == NULL) {
@@ -2496,8 +2490,6 @@ emit_unsafe_accessor_method_wrapper (MonoMethodBuilder *mb, gboolean to_be_infla
 
 	gboolean inflate_generic_data = FALSE;
 	if ((accessor_method->is_generic || to_be_inflated)) {
-		// We want to do a static lookup: target type must be G<T>, not just !T or !!T
-		g_assert (target_type->type != MONO_TYPE_VAR && target_type->type != MONO_TYPE_MVAR);
 		inflate_generic_data = TRUE;
 	};
 
@@ -2513,7 +2505,7 @@ emit_unsafe_accessor_method_wrapper (MonoMethodBuilder *mb, gboolean to_be_infla
 
 	MonoMethodSignature *member_sig = method_sig_from_accessor_sig (mb, hasthis, sig);
 
-	MonoClass *in_class = target_class; // mono_class_get_generic_type_definition (target_class);
+	MonoClass *in_class = target_class;
 
 	MonoMethod *target_method = NULL;
 	if (!ctor_as_method)
