@@ -111,7 +111,7 @@ internal sealed partial class SOSDacImpl : ISOSDacInterface, ISOSDacInterface9
     {
         try
         {
-            Contracts.Thread thread = _target.Contracts.Thread;
+            Contracts.IThread thread = _target.Contracts.Thread;
             Contracts.ThreadStoreData threadStoreData = thread.GetThreadStoreData();
             data->threadCount = threadStoreData.ThreadCount;
             data->firstThread = threadStoreData.FirstThread.Value;

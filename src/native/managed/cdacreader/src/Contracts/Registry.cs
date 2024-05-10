@@ -18,7 +18,7 @@ internal sealed class Registry
         _target = target;
     }
 
-    public Thread Thread => GetContract<Thread>();
+    public IThread Thread => GetContract<IThread>();
 
     private T GetContract<T>() where T : IContract
     {

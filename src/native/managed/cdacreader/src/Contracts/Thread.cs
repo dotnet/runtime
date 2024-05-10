@@ -10,26 +10,28 @@ public record struct ThreadStoreData(
     int ThreadCount,
     TargetPointer FirstThread);
 
-internal class Thread : IContract
+internal interface IThread : IContract
 {
-    public static Thread NotImplemented = new Thread();
-
-    public static string Name { get; } = nameof(Thread);
-
-    public static IContract Create(Target target, int version)
+    static string IContract.Name { get; } = nameof(Thread);
+    static IContract IContract.Create(Target target, int version)
     {
         TargetPointer threadStore = target.ReadGlobalPointer(Constants.Globals.ThreadStore);
         return version switch
         {
             1 => new Thread_1(target, threadStore),
-            _ => NotImplemented,
+            _ => default(Thread),
         };
     }
 
     public virtual ThreadStoreData GetThreadStoreData() => throw new NotImplementedException();
 }
 
-internal sealed class Thread_1 : Thread
+internal readonly struct Thread : IThread
+{
+    // Everything throws NotImplementedException
+}
+
+internal readonly struct Thread_1 : IThread
 {
     private readonly Target _target;
     private readonly TargetPointer _threadStoreAddr;
@@ -40,7 +42,7 @@ internal sealed class Thread_1 : Thread
         _threadStoreAddr = threadStore;
     }
 
-    public override ThreadStoreData GetThreadStoreData()
+    ThreadStoreData IThread.GetThreadStoreData()
     {
         Data.ThreadStore? threadStore;
         if (!_target.ProcessedData.TryGet(_threadStoreAddr.Value, out threadStore))
