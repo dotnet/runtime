@@ -5039,7 +5039,7 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
                             emitIns_R_R_R(INS_slt, attr, tempReg1, resultReg, regOp1);
                             emitIns_R_R_I(INS_slti, attr, tempReg2, regOp2, 0);
 
-                            // if ((A < B) && (C > 0)) || ((A > B) && (C < 0)) then overflow
+                            // if ((A < B) != (C < 0)) then overflow
                             branchReg1 = tempReg1;
                             branchReg2 = tempReg2;
                         }
