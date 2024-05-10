@@ -1195,15 +1195,12 @@ namespace System
         ///    <para>On ARM64 hardware this may use the <c>FRECPE</c> instruction which performs a single Newton-Raphson iteration.</para>
         ///    <para>On hardware without specialized support, this may just return <c>1.0 / d</c>.</para>
         /// </remarks>
-        [Intrinsic]
-        public static double ReciprocalEstimate(double d)
-        {
 #if MONO
-            return 1.0 / d;
+        public static double ReciprocalEstimate(double d) => 1.0 / d;
 #else
-            return ReciprocalEstimate(d);
+        [Intrinsic]
+        public static double ReciprocalEstimate(double d) => ReciprocalEstimate(d);
 #endif
-        }
 
         /// <summary>Returns an estimate of the reciprocal square root of a specified number.</summary>
         /// <param name="d">The number whose reciprocal square root is to be estimated.</param>
@@ -1212,15 +1209,12 @@ namespace System
         ///    <para>On ARM64 hardware this may use the <c>FRSQRTE</c> instruction which performs a single Newton-Raphson iteration.</para>
         ///    <para>On hardware without specialized support, this may just return <c>1.0 / Sqrt(d)</c>.</para>
         /// </remarks>
-        [Intrinsic]
-        public static double ReciprocalSqrtEstimate(double d)
-        {
-#if MONO
-            return 1.0 / Sqrt(d);
+#if MONO || TARGET_RISCV64 || TARGET_LOONGARCH64
+        public static double ReciprocalSqrtEstimate(double d) => 1.0 / Sqrt(d);
 #else
-            return ReciprocalSqrtEstimate(d);
+        [Intrinsic]
+        public static double ReciprocalSqrtEstimate(double d) => ReciprocalSqrtEstimate(d);
 #endif
-        }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static decimal Round(decimal d)
