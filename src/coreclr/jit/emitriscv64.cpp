@@ -5033,7 +5033,8 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
                         else
                         {
                             assert(tempReg != tempReg1);
-                            regNumber tempReg2 = tempReg; // When tempReg2 is used the tempReg has to be already dead
+                            // When the tempReg2 is being used then the tempReg has to be already dead
+                            regNumber tempReg2 = tempReg;
 
                             emitIns_R_R_R(INS_slt, attr, tempReg1, resultReg, regOp1);
                             emitIns_R_R_I(INS_slti, attr, tempReg2, regOp2, 0);
