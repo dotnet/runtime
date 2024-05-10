@@ -3540,7 +3540,9 @@ void emitter::emitDispInsName(
                     if (imm12 == 0)
                     {
                         printf("sext.w         %s, %s\n", rd, rs1);
-                    } else {
+                    }
+                    else
+                    {
                         printf("addiw          %s, %s, %d\n", rd, rs1, imm12);
                     }
                     return;
@@ -4957,8 +4959,7 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
                     if (dstReg == regOp1)
                     {
                         assert(tempReg != regOp1);
-                        saveOperReg1 = tempReg
-                        saveOperReg2 = (regOp1 == regOp2) ? tempReg : regOp2;
+                        saveOperReg1 = tempReg saveOperReg2 = (regOp1 == regOp2) ? tempReg : regOp2;
                         emitIns_R_R(INS_mov, attr, tempReg, regOp1);
                     }
                     else if (dstReg == regOp2)
@@ -4991,25 +4992,29 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
                     if (dst->OperGet() == GT_ADD)
                     {
                         resultReg = dstReg;
-                        regOp1 = saveOperReg1;
-                        regOp2 = saveOperReg2;
-                    }  else {
+                        regOp1    = saveOperReg1;
+                        regOp2    = saveOperReg2;
+                    }
+                    else
+                    {
                         resultReg = saveOperReg1;
-                        regOp1 = dstReg;
-                        regOp2 = saveOperReg2;
+                        regOp1    = dstReg;
+                        regOp2    = saveOperReg2;
                     }
 
-                    instruction branchIns = INS_none;
-                    regNumber branchReg1 = REG_NA;
-                    regNumber branchReg2 = REG_NA;
+                    instruction branchIns  = INS_none;
+                    regNumber   branchReg1 = REG_NA;
+                    regNumber   branchReg2 = REG_NA;
 
                     if (((dst->gtFlags & GTF_UNSIGNED) != 0))
                     {
                         // if B > A then overflow
-                        branchIns = INS_bltu;
+                        branchIns  = INS_bltu;
                         branchReg1 = resultReg;
                         branchReg2 = regOp1;
-                    } else {
+                    }
+                    else
+                    {
                         regNumber tempReg1 = dst->ExtractTempReg();
 
                         branchIns = INS_bne;
@@ -5023,7 +5028,9 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
                             // if 64-bit addition is not equal to 32-bit addition for 32-bit operands then overflow
                             branchReg1 = resultReg;
                             branchReg2 = tempReg1;
-                        } else {
+                        }
+                        else
+                        {
                             assert(tempReg != tempReg1);
                             regNumber tempReg2 = tempReg; // When tempReg2 is used the tempReg has to be already dead
 
