@@ -1326,6 +1326,8 @@ part2:
 
         {
             CONTRACT_VIOLATION(ModeViolation);
+            // At the moment, this doesn't do anything more than log statistics.
+            VirtualCallStubManager::UninitStatic();
 
             // On the new plan, we only do the tear-down under the protection of the loader
             // lock -- after the OS has stopped all other threads.
@@ -1348,10 +1350,6 @@ part2:
                 // Terminate the debugging services.
                 TerminateDebugger();
 #endif // DEBUGGING_SUPPORTED
-
-                //@TODO: find the right place for this
-                VirtualCallStubManager::UninitStatic();
-
                 WriteJitHelperCountToSTRESSLOG();
 
                 STRESS_LOG0(LF_STARTUP, LL_INFO10, "EEShutdown shutting down logging");
