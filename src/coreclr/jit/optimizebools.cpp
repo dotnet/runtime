@@ -1245,7 +1245,7 @@ bool OptBoolsDsc::optOptimizeBoolsChkTypeCostCond()
 //
 void OptBoolsDsc::optOptimizeBoolsKeepFirstBlockAndFreeTheRest(GenTree* cmpOp, bool optReturnBlock)
 {
-    #if FEATURE_SET_FLAGS
+#if FEATURE_SET_FLAGS
     // For comparisons against zero we will have the GTF_SET_FLAGS set
     // and this can cause an assert to fire in fgMoveOpsLeft(GenTree* tree)
     // during the CSE phase.
@@ -1551,10 +1551,10 @@ bool OptBoolsDsc::optOptimizeBoolsReturnBlock(BasicBlock* b3)
              (it1val == 0 && it2val == 0 && it3val == 0))
     {
         // Case: x == 0 && y == 0
-            //      t1:c1!=0 t2:c2==0 t3:c3==0
-            //      ==> true if (c1|c2)==0
-            foldOp = GT_OR;
-            cmpOp  = GT_EQ;
+        //      t1:c1!=0 t2:c2==0 t3:c3==0
+        //      ==> true if (c1|c2)==0
+        foldOp = GT_OR;
+        cmpOp  = GT_EQ;
     }
     else if ((m_testInfo1.compTree->gtOper == GT_EQ && m_testInfo2.compTree->gtOper == GT_NE) &&
              (it1val == 0 && it2val == 0 && it3val == 0))
@@ -1786,7 +1786,8 @@ GenTree* OptBoolsDsc::optIsBoolComp(OptTestInfo* pOptTest)
 }
 
 //-----------------------------------------------------------------------------
-//  optOptimizeAndConditionWithEqualityOperator: Optimize boolean when m_b1 is BBJ_COND with EQ on integers, m_b2 is BBJ_RETURN with EQ on integers and m_b3 is BBJ_RETURN of False
+//  optOptimizeAndConditionWithEqualityOperator: Optimize boolean when m_b1 is BBJ_COND with EQ on integers, m_b2 is
+//  BBJ_RETURN with EQ on integers and m_b3 is BBJ_RETURN of False
 //
 // Arguments:
 //      b3:    Pointer to basic block b3
@@ -1825,42 +1826,43 @@ bool OptBoolsDsc::optOptimizeAndConditionWithEqualityOperator(BasicBlock* b3)
     GenTree* op21 = cond2->AsOp()->gtOp1;
     GenTree* op22 = cond2->AsOp()->gtOp2;
 
-    if (!op11->OperIs(GT_LCL_VAR, GT_CNS_INT) || !op12->OperIs(GT_LCL_VAR, GT_CNS_INT) || !op21->OperIs(GT_LCL_VAR, GT_CNS_INT) || !op22->OperIs(GT_LCL_VAR, GT_CNS_INT))
+    if (!op11->OperIs(GT_LCL_VAR, GT_CNS_INT) || !op12->OperIs(GT_LCL_VAR, GT_CNS_INT) ||
+        !op21->OperIs(GT_LCL_VAR, GT_CNS_INT) || !op22->OperIs(GT_LCL_VAR, GT_CNS_INT))
     {
         return false;
     }
 
     GenTreeOp* xorOp1 = m_comp->gtNewOperNode(GT_XOR, TYP_INT, op11, op12);
     xorOp1->gtFlags |= GTF_BOOLEAN;
-    xorOp1->gtPrev = op12;
-    op12->gtNext = xorOp1;
-    op12->gtPrev = op11;
-    op11->gtNext = op12;
-    op11->gtPrev = nullptr;
+    xorOp1->gtPrev    = op12;
+    op12->gtNext      = xorOp1;
+    op12->gtPrev      = op11;
+    op11->gtNext      = op12;
+    op11->gtPrev      = nullptr;
     GenTreeOp* xorOp2 = m_comp->gtNewOperNode(GT_XOR, TYP_INT, op21, op22);
     xorOp2->gtFlags |= GTF_BOOLEAN;
     xorOp2->gtPrev = op22;
-    op22->gtNext = xorOp2;
-    op22->gtPrev = op21;
-    op21->gtNext = op22;
+    op22->gtNext   = xorOp2;
+    op22->gtPrev   = op21;
+    op21->gtNext   = op22;
 
     GenTreeOp* branchlessOrEqOp = m_comp->gtNewOperNode(GT_OR, TYP_INT, xorOp1, xorOp2);
     branchlessOrEqOp->gtFlags |= GTF_BOOLEAN;
     branchlessOrEqOp->gtPrev = xorOp2;
-    xorOp2->gtNext = branchlessOrEqOp;
-    op21->gtPrev = xorOp1;
-    xorOp1->gtNext = op21;
+    xorOp2->gtNext           = branchlessOrEqOp;
+    op21->gtPrev             = xorOp1;
+    xorOp1->gtNext           = op21;
 
     GenTreeIntCon* trueOp = m_comp->gtNewFalse();
     m_testInfo1.compTree->SetOper(cond2->OperIs(GT_EQ) ? GT_EQ : GT_NE);
     m_testInfo1.compTree->gtFlags |= GTF_BOOLEAN;
-    m_testInfo1.compTree->gtType = TYP_INT;
+    m_testInfo1.compTree->gtType        = TYP_INT;
     m_testInfo1.compTree->AsOp()->gtOp1 = branchlessOrEqOp;
     m_testInfo1.compTree->AsOp()->gtOp2 = trueOp;
-    m_testInfo1.compTree->gtPrev = trueOp;
-    trueOp->gtNext = m_testInfo1.compTree;
-    trueOp->gtPrev = branchlessOrEqOp;
-    branchlessOrEqOp->gtNext = trueOp;
+    m_testInfo1.compTree->gtPrev        = trueOp;
+    trueOp->gtNext                      = m_testInfo1.compTree;
+    trueOp->gtPrev                      = branchlessOrEqOp;
+    branchlessOrEqOp->gtNext            = trueOp;
 
     m_testInfo1.testTree->gtOper = m_testInfo2.testTree->OperGet();
     m_testInfo1.testTree->gtType = m_testInfo2.testTree->TypeGet();
@@ -2147,7 +2149,8 @@ PhaseStatus Compiler::optOptimizeBools()
                     continue;
                 }
 
-                if (optBoolsDsc.optOptimizeBoolsReturnBlock(b3) || optBoolsDsc.optOptimizeAndConditionWithEqualityOperator(b3))
+                if (optBoolsDsc.optOptimizeBoolsReturnBlock(b3) ||
+                    optBoolsDsc.optOptimizeAndConditionWithEqualityOperator(b3))
                 {
                     change = true;
                     numReturn++;
