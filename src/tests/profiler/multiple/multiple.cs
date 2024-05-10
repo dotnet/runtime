@@ -13,19 +13,14 @@ namespace Profiler.Tests
         private static readonly Guid MultipleProfilerGuid = new Guid("BFA8EF13-E144-49B9-B95C-FC1C150C7651");
         private static readonly string ProfilerPath = ProfilerTestRunner.GetProfilerPath();
 
-        private static ManualResetEvent _profilerDone = new ManualResetEvent(false);
-
         [DllImport("Profiler")]
         private static extern void PassCallbackToProfiler(ProfilerCallback callback);
 
-        private static void ProfilerDone()
-        {
-            _profilerDone.Set();
-        }
-
         public static int RunTest(String[] args)
         {
-            PassCallbackToProfiler(ProfilerDone);
+            ManualResetEvent profilerDone = new ManualResetEvent(false);
+            ProfilerCallback profilerDoneDelegate = () => profilerDone.Set();
+            PassCallbackToProfiler(profilerDoneDelegate);
 
             ProfilerControlHelpers.AttachProfilerToSelf(MultipleProfilerGuid, ProfilerPath);
 
@@ -41,11 +36,12 @@ namespace Profiler.Tests
             }
 
             Console.WriteLine("Waiting for profilers to all detach");
-            if (!_profilerDone.WaitOne(TimeSpan.FromMinutes(5)))
+            if (!profilerDone.WaitOne(TimeSpan.FromMinutes(5)))
             {
                 throw new Exception("Test timed out waiting for the profilers to set the callback, test will fail.");
             }
 
+            GC.KeepAlive(profilerDoneDelegate);
             return 100;
         }
 
