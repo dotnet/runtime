@@ -5011,11 +5011,11 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
 
                         branchIns = INS_bne;
 
-                        if ((dst->gtType == TYP_INT) && (attr == EA_8BYTE))
+                        if ((ins == INS_addw) && (attr == EA_8BYTE))
                         {
                             assert((src1->gtType == TYP_INT) && (src2->gtType == TYP_INT));
 
-                            emitIns_R_R_I(INS_addw, attr, tempReg1, regOp1, regOp2);
+                            emitIns_R_R_I(INS_add, attr, tempReg1, regOp1, regOp2);
 
                             branchReg1 = resultReg;
                             branchReg2 = tempReg1;
