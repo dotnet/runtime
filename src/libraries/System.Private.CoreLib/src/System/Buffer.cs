@@ -182,6 +182,9 @@ namespace System
 #endif
         internal static void BulkMoveWithWriteBarrier(ref byte destination, ref byte source, nuint byteCount)
         {
+            if (byteCount == 0 || Unsafe.AreSame(ref destination, ref source))
+                return;
+
             if (byteCount <= BulkMoveWithWriteBarrierChunk)
                 __BulkMoveWithWriteBarrier(ref destination, ref source, byteCount);
             else
@@ -193,9 +196,7 @@ namespace System
         private static void _BulkMoveWithWriteBarrier(ref byte destination, ref byte source, nuint byteCount)
         {
             Debug.Assert(byteCount > BulkMoveWithWriteBarrierChunk);
-
-            if (Unsafe.AreSame(ref source, ref destination))
-                return;
+            Debug.Assert(!Unsafe.AreSame(ref source, ref destination));
 
             // This is equivalent to: (destination - source) >= byteCount || (destination - source) < 0
             if ((nuint)(nint)Unsafe.ByteOffset(ref source, ref destination) >= byteCount)
