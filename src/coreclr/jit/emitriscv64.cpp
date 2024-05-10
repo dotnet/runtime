@@ -5020,7 +5020,7 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
 
                         branchIns = INS_bne;
 
-                        if ((ins == INS_addw) && (attr == EA_8BYTE))
+                        if (attr == EA_4BYTE)
                         {
                             assert((src1->gtType == TYP_INT) && (src2->gtType == TYP_INT));
 
