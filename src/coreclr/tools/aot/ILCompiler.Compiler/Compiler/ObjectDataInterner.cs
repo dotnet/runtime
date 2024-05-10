@@ -27,6 +27,10 @@ namespace ILCompiler
 
             foreach (IMethodBodyNode body in factory.MetadataManager.GetCompiledMethodBodies())
             {
+                // We don't track special unboxing thunks as virtual method use related so ignore them
+                if (body is ISpecialUnboxThunkNode unboxThunk && unboxThunk.IsSpecialUnboxingThunk)
+                    continue;
+
                 var key = new MethodInternKey(body, factory);
                 if (methodHash.TryGetValue(key, out MethodInternKey found))
                 {

@@ -752,7 +752,8 @@ namespace ILCompiler.DependencyAnalysis
         {
             Debug.Assert(NeedsEntrypoint(_method));
             unboxingStub = _method.OwningType.IsValueType && !_method.Signature.IsStatic;
-            IMethodNode methodEntryPointNode = factory.MethodEntrypoint(_method, unboxingStub);
+            // TODO-SIZE: this is only address taken if it's a target of a delegate
+            IMethodNode methodEntryPointNode = factory.AddressTakenMethodEntrypoint(_method, unboxingStub);
             // Note: We don't set the IsUnboxingStub flag on template methods (all template lookups performed at runtime are performed with this flag not set,
             // since it can't always be conveniently computed for a concrete method before looking up its template)
             unboxingStub = false;

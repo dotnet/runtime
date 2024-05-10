@@ -6,9 +6,10 @@ using System.Runtime.CompilerServices;
 
 class Program
 {
-    [MethodImpl(MethodImplOptions.NoInlining)]
     static int Main()
     {
+        BodyFoldingTest.Run();
+
         string stackTrace = Environment.StackTrace;
 
         Console.WriteLine(stackTrace);

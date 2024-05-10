@@ -12,5 +12,6 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="StackTraceMetadata.cs" />
+    <Compile Include="BodyFoldingTest.cs" />
   </ItemGroup>
 </Project>
