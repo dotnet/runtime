@@ -110,7 +110,7 @@ regNumber NodeInternalRegisters::Extract(GenTree* tree, regMaskTP mask)
 }
 
 //------------------------------------------------------------------------
-// GetSingleTempReg: There is expected to be exactly one available temporary register
+// GetSingle: There is expected to be exactly one available temporary register
 // in the given mask in the internal register set. Get that register. No future calls to get
 // a temporary register are expected. Removes the register from the set, but only in
 // DEBUG to avoid doing unnecessary work in non-DEBUG builds.
