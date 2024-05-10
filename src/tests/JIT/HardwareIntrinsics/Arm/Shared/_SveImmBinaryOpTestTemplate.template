@@ -159,11 +159,14 @@ namespace JIT.HardwareIntrinsics.Arm
         private static readonly int RetElementCount = Unsafe.SizeOf<{RetVectorType}<{RetBaseType}>>() / sizeof({RetBaseType});
         private static readonly byte Imm = {Imm};
 
+        private static {Op1BaseType}[] _maskData = new {Op1BaseType}[Op1ElementCount];
         private static {Op1BaseType}[] _data1 = new {Op1BaseType}[Op1ElementCount];
         private static {Op1BaseType}[] _data2 = new {Op1BaseType}[Op1ElementCount];
 
+        private {Op1VectorType}<{Op1BaseType}> _mask;
         private {Op1VectorType}<{Op1BaseType}> _fld1;
         private {Op1VectorType}<{Op1BaseType}> _fld2;
+	private {Op1VectorType}<{Op1BaseType}> _falseFld;
 
         private DataTable _dataTable;
 
@@ -177,7 +180,7 @@ namespace JIT.HardwareIntrinsics.Arm
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op1VectorType}<{Op1BaseType}>, byte>(ref _fld1), ref Unsafe.As<{Op1BaseType}, byte>(ref _data1[0]), (uint)Unsafe.SizeOf<{Op1VectorType}<{Op1BaseType}>>());
             for (var i = 0; i < Op1ElementCount; i++) { _data2[i] = {NextValueOp1}; }
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op1VectorType}<{Op1BaseType}>, byte>(ref _fld2), ref Unsafe.As<{Op1BaseType}, byte>(ref _data2[0]), (uint)Unsafe.SizeOf<{Op1VectorType}<{Op1BaseType}>>());
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op1VectorType}<{Op1BaseType}>, byte>(ref _falseFld), ref Unsafe.As<{Op1BaseType}, byte>(ref _data3[0]), (uint)Unsafe.SizeOf<{Op1VectorType}<{Op1BaseType}>>());            
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op1VectorType}<{Op1BaseType}>, byte>(ref _falseFld), ref Unsafe.As<{Op1BaseType}, byte>(ref _data2[0]), (uint)Unsafe.SizeOf<{Op1VectorType}<{Op1BaseType}>>());            
 
             for (var i = 0; i < Op1ElementCount; i++) { _data1[i] = {NextValueOp1}; }
             for (var i = 0; i < Op1ElementCount; i++) { _data2[i] = {NextValueOp1}; }
@@ -311,11 +314,11 @@ namespace JIT.HardwareIntrinsics.Arm
             ConditionalSelectScenario({Op1VectorType}<{Op1BaseType}>.AllBitsSet, _fld1, _fld2, {Op1VectorType}<{Op1BaseType}>.Zero);            
         }
         [method: MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private void ConditionalSelectScenario({Op1VectorType}<{Op1BaseType}> mask, {Op1VectorType}<{Op1BaseType}> op1, {Op1VectorType}<{Op1BaseType}> op2, {Op1VectorType}<{Op1BaseType}> op3, {Op1VectorType}<{Op1BaseType}> falseOp)
+        private void ConditionalSelectScenario({Op1VectorType}<{Op1BaseType}> mask, {Op1VectorType}<{Op1BaseType}> op1, {Op1VectorType}<{Op1BaseType}> op2, {Op1VectorType}<{Op1BaseType}> falseOp)
         {
-            var result = Sve.ConditionalSelect(mask, {Isa}.{Method}(op1, op2, op3, Imm), falseOp);
+            var result = Sve.ConditionalSelect(mask, {Isa}.{Method}(op1, op2, Imm), falseOp);
             Unsafe.Write(_dataTable.outArrayPtr, result);
-            ValidateConditionalSelectResult(mask, op1, op2, op3, falseOp, _dataTable.outArrayPtr);
+            ValidateConditionalSelectResult(mask, op1, op2, falseOp, _dataTable.outArrayPtr);
         }
 
         public void RunUnsupportedScenario()
