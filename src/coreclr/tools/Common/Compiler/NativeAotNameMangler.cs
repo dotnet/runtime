@@ -344,7 +344,7 @@ namespace ILCompiler
 
             Utf8StringBuilder sb = new Utf8StringBuilder();
             sb.Append(GetMangledTypeName(method.OwningType));
-            sb.Append("__");
+            sb.Append("__"u8);
             sb.Append(GetUnqualifiedMangledMethodName(method));
             utf8MangledName = sb.ToUtf8String();
 
@@ -391,7 +391,7 @@ namespace ILCompiler
 
             for (int i = 0; i < signature.Length; i++)
             {
-                sb.Append("__");
+                sb.Append("__"u8);
                 string sigArgName = GetMangledTypeName(signature[i]);
                 sb.Append(sigArgName);
             }
@@ -451,7 +451,7 @@ namespace ILCompiler
                 {
                     string instArgName = GetMangledTypeName(inst[i]);
                     if (i > 0)
-                        sb.Append("__");
+                        sb.Append("__"u8);
                     sb.Append(instArgName);
                 }
 
