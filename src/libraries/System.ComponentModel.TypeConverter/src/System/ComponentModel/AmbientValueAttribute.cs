@@ -39,8 +39,7 @@ namespace System.ComponentModel
             {
                 _value = TypeDescriptorGetConverter(type).ConvertFromInvariantString(value);
 
-                [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-                    Justification = "This is only used at design time, which is not trimmed.")]
+                [RequiresUnreferencedCode("AmbientValueAttribute usage of TypeConverter is not compatible with trimming.")]
                 static TypeConverter TypeDescriptorGetConverter([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type) => TypeDescriptor.GetConverter(type);
             }
             catch

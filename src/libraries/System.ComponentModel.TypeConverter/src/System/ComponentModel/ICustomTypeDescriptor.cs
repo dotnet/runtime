@@ -82,6 +82,8 @@ namespace System.ComponentModel
         /// <summary>
         /// Gets a type converter for this object that may be registered.
         /// </summary>
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = TypeDescriptionProvider.ForwardFromRegisteredMessage)]
         TypeConverter? GetConverterFromRegisteredType()
         {
             if (RequireRegisteredTypes is null)
@@ -96,11 +98,7 @@ namespace System.ComponentModel
                 TypeDescriptor.ThrowHelper.ThrowNotImplementedException_CustomTypeProviderMustImplememtMember(nameof(GetConverterFromRegisteredType));
             }
 
-            return Forward();
-
-            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-                Justification = TypeDescriptionProvider.ForwardFromRegisteredMessage)]
-            TypeConverter? Forward() => GetConverter();
+            return GetConverter();
         }
 
         /// <summary>
@@ -126,6 +124,8 @@ namespace System.ComponentModel
         /// <summary>
         /// Gets the properties for this instance of a component that may be registered.
         /// </summary>
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = TypeDescriptionProvider.ForwardFromRegisteredMessage)]
         PropertyDescriptorCollection GetPropertiesFromRegisteredType()
         {
             if (RequireRegisteredTypes is null)
@@ -140,11 +140,7 @@ namespace System.ComponentModel
                 TypeDescriptor.ThrowHelper.ThrowNotImplementedException_CustomTypeProviderMustImplememtMember(nameof(GetPropertiesFromRegisteredType));
             }
 
-            return Forward();
-
-            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-                Justification = TypeDescriptionProvider.ForwardFromRegisteredMessage)]
-            PropertyDescriptorCollection Forward() => GetProperties();
+            return GetProperties();
         }
 
         /// <summary>

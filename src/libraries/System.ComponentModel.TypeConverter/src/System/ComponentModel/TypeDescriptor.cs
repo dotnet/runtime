@@ -1747,7 +1747,7 @@ namespace System.ComponentModel
                     {
                         throw new NotSupportedException(SR.ComObjectDescriptorsNotSupported);
                     }
-                    type = GetComObjectType();
+                    type = ComObjectType;
                 }
                 else if (OperatingSystem.IsWindows()
                     && ComWrappers.TryGetComInstance(instance, out nint unknown))
@@ -1762,7 +1762,7 @@ namespace System.ComponentModel
                     //
                     // Tracked with https://github.com/dotnet/winforms/issues/9291
                     Marshal.Release(unknown);
-                    type = GetComObjectType();
+                    type = ComObjectType;
                 }
 
                 if (createDelegator)
@@ -1776,10 +1776,6 @@ namespace System.ComponentModel
             }
 
             return node;
-
-            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-                Justification = "This is protected at runtime by checking for IsComObjectDescriptorSupported.")]
-            static Type GetComObjectType() => ComObjectType;
         }
 
         /// <summary>
