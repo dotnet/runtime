@@ -3046,7 +3046,7 @@ void MethodDesc::EnsureTemporaryEntryPointCore(LoaderAllocator *pLoaderAllocator
         PCODE tempEntryPoint = GetTemporaryEntryPoint_NoAlloc();
         _ASSERTE(tempEntryPoint != (PCODE)NULL);
 
-        if (*pSlot == NULL)
+        if (*pSlot == (PCODE)NULL)
         {
             InterlockedCompareExchangeT(pSlot, tempEntryPoint, (PCODE)NULL);
         }
