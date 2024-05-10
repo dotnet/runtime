@@ -1260,7 +1260,7 @@ namespace R2RDump
                     }
                     else
                     {
-                        // frist non-ld instruction
+                        // first non-ld instruction
                         isFound = StaticAnalyzeRiscV64Assembly(
                             rtf.StartAddress + currentInstrOffset, 
                             currentInstrOffset, 
