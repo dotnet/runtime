@@ -7514,6 +7514,70 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			if (cfg->gsharedvt_min && mini_is_gsharedvt_variable_signature (fsig))
 				GSHAREDVT_FAILURE (il_op);
 
+			/*
+			 * We need to modify the signature of the swiftcall calli to account for the lowering of Swift structs.
+ 			 * This is done by replacing struct arguments on stack with a lowered sequence and updating the signature.
+			 */
+			if (fsig->pinvoke && mono_method_signature_has_ext_callconv (fsig, MONO_EXT_CALLCONV_SWIFTCALL)) {
+				g_assert (!fsig->hasthis); // Swift P/Invoke calls shouldn't contain 'this'
+				
+				n = fsig->param_count;
+				sp -= n;
+				// Save the old arguments				
+				MonoInst **old_args = g_newa (MonoInst*, n);
+				for (int idx_param = 0; idx_param < n; ++idx_param) {
+					old_args [idx_param] = sp [idx_param];
+				}
+
+				GArray *new_params = g_array_new (FALSE, FALSE, sizeof (MonoType *));
+				uint32_t new_param_count = 0;
+				/*
+				 * Go through the lowered arguments, if the argument is a struct, 
+				 * we need to replace it with a sequence of lowered arguments.
+				 * Also record the updated parameters for the new signature.
+				 */
+				for (int idx_param = 0; idx_param < n; ++idx_param) {
+					MonoType *ptype = fsig->params [idx_param];
+					if (mono_type_is_struct (ptype)) {
+						SwiftPhysicalLowering lowered_swift_struct = mono_marshal_get_swift_physical_lowering (ptype, FALSE);
+						if (!lowered_swift_struct.by_reference) {
+							// Create a new local variable to store the base address of the struct
+							MonoInst *struct_base_address =  mono_compile_create_var (cfg, mono_get_int_type (), OP_LOCAL);
+							CHECK_ARG (idx_param);
+							NEW_ARGLOADA (cfg, struct_base_address, idx_param);
+							MONO_ADD_INS (cfg->cbb, struct_base_address);
+
+							for (uint32_t idx_lowered = 0; idx_lowered < lowered_swift_struct.num_lowered_elements; ++idx_lowered) {
+								MonoInst *lowered_arg = NULL;
+								// Load the lowered elements of the struct
+								lowered_arg = mini_emit_memory_load (cfg, lowered_swift_struct.lowered_elements [idx_lowered], struct_base_address, lowered_swift_struct.offsets [idx_lowered], 0); //ins_flag
+								*sp++ = lowered_arg;
+
+								++new_param_count;
+								g_array_append_val (new_params, lowered_swift_struct.lowered_elements [idx_lowered]);
+							}
+							continue;
+						}
+					}
+					// For non-struct and by-ref arguments, just copy them over
+					*sp++ = old_args [idx_param];
+
+					++new_param_count;
+					g_array_append_val (new_params, ptype);
+				}
+
+				// Create a new dummy signature with the lowered arguments
+				MonoMethodSignature *swiftcall_signature = mono_metadata_signature_alloc (m_class_get_image (method->klass), new_param_count);
+				for (uint32_t idx_param = 0; idx_param < new_param_count; ++idx_param) {
+					swiftcall_signature->params [idx_param] = g_array_index (new_params, MonoType *, idx_param);
+				}
+				swiftcall_signature->ret = fsig->ret;
+				swiftcall_signature->pinvoke = fsig->pinvoke;
+				swiftcall_signature->ext_callconv = fsig->ext_callconv;
+				
+				fsig = swiftcall_signature;	
+			}
+
 			if (method->dynamic && fsig->pinvoke) {
 				MonoInst *args [3];
 
