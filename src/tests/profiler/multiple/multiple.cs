@@ -10,10 +10,10 @@ namespace Profiler.Tests
 {
     class MultiplyLoaded
     {
-        static readonly Guid MultipleProfilerGuid = new Guid("BFA8EF13-E144-49B9-B95C-FC1C150C7651");
-        static readonly string ProfilerPath = ProfilerTestRunner.GetProfilerPath();
+        private static readonly Guid MultipleProfilerGuid = new Guid("BFA8EF13-E144-49B9-B95C-FC1C150C7651");
+        private static readonly string ProfilerPath = ProfilerTestRunner.GetProfilerPath();
 
-        static ManualResetEvent _profilerDone = new ManualResetEvent(false);
+        private static ManualResetEvent _profilerDone = new ManualResetEvent(false);
 
         [DllImport("Profiler")]
         private static extern void PassCallbackToProfiler(ProfilerCallback callback);

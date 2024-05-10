@@ -12,10 +12,16 @@ namespace Profiler.Tests
     class ReleaseOnShutdown
     {
         private static readonly Guid ReleaseOnShutdownGuid = new Guid("B8C47A29-9C1D-4EEA-ABA0-8E8B3E3B792E");
+        private static ManualResetEvent _profilerDone = new ManualResetEvent(false);
 
         [DllImport("Profiler")]
         private static extern void PassCallbackToProfiler(ProfilerCallback callback);
-        
+
+        private static void ProfilerDone()
+        {
+            _profilerDone.Set();
+        }
+
         public unsafe static int RunTest(string[] args)
         {
             string profilerName;
@@ -35,11 +41,10 @@ namespace Profiler.Tests
             string rootPath = Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
             string profilerPath = Path.Combine(rootPath, profilerName);
 
-            ManualResetEvent _profilerDone = new ManualResetEvent(false);
             Console.WriteLine($"Attaching profiler {profilerPath} to self.");
             ProfilerControlHelpers.AttachProfilerToSelf(ReleaseOnShutdownGuid, profilerPath);
 
-            PassCallbackToProfiler(() => _profilerDone.Set());
+            PassCallbackToProfiler(ProfilerDone);
             if (!_profilerDone.WaitOne(TimeSpan.FromMinutes(5)))
             {
                 Console.WriteLine("Profiler did not set the callback, test will fail.");
