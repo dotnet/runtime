@@ -115,9 +115,9 @@ get_attr_ctor_method_from_handle (MonoReflectionCustomAttrHandle cattr, MonoRefl
  * \param ctor_method (out param) the custom attribute constructor as MonoMethod if the custom attribute is visible, otherwise NULL
  *
  * \returns TRUE if the custom attribute is visible on a decorated type, otherwise FALSE
- * 
+ *
  * Determines if a custom attribute is visible for a decorated target \p target_image
- * 
+ *
  * FIXME: the return value is also TRUE when custom attribute constructor is NULL, which is probably a bug
  */
 static gboolean
@@ -2062,7 +2062,7 @@ mono_method_get_unsafe_accessor_attr_data (MonoMethod *method, int *accessor_kin
 	}
 
 	MonoDecodeCustomAttr *decoded_args = mono_reflection_create_custom_attr_data_args_noalloc (m_class_get_image (attr->ctor->klass), attr->ctor, attr->data, attr->data_size, error);
-	
+
 	if (!is_ok (error)) {
 		mono_error_cleanup (error);
 		mono_reflection_free_custom_attr_data_args_noalloc (decoded_args);
@@ -2583,6 +2583,8 @@ mono_reflection_get_custom_attrs_info_checked (MonoObjectHandle obj, MonoError *
 		cinfo = mono_reflection_get_custom_attrs_info_checked (MONO_HANDLE_CAST (MonoObject, generic_type), error, respect_cattr_visibility);
 		goto_if_nok (error, leave);
 	} else { /* handle other types here... */
+		g_print ("strcmp (\"%s\", klass_name) == %u\n", "Assembly", strcmp("Assembly", klass_name));
+		g_print ("strcmp (\"%s\", klass_name) == %u\n", "RuntimeAssembly", strcmp("RuntimeAssembly", klass_name));
 		g_error ("get custom attrs not yet supported for %s", m_class_get_name (klass));
 	}
 
