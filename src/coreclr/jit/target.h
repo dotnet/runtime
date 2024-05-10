@@ -230,27 +230,27 @@ public:
     {
     }
 
-    FORCEINLINE explicit operator bool() const
+    explicit operator bool() const
     {
         return low != RBM_NONE;
     }
 
-    FORCEINLINE explicit operator regMaskSmall() const
+    explicit operator regMaskSmall() const
     {
         return (regMaskSmall)low;
     }
 
-    FORCEINLINE explicit operator unsigned int() const
+    explicit operator unsigned int() const
     {
         return (unsigned int)low;
     }
 
-    FORCEINLINE uint64_t getLow() const
+    uint64_t getLow() const
     {
         return low;
     }
 
-    FORCEINLINE void setLow(uint64_t _low)
+    void setLow(uint64_t _low)
     {
         low = _low;
     }
