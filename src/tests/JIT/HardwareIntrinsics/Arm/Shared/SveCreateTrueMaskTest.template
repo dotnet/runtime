@@ -60,31 +60,7 @@ namespace JIT.HardwareIntrinsics.Arm
             return result;
         }
 
-        // DecodePredCount()
-        // =================
-        // integer DecodePredCount(bits(5) bitpattern, integer esize)
-        //     integer elements = CurrentVL DIV esize;
-        //     integer numElem;
-        //     case bitpattern of
-        //         when '00000' numElem = FloorPow2(elements);
-        //         when '00001' numElem = if elements >= 1 then 1 else 0;
-        //         when '00010' numElem = if elements >= 2 then 2 else 0;
-        //         when '00011' numElem = if elements >= 3 then 3 else 0;
-        //         when '00100' numElem = if elements >= 4 then 4 else 0;
-        //         when '00101' numElem = if elements >= 5 then 5 else 0;
-        //         when '00110' numElem = if elements >= 6 then 6 else 0;
-        //         when '00111' numElem = if elements >= 7 then 7 else 0;
-        //         when '01000' numElem = if elements >= 8 then 8 else 0;
-        //         when '01001' numElem = if elements >= 16 then 16 else 0;
-        //         when '01010' numElem = if elements >= 32 then 32 else 0;
-        //         when '01011' numElem = if elements >= 64 then 64 else 0;
-        //         when '01100' numElem = if elements >= 128 then 128 else 0;
-        //         when '01101' numElem = if elements >= 256 then 256 else 0;
-        //         when '11101' numElem = elements - (elements MOD 4);
-        //         when '11110' numElem = elements - (elements MOD 3);
-        //         when '11111' numElem = elements;
-        //         otherwise    numElem = 0;
-        //     return numElem;
+        // Decode a pattern specifier into a predicate constraint.
 
         private static int DecodePredCount({Op1Type} bitpattern, int esize)
         {
@@ -148,20 +124,7 @@ namespace JIT.HardwareIntrinsics.Arm
             return 0;
         }
 
-        // constant integer VL = CurrentVL;
-        // constant integer PL = VL DIV 8;
-        // constant integer elements = VL DIV esize;
-        // integer count = DecodePredCount(pat, esize);
-        // bits(PL) result;
-        // constant integer psize = esize DIV 8;
-        //
-        // for e = 0 to elements-1
-        //     bit pbit = if e < count then '1' else '0';
-        //     Elem[result, e, psize] = ZeroExtend(pbit, psize);
-        //
-        // if setflags then
-        //     PSTATE.<N,Z,C,V> = PredTest(result, result, esize);
-        // P[d, PL] = result;
+        // Calculate the expected result of a PTRUE instruction.
 
         private static {RetVectorType}<{RetBaseType}> PtrueOp({Op1Type} bitpattern, int esize)
         {
