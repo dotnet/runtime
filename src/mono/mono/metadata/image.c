@@ -538,8 +538,8 @@ load_metadata_ptrs (MonoImage *image, MonoCLIImageInfo *iinfo)
 		} else {
 			uint64_t tp = (uint64_t)"#~";
 			g_print ("strncmp (ptr + 8, \"%s\", 3) == %u; &str=%u\n", "#~", strncmp (ptr + 8, "#~", 3), (uint32_t)tp);
-			for (int32_t i = -32; i <= 32; i++) {
-				uint8_t *cp = ((uint8_t *)tp) + i;
+			for (int32_t ii = -32; ii <= 32; ii++) {
+				uint8_t *cp = ((uint8_t *)tp) + ii;
 				g_print("%u %c ", *cp, *cp);
 			}
 			g_print("\n");
