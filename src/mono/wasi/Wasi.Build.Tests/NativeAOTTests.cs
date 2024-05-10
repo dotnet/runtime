@@ -3,6 +3,7 @@
 
 using System;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 using Wasm.Build.Tests;
@@ -49,16 +50,23 @@ public class NativeAOTTests : BuildTestBase
             )
         );
 
-        string outputDir = Path.Combine(_projectDir!, "bin", config, DefaultTargetFramework, BuildEnvironment.DefaultRuntimeIdentifier, "native");
-        string outputFileName = $"{id}.wasm";
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        {
+            string outputDir = Path.Combine(_projectDir!, "bin", config, DefaultTargetFramework, BuildEnvironment.DefaultRuntimeIdentifier, "native");
+            string outputFileName = $"{id}.wasm";
 
-        Assert.True(File.Exists(Path.Combine(outputDir, outputFileName)), $"Expected {outputFileName} to exist in {outputDir}");
-        Assert.Contains("Generating native code", buildOutput);
+            Assert.True(File.Exists(Path.Combine(outputDir, outputFileName)), $"Expected {outputFileName} to exist in {outputDir}");
+            Assert.Contains("Generating native code", buildOutput);
 
-        using var runCommand = new ToolCommand(BuildEnvironment.GetExecutableName(@"wasmtime"), _testOutput)
-            .WithWorkingDirectory(outputDir);
+            using var runCommand = new ToolCommand(BuildEnvironment.GetExecutableName(@"wasmtime"), _testOutput)
+                .WithWorkingDirectory(outputDir);
 
-        var result = runCommand.Execute(outputFileName).EnsureSuccessful();
-        Assert.Contains("Hello, Wasi Console!", result.Output);
+            var result = runCommand.Execute(outputFileName).EnsureSuccessful();
+            Assert.Contains("Hello, Wasi Console!", result.Output);
+        }
+        else
+        {
+            Assert.Contains("NETSDK1204", buildOutput); // Ahead-of-time compilation is not supported on the current platform 'linux-x64'
+        }
     }
 }
