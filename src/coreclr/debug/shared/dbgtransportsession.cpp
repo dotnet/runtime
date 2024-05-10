@@ -2502,8 +2502,13 @@ DWORD DbgTransportSession::GetEventSize(DebuggerIPCEvent *pEvent)
     case DB_IPCE_DISABLE_OPTS:
         cbAdditionalSize = sizeof(pEvent->DisableOptData);
         break;
+
     case DB_IPCE_FORCE_CATCH_HANDLER_FOUND:
         cbAdditionalSize = sizeof(pEvent->ForceCatchHandlerFoundData);
+        break;
+
+    case DB_IPCE_SET_ENABLE_CUSTOM_NOTIFICATION:
+        cbAdditionalSize = sizeof(pEvent->CustomNotificationData);
         break;
 
     default:

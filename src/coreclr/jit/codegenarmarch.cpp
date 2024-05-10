@@ -3682,11 +3682,11 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
             {
 #ifdef TARGET_ARM
                 // For arm32 we've allocated an internal register to load the target into.
-                // Loading into lr takes 4 bytes (instead of potentially 2 with another register).
+                // Loading into IP takes 4 bytes (instead of potentially 2 with another register).
                 targetAddrReg = internalRegisters.GetSingle(call);
 #else
-                // For arm64 we just use lr and skip the internal register.
-                targetAddrReg = REG_LR;
+                // For arm64 we just use IP0 and skip the internal register.
+                targetAddrReg = REG_INDIRECT_CALL_TARGET_REG;
 #endif
 
                 GetEmitter()->emitIns_R_R(ins_Load(TYP_I_IMPL), emitActualTypeSize(TYP_I_IMPL), targetAddrReg,

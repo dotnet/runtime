@@ -382,6 +382,164 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<ulong> AndAcross(Vector<ulong> value) => AndAcross(value);
 
 
+        ///  BitwiseClear : Bitwise clear
+
+        /// <summary>
+        /// svuint8_t svbic[_u8]_m(svbool_t pg, svuint8_t op1, svuint8_t op2)
+        /// svuint8_t svbic[_u8]_x(svbool_t pg, svuint8_t op1, svuint8_t op2)
+        /// svuint8_t svbic[_u8]_z(svbool_t pg, svuint8_t op1, svuint8_t op2)
+        ///   BIC Ztied1.B, Pg/M, Ztied1.B, Zop2.B
+        ///   BIC Zresult.D, Zop1.D, Zop2.D
+        /// svbool_t svbic[_b]_z(svbool_t pg, svbool_t op1, svbool_t op2)
+        ///   BIC Presult.B, Pg/Z, Pop1.B, Pop2.B
+        /// </summary>
+        public static unsafe Vector<byte> BitwiseClear(Vector<byte> left, Vector<byte> right) => BitwiseClear(left, right);
+
+        /// <summary>
+        /// svint16_t svbic[_s16]_m(svbool_t pg, svint16_t op1, svint16_t op2)
+        /// svint16_t svbic[_s16]_x(svbool_t pg, svint16_t op1, svint16_t op2)
+        /// svint16_t svbic[_s16]_z(svbool_t pg, svint16_t op1, svint16_t op2)
+        ///   BIC Ztied1.H, Pg/M, Ztied1.H, Zop2.H
+        ///   BIC Zresult.D, Zop1.D, Zop2.D
+        /// svbool_t svbic[_b]_z(svbool_t pg, svbool_t op1, svbool_t op2)
+        ///   BIC Presult.B, Pg/Z, Pop1.B, Pop2.B
+        /// </summary>
+        public static unsafe Vector<short> BitwiseClear(Vector<short> left, Vector<short> right) => BitwiseClear(left, right);
+
+        /// <summary>
+        /// svint32_t svbic[_s32]_m(svbool_t pg, svint32_t op1, svint32_t op2)
+        /// svint32_t svbic[_s32]_x(svbool_t pg, svint32_t op1, svint32_t op2)
+        /// svint32_t svbic[_s32]_z(svbool_t pg, svint32_t op1, svint32_t op2)
+        ///   BIC Ztied1.S, Pg/M, Ztied1.S, Zop2.S
+        ///   BIC Zresult.D, Zop1.D, Zop2.D
+        /// svbool_t svbic[_b]_z(svbool_t pg, svbool_t op1, svbool_t op2)
+        ///   BIC Presult.B, Pg/Z, Pop1.B, Pop2.B
+        /// </summary>
+        public static unsafe Vector<int> BitwiseClear(Vector<int> left, Vector<int> right) => BitwiseClear(left, right);
+
+        /// <summary>
+        /// svint64_t svbic[_s64]_m(svbool_t pg, svint64_t op1, svint64_t op2)
+        /// svint64_t svbic[_s64]_x(svbool_t pg, svint64_t op1, svint64_t op2)
+        /// svint64_t svbic[_s64]_z(svbool_t pg, svint64_t op1, svint64_t op2)
+        ///   BIC Ztied1.D, Pg/M, Ztied1.D, Zop2.D
+        ///   BIC Zresult.D, Zop1.D, Zop2.D
+        /// svbool_t svbic[_b]_z(svbool_t pg, svbool_t op1, svbool_t op2)
+        ///   BIC Presult.B, Pg/Z, Pop1.B, Pop2.B
+        /// </summary>
+        public static unsafe Vector<long> BitwiseClear(Vector<long> left, Vector<long> right) => BitwiseClear(left, right);
+
+        /// <summary>
+        /// svint8_t svbic[_s8]_m(svbool_t pg, svint8_t op1, svint8_t op2)
+        /// svint8_t svbic[_s8]_x(svbool_t pg, svint8_t op1, svint8_t op2)
+        /// svint8_t svbic[_s8]_z(svbool_t pg, svint8_t op1, svint8_t op2)
+        ///   BIC Ztied1.B, Pg/M, Ztied1.B, Zop2.B
+        ///   BIC Zresult.D, Zop1.D, Zop2.D
+        /// svbool_t svbic[_b]_z(svbool_t pg, svbool_t op1, svbool_t op2)
+        ///   BIC Presult.B, Pg/Z, Pop1.B, Pop2.B
+        /// </summary>
+        public static unsafe Vector<sbyte> BitwiseClear(Vector<sbyte> left, Vector<sbyte> right) => BitwiseClear(left, right);
+
+        /// <summary>
+        /// svuint16_t svbic[_u16]_m(svbool_t pg, svuint16_t op1, svuint16_t op2)
+        /// svuint16_t svbic[_u16]_x(svbool_t pg, svuint16_t op1, svuint16_t op2)
+        /// svuint16_t svbic[_u16]_z(svbool_t pg, svuint16_t op1, svuint16_t op2)
+        ///   BIC Ztied1.H, Pg/M, Ztied1.H, Zop2.H
+        ///   BIC Zresult.D, Zop1.D, Zop2.D
+        /// svbool_t svbic[_b]_z(svbool_t pg, svbool_t op1, svbool_t op2)
+        ///   BIC Presult.B, Pg/Z, Pop1.B, Pop2.B
+        /// </summary>
+        public static unsafe Vector<ushort> BitwiseClear(Vector<ushort> left, Vector<ushort> right) => BitwiseClear(left, right);
+
+        /// <summary>
+        /// svuint32_t svbic[_u32]_m(svbool_t pg, svuint32_t op1, svuint32_t op2)
+        /// svuint32_t svbic[_u32]_x(svbool_t pg, svuint32_t op1, svuint32_t op2)
+        /// svuint32_t svbic[_u32]_z(svbool_t pg, svuint32_t op1, svuint32_t op2)
+        ///   BIC Ztied1.S, Pg/M, Ztied1.S, Zop2.S
+        ///   BIC Zresult.D, Zop1.D, Zop2.D
+        /// svbool_t svbic[_b]_z(svbool_t pg, svbool_t op1, svbool_t op2)
+        ///   BIC Presult.B, Pg/Z, Pop1.B, Pop2.B
+        /// </summary>
+        public static unsafe Vector<uint> BitwiseClear(Vector<uint> left, Vector<uint> right) => BitwiseClear(left, right);
+
+        /// <summary>
+        /// svuint64_t svbic[_u64]_m(svbool_t pg, svuint64_t op1, svuint64_t op2)
+        /// svuint64_t svbic[_u64]_x(svbool_t pg, svuint64_t op1, svuint64_t op2)
+        /// svuint64_t svbic[_u64]_z(svbool_t pg, svuint64_t op1, svuint64_t op2)
+        ///   BIC Ztied1.D, Pg/M, Ztied1.D, Zop2.D
+        ///   BIC Zresult.D, Zop1.D, Zop2.D
+        /// svbool_t svbic[_b]_z(svbool_t pg, svbool_t op1, svbool_t op2)
+        ///   BIC Presult.B, Pg/Z, Pop1.B, Pop2.B
+        /// </summary>
+        public static unsafe Vector<ulong> BitwiseClear(Vector<ulong> left, Vector<ulong> right) => BitwiseClear(left, right);
+
+
+        ///  BooleanNot : Logically invert boolean condition
+
+        /// <summary>
+        /// svuint8_t svcnot[_u8]_m(svuint8_t inactive, svbool_t pg, svuint8_t op)
+        /// svuint8_t svcnot[_u8]_x(svbool_t pg, svuint8_t op)
+        /// svuint8_t svcnot[_u8]_z(svbool_t pg, svuint8_t op)
+        ///   CNOT Ztied.B, Pg/M, Zop.B
+        /// </summary>
+        public static unsafe Vector<byte> BooleanNot(Vector<byte> value) => BooleanNot(value);
+
+        /// <summary>
+        /// svint16_t svcnot[_s16]_m(svint16_t inactive, svbool_t pg, svint16_t op)
+        /// svint16_t svcnot[_s16]_x(svbool_t pg, svint16_t op)
+        /// svint16_t svcnot[_s16]_z(svbool_t pg, svint16_t op)
+        ///   CNOT Ztied.H, Pg/M, Zop.H
+        /// </summary>
+        public static unsafe Vector<short> BooleanNot(Vector<short> value) => BooleanNot(value);
+
+        /// <summary>
+        /// svint32_t svcnot[_s32]_m(svint32_t inactive, svbool_t pg, svint32_t op)
+        /// svint32_t svcnot[_s32]_x(svbool_t pg, svint32_t op)
+        /// svint32_t svcnot[_s32]_z(svbool_t pg, svint32_t op)
+        ///   CNOT Ztied.S, Pg/M, Zop.S
+        /// </summary>
+        public static unsafe Vector<int> BooleanNot(Vector<int> value) => BooleanNot(value);
+
+        /// <summary>
+        /// svint64_t svcnot[_s64]_m(svint64_t inactive, svbool_t pg, svint64_t op)
+        /// svint64_t svcnot[_s64]_x(svbool_t pg, svint64_t op)
+        /// svint64_t svcnot[_s64]_z(svbool_t pg, svint64_t op)
+        ///   CNOT Ztied.D, Pg/M, Zop.D
+        /// </summary>
+        public static unsafe Vector<long> BooleanNot(Vector<long> value) => BooleanNot(value);
+
+        /// <summary>
+        /// svint8_t svcnot[_s8]_m(svint8_t inactive, svbool_t pg, svint8_t op)
+        /// svint8_t svcnot[_s8]_x(svbool_t pg, svint8_t op)
+        /// svint8_t svcnot[_s8]_z(svbool_t pg, svint8_t op)
+        ///   CNOT Ztied.B, Pg/M, Zop.B
+        /// </summary>
+        public static unsafe Vector<sbyte> BooleanNot(Vector<sbyte> value) => BooleanNot(value);
+
+        /// <summary>
+        /// svuint16_t svcnot[_u16]_m(svuint16_t inactive, svbool_t pg, svuint16_t op)
+        /// svuint16_t svcnot[_u16]_x(svbool_t pg, svuint16_t op)
+        /// svuint16_t svcnot[_u16]_z(svbool_t pg, svuint16_t op)
+        ///   CNOT Ztied.H, Pg/M, Zop.H
+        /// </summary>
+        public static unsafe Vector<ushort> BooleanNot(Vector<ushort> value) => BooleanNot(value);
+
+        /// <summary>
+        /// svuint32_t svcnot[_u32]_m(svuint32_t inactive, svbool_t pg, svuint32_t op)
+        /// svuint32_t svcnot[_u32]_x(svbool_t pg, svuint32_t op)
+        /// svuint32_t svcnot[_u32]_z(svbool_t pg, svuint32_t op)
+        ///   CNOT Ztied.S, Pg/M, Zop.S
+        /// </summary>
+        public static unsafe Vector<uint> BooleanNot(Vector<uint> value) => BooleanNot(value);
+
+        /// <summary>
+        /// svuint64_t svcnot[_u64]_m(svuint64_t inactive, svbool_t pg, svuint64_t op)
+        /// svuint64_t svcnot[_u64]_x(svbool_t pg, svuint64_t op)
+        /// svuint64_t svcnot[_u64]_z(svbool_t pg, svuint64_t op)
+        ///   CNOT Ztied.D, Pg/M, Zop.D
+        /// </summary>
+        public static unsafe Vector<ulong> BooleanNot(Vector<ulong> value) => BooleanNot(value);
+
+
         ///  ConditionalSelect : Conditionally select elements
 
         /// <summary>

@@ -98,7 +98,6 @@ CodeGen::HWIntrinsicImmOpHelper::HWIntrinsicImmOpHelper(CodeGen* codeGen, GenTre
             // these by
             // using the same approach as in hwintrinsicxarch.cpp - adding an additional indirection level in form of a
             // branch table.
-            assert(!HWIntrinsicInfo::GeneratesMultipleIns(intrin->GetHWIntrinsicId()));
             branchTargetReg = codeGen->internalRegisters.GetSingle(intrin);
         }
 
