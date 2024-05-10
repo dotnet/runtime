@@ -5007,7 +5007,7 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
 
                         if ((dst->gtType == TYP_INT) && (attr == EA_8BYTE))
                         {
-                            assert((src1Reg->gtType == TYP_INT) && (src2Reg->gtType == TYP_INT));
+                            assert((src1->gtType == TYP_INT) && (src2->gtType == TYP_INT));
 
                             emitIns_R_R_I(INS_addw, attr, tempReg1, regOp1, regOp2);
 
