@@ -4976,8 +4976,6 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
 
                 if (needCheckOv)
                 {
-                    regNumber tempReg1;
-                    regNumber tempReg2;
                     /*
                         Check if A = B + C
                         In case of addition:
@@ -4998,12 +4996,20 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
                         regOp2 = saveOperReg2;
                     }
 
+                    instruction branchIns = INS_none;
+                    regNumber branchReg1 = REG_NA;
+                    regNumber branchReg2 = REG_NA;
+
                     if (((dst->gtFlags & GTF_UNSIGNED) != 0))
                     {
-                        codeGen->genJumpToThrowHlpBlk_la(SCK_OVERFLOW, INS_bltu, resultReg, nullptr, regOp1);
+                        branchIns = INS_bltu;
+                        branchReg1 = resultReg;
+                        branchReg2 = regOp1;
                     } else {
-                        BasicBlock* survivorLabel = codeGen->genCreateTempLabel();
-                        tempReg1 = dst->ExtractTempReg();
+                        regNumber tempReg1 = dst->ExtractTempReg();
+                        regNumber tempReg2 = tempReg;
+
+                        branchIns = INS_bne;
 
                         if ((dst->gtType == TYP_INT) && (attr == EA_8BYTE))
                         {
@@ -5011,18 +5017,18 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
 
                             emitIns_R_R_I(INS_addw, attr, tempReg1, regOp1, regOp2);
 
-                            emitIns_J_cond_la(INS_beq, survivorLabel, resultReg, tempReg1);
+                            branchReg1 = resultReg;
+                            branchReg2 = tempReg1;
                         } else {
                             emitIns_R_R_R(INS_slt, attr, tempReg1, resultReg, regOp1);
-                            emitIns_R_R_I(INS_slti, attr, tempReg, regOp2, 0);
+                            emitIns_R_R_I(INS_slti, attr, tempReg2, regOp2, 0);
 
-                            emitIns_J_cond_la(INS_beq, survivorLabel, tempReg1, tempReg);
+                            branchReg1 = tempReg1;
+                            branchReg2 = tempReg2;
                         }
-
-                        codeGen->genJumpToThrowHlpBlk(EJ_jmp, SCK_OVERFLOW);
-
-                        codeGen->genDefineTempLabel(survivorLabel);
                     }
+
+                    codeGen->genJumpToThrowHlpBlk_la(SCK_OVERFLOW, branchIns, branchReg1, nullptr, branchReg2);
                 }
             }
             break;
