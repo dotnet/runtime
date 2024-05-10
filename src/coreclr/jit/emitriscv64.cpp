@@ -4959,7 +4959,8 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
                     if (dstReg == regOp1)
                     {
                         assert(tempReg != regOp1);
-                        saveOperReg1 = tempReg saveOperReg2 = (regOp1 == regOp2) ? tempReg : regOp2;
+                        saveOperReg1 = tempReg;
+                        saveOperReg2 = (regOp1 == regOp2) ? tempReg : regOp2;
                         emitIns_R_R(INS_mov, attr, tempReg, regOp1);
                     }
                     else if (dstReg == regOp2)
