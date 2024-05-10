@@ -8859,8 +8859,8 @@ GenTree* Compiler::impEstimateIntrinsic(CORINFO_METHOD_HANDLE method,
 
             if (intrinsicName == NI_System_Math_ReciprocalSqrtEstimate)
             {
-                op1 = new (this, GT_INTRINSIC) GenTreeIntrinsic(genActualType(callType), op1, NI_System_Math_Sqrt,
-                                                                nullptr);
+                op1 = new (this, GT_INTRINSIC)
+                    GenTreeIntrinsic(genActualType(callType), op1, NI_System_Math_Sqrt, nullptr);
             }
 
             return gtNewOperNode(GT_DIV, genActualType(callType), gtNewDconNode(1.0, callType), op1);
