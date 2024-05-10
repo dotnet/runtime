@@ -6,7 +6,7 @@ using System;
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
 // TODO: [cdac] Add other counts / threads
-public record struct ThreadStoreData(
+internal record struct ThreadStoreData(
     int ThreadCount,
     TargetPointer FirstThread);
 
