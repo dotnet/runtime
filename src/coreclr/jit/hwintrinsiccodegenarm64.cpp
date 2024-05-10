@@ -553,7 +553,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                             // embMaskOp1Reg is same as `falseReg`, but not same as `targetReg`. Move the
                             // `embMaskOp1Reg` i.e. `falseReg` in `targetReg`, using "unpredicated movprfx", so the
                             // subsequent `insEmbMask` operation can be merged on top of it.
-                            GetEmitter()->emitIns_R_R(INS_sve_movprfx, EA_SCALABLE, targetReg, falseReg, opt);
+                            GetEmitter()->emitIns_R_R(INS_sve_movprfx, EA_SCALABLE, targetReg, falseReg);
                         }
 
                         // Finally, perform the actual "predicated" operation so that `targetReg` is the first operand
