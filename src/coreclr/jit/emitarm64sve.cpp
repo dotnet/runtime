@@ -10407,8 +10407,8 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
 
         case IF_SVE_AU_3A: // ...........mmmmm ......nnnnnddddd -- SVE bitwise logical operations (unpredicated)
             code = emitInsCodeSve(ins, fmt);
-            code |= insEncodeReg_V<4, 0>(id->idReg1());   // ddddd
-            code |= insEncodeReg_V<9, 5>(id->idReg2());   // nnnnn
+            code |= insEncodeReg_V<4, 0>(id->idReg1()); // ddddd
+            code |= insEncodeReg_V<9, 5>(id->idReg2()); // nnnnn
             if (id->idIns() != INS_sve_mov)
             {
                 code |= insEncodeReg_V<20, 16>(id->idReg3()); // mmmmm
@@ -12942,8 +12942,8 @@ void emitter::emitInsSveSanityCheck(instrDesc* id)
             break;
         case IF_SVE_AU_3A: // ...........mmmmm ......nnnnnddddd -- SVE bitwise logical operations (unpredicated)
             assert(insOptsScalable(id->idInsOpt()));
-            assert(isVectorRegister(id->idReg1())); // ddddd
-            assert(isVectorRegister(id->idReg2())); // nnnnn/mmmmm
+            assert(isVectorRegister(id->idReg1()));                                 // ddddd
+            assert(isVectorRegister(id->idReg2()));                                 // nnnnn/mmmmm
             assert((id->idIns() == INS_sve_mov) || isVectorRegister(id->idReg3())); // mmmmm/aaaaa
             break;
 
@@ -14605,10 +14605,10 @@ void emitter::emitDispInsSveHelp(instrDesc* id)
 
         // <Zd>.D, <Zn>.D, <Zm>.D
         case IF_SVE_AU_3A: // ...........mmmmm ......nnnnnddddd -- SVE bitwise logical operations (unpredicated)
-            emitDispSveReg(id->idReg1(), id->idInsOpt(), true);  // ddddd
+            emitDispSveReg(id->idReg1(), id->idInsOpt(), true); // ddddd
             if (id->idIns() == INS_sve_mov)
             {
-                emitDispSveReg(id->idReg2(), id->idInsOpt(), false);  // nnnnn/mmmmm
+                emitDispSveReg(id->idReg2(), id->idInsOpt(), false); // nnnnn/mmmmm
             }
             else
             {

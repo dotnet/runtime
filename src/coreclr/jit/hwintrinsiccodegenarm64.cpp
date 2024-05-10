@@ -634,18 +634,18 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                     else
                     {
                         // Below are the considerations we need to handle:
-                        // 
+                        //
                         // targetReg == falseReg && targetReg == embMaskOp1Reg
                         //      fmla    Zd, P/m, Zn, Zm
                         //
                         // targetReg == falseReg && targetReg != embMaskOp1Reg
                         //      movprfx target, P/m, embMaskOp1Reg
                         //      fmla    target, P/m, embMaskOp2Reg, embMaskOp3Reg
-                        // 
+                        //
                         // targetReg != falseReg && targetReg == embMaskOp1Reg
                         //      sel     target, P/m, embMaskOp1Reg, falseReg
                         //      fmla    target, P/m, embMaskOp2Reg, embMaskOp3Reg
-                        // 
+                        //
                         // targetReg != falseReg && targetReg != embMaskOp1Reg
                         //      sel     target, P/m, embMaskOp1Reg, falseReg
                         //      fmla    target, P/m, embMaskOp2Reg, embMaskOp3Reg

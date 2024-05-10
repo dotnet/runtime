@@ -1772,8 +1772,8 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
         // For ConditionalSelect, if there is an embedded operation, and the operation has RMW semantics
         // then record delay-free for operands as well as the "merge" value
         GenTreeHWIntrinsic* embOp2Node = intrin.op2->AsHWIntrinsic();
-        size_t              numArgs      = embOp2Node->GetOperandCount();
-        const HWIntrinsic         intrinEmb(embOp2Node);
+        size_t              numArgs    = embOp2Node->GetOperandCount();
+        const HWIntrinsic   intrinEmb(embOp2Node);
         numArgs = embOp2Node->GetOperandCount();
 
         if (HWIntrinsicInfo::IsFmaIntrinsic(intrinEmb.id))
