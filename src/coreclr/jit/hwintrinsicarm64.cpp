@@ -279,15 +279,15 @@ void Compiler::getHWIntrinsicImmOps(NamedIntrinsic    intrinsic,
 //                         if it differs from the default type/size of the instrinsic
 //
 // Arguments:
-//    intrinsic               -- NamedIntrinsic associated with the HWIntrinsic to lookup
-//    sig                     -- signature of the intrinsic call.
-//    immNumber               -- Which immediate to use (1 for most intrinsics)
-//    simdBaseType            -- base type of the intrinsic
-//    simdType                -- vector size of the intrinsic
-//    op2ClsHnd               -- cls handler for op2
-//    op2ClsHnd               -- cls handler for op3
-//    immSimdSize [IN/OUT]    -- Size of the immediate to override
-//    pImmUpperBound [IN/OUT] -- Base type of the immediate to override
+//    intrinsic                -- NamedIntrinsic associated with the HWIntrinsic to lookup
+//    sig                      -- signature of the intrinsic call.
+//    immNumber                -- Which immediate to use (1 for most intrinsics)
+//    simdBaseType             -- base type of the intrinsic
+//    simdType                 -- vector size of the intrinsic
+//    op2ClsHnd                -- cls handler for op2
+//    op2ClsHnd                -- cls handler for op3
+//    immSimdSize [IN/OUT]     -- Size of the immediate to override
+//    immSimdBaseType [IN/OUT] -- Base type of the immediate to override
 //
 void Compiler::getHWIntrinsicImmTypes(NamedIntrinsic       intrinsic,
                                       CORINFO_SIG_INFO*    sig,
