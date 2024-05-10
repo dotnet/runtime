@@ -56,17 +56,11 @@ namespace Internal.Text
 
         public Utf8StringBuilder Append(string value)
         {
-            Ensure(value.Length);
+            int length = Encoding.UTF8.GetByteCount(value);
+            Ensure(length);
 
-            byte[] buffer = _buffer;
-            for (int i = 0; i < value.Length; i++)
-            {
-                char c = value[i];
-                if (c > 0x7F)
-                    return Append(Encoding.UTF8.GetBytes(value));
-                buffer[_length+i] = (byte)c;
-            }
-            _length += value.Length;
+            Encoding.UTF8.GetBytes(value, _buffer.AsSpan(_length));
+            _length += length;
 
             return this;
         }
