@@ -5,7 +5,6 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
-//using System.Reflection;
 
 namespace System.ComponentModel
 {
@@ -218,7 +217,7 @@ namespace System.ComponentModel
         protected object? CreateInstance(
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type type)
         {
-            Type[] typeArgs = { typeof(Type) };
+            Type[] typeArgs = new Type[] { typeof(Type) };
             ConstructorInfo? ctor = type.GetConstructor(typeArgs);
             if (ctor != null)
             {

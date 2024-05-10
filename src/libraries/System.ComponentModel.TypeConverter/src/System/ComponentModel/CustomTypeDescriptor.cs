@@ -69,7 +69,7 @@ namespace System.ComponentModel
         /// The GetConverter method returns a type converter for the type this type
         /// descriptor is representing.
         /// </summary>
-        [RequiresUnreferencedCode("Generic TypeConverters may require the generic types to be annotated. For example, NullableConverter requires the underlying type to be DynamicallyAccessedMembers All.")]
+        [RequiresUnreferencedCode(TypeConverter.RequiresUnreferencedCodeMessage)]
         public virtual TypeConverter? GetConverter()
         {
             if (_parent != null)
@@ -81,7 +81,7 @@ namespace System.ComponentModel
         }
 
         /// <summary>
-        /// The GetConverter method returns a type converter for the type this type
+        /// The GetConverterFromRegisteredType method returns a type converter for the type this type
         /// descriptor is representing.
         /// </summary>
         public virtual TypeConverter? GetConverterFromRegisteredType()
@@ -103,11 +103,11 @@ namespace System.ComponentModel
                 TypeDescriptor.ThrowHelper.ThrowNotImplementedException_CustomTypeProviderMustImplememtMember(nameof(GetConverterFromRegisteredType));
             }
 
-            return FallBack();
+            return Forward();
 
             [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
                 Justification = TypeDescriptionProvider.ForwardFromRegisteredMessage)]
-            TypeConverter? FallBack() => GetConverter();
+            TypeConverter? Forward() => GetConverter();
         }
 
         /// <summary>
@@ -239,11 +239,11 @@ namespace System.ComponentModel
                 TypeDescriptor.ThrowHelper.ThrowNotImplementedException_CustomTypeProviderMustImplememtMember(nameof(GetPropertiesFromRegisteredType));
             }
 
-            return FallBack();
+            return Forward();
 
             [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
                 Justification = TypeDescriptionProvider.ForwardFromRegisteredMessage)]
-            PropertyDescriptorCollection FallBack() => GetProperties();
+            PropertyDescriptorCollection Forward() => GetProperties();
         }
 
         /// <summary>
@@ -277,6 +277,7 @@ namespace System.ComponentModel
         /// Whether types are required to be registered through <see cref="TypeDescriptionProvider.RegisterType{T}"/>.
         /// </summary>
         /// <remarks>
+        /// The default value is <see langword="null"/> which means that the type descriptor has not declared whether or not it is compatible registered types.
         /// A type descriptor needs to implement this to return <see langword="true"/> or <see langword="false"/> if the feature switch
         /// 'System.ComponentModel.TypeDescriptor.RequireRegisteredTypes' is enabled.
         /// If <see langword="true"/> is returned, then the type descriptor must also implement

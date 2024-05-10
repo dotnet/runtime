@@ -368,11 +368,11 @@ namespace System.ComponentModel
                 return _parent.GetTypeDescriptorFromRegisteredType(objectType, instance);
             }
 
-            return FallBack();
+            return Forward();
 
             [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2067:UnrecognizedReflectionPattern",
                 Justification = TypeDescriptionProvider.ForwardFromRegisteredMessage)]
-            ICustomTypeDescriptor? FallBack() => GetTypeDescriptor(objectType, instance);
+            ICustomTypeDescriptor? Forward() => GetTypeDescriptor(objectType, instance);
         }
 
         /// <summary>

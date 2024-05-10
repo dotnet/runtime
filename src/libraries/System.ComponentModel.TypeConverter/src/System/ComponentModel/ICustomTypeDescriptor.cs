@@ -29,7 +29,7 @@ namespace System.ComponentModel
         /// <summary>
         /// Gets a type converter for this object.
         /// </summary>
-        [RequiresUnreferencedCode("Generic TypeConverters may require the generic types to be annotated. For example, NullableConverter requires the underlying type to be DynamicallyAccessedMembers All.")]
+        [RequiresUnreferencedCode(TypeConverter.RequiresUnreferencedCodeMessage)]
         TypeConverter? GetConverter();
 
         /// <summary>
@@ -96,11 +96,11 @@ namespace System.ComponentModel
                 TypeDescriptor.ThrowHelper.ThrowNotImplementedException_CustomTypeProviderMustImplememtMember(nameof(GetConverterFromRegisteredType));
             }
 
-            return FallBack();
+            return Forward();
 
             [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
                 Justification = TypeDescriptionProvider.ForwardFromRegisteredMessage)]
-            TypeConverter? FallBack() => GetConverter();
+            TypeConverter? Forward() => GetConverter();
         }
 
         /// <summary>
@@ -140,11 +140,11 @@ namespace System.ComponentModel
                 TypeDescriptor.ThrowHelper.ThrowNotImplementedException_CustomTypeProviderMustImplememtMember(nameof(GetPropertiesFromRegisteredType));
             }
 
-            return FallBack();
+            return Forward();
 
             [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
                 Justification = TypeDescriptionProvider.ForwardFromRegisteredMessage)]
-            PropertyDescriptorCollection FallBack() => GetProperties();
+            PropertyDescriptorCollection Forward() => GetProperties();
         }
 
         /// <summary>

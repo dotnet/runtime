@@ -3386,11 +3386,11 @@ namespace System.ComponentModel
                     ThrowHelper.ThrowInvalidOperationException_RegisterTypeRequired(objectType);
                 }
 
-                return FallBack();
+                return Forward();
 
                 [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2067:UnrecognizedReflectionPattern",
                     Justification = TypeDescriptionProvider.ForwardFromRegisteredMessage)]
-                ICustomTypeDescriptor FallBack() => GetTypeDescriptor(objectType, instance);
+                ICustomTypeDescriptor Forward() => GetTypeDescriptor(objectType, instance);
             }
 
             internal DefaultTypeDescriptor GetDefaultTypeDescriptor([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type objectType)
