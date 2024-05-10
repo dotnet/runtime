@@ -85,9 +85,9 @@
       <SourceBuild RepoName="source-build-reference-packages" ManagedOnly="true" />
     </Dependency>
     <!-- Intermediate is necessary for source build. -->
-    <Dependency Name="Microsoft.SourceBuild.Intermediate.source-build-externals" Version="9.0.0-alpha.1.24256.2">
+    <Dependency Name="Microsoft.SourceBuild.Intermediate.source-build-externals" Version="9.0.0-alpha.1.24258.1">
       <Uri>https://github.com/dotnet/source-build-externals</Uri>
-      <Sha>94b5dd594f49b5b38e28e4d5c733caa8555947a4</Sha>
+      <Sha>7dc4b475c02c94754d95520e81d107bbe1909336</Sha>
       <SourceBuild RepoName="source-build-externals" ManagedOnly="true" />
     </Dependency>
   </ProductDependencies>
@@ -413,6 +413,38 @@
     <Dependency Name="Microsoft.Dotnet.Sdk.Internal" Version="9.0.100-preview.5.24253.16">
       <Uri>https://github.com/dotnet/installer</Uri>
       <Sha>fa261b952d702c6bd604728fcbdb58ac071a22b1</Sha>
+    </Dependency>
+    <Dependency Name="runtime.linux-arm64.Microsoft.NETCore.Runtime.Wasm.Node.Transport" Version="9.0.0-alpha.1.24175.1">
+      <Uri>https://github.com/dotnet/node</Uri>
+      <Sha>308c7d0f1fa19bd1e7b768ad13646f5206133cdb</Sha>
+    </Dependency>
+    <Dependency Name="runtime.linux-musl-arm64.Microsoft.NETCore.Runtime.Wasm.Node.Transport" Version="9.0.0-alpha.1.24175.1">
+      <Uri>https://github.com/dotnet/node</Uri>
+      <Sha>308c7d0f1fa19bd1e7b768ad13646f5206133cdb</Sha>
+    </Dependency>
+    <Dependency Name="runtime.linux-x64.Microsoft.NETCore.Runtime.Wasm.Node.Transport" Version="9.0.0-alpha.1.24175.1">
+      <Uri>https://github.com/dotnet/node</Uri>
+      <Sha>308c7d0f1fa19bd1e7b768ad13646f5206133cdb</Sha>
+    </Dependency>
+    <Dependency Name="runtime.linux-musl-x64.Microsoft.NETCore.Runtime.Wasm.Node.Transport" Version="9.0.0-alpha.1.24175.1">
+      <Uri>https://github.com/dotnet/node</Uri>
+      <Sha>308c7d0f1fa19bd1e7b768ad13646f5206133cdb</Sha>
+    </Dependency>
+    <Dependency Name="runtime.osx-arm64.Microsoft.NETCore.Runtime.Wasm.Node.Transport" Version="9.0.0-alpha.1.24175.1">
+      <Uri>https://github.com/dotnet/node</Uri>
+      <Sha>308c7d0f1fa19bd1e7b768ad13646f5206133cdb</Sha>
+    </Dependency>
+    <Dependency Name="runtime.osx-x64.Microsoft.NETCore.Runtime.Wasm.Node.Transport" Version="9.0.0-alpha.1.24175.1">
+      <Uri>https://github.com/dotnet/node</Uri>
+      <Sha>308c7d0f1fa19bd1e7b768ad13646f5206133cdb</Sha>
+    </Dependency>
+    <Dependency Name="runtime.win-arm64.Microsoft.NETCore.Runtime.Wasm.Node.Transport" Version="9.0.0-alpha.1.24175.1">
+      <Uri>https://github.com/dotnet/node</Uri>
+      <Sha>308c7d0f1fa19bd1e7b768ad13646f5206133cdb</Sha>
+    </Dependency>
+    <Dependency Name="runtime.win-x64.Microsoft.NETCore.Runtime.Wasm.Node.Transport" Version="9.0.0-alpha.1.24175.1">
+      <Uri>https://github.com/dotnet/node</Uri>
+      <Sha>308c7d0f1fa19bd1e7b768ad13646f5206133cdb</Sha>
     </Dependency>
   </ToolsetDependencies>
 </Dependencies>
