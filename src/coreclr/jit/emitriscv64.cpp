@@ -5041,7 +5041,7 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
                     }
                     else
                     {
-                        regNumber tempReg1 = codeGen->internalRegisters.Extract(dst);
+                        regNumber tempReg1 = codeGen->internalRegisters.GetSingle(dst);
                         assert(tempReg1 != dstReg);
                         assert(tempReg1 != regOp1);
                         assert(tempReg1 != regOp2);
