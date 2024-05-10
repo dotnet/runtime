@@ -677,6 +677,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                         // destination using /Z.
 
                         assert(targetReg != embMaskOp2Reg);
+                        assert(intrin.op3->isContained() || !intrin.op1->IsMaskAllBitsSet());
                         GetEmitter()->emitIns_R_R_R(INS_sve_movprfx, emitSize, targetReg, maskReg, embMaskOp1Reg, opt);
                     }
                     else
