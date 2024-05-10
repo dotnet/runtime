@@ -2017,7 +2017,7 @@ namespace Internal.NativeFormat
         // Calculates the highest bit set in a given unsigned integer.
         private static int HighestBit(uint x)
         {
-            return 1 << ((sizeof(uint) * 8) - BitOperations.LeadingZeroCount(x));
+            return (sizeof(uint) * 8) - BitOperations.LeadingZeroCount(x);
         }
 
         // Helper method to back patch entry index in the bucket table
@@ -2046,7 +2046,7 @@ namespace Internal.NativeFormat
             uint bucketsEstimate = (uint)(_Entries.Count / _nFillFactor);
 
             // Round number of buckets up to the power of two
-            _nBuckets = (uint)HighestBit(bucketsEstimate);
+            _nBuckets = (uint)(1 << HighestBit(bucketsEstimate));
 
             // Lowest byte of the hashcode is used for lookup within the bucket. Keep it sorted too so that
             // we can use the ordering to terminate the lookup prematurely.
