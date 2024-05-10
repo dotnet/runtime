@@ -7,9 +7,9 @@ using System.Text;
 
 namespace Internal.Text
 {
-    public struct Utf8String : IEquatable<Utf8String>, IComparable<Utf8String>
+    public readonly struct Utf8String : IEquatable<Utf8String>, IComparable<Utf8String>
     {
-        private byte[] _value;
+        private readonly byte[] _value;
 
         public Utf8String(byte[] underlyingArray)
         {
