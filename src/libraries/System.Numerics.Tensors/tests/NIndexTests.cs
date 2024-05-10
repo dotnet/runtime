@@ -1,13 +1,10 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
-using System.Buffers;
 using System.Collections.Generic;
-using System.Reflection;
 using Xunit;
 
-namespace System.Tests
+namespace System.Buffers.Tests
 {
     public static class NativeIndexTests
     {
@@ -102,7 +99,7 @@ namespace System.Tests
             NIndex index2 = 10;
             Assert.Equal(index1.GetHashCode(), index2.GetHashCode());
 
-            index2 = new NIndex(10, fromEnd: true);
+            index2 = new NIndex(101, fromEnd: true);
             Assert.NotEqual(index1.GetHashCode(), index2.GetHashCode());
 
             index2 = new NIndex(99999, fromEnd: false);

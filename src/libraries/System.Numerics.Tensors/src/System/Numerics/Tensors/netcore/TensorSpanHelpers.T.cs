@@ -31,6 +31,11 @@ namespace System.Numerics.Tensors
             MemoryMarshal.CreateSpan(ref source, checked((int)length)).CopyTo(MemoryMarshal.CreateSpan(ref destination, checked((int)length)));
         }
 
+        public static unsafe void Memmove<T>(Span<T> destination, ref T source, nint length)
+        {
+            MemoryMarshal.CreateSpan(ref source, checked((int)length)).CopyTo(destination);
+        }
+
         public static void Clear<T>(ref T dest, nuint len)
         {
             while (len > 0)

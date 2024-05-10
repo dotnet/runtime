@@ -1,12 +1,9 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
-using System.Buffers;
-using System.Reflection;
 using Xunit;
 
-namespace System.Tests
+namespace System.Buffers.Tests
 {
     public static class NativeRangeTests
     {
@@ -101,7 +98,7 @@ namespace System.Tests
             NRange NativeRange2 = new NRange(new NIndex(10, fromEnd: false), new NIndex(20, fromEnd: false));
             Assert.Equal(NativeRange1.GetHashCode(), NativeRange2.GetHashCode());
 
-            NativeRange2 = new NRange(new NIndex(10, fromEnd: false), new NIndex(20, fromEnd: true));
+            NativeRange2 = new NRange(new NIndex(101, fromEnd: false), new NIndex(20, fromEnd: true));
             Assert.NotEqual(NativeRange1.GetHashCode(), NativeRange2.GetHashCode());
 
             NativeRange2 = new NRange(new NIndex(10, fromEnd: false), new NIndex(21, fromEnd: false));

@@ -16,12 +16,14 @@ namespace System.Numerics.Tensors
 
         public TensorSpanDebugView(TensorSpan<T> span)
         {
-            _array = span.ToArray();
+            _array = new T[span.FlattenedLength];
+            span.FlattenTo(_array);
         }
 
         public TensorSpanDebugView(ReadOnlyTensorSpan<T> span)
         {
-            _array = span.ToArray();
+            _array = new T[span.FlattenedLength];
+            span.FlattenTo(_array);
         }
 
         [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]

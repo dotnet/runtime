@@ -148,16 +148,10 @@ namespace System.Buffers
         /// <summary>Converts native integer number to an NIndex.</summary>
         public static implicit operator NIndex(Index value) => new NIndex(value);
 
-        /// <summary>
-        /// Converts a <see cref="NIndex"/> to an <see cref="Index"/>."/>
-        /// </summary>
-        /// <param name="value"></param>
+        /// <summary>Converts a <see cref="NIndex"/> to an <see cref="Index"/>."/></summary>
         public static explicit operator Index(NIndex value) => new Index((int)value.Value, value.IsFromEnd);
 
-        /// <summary>
-        /// Converts a <see cref="NIndex"/> to an <see cref="Index"/>."/>
-        /// </summary>
-        /// <param name="value"></param>
+        /// <summary>Converts a <see cref="NIndex"/> to an <see cref="Index"/>."/></summary>
         public static explicit operator checked Index(NIndex value) => new Index(checked((int)value.Value), value.IsFromEnd);
 
         /// <summary>Converts the value of the current NIndex object to its equivalent string representation.</summary>

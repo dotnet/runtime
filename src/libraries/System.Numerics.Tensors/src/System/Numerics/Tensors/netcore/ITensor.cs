@@ -11,27 +11,26 @@ using System.Threading.Tasks;
 namespace System.Numerics.Tensors
 {
     public interface ITensor<TSelf, T>
-        : IEnumerable<T>,
-          IEquatable<TSelf>,
-          IEqualityOperators<TSelf, TSelf, bool>
+        : IEnumerable<T>
         where TSelf : ITensor<TSelf, T>
     {
         // TODO: Determine if we can implement `IEqualityOperators<TSelf, T, bool>`.
         // It looks like C#/.NET currently hits limitations here as it believes TSelf and T could be the same type
         // Ideally we could annotate it such that they cannot be the same type and no conflicts would exist
 
-        static TSelf? Empty { get; }
+        static abstract TSelf? Empty { get; }
 
         bool IsEmpty { get; }
         bool IsPinned { get; }
         int Rank { get; }
+        nint FlattenedLength { get; }
         // THIS IS GOING TO PEND A DISCUSSION WITH THE LANGUAGE TEAM
-        ReadOnlySpan<nint> Strides { get; }
+        void GetStrides(Span<nint> destination);
+        void GetLengths(Span<nint> destination);
 
-        ref T this[params scoped ReadOnlySpan<nint> indices] { get; }
-
-        static abstract implicit operator TensorSpan<T>(TSelf value);
-        static abstract implicit operator ReadOnlyTensorSpan<T>(TSelf value);
+        T this[params scoped ReadOnlySpan<nint> indexes] { get; }
+        T this[params scoped ReadOnlySpan<NIndex> indexes] { get; set; }
+        TSelf this[params scoped ReadOnlySpan<NRange> ranges] { get; set; }
 
         TensorSpan<T> AsTensorSpan(params scoped ReadOnlySpan<NRange> ranges);
         ReadOnlyTensorSpan<T> AsReadOnlyTensorSpan(params scoped ReadOnlySpan<NRange> ranges);
@@ -42,13 +41,5 @@ namespace System.Numerics.Tensors
         void CopyTo(TensorSpan<T> destination);
         void Fill(T value);
         bool TryCopyTo(TensorSpan<T> destination);
-
-        // IEqualityOperators
-
-        static abstract bool operator ==(TSelf left, TSelf right);
-        static abstract bool operator ==(TSelf left, T right);
-
-        static abstract bool operator !=(TSelf left, TSelf right);
-        static abstract bool operator !=(TSelf left, T right);
     }
 }

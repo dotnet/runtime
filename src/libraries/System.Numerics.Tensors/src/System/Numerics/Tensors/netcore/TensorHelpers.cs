@@ -29,7 +29,7 @@ namespace System.Numerics.Tensors
         /// <returns>How many boolean values are true.</returns>
         public static nint CountTrueElements(Tensor<bool> filter)
         {
-            Span<bool> filterSpan = MemoryMarshal.CreateSpan(ref filter._values[0], (int)filter._linearLength);
+            Span<bool> filterSpan = MemoryMarshal.CreateSpan(ref filter._values[0], (int)filter._flattenedLength);
             nint count = 0;
             for (int i = 0; i < filterSpan.Length; i++)
             {
@@ -41,7 +41,7 @@ namespace System.Numerics.Tensors
         }
 
         internal static bool AreShapesBroadcastCompatible<T>(Tensor<T> tensor1, Tensor<T> tensor2)
-            where T : IEquatable<T>, IEqualityOperators<T, T, bool> => AreShapesBroadcastCompatible(tensor1.Shape, tensor2.Shape);
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool> => AreShapesBroadcastCompatible(tensor1.Lengths, tensor2.Lengths);
 
         internal static bool AreShapesBroadcastCompatible(ReadOnlySpan<nint> shape1, ReadOnlySpan<nint> shape2)
         {
@@ -114,7 +114,7 @@ namespace System.Numerics.Tensors
         }
 
         internal static bool IsUnderlyingStorageSameSize<T>(Tensor<T> tensor1, Tensor<T> tensor2)
-            where T : IEquatable<T>, IEqualityOperators<T, T, bool> => tensor1.Shape.Length == tensor2.Shape.Length;
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool> => tensor1.Lengths.Length == tensor2.Lengths.Length;
 
         internal static bool AreShapesTheSame<T>(Tensor<T> tensor1, Tensor<T> tensor2)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool> => tensor1._lengths.SequenceEqual(tensor2._lengths);

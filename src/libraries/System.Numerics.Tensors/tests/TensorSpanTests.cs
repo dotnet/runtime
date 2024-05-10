@@ -17,18 +17,20 @@ namespace System.Numerics.Tensors.Tests
         public static void IntArrayAsTensorSpan()
         {
             int[] a = { 91, 92, -93, 94 };
+            int[] results = new int[4];
             TensorSpan<int> spanInt = a.AsTensorSpan(4);
             Assert.Equal(1, spanInt.Rank);
 
-            Assert.Equal(1, spanInt.Shape.Length);
-            Assert.Equal(4, spanInt.Shape[0]);
+            Assert.Equal(1, spanInt.Lengths.Length);
+            Assert.Equal(4, spanInt.Lengths[0]);
             Assert.Equal(1, spanInt.Strides.Length);
             Assert.Equal(1, spanInt.Strides[0]);
             Assert.Equal(91, spanInt[0]);
             Assert.Equal(92, spanInt[1]);
             Assert.Equal(-93, spanInt[2]);
             Assert.Equal(94, spanInt[3]);
-            Assert.Equal(a, spanInt.ToArray());
+            spanInt.FlattenTo(results);
+            Assert.Equal(a, results);
             spanInt[0] = 100;
             spanInt[1] = 101;
             spanInt[2] = -102;
@@ -44,11 +46,12 @@ namespace System.Numerics.Tensors.Tests
             a[2] = -93;
             a[3] = 94;
             spanInt = a.AsTensorSpan(2, 2);
-            Assert.Equal(a, spanInt.ToArray());
+            spanInt.FlattenTo(results);
+            Assert.Equal(a, results);
             Assert.Equal(2, spanInt.Rank);
-            Assert.Equal(2, spanInt.Shape.Length);
-            Assert.Equal(2, spanInt.Shape[0]);
-            Assert.Equal(2, spanInt.Shape[1]);
+            Assert.Equal(2, spanInt.Lengths.Length);
+            Assert.Equal(2, spanInt.Lengths[0]);
+            Assert.Equal(2, spanInt.Lengths[1]);
             Assert.Equal(2, spanInt.Strides.Length);
             Assert.Equal(2, spanInt.Strides[0]);
             Assert.Equal(1, spanInt.Strides[1]);
@@ -359,10 +362,11 @@ namespace System.Numerics.Tensors.Tests
         public static void TensorSpanSliceTest()
         {
             int[] a = [1, 2, 3, 4, 5, 6, 7, 8, 9];
+            int[] results = new int[9];
             TensorSpan<int> spanInt = a.AsTensorSpan(3, 3);
 
-            Assert.Throws<ArgumentOutOfRangeException>(() => a.AsTensorSpan(2, 3).Slice(0..1));
-            Assert.Throws<ArgumentOutOfRangeException>(() => a.AsTensorSpan(2, 3).Slice(1..2));
+            Assert.Throws<IndexOutOfRangeException>(() => a.AsTensorSpan(2, 3).Slice(0..1));
+            Assert.Throws<IndexOutOfRangeException>(() => a.AsTensorSpan(2, 3).Slice(1..2));
             Assert.Throws<ArgumentOutOfRangeException>(() => a.AsTensorSpan(2, 3).Slice(0..1, 5..6));
 
             var sp = spanInt.Slice(1..3, 1..3);
@@ -371,7 +375,9 @@ namespace System.Numerics.Tensors.Tests
             Assert.Equal(8, sp[1, 0]);
             Assert.Equal(9, sp[1, 1]);
             int[] slice = [5, 6, 8, 9];
-            Assert.Equal(slice, sp.ToArray());
+            results = new int[4];
+            sp.FlattenTo(results);
+            Assert.Equal(slice, results);
             var enumerator = sp.GetEnumerator();
             var index = 0;
             while (enumerator.MoveNext())
@@ -389,7 +395,9 @@ namespace System.Numerics.Tensors.Tests
             Assert.Equal(7, sp[2, 0]);
             Assert.Equal(8, sp[2, 1]);
             Assert.Equal(9, sp[2, 2]);
-            Assert.Equal(a, sp.ToArray());
+            results = new int[9];
+            sp.FlattenTo(results);
+            Assert.Equal(a, results);
             enumerator = sp.GetEnumerator();
             index = 0;
             while (enumerator.MoveNext())
@@ -401,7 +409,9 @@ namespace System.Numerics.Tensors.Tests
             Assert.Equal(1, sp[0, 0]);
             Assert.Throws<IndexOutOfRangeException>(() => a.AsTensorSpan(3, 3).Slice(0..1, 0..1)[0, 1]);
             slice = [1];
-            Assert.Equal(slice, sp.ToArray());
+            results = new int[1];
+            sp.FlattenTo(results);
+            Assert.Equal(slice, results);
             enumerator = sp.GetEnumerator();
             index = 0;
             while (enumerator.MoveNext())
@@ -415,7 +425,9 @@ namespace System.Numerics.Tensors.Tests
             Assert.Equal(4, sp[1, 0]);
             Assert.Equal(5, sp[1, 1]);
             slice = [1, 2, 4, 5];
-            Assert.Equal(slice, sp.ToArray());
+            results = new int[4];
+            sp.FlattenTo(results);
+            Assert.Equal(slice, results);
             enumerator = sp.GetEnumerator();
             index = 0;
             while (enumerator.MoveNext())
@@ -428,7 +440,9 @@ namespace System.Numerics.Tensors.Tests
             sp = spanInt.Slice(1..2, 1..2, 1..2);
             Assert.Equal(13, sp[0, 0, 0]);
             slice = [13];
-            Assert.Equal(slice, sp.ToArray());
+            results = new int[1];
+            sp.FlattenTo(results);
+            Assert.Equal(slice, results);
             enumerator = sp.GetEnumerator();
             index = 0;
             while (enumerator.MoveNext())
@@ -446,7 +460,9 @@ namespace System.Numerics.Tensors.Tests
             Assert.Equal(25, sp[1, 1, 0]);
             Assert.Equal(26, sp[1, 1, 1]);
             slice = [13, 14, 16, 17, 22, 23, 25, 26];
-            Assert.Equal(slice, sp.ToArray());
+            results = new int[8];
+            sp.FlattenTo(results);
+            Assert.Equal(slice, results);
             enumerator = sp.GetEnumerator();
             index = 0;
             while (enumerator.MoveNext())
@@ -462,7 +478,9 @@ namespace System.Numerics.Tensors.Tests
             Assert.Equal(14, sp[0,1,0,0]);
             Assert.Equal(15, sp[0,1,0,1]);
             slice = [10, 11, 14, 15];
-            Assert.Equal(slice, sp.ToArray());
+            results = new int[4];
+            sp.FlattenTo(results);
+            Assert.Equal(slice, results);
             enumerator = sp.GetEnumerator();
             index = 0;
             while (enumerator.MoveNext())
