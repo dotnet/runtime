@@ -43,8 +43,6 @@ namespace JIT.HardwareIntrinsics.Arm
 
     public sealed unsafe class CreateFalseMaskTest__{TestName}
     {
-        private static readonly int LargestVectorSize = {LargestVectorSize};
-
         private static readonly int RetElementCount = Unsafe.SizeOf<{RetVectorType}<{RetBaseType}>>() / sizeof({RetBaseType});
 
         public CreateFalseMaskTest__{TestName}()
