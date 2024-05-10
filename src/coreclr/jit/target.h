@@ -249,11 +249,6 @@ public:
     {
         return low;
     }
-
-    void setLow(uint64_t _low)
-    {
-        low = _low;
-    }
 };
 
 static regMaskTP operator^(regMaskTP first, regMaskTP second)
@@ -294,13 +289,13 @@ static regMaskTP& operator>>=(regMaskTP& first, const int b)
 
 static regMaskTP& operator|=(regMaskTP& first, regMaskTP second)
 {
-    first.setLow(first.getLow() | second.getLow());
+    first = first | second;
     return first;
 }
 
 static regMaskTP& operator^=(regMaskTP& first, regMaskTP second)
 {
-    first.setLow(first.getLow() ^ second.getLow());
+    first = first ^ second;
     return first;
 }
 
@@ -324,7 +319,7 @@ static regMaskSmall operator|=(regMaskSmall& first, regMaskTP second)
 
 static regMaskTP& operator&=(regMaskTP& first, regMaskTP second)
 {
-    first.setLow(first.getLow() & second.getLow());
+    first = first & second;
     return first;
 }
 
