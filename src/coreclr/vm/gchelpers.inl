@@ -31,13 +31,12 @@
 
 FORCEINLINE void InlinedSetCardsAfterBulkCopyHelper(Object **start, size_t len)
 {
+    // Caller is expected to check whether start points into the heap or not
+    _ASSERTE(!((BYTE*)start < g_lowest_address || (BYTE*)start >= g_highest_address));
+
     // Check whether the writes were even into the heap. If not there's no card update required.
     // Also if the size is smaller than a pointer, no write barrier is required.
     _ASSERTE(len >= sizeof(uintptr_t));
-    if ((BYTE*)start < g_lowest_address || (BYTE*)start >= g_highest_address)
-    {
-        return;
-    }
 
     // Don't optimize the Generation 0 case if we are checking for write barrier violations
     // since we need to update the shadow heap even in the generation 0 case.
