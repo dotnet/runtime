@@ -1768,6 +1768,19 @@ namespace System.Runtime.Intrinsics.Arm
         /// </summary>
         public static unsafe Vector<ulong> MultiplyAdd(Vector<ulong> addend, Vector<ulong> left, Vector<ulong> right) { throw new PlatformNotSupportedException(); }
 
+        ///  MultiplyBySelectedScalar : Multiply
+
+        /// <summary>
+        /// svfloat64_t svmul_lane[_f64](svfloat64_t op1, svfloat64_t op2, uint64_t imm_index)
+        ///   FMUL Zresult.D, Zop1.D, Zop2.D[imm_index]
+        /// </summary>
+        public static unsafe Vector<double> MultiplyBySelectedScalar(Vector<double> left, Vector<double> right, [ConstantExpected] byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svfloat32_t svmul_lane[_f32](svfloat32_t op1, svfloat32_t op2, uint64_t imm_index)
+        ///   FMUL Zresult.S, Zop1.S, Zop2.S[imm_index]
+        /// </summary>
+        public static unsafe Vector<float> MultiplyBySelectedScalar(Vector<float> left, Vector<float> right, [ConstantExpected] byte rightIndex) { throw new PlatformNotSupportedException(); }
 
         ///  MultiplySubtract : Multiply-subtract, minuend first
 

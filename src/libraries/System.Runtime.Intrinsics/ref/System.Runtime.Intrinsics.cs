@@ -4391,6 +4391,9 @@ namespace System.Runtime.Intrinsics.Arm
         public static System.Numerics.Vector<uint> MultiplyAdd(System.Numerics.Vector<uint> addend, System.Numerics.Vector<uint> left, System.Numerics.Vector<uint> right) { throw null; }
         public static System.Numerics.Vector<ulong> MultiplyAdd(System.Numerics.Vector<ulong> addend, System.Numerics.Vector<ulong> left, System.Numerics.Vector<ulong> right) { throw null; }
         
+        public static System.Numerics.Vector<double> MultiplyBySelectedScalar(System.Numerics.Vector<double> left, System.Numerics.Vector<double> right, [ConstantExpected] byte rightIndex) { throw null; }
+        public static System.Numerics.Vector<float> MultiplyBySelectedScalar(System.Numerics.Vector<float> left, System.Numerics.Vector<float> right, [ConstantExpected] byte rightIndex) { throw null; }
+        
         public static System.Numerics.Vector<byte> MultiplySubtract(System.Numerics.Vector<byte> minuend, System.Numerics.Vector<byte> left, System.Numerics.Vector<byte> right) { throw null; }
         public static System.Numerics.Vector<short> MultiplySubtract(System.Numerics.Vector<short> minuend, System.Numerics.Vector<short> left, System.Numerics.Vector<short> right) { throw null; }
         public static System.Numerics.Vector<int> MultiplySubtract(System.Numerics.Vector<int> minuend, System.Numerics.Vector<int> left, System.Numerics.Vector<int> right) { throw null; }
