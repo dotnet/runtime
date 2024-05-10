@@ -78,6 +78,14 @@
         ret     lr
     LEAF_END
 
+#if defined(_MSC_VER)
+;; DWORD64 __stdcall GetSveLengthFromOS(void);
+    LEAF_ENTRY GetSveLengthFromOS
+        rdvl    x0, 1
+        ret     lr
+    LEAF_END
+#endif // _MSC_VER
+
 ;;-----------------------------------------------------------------------------
 ;; This routine captures the machine state. It is used by helper method frame
 ;;-----------------------------------------------------------------------------

@@ -69,6 +69,10 @@ Abstract:
 #include "gcinfo.h"
 #include "eexcp.h"
 
+#if defined(TARGET_ARM64) && defined(_MSC_VER)
+extern "C" DWORD64 __stdcall GetSveLengthFromOS();
+#endif
+
 class MethodDesc;
 class ICorJitCompiler;
 class IJitManager;
@@ -1912,15 +1916,7 @@ public:
         return m_CPUCompileFlags;
     }
 
-#if defined(TARGET_ARM64)
-#if defined(_MSC_VER)
-    inline UINT64 GetSveLengthFromOS()
-    {
-        UINT64 size;
-        __asm rdvl size, 1
-        return size;
-    }
-#else // defined(__GNUC__)
+#if defined(TARGET_ARM64) && !defined(_MSC_VER)
     __attribute__((target("sve")))
     inline UINT64 GetSveLengthFromOS()
     {
@@ -1928,7 +1924,6 @@ public:
         __asm__ __volatile__("rdvl %0, #1" : "=r"(size));
         return size;
     }
-#endif  // _MSC_VER
 #endif  // TARGET_ARM64
 
 private:
