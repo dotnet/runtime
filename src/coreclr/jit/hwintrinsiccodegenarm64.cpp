@@ -572,61 +572,55 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 case 3:
                 {
                     assert(instrIsRMW);
-                    assert(!HWIntrinsicInfo::IsOptionalEmbeddedMaskedOperation(intrinEmbMask.id));
+                    assert(HWIntrinsicInfo::IsFmaIntrinsic(intrinEmbMask.id));
+                    assert(falseReg != embMaskOp1Reg);
+                    assert(falseReg != embMaskOp2Reg);
+                    assert(falseReg != embMaskOp3Reg);
 
-                    if (HWIntrinsicInfo::IsFmaIntrinsic(intrinEmbMask.id))
+                    bool useAddend = true;
+                    if (targetReg == embMaskOp2Reg)
                     {
-                        bool useAddend = true;
-                        if (targetReg == embMaskOp2Reg)
-                        {
-                            useAddend = false;
-                            std::swap(embMaskOp1Reg, embMaskOp2Reg);
-                        }
-                        else if (targetReg == embMaskOp3Reg)
-                        {
-                            useAddend = false;
-                            std::swap(embMaskOp1Reg, embMaskOp3Reg);
-                        }
-                        else
-                        {
-                            // Nothing to do here
-                        }
-
-                        switch (intrinEmbMask.id)
-                        {
-                            case NI_Sve_FusedMultiplyAdd:
-                                insEmbMask = useAddend ? INS_sve_fmla : INS_sve_fmad;
-                                break;
-
-                            case NI_Sve_FusedMultiplyAddNegated:
-                                insEmbMask = useAddend ? INS_sve_fnmla : INS_sve_fnmad;
-                                break;
-
-                            case NI_Sve_FusedMultiplySubtract:
-                                insEmbMask = useAddend ? INS_sve_fmls : INS_sve_fmsb;
-                                break;
-
-                            case NI_Sve_FusedMultiplySubtractNegated:
-                                insEmbMask = useAddend ? INS_sve_fnmls : INS_sve_fnmsb;
-                                break;
-
-                            case NI_Sve_MultiplyAdd:
-                                insEmbMask = useAddend ? INS_sve_mla : INS_sve_mad;
-                                break;
-
-                            case NI_Sve_MultiplySubtract:
-                                insEmbMask = useAddend ? INS_sve_mls : INS_sve_msb;
-                                break;
-
-                            default:
-                                unreached();
-                        }
+                        useAddend = false;
+                        std::swap(embMaskOp1Reg, embMaskOp2Reg);
+                    }
+                    else if (targetReg == embMaskOp3Reg)
+                    {
+                        useAddend = false;
+                        std::swap(embMaskOp1Reg, embMaskOp3Reg);
                     }
                     else
                     {
-                        assert(targetReg != falseReg);
-                        assert(targetReg != embMaskOp2Reg);
-                        assert(targetReg != embMaskOp3Reg);
+                        // Nothing to do here
+                    }
+
+                    switch (intrinEmbMask.id)
+                    {
+                        case NI_Sve_FusedMultiplyAdd:
+                            insEmbMask = useAddend ? INS_sve_fmla : INS_sve_fmad;
+                            break;
+
+                        case NI_Sve_FusedMultiplyAddNegated:
+                            insEmbMask = useAddend ? INS_sve_fnmla : INS_sve_fnmad;
+                            break;
+
+                        case NI_Sve_FusedMultiplySubtract:
+                            insEmbMask = useAddend ? INS_sve_fmls : INS_sve_fmsb;
+                            break;
+
+                        case NI_Sve_FusedMultiplySubtractNegated:
+                            insEmbMask = useAddend ? INS_sve_fnmls : INS_sve_fnmsb;
+                            break;
+
+                        case NI_Sve_MultiplyAdd:
+                            insEmbMask = useAddend ? INS_sve_mla : INS_sve_mad;
+                            break;
+
+                        case NI_Sve_MultiplySubtract:
+                            insEmbMask = useAddend ? INS_sve_mls : INS_sve_msb;
+                            break;
+
+                        default:
+                            unreached();
                     }
 
                     if (intrin.op3->IsVectorZero())
@@ -639,24 +633,50 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                     }
                     else
                     {
-                        if (targetReg != embMaskOp1Reg)
-                        {
-                            // Since this is RMW node, we need to move `embMaskOp1Reg -> targetReg` first.
-                            GetEmitter()->emitIns_Mov(INS_sve_mov, emitSize, targetReg, embMaskOp1Reg,
-                                                      true /* canSkip */, opt);
-                        }
+                        // Below are the considerations we need to handle:
+                        // 
+                        // targetReg == falseReg && targetReg == embMaskOp1Reg
+                        //      fmla    Zd, P/m, Zn, Zm
+                        //
+                        // targetReg == falseReg && targetReg != embMaskOp1Reg
+                        //      movprfx target, P/m, embMaskOp1Reg
+                        //      fmla    target, P/m, embMaskOp2Reg, embMaskOp3Reg
+                        // 
+                        // targetReg != falseReg && targetReg == embMaskOp1Reg
+                        //      sel     target, P/m, embMaskOp1Reg, falseReg
+                        //      fmla    target, P/m, embMaskOp2Reg, embMaskOp3Reg
+                        // 
+                        // targetReg != falseReg && targetReg != embMaskOp1Reg
+                        //      sel     target, P/m, embMaskOp1Reg, falseReg
+                        //      fmla    target, P/m, embMaskOp2Reg, embMaskOp3Reg
+                        //
+                        // Note that, we just check if the targetReg/falseReg or targetReg/embMaskOp1Reg
+                        // coincides or not. Other combination like falseReg/embMaskOp*Reg cannot happen
+                        // because we marked embMaskOp*Reg as delayFree.
 
                         if (targetReg != falseReg)
                         {
-                            // Next, if `falseReg` is not same as `targetReg`, merge it with `target`
-                            GetEmitter()->emitIns_R_R_R(INS_sve_movprfx, emitSize, targetReg, maskReg, falseReg,
+                            // If falseReg value is not present in targetReg yet, move the inactive lanes
+                            // into the targetReg using `sel`. Since this is RMW, the active lanes should
+                            // have the value from embMaskOp1Reg
+
+                            GetEmitter()->emitIns_R_R_R_R(INS_sve_sel, emitSize, targetReg, maskReg, embMaskOp1Reg,
+                                                          falseReg, opt, INS_SCALABLE_OPTS_UNPREDICATED);
+                        }
+                        else if (targetReg != embMaskOp1Reg)
+                        {
+                            // If target already contains the values of `falseReg`, just merge the lanes from
+                            // `embMaskOp1Reg`, again because this is RMW semantics.
+
+                            GetEmitter()->emitIns_R_R_R(INS_sve_movprfx, emitSize, targetReg, maskReg, embMaskOp1Reg,
                                                         opt, INS_SCALABLE_OPTS_PREDICATE_MERGE);
                         }
                     }
 
-                    // `targetReg` is same as `falseReg`. Just generate the predicated version of instruction
+                    // Finally, perform the desired operation.
                     GetEmitter()->emitIns_R_R_R_R(insEmbMask, emitSize, targetReg, maskReg, embMaskOp2Reg,
                                                   embMaskOp3Reg, opt);
+
                     break;
                 }
                 default:
