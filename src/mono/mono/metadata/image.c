@@ -536,8 +536,13 @@ load_metadata_ptrs (MonoImage *image, MonoCLIImageInfo *iinfo)
 			mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_METADATA_UPDATE, "Image '%s' has a minimal delta marker", image->name);
 			ptr += 8 + 5;
 		} else {
-			g_print ("strncmp (ptr + 8, \"%s\", 3) == %u\n", "#~", strncmp (ptr + 8, "#~", 3));
-			g_print ("strncmp (ptr + 8, \"%s\", 3) == %u\n", "#-", strncmp (ptr + 8, "#-", 3));
+			uint64_t tp = (uint64_t)"#~";
+			g_print ("strncmp (ptr + 8, \"%s\", 3) == %u; &str=%u\n", "#~", strncmp (ptr + 8, "#~", 3), (uint32_t)tp);
+			for (int32_t i = -32; i <= 32; i++) {
+				uint8_t *cp = ((uint8_t *)tp) + i;
+				g_print("%u %c ", *cp, *cp);
+			}
+			g_print("\n");
 			g_message ("Unknown heap type: %s\n", ptr + 8);
 			ptr += 8 + strlen (ptr + 8) + 1;
 		}
