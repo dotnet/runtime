@@ -1477,6 +1477,22 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static short AddWideningUpper(short[] op1, sbyte[] op2, int i) => AddWidening(op1[i], op2[i + op2.Length / 2]);
 
+        public static sbyte BooleanNot(sbyte value) => (sbyte)(value == 0 ? 1 : 0);
+
+        public static byte BooleanNot(byte value) => (byte)(value == 0 ? 1 : 0);
+
+        public static short BooleanNot(short value) => (short)(value == 0 ? 1 : 0);
+
+        public static ushort BooleanNot(ushort value) => (ushort)(value == 0 ? 1 : 0);
+
+        public static int BooleanNot(int value) => (int)(value == 0 ? 1 : 0);
+
+        public static uint BooleanNot(uint value) => (uint)(value == 0 ? 1 : 0);
+
+        public static long BooleanNot(long value) => (long)(value == 0 ? 1 : 0);
+
+        public static ulong BooleanNot(ulong value) => (ulong)(value == 0 ? 1 : 0);
+
         public static sbyte ExtractNarrowing(short op1) => (sbyte)op1;
 
         public static sbyte ExtractNarrowingUpper(sbyte[] op1, short[] op2, int i) => i < op1.Length ? op1[i] : ExtractNarrowing(op2[i - op1.Length]);
@@ -5118,9 +5134,15 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static sbyte AddAcross(sbyte[] op1) => Reduce(Add, op1);
 
+        public static sbyte AndAcross(sbyte[] op1) => Reduce(And, op1);
+
         public static sbyte MaxAcross(sbyte[] op1) => Reduce(Max, op1);
 
         public static sbyte MinAcross(sbyte[] op1) => Reduce(Min, op1);
+
+        public static sbyte OrAcross(sbyte[] op1) => Reduce(Or, op1);
+
+        public static sbyte XorAcross(sbyte[] op1) => Reduce(Xor, op1);
 
         private static sbyte Reduce(Func<sbyte, sbyte, sbyte> reduceOp, sbyte[] op1)
         {
@@ -5136,9 +5158,15 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static byte AddAcross(byte[] op1) => Reduce(Add, op1);
 
+        public static byte AndAcross(byte[] op1) => Reduce(And, op1);
+
         public static byte MaxAcross(byte[] op1) => Reduce(Max, op1);
 
         public static byte MinAcross(byte[] op1) => Reduce(Min, op1);
+
+        public static byte OrAcross(byte[] op1) => Reduce(Or, op1);
+
+        public static byte XorAcross(byte[] op1) => Reduce(Xor, op1);
 
         private static byte Reduce(Func<byte, byte, byte> reduceOp, byte[] op1)
         {
@@ -5154,9 +5182,15 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static short AddAcross(short[] op1) => Reduce(Add, op1);
 
+        public static short AndAcross(short[] op1) => Reduce(And, op1);
+
         public static short MaxAcross(short[] op1) => Reduce(Max, op1);
 
         public static short MinAcross(short[] op1) => Reduce(Min, op1);
+
+        public static short OrAcross(short[] op1) => Reduce(Or, op1);
+
+        public static short XorAcross(short[] op1) => Reduce(Xor, op1);
 
         private static short Reduce(Func<short, short, short> reduceOp, short[] op1)
         {
@@ -5172,9 +5206,15 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static ushort AddAcross(ushort[] op1) => Reduce(Add, op1);
 
+        public static ushort AndAcross(ushort[] op1) => Reduce(And, op1);
+
         public static ushort MaxAcross(ushort[] op1) => Reduce(Max, op1);
 
         public static ushort MinAcross(ushort[] op1) => Reduce(Min, op1);
+
+        public static ushort OrAcross(ushort[] op1) => Reduce(Or, op1);
+
+        public static ushort XorAcross(ushort[] op1) => Reduce(Xor, op1);
 
         private static ushort Reduce(Func<ushort, ushort, ushort> reduceOp, ushort[] op1)
         {
@@ -5190,9 +5230,15 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static int AddAcross(int[] op1) => Reduce(Add, op1);
 
+        public static int AndAcross(int[] op1) => Reduce(And, op1);
+
         public static int MaxAcross(int[] op1) => Reduce(Max, op1);
 
         public static int MinAcross(int[] op1) => Reduce(Min, op1);
+
+        public static int OrAcross(int[] op1) => Reduce(Or, op1);
+
+        public static int XorAcross(int[] op1) => Reduce(Xor, op1);
 
         private static int Reduce(Func<int, int, int> reduceOp, int[] op1)
         {
@@ -5208,9 +5254,15 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static uint AddAcross(uint[] op1) => Reduce(Add, op1);
 
+        public static uint AndAcross(uint[] op1) => Reduce(And, op1);
+
         public static uint MaxAcross(uint[] op1) => Reduce(Max, op1);
 
         public static uint MinAcross(uint[] op1) => Reduce(Min, op1);
+
+        public static uint OrAcross(uint[] op1) => Reduce(Or, op1);
+
+        public static uint XorAcross(uint[] op1) => Reduce(Xor, op1);
 
         private static uint Reduce(Func<uint, uint, uint> reduceOp, uint[] op1)
         {
@@ -5226,9 +5278,15 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static long AddAcross(long[] op1) => Reduce(Add, op1);
 
+        public static long AndAcross(long[] op1) => Reduce(And, op1);
+
         public static long MaxAcross(long[] op1) => Reduce(Max, op1);
 
         public static long MinAcross(long[] op1) => Reduce(Min, op1);
+
+        public static long OrAcross(long[] op1) => Reduce(Or, op1);
+
+        public static long XorAcross(long[] op1) => Reduce(Xor, op1);
 
         private static long Reduce(Func<long, long, long> reduceOp, long[] op1)
         {
@@ -5244,9 +5302,15 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static ulong AddAcross(ulong[] op1) => Reduce(Add, op1);
 
+        public static ulong AndAcross(ulong[] op1) => Reduce(And, op1);
+
         public static ulong MaxAcross(ulong[] op1) => Reduce(Max, op1);
 
         public static ulong MinAcross(ulong[] op1) => Reduce(Min, op1);
+
+        public static ulong OrAcross(ulong[] op1) => Reduce(Or, op1);
+
+        public static ulong XorAcross(ulong[] op1) => Reduce(Xor, op1);
 
         private static ulong Reduce(Func<ulong, ulong, ulong> reduceOp, ulong[] op1)
         {

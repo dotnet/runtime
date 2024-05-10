@@ -788,6 +788,9 @@ LinearScan::LinearScan(Compiler* theCompiler)
     regSelector = new (theCompiler, CMK_LSRA) RegisterSelection(this);
 
 #ifdef TARGET_ARM64
+    // Note: one known reason why we exclude LR is because NativeAOT has dependency on not
+    //       using LR as a GPR. See: https://github.com/dotnet/runtime/issues/101932
+    //       Once that is addressed, we may consider allowing LR in availableIntRegs.
     availableIntRegs = (RBM_ALLINT & ~(RBM_PR | RBM_FP | RBM_LR) & ~compiler->codeGen->regSet.rsMaskResvd);
 #elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     availableIntRegs = (RBM_ALLINT & ~(RBM_FP | RBM_RA) & ~compiler->codeGen->regSet.rsMaskResvd);
@@ -1726,8 +1729,10 @@ bool LinearScan::isRegCandidate(LclVarDsc* varDsc)
 #if defined(TARGET_XARCH)
         case TYP_SIMD32:
         case TYP_SIMD64:
-        case TYP_MASK:
 #endif // TARGET_XARCH
+#ifdef FEATURE_MASKED_HW_INTRINSICS
+        case TYP_MASK:
+#endif // FEATURE_MASKED_HW_INTRINSICS
         {
             return !varDsc->lvPromoted;
         }
@@ -5874,6 +5879,8 @@ void LinearScan::allocateRegisters()
             continue;
         }
 
+        assert(!currentRefPosition.isPhysRegRef);
+
         // If this is an exposed use, do nothing - this is merely a placeholder to attempt to
         // ensure that a register is allocated for the full lifetime.  The resolution logic
         // will take care of moving to the appropriate register if needed.
@@ -7425,7 +7432,6 @@ void LinearScan::insertCopyOrReload(BasicBlock* block, GenTree* tree, unsigned m
     // child needs to be copied or reloaded to that reg.
     if (parent->IsCopyOrReload())
     {
-        noway_assert(parent->OperGet() == oper);
         noway_assert(tree->IsMultiRegNode());
         GenTreeCopyOrReload* copyOrReload = parent->AsCopyOrReload();
         noway_assert(copyOrReload->GetRegNumByIdx(multiRegIdx) == REG_NA);
@@ -13307,8 +13313,7 @@ regMaskTP LinearScan::RegisterSelection::select(Interval*                current
 
             // If there is another fixed reference to this register before the use, change the candidates
             // on this RefPosition to include that of nextRefPos.
-            // TODO-Quirk: Should pass right type here, but previously this didn't consider TYP_DOUBLE case for arm32.
-            unsigned nextFixedRegRefLocation = linearScan->getNextFixedRef(defReg, TYP_I_IMPL);
+            unsigned nextFixedRegRefLocation = linearScan->getNextFixedRef(defReg, currentInterval->registerType);
             if (nextFixedRegRefLocation <= nextRefPos->getRefEndLocation())
             {
                 candidates |= nextRefPos->registerAssignment;
@@ -13768,7 +13773,7 @@ regMaskTP LinearScan::RegisterSelection::selectMinimal(Interval*                
 
             // If there is another fixed reference to this register before the use, change the candidates
             // on this RefPosition to include that of nextRefPos.
-            unsigned nextFixedRegRefLocation = linearScan->getNextFixedRef(defReg, TYP_I_IMPL);
+            unsigned nextFixedRegRefLocation = linearScan->getNextFixedRef(defReg, currentInterval->registerType);
             if (nextFixedRegRefLocation <= nextRefPos->getRefEndLocation())
             {
                 candidates |= nextRefPos->registerAssignment;

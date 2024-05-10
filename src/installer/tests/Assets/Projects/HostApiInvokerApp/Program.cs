@@ -28,8 +28,12 @@ namespace HostApiInvokerApp
 
         public static void MainCore(string[] args)
         {
-            Console.WriteLine("Hello World!");
-            Console.WriteLine(string.Join(Environment.NewLine, args));
+            if (args.Length == 0)
+                throw new Exception($"{nameof(HostApiInvokerApp)} requires at least one argument specifying the API to test.");
+
+            Console.WriteLine("Arguments:");
+            foreach (string arg in args)
+                Console.WriteLine($"  {arg}");
 
             // If requested, test multilevel lookup using fake Global SDK directories:
             //     1. using a fake ProgramFiles location
@@ -39,22 +43,30 @@ namespace HostApiInvokerApp
             string testMultilevelLookupProgramFiles = Environment.GetEnvironmentVariable("TEST_MULTILEVEL_LOOKUP_PROGRAM_FILES");
             string testMultilevelLookupSelfRegistered = Environment.GetEnvironmentVariable("TEST_MULTILEVEL_LOOKUP_SELF_REGISTERED");
 
+            string hostfxrPath;
             if (testMultilevelLookupProgramFiles != null && testMultilevelLookupSelfRegistered != null)
             {
                 Environment.SetEnvironmentVariable("_DOTNET_TEST_GLOBALLY_REGISTERED_PATH", testMultilevelLookupSelfRegistered);
                 Environment.SetEnvironmentVariable("ProgramFiles", testMultilevelLookupProgramFiles);
                 Environment.SetEnvironmentVariable("ProgramFiles(x86)", testMultilevelLookupProgramFiles);
                 Environment.SetEnvironmentVariable("DOTNET_MULTILEVEL_LOOKUP", "1");
+                hostfxrPath = AppContext.GetData("HOSTFXR_PATH_TEST_BEHAVIOR") as string;
             }
             else
             {
                 // never rely on machine state in test if we're not faking the multi-level lookup
                 Environment.SetEnvironmentVariable("DOTNET_MULTILEVEL_LOOKUP", "0");
+                hostfxrPath = AppContext.GetData("HOSTFXR_PATH") as string;
             }
 
-            if (args.Length == 0)
+            if (hostfxrPath is not null)
             {
-                throw new Exception("Invalid number of arguments passed");
+                NativeLibrary.SetDllImportResolver(typeof(Program).Assembly, (libraryName, assembly, searchPath) =>
+                {
+                    return libraryName == nameof(HostFXR.hostfxr)
+                        ? NativeLibrary.Load(libraryName, assembly, searchPath)
+                        : default;
+                });
             }
 
             string apiToTest = args[0];
