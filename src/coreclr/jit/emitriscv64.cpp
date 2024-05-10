@@ -5022,7 +5022,7 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
 
                         if (attr == EA_4BYTE)
                         {
-                            assert((src1->gtType == TYP_INT) && (src2->gtType == TYP_INT));
+                            assert((src1->gtType != TYP_LONG) && (src2->gtType != TYP_LONG));
 
                             emitIns_R_R_R(INS_add, attr, tempReg1, regOp1, regOp2);
 
