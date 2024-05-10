@@ -509,84 +509,11 @@ void Compiler::optRelopImpliesRelop(RelopImplicationInfo* rii)
             }
         }
 
-        // Given R(x, cns1) and R*(x, cns2) see if we can infer R* from R.
-        // First try to put constants on the right.
-        VNFunc   domFunc = domApp.m_func;
-        ValueNum domOp1  = domApp.m_args[0];
-        ValueNum domOp2  = domApp.m_args[1];
-
-        VNFunc   treeFunc = treeApp.m_func;
-        ValueNum treeOp1  = treeApp.m_args[0];
-        ValueNum treeOp2  = treeApp.m_args[1];
-
-        if (vnStore->IsVNConstant(domOp1))
+        if (((treeApp.m_args[0] == domApp.m_args[0]) || (treeApp.m_args[0] == domApp.m_args[1]) ||
+             (treeApp.m_args[1] == domApp.m_args[0]) || (treeApp.m_args[1] == domApp.m_args[1])) &&
+            optRelopTryInferWithOneEqualOperand(domApp, treeApp, rii))
         {
-            std::swap(domOp1, domOp2);
-            domFunc = ValueNumStore::SwapRelop(domFunc);
-        }
-
-        if (vnStore->IsVNConstant(treeOp1))
-        {
-            std::swap(treeOp1, treeOp2);
-            treeFunc = ValueNumStore::SwapRelop(treeFunc);
-        }
-
-        if ((treeOp1 == domOp1) && vnStore->IsVNConstant(treeOp2) && vnStore->IsVNConstant(domOp2) &&
-            varTypeIsIntOrI(vnStore->TypeOfVN(treeOp1)) && vnStore->TypeOfVN(domOp1) == vnStore->TypeOfVN(treeOp2) &&
-            vnStore->TypeOfVN(domOp2) == vnStore->TypeOfVN(treeOp2))
-        {
-            // We currently don't handle VNF_relop_UN funcs here
-            if (ValueNumStore::VNFuncIsSignedComparison(domFunc) && ValueNumStore::VNFuncIsSignedComparison(treeFunc))
-            {
-                // Dominating "X relop CNS"
-                const genTreeOps     domOper = static_cast<genTreeOps>(domFunc);
-                const target_ssize_t domCns  = vnStore->CoercedConstantValue<target_ssize_t>(domOp2);
-
-                // Dominated "X relop CNS"
-                const genTreeOps     treeOper = static_cast<genTreeOps>(treeFunc);
-                const target_ssize_t treeCns  = vnStore->CoercedConstantValue<target_ssize_t>(treeOp2);
-
-                // Example:
-                //
-                // void Test(int x)
-                // {
-                //     if (x > 100)
-                //         if (x > 10)
-                //             Console.WriteLine("Taken!");
-                // }
-                //
-
-                // Corresponding BB layout:
-                //
-                // BB1:
-                //   if (x <= 100)
-                //       goto BB4
-                //
-                // BB2:
-                //   // x is known to be > 100 here
-                //   if (x <= 10) // never true
-                //       goto BB4
-                //
-                // BB3:
-                //   Console.WriteLine("Taken!");
-                //
-                // BB4:
-                //   return;
-
-                // Check whether the dominating compare being "false" implies the dominated compare is known
-                // to be either "true" or "false".
-                RelopResult treeOperStatus =
-                    IsCmp2ImpliedByCmp1(GenTree::ReverseRelop(domOper), domCns, treeOper, treeCns);
-                if (treeOperStatus != RelopResult::Unknown)
-                {
-                    rii->canInfer          = true;
-                    rii->vnRelation        = ValueNumStore::VN_RELATION_KIND::VRK_Inferred;
-                    rii->canInferFromTrue  = false;
-                    rii->canInferFromFalse = true;
-                    rii->reverseSense      = treeOperStatus == RelopResult::AlwaysTrue;
-                    return;
-                }
-            }
+            return;
         }
     }
 
@@ -662,6 +589,115 @@ void Compiler::optRelopImpliesRelop(RelopImplicationInfo* rii)
             }
         }
     }
+}
+
+//------------------------------------------------------------------------
+// optRelopTryInferWithOneEqualOperand: Given a domnating relop R(x, y) and
+// another relop R*(a, b) that share an operand, try to see if we can infer
+// something about R*(a, b).
+//
+// Arguments:
+//   domApp  - The dominating relop R*(x, y)
+//   treeApp - The dominated relop R*(a, b)
+//   rii     - [out] struct with relop implication information
+//
+// Returns:
+//   True if something was inferred; otherwise false.
+//
+bool Compiler::optRelopTryInferWithOneEqualOperand(const VNFuncApp&      domApp,
+                                                   const VNFuncApp&      treeApp,
+                                                   RelopImplicationInfo* rii)
+{
+    // Canonicalize constants to be on the right.
+    VNFunc   domFunc = domApp.m_func;
+    ValueNum domOp1  = domApp.m_args[0];
+    ValueNum domOp2  = domApp.m_args[1];
+
+    VNFunc   treeFunc = treeApp.m_func;
+    ValueNum treeOp1  = treeApp.m_args[0];
+    ValueNum treeOp2  = treeApp.m_args[1];
+
+    if (vnStore->IsVNConstant(domOp1))
+    {
+        std::swap(domOp1, domOp2);
+        domFunc = ValueNumStore::SwapRelop(domFunc);
+    }
+
+    if (vnStore->IsVNConstant(treeOp1))
+    {
+        std::swap(treeOp1, treeOp2);
+        treeFunc = ValueNumStore::SwapRelop(treeFunc);
+    }
+
+    // Given R(x, cns1) and R*(x, cns2) see if we can infer R* from R.
+    if ((treeOp1 != domOp1) || !vnStore->IsVNConstant(treeOp2) || !vnStore->IsVNConstant(domOp2))
+    {
+        return false;
+    }
+
+    var_types treeOp1Type = vnStore->TypeOfVN(treeOp1);
+    var_types treeOp2Type = vnStore->TypeOfVN(treeOp2);
+    var_types domOp1Type  = vnStore->TypeOfVN(domOp1);
+    var_types domOp2Type  = vnStore->TypeOfVN(domOp2);
+    if (!varTypeIsIntOrI(treeOp1Type) || (domOp1Type != treeOp2Type) || (domOp2Type != treeOp2Type))
+    {
+        return false;
+    }
+    // We currently don't handle VNF_relop_UN funcs here
+    if (!ValueNumStore::VNFuncIsSignedComparison(domFunc) || !ValueNumStore::VNFuncIsSignedComparison(treeFunc))
+    {
+        return false;
+    }
+
+    // Dominating "X relop CNS"
+    const genTreeOps     domOper = static_cast<genTreeOps>(domFunc);
+    const target_ssize_t domCns  = vnStore->CoercedConstantValue<target_ssize_t>(domOp2);
+
+    // Dominated "X relop CNS"
+    const genTreeOps     treeOper = static_cast<genTreeOps>(treeFunc);
+    const target_ssize_t treeCns  = vnStore->CoercedConstantValue<target_ssize_t>(treeOp2);
+
+    // Example:
+    //
+    // void Test(int x)
+    // {
+    //     if (x > 100)
+    //         if (x > 10)
+    //             Console.WriteLine("Taken!");
+    // }
+    //
+
+    // Corresponding BB layout:
+    //
+    // BB1:
+    //   if (x <= 100)
+    //       goto BB4
+    //
+    // BB2:
+    //   // x is known to be > 100 here
+    //   if (x <= 10) // never true
+    //       goto BB4
+    //
+    // BB3:
+    //   Console.WriteLine("Taken!");
+    //
+    // BB4:
+    //   return;
+
+    // Check whether the dominating compare being "false" implies the dominated compare is known
+    // to be either "true" or "false".
+    RelopResult treeOperStatus = IsCmp2ImpliedByCmp1(GenTree::ReverseRelop(domOper), domCns, treeOper, treeCns);
+    if (treeOperStatus == RelopResult::Unknown)
+    {
+        return false;
+    }
+
+    rii->canInfer          = true;
+    rii->vnRelation        = ValueNumStore::VN_RELATION_KIND::VRK_Inferred;
+    rii->canInferFromTrue  = false;
+    rii->canInferFromFalse = true;
+    rii->reverseSense      = treeOperStatus == RelopResult::AlwaysTrue;
+    return true;
 }
 
 //------------------------------------------------------------------------
