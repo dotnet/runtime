@@ -576,20 +576,69 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                     assert(falseReg != embMaskOp2Reg);
                     assert(falseReg != embMaskOp3Reg);
 
+                    // For FMA, the operation we are trying to perform is:
+                    //      result = op1 + (op2 * op3)
+                    //
+                    // There are two instructions that can be used depending on which operand's register,
+                    // optionally, will store the final result.
+                    //
+                    // 1. If the result is stored in the operand that was used as an "addend" in the operation,
+                    // then we use `FMLA` format:
+                    //      reg1 = reg1 + (reg2 * reg3)
+                    //
+                    // 2. If the result is stored in the operand that was used as a "multiplicand" in the operation,
+                    // then we use `FMAD` format:
+                    //      reg1 = (reg1 * reg2) + reg3
+                    //
+                    // Check if the result's register is same as that of one of the operand's register and accordingly
+                    // pick the appropriate format. Suppose `targetReg` holds the result, then we have following cases:
+                    //
+                    // Case# 1: Result is stored in the operand that held the "addend"
+                    //      targetReg == reg1
+                    //
+                    // We generate the FMLA instruction format and no further changes are needed.
+                    //
+                    // Case# 2: Result is stored in the operand `op2` that held the "multiplicand"
+                    //      targetReg == reg2
+                    //
+                    // So we basically have an operation:
+                    //      reg2 = reg1 + (reg2 * reg3)
+                    //
+                    // Since, the result will be stored in the "multiplicand", we pick format `FMAD`.
+                    // Then, we rearrange the operands to ensure that the operation is done correctly.
+                    //      reg2 = reg1 + (reg2 * reg3)  // to start with
+                    //      reg2 = reg3 + (reg2 * reg1)  // swap reg1 <--> reg3
+                    //      reg1 = reg3 + (reg1 * reg2)  // swap reg1 <--> reg2
+                    //      reg1 = (reg1 * reg2) + reg3  // rearrange to get FMAD format
+                    //
+                    // Case# 3: Result is stored in the operand `op3` that held the "multiplier"
+                    //      targetReg == reg3
+                    //
+                    // So we basically have an operation:
+                    //      reg3 = reg1 + (reg2 * reg3)
+                    // Since, the result will be stored in the "multiplier", we again pick format `FMAD`.
+                    // Then, we rearrange the operands to ensure that the operation is done correctly.
+                    //      reg3 = reg1 + (reg2 * reg3)  // to start with
+                    //      reg1 = reg3 + (reg2 * reg1)  // swap reg1 <--> reg3
+                    //      reg1 = (reg1 * reg2) + reg3  // rearrange to get FMAD format
+
                     bool useAddend = true;
                     if (targetReg == embMaskOp2Reg)
                     {
+                        // Case# 2
                         useAddend = false;
+                        std::swap(embMaskOp1Reg, embMaskOp3Reg);
                         std::swap(embMaskOp1Reg, embMaskOp2Reg);
                     }
                     else if (targetReg == embMaskOp3Reg)
                     {
+                        // Case# 3
                         useAddend = false;
                         std::swap(embMaskOp1Reg, embMaskOp3Reg);
                     }
                     else
                     {
-                        // Nothing to do here
+                        // Case# 1
                     }
 
                     switch (intrinEmbMask.id)
@@ -743,11 +792,6 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                         GetEmitter()->emitIns_R_R_R_R(ins, emitSize, targetReg, op1Reg, op2Reg, op3Reg, opt,
                                                       INS_SCALABLE_OPTS_UNPREDICATED);
                     }
-                    break;
-                case 4:
-                    assert(!isRMW);
-                    GetEmitter()->emitIns_R_R_R_R(ins, emitSize, targetReg, op1Reg, op2Reg, op3Reg, opt,
-                                                  INS_SCALABLE_OPTS_UNPREDICATED);
                     break;
 
                 default:

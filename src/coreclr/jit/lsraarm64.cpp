@@ -1798,12 +1798,15 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
             if (resultOpNum == 2)
             {
                 // op2 = op1 + (op2 * op3)
+                std::swap(emitOp1, emitOp3);
                 std::swap(emitOp1, emitOp2);
+                // op1 = (op1 * op2) + op3
             }
             else if (resultOpNum == 3)
             {
                 // op3 = op1 + (op2 * op3)
                 std::swap(emitOp1, emitOp3);
+                // op1 = (op1 * op2) + op3
             }
             else
             {
