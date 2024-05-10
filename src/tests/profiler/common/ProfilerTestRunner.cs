@@ -210,7 +210,7 @@ namespace Profiler.Tests
                         _hasPassingOutput = true;
                     }
 
-                    Console.WriteLine($"Profiler STDOUT: {line}");
+                    Console.WriteLine($"Profilee STDOUT: {line}");
                 }
             }
         }
