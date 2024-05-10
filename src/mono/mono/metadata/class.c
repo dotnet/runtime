@@ -1168,7 +1168,7 @@ MonoMethod*
 mono_class_inflate_generic_method_full_checked (MonoMethod *method, MonoClass *klass_hint, MonoGenericContext *context, MonoError *error)
 {
 	MonoMethod *result;
-	MonoMethodInflated *iresult, *cached;
+	MonoMethodInflated *iresult, *cached = NULL;
 	MonoMethodSignature *sig;
 	MonoGenericContext tmp_context;
 
@@ -1223,8 +1223,8 @@ mono_class_inflate_generic_method_full_checked (MonoMethod *method, MonoClass *k
 	// check cache
 	mono_mem_manager_lock (mm);
 	if (!mm->gmethod_cache)
-		mm->gmethod_cache = g_hash_table_new_full (inflated_method_hash, inflated_method_equal, NULL, (GDestroyNotify)free_inflated_method);
-	cached = (MonoMethodInflated *)g_hash_table_lookup (mm->gmethod_cache, iresult);
+		mm->gmethod_cache = dn_simdhash_ght_new_full (inflated_method_hash, inflated_method_equal, NULL, (GDestroyNotify)free_inflated_method, 0, NULL);
+	dn_simdhash_ght_try_get_value (mm->gmethod_cache, iresult, (void **)&cached);
 	mono_mem_manager_unlock (mm);
 
 	if (cached) {
@@ -1319,9 +1319,10 @@ mono_class_inflate_generic_method_full_checked (MonoMethod *method, MonoClass *k
 
 	// check cache
 	mono_mem_manager_lock (mm);
-	cached = (MonoMethodInflated *)g_hash_table_lookup (mm->gmethod_cache, iresult);
+	cached = NULL;
+	dn_simdhash_ght_try_get_value (mm->gmethod_cache, iresult, (void **)&cached);
 	if (!cached) {
-		g_hash_table_insert (mm->gmethod_cache, iresult, iresult);
+		dn_simdhash_ght_insert (mm->gmethod_cache, iresult, iresult);
 		iresult->owner = mm;
 		cached = iresult;
 	}
@@ -5264,7 +5265,7 @@ mono_class_get_fields_internal (MonoClass *klass, gpointer *iter)
  * mono_class_get_methods:
  * \param klass the \c MonoClass to act on
  *
- * This routine is an iterator routine for retrieving the fields in a class.
+ * This routine is an iterator routine for retrieving the methods in a class.
  *
  * You must pass a \c gpointer that points to zero and is treated as an opaque handle to
  * iterate over all of the elements.  When no more values are

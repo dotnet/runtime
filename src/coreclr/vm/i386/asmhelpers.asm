@@ -24,7 +24,6 @@ EXTERN __imp__RtlUnwind@16:DWORD
 ifdef _DEBUG
 EXTERN _HelperMethodFrameConfirmState@20:PROC
 endif
-EXTERN _StubRareEnableWorker@4:PROC
 ifdef FEATURE_COMINTEROP
 EXTERN _StubRareDisableHRWorker@4:PROC
 endif ; FEATURE_COMINTEROP
@@ -393,29 +392,6 @@ endif
         pop     ebp ; don't use 'leave' here, as ebp as been trashed
         retn    8
 _CallJitEHFinallyHelper@8 ENDP
-
-;-----------------------------------------------------------------------
-; The out-of-line portion of the code to enable preemptive GC.
-; After the work is done, the code jumps back to the "pRejoinPoint"
-; which should be emitted right after the inline part is generated.
-;
-; Assumptions:
-;      ebx = Thread
-; Preserves
-;      all registers except ecx.
-;
-;-----------------------------------------------------------------------
-_StubRareEnable proc public
-        push    eax
-        push    edx
-
-        push    ebx
-        call    _StubRareEnableWorker@4
-
-        pop     edx
-        pop     eax
-        retn
-_StubRareEnable ENDP
 
 ifdef FEATURE_COMINTEROP
 _StubRareDisableHR proc public

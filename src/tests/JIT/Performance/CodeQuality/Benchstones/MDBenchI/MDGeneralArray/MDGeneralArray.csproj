@@ -4,6 +4,7 @@
     <Optimize>true</Optimize>
   </PropertyGroup>
   <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
     <Compile Include="$(MSBuildProjectName).cs" />
   </ItemGroup>
   <PropertyGroup>

@@ -103,8 +103,8 @@ namespace System.Collections.Tests
         public void IList_Generic_ItemGet_NegativeIndex_ThrowsException(int count)
         {
             IList<T> list = GenericIListFactory(count);
-            CollectionAsserts.ThrowsElementAt(list, -1, IList_Generic_Item_InvalidIndex_ThrowType);
-            CollectionAsserts.ThrowsElementAt(list, int.MinValue, IList_Generic_Item_InvalidIndex_ThrowType);
+            Assert.Throws(IList_Generic_Item_InvalidIndex_ThrowType, () => list[-1]);
+            Assert.Throws(IList_Generic_Item_InvalidIndex_ThrowType, () => list[int.MinValue]);
         }
 
         [Theory]
@@ -112,8 +112,8 @@ namespace System.Collections.Tests
         public void IList_Generic_ItemGet_IndexGreaterThanListCount_ThrowsException(int count)
         {
             IList<T> list = GenericIListFactory(count);
-            CollectionAsserts.ThrowsElementAt(list, count, IList_Generic_Item_InvalidIndex_ThrowType);
-            CollectionAsserts.ThrowsElementAt(list, count + 1, IList_Generic_Item_InvalidIndex_ThrowType);
+            Assert.Throws(IList_Generic_Item_InvalidIndex_ThrowType, () => list[count]);
+            Assert.Throws(IList_Generic_Item_InvalidIndex_ThrowType, () => list[count + 1]);
         }
 
         [Theory]
@@ -121,7 +121,8 @@ namespace System.Collections.Tests
         public void IList_Generic_ItemGet_ValidGetWithinListBounds(int count)
         {
             IList<T> list = GenericIListFactory(count);
-            Assert.All(Enumerable.Range(0, count), index => CollectionAsserts.ElementAtSucceeds(list, index));
+            T result;
+            Assert.All(Enumerable.Range(0, count), index => result = list[index]);
         }
 
         #endregion
@@ -138,7 +139,7 @@ namespace System.Collections.Tests
                 T validAdd = CreateT(0);
                 Assert.Throws(IList_Generic_Item_InvalidIndex_ThrowType, () => list[-1] = validAdd);
                 Assert.Throws(IList_Generic_Item_InvalidIndex_ThrowType, () => list[int.MinValue] = validAdd);
-                CollectionAsserts.HasCount(list, count);
+                Assert.Equal(count, list.Count);
             }
         }
 
@@ -152,7 +153,7 @@ namespace System.Collections.Tests
                 T validAdd = CreateT(0);
                 Assert.Throws(IList_Generic_Item_InvalidIndex_ThrowType, () => list[count] = validAdd);
                 Assert.Throws(IList_Generic_Item_InvalidIndex_ThrowType, () => list[count + 1] = validAdd);
-                CollectionAsserts.HasCount(list, count);
+                Assert.Equal(count, list.Count);
             }
         }
 
@@ -165,7 +166,7 @@ namespace System.Collections.Tests
                 IList<T> list = GenericIListFactory(count);
                 T before = list[count / 2];
                 Assert.Throws<NotSupportedException>(() => list[count / 2] = CreateT(321432));
-                CollectionAsserts.EqualAt(list, count / 2, before);
+                Assert.Equal(before, list[count / 2]);
             }
         }
 
@@ -178,7 +179,7 @@ namespace System.Collections.Tests
                 IList<T> list = GenericIListFactory(count);
                 T value = CreateT(123452);
                 list[0] = value;
-                CollectionAsserts.EqualAt(list, 0, value);
+                Assert.Equal(value, list[0]);
             }
         }
 
@@ -192,12 +193,12 @@ namespace System.Collections.Tests
                 if (DefaultValueAllowed)
                 {
                     list[0] = default(T);
-                    CollectionAsserts.EqualAt(list, 0, default(T));
+                    Assert.Equal(default(T), list[0]);
                 }
                 else
                 {
                     Assert.Throws<ArgumentNullException>(() => list[0] = default(T));
-                    CollectionAsserts.NotEqualAt(list, 0, default(T));
+                    Assert.NotEqual(default(T), list[0]);
                 }
             }
         }
@@ -212,7 +213,7 @@ namespace System.Collections.Tests
                 T value = CreateT(123452);
                 int lastIndex = count > 0 ? count - 1 : 0;
                 list[lastIndex] = value;
-                CollectionAsserts.EqualAt(list, lastIndex, value);
+                Assert.Equal(value, list[lastIndex]);
             }
         }
 
@@ -227,12 +228,12 @@ namespace System.Collections.Tests
                 if (DefaultValueAllowed)
                 {
                     list[lastIndex] = default(T);
-                    CollectionAsserts.EqualAt(list, lastIndex, default(T));
+                    Assert.Equal(default(T), list[lastIndex]);
                 }
                 else
                 {
                     Assert.Throws<ArgumentNullException>(() => list[lastIndex] = default(T));
-                    CollectionAsserts.NotEqualAt(list, lastIndex, default(T));
+                    Assert.NotEqual(default(T), list[lastIndex]);
                 }
             }
         }
@@ -247,8 +248,8 @@ namespace System.Collections.Tests
                 T value = CreateT(123452);
                 list[0] = value;
                 list[1] = value;
-                CollectionAsserts.EqualAt(list, 0, value);
-                CollectionAsserts.EqualAt(list, 1, value);
+                Assert.Equal(value, list[0]);
+                Assert.Equal(value, list[1]);
             }
         }
 
@@ -395,7 +396,7 @@ namespace System.Collections.Tests
                 T validAdd = CreateT(0);
                 Assert.Throws<ArgumentOutOfRangeException>(() => list.Insert(-1, validAdd));
                 Assert.Throws<ArgumentOutOfRangeException>(() => list.Insert(int.MinValue, validAdd));
-                CollectionAsserts.HasCount(list, count);
+                Assert.Equal(count, list.Count);
             }
         }
 
@@ -408,8 +409,8 @@ namespace System.Collections.Tests
                 IList<T> list = GenericIListFactory(count);
                 T validAdd = CreateT(12350);
                 list.Insert(count, validAdd);
-                CollectionAsserts.HasCount(list, count + 1);
-                CollectionAsserts.EqualAt(list, count, validAdd);
+                Assert.Equal(count + 1, list.Count);
+                Assert.Equal(validAdd, list[count]);
             }
         }
 
@@ -421,7 +422,7 @@ namespace System.Collections.Tests
             {
                 IList<T> list = GenericIListFactory(count);
                 Assert.Throws<NotSupportedException>(() => list.Insert(count / 2, CreateT(321432)));
-                CollectionAsserts.HasCount(list, count);
+                Assert.Equal(count, list.Count);
             }
         }
 
@@ -434,8 +435,8 @@ namespace System.Collections.Tests
                 IList<T> list = GenericIListFactory(count);
                 T value = CreateT(123452);
                 list.Insert(0, value);
-                CollectionAsserts.EqualAt(list, 0, value);
-                CollectionAsserts.HasCount(list, count + 1);
+                Assert.Equal(value, list[0]);
+                Assert.Equal(count + 1, list.Count);
             }
         }
 
@@ -448,8 +449,8 @@ namespace System.Collections.Tests
                 IList<T> list = GenericIListFactory(count);
                 T value = default(T);
                 list.Insert(0, value);
-                CollectionAsserts.EqualAt(list, 0, value);
-                CollectionAsserts.HasCount(list, count + 1);
+                Assert.Equal(value, list[0]);
+                Assert.Equal(count + 1, list.Count);
             }
         }
 
@@ -463,8 +464,8 @@ namespace System.Collections.Tests
                 T value = CreateT(123452);
                 int lastIndex = count > 0 ? count - 1 : 0;
                 list.Insert(lastIndex, value);
-                CollectionAsserts.EqualAt(list, lastIndex, value);
-                CollectionAsserts.HasCount(list, count + 1);
+                Assert.Equal(value, list[lastIndex]);
+                Assert.Equal(count + 1, list.Count);
             }
         }
 
@@ -478,8 +479,8 @@ namespace System.Collections.Tests
                 T value = default(T);
                 int lastIndex = count > 0 ? count - 1 : 0;
                 list.Insert(lastIndex, value);
-                CollectionAsserts.EqualAt(list, lastIndex, value);
-                CollectionAsserts.HasCount(list, count + 1);
+                Assert.Equal(value, list[lastIndex]);
+                Assert.Equal(count + 1, list.Count);
             }
         }
 
@@ -499,9 +500,9 @@ namespace System.Collections.Tests
                 {
                     list.Insert(0, value);
                     list.Insert(1, value);
-                    CollectionAsserts.EqualAt(list, 0, value);
-                    CollectionAsserts.EqualAt(list, 1, value);
-                    CollectionAsserts.HasCount(list, count + 2);
+                    Assert.Equal(value, list[0]);
+                    Assert.Equal(value, list[1]);
+                    Assert.Equal(count + 2, list.Count);
                 }
             }
         }
@@ -534,7 +535,7 @@ namespace System.Collections.Tests
                 T validAdd = CreateT(0);
                 Assert.Throws<ArgumentOutOfRangeException>(() => list.RemoveAt(-1));
                 Assert.Throws<ArgumentOutOfRangeException>(() => list.RemoveAt(int.MinValue));
-                CollectionAsserts.HasCount(list, count);
+                Assert.Equal(count, list.Count);
             }
         }
 
@@ -548,7 +549,7 @@ namespace System.Collections.Tests
                 T validAdd = CreateT(0);
                 Assert.Throws<ArgumentOutOfRangeException>(() => list.RemoveAt(count));
                 Assert.Throws<ArgumentOutOfRangeException>(() => list.RemoveAt(count + 1));
-                CollectionAsserts.HasCount(list, count);
+                Assert.Equal(count, list.Count);
             }
         }
 
@@ -560,7 +561,7 @@ namespace System.Collections.Tests
             {
                 IList<T> list = GenericIListFactory(count);
                 Assert.Throws<NotSupportedException>(() => list.RemoveAt(count / 2));
-                CollectionAsserts.HasCount(list, count);
+                Assert.Equal(count, list.Count);
             }
         }
 
@@ -571,11 +572,11 @@ namespace System.Collections.Tests
             if (!IsReadOnly && !AddRemoveClear_ThrowsNotSupported)
             {
                 IList<T> list = GenericIListFactory(count);
-                CollectionAsserts.HasCount(list, count);
+                Assert.Equal(count, list.Count);
                 Assert.All(Enumerable.Range(0, count).Reverse(), index =>
                 {
                     list.RemoveAt(index);
-                    CollectionAsserts.HasCount(list, index);
+                    Assert.Equal(index, list.Count);
                 });
             }
         }
@@ -590,7 +591,7 @@ namespace System.Collections.Tests
                 Assert.All(Enumerable.Range(0, count), index =>
                 {
                     list.RemoveAt(0);
-                    CollectionAsserts.HasCount(list, count - index - 1);
+                    Assert.Equal(count - index - 1, list.Count);
                 });
             }
         }

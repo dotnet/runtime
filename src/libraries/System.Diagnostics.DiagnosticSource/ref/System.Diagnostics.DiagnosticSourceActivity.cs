@@ -50,6 +50,7 @@ namespace System.Diagnostics
         public string? TraceStateString { get { throw null; } set { } }
         public System.Diagnostics.Activity AddBaggage(string key, string? value) { throw null; }
         public System.Diagnostics.Activity AddEvent(System.Diagnostics.ActivityEvent e) { throw null; }
+        public System.Diagnostics.Activity AddLink(System.Diagnostics.ActivityLink link) { throw null; }
         public System.Diagnostics.Activity AddTag(string key, string? value) { throw null; }
         public System.Diagnostics.Activity AddTag(string key, object? value) { throw null; }
         public System.Diagnostics.Activity SetTag(string key, object? value) { throw null; }
@@ -402,7 +403,7 @@ namespace System.Diagnostics.Metrics
         public ReadOnlySpan<System.Collections.Generic.KeyValuePair<string, object?>> Tags { get { throw null; } }
         public T Value { get { throw null; } }
     }
-    public delegate void MeasurementCallback<T>(Instrument instrument, T measurement, ReadOnlySpan<System.Collections.Generic.KeyValuePair<string, object?>> tags, object? state);
+    public delegate void MeasurementCallback<T>(Instrument instrument, T measurement, ReadOnlySpan<System.Collections.Generic.KeyValuePair<string, object?>> tags, object? state) where T : struct;
     public class Meter : IDisposable
     {
         public Counter<T> CreateCounter<T>(string name, string? unit = null, string? description = null) where T : struct  { throw null; }

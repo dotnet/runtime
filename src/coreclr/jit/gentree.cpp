@@ -9782,7 +9782,6 @@ DONE:
     /* Make sure to copy back fields that may have been initialized */
 
     copy->CopyRawCosts(tree);
-    copy->gtRsvdRegs = tree->gtRsvdRegs;
     copy->CopyReg(tree);
     return copy;
 }
@@ -11644,7 +11643,7 @@ void Compiler::gtDispNode(GenTree* tree, IndentStack* indentStack, _In_ _In_opt_
         if (verbose && 0)
         {
             printf(" RR=");
-            dspRegMask(tree->gtRsvdRegs);
+            dspRegMask(JitTls::GetCompiler()->codeGen->internalRegisters.GetAll(tree));
             printf("\n");
         }
     }
@@ -18012,7 +18011,7 @@ bool GenTree::canBeContained() const
     }
     else if (OperIsHWIntrinsic() && !isContainableHWIntrinsic())
     {
-        return isEvexEmbeddedMaskingCompatibleHWIntrinsic();
+        return isEmbeddedMaskingCompatibleHWIntrinsic();
     }
 
     return true;
@@ -19738,13 +19737,6 @@ bool GenTree::isContainableHWIntrinsic() const
             return true;
         }
 
-        case NI_Vector128_get_Zero:
-        case NI_Vector256_get_Zero:
-        {
-            // These HWIntrinsic operations are contained as part of Sse41.Insert
-            return true;
-        }
-
         case NI_SSE3_MoveAndDuplicate:
         case NI_AVX_BroadcastScalarToVector128:
         case NI_AVX2_BroadcastScalarToVector128:
@@ -19902,31 +19894,45 @@ bool GenTree::isRMWHWIntrinsic(Compiler* comp)
 //
 bool GenTree::isEvexCompatibleHWIntrinsic() const
 {
-    // TODO-XARCH-AVX512 remove the ReturnsPerElementMask check once K registers have been properly
-    // implemented in the register allocator
-    return OperIsHWIntrinsic() && HWIntrinsicInfo::HasEvexSemantics(AsHWIntrinsic()->GetHWIntrinsicId()) &&
-           !HWIntrinsicInfo::ReturnsPerElementMask(AsHWIntrinsic()->GetHWIntrinsicId());
+    return OperIsHWIntrinsic() && HWIntrinsicInfo::HasEvexSemantics(AsHWIntrinsic()->GetHWIntrinsicId());
 }
 
 //------------------------------------------------------------------------
-// isEvexEmbeddedMaskingCompatibleHWIntrinsic: Checks if the intrinsic is compatible
+// isEmbeddedMaskingCompatibleHWIntrinsic : Checks if the intrinsic is compatible
 // with the EVEX embedded masking form for its intended lowering instruction.
 //
 // Return Value:
 // true if the intrisic node lowering instruction has an EVEX embedded masking
 //
-bool GenTree::isEvexEmbeddedMaskingCompatibleHWIntrinsic() const
+bool GenTree::isEmbeddedMaskingCompatibleHWIntrinsic() const
 {
-#if defined(TARGET_XARCH)
     if (OperIsHWIntrinsic())
     {
-        // TODO-AVX512F-CQ: Expand this to the full set of APIs and make it table driven
-        // using IsEmbMaskingCompatible. For now, however, limit it to some explicit ids
-        // for prototyping purposes.
-        return (AsHWIntrinsic()->GetHWIntrinsicId() == NI_AVX512F_Add);
-    }
-#endif // TARGET_XARCH
+#if defined(TARGET_XARCH)
+        NamedIntrinsic intrinsicId  = AsHWIntrinsic()->GetHWIntrinsicId();
+        var_types      simdBaseType = AsHWIntrinsic()->GetSimdBaseType();
 
+        switch (intrinsicId)
+        {
+            case NI_AVX512F_ConvertToVector256Int32:
+            case NI_AVX512F_ConvertToVector256UInt32:
+            case NI_AVX512F_ConvertToVector512Int32:
+            case NI_AVX512F_ConvertToVector512UInt32:
+            case NI_AVX512F_VL_ConvertToVector128UInt32:
+            {
+                return varTypeIsFloating(simdBaseType);
+            }
+
+            default:
+            {
+                return HWIntrinsicInfo::IsEmbMaskingCompatible(intrinsicId);
+            }
+        }
+#elif defined(TARGET_ARM64)
+        return HWIntrinsicInfo::IsEmbeddedMaskedOperation(AsHWIntrinsic()->GetHWIntrinsicId()) ||
+               HWIntrinsicInfo::IsOptionalEmbeddedMaskedOperation(AsHWIntrinsic()->GetHWIntrinsicId());
+#endif
+    }
     return false;
 }
 
@@ -26506,6 +26512,30 @@ bool GenTreeHWIntrinsic::OperIsMemoryLoad(GenTree** pAddr) const
                 break;
 
             case NI_Sve_LoadVector:
+            case NI_Sve_LoadVectorByteZeroExtendToInt16:
+            case NI_Sve_LoadVectorByteZeroExtendToInt32:
+            case NI_Sve_LoadVectorByteZeroExtendToInt64:
+            case NI_Sve_LoadVectorByteZeroExtendToUInt16:
+            case NI_Sve_LoadVectorByteZeroExtendToUInt32:
+            case NI_Sve_LoadVectorByteZeroExtendToUInt64:
+            case NI_Sve_LoadVectorInt16SignExtendToInt32:
+            case NI_Sve_LoadVectorInt16SignExtendToInt64:
+            case NI_Sve_LoadVectorInt16SignExtendToUInt32:
+            case NI_Sve_LoadVectorInt16SignExtendToUInt64:
+            case NI_Sve_LoadVectorInt32SignExtendToInt64:
+            case NI_Sve_LoadVectorInt32SignExtendToUInt64:
+            case NI_Sve_LoadVectorSByteSignExtendToInt16:
+            case NI_Sve_LoadVectorSByteSignExtendToInt32:
+            case NI_Sve_LoadVectorSByteSignExtendToInt64:
+            case NI_Sve_LoadVectorSByteSignExtendToUInt16:
+            case NI_Sve_LoadVectorSByteSignExtendToUInt32:
+            case NI_Sve_LoadVectorSByteSignExtendToUInt64:
+            case NI_Sve_LoadVectorUInt16ZeroExtendToInt32:
+            case NI_Sve_LoadVectorUInt16ZeroExtendToInt64:
+            case NI_Sve_LoadVectorUInt16ZeroExtendToUInt32:
+            case NI_Sve_LoadVectorUInt16ZeroExtendToUInt64:
+            case NI_Sve_LoadVectorUInt32ZeroExtendToInt64:
+            case NI_Sve_LoadVectorUInt32ZeroExtendToUInt64:
                 addr = Op(2);
                 break;
 #endif // TARGET_ARM64
@@ -26712,7 +26742,23 @@ bool GenTreeHWIntrinsic::OperIsMemoryStoreOrBarrier() const
 bool GenTreeHWIntrinsic::OperIsEmbBroadcastCompatible() const
 {
 #if defined(TARGET_XARCH)
-    return HWIntrinsicInfo::IsEmbBroadcastCompatible(GetHWIntrinsicId());
+    NamedIntrinsic intrinsicId  = GetHWIntrinsicId();
+    var_types      simdBaseType = GetSimdBaseType();
+
+    switch (intrinsicId)
+    {
+        case NI_AVX512F_ConvertToVector256Int32:
+        case NI_AVX512F_ConvertToVector256UInt32:
+        case NI_AVX512F_VL_ConvertToVector128UInt32:
+        {
+            return varTypeIsFloating(simdBaseType);
+        }
+
+        default:
+        {
+            return !varTypeIsSmall(simdBaseType) && HWIntrinsicInfo::IsEmbBroadcastCompatible(intrinsicId);
+        }
+    }
 #else
     return false;
 #endif // TARGET_XARCH
@@ -27031,6 +27077,9 @@ void GenTreeHWIntrinsic::SetHWIntrinsicId(NamedIntrinsic intrinsicId)
 
     // We'll choose to trust the programmer here.
     assert((oldOperandCount == static_cast<size_t>(newOperandCount)) || newCountUnknown);
+
+    // All ids being set must be valid
+    assert(!HWIntrinsicInfo::IsInvalidNodeId(intrinsicId));
 #endif // DEBUG
 
     gtHWIntrinsicId = intrinsicId;
@@ -27694,75 +27743,14 @@ regMaskTP ReturnTypeDesc::GetABIReturnRegs(CorInfoCallConvExtension callConv) co
 }
 
 //------------------------------------------------------------------------
-// The following functions manage the gtRsvdRegs set of temporary registers
-// created by LSRA during code generation.
-
-//------------------------------------------------------------------------
-// AvailableTempRegCount: return the number of available temporary registers in the (optional) given set
-// (typically, RBM_ALLINT or RBM_ALLFLOAT).
+//  GetNum: Get the SSA number for a given field.
 //
-// Arguments:
-//    mask - (optional) Check for available temporary registers only in this set.
+//  Arguments:
+//     compiler - The Compiler instance
+//     index    - The field index
 //
-// Return Value:
-//    Count of available temporary registers in given set.
-//
-unsigned GenTree::AvailableTempRegCount(regMaskTP mask /* = (regMaskTP)-1 */) const
-{
-    return genCountBits(gtRsvdRegs & mask);
-}
-
-//------------------------------------------------------------------------
-// GetSingleTempReg: There is expected to be exactly one available temporary register
-// in the given mask in the gtRsvdRegs set. Get that register. No future calls to get
-// a temporary register are expected. Removes the register from the set, but only in
-// DEBUG to avoid doing unnecessary work in non-DEBUG builds.
-//
-// Arguments:
-//    mask - (optional) Get an available temporary register only in this set.
-//
-// Return Value:
-//    Available temporary register in given mask.
-//
-regNumber GenTree::GetSingleTempReg(regMaskTP mask /* = (regMaskTP)-1 */)
-{
-    regMaskTP availableSet = gtRsvdRegs & mask;
-    assert(genCountBits(availableSet) == 1);
-    regNumber tempReg = genRegNumFromMask(availableSet);
-    INDEBUG(gtRsvdRegs &= ~availableSet;) // Remove the register from the set, so it can't be used again.
-    return tempReg;
-}
-
-//------------------------------------------------------------------------
-// ExtractTempReg: Find the lowest number temporary register from the gtRsvdRegs set
-// that is also in the optional given mask (typically, RBM_ALLINT or RBM_ALLFLOAT),
-// and return it. Remove this register from the temporary register set, so it won't
-// be returned again.
-//
-// Arguments:
-//    mask - (optional) Extract an available temporary register only in this set.
-//
-// Return Value:
-//    Available temporary register in given mask.
-//
-regNumber GenTree::ExtractTempReg(regMaskTP mask /* = (regMaskTP)-1 */)
-{
-    regMaskTP availableSet = gtRsvdRegs & mask;
-    assert(genCountBits(availableSet) >= 1);
-    regNumber tempReg = genFirstRegNumFromMask(availableSet);
-    gtRsvdRegs ^= genRegMask(tempReg);
-    return tempReg;
-}
-
-//------------------------------------------------------------------------
-// GetNum: Get the SSA number for a given field.
-//
-// Arguments:
-//    compiler - The Compiler instance
-//    index    - The field index
-//
-// Return Value:
-//    The SSA number corresponding to the field at "index".
+//  Return Value:
+//     The SSA number corresponding to the field at "index".
 //
 unsigned SsaNumInfo::GetNum(Compiler* compiler, unsigned index) const
 {
