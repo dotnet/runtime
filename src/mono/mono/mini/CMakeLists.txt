@@ -54,6 +54,7 @@ set(imported_native_sources
     ../../../native/containers/dn-simdhash-ptr-ptr.c
     ../../../native/containers/dn-simdhash-string-ptr.c
     ../../../native/containers/dn-simdhash-u32-ptr.c
+    ../../../native/containers/dn-simdhash-ght-compatible.c
     ../../../native/containers/dn-simdhash-ptrpair-ptr.c)
 
 set(mini_common_sources
