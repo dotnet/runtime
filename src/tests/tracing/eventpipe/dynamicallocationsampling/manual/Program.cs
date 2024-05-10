@@ -11,12 +11,12 @@ namespace DynamicAllocationSampling
     {
         public string TypeName = "?";
         public int Count;
-        public int Size;
-        public int TotalSize;
+        public long Size;
+        public long TotalSize;
 
         public override int GetHashCode()
         {
-            return TypeName.GetHashCode();
+            return (TypeName+Size).GetHashCode();
         }
 
         public override bool Equals(object? obj)
@@ -31,7 +31,7 @@ namespace DynamicAllocationSampling
                 return false;
             }
 
-            return TypeName.Equals(((TypeInfo)obj).TypeName);
+            return (TypeName+Size).Equals(((TypeInfo)obj).TypeName+Size);
         }
     }
 
@@ -140,7 +140,7 @@ namespace DynamicAllocationSampling
         {
             if (!_tickTypes.TryGetValue(payload.TypeName, out TypeInfo typeInfo))
             {
-                typeInfo = new TypeInfo() { TypeName = payload.TypeName, Count = 0, Size = (int)payload.ObjectSize, TotalSize = 0 };
+                typeInfo = new TypeInfo() { TypeName = payload.TypeName, Count = 0, Size = payload.ObjectSize, TotalSize = 0 };
                 _tickTypes.Add(payload.TypeName, typeInfo);
             }
             typeInfo.Count++;
@@ -153,10 +153,10 @@ namespace DynamicAllocationSampling
             {
                 AllocationSampledData payload = new AllocationSampledData(eventData, 8); // assume 64-bit pointers
 
-                if (!_sampledTypes.TryGetValue(payload.TypeName, out TypeInfo typeInfo))
+                if (!_sampledTypes.TryGetValue(payload.TypeName+payload.ObjectSize, out TypeInfo typeInfo))
                 {
                     typeInfo = new TypeInfo() { TypeName = payload.TypeName, Count = 0, Size = (int)payload.ObjectSize, TotalSize = 0 };
-                    _sampledTypes.Add(payload.TypeName, typeInfo);
+                    _sampledTypes.Add(payload.TypeName + payload.ObjectSize, typeInfo);
                 }
                 typeInfo.Count++;
                 typeInfo.TotalSize += (int)payload.ObjectSize;
@@ -235,7 +235,12 @@ namespace DynamicAllocationSampling
             {
                 var distribution = typeDistribution[type];
 
-                Console.WriteLine(type.TypeName);
+                string typeName = type.TypeName;
+                if (typeName.Contains("[]"))
+                {
+                    typeName += $" ({type.Size} bytes)";
+                }
+                Console.WriteLine(typeName);
                 Console.WriteLine("-------------------------");
                 foreach (var diff in distribution.OrderBy(v => v))
                 {
@@ -249,8 +254,8 @@ namespace DynamicAllocationSampling
         {
             // TODO: need to compute the mean size in case of array types
             // print the sampled types for both AllocationTick and AllocationSampled
-            Console.WriteLine("Tag  SCount  TCount       SSize       TSize  UnitSize  UpscaledSize  UpscaledCount  Name");
-            Console.WriteLine("-------------------------------------------------------------------------------------------");
+            Console.WriteLine("Tag  SCount  TCount          SSize          TSize   UnitSize     UpscaledSize  UpscaledCount  Name");
+            Console.WriteLine("--------------------------------------------------------------------------------------------------");
             foreach (var type in _sampledTypes.Values.OrderBy(v => v.Size))
             {
                 string tag = "S";
@@ -269,19 +274,25 @@ namespace DynamicAllocationSampling
                     Console.Write($"  {tickType.Count,6}");
                 }
 
-                Console.Write($"  {type.TotalSize,10}");
+                Console.Write($"  {type.TotalSize,13}");
                 if (tag == "S")
                 {
-                    Console.Write($"  {0,10}");
+                    Console.Write($"  {0,13}");
                 }
                 else
                 {
-                    Console.Write($"  {tickType.TotalSize,10}");
+                    Console.Write($"  {tickType.TotalSize,13}");
+                }
+
+                string typeName = type.TypeName;
+                if (typeName.Contains("[]"))
+                {
+                    typeName += $" ({type.Size} bytes)";
                 }
 
                 if (type.Count != 0)
                 {
-                    Console.WriteLine($"  {type.TotalSize / type.Count,8}    {UpscaleSize(type.TotalSize, type.Count, SAMPLING_MEAN),10}     {(long)type.Count * UpscaleSize(type.TotalSize, type.Count, SAMPLING_MEAN) / type.TotalSize,10}  {type.TypeName}");
+                    Console.WriteLine($"  {type.TotalSize / type.Count,9}    {UpscaleSize(type.TotalSize, type.Count, SAMPLING_MEAN),13}     {(long)type.Count * UpscaleSize(type.TotalSize, type.Count, SAMPLING_MEAN) / type.TotalSize,10}  {typeName}");
                 }
             }
 
@@ -291,7 +302,13 @@ namespace DynamicAllocationSampling
 
                 if (!_sampledTypes.ContainsKey(type.TypeName))
                 {
-                    Console.WriteLine($"{tag,3}  {"0",6}  {type.Count,6}  {"0",10}  {type.TotalSize,10}  {type.TotalSize / type.Count,8}    {"0",10}     {"0",10}  {type.TypeName}");
+                    string typeName = type.TypeName;
+                    if (typeName.Contains("[]"))
+                    {
+                        typeName += $" ({type.Size} bytes)";
+                    }
+
+                    Console.WriteLine($"{tag,3}  {"0",6}  {type.Count,6}  {"0",13}  {type.TotalSize,13}  {type.TotalSize / type.Count,9}    {"0",13}     {"0",10}  {typeName}");
                 }
             }
         }

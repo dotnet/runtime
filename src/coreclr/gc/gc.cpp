@@ -7035,7 +7035,7 @@ void gc_heap::gc_thread_function ()
             }
 
             // wait till the threads that should have gone idle at least reached the place where they are about to wait on the idle event.
-            if ((gc_heap::dynamic_adaptation_mode == dynamic_adaptation_to_application_sizes) && 
+            if ((gc_heap::dynamic_adaptation_mode == dynamic_adaptation_to_application_sizes) &&
                 (n_heaps != dynamic_heap_count_data.last_n_heaps))
             {
                 int spin_count = 1024;
@@ -43896,7 +43896,7 @@ size_t gc_heap::decommit_region (heap_segment* region, int bucket, int h_number)
     {
 #ifdef MULTIPLE_HEAPS
         // In return_free_region, we set heap_segment_heap (region) to nullptr so we cannot use it here.
-        // but since all heaps share the same mark array we simply pick the 0th heap to use. 
+        // but since all heaps share the same mark array we simply pick the 0th heap to use.
         gc_heap* hp = g_heaps [0];
 #else
         gc_heap* hp = pGenGCHeap;
@@ -48192,7 +48192,7 @@ HRESULT GCHeap::Initialize()
     /*
      * Allocation requests less than loh_size_threshold will be allocated on the small object heap.
      *
-     * An object cannot span more than one region and regions in small object heap are of the same size - gc_region_size. 
+     * An object cannot span more than one region and regions in small object heap are of the same size - gc_region_size.
      * However, the space available for actual allocations is reduced by the following implementation details -
      *
      * 1.) heap_segment_mem is set to the new pages + sizeof(aligned_plug_and_gap) in make_heap_segment.
@@ -48208,7 +48208,7 @@ HRESULT GCHeap::Initialize()
 #ifdef FEATURE_STRUCTALIGN
     /*
      * The above assumed FEATURE_STRUCTALIGN is not turned on for platforms where USE_REGIONS is supported, otherwise it is possible
-     * that the allocation size is inflated by ComputeMaxStructAlignPad in GCHeap::Alloc and we have to compute an upper bound of that 
+     * that the allocation size is inflated by ComputeMaxStructAlignPad in GCHeap::Alloc and we have to compute an upper bound of that
      * function.
      *
      * Note that ComputeMaxStructAlignPad is defined to be 0 if FEATURE_STRUCTALIGN is turned off.
@@ -49085,7 +49085,6 @@ bool GCHeap::StressHeap(gc_alloc_context * context)
     }                                                                                       \
 } while (false)
 
-#ifdef FEATURE_64BIT_ALIGNMENT
 // Allocate small object with an alignment requirement of 8-bytes.
 Object* AllocAlign8(alloc_context* acontext, gc_heap* hp, size_t size, uint32_t flags)
 {
@@ -49151,7 +49150,6 @@ Object* AllocAlign8(alloc_context* acontext, gc_heap* hp, size_t size, uint32_t 
 
     return newAlloc;
 }
-#endif // FEATURE_64BIT_ALIGNMENT
 
 Object*
 GCHeap::Alloc(gc_alloc_context* context, size_t size, uint32_t flags REQD_ALIGN_DCL)
@@ -49212,15 +49210,11 @@ GCHeap::Alloc(gc_alloc_context* context, size_t size, uint32_t flags REQD_ALIGN_
     }
     else
     {
-#ifdef FEATURE_64BIT_ALIGNMENT
         if (flags & GC_ALLOC_ALIGN8)
         {
             newAlloc = AllocAlign8 (acontext, hp, size, flags);
         }
         else
-#else
-        assert ((flags & GC_ALLOC_ALIGN8) == 0);
-#endif
         {
             newAlloc = (Object*) hp->allocate (size + ComputeMaxStructAlignPad(requiredAlignment), acontext, flags);
         }

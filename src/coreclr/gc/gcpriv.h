@@ -1458,9 +1458,7 @@ class gc_heap
     friend struct ::alloc_context;
     friend void ProfScanRootsHelper(Object** object, ScanContext *pSC, uint32_t dwFlags);
     friend void GCProfileWalkHeapWorker(BOOL fProfilerPinned, BOOL fShouldWalkHeapRootsForEtw, BOOL fShouldWalkHeapObjectsForEtw);
-#ifdef FEATURE_64BIT_ALIGNMENT
     friend Object* AllocAlign8(alloc_context* acontext, gc_heap* hp, size_t size, uint32_t flags);
-#endif //FEATURE_64BIT_ALIGNMENT
     friend class t_join;
     friend class gc_mechanisms;
     friend class seg_free_spaces;
@@ -3347,8 +3345,8 @@ private:
         size_t new_current_total_committed);
 
 #ifdef USE_REGIONS
-    PER_HEAP_ISOLATED_METHOD void compute_committed_bytes(size_t& total_committed, size_t& committed_decommit, size_t& committed_free, 
-                                  size_t& committed_bookkeeping, size_t& new_current_total_committed, size_t& new_current_total_committed_bookkeeping, 
+    PER_HEAP_ISOLATED_METHOD void compute_committed_bytes(size_t& total_committed, size_t& committed_decommit, size_t& committed_free,
+                                  size_t& committed_bookkeeping, size_t& new_current_total_committed, size_t& new_current_total_committed_bookkeeping,
                                   size_t* new_committed_by_oh);
 #endif
 
@@ -4228,7 +4226,7 @@ private:
 
 #ifdef DYNAMIC_HEAP_COUNT
     // Sample collection -
-    // 
+    //
     // For every GC, we collect the msl wait time + GC pause duration info and use both to calculate the
     // throughput cost percentage. We will also be using the wait time and the GC pause duration separately
     // for other purposes in the future.

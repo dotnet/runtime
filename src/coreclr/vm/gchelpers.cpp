@@ -528,14 +528,12 @@ OBJECTREF AllocateSzArray(MethodTable* pArrayMT, INT32 cElements, GC_ALLOC_FLAGS
     }
     else
     {
-#ifndef FEATURE_64BIT_ALIGNMENT
         if ((DATA_ALIGNMENT < sizeof(double)) && (pArrayMT->GetArrayElementType() == ELEMENT_TYPE_R8))
         {
             flags |= GC_ALLOC_ALIGN8;
             orArray = (ArrayBase*)Alloc(totalSize, flags, isSampled, samplingBudget);
         }
         else
-#endif  // FEATURE_64BIT_ALIGNMENT
         {
 #ifdef FEATURE_64BIT_ALIGNMENT
             MethodTable* pElementMT = pArrayMT->GetArrayElementTypeHandle().GetMethodTable();
