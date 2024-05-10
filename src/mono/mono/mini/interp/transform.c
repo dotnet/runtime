@@ -3404,6 +3404,78 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 		return FALSE;
 	}
 
+#ifdef MONO_ARCH_HAVE_SWIFTCALL
+	/*
+	* We need to modify the signature of the swiftcall calli to account for the lowering of Swift structs.
+	* This is done by replacing struct arguments on stack with a lowered sequence and updating the signature.
+	*/
+	if (csignature->pinvoke && mono_method_signature_has_ext_callconv (csignature, MONO_EXT_CALLCONV_SWIFTCALL)) {
+		g_assert (!csignature->hasthis); // P/Invoke calls shouldn't contain 'this'
+
+		// Save the function pointer
+		StackInfo sp_fp = td->sp [-1];
+		--td->sp;
+
+		// Save the old arguments				
+		td->sp -= csignature->param_count;
+		StackInfo *sp_old_params = (StackInfo*) mono_mempool_alloc (td->mempool, sizeof (StackInfo) * csignature->param_count);
+		memcpy (sp_old_params, td->sp, sizeof (StackInfo) * csignature->param_count);
+
+		GArray *new_params = g_array_new (FALSE, FALSE, sizeof (MonoType *));
+		uint32_t new_param_count = 0;
+		int align;
+		/*
+		* Go through the lowered arguments, if the argument is a struct, 
+		* we need to replace it with a sequence of lowered arguments.
+		* Also record the updated parameters for the new signature.
+		*/
+		for (int idx_param = 0; idx_param < csignature->param_count; ++idx_param) {
+			MonoType *ptype = csignature->params [idx_param];
+			if (mono_type_is_struct (ptype)) {
+				SwiftPhysicalLowering lowered_swift_struct = mono_marshal_get_swift_physical_lowering (ptype, FALSE);
+				if (!lowered_swift_struct.by_reference) {
+					for (uint32_t idx_lowered = 0; idx_lowered < lowered_swift_struct.num_lowered_elements; ++idx_lowered) {
+						int mt_lowered = mono_mint_type (lowered_swift_struct.lowered_elements [idx_lowered]);
+						int lowered_elem_size = mono_type_size (lowered_swift_struct.lowered_elements [idx_lowered], &align); 
+						// Load the lowered elements of the struct
+						interp_add_ins (td, MINT_MOV_SRC_OFF);
+						interp_ins_set_sreg (td->last_ins, sp_old_params [idx_param].var);
+						td->last_ins->data [0] = lowered_swift_struct.offsets [idx_lowered];
+						td->last_ins->data [1] = GINT_TO_UINT16 (mt_lowered);
+						td->last_ins->data [2] = GINT_TO_UINT16 (lowered_elem_size);
+						push_mono_type (td, lowered_swift_struct.lowered_elements [idx_lowered], mt_lowered, mono_class_from_mono_type_internal (lowered_swift_struct.lowered_elements [idx_lowered]));
+						interp_ins_set_dreg (td->last_ins, td->sp [-1].var);
+						
+						++new_param_count;
+						g_array_append_val (new_params, lowered_swift_struct.lowered_elements [idx_lowered]);
+					}
+					continue;
+				}
+			}
+			// For non-struct and by-ref arguments, just copy them over
+			memcpy (td->sp, &sp_old_params [idx_param], sizeof (StackInfo));
+			++td->sp;
+
+			++new_param_count;
+			g_array_append_val (new_params, ptype);
+		}
+		// Restore the function pointer
+		memcpy (td->sp, &sp_fp, sizeof (StackInfo));
+		++td->sp;
+
+		// Create a new dummy signature with the lowered arguments
+		MonoMethodSignature *swiftcall_signature = mono_metadata_signature_alloc (m_class_get_image (method->klass), new_param_count);
+		for (uint32_t idx_param = 0; idx_param < new_param_count; ++idx_param) {
+			swiftcall_signature->params [idx_param] = g_array_index (new_params, MonoType *, idx_param);
+		}
+		swiftcall_signature->ret = csignature->ret;
+		swiftcall_signature->pinvoke = csignature->pinvoke;
+		swiftcall_signature->ext_callconv = csignature->ext_callconv;
+		
+		csignature = swiftcall_signature;	
+	}
+#endif
+
 	if (check_visibility && target_method && !mono_method_can_access_method (method, target_method))
 		interp_generate_mae_throw (td, method, target_method);
 
