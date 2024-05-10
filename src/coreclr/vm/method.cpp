@@ -504,10 +504,10 @@ PCODE MethodDesc::GetMethodEntryPoint()
         TADDR pSlot = dac_cast<TADDR>(this) + size;
 
 #if !defined(HAS_COMPACT_ENTRYPOINTS) && !defined(DACCESS_COMPILE)
-        if (*PTR_PCODE(pSlot) == NULL)
+        if (*PTR_PCODE(pSlot) == (PCODE)NULL)
         {
             EnsureSlotFilled();
-            _ASSERTE(*PTR_PCODE(pSlot) != NULL);
+            _ASSERTE(*PTR_PCODE(pSlot) != (PCODE)NULL);
         }
 #endif
         return *PTR_PCODE(pSlot);
@@ -2217,7 +2217,7 @@ BOOL MethodDesc::IsPointingToPrestub()
         if (IsVersionableWithVtableSlotBackpatch())
         {
             PCODE methodEntrypoint = GetMethodEntryPoint_NoAlloc();
-            return methodEntrypoint == GetTemporaryEntryPoint_NoAlloc() && methodEntrypoint != NULL;
+            return methodEntrypoint == GetTemporaryEntryPoint_NoAlloc() && methodEntrypoint != (PCODE)NULL;
         }
         return TRUE;
     }
@@ -2960,14 +2960,14 @@ PCODE MethodDesc::GetTemporaryEntryPoint()
     }
     CONTRACTL_END;
 
-    TADDR pEntryPoint = GetTemporaryEntryPoint_NoAlloc();
-    if (pEntryPoint != NULL)
+    PCODE pEntryPoint = GetTemporaryEntryPoint_NoAlloc();
+    if (pEntryPoint != (PCODE)NULL)
         return pEntryPoint;
 
 #ifndef DACCESS_COMPILE
     EnsureTemporaryEntryPoint(GetLoaderAllocator());
     pEntryPoint = GetTemporaryEntryPoint_NoAlloc();
-    _ASSERTE(pEntryPoint != NULL);
+    _ASSERTE(pEntryPoint != (PCODE)NULL);
 
 #ifdef _DEBUG
     MethodDesc * pMD = MethodDesc::GetMethodDescFromStubAddr(pEntryPoint);
@@ -3016,7 +3016,7 @@ void MethodDesc::EnsureTemporaryEntryPoint(LoaderAllocator *pLoaderAllocator)
     }
     CONTRACTL_END;
 
-    if (GetTemporaryEntryPoint_NoAlloc() == NULL)
+    if (GetTemporaryEntryPoint_NoAlloc() == (PCODE)NULL)
     {
         AllocMemTracker amt;
         EnsureTemporaryEntryPointCore(pLoaderAllocator, &amt);
@@ -3033,18 +3033,18 @@ void MethodDesc::EnsureTemporaryEntryPointCore(LoaderAllocator *pLoaderAllocator
     }
     CONTRACTL_END;
 
-    if (GetTemporaryEntryPoint_NoAlloc() == NULL)
+    if (GetTemporaryEntryPoint_NoAlloc() == (PCODE)NULL)
     {
         PTR_PCODE pSlot = GetAddrOfSlot();
 
         AllocMemTracker amt;
         Precode* pPrecode = Precode::Allocate(GetPrecodeType(), this, GetLoaderAllocator(), &amt);
 
-        if (InterlockedCompareExchangeT(&m_pTemporaryEntryPoint, pPrecode->GetEntryPoint(), (PCODE)NULL) == NULL)
+        if (InterlockedCompareExchangeT(&m_pTemporaryEntryPoint, pPrecode->GetEntryPoint(), (PCODE)NULL) == (PCODE)NULL)
             amt.SuppressRelease();
 
         PCODE tempEntryPoint = GetTemporaryEntryPoint_NoAlloc();
-        _ASSERTE(tempEntryPoint != NULL);
+        _ASSERTE(tempEntryPoint != (PCODE)NULL);
 
         if (*pSlot == NULL)
         {
@@ -3096,7 +3096,7 @@ Precode* MethodDesc::GetOrCreatePrecode()
     PrecodeType requiredType = GetPrecodeType();
     PrecodeType availableType = PRECODE_INVALID;
 
-    if (!GetMethodDescChunk()->HasCompactEntryPoints() && tempEntry != NULL)
+    if (!GetMethodDescChunk()->HasCompactEntryPoints() && tempEntry != (PCODE)NULL)
     {
         availableType = Precode::GetPrecodeFromEntryPoint(tempEntry)->GetType();
     }
@@ -3114,7 +3114,7 @@ Precode* MethodDesc::GetOrCreatePrecode()
         if (InterlockedCompareExchangeT(pSlot, pPrecode->GetEntryPoint(), tempEntry) == tempEntry)
             amt.SuppressRelease();
     }
-    else if (*pSlot == NULL)
+    else if (*pSlot == (PCODE)NULL)
     {
         InterlockedCompareExchangeT(pSlot, tempEntry, (PCODE)NULL);
     }
