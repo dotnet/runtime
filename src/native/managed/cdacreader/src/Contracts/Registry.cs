@@ -20,13 +20,13 @@ internal sealed class Registry
 
     public Thread Thread => GetContract<Thread>();
 
-    private T GetContract<T>() where T : IContract, new()
+    private T GetContract<T>() where T : IContract
     {
         if (_contracts.TryGetValue(typeof(T), out IContract? contractMaybe))
             return (T)contractMaybe;
 
         if (!_target.TryGetContractVersion(T.Name, out int version))
-            return new T();
+            throw new NotImplementedException();
 
         // Create and register the contract
         IContract contract = T.Create(_target, version);

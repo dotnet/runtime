@@ -219,14 +219,11 @@ public sealed unsafe class Target
 
     public T Read<T>(ulong address) where T : unmanaged, IBinaryInteger<T>, IMinMaxValue<T>
     {
-        if (!TryRead(address, out T value))
+        if (!TryRead(address, _config.IsLittleEndian, _reader, out T value))
             throw new InvalidOperationException($"Failed to read {typeof(T)} at 0x{address:x8}.");
 
         return value;
     }
-
-    public bool TryRead<T>(ulong address, out T value) where T : unmanaged, IBinaryInteger<T>, IMinMaxValue<T>
-        => TryRead(address, _config.IsLittleEndian, _reader, out value);
 
     private static bool TryRead<T>(ulong address, bool isLittleEndian, Reader reader, out T value) where T : unmanaged, IBinaryInteger<T>, IMinMaxValue<T>
     {
@@ -248,14 +245,11 @@ public sealed unsafe class Target
 
     public TargetPointer ReadPointer(ulong address)
     {
-        if (!TryReadPointer(address, out TargetPointer pointer))
+        if (!TryReadPointer(address, _config, _reader, out TargetPointer pointer))
             throw new InvalidOperationException($"Failed to read pointer at 0x{address:x8}.");
 
         return pointer;
     }
-
-    public bool TryReadPointer(ulong address, out TargetPointer pointer)
-        => TryReadPointer(address, _config, _reader, out pointer);
 
     private static bool TryReadPointer(ulong address, Configuration config, Reader reader, out TargetPointer pointer)
     {
@@ -343,33 +337,22 @@ public sealed unsafe class Target
 
     public TypeInfo GetTypeInfo(DataType type)
     {
-        if (!TryGetTypeInfo(type, out TypeInfo typeInfo))
+        if (!_knownTypes.TryGetValue(type, out TypeInfo typeInfo))
             throw new InvalidOperationException($"Failed to get type info for '{type}'");
 
         return typeInfo;
     }
-
-    public bool TryGetTypeInfo(DataType type, out TypeInfo typeInfo)
-        => _knownTypes.TryGetValue(type, out typeInfo);
 
     public TypeInfo GetTypeInfo(string type)
     {
-        if (!TryGetTypeInfo(type, out TypeInfo typeInfo))
-            throw new InvalidOperationException($"Failed to get type info for '{type}'");
-
+        if (_types.TryGetValue(type, out TypeInfo typeInfo))
         return typeInfo;
-    }
-
-    public bool TryGetTypeInfo(string type, out TypeInfo typeInfo)
-    {
-        if (_types.TryGetValue(type, out typeInfo))
-            return true;
 
         DataType dataType = GetDataType(type);
-        if (dataType is DataType.Unknown)
-            return false;
+        if (dataType is not DataType.Unknown)
+            return GetTypeInfo(dataType);
 
-        return TryGetTypeInfo(dataType, out typeInfo);
+        throw new InvalidOperationException($"Failed to get type info for '{type}'");
     }
 
     internal bool TryGetContractVersion(string contractName, out int version)

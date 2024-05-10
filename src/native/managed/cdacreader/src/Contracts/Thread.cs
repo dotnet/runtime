@@ -18,9 +18,7 @@ internal class Thread : IContract
 
     public static IContract Create(Target target, int version)
     {
-        if (!target.TryReadGlobalPointer(Constants.Globals.ThreadStore, out TargetPointer threadStore))
-            return NotImplemented;
-
+        TargetPointer threadStore = target.ReadGlobalPointer(Constants.Globals.ThreadStore);
         return version switch
         {
             1 => new Thread_1(target, threadStore),
