@@ -8,7 +8,7 @@ using System.Runtime.Intrinsics;
 
 namespace System.Runtime.Intrinsics.X86
 {
-    /// <summary>This class provides access to X86 AVX512BW hardware instructions via intrinsics</summary>
+    /// <summary>This class provides access to X86 Avx10.1 hardware instructions via intrinsics</summary>
     [CLSCompliant(false)]
     public abstract class Avx10v1 : Avx2
     {

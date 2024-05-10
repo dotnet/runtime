@@ -6,7 +6,7 @@ using System.Runtime.CompilerServices;
 
 namespace System.Runtime.Intrinsics.X86
 {
-    /// <summary>This class provides access to X86 AVX512BW hardware instructions via intrinsics</summary>
+    /// <summary>This class provides access to X86 AVX10.1 hardware instructions via intrinsics</summary>
     [Intrinsic]
     [CLSCompliant(false)]
     public abstract class Avx10v1 : Avx2
@@ -2640,7 +2640,6 @@ namespace System.Runtime.Intrinsics.X86
 
             public static new bool IsSupported { get => IsSupported; }
 
-            //from avx512cd starts
             /// <summary>
             /// __m512i _mm512_conflict_epi32 (__m512i a)
             ///   VPCONFLICTD zmm1 {k1}{z}, zmm2/m512/m32bcst
@@ -2688,9 +2687,7 @@ namespace System.Runtime.Intrinsics.X86
             ///   VPLZCNTQ zmm1 {k1}{z}, zmm2/m512/m64bcst
             /// </summary>
             public static Vector512<ulong> LeadingZeroCount(Vector512<ulong> value) => LeadingZeroCount(value);
-            //from avx512cd ends
 
-            //from avx512dq starts
             /// <summary>
             /// __m512 _mm512_and_ps (__m512 a, __m512 b)
             ///   VANDPS zmm1 {k1}{z}, zmm2, zmm3/m512/m32bcst
@@ -3020,9 +3017,7 @@ namespace System.Runtime.Intrinsics.X86
             ///   VXORPD zmm1 {k1}{z}, zmm2, zmm3/m512/m64bcst
             /// </summary>
             public static Vector512<double> Xor(Vector512<double> left, Vector512<double> right) => Xor(left, right);
-            //from avx512dq ends
 
-            //from avx512vbmi starts
             /// <summary>
             /// __m512i _mm512_permutevar64x8_epi8 (__m512i a, __m512i b)
             ///   VPERMB zmm1 {k1}{z}, zmm2, zmm3/m512
@@ -3048,7 +3043,6 @@ namespace System.Runtime.Intrinsics.X86
             ///   VPERMT2B zmm1 {k1}{z}, zmm2, zmm3/m512
             /// </summary>
             public static Vector512<sbyte> PermuteVar64x8x2(Vector512<sbyte> lower, Vector512<sbyte> indices, Vector512<sbyte> upper) => PermuteVar64x8x2(lower, indices, upper);
-            //from avx512vbmi ends
         }
     }
 }
