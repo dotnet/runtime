@@ -3125,15 +3125,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
     // To be fixed in https://github.com/dotnet/runtime/pull/77465
     const bool tier0opts = !opts.compDbgCode && !opts.jitFlags->IsSet(JitFlags::JIT_FLAG_MIN_OPT);
 
-    if (tier0opts)
-    {
-        // The *Estimate APIs are allowed to differ in behavior across hardware
-        // so ensure we treat them as "betterToExpand" to get deterministic behavior
-
-        betterToExpand |= (ni == NI_System_Math_ReciprocalEstimate);
-        betterToExpand |= (ni == NI_System_Math_ReciprocalSqrtEstimate);
-    }
-    else if (!mustExpand)
+    if (!mustExpand)
     {
         switch (ni)
         {
@@ -7471,6 +7463,8 @@ bool Compiler::IsTargetIntrinsic(NamedIntrinsic intrinsicName)
     {
         case NI_System_Math_Abs:
         case NI_System_Math_Sqrt:
+        case NI_System_Math_ReciprocalEstimate:
+        case NI_System_Math_ReciprocalSqrtEstimate:
             return true;
 
         default:
@@ -8847,7 +8841,7 @@ GenTree* Compiler::impEstimateIntrinsic(CORINFO_METHOD_HANDLE method,
             simdSize = 16;
         }
 
-        GenTree* op1 = impPopStack().val;
+        GenTree* op1 = impImplicitR4orR8Cast(impPopStack().val, callType);
 
         op1 = gtNewSimdCreateScalarUnsafeNode(simdType, op1, callJitType, simdSize);
         op1 = gtNewSimdHWIntrinsicNode(simdType, op1, intrinsicId, callJitType, simdSize);
@@ -8856,10 +8850,27 @@ GenTree* Compiler::impEstimateIntrinsic(CORINFO_METHOD_HANDLE method,
     }
 #endif // FEATURE_HW_INTRINSICS
 
-    // TODO-CQ: Returning this as an intrinsic blocks inlining and is undesirable
-    // return impMathIntrinsic(method, sig, callType, intrinsicName, tailCall);
+    switch (intrinsicName)
+    {
+        case NI_System_Math_ReciprocalEstimate:
+        case NI_System_Math_ReciprocalSqrtEstimate:
+        {
+            GenTree* op1 = impImplicitR4orR8Cast(impPopStack().val, callType);
 
-    return nullptr;
+            if (intrinsicName == NI_System_Math_ReciprocalSqrtEstimate)
+            {
+                op1 = new (this, GT_INTRINSIC) GenTreeIntrinsic(genActualType(callType), op1, NI_System_Math_Sqrt,
+                                                                nullptr);
+            }
+
+            return gtNewOperNode(GT_DIV, genActualType(callType), gtNewDconNode(1.0, callType), op1);
+        }
+
+        default:
+        {
+            unreached();
+        }
+    }
 }
 
 GenTree* Compiler::impMathIntrinsic(CORINFO_METHOD_HANDLE method,
@@ -8958,8 +8969,8 @@ GenTree* Compiler::impMinMaxIntrinsic(CORINFO_METHOD_HANDLE method,
     GenTreeDblCon* cnsNode   = nullptr;
     GenTree*       otherNode = nullptr;
 
-    GenTree* op2 = impStackTop().val;
-    GenTree* op1 = impStackTop(1).val;
+    GenTree* op2 = impImplicitR4orR8Cast(impStackTop().val, callType);
+    GenTree* op1 = impImplicitR4orR8Cast(impStackTop(1).val, callType);
 
     if (op2->IsCnsFltOrDbl())
     {
@@ -9227,7 +9238,7 @@ GenTree* Compiler::impMinMaxIntrinsic(CORINFO_METHOD_HANDLE method,
                     retNode->AsHWIntrinsic()->Op(2) = op1;
                 }
 
-                return gtNewSimdToScalarNode(callType, retNode, callJitType, 16);
+                return gtNewSimdToScalarNode(genActualType(callType), retNode, callJitType, 16);
             }
         }
 #endif // FEATURE_HW_INTRINSICS && TARGET_XARCH
@@ -9392,7 +9403,7 @@ GenTree* Compiler::impMinMaxIntrinsic(CORINFO_METHOD_HANDLE method,
                                            callJitType, 16);
         }
 
-        return gtNewSimdToScalarNode(callType, tmp, callJitType, 16);
+        return gtNewSimdToScalarNode(genActualType(callType), tmp, callJitType, 16);
     }
 #endif // FEATURE_HW_INTRINSICS && TARGET_XARCH
 

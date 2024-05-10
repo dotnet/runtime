@@ -1196,10 +1196,13 @@ namespace System
         ///    <para>On hardware without specialized support, this may just return <c>1.0 / d</c>.</para>
         /// </remarks>
         [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static double ReciprocalEstimate(double d)
         {
+#if MONO
             return 1.0 / d;
+#else
+            return ReciprocalEstimate(d);
+#endif
         }
 
         /// <summary>Returns an estimate of the reciprocal square root of a specified number.</summary>
@@ -1210,10 +1213,13 @@ namespace System
         ///    <para>On hardware without specialized support, this may just return <c>1.0 / Sqrt(d)</c>.</para>
         /// </remarks>
         [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static double ReciprocalSqrtEstimate(double d)
         {
+#if MONO
             return 1.0 / Sqrt(d);
+#else
+            return ReciprocalSqrtEstimate(d);
+#endif
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
