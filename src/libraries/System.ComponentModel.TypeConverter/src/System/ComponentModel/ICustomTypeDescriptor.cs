@@ -99,7 +99,7 @@ namespace System.ComponentModel
             return FallBack();
 
             [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-                Justification = "Chaining from registered type provider to legacy provider is supported.")]
+                Justification = TypeDescriptionProvider.ForwardFromRegisteredMessage)]
             TypeConverter? FallBack() => GetConverter();
         }
 
@@ -112,12 +112,12 @@ namespace System.ComponentModel
             {
                 if (TypeDescriptor.RequireRegisteredTypes)
                 {
-                    TypeDescriptor.ThrowHelper.ThrowNotImplementedException_RegisteredTypeMemberCalledOnLegacyProvider(nameof(GetEventsFromRegisteredType));
+                    TypeDescriptor.ThrowHelper.ThrowNotImplementedException_CustomTypeProviderMustImplememtMember(nameof(GetEventsFromRegisteredType));
                 }
             }
             else if (RequireRegisteredTypes == true)
             {
-                throw new NotImplementedException();
+                TypeDescriptor.ThrowHelper.ThrowNotImplementedException_CustomTypeProviderMustImplememtMember(nameof(GetEventsFromRegisteredType));
             }
 
             return GetEvents();
@@ -132,24 +132,34 @@ namespace System.ComponentModel
             {
                 if (TypeDescriptor.RequireRegisteredTypes)
                 {
-                    TypeDescriptor.ThrowHelper.ThrowNotImplementedException_RegisteredTypeMemberCalledOnLegacyProvider(nameof(GetPropertiesFromRegisteredType));
+                    TypeDescriptor.ThrowHelper.ThrowNotImplementedException_CustomTypeProviderMustImplememtMember(nameof(GetPropertiesFromRegisteredType));
                 }
             }
             else if (RequireRegisteredTypes == true)
             {
-                throw new NotImplementedException();
+                TypeDescriptor.ThrowHelper.ThrowNotImplementedException_CustomTypeProviderMustImplememtMember(nameof(GetPropertiesFromRegisteredType));
             }
 
             return FallBack();
 
             [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-                Justification = "Chaining from registered type provider to legacy provider is supported.")]
+                Justification = TypeDescriptionProvider.ForwardFromRegisteredMessage)]
             PropertyDescriptorCollection FallBack() => GetProperties();
         }
 
         /// <summary>
-        /// Whether this type provider supports known types.
+        /// Whether types are required to be registered through <see cref="TypeDescriptionProvider.RegisterType{T}"/>.
         /// </summary>
+        /// <remarks>
+        /// The default value is <see langword="null"/> which means that the type descriptor has not declared whether or not it is compatible registered types.
+        /// A type descriptor needs to implement this to return either <see langword="true"/> or <see langword="false"/> if the feature switch
+        /// 'System.ComponentModel.TypeDescriptor.RequireRegisteredTypes' is enabled.
+        /// If <see langword="true"/> is returned, then the type descriptor must also implement
+        /// <see cref="ICustomTypeDescriptor.GetConverterFromRegisteredType()"/>,
+        /// <see cref="ICustomTypeDescriptor.GetEventsFromRegisteredType()"/>, and
+        /// <see cref="ICustomTypeDescriptor.GetPropertiesFromRegisteredType()"/>.
+        /// <br/>
+        /// </remarks>
         bool? RequireRegisteredTypes => null;
     }
 }

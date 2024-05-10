@@ -331,8 +331,11 @@ namespace System.ComponentModel
         /// <summary>
         /// Retrieves the class name for our type.
         /// </summary>
-        internal string? GetClassName([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type) =>
-            GetClassNameFromRegisteredType(type);
+        internal string? GetClassName([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type)
+        {
+            ReflectedTypeData td = GetTypeData(type, true)!;
+            return td.GetClassName();
+        }
 
         /// <summary>
         /// Retrieves the class name for our type.
@@ -536,7 +539,7 @@ namespace System.ComponentModel
         /// Retrieves the properties for this type.
         /// </summary>
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-            Justification = "Instance is verified to be registered.")]
+            Justification = "Instance is verified at run-time to be registered.")]
         internal PropertyDescriptorCollection GetExtendedPropertiesFromRegisteredType(object instance) => GetExtendedProperties(instance);
 
         /// <summary>
@@ -884,7 +887,7 @@ namespace System.ComponentModel
         internal PropertyDescriptorCollection GetPropertiesFromRegisteredType(Type type)
         {
             ReflectedTypeData td = GetTypeDataFromRegisteredType(type);
-            return td.GetProperties();
+            return td.GetPropertiesFromRegisteredType();
         }
 
         /// <summary>
@@ -928,11 +931,18 @@ namespace System.ComponentModel
                 if (_typeData != null && _typeData.TryGetValue(type, out td))
                 {
                     Debug.Assert(td != null);
+
+                    if (TypeDescriptor.RequireRegisteredTypes && !td.IsRegisteredAsRegisteredType && !IsIntrinsicType(type))
+                    {
+                        TypeDescriptor.ThrowHelper.ThrowInvalidOperationException_RegisterTypeRequired(type);
+                    }
+
                     return td;
                 }
 
                 if (TypeDescriptor.RequireRegisteredTypes && !IsIntrinsicType(type))
                 {
+                    // Since registering a type adds it to _typeData, this means the type was not registered.
                     TypeDescriptor.ThrowHelper.ThrowInvalidOperationException_RegisterTypeRequired(type);
                 }
 
@@ -956,8 +966,14 @@ namespace System.ComponentModel
                     return GetOrRegisterType(type);
                 }
 
+                // Since registering a type adds it to _typeData, this means the type was not registered.
                 TypeDescriptor.ThrowHelper.ThrowInvalidOperationException_RegisterTypeRequired(type);
                 td = null;
+            }
+
+            if (!td.IsRegisteredAsRegisteredType && !IsIntrinsicType(type))
+            {
+                TypeDescriptor.ThrowHelper.ThrowInvalidOperationException_RegisterTypeRequired(type);
             }
 
             return td;
@@ -1325,7 +1341,6 @@ namespace System.ComponentModel
 
         private static PropertyDescriptor[] ReflectGetPropertiesFromRegisteredType(Type type)
         {
-            //todo: throw?
             return ReflectGetPropertiesImpl(type);
         }
 

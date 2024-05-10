@@ -46,6 +46,8 @@ namespace System.ComponentModel
     /// </summary>
     internal sealed class ReflectPropertyDescriptor : PropertyDescriptor
     {
+        private const string ComponentClassIsProtected = "_componentClass is already a protected through [DynamicallyAccessedModifiers(All)] or is a registered type.";
+
         private static readonly object s_noValue = new object();
 
         private static readonly int s_bitDefaultValueQueried = InterlockedBitVector32.CreateMask();
@@ -60,7 +62,6 @@ namespace System.ComponentModel
         private static readonly int s_bitSetOnDemand = InterlockedBitVector32.CreateMask(s_bitAmbientValueQueried);
 
         private InterlockedBitVector32 _state;             // Contains the state bits for this property descriptor.
-        //[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
         private readonly Type _componentClass;             // used to determine if we should all on us or on the designer
         private readonly Type _type;                       // the data type of the property
         private object? _defaultValue;               // the default value of the property (or noValue)
@@ -243,7 +244,7 @@ namespace System.ComponentModel
         /// The EventDescriptor for the "{propertyname}Changed" event on the component, or null if there isn't one for this property.
         /// </summary>
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2077:UnrecognizedReflectionPattern",
-            Justification = "_componentClass is already a protected through [DynamicallyAccessedModifiers(All)].")]
+            Justification = ComponentClassIsProtected)]
         private EventDescriptor ChangedEventValue
         {
             get
@@ -317,9 +318,9 @@ namespace System.ComponentModel
         /// The GetMethod for this property
         /// </summary>
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2077:UnrecognizedReflectionPattern",
-            Justification = "_componentClass is already a protected through [DynamicallyAccessedModifiers(All)].")]
+            Justification = ComponentClassIsProtected)]
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2080:UnrecognizedReflectionPattern",
-            Justification = "_componentClass is already a protected through [DynamicallyAccessedModifiers(All)].")]
+            Justification = ComponentClassIsProtected)]
         private MethodInfo GetMethodValue
         {
             get
@@ -375,7 +376,7 @@ namespace System.ComponentModel
         /// Access to the reset method, if one exists for this property.
         /// </summary>
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2077:UnrecognizedReflectionPattern",
-            Justification = "_componentClass is already a protected through [DynamicallyAccessedModifiers(All)].")]
+            Justification = ComponentClassIsProtected)]
         private MethodInfo? ResetMethodValue
         {
             get
@@ -405,11 +406,11 @@ namespace System.ComponentModel
         /// Accessor for the set method
         /// </summary>
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2077:UnrecognizedReflectionPattern",
-            Justification = "_componentClass is already a protected through [DynamicallyAccessedModifiers(All)].")]
+            Justification = ComponentClassIsProtected)]
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:UnrecognizedReflectionPattern",
-            Justification = "_componentClass is already a protected through [DynamicallyAccessedModifiers(All)].")]
+            Justification = ComponentClassIsProtected)]
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2080:UnrecognizedReflectionPattern",
-            Justification = "_componentClass is already a protected through [DynamicallyAccessedModifiers(All)].")]
+            Justification = ComponentClassIsProtected)]
         private MethodInfo? SetMethodValue
         {
             get
@@ -467,7 +468,7 @@ namespace System.ComponentModel
         /// Accessor for the ShouldSerialize method.
         /// </summary>
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2077:UnrecognizedReflectionPattern",
-            Justification = "_componentClass is already a protected through [DynamicallyAccessedModifiers(All)].")]
+            Justification = ComponentClassIsProtected)]
         private MethodInfo? ShouldSerializeMethodValue
         {
             get
@@ -742,9 +743,9 @@ namespace System.ComponentModel
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2072:UnrecognizedReflectionPattern",
             Justification = "ReflectPropertyDescriptor ctors are all marked as RequiresUnreferencedCode because PropertyType can't be annotated as 'All'.")]
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:UnrecognizedReflectionPattern",
-            Justification = "_componentClass is already a protected through [DynamicallyAccessedModifiers(All)].")]
+            Justification = ComponentClassIsProtected)]
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2080:UnrecognizedReflectionPattern",
-            Justification = "_componentClass is already a protected through [DynamicallyAccessedModifiers(All)].")]
+            Justification = ComponentClassIsProtected)]
         protected override void FillAttributes(IList attributes)
         {
             Debug.Assert(_componentClass != null, "Must have a component class for FillAttributes");

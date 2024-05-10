@@ -169,7 +169,7 @@ namespace System.ComponentModel
 
                 if (componentReflect)
                 {
-                    PropertyDescriptor? prop = GetPropertyDescriptor(value).Find(propName, IgnoreCase);
+                    PropertyDescriptor? prop = TypeDescriptorGetProperties(value).Find(propName, IgnoreCase);
 
                     if (prop != null && !prop.IsReadOnly && (kvp.Value == null || prop.PropertyType.IsInstanceOfType(kvp.Value)))
                     {
@@ -204,8 +204,8 @@ namespace System.ComponentModel
             }
 
             [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-                Justification = "Calling method either has DynamicallyAccessedMemberTypes.All or RequiresUnreferencedCode.")]
-            static PropertyDescriptorCollection GetPropertyDescriptor(object value) => TypeDescriptor.GetProperties(value);
+                Justification = "Calling method either has RequiresUnreferencedCode or has registered types.")]
+            static PropertyDescriptorCollection TypeDescriptorGetProperties(object value) => TypeDescriptor.GetProperties(value);
         }
 
         /// <summary>

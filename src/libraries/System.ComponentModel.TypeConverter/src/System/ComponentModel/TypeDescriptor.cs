@@ -110,6 +110,10 @@ namespace System.ComponentModel
         {
         }
 
+        /// <summary>
+        /// Registers the type so it can be used by reflection-based providers in trimmed applications.
+        /// </summary>
+        /// <typeparam name="T">The type to register.</typeparam>
         public static void RegisterType<[DynamicallyAccessedMembers(RegisteredTypesDynamicallyAccessedMembers)] T>()
         {
             TypeDescriptionNode node = NodeFor(typeof(T), createDelegator: false);
@@ -150,19 +154,7 @@ namespace System.ComponentModel
         /// </summary>
         /// <remarks>
         /// The value of the property is backed by the "System.ComponentModel.TypeDescriptor.RequireRegisteredTypes"
-        /// <see cref="AppContext"/> setting and defaults to <see langword="false"/> if unset.
-        /// If <see langword="true"/>, a custom <see cref="TypeDescriptionProvider"/> must implement
-        /// <see cref="TypeDescriptionProvider.RequireRegisteredTypes"/> to return <see langword="true"/> or <see langword="false"/>.
-        /// If <see langword="true"/> is returned, then the custom provider must also implement
-        /// <see cref="TypeDescriptionProvider.IsRegisteredType(Type)"/> and
-        /// <see cref="TypeDescriptionProvider.GetTypeDescriptorFromRegisteredType(Type, object?)"/>
-        /// <br/>
-        /// If <see langword="true"/>, a custom <see cref="ICustomTypeDescriptor"/> must implement
-        /// <see cref="ICustomTypeDescriptor.RequireRegisteredTypes"/> to return <see langword="true"/> or <see langword="false"/>.
-        /// If <see langword="true"/> is returned, then the custom descriptor must also implement
-        /// <see cref="ICustomTypeDescriptor.GetConverterFromRegisteredType()"/>,
-        /// <see cref="ICustomTypeDescriptor.GetEventsFromRegisteredType()"/> and
-        /// <see cref="ICustomTypeDescriptor.GetPropertiesFromRegisteredType()"/>.
+        /// feature switch.
         /// </remarks>
         [FeatureSwitchDefinition("System.ComponentModel.TypeDescriptor.RequireRegisteredTypes")]
         internal static bool RequireRegisteredTypes => s_requireRegisteredTypes;
@@ -1540,14 +1532,15 @@ namespace System.ComponentModel
         [EditorBrowsable(EditorBrowsableState.Advanced)]
         public static TypeDescriptionProvider GetProvider(object instance)
         {
-            if (!RequireRegisteredTypes)
-            {
-                ArgumentNullException.ThrowIfNull(instance);
+            ArgumentNullException.ThrowIfNull(instance);
+            TypeDescriptionProvider provider = NodeFor(instance, true);
 
-                return NodeFor(instance, true);
+            if (provider.RequireRegisteredTypes == true && !provider.IsRegisteredType(instance.GetType()))
+            {
+                ThrowHelper.ThrowInvalidOperationException_RegisterTypeRequired(instance.GetType());
             }
 
-            throw new InvalidOperationException("TODO GetProvider");
+            return provider;
         }
 
         /// <summary>
@@ -1754,7 +1747,7 @@ namespace System.ComponentModel
                     {
                         throw new NotSupportedException(SR.ComObjectDescriptorsNotSupported);
                     }
-                    type = ComObjectType;
+                    type = GetComObjectType();
                 }
                 else if (OperatingSystem.IsWindows()
                     && ComWrappers.TryGetComInstance(instance, out nint unknown))
@@ -1769,7 +1762,7 @@ namespace System.ComponentModel
                     //
                     // Tracked with https://github.com/dotnet/winforms/issues/9291
                     Marshal.Release(unknown);
-                    type = ComObjectType;
+                    type = GetComObjectType();
                 }
 
                 if (createDelegator)
@@ -1783,6 +1776,10 @@ namespace System.ComponentModel
             }
 
             return node;
+
+            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+                Justification = "This is protected at runtime by checking for IsComObjectDescriptorSupported.")]
+            static Type GetComObjectType() => ComObjectType;
         }
 
         /// <summary>
@@ -3296,7 +3293,7 @@ namespace System.ComponentModel
             /// Implements GetExtendedTypeDescriptor. This creates a custom type
             /// descriptor that walks the linked list for each of its calls.
             /// </summary>
-            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode", Justification = "The object is verified here to be a registered type.")]
+            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode", Justification = "The object is verified at run-time to be a registered type.")]
             public override ICustomTypeDescriptor GetExtendedTypeDescriptorFromRegisteredType(object instance)
             {
                 ArgumentNullException.ThrowIfNull(instance);
@@ -3392,8 +3389,8 @@ namespace System.ComponentModel
                 return FallBack();
 
                 [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2067:UnrecognizedReflectionPattern",
-                    Justification = "Calling the equivalent DynamicallyAccessedMembers method is supported when types are registered.")]
-                ICustomTypeDescriptor FallBack() => new DefaultTypeDescriptor(this, objectType, instance);
+                    Justification = TypeDescriptionProvider.ForwardFromRegisteredMessage)]
+                ICustomTypeDescriptor FallBack() => GetTypeDescriptor(objectType, instance);
             }
 
             internal DefaultTypeDescriptor GetDefaultTypeDescriptor([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type objectType)
@@ -4209,15 +4206,13 @@ namespace System.ComponentModel
 
         internal static class ThrowHelper
         {
-            internal static NotImplementedException ThrowNotImplementedException_CustomTypeProviderMustImplememtMember(string memberName) => throw new NotImplementedException($"todo: custom type providers must implement member {memberName}.");
-
-            // TODO: remove this
             [DoesNotReturn]
-            internal static void ThrowNotImplementedException_RegisteredTypeMemberCalledOnLegacyProvider(string memberName) => throw new NotImplementedException($"todo: the member {memberName} was called on a provider that returned 'false' for RequireRegisteredTypes.");
+            internal static void ThrowNotImplementedException_CustomTypeProviderMustImplememtMember(string memberName) =>
+                throw new NotImplementedException(SR.Format(SR.CustomTypeProviderNotImplemented, memberName));
 
             [DoesNotReturn]
             internal static void ThrowInvalidOperationException_RegisterTypeRequired(Type type) =>
-                throw new InvalidOperationException(SR.Format(SR.TypeIsNotRegistered, type.FullName, TypeDescriptor.GetProvider(type).GetType().FullName));
+                throw new InvalidOperationException(SR.Format(SR.TypeIsNotRegistered, type.FullName));
         }
     }
 }

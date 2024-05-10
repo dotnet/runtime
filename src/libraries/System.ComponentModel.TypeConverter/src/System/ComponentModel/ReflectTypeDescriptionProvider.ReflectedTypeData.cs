@@ -199,6 +199,11 @@ namespace System.ComponentModel
                         Type? converterType = GetTypeFromName(instanceAttr.ConverterTypeName);
                         if (converterType != null && typeof(TypeConverter).IsAssignableFrom(converterType))
                         {
+                            if (verifyIsRegisteredType && !_isRegisteredAsRegisteredType && !IsIntrinsicType(_type))
+                            {
+                                TypeDescriptor.ThrowHelper.ThrowInvalidOperationException_RegisterTypeRequired(_type);
+                            }
+
                             return (TypeConverter)ReflectTypeDescriptionProvider.CreateInstance(converterType, _type)!;
                         }
                     }
@@ -224,19 +229,13 @@ namespace System.ComponentModel
                         // we find one in the stock hashtable.
                         _converter = GetIntrinsicTypeConverter(_type);
 
-                        if (verifyIsRegisteredType)
-                        {
-                            if (_converter.GetType() == typeof(TypeConverter))
-                            {
-                                if (!_isRegisteredAsRegisteredType)
-                                {
-                                    throw new InvalidOperationException("todo: trimmable applications require registering Types with TypeDescriptor.RegisterType().");
-                                }
-                            }
-                        }
-
                         Debug.Assert(_converter != null, "There is no intrinsic setup in the hashtable for the Object type");
                     }
+                }
+
+                if (verifyIsRegisteredType && !_isRegisteredAsRegisteredType && !IsIntrinsicType(_type))
+                {
+                    TypeDescriptor.ThrowHelper.ThrowInvalidOperationException_RegisterTypeRequired(_type);
                 }
 
                 return _converter;
@@ -468,20 +467,7 @@ namespace System.ComponentModel
             /// <summary>
             /// Retrieves the properties for this type.
             /// </summary>
-            //[RequiresUnreferencedCode(PropertyDescriptor.PropertyDescriptorPropertyTypeMessage)]
-            //internal PropertyDescriptorCollection GetProperties()
-            //    => GetPropertiesImpl();
-
-            //internal PropertyDescriptorCollection GetPropertiesFromRegisteredType()
-            //{
-            //    if (!IsRegisteredAsRegisteredType)
-            //    {
-            //        throw new InvalidOperationException("todo: trimmable applications require registering Types with TypeDescriptor.RegisterType().");
-            //    }
-
-            //    return GetPropertiesImpl();
-            //}
-
+            [RequiresUnreferencedCode(PropertyDescriptor.PropertyDescriptorPropertyTypeMessage)]
             internal PropertyDescriptorCollection GetProperties()
             {
                 // Worst case collision scenario:  we don't want the perf hit
@@ -496,7 +482,7 @@ namespace System.ComponentModel
 
                     do
                     {
-                        propertyArray = ReflectGetPropertiesFromRegisteredType(baseType);
+                        propertyArray = ReflectGetProperties(baseType);
                         foreach (PropertyDescriptor p in propertyArray)
                         {
                             propertyList.TryAdd(p.Name, p);
@@ -512,6 +498,10 @@ namespace System.ComponentModel
 
                 return _properties;
             }
+
+            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+                Justification = "Before this method was called, the type was validated to be registered.")]
+            internal PropertyDescriptorCollection GetPropertiesFromRegisteredType() => GetProperties();
 
             /// <summary>
             /// Retrieves a type from a name. The Assembly of the type

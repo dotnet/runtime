@@ -13,6 +13,8 @@ namespace System.ComponentModel
     /// </summary>
     public abstract class TypeDescriptionProvider
     {
+        internal const string ForwardFromRegisteredMessage = "Forwarding from a type provider that supports registered types to one that does not is supported.";
+
         private readonly TypeDescriptionProvider? _parent;
         private EmptyCustomTypeDescriptor? _emptyDescriptor;
 
@@ -41,6 +43,10 @@ namespace System.ComponentModel
             _parent = parent;
         }
 
+        /// <summary>
+        /// Registers the type so it can be used by reflection-based providers in trimmed applications.
+        /// </summary>
+        /// <typeparam name="T">The type to register.</typeparam>
         public virtual void RegisterType<[DynamicallyAccessedMembers(TypeDescriptor.RegisteredTypesDynamicallyAccessedMembers)] T>()
         {
             // We allow this to be a no-op since the caller may not know if the provider supports known types.
@@ -288,6 +294,20 @@ namespace System.ComponentModel
             return _emptyDescriptor ??= new EmptyCustomTypeDescriptor();
         }
 
+        /// <summary>
+        /// This method returns a custom type descriptor for the given type / object.
+        /// The objectType parameter is always valid, but the instance parameter may
+        /// be null if no instance was passed to TypeDescriptor. The method should
+        /// return a custom type descriptor for the object. If the method is not
+        /// interested in providing type information for the object it should
+        /// return base.
+        ///
+        /// This method is prototyped as virtual, and by default returns a
+        /// custom type descriptor that returns empty collections for all values
+        /// if no parent provider was passed. If a parent provider was passed,
+        /// this method will invoke the parent provider's GetTypeDescriptor
+        /// method.
+        /// </summary>
         public ICustomTypeDescriptor? GetTypeDescriptorFromRegisteredType(Type objectType)
         {
             ArgumentNullException.ThrowIfNull(objectType);
@@ -300,6 +320,14 @@ namespace System.ComponentModel
             return GetTypeDescriptorFromRegisteredType(objectType, instance: null);
         }
 
+        /// <summary>
+        /// This method returns a custom type descriptor for the given type / object.
+        /// The objectType parameter is always valid, but the instance parameter may
+        /// be null if no instance was passed to TypeDescriptor. The method should
+        /// return a custom type descriptor for the object. If the method is not
+        /// interested in providing type information for the object it should
+        /// return base.
+        /// </summary>
         public ICustomTypeDescriptor? GetTypeDescriptorFromRegisteredType(object instance)
         {
             ArgumentNullException.ThrowIfNull(instance);
@@ -312,7 +340,21 @@ namespace System.ComponentModel
             return GetTypeDescriptorFromRegisteredType(instance.GetType(), instance);
         }
 
-        // This method doesn't contain [DynamicallyAccessedMembers(All)] unlike GetTypeDescriptor(). It does this to
+        /// <summary>
+        /// This method returns a custom type descriptor for the given type / object.
+        /// The objectType parameter is always valid, but the instance parameter may
+        /// be null if no instance was passed to TypeDescriptor. The method should
+        /// return a custom type descriptor for the object. If the method is not
+        /// interested in providing type information for the object it should
+        /// return base.
+        ///
+        /// This method is prototyped as virtual, and by default returns a
+        /// custom type descriptor that returns empty collections for all values
+        /// if no parent provider was passed. If a parent provider was passed,
+        /// this method will invoke the parent provider's GetTypeDescriptor
+        /// method.
+        /// </summary>
+        // This method doesn't contain [DynamicallyAccessedMembers(All)] unlike GetTypeDescriptor(type,object). It does this to
         // prevent trim errors similar to other "FromRegisteredType" methods. However, unlike those other methods,
         // it does not validate that the type is registered so it could be ubused by the caller.
         // However, validation still occurs during subsequent calls to Get*FromRegisteredType() which validate that the type
@@ -326,13 +368,17 @@ namespace System.ComponentModel
                 return _parent.GetTypeDescriptorFromRegisteredType(objectType, instance);
             }
 
-            return FallBackToLegacyProvider();
+            return FallBack();
 
             [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2067:UnrecognizedReflectionPattern",
-                Justification = "Chaining from registered type provider to legacy provider is supported.")]
-            ICustomTypeDescriptor? FallBackToLegacyProvider() => GetTypeDescriptor(objectType, instance);
+                Justification = TypeDescriptionProvider.ForwardFromRegisteredMessage)]
+            ICustomTypeDescriptor? FallBack() => GetTypeDescriptor(objectType, instance);
         }
 
+        /// <summary>
+        /// Whether the provider uses reflection and requires types to be registered through <see cref="TypeDescriptor.RegisterType{T}"/>
+        /// to support trimmed applications.
+        /// </summary>
         public virtual bool? RequireRegisteredTypes
         {
             get
@@ -347,9 +393,9 @@ namespace System.ComponentModel
         }
 
         /// <summary>
-        /// This method returns true if the type is "supported" by the type descriptor
-        /// and its chain of type description providers.
+        /// Returns whether the type was registered with its provider through <see cref="TypeDescriptor.RegisterType{T}"/>.
         /// </summary>
+        /// <exception cref="ArgumentNullException">If <paramref name="type"/> is null.</exception>
         public virtual bool IsRegisteredType(Type type)
         {
             ArgumentNullException.ThrowIfNull(type);

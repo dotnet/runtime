@@ -7,7 +7,7 @@ using System.Reflection;
 namespace System.ComponentModel
 {
     [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
-        Justification = "type is annotated as preserve All members, so we can call GetConstructor.")]
+        Justification = "Class is only called with types are are registered.")]
     internal static class TrimSafeReflectionHelper
     {
         public static PropertyInfo[] GetProperties(Type type, BindingFlags bindingAttr) => type.GetProperties(bindingAttr);

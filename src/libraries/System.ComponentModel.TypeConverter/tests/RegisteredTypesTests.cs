@@ -67,8 +67,6 @@ namespace System.ComponentModel.Tests
         [Fact]
         public static void GetMembers_NotRegistered()
         {
-            RemoteInvokeOptions options = new RemoteInvokeOptions();
-
             RemoteExecutor.Invoke(() =>
             {
                 TypeDescriptionProvider provider = TypeDescriptor.GetProvider(typeof(C1));
@@ -77,7 +75,7 @@ namespace System.ComponentModel.Tests
                 Assert.Equal("System.ComponentModel.Int32Converter", properties[0].Converter.ToString());
                 Assert.Equal(2, TypeDescriptor.GetEvents(typeof(C1)).Count);
                 Assert.IsType<TypeConverter>(TypeDescriptor.GetConverter(typeof(C1)));
-            }, options).Dispose();
+            }).Dispose();
         }
 
         [Fact]
@@ -270,6 +268,32 @@ namespace System.ComponentModel.Tests
                     ictd.GetConverterFromRegisteredType();
                 }
             }).Dispose();
+        }
+
+        [Fact]
+        public static void GetProviderWithInstance_NotRegistered()
+        {
+            RemoteInvokeOptions options = new RemoteInvokeOptions();
+            options.RuntimeConfigurationOptions[TypeDescriptorRequireRegisteredTypesSwitchName] = bool.TrueString;
+
+            RemoteExecutor.Invoke(() =>
+            {
+                Assert.Throws<InvalidOperationException>(() => TypeDescriptor.GetProvider(new C1()));
+            }, options).Dispose();
+        }
+
+        [Fact]
+        public static void GetProviderWithInstance_Registered()
+        {
+            RemoteInvokeOptions options = new RemoteInvokeOptions();
+            options.RuntimeConfigurationOptions[TypeDescriptorRequireRegisteredTypesSwitchName] = bool.TrueString;
+
+            RemoteExecutor.Invoke(() =>
+            {
+                TypeDescriptor.RegisterType<C1>();
+                TypeDescriptionProvider provider = TypeDescriptor.GetProvider(new C1());
+                Assert.NotNull(provider);
+            }, options).Dispose();
         }
 
         private sealed class EmptyCustomTypeDescriptor : CustomTypeDescriptor { }

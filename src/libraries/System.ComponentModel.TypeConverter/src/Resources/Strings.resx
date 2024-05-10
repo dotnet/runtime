@@ -322,6 +322,9 @@
     <value>BinaryFormatter serialization is obsolete and should not be used. See https://aka.ms/binaryformatter for more information.</value>
   </data>
   <data name="TypeIsNotRegistered" xml:space="preserve">
-    <value>The type {0} is not registered with the description provider {1}. Call 'TypeDescriptor.RegisterType()' to register the type.</value>
+    <value>The type {0} is not registered. Call 'TypeDescriptor.RegisterType()' to register the type.</value>
+  </data>
+  <data name="CustomTypeProviderNotImplemented" xml:space="preserve">
+    <value>Custom type providers must implement member {0}.</value>
   </data>
 </root>
