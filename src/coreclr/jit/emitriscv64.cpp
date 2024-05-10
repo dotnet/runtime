@@ -3536,8 +3536,13 @@ void emitter::emitDispInsName(
             //}
             switch (opcode2)
             {
-                case 0x0: // ADDIW
-                    printf("addiw          %s, %s, %d\n", rd, rs1, imm12);
+                case 0x0: // ADDIW & SEXT.W
+                    if (imm12 == 0)
+                    {
+                        printf("sext.w         %s, %s\n", rd, rs1);
+                    } else {
+                        printf("addiw          %s, %s, %d\n", rd, rs1, imm12);
+                    }
                     return;
                 case 0x1:                                                         // SLLIW
                     printf("slliw          %s, %s, %d\n", rd, rs1, imm12 & 0x3f); // 6 BITS for SHAMT in RISCV64
