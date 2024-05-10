@@ -112,7 +112,7 @@ inline regMaskTP genFindLowestBit(regMaskTP value)
 
 inline bool genMaxOneBit(regMaskTP value)
 {
-    return genMaxOneBit(value.low);
+    return genMaxOneBit(value.getLow());
 }
 
 /*****************************************************************************
@@ -122,7 +122,7 @@ inline bool genMaxOneBit(regMaskTP value)
 
 inline bool genExactlyOneBit(regMaskTP value)
 {
-    return genExactlyOneBit(value.low);
+    return genExactlyOneBit(value.getLow());
 }
 #endif
 
@@ -981,11 +981,7 @@ inline regNumber genFirstRegNumFromMaskAndToggle(regMaskTP& mask)
 
     /* Convert the mask to a register number */
 
-#ifdef TARGET_ARM64
     regNumber regNum = (regNumber)BitScanForward(mask);
-#else
-    regNumber regNum = (regNumber)BitOperations::BitScanForward(mask);
-#endif
 
     mask ^= genRegMask(regNum);
 
@@ -1008,11 +1004,7 @@ inline regNumber genFirstRegNumFromMask(regMaskTP mask)
 
     /* Convert the mask to a register number */
 
-#ifdef TARGET_ARM64
     regNumber regNum = (regNumber)BitScanForward(mask);
-#else
-    regNumber regNum = (regNumber)BitOperations::BitScanForward(mask);
-#endif
 
     return regNum;
 }
@@ -5075,12 +5067,6 @@ BasicBlockVisit FlowGraphNaturalLoop::VisitRegularExitBlocks(TFunc func)
 
     return BasicBlockVisit::Continue;
 }
-
-// regMaskTP operator^(const regMaskTP& first, const regMaskTP& second)
-//{
-//     regMaskTP result(first.low ^ second.getLow());
-//     return result;
-// }
 
 /*****************************************************************************/
 #endif //_COMPILER_HPP_

@@ -3829,9 +3829,9 @@ void CodeGen::genZeroInitFltRegs(const regMaskTP& initFltRegs, const regMaskTP& 
 
     // Iterate through float/double registers and initialize them to 0 or
     // copy from already initialized register of the same type.
-    regMaskTP regMask = genRegMask(REG_FP_FIRST);
-    for (regNumber reg = REG_FP_FIRST; reg <= REG_FP_LAST; reg = REG_NEXT(reg), regMask <<= 1)
+    for (regNumber reg = REG_FP_FIRST; reg <= REG_FP_LAST; reg = REG_NEXT(reg))
     {
+        regMaskTP regMask = genRegMask(reg);
         if (regMask & initFltRegs)
         {
             // Do we have a float register already set to 0?
@@ -5732,10 +5732,9 @@ void CodeGen::genFnProlog()
 
     if (initRegs)
     {
-        regMaskTP regMask = 0x1;
-
-        for (regNumber reg = REG_INT_FIRST; reg <= REG_INT_LAST; reg = REG_NEXT(reg), regMask <<= 1)
+        for (regNumber reg = REG_INT_FIRST; reg <= REG_INT_LAST; reg = REG_NEXT(reg))
         {
+            regMaskTP regMask = genRegMask(reg);
             if (regMask & initRegs)
             {
                 // Check if we have already zeroed this register

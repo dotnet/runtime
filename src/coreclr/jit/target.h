@@ -217,9 +217,11 @@ typedef unsigned __int64 regMaskTP;
 typedef unsigned __int64 regMaskSmall;
 struct regMaskTP
 {
-    unsigned __int64 low;
+private:
+    uint64_t low;
 
-    regMaskTP(unsigned __int64 regMask)
+public:
+    constexpr regMaskTP(uint64_t regMask)
         : low(regMask)
     {
     }
@@ -230,7 +232,7 @@ struct regMaskTP
 
     FORCEINLINE explicit operator bool() const
     {
-        return low != 0;
+        return low != RBM_NONE;
     }
 
     FORCEINLINE explicit operator regMaskSmall() const
@@ -243,49 +245,44 @@ struct regMaskTP
         return (unsigned int)low;
     }
 
-    FORCEINLINE unsigned __int64 getLow() const
+    FORCEINLINE uint64_t getLow() const
     {
         return low;
     }
+
+    FORCEINLINE void setLow(uint64_t _low)
+    {
+        low = _low;
+    }
 };
-
-static uint32_t PopCount(regMaskTP value)
-{
-    return BitOperations::PopCount(value.getLow());
-}
-
-static uint32_t BitScanForward(regMaskTP mask)
-{
-    return BitOperations::BitScanForward(mask.low);
-}
 
 static regMaskTP operator^(regMaskTP first, regMaskTP second)
 {
-    regMaskTP result(first.low ^ second.getLow());
+    regMaskTP result(first.getLow() ^ second.getLow());
     return result;
 }
 
 static regMaskTP operator&(regMaskTP first, regMaskTP second)
 {
-    regMaskTP result(first.low & second.getLow());
+    regMaskTP result(first.getLow() & second.getLow());
     return result;
 }
 
 static regMaskTP operator|(regMaskTP first, regMaskTP second)
 {
-    regMaskTP result(first.low | second.getLow());
+    regMaskTP result(first.getLow() | second.getLow());
     return result;
 }
 
 static regMaskTP operator<<(regMaskTP first, const int b)
 {
-    regMaskTP result(first.low << b);
+    regMaskTP result(first.getLow() << b);
     return result;
 }
 
 static regMaskTP operator>>(regMaskTP first, const int b)
 {
-    regMaskTP result(first.low >> b);
+    regMaskTP result(first.getLow() >> b);
     return result;
 }
 
@@ -297,70 +294,77 @@ static regMaskTP& operator>>=(regMaskTP& first, const int b)
 
 static regMaskTP& operator|=(regMaskTP& first, regMaskTP second)
 {
-    first.low |= second.low;
+    first.setLow(first.getLow() | second.getLow());
     return first;
 }
 
 static regMaskTP& operator^=(regMaskTP& first, regMaskTP second)
 {
-    first.low ^= second.low;
+    first.setLow(first.getLow() ^ second.getLow());
     return first;
 }
 
 static regMaskSmall operator^=(regMaskSmall& first, regMaskTP second)
 {
-    first ^= second.low;
+    first ^= second.getLow();
     return first;
 }
 
 static regMaskSmall operator&=(regMaskSmall& first, regMaskTP second)
 {
-    first &= second.low;
+    first &= second.getLow();
     return first;
 }
 
 static regMaskSmall operator|=(regMaskSmall& first, regMaskTP second)
 {
-    first |= second.low;
-    return first;
-}
-
-static regMaskTP& operator<<=(regMaskTP& first, regMaskTP second)
-{
-    first.low <<= second.low;
+    first |= second.getLow();
     return first;
 }
 
 static regMaskTP& operator&=(regMaskTP& first, regMaskTP second)
 {
-    first.low &= second.low;
+    first.setLow(first.getLow() & second.getLow());
     return first;
 }
 
 static bool operator==(regMaskTP first, regMaskTP second)
 {
-    return (first.low == second.low);
+    return (first.getLow() == second.getLow());
 }
 
 static bool operator!=(regMaskTP first, regMaskTP second)
 {
-    return (first.low != second.low);
-}
-
-static bool operator>(regMaskTP first, regMaskTP second)
-{
-    return (first.low > second.low);
+    return (first.getLow() != second.getLow());
 }
 
 static regMaskTP operator~(regMaskTP first)
 {
-    regMaskTP result(~first.low);
+    regMaskTP result(~first.getLow());
     return result;
 }
 
 #else
 typedef unsigned regMaskTP;
 #endif
+
+static uint32_t PopCount(regMaskTP value)
+{
+#ifdef TARGET_ARM64
+    return BitOperations::PopCount(value.getLow());
+#else
+    return BitOperations::PopCount(value);
+#endif
+}
+
+static uint32_t BitScanForward(regMaskTP mask)
+{
+#ifdef TARGET_ARM64
+    return BitOperations::BitScanForward(mask.getLow());
+#else
+    return BitOperations::BitScanForward(mask);
+#endif
+}
 
 #if REGMASK_BITS == 8
 typedef unsigned char regMaskSmall;
@@ -703,7 +707,7 @@ inline bool floatRegCanHoldType(regNumber reg, var_types type)
     }
     else
     {
-        // Can be TYP_STRUCT for HFfirst. It's not clear that's correct; what about
+        // Can be TYP_STRUCT for HFA. It's not clear that's correct; what about
         // HFA of double? We wouldn't be asserting the right alignment, and
         // callers like genRegMaskFloat() wouldn't be generating the right mask.
 

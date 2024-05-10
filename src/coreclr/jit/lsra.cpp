@@ -13609,11 +13609,7 @@ regMaskTP LinearScan::RegisterSelection::select(Interval*                current
                                                             &overallLimitCandidates);
                 assert(limitConsecutiveResult != RBM_NONE);
 
-#ifdef TARGET_ARM64
                 unsigned startRegister = BitScanForward(limitConsecutiveResult);
-#else
-                unsigned startRegister = BitOperations::BitScanForward(limitConsecutiveResult);
-#endif
 
                 regMaskTP registersNeededMask = (1ULL << refPosition->regCount) - 1;
                 candidates |= (registersNeededMask << startRegister);
