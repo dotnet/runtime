@@ -44,6 +44,11 @@ FCIMPLEND
 
 FCIMPL3(void, RhBulkMoveWithWriteBarrier, uint8_t* pDest, uint8_t* pSrc, size_t cbDest)
 {
+    if (cbDest == 0)
+    {
+        return;
+    }
+    
     const bool notInHeap = pDest < g_lowest_address || pDest >= g_highest_address;
 
     if (!notInHeap)
