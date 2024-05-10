@@ -25,8 +25,7 @@ namespace JIT.HardwareIntrinsics.Arm
                 test.RunBasicScenario_CreateFalseMask();
 
                 // Validates calling via reflection works
-                // TODO-SVE: Enable once register allocation exists for predicates.
-                // test.RunReflectionScenario_CreateFalseMask();
+                test.RunReflectionScenario_CreateFalseMask();
             }
             else
             {
