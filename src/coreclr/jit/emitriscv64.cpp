@@ -4954,7 +4954,7 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
                         assert(tempReg != regOp1);
                         assert(REG_RA != regOp1);
                         saveOperReg1 = tempReg;
-                        saveOperReg2 = regOp2;
+                        saveOperReg2 = (regOp1 == regOp2) ? tempReg : regOp2;
                         emitIns_R_R(INS_mov, attr, tempReg, regOp1);
                     }
                     else if (dstReg == regOp2)
@@ -4983,7 +4983,7 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
                         In case of subtraction:
                         src1 = src2 + dst
                     */
-                    regNumber resultReg;
+                    regNumber resultReg = REG_NA;
 
                     if (dst->OperGet() == GT_ADD)
                     {
