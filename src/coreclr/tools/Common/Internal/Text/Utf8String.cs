@@ -38,7 +38,7 @@ namespace Internal.Text
 
         public override bool Equals(object obj)
         {
-            return (obj is Utf8String) && Equals((Utf8String)obj);
+            return (obj is Utf8String utf8String) && Equals(utf8String);
         }
 
         public override unsafe int GetHashCode()
