@@ -71,37 +71,7 @@ namespace Internal.Text
 
         public bool Equals(Utf8String other)
         {
-            int length = _value.Length;
-            if (length != other.Length)
-                return false;
-
-            if (_value == other._value)
-                return true;
-
-            unsafe
-            {
-                fixed (byte* ap = _value) fixed (byte* bp = other._value)
-                {
-                    byte* a = ap;
-                    byte* b = bp;
-
-                    while (length >= 4)
-                    {
-                        if (*(int*)a != *(int*)b) return false;
-                        a += 4; b += 4; length -= 4;
-                    }
-                    if (length >= 2)
-                    {
-                        if (*(short*)a != *(short*)b) return false;
-                        a += 2; b += 2; length -= 2;
-                    }
-                    if (length > 0)
-                    {
-                        if (*a != *b) return false;
-                    }
-                    return true;
-                }
-            }
+            return UnderlyingArray.SequenceEqual(other.UnderlyingArray);
         }
 
         private static int Compare(Utf8String strA, Utf8String strB)
