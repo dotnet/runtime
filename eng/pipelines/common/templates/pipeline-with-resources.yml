@@ -100,7 +100,7 @@ extends:
         image: mcr.microsoft.com/dotnet-buildtools/prereqs:centos-stream8
 
       browser_wasm:
-        image: mcr.microsoft.com/dotnet-buildtools/prereqs:cbl-mariner-2.0
+        image: mcr.microsoft.com/dotnet-buildtools/prereqs:cbl-mariner-2.0-cross-amd64
         env:
           ROOTFS_DIR: /crossrootfs/x64
 
