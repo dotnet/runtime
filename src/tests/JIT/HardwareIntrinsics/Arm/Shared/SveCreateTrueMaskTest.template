@@ -79,7 +79,7 @@ namespace JIT.HardwareIntrinsics.Arm
                     throw new Exception("Incorrect esize");
             }
 
-            int elements = (int)(Sve.Count64BitElements()) * 64 / esize;
+            int elements = (int)(Sve.Count8BitElements()) * 8 / esize;
             switch (bitpattern)
             {
                 case {Op1Type}.LargestPowerOf2:
@@ -128,7 +128,7 @@ namespace JIT.HardwareIntrinsics.Arm
 
         private static {RetVectorType}<{RetBaseType}> PtrueOp({Op1Type} bitpattern, int esize)
         {
-            int VL = (int)(Sve.Count64BitElements()) * 64;
+            int VL = (int)(Sve.Count8BitElements()) * 8;
             int PL = VL / 8;
             int elements = VL / esize;
             int count = DecodePredCount(bitpattern, esize);
