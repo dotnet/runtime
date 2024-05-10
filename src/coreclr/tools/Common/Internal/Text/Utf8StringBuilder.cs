@@ -16,8 +16,7 @@ namespace Internal.Text
         {
         }
 
-        // TODO: This should return ReadOnlySpan<byte> instead once available
-        public byte[] UnderlyingArray => _buffer;
+        public ReadOnlySpan<byte> UnderlyingArray => _buffer;
         public int Length => _length;
 
         public Utf8StringBuilder Clear()
@@ -38,10 +37,10 @@ namespace Internal.Text
             return Append(value.UnderlyingArray);
         }
 
-        public Utf8StringBuilder Append(byte[] value)
+        public Utf8StringBuilder Append(ReadOnlySpan<byte> value)
         {
             Ensure(value.Length);
-            Buffer.BlockCopy(value, 0, _buffer, _length, value.Length);
+            value.CopyTo(_buffer.AsSpan(_length));
             _length += value.Length;
             return this;
         }
@@ -84,9 +83,7 @@ namespace Internal.Text
 
         public Utf8String ToUtf8String()
         {
-            var ret = new byte[_length];
-            Buffer.BlockCopy(_buffer, 0, ret, 0, _length);
-            return new Utf8String(ret);
+            return new Utf8String(_buffer.AsSpan(0, _length).ToArray());
         }
 
         private void Ensure(int extraSpace)
@@ -99,7 +96,7 @@ namespace Internal.Text
         {
             int newSize = Math.Max(2 * _buffer.Length, _length + extraSpace);
             byte[] newBuffer = new byte[newSize];
-            Buffer.BlockCopy(_buffer, 0, newBuffer, 0, _length);
+            _buffer.AsSpan(0, _length).CopyTo(newBuffer);
             _buffer = newBuffer;
         }
 

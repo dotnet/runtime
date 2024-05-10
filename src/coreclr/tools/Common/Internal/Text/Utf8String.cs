@@ -21,8 +21,7 @@ namespace Internal.Text
             _value = Encoding.UTF8.GetBytes(s);
         }
 
-        // TODO: This should return ReadOnlySpan<byte> instead once available
-        public byte[] UnderlyingArray => _value;
+        public ReadOnlySpan<byte> UnderlyingArray => _value;
         public int Length => _value.Length;
 
         // For now, define implicit conversions between string and Utf8String to aid the transition
