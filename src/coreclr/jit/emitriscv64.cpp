@@ -5024,7 +5024,7 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
                         {
                             assert((src1->gtType == TYP_INT) && (src2->gtType == TYP_INT));
 
-                            emitIns_R_R_I(INS_add, attr, tempReg1, regOp1, regOp2);
+                            emitIns_R_R_R(INS_add, attr, tempReg1, regOp1, regOp2);
 
                             // if 64-bit addition is not equal to 32-bit addition for 32-bit operands then overflow
                             branchReg1 = resultReg;
