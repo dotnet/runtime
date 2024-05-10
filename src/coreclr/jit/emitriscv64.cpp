@@ -5009,7 +5009,7 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
                         {
                             assert((src1Reg->gtType == TYP_INT) && (src2Reg->gtType == TYP_INT));
 
-                            emitIns_R_R_I(INS_add, attr, tempReg1, regOp1, regOp2);
+                            emitIns_R_R_I(INS_addw, attr, tempReg1, regOp1, regOp2);
 
                             emitIns_J_cond_la(INS_beq, survivorLabel, resultReg, tempReg1);
                         } else {
