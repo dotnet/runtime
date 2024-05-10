@@ -543,7 +543,7 @@ namespace System.Reflection
         }
         private static RuntimeType ResolveType(RuntimeModule scope, string typeName)
         {
-            RuntimeType type = TypeNameParser.GetTypeReferencedByCustomAttribute(typeName, scope);
+            RuntimeType type = TypeNameResolver.GetTypeReferencedByCustomAttribute(typeName, scope);
             Debug.Assert(type is not null);
             return type;
         }
@@ -899,7 +899,7 @@ namespace System.Reflection
                     throw new BadImageFormatException();
                 }
 
-                enumType = TypeNameParser.GetTypeReferencedByCustomAttribute(enumTypeMaybe, module);
+                enumType = TypeNameResolver.GetTypeReferencedByCustomAttribute(enumTypeMaybe, module);
                 if (!enumType.IsEnum)
                 {
                     throw new BadImageFormatException();

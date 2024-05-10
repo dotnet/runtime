@@ -12092,7 +12092,8 @@ namespace BigFrames
         }
 
         [Fact]
-        public static int TestEntryPoint()
+            [OuterLoop]
+            public static int TestEntryPoint()
         {
             Test1(1); // force JIT of this
             Test1(80);
