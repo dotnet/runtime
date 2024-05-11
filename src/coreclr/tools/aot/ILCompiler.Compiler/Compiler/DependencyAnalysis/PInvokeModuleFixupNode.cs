@@ -123,11 +123,11 @@ namespace ILCompiler.DependencyAnalysis
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
             sb.Append(nameMangler.GetMangledTypeName(DeclaringModule.GetGlobalModuleType()));
-            sb.Append((byte)'_');
+            sb.Append('_');
             sb.Append(nameMangler.SanitizeName(ModuleName));
             if (DllImportSearchPath.HasValue)
             {
-                sb.Append((byte)'_');
+                sb.Append('_');
                 sb.Append(((int)DllImportSearchPath.Value).ToString());
             }
         }

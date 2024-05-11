@@ -29,7 +29,7 @@ namespace ILCompiler.DependencyAnalysis
 
             for (int i = 0; i < _details.Variance.Length; i++)
             {
-                sb.Append((byte)'_');
+                sb.Append('_');
                 sb.Append((checked((byte)_details.Variance[i])).ToStringInvariant());
             }
         }
