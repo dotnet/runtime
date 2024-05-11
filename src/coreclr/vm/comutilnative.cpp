@@ -525,9 +525,8 @@ FCIMPL3(VOID, Buffer::BulkMoveWithWriteBarrier, void *dst, void *src, size_t byt
 {
     FCALL_CONTRACT;
 
-    _ASSERTE(dst != src);
-    _ASSERTE(byteCount != 0);
-    InlinedMemmoveGCRefsHelper(dst, src, byteCount);
+    if (dst != src && byteCount != 0)
+        InlinedMemmoveGCRefsHelper(dst, src, byteCount);
 
     FC_GC_POLL();
 }
