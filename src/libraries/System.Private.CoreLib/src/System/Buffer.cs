@@ -194,6 +194,9 @@ namespace System
         {
             Debug.Assert(byteCount > BulkMoveWithWriteBarrierChunk);
 
+            if (Unsafe.AreSame(ref source, ref destination))
+                return;
+
             // This is equivalent to: (destination - source) >= byteCount || (destination - source) < 0
             if ((nuint)(nint)Unsafe.ByteOffset(ref source, ref destination) >= byteCount)
             {
