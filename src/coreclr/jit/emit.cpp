@@ -2217,6 +2217,10 @@ void emitter::emitCreatePlaceholderIG(insGroupPlaceholderType igType,
         emitCurIG->igFlags &= ~IGF_PROPAGATE_MASK;
     }
 
+    // since we have emitted a placeholder, the last ins is not longer the last.
+    emitLastIns   = nullptr;
+    emitLastInsIG = nullptr;
+
 #ifdef DEBUG
     if (emitComp->verbose)
     {
@@ -2834,6 +2838,16 @@ bool emitter::emitNoGChelper(CorInfoHelpFunc helpFunc)
 
         case CORINFO_HELP_INIT_PINVOKE_FRAME:
 
+        case CORINFO_HELP_FAIL_FAST:
+        case CORINFO_HELP_STACK_PROBE:
+
+        case CORINFO_HELP_CHECK_OBJ:
+
+        // never present on stack at the time of GC
+        case CORINFO_HELP_TAILCALL:
+        case CORINFO_HELP_JIT_REVERSE_PINVOKE_ENTER:
+        case CORINFO_HELP_JIT_REVERSE_PINVOKE_ENTER_TRACK_TRANSITIONS:
+
         case CORINFO_HELP_VALIDATE_INDIRECT_CALL:
             return true;
 
@@ -2868,10 +2882,36 @@ bool emitter::emitNoGChelper(CORINFO_METHOD_HANDLE methHnd)
  *  Mark the current spot as having a label.
  */
 
-void* emitter::emitAddLabel(VARSET_VALARG_TP    GCvars,
-                            regMaskTP           gcrefRegs,
-                            regMaskTP byrefRegs DEBUG_ARG(BasicBlock* block))
+void* emitter::emitAddLabel(VARSET_VALARG_TP GCvars, regMaskTP gcrefRegs, regMaskTP byrefRegs, BasicBlock* prevBlock)
 {
+    // if starting a new block that can be a target of a branch and the last instruction was GC-capable call.
+    if ((prevBlock != nullptr) && emitComp->compCurBB->HasFlag(BBF_HAS_LABEL) && emitLastInsIsCallWithGC())
+    {
+        // no GC-capable calls expected in prolog
+        assert(!emitIGisInEpilog(emitLastInsIG));
+
+        // We have just emitted a call that can do GC and conservatively recorded what is alive after the call.
+        // Now we see that the next instruction may be reachable by a branch with a different liveness.
+        // We want to maintain the invariant that the GC info at IP after a GC-capable call is the same
+        // regardless how it is reached.
+        // One way to ensure that is by adding an instruction (NOP or BRK) after the call.
+        if ((emitThisGCrefRegs != gcrefRegs) || (emitThisByrefRegs != byrefRegs) ||
+            !VarSetOps::Equal(emitComp, emitThisGCrefVars, GCvars))
+        {
+            if (prevBlock->KindIs(BBJ_THROW))
+            {
+                emitIns(INS_BREAKPOINT);
+            }
+            else
+            {
+                // other block kinds should emit something at the end that is not a call.
+                assert(prevBlock->KindIs(BBJ_ALWAYS));
+                // CONSIDER: In many cases we could instead patch up the GC info for previous call instruction.
+                emitIns(INS_nop);
+            }
+        }
+    }
+
     /* Create a new IG if the current one is non-empty */
 
     if (emitCurIGnonEmpty())
@@ -3632,6 +3672,7 @@ emitter::instrDesc* emitter::emitNewInstrCallInd(int              argCnt,
 
         /* Make sure we didn't waste space unexpectedly */
         assert(!id->idIsLargeCns());
+        id->idSetIsCall();
 
 #ifdef TARGET_XARCH
         /* Store the displacement and make sure the value fit */
@@ -3711,6 +3752,7 @@ emitter::instrDesc* emitter::emitNewInstrCallDir(int              argCnt,
 
         /* Make sure we didn't waste space unexpectedly */
         assert(!id->idIsLargeCns());
+        id->idSetIsCall();
 
         /* Save the live GC registers in the unused register fields */
         assert((gcrefRegs & RBM_CALLEE_TRASH) == 0);
@@ -8722,6 +8764,16 @@ void emitter::emitUpdateLiveGCvars(VARSET_VALARG_TP vars, BYTE* addr)
 
 /*****************************************************************************
  *
+ *  Last emitted instruction is a call and it is not a NoGC call.
+ */
+
+bool emitter::emitLastInsIsCallWithGC()
+{
+    return emitLastIns != nullptr && emitLastIns->idIsCall() && !emitLastIns->idIsNoGC();
+}
+
+/*****************************************************************************
+ *
  *  Record a call location for GC purposes (we know that this is a method that
  *  will not be fully interruptible).
  */
@@ -10008,7 +10060,7 @@ void emitter::emitStackPopLargeStk(BYTE* addr, bool isCall, unsigned char callIn
 
     // We make a bitmask whose bits correspond to callee-saved register indices (in the sequence
     // of callee-saved registers only).
-    for (unsigned calleeSavedRegIdx = 0; calleeSavedRegIdx < CNT_CALLEE_SAVED; calleeSavedRegIdx++)
+    for (unsigned calleeSavedRegIdx = 0; calleeSavedRegIdx < CNT_CALL_GC_REGS; calleeSavedRegIdx++)
     {
         regMaskTP calleeSavedRbm = raRbmCalleeSaveOrder[calleeSavedRegIdx];
         if (emitThisGCrefRegs & calleeSavedRbm)

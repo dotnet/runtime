@@ -8,7 +8,7 @@
 #error This file uses manual memory management and must not use ARC, but ARC is enabled.
 #endif
 
-char* SystemNative_GetDefaultTimeZone()
+char* SystemNative_GetDefaultTimeZone(void)
 {
     NSTimeZone *tz = [NSTimeZone localTimeZone];
     NSString *name = [tz name];

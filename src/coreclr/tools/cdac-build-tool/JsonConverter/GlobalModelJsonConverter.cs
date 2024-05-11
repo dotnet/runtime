@@ -15,7 +15,7 @@ public class GlobalModelJsonConverter : JsonConverter<DataDescriptorModel.Global
 
     public override void Write(Utf8JsonWriter writer, DataDescriptorModel.GlobalModel value, JsonSerializerOptions options)
     {
-        if (value.Type is null)
+        if (string.IsNullOrEmpty(value.Type))
         {
             // no type: just write 'value' or '[value]'
             JsonSerializer.Serialize(writer, value.Value, options);

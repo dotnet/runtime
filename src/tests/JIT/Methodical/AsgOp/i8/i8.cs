@@ -670,6 +670,7 @@ public class test
 
 
     [Fact]
+    [OuterLoop]
     public static int TestEntryPoint()
     {
         Int64 x;
@@ -1216,60 +1217,60 @@ public class test
         }
 
         /*
-		x = f60(-10, 4);
-		if (x != -671088640)
-		{
-			Console.WriteLine("\nInitial parameters: x is -10 and y is 4.");
-			Console.WriteLine("f60	x <<= x + y failed.");
-			Console.WriteLine("x: {0}, \texpected: -671088640", x);
-			pass = false;
-		}
+        x = f60(-10, 4);
+        if (x != -671088640)
+        {
+            Console.WriteLine("\nInitial parameters: x is -10 and y is 4.");
+            Console.WriteLine("f60	x <<= x + y failed.");
+            Console.WriteLine("x: {0}, \texpected: -671088640", x);
+            pass = false;
+        }
 
-		x = f61(-10, 4);
-		if (x != -2621440)
-		{
-			Console.WriteLine("\nInitial parameters: x is -10 and y is 4.");
-			Console.WriteLine("f61	x <<= x - y failed.");
-			Console.WriteLine("x: {0}, \texpected: -2621440", x);
-			pass = false;
-		}
+        x = f61(-10, 4);
+        if (x != -2621440)
+        {
+            Console.WriteLine("\nInitial parameters: x is -10 and y is 4.");
+            Console.WriteLine("f61	x <<= x - y failed.");
+            Console.WriteLine("x: {0}, \texpected: -2621440", x);
+            pass = false;
+        }
 
-		x = f62(-10, 4);
-		if (x != -167772160)
-		{
-			Console.WriteLine("\nInitial parameters: x is -10 and y is 4.");
-			Console.WriteLine("f62	x <<= x * y failed.");
-			Console.WriteLine("x: {0}, \texpected: -167772160", x);
-			pass = false;
-		}
+        x = f62(-10, 4);
+        if (x != -167772160)
+        {
+            Console.WriteLine("\nInitial parameters: x is -10 and y is 4.");
+            Console.WriteLine("f62	x <<= x * y failed.");
+            Console.WriteLine("x: {0}, \texpected: -167772160", x);
+            pass = false;
+        }
 
-		x = f63(-10, 4);
-		if (x != -2147483648)
-		{
-			Console.WriteLine("\nInitial parameters: x is -10 and y is 4.");
-			Console.WriteLine("f63	x <<= x / y failed.");
-			Console.WriteLine("x: {0}, \texpected: -2147483648", x);
-			pass = false;
-		}
+        x = f63(-10, 4);
+        if (x != -2147483648)
+        {
+            Console.WriteLine("\nInitial parameters: x is -10 and y is 4.");
+            Console.WriteLine("f63	x <<= x / y failed.");
+            Console.WriteLine("x: {0}, \texpected: -2147483648", x);
+            pass = false;
+        }
 
-		x = f64(-10, 4);
-		if (x != -2147483648)
-		{
-			Console.WriteLine("\nInitial parameters: x is -10 and y is 4.");
-			Console.WriteLine("f64	x <<= x % y failed.");
-			Console.WriteLine("x: {0}, \texpected: -2147483648", x);
-			pass = false;
-		}
+        x = f64(-10, 4);
+        if (x != -2147483648)
+        {
+            Console.WriteLine("\nInitial parameters: x is -10 and y is 4.");
+            Console.WriteLine("f64	x <<= x % y failed.");
+            Console.WriteLine("x: {0}, \texpected: -2147483648", x);
+            pass = false;
+        }
 
-		x = f65(-10, 4);
-		if (x != -10)
-		{
-			Console.WriteLine("\nInitial parameters: x is -10 and y is 4.");
-			Console.WriteLine("f65	x <<= x << y failed.");
-			Console.WriteLine("x: {0}, \texpected: -10", x);
-			pass = false;
-		}
-		*/
+        x = f65(-10, 4);
+        if (x != -10)
+        {
+            Console.WriteLine("\nInitial parameters: x is -10 and y is 4.");
+            Console.WriteLine("f65	x <<= x << y failed.");
+            Console.WriteLine("x: {0}, \texpected: -10", x);
+            pass = false;
+        }
+        */
 
         x = f66(-10, 4);
         if (x != 0)
@@ -1290,24 +1291,24 @@ public class test
         }
 
         /*
-		x = f68(-10, 4);
-		if (x != -2621440)
-		{
-			Console.WriteLine("\nInitial parameters: x is -10 and y is 4.");
-			Console.WriteLine("f68	x <<= x ^ y failed.");
-			Console.WriteLine("x: {0}, \texpected: -2621440", x);
-			pass = false;
-		}
+        x = f68(-10, 4);
+        if (x != -2621440)
+        {
+            Console.WriteLine("\nInitial parameters: x is -10 and y is 4.");
+            Console.WriteLine("f68	x <<= x ^ y failed.");
+            Console.WriteLine("x: {0}, \texpected: -2621440", x);
+            pass = false;
+        }
 
-		x = f69(-10, 4);
-		if (x != -41943040)
-		{
-			Console.WriteLine("\nInitial parameters: x is -10 and y is 4.");
-			Console.WriteLine("f69	x <<= x | y failed.");
-			Console.WriteLine("x: {0}, \texpected: -41943040", x);
-			pass = false;
-		}
-		*/
+        x = f69(-10, 4);
+        if (x != -41943040)
+        {
+            Console.WriteLine("\nInitial parameters: x is -10 and y is 4.");
+            Console.WriteLine("f69	x <<= x | y failed.");
+            Console.WriteLine("x: {0}, \texpected: -41943040", x);
+            pass = false;
+        }
+        */
 
         x = f70(-10, 4);
         if (x != -1)
@@ -1355,15 +1356,15 @@ public class test
         }
 
         /*
-		x = f75(-10, 4);
-		if (x != -10)
-		{
-			Console.WriteLine("\nInitial parameters: x is -10 and y is 4.");
-			Console.WriteLine("f75	x >>= x << y failed.");
-			Console.WriteLine("x: {0}, \texpected: -10", x);
-			pass = false;
-		}
-		*/
+        x = f75(-10, 4);
+        if (x != -10)
+        {
+            Console.WriteLine("\nInitial parameters: x is -10 and y is 4.");
+            Console.WriteLine("f75	x >>= x << y failed.");
+            Console.WriteLine("x: {0}, \texpected: -10", x);
+            pass = false;
+        }
+        */
 
         x = f76(-10, 4);
         if (x != -1)
