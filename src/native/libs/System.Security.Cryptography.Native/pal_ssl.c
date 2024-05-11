@@ -172,10 +172,10 @@ static void DetectCiphersuiteConfiguration(void)
 }
 
 
-void CryptoNative_EnsureLibSslInitialized(CRYPTO_malloc_fn  mallocFunction, CRYPTO_realloc_fn reallocFunction, CRYPTO_free_fn freefunction)
+void CryptoNative_EnsureLibSslInitialized(void)
 
 {
-    CryptoNative_EnsureOpenSslInitialized(mallocFunction, reallocFunction, freefunction);
+    CryptoNative_EnsureOpenSslInitialized();
 
     // If portable, call the 1.0 initializer when needed.
     // If 1.0, call it statically.

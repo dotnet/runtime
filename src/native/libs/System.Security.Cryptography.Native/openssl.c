@@ -1464,10 +1464,116 @@ int32_t CryptoNative_OpenSslAvailable(void)
 #endif
 }
 
+static CRYPTO_RWLOCK* g_allocLock = NULL;
+static int g_allocatedMemory;
+static int g_allocationCount;
+
+static CRYPTO_malloc_fn  g_mallocFunction;
+static CRYPTO_realloc_fn g_reallocFunction;
+static CRYPTO_free_fn g_freefunction;
+static CRYPTO_allocation_cb g_memoryCallback;
+
+struct memoryEntry
+{
+    int size;
+    int line;
+    const char* file;
+};
+
+static void* mallocFunction(size_t size, const char *file, int line)
+{
+    void* ptr = malloc(size + sizeof(struct memoryEntry));
+    if (ptr != NULL)
+    {
+        int newCount;
+        CRYPTO_atomic_add(&g_allocatedMemory, (int)size, &newCount, g_allocLock);
+        CRYPTO_atomic_add(&g_allocationCount, 1, &newCount, g_allocLock);
+        struct memoryEntry* entry = (struct memoryEntry*)ptr;
+        entry->size = (int)size;
+        entry->line = line;
+        entry->file = file;
+
+        if (g_memoryCallback != NULL)
+        {
+            g_memoryCallback(MallocOperation, ptr, NULL, entry->size, file, line);
+        }
+    }
+
+    return (void*)((char*)ptr + sizeof(struct memoryEntry));
+}
+
+static void* reallocFunction (void *ptr, size_t size, const char *file, int line)
+{
+    struct memoryEntry* entry;
+    int newCount;
+
+    if (ptr != NULL)
+    {
+        ptr = (void*)((char*)ptr - sizeof(struct memoryEntry));
+        entry = (struct memoryEntry*)ptr;
+        CRYPTO_atomic_add(&g_allocatedMemory, (int)(-entry->size), &newCount, g_allocLock);
+    }
+
+    void* newPtr = realloc(ptr, size + sizeof(struct memoryEntry));
+    if (newPtr != NULL)
+    {
+        CRYPTO_atomic_add(&g_allocatedMemory, (int)size, &newCount, g_allocLock);
+        CRYPTO_atomic_add(&g_allocationCount, 1, &newCount, g_allocLock);
+
+        entry = (struct memoryEntry*)newPtr;
+        entry->size = (int)size;
+        entry->line = line;
+        entry->file = file;
+
+        if (g_memoryCallback != NULL)
+        {
+            g_memoryCallback(ReallocOperation, newPtr, ptr, entry->size, file, line);
+        }
+
+        return (void*)((char*)newPtr + sizeof(struct memoryEntry));
+    }
+
+    return NULL;
+}
+
+static void freeFunction(void *ptr, const char *file, int line)
+{
+    if (ptr != NULL)
+    {
+        int newCount;
+        struct memoryEntry* entry = (struct memoryEntry*)((char*)ptr - sizeof(struct memoryEntry));
+        CRYPTO_atomic_add(&g_allocatedMemory, (int)-entry->size, &newCount, g_allocLock);
+        if (g_memoryCallback != NULL)
+        {
+            g_memoryCallback(FreeOperation, entry, NULL, entry->size, file, line);
+        }
+
+        free(entry);
+    }
+}
+
+int32_t CryptoNative_GetMemoryUse(int* totalUsed, int* allocationCount)
+{
+    if (totalUsed == NULL || allocationCount == NULL)
+    {
+        return 0;
+    }
+    *totalUsed = g_allocatedMemory;
+    *allocationCount = g_allocationCount;
+
+    return 1;
+}
+
+PALEXPORT int32_t CryptoNative_SetMemoryTracking(CRYPTO_allocation_cb callback)
+{
+    g_memoryCallback = callback;
+    return 1;
+}
+
 static int32_t g_initStatus = 1;
 int g_x509_ocsp_index = -1;
 
-static int32_t EnsureOpenSslInitializedCore(CRYPTO_malloc_fn  mallocFunction, CRYPTO_realloc_fn reallocFunction, CRYPTO_free_fn freefunction)
+static int32_t EnsureOpenSslInitializedCore(void)
 {
     int ret = 0;
 
@@ -1478,22 +1584,33 @@ static int32_t EnsureOpenSslInitializedCore(CRYPTO_malloc_fn  mallocFunction, CR
     InitializeOpenSSLShim();
 #endif
 
-    if (mallocFunction != NULL && reallocFunction != NULL && freefunction != NULL)
+    const char* debug = getenv("DOTNET_SYSTEM_NET_SECURITY_OPENSSL_MEMORY_DEBUG");
+    if (debug != NULL && strcmp(debug, "1") == 0)
     {
         // This needs to be done before any allocation is done e.g. EnsureOpenSsl* is called.
         // And it also needs to be after the pointers are loaded for DISTRO_AGNOSTIC_SSL
 #ifdef FEATURE_DISTRO_AGNOSTIC_SSL
-        if (!API_EXISTS(SSL_state))
+        if (API_EXISTS(CRYPTO_THREAD_lock_new))
         {
-            // CRYPTO_set_mem_functions exists in OpenSSL 1.0.1 as well but it has different prototype
-            // and that makes it difficult to use with managed callbacks.
-            // Since 1.0 is long time out of support we use it only on 1.1.1+
-            CRYPTO_set_mem_functions11(mallocFunction, reallocFunction, freefunction);
+            // This should cover 1.1.1+
+
+            CRYPTO_set_mem_functions11(mallocFunction, reallocFunction, freeFunction);
+            g_allocLock = CRYPTO_THREAD_lock_new();
+
+            if (!API_EXISTS(SSL_state))
+            {
+                // CRYPTO_set_mem_functions exists in OpenSSL 1.0.1 as well but it has different prototype
+                // and that makes it difficult to use with managed callbacks.
+                // Since 1.0 is long time out of support we use it only on 1.1.1+
+                CRYPTO_set_mem_functions11(mallocFunction, reallocFunction, freeFunction);
+                g_allocLock = CRYPTO_THREAD_lock_new();
+            }
         }
 #elif OPENSSL_VERSION_NUMBER >= OPENSSL_VERSION_1_1_0_RTM
         // OpenSSL 1.0 has different prototypes and it is out of support so we enable this only
         // on 1.1.1+
-        CRYPTO_set_mem_functions(mallocFunction, reallocFunction, freefunction);
+        CRYPTO_set_mem_functions(mallocFunction, reallocFunction, freeFunction);
+        g_allocLock = CRYPTO_THREAD_lock_new();
 #endif
     }
 
@@ -1522,22 +1639,15 @@ static int32_t EnsureOpenSslInitializedCore(CRYPTO_malloc_fn  mallocFunction, CR
     return ret;
 }
 
-static CRYPTO_malloc_fn  _mallocFunction;
-static CRYPTO_realloc_fn _reallocFunction;
-static CRYPTO_free_fn _freefunction;
-
 static void EnsureOpenSslInitializedOnce(void)
 {
-    g_initStatus = EnsureOpenSslInitializedCore(_mallocFunction, _reallocFunction, _freefunction);
+    g_initStatus = EnsureOpenSslInitializedCore();
 }
 
 static pthread_once_t g_initializeShim = PTHREAD_ONCE_INIT;
 
-int32_t CryptoNative_EnsureOpenSslInitialized(CRYPTO_malloc_fn  mallocFunction, CRYPTO_realloc_fn reallocFunction, CRYPTO_free_fn freefunction)
+int32_t CryptoNative_EnsureOpenSslInitialized(void)
 {
-    _mallocFunction = mallocFunction;
-    _reallocFunction = reallocFunction;
-    _freefunction = freefunction;
     pthread_once(&g_initializeShim, EnsureOpenSslInitializedOnce);
     return g_initStatus;
 }

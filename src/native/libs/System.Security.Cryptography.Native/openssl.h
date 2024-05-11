@@ -69,10 +69,23 @@ PALEXPORT int32_t CryptoNative_GetRandomBytes(uint8_t* buf, int32_t num);
 
 PALEXPORT int32_t CryptoNative_LookupFriendlyNameByOid(const char* oidValue, const char** friendlyName);
 
-PALEXPORT int32_t CryptoNative_EnsureOpenSslInitialized(CRYPTO_malloc_fn  mallocFunction, CRYPTO_realloc_fn reallocFunction, CRYPTO_free_fn freefunction);
+PALEXPORT int32_t CryptoNative_EnsureOpenSslInitialized(void);
 
 PALEXPORT int64_t CryptoNative_OpenSslVersionNumber(void);
 
 PALEXPORT void CryptoNative_RegisterLegacyAlgorithms(void);
 
 PALEXPORT int32_t CryptoNative_OpenSslAvailable(void);
+
+PALEXPORT int32_t CryptoNative_GetMemoryUse(int* totalUsed, int* allocationCount);
+
+typedef enum
+{
+    MallocOperation = 1,
+    ReallocOperation = 2,
+    FreeOperation = 3,
+} MemoryOperation;
+
+typedef void (*CRYPTO_allocation_cb)(MemoryOperation operation, void* ptr, void* oldPtr, int size, const char *file, int line);
+
+PALEXPORT int32_t CryptoNative_SetMemoryTracking(CRYPTO_allocation_cb callback);

@@ -10,6 +10,13 @@ typedef void *(*CRYPTO_malloc_fn)(size_t num, const char *file, int line);
 typedef void *(*CRYPTO_realloc_fn)(void *addr, size_t num, const char *file, int line);
 typedef void (*CRYPTO_free_fn)(void *addr, const char *file, int line);
 
+#ifndef CRYPTO_RWLOCK
+typedef void CRYPTO_RWLOCK;
+#endif
+
+CRYPTO_RWLOCK *CRYPTO_THREAD_lock_new(void);
+int CRYPTO_atomic_add(int *val, int amount, int *ret, CRYPTO_RWLOCK *lock);
+
 typedef struct evp_mac_st EVP_MAC;
 typedef struct evp_mac_ctx_st EVP_MAC_CTX;
 

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography.X509Certificates;
@@ -170,5 +171,117 @@ internal static partial class Interop
 
             return bytes;
         }
+
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SetMemoryTracking")]
+        private static unsafe partial int SetMemoryTracking(delegate* unmanaged<MemoryOperation, UIntPtr, UIntPtr, int, char*, int, void> trackingCallback);
+
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetMemoryUse")]
+        internal static partial int GetMemoryUse(ref int memoryUse, ref int allocationCount);
+
+        public static int GetOpenSslAllocatedMemory()
+        {
+            int used = 0;
+            int count = 0;
+            GetMemoryUse(ref used, ref count);
+            return used;
+        }
+
+        public static int GetOpenSslAllocationCount()
+        {
+            int used = 0;
+            int count = 0;
+            GetMemoryUse(ref used, ref count);
+            return count;
+        }
+#if DEBUG
+        [StructLayout(LayoutKind.Sequential)]
+        private unsafe struct MemoryEntry
+        {
+            public int Size;
+            public int Line;
+            public char* File;
+        }
+
+        private enum MemoryOperation
+        {
+            Malloc = 1,
+            Realloc = 2,
+            Free = 3,
+        }
+
+        private static readonly unsafe UIntPtr Offset = (UIntPtr)sizeof(MemoryEntry);
+        private static HashSet<UIntPtr>? _allocations;
+
+        [UnmanagedCallersOnly]
+        private static unsafe void MemoryTrackinCallback(MemoryOperation operation, UIntPtr ptr, UIntPtr oldPtr, int size, char* file, int line)
+        {
+            Span<MemoryEntry> entry = new Span<MemoryEntry>((void*)ptr, 1);
+
+            Debug.Assert(entry[0].File != null);
+            Debug.Assert(ptr != UIntPtr.Zero);
+
+            switch (operation)
+            {
+                case MemoryOperation.Malloc:
+                    Debug.Assert(size == entry[0].Size);
+                    lock (_allocations!)
+                    {
+                        _allocations!.Add(ptr);
+                    }
+                    break;
+                case MemoryOperation.Realloc:
+                    lock (_allocations!)
+                    {
+                        if ((IntPtr)oldPtr != IntPtr.Zero)
+                        {
+                            _allocations!.Remove(oldPtr);
+                        }
+                        _allocations!.Add(ptr);
+                    }
+                    break;
+                case MemoryOperation.Free:
+                    lock (_allocations!)
+                    {
+                        _allocations!.Remove(ptr);
+                    }
+                    break;
+            }
+        }
+
+        public static unsafe void EnableTracking()
+        {
+            _allocations ??= new HashSet<UIntPtr>();
+            _allocations!.Clear();
+            SetMemoryTracking(&MemoryTrackinCallback);
+        }
+
+        public static unsafe void DisableTracking()
+        {
+            SetMemoryTracking(null);
+            _allocations!.Clear();
+        }
+
+        public static unsafe Tuple<UIntPtr, int, string>[] GetIncrementalAllocations()
+        {
+            if (_allocations == null || _allocations.Count == 0)
+            {
+                return Array.Empty<Tuple<UIntPtr, int, string>>();
+            }
+
+            lock (_allocations!)
+            {
+                Tuple<UIntPtr, int, string>[] allocations = new Tuple<UIntPtr, int, string>[_allocations.Count];
+                int index = 0;
+                foreach (UIntPtr ptr in _allocations)
+                {
+                    Span<MemoryEntry> entry = new Span<MemoryEntry>((void*)ptr, 1);
+                    allocations[index] = new Tuple<UIntPtr, int, string>(ptr + Offset, entry[0].Size, $"{Marshal.PtrToStringAnsi((IntPtr)entry[0].File)}:{entry[0].Line}");
+                    index++;
+                }
+
+                return allocations;
+            }
+        }
+#endif
     }
 }

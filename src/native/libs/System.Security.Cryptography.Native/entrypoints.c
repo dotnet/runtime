@@ -192,6 +192,8 @@ static const Entry s_cryptoNative[] =
     DllImportEntry(CryptoNative_GetECKeyParameters)
     DllImportEntry(CryptoNative_GetMaxMdSize)
     DllImportEntry(CryptoNative_GetMemoryBioSize)
+    DllImportEntry(CryptoNative_GetMemoryUse)
+    DllImportEntry(CryptoNative_SetMemoryTracking)
     DllImportEntry(CryptoNative_GetObjectDefinitionByName)
     DllImportEntry(CryptoNative_GetOcspRequestDerSize)
     DllImportEntry(CryptoNative_GetPkcs7Certificates)
