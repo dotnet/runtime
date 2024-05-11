@@ -1827,7 +1827,8 @@ bool OptBoolsDsc::optOptimizeAndConditionWithEqualityOperator(BasicBlock* b3)
     GenTree* op22 = cond2->AsOp()->gtOp2;
 
     if (!op11->OperIs(GT_LCL_VAR, GT_CNS_INT) || !op12->OperIs(GT_LCL_VAR, GT_CNS_INT) ||
-        !op21->OperIs(GT_LCL_VAR, GT_CNS_INT) || !op22->OperIs(GT_LCL_VAR, GT_CNS_INT))
+        !op21->OperIs(GT_LCL_VAR, GT_CNS_INT) || !op22->OperIs(GT_LCL_VAR, GT_CNS_INT) || !op11->TypeIs(TYP_INT) ||
+        !op12->TypeIs(TYP_INT) || !op21->TypeIs(TYP_INT) || !op22->TypeIs(TYP_INT))
     {
         return false;
     }
