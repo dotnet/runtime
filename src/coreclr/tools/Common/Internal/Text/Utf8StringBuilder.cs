@@ -89,7 +89,7 @@ namespace Internal.Text
         {
             int newSize = Math.Max(2 * _buffer.Length, _length + extraSpace);
             byte[] newBuffer = new byte[newSize];
-            _buffer.AsSpan(0, _length).CopyTo(newBuffer);
+            AsSpan().CopyTo(newBuffer);
             _buffer = newBuffer;
         }
     }
