@@ -35,7 +35,7 @@ namespace ILCompiler.DependencyAnalysis
 
             if (_callSiteIdentifier != null)
             {
-                sb.Append('_');
+                sb.Append((byte)'_');
                 _callSiteIdentifier.AppendMangledName(nameMangler, sb);
             }
         }

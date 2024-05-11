@@ -46,11 +46,9 @@ namespace Internal.Text
             return this;
         }
 
-        public Utf8StringBuilder Append(char value)
+        public Utf8StringBuilder Append(byte value)
         {
             Ensure(1);
-            if (value > 0x7F)
-                return Append(Encoding.UTF8.GetBytes(new char[] { value }));
             _buffer[_length++] = (byte)value;
             return this;
         }

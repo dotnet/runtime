@@ -55,26 +55,26 @@ namespace ILCompiler.ObjectWriter
 
             if (cie.FdesHaveAugmentationData)
             {
-                augmentationString.Append('z');
+                augmentationString.Append((byte)'z');
             }
             if (cie.PersonalitySymbolName != null)
             {
-                augmentationString.Append('P');
+                augmentationString.Append((byte)'P');
                 augmentationLength += 1u + AddressSize(cie.PersonalityEncoding);
             }
             if (cie.LsdaEncoding != 0)
             {
-                augmentationString.Append('L');
+                augmentationString.Append((byte)'L');
                 augmentationLength++;
             }
             if (cie.PointerEncoding != 0)
             {
-                augmentationString.Append('R');
+                augmentationString.Append((byte)'R');
                 augmentationLength++;
             }
             if (cie.IsSignalFrame)
             {
-                augmentationString.Append('S');
+                augmentationString.Append((byte)'S');
             }
 
             uint length =
