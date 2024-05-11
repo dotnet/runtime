@@ -19856,6 +19856,8 @@ bool GenTree::isContainableHWIntrinsic() const
         case NI_AVX512BW_VL_ConvertToVector128SByteWithSaturation:
         case NI_AVX512DQ_ExtractVector128:
         case NI_AVX512DQ_ExtractVector256:
+        case NI_AVX10v1_ConvertToVector128Byte:
+        case NI_AVX10v1_ConvertToVector128ByteWithSaturation:
         case NI_AVX10v1_ConvertToVector128Int16:
         case NI_AVX10v1_ConvertToVector128Int16WithSaturation:
         case NI_AVX10v1_ConvertToVector128Int32:
@@ -19948,6 +19950,7 @@ bool GenTree::isRMWHWIntrinsic(Compiler* comp)
         case NI_AVX512F_FixupScalar:
         case NI_AVX512F_VL_Fixup:
         case NI_AVX10v1_Fixup:
+        case NI_AVX10v1_FixupScalar:
         {
             // We are actually only RMW in the case where the lookup table
             // has any value that could result in `op1` being picked. So
@@ -19975,7 +19978,7 @@ bool GenTree::isRMWHWIntrinsic(Compiler* comp)
             uint32_t  count        = simdSize / sizeof(uint32_t);
             uint32_t  incSize      = (simdBaseType == TYP_FLOAT) ? 1 : 2;
 
-            if (intrinsicId == NI_AVX512F_FixupScalar)
+            if (intrinsicId == NI_AVX512F_FixupScalar || intrinsicId == NI_AVX10v1_FixupScalar)
             {
                 // Upper elements come from op2
                 count = 1;
@@ -20219,6 +20222,10 @@ GenTree* Compiler::gtNewSimdAbsNode(var_types type, GenTree* op1, CorInfoType si
         {
             assert(compIsaSupportedDebugOnly(InstructionSet_AVX512F));
             intrinsic = NI_AVX512F_Abs;
+        }
+        else if (compOpportunisticallyDependsOn(InstructionSet_AVX10v1))
+        {
+            intrinsic = NI_AVX10v1_Abs;
         }
         else if (compOpportunisticallyDependsOn(InstructionSet_AVX512F_VL))
         {
@@ -20571,8 +20578,16 @@ GenTree* Compiler::gtNewSimdBinOpNode(
                     if (varTypeIsLong(simdBaseType) || (simdBaseType == TYP_DOUBLE))
                     {
                         assert(varTypeIsSigned(simdBaseType));
-                        assert(compIsaSupportedDebugOnly(InstructionSet_AVX512F_VL));
-                        intrinsic = NI_AVX512F_VL_ShiftRightArithmetic;
+                        assert(compIsaSupportedDebugOnly(InstructionSet_AVX512F_VL) ||
+                               compIsaSupportedDebugOnly(InstructionSet_AVX10v1));
+                        if (compOpportunisticallyDependsOn(InstructionSet_AVX10v1))
+                        {
+                            intrinsic = NI_AVX10v1_ShiftRightArithmetic;
+                        }
+                        else
+                        {
+                            intrinsic = NI_AVX512F_VL_ShiftRightArithmetic;
+                        }
                     }
                     else
                     {
@@ -20633,8 +20648,14 @@ GenTree* Compiler::gtNewSimdBinOpNode(
                 if (varTypeIsLong(simdBaseType) || (simdBaseType == TYP_DOUBLE))
                 {
                     assert(varTypeIsSigned(simdBaseType));
-                    assert(compIsaSupportedDebugOnly(InstructionSet_AVX512F_VL));
-                    intrinsic = NI_AVX512F_VL_ShiftRightArithmetic;
+                    if (compOpportunisticallyDependsOn(InstructionSet_AVX10v1))
+                    {
+                        intrinsic = NI_AVX10v1_ShiftRightArithmetic;
+                    }
+                    else
+                    {
+                        intrinsic = NI_AVX512F_VL_ShiftRightArithmetic;
+                    }
                 }
                 else
                 {
@@ -20748,7 +20769,45 @@ GenTree* Compiler::gtNewSimdBinOpNode(
                     }
                     else if (simdSize == 16 && compOpportunisticallyDependsOn(InstructionSet_AVX2))
                     {
-                        if (IsBaselineVector512IsaSupportedOpportunistically())
+                        if (compOpportunisticallyDependsOn(InstructionSet_AVX10v1))
+                        {
+                            // Input is SIMD16 [U]Byte and AVX512BW_VL is supported:
+                            // - Widen inputs as SIMD32 [U]Short
+                            // - Multiply widened inputs (SIMD32 [U]Short) as widened product (SIMD32 [U]Short)
+                            // - Narrow widened product (SIMD32 [U]Short) as SIMD16 [U]Byte
+                            widenIntrinsic = NI_AVX2_ConvertToVector256Int16;
+
+                            if (simdBaseType == TYP_BYTE)
+                            {
+                                widenedSimdBaseJitType = CORINFO_TYPE_SHORT;
+                                narrowIntrinsic        = NI_AVX10v1_ConvertToVector128SByte;
+                            }
+                            else
+                            {
+                                widenedSimdBaseJitType = CORINFO_TYPE_USHORT;
+                                narrowIntrinsic        = NI_AVX10v1_ConvertToVector128Byte;
+                            }
+
+                            widenedType     = TYP_SIMD32;
+                            widenedSimdSize = 32;
+
+                            // Vector256<ushort> widenedOp1 = Avx2.ConvertToVector256Int16(op1).AsUInt16()
+                            GenTree* widenedOp1 = gtNewSimdHWIntrinsicNode(widenedType, op1, widenIntrinsic,
+                                                                           simdBaseJitType, widenedSimdSize);
+
+                            // Vector256<ushort> widenedOp2 = Avx2.ConvertToVector256Int16(op2).AsUInt16()
+                            GenTree* widenedOp2 = gtNewSimdHWIntrinsicNode(widenedType, op2, widenIntrinsic,
+                                                                           simdBaseJitType, widenedSimdSize);
+
+                            // Vector256<ushort> widenedProduct = widenedOp1 * widenedOp2
+                            GenTree* widenedProduct = gtNewSimdBinOpNode(GT_MUL, widenedType, widenedOp1, widenedOp2,
+                                                                         widenedSimdBaseJitType, widenedSimdSize);
+
+                            // Vector128<byte> product = Avx512BW.VL.ConvertToVector128Byte(widenedProduct)
+                            return gtNewSimdHWIntrinsicNode(type, widenedProduct, narrowIntrinsic,
+                                                            widenedSimdBaseJitType, widenedSimdSize);
+                        }
+                        else if (IsBaselineVector512IsaSupportedOpportunistically())
                         {
                             // Input is SIMD16 [U]Byte and AVX512BW_VL is supported:
                             // - Widen inputs as SIMD32 [U]Short
@@ -20968,9 +21027,14 @@ GenTree* Compiler::gtNewSimdBinOpNode(
                 case TYP_ULONG:
                 {
                     assert((simdSize == 16) || (simdSize == 32) || (simdSize == 64));
-                    assert(compIsaSupportedDebugOnly(InstructionSet_AVX512DQ_VL));
+                    assert(compIsaSupportedDebugOnly(InstructionSet_AVX512DQ_VL) ||
+                           compIsaSupportedDebugOnly(InstructionSet_AVX10v1));
 
-                    if (simdSize != 64)
+                    if (simdSize != 64 && compOpportunisticallyDependsOn(InstructionSet_AVX10v1))
+                    {
+                        intrinsic = NI_AVX10v1_MultiplyLow;
+                    }
+                    else if (simdSize != 64)
                     {
                         intrinsic = NI_AVX512DQ_VL_MultiplyLow;
                     }
@@ -21520,12 +21584,45 @@ GenTree* Compiler::gtNewSimdCvtNode(var_types   type,
 
 #if defined(TARGET_XARCH)
     assert(IsBaselineVector512IsaSupportedDebugOnly() ||
+           (simdSize != 64 && compIsaSupportedDebugOnly(InstructionSet_AVX10v1)) ||
            ((simdTargetBaseType == TYP_INT) && ((simdSize == 16 && compIsaSupportedDebugOnly(InstructionSet_SSE41)) ||
                                                 (simdSize == 32 && compIsaSupportedDebugOnly(InstructionSet_AVX)))));
 
     GenTree* fixupVal;
 
-    if (IsBaselineVector512IsaSupportedOpportunistically())
+    if (simdSize != 64 && compOpportunisticallyDependsOn(InstructionSet_AVX10v1))
+    {
+        /*Generate the control table for VFIXUPIMMSD/SS
+        - For conversion to unsigned
+                    // QNAN: 0b1000: Saturate to Zero
+                    // SNAN: 0b1000: Saturate to Zero
+                    // ZERO: 0b0000
+                    // +ONE: 0b0000
+                    // -INF: 0b1000: Saturate to Zero
+                    // +INF: 0b0000
+                    // -VAL: 0b1000: Saturate to Zero
+                    // +VAL: 0b0000
+        - For conversion to signed
+                    // QNAN: 0b1000: Saturate to Zero
+                    // SNAN: 0b1000: Saturate to Zero
+                    // ZERO: 0b0000
+                    // +ONE: 0b0000
+                    // -INF: 0b0000
+                    // +INF: 0b0000
+                    // -VAL: 0b0000
+                    // +VAL: 0b0000
+        */
+        int32_t  iconVal = varTypeIsUnsigned(simdTargetBaseType) ? 0x08080088 : 0x00000088;
+        GenTree* tblCon  = gtNewSimdCreateBroadcastNode(type, gtNewIconNode(iconVal), simdTargetBaseJitType, simdSize);
+
+        // We need op1Clone to run fixup
+        GenTree* op1Clone = fgMakeMultiUse(&op1);
+
+        // run vfixupimmsd base on table and no flags reporting
+        fixupVal = gtNewSimdHWIntrinsicNode(type, op1, op1Clone, tblCon, gtNewIconNode(0), NI_AVX10v1_Fixup,
+                                            simdSourceBaseJitType, simdSize);
+    }
+    else if (IsBaselineVector512IsaSupportedOpportunistically())
     {
         /*Generate the control table for VFIXUPIMMSD/SS
         - For conversion to unsigned
@@ -21636,145 +21733,265 @@ GenTree* Compiler::gtNewSimdCvtNativeNode(var_types   type,
 
 #if defined(TARGET_XARCH)
     assert(IsBaselineVector512IsaSupportedDebugOnly() ||
+           (simdSize != 64 && compIsaSupportedDebugOnly(InstructionSet_AVX10v1)) ||
            ((simdTargetBaseType == TYP_INT) &&
             ((simdSize == 16) || (simdSize == 32 && compIsaSupportedDebugOnly(InstructionSet_AVX)))));
 
-    switch (simdSourceBaseJitType)
+    if (compOpportunisticallyDependsOn(InstructionSet_AVX10v1))
     {
-        case CORINFO_TYPE_FLOAT:
+        switch (simdSourceBaseJitType)
         {
-            switch (simdTargetBaseJitType)
+            case CORINFO_TYPE_FLOAT:
             {
-                case CORINFO_TYPE_INT:
+                switch (simdTargetBaseJitType)
                 {
-                    switch (simdSize)
+                    case CORINFO_TYPE_INT:
                     {
-                        case 64:
+                        switch (simdSize)
                         {
-                            hwIntrinsicID = NI_AVX512F_ConvertToVector512Int32WithTruncation;
-                            break;
-                        }
+                            case 32:
+                            {
+                                hwIntrinsicID = NI_AVX_ConvertToVector256Int32WithTruncation;
+                                break;
+                            }
 
-                        case 32:
-                        {
-                            hwIntrinsicID = NI_AVX_ConvertToVector256Int32WithTruncation;
-                            break;
-                        }
+                            case 16:
+                            {
+                                hwIntrinsicID = NI_SSE2_ConvertToVector128Int32WithTruncation;
+                                break;
+                            }
 
-                        case 16:
-                        {
-                            hwIntrinsicID = NI_SSE2_ConvertToVector128Int32WithTruncation;
-                            break;
+                            default:
+                                unreached();
                         }
-
-                        default:
-                            unreached();
+                        break;
                     }
-                    break;
-                }
 
-                case CORINFO_TYPE_UINT:
-                {
-                    switch (simdSize)
+                    case CORINFO_TYPE_UINT:
                     {
-                        case 64:
+                        switch (simdSize)
                         {
-                            hwIntrinsicID = NI_AVX512F_ConvertToVector512UInt32WithTruncation;
-                            break;
-                        }
+                            case 32:
+                            {
+                                hwIntrinsicID = NI_AVX10v1_ConvertToVector256UInt32WithTruncation;
+                                break;
+                            }
 
-                        case 32:
-                        {
-                            hwIntrinsicID = NI_AVX512F_VL_ConvertToVector256UInt32WithTruncation;
-                            break;
-                        }
+                            case 16:
+                            {
+                                hwIntrinsicID = NI_AVX10v1_ConvertToVector128UInt32WithTruncation;
+                                break;
+                            }
 
-                        case 16:
-                        {
-                            hwIntrinsicID = NI_AVX512F_VL_ConvertToVector128UInt32WithTruncation;
-                            break;
+                            default:
+                                unreached();
                         }
-
-                        default:
-                            unreached();
+                        break;
                     }
-                    break;
-                }
 
-                default:
-                    unreached();
+                    default:
+                        unreached();
+                }
+                break;
             }
-            break;
-        }
 
-        case CORINFO_TYPE_DOUBLE:
+            case CORINFO_TYPE_DOUBLE:
+            {
+                switch (simdTargetBaseJitType)
+                {
+                    case CORINFO_TYPE_LONG:
+                    {
+                        switch (simdSize)
+                        {
+                            case 32:
+                            {
+                                hwIntrinsicID = NI_AVX10v1_ConvertToVector256Int64WithTruncation;
+                                break;
+                            }
+
+                            case 16:
+                            {
+                                hwIntrinsicID = NI_AVX10v1_ConvertToVector128Int64WithTruncation;
+                                break;
+                            }
+
+                            default:
+                                unreached();
+                        }
+                        break;
+                    }
+
+                    case CORINFO_TYPE_ULONG:
+                    {
+                        switch (simdSize)
+                        {
+                            case 32:
+                            {
+                                hwIntrinsicID = NI_AVX10v1_ConvertToVector256UInt64WithTruncation;
+                                break;
+                            }
+
+                            case 16:
+                            {
+                                hwIntrinsicID = NI_AVX10v1_ConvertToVector128UInt64WithTruncation;
+                                break;
+                            }
+
+                            default:
+                                unreached();
+                        }
+                        break;
+                    }
+
+                    default:
+                        unreached();
+                }
+                break;
+            }
+
+            default:
+                unreached();
+        }
+    }
+    else
+    {
+        switch (simdSourceBaseJitType)
         {
-            switch (simdTargetBaseJitType)
+            case CORINFO_TYPE_FLOAT:
             {
-                case CORINFO_TYPE_LONG:
+                switch (simdTargetBaseJitType)
                 {
-                    switch (simdSize)
+                    case CORINFO_TYPE_INT:
                     {
-                        case 64:
+                        switch (simdSize)
                         {
-                            hwIntrinsicID = NI_AVX512DQ_ConvertToVector512Int64WithTruncation;
-                            break;
-                        }
+                            case 64:
+                            {
+                                hwIntrinsicID = NI_AVX512F_ConvertToVector512Int32WithTruncation;
+                                break;
+                            }
 
-                        case 32:
-                        {
-                            hwIntrinsicID = NI_AVX512DQ_VL_ConvertToVector256Int64WithTruncation;
-                            break;
-                        }
+                            case 32:
+                            {
+                                hwIntrinsicID = NI_AVX_ConvertToVector256Int32WithTruncation;
+                                break;
+                            }
 
-                        case 16:
-                        {
-                            hwIntrinsicID = NI_AVX512DQ_VL_ConvertToVector128Int64WithTruncation;
-                            break;
-                        }
+                            case 16:
+                            {
+                                hwIntrinsicID = NI_SSE2_ConvertToVector128Int32WithTruncation;
+                                break;
+                            }
 
-                        default:
-                            unreached();
+                            default:
+                                unreached();
+                        }
+                        break;
                     }
-                    break;
-                }
 
-                case CORINFO_TYPE_ULONG:
-                {
-                    switch (simdSize)
+                    case CORINFO_TYPE_UINT:
                     {
-                        case 64:
+                        switch (simdSize)
                         {
-                            hwIntrinsicID = NI_AVX512DQ_ConvertToVector512UInt64WithTruncation;
-                            break;
-                        }
+                            case 64:
+                            {
+                                hwIntrinsicID = NI_AVX512F_ConvertToVector512UInt32WithTruncation;
+                                break;
+                            }
 
-                        case 32:
-                        {
-                            hwIntrinsicID = NI_AVX512DQ_VL_ConvertToVector256UInt64WithTruncation;
-                            break;
-                        }
+                            case 32:
+                            {
+                                hwIntrinsicID = NI_AVX512F_VL_ConvertToVector256UInt32WithTruncation;
+                                break;
+                            }
 
-                        case 16:
-                        {
-                            hwIntrinsicID = NI_AVX512DQ_VL_ConvertToVector128UInt64WithTruncation;
-                            break;
-                        }
+                            case 16:
+                            {
+                                hwIntrinsicID = NI_AVX512F_VL_ConvertToVector128UInt32WithTruncation;
+                                break;
+                            }
 
-                        default:
-                            unreached();
+                            default:
+                                unreached();
+                        }
+                        break;
                     }
-                    break;
-                }
 
-                default:
-                    unreached();
+                    default:
+                        unreached();
+                }
+                break;
             }
-            break;
-        }
 
-        default:
-            unreached();
+            case CORINFO_TYPE_DOUBLE:
+            {
+                switch (simdTargetBaseJitType)
+                {
+                    case CORINFO_TYPE_LONG:
+                    {
+                        switch (simdSize)
+                        {
+                            case 64:
+                            {
+                                hwIntrinsicID = NI_AVX512DQ_ConvertToVector512Int64WithTruncation;
+                                break;
+                            }
+
+                            case 32:
+                            {
+                                hwIntrinsicID = NI_AVX512DQ_VL_ConvertToVector256Int64WithTruncation;
+                                break;
+                            }
+
+                            case 16:
+                            {
+                                hwIntrinsicID = NI_AVX512DQ_VL_ConvertToVector128Int64WithTruncation;
+                                break;
+                            }
+
+                            default:
+                                unreached();
+                        }
+                        break;
+                    }
+
+                    case CORINFO_TYPE_ULONG:
+                    {
+                        switch (simdSize)
+                        {
+                            case 64:
+                            {
+                                hwIntrinsicID = NI_AVX512DQ_ConvertToVector512UInt64WithTruncation;
+                                break;
+                            }
+
+                            case 32:
+                            {
+                                hwIntrinsicID = NI_AVX512DQ_VL_ConvertToVector256UInt64WithTruncation;
+                                break;
+                            }
+
+                            case 16:
+                            {
+                                hwIntrinsicID = NI_AVX512DQ_VL_ConvertToVector128UInt64WithTruncation;
+                                break;
+                            }
+
+                            default:
+                                unreached();
+                        }
+                        break;
+                    }
+
+                    default:
+                        unreached();
+                }
+                break;
+            }
+
+            default:
+                unreached();
+        }
     }
 #elif defined(TARGET_ARM64)
     assert((simdSize == 8) || (simdSize == 16));
@@ -24046,6 +24263,10 @@ GenTree* Compiler::gtNewSimdMaxNode(
             {
                 intrinsic = NI_AVX2_Max;
             }
+            else if (compOpportunisticallyDependsOn(InstructionSet_AVX10v1))
+            {
+                intrinsic = NI_AVX10v1_Max;
+            }
             else if (compOpportunisticallyDependsOn(InstructionSet_AVX512F_VL))
             {
                 intrinsic = NI_AVX512F_VL_Max;
@@ -24159,7 +24380,11 @@ GenTree* Compiler::gtNewSimdMaxNode(
             case TYP_LONG:
             case TYP_ULONG:
             {
-                if (compOpportunisticallyDependsOn(InstructionSet_AVX512F_VL))
+                if (compOpportunisticallyDependsOn(InstructionSet_AVX10v1))
+                {
+                    intrinsic = NI_AVX10v1_Max;
+                }
+                else if (compOpportunisticallyDependsOn(InstructionSet_AVX512F_VL))
                 {
                     intrinsic = NI_AVX512F_VL_Max;
                 }
@@ -24252,6 +24477,10 @@ GenTree* Compiler::gtNewSimdMinNode(
             if (!varTypeIsLong(simdBaseType))
             {
                 intrinsic = NI_AVX2_Min;
+            }
+            else if (compOpportunisticallyDependsOn(InstructionSet_AVX10v1))
+            {
+                intrinsic = NI_AVX10v1_Min;
             }
             else if (compOpportunisticallyDependsOn(InstructionSet_AVX512F_VL))
             {
@@ -24362,7 +24591,11 @@ GenTree* Compiler::gtNewSimdMinNode(
             case TYP_LONG:
             case TYP_ULONG:
             {
-                if (compOpportunisticallyDependsOn(InstructionSet_AVX512F_VL))
+                if (compOpportunisticallyDependsOn(InstructionSet_AVX10v1))
+                {
+                    intrinsic = NI_AVX10v1_Min;
+                }
+                else if (compOpportunisticallyDependsOn(InstructionSet_AVX512F_VL))
                 {
                     intrinsic = NI_AVX512F_VL_Min;
                 }
@@ -24443,8 +24676,96 @@ GenTree* Compiler::gtNewSimdNarrowNode(
 #if defined(TARGET_XARCH)
     GenTree* tmp3;
     GenTree* tmp4;
+    if ((simdSize != 64) && compOpportunisticallyDependsOn(InstructionSet_AVX10v1))
+    {
+        // This is the same in principle to the other comments below, however due to
+        // code formatting, its too long to reasonably display here.
 
-    if (IsBaselineVector512IsaSupportedOpportunistically())
+        assert((simdSize == 16) || (simdSize == 32));
+        var_types tmpSimdType = TYP_SIMD16;
+
+        NamedIntrinsic intrinsicId;
+        CorInfoType    opBaseJitType;
+
+        switch (simdBaseType)
+        {
+            case TYP_BYTE:
+            {
+                intrinsicId   = NI_AVX10v1_ConvertToVector128SByte;
+                opBaseJitType = CORINFO_TYPE_SHORT;
+                break;
+            }
+
+            case TYP_UBYTE:
+            {
+                intrinsicId   = NI_AVX10v1_ConvertToVector128Byte;
+                opBaseJitType = CORINFO_TYPE_USHORT;
+                break;
+            }
+
+            case TYP_SHORT:
+            {
+                intrinsicId   = NI_AVX10v1_ConvertToVector128Int16;
+                opBaseJitType = CORINFO_TYPE_INT;
+                break;
+            }
+
+            case TYP_USHORT:
+            {
+                intrinsicId   = NI_AVX10v1_ConvertToVector128UInt16;
+                opBaseJitType = CORINFO_TYPE_UINT;
+                break;
+            }
+
+            case TYP_INT:
+            {
+                intrinsicId   = NI_AVX10v1_ConvertToVector128Int32;
+                opBaseJitType = CORINFO_TYPE_LONG;
+                break;
+            }
+
+            case TYP_UINT:
+            {
+                intrinsicId   = NI_AVX10v1_ConvertToVector128UInt32;
+                opBaseJitType = CORINFO_TYPE_ULONG;
+                break;
+            }
+
+            case TYP_FLOAT:
+            {
+                if (simdSize == 32)
+                {
+                    intrinsicId = NI_AVX_ConvertToVector128Single;
+                }
+                else
+                {
+                    intrinsicId = NI_SSE2_ConvertToVector128Single;
+                }
+
+                opBaseJitType = CORINFO_TYPE_DOUBLE;
+                break;
+            }
+
+            default:
+            {
+                unreached();
+            }
+        }
+
+        tmp1 = gtNewSimdHWIntrinsicNode(tmpSimdType, op1, intrinsicId, opBaseJitType, simdSize);
+        tmp2 = gtNewSimdHWIntrinsicNode(tmpSimdType, op2, intrinsicId, opBaseJitType, simdSize);
+
+        if (simdSize == 16)
+        {
+            return gtNewSimdHWIntrinsicNode(type, tmp1, tmp2, NI_SSE_MoveLowToHigh, CORINFO_TYPE_FLOAT, simdSize);
+        }
+
+        intrinsicId = NI_Vector128_ToVector256Unsafe;
+
+        tmp1 = gtNewSimdHWIntrinsicNode(type, tmp1, intrinsicId, simdBaseJitType, simdSize / 2);
+        return gtNewSimdWithUpperNode(type, tmp1, tmp2, simdBaseJitType, simdSize);
+    }
+    else if (IsBaselineVector512IsaSupportedOpportunistically())
     {
         // This is the same in principle to the other comments below, however due to
         // code formatting, its too long to reasonably display here.
@@ -25051,8 +25372,9 @@ GenTree* Compiler::gtNewSimdShuffleNode(
     {
         assert(compIsaSupportedDebugOnly(InstructionSet_AVX2));
 
-        if ((varTypeIsByte(simdBaseType) && !compOpportunisticallyDependsOn(InstructionSet_AVX512VBMI_VL)) ||
-            (varTypeIsShort(simdBaseType) && !compOpportunisticallyDependsOn(InstructionSet_AVX512BW_VL)))
+        if (((varTypeIsByte(simdBaseType) && !compOpportunisticallyDependsOn(InstructionSet_AVX512VBMI_VL)) ||
+             (varTypeIsShort(simdBaseType) && !compOpportunisticallyDependsOn(InstructionSet_AVX512BW_VL))) &&
+            (!compOpportunisticallyDependsOn(InstructionSet_AVX10v1)))
         {
             if (crossLane)
             {
@@ -25104,6 +25426,34 @@ GenTree* Compiler::gtNewSimdShuffleNode(
 
             // swap the operands to match the encoding requirements
             retNode = gtNewSimdHWIntrinsicNode(type, op2, op1, NI_AVX2_PermuteVar8x32, simdBaseJitType, simdSize);
+        }
+        else if (((elementSize == 2) || (elementSize == 1)) && compOpportunisticallyDependsOn(InstructionSet_AVX10v1))
+        {
+            if (elementSize == 2)
+            {
+                assert(compIsaSupportedDebugOnly(InstructionSet_AVX10v1));
+                for (uint32_t i = 0; i < elementCount; i++)
+                {
+                    vecCns.u16[i] = (uint8_t)(vecCns.u8[i * elementSize] / elementSize);
+                }
+
+                op2                        = gtNewVconNode(type);
+                op2->AsVecCon()->gtSimdVal = vecCns;
+
+                // swap the operands to match the encoding requirements
+                retNode =
+                    gtNewSimdHWIntrinsicNode(type, op2, op1, NI_AVX10v1_PermuteVar16x16, simdBaseJitType, simdSize);
+            }
+            else // elementSize == 1
+            {
+                assert(compIsaSupportedDebugOnly(InstructionSet_AVX512VBMI_VL));
+                op2                        = gtNewVconNode(type);
+                op2->AsVecCon()->gtSimdVal = vecCns;
+
+                // swap the operands to match the encoding requirements
+                retNode =
+                    gtNewSimdHWIntrinsicNode(type, op2, op1, NI_AVX10v1_PermuteVar32x8, simdBaseJitType, simdSize);
+            }
         }
         else if (elementSize == 2)
         {
@@ -25720,7 +26070,8 @@ GenTree* Compiler::gtNewSimdTernaryLogicNode(var_types   type,
                                              CorInfoType simdBaseJitType,
                                              unsigned    simdSize)
 {
-    assert(IsBaselineVector512IsaSupportedDebugOnly());
+    assert(IsBaselineVector512IsaSupportedDebugOnly() ||
+           ((simdSize != 64) && compIsaSupportedDebugOnly(InstructionSet_AVX10v1)));
 
     assert(varTypeIsSIMD(type));
     assert(getSIMDTypeForSize(simdSize) == type);
@@ -25745,6 +26096,11 @@ GenTree* Compiler::gtNewSimdTernaryLogicNode(var_types   type,
     if (simdSize == 64)
     {
         intrinsic = NI_AVX512F_TernaryLogic;
+    }
+    else if (compOpportunisticallyDependsOn(InstructionSet_AVX10v1))
+    {
+        assert((simdSize == 16) || (simdSize == 32));
+        intrinsic = NI_AVX10v1_TernaryLogic;
     }
     else
     {
@@ -25892,8 +26248,11 @@ GenTree* Compiler::gtNewSimdUnOpNode(
                 {
                     assert(compIsaSupportedDebugOnly(InstructionSet_AVX));
                 }
-
-                if ((genTypeSize(simdBaseType) >= 4) && compOpportunisticallyDependsOn(InstructionSet_AVX512F_VL))
+                if ((genTypeSize(simdBaseType) >= 4) && compOpportunisticallyDependsOn(InstructionSet_AVX10v1))
+                {
+                    intrinsic = NI_AVX10v1_TernaryLogic;
+                }
+                else if ((genTypeSize(simdBaseType) >= 4) && compOpportunisticallyDependsOn(InstructionSet_AVX512F_VL))
                 {
                     intrinsic = NI_AVX512F_VL_TernaryLogic;
                 }
@@ -25902,7 +26261,8 @@ GenTree* Compiler::gtNewSimdUnOpNode(
             if (intrinsic != NI_Illegal)
             {
                 // AVX512 allows performing `not` without requiring a memory access
-                assert(compIsaSupportedDebugOnly(InstructionSet_AVX512F_VL));
+                assert(compIsaSupportedDebugOnly(InstructionSet_AVX512F_VL) ||
+                       compIsaSupportedDebugOnly(InstructionSet_AVX10v1));
 
                 op2 = gtNewZeroConNode(type);
                 op3 = gtNewZeroConNode(type);
@@ -27134,6 +27494,8 @@ bool GenTreeHWIntrinsic::OperIsEmbRoundingEnabled() const
         case NI_AVX512DQ_ConvertToVector512Double:
         case NI_AVX512DQ_ConvertToVector512Int64:
         case NI_AVX512DQ_ConvertToVector512UInt64:
+        case NI_AVX10v1_ConvertToInt32:
+        case NI_AVX10v1_ConvertToUInt32:
         case NI_AVX10v1_V512_ConvertToVector256Single:
         case NI_AVX10v1_V512_ConvertToVector512Double:
         case NI_AVX10v1_V512_ConvertToVector512Int64:

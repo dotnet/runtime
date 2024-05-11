@@ -894,7 +894,105 @@ GenTree* Lowering::LowerCast(GenTree* tree)
                     Vector128.Create<long>(long.MaxValue)
                 );
         */
-        if (comp->IsBaselineVector512IsaSupportedOpportunistically())
+        if (comp->compOpportunisticallyDependsOn(InstructionSet_AVX10v1))
+        {
+            // Clone the cast operand for usage.
+            GenTree* op1Clone1 = comp->gtClone(castOp);
+            BlockRange().InsertAfter(castOp, op1Clone1);
+
+            // Generate the control table for VFIXUPIMMSD
+            // The behavior we want is to saturate negative values to 0.
+            GenTreeVecCon* tbl    = comp->gtNewVconNode(TYP_SIMD16);
+            tbl->gtSimdVal.i32[0] = (varTypeIsUnsigned(dstType)) ? 0x08080088 : 0x00000088;
+            BlockRange().InsertAfter(op1Clone1, tbl);
+
+            // get a zero int node for control table
+            GenTree* ctrlByte = comp->gtNewIconNode(0);
+            BlockRange().InsertAfter(tbl, ctrlByte);
+
+            if (varTypeIsUnsigned(dstType))
+            {
+                // run vfixupimmsd base on table and no flags reporting
+                GenTree* oper1 = comp->gtNewSimdHWIntrinsicNode(TYP_SIMD16, castOp, op1Clone1, tbl, ctrlByte,
+                                                                NI_AVX10v1_FixupScalar, fieldType, 16);
+                BlockRange().InsertAfter(ctrlByte, oper1);
+                LowerNode(oper1);
+
+                // Convert to scalar
+                // Here, we try to insert a Vector128 to Scalar node so that the input
+                // can be provided to the scalar cast
+                GenTree* oper2 = comp->gtNewSimdHWIntrinsicNode(srcType, oper1, NI_Vector128_ToScalar, fieldType, 16);
+                BlockRange().InsertAfter(oper1, oper2);
+                LowerNode(oper2);
+
+                castOutput = comp->gtNewCastNode(genActualType(dstType), oper2, false, dstType);
+                BlockRange().InsertAfter(oper2, castOutput);
+            }
+            else
+            {
+                CorInfoType destFieldType = (dstType == TYP_INT) ? CORINFO_TYPE_INT : CORINFO_TYPE_LONG;
+
+                ssize_t actualMaxVal = (dstType == TYP_INT) ? INT32_MAX : INT64_MAX;
+
+                // run vfixupimmsd base on table and no flags reporting
+                GenTree* fixupVal = comp->gtNewSimdHWIntrinsicNode(TYP_SIMD16, castOp, op1Clone1, tbl, ctrlByte,
+                                                                   NI_AVX10v1_FixupScalar, fieldType, 16);
+                BlockRange().InsertAfter(ctrlByte, fixupVal);
+                LowerNode(fixupVal);
+
+                // get the max value vector
+                GenTree* maxValScalar = (srcType == TYP_DOUBLE)
+                                            ? comp->gtNewDconNodeD(static_cast<double>(actualMaxVal))
+                                            : comp->gtNewDconNodeF(static_cast<float>(actualMaxVal));
+                GenTree* maxVal       = comp->gtNewSimdCreateBroadcastNode(TYP_SIMD16, maxValScalar, fieldType, 16);
+                BlockRange().InsertAfter(fixupVal, maxVal);
+
+                GenTree* maxValDstTypeScalar = (dstType == TYP_INT) ? comp->gtNewIconNode(actualMaxVal, dstType)
+                                                                    : comp->gtNewLconNode(actualMaxVal);
+                GenTree* maxValDstType =
+                    comp->gtNewSimdCreateBroadcastNode(TYP_SIMD16, maxValDstTypeScalar, destFieldType, 16);
+                BlockRange().InsertAfter(maxVal, maxValDstType);
+
+                // usage 1 --> compare with max value of integer
+                GenTree* compMask = comp->gtNewSimdCmpOpNode(GT_GE, TYP_SIMD16, fixupVal, maxVal, fieldType, 16);
+                BlockRange().InsertAfter(maxValDstType, compMask);
+
+                // convert fixupVal to local variable and clone it for further use
+                LIR::Use fixupValUse(BlockRange(), &(compMask->AsHWIntrinsic()->Op(1)), compMask);
+                ReplaceWithLclVar(fixupValUse);
+                fixupVal               = compMask->AsHWIntrinsic()->Op(1);
+                GenTree* fixupValClone = comp->gtClone(fixupVal);
+                LowerNode(compMask);
+                BlockRange().InsertAfter(fixupVal, fixupValClone);
+
+                GenTree* FixupValCloneScalar =
+                    comp->gtNewSimdHWIntrinsicNode(srcType, fixupValClone, NI_Vector128_ToScalar, fieldType, 16);
+                BlockRange().InsertAfter(compMask, FixupValCloneScalar);
+                LowerNode(FixupValCloneScalar);
+
+                // cast it
+                GenTreeCast* newCast = comp->gtNewCastNode(dstType, FixupValCloneScalar, false, dstType);
+                BlockRange().InsertAfter(FixupValCloneScalar, newCast);
+
+                GenTree* newTree = comp->gtNewSimdCreateBroadcastNode(TYP_SIMD16, newCast, destFieldType, 16);
+                BlockRange().InsertAfter(newCast, newTree);
+                LowerNode(newTree);
+
+                // usage 2 --> use thecompared mask with input value and max value to blend
+                GenTree* control = comp->gtNewIconNode(0xCA); // (B & A) | (C & ~A)
+                BlockRange().InsertAfter(newTree, control);
+                GenTree* cndSelect = comp->gtNewSimdTernaryLogicNode(TYP_SIMD16, compMask, maxValDstType, newTree,
+                                                                     control, destFieldType, 16);
+                BlockRange().InsertAfter(control, cndSelect);
+                LowerNode(cndSelect);
+
+                castOutput =
+                    comp->gtNewSimdHWIntrinsicNode(dstType, cndSelect, NI_Vector128_ToScalar, destFieldType, 16);
+                BlockRange().InsertAfter(cndSelect, castOutput);
+                LowerNode(castOutput);
+            }
+        }
+        else if (comp->IsBaselineVector512IsaSupportedOpportunistically())
         {
             // Clone the cast operand for usage.
             GenTree* op1Clone1 = comp->gtClone(castOp);

@@ -9606,7 +9606,8 @@ public:
     //
     bool canUseEvexEncoding() const
     {
-        return compOpportunisticallyDependsOn(InstructionSet_AVX512F);
+        return (compOpportunisticallyDependsOn(InstructionSet_AVX512F) ||
+                compOpportunisticallyDependsOn(InstructionSet_AVX10v1));
     }
 
 private:

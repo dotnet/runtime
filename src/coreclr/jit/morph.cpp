@@ -382,6 +382,7 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
                 //     double -> int/uint/long for SSE41
                 // For all other conversions, we use helper functions.
                 if (compOpportunisticallyDependsOn(InstructionSet_AVX512F) ||
+                    compOpportunisticallyDependsOn(InstructionSet_AVX10v1) ||
                     ((dstType != TYP_ULONG) && compOpportunisticallyDependsOn(InstructionSet_SSE41)))
                 {
                     if (tree->CastOp() != oper)

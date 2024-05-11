@@ -161,7 +161,8 @@ GenTree* Compiler::impExpandHalfConstEqualsSIMD(
         GenTreeVecCon* toLowerVec2 = gtNewVconNode(simdType, (BYTE*)toLowerMask + byteLen - simdSize);
 
 #if defined(TARGET_XARCH)
-        if (compOpportunisticallyDependsOn(InstructionSet_AVX512F_VL))
+        if (compOpportunisticallyDependsOn(InstructionSet_AVX512F_VL) ||
+            compOpportunisticallyDependsOn(InstructionSet_AVX10v1))
         {
             GenTree* control;
 
@@ -185,7 +186,8 @@ GenTree* Compiler::impExpandHalfConstEqualsSIMD(
     // ((v1 ^ cns1) | (v2 ^ cns2)) == zero
 
 #if defined(TARGET_XARCH)
-    if (compOpportunisticallyDependsOn(InstructionSet_AVX512F_VL))
+    if (compOpportunisticallyDependsOn(InstructionSet_AVX512F_VL) ||
+        compOpportunisticallyDependsOn(InstructionSet_AVX10v1))
     {
         GenTree* control;
 
