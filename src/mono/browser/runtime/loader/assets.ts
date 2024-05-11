@@ -478,7 +478,7 @@ async function start_asset_download_with_throttle (asset: AssetEntryInternal): P
             ("body" in response) && response.body && // in some cases response.body can be missing or null
             asset.knownLength
         ) {
-            asset.stream = [response.body!, asset.knownLength];
+            asset.stream = response.body!;
         } else {
             if ((asset.behavior !== "vfs") && ENVIRONMENT_IS_WEB)
                 mono_log_warn(`Could not stream resource ${asset.resolvedUrl} with length ${asset.knownLength} and behavior ${asset.behavior}.`);
