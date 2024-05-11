@@ -27955,7 +27955,7 @@ bool GenTreeLclVar::IsNeverNegative(Compiler* comp) const
     return comp->lvaGetDesc(GetLclNum())->IsNeverNegative();
 }
 
-#if defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
+#if (defined(TARGET_XARCH) || defined(TARGET_ARM64)) && defined(FEATURE_HW_INTRINSICS)
 //------------------------------------------------------------------------
 // GetResultOpNumForRmwIntrinsic: check if the result is written into one of the operands.
 // In the case that none of the operand is overwritten, check if any of them is lastUse.
@@ -27966,7 +27966,11 @@ bool GenTreeLclVar::IsNeverNegative(Compiler* comp) const
 //
 unsigned GenTreeHWIntrinsic::GetResultOpNumForRmwIntrinsic(GenTree* use, GenTree* op1, GenTree* op2, GenTree* op3)
 {
+#if defined(TARGET_XARCH)
     assert(HWIntrinsicInfo::IsFmaIntrinsic(gtHWIntrinsicId) || HWIntrinsicInfo::IsPermuteVar2x(gtHWIntrinsicId));
+#elif defined(TARGET_ARM64)
+    assert(HWIntrinsicInfo::IsFmaIntrinsic(gtHWIntrinsicId));
+#endif
 
     if (use != nullptr && use->OperIs(GT_STORE_LCL_VAR))
     {

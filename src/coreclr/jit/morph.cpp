@@ -10717,10 +10717,9 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
                 break;
             }
 
-            unsigned            simdBaseTypeSize = genTypeSize(node->GetSimdBaseType());
-            GenTreeHWIntrinsic* cvtOp2           = op2->AsHWIntrinsic();
+            unsigned simdBaseTypeSize = genTypeSize(node->GetSimdBaseType());
 
-            if ((genTypeSize(cvtOp2->GetSimdBaseType()) != simdBaseTypeSize))
+            if (!op2->OperIsHWIntrinsic() || (genTypeSize(op2->AsHWIntrinsic()->GetSimdBaseType()) != simdBaseTypeSize))
             {
                 // We need the operand to be the same kind of mask; otherwise
                 // the bitwise operation can differ in how it performs
