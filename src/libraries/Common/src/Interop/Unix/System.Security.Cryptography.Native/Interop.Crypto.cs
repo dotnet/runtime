@@ -172,9 +172,6 @@ internal static partial class Interop
             return bytes;
         }
 
-        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SetMemoryTracking")]
-        private static unsafe partial int SetMemoryTracking(delegate* unmanaged<MemoryOperation, UIntPtr, UIntPtr, int, char*, int, void> trackingCallback);
-
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetMemoryUse")]
         internal static partial int GetMemoryUse(ref int memoryUse, ref int allocationCount);
 
@@ -194,6 +191,9 @@ internal static partial class Interop
             return count;
         }
 #if DEBUG
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SetMemoryTracking")]
+        private static unsafe partial int SetMemoryTracking(delegate* unmanaged<MemoryOperation, UIntPtr, UIntPtr, int, char*, int, void> trackingCallback);
+
         [StructLayout(LayoutKind.Sequential)]
         private unsafe struct MemoryEntry
         {
