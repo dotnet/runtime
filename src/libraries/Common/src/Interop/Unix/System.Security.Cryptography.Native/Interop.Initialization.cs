@@ -2,11 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Globalization;
 using System.Runtime.InteropServices;
-using System.Threading;
 
 internal static partial class Interop
 {
@@ -31,11 +27,10 @@ internal static partial class Interop
         }
     }
 
-    internal static unsafe partial class CryptoInitializer
+    internal static partial class CryptoInitializer
     {
 
-#pragma warning disable CA1810
-        static unsafe CryptoInitializer()
+        static CryptoInitializer()
         {
             if (EnsureOpenSslInitialized() != 0)
             {
@@ -49,25 +44,13 @@ internal static partial class Interop
             }
 
         }
-#pragma warning restore CA1810
 
         internal static void Initialize()
         {
             // No-op that exists to provide a hook for other static constructors.
-            string? value = Environment.GetEnvironmentVariable("DOTNET_SYSTEM_NET_SECURITY_OPENSSL_MEMORY_DEBUG");
-            if (int.TryParse(value, CultureInfo.InvariantCulture, out int enabled) && enabled == 1)
-            {
-                Crypto.GetOpenSslAllocationCount();
-                Crypto.GetOpenSslAllocatedMemory();
-#if DEBUG
-                Crypto.EnableTracking();
-                Crypto.GetIncrementalAllocations();
-                Crypto.DisableTracking();
-#endif
-            }
         }
 
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EnsureOpenSslInitialized")]
-        private static unsafe partial int EnsureOpenSslInitialized();
+        private static partial int EnsureOpenSslInitialized();
     }
 }
