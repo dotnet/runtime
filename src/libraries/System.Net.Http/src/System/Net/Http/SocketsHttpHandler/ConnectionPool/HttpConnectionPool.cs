@@ -305,12 +305,12 @@ namespace System.Net.Http
         {
             get
             {
-                Debug.Assert(!Monitor.IsEntered(_http11Connections));
-                return _http11Connections;
+                Debug.Assert(!Monitor.IsEntered(_originAuthority));
+                return _originAuthority;
             }
         }
 
-        public bool HasSyncObjLock => Monitor.IsEntered(_http11Connections);
+        public bool HasSyncObjLock => Monitor.IsEntered(_originAuthority);
 
         // Overview of connection management (mostly HTTP version independent):
         //
@@ -946,7 +946,7 @@ namespace System.Net.Http
                 // will be purged next time around.
                 _usedSinceLastCleanup = false;
 
-                ScavengeHttp11ConnectionStack(this, _http11Connections, ref toDispose, nowTicks, pooledConnectionLifetime, pooledConnectionIdleTimeout);
+                ScavengeHttp11ConnectionStack(this, ref _http11Connections, ref toDispose, nowTicks, pooledConnectionLifetime, pooledConnectionIdleTimeout);
 
                 if (_availableHttp2Connections is not null)
                 {

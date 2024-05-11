@@ -15,7 +15,7 @@ namespace System.Net.Http
     internal sealed partial class HttpConnectionPool
     {
         /// <summary>Stack of currently available HTTP/1.1 connections stored in the pool.</summary>
-        private readonly ConcurrentStack<HttpConnection> _http11Connections = new();
+        private HttpConnectionStack<HttpConnection> _http11Connections = new();
         /// <summary>Controls whether we can use a fast path when returning connections to the pool and skip calling into <see cref="ProcessHttp11RequestQueue(HttpConnection?)"/>.</summary>
         private bool _http11RequestQueueIsEmptyAndNotDisposed;
         /// <summary>The maximum number of HTTP/1.1 connections allowed to be associated with the pool.</summary>
@@ -380,7 +380,7 @@ namespace System.Net.Http
             lock (SyncObj)
             {
                 Debug.Assert(_associatedHttp11ConnectionCount > 0);
-                Debug.Assert(!disposing || Array.IndexOf(_http11Connections.ToArray(), connection) < 0);
+                Debug.Assert(!disposing || !_http11Connections.DebugContains(connection));
 
                 _associatedHttp11ConnectionCount--;
 
@@ -388,7 +388,7 @@ namespace System.Net.Http
             }
         }
 
-        private static void ScavengeHttp11ConnectionStack(HttpConnectionPool pool, ConcurrentStack<HttpConnection> connections, ref List<HttpConnectionBase>? toDispose, long nowTicks, TimeSpan pooledConnectionLifetime, TimeSpan pooledConnectionIdleTimeout)
+        private static void ScavengeHttp11ConnectionStack(HttpConnectionPool pool, ref HttpConnectionStack<HttpConnection> connections, ref List<HttpConnectionBase>? toDispose, long nowTicks, TimeSpan pooledConnectionLifetime, TimeSpan pooledConnectionIdleTimeout)
         {
             // We can't simply enumerate the connections stack as other threads may still be adding and removing entries.
             // If we want to check the state of a connection, we must take it from the stack first to ensure we own it.

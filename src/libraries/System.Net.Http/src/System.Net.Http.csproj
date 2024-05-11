@@ -179,6 +179,7 @@
     <Compile Include="System\Net\Http\SocketsHttpHandler\ConnectionPool\HttpConnectionPool.Http1.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\ConnectionPool\HttpConnectionPool.Http2.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\ConnectionPool\HttpConnectionPool.Http3.cs" />
+    <Compile Include="System\Net\Http\SocketsHttpHandler\ConnectionPool\HttpConnectionStack.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\ConnectionPool\HttpConnectionWaiter.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\ConnectionPool\RequestQueue.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\AuthenticationHelper.cs" />
