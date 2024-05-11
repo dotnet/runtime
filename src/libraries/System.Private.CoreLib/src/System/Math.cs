@@ -1195,6 +1195,7 @@ namespace System
         ///    <para>On ARM64 hardware this may use the <c>FRECPE</c> instruction which performs a single Newton-Raphson iteration.</para>
         ///    <para>On hardware without specialized support, this may just return <c>1.0 / d</c>.</para>
         /// </remarks>
+        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
 #if MONO
         public static double ReciprocalEstimate(double d) => 1.0 / d;
 #else
@@ -1209,6 +1210,7 @@ namespace System
         ///    <para>On ARM64 hardware this may use the <c>FRSQRTE</c> instruction which performs a single Newton-Raphson iteration.</para>
         ///    <para>On hardware without specialized support, this may just return <c>1.0 / Sqrt(d)</c>.</para>
         /// </remarks>
+        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
 #if MONO || TARGET_RISCV64 || TARGET_LOONGARCH64
         public static double ReciprocalSqrtEstimate(double d) => 1.0 / Sqrt(d);
 #else

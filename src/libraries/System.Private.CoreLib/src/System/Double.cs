@@ -866,10 +866,12 @@ namespace System
 
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.ReciprocalEstimate(TSelf)" />
         [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         public static double ReciprocalEstimate(double x) => Math.ReciprocalEstimate(x);
 
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.ReciprocalSqrtEstimate(TSelf)" />
         [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         public static double ReciprocalSqrtEstimate(double x) => Math.ReciprocalSqrtEstimate(x);
 
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.ScaleB(TSelf, int)" />
