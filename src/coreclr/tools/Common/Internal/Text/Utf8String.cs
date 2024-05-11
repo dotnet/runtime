@@ -76,23 +76,7 @@ namespace Internal.Text
 
         private static int Compare(Utf8String strA, Utf8String strB)
         {
-            ReadOnlySpan<byte> x = strA.UnderlyingArray;
-            ReadOnlySpan<byte> y = strB.UnderlyingArray;
-
-            int length = Math.Min(x.Length, y.Length);
-
-            int diffIndex = x.CommonPrefixLength(y);
-
-            if (diffIndex != length)
-            {
-                return x[diffIndex] - y[diffIndex];
-            }
-
-            // At this point, we have compared all the characters in at least one string.
-            // The longer string will be larger.
-            // We could optimize and compare lengths before iterating strings, but we want
-            // strA and strB to be sorted adjacent to eachother.
-            return x.Length - y.Length;
+            return strA.UnderlyingArray.SequenceCompareTo(strB.UnderlyingArray);
         }
 
         public int CompareTo(Utf8String other)
