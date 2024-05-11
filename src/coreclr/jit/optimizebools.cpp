@@ -1255,8 +1255,16 @@ void OptBoolsDsc::optOptimizeBoolsKeepFirstBlockAndFreeTheRest(GenTree* cmpOp, b
 
     // Make sure that the GTF_SET_FLAGS bit is cleared.
     // Fix 388436 ARM JitStress WP7
-    m_c1->gtFlags &= ~GTF_SET_FLAGS;
-    m_c2->gtFlags &= ~GTF_SET_FLAGS;
+
+    if (m_c1 != nullptr)
+    {
+        m_c1->gtFlags &= ~GTF_SET_FLAGS;
+    }
+
+    if (m_c2 != nullptr)
+    {
+        m_c2->gtFlags &= ~GTF_SET_FLAGS;
+    }
 
     // The new top level node that we just created does feed directly into
     // a comparison against zero, so set the GTF_SET_FLAGS bit so that
