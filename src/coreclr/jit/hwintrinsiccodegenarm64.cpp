@@ -416,10 +416,16 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
             regNumber maskReg       = op1Reg;
             regNumber embMaskOp1Reg = REG_NA;
             regNumber embMaskOp2Reg = REG_NA;
+            regNumber embMaskOp3Reg = REG_NA;
             regNumber falseReg      = op3Reg;
 
             switch (intrinEmbMask.numOperands)
             {
+                case 3:
+                    assert(intrinEmbMask.op3 != nullptr);
+                    embMaskOp3Reg = intrinEmbMask.op3->GetRegNum();
+                    FALLTHROUGH;
+
                 case 2:
                     assert(intrinEmbMask.op2 != nullptr);
                     embMaskOp2Reg = intrinEmbMask.op2->GetRegNum();
@@ -437,6 +443,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
             switch (intrinEmbMask.numOperands)
             {
                 case 1:
+                {
                     assert(!instrIsRMW);
 
                     if (targetReg != falseReg)
@@ -487,9 +494,10 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
 
                     GetEmitter()->emitIns_R_R_R(insEmbMask, emitSize, targetReg, maskReg, embMaskOp1Reg, opt);
                     break;
+                }
 
                 case 2:
-
+                {
                     assert(instrIsRMW);
 
                     if (intrin.op3->IsVectorZero())
@@ -544,7 +552,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                             // embMaskOp1Reg is same as `falseReg`, but not same as `targetReg`. Move the
                             // `embMaskOp1Reg` i.e. `falseReg` in `targetReg`, using "unpredicated movprfx", so the
                             // subsequent `insEmbMask` operation can be merged on top of it.
-                            GetEmitter()->emitIns_R_R(INS_sve_movprfx, EA_SCALABLE, targetReg, falseReg, opt);
+                            GetEmitter()->emitIns_R_R(INS_sve_movprfx, EA_SCALABLE, targetReg, falseReg);
                         }
 
                         // Finally, perform the actual "predicated" operation so that `targetReg` is the first operand
@@ -559,7 +567,167 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                     }
 
                     break;
+                }
+                case 3:
+                {
+                    assert(instrIsRMW);
+                    assert(HWIntrinsicInfo::IsFmaIntrinsic(intrinEmbMask.id));
+                    assert(falseReg != embMaskOp1Reg);
+                    assert(falseReg != embMaskOp2Reg);
+                    assert(falseReg != embMaskOp3Reg);
 
+                    // For FMA, the operation we are trying to perform is:
+                    //      result = op1 + (op2 * op3)
+                    //
+                    // There are two instructions that can be used depending on which operand's register,
+                    // optionally, will store the final result.
+                    //
+                    // 1. If the result is stored in the operand that was used as an "addend" in the operation,
+                    // then we use `FMLA` format:
+                    //      reg1 = reg1 + (reg2 * reg3)
+                    //
+                    // 2. If the result is stored in the operand that was used as a "multiplicand" in the operation,
+                    // then we use `FMAD` format:
+                    //      reg1 = (reg1 * reg2) + reg3
+                    //
+                    // Check if the result's register is same as that of one of the operand's register and accordingly
+                    // pick the appropriate format. Suppose `targetReg` holds the result, then we have following cases:
+                    //
+                    // Case# 1: Result is stored in the operand that held the "addend"
+                    //      targetReg == reg1
+                    //
+                    // We generate the FMLA instruction format and no further changes are needed.
+                    //
+                    // Case# 2: Result is stored in the operand `op2` that held the "multiplicand"
+                    //      targetReg == reg2
+                    //
+                    // So we basically have an operation:
+                    //      reg2 = reg1 + (reg2 * reg3)
+                    //
+                    // Since, the result will be stored in the "multiplicand", we pick format `FMAD`.
+                    // Then, we rearrange the operands to ensure that the operation is done correctly.
+                    //      reg2 = reg1 + (reg2 * reg3)  // to start with
+                    //      reg2 = reg3 + (reg2 * reg1)  // swap reg1 <--> reg3
+                    //      reg1 = reg3 + (reg1 * reg2)  // swap reg1 <--> reg2
+                    //      reg1 = (reg1 * reg2) + reg3  // rearrange to get FMAD format
+                    //
+                    // Case# 3: Result is stored in the operand `op3` that held the "multiplier"
+                    //      targetReg == reg3
+                    //
+                    // So we basically have an operation:
+                    //      reg3 = reg1 + (reg2 * reg3)
+                    // Since, the result will be stored in the "multiplier", we again pick format `FMAD`.
+                    // Then, we rearrange the operands to ensure that the operation is done correctly.
+                    //      reg3 = reg1 + (reg2 * reg3)  // to start with
+                    //      reg1 = reg3 + (reg2 * reg1)  // swap reg1 <--> reg3
+                    //      reg1 = (reg1 * reg2) + reg3  // rearrange to get FMAD format
+
+                    bool useAddend = true;
+                    if (targetReg == embMaskOp2Reg)
+                    {
+                        // Case# 2
+                        useAddend = false;
+                        std::swap(embMaskOp1Reg, embMaskOp3Reg);
+                        std::swap(embMaskOp1Reg, embMaskOp2Reg);
+                    }
+                    else if (targetReg == embMaskOp3Reg)
+                    {
+                        // Case# 3
+                        useAddend = false;
+                        std::swap(embMaskOp1Reg, embMaskOp3Reg);
+                    }
+                    else
+                    {
+                        // Case# 1
+                    }
+
+                    switch (intrinEmbMask.id)
+                    {
+                        case NI_Sve_FusedMultiplyAdd:
+                            insEmbMask = useAddend ? INS_sve_fmla : INS_sve_fmad;
+                            break;
+
+                        case NI_Sve_FusedMultiplyAddNegated:
+                            insEmbMask = useAddend ? INS_sve_fnmla : INS_sve_fnmad;
+                            break;
+
+                        case NI_Sve_FusedMultiplySubtract:
+                            insEmbMask = useAddend ? INS_sve_fmls : INS_sve_fmsb;
+                            break;
+
+                        case NI_Sve_FusedMultiplySubtractNegated:
+                            insEmbMask = useAddend ? INS_sve_fnmls : INS_sve_fnmsb;
+                            break;
+
+                        case NI_Sve_MultiplyAdd:
+                            insEmbMask = useAddend ? INS_sve_mla : INS_sve_mad;
+                            break;
+
+                        case NI_Sve_MultiplySubtract:
+                            insEmbMask = useAddend ? INS_sve_mls : INS_sve_msb;
+                            break;
+
+                        default:
+                            unreached();
+                    }
+
+                    if (intrin.op3->IsVectorZero())
+                    {
+                        // If `falseReg` is zero, then move the first operand of `intrinEmbMask` in the
+                        // destination using /Z.
+
+                        assert(targetReg != embMaskOp2Reg);
+                        assert(intrin.op3->isContained() || !intrin.op1->IsMaskAllBitsSet());
+                        GetEmitter()->emitIns_R_R_R(INS_sve_movprfx, emitSize, targetReg, maskReg, embMaskOp1Reg, opt);
+                    }
+                    else
+                    {
+                        // Below are the considerations we need to handle:
+                        //
+                        // targetReg == falseReg && targetReg == embMaskOp1Reg
+                        //      fmla    Zd, P/m, Zn, Zm
+                        //
+                        // targetReg == falseReg && targetReg != embMaskOp1Reg
+                        //      movprfx target, P/m, embMaskOp1Reg
+                        //      fmla    target, P/m, embMaskOp2Reg, embMaskOp3Reg
+                        //
+                        // targetReg != falseReg && targetReg == embMaskOp1Reg
+                        //      sel     target, P/m, embMaskOp1Reg, falseReg
+                        //      fmla    target, P/m, embMaskOp2Reg, embMaskOp3Reg
+                        //
+                        // targetReg != falseReg && targetReg != embMaskOp1Reg
+                        //      sel     target, P/m, embMaskOp1Reg, falseReg
+                        //      fmla    target, P/m, embMaskOp2Reg, embMaskOp3Reg
+                        //
+                        // Note that, we just check if the targetReg/falseReg or targetReg/embMaskOp1Reg
+                        // coincides or not. Other combination like falseReg/embMaskOp*Reg cannot happen
+                        // because we marked embMaskOp*Reg as delayFree.
+
+                        if (targetReg != falseReg)
+                        {
+                            // If falseReg value is not present in targetReg yet, move the inactive lanes
+                            // into the targetReg using `sel`. Since this is RMW, the active lanes should
+                            // have the value from embMaskOp1Reg
+
+                            GetEmitter()->emitIns_R_R_R_R(INS_sve_sel, emitSize, targetReg, maskReg, embMaskOp1Reg,
+                                                          falseReg, opt, INS_SCALABLE_OPTS_UNPREDICATED);
+                        }
+                        else if (targetReg != embMaskOp1Reg)
+                        {
+                            // If target already contains the values of `falseReg`, just merge the lanes from
+                            // `embMaskOp1Reg`, again because this is RMW semantics.
+
+                            GetEmitter()->emitIns_R_R_R(INS_sve_movprfx, emitSize, targetReg, maskReg, embMaskOp1Reg,
+                                                        opt, INS_SCALABLE_OPTS_PREDICATE_MERGE);
+                        }
+                    }
+
+                    // Finally, perform the desired operation.
+                    GetEmitter()->emitIns_R_R_R_R(insEmbMask, emitSize, targetReg, maskReg, embMaskOp2Reg,
+                                                  embMaskOp3Reg, opt);
+
+                    break;
+                }
                 default:
                     unreached();
             }
@@ -626,6 +794,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                                                       INS_SCALABLE_OPTS_UNPREDICATED);
                     }
                     break;
+
                 default:
                     unreached();
             }

@@ -1626,7 +1626,6 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
             }
         }
     }
-
     else if (HWIntrinsicInfo::NeedsConsecutiveRegisters(intrin.id))
     {
         switch (intrin.id)
@@ -1768,21 +1767,72 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
     else if ((intrin.id == NI_Sve_ConditionalSelect) && (intrin.op2->IsEmbMaskOp()) &&
              (intrin.op2->isRMWHWIntrinsic(compiler)))
     {
+        assert(intrin.op3 != nullptr);
+
         // For ConditionalSelect, if there is an embedded operation, and the operation has RMW semantics
         // then record delay-free for operands as well as the "merge" value
-        GenTreeHWIntrinsic* intrinEmbOp2 = intrin.op2->AsHWIntrinsic();
-        size_t              numArgs      = intrinEmbOp2->GetOperandCount();
-        assert((numArgs == 1) || (numArgs == 2));
-        tgtPrefUse = BuildUse(intrinEmbOp2->Op(1));
-        srcCount += 1;
+        GenTreeHWIntrinsic* embOp2Node = intrin.op2->AsHWIntrinsic();
+        size_t              numArgs    = embOp2Node->GetOperandCount();
+        const HWIntrinsic   intrinEmb(embOp2Node);
+        numArgs = embOp2Node->GetOperandCount();
 
-        for (size_t argNum = 2; argNum <= numArgs; argNum++)
+        if (HWIntrinsicInfo::IsFmaIntrinsic(intrinEmb.id))
         {
-            srcCount += BuildDelayFreeUses(intrinEmbOp2->Op(argNum), intrinEmbOp2->Op(1));
-        }
+            assert(embOp2Node->isRMWHWIntrinsic(compiler));
+            assert(numArgs == 3);
 
-        assert(intrin.op3 != nullptr);
-        srcCount += BuildDelayFreeUses(intrin.op3, intrinEmbOp2->Op(1));
+            LIR::Use use;
+            GenTree* user = nullptr;
+
+            if (LIR::AsRange(blockSequence[curBBSeqNum]).TryGetUse(embOp2Node, &use))
+            {
+                user = use.User();
+            }
+            unsigned resultOpNum =
+                embOp2Node->GetResultOpNumForRmwIntrinsic(user, intrinEmb.op1, intrinEmb.op2, intrinEmb.op3);
+
+            GenTree* emitOp1 = intrinEmb.op1;
+            GenTree* emitOp2 = intrinEmb.op2;
+            GenTree* emitOp3 = intrinEmb.op3;
+
+            if (resultOpNum == 2)
+            {
+                // op2 = op1 + (op2 * op3)
+                std::swap(emitOp1, emitOp3);
+                std::swap(emitOp1, emitOp2);
+                // op1 = (op1 * op2) + op3
+            }
+            else if (resultOpNum == 3)
+            {
+                // op3 = op1 + (op2 * op3)
+                std::swap(emitOp1, emitOp3);
+                // op1 = (op1 * op2) + op3
+            }
+            else
+            {
+                // op1 = op1 + (op2 * op3)
+                // Nothing needs to be done
+            }
+
+            tgtPrefUse = BuildUse(emitOp1);
+            srcCount += 1;
+            srcCount += BuildDelayFreeUses(emitOp2, emitOp1);
+            srcCount += BuildDelayFreeUses(emitOp3, emitOp1);
+            srcCount += BuildDelayFreeUses(intrin.op3, emitOp1);
+        }
+        else
+        {
+            assert((numArgs == 1) || (numArgs == 2) || (numArgs == 3));
+            tgtPrefUse = BuildUse(embOp2Node->Op(1));
+            srcCount += 1;
+
+            for (size_t argNum = 2; argNum <= numArgs; argNum++)
+            {
+                srcCount += BuildDelayFreeUses(embOp2Node->Op(argNum), embOp2Node->Op(1));
+            }
+
+            srcCount += BuildDelayFreeUses(intrin.op3, embOp2Node->Op(1));
+        }
     }
 
     else if (intrin.op2 != nullptr)
@@ -1792,7 +1842,8 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
 
         assert(intrin.op1 != nullptr);
 
-        bool forceOp2DelayFree = false;
+        bool      forceOp2DelayFree = false;
+        regMaskTP candidates        = RBM_NONE;
         if ((intrin.id == NI_Vector64_GetElement) || (intrin.id == NI_Vector128_GetElement))
         {
             if (!intrin.op2->IsCnsIntOrI() && (!intrin.op1->isContained() || intrin.op1->OperIsLocal()))
@@ -1812,6 +1863,22 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 // we will use the SIMD temp location to store the vector.
                 var_types requiredSimdTempType = (intrin.id == NI_Vector64_GetElement) ? TYP_SIMD8 : TYP_SIMD16;
                 compiler->getSIMDInitTempVarNum(requiredSimdTempType);
+            }
+        }
+
+        if ((intrin.id == NI_Sve_FusedMultiplyAddBySelectedScalar) ||
+            (intrin.id == NI_Sve_FusedMultiplySubtractBySelectedScalar))
+        {
+            // If this is common pattern, then we will add a flag in the table, but for now, just check for specific
+            // intrinsics
+            if (intrin.baseType == TYP_DOUBLE)
+            {
+                candidates = RBM_SVE_INDEXED_D_ELEMENT_ALLOWED_REGS;
+            }
+            else
+            {
+                assert(intrin.baseType == TYP_FLOAT);
+                candidates = RBM_SVE_INDEXED_S_ELEMENT_ALLOWED_REGS;
             }
         }
 
@@ -1845,7 +1912,8 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
 
         if (intrin.op3 != nullptr)
         {
-            srcCount += isRMW ? BuildDelayFreeUses(intrin.op3, intrin.op1) : BuildOperandUses(intrin.op3);
+            srcCount += isRMW ? BuildDelayFreeUses(intrin.op3, intrin.op1, candidates)
+                              : BuildOperandUses(intrin.op3, candidates);
 
             if (intrin.op4 != nullptr)
             {
