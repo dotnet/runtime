@@ -16,7 +16,6 @@ namespace Internal.Text
         {
         }
 
-        public ReadOnlySpan<byte> UnderlyingArray => _buffer;
         public int Length => _length;
 
         public Utf8StringBuilder Clear()
