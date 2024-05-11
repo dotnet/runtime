@@ -48,9 +48,9 @@ namespace Internal.Text
 
         public Utf8StringBuilder Append(char value)
         {
+            Debug.Assert(Ascii.IsValid(value));
+
             Ensure(1);
-            if (value > 0x7F)
-                return Append(Encoding.UTF8.GetBytes(new char[] { value }));
             _buffer[_length++] = (byte)value;
             return this;
         }
