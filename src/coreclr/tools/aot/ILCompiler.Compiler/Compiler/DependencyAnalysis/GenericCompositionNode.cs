@@ -24,7 +24,7 @@ namespace ILCompiler.DependencyAnalysis
 
             foreach (TypeDesc instArg in _details)
             {
-                sb.Append("_"u8);
+                sb.Append((byte)'_');
                 sb.Append(nameMangler.GetMangledTypeName(instArg));
             }
         }
