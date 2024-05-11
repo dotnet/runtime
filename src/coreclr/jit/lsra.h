@@ -794,8 +794,8 @@ private:
     static const regMaskTP LsraLimitSmallIntSet = (RBM_R0 | RBM_R1 | RBM_R2 | RBM_R3 | RBM_R4 | RBM_R5);
     static const regMaskTP LsraLimitSmallFPSet  = (RBM_F0 | RBM_F1 | RBM_F2 | RBM_F16 | RBM_F17);
 #elif defined(TARGET_ARM64)
-    static const regMaskTP LsraLimitSmallIntSet = (RBM_R0 | RBM_R1 | RBM_R2 | RBM_R19 | RBM_R20);
-    static const regMaskTP LsraLimitSmallFPSet  = (RBM_V0 | RBM_V1 | RBM_V2 | RBM_V8 | RBM_V9);
+    static constexpr regMaskTP LsraLimitSmallIntSet = (RBM_R0 | RBM_R1 | RBM_R2 | RBM_R19 | RBM_R20);
+    static constexpr regMaskTP LsraLimitSmallFPSet  = (RBM_V0 | RBM_V1 | RBM_V2 | RBM_V8 | RBM_V9);
 #elif defined(TARGET_X86)
     static const regMaskTP LsraLimitSmallIntSet = (RBM_EAX | RBM_ECX | RBM_EDI);
     static const regMaskTP LsraLimitSmallFPSet  = (RBM_XMM0 | RBM_XMM1 | RBM_XMM2 | RBM_XMM6 | RBM_XMM7);
@@ -1083,8 +1083,7 @@ private:
     // insert refpositions representing prolog zero-inits which will be added later
     void insertZeroInitRefPositions();
 
-    // add physreg refpositions for a tree node, based on calling convention and instruction selection predictions
-    void addRefsForPhysRegMask(regMaskTP mask, LsraLocation currentLoc, RefType refType, bool isLastUse);
+    void addKillForRegs(regMaskTP mask, LsraLocation currentLoc);
 
     void resolveConflictingDefAndUse(Interval* interval, RefPosition* defRefPosition);
 
@@ -1262,6 +1261,7 @@ private:
     void setIntervalAsSplit(Interval* interval);
     void spillInterval(Interval* interval, RefPosition* fromRefPosition DEBUGARG(RefPosition* toRefPosition));
 
+    void processKills(RefPosition* killRefPosition);
     void spillGCRefs(RefPosition* killRefPosition);
 
     /*****************************************************************************
@@ -1581,6 +1581,7 @@ private:
         LSRA_EVENT_FREE_REGS,
         LSRA_EVENT_UPPER_VECTOR_SAVE,
         LSRA_EVENT_UPPER_VECTOR_RESTORE,
+        LSRA_EVENT_KILL_REGS,
 
         // Characteristics of the current RefPosition
         LSRA_EVENT_INCREMENT_RANGE_END, // ???
@@ -1606,7 +1607,8 @@ private:
                                  Interval*     interval      = nullptr,
                                  regNumber     reg           = REG_NA,
                                  BasicBlock*   currentBlock  = nullptr,
-                                 RegisterScore registerScore = NONE);
+                                 RegisterScore registerScore = NONE,
+                                 regMaskTP     regMask       = RBM_NONE);
 
     void validateIntervals();
 
@@ -1732,6 +1734,11 @@ private:
 
     // Ordered list of RefPositions
     RefPositionList refPositions;
+
+    // Head of linked list of RefTypeKill ref positions
+    RefPosition* killHead;
+    // Tail slot of linked list of RefTypeKill ref positions
+    RefPosition** killTail;
 
     // Per-block variable location mappings: an array indexed by block number that yields a
     // pointer to an array of regNumber, one per variable.
@@ -1897,7 +1904,7 @@ private:
 
     regMaskTP    fixedRegs;
     LsraLocation nextFixedRef[REG_COUNT];
-    void         updateNextFixedRef(RegRecord* regRecord, RefPosition* nextRefPosition);
+    void         updateNextFixedRef(RegRecord* regRecord, RefPosition* nextRefPosition, RefPosition* nextKill);
     LsraLocation getNextFixedRef(regNumber regNum, var_types regType)
     {
         LsraLocation loc = nextFixedRef[regNum];
@@ -2055,6 +2062,7 @@ private:
 #endif
     int  BuildPutArgReg(GenTreeUnOp* node);
     int  BuildCall(GenTreeCall* call);
+    void MarkSwiftErrorBusyForCall(GenTreeCall* call);
     int  BuildCmp(GenTree* tree);
     int  BuildCmpOperands(GenTree* tree);
     int  BuildBlockStore(GenTreeBlk* blkNode);
@@ -2717,7 +2725,7 @@ public:
 
     bool IsPhysRegRef()
     {
-        return ((refType == RefTypeFixedReg) || (refType == RefTypeKill));
+        return (refType == RefTypeFixedReg);
     }
 
     void setRegOptional(bool val)

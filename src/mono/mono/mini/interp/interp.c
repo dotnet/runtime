@@ -2824,10 +2824,13 @@ do_jit_call (ThreadContext *context, stackval *ret_sp, stackval *sp, InterpFrame
 	}
 
 	JitCallCbData cb_data;
-	memset (&cb_data, 0, sizeof (cb_data));
 	cb_data.pindex = pindex;
 	cb_data.args = args;
+	cb_data.ftndesc.interp_method = NULL;
+	cb_data.ftndesc.method = NULL;
 	if (cinfo->no_wrapper) {
+		cb_data.ftndesc.addr = NULL;
+		cb_data.ftndesc.arg = NULL;
 		cb_data.jit_wrapper = cinfo->addr;
 		cb_data.extra_arg = cinfo->extra_arg;
 	} else {
@@ -3341,13 +3344,11 @@ interp_create_method_pointer_llvmonly (MonoMethod *method, gboolean unbox, MonoE
 	) {
 		jiterp_preserve_module();
 
-		const char *name = mono_method_full_name (method, FALSE);
 		gpointer wasm_entry_func = mono_interp_jit_wasm_entry_trampoline (
 			imethod, method, sig->param_count, (MonoType *)sig->params,
 			unbox, sig->hasthis, sig->ret->type != MONO_TYPE_VOID,
-			name, entry_func
+			entry_func
 		);
-		g_free((void *)name);
 
 		// Compiling a trampoline can fail for various reasons, so in that case we will fall back to the pre-existing ones below
 		if (wasm_entry_func)
