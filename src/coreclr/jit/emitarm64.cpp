@@ -4250,9 +4250,11 @@ void emitter::emitIns_Mov(
 
         case INS_sve_mov:
         {
-            if (isPredicateRegister(dstReg) && isPredicateRegister(srcReg))
+            // TODO-SVE: Remove check for insOptsNone() when predicate registers
+            //  are present.
+            if (insOptsNone(opt) && isPredicateRegister(dstReg) && isPredicateRegister(srcReg))
             {
-                assert(insOptsNone(opt));
+                // assert(insOptsNone(opt));
 
                 opt  = INS_OPTS_SCALABLE_B;
                 attr = EA_SCALABLE;
@@ -4262,6 +4264,16 @@ void emitter::emitIns_Mov(
                     return;
                 }
                 fmt = IF_SVE_CZ_4A_L;
+            }
+            else if (isVectorRegister(dstReg) && isVectorRegister(srcReg))
+            {
+                assert(insOptsScalable(opt));
+
+                if (IsRedundantMov(ins, size, dstReg, srcReg, canSkip))
+                {
+                    return;
+                }
+                fmt = IF_SVE_AU_3A;
             }
             else
             {
