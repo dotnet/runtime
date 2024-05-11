@@ -49,7 +49,7 @@ namespace Internal.Text
         public Utf8StringBuilder Append(byte value)
         {
             Ensure(1);
-            _buffer[_length++] = (byte)value;
+            _buffer[_length++] = value;
             return this;
         }
 
