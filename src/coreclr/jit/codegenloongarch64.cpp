@@ -6559,7 +6559,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
 //
 void CodeGen::genJmpPlaceVarArgs()
 {
-    NYI("Varargs not supported");
+    NYI_LOONGARCH64("Varargs not supported");
 }
 
 //------------------------------------------------------------------------
