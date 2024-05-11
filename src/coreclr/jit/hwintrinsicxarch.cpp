@@ -1436,6 +1436,13 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             assert(sig->numArgs == 1);
             assert(simdBaseType == TYP_FLOAT);
 
+            if (opts.IsReadyToRun())
+            {
+                // We explicitly block these APIs from being expanded in R2R
+                // since we know they are non-deterministic across hardware
+                break;
+            }
+
             op1     = impSIMDPopStack();
             retNode = gtNewSimdCvtNativeNode(retType, op1, CORINFO_TYPE_INT, simdBaseJitType, simdSize);
             break;
@@ -1462,6 +1469,13 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         {
             assert(sig->numArgs == 1);
             assert(simdBaseType == TYP_DOUBLE);
+
+            if (opts.IsReadyToRun())
+            {
+                // We explicitly block these APIs from being expanded in R2R
+                // since we know they are non-deterministic across hardware
+                break;
+            }
 
             if (IsBaselineVector512IsaSupportedOpportunistically())
             {
@@ -1542,6 +1556,13 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             assert(sig->numArgs == 1);
             assert(simdBaseType == TYP_FLOAT);
 
+            if (opts.IsReadyToRun())
+            {
+                // We explicitly block these APIs from being expanded in R2R
+                // since we know they are non-deterministic across hardware
+                break;
+            }
+
             if (IsBaselineVector512IsaSupportedOpportunistically())
             {
                 op1     = impSIMDPopStack();
@@ -1556,6 +1577,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         {
             assert(sig->numArgs == 1);
             assert(simdBaseType == TYP_DOUBLE);
+
             if (IsBaselineVector512IsaSupportedOpportunistically())
             {
                 op1     = impSIMDPopStack();
@@ -1570,6 +1592,13 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         {
             assert(sig->numArgs == 1);
             assert(simdBaseType == TYP_DOUBLE);
+
+            if (opts.IsReadyToRun())
+            {
+                // We explicitly block these APIs from being expanded in R2R
+                // since we know they are non-deterministic across hardware
+                break;
+            }
 
             if (IsBaselineVector512IsaSupportedOpportunistically())
             {

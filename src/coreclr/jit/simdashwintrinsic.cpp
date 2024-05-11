@@ -512,8 +512,39 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
 
     switch (intrinsic)
     {
-#if defined(TARGET_XARCH)
+        case NI_VectorT_ConvertToInt32Native:
+        {
+            if (opts.IsReadyToRun())
+            {
+                // We explicitly block these APIs from being expanded in R2R
+                // since we know they are non-deterministic across hardware
+                return nullptr;
+            }
+            break;
+        }
 
+        case NI_VectorT_ConvertToInt64Native:
+        case NI_VectorT_ConvertToUInt32Native:
+        case NI_VectorT_ConvertToUInt64Native:
+        {
+            if (opts.IsReadyToRun())
+            {
+                // We explicitly block these APIs from being expanded in R2R
+                // since we know they are non-deterministic across hardware
+                return nullptr;
+            }
+
+#if defined(TARGET_XARCH)
+            if (!IsBaselineVector512IsaSupportedOpportunistically())
+            {
+                return nullptr;
+            }
+#endif // TARGET_XARCH
+
+            break;
+        }
+
+#if defined(TARGET_XARCH)
         case NI_VectorT_ConvertToDouble:
         {
             if (IsBaselineVector512IsaSupportedOpportunistically())
@@ -533,11 +564,8 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
         }
 
         case NI_VectorT_ConvertToInt64:
-        case NI_VectorT_ConvertToInt64Native:
         case NI_VectorT_ConvertToUInt32:
-        case NI_VectorT_ConvertToUInt32Native:
         case NI_VectorT_ConvertToUInt64:
-        case NI_VectorT_ConvertToUInt64Native:
         {
             if (IsBaselineVector512IsaSupportedOpportunistically())
             {

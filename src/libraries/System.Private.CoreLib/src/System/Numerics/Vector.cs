@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
@@ -346,6 +347,7 @@ namespace System.Numerics
         /// <param name="value">The vector to convert.</param>
         /// <returns>The converted vector.</returns>
         [Intrinsic]
+        [BypassReadyToRun]
         public static Vector<int> ConvertToInt32Native(Vector<float> value) => ConvertToInt32(value);
 
         /// <summary>Converts a <see cref="Vector{Double}" /> to a <see cref="Vector{Int64}" /> using saturation on overflow.</summary>
@@ -369,6 +371,7 @@ namespace System.Numerics
         /// <param name="value">The vector to convert.</param>
         /// <returns>The converted vector.</returns>
         [Intrinsic]
+        [BypassReadyToRun]
         public static Vector<long> ConvertToInt64Native(Vector<double> value) => ConvertToInt64(value);
 
         /// <summary>Converts a <see cref="Vector{Int32}" /> to a <see cref="Vector{Single}" />.</summary>
@@ -430,6 +433,7 @@ namespace System.Numerics
         /// <param name="value">The vector to convert.</param>
         /// <returns>The converted vector.</returns>
         [Intrinsic]
+        [BypassReadyToRun]
         [CLSCompliant(false)]
         public static Vector<uint> ConvertToUInt32Native(Vector<float> value) => ConvertToUInt32(value);
 
@@ -455,6 +459,7 @@ namespace System.Numerics
         /// <param name="value">The vector to convert.</param>
         /// <returns>The converted vector.</returns>
         [Intrinsic]
+        [BypassReadyToRun]
         [CLSCompliant(false)]
         public static Vector<ulong> ConvertToUInt64Native(Vector<double> value) => ConvertToUInt64(value);
 

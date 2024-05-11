@@ -7,6 +7,7 @@
 
 using System.Diagnostics;
 using System.Numerics;
+using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
@@ -313,7 +314,7 @@ namespace System
         ///    <para>On ARM64 hardware this may use the <c>FRECPE</c> instruction which performs a single Newton-Raphson iteration.</para>
         ///    <para>On hardware without specialized support, this may just return <c>1.0 / x</c>.</para>
         /// </remarks>
-        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
+        [BypassReadyToRun]
 #if MONO
         public static float ReciprocalEstimate(float x) => 1.0f / x;
 #else
@@ -329,7 +330,7 @@ namespace System
         ///    <para>On ARM64 hardware this may use the <c>FRSQRTE</c> instruction which performs a single Newton-Raphson iteration.</para>
         ///    <para>On hardware without specialized support, this may just return <c>1.0 / Sqrt(x)</c>.</para>
         /// </remarks>
-        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
+        [BypassReadyToRun]
 #if MONO || TARGET_RISCV64 || TARGET_LOONGARCH64
         public static float ReciprocalSqrtEstimate(float x) => 1.0f / Sqrt(x);
 #else

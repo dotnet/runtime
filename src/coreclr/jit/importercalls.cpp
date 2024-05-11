@@ -5191,8 +5191,18 @@ GenTree* Compiler::impPrimitiveNamedIntrinsic(NamedIntrinsic        intrinsic,
 
     switch (intrinsic)
     {
-        case NI_PRIMITIVE_ConvertToInteger:
         case NI_PRIMITIVE_ConvertToIntegerNative:
+        {
+            if (opts.IsReadyToRun())
+            {
+                // We explicitly block these APIs from being expanded in R2R
+                // since we know they are non-deterministic across hardware
+                return nullptr;
+            }
+            FALLTHROUGH;
+        }
+
+        case NI_PRIMITIVE_ConvertToInteger:
         {
             assert(sig->sigInst.methInstCount == 1);
             assert(varTypeIsFloating(baseType));
@@ -8765,10 +8775,16 @@ GenTree* Compiler::impEstimateIntrinsic(CORINFO_METHOD_HANDLE method,
     assert(varTypeIsFloating(callType));
     assert(sig->numArgs == 1);
 
+    if (opts.IsReadyToRun())
+    {
+        // We explicitly block these APIs from being expanded in R2R
+        // since we know they are non-deterministic across hardware
+        return nullptr;
+    }
+
 #if defined(FEATURE_HW_INTRINSICS)
     // We use compExactlyDependsOn since these are estimate APIs where
-    // the behavior is explicitly allowed to differ across machines and
-    // we want to ensure that it gets marked as such in R2R.
+    // the behavior is explicitly allowed to differ across machines
 
     var_types      simdType    = TYP_UNKNOWN;
     NamedIntrinsic intrinsicId = NI_Illegal;

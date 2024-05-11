@@ -1190,11 +1190,9 @@ namespace System.Runtime.InteropServices
         public static NFloat Lerp(NFloat value1, NFloat value2, NFloat amount) => new NFloat(NativeType.Lerp(value1._value, value2._value, amount._value));
 
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.ReciprocalEstimate(TSelf)" />
-        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         public static NFloat ReciprocalEstimate(NFloat x) => new NFloat(NativeType.ReciprocalEstimate(x._value));
 
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.ReciprocalSqrtEstimate(TSelf)" />
-        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         public static NFloat ReciprocalSqrtEstimate(NFloat x) => new NFloat(NativeType.ReciprocalSqrtEstimate(x._value));
 
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.ScaleB(TSelf, int)" />

@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.Numerics;
+using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics.Arm;
@@ -361,6 +362,7 @@ namespace System.Runtime.Intrinsics
         /// <param name="vector">The vector to convert.</param>
         /// <returns>The converted vector.</returns>
         [Intrinsic]
+        [BypassReadyToRun]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe Vector64<int> ConvertToInt32Native(Vector64<float> vector) => ConvertToInt32(vector);
 
@@ -386,6 +388,7 @@ namespace System.Runtime.Intrinsics
         /// <param name="vector">The vector to convert.</param>
         /// <returns>The converted vector.</returns>
         [Intrinsic]
+        [BypassReadyToRun]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe Vector64<long> ConvertToInt64Native(Vector64<double> vector) => ConvertToInt64(vector);
 
@@ -449,6 +452,7 @@ namespace System.Runtime.Intrinsics
         /// <param name="vector">The vector to convert.</param>
         /// <returns>The converted vector.</returns>
         [Intrinsic]
+        [BypassReadyToRun]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe Vector64<uint> ConvertToUInt32Native(Vector64<float> vector) => ConvertToUInt32(vector);
@@ -476,6 +480,7 @@ namespace System.Runtime.Intrinsics
         /// <param name="vector">The vector to convert.</param>
         /// <returns>The converted vector.</returns>
         [Intrinsic]
+        [BypassReadyToRun]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe Vector64<ulong> ConvertToUInt64Native(Vector64<double> vector) => ConvertToUInt64(vector);

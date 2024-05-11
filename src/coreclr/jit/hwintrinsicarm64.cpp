@@ -624,10 +624,20 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
-        case NI_Vector64_ConvertToInt32:
         case NI_Vector64_ConvertToInt32Native:
-        case NI_Vector128_ConvertToInt32:
         case NI_Vector128_ConvertToInt32Native:
+        {
+            if (opts.IsReadyToRun())
+            {
+                // We explicitly block these APIs from being expanded in R2R
+                // since we know they are non-deterministic across hardware
+                break;
+            }
+            FALLTHROUGH;
+        }
+
+        case NI_Vector64_ConvertToInt32:
+        case NI_Vector128_ConvertToInt32:
         {
             assert(sig->numArgs == 1);
             assert(simdBaseType == TYP_FLOAT);
@@ -637,10 +647,20 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
-        case NI_Vector64_ConvertToInt64:
         case NI_Vector64_ConvertToInt64Native:
-        case NI_Vector128_ConvertToInt64:
         case NI_Vector128_ConvertToInt64Native:
+        {
+            if (opts.IsReadyToRun())
+            {
+                // We explicitly block these APIs from being expanded in R2R
+                // since we know they are non-deterministic across hardware
+                break;
+            }
+            FALLTHROUGH;
+        }
+
+        case NI_Vector64_ConvertToInt64:
+        case NI_Vector128_ConvertToInt64:
         {
             assert(sig->numArgs == 1);
             assert(simdBaseType == TYP_DOUBLE);
@@ -661,10 +681,20 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
-        case NI_Vector64_ConvertToUInt32:
         case NI_Vector64_ConvertToUInt32Native:
-        case NI_Vector128_ConvertToUInt32:
         case NI_Vector128_ConvertToUInt32Native:
+        {
+            if (opts.IsReadyToRun())
+            {
+                // We explicitly block these APIs from being expanded in R2R
+                // since we know they are non-deterministic across hardware
+                break;
+            }
+            FALLTHROUGH;
+        }
+
+        case NI_Vector64_ConvertToUInt32:
+        case NI_Vector128_ConvertToUInt32:
         {
             assert(sig->numArgs == 1);
             assert(simdBaseType == TYP_FLOAT);
@@ -674,10 +704,20 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
-        case NI_Vector64_ConvertToUInt64:
         case NI_Vector64_ConvertToUInt64Native:
-        case NI_Vector128_ConvertToUInt64:
         case NI_Vector128_ConvertToUInt64Native:
+        {
+            if (opts.IsReadyToRun())
+            {
+                // We explicitly block these APIs from being expanded in R2R
+                // since we know they are non-deterministic across hardware
+                break;
+            }
+            FALLTHROUGH;
+        }
+
+        case NI_Vector64_ConvertToUInt64:
+        case NI_Vector128_ConvertToUInt64:
         {
             assert(sig->numArgs == 1);
             assert(simdBaseType == TYP_DOUBLE);

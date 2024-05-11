@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Numerics;
+using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
@@ -662,6 +663,7 @@ namespace System
 
         /// <inheritdoc cref="IFloatingPoint{TSelf}.ConvertToIntegerNative{TInteger}(TSelf)" />
         [Intrinsic]
+        [BypassReadyToRun]
         public static TInteger ConvertToIntegerNative<TInteger>(double value)
             where TInteger : IBinaryInteger<TInteger> => TInteger.CreateSaturating(value);
 
@@ -866,12 +868,10 @@ namespace System
 
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.ReciprocalEstimate(TSelf)" />
         [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         public static double ReciprocalEstimate(double x) => Math.ReciprocalEstimate(x);
 
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.ReciprocalSqrtEstimate(TSelf)" />
         [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         public static double ReciprocalSqrtEstimate(double x) => Math.ReciprocalSqrtEstimate(x);
 
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.ScaleB(TSelf, int)" />
