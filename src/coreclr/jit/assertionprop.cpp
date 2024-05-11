@@ -3930,6 +3930,18 @@ void Compiler::optAssertionProp_RangeProperties(ASSERT_VALARG_TP assertions,
     {
         AssertionDsc* curAssertion = optGetAssertion(GetAssertionIndex(index));
 
+        // if treeVN has a bound-check assertion where it's an index, then
+        // it means it's not negative, example:
+        //
+        //   array[idx] = 42; // creates 'BoundsCheckNoThrow' assertion
+        //   return idx % 8;  // idx is known to be never negative here, hence, MOD->UMOD
+        //
+        if (curAssertion->IsBoundsCheckNoThrow() && (curAssertion->op1.bnd.vnIdx == treeVN))
+        {
+            *isKnownNonNegative = true;
+            continue;
+        }
+
         // First, analyze possible X ==/!= CNS assertions.
         if (curAssertion->IsConstantInt32Assertion() && (curAssertion->op1.vn == treeVN))
         {
