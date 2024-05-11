@@ -339,20 +339,13 @@ namespace ILCompiler.DependencyAnalysis
                     return true;
                 }
 
-                [MethodImpl(MethodImplOptions.AggressiveInlining)]
-                private static int _rotl(int value, int shift)
-                {
-                    // This is expected to be optimized into a single rotl instruction
-                    return (int)(((uint)value << shift) | ((uint)value >> (32 - shift)));
-                }
-
                 int IEqualityComparer<List<uint>>.GetHashCode(List<uint> obj)
                 {
                     int hashcode = 0x42284781;
                     foreach (uint u in obj)
                     {
                         hashcode ^= (int)u;
-                        hashcode = _rotl(hashcode, 5);
+                        hashcode = (int)BitOperations.RotateLeft((uint)hashcode, 5);
                     }
 
                     return hashcode;
