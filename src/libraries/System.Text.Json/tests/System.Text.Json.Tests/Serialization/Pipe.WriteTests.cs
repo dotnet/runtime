@@ -300,7 +300,6 @@ namespace System.Text.Json.Serialization.Tests
             result = await pipe.Reader.ReadAsync();
             Assert.Equal(2002, result.Buffer.Length);
 
-            //pipe.Writer.CancelPendingFlush();
         }
 
         internal class TestPool : MemoryPool<byte>
