@@ -76,7 +76,7 @@ namespace Internal.Text
 
         public Utf8String ToUtf8String()
         {
-            return new Utf8String(_buffer.AsSpan(0, _length).ToArray());
+            return new Utf8String(AsSpan().ToArray());
         }
 
         private void Ensure(int extraSpace)
