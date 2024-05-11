@@ -90,6 +90,17 @@ namespace System.DirectoryServices.Protocols
 
     public class DirectoryControl
     {
+        // Scratch buffer allocations with sizes which are below this threshold should be made on the stack.
+        // This is partially based on RFC1035, which specifies that a label in a domain name should be < 64 characters.
+        // If a server name is specified as an FQDN, this will be at least three labels in an AD environment - up to
+        // 192 characters. Doubling this to allow for Unicode encoding, then rounding to the nearest power of two
+        // yields 512.
+        internal const int ServerNameStackAllocationThreshold = 512;
+        // Scratch buffer allocations with sizes which are below this threshold should be made on the stack.
+        // This is based on the Active Directory schema. The largest attribute name here is msDS-FailedInteractiveLogonCountAtLastSuccessfulLogon,
+        // which is 53 characters long. This is rounded up to the nearest power of two.
+        internal const int AttributeNameStackAllocationThreshold = 64;
+
         internal static readonly UTF8Encoding s_utf8Encoding = new(false, true);
 
         internal byte[] _directoryControlValue;
@@ -126,7 +137,7 @@ namespace System.DirectoryServices.Protocols
 
         internal static void TransformControls(DirectoryControl[] controls)
         {
-            Span<byte> scratchSpace = stackalloc byte[256];
+            Span<byte> attributeNameScratchSpace = stackalloc byte[AttributeNameStackAllocationThreshold];
 
             for (int i = 0; i < controls.Length; i++)
             {
@@ -210,7 +221,7 @@ namespace System.DirectoryServices.Protocols
                     asnReadSuccessful = AsnDecoder.TryReadEncodedValue(asnSpan, AsnEncodingRules.BER, out Asn1Tag octetStringTag, out _, out int octetStringLength, out _);
                     if (asnReadSuccessful)
                     {
-                        Span<byte> attributeNameBuffer = octetStringLength < scratchSpace.Length ? scratchSpace.Slice(0, octetStringLength) : new byte[octetStringLength];
+                        Span<byte> attributeNameBuffer = octetStringLength <= AttributeNameStackAllocationThreshold ? attributeNameScratchSpace.Slice(0, octetStringLength) : new byte[octetStringLength];
 
                         _ = AsnDecoder.TryReadOctetString(asnSpan, attributeNameBuffer, AsnEncodingRules.BER, out _, out _);
                         attribute = s_utf8Encoding.GetString(attributeNameBuffer);
@@ -281,7 +292,8 @@ namespace System.DirectoryServices.Protocols
                 if (!string.IsNullOrEmpty(AttributeName))
                 {
                     int octetStringLength = s_utf8Encoding.GetByteCount(AttributeName);
-                    Span<byte> tmpValue = octetStringLength < 256 ? stackalloc byte[octetStringLength] : new byte[octetStringLength];
+                    // This trades slightly increased stack usage for the improved codegen which comes from a constant value.
+                    Span<byte> tmpValue = octetStringLength <= AttributeNameStackAllocationThreshold ? stackalloc byte[AttributeNameStackAllocationThreshold].Slice(0, octetStringLength) : new byte[octetStringLength];
 
                     s_utf8Encoding.GetBytes(AttributeName, tmpValue);
                     writer.WriteOctetString(tmpValue);
@@ -490,7 +502,6 @@ namespace System.DirectoryServices.Protocols
     public class VerifyNameControl : DirectoryControl
     {
         private string _serverName;
-
         public VerifyNameControl() : base("1.2.840.113556.1.4.1338", null, true, true) { }
 
         public VerifyNameControl(string serverName) : this()
@@ -530,7 +541,9 @@ namespace System.DirectoryServices.Protocols
                 if (!string.IsNullOrEmpty(ServerName))
                 {
                     int serverNameLength = Encoding.Unicode.GetByteCount(ServerName);
-                    Span<byte> tmpValue = serverNameLength < 256 ? stackalloc byte[serverNameLength] : new byte[serverNameLength];
+                    // This differs from AsqRequest - it doesn't allocate ServerNameStackAllocationThreshold and provide a slice into it, because the size of this
+                    // constant is such that the larger stack allocation would outweigh the benefit of a constant-value stackalloc.
+                    Span<byte> tmpValue = serverNameLength <= ServerNameStackAllocationThreshold ? stackalloc byte[serverNameLength] : new byte[serverNameLength];
 
                     Encoding.Unicode.GetBytes(ServerName, tmpValue);
                     writer.WriteOctetString(tmpValue);
@@ -836,7 +849,11 @@ namespace System.DirectoryServices.Protocols
              * */
             using (AsnWriter.Scope outerSequence = writer.PushSequence())
             {
-                Span<byte> scratchSpace = stackalloc byte[256];
+                // This scratch space is used for storing attribute names and matching rule OIDs.
+                // Active Directory's valid matching rule OIDs are listed in MS-ADTS 3.1.1.3.4.1.13,
+                // with a maximum length of 23 characters - within the attribute name stack allocation
+                // threshold.
+                Span<byte> scratchSpace = stackalloc byte[AttributeNameStackAllocationThreshold];
 
                 for (int i = 0; i < _keys.Length; i++)
                 {
@@ -847,7 +864,7 @@ namespace System.DirectoryServices.Protocols
                         if (!string.IsNullOrEmpty(key.AttributeName))
                         {
                             int octetStringLength = s_utf8Encoding.GetByteCount(key.AttributeName);
-                            Span<byte> tmpValue = octetStringLength < scratchSpace.Length ? scratchSpace.Slice(0, octetStringLength) : new byte[octetStringLength];
+                            Span<byte> tmpValue = octetStringLength <= AttributeNameStackAllocationThreshold ? scratchSpace.Slice(0, octetStringLength) : new byte[octetStringLength];
 
                             s_utf8Encoding.GetBytes(key.AttributeName, tmpValue);
                             writer.WriteOctetString(tmpValue);
@@ -860,7 +877,7 @@ namespace System.DirectoryServices.Protocols
                         if (!string.IsNullOrEmpty(key.MatchingRule))
                         {
                             int octetStringLength = s_utf8Encoding.GetByteCount(key.MatchingRule);
-                            Span<byte> tmpValue = octetStringLength < scratchSpace.Length ? scratchSpace.Slice(0, octetStringLength) : new byte[octetStringLength];
+                            Span<byte> tmpValue = octetStringLength <= AttributeNameStackAllocationThreshold ? scratchSpace.Slice(0, octetStringLength) : new byte[octetStringLength];
 
                             s_utf8Encoding.GetBytes(key.MatchingRule, tmpValue);
                             writer.WriteOctetString(tmpValue, s_orderingRuleTag);
