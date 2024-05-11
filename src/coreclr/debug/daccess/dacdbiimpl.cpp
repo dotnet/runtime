@@ -4922,12 +4922,7 @@ VMPTR_AppDomain DacDbiInterfaceImpl::GetCurrentAppDomain(VMPTR_Thread vmThread)
     DD_ENTER_MAY_THROW;
 
     Thread *    pThread    = vmThread.GetDacPtr();
-    AppDomain * pAppDomain = pThread->GetDomain();
-
-    if (pAppDomain == NULL)
-    {
-        ThrowHR(E_FAIL);
-    }
+    AppDomain * pAppDomain = AppDomain::GetCurrentDomain();
 
     VMPTR_AppDomain vmAppDomain = VMPTR_AppDomain::NullPtr();
     vmAppDomain.SetDacTargetPtr(PTR_HOST_TO_TADDR(pAppDomain));
@@ -7477,7 +7472,7 @@ HRESULT DacDbiInterfaceImpl::GetDefinesBitField(ULONG32 *pDefines)
 
     if (g_pDebugger == NULL)
         return CORDBG_E_NOTREADY;
-        
+
     *pDefines = g_pDebugger->m_defines;
     return S_OK;
 }

@@ -547,7 +547,7 @@ namespace System.Net.Sockets.Tests
                     await Task.WhenAll(remoteTask, clientConnectTask);
 
                     using (TcpClient remote = remoteTask.Result)
-                    using (NetworkStream serverStream = new NetworkStream(remote.Client, serverAccess, ownsSocket:true))
+                    using (NetworkStream serverStream = new NetworkStream(remote.Client, serverAccess, ownsSocket: true))
                     using (NetworkStream clientStream = new NetworkStream(client.Client, clientAccess, ownsSocket: true))
                     {
                         await func(serverStream, clientStream);
@@ -558,6 +558,77 @@ namespace System.Net.Sockets.Tests
             {
                 listener.Stop();
             }
+        }
+
+        [Fact]
+        public async Task NetworkStream_ReadTimeout_RemainUseable()
+        {
+            using StreamPair streams = await CreateConnectedStreamsAsync();
+            NetworkStream readable = (NetworkStream)streams.Stream1;
+
+            Assert.True(readable.Socket.Connected);
+            readable.Socket.ReceiveTimeout = TestSettings.FailingTestTimeout;
+            var buffer = new byte[100];
+            int readBytes;
+            try
+            {
+                readBytes = readable.Read(buffer);
+            }
+            catch (IOException ex) when (ex.InnerException is SocketException && ((SocketException)ex.InnerException).SocketErrorCode == SocketError.TimedOut)
+            {
+            }
+            Assert.True(readable.Socket.Connected);
+
+            try
+            {
+                readBytes = readable.Read(buffer);
+            }
+            catch (IOException ex) when (ex.InnerException is SocketException && ((SocketException)ex.InnerException).SocketErrorCode == SocketError.TimedOut)
+            {
+            }
+            Assert.True(readable.Socket.Connected);
+
+            streams.Stream2.Write(new byte[] { 65 });
+            readBytes = readable.Read(buffer);
+            Assert.Equal(1, readBytes);
+            Assert.True(readable.Socket.Connected);
+        }
+
+
+        [Fact]
+        public async Task NetworkStream_ReadAsyncTimeout_RemainUseable()
+        {
+            using StreamPair streams = await CreateConnectedStreamsAsync();
+            NetworkStream readable = (NetworkStream)streams.Stream1;
+
+            Assert.True(readable.Socket.Connected);
+
+            CancellationTokenSource cts = new CancellationTokenSource(TestSettings.FailingTestTimeout);
+            var buffer = new byte[100];
+            int readBytes;
+            try
+            {
+                readBytes = await readable.ReadAsync(buffer, cts.Token);
+            }
+            catch (OperationCanceledException)
+            {
+            }
+            Assert.True(readable.Socket.Connected);
+
+            try
+            {
+                cts = new CancellationTokenSource(TestSettings.FailingTestTimeout);
+                readBytes = await readable.ReadAsync(buffer, cts.Token);
+            }
+            catch (OperationCanceledException)
+            {
+            }
+            Assert.True(readable.Socket.Connected);
+
+            await streams.Stream2.WriteAsync(new byte[] { 65 });
+            readBytes = await readable.ReadAsync(buffer);
+            Assert.Equal(1, readBytes);
+            Assert.True(readable.Socket.Connected);
         }
 
         private sealed class DerivedNetworkStream : NetworkStream

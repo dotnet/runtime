@@ -1,5 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
+    <HasMergedInTests>true</HasMergedInTests>
     <!-- Tracking issue: https://github.com/dotnet/runtime/issues/90427 -->
     <CLRTestTargetUnsupported Condition="'$(RuntimeFlavor)' == 'mono' and ('$(RuntimeVariant)' == 'minifullaot' or '$(RuntimeVariant)' == 'llvmfullaot')">true</CLRTestTargetUnsupported>
   </PropertyGroup>
@@ -9,7 +10,82 @@
     <MergedWrapperProjectReference Remove="*/**/*_do.??proj" />
     <MergedWrapperProjectReference Remove="*/**/*_r.??proj" />
     <MergedWrapperProjectReference Remove="*/**/*_ro.??proj" />
+    <!-- Treat these references as regular project references. -->
+    <ProjectReference Include="../common/localloc_common.ilproj" />
+    <ProjectReference Include="../common/eh_common.csproj" />
+    <ProjectReference Include="flowgraph/dev10_bug679008/helper.ilproj" />
+    <MergedWrapperProjectReference Remove="flowgraph/dev10_bug679008/helper.ilproj" />
+    <CMakeProjectReference Include="gc_poll/CMakeLists.txt" />
   </ItemGroup>
-
+  <ItemGroup>
+    <Compile Include="Arrays\misc\IndexingSideEffects.cs" />
+    <Compile Include="Boxing\boxunbox\BoxPatternMatchAndSideEffects.cs" />
+    <Compile Include="Boxing\misc\unusedindir.cs" />
+    <Compile Include="Coverage\b433189.cs" />
+    <Compile Include="delegate\GSDelegate.cs" />
+    <Compile Include="delegate\VirtualDelegate.cs" />
+    <Compile Include="divrem\div\negSignedMod.cs" />
+    <Compile Include="dynamic_methods\bug_445388.cs" />
+    <Compile Include="eh\interactions\ehSO.cs" />
+    <Compile Include="eh\interactions\volatileFromFinally.cs" />
+    <Compile Include="eh\regress\asurt\122239\outermostFinally.cs" />
+    <Compile Include="eh\regress\vswhidbey\148190\baduwinfo.cs" />
+    <Compile Include="eh\regress\vswhidbey\148190\baduwinfo1.cs" />
+    <Compile Include="flowgraph\bug614098\intToByte.cs" />
+    <Compile Include="flowgraph\bug619534\ehCodeMotion.cs" />
+    <Compile Include="flowgraph\bug619534\finallyclone.cs" />
+    <Compile Include="flowgraph\bug619534\moduleHandleCache.cs" />
+    <Compile Include="flowgraph\bug619534\moduleLibrary.cs" />
+    <Compile Include="flowgraph\bug619534\twoEndFinallys.cs" />
+    <Compile Include="flowgraph\bug621705\ptuple_lost.cs" />
+    <Compile Include="flowgraph\bug647189\ssa_tuIsAddr.cs" />
+    <Compile Include="flowgraph\dev10_bug675304\arrayDim.cs" />
+    <Compile Include="flowgraph\dev10_bug675304\osrAddovershot.cs" />
+    <Compile Include="flowgraph\dev10_bug679008\castClassEH.cs" />
+    <Compile Include="flowgraph\dev10_bug679008\EHCopyProp.cs" />
+    <Compile Include="flowgraph\dev10_bug679008\GCOverReporting.cs" />
+    <Compile Include="flowgraph\dev10_bug679008\sealedCastVariance.cs" />
+    <Compile Include="flowgraph\dev10_bug679008\singleRefField.cs" />
+    <Compile Include="flowgraph\dev10_bug679008\zeroInitStackSlot.cs" />
+    <Compile Include="flowgraph\dev10_bug723489\qMarkColon.cs" />
+    <Compile Include="gc_poll\InsertGCPoll.cs" />
+    <Compile Include="inlining\boolean\InlineBool.cs" />
+    <Compile Include="inlining\bug505642\test.cs" />
+    <Compile Include="jitinterface\bug603649.cs" />
+    <Compile Include="largeframes\basic\bigframes.cs" />
+    <Compile Include="largeframes\skip2\skippage2.cs" />
+    <Compile Include="largeframes\skip3\skippage3.cs" />
+    <Compile Include="largeframes\skip4\skippage4.cs" />
+    <Compile Include="largeframes\skip5\skippage5.cs" />
+    <Compile Include="largeframes\skip6\skippage6.cs" />
+    <Compile Include="largeframes\skip7\skippage7.cs" />
+    <Compile Include="largeframes\skip\skippage.cs" />
+    <Compile Include="nonvirtualcall\classic.cs" />
+    <Compile Include="nonvirtualcall\delegate.cs" />
+    <Compile Include="nonvirtualcall\generics.cs" />
+    <Compile Include="nonvirtualcall\generics2.cs" />
+    <Compile Include="nonvirtualcall\tailcall.cs" />
+    <Compile Include="nonvirtualcall\valuetype.cs" />
+    <Compile Include="refany\array1.cs" />
+    <Compile Include="refany\array2.cs" />
+    <Compile Include="refany\format.cs" />
+    <Compile Include="refany\lcs.cs" />
+    <Compile Include="stringintern\b207621.cs" />
+    <Compile Include="stringintern\test1.cs" />
+    <Compile Include="stringintern\test2.cs" />
+    <Compile Include="stringintern\test4.cs" />
+    <Compile Include="stringintern\testgenstr.cs" />
+    <Compile Include="stringintern\teststr.cs" />
+    <Compile Include="structs\ExplicitLayout.cs" />
+    <Compile Include="structs\StructStackParams.cs" />
+    <Compile Include="structs\StructWithSingleFloat.cs" />
+    <Compile Include="structs\systemvbringup\structpasstest.cs" />
+    <Compile Include="structs\systemvbringup\structpasstest1.cs" />
+    <Compile Include="structs\systemvbringup\structpasstest2.cs" />
+    <Compile Include="structs\systemvbringup\structpinvoketests.cs" />
+    <Compile Include="structs\systemvbringup\structrettest.cs" />
+    <Compile Include="structs\valuetuple.cs" />
+    <Compile Include="tailcall_v4\delegateParamCallTarget.cs" />
+  </ItemGroup>
   <Import Project="$(TestSourceDir)MergedTestRunner.targets" />
 </Project>

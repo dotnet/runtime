@@ -781,8 +781,8 @@ ClrDataAccess::GetThreadData(CLRDATA_ADDRESS threadAddr, struct DacpThreadData *
     threadData->fiberData = (CLRDATA_ADDRESS)NULL;
 
     threadData->pFrame = PTR_CDADDR(thread->m_pFrame);
-    threadData->context = PTR_CDADDR(thread->m_pDomain);
-    threadData->domain = PTR_CDADDR(thread->m_pDomain);
+    threadData->context = PTR_CDADDR(AppDomain::GetCurrentDomain());
+    threadData->domain = PTR_CDADDR(AppDomain::GetCurrentDomain());
     threadData->lockCount = (DWORD)-1;
 #ifndef TARGET_UNIX
     threadData->teb = TO_CDADDR(thread->m_pTEB);

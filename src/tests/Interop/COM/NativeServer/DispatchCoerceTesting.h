@@ -168,7 +168,7 @@ private:
             }
             case VT_UNKNOWN:
             {
-                V_UNKNOWN(pVarResult) = static_cast<IUnknown *>(this);
+                (void)QueryInterface(IID_IUnknown, (void**)&V_UNKNOWN(pVarResult));
                 break;
             }
             default:

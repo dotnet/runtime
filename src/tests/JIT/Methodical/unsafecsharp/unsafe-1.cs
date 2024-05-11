@@ -278,6 +278,7 @@ public class TestApp
         return pb + 1 > pb ? 100 : 101;
     }
     [Fact]
+    [OuterLoop]
     public static unsafe int TestEntryPoint()
     {
         AA loc_x = new AA(0, 100);

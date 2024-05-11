@@ -304,6 +304,7 @@ public class FloatOvfToInt
     }
 
     [Fact]
+    [OuterLoop]
     public static int TestEntryPoint()
     {
         int res = TestValues();

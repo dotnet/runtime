@@ -947,7 +947,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			interface IDerivedWithDefault : IBaseWithDefault
 			{
 				[ExpectedWarning ("IL2092")]
-				[ExpectedWarning ("IL2092", Tool.Analyzer, "")] // https://github.com/dotnet/linker/issues/3121
+				[UnexpectedWarning ("IL2092", Tool.Analyzer, "https://github.com/dotnet/linker/issues/3121")]
 				void IBaseWithDefault.DefaultMethod ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] Type type) { }
 			}
 

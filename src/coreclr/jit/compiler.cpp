@@ -3760,7 +3760,7 @@ void Compiler::dumpRegMask(regMaskTP regs) const
     {
         printf("[allDouble]");
     }
-#ifdef TARGET_XARCH
+#ifdef FEATURE_MASKED_HW_INTRINSICS
     else if (regs == RBM_ALLMASK)
     {
         printf("[allMask]");

@@ -28,6 +28,7 @@ public class simple
         testLog = new TestUtil.TestLog(expectedOut);
     }
     [Fact]
+    [OuterLoop]
     public static int TestEntryPoint()
     {
         //Start recording

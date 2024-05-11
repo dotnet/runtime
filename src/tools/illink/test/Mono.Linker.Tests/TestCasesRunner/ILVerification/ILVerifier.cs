@@ -33,7 +33,7 @@ public class ILVerifier : IResolver, IDisposable
 				IncludeMetadataTokensInErrorMessages = true
 			});
 
-		_verifier.SetSystemModuleName (new AssemblyName (systemModuleName));
+		_verifier.SetSystemModuleName (new AssemblyNameInfo (systemModuleName));
 	}
 
 	public ILVerifierResult[] VerifyByName (string assemblyName)
@@ -132,10 +132,10 @@ public class ILVerifier : IResolver, IDisposable
 		return null;
 	}
 
-	PEReader? IResolver.ResolveAssembly (AssemblyName assemblyName)
+	PEReader? IResolver.ResolveAssembly (AssemblyNameInfo assemblyName)
 		=> Resolve (assemblyName.Name ?? assemblyName.FullName);
 
-	PEReader? IResolver.ResolveModule (AssemblyName referencingModule, string fileName)
+	PEReader? IResolver.ResolveModule (AssemblyNameInfo referencingModule, string fileName)
 		=> Resolve (Path.GetFileNameWithoutExtension (fileName));
 
 	public void Dispose ()

@@ -9632,7 +9632,7 @@ uint32_t CEEInfo::getLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE c
     uint32_t size = STRUCT_NO_FLOAT_FIELD;
 
 #if defined(TARGET_LOONGARCH64)
-    size = (uint32_t)MethodTable::GetLoongArch64PassStructInRegisterFlags(cls);
+    size = (uint32_t)MethodTable::GetLoongArch64PassStructInRegisterFlags(TypeHandle(cls));
 #endif
 
     EE_TO_JIT_TRANSITION_LEAF();

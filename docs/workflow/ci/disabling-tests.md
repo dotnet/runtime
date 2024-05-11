@@ -40,8 +40,26 @@ expedient to disable the test more broadly than possibly required.
 
 ## Disabling runtime tests (src/tests)
 
-Most tests are disabled by adding the test to the appropriate place, under the appropriate configuration condition,
-in the [issues.targets](../../../src/tests/issues.targets) file. All temporarily disabled tests must have a
+
+### Disabling runtime tests (src/tests) with xunit attributes
+
+The runtime tests use an XUnit-based model for test execution. There are [a number of attributes provided for filtering](../testing/libraries/filtering-tests.md)
+based on different test modes. Here are some examples of attributes that can be applied to tests to prevent them from running in certain configurations:
+
+- Prevent a test from running on Mono: `[SkipOnMono]`
+- Prevent a test from running on CoreCLR: `[SkipOnCoreClr]`
+- Prevent a test from running under GCStress: `[SkipOnCoreClr("Reason", RuntimeTestModes.AnyGCStress)]`
+- Prevent a test from running under HeapVerify: `[SkipOnCoreClr("Reason", RuntimeTestModes.HeapVerify)]`
+- Prevent a test from running under JIT stress modes: `[SkipOnCoreClr("Reason", RuntimeTestModes.AnyJitStress)]`
+
+Additionally, the `ConditionalFact`, `ConditionalTheory`, `PlatformSpecific`, and `ActiveIssue` attributes are available for usage to disable or enable tests only on specific platforms or configurations.
+
+Some test modes are processed at the assembly level. For these tests, you should mark the tests as `<RequiresProcessIsolation>true</RequiresProcessIsolation>` and set one of the attributes in the following section.
+
+### Disabling runtime tests (src/tests) with issues.targets
+
+Out-of-process tests are disabled by adding the test to the appropriate place, under the appropriate configuration condition,
+in the [issues.targets](../../../src/tests/issues.targets) file. Additionally, tests that are the only `[Fact]`-attributed method in their assembly may be disabled through issues.targets. All temporarily disabled tests must have a
 link to a GitHub issue in the `<Issue>` element. Disabling a test here can be conditioned on processor
 architecture, runtime, and operating system.
 
@@ -63,13 +81,6 @@ Note that these properties can be conditional, e.g.:
 (REVIEW: I'm not clear which conditions are allowed, and respected.)
 
 More information about writing/adding tests to src/tests can be found [here](../testing/coreclr/test-configuration.md).
-
-## Disabling runtime tests (src/tests) with xunit attributes
-
-When this document was written, the src/tests tree was in the process of being converted to a new
-execution model (see [dotnet/runtime#54512](https://github.com/dotnet/runtime/issues/54512)). This model annotates tests with xunit-style
-`[Fact]` attributes. For tests which have been converted to this form, all the xunit attributes related to test disabling
-described in the "src/libraries" section below are also applicable.
 
 ## Disabling libraries tests (src/libraries)
 

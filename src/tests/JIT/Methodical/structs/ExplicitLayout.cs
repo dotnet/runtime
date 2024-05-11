@@ -29,6 +29,7 @@ public class ExplicitLayout
     public class Program
     {
         [Fact]
+        [OuterLoop]
         public static int TestEntrypoint()
         {
             int returnVal = 100;

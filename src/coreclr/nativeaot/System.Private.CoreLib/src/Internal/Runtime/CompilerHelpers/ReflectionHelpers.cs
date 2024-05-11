@@ -17,14 +17,14 @@ namespace Internal.Runtime.CompilerHelpers
         // a default assembly name.
         public static Type GetType(string typeName, string callingAssemblyName, bool throwOnError, bool ignoreCase)
         {
-            return TypeNameParser.GetType(typeName, throwOnError: throwOnError, ignoreCase: ignoreCase, defaultAssemblyName: callingAssemblyName);
+            return TypeNameResolver.GetType(typeName, throwOnError: throwOnError, ignoreCase: ignoreCase, defaultAssemblyName: callingAssemblyName);
         }
 
         // This entry is used to implement Type.GetType()'s ability to detect the calling assembly and use it as
         // a default assembly name.
         public static Type ExtensibleGetType(string typeName, string callingAssemblyName, Func<AssemblyName, Assembly?> assemblyResolver, Func<Assembly?, string, bool, Type?>? typeResolver, bool throwOnError, bool ignoreCase)
         {
-            return TypeNameParser.GetType(typeName, assemblyResolver, typeResolver, throwOnError: throwOnError, ignoreCase: ignoreCase, defaultAssemblyName: callingAssemblyName);
+            return TypeNameResolver.GetType(typeName, assemblyResolver, typeResolver, throwOnError: throwOnError, ignoreCase: ignoreCase, defaultAssemblyName: callingAssemblyName);
         }
 
         // This supports Assembly.GetExecutingAssembly() intrinsic expansion in the compiler

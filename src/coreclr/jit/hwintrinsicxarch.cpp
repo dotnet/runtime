@@ -301,6 +301,8 @@ int HWIntrinsicInfo::lookupImmUpperBound(NamedIntrinsic id)
     {
         case NI_AVX_Compare:
         case NI_AVX_CompareScalar:
+        case NI_AVX512F_Compare:
+        case NI_AVX512F_CompareMask:
         {
             assert(!HWIntrinsicInfo::HasFullRangeImm(id));
             return 31; // enum FloatComparisonMode has 32 values
@@ -604,18 +606,11 @@ int HWIntrinsicInfo::lookupIval(Compiler* comp, NamedIntrinsic id, var_types sim
         {
             if (varTypeIsFloating(simdBaseType))
             {
-                if (comp->compOpportunisticallyDependsOn(InstructionSet_AVX))
-                {
-                    return static_cast<int>(FloatComparisonMode::OrderedGreaterThanSignaling);
-                }
-
                 // CompareGreaterThan is not directly supported in hardware without AVX support.
-                // We will return the inverted case here and lowering will itself swap the ops
-                // to ensure the emitted code remains correct. This simplifies the overall logic
-                // here and for other use cases.
+                // Lowering ensures we swap the operands and change to the correct ID.
 
-                assert(id != NI_AVX_CompareGreaterThan);
-                return static_cast<int>(FloatComparisonMode::OrderedLessThanSignaling);
+                assert(comp->compIsaSupportedDebugOnly(InstructionSet_AVX));
+                return static_cast<int>(FloatComparisonMode::OrderedGreaterThanSignaling);
             }
             else if ((id == NI_AVX512F_CompareGreaterThanMask) && varTypeIsUnsigned(simdBaseType))
             {
@@ -653,18 +648,11 @@ int HWIntrinsicInfo::lookupIval(Compiler* comp, NamedIntrinsic id, var_types sim
         {
             if (varTypeIsFloating(simdBaseType))
             {
-                if (comp->compOpportunisticallyDependsOn(InstructionSet_AVX))
-                {
-                    return static_cast<int>(FloatComparisonMode::OrderedGreaterThanOrEqualSignaling);
-                }
-
                 // CompareGreaterThanOrEqual is not directly supported in hardware without AVX support.
-                // We will return the inverted case here and lowering will itself swap the ops
-                // to ensure the emitted code remains correct. This simplifies the overall logic
-                // here and for other use cases.
+                // Lowering ensures we swap the operands and change to the correct ID.
 
-                assert(id != NI_AVX_CompareGreaterThanOrEqual);
-                return static_cast<int>(FloatComparisonMode::OrderedLessThanOrEqualSignaling);
+                assert(comp->compIsaSupportedDebugOnly(InstructionSet_AVX));
+                return static_cast<int>(FloatComparisonMode::OrderedGreaterThanOrEqualSignaling);
             }
             else
             {
@@ -721,18 +709,11 @@ int HWIntrinsicInfo::lookupIval(Compiler* comp, NamedIntrinsic id, var_types sim
         {
             if (varTypeIsFloating(simdBaseType))
             {
-                if (comp->compOpportunisticallyDependsOn(InstructionSet_AVX))
-                {
-                    return static_cast<int>(FloatComparisonMode::UnorderedNotGreaterThanSignaling);
-                }
-
                 // CompareNotGreaterThan is not directly supported in hardware without AVX support.
-                // We will return the inverted case here and lowering will itself swap the ops
-                // to ensure the emitted code remains correct. This simplifies the overall logic
-                // here and for other use cases.
+                // Lowering ensures we swap the operands and change to the correct ID.
 
-                assert(id != NI_AVX_CompareGreaterThan);
-                return static_cast<int>(FloatComparisonMode::UnorderedNotLessThanSignaling);
+                assert(comp->compIsaSupportedDebugOnly(InstructionSet_AVX));
+                return static_cast<int>(FloatComparisonMode::UnorderedNotGreaterThanSignaling);
             }
             else
             {
@@ -770,18 +751,11 @@ int HWIntrinsicInfo::lookupIval(Compiler* comp, NamedIntrinsic id, var_types sim
         {
             if (varTypeIsFloating(simdBaseType))
             {
-                if (comp->compOpportunisticallyDependsOn(InstructionSet_AVX))
-                {
-                    return static_cast<int>(FloatComparisonMode::UnorderedNotGreaterThanOrEqualSignaling);
-                }
-
                 // CompareNotGreaterThanOrEqual is not directly supported in hardware without AVX support.
-                // We will return the inverted case here and lowering will itself swap the ops
-                // to ensure the emitted code remains correct. This simplifies the overall logic
-                // here and for other use cases.
+                // Lowering ensures we swap the operands and change to the correct ID.
 
-                assert(id != NI_AVX_CompareNotGreaterThanOrEqual);
-                return static_cast<int>(FloatComparisonMode::UnorderedNotLessThanOrEqualSignaling);
+                assert(comp->compIsaSupportedDebugOnly(InstructionSet_AVX));
+                return static_cast<int>(FloatComparisonMode::UnorderedNotGreaterThanOrEqualSignaling);
             }
             else
             {
@@ -2027,9 +2001,12 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             if (IsBaselineVector512IsaSupportedOpportunistically())
             {
                 op1 = impSIMDPopStack();
-                op1 =
-                    gtNewSimdHWIntrinsicNode(TYP_MASK, op1, NI_AVX512F_ConvertVectorToMask, simdBaseJitType, simdSize);
 
+                if (!varTypeIsMask(op1))
+                {
+                    op1 = gtNewSimdHWIntrinsicNode(TYP_MASK, op1, NI_AVX512F_ConvertVectorToMask, simdBaseJitType,
+                                                   simdSize);
+                }
                 retNode = gtNewSimdHWIntrinsicNode(retType, op1, NI_AVX512F_MoveMask, simdBaseJitType, simdSize);
             }
             break;
@@ -3399,6 +3376,38 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 op1                = impCloneExpr(op1, &clonedOp1, CHECK_SPILL_ALL,
                                                   nullptr DEBUGARG("Clone op1 for Sse.CompareScalarGreaterThan"));
 
+                switch (intrinsic)
+                {
+                    case NI_SSE_CompareScalarGreaterThan:
+                    {
+                        intrinsic = NI_SSE_CompareScalarLessThan;
+                        break;
+                    }
+
+                    case NI_SSE_CompareScalarGreaterThanOrEqual:
+                    {
+                        intrinsic = NI_SSE_CompareScalarLessThanOrEqual;
+                        break;
+                    }
+
+                    case NI_SSE_CompareScalarNotGreaterThan:
+                    {
+                        intrinsic = NI_SSE_CompareScalarNotLessThan;
+                        break;
+                    }
+
+                    case NI_SSE_CompareScalarNotGreaterThanOrEqual:
+                    {
+                        intrinsic = NI_SSE_CompareScalarNotLessThanOrEqual;
+                        break;
+                    }
+
+                    default:
+                    {
+                        unreached();
+                    }
+                }
+
                 retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op2, op1, intrinsic, simdBaseJitType, simdSize);
                 retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, clonedOp1, retNode, NI_SSE_MoveScalar, simdBaseJitType,
                                                    simdSize);
@@ -3457,6 +3466,38 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 GenTree* clonedOp1 = nullptr;
                 op1                = impCloneExpr(op1, &clonedOp1, CHECK_SPILL_ALL,
                                                   nullptr DEBUGARG("Clone op1 for Sse2.CompareScalarGreaterThan"));
+
+                switch (intrinsic)
+                {
+                    case NI_SSE2_CompareScalarGreaterThan:
+                    {
+                        intrinsic = NI_SSE2_CompareScalarLessThan;
+                        break;
+                    }
+
+                    case NI_SSE2_CompareScalarGreaterThanOrEqual:
+                    {
+                        intrinsic = NI_SSE2_CompareScalarLessThanOrEqual;
+                        break;
+                    }
+
+                    case NI_SSE2_CompareScalarNotGreaterThan:
+                    {
+                        intrinsic = NI_SSE2_CompareScalarNotLessThan;
+                        break;
+                    }
+
+                    case NI_SSE2_CompareScalarNotGreaterThanOrEqual:
+                    {
+                        intrinsic = NI_SSE2_CompareScalarNotLessThanOrEqual;
+                        break;
+                    }
+
+                    default:
+                    {
+                        unreached();
+                    }
+                }
 
                 retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op2, op1, intrinsic, simdBaseJitType, simdSize);
                 retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, clonedOp1, retNode, NI_SSE2_MoveScalar, simdBaseJitType,
@@ -4093,9 +4134,29 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             op2 = impSIMDPopStack();
             op1 = impSIMDPopStack();
 
-            op3 = gtNewSimdHWIntrinsicNode(TYP_MASK, op3, NI_AVX512F_ConvertVectorToMask, simdBaseJitType, simdSize);
+            if (!varTypeIsMask(op3))
+            {
+                op3 =
+                    gtNewSimdHWIntrinsicNode(TYP_MASK, op3, NI_AVX512F_ConvertVectorToMask, simdBaseJitType, simdSize);
+            }
             retNode = gtNewSimdHWIntrinsicNode(retType, op1, op2, op3, NI_AVX512F_BlendVariableMask, simdBaseJitType,
                                                simdSize);
+            break;
+        }
+
+        case NI_AVX512F_Compare:
+        {
+            assert(sig->numArgs == 3);
+
+            op3 = impPopStack().val;
+            op2 = impSIMDPopStack();
+            op1 = impSIMDPopStack();
+
+            retNode =
+                gtNewSimdHWIntrinsicNode(TYP_MASK, op1, op2, op3, NI_AVX512F_CompareMask, simdBaseJitType, simdSize);
+            retNode =
+                gtNewSimdHWIntrinsicNode(retType, retNode, NI_AVX512F_ConvertMaskToVector, simdBaseJitType, simdSize);
+
             break;
         }
 

@@ -30,8 +30,8 @@ namespace System.Reflection.Runtime.General
         public static bool StringOrNullEquals(this ConstantStringValueHandle handle, string valueOrNull, MetadataReader reader)
         {
             if (valueOrNull == null)
-                return handle.IsNull(reader);
-            if (handle.IsNull(reader))
+                return handle.IsNil;
+            if (handle.IsNil)
                 return false;
             return handle.StringEquals(valueOrNull, reader);
         }

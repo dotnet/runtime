@@ -249,7 +249,7 @@ namespace System.Reflection
         {
             ArgumentException.ThrowIfNullOrEmpty(name);
 
-            return TypeNameParser.GetType(name, topLevelAssembly: this,
+            return TypeNameResolver.GetType(name, topLevelAssembly: this,
                 throwOnError: throwOnError, ignoreCase: ignoreCase);
         }
 

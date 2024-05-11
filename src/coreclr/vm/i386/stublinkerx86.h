@@ -323,9 +323,6 @@ class StubLinkerCPU : public StubLinker
         }
 
 #if defined(FEATURE_COMINTEROP) && defined(TARGET_X86)
-        VOID EmitEnable(CodeLabel *pForwardRef);
-        VOID EmitRareEnable(CodeLabel *pRejoinPoint);
-
         VOID EmitDisable(CodeLabel *pForwardRef, BOOL fCallIn, X86Reg ThreadReg);
         VOID EmitRareDisable(CodeLabel *pRejoinPoint);
         VOID EmitRareDisableHRESULT(CodeLabel *pRejoinPoint, CodeLabel *pExitPoint);

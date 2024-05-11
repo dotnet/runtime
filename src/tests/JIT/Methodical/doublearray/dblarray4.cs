@@ -20,6 +20,8 @@ public class DblArray4
 {
     private static int s_LOH_GEN = 0;
     [Fact]
+    [SkipOnCoreClr("This test is not compatible with GCStress.", RuntimeTestModes.AnyGCStress)]
+    [OuterLoop]
     public static int TestEntryPoint()
     {
         if (RuntimeInformation.ProcessArchitecture == Architecture.X86)

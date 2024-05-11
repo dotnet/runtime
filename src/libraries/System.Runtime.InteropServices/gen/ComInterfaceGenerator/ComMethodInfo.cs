@@ -17,7 +17,8 @@ namespace Microsoft.Interop
     internal sealed record ComMethodInfo(
         MethodDeclarationSyntax Syntax,
         string MethodName,
-        SequenceEqualImmutableArray<AttributeInfo> Attributes)
+        SequenceEqualImmutableArray<AttributeInfo> Attributes,
+        bool IsUserDefinedShadowingMethod)
     {
         /// <summary>
         /// Returns a list of tuples of ComMethodInfo, IMethodSymbol, and Diagnostic. If ComMethodInfo is null, Diagnostic will not be null, and vice versa.
@@ -123,7 +124,9 @@ namespace Microsoft.Interop
             {
                 attributeInfos.Add(AttributeInfo.From(attr));
             }
-            var comMethodInfo = new ComMethodInfo(comMethodDeclaringSyntax, method.Name, attributeInfos.MoveToImmutable().ToSequenceEqual());
+
+            bool shadowsBaseMethod = comMethodDeclaringSyntax.Modifiers.Any(SyntaxKind.NewKeyword);
+            var comMethodInfo = new ComMethodInfo(comMethodDeclaringSyntax, method.Name, attributeInfos.MoveToImmutable().ToSequenceEqual(), shadowsBaseMethod);
             return DiagnosticOr<(ComMethodInfo, IMethodSymbol)>.From((comMethodInfo, method));
         }
     }

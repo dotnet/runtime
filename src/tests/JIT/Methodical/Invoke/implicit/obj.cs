@@ -21,6 +21,7 @@ namespace JitTest_obj_implicit_cs
         }
 
         [Fact]
+        [OuterLoop]
         public static int TestEntryPoint()
         {
             try

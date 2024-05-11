@@ -1332,7 +1332,7 @@ public:
     FORCEINLINE void Poll()
     {
         WRAPPER_NO_CONTRACT;
-        if (m_pThread->CatchAtSafePointOpportunistic())
+        if (m_pThread->CatchAtSafePoint())
             CommonTripThread();
     }
 #endif // DACCESS_COMPILE

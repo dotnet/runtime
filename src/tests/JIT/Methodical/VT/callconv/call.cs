@@ -63,6 +63,7 @@ namespace JitTest_call_cs
         }
 
         [Fact]
+        [OuterLoop]
         public static int TestEntryPoint()
         {
             VT vt = new VT(10, "10");

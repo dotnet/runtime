@@ -167,4 +167,4 @@ build-app-host:
 	$(DOTNET) build $(TOP)/src/mono/wasm/host $(_MSBUILD_WASM_BUILD_ARGS) $(MSBUILD_ARGS)
 
 patch-deterministic:
-	cd emsdk/upstream/emscripten/ && patch -p1 < ../../../runtime/deterministic.diff
+	cd emsdk/emscripten/ && patch -p1 < ../../../runtime/deterministic.diff

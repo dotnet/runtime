@@ -114,7 +114,7 @@ FORCEINLINE bool Object::TryEnterObjMonitorSpinHelper()
     } CONTRACTL_END;
 
     Thread *pCurThread = GetThread();
-    if (pCurThread->CatchAtSafePointOpportunistic())
+    if (pCurThread->CatchAtSafePoint())
     {
         return false;
     }

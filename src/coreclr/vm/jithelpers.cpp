@@ -2935,7 +2935,7 @@ HCIMPL2(LPVOID, Unbox_Helper, CORINFO_CLASS_HANDLE type, Object* obj)
     if (pMT1->GetInternalCorElementType() == pMT2->GetInternalCorElementType() &&
             (pMT1->IsEnum() || pMT1->IsTruePrimitive()) &&
             (pMT2->IsEnum() || pMT2->IsTruePrimitive()) &&
-            g_TrapReturningThreads.LoadWithoutBarrier() == 0)
+            g_TrapReturningThreads == 0)
     {
         return obj->GetData();
     }
@@ -3651,7 +3651,7 @@ NOINLINE static void JIT_MonEnter_Helper(Object* obj, BYTE* pbLockTaken, LPVOID 
 
     GCPROTECT_BEGININTERIOR(pbLockTaken);
 
-    if (GET_THREAD()->CatchAtSafePointOpportunistic())
+    if (GET_THREAD()->CatchAtSafePoint())
     {
         GET_THREAD()->PulseGCMode();
     }
@@ -3730,7 +3730,7 @@ NOINLINE static void JIT_MonTryEnter_Helper(Object* obj, INT32 timeOut, BYTE* pb
 
     GCPROTECT_BEGININTERIOR(pbLockTaken);
 
-    if (GET_THREAD()->CatchAtSafePointOpportunistic())
+    if (GET_THREAD()->CatchAtSafePoint())
     {
         GET_THREAD()->PulseGCMode();
     }
@@ -3764,7 +3764,7 @@ HCIMPL3(void, JIT_MonTryEnter_Portable, Object* obj, INT32 timeOut, BYTE* pbLock
 
     pCurThread = GetThread();
 
-    if (pCurThread->CatchAtSafePointOpportunistic())
+    if (pCurThread->CatchAtSafePoint())
     {
         goto FramedLockHelper;
     }
@@ -3936,7 +3936,7 @@ HCIMPL_MONHELPER(JIT_MonEnterStatic_Portable, AwareLock *lock)
     MONHELPER_STATE(_ASSERTE(pbLockTaken != NULL && *pbLockTaken == 0));
 
     Thread *pCurThread = GetThread();
-    if (pCurThread->CatchAtSafePointOpportunistic())
+    if (pCurThread->CatchAtSafePoint())
     {
         goto FramedLockHelper;
     }
@@ -4811,11 +4811,11 @@ HCIMPL0(VOID, JIT_PollGC)
     FCALL_CONTRACT;
 
     // As long as we can have GCPOLL_CALL polls, it would not hurt to check the trap flag.
-    if (!g_TrapReturningThreads.LoadWithoutBarrier())
+    if (!g_TrapReturningThreads)
         return;
 
     // Does someone want this thread stopped?
-    if (!GetThread()->CatchAtSafePointOpportunistic())
+    if (!GetThread()->CatchAtSafePoint())
         return;
 
     // Tailcall to the slow helper
@@ -5282,7 +5282,7 @@ void JIT_Patchpoint(int* counter, int ilOffset)
         DWORD contextSize = 0;
         ULONG64 xStateCompactionMask = 0;
         DWORD contextFlags = CONTEXT_FULL;
-        if (Thread::AreCetShadowStacksEnabled())
+        if (Thread::AreShadowStacksEnabled())
         {
             xStateCompactionMask = XSTATE_MASK_CET_U;
             contextFlags |= CONTEXT_XSTATE;
@@ -5310,7 +5310,7 @@ void JIT_Patchpoint(int* counter, int ilOffset)
         RtlCaptureContext(pFrameContext);
 
 #if defined(TARGET_WINDOWS) && defined(TARGET_AMD64)
-        if (Thread::AreCetShadowStacksEnabled())
+        if (Thread::AreShadowStacksEnabled())
         {
             pFrameContext->ContextFlags |= CONTEXT_XSTATE;
             SetXStateFeaturesMask(pFrameContext, xStateCompactionMask);
@@ -6156,7 +6156,7 @@ HCIMPL3_RAW(void, JIT_ReversePInvokeEnterTrackTransitions, ReversePInvokeFrame* 
 
         // Manually inline the fast path in Thread::DisablePreemptiveGC().
         thread->m_fPreemptiveGCDisabled.StoreWithoutBarrier(1);
-        if (g_TrapReturningThreads.LoadWithoutBarrier() != 0)
+        if (g_TrapReturningThreads != 0)
         {
             // If we're in an IL stub, we want to trace the address of the target method,
             // not the next instruction in the stub.
@@ -6193,7 +6193,7 @@ HCIMPL1_RAW(void, JIT_ReversePInvokeEnter, ReversePInvokeFrame* frame)
 
         // Manually inline the fast path in Thread::DisablePreemptiveGC().
         thread->m_fPreemptiveGCDisabled.StoreWithoutBarrier(1);
-        if (g_TrapReturningThreads.LoadWithoutBarrier() != 0)
+        if (g_TrapReturningThreads != 0)
         {
             JIT_ReversePInvokeEnterRare2(frame, _ReturnAddress());
         }

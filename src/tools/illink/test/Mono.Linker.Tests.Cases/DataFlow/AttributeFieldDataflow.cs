@@ -41,7 +41,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		[Kept]
 		[KeptAttributeAttribute (typeof (KeepsPublicMethodsAttribute))]
 		// Trimmer/NativeAot only for now - https://github.com/dotnet/linker/issues/2273
-		[ExpectedWarning ("IL2026", "--ClassWithKeptPublicMethods--", Tool.Trimmer | Tool.NativeAot, "")]
+		[ExpectedWarning ("IL2026", "--ClassWithKeptPublicMethods--", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/95118")]
 		[KeepsPublicMethods (TypeName = "Mono.Linker.Tests.Cases.DataFlow.AttributeFieldDataflow+ClassWithKeptPublicMethods")]
 		public static void TestKeepsPublicMethodsString ()
 		{

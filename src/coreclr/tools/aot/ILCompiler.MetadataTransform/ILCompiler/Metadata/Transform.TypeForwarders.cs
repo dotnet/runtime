@@ -10,7 +10,7 @@ using Cts = Internal.TypeSystem;
 using Ecma = System.Reflection.Metadata;
 
 using Debug = System.Diagnostics.Debug;
-using AssemblyName = System.Reflection.AssemblyName;
+using AssemblyNameInfo = System.Reflection.Metadata.AssemblyNameInfo;
 using AssemblyContentType = System.Reflection.AssemblyContentType;
 using AssemblyNameFlags = System.Reflection.AssemblyNameFlags;
 using AssemblyFlags = System.Reflection.AssemblyFlags;
@@ -65,20 +65,14 @@ namespace ILCompiler.Metadata
                         NamespaceDefinition namespaceDefinition = HandleNamespaceDefinition(module, ns);
 
                         Ecma.AssemblyReference assemblyRef = reader.GetAssemblyReference((Ecma.AssemblyReferenceHandle)exportedType.Implementation);
-                        AssemblyName refName = new AssemblyName
-                        {
-                            ContentType = (AssemblyContentType)((int)(assemblyRef.Flags & AssemblyFlags.ContentTypeMask) >> 9),
-                            Flags = (AssemblyNameFlags)(assemblyRef.Flags & ~AssemblyFlags.ContentTypeMask),
-                            CultureName = reader.GetString(assemblyRef.Culture),
-                            Name = reader.GetString(assemblyRef.Name),
-                            Version = assemblyRef.Version,
-                        };
-
-                        if ((assemblyRef.Flags & AssemblyFlags.PublicKey) != 0)
-                            refName.SetPublicKey(reader.GetBlobBytes(assemblyRef.PublicKeyOrToken));
-                        else
-                            refName.SetPublicKeyToken(reader.GetBlobBytes(assemblyRef.PublicKeyOrToken));
-
+                        AssemblyNameInfo refName = new AssemblyNameInfo
+                        (
+                            name: reader.GetString(assemblyRef.Name),
+                            version: assemblyRef.Version,
+                            cultureName: reader.GetString(assemblyRef.Culture),
+                            flags: (AssemblyNameFlags)assemblyRef.Flags,
+                            publicKeyOrToken: reader.GetBlobContent(assemblyRef.PublicKeyOrToken)
+                        );
                         record.Scope = HandleScopeReference(refName);
 
                         namespaceDefinition.TypeForwarders.Add(record);

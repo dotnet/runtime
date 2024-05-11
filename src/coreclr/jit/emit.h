@@ -762,10 +762,10 @@ protected:
         // loongarch64: 28 bits
         // risc-v:      28 bits
 
-        unsigned _idSmallDsc  : 1; // is this a "small" descriptor?
-        unsigned _idLargeCns  : 1; // does a large constant     follow?
-        unsigned _idLargeDsp  : 1; // does a large displacement follow?
-        unsigned _idLargeCall : 1; // large call descriptor used
+        unsigned _idSmallDsc : 1; // is this a "small" descriptor?
+        unsigned _idLargeCns : 1; // does a large constant     follow? (or if large call descriptor used)
+        unsigned _idLargeDsp : 1; // does a large displacement follow?
+        unsigned _idCall     : 1; // this is a call
 
         // We have several pieces of information we need to encode but which are only applicable
         // to a subset of instrDescs. To accommodate that, we define a several _idCustom# bitfields
@@ -1565,7 +1565,7 @@ protected:
 
         bool idIsLargeCns() const
         {
-            return _idLargeCns != 0;
+            return _idLargeCns != 0 && !idIsCall();
         }
         void idSetIsLargeCns()
         {
@@ -1585,13 +1585,23 @@ protected:
             _idLargeDsp = 0;
         }
 
+        bool idIsCall() const
+        {
+            return _idCall != 0;
+        }
+        void idSetIsCall()
+        {
+            _idCall = 1;
+        }
+
         bool idIsLargeCall() const
         {
-            return _idLargeCall != 0;
+            return idIsCall() && _idLargeCns == 1;
         }
         void idSetIsLargeCall()
         {
-            _idLargeCall = 1;
+            idSetIsCall();
+            _idLargeCns = 1;
         }
 
         bool idIsBound() const
@@ -1653,27 +1663,41 @@ protected:
         {
             assert(!idIsEvexbContextSet());
 
-            if (instOptions == INS_OPTS_EVEX_eb_er_rd)
+            switch (instOptions & INS_OPTS_EVEX_b_MASK)
             {
-                _idEvexbContext = 1;
-            }
-            else if (instOptions == INS_OPTS_EVEX_er_ru)
-            {
-                _idEvexbContext = 2;
-            }
-            else if (instOptions == INS_OPTS_EVEX_er_rz)
-            {
-                _idEvexbContext = 3;
-            }
-            else
-            {
-                unreached();
+                case INS_OPTS_EVEX_eb_er_rd:
+                {
+                    _idEvexbContext = 1;
+                    break;
+                }
+
+                case INS_OPTS_EVEX_er_ru:
+                {
+                    _idEvexbContext = 2;
+                    break;
+                }
+
+                case INS_OPTS_EVEX_er_rz:
+                {
+                    _idEvexbContext = 3;
+                    break;
+                }
+
+                default:
+                {
+                    unreached();
+                }
             }
         }
 
         unsigned idGetEvexbContext() const
         {
             return _idEvexbContext;
+        }
+
+        bool idIsEvexAaaContextSet() const
+        {
+            return idGetEvexAaaContext() != 0;
         }
 
         unsigned idGetEvexAaaContext() const
@@ -2279,9 +2303,9 @@ protected:
     void emitDispInsAddr(const BYTE* code);
     void emitDispInsOffs(unsigned offs, bool doffs);
     void emitDispInsHex(instrDesc* id, BYTE* code, size_t sz);
-    void emitDispEmbBroadcastCount(instrDesc* id);
-    void emitDispEmbRounding(instrDesc* id);
-    void emitDispEmbMasking(instrDesc* id);
+    void emitDispEmbBroadcastCount(instrDesc* id) const;
+    void emitDispEmbRounding(instrDesc* id) const;
+    void emitDispEmbMasking(instrDesc* id) const;
     void emitDispIns(instrDesc* id,
                      bool       isNew,
                      bool       doffs,
@@ -2857,9 +2881,11 @@ private:
     // Mark this instruction group as having a label; return the new instruction group.
     // Sets the emitter's record of the currently live GC variables
     // and registers.
-    void* emitAddLabel(VARSET_VALARG_TP    GCvars,
-                       regMaskTP           gcrefRegs,
-                       regMaskTP byrefRegs DEBUG_ARG(BasicBlock* block = nullptr));
+    // prevBlock is passed when starting a new block.
+    void* emitAddLabel(VARSET_VALARG_TP GCvars,
+                       regMaskTP        gcrefRegs,
+                       regMaskTP        byrefRegs,
+                       BasicBlock*      prevBlock = nullptr);
 
     // Same as above, except the label is added and is conceptually "inline" in
     // the current block. Thus it extends the previous block and the emitter
@@ -3189,6 +3215,8 @@ public:
     void emitStackKillArgs(BYTE* addr, unsigned count, unsigned char callInstrSize);
 
     void emitRecordGCcall(BYTE* codePos, unsigned char callInstrSize);
+
+    bool emitLastInsIsCallWithGC();
 
     // Helpers for the above
 

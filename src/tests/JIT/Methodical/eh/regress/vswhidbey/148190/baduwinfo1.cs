@@ -117,6 +117,7 @@ public class Test_baduwinfo1
         return ret;
     }
     [Fact]
+    [OuterLoop]
     public static int TestEntryPoint()
     {
         String s = "Test1";

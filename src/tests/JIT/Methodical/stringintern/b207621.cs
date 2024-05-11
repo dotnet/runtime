@@ -14,6 +14,7 @@ public class Test_b207621
     }
 
     [Fact]
+    [OuterLoop]
     static public int TestEntryPoint()
     {
         string a = null;

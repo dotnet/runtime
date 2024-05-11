@@ -61,7 +61,17 @@ LEAF_END RtlCaptureContext, _TEXT
 
 LEAF_ENTRY RtlRestoreContext, _TEXT
 
+    // Set %r1 and %r0 to hold the target return address and stack pointer.
+    // These will be installed only at the very end, to avoid potentially
+    // clobbering the context structure on the local stack.
     lgr     %r1, %r14
+    lgr     %r0, %r15
+    tm      CONTEXT_ContextFlags+3(%r2), CONTEXT_CONTROL
+    je      LOCAL_LABEL(Done_Restore_CONTEXT_CONTROL)
+    // We do *not* attempt to restore the PSW mask here!
+    lg      %r1, CONTEXT_PSWAddr(%r2)
+    lg      %r0, CONTEXT_R15(%r2)
+LOCAL_LABEL(Done_Restore_CONTEXT_CONTROL):
 
     tm      CONTEXT_ContextFlags+3(%r2), CONTEXT_FLOATING_POINT
     je      LOCAL_LABEL(Done_Restore_CONTEXT_FLOATING_POINT)
@@ -83,19 +93,13 @@ LEAF_ENTRY RtlRestoreContext, _TEXT
     ld      %f15, CONTEXT_F15(%r2)
 LOCAL_LABEL(Done_Restore_CONTEXT_FLOATING_POINT):
 
-    tm      CONTEXT_ContextFlags+3(%r2), CONTEXT_CONTROL
-    je      LOCAL_LABEL(Done_Restore_CONTEXT_CONTROL)
-    // We do *not* attempt to restore the PSW mask here!
-    lg      %r1, CONTEXT_PSWAddr(%r2)
-    lg      %r15, CONTEXT_R15(%r2)
-LOCAL_LABEL(Done_Restore_CONTEXT_CONTROL):
-
     tm      CONTEXT_ContextFlags+3(%r2), CONTEXT_INTEGER
     je      LOCAL_LABEL(Done_Restore_CONTEXT_INTEGER)
     // We do *not* restore %r0 and %r1 here!
     lmg     %r2, %r14, CONTEXT_R2(%r2)
 LOCAL_LABEL(Done_Restore_CONTEXT_INTEGER):
 
+    lgr     %r15, %r0
     br %r1
 LEAF_END RtlRestoreContext, _TEXT
 

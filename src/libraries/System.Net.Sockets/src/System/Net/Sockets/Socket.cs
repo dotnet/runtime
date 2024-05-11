@@ -3754,7 +3754,7 @@ namespace System.Net.Sockets
 
             if (disconnectOnFailure && _isConnected && (_handle.IsInvalid || (errorCode != SocketError.WouldBlock &&
                     errorCode != SocketError.IOPending && errorCode != SocketError.NoBufferSpaceAvailable &&
-                    errorCode != SocketError.TimedOut)))
+                    errorCode != SocketError.TimedOut && errorCode != SocketError.OperationAborted)))
             {
                 // The socket is no longer a valid socket.
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "Invalidating socket.");

@@ -787,7 +787,7 @@ FCIMPL1(void, DebugDebugger::CustomNotification, Object * dataUNSAFE)
         HELPER_METHOD_FRAME_BEGIN_PROTECT(pData);
 
         Thread * pThread = GetThread();
-        AppDomain * pAppDomain = pThread->GetDomain();
+        AppDomain * pAppDomain = AppDomain::GetCurrentDomain();
 
         StrongHandleHolder objHandle = pAppDomain->CreateStrongHandle(pData);
         MethodTable * pMT = pData->GetGCSafeMethodTable();

@@ -42,6 +42,7 @@ namespace JitTest_virtcall_cs
         }
 
         [Fact]
+        [SkipOnCoreClr("This test is not compatible with GCStress.", RuntimeTestModes.AnyGCStress)]
         public static int TestEntryPoint()
         {
             try

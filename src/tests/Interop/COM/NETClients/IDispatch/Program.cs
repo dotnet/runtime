@@ -220,7 +220,7 @@ namespace NetClient
             var dispatchCoerceTesting = (DispatchCoerceTesting)new DispatchCoerceTestingClass();
 
             Console.WriteLine($"Calling {nameof(DispatchCoerceTesting.ReturnToManaged)} ...");
-            
+
             // Supported types
             // See returned values in DispatchCoerceTesting.h
             (VarEnum type, int expectedValue)[] supportedTypes =

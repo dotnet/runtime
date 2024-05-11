@@ -190,6 +190,7 @@ namespace Test
         }
 
         [Fact]
+        [OuterLoop]
         public static int TestEntryPoint()
         {
             try

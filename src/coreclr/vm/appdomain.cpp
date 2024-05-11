@@ -3861,8 +3861,6 @@ AppDomain::RaiseUnhandledExceptionEvent(OBJECTREF *pThrowable, BOOL isTerminatin
 
     _ASSERTE(pThrowable != NULL && IsProtectedByGCFrame(pThrowable));
 
-    _ASSERTE(this == GetThread()->GetDomain());
-
     OBJECTREF orDelegate = CoreLibBinder::GetField(FIELD__APPCONTEXT__UNHANDLED_EXCEPTION)->GetStaticOBJECTREF();
     if (orDelegate == NULL)
         return FALSE;

@@ -88,7 +88,7 @@ namespace System.Reflection.Runtime.Assemblies.NativeFormat
                     MetadataReader reader = scope.Reader;
 
                     QualifiedMethodHandle entrypointHandle = scope.ScopeDefinition.EntryPoint;
-                    if (!entrypointHandle.IsNull(reader))
+                    if (!entrypointHandle.IsNil)
                     {
                         QualifiedMethod entrypointMethod = entrypointHandle.GetQualifiedMethod(reader);
                         TypeDefinitionHandle declaringTypeHandle = entrypointMethod.EnclosingType;

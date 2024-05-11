@@ -639,7 +639,7 @@ CustomMarshalerInfo *SharedCustomMarshalerHelper::GetCustomMarshalerInfo()
     CONTRACTL_END;
 
     // Retrieve the marshalling data for the current app domain.
-    EEMarshalingData *pMarshalingData = GetThread()->GetDomain()->GetLoaderAllocator()->GetMarshalingData();
+    EEMarshalingData *pMarshalingData = AppDomain::GetCurrentDomain()->GetLoaderAllocator()->GetMarshalingData();
 
     // Retrieve the custom marshaling information for the current shared custom
     // marshaling helper.

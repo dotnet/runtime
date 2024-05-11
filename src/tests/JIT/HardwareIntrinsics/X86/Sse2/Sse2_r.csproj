@@ -2,6 +2,8 @@
   <PropertyGroup>
     <AssemblyName>X86_Sse2_r</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <!-- https://github.com/dotnet/runtime/issues/102037 -->
+    <MonoAotIncompatible>true</MonoAotIncompatible>
   </PropertyGroup>
   <PropertyGroup>
     <DebugType>Embedded</DebugType>

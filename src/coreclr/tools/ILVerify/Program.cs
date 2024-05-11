@@ -113,13 +113,13 @@ namespace ILVerify
                 IncludeMetadataTokensInErrorMessages = Get(_command.Tokens),
                 SanityChecks = Get(_command.SanityChecks)
             });
-            _verifier.SetSystemModuleName(new AssemblyName(Get(_command.SystemModule) ?? "mscorlib"));
+            _verifier.SetSystemModuleName(new AssemblyNameInfo(Get(_command.SystemModule) ?? "mscorlib"));
 
             int numErrors = 0;
 
             foreach (var kvp in _inputFilePaths)
             {
-                numErrors += VerifyAssembly(new AssemblyName(kvp.Key), kvp.Value);
+                numErrors += VerifyAssembly(new AssemblyNameInfo(kvp.Key), kvp.Value);
             }
 
             if (numErrors > 0)
@@ -224,7 +224,7 @@ namespace ILVerify
             Write(")");
         }
 
-        private int VerifyAssembly(AssemblyName name, string path)
+        private int VerifyAssembly(AssemblyNameInfo name, string path)
         {
             PEReader peReader = Resolve(name.Name);
             EcmaModule module = _verifier.GetModule(peReader);
@@ -451,10 +451,10 @@ namespace ILVerify
             return false;
         }
 
-        PEReader IResolver.ResolveAssembly(AssemblyName assemblyName)
+        PEReader IResolver.ResolveAssembly(AssemblyNameInfo assemblyName)
             => Resolve(assemblyName.Name);
 
-        PEReader IResolver.ResolveModule(AssemblyName referencingModule, string fileName)
+        PEReader IResolver.ResolveModule(AssemblyNameInfo referencingModule, string fileName)
             => Resolve(Path.GetFileNameWithoutExtension(fileName));
 
         public PEReader Resolve(string simpleName)

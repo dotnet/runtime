@@ -5318,7 +5318,7 @@ void CordbProcess::RawDispatchEvent(
             // if the class is NULL, that means the debugger never enabled notifications for it. Otherwise,
             // the CordbClass instance would already have been created when the notifications were
             // enabled.
-            if ((pNotificationClass != NULL) && pNotificationClass->CustomNotificationsEnabled())
+            if (pNotificationClass != NULL)
 
             {
                 PUBLIC_CALLBACK_IN_THIS_SCOPE(this, pLockHolder, pEvent);
@@ -11414,14 +11414,37 @@ const EXCEPTION_RECORD * CordbProcess::ValidateExceptionRecord(
 HRESULT CordbProcess::SetEnableCustomNotification(ICorDebugClass * pClass, BOOL fEnable)
 {
     HRESULT hr = S_OK;
-    PUBLIC_API_BEGIN(this); // takes the lock
+    PUBLIC_API_ENTRY(this);
+    FAIL_IF_NEUTERED(this);
+    ATT_REQUIRE_STOPPED_MAY_FAIL(GetProcess());
 
     ValidateOrThrow(pClass);
 
-    ((CordbClass *)pClass)->SetCustomNotifications(fEnable);
+    CordbProcess * pProcess = GetProcess();
+    RSLockHolder lockHolder(pProcess->GetProcessLock());
 
-    PUBLIC_API_END(hr);
-    return hr;
+    DebuggerIPCEvent event;
+    CordbClass *pCordbClass = static_cast<CordbClass *>(pClass);
+    _ASSERTE(pCordbClass != NULL);
+    CordbAppDomain * pAppDomain = pCordbClass->GetAppDomain();
+    _ASSERTE (pAppDomain != NULL);
+    CordbModule *pModule = pCordbClass->GetModule();
+
+    pProcess->InitIPCEvent(&event,
+                           DB_IPCE_SET_ENABLE_CUSTOM_NOTIFICATION,
+                           true,
+                           pAppDomain->GetADToken());
+    event.CustomNotificationData.vmModule = pModule->GetRuntimeModule();
+    event.CustomNotificationData.classMetadataToken = pCordbClass->MDToken();
+    event.CustomNotificationData.Enabled = fEnable;
+
+    lockHolder.Release();
+    hr = pProcess->m_cordb->SendIPCEvent(pProcess, &event, sizeof(DebuggerIPCEvent));
+    lockHolder.Acquire();
+
+    _ASSERTE(event.type == DB_IPCE_SET_ENABLE_CUSTOM_NOTIFICATION_RESULT);
+
+    return event.hr;
 } // CordbProcess::SetEnableCustomNotification
 
 //---------------------------------------------------------------------------------------

@@ -386,5 +386,39 @@ namespace ComInterfaceGenerator.Tests
                 obj.ByValueOutParam(strings);
             });
         }
+
+        [Fact]
+        public unsafe void IHideWorksAsExpected()
+        {
+            IHide obj = CreateWrapper<HideBaseMethods, IHide3>();
+
+            // IHide.SameMethod should be index 3
+            Assert.Equal(3, obj.SameMethod());
+            Assert.Equal(4, obj.DifferentMethod());
+
+            IHide2 obj2 = (IHide2)obj;
+
+            // IHide2.SameMethod should be index 5
+            Assert.Equal(5, obj2.SameMethod());
+            Assert.Equal(4, obj2.DifferentMethod());
+            Assert.Equal(6, obj2.DifferentMethod2());
+
+            IHide3 obj3 = (IHide3)obj;
+            // IHide3.SameMethod should be index 7
+            Assert.Equal(7, obj3.SameMethod());
+            Assert.Equal(4, obj3.DifferentMethod());
+            Assert.Equal(6, obj3.DifferentMethod2());
+            Assert.Equal(8, obj3.DifferentMethod3());
+
+            // Ensure each VTable method points to the correct method on HideBaseMethods
+            for (int i = 3; i < 9; i++)
+            {
+                var (__this, __vtable_native) = ((global::System.Runtime.InteropServices.Marshalling.IUnmanagedVirtualMethodTableProvider)obj3).GetVirtualMethodTableInfoForKey(typeof(global::SharedTypes.ComInterfaces.IHide3));
+                int __retVal;
+                int __invokeRetVal;
+                __invokeRetVal = ((delegate* unmanaged[MemberFunction]<void*, int*, int>)__vtable_native[i])(__this, &__retVal);
+                Assert.Equal(i, __retVal);
+            }
+        }
     }
 }

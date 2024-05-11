@@ -577,7 +577,7 @@ VOID ETW::ThreadLog::FireThreadCreated(Thread * pThread)
 
     FireEtwThreadCreated(
         (ULONGLONG)pThread,
-        (ULONGLONG)pThread->GetDomain(),
+        (ULONGLONG)AppDomain::GetCurrentDomain(),
         GetEtwThreadFlags(pThread),
         pThread->GetThreadId(),
         pThread->GetOSThreadId(),
@@ -590,7 +590,7 @@ VOID ETW::ThreadLog::FireThreadDC(Thread * pThread)
 
     FireEtwThreadDC(
         (ULONGLONG)pThread,
-        (ULONGLONG)pThread->GetDomain(),
+        (ULONGLONG)AppDomain::GetCurrentDomain(),
         GetEtwThreadFlags(pThread),
         pThread->GetThreadId(),
         pThread->GetOSThreadId(),

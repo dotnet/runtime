@@ -10,7 +10,7 @@ namespace System.Numerics.Tensors
 {
     public static partial class TensorPrimitives
     {
-        /// <summary>Computes the element-wise result of <c>(<paramref name="x" /> * <paramref name="y" />) * <paramref name="addend" /></c> for the specified tensors of numbers.</summary>
+        /// <summary>Computes the element-wise result of <c>(<paramref name="x" /> * <paramref name="y" />) + <paramref name="addend" /></c> for the specified tensors of numbers.</summary>
         /// <param name="x">The first tensor, represented as a span.</param>
         /// <param name="y">The second tensor, represented as a span.</param>
         /// <param name="addend">The third tensor, represented as a span.</param>
@@ -38,7 +38,7 @@ namespace System.Numerics.Tensors
             where T : IFloatingPointIeee754<T> =>
             InvokeSpanSpanSpanIntoSpan<T, FusedMultiplyAddOperator<T>>(x, y, addend, destination);
 
-        /// <summary>Computes the element-wise result of <c>(<paramref name="x" /> * <paramref name="y" />) * <paramref name="addend" /></c> for the specified tensors of numbers.</summary>
+        /// <summary>Computes the element-wise result of <c>(<paramref name="x" /> * <paramref name="y" />) + <paramref name="addend" /></c> for the specified tensors of numbers.</summary>
         /// <param name="x">The first tensor, represented as a span.</param>
         /// <param name="y">The second tensor, represented as a span.</param>
         /// <param name="addend">The third tensor, represented as a scalar.</param>
@@ -66,7 +66,7 @@ namespace System.Numerics.Tensors
             where T : IFloatingPointIeee754<T> =>
             InvokeSpanSpanScalarIntoSpan<T, FusedMultiplyAddOperator<T>>(x, y, addend, destination);
 
-        /// <summary>Computes the element-wise result of <c>(<paramref name="x" /> * <paramref name="y" />) * <paramref name="addend" /></c> for the specified tensors of numbers.</summary>
+        /// <summary>Computes the element-wise result of <c>(<paramref name="x" /> * <paramref name="y" />) + <paramref name="addend" /></c> for the specified tensors of numbers.</summary>
         /// <param name="x">The first tensor, represented as a span.</param>
         /// <param name="y">The second tensor, represented as a scalar.</param>
         /// <param name="addend">The third tensor, represented as a span.</param>

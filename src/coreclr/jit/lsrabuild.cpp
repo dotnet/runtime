@@ -2898,7 +2898,7 @@ void LinearScan::stressSetRandomParameterPreferences()
 
         // Select a random register from all possible parameter registers
         // (of the right type). Preference this parameter to that register.
-        unsigned numBits = BitOperations::PopCount(*regs);
+        unsigned numBits = PopCount(*regs);
         if (numBits == 0)
         {
             continue;
@@ -3605,7 +3605,7 @@ int LinearScan::BuildDelayFreeUses(GenTree*      node,
     else if (node->OperIsHWIntrinsic())
     {
         assert(node->AsHWIntrinsic()->GetOperandCount() == 1);
-        use = BuildUse(node->AsHWIntrinsic()->Op(1), candidates);
+        return BuildDelayFreeUses(node->AsHWIntrinsic()->Op(1), rmwNode, candidates, useRefPositionRef);
     }
 #endif
     else if (!node->OperIsIndir())

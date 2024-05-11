@@ -417,11 +417,6 @@ const char* dspRegRange(regMaskTP regMask, size_t& minSiz, const char* sep, regN
             sep        = " ";
         }
 
-        if (regBit > regMask)
-        {
-            break;
-        }
-
         regPrev = regNum;
     }
 

@@ -15,11 +15,11 @@
 //     - multiply by a positive constant
 //     - add/subtract when the initial IV is known to be >= 0
 //     - add a value smaller than pointer size (to avoid a value off the end of an array) <-- This last check was missing and hence the bug!!!!!
-// 
-// Problem: The JIT seems to be rewriting the IV and the loop test in terms of the struct member, which is not safe because the member is more than pointer size past the end of the array. 
-// 
-// Fix: Stop OSR from rewriting IV's when the ADD is greater than pointer size. Need to further beat down OSR to have it stop rewriting IVs when they would be offset more than pointer-sized past the end of an array or object. 
-// 
+//
+// Problem: The JIT seems to be rewriting the IV and the loop test in terms of the struct member, which is not safe because the member is more than pointer size past the end of the array.
+//
+// Fix: Stop OSR from rewriting IV's when the ADD is greater than pointer size. Need to further beat down OSR to have it stop rewriting IVs when they would be offset more than pointer-sized past the end of an array or object.
+//
 // PLEASE NOTE: You have to set DOTNET_GCSTRESS=4 to see the AV.
 
 using System;
@@ -40,7 +40,7 @@ public static class Repro
         for (int i = 0; i < ms.Length; i++)
         {
             sum += ms[i].h; //Gives an AV
-                            //sum += ms[i].b; //will not give an AV since offset is less than 8 bytes. 
+                            //sum += ms[i].b; //will not give an AV since offset is less than 8 bytes.
         }
         return sum;
     }
@@ -63,11 +63,12 @@ public static class Repro
     }
 
     [Fact]
+    [OuterLoop]
     public static int TestEntryPoint()
     {
         MyStruct[] ms = InitMS(5); //InitMS(args.Length > 0 ? int.Parse(args[0]) : 5);
-                                   //Do not expect to take in any arguments here for simplicity sake.
-                                   //This does not impact functionality of the repro.
+                                    //Do not expect to take in any arguments here for simplicity sake.
+                                    //This does not impact functionality of the repro.
         if (SumMSH(ms) == 115) return 100; else return 101;
     }
 }

@@ -157,6 +157,9 @@ ASMCONSTANTS_C_ASSERT(UnmanagedToManagedFrame__m_pvDatum == offsetof(UnmanagedTo
 
 #endif // FEATURE_COMINTEROP
 
+#ifdef FEATURE_SPECIAL_USER_MODE_APC
+#define OFFSETOF__APC_CALLBACK_DATA__ContextRecord 0x8
+#endif
 
 #define REDIRECTSTUB_SP_OFFSET_CONTEXT 0
 

@@ -9,6 +9,7 @@ namespace Precise
     public class Driver_xprecise4
     {
         [Fact]
+        [OuterLoop]
         public static int TestEntryPoint()
         {
             try

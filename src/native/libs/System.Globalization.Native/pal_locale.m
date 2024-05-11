@@ -536,11 +536,9 @@ int32_t GlobalizationNative_GetLocaleInfoIntNative(const char* localeName, Local
         {
             case LocaleNumber_MeasurementSystem:
             {
-                NSString *currentLocaleCode = [currentLocale objectForKey:NSLocaleMeasurementSystem];
-                NSString *usLocaleCode = [[[NSLocale alloc] initWithLocaleIdentifier:@"en_US"] objectForKey:NSLocaleMeasurementSystem];
-                const char *measurementSystem = [currentLocaleCode UTF8String];
-                const char *us_measurementSystem = [usLocaleCode UTF8String];
-                value = (measurementSystem == us_measurementSystem) ? 1 : 0;
+                NSString *currenMeasurementSystem = [currentLocale objectForKey:NSLocaleMeasurementSystem];
+                NSString *usMeasurementSystem = [[[NSLocale alloc] initWithLocaleIdentifier:@"en_US"] objectForKey:NSLocaleMeasurementSystem];
+                value = [currenMeasurementSystem isEqualToString:usMeasurementSystem] ? 1 : 0;
                 break;
             }
             case LocaleNumber_FractionalDigitsCount:

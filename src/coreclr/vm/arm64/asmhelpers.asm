@@ -1174,5 +1174,39 @@ __HelperNakedFuncName SETS "$helper":CC:"Naked"
         br x9
     LEAF_END
 
+#ifdef FEATURE_SPECIAL_USER_MODE_APC
+
+    IMPORT |?ApcActivationCallback@Thread@@CAX_K@Z|
+
+    ; extern "C" void NTAPI ApcActivationCallbackStub(ULONG_PTR Parameter);
+    NESTED_ENTRY ApcActivationCallbackStub
+
+        PROLOG_SAVE_REG_PAIR    fp, lr, #-16!
+        PROLOG_STACK_ALLOC      16                ; stack slot for CONTEXT* and padding
+
+        ;REDIRECTSTUB_SP_OFFSET_CONTEXT is defined in asmconstants.h and is used in GetCONTEXTFromRedirectedStubStackFrame
+        ;If CONTEXT is not saved at 0 offset from SP it must be changed as well.
+        ASSERT REDIRECTSTUB_SP_OFFSET_CONTEXT == 0
+
+        ; Save a copy of the redirect CONTEXT*.
+        ; This is needed for the debugger to unwind the stack.
+        ldr x17, [x0, OFFSETOF__APC_CALLBACK_DATA__ContextRecord]
+        str x17, [sp]
+
+        bl |?ApcActivationCallback@Thread@@CAX_K@Z|
+
+        EPILOG_STACK_FREE       16                ; undo stack slot for CONTEXT* and padding
+        EPILOG_RESTORE_REG_PAIR fp, lr, #16!
+        EPILOG_RETURN
+
+; Put a label here to tell the debugger where the end of this function is.
+    PATCH_LABEL ApcActivationCallbackStubEnd
+    EXPORT ApcActivationCallbackStubEnd
+
+    NESTED_END
+
+#endif ; FEATURE_SPECIAL_USER_MODE_APC
+
+
 ; Must be at very end of file
     END

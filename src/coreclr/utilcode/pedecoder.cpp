@@ -35,8 +35,6 @@ CHECK PEDecoder::CheckFormat() const
 
             if (IsILOnly())
                 CHECK(CheckILOnly());
-
-            CHECK(CheckWillCreateGuardPage());
         }
     }
 
@@ -2433,44 +2431,6 @@ PTR_CVOID PEDecoder::GetNativeManifestMetadata(COUNT_T *pSize) const
         *pSize = VAL32(pDir->Size);
 
     RETURN dac_cast<PTR_VOID>(GetDirectoryData(pDir));
-}
-
-// Get the SizeOfStackReserve and SizeOfStackCommit from the PE file that was used to create
-// the calling process (.exe file).
-void PEDecoder::GetEXEStackSizes(SIZE_T *PE_SizeOfStackReserve, SIZE_T *PE_SizeOfStackCommit) const
-{
-    CONTRACTL {
-        PRECONDITION(!IsDll()); // This routine should only be called for EXE files.
-        NOTHROW;
-        GC_NOTRIGGER;
-    } CONTRACTL_END;
-
-    * PE_SizeOfStackReserve = GetSizeOfStackReserve();
-    * PE_SizeOfStackCommit  = GetSizeOfStackCommit();
-}
-
-CHECK PEDecoder::CheckWillCreateGuardPage() const
-{
-    CONTRACT_CHECK
-    {
-        PRECONDITION(CheckNTHeaders());
-        NOTHROW;
-        GC_NOTRIGGER;
-    }
-    CONTRACT_CHECK_END;
-
-    if (!IsDll())
-    {
-        SIZE_T sizeReservedStack = 0;
-        SIZE_T sizeCommittedStack = 0;
-
-        GetEXEStackSizes(&sizeReservedStack, &sizeCommittedStack);
-
-        CHECK(ThreadWillCreateGuardPage(sizeReservedStack, sizeCommittedStack));
-
-    }
-
-    CHECK_OK;
 }
 
 BOOL PEDecoder::HasNativeEntryPoint() const

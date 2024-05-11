@@ -598,7 +598,7 @@ void SyncBlockCache::CleanupSyncBlocks()
             pParam->psb = NULL;
 
             // pulse GC mode to allow GC to perform its work
-            if (FinalizerThread::GetFinalizerThread()->CatchAtSafePointOpportunistic())
+            if (FinalizerThread::GetFinalizerThread()->CatchAtSafePoint())
             {
                 FinalizerThread::GetFinalizerThread()->PulseGCMode();
             }

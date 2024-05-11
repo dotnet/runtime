@@ -19,8 +19,9 @@ const config = getConfig();
 const exports = await getAssemblyExports(config.mainAssemblyName);
 globalThis.onClick = exports.Program.OnClick;
 
-await dotnet
+const runtime = await dotnet
     .withRuntimeOptions(["--jiterpreter-stats-enabled"])
-    .run();
+    .create();
+await runtime.runMain();
 const btnRender = document.getElementById("btnRender");
 btnRender.disabled = false;

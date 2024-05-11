@@ -120,7 +120,7 @@ mono_interp_record_interp_entry (void *fn_ptr);
 extern gpointer
 mono_interp_jit_wasm_entry_trampoline (
 	void *imethod, MonoMethod *method, int argument_count, MonoType *param_types,
-	int unbox, int has_this, int has_return, const char *name, void *default_implementation
+	int unbox, int has_this, int has_return, void *default_implementation
 );
 
 // Fast-path implemented in C

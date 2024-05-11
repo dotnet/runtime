@@ -4,7 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO.Compression;
-using System.Reflection;
+using System.Reflection.Metadata;
 
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
@@ -656,14 +656,14 @@ namespace ILCompiler.IBC
                     }
                 }
 
-                public AssemblyName GetName()
+                public AssemblyNameInfo GetName()
                 {
-                    return new AssemblyName("System.Private.Canon");
+                    return new AssemblyNameInfo("System.Private.Canon");
                 }
             }
 
             private CanonModule _canonModule;
-            private AssemblyName _canonModuleName;
+            private AssemblyNameInfo _canonModuleName;
             private IModuleResolver _wrappedResolver;
 
             public CustomCanonResolver(TypeSystemContext wrappedContext)
@@ -673,7 +673,7 @@ namespace ILCompiler.IBC
                 _wrappedResolver = wrappedContext;
             }
 
-            ModuleDesc IModuleResolver.ResolveAssembly(AssemblyName name, bool throwIfNotFound)
+            ModuleDesc IModuleResolver.ResolveAssembly(AssemblyNameInfo name, bool throwIfNotFound)
             {
                 if (name.Name == _canonModuleName.Name)
                     return _canonModule;

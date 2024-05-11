@@ -507,7 +507,7 @@ FCIMPL1(void, ThreadNative::Initialize, ThreadBaseObject* pThisUNSAFE)
 
     PREFIX_ASSUME(unstarted != NULL);
 
-    if (GetThread()->GetDomain()->IgnoreUnhandledExceptions())
+    if (AppDomain::GetCurrentDomain()->IgnoreUnhandledExceptions())
     {
         unstarted->SetThreadStateNC(Thread::TSNC_IgnoreUnhandledExceptions);
     }
@@ -912,25 +912,6 @@ void ThreadNative::InformThreadNameChange(Thread* pThread, LPCWSTR name, INT32 l
     }
 #endif // DEBUGGING_SUPPORTED
 }
-
-extern "C" UINT64 QCALLTYPE ThreadNative_GetProcessDefaultStackSize()
-{
-    QCALL_CONTRACT;
-
-    SIZE_T reserve = 0;
-    SIZE_T commit = 0;
-
-    BEGIN_QCALL;
-
-    if (!Thread::GetProcessDefaultStackSize(&reserve, &commit))
-        reserve = 1024 * 1024;
-
-    END_QCALL;
-
-    return (UINT64)reserve;
-}
-
-
 
 FCIMPL1(FC_BOOL_RET, ThreadNative::IsThreadpoolThread, ThreadBaseObject* thread)
 {

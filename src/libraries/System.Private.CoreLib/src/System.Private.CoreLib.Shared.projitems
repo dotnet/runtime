@@ -778,6 +778,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\TypeDelegator.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\TypeFilter.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\TypeInfo.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\TypeNameResolver.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Metadata\MetadataUpdateHandlerAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\ResolveEventArgs.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\ResolveEventHandler.cs" />
@@ -1475,25 +1476,25 @@
     <Compile Include="$(CommonPath)System\IO\PathInternal.CaseSensitivity.cs">
       <Link>Common\System\IO\PathInternal.CaseSensitivity.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)System\Reflection\TypeNameParser.Helpers.cs">
-      <Link>Common\System\Reflection\TypeNameParser.Helpers</Link>
-    </Compile>
     <Compile Include="$(CommonPath)System\Reflection\AssemblyNameParser.cs">
       <Link>Common\System\Reflection\AssemblyNameParser.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)System\Reflection\AssemblyNameFormatter.cs">
       <Link>Common\System\Reflection\AssemblyNameFormatter.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)System\Reflection\Metadata\AssemblyNameInfo.cs">
+    <Compile Include="$(LibrariesProjectRoot)System.Reflection.Metadata\src\System\Reflection\Metadata\AssemblyNameInfo.cs">
       <Link>Common\System\Reflection\Metadata\AssemblyNameInfo.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)System\Reflection\Metadata\TypeName.cs">
+    <Compile Include="$(LibrariesProjectRoot)System.Reflection.Metadata\src\System\Reflection\Metadata\TypeName.cs">
       <Link>Common\System\Reflection\Metadata\TypeName.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)System\Reflection\Metadata\TypeNameParser.cs">
+    <Compile Include="$(CommonPath)System\Reflection\Metadata\TypeNameHelpers.cs">
+      <Link>Common\System\Reflection\Metadata\TypeNameHelpers.cs</Link>
+    </Compile>
+    <Compile Include="$(LibrariesProjectRoot)System.Reflection.Metadata\src\System\Reflection\Metadata\TypeNameParser.cs">
       <Link>Common\System\Reflection\Metadata\TypeNameParser.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)System\Reflection\Metadata\TypeNameParserHelpers.cs">
+    <Compile Include="$(LibrariesProjectRoot)System.Reflection.Metadata\src\System\Reflection\Metadata\TypeNameParserHelpers.cs">
       <Link>Common\System\Reflection\Metadata\TypeNameParserHelpers.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)System\Runtime\Versioning\NonVersionableAttribute.cs">

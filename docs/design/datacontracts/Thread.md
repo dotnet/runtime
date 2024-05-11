@@ -22,9 +22,7 @@ enum ThreadState
 
     TS_AbortRequested         = 0x00000001,    // Abort the thread
 
-    TS_GCSuspendPending       = 0x00000002,    // ThreadSuspend::SuspendRuntime watches this thread to leave coop mode.
     TS_GCSuspendRedirected    = 0x00000004,    // ThreadSuspend::SuspendRuntime has redirected the thread to suspention routine.
-    TS_GCSuspendFlags         = TS_GCSuspendPending | TS_GCSuspendRedirected, // used to track suspension progress. Only SuspendRuntime writes/resets these.
 
     TS_DebugSuspendPending    = 0x00000008,    // Is the debugger suspending threads?
     TS_GCOnTransitions        = 0x00000010,    // Force a GC on stub transitions (GCStress only)

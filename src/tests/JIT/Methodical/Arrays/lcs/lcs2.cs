@@ -84,6 +84,7 @@ namespace JitTest_lcs2_lcs_cs
         }
 
         [Fact]
+        [SkipOnCoreClr("This test is not compatible with GCStress.", RuntimeTestModes.AnyGCStress)]
         public static int TestEntryPoint()
         {
             Console.WriteLine("Test searches for longest common subsequence of 4 strings\n\n");

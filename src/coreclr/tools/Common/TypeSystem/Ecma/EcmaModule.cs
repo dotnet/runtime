@@ -615,22 +615,14 @@ namespace Internal.TypeSystem.Ecma
         {
             AssemblyReference assemblyReference = _metadataReader.GetAssemblyReference(handle);
 
-            AssemblyName an = new AssemblyName();
-            an.Name = _metadataReader.GetString(assemblyReference.Name);
-            an.Version = assemblyReference.Version;
-
-            var publicKeyOrToken = _metadataReader.GetBlobBytes(assemblyReference.PublicKeyOrToken);
-            if ((assemblyReference.Flags & AssemblyFlags.PublicKey) != 0)
-            {
-                an.SetPublicKey(publicKeyOrToken);
-            }
-            else
-            {
-                an.SetPublicKeyToken(publicKeyOrToken);
-            }
-
-            an.CultureName = _metadataReader.GetString(assemblyReference.Culture);
-            an.ContentType = GetContentTypeFromAssemblyFlags(assemblyReference.Flags);
+            AssemblyNameInfo an = new AssemblyNameInfo
+            (
+                name: _metadataReader.GetString(assemblyReference.Name),
+                version: assemblyReference.Version,
+                cultureName: _metadataReader.GetString(assemblyReference.Culture),
+                flags: (AssemblyNameFlags)assemblyReference.Flags,
+                publicKeyOrToken: _metadataReader.GetBlobContent(assemblyReference.PublicKeyOrToken)
+            );
 
             var assembly = _moduleResolver.ResolveAssembly(an, throwIfNotFound: false);
             if (assembly == null)
@@ -685,11 +677,6 @@ namespace Internal.TypeSystem.Ecma
                 return null;
 
             return (MetadataType)GetType(MetadataTokens.EntityHandle(0x02000001 /* COR_GLOBAL_PARENT_TOKEN */));
-        }
-
-        protected static AssemblyContentType GetContentTypeFromAssemblyFlags(AssemblyFlags flags)
-        {
-            return (AssemblyContentType)(((int)flags & 0x0E00) >> 9);
         }
 
         public string GetUserString(UserStringHandle userStringHandle)
