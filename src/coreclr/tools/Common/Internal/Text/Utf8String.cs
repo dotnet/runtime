@@ -21,7 +21,6 @@ namespace Internal.Text
             _value = Encoding.UTF8.GetBytes(s);
         }
 
-        public ReadOnlySpan<byte> UnderlyingArray => _value;
         public int Length => _value.Length;
 
         // For now, define implicit conversions between string and Utf8String to aid the transition
@@ -30,6 +29,8 @@ namespace Internal.Text
         {
             return new Utf8String(s);
         }
+
+        public ReadOnlySpan<byte> AsSpan() => _value;
 
         public override string ToString()
         {
@@ -71,12 +72,12 @@ namespace Internal.Text
 
         public bool Equals(Utf8String other)
         {
-            return UnderlyingArray.SequenceEqual(other.UnderlyingArray);
+            return AsSpan().SequenceEqual(other.AsSpan());
         }
 
         private static int Compare(Utf8String strA, Utf8String strB)
         {
-            return strA.UnderlyingArray.SequenceCompareTo(strB.UnderlyingArray);
+            return strA.AsSpan().SequenceCompareTo(strB.AsSpan());
         }
 
         public int CompareTo(Utf8String other)

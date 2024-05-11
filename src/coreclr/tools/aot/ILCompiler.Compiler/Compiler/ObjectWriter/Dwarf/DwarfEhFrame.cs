@@ -93,7 +93,7 @@ namespace ILCompiler.ObjectWriter
             _sectionWriter.WriteLittleEndian<uint>(0);
 
             _sectionWriter.WriteByte(cie.ReturnAddressRegister < 0x7F ? (byte)1u : (byte)3u); // Version
-            _sectionWriter.Write(augmentationString.UnderlyingArray);
+            _sectionWriter.Write(augmentationString.AsSpan());
 
             _sectionWriter.WriteULEB128(cie.CodeAlignFactor);
             _sectionWriter.WriteSLEB128(cie.DataAlignFactor);

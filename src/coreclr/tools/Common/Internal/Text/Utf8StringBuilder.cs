@@ -16,8 +16,9 @@ namespace Internal.Text
         {
         }
 
-        public ReadOnlySpan<byte> UnderlyingArray => _buffer;
         public int Length => _length;
+
+        public ReadOnlySpan<byte> AsSpan() => _buffer;
 
         public Utf8StringBuilder Clear()
         {
@@ -34,7 +35,7 @@ namespace Internal.Text
 
         public Utf8StringBuilder Append(Utf8String value)
         {
-            return Append(value.UnderlyingArray);
+            return Append(value.AsSpan());
         }
 
         public Utf8StringBuilder Append(ReadOnlySpan<byte> value)
