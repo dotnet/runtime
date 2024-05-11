@@ -312,7 +312,7 @@ namespace ILCompiler.DependencyAnalysis
                     foreach (NativeLayoutVertexNode node in Vertices)
                     {
                         hashcode ^= node.GetHashCode();
-                        hashcode = BitOperations.RotateLeft((uint)hashcode, 5);
+                        hashcode = (int)BitOperations.RotateLeft((uint)hashcode, 5);
                     }
                     return hashcode;
                 }
