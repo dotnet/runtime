@@ -177,32 +177,30 @@ export async function mono_download_assets (): Promise<void> {
         for (const downloadPromise of promises_of_assets) {
             promises_of_asset_instantiation.push((async () => {
                 const asset = await downloadPromise;
-                if (asset.buffer) {
+                if (asset.buffer || asset.stream) {
                     if (!skipInstantiateByAssetTypes[asset.behavior]) {
-                        mono_assert(asset.buffer && typeof asset.buffer === "object", "asset buffer must be array-like or buffer-like or promise of these");
+                        if (asset.buffer)
+                            mono_assert(asset.buffer && typeof asset.buffer === "object", "asset buffer must be array-like or buffer-like or promise of these");
+                        else if (asset.stream)
+                            mono_assert(asset.stream && typeof asset.stream === "object", "asset buffer must be a stream or promise of these");
+
                         mono_assert(typeof asset.resolvedUrl === "string", "resolvedUrl must be string");
                         const url = asset.resolvedUrl!;
-                        const buffer = await asset.buffer;
-                        const data = new Uint8Array(buffer);
-                        cleanupAsset(asset);
 
-                        // wait till after onRuntimeInitialized
+                        if (asset.buffer) {
+                            const buffer = await asset.buffer;
+                            const data = new Uint8Array(buffer);
+                            cleanupAsset(asset);
 
-                        await runtimeHelpers.beforeOnRuntimeInitialized.promise;
-                        await runtimeHelpers.instantiate_asset(asset, url, data);
-                    }
-                } else if (asset.stream) {
-                    if (!skipInstantiateByAssetTypes[asset.behavior]) {
-                        mono_assert(asset.stream && typeof asset.stream === "object", "asset buffer must be array-like or buffer-like or promise of these");
-                        mono_assert(typeof asset.resolvedUrl === "string", "resolvedUrl must be string");
-                        const url = asset.resolvedUrl!;
-                        const stream = await asset.stream;
-                        cleanupAsset(asset);
+                            await runtimeHelpers.beforeOnRuntimeInitialized.promise;
+                            await runtimeHelpers.instantiate_asset(asset, url, data);
+                        } else {
+                            const stream = await asset.stream;
+                            cleanupAsset(asset);
 
-                        // wait till after onRuntimeInitialized
-
-                        await runtimeHelpers.beforeOnRuntimeInitialized.promise;
-                        await runtimeHelpers.instantiate_asset(asset, url, stream);
+                            await runtimeHelpers.beforeOnRuntimeInitialized.promise;
+                            await runtimeHelpers.instantiate_asset(asset, url, stream!);
+                        }
                     }
                 } else {
                     const headersOnly = skipBufferByAssetTypes[asset.behavior];

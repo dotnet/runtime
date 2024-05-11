@@ -14,10 +14,10 @@ import { VoidPtr } from "./types/emscripten";
 import { setSegmentationRulesFromJson } from "./hybrid-globalization/grapheme-segmenter";
 
 // this need to be run only after onRuntimeInitialized event, when the memory is ready
-export async function instantiate_asset (asset: AssetEntry, url: string, bytesOrStream: Uint8Array | [ReadableStream, number]) : Promise<void> {
-    const length = Array.isArray(bytesOrStream)
-        ? bytesOrStream[1]
-        : bytesOrStream.length;
+export async function instantiate_asset (asset: AssetEntry, url: string, bytesOrStream: Uint8Array | ReadableStream) : Promise<void> {
+    const length = bytesOrStream instanceof Uint8Array
+        ? bytesOrStream.length
+        : asset.knownLength!;
     mono_log_debug(`Loaded:${asset.name} as ${asset.behavior} size ${length} from ${url}`);
     const mark = startMeasure();
 
@@ -40,10 +40,10 @@ export async function instantiate_asset (asset: AssetEntry, url: string, bytesOr
         // falls through
         case "heap":
         case "icu":
-            if (Array.isArray(bytesOrStream))
-                offset = await mono_wasm_load_stream_into_heap_persistent(bytesOrStream[0], bytesOrStream[1]);
-            else
+            if (bytesOrStream instanceof Uint8Array)
                 offset = mono_wasm_load_bytes_into_heap_persistent(bytesOrStream);
+            else
+                offset = await mono_wasm_load_stream_into_heap_persistent(bytesOrStream, asset.knownLength!);
             break;
 
         case "vfs": {
@@ -68,7 +68,7 @@ export async function instantiate_asset (asset: AssetEntry, url: string, bytesOr
             }
 
             mono_log_debug(`Creating file '${fileName}' in directory '${parentDirectory}'`);
-            if (Array.isArray(bytesOrStream))
+            if (!(bytesOrStream instanceof Uint8Array))
                 throw new Error("Not implemented: Decode stream into vfs");
 
             Module.FS_createDataFile(

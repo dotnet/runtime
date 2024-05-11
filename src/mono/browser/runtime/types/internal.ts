@@ -231,7 +231,7 @@ export type RuntimeHelpers = {
 
     //core
     stringify_as_error_with_stack?: (error: any) => string,
-    instantiate_asset: (asset: AssetEntry, url: string, bytesOrStream: Uint8Array | [ReadableStream, number]) => Promise<void>,
+    instantiate_asset: (asset: AssetEntry, url: string, bytesOrStream: Uint8Array | ReadableStream) => Promise<void>,
     instantiate_symbols_asset: (pendingAsset: AssetEntryInternal) => Promise<void>,
     instantiate_segmentation_rules_asset: (pendingAsset: AssetEntryInternal) => Promise<void>,
     jiterpreter_dump_stats?: (concise?: boolean) => void,
