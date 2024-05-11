@@ -46,13 +46,6 @@ namespace Internal.Text
             return this;
         }
 
-        public Utf8StringBuilder Append(byte value)
-        {
-            Ensure(1);
-            _buffer[_length++] = value;
-            return this;
-        }
-
         public Utf8StringBuilder Append(string value)
         {
             int length = Encoding.UTF8.GetByteCount(value);
