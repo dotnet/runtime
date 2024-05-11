@@ -7,6 +7,7 @@ using System.Runtime.CompilerServices;
 using Internal.Text;
 using Internal.TypeSystem;
 using ILCompiler.DependencyAnalysisFramework;
+using System.Numerics;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -305,20 +306,13 @@ namespace ILCompiler.DependencyAnalysis
                     return true;
                 }
 
-                [MethodImpl(MethodImplOptions.AggressiveInlining)]
-                private static int _rotl(int value, int shift)
-                {
-                    // This is expected to be optimized into a single rotl instruction
-                    return (int)(((uint)value << shift) | ((uint)value >> (32 - shift)));
-                }
-
                 public override int GetHashCode()
                 {
                     int hashcode = 0;
                     foreach (NativeLayoutVertexNode node in Vertices)
                     {
                         hashcode ^= node.GetHashCode();
-                        hashcode = _rotl(hashcode, 5);
+                        hashcode = BitOperations.RotateLeft((uint)hashcode, 5);
                     }
                     return hashcode;
                 }
