@@ -8,7 +8,6 @@
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
-using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Arm;
@@ -1196,13 +1195,15 @@ namespace System
         ///    <para>On ARM64 hardware this may use the <c>FRECPE</c> instruction which performs a single Newton-Raphson iteration.</para>
         ///    <para>On hardware without specialized support, this may just return <c>1.0 / d</c>.</para>
         /// </remarks>
-        [BypassReadyToRun]
-#if MONO
-        public static double ReciprocalEstimate(double d) => 1.0 / d;
-#else
         [Intrinsic]
-        public static double ReciprocalEstimate(double d) => ReciprocalEstimate(d);
+        public static double ReciprocalEstimate(double d)
+        {
+#if MONO
+            return 1.0 / d;
+#else
+            return ReciprocalEstimate(d);
 #endif
+        }
 
         /// <summary>Returns an estimate of the reciprocal square root of a specified number.</summary>
         /// <param name="d">The number whose reciprocal square root is to be estimated.</param>
@@ -1211,13 +1212,15 @@ namespace System
         ///    <para>On ARM64 hardware this may use the <c>FRSQRTE</c> instruction which performs a single Newton-Raphson iteration.</para>
         ///    <para>On hardware without specialized support, this may just return <c>1.0 / Sqrt(d)</c>.</para>
         /// </remarks>
-        [BypassReadyToRun]
-#if MONO || TARGET_RISCV64 || TARGET_LOONGARCH64
-        public static double ReciprocalSqrtEstimate(double d) => 1.0 / Sqrt(d);
-#else
         [Intrinsic]
-        public static double ReciprocalSqrtEstimate(double d) => ReciprocalSqrtEstimate(d);
+        public static double ReciprocalSqrtEstimate(double d)
+        {
+#if MONO || TARGET_RISCV64 || TARGET_LOONGARCH64
+            return 1.0 / Sqrt(d);
+#else
+            return ReciprocalSqrtEstimate(d);
 #endif
+        }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static decimal Round(decimal d)

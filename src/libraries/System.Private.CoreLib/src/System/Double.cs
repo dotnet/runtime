@@ -6,7 +6,6 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Numerics;
-using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
@@ -663,9 +662,20 @@ namespace System
 
         /// <inheritdoc cref="IFloatingPoint{TSelf}.ConvertToIntegerNative{TInteger}(TSelf)" />
         [Intrinsic]
-        [BypassReadyToRun]
         public static TInteger ConvertToIntegerNative<TInteger>(double value)
-            where TInteger : IBinaryInteger<TInteger> => TInteger.CreateSaturating(value);
+            where TInteger : IBinaryInteger<TInteger>
+        {
+#if !MONO
+            if (typeof(TInteger).IsPrimitive)
+            {
+                // We need this to be recursive so indirect calls (delegates
+                // for example) produce the same result as direct invocation
+                return ConvertToIntegerNative<TInteger>(value);
+            }
+#endif
+
+            return TInteger.CreateSaturating(value);
+        }
 
         /// <inheritdoc cref="IFloatingPoint{TSelf}.Floor(TSelf)" />
         [Intrinsic]

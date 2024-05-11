@@ -335,6 +335,7 @@ GenTree* Compiler::impNonConstFallback(NamedIntrinsic intrinsic, var_types simdT
 //    sig             -- signature of the intrinsic call.
 //    simdBaseJitType -- generic argument of the intrinsic.
 //    retType         -- return type of the intrinsic.
+//    mustExpand      -- true if the intrinsic must return a GenTree*; otherwise, false
 //
 // Return Value:
 //    The GT_HWINTRINSIC node, or nullptr if not a supported intrinsic
@@ -345,7 +346,8 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                                        CORINFO_SIG_INFO*     sig,
                                        CorInfoType           simdBaseJitType,
                                        var_types             retType,
-                                       unsigned              simdSize)
+                                       unsigned              simdSize,
+                                       bool                  mustExpand)
 {
     const HWIntrinsicCategory category = HWIntrinsicInfo::lookupCategory(intrinsic);
     const int                 numArgs  = sig->numArgs;
@@ -627,10 +629,8 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector64_ConvertToInt32Native:
         case NI_Vector128_ConvertToInt32Native:
         {
-            if (opts.IsReadyToRun())
+            if (BlockNonDeterministicIntrinsics(mustExpand))
             {
-                // We explicitly block these APIs from being expanded in R2R
-                // since we know they are non-deterministic across hardware
                 break;
             }
             FALLTHROUGH;
@@ -650,10 +650,8 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector64_ConvertToInt64Native:
         case NI_Vector128_ConvertToInt64Native:
         {
-            if (opts.IsReadyToRun())
+            if (BlockNonDeterministicIntrinsics(mustExpand))
             {
-                // We explicitly block these APIs from being expanded in R2R
-                // since we know they are non-deterministic across hardware
                 break;
             }
             FALLTHROUGH;
@@ -684,10 +682,8 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector64_ConvertToUInt32Native:
         case NI_Vector128_ConvertToUInt32Native:
         {
-            if (opts.IsReadyToRun())
+            if (BlockNonDeterministicIntrinsics(mustExpand))
             {
-                // We explicitly block these APIs from being expanded in R2R
-                // since we know they are non-deterministic across hardware
                 break;
             }
             FALLTHROUGH;
@@ -707,10 +703,8 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector64_ConvertToUInt64Native:
         case NI_Vector128_ConvertToUInt64Native:
         {
-            if (opts.IsReadyToRun())
+            if (BlockNonDeterministicIntrinsics(mustExpand))
             {
-                // We explicitly block these APIs from being expanded in R2R
-                // since we know they are non-deterministic across hardware
                 break;
             }
             FALLTHROUGH;

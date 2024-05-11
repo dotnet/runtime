@@ -4530,7 +4530,7 @@ protected:
                                   CORINFO_SIG_INFO*     sig,
                                   CorInfoType           callJitType,
                                   NamedIntrinsic        intrinsicName,
-                                  bool                  tailCall);
+                                  bool                  mustExpand);
     GenTree* impMathIntrinsic(CORINFO_METHOD_HANDLE method,
                               CORINFO_SIG_INFO*     sig,
                               var_types             callType,
@@ -4561,7 +4561,8 @@ protected:
     GenTree* impPrimitiveNamedIntrinsic(NamedIntrinsic        intrinsic,
                                         CORINFO_CLASS_HANDLE  clsHnd,
                                         CORINFO_METHOD_HANDLE method,
-                                        CORINFO_SIG_INFO*     sig);
+                                        CORINFO_SIG_INFO*     sig,
+                                        bool                  mustExpand);
 
 #ifdef FEATURE_HW_INTRINSICS
     GenTree* impHWIntrinsic(NamedIntrinsic        intrinsic,
@@ -4573,7 +4574,8 @@ protected:
                                   CORINFO_CLASS_HANDLE  clsHnd,
                                   CORINFO_METHOD_HANDLE method,
                                   CORINFO_SIG_INFO*     sig,
-                                  GenTree*              newobjThis);
+                                  GenTree*              newobjThis,
+                                  bool                  mustExpand);
 
 protected:
     bool compSupportsHWIntrinsic(CORINFO_InstructionSet isa);
@@ -4584,7 +4586,8 @@ protected:
                                          var_types            retType,
                                          CorInfoType          simdBaseJitType,
                                          unsigned             simdSize,
-                                         GenTree*             newobjThis);
+                                         GenTree*             newobjThis,
+                                         bool                 mustExpand);
 
     GenTree* impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                                  CORINFO_CLASS_HANDLE  clsHnd,
@@ -4592,7 +4595,8 @@ protected:
                                  CORINFO_SIG_INFO*     sig,
                                  CorInfoType           simdBaseJitType,
                                  var_types             retType,
-                                 unsigned              simdSize);
+                                 unsigned              simdSize,
+                                 bool                  mustExpand);
 
     GenTree* getArgForHWIntrinsic(var_types            argType,
                                   CORINFO_CLASS_HANDLE argClass,
@@ -8239,6 +8243,22 @@ public:
     bool IsTargetAbi(CORINFO_RUNTIME_ABI abi)
     {
         return eeGetEEInfo()->targetAbi == abi;
+    }
+
+    bool BlockNonDeterministicIntrinsics(bool mustExpand)
+    {
+        // We explicitly block these APIs from being expanded in R2R
+        // since we know they are non-deterministic across hardware
+
+        if (opts.IsReadyToRun() && !IsTargetAbi(CORINFO_NATIVEAOT_ABI))
+        {
+            if (mustExpand)
+            {
+                implLimitation();
+            }
+            return true;
+        }
+        return false;
     }
 
 #if defined(FEATURE_EH_WINDOWS_X86)

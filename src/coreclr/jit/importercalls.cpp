@@ -3024,8 +3024,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
         else
         {
             assert((ni > NI_PRIMITIVE_START) && (ni < NI_PRIMITIVE_END));
-            assert(!mustExpand);
-            return impPrimitiveNamedIntrinsic(ni, clsHnd, method, sig);
+            return impPrimitiveNamedIntrinsic(ni, clsHnd, method, sig, mustExpand);
         }
     }
 
@@ -3080,11 +3079,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
 
             if (isIntrinsic)
             {
-                // These intrinsics aren't defined recursively and so they will never be mustExpand
-                // Instead, they provide software fallbacks that will be executed instead.
-
-                assert(!mustExpand);
-                return impSimdAsHWIntrinsic(ni, clsHnd, method, sig, newobjThis);
+                return impSimdAsHWIntrinsic(ni, clsHnd, method, sig, newobjThis, mustExpand);
             }
         }
     }
@@ -4149,7 +4144,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
             case NI_System_Math_ReciprocalEstimate:
             case NI_System_Math_ReciprocalSqrtEstimate:
             {
-                retNode = impEstimateIntrinsic(method, sig, callJitType, ni, tailCall);
+                retNode = impEstimateIntrinsic(method, sig, callJitType, ni, mustExpand);
                 break;
             }
 
@@ -5158,6 +5153,7 @@ GenTree* Compiler::impSRCSUnsafeIntrinsic(NamedIntrinsic          intrinsic,
 //    clsHnd    - handle for the intrinsic method's class
 //    method    - handle for the intrinsic method
 //    sig       - signature of the intrinsic method
+//   mustExpand    - true if the intrinsic must return a GenTree*; otherwise, false
 //
 // Returns:
 //    IR tree to use in place of the call, or nullptr if the jit should treat
@@ -5166,7 +5162,8 @@ GenTree* Compiler::impSRCSUnsafeIntrinsic(NamedIntrinsic          intrinsic,
 GenTree* Compiler::impPrimitiveNamedIntrinsic(NamedIntrinsic        intrinsic,
                                               CORINFO_CLASS_HANDLE  clsHnd,
                                               CORINFO_METHOD_HANDLE method,
-                                              CORINFO_SIG_INFO*     sig)
+                                              CORINFO_SIG_INFO*     sig,
+                                              bool                  mustExpand)
 {
     assert(sig->sigInst.classInstCount == 0);
 
@@ -5193,10 +5190,8 @@ GenTree* Compiler::impPrimitiveNamedIntrinsic(NamedIntrinsic        intrinsic,
     {
         case NI_PRIMITIVE_ConvertToIntegerNative:
         {
-            if (opts.IsReadyToRun())
+            if (BlockNonDeterministicIntrinsics(mustExpand))
             {
-                // We explicitly block these APIs from being expanded in R2R
-                // since we know they are non-deterministic across hardware
                 return nullptr;
             }
             FALLTHROUGH;
@@ -5527,7 +5522,7 @@ GenTree* Compiler::impPrimitiveNamedIntrinsic(NamedIntrinsic        intrinsic,
             }
 
 #if defined(FEATURE_HW_INTRINSICS)
-            GenTree* lzcnt = impPrimitiveNamedIntrinsic(NI_PRIMITIVE_LeadingZeroCount, clsHnd, method, sig);
+            GenTree* lzcnt = impPrimitiveNamedIntrinsic(NI_PRIMITIVE_LeadingZeroCount, clsHnd, method, sig, mustExpand);
 
             if (lzcnt != nullptr)
             {
@@ -8762,23 +8757,21 @@ void Compiler::impCheckCanInline(GenTreeCall*           call,
 //   method        - The handle of the method being imported
 //   callType      - The underlying type for the call
 //   intrinsicName - The intrinsic being imported
-//   tailCall      - true if the method is a tail call; otherwise false
+//   mustExpand    - true if the intrinsic must return a GenTree*; otherwise, false
 //
 GenTree* Compiler::impEstimateIntrinsic(CORINFO_METHOD_HANDLE method,
                                         CORINFO_SIG_INFO*     sig,
                                         CorInfoType           callJitType,
                                         NamedIntrinsic        intrinsicName,
-                                        bool                  tailCall)
+                                        bool                  mustExpand)
 {
     var_types callType = JITtype2varType(callJitType);
 
     assert(varTypeIsFloating(callType));
     assert(sig->numArgs == 1);
 
-    if (opts.IsReadyToRun())
+    if (BlockNonDeterministicIntrinsics(mustExpand))
     {
-        // We explicitly block these APIs from being expanded in R2R
-        // since we know they are non-deterministic across hardware
         return nullptr;
     }
 
