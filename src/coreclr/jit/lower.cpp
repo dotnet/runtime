@@ -9212,6 +9212,7 @@ bool Lowering::TryMakeIndirsAdjacent(GenTreeIndir* prevIndir, GenTreeIndir* indi
     if ((prevIndir->gtLIRFlags & LIR::Flags::Mark) != 0)
     {
         JITDUMP("Previous indir is part of the data flow of current indir\n");
+        UnmarkTree(indir);
         return false;
     }
 
@@ -9249,6 +9250,7 @@ bool Lowering::TryMakeIndirsAdjacent(GenTreeIndir* prevIndir, GenTreeIndir* indi
         if (!indir->OperIsLoad())
         {
             JITDUMP("Have conservative interference with last store. Giving up.\n");
+            UnmarkTree(indir);
             return false;
         }
 
@@ -9348,7 +9350,7 @@ bool Lowering::TryMakeIndirsAdjacent(GenTreeIndir* prevIndir, GenTreeIndir* indi
         }
     }
 
-    JITDUMP("Interference checks passed: can to move unrelated nodes past second indir.\n");
+    JITDUMP("Interference checks passed: can move unrelated nodes past second indir.\n");
 
     if (sawData)
     {
@@ -9379,6 +9381,7 @@ bool Lowering::TryMakeIndirsAdjacent(GenTreeIndir* prevIndir, GenTreeIndir* indi
         if (m_scratchSideEffects.InterferesWith(comp, prevIndir, true))
         {
             JITDUMP("Cannot move prev indir up after data computation\n");
+            UnmarkTree(indir);
             return false;
         }
     }
