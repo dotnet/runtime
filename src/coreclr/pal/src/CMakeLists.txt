@@ -144,8 +144,8 @@ set(SOURCES
   init/sxs.cpp
   loader/module.cpp
   locale/unicode.cpp
-  locale/unicodedata.cpp
   ${CLR_SRC_NATIVE_DIR}/minipal/utf8.c
+  ${CLR_SRC_NATIVE_DIR}/minipal/unicodedata.c
   map/common.cpp
   map/map.cpp
   map/virtual.cpp

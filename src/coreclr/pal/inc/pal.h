@@ -48,7 +48,6 @@ Abstract:
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
-#include <wctype.h>
 
 #ifdef __cplusplus
 extern "C++"
@@ -3961,9 +3960,6 @@ PALIMPORT DLLEXPORT char * __cdecl PAL_getenv(const char *);
 PALIMPORT DLLEXPORT int __cdecl _putenv(const char *);
 
 #define ERANGE          34
-
-PALIMPORT WCHAR __cdecl PAL_ToUpperInvariant(WCHAR);
-PALIMPORT WCHAR __cdecl PAL_ToLowerInvariant(WCHAR);
 
 /****************PAL Perf functions for PInvoke*********************/
 #if PAL_PERF

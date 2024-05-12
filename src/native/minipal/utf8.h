@@ -68,6 +68,22 @@ size_t minipal_convert_utf8_to_utf16(const char* source, size_t sourceLength, CH
  */
 size_t minipal_convert_utf16_to_utf8(const CHAR16_T* source, size_t sourceLength, char* destination, size_t destinationLength, unsigned int flags);
 
+/**
+ * Convert a UTF-16 character to uppercase using invariant culture.
+ *
+ * @param code The UTF-16 character to be converted.
+ * @return The uppercase equivalent of the character or the character itself if no conversion is necessary.
+ */
+const CHAR16_T minipal_toupper_invariant(const CHAR16_T code);
+
+/**
+ * Convert a UTF-16 character to lowercase using invariant culture.
+ *
+ * @param code The UTF-16 character to be converted.
+ * @return The lowercase equivalent of the character or the character itself if no conversion is necessary.
+ */
+const CHAR16_T minipal_tolower_invariant(const CHAR16_T code);
+
 #ifdef __cplusplus
 }
 #endif // __cplusplus

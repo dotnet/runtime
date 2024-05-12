@@ -30,7 +30,6 @@ Revision History:
 #include <stdarg.h>
 #include <dlfcn.h>
 #include <errno.h>
-#include <wctype.h>
 
 SET_DEFAULT_DEBUG_CHANNEL(MISC);
 
@@ -335,6 +334,7 @@ FormatMessageW(
         goto exit;
     }
 
+    #define iswdigit(c) (c >= L'0' && c <= L'9')
 
     /* Process the string. */
     lpReturnString = lpWorkingString;
