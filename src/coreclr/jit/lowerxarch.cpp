@@ -10899,6 +10899,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                         case NI_AVX512F_FixupScalar:
                         case NI_AVX512F_VL_Fixup:
                         case NI_AVX10v1_Fixup:
+                        case NI_AVX10v1_FixupScalar:
                         {
                             if (!isContainedImm)
                             {

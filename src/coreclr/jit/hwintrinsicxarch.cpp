@@ -3686,6 +3686,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         case NI_AVX10v1_PermuteVar16x16:
         case NI_AVX10v1_PermuteVar32x8:
         case NI_AVX10v1_PermuteVar4x64:
+        case NI_AVX10v1_V512_PermuteVar64x8:
         {
             simdBaseJitType = getBaseJitTypeOfSIMDType(sig->retTypeSigClass);
 
