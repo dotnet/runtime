@@ -107,7 +107,7 @@ private:
     bool       optOptimizeBoolsChkTypeCostCond();
     void       optOptimizeBoolsUpdateTrees();
     bool       FindCompareChain(GenTree* condition, bool* isTestCondition);
-    void       optOptimizeBoolsKeepFirstBlockAndFreeTheRest(GenTree* cmpOp, bool optReturnBlock);
+    void       optOptimizeBoolsKeepFirstBlockAndFreeTheRest(bool optReturnBlock);
 };
 
 //-----------------------------------------------------------------------------
@@ -1243,40 +1243,8 @@ bool OptBoolsDsc::optOptimizeBoolsChkTypeCostCond()
 //    cmpOp          - comparison operation
 //    optReturnBlock - defines whether to make first block a return or condition block
 //
-void OptBoolsDsc::optOptimizeBoolsKeepFirstBlockAndFreeTheRest(GenTree* cmpOp, bool optReturnBlock)
+void OptBoolsDsc::optOptimizeBoolsKeepFirstBlockAndFreeTheRest(bool optReturnBlock)
 {
-#if FEATURE_SET_FLAGS
-    // For comparisons against zero we will have the GTF_SET_FLAGS set
-    // and this can cause an assert to fire in fgMoveOpsLeft(GenTree* tree)
-    // during the CSE phase.
-    //
-    // So make sure to clear any GTF_SET_FLAGS bit on these operations
-    // as they are no longer feeding directly into a comparisons against zero
-
-    // Make sure that the GTF_SET_FLAGS bit is cleared.
-    // Fix 388436 ARM JitStress WP7
-
-    if (m_c1 != nullptr)
-    {
-        m_c1->gtFlags &= ~GTF_SET_FLAGS;
-    }
-
-    if (m_c2 != nullptr)
-    {
-        m_c2->gtFlags &= ~GTF_SET_FLAGS;
-    }
-
-    // The new top level node that we just created does feed directly into
-    // a comparison against zero, so set the GTF_SET_FLAGS bit so that
-    // we generate an instruction that sets the flags, which allows us
-    // to omit the cmp with zero instruction.
-
-    // Request that the codegen for cmpOp sets the condition flags
-    // when it generates the code for cmpOp.
-    //
-    cmpOp->gtRequestSetFlags();
-#endif
-
     // Recost/rethread the tree if necessary
     //
     if (m_comp->fgNodeThreading != NodeThreading::None)
@@ -1409,7 +1377,32 @@ void OptBoolsDsc::optOptimizeBoolsUpdateTrees()
         --m_comp->fgReturnCount;
     }
 
-    optOptimizeBoolsKeepFirstBlockAndFreeTheRest(cmpOp1, optReturnBlock);
+#if FEATURE_SET_FLAGS
+    // For comparisons against zero we will have the GTF_SET_FLAGS set
+    // and this can cause an assert to fire in fgMoveOpsLeft(GenTree* tree)
+    // during the CSE phase.
+    //
+    // So make sure to clear any GTF_SET_FLAGS bit on these operations
+    // as they are no longer feeding directly into a comparisons against zero
+
+    // Make sure that the GTF_SET_FLAGS bit is cleared.
+    // Fix 388436 ARM JitStress WP7
+
+    m_c1->gtFlags &= ~GTF_SET_FLAGS;
+    m_c2->gtFlags &= ~GTF_SET_FLAGS;
+
+    // The new top level node that we just created does feed directly into
+    // a comparison against zero, so set the GTF_SET_FLAGS bit so that
+    // we generate an instruction that sets the flags, which allows us
+    // to omit the cmp with zero instruction.
+
+    // Request that the codegen for cmpOp sets the condition flags
+    // when it generates the code for cmpOp.
+    //
+    cmpOp1->gtRequestSetFlags();
+#endif
+
+    optOptimizeBoolsKeepFirstBlockAndFreeTheRest(optReturnBlock);
 }
 
 //-----------------------------------------------------------------------------
@@ -1876,7 +1869,7 @@ bool OptBoolsDsc::optOptimizeAndConditionWithEqualityOperator(BasicBlock* b3)
     m_testInfo1.testTree->gtOper = m_testInfo2.testTree->OperGet();
     m_testInfo1.testTree->gtType = m_testInfo2.testTree->TypeGet();
 
-    optOptimizeBoolsKeepFirstBlockAndFreeTheRest(m_testInfo1.compTree, true);
+    optOptimizeBoolsKeepFirstBlockAndFreeTheRest(true);
     return true;
 }
 
