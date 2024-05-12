@@ -3288,10 +3288,11 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* node)
         // For block with GC refs we still can use SIMD, but only for continuous
         // non-GC parts where atomicity guarantees are not that strict.
         assert(!willUseSimdMov);
-        ClassLayout* layout      = node->GetLayout();
-        regNumber    simdZeroReg = REG_NA;
-        unsigned     slots       = layout->GetSlotCount();
-        unsigned     slot        = 0;
+        ClassLayout* layout = node->GetLayout();
+
+        regNumber simdZeroReg = REG_NA;
+        unsigned  slots       = layout->GetSlotCount();
+        unsigned  slot        = 0;
         while (slot < slots)
         {
             if (!layout->IsGCPtr(slot))
