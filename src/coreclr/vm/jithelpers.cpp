@@ -109,20 +109,6 @@ using std::isnan;
 //
 #define Is32BitSigned(a)    (Hi32Bits(a) == Hi32Bits((INT64)(INT32)(a)))
 
-//
-// helper function to shift the result by 32-bits
-//
-inline UINT64 ShiftToHi32Bits(UINT32 x)
-{
-    // The shift compiles into slow multiplication by 2^32! VSWhidbey 360736
-    // return ((UINT64)x) << 32;
-
-    ULARGE_INTEGER ret;
-    ret.u.HighPart = x;
-    ret.u.LowPart = 0;
-    return ret.QuadPart;
-}
-
 #if !defined(TARGET_X86) || defined(TARGET_UNIX)
 /*********************************************************************/
 HCIMPL2_VV(INT64, JIT_LMul, INT64 val1, INT64 val2)
@@ -139,117 +125,6 @@ HCIMPL2_VV(INT64, JIT_LMul, INT64 val1, INT64 val2)
 }
 HCIMPLEND
 #endif // !TARGET_X86 || TARGET_UNIX
-
-/*********************************************************************/
-HCIMPL2_VV(INT64, JIT_LMulOvf, INT64 val1, INT64 val2)
-{
-    FCALL_CONTRACT;
-
-    // This short-cut does not actually help since the multiplication
-    // of two 32-bit signed ints compiles into the call to a slow helper
-    // if (Is32BitSigned(val1) && Is32BitSigned(val2))
-    //     return (INT64)(INT32)val1 * (INT64)(INT32)val2;
-
-    INDEBUG(INT64 expected = val1 * val2;)
-    INT64 ret;
-
-        // Remember the sign of the result
-    INT32 sign = Hi32Bits(val1) ^ Hi32Bits(val2);
-
-        // Convert to unsigned multiplication
-    if (val1 < 0) val1 = -val1;
-    if (val2 < 0) val2 = -val2;
-
-        // Get the upper 32 bits of the numbers
-    UINT32 val1High = Hi32Bits(val1);
-    UINT32 val2High = Hi32Bits(val2);
-
-    UINT64 valMid;
-
-    if (val1High == 0) {
-        // Compute the 'middle' bits of the long multiplication
-        valMid = Mul32x32To64(val2High, val1);
-    }
-    else {
-        if (val2High != 0)
-            goto ThrowExcep;
-        // Compute the 'middle' bits of the long multiplication
-        valMid = Mul32x32To64(val1High, val2);
-    }
-
-        // See if any bits after bit 32 are set
-    if (Hi32Bits(valMid) != 0)
-        goto ThrowExcep;
-
-    ret = Mul32x32To64(val1, val2) + ShiftToHi32Bits((UINT32)(valMid));
-
-    // check for overflow
-    if (Hi32Bits(ret) < (UINT32)valMid)
-        goto ThrowExcep;
-
-    if (sign >= 0) {
-        // have we spilled into the sign bit?
-        if (ret < 0)
-            goto ThrowExcep;
-    }
-    else {
-        ret = -ret;
-        // have we spilled into the sign bit?
-        if (ret > 0)
-            goto ThrowExcep;
-    }
-    _ASSERTE(ret == expected);
-    return ret;
-
-ThrowExcep:
-    FCThrow(kOverflowException);
-}
-HCIMPLEND
-
-/*********************************************************************/
-HCIMPL2_VV(UINT64, JIT_ULMulOvf, UINT64 val1, UINT64 val2)
-{
-    FCALL_CONTRACT;
-
-    INDEBUG(UINT64 expected = val1 * val2;)
-    UINT64 ret;
-
-        // Get the upper 32 bits of the numbers
-    UINT32 val1High = Hi32Bits(val1);
-    UINT32 val2High = Hi32Bits(val2);
-
-    UINT64 valMid;
-
-    if (val1High == 0) {
-        if (val2High == 0)
-            return Mul32x32To64(val1, val2);
-        // Compute the 'middle' bits of the long multiplication
-        valMid = Mul32x32To64(val2High, val1);
-    }
-    else {
-        if (val2High != 0)
-            goto ThrowExcep;
-        // Compute the 'middle' bits of the long multiplication
-        valMid = Mul32x32To64(val1High, val2);
-    }
-
-        // See if any bits after bit 32 are set
-    if (Hi32Bits(valMid) != 0)
-        goto ThrowExcep;
-
-    ret = Mul32x32To64(val1, val2) + ShiftToHi32Bits((UINT32)(valMid));
-
-    // check for overflow
-    if (Hi32Bits(ret) < (UINT32)valMid)
-        goto ThrowExcep;
-
-    _ASSERTE(ret == expected);
-    return ret;
-
-ThrowExcep:
-        FCThrow(kOverflowException);
-    }
-HCIMPLEND
 
 /*********************************************************************/
 HCIMPL2(INT32, JIT_Div, INT32 dividend, INT32 divisor)
@@ -522,62 +397,6 @@ HCIMPL1_V(int64_t, JIT_Dbl2Lng, double val)
 HCIMPLEND
 
 /*********************************************************************/
-HCIMPL1_V(uint32_t, JIT_Dbl2UIntOvf, double val)
-{
-    FCALL_CONTRACT;
-
-    // Note that this expression also works properly for val = NaN case
-    if (val > -1.0 && val < 4294967296.0)
-        return (uint32_t)val;
-
-    FCThrow(kOverflowException);
-}
-HCIMPLEND
-
-/*********************************************************************/
-HCIMPL1_V(int, JIT_Dbl2IntOvf, double val)
-{
-    FCALL_CONTRACT;
-
-    const double two31 = 2147483648.0;
-    // Note that this expression also works properly for val = NaN case
-    if (val > -two31 - 1 && val < two31)
-        return (int32_t)val;
-
-    FCThrow(kOverflowException);
-}
-HCIMPLEND
-
-/*********************************************************************/
-HCIMPL1_V(int64_t, JIT_Dbl2LngOvf, double val)
-{
-    FCALL_CONTRACT;
-
-    const double two63  = 2147483648.0 * 4294967296.0;
-
-    // Note that this expression also works properly for val = NaN case
-    // We need to compare with the very next double to two63. 0x402 is epsilon to get us there.
-    if (val > -two63 - 0x402 && val < two63)
-        return (int64_t)val;
-
-    FCThrow(kOverflowException);
-}
-HCIMPLEND
-
-/*********************************************************************/
-HCIMPL1_V(uint64_t, JIT_Dbl2ULngOvf, double val)
-{
-    FCALL_CONTRACT;
-
-    const double two64  = 4294967296.0 * 4294967296.0;
-    // Note that this expression also works properly for val = NaN case
-    if (val > -1.0 && val < two64)
-        return (uint64_t)val;
-
-    FCThrow(kOverflowException);
-}
-HCIMPLEND
-
 HCIMPL1_V(uint32_t, JIT_Dbl2UInt, double val)
 {
     FCALL_CONTRACT;

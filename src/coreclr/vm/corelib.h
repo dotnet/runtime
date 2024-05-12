@@ -261,6 +261,14 @@ DEFINE_CLASS(UINT128,              System,                 UInt128)
 
 DEFINE_CLASS(MATH,                  System,                 Math)
 DEFINE_METHOD(MATH,                 ROUND,                  Round,                      SM_Dbl_RetDbl)
+#ifndef TARGET_64BIT
+DEFINE_METHOD(MATH,                 MULTIPLY_INT64_CHECKED, MultiplyInt64Checked,       NoSig)
+DEFINE_METHOD(MATH,                 MULTIPLY_UINT64_CHECKED, MultiplyUInt64Checked,     NoSig)
+#endif
+DEFINE_METHOD(MATH,                 CONVERT_TO_INT32_CHECKED, ConvertToInt32Checked,    NoSig)
+DEFINE_METHOD(MATH,                 CONVERT_TO_UINT32_CHECKED, ConvertToUInt32Checked,  NoSig)
+DEFINE_METHOD(MATH,                 CONVERT_TO_INT64_CHECKED, ConvertToInt64Checked,    NoSig)
+DEFINE_METHOD(MATH,                 CONVERT_TO_UINT64_CHECKED, ConvertToUInt64Checked,  NoSig)
 
 DEFINE_CLASS(MATHF,                 System,                 MathF)
 DEFINE_METHOD(MATHF,                ROUND,                  Round,                      SM_Flt_RetFlt)
