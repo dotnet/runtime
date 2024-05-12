@@ -2377,13 +2377,7 @@ void Compiler::optAssertionGen(GenTree* tree)
             break;
 
         case GT_IND:
-            // Dynamic block copy sources could be zero-sized and so should not generate assertions.
-            if (tree->TypeIs(TYP_STRUCT))
-            {
-                break;
-            }
-            FALLTHROUGH;
-
+        case GT_LOCKADD:
         case GT_XAND:
         case GT_XORR:
         case GT_XADD:

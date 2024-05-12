@@ -8673,16 +8673,24 @@ void Lowering::LowerStoreIndirCoalescing(GenTreeIndir* ind)
         assert(prevData.IsStore());
         assert(currData.IsStore());
 
-        // For now, only constants are supported for data.
-        if (!prevData.value->OperIsConst() || !currData.value->OperIsConst())
-        {
-            return;
-        }
-
         // Otherwise, the difference between two offsets has to match the size of the type.
         // We don't support overlapping stores.
         if (abs(prevData.offset - currData.offset) != (int)genTypeSize(prevData.targetType))
         {
+            return;
+        }
+
+        // At this point we know that the 2nd (current) STOREIND has the same side-effects as the previous STOREIND
+        // We can move the address part before the previous STOREIND to make STP friendly
+        auto makeStpFriendly = [&]() {
+            LIR::Range Range = BlockRange().Remove(currData.rangeStart, currData.rangeEnd->gtPrev);
+            BlockRange().InsertBefore(prevData.rangeEnd, std::move(Range));
+        };
+
+        // For now, only constants are supported for data.
+        if (!prevData.value->OperIsConst() || !currData.value->OperIsConst())
+        {
+            makeStpFriendly();
             return;
         }
 
@@ -8715,6 +8723,7 @@ void Lowering::LowerStoreIndirCoalescing(GenTreeIndir* ind)
             // Base address being TYP_REF gives us a hint that data is pointer-aligned.
             if (!currData.baseAddr->TypeIs(TYP_REF))
             {
+                makeStpFriendly();
                 return;
             }
 
@@ -8807,9 +8816,15 @@ void Lowering::LowerStoreIndirCoalescing(GenTreeIndir* ind)
                     break;
                 }
                 return;
-#endif // TARGET_AMD64
-#endif // FEATURE_HW_INTRINSICS
-#endif // TARGET_64BIT
+#elif defined(TARGET_ARM64) // TARGET_AMD64
+            case TYP_SIMD16:
+                // There is no TYP_SIMD32 to coalesce these two stores.
+                // At least, we can make it STP-friendly:
+                makeStpFriendly();
+                return;
+#endif                      // TARGET_ARM64
+#endif                      // FEATURE_HW_INTRINSICS
+#endif                      // TARGET_64BIT
 
             // TYP_FLOAT and TYP_DOUBLE aren't needed here - they're expected to
             // be converted to TYP_INT/TYP_LONG for constant value.
