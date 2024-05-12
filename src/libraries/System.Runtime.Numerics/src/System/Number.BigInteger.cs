@@ -326,9 +326,8 @@ namespace System
             {
                 // Check for nonzero digits after the decimal point.
                 ReadOnlySpan<byte> fracDigitsSpan = number.Digits.Slice(intDigits.Length);
-                for (int i = 0; i < fracDigitsSpan.Length; i++)
+                foreach (byte digitChar in fracDigitsSpan)
                 {
-                    char digitChar = (char)fracDigitsSpan[i];
                     if (digitChar == '\0')
                     {
                         break;
@@ -361,14 +360,7 @@ namespace System
                 DivideAndConquer(ref number, intDigits, resultBuffer);
             }
 
-            resultBuffer = resultBuffer.Slice(0, BigIntegerCalculator.ActualLength(resultBuffer));
-            Debug.Assert(resultBuffer.Length == 0 || resultBuffer[^1] != 0);
-
-            result = resultBuffer.Length == 0
-                ? BigInteger.Zero
-                : resultBuffer is [uint leading] && (leading <= int.MaxValue || number.IsNegative && leading == unchecked((uint)(int.MaxValue + 1)))
-                    ? new BigInteger((int)(number.IsNegative ? -leading : leading))
-                    : new BigInteger(number.IsNegative ? -1 : 1, resultBuffer.ToArray());
+            result = new BigInteger(resultBuffer, number.IsNegative);
 
             if (resultBufferFromPool != null)
                 ArrayPool<uint>.Shared.Return(resultBufferFromPool);
