@@ -644,6 +644,8 @@ public:
     template <bool localVarsEnregistered>
     void buildIntervals();
 
+    void buildInitialParamDef(const LclVarDsc* varDsc, regNumber paramReg);
+
     // This is where the actual assignment is done for scenarios where
     // no local var enregistration is done.
     void allocateRegistersMinimal();
