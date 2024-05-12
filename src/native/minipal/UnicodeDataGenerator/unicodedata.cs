@@ -17,6 +17,7 @@ Console.WriteLine(@"
 //
 
 #include <minipal/utf8.h>
+#include <inttypes.h>
 
 typedef struct
 {
