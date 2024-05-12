@@ -5,6 +5,7 @@ using Xunit;
 namespace NetClient
 {
     using System;
+    using System.Drawing;
     using System.Globalization;
     using System.Reflection;
     using System.Runtime.InteropServices;
@@ -278,29 +279,33 @@ namespace NetClient
 
             Console.WriteLine("Invoking void-returning method should not allocate return buffer.");
             // E_POINTER translates to NullReferenceException
-            Assert.Throws<NullReferenceException>(() => dispatchCoerceTesting.ReturnToManaged_Void());
+            Assert.Throws<NullReferenceException>(() => dispatchCoerceTesting.ReturnToManaged_Void(0));
 
             Console.WriteLine("Converting int to double should be supported.");
-            Assert.Equal(1234d, dispatchCoerceTesting.ReturnToManaged_Double());
+            Assert.Equal(1234d, dispatchCoerceTesting.ReturnToManaged_Double(1234));
 
             Console.WriteLine("Converting int to string should be supported.");
-            Assert.Equal("1234", dispatchCoerceTesting.ReturnToManaged_String());
+            Assert.Equal("1234", dispatchCoerceTesting.ReturnToManaged_String(1234));
 
             Console.WriteLine("Converting int to decimal should be supported.");
-            Assert.Equal(1234m, dispatchCoerceTesting.ReturnToManaged_Decimal());
+            Assert.Equal(1234m, dispatchCoerceTesting.ReturnToManaged_Decimal(1234));
 
             Console.WriteLine("Converting int to DateTime should be supported.");
-            Assert.Equal(new DateTime(1903, 5, 18, 0, 0, 0), dispatchCoerceTesting.ReturnToManaged_DateTime());
+            Assert.Equal(new DateTime(100, 1, 1), dispatchCoerceTesting.ReturnToManaged_DateTime(-657434));
+            Assert.Throws<OverflowException>(() => dispatchCoerceTesting.ReturnToManaged_DateTime(-657435));
+            Assert.Equal(new DateTime(9999, 12, 31), dispatchCoerceTesting.ReturnToManaged_DateTime(2958465));
+            Assert.Throws<OverflowException>(() => dispatchCoerceTesting.ReturnToManaged_DateTime(2958466));
 
             Console.WriteLine("Converting int to System.Drawing.Color should be supported.");
-            Assert.Equal(System.Drawing.Color.FromArgb(210, 4, 0), dispatchCoerceTesting.ReturnToManaged_Color());
+            Assert.Equal(Color.FromKnownColor(KnownColor.ActiveBorder), dispatchCoerceTesting.ReturnToManaged_Color(unchecked((int)0x8000000A)));
+            Assert.Equal(ColorTranslator.FromOle(1234), dispatchCoerceTesting.ReturnToManaged_Color(1234));
 
             Console.WriteLine("Converting int to VT_MISSING should be rejected.");
-            comException = Assert.Throws<COMException>(() => dispatchCoerceTesting.ReturnToManaged_Missing());
+            comException = Assert.Throws<COMException>(() => dispatchCoerceTesting.ReturnToManaged_Missing(0));
             Assert.Equal(unchecked((int)0x80020005), comException.HResult);
 
             Console.WriteLine("Converting int to VT_NULL should be rejected.");
-            comException = Assert.Throws<COMException>(() => dispatchCoerceTesting.ReturnToManaged_DBNull());
+            comException = Assert.Throws<COMException>(() => dispatchCoerceTesting.ReturnToManaged_DBNull(0));
             Assert.Equal(unchecked((int)0x80020005), comException.HResult);
 
             // LOCAL_BOOL

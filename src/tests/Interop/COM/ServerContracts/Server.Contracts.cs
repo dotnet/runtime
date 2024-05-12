@@ -327,14 +327,14 @@ namespace Server.Contract
         int ReturnToManaged(short vt);
         int ManagedArgument(int arg);
         string BoolToString();
-        void ReturnToManaged_Void();
-        double ReturnToManaged_Double();
-        string ReturnToManaged_String();
-        decimal ReturnToManaged_Decimal();
-        DateTime ReturnToManaged_DateTime();
-        Color ReturnToManaged_Color();
-        System.Reflection.Missing ReturnToManaged_Missing();
-        DBNull ReturnToManaged_DBNull();
+        void ReturnToManaged_Void(int value);
+        double ReturnToManaged_Double(int value);
+        string ReturnToManaged_String(int value);
+        decimal ReturnToManaged_Decimal(int value);
+        DateTime ReturnToManaged_DateTime(int value);
+        Color ReturnToManaged_Color(int value);
+        System.Reflection.Missing ReturnToManaged_Missing(int value);
+        DBNull ReturnToManaged_DBNull(int value);
     }
 
     [ComVisible(true)]

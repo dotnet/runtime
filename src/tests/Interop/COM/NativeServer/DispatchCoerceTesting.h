@@ -88,9 +88,6 @@ public: // IDispatch
                 return BoolToString_Dispatch(pDispParams, pVarResult);
             }
             case 4:
-            {
-                return ReturnToManaged_Void_Dispatch(pDispParams, pVarResult);
-            }
             case 5:
             case 6:
             case 7:
@@ -216,33 +213,31 @@ private:
         return S_OK;
     }
 
-    HRESULT ReturnToManaged_Void_Dispatch(_In_ DISPPARAMS *pDispParams, _Inout_ VARIANT *pVarResult)
-    {
-        HRESULT hr;
-
-        size_t expectedArgCount = 0;
-        RETURN_IF_FAILED(VerifyValues(uint32_t(expectedArgCount), pDispParams->cArgs));
-
-        if (pVarResult == nullptr)
-            return E_POINTER;
-
-        V_VT(pVarResult) = VT_I4;
-        V_I4(pVarResult) = 1234;
-        return S_OK;
-    }
-
     HRESULT ReturnToManaged_Any_Dispatch(_In_ DISPPARAMS *pDispParams, _Inout_ VARIANT *pVarResult)
     {
         HRESULT hr;
 
-        size_t expectedArgCount = 0;
+        int *args[1];
+        size_t expectedArgCount = 1;
         RETURN_IF_FAILED(VerifyValues(uint32_t(expectedArgCount), pDispParams->cArgs));
 
         if (pVarResult == nullptr)
             return E_POINTER;
 
+        VARENUM currType;
+        VARIANTARG *currArg;
+        size_t argIdx = expectedArgCount - 1;
+
+        // Extract args
+        {
+            currType = VT_I4;
+            currArg = NextArg(pDispParams->rgvarg, argIdx);
+            RETURN_IF_FAILED(VerifyValues(VARENUM(currType), VARENUM(currArg->vt)));
+            args[0] = &currArg->intVal;
+        }
+
         V_VT(pVarResult) = VT_I4;
-        V_I4(pVarResult) = 1234;
+        V_I4(pVarResult) = *args[0];
         return S_OK;
     }
 

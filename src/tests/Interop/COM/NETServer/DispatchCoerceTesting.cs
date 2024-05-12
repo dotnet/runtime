@@ -27,42 +27,42 @@ public class DispatchCoerceTesting : Server.Contract.IDispatchCoerceTesting
         throw new NotImplementedException();
     }
 
-    public void ReturnToManaged_Void()
+    public void ReturnToManaged_Void(int value)
     {
         throw new NotImplementedException();
     }
 
-    double ReturnToManaged_Double()
+    public double ReturnToManaged_Double(int value)
     {
         throw new NotImplementedException();
     }
 
-    string ReturnToManaged_String()
+    public string ReturnToManaged_String(int value)
     {
         throw new NotImplementedException();
     }
 
-    decimal ReturnToManaged_Decimal()
+    public decimal ReturnToManaged_Decimal(int value)
     {
         throw new NotImplementedException();
     }
 
-    DateTime ReturnToManaged_DateTime()
+    public DateTime ReturnToManaged_DateTime(int value)
     {
         throw new NotImplementedException();
     }
 
-    System.Drawing.Color ReturnToManaged_Color()
+    public System.Drawing.Color ReturnToManaged_Color(int value)
     {
         throw new NotImplementedException();
     }
     
-    public System.Reflection.Missing ReturnToManaged_Missing()
+    public System.Reflection.Missing ReturnToManaged_Missing(int value)
     {
         return System.Reflection.Missing.Value;
     }
 
-    public DBNull ReturnToManaged_DBNull()
+    public DBNull ReturnToManaged_DBNull(int value)
     {
         return DBNull.Value;
     }
