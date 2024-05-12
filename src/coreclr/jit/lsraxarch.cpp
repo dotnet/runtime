@@ -1450,6 +1450,7 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
                             continuousNonGc++;
                         }
                     }
+                    xmmCandidates += (continuousNonGc * TARGET_POINTER_SIZE) / XMM_REGSIZE_BYTES;
 
                     // Just one XMM candidate is not profitable
                     willUseSimdMov = xmmCandidates > 1;
