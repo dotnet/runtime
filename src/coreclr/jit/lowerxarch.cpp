@@ -73,9 +73,9 @@ void Lowering::LowerStoreLoc(GenTreeLclVarCommon* storeLoc)
 //    node       - The indirect store node (GT_STORE_IND) of interest
 //
 // Return Value:
-//    None.
+//    Next node to lower.
 //
-void Lowering::LowerStoreIndir(GenTreeStoreInd* node)
+GenTree* Lowering::LowerStoreIndir(GenTreeStoreInd* node)
 {
     // Mark all GT_STOREIND nodes to indicate that it is not known
     // whether it represents a RMW memory op.
@@ -92,7 +92,7 @@ void Lowering::LowerStoreIndir(GenTreeStoreInd* node)
         // SSE2 doesn't support RMW form of instructions.
         if (LowerRMWMemOp(node))
         {
-            return;
+            return node->gtNext;
         }
     }
 
@@ -109,23 +109,25 @@ void Lowering::LowerStoreIndir(GenTreeStoreInd* node)
     {
         if (!node->Data()->IsCnsVec())
         {
-            return;
+            return node->gtNext;
         }
 
         if (!node->Data()->AsVecCon()->TypeIs(TYP_SIMD32, TYP_SIMD64))
         {
-            return;
+            return node->gtNext;
         }
 
         if (node->Data()->IsVectorAllBitsSet() || node->Data()->IsVectorZero())
         {
             // To avoid some unexpected regression, this optimization only applies to non-all 1/0 constant vectors.
-            return;
+            return node->gtNext;
         }
 
         TryCompressConstVecData(node);
     }
 #endif
+
+    return node->gtNext;
 }
 
 //----------------------------------------------------------------------------------------------

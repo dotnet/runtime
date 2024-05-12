@@ -491,11 +491,21 @@ void Lowering::LowerStoreLoc(GenTreeLclVarCommon* storeLoc)
 //    node       - The indirect store node (GT_STORE_IND) of interest
 //
 // Return Value:
-//    None.
+//    Next node to lower.
 //
-void Lowering::LowerStoreIndir(GenTreeStoreInd* node)
+GenTree* Lowering::LowerStoreIndir(GenTreeStoreInd* node)
 {
+    GenTree* next = node->gtNext;
     ContainCheckStoreIndir(node);
+
+#ifdef TARGET_ARM64
+    if (comp->opts.OptimizationEnabled())
+    {
+        OptimizeForLdpStp(node);
+    }
+#endif
+
+    return next;
 }
 
 //------------------------------------------------------------------------
