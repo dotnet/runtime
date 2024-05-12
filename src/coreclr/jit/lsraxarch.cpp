@@ -1430,9 +1430,37 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
         {
             case GenTreeBlk::BlkOpKindUnroll:
             {
-                const bool canUse16BytesSimdMov =
-                    !blkNode->IsOnHeapAndContainsReferences() && compiler->IsBaselineSimdIsaSupported();
-                const bool willUseSimdMov = canUse16BytesSimdMov && (size >= XMM_REGSIZE_BYTES);
+                const bool canUse16BytesSimdMov = compiler->IsBaselineSimdIsaSupported();
+                bool       willUseSimdMov       = canUse16BytesSimdMov && (size >= XMM_REGSIZE_BYTES);
+                if (willUseSimdMov && blkNode->IsOnHeapAndContainsReferences())
+                {
+                    ClassLayout* layout = blkNode->GetLayout();
+                    unsigned     slots  = layout->GetSlotCount();
+                    unsigned     slot   = 0;
+                    unsigned     simds  = 0;
+                    while (slot < slots)
+                    {
+                        if (!layout->IsGCPtr(slot))
+                        {
+                            // How many continuous non-GC slots do we have?
+                            unsigned nonGcSlotCount = 0;
+                            do
+                            {
+                                nonGcSlotCount++;
+                                slot++;
+                            } while ((slot < slots) && !layout->IsGCPtr(slot));
+                            simds += (nonGcSlotCount * TARGET_POINTER_SIZE) / XMM_REGSIZE_BYTES;
+                        }
+                        else
+                        {
+                            // GC slot
+                            slot++;
+                        }
+                    }
+
+                    // Just one XMM candidate is not profitable
+                    willUseSimdMov = simds > 1;
+                }
 
                 if (willUseSimdMov)
                 {
