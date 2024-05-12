@@ -320,6 +320,29 @@ namespace System
                 return ParsingStatus.Failed;
             }
 
+            ReadOnlySpan<byte> intDigits = number.Digits.Slice(0, Math.Min(number.Scale, number.DigitsCount));
+            int intDigitsEnd = intDigits.IndexOf<byte>(0);
+            if (intDigitsEnd < 0)
+            {
+                // Check for nonzero digits after the decimal point.
+                ReadOnlySpan<byte> fracDigitsSpan = number.Digits.Slice(intDigits.Length);
+                for (int i = 0; i < fracDigitsSpan.Length; i++)
+                {
+                    char digitChar = (char)fracDigitsSpan[i];
+                    if (digitChar == '\0')
+                    {
+                        break;
+                    }
+                    if (digitChar != '0')
+                    {
+                        result = default;
+                        return ParsingStatus.Failed;
+                    }
+                }
+            }
+            else
+                intDigits = intDigits.Slice(0, intDigitsEnd);
+
             const double digitRatio = 0.10381025297; // log_{2^32}(10)
             int resultLength = checked((int)(number.Scale * digitRatio) + 1 + 2);
             uint[]? resultBufferFromPool = null;
@@ -329,12 +352,13 @@ namespace System
                 : resultBufferFromPool = ArrayPool<uint>.Shared.Rent(resultLength)).Slice(0, resultLength);
             resultBuffer.Clear();
 
-            if (number.Scale <= BigIntegerParseNaiveThreshold
-                ? !Naive(ref number, resultBuffer)
-                : !DivideAndConquer(ref number, resultBuffer))
+            if (number.Scale <= BigIntegerParseNaiveThreshold)
             {
-                result = default;
-                return ParsingStatus.Failed;
+                Naive(ref number, intDigits, resultBuffer);
+            }
+            else
+            {
+                DivideAndConquer(ref number, intDigits, resultBuffer);
             }
 
             resultBuffer = resultBuffer.Slice(0, BigIntegerCalculator.ActualLength(resultBuffer));
@@ -351,30 +375,8 @@ namespace System
 
             return ParsingStatus.OK;
 
-            static bool DivideAndConquer(ref NumberBuffer number, scoped Span<uint> bits)
+            static void DivideAndConquer(ref NumberBuffer number, ReadOnlySpan<byte> intDigits, scoped Span<uint> bits)
             {
-                ReadOnlySpan<byte> intDigits = number.Digits.Slice(0, Math.Min(number.Scale, number.DigitsCount));
-                int intDigitsEnd = intDigits.IndexOf<byte>(0);
-                if (intDigitsEnd < 0)
-                {
-                    // Check for nonzero digits after the decimal point.
-                    ReadOnlySpan<byte> fracDigitsSpan = number.Digits.Slice(intDigits.Length);
-                    for (int i = 0; i < fracDigitsSpan.Length; i++)
-                    {
-                        char digitChar = (char)fracDigitsSpan[i];
-                        if (digitChar == '\0')
-                        {
-                            break;
-                        }
-                        if (digitChar != '0')
-                        {
-                            return false;
-                        }
-                    }
-                }
-                else
-                    intDigits = intDigits.Slice(0, intDigitsEnd);
-
                 int totalDigitCount = Math.Min(number.DigitsCount, number.Scale);
                 int trailingZeroCount = number.Scale - totalDigitCount;
 
@@ -415,8 +417,6 @@ namespace System
 
                 if (powersOf1e9BufferFromPool != null)
                     ArrayPool<uint>.Shared.Return(powersOf1e9BufferFromPool);
-
-                return true;
             }
 
             static void Recursive(in PowersOf1e9 powersOf1e9, ReadOnlySpan<byte> digits, Span<uint> bits)
@@ -514,36 +514,13 @@ namespace System
                 return resultLength;
             }
 
-            static bool Naive(ref NumberBuffer number, scoped Span<uint> bits)
+            static void Naive(ref NumberBuffer number, ReadOnlySpan<byte> intDigits, scoped Span<uint> bits)
             {
-                ReadOnlySpan<byte> intDigits = number.Digits.Slice(0, Math.Min(number.Scale, number.DigitsCount));
-                int intDigitsEnd = intDigits.IndexOf<byte>(0);
-                if (intDigitsEnd < 0)
-                {
-                    // Check for nonzero digits after the decimal point.
-                    ReadOnlySpan<byte> fracDigitsSpan = number.Digits.Slice(intDigits.Length);
-                    for (int i = 0; i < fracDigitsSpan.Length; i++)
-                    {
-                        char digitChar = (char)fracDigitsSpan[i];
-                        if (digitChar == '\0')
-                        {
-                            break;
-                        }
-                        if (digitChar != '0')
-                        {
-                            return false;
-                        }
-                    }
-                }
-                else
-                    intDigits = intDigits.Slice(0, intDigitsEnd);
-
-
                 int totalDigitCount = Math.Min(number.DigitsCount, number.Scale);
                 if (totalDigitCount == 0)
                 {
                     // number is 0.
-                    return true;
+                    return;
                 }
                 int resultLength = NaiveDigits(intDigits, bits);
 
@@ -565,8 +542,6 @@ namespace System
                     if (carry != 0)
                         bits[resultLength++] = carry;
                 }
-
-                return true;
             }
 
             static uint MultiplyAdd(Span<uint> bits, uint multiplier, uint addValue)
