@@ -499,6 +499,7 @@ public partial class VectorTest
     }
 
     [Fact]
+        [SkipOnMono("https://github.com/dotnet/runtime/issues/100368")]
     public static int TestEntryPoint()
     {
         int returnVal = Pass;
