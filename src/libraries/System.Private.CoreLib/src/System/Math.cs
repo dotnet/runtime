@@ -1487,7 +1487,7 @@ namespace System
         private static uint High32Bits(ulong a) => (uint)(a >> 32);
 
         [StackTraceHidden]
-        internal static long MultiplyInt64Checked(long left, long right)
+        internal static long MultiplyChecked(long left, long right)
         {
 #if DEBUG
             long result = left * right;
@@ -1556,7 +1556,7 @@ namespace System
         }
 
         [StackTraceHidden]
-        internal static ulong MultiplyUInt64Checked(ulong left, ulong right)
+        internal static ulong MultiplyChecked(ulong left, ulong right)
         {
             // Get the upper 32 bits of the numbers
             uint val1High = High32Bits(left);

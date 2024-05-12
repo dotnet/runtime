@@ -162,11 +162,11 @@ void ECall::PopulateManagedHelpers()
     SetJitHelperFunction(CORINFO_HELP_BULK_WRITEBARRIER, pDest);
 
 #ifndef TARGET_64BIT
-    pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__MATH__MULTIPLY_INT64_CHECKED));
+    pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__MATH__MULTIPLY_CHECKED_INT64));
     pDest = pMD->GetMultiCallableAddrOfCode();
     SetJitHelperFunction(CORINFO_HELP_LMUL_OVF, pDest);
 
-    pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__MATH__MULTIPLY_UINT64_CHECKED));
+    pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__MATH__MULTIPLY_CHECKED_UINT64));
     pDest = pMD->GetMultiCallableAddrOfCode();
     SetJitHelperFunction(CORINFO_HELP_ULMUL_OVF, pDest);
 #endif
