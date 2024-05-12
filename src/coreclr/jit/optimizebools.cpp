@@ -1817,10 +1817,13 @@ bool OptBoolsDsc::optOptimizeAndConditionWithEqualityOperator(BasicBlock* b3)
     GenTree* cond1 = m_testInfo1.GetTestOp();
     GenTree* cond2 = m_testInfo2.GetTestOp();
 
-    if (!cond1->OperIs(GT_NE) || !cond2->OperIs(GT_EQ, GT_NE))
+    ssize_t block3RetVal = m_b3->firstStmt()->GetRootNode()->AsOp()->GetReturnValue()->AsIntCon()->IconValue();
+
+    if (!cond1->OperIs(GT_NE) || !cond2->OperIs(GT_EQ, GT_NE) || (block3RetVal != 0 && cond2->OperIs(GT_EQ)) ||
+        (block3RetVal != 1 && cond2->OperIs(GT_NE)))
     {
         return false;
-    }
+    };
 
     GenTree* op11 = cond1->AsOp()->gtOp1;
     GenTree* op12 = cond1->AsOp()->gtOp2;
