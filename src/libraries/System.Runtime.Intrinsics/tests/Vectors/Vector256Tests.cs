@@ -5922,7 +5922,12 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         {
             Assert.Equal(Vector256.Create(double.ConvertToIntegerNative<long>(double.MinValue)), Vector256.ConvertToInt64Native(Vector256.Create(double.MinValue)));
             Assert.Equal(Vector256.Create(double.ConvertToIntegerNative<long>(2.6)), Vector256.ConvertToInt64Native(Vector256.Create(2.6)));
-            Assert.Equal(Vector256.Create(double.ConvertToIntegerNative<long>(double.MaxValue)), Vector256.ConvertToInt64Native(Vector256.Create(double.MaxValue)));
+
+            if (Environment.Is64BitProcess)
+            {
+                // This isn't accelerated on all 32-bit systems today and may fallback to ConvertToInteger behavior
+                Assert.Equal(Vector256.Create(double.ConvertToIntegerNative<long>(double.MaxValue)), Vector256.ConvertToInt64Native(Vector256.Create(double.MaxValue)));
+            }
         }
 
         [Fact]
@@ -5956,7 +5961,12 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         [SkipOnMono("https://github.com/dotnet/runtime/issues/100368")]
         public void ConvertToUInt64NativeTest()
         {
-            Assert.Equal(Vector256.Create(double.ConvertToIntegerNative<ulong>(double.MinValue)), Vector256.ConvertToUInt64Native(Vector256.Create(double.MinValue)));
+            if (Environment.Is64BitProcess)
+            {
+                // This isn't accelerated on all 32-bit systems today and may fallback to ConvertToInteger behavior
+                Assert.Equal(Vector256.Create(double.ConvertToIntegerNative<ulong>(double.MinValue)), Vector256.ConvertToUInt64Native(Vector256.Create(double.MinValue)));
+            }
+
             Assert.Equal(Vector256.Create(double.ConvertToIntegerNative<ulong>(2.6)), Vector256.ConvertToUInt64Native(Vector256.Create(2.6)));
             Assert.Equal(Vector256.Create(double.ConvertToIntegerNative<ulong>(double.MaxValue)), Vector256.ConvertToUInt64Native(Vector256.Create(double.MaxValue)));
         }
