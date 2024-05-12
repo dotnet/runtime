@@ -26,7 +26,6 @@ typedef unsigned short char16_t;
 #include <minipal/utils.h>
 #include <minipal/types.h>
 #include <errno.h>
-#include <wctype.h>
 
 #define PALTEST(testfunc, testname) \
  int __cdecl testfunc(int argc, char* argv[]); \
