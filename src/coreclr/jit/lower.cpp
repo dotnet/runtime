@@ -8683,8 +8683,13 @@ void Lowering::LowerStoreIndirCoalescing(GenTreeIndir* ind)
         // At this point we know that the 2nd (current) STOREIND has the same side-effects as the previous STOREIND
         // We can move the address part before the previous STOREIND to make STP friendly
         auto makeStpFriendly = [&]() {
-            LIR::Range Range = BlockRange().Remove(currData.rangeStart, currData.rangeEnd->gtPrev);
-            BlockRange().InsertBefore(prevData.rangeEnd, std::move(Range));
+#ifdef TARGET_ARM64
+            if (!GenTree::Compare(prevData.value, currData.value) || currData.value->IsVectorZero())
+            {
+                LIR::Range Range = BlockRange().Remove(currData.rangeStart, ind->gtPrev);
+                BlockRange().InsertBefore(prevInd, std::move(Range));
+            }
+#endif
         };
 
         // For now, only constants are supported for data.
