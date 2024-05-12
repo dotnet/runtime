@@ -1349,7 +1349,7 @@ PCODE VSD_ResolveWorker(TransitionBlock * pTransitionBlock,
     MethodTable * pRepresentativeMT = pObj->GetMethodTable();
     if (representativeToken.IsTypedToken())
     {
-        pRepresentativeMT = CURRENT_THREAD->GetDomain()->LookupType(representativeToken.GetTypeID());
+        pRepresentativeMT = AppDomain::GetCurrentDomain()->LookupType(representativeToken.GetTypeID());
         CONSISTENCY_CHECK(CheckPointer(pRepresentativeMT));
     }
 
@@ -1886,7 +1886,7 @@ VirtualCallStubManager::Resolver(
     MethodDesc *  dbg_pTokenMD = NULL;
     if (token.IsTypedToken())
     {
-        dbg_pTokenMT = GetThread()->GetDomain()->LookupType(token.GetTypeID());
+        dbg_pTokenMT = AppDomain::GetCurrentDomain()->LookupType(token.GetTypeID());
         dbg_pTokenMD = dbg_pTokenMT->FindDispatchSlot(TYPE_ID_THIS_CLASS, token.GetSlotNumber(), throwOnConflict).GetMethodDesc();
     }
 #endif // _DEBUG
@@ -2042,7 +2042,7 @@ VirtualCallStubManager::Resolver(
         MethodDesc *  pTokenMD = NULL;
         if (token.IsTypedToken())
         {
-            pTokenMT = GetThread()->GetDomain()->LookupType(token.GetTypeID());
+            pTokenMT = AppDomain::GetCurrentDomain()->LookupType(token.GetTypeID());
             pTokenMD = pTokenMT->FindDispatchSlot(TYPE_ID_THIS_CLASS, token.GetSlotNumber(), throwOnConflict).GetMethodDesc();
         }
 
@@ -2101,8 +2101,8 @@ BOOL VirtualCallStubManager::IsInterfaceToken(DispatchToken token)
     } CONTRACT_END;
     BOOL ret = token.IsTypedToken();
     // For now, only interfaces have typed dispatch tokens.
-    CONSISTENCY_CHECK(!ret || CheckPointer(GetThread()->GetDomain()->LookupType(token.GetTypeID())));
-    CONSISTENCY_CHECK(!ret || GetThread()->GetDomain()->LookupType(token.GetTypeID())->IsInterface());
+    CONSISTENCY_CHECK(!ret || CheckPointer(AppDomain::GetCurrentDomain()->LookupType(token.GetTypeID())));
+    CONSISTENCY_CHECK(!ret || AppDomain::GetCurrentDomain()->LookupType(token.GetTypeID())->IsInterface());
     RETURN (ret);
 }
 
@@ -2128,7 +2128,7 @@ VirtualCallStubManager::GetRepresentativeMethodDescFromToken(
 
     if (token.IsTypedToken())
     {
-        pMT = GetThread()->GetDomain()->LookupType(token.GetTypeID());
+        pMT = AppDomain::GetCurrentDomain()->LookupType(token.GetTypeID());
         CONSISTENCY_CHECK(CheckPointer(pMT));
         token = DispatchToken::CreateDispatchToken(token.GetSlotNumber());
     }
@@ -2143,7 +2143,7 @@ MethodTable *VirtualCallStubManager::GetTypeFromToken(DispatchToken token)
         NOTHROW;
         WRAPPER(GC_TRIGGERS);
     } CONTRACTL_END;
-    MethodTable *pMT = GetThread()->GetDomain()->LookupType(token.GetTypeID());
+    MethodTable *pMT = AppDomain::GetCurrentDomain()->LookupType(token.GetTypeID());
     _ASSERTE(pMT != NULL);
     _ASSERTE(pMT->LookupTypeID() == token.GetTypeID());
     return pMT;

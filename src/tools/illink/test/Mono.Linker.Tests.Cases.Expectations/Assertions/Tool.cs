@@ -13,6 +13,7 @@ namespace Mono.Linker.Tests.Cases.Expectations.Assertions
 	[Flags]
 	public enum Tool
 	{
+		None = 0,
 		Trimmer = 1,
 		Analyzer = 2,
 		NativeAot = 4,

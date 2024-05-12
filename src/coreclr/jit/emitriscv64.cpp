@@ -956,7 +956,9 @@ void emitter::emitIns_R_C(
         id->idCodeSize(8);
     }
     else
-        id->idCodeSize(16);
+    {
+        id->idCodeSize(24);
+    }
 
     if (EA_IS_GCREF(attr))
     {
@@ -1056,11 +1058,11 @@ void emitter::emitIns_R_L(instruction ins, emitAttr attr, BasicBlock* dst, regNu
     //   auipc reg, offset-hi20
     //   addi  reg, reg, offset-lo12
     //
-    // else:  3-ins:
-    //   lui  tmp, dst-hi-20bits
+    // else:  5-ins:
+    //   lui  tmp, dst-lo-20bits
     //   addi tmp, tmp, dst-lo-12bits
-    //   lui  reg, 0xff << 12
-    //   slli reg, reg, 32
+    //   lui reg, dst-hi-15bits
+    //   slli reg, reg, 20
     //   add  reg, tmp, reg
 
     instrDesc* id = emitNewInstr(attr);
@@ -1373,11 +1375,32 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
     /* Update the emitter's live GC ref sets */
 
+    // If the method returns a GC ref, mark RBM_INTRET appropriately
+    if (retSize == EA_GCREF)
+    {
+        gcrefRegs |= RBM_INTRET;
+    }
+    else if (retSize == EA_BYREF)
+    {
+        byrefRegs |= RBM_INTRET;
+    }
+
+    // If is a multi-register return method is called, mark RBM_INTRET_1 appropriately
+    if (secondRetSize == EA_GCREF)
+    {
+        gcrefRegs |= RBM_INTRET_1;
+    }
+    else if (secondRetSize == EA_BYREF)
+    {
+        byrefRegs |= RBM_INTRET_1;
+    }
+
     VarSetOps::Assign(emitComp, emitThisGCrefVars, ptrVars);
     emitThisGCrefRegs = gcrefRegs;
     emitThisByrefRegs = byrefRegs;
 
-    id->idSetIsNoGC(emitNoGChelper(methHnd));
+    // for the purpose of GC safepointing tail-calls are not real calls
+    id->idSetIsNoGC(isJump || emitNoGChelper(methHnd));
 
     /* Set the instruction - special case jumping a function */
     instruction ins;
@@ -1565,7 +1588,7 @@ unsigned emitter::emitOutputCall(const insGroup* ig, BYTE* dst, instrDesc* id, c
         // jalr t2
 
         ssize_t imm = (ssize_t)(id->idAddr()->iiaAddr);
-        assert((imm >> 32) <= 0xff);
+        assert((uint64_t)(imm >> 32) <= 0x7fff); // RISC-V Linux Kernel SV48
 
         int reg2 = (int)(imm & 1);
         imm -= reg2;
@@ -2963,14 +2986,16 @@ BYTE* emitter::emitOutputInstr_OptsRcReloc(BYTE* dst, instruction* ins, unsigned
 BYTE* emitter::emitOutputInstr_OptsRcNoReloc(BYTE* dst, instruction* ins, unsigned offset, regNumber reg1)
 {
     const ssize_t immediate = reinterpret_cast<ssize_t>(emitConsBlock) + offset;
-    assertCodeLength(static_cast<size_t>(immediate), 40);
+    assertCodeLength(static_cast<size_t>(immediate), 48); // RISC-V Linux Kernel SV48
     const regNumber rsvdReg = codeGen->rsGetRsvdReg();
 
     const instruction lastIns = (*ins == INS_jal) ? (*ins = INS_addi) : *ins;
-    const ssize_t     high    = immediate >> 11;
+    const ssize_t     high    = immediate >> 16;
 
     dst += emitOutput_UTypeInstr(dst, INS_lui, rsvdReg, UpperNBitsOfWordSignExtend<20>(high));
     dst += emitOutput_ITypeInstr(dst, INS_addi, rsvdReg, rsvdReg, LowerNBitsOfWord<12>(high));
+    dst += emitOutput_ITypeInstr(dst, INS_slli, rsvdReg, rsvdReg, 5);
+    dst += emitOutput_ITypeInstr(dst, INS_addi, rsvdReg, rsvdReg, LowerNBitsOfWord<5>(immediate >> 11));
     dst += emitOutput_ITypeInstr(dst, INS_slli, rsvdReg, rsvdReg, 11);
     dst += emitOutput_ITypeInstr(dst, lastIns, reg1, rsvdReg, LowerNBitsOfWord<11>(immediate));
     return dst;
@@ -3006,15 +3031,15 @@ BYTE* emitter::emitOutputInstr_OptsRlReloc(BYTE* dst, ssize_t igOffs, regNumber 
 BYTE* emitter::emitOutputInstr_OptsRlNoReloc(BYTE* dst, ssize_t igOffs, regNumber reg1)
 {
     const ssize_t immediate = reinterpret_cast<ssize_t>(emitCodeBlock) + igOffs;
-    assertCodeLength(static_cast<size_t>(immediate), 32 + 20);
+    assertCodeLength(static_cast<size_t>(immediate), 48); // RISC-V Linux Kernel SV48
 
     const regNumber rsvdReg      = codeGen->rsGetRsvdReg();
     const ssize_t   upperSignExt = UpperWordOfDoubleWordDoubleSignExtend<32, 52>(immediate);
 
     dst += emitOutput_UTypeInstr(dst, INS_lui, rsvdReg, UpperNBitsOfWordSignExtend<20>(immediate));
     dst += emitOutput_ITypeInstr(dst, INS_addi, rsvdReg, rsvdReg, LowerNBitsOfWord<12>(immediate));
-    dst += emitOutput_ITypeInstr(dst, INS_addi, reg1, REG_ZERO, LowerNBitsOfWord<12>(upperSignExt));
-    dst += emitOutput_ITypeInstr(dst, INS_slli, reg1, reg1, 32);
+    dst += emitOutput_UTypeInstr(dst, INS_lui, reg1, LowerNBitsOfWord<16>(upperSignExt));
+    dst += emitOutput_ITypeInstr(dst, INS_slli, reg1, reg1, 20);
     dst += emitOutput_RTypeInstr(dst, INS_add, reg1, reg1, rsvdReg);
     return dst;
 }

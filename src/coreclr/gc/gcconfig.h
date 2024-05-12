@@ -137,7 +137,8 @@ public:
     INT_CONFIG   (GCEnabledInstructionSets,  "GCEnabledInstructionSets",  NULL,                                -1,                 "Specifies whether GC can use AVX2 or AVX512F - 0 for neither, 1 for AVX2, 3 for AVX512F")\
     INT_CONFIG   (GCConserveMem,             "GCConserveMemory",          "System.GC.ConserveMemory",          0,                  "Specifies how hard GC should try to conserve memory - values 0-9")                       \
     INT_CONFIG   (GCWriteBarrier,            "GCWriteBarrier",            NULL,                                0,                  "Specifies whether GC should use more precise but slower write barrier")                  \
-    STRING_CONFIG(GCName,                    "GCName",                    "System.GC.Name",                                        "Specifies the path of the standalone GC implementation.")                                \
+    STRING_CONFIG(GCName,                    "GCName",                    "System.GC.Name",                                        "Specifies the name of the standalone GC implementation.")                                \
+    STRING_CONFIG(GCPath,                    "GCPath",                    "System.GC.Path",                                        "Specifies the path of the standalone GC implementation.")                                \
     INT_CONFIG   (GCSpinCountUnit,           "GCSpinCountUnit",           NULL,                                0,                  "Specifies the spin count unit used by the GC.")                                          \
     INT_CONFIG   (GCDynamicAdaptationMode,   "GCDynamicAdaptationMode",   "System.GC.DynamicAdaptationMode",   0,                  "Enable the GC to dynamically adapt to application sizes.")
 // This class is responsible for retreiving configuration information

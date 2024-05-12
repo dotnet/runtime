@@ -21,7 +21,7 @@ The .NET Foundation licenses this file to you under the MIT license.
     <ObjectSuffix Condition="'$(ControlFlowGuard)' == 'Guard'">.GuardCF.obj</ObjectSuffix>
     <LibrarySuffix Condition="'$(ControlFlowGuard)' == 'Guard'">.GuardCF.lib</LibrarySuffix>
     <FullRuntimeName>Runtime.WorkstationGC</FullRuntimeName>
-    <FullRuntimeName Condition="'$(ServerGarbageCollection)' == 'true' or '$(ControlFlowGuard)' == 'Guard'">Runtime.ServerGC</FullRuntimeName>
+    <FullRuntimeName Condition="'$(ServerGarbageCollection)' == 'true' or '$(IlcLinkServerGC)' == 'true' or '$(ControlFlowGuard)' == 'Guard'">Runtime.ServerGC</FullRuntimeName>
     <BootstrapperName>bootstrapper</BootstrapperName>
     <BootstrapperName Condition="'$(NativeLib)' != '' or '$(CustomNativeMain)' == 'true'">bootstrapperdll</BootstrapperName>
     <VxSortSupportName>Runtime.VxsortEnabled</VxSortSupportName>
