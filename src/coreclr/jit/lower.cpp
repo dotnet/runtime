@@ -9369,7 +9369,7 @@ bool Lowering::TryMakeIndirsAdjacent(GenTreeIndir* prevIndir, GenTreeIndir* indi
                 if (m_scratchSideEffects.InterferesWith(comp, cur, true))
                 {
                     JITDUMP("Cannot move prev indir [%06u] up past [%06u] to get it past the data computation\n",
-                        Compiler::dspTreeID(prevIndir), Compiler::dspTreeID(cur));
+                            Compiler::dspTreeID(prevIndir), Compiler::dspTreeID(cur));
                     UnmarkTree(indir);
                     return false;
                 }
