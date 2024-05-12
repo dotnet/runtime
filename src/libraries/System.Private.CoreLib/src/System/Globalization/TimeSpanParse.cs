@@ -56,7 +56,7 @@ namespace System.Globalization
     internal static class TimeSpanParse
     {
         private const int MaxFractionDigits = 7;
-        private const int MaxDays = 10675199;
+        internal const int MaxDays = 10675199;
         private const int MaxHours = 23;
         private const int MaxMinutes = 59;
         private const int MaxSeconds = 59;

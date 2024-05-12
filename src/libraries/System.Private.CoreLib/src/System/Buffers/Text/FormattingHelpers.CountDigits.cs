@@ -113,33 +113,5 @@ namespace System.Buffers.Text
             // The number of hex digits is log16(value) + 1, or log2(value) / 4 + 1
             return (BitOperations.Log2(value) >> 2) + 1;
         }
-
-        // Counts the number of trailing '0' digits in a decimal number.
-        // e.g., value =      0 => retVal = 0, valueWithoutTrailingZeros = 0
-        //       value =   1234 => retVal = 0, valueWithoutTrailingZeros = 1234
-        //       value = 320900 => retVal = 2, valueWithoutTrailingZeros = 3209
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int CountDecimalTrailingZeros(uint value, out uint valueWithoutTrailingZeros)
-        {
-            int zeroCount = 0;
-
-            if (value != 0)
-            {
-                while (true)
-                {
-                    uint temp = value / 10;
-                    if (value != (temp * 10))
-                    {
-                        break;
-                    }
-
-                    value = temp;
-                    zeroCount++;
-                }
-            }
-
-            valueWithoutTrailingZeros = value;
-            return zeroCount;
-        }
     }
 }

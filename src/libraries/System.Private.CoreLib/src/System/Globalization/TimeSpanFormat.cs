@@ -5,6 +5,7 @@ using System.Buffers.Text;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Numerics;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
 
@@ -106,39 +107,35 @@ namespace System.Globalization
             g
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static void GetAbsoluteParts(TimeSpan value, out int days, out int hours, out int minutes, out int seconds, out int fraction)
+        {
+            // Calculate absolute value of signed 64-bit value as unsigned 64-bit
+            ulong totalTicks = value.Ticks >= 0 ? (ulong)value.Ticks : (ulong)-value.Ticks;
+
+            (ulong totalSeconds, ulong uFraction) = Math.DivRem(totalTicks, TimeSpan.TicksPerSecond);
+            fraction = (int)uFraction;
+            (ulong totalMinutes, ulong uSeconds) = Math.DivRem(totalSeconds, 60);
+            seconds = (int)uSeconds;
+            (ulong totalHours, ulong uMinutes) = Math.DivRem(totalMinutes, 60);
+            minutes = (int)uMinutes;
+            Debug.Assert(totalHours <= uint.MaxValue);
+            (uint uDays, uint uHours) = Math.DivRem((uint)totalHours, 24);
+            days = (int)uDays;
+            Debug.Assert(days <= TimeSpanParse.MaxDays);
+            hours = (int)uHours;
+        }
+
         internal static unsafe bool TryFormatStandard<TChar>(TimeSpan value, StandardFormat format, ReadOnlySpan<TChar> decimalSeparator, Span<TChar> destination, out int written) where TChar : unmanaged, IUtfChar<TChar>
         {
             Debug.Assert(format == StandardFormat.C || format == StandardFormat.G || format == StandardFormat.g);
 
+            GetAbsoluteParts(value, out int days, out int hours, out int minutes, out int seconds, out int fraction);
+
             // First, calculate how large an output buffer is needed to hold the entire output.
-            int requiredOutputLength = 8; // start with "hh:mm:ss" and adjust as necessary
+            // start with "hh:mm:ss" and adjust as necessary, add one for leading '-' if negative
+            int requiredOutputLength = value.Ticks >= 0 ? 8 : 9;
 
-            uint fraction;
-            ulong totalSecondsRemaining;
-            {
-                // Turn this into a non-negative TimeSpan if possible.
-                long ticks = value.Ticks;
-                if (ticks < 0)
-                {
-                    requiredOutputLength = 9; // requiredOutputLength + 1 for the leading '-' sign
-                    ticks = -ticks;
-                    if (ticks < 0)
-                    {
-                        Debug.Assert(ticks == long.MinValue /* -9223372036854775808 */);
-
-                        // We computed these ahead of time; they're straight from the decimal representation of Int64.MinValue.
-                        fraction = 4775808;
-                        totalSecondsRemaining = 922337203685;
-                        goto AfterComputeFraction;
-                    }
-                }
-
-                ulong fraction64;
-                (totalSecondsRemaining, fraction64) = Math.DivRem((ulong)ticks, TimeSpan.TicksPerSecond);
-                fraction = (uint)fraction64;
-            }
-
-        AfterComputeFraction:
             // Only write out the fraction if it's non-zero, and in that
             // case write out the entire fraction (all digits).
             Debug.Assert(fraction < 10_000_000);
@@ -167,38 +164,11 @@ namespace System.Globalization
                     Debug.Assert(format == StandardFormat.g);
                     if (fraction != 0)
                     {
-                        fractionDigits = DateTimeFormat.MaxSecondsFractionDigits - FormattingHelpers.CountDecimalTrailingZeros(fraction, out fraction);
+                        fraction = DateTimeFormat.RemoveFractionTrailingZeros(fraction, DateTimeFormat.MaxSecondsFractionDigits, out fractionDigits);
                         requiredOutputLength += fractionDigits;
                         requiredOutputLength += decimalSeparator.Length;
                     }
                     break;
-            }
-
-            ulong totalMinutesRemaining = 0, seconds = 0;
-            if (totalSecondsRemaining > 0)
-            {
-                // Only compute minutes if the TimeSpan has an absolute value of >= 1 minute.
-                (totalMinutesRemaining, seconds) = Math.DivRem(totalSecondsRemaining, 60 /* seconds per minute */);
-                Debug.Assert(seconds < 60);
-            }
-
-            ulong totalHoursRemaining = 0, minutes = 0;
-            if (totalMinutesRemaining > 0)
-            {
-                // Only compute hours if the TimeSpan has an absolute value of >= 1 hour.
-                (totalHoursRemaining, minutes) = Math.DivRem(totalMinutesRemaining, 60 /* minutes per hour */);
-                Debug.Assert(minutes < 60);
-            }
-
-            // At this point, we can switch over to 32-bit DivRem since the data has shrunk far enough.
-            Debug.Assert(totalHoursRemaining <= uint.MaxValue);
-
-            uint days = 0, hours = 0;
-            if (totalHoursRemaining > 0)
-            {
-                // Only compute days if the TimeSpan has an absolute value of >= 1 day.
-                (days, hours) = Math.DivRem((uint)totalHoursRemaining, 24 /* hours per day */);
-                Debug.Assert(hours < 24);
             }
 
             int hourDigits = 2;
@@ -212,7 +182,7 @@ namespace System.Globalization
             int dayDigits = 0;
             if (days > 0)
             {
-                dayDigits = FormattingHelpers.CountDigits(days);
+                dayDigits = FormattingHelpers.CountDigits((uint)days);
                 Debug.Assert(dayDigits <= 8);
                 requiredOutputLength += dayDigits + 1; // for the leading "d."
             }
@@ -242,7 +212,7 @@ namespace System.Globalization
                 // Write day and separator, if necessary
                 if (dayDigits != 0)
                 {
-                    Number.WriteDigits(days, p, dayDigits);
+                    Number.WriteDigits((uint)days, p, dayDigits);
                     p += dayDigits;
                     *p++ = TChar.CastFrom(format == StandardFormat.C ? '.' : ':');
                 }
@@ -251,7 +221,7 @@ namespace System.Globalization
                 Debug.Assert(hourDigits == 1 || hourDigits == 2);
                 if (hourDigits == 2)
                 {
-                    Number.WriteTwoDigits(hours, p);
+                    Number.WriteTwoDigits((uint)hours, p);
                     p += 2;
                 }
                 else
@@ -282,7 +252,7 @@ namespace System.Globalization
                         p += decimalSeparator.Length;
                     }
 
-                    Number.WriteDigits(fraction, p, fractionDigits);
+                    Number.WriteDigits((uint)fraction, p, fractionDigits);
                     p += fractionDigits;
                 }
 
@@ -298,18 +268,7 @@ namespace System.Globalization
         {
             Debug.Assert(dtfi != null);
 
-            int day = (int)(value.Ticks / TimeSpan.TicksPerDay);
-            long time = value.Ticks % TimeSpan.TicksPerDay;
-
-            if (value.Ticks < 0)
-            {
-                day = -day;
-                time = -time;
-            }
-            int hours = (int)(time / TimeSpan.TicksPerHour % 24);
-            int minutes = (int)(time / TimeSpan.TicksPerMinute % 60);
-            int seconds = (int)(time / TimeSpan.TicksPerSecond % 60);
-            int fraction = (int)(time % TimeSpan.TicksPerSecond);
+            GetAbsoluteParts(value, out int days, out int hours, out int minutes, out int seconds, out int fraction);
 
             int tmp;
             int i = 0;
@@ -371,19 +330,7 @@ namespace System.Globalization
 
                         tmp = fraction;
                         tmp /= TimeSpanParse.Pow10UpToMaxFractionDigits(DateTimeFormat.MaxSecondsFractionDigits - tokenLen);
-                        int effectiveDigits = tokenLen;
-                        while (effectiveDigits > 0)
-                        {
-                            if (tmp % 10 == 0)
-                            {
-                                tmp /= 10;
-                                effectiveDigits--;
-                            }
-                            else
-                            {
-                                break;
-                            }
-                        }
+                        tmp = DateTimeFormat.RemoveFractionTrailingZeros(tmp, tokenLen, out int effectiveDigits);
                         if (effectiveDigits > 0)
                         {
                             DateTimeFormat.FormatFraction(ref result, tmp, DateTimeFormat.fixedNumberFormats[effectiveDigits - 1]);
@@ -400,7 +347,7 @@ namespace System.Globalization
                             goto default; // to release the builder and throw
                         }
 
-                        DateTimeFormat.FormatDigits(ref result, day, tokenLen);
+                        DateTimeFormat.FormatDigits(ref result, days, tokenLen);
                         break;
                     case '\'':
                     case '\"':

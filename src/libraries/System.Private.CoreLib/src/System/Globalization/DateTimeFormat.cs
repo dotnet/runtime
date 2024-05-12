@@ -492,19 +492,7 @@ namespace System
                             }
                             else
                             {
-                                int effectiveDigits = tokenLen;
-                                while (effectiveDigits > 0)
-                                {
-                                    if (fraction % 10 == 0)
-                                    {
-                                        fraction /= 10;
-                                        effectiveDigits--;
-                                    }
-                                    else
-                                    {
-                                        break;
-                                    }
-                                }
+                                fraction = RemoveFractionTrailingZeros(fraction, tokenLen, out int effectiveDigits);
                                 if (effectiveDigits > 0)
                                 {
                                     FormatFraction(ref result, fraction, fixedNumberFormats[effectiveDigits - 1]);
@@ -770,6 +758,26 @@ namespace System
                 Debug.Assert(typeof(TChar) == typeof(byte));
                 Encoding.UTF8.GetBytes(s, MemoryMarshal.Cast<TChar, byte>(result.AppendSpan(Encoding.UTF8.GetByteCount(s))));
             }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static int RemoveFractionTrailingZeros(int fraction, int digits, out int effectiveDigits)
+        {
+            Debug.Assert(fraction >= 0);
+            Debug.Assert(fraction < TimeSpanParse.Pow10UpToMaxFractionDigits(digits));
+            effectiveDigits = digits;
+            while (effectiveDigits > 0)
+            {
+                (int div, int rem) = Math.DivRem(fraction, 10);
+                if (rem != 0)
+                {
+                    break;
+                }
+
+                fraction = div;
+                effectiveDigits--;
+            }
+            return fraction;
         }
 
         internal static void FormatFraction<TChar>(ref ValueListBuilder<TChar> result, int fraction, ReadOnlySpan<char> fractionFormat) where TChar : unmanaged, IUtfChar<TChar>
