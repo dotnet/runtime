@@ -9355,30 +9355,30 @@ bool Lowering::TryMakeIndirsAdjacent(GenTreeIndir* prevIndir, GenTreeIndir* indi
     if (sawData)
     {
         // If the data node of 'indir' is between 'prevIndir' and 'indir' then
-        // try to move the previous indir up happen after the data computation.
-        // We will be moving all nodes unrelated to the data flow past 'indir',
-        // so we only need to check interference between 'prevIndir' and all
-        // nodes that are part of 'indir's dataflow.
+        // try to move the previous indir up to happen after the data
+        // computation. We will be moving all nodes unrelated to the data flow
+        // past 'indir', so we only need to check interference between
+        // 'prevIndir' and all nodes that are part of 'indir's dataflow.
         m_scratchSideEffects.Clear();
+        m_scratchSideEffects.AddNode(comp, prevIndir);
 
         for (GenTree* cur = prevIndir->gtNext;; cur = cur->gtNext)
         {
             if ((cur->gtLIRFlags & LIR::Flags::Mark) != 0)
             {
-                m_scratchSideEffects.AddNode(comp, cur);
+                if (m_scratchSideEffects.InterferesWith(comp, cur, true))
+                {
+                    JITDUMP("Cannot move prev indir [%06u] up past [%06u] to get it past the data computation\n",
+                        Compiler::dspTreeID(prevIndir), Compiler::dspTreeID(cur));
+                    UnmarkTree(indir);
+                    return false;
+                }
             }
 
             if (cur == indir->Data())
             {
                 break;
             }
-        }
-
-        if (m_scratchSideEffects.InterferesWith(comp, prevIndir, true))
-        {
-            JITDUMP("Cannot move prev indir up after data computation\n");
-            UnmarkTree(indir);
-            return false;
         }
     }
 
