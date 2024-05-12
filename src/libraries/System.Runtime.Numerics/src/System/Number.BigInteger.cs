@@ -337,7 +337,14 @@ namespace System
                 return ParsingStatus.Failed;
             }
 
-            result = NumberBufferToBigInteger(resultBuffer.Slice(0, BigIntegerCalculator.ActualLength(resultBuffer)), number.IsNegative);
+            resultBuffer = resultBuffer.Slice(0, BigIntegerCalculator.ActualLength(resultBuffer));
+            Debug.Assert(resultBuffer.Length == 0 || resultBuffer[^1] != 0);
+
+            result = resultBuffer.Length == 0
+                ? BigInteger.Zero
+                : resultBuffer is [uint leading] && (leading <= int.MaxValue || number.IsNegative && leading == unchecked((uint)(int.MaxValue + 1)))
+                    ? new BigInteger((int)(number.IsNegative ? -leading : leading))
+                    : new BigInteger(number.IsNegative ? -1 : 1, resultBuffer.ToArray());
 
             if (resultBufferFromPool != null)
                 ArrayPool<uint>.Shared.Return(resultBufferFromPool);
@@ -573,24 +580,6 @@ namespace System
                     carry = (uint)(p >> 32);
                 }
                 return carry;
-            }
-
-            static BigInteger NumberBufferToBigInteger(ReadOnlySpan<uint> result, bool isNegative)
-            {
-                Debug.Assert(result.Length == 0 || result[^1] != 0);
-
-                if (result.Length == 0)
-                {
-                    return BigInteger.Zero;
-                }
-                else if (result is [uint leading] && (leading <= int.MaxValue || isNegative && leading == unchecked((uint)(int.MaxValue + 1))))
-                {
-                    return new BigInteger((int)(isNegative ? -leading : leading));
-                }
-                else
-                {
-                    return new BigInteger(isNegative ? -1 : 1, result.ToArray());
-                }
             }
         }
 
