@@ -2377,7 +2377,6 @@ void Compiler::optAssertionGen(GenTree* tree)
             break;
 
         case GT_IND:
-        case GT_LOCKADD:
         case GT_XAND:
         case GT_XORR:
         case GT_XADD:
