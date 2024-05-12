@@ -10726,7 +10726,14 @@ void* CEEJitInfo::getHelperFtn(CorInfoHelpFunc    ftnNum,         /* IN  */
             dynamicFtnNum == DYNAMIC_CORINFO_HELP_LDELEMA_REF ||
             dynamicFtnNum == DYNAMIC_CORINFO_HELP_MEMSET ||
             dynamicFtnNum == DYNAMIC_CORINFO_HELP_MEMZERO ||
-            dynamicFtnNum == DYNAMIC_CORINFO_HELP_MEMCPY)
+            dynamicFtnNum == DYNAMIC_CORINFO_HELP_MEMCPY ||
+            dynamicFtnNum == DYNAMIC_CORINFO_HELP_BULK_WRITEBARRIER ||
+            IN_TARGET_32BIT(dynamicFtnNum == DYNAMIC_CORINFO_HELP_LMUL_OVF ||)
+            IN_TARGET_32BIT(dynamicFtnNum == DYNAMIC_CORINFO_HELP_ULMUL_OVF ||)
+            dynamicFtnNum == DYNAMIC_CORINFO_HELP_DBL2INT_OVF ||
+            dynamicFtnNum == DYNAMIC_CORINFO_HELP_DBL2LNG_OVF ||
+            dynamicFtnNum == DYNAMIC_CORINFO_HELP_DBL2UINT_OVF ||
+            dynamicFtnNum == DYNAMIC_CORINFO_HELP_DBL2ULNG_OVF)
         {
             Precode* pPrecode = Precode::GetPrecodeFromEntryPoint((PCODE)hlpDynamicFuncTable[dynamicFtnNum].pfnHelper);
             _ASSERTE(pPrecode->GetType() == PRECODE_FIXUP);
