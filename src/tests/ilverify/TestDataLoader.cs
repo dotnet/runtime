@@ -279,10 +279,10 @@ namespace ILVerification.Tests
                 _simpleNameToPathMap = simpleNameToPathMap;
             }
 
-            PEReader IResolver.ResolveAssembly(AssemblyName assemblyName)
+            PEReader IResolver.ResolveAssembly(AssemblyNameInfo assemblyName)
                 => Resolve(assemblyName.Name);
 
-            PEReader IResolver.ResolveModule(AssemblyName referencingModule, string fileName)
+            PEReader IResolver.ResolveModule(AssemblyNameInfo referencingModule, string fileName)
                 => Resolve(Path.GetFileNameWithoutExtension(fileName));
 
             public PEReader Resolve(string simpleName)
