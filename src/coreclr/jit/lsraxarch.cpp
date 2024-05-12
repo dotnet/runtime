@@ -1435,14 +1435,13 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
                 {
                     ClassLayout* layout = blkNode->GetLayout();
 
-                    unsigned slot            = 0;
                     unsigned xmmCandidates   = 0;
                     unsigned continuousNonGc = 0;
-                    for (unsigned i = 0; i < layout->GetSlotCount(); i++)
+                    for (unsigned slot = 0; slot < layout->GetSlotCount(); slot++)
                     {
                         if (layout->IsGCPtr(slot))
                         {
-                            xmmCandidates += (continuousNonGc * TARGET_POINTER_SIZE) / XMM_REGSIZE_BYTES;
+                            xmmCandidates += ((continuousNonGc * TARGET_POINTER_SIZE) / XMM_REGSIZE_BYTES);
                             continuousNonGc = 0;
                         }
                         else
@@ -1450,7 +1449,7 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
                             continuousNonGc++;
                         }
                     }
-                    xmmCandidates += (continuousNonGc * TARGET_POINTER_SIZE) / XMM_REGSIZE_BYTES;
+                    xmmCandidates += ((continuousNonGc * TARGET_POINTER_SIZE) / XMM_REGSIZE_BYTES);
 
                     // Just one XMM candidate is not profitable
                     willUseSimdMov = xmmCandidates > 1;
