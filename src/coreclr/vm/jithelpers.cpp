@@ -6040,7 +6040,7 @@ HCIMPLEND
 /* Fills out portions of an InlinedCallFrame for JIT64    */
 /* The idea here is to allocate and initialize the frame to only once, */
 /* regardless of how many PInvokes there are in the method            */
-Thread * __stdcall JIT_InitPInvokeFrame(InlinedCallFrame *pFrame, PTR_VOID StubSecretArg)
+Thread * JIT_InitPInvokeFrame(InlinedCallFrame *pFrame)
 {
     CONTRACTL
     {
@@ -6054,7 +6054,6 @@ Thread * __stdcall JIT_InitPInvokeFrame(InlinedCallFrame *pFrame, PTR_VOID StubS
     _ASSERTE(pFrame != pThread->GetFrame());
 
     pFrame->Init();
-    pFrame->m_StubSecretArg = StubSecretArg;
     pFrame->m_Next = pThread->GetFrame();
 
     return pThread;

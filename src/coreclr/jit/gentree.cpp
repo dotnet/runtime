@@ -13136,8 +13136,6 @@ const char* Compiler::gtGetWellKnownArgNameForArgMsg(WellKnownArg arg)
             return "retbuf";
         case WellKnownArg::PInvokeFrame:
             return "pinv frame";
-        case WellKnownArg::SecretStubParam:
-            return "stub param";
         case WellKnownArg::WrapperDelegateCell:
             return "wrap cell";
         case WellKnownArg::ShiftLow:

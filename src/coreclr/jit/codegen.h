@@ -277,6 +277,7 @@ protected:
 
     var_types genParamStackStoreType(LclVarDsc* dsc, const ABIPassingSegment& seg);
     void      genSpillOrAddRegisterParam(unsigned lclNum, class RegGraph* graph);
+    void      genSpillOrAddNonStandardRegisterParam(unsigned lclNum, regNumber sourceReg, class RegGraph* graph);
     void      genEnregisterIncomingStackArgs();
 #if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     void genEnregisterOSRArgsAndLocals(regNumber initReg, bool* pInitRegZeroed);
