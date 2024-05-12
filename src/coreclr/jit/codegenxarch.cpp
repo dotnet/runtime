@@ -3311,13 +3311,12 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* node)
                     unsigned simdSize = compiler->roundDownSIMDSize((nonGcSlotCount - nonGcSlot) * REGSIZE_BYTES);
                     if (simdSize > 0)
                     {
-                        // Initialize simdZeroReg with zero on demand, it's enough to use TYP_SIMD16
-                        // regardless of the SIMD size we're going to use.
+                        // Initialize simdZeroReg with zero on demand
                         if (simdZeroReg == REG_NA)
                         {
                             simdZeroReg = internalRegisters.GetSingle(node, RBM_ALLFLOAT);
-                            simd_t vecCon;
-                            memset(&vecCon, (uint8_t)src->AsIntCon()->IconValue(), sizeof(simd_t));
+                            // SIMD16 is sufficient for any SIMD size
+                            simd_t vecCon = {};
                             genSetRegToConst(simdZeroReg, TYP_SIMD16, &vecCon);
                         }
 
