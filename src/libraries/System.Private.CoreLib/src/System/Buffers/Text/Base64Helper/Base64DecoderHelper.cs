@@ -1299,7 +1299,7 @@ namespace System.Buffers.Text
                 Vector256<sbyte> hi = Avx2.Shuffle(lutHigh, hiNibbles);
                 Vector256<sbyte> lo = Avx2.Shuffle(lutLow, loNibbles);
 
-                if (!Avx.TestZ(lo, hi))
+                if ((lo & hi) != Vector256<sbyte>.Zero)
                 {
                     result = default;
                     return false;
