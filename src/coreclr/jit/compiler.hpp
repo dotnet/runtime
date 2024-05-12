@@ -99,6 +99,33 @@ inline bool genExactlyOneBit(T value)
     return ((value != 0) && genMaxOneBit(value));
 }
 
+#ifdef TARGET_ARM64
+inline regMaskTP genFindLowestBit(regMaskTP value)
+{
+    return regMaskTP(genFindLowestBit(value.getLow()));
+}
+
+/*****************************************************************************
+ *
+ *  Return true if the given value has exactly zero or one bits set.
+ */
+
+inline bool genMaxOneBit(regMaskTP value)
+{
+    return genMaxOneBit(value.getLow());
+}
+
+/*****************************************************************************
+ *
+ *  Return true if the given value has exactly one bit set.
+ */
+
+inline bool genExactlyOneBit(regMaskTP value)
+{
+    return genExactlyOneBit(value.getLow());
+}
+#endif
+
 /*****************************************************************************
  *
  *  Given a value that has exactly one bit set, return the position of that
@@ -146,6 +173,13 @@ inline unsigned genCountBits(uint64_t bits)
 {
     return BitOperations::PopCount(bits);
 }
+
+#ifdef TARGET_ARM64
+inline unsigned genCountBits(regMaskTP mask)
+{
+    return BitOperations::PopCount(mask.getLow());
+}
+#endif
 
 /*****************************************************************************
  *
@@ -914,11 +948,18 @@ inline regNumber genRegNumFromMask(regMaskTP mask)
 
     /* Convert the mask to a register number */
 
+#ifdef TARGET_ARM64
+    regNumber regNum = (regNumber)genLog2(mask.getLow());
+
+    /* Make sure we got it right */
+    assert(genRegMask(regNum) == mask.getLow());
+
+#else
     regNumber regNum = (regNumber)genLog2(mask);
 
     /* Make sure we got it right */
-
     assert(genRegMask(regNum) == mask);
+#endif
 
     return regNum;
 }
@@ -940,7 +981,8 @@ inline regNumber genFirstRegNumFromMaskAndToggle(regMaskTP& mask)
 
     /* Convert the mask to a register number */
 
-    regNumber regNum = (regNumber)BitOperations::BitScanForward(mask);
+    regNumber regNum = (regNumber)BitScanForward(mask);
+
     mask ^= genRegMask(regNum);
 
     return regNum;
@@ -962,7 +1004,7 @@ inline regNumber genFirstRegNumFromMask(regMaskTP mask)
 
     /* Convert the mask to a register number */
 
-    regNumber regNum = (regNumber)BitOperations::BitScanForward(mask);
+    regNumber regNum = (regNumber)BitScanForward(mask);
 
     return regNum;
 }
@@ -4463,7 +4505,11 @@ inline void* operator new[](size_t sz, Compiler* compiler, CompMemKind cmk)
 
 inline void printRegMask(regMaskTP mask)
 {
+#ifdef TARGET_ARM64
+    printf(REG_MASK_ALL_FMT, mask.getLow());
+#else
     printf(REG_MASK_ALL_FMT, mask);
+#endif
 }
 
 inline char* regMaskToString(regMaskTP mask, Compiler* context)
@@ -4471,14 +4517,22 @@ inline char* regMaskToString(regMaskTP mask, Compiler* context)
     const size_t cchRegMask = 24;
     char*        regmask    = new (context, CMK_Unknown) char[cchRegMask];
 
+#ifdef TARGET_ARM64
+    sprintf_s(regmask, cchRegMask, REG_MASK_ALL_FMT, mask.getLow());
+#else
     sprintf_s(regmask, cchRegMask, REG_MASK_ALL_FMT, mask);
+#endif
 
     return regmask;
 }
 
 inline void printRegMaskInt(regMaskTP mask)
 {
+#ifdef TARGET_ARM64
+    printf(REG_MASK_INT_FMT, (mask & RBM_ALLINT).getLow());
+#else
     printf(REG_MASK_INT_FMT, (mask & RBM_ALLINT));
+#endif
 }
 
 inline char* regMaskIntToString(regMaskTP mask, Compiler* context)
@@ -4486,7 +4540,11 @@ inline char* regMaskIntToString(regMaskTP mask, Compiler* context)
     const size_t cchRegMask = 24;
     char*        regmask    = new (context, CMK_Unknown) char[cchRegMask];
 
+#ifdef TARGET_ARM64
+    sprintf_s(regmask, cchRegMask, REG_MASK_INT_FMT, (mask & RBM_ALLINT).getLow());
+#else
     sprintf_s(regmask, cchRegMask, REG_MASK_INT_FMT, (mask & RBM_ALLINT));
+#endif
 
     return regmask;
 }

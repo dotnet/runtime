@@ -17,7 +17,7 @@ extends:
 
     containers:
       linux_arm:
-        image: mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-cross-arm-net9.0
+        image: mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-cross-arm-net9.0-20240507035943-1390eea
         env:
           ROOTFS_DIR: /crossrootfs/arm
 
@@ -100,7 +100,7 @@ extends:
         image: mcr.microsoft.com/dotnet-buildtools/prereqs:centos-stream8
 
       browser_wasm:
-        image: mcr.microsoft.com/dotnet-buildtools/prereqs:cbl-mariner-2.0-webassembly-20230913040940-1edc1c6
+        image: mcr.microsoft.com/dotnet-buildtools/prereqs:cbl-mariner-2.0-webassembly
         env:
           ROOTFS_DIR: /crossrootfs/x64
 
