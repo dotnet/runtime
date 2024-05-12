@@ -9363,10 +9363,6 @@ bool Lowering::TryMakeIndirsAdjacent(GenTreeIndir* prevIndir, GenTreeIndir* indi
 
         for (GenTree* cur = prevIndir->gtNext;; cur = cur->gtNext)
         {
-            // * Previous indir should be moved past data
-            // * All nodes past of the data flow of current indir should be moved past data
-            // Other nodes will be moved past the indir below.
-
             if ((cur->gtLIRFlags & LIR::Flags::Mark) != 0)
             {
                 m_scratchSideEffects.AddNode(comp, cur);
