@@ -825,7 +825,7 @@ namespace System.Numerics.Tensors.Tests
             int[] a = [91, 92, -93, 94];
             TensorSpan<int> spanInt = a.AsTensorSpan(4);
             nint[] dims = [4];
-            var tensor = Tensor.CreateUninitialized<int>(false, dims.AsSpan());
+            var tensor = Tensor.CreateUninitialized<int>(dims.AsSpan(), false);
             spanInt.CopyTo(tensor);
             Assert.Equal(1, tensor.Rank);
 
@@ -854,11 +854,11 @@ namespace System.Numerics.Tensors.Tests
             a[3] = 94;
             spanInt = a.AsTensorSpan(2, 2);
             dims = [2, 2];
-            tensor = Tensor.CreateUninitialized<int>(false, dims.AsSpan());
+            tensor = Tensor.CreateUninitialized<int>(dims.AsSpan(), false);
             spanInt.CopyTo(tensor);
             Assert.Equal(a, tensor.ToArray());
             Assert.Equal(2, tensor.Rank);
-            //Assert.Equal(4, spanInt.Length);
+            //Assert.Equal(4, spanInt.FlattenedLength);
             Assert.Equal(2, tensor.Lengths.Length);
             Assert.Equal(2, tensor.Lengths[0]);
             Assert.Equal(2, tensor.Lengths[1]);
@@ -885,7 +885,7 @@ namespace System.Numerics.Tensors.Tests
         public static void TensorFillTest()
         {
             nint[] dims = [3, 3];
-            var tensor = Tensor.CreateUninitialized<int>(false, dims.AsSpan());
+            var tensor = Tensor.CreateUninitialized<int>(dims.AsSpan(), false);
             tensor.Fill(-1);
             var enumerator = tensor.GetEnumerator();
             while (enumerator.MoveNext())
@@ -908,7 +908,7 @@ namespace System.Numerics.Tensors.Tests
             }
 
             dims = [9];
-            tensor = Tensor.CreateUninitialized<int>(false, dims.AsSpan());
+            tensor = Tensor.CreateUninitialized<int>(dims.AsSpan(), false);
             tensor.Fill(-1);
             enumerator = tensor.GetEnumerator();
             while (enumerator.MoveNext())
@@ -917,7 +917,7 @@ namespace System.Numerics.Tensors.Tests
             }
 
             dims = [3, 3, 3];
-            tensor = Tensor.CreateUninitialized<int>(false, dims.AsSpan());
+            tensor = Tensor.CreateUninitialized<int>(dims.AsSpan(), false);
             tensor.Fill(-1);
             enumerator = tensor.GetEnumerator();
             while (enumerator.MoveNext())
@@ -926,7 +926,7 @@ namespace System.Numerics.Tensors.Tests
             }
 
             dims = [3, 2, 2];
-            tensor = Tensor.CreateUninitialized<int>(false, dims.AsSpan());
+            tensor = Tensor.CreateUninitialized<int>(dims.AsSpan(), false);
             tensor.Fill(-1);
             enumerator = tensor.GetEnumerator();
             while (enumerator.MoveNext())
@@ -935,7 +935,7 @@ namespace System.Numerics.Tensors.Tests
             }
 
             dims = [2, 2, 2, 2];
-            tensor = Tensor.CreateUninitialized<int>(false , dims.AsSpan());
+            tensor = Tensor.CreateUninitialized<int>(dims.AsSpan(), false);
             tensor.Fill(-1);
             enumerator = tensor.GetEnumerator();
             while (enumerator.MoveNext())
@@ -944,7 +944,7 @@ namespace System.Numerics.Tensors.Tests
             }
 
             dims = [3, 2, 2, 2];
-            tensor = Tensor.CreateUninitialized<int>(false, dims.AsSpan());
+            tensor = Tensor.CreateUninitialized<int>(dims.AsSpan(), false);
             tensor.Fill(-1);
             enumerator = tensor.GetEnumerator();
             while (enumerator.MoveNext())
@@ -958,7 +958,7 @@ namespace System.Numerics.Tensors.Tests
         {
             int[] a = [1, 2, 3, 4, 5, 6, 7, 8, 9];
             TensorSpan<int> spanInt = a.AsTensorSpan(3, 3);
-            var tensor = Tensor.CreateUninitialized<int>(false, [3, 3]);
+            var tensor = Tensor.CreateUninitialized<int>([3, 3], false);
             spanInt.CopyTo(tensor);
             var slice = tensor.Slice(0..2, 0..2);
             slice.Clear();
@@ -988,7 +988,7 @@ namespace System.Numerics.Tensors.Tests
 
             a = [1, 2, 3, 4, 5, 6, 7, 8, 9];
             spanInt = a.AsTensorSpan(9);
-            tensor = Tensor.CreateUninitialized<int>(false, [9]);
+            tensor = Tensor.CreateUninitialized<int>([9], false);
             spanInt.CopyTo(tensor);
             slice = tensor.Slice(0..1);
             slice.Clear();
@@ -1015,7 +1015,7 @@ namespace System.Numerics.Tensors.Tests
 
             a = [.. Enumerable.Range(0, 27)];
             spanInt = a.AsTensorSpan(3, 3, 3);
-            tensor = Tensor.CreateUninitialized<int>(false, [3, 3, 3]);
+            tensor = Tensor.CreateUninitialized<int>([3, 3, 3], false);
             spanInt.CopyTo(tensor);
             tensor.Clear();
             enumerator = tensor.GetEnumerator();
@@ -1026,7 +1026,7 @@ namespace System.Numerics.Tensors.Tests
 
             a = [.. Enumerable.Range(0, 12)];
             spanInt = a.AsTensorSpan(3, 2, 2);
-            tensor = Tensor.CreateUninitialized<int>(false, [3, 2, 2]);
+            tensor = Tensor.CreateUninitialized<int>([3, 2, 2], false);
             spanInt.CopyTo(tensor);
             tensor.Clear();
             enumerator = tensor.GetEnumerator();
@@ -1037,7 +1037,7 @@ namespace System.Numerics.Tensors.Tests
 
             a = [.. Enumerable.Range(0, 16)];
             spanInt = a.AsTensorSpan(2, 2, 2, 2);
-            tensor = Tensor.CreateUninitialized<int>(false, [2, 2, 2, 2]);
+            tensor = Tensor.CreateUninitialized<int>([2, 2, 2, 2], false);
             spanInt.CopyTo(tensor);
             tensor.Clear();
             enumerator = tensor.GetEnumerator();
@@ -1048,7 +1048,7 @@ namespace System.Numerics.Tensors.Tests
 
             a = [.. Enumerable.Range(0, 24)];
             spanInt = a.AsTensorSpan(3, 2, 2, 2);
-            tensor = Tensor.CreateUninitialized<int>(false, [3, 2, 2, 2]);
+            tensor = Tensor.CreateUninitialized<int>([3, 2, 2, 2], false);
             spanInt.CopyTo(tensor);
             tensor.Clear();
             enumerator = tensor.GetEnumerator();
@@ -1202,7 +1202,7 @@ namespace System.Numerics.Tensors.Tests
             int[] rightData = new int[9];
             nint[] dims = [3, 3];
             TensorSpan<int> leftSpan = leftData.AsTensorSpan(3, 3);
-            var tensor = Tensor.CreateUninitialized<int>(false, dims.AsSpan());
+            var tensor = Tensor.CreateUninitialized<int>(dims.AsSpan(), false);
             TensorSpan<int> rightSpan = rightData.AsTensorSpan(3, 3);
             leftSpan.CopyTo(tensor);
             var leftEnum = leftSpan.GetEnumerator();
@@ -1227,7 +1227,7 @@ namespace System.Numerics.Tensors.Tests
             leftData = [1, 2, 3, 4, 5, 6, 7, 8, 9];
             dims = [15];
             leftSpan = leftData.AsTensorSpan(9);
-            tensor = Tensor.Create<int>(false, dims.AsSpan());
+            tensor = Tensor.Create<int>(dims.AsSpan(), false);
             leftSpan.CopyTo(tensor);
             leftEnum = leftSpan.GetEnumerator();
             tensorEnum = tensor.GetEnumerator();
@@ -1257,7 +1257,7 @@ namespace System.Numerics.Tensors.Tests
             int[] rightData = new int[9];
             TensorSpan<int> leftSpan = leftData.AsTensorSpan(3, 3);
             nint[] dims = [3, 3];
-            var tensor = Tensor.CreateUninitialized<int>(false, dims.AsSpan());
+            var tensor = Tensor.CreateUninitialized<int>(dims.AsSpan(), false);
             TensorSpan<int> rightSpan = rightData.AsTensorSpan(3, 3);
             var success = leftSpan.TryCopyTo(tensor);
             Assert.True(success);
@@ -1279,7 +1279,7 @@ namespace System.Numerics.Tensors.Tests
             leftData = [1, 2, 3, 4, 5, 6, 7, 8, 9];
             dims = [15];
             leftSpan = leftData.AsTensorSpan(9);
-            tensor = Tensor.Create<int>(false, dims.AsSpan());
+            tensor = Tensor.Create<int>(dims.AsSpan(), false);
             success = leftSpan.TryCopyTo(tensor);
             leftEnum = leftSpan.GetEnumerator();
             tensorEnum = tensor.GetEnumerator();
@@ -1298,7 +1298,7 @@ namespace System.Numerics.Tensors.Tests
             leftData = [.. Enumerable.Range(0, 27)];
             var l = leftData.AsTensorSpan(3, 3, 3);
             dims = [2, 2];
-            tensor = Tensor.Create<int>(false, dims.AsSpan());
+            tensor = Tensor.Create<int>(dims.AsSpan(), false);
             var r = new TensorSpan<int>();
             success = l.TryCopyTo(tensor);
             Assert.False(success);
@@ -1310,7 +1310,7 @@ namespace System.Numerics.Tensors.Tests
         public static void TensorSliceTest()
         {
             int[] a = [1, 2, 3, 4, 5, 6, 7, 8, 9];
-            var tensor = Tensor.CreateUninitialized<int>(false, [3, 3]);
+            var tensor = Tensor.CreateUninitialized<int>([3, 3], false);
 
             //Assert.Throws<ArgumentOutOfRangeException>(() => tensor.Slice(0..1));
             //Assert.Throws<ArgumentOutOfRangeException>(() => tensor.Slice(1..2));
@@ -1378,7 +1378,7 @@ namespace System.Numerics.Tensors.Tests
 
             int[] numbers = [.. Enumerable.Range(0, 27)];
             intSpan = numbers.AsTensorSpan(3, 3, 3);
-            tensor = Tensor.CreateUninitialized<int>(false, [3, 3, 3]);
+            tensor = Tensor.CreateUninitialized<int>([3, 3, 3], false);
             intSpan.CopyTo(tensor.AsTensorSpan());
             sp = tensor.Slice(1..2, 1..2, 1..2);
             Assert.Equal(13, sp[0, 0, 0]);
@@ -1411,7 +1411,7 @@ namespace System.Numerics.Tensors.Tests
 
             numbers = [.. Enumerable.Range(0, 16)];
             intSpan = numbers.AsTensorSpan(2, 2, 2, 2);
-            tensor = Tensor.CreateUninitialized<int>(false, [2, 2, 2, 2]);
+            tensor = Tensor.CreateUninitialized<int>([2, 2, 2, 2], false);
             intSpan.CopyTo(tensor.AsTensorSpan());
             sp = tensor.Slice(1..2, 0..2, 1..2, 0..2);
             Assert.Equal(10, sp[0, 0, 0, 0]);
@@ -1433,7 +1433,7 @@ namespace System.Numerics.Tensors.Tests
         {
             int[] a = [1, 2, 3, 4, 5, 6, 7, 8, 9];
             nint[] dims = [9];
-            var tensor = Tensor.CreateUninitialized<int>(false, dims.AsSpan());
+            var tensor = Tensor.CreateUninitialized<int>(dims.AsSpan(), false);
             var span = a.AsTensorSpan(dims);
             span.CopyTo(tensor);
 
@@ -1476,7 +1476,7 @@ namespace System.Numerics.Tensors.Tests
         public static void TensorSqueezeTest()
         {
             nint[] dims = [1, 2];
-            var tensor = Tensor.Create<int>(false, dims.AsSpan());
+            var tensor = Tensor.Create<int>(dims.AsSpan(), false);
             Assert.Equal(2, tensor.Rank);
             Assert.Equal(1, tensor.Lengths[0]);
             Assert.Equal(2, tensor.Lengths[1]);
@@ -1486,7 +1486,7 @@ namespace System.Numerics.Tensors.Tests
             Assert.Equal(2, tensor.Lengths[0]);
 
             dims = [1, 2, 1];
-            tensor = Tensor.Create<int>(false, dims.AsSpan());
+            tensor = Tensor.Create<int>(dims.AsSpan(), false);
             Assert.Equal(3, tensor.Rank);
             Assert.Equal(1, tensor.Lengths[0]);
             Assert.Equal(2, tensor.Lengths[1]);
@@ -1497,7 +1497,7 @@ namespace System.Numerics.Tensors.Tests
             Assert.Equal(2, tensor.Lengths[0]);
 
             dims = [1, 2, 1];
-            tensor = Tensor.Create<int>(false, dims.AsSpan());
+            tensor = Tensor.Create<int>(dims.AsSpan(), false);
             Assert.Equal(3, tensor.Rank);
             Assert.Equal(1, tensor.Lengths[0]);
             Assert.Equal(2, tensor.Lengths[1]);
@@ -1509,7 +1509,7 @@ namespace System.Numerics.Tensors.Tests
             Assert.Equal(1, tensor.Lengths[1]);
 
             dims = [1, 2, 1];
-            tensor = Tensor.Create<int>(false, dims.AsSpan());
+            tensor = Tensor.Create<int>(dims.AsSpan(), false);
             Assert.Equal(3, tensor.Rank);
             Assert.Equal(1, tensor.Lengths[0]);
             Assert.Equal(2, tensor.Lengths[1]);
@@ -1521,7 +1521,7 @@ namespace System.Numerics.Tensors.Tests
             Assert.Equal(2, tensor.Lengths[1]);
 
             dims = [1, 2, 1];
-            tensor = Tensor.Create<int>(false, dims.AsSpan());
+            tensor = Tensor.Create<int>(dims.AsSpan(), false);
             Assert.Equal(3, tensor.Rank);
             Assert.Equal(1, tensor.Lengths[0]);
             Assert.Equal(2, tensor.Lengths[1]);
@@ -1534,7 +1534,7 @@ namespace System.Numerics.Tensors.Tests
         [Fact]
         public static void TensorUnsqueezeTest()
         {
-            var tensor = Tensor.Create<int>(false, [2]);
+            var tensor = Tensor.Create<int>([2], false);
             Assert.Equal(1, tensor.Rank);
             Assert.Equal(2, tensor.Lengths[0]);
 
@@ -1543,7 +1543,7 @@ namespace System.Numerics.Tensors.Tests
             Assert.Equal(1, tensor.Lengths[0]);
             Assert.Equal(2, tensor.Lengths[1]);
 
-            tensor = Tensor.Create<int>(false, [2]);
+            tensor = Tensor.Create<int>([2], false);
             Assert.Equal(1, tensor.Rank);
             Assert.Equal(2, tensor.Lengths[0]);
 
@@ -1552,7 +1552,7 @@ namespace System.Numerics.Tensors.Tests
             Assert.Equal(2, tensor.Lengths[0]);
             Assert.Equal(1, tensor.Lengths[1]);
 
-            tensor = Tensor.Create<int>(false, [2]);
+            tensor = Tensor.Create<int>([2], false);
             Assert.Equal(1, tensor.Rank);
             Assert.Equal(2, tensor.Lengths[0]);
 

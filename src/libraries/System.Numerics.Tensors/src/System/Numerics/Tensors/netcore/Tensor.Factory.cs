@@ -13,30 +13,30 @@ namespace System.Numerics.Tensors
     public static partial class Tensor
     {
         /// <summary>
-        /// Creates a <see cref="Tensor{T}"/> and initializes it with the default value of T. If <paramref name="mustPin"/> is true, the memory will be pinned.
+        /// Creates a <see cref="Tensor{T}"/> and initializes it with the default value of T. If <paramref name="pinned"/> is true, the memory will be pinned.
         /// </summary>
-        /// <param name="mustPin">A <see cref="bool"/> whether the underlying data should be pinned or not.</param>
         /// <param name="lengths">A <see cref="ReadOnlySpan{T}"/> indicating the lengths of each dimension.</param>
-        public static Tensor<T> Create<T>(bool mustPin, ReadOnlySpan<nint> lengths)
+        /// <param name="pinned">A <see cref="bool"/> whether the underlying data should be pinned or not.</param>
+        public static Tensor<T> Create<T>(ReadOnlySpan<nint> lengths, bool pinned = false)
             where T : IEquatable<T>
         {
             nint linearLength = TensorSpanHelpers.CalculateTotalLength(lengths);
-            T[] values = mustPin ? GC.AllocateArray<T>((int)linearLength, mustPin) : (new T[linearLength]);
-            return new Tensor<T>(values, lengths.ToArray(), mustPin);
+            T[] values = pinned ? GC.AllocateArray<T>((int)linearLength, pinned) : (new T[linearLength]);
+            return new Tensor<T>(values, lengths.ToArray(), pinned);
         }
 
         /// <summary>
-        /// Creates a <see cref="Tensor{T}"/> and initializes it with the default value of T. If <paramref name="mustPin"/> is true, the memory will be pinned.
+        /// Creates a <see cref="Tensor{T}"/> and initializes it with the default value of T. If <paramref name="pinned"/> is true, the memory will be pinned.
         /// </summary>
-        /// <param name="mustPin">A <see cref="bool"/> whether the underlying data should be pinned or not.</param>
         /// <param name="lengths">A <see cref="ReadOnlySpan{T}"/> indicating the lengths of each dimension.</param>
         /// <param name="strides">A <see cref="ReadOnlySpan{T}"/> indicating the strides of each dimension.</param>
-        public static Tensor<T> Create<T>(bool mustPin, ReadOnlySpan<nint> lengths, ReadOnlySpan<nint> strides)
+        /// <param name="pinned">A <see cref="bool"/> whether the underlying data should be pinned or not.</param>
+        public static Tensor<T> Create<T>(ReadOnlySpan<nint> lengths, ReadOnlySpan<nint> strides, bool pinned = false)
             where T : IEquatable<T>
         {
             nint linearLength = TensorSpanHelpers.CalculateTotalLength(lengths);
-            T[] values = mustPin ? GC.AllocateArray<T>((int)linearLength, mustPin) : (new T[linearLength]);
-            return new Tensor<T>(values, lengths.ToArray(), strides.ToArray(), mustPin);
+            T[] values = pinned ? GC.AllocateArray<T>((int)linearLength, pinned) : (new T[linearLength]);
+            return new Tensor<T>(values, lengths.ToArray(), strides.ToArray(), pinned);
         }
 
         /// <summary>
@@ -75,30 +75,30 @@ namespace System.Numerics.Tensors
         }
 
         /// <summary>
-        /// Creates a <see cref="Tensor{T}"/> and does not initialize it. If <paramref name="mustPin"/> is true, the memory will be pinned.
+        /// Creates a <see cref="Tensor{T}"/> and does not initialize it. If <paramref name="pinned"/> is true, the memory will be pinned.
         /// </summary>
-        /// <param name="mustPin">A <see cref="bool"/> whether the underlying data should be pinned or not.</param>
         /// <param name="lengths">A <see cref="ReadOnlySpan{T}"/> indicating the lengths of each dimension.</param>
-        public static Tensor<T> CreateUninitialized<T>(bool mustPin, ReadOnlySpan<nint> lengths)
+        /// <param name="pinned">A <see cref="bool"/> whether the underlying data should be pinned or not.</param>
+        public static Tensor<T> CreateUninitialized<T>(ReadOnlySpan<nint> lengths, bool pinned = false)
             where T : IEquatable<T>
         {
             nint linearLength = TensorSpanHelpers.CalculateTotalLength(lengths);
-            T[] values = GC.AllocateUninitializedArray<T>((int)linearLength, mustPin);
-            return new Tensor<T>(values, lengths.ToArray(), mustPin);
+            T[] values = GC.AllocateUninitializedArray<T>((int)linearLength, pinned);
+            return new Tensor<T>(values, lengths.ToArray(), pinned);
         }
 
         /// <summary>
-        /// Creates a <see cref="Tensor{T}"/> and does not initialize it. If <paramref name="mustPin"/> is true, the memory will be pinned.
+        /// Creates a <see cref="Tensor{T}"/> and does not initialize it. If <paramref name="pinned"/> is true, the memory will be pinned.
         /// </summary>
-        /// <param name="mustPin">A <see cref="bool"/> whether the underlying data should be pinned or not.</param>
         /// <param name="lengths">A <see cref="ReadOnlySpan{T}"/> indicating the lengths of each dimension.</param>
         /// <param name="strides">A <see cref="ReadOnlySpan{T}"/> indicating the strides of each dimension.</param>
-        public static Tensor<T> CreateUninitialized<T>(bool mustPin, ReadOnlySpan<nint> lengths, ReadOnlySpan<nint> strides)
+        /// <param name="pinned">A <see cref="bool"/> whether the underlying data should be pinned or not.</param>
+        public static Tensor<T> CreateUninitialized<T>(ReadOnlySpan<nint> lengths, ReadOnlySpan<nint> strides, bool pinned = false )
             where T : IEquatable<T>
         {
             nint linearLength = TensorSpanHelpers.CalculateTotalLength(lengths);
-            T[] values = GC.AllocateUninitializedArray<T>((int)linearLength, mustPin);
-            return new Tensor<T>(values, lengths.ToArray(), strides.ToArray(), mustPin);
+            T[] values = GC.AllocateUninitializedArray<T>((int)linearLength, pinned);
+            return new Tensor<T>(values, lengths.ToArray(), strides.ToArray(), pinned);
         }
 
         /// <summary>

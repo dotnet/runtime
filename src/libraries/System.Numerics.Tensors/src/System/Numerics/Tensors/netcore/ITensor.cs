@@ -11,35 +11,32 @@ using System.Threading.Tasks;
 namespace System.Numerics.Tensors
 {
     public interface ITensor<TSelf, T>
-        : IEnumerable<T>
+        : IReadOnlyTensor<TSelf, T>
         where TSelf : ITensor<TSelf, T>
     {
         // TODO: Determine if we can implement `IEqualityOperators<TSelf, T, bool>`.
         // It looks like C#/.NET currently hits limitations here as it believes TSelf and T could be the same type
         // Ideally we could annotate it such that they cannot be the same type and no conflicts would exist
 
-        static abstract TSelf? Empty { get; }
+        static abstract TSelf Create(ReadOnlySpan<nint> lengths, bool pinned = false);
+        static abstract TSelf Create(ReadOnlySpan<nint> lengths, ReadOnlySpan<nint> strides, bool pinned = false);
 
-        bool IsEmpty { get; }
-        bool IsPinned { get; }
-        int Rank { get; }
-        nint FlattenedLength { get; }
-        // THIS IS GOING TO PEND A DISCUSSION WITH THE LANGUAGE TEAM
-        void GetStrides(Span<nint> destination);
-        void GetLengths(Span<nint> destination);
+        static abstract TSelf CreateUninitialized(ReadOnlySpan<nint> lengths, bool pinned = false);
+        static abstract TSelf CreateUninitialized(ReadOnlySpan<nint> lengths, ReadOnlySpan<nint> strides, bool pinned = false);
 
-        T this[params scoped ReadOnlySpan<nint> indexes] { get; }
-        T this[params scoped ReadOnlySpan<NIndex> indexes] { get; set; }
-        TSelf this[params scoped ReadOnlySpan<NRange> ranges] { get; set; }
+        bool IsReadOnly { get; }
 
-        TensorSpan<T> AsTensorSpan(params scoped ReadOnlySpan<NRange> ranges);
-        ReadOnlyTensorSpan<T> AsReadOnlyTensorSpan(params scoped ReadOnlySpan<NRange> ranges);
-        ref T GetPinnableReference();
-        TSelf Slice(params scoped ReadOnlySpan<NRange> ranges);
+        new T this[params ReadOnlySpan<nint> indexes] { get; set; }
+        new T this[params ReadOnlySpan<NIndex> indexes] { get; set; }
+        new TSelf this[params scoped ReadOnlySpan<NRange> ranges] { get; set; }
+
+        TensorSpan<T> AsTensorSpan();
+        TensorSpan<T> AsTensorSpan(params scoped ReadOnlySpan<nint> start);
+        TensorSpan<T> AsTensorSpan(params scoped ReadOnlySpan<NIndex> startIndex);
+        TensorSpan<T> AsTensorSpan(params scoped ReadOnlySpan<NRange> range);
 
         void Clear();
-        void CopyTo(TensorSpan<T> destination);
         void Fill(T value);
-        bool TryCopyTo(TensorSpan<T> destination);
+        new ref T GetPinnableReference();
     }
 }

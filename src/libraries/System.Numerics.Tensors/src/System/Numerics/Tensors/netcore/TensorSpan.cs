@@ -59,7 +59,7 @@ namespace System.Numerics.Tensors
         /// <remarks>Returns default when <paramref name="array"/> is null.</remarks>
         /// <exception cref="ArrayTypeMismatchException">Thrown when <paramref name="array"/> is covariant and array's type is not exactly T[].</exception>
         /// <exception cref="ArgumentOutOfRangeException">
-        /// Thrown when the specified <paramref name="startIndex"/> or end index is not in the range (&lt;0 or &gt;Length).
+        /// Thrown when the specified <paramref name="startIndex"/> or end index is not in the range (&lt;0 or &gt;FlattenedLength).
         /// </exception>
         public TensorSpan(T[]? array, Index startIndex, scoped ReadOnlySpan<nint> lengths, scoped ReadOnlySpan<nint> strides)
             : this(array, startIndex.GetOffset(array?.Length ?? 0), lengths, strides)
@@ -77,7 +77,7 @@ namespace System.Numerics.Tensors
         /// <remarks>Returns default when <paramref name="array"/> is null.</remarks>
         /// <exception cref="ArrayTypeMismatchException">Thrown when <paramref name="array"/> is covariant and array's type is not exactly T[].</exception>
         /// <exception cref="ArgumentOutOfRangeException">
-        /// Thrown when the specified <paramref name="start"/> or end index is not in the range (&lt;0 or &gt;Length).
+        /// Thrown when the specified <paramref name="start"/> or end index is not in the range (&lt;0 or &gt;FlattenedLength).
         /// </exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public TensorSpan(T[]? array, int start, scoped ReadOnlySpan<nint> lengths, scoped ReadOnlySpan<nint> strides)
@@ -208,7 +208,7 @@ namespace System.Numerics.Tensors
         /// <param name="indexes"></param>
         /// <returns></returns>
         /// <exception cref="IndexOutOfRangeException">
-        /// Thrown when any index is less than 0 or any index is greater than or equal to Length
+        /// Thrown when any index is less than 0 or any index is greater than or equal to FlattenedLength
         /// </exception>
         public ref T this[params scoped ReadOnlySpan<nint> indexes]
         {
@@ -232,7 +232,7 @@ namespace System.Numerics.Tensors
         /// <param name="indexes"></param>
         /// <returns></returns>
         /// <exception cref="IndexOutOfRangeException">
-        /// Thrown when any index is less than 0 or any index is greater than or equal to Length
+        /// Thrown when any index is less than 0 or any index is greater than or equal to FlattenedLength
         /// </exception>
         public ref T this[params scoped ReadOnlySpan<NIndex> indexes]
         {
@@ -257,7 +257,7 @@ namespace System.Numerics.Tensors
         /// <param name="ranges"></param>
         /// <returns></returns>
         /// <exception cref="IndexOutOfRangeException">
-        /// Thrown when any index is less than 0 or any index is greater than or equal to Length
+        /// Thrown when any index is less than 0 or any index is greater than or equal to FlattenedLength
         /// </exception>
         public TensorSpan<T> this[params scoped ReadOnlySpan<NRange> ranges]
         {
@@ -441,7 +441,7 @@ namespace System.Numerics.Tensors
         {
             Span<nint> curIndexes = stackalloc nint[Rank];
             nint filledValues = 0;
-            // REVIEW: If we track the actual length of the backing data, because Length doesn't always equal the actual length, we could use that here to not need to loop.
+            // REVIEW: If we track the actual length of the backing data, because FlattenedLength doesn't always equal the actual length, we could use that here to not need to loop.
             while (filledValues < _flattenedLength)
             {
                 TensorSpanHelpers.Fill(ref Unsafe.Add(ref _reference, TensorSpanHelpers.ComputeLinearIndex(curIndexes, Strides, Lengths)), (nuint)Lengths[Rank - 1], value);
@@ -564,7 +564,7 @@ namespace System.Numerics.Tensors
         /// <param name="indexes">The indexes for the slice.</param>
         /// <returns></returns>
         /// <exception cref="IndexOutOfRangeException">
-        /// Thrown when any index is less than 0 or any index is greater than or equal to Length
+        /// Thrown when any index is less than 0 or any index is greater than or equal to FlattenedLength
         /// </exception>
         public TensorSpan<T> Slice(params scoped ReadOnlySpan<NIndex> indexes)
         {

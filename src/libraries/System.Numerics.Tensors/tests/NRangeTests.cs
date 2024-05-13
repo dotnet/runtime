@@ -128,7 +128,7 @@ namespace System.Buffers.Tests
             }
         }
 
-        // CustomNativeRangeTester is a custom class which containing the members Length, Slice and int NativeIndexer.
+        // CustomNativeRangeTester is a custom class which containing the members FlattenedLength, Slice and int NativeIndexer.
         // Having these members allow the C# compiler to support
         //      this[NIndex]
         //      this[NRange]
