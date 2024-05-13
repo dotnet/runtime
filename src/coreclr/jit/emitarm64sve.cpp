@@ -10022,8 +10022,8 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
         case IF_SVE_FL_3A:   // ........xx.mmmmm ......nnnnnddddd
         case IF_SVE_FM_3A:   // ........xx.mmmmm ......nnnnnddddd -- SVE2 integer add/subtract wide
         case IF_SVE_FW_3A:   // ........xx.mmmmm ......nnnnnddddd -- SVE2 integer absolute difference and accumulate
-        case IF_SVE_GC_3A: // ........xx.mmmmm ......nnnnnddddd -- SVE2 integer add/subtract narrow high part
-        case IF_SVE_GF_3A: // ........xx.mmmmm ......nnnnnddddd -- SVE2 histogram generation (segment)
+        case IF_SVE_GC_3A:   // ........xx.mmmmm ......nnnnnddddd -- SVE2 integer add/subtract narrow high part
+        case IF_SVE_GF_3A:   // ........xx.mmmmm ......nnnnnddddd -- SVE2 histogram generation (segment)
             code = emitInsCodeSve(ins, fmt);
             code |= insEncodeReg_V<4, 0>(id->idReg1());                      // ddddd
             code |= insEncodeReg_V<9, 5>(id->idReg2());                      // nnnnn
@@ -12649,8 +12649,8 @@ void emitter::emitInsSveSanityCheck(instrDesc* id)
         case IF_SVE_FL_3A:   // ........xx.mmmmm ......nnnnnddddd
         case IF_SVE_FM_3A:   // ........xx.mmmmm ......nnnnnddddd -- SVE2 integer add/subtract wide
         case IF_SVE_FW_3A:   // ........xx.mmmmm ......nnnnnddddd -- SVE2 integer absolute difference and accumulate
-        case IF_SVE_GC_3A: // ........xx.mmmmm ......nnnnnddddd -- SVE2 integer add/subtract narrow high part
-        case IF_SVE_GF_3A: // ........xx.mmmmm ......nnnnnddddd -- SVE2 histogram generation (segment)
+        case IF_SVE_GC_3A:   // ........xx.mmmmm ......nnnnnddddd -- SVE2 integer add/subtract narrow high part
+        case IF_SVE_GF_3A:   // ........xx.mmmmm ......nnnnnddddd -- SVE2 histogram generation (segment)
             assert(insOptsScalableStandard(id->idInsOpt())); // xx
             assert(isVectorRegister(id->idReg1()));          // ddddd
             assert(isVectorRegister(id->idReg2()));          // nnnnn
@@ -16630,7 +16630,7 @@ void emitter::getInsSveExecutionCharacteristics(instrDesc* id, insExecutionChara
             }
             break;
 
-        case IF_SVE_FL_3A:   // ........xx.mmmmm ......nnnnnddddd
+        case IF_SVE_FL_3A: // ........xx.mmmmm ......nnnnnddddd
             switch (ins)
             {
                 case INS_sve_smullb:
