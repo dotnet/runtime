@@ -2231,7 +2231,7 @@ namespace System.Runtime.Intrinsics.Arm
         ///   FMULX Ztied1.S, Pg/M, Ztied1.S, Zop2.S
         /// </summary>
         public static unsafe Vector<float> MultiplyExtended(Vector<float> left, Vector<float> right) { throw new PlatformNotSupportedException(); }
-        
+
         ///  MultiplySubtract : Multiply-subtract, minuend first
 
         /// <summary>
