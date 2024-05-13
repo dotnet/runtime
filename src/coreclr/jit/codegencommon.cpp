@@ -3500,8 +3500,12 @@ void CodeGen::genHomeRegisterParams(regNumber initReg, bool* initRegStillZeroed)
 //
 regMaskTP CodeGen::genGetParameterHomingTempRegisterCandidates()
 {
-    return RBM_CALLEE_TRASH | intRegState.rsCalleeRegArgMaskLiveIn | floatRegState.rsCalleeRegArgMaskLiveIn |
-           regSet.rsGetModifiedRegsMask();
+    regMaskTP regs = RBM_CALLEE_TRASH | intRegState.rsCalleeRegArgMaskLiveIn | floatRegState.rsCalleeRegArgMaskLiveIn |
+                     regSet.rsGetModifiedRegsMask();
+    // We may have reserved register that the backend needs to access stack
+    // locals. We cannot place state in that register.
+    regs &= ~regSet.rsMaskResvd;
+    return regs;
 }
 
 /*****************************************************************************
@@ -4837,7 +4841,7 @@ void CodeGen::genFinalizeFrame()
     regMaskTP homingCandidates = genGetParameterHomingTempRegisterCandidates();
     if (((homingCandidates & ~intRegState.rsCalleeRegArgMaskLiveIn) & RBM_ALLINT) == RBM_NONE)
     {
-        regMaskTP extraRegMask = RBM_ALLINT & ~homingCandidates;
+        regMaskTP extraRegMask = RBM_ALLINT & ~homingCandidates & ~regSet.rsMaskResvd;
         assert(extraRegMask != RBM_NONE);
         regNumber extraReg = genFirstRegNumFromMask(extraRegMask);
         JITDUMP("No temporary registers are available for integer parameter homing. Adding %s\n", getRegName(extraReg));
@@ -4846,7 +4850,7 @@ void CodeGen::genFinalizeFrame()
 
     if (((homingCandidates & ~floatRegState.rsCalleeRegArgMaskLiveIn) & RBM_ALLFLOAT) == RBM_NONE)
     {
-        regMaskTP extraRegMask = RBM_ALLFLOAT & ~homingCandidates;
+        regMaskTP extraRegMask = RBM_ALLFLOAT & ~homingCandidates & ~regSet.rsMaskResvd;
         assert(extraRegMask != RBM_NONE);
         regNumber extraReg = genFirstRegNumFromMask(extraRegMask);
         JITDUMP("No temporary registers are available for float parameter homing. Adding %s\n", getRegName(extraReg));
