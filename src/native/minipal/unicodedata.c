@@ -20,7 +20,7 @@ typedef struct
 #define UPPER_CASE 0
 #define LOWER_CASE 1
 
-const UnicodeDataRec UnicodeData[] =
+static const UnicodeDataRec UnicodeData[] =
 {
     { 0x41, UPPER_CASE, 0x61 },
     { 0x42, UPPER_CASE, 0x62 },

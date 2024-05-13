@@ -29,7 +29,7 @@ typedef struct
 #define UPPER_CASE 0
 #define LOWER_CASE 1
 
-const UnicodeDataRec UnicodeData[] =
+static const UnicodeDataRec UnicodeData[] =
 {");
 
 string sourceFileName = args[0];
