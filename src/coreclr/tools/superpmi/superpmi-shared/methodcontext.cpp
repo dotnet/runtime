@@ -5799,7 +5799,7 @@ void MethodContext::dmpGetPgoInstrumentationResults(DWORDLONG key, const Agnosti
                 case ICorJitInfo::PgoInstrumentationKind::GetLikelyMethod:
                     {
                         // (N)umber, (L)ikelihood, (H)andle
-                        printf("N %u L %u H %016" PRIX64 "", (unsigned)(pBuf[i].Other >> 8), (unsigned)(pBuf[i].Other && 0xFF), CastHandle(*(uintptr_t*)(pInstrumentationData + pBuf[i].Offset)));
+                        printf("N %u L %u H %016" PRIX64 "", (unsigned)(pBuf[i].Other >> 8), (unsigned)(pBuf[i].Other & 0xFF), CastHandle(*(uintptr_t*)(pInstrumentationData + pBuf[i].Offset)));
                     }
                     break;
                 default:
