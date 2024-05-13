@@ -4243,7 +4243,7 @@ public:
         return lvaGetDesc(lclNum)->lvInSsa;
     }
 
-    unsigned lvaStubArgumentVar; // variable representing the secret stub argument coming in EAX
+    unsigned lvaStubArgumentVar; // variable representing the secret stub argument
 
     unsigned lvaPSPSym; // variable representing the PSPSym
 
@@ -4602,6 +4602,34 @@ protected:
     GenTree* addRangeCheckIfNeeded(
         NamedIntrinsic intrinsic, GenTree* immOp, bool mustExpand, int immLowerBound, int immUpperBound);
     GenTree* addRangeCheckForHWIntrinsic(GenTree* immOp, int immLowerBound, int immUpperBound);
+
+    void getHWIntrinsicImmOps(NamedIntrinsic    intrinsic,
+                              CORINFO_SIG_INFO* sig,
+                              GenTree**         immOp1Ptr,
+                              GenTree**         immOp2Ptr);
+
+    bool CheckHWIntrinsicImmRange(NamedIntrinsic intrinsic,
+                                  CorInfoType simdBaseJitType,
+                                  GenTree* immOp,
+                                  bool mustExpand,
+                                  int immLowerBound,
+                                  int immUpperBound,
+                                  bool hasFullRangeImm,
+                                  bool *useFallback);
+
+#if defined(TARGET_ARM64)
+
+    void getHWIntrinsicImmTypes(NamedIntrinsic       intrinsic,
+                                CORINFO_SIG_INFO*    sig,
+                                unsigned             immNumber,
+                                var_types            simdBaseType,
+                                CorInfoType          simdBaseJitType,
+                                CORINFO_CLASS_HANDLE op2ClsHnd,
+                                CORINFO_CLASS_HANDLE op3ClsHnd,
+                                unsigned*            immSimdSize,
+                                var_types*           immSimdBaseType);
+
+#endif // TARGET_ARM64
 
 #endif // FEATURE_HW_INTRINSICS
     GenTree* impArrayAccessIntrinsic(CORINFO_CLASS_HANDLE clsHnd,
@@ -7502,6 +7530,9 @@ public:
     BitVecTraits* optReachableBitVecTraits;
     BitVec        optReachableBitVec;
     void          optRelopImpliesRelop(RelopImplicationInfo* rii);
+    bool          optRelopTryInferWithOneEqualOperand(const VNFuncApp&      domApp,
+                                                      const VNFuncApp&      treeApp,
+                                                      RelopImplicationInfo* rii);
 
     /**************************************************************************
      *               Value/Assertion propagation
