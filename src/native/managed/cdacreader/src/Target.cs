@@ -364,20 +364,17 @@ public sealed unsafe class Target
     /// </summary>
     internal sealed class DataCache
     {
-        // TODO: [cdac] We may want to allow different types for the same address
-        private readonly Dictionary<ulong, object?> _readDataByAddress = [];
+        private readonly Dictionary<(ulong, Type), object?> _readDataByAddress = [];
 
-        public bool TryRegister(ulong address, object data)
+        public bool TryRegister<T>(ulong address, T data)
         {
-            bool success = _readDataByAddress.TryAdd(address, data);
-            System.Diagnostics.Debug.Assert(success || data.GetType() == _readDataByAddress[address]!.GetType());
-            return success;
+            return _readDataByAddress.TryAdd((address, typeof(T)), data);
         }
 
         public bool TryGet<T>(ulong address, [NotNullWhen(true)] out T? data)
         {
             data = default;
-            if (!_readDataByAddress.TryGetValue(address, out object? dataObj))
+            if (!_readDataByAddress.TryGetValue((address, typeof(T)), out object? dataObj))
                 return false;
 
             if (dataObj is T dataMaybe)
