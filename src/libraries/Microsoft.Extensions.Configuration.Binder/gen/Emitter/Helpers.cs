@@ -71,7 +71,6 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 public const string element = nameof(element);
                 public const string enumValue = nameof(enumValue);
                 public const string exception = nameof(exception);
-                public const string getPath = nameof(getPath);
                 public const string key = nameof(key);
                 public const string name = nameof(name);
                 public const string instance = nameof(instance);
