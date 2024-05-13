@@ -628,11 +628,7 @@ namespace System.Globalization
             // all available calendar type(s).  The first one is the default calendar
             invariant._waCalendars = new CalendarId[] { CalendarId.GREGORIAN };
 
-#if TARGET_BROWSER
-            if (!GlobalizationMode.InvariantFast)
-#else
-            if (!GlobalizationMode.Invariant)
-#endif
+            if (!GlobalizationMode.InvariantNoLoad)
             {
                 // Store for specific data about each calendar
                 invariant._calendars = new CalendarData[CalendarData.MAX_CALENDARS];
@@ -650,11 +646,7 @@ namespace System.Globalization
             invariant._iDefaultMacCodePage = 10000;         // default macintosh code page
             invariant._iDefaultEbcdicCodePage = 037;        // default EBCDIC code page
 
-#if TARGET_BROWSER
-            if (GlobalizationMode.InvariantFast)
-#else
-            if (GlobalizationMode.Invariant)
-#endif
+            if (GlobalizationMode.InvariantNoLoad)
             {
                 invariant._sLocalizedCountry = invariant._sNativeCountry;
             }

@@ -41,7 +41,7 @@ namespace System.Globalization
                 if (OperatingSystem.IsBrowser() || OperatingSystem.IsAndroid() ||
                     OperatingSystem.IsIOS() || OperatingSystem.IsTvOS() || OperatingSystem.IsWatchOS())
                 {
-                    return "Unable to load required ICU Globalization data. Please see https://aka.ms/dotnet-missing-libicu for more information.\n" + Environment.StackTrace;
+                    return "Unable to load required ICU Globalization data. Please see https://aka.ms/dotnet-missing-libicu for more information";
                 }
                 else
                 {

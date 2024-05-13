@@ -26,10 +26,19 @@ namespace System.Globalization
         // static cctor (on Unix) to be preserved when Invariant=false.
         internal static bool Invariant => Settings.Invariant;
 
+        // same as GlobalizationMode.Invariant but doesn't trigger ICU load in GlobalizationMode.Settings.cctor
+        // during runtime startup on Browser platform
+        internal static bool InvariantNoLoad 
+        { 
+            get 
+            {
 #if TARGET_BROWSER
-        // same as GlobalizationMode.Invariant but doesn't trigger ICU load in GlobalizationMode.Settings.cctor during runtime startup
-        internal static bool InvariantFast { get; } = AppContextConfigHelper.GetBooleanConfig("System.Globalization.Invariant", "DOTNET_SYSTEM_GLOBALIZATION_INVARIANT");
+                return AppContextConfigHelper.GetBooleanConfig("System.Globalization.Invariant", "DOTNET_SYSTEM_GLOBALIZATION_INVARIANT");
+#else
+                return Settings.Invariant;
 #endif
+            }
+        }
 
 #if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS || TARGET_BROWSER
         internal static bool Hybrid => Settings.Hybrid;
