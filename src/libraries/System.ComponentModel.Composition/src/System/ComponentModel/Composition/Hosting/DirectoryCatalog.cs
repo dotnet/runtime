@@ -22,7 +22,7 @@ namespace System.ComponentModel.Composition.Hosting
     public partial class DirectoryCatalog : ComposablePartCatalog, INotifyComposablePartCatalogChanged, ICompositionElement
     {
         private static bool IsWindows =>
-#if NETCOREAPP_5_0_OR_GREATER
+#if NET
             OperatingSystem.IsWindows();
 #else
             RuntimeInformation.IsOSPlatform(OSPlatform.Windows);

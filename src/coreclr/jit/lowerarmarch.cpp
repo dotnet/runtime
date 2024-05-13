@@ -737,6 +737,12 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
 
         if (doCpObj)
         {
+            // Try to use bulk copy helper
+            if (TryLowerBlockStoreAsGcBulkCopyCall(blkNode))
+            {
+                return;
+            }
+
             assert((dstAddr->TypeGet() == TYP_BYREF) || (dstAddr->TypeGet() == TYP_I_IMPL));
             blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindCpObjUnroll;
         }
@@ -3328,7 +3334,8 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                     uint32_t maskSize = genTypeSize(node->GetSimdBaseType());
                     uint32_t operSize = genTypeSize(op2->AsHWIntrinsic()->GetSimdBaseType());
 
-                    if ((maskSize == operSize) && IsInvariantInRange(op2, node))
+                    if ((maskSize == operSize) && IsInvariantInRange(op2, node) &&
+                        op2->isEmbeddedMaskingCompatibleHWIntrinsic())
                     {
                         MakeSrcContained(node, op2);
                         op2->MakeEmbMaskOp();
@@ -3336,15 +3343,26 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                 }
 
                 // Handle op3
-                if (op3->IsVectorZero())
+                if (op3->IsVectorZero() && op1->IsMaskAllBitsSet())
                 {
                     // When we are merging with zero, we can specialize
                     // and avoid instantiating the vector constant.
+                    // Do this only if op1 was AllTrueMask
                     MakeSrcContained(node, op3);
                 }
 
                 break;
             }
+
+            case NI_Sve_FusedMultiplyAddBySelectedScalar:
+            case NI_Sve_FusedMultiplySubtractBySelectedScalar:
+                assert(hasImmediateOperand);
+                assert(varTypeIsIntegral(intrin.op4));
+                if (intrin.op4->IsCnsIntOrI())
+                {
+                    MakeSrcContained(node, intrin.op4);
+                }
+                break;
 
             default:
                 unreached();

@@ -993,6 +993,12 @@ public:
         m_ImportCount++;
     }
 
+    // Return number of import attempts
+    unsigned GetImportCount() const
+    {
+        return m_ImportCount;
+    }
+
     // Inform strategy about the inline decision for a prejit root
     void NotePrejitDecision(const InlineResult& r)
     {

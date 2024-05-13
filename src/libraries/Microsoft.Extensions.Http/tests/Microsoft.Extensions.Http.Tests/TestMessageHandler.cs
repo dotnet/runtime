@@ -26,7 +26,7 @@ namespace Microsoft.Extensions.Http
             return Task.FromResult(response);
         }
 
-#if NET5_0_OR_GREATER
+#if NET
         protected override HttpResponseMessage Send(HttpRequestMessage request, CancellationToken cancellationToken) => _responseFactory(request);
 #endif
     }

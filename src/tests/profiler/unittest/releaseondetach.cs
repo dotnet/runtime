@@ -15,7 +15,7 @@ namespace Profiler.Tests
 
         [DllImport("Profiler")]
         private static extern void PassCallbackToProfiler(ProfilerCallback callback);
-        
+
         public unsafe static int RunTest(string[] args)
         {
             string profilerName;
@@ -35,16 +35,18 @@ namespace Profiler.Tests
             string rootPath = Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
             string profilerPath = Path.Combine(rootPath, profilerName);
 
-            ManualResetEvent _profilerDone = new ManualResetEvent(false);
             Console.WriteLine($"Attaching profiler {profilerPath} to self.");
             ProfilerControlHelpers.AttachProfilerToSelf(ReleaseOnShutdownGuid, profilerPath);
 
-            PassCallbackToProfiler(() => _profilerDone.Set());
-            if (!_profilerDone.WaitOne(TimeSpan.FromMinutes(5)))
+            ManualResetEvent profilerDone = new ManualResetEvent(false);
+            ProfilerCallback profilerDoneDelegate = () => profilerDone.Set();
+            PassCallbackToProfiler(profilerDoneDelegate);
+            if (!profilerDone.WaitOne(TimeSpan.FromMinutes(5)))
             {
                 Console.WriteLine("Profiler did not set the callback, test will fail.");
             }
 
+            GC.KeepAlive(profilerDoneDelegate);
             return 100;
         }
 

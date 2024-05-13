@@ -41,7 +41,7 @@ namespace System.Runtime.Serialization
 
         public void AddRange(CodeTypeReference[] value)
         {
-#if NET5_0_OR_GREATER
+#if NET
             ArgumentNullException.ThrowIfNull(value);
 #else
             if (value is null)
@@ -58,7 +58,7 @@ namespace System.Runtime.Serialization
 
         public void AddRange(CodeTypeReferenceCollection value)
         {
-#if NET5_0_OR_GREATER
+#if NET
             ArgumentNullException.ThrowIfNull(value);
 #else
             if (value is null)

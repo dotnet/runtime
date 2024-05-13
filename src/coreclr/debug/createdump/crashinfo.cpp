@@ -927,6 +927,17 @@ CrashInfo::SearchMemoryRegions(const std::set<MemoryRegion>& regions, const Memo
     return nullptr;
 }
 
+// Declare the prototype for the Itanium C++ ABI demangler API.
+// We may not have the Itanium C++ ABI header available even when we're building against this ABI
+// so we'll declare the prototype ourselves.
+// See Itanium C++ ABI, March 14, 2017 Revision, Chapter 3, Section 3.4
+namespace abi {
+  extern "C" char* __cxa_demangle (const char* mangled_name,
+				   char* buf,
+				   size_t* n,
+				   int* status);
+}
+
 //
 // Lookup a symbol in a module. The caller needs to call "free()" on symbol returned.
 //
