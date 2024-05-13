@@ -49,7 +49,7 @@ namespace System.ComponentModel.Tests
             }).Dispose();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public static void GetMembers_NotRegistered_SwitchOn()
         {
             RemoteInvokeOptions options = new RemoteInvokeOptions();
@@ -78,7 +78,7 @@ namespace System.ComponentModel.Tests
             }).Dispose();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public static void GetMembers_FromRegisteredType_Registered_FullCoverage()
         {
             RemoteInvokeOptions options = new RemoteInvokeOptions();
@@ -123,7 +123,7 @@ namespace System.ComponentModel.Tests
             }, options).Dispose();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public static void GetMembersFromRegisteredType_ChildRegistered_SwitchOn()
         {
             RemoteInvokeOptions options = new RemoteInvokeOptions();
@@ -139,7 +139,7 @@ namespace System.ComponentModel.Tests
             }, options).Dispose();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public static void GetMembersFromRegisteredType_ChildUnregistered_SwitchOn()
         {
             RemoteInvokeOptions options = new RemoteInvokeOptions();
@@ -154,7 +154,7 @@ namespace System.ComponentModel.Tests
             }, options).Dispose();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public static void GetMembersFromRegisteredType_BaseClassUnregistered_SwitchOn()
         {
             RemoteInvokeOptions options = new RemoteInvokeOptions();
@@ -192,7 +192,7 @@ namespace System.ComponentModel.Tests
             Assert.Equal("String", properties[1].GetChildProperties()[1].Name);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public static void GetPropertiesFromRegisteredTypeInstance_Trimmed()
         {
             RemoteInvokeOptions options = new RemoteInvokeOptions();
@@ -204,7 +204,7 @@ namespace System.ComponentModel.Tests
             }, options).Dispose();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public static void GetPropertiesFromRegisteredTypeInstance_Unregistered_Trimmed()
         {
             RemoteInvokeOptions options = new RemoteInvokeOptions();
@@ -216,7 +216,7 @@ namespace System.ComponentModel.Tests
             }, options).Dispose();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public static void LegacyProviders_ThrowOnFeatureSwitch_ICustomTypeDescriptor()
         {
             RemoteInvokeOptions options = new RemoteInvokeOptions();
@@ -270,7 +270,7 @@ namespace System.ComponentModel.Tests
             }).Dispose();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public static void GetProviderWithInstance_NotRegistered()
         {
             RemoteInvokeOptions options = new RemoteInvokeOptions();
@@ -282,7 +282,7 @@ namespace System.ComponentModel.Tests
             }, options).Dispose();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public static void GetProviderWithInstance_Registered()
         {
             RemoteInvokeOptions options = new RemoteInvokeOptions();
