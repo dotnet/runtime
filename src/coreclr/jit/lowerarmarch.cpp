@@ -295,6 +295,74 @@ bool Lowering::IsContainableUnaryOrBinaryOp(GenTree* parentNode, GenTree* childN
         return false;
     }
 
+    if (childNode->OperIs(GT_ROL, GT_ROR))
+    {
+        // Find "a op (b rotate cns)"
+
+        if (childNode->gtGetOp1()->isContained())
+        {
+            // Cannot contain if the childs op1 is already contained
+            return false;
+        }
+
+        GenTree* rotateAmountNode = childNode->gtGetOp2();
+
+        if (!rotateAmountNode->IsCnsIntOrI())
+        {
+            // Cannot contain if the childs op2 is not a constant
+            return false;
+        }
+
+        const ssize_t wrapAmount = (static_cast<ssize_t>(genTypeSize(parentNode)) * BITS_PER_BYTE);
+        assert((wrapAmount == 32) || (wrapAmount == 64));
+
+        // Rotation is circular, so normalize to [0, wrapAmount - 1]
+        ssize_t rotateAmount = rotateAmountNode->AsIntCon()->IconValue() % wrapAmount;
+        assert((rotateAmount >= 0) && (rotateAmount <= (wrapAmount - 1)));
+
+        if (childNode->OperIs(GT_ROL))
+        {
+            // The actual instructions only encode rotate right but
+            // since rotating left by 1 is equivalen to rotating
+            // right by (rotateAmount - 1), we can fix things here.
+
+            childNode->SetOper(GT_ROR);
+            rotateAmount = wrapAmount - rotateAmount;
+        }
+
+        rotateAmountNode->AsIntCon()->SetIconValue(rotateAmount);
+        assert(childNode->OperIs(GT_ROR));
+
+        if (parentNode->OperIs(GT_AND))
+        {
+            // These operations can still report flags
+
+            if (IsInvariantInRange(childNode, parentNode))
+            {
+                assert(rotateAmountNode->isContained());
+                return true;
+            }
+        }
+
+        if ((parentNode->gtFlags & GTF_SET_FLAGS) != 0)
+        {
+            // Cannot contain if the parent operation needs to set flags
+            return false;
+        }
+
+        if (parentNode->OperIs(GT_OR, GT_XOR))
+        {
+            if (IsInvariantInRange(childNode, parentNode))
+            {
+                assert(rotateAmountNode->isContained());
+                return true;
+            }
+        }
+
+        // TODO: Handle BIC/BICS, EON, MVN, ORN, TST
+        return false;
+    }
+
     if (childNode->OperIs(GT_NEG))
     {
         // If we have a contained LSH, RSH or RSZ, we can still contain NEG if the parent is a EQ or NE.
@@ -669,6 +737,12 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
 
         if (doCpObj)
         {
+            // Try to use bulk copy helper
+            if (TryLowerBlockStoreAsGcBulkCopyCall(blkNode))
+            {
+                return;
+            }
+
             assert((dstAddr->TypeGet() == TYP_BYREF) || (dstAddr->TypeGet() == TYP_I_IMPL));
             blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindCpObjUnroll;
         }
@@ -726,7 +800,7 @@ void Lowering::ContainBlockStoreAddress(GenTreeBlk* blkNode, unsigned size, GenT
     {
         return;
     }
-#else // !TARGET_ARM
+#else  // !TARGET_ARM
     if ((ClrSafeInt<int>(offset) + ClrSafeInt<int>(size)).IsOverflow())
     {
         return;
@@ -778,7 +852,7 @@ void Lowering::LowerPutArgStkOrSplit(GenTreePutArgStk* putArgNode)
 //    tree - GT_CAST node to be lowered
 //
 // Return Value:
-//    None.
+//    nextNode to be lowered if tree is modified else returns nullptr
 //
 // Notes:
 //    Casts from float/double to a smaller int type are transformed as follows:
@@ -791,7 +865,7 @@ void Lowering::LowerPutArgStkOrSplit(GenTreePutArgStk* putArgNode)
 //    don't expect to see them here.
 //    i) GT_CAST(float/double, int type with overflow detection)
 //
-void Lowering::LowerCast(GenTree* tree)
+GenTree* Lowering::LowerCast(GenTree* tree)
 {
     assert(tree->OperGet() == GT_CAST);
 
@@ -814,6 +888,8 @@ void Lowering::LowerCast(GenTree* tree)
 
     // Now determine if we have operands that should be contained.
     ContainCheckCast(tree->AsCast());
+
+    return nullptr;
 }
 
 //------------------------------------------------------------------------
@@ -1208,6 +1284,34 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
 
         default:
             break;
+    }
+
+    if (HWIntrinsicInfo::IsEmbeddedMaskedOperation(intrinsicId))
+    {
+        LIR::Use use;
+        if (BlockRange().TryGetUse(node, &use))
+        {
+            GenTree* user = use.User();
+            // Wrap the intrinsic in ConditionalSelect only if it is not already inside another ConditionalSelect
+            if (!user->OperIsHWIntrinsic() || (user->AsHWIntrinsic()->GetHWIntrinsicId() != NI_Sve_ConditionalSelect))
+            {
+                CorInfoType simdBaseJitType = node->GetSimdBaseJitType();
+                unsigned    simdSize        = node->GetSimdSize();
+                var_types   simdType        = Compiler::getSIMDTypeForSize(simdSize);
+                GenTree*    trueMask        = comp->gtNewSimdAllTrueMaskNode(simdBaseJitType, simdSize);
+                GenTree*    trueVal         = node;
+                GenTree*    falseVal        = comp->gtNewZeroConNode(simdType);
+
+                GenTreeHWIntrinsic* condSelNode =
+                    comp->gtNewSimdHWIntrinsicNode(simdType, trueMask, trueVal, falseVal, NI_Sve_ConditionalSelect,
+                                                   simdBaseJitType, simdSize);
+
+                BlockRange().InsertBefore(node, trueMask);
+                BlockRange().InsertBefore(node, falseVal);
+                BlockRange().InsertAfter(node, condSelNode);
+                use.ReplaceWith(condSelNode);
+            }
+        }
     }
 
     ContainCheckHWIntrinsic(node);
@@ -3186,6 +3290,79 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                 }
                 break;
             }
+
+            case NI_Sve_CreateTrueMaskByte:
+            case NI_Sve_CreateTrueMaskDouble:
+            case NI_Sve_CreateTrueMaskInt16:
+            case NI_Sve_CreateTrueMaskInt32:
+            case NI_Sve_CreateTrueMaskInt64:
+            case NI_Sve_CreateTrueMaskSByte:
+            case NI_Sve_CreateTrueMaskSingle:
+            case NI_Sve_CreateTrueMaskUInt16:
+            case NI_Sve_CreateTrueMaskUInt32:
+            case NI_Sve_CreateTrueMaskUInt64:
+            case NI_Sve_Count16BitElements:
+            case NI_Sve_Count32BitElements:
+            case NI_Sve_Count64BitElements:
+            case NI_Sve_Count8BitElements:
+                assert(hasImmediateOperand);
+                assert(varTypeIsIntegral(intrin.op1));
+                if (intrin.op1->IsCnsIntOrI())
+                {
+                    MakeSrcContained(node, intrin.op1);
+                }
+                break;
+
+            case NI_Sve_ConditionalSelect:
+            {
+                assert(intrin.numOperands == 3);
+                GenTree* op1 = intrin.op1;
+                GenTree* op2 = intrin.op2;
+                GenTree* op3 = intrin.op3;
+
+                // Handle op1
+                if (op1->IsVectorZero())
+                {
+                    // When we are merging with zero, we can specialize
+                    // and avoid instantiating the vector constant.
+                    MakeSrcContained(node, op1);
+                }
+
+                // Handle op2
+                if (op2->OperIsHWIntrinsic())
+                {
+                    uint32_t maskSize = genTypeSize(node->GetSimdBaseType());
+                    uint32_t operSize = genTypeSize(op2->AsHWIntrinsic()->GetSimdBaseType());
+
+                    if ((maskSize == operSize) && IsInvariantInRange(op2, node) &&
+                        op2->isEmbeddedMaskingCompatibleHWIntrinsic())
+                    {
+                        MakeSrcContained(node, op2);
+                        op2->MakeEmbMaskOp();
+                    }
+                }
+
+                // Handle op3
+                if (op3->IsVectorZero() && op1->IsMaskAllBitsSet())
+                {
+                    // When we are merging with zero, we can specialize
+                    // and avoid instantiating the vector constant.
+                    // Do this only if op1 was AllTrueMask
+                    MakeSrcContained(node, op3);
+                }
+
+                break;
+            }
+
+            case NI_Sve_FusedMultiplyAddBySelectedScalar:
+            case NI_Sve_FusedMultiplySubtractBySelectedScalar:
+                assert(hasImmediateOperand);
+                assert(varTypeIsIntegral(intrin.op4));
+                if (intrin.op4->IsCnsIntOrI())
+                {
+                    MakeSrcContained(node, intrin.op4);
+                }
+                break;
 
             default:
                 unreached();

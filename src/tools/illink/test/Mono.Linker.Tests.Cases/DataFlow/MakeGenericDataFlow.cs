@@ -125,8 +125,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				typeof (GenericWithPublicFieldsArgument<>).MakeGenericType (type);
 			}
 
-			// https://github.com/dotnet/linker/issues/2428
-			// [ExpectedWarning ("IL2071", "'T'")]
+			[ExpectedWarning ("IL2071", "'T'", Tool.None, "https://github.com/dotnet/linker/issues/2428")]
 			[ExpectedWarning ("IL2070", "'this'")]
 			static void TestWithRequirementsFromParamWithMismatch (
 				[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] Type type)
@@ -140,8 +139,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				typeof (GenericWithPublicFieldsArgument<>).MakeGenericType (typeof (T));
 			}
 
-			// https://github.com/dotnet/linker/issues/2428
-			// [ExpectedWarning ("IL2091", "'T'")]
+			[ExpectedWarning ("IL2091", "'T'", Tool.None,"https://github.com/dotnet/linker/issues/2428")]
 			[ExpectedWarning ("IL2090", "'this'")] // Note that this actually produces a warning which should not be possible to produce right now
 			static void TestWithRequirementsFromGenericParamWithMismatch<
 				[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] TInput> ()
@@ -550,8 +548,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 					.MakeGenericMethod (types);
 			}
 
-			// https://github.com/dotnet/linker/issues/2158 - analyzer doesn't work the same as ILLink, it simply doesn't handle refs
-			[ExpectedWarning ("IL2060", nameof (MethodInfo.MakeGenericMethod), ProducedBy = Tool.Trimmer | Tool.NativeAot)]
+			// Analyzer doesn't work the same as ILLink, it simply doesn't handle refs
+			[ExpectedWarning ("IL2060", nameof (MethodInfo.MakeGenericMethod), Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/linker/issues/2158")]
 			static void TestWithArrayUnknownIndexSetByRef (int indexToSet)
 			{
 				Type[] types = new Type[1];

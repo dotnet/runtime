@@ -418,12 +418,11 @@ FCIMPL0(int64_t, RhGetTotalAllocatedBytes)
 }
 FCIMPLEND
 
-FCIMPL2(void, RhEnumerateConfigurationValues, void* configurationContext, ConfigurationValueFunc callback)
+EXTERN_C void QCALLTYPE RhEnumerateConfigurationValues(void* configurationContext, ConfigurationValueFunc callback)
 {
     IGCHeap* pHeap = GCHeapUtilities::GetGCHeap();
     pHeap->EnumerateConfigurationValues(configurationContext, callback);
 }
-FCIMPLEND
 
 GCHeapHardLimitInfo g_gcHeapHardLimitInfo;
 bool g_gcHeapHardLimitInfoSpecified = false;
@@ -476,6 +475,12 @@ static Object* GcAllocInternal(MethodTable* pEEType, uint32_t uFlags, uintptr_t 
 {
     ASSERT(!pThread->IsDoNotTriggerGcSet());
     ASSERT(pThread->IsCurrentThreadInCooperativeMode());
+
+    if (pEEType->ContainsPointers())
+    {
+        uFlags |= GC_ALLOC_CONTAINS_REF;
+        uFlags &= ~GC_ALLOC_ZEROING_OPTIONAL;
+    }
 
     size_t cbSize = pEEType->GetBaseSize();
 
@@ -563,7 +568,7 @@ static Object* GcAllocInternal(MethodTable* pEEType, uint32_t uFlags, uintptr_t 
 //  numElements     -  number of array elements
 //  pTransitionFrame-  transition frame to make stack crawlable
 // Returns a pointer to the object allocated or NULL on failure.
-EXTERN_C void* REDHAWK_CALLCONV RhpGcAlloc(MethodTable* pEEType, uint32_t uFlags, uintptr_t numElements, PInvokeTransitionFrame* pTransitionFrame)
+EXTERN_C void* F_CALL_CONV RhpGcAlloc(MethodTable* pEEType, uint32_t uFlags, uintptr_t numElements, PInvokeTransitionFrame* pTransitionFrame)
 {
     Thread* pThread = ThreadStore::GetCurrentThread();
 
@@ -702,7 +707,7 @@ EXTERN_C UInt32_BOOL g_fGcStressStarted;
 UInt32_BOOL g_fGcStressStarted = UInt32_FALSE; // UInt32_BOOL because asm code reads it
 
 // static
-EXTERN_C void REDHAWK_CALLCONV RhpStressGc()
+EXTERN_C void F_CALL_CONV RhpStressGc()
 {
     // The GarbageCollect operation below may trash the last win32 error. We save the error here so that it can be
     // restored after the GC operation;

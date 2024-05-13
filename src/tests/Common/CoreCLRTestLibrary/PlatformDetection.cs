@@ -14,6 +14,7 @@ namespace TestLibrary
 
         public static bool IsX86Process => RuntimeInformation.ProcessArchitecture == Architecture.X86;
         public static bool IsNotX86Process => !IsX86Process;
+        public static bool IsArm64Process => RuntimeInformation.ProcessArchitecture == Architecture.Arm64;
 
         public static bool IsWindows => OperatingSystem.IsWindows();
 
@@ -46,10 +47,16 @@ namespace TestLibrary
             }
         }
 
+        public static bool IsNonZeroLowerBoundArrayNotSupported => !IsNonZeroLowerBoundArraySupported;
+
+        public static bool IsMonoRuntime => Type.GetType("Mono.RuntimeStructs") != null;
+
         static string _variant = Environment.GetEnvironmentVariable("DOTNET_RUNTIME_VARIANT");
 
         public static bool IsMonoLLVMAOT => _variant == "llvmaot";
         public static bool IsMonoLLVMFULLAOT => _variant == "llvmfullaot";
+        public static bool IsMonoMINIFULLAOT => _variant == "minifullaot";
+        public static bool IsMonoFULLAOT => IsMonoLLVMFULLAOT || IsMonoMINIFULLAOT;
         public static bool IsMonoInterpreter => _variant == "monointerpreter";
 
         // These platforms have not had their infrastructure updated to support native test assets.

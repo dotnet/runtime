@@ -7,6 +7,10 @@
     <!-- CA2252: Opt in to preview features before using them (Lock) -->
     <EnablePreviewFeatures>true</EnablePreviewFeatures>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(TargetOS)' == 'browser'">
+    <XunitShowProgress>true</XunitShowProgress>
+    <_WasmPThreadPoolUnusedSize>10</_WasmPThreadPoolUnusedSize>
+  </PropertyGroup>
   <ItemGroup>
     <Compile Include="AsyncLocalTests.cs" />
     <Compile Include="AutoResetEventTests.cs" />

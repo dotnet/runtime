@@ -96,7 +96,7 @@ namespace System.Net.Http.Functional.Tests
         {
             return useVersion.Major switch
             {
-#if NETCOREAPP
+#if NET
 #if HTTP3
                 3 => Http3LoopbackServerFactory.Singleton,
 #endif

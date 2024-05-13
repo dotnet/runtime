@@ -16,7 +16,22 @@ namespace ILCompiler
         /// </summary>
         public static bool IsHardwareIntrinsic(MethodDesc method)
         {
-            return !string.IsNullOrEmpty(InstructionSetSupport.GetHardwareIntrinsicId(method.Context.Target.Architecture, method.OwningType));
+            // Matches logic in
+            // https://github.com/dotnet/runtime/blob/5c40bb5636b939fb548492fdeb9d501b599ac5f5/src/coreclr/vm/methodtablebuilder.cpp#L1491-L1512
+            TypeDesc owningType = method.OwningType;
+            if (owningType.IsIntrinsic && !owningType.HasInstantiation)
+            {
+                var owningMdType = (MetadataType)owningType;
+                string ns = owningMdType.ContainingType?.Namespace ?? owningMdType.Namespace;
+                return method.Context.Target.Architecture switch
+                {
+                    TargetArchitecture.ARM64 => ns == "System.Runtime.Intrinsics.Arm",
+                    TargetArchitecture.X64 or TargetArchitecture.X86 => ns == "System.Runtime.Intrinsics.X86",
+                    _ => false,
+                };
+            }
+
+            return false;
         }
 
         public static void AddRuntimeRequiredIsaFlagsToBuilder(InstructionSetSupportBuilder builder, int flags)
@@ -69,6 +84,9 @@ namespace ILCompiler
             public const int VectorT128 = 0x4000000;
             public const int VectorT256 = 0x8000000;
             public const int VectorT512 = 0x10000000;
+            public const int Avx10v1 = 0x20000000;
+            public const int Avx10v1_v256 = 0x40000000;
+            public const int Avx10v1_v512 = unchecked((int)0x80000000);
 
             public static void AddToBuilder(InstructionSetSupportBuilder builder, int flags)
             {
@@ -124,6 +142,12 @@ namespace ILCompiler
                     builder.AddSupportedInstructionSet("avx512vbmi_vl");
                 if ((flags & Serialize) != 0)
                     builder.AddSupportedInstructionSet("serialize");
+                if ((flags & Avx10v1) != 0)
+                    builder.AddSupportedInstructionSet("avx10v1");
+                if ((flags & Avx10v1_v256) != 0)
+                    builder.AddSupportedInstructionSet("avx10v1_v256");
+                if ((flags & Avx10v1_v512) != 0)
+                    builder.AddSupportedInstructionSet("avx10v1_v512");
             }
 
             public static int FromInstructionSet(InstructionSet instructionSet)
@@ -187,6 +211,12 @@ namespace ILCompiler
                     InstructionSet.X64_AVX512VBMI_VL_X64 => Avx512Vbmi_vl,
                     InstructionSet.X64_X86Serialize => Serialize,
                     InstructionSet.X64_X86Serialize_X64 => Serialize,
+                    InstructionSet.X64_AVX10v1 => Avx10v1,
+                    InstructionSet.X64_AVX10v1_X64 => Avx10v1,
+                    InstructionSet.X64_AVX10v1_V256 => Avx10v1_v256,
+                    InstructionSet.X64_AVX10v1_V256_X64 => Avx10v1_v256,
+                    InstructionSet.X64_AVX10v1_V512 => Avx10v1_v512,
+                    InstructionSet.X64_AVX10v1_V512_X64 => Avx10v1_v512,
 
                     // Baseline ISAs - they're always available
                     InstructionSet.X64_SSE => 0,

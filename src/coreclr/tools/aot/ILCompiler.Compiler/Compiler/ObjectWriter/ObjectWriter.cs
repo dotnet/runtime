@@ -539,21 +539,13 @@ namespace ILCompiler.ObjectWriter
 
         public static void EmitObject(string objectFilePath, IReadOnlyCollection<DependencyNode> nodes, NodeFactory factory, ObjectWritingOptions options, IObjectDumper dumper, Logger logger)
         {
-            var stopwatch = new Stopwatch();
-            stopwatch.Start();
+            var stopwatch = Stopwatch.StartNew();
 
-            if (Environment.GetEnvironmentVariable("DOTNET_USE_LLVM_OBJWRITER") == "1")
-            {
-                LegacyObjectWriter.EmitObject(objectFilePath, nodes, factory, options, dumper, logger);
-            }
-            else
-            {
-                ObjectWriter objectWriter =
-                    factory.Target.IsApplePlatform ? new MachObjectWriter(factory, options) :
-                    factory.Target.OperatingSystem == TargetOS.Windows ? new CoffObjectWriter(factory, options) :
-                    new ElfObjectWriter(factory, options);
-                objectWriter.EmitObject(objectFilePath, nodes, dumper, logger);
-            }
+            ObjectWriter objectWriter =
+                factory.Target.IsApplePlatform ? new MachObjectWriter(factory, options) :
+                factory.Target.OperatingSystem == TargetOS.Windows ? new CoffObjectWriter(factory, options) :
+                new ElfObjectWriter(factory, options);
+            objectWriter.EmitObject(objectFilePath, nodes, dumper, logger);
 
             stopwatch.Stop();
             if (logger.IsVerbose)

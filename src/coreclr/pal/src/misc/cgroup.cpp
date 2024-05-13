@@ -28,7 +28,6 @@ SET_DEFAULT_DEBUG_CHANNEL(MISC);
 #endif
 
 #define CGROUP2_SUPER_MAGIC 0x63677270
-#define TMPFS_MAGIC 0x01021994
 
 #define BASE_TEN 10
 
@@ -55,7 +54,7 @@ public:
 
     static void Cleanup()
     {
-        PAL_free(s_cpu_cgroup_path);
+        free(s_cpu_cgroup_path);
     }
 
     static bool GetCpuLimit(UINT *val)
@@ -94,12 +93,16 @@ private:
         if (result != 0)
             return 0;
 
-        switch (stats.f_type)
+        if (stats.f_type == CGROUP2_SUPER_MAGIC)
         {
-            case TMPFS_MAGIC: return 1;
-            case CGROUP2_SUPER_MAGIC: return 2;
-            default:
-                return 0;
+            return 2;
+        }
+        else
+        {
+            // Assume that if /sys/fs/cgroup exists and the file system type is not cgroup2fs,
+            // it is cgroup v1. Typically the file system type is tmpfs, but other values have
+            // been seen in the wild.
+            return 1;
         }
 #endif
     }
@@ -126,7 +129,7 @@ private:
 
         len = strlen(hierarchy_mount);
         len += strlen(cgroup_path_relative_to_mount);
-        cgroup_path = (char*)PAL_malloc(len+1);
+        cgroup_path = (char*)malloc(len+1);
         if (cgroup_path == nullptr)
            goto done;
 
@@ -157,8 +160,8 @@ private:
         strcat_s(cgroup_path, len+1, cgroup_path_relative_to_mount + common_path_prefix_len);
 
     done:
-        PAL_free(hierarchy_root);
-        PAL_free(cgroup_path_relative_to_mount);
+        free(hierarchy_root);
+        free(cgroup_path_relative_to_mount);
         *pcgroup_path = cgroup_path;
         if (pcgroup_hierarchy_mount != nullptr)
         {
@@ -166,7 +169,7 @@ private:
         }
         else
         {
-            PAL_free(hierarchy_mount);
+            free(hierarchy_mount);
         }
     }
 
@@ -187,14 +190,14 @@ private:
         {
             if (filesystemType == nullptr || lineLen > maxLineLen)
             {
-                PAL_free(filesystemType);
+                free(filesystemType);
                 filesystemType = nullptr;
-                PAL_free(options);
+                free(options);
                 options = nullptr;
-                filesystemType = (char*)PAL_malloc(lineLen+1);
+                filesystemType = (char*)malloc(lineLen+1);
                 if (filesystemType == nullptr)
                     goto done;
-                options = (char*)PAL_malloc(lineLen+1);
+                options = (char*)malloc(lineLen+1);
                 if (options == nullptr)
                     goto done;
                 maxLineLen = lineLen;
@@ -227,10 +230,10 @@ private:
                 }
                 if (isSubsystemMatch)
                 {
-                    mountpath = (char*)PAL_malloc(lineLen+1);
+                    mountpath = (char*)malloc(lineLen+1);
                     if (mountpath == nullptr)
                         goto done;
-                    mountroot = (char*)PAL_malloc(lineLen+1);
+                    mountroot = (char*)malloc(lineLen+1);
                     if (mountroot == nullptr)
                         goto done;
 
@@ -249,10 +252,10 @@ private:
             }
         }
     done:
-        PAL_free(mountpath);
-        PAL_free(mountroot);
-        PAL_free(filesystemType);
-        PAL_free(options);
+        free(mountpath);
+        free(mountroot);
+        free(filesystemType);
+        free(options);
         free(line);
         if (mountinfofile)
             fclose(mountinfofile);
@@ -275,14 +278,14 @@ private:
         {
             if (subsystem_list == nullptr || lineLen > maxLineLen)
             {
-                PAL_free(subsystem_list);
+                free(subsystem_list);
                 subsystem_list = nullptr;
-                PAL_free(cgroup_path);
+                free(cgroup_path);
                 cgroup_path = nullptr;
-                subsystem_list = (char*)PAL_malloc(lineLen+1);
+                subsystem_list = (char*)malloc(lineLen+1);
                 if (subsystem_list == nullptr)
                     goto done;
-                cgroup_path = (char*)PAL_malloc(lineLen+1);
+                cgroup_path = (char*)malloc(lineLen+1);
                 if (cgroup_path == nullptr)
                     goto done;
                 maxLineLen = lineLen;
@@ -332,10 +335,10 @@ private:
             }
         }
     done:
-        PAL_free(subsystem_list);
+        free(subsystem_list);
         if (!result)
         {
-            PAL_free(cgroup_path);
+            free(cgroup_path);
             cgroup_path = nullptr;
         }
         free(line);

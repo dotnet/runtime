@@ -8,7 +8,7 @@ import { exceptions, simd } from "wasm-feature-detect";
 
 import gitHash from "consts:gitHash";
 
-import type { DotnetModuleInternal, GlobalObjects, LoaderHelpers, MonoConfigInternal, RuntimeHelpers } from "../types/internal";
+import type { DotnetModuleInternal, GlobalObjects, LoaderHelpers, MonoConfigInternal, PThreadWorker, RuntimeHelpers } from "../types/internal";
 import type { MonoConfig, RuntimeAPI } from "../types";
 import { assert_runtime_running, installUnhandledErrorHandler, is_exited, is_runtime_running, mono_exit } from "./exit";
 import { assertIsControllablePromise, createPromiseController, getPromiseController } from "./promise-controller";
@@ -53,7 +53,7 @@ export const globalObjectsRoot: GlobalObjects = {
 
 setLoaderGlobals(globalObjectsRoot);
 
-export function setLoaderGlobals(
+export function setLoaderGlobals (
     globalObjects: GlobalObjects,
 ) {
     if (_loaderModuleLoaded) {
@@ -76,8 +76,12 @@ export function setLoaderGlobals(
         mono_wasm_bindings_is_ready: false,
         config: globalObjects.module.config,
         diagnosticTracing: false,
-        nativeAbort: (reason: any) => { throw reason || new Error("abort"); },
-        nativeExit: (code: number) => { throw new Error("exit:" + code); }
+        nativeAbort: (reason: any) => {
+            throw reason || new Error("abort");
+        },
+        nativeExit: (code: number) => {
+            throw new Error("exit:" + code);
+        }
     };
     const lh: Partial<LoaderHelpers> = {
         gitHash,
@@ -91,7 +95,6 @@ export function setLoaderGlobals(
         loadedFiles: [],
         loadedAssemblies: [],
         libraryInitializers: [],
-        loadingWorkers: [],
         workerNextNumber: 1,
         actual_downloaded_assets_count: 0,
         actual_instantiated_assets_count: 0,
@@ -102,6 +105,7 @@ export function setLoaderGlobals(
         allDownloadsQueued: createPromiseController<void>(),
         wasmCompilePromise: createPromiseController<WebAssembly.Module>(),
         runtimeModuleLoaded: createPromiseController<void>(),
+        loadingWorkers: createPromiseController<PThreadWorker[]>(),
 
         is_exited,
         is_runtime_running,
@@ -133,7 +137,7 @@ export function setLoaderGlobals(
 // this will abort the program if the condition is false
 // see src\mono\browser\runtime\rollup.config.js
 // we inline the condition, because the lambda could allocate closure on hot path otherwise
-export function mono_assert(condition: unknown, messageFactory: string | (() => string)): asserts condition {
+export function mono_assert (condition: unknown, messageFactory: string | (() => string)): asserts condition {
     if (condition) return;
     const message = "Assert failed: " + (typeof messageFactory === "function"
         ? messageFactory()

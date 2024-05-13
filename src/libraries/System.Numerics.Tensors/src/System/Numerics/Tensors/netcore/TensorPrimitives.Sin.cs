@@ -97,8 +97,8 @@ namespace System.Numerics.Tensors
         /// <summary>float.Sin(x)</summary>
         private readonly struct SinOperatorSingle : IUnaryOperator<float, float>
         {
-            internal const uint SignMask = 0x7FFFFFFFu;
             internal const uint MaxVectorizedValue = 0x49800000u;
+            internal const uint SignMask = 0x7FFFFFFFu;
             private const float AlmHuge = 1.2582912e7f;
             private const float Pi_Tail1 = 8.742278e-8f;
             private const float Pi_Tail2 = 3.430249e-15f;
@@ -231,11 +231,17 @@ namespace System.Numerics.Tensors
                     return ApplyScalar<SinOperatorDouble>(x);
                 }
 
+                // dn = |x| * (1 / π)
                 Vector128<double> almHuge = Vector128.Create(AlmHuge);
                 Vector128<double> dn = MultiplyAddEstimateOperator<double>.Invoke(uxMasked, Vector128.Create(1 / double.Pi), almHuge);
                 Vector128<ulong> odd = dn.AsUInt64() << 63;
                 dn -= almHuge;
-                Vector128<double> f = uxMasked - (dn * Vector128.Create(double.Pi)) - (dn * Vector128.Create(Pi_Tail1)) - (dn * Vector128.Create(Pi_Tail2));
+
+                // f = |x| - (dn * π)
+                Vector128<double> f = uxMasked;
+                f = MultiplyAddEstimateOperator<double>.Invoke(dn, Vector128.Create(-double.Pi), f);
+                f = MultiplyAddEstimateOperator<double>.Invoke(dn, Vector128.Create(-Pi_Tail1), f);
+                f = MultiplyAddEstimateOperator<double>.Invoke(dn, Vector128.Create(-Pi_Tail2), f);
 
                 // POLY_EVAL_ODD_17
                 Vector128<double> f2 = f * f;
@@ -262,11 +268,17 @@ namespace System.Numerics.Tensors
                     return ApplyScalar<SinOperatorDouble>(x);
                 }
 
+                // dn = |x| * (1 / π)
                 Vector256<double> almHuge = Vector256.Create(AlmHuge);
                 Vector256<double> dn = MultiplyAddEstimateOperator<double>.Invoke(uxMasked, Vector256.Create(1 / double.Pi), almHuge);
                 Vector256<ulong> odd = dn.AsUInt64() << 63;
                 dn -= almHuge;
-                Vector256<double> f = uxMasked - (dn * Vector256.Create(double.Pi)) - (dn * Vector256.Create(Pi_Tail1)) - (dn * Vector256.Create(Pi_Tail2));
+
+                // f = |x| - (dn * π)
+                Vector256<double> f = uxMasked;
+                f = MultiplyAddEstimateOperator<double>.Invoke(dn, Vector256.Create(-double.Pi), f);
+                f = MultiplyAddEstimateOperator<double>.Invoke(dn, Vector256.Create(-Pi_Tail1), f);
+                f = MultiplyAddEstimateOperator<double>.Invoke(dn, Vector256.Create(-Pi_Tail2), f);
 
                 // POLY_EVAL_ODD_17
                 Vector256<double> f2 = f * f;
@@ -293,11 +305,17 @@ namespace System.Numerics.Tensors
                     return ApplyScalar<SinOperatorDouble>(x);
                 }
 
+                // dn = |x| * (1 / π)
                 Vector512<double> almHuge = Vector512.Create(AlmHuge);
                 Vector512<double> dn = MultiplyAddEstimateOperator<double>.Invoke(uxMasked, Vector512.Create(1 / double.Pi), almHuge);
                 Vector512<ulong> odd = dn.AsUInt64() << 63;
                 dn -= almHuge;
-                Vector512<double> f = uxMasked - (dn * Vector512.Create(double.Pi)) - (dn * Vector512.Create(Pi_Tail1)) - (dn * Vector512.Create(Pi_Tail2));
+
+                // f = |x| - (dn * π)
+                Vector512<double> f = uxMasked;
+                f = MultiplyAddEstimateOperator<double>.Invoke(dn, Vector512.Create(-double.Pi), f);
+                f = MultiplyAddEstimateOperator<double>.Invoke(dn, Vector512.Create(-Pi_Tail1), f);
+                f = MultiplyAddEstimateOperator<double>.Invoke(dn, Vector512.Create(-Pi_Tail2), f);
 
                 // POLY_EVAL_ODD_17
                 Vector512<double> f2 = f * f;

@@ -31,16 +31,17 @@ endm
 DEFINE_INTERFACE_DISPATCH_STUB macro entries
 
 StubName textequ @CatStr( _RhpInterfaceDispatch, entries, <@0> )
+StubAVLocation textequ @CatStr( _RhpInterfaceDispatchAVLocation, entries )
 
     StubName proc public
 
         ;; Check the instance here to catch null references. We're going to touch it again below (to cache
         ;; the MethodTable pointer), but that's after we've pushed ebx below, and taking an A/V there will
-        ;; mess up the stack trace for debugging. We also don't have a spare scratch register (eax holds
-        ;; the cache pointer and the push of ebx below is precisely so we can access a second register
-        ;; to hold the MethodTable pointer).
-        test    ecx, ecx
-        je      RhpInterfaceDispatchNullReference
+        ;; mess up the stack trace. We also don't have a spare scratch register (eax holds the cache pointer
+        ;; and the push of ebx below is precisely so we can access a second register to hold the MethodTable
+        ;; pointer).
+    ALTERNATE_ENTRY StubAVLocation
+        cmp     dword ptr [ecx], ecx
 
         ;; eax currently contains the indirection cell address. We need to update it to point to the cache
         ;; block instead.
@@ -94,15 +95,6 @@ RhpInterfaceDispatchSlow proc
         jmp         _RhpUniversalTransition_DebugStepTailCall@0
 RhpInterfaceDispatchSlow endp
 
-;; Out of line helper used when we try to interface dispatch on a null pointer. Sets up the stack so the
-;; debugger gives a reasonable stack trace.
-RhpInterfaceDispatchNullReference proc public
-        push    ebp
-        mov     ebp, esp
-        mov     ebx, [ecx]  ;; This should A/V
-        int     3
-RhpInterfaceDispatchNullReference endp
-
 ;; Stub dispatch routine for dispatch to a vtable slot
 _RhpVTableOffsetDispatch@0 proc public
         ;; eax currently contains the indirection cell address. We need to update it to point to the vtable offset (which is in the m_pCache field)
@@ -122,6 +114,11 @@ _RhpVTableOffsetDispatch@0 endp
 ;; Initial dispatch on an interface when we don't have a cache yet.
 FASTCALL_FUNC RhpInitialDynamicInterfaceDispatch, 0
 ALTERNATE_ENTRY _RhpInitialInterfaceDispatch
+        ;; Trigger an AV if we're dispatching on a null this.
+        ;; The exception handling infrastructure is aware of the fact that this is the first
+        ;; instruction of RhpInitialInterfaceDispatch and uses it to translate an AV here
+        ;; to a NullReferenceException at the callsite.
+        cmp     dword ptr [ecx], ecx
 
         jmp RhpInterfaceDispatchSlow
 FASTCALL_ENDFUNC

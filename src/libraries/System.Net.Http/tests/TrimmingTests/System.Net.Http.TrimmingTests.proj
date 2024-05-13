@@ -5,6 +5,8 @@
     <TestConsoleAppSourceFiles Include="DecompressionHandlerTrimmedTest.cs" />
     <TestConsoleAppSourceFiles Include="HttpClientTest.cs">
       <SkipOnTestRuntimes>browser-wasm</SkipOnTestRuntimes>
+      <!-- Checks for presence of managed assemblies on disk -->
+      <NativeAotIncompatible>true</NativeAotIncompatible>
     </TestConsoleAppSourceFiles>
   </ItemGroup>
 

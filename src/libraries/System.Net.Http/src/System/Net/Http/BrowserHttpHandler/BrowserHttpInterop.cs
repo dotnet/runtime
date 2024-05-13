@@ -147,7 +147,7 @@ namespace System.Net.Http
                     }
                 }, (promise, jsController)))
                 {
-                    await promise.ConfigureAwait(true);
+                    await promise.ConfigureAwait(false);
                 }
             }
             catch (OperationCanceledException oce) when (cancellationToken.IsCancellationRequested)

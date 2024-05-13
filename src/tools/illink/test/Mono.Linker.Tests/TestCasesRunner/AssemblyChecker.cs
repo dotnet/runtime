@@ -345,7 +345,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				}
 
 				if (expectedInterfaces.Any ()) {
-					yield return $"Expected interfaces were not found on {src}";
+					yield return $"Expected interfaces were not found on {src}. Expected to find: \n{string.Join(Environment.NewLine, expectedInterfaces)}\n";
 				}
 			}
 		}

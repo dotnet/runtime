@@ -224,14 +224,13 @@ private :
 };
 
 #define ACQUIRE_STACKING_ALLOCATOR(stackingAllocatorName)  \
-  Thread *pThread__ACQUIRE_STACKING_ALLOCATOR = GetThread(); \
-  StackingAllocator *stackingAllocatorName = pThread__ACQUIRE_STACKING_ALLOCATOR->m_stackLocalAllocator; \
+  StackingAllocator *stackingAllocatorName = StackingAllocatorHolder::GetCurrentThreadStackingAllocator(); \
   bool allocatorOwner__ACQUIRE_STACKING_ALLOCATOR = false; \
   NewArrayHolder<char> heapAllocatedStackingBuffer__ACQUIRE_STACKING_ALLOCATOR; \
 \
   if (stackingAllocatorName == NULL) \
   { \
-      if (pThread__ACQUIRE_STACKING_ALLOCATOR->CheckCanUseStackAlloc()) \
+      if (GetThread()->CheckCanUseStackAlloc()) \
       { \
           stackingAllocatorName = new (_alloca(sizeof(StackingAllocator))) StackingAllocator; \
       } \
@@ -245,28 +244,35 @@ private :
       }\
       allocatorOwner__ACQUIRE_STACKING_ALLOCATOR = true; \
   } \
-  StackingAllocatorHolder sah_ACQUIRE_STACKING_ALLOCATOR(stackingAllocatorName, pThread__ACQUIRE_STACKING_ALLOCATOR, allocatorOwner__ACQUIRE_STACKING_ALLOCATOR)
+  StackingAllocatorHolder sah_ACQUIRE_STACKING_ALLOCATOR(stackingAllocatorName, allocatorOwner__ACQUIRE_STACKING_ALLOCATOR)
 
-class Thread;
 class StackingAllocatorHolder
 {
+    // Allocator used during marshaling for temporary buffers, much faster than
+    // heap allocation.
+    //
+    // Uses of this allocator should be effectively statically scoped, i.e. a "region"
+    // is started using a CheckPointHolder and GetCheckpoint, and this region can then be used for allocations
+    // from that point onwards, and then all memory is reclaimed when the static scope for the
+    // checkpoint is exited by the running thread.
+    static thread_local StackingAllocator* t_currentStackingAllocator;
     StackingAllocator *m_pStackingAllocator;
     void* m_checkpointMarker;
-    Thread* m_thread;
     bool m_owner;
 
     public:
     ~StackingAllocatorHolder();
-    StackingAllocatorHolder(StackingAllocator *pStackingAllocator, Thread *pThread, bool owner);
+    StackingAllocatorHolder(StackingAllocator *pStackingAllocator, bool owner);
     StackingAllocator *GetStackingAllocator() { return m_pStackingAllocator; }
     StackingAllocator &operator->() { return *m_pStackingAllocator; }
+    static StackingAllocator* GetCurrentThreadStackingAllocator();
 };
 
 
 void * __cdecl operator new(size_t n, StackingAllocator *alloc);
 void * __cdecl operator new[](size_t n, StackingAllocator *alloc);
-void * __cdecl operator new(size_t n, StackingAllocator *alloc, const NoThrow&) throw();
-void * __cdecl operator new[](size_t n, StackingAllocator *alloc, const NoThrow&) throw();
+void * __cdecl operator new(size_t n, StackingAllocator *alloc, const std::nothrow_t&) noexcept;
+void * __cdecl operator new[](size_t n, StackingAllocator *alloc, const std::nothrow_t&) noexcept;
 
 #ifdef _MSC_VER
 #pragma warning(pop)

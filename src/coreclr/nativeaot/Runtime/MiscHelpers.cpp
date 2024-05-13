@@ -411,9 +411,20 @@ FCIMPL2(uint32_t, RhGetKnobValues, char *** pResultKeys, char *** pResultValues)
 FCIMPLEND
 
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
-FCIMPL3(void, RhCpuIdEx, int* cpuInfo, int functionId, int subFunctionId)
+EXTERN_C void QCALLTYPE RhCpuIdEx(int* cpuInfo, int functionId, int subFunctionId)
 {
     __cpuidex(cpuInfo, functionId, subFunctionId);
 }
-FCIMPLEND
 #endif
+
+FCIMPL3(int32_t, RhpLockCmpXchg32, int32_t * location, int32_t value, int32_t comparand)
+{
+    return PalInterlockedCompareExchange(location, value, comparand);
+}
+FCIMPLEND
+
+FCIMPL3_ILL(int64_t, RhpLockCmpXchg64, int64_t * location, int64_t value, int64_t comparand)
+{
+    return PalInterlockedCompareExchange64(location, value, comparand);
+}
+FCIMPLEND
