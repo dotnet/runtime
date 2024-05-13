@@ -1248,6 +1248,8 @@ void STDMETHODCALLTYPE EEShutDownHelper(BOOL fIsDllUnloading)
         // This will check a flag and do nothing if not enabled.
         Interpreter::PrintPostMortemData();
 #endif // FEATURE_INTERPRETER
+        VirtualCallStubManager::LogFinalStats();
+        WriteJitHelperCountToSTRESSLOG();
 
 #ifdef PROFILING_SUPPORTED
         // If profiling is enabled, then notify of shutdown first so that the
@@ -1326,8 +1328,6 @@ part2:
 
         {
             CONTRACT_VIOLATION(ModeViolation);
-            // At the moment, this doesn't do anything more than log statistics.
-            VirtualCallStubManager::UninitStatic();
 
             // On the new plan, we only do the tear-down under the protection of the loader
             // lock -- after the OS has stopped all other threads.
@@ -1350,7 +1350,6 @@ part2:
                 // Terminate the debugging services.
                 TerminateDebugger();
 #endif // DEBUGGING_SUPPORTED
-                WriteJitHelperCountToSTRESSLOG();
 
                 STRESS_LOG0(LF_STARTUP, LL_INFO10, "EEShutdown shutting down logging");
 
