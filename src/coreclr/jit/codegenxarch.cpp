@@ -7535,7 +7535,6 @@ void CodeGen::genIntToFloatCast(GenTree* treeNode)
 
     if (srcType == TYP_ULONG)
     {
-        // FloatingPointUtils::convertUInt64ToDobule
         assert(dstType == TYP_DOUBLE);
         assert(op1->isUsedFromReg());
 
