@@ -233,6 +233,11 @@ namespace Microsoft.Extensions.DependencyInjection
         public static System.Collections.Generic.IEnumerable<T> GetServices<T>(this System.IServiceProvider provider) { throw null; }
         public static T? GetService<T>(this System.IServiceProvider provider) { throw null; }
     }
+    [System.AttributeUsageAttribute(System.AttributeTargets.Parameter)]
+    public partial class InheritServiceKeyAttribute : System.Attribute
+    {
+        public InheritServiceKeyAttribute() { }
+    }
 }
 namespace Microsoft.Extensions.DependencyInjection.Extensions
 {
