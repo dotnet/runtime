@@ -473,6 +473,7 @@ GenTree* Compiler::impNonConstFallback(NamedIntrinsic intrinsic, var_types simdT
 //    sig             -- signature of the intrinsic call.
 //    simdBaseJitType -- generic argument of the intrinsic.
 //    retType         -- return type of the intrinsic.
+//    mustExpand      -- true if the intrinsic must return a GenTree*; otherwise, false
 //
 // Return Value:
 //    The GT_HWINTRINSIC node, or nullptr if not a supported intrinsic
@@ -483,7 +484,8 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                                        CORINFO_SIG_INFO*     sig,
                                        CorInfoType           simdBaseJitType,
                                        var_types             retType,
-                                       unsigned              simdSize)
+                                       unsigned              simdSize,
+                                       bool                  mustExpand)
 {
     const HWIntrinsicCategory category = HWIntrinsicInfo::lookupCategory(intrinsic);
     const int                 numArgs  = sig->numArgs;
@@ -762,10 +764,18 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
-        case NI_Vector64_ConvertToInt32:
         case NI_Vector64_ConvertToInt32Native:
-        case NI_Vector128_ConvertToInt32:
         case NI_Vector128_ConvertToInt32Native:
+        {
+            if (BlockNonDeterministicIntrinsics(mustExpand))
+            {
+                break;
+            }
+            FALLTHROUGH;
+        }
+
+        case NI_Vector64_ConvertToInt32:
+        case NI_Vector128_ConvertToInt32:
         {
             assert(sig->numArgs == 1);
             assert(simdBaseType == TYP_FLOAT);
@@ -775,10 +785,18 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
-        case NI_Vector64_ConvertToInt64:
         case NI_Vector64_ConvertToInt64Native:
-        case NI_Vector128_ConvertToInt64:
         case NI_Vector128_ConvertToInt64Native:
+        {
+            if (BlockNonDeterministicIntrinsics(mustExpand))
+            {
+                break;
+            }
+            FALLTHROUGH;
+        }
+
+        case NI_Vector64_ConvertToInt64:
+        case NI_Vector128_ConvertToInt64:
         {
             assert(sig->numArgs == 1);
             assert(simdBaseType == TYP_DOUBLE);
@@ -799,10 +817,18 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
-        case NI_Vector64_ConvertToUInt32:
         case NI_Vector64_ConvertToUInt32Native:
-        case NI_Vector128_ConvertToUInt32:
         case NI_Vector128_ConvertToUInt32Native:
+        {
+            if (BlockNonDeterministicIntrinsics(mustExpand))
+            {
+                break;
+            }
+            FALLTHROUGH;
+        }
+
+        case NI_Vector64_ConvertToUInt32:
+        case NI_Vector128_ConvertToUInt32:
         {
             assert(sig->numArgs == 1);
             assert(simdBaseType == TYP_FLOAT);
@@ -812,10 +838,18 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
-        case NI_Vector64_ConvertToUInt64:
         case NI_Vector64_ConvertToUInt64Native:
-        case NI_Vector128_ConvertToUInt64:
         case NI_Vector128_ConvertToUInt64Native:
+        {
+            if (BlockNonDeterministicIntrinsics(mustExpand))
+            {
+                break;
+            }
+            FALLTHROUGH;
+        }
+
+        case NI_Vector64_ConvertToUInt64:
+        case NI_Vector128_ConvertToUInt64:
         {
             assert(sig->numArgs == 1);
             assert(simdBaseType == TYP_DOUBLE);
