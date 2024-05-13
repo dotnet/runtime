@@ -290,24 +290,28 @@ namespace System.Net
                     {
                         return Invalid;
                     }
+                    bytesConsumed = current;
                     return parts[0];
                 case 1: // 0xFF.0xFFFFFF
                     if (parts[1] > 0xffffff)
                     {
                         return Invalid;
                     }
+                    bytesConsumed = current;
                     return (parts[0] << 24) | (parts[1] & 0xffffff);
                 case 2: // 0xFF.0xFF.0xFFFF
                     if (parts[2] > 0xffff)
                     {
                         return Invalid;
                     }
+                    bytesConsumed = current;
                     return (parts[0] << 24) | ((parts[1] & 0xff) << 16) | (parts[2] & 0xffff);
                 case 3: // 0xFF.0xFF.0xFF.0xFF
                     if (parts[3] > 0xff)
                     {
                         return Invalid;
                     }
+                    bytesConsumed = current;
                     return (parts[0] << 24) | ((parts[1] & 0xff) << 16) | ((parts[2] & 0xff) << 8) | (parts[3] & 0xff);
                 default:
                     return Invalid;
