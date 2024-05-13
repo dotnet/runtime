@@ -30,6 +30,7 @@ import { mono_wasm_schedule_synchronization_context } from "./pthreads/shared";
 import { Int32Ptr, VoidPtr } from "./types/emscripten";
 import { runtimeHelpers } from "./globals";
 import { VoidPtrNull } from "./types/internal";
+import { mono_wasm_get_locale_info } from "./hybrid-globalization/locales-common";
 
 // the JS methods would be visible to EMCC linker and become imports of the WASM module
 
@@ -156,13 +157,6 @@ function mono_wasm_get_culture_info (culture: number, cultureLength: number, dst
     return VoidPtrNull;
 }
 
-function mono_wasm_get_locale_info (culture: number, cultureLength: number, locale: number, localeLength: number, dst: number, dstMaxLength: number, dstLength: Int32Ptr): VoidPtr {
-    if (typeof runtimeHelpers.mono_wasm_get_locale_info === "function") {
-        return runtimeHelpers.mono_wasm_get_locale_info(culture, cultureLength, locale, localeLength, dst, dstMaxLength, dstLength);
-    }
-    return VoidPtrNull;
-}
-
 function mono_wasm_get_first_day_of_week (culture: number, cultureLength: number, resultPtr: Int32Ptr): VoidPtr {
     if (typeof runtimeHelpers.mono_wasm_get_first_day_of_week === "function") {
         return runtimeHelpers.mono_wasm_get_first_day_of_week(culture, cultureLength, resultPtr);
@@ -186,9 +180,10 @@ export const mono_wasm_hybrid_globalization_imports = [
     mono_wasm_index_of,
     mono_wasm_get_calendar_info,
     mono_wasm_get_culture_info,
-    mono_wasm_get_locale_info,
     mono_wasm_get_first_day_of_week,
     mono_wasm_get_first_week_of_year,
+    // used by both: non-HG and HG:
+    mono_wasm_get_locale_info,
 ];
 
 const wasmImports: Function[] = [
