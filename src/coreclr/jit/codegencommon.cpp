@@ -5302,28 +5302,6 @@ void CodeGen::genFnProlog()
     // will be skipped.
     bool      initRegZeroed = false;
     regMaskTP excludeMask   = intRegState.rsCalleeRegArgMaskLiveIn;
-    regMaskTP tempMask;
-
-    // We should not use the special PINVOKE registers as the initReg
-    // since they are trashed by the jithelper call to setup the PINVOKE frame
-    if (compiler->compMethodRequiresPInvokeFrame())
-    {
-        excludeMask |= RBM_PINVOKE_FRAME;
-
-        assert(!compiler->opts.ShouldUsePInvokeHelpers() || (compiler->info.compLvFrameListRoot == BAD_VAR_NUM));
-        if (!compiler->opts.ShouldUsePInvokeHelpers())
-        {
-            excludeMask |= (RBM_PINVOKE_TCB | RBM_PINVOKE_SCRATCH);
-
-            // We also must exclude the register used by compLvFrameListRoot when it is enregistered
-            //
-            const LclVarDsc* varDsc = compiler->lvaGetDesc(compiler->info.compLvFrameListRoot);
-            if (varDsc->lvRegister)
-            {
-                excludeMask |= genRegMask(varDsc->GetRegNum());
-            }
-        }
-    }
 
 #ifdef TARGET_ARM
     // If we have a variable sized frame (compLocallocUsed is true)
@@ -5342,7 +5320,7 @@ void CodeGen::genFnProlog()
     const bool isOSRx64Root = false;
 #endif // TARGET_AMD64
 
-    tempMask = initRegs & ~excludeMask & ~regSet.rsMaskResvd;
+    regMaskTP tempMask = initRegs & ~excludeMask & ~regSet.rsMaskResvd;
 
     if (tempMask != RBM_NONE)
     {
