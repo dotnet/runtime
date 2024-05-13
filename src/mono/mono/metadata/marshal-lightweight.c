@@ -2279,7 +2279,7 @@ static gboolean
 unsafe_accessor_target_type_forbidden (MonoType *target_type);
 
 static void
-emit_unsafe_accessor_field_wrapper (MonoMethodBuilder *mb, gboolean to_be_inflated, MonoMethod *accessor_method, MonoMethodSignature *sig, MonoUnsafeAccessorKind kind, const char *member_name)
+emit_unsafe_accessor_field_wrapper (MonoMethodBuilder *mb, gboolean inflate_generic_data, MonoMethod *accessor_method, MonoMethodSignature *sig, MonoUnsafeAccessorKind kind, const char *member_name)
 {
 	// Field access requires a single argument for target type and a return type.
 	g_assert (kind == MONO_UNSAFE_ACCESSOR_FIELD || kind == MONO_UNSAFE_ACCESSOR_STATIC_FIELD);
@@ -2292,13 +2292,6 @@ emit_unsafe_accessor_field_wrapper (MonoMethodBuilder *mb, gboolean to_be_inflat
 		mono_mb_emit_exception_full (mb, "System", "BadImageFormatException", "Invalid usage of UnsafeAccessorAttribute.");
 		return;
 	}
-
-	gboolean inflate_generic_data = FALSE;
-	if ((accessor_method->is_generic || to_be_inflated)) {
-		// If the target is generic, we'll find a generic MonoClassField and then mark it to be
-		// inflated in order to handle instances, or gshared/gsharedvt instances.
-		inflate_generic_data = TRUE;
-	};
 
 	MonoType *ret_type = sig->ret;
 
@@ -2415,7 +2408,7 @@ inflate_method (MonoClass *klass, MonoMethod *method, MonoMethod *accessor_metho
 }
 
 static void
-emit_unsafe_accessor_ctor_wrapper (MonoMethodBuilder *mb, gboolean to_be_inflated, MonoMethod *accessor_method, MonoMethodSignature *sig, MonoUnsafeAccessorKind kind, const char *member_name)
+emit_unsafe_accessor_ctor_wrapper (MonoMethodBuilder *mb, gboolean inflate_generic_data, MonoMethod *accessor_method, MonoMethodSignature *sig, MonoUnsafeAccessorKind kind, const char *member_name)
 {
 	g_assert (kind == MONO_UNSAFE_ACCESSOR_CTOR);
 	// null or empty string member name is ok for a constructor
@@ -2433,13 +2426,6 @@ emit_unsafe_accessor_ctor_wrapper (MonoMethodBuilder *mb, gboolean to_be_inflate
 		return;
 	}
 	
-	gboolean inflate_generic_data = FALSE;
-	if ((accessor_method->is_generic || to_be_inflated)) {
-		// If the target is generic, we'll find a generic MonoMethod* and then mark it to be
-		// inflated in order to handle instances, or gshared/gsharedvt instances.
-		inflate_generic_data = TRUE;
-	};
-
 	MonoClass *target_class = mono_class_from_mono_type_internal (target_type);
 
 	ERROR_DECL(find_method_error);
@@ -2471,7 +2457,7 @@ emit_unsafe_accessor_ctor_wrapper (MonoMethodBuilder *mb, gboolean to_be_inflate
 }
 
 static void
-emit_unsafe_accessor_method_wrapper (MonoMethodBuilder *mb, gboolean to_be_inflated, MonoMethod *accessor_method, MonoMethodSignature *sig, MonoUnsafeAccessorKind kind, const char *member_name)
+emit_unsafe_accessor_method_wrapper (MonoMethodBuilder *mb, gboolean inflate_generic_data, MonoMethod *accessor_method, MonoMethodSignature *sig, MonoUnsafeAccessorKind kind, const char *member_name)
 {
 	g_assert (kind == MONO_UNSAFE_ACCESSOR_METHOD || kind == MONO_UNSAFE_ACCESSOR_STATIC_METHOD);
 	g_assert (member_name != NULL);
@@ -2479,19 +2465,12 @@ emit_unsafe_accessor_method_wrapper (MonoMethodBuilder *mb, gboolean to_be_infla
 	// We explicitly allow calling a constructor as if it was an instance method, but we need some hacks in a couple of places
 	gboolean ctor_as_method = !strcmp (member_name, ".ctor");
 
-	
-
 	MonoType *target_type = sig->param_count >= 1 ? sig->params[0] : NULL;
 
 	if (sig->param_count < 1 || target_type == NULL || unsafe_accessor_target_type_forbidden (target_type)) {
 		mono_mb_emit_exception_full (mb, "System", "BadImageFormatException", "Invalid usage of UnsafeAccessorAttribute.");
 		return;
 	}
-
-	gboolean inflate_generic_data = FALSE;
-	if ((accessor_method->is_generic || to_be_inflated)) {
-		inflate_generic_data = TRUE;
-	};
 
 	gboolean hasthis = kind == MONO_UNSAFE_ACCESSOR_METHOD;
 	MonoClass *target_class = mono_class_from_mono_type_internal (target_type);
@@ -2539,13 +2518,8 @@ emit_unsafe_accessor_method_wrapper (MonoMethodBuilder *mb, gboolean to_be_infla
 }
 
 static void
-emit_unsafe_accessor_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethod *accessor_method, MonoMethodSignature *sig, gboolean to_be_inflated, MonoUnsafeAccessorKind kind, const char *member_name)
+emit_unsafe_accessor_wrapper_ilgen (MonoMethodBuilder *mb, gboolean inflate_generic_data, MonoMethod *accessor_method, MonoMethodSignature *sig, MonoUnsafeAccessorKind kind, const char *member_name)
 {
-	// to_be_inflated means we're emitting a non-generic accessor method belonging to a gtd
-	// that will be inflated by marshal.c
-	if (to_be_inflated && !accessor_method->is_generic)
-		g_assert (!accessor_method->is_inflated);
-	
 	if (!m_method_is_static (accessor_method)) {
 		mono_mb_emit_exception_full (mb, "System", "BadImageFormatException", "UnsafeAccessor_NonStatic");
 		return;
@@ -2554,14 +2528,14 @@ emit_unsafe_accessor_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethod *accessor_
 	switch (kind) {
 	case MONO_UNSAFE_ACCESSOR_FIELD:
 	case MONO_UNSAFE_ACCESSOR_STATIC_FIELD:
-		emit_unsafe_accessor_field_wrapper (mb, to_be_inflated, accessor_method, sig, kind, member_name);
+		emit_unsafe_accessor_field_wrapper (mb, inflate_generic_data, accessor_method, sig, kind, member_name);
 		return;
 	case MONO_UNSAFE_ACCESSOR_CTOR:
-		emit_unsafe_accessor_ctor_wrapper (mb, to_be_inflated, accessor_method, sig, kind, member_name);
+		emit_unsafe_accessor_ctor_wrapper (mb, inflate_generic_data, accessor_method, sig, kind, member_name);
 		return;
 	case MONO_UNSAFE_ACCESSOR_METHOD:
 	case MONO_UNSAFE_ACCESSOR_STATIC_METHOD:
-		emit_unsafe_accessor_method_wrapper (mb, to_be_inflated, accessor_method, sig, kind, member_name);
+		emit_unsafe_accessor_method_wrapper (mb, inflate_generic_data, accessor_method, sig, kind, member_name);
 		return;
 	default:
 		mono_mb_emit_exception_full (mb, "System", "BadImageFormatException", "UnsafeAccessor_InvalidKindValue");

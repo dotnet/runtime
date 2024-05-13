@@ -5338,7 +5338,10 @@ mono_marshal_get_unsafe_accessor_wrapper (MonoMethod *accessor_method, MonoUnsaf
 		get_marshal_cb ()->mb_inflate_wrapper_data (mb);
 	}
 
-	get_marshal_cb ()->emit_unsafe_accessor_wrapper (mb, accessor_method, sig, is_inflated, kind, member_name);
+	// if the wrapper will be inflated (either now by us, or when it's called, because it is
+	// generic), mark the wrapper data to be inflated, too
+	gboolean inflate_generic_data = accessor_method->is_generic || is_inflated;
+	get_marshal_cb ()->emit_unsafe_accessor_wrapper (mb, inflate_generic_data, accessor_method, sig, kind, member_name);
 
 	info = mono_wrapper_info_create (mb, WRAPPER_SUBTYPE_UNSAFE_ACCESSOR);
 	info->d.unsafe_accessor.method = accessor_method;
