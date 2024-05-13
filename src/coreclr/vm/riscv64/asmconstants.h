@@ -214,16 +214,16 @@ ASMCONSTANTS_C_ASSERT(Frame__m_Next == offsetof(Frame, m_Next))
 #define               InlinedCallFrame__m_Datum 0x10
 ASMCONSTANTS_C_ASSERT(InlinedCallFrame__m_Datum == offsetof(InlinedCallFrame, m_Datum))
 
-#define               InlinedCallFrame__m_pCallSiteSP 0x20
+#define               InlinedCallFrame__m_pCallSiteSP 0x18
 ASMCONSTANTS_C_ASSERT(InlinedCallFrame__m_pCallSiteSP == offsetof(InlinedCallFrame, m_pCallSiteSP))
 
-#define               InlinedCallFrame__m_pCallerReturnAddress 0x28
+#define               InlinedCallFrame__m_pCallerReturnAddress 0x20
 ASMCONSTANTS_C_ASSERT(InlinedCallFrame__m_pCallerReturnAddress == offsetof(InlinedCallFrame, m_pCallerReturnAddress))
 
-#define               InlinedCallFrame__m_pCalleeSavedFP 0x30
+#define               InlinedCallFrame__m_pCalleeSavedFP 0x28
 ASMCONSTANTS_C_ASSERT(InlinedCallFrame__m_pCalleeSavedFP == offsetof(InlinedCallFrame, m_pCalleeSavedFP))
 
-#define               InlinedCallFrame__m_pThread 0x38
+#define               InlinedCallFrame__m_pThread 0x30
 ASMCONSTANTS_C_ASSERT(InlinedCallFrame__m_pThread == offsetof(InlinedCallFrame, m_pThread))
 
 #define FixupPrecodeData__Target 0x00

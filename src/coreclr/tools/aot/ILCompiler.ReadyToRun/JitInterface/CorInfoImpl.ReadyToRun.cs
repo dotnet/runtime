@@ -934,7 +934,7 @@ namespace Internal.JitInterface
             // In debug, write some bogus data to the struct to ensure we have filled everything
             // properly.
             fixed (CORINFO_LOOKUP* tmp = &pLookup)
-                MemoryHelper.FillMemory((byte*)tmp, 0xcc, sizeof(CORINFO_LOOKUP));
+                NativeMemory.Fill(tmp, (nuint)sizeof(CORINFO_LOOKUP), 0xcc);
 #endif
 
             TypeDesc delegateTypeDesc = HandleToObject(delegateType);
@@ -1663,7 +1663,7 @@ namespace Internal.JitInterface
 #if DEBUG
             // In debug, write some bogus data to the struct to ensure we have filled everything
             // properly.
-            MemoryHelper.FillMemory((byte*)pResult, 0xcc, Marshal.SizeOf<CORINFO_FIELD_INFO>());
+            NativeMemory.Fill(pResult, (nuint)sizeof(CORINFO_FIELD_INFO), 0xcc);
 #endif
 
             Debug.Assert(((int)flags & ((int)CORINFO_ACCESS_FLAGS.CORINFO_ACCESS_GET |
@@ -1847,7 +1847,7 @@ namespace Internal.JitInterface
 #if DEBUG
             // In debug, write some bogus data to the struct to ensure we have filled everything
             // properly.
-            MemoryHelper.FillMemory((byte*)pResult, 0xcc, Marshal.SizeOf<CORINFO_CALL_INFO>());
+            NativeMemory.Fill(pResult, (nuint)sizeof(CORINFO_CALL_INFO), 0xcc);
 #endif
             pResult->codePointerOrStubLookup.lookupKind.needsRuntimeLookup = false;
 
@@ -2648,7 +2648,7 @@ namespace Internal.JitInterface
             // In debug, write some bogus data to the struct to ensure we have filled everything
             // properly.
             fixed (CORINFO_GENERICHANDLE_RESULT* tmp = &pResult)
-                MemoryHelper.FillMemory((byte*)tmp, 0xcc, Marshal.SizeOf<CORINFO_GENERICHANDLE_RESULT>());
+                NativeMemory.Fill(tmp, (nuint)sizeof(CORINFO_GENERICHANDLE_RESULT), 0xcc);
 #endif
 
             bool runtimeLookup = false;
