@@ -43,6 +43,7 @@ namespace hello_tryfinallyloop_leaves_cs
             Console.WriteLine("in Finally\n");
         }
         [Fact]
+        [OuterLoop]
         static public int TestEntryPoint()
         {
             int i = 0;

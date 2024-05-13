@@ -47,6 +47,7 @@ public class cs1
     }
 
     [Fact]
+    [OuterLoop]
     public static int TestEntryPoint()
     {
         try
