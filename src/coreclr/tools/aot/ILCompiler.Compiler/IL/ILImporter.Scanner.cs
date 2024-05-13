@@ -360,8 +360,9 @@ namespace Internal.IL
                     }
                     else
                     {
-                        MethodDesc ctor = Compilation.GetConstructorForCreateInstanceIntrinsic(method.Instantiation[0]);
-                        _dependencies.Add(_factory.CanonicalEntrypoint(ctor), reason);
+                        TypeDesc type = method.Instantiation[0];
+                        MethodDesc ctor = Compilation.GetConstructorForCreateInstanceIntrinsic(type);
+                        _dependencies.Add(type.IsValueType ? _factory.ExactCallableAddress(ctor) : _factory.CanonicalEntrypoint(ctor), reason);
                     }
 
                     return;
@@ -707,11 +708,7 @@ namespace Internal.IL
                     _dependencies.Add(_factory.InterfaceDispatchCell(method), reason);
                 }
             }
-            else if (_compilation.HasFixedSlotVTable(method.OwningType))
-            {
-                // No dependencies: virtual call through the vtable
-            }
-            else
+            else if (_compilation.NeedsSlotUseTracking(method.OwningType))
             {
                 MethodDesc slotDefiningMethod = targetMethod.IsNewSlot ?
                         targetMethod : MetadataVirtualMethodAlgorithm.FindSlotDefiningMethodForVirtualMethod(targetMethod);
@@ -1224,7 +1221,7 @@ namespace Internal.IL
                     break;
                 case ILOpcode.mul_ovf:
                 case ILOpcode.mul_ovf_un:
-                    if (_compilation.TypeSystemContext.Target.Architecture == TargetArchitecture.ARM)
+                    if (_compilation.TypeSystemContext.Target.PointerSize == 4)
                     {
                         _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.LMulOfv), "_lmulovf");
                         _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.ULMulOvf), "_ulmulovf");
@@ -1234,32 +1231,63 @@ namespace Internal.IL
                     break;
                 case ILOpcode.div:
                 case ILOpcode.div_un:
-                    if (_compilation.TypeSystemContext.Target.Architecture == TargetArchitecture.ARM)
+                    if (_compilation.TypeSystemContext.Target.Architecture is TargetArchitecture.ARM or TargetArchitecture.X86)
                     {
                         _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.ULDiv), "_uldiv");
                         _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.LDiv), "_ldiv");
-                        _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.UDiv), "_udiv");
-                        _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.Div), "_div");
+
+                        if (_compilation.TypeSystemContext.Target.Architecture is TargetArchitecture.ARM)
+                        {
+                            _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.UDiv), "_udiv");
+                            _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.Div), "_div");
+                        }
                     }
                     else if (_compilation.TypeSystemContext.Target.Architecture == TargetArchitecture.ARM64)
                     {
                         _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.ThrowDivZero), "_divbyzero");
+                        if (opcode == ILOpcode.div)
+                        {
+                            _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.Overflow), "_ovf");
+                        }
                     }
                     break;
                 case ILOpcode.rem:
                 case ILOpcode.rem_un:
-                    if (_compilation.TypeSystemContext.Target.Architecture == TargetArchitecture.ARM)
+                    if (_compilation.TypeSystemContext.Target.Architecture is TargetArchitecture.ARM or TargetArchitecture.X86)
                     {
                         _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.ULMod), "_ulmod");
                         _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.LMod), "_lmod");
-                        _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.UMod), "_umod");
-                        _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.Mod), "_mod");
+                        if (_compilation.TypeSystemContext.Target.Architecture is TargetArchitecture.ARM)
+                        {
+                            _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.UMod), "_umod");
+                            _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.Mod), "_mod");
+                        }
                     }
                     else if (_compilation.TypeSystemContext.Target.Architecture == TargetArchitecture.ARM64)
                     {
                         _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.ThrowDivZero), "_divbyzero");
+                        if (opcode == ILOpcode.rem)
+                        {
+                            _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.Overflow), "_ovf");
+                        }
                     }
+
+                    _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.DblRem), "rem");
+                    _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.FltRem), "rem");
                     break;
+            }
+        }
+
+        private void ImportConvert(WellKnownType wellKnownType, bool checkOverflow, bool unsigned)
+        {
+            if (checkOverflow)
+            {
+                _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.Dbl2IntOvf), "_dbl2intovf");
+                _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.Dbl2UIntOvf), "_dbl2uintovf");
+                _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.Dbl2LngOvf), "_dbl2lngovf");
+                _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.Dbl2ULngOvf), "_dbl2ulngovf");
+
+                _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.Overflow), "_ovf");
             }
         }
 
@@ -1388,7 +1416,6 @@ namespace Internal.IL
         private static void ImportStoreIndirect(TypeDesc type) { }
         private static void ImportShiftOperation(ILOpcode opcode) { }
         private static void ImportCompareOperation(ILOpcode opcode) { }
-        private static void ImportConvert(WellKnownType wellKnownType, bool checkOverflow, bool unsigned) { }
         private static void ImportUnaryOperation(ILOpcode opCode) { }
         private static void ImportCpOpj(int token) { }
         private static void ImportCkFinite() { }

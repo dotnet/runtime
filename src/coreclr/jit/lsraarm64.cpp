@@ -180,7 +180,7 @@ regMaskTP LinearScan::filterConsecutiveCandidates(regMaskTP    candidates,
                                                   unsigned int registersNeeded,
                                                   regMaskTP*   allConsecutiveCandidates)
 {
-    if (BitOperations::PopCount(candidates) < registersNeeded)
+    if (PopCount(candidates) < registersNeeded)
     {
         // There is no way the register demanded can be satisfied for this RefPosition
         // based on the candidates from which it can allocate a register.
@@ -205,7 +205,7 @@ regMaskTP LinearScan::filterConsecutiveCandidates(regMaskTP    candidates,
     do
     {
         // From LSB, find the first available register (bit `1`)
-        regAvailableStartIndex = BitOperations::BitScanForward(static_cast<DWORD64>(currAvailableRegs));
+        regAvailableStartIndex = BitScanForward(currAvailableRegs);
         regMaskTP startMask    = (1ULL << regAvailableStartIndex) - 1;
 
         // Mask all the bits that are processed from LSB thru regAvailableStart until the last `1`.
@@ -223,7 +223,7 @@ regMaskTP LinearScan::filterConsecutiveCandidates(regMaskTP    candidates,
         }
         else
         {
-            regAvailableEndIndex = BitOperations::BitScanForward(static_cast<DWORD64>(maskProcessed));
+            regAvailableEndIndex = BitScanForward(maskProcessed);
         }
         regMaskTP endMask = (1ULL << regAvailableEndIndex) - 1;
 
@@ -335,7 +335,7 @@ regMaskTP LinearScan::filterConsecutiveCandidatesForSpill(regMaskTP consecutiveC
     do
     {
         // From LSB, find the first available register (bit `1`)
-        regAvailableStartIndex = BitOperations::BitScanForward(static_cast<DWORD64>(unprocessedRegs));
+        regAvailableStartIndex = BitScanForward(unprocessedRegs);
 
         // For the current range, find how many registers are free vs. busy
         regMaskTP maskForCurRange        = RBM_NONE;
@@ -370,7 +370,7 @@ regMaskTP LinearScan::filterConsecutiveCandidatesForSpill(regMaskTP consecutiveC
             // In the given range, there are some free registers available. Calculate how many registers
             // will need spilling if this range is picked.
 
-            int curSpillRegs = registersNeeded - BitOperations::PopCount(maskForCurRange);
+            int curSpillRegs = registersNeeded - PopCount(maskForCurRange);
             if (curSpillRegs < maxSpillRegs)
             {
                 consecutiveResultForBusy = 1ULL << regAvailableStartIndex;
@@ -582,7 +582,7 @@ int LinearScan::BuildNode(GenTree* tree)
 {
     assert(!tree->isContained());
     int       srcCount;
-    int       dstCount      = 0;
+    int       dstCount;
     regMaskTP killMask      = RBM_NONE;
     bool      isLocalDefUse = false;
 
@@ -740,6 +740,16 @@ int LinearScan::BuildNode(GenTree* tree)
             killMask = getKillSetForReturn();
             BuildDefsWithKills(tree, 0, RBM_NONE, killMask);
             break;
+
+#ifdef SWIFT_SUPPORT
+        case GT_SWIFT_ERROR_RET:
+            BuildUse(tree->gtGetOp1(), RBM_SWIFT_ERROR);
+            // Plus one for error register
+            srcCount = BuildReturn(tree) + 1;
+            killMask = getKillSetForReturn();
+            BuildDefsWithKills(tree, 0, RBM_NONE, killMask);
+            break;
+#endif // SWIFT_SUPPORT
 
         case GT_RETFILT:
             assert(dstCount == 0);
@@ -1454,6 +1464,10 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                     case NI_Sve_CreateTrueMaskUInt16:
                     case NI_Sve_CreateTrueMaskUInt32:
                     case NI_Sve_CreateTrueMaskUInt64:
+                    case NI_Sve_Count16BitElements:
+                    case NI_Sve_Count32BitElements:
+                    case NI_Sve_Count64BitElements:
+                    case NI_Sve_Count8BitElements:
                         needBranchTargetReg = !intrin.op1->isContainedIntOrIImmed();
                         break;
 
@@ -1612,7 +1626,6 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
             }
         }
     }
-
     else if (HWIntrinsicInfo::NeedsConsecutiveRegisters(intrin.id))
     {
         switch (intrin.id)
@@ -1744,10 +1757,82 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 *pDstCount = dstCount;
                 break;
             }
+
             default:
                 noway_assert(!"Not a supported as multiple consecutive register intrinsic");
         }
         return srcCount;
+    }
+
+    else if ((intrin.id == NI_Sve_ConditionalSelect) && (intrin.op2->IsEmbMaskOp()) &&
+             (intrin.op2->isRMWHWIntrinsic(compiler)))
+    {
+        assert(intrin.op3 != nullptr);
+
+        // For ConditionalSelect, if there is an embedded operation, and the operation has RMW semantics
+        // then record delay-free for operands as well as the "merge" value
+        GenTreeHWIntrinsic* embOp2Node = intrin.op2->AsHWIntrinsic();
+        size_t              numArgs    = embOp2Node->GetOperandCount();
+        const HWIntrinsic   intrinEmb(embOp2Node);
+        numArgs = embOp2Node->GetOperandCount();
+
+        if (HWIntrinsicInfo::IsFmaIntrinsic(intrinEmb.id))
+        {
+            assert(embOp2Node->isRMWHWIntrinsic(compiler));
+            assert(numArgs == 3);
+
+            LIR::Use use;
+            GenTree* user = nullptr;
+
+            if (LIR::AsRange(blockSequence[curBBSeqNum]).TryGetUse(embOp2Node, &use))
+            {
+                user = use.User();
+            }
+            unsigned resultOpNum =
+                embOp2Node->GetResultOpNumForRmwIntrinsic(user, intrinEmb.op1, intrinEmb.op2, intrinEmb.op3);
+
+            GenTree* emitOp1 = intrinEmb.op1;
+            GenTree* emitOp2 = intrinEmb.op2;
+            GenTree* emitOp3 = intrinEmb.op3;
+
+            if (resultOpNum == 2)
+            {
+                // op2 = op1 + (op2 * op3)
+                std::swap(emitOp1, emitOp3);
+                std::swap(emitOp1, emitOp2);
+                // op1 = (op1 * op2) + op3
+            }
+            else if (resultOpNum == 3)
+            {
+                // op3 = op1 + (op2 * op3)
+                std::swap(emitOp1, emitOp3);
+                // op1 = (op1 * op2) + op3
+            }
+            else
+            {
+                // op1 = op1 + (op2 * op3)
+                // Nothing needs to be done
+            }
+
+            tgtPrefUse = BuildUse(emitOp1);
+            srcCount += 1;
+            srcCount += BuildDelayFreeUses(emitOp2, emitOp1);
+            srcCount += BuildDelayFreeUses(emitOp3, emitOp1);
+            srcCount += BuildDelayFreeUses(intrin.op3, emitOp1);
+        }
+        else
+        {
+            assert((numArgs == 1) || (numArgs == 2) || (numArgs == 3));
+            tgtPrefUse = BuildUse(embOp2Node->Op(1));
+            srcCount += 1;
+
+            for (size_t argNum = 2; argNum <= numArgs; argNum++)
+            {
+                srcCount += BuildDelayFreeUses(embOp2Node->Op(argNum), embOp2Node->Op(1));
+            }
+
+            srcCount += BuildDelayFreeUses(intrin.op3, embOp2Node->Op(1));
+        }
     }
 
     else if (intrin.op2 != nullptr)
@@ -1757,7 +1842,8 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
 
         assert(intrin.op1 != nullptr);
 
-        bool forceOp2DelayFree = false;
+        bool      forceOp2DelayFree = false;
+        regMaskTP candidates        = RBM_NONE;
         if ((intrin.id == NI_Vector64_GetElement) || (intrin.id == NI_Vector128_GetElement))
         {
             if (!intrin.op2->IsCnsIntOrI() && (!intrin.op1->isContained() || intrin.op1->OperIsLocal()))
@@ -1780,18 +1866,54 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
             }
         }
 
-        if (forceOp2DelayFree)
+        if ((intrin.id == NI_Sve_FusedMultiplyAddBySelectedScalar) ||
+            (intrin.id == NI_Sve_FusedMultiplySubtractBySelectedScalar))
         {
-            srcCount += BuildDelayFreeUses(intrin.op2);
+            // If this is common pattern, then we will add a flag in the table, but for now, just check for specific
+            // intrinsics
+            if (intrin.baseType == TYP_DOUBLE)
+            {
+                candidates = RBM_SVE_INDEXED_D_ELEMENT_ALLOWED_REGS;
+            }
+            else
+            {
+                assert(intrin.baseType == TYP_FLOAT);
+                candidates = RBM_SVE_INDEXED_S_ELEMENT_ALLOWED_REGS;
+            }
+        }
+
+        if ((intrin.id == NI_Sve_ConditionalSelect) && (intrin.op2->IsEmbMaskOp()) &&
+            (intrin.op2->isRMWHWIntrinsic(compiler)))
+        {
+            // For ConditionalSelect, if there is an embedded operation, and the operation has RMW semantics
+            // then record delay-free for them.
+            GenTreeHWIntrinsic* intrinEmbOp2 = intrin.op2->AsHWIntrinsic();
+            size_t              numArgs      = intrinEmbOp2->GetOperandCount();
+            assert((numArgs == 1) || (numArgs == 2));
+            tgtPrefUse = BuildUse(intrinEmbOp2->Op(1));
+            srcCount += 1;
+
+            for (size_t argNum = 2; argNum <= numArgs; argNum++)
+            {
+                srcCount += BuildDelayFreeUses(intrinEmbOp2->Op(argNum), intrinEmbOp2->Op(1));
+            }
         }
         else
         {
-            srcCount += isRMW ? BuildDelayFreeUses(intrin.op2, intrin.op1) : BuildOperandUses(intrin.op2);
+            if (forceOp2DelayFree)
+            {
+                srcCount += BuildDelayFreeUses(intrin.op2);
+            }
+            else
+            {
+                srcCount += isRMW ? BuildDelayFreeUses(intrin.op2, intrin.op1) : BuildOperandUses(intrin.op2);
+            }
         }
 
         if (intrin.op3 != nullptr)
         {
-            srcCount += isRMW ? BuildDelayFreeUses(intrin.op3, intrin.op1) : BuildOperandUses(intrin.op3);
+            srcCount += isRMW ? BuildDelayFreeUses(intrin.op3, intrin.op1, candidates)
+                              : BuildOperandUses(intrin.op3, candidates);
 
             if (intrin.op4 != nullptr)
             {

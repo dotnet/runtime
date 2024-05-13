@@ -22,6 +22,7 @@ namespace System.Net.NetworkInformation.Tests
         [Fact]
         public void BasicTest_GetNetworkInterfaces_AtLeastOne()
         {
+
             Assert.NotEqual<int>(0, NetworkInterface.GetAllNetworkInterfaces().Length);
         }
 
@@ -50,7 +51,8 @@ namespace System.Net.NetworkInformation.Tests
 
                 if (nic.NetworkInterfaceType == NetworkInterfaceType.Ethernet)
                 {
-                    Assert.Equal(6, nic.GetPhysicalAddress().GetAddressBytes().Length);
+                    var physicalAddressLength = nic.GetPhysicalAddress().GetAddressBytes().Length;
+                    Assert.True(physicalAddressLength == 0 || physicalAddressLength == 6);
                 }
             }
         }

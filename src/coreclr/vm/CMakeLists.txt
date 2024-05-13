@@ -103,7 +103,6 @@ set(VM_SOURCES_DAC_AND_WKS_COMMON
     peassembly.cpp
     peimage.cpp
     perfmap.cpp
-    perfinfo.cpp
     pgo.cpp
     precode.cpp
     prestub.cpp
@@ -206,7 +205,6 @@ set(VM_HEADERS_DAC_AND_WKS_COMMON
     peimagelayout.h
     peimagelayout.inl
     perfmap.h
-    perfinfo.h
     pgo.h
     precode.h
     rejit.h
@@ -358,7 +356,6 @@ set(VM_SOURCES_WKS
     reflectclasswriter.cpp
     reflectioninvocation.cpp
     runtimehandles.cpp
-    safehandle.cpp
     simplerwlock.cpp
     stackingallocator.cpp
     stringliteralmap.cpp
@@ -392,6 +389,7 @@ set(VM_HEADERS_WKS
     callhelpers.h
     callsiteinspect.h
     callconvbuilder.hpp
+    cdacoffsets.h
     ceemain.h
     clrconfignative.h
     clrex.h
@@ -487,21 +485,6 @@ set(GC_SOURCES_WKS
     ../gc/gcload.cpp
     ../gc/softwarewritewatch.cpp
     ../gc/handletablecache.cpp)
-
-if (CLR_CMAKE_TARGET_ARCH_AMD64 AND CLR_CMAKE_TARGET_WIN32)
-  set ( GC_SOURCES_WKS
-    ${GC_SOURCES_WKS}
-    ../gc/vxsort/isa_detection.cpp
-    ../gc/vxsort/do_vxsort_avx2.cpp
-    ../gc/vxsort/do_vxsort_avx512.cpp
-    ../gc/vxsort/machine_traits.avx2.cpp
-    ../gc/vxsort/smallsort/bitonic_sort.AVX2.int64_t.generated.cpp
-    ../gc/vxsort/smallsort/bitonic_sort.AVX2.int32_t.generated.cpp
-    ../gc/vxsort/smallsort/bitonic_sort.AVX512.int64_t.generated.cpp
-    ../gc/vxsort/smallsort/bitonic_sort.AVX512.int32_t.generated.cpp
-    ../gc/vxsort/smallsort/avx2_load_mask_tables.cpp
-)
-endif (CLR_CMAKE_TARGET_ARCH_AMD64 AND CLR_CMAKE_TARGET_WIN32)
 
 set(GC_HEADERS_WKS
     ${GC_HEADERS_DAC_AND_WKS_COMMON}

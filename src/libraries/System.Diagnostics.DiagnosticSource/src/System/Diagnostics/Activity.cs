@@ -226,7 +226,7 @@ namespace System.Diagnostics
                     Span<char> flagsChars = stackalloc char[2];
                     HexConverter.ToCharsBuffer((byte)((~ActivityTraceFlagsIsSet) & _w3CIdFlags), flagsChars, 0, HexConverter.Casing.Lower);
                     string id =
-#if NET6_0_OR_GREATER
+#if NET
                         string.Create(null, stackalloc char[128], $"00-{_traceId}-{_spanId}-{flagsChars}");
 #else
                         "00-" + _traceId + "-" + _spanId + "-" + flagsChars.ToString();
@@ -258,7 +258,7 @@ namespace System.Diagnostics
                         Span<char> flagsChars = stackalloc char[2];
                         HexConverter.ToCharsBuffer((byte)((~ActivityTraceFlagsIsSet) & _parentTraceFlags), flagsChars, 0, HexConverter.Casing.Lower);
                         string parentId =
-#if NET6_0_OR_GREATER
+#if NET
                             string.Create(null, stackalloc char[128], $"00-{_traceId}-{_parentSpanId}-{flagsChars}");
 #else
                             "00-" + _traceId + "-" + _parentSpanId + "-" + flagsChars.ToString();
@@ -512,6 +512,25 @@ namespace System.Diagnostics
             if (_events != null || Interlocked.CompareExchange(ref _events, new DiagLinkedList<ActivityEvent>(e), null) != null)
             {
                 _events.Add(e);
+            }
+
+            return this;
+        }
+
+        /// <summary>
+        /// Add an <see cref="ActivityLink"/> to the <see cref="Links"/> list.
+        /// </summary>
+        /// <param name="link">The <see cref="ActivityLink"/> to add.</param>
+        /// <returns><see langword="this" /> for convenient chaining.</returns>
+        /// <remarks>
+        /// For contexts that are available during span creation, adding links at span creation is preferred to calling <see cref="AddLink(ActivityLink)" /> later,
+        /// because head sampling decisions can only consider information present during span creation.
+        /// </remarks>
+        public Activity AddLink(ActivityLink link)
+        {
+            if (_links != null || Interlocked.CompareExchange(ref _links, new DiagLinkedList<ActivityLink>(link), null) != null)
+            {
+                _links.Add(link);
             }
 
             return this;

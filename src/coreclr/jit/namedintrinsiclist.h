@@ -37,7 +37,6 @@ enum NamedIntrinsic : unsigned short
     NI_System_Math_Cosh,
     NI_System_Math_Exp,
     NI_System_Math_Floor,
-    NI_System_Math_FMod,
     NI_System_Math_FusedMultiplyAdd,
     NI_System_Math_ILogB,
     NI_System_Math_Log,
@@ -52,6 +51,8 @@ enum NamedIntrinsic : unsigned short
     NI_System_Math_MinMagnitudeNumber,
     NI_System_Math_MinNumber,
     NI_System_Math_Pow,
+    NI_System_Math_ReciprocalEstimate,
+    NI_System_Math_ReciprocalSqrtEstimate,
     NI_System_Math_Round,
     NI_System_Math_Sin,
     NI_System_Math_Sinh,
@@ -228,6 +229,8 @@ enum NamedIntrinsic : unsigned short
 
     NI_PRIMITIVE_START,
 
+    NI_PRIMITIVE_ConvertToInteger,
+    NI_PRIMITIVE_ConvertToIntegerNative,
     NI_PRIMITIVE_Crc32C,
     NI_PRIMITIVE_LeadingZeroCount,
     NI_PRIMITIVE_Log2,

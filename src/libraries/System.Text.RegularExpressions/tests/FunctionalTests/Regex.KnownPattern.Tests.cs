@@ -1526,7 +1526,7 @@ namespace System.Text.RegularExpressions.Tests
                 (Options & ~RegexOptions.Compiled) == (other.Options & ~RegexOptions.Compiled); // Compiled doesn't affect semantics, so remove it from equality for our purposes
         }
 
-#if NETCOREAPP
+#if NET
         [OuterLoop("Takes many seconds")]
         [Fact]
         public async Task PatternsDataSet_ConstructRegexForAll_NonBacktracking()
@@ -1553,12 +1553,12 @@ namespace System.Text.RegularExpressions.Tests
         [OuterLoop("Takes minutes to generate and compile thousands of expressions")]
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.Is64BitProcess), nameof(PlatformDetection.IsNotMobile), nameof(PlatformDetection.IsNotBrowser))] // consumes a lot of memory, doesn't work on mobile
         [ActiveIssue("https://github.com/dotnet/runtime/issues/80018", TestRuntimes.Mono)]
-        public void PatternsDataSet_ConstructRegexForAll_SourceGenerated()
+        public async Task PatternsDataSet_ConstructRegexForAll_SourceGenerated()
         {
-            Parallel.ForEach(s_patternsDataSet.Value.Chunk(50), chunk =>
+            await Parallel.ForEachAsync(s_patternsDataSet.Value.Chunk(50), async (chunk, ct) =>
             {
-                RegexHelpers.GetRegexesAsync(RegexEngine.SourceGenerated,
-                    chunk.Select(r => (r.Pattern, (CultureInfo?)null, (RegexOptions?)r.Options, (TimeSpan?)null)).ToArray()).GetAwaiter().GetResult();
+                await RegexHelpers.GetRegexesAsync(RegexEngine.SourceGenerated,
+                    chunk.Select(r => (r.Pattern, (CultureInfo?)null, (RegexOptions?)r.Options, (TimeSpan?)null)).ToArray());
             });
         }
 

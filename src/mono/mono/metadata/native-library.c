@@ -1222,3 +1222,63 @@ mono_loader_install_pinvoke_override (PInvokeOverrideFn override_fn)
 {
 	pinvoke_override = override_fn;
 }
+
+static gboolean
+is_symbol_char_verbatim (unsigned char b)
+{
+	return ((b >= '0' && b <= '9') || (b >= 'a' && b <= 'z') || (b >= 'A' && b <= 'Z'));
+}
+
+static gboolean
+is_symbol_char_underscore (unsigned char c)
+{
+	switch (c) {
+	case '_':
+	case '.':
+	case '-':
+	case '+':
+	case '<':
+	case '>':
+		return TRUE;
+	default:
+		return FALSE;
+	}
+}
+
+static size_t mono_precompute_size (const char *key)
+{
+	size_t size = 1; // Null terminator
+	size_t len = (int)strlen (key);
+	for (size_t i = 0; i < len; ++i) {
+		unsigned char b = key[i];
+		if (is_symbol_char_verbatim (b) || is_symbol_char_underscore (b)) {
+			size++;
+		}
+		else {
+			size += 4;
+		}
+	}
+	return size;
+}
+
+// Keep synced with FixupSymbolName from src/tasks/Common/Utils.cs
+char* mono_fixup_symbol_name (const char *prefix, const char *key, const char *suffix) {
+	size_t size = mono_precompute_size (key) + strlen (prefix) + strlen (suffix);
+	GString *str = g_string_sized_new (size);
+	size_t len = (int)strlen (key);
+	g_string_append_printf (str, "%s", prefix);
+
+	for (size_t i = 0; i < len; ++i) {
+		unsigned char b = key[i];
+		if (is_symbol_char_verbatim (b)) {
+			g_string_append_c (str, b);
+		} else if (is_symbol_char_underscore (b)) {
+			g_string_append_c (str, '_');
+		} else {
+			// Append the hex representation of b between underscores
+			g_string_append_printf (str, "_%X_", b);
+		}
+	}
+	g_string_append_printf (str, "%s", suffix);
+	return g_string_free (str, FALSE);
+}

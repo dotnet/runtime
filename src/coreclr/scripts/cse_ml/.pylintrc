@@ -1,0 +1,5 @@
+[FORMAT]
+max-line-length = 120
+
+[DESIGN]
+max-args=8

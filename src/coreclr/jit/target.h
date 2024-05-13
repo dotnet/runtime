@@ -68,27 +68,27 @@ inline bool compUnixX86Abi()
 // The following are intended to capture only those #defines that cannot be replaced
 // with static const members of Target
 #if defined(TARGET_AMD64)
-#define REGMASK_BITS 64
+#define REGMASK_BITS              64
 #define CSE_CONST_SHARED_LOW_BITS 16
 
 #elif defined(TARGET_X86)
-#define REGMASK_BITS 32
+#define REGMASK_BITS              32
 #define CSE_CONST_SHARED_LOW_BITS 16
 
 #elif defined(TARGET_ARM)
-#define REGMASK_BITS 64
+#define REGMASK_BITS              64
 #define CSE_CONST_SHARED_LOW_BITS 12
 
 #elif defined(TARGET_ARM64)
-#define REGMASK_BITS 64
+#define REGMASK_BITS              64
 #define CSE_CONST_SHARED_LOW_BITS 12
 
 #elif defined(TARGET_LOONGARCH64)
-#define REGMASK_BITS 64
+#define REGMASK_BITS              64
 #define CSE_CONST_SHARED_LOW_BITS 12
 
 #elif defined(TARGET_RISCV64)
-#define REGMASK_BITS 64
+#define REGMASK_BITS              64
 #define CSE_CONST_SHARED_LOW_BITS 12
 
 #else
@@ -110,7 +110,7 @@ inline bool compUnixX86Abi()
 enum _regNumber_enum : unsigned
 {
 #define REGDEF(name, rnum, mask, sname) REG_##name = rnum,
-#define REGALIAS(alias, realname) REG_##alias = REG_##realname,
+#define REGALIAS(alias, realname)       REG_##alias = REG_##realname,
 #include "register.h"
 
     REG_COUNT,
@@ -122,7 +122,7 @@ enum _regMask_enum : unsigned __int64
 {
     RBM_NONE = 0,
 #define REGDEF(name, rnum, mask, sname) RBM_##name = mask,
-#define REGALIAS(alias, realname) RBM_##alias = RBM_##realname,
+#define REGALIAS(alias, realname)       RBM_##alias = RBM_##realname,
 #include "register.h"
 };
 
@@ -131,7 +131,7 @@ enum _regMask_enum : unsigned __int64
 enum _regNumber_enum : unsigned
 {
 #define REGDEF(name, rnum, mask, xname, wname) REG_##name = rnum,
-#define REGALIAS(alias, realname) REG_##alias = REG_##realname,
+#define REGALIAS(alias, realname)              REG_##alias = REG_##realname,
 #include "register.h"
 
     REG_COUNT,
@@ -143,7 +143,7 @@ enum _regMask_enum : unsigned __int64
 {
     RBM_NONE = 0,
 #define REGDEF(name, rnum, mask, xname, wname) RBM_##name = mask,
-#define REGALIAS(alias, realname) RBM_##alias = RBM_##realname,
+#define REGALIAS(alias, realname)              RBM_##alias = RBM_##realname,
 #include "register.h"
 };
 
@@ -152,7 +152,7 @@ enum _regMask_enum : unsigned __int64
 enum _regNumber_enum : unsigned
 {
 #define REGDEF(name, rnum, mask, sname) REG_##name = rnum,
-#define REGALIAS(alias, realname) REG_##alias = REG_##realname,
+#define REGALIAS(alias, realname)       REG_##alias = REG_##realname,
 #include "register.h"
 
     REG_COUNT,
@@ -165,9 +165,8 @@ enum _regMask_enum : uint64_t
     RBM_NONE = 0,
 
 #define REGDEF(name, rnum, mask, sname) RBM_##name = mask,
-#define REGALIAS(alias, realname) RBM_##alias = RBM_##realname,
+#define REGALIAS(alias, realname)       RBM_##alias = RBM_##realname,
 #include "register.h"
-
 };
 
 #elif defined(TARGET_X86)
@@ -175,7 +174,7 @@ enum _regMask_enum : uint64_t
 enum _regNumber_enum : unsigned
 {
 #define REGDEF(name, rnum, mask, sname) REG_##name = rnum,
-#define REGALIAS(alias, realname) REG_##alias = REG_##realname,
+#define REGALIAS(alias, realname)       REG_##alias = REG_##realname,
 #include "register.h"
 
     REG_COUNT,
@@ -188,7 +187,7 @@ enum _regMask_enum : unsigned
     RBM_NONE = 0,
 
 #define REGDEF(name, rnum, mask, sname) RBM_##name = mask,
-#define REGALIAS(alias, realname) RBM_##alias = RBM_##realname,
+#define REGALIAS(alias, realname)       RBM_##alias = RBM_##realname,
 #include "register.h"
 };
 
@@ -209,11 +208,158 @@ enum _regMask_enum : unsigned
 // In any case, we believe that is OK to freely cast between these types; no information will
 // be lost.
 
-#if defined(TARGET_AMD64) || defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+typedef _regNumber_enum regNumber;
+typedef unsigned char   regNumberSmall;
+
+#if defined(TARGET_AMD64) || defined(TARGET_ARM) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 typedef unsigned __int64 regMaskTP;
+#elif defined(TARGET_ARM64)
+typedef unsigned __int64 regMaskSmall;
+struct regMaskTP
+{
+private:
+    uint64_t low;
+
+public:
+    constexpr regMaskTP(uint64_t regMask)
+        : low(regMask)
+    {
+    }
+
+    regMaskTP()
+    {
+    }
+
+    explicit operator bool() const
+    {
+        return low != RBM_NONE;
+    }
+
+    explicit operator regMaskSmall() const
+    {
+        return (regMaskSmall)low;
+    }
+
+    explicit operator unsigned int() const
+    {
+        return (unsigned int)low;
+    }
+
+    uint64_t getLow() const
+    {
+        return low;
+    }
+};
+
+static regMaskTP operator^(regMaskTP first, regMaskTP second)
+{
+    regMaskTP result(first.getLow() ^ second.getLow());
+    return result;
+}
+
+static regMaskTP operator&(regMaskTP first, regMaskTP second)
+{
+    regMaskTP result(first.getLow() & second.getLow());
+    return result;
+}
+
+static regMaskTP operator|(regMaskTP first, regMaskTP second)
+{
+    regMaskTP result(first.getLow() | second.getLow());
+    return result;
+}
+
+static regMaskTP operator<<(regMaskTP first, const int b)
+{
+    regMaskTP result(first.getLow() << b);
+    return result;
+}
+
+static regMaskTP operator>>(regMaskTP first, const int b)
+{
+    regMaskTP result(first.getLow() >> b);
+    return result;
+}
+
+static regMaskTP& operator>>=(regMaskTP& first, const int b)
+{
+    first = first >> b;
+    return first;
+}
+
+static regMaskTP& operator|=(regMaskTP& first, regMaskTP second)
+{
+    first = first | second;
+    return first;
+}
+
+static regMaskTP& operator^=(regMaskTP& first, regMaskTP second)
+{
+    first = first ^ second;
+    return first;
+}
+
+static regMaskSmall operator^=(regMaskSmall& first, regMaskTP second)
+{
+    first ^= second.getLow();
+    return first;
+}
+
+static regMaskSmall operator&=(regMaskSmall& first, regMaskTP second)
+{
+    first &= second.getLow();
+    return first;
+}
+
+static regMaskSmall operator|=(regMaskSmall& first, regMaskTP second)
+{
+    first |= second.getLow();
+    return first;
+}
+
+static regMaskTP& operator&=(regMaskTP& first, regMaskTP second)
+{
+    first = first & second;
+    return first;
+}
+
+static bool operator==(regMaskTP first, regMaskTP second)
+{
+    return (first.getLow() == second.getLow());
+}
+
+static bool operator!=(regMaskTP first, regMaskTP second)
+{
+    return (first.getLow() != second.getLow());
+}
+
+static regMaskTP operator~(regMaskTP first)
+{
+    regMaskTP result(~first.getLow());
+    return result;
+}
+
 #else
-typedef unsigned       regMaskTP;
+typedef unsigned regMaskTP;
 #endif
+
+static uint32_t PopCount(regMaskTP value)
+{
+#ifdef TARGET_ARM64
+    return BitOperations::PopCount(value.getLow());
+#else
+    return BitOperations::PopCount(value);
+#endif
+}
+
+static uint32_t BitScanForward(regMaskTP mask)
+{
+#ifdef TARGET_ARM64
+    return BitOperations::BitScanForward(mask.getLow());
+#else
+    return BitOperations::BitScanForward(mask);
+#endif
+}
 
 #if REGMASK_BITS == 8
 typedef unsigned char regMaskSmall;
@@ -233,15 +379,12 @@ typedef unsigned __int64 regMaskSmall;
 #define REG_MASK_ALL_FMT "%016llX"
 #endif
 
-typedef _regNumber_enum regNumber;
-typedef unsigned char   regNumberSmall;
-
 /*****************************************************************************/
 
 #ifdef DEBUG
-#define DSP_SRC_OPER_LEFT 0
+#define DSP_SRC_OPER_LEFT  0
 #define DSP_SRC_OPER_RIGHT 1
-#define DSP_DST_OPER_LEFT 1
+#define DSP_DST_OPER_LEFT  1
 #define DSP_DST_OPER_RIGHT 0
 #endif
 
@@ -422,7 +565,8 @@ inline bool genIsValidDoubleReg(regNumber reg)
 inline bool hasFixedRetBuffReg(CorInfoCallConvExtension callConv)
 {
 #if defined(TARGET_ARM64)
-    return true;
+    // Windows does not use fixed ret buff arg for instance calls, but does otherwise.
+    return !TargetOS::IsWindows || !callConvIsInstanceMethodCallConv(callConv);
 #elif defined(TARGET_AMD64) && defined(SWIFT_SUPPORT)
     return callConv == CorInfoCallConvExtension::Swift;
 #else
@@ -498,6 +642,12 @@ inline regMaskTP fullIntArgRegMask(CorInfoCallConvExtension callConv)
     if (callConv == CorInfoCallConvExtension::Swift)
     {
         result |= RBM_SWIFT_SELF;
+
+        // We don't pass any arguments in REG_SWIFT_ERROR, but as a quirk,
+        // we set the SwiftError* parameter to be passed in this register,
+        // and later ensure the parameter isn't given any registers/stack space
+        // to avoid interfering with other arguments.
+        result |= RBM_SWIFT_ERROR;
     }
 #endif
 
@@ -667,8 +817,7 @@ inline regMaskTP genRegMask(regNumber regNum, var_types type)
  *  These arrays list the callee-saved register numbers (and bitmaps, respectively) for
  *  the current architecture.
  */
-extern const regNumber raRegCalleeSaveOrder[CNT_CALLEE_SAVED];
-extern const regMaskTP raRbmCalleeSaveOrder[CNT_CALLEE_SAVED];
+extern const regMaskTP raRbmCalleeSaveOrder[CNT_CALL_GC_REGS];
 
 // This method takes a "compact" bitset of the callee-saved registers, and "expands" it to a full register mask.
 regMaskSmall genRegMaskFromCalleeSavedMask(unsigned short);
@@ -763,8 +912,8 @@ typedef __int64          target_ssize_t;
 #define TARGET_SIGN_BIT (1ULL << 63)
 
 #else // !TARGET_64BIT
-typedef unsigned int   target_size_t;
-typedef int            target_ssize_t;
+typedef unsigned int target_size_t;
+typedef int          target_ssize_t;
 #define TARGET_SIGN_BIT (1ULL << 31)
 
 #endif // !TARGET_64BIT

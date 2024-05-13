@@ -51,6 +51,7 @@
 #include <mono/metadata/mempool-internals.h>
 #include <mono/metadata/mono-basic-block.h>
 #include <mono/metadata/mono-endian.h>
+#include <mono/metadata/native-library.h>
 #include <mono/metadata/threads-types.h>
 #include <mono/metadata/custom-attrs-internals.h>
 #include <mono/utils/mono-logger-internals.h>
@@ -242,8 +243,11 @@ typedef struct MonoAotOptions {
 	gboolean child;
 	char *tool_prefix;
 	char *as_prefix;
+	char *as_name;
+	char *as_options;
 	char *ld_flags;
 	char *ld_name;
+	char *ld_options;
 	char *mtriple;
 	char *llvm_path;
 	char *temp_path;
@@ -8940,10 +8944,16 @@ mono_aot_parse_options (const char *aot_options, MonoAotOptions *opts)
 			opts->tool_prefix = g_strdup (arg + strlen ("tool-prefix="));
 		} else if (str_begins_with (arg, "as-prefix=")) {
 			opts->as_prefix = g_strdup (arg + strlen ("as-prefix="));
+		} else if (str_begins_with (arg, "as-name=")) {
+			opts->as_name = g_strdup (arg + strlen ("as-name="));
+		} else if (str_begins_with (arg, "as-options=")) {
+			opts->as_options = g_strdup (arg + strlen ("as-options="));
 		} else if (str_begins_with (arg, "ld-flags=")) {
 			opts->ld_flags = g_strdup (arg + strlen ("ld-flags="));
 		} else if (str_begins_with (arg, "ld-name=")) {
 			opts->ld_name = g_strdup (arg + strlen ("ld-name="));
+		} else if (str_begins_with (arg, "ld-options=")) {
+			opts->ld_options = g_strdup (arg + strlen ("ld-options="));
 		} else if (str_begins_with (arg, "soft-debug")) {
 			opts->soft_debug = TRUE;
 		// Intentionally undocumented x2-- deprecated
@@ -11172,7 +11182,7 @@ mono_aot_type_hash (MonoType *t1)
 	case MONO_TYPE_CLASS:
 	case MONO_TYPE_SZARRAY:
 		/* check if the distribution is good enough */
-		return ((hash << 5) - hash) ^ mono_metadata_str_hash (m_class_get_name (t1->data.klass));
+		return ((hash << 5) - hash) ^ m_class_get_name_hash (t1->data.klass);
 	case MONO_TYPE_PTR:
 		return ((hash << 5) - hash) ^ mono_metadata_type_hash (t1->data.type);
 	case MONO_TYPE_ARRAY:
@@ -11242,7 +11252,7 @@ mono_aot_method_hash (MonoMethod *method)
 		hashes [1] = 0;
 		g_free (full_name);
 	} else {
-		hashes [0] = mono_metadata_str_hash (m_class_get_name (klass));
+		hashes [0] = m_class_get_name_hash (klass);
 		hashes [1] = mono_metadata_str_hash (m_class_get_name_space (klass));
 	}
 	if (method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE && mono_marshal_get_wrapper_info (method)->subtype == WRAPPER_SUBTYPE_ICALL_WRAPPER)
@@ -12398,22 +12408,14 @@ emit_file_info (MonoAotCompile *acfg)
 
 	if (acfg->aot_opts.static_link) {
 		char symbol [MAX_SYMBOL_SIZE];
-		char *p;
 
 		/*
 		 * Emit a global symbol which can be passed by an embedding app to
 		 * mono_aot_register_module (). The symbol points to a pointer to the file info
 		 * structure.
 		 */
-		sprintf (symbol, "%smono_aot_module_%s_info", acfg->user_symbol_prefix, acfg->image->assembly->aname.name);
-
-		/* Get rid of characters which cannot occur in symbols */
-		p = symbol;
-		for (p = symbol; *p; ++p) {
-			if (!(isalnum (*p) || *p == '_'))
-				*p = '_';
-		}
-		acfg->static_linking_symbol = g_strdup (symbol);
+		snprintf (symbol, MAX_SYMBOL_SIZE, "%smono_aot_module_%s", acfg->user_symbol_prefix, acfg->image->assembly->aname.name);
+		acfg->static_linking_symbol = mono_fixup_symbol_name ("", symbol, "_info");
 	}
 
 	if (acfg->llvm)
@@ -13222,8 +13224,16 @@ compile_asm (MonoAotCompile *acfg)
 #ifdef TARGET_OSX
 	g_string_append (acfg->as_args, "-c -x assembler ");
 #endif
+	const char *as_binary_name = acfg->aot_opts.as_name;
+	if (as_binary_name == NULL) {
+		as_binary_name = AS_NAME;
+	}
+	const char *as_options = acfg->aot_opts.as_options;
+	if (as_options == NULL) {
+		as_options = AS_OPTIONS;
+	}
 
-	command = g_strdup_printf ("\"%s%s\" %s %s -o %s %s", as_prefix, AS_NAME, AS_OPTIONS,
+	command = g_strdup_printf ("\"%s%s\" %s %s -o %s %s", as_prefix, as_binary_name, as_options,
 			acfg->as_args ? acfg->as_args->str : "",
 			wrap_path (objfile), wrap_path (acfg->asm_fname));
 	aot_printf (acfg, "Executing the native assembler: %s\n", command);
@@ -13234,7 +13244,7 @@ compile_asm (MonoAotCompile *acfg)
 	}
 
 	if (acfg->llvm && !acfg->llvm_owriter) {
-		command = g_strdup_printf ("\"%s%s\" %s %s -o %s %s", as_prefix, AS_NAME, AS_OPTIONS,
+		command = g_strdup_printf ("\"%s%s\" %s %s -o %s %s", as_prefix, as_binary_name, as_options,
 			acfg->as_args ? acfg->as_args->str : "",
 			wrap_path (acfg->llvm_ofile), wrap_path (acfg->llvm_sfile));
 		aot_printf (acfg, "Executing the native assembler: %s\n", command);
@@ -13283,16 +13293,21 @@ compile_asm (MonoAotCompile *acfg)
 
 	str = g_string_new ("");
 	const char *ld_binary_name = acfg->aot_opts.ld_name;
+
+	const char *ld_options = acfg->aot_opts.ld_options;
+	if (ld_options == NULL) {
+		ld_options = LD_OPTIONS;
+	}
 #if defined(LD_NAME)
 	if (ld_binary_name == NULL) {
 		ld_binary_name = LD_NAME;
 	}
 	if (acfg->aot_opts.tool_prefix)
-		g_string_append_printf (str, "\"%s%s\" %s", tool_prefix, ld_binary_name, LD_OPTIONS);
+		g_string_append_printf (str, "\"%s%s\" %s", tool_prefix, ld_binary_name, ld_options);
 	else if (acfg->aot_opts.llvm_only)
 		g_string_append_printf (str, "%s", acfg->aot_opts.clangxx);
 	else
-		g_string_append_printf (str, "\"%s%s\" %s", tool_prefix, ld_binary_name, LD_OPTIONS);
+		g_string_append_printf (str, "\"%s%s\" %s", tool_prefix, ld_binary_name, ld_options);
 #else
 	if (ld_binary_name == NULL) {
 		ld_binary_name = "ld";
@@ -13301,7 +13316,7 @@ compile_asm (MonoAotCompile *acfg)
 	// Default (linux)
 	if (acfg->aot_opts.tool_prefix)
 		/* Cross compiling */
-		g_string_append_printf (str, "\"%s%s\" %s", tool_prefix, ld_binary_name, LD_OPTIONS);
+		g_string_append_printf (str, "\"%s%s\" %s", tool_prefix, ld_binary_name, ld_options);
 	else if (acfg->aot_opts.llvm_only)
 		g_string_append_printf (str, "%s", acfg->aot_opts.clangxx);
 	else
@@ -13767,7 +13782,7 @@ is_local_inst (MonoGenericInst *inst, MonoImage *image)
 {
 	for (guint i = 0; i < inst->type_argc; ++i) {
 		MonoClass *k = mono_class_from_mono_type_internal (inst->type_argv [i]);
-		if (!MONO_TYPE_IS_PRIMITIVE (inst->type_argv [i]) && m_class_get_image (k) != image)
+		if ((m_class_get_image (k) != mono_defaults.corlib) && (m_class_get_image (k) != image))
 			return FALSE;
 	}
 	return TRUE;
@@ -14232,8 +14247,11 @@ aot_opts_free (MonoAotOptions *aot_opts)
 	g_free (aot_opts->dedup_include);
 	g_free (aot_opts->tool_prefix);
 	g_free (aot_opts->as_prefix);
+	g_free (aot_opts->as_name);
+	g_free (aot_opts->as_options);
 	g_free (aot_opts->ld_flags);
 	g_free (aot_opts->ld_name);
+	g_free (aot_opts->ld_options);
 	g_free (aot_opts->mtriple);
 	g_free (aot_opts->llvm_path);
 	g_free (aot_opts->temp_path);
@@ -14266,6 +14284,8 @@ acfg_free (MonoAotCompile *acfg)
 	g_free (acfg->static_linking_symbol);
 	g_free (acfg->got_symbol);
 	g_free (acfg->plt_symbol);
+	g_free (acfg->global_prefix);
+	g_free (acfg->assembly_name_sym);
 	g_ptr_array_free (acfg->methods, TRUE);
 	g_ptr_array_free (acfg->image_table, TRUE);
 	g_ptr_array_free (acfg->globals, TRUE);
@@ -14835,7 +14855,6 @@ aot_assembly (MonoAssembly *ass, guint32 jit_opts, MonoAotOptions *aot_options)
 {
 	MonoImage *image = ass->image;
 	MonoAotCompile *acfg;
-	char *p;
 	int res;
 	TV_DECLARE (atv);
 	TV_DECLARE (btv);
@@ -15094,13 +15113,7 @@ aot_assembly (MonoAssembly *ass, guint32 jit_opts, MonoAotOptions *aot_options)
 	if (acfg->aot_opts.llvm_only)
 		acfg->flags = (MonoAotFileFlags)(acfg->flags | MONO_AOT_FILE_FLAG_LLVM_ONLY);
 
-	acfg->assembly_name_sym = g_strdup (get_assembly_prefix (acfg->image));
-	/* Get rid of characters which cannot occur in symbols */
-	for (p = acfg->assembly_name_sym; *p; ++p) {
-		if (!(isalnum (*p) || *p == '_'))
-			*p = '_';
-	}
-
+	acfg->assembly_name_sym = mono_fixup_symbol_name ("", get_assembly_prefix (acfg->image), "");
 	acfg->global_prefix = g_strdup_printf ("mono_aot_%s", acfg->assembly_name_sym);
 	acfg->plt_symbol = g_strdup_printf ("%s_plt", acfg->global_prefix);
 	acfg->got_symbol = g_strdup_printf ("%s_got", acfg->global_prefix);

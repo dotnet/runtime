@@ -4585,13 +4585,6 @@ LONG InternalUnhandledExceptionFilter_Worker(
     STRESS_LOG2(LF_EH, LL_INFO10, "In InternalUnhandledExceptionFilter_Worker, Exception = %x, sp = %p\n",
                                     pExceptionInfo->ExceptionRecord->ExceptionCode, GetCurrentSP());
 
-    // If we can't enter the EE, done.
-    if (g_fForbidEnterEE)
-    {
-        LOG((LF_EH, LL_INFO100, "InternalUnhandledExceptionFilter_Worker: g_fForbidEnterEE is TRUE\n"));
-        return EXCEPTION_CONTINUE_SEARCH;
-    }
-
     // We don't do anything when this is called from an unmanaged thread.
     Thread *pThread = GetThreadNULLOk();
 
@@ -4622,18 +4615,6 @@ LONG InternalUnhandledExceptionFilter_Worker(
         }
     }
 #endif
-
-    // This shouldn't be possible, but MSVC re-installs us... for now, just bail if this happens.
-    if (g_fNoExceptions)
-    {
-        return EXCEPTION_CONTINUE_SEARCH;
-    }
-
-    // Are we looking at a stack overflow here?
-    if ((pThread !=  NULL) && !pThread->DetermineIfGuardPagePresent())
-    {
-        g_fForbidEnterEE = true;
-    }
 
 #ifdef DEBUGGING_SUPPORTED
 
@@ -4761,7 +4742,7 @@ LONG InternalUnhandledExceptionFilter_Worker(
             // ignoring unhandled exceptions cannot be set on the default domain.
 
             if (IsFinalizerThread() || (pParam->pThread->IsThreadPoolThread()))
-                fIsProcessTerminating = !(pParam->pThread->GetDomain()->IgnoreUnhandledExceptions());
+                fIsProcessTerminating = !(AppDomain::GetCurrentDomain()->IgnoreUnhandledExceptions());
             else
                 fIsProcessTerminating = !(pParam->pThread->HasThreadStateNC(Thread::TSNC_IgnoreUnhandledExceptions));
 
@@ -5533,8 +5514,6 @@ static LONG ThreadBaseExceptionFilter_Worker(PEXCEPTION_POINTERS pExceptionInfo,
     ThreadBaseExceptionFilterParam *pParam = (ThreadBaseExceptionFilterParam *) pvParam;
     UnhandledExceptionLocation location = pParam->location;
 
-    _ASSERTE(!g_fNoExceptions);
-
     Thread* pThread = GetThread();
 
 #ifdef _DEBUG
@@ -5808,7 +5787,7 @@ LPVOID COMPlusCheckForAbort(UINT_PTR uTryCatchResumeAddress)
 
     // Reverse COM interop IL stubs map all exceptions to HRESULTs and must not propagate Thread.Abort
     // to their unmanaged callers.
-    if (uTryCatchResumeAddress != NULL)
+    if (uTryCatchResumeAddress != (UINT_PTR)NULL)
     {
         MethodDesc * pMDResumeMethod = ExecutionManager::GetCodeMethodDesc((PCODE)uTryCatchResumeAddress);
         if (pMDResumeMethod->IsILStub())
@@ -6737,14 +6716,6 @@ VEH_ACTION WINAPI CLRVectoredExceptionHandlerPhase3(PEXCEPTION_POINTERS pExcepti
 
 VEH_ACTION WINAPI CLRVectoredExceptionHandler(PEXCEPTION_POINTERS pExceptionInfo)
 {
-    // It is not safe to execute code inside VM after we shutdown EE.  One example is DisablePreemptiveGC
-    // will block forever.
-    if (g_fForbidEnterEE)
-    {
-        return VEH_CONTINUE_SEARCH;
-    }
-
-
     //
     // DO NOT USE CONTRACTS HERE AS THIS ROUTINE MAY NEVER RETURN.  You can use
     // static contracts, but currently this is all WRAPPER_NO_CONTRACT.
@@ -6796,12 +6767,19 @@ VEH_ACTION WINAPI CLRVectoredExceptionHandler(PEXCEPTION_POINTERS pExceptionInfo
 
     if (pExceptionInfo->ExceptionRecord->ExceptionCode == STATUS_RETURN_ADDRESS_HIJACK_ATTEMPT)
     {
+        if (pThread == NULL || !pThread->PreemptiveGCDisabled())
+        {
+            // We are not running managed code, so this cannot be our hijack
+            // Perhaps some other runtime is responsible.
+            return VEH_CONTINUE_SEARCH;
+        }
+
         HijackArgs hijackArgs;
         hijackArgs.Rax = pExceptionInfo->ContextRecord->Rax;
         hijackArgs.Rsp = pExceptionInfo->ContextRecord->Rsp;
 
-        bool areCetShadowStacksEnabled = Thread::AreCetShadowStacksEnabled();
-        if (areCetShadowStacksEnabled)
+        bool areShadowStacksEnabled = Thread::AreShadowStacksEnabled();
+        if (areShadowStacksEnabled)
         {
             // When the CET is enabled, the return address is still on stack, so we need to set the Rsp as
             // if it was popped.
@@ -6819,7 +6797,7 @@ VEH_ACTION WINAPI CLRVectoredExceptionHandler(PEXCEPTION_POINTERS pExceptionInfo
         #undef CALLEE_SAVED_REGISTER
         pExceptionInfo->ContextRecord->Rax = hijackArgs.Rax;
 
-        if (areCetShadowStacksEnabled)
+        if (areShadowStacksEnabled)
         {
             // The context refers to the return instruction
             // Set the return address on the stack to the original one
@@ -7434,12 +7412,6 @@ LONG WINAPI CLRVectoredExceptionHandlerShim(PEXCEPTION_POINTERS pExceptionInfo)
     // WARNING WARNING WARNING WARNING WARNING WARNING WARNING
     //
 
-    // If exceptions (or runtime) have been disabled, then simply return.
-    if (g_fForbidEnterEE || g_fNoExceptions)
-    {
-        return EXCEPTION_CONTINUE_SEARCH;
-    }
-
 #ifdef FEATURE_EH_FUNCLETS
     pExceptionInfo->ContextRecord->ContextFlags |= CONTEXT_EXCEPTION_ACTIVE;
 #endif // FEATURE_EH_FUNCLETS
@@ -7685,35 +7657,6 @@ void CLRAddVectoredHandlers(void)
     }
 
     LOG((LF_EH, LL_INFO100, "CLRAddVectoredHandlers: AddVectoredExceptionHandler() succeeded\n"));
-#endif // !TARGET_UNIX
-}
-
-// This function removes the vectored exception and continue handler registration
-// from the OS.
-void CLRRemoveVectoredHandlers(void)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-#ifndef TARGET_UNIX
-
-    // Unregister the vectored exception handler if one is registered (and we can).
-    if (g_hVectoredExceptionHandler != NULL)
-    {
-        // Unregister the vectored exception handler
-        if (RemoveVectoredExceptionHandler(g_hVectoredExceptionHandler) == FALSE)
-        {
-            LOG((LF_EH, LL_INFO100, "CLRRemoveVectoredHandlers: RemoveVectoredExceptionHandler() failed.\n"));
-        }
-        else
-        {
-            LOG((LF_EH, LL_INFO100, "CLRRemoveVectoredHandlers: RemoveVectoredExceptionHandler() succeeded.\n"));
-        }
-    }
 #endif // !TARGET_UNIX
 }
 

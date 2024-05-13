@@ -346,7 +346,6 @@ G_EXTERN_C
 extern void schedule_background_exec (void);
 
 // when this is called from ThreadPool, the cb would be System.Threading.ThreadPool.BackgroundJobHandler
-// when this is called from JSSynchronizationContext, the cb would be System.Runtime.InteropServices.JavaScript.JSSynchronizationContext.BackgroundJobHandler
 // when this is called from sgen it would be wrapper of sgen_perform_collection_inner
 // when this is called from gc, it would be mono_runtime_do_background_work
 #ifdef DISABLE_THREADS
@@ -354,77 +353,24 @@ void
 mono_main_thread_schedule_background_job (background_job_cb cb)
 {
 	g_assert (cb);
-	THREADS_DEBUG ("mono_main_thread_schedule_background_job2: thread %p queued job %p to current thread\n", (gpointer)pthread_self(), (gpointer) cb);
-	mono_current_thread_schedule_background_job (cb);
-}
-#endif /*DISABLE_THREADS*/
+	THREADS_DEBUG ("mono_main_thread_schedule_background_job: thread %p queued job %p to current thread\n", (gpointer)pthread_self(), (gpointer) cb);
 
-#ifndef DISABLE_THREADS
-MonoNativeTlsKey jobs_key;
-#else /* DISABLE_THREADS */
+	if (!jobs)
+		schedule_background_exec ();
+
+	if (!g_slist_find (jobs, (gconstpointer)cb))
+		jobs = g_slist_prepend (jobs, (gpointer)cb);
+}
+
 GSList *jobs;
-#endif /* DISABLE_THREADS */
-
-void
-mono_current_thread_schedule_background_job (background_job_cb cb)
-{
-	g_assert (cb);
-#ifdef DISABLE_THREADS
-
-	if (!jobs)
-		schedule_background_exec ();
-
-	if (!g_slist_find (jobs, (gconstpointer)cb))
-		jobs = g_slist_prepend (jobs, (gpointer)cb);
-
-#else /*DISABLE_THREADS*/
-
-	GSList *jobs = mono_native_tls_get_value (jobs_key);
-	THREADS_DEBUG ("mono_current_thread_schedule_background_job1: thread %p queuing job %p into %p\n", (gpointer)pthread_self(), (gpointer) cb, (gpointer) jobs);
-	if (!jobs)
-	{
-		THREADS_DEBUG ("mono_current_thread_schedule_background_job2: thread %p calling schedule_background_exec before job %p\n", (gpointer)pthread_self(), (gpointer) cb);
-		schedule_background_exec ();
-	}
-
-	if (!g_slist_find (jobs, (gconstpointer)cb))
-	{
-		jobs = g_slist_prepend (jobs, (gpointer)cb);
-		mono_native_tls_set_value (jobs_key, jobs);
-		THREADS_DEBUG ("mono_current_thread_schedule_background_job3: thread %p queued job %p\n", (gpointer)pthread_self(), (gpointer) cb);
-	}
-
-#endif /*DISABLE_THREADS*/
-}
-
-#ifndef DISABLE_THREADS
-void
-mono_target_thread_schedule_background_job (MonoNativeThreadId target_thread, background_job_cb cb)
-{
-	THREADS_DEBUG ("worker %p queued job %p to worker %p \n", (gpointer)pthread_self(), (gpointer) cb, (gpointer) target_thread);
-	// NOTE: here the cb is [UnmanagedCallersOnly] which wraps it with MONO_ENTER_GC_UNSAFE/MONO_EXIT_GC_UNSAFE
-	mono_threads_wasm_async_run_in_target_thread_vi ((pthread_t) target_thread, (void*)mono_current_thread_schedule_background_job, (gpointer)cb);
-}
-#endif /*DISABLE_THREADS*/
-
-G_EXTERN_C
-EMSCRIPTEN_KEEPALIVE void
-mono_background_exec (void);
 
 G_EXTERN_C
 EMSCRIPTEN_KEEPALIVE void
 mono_background_exec (void)
 {
 	MONO_ENTER_GC_UNSAFE;
-#ifdef DISABLE_THREADS
 	GSList *j = jobs, *cur;
 	jobs = NULL;
-#else /* DISABLE_THREADS */
-	THREADS_DEBUG ("mono_background_exec on thread %p started\n", (gpointer)pthread_self());
-	GSList *jobs = mono_native_tls_get_value (jobs_key);
-	GSList *j = jobs, *cur;
-	mono_native_tls_set_value (jobs_key, NULL);
-#endif /* DISABLE_THREADS */
 
 	for (cur = j; cur; cur = cur->next) {
 		background_job_cb cb = (background_job_cb)cur->data;
@@ -436,6 +382,17 @@ mono_background_exec (void)
 	g_slist_free (j);
 	MONO_EXIT_GC_UNSAFE;
 }
+
+#else /*DISABLE_THREADS*/
+
+extern void mono_wasm_schedule_synchronization_context ();
+
+void mono_target_thread_schedule_synchronization_context(MonoNativeThreadId target_thread)
+{
+	emscripten_dispatch_to_thread_async ((pthread_t) target_thread, EM_FUNC_SIG_V, mono_wasm_schedule_synchronization_context, NULL);
+}
+
+#endif /*DISABLE_THREADS*/
 
 gboolean
 mono_threads_platform_is_main_thread (void)
