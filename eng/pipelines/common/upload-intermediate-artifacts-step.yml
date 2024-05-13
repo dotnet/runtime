@@ -2,6 +2,7 @@ parameters:
   name: ''
   publishPackagesCondition: always()
   publishVSSetupCondition: false
+  isOfficialBuild: true
 
 steps:
 - task: CopyFiles@2
@@ -27,7 +28,7 @@ steps:
 
 - template: /eng/pipelines/common/templates/publish-build-artifacts.yml
   parameters:
-    isOfficialBuild: true
+    isOfficialBuild: ${{ parameters.isOfficialBuild }}
     displayName: Publish intermediate artifacts
     inputs:
       PathtoPublish: '$(Build.StagingDirectory)/IntermediateArtifacts'

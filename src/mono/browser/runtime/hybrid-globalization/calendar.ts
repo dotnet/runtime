@@ -2,23 +2,20 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 /* eslint-disable no-inner-declarations */
-import { mono_wasm_new_external_root } from "../roots";
-import { monoStringToString, stringToUTF16 } from "../strings";
-import { MonoObject, MonoObjectRef, MonoString, MonoStringRef } from "../types/internal";
-import { Int32Ptr } from "../types/emscripten";
-import { wrap_error_root, wrap_no_error_root } from "./helpers";
+import { stringToUTF16, stringToUTF16Ptr, utf16ToString } from "../strings";
+import { VoidPtrNull } from "../types/internal";
+import { Int32Ptr, VoidPtr } from "../types/emscripten";
 import { INNER_SEPARATOR, OUTER_SEPARATOR, normalizeSpaces } from "./helpers";
+import { setI32 } from "../memory";
 
 const MONTH_CODE = "MMMM";
 const YEAR_CODE = "yyyy";
 const DAY_CODE = "d";
 
 // this function joins all calendar info with OUTER_SEPARATOR into one string and returns it back to managed code
-export function mono_wasm_get_calendar_info (culture: MonoStringRef, calendarId: number, dst: number, dstLength: number, isException: Int32Ptr, exAddress: MonoObjectRef): number {
-    const cultureRoot = mono_wasm_new_external_root<MonoString>(culture),
-        exceptionRoot = mono_wasm_new_external_root<MonoObject>(exAddress);
+export function mono_wasm_get_calendar_info (culture: number, cultureLength: number, calendarId: number, dst: number, dstMaxLength: number, dstLength: Int32Ptr): VoidPtr {
     try {
-        const cultureName = monoStringToString(cultureRoot);
+        const cultureName = utf16ToString(<any>culture, <any>(culture + 2 * cultureLength));
         const locale = cultureName ? cultureName : undefined;
         const calendarInfo = {
             EnglishName: "",
@@ -56,18 +53,14 @@ export function mono_wasm_get_calendar_info (culture: MonoStringRef, calendarId:
         calendarInfo.AbbreviatedEraNames = eraNames.abbreviatedEraNames;
 
         const result = Object.values(calendarInfo).join(OUTER_SEPARATOR);
-        if (result.length > dstLength) {
-            throw new Error(`Calendar info exceeds length of ${dstLength}.`);
+        if (result.length > dstMaxLength) {
+            throw new Error(`Calendar info exceeds length of ${dstMaxLength}.`);
         }
         stringToUTF16(dst, dst + 2 * result.length, result);
-        wrap_no_error_root(isException, exceptionRoot);
-        return result.length;
+        setI32(dstLength, result.length);
+        return VoidPtrNull;
     } catch (ex: any) {
-        wrap_error_root(isException, ex, exceptionRoot);
-        return -1;
-    } finally {
-        cultureRoot.release();
-        exceptionRoot.release();
+        return stringToUTF16Ptr(ex.toString());
     }
 }
 
@@ -231,7 +224,7 @@ function getDayNames (locale: string | undefined) : { long: string[], abbreviate
     const dayNames = [];
     const dayNamesAbb = [];
     const dayNamesSS = [];
-    for(let i = 0; i < 7; i++) {
+    for (let i = 0; i < 7; i++) {
         dayNames[i] = weekDay.toLocaleDateString(locale, { weekday: "long" });
         dayNamesAbb[i] = weekDay.toLocaleDateString(locale, { weekday: "short" });
         dayNamesSS[i] = weekDay.toLocaleDateString(locale, { weekday: "narrow" });
@@ -251,7 +244,7 @@ function getMonthNames (locale: string | undefined) : { long: string[], abbrevia
     const monthsGen: string[] = [];
     const monthsAbbGen: string[] = [];
     let isChineeseStyle, isShortFormBroken;
-    for(let i = firstMonthShift; i < 12 + firstMonthShift; i++) {
+    for (let i = firstMonthShift; i < 12 + firstMonthShift; i++) {
         const monthCnt = i % 12;
         date.setMonth(monthCnt);
 

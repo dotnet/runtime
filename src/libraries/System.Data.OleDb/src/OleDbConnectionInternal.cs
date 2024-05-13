@@ -624,7 +624,7 @@ namespace System.Data.OleDb
 
                 UnsafeNativeMethods.IRowset? rowset = null;
                 OleDbHResult hr;
-                hr = dbSchemaRowset.GetRowset(IntPtr.Zero, ref schema, restrictions.Length, restrictions, ref ODB.IID_IRowset, 0, IntPtr.Zero, out rowset);
+                hr = dbSchemaRowset.GetRowset(IntPtr.Zero, in schema, restrictions.Length, restrictions, in ODB.IID_IRowset, 0, IntPtr.Zero, out rowset);
 
                 if (hr < 0)
                 { // ignore infomsg

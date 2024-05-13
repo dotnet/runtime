@@ -130,6 +130,10 @@ The toplevel dictionary will contain:
 * `"types": TYPES_DESCRIPTOR` see below
 * `"globals": GLOBALS_DESCRIPTOR` see below
 
+Additional toplevel keys may be present. For example, the in-memory data descriptor will contain a
+`"contracts"` key (see [contract descriptor](./contract_descriptor.md#Compatible_contracts)) for the
+set of compatible contracts.
+
 ### Baseline data descriptor identifier
 
 The in-memory descriptor may contain an optional string identifying a well-known baseline
@@ -243,9 +247,8 @@ Rationale: This allows tooling to generate the in-memory data descriptor as a si
 string.  For pointers, the address can be stored at a known offset in an in-proc
 array of pointers and the offset written into the constant JSON string.
 
-The indirection array is not part of the data descriptor spec.  It is expected that the data
-contract descriptor will include it. (The data contract descriptor must contain: the data
-descriptor, the set of compatible algorithmic contracts, the aux array of globals).
+The indirection array is not part of the data descriptor spec.  It is part of the [contract
+descriptor](./contract_descriptor.md#Contract_descriptor).
 
 
 

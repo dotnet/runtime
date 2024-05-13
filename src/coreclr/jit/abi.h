@@ -25,9 +25,13 @@ public:
     // If this segment is passed in a register, return the particular register.
     regNumber GetRegister() const;
 
+    regMaskTP GetRegisterMask() const;
+
     // If this segment is passed on the stack then return the particular stack
-    // offset, relative to the first stack argument's offset.
+    // offset, relative to the base of stack arguments.
     unsigned GetStackOffset() const;
+
+    var_types GetRegisterType() const;
 
     static ABIPassingSegment InRegister(regNumber reg, unsigned offset, unsigned size);
     static ABIPassingSegment OnStack(unsigned stackOffset, unsigned offset, unsigned size);
@@ -44,12 +48,29 @@ struct ABIPassingInformation
     // multiple register segments and a struct segment.
     // - On Windows x64, all parameters always fit into one stack slot or
     // register, and thus always have NumSegments == 1
-    unsigned           NumSegments = 0;
-    ABIPassingSegment* Segments    = nullptr;
+    // - On loongarch64/riscv64, structs can be passed in two registers or
+    // can be split out over register and stack, giving
+    // multiple register segments and a struct segment.
+    unsigned           NumSegments;
+    ABIPassingSegment* Segments;
 
+    ABIPassingInformation(unsigned numSegments = 0, ABIPassingSegment* segments = nullptr)
+        : NumSegments(numSegments)
+        , Segments(segments)
+    {
+    }
+
+    bool HasAnyRegisterSegment() const;
+    bool HasAnyStackSegment() const;
+    bool HasExactlyOneRegisterSegment() const;
+    bool HasExactlyOneStackSegment() const;
     bool IsSplitAcrossRegistersAndStack() const;
 
     static ABIPassingInformation FromSegment(Compiler* comp, const ABIPassingSegment& segment);
+
+#ifdef DEBUG
+    void Dump() const;
+#endif
 };
 
 class RegisterQueue
@@ -59,11 +80,13 @@ class RegisterQueue
     unsigned int     m_index = 0;
 
 public:
-    RegisterQueue(const regNumber* regs, unsigned int numRegs) : m_regs(regs), m_numRegs(numRegs)
+    RegisterQueue(const regNumber* regs, unsigned int numRegs)
+        : m_regs(regs)
+        , m_numRegs(numRegs)
     {
     }
 
-    unsigned Count()
+    unsigned Count() const
     {
         return m_numRegs - m_index;
     }
@@ -83,11 +106,17 @@ struct ClassifierInfo
 
 class X86Classifier
 {
-    RegisterQueue m_regs;
-    unsigned      m_stackArgSize = 0;
+    const ClassifierInfo& m_info;
+    RegisterQueue         m_regs;
+    unsigned              m_stackArgSize = 0;
 
 public:
     X86Classifier(const ClassifierInfo& info);
+
+    unsigned StackSize()
+    {
+        return m_stackArgSize;
+    }
 
     ABIPassingInformation Classify(Compiler*    comp,
                                    var_types    type,
@@ -99,10 +128,15 @@ class WinX64Classifier
 {
     RegisterQueue m_intRegs;
     RegisterQueue m_floatRegs;
-    unsigned      m_stackArgSize = 0;
+    unsigned      m_stackArgSize = 32;
 
 public:
     WinX64Classifier(const ClassifierInfo& info);
+
+    unsigned StackSize()
+    {
+        return m_stackArgSize;
+    }
 
     ABIPassingInformation Classify(Compiler*    comp,
                                    var_types    type,
@@ -118,6 +152,11 @@ class SysVX64Classifier
 
 public:
     SysVX64Classifier(const ClassifierInfo& info);
+
+    unsigned StackSize()
+    {
+        return m_stackArgSize;
+    }
 
     ABIPassingInformation Classify(Compiler*    comp,
                                    var_types    type,
@@ -135,6 +174,82 @@ class Arm64Classifier
 public:
     Arm64Classifier(const ClassifierInfo& info);
 
+    unsigned StackSize()
+    {
+        return roundUp(m_stackArgSize, TARGET_POINTER_SIZE);
+    }
+
+    ABIPassingInformation Classify(Compiler*    comp,
+                                   var_types    type,
+                                   ClassLayout* structLayout,
+                                   WellKnownArg wellKnownParam);
+};
+
+class Arm32Classifier
+{
+    const ClassifierInfo& m_info;
+    // 4 int regs are available for parameters. This gives the index of the
+    // next one.
+    // A.k.a. "NCRN": Next Core Register Number
+    unsigned m_nextIntReg = 0;
+    // 16 float regs are available for parameters. We keep them as a mask as
+    // they can be backfilled.
+    unsigned m_floatRegs = 0xFFFF;
+    // A.k.a. "NSAA": Next Stack Argument Address
+    unsigned m_stackArgSize = 0;
+
+    ABIPassingInformation ClassifyFloat(Compiler* comp, var_types type, unsigned elems);
+
+public:
+    Arm32Classifier(const ClassifierInfo& info);
+
+    unsigned StackSize()
+    {
+        return m_stackArgSize;
+    }
+
+    ABIPassingInformation Classify(Compiler*    comp,
+                                   var_types    type,
+                                   ClassLayout* structLayout,
+                                   WellKnownArg wellKnownParam);
+};
+
+class RiscV64Classifier
+{
+    const ClassifierInfo& m_info;
+    RegisterQueue         m_intRegs;
+    RegisterQueue         m_floatRegs;
+    unsigned              m_stackArgSize = 0;
+
+public:
+    RiscV64Classifier(const ClassifierInfo& info);
+
+    unsigned StackSize()
+    {
+        return m_stackArgSize;
+    }
+
+    ABIPassingInformation Classify(Compiler*    comp,
+                                   var_types    type,
+                                   ClassLayout* structLayout,
+                                   WellKnownArg wellKnownParam);
+};
+
+class LoongArch64Classifier
+{
+    const ClassifierInfo& m_info;
+    RegisterQueue         m_intRegs;
+    RegisterQueue         m_floatRegs;
+    unsigned              m_stackArgSize = 0;
+
+public:
+    LoongArch64Classifier(const ClassifierInfo& info);
+
+    unsigned StackSize()
+    {
+        return m_stackArgSize;
+    }
+
     ABIPassingInformation Classify(Compiler*    comp,
                                    var_types    type,
                                    ClassLayout* structLayout,
@@ -149,6 +264,12 @@ typedef WinX64Classifier PlatformClassifier;
 typedef SysVX64Classifier PlatformClassifier;
 #elif defined(TARGET_ARM64)
 typedef Arm64Classifier PlatformClassifier;
+#elif defined(TARGET_ARM)
+typedef Arm32Classifier PlatformClassifier;
+#elif defined(TARGET_RISCV64)
+typedef RiscV64Classifier PlatformClassifier;
+#elif defined(TARGET_LOONGARCH64)
+typedef LoongArch64Classifier PlatformClassifier;
 #endif
 
 #ifdef SWIFT_SUPPORT
@@ -157,8 +278,14 @@ class SwiftABIClassifier
     PlatformClassifier m_classifier;
 
 public:
-    SwiftABIClassifier(const ClassifierInfo& info) : m_classifier(info)
+    SwiftABIClassifier(const ClassifierInfo& info)
+        : m_classifier(info)
     {
+    }
+
+    unsigned StackSize()
+    {
+        return m_classifier.StackSize();
     }
 
     ABIPassingInformation Classify(Compiler*    comp,

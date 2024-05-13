@@ -40,6 +40,9 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [JSImport("intentionallyMissingImport", "JavaScriptTestHelper")]
         public static partial void IntentionallyMissingImport();
 
+        [JSImport("intentionallyMissingImportAsync", "JavaScriptTestHelper")]
+        public static partial Task IntentionallyMissingImportAsync();
+
         [JSImport("catch1toString", "JavaScriptTestHelper")]
         public static partial string catch1toString(string message, string functionName);
 
@@ -490,6 +493,8 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [return: JSMarshalAs<JSType.Number>]
         internal static partial int back3_FunctionIntInt([JSMarshalAs<JSType.Function<JSType.Number, JSType.Number>>] Func<int, int>? fun, [JSMarshalAs<JSType.Number>] int a);
 
+        [JSImport("back4", "JavaScriptTestHelper")]
+        internal static partial void back4_ActionIntLongDouble([JSMarshalAs<JSType.Function<JSType.Number, JSType.Number, JSType.Number>>] Action<int, long, double>? action, [JSMarshalAs<JSType.Number>] int a, [JSMarshalAs<JSType.Number>] long b, [JSMarshalAs<JSType.Number>] double c);
 
         [JSImport("invoke1", "JavaScriptTestHelper")]
         [return: JSMarshalAs<JSType.Function<JSType.Number, JSType.Number>>]

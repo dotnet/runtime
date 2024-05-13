@@ -17,6 +17,7 @@ import shutil
 import sys
 import zipfile
 import stat
+import tempfile
 
 from os import path
 from coreclr_arguments import *
@@ -124,39 +125,23 @@ def build_and_run(coreclr_args):
 
     checked_root = path.join(source_directory, "artifacts", "bin", "coreclr", target_os + "." + coreclr_args.arch + ".Checked")
     release_root = path.join(source_directory, "artifacts", "bin", "coreclr", target_os + "." + coreclr_args.arch + ".Release")
-    spmi_temp = path.join(source_directory, "artifacts", "spmi_aspnet_collection")
-
-    # Set up/clean up temp dir
-    if not os.path.exists(spmi_temp):
-        os.makedirs(spmi_temp)
-
-    def remove_readonly(func, path, _):
-        "Clear the readonly bit and reattempt the removal"
-        os.chmod(path, stat.S_IWRITE)
-        func(path)
-
-    spmi_temp_items = [os.path.join(spmi_temp, item) for item in os.listdir(spmi_temp)]
-    for item in spmi_temp_items:
-        if os.path.isdir(item):
-            shutil.rmtree(item, onerror=remove_readonly)
-        else:
-            os.remove(item)
 
     # We'll use repo script to install dotnet
     dotnet_install_script_name = "dotnet-install.cmd" if is_windows else "dotnet-install.sh"
     dotnet_install_script_path = path.join(source_directory, "eng", "common", dotnet_install_script_name)
 
-    with TempDir(spmi_temp, skip_cleanup=True) as temp_location:
+    with tempfile.TemporaryDirectory() as temp_location:
 
         print ("Executing in " + temp_location)
+        os.chdir(temp_location)
 
-        # install dotnet 6.0
-        run_command([dotnet_install_script_path, "-Version", "7.0.2"], temp_location, _exit_on_fail=True)
+        # install dotnet 8.0
+        run_command([dotnet_install_script_path, "-Version", "8.0.0"], temp_location, _exit_on_fail=True)
         os.environ['DOTNET_MULTILEVEL_LOOKUP'] = '0'
         os.environ['DOTNET_SKIP_FIRST_TIME_EXPERIENCE'] = '1'
         dotnet_path = path.join(source_directory, ".dotnet")
         dotnet_exe = path.join(dotnet_path, "dotnet.exe") if is_windows else path.join(dotnet_path, "dotnet")
-        run_command([dotnet_exe, "--info"], temp_location, _exit_on_fail=True)
+        # run_command([dotnet_exe, "--info"], temp_location, _exit_on_fail=True)
         os.environ['DOTNET_ROOT'] = dotnet_path
 
         ## install crank as local tool
@@ -190,24 +175,27 @@ def build_and_run(coreclr_args):
                                     ("proxy", "proxy-yarp"),
                                     ("staticfiles", "static"),
                                     ("websocket", "websocket"),
-                                    ("orchard", "about-sqlite")
+                                    ("orchard", "about-sqlite"),
+                                    ("signalr", "signalr"),
+                                    ("grpc", "grpcaspnetcoreserver-grpcnetclient"),
+                                    ("efcore", "NavigationsQuery"),
+                                    ("efcore", "Funcletization")
                                     ]
 
-        # configname_scenario_list = [("platform", "plaintext")]
+        # configname_scenario_list = [("quic", "read-write")]
 
         # note tricks to get one element tuples
 
         runtime_options_list = [
             ("Dummy=0",),
             ("TieredCompilation=0", ),
-            ("TieredPGO=1",),
+            ("TieredPGO=0",),
             ("TieredPGO=1", "ReadyToRun=0"),
             ("ReadyToRun=0", "OSR_HitLimit=0", "TC_OnStackReplacement_InitialCounter=10"),
-            ("TieredPGO=1", "ReadyToRun=0", "OSR_HitLimit=0", "TC_OnStackReplacement_InitialCounter=10"),
             ("TC_PartialCompilation=1",)
             ]
 
-        # runtime_options_list = [("TieredCompilation=0", )]
+        # runtime_options_list = [("Dummy=0", )]
 
         mch_file = path.join(coreclr_args.output_mch_path, "aspnet.run." + target_os + "." + target_arch + ".checked.mch")
         benchmark_machine = determine_benchmark_machine(coreclr_args)
@@ -287,6 +275,8 @@ def build_and_run(coreclr_args):
         print("Merged summary for " + mch_file)
         command = [mcs_path, "-jitflags", mch_file]
         run_command(command, temp_location)
+
+        os.chdir(source_directory )
 
 def main(main_args):
     """ Main entry point

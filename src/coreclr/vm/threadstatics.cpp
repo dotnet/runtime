@@ -52,11 +52,11 @@ void ThreadLocalBlock::FreeTLM(SIZE_T i, BOOL isThreadShuttingdown)
                         ThreadLocalModule::CollectibleDynamicEntry *entry = (ThreadLocalModule::CollectibleDynamicEntry*)pThreadLocalModule->m_pDynamicClassTable[k].m_pDynamicEntry;
                         PTR_LoaderAllocator pLoaderAllocator = entry->m_pLoaderAllocator;
 
-                        if (entry->m_hGCStatics != NULL)
+                        if (entry->m_hGCStatics != 0)
                         {
                             pLoaderAllocator->FreeHandle(entry->m_hGCStatics);
                         }
-                        if (entry->m_hNonGCStatics != NULL)
+                        if (entry->m_hNonGCStatics != 0)
                         {
                             pLoaderAllocator->FreeHandle(entry->m_hNonGCStatics);
                         }
@@ -125,7 +125,7 @@ void ThreadLocalBlock::EnsureModuleIndex(ModuleIndex index)
         return;
     }
 
-    SIZE_T aModuleIndices = max(16, m_TLMTableSize);
+    SIZE_T aModuleIndices = max((SIZE_T)16, m_TLMTableSize);
     while (aModuleIndices <= index.m_dwIndex)
     {
         aModuleIndices *= 2;
@@ -411,7 +411,7 @@ void    ThreadLocalModule::EnsureDynamicClassIndex(DWORD dwID)
         return;
     }
 
-    SIZE_T aDynamicEntries = max(16, m_aDynamicEntries);
+    SIZE_T aDynamicEntries = max((SIZE_T)16, m_aDynamicEntries);
     while (aDynamicEntries <= dwID)
     {
         aDynamicEntries *= 2;

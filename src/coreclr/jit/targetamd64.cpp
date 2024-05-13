@@ -39,7 +39,8 @@ const regMaskTP fltArgMasks[] = { RBM_XMM0, RBM_XMM1, RBM_XMM2, RBM_XMM3 };
 //   info - Info about the method being classified.
 //
 SysVX64Classifier::SysVX64Classifier(const ClassifierInfo& info)
-    : m_intRegs(intArgRegs, ArrLen(intArgRegs)), m_floatRegs(fltArgRegs, ArrLen(fltArgRegs))
+    : m_intRegs(intArgRegs, ArrLen(intArgRegs))
+    , m_floatRegs(fltArgRegs, ArrLen(fltArgRegs))
 {
 }
 
@@ -141,7 +142,8 @@ ABIPassingInformation SysVX64Classifier::Classify(Compiler*    comp,
 //   info - Info about the method being classified.
 //
 WinX64Classifier::WinX64Classifier(const ClassifierInfo& info)
-    : m_intRegs(intArgRegs, ArrLen(intArgRegs)), m_floatRegs(fltArgRegs, ArrLen(fltArgRegs))
+    : m_intRegs(intArgRegs, ArrLen(intArgRegs))
+    , m_floatRegs(fltArgRegs, ArrLen(fltArgRegs))
 {
 }
 

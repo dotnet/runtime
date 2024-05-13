@@ -727,8 +727,7 @@ void OpenScope(ISymUnmanagedScope                        *pIScope,
 char* DumpUnicodeString(void* GUICookie,
                         __inout __nullterminated char* szString,
                         _In_reads_(cbString) WCHAR* pszString,
-                        ULONG cbString,
-                        bool SwapString )
+                        ULONG cbString)
 {
     unsigned     i,L;
     char*   szStr=NULL, *szRet = NULL;
@@ -750,8 +749,7 @@ char* DumpUnicodeString(void* GUICookie,
 #endif
 
 #if BIGENDIAN
-    if (SwapString)
-        SwapStringLength(pszString, cbString);
+    SwapStringLength(pszString, cbString);
 #endif
 
     // first, check for embedded zeros:
@@ -782,7 +780,7 @@ DumpAsByteArray:
         strcat_s(szString,SZSTRING_SIZE," (");
 
 #if BIGENDIAN
-    SwapStringLength(pszString, cbString);
+        SwapStringLength(pszString, cbString);
 #endif
         DumpByteArray(szString,(BYTE*)pszString,cbString*sizeof(WCHAR),GUICookie);
         szRet = &szString[strlen(szString)];
@@ -1573,7 +1571,7 @@ BOOL Disassemble(IMDInternalImport *pImport, BYTE *ILHeader, void *GUICookie, md
                 if(f==0.0)
                     strcpy_s(szf,32,((v>>24)==0)? "0.0" : "-0.0");
                 else
-                    _gcvt_s(szf,32,(double)f, 8);
+                    sprintf_s(szf, 32, "%.*g", 8, (double)f);
                 float fd = (float)atof(szf);
                 // Must compare as underlying bytes, not floating point otherwise optimizer will
                 // try to enregister and compare 80-bit precision number with 32-bit precision number!!!!
@@ -1612,7 +1610,7 @@ BOOL Disassemble(IMDInternalImport *pImport, BYTE *ILHeader, void *GUICookie, md
                 if(d==0.0)
                     strcpy_s(szf,32,((v>>56)==0)? "0.0" : "-0.0");
                 else
-                    _gcvt_s(szf,32,d, 17);
+                    sprintf_s(szf, 32, "%.*g", 17, d);
                 double df = strtod(szf, &pch); //atof(szf);
                 // Must compare as underlying bytes, not floating point otherwise optimizer will
                 // try to enregister and compare 80-bit precision number with 64-bit precision number!!!!
@@ -2546,7 +2544,7 @@ void PrettyPrintToken(__inout __nullterminated char* szString, mdToken tk, IMDIn
             }
             if (pszString != NULL)
             {
-                DumpUnicodeString(GUICookie,szString,(WCHAR *)pszString,cbString, true);
+                DumpUnicodeString(GUICookie,szString,(WCHAR *)pszString,cbString);
             }
             else
             {

@@ -109,7 +109,7 @@ namespace Microsoft.Extensions
 
         public ISet<UnsupportedTypeInHashSet> UninstantiatedHashSetWithUnsupportedKey { get; set; }
 
-#if NETCOREAPP
+#if NET
         public IReadOnlySet<string> InstantiatedIReadOnlySet { get; set; } = new HashSet<string>();
         public IReadOnlySet<string> InstantiatedIReadOnlySetWithSomeValues { get; set; } =
             new HashSet<string>(new[] { "existing1", "existing2" });
