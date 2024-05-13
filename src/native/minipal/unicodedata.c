@@ -7,8 +7,7 @@
 // IF YOU NEED TO UPDATE UNICODE VERSION FOLLOW THE GUIDE AT src/libraries/System.Private.CoreLib/Tools/GenUnicodeProp/Updating-Unicode-Versions.md
 //
 
-#include <minipal/utf8.h>
-#include <inttypes.h>
+#include <minipal/strings.h>
 
 typedef struct
 {

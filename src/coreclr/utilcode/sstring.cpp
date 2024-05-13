@@ -10,7 +10,7 @@
 #include "sstring.h"
 #include "ex.h"
 #include "holder.h"
-#include <minipal/utf8.h>
+#include <minipal/strings.h>
 
 #if defined(_MSC_VER)
 #pragma inline_depth (25)

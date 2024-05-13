@@ -14,7 +14,7 @@
 #include <string.h>
 #include <errno.h>
 #include <limits.h>
-#include <minipal/utf8.h>
+#include <minipal/strings.h>
 #include "internal_securecrt.h"
 
 #include "mbusafecrt_internal.h"
