@@ -161,7 +161,7 @@ const wasmImports: Function[] = [
     ...mono_wasm_imports,
     // threading exports, if threading is enabled
     ...mono_wasm_threads_imports,
-    // hybrid globalization exports, if HG is enabled (curently if MT is disabled)
+    // hybrid globalization exports
     ...mono_wasm_hybrid_globalization_imports,
 ];
 

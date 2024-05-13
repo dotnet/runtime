@@ -76,11 +76,10 @@ function createWasmImportStubsFrom(collection) {
 // we will replace them with the real implementation in replace_linker_placeholders
 function injectDependencies() {
     createWasmImportStubsFrom(methodIndexByName.mono_wasm_imports);
+    createWasmImportStubsFrom(methodIndexByName.mono_wasm_hybrid_globalization_imports);
 
     #if USE_PTHREADS
     createWasmImportStubsFrom(methodIndexByName.mono_wasm_threads_imports);
-    #else
-    createWasmImportStubsFrom(methodIndexByName.mono_wasm_hybrid_globalization_imports);
     #endif
 
     DotnetSupportLib["$DOTNET__postset"] = `DOTNET.setup({ ` +
