@@ -8,10 +8,28 @@ using System.Threading;
 
 namespace System.Runtime.Loader
 {
-    internal struct TPAEntry
+    internal sealed class TPAEntry
     {
         public string? ILFileName;
         public string? NIFileName;
+    }
+
+    internal sealed class FailureCacheKey : IEquatable<FailureCacheKey>
+    {
+        public readonly string SimpleName;
+        public readonly AssemblyVersion AssemblyVersion;
+
+        public FailureCacheKey(string simpleName, AssemblyVersion AssemblyVersion)
+        {
+            SimpleName = simpleName;
+            this.AssemblyVersion = AssemblyVersion;
+        }
+
+        public override bool Equals(object? obj) => obj is FailureCacheKey other && Equals(other);
+
+        public bool Equals(FailureCacheKey? other) => other != null && SimpleName == other.SimpleName && AssemblyVersion.Equals(other.AssemblyVersion);
+
+        public override int GetHashCode() => HashCode.Combine(SimpleName, AssemblyVersion.Major, AssemblyVersion.Minor, AssemblyVersion.Build, AssemblyVersion.Revision);
     }
 
     internal sealed class ApplicationContext
@@ -22,7 +40,7 @@ namespace System.Runtime.Loader
 
         public Dictionary<BinderAssemblyName, BinderAssembly> ExecutionContext { get; } = new Dictionary<BinderAssemblyName, BinderAssembly>();
 
-        public Dictionary<(string SimpleName, AssemblyVersion Version), int> FailureCache { get; } = new Dictionary<(string SimpleName, AssemblyVersion Version), int>();
+        public Dictionary<FailureCacheKey, int> FailureCache { get; } = new Dictionary<FailureCacheKey, int>();
 
         public object ContextCriticalSection { get; } = new object();
 
@@ -204,7 +222,7 @@ namespace System.Runtime.Loader
                         break;
                     }
 
-                    if (TrustedPlatformAssemblyMap.TryGetValue(simpleName, out TPAEntry existingEntry))
+                    if (TrustedPlatformAssemblyMap.TryGetValue(simpleName, out TPAEntry? existingEntry))
                     {
                         //
                         // We want to store only the first entry matching a simple name we encounter.
@@ -221,10 +239,12 @@ namespace System.Runtime.Loader
 
                     if (isNativeImage)
                     {
+                        existingEntry ??= new TPAEntry();
                         existingEntry.NIFileName = fileName;
                     }
                     else
                     {
+                        existingEntry ??= new TPAEntry();
                         existingEntry.ILFileName = fileName;
                     }
 
@@ -274,7 +294,7 @@ namespace System.Runtime.Loader
 
         public void AddToFailureCache(BinderAssemblyName assemblyName, int hresult)
         {
-            FailureCache.Add((assemblyName.SimpleName, assemblyName.Version), hresult);
+            FailureCache.Add(new FailureCacheKey(assemblyName.SimpleName, assemblyName.Version), hresult);
             IncrementVersion();
         }
     }
