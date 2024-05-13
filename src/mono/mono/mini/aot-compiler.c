@@ -4833,62 +4833,16 @@ mono_aot_can_enter_interp (MonoMethod *method)
 }
 
 static MonoMethod*
-inflate_unsafe_accessor_like_decl (MonoMethod *extern_method_inst, MonoUnsafeAccessorKind accessor_kind, const char *member_name, MonoError *error)
-{
-	g_assert (extern_method_inst->is_inflated);
-	MonoMethodInflated *infl = (MonoMethodInflated*)extern_method_inst;
-	MonoMethod *extern_decl = infl->declaring;
-	MonoMethod *generic_wrapper = mono_marshal_get_unsafe_accessor_wrapper (extern_decl, accessor_kind, member_name);
-	MonoGenericContext *ctx = &infl->context;
-	MonoMethod *inflated_wrapper = mono_class_inflate_generic_method_checked (generic_wrapper, ctx, error);
-	return inflated_wrapper;
-}
-
-/**
- * Replaces some extern \c method by a wrapper.
- *
- * Unsafe accessor methods are static extern methods with no header.  Calls to
- * them are replaced by calls to a wrapper.  So during AOT compilation when we
- * collect methods to AOT, we replace these methods by the wrappers, too.
- *
- * Returns the wrapper method, or \c NULL if it doesn't need to be replaced.
- * On error returns NULL and sets \c error.
- */
-static MonoMethod*
 replace_generated_method (MonoAotCompile *acfg, MonoMethod *method, MonoError *error)
 {
-	if (G_LIKELY (mono_method_metadata_has_header (method)))
-		return NULL;
-
-	/* Unsafe accessors methods.  Replace attempts to compile the accessor method by
-	 * its wrapper.
-	 */
-	char *member_name = NULL;
-	int accessor_kind = -1;
-	if (mono_method_get_unsafe_accessor_attr_data (method, &accessor_kind, &member_name, error)) {
-		MonoMethod *wrapper = NULL;
-		if (method->is_inflated) {
-			wrapper = inflate_unsafe_accessor_like_decl (method, (MonoUnsafeAccessorKind)accessor_kind, member_name, error);
-		} else {
-			wrapper = mono_marshal_get_unsafe_accessor_wrapper (method, (MonoUnsafeAccessorKind)accessor_kind, member_name);
-		}
-		if (is_ok (error)) {
-			if (mono_trace_is_traced (G_LOG_LEVEL_INFO, MONO_TRACE_AOT)) {
-				char * method_name = mono_method_get_full_name (wrapper);
-				mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_AOT, "Replacing generated method by %s", method_name);
-				g_free (method_name);
-			}
-			return wrapper;
-		}
-	}
-
+	MonoMethod *wrapper = mini_replace_generated_method (method, error);
 	if (!is_ok (error)) {
 		char *method_name = mono_method_get_full_name (method);
 		aot_printerrf (acfg, "Could not get generated wrapper for %s due to %s", method_name, mono_error_get_message (error));
 		g_free (method_name);
 	}
 
-	return NULL;
+	return wrapper;
 }
 
 static void

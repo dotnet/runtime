@@ -941,14 +941,6 @@ typedef struct {
 	gboolean no_aot_trampoline;
 } MethodRef;
 
-static MonoMethod*
-inflate_unsafe_accessor_wrapper (MonoMethod *extern_decl, MonoGenericContext *ctx, MonoUnsafeAccessorKind accessor_kind, const char *member_name, MonoError *error)
-{
-	MonoMethod *generic_wrapper = mono_marshal_get_unsafe_accessor_wrapper (extern_decl, accessor_kind, member_name);
-	MonoMethod *inflated_wrapper = mono_class_inflate_generic_method_checked (generic_wrapper, ctx, error);
-	return inflated_wrapper;
-}
-
 /*
  * decode_method_ref_with_target:
  *
@@ -1096,7 +1088,7 @@ decode_method_ref_with_target (MonoAotModule *module, MethodRef *ref, MonoMethod
 					MonoGenericContext ctx = {0,};
 					decode_generic_context (module, &ctx, p, &p, error);
 					mono_error_assert_ok (error);
-					ref->method = inflate_unsafe_accessor_wrapper (m, &ctx, kind, member_name, error);
+					ref->method = mini_inflate_unsafe_accessor_wrapper (m, &ctx, kind, member_name, error);
 					if (!is_ok (error))
 						return FALSE;
 				} else {
@@ -4609,50 +4601,6 @@ inst_is_private (MonoGenericInst *inst)
 	return FALSE;
 }
 
-static MonoMethod*
-inflate_unsafe_accessor_like_decl (MonoMethod *extern_method_inst, MonoUnsafeAccessorKind accessor_kind, const char *member_name, MonoError *error)
-{
-	g_assert (extern_method_inst->is_inflated);
-	MonoMethodInflated *infl = (MonoMethodInflated*)extern_method_inst;
-	MonoMethod *extern_decl = infl->declaring;
-	MonoMethod *generic_wrapper = mono_marshal_get_unsafe_accessor_wrapper (extern_decl, accessor_kind, member_name);
-	MonoGenericContext *ctx = &infl->context;
-	MonoMethod *inflated_wrapper = mono_class_inflate_generic_method_checked (generic_wrapper, ctx, error);
-	return inflated_wrapper;
-}
-
-static MonoMethod*
-replace_generated_method (MonoMethod *method, MonoError *error)
-{
-	if (G_LIKELY (mono_method_metadata_has_header (method)))
-		return NULL;
-
-	/* Unsafe accessors methods.  Replace attempts to compile the accessor method by
-	 * its wrapper.
-	 */
-	char *member_name = NULL;
-	int accessor_kind = -1;
-	if (mono_method_get_unsafe_accessor_attr_data (method, &accessor_kind, &member_name, error)) {
-		MonoMethod *wrapper = NULL;
-		if (method->is_inflated) {
-			wrapper = inflate_unsafe_accessor_like_decl (method, (MonoUnsafeAccessorKind)accessor_kind, member_name, error);
-		} else {
-			wrapper = mono_marshal_get_unsafe_accessor_wrapper (method, (MonoUnsafeAccessorKind)accessor_kind, member_name);
-		}
-		if (is_ok (error)) {
-			if (mono_trace_is_traced (G_LOG_LEVEL_INFO, MONO_TRACE_AOT)) {
-				char * method_name = mono_method_get_full_name (wrapper);
-				mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_AOT, "Replacing generated method by %s", method_name);
-				g_free (method_name);
-			}
-			return wrapper;
-		}
-	}
-
-	return NULL;
-}
-
-
 gboolean
 mono_aot_can_dedup (MonoMethod *method)
 {
@@ -5122,7 +5070,7 @@ mono_aot_get_method (MonoMethod *method, MonoError *error)
 				method = shared;
 			if (method_index == 0xffffff && !mono_method_metadata_has_header (method)) {
 				// replace lookups for unsafe accessor instances by lookups of the wrapper
-				MonoMethod *wrapper = replace_generated_method (method, error);
+				MonoMethod *wrapper = mini_replace_generated_method (method, error);
 				mono_error_assert_ok (error);
 				if (wrapper != NULL) {
 					shared = mini_get_shared_method_full (wrapper, SHARE_MODE_NONE, error);
@@ -5141,7 +5089,7 @@ mono_aot_get_method (MonoMethod *method, MonoError *error)
 			/* Use the all-vt shared method since this is what was AOTed */
 			shared = mini_get_shared_method_full (method, SHARE_MODE_GSHAREDVT, error);
 			if (shared && !mono_method_metadata_has_header (shared)) {
-				MonoMethod *wrapper = replace_generated_method (shared, error);
+				MonoMethod *wrapper = mini_replace_generated_method (shared, error);
 				mono_error_assert_ok (error);
 				if (wrapper != NULL) {
 					shared = mini_get_shared_method_full (wrapper, SHARE_MODE_GSHAREDVT, error);
@@ -5168,7 +5116,7 @@ mono_aot_get_method (MonoMethod *method, MonoError *error)
 
 		if (method_index == 0xffffff && !mono_method_metadata_has_header (method)) {
 			// replace lookups for unsafe accessor instances by lookups of the wrapper
-			MonoMethod *wrapper = replace_generated_method (method, error);
+			MonoMethod *wrapper = mini_replace_generated_method (method, error);
 			mono_error_assert_ok (error);
 			if (wrapper != NULL) {
 				method_index = find_aot_method (wrapper, &amodule);
