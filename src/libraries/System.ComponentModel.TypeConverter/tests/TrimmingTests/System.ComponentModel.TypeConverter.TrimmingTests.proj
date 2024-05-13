@@ -12,7 +12,6 @@
     <TestConsoleAppSourceFiles Include="TypeDescriptorTest_FeatureSwitch_Unregistered.cs">
       <EnabledFeatureSwitches>System.ComponentModel.TypeDescriptor.RequireRegisteredTypes</EnabledFeatureSwitches>
     </TestConsoleAppSourceFiles>
-    <TestConsoleAppSourceFiles Include="TypeDescriptorTest_NullableConverter.cs" />
     <TestConsoleAppSourceFiles Include="TypeDescriptorTest_Registered.cs" />
     <TestConsoleAppSourceFiles Include="TypeDescriptorTest_Unregistered.cs" />
   </ItemGroup>

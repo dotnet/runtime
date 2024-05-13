@@ -11,7 +11,7 @@ namespace System.ComponentModel.Tests
     {
         private const string TypeDescriptorRequireRegisteredTypesSwitchName = "System.ComponentModel.TypeDescriptor.RequireRegisteredTypes";
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public static void ApplyResourcesToRegisteredType_NotRegistered()
         {
             RemoteExecutor.Invoke(() =>
@@ -21,7 +21,7 @@ namespace System.ComponentModel.Tests
             }).Dispose();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public static void ApplyResourcesToRegisteredType_Registered()
         {
             RemoteExecutor.Invoke(() =>
@@ -32,7 +32,7 @@ namespace System.ComponentModel.Tests
             }).Dispose();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public static void GetMembersWithRegisteredType_NotRegistered()
         {
             RemoteExecutor.Invoke(() =>
@@ -64,7 +64,7 @@ namespace System.ComponentModel.Tests
             }, options).Dispose();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public static void GetMembers_NotRegistered()
         {
             RemoteExecutor.Invoke(() =>
@@ -176,20 +176,25 @@ namespace System.ComponentModel.Tests
             }, options).Dispose();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public static void GetPropertiesFromRegisteredTypeInstance()
         {
-            TypeDescriptor.RegisterType<C1>();
-            TypeDescriptor.RegisterType<C2>();
+            RemoteInvokeOptions options = new RemoteInvokeOptions();
 
-            PropertyDescriptorCollection properties = TypeDescriptor.GetPropertiesFromRegisteredType(new C1());
-            Assert.Equal("Int32", properties[0].Name);
-            Assert.Equal("Class", properties[1].Name);
-            Assert.Equal(2, properties[1].GetChildProperties().Count);
-            Assert.Equal("Bool", properties[1].GetChildProperties()[0].Name);
+            RemoteExecutor.Invoke(() =>
+            {
+                TypeDescriptor.RegisterType<C1>();
+                TypeDescriptor.RegisterType<C2>();
 
-            // Even though C1.Class.Base is not explictely registered, we should still be able to get the properties of Base.
-            Assert.Equal("String", properties[1].GetChildProperties()[1].Name);
+                PropertyDescriptorCollection properties = TypeDescriptor.GetPropertiesFromRegisteredType(new C1());
+                Assert.Equal("Int32", properties[0].Name);
+                Assert.Equal("Class", properties[1].Name);
+                Assert.Equal(2, properties[1].GetChildProperties().Count);
+                Assert.Equal("Bool", properties[1].GetChildProperties()[0].Name);
+
+                // Even though C1.Class.Base is not explictely registered, we should still be able to get the properties of Base.
+                Assert.Equal("String", properties[1].GetChildProperties()[1].Name);
+            }).Dispose();
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
@@ -248,7 +253,7 @@ namespace System.ComponentModel.Tests
             }, options).Dispose();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public static void LegacyProviders_DotNotThrowWhenNoFeatureSwitch()
         {
             RemoteExecutor.Invoke(() =>
@@ -291,9 +296,73 @@ namespace System.ComponentModel.Tests
             RemoteExecutor.Invoke(() =>
             {
                 TypeDescriptor.RegisterType<C1>();
-                TypeDescriptionProvider provider = TypeDescriptor.GetProvider(new C1());
+                C1 obj = new C1();
+                TypeDescriptionProvider provider = TypeDescriptor.GetProvider(obj);
                 Assert.NotNull(provider);
+
+                ICustomTypeDescriptor instanceDescriptor = provider.GetExtendedTypeDescriptor(obj);
+                Assert.Equal(0, instanceDescriptor.GetProperties().Count);
+                Assert.Throws<NotImplementedException>(() => instanceDescriptor.GetPropertiesFromRegisteredType().Count);
+                Assert.Equal(0, instanceDescriptor.GetEvents().Count);
+                Assert.Throws<NotImplementedException>(() => instanceDescriptor.GetEventsFromRegisteredType().Count);
+                Assert.NotNull(instanceDescriptor.GetConverterFromRegisteredType());
+
+                instanceDescriptor = provider.GetTypeDescriptor(obj);
+                Assert.Equal(2, instanceDescriptor.GetProperties().Count);
+                Assert.Equal(2, instanceDescriptor.GetPropertiesFromRegisteredType().Count);
+                Assert.Equal(2, instanceDescriptor.GetEvents().Count);
+                Assert.Equal(2, instanceDescriptor.GetEventsFromRegisteredType().Count);
+                Assert.NotNull(instanceDescriptor.GetConverterFromRegisteredType());
             }, options).Dispose();
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public static void VerifyNullableUnderlying_Registered()
+        {
+            RemoteInvokeOptions options = new RemoteInvokeOptions();
+            options.RuntimeConfigurationOptions[TypeDescriptorRequireRegisteredTypesSwitchName] = bool.TrueString;
+
+            RemoteExecutor.Invoke(() =>
+            {
+                TypeDescriptor.RegisterType<ClassWithGenericProperty>();
+                TypeDescriptor.RegisterType<MyStruct>();
+
+                PropertyDescriptorCollection properties = TypeDescriptor.GetProperties(GetType_ClassWithGenericProperty());
+                Assert.Equal(1, properties.Count);
+                Assert.Equal("NullableStruct", properties[0].Name);
+                Assert.NotNull(properties[0].Converter);
+
+                static Type GetType_ClassWithGenericProperty() => typeof(ClassWithGenericProperty);
+            }, options).Dispose();
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public static void VerifyNullableUnderlying_NotRegistered()
+        {
+            RemoteInvokeOptions options = new RemoteInvokeOptions();
+            options.RuntimeConfigurationOptions[TypeDescriptorRequireRegisteredTypesSwitchName] = bool.TrueString;
+
+            RemoteExecutor.Invoke(() =>
+            {
+                TypeDescriptor.RegisterType<ClassWithGenericProperty>();
+
+                PropertyDescriptorCollection properties = TypeDescriptor.GetProperties(GetType_ClassWithGenericProperty());
+                Assert.Equal(1, properties.Count);
+                Assert.Equal("NullableStruct", properties[0].Name);
+
+                Assert.Throws<InvalidOperationException>(() => properties[0].Converter);
+
+                static Type GetType_ClassWithGenericProperty() => typeof(ClassWithGenericProperty);
+            }, options).Dispose();
+        }
+
+        internal class MyStruct
+        {
+        }
+
+        class ClassWithGenericProperty
+        {
+            public MyStruct? NullableStruct { get; set; }
         }
 
         private sealed class EmptyCustomTypeDescriptor : CustomTypeDescriptor { }

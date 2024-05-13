@@ -932,7 +932,7 @@ namespace System.ComponentModel
                 {
                     Debug.Assert(td != null);
 
-                    if (TypeDescriptor.RequireRegisteredTypes && !td.IsRegisteredAsRegisteredType && !IsIntrinsicType(type))
+                    if (TypeDescriptor.RequireRegisteredTypes && !td.IsRegistered && !IsIntrinsicType(type))
                     {
                         TypeDescriptor.ThrowHelper.ThrowInvalidOperationException_RegisterTypeRequired(type);
                     }
@@ -971,7 +971,7 @@ namespace System.ComponentModel
                 td = null;
             }
 
-            if (!td.IsRegisteredAsRegisteredType && !IsIntrinsicType(type))
+            if (!td.IsRegistered && !IsIntrinsicType(type))
             {
                 TypeDescriptor.ThrowHelper.ThrowInvalidOperationException_RegisterTypeRequired(type);
             }

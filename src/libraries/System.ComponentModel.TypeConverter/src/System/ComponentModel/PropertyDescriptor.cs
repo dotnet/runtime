@@ -101,12 +101,14 @@ namespace System.ComponentModel
                     TypeConverterAttribute attr = (TypeConverterAttribute)attrs[typeof(TypeConverterAttribute)]!;
                     if (attr.ConverterTypeName != null && attr.ConverterTypeName.Length > 0)
                     {
-                        TypeDescriptor.ValidateRegisteredType(PropertyType);
+                        // We don't validate that the type is registered since the trimmer
+                        // does not remove custom attributes that references the converter.
                         _converter = CreateConverterFromTypeName(attr);
                     }
 
                     _converter ??= TypeDescriptor.GetConverterFromRegisteredType(PropertyType);
                 }
+
                 return _converter;
 
                 [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",

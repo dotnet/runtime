@@ -973,7 +973,7 @@ namespace System.ComponentModel
         /// Performs arg checking so callers don't have to.
         /// </summary>
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2067:UnrecognizedReflectionPattern",
-            Justification = "The type has [DynamicallyAccessedMemberTypes].")]
+            Justification = "The type will be validated to see if it was registered.")]
         private static DefaultTypeDescriptor GetDescriptorFromRegisteredType(Type type,
             string typeName)
         {

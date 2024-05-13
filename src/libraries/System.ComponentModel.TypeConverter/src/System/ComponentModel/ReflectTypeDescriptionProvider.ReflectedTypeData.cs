@@ -25,12 +25,12 @@ namespace System.ComponentModel
             private object[]? _editors;
             private Type[]? _editorTypes;
             private int _editorCount;
-            private bool _isRegisteredAsRegisteredType;
+            private bool _isRegistered;
 
             internal ReflectedTypeData(Type type, bool isRegisteredType)
             {
                 _type = type;
-                _isRegisteredAsRegisteredType = isRegisteredType;
+                _isRegistered = isRegisteredType;
             }
 
             /// <summary>
@@ -39,7 +39,7 @@ namespace System.ComponentModel
             /// </summary>
             internal bool IsPopulated => (_attributes != null) | (_events != null) | (_properties != null);
 
-            internal bool IsRegisteredAsRegisteredType => _isRegisteredAsRegisteredType;
+            internal bool IsRegistered => _isRegistered;
 
             /// <summary>
             /// Retrieves custom attributes.
@@ -199,7 +199,7 @@ namespace System.ComponentModel
                         Type? converterType = GetTypeFromName(instanceAttr.ConverterTypeName);
                         if (converterType != null && typeof(TypeConverter).IsAssignableFrom(converterType))
                         {
-                            if (verifyIsRegisteredType && !_isRegisteredAsRegisteredType && !IsIntrinsicType(_type))
+                            if (verifyIsRegisteredType && !_isRegistered && !IsIntrinsicType(_type))
                             {
                                 TypeDescriptor.ThrowHelper.ThrowInvalidOperationException_RegisterTypeRequired(_type);
                             }
@@ -233,7 +233,7 @@ namespace System.ComponentModel
                     }
                 }
 
-                if (verifyIsRegisteredType && !_isRegisteredAsRegisteredType && !IsIntrinsicType(_type))
+                if (verifyIsRegisteredType && !_isRegistered && !IsIntrinsicType(_type))
                 {
                     TypeDescriptor.ThrowHelper.ThrowInvalidOperationException_RegisterTypeRequired(_type);
                 }
