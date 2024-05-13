@@ -60,9 +60,6 @@ private:
     // Bit mask used in zeroing the 3rd element of a SIMD12
     CORINFO_FIELD_HANDLE zroSimd12Elm3;
 
-    // Bit mask used in U8 -> double conversion to adjust the result.
-    CORINFO_FIELD_HANDLE u8ToDblBitmask;
-
     // Generates SSE2 code for the given tree as "Operand BitWiseOp BitMask"
     void genSSE2BitwiseOp(GenTree* treeNode);
 

@@ -7531,48 +7531,51 @@ void CodeGen::genIntToFloatCast(GenTree* treeNode)
 
     // integral to floating-point conversions all have RMW semantics if VEX support
     // is not available
+    const bool isRMW = !compiler->canUseVexEncoding();
 
-    bool isRMW = !compiler->canUseVexEncoding();
-    inst_RV_RV_TT(ins, emitTypeSize(srcType), targetReg, targetReg, op1, isRMW, INS_OPTS_NONE);
-
-    // Handle the case of srcType = TYP_ULONG. SSE2 conversion instruction
-    // will interpret ULONG value as LONG.  Hence we need to adjust the
-    // result if sign-bit of srcType is set.
     if (srcType == TYP_ULONG)
     {
-        // The instruction sequence below is less accurate than what clang
-        // and gcc generate. However, we keep the current sequence for backward compatibility.
-        // If we change the instructions below, FloatingPointUtils::convertUInt64ToDobule
-        // should be also updated for consistent conversion result.
+        // FloatingPointUtils::convertUInt64ToDobule
         assert(dstType == TYP_DOUBLE);
         assert(op1->isUsedFromReg());
 
-        // Set the flags without modifying op1.
-        // test op1Reg, op1Reg
-        inst_RV_RV(INS_test, op1->GetRegNum(), op1->GetRegNum(), srcType);
+        // The following LONG->DOUBLE cast machinery is based on clang's implementation
+        // with "-ffp-model=strict" flag:
+        //
+        //   mov      tmp1, arg (8 byte)
+        //   shr      tmp1
+        //   mov      tmp2, arg (4 byte)
+        //   and      tmp2, 1
+        //   or       tmp2, tmp1
+        //   test     arg,  arg
+        //   cmovns   tmp2, arg
+        //   cvtsi2sd xmm0, tmp2
+        //   jns     .LABEL
+        //   addsd    xmm0, xmm0
+        //.LABEL
+        //
+        regNumber argReg  = treeNode->gtGetOp1()->GetRegNum();
+        regNumber tmpReg1 = internalRegisters.Extract(treeNode);
+        regNumber tmpReg2 = internalRegisters.Extract(treeNode);
 
-        // No need to adjust result if op1 >= 0 i.e. positive
-        // Jge label
+        inst_Mov(TYP_LONG, tmpReg1, argReg, /* canSkip */ false, EA_8BYTE);
+        inst_RV_SH(INS_shr, EA_8BYTE, tmpReg1, 1);
+        inst_Mov(TYP_INT, tmpReg2, argReg, /* canSkip */ false, EA_4BYTE);
+        GetEmitter()->emitIns_R_I(INS_and, EA_4BYTE, tmpReg2, 1);
+        GetEmitter()->emitIns_R_R(INS_or, EA_8BYTE, tmpReg2, tmpReg1);
+        GetEmitter()->emitIns_R_R(INS_test, EA_8BYTE, argReg, argReg);
+        GetEmitter()->emitIns_R_R(INS_cmovns, EA_8BYTE, tmpReg2, argReg);
+        GetEmitter()->emitIns_R_R(INS_cvtsi2sd64, EA_8BYTE, targetReg, tmpReg2);
+
         BasicBlock* label = genCreateTempLabel();
-        inst_JMP(EJ_jge, label);
-
-        // Adjust the result
-        // result = result + 0x43f00000 00000000
-        // addsd resultReg,  0x43f00000 00000000
-        CORINFO_FIELD_HANDLE* cns = &u8ToDblBitmask;
-        if (*cns == nullptr)
-        {
-            double d;
-            static_assert_no_msg(sizeof(double) == sizeof(__int64));
-            *((__int64*)&d) = 0x43f0000000000000LL;
-
-            *cns = GetEmitter()->emitFltOrDblConst(d, EA_8BYTE);
-        }
-        GetEmitter()->emitIns_SIMD_R_R_C(INS_addsd, EA_8BYTE, targetReg, targetReg, *cns, 0, INS_OPTS_NONE);
-
+        inst_JMP(EJ_jns, label);
+        GetEmitter()->emitIns_R_R(INS_addsd, EA_8BYTE, targetReg, targetReg);
         genDefineTempLabel(label);
     }
-
+    else
+    {
+        inst_RV_RV_TT(ins, emitTypeSize(srcType), targetReg, targetReg, op1, isRMW, INS_OPTS_NONE);
+    }
     genProduceReg(treeNode);
 }
 

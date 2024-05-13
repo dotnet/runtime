@@ -202,7 +202,6 @@ CodeGen::CodeGen(Compiler* theCompiler)
     absBitmaskFlt  = nullptr;
     absBitmaskDbl  = nullptr;
     zroSimd12Elm3  = nullptr;
-    u8ToDblBitmask = nullptr;
 #endif // defined(TARGET_XARCH)
 
 #if defined(FEATURE_PUT_STRUCT_ARG_STK) && !defined(TARGET_X86)
