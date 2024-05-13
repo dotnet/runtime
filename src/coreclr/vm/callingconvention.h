@@ -529,7 +529,13 @@ public:
         // Composites greater than 16 bytes are passed by reference
         return (size > ENREGISTERED_PARAMTYPE_MAXSIZE);
 #elif defined(TARGET_RISCV64)
-        return (size > ENREGISTERED_PARAMTYPE_MAXSIZE);
+        if (th.GetSignatureCorElementType() == ELEMENT_TYPE_VALUETYPE)
+        {
+            int flags = MethodTable::GetRiscV64PassStructInRegisterFlags(th);
+            return (flags == STRUCT_NO_FLOAT_FIELD) && (size > ENREGISTERED_PARAMTYPE_MAXSIZE);
+        }
+        assert(size <= ENREGISTERED_PARAMTYPE_MAXSIZE);
+        return FALSE;
 #else
         PORTABILITY_ASSERT("ArgIteratorTemplate::IsArgPassedByRef");
         return FALSE;
@@ -588,7 +594,12 @@ public:
         if (m_argType == ELEMENT_TYPE_VALUETYPE)
         {
             _ASSERTE(!m_argTypeHandle.IsNull());
+        #ifdef TARGET_RISCV64
+            int flags = MethodTable::GetRiscV64PassStructInRegisterFlags(m_argTypeHandle);
+            return (flags == STRUCT_NO_FLOAT_FIELD) && (m_argSize > ENREGISTERED_PARAMTYPE_MAXSIZE);
+        #else
             return (m_argSize > ENREGISTERED_PARAMTYPE_MAXSIZE);
+        #endif
         }
         return FALSE;
 #else
