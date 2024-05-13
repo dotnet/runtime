@@ -1480,6 +1480,7 @@ namespace System.Runtime.Intrinsics.Arm
         /// </summary>
         public static unsafe Vector<ulong> LoadVectorUInt32ZeroExtendToUInt64(Vector<ulong> mask, uint* address) => LoadVectorUInt32ZeroExtendToUInt64(mask, address);
 
+
         ///  LoadVectorx2 : Load two-element tuples into two vectors
 
         /// <summary>
@@ -1697,6 +1698,7 @@ namespace System.Runtime.Intrinsics.Arm
         ///   LD4D {Zresult0.D - Zresult3.D}, Pg/Z, [Xbase, #0, MUL VL]
         /// </summary>
         public static unsafe (Vector<ulong>, Vector<ulong>, Vector<ulong>, Vector<ulong>) LoadVectorx4(Vector<ulong> mask, ulong* address) => LoadVectorx4(mask, address);
+
 
         ///  Max : Maximum
 
