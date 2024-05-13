@@ -120,6 +120,16 @@ namespace System.Buffers.Text.Tests
             }
         }
 
+        internal static void InitializeUrlDecodableBytes(Span<char> bytes, int seed = 100)
+        {
+            var rnd = new Random(seed);
+            for (int i = 0; i < bytes.Length; i++)
+            {
+                int index = (byte)rnd.Next(0, s_urlEncodingMap.Length);
+                bytes[i] = (char)s_urlEncodingMap[index];
+            }
+        }
+
         internal static void InitializeUrlDecodableBytes(Span<byte> bytes, int seed = 100)
         {
             var rnd = new Random(seed);
@@ -163,29 +173,29 @@ namespace System.Buffers.Text.Tests
 
         public static bool VerifyEncodingCorrectness(int expectedConsumed, int expectedWritten, Span<byte> source, Span<byte> encodedBytes)
         {
-            string expectedText = Convert.ToBase64String(source.Slice(0, expectedConsumed).ToArray());
-            string encodedText = Encoding.ASCII.GetString(encodedBytes.Slice(0, expectedWritten).ToArray());
+            string expectedText = Convert.ToBase64String(source.Slice(0, expectedConsumed));
+            string encodedText = Encoding.ASCII.GetString(encodedBytes.Slice(0, expectedWritten));
             return expectedText.Equals(encodedText);
         }
 
         public static bool VerifyUrlEncodingCorrectness(int expectedConsumed, int expectedWritten, Span<byte> source, Span<byte> encodedBytes)
         {
-            string expectedText = Convert.ToBase64String(source.Slice(0, expectedConsumed).ToArray())
+            string expectedText = Convert.ToBase64String(source.Slice(0, expectedConsumed))
                 .Replace('+', '-').Replace('/', '_').TrimEnd('=');
-            string encodedText = Encoding.ASCII.GetString(encodedBytes.Slice(0, expectedWritten).ToArray());
+            string encodedText = Encoding.ASCII.GetString(encodedBytes.Slice(0, expectedWritten));
             return expectedText.Equals(encodedText);
         }
 
         public static bool VerifyDecodingCorrectness(int expectedConsumed, int expectedWritten, Span<byte> source, Span<byte> decodedBytes)
         {
-            string sourceString = Encoding.ASCII.GetString(source.Slice(0, expectedConsumed).ToArray());
+            string sourceString = Encoding.ASCII.GetString(source.Slice(0, expectedConsumed));
             byte[] expectedBytes = Convert.FromBase64String(sourceString);
             return expectedBytes.AsSpan().SequenceEqual(decodedBytes.Slice(0, expectedWritten));
         }
 
         public static bool VerifyUrlDecodingCorrectness(int expectedConsumed, int expectedWritten, Span<byte> source, Span<byte> decodedBytes)
         {
-            string sourceString = Encoding.ASCII.GetString(source.Slice(0, expectedConsumed).ToArray());
+            string sourceString = Encoding.ASCII.GetString(source.Slice(0, expectedConsumed));
             string padded = sourceString.Length % 4 == 0 ? sourceString :
                 sourceString.PadRight(sourceString.Length + (4 - sourceString.Length % 4), '=');
             string base64 = padded.Replace("_", "/").Replace("-", "+");
