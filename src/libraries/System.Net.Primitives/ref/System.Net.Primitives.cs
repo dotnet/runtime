@@ -4,8 +4,6 @@
 // Changes to this file must follow the https://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
-using System.Diagnostics.CodeAnalysis;
-
 namespace System.Net
 {
     [System.FlagsAttribute]
@@ -328,7 +326,7 @@ namespace System.Net
         public bool TryFormat(System.Span<byte> utf8Destination, out int bytesWritten) { throw null; }
         public static bool TryParse(System.ReadOnlySpan<char> s, out System.Net.IPNetwork result) { throw null; }
         public static bool TryParse(string? s, out System.Net.IPNetwork result) { throw null; }
-        public static bool TryParse(ReadOnlySpan<byte> utf8Text, [MaybeNullWhen(false)] out IPNetwork result) { throw null; }
+        public static bool TryParse(ReadOnlySpan<byte> utf8Text, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out IPNetwork result) { throw null; }
     }
     public partial interface IWebProxy
     {
