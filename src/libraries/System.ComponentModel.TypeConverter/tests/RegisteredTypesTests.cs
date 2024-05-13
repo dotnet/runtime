@@ -124,6 +124,23 @@ namespace System.ComponentModel.Tests
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public static void TypeDescriptionProvider_RegisterType()
+        {
+            RemoteInvokeOptions options = new RemoteInvokeOptions();
+
+            RemoteExecutor.Invoke(() =>
+            {
+                TypeDescriptionProvider provider = TypeDescriptor.GetProvider(typeof(C1));
+
+                // Ensure RegisterType() forwards to the reflection provider (through TypeDescriptionNode and then DelegatingTypeDescriptionProvider)
+                provider.RegisterType<C1>();
+
+                PropertyDescriptorCollection properties = TypeDescriptor.GetPropertiesFromRegisteredType(typeof(C1));
+                Assert.Equal(2, properties.Count);
+            }).Dispose();
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public static void GetMembersFromRegisteredType_ChildRegistered_SwitchOn()
         {
             RemoteInvokeOptions options = new RemoteInvokeOptions();
@@ -273,18 +290,6 @@ namespace System.ComponentModel.Tests
                     ictd.GetConverterFromRegisteredType();
                 }
             }).Dispose();
-        }
-
-        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public static void GetProviderWithInstance_NotRegistered()
-        {
-            RemoteInvokeOptions options = new RemoteInvokeOptions();
-            options.RuntimeConfigurationOptions[TypeDescriptorRequireRegisteredTypesSwitchName] = bool.TrueString;
-
-            RemoteExecutor.Invoke(() =>
-            {
-                Assert.Throws<InvalidOperationException>(() => TypeDescriptor.GetProvider(new C1()));
-            }, options).Dispose();
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]

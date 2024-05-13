@@ -377,7 +377,8 @@ namespace System.ComponentModel
 
         /// <summary>
         /// Whether the provider uses reflection and requires types to be registered through <see cref="TypeDescriptor.RegisterType{T}"/>
-        /// to support trimmed applications.
+        /// to support trimmed applications. For backwards compatibility, this is typically only enforced when calling members that have
+        /// a "FromRegisteredType" suffix.
         /// </summary>
         public virtual bool? RequireRegisteredTypes
         {

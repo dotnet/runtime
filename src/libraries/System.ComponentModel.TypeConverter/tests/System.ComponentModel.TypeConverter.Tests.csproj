@@ -174,9 +174,6 @@
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
-    <None Include="TrimmingTests\TypeDescriptorTest_NullableConverter_Unregistered.cs" />
-  </ItemGroup>
-  <ItemGroup>
     <TrimmerRootDescriptor Include="$(MSBuildThisFileDirectory)ILLink.Descriptors.xml" />
   </ItemGroup>
 </Project>

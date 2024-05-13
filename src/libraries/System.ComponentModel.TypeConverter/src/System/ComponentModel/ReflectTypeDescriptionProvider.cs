@@ -280,7 +280,12 @@ namespace System.ComponentModel
         }
 
         public override bool? RequireRegisteredTypes => true;
-        public override bool IsRegisteredType(Type type) => _typeData != null ? _typeData.ContainsKey(type) : false;
+        public override bool IsRegisteredType(Type type)
+        {
+            return _typeData != null &&
+                _typeData.TryGetValue(type, out ReflectedTypeData? data) &&
+                data.IsRegistered;
+        }
 
         /// <summary>
         /// Helper method to create editors and type converters. This checks to see if the

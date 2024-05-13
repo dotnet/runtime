@@ -162,12 +162,9 @@ namespace System.ComponentModel
         internal static void ValidateRegisteredType(Type type)
         {
             TypeDescriptionProvider provider = GetProvider(type);
-            if (provider.RequireRegisteredTypes == true)
+            if (provider.RequireRegisteredTypes == true && !provider.IsRegisteredType(type))
             {
-                if (!provider.IsRegisteredType(type))
-                {
-                    ThrowHelper.ThrowInvalidOperationException_RegisterTypeRequired(type);
-                }
+                ThrowHelper.ThrowInvalidOperationException_RegisterTypeRequired(type);
             }
         }
 
@@ -1533,14 +1530,7 @@ namespace System.ComponentModel
         public static TypeDescriptionProvider GetProvider(object instance)
         {
             ArgumentNullException.ThrowIfNull(instance);
-            TypeDescriptionProvider provider = NodeFor(instance, true);
-
-            if (provider.RequireRegisteredTypes == true && !provider.IsRegisteredType(instance.GetType()))
-            {
-                ThrowHelper.ThrowInvalidOperationException_RegisterTypeRequired(instance.GetType());
-            }
-
-            return provider;
+            return NodeFor(instance, true);
         }
 
         /// <summary>
@@ -3404,6 +3394,8 @@ namespace System.ComponentModel
             public override bool? RequireRegisteredTypes => Provider.RequireRegisteredTypes;
 
             public override bool IsRegisteredType(Type type) => Provider.IsRegisteredType(type);
+
+            public override void RegisterType<[DynamicallyAccessedMembers(RegisteredTypesDynamicallyAccessedMembers)] T>() => Provider.RegisterType<T>();
 
             /// <summary>
             /// A type descriptor for extended types. This type descriptor
