@@ -7,7 +7,7 @@ import WasmEnableThreads from "consts:wasmEnableThreads";
 import WasmEnableSIMD from "consts:wasmEnableSIMD";
 import WasmEnableExceptionHandling from "consts:wasmEnableExceptionHandling";
 
-import type { RuntimeAPI } from "./types";
+import { GlobalizationMode, type RuntimeAPI } from "./types";
 
 import { Module, exportedRuntimeAPI, loaderHelpers, passEmscriptenInternals, runtimeHelpers, setRuntimeGlobals, } from "./globals";
 import { GlobalObjects, RuntimeHelpers } from "./types/internal";
@@ -49,13 +49,14 @@ function initializeExports (globalObjects: GlobalObjects): RuntimeAPI {
         rh.dumpThreads = mono_wasm_dump_threads;
         rh.mono_wasm_print_thread_dump = () => tcwraps.mono_wasm_print_thread_dump();
     }
-    // if HG is on:
-    rh.stringToUTF16 = stringToUTF16;
-    rh.stringToUTF16Ptr = stringToUTF16Ptr;
-    rh.utf16ToString = utf16ToString;
-    rh.localHeapViewU16 = localHeapViewU16;
-    rh.setU16_local = setU16_local;
-    rh.setI32 = setI32;
+    if (loaderHelpers.config.globalizationMode === GlobalizationMode.Hybrid) {
+        rh.stringToUTF16 = stringToUTF16;
+        rh.stringToUTF16Ptr = stringToUTF16Ptr;
+        rh.utf16ToString = utf16ToString;
+        rh.localHeapViewU16 = localHeapViewU16;
+        rh.setU16_local = setU16_local;
+        rh.setI32 = setI32;
+    }
 
     Object.assign(runtimeHelpers, rh);
 
