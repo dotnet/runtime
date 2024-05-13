@@ -2002,12 +2002,12 @@ void ArgIteratorTemplate<ARGITERATOR_BASE>::ComputeReturnFlags()
                 break;
             }
 #elif defined(TARGET_RISCV64)
-            if  (size <= ENREGISTERED_RETURNTYPE_INTEGER_MAXSIZE)
-            {
-                assert(!thValueType.IsTypeDesc());
-                flags = (MethodTable::GetRiscV64PassStructInRegisterFlags(thValueType) & 0xff) << RETURN_FP_SIZE_SHIFT;
+            assert(!thValueType.IsTypeDesc());
+            int structFlags = MethodTable::GetRiscV64PassStructInRegisterFlags(thValueType);
+            flags |= (structFlags & 0xff) << RETURN_FP_SIZE_SHIFT;
+
+            if  (structFlags != STRUCT_NO_FLOAT_FIELD || size <= ENREGISTERED_RETURNTYPE_INTEGER_MAXSIZE)
                 break;
-            }
 #else
             if  (size <= ENREGISTERED_RETURNTYPE_INTEGER_MAXSIZE)
                 break;
