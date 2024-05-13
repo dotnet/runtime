@@ -4247,6 +4247,16 @@ namespace System.Runtime.Intrinsics.Arm
         public static System.Numerics.Vector<ulong> ConditionalSelect(System.Numerics.Vector<ulong> mask, System.Numerics.Vector<ulong> left, System.Numerics.Vector<ulong> right) { throw null; }
         public static System.Numerics.Vector<float> ConditionalSelect(System.Numerics.Vector<float> mask, System.Numerics.Vector<float> left, System.Numerics.Vector<float> right) { throw null; }
         public static System.Numerics.Vector<double> ConditionalSelect(System.Numerics.Vector<double> mask, System.Numerics.Vector<double> left, System.Numerics.Vector<double> right) { throw null; }
+        public static System.Numerics.Vector<byte> CreateFalseMaskByte() { throw null; }
+        public static System.Numerics.Vector<double> CreateFalseMaskDouble() { throw null; }
+        public static System.Numerics.Vector<short> CreateFalseMaskInt16() { throw null; }
+        public static System.Numerics.Vector<int> CreateFalseMaskInt32() { throw null; }
+        public static System.Numerics.Vector<long> CreateFalseMaskInt64() { throw null; }
+        public static System.Numerics.Vector<sbyte> CreateFalseMaskSByte() { throw null; }
+        public static System.Numerics.Vector<float> CreateFalseMaskSingle() { throw null; }
+        public static System.Numerics.Vector<ushort> CreateFalseMaskUInt16() { throw null; }
+        public static System.Numerics.Vector<uint> CreateFalseMaskUInt32() { throw null; }
+        public static System.Numerics.Vector<ulong> CreateFalseMaskUInt64() { throw null; }
         public static System.Numerics.Vector<byte> CreateTrueMaskByte([ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw null; }
         public static System.Numerics.Vector<double> CreateTrueMaskDouble([ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw null; }
         public static System.Numerics.Vector<short> CreateTrueMaskInt16([ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw null; }
