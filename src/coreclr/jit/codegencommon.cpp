@@ -5374,17 +5374,6 @@ void CodeGen::genFnProlog()
     }
 #endif
 
-#if !defined(TARGET_LOONGARCH64) && !defined(TARGET_RISCV64)
-    // For LoongArch64's OSR root frames, we may need a scratch register for large
-    // offset addresses. But this does not conflict with the REG_PINVOKE_FRAME.
-    //
-    // RISC-V64's OSR root frames are similar to LoongArch64's. In this case
-    // REG_SCRATCH also shouldn't conflict with REG_PINVOKE_FRAME, even if
-    // technically they are the same register - REG_T0.
-    //
-    noway_assert(!compiler->compMethodRequiresPInvokeFrame() || (initReg != REG_PINVOKE_FRAME));
-#endif // !TARGET_LOONGARCH64 && !TARGET_RISCV64
-
 #if defined(TARGET_AMD64)
     // If we are a varargs call, in order to set up the arguments correctly this
     // must be done in a 2 step process. As per the x64 ABI:
