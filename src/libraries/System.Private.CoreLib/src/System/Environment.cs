@@ -201,21 +201,17 @@ namespace System
             }
         }
 
+        internal const string InternalVersion = "9.0.0";
+
         public static Version Version
         {
             get
             {
-                string? versionString = typeof(object).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion;
+                Debug.Assert(InternalVersion ==
+                    typeof(object).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion?.Split('-', '+')?[0],
+                    $"{nameof(InternalVersion)} mismatched! Keep {nameof(InternalVersion)} in sync with ProductVersion in eng/Versions.props.");
 
-                ReadOnlySpan<char> versionSpan = versionString.AsSpan();
-
-                // Strip optional suffixes
-                int separatorIndex = versionSpan.IndexOfAny('-', '+', ' ');
-                if (separatorIndex >= 0)
-                    versionSpan = versionSpan.Slice(0, separatorIndex);
-
-                // Return zeros rather then failing if the version string fails to parse
-                return Version.TryParse(versionSpan, out Version? version) ? version : new Version();
+                return Version.Parse(InternalVersion);
             }
         }
 
