@@ -1,8 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { mono_wasm_imports, mono_wasm_threads_imports, mono_wasm_hybrid_globalization_imports } from "./exports-binding";
+import { mono_wasm_imports, mono_wasm_threads_imports } from "./exports-binding";
 import gitHash from "consts:gitHash";
+import { mono_wasm_hybrid_globalization_imports } from "./globalization";
 
 export function export_linker_indexes_as_code (): string {
     const indexByName: any = {
