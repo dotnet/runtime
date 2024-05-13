@@ -752,7 +752,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
 
         if (CollectTrimmingEligibleMethods)
         {
-            string assemblyName = assemblyFilename.Replace(".", "_");
+            string assemblyName = FixupSymbolName(assemblyFilename);
             string outputFileName = assemblyName + "_compiled_methods.txt";
             string outputFilePath;
             if (string.IsNullOrEmpty(TrimmingEligibleMethodsOutputDirectory))

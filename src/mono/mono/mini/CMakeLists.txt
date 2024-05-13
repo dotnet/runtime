@@ -49,6 +49,14 @@ endif()
 # MINI
 #
 
+set(imported_native_sources
+    ../../../native/containers/dn-simdhash.c
+    ../../../native/containers/dn-simdhash-ptr-ptr.c
+    ../../../native/containers/dn-simdhash-string-ptr.c
+    ../../../native/containers/dn-simdhash-u32-ptr.c
+    ../../../native/containers/dn-simdhash-ght-compatible.c
+    ../../../native/containers/dn-simdhash-ptrpair-ptr.c)
+
 set(mini_common_sources
     mini.c
     mini-runtime.c
@@ -302,7 +310,7 @@ else()
 set(profiler_sources "")
 endif()
 
-set(mini_sources "main-core.c;${mini_common_sources};${arch_sources};${os_sources};${mini_interp_sources};${llvm_sources};${debugger_sources};${profiler_sources};${llvm_runtime_sources}")
+set(mini_sources "main-core.c;${imported_native_sources};${mini_common_sources};${arch_sources};${os_sources};${mini_interp_sources};${llvm_sources};${debugger_sources};${profiler_sources};${llvm_runtime_sources}")
 
 if(LLVM_INCLUDEDIR)
   include_directories(BEFORE SYSTEM "${LLVM_INCLUDEDIR}")
