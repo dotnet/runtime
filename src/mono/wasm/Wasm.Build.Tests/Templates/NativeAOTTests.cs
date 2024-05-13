@@ -34,6 +34,7 @@ public class NativeAOTTests : BlazorWasmTestBase
         Utils.DirectoryCopy(Path.Combine(BuildEnvironment.TestAssetsPath, assetName), Path.Combine(_projectDir!));
         string projectName = Path.GetFileNameWithoutExtension(_projectDir!);
 
+        bool isWindowsPlatform = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
         (_, string buildOutput) = BuildTemplateProject(
             ExpandBuildArgs(new BuildArgs(projectName, config, AOT: false, id, null)),
             id: id,
@@ -41,11 +42,12 @@ public class NativeAOTTests : BlazorWasmTestBase
                 AssertAppBundle: false,
                 CreateProject: false,
                 Publish: true,
-                TargetFramework: DefaultTargetFramework
+                TargetFramework: DefaultTargetFramework,
+                ExpectSuccess: isWindowsPlatform
             )
         );
 
-        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        if (isWindowsPlatform)
         {
             string outputDir = Path.Combine(_projectDir!, "bin", config, DefaultTargetFramework, BuildEnvironment.DefaultRuntimeIdentifier, "native");
 

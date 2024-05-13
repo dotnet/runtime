@@ -39,6 +39,7 @@ public class NativeAOTTests : BuildTestBase
 
         AddItemsPropertiesToProject(projectFile, extraProperties: "<PublishAot>true</PublishAot>");
 
+        bool isWindowsPlatform = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
         (_, string buildOutput) = BuildProject(
             buildArgs,
             id: id,
@@ -46,11 +47,12 @@ public class NativeAOTTests : BuildTestBase
                 AssertAppBundle: false,
                 CreateProject: false,
                 Publish: true,
-                TargetFramework: DefaultTargetFramework
+                TargetFramework: DefaultTargetFramework,
+                ExpectSuccess: isWindowsPlatform
             )
         );
 
-        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        if (isWindowsPlatform)
         {
             string outputDir = Path.Combine(_projectDir!, "bin", config, DefaultTargetFramework, BuildEnvironment.DefaultRuntimeIdentifier, "native");
             string outputFileName = $"{id}.wasm";
