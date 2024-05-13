@@ -2243,6 +2243,57 @@ namespace System.Runtime.Intrinsics.Arm
         ///   MLS Ztied1.D, Pg/M, Zop2.D, Zop3.D
         /// </summary>
         public static unsafe Vector<ulong> MultiplySubtract(Vector<ulong> minuend, Vector<ulong> left, Vector<ulong> right) { throw new PlatformNotSupportedException(); }
+
+        ///  Negate : Negate
+
+        /// <summary>
+        /// svfloat64_t svneg[_f64]_m(svfloat64_t inactive, svbool_t pg, svfloat64_t op)
+        /// svfloat64_t svneg[_f64]_x(svbool_t pg, svfloat64_t op)
+        /// svfloat64_t svneg[_f64]_z(svbool_t pg, svfloat64_t op)
+        ///   FNEG Ztied.D, Pg/M, Zop.D
+        /// </summary>
+        public static unsafe Vector<double> Negate(Vector<double> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint16_t svneg[_s16]_m(svint16_t inactive, svbool_t pg, svint16_t op)
+        /// svint16_t svneg[_s16]_x(svbool_t pg, svint16_t op)
+        /// svint16_t svneg[_s16]_z(svbool_t pg, svint16_t op)
+        ///   NEG Ztied.H, Pg/M, Zop.H
+        /// </summary>
+        public static unsafe Vector<short> Negate(Vector<short> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint32_t svneg[_s32]_m(svint32_t inactive, svbool_t pg, svint32_t op)
+        /// svint32_t svneg[_s32]_x(svbool_t pg, svint32_t op)
+        /// svint32_t svneg[_s32]_z(svbool_t pg, svint32_t op)
+        ///   NEG Ztied.S, Pg/M, Zop.S
+        /// </summary>
+        public static unsafe Vector<int> Negate(Vector<int> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint64_t svneg[_s64]_m(svint64_t inactive, svbool_t pg, svint64_t op)
+        /// svint64_t svneg[_s64]_x(svbool_t pg, svint64_t op)
+        /// svint64_t svneg[_s64]_z(svbool_t pg, svint64_t op)
+        ///   NEG Ztied.D, Pg/M, Zop.D
+        /// </summary>
+        public static unsafe Vector<long> Negate(Vector<long> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint8_t svneg[_s8]_x(svbool_t pg, svint8_t op)
+        /// svint8_t svneg[_s8]_m(svint8_t inactive, svbool_t pg, svint8_t op)
+        /// svint8_t svneg[_s8]_z(svbool_t pg, svint8_t op)
+        ///   NEG Ztied.B, Pg/M, Zop.B
+        /// </summary>
+        public static unsafe Vector<sbyte> Negate(Vector<sbyte> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svfloat32_t svneg[_f32]_m(svfloat32_t inactive, svbool_t pg, svfloat32_t op)
+        /// svfloat32_t svneg[_f32]_x(svbool_t pg, svfloat32_t op)
+        /// svfloat32_t svneg[_f32]_z(svbool_t pg, svfloat32_t op)
+        ///   FNEG Ztied.S, Pg/M, Zop.S
+        /// </summary>
+        public static unsafe Vector<float> Negate(Vector<float> value) { throw new PlatformNotSupportedException(); }
+
         ///  Or : Bitwise inclusive OR
 
         /// <summary>
@@ -2588,6 +2639,57 @@ namespace System.Runtime.Intrinsics.Arm
         ///   MOVPRFX Zresult.D, Pg/Z, Zop1.D; FSUB Zresult.D, Pg/M, Zresult.D, Zop2.D
         /// </summary>
         public static unsafe Vector<double> Subtract(Vector<double> left, Vector<double> right) { throw new PlatformNotSupportedException(); }
+
+        ///  SubtractSaturate : Saturating subtract
+
+        /// <summary>
+        /// svuint8_t svqsub[_u8](svuint8_t op1, svuint8_t op2)
+        ///   UQSUB Zresult.B, Zop1.B, Zop2.B
+        /// </summary>
+        public static unsafe Vector<byte> SubtractSaturate(Vector<byte> left, Vector<byte> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint16_t svqsub[_s16](svint16_t op1, svint16_t op2)
+        ///   SQSUB Zresult.H, Zop1.H, Zop2.H
+        /// </summary>
+        public static unsafe Vector<short> SubtractSaturate(Vector<short> left, Vector<short> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint32_t svqsub[_s32](svint32_t op1, svint32_t op2)
+        ///   SQSUB Zresult.S, Zop1.S, Zop2.S
+        /// </summary>
+        public static unsafe Vector<int> SubtractSaturate(Vector<int> left, Vector<int> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint64_t svqsub[_s64](svint64_t op1, svint64_t op2)
+        ///   SQSUB Zresult.D, Zop1.D, Zop2.D
+        /// </summary>
+        public static unsafe Vector<long> SubtractSaturate(Vector<long> left, Vector<long> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint8_t svqsub[_s8](svint8_t op1, svint8_t op2)
+        ///   SQSUB Zresult.B, Zop1.B, Zop2.B
+        /// </summary>
+        public static unsafe Vector<sbyte> SubtractSaturate(Vector<sbyte> left, Vector<sbyte> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint16_t svqsub[_u16](svuint16_t op1, svuint16_t op2)
+        ///   UQSUB Zresult.H, Zop1.H, Zop2.H
+        /// </summary>
+        public static unsafe Vector<ushort> SubtractSaturate(Vector<ushort> left, Vector<ushort> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint32_t svqsub[_u32](svuint32_t op1, svuint32_t op2)
+        ///   UQSUB Zresult.S, Zop1.S, Zop2.S
+        /// </summary>
+        public static unsafe Vector<uint> SubtractSaturate(Vector<uint> left, Vector<uint> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint64_t svqsub[_u64](svuint64_t op1, svuint64_t op2)
+        ///   UQSUB Zresult.D, Zop1.D, Zop2.D
+        /// </summary>
+        public static unsafe Vector<ulong> SubtractSaturate(Vector<ulong> left, Vector<ulong> right) { throw new PlatformNotSupportedException(); }
+
 
         ///  SignExtendWideningLower : Unpack and extend low half
 
