@@ -1,0 +1,1128 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<dependencies version="1.2">
+	<edge mark="1" b="Assembly:test, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null" e="TypeDef:Mono.Linker.Tests.Cases.TypeForwarding.AttributeEnumArgumentForwardedCopyUsedWithSweptForwarder:test.exe" />
+	<edge mark="1" b="TypeDef:Mono.Linker.Tests.Cases.TypeForwarding.AttributeEnumArgumentForwardedCopyUsedWithSweptForwarder:test.exe" e="Method:System.Void Mono.Linker.Tests.Cases.TypeForwarding.AttributeEnumArgumentForwardedCopyUsedWithSweptForwarder::Main()" />
+	<edge mark="1" b="TypeDef:Mono.Linker.Tests.Cases.TypeForwarding.AttributeEnumArgumentForwardedCopyUsedWithSweptForwarder:test.exe" e="Module:test.exe" />
+	<edge mark="1" b="Module:test.exe" e="Assembly:test, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null" />
+	<edge mark="1" b="Method:System.Void Mono.Linker.Tests.Cases.TypeForwarding.AttributeEnumArgumentForwardedCopyUsedWithSweptForwarder::Main()" e="TypeDef:System.Void" />
+	<edge mark="1" b="TypeDef:System.Void" e="Module:System.Private.CoreLib.dll" />
+	<edge mark="1" b="Module:System.Private.CoreLib.dll" e="Assembly:System.Private.CoreLib, Version=9.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e" />
+	<edge mark="1" b="Method:System.Void Mono.Linker.Tests.Cases.TypeForwarding.AttributeEnumArgumentForwardedCopyUsedWithSweptForwarder::Main()" e="TypeDef:System.Type" />
+	<edge mark="1" b="TypeDef:System.Type" e="Module:System.Private.CoreLib.dll" />
+	<edge mark="1" b="Method:System.Void Mono.Linker.Tests.Cases.TypeForwarding.AttributeEnumArgumentForwardedCopyUsedWithSweptForwarder::Main()" e="TypeDef:System.Type" />
+	<edge mark="1" b="Method:System.Void Mono.Linker.Tests.Cases.TypeForwarding.AttributeEnumArgumentForwardedCopyUsedWithSweptForwarder::Main()" e="TypeDef:Mono.Linker.Tests.Cases.TypeForwarding.Dependencies.AttributedType" />
+	<edge mark="1" b="TypeDef:Mono.Linker.Tests.Cases.TypeForwarding.Dependencies.AttributedType" e="Module:Attribute.dll" />
+	<edge mark="1" b="Module:Attribute.dll" e="Assembly:Attribute, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null" />
+	<edge mark="1" b="Method:System.Void Mono.Linker.Tests.Cases.TypeForwarding.AttributeEnumArgumentForwardedCopyUsedWithSweptForwarder::Main()" e="Method:System.Type System.Type::GetTypeFromHandle(System.RuntimeTypeHandle)" />
+	<edge mark="1" b="Method:System.Type System.Type::GetTypeFromHandle(System.RuntimeTypeHandle)" e="TypeDef:System.Type" />
+	<edge mark="1" b="Method:System.Void Mono.Linker.Tests.Cases.TypeForwarding.AttributeEnumArgumentForwardedCopyUsedWithSweptForwarder::Main()" e="TypeDef:Mono.Linker.Tests.Cases.TypeForwarding.Dependencies.UsedToReferenceForwarderAssembly" />
+	<edge mark="1" b="TypeDef:Mono.Linker.Tests.Cases.TypeForwarding.Dependencies.UsedToReferenceForwarderAssembly" e="Module:Forwarder.dll" />
+	<edge mark="1" b="Module:Forwarder.dll" e="Assembly:Forwarder, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null" />
+	<edge mark="1" b="Method:System.Void Mono.Linker.Tests.Cases.TypeForwarding.AttributeEnumArgumentForwardedCopyUsedWithSweptForwarder::Main()" e="Method:System.Type System.Type::GetTypeFromHandle(System.RuntimeTypeHandle)" />
+	<edge mark="1" b="Method:System.Type System.Type::GetTypeFromHandle(System.RuntimeTypeHandle)" e="TypeDef:System.Type" />
+	<edge mark="1" b="TypeDef:System.Object" e="Module:System.Private.CoreLib.dll" />
+	<edge mark="1" b="TypeDef:System.Object" e="Method:System.Void System.Object::Finalize()" />
+	<edge mark="1" b="Method:System.Void System.Object::Finalize()" e="TypeDef:System.Void" />
+	<edge mark="1" b="TypeDef:System.Runtime.Versioning.NonVersionableAttribute:System.Private.CoreLib.dll" e="Module:System.Private.CoreLib.dll" />
+	<edge b="Method:System.Void System.Runtime.Versioning.NonVersionableAttribute::.ctor()" e="TypeDef:System.Runtime.Versioning.NonVersionableAttribute:System.Private.CoreLib.dll" />
+	<edge mark="1" b="Method:System.Void System.Runtime.Versioning.NonVersionableAttribute::.ctor()" e="TypeDef:System.Void" />
+	<edge mark="1" b="TypeDef:System.Attribute" e="Module:System.Private.CoreLib.dll" />
+	<edge mark="1" b="TypeDef:System.Runtime.CompilerServices.NullableAttribute" e="Module:System.Private.CoreLib.dll" />
+	<edge b="Method:System.Void System.Runtime.CompilerServices.NullableAttribute::.ctor(System.Byte)" e="TypeDef:System.Runtime.CompilerServices.NullableAttribute" />
+	<edge mark="1" b="TypeDef:System.Byte" e="Module:System.Private.CoreLib.dll" />
+	<edge mark="1" b="Method:System.Void System.Runtime.CompilerServices.NullableAttribute::.ctor(System.Byte)" e="TypeDef:System.Void" />
+	<edge mark="1" b="TypeDef:System.ValueType" e="Module:System.Private.CoreLib.dll" />
+	<edge mark="1" b="TypeDef:System.Byte" e="Method:System.Boolean System.Byte::Equals(System.Object)" />
+	<edge mark="1" b="TypeDef:System.Byte" e="Method:System.Int32 System.Byte::GetHashCode()" />
+	<edge mark="1" b="TypeDef:System.Byte" e="Method:System.String System.Byte::ToString()" />
+	<edge mark="1" b="TypeDef:System.Byte" e="Field:System.Byte System.Byte::m_value" />
+	<edge mark="1" b="Field:System.Byte System.Byte::m_value" e="TypeDef:System.Byte" />
+	<edge mark="1" b="Field:System.Byte System.Byte::m_value" e="TypeDef:System.Byte" />
+	<edge mark="1" b="TypeDef:System.Byte" e="Method:System.Boolean System.Byte::Equals(System.Object)" />
+	<edge mark="1" b="TypeDef:System.Byte" e="Method:System.Int32 System.Byte::GetHashCode()" />
+	<edge mark="1" b="TypeDef:System.Byte" e="Method:System.String System.Byte::ToString()" />
+	<edge mark="1" b="TypeDef:System.ValueType" e="Method:System.Boolean System.ValueType::Equals(System.Object)" />
+	<edge mark="1" b="TypeDef:System.ValueType" e="Method:System.Int32 System.ValueType::GetHashCode()" />
+	<edge mark="1" b="TypeDef:System.ValueType" e="Method:System.String System.ValueType::ToString()" />
+	<edge mark="1" b="TypeDef:System.ValueType" e="Method:System.Boolean System.ValueType::Equals(System.Object)" />
+	<edge mark="1" b="TypeDef:System.ValueType" e="Method:System.Int32 System.ValueType::GetHashCode()" />
+	<edge mark="1" b="TypeDef:System.ValueType" e="Method:System.String System.ValueType::ToString()" />
+	<edge mark="1" b="Method:System.String System.ValueType::ToString()" e="Method:System.String System.Object::ToString()" />
+	<edge mark="1" b="TypeDef:System.Byte" e="Method:System.String System.Byte::ToString()" />
+	<edge mark="1" b="Method:System.String System.ValueType::ToString()" e="TypeDef:System.String" />
+	<edge mark="1" b="TypeDef:System.String" e="Module:System.Private.CoreLib.dll" />
+	<edge mark="1" b="TypeDef:System.Reflection.DefaultMemberAttribute" e="Module:System.Private.CoreLib.dll" />
+	<edge b="Method:System.Void System.Reflection.DefaultMemberAttribute::.ctor(System.String)" e="TypeDef:System.Reflection.DefaultMemberAttribute" />
+	<edge mark="1" b="Method:System.Void System.Reflection.DefaultMemberAttribute::.ctor(System.String)" e="TypeDef:System.Void" />
+	<edge mark="1" b="TypeDef:System.ValueType" e="Method:System.String System.ValueType::ToString()" />
+	<edge mark="1" b="Method:System.String System.Object::ToString()" e="TypeDef:System.String" />
+	<edge mark="1" b="Method:System.Int32 System.ValueType::GetHashCode()" e="Method:System.Int32 System.Object::GetHashCode()" />
+	<edge mark="1" b="TypeDef:System.Byte" e="Method:System.Int32 System.Byte::GetHashCode()" />
+	<edge mark="1" b="Method:System.Int32 System.ValueType::GetHashCode()" e="TypeDef:System.Int32" />
+	<edge mark="1" b="TypeDef:System.Int32" e="Module:System.Private.CoreLib.dll" />
+	<edge mark="1" b="TypeDef:System.Int32" e="Method:System.Boolean System.Int32::Equals(System.Object)" />
+	<edge mark="1" b="TypeDef:System.Int32" e="Method:System.Int32 System.Int32::GetHashCode()" />
+	<edge mark="1" b="TypeDef:System.Int32" e="Method:System.String System.Int32::ToString()" />
+	<edge mark="1" b="TypeDef:System.Int32" e="Field:System.Int32 System.Int32::m_value" />
+	<edge mark="1" b="Field:System.Int32 System.Int32::m_value" e="TypeDef:System.Int32" />
+	<edge mark="1" b="Field:System.Int32 System.Int32::m_value" e="TypeDef:System.Int32" />
+	<edge mark="1" b="TypeDef:System.Int32" e="Method:System.Boolean System.Int32::Equals(System.Object)" />
+	<edge mark="1" b="TypeDef:System.Int32" e="Method:System.Int32 System.Int32::GetHashCode()" />
+	<edge mark="1" b="TypeDef:System.Int32" e="Method:System.String System.Int32::ToString()" />
+	<edge mark="1" b="Method:System.String System.Int32::ToString()" e="Method:System.String System.ValueType::ToString()" />
+	<edge mark="1" b="Method:System.String System.ValueType::ToString()" e="Method:System.String System.Object::ToString()" />
+	<edge mark="1" b="Method:System.String System.Int32::ToString()" e="TypeDef:System.String" />
+	<edge mark="1" b="Method:System.Int32 System.Int32::GetHashCode()" e="Method:System.Int32 System.ValueType::GetHashCode()" />
+	<edge mark="1" b="Method:System.Int32 System.ValueType::GetHashCode()" e="Method:System.Int32 System.Object::GetHashCode()" />
+	<edge mark="1" b="Method:System.Int32 System.Int32::GetHashCode()" e="TypeDef:System.Int32" />
+	<edge mark="1" b="Method:System.Boolean System.Int32::Equals(System.Object)" e="Method:System.Boolean System.ValueType::Equals(System.Object)" />
+	<edge mark="1" b="Method:System.Boolean System.ValueType::Equals(System.Object)" e="Method:System.Boolean System.Object::Equals(System.Object)" />
+	<edge mark="1" b="Method:System.Boolean System.Int32::Equals(System.Object)" e="TypeDef:System.Boolean" />
+	<edge mark="1" b="TypeDef:System.Boolean" e="Module:System.Private.CoreLib.dll" />
+	<edge mark="1" b="TypeDef:System.Boolean" e="Method:System.Int32 System.Boolean::GetHashCode()" />
+	<edge mark="1" b="TypeDef:System.Boolean" e="Method:System.String System.Boolean::ToString()" />
+	<edge mark="1" b="TypeDef:System.Boolean" e="Method:System.Boolean System.Boolean::Equals(System.Object)" />
+	<edge mark="1" b="TypeDef:System.Boolean" e="Field:System.Boolean System.Boolean::m_value" />
+	<edge mark="1" b="Field:System.Boolean System.Boolean::m_value" e="TypeDef:System.Boolean" />
+	<edge mark="1" b="Field:System.Boolean System.Boolean::m_value" e="TypeDef:System.Boolean" />
+	<edge mark="1" b="TypeDef:System.Boolean" e="Method:System.Int32 System.Boolean::GetHashCode()" />
+	<edge mark="1" b="TypeDef:System.Boolean" e="Method:System.String System.Boolean::ToString()" />
+	<edge mark="1" b="TypeDef:System.Boolean" e="Method:System.Boolean System.Boolean::Equals(System.Object)" />
+	<edge mark="1" b="Method:System.Boolean System.Boolean::Equals(System.Object)" e="Method:System.Boolean System.ValueType::Equals(System.Object)" />
+	<edge mark="1" b="Method:System.Boolean System.ValueType::Equals(System.Object)" e="Method:System.Boolean System.Object::Equals(System.Object)" />
+	<edge mark="1" b="Method:System.Boolean System.Boolean::Equals(System.Object)" e="TypeDef:System.Boolean" />
+	<edge mark="1" b="Method:System.String System.Boolean::ToString()" e="Method:System.String System.ValueType::ToString()" />
+	<edge mark="1" b="Method:System.String System.ValueType::ToString()" e="Method:System.String System.Object::ToString()" />
+	<edge mark="1" b="Method:System.String System.Boolean::ToString()" e="TypeDef:System.String" />
+	<edge mark="1" b="Method:System.Int32 System.Boolean::GetHashCode()" e="Method:System.Int32 System.ValueType::GetHashCode()" />
+	<edge mark="1" b="Method:System.Int32 System.ValueType::GetHashCode()" e="Method:System.Int32 System.Object::GetHashCode()" />
+	<edge mark="1" b="Method:System.Int32 System.Boolean::GetHashCode()" e="TypeDef:System.Int32" />
+	<edge mark="1" b="TypeDef:System.ValueType" e="Method:System.Boolean System.ValueType::Equals(System.Object)" />
+	<edge mark="1" b="Method:System.Boolean System.Object::Equals(System.Object)" e="TypeDef:System.Boolean" />
+	<edge mark="1" b="TypeDef:System.Diagnostics.CodeAnalysis.NotNullWhenAttribute" e="Module:System.Private.CoreLib.dll" />
+	<edge b="Method:System.Void System.Diagnostics.CodeAnalysis.NotNullWhenAttribute::.ctor(System.Boolean)" e="TypeDef:System.Diagnostics.CodeAnalysis.NotNullWhenAttribute" />
+	<edge mark="1" b="Method:System.Void System.Diagnostics.CodeAnalysis.NotNullWhenAttribute::.ctor(System.Boolean)" e="TypeDef:System.Void" />
+	<edge mark="1" b="TypeDef:System.ValueType" e="Method:System.Int32 System.ValueType::GetHashCode()" />
+	<edge mark="1" b="Method:System.Int32 System.Object::GetHashCode()" e="TypeDef:System.Int32" />
+	<edge mark="1" b="Method:System.Boolean System.ValueType::Equals(System.Object)" e="Method:System.Boolean System.Object::Equals(System.Object)" />
+	<edge mark="1" b="TypeDef:System.Boolean" e="Method:System.Boolean System.Boolean::Equals(System.Object)" />
+	<edge mark="1" b="TypeDef:System.Byte" e="Method:System.Boolean System.Byte::Equals(System.Object)" />
+	<edge mark="1" b="TypeDef:System.Int32" e="Method:System.Boolean System.Int32::Equals(System.Object)" />
+	<edge mark="1" b="Method:System.Boolean System.ValueType::Equals(System.Object)" e="TypeDef:System.Boolean" />
+	<edge mark="1" b="TypeDef:System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute" e="Module:System.Private.CoreLib.dll" />
+	<edge mark="1" b="Method:System.Void System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute::set_Justification(System.String)" e="Property:System.String System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute::Justification()" />
+	<edge mark="1" b="Method:System.Void System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute::set_Justification(System.String)" e="TypeDef:System.Void" />
+	<edge mark="1" b="TypeDef:System.Runtime.CompilerServices.CompilerGeneratedAttribute" e="Module:System.Private.CoreLib.dll" />
+	<edge b="Method:System.Void System.Runtime.CompilerServices.CompilerGeneratedAttribute::.ctor()" e="TypeDef:System.Runtime.CompilerServices.CompilerGeneratedAttribute" />
+	<edge mark="1" b="Method:System.Void System.Runtime.CompilerServices.CompilerGeneratedAttribute::.ctor()" e="TypeDef:System.Void" />
+	<edge b="Method:System.Void System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute::.ctor(System.String,System.String)" e="TypeDef:System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute" />
+	<edge mark="1" b="Method:System.Void System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute::.ctor(System.String,System.String)" e="TypeDef:System.Void" />
+	<edge mark="1" b="Method:System.String System.Byte::ToString()" e="Method:System.String System.ValueType::ToString()" />
+	<edge mark="1" b="Method:System.String System.ValueType::ToString()" e="Method:System.String System.Object::ToString()" />
+	<edge mark="1" b="Method:System.String System.Byte::ToString()" e="TypeDef:System.String" />
+	<edge mark="1" b="Method:System.Int32 System.Byte::GetHashCode()" e="Method:System.Int32 System.ValueType::GetHashCode()" />
+	<edge mark="1" b="Method:System.Int32 System.ValueType::GetHashCode()" e="Method:System.Int32 System.Object::GetHashCode()" />
+	<edge mark="1" b="Method:System.Int32 System.Byte::GetHashCode()" e="TypeDef:System.Int32" />
+	<edge mark="1" b="Method:System.Boolean System.Byte::Equals(System.Object)" e="Method:System.Boolean System.ValueType::Equals(System.Object)" />
+	<edge mark="1" b="Method:System.Boolean System.ValueType::Equals(System.Object)" e="Method:System.Boolean System.Object::Equals(System.Object)" />
+	<edge mark="1" b="Method:System.Boolean System.Byte::Equals(System.Object)" e="TypeDef:System.Boolean" />
+	<edge mark="1" b="TypeDef:System.Runtime.CompilerServices.IsReadOnlyAttribute" e="Module:System.Private.CoreLib.dll" />
+	<edge b="Method:System.Void System.Runtime.CompilerServices.IsReadOnlyAttribute::.ctor()" e="TypeDef:System.Runtime.CompilerServices.IsReadOnlyAttribute" />
+	<edge mark="1" b="Method:System.Void System.Runtime.CompilerServices.IsReadOnlyAttribute::.ctor()" e="TypeDef:System.Void" />
+	<edge mark="1" b="TypeDef:System.ComponentModel.EditorBrowsableAttribute" e="Module:System.Private.CoreLib.dll" />
+	<edge mark="1" b="TypeDef:System.ComponentModel.EditorBrowsableAttribute" e="Method:System.Boolean System.ComponentModel.EditorBrowsableAttribute::Equals(System.Object)" />
+	<edge mark="1" b="TypeDef:System.ComponentModel.EditorBrowsableAttribute" e="Method:System.Int32 System.ComponentModel.EditorBrowsableAttribute::GetHashCode()" />
+	<edge b="Method:System.Void System.ComponentModel.EditorBrowsableAttribute::.ctor(System.ComponentModel.EditorBrowsableState)" e="TypeDef:System.ComponentModel.EditorBrowsableAttribute" />
+	<edge mark="1" b="TypeDef:System.ComponentModel.EditorBrowsableState" e="Module:System.Private.CoreLib.dll" />
+	<edge mark="1" b="Method:System.Void System.ComponentModel.EditorBrowsableAttribute::.ctor(System.ComponentModel.EditorBrowsableState)" e="TypeDef:System.Void" />
+	<edge mark="1" b="TypeDef:System.Enum" e="Module:System.Private.CoreLib.dll" />
+	<edge mark="1" b="TypeDef:System.ComponentModel.EditorBrowsableState" e="Field:System.Int32 System.ComponentModel.EditorBrowsableState::value__" />
+	<edge mark="1" b="Field:System.Int32 System.ComponentModel.EditorBrowsableState::value__" e="TypeDef:System.ComponentModel.EditorBrowsableState" />
+	<edge mark="1" b="Field:System.Int32 System.ComponentModel.EditorBrowsableState::value__" e="TypeDef:System.Int32" />
+	<edge mark="1" b="TypeDef:System.ComponentModel.EditorBrowsableState" e="Field:System.ComponentModel.EditorBrowsableState System.ComponentModel.EditorBrowsableState::Always" />
+	<edge mark="1" b="Field:System.ComponentModel.EditorBrowsableState System.ComponentModel.EditorBrowsableState::Always" e="TypeDef:System.ComponentModel.EditorBrowsableState" />
+	<edge mark="1" b="Field:System.ComponentModel.EditorBrowsableState System.ComponentModel.EditorBrowsableState::Always" e="TypeDef:System.ComponentModel.EditorBrowsableState" />
+	<edge mark="1" b="TypeDef:System.ComponentModel.EditorBrowsableState" e="Field:System.ComponentModel.EditorBrowsableState System.ComponentModel.EditorBrowsableState::Never" />
+	<edge mark="1" b="Field:System.ComponentModel.EditorBrowsableState System.ComponentModel.EditorBrowsableState::Never" e="TypeDef:System.ComponentModel.EditorBrowsableState" />
+	<edge mark="1" b="Field:System.ComponentModel.EditorBrowsableState System.ComponentModel.EditorBrowsableState::Never" e="TypeDef:System.ComponentModel.EditorBrowsableState" />
+	<edge mark="1" b="TypeDef:System.ComponentModel.EditorBrowsableState" e="Field:System.ComponentModel.EditorBrowsableState System.ComponentModel.EditorBrowsableState::Advanced" />
+	<edge mark="1" b="Field:System.ComponentModel.EditorBrowsableState System.ComponentModel.EditorBrowsableState::Advanced" e="TypeDef:System.ComponentModel.EditorBrowsableState" />
+	<edge mark="1" b="Field:System.ComponentModel.EditorBrowsableState System.ComponentModel.EditorBrowsableState::Advanced" e="TypeDef:System.ComponentModel.EditorBrowsableState" />
+	<edge mark="1" b="TypeDef:System.Enum" e="Method:System.Boolean System.Enum::Equals(System.Object)" />
+	<edge mark="1" b="TypeDef:System.Enum" e="Method:System.Int32 System.Enum::GetHashCode()" />
+	<edge mark="1" b="TypeDef:System.Enum" e="Method:System.String System.Enum::ToString()" />
+	<edge mark="1" b="TypeDef:System.Enum" e="Method:System.Boolean System.Enum::Equals(System.Object)" />
+	<edge mark="1" b="TypeDef:System.Enum" e="Method:System.Int32 System.Enum::GetHashCode()" />
+	<edge mark="1" b="TypeDef:System.Enum" e="Method:System.String System.Enum::ToString()" />
+	<edge mark="1" b="Method:System.String System.Enum::ToString()" e="Method:System.String System.ValueType::ToString()" />
+	<edge mark="1" b="Method:System.String System.ValueType::ToString()" e="Method:System.String System.Object::ToString()" />
+	<edge mark="1" b="Method:System.String System.Enum::ToString()" e="TypeDef:System.String" />
+	<edge mark="1" b="Method:System.Int32 System.Enum::GetHashCode()" e="Method:System.Int32 System.ValueType::GetHashCode()" />
+	<edge mark="1" b="Method:System.Int32 System.ValueType::GetHashCode()" e="Method:System.Int32 System.Object::GetHashCode()" />
+	<edge mark="1" b="Method:System.Int32 System.Enum::GetHashCode()" e="TypeDef:System.Int32" />
+	<edge mark="1" b="Method:System.Boolean System.Enum::Equals(System.Object)" e="Method:System.Boolean System.ValueType::Equals(System.Object)" />
+	<edge mark="1" b="Method:System.Boolean System.ValueType::Equals(System.Object)" e="Method:System.Boolean System.Object::Equals(System.Object)" />
+	<edge mark="1" b="Method:System.Boolean System.Enum::Equals(System.Object)" e="TypeDef:System.Boolean" />
+	<edge mark="1" b="TypeDef:System.ComponentModel.EditorBrowsableAttribute" e="Method:System.Boolean System.ComponentModel.EditorBrowsableAttribute::Equals(System.Object)" />
+	<edge mark="1" b="TypeDef:System.ComponentModel.EditorBrowsableAttribute" e="Method:System.Int32 System.ComponentModel.EditorBrowsableAttribute::GetHashCode()" />
+	<edge mark="1" b="Method:System.Int32 System.ComponentModel.EditorBrowsableAttribute::GetHashCode()" e="Method:System.Int32 System.Attribute::GetHashCode()" />
+	<edge mark="1" b="Method:System.Int32 System.Attribute::GetHashCode()" e="Method:System.Int32 System.Object::GetHashCode()" />
+	<edge mark="1" b="Method:System.Int32 System.ComponentModel.EditorBrowsableAttribute::GetHashCode()" e="TypeDef:System.Int32" />
+	<edge mark="1" b="Method:System.Int32 System.Attribute::GetHashCode()" e="Method:System.Int32 System.Object::GetHashCode()" />
+	<edge mark="1" b="TypeDef:System.ComponentModel.EditorBrowsableAttribute" e="Method:System.Int32 System.ComponentModel.EditorBrowsableAttribute::GetHashCode()" />
+	<edge mark="1" b="Method:System.Int32 System.Attribute::GetHashCode()" e="TypeDef:System.Int32" />
+	<edge mark="1" b="Method:System.Boolean System.ComponentModel.EditorBrowsableAttribute::Equals(System.Object)" e="Method:System.Boolean System.Attribute::Equals(System.Object)" />
+	<edge mark="1" b="Method:System.Boolean System.Attribute::Equals(System.Object)" e="Method:System.Boolean System.Object::Equals(System.Object)" />
+	<edge mark="1" b="Method:System.Boolean System.ComponentModel.EditorBrowsableAttribute::Equals(System.Object)" e="TypeDef:System.Boolean" />
+	<edge mark="1" b="Method:System.Boolean System.Attribute::Equals(System.Object)" e="Method:System.Boolean System.Object::Equals(System.Object)" />
+	<edge mark="1" b="TypeDef:System.ComponentModel.EditorBrowsableAttribute" e="Method:System.Boolean System.ComponentModel.EditorBrowsableAttribute::Equals(System.Object)" />
+	<edge mark="1" b="Method:System.Boolean System.Attribute::Equals(System.Object)" e="TypeDef:System.Boolean" />
+	<edge mark="1" b="TypeDef:System.AttributeUsageAttribute" e="Module:System.Private.CoreLib.dll" />
+	<edge mark="1" b="Method:System.Void System.AttributeUsageAttribute::set_Inherited(System.Boolean)" e="Property:System.Boolean System.AttributeUsageAttribute::Inherited()" />
+	<edge mark="1" b="Method:System.Void System.AttributeUsageAttribute::set_Inherited(System.Boolean)" e="TypeDef:System.Void" />
+	<edge mark="1" b="Method:System.Void System.AttributeUsageAttribute::set_AllowMultiple(System.Boolean)" e="Property:System.Boolean System.AttributeUsageAttribute::AllowMultiple()" />
+	<edge mark="1" b="Method:System.Void System.AttributeUsageAttribute::set_AllowMultiple(System.Boolean)" e="TypeDef:System.Void" />
+	<edge b="Method:System.Void System.AttributeUsageAttribute::.ctor(System.AttributeTargets)" e="TypeDef:System.AttributeUsageAttribute" />
+	<edge mark="1" b="TypeDef:System.AttributeTargets" e="Module:System.Private.CoreLib.dll" />
+	<edge mark="1" b="Method:System.Void System.AttributeUsageAttribute::.ctor(System.AttributeTargets)" e="TypeDef:System.Void" />
+	<edge mark="1" b="TypeDef:System.AttributeTargets" e="Field:System.Int32 System.AttributeTargets::value__" />
+	<edge mark="1" b="Field:System.Int32 System.AttributeTargets::value__" e="TypeDef:System.AttributeTargets" />
+	<edge mark="1" b="Field:System.Int32 System.AttributeTargets::value__" e="TypeDef:System.Int32" />
+	<edge mark="1" b="TypeDef:System.AttributeTargets" e="Field:System.AttributeTargets System.AttributeTargets::Assembly" />
+	<edge mark="1" b="Field:System.AttributeTargets System.AttributeTargets::Assembly" e="TypeDef:System.AttributeTargets" />
+	<edge mark="1" b="Field:System.AttributeTargets System.AttributeTargets::Assembly" e="TypeDef:System.AttributeTargets" />
+	<edge mark="1" b="TypeDef:System.AttributeTargets" e="Field:System.AttributeTargets System.AttributeTargets::Module" />
+	<edge mark="1" b="Field:System.AttributeTargets System.AttributeTargets::Module" e="TypeDef:System.AttributeTargets" />
+	<edge mark="1" b="Field:System.AttributeTargets System.AttributeTargets::Module" e="TypeDef:System.AttributeTargets" />
+	<edge mark="1" b="TypeDef:System.AttributeTargets" e="Field:System.AttributeTargets System.AttributeTargets::Class" />
+	<edge mark="1" b="Field:System.AttributeTargets System.AttributeTargets::Class" e="TypeDef:System.AttributeTargets" />
+	<edge mark="1" b="Field:System.AttributeTargets System.AttributeTargets::Class" e="TypeDef:System.AttributeTargets" />
+	<edge mark="1" b="TypeDef:System.AttributeTargets" e="Field:System.AttributeTargets System.AttributeTargets::Struct" />
+	<edge mark="1" b="Field:System.AttributeTargets System.AttributeTargets::Struct" e="TypeDef:System.AttributeTargets" />
+	<edge mark="1" b="Field:System.AttributeTargets System.AttributeTargets::Struct" e="TypeDef:System.AttributeTargets" />
+	<edge mark="1" b="TypeDef:System.AttributeTargets" e="Field:System.AttributeTargets System.AttributeTargets::Enum" />
+	<edge mark="1" b="Field:System.AttributeTargets System.AttributeTargets::Enum" e="TypeDef:System.AttributeTargets" />
+	<edge mark="1" b="Field:System.AttributeTargets System.AttributeTargets::Enum" e="TypeDef:System.AttributeTargets" />
+	<edge mark="1" b="TypeDef:System.AttributeTargets" e="Field:System.AttributeTargets System.AttributeTargets::Constructor" />
+	<edge mark="1" b="Field:System.AttributeTargets System.AttributeTargets::Constructor" e="TypeDef:System.AttributeTargets" />
+	<edge mark="1" b="Field:System.AttributeTargets System.AttributeTargets::Constructor" e="TypeDef:System.AttributeTargets" />
+	<edge mark="1" b="TypeDef:System.AttributeTargets" e="Field:System.AttributeTargets System.AttributeTargets::Method" />
+	<edge mark="1" b="Field:System.AttributeTargets System.AttributeTargets::Method" e="TypeDef:System.AttributeTargets" />
+	<edge mark="1" b="Field:System.AttributeTargets System.AttributeTargets::Method" e="TypeDef:System.AttributeTargets" />
+	<edge mark="1" b="TypeDef:System.AttributeTargets" e="Field:System.AttributeTargets System.AttributeTargets::Property" />
+	<edge mark="1" b="Field:System.AttributeTargets System.AttributeTargets::Property" e="TypeDef:System.AttributeTargets" />
+	<edge mark="1" b="Field:System.AttributeTargets System.AttributeTargets::Property" e="TypeDef:System.AttributeTargets" />
+	<edge mark="1" b="TypeDef:System.AttributeTargets" e="Field:System.AttributeTargets System.AttributeTargets::Field" />
+	<edge mark="1" b="Field:System.AttributeTargets System.AttributeTargets::Field" e="TypeDef:System.AttributeTargets" />
+	<edge mark="1" b="Field:System.AttributeTargets System.AttributeTargets::Field" e="TypeDef:System.AttributeTargets" />
+	<edge mark="1" b="TypeDef:System.AttributeTargets" e="Field:System.AttributeTargets System.AttributeTargets::Event" />
+	<edge mark="1" b="Field:System.AttributeTargets System.AttributeTargets::Event" e="TypeDef:System.AttributeTargets" />
+	<edge mark="1" b="Field:System.AttributeTargets System.AttributeTargets::Event" e="TypeDef:System.AttributeTargets" />
+	<edge mark="1" b="TypeDef:System.AttributeTargets" e="Field:System.AttributeTargets System.AttributeTargets::Interface" />
+	<edge mark="1" b="Field:System.AttributeTargets System.AttributeTargets::Interface" e="TypeDef:System.AttributeTargets" />
+	<edge mark="1" b="Field:System.AttributeTargets System.AttributeTargets::Interface" e="TypeDef:System.AttributeTargets" />
+	<edge mark="1" b="TypeDef:System.AttributeTargets" e="Field:System.AttributeTargets System.AttributeTargets::Parameter" />
+	<edge mark="1" b="Field:System.AttributeTargets System.AttributeTargets::Parameter" e="TypeDef:System.AttributeTargets" />
+	<edge mark="1" b="Field:System.AttributeTargets System.AttributeTargets::Parameter" e="TypeDef:System.AttributeTargets" />
+	<edge mark="1" b="TypeDef:System.AttributeTargets" e="Field:System.AttributeTargets System.AttributeTargets::Delegate" />
+	<edge mark="1" b="Field:System.AttributeTargets System.AttributeTargets::Delegate" e="TypeDef:System.AttributeTargets" />
+	<edge mark="1" b="Field:System.AttributeTargets System.AttributeTargets::Delegate" e="TypeDef:System.AttributeTargets" />
+	<edge mark="1" b="TypeDef:System.AttributeTargets" e="Field:System.AttributeTargets System.AttributeTargets::ReturnValue" />
+	<edge mark="1" b="Field:System.AttributeTargets System.AttributeTargets::ReturnValue" e="TypeDef:System.AttributeTargets" />
+	<edge mark="1" b="Field:System.AttributeTargets System.AttributeTargets::ReturnValue" e="TypeDef:System.AttributeTargets" />
+	<edge mark="1" b="TypeDef:System.AttributeTargets" e="Field:System.AttributeTargets System.AttributeTargets::GenericParameter" />
+	<edge mark="1" b="Field:System.AttributeTargets System.AttributeTargets::GenericParameter" e="TypeDef:System.AttributeTargets" />
+	<edge mark="1" b="Field:System.AttributeTargets System.AttributeTargets::GenericParameter" e="TypeDef:System.AttributeTargets" />
+	<edge mark="1" b="TypeDef:System.AttributeTargets" e="Field:System.AttributeTargets System.AttributeTargets::All" />
+	<edge mark="1" b="Field:System.AttributeTargets System.AttributeTargets::All" e="TypeDef:System.AttributeTargets" />
+	<edge mark="1" b="Field:System.AttributeTargets System.AttributeTargets::All" e="TypeDef:System.AttributeTargets" />
+	<edge mark="1" b="TypeDef:System.FlagsAttribute" e="Module:System.Private.CoreLib.dll" />
+	<edge b="Method:System.Void System.FlagsAttribute::.ctor()" e="TypeDef:System.FlagsAttribute" />
+	<edge mark="1" b="Method:System.Void System.FlagsAttribute::.ctor()" e="TypeDef:System.Void" />
+	<edge mark="1" b="TypeDef:System.Runtime.CompilerServices.TypeForwardedFromAttribute" e="Module:System.Private.CoreLib.dll" />
+	<edge b="Method:System.Void System.Runtime.CompilerServices.TypeForwardedFromAttribute::.ctor(System.String)" e="TypeDef:System.Runtime.CompilerServices.TypeForwardedFromAttribute" />
+	<edge mark="1" b="Method:System.Void System.Runtime.CompilerServices.TypeForwardedFromAttribute::.ctor(System.String)" e="TypeDef:System.Void" />
+	<edge mark="1" b="TypeDef:System.Runtime.InteropServices.ComVisibleAttribute" e="Module:System.Private.CoreLib.dll" />
+	<edge b="Method:System.Void System.Runtime.InteropServices.ComVisibleAttribute::.ctor(System.Boolean)" e="TypeDef:System.Runtime.InteropServices.ComVisibleAttribute" />
+	<edge mark="1" b="Method:System.Void System.Runtime.InteropServices.ComVisibleAttribute::.ctor(System.Boolean)" e="TypeDef:System.Void" />
+	<edge mark="1" b="TypeDef:System.Runtime.InteropServices.ClassInterfaceAttribute" e="Module:System.Private.CoreLib.dll" />
+	<edge b="Method:System.Void System.Runtime.InteropServices.ClassInterfaceAttribute::.ctor(System.Runtime.InteropServices.ClassInterfaceType)" e="TypeDef:System.Runtime.InteropServices.ClassInterfaceAttribute" />
+	<edge mark="1" b="TypeDef:System.Runtime.InteropServices.ClassInterfaceType" e="Module:System.Private.CoreLib.dll" />
+	<edge mark="1" b="Method:System.Void System.Runtime.InteropServices.ClassInterfaceAttribute::.ctor(System.Runtime.InteropServices.ClassInterfaceType)" e="TypeDef:System.Void" />
+	<edge mark="1" b="TypeDef:System.Runtime.InteropServices.ClassInterfaceType" e="Field:System.Int32 System.Runtime.InteropServices.ClassInterfaceType::value__" />
+	<edge mark="1" b="Field:System.Int32 System.Runtime.InteropServices.ClassInterfaceType::value__" e="TypeDef:System.Runtime.InteropServices.ClassInterfaceType" />
+	<edge mark="1" b="Field:System.Int32 System.Runtime.InteropServices.ClassInterfaceType::value__" e="TypeDef:System.Int32" />
+	<edge mark="1" b="TypeDef:System.Runtime.InteropServices.ClassInterfaceType" e="Field:System.Runtime.InteropServices.ClassInterfaceType System.Runtime.InteropServices.ClassInterfaceType::None" />
+	<edge mark="1" b="Field:System.Runtime.InteropServices.ClassInterfaceType System.Runtime.InteropServices.ClassInterfaceType::None" e="TypeDef:System.Runtime.InteropServices.ClassInterfaceType" />
+	<edge mark="1" b="Field:System.Runtime.InteropServices.ClassInterfaceType System.Runtime.InteropServices.ClassInterfaceType::None" e="TypeDef:System.Runtime.InteropServices.ClassInterfaceType" />
+	<edge mark="1" b="TypeDef:System.Runtime.InteropServices.ClassInterfaceType" e="Field:System.Runtime.InteropServices.ClassInterfaceType System.Runtime.InteropServices.ClassInterfaceType::AutoDispatch" />
+	<edge mark="1" b="Field:System.Runtime.InteropServices.ClassInterfaceType System.Runtime.InteropServices.ClassInterfaceType::AutoDispatch" e="TypeDef:System.Runtime.InteropServices.ClassInterfaceType" />
+	<edge mark="1" b="Field:System.Runtime.InteropServices.ClassInterfaceType System.Runtime.InteropServices.ClassInterfaceType::AutoDispatch" e="TypeDef:System.Runtime.InteropServices.ClassInterfaceType" />
+	<edge mark="1" b="TypeDef:System.Runtime.InteropServices.ClassInterfaceType" e="Field:System.Runtime.InteropServices.ClassInterfaceType System.Runtime.InteropServices.ClassInterfaceType::AutoDual" />
+	<edge mark="1" b="Field:System.Runtime.InteropServices.ClassInterfaceType System.Runtime.InteropServices.ClassInterfaceType::AutoDual" e="TypeDef:System.Runtime.InteropServices.ClassInterfaceType" />
+	<edge mark="1" b="Field:System.Runtime.InteropServices.ClassInterfaceType System.Runtime.InteropServices.ClassInterfaceType::AutoDual" e="TypeDef:System.Runtime.InteropServices.ClassInterfaceType" />
+	<edge mark="1" b="TypeDef:System.Runtime.CompilerServices.NullableContextAttribute" e="Module:System.Private.CoreLib.dll" />
+	<edge b="Method:System.Void System.Runtime.CompilerServices.NullableContextAttribute::.ctor(System.Byte)" e="TypeDef:System.Runtime.CompilerServices.NullableContextAttribute" />
+	<edge mark="1" b="Method:System.Void System.Runtime.CompilerServices.NullableContextAttribute::.ctor(System.Byte)" e="TypeDef:System.Void" />
+	<edge mark="1" b="TypeDef:System.RuntimeTypeHandle" e="Module:System.Private.CoreLib.dll" />
+	<edge mark="1" b="Method:System.Type System.Type::GetTypeFromHandle(System.RuntimeTypeHandle)" e="TypeDef:System.Type" />
+	<edge mark="1" b="TypeDef:System.RuntimeTypeHandle" e="Method:System.Int32 System.RuntimeTypeHandle::GetHashCode()" />
+	<edge mark="1" b="TypeDef:System.RuntimeTypeHandle" e="Method:System.Boolean System.RuntimeTypeHandle::Equals(System.Object)" />
+	<edge mark="1" b="TypeDef:System.RuntimeTypeHandle" e="Field:System.RuntimeType System.RuntimeTypeHandle::m_type" />
+	<edge mark="1" b="Field:System.RuntimeType System.RuntimeTypeHandle::m_type" e="TypeDef:System.RuntimeTypeHandle" />
+	<edge mark="1" b="Field:System.RuntimeType System.RuntimeTypeHandle::m_type" e="TypeDef:System.RuntimeType:System.Private.CoreLib.dll" />
+	<edge mark="1" b="TypeDef:System.RuntimeType:System.Private.CoreLib.dll" e="Module:System.Private.CoreLib.dll" />
+	<edge mark="1" b="TypeDef:System.RuntimeTypeHandle" e="Method:System.Int32 System.RuntimeTypeHandle::GetHashCode()" />
+	<edge mark="1" b="TypeDef:System.RuntimeTypeHandle" e="Method:System.Boolean System.RuntimeTypeHandle::Equals(System.Object)" />
+	<edge mark="1" b="TypeDef:System.Reflection.TypeInfo" e="Module:System.Private.CoreLib.dll" />
+	<edge mark="1" b="Method:System.Reflection.MethodInfo[] System.Type::GetMethods(System.Reflection.BindingFlags)" e="Method:System.Reflection.MethodInfo[] System.RuntimeType::GetMethods(System.Reflection.BindingFlags)" />
+	<edge mark="1" b="Method:System.Reflection.ConstructorInfo[] System.Type::GetConstructors(System.Reflection.BindingFlags)" e="Method:System.Reflection.ConstructorInfo[] System.RuntimeType::GetConstructors(System.Reflection.BindingFlags)" />
+	<edge mark="1" b="Method:System.Reflection.PropertyInfo[] System.Type::GetProperties(System.Reflection.BindingFlags)" e="Method:System.Reflection.PropertyInfo[] System.RuntimeType::GetProperties(System.Reflection.BindingFlags)" />
+	<edge mark="1" b="Method:System.Reflection.EventInfo[] System.Type::GetEvents(System.Reflection.BindingFlags)" e="Method:System.Reflection.EventInfo[] System.RuntimeType::GetEvents(System.Reflection.BindingFlags)" />
+	<edge mark="1" b="Method:System.Reflection.FieldInfo[] System.Type::GetFields(System.Reflection.BindingFlags)" e="Method:System.Reflection.FieldInfo[] System.RuntimeType::GetFields(System.Reflection.BindingFlags)" />
+	<edge mark="1" b="Method:System.Type[] System.Type::GetInterfaces()" e="Method:System.Type[] System.RuntimeType::GetInterfaces()" />
+	<edge mark="1" b="Method:System.Type[] System.Type::GetNestedTypes(System.Reflection.BindingFlags)" e="Method:System.Type[] System.RuntimeType::GetNestedTypes(System.Reflection.BindingFlags)" />
+	<edge mark="1" b="Method:System.Reflection.MemberInfo[] System.Type::GetMembers(System.Reflection.BindingFlags)" e="Method:System.Reflection.MemberInfo[] System.RuntimeType::GetMembers(System.Reflection.BindingFlags)" />
+	<edge mark="1" b="Method:System.Reflection.MethodInfo System.Type::GetMethodImpl(System.String,System.Reflection.BindingFlags,System.Reflection.Binder,System.Reflection.CallingConventions,System.Type[],System.Reflection.ParameterModifier[])" e="Method:System.Reflection.MethodInfo System.RuntimeType::GetMethodImpl(System.String,System.Reflection.BindingFlags,System.Reflection.Binder,System.Reflection.CallingConventions,System.Type[],System.Reflection.ParameterModifier[])" />
+	<edge mark="1" b="Method:System.Reflection.ConstructorInfo System.Type::GetConstructorImpl(System.Reflection.BindingFlags,System.Reflection.Binder,System.Reflection.CallingConventions,System.Type[],System.Reflection.ParameterModifier[])" e="Method:System.Reflection.ConstructorInfo System.RuntimeType::GetConstructorImpl(System.Reflection.BindingFlags,System.Reflection.Binder,System.Reflection.CallingConventions,System.Type[],System.Reflection.ParameterModifier[])" />
+	<edge mark="1" b="Method:System.Reflection.PropertyInfo System.Type::GetPropertyImpl(System.String,System.Reflection.BindingFlags,System.Reflection.Binder,System.Type,System.Type[],System.Reflection.ParameterModifier[])" e="Method:System.Reflection.PropertyInfo System.RuntimeType::GetPropertyImpl(System.String,System.Reflection.BindingFlags,System.Reflection.Binder,System.Type,System.Type[],System.Reflection.ParameterModifier[])" />
+	<edge mark="1" b="Method:System.Reflection.EventInfo System.Type::GetEvent(System.String,System.Reflection.BindingFlags)" e="Method:System.Reflection.EventInfo System.RuntimeType::GetEvent(System.String,System.Reflection.BindingFlags)" />
+	<edge mark="1" b="Method:System.Reflection.FieldInfo System.Type::GetField(System.String,System.Reflection.BindingFlags)" e="Method:System.Reflection.FieldInfo System.RuntimeType::GetField(System.String,System.Reflection.BindingFlags)" />
+	<edge mark="1" b="Method:System.Type System.Type::GetInterface(System.String,System.Boolean)" e="Method:System.Type System.RuntimeType::GetInterface(System.String,System.Boolean)" />
+	<edge mark="1" b="Method:System.Type System.Type::GetNestedType(System.String,System.Reflection.BindingFlags)" e="Method:System.Type System.RuntimeType::GetNestedType(System.String,System.Reflection.BindingFlags)" />
+	<edge mark="1" b="Method:System.String System.Type::get_FullName()" e="Method:System.String System.RuntimeType::get_FullName()" />
+	<edge mark="1" b="Method:System.String System.Type::get_AssemblyQualifiedName()" e="Method:System.String System.RuntimeType::get_AssemblyQualifiedName()" />
+	<edge mark="1" b="Method:System.String System.Type::get_Namespace()" e="Method:System.String System.RuntimeType::get_Namespace()" />
+	<edge mark="1" b="Method:System.Guid System.Type::get_GUID()" e="Method:System.Guid System.RuntimeType::get_GUID()" />
+	<edge mark="1" b="Method:System.String System.Reflection.MemberInfo::get_Name()" e="Method:System.String System.RuntimeType::get_Name()" />
+	<edge mark="1" b="Method:System.Reflection.Assembly System.Type::get_Assembly()" e="Method:System.Reflection.Assembly System.RuntimeType::get_Assembly()" />
+	<edge mark="1" b="Method:System.Type System.Type::get_BaseType()" e="Method:System.Type System.RuntimeType::get_BaseType()" />
+	<edge mark="1" b="Method:System.Reflection.Module System.Type::get_Module()" e="Method:System.Reflection.Module System.RuntimeType::get_Module()" />
+	<edge mark="1" b="Method:System.Type System.Type::get_UnderlyingSystemType()" e="Method:System.Type System.RuntimeType::get_UnderlyingSystemType()" />
+	<edge mark="1" b="Method:System.Reflection.TypeAttributes System.Type::GetAttributeFlagsImpl()" e="Method:System.Reflection.TypeAttributes System.RuntimeType::GetAttributeFlagsImpl()" />
+	<edge mark="1" b="Method:System.Object[] System.Reflection.MemberInfo::GetCustomAttributes(System.Boolean)" e="Method:System.Object[] System.RuntimeType::GetCustomAttributes(System.Boolean)" />
+	<edge mark="1" b="Method:System.Object[] System.Reflection.MemberInfo::GetCustomAttributes(System.Type,System.Boolean)" e="Method:System.Object[] System.RuntimeType::GetCustomAttributes(System.Type,System.Boolean)" />
+	<edge mark="1" b="Method:System.Type System.Type::GetElementType()" e="Method:System.Type System.RuntimeType::GetElementType()" />
+	<edge mark="1" b="Method:System.Boolean System.Type::HasElementTypeImpl()" e="Method:System.Boolean System.RuntimeType::HasElementTypeImpl()" />
+	<edge mark="1" b="Method:System.Boolean System.Type::IsArrayImpl()" e="Method:System.Boolean System.RuntimeType::IsArrayImpl()" />
+	<edge mark="1" b="Method:System.Boolean System.Reflection.MemberInfo::IsDefined(System.Type,System.Boolean)" e="Method:System.Boolean System.RuntimeType::IsDefined(System.Type,System.Boolean)" />
+	<edge mark="1" b="Method:System.Boolean System.Type::IsByRefImpl()" e="Method:System.Boolean System.RuntimeType::IsByRefImpl()" />
+	<edge mark="1" b="Method:System.Boolean System.Type::IsPrimitiveImpl()" e="Method:System.Boolean System.RuntimeType::IsPrimitiveImpl()" />
+	<edge mark="1" b="Method:System.Boolean System.Type::IsPointerImpl()" e="Method:System.Boolean System.RuntimeType::IsPointerImpl()" />
+	<edge mark="1" b="Method:System.Boolean System.Type::IsCOMObjectImpl()" e="Method:System.Boolean System.RuntimeType::IsCOMObjectImpl()" />
+	<edge mark="1" b="Method:System.Object System.Type::InvokeMember(System.String,System.Reflection.BindingFlags,System.Reflection.Binder,System.Object,System.Object[],System.Reflection.ParameterModifier[],System.Globalization.CultureInfo,System.String[])" e="Method:System.Object System.RuntimeType::InvokeMember(System.String,System.Reflection.BindingFlags,System.Reflection.Binder,System.Object,System.Object[],System.Reflection.ParameterModifier[],System.Globalization.CultureInfo,System.String[])" />
+	<edge mark="1" b="TypeDef:System.Reflection.BindingFlags" e="Module:System.Private.CoreLib.dll" />
+	<edge mark="1" b="TypeDef:System.Reflection.Binder" e="Module:System.Private.CoreLib.dll" />
+	<edge b="Method:System.Object System.RuntimeType::InvokeMember(System.String,System.Reflection.BindingFlags,System.Reflection.Binder,System.Object,System.Object[],System.Reflection.ParameterModifier[],System.Globalization.CultureInfo,System.String[])" e="TypeSpec:System.Object[]" />
+	<edge b="Method:System.Object System.RuntimeType::InvokeMember(System.String,System.Reflection.BindingFlags,System.Reflection.Binder,System.Object,System.Object[],System.Reflection.ParameterModifier[],System.Globalization.CultureInfo,System.String[])" e="TypeSpec:System.Reflection.ParameterModifier[]" />
+	<edge mark="1" b="TypeDef:System.Reflection.ParameterModifier" e="Module:System.Private.CoreLib.dll" />
+	<edge mark="1" b="TypeDef:System.Globalization.CultureInfo" e="Module:System.Private.CoreLib.dll" />
+	<edge b="Method:System.Object System.RuntimeType::InvokeMember(System.String,System.Reflection.BindingFlags,System.Reflection.Binder,System.Object,System.Object[],System.Reflection.ParameterModifier[],System.Globalization.CultureInfo,System.String[])" e="TypeSpec:System.String[]" />
+	<edge mark="1" b="Method:System.Object System.RuntimeType::InvokeMember(System.String,System.Reflection.BindingFlags,System.Reflection.Binder,System.Object,System.Object[],System.Reflection.ParameterModifier[],System.Globalization.CultureInfo,System.String[])" e="Method:System.Object System.Type::InvokeMember(System.String,System.Reflection.BindingFlags,System.Reflection.Binder,System.Object,System.Object[],System.Reflection.ParameterModifier[],System.Globalization.CultureInfo,System.String[])" />
+	<edge mark="1" b="Method:System.Object System.RuntimeType::InvokeMember(System.String,System.Reflection.BindingFlags,System.Reflection.Binder,System.Object,System.Object[],System.Reflection.ParameterModifier[],System.Globalization.CultureInfo,System.String[])" e="TypeDef:System.Object" />
+	<edge mark="1" b="TypeDef:System.Reflection.ParameterModifier" e="Field:System.Boolean[] System.Reflection.ParameterModifier::_byRef" />
+	<edge mark="1" b="Field:System.Boolean[] System.Reflection.ParameterModifier::_byRef" e="TypeDef:System.Reflection.ParameterModifier" />
+	<edge b="Field:System.Boolean[] System.Reflection.ParameterModifier::_byRef" e="TypeSpec:System.Boolean[]" />
+	<edge mark="1" b="TypeSpec:System.Boolean[]" e="TypeDef:System.Boolean" />
+	<edge mark="1" b="TypeDef:System.Reflection.BindingFlags" e="Field:System.Int32 System.Reflection.BindingFlags::value__" />
+	<edge mark="1" b="Field:System.Int32 System.Reflection.BindingFlags::value__" e="TypeDef:System.Reflection.BindingFlags" />
+	<edge mark="1" b="Field:System.Int32 System.Reflection.BindingFlags::value__" e="TypeDef:System.Int32" />
+	<edge mark="1" b="TypeDef:System.Reflection.BindingFlags" e="Field:System.Reflection.BindingFlags System.Reflection.BindingFlags::Default" />
+	<edge mark="1" b="Field:System.Reflection.BindingFlags System.Reflection.BindingFlags::Default" e="TypeDef:System.Reflection.BindingFlags" />
+	<edge mark="1" b="Field:System.Reflection.BindingFlags System.Reflection.BindingFlags::Default" e="TypeDef:System.Reflection.BindingFlags" />
+	<edge mark="1" b="TypeDef:System.Reflection.BindingFlags" e="Field:System.Reflection.BindingFlags System.Reflection.BindingFlags::IgnoreCase" />
+	<edge mark="1" b="Field:System.Reflection.BindingFlags System.Reflection.BindingFlags::IgnoreCase" e="TypeDef:System.Reflection.BindingFlags" />
+	<edge mark="1" b="Field:System.Reflection.BindingFlags System.Reflection.BindingFlags::IgnoreCase" e="TypeDef:System.Reflection.BindingFlags" />
+	<edge mark="1" b="TypeDef:System.Reflection.BindingFlags" e="Field:System.Reflection.BindingFlags System.Reflection.BindingFlags::DeclaredOnly" />
+	<edge mark="1" b="Field:System.Reflection.BindingFlags System.Reflection.BindingFlags::DeclaredOnly" e="TypeDef:System.Reflection.BindingFlags" />
+	<edge mark="1" b="Field:System.Reflection.BindingFlags System.Reflection.BindingFlags::DeclaredOnly" e="TypeDef:System.Reflection.BindingFlags" />
+	<edge mark="1" b="TypeDef:System.Reflection.BindingFlags" e="Field:System.Reflection.BindingFlags System.Reflection.BindingFlags::Instance" />
+	<edge mark="1" b="Field:System.Reflection.BindingFlags System.Reflection.BindingFlags::Instance" e="TypeDef:System.Reflection.BindingFlags" />
+	<edge mark="1" b="Field:System.Reflection.BindingFlags System.Reflection.BindingFlags::Instance" e="TypeDef:System.Reflection.BindingFlags" />
+	<edge mark="1" b="TypeDef:System.Reflection.BindingFlags" e="Field:System.Reflection.BindingFlags System.Reflection.BindingFlags::Static" />
+	<edge mark="1" b="Field:System.Reflection.BindingFlags System.Reflection.BindingFlags::Static" e="TypeDef:System.Reflection.BindingFlags" />
+	<edge mark="1" b="Field:System.Reflection.BindingFlags System.Reflection.BindingFlags::Static" e="TypeDef:System.Reflection.BindingFlags" />
+	<edge mark="1" b="TypeDef:System.Reflection.BindingFlags" e="Field:System.Reflection.BindingFlags System.Reflection.BindingFlags::Public" />
+	<edge mark="1" b="Field:System.Reflection.BindingFlags System.Reflection.BindingFlags::Public" e="TypeDef:System.Reflection.BindingFlags" />
+	<edge mark="1" b="Field:System.Reflection.BindingFlags System.Reflection.BindingFlags::Public" e="TypeDef:System.Reflection.BindingFlags" />
+	<edge mark="1" b="TypeDef:System.Reflection.BindingFlags" e="Field:System.Reflection.BindingFlags System.Reflection.BindingFlags::NonPublic" />
+	<edge mark="1" b="Field:System.Reflection.BindingFlags System.Reflection.BindingFlags::NonPublic" e="TypeDef:System.Reflection.BindingFlags" />
+	<edge mark="1" b="Field:System.Reflection.BindingFlags System.Reflection.BindingFlags::NonPublic" e="TypeDef:System.Reflection.BindingFlags" />
+	<edge mark="1" b="TypeDef:System.Reflection.BindingFlags" e="Field:System.Reflection.BindingFlags System.Reflection.BindingFlags::FlattenHierarchy" />
+	<edge mark="1" b="Field:System.Reflection.BindingFlags System.Reflection.BindingFlags::FlattenHierarchy" e="TypeDef:System.Reflection.BindingFlags" />
+	<edge mark="1" b="Field:System.Reflection.BindingFlags System.Reflection.BindingFlags::FlattenHierarchy" e="TypeDef:System.Reflection.BindingFlags" />
+	<edge mark="1" b="TypeDef:System.Reflection.BindingFlags" e="Field:System.Reflection.BindingFlags System.Reflection.BindingFlags::InvokeMethod" />
+	<edge mark="1" b="Field:System.Reflection.BindingFlags System.Reflection.BindingFlags::InvokeMethod" e="TypeDef:System.Reflection.BindingFlags" />
+	<edge mark="1" b="Field:System.Reflection.BindingFlags System.Reflection.BindingFlags::InvokeMethod" e="TypeDef:System.Reflection.BindingFlags" />
+	<edge mark="1" b="TypeDef:System.Reflection.BindingFlags" e="Field:System.Reflection.BindingFlags System.Reflection.BindingFlags::CreateInstance" />
+	<edge mark="1" b="Field:System.Reflection.BindingFlags System.Reflection.BindingFlags::CreateInstance" e="TypeDef:System.Reflection.BindingFlags" />
+	<edge mark="1" b="Field:System.Reflection.BindingFlags System.Reflection.BindingFlags::CreateInstance" e="TypeDef:System.Reflection.BindingFlags" />
+	<edge mark="1" b="TypeDef:System.Reflection.BindingFlags" e="Field:System.Reflection.BindingFlags System.Reflection.BindingFlags::GetField" />
+	<edge mark="1" b="Field:System.Reflection.BindingFlags System.Reflection.BindingFlags::GetField" e="TypeDef:System.Reflection.BindingFlags" />
+	<edge mark="1" b="Field:System.Reflection.BindingFlags System.Reflection.BindingFlags::GetField" e="TypeDef:System.Reflection.BindingFlags" />
+	<edge mark="1" b="TypeDef:System.Reflection.BindingFlags" e="Field:System.Reflection.BindingFlags System.Reflection.BindingFlags::SetField" />
+	<edge mark="1" b="Field:System.Reflection.BindingFlags System.Reflection.BindingFlags::SetField" e="TypeDef:System.Reflection.BindingFlags" />
+	<edge mark="1" b="Field:System.Reflection.BindingFlags System.Reflection.BindingFlags::SetField" e="TypeDef:System.Reflection.BindingFlags" />
+	<edge mark="1" b="TypeDef:System.Reflection.BindingFlags" e="Field:System.Reflection.BindingFlags System.Reflection.BindingFlags::GetProperty" />
+	<edge mark="1" b="Field:System.Reflection.BindingFlags System.Reflection.BindingFlags::GetProperty" e="TypeDef:System.Reflection.BindingFlags" />
+	<edge mark="1" b="Field:System.Reflection.BindingFlags System.Reflection.BindingFlags::GetProperty" e="TypeDef:System.Reflection.BindingFlags" />
+	<edge mark="1" b="TypeDef:System.Reflection.BindingFlags" e="Field:System.Reflection.BindingFlags System.Reflection.BindingFlags::SetProperty" />
+	<edge mark="1" b="Field:System.Reflection.BindingFlags System.Reflection.BindingFlags::SetProperty" e="TypeDef:System.Reflection.BindingFlags" />
+	<edge mark="1" b="Field:System.Reflection.BindingFlags System.Reflection.BindingFlags::SetProperty" e="TypeDef:System.Reflection.BindingFlags" />
+	<edge mark="1" b="TypeDef:System.Reflection.BindingFlags" e="Field:System.Reflection.BindingFlags System.Reflection.BindingFlags::PutDispProperty" />
+	<edge mark="1" b="Field:System.Reflection.BindingFlags System.Reflection.BindingFlags::PutDispProperty" e="TypeDef:System.Reflection.BindingFlags" />
+	<edge mark="1" b="Field:System.Reflection.BindingFlags System.Reflection.BindingFlags::PutDispProperty" e="TypeDef:System.Reflection.BindingFlags" />
+	<edge mark="1" b="TypeDef:System.Reflection.BindingFlags" e="Field:System.Reflection.BindingFlags System.Reflection.BindingFlags::PutRefDispProperty" />
+	<edge mark="1" b="Field:System.Reflection.BindingFlags System.Reflection.BindingFlags::PutRefDispProperty" e="TypeDef:System.Reflection.BindingFlags" />
+	<edge mark="1" b="Field:System.Reflection.BindingFlags System.Reflection.BindingFlags::PutRefDispProperty" e="TypeDef:System.Reflection.BindingFlags" />
+	<edge mark="1" b="TypeDef:System.Reflection.BindingFlags" e="Field:System.Reflection.BindingFlags System.Reflection.BindingFlags::ExactBinding" />
+	<edge mark="1" b="Field:System.Reflection.BindingFlags System.Reflection.BindingFlags::ExactBinding" e="TypeDef:System.Reflection.BindingFlags" />
+	<edge mark="1" b="Field:System.Reflection.BindingFlags System.Reflection.BindingFlags::ExactBinding" e="TypeDef:System.Reflection.BindingFlags" />
+	<edge mark="1" b="TypeDef:System.Reflection.BindingFlags" e="Field:System.Reflection.BindingFlags System.Reflection.BindingFlags::SuppressChangeType" />
+	<edge mark="1" b="Field:System.Reflection.BindingFlags System.Reflection.BindingFlags::SuppressChangeType" e="TypeDef:System.Reflection.BindingFlags" />
+	<edge mark="1" b="Field:System.Reflection.BindingFlags System.Reflection.BindingFlags::SuppressChangeType" e="TypeDef:System.Reflection.BindingFlags" />
+	<edge mark="1" b="TypeDef:System.Reflection.BindingFlags" e="Field:System.Reflection.BindingFlags System.Reflection.BindingFlags::OptionalParamBinding" />
+	<edge mark="1" b="Field:System.Reflection.BindingFlags System.Reflection.BindingFlags::OptionalParamBinding" e="TypeDef:System.Reflection.BindingFlags" />
+	<edge mark="1" b="Field:System.Reflection.BindingFlags System.Reflection.BindingFlags::OptionalParamBinding" e="TypeDef:System.Reflection.BindingFlags" />
+	<edge mark="1" b="TypeDef:System.Reflection.BindingFlags" e="Field:System.Reflection.BindingFlags System.Reflection.BindingFlags::IgnoreReturn" />
+	<edge mark="1" b="Field:System.Reflection.BindingFlags System.Reflection.BindingFlags::IgnoreReturn" e="TypeDef:System.Reflection.BindingFlags" />
+	<edge mark="1" b="Field:System.Reflection.BindingFlags System.Reflection.BindingFlags::IgnoreReturn" e="TypeDef:System.Reflection.BindingFlags" />
+	<edge mark="1" b="TypeDef:System.Reflection.BindingFlags" e="Field:System.Reflection.BindingFlags System.Reflection.BindingFlags::DoNotWrapExceptions" />
+	<edge mark="1" b="Field:System.Reflection.BindingFlags System.Reflection.BindingFlags::DoNotWrapExceptions" e="TypeDef:System.Reflection.BindingFlags" />
+	<edge mark="1" b="Field:System.Reflection.BindingFlags System.Reflection.BindingFlags::DoNotWrapExceptions" e="TypeDef:System.Reflection.BindingFlags" />
+	<edge b="Method:System.Object System.Type::InvokeMember(System.String,System.Reflection.BindingFlags,System.Reflection.Binder,System.Object,System.Object[],System.Reflection.ParameterModifier[],System.Globalization.CultureInfo,System.String[])" e="TypeSpec:System.Object[]" />
+	<edge b="Method:System.Object System.Type::InvokeMember(System.String,System.Reflection.BindingFlags,System.Reflection.Binder,System.Object,System.Object[],System.Reflection.ParameterModifier[],System.Globalization.CultureInfo,System.String[])" e="TypeSpec:System.Reflection.ParameterModifier[]" />
+	<edge b="Method:System.Object System.Type::InvokeMember(System.String,System.Reflection.BindingFlags,System.Reflection.Binder,System.Object,System.Object[],System.Reflection.ParameterModifier[],System.Globalization.CultureInfo,System.String[])" e="TypeSpec:System.String[]" />
+	<edge mark="1" b="Method:System.Object System.Type::InvokeMember(System.String,System.Reflection.BindingFlags,System.Reflection.Binder,System.Object,System.Object[],System.Reflection.ParameterModifier[],System.Globalization.CultureInfo,System.String[])" e="Method:System.Object System.RuntimeType::InvokeMember(System.String,System.Reflection.BindingFlags,System.Reflection.Binder,System.Object,System.Object[],System.Reflection.ParameterModifier[],System.Globalization.CultureInfo,System.String[])" />
+	<edge mark="1" b="Method:System.Object System.Type::InvokeMember(System.String,System.Reflection.BindingFlags,System.Reflection.Binder,System.Object,System.Object[],System.Reflection.ParameterModifier[],System.Globalization.CultureInfo,System.String[])" e="TypeDef:System.Object" />
+	<edge b="Method:System.Void System.Runtime.CompilerServices.NullableAttribute::.ctor(System.Byte[])" e="TypeDef:System.Runtime.CompilerServices.NullableAttribute" />
+	<edge b="Method:System.Void System.Runtime.CompilerServices.NullableAttribute::.ctor(System.Byte[])" e="TypeSpec:System.Byte[]" />
+	<edge mark="1" b="Method:System.Void System.Runtime.CompilerServices.NullableAttribute::.ctor(System.Byte[])" e="TypeDef:System.Void" />
+	<edge mark="1" b="TypeDef:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute" e="Module:System.Private.CoreLib.dll" />
+	<edge b="Method:System.Void System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute::.ctor(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes)" e="TypeDef:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute" />
+	<edge mark="1" b="TypeDef:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes" e="Module:System.Private.CoreLib.dll" />
+	<edge mark="1" b="Method:System.Void System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute::.ctor(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes)" e="TypeDef:System.Void" />
+	<edge mark="1" b="TypeDef:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes" e="Field:System.Int32 System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes::value__" />
+	<edge mark="1" b="Field:System.Int32 System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes::value__" e="TypeDef:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes" />
+	<edge mark="1" b="Field:System.Int32 System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes::value__" e="TypeDef:System.Int32" />
+	<edge mark="1" b="TypeDef:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes" e="Field:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes::None" />
+	<edge mark="1" b="Field:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes::None" e="TypeDef:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes" />
+	<edge mark="1" b="Field:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes::None" e="TypeDef:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes" />
+	<edge mark="1" b="TypeDef:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes" e="Field:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes::PublicParameterlessConstructor" />
+	<edge mark="1" b="Field:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes::PublicParameterlessConstructor" e="TypeDef:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes" />
+	<edge mark="1" b="Field:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes::PublicParameterlessConstructor" e="TypeDef:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes" />
+	<edge mark="1" b="TypeDef:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes" e="Field:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes::PublicConstructors" />
+	<edge mark="1" b="Field:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes::PublicConstructors" e="TypeDef:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes" />
+	<edge mark="1" b="Field:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes::PublicConstructors" e="TypeDef:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes" />
+	<edge mark="1" b="TypeDef:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes" e="Field:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes::NonPublicConstructors" />
+	<edge mark="1" b="Field:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes::NonPublicConstructors" e="TypeDef:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes" />
+	<edge mark="1" b="Field:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes::NonPublicConstructors" e="TypeDef:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes" />
+	<edge mark="1" b="TypeDef:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes" e="Field:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes::PublicMethods" />
+	<edge mark="1" b="Field:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes::PublicMethods" e="TypeDef:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes" />
+	<edge mark="1" b="Field:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes::PublicMethods" e="TypeDef:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes" />
+	<edge mark="1" b="TypeDef:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes" e="Field:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes::NonPublicMethods" />
+	<edge mark="1" b="Field:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes::NonPublicMethods" e="TypeDef:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes" />
+	<edge mark="1" b="Field:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes::NonPublicMethods" e="TypeDef:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes" />
+	<edge mark="1" b="TypeDef:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes" e="Field:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes::PublicFields" />
+	<edge mark="1" b="Field:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes::PublicFields" e="TypeDef:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes" />
+	<edge mark="1" b="Field:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes::PublicFields" e="TypeDef:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes" />
+	<edge mark="1" b="TypeDef:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes" e="Field:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes::NonPublicFields" />
+	<edge mark="1" b="Field:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes::NonPublicFields" e="TypeDef:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes" />
+	<edge mark="1" b="Field:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes::NonPublicFields" e="TypeDef:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes" />
+	<edge mark="1" b="TypeDef:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes" e="Field:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes::PublicNestedTypes" />
+	<edge mark="1" b="Field:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes::PublicNestedTypes" e="TypeDef:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes" />
+	<edge mark="1" b="Field:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes::PublicNestedTypes" e="TypeDef:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes" />
+	<edge mark="1" b="TypeDef:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes" e="Field:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes::NonPublicNestedTypes" />
+	<edge mark="1" b="Field:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes::NonPublicNestedTypes" e="TypeDef:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes" />
+	<edge mark="1" b="Field:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes::NonPublicNestedTypes" e="TypeDef:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes" />
+	<edge mark="1" b="TypeDef:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes" e="Field:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes::PublicProperties" />
+	<edge mark="1" b="Field:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes::PublicProperties" e="TypeDef:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes" />
+	<edge mark="1" b="Field:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes::PublicProperties" e="TypeDef:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes" />
+	<edge mark="1" b="TypeDef:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes" e="Field:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes::NonPublicProperties" />
+	<edge mark="1" b="Field:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes::NonPublicProperties" e="TypeDef:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes" />
+	<edge mark="1" b="Field:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes::NonPublicProperties" e="TypeDef:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes" />
+	<edge mark="1" b="TypeDef:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes" e="Field:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes::PublicEvents" />
+	<edge mark="1" b="Field:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes::PublicEvents" e="TypeDef:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes" />
+	<edge mark="1" b="Field:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes::PublicEvents" e="TypeDef:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes" />
+	<edge mark="1" b="TypeDef:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes" e="Field:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes::NonPublicEvents" />
+	<edge mark="1" b="Field:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes::NonPublicEvents" e="TypeDef:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes" />
+	<edge mark="1" b="Field:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes::NonPublicEvents" e="TypeDef:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes" />
+	<edge mark="1" b="TypeDef:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes" e="Field:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes::Interfaces" />
+	<edge mark="1" b="Field:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes::Interfaces" e="TypeDef:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes" />
+	<edge mark="1" b="Field:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes::Interfaces" e="TypeDef:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes" />
+	<edge mark="1" b="TypeDef:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes" e="Field:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes::All" />
+	<edge mark="1" b="Field:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes::All" e="TypeDef:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes" />
+	<edge mark="1" b="Field:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes::All" e="TypeDef:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes" />
+	<edge mark="1" b="TypeDef:System.Diagnostics.DebuggerHiddenAttribute" e="Module:System.Private.CoreLib.dll" />
+	<edge b="Method:System.Void System.Diagnostics.DebuggerHiddenAttribute::.ctor()" e="TypeDef:System.Diagnostics.DebuggerHiddenAttribute" />
+	<edge mark="1" b="Method:System.Void System.Diagnostics.DebuggerHiddenAttribute::.ctor()" e="TypeDef:System.Void" />
+	<edge mark="1" b="TypeDef:System.Diagnostics.DebuggerStepThroughAttribute" e="Module:System.Private.CoreLib.dll" />
+	<edge b="Method:System.Void System.Diagnostics.DebuggerStepThroughAttribute::.ctor()" e="TypeDef:System.Diagnostics.DebuggerStepThroughAttribute" />
+	<edge mark="1" b="Method:System.Void System.Diagnostics.DebuggerStepThroughAttribute::.ctor()" e="TypeDef:System.Void" />
+	<edge mark="1" b="Method:System.Boolean System.RuntimeType::IsCOMObjectImpl()" e="Method:System.Boolean System.Type::IsCOMObjectImpl()" />
+	<edge mark="1" b="Method:System.Boolean System.RuntimeType::IsCOMObjectImpl()" e="TypeDef:System.Boolean" />
+	<edge mark="1" b="Method:System.Boolean System.Type::IsCOMObjectImpl()" e="Method:System.Boolean System.RuntimeType::IsCOMObjectImpl()" />
+	<edge mark="1" b="Method:System.Boolean System.Type::IsCOMObjectImpl()" e="TypeDef:System.Boolean" />
+	<edge mark="1" b="Method:System.Boolean System.RuntimeType::IsPointerImpl()" e="Method:System.Boolean System.Type::IsPointerImpl()" />
+	<edge mark="1" b="Method:System.Boolean System.RuntimeType::IsPointerImpl()" e="TypeDef:System.Boolean" />
+	<edge mark="1" b="Method:System.Boolean System.Type::IsPointerImpl()" e="Method:System.Boolean System.RuntimeType::IsPointerImpl()" />
+	<edge mark="1" b="Method:System.Boolean System.Type::IsPointerImpl()" e="TypeDef:System.Boolean" />
+	<edge mark="1" b="Method:System.Boolean System.RuntimeType::IsPrimitiveImpl()" e="Method:System.Boolean System.Type::IsPrimitiveImpl()" />
+	<edge mark="1" b="Method:System.Boolean System.RuntimeType::IsPrimitiveImpl()" e="TypeDef:System.Boolean" />
+	<edge mark="1" b="Method:System.Boolean System.Type::IsPrimitiveImpl()" e="Method:System.Boolean System.RuntimeType::IsPrimitiveImpl()" />
+	<edge mark="1" b="Method:System.Boolean System.Type::IsPrimitiveImpl()" e="TypeDef:System.Boolean" />
+	<edge mark="1" b="Method:System.Boolean System.RuntimeType::IsByRefImpl()" e="Method:System.Boolean System.Type::IsByRefImpl()" />
+	<edge mark="1" b="Method:System.Boolean System.RuntimeType::IsByRefImpl()" e="TypeDef:System.Boolean" />
+	<edge mark="1" b="Method:System.Boolean System.Type::IsByRefImpl()" e="Method:System.Boolean System.RuntimeType::IsByRefImpl()" />
+	<edge mark="1" b="Method:System.Boolean System.Type::IsByRefImpl()" e="TypeDef:System.Boolean" />
+	<edge mark="1" b="Method:System.Boolean System.RuntimeType::IsDefined(System.Type,System.Boolean)" e="Method:System.Boolean System.Reflection.MemberInfo::IsDefined(System.Type,System.Boolean)" />
+	<edge mark="1" b="Method:System.Boolean System.RuntimeType::IsDefined(System.Type,System.Boolean)" e="TypeDef:System.Boolean" />
+	<edge mark="1" b="TypeDef:System.Reflection.MemberInfo" e="Module:System.Private.CoreLib.dll" />
+	<edge mark="1" b="Method:System.Boolean System.Reflection.MemberInfo::IsDefined(System.Type,System.Boolean)" e="Method:System.Boolean System.RuntimeType::IsDefined(System.Type,System.Boolean)" />
+	<edge mark="1" b="Method:System.Boolean System.Reflection.MemberInfo::IsDefined(System.Type,System.Boolean)" e="TypeDef:System.Boolean" />
+	<edge mark="1" b="Method:System.Boolean System.RuntimeType::IsArrayImpl()" e="Method:System.Boolean System.Type::IsArrayImpl()" />
+	<edge mark="1" b="Method:System.Boolean System.RuntimeType::IsArrayImpl()" e="TypeDef:System.Boolean" />
+	<edge mark="1" b="Method:System.Boolean System.Type::IsArrayImpl()" e="Method:System.Boolean System.RuntimeType::IsArrayImpl()" />
+	<edge mark="1" b="Method:System.Boolean System.Type::IsArrayImpl()" e="TypeDef:System.Boolean" />
+	<edge mark="1" b="Method:System.Boolean System.RuntimeType::HasElementTypeImpl()" e="Method:System.Boolean System.Type::HasElementTypeImpl()" />
+	<edge mark="1" b="Method:System.Boolean System.RuntimeType::HasElementTypeImpl()" e="TypeDef:System.Boolean" />
+	<edge mark="1" b="Method:System.Boolean System.Type::HasElementTypeImpl()" e="Method:System.Boolean System.RuntimeType::HasElementTypeImpl()" />
+	<edge mark="1" b="Method:System.Boolean System.Type::HasElementTypeImpl()" e="TypeDef:System.Boolean" />
+	<edge mark="1" b="Method:System.Type System.RuntimeType::GetElementType()" e="Method:System.Type System.Type::GetElementType()" />
+	<edge mark="1" b="Method:System.Type System.RuntimeType::GetElementType()" e="TypeDef:System.Type" />
+	<edge mark="1" b="Method:System.Type System.Type::GetElementType()" e="Method:System.Type System.RuntimeType::GetElementType()" />
+	<edge mark="1" b="Method:System.Type System.Type::GetElementType()" e="TypeDef:System.Type" />
+	<edge mark="1" b="Method:System.Object[] System.RuntimeType::GetCustomAttributes(System.Type,System.Boolean)" e="Method:System.Object[] System.Reflection.MemberInfo::GetCustomAttributes(System.Type,System.Boolean)" />
+	<edge b="Method:System.Object[] System.RuntimeType::GetCustomAttributes(System.Type,System.Boolean)" e="TypeSpec:System.Object[]" />
+	<edge mark="1" b="TypeSpec:System.Object[]" e="TypeDef:System.Object" />
+	<edge mark="1" b="Method:System.Object[] System.Reflection.MemberInfo::GetCustomAttributes(System.Type,System.Boolean)" e="Method:System.Object[] System.RuntimeType::GetCustomAttributes(System.Type,System.Boolean)" />
+	<edge b="Method:System.Object[] System.Reflection.MemberInfo::GetCustomAttributes(System.Type,System.Boolean)" e="TypeSpec:System.Object[]" />
+	<edge mark="1" b="TypeSpec:System.Object[]" e="TypeDef:System.Object" />
+	<edge mark="1" b="Method:System.Object[] System.RuntimeType::GetCustomAttributes(System.Boolean)" e="Method:System.Object[] System.Reflection.MemberInfo::GetCustomAttributes(System.Boolean)" />
+	<edge b="Method:System.Object[] System.RuntimeType::GetCustomAttributes(System.Boolean)" e="TypeSpec:System.Object[]" />
+	<edge mark="1" b="TypeSpec:System.Object[]" e="TypeDef:System.Object" />
+	<edge mark="1" b="Method:System.Object[] System.Reflection.MemberInfo::GetCustomAttributes(System.Boolean)" e="Method:System.Object[] System.RuntimeType::GetCustomAttributes(System.Boolean)" />
+	<edge b="Method:System.Object[] System.Reflection.MemberInfo::GetCustomAttributes(System.Boolean)" e="TypeSpec:System.Object[]" />
+	<edge mark="1" b="TypeSpec:System.Object[]" e="TypeDef:System.Object" />
+	<edge mark="1" b="Method:System.Reflection.TypeAttributes System.RuntimeType::GetAttributeFlagsImpl()" e="Method:System.Reflection.TypeAttributes System.Type::GetAttributeFlagsImpl()" />
+	<edge mark="1" b="Method:System.Reflection.TypeAttributes System.RuntimeType::GetAttributeFlagsImpl()" e="TypeDef:System.Reflection.TypeAttributes" />
+	<edge mark="1" b="TypeDef:System.Reflection.TypeAttributes" e="Module:System.Private.CoreLib.dll" />
+	<edge mark="1" b="TypeDef:System.Reflection.TypeAttributes" e="Field:System.Int32 System.Reflection.TypeAttributes::value__" />
+	<edge mark="1" b="Field:System.Int32 System.Reflection.TypeAttributes::value__" e="TypeDef:System.Reflection.TypeAttributes" />
+	<edge mark="1" b="Field:System.Int32 System.Reflection.TypeAttributes::value__" e="TypeDef:System.Int32" />
+	<edge mark="1" b="TypeDef:System.Reflection.TypeAttributes" e="Field:System.Reflection.TypeAttributes System.Reflection.TypeAttributes::VisibilityMask" />
+	<edge mark="1" b="Field:System.Reflection.TypeAttributes System.Reflection.TypeAttributes::VisibilityMask" e="TypeDef:System.Reflection.TypeAttributes" />
+	<edge mark="1" b="Field:System.Reflection.TypeAttributes System.Reflection.TypeAttributes::VisibilityMask" e="TypeDef:System.Reflection.TypeAttributes" />
+	<edge mark="1" b="TypeDef:System.Reflection.TypeAttributes" e="Field:System.Reflection.TypeAttributes System.Reflection.TypeAttributes::NotPublic" />
+	<edge mark="1" b="Field:System.Reflection.TypeAttributes System.Reflection.TypeAttributes::NotPublic" e="TypeDef:System.Reflection.TypeAttributes" />
+	<edge mark="1" b="Field:System.Reflection.TypeAttributes System.Reflection.TypeAttributes::NotPublic" e="TypeDef:System.Reflection.TypeAttributes" />
+	<edge mark="1" b="TypeDef:System.Reflection.TypeAttributes" e="Field:System.Reflection.TypeAttributes System.Reflection.TypeAttributes::Public" />
+	<edge mark="1" b="Field:System.Reflection.TypeAttributes System.Reflection.TypeAttributes::Public" e="TypeDef:System.Reflection.TypeAttributes" />
+	<edge mark="1" b="Field:System.Reflection.TypeAttributes System.Reflection.TypeAttributes::Public" e="TypeDef:System.Reflection.TypeAttributes" />
+	<edge mark="1" b="TypeDef:System.Reflection.TypeAttributes" e="Field:System.Reflection.TypeAttributes System.Reflection.TypeAttributes::NestedPublic" />
+	<edge mark="1" b="Field:System.Reflection.TypeAttributes System.Reflection.TypeAttributes::NestedPublic" e="TypeDef:System.Reflection.TypeAttributes" />
+	<edge mark="1" b="Field:System.Reflection.TypeAttributes System.Reflection.TypeAttributes::NestedPublic" e="TypeDef:System.Reflection.TypeAttributes" />
+	<edge mark="1" b="TypeDef:System.Reflection.TypeAttributes" e="Field:System.Reflection.TypeAttributes System.Reflection.TypeAttributes::NestedPrivate" />
+	<edge mark="1" b="Field:System.Reflection.TypeAttributes System.Reflection.TypeAttributes::NestedPrivate" e="TypeDef:System.Reflection.TypeAttributes" />
+	<edge mark="1" b="Field:System.Reflection.TypeAttributes System.Reflection.TypeAttributes::NestedPrivate" e="TypeDef:System.Reflection.TypeAttributes" />
+	<edge mark="1" b="TypeDef:System.Reflection.TypeAttributes" e="Field:System.Reflection.TypeAttributes System.Reflection.TypeAttributes::NestedFamily" />
+	<edge mark="1" b="Field:System.Reflection.TypeAttributes System.Reflection.TypeAttributes::NestedFamily" e="TypeDef:System.Reflection.TypeAttributes" />
+	<edge mark="1" b="Field:System.Reflection.TypeAttributes System.Reflection.TypeAttributes::NestedFamily" e="TypeDef:System.Reflection.TypeAttributes" />
+	<edge mark="1" b="TypeDef:System.Reflection.TypeAttributes" e="Field:System.Reflection.TypeAttributes System.Reflection.TypeAttributes::NestedAssembly" />
+	<edge mark="1" b="Field:System.Reflection.TypeAttributes System.Reflection.TypeAttributes::NestedAssembly" e="TypeDef:System.Reflection.TypeAttributes" />
+	<edge mark="1" b="Field:System.Reflection.TypeAttributes System.Reflection.TypeAttributes::NestedAssembly" e="TypeDef:System.Reflection.TypeAttributes" />
+	<edge mark="1" b="TypeDef:System.Reflection.TypeAttributes" e="Field:System.Reflection.TypeAttributes System.Reflection.TypeAttributes::NestedFamANDAssem" />
+	<edge mark="1" b="Field:System.Reflection.TypeAttributes System.Reflection.TypeAttributes::NestedFamANDAssem" e="TypeDef:System.Reflection.TypeAttributes" />
+	<edge mark="1" b="Field:System.Reflection.TypeAttributes System.Reflection.TypeAttributes::NestedFamANDAssem" e="TypeDef:System.Reflection.TypeAttributes" />
+	<edge mark="1" b="TypeDef:System.Reflection.TypeAttributes" e="Field:System.Reflection.TypeAttributes System.Reflection.TypeAttributes::NestedFamORAssem" />
+	<edge mark="1" b="Field:System.Reflection.TypeAttributes System.Reflection.TypeAttributes::NestedFamORAssem" e="TypeDef:System.Reflection.TypeAttributes" />
+	<edge mark="1" b="Field:System.Reflection.TypeAttributes System.Reflection.TypeAttributes::NestedFamORAssem" e="TypeDef:System.Reflection.TypeAttributes" />
+	<edge mark="1" b="TypeDef:System.Reflection.TypeAttributes" e="Field:System.Reflection.TypeAttributes System.Reflection.TypeAttributes::LayoutMask" />
+	<edge mark="1" b="Field:System.Reflection.TypeAttributes System.Reflection.TypeAttributes::LayoutMask" e="TypeDef:System.Reflection.TypeAttributes" />
+	<edge mark="1" b="Field:System.Reflection.TypeAttributes System.Reflection.TypeAttributes::LayoutMask" e="TypeDef:System.Reflection.TypeAttributes" />
+	<edge mark="1" b="TypeDef:System.Reflection.TypeAttributes" e="Field:System.Reflection.TypeAttributes System.Reflection.TypeAttributes::AutoLayout" />
+	<edge mark="1" b="Field:System.Reflection.TypeAttributes System.Reflection.TypeAttributes::AutoLayout" e="TypeDef:System.Reflection.TypeAttributes" />
+	<edge mark="1" b="Field:System.Reflection.TypeAttributes System.Reflection.TypeAttributes::AutoLayout" e="TypeDef:System.Reflection.TypeAttributes" />
+	<edge mark="1" b="TypeDef:System.Reflection.TypeAttributes" e="Field:System.Reflection.TypeAttributes System.Reflection.TypeAttributes::SequentialLayout" />
+	<edge mark="1" b="Field:System.Reflection.TypeAttributes System.Reflection.TypeAttributes::SequentialLayout" e="TypeDef:System.Reflection.TypeAttributes" />
+	<edge mark="1" b="Field:System.Reflection.TypeAttributes System.Reflection.TypeAttributes::SequentialLayout" e="TypeDef:System.Reflection.TypeAttributes" />
+	<edge mark="1" b="TypeDef:System.Reflection.TypeAttributes" e="Field:System.Reflection.TypeAttributes System.Reflection.TypeAttributes::ExplicitLayout" />
+	<edge mark="1" b="Field:System.Reflection.TypeAttributes System.Reflection.TypeAttributes::ExplicitLayout" e="TypeDef:System.Reflection.TypeAttributes" />
+	<edge mark="1" b="Field:System.Reflection.TypeAttributes System.Reflection.TypeAttributes::ExplicitLayout" e="TypeDef:System.Reflection.TypeAttributes" />
+	<edge mark="1" b="TypeDef:System.Reflection.TypeAttributes" e="Field:System.Reflection.TypeAttributes System.Reflection.TypeAttributes::ClassSemanticsMask" />
+	<edge mark="1" b="Field:System.Reflection.TypeAttributes System.Reflection.TypeAttributes::ClassSemanticsMask" e="TypeDef:System.Reflection.TypeAttributes" />
+	<edge mark="1" b="Field:System.Reflection.TypeAttributes System.Reflection.TypeAttributes::ClassSemanticsMask" e="TypeDef:System.Reflection.TypeAttributes" />
+	<edge mark="1" b="TypeDef:System.Reflection.TypeAttributes" e="Field:System.Reflection.TypeAttributes System.Reflection.TypeAttributes::Class" />
+	<edge mark="1" b="Field:System.Reflection.TypeAttributes System.Reflection.TypeAttributes::Class" e="TypeDef:System.Reflection.TypeAttributes" />
+	<edge mark="1" b="Field:System.Reflection.TypeAttributes System.Reflection.TypeAttributes::Class" e="TypeDef:System.Reflection.TypeAttributes" />
+	<edge mark="1" b="TypeDef:System.Reflection.TypeAttributes" e="Field:System.Reflection.TypeAttributes System.Reflection.TypeAttributes::Interface" />
+	<edge mark="1" b="Field:System.Reflection.TypeAttributes System.Reflection.TypeAttributes::Interface" e="TypeDef:System.Reflection.TypeAttributes" />
+	<edge mark="1" b="Field:System.Reflection.TypeAttributes System.Reflection.TypeAttributes::Interface" e="TypeDef:System.Reflection.TypeAttributes" />
+	<edge mark="1" b="TypeDef:System.Reflection.TypeAttributes" e="Field:System.Reflection.TypeAttributes System.Reflection.TypeAttributes::Abstract" />
+	<edge mark="1" b="Field:System.Reflection.TypeAttributes System.Reflection.TypeAttributes::Abstract" e="TypeDef:System.Reflection.TypeAttributes" />
+	<edge mark="1" b="Field:System.Reflection.TypeAttributes System.Reflection.TypeAttributes::Abstract" e="TypeDef:System.Reflection.TypeAttributes" />
+	<edge mark="1" b="TypeDef:System.Reflection.TypeAttributes" e="Field:System.Reflection.TypeAttributes System.Reflection.TypeAttributes::Sealed" />
+	<edge mark="1" b="Field:System.Reflection.TypeAttributes System.Reflection.TypeAttributes::Sealed" e="TypeDef:System.Reflection.TypeAttributes" />
+	<edge mark="1" b="Field:System.Reflection.TypeAttributes System.Reflection.TypeAttributes::Sealed" e="TypeDef:System.Reflection.TypeAttributes" />
+	<edge mark="1" b="TypeDef:System.Reflection.TypeAttributes" e="Field:System.Reflection.TypeAttributes System.Reflection.TypeAttributes::SpecialName" />
+	<edge mark="1" b="Field:System.Reflection.TypeAttributes System.Reflection.TypeAttributes::SpecialName" e="TypeDef:System.Reflection.TypeAttributes" />
+	<edge mark="1" b="Field:System.Reflection.TypeAttributes System.Reflection.TypeAttributes::SpecialName" e="TypeDef:System.Reflection.TypeAttributes" />
+	<edge mark="1" b="TypeDef:System.Reflection.TypeAttributes" e="Field:System.Reflection.TypeAttributes System.Reflection.TypeAttributes::Import" />
+	<edge mark="1" b="Field:System.Reflection.TypeAttributes System.Reflection.TypeAttributes::Import" e="TypeDef:System.Reflection.TypeAttributes" />
+	<edge mark="1" b="Field:System.Reflection.TypeAttributes System.Reflection.TypeAttributes::Import" e="TypeDef:System.Reflection.TypeAttributes" />
+	<edge mark="1" b="TypeDef:System.Reflection.TypeAttributes" e="Field:System.Reflection.TypeAttributes System.Reflection.TypeAttributes::Serializable" />
+	<edge mark="1" b="Field:System.Reflection.TypeAttributes System.Reflection.TypeAttributes::Serializable" e="TypeDef:System.Reflection.TypeAttributes" />
+	<edge mark="1" b="Field:System.Reflection.TypeAttributes System.Reflection.TypeAttributes::Serializable" e="TypeDef:System.Reflection.TypeAttributes" />
+	<edge mark="1" b="TypeDef:System.Reflection.TypeAttributes" e="Field:System.Reflection.TypeAttributes System.Reflection.TypeAttributes::WindowsRuntime" />
+	<edge mark="1" b="Field:System.Reflection.TypeAttributes System.Reflection.TypeAttributes::WindowsRuntime" e="TypeDef:System.Reflection.TypeAttributes" />
+	<edge mark="1" b="Field:System.Reflection.TypeAttributes System.Reflection.TypeAttributes::WindowsRuntime" e="TypeDef:System.Reflection.TypeAttributes" />
+	<edge mark="1" b="TypeDef:System.Reflection.TypeAttributes" e="Field:System.Reflection.TypeAttributes System.Reflection.TypeAttributes::StringFormatMask" />
+	<edge mark="1" b="Field:System.Reflection.TypeAttributes System.Reflection.TypeAttributes::StringFormatMask" e="TypeDef:System.Reflection.TypeAttributes" />
+	<edge mark="1" b="Field:System.Reflection.TypeAttributes System.Reflection.TypeAttributes::StringFormatMask" e="TypeDef:System.Reflection.TypeAttributes" />
+	<edge mark="1" b="TypeDef:System.Reflection.TypeAttributes" e="Field:System.Reflection.TypeAttributes System.Reflection.TypeAttributes::AnsiClass" />
+	<edge mark="1" b="Field:System.Reflection.TypeAttributes System.Reflection.TypeAttributes::AnsiClass" e="TypeDef:System.Reflection.TypeAttributes" />
+	<edge mark="1" b="Field:System.Reflection.TypeAttributes System.Reflection.TypeAttributes::AnsiClass" e="TypeDef:System.Reflection.TypeAttributes" />
+	<edge mark="1" b="TypeDef:System.Reflection.TypeAttributes" e="Field:System.Reflection.TypeAttributes System.Reflection.TypeAttributes::UnicodeClass" />
+	<edge mark="1" b="Field:System.Reflection.TypeAttributes System.Reflection.TypeAttributes::UnicodeClass" e="TypeDef:System.Reflection.TypeAttributes" />
+	<edge mark="1" b="Field:System.Reflection.TypeAttributes System.Reflection.TypeAttributes::UnicodeClass" e="TypeDef:System.Reflection.TypeAttributes" />
+	<edge mark="1" b="TypeDef:System.Reflection.TypeAttributes" e="Field:System.Reflection.TypeAttributes System.Reflection.TypeAttributes::AutoClass" />
+	<edge mark="1" b="Field:System.Reflection.TypeAttributes System.Reflection.TypeAttributes::AutoClass" e="TypeDef:System.Reflection.TypeAttributes" />
+	<edge mark="1" b="Field:System.Reflection.TypeAttributes System.Reflection.TypeAttributes::AutoClass" e="TypeDef:System.Reflection.TypeAttributes" />
+	<edge mark="1" b="TypeDef:System.Reflection.TypeAttributes" e="Field:System.Reflection.TypeAttributes System.Reflection.TypeAttributes::CustomFormatClass" />
+	<edge mark="1" b="Field:System.Reflection.TypeAttributes System.Reflection.TypeAttributes::CustomFormatClass" e="TypeDef:System.Reflection.TypeAttributes" />
+	<edge mark="1" b="Field:System.Reflection.TypeAttributes System.Reflection.TypeAttributes::CustomFormatClass" e="TypeDef:System.Reflection.TypeAttributes" />
+	<edge mark="1" b="TypeDef:System.Reflection.TypeAttributes" e="Field:System.Reflection.TypeAttributes System.Reflection.TypeAttributes::CustomFormatMask" />
+	<edge mark="1" b="Field:System.Reflection.TypeAttributes System.Reflection.TypeAttributes::CustomFormatMask" e="TypeDef:System.Reflection.TypeAttributes" />
+	<edge mark="1" b="Field:System.Reflection.TypeAttributes System.Reflection.TypeAttributes::CustomFormatMask" e="TypeDef:System.Reflection.TypeAttributes" />
+	<edge mark="1" b="TypeDef:System.Reflection.TypeAttributes" e="Field:System.Reflection.TypeAttributes System.Reflection.TypeAttributes::BeforeFieldInit" />
+	<edge mark="1" b="Field:System.Reflection.TypeAttributes System.Reflection.TypeAttributes::BeforeFieldInit" e="TypeDef:System.Reflection.TypeAttributes" />
+	<edge mark="1" b="Field:System.Reflection.TypeAttributes System.Reflection.TypeAttributes::BeforeFieldInit" e="TypeDef:System.Reflection.TypeAttributes" />
+	<edge mark="1" b="TypeDef:System.Reflection.TypeAttributes" e="Field:System.Reflection.TypeAttributes System.Reflection.TypeAttributes::RTSpecialName" />
+	<edge mark="1" b="Field:System.Reflection.TypeAttributes System.Reflection.TypeAttributes::RTSpecialName" e="TypeDef:System.Reflection.TypeAttributes" />
+	<edge mark="1" b="Field:System.Reflection.TypeAttributes System.Reflection.TypeAttributes::RTSpecialName" e="TypeDef:System.Reflection.TypeAttributes" />
+	<edge mark="1" b="TypeDef:System.Reflection.TypeAttributes" e="Field:System.Reflection.TypeAttributes System.Reflection.TypeAttributes::HasSecurity" />
+	<edge mark="1" b="Field:System.Reflection.TypeAttributes System.Reflection.TypeAttributes::HasSecurity" e="TypeDef:System.Reflection.TypeAttributes" />
+	<edge mark="1" b="Field:System.Reflection.TypeAttributes System.Reflection.TypeAttributes::HasSecurity" e="TypeDef:System.Reflection.TypeAttributes" />
+	<edge mark="1" b="TypeDef:System.Reflection.TypeAttributes" e="Field:System.Reflection.TypeAttributes System.Reflection.TypeAttributes::ReservedMask" />
+	<edge mark="1" b="Field:System.Reflection.TypeAttributes System.Reflection.TypeAttributes::ReservedMask" e="TypeDef:System.Reflection.TypeAttributes" />
+	<edge mark="1" b="Field:System.Reflection.TypeAttributes System.Reflection.TypeAttributes::ReservedMask" e="TypeDef:System.Reflection.TypeAttributes" />
+	<edge mark="1" b="TypeDef:System.ObsoleteAttribute" e="Module:System.Private.CoreLib.dll" />
+	<edge mark="1" b="Method:System.Void System.ObsoleteAttribute::set_UrlFormat(System.String)" e="Property:System.String System.ObsoleteAttribute::UrlFormat()" />
+	<edge mark="1" b="Method:System.Void System.ObsoleteAttribute::set_UrlFormat(System.String)" e="TypeDef:System.Void" />
+	<edge mark="1" b="Method:System.Void System.ObsoleteAttribute::set_DiagnosticId(System.String)" e="Property:System.String System.ObsoleteAttribute::DiagnosticId()" />
+	<edge mark="1" b="Method:System.Void System.ObsoleteAttribute::set_DiagnosticId(System.String)" e="TypeDef:System.Void" />
+	<edge b="Method:System.Void System.ObsoleteAttribute::.ctor(System.String)" e="TypeDef:System.ObsoleteAttribute" />
+	<edge mark="1" b="Method:System.Void System.ObsoleteAttribute::.ctor(System.String)" e="TypeDef:System.Void" />
+	<edge mark="1" b="Method:System.Reflection.TypeAttributes System.Type::GetAttributeFlagsImpl()" e="Method:System.Reflection.TypeAttributes System.RuntimeType::GetAttributeFlagsImpl()" />
+	<edge mark="1" b="Method:System.Reflection.TypeAttributes System.Type::GetAttributeFlagsImpl()" e="TypeDef:System.Reflection.TypeAttributes" />
+	<edge mark="1" b="Method:System.Type System.RuntimeType::get_UnderlyingSystemType()" e="Property:System.Type System.RuntimeType::UnderlyingSystemType()" />
+	<edge mark="1" b="Method:System.Type System.RuntimeType::get_UnderlyingSystemType()" e="Method:System.Type System.Type::get_UnderlyingSystemType()" />
+	<edge mark="1" b="Method:System.Type System.RuntimeType::get_UnderlyingSystemType()" e="TypeDef:System.Type" />
+	<edge mark="1" b="Method:System.Type System.Type::get_UnderlyingSystemType()" e="Property:System.Type System.Type::UnderlyingSystemType()" />
+	<edge mark="1" b="Method:System.Type System.Type::get_UnderlyingSystemType()" e="Method:System.Type System.RuntimeType::get_UnderlyingSystemType()" />
+	<edge mark="1" b="Method:System.Type System.Type::get_UnderlyingSystemType()" e="TypeDef:System.Type" />
+	<edge mark="1" b="Method:System.Reflection.Module System.RuntimeType::get_Module()" e="Property:System.Reflection.Module System.RuntimeType::Module()" />
+	<edge mark="1" b="Method:System.Reflection.Module System.RuntimeType::get_Module()" e="Method:System.Reflection.Module System.Type::get_Module()" />
+	<edge mark="1" b="Method:System.Reflection.Module System.Type::get_Module()" e="Method:System.Reflection.Module System.Reflection.MemberInfo::get_Module()" />
+	<edge mark="1" b="Method:System.Reflection.Module System.RuntimeType::get_Module()" e="TypeDef:System.Reflection.Module" />
+	<edge mark="1" b="TypeDef:System.Reflection.Module" e="Module:System.Private.CoreLib.dll" />
+	<edge mark="1" b="Method:System.Reflection.Module System.Reflection.MemberInfo::get_Module()" e="Property:System.Reflection.Module System.Reflection.MemberInfo::Module()" />
+	<edge mark="1" b="Method:System.Reflection.Module System.Reflection.MemberInfo::get_Module()" e="TypeDef:System.Reflection.Module" />
+	<edge mark="1" b="Method:System.Reflection.Module System.Type::get_Module()" e="Property:System.Reflection.Module System.Type::Module()" />
+	<edge mark="1" b="Method:System.Reflection.Module System.Type::get_Module()" e="Method:System.Reflection.Module System.Reflection.MemberInfo::get_Module()" />
+	<edge mark="1" b="Method:System.Reflection.Module System.Type::get_Module()" e="Method:System.Reflection.Module System.RuntimeType::get_Module()" />
+	<edge mark="1" b="Method:System.Reflection.Module System.Type::get_Module()" e="TypeDef:System.Reflection.Module" />
+	<edge mark="1" b="Method:System.Type System.RuntimeType::get_BaseType()" e="Property:System.Type System.RuntimeType::BaseType()" />
+	<edge mark="1" b="Method:System.Type System.RuntimeType::get_BaseType()" e="Method:System.Type System.Type::get_BaseType()" />
+	<edge mark="1" b="Method:System.Type System.RuntimeType::get_BaseType()" e="TypeDef:System.Type" />
+	<edge mark="1" b="Method:System.Type System.Type::get_BaseType()" e="Property:System.Type System.Type::BaseType()" />
+	<edge mark="1" b="Method:System.Type System.Type::get_BaseType()" e="Method:System.Type System.RuntimeType::get_BaseType()" />
+	<edge mark="1" b="Method:System.Type System.Type::get_BaseType()" e="TypeDef:System.Type" />
+	<edge mark="1" b="Method:System.Reflection.Assembly System.RuntimeType::get_Assembly()" e="Property:System.Reflection.Assembly System.RuntimeType::Assembly()" />
+	<edge mark="1" b="Method:System.Reflection.Assembly System.RuntimeType::get_Assembly()" e="Method:System.Reflection.Assembly System.Type::get_Assembly()" />
+	<edge mark="1" b="Method:System.Reflection.Assembly System.RuntimeType::get_Assembly()" e="TypeDef:System.Reflection.Assembly" />
+	<edge mark="1" b="TypeDef:System.Reflection.Assembly" e="Module:System.Private.CoreLib.dll" />
+	<edge mark="1" b="Method:System.Reflection.Assembly System.Type::get_Assembly()" e="Property:System.Reflection.Assembly System.Type::Assembly()" />
+	<edge mark="1" b="Method:System.Reflection.Assembly System.Type::get_Assembly()" e="Method:System.Reflection.Assembly System.RuntimeType::get_Assembly()" />
+	<edge mark="1" b="Method:System.Reflection.Assembly System.Type::get_Assembly()" e="TypeDef:System.Reflection.Assembly" />
+	<edge mark="1" b="Method:System.String System.RuntimeType::get_Name()" e="Property:System.String System.RuntimeType::Name()" />
+	<edge mark="1" b="Method:System.String System.RuntimeType::get_Name()" e="Method:System.String System.Reflection.MemberInfo::get_Name()" />
+	<edge mark="1" b="Method:System.String System.RuntimeType::get_Name()" e="TypeDef:System.String" />
+	<edge mark="1" b="Method:System.String System.Reflection.MemberInfo::get_Name()" e="Property:System.String System.Reflection.MemberInfo::Name()" />
+	<edge mark="1" b="Method:System.String System.Reflection.MemberInfo::get_Name()" e="Method:System.String System.RuntimeType::get_Name()" />
+	<edge mark="1" b="Method:System.String System.Reflection.MemberInfo::get_Name()" e="TypeDef:System.String" />
+	<edge mark="1" b="Method:System.Guid System.RuntimeType::get_GUID()" e="Property:System.Guid System.RuntimeType::GUID()" />
+	<edge mark="1" b="Method:System.Guid System.RuntimeType::get_GUID()" e="Method:System.Guid System.Type::get_GUID()" />
+	<edge mark="1" b="Method:System.Guid System.RuntimeType::get_GUID()" e="TypeDef:System.Guid" />
+	<edge mark="1" b="TypeDef:System.Guid" e="Module:System.Private.CoreLib.dll" />
+	<edge mark="1" b="TypeDef:System.Guid" e="Method:System.Int32 System.Guid::GetHashCode()" />
+	<edge mark="1" b="TypeDef:System.Guid" e="Method:System.Boolean System.Guid::Equals(System.Object)" />
+	<edge mark="1" b="TypeDef:System.Guid" e="Method:System.String System.Guid::ToString()" />
+	<edge mark="1" b="TypeDef:System.Guid" e="Field:System.Int32 System.Guid::_a" />
+	<edge mark="1" b="Field:System.Int32 System.Guid::_a" e="TypeDef:System.Guid" />
+	<edge mark="1" b="Field:System.Int32 System.Guid::_a" e="TypeDef:System.Int32" />
+	<edge mark="1" b="TypeDef:System.Guid" e="Field:System.Int16 System.Guid::_b" />
+	<edge mark="1" b="Field:System.Int16 System.Guid::_b" e="TypeDef:System.Guid" />
+	<edge mark="1" b="Field:System.Int16 System.Guid::_b" e="TypeDef:System.Int16" />
+	<edge mark="1" b="TypeDef:System.Int16" e="Module:System.Private.CoreLib.dll" />
+	<edge mark="1" b="TypeDef:System.Guid" e="Field:System.Int16 System.Guid::_c" />
+	<edge mark="1" b="Field:System.Int16 System.Guid::_c" e="TypeDef:System.Guid" />
+	<edge mark="1" b="Field:System.Int16 System.Guid::_c" e="TypeDef:System.Int16" />
+	<edge mark="1" b="TypeDef:System.Guid" e="Field:System.Byte System.Guid::_d" />
+	<edge mark="1" b="Field:System.Byte System.Guid::_d" e="TypeDef:System.Guid" />
+	<edge mark="1" b="Field:System.Byte System.Guid::_d" e="TypeDef:System.Byte" />
+	<edge mark="1" b="TypeDef:System.Guid" e="Field:System.Byte System.Guid::_e" />
+	<edge mark="1" b="Field:System.Byte System.Guid::_e" e="TypeDef:System.Guid" />
+	<edge mark="1" b="Field:System.Byte System.Guid::_e" e="TypeDef:System.Byte" />
+	<edge mark="1" b="TypeDef:System.Guid" e="Field:System.Byte System.Guid::_f" />
+	<edge mark="1" b="Field:System.Byte System.Guid::_f" e="TypeDef:System.Guid" />
+	<edge mark="1" b="Field:System.Byte System.Guid::_f" e="TypeDef:System.Byte" />
+	<edge mark="1" b="TypeDef:System.Guid" e="Field:System.Byte System.Guid::_g" />
+	<edge mark="1" b="Field:System.Byte System.Guid::_g" e="TypeDef:System.Guid" />
+	<edge mark="1" b="Field:System.Byte System.Guid::_g" e="TypeDef:System.Byte" />
+	<edge mark="1" b="TypeDef:System.Guid" e="Field:System.Byte System.Guid::_h" />
+	<edge mark="1" b="Field:System.Byte System.Guid::_h" e="TypeDef:System.Guid" />
+	<edge mark="1" b="Field:System.Byte System.Guid::_h" e="TypeDef:System.Byte" />
+	<edge mark="1" b="TypeDef:System.Guid" e="Field:System.Byte System.Guid::_i" />
+	<edge mark="1" b="Field:System.Byte System.Guid::_i" e="TypeDef:System.Guid" />
+	<edge mark="1" b="Field:System.Byte System.Guid::_i" e="TypeDef:System.Byte" />
+	<edge mark="1" b="TypeDef:System.Guid" e="Field:System.Byte System.Guid::_j" />
+	<edge mark="1" b="Field:System.Byte System.Guid::_j" e="TypeDef:System.Guid" />
+	<edge mark="1" b="Field:System.Byte System.Guid::_j" e="TypeDef:System.Byte" />
+	<edge mark="1" b="TypeDef:System.Guid" e="Field:System.Byte System.Guid::_k" />
+	<edge mark="1" b="Field:System.Byte System.Guid::_k" e="TypeDef:System.Guid" />
+	<edge mark="1" b="Field:System.Byte System.Guid::_k" e="TypeDef:System.Byte" />
+	<edge mark="1" b="TypeDef:System.Guid" e="Method:System.Int32 System.Guid::GetHashCode()" />
+	<edge mark="1" b="TypeDef:System.Guid" e="Method:System.Boolean System.Guid::Equals(System.Object)" />
+	<edge mark="1" b="TypeDef:System.Guid" e="Method:System.String System.Guid::ToString()" />
+	<edge mark="1" b="TypeDef:System.Int16" e="Method:System.Boolean System.Int16::Equals(System.Object)" />
+	<edge mark="1" b="TypeDef:System.Int16" e="Method:System.Int32 System.Int16::GetHashCode()" />
+	<edge mark="1" b="TypeDef:System.Int16" e="Method:System.String System.Int16::ToString()" />
+	<edge mark="1" b="TypeDef:System.Int16" e="Field:System.Int16 System.Int16::m_value" />
+	<edge mark="1" b="Field:System.Int16 System.Int16::m_value" e="TypeDef:System.Int16" />
+	<edge mark="1" b="Field:System.Int16 System.Int16::m_value" e="TypeDef:System.Int16" />
+	<edge mark="1" b="TypeDef:System.Int16" e="Method:System.Boolean System.Int16::Equals(System.Object)" />
+	<edge mark="1" b="TypeDef:System.Int16" e="Method:System.Int32 System.Int16::GetHashCode()" />
+	<edge mark="1" b="TypeDef:System.Int16" e="Method:System.String System.Int16::ToString()" />
+	<edge mark="1" b="Method:System.String System.Int16::ToString()" e="Method:System.String System.ValueType::ToString()" />
+	<edge mark="1" b="Method:System.String System.ValueType::ToString()" e="Method:System.String System.Object::ToString()" />
+	<edge mark="1" b="Method:System.String System.Int16::ToString()" e="TypeDef:System.String" />
+	<edge mark="1" b="Method:System.Int32 System.Int16::GetHashCode()" e="Method:System.Int32 System.ValueType::GetHashCode()" />
+	<edge mark="1" b="Method:System.Int32 System.ValueType::GetHashCode()" e="Method:System.Int32 System.Object::GetHashCode()" />
+	<edge mark="1" b="Method:System.Int32 System.Int16::GetHashCode()" e="TypeDef:System.Int32" />
+	<edge mark="1" b="Method:System.Boolean System.Int16::Equals(System.Object)" e="Method:System.Boolean System.ValueType::Equals(System.Object)" />
+	<edge mark="1" b="Method:System.Boolean System.ValueType::Equals(System.Object)" e="Method:System.Boolean System.Object::Equals(System.Object)" />
+	<edge mark="1" b="Method:System.Boolean System.Int16::Equals(System.Object)" e="TypeDef:System.Boolean" />
+	<edge mark="1" b="Method:System.String System.Guid::ToString()" e="Method:System.String System.ValueType::ToString()" />
+	<edge mark="1" b="Method:System.String System.ValueType::ToString()" e="Method:System.String System.Object::ToString()" />
+	<edge mark="1" b="Method:System.String System.Guid::ToString()" e="TypeDef:System.String" />
+	<edge mark="1" b="Method:System.Boolean System.Guid::Equals(System.Object)" e="Method:System.Boolean System.ValueType::Equals(System.Object)" />
+	<edge mark="1" b="Method:System.Boolean System.ValueType::Equals(System.Object)" e="Method:System.Boolean System.Object::Equals(System.Object)" />
+	<edge mark="1" b="Method:System.Boolean System.Guid::Equals(System.Object)" e="TypeDef:System.Boolean" />
+	<edge mark="1" b="Method:System.Int32 System.Guid::GetHashCode()" e="Method:System.Int32 System.ValueType::GetHashCode()" />
+	<edge mark="1" b="Method:System.Int32 System.ValueType::GetHashCode()" e="Method:System.Int32 System.Object::GetHashCode()" />
+	<edge mark="1" b="Method:System.Int32 System.Guid::GetHashCode()" e="TypeDef:System.Int32" />
+	<edge mark="1" b="Method:System.Guid System.Type::get_GUID()" e="Property:System.Guid System.Type::GUID()" />
+	<edge mark="1" b="Method:System.Guid System.Type::get_GUID()" e="Method:System.Guid System.RuntimeType::get_GUID()" />
+	<edge mark="1" b="Method:System.Guid System.Type::get_GUID()" e="TypeDef:System.Guid" />
+	<edge mark="1" b="Method:System.String System.RuntimeType::get_Namespace()" e="Property:System.String System.RuntimeType::Namespace()" />
+	<edge mark="1" b="Method:System.String System.RuntimeType::get_Namespace()" e="Method:System.String System.Type::get_Namespace()" />
+	<edge mark="1" b="Method:System.String System.RuntimeType::get_Namespace()" e="TypeDef:System.String" />
+	<edge mark="1" b="Method:System.String System.Type::get_Namespace()" e="Property:System.String System.Type::Namespace()" />
+	<edge mark="1" b="Method:System.String System.Type::get_Namespace()" e="Method:System.String System.RuntimeType::get_Namespace()" />
+	<edge mark="1" b="Method:System.String System.Type::get_Namespace()" e="TypeDef:System.String" />
+	<edge mark="1" b="Method:System.String System.RuntimeType::get_AssemblyQualifiedName()" e="Property:System.String System.RuntimeType::AssemblyQualifiedName()" />
+	<edge mark="1" b="Method:System.String System.RuntimeType::get_AssemblyQualifiedName()" e="Method:System.String System.Type::get_AssemblyQualifiedName()" />
+	<edge mark="1" b="Method:System.String System.RuntimeType::get_AssemblyQualifiedName()" e="TypeDef:System.String" />
+	<edge mark="1" b="Method:System.String System.Type::get_AssemblyQualifiedName()" e="Property:System.String System.Type::AssemblyQualifiedName()" />
+	<edge mark="1" b="Method:System.String System.Type::get_AssemblyQualifiedName()" e="Method:System.String System.RuntimeType::get_AssemblyQualifiedName()" />
+	<edge mark="1" b="Method:System.String System.Type::get_AssemblyQualifiedName()" e="TypeDef:System.String" />
+	<edge mark="1" b="Method:System.String System.RuntimeType::get_FullName()" e="Property:System.String System.RuntimeType::FullName()" />
+	<edge mark="1" b="Method:System.String System.RuntimeType::get_FullName()" e="Method:System.String System.Type::get_FullName()" />
+	<edge mark="1" b="Method:System.String System.RuntimeType::get_FullName()" e="TypeDef:System.String" />
+	<edge mark="1" b="Method:System.String System.Type::get_FullName()" e="Property:System.String System.Type::FullName()" />
+	<edge mark="1" b="Method:System.String System.Type::get_FullName()" e="Method:System.String System.RuntimeType::get_FullName()" />
+	<edge mark="1" b="Method:System.String System.Type::get_FullName()" e="TypeDef:System.String" />
+	<edge mark="1" b="Method:System.Type System.RuntimeType::GetNestedType(System.String,System.Reflection.BindingFlags)" e="Method:System.Type System.Type::GetNestedType(System.String,System.Reflection.BindingFlags)" />
+	<edge mark="1" b="Method:System.Type System.RuntimeType::GetNestedType(System.String,System.Reflection.BindingFlags)" e="TypeDef:System.Type" />
+	<edge mark="1" b="Method:System.Type System.Type::GetNestedType(System.String,System.Reflection.BindingFlags)" e="Method:System.Type System.RuntimeType::GetNestedType(System.String,System.Reflection.BindingFlags)" />
+	<edge mark="1" b="Method:System.Type System.Type::GetNestedType(System.String,System.Reflection.BindingFlags)" e="TypeDef:System.Type" />
+	<edge mark="1" b="Method:System.Type System.RuntimeType::GetInterface(System.String,System.Boolean)" e="Method:System.Type System.Type::GetInterface(System.String,System.Boolean)" />
+	<edge mark="1" b="Method:System.Type System.RuntimeType::GetInterface(System.String,System.Boolean)" e="TypeDef:System.Type" />
+	<edge mark="1" b="Method:System.Type System.Type::GetInterface(System.String,System.Boolean)" e="Method:System.Type System.RuntimeType::GetInterface(System.String,System.Boolean)" />
+	<edge mark="1" b="Method:System.Type System.Type::GetInterface(System.String,System.Boolean)" e="TypeDef:System.Type" />
+	<edge mark="1" b="Method:System.Reflection.FieldInfo System.RuntimeType::GetField(System.String,System.Reflection.BindingFlags)" e="Method:System.Reflection.FieldInfo System.Type::GetField(System.String,System.Reflection.BindingFlags)" />
+	<edge mark="1" b="Method:System.Reflection.FieldInfo System.RuntimeType::GetField(System.String,System.Reflection.BindingFlags)" e="TypeDef:System.Reflection.FieldInfo" />
+	<edge mark="1" b="TypeDef:System.Reflection.FieldInfo" e="Module:System.Private.CoreLib.dll" />
+	<edge mark="1" b="Method:System.Reflection.MemberTypes System.Reflection.MemberInfo::get_MemberType()" e="Method:System.Reflection.MemberTypes System.Reflection.FieldInfo::get_MemberType()" />
+	<edge mark="1" b="Method:System.Reflection.MemberTypes System.Reflection.FieldInfo::get_MemberType()" e="Property:System.Reflection.MemberTypes System.Reflection.FieldInfo::MemberType()" />
+	<edge mark="1" b="Method:System.Reflection.MemberTypes System.Reflection.FieldInfo::get_MemberType()" e="Method:System.Reflection.MemberTypes System.Reflection.MemberInfo::get_MemberType()" />
+	<edge mark="1" b="Method:System.Reflection.MemberTypes System.Reflection.FieldInfo::get_MemberType()" e="TypeDef:System.Reflection.MemberTypes" />
+	<edge mark="1" b="TypeDef:System.Reflection.MemberTypes" e="Module:System.Private.CoreLib.dll" />
+	<edge mark="1" b="TypeDef:System.Reflection.MemberTypes" e="Field:System.Int32 System.Reflection.MemberTypes::value__" />
+	<edge mark="1" b="Field:System.Int32 System.Reflection.MemberTypes::value__" e="TypeDef:System.Reflection.MemberTypes" />
+	<edge mark="1" b="Field:System.Int32 System.Reflection.MemberTypes::value__" e="TypeDef:System.Int32" />
+	<edge mark="1" b="TypeDef:System.Reflection.MemberTypes" e="Field:System.Reflection.MemberTypes System.Reflection.MemberTypes::Constructor" />
+	<edge mark="1" b="Field:System.Reflection.MemberTypes System.Reflection.MemberTypes::Constructor" e="TypeDef:System.Reflection.MemberTypes" />
+	<edge mark="1" b="Field:System.Reflection.MemberTypes System.Reflection.MemberTypes::Constructor" e="TypeDef:System.Reflection.MemberTypes" />
+	<edge mark="1" b="TypeDef:System.Reflection.MemberTypes" e="Field:System.Reflection.MemberTypes System.Reflection.MemberTypes::Event" />
+	<edge mark="1" b="Field:System.Reflection.MemberTypes System.Reflection.MemberTypes::Event" e="TypeDef:System.Reflection.MemberTypes" />
+	<edge mark="1" b="Field:System.Reflection.MemberTypes System.Reflection.MemberTypes::Event" e="TypeDef:System.Reflection.MemberTypes" />
+	<edge mark="1" b="TypeDef:System.Reflection.MemberTypes" e="Field:System.Reflection.MemberTypes System.Reflection.MemberTypes::Field" />
+	<edge mark="1" b="Field:System.Reflection.MemberTypes System.Reflection.MemberTypes::Field" e="TypeDef:System.Reflection.MemberTypes" />
+	<edge mark="1" b="Field:System.Reflection.MemberTypes System.Reflection.MemberTypes::Field" e="TypeDef:System.Reflection.MemberTypes" />
+	<edge mark="1" b="TypeDef:System.Reflection.MemberTypes" e="Field:System.Reflection.MemberTypes System.Reflection.MemberTypes::Method" />
+	<edge mark="1" b="Field:System.Reflection.MemberTypes System.Reflection.MemberTypes::Method" e="TypeDef:System.Reflection.MemberTypes" />
+	<edge mark="1" b="Field:System.Reflection.MemberTypes System.Reflection.MemberTypes::Method" e="TypeDef:System.Reflection.MemberTypes" />
+	<edge mark="1" b="TypeDef:System.Reflection.MemberTypes" e="Field:System.Reflection.MemberTypes System.Reflection.MemberTypes::Property" />
+	<edge mark="1" b="Field:System.Reflection.MemberTypes System.Reflection.MemberTypes::Property" e="TypeDef:System.Reflection.MemberTypes" />
+	<edge mark="1" b="Field:System.Reflection.MemberTypes System.Reflection.MemberTypes::Property" e="TypeDef:System.Reflection.MemberTypes" />
+	<edge mark="1" b="TypeDef:System.Reflection.MemberTypes" e="Field:System.Reflection.MemberTypes System.Reflection.MemberTypes::TypeInfo" />
+	<edge mark="1" b="Field:System.Reflection.MemberTypes System.Reflection.MemberTypes::TypeInfo" e="TypeDef:System.Reflection.MemberTypes" />
+	<edge mark="1" b="Field:System.Reflection.MemberTypes System.Reflection.MemberTypes::TypeInfo" e="TypeDef:System.Reflection.MemberTypes" />
+	<edge mark="1" b="TypeDef:System.Reflection.MemberTypes" e="Field:System.Reflection.MemberTypes System.Reflection.MemberTypes::Custom" />
+	<edge mark="1" b="Field:System.Reflection.MemberTypes System.Reflection.MemberTypes::Custom" e="TypeDef:System.Reflection.MemberTypes" />
+	<edge mark="1" b="Field:System.Reflection.MemberTypes System.Reflection.MemberTypes::Custom" e="TypeDef:System.Reflection.MemberTypes" />
+	<edge mark="1" b="TypeDef:System.Reflection.MemberTypes" e="Field:System.Reflection.MemberTypes System.Reflection.MemberTypes::NestedType" />
+	<edge mark="1" b="Field:System.Reflection.MemberTypes System.Reflection.MemberTypes::NestedType" e="TypeDef:System.Reflection.MemberTypes" />
+	<edge mark="1" b="Field:System.Reflection.MemberTypes System.Reflection.MemberTypes::NestedType" e="TypeDef:System.Reflection.MemberTypes" />
+	<edge mark="1" b="TypeDef:System.Reflection.MemberTypes" e="Field:System.Reflection.MemberTypes System.Reflection.MemberTypes::All" />
+	<edge mark="1" b="Field:System.Reflection.MemberTypes System.Reflection.MemberTypes::All" e="TypeDef:System.Reflection.MemberTypes" />
+	<edge mark="1" b="Field:System.Reflection.MemberTypes System.Reflection.MemberTypes::All" e="TypeDef:System.Reflection.MemberTypes" />
+	<edge mark="1" b="Method:System.Reflection.MemberTypes System.Reflection.MemberInfo::get_MemberType()" e="Property:System.Reflection.MemberTypes System.Reflection.MemberInfo::MemberType()" />
+	<edge mark="1" b="Method:System.Reflection.MemberTypes System.Reflection.MemberInfo::get_MemberType()" e="Method:System.Reflection.MemberTypes System.Type::get_MemberType()" />
+	<edge mark="1" b="Method:System.Reflection.MemberTypes System.Reflection.MemberInfo::get_MemberType()" e="Method:System.Reflection.MemberTypes System.Reflection.FieldInfo::get_MemberType()" />
+	<edge mark="1" b="Method:System.Reflection.MemberTypes System.Reflection.MemberInfo::get_MemberType()" e="TypeDef:System.Reflection.MemberTypes" />
+	<edge mark="1" b="Method:System.Reflection.MemberTypes System.Type::get_MemberType()" e="Property:System.Reflection.MemberTypes System.Type::MemberType()" />
+	<edge mark="1" b="Method:System.Reflection.MemberTypes System.Type::get_MemberType()" e="Method:System.Reflection.MemberTypes System.Reflection.MemberInfo::get_MemberType()" />
+	<edge mark="1" b="Method:System.Reflection.MemberTypes System.Type::get_MemberType()" e="TypeDef:System.Reflection.MemberTypes" />
+	<edge mark="1" b="Method:System.Reflection.FieldInfo System.Type::GetField(System.String,System.Reflection.BindingFlags)" e="Method:System.Reflection.FieldInfo System.RuntimeType::GetField(System.String,System.Reflection.BindingFlags)" />
+	<edge mark="1" b="Method:System.Reflection.FieldInfo System.Type::GetField(System.String,System.Reflection.BindingFlags)" e="TypeDef:System.Reflection.FieldInfo" />
+	<edge mark="1" b="Method:System.Reflection.EventInfo System.RuntimeType::GetEvent(System.String,System.Reflection.BindingFlags)" e="Method:System.Reflection.EventInfo System.Type::GetEvent(System.String,System.Reflection.BindingFlags)" />
+	<edge mark="1" b="Method:System.Reflection.EventInfo System.RuntimeType::GetEvent(System.String,System.Reflection.BindingFlags)" e="TypeDef:System.Reflection.EventInfo" />
+	<edge mark="1" b="TypeDef:System.Reflection.EventInfo" e="Module:System.Private.CoreLib.dll" />
+	<edge mark="1" b="Method:System.Reflection.MemberTypes System.Reflection.MemberInfo::get_MemberType()" e="Method:System.Reflection.MemberTypes System.Reflection.EventInfo::get_MemberType()" />
+	<edge mark="1" b="Method:System.Reflection.MemberTypes System.Reflection.EventInfo::get_MemberType()" e="Property:System.Reflection.MemberTypes System.Reflection.EventInfo::MemberType()" />
+	<edge mark="1" b="Method:System.Reflection.MemberTypes System.Reflection.EventInfo::get_MemberType()" e="Method:System.Reflection.MemberTypes System.Reflection.MemberInfo::get_MemberType()" />
+	<edge mark="1" b="Method:System.Reflection.MemberTypes System.Reflection.EventInfo::get_MemberType()" e="TypeDef:System.Reflection.MemberTypes" />
+	<edge mark="1" b="Method:System.Reflection.EventInfo System.Type::GetEvent(System.String,System.Reflection.BindingFlags)" e="Method:System.Reflection.EventInfo System.RuntimeType::GetEvent(System.String,System.Reflection.BindingFlags)" />
+	<edge mark="1" b="Method:System.Reflection.EventInfo System.Type::GetEvent(System.String,System.Reflection.BindingFlags)" e="TypeDef:System.Reflection.EventInfo" />
+	<edge b="Method:System.Reflection.PropertyInfo System.RuntimeType::GetPropertyImpl(System.String,System.Reflection.BindingFlags,System.Reflection.Binder,System.Type,System.Type[],System.Reflection.ParameterModifier[])" e="TypeSpec:System.Type[]" />
+	<edge b="Method:System.Reflection.PropertyInfo System.RuntimeType::GetPropertyImpl(System.String,System.Reflection.BindingFlags,System.Reflection.Binder,System.Type,System.Type[],System.Reflection.ParameterModifier[])" e="TypeSpec:System.Reflection.ParameterModifier[]" />
+	<edge mark="1" b="Method:System.Reflection.PropertyInfo System.RuntimeType::GetPropertyImpl(System.String,System.Reflection.BindingFlags,System.Reflection.Binder,System.Type,System.Type[],System.Reflection.ParameterModifier[])" e="Method:System.Reflection.PropertyInfo System.Type::GetPropertyImpl(System.String,System.Reflection.BindingFlags,System.Reflection.Binder,System.Type,System.Type[],System.Reflection.ParameterModifier[])" />
+	<edge mark="1" b="Method:System.Reflection.PropertyInfo System.RuntimeType::GetPropertyImpl(System.String,System.Reflection.BindingFlags,System.Reflection.Binder,System.Type,System.Type[],System.Reflection.ParameterModifier[])" e="TypeDef:System.Reflection.PropertyInfo" />
+	<edge mark="1" b="TypeDef:System.Reflection.PropertyInfo" e="Module:System.Private.CoreLib.dll" />
+	<edge mark="1" b="Method:System.Reflection.MemberTypes System.Reflection.MemberInfo::get_MemberType()" e="Method:System.Reflection.MemberTypes System.Reflection.PropertyInfo::get_MemberType()" />
+	<edge mark="1" b="Method:System.Reflection.MemberTypes System.Reflection.PropertyInfo::get_MemberType()" e="Property:System.Reflection.MemberTypes System.Reflection.PropertyInfo::MemberType()" />
+	<edge mark="1" b="Method:System.Reflection.MemberTypes System.Reflection.PropertyInfo::get_MemberType()" e="Method:System.Reflection.MemberTypes System.Reflection.MemberInfo::get_MemberType()" />
+	<edge mark="1" b="Method:System.Reflection.MemberTypes System.Reflection.PropertyInfo::get_MemberType()" e="TypeDef:System.Reflection.MemberTypes" />
+	<edge b="Method:System.Reflection.PropertyInfo System.Type::GetPropertyImpl(System.String,System.Reflection.BindingFlags,System.Reflection.Binder,System.Type,System.Type[],System.Reflection.ParameterModifier[])" e="TypeSpec:System.Type[]" />
+	<edge b="Method:System.Reflection.PropertyInfo System.Type::GetPropertyImpl(System.String,System.Reflection.BindingFlags,System.Reflection.Binder,System.Type,System.Type[],System.Reflection.ParameterModifier[])" e="TypeSpec:System.Reflection.ParameterModifier[]" />
+	<edge mark="1" b="Method:System.Reflection.PropertyInfo System.Type::GetPropertyImpl(System.String,System.Reflection.BindingFlags,System.Reflection.Binder,System.Type,System.Type[],System.Reflection.ParameterModifier[])" e="Method:System.Reflection.PropertyInfo System.RuntimeType::GetPropertyImpl(System.String,System.Reflection.BindingFlags,System.Reflection.Binder,System.Type,System.Type[],System.Reflection.ParameterModifier[])" />
+	<edge mark="1" b="Method:System.Reflection.PropertyInfo System.Type::GetPropertyImpl(System.String,System.Reflection.BindingFlags,System.Reflection.Binder,System.Type,System.Type[],System.Reflection.ParameterModifier[])" e="TypeDef:System.Reflection.PropertyInfo" />
+	<edge mark="1" b="TypeDef:System.Reflection.CallingConventions" e="Module:System.Private.CoreLib.dll" />
+	<edge b="Method:System.Reflection.ConstructorInfo System.RuntimeType::GetConstructorImpl(System.Reflection.BindingFlags,System.Reflection.Binder,System.Reflection.CallingConventions,System.Type[],System.Reflection.ParameterModifier[])" e="TypeSpec:System.Type[]" />
+	<edge b="Method:System.Reflection.ConstructorInfo System.RuntimeType::GetConstructorImpl(System.Reflection.BindingFlags,System.Reflection.Binder,System.Reflection.CallingConventions,System.Type[],System.Reflection.ParameterModifier[])" e="TypeSpec:System.Reflection.ParameterModifier[]" />
+	<edge mark="1" b="Method:System.Reflection.ConstructorInfo System.RuntimeType::GetConstructorImpl(System.Reflection.BindingFlags,System.Reflection.Binder,System.Reflection.CallingConventions,System.Type[],System.Reflection.ParameterModifier[])" e="Method:System.Reflection.ConstructorInfo System.Type::GetConstructorImpl(System.Reflection.BindingFlags,System.Reflection.Binder,System.Reflection.CallingConventions,System.Type[],System.Reflection.ParameterModifier[])" />
+	<edge mark="1" b="Method:System.Reflection.ConstructorInfo System.RuntimeType::GetConstructorImpl(System.Reflection.BindingFlags,System.Reflection.Binder,System.Reflection.CallingConventions,System.Type[],System.Reflection.ParameterModifier[])" e="TypeDef:System.Reflection.ConstructorInfo" />
+	<edge mark="1" b="TypeDef:System.Reflection.ConstructorInfo" e="Module:System.Private.CoreLib.dll" />
+	<edge mark="1" b="TypeDef:System.Reflection.CallingConventions" e="Field:System.Int32 System.Reflection.CallingConventions::value__" />
+	<edge mark="1" b="Field:System.Int32 System.Reflection.CallingConventions::value__" e="TypeDef:System.Reflection.CallingConventions" />
+	<edge mark="1" b="Field:System.Int32 System.Reflection.CallingConventions::value__" e="TypeDef:System.Int32" />
+	<edge mark="1" b="TypeDef:System.Reflection.CallingConventions" e="Field:System.Reflection.CallingConventions System.Reflection.CallingConventions::Standard" />
+	<edge mark="1" b="Field:System.Reflection.CallingConventions System.Reflection.CallingConventions::Standard" e="TypeDef:System.Reflection.CallingConventions" />
+	<edge mark="1" b="Field:System.Reflection.CallingConventions System.Reflection.CallingConventions::Standard" e="TypeDef:System.Reflection.CallingConventions" />
+	<edge mark="1" b="TypeDef:System.Reflection.CallingConventions" e="Field:System.Reflection.CallingConventions System.Reflection.CallingConventions::VarArgs" />
+	<edge mark="1" b="Field:System.Reflection.CallingConventions System.Reflection.CallingConventions::VarArgs" e="TypeDef:System.Reflection.CallingConventions" />
+	<edge mark="1" b="Field:System.Reflection.CallingConventions System.Reflection.CallingConventions::VarArgs" e="TypeDef:System.Reflection.CallingConventions" />
+	<edge mark="1" b="TypeDef:System.Reflection.CallingConventions" e="Field:System.Reflection.CallingConventions System.Reflection.CallingConventions::Any" />
+	<edge mark="1" b="Field:System.Reflection.CallingConventions System.Reflection.CallingConventions::Any" e="TypeDef:System.Reflection.CallingConventions" />
+	<edge mark="1" b="Field:System.Reflection.CallingConventions System.Reflection.CallingConventions::Any" e="TypeDef:System.Reflection.CallingConventions" />
+	<edge mark="1" b="TypeDef:System.Reflection.CallingConventions" e="Field:System.Reflection.CallingConventions System.Reflection.CallingConventions::HasThis" />
+	<edge mark="1" b="Field:System.Reflection.CallingConventions System.Reflection.CallingConventions::HasThis" e="TypeDef:System.Reflection.CallingConventions" />
+	<edge mark="1" b="Field:System.Reflection.CallingConventions System.Reflection.CallingConventions::HasThis" e="TypeDef:System.Reflection.CallingConventions" />
+	<edge mark="1" b="TypeDef:System.Reflection.CallingConventions" e="Field:System.Reflection.CallingConventions System.Reflection.CallingConventions::ExplicitThis" />
+	<edge mark="1" b="Field:System.Reflection.CallingConventions System.Reflection.CallingConventions::ExplicitThis" e="TypeDef:System.Reflection.CallingConventions" />
+	<edge mark="1" b="Field:System.Reflection.CallingConventions System.Reflection.CallingConventions::ExplicitThis" e="TypeDef:System.Reflection.CallingConventions" />
+	<edge mark="1" b="TypeDef:System.Reflection.MethodBase" e="Module:System.Private.CoreLib.dll" />
+	<edge mark="1" b="Method:System.Reflection.MemberTypes System.Reflection.MemberInfo::get_MemberType()" e="Method:System.Reflection.MemberTypes System.Reflection.ConstructorInfo::get_MemberType()" />
+	<edge mark="1" b="Method:System.Reflection.MemberTypes System.Reflection.ConstructorInfo::get_MemberType()" e="Property:System.Reflection.MemberTypes System.Reflection.ConstructorInfo::MemberType()" />
+	<edge mark="1" b="Method:System.Reflection.MemberTypes System.Reflection.ConstructorInfo::get_MemberType()" e="Method:System.Reflection.MemberTypes System.Reflection.MemberInfo::get_MemberType()" />
+	<edge mark="1" b="Method:System.Reflection.MemberTypes System.Reflection.ConstructorInfo::get_MemberType()" e="TypeDef:System.Reflection.MemberTypes" />
+	<edge b="Method:System.Reflection.ConstructorInfo System.Type::GetConstructorImpl(System.Reflection.BindingFlags,System.Reflection.Binder,System.Reflection.CallingConventions,System.Type[],System.Reflection.ParameterModifier[])" e="TypeSpec:System.Type[]" />
+	<edge b="Method:System.Reflection.ConstructorInfo System.Type::GetConstructorImpl(System.Reflection.BindingFlags,System.Reflection.Binder,System.Reflection.CallingConventions,System.Type[],System.Reflection.ParameterModifier[])" e="TypeSpec:System.Reflection.ParameterModifier[]" />
+	<edge mark="1" b="Method:System.Reflection.ConstructorInfo System.Type::GetConstructorImpl(System.Reflection.BindingFlags,System.Reflection.Binder,System.Reflection.CallingConventions,System.Type[],System.Reflection.ParameterModifier[])" e="Method:System.Reflection.ConstructorInfo System.RuntimeType::GetConstructorImpl(System.Reflection.BindingFlags,System.Reflection.Binder,System.Reflection.CallingConventions,System.Type[],System.Reflection.ParameterModifier[])" />
+	<edge mark="1" b="Method:System.Reflection.ConstructorInfo System.Type::GetConstructorImpl(System.Reflection.BindingFlags,System.Reflection.Binder,System.Reflection.CallingConventions,System.Type[],System.Reflection.ParameterModifier[])" e="TypeDef:System.Reflection.ConstructorInfo" />
+	<edge b="Method:System.Reflection.MethodInfo System.RuntimeType::GetMethodImpl(System.String,System.Reflection.BindingFlags,System.Reflection.Binder,System.Reflection.CallingConventions,System.Type[],System.Reflection.ParameterModifier[])" e="TypeSpec:System.Type[]" />
+	<edge b="Method:System.Reflection.MethodInfo System.RuntimeType::GetMethodImpl(System.String,System.Reflection.BindingFlags,System.Reflection.Binder,System.Reflection.CallingConventions,System.Type[],System.Reflection.ParameterModifier[])" e="TypeSpec:System.Reflection.ParameterModifier[]" />
+	<edge mark="1" b="Method:System.Reflection.MethodInfo System.RuntimeType::GetMethodImpl(System.String,System.Reflection.BindingFlags,System.Reflection.Binder,System.Reflection.CallingConventions,System.Type[],System.Reflection.ParameterModifier[])" e="Method:System.Reflection.MethodInfo System.Type::GetMethodImpl(System.String,System.Reflection.BindingFlags,System.Reflection.Binder,System.Reflection.CallingConventions,System.Type[],System.Reflection.ParameterModifier[])" />
+	<edge mark="1" b="Method:System.Reflection.MethodInfo System.RuntimeType::GetMethodImpl(System.String,System.Reflection.BindingFlags,System.Reflection.Binder,System.Reflection.CallingConventions,System.Type[],System.Reflection.ParameterModifier[])" e="TypeDef:System.Reflection.MethodInfo" />
+	<edge mark="1" b="TypeDef:System.Reflection.MethodInfo" e="Module:System.Private.CoreLib.dll" />
+	<edge mark="1" b="Method:System.Reflection.MemberTypes System.Reflection.MemberInfo::get_MemberType()" e="Method:System.Reflection.MemberTypes System.Reflection.MethodInfo::get_MemberType()" />
+	<edge mark="1" b="Method:System.Reflection.MemberTypes System.Reflection.MethodInfo::get_MemberType()" e="Property:System.Reflection.MemberTypes System.Reflection.MethodInfo::MemberType()" />
+	<edge mark="1" b="Method:System.Reflection.MemberTypes System.Reflection.MethodInfo::get_MemberType()" e="Method:System.Reflection.MemberTypes System.Reflection.MemberInfo::get_MemberType()" />
+	<edge mark="1" b="Method:System.Reflection.MemberTypes System.Reflection.MethodInfo::get_MemberType()" e="TypeDef:System.Reflection.MemberTypes" />
+	<edge b="Method:System.Reflection.MethodInfo System.Type::GetMethodImpl(System.String,System.Reflection.BindingFlags,System.Reflection.Binder,System.Reflection.CallingConventions,System.Type[],System.Reflection.ParameterModifier[])" e="TypeSpec:System.Type[]" />
+	<edge b="Method:System.Reflection.MethodInfo System.Type::GetMethodImpl(System.String,System.Reflection.BindingFlags,System.Reflection.Binder,System.Reflection.CallingConventions,System.Type[],System.Reflection.ParameterModifier[])" e="TypeSpec:System.Reflection.ParameterModifier[]" />
+	<edge mark="1" b="Method:System.Reflection.MethodInfo System.Type::GetMethodImpl(System.String,System.Reflection.BindingFlags,System.Reflection.Binder,System.Reflection.CallingConventions,System.Type[],System.Reflection.ParameterModifier[])" e="Method:System.Reflection.MethodInfo System.RuntimeType::GetMethodImpl(System.String,System.Reflection.BindingFlags,System.Reflection.Binder,System.Reflection.CallingConventions,System.Type[],System.Reflection.ParameterModifier[])" />
+	<edge mark="1" b="Method:System.Reflection.MethodInfo System.Type::GetMethodImpl(System.String,System.Reflection.BindingFlags,System.Reflection.Binder,System.Reflection.CallingConventions,System.Type[],System.Reflection.ParameterModifier[])" e="TypeDef:System.Reflection.MethodInfo" />
+	<edge mark="1" b="Method:System.Reflection.MemberInfo[] System.RuntimeType::GetMembers(System.Reflection.BindingFlags)" e="Method:System.Reflection.MemberInfo[] System.Type::GetMembers(System.Reflection.BindingFlags)" />
+	<edge b="Method:System.Reflection.MemberInfo[] System.RuntimeType::GetMembers(System.Reflection.BindingFlags)" e="TypeSpec:System.Reflection.MemberInfo[]" />
+	<edge mark="1" b="TypeSpec:System.Reflection.MemberInfo[]" e="TypeDef:System.Reflection.MemberInfo" />
+	<edge mark="1" b="Method:System.Reflection.MemberInfo[] System.Type::GetMembers(System.Reflection.BindingFlags)" e="Method:System.Reflection.MemberInfo[] System.RuntimeType::GetMembers(System.Reflection.BindingFlags)" />
+	<edge b="Method:System.Reflection.MemberInfo[] System.Type::GetMembers(System.Reflection.BindingFlags)" e="TypeSpec:System.Reflection.MemberInfo[]" />
+	<edge mark="1" b="TypeSpec:System.Reflection.MemberInfo[]" e="TypeDef:System.Reflection.MemberInfo" />
+	<edge mark="1" b="Method:System.Type[] System.RuntimeType::GetNestedTypes(System.Reflection.BindingFlags)" e="Method:System.Type[] System.Type::GetNestedTypes(System.Reflection.BindingFlags)" />
+	<edge b="Method:System.Type[] System.RuntimeType::GetNestedTypes(System.Reflection.BindingFlags)" e="TypeSpec:System.Type[]" />
+	<edge mark="1" b="TypeSpec:System.Type[]" e="TypeDef:System.Type" />
+	<edge mark="1" b="Method:System.Type[] System.Type::GetNestedTypes(System.Reflection.BindingFlags)" e="Method:System.Type[] System.RuntimeType::GetNestedTypes(System.Reflection.BindingFlags)" />
+	<edge b="Method:System.Type[] System.Type::GetNestedTypes(System.Reflection.BindingFlags)" e="TypeSpec:System.Type[]" />
+	<edge mark="1" b="TypeSpec:System.Type[]" e="TypeDef:System.Type" />
+	<edge mark="1" b="Method:System.Type[] System.RuntimeType::GetInterfaces()" e="Method:System.Type[] System.Type::GetInterfaces()" />
+	<edge b="Method:System.Type[] System.RuntimeType::GetInterfaces()" e="TypeSpec:System.Type[]" />
+	<edge mark="1" b="TypeSpec:System.Type[]" e="TypeDef:System.Type" />
+	<edge mark="1" b="Method:System.Type[] System.Type::GetInterfaces()" e="Method:System.Type[] System.RuntimeType::GetInterfaces()" />
+	<edge b="Method:System.Type[] System.Type::GetInterfaces()" e="TypeSpec:System.Type[]" />
+	<edge mark="1" b="TypeSpec:System.Type[]" e="TypeDef:System.Type" />
+	<edge mark="1" b="Method:System.Reflection.FieldInfo[] System.RuntimeType::GetFields(System.Reflection.BindingFlags)" e="Method:System.Reflection.FieldInfo[] System.Type::GetFields(System.Reflection.BindingFlags)" />
+	<edge b="Method:System.Reflection.FieldInfo[] System.RuntimeType::GetFields(System.Reflection.BindingFlags)" e="TypeSpec:System.Reflection.FieldInfo[]" />
+	<edge mark="1" b="TypeSpec:System.Reflection.FieldInfo[]" e="TypeDef:System.Reflection.FieldInfo" />
+	<edge mark="1" b="Method:System.Reflection.FieldInfo[] System.Type::GetFields(System.Reflection.BindingFlags)" e="Method:System.Reflection.FieldInfo[] System.RuntimeType::GetFields(System.Reflection.BindingFlags)" />
+	<edge b="Method:System.Reflection.FieldInfo[] System.Type::GetFields(System.Reflection.BindingFlags)" e="TypeSpec:System.Reflection.FieldInfo[]" />
+	<edge mark="1" b="TypeSpec:System.Reflection.FieldInfo[]" e="TypeDef:System.Reflection.FieldInfo" />
+	<edge mark="1" b="Method:System.Reflection.EventInfo[] System.RuntimeType::GetEvents(System.Reflection.BindingFlags)" e="Method:System.Reflection.EventInfo[] System.Type::GetEvents(System.Reflection.BindingFlags)" />
+	<edge b="Method:System.Reflection.EventInfo[] System.RuntimeType::GetEvents(System.Reflection.BindingFlags)" e="TypeSpec:System.Reflection.EventInfo[]" />
+	<edge mark="1" b="TypeSpec:System.Reflection.EventInfo[]" e="TypeDef:System.Reflection.EventInfo" />
+	<edge mark="1" b="Method:System.Reflection.EventInfo[] System.Type::GetEvents(System.Reflection.BindingFlags)" e="Method:System.Reflection.EventInfo[] System.RuntimeType::GetEvents(System.Reflection.BindingFlags)" />
+	<edge b="Method:System.Reflection.EventInfo[] System.Type::GetEvents(System.Reflection.BindingFlags)" e="TypeSpec:System.Reflection.EventInfo[]" />
+	<edge mark="1" b="TypeSpec:System.Reflection.EventInfo[]" e="TypeDef:System.Reflection.EventInfo" />
+	<edge mark="1" b="Method:System.Reflection.PropertyInfo[] System.RuntimeType::GetProperties(System.Reflection.BindingFlags)" e="Method:System.Reflection.PropertyInfo[] System.Type::GetProperties(System.Reflection.BindingFlags)" />
+	<edge b="Method:System.Reflection.PropertyInfo[] System.RuntimeType::GetProperties(System.Reflection.BindingFlags)" e="TypeSpec:System.Reflection.PropertyInfo[]" />
+	<edge mark="1" b="TypeSpec:System.Reflection.PropertyInfo[]" e="TypeDef:System.Reflection.PropertyInfo" />
+	<edge mark="1" b="Method:System.Reflection.PropertyInfo[] System.Type::GetProperties(System.Reflection.BindingFlags)" e="Method:System.Reflection.PropertyInfo[] System.RuntimeType::GetProperties(System.Reflection.BindingFlags)" />
+	<edge b="Method:System.Reflection.PropertyInfo[] System.Type::GetProperties(System.Reflection.BindingFlags)" e="TypeSpec:System.Reflection.PropertyInfo[]" />
+	<edge mark="1" b="TypeSpec:System.Reflection.PropertyInfo[]" e="TypeDef:System.Reflection.PropertyInfo" />
+	<edge mark="1" b="Method:System.Reflection.ConstructorInfo[] System.RuntimeType::GetConstructors(System.Reflection.BindingFlags)" e="Method:System.Reflection.ConstructorInfo[] System.Type::GetConstructors(System.Reflection.BindingFlags)" />
+	<edge b="Method:System.Reflection.ConstructorInfo[] System.RuntimeType::GetConstructors(System.Reflection.BindingFlags)" e="TypeSpec:System.Reflection.ConstructorInfo[]" />
+	<edge mark="1" b="TypeSpec:System.Reflection.ConstructorInfo[]" e="TypeDef:System.Reflection.ConstructorInfo" />
+	<edge mark="1" b="Method:System.Reflection.ConstructorInfo[] System.Type::GetConstructors(System.Reflection.BindingFlags)" e="Method:System.Reflection.ConstructorInfo[] System.RuntimeType::GetConstructors(System.Reflection.BindingFlags)" />
+	<edge b="Method:System.Reflection.ConstructorInfo[] System.Type::GetConstructors(System.Reflection.BindingFlags)" e="TypeSpec:System.Reflection.ConstructorInfo[]" />
+	<edge mark="1" b="TypeSpec:System.Reflection.ConstructorInfo[]" e="TypeDef:System.Reflection.ConstructorInfo" />
+	<edge mark="1" b="Method:System.Reflection.MethodInfo[] System.RuntimeType::GetMethods(System.Reflection.BindingFlags)" e="Method:System.Reflection.MethodInfo[] System.Type::GetMethods(System.Reflection.BindingFlags)" />
+	<edge b="Method:System.Reflection.MethodInfo[] System.RuntimeType::GetMethods(System.Reflection.BindingFlags)" e="TypeSpec:System.Reflection.MethodInfo[]" />
+	<edge mark="1" b="TypeSpec:System.Reflection.MethodInfo[]" e="TypeDef:System.Reflection.MethodInfo" />
+	<edge mark="1" b="Method:System.Reflection.MethodInfo[] System.Type::GetMethods(System.Reflection.BindingFlags)" e="Method:System.Reflection.MethodInfo[] System.RuntimeType::GetMethods(System.Reflection.BindingFlags)" />
+	<edge b="Method:System.Reflection.MethodInfo[] System.Type::GetMethods(System.Reflection.BindingFlags)" e="TypeSpec:System.Reflection.MethodInfo[]" />
+	<edge mark="1" b="TypeSpec:System.Reflection.MethodInfo[]" e="TypeDef:System.Reflection.MethodInfo" />
+	<edge mark="1" b="Method:System.Boolean System.RuntimeTypeHandle::Equals(System.Object)" e="Method:System.Boolean System.ValueType::Equals(System.Object)" />
+	<edge mark="1" b="Method:System.Boolean System.ValueType::Equals(System.Object)" e="Method:System.Boolean System.Object::Equals(System.Object)" />
+	<edge mark="1" b="Method:System.Boolean System.RuntimeTypeHandle::Equals(System.Object)" e="TypeDef:System.Boolean" />
+	<edge mark="1" b="Method:System.Int32 System.RuntimeTypeHandle::GetHashCode()" e="Method:System.Int32 System.ValueType::GetHashCode()" />
+	<edge mark="1" b="Method:System.Int32 System.ValueType::GetHashCode()" e="Method:System.Int32 System.Object::GetHashCode()" />
+	<edge mark="1" b="Method:System.Int32 System.RuntimeTypeHandle::GetHashCode()" e="TypeDef:System.Int32" />
+	<edge mark="1" b="TypeDef:System.Runtime.CompilerServices.IntrinsicAttribute:System.Private.CoreLib.dll" e="Module:System.Private.CoreLib.dll" />
+	<edge b="Method:System.Void System.Runtime.CompilerServices.IntrinsicAttribute::.ctor()" e="TypeDef:System.Runtime.CompilerServices.IntrinsicAttribute:System.Private.CoreLib.dll" />
+	<edge mark="1" b="Method:System.Void System.Runtime.CompilerServices.IntrinsicAttribute::.ctor()" e="TypeDef:System.Void" />
+	<edge mark="1" b="TypeDef:Mono.Linker.Tests.Cases.TypeForwarding.Dependencies.AttributeWithEnumArgumentAttribute" e="Module:Attribute.dll" />
+	<edge b="Method:System.Void Mono.Linker.Tests.Cases.TypeForwarding.Dependencies.AttributeWithEnumArgumentAttribute::.ctor(Mono.Linker.Tests.Cases.TypeForwarding.Dependencies.MyEnum)" e="TypeDef:Mono.Linker.Tests.Cases.TypeForwarding.Dependencies.AttributeWithEnumArgumentAttribute" />
+	<edge mark="1" b="TypeDef:Mono.Linker.Tests.Cases.TypeForwarding.Dependencies.MyEnum" e="Module:Implementation.dll" />
+	<edge mark="1" b="Module:Implementation.dll" e="Assembly:Implementation, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null" />
+	<edge mark="1" b="Method:System.Void Mono.Linker.Tests.Cases.TypeForwarding.Dependencies.AttributeWithEnumArgumentAttribute::.ctor(Mono.Linker.Tests.Cases.TypeForwarding.Dependencies.MyEnum)" e="TypeDef:System.Void" />
+	<edge mark="1" b="Method:System.Void Mono.Linker.Tests.Cases.TypeForwarding.Dependencies.AttributeWithEnumArgumentAttribute::.ctor(Mono.Linker.Tests.Cases.TypeForwarding.Dependencies.MyEnum)" e="Method:System.Void System.Attribute::.ctor()" />
+	<edge mark="1" b="Method:System.Void System.Attribute::.ctor()" e="TypeDef:System.Attribute" />
+	<edge mark="1" b="TypeDef:Mono.Linker.Tests.Cases.TypeForwarding.Dependencies.MyEnum" e="Field:System.Int32 Mono.Linker.Tests.Cases.TypeForwarding.Dependencies.MyEnum::value__" />
+	<edge mark="1" b="Field:System.Int32 Mono.Linker.Tests.Cases.TypeForwarding.Dependencies.MyEnum::value__" e="TypeDef:Mono.Linker.Tests.Cases.TypeForwarding.Dependencies.MyEnum" />
+	<edge mark="1" b="Field:System.Int32 Mono.Linker.Tests.Cases.TypeForwarding.Dependencies.MyEnum::value__" e="TypeDef:System.Int32" />
+	<edge mark="1" b="TypeDef:Mono.Linker.Tests.Cases.TypeForwarding.Dependencies.MyEnum" e="Field:Mono.Linker.Tests.Cases.TypeForwarding.Dependencies.MyEnum Mono.Linker.Tests.Cases.TypeForwarding.Dependencies.MyEnum::A" />
+	<edge mark="1" b="Field:Mono.Linker.Tests.Cases.TypeForwarding.Dependencies.MyEnum Mono.Linker.Tests.Cases.TypeForwarding.Dependencies.MyEnum::A" e="TypeDef:Mono.Linker.Tests.Cases.TypeForwarding.Dependencies.MyEnum" />
+	<edge mark="1" b="Field:Mono.Linker.Tests.Cases.TypeForwarding.Dependencies.MyEnum Mono.Linker.Tests.Cases.TypeForwarding.Dependencies.MyEnum::A" e="TypeDef:Mono.Linker.Tests.Cases.TypeForwarding.Dependencies.MyEnum" />
+	<edge mark="1" b="TypeDef:Mono.Linker.Tests.Cases.TypeForwarding.Dependencies.MyEnum" e="Field:Mono.Linker.Tests.Cases.TypeForwarding.Dependencies.MyEnum Mono.Linker.Tests.Cases.TypeForwarding.Dependencies.MyEnum::B" />
+	<edge mark="1" b="Field:Mono.Linker.Tests.Cases.TypeForwarding.Dependencies.MyEnum Mono.Linker.Tests.Cases.TypeForwarding.Dependencies.MyEnum::B" e="TypeDef:Mono.Linker.Tests.Cases.TypeForwarding.Dependencies.MyEnum" />
+	<edge mark="1" b="Field:Mono.Linker.Tests.Cases.TypeForwarding.Dependencies.MyEnum Mono.Linker.Tests.Cases.TypeForwarding.Dependencies.MyEnum::B" e="TypeDef:Mono.Linker.Tests.Cases.TypeForwarding.Dependencies.MyEnum" />
+	<edge mark="1" b="TypeDef:Mono.Linker.Tests.Cases.TypeForwarding.Dependencies.MyEnum" e="Field:Mono.Linker.Tests.Cases.TypeForwarding.Dependencies.MyEnum Mono.Linker.Tests.Cases.TypeForwarding.Dependencies.MyEnum::C" />
+	<edge mark="1" b="Field:Mono.Linker.Tests.Cases.TypeForwarding.Dependencies.MyEnum Mono.Linker.Tests.Cases.TypeForwarding.Dependencies.MyEnum::C" e="TypeDef:Mono.Linker.Tests.Cases.TypeForwarding.Dependencies.MyEnum" />
+	<edge mark="1" b="Field:Mono.Linker.Tests.Cases.TypeForwarding.Dependencies.MyEnum Mono.Linker.Tests.Cases.TypeForwarding.Dependencies.MyEnum::C" e="TypeDef:Mono.Linker.Tests.Cases.TypeForwarding.Dependencies.MyEnum" />
+	<edge mark="1" b="TypeDef:System.Attribute" e="Method:System.Boolean System.Attribute::Equals(System.Object)" />
+	<edge mark="1" b="TypeDef:System.Attribute" e="Method:System.Int32 System.Attribute::GetHashCode()" />
+	<edge b="Method:System.Void System.Attribute::.ctor()" e="TypeDef:System.Attribute" />
+	<edge mark="1" b="Method:System.Void System.Attribute::.ctor()" e="TypeDef:System.Void" />
+	<edge mark="1" b="Method:System.Reflection.MemberTypes System.Reflection.MemberInfo::get_MemberType()" e="Method:System.Reflection.MemberTypes System.Type::get_MemberType()" />
+	<edge mark="1" b="Method:System.Type System.Reflection.MemberInfo::get_DeclaringType()" e="Method:System.Type System.Type::get_DeclaringType()" />
+	<edge mark="1" b="Method:System.Type System.Reflection.MemberInfo::get_ReflectedType()" e="Method:System.Type System.Type::get_ReflectedType()" />
+	<edge mark="1" b="Method:System.Type System.Type::get_ReflectedType()" e="Property:System.Type System.Type::ReflectedType()" />
+	<edge mark="1" b="Method:System.Type System.Type::get_ReflectedType()" e="Method:System.Type System.Reflection.MemberInfo::get_ReflectedType()" />
+	<edge mark="1" b="Method:System.Type System.Type::get_ReflectedType()" e="TypeDef:System.Type" />
+	<edge mark="1" b="Method:System.Type System.Reflection.MemberInfo::get_ReflectedType()" e="Property:System.Type System.Reflection.MemberInfo::ReflectedType()" />
+	<edge mark="1" b="Method:System.Type System.Reflection.MemberInfo::get_ReflectedType()" e="Method:System.Type System.Type::get_ReflectedType()" />
+	<edge mark="1" b="Method:System.Type System.Reflection.MemberInfo::get_ReflectedType()" e="TypeDef:System.Type" />
+	<edge mark="1" b="Method:System.Type System.Type::get_DeclaringType()" e="Property:System.Type System.Type::DeclaringType()" />
+	<edge mark="1" b="Method:System.Type System.Type::get_DeclaringType()" e="Method:System.Type System.Reflection.MemberInfo::get_DeclaringType()" />
+	<edge mark="1" b="Method:System.Type System.Type::get_DeclaringType()" e="TypeDef:System.Type" />
+	<edge mark="1" b="Method:System.Type System.Reflection.MemberInfo::get_DeclaringType()" e="Property:System.Type System.Reflection.MemberInfo::DeclaringType()" />
+	<edge mark="1" b="Method:System.Type System.Reflection.MemberInfo::get_DeclaringType()" e="Method:System.Type System.Type::get_DeclaringType()" />
+	<edge mark="1" b="Method:System.Type System.Reflection.MemberInfo::get_DeclaringType()" e="TypeDef:System.Type" />
+	<edge mark="1" b="TypeDef:System.Reflection.Metadata.RuntimeTypeMetadataUpdateHandler:System.Private.CoreLib.dll" e="Module:System.Private.CoreLib.dll" />
+	<edge mark="1" b="Assembly:System.Private.CoreLib, Version=9.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e" e="Method:System.Boolean System.Reflection.Metadata.RuntimeTypeMetadataUpdateHandler::SkipAssembly(System.Reflection.Assembly)" />
+	<edge mark="1" b="Assembly:System.Private.CoreLib, Version=9.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e" e="Method:System.Void System.Reflection.Metadata.RuntimeTypeMetadataUpdateHandler::ClearCache(System.Type)" />
+	<edge mark="1" b="Assembly:System.Private.CoreLib, Version=9.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e" e="Method:System.Boolean System.Reflection.Metadata.RuntimeTypeMetadataUpdateHandler::RequiresClearingAllTypes(System.Type[])" />
+	<edge mark="1" b="Assembly:System.Private.CoreLib, Version=9.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e" e="Method:System.Object System.Object::MemberwiseClone()" />
+	<edge mark="1" b="Assembly:System.Private.CoreLib, Version=9.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e" e="Method:System.Void System.Object::Finalize()" />
+	<edge mark="1" b="Assembly:System.Private.CoreLib, Version=9.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e" e="Method:System.Void System.Reflection.Metadata.RuntimeTypeMetadataUpdateHandler::ClearCache(System.Type[])" />
+	<edge mark="1" b="Assembly:System.Private.CoreLib, Version=9.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e" e="Method:System.Type System.Object::GetType()" />
+	<edge mark="1" b="Assembly:System.Private.CoreLib, Version=9.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e" e="Method:System.String System.Object::ToString()" />
+	<edge mark="1" b="Assembly:System.Private.CoreLib, Version=9.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e" e="Method:System.Boolean System.Object::Equals(System.Object)" />
+	<edge mark="1" b="Assembly:System.Private.CoreLib, Version=9.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e" e="Method:System.Boolean System.Object::Equals(System.Object,System.Object)" />
+	<edge mark="1" b="Assembly:System.Private.CoreLib, Version=9.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e" e="Method:System.Boolean System.Object::ReferenceEquals(System.Object,System.Object)" />
+	<edge mark="1" b="Assembly:System.Private.CoreLib, Version=9.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e" e="Method:System.Int32 System.Object::GetHashCode()" />
+	<edge mark="1" b="TypeDef:System.Runtime.CompilerServices.SkipLocalsInitAttribute" e="Module:System.Private.CoreLib.dll" />
+	<edge b="Method:System.Void System.Runtime.CompilerServices.SkipLocalsInitAttribute::.ctor()" e="TypeDef:System.Runtime.CompilerServices.SkipLocalsInitAttribute" />
+	<edge mark="1" b="Method:System.Void System.Runtime.CompilerServices.SkipLocalsInitAttribute::.ctor()" e="TypeDef:System.Void" />
+	<edge mark="1" b="TypeDef:System.Runtime.CompilerServices.NullablePublicOnlyAttribute" e="Module:System.Private.CoreLib.dll" />
+	<edge b="Method:System.Void System.Runtime.CompilerServices.NullablePublicOnlyAttribute::.ctor(System.Boolean)" e="TypeDef:System.Runtime.CompilerServices.NullablePublicOnlyAttribute" />
+	<edge mark="1" b="Method:System.Void System.Runtime.CompilerServices.NullablePublicOnlyAttribute::.ctor(System.Boolean)" e="TypeDef:System.Void" />
+	<edge mark="1" b="TypeDef:System.Runtime.Versioning.RequiresPreviewFeaturesAttribute" e="Module:System.Private.CoreLib.dll" />
+	<edge b="Method:System.Void System.Runtime.Versioning.RequiresPreviewFeaturesAttribute::.ctor()" e="TypeDef:System.Runtime.Versioning.RequiresPreviewFeaturesAttribute" />
+	<edge mark="1" b="Method:System.Void System.Runtime.Versioning.RequiresPreviewFeaturesAttribute::.ctor()" e="TypeDef:System.Void" />
+	<edge mark="1" b="TypeDef:System.Reflection.AssemblyTitleAttribute" e="Module:System.Private.CoreLib.dll" />
+	<edge b="Method:System.Void System.Reflection.AssemblyTitleAttribute::.ctor(System.String)" e="TypeDef:System.Reflection.AssemblyTitleAttribute" />
+	<edge mark="1" b="Method:System.Void System.Reflection.AssemblyTitleAttribute::.ctor(System.String)" e="TypeDef:System.Void" />
+	<edge mark="1" b="TypeDef:System.Reflection.AssemblyProductAttribute" e="Module:System.Private.CoreLib.dll" />
+	<edge b="Method:System.Void System.Reflection.AssemblyProductAttribute::.ctor(System.String)" e="TypeDef:System.Reflection.AssemblyProductAttribute" />
+	<edge mark="1" b="Method:System.Void System.Reflection.AssemblyProductAttribute::.ctor(System.String)" e="TypeDef:System.Void" />
+	<edge mark="1" b="TypeDef:System.Reflection.AssemblyInformationalVersionAttribute" e="Module:System.Private.CoreLib.dll" />
+	<edge b="Method:System.Void System.Reflection.AssemblyInformationalVersionAttribute::.ctor(System.String)" e="TypeDef:System.Reflection.AssemblyInformationalVersionAttribute" />
+	<edge mark="1" b="Method:System.Void System.Reflection.AssemblyInformationalVersionAttribute::.ctor(System.String)" e="TypeDef:System.Void" />
+	<edge mark="1" b="TypeDef:System.Reflection.AssemblyFileVersionAttribute" e="Module:System.Private.CoreLib.dll" />
+	<edge b="Method:System.Void System.Reflection.AssemblyFileVersionAttribute::.ctor(System.String)" e="TypeDef:System.Reflection.AssemblyFileVersionAttribute" />
+	<edge mark="1" b="Method:System.Void System.Reflection.AssemblyFileVersionAttribute::.ctor(System.String)" e="TypeDef:System.Void" />
+	<edge mark="1" b="TypeDef:System.Reflection.AssemblyDescriptionAttribute" e="Module:System.Private.CoreLib.dll" />
+	<edge b="Method:System.Void System.Reflection.AssemblyDescriptionAttribute::.ctor(System.String)" e="TypeDef:System.Reflection.AssemblyDescriptionAttribute" />
+	<edge mark="1" b="Method:System.Void System.Reflection.AssemblyDescriptionAttribute::.ctor(System.String)" e="TypeDef:System.Void" />
+	<edge mark="1" b="TypeDef:System.Reflection.AssemblyCopyrightAttribute" e="Module:System.Private.CoreLib.dll" />
+	<edge b="Method:System.Void System.Reflection.AssemblyCopyrightAttribute::.ctor(System.String)" e="TypeDef:System.Reflection.AssemblyCopyrightAttribute" />
+	<edge mark="1" b="Method:System.Void System.Reflection.AssemblyCopyrightAttribute::.ctor(System.String)" e="TypeDef:System.Void" />
+	<edge mark="1" b="TypeDef:System.Reflection.AssemblyConfigurationAttribute" e="Module:System.Private.CoreLib.dll" />
+	<edge b="Method:System.Void System.Reflection.AssemblyConfigurationAttribute::.ctor(System.String)" e="TypeDef:System.Reflection.AssemblyConfigurationAttribute" />
+	<edge mark="1" b="Method:System.Void System.Reflection.AssemblyConfigurationAttribute::.ctor(System.String)" e="TypeDef:System.Void" />
+	<edge mark="1" b="TypeDef:System.Reflection.AssemblyCompanyAttribute" e="Module:System.Private.CoreLib.dll" />
+	<edge b="Method:System.Void System.Reflection.AssemblyCompanyAttribute::.ctor(System.String)" e="TypeDef:System.Reflection.AssemblyCompanyAttribute" />
+	<edge mark="1" b="Method:System.Void System.Reflection.AssemblyCompanyAttribute::.ctor(System.String)" e="TypeDef:System.Void" />
+	<edge mark="1" b="TypeDef:System.Runtime.Versioning.TargetFrameworkAttribute" e="Module:System.Private.CoreLib.dll" />
+	<edge mark="1" b="Method:System.Void System.Runtime.Versioning.TargetFrameworkAttribute::set_FrameworkDisplayName(System.String)" e="Property:System.String System.Runtime.Versioning.TargetFrameworkAttribute::FrameworkDisplayName()" />
+	<edge mark="1" b="Method:System.Void System.Runtime.Versioning.TargetFrameworkAttribute::set_FrameworkDisplayName(System.String)" e="TypeDef:System.Void" />
+	<edge b="Method:System.Void System.Runtime.Versioning.TargetFrameworkAttribute::.ctor(System.String)" e="TypeDef:System.Runtime.Versioning.TargetFrameworkAttribute" />
+	<edge mark="1" b="Method:System.Void System.Runtime.Versioning.TargetFrameworkAttribute::.ctor(System.String)" e="TypeDef:System.Void" />
+	<edge mark="1" b="TypeDef:System.Runtime.CompilerServices.DisableRuntimeMarshallingAttribute" e="Module:System.Private.CoreLib.dll" />
+	<edge b="Method:System.Void System.Runtime.CompilerServices.DisableRuntimeMarshallingAttribute::.ctor()" e="TypeDef:System.Runtime.CompilerServices.DisableRuntimeMarshallingAttribute" />
+	<edge mark="1" b="Method:System.Void System.Runtime.CompilerServices.DisableRuntimeMarshallingAttribute::.ctor()" e="TypeDef:System.Void" />
+	<edge mark="1" b="TypeDef:System.Resources.NeutralResourcesLanguageAttribute" e="Module:System.Private.CoreLib.dll" />
+	<edge b="Method:System.Void System.Resources.NeutralResourcesLanguageAttribute::.ctor(System.String)" e="TypeDef:System.Resources.NeutralResourcesLanguageAttribute" />
+	<edge mark="1" b="Method:System.Void System.Resources.NeutralResourcesLanguageAttribute::.ctor(System.String)" e="TypeDef:System.Void" />
+	<edge mark="1" b="TypeDef:System.Reflection.AssemblyMetadataAttribute" e="Module:System.Private.CoreLib.dll" />
+	<edge b="Method:System.Void System.Reflection.AssemblyMetadataAttribute::.ctor(System.String,System.String)" e="TypeDef:System.Reflection.AssemblyMetadataAttribute" />
+	<edge mark="1" b="Method:System.Void System.Reflection.AssemblyMetadataAttribute::.ctor(System.String,System.String)" e="TypeDef:System.Void" />
+	<edge mark="1" b="TypeDef:System.Runtime.InteropServices.DefaultDllImportSearchPathsAttribute" e="Module:System.Private.CoreLib.dll" />
+	<edge b="Method:System.Void System.Runtime.InteropServices.DefaultDllImportSearchPathsAttribute::.ctor(System.Runtime.InteropServices.DllImportSearchPath)" e="TypeDef:System.Runtime.InteropServices.DefaultDllImportSearchPathsAttribute" />
+	<edge mark="1" b="TypeDef:System.Runtime.InteropServices.DllImportSearchPath" e="Module:System.Private.CoreLib.dll" />
+	<edge mark="1" b="Method:System.Void System.Runtime.InteropServices.DefaultDllImportSearchPathsAttribute::.ctor(System.Runtime.InteropServices.DllImportSearchPath)" e="TypeDef:System.Void" />
+	<edge mark="1" b="TypeDef:System.Runtime.InteropServices.DllImportSearchPath" e="Field:System.Int32 System.Runtime.InteropServices.DllImportSearchPath::value__" />
+	<edge mark="1" b="Field:System.Int32 System.Runtime.InteropServices.DllImportSearchPath::value__" e="TypeDef:System.Runtime.InteropServices.DllImportSearchPath" />
+	<edge mark="1" b="Field:System.Int32 System.Runtime.InteropServices.DllImportSearchPath::value__" e="TypeDef:System.Int32" />
+	<edge mark="1" b="TypeDef:System.Runtime.InteropServices.DllImportSearchPath" e="Field:System.Runtime.InteropServices.DllImportSearchPath System.Runtime.InteropServices.DllImportSearchPath::UseDllDirectoryForDependencies" />
+	<edge mark="1" b="Field:System.Runtime.InteropServices.DllImportSearchPath System.Runtime.InteropServices.DllImportSearchPath::UseDllDirectoryForDependencies" e="TypeDef:System.Runtime.InteropServices.DllImportSearchPath" />
+	<edge mark="1" b="Field:System.Runtime.InteropServices.DllImportSearchPath System.Runtime.InteropServices.DllImportSearchPath::UseDllDirectoryForDependencies" e="TypeDef:System.Runtime.InteropServices.DllImportSearchPath" />
+	<edge mark="1" b="TypeDef:System.Runtime.InteropServices.DllImportSearchPath" e="Field:System.Runtime.InteropServices.DllImportSearchPath System.Runtime.InteropServices.DllImportSearchPath::ApplicationDirectory" />
+	<edge mark="1" b="Field:System.Runtime.InteropServices.DllImportSearchPath System.Runtime.InteropServices.DllImportSearchPath::ApplicationDirectory" e="TypeDef:System.Runtime.InteropServices.DllImportSearchPath" />
+	<edge mark="1" b="Field:System.Runtime.InteropServices.DllImportSearchPath System.Runtime.InteropServices.DllImportSearchPath::ApplicationDirectory" e="TypeDef:System.Runtime.InteropServices.DllImportSearchPath" />
+	<edge mark="1" b="TypeDef:System.Runtime.InteropServices.DllImportSearchPath" e="Field:System.Runtime.InteropServices.DllImportSearchPath System.Runtime.InteropServices.DllImportSearchPath::UserDirectories" />
+	<edge mark="1" b="Field:System.Runtime.InteropServices.DllImportSearchPath System.Runtime.InteropServices.DllImportSearchPath::UserDirectories" e="TypeDef:System.Runtime.InteropServices.DllImportSearchPath" />
+	<edge mark="1" b="Field:System.Runtime.InteropServices.DllImportSearchPath System.Runtime.InteropServices.DllImportSearchPath::UserDirectories" e="TypeDef:System.Runtime.InteropServices.DllImportSearchPath" />
+	<edge mark="1" b="TypeDef:System.Runtime.InteropServices.DllImportSearchPath" e="Field:System.Runtime.InteropServices.DllImportSearchPath System.Runtime.InteropServices.DllImportSearchPath::System32" />
+	<edge mark="1" b="Field:System.Runtime.InteropServices.DllImportSearchPath System.Runtime.InteropServices.DllImportSearchPath::System32" e="TypeDef:System.Runtime.InteropServices.DllImportSearchPath" />
+	<edge mark="1" b="Field:System.Runtime.InteropServices.DllImportSearchPath System.Runtime.InteropServices.DllImportSearchPath::System32" e="TypeDef:System.Runtime.InteropServices.DllImportSearchPath" />
+	<edge mark="1" b="TypeDef:System.Runtime.InteropServices.DllImportSearchPath" e="Field:System.Runtime.InteropServices.DllImportSearchPath System.Runtime.InteropServices.DllImportSearchPath::SafeDirectories" />
+	<edge mark="1" b="Field:System.Runtime.InteropServices.DllImportSearchPath System.Runtime.InteropServices.DllImportSearchPath::SafeDirectories" e="TypeDef:System.Runtime.InteropServices.DllImportSearchPath" />
+	<edge mark="1" b="Field:System.Runtime.InteropServices.DllImportSearchPath System.Runtime.InteropServices.DllImportSearchPath::SafeDirectories" e="TypeDef:System.Runtime.InteropServices.DllImportSearchPath" />
+	<edge mark="1" b="TypeDef:System.Runtime.InteropServices.DllImportSearchPath" e="Field:System.Runtime.InteropServices.DllImportSearchPath System.Runtime.InteropServices.DllImportSearchPath::AssemblyDirectory" />
+	<edge mark="1" b="Field:System.Runtime.InteropServices.DllImportSearchPath System.Runtime.InteropServices.DllImportSearchPath::AssemblyDirectory" e="TypeDef:System.Runtime.InteropServices.DllImportSearchPath" />
+	<edge mark="1" b="Field:System.Runtime.InteropServices.DllImportSearchPath System.Runtime.InteropServices.DllImportSearchPath::AssemblyDirectory" e="TypeDef:System.Runtime.InteropServices.DllImportSearchPath" />
+	<edge mark="1" b="TypeDef:System.Runtime.InteropServices.DllImportSearchPath" e="Field:System.Runtime.InteropServices.DllImportSearchPath System.Runtime.InteropServices.DllImportSearchPath::LegacyBehavior" />
+	<edge mark="1" b="Field:System.Runtime.InteropServices.DllImportSearchPath System.Runtime.InteropServices.DllImportSearchPath::LegacyBehavior" e="TypeDef:System.Runtime.InteropServices.DllImportSearchPath" />
+	<edge mark="1" b="Field:System.Runtime.InteropServices.DllImportSearchPath System.Runtime.InteropServices.DllImportSearchPath::LegacyBehavior" e="TypeDef:System.Runtime.InteropServices.DllImportSearchPath" />
+	<edge mark="1" b="TypeDef:System.CLSCompliantAttribute" e="Module:System.Private.CoreLib.dll" />
+	<edge b="Method:System.Void System.CLSCompliantAttribute::.ctor(System.Boolean)" e="TypeDef:System.CLSCompliantAttribute" />
+	<edge mark="1" b="Method:System.Void System.CLSCompliantAttribute::.ctor(System.Boolean)" e="TypeDef:System.Void" />
+	<edge mark="1" b="Method:System.Boolean System.Object::ReferenceEquals(System.Object,System.Object)" e="TypeDef:System.Boolean" />
+	<edge mark="1" b="Method:System.Boolean System.Object::Equals(System.Object,System.Object)" e="TypeDef:System.Boolean" />
+	<edge mark="1" b="Method:System.Type System.Object::GetType()" e="TypeDef:System.Type" />
+	<edge mark="1" b="Method:System.Type System.Object::GetType()" e="Method:System.Void System.Type::.ctor()" />
+	<edge mark="1" b="TypeDef:System.Type" e="Method:System.Reflection.MemberTypes System.Type::get_MemberType()" />
+	<edge mark="1" b="TypeDef:System.Type" e="Method:System.Reflection.Module System.Type::get_Module()" />
+	<edge mark="1" b="TypeDef:System.Type" e="Method:System.Type System.Type::get_DeclaringType()" />
+	<edge mark="1" b="TypeDef:System.Type" e="Method:System.Type System.Type::get_ReflectedType()" />
+	<edge mark="1" b="TypeDef:System.Type" e="Method:System.String System.Type::ToString()" />
+	<edge mark="1" b="TypeDef:System.Type" e="Method:System.Boolean System.Type::Equals(System.Object)" />
+	<edge mark="1" b="TypeDef:System.Type" e="Method:System.Int32 System.Type::GetHashCode()" />
+	<edge b="Method:System.Void System.Type::.ctor()" e="TypeDef:System.Type" />
+	<edge mark="1" b="Method:System.Void System.Type::.ctor()" e="TypeDef:System.Void" />
+	<edge mark="1" b="Method:System.Int32 System.Type::GetHashCode()" e="Method:System.Int32 System.Reflection.MemberInfo::GetHashCode()" />
+	<edge mark="1" b="Method:System.Int32 System.Reflection.MemberInfo::GetHashCode()" e="Method:System.Int32 System.Object::GetHashCode()" />
+	<edge mark="1" b="Method:System.Int32 System.Type::GetHashCode()" e="TypeDef:System.Int32" />
+	<edge mark="1" b="Method:System.Int32 System.Reflection.MemberInfo::GetHashCode()" e="Method:System.Int32 System.Object::GetHashCode()" />
+	<edge mark="1" b="TypeDef:System.Type" e="Method:System.Int32 System.Type::GetHashCode()" />
+	<edge mark="1" b="Method:System.Int32 System.Reflection.MemberInfo::GetHashCode()" e="TypeDef:System.Int32" />
+	<edge mark="1" b="Method:System.Boolean System.Type::Equals(System.Object)" e="Method:System.Boolean System.Reflection.MemberInfo::Equals(System.Object)" />
+	<edge mark="1" b="Method:System.Boolean System.Reflection.MemberInfo::Equals(System.Object)" e="Method:System.Boolean System.Object::Equals(System.Object)" />
+	<edge mark="1" b="Method:System.Boolean System.Type::Equals(System.Object)" e="TypeDef:System.Boolean" />
+	<edge mark="1" b="Method:System.Boolean System.Reflection.MemberInfo::Equals(System.Object)" e="Method:System.Boolean System.Object::Equals(System.Object)" />
+	<edge mark="1" b="TypeDef:System.Type" e="Method:System.Boolean System.Type::Equals(System.Object)" />
+	<edge mark="1" b="Method:System.Boolean System.Reflection.MemberInfo::Equals(System.Object)" e="TypeDef:System.Boolean" />
+	<edge mark="1" b="Method:System.String System.Type::ToString()" e="Method:System.String System.Object::ToString()" />
+	<edge mark="1" b="Method:System.String System.Type::ToString()" e="TypeDef:System.String" />
+	<edge b="Method:System.Void System.Reflection.Metadata.RuntimeTypeMetadataUpdateHandler::ClearCache(System.Type[])" e="TypeSpec:System.Type[]" />
+	<edge mark="1" b="Method:System.Void System.Reflection.Metadata.RuntimeTypeMetadataUpdateHandler::ClearCache(System.Type[])" e="TypeDef:System.Void" />
+	<edge mark="1" b="Method:System.Object System.Object::MemberwiseClone()" e="TypeDef:System.Object" />
+	<edge b="Method:System.Boolean System.Reflection.Metadata.RuntimeTypeMetadataUpdateHandler::RequiresClearingAllTypes(System.Type[])" e="TypeSpec:System.Type[]" />
+	<edge mark="1" b="Method:System.Boolean System.Reflection.Metadata.RuntimeTypeMetadataUpdateHandler::RequiresClearingAllTypes(System.Type[])" e="TypeDef:System.Boolean" />
+	<edge mark="1" b="Method:System.Void System.Reflection.Metadata.RuntimeTypeMetadataUpdateHandler::ClearCache(System.Type)" e="TypeDef:System.Void" />
+	<edge mark="1" b="Method:System.Boolean System.Reflection.Metadata.RuntimeTypeMetadataUpdateHandler::SkipAssembly(System.Reflection.Assembly)" e="TypeDef:System.Boolean" />
+	<edge mark="1" b="TypeDef:System.Reflection.Metadata.MetadataUpdateHandlerAttribute" e="Module:System.Private.CoreLib.dll" />
+	<edge b="Method:System.Void System.Reflection.Metadata.MetadataUpdateHandlerAttribute::.ctor(System.Type)" e="TypeDef:System.Reflection.Metadata.MetadataUpdateHandlerAttribute" />
+	<edge mark="1" b="Method:System.Void System.Reflection.Metadata.MetadataUpdateHandlerAttribute::.ctor(System.Type)" e="TypeDef:System.Void" />
+	<edge mark="1" b="TypeDef:System.Runtime.CompilerServices.ExtensionAttribute" e="Module:System.Private.CoreLib.dll" />
+	<edge b="Method:System.Void System.Runtime.CompilerServices.ExtensionAttribute::.ctor()" e="TypeDef:System.Runtime.CompilerServices.ExtensionAttribute" />
+	<edge mark="1" b="Method:System.Void System.Runtime.CompilerServices.ExtensionAttribute::.ctor()" e="TypeDef:System.Void" />
+	<edge mark="1" b="TypeDef:System.Runtime.CompilerServices.RefSafetyRulesAttribute" e="Module:System.Private.CoreLib.dll" />
+	<edge b="Method:System.Void System.Runtime.CompilerServices.RefSafetyRulesAttribute::.ctor(System.Int32)" e="TypeDef:System.Runtime.CompilerServices.RefSafetyRulesAttribute" />
+	<edge mark="1" b="Method:System.Void System.Runtime.CompilerServices.RefSafetyRulesAttribute::.ctor(System.Int32)" e="TypeDef:System.Void" />
+	<edge mark="1" b="TypeDef:System.Diagnostics.DebuggableAttribute" e="Module:System.Private.CoreLib.dll" />
+	<edge b="Method:System.Void System.Diagnostics.DebuggableAttribute::.ctor(System.Diagnostics.DebuggableAttribute/DebuggingModes)" e="TypeDef:System.Diagnostics.DebuggableAttribute" />
+	<edge mark="1" b="TypeDef:System.Diagnostics.DebuggableAttribute/DebuggingModes" e="Module:System.Private.CoreLib.dll" />
+	<edge mark="1" b="Method:System.Void System.Diagnostics.DebuggableAttribute::.ctor(System.Diagnostics.DebuggableAttribute/DebuggingModes)" e="TypeDef:System.Void" />
+	<edge mark="1" b="TypeDef:System.Diagnostics.DebuggableAttribute/DebuggingModes" e="Field:System.Int32 System.Diagnostics.DebuggableAttribute/DebuggingModes::value__" />
+	<edge mark="1" b="Field:System.Int32 System.Diagnostics.DebuggableAttribute/DebuggingModes::value__" e="TypeDef:System.Diagnostics.DebuggableAttribute/DebuggingModes" />
+	<edge mark="1" b="Field:System.Int32 System.Diagnostics.DebuggableAttribute/DebuggingModes::value__" e="TypeDef:System.Int32" />
+	<edge mark="1" b="TypeDef:System.Diagnostics.DebuggableAttribute/DebuggingModes" e="Field:System.Diagnostics.DebuggableAttribute/DebuggingModes System.Diagnostics.DebuggableAttribute/DebuggingModes::None" />
+	<edge mark="1" b="Field:System.Diagnostics.DebuggableAttribute/DebuggingModes System.Diagnostics.DebuggableAttribute/DebuggingModes::None" e="TypeDef:System.Diagnostics.DebuggableAttribute/DebuggingModes" />
+	<edge mark="1" b="Field:System.Diagnostics.DebuggableAttribute/DebuggingModes System.Diagnostics.DebuggableAttribute/DebuggingModes::None" e="TypeDef:System.Diagnostics.DebuggableAttribute/DebuggingModes" />
+	<edge mark="1" b="TypeDef:System.Diagnostics.DebuggableAttribute/DebuggingModes" e="Field:System.Diagnostics.DebuggableAttribute/DebuggingModes System.Diagnostics.DebuggableAttribute/DebuggingModes::Default" />
+	<edge mark="1" b="Field:System.Diagnostics.DebuggableAttribute/DebuggingModes System.Diagnostics.DebuggableAttribute/DebuggingModes::Default" e="TypeDef:System.Diagnostics.DebuggableAttribute/DebuggingModes" />
+	<edge mark="1" b="Field:System.Diagnostics.DebuggableAttribute/DebuggingModes System.Diagnostics.DebuggableAttribute/DebuggingModes::Default" e="TypeDef:System.Diagnostics.DebuggableAttribute/DebuggingModes" />
+	<edge mark="1" b="TypeDef:System.Diagnostics.DebuggableAttribute/DebuggingModes" e="Field:System.Diagnostics.DebuggableAttribute/DebuggingModes System.Diagnostics.DebuggableAttribute/DebuggingModes::DisableOptimizations" />
+	<edge mark="1" b="Field:System.Diagnostics.DebuggableAttribute/DebuggingModes System.Diagnostics.DebuggableAttribute/DebuggingModes::DisableOptimizations" e="TypeDef:System.Diagnostics.DebuggableAttribute/DebuggingModes" />
+	<edge mark="1" b="Field:System.Diagnostics.DebuggableAttribute/DebuggingModes System.Diagnostics.DebuggableAttribute/DebuggingModes::DisableOptimizations" e="TypeDef:System.Diagnostics.DebuggableAttribute/DebuggingModes" />
+	<edge mark="1" b="TypeDef:System.Diagnostics.DebuggableAttribute/DebuggingModes" e="Field:System.Diagnostics.DebuggableAttribute/DebuggingModes System.Diagnostics.DebuggableAttribute/DebuggingModes::IgnoreSymbolStoreSequencePoints" />
+	<edge mark="1" b="Field:System.Diagnostics.DebuggableAttribute/DebuggingModes System.Diagnostics.DebuggableAttribute/DebuggingModes::IgnoreSymbolStoreSequencePoints" e="TypeDef:System.Diagnostics.DebuggableAttribute/DebuggingModes" />
+	<edge mark="1" b="Field:System.Diagnostics.DebuggableAttribute/DebuggingModes System.Diagnostics.DebuggableAttribute/DebuggingModes::IgnoreSymbolStoreSequencePoints" e="TypeDef:System.Diagnostics.DebuggableAttribute/DebuggingModes" />
+	<edge mark="1" b="TypeDef:System.Diagnostics.DebuggableAttribute/DebuggingModes" e="Field:System.Diagnostics.DebuggableAttribute/DebuggingModes System.Diagnostics.DebuggableAttribute/DebuggingModes::EnableEditAndContinue" />
+	<edge mark="1" b="Field:System.Diagnostics.DebuggableAttribute/DebuggingModes System.Diagnostics.DebuggableAttribute/DebuggingModes::EnableEditAndContinue" e="TypeDef:System.Diagnostics.DebuggableAttribute/DebuggingModes" />
+	<edge mark="1" b="Field:System.Diagnostics.DebuggableAttribute/DebuggingModes System.Diagnostics.DebuggableAttribute/DebuggingModes::EnableEditAndContinue" e="TypeDef:System.Diagnostics.DebuggableAttribute/DebuggingModes" />
+	<edge mark="1" b="TypeDef:System.Runtime.CompilerServices.RuntimeCompatibilityAttribute" e="Module:System.Private.CoreLib.dll" />
+	<edge mark="1" b="Method:System.Void System.Runtime.CompilerServices.RuntimeCompatibilityAttribute::set_WrapNonExceptionThrows(System.Boolean)" e="Property:System.Boolean System.Runtime.CompilerServices.RuntimeCompatibilityAttribute::WrapNonExceptionThrows()" />
+	<edge mark="1" b="Method:System.Void System.Runtime.CompilerServices.RuntimeCompatibilityAttribute::set_WrapNonExceptionThrows(System.Boolean)" e="TypeDef:System.Void" />
+	<edge b="Method:System.Void System.Runtime.CompilerServices.RuntimeCompatibilityAttribute::.ctor()" e="TypeDef:System.Runtime.CompilerServices.RuntimeCompatibilityAttribute" />
+	<edge mark="1" b="Method:System.Void System.Runtime.CompilerServices.RuntimeCompatibilityAttribute::.ctor()" e="TypeDef:System.Void" />
+	<edge mark="1" b="TypeDef:System.Runtime.CompilerServices.CompilationRelaxationsAttribute" e="Module:System.Private.CoreLib.dll" />
+	<edge b="Method:System.Void System.Runtime.CompilerServices.CompilationRelaxationsAttribute::.ctor(System.Int32)" e="TypeDef:System.Runtime.CompilerServices.CompilationRelaxationsAttribute" />
+	<edge mark="1" b="Method:System.Void System.Runtime.CompilerServices.CompilationRelaxationsAttribute::.ctor(System.Int32)" e="TypeDef:System.Void" />
+</dependencies>

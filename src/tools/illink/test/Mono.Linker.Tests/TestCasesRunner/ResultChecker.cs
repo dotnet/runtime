@@ -276,6 +276,9 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			bool checkRemainingErrors = !HasAttribute (linkResult.TestCase.FindTypeDefinition (original), nameof (SkipRemainingErrorsValidationAttribute));
 			VerifyLoggedMessages (original, linkResult.Logger, checkRemainingErrors);
 			VerifyRecordedDependencies (original, linkResult.Customizations.DependencyRecorder);
+
+			// VerifyExpectedDependencyTrace (original, linkResult.MetadataProvider.)
+			// VerifyExpectedDependencyTrace (original, linkResult.TestCase.TestSuiteDirectory, linkResult.OutputAssemblyPath);
 		}
 
 		protected virtual void InitialChecking (TrimmedTestCaseResult linkResult, AssemblyDefinition original, AssemblyDefinition linked)
@@ -1049,6 +1052,23 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			{
 				return $"{dependency.Source} -> {dependency.Target} Marked: {dependency.Marked}";
 			}
+		}
+
+		void VerifyExpectedDependencyTrace (AssemblyDefinition original, NPath testSuiteDirectory, NPath outputAssemblyPath)
+		{
+			if (!TryGetCustomAttribute (original.EntryPoint.DeclaringType, nameof (ExpectedDependencyTraceAttribute), out var attr))
+				return;
+
+			var expectedTrace = (string) attr.ConstructorArguments[0].Value;
+			var expectedTracePath = testSuiteDirectory.Combine (expectedTrace);
+			Assert.IsTrue (expectedTracePath.FileExists (), $"Expected dependency trace file '{expectedTracePath}' does not exist.");
+
+			// linker-dependencies.xml in same dir as output
+			var tracePath = outputAssemblyPath.Parent.Combine ("linker-dependencies.xml");
+			Assert.IsTrue (tracePath.FileExists (), $"Dependency trace file '{tracePath}' does not exist.");
+
+			Assert.That (File.ReadAllLines (tracePath), Is.EquivalentTo (
+				File.ReadAllLines (expectedTracePath)));
 		}
 
 		void VerifyExpectedInstructionSequenceOnMemberInAssembly (CustomAttribute inAssemblyAttribute, TypeDefinition linkedType)

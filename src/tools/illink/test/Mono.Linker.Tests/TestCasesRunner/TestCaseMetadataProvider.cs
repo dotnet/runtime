@@ -97,7 +97,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 					context.Tracer.AddRecorder (customizations.DependencyRecorder);
 				};
 			}
-
+			
 			if (ValidatesLogMessages (_testCaseTypeDefinition)) {
 				customizations.CustomizeContext += context => {
 					context.LogMessages = true;
@@ -185,6 +185,19 @@ namespace Mono.Linker.Tests.TestCasesRunner
 		{
 			return _testCaseTypeDefinition.CustomAttributes
 				.FirstOrDefault (attr => attr.AttributeType.Name == nameof (SetupLinkerLinkAllAttribute)) != null;
+		}
+
+		public virtual string GetExpectedDependencyTrace ()
+		{
+			// Source file + ".linker-dependencies.xml"
+			return _testCase.SourceFile.Parent
+				.Combine("Dependencies")
+				.Combine(_testCase.SourceFile.FileName)
+				.ChangeExtension(".linker-dependencies.xml");
+			// return _testCaseTypeDefinition.CustomAttributes
+			// 	.Where (attr => attr.AttributeType.Name == nameof (ExpectedDependencyTraceAttribute))
+			// 	.Select (attr => (string) attr.ConstructorArguments.First ().Value)
+			// 	.SingleOrDefault ();
 		}
 	}
 }

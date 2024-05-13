@@ -5,6 +5,8 @@ using System.Collections.Generic;
 using ILCompiler.DependencyAnalysisFramework;
 using Mono.Cecil;
 
+using DependencyList = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<Mono.Linker.Steps.MarkStep.NodeFactory>.DependencyList;
+
 namespace Mono.Linker.Steps
 {
 	public partial class MarkStep
@@ -28,8 +30,9 @@ namespace Mono.Linker.Steps
 
 			public override IEnumerable<DependencyListEntry>? GetStaticDependencies (NodeFactory context)
 			{
-				context.MarkStep.ProcessType (type);
-				return null;
+				var dependencies = new DependencyList ();
+				context.MarkStep.ProcessType (type, ref dependencies);
+				return dependencies;
 			}
 
 			public override IEnumerable<CombinedDependencyListEntry>? GetConditionalStaticDependencies (NodeFactory context) => null;

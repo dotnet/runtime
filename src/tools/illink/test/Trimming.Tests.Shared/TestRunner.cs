@@ -177,6 +177,13 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 			builder.ProcessOptions (caseDefinedOptions);
 
+			// Uncomment this to produce traces into the src directory.
+			var expectedTracePath = metadataProvider.GetExpectedDependencyTrace ();
+			builder.AddAdditionalArgument ("--dump-dependencies", null);
+			builder.AddAdditionalArgument ("--dependencies-file", [expectedTracePath]);
+
+			// builder.AddAdditionalArgument ("--dump-dependencies", null);
+
 			builder.ProcessTestInputAssembly (compilationResult.InputAssemblyPath);
 		}
 
