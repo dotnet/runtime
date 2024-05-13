@@ -1292,11 +1292,7 @@ namespace R2RDump
                         return;
                     }
 
-                    StringBuilder updatedInstruction = new();
-                    updatedInstruction.Append(instruction);
-                    updatedInstruction.Append(" // ");
-                    updatedInstruction.Append(targetName);
-                    instruction = updatedInstruction.ToString();
+                    instruction = $"{instruction} // {targetName}";
                 }
             }
         }
