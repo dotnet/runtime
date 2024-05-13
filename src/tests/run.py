@@ -1411,8 +1411,7 @@ def create_repro(args, env, tests):
     for test in failed_tests:
         if test["is_merged"]:
             print("Skipping repro for merged test: %s (%s)" % (test["name"], test["assembly_display_name"]))
-            continue
-        if test["test_path"] is None:
+        elif test["test_path"] is None:
             print("Failed to create repro for test: %s (%s)" % (test["name"], test["assembly_display_name"]))
         else:
             debug_env = DebugEnv(args, env, test)
