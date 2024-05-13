@@ -106,7 +106,7 @@ struct MonoAotModule {
 	GHashTable *name_cache;
 	GHashTable *extra_methods;
 	/* Maps methods to their code */
-	GHashTable *method_to_code;
+	dn_simdhash_ptr_ptr_t *method_to_code;
 	/* Maps pointers into the method info to the methods themselves */
 	dn_simdhash_ptr_ptr_t *method_ref_to_method;
 	MonoAssemblyName *image_names;
@@ -2159,7 +2159,8 @@ load_aot_module (MonoAssemblyLoadContext *alc, MonoAssembly *assembly, gpointer 
 	amodule->llvm_got = g_malloc0 (sizeof (gpointer) * amodule->info.llvm_got_size);
 	amodule->globals = globals;
 	amodule->sofile = sofile;
-	amodule->method_to_code = g_hash_table_new (mono_aligned_addr_hash, NULL);
+	// FIXME: Select a better default size
+	amodule->method_to_code = dn_simdhash_ptr_ptr_new (4096, NULL);
 	amodule->extra_methods = g_hash_table_new (NULL, NULL);
 	amodule->shared_got = g_new0 (gpointer, info->nshared_got_entries);
 
@@ -4444,7 +4445,7 @@ load_method (MonoAotModule *amodule, MonoImage *image, MonoMethod *method, guint
 		mono_atomic_inc_i32 (&mono_jit_stats.methods_aot);
 
 	if (method && method->wrapper_type)
-		g_hash_table_insert (amodule->method_to_code, method, code);
+		dn_simdhash_ptr_ptr_try_add (amodule->method_to_code, method, code);
 
 	/* Commit changes since methods_loaded is accessed outside the lock */
 	mono_memory_barrier ();
@@ -4902,7 +4903,7 @@ mono_aot_get_method (MonoMethod *method, MonoError *error)
 	MonoMethod *orig_method = method;
 	guint32 method_index;
 	MonoAotModule *amodule = m_class_get_image (klass)->aot_module;
-	guint8 *code;
+	guint8 *code = NULL;
 	gboolean cache_result = FALSE;
 	ERROR_DECL (inner_error);
 
@@ -4951,7 +4952,7 @@ mono_aot_get_method (MonoMethod *method, MonoError *error)
 	if (method_index == 0xffffff && (method->is_inflated || !method->token)) {
 		/* This hash table is used to avoid the slower search in the extra_method_table in the AOT image */
 		amodule_lock (amodule);
-		code = (guint8 *)g_hash_table_lookup (amodule->method_to_code, method);
+		dn_simdhash_ptr_ptr_try_get_value (amodule->method_to_code, method, (void **)&code);
 		amodule_unlock (amodule);
 		if (code)
 			return code;
@@ -5103,7 +5104,7 @@ mono_aot_get_method (MonoMethod *method, MonoError *error)
 		return NULL;
 	if (code && cache_result) {
 		amodule_lock (amodule);
-		g_hash_table_insert (amodule->method_to_code, orig_method, code);
+		dn_simdhash_ptr_ptr_try_add (amodule->method_to_code, orig_method, code);
 		amodule_unlock (amodule);
 	}
 	return code;

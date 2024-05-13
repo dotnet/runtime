@@ -108,9 +108,6 @@ struct SuspendStatistics
     ///////////////////////////////////////////////////////////////////////////////////////////////
     // There are some interesting events that are worth counting, because they show where the time is going:
 
-    // number of times we waited on g_pGCSuspendEvent while trying to suspend the EE
-    int cntWaits;
-
     // and the number of times those Waits timed out rather than being signalled by a cooperating thread
     int cntWaitTimeouts;
 
@@ -185,14 +182,13 @@ public:
 private:
     static SUSPEND_REASON    m_suspendReason;    // This contains the reason why the runtime is suspended
 
-    static void SuspendRuntime(ThreadSuspend::SUSPEND_REASON reason);
-    static void ResumeRuntime(BOOL bFinishedGC, BOOL SuspendSucceeded);
+    static void SuspendAllThreads();
+    static void ResumeAllThreads(BOOL SuspendSucceeded);
 public:
     // Initialize thread suspension support
     static void Initialize();
 
 private:
-    static CLREvent * g_pGCSuspendEvent;
 
 #if defined(TARGET_WINDOWS)
     static void* g_returnAddressHijackTarget;
