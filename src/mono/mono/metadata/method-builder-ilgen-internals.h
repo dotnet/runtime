@@ -50,9 +50,8 @@ enum MonoILGenWrapperDataKind
 	MONO_MB_ILGEN_WRAPPER_DATA_METHOD,
 };
 
-// index in MonoMethodWrapper:wrapper_data where the inflate info will be stored
-// notes:
-// - idx 1 is the wrapper info (see mono_method_get_wrapper_info)
+// index in MonoMethodWrapper:wrapper_data where the inflate info will be stored.
+// note: idx 1 is the wrapper info (see mono_marshal_get_wrapper_info)
 #define MONO_MB_ILGEN_INFLATE_WRAPPER_INFO_IDX 2
 
 #endif

@@ -257,8 +257,10 @@ create_method_ilgen (MonoMethodBuilder *mb, MonoMethodSignature *signature, int 
 		g_assert (!container->is_anonymous);
 		g_assert (container->is_method);
 		g_assert (container->owner.method == mb->method);
-		// HACK: reassign container owner from the method builder placeholder to the
-		// final created method
+		// NOTE: reassigning container owner from the method builder placeholder to the
+		// final created method.  The "proper" way to do this would be a deep copy or
+		// calling mono_metadata_load_generic_params again and inflating everything.  But
+		// method builder is already one-shot, so this is ok, too.
 		container->owner.method = method;
 	}
 
@@ -749,6 +751,8 @@ mono_mb_inflate_generic_wrapper_data (MonoGenericContext *context, gpointer *met
 
 			mono_metadata_free_type (inflated_type);
 
+			// note: inflated class might not have been used for much yet.  Ensure
+			// fields are initialized.
 			mono_class_get_fields_internal (inflated_class, &dummy);
 			g_assert (m_class_get_fields (inflated_class));
 
