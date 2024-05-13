@@ -34,37 +34,46 @@ public class NativeAOTTests : BlazorWasmTestBase
         Utils.DirectoryCopy(Path.Combine(BuildEnvironment.TestAssetsPath, assetName), Path.Combine(_projectDir!));
         string projectName = Path.GetFileNameWithoutExtension(_projectDir!);
 
-        bool isWindowsPlatform = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
-        (_, string buildOutput) = BuildTemplateProject(
-            ExpandBuildArgs(new BuildArgs(projectName, config, AOT: false, id, null)),
-            id: id,
-            new BuildProjectOptions(
-                AssertAppBundle: false,
-                CreateProject: false,
-                Publish: true,
-                TargetFramework: DefaultTargetFramework,
-                ExpectSuccess: isWindowsPlatform
-            )
-        );
-
-        if (isWindowsPlatform)
+        try
         {
-            string outputDir = Path.Combine(_projectDir!, "bin", config, DefaultTargetFramework, BuildEnvironment.DefaultRuntimeIdentifier, "native");
-
-            List<string> consoleOutput = new();
-            BlazorRunOptions blazorRunOptions = new(
-                CheckCounter: false,
-                Config: config,
-                OnConsoleMessage: (_, message) => consoleOutput.Add(message.Text),
-                Host: BlazorRunHost.WebServer
+            bool isWindowsPlatform = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
+            (_, string buildOutput) = BuildTemplateProject(
+                ExpandBuildArgs(new BuildArgs(projectName, config, AOT: false, id, null)),
+                id: id,
+                new BuildProjectOptions(
+                    AssertAppBundle: false,
+                    CreateProject: false,
+                    Publish: true,
+                    TargetFramework: DefaultTargetFramework,
+                    ExpectSuccess: isWindowsPlatform
+                )
             );
-            await BlazorRunTest($"{s_xharnessRunnerCommand} wasm webserver --app=. --web-server-use-default-files", outputDir, blazorRunOptions);
 
-            Assert.True(consoleOutput.Contains("Hello, NativeAOT!"), $"Expected 'Hello, NativeAOT!' wasn't emitted by the test app. Output was: {String.Join(", ", consoleOutput)}");
+            if (isWindowsPlatform)
+            {
+                string outputDir = Path.Combine(_projectDir!, "bin", config, DefaultTargetFramework, BuildEnvironment.DefaultRuntimeIdentifier, "native");
+
+                List<string> consoleOutput = new();
+                BlazorRunOptions blazorRunOptions = new(
+                    CheckCounter: false,
+                    Config: config,
+                    OnConsoleMessage: (_, message) => consoleOutput.Add(message.Text),
+                    Host: BlazorRunHost.WebServer
+                );
+                await BlazorRunTest($"{s_xharnessRunnerCommand} wasm webserver --app=. --web-server-use-default-files", outputDir, blazorRunOptions);
+
+                Assert.True(consoleOutput.Contains("Hello, NativeAOT!"), $"Expected 'Hello, NativeAOT!' wasn't emitted by the test app. Output was: {String.Join(", ", consoleOutput)}");
+            }
+            else
+            {
+                Assert.Contains("NETSDK1204", buildOutput); // Ahead-of-time compilation is not supported on the current platform 'linux-x64'
+            }
         }
-        else
+        finally
         {
-            Assert.Contains("NETSDK1204", buildOutput); // Ahead-of-time compilation is not supported on the current platform 'linux-x64'
+            _testOutput.WriteLine($"Content of {_nugetPackagesDir}");
+            foreach (string file in Directory.EnumerateFiles(_nugetPackagesDir, "*", SearchOption.AllDirectories))
+                _testOutput.WriteLine(file);
         }
     }
 }

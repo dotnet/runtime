@@ -39,8 +39,10 @@ public class NativeAOTTests : BuildTestBase
 
         AddItemsPropertiesToProject(projectFile, extraProperties: "<PublishAot>true</PublishAot>");
 
-        bool isWindowsPlatform = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
-        (_, string buildOutput) = BuildProject(
+        try
+        {
+            bool isWindowsPlatform = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
+            (_, string buildOutput) = BuildProject(
             buildArgs,
             id: id,
             new BuildProjectOptions(
@@ -69,6 +71,13 @@ public class NativeAOTTests : BuildTestBase
         else
         {
             Assert.Contains("NETSDK1204", buildOutput); // Ahead-of-time compilation is not supported on the current platform 'linux-x64'
+        }
+    }
+        finally
+        {
+            _testOutput.WriteLine($"Content of {_nugetPackagesDir}");
+            foreach (string file in Directory.EnumerateFiles(_nugetPackagesDir, "*", SearchOption.AllDirectories))
+                _testOutput.WriteLine(file);
         }
     }
 }
