@@ -4436,4 +4436,27 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
     return retNode;
 }
+
+//------------------------------------------------------------------------
+// getHWIntrinsicImmOps: Gets the immediate Ops for an intrinsic
+//
+// Arguments:
+//    intrinsic       -- NamedIntrinsic associated with the HWIntrinsic to lookup
+//    sig             -- signature of the intrinsic call.
+//    immOp1Ptr [OUT] -- The first immediate Op
+//    immOp2Ptr [OUT] -- The second immediate Op, if any. Otherwise unchanged.
+//
+void Compiler::getHWIntrinsicImmOps(NamedIntrinsic    intrinsic,
+                                    CORINFO_SIG_INFO* sig,
+                                    GenTree**         immOp1Ptr,
+                                    GenTree**         immOp2Ptr)
+{
+    if ((sig->numArgs > 0) && HWIntrinsicInfo::isImmOp(intrinsic, impStackTop().val))
+    {
+        // NOTE: The following code assumes that for all intrinsics
+        // taking an immediate operand, that operand will be last.
+        *immOp1Ptr = impStackTop().val;
+    }
+}
+
 #endif // FEATURE_HW_INTRINSICS
