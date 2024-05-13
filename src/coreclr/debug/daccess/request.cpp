@@ -38,6 +38,8 @@ typedef DPTR(InteropLib::ABI::ManagedObjectWrapperLayout) PTR_ManagedObjectWrapp
 #include "rejit.h"
 #include "request_common.h"
 
+#include "cdac.h"
+
 // GC headers define these to EE-specific stuff that we don't want.
 #undef EnterCriticalSection
 #undef LeaveCriticalSection
@@ -299,29 +301,62 @@ HRESULT ClrDataAccess::GetThreadStoreData(struct DacpThreadStoreData *threadStor
 {
     SOSDacEnter();
 
-    ThreadStore* threadStore = ThreadStore::s_pThreadStore;
-    if (!threadStore)
+    if (m_cdacSos != NULL)
     {
-        hr = E_UNEXPECTED;
+        // Try the cDAC first - it will return E_NOTIMPL if it doesn't support this method yet. Fall back to the DAC.
+        hr = m_cdacSos->GetThreadStoreData(threadStoreData);
+        if (FAILED(hr))
+        {
+            hr = GetThreadStoreDataImpl(threadStoreData);
+        }
+#ifdef _DEBUG
+        else
+        {
+            // Assert that the data is the same as what we get from the DAC.
+            DacpThreadStoreData threadStoreDataLocal;
+            HRESULT hrLocal = GetThreadStoreDataImpl(&threadStoreDataLocal);
+            _ASSERTE(hr == hrLocal);
+            _ASSERTE(threadStoreData->threadCount == threadStoreDataLocal.threadCount);
+            _ASSERTE(threadStoreData->unstartedThreadCount == threadStoreDataLocal.unstartedThreadCount);
+            _ASSERTE(threadStoreData->backgroundThreadCount == threadStoreDataLocal.backgroundThreadCount);
+            _ASSERTE(threadStoreData->pendingThreadCount == threadStoreDataLocal.pendingThreadCount);
+            _ASSERTE(threadStoreData->deadThreadCount == threadStoreDataLocal.deadThreadCount);
+            _ASSERTE(threadStoreData->fHostConfig == threadStoreDataLocal.fHostConfig);
+            _ASSERTE(threadStoreData->firstThread == threadStoreDataLocal.firstThread);
+            _ASSERTE(threadStoreData->finalizerThread == threadStoreDataLocal.finalizerThread);
+            _ASSERTE(threadStoreData->gcThread == threadStoreDataLocal.gcThread);
+        }
+#endif
     }
     else
     {
-        // initialize the fields of our local structure
-        threadStoreData->threadCount = threadStore->m_ThreadCount;
-        threadStoreData->unstartedThreadCount = threadStore->m_UnstartedThreadCount;
-        threadStoreData->backgroundThreadCount = threadStore->m_BackgroundThreadCount;
-        threadStoreData->pendingThreadCount = threadStore->m_PendingThreadCount;
-        threadStoreData->deadThreadCount = threadStore->m_DeadThreadCount;
-        threadStoreData->fHostConfig = FALSE;
-
-        // identify the "important" threads
-        threadStoreData->firstThread = HOST_CDADDR(threadStore->m_ThreadList.GetHead());
-        threadStoreData->finalizerThread = HOST_CDADDR(g_pFinalizerThread);
-        threadStoreData->gcThread = HOST_CDADDR(g_pSuspensionThread);
+        hr = GetThreadStoreDataImpl(threadStoreData);
     }
 
     SOSDacLeave();
     return hr;
+}
+
+HRESULT ClrDataAccess::GetThreadStoreDataImpl(struct DacpThreadStoreData *threadStoreData)
+{
+    ThreadStore* threadStore = ThreadStore::s_pThreadStore;
+    if (!threadStore)
+        return E_UNEXPECTED;
+
+    // initialize the fields of our local structure
+    threadStoreData->threadCount = threadStore->m_ThreadCount;
+    threadStoreData->unstartedThreadCount = threadStore->m_UnstartedThreadCount;
+    threadStoreData->backgroundThreadCount = threadStore->m_BackgroundThreadCount;
+    threadStoreData->pendingThreadCount = threadStore->m_PendingThreadCount;
+    threadStoreData->deadThreadCount = threadStore->m_DeadThreadCount;
+    threadStoreData->fHostConfig = FALSE;
+
+    // identify the "important" threads
+    threadStoreData->firstThread = HOST_CDADDR(threadStore->m_ThreadList.GetHead());
+    threadStoreData->finalizerThread = HOST_CDADDR(g_pFinalizerThread);
+    threadStoreData->gcThread = HOST_CDADDR(g_pSuspensionThread);
+
+    return S_OK;
 }
 
 HRESULT
@@ -746,8 +781,8 @@ ClrDataAccess::GetThreadData(CLRDATA_ADDRESS threadAddr, struct DacpThreadData *
     threadData->fiberData = (CLRDATA_ADDRESS)NULL;
 
     threadData->pFrame = PTR_CDADDR(thread->m_pFrame);
-    threadData->context = PTR_CDADDR(thread->m_pDomain);
-    threadData->domain = PTR_CDADDR(thread->m_pDomain);
+    threadData->context = PTR_CDADDR(AppDomain::GetCurrentDomain());
+    threadData->domain = PTR_CDADDR(AppDomain::GetCurrentDomain());
     threadData->lockCount = (DWORD)-1;
 #ifndef TARGET_UNIX
     threadData->teb = TO_CDADDR(thread->m_pTEB);
@@ -3255,7 +3290,7 @@ ClrDataAccess::GetThreadLocalModuleData(CLRDATA_ADDRESS thread, unsigned int ind
 HRESULT ClrDataAccess::GetHandleEnum(ISOSHandleEnum **ppHandleEnum)
 {
     unsigned int types[] = {HNDTYPE_WEAK_SHORT, HNDTYPE_WEAK_LONG, HNDTYPE_STRONG, HNDTYPE_PINNED, HNDTYPE_DEPENDENT,
-                            HNDTYPE_SIZEDREF,
+                            HNDTYPE_SIZEDREF, HNDTYPE_WEAK_INTERIOR_POINTER,
 #if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS) || defined(FEATURE_OBJCMARSHAL)
                             HNDTYPE_REFCOUNTED,
 #endif // FEATURE_COMINTEROP || FEATURE_COMWRAPPERS || FEATURE_OBJCMARSHAL
@@ -4951,7 +4986,15 @@ HRESULT ClrDataAccess::GetBreakingChangeVersion(int* pVersion)
     if (pVersion == nullptr)
         return E_INVALIDARG;
 
-    *pVersion = SOS_BREAKING_CHANGE_VERSION;
+    if (m_cdacSos9 != nullptr && SUCCEEDED(m_cdacSos9->GetBreakingChangeVersion(pVersion)))
+    {
+        _ASSERTE(*pVersion == SOS_BREAKING_CHANGE_VERSION);
+    }
+    else
+    {
+        *pVersion = SOS_BREAKING_CHANGE_VERSION;
+    }
+
     return S_OK;
 }
 
@@ -5406,10 +5449,10 @@ HRESULT STDMETHODCALLTYPE ClrDataAccess::GetStaticBaseAddress(CLRDATA_ADDRESS me
 {
     if (!nonGCStaticsAddress && !GCStaticsAddress)
         return E_POINTER;
-    
+
     if (!methodTable)
         return E_INVALIDARG;
-    
+
     SOSDacEnter();
 
     PTR_MethodTable mTable = PTR_MethodTable(TO_TADDR(methodTable));
@@ -5440,13 +5483,13 @@ HRESULT STDMETHODCALLTYPE ClrDataAccess::GetThreadStaticBaseAddress(CLRDATA_ADDR
 {
     if (!nonGCStaticsAddress && !GCStaticsAddress)
         return E_POINTER;
-    
+
     if (!methodTable)
         return E_INVALIDARG;
 
     if (!threadPtr)
         return E_INVALIDARG;
-    
+
     SOSDacEnter();
 
     PTR_MethodTable mTable = PTR_MethodTable(TO_TADDR(methodTable));

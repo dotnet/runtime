@@ -4704,7 +4704,7 @@ namespace System.Threading.Tasks
         /// the execution of at least one of the <see cref="Task"/> instances.
         /// </exception>
         [UnsupportedOSPlatform("browser")]
-        public static void WaitAll(params ReadOnlySpan<Task> tasks)
+        public static void WaitAll(/*params*/ ReadOnlySpan<Task> tasks)
         {
             bool waitResult = WaitAllCore(tasks, Timeout.Infinite, default);
             Debug.Assert(waitResult, "expected wait to succeed");
@@ -4743,15 +4743,15 @@ namespace System.Threading.Tasks
         [MethodImpl(MethodImplOptions.NoOptimization)]  // this is needed for the parallel debugger
         public static bool WaitAll(Task[] tasks, TimeSpan timeout)
         {
-            if (tasks is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.tasks);
-            }
-
             long totalMilliseconds = (long)timeout.TotalMilliseconds;
             if (totalMilliseconds is < -1 or > int.MaxValue)
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.timeout);
+            }
+
+            if (tasks is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.tasks);
             }
 
             return WaitAllCore(tasks, (int)totalMilliseconds, default);
@@ -4873,6 +4873,33 @@ namespace System.Threading.Tasks
             }
 
             return WaitAllCore(tasks, millisecondsTimeout, cancellationToken);
+        }
+
+        /// <summary>Waits for all of the provided <see cref="Task"/> objects to complete execution unless the wait is cancelled.</summary>
+        /// <param name="tasks">An <see cref="IEnumerable{T}"/> of Task instances on which to wait.</param>
+        /// <param name="cancellationToken">A <see cref="CancellationToken"/> to observe while waiting for the tasks to complete.</param>
+        /// <exception cref="ArgumentNullException">The <paramref name="tasks"/> argument is null.</exception>
+        /// <exception cref="ArgumentException">The <paramref name="tasks"/> argument contains a null element.</exception>
+        /// <exception cref="ObjectDisposedException">One or more of the <see cref="Task"/> objects in tasks has been disposed.</exception>
+        /// <exception cref="OperationCanceledException">The <paramref name="cancellationToken"/> was canceled.</exception>
+        /// <exception cref="AggregateException">
+        /// At least one of the <see cref="Task"/> instances was canceled. If a task was canceled, the <see cref="AggregateException"/>
+        /// contains an <see cref="OperationCanceledException"/> in its <see cref="AggregateException.InnerExceptions"/> collection.
+        /// </exception>
+        [UnsupportedOSPlatform("browser")]
+        public static void WaitAll(IEnumerable<Task> tasks, CancellationToken cancellationToken = default)
+        {
+            if (tasks is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.tasks);
+            }
+
+            ReadOnlySpan<Task> span =
+                tasks is List<Task> list ? CollectionsMarshal.AsSpan(list) :
+                tasks is Task[] array ? array :
+                CollectionsMarshal.AsSpan(new List<Task>(tasks));
+
+            WaitAllCore(span, Timeout.Infinite, cancellationToken);
         }
 
         // Separated out to allow it to be optimized (caller is marked NoOptimization for VS parallel debugger
@@ -5946,7 +5973,7 @@ namespace System.Threading.Tasks
         /// </para>
         /// </remarks>
         /// <exception cref="ArgumentException">The <paramref name="tasks"/> array contained a null task.</exception>
-        public static Task WhenAll(params ReadOnlySpan<Task> tasks) =>
+        public static Task WhenAll(/*params*/ ReadOnlySpan<Task> tasks) =>
             tasks.Length != 0 ? new WhenAllPromise(tasks) : CompletedTask;
 
         /// <summary>A Task that gets completed when all of its constituent tasks complete.</summary>
@@ -6273,7 +6300,7 @@ namespace System.Threading.Tasks
         /// <exception cref="ArgumentException">
         /// The <paramref name="tasks"/> array contained a null task.
         /// </exception>
-        public static Task<TResult[]> WhenAll<TResult>(params ReadOnlySpan<Task<TResult>> tasks)
+        public static Task<TResult[]> WhenAll<TResult>(/*params*/ ReadOnlySpan<Task<TResult>> tasks)
         {
             if (tasks.IsEmpty)
             {
@@ -6444,7 +6471,7 @@ namespace System.Threading.Tasks
         /// <exception cref="ArgumentException">
         /// The <paramref name="tasks"/> array contained a null task, or was empty.
         /// </exception>
-        public static Task<Task> WhenAny(params ReadOnlySpan<Task> tasks) =>
+        public static Task<Task> WhenAny(/*params*/ ReadOnlySpan<Task> tasks) =>
             WhenAnyCore(tasks);
 
         /// <summary>
@@ -6728,7 +6755,7 @@ namespace System.Threading.Tasks
         /// <exception cref="ArgumentException">
         /// The <paramref name="tasks"/> array contained a null task, or was empty.
         /// </exception>
-        public static Task<Task<TResult>> WhenAny<TResult>(params ReadOnlySpan<Task<TResult>> tasks) =>
+        public static Task<Task<TResult>> WhenAny<TResult>(/*params*/ ReadOnlySpan<Task<TResult>> tasks) =>
             WhenAnyCore(tasks);
 
         /// <summary>Creates a task that will complete when either of the supplied tasks have completed.</summary>

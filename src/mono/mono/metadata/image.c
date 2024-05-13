@@ -1730,60 +1730,6 @@ mono_image_open_from_data (char *data, guint32 data_len, gboolean need_copy, Mon
 	return result;
 }
 
-#ifdef HOST_WIN32
-static MonoImageStorage *
-mono_image_storage_open_from_module_handle (HMODULE module_handle, const char *fname, gboolean has_entry_point)
-{
-	char *key = g_strdup (fname);
-	MonoImageStorage *published_storage = NULL;
-	if (mono_image_storage_tryaddref (key, &published_storage)) {
-		g_free (key);
-		return published_storage;
-	}
-
-	MonoImageStorage *storage = g_new0 (MonoImageStorage, 1);
-	mono_refcount_init (storage, mono_image_storage_dtor);
-	storage->raw_data = (char*) module_handle;
-	storage->is_module_handle = TRUE;
-	storage->has_entry_point = !!has_entry_point;
-
-	storage->key = key;
-
-	MonoImageStorage *other_storage = NULL;
-	if (!mono_image_storage_trypublish (storage, &other_storage)) {
-		mono_image_storage_close (storage);
-		storage = other_storage;
-	}
-	return storage;
-}
-
-/* fname is not duplicated. */
-MonoImage*
-mono_image_open_from_module_handle (MonoAssemblyLoadContext *alc, HMODULE module_handle, char* fname, gboolean has_entry_point, MonoImageOpenStatus* status)
-{
-	MonoImage* image;
-	MonoCLIImageInfo* iinfo;
-
-	MonoImageStorage *storage = mono_image_storage_open_from_module_handle (module_handle, fname, has_entry_point);
-	image = g_new0 (MonoImage, 1);
-	image->storage = storage;
-	mono_image_init_raw_data (image, storage);
-	iinfo = g_new0 (MonoCLIImageInfo, 1);
-	image->image_info = iinfo;
-	image->name = fname;
-	image->filename = g_strdup (image->name);
-	image->ref_count = has_entry_point ? 0 : 1;
-	image->alc = alc;
-
-	MonoImageLoadOptions options = {0, };
-	image = do_mono_image_load (image, status, &options);
-	if (image == NULL)
-		return NULL;
-
-	return register_image (mono_alc_get_loaded_images (alc), image);
-}
-#endif
-
 /**
  * mono_image_open_full:
  */
@@ -2120,9 +2066,9 @@ mono_image_close_except_pools (MonoImage *image)
 	}
 
 	if (image->method_cache)
-		g_hash_table_destroy (image->method_cache);
+		dn_simdhash_free (image->method_cache);
 	if (image->methodref_cache)
-		g_hash_table_destroy (image->methodref_cache);
+		dn_simdhash_free (image->methodref_cache);
 	mono_internal_hash_table_destroy (&image->class_cache);
 	mono_conc_hashtable_destroy (image->field_cache);
 	if (image->array_cache) {

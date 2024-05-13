@@ -824,13 +824,10 @@ public:
     // during object construction.
     void CheckRunClassInitAsIfConstructingThrowing();
 
-#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-    static bool IsOnlyOneField(MethodTable * pMT);
 #if defined(TARGET_LOONGARCH64)
-    static int GetLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE clh);
+    static int GetLoongArch64PassStructInRegisterFlags(TypeHandle th);
 #elif defined(TARGET_RISCV64)
-    static int GetRiscV64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE clh);
-#endif
+    static int GetRiscV64PassStructInRegisterFlags(TypeHandle th);
 #endif
 
 #if defined(UNIX_AMD64_ABI_ITF)
