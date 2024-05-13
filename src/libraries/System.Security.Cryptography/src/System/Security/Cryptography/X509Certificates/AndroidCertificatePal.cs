@@ -51,7 +51,6 @@ namespace System.Security.Cryptography.X509Certificates
         {
             Debug.Assert(password != null);
 
-            bool ephemeralSpecified = keyStorageFlags.HasFlag(X509KeyStorageFlags.EphemeralKeySet);
             X509ContentType contentType = X509Certificate2.GetCertContentType(rawData);
 
             switch (contentType)
@@ -62,14 +61,20 @@ namespace System.Security.Cryptography.X509Certificates
                     // We don't support determining this on Android right now, so we throw.
                     throw new CryptographicException(SR.Cryptography_X509_PKCS7_NoSigner);
                 case X509ContentType.Pkcs12:
-                    if ((keyStorageFlags & X509KeyStorageFlags.PersistKeySet) == X509KeyStorageFlags.PersistKeySet)
+                    try
                     {
-                        throw new PlatformNotSupportedException(SR.Cryptography_X509_PKCS12_PersistKeySetNotSupported);
+                        return X509CertificateLoader.LoadPkcs12Pal(
+                            rawData,
+                            password.DangerousGetSpan(),
+                            keyStorageFlags,
+                            X509Certificate.GetPkcs12Limits(readingFromFile, password));
                     }
-
-                    X509Certificate.EnforceIterationCountLimit(ref rawData, readingFromFile, password.PasswordProvided);
-
-                    return ReadPkcs12(rawData, password, ephemeralSpecified);
+                    catch (Pkcs12LoadLimitExceededException e)
+                    {
+                        throw new CryptographicException(
+                            SR.Cryptography_X509_PfxWithoutPassword_MaxAllowedIterationsExceeded,
+                            e);
+                    }
                 case X509ContentType.Cert:
                 default:
                 {
@@ -114,24 +119,6 @@ namespace System.Security.Cryptography.X509Certificates
 
             handle = new AndroidCertificatePal(certHandle);
             return true;
-        }
-
-        private static AndroidCertificatePal ReadPkcs12(ReadOnlySpan<byte> rawData, SafePasswordHandle password, bool ephemeralSpecified)
-        {
-            using (var reader = new AndroidPkcs12Reader())
-            {
-                reader.ParsePkcs12(rawData);
-                reader.Decrypt(password, ephemeralSpecified);
-
-                UnixPkcs12Reader.CertAndKey certAndKey = reader.GetSingleCert();
-                AndroidCertificatePal pal = (AndroidCertificatePal)certAndKey.Cert!;
-                if (certAndKey.Key != null)
-                {
-                    pal.SetPrivateKey(AndroidPkcs12Reader.GetPrivateKey(certAndKey.Key));
-                }
-
-                return pal;
-            }
         }
 
         internal AndroidCertificatePal(SafeX509Handle handle)
@@ -418,7 +405,7 @@ namespace System.Security.Cryptography.X509Certificates
             {
                 typedKey.ImportParameters(dsaParameters);
                 return CopyWithPrivateKeyHandle(typedKey.DuplicateKeyHandle());
-            };
+            }
         }
 
         public ICertificatePal CopyWithPrivateKey(ECDsa privateKey)

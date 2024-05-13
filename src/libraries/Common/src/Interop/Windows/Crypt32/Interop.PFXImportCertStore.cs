@@ -10,5 +10,8 @@ internal static partial class Interop
     {
         [LibraryImport(Libraries.Crypt32, SetLastError = true)]
         internal static partial SafeCertStoreHandle PFXImportCertStore(ref DATA_BLOB pPFX, SafePasswordHandle password, PfxCertStoreFlags dwFlags);
+
+        [LibraryImport(Libraries.Crypt32, SetLastError = true)]
+        internal static unsafe partial SafeCertStoreHandle PFXImportCertStore(ref DATA_BLOB pPFX, char* password, PfxCertStoreFlags dwFlags);
     }
 }

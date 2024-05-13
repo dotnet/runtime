@@ -88,6 +88,11 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                     assert(c2);
                 }
             }
+
+            using (X509Certificate2 c3 = X509CertificateLoader.LoadCertificate(TestData.MsCertificate))
+            {
+                assert(c3);
+            }
         }
 
         [Fact]
@@ -118,6 +123,11 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 {
                     assert(c2);
                 }
+            }
+
+            using (X509Certificate2 c3 = X509CertificateLoader.LoadCertificate(TestData.MsCertificatePemBytes))
+            {
+                assert(c3);
             }
         }
 
@@ -176,6 +186,33 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         {
             var c1 = new X509Certificate2(TestData.PfxData, TestData.PfxDataPassword);
             using (var c2 = new X509Certificate2(TestData.PfxData, TestData.PfxDataPassword))
+            {
+                RSA rsa = c2.GetRSAPrivateKey();
+                byte[] hash = new byte[SHA256.HashSizeInBytes];
+                byte[] sig = rsa.SignHash(hash, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
+                Assert.Equal(TestData.PfxSha256Empty_ExpectedSig, sig);
+
+                c1.Dispose();
+                rsa.Dispose();
+
+                GC.Collect();
+                GC.WaitForPendingFinalizers();
+
+                // Verify other cert and previous key do not affect cert
+                using (rsa = c2.GetRSAPrivateKey())
+                {
+                    hash = new byte[SHA256.HashSizeInBytes];
+                    sig = rsa.SignHash(hash, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
+                    Assert.Equal(TestData.PfxSha256Empty_ExpectedSig, sig);
+                }
+            }
+        }
+
+        [Fact]
+        public static void Loader_Lifetime_Independent()
+        {
+            var c1 = X509CertificateLoader.LoadPkcs12(TestData.PfxData, TestData.PfxDataPassword);
+            using (var c2 = X509CertificateLoader.LoadPkcs12(TestData.PfxData, TestData.PfxDataPassword))
             {
                 RSA rsa = c2.GetRSAPrivateKey();
                 byte[] hash = new byte[SHA256.HashSizeInBytes];
@@ -354,7 +391,13 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
             else // Any Unix
             {
-                Assert.Equal(new CryptographicException("message").HResult, ex.HResult);
+                const int COR_E_SYSTEM = -2146233087;
+                const int CRYPT_E_BAD_DECODE = -2146885630;
+
+                if (ex.HResult != CRYPT_E_BAD_DECODE)
+                {
+                    Assert.Equal(COR_E_SYSTEM, ex.HResult);
+                }
             }
         }
 

@@ -56,6 +56,25 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        public static void TestSerialFromNewLoader()
+        {
+            string expectedSerialHex = "33000000B011AF0A8BD03B9FDD0001000000B0";
+            byte[] expectedSerial = "B00000000100DD9F3BD08B0AAF11B000000033".HexToByteArray();
+
+            using (X509Certificate2 c = X509CertificateLoader.LoadCertificateFromFile(TestFiles.MsCertificateDerFile))
+            {
+                byte[] serial = c.GetSerialNumber();
+                Assert.Equal(expectedSerial, serial);
+                string serialHex = c.GetSerialNumberString();
+                Assert.Equal(expectedSerialHex, serialHex);
+                serialHex = c.SerialNumber;
+                Assert.Equal(expectedSerialHex, serialHex);
+
+                Assert.Equal(expectedSerialHex, c.SerialNumberBytes.ByteArrayToHex());
+            }
+        }
+
+        [Fact]
         public static void TestThumbprint()
         {
             string expectedThumbPrintHex = "108E2BA23632620C427C570B6D9DB51AC31387FE";
