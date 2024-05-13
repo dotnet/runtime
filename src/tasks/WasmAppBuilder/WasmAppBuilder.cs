@@ -316,7 +316,13 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
                 var vfsPath = Path.Combine(supportFilesDir, generatedFileName);
                 FileCopyChecked(item.ItemSpec, vfsPath, "FilesToIncludeInFileSystem");
 
-                (loadingStage == "Core" ? coreVfs : vfs)[targetPath] = new()
+                var vfsDict = loadingStage switch
+                {
+                    null => vfs,
+                    "Core" => coreVfs,
+                    _ => throw new LogAsErrorException($"The WasmFilesToIncludeInFileSystem '{item.ItemSpec}' has LoadingStage set to unsupported '{loadingStage}' (empty or 'Core' is currently supported).")
+                };
+                vfsDict[targetPath] = new()
                 {
                     [$"supportFiles/{generatedFileName}"] = Utils.ComputeIntegrity(vfsPath)
                 };
