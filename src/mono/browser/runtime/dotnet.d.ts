@@ -347,7 +347,11 @@ type SingleAssetBehaviors =
 /**
  * The javascript module for threads.
  */
- | "js-module-threads" | "js-module-globalization"
+ | "js-module-threads"
+/**
+ * The javascript module for globalization.
+ */
+|  "js-module-globalization"
 /**
  * The javascript module for runtime.
  */
