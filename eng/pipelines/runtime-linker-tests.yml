@@ -60,7 +60,8 @@ jobs:
       timeoutInMinutes: 120
       nameSuffix: Runtime_Release
       buildArgs: -s clr+libs -c $(_BuildConfig)
-      extraStepsTemplate: /eng/pipelines/libraries/execute-trimming-tests-steps.yml
+      postBuildSteps:
+        - template: /eng/pipelines/libraries/execute-trimming-tests-steps.yml
 
 #
 # Build Release config vertical for Browser-wasm
@@ -76,6 +77,7 @@ jobs:
       timeoutInMinutes: 120
       nameSuffix: Runtime_Release
       buildArgs: -s mono+libs -c $(_BuildConfig) -p:WasmBuildNative=false
-      extraStepsTemplate: /eng/pipelines/libraries/execute-trimming-tests-steps.yml
-      extraStepsParameters:
-          extraTestArgs: '/p:WasmBuildNative=false'
+      postBuildSteps:
+        - template: /eng/pipelines/libraries/execute-trimming-tests-steps.yml
+          parameters:
+              extraTestArgs: '/p:WasmBuildNative=false'

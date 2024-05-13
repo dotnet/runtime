@@ -143,9 +143,10 @@ stages:
         buildArgs: -s mono+libs+host+packs -c $(_BuildConfig)
         nameSuffix: AllSubsets_Mono
         isOfficialBuild: ${{ variables.isOfficialBuild }}
-        extraStepsTemplate: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
-        extraStepsParameters:
-          name: MonoRuntimePacks
+        postBuildSteps:
+          - template: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
+            parameters:
+              name: MonoRuntimePacks
 
   # Build Mono AOT offset headers once, for consumption elsewhere
   #
@@ -184,9 +185,10 @@ stages:
         - Android
         - Browser
         isOfficialBuild: ${{ variables.isOfficialBuild }}
-        extraStepsTemplate: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
-        extraStepsParameters:
-          name: MonoRuntimePacks
+        postBuildSteps:
+          - template: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
+            parameters:
+              name: MonoRuntimePacks
 
   - template: /eng/pipelines/common/platform-matrix.yml
     parameters:
@@ -207,9 +209,10 @@ stages:
         - Android
         - Browser
         isOfficialBuild: ${{ variables.isOfficialBuild }}
-        extraStepsTemplate: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
-        extraStepsParameters:
-          name: MonoRuntimePacks
+        postBuildSteps:
+          - template: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
+            parameters:
+              name: MonoRuntimePacks
 
   - template: /eng/pipelines/common/platform-matrix.yml
     parameters:
@@ -236,9 +239,10 @@ stages:
         - iOS
         - MacCatalyst
         isOfficialBuild: ${{ variables.isOfficialBuild }}
-        extraStepsTemplate: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
-        extraStepsParameters:
-          name: MonoRuntimePacks
+        postBuildSteps:
+          - template: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
+            parameters:
+              name: MonoRuntimePacks
 
   #
   # Build Mono LLVM runtime packs
@@ -267,9 +271,10 @@ stages:
           nameSuffix: AllSubsets_Mono_LLVMJIT
           runtimeVariant: LLVMJIT
           isOfficialBuild: ${{ variables.isOfficialBuild }}
-          extraStepsTemplate: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
-          extraStepsParameters:
-            name: MonoRuntimePacks
+          postBuildSteps:
+            - template: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
+              parameters:
+                name: MonoRuntimePacks
       #LLVMAOT
       - jobTemplate: /eng/pipelines/common/global-build-job.yml
         buildConfig: release
@@ -280,9 +285,10 @@ stages:
           nameSuffix: AllSubsets_Mono_LLVMAOT
           runtimeVariant: LLVMAOT
           isOfficialBuild: ${{ variables.isOfficialBuild }}
-          extraStepsTemplate: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
-          extraStepsParameters:
-            name: MonoRuntimePacks
+          postBuildSteps:
+            - template: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
+              parameters:
+                name: MonoRuntimePacks
 
   #
   # Build libraries using live CoreLib from CoreCLR
@@ -335,9 +341,10 @@ stages:
 #      - SourceBuild_Linux_x64
 #      jobParameters:
 #        nameSuffix: SourceBuild
-#        extraStepsTemplate: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
-#        extraStepsParameters:
-#          name: SourceBuildPackages
+#        postBuildSteps:
+#          - template: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
+#            parameters:
+#              name: SourceBuildPackages
 #        timeoutInMinutes: 95
       
 
