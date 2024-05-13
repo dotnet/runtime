@@ -75,6 +75,87 @@ namespace System.Runtime.Intrinsics.Arm
         /// </summary>
         public static unsafe Vector<double> Abs(Vector<double> value) { throw new PlatformNotSupportedException(); }
 
+        ///  AbsoluteDifference : Absolute difference
+
+        /// <summary>
+        /// svuint8_t svabd[_u8]_m(svbool_t pg, svuint8_t op1, svuint8_t op2)
+        /// svuint8_t svabd[_u8]_x(svbool_t pg, svuint8_t op1, svuint8_t op2)
+        ///   MOVPRFX Zresult.B, Pg/Z, Zop1.B; UABD Zresult.B, Pg/M, Zresult.B, Zop2.B
+        ///   UABD Ztied1.B, Pg/M, Ztied1.B, Zop2.B
+        /// </summary>
+        public static unsafe Vector<byte> AbsoluteDifference(Vector<byte> left, Vector<byte> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svfloat64_t svabd[_f64]_m(svbool_t pg, svfloat64_t op1, svfloat64_t op2)
+        /// svfloat64_t svabd[_f64]_x(svbool_t pg, svfloat64_t op1, svfloat64_t op2)
+        /// svfloat64_t svabd[_f64]_z(svbool_t pg, svfloat64_t op1, svfloat64_t op2)
+        ///   FABD Ztied1.D, Pg/M, Ztied1.D, Zop2.D
+        /// </summary>
+        public static unsafe Vector<double> AbsoluteDifference(Vector<double> left, Vector<double> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint16_t svabd[_s16]_m(svbool_t pg, svint16_t op1, svint16_t op2)
+        /// svint16_t svabd[_s16]_x(svbool_t pg, svint16_t op1, svint16_t op2)
+        /// svint16_t svabd[_s16]_z(svbool_t pg, svint16_t op1, svint16_t op2)
+        ///   SABD Ztied1.H, Pg/M, Ztied1.H, Zop2.H
+        /// </summary>
+        public static unsafe Vector<short> AbsoluteDifference(Vector<short> left, Vector<short> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint32_t svabd[_s32]_m(svbool_t pg, svint32_t op1, svint32_t op2)
+        /// svint32_t svabd[_s32]_x(svbool_t pg, svint32_t op1, svint32_t op2)
+        /// svint32_t svabd[_s32]_z(svbool_t pg, svint32_t op1, svint32_t op2)
+        ///   SABD Ztied1.S, Pg/M, Ztied1.S, Zop2.S
+        /// </summary>
+        public static unsafe Vector<int> AbsoluteDifference(Vector<int> left, Vector<int> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint64_t svabd[_s64]_m(svbool_t pg, svint64_t op1, svint64_t op2)
+        /// svint64_t svabd[_s64]_x(svbool_t pg, svint64_t op1, svint64_t op2)
+        /// svint64_t svabd[_s64]_z(svbool_t pg, svint64_t op1, svint64_t op2)
+        ///   SABD Ztied1.D, Pg/M, Ztied1.D, Zop2.D
+        /// </summary>
+        public static unsafe Vector<long> AbsoluteDifference(Vector<long> left, Vector<long> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint8_t svabd[_s8]_m(svbool_t pg, svint8_t op1, svint8_t op2)
+        /// svint8_t svabd[_s8]_x(svbool_t pg, svint8_t op1, svint8_t op2)
+        /// svint8_t svabd[_s8]_z(svbool_t pg, svint8_t op1, svint8_t op2)
+        ///   SABD Ztied1.B, Pg/M, Ztied1.B, Zop2.B
+        /// </summary>
+        public static unsafe Vector<sbyte> AbsoluteDifference(Vector<sbyte> left, Vector<sbyte> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svfloat32_t svabd[_f32]_m(svbool_t pg, svfloat32_t op1, svfloat32_t op2)
+        /// svfloat32_t svabd[_f32]_x(svbool_t pg, svfloat32_t op1, svfloat32_t op2)
+        /// svfloat32_t svabd[_f32]_z(svbool_t pg, svfloat32_t op1, svfloat32_t op2)
+        ///   FABD Ztied1.S, Pg/M, Ztied1.S, Zop2.S
+        /// </summary>
+        public static unsafe Vector<float> AbsoluteDifference(Vector<float> left, Vector<float> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint16_t svabd[_u16]_m(svbool_t pg, svuint16_t op1, svuint16_t op2)
+        /// svuint16_t svabd[_u16]_x(svbool_t pg, svuint16_t op1, svuint16_t op2)
+        /// svuint16_t svabd[_u16]_z(svbool_t pg, svuint16_t op1, svuint16_t op2)
+        ///   UABD Ztied1.H, Pg/M, Ztied1.H, Zop2.H
+        /// </summary>
+        public static unsafe Vector<ushort> AbsoluteDifference(Vector<ushort> left, Vector<ushort> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint32_t svabd[_u32]_m(svbool_t pg, svuint32_t op1, svuint32_t op2)
+        /// svuint32_t svabd[_u32]_x(svbool_t pg, svuint32_t op1, svuint32_t op2)
+        /// svuint32_t svabd[_u32]_z(svbool_t pg, svuint32_t op1, svuint32_t op2)
+        ///   UABD Ztied1.S, Pg/M, Ztied1.S, Zop2.S
+        /// </summary>
+        public static unsafe Vector<uint> AbsoluteDifference(Vector<uint> left, Vector<uint> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint64_t svabd[_u64]_m(svbool_t pg, svuint64_t op1, svuint64_t op2)
+        /// svuint64_t svabd[_u64]_x(svbool_t pg, svuint64_t op1, svuint64_t op2)
+        /// svuint64_t svabd[_u64]_z(svbool_t pg, svuint64_t op1, svuint64_t op2)
+        ///   UABD Ztied1.D, Pg/M, Ztied1.D, Zop2.D
+        /// </summary>
+        public static unsafe Vector<ulong> AbsoluteDifference(Vector<ulong> left, Vector<ulong> right) { throw new PlatformNotSupportedException(); }
 
         ///  Add : Add
 

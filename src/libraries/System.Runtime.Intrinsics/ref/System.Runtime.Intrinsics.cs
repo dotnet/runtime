@@ -4177,6 +4177,18 @@ namespace System.Runtime.Intrinsics.Arm
         public static System.Numerics.Vector<long> Abs(System.Numerics.Vector<long> value) { throw null; }
         public static System.Numerics.Vector<float> Abs(System.Numerics.Vector<float> value) { throw null; }
         public static System.Numerics.Vector<double> Abs(System.Numerics.Vector<double> value) { throw null; }
+
+        public static System.Numerics.Vector<byte> AbsoluteDifference(System.Numerics.Vector<byte> left, System.Numerics.Vector<byte> right) { throw null; }
+        public static System.Numerics.Vector<double> AbsoluteDifference(System.Numerics.Vector<double> left, System.Numerics.Vector<double> right) { throw null; }
+        public static System.Numerics.Vector<short> AbsoluteDifference(System.Numerics.Vector<short> left, System.Numerics.Vector<short> right) { throw null; }
+        public static System.Numerics.Vector<int> AbsoluteDifference(System.Numerics.Vector<int> left, System.Numerics.Vector<int> right) { throw null; }
+        public static System.Numerics.Vector<long> AbsoluteDifference(System.Numerics.Vector<long> left, System.Numerics.Vector<long> right) { throw null; }
+        public static System.Numerics.Vector<sbyte> AbsoluteDifference(System.Numerics.Vector<sbyte> left, System.Numerics.Vector<sbyte> right) { throw null; }
+        public static System.Numerics.Vector<float> AbsoluteDifference(System.Numerics.Vector<float> left, System.Numerics.Vector<float> right) { throw null; }
+        public static System.Numerics.Vector<ushort> AbsoluteDifference(System.Numerics.Vector<ushort> left, System.Numerics.Vector<ushort> right) { throw null; }
+        public static System.Numerics.Vector<uint> AbsoluteDifference(System.Numerics.Vector<uint> left, System.Numerics.Vector<uint> right) { throw null; }
+        public static System.Numerics.Vector<ulong> AbsoluteDifference(System.Numerics.Vector<ulong> left, System.Numerics.Vector<ulong> right) { throw null; }        
+
         public static System.Numerics.Vector<sbyte> Add(System.Numerics.Vector<sbyte> left, System.Numerics.Vector<sbyte> right) { throw null; }
         public static System.Numerics.Vector<short> Add(System.Numerics.Vector<short> left, System.Numerics.Vector<short> right) { throw null; }
         public static System.Numerics.Vector<int> Add(System.Numerics.Vector<int> left, System.Numerics.Vector<int> right) { throw null; }
@@ -4187,6 +4199,7 @@ namespace System.Runtime.Intrinsics.Arm
         public static System.Numerics.Vector<ulong> Add(System.Numerics.Vector<ulong> left, System.Numerics.Vector<ulong> right) { throw null; }
         public static System.Numerics.Vector<float> Add(System.Numerics.Vector<float> left, System.Numerics.Vector<float> right) { throw null; }
         public static System.Numerics.Vector<double> Add(System.Numerics.Vector<double> left, System.Numerics.Vector<double> right) { throw null; }
+
         public static System.Numerics.Vector<double> AddAcross(System.Numerics.Vector<double> value) { throw null; }
         public static System.Numerics.Vector<long> AddAcross(System.Numerics.Vector<short> value) { throw null; }
         public static System.Numerics.Vector<long> AddAcross(System.Numerics.Vector<int> value) { throw null; }
@@ -4206,6 +4219,7 @@ namespace System.Runtime.Intrinsics.Arm
         public static System.Numerics.Vector<ushort> And(System.Numerics.Vector<ushort> left, System.Numerics.Vector<ushort> right) { throw null; }
         public static System.Numerics.Vector<uint> And(System.Numerics.Vector<uint> left, System.Numerics.Vector<uint> right) { throw null; }
         public static System.Numerics.Vector<ulong> And(System.Numerics.Vector<ulong> left, System.Numerics.Vector<ulong> right) { throw null; }
+        
         public static System.Numerics.Vector<byte> AndAcross(System.Numerics.Vector<byte> value) { throw null; }
         public static System.Numerics.Vector<short> AndAcross(System.Numerics.Vector<short> value) { throw null; }
         public static System.Numerics.Vector<int> AndAcross(System.Numerics.Vector<int> value) { throw null; }
