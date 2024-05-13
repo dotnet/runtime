@@ -91,7 +91,7 @@ namespace System.Numerics.Tensors
                     // We can't use AdvSimd.MaxNumber here because it doesn't correctly
                     // handle sNaN (it converts it to qNaN as per the now deprecated
                     // maxNum function defined by IEEE 754:2008, but which is not inline
-                    // with the maximumNumber function that replaces it in IEEE 754:2019
+                    // with the maximumNumber function that replaces it in IEEE 754:2019)
 
                     Vector128<T> max;
 
