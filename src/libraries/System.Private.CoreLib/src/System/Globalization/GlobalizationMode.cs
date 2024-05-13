@@ -28,9 +28,9 @@ namespace System.Globalization
 
         // same as GlobalizationMode.Invariant but doesn't trigger ICU load in GlobalizationMode.Settings.cctor
         // during runtime startup on Browser platform
-        internal static bool InvariantNoLoad 
-        { 
-            get 
+        internal static bool InvariantNoLoad
+        {
+            get
             {
 #if TARGET_BROWSER
                 return AppContextConfigHelper.GetBooleanConfig("System.Globalization.Invariant", "DOTNET_SYSTEM_GLOBALIZATION_INVARIANT");
