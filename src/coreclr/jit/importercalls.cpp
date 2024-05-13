@@ -7476,8 +7476,24 @@ bool Compiler::IsTargetIntrinsic(NamedIntrinsic intrinsicName)
             return false;
     }
 #elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-    // TODO-LoongArch64: add some intrinsics.
-    return false;
+    switch (intrinsicName)
+    {
+        case NI_System_Math_Abs:
+        case NI_System_Math_Sqrt:
+        case NI_System_Math_ReciprocalSqrtEstimate:
+        {
+            // TODO-LoongArch64: support these standard intrinsics
+            // TODO-RISCV64: support these standard intrinsics
+
+            return false;
+        }
+
+        case NI_System_Math_ReciprocalEstimate:
+            return true;
+
+        default:
+            return false;
+    }
 #else
     // TODO: This portion of logic is not implemented for other arch.
     // The reason for returning true is that on all other arch the only intrinsic
@@ -8775,6 +8791,11 @@ GenTree* Compiler::impEstimateIntrinsic(CORINFO_METHOD_HANDLE method,
         return nullptr;
     }
 
+    if (IsIntrinsicImplementedByUserCall(intrinsicName))
+    {
+        return nullptr;
+    }
+
 #if defined(FEATURE_HW_INTRINSICS)
     // We use compExactlyDependsOn since these are estimate APIs where
     // the behavior is explicitly allowed to differ across machines
@@ -8868,6 +8889,7 @@ GenTree* Compiler::impEstimateIntrinsic(CORINFO_METHOD_HANDLE method,
 
             if (intrinsicName == NI_System_Math_ReciprocalSqrtEstimate)
             {
+                assert(!IsIntrinsicImplementedByUserCall(NI_System_Math_Sqrt));
                 op1 = new (this, GT_INTRINSIC)
                     GenTreeIntrinsic(genActualType(callType), op1, NI_System_Math_Sqrt, nullptr);
             }
