@@ -644,6 +644,8 @@ public:
     template <bool localVarsEnregistered>
     void buildIntervals();
 
+    void buildInitialParamDef(const LclVarDsc* varDsc, regNumber paramReg);
+
     // This is where the actual assignment is done for scenarios where
     // no local var enregistration is done.
     void allocateRegistersMinimal();
@@ -767,47 +769,6 @@ private:
         LSRA_LIMIT_MASK = 0x3
 #endif
     };
-
-    // When LSRA_LIMIT_SMALL_SET is specified, it is desirable to select a "mixed" set of caller- and callee-save
-    // registers, so as to get different coverage than limiting to callee or caller.
-    // At least for x86 and AMD64, and potentially other architecture that will support SIMD,
-    // we need a minimum of 5 fp regs in order to support the InitN intrinsic for Vector4.
-    // Hence the "SmallFPSet" has 5 elements.
-
-#if defined(TARGET_AMD64)
-#ifdef UNIX_AMD64_ABI
-    // On System V the RDI and RSI are not callee saved. Use R12 ans R13 as callee saved registers.
-    static const regMaskTP LsraLimitSmallIntSet =
-        (RBM_EAX | RBM_ECX | RBM_EBX | RBM_ETW_FRAMED_EBP | RBM_R12 | RBM_R13);
-#else  // !UNIX_AMD64_ABI
-    // On Windows Amd64 use the RDI and RSI as callee saved registers.
-    static const regMaskTP LsraLimitSmallIntSet =
-        (RBM_EAX | RBM_ECX | RBM_EBX | RBM_ETW_FRAMED_EBP | RBM_ESI | RBM_EDI);
-#endif // !UNIX_AMD64_ABI
-    static const regMaskTP LsraLimitSmallFPSet = (RBM_XMM0 | RBM_XMM1 | RBM_XMM2 | RBM_XMM6 | RBM_XMM7);
-    static const regMaskTP LsraLimitUpperSimdSet =
-        (RBM_XMM16 | RBM_XMM17 | RBM_XMM18 | RBM_XMM19 | RBM_XMM20 | RBM_XMM21 | RBM_XMM22 | RBM_XMM23 | RBM_XMM24 |
-         RBM_XMM25 | RBM_XMM26 | RBM_XMM27 | RBM_XMM28 | RBM_XMM29 | RBM_XMM30 | RBM_XMM31);
-#elif defined(TARGET_ARM)
-    // On ARM, we may need two registers to set up the target register for a virtual call, so we need
-    // to have at least the maximum number of arg registers, plus 2.
-    static const regMaskTP LsraLimitSmallIntSet = (RBM_R0 | RBM_R1 | RBM_R2 | RBM_R3 | RBM_R4 | RBM_R5);
-    static const regMaskTP LsraLimitSmallFPSet  = (RBM_F0 | RBM_F1 | RBM_F2 | RBM_F16 | RBM_F17);
-#elif defined(TARGET_ARM64)
-    static const regMaskTP LsraLimitSmallIntSet = (RBM_R0 | RBM_R1 | RBM_R2 | RBM_R19 | RBM_R20);
-    static const regMaskTP LsraLimitSmallFPSet  = (RBM_V0 | RBM_V1 | RBM_V2 | RBM_V8 | RBM_V9);
-#elif defined(TARGET_X86)
-    static const regMaskTP LsraLimitSmallIntSet = (RBM_EAX | RBM_ECX | RBM_EDI);
-    static const regMaskTP LsraLimitSmallFPSet  = (RBM_XMM0 | RBM_XMM1 | RBM_XMM2 | RBM_XMM6 | RBM_XMM7);
-#elif defined(TARGET_LOONGARCH64)
-    static const regMaskTP LsraLimitSmallIntSet = (RBM_T1 | RBM_T3 | RBM_A0 | RBM_A1 | RBM_T0);
-    static const regMaskTP LsraLimitSmallFPSet  = (RBM_F0 | RBM_F1 | RBM_F2 | RBM_F8 | RBM_F9);
-#elif defined(TARGET_RISCV64)
-    static const regMaskTP LsraLimitSmallIntSet = (RBM_T1 | RBM_T3 | RBM_A0 | RBM_A1 | RBM_T0);
-    static const regMaskTP LsraLimitSmallFPSet  = (RBM_F0 | RBM_F1 | RBM_F2 | RBM_F8 | RBM_F9);
-#else
-#error Unsupported or unset target architecture
-#endif // target
 
     LsraStressLimitRegs getStressLimitRegs()
     {
