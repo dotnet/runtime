@@ -70,7 +70,7 @@ namespace System.Runtime.Loader
         {
             int* dwPAFlags = stackalloc int[2];
             IntPtr pIMetaDataAssemblyImport = AssemblyBinderCommon.BinderAcquireImport(pPEImage, dwPAFlags);
-            var scope = new MetadataImport(pIMetaDataAssemblyImport, null);
+            var scope = new MetadataImport(pIMetaDataAssemblyImport);
 
             ProcessorArchitecture = AssemblyBinderCommon.TranslatePEToArchitectureType(dwPAFlags);
 

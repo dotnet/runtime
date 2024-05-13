@@ -440,23 +440,18 @@ FCIMPL3(HRESULT, MetaDataImport::GetMemberRefProps,
 }
 FCIMPLEND
 
-MDImpl1(void, MetaDataImport::GetAssemblyFromScope,
+FCIMPL2(HRESULT, MetaDataImport::GetAssemblyFromScope,
+    IMDInternalImport* pScope,
     mdAssembly* ptkAssembly)
 {
     FCALL_CONTRACT;
 
-    HRESULT hr;
-    IMDInternalImport *_pScope = pScope;
-
-    hr = _pScope->GetAssemblyFromScope(ptkAssembly);
-    if (FAILED(hr))
-    {
-        FCThrowVoid(kBadImageFormatException);
-    }
+    return pScope->GetAssemblyFromScope(ptkAssembly);
 }
 FCIMPLEND
 
-MDImpl7(void, MetaDataImport::GetAssemblyProps,
+FCIMPL8(HRESULT, MetaDataImport::GetAssemblyProps,
+    IMDInternalImport* pScope,
     mdAssembly mda,
     const void** ppbPublicKey,
     ULONG* pcbPublicKey,
@@ -467,10 +462,7 @@ MDImpl7(void, MetaDataImport::GetAssemblyProps,
 {
     FCALL_CONTRACT;
 
-    HRESULT hr;
-    IMDInternalImport *_pScope = pScope;
-
-    hr = _pScope->GetAssemblyProps(mda, ppbPublicKey, pcbPublicKey, pulHashAlgId, pszName, pMetaData, pdwAsselblyFlags);
+    return pScope->GetAssemblyProps(mda, ppbPublicKey, pcbPublicKey, pulHashAlgId, pszName, pMetaData, pdwAsselblyFlags);
 }
 FCIMPLEND
 

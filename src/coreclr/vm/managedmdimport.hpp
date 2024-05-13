@@ -68,11 +68,9 @@ public:
         LPUTF8* marshalCookie,
         INT32*  iidParamIndex);
 
-    ////
-    //// Assembly
-    ////
-    MDDecl1(void, GetAssemblyFromScope, mdAssembly* ptkAssembly);
-    MDDecl7(void, GetAssemblyProps,
+    static FCDECL2(HRESULT, GetAssemblyFromScope, IMDInternalImport* pScope, mdAssembly* ptkAssembly);
+    static FCDECL8(HRESULT, GetAssemblyProps,
+        IMDInternalImport* pScope,
         mdAssembly mda,
         const void** ppbPublicKey,
         ULONG* pcbPublicKey,

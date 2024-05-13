@@ -126,7 +126,7 @@ namespace System.Runtime.Loader
                 return;
             }
 
-            var mdImport = new MetadataImport(Assembly_GetMDImport(loadedAssembly), null);
+            var mdImport = new MetadataImport(Assembly_GetMDImport(loadedAssembly));
             mdImport.GetScopeProps(out Guid mvid);
             string simpleName = new MdUtf8String(Assembly_GetSimpleName(loadedAssembly)).ToString();
 

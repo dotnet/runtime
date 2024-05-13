@@ -312,6 +312,12 @@ namespace System.Reflection
             // since the instance can be replaced during HotReload and EnC scenarios.
             m_metadataImport2 = GetMetadataImport(module);
         }
+
+        internal MetadataImport(IntPtr pIMetaDataAssemblyImport2)
+        {
+            ArgumentNullException.ThrowIfNull(pIMetaDataAssemblyImport2);
+            m_metadataImport2 = pIMetaDataAssemblyImport2;
+        }
         #endregion
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MetadataImport_Enum")]
@@ -612,15 +618,15 @@ namespace System.Reflection
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern void _GetAssemblyFromScope(IntPtr scope, out uint tkAssembly);
+        private static extern int GetAssemblyFromScope(IntPtr scope, out uint tkAssembly);
         public uint GetAssemblyFromScope()
         {
-            _GetAssemblyFromScope(m_metadataImport2, out uint tkAssembly);
+            ThrowBadImageExceptionForHR(GetAssemblyFromScope(m_metadataImport2, out uint tkAssembly));
             return tkAssembly;
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern unsafe void _GetAssemblyProps(
+        private static extern unsafe int GetAssemblyProps(
             IntPtr scope,
             uint mda,
             out byte* ppbPublicKey,
@@ -639,7 +645,7 @@ namespace System.Reflection
             out uint asselblyFlags)
         {
             void* _name;
-            _GetAssemblyProps(m_metadataImport2, assemblyToken, out publicKey, out publicKeyLength, out hashAlgId, &_name, pMetadata, out asselblyFlags);
+            ThrowBadImageExceptionForHR(GetAssemblyProps(m_metadataImport2, assemblyToken, out publicKey, out publicKeyLength, out hashAlgId, &_name, pMetadata, out asselblyFlags));
             assemblyName = new MdUtf8String(_name).ToString();
         }
         #endregion
