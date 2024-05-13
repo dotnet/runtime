@@ -658,7 +658,19 @@ namespace System
         /// <inheritdoc cref="IFloatingPoint{TSelf}.ConvertToIntegerNative{TInteger}(TSelf)" />
         [Intrinsic]
         public static TInteger ConvertToIntegerNative<TInteger>(float value)
-            where TInteger : IBinaryInteger<TInteger> => TInteger.CreateSaturating(value);
+            where TInteger : IBinaryInteger<TInteger>
+        {
+#if !MONO
+            if (typeof(TInteger).IsPrimitive)
+            {
+                // We need this to be recursive so indirect calls (delegates
+                // for example) produce the same result as direct invocation
+                return ConvertToIntegerNative<TInteger>(value);
+            }
+#endif
+
+            return TInteger.CreateSaturating(value);
+        }
 
         /// <inheritdoc cref="IFloatingPoint{TSelf}.Floor(TSelf)" />
         [Intrinsic]
@@ -848,9 +860,11 @@ namespace System
         public static float Lerp(float value1, float value2, float amount) => (value1 * (1.0f - amount)) + (value2 * amount);
 
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.ReciprocalEstimate(TSelf)" />
+        [Intrinsic]
         public static float ReciprocalEstimate(float x) => MathF.ReciprocalEstimate(x);
 
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.ReciprocalSqrtEstimate(TSelf)" />
+        [Intrinsic]
         public static float ReciprocalSqrtEstimate(float x) => MathF.ReciprocalSqrtEstimate(x);
 
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.ScaleB(TSelf, int)" />

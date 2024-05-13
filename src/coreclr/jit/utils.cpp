@@ -417,11 +417,6 @@ const char* dspRegRange(regMaskTP regMask, size_t& minSiz, const char* sep, regN
             sep        = " ";
         }
 
-        if (regBit > regMask)
-        {
-            break;
-        }
-
         regPrev = regNum;
     }
 
@@ -1746,7 +1741,7 @@ void HelperCallProperties::init()
             case CORINFO_HELP_CHECKED_ASSIGN_REF:
             case CORINFO_HELP_ASSIGN_REF_ENSURE_NONHEAP:
             case CORINFO_HELP_ASSIGN_BYREF:
-            case CORINFO_HELP_ASSIGN_STRUCT:
+            case CORINFO_HELP_BULK_WRITEBARRIER:
 
                 mutatesHeap = true;
                 break;

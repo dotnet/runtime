@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.IO;
+using System.IO.Pipelines;
 using System.Text.Json.Serialization.Converters;
 using System.Threading;
 using System.Threading.Tasks;
@@ -58,12 +59,28 @@ namespace System.Text.Json.Serialization.Metadata
             }
         }
 
-        // Root serialization method for async streaming serialization.
-        internal async Task SerializeAsync(
-            Stream utf8Json,
+        internal Task SerializeAsync(Stream utf8Json,
             T? rootValue,
             CancellationToken cancellationToken,
             object? rootValueBoxed = null)
+        {
+            return SerializeAsync(new AsyncSerializationStreamContext(utf8Json, Options), rootValue, cancellationToken, rootValueBoxed);
+        }
+
+        internal Task SerializeAsync(PipeWriter utf8Json,
+            T? rootValue,
+            CancellationToken cancellationToken,
+            object? rootValueBoxed = null)
+        {
+            return SerializeAsync(new AsyncSerializationPipeContext(utf8Json), rootValue, cancellationToken, rootValueBoxed);
+        }
+
+        // Root serialization method for async streaming serialization.
+        private async Task SerializeAsync<TSerializationContext>(
+            TSerializationContext serializationContext,
+            T? rootValue,
+            CancellationToken cancellationToken,
+            object? rootValueBoxed = null) where TSerializationContext : struct, IAsyncSerializationBufferWriterContext
         {
             Debug.Assert(IsConfigured);
             Debug.Assert(rootValueBoxed is null || rootValueBoxed is T);
@@ -76,24 +93,30 @@ namespace System.Text.Json.Serialization.Metadata
                 Debug.Assert(CanUseSerializeHandler);
                 Debug.Assert(Converter is JsonMetadataServicesConverter<T>);
 
-                using var bufferWriter = new PooledByteBufferWriter(Options.DefaultBufferSize);
-                Utf8JsonWriter writer = Utf8JsonWriterCache.RentWriter(Options, bufferWriter);
+                Utf8JsonWriter writer = Utf8JsonWriterCache.RentWriter(Options, serializationContext.BufferWriter);
 
                 try
                 {
-                    SerializeHandler(writer, rootValue!);
-                    writer.Flush();
+                    try
+                    {
+                        SerializeHandler(writer, rootValue!);
+                        writer.Flush();
+                    }
+                    finally
+                    {
+                        // Record the serialization size in both successful and failed operations,
+                        // since we want to immediately opt out of the fast path if it exceeds the threshold.
+                        OnRootLevelAsyncSerializationCompleted(writer.BytesCommitted + writer.BytesPending);
+
+                        Utf8JsonWriterCache.ReturnWriter(writer);
+                    }
+
+                    await serializationContext.FlushAsync(cancellationToken).ConfigureAwait(false);
                 }
                 finally
                 {
-                    // Record the serialization size in both successful and failed operations,
-                    // since we want to immediately opt out of the fast path if it exceeds the threshold.
-                    OnRootLevelAsyncSerializationCompleted(writer.BytesCommitted + writer.BytesPending);
-
-                    Utf8JsonWriterCache.ReturnWriter(writer);
+                    serializationContext.Dispose();
                 }
-
-                await bufferWriter.WriteToStreamAsync(utf8Json, cancellationToken).ConfigureAwait(false);
             }
             else if (
 #if NET
@@ -104,7 +127,7 @@ namespace System.Text.Json.Serialization.Metadata
                 Options.TryGetPolymorphicTypeInfoForRootType(rootValue, out JsonTypeInfo? derivedTypeInfo))
             {
                 Debug.Assert(typeof(T) == typeof(object));
-                await derivedTypeInfo.SerializeAsObjectAsync(utf8Json, rootValue, cancellationToken).ConfigureAwait(false);
+                await derivedTypeInfo.SerializeAsObjectAsync(serializationContext, rootValue, cancellationToken).ConfigureAwait(false);
             }
             else
             {
@@ -117,14 +140,13 @@ namespace System.Text.Json.Serialization.Metadata
 
                 state.CancellationToken = cancellationToken;
 
-                using var bufferWriter = new PooledByteBufferWriter(Options.DefaultBufferSize);
-                using var writer = new Utf8JsonWriter(bufferWriter, Options.GetWriterOptions());
+                var writer = new Utf8JsonWriter(serializationContext.BufferWriter, Options.GetWriterOptions());
 
                 try
                 {
                     do
                     {
-                        state.FlushThreshold = (int)(bufferWriter.Capacity * JsonSerializer.FlushThreshold);
+                        state.FlushThreshold = serializationContext.FlushThreshold;
 
                         try
                         {
@@ -139,8 +161,7 @@ namespace System.Text.Json.Serialization.Metadata
                             }
                             else
                             {
-                                await bufferWriter.WriteToStreamAsync(utf8Json, cancellationToken).ConfigureAwait(false);
-                                bufferWriter.Clear();
+                                await serializationContext.FlushAsync(cancellationToken).ConfigureAwait(false);
                             }
                         }
                         finally
@@ -169,6 +190,15 @@ namespace System.Text.Json.Serialization.Metadata
                         }
 
                     } while (!isFinalBlock);
+
+                    if (CanUseSerializeHandler)
+                    {
+                        // On successful serialization, record the serialization size
+                        // to determine potential suitability of the type for
+                        // fast-path serialization in streaming methods.
+                        Debug.Assert(writer.BytesPending == 0);
+                        OnRootLevelAsyncSerializationCompleted(writer.BytesCommitted);
+                    }
                 }
                 catch
                 {
@@ -176,14 +206,10 @@ namespace System.Text.Json.Serialization.Metadata
                     await state.DisposePendingDisposablesOnExceptionAsync().ConfigureAwait(false);
                     throw;
                 }
-
-                if (CanUseSerializeHandler)
+                finally
                 {
-                    // On successful serialization, record the serialization size
-                    // to determine potential suitability of the type for
-                    // fast-path serialization in streaming methods.
-                    Debug.Assert(writer.BytesPending == 0);
-                    OnRootLevelAsyncSerializationCompleted(writer.BytesCommitted);
+                    writer.Dispose();
+                    serializationContext.Dispose();
                 }
             }
         }
@@ -271,7 +297,13 @@ namespace System.Text.Json.Serialization.Metadata
         internal sealed override void SerializeAsObject(Utf8JsonWriter writer, object? rootValue)
             => Serialize(writer, JsonSerializer.UnboxOnWrite<T>(rootValue), rootValue);
 
+        internal sealed override Task SerializeAsObjectAsync<TSerializationContext>(TSerializationContext serializationContext, object? rootValue, CancellationToken cancellationToken)
+            => SerializeAsync(serializationContext, JsonSerializer.UnboxOnWrite<T>(rootValue), cancellationToken, rootValue);
+
         internal sealed override Task SerializeAsObjectAsync(Stream utf8Json, object? rootValue, CancellationToken cancellationToken)
+            => SerializeAsync(utf8Json, JsonSerializer.UnboxOnWrite<T>(rootValue), cancellationToken, rootValue);
+
+        internal sealed override Task SerializeAsObjectAsync(PipeWriter utf8Json, object? rootValue, CancellationToken cancellationToken)
             => SerializeAsync(utf8Json, JsonSerializer.UnboxOnWrite<T>(rootValue), cancellationToken, rootValue);
 
         internal sealed override void SerializeAsObject(Stream utf8Json, object? rootValue)

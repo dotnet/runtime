@@ -3760,7 +3760,7 @@ void Compiler::dumpRegMask(regMaskTP regs) const
     {
         printf("[allDouble]");
     }
-#ifdef TARGET_XARCH
+#ifdef FEATURE_MASKED_HW_INTRINSICS
     else if (regs == RBM_ALLMASK)
     {
         printf("[allMask]");
@@ -4088,7 +4088,18 @@ _SetMinOpts:
     {
         info.compCompHnd->setMethodAttribs(info.compMethodHnd, CORINFO_FLG_SWITCHED_TO_MIN_OPT);
         opts.jitFlags->Clear(JitFlags::JIT_FLAG_TIER1);
+        opts.jitFlags->Clear(JitFlags::JIT_FLAG_BBOPT);
         compSwitchedToMinOpts = true;
+
+        // We may have read PGO data. Clear it out because we won't be using it.
+        //
+        fgPgoFailReason  = "method switched to min-opts";
+        fgPgoQueryResult = E_FAIL;
+        fgPgoHaveWeights = false;
+        fgPgoData        = nullptr;
+        fgPgoSchema      = nullptr;
+        fgPgoDisabled    = true;
+        fgPgoDynamic     = false;
     }
 
 #ifdef DEBUG
@@ -4591,11 +4602,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
             assert(lvaStubArgumentVar == BAD_VAR_NUM);
             lvaStubArgumentVar                     = lvaGrabTempWithImplicitUse(false DEBUGARG("stub argument"));
             lvaGetDesc(lvaStubArgumentVar)->lvType = TYP_I_IMPL;
-            // TODO-CQ: there is no need to mark it as doNotEnreg. There are no stores for this local
-            // before codegen so liveness and LSRA mark it as "liveIn" and always allocate a stack slot for it.
-            // However, it would be better to process it like other argument locals and keep it in
-            // a reg for the whole method without spilling to the stack when possible.
-            lvaSetVarDoNotEnregister(lvaStubArgumentVar DEBUGARG(DoNotEnregisterReason::VMNeedsStackAddr));
         }
     };
     DoPhase(this, PHASE_PRE_IMPORT, preImportPhase);
@@ -4686,11 +4692,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         return;
     }
 
-    // Drop back to just checking profile likelihoods.
-    //
-    activePhaseChecks &= ~PhaseChecks::CHECK_PROFILE;
-    activePhaseChecks |= PhaseChecks::CHECK_LIKELIHOODS;
-
     // At this point in the phase list, all the inlinee phases have
     // been run, and inlinee compiles have exited, so we should only
     // get this far if we are jitting the root method.
@@ -4706,6 +4707,11 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 
     // Record "start" values for post-inlining cycles and elapsed time.
     RecordStateAtEndOfInlining();
+
+    // Drop back to just checking profile likelihoods.
+    //
+    activePhaseChecks &= ~PhaseChecks::CHECK_PROFILE;
+    activePhaseChecks |= PhaseChecks::CHECK_LIKELIHOODS;
 
     // Transform each GT_ALLOCOBJ node into either an allocation helper call or
     // local variable allocation on the stack.
@@ -8056,6 +8062,7 @@ if (!inlineInfo &&
     compileFlags->Set(JitFlags::JIT_FLAG_MIN_OPT);
     compileFlags->Clear(JitFlags::JIT_FLAG_SIZE_OPT);
     compileFlags->Clear(JitFlags::JIT_FLAG_SPEED_OPT);
+    compileFlags->Clear(JitFlags::JIT_FLAG_BBOPT);
 
     goto START;
 }

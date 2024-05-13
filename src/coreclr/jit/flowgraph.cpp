@@ -2438,7 +2438,10 @@ PhaseStatus Compiler::fgAddInternal()
 
         LclVarDsc* varDsc = lvaGetDesc(lvaInlinedPInvokeFrameVar);
         // Make room for the inlined frame.
-        lvaSetStruct(lvaInlinedPInvokeFrameVar, typGetBlkLayout(eeGetEEInfo()->inlinedCallFrameInfo.size), false);
+        const CORINFO_EE_INFO* eeInfo = eeGetEEInfo();
+        unsigned frameSize            = info.compPublishStubParam ? eeInfo->inlinedCallFrameInfo.sizeWithSecretStubArg
+                                                                  : eeInfo->inlinedCallFrameInfo.size;
+        lvaSetStruct(lvaInlinedPInvokeFrameVar, typGetBlkLayout(frameSize), false);
     }
 
     // Do we need to insert a "JustMyCode" callback?
@@ -4029,8 +4032,8 @@ bool FlowGraphDfsTree::Contains(BasicBlock* block) const
 // block `descendant`
 //
 // Arguments:
-//   ancestor   -- block that is possible ancestor
-//   descendant -- block that is possible descendant
+//   ancestor   - block that is possible ancestor
+//   descendant - block that is possible descendant
 //
 // Returns:
 //   True if `ancestor` is ancestor of `descendant` in the depth first spanning
@@ -4049,6 +4052,9 @@ bool FlowGraphDfsTree::IsAncestor(BasicBlock* ancestor, BasicBlock* descendant) 
 //------------------------------------------------------------------------
 // fgComputeDfs: Compute a depth-first search tree for the flow graph.
 //
+// Type parameters:
+//   useProfile - If true, determines order of successors visited using profile data
+//
 // Returns:
 //   The tree.
 //
@@ -4056,6 +4062,7 @@ bool FlowGraphDfsTree::IsAncestor(BasicBlock* ancestor, BasicBlock* descendant) 
 //   Preorder and postorder numbers are assigned into the BasicBlock structure.
 //   The tree returned contains a postorder of the basic blocks.
 //
+template <const bool useProfile /* = false */>
 FlowGraphDfsTree* Compiler::fgComputeDfs()
 {
     BasicBlock** postOrder = new (this, CMK_DepthFirstSearch) BasicBlock*[fgBBcount];
@@ -4081,9 +4088,16 @@ FlowGraphDfsTree* Compiler::fgComputeDfs()
         }
     };
 
-    unsigned numBlocks = fgRunDfs(visitPreorder, visitPostorder, visitEdge);
+    unsigned numBlocks =
+        fgRunDfs<decltype(visitPreorder), decltype(visitPostorder), decltype(visitEdge), useProfile>(visitPreorder,
+                                                                                                     visitPostorder,
+                                                                                                     visitEdge);
     return new (this, CMK_DepthFirstSearch) FlowGraphDfsTree(this, postOrder, numBlocks, hasCycle);
 }
+
+// Add explicit instantiations.
+template FlowGraphDfsTree* Compiler::fgComputeDfs<false>();
+template FlowGraphDfsTree* Compiler::fgComputeDfs<true>();
 
 //------------------------------------------------------------------------
 // fgInvalidateDfsTree: Invalidate computed DFS tree and dependent annotations
