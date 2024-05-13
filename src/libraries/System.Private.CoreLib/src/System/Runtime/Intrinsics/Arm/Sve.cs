@@ -320,6 +320,55 @@ namespace System.Runtime.Intrinsics.Arm
         /// </summary>
         public static unsafe Vector<ulong> AddAcross(Vector<ulong> value) => AddAcross(value);
 
+        ///  AddSaturate : Saturating add
+
+        /// <summary>
+        /// svuint8_t svqadd[_u8](svuint8_t op1, svuint8_t op2)
+        ///   UQADD Zresult.B, Zop1.B, Zop2.B
+        /// </summary>
+        public static unsafe Vector<byte> AddSaturate(Vector<byte> left, Vector<byte> right) => AddSaturate(left, right);
+
+        /// <summary>
+        /// svint16_t svqadd[_s16](svint16_t op1, svint16_t op2)
+        ///   SQADD Zresult.H, Zop1.H, Zop2.H
+        /// </summary>
+        public static unsafe Vector<short> AddSaturate(Vector<short> left, Vector<short> right) => AddSaturate(left, right);
+
+        /// <summary>
+        /// svint32_t svqadd[_s32](svint32_t op1, svint32_t op2)
+        ///   SQADD Zresult.S, Zop1.S, Zop2.S
+        /// </summary>
+        public static unsafe Vector<int> AddSaturate(Vector<int> left, Vector<int> right) => AddSaturate(left, right);
+
+        /// <summary>
+        /// svint64_t svqadd[_s64](svint64_t op1, svint64_t op2)
+        ///   SQADD Zresult.D, Zop1.D, Zop2.D
+        /// </summary>
+        public static unsafe Vector<long> AddSaturate(Vector<long> left, Vector<long> right) => AddSaturate(left, right);
+
+        /// <summary>
+        /// svint8_t svqadd[_s8](svint8_t op1, svint8_t op2)
+        ///   SQADD Zresult.B, Zop1.B, Zop2.B
+        /// </summary>
+        public static unsafe Vector<sbyte> AddSaturate(Vector<sbyte> left, Vector<sbyte> right) => AddSaturate(left, right);
+
+        /// <summary>
+        /// svuint16_t svqadd[_u16](svuint16_t op1, svuint16_t op2)
+        ///   UQADD Zresult.H, Zop1.H, Zop2.H
+        /// </summary>
+        public static unsafe Vector<ushort> AddSaturate(Vector<ushort> left, Vector<ushort> right) => AddSaturate(left, right);
+
+        /// <summary>
+        /// svuint32_t svqadd[_u32](svuint32_t op1, svuint32_t op2)
+        ///   UQADD Zresult.S, Zop1.S, Zop2.S
+        /// </summary>
+        public static unsafe Vector<uint> AddSaturate(Vector<uint> left, Vector<uint> right) => AddSaturate(left, right);
+
+        /// <summary>
+        /// svuint64_t svqadd[_u64](svuint64_t op1, svuint64_t op2)
+        ///   UQADD Zresult.D, Zop1.D, Zop2.D
+        /// </summary>
+        public static unsafe Vector<ulong> AddSaturate(Vector<ulong> left, Vector<ulong> right) => AddSaturate(left, right);
 
         ///  And : Bitwise AND
 
