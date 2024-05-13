@@ -9392,7 +9392,7 @@ bool Lowering::TryMakeIndirsAdjacent(GenTreeIndir* prevIndir, GenTreeIndir* indi
         // For some reason LSRA is not able to reuse a constant if both LIR
         // temps are live simultaneously, so skip moving in those cases and
         // expect LSRA to reuse the constant instead.
-        if (indir->Data()->OperIs(GT_CNS_INT, GT_CNS_DBL, GT_CNS_VEC) && GenTree::Compare(indir->Data(), prevIndir->Data()))
+        if (indir->Data()->OperIs(GT_CNS_INT, GT_CNS_DBL) && GenTree::Compare(indir->Data(), prevIndir->Data()))
         {
             JITDUMP("Not moving previous indir since we are expecting constant reuse for the data\n");
         }
