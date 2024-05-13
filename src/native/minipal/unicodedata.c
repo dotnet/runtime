@@ -2403,7 +2403,7 @@ static int UnicodeDataComp(const void *opposingCode, const void *elem)
     }
 }
 
-const CHAR16_T minipal_toupper_invariant(const CHAR16_T code)
+CHAR16_T minipal_toupper_invariant(CHAR16_T code)
 {
     UnicodeDataRec *record = (UnicodeDataRec *) bsearch(&code, UnicodeData, UNICODE_DATA_SIZE,
         sizeof(UnicodeDataRec), UnicodeDataComp);
@@ -2414,7 +2414,7 @@ const CHAR16_T minipal_toupper_invariant(const CHAR16_T code)
     return record->opposingCode;
 }
 
-const CHAR16_T minipal_tolower_invariant(const CHAR16_T code)
+CHAR16_T minipal_tolower_invariant(CHAR16_T code)
 {
     UnicodeDataRec *record = (UnicodeDataRec *) bsearch(&code, UnicodeData, UNICODE_DATA_SIZE,
         sizeof(UnicodeDataRec), UnicodeDataComp);
