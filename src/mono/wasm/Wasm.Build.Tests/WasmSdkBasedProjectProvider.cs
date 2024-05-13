@@ -112,9 +112,9 @@ public class WasmSdkBasedProjectProvider : ProjectProviderBase
         {
             nativeFilesToCheck.Add("dotnet.native.worker.js");
         }
-        else
+        if (assertOptions.GlobalizationMode == GlobalizationMode.Hybrid)
         {
-            nativeFilesToCheck.Add("dotnet.globalization.js"); // change to HG flag
+            nativeFilesToCheck.Add("dotnet.globalization.js");
         }
 
         foreach (string nativeFilename in nativeFilesToCheck)
