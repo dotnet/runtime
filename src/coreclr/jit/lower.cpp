@@ -3591,12 +3591,8 @@ void Lowering::MoveCFGCallArgs(GenTreeCall* call)
     for (CallArg& arg : call->gtArgs.EarlyArgs())
     {
         GenTree* node = arg.GetEarlyNode();
-        // Non-value nodes in early args are setup nodes for late args.
-        if (node->IsValue())
-        {
-            assert(node->OperIsPutArg() || node->OperIsFieldList());
-            MoveCFGCallArg(call, node);
-        }
+        assert(node->OperIsPutArg() || node->OperIsFieldList());
+        MoveCFGCallArg(call, node);
     }
 
     for (CallArg& arg : call->gtArgs.LateArgs())
