@@ -73,7 +73,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 }
                 if (section.Value is string value)
                 {
-                    return ParseInt(value, () => section.Path);
+                    return ParseInt(value, section.Path);
                 }
             }
             else if (type == typeof(string))
@@ -92,7 +92,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 }
                 if (section.Value is string value)
                 {
-                    return ParseFloat(value, () => section.Path);
+                    return ParseFloat(value, section.Path);
                 }
             }
             else if (type == typeof(double))
@@ -103,7 +103,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 }
                 if (section.Value is string value)
                 {
-                    return ParseDouble(value, () => section.Path);
+                    return ParseDouble(value, section.Path);
                 }
             }
 
@@ -146,7 +146,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             return binderOptions;
         }
 
-        public static int ParseInt(string value, Func<string?> getPath)
+        public static int ParseInt(string value, string? path)
         {
             try
             {
@@ -154,11 +154,11 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
             catch (Exception exception)
             {
-                throw new InvalidOperationException($"Failed to convert configuration value at '{getPath()}' to type '{typeof(int)}'.", exception);
+                throw new InvalidOperationException($"Failed to convert configuration value at '{path}' to type '{typeof(int)}'.", exception);
             }
         }
 
-        public static float ParseFloat(string value, Func<string?> getPath)
+        public static float ParseFloat(string value, string? path)
         {
             try
             {
@@ -166,11 +166,11 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
             catch (Exception exception)
             {
-                throw new InvalidOperationException($"Failed to convert configuration value at '{getPath()}' to type '{typeof(float)}'.", exception);
+                throw new InvalidOperationException($"Failed to convert configuration value at '{path}' to type '{typeof(float)}'.", exception);
             }
         }
 
-        public static double ParseDouble(string value, Func<string?> getPath)
+        public static double ParseDouble(string value, string? path)
         {
             try
             {
@@ -178,7 +178,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
             catch (Exception exception)
             {
-                throw new InvalidOperationException($"Failed to convert configuration value at '{getPath()}' to type '{typeof(double)}'.", exception);
+                throw new InvalidOperationException($"Failed to convert configuration value at '{path}' to type '{typeof(double)}'.", exception);
             }
         }
         #endregion Core binding extensions.
