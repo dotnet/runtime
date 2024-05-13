@@ -49,29 +49,22 @@ namespace System.Net.Security
 
             ReadOnlySpan<char> ipSpan = hostname.AsSpan();
 
-            int end = ipSpan.Length;
-
             if (ipSpan.Contains(':'))
             {
                 // The address is parsed as IPv6 if and only if it contains a colon. This is valid because
                 // we don't support/parse a port specification at the end of an IPv4 address.
                 Span<ushort> numbers = stackalloc ushort[IPAddressParserStatics.IPv6AddressShorts];
 
-                fixed (char* ipStringPtr = &MemoryMarshal.GetReference(ipSpan))
-                {
-                    return IPv6AddressHelper.IsValidStrict(ipStringPtr, 0, ref end);
-                }
+                return IPv6AddressHelper<char>.IsValidStrict(ipSpan);
             }
             else if (char.IsDigit(ipSpan[0]))
             {
                 long tmpAddr;
+                int end = ipSpan.Length;
 
-                fixed (char* ipStringPtr = &MemoryMarshal.GetReference(ipSpan))
-                {
-                    tmpAddr = IPv4AddressHelper.ParseNonCanonical(ipStringPtr, 0, ref end, notImplicitFile: true);
-                }
+                tmpAddr = IPv4AddressHelper<char>.ParseNonCanonical(ipSpan, ref end, notImplicitFile: true);
 
-                if (tmpAddr != IPv4AddressHelper.Invalid && end == ipSpan.Length)
+                if (tmpAddr != IPv4AddressHelper<char>.Invalid && end == ipSpan.Length)
                 {
                     return true;
                 }

@@ -34,7 +34,7 @@
     <Compile Include="System\Net\IPAddress.cs" />
     <Compile Include="System\Net\IPNetwork.cs" />
     <Compile Include="$(CommonPath)System\Net\IPAddressParser.Common.cs"
-             Link="System\Net\IPAddressParser.cs" />
+             Link="System\Net\IPAddressParser.Common.cs" />
     <Compile Include="System\Net\IPAddressParser.cs"
              Link="System\Net\IPAddressParser.cs" />
     <Compile Include="System\Net\IPEndPoint.cs" />

@@ -2520,7 +2520,7 @@ namespace System
                     break;
 
                 case Flags.IPv4HostType:
-                    host = IPv4AddressHelper<char>.ParseCanonicalName(str.AsSpan(idx, end - idx), ref loopback);
+                    host = IPv4AddressHelper<char>.ParseCanonicalName(str.AsSpan(idx), ref loopback);
                     break;
 
                 case Flags.UncHostType:
@@ -3851,6 +3851,8 @@ namespace System
                 }
             }
 
+            int bytesConsumed = 0;
+
             if (ch == '[' && syntax.InFact(UriSyntaxFlags.AllowIPv6Host) &&
                 IPv6AddressHelper<char>.IsValid(pString, start + 1, ref end))
             {
@@ -3862,8 +3864,9 @@ namespace System
                 }
             }
             else if (char.IsAsciiDigit(ch) && syntax.InFact(UriSyntaxFlags.AllowIPv4Host) &&
-                IPv4AddressHelper<char>.IsValid(new ReadOnlySpan<char>(pString + start, end - start), ref end, false, StaticNotAny(flags, Flags.ImplicitFile), syntax.InFact(UriSyntaxFlags.V1_UnknownUri)))
+                IPv4AddressHelper<char>.IsValid(new ReadOnlySpan<char>(pString + start, end - start), ref bytesConsumed, false, StaticNotAny(flags, Flags.ImplicitFile), syntax.InFact(UriSyntaxFlags.V1_UnknownUri)))
             {
+                end = start + bytesConsumed;
                 flags |= Flags.IPv4HostType;
 
                 if (hasUnicode)

@@ -245,7 +245,7 @@ namespace System.Net
                                 return false;
                             }
 
-                            if (!IPv4AddressHelper<TChar>.IsValid(new ReadOnlySpan<TChar>(name + lastSequence, i - lastSequence), ref ipv4AddressLength, true, false, false))
+                            if (!IPv4AddressHelper<TChar>.IsValid(new ReadOnlySpan<TChar>(name + lastSequence, end - lastSequence), ref ipv4AddressLength, true, false, false))
                             {
                                 return false;
                             }

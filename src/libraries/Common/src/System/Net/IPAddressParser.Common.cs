@@ -25,7 +25,7 @@ namespace System.Net
 
             return numericBase switch
             {
-                > 0 and < 10 => ch >= NumericRangeStartCharacter && ch - NumericRangeStartCharacter < TChar.CreateTruncating(numericBase),
+                > 0 and <= 10 => ch >= NumericRangeStartCharacter && ch - NumericRangeStartCharacter < TChar.CreateTruncating(numericBase),
                 Hex => HexConverter.IsHexChar(int.CreateTruncating(ch)),
                 _ => false
             };
