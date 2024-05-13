@@ -8,9 +8,9 @@ namespace Allocate
         public static readonly AllocationsRunEventSource Log = new AllocationsRunEventSource();
 
         [Event(600, Level = EventLevel.Informational)]
-        public void StartRun(int iterationsCount, int allocationCount)
+        public void StartRun(int iterationsCount, int allocationCount, string listOfTypes)
         {
-            WriteEvent(eventId: 600, iterationsCount, allocationCount);
+            WriteEvent(eventId: 600, iterationsCount, allocationCount, listOfTypes);
         }
 
         [Event(601, Level = EventLevel.Informational)]

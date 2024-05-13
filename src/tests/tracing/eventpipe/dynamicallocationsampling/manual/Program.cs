@@ -4,6 +4,7 @@ using Microsoft.Diagnostics.Tracing;
 using System.Diagnostics.Tracing;
 using Microsoft.Diagnostics.Tracing.Parsers.Clr;
 using System.Text;
+using System.Runtime.CompilerServices;
 
 namespace DynamicAllocationSampling
 {
@@ -44,6 +45,7 @@ namespace DynamicAllocationSampling
         private static List<Dictionary<string, TypeInfo>> _sampledTypesInRun = null;
         private static List<Dictionary<string, TypeInfo>> _tickTypesInRun = null;
         private static int _allocationsCount = 0;
+        private static List<string> _allocatedTypes = new List<string>();
 
         static void Main(string[] args)
         {
@@ -131,17 +133,29 @@ namespace DynamicAllocationSampling
 
         private static long UpscaleSize(long totalSize, int count, long mean)
         {
+            // This is the Poisson process based scaling
             var averageSize = (double)totalSize / (double)count;
             var scale = 1 / (1 - Math.Exp(-averageSize / mean));
             return (long)(totalSize * scale);
+
+            // TODO: use the other upscaling method
+            // = sq/p + u
+            //   s = # of samples for a type
+            //   q = 0.99999
+            //   p = 0.00001
+            //   u = sum of object remainders = Sum(object_size - sampledByteOffset) for all samples
+            // The problem I see is that the size of the object does not appear in the formula (q/p is a constant ~= 100.000)
         }
 
         private static void OnAllocationTick(GCAllocationTickTraceData payload)
         {
-            if (!_tickTypes.TryGetValue(payload.TypeName, out TypeInfo typeInfo))
+            // skip unexpected types
+            if (!_allocatedTypes.Contains(payload.TypeName)) return;
+
+            if (!_tickTypes.TryGetValue(payload.TypeName + payload.ObjectSize, out TypeInfo typeInfo))
             {
                 typeInfo = new TypeInfo() { TypeName = payload.TypeName, Count = 0, Size = payload.ObjectSize, TotalSize = 0 };
-                _tickTypes.Add(payload.TypeName, typeInfo);
+                _tickTypes.Add(payload.TypeName + payload.ObjectSize, typeInfo);
             }
             typeInfo.Count++;
             typeInfo.TotalSize += (int)payload.ObjectSize;
@@ -152,6 +166,9 @@ namespace DynamicAllocationSampling
             if (eventData.ID == (TraceEventID)303)
             {
                 AllocationSampledData payload = new AllocationSampledData(eventData, 8); // assume 64-bit pointers
+
+                // skip unexpected types
+                if (!_allocatedTypes.Contains(payload.TypeName)) return;
 
                 if (!_sampledTypes.TryGetValue(payload.TypeName+payload.ObjectSize, out TypeInfo typeInfo))
                 {
@@ -172,6 +189,12 @@ namespace DynamicAllocationSampling
                 _sampledTypesInRun = new List<Dictionary<string, TypeInfo>>(payload.Iterations);
                 _tickTypesInRun = new List<Dictionary<string, TypeInfo>>(payload.Iterations);
                 _allocationsCount = payload.Count;
+                string allocatedTypes = payload.AllocatedTypes;
+                if (allocatedTypes.Length > 0)
+                {
+                    _allocatedTypes = allocatedTypes.Split(';').ToList();
+                }
+
                 return;
             }
 
@@ -259,7 +282,7 @@ namespace DynamicAllocationSampling
             foreach (var type in _sampledTypes.Values.OrderBy(v => v.Size))
             {
                 string tag = "S";
-                if (_tickTypes.TryGetValue(type.TypeName, out TypeInfo tickType))
+                if (_tickTypes.TryGetValue(type.TypeName + type.Size, out TypeInfo tickType))
                 {
                     tag += "T";
                 }
@@ -300,7 +323,7 @@ namespace DynamicAllocationSampling
             {
                 string tag = "T";
 
-                if (!_sampledTypes.ContainsKey(type.TypeName))
+                if (!_sampledTypes.ContainsKey(type.TypeName + type.Size))
                 {
                     string typeName = type.TypeName;
                     if (typeName.Contains("[]"))
@@ -364,7 +387,9 @@ namespace DynamicAllocationSampling
 
     class AllocationsRunData
     {
+        const int EndOfStringCharLength = 2;
         private TraceEvent _payload;
+
         public AllocationsRunData(TraceEvent payload)
         {
             _payload = payload;
@@ -374,12 +399,16 @@ namespace DynamicAllocationSampling
 
         public int Iterations;
         public int Count;
+        public string AllocatedTypes;
 
         private void ComputeFields()
         {
+            int offsetBeforeString = 4 + 4;
+
             Span<byte> data = _payload.EventData().AsSpan();
             Iterations = BitConverter.ToInt32(data.Slice(0, 4));
             Count = BitConverter.ToInt32(data.Slice(4, 4));
+            AllocatedTypes = Encoding.Unicode.GetString(data.Slice(offsetBeforeString, _payload.EventDataLength - offsetBeforeString - EndOfStringCharLength));
         }
     }
 

@@ -1,30 +1,12 @@
-This folder contains code that compares the time spent to allocate 100000 arrays of 35 bytes.
-I wanted to manually have a rough idea of the order of magnitude without any event, with AllocationTick, with AllocationSampled.
-The warmup stage is needed to pay the commit cost to store the 100000 arrays.
+This folder contains simple code that compares the time spent to allocate arrays of bytes with event analysis as an example.
+The manual folder contains code to allocate and count objects in different runs. 
 
- ```
- "C:\github\chrisnas\runtime\artifacts\tests\coreclr\windows.x64.Debug\Tests\Core_Root\corerun.exe" -p "System.Runtime.Serialization.EnableUnsafeBinaryFormatterSerialization=true"  dynamicallocationsampling.dll
-  0.0s: 100000 allocated arrays
-  0.3s:  #GCs: 0
-  0.3s:  Warmup: 100000 instances allocated for 3500000 bytes in 522 ms
-  0.3s: -
-  0.3s: 100000 allocated arrays
-  0.3s:  #GCs: 1
-  0.3s:  No Sampling: 100000 instances allocated for 3500000 bytes in 8 ms
-  0.3s: -
-  0.3s: ==TEST STARTING==
-  5.3s: 100000 allocated arrays
-  5.3s:  #GCs: 2
-  5.3s:  AllocationTick: 100000 instances allocated for 3500000 bytes in 13 ms
-  7.2s: AllocationTick counts validation
-  7.2s: Nb events: 71
-  7.2s: ==TEST FINISHED: PASSED!==
-  7.2s: -
-  7.2s: ==TEST STARTING==
-  7.5s: 100000 allocated arrays
-  7.5s:  #GCs: 3
-  7.5s:  AllocationSampled: 100000 instances allocated for 3500000 bytes in 14 ms
-  7.5s: AllocationSampled counts validation
-  7.5s: Nb events: 54
-  7.5s: ==TEST FINISHED: PASSED!==
-```
+More interestingly, itthe result of 10 x runs of GCPerfSim to allocate 500 GB of mixed size objects on 4 threads with a 50MB live object size are also available. 
+The goal is to emphasize the impact of allocation performance and GC collection overhead:
+- GCPerfSimx10_Baseline.txt: .NET version before the PR
+- GCPerfSimx10_Baseline+AllocationTick.txt: same but with AllocationTick emitted
+- GCPerfSimx10_PullRequest.txt: PR without provider enabled
+- GCPerfSimx10_PullRequest+Events.txt: same but with AllocationSampled emitted
+In each scenario, the PR is faster than the baseline (expected for AllocationTick because verbose instead of information)
+
+

@@ -63,17 +63,13 @@ typedef struct _ee_alloc_context
     // it is expected that the caller of this function has already checked if sampling is on/off
     static inline bool IsSampled(CLRRandom* pRandomizer, size_t range)
     {
-        assert(ETW_TRACING_CATEGORY_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context,
-                                            TRACE_LEVEL_INFORMATION,
-                                            CLR_ALLOCATIONSAMPLING_KEYWORD));
-
         size_t threshold = ComputeGeometricRandom(pRandomizer);
         return (threshold < range);
     }
 private:
     static inline size_t ComputeGeometricRandom(CLRRandom* pRandomizer)
     {
-        // compute a thres based on an exponential distribution
+        // compute a random sample from the Geometric distribution
         double probability = pRandomizer->NextDouble();
         size_t threshold = (size_t)(-log(1 - probability) * SamplingDistributionMean);
         return threshold;

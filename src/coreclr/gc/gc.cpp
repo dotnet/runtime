@@ -7035,7 +7035,7 @@ void gc_heap::gc_thread_function ()
             }
 
             // wait till the threads that should have gone idle at least reached the place where they are about to wait on the idle event.
-            if ((gc_heap::dynamic_adaptation_mode == dynamic_adaptation_to_application_sizes) &&
+            if ((gc_heap::dynamic_adaptation_mode == dynamic_adaptation_to_application_sizes) && 
                 (n_heaps != dynamic_heap_count_data.last_n_heaps))
             {
                 int spin_count = 1024;

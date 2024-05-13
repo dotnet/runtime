@@ -213,14 +213,18 @@ inline Object* Alloc(ee_alloc_context* pEEAllocContext, size_t size, GC_ALLOC_FL
         }
         else
         {
-            // there are 4 scenarios to deal with here:
-            // 1. the allocation context is empty (alloc_ptr, alloc_limit == nullptr) at the beginning
-            // 2. the previous allocated object was too big for the allocation context
-            //    - alloc_sampling, alloc_ptr, alloc_limit have the same value (could be null - the first POH allocation for example)
-            // 3. the previous allocation context returned by the GC was not sampled (alloc_sampling == alloc_limit)
-            // 4. the previous allocation context returned by the GC was sampled (alloc_sampling < alloc_limit)
+            // Check to see if the allocated object overlaps a sampled byte
+            // in this AC. This happens when both:
+            // 1) The AC contains a sampled byte (alloc_sampling < alloc_limit)
+            // 2) The object is large enough to overlap it (size > samplingBudget)
+            //
+            // Note that the AC could have no remaining space for allocations (alloc_ptr =
+            // alloc_limit = alloc_sampling). When a thread hasn't done any SOH allocations
+            // yet it also starts in an empty state where alloc_ptr = alloc_limit =
+            // alloc_sampling = nullptr. The (1) check handles both of these situations
+            // properly as an empty AC can not have a sampled byte inside of it.
             isSampled =
-                (pEEAllocContext->alloc_sampling != pAllocContext->alloc_limit) &&
+                (pEEAllocContext->alloc_sampling < pAllocContext->alloc_limit) &&
                 (size > samplingBudget);
 
             // if the object overflows the AC, we need to sample the remaining bytes

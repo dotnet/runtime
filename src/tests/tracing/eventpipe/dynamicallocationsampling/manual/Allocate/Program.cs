@@ -30,22 +30,29 @@ namespace Allocate
             ParseCommandLine(args, out Scenario scenario, out int allocationsCount, out int iterations);
 
             IAllocations allocationsRun = null;
+            string allocatedTypes = string.Empty;
+
             switch(scenario)
             {
                 case Scenario.SmallAndBig:
                     allocationsRun = new AllocateSmallAndBig();
+                    allocatedTypes = "Object8;Object16;Object32;Object64;Object128";
                     break;
                 case Scenario.PerThread:
                     allocationsRun = new ThreadedAllocations();
+                    allocatedTypes = "Object24;Object48;Object72";
                     break;
                 case Scenario.ArrayOfDouble:
                     allocationsRun = new AllocateArraysOfDoubles();
+                    allocatedTypes = "System.Double[]";
                     break;
                 case Scenario.FinalizerAndArraysAndStrings:
                     allocationsRun = new AllocateDifferentTypes();
+                    allocatedTypes = "System.String;Allocate.WithFinalizer;System.Byte[]";
                     break;
                 case Scenario.RatioSizedArrays:
                     allocationsRun = new AllocateRatioSizedArrays();
+                    allocatedTypes = "System.Byte[]";
                     break;
                 default:
                     Console.WriteLine($"Invalid scenario: '{scenario}'");
@@ -60,7 +67,7 @@ namespace Allocate
                 Stopwatch clock = new Stopwatch();
                 clock.Start();
 
-                AllocationsRunEventSource.Log.StartRun(iterations, allocationsCount);
+                AllocationsRunEventSource.Log.StartRun(iterations, allocationsCount, allocatedTypes);
                 for (int i = 0; i < iterations; i++)
                 {
                     AllocationsRunEventSource.Log.StartIteration(i);
