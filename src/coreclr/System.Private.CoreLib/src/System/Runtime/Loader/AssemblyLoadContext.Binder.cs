@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -79,7 +80,7 @@ namespace System.Runtime.Loader
                 addAllLoadedModules = true;
             }
 
-            ref SimpleNameToExpectedMVIDAndRequiringAssembly entry = ref CollectionsMarshal.GetValueRefOrAddDefault(_assemblySimpleNameMvidCheckHash, simpleName, out bool found);
+            ref SimpleNameToExpectedMVIDAndRequiringAssembly? entry = ref CollectionsMarshal.GetValueRefOrAddDefault(_assemblySimpleNameMvidCheckHash, simpleName, out bool found);
             if (!found)
             {
                 entry = new SimpleNameToExpectedMVIDAndRequiringAssembly
@@ -91,6 +92,7 @@ namespace System.Runtime.Loader
             }
             else
             {
+                Debug.Assert(entry != null);
                 // Elem already exists. Determine if the existing elem is another one with the same mvid, in which case just record that a dependency is in play.
                 // If the existing elem has a different mvid, fail.
                 if (entry.Mvid == mvid)
@@ -130,7 +132,7 @@ namespace System.Runtime.Loader
             mdImport.GetScopeProps(out Guid mvid);
             string simpleName = new MdUtf8String(Assembly_GetSimpleName(loadedAssembly)).ToString();
 
-            ref SimpleNameToExpectedMVIDAndRequiringAssembly entry = ref CollectionsMarshal.GetValueRefOrAddDefault(_assemblySimpleNameMvidCheckHash, simpleName, out bool found);
+            ref SimpleNameToExpectedMVIDAndRequiringAssembly? entry = ref CollectionsMarshal.GetValueRefOrAddDefault(_assemblySimpleNameMvidCheckHash, simpleName, out bool found);
             if (!found)
             {
                 entry = new SimpleNameToExpectedMVIDAndRequiringAssembly
@@ -142,6 +144,7 @@ namespace System.Runtime.Loader
             }
             else
             {
+                Debug.Assert(entry != null);
                 // Elem already exists. Determine if the existing elem is another one with the same mvid, in which case do nothing. Everything is fine here.
                 // If the existing elem has a different mvid, but isn't a dependency on exact mvid elem, then set the mvid to all 0.
                 // If the existing elem has a different mvid, and is a dependency on exact mvid elem, then we've hit a fatal error.
@@ -162,7 +165,7 @@ namespace System.Runtime.Loader
         }
         //#endif // FEATURE_READYTORUN
 
-        private struct SimpleNameToExpectedMVIDAndRequiringAssembly
+        private sealed class SimpleNameToExpectedMVIDAndRequiringAssembly
         {
             // When an assembly is loaded, this Mvid value will be set to the mvid of the assembly. If there are multiple assemblies
             // with different mvid's loaded with the same simple name, then the Mvid value will be set to all zeroes.
