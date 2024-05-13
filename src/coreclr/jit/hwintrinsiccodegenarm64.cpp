@@ -20,9 +20,10 @@
 //       intrinsic node. The register will be later used to store computed branch target address.
 //
 // Arguments:
-//    codeGen -- an instance of CodeGen class.
-//    immOp   -- an immediate operand of the intrinsic.
-//    intrin  -- a hardware intrinsic tree node.
+//    codeGen   -- an instance of CodeGen class.
+//    immOp     -- an immediate operand of the intrinsic.
+//    intrin    -- a hardware intrinsic tree node.
+//    immNumber -- which immediate operand to use (most intrinsics only have one).
 //
 // Note: This class is designed to be used in the following way
 //       HWIntrinsicImmOpHelper helper(this, immOp, intrin);

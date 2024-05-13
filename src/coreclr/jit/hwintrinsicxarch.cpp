@@ -4383,7 +4383,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 //    intrinsic       -- NamedIntrinsic associated with the HWIntrinsic to lookup
 //    sig             -- signature of the intrinsic call.
 //    immOp1Ptr [OUT] -- The first immediate Op
-//    immOp2Ptr [OUT] -- The second immediate Op
+//    immOp2Ptr [OUT] -- The second immediate Op, if any. Otherwise unchanged.
 //
 void Compiler::getHWIntrinsicImmOps(NamedIntrinsic    intrinsic,
                                     CORINFO_SIG_INFO* sig,

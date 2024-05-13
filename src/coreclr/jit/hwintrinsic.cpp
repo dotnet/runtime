@@ -1032,6 +1032,22 @@ struct HWIntrinsicSignatureReader final
     }
 };
 
+//------------------------------------------------------------------------
+// CheckHWIntrinsicImmRange: Check if an immediate is within the valid range
+//
+// Arguments:
+//    intrinsicId       -- HW intrinsic id
+//    simdBaseJitType   -- The base JIT type of SIMD type of the intrinsic
+//    immOp             -- Immediate to check is within range
+//    mustExpand        -- true if the intrinsic must expand to a GenTree*; otherwise, false
+//    immLowerBound     -- the lower valid bound of the immediate
+//    immLowerBound     -- the upper valid bound of the immediate
+//    hasFullRangeImm   -- the range has all valid values. The immediate is always within range.
+//    useFallback [OUT] -- Only set if false is returned. A fallback can be used instead.
+//
+// Return Value:
+//    returns true if immOp is within range. Otherwise false.
+//
 bool Compiler::CheckHWIntrinsicImmRange(NamedIntrinsic intrinsic,
                                         CorInfoType    simdBaseJitType,
                                         GenTree*       immOp,
@@ -1097,7 +1113,7 @@ bool Compiler::CheckHWIntrinsicImmRange(NamedIntrinsic intrinsic,
         else if (!mustExpand)
         {
             // When the imm-argument is not a constant and we are not being forced to expand, we need to
-            // return nullptr so a GT_CALL to the intrinsic method is emitted instead. The
+            // return false so a GT_CALL to the intrinsic method is emitted instead. The
             // intrinsic method is recursive and will be forced to expand, at which point
             // we emit some less efficient fallback code.
             return false;

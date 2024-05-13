@@ -217,7 +217,7 @@ bool HWIntrinsicInfo::isScalarIsa(CORINFO_InstructionSet isa)
 //    intrinsic       -- NamedIntrinsic associated with the HWIntrinsic to lookup
 //    sig             -- signature of the intrinsic call.
 //    immOp1Ptr [OUT] -- The first immediate Op
-//    immOp2Ptr [OUT] -- The second immediate Op
+//    immOp2Ptr [OUT] -- The second immediate Op, if any. Otherwise unchanged.
 //
 void Compiler::getHWIntrinsicImmOps(NamedIntrinsic    intrinsic,
                                     CORINFO_SIG_INFO* sig,
@@ -352,6 +352,7 @@ void Compiler::getHWIntrinsicImmTypes(NamedIntrinsic       intrinsic,
 //    intrinsic -- NamedIntrinsic associated with the HWIntrinsic to lookup
 //    simdType  -- vector size
 //    baseType  -- base type of the Vector64/128<T>
+//    immNumber -- which immediate operand to check for (most intrinsics only have one)
 //    pImmLowerBound [OUT] - The lower incl. bound for a value of the intrinsic immediate operand
 //    pImmUpperBound [OUT] - The upper incl. bound for a value of the intrinsic immediate operand
 //
