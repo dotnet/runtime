@@ -313,7 +313,8 @@ namespace System.Text.Json.Serialization.Metadata
                     ParameterType = reflectionInfo.ParameterType,
                     Position = reflectionInfo.Position,
                     HasDefaultValue = reflectionInfo.HasDefaultValue,
-                    DefaultValue = reflectionInfo.GetDefaultValue()
+                    DefaultValue = reflectionInfo.GetDefaultValue(),
+                    DisallowNullReads = DetermineParameterNullabilityAllowance(reflectionInfo)
                 };
 
                 jsonParameters[i] = jsonInfo;
@@ -354,6 +355,7 @@ namespace System.Text.Json.Serialization.Metadata
             DeterminePropertyPolicies(jsonPropertyInfo, memberInfo);
             DeterminePropertyName(jsonPropertyInfo, memberInfo);
             DeterminePropertyIsRequired(jsonPropertyInfo, memberInfo, shouldCheckForRequiredKeyword);
+            DeterminePropertyNullabilityAllowance(jsonPropertyInfo, memberInfo);
 
             if (ignoreCondition != JsonIgnoreCondition.Always)
             {
@@ -466,6 +468,41 @@ namespace System.Text.Json.Serialization.Metadata
             defaultCtor ??= type.GetConstructor(BindingFlags.Public | BindingFlags.Instance, binder: null, Type.EmptyTypes, modifiers: null);
 
             return MemberAccessor.CreateParameterlessConstructor(type, defaultCtor);
+        }
+
+        [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
+        [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
+        private static void DeterminePropertyNullabilityAllowance(JsonPropertyInfo propertyInfo, MemberInfo memberInfo)
+        {
+            if (propertyInfo.PropertyType.IsValueType)
+            {
+                return;
+            }
+
+            NullabilityInfo nullability;
+            if (propertyInfo.MemberType is MemberTypes.Property)
+            {
+                nullability = new NullabilityInfoContext().Create((PropertyInfo)memberInfo);
+            }
+            else
+            {
+                Debug.Assert(propertyInfo.MemberType is MemberTypes.Field);
+                nullability = new NullabilityInfoContext().Create((FieldInfo)memberInfo);
+            }
+
+            propertyInfo.DisallowNullReads = nullability.WriteState is NullabilityState.NotNull;
+            propertyInfo.DisallowNullWrites = nullability.ReadState is NullabilityState.NotNull;
+        }
+
+        private static bool DetermineParameterNullabilityAllowance(ParameterInfo parameterInfo)
+        {
+            if (parameterInfo.ParameterType.IsValueType)
+            {
+                return false;
+            }
+
+            NullabilityInfo nullability = new NullabilityInfoContext().Create(parameterInfo);
+            return nullability.WriteState is NullabilityState.NotNull;
         }
     }
 }

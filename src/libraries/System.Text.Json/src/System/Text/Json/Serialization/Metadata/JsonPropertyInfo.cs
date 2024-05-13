@@ -234,6 +234,16 @@ namespace System.Text.Json.Serialization.Metadata
         internal bool IsSourceGenerated { get; set; }
 
         /// <summary>
+        /// Gets or sets a value indicating whether the <see cref="Set"/> allows <see langword="null"/> values on deserialization.
+        /// </summary>
+        public bool DisallowNullReads { get; set; }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether the <see cref="Get"/> allows <see langword="null"/> values on serialization.
+        /// </summary>
+        public bool DisallowNullWrites { get; set; }
+
+        /// <summary>
         /// Specifies whether the current property is a special extension data property.
         /// </summary>
         /// <exception cref="InvalidOperationException">

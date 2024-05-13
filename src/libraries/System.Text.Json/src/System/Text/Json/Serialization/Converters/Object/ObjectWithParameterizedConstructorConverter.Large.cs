@@ -22,6 +22,11 @@ namespace System.Text.Json.Serialization.Converters
 
             if (success && !(arg == null && jsonParameterInfo.IgnoreNullTokensOnRead))
             {
+                if (arg == null && jsonParameterInfo.DisallowNullReads && !jsonParameterInfo.Options.IgnoreNullableAnnotations)
+                {
+                    ThrowHelper.ThrowJsonException_NullabilityDoesNotAllowNull(jsonParameterInfo.MatchingProperty.Name, state.Current.JsonTypeInfo.Type);
+                }
+
                 ((object[])state.Current.CtorArgumentState!.Arguments)[jsonParameterInfo.Position] = arg!;
 
                 // if this is required property IgnoreNullTokensOnRead will always be false because we don't allow for both to be true

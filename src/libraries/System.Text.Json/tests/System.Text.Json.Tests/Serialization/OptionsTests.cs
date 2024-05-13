@@ -66,6 +66,7 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(JsonCommentHandling.Disallow, options.ReadCommentHandling);
             Assert.Equal(JsonUnmappedMemberHandling.Skip, options.UnmappedMemberHandling);
             Assert.False(options.WriteIndented);
+            Assert.False(options.IgnoreNullableAnnotations);
 
             TestIListNonThrowingOperationsWhenImmutable(options.Converters, tc);
             TestIListNonThrowingOperationsWhenImmutable(options.TypeInfoResolverChain, options.TypeInfoResolver);
@@ -85,6 +86,7 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Throws<InvalidOperationException>(() => options.UnmappedMemberHandling = options.UnmappedMemberHandling);
             Assert.Throws<InvalidOperationException>(() => options.WriteIndented = options.WriteIndented);
             Assert.Throws<InvalidOperationException>(() => options.TypeInfoResolver = options.TypeInfoResolver);
+            Assert.Throws<InvalidOperationException>(() => options.IgnoreNullableAnnotations = options.IgnoreNullableAnnotations);
 
             TestIListThrowingOperationsWhenImmutable(options.Converters, tc);
             TestIListThrowingOperationsWhenImmutable(options.TypeInfoResolverChain, options.TypeInfoResolver);
@@ -913,6 +915,31 @@ namespace System.Text.Json.Serialization.Tests
             var value = new MyClass();
             string json = JsonSerializer.Serialize(value, options);
             JsonTestHelper.AssertJsonEqual("""{"Value":null,"Thing":null}""", json);
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public static void Options_IgnoreNullableAnnotationsDefault_Net8CompatibilitySwitch()
+        {
+            var options = new RemoteInvokeOptions
+            {
+                RuntimeConfigurationOptions =
+                {
+                    ["System.Text.Json.Serialization.IgnoreNullableAnnotationsDefault"] = true,
+                }
+            };
+
+            RemoteExecutor.Invoke(static () =>
+            {
+                var jsonOptions = new JsonSerializerOptions();
+                Assert.True(jsonOptions.IgnoreNullableAnnotations);
+
+                var value = new NullableAnnotationsTests.NotNullablePropertyClass();
+                Assert.Null(value.Property);
+                string json = JsonSerializer.Serialize(value, jsonOptions);
+
+                value = JsonSerializer.Deserialize<NullableAnnotationsTests.NotNullablePropertyClass>(json, jsonOptions);
+                Assert.Null(value.Property);
+            }, options).Dispose();
         }
 
         private static void GenericObjectOrJsonElementConverterTestHelper<T>(string converterName, object objectValue, string stringValue)

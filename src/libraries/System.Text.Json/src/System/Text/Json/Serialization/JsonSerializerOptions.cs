@@ -67,7 +67,8 @@ namespace System.Text.Json
 
         private static JsonSerializerOptions? s_webOptions;
 
-        // For any new option added, adding it to the options copied in the copy constructor below must be considered.
+        // For any new option added, considered adding it to the options copied in the copy constructor below
+        // and consider updating the EqualtyComparer used for comparing CachingContexts.
         private IJsonTypeInfoResolver? _typeInfoResolver;
         private JsonNamingPolicy? _dictionaryKeyPolicy;
         private JsonNamingPolicy? _jsonPropertyNamingPolicy;
@@ -85,6 +86,7 @@ namespace System.Text.Json
         private int _maxDepth;
         private bool _allowOutOfOrderMetadataProperties;
         private bool _allowTrailingCommas;
+        private bool _ignoreNullableAnnotations = AppContextSwitchHelper.IgnoreNullableAnnotationsDefault;
         private bool _ignoreNullValues;
         private bool _ignoreReadOnlyProperties;
         private bool _ignoreReadonlyFields;
@@ -138,6 +140,7 @@ namespace System.Text.Json
             _maxDepth = options._maxDepth;
             _allowOutOfOrderMetadataProperties = options._allowOutOfOrderMetadataProperties;
             _allowTrailingCommas = options._allowTrailingCommas;
+            _ignoreNullableAnnotations = options._ignoreNullableAnnotations;
             _ignoreNullValues = options._ignoreNullValues;
             _ignoreReadOnlyProperties = options._ignoreReadOnlyProperties;
             _ignoreReadonlyFields = options._ignoreReadonlyFields;
@@ -776,6 +779,22 @@ namespace System.Text.Json
                 JsonWriterHelper.ValidateNewLine(value);
                 VerifyMutable();
                 _newLine = value;
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets a value that indicates whether nullability annotations of nullable reference types are ignored during serialization and deserialization.
+        /// </summary>
+        /// <exception cref="InvalidOperationException">
+        /// Thrown if this property is set after serialization or deserialization has occurred.
+        /// </exception>
+        public bool IgnoreNullableAnnotations
+        {
+            get => _ignoreNullableAnnotations;
+            set
+            {
+                VerifyMutable();
+                _ignoreNullableAnnotations = value;
             }
         }
 

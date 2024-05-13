@@ -737,4 +737,10 @@
   <data name="InvalidNewLine" xml:space="preserve">
     <value>New line can be only "\n" or "\r\n".</value>
   </data>
+  <data name="NullableAnnotationsDontAllowNull" xml:space="preserve">
+    <value>The nullable annotations of the property or field '{0}' on type '{1}' don't allow null values.</value>
+  </data>
+  <data name="NullabilityInfoContext_NotSupported" xml:space="preserve">
+    <value>NullabilityInfoContext is not supported in the current application because 'System.Reflection.NullabilityInfoContext.IsSupported' is set to false. Set the MSBuild Property 'NullabilityInfoContextSupport' to true in order to enable it.</value>
+  </data>
 </root>

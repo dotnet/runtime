@@ -64,6 +64,12 @@ namespace System.Text.Json
         }
 
         [DoesNotReturn]
+        public static void ThrowJsonException_NullabilityDoesNotAllowNull(string propertyName, Type propertyType)
+        {
+            throw new JsonException(SR.Format(SR.NullableAnnotationsDontAllowNull, propertyName, propertyType)) { AppendPathInformation = true };
+        }
+
+        [DoesNotReturn]
         public static void ThrowInvalidOperationException_ObjectCreationHandlingPopulateNotSupportedByConverter(JsonPropertyInfo propertyInfo)
         {
             throw new InvalidOperationException(SR.Format(SR.ObjectCreationHandlingPopulateNotSupportedByConverter, propertyInfo.Name, propertyInfo.DeclaringType));

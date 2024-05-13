@@ -98,6 +98,16 @@ namespace System.Text.Json.SourceGeneration
         public required bool CanUseSetter { get; init; }
 
         /// <summary>
+        /// Whether the property disallows serializing null values based on its nullability annotations.
+        /// </summary>
+        public required bool DisallowNullWrites { get; init; }
+
+        /// <summary>
+        /// Whether the property disallows deserializing null values based on its nullability annotations.
+        /// </summary>
+        public required bool DisallowNullReads{ get; init; }
+
+        /// <summary>
         /// The <see cref="JsonIgnoreCondition"/> for the property.
         /// </summary>
         public required JsonIgnoreCondition? DefaultIgnoreCondition { get; init; }

@@ -1165,6 +1165,8 @@ namespace System.Text.Json.Serialization.Metadata
                             matchingEntry.DuplicateName);
                     }
 
+                    //if (matchingEntry.JsonPropertyInfo.DisallowNullReads != parameterInfo)
+
                     Debug.Assert(matchingEntry.JsonPropertyInfo != null);
                     JsonPropertyInfo jsonPropertyInfo = matchingEntry.JsonPropertyInfo;
                     JsonParameterInfo jsonParameterInfo = jsonPropertyInfo.CreateJsonParameterInfo(parameterInfo);

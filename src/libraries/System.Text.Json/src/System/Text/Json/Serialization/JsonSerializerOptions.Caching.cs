@@ -507,6 +507,7 @@ namespace System.Text.Json
                     left.NewLine == right.NewLine && // Read through property due to lazy initialization of the backing field
                     left._allowOutOfOrderMetadataProperties == right._allowOutOfOrderMetadataProperties &&
                     left._allowTrailingCommas == right._allowTrailingCommas &&
+                    left._ignoreNullableAnnotations == right._ignoreNullableAnnotations &&
                     left._ignoreNullValues == right._ignoreNullValues &&
                     left._ignoreReadOnlyProperties == right._ignoreReadOnlyProperties &&
                     left._ignoreReadonlyFields == right._ignoreReadonlyFields &&
@@ -565,6 +566,7 @@ namespace System.Text.Json
                 AddHashCode(ref hc, options.NewLine); // Read through property due to lazy initialization of the backing field
                 AddHashCode(ref hc, options._allowOutOfOrderMetadataProperties);
                 AddHashCode(ref hc, options._allowTrailingCommas);
+                AddHashCode(ref hc, options._ignoreNullableAnnotations);
                 AddHashCode(ref hc, options._ignoreNullValues);
                 AddHashCode(ref hc, options._ignoreReadOnlyProperties);
                 AddHashCode(ref hc, options._ignoreReadonlyFields);

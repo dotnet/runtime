@@ -66,9 +66,20 @@ namespace System.Text.Json.Serialization.Converters
 
             bool success = info.EffectiveConverter.TryRead(ref reader, info.ParameterType, info.Options, ref state, out TArg? value, out _);
 
-            arg = value is null && jsonParameterInfo.IgnoreNullTokensOnRead
-                ? info.DefaultValue // Use default value specified on parameter, if any.
-                : value;
+            if (value is null)
+            {
+                if (info.IgnoreNullTokensOnRead)
+                {
+                    // Use default value specified on parameter, if any.
+                    value = info.DefaultValue;
+                }
+                else if (info.DisallowNullReads && !info.Options.IgnoreNullableAnnotations)
+                {
+                    ThrowHelper.ThrowJsonException_NullabilityDoesNotAllowNull(info.MatchingProperty.Name, state.Current.JsonTypeInfo.Type);
+                }
+            }
+
+            arg = value;
 
             if (success)
             {

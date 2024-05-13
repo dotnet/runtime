@@ -268,6 +268,7 @@ namespace System.Text.Json.SourceGeneration
                 int? defaultBufferSize = null;
                 JsonIgnoreCondition? defaultIgnoreCondition = null;
                 JsonKnownNamingPolicy? dictionaryKeyPolicy = null;
+                bool? ignoreNullableAnnotations = null;
                 bool? ignoreReadOnlyFields = null;
                 bool? ignoreReadOnlyProperties = null;
                 bool? includeFields = null;
@@ -327,6 +328,10 @@ namespace System.Text.Json.SourceGeneration
 
                         case nameof(JsonSourceGenerationOptionsAttribute.DictionaryKeyPolicy):
                             dictionaryKeyPolicy = (JsonKnownNamingPolicy)namedArg.Value.Value!;
+                            break;
+
+                        case nameof(JsonSourceGenerationOptionsAttribute.IgnoreNullableAnnotations):
+                            ignoreNullableAnnotations = (bool)namedArg.Value.Value!;
                             break;
 
                         case nameof(JsonSourceGenerationOptionsAttribute.IgnoreReadOnlyFields):
@@ -412,6 +417,7 @@ namespace System.Text.Json.SourceGeneration
                     Converters = converters?.ToImmutableEquatableArray(),
                     DefaultIgnoreCondition = defaultIgnoreCondition,
                     DictionaryKeyPolicy = dictionaryKeyPolicy,
+                    IgnoreNullableAnnotations = ignoreNullableAnnotations,
                     IgnoreReadOnlyFields = ignoreReadOnlyFields,
                     IgnoreReadOnlyProperties = ignoreReadOnlyProperties,
                     IncludeFields = includeFields,
@@ -1120,7 +1126,9 @@ namespace System.Text.Json.SourceGeneration
                     out bool canUseGetter,
                     out bool canUseSetter,
                     out bool hasJsonIncludeButIsInaccessible,
-                    out bool setterIsInitOnly);
+                    out bool setterIsInitOnly,
+                    out bool disallowNullWrites,
+                    out bool disallowNullReads);
 
                 if (hasJsonIncludeButIsInaccessible)
                 {
@@ -1184,6 +1192,8 @@ namespace System.Text.Json.SourceGeneration
                     PropertyType = propertyTypeRef,
                     DeclaringType = declaringType,
                     ConverterType = converterType,
+                    DisallowNullWrites = disallowNullWrites,
+                    DisallowNullReads = disallowNullReads,
                 };
             }
 
@@ -1301,7 +1311,9 @@ namespace System.Text.Json.SourceGeneration
                 out bool canUseGetter,
                 out bool canUseSetter,
                 out bool hasJsonIncludeButIsInaccessible,
-                out bool isSetterInitOnly)
+                out bool isSetterInitOnly,
+                out bool disallowNullWrites,
+                out bool disallowNullReads)
             {
                 isAccessible = false;
                 isReadOnly = false;
@@ -1310,6 +1322,8 @@ namespace System.Text.Json.SourceGeneration
                 canUseSetter = false;
                 hasJsonIncludeButIsInaccessible = false;
                 isSetterInitOnly = false;
+                disallowNullWrites = false;
+                disallowNullReads = false;
 
                 switch (memberInfo)
                 {
@@ -1358,6 +1372,12 @@ namespace System.Text.Json.SourceGeneration
                         {
                             isReadOnly = true;
                         }
+
+                        if (!propertyInfo.Type.IsValueType)
+                        {
+                            disallowNullWrites = propertyInfo.GetMethod != null && IsReturnValueNonNullable(propertyInfo, propertyInfo.NullableAnnotation);
+                            disallowNullReads = propertyInfo.SetMethod != null && IsParameterNonNullable(propertyInfo, propertyInfo.NullableAnnotation);
+                        }
                         break;
                     case IFieldSymbol fieldInfo:
                         isReadOnly = fieldInfo.IsReadOnly;
@@ -1379,6 +1399,12 @@ namespace System.Text.Json.SourceGeneration
                         else
                         {
                             hasJsonIncludeButIsInaccessible = hasJsonInclude;
+                        }
+
+                        if (!fieldInfo.Type.IsValueType)
+                        {
+                            disallowNullWrites = IsReturnValueNonNullable(fieldInfo, fieldInfo.NullableAnnotation);
+                            disallowNullReads = IsParameterNonNullable(fieldInfo, fieldInfo.NullableAnnotation);
                         }
                         break;
                     default:
@@ -1430,6 +1456,7 @@ namespace System.Text.Json.SourceGeneration
                             HasDefaultValue = parameterInfo.HasExplicitDefaultValue,
                             DefaultValue = parameterInfo.HasExplicitDefaultValue ? parameterInfo.ExplicitDefaultValue : null,
                             ParameterIndex = i,
+                            DisallowNullReads = IsParameterNonNullable(parameterInfo, parameterInfo.NullableAnnotation),
                         };
                     }
                 }
@@ -1591,6 +1618,30 @@ namespace System.Text.Json.SourceGeneration
                 }
 
                 return sb.ToString();
+            }
+
+            // TODO: is this the right place to place this? Look into the roslynextensions helper.
+            private static bool IsReturnValueNonNullable(ISymbol symbol, NullableAnnotation returnTypeAnnotation)
+            {
+                return
+                    !HasCodeAnalysisAttribute(symbol, "MaybeNullAttribute") &&
+                    (returnTypeAnnotation is NullableAnnotation.NotAnnotated ||
+                     HasCodeAnalysisAttribute(symbol, "NotNullAttribute"));
+            }
+
+            private static bool IsParameterNonNullable(ISymbol symbol, NullableAnnotation parameterAnnotation)
+            {
+                return
+                    !HasCodeAnalysisAttribute(symbol, "AllowNullAttribute") &&
+                    (parameterAnnotation is NullableAnnotation.NotAnnotated ||
+                     HasCodeAnalysisAttribute(symbol, "DisallowNullAttribute"));
+            }
+
+            private static bool HasCodeAnalysisAttribute(ISymbol symbol, string attributeName)
+            {
+                return symbol.GetAttributes().Any(attr =>
+                    attr.AttributeClass?.Name == attributeName &&
+                    attr.AttributeClass.ContainingNamespace.ToDisplayString() == "System.Diagnostics.CodeAnalysis");
             }
 
             private JsonPrimitiveTypeKind? GetPrimitiveTypeKind(ITypeSymbol type)

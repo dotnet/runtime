@@ -672,6 +672,15 @@ namespace System.Text.Json.SourceGeneration
                         writer.WriteLine($"properties[{i}].Order = {property.Order};");
                     }
 
+                    if (property.DisallowNullWrites)
+                    {
+                        writer.WriteLine($"properties[{i}].DisallowNullWrites = true;");
+                    }
+                    if (property.DisallowNullReads)
+                    {
+                        writer.WriteLine($"properties[{i}].DisallowNullReads = true;");
+                    }
+
                     writer.WriteLine();
                 }
 
@@ -705,7 +714,8 @@ namespace System.Text.Json.SourceGeneration
                             ParameterType = typeof({{spec.ParameterType.FullyQualifiedName}}),
                             Position = {{spec.ParameterIndex}},
                             HasDefaultValue = {{FormatBoolLiteral(spec.HasDefaultValue)}},
-                            DefaultValue = {{CSharpSyntaxUtilities.FormatLiteral(spec.DefaultValue, spec.ParameterType)}}
+                            DefaultValue = {{CSharpSyntaxUtilities.FormatLiteral(spec.DefaultValue, spec.ParameterType)}},
+                            DisallowNullReads = {{FormatBoolLiteral(spec.DisallowNullReads)}},
                         };
 
                         """);
@@ -1134,6 +1144,9 @@ namespace System.Text.Json.SourceGeneration
 
                 if (optionsSpec.DictionaryKeyPolicy is JsonKnownNamingPolicy dictionaryKeyPolicy)
                     writer.WriteLine($"DictionaryKeyPolicy = {FormatNamingPolicy(dictionaryKeyPolicy)},");
+
+                if (optionsSpec.IgnoreNullableAnnotations is bool ignoreNullableAnnotations)
+                    writer.WriteLine($"IgnoreNullableAnnotations = {FormatBoolLiteral(ignoreNullableAnnotations)},");
 
                 if (optionsSpec.IgnoreReadOnlyFields is bool ignoreReadOnlyFields)
                     writer.WriteLine($"IgnoreReadOnlyFields = {FormatBoolLiteral(ignoreReadOnlyFields)},");

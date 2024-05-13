@@ -401,6 +401,7 @@ namespace System.Text.Json
         public System.Text.Json.JsonNamingPolicy? PropertyNamingPolicy { get { throw null; } set { } }
         public System.Text.Json.JsonCommentHandling ReadCommentHandling { get { throw null; } set { } }
         public System.Text.Json.Serialization.ReferenceHandler? ReferenceHandler { get { throw null; } set { } }
+        public bool IgnoreNullableAnnotations { get { throw null; } set { } }
         public System.Text.Json.Serialization.Metadata.IJsonTypeInfoResolver? TypeInfoResolver { get { throw null; } set { } }
         public System.Collections.Generic.IList<System.Text.Json.Serialization.Metadata.IJsonTypeInfoResolver> TypeInfoResolverChain { get { throw null; } }
         public System.Text.Json.Serialization.JsonUnknownTypeHandling UnknownTypeHandling { get { throw null; } set { } }
@@ -1097,6 +1098,7 @@ namespace System.Text.Json.Serialization
         public bool WriteIndented { get { throw null; } set { } }
         public char IndentCharacter { get { throw null; } set { } }
         public int IndentSize { get { throw null; } set { } }
+        public bool IgnoreNullableAnnotations { get { throw null; } set { } }
     }
     [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("JsonStringEnumConverter cannot be statically analyzed and requires runtime code generation. Applications should use the generic JsonStringEnumConverter<TEnum> instead.")]
     public partial class JsonStringEnumConverter : System.Text.Json.Serialization.JsonConverterFactory
@@ -1277,6 +1279,7 @@ namespace System.Text.Json.Serialization.Metadata
         public string Name { get { throw null; } init { } }
         public System.Type ParameterType { get { throw null; } init { } }
         public int Position { get { throw null; } init { } }
+        public bool DisallowNullReads { get { throw null; } init { } }
     }
     public partial class JsonPolymorphismOptions
     {
@@ -1303,6 +1306,8 @@ namespace System.Text.Json.Serialization.Metadata
         public System.Type PropertyType { get { throw null; } }
         public System.Action<object, object?>? Set { get { throw null; } set { } }
         public System.Func<object, object?, bool>? ShouldSerialize { get { throw null; } set { } }
+        public bool DisallowNullWrites { get { throw null; } set { } }
+        public bool DisallowNullReads { get { throw null; } set { } }
     }
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     public sealed partial class JsonPropertyInfoValues<T>

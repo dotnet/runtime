@@ -35,6 +35,8 @@ namespace System.Text.Json.Serialization.Metadata
 
         public JsonPropertyInfo MatchingProperty { get; }
 
+        public bool DisallowNullReads { get; }
+
         public JsonParameterInfo(JsonParameterInfoValues parameterInfoValues, JsonPropertyInfo matchingProperty)
         {
             Debug.Assert(matchingProperty.IsConfigured);
@@ -43,11 +45,13 @@ namespace System.Text.Json.Serialization.Metadata
             ShouldDeserialize = !matchingProperty.IsIgnored;
             Options = matchingProperty.Options;
             Position = parameterInfoValues.Position;
+            DisallowNullReads = parameterInfoValues.DisallowNullReads;
 
             ParameterType = matchingProperty.PropertyType;
             NameAsUtf8Bytes = matchingProperty.NameAsUtf8Bytes;
             IgnoreNullTokensOnRead = matchingProperty.IgnoreNullTokensOnRead;
             NumberHandling = matchingProperty.EffectiveNumberHandling;
+            //DisallowNullWrites = matchingProperty.DisallowNullWrites;
         }
     }
 }

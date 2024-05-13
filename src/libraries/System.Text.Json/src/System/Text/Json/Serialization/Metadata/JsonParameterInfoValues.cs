@@ -41,5 +41,11 @@ namespace System.Text.Json.Serialization.Metadata
         /// </summary>
         /// <remarks>This API is for use by the output of the System.Text.Json source generator and should not be called directly.</remarks>
         public object? DefaultValue { get; init; }
+
+        /// <summary>
+        /// Whether the parameter allows <see langword="null"/> values.
+        /// </summary>
+        /// <remarks>This API is for use by the output of the System.Text.Json source generator and should not be called directly.</remarks>
+        public bool DisallowNullReads { get; init; }
     }
 }
