@@ -22,6 +22,8 @@ public sealed class TestEventListener : EventListener
     public static string[] NetworkingEvents => new[]
     {
         "Private.InternalDiagnostics.System.Net.Quic",
+        "Private.InternalDiagnostics.System.Net.Http",
+        "System.Net.Http",
     };
 
     private readonly Action<string> _writeFunc;
