@@ -388,9 +388,6 @@ public sealed partial class QuicConnection : IAsyncDisposable
                 await stream.DisposeAsync().ConfigureAwait(false);
             }
 
-            // Propagate ODE if disposed in the meantime.
-            ObjectDisposedException.ThrowIf(_disposed == 1, this);
-
             // In case of an incoming race when the connection is closed by the peer just before we open the stream,
             // we receive QUIC_STATUS_ABORTED from MsQuic, but we don't know how the connection was closed. We throw
             // special exception and handle it here where we can determine the shutdown reason.
@@ -502,7 +499,7 @@ public sealed partial class QuicConnection : IAsyncDisposable
     }
     private unsafe int HandleEventShutdownComplete()
     {
-        Exception exception = ExceptionDispatchInfo.SetCurrentStackTrace(_disposed == 1 ? new ObjectDisposedException(GetType().FullName) : ThrowHelper.GetOperationAbortedException());
+        Exception exception = ExceptionDispatchInfo.SetCurrentStackTrace(ThrowHelper.GetOperationAbortedException());
         _connectionCloseTcs.TrySetException(exception);
         _acceptQueue.Writer.TryComplete(exception);
         _connectedTcs.TrySetException(exception);
