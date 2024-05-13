@@ -3120,7 +3120,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
     // To be fixed in https://github.com/dotnet/runtime/pull/77465
     const bool tier0opts = !opts.compDbgCode && !opts.jitFlags->IsSet(JitFlags::JIT_FLAG_MIN_OPT);
 
-    if (!mustExpand)
+    if (!mustExpand && tier0opts)
     {
         switch (ni)
         {
