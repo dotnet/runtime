@@ -161,13 +161,18 @@ public sealed partial class QuicStream
         try
         {
             QUIC_HANDLE* handle;
-            ThrowHelper.ThrowIfMsQuicError(MsQuicApi.Api.StreamOpen(
+            int status = MsQuicApi.Api.StreamOpen(
                 connectionHandle,
                 type == QuicStreamType.Unidirectional ? QUIC_STREAM_OPEN_FLAGS.UNIDIRECTIONAL : QUIC_STREAM_OPEN_FLAGS.NONE,
                 &NativeCallback,
                 (void*)GCHandle.ToIntPtr(context),
-                &handle),
-                "StreamOpen failed");
+                &handle);
+
+            if (ThrowHelper.TryGetStreamExceptionForMsQuicStatus(status, out Exception? ex, streamWasSuccessfullyStarted: false, message: "StreamOpen failed"))
+            {
+                throw ex;
+            }
+
             _handle = new MsQuicContextSafeHandle(handle, context, SafeHandleType.Stream, connectionHandle);
         }
         catch
@@ -241,7 +246,8 @@ public sealed partial class QuicStream
                 int status = MsQuicApi.Api.StreamStart(
                     _handle,
                     QUIC_STREAM_START_FLAGS.SHUTDOWN_ON_FAIL | QUIC_STREAM_START_FLAGS.INDICATE_PEER_ACCEPT);
-                if (ThrowHelper.TryGetStreamExceptionForMsQuicStatus(status, out Exception? exception))
+
+                if (ThrowHelper.TryGetStreamExceptionForMsQuicStatus(status, out Exception? exception, streamWasSuccessfullyStarted: false))
                 {
                     _startedTcs.TrySetException(exception);
                 }
