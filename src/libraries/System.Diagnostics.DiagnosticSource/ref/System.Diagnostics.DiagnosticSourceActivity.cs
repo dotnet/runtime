@@ -50,6 +50,7 @@ namespace System.Diagnostics
         public string? TraceStateString { get { throw null; } set { } }
         public System.Diagnostics.Activity AddBaggage(string key, string? value) { throw null; }
         public System.Diagnostics.Activity AddEvent(System.Diagnostics.ActivityEvent e) { throw null; }
+        public System.Diagnostics.Activity AddLink(System.Diagnostics.ActivityLink link) { throw null; }
         public System.Diagnostics.Activity AddTag(string key, string? value) { throw null; }
         public System.Diagnostics.Activity AddTag(string key, object? value) { throw null; }
         public System.Diagnostics.Activity SetTag(string key, object? value) { throw null; }

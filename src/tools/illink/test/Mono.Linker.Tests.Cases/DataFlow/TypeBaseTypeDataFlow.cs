@@ -58,9 +58,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 		class AllPropagatedWithDerivedClass
 		{
-			// https://github.com/dotnet/linker/issues/2673
-			[ExpectedWarning ("IL2072", nameof (DataFlowTypeExtensions.RequiresAll) + "(Type)", nameof (TestSystemTypeBase.BaseType) + ".get",
-				ProducedBy = Tool.Analyzer)]
+			[ExpectedWarning ("IL2072", nameof (DataFlowTypeExtensions.RequiresAll) + "(Type)", nameof (TestSystemTypeBase.BaseType) + ".get", Tool.Analyzer, "https://github.com/dotnet/linker/issues/2673")]
 			static void TestAllPropagated ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.All)] TestSystemTypeBase derivedType)
 			{
 				derivedType.BaseType.RequiresAll ();
@@ -284,7 +282,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 
 			[ExpectedWarning ("IL2070")]
-			[ExpectedWarning ("IL2075", ProducedBy = Tool.Analyzer)] // ILLink doesn't implement backward branches data flow yet
+			[ExpectedWarning ("IL2075", Tool.Analyzer, "")] // ILLink doesn't implement backward branches data flow yet
 			static void EnumerateInterfacesOnBaseTypes_Unannotated (Type type)
 			{
 				Type? t = type;

@@ -75,15 +75,21 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 		// - 'this' parameter (for annotated methods)
 		// - field reference
 
-		public override MultiValue Visit (IOperation? operation, StateValue argument)
+		public override MultiValue DefaultVisit (IOperation operation, StateValue argument)
 		{
-			var returnValue = base.Visit (operation, argument);
+			var returnValue = base.DefaultVisit (operation, argument);
 
 			// If the return value is empty (TopValue basically) and the Operation tree
 			// reports it as having a constant value, use that as it will automatically cover
 			// cases we don't need/want to handle.
-			if (operation != null && returnValue.IsEmpty () && TryGetConstantValue (operation, out var constValue))
+			if (!returnValue.IsEmpty ())
+				return returnValue;
+
+			if (TryGetConstantValue (operation, out var constValue))
 				return constValue;
+
+			if (operation.Type is not null)
+				return UnknownValue.Instance;
 
 			return returnValue;
 		}
@@ -116,7 +122,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 			var value = base.VisitConversion (operation, state);
 
 			if (operation.OperatorMethod != null)
-				return operation.OperatorMethod.ReturnType.IsTypeInterestingForDataflow () ? new MethodReturnValue (operation.OperatorMethod) : value;
+				return operation.OperatorMethod.ReturnType.IsTypeInterestingForDataflow () ? new MethodReturnValue (operation.OperatorMethod, isNewObj: false) : value;
 
 			// TODO - is it possible to have annotation on the operator method parameters?
 			// if so, will these be checked here?
@@ -341,7 +347,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 				return;
 
 			if (method.ReturnType.IsTypeInterestingForDataflow ()) {
-				var returnParameter = new MethodReturnValue (method);
+				var returnParameter = new MethodReturnValue (method, isNewObj: false);
 
 				TrimAnalysisPatterns.Add (
 					new TrimAnalysisAssignmentPattern (returnValue, returnParameter, operation, OwningSymbol, featureContext),

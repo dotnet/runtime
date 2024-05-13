@@ -277,6 +277,8 @@ void HWIntrinsicInfo::lookupImmBounds(
             case NI_AdvSimd_Arm64_StoreSelectedScalarVector128x4:
             case NI_AdvSimd_Arm64_DuplicateSelectedScalarToVector128:
             case NI_AdvSimd_Arm64_InsertSelectedScalar:
+            case NI_Sve_FusedMultiplyAddBySelectedScalar:
+            case NI_Sve_FusedMultiplySubtractBySelectedScalar:
                 immUpperBound = Compiler::getSIMDVectorLength(simdSize, baseType) - 1;
                 break;
 
@@ -290,6 +292,10 @@ void HWIntrinsicInfo::lookupImmBounds(
             case NI_Sve_CreateTrueMaskUInt16:
             case NI_Sve_CreateTrueMaskUInt32:
             case NI_Sve_CreateTrueMaskUInt64:
+            case NI_Sve_Count16BitElements:
+            case NI_Sve_Count32BitElements:
+            case NI_Sve_Count64BitElements:
+            case NI_Sve_Count8BitElements:
                 immLowerBound = (int)SVE_PATTERN_POW2;
                 immUpperBound = (int)SVE_PATTERN_ALL;
                 break;

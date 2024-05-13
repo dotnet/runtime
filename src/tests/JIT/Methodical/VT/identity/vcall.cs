@@ -17,6 +17,7 @@ namespace MS_vcall_cs
         }
 
         [Fact]
+        [OuterLoop]
         public static int TestEntryPoint()
         {
             VT vt;

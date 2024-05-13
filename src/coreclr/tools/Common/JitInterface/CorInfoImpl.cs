@@ -3283,7 +3283,7 @@ namespace Internal.JitInterface
             // In debug, write some bogus data to the struct to ensure we have filled everything
             // properly.
             fixed (CORINFO_EE_INFO* tmp = &pEEInfoOut)
-                MemoryHelper.FillMemory((byte*)tmp, 0xcc, Marshal.SizeOf<CORINFO_EE_INFO>());
+                NativeMemory.Fill(tmp, (nuint)sizeof(CORINFO_EE_INFO), 0xcc);
 #endif
 
             int pointerSize = this.PointerSize;
@@ -4261,7 +4261,7 @@ namespace Internal.JitInterface
         }
 
         private HRESULT getPgoInstrumentationResults(CORINFO_METHOD_STRUCT_* ftnHnd, ref PgoInstrumentationSchema* pSchema, ref uint countSchemaItems, byte** pInstrumentationData,
-            ref PgoSource pPgoSource)
+            ref PgoSource pPgoSource, ref bool pDynamicPgo)
         {
             MethodDesc methodDesc = HandleToObject(ftnHnd);
 
@@ -4308,6 +4308,7 @@ namespace Internal.JitInterface
             countSchemaItems = pgoResults.countSchemaItems;
             *pInstrumentationData = pgoResults.pInstrumentationData;
             pPgoSource = PgoSource.Static;
+            pDynamicPgo = false;
             return pgoResults.hr;
         }
 
