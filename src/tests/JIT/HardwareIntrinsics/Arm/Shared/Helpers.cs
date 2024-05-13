@@ -1477,6 +1477,22 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static short AddWideningUpper(short[] op1, sbyte[] op2, int i) => AddWidening(op1[i], op2[i + op2.Length / 2]);
 
+        public static sbyte BooleanNot(sbyte value) => (sbyte)(value == 0 ? 1 : 0);
+
+        public static byte BooleanNot(byte value) => (byte)(value == 0 ? 1 : 0);
+
+        public static short BooleanNot(short value) => (short)(value == 0 ? 1 : 0);
+
+        public static ushort BooleanNot(ushort value) => (ushort)(value == 0 ? 1 : 0);
+
+        public static int BooleanNot(int value) => (int)(value == 0 ? 1 : 0);
+
+        public static uint BooleanNot(uint value) => (uint)(value == 0 ? 1 : 0);
+
+        public static long BooleanNot(long value) => (long)(value == 0 ? 1 : 0);
+
+        public static ulong BooleanNot(ulong value) => (ulong)(value == 0 ? 1 : 0);
+
         public static sbyte ExtractNarrowing(short op1) => (sbyte)op1;
 
         public static sbyte ExtractNarrowingUpper(sbyte[] op1, short[] op2, int i) => i < op1.Length ? op1[i] : ExtractNarrowing(op2[i - op1.Length]);
