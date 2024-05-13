@@ -553,7 +553,6 @@ namespace parse_hb_log
             int procStart = procsPerNode * nodeIndexToPrint;
             int procEnd = procsPerNode * (nodeIndexToPrint + 1);
 
-            // int currentGCAllocMBAllHeaps = 0;
             int currentGCAllocMB = 0;
             for (int procIndex = procStart; procIndex < procEnd; procIndex++)
             {
@@ -563,7 +562,6 @@ namespace parse_hb_log
                 //    currentGCAllocMB);
             }
 
-            // currentGCAllocMBAllHeaps = currentGCAllocMB;
             currentGCAllocMB /= procsPerNode;
             totalAllocMB += currentGCAllocMB;
             totalBudgetMB += budgetMB;
