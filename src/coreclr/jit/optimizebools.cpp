@@ -1808,6 +1808,10 @@ GenTree* OptBoolsDsc::optIsBoolComp(OptTestInfo* pOptTest)
 //
 bool OptBoolsDsc::optOptimizeAndConditionWithEqualityOperator(BasicBlock* b3)
 {
+#if defined(TARGET_ARM) || defined(TARGET_ARM64)
+    return false;
+#endif
+
     Statement* const s1 = optOptimizeBoolsChkBlkCond();
     if (s1 == nullptr)
     {
