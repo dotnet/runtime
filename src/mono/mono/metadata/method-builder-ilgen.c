@@ -721,12 +721,10 @@ mono_mb_inflate_generic_wrapper_data (MonoGenericContext *context, gpointer *met
 {
 	MonoMethodBuilderInflateWrapperData* inflate_info = (MonoMethodBuilderInflateWrapperData*)method_data[MONO_MB_ILGEN_INFLATE_WRAPPER_INFO_IDX];
 	MonoMethodBuilderInflateWrapperData* p = inflate_info;
-	int count = 0;
-	while (p->idx != 0) {p++; count++;}
 
-	for (int x = 0; x < count; x++) {
-		int idx = inflate_info[x].idx;
-		uint16_t kind = inflate_info[x].kind;
+	while (p && p->idx != 0) {
+		int idx = p->idx;
+		uint16_t kind = p->kind;
 		gpointer *pdata = &method_data[idx];
 		switch (kind) {
 		case MONO_MB_ILGEN_WRAPPER_DATA_NONE:
@@ -740,8 +738,11 @@ mono_mb_inflate_generic_wrapper_data (MonoGenericContext *context, gpointer *met
 			MonoClass *inflated_class = mono_class_from_mono_type_internal (inflated_type);
 			// TODO: EnC metadata-update.  But note:
 			//    error ENC0025: Adding an extern method requires restarting the application.
-			// So for UnsafeAccessor methods we don't need to handle this.  But if we
-			// have other kinds of generic wrappers, it might become an issue.
+			//
+			// So for UnsafeAccessor methods we don't need to handle this
+			// until https://github.com/dotnet/runtime/issues/102080
+			//
+			// But if we have other kinds of generic wrappers, we may need to do it sooner.
 			g_assert (!m_field_is_from_update (field));
 			int i = GPTRDIFF_TO_INT (field - m_class_get_fields (m_field_get_parent (field)));
 			gpointer dummy = NULL;
@@ -767,6 +768,7 @@ mono_mb_inflate_generic_wrapper_data (MonoGenericContext *context, gpointer *met
 		default:
 			g_assert_not_reached();
 		}
+		p++;
 	}
 	return TRUE;
 }
