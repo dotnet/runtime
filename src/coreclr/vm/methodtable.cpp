@@ -8380,20 +8380,20 @@ PCODE MethodTable::GetRestoredSlot(DWORD slotNumber)
 
     PCODE slot = GetCanonicalMethodTable()->GetSlot(slotNumber);
 #ifndef DACCESS_COMPILE
-    if (slot == NULL)
+    if (slot == (PCODE)NULL)
     {
         // This is a slot that has not been filled in yet. This can happen if we are
         // looking at a slot which has not yet been given a temporary entry point.
         MethodDesc *pMD = GetCanonicalMethodTable()->GetMethodDescForSlot_NoThrow(slotNumber);
         PCODE temporaryEntryPoint = pMD->GetTemporaryEntryPoint();
         slot = GetCanonicalMethodTable()->GetSlot(slotNumber);
-        if (slot == NULL)
+        if (slot == (PCODE)NULL)
         {
             InterlockedCompareExchangeT(GetCanonicalMethodTable()->GetSlotPtrRaw(slotNumber), temporaryEntryPoint, (PCODE)NULL);
             slot = GetCanonicalMethodTable()->GetSlot(slotNumber);
         }
     }
-    _ASSERTE(slot != NULL);
+    _ASSERTE(slot != (PCODE)NULL);
 #endif // DACCESS_COMPILE
     return slot;
 }
