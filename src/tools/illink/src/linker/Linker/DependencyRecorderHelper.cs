@@ -48,7 +48,7 @@ namespace Mono.Linker
 			return "Other:" + o;
 		}
 
-		static bool WillAssemblyBeModified (LinkContext context, AssemblyDefinition assembly)
+		internal static bool WillAssemblyBeModified (LinkContext context, AssemblyDefinition assembly)
 		{
 			switch (context.Annotations.GetAction (assembly)) {
 			case AssemblyAction.Link:

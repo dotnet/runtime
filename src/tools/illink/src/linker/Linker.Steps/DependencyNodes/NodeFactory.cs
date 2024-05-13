@@ -5,7 +5,6 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using Mono.Cecil;
-using Mono.Linker.Steps;
 
 namespace Mono.Linker.Steps
 {
@@ -24,8 +23,6 @@ namespace Mono.Linker.Steps
 
 			readonly NodeCache<TypeDefinition, TypeIsRelevantToVariantCastingNode> _typeIsRelevantToVariantCastingNodes = new (static (t) => new TypeIsRelevantToVariantCastingNode (t));
 
-			readonly NodeCache<(ITracingNode, string, object?), RootTracingNode> _rootTracingNodes = new (static (tup) => new RootTracingNode (tup.Item1, tup.Item2, tup.Item3));
-
 			internal TypeDefinitionNode GetTypeNode (TypeDefinition definition)
 			{
 				return _typeNodes.GetOrAdd (definition);
@@ -39,11 +36,6 @@ namespace Mono.Linker.Steps
 			internal TypeIsRelevantToVariantCastingNode GetTypeIsRelevantToVariantCastingNode (TypeDefinition type)
 			{
 				return _typeIsRelevantToVariantCastingNodes.GetOrAdd (type);
-			}
-
-			internal RootTracingNode GetRootTracingNode (ITracingNode newNode, string reason, object? depender)
-			{
-				return _rootTracingNodes.GetOrAdd ((newNode, reason, depender));
 			}
 
 			struct NodeCache<TKey, TValue> where TKey : notnull

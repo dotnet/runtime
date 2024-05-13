@@ -14,38 +14,46 @@ namespace Mono.Linker.Steps
 			MarkStep _markStep;
 			public EdgeVisitor (MarkStep markStep) => _markStep = markStep;
 
-			private static bool ShouldBeLogged (DependencyNodeCore<NodeFactory> node, out object? dependencyObject)
+			private bool ShouldBeLogged (DependencyNodeCore<NodeFactory> o)
 			{
-				switch (node) {
-				case ITracingNode ltn:
-					dependencyObject = ltn.DependencyObject;
-					return true;
-				default:
-					dependencyObject = null;
+				if (o is ProcessCallbackNode)
 					return false;
-				};
+
+				if (!_markStep.Context.EnableReducedTracing)
+					return true;
+
+				var context = _markStep.Context;
+
+				if (o is TypeDefinitionNode t)
+					return DependencyRecorderHelper.WillAssemblyBeModified (context, t.Type.Module.Assembly);
+
+				return true;
 			}
 
 			public void VisitEdge (DependencyNodeCore<NodeFactory> nodeDepender, DependencyNodeCore<NodeFactory> nodeDependedOn, string reason)
 			{
-				if (!(ShouldBeLogged (nodeDependedOn, out var dependee) && ShouldBeLogged (nodeDepender, out var depender)))
+				if (!(ShouldBeLogged (nodeDependedOn) && ShouldBeLogged (nodeDepender)))
 					return;
-				Debug.Assert (nodeDependedOn is not RootTracingNode);
-				DependencyInfo depInfo = new (NodeFactory.StringToDependencyKindMap[reason], depender);
-				_markStep.Context.Tracer.AddDirectDependency (dependee!, depInfo, true);
+				var dependerName = DependencyNodeCore<NodeFactory>.GetNodeName (nodeDepender, null!);
+				var dependeeName = DependencyNodeCore<NodeFactory>.GetNodeName (nodeDependedOn, null!);
+				DependencyInfo depInfo = new (NodeFactory.StringToDependencyKindMap[reason], dependerName);
+				_markStep.Context.Tracer.AddDirectDependency (dependeeName!, depInfo, true);
 			}
 
 			public void VisitEdge (string root, DependencyNodeCore<NodeFactory> dependedOn)
 			{
-				Debug.Assert (dependedOn is RootTracingNode or not ITracingNode);
+				// Root nodes will be traced in MarkStep.Mark[Type|Method|Field] and not here
 			}
 
 			public void VisitEdge (DependencyNodeCore<NodeFactory> nodeDepender, DependencyNodeCore<NodeFactory> nodeDependerOther, DependencyNodeCore<NodeFactory> nodeDependedOn, string reason)
 			{
-				if (!(ShouldBeLogged (nodeDependedOn, out var dependee) && ShouldBeLogged (nodeDepender, out var depender)))
+				if (!(ShouldBeLogged (nodeDependedOn) && ShouldBeLogged (nodeDepender)))
 					return;
-				DependencyInfo depInfo = new (NodeFactory.StringToDependencyKindMap[reason], depender);
-				_markStep.Context.Tracer.AddDirectDependency (dependee!, depInfo, true);
+
+				var dependerName = DependencyNodeCore<NodeFactory>.GetNodeName (nodeDepender, null!);
+				var dependeeName = DependencyNodeCore<NodeFactory>.GetNodeName (nodeDependedOn, null!);
+				DependencyInfo depInfo = new (NodeFactory.StringToDependencyKindMap[reason], dependerName);
+				_markStep.Context.Tracer.AddDirectDependency (dependeeName!, depInfo, true);
 			}
 		}
 	}

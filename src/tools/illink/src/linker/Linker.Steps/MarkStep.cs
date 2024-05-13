@@ -1954,14 +1954,14 @@ namespace Mono.Linker.Steps
 			MarkStaticConstructor (type, reason, origin);
 		}
 
-
 		/// <summary>
 		/// Marks the specified <paramref name="reference"/> as referenced.
 		/// </summary>
 		/// <param name="reference">The type reference to mark.</param>
 		/// <param name="reason">The reason why the marking is occuring</param>
+		/// <param name="addToGraphAsRoot">Whether to add the node to the dependency graph</param>
 		/// <returns>The resolved type definition if the reference can be resolved</returns>
-		protected internal virtual TypeDefinition? MarkType (TypeReference reference, DependencyInfo reason, MessageOrigin? origin = null)
+		protected internal virtual TypeDefinition? MarkType (TypeReference reference, DependencyInfo reason, MessageOrigin? origin = null, bool addToGraphAsRoot = true)
 		{
 #if DEBUG
 			if (!_typeReasons.Contains (reason.Kind))
@@ -1991,8 +1991,11 @@ namespace Mono.Linker.Steps
 				Debug.Assert (Annotations.IsMarked (type));
 				break;
 			default:
-#pragma warning disable CS0618 // We will track the reason for the mark in the dependency graph
-				Annotations.Mark (type);
+				if (addToGraphAsRoot)
+					Annotations.Mark (type, reason, ScopeStack.CurrentScope.Origin);
+				else
+#pragma warning disable CS0618 // Mark with a reason: We add the reason in the dependency graph edge visitor
+					Annotations.Mark (type);
 #pragma warning restore CS0618
 				break;
 			}
@@ -2018,9 +2021,10 @@ namespace Mono.Linker.Steps
 			if (type.Scope is ModuleDefinition module)
 				MarkModule (module, new DependencyInfo (DependencyKind.ScopeOfType, type));
 
-			var typeNode = _nodeFactory.GetTypeNode (type);
-			var rootNode = _nodeFactory.GetRootTracingNode (typeNode, NodeFactory.DependencyKindToStringMap[reason.Kind], reason.Source);
-			_dependencyGraph.AddRoot (rootNode, "Tracing Root");
+			if(addToGraphAsRoot) {
+				var typeNode = _nodeFactory.GetTypeNode (type);
+				_dependencyGraph.AddRoot (typeNode, NodeFactory.DependencyKindToStringMap[reason.Kind]);
+			}
 			return type;
 		}
 
@@ -3019,9 +3023,7 @@ namespace Mono.Linker.Steps
 				Debug.Assert (Annotations.IsMarked (method));
 				break;
 			default:
-#pragma warning disable CS0618 // We will track the reason for the mark in the dependency graph
-				Annotations.Mark (method);
-#pragma warning restore CS0618
+				Annotations.Mark (method, reason, origin);
 				break;
 			}
 
@@ -3043,8 +3045,7 @@ namespace Mono.Linker.Steps
 				_completed = false;
 
 			var methodNode = _nodeFactory.GetMethodDefinitionNode (method, reason);
-			var rootNode = _nodeFactory.GetRootTracingNode (methodNode, NodeFactory.DependencyKindToStringMap[reason.Kind], reason.Source);
-			_dependencyGraph.AddRoot (rootNode, "Tracing Root");
+			_dependencyGraph.AddRoot (methodNode, NodeFactory.DependencyKindToStringMap[reason.Kind]);
 
 			return method;
 		}
@@ -3214,15 +3215,6 @@ namespace Mono.Linker.Steps
 				MarkEvent (@event, new DependencyInfo (PropagateDependencyKindToAccessors (reason.Kind, DependencyKind.EventOfEventMethod), method));
 			}
 
-			if (method.HasMetadataParameters ()) {
-#pragma warning disable RS0030 // MethodReference.Parameters is banned. It's easiest to leave the code as is for now
-				foreach (ParameterDefinition pd in method.Parameters) {
-					MarkType (pd.ParameterType, new DependencyInfo (DependencyKind.ParameterType, method));
-					MarkCustomAttributes (pd, new DependencyInfo (DependencyKind.ParameterAttribute, method));
-					MarkMarshalSpec (pd, new DependencyInfo (DependencyKind.ParameterMarshalSpec, method));
-				}
-#pragma warning restore RS0030
-			}
 
 			if (method.HasOverrides) {
 				var assembly = Context.Resolve (method.DeclaringType.Scope);
