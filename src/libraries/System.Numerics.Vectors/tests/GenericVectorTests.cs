@@ -3164,7 +3164,7 @@ namespace System.Numerics.Tests
             Vector<int> targetVec = Vector.ConvertToInt32(sourceVec);
             for (int i = 0; i < Vector<int>.Count; i++)
             {
-                Assert.Equal(unchecked((int)source[i]), targetVec[i]);
+                Assert.Equal(float.ConvertToInteger<int>(source[i]), targetVec[i]);
             }
         }
 
@@ -3176,7 +3176,7 @@ namespace System.Numerics.Tests
             Vector<uint> targetVec = Vector.ConvertToUInt32(sourceVec);
             for (int i = 0; i < Vector<uint>.Count; i++)
             {
-                Assert.Equal(unchecked((uint)source[i]), targetVec[i]);
+                Assert.Equal(float.ConvertToInteger<uint>(source[i]), targetVec[i]);
             }
         }
 
@@ -3188,7 +3188,7 @@ namespace System.Numerics.Tests
             Vector<long> targetVec = Vector.ConvertToInt64(sourceVec);
             for (int i = 0; i < Vector<long>.Count; i++)
             {
-                Assert.Equal(unchecked((long)source[i]), targetVec[i]);
+                Assert.Equal(double.ConvertToInteger<long>(source[i]), targetVec[i]);
             }
         }
 
@@ -3200,7 +3200,7 @@ namespace System.Numerics.Tests
             Vector<ulong> targetVec = Vector.ConvertToUInt64(sourceVec);
             for (int i = 0; i < Vector<ulong>.Count; i++)
             {
-                Assert.Equal(unchecked((ulong)source[i]), targetVec[i]);
+                Assert.Equal(double.ConvertToInteger<ulong>(source[i]), targetVec[i]);
             }
         }
 
