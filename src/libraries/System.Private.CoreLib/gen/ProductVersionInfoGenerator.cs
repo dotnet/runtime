@@ -34,7 +34,7 @@ namespace System
         /// <summary>
         /// Gets a version consisting of the major, minor, build, and revision numbers of the common language runtime.
         /// </summary>
-        public static Version Version => new Version({string.Replace(versionObject.ToString(), ".", ", ")});
+        public static Version Version => new Version({versionObject.ToString().Replace(".", ", ")});
     }}
 }}
 
