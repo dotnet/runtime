@@ -480,14 +480,10 @@
                        $(NativeBinDir)dotnet.native.js;
                        $(NativeBinDir)dotnet.d.ts;
                        $(NativeBinDir)package.json;
-                       $(NativeBinDir)dotnet.native.wasm"
+                       $(NativeBinDir)dotnet.native.wasm;
+                       $(NativeBinDir)dotnet.globalization.js"
           DestinationFolder="$(MicrosoftNetCoreAppRuntimePackNativeDir)"
           SkipUnchangedFiles="true" />
-
-    <Copy SourceFiles="$(NativeBinDir)dotnet.globalization.js"
-          DestinationFolder="$(MicrosoftNetCoreAppRuntimePackNativeDir)"
-          SkipUnchangedFiles="true"
-          Condition="'$(HybridGlobalization)' == 'true' and Exists('$(NativeBinDir)dotnet.globalization.js')" />
 
     <Copy SourceFiles="$(NativeBinDir)dotnet.native.worker.js"
           DestinationFolder="$(MicrosoftNetCoreAppRuntimePackNativeDir)"
