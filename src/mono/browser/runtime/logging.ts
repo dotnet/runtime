@@ -15,10 +15,18 @@ export function set_thread_prefix (threadPrefix: string) {
 }
 
 /* eslint-disable no-console */
-export function mono_log_debug (msg: string, ...data: any) {
+
+export function mono_log_debug (messageFactory: string | (() => string)) {
     if (runtimeHelpers.diagnosticTracing) {
-        console.debug(prefix + msg, ...data);
+        const message = (typeof messageFactory === "function"
+            ? messageFactory()
+            : messageFactory);
+        mono_always_log_debug( message);
     }
+}
+
+export function mono_always_log_debug (msg: string) {
+    console.debug(prefix + msg);
 }
 
 export function mono_log_info (msg: string, ...data: any) {
@@ -164,7 +172,7 @@ export function parseSymbolMapFile (text: string) {
     //  may be never
     mono_assert(!wasm_pending_symbol_table, "Another symbol map was already loaded");
     wasm_pending_symbol_table = text;
-    mono_log_debug(`Deferred loading of ${text.length}ch symbol map`);
+    mono_log_debug(() => `Deferred loading of ${text.length}ch symbol map`);
 }
 
 function performDeferredSymbolMapParsing () {
@@ -197,7 +205,7 @@ function performDeferredSymbolMapParsing () {
             parts[1] = parts.splice(1).join(":");
             wasm_func_map.set(Number(parts[0]), parts[1]);
         });
-        mono_log_debug(`Loaded ${wasm_func_map.size} symbols`);
+        mono_log_debug(() => `Loaded ${wasm_func_map.size} symbols`);
     } catch (exc) {
         mono_log_warn(`Failed to load symbol map: ${exc}`);
     }

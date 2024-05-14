@@ -18,10 +18,17 @@ export function set_thread_prefix (threadPrefix: string) {
     threadNamePrefix = threadPrefix;
 }
 
-export function mono_log_debug (msg: string, ...data: any[]) {
+export function mono_log_debug (messageFactory: string | (() => string)) {
     if (loaderHelpers.diagnosticTracing) {
-        console.debug(prefix + msg, ...data);
+        const message = (typeof messageFactory === "function"
+            ? messageFactory()
+            : messageFactory);
+        mono_always_log_debug( message);
     }
+}
+
+export function mono_always_log_debug (msg: string) {
+    console.debug(prefix + msg);
 }
 
 export function mono_log_info (msg: string, ...data: any) {

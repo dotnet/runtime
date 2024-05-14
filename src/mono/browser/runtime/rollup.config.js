@@ -68,12 +68,28 @@ const inlineAssert = [
         // eslint-disable-next-line quotes
         pattern: 'mono_assert\\(([^,]*), \\(\\) => *`([^`]*)`\\);',
         replacement: (match) => `if (!(${match[1]})) mono_assert(false, \`${match[2]}\`); // inlined mono_assert condition`
-    }
+    },
+    {
+        // eslint-disable-next-line quotes
+        pattern: 'mono_log_debug\\(*"([^"]*)"\\);',
+        // eslint-disable-next-line quotes
+        replacement: (match) => `if (loaderHelpers.diagnosticTracing) mono_always_log_debug("${match[2]}"); // inlined mono_log_debug condition`
+    },
+    {
+        // eslint-disable-next-line quotes
+        pattern: 'mono_log_debug\\(\\(\\) => *`([^`]*)`\\);',
+        replacement: (match) => `if (loaderHelpers.diagnosticTracing) mono_always_log_debug(\`${match[1]}\`); // inlined mono_log_debug condition`
+    },
 ];
 const checkAssert =
 {
     pattern: /^\s*mono_check/gm,
     failure: "previous regexp didn't inline all mono_check statements"
+};
+const checkDebugLog =
+{
+    pattern: /^\s*mono_log_debug/gm,
+    failure: "previous regexp didn't inline all mono_log_debug statements"
 };
 const checkNoLoader =
 {
@@ -164,7 +180,7 @@ const loaderConfig = {
         }
     ],
     external: externalDependencies,
-    plugins: [nodeResolve(), regexReplace(inlineAssert), regexCheck([checkAssert, checkNoRuntime]), ...outputCodePlugins],
+    plugins: [nodeResolve(), regexReplace(inlineAssert), regexCheck([checkAssert, checkNoRuntime, checkDebugLog]), ...outputCodePlugins],
     onwarn: onwarn
 };
 const runtimeConfig = {
@@ -181,7 +197,7 @@ const runtimeConfig = {
         }
     ],
     external: externalDependencies,
-    plugins: [regexReplace(inlineAssert), regexCheck([checkAssert, checkNoLoader]), ...outputCodePlugins],
+    plugins: [regexReplace(inlineAssert), regexCheck([checkAssert, checkNoLoader, checkDebugLog]), ...outputCodePlugins],
     onwarn: onwarn
 };
 const wasmImportsConfig = {
