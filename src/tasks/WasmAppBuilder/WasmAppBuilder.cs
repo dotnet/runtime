@@ -319,6 +319,7 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
                 var vfsDict = loadingStage switch
                 {
                     null => vfs,
+                    "" => vfs,
                     "Core" => coreVfs,
                     _ => throw new LogAsErrorException($"The WasmFilesToIncludeInFileSystem '{item.ItemSpec}' has LoadingStage set to unsupported '{loadingStage}' (empty or 'Core' is currently supported).")
                 };
