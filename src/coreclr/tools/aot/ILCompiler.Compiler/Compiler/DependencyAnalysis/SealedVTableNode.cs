@@ -169,12 +169,13 @@ namespace ILCompiler.DependencyAnalysis
                     if (!declMethod.Signature.IsStatic && !needsEntriesForInstanceInterfaceMethodImpls)
                         continue;
 
+                    MethodDesc interfaceDefDeclMethod = declMethod;
                     if  (!interfaceType.IsTypeDefinition)
-                        declMethod = factory.TypeSystemContext.GetMethodForInstantiatedType(declMethod.GetTypicalMethodDefinition(), (InstantiatedType)definitionInterfaceType);
+                        interfaceDefDeclMethod = factory.TypeSystemContext.GetMethodForInstantiatedType(declMethod.GetTypicalMethodDefinition(), (InstantiatedType)definitionInterfaceType);
 
                     var implMethod = declMethod.Signature.IsStatic ?
-                        declTypeDefinition.ResolveInterfaceMethodToStaticVirtualMethodOnType(declMethod) :
-                        declTypeDefinition.ResolveInterfaceMethodToVirtualMethodOnType(declMethod);
+                        declTypeDefinition.ResolveInterfaceMethodToStaticVirtualMethodOnType(interfaceDefDeclMethod) :
+                        declTypeDefinition.ResolveInterfaceMethodToVirtualMethodOnType(interfaceDefDeclMethod);
 
                     // Interface methods first implemented by a base type in the hierarchy will return null for the implMethod (runtime interface
                     // dispatch will walk the inheritance chain).
@@ -206,7 +207,7 @@ namespace ILCompiler.DependencyAnalysis
                     {
                         // If the interface method is provided by a default implementation, add the default implementation
                         // to the sealed vtable.
-                        var resolution = declTypeDefinition.ResolveInterfaceMethodToDefaultImplementationOnType(declMethod, out implMethod);
+                        var resolution = declTypeDefinition.ResolveInterfaceMethodToDefaultImplementationOnType(interfaceDefDeclMethod, out implMethod);
                         if (resolution == DefaultInterfaceMethodResolution.DefaultImplementation)
                         {
                             DefType providingInterfaceDefinitionType = (DefType)implMethod.OwningType;
