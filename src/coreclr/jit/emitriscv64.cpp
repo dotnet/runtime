@@ -5042,7 +5042,7 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
                     regNumber   branchReg1 = REG_NA;
                     regNumber   branchReg2 = REG_NA;
 
-                    if (((dst->gtFlags & GTF_UNSIGNED) != 0))
+                    if ((dst->gtFlags & GTF_UNSIGNED) != 0)
                     {
                         // if A < B then overflow
                         branchIns  = INS_bltu;
@@ -5057,7 +5057,8 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
 
                         if (attr == EA_4BYTE)
                         {
-                            assert((src1->gtType != TYP_LONG) && (src2->gtType != TYP_LONG));
+                            assert(src1->gtType != TYP_LONG);
+                            assert(src2->gtType != TYP_LONG);
 
                             emitIns_R_R_R(INS_add, attr, tempReg1, regOp1, regOp2);
 
@@ -5067,6 +5068,7 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
                         }
                         else
                         {
+                            assert(attr == EA_8BYTE);
                             assert(tempReg != tempReg1);
                             // When the tempReg2 is being used then the tempReg has to be already dead
                             regNumber tempReg2 = tempReg;
