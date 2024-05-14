@@ -319,7 +319,7 @@ export type MarshalerToCs = (arg: JSMarshalerArgument, value: any, element_type?
 export type BoundMarshalerToJs = (args: JSMarshalerArguments) => any;
 export type BoundMarshalerToCs = (args: JSMarshalerArguments, value: any) => void;
 // please keep in sync with src\libraries\System.Runtime.InteropServices.JavaScript\src\System\Runtime\InteropServices\JavaScript\MarshalerType.cs
-export enum MarshalerType {
+export const enum MarshalerType {
     None = 0,
     Void = 1,
     Discard,
