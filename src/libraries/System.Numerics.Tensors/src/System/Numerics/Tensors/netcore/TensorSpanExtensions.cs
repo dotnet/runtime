@@ -11,7 +11,7 @@ using System.Threading.Tasks;
 
 namespace System.Numerics.Tensors
 {
-    public static class TensorSpanExtensions
+    public static class TensorSpan
     {
         /// <summary>
         /// Determines whether two sequences are equal by comparing the elements using IEquatable{T}.Equals(T).

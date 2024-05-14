@@ -5,19 +5,9 @@ using System.Buffers;
 using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Diagnostics;
-using System.Globalization;
-using System.Linq;
-using System.Reflection;
-using System.Reflection.Metadata;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Runtime.Serialization;
-using System.Security.Cryptography;
 using System.Text;
-using System.Threading.Tasks;
-using Microsoft.VisualBasic;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 
 #pragma warning disable CS8601 // Possible null reference assignment.
 #pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
@@ -63,7 +53,7 @@ namespace System.Numerics.Tensors
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal Tensor(T[] values, scoped ReadOnlySpan<nint> lengths, ReadOnlySpan<nint> strides, bool isPinned = false)
+        internal Tensor(T[] values, scoped ReadOnlySpan<nint> lengths, scoped ReadOnlySpan<nint> strides, bool isPinned = false)
         {
             _flattenedLength = TensorSpanHelpers.CalculateTotalLength(lengths);
 
@@ -81,7 +71,7 @@ namespace System.Numerics.Tensors
         /// </summary>
         /// <param name="lengths">A <see cref="ReadOnlySpan{T}"/> indicating the lengths of each dimension.</param>
         /// <param name="pinned">A <see cref="bool"/> whether the underlying data should be pinned or not.</param>
-        public static Tensor<T> Create(ReadOnlySpan<nint> lengths, bool pinned = false)
+        static Tensor<T> ITensor<Tensor<T>, T>.Create(scoped ReadOnlySpan<nint> lengths, bool pinned)
         {
             nint linearLength = TensorSpanHelpers.CalculateTotalLength(lengths);
             T[] values = pinned ? GC.AllocateArray<T>((int)linearLength, pinned) : (new T[linearLength]);
@@ -94,7 +84,7 @@ namespace System.Numerics.Tensors
         /// <param name="lengths">A <see cref="ReadOnlySpan{T}"/> indicating the lengths of each dimension.</param>
         /// <param name="strides">A <see cref="ReadOnlySpan{T}"/> indicating the strides of each dimension.</param>
         /// <param name="pinned">A <see cref="bool"/> whether the underlying data should be pinned or not.</param>
-        public static Tensor<T> Create(ReadOnlySpan<nint> lengths, ReadOnlySpan<nint> strides, bool pinned = false)
+        static Tensor<T> ITensor<Tensor<T>, T>.Create(scoped ReadOnlySpan<nint> lengths, scoped ReadOnlySpan<nint> strides, bool pinned)
         {
             nint linearLength = TensorSpanHelpers.CalculateTotalLength(lengths);
             T[] values = pinned ? GC.AllocateArray<T>((int)linearLength, pinned) : (new T[linearLength]);
@@ -106,7 +96,7 @@ namespace System.Numerics.Tensors
         /// </summary>
         /// <param name="lengths">A <see cref="ReadOnlySpan{T}"/> indicating the lengths of each dimension.</param>
         /// <param name="pinned">A <see cref="bool"/> whether the underlying data should be pinned or not.</param>
-        public static Tensor<T> CreateUninitialized(ReadOnlySpan<nint> lengths, bool pinned = false)
+        static Tensor<T> ITensor<Tensor<T>, T>.CreateUninitialized(scoped ReadOnlySpan<nint> lengths, bool pinned)
         {
             nint linearLength = TensorSpanHelpers.CalculateTotalLength(lengths);
             T[] values = GC.AllocateUninitializedArray<T>((int)linearLength, pinned);
@@ -119,7 +109,7 @@ namespace System.Numerics.Tensors
         /// <param name="lengths">A <see cref="ReadOnlySpan{T}"/> indicating the lengths of each dimension.</param>
         /// <param name="strides">A <see cref="ReadOnlySpan{T}"/> indicating the strides of each dimension.</param>
         /// <param name="pinned">A <see cref="bool"/> whether the underlying data should be pinned or not.</param>
-        public static Tensor<T> CreateUninitialized(ReadOnlySpan<nint> lengths, ReadOnlySpan<nint> strides, bool pinned = false)
+        static Tensor<T> ITensor<Tensor<T>, T>.CreateUninitialized(scoped ReadOnlySpan<nint> lengths, scoped ReadOnlySpan<nint> strides, bool pinned)
         {
             nint linearLength = TensorSpanHelpers.CalculateTotalLength(lengths);
             T[] values = GC.AllocateUninitializedArray<T>((int)linearLength, pinned);
@@ -166,7 +156,7 @@ namespace System.Numerics.Tensors
         /// Gets the length of each dimension in this <see cref="Tensor{T}"/>.
         /// </summary>
         /// <value><see cref="ReadOnlySpan{T}"/> with the lengths of each dimension.</value>
-        public void GetLengths(Span<nint> destination) => _lengths.CopyTo(destination);
+        void IReadOnlyTensor<Tensor<T>, T>.GetLengths(Span<nint> destination) => _lengths.CopyTo(destination);
 
 
         /// <summary>
@@ -179,19 +169,9 @@ namespace System.Numerics.Tensors
         /// Gets the strides of each dimension in this <see cref="Tensor{T}"/>.
         /// </summary>
         /// <value><see cref="ReadOnlySpan{T}"/> with the strides of each dimension.</value>
-        public void GetStrides(Span<nint> destination) => _strides.CopyTo(destination);
+        void IReadOnlyTensor<Tensor<T>, T>.GetStrides(scoped Span<nint> destination) => _strides.CopyTo(destination);
 
-        public bool IsReadOnly => false;
-
-        /// <summary>
-        /// Returns a reference to specified element of the Tensor.
-        /// </summary>
-        /// <param name="indexes"></param>
-        /// <returns></returns>
-        /// <exception cref="IndexOutOfRangeException">
-        /// Thrown when index less than 0 or index greater than or equal to FlattenedLength
-        /// </exception>
-        public ref T this[params ReadOnlySpan<nint> indexes] => ref AsTensorSpan()[indexes];
+        bool ITensor<Tensor<T>, T>.IsReadOnly => false;
 
         /// <summary>
         /// Returns a reference to specified element of the Tensor.
@@ -201,7 +181,17 @@ namespace System.Numerics.Tensors
         /// <exception cref="IndexOutOfRangeException">
         /// Thrown when index less than 0 or index greater than or equal to FlattenedLength
         /// </exception>
-        public ref T this[params ReadOnlySpan<NIndex> indexes] => ref AsTensorSpan()[indexes];
+        public ref T this[params scoped ReadOnlySpan<nint> indexes] => ref AsTensorSpan()[indexes];
+
+        /// <summary>
+        /// Returns a reference to specified element of the Tensor.
+        /// </summary>
+        /// <param name="indexes"></param>
+        /// <returns></returns>
+        /// <exception cref="IndexOutOfRangeException">
+        /// Thrown when index less than 0 or index greater than or equal to FlattenedLength
+        /// </exception>
+        public ref T this[params scoped ReadOnlySpan<NIndex> indexes] => ref AsTensorSpan()[indexes];
 
         /// <summary>
         /// Returns a slice of the Tensor.
@@ -274,7 +264,7 @@ namespace System.Numerics.Tensors
         /// <exception cref="IndexOutOfRangeException">
         /// Thrown when index less than 0 or index greater than or equal to FlattenedLength
         /// </exception>
-        T IReadOnlyTensor<Tensor<T>, T>.this[params ReadOnlySpan<nint> indexes] => AsReadOnlyTensorSpan()[indexes];
+        T IReadOnlyTensor<Tensor<T>, T>.this[params scoped ReadOnlySpan<nint> indexes] => AsReadOnlyTensorSpan()[indexes];
 
         /// <summary>
         /// Returns the specified element of the ReadOnlyTensor.
@@ -284,7 +274,7 @@ namespace System.Numerics.Tensors
         /// <exception cref="IndexOutOfRangeException">
         /// Thrown when index less than 0 or index greater than or equal to FlattenedLength
         /// </exception>
-        T IReadOnlyTensor<Tensor<T>, T>.this[params ReadOnlySpan<NIndex> indexes] => AsReadOnlyTensorSpan()[indexes];
+        T IReadOnlyTensor<Tensor<T>, T>.this[params scoped ReadOnlySpan<NIndex> indexes] => AsReadOnlyTensorSpan()[indexes];
 
         /// <summary>
         /// Returns a slice of the ReadOnlyTensor.
@@ -294,7 +284,7 @@ namespace System.Numerics.Tensors
         /// <exception cref="IndexOutOfRangeException">
         /// Thrown when any index is less than 0 or any index is greater than or equal to FlattenedLength
         /// </exception>
-        Tensor<T> IReadOnlyTensor<Tensor<T>, T>.this[params ReadOnlySpan<NRange> ranges]
+        Tensor<T> IReadOnlyTensor<Tensor<T>, T>.this[params scoped ReadOnlySpan<NRange> ranges]
         {
             get
             {
@@ -344,63 +334,63 @@ namespace System.Numerics.Tensors
             }
         }
 
-        public static implicit operator TensorSpan<T>(Tensor<T> value) => new TensorSpan<T>(ref MemoryMarshal.GetArrayDataReference(value._values), value._lengths, value._strides);
+        public static implicit operator TensorSpan<T>(Tensor<T> value) => new TensorSpan<T>(ref MemoryMarshal.GetArrayDataReference(value._values), value._lengths, value._strides, value._flattenedLength);
 
-        public static implicit operator ReadOnlyTensorSpan<T>(Tensor<T> value) => new ReadOnlyTensorSpan<T>(ref MemoryMarshal.GetArrayDataReference(value._values), value._lengths, value._strides);
+        public static implicit operator ReadOnlyTensorSpan<T>(Tensor<T> value) => new ReadOnlyTensorSpan<T>(ref MemoryMarshal.GetArrayDataReference(value._values), value._lengths, value._strides, value.FlattenedLength);
 
         /// <summary>
         /// Converts this <see cref="Tensor{T}"/> to a <see cref="TensorSpan{T}"/> pointing to the same backing memory."/>
         /// </summary>
         /// <returns><see cref="TensorSpan{T}"/></returns>
-        public TensorSpan<T> AsTensorSpan() => new TensorSpan<T>(ref MemoryMarshal.GetArrayDataReference(_values), _lengths, _strides);
+        public TensorSpan<T> AsTensorSpan() => new TensorSpan<T>(ref MemoryMarshal.GetArrayDataReference(_values), _lengths, _strides, _flattenedLength);
 
         /// <summary>
         /// Converts this <see cref="Tensor{T}"/> to a <see cref="TensorSpan{T}"/> pointing to the same backing memory based on the provided ranges."/>
         /// </summary>
         /// <param name="start">The ranges you want in the <see cref="TensorSpan{T}"/>.</param>
         /// <returns><see cref="TensorSpan{T}"/> based on the provided ranges.</returns>
-        public TensorSpan<T> AsTensorSpan(params ReadOnlySpan<NRange> start) => AsTensorSpan().Slice(start);
+        public TensorSpan<T> AsTensorSpan(params scoped ReadOnlySpan<NRange> start) => AsTensorSpan().Slice(start);
 
         /// <summary>
         /// Converts this <see cref="Tensor{T}"/> to a <see cref="TensorSpan{T}"/> pointing to the same backing memory based on the provided start locations."/>
         /// </summary>
         /// <param name="start">The start location you want in the <see cref="TensorSpan{T}"/>.</param>
         /// <returns><see cref="TensorSpan{T}"/> based on the provided ranges.</returns>
-        public TensorSpan<T> AsTensorSpan(params ReadOnlySpan<nint> start) => Slice(start);
+        public TensorSpan<T> AsTensorSpan(params scoped ReadOnlySpan<nint> start) => Slice(start);
 
         /// <summary>
         /// Converts this <see cref="Tensor{T}"/> to a <see cref="TensorSpan{T}"/> pointing to the same backing memory based on the provided start indexes."/>
         /// </summary>
         /// <param name="startIndex">The ranges you want in the <see cref="TensorSpan{T}"/>.</param>
         /// <returns><see cref="TensorSpan{T}"/> based on the provided ranges.</returns>
-        public TensorSpan<T> AsTensorSpan(params ReadOnlySpan<NIndex> startIndex) => AsTensorSpan().Slice(startIndex);
+        public TensorSpan<T> AsTensorSpan(params scoped ReadOnlySpan<NIndex> startIndex) => AsTensorSpan().Slice(startIndex);
 
         /// <summary>
         /// Converts this <see cref="Tensor{T}"/> to a <see cref="ReadOnlyTensorSpan{T}"/> pointing to the same backing memory."/>
         /// </summary>
         /// <returns><see cref="ReadOnlyTensorSpan{T}"/></returns>
-        public ReadOnlyTensorSpan<T> AsReadOnlyTensorSpan() => new ReadOnlyTensorSpan<T>(ref MemoryMarshal.GetArrayDataReference(_values), _lengths, _strides);
+        public ReadOnlyTensorSpan<T> AsReadOnlyTensorSpan() => new ReadOnlyTensorSpan<T>(ref MemoryMarshal.GetArrayDataReference(_values), _lengths, _strides, _flattenedLength);
 
         /// <summary>
         /// Converts this <see cref="Tensor{T}"/> to a <see cref="ReadOnlyTensorSpan{T}"/> pointing to the same backing memory based on the provided ranges."/>
         /// </summary>
         /// <param name="start">The ranges you want in the <see cref="ReadOnlyTensorSpan{T}"/></param>
         /// <returns></returns>
-        public ReadOnlyTensorSpan<T> AsReadOnlyTensorSpan(params ReadOnlySpan<NRange> start) => AsTensorSpan().Slice(start);
+        public ReadOnlyTensorSpan<T> AsReadOnlyTensorSpan(params scoped ReadOnlySpan<NRange> start) => AsTensorSpan().Slice(start);
 
         /// <summary>
         /// Converts this <see cref="Tensor{T}"/> to a <see cref="ReadOnlyTensorSpan{T}"/> pointing to the same backing memory based on the provided start locations."/>
         /// </summary>
         /// <param name="start">The start locations you want in the <see cref="ReadOnlyTensorSpan{T}"/></param>
         /// <returns></returns>
-        public ReadOnlyTensorSpan<T> AsReadOnlyTensorSpan(params ReadOnlySpan<nint> start) => Slice(start);
+        public ReadOnlyTensorSpan<T> AsReadOnlyTensorSpan(params scoped ReadOnlySpan<nint> start) => Slice(start);
 
         /// <summary>
         /// Converts this <see cref="Tensor{T}"/> to a <see cref="ReadOnlyTensorSpan{T}"/> pointing to the same backing memory based on the provided start indexes."/>
         /// </summary>
         /// <param name="startIndex">The start indexes you want in the <see cref="ReadOnlyTensorSpan{T}"/></param>
         /// <returns></returns>
-        public ReadOnlyTensorSpan<T> AsReadOnlyTensorSpan(params ReadOnlySpan<NIndex> startIndex) => AsTensorSpan().Slice(startIndex);
+        public ReadOnlyTensorSpan<T> AsReadOnlyTensorSpan(params scoped ReadOnlySpan<NIndex> startIndex) => AsTensorSpan().Slice(startIndex);
 
         /// <summary>
         /// Returns a reference to the 0th element of the Tensor. If the Tensor is empty, returns null reference.
@@ -422,7 +412,7 @@ namespace System.Numerics.Tensors
         /// <param name="start">The ranges for the slice</param>
         /// <returns><see cref="Tensor{T}"/> as a copy of the provided ranges.</returns>
         // REVIEW: CURRENTLY DOES A COPY.
-        public Tensor<T> Slice(params ReadOnlySpan<NRange> start)
+        public Tensor<T> Slice(params scoped ReadOnlySpan<NRange> start)
         {
             if (start.Length != Lengths.Length)
                 throw new ArgumentOutOfRangeException(nameof(start), "Number of dimensions to slice does not equal the number of dimensions in the span");
@@ -440,7 +430,7 @@ namespace System.Numerics.Tensors
         /// <param name="start">The start indexes for the slice</param>
         /// <returns><see cref="Tensor{T}"/> as a copy of the provided ranges.</returns>
         // REVIEW: CURRENTLY DOES A COPY.
-        public Tensor<T> Slice(params ReadOnlySpan<nint> start)
+        public Tensor<T> Slice(params scoped ReadOnlySpan<nint> start)
         {
             NRange[] ranges = new NRange[start.Length];
             for (int i = 0; i < start.Length; i++)
@@ -456,7 +446,7 @@ namespace System.Numerics.Tensors
         /// <param name="startIndex">The start indexes for the slice</param>
         /// <returns><see cref="Tensor{T}"/> as a copy of the provided ranges.</returns>
         // REVIEW: CURRENTLY DOES A COPY.
-        public Tensor<T> Slice(params ReadOnlySpan<NIndex> startIndex)
+        public Tensor<T> Slice(params scoped ReadOnlySpan<NIndex> startIndex)
         {
             NRange[] ranges = new NRange[startIndex.Length];
             for (int i = 0; i < startIndex.Length; i++)
@@ -482,7 +472,7 @@ namespace System.Numerics.Tensors
         /// Thrown when the destination TensorSpan is shorter than the source Tensor.
         /// </exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void CopyTo(TensorSpan<T> destination) => AsTensorSpan().CopyTo(destination);
+        public void CopyTo(scoped TensorSpan<T> destination) => AsTensorSpan().CopyTo(destination);
 
         /// <summary>
         /// Fills the contents of this span with the given value.
@@ -498,19 +488,26 @@ namespace System.Numerics.Tensors
         /// <param name="destination">The span to copy items into.</param>
         /// <returns>If the destination span is shorter than the source tensor, this method
         /// return false and no data is written to the destination.</returns>
-        public bool TryCopyTo(TensorSpan<T> destination) => AsTensorSpan().TryCopyTo(destination);
+        public bool TryCopyTo(scoped TensorSpan<T> destination) => AsTensorSpan().TryCopyTo(destination);
 
         /// <summary>
         /// Flattens the contents of this Tensor into the provided <see cref="Span{T}"/>.
         /// </summary>
         /// <param name="destination">The span to copy items into.</param>
-        public void FlattenTo(Span<T> destination) => AsTensorSpan().FlattenTo(destination);
+        public void FlattenTo(scoped Span<T> destination) => AsTensorSpan().FlattenTo(destination);
 
         /// <summary>
         /// Flattens the contents of this Tensor into the provided <see cref="Span{T}"/>.
         /// </summary>
         /// <param name="destination">The span to copy items into.</param>
-        public bool TryFlattenTo(Span<T> destination) => AsTensorSpan().TryFlattenTo(destination);
+        public bool TryFlattenTo(scoped Span<T> destination) => AsTensorSpan().TryFlattenTo(destination);
+
+        // IEnumerable
+        /// <summary>
+        /// Gets an <see cref="IEnumerator{T}"/> for the <see cref="Tensor{T}"/>.
+        /// </summary>
+        /// <returns><see cref="IEnumerator{T}"/></returns>
+        IEnumerator<T> IEnumerable<T>.GetEnumerator() => GetEnumerator();
 
         // IEnumerable
         /// <summary>
@@ -523,77 +520,9 @@ namespace System.Numerics.Tensors
         /// Gets an <see cref="IEnumerator"/> for the <see cref="Tensor{T}"/>."/>
         /// </summary>
         /// <returns></returns>
-        IEnumerator IEnumerable.GetEnumerator() => new Enumerator(this);
+        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
-        // IEquatable
-        /// <summary>
-        /// Returns true if left and right point at the same memory and have the same length and have the same rank.  Note that
-        /// this does *not* check to see if the *contents* are equal.
-        /// </summary>
-        /// <param name="other"></param>
-        public bool Equals(Tensor<T>? other)
-        {
-            if (other is null)
-                return false;
-
-            return _flattenedLength == other._flattenedLength &&
-            Rank == other.Rank &&
-            _lengths == other._lengths &&
-            Unsafe.AreSame(ref _values[0], ref other._values[0]);
-        }
-
-        // REVIEW: REFERENCE EQUALITY VS DEEP EQUALITY. ALL OTHER OPERATORS WILL DO EXPENSIVE WORK.
-        // IEqualityOperators
-        /// <summary>
-        /// Returns true if left and right point at the same memory and have the same length and have the same rank.  Note that
-        /// this does *not* check to see if the *contents* are equal.
-        /// </summary>
-        public static bool operator ==(Tensor<T>? left, Tensor<T>? right)
-        {
-            if (left is null)
-                return right is null;
-            else if (right is null)
-                return false;
-
-            return left._flattenedLength == right._flattenedLength &&
-                left.Rank == right.Rank &&
-                left._lengths == right._lengths &&
-                Unsafe.AreSame(ref left._values[0], ref right._values[0]);
-        }
-
-        /// <summary>
-        /// Return true if the Tensor has only a single element and that element is equal to the right value.
-        /// </summary>
-        public static bool operator ==(Tensor<T> left, T right)
-        {
-            if (left is null)
-                return false;
-            if (right is null)
-                return false;
-
-            if (left._values is null)
-                return false;
-
-            T val = left._values[0];
-            if (val is null)
-                return false;
-
-            return TensorSpanHelpers.CalculateTotalLength(left._lengths) == 1 &&
-            val.Equals(right);
-        }
-
-        /// <summary>
-        /// Returns false if left and right point at the same memory and have the same length and have the same rank.  Note that
-        /// this does *not* check to see if the *contents* are equal.
-        /// </summary>
-        public static bool operator !=(Tensor<T>? left, Tensor<T>? right) => !(left == right);
-
-        /// <summary>
-        /// Return false if the Tensor has only a single element and that element is equal to the right value.
-        /// </summary>
-        public static bool operator !=(Tensor<T> left, T right) => !(left == right);
-
-        private sealed class Enumerator : IEnumerator<T>
+        private struct Enumerator : IEnumerator<T>
         {
             /// <summary>The span being enumerated.</summary>
             private readonly Tensor<T> _tensor;
@@ -652,12 +581,6 @@ namespace System.Numerics.Tensors
         }
 
         // REVIEW: PENDING API REVIEW TO DETERMINE IMPLEMENTATION
-        public override bool Equals(object? obj)
-        {
-            return obj is Tensor<T> tensor && Equals(tensor);
-        }
-
-        // REVIEW: PENDING API REVIEW TO DETERMINE IMPLEMENTATION
         public override int GetHashCode()
         {
             throw new NotImplementedException();
@@ -696,7 +619,7 @@ namespace System.Numerics.Tensors
         /// </summary>
         /// <param name="maximumLengths">Maximum Length of each dimension</param>
         /// <returns>A <see cref="string"/> representation of the <see cref="Tensor{T}"/></returns>
-        public string ToString(params ReadOnlySpan<nint> maximumLengths)
+        public string ToString(params scoped ReadOnlySpan<nint> maximumLengths)
         {
             var sb = new StringBuilder();
             sb.AppendLine(ToMetadataString());

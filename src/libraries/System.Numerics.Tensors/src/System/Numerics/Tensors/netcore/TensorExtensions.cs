@@ -28,7 +28,7 @@ namespace System.Numerics.Tensors
         /// <param name="span">The <see cref="TensorSpan{T}"/> you want to represent as a string.</param>
         /// <param name="maximumLengths">Maximum Length of each dimension</param>
         /// <returns>A <see cref="string"/> representation of the <paramref name="span"/></returns>
-        public static string ToString<T>(this TensorSpan<T> span, params ReadOnlySpan<nint> maximumLengths) => ((ReadOnlyTensorSpan<T>)span).ToString(maximumLengths);
+        public static string ToString<T>(this TensorSpan<T> span, params scoped ReadOnlySpan<nint> maximumLengths) => ((ReadOnlyTensorSpan<T>)span).ToString(maximumLengths);
 
         /// <summary>
         /// Creates a <see cref="string"/> representation of the <see cref="ReadOnlyTensorSpan{T}"/>."/>
@@ -36,7 +36,7 @@ namespace System.Numerics.Tensors
         /// <typeparam name="T"></typeparam>
         /// <param name="span">The <see cref="ReadOnlyTensorSpan{T}"/> you want to represent as a string.</param>
         /// <param name="maximumLengths">Maximum Length of each dimension</param>
-        public static string ToString<T>(this ReadOnlyTensorSpan<T> span, params ReadOnlySpan<nint> maximumLengths)
+        public static string ToString<T>(this ReadOnlyTensorSpan<T> span, params scoped ReadOnlySpan<nint> maximumLengths)
         {
             var sb = new StringBuilder();
             scoped Span<nint> curIndexes;
@@ -57,7 +57,7 @@ namespace System.Numerics.Tensors
             T[] values = new T[span.Lengths[span.Rank - 1]];
             while (copiedValues < span._flattenedLength)
             {
-                var sp = new ReadOnlyTensorSpan<T>(ref Unsafe.Add(ref span._reference, TensorSpanHelpers.ComputeLinearIndex(curIndexes, span.Strides, span.Lengths)), [span.Lengths[span.Rank - 1]], [1]);
+                var sp = new ReadOnlyTensorSpan<T>(ref Unsafe.Add(ref span._reference, TensorSpanHelpers.ComputeLinearIndex(curIndexes, span.Strides, span.Lengths)), [span.Lengths[span.Rank - 1]], [1], span.Lengths[span.Rank - 1]);
                 sb.Append('{');
                 sp.FlattenTo(values);
                 sb.Append(string.Join(",", values));
@@ -81,7 +81,7 @@ namespace System.Numerics.Tensors
         /// </summary>
         /// <param name="input">Input <see cref="Tensor{T}"/>.</param>
         /// <param name="shape"><see cref="ReadOnlySpan{T}"/> of the desired new shape.</param>
-        public static Tensor<T> Resize<T>(Tensor<T> input, ReadOnlySpan<nint> shape)
+        public static Tensor<T> Resize<T>(Tensor<T> input, scoped ReadOnlySpan<nint> shape)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>
         {
             nint newSize = TensorSpanHelpers.CalculateTotalLength(shape);
@@ -102,7 +102,7 @@ namespace System.Numerics.Tensors
         /// </summary>
         /// <param name="input">Input <see cref="TensorSpan{T}"/>.</param>
         /// <param name="shape"><see cref="ReadOnlySpan{T}"/> of the desired new shape.</param>
-        public static TensorSpan<T> Resize<T>(TensorSpan<T> input, ReadOnlySpan<nint> shape)
+        public static TensorSpan<T> Resize<T>(TensorSpan<T> input, scoped ReadOnlySpan<nint> shape)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>
         {
             nint newSize = TensorSpanHelpers.CalculateTotalLength(shape);
@@ -127,7 +127,7 @@ namespace System.Numerics.Tensors
         /// <param name="input">Input <see cref="Tensor{T}"/>.</param>
         /// <param name="shape"><see cref="ReadOnlySpan{T}"/> of the desired new shape.</param>
         /// <exception cref="ArgumentException">Thrown when the shapes are not broadcast compatible.</exception>
-        public static Tensor<T> Broadcast<T>(Tensor<T> input, ReadOnlySpan<nint> shape)
+        public static Tensor<T> Broadcast<T>(Tensor<T> input, scoped ReadOnlySpan<nint> shape)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>
         {
             Tensor<T> intermediate = BroadcastTo(input, shape);
@@ -187,11 +187,11 @@ namespace System.Numerics.Tensors
         /// <param name="input">Input <see cref="TensorSpan{T}"/>.</param>
         /// <param name="shape"><see cref="ReadOnlySpan{T}"/> of the desired new shape.</param>
         /// <exception cref="ArgumentException">Thrown when the shapes are not broadcast compatible.</exception>
-        internal static TensorSpan<T> BroadcastTo<T>(TensorSpan<T> input, ReadOnlySpan<nint> shape)
+        internal static TensorSpan<T> BroadcastTo<T>(TensorSpan<T> input, scoped ReadOnlySpan<nint> shape)
         where T : IEquatable<T>, IEqualityOperators<T, T, bool>
         {
             if (input.Lengths.SequenceEqual(shape))
-                return new TensorSpan<T>(ref input._reference, shape, input.Strides);
+                return new TensorSpan<T>(ref input._reference, shape, input.Strides, input._memoryLength);
 
             if (!TensorHelpers.AreShapesBroadcastCompatible(input.Lengths, shape))
                 ThrowHelper.ThrowArgument_ShapesNotBroadcastCompatible();
@@ -217,7 +217,7 @@ namespace System.Numerics.Tensors
                 }
             }
 
-            TensorSpan<T> output = new TensorSpan<T>(ref input._reference, shape, strides);
+            TensorSpan<T> output = new TensorSpan<T>(ref input._reference, shape, strides, input._memoryLength);
 
             return output;
         }
@@ -453,7 +453,7 @@ namespace System.Numerics.Tensors
         /// <param name="tensor">Input <see cref="Tensor{T}"/>.</param>
         /// <param name="values">The values you want to set in the <paramref name="tensor"/>.</param>
         /// <param name="ranges">The ranges you want to set.</param>
-        public static Tensor<T> SetSlice<T>(this Tensor<T> tensor, Tensor<T> values, params ReadOnlySpan<NRange> ranges)
+        public static Tensor<T> SetSlice<T>(this Tensor<T> tensor, Tensor<T> values, params scoped ReadOnlySpan<NRange> ranges)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>
         {
             TensorSpan<T> srcSpan;
@@ -1003,7 +1003,7 @@ namespace System.Numerics.Tensors
         /// </summary>
         /// <param name="input"><see cref="Tensor{T}"/> you want to reshape.</param>
         /// <param name="lengths"><see cref="ReadOnlySpan{T}"/> with the new dimensions.</param>
-        public static Tensor<T> Reshape<T>(this Tensor<T> input, params ReadOnlySpan<nint> lengths)
+        public static Tensor<T> Reshape<T>(this Tensor<T> input, params scoped ReadOnlySpan<nint> lengths)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>
         {
             nint[] arrLengths = lengths.ToArray();
@@ -1038,7 +1038,7 @@ namespace System.Numerics.Tensors
         /// </summary>
         /// <param name="input"><see cref="TensorSpan{T}"/> you want to reshape.</param>
         /// <param name="lengths"><see cref="ReadOnlySpan{T}"/> with the new dimensions.</param>
-        public static TensorSpan<T> Reshape<T>(this TensorSpan<T> input, params ReadOnlySpan<nint> lengths)
+        public static TensorSpan<T> Reshape<T>(this TensorSpan<T> input, params scoped ReadOnlySpan<nint> lengths)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>
         {
             nint[] arrLengths = lengths.ToArray();
@@ -1063,7 +1063,7 @@ namespace System.Numerics.Tensors
             if (tempLinear != input.FlattenedLength)
                 ThrowHelper.ThrowArgument_InvalidReshapeDimensions();
             nint[] strides = TensorSpanHelpers.CalculateStrides(arrLengths);
-            return new TensorSpan<T>(ref input._reference, arrLengths, strides);
+            return new TensorSpan<T>(ref input._reference, arrLengths, strides, input._memoryLength);
         }
         #endregion
 
@@ -1338,7 +1338,7 @@ namespace System.Numerics.Tensors
         /// </summary>
         /// <param name="input">Input <see cref="Tensor{T}"/></param>
         /// <param name="axis"><see cref="ReadOnlySpan{T}"/> with the new axis ordering.</param>
-        public static Tensor<T> Permute<T>(Tensor<T> input, params ReadOnlySpan<int> axis)
+        public static Tensor<T> Permute<T>(Tensor<T> input, params scoped ReadOnlySpan<int> axis)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>
         {
             if (input.Rank == 1)

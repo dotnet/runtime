@@ -18,11 +18,11 @@ namespace System.Numerics.Tensors
         // It looks like C#/.NET currently hits limitations here as it believes TSelf and T could be the same type
         // Ideally we could annotate it such that they cannot be the same type and no conflicts would exist
 
-        static abstract TSelf Create(ReadOnlySpan<nint> lengths, bool pinned = false);
-        static abstract TSelf Create(ReadOnlySpan<nint> lengths, ReadOnlySpan<nint> strides, bool pinned = false);
+        static abstract TSelf Create(scoped ReadOnlySpan<nint> lengths, bool pinned = false);
+        static abstract TSelf Create(scoped ReadOnlySpan<nint> lengths, scoped ReadOnlySpan<nint> strides, bool pinned = false);
 
-        static abstract TSelf CreateUninitialized(ReadOnlySpan<nint> lengths, bool pinned = false);
-        static abstract TSelf CreateUninitialized(ReadOnlySpan<nint> lengths, ReadOnlySpan<nint> strides, bool pinned = false);
+        static abstract TSelf CreateUninitialized(scoped ReadOnlySpan<nint> lengths, bool pinned = false);
+        static abstract TSelf CreateUninitialized(scoped ReadOnlySpan<nint> lengths, scoped ReadOnlySpan<nint> strides, bool pinned = false);
 
         bool IsReadOnly { get; }
 

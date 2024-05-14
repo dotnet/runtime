@@ -29,18 +29,18 @@ namespace System.Numerics.Tensors
         ReadOnlyTensorSpan<T> AsReadOnlyTensorSpan(params scoped ReadOnlySpan<NIndex> startIndex);
         ReadOnlyTensorSpan<T> AsReadOnlyTensorSpan(params scoped ReadOnlySpan<NRange> range);
 
-        void CopyTo(TensorSpan<T> destination);
-        void FlattenTo(Span<T> destination);
+        void CopyTo(scoped TensorSpan<T> destination);
+        void FlattenTo(scoped Span<T> destination);
 
         // These are not properties so that structs can implement the interface without allocating:
-        void GetLengths(Span<nint> destination);
-        void GetStrides(Span<nint> destination);
+        void GetLengths(scoped Span<nint> destination);
+        void GetStrides(scoped Span<nint> destination);
 
         ref readonly T GetPinnableReference();
         TSelf Slice(params scoped ReadOnlySpan<nint> start);
         TSelf Slice(params scoped ReadOnlySpan<NIndex> startIndex);
         TSelf Slice(params scoped ReadOnlySpan<NRange> range);
-        bool TryCopyTo(TensorSpan<T> destination);
-        bool TryFlattenTo(Span<T> destination);
+        bool TryCopyTo(scoped TensorSpan<T> destination);
+        bool TryFlattenTo(scoped Span<T> destination);
     }
 }

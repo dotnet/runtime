@@ -81,6 +81,28 @@ namespace System.Numerics.Tensors
         /// <param name="strides"></param>
         /// <param name="lengths"></param>
         /// <returns></returns>
+        public static nint ComputeLinearIndex(ReadOnlySpan<int> indices, ReadOnlySpan<nint> strides, ReadOnlySpan<nint> lengths)
+        {
+            Debug.Assert(strides.Length == indices.Length);
+
+            nint index = 0;
+            for (int i = 0; i < indices.Length; i++)
+            {
+                if (indices[i] >= lengths[i] || indices[i] < 0)
+                    ThrowHelper.ThrowIndexOutOfRangeException();
+                index += strides[i] * indices[i];
+            }
+
+            return index;
+        }
+
+        /// <summary>
+        /// Calculates the 1-d index for n-d indices in layout specified by strides.
+        /// </summary>
+        /// <param name="indices"></param>
+        /// <param name="strides"></param>
+        /// <param name="lengths"></param>
+        /// <returns></returns>
         public static nint ComputeLinearIndex(ReadOnlySpan<NIndex> indices, ReadOnlySpan<nint> strides, ReadOnlySpan<nint> lengths)
         {
             Debug.Assert(strides.Length == indices.Length);
