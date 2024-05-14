@@ -2616,6 +2616,91 @@ AssertionIndex Compiler::optAssertionIsSubtype(GenTree* tree, GenTree* methodTab
     return NO_ASSERTION_INDEX;
 }
 
+static bool IsBulkWriteBarrierCandidate(GenTreeBlk* blk)
+{
+    assert(blk->OperIs(GT_STORE_BLK));
+
+    // We're only interested in block copies with > 3 gc fields
+    const unsigned bulkCopyThreshold = 4;
+    if (blk->OperIsInitBlkOp() || (blk->GetLayout()->GetGCPtrCount() < bulkCopyThreshold))
+    {
+        return false;
+    }
+
+    // If the layout contains a byref, then we know it must live on the stack.
+    if (blk->Addr()->OperIs(GT_LCL_ADDR) || blk->GetLayout()->HasGCByRef())
+    {
+        return false;
+    }
+
+    // Conservatively give up on volatile operations
+    if (blk->IsVolatile() || (blk->Data()->OperIs(GT_BLK) && blk->Data()->AsIndir()->IsVolatile()))
+    {
+        return false;
+    }
+
+    // TODO: Consider using VN for better "not in the GC heap" analysis
+    return true;
+}
+
+GenTree* Compiler::optVNBasedFoldExpr_Blk(BasicBlock* block, GenTree* parent, GenTreeBlk* blk)
+{
+    if (IsBulkWriteBarrierCandidate(blk))
+    {
+        GenTree* dst = blk->Addr();
+        GenTree* src = blk->Data();
+
+        if (src->OperIs(GT_BLK))
+        {
+            src = src->AsBlk()->Addr();
+        }
+        else
+        {
+            assert(src->OperIs(GT_LCL_VAR, GT_LCL_FLD));
+
+            // Get an address of the LCL struct
+            GenTreeLclVarCommon* srcLcl = src->AsLclVarCommon();
+            src                         = gtNewLclAddrNode(srcLcl->GetLclNum(), srcLcl->GetLclOffs(), TYP_I_IMPL);
+            lvaSetVarAddrExposed(srcLcl->GetLclNum() DEBUGARG(AddressExposedReason::ESCAPE_ADDRESS));
+        }
+
+        // if op2 (src) is evaluated before op1 (dest), we need to preserve the side-effects since
+        // dest is the first argument in the helper call.
+        GenTree* rootEffects = nullptr;
+        if (blk->IsReverseOp() && (((dst->gtFlags | src->gtFlags) & GTF_ALL_EFFECT) != 0))
+        {
+            TempInfo tmp = fgMakeTemp(dst);
+            rootEffects  = tmp.store;
+            dst          = tmp.load;
+        }
+
+        // Wrap with nullchecks
+        // TODO: Consider using VNs to have a more precise non-null analysis
+        if (fgAddrCouldBeNull(dst))
+        {
+            GenTree* destClone = fgMakeMultiUse(&dst);
+            dst                = gtNewOperNode(GT_COMMA, dst->TypeGet(), gtNewNullCheck(dst, block), destClone);
+        }
+        if (fgAddrCouldBeNull(src))
+        {
+            GenTree* srcClone = fgMakeMultiUse(&src);
+            src               = gtNewOperNode(GT_COMMA, src->TypeGet(), gtNewNullCheck(src, block), srcClone);
+        }
+
+        GenTreeIntCon* size = gtNewIconNode((ssize_t)blk->GetLayout()->GetSize(), TYP_I_IMPL);
+        GenTreeCall*   call = gtNewHelperCallNode(CORINFO_HELP_BULK_WRITEBARRIER, TYP_VOID, dst, src, size);
+        fgMorphArgs(call);
+        GenTree* result = call;
+        if (rootEffects != nullptr)
+        {
+            result = gtNewOperNode(GT_COMMA, call->TypeGet(), rootEffects, call);
+        }
+        gtSetEvalOrder(result);
+        return result;
+    }
+    return nullptr;
+}
+
 //------------------------------------------------------------------------------
 // optVNBasedFoldExpr_Call: Folds given call using VN to a simpler tree.
 //
@@ -2707,6 +2792,9 @@ GenTree* Compiler::optVNBasedFoldExpr(BasicBlock* block, GenTree* parent, GenTre
     {
         case GT_CALL:
             return optVNBasedFoldExpr_Call(block, parent, tree->AsCall());
+
+        case GT_STORE_BLK:
+            return optVNBasedFoldExpr_Blk(block, parent, tree->AsBlk());
 
             // We can add more VN-based foldings here.
 
@@ -6419,6 +6507,10 @@ Compiler::fgWalkResult Compiler::optVNBasedFoldCurStmt(BasicBlock* block,
     // This can occur for HFA return values (see hfa_sf3E_r.exe)
     if (tree->TypeGet() == TYP_STRUCT)
     {
+        if (tree->OperIs(GT_STORE_BLK) && IsBulkWriteBarrierCandidate(tree->AsBlk()))
+        {
+            goto DO_FOLD;
+        }
         return WALK_CONTINUE;
     }
 
@@ -6495,6 +6587,8 @@ Compiler::fgWalkResult Compiler::optVNBasedFoldCurStmt(BasicBlock* block,
             // Unknown node, continue to walk.
             return WALK_CONTINUE;
     }
+
+DO_FOLD:
 
     // Perform the VN-based folding:
     GenTree* newTree = optVNBasedFoldExpr(block, parent, tree);

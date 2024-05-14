@@ -370,12 +370,6 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
         // CopyObj or CopyBlk
         if (doCpObj)
         {
-            // Try to use bulk copy helper
-            if (TryLowerBlockStoreAsGcBulkCopyCall(blkNode))
-            {
-                return;
-            }
-
             assert((dstAddr->TypeGet() == TYP_BYREF) || (dstAddr->TypeGet() == TYP_I_IMPL));
             blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindCpObjUnroll;
         }
