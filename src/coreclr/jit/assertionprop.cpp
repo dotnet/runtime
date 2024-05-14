@@ -2649,7 +2649,6 @@ GenTree* Compiler::optVNBasedFoldExpr_Blk(BasicBlock* block, GenTree* parent, Ge
     {
         GenTree* dst = blk->Addr();
         GenTree* src = blk->Data();
-
         if (src->OperIs(GT_BLK))
         {
             src = src->AsBlk()->Addr();
@@ -2657,15 +2656,14 @@ GenTree* Compiler::optVNBasedFoldExpr_Blk(BasicBlock* block, GenTree* parent, Ge
         else
         {
             assert(src->OperIs(GT_LCL_VAR, GT_LCL_FLD));
-
-            // Get an address of the LCL struct
             GenTreeLclVarCommon* srcLcl = src->AsLclVarCommon();
-            src                         = gtNewLclAddrNode(srcLcl->GetLclNum(), srcLcl->GetLclOffs(), TYP_I_IMPL);
+            // Get an address of the LCL struct
+            src = gtNewLclAddrNode(srcLcl->GetLclNum(), srcLcl->GetLclOffs(), TYP_I_IMPL);
             lvaSetVarAddrExposed(srcLcl->GetLclNum() DEBUGARG(AddressExposedReason::ESCAPE_ADDRESS));
         }
 
-        // if op2 (src) is evaluated before op1 (dest), we need to preserve the side-effects since
-        // dest is the first argument in the helper call.
+        // if op2 (src) is evaluated before op1 (dest), we need to preserve the
+        // side-effects since dest is the first argument in the helper call.
         GenTree* rootEffects = nullptr;
         if (blk->IsReverseOp() && (((dst->gtFlags | src->gtFlags) & GTF_ALL_EFFECT) != 0))
         {
@@ -2673,19 +2671,9 @@ GenTree* Compiler::optVNBasedFoldExpr_Blk(BasicBlock* block, GenTree* parent, Ge
             rootEffects  = tmp.store;
             dst          = tmp.load;
         }
-
-        // Wrap with nullchecks
         // TODO: Consider using VNs to have a more precise non-null analysis
-        if (fgAddrCouldBeNull(dst))
-        {
-            GenTree* destClone = fgMakeMultiUse(&dst);
-            dst                = gtNewOperNode(GT_COMMA, dst->TypeGet(), gtNewNullCheck(dst, block), destClone);
-        }
-        if (fgAddrCouldBeNull(src))
-        {
-            GenTree* srcClone = fgMakeMultiUse(&src);
-            src               = gtNewOperNode(GT_COMMA, src->TypeGet(), gtNewNullCheck(src, block), srcClone);
-        }
+        fgWrapWithNullcheck(&dst, block);
+        fgWrapWithNullcheck(&src, block);
 
         GenTreeIntCon* size = gtNewIconNode((ssize_t)blk->GetLayout()->GetSize(), TYP_I_IMPL);
         GenTreeCall*   call = gtNewHelperCallNode(CORINFO_HELP_BULK_WRITEBARRIER, TYP_VOID, dst, src, size);

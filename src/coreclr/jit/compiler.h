@@ -6352,6 +6352,7 @@ private:
     GenTree* fgInsertCommaFormTemp(GenTree** ppTree);
     TempInfo fgMakeTemp(GenTree* value);
     GenTree* fgMakeMultiUse(GenTree** ppTree);
+    void     fgWrapWithNullcheck(GenTree** ppTree, BasicBlock* block);
 
     //                  Recognize a bitwise rotation pattern and convert into a GT_ROL or a GT_ROR node.
     GenTree* fgRecognizeAndMorphBitwiseRotation(GenTree* tree);
