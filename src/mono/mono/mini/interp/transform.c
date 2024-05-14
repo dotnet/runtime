@@ -3421,7 +3421,7 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 		StackInfo *sp_old_params = (StackInfo*) mono_mempool_alloc (td->mempool, sizeof (StackInfo) * csignature->param_count);
 		memcpy (sp_old_params, td->sp, sizeof (StackInfo) * csignature->param_count);
 
-		GArray *new_params = g_array_new (FALSE, FALSE, sizeof (MonoType *));
+		GArray *new_params = g_array_new (FALSE, FALSE, sizeof (MonoType*));
 		uint32_t new_param_count = 0;
 		int align;
 		/*
@@ -3449,15 +3449,26 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 						++new_param_count;
 						g_array_append_val (new_params, lowered_swift_struct.lowered_elements [idx_lowered]);
 					}
-					continue;
-				}
-			}
-			// For non-struct and by-ref arguments, just copy them over
-			memcpy (td->sp, &sp_old_params [idx_param], sizeof (StackInfo));
-			++td->sp;
+				} else {
+					// For structs that cannot be lowered, we change the argument to byref type
+					ptype = mono_class_get_byref_type (mono_defaults.typed_reference_class);
+					// Load the address of the struct
+					interp_add_ins (td, MINT_LDLOCA_S);
+					interp_ins_set_sreg (td->last_ins, sp_old_params [idx_param].var);
+					push_simple_type (td, STACK_TYPE_I);
+					interp_ins_set_dreg (td->last_ins, td->sp [-1].var);
 
-			++new_param_count;
-			g_array_append_val (new_params, ptype);
+					++new_param_count;
+					g_array_append_val (new_params, ptype);
+				}
+			} else {
+				// Copy over non-struct arguments
+				memcpy (td->sp, &sp_old_params [idx_param], sizeof (StackInfo));
+				++td->sp;
+
+				++new_param_count;
+				g_array_append_val (new_params, ptype);
+			}
 		}
 		// Restore the function pointer
 		memcpy (td->sp, &sp_fp, sizeof (StackInfo));

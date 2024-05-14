@@ -7529,7 +7529,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					old_args [idx_param] = sp [idx_param];
 				}
 
-				GArray *new_params = g_array_new (FALSE, FALSE, sizeof (MonoType *));
+				GArray *new_params = g_array_new (FALSE, FALSE, sizeof (MonoType*));
 				uint32_t new_param_count = 0;
 				/*
 				 * Go through the lowered arguments, if the argument is a struct, 
@@ -7550,20 +7550,32 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 							for (uint32_t idx_lowered = 0; idx_lowered < lowered_swift_struct.num_lowered_elements; ++idx_lowered) {
 								MonoInst *lowered_arg = NULL;
 								// Load the lowered elements of the struct
-								lowered_arg = mini_emit_memory_load (cfg, lowered_swift_struct.lowered_elements [idx_lowered], struct_base_address, lowered_swift_struct.offsets [idx_lowered], 0); //ins_flag
+								lowered_arg = mini_emit_memory_load (cfg, lowered_swift_struct.lowered_elements [idx_lowered], struct_base_address, lowered_swift_struct.offsets [idx_lowered], 0);
 								*sp++ = lowered_arg;
 
 								++new_param_count;
 								g_array_append_val (new_params, lowered_swift_struct.lowered_elements [idx_lowered]);
 							}
-							continue;
-						}
-					}
-					// For non-struct and by-ref arguments, just copy them over
-					*sp++ = old_args [idx_param];
+						} else {
+							// For structs that cannot be lowered, we change the argument to byref type
+							ptype = mono_class_get_byref_type (mono_defaults.typed_reference_class);
+							// Load the address of the struct
+							MonoInst *struct_base_address =  mono_compile_create_var (cfg, mono_get_int_type (), OP_LOCAL);
+							CHECK_ARG (idx_param);
+							NEW_ARGLOADA (cfg, struct_base_address, idx_param);
+							MONO_ADD_INS (cfg->cbb, struct_base_address);
+							*sp++ = struct_base_address;
 
-					++new_param_count;
-					g_array_append_val (new_params, ptype);
+							++new_param_count;
+							g_array_append_val (new_params, ptype);
+						}
+					} else {
+						// Copy over non-struct arguments
+						*sp++ = old_args [idx_param];
+
+						++new_param_count;
+						g_array_append_val (new_params, ptype);
+					}
 				}
 
 				// Create a new dummy signature with the lowered arguments
