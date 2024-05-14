@@ -1017,6 +1017,13 @@ namespace System.Net.Http.Functional.Tests
                 return;
             }
 
+            TestEventListener? listener = null;
+            if (UseVersion == HttpVersion30)
+            {
+                listener = new TestEventListener(_output, TestEventListener.NetworkingEvents);
+            }
+            _output.WriteLine("Starting ReadAsStreamAsync_HandlerProducesWellBehavedResponseStream test");
+
             var tcs = new TaskCompletionSource<bool>();
             await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
             {
@@ -1235,6 +1242,7 @@ namespace System.Net.Http.Functional.Tests
                     }
                 });
             });
+            listener?.Dispose();
         }
 
         [Fact]

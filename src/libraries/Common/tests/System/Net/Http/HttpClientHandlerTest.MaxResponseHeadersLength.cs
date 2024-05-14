@@ -57,6 +57,13 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public async Task SetAfterUse_Throws()
         {
+            TestEventListener? listener = null;
+            if (UseVersion == HttpVersion30)
+            {
+                listener = new TestEventListener(_output, TestEventListener.NetworkingEvents);
+            }
+            _output.WriteLine("Starting SetAfterUse_Throws test");
+
             await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
             {
                 using HttpClientHandler handler = CreateHttpClientHandler();
@@ -67,6 +74,7 @@ namespace System.Net.Http.Functional.Tests
                 Assert.Throws<InvalidOperationException>(() => handler.MaxResponseHeadersLength = 1);
             },
             server => server.AcceptConnectionSendResponseAndCloseAsync());
+            listener?.Dispose();
         }
 
         [Theory]
