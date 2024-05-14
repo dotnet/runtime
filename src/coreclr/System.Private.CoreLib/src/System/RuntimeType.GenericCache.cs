@@ -104,7 +104,7 @@ namespace System
                 if (currentCache is null)
                 {
                     TCache newCache = TCache.Create(type);
-                    currentCache = newCache;
+                    genericCache = newCache;
                     return newCache;
                 }
                 else if (currentCache is TCache existing)
@@ -149,7 +149,8 @@ namespace System
             public static void Overwrite(RuntimeType type, TCache cache)
             {
                 ref object? genericCache = ref type.Cache.GenericCache;
-                if (genericCache is null)
+                object? currentCache = genericCache;
+                if (currentCache is null)
                 {
                     genericCache = cache;
                     return;
@@ -160,8 +161,8 @@ namespace System
                 // but we can't easily do a lock-free CompareExchange with the current design,
                 // and we can't assume that we won't have one thread adding another item to the cache
                 // while another is trying to overwrite the (currently) only entry in the cache.
-                CompositeCacheEntry composite = GetOrUpgradeToCompositeCache(ref genericCache);
-
+                CompositeCacheEntry composite = GetOrUpgradeToCompositeCache(ref currentCache);
+                genericCache = currentCache;
                 composite.OverwriteNestedCache(cache);
             }
         }
