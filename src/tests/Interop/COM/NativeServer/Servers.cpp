@@ -166,6 +166,7 @@ STDAPI DllRegisterServer(void)
     RETURN_IF_FAILED(RegisterClsid(__uuidof(ErrorMarshalTesting), L"Both"));
     RETURN_IF_FAILED(RegisterClsid(__uuidof(DispatchTesting), L"Both"));
     RETURN_IF_FAILED(RegisterClsid(__uuidof(EventTesting), L"Both"));
+    RETURN_IF_FAILED(RegisterClsid(__uuidof(DispatchCoerceTesting), L"Both"));
     RETURN_IF_FAILED(RegisterClsid(__uuidof(AggregationTesting), L"Both"));
     RETURN_IF_FAILED(RegisterClsid(__uuidof(ColorTesting), L"Both"));
     RETURN_IF_FAILED(RegisterClsid(__uuidof(InspectableTesting), L"Both"));
@@ -185,6 +186,7 @@ STDAPI DllUnregisterServer(void)
     RETURN_IF_FAILED(RemoveClsid(__uuidof(ErrorMarshalTesting)));
     RETURN_IF_FAILED(RemoveClsid(__uuidof(DispatchTesting)));
     RETURN_IF_FAILED(RemoveClsid(__uuidof(EventTesting)));
+    RETURN_IF_FAILED(RemoveClsid(__uuidof(DispatchCoerceTesting)));
     RETURN_IF_FAILED(RemoveClsid(__uuidof(AggregationTesting)));
     RETURN_IF_FAILED(RemoveClsid(__uuidof(ColorTesting)));
     RETURN_IF_FAILED(RemoveClsid(__uuidof(InspectableTesting)));
@@ -215,6 +217,9 @@ STDAPI DllGetClassObject(_In_ REFCLSID rclsid, _In_ REFIID riid, _Out_ LPVOID FA
 
     if (rclsid == __uuidof(EventTesting))
         return ClassFactoryBasic<EventTesting>::Create(riid, ppv);
+
+    if (rclsid == __uuidof(DispatchCoerceTesting))
+        return ClassFactoryBasic<DispatchCoerceTesting>::Create(riid, ppv);
 
     if (rclsid == __uuidof(AggregationTesting))
         return ClassFactoryAggregate<AggregationTesting>::Create(riid, ppv);

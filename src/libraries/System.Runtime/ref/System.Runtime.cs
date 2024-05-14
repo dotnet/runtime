@@ -4,6 +4,8 @@
 // Changes to this file must follow the https://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
+using System.Numerics;
+
 namespace Microsoft.Win32.SafeHandles
 {
     public abstract partial class CriticalHandleMinusOneIsInvalid : System.Runtime.InteropServices.CriticalHandle
@@ -1985,6 +1987,8 @@ namespace System
         public static int Compare(decimal d1, decimal d2) { throw null; }
         public int CompareTo(decimal value) { throw null; }
         public int CompareTo(object? value) { throw null; }
+        public static TInteger ConvertToInteger<TInteger>(decimal value) where TInteger : System.Numerics.IBinaryInteger<TInteger> { throw null; }
+        public static TInteger ConvertToIntegerNative<TInteger>(decimal value) where TInteger : System.Numerics.IBinaryInteger<TInteger> { throw null; }
         public static decimal CopySign(decimal value, decimal sign) { throw null; }
         public static decimal CreateChecked<TOther>(TOther value) where TOther : System.Numerics.INumberBase<TOther> { throw null; }
         public static decimal CreateSaturating<TOther>(TOther value) where TOther : System.Numerics.INumberBase<TOther> { throw null; }
@@ -2259,6 +2263,8 @@ namespace System
         public static double Clamp(double value, double min, double max) { throw null; }
         public int CompareTo(double value) { throw null; }
         public int CompareTo(object? value) { throw null; }
+        public static TInteger ConvertToInteger<TInteger>(double value) where TInteger : System.Numerics.IBinaryInteger<TInteger> { throw null; }
+        public static TInteger ConvertToIntegerNative<TInteger>(double value) where TInteger : System.Numerics.IBinaryInteger<TInteger> { throw null; }
         public static double CopySign(double value, double sign) { throw null; }
         public static double Cos(double x) { throw null; }
         public static double Cosh(double x) { throw null; }
@@ -2881,6 +2887,8 @@ namespace System
         public static System.Half Clamp(System.Half value, System.Half min, System.Half max) { throw null; }
         public int CompareTo(System.Half other) { throw null; }
         public int CompareTo(object? obj) { throw null; }
+        public static TInteger ConvertToInteger<TInteger>(System.Half value) where TInteger : System.Numerics.IBinaryInteger<TInteger> { throw null; }
+        public static TInteger ConvertToIntegerNative<TInteger>(System.Half value) where TInteger : System.Numerics.IBinaryInteger<TInteger> { throw null; }
         public static System.Half CopySign(System.Half value, System.Half sign) { throw null; }
         public static System.Half Cos(System.Half x) { throw null; }
         public static System.Half Cosh(System.Half x) { throw null; }
@@ -4998,6 +5006,8 @@ namespace System
         public static float Clamp(float value, float min, float max) { throw null; }
         public int CompareTo(object? value) { throw null; }
         public int CompareTo(float value) { throw null; }
+        public static TInteger ConvertToInteger<TInteger>(float value) where TInteger : System.Numerics.IBinaryInteger<TInteger> { throw null; }
+        public static TInteger ConvertToIntegerNative<TInteger>(float value) where TInteger : System.Numerics.IBinaryInteger<TInteger> { throw null; }
         public static float CopySign(float value, float sign) { throw null; }
         public static float Cos(float x) { throw null; }
         public static float Cosh(float x) { throw null; }
@@ -10809,6 +10819,8 @@ namespace System.Numerics
     public partial interface IFloatingPoint<TSelf> : System.IComparable, System.IComparable<TSelf>, System.IEquatable<TSelf>, System.IFormattable, System.IParsable<TSelf>, System.ISpanFormattable, System.ISpanParsable<TSelf>, System.Numerics.IAdditionOperators<TSelf, TSelf, TSelf>, System.Numerics.IAdditiveIdentity<TSelf, TSelf>, System.Numerics.IComparisonOperators<TSelf, TSelf, bool>, System.Numerics.IDecrementOperators<TSelf>, System.Numerics.IDivisionOperators<TSelf, TSelf, TSelf>, System.Numerics.IEqualityOperators<TSelf, TSelf, bool>, System.Numerics.IFloatingPointConstants<TSelf>, System.Numerics.IIncrementOperators<TSelf>, System.Numerics.IModulusOperators<TSelf, TSelf, TSelf>, System.Numerics.IMultiplicativeIdentity<TSelf, TSelf>, System.Numerics.IMultiplyOperators<TSelf, TSelf, TSelf>, System.Numerics.INumber<TSelf>, System.Numerics.INumberBase<TSelf>, System.Numerics.ISignedNumber<TSelf>, System.Numerics.ISubtractionOperators<TSelf, TSelf, TSelf>, System.Numerics.IUnaryNegationOperators<TSelf, TSelf>, System.Numerics.IUnaryPlusOperators<TSelf, TSelf> where TSelf : System.Numerics.IFloatingPoint<TSelf>?
     {
         static virtual TSelf Ceiling(TSelf x) { throw null; }
+        static virtual TInteger ConvertToInteger<TInteger>(TSelf value) where TInteger : System.Numerics.IBinaryInteger<TInteger> { throw null; }
+        static virtual TInteger ConvertToIntegerNative<TInteger>(TSelf value) where TInteger : System.Numerics.IBinaryInteger<TInteger> { throw null; }
         static virtual TSelf Floor(TSelf x) { throw null; }
         int GetExponentByteCount();
         int GetExponentShortestBitLength();

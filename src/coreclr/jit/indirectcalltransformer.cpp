@@ -1248,8 +1248,14 @@ private:
 
                         if (!isReasonableUnderflow)
                         {
-                            compiler->fgPgoConsistent = false;
-                            compiler->Metrics.ProfileInconsistentChainedGDV++;
+                            JITDUMP("Profile data could not be locally repaired. Data %s inconsistent.\n",
+                                    compiler->fgPgoConsistent ? "is now" : "was already");
+
+                            if (compiler->fgPgoConsistent)
+                            {
+                                compiler->Metrics.ProfileInconsistentChainedGDV++;
+                                compiler->fgPgoConsistent = false;
+                            }
                         }
                     }
 

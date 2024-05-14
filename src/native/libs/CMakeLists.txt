@@ -109,7 +109,7 @@ if (CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
         add_subdirectory(System.IO.Ports.Native)
     endif ()
 
-    if (CMAKE_C_COMPILER_ID STREQUAL Clang)
+    if (CMAKE_C_COMPILER_ID MATCHES "Clang")
         add_compile_options(-Weverything)
         add_compile_options(-Wno-format-nonliteral)
         add_compile_options(-Wno-disabled-macro-expansion)
@@ -118,6 +118,8 @@ if (CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
         add_compile_options(-Wno-cast-align)
         add_compile_options(-Wno-typedef-redefinition)
         add_compile_options(-Wno-c11-extensions)
+        add_compile_options(-Wno-pre-c11-compat) # fixes build on Debian
+        add_compile_options(-Wno-unknown-warning-option) # unknown warning option '-Wno-pre-c11-compat'
         add_compile_options(-Wno-thread-safety-analysis)
         if (CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
             add_compile_options(-Wno-unsafe-buffer-usage)
