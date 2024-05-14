@@ -1348,6 +1348,67 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
             }
             break;
 
+            case NI_Sve_Storex2:
+            case NI_Sve_Storex3:
+            case NI_Sve_Storex4:
+            {
+                assert(intrin.op3->OperIsFieldList());
+                GenTreeFieldList* fieldList  = intrin.op3->AsFieldList();
+                GenTree*          firstField = fieldList->Uses().GetHead()->GetNode();
+                op3Reg                       = firstField->GetRegNum();
+
+#ifdef DEBUG
+                unsigned  regCount = 0;
+                regNumber argReg   = op3Reg;
+                for (GenTreeFieldList::Use& use : fieldList->Uses())
+                {
+                    regCount++;
+
+                    GenTree* argNode = use.GetNode();
+                    assert(argReg == argNode->GetRegNum());
+                    argReg = getNextSIMDRegWithWraparound(argReg);
+                }
+
+                switch (ins)
+                {
+                    case INS_sve_st2b:
+                    case INS_sve_st2d:
+                    case INS_sve_st2h:
+                    case INS_sve_st2w:
+                    case INS_sve_st2q:
+                        assert(regCount == 2);
+                        break;
+
+                    case INS_sve_st3b:
+                    case INS_sve_st3d:
+                    case INS_sve_st3h:
+                    case INS_sve_st3w:
+                    case INS_sve_st3q:
+                        assert(regCount == 3);
+                        break;
+
+                    case INS_sve_st4b:
+                    case INS_sve_st4d:
+                    case INS_sve_st4h:
+                    case INS_sve_st4w:
+                    case INS_sve_st4q:
+                        assert(regCount == 4);
+                        break;
+
+                    default:
+                        unreached();
+                }
+#endif
+                GetEmitter()->emitIns_R_R_R_I(ins, emitSize, op3Reg, op1Reg, op2Reg, 0, opt);
+                break;
+            }
+
+            case NI_Sve_Store:
+            {
+                GetEmitter()->emitIns_R_R_R_I(ins, emitSize, op3Reg, op1Reg, op2Reg, 0, opt);
+                break;
+            }
+
             case NI_Vector64_ToVector128:
                 GetEmitter()->emitIns_Mov(ins, emitSize, targetReg, op1Reg, /* canSkip */ false);
                 break;

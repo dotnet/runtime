@@ -1758,6 +1758,20 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 break;
             }
 
+            case NI_Sve_Storex2:
+            case NI_Sve_Storex3:
+            case NI_Sve_Storex4:
+            {
+                assert(intrin.op2 != nullptr);
+                assert(intrin.op3 != nullptr);
+                srcCount += BuildAddrUses(intrin.op2);
+                srcCount += BuildConsecutiveRegistersForUse(intrin.op3);
+                assert(dstCount == 0);
+                buildInternalRegisterUses();
+                *pDstCount = 0;
+                break;
+            }
+
             default:
                 noway_assert(!"Not a supported as multiple consecutive register intrinsic");
         }
@@ -1865,8 +1879,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 compiler->getSIMDInitTempVarNum(requiredSimdTempType);
             }
         }
-
-        if ((intrin.id == NI_Sve_FusedMultiplyAddBySelectedScalar) ||
+        else if ((intrin.id == NI_Sve_FusedMultiplyAddBySelectedScalar) ||
             (intrin.id == NI_Sve_FusedMultiplySubtractBySelectedScalar))
         {
             // If this is common pattern, then we will add a flag in the table, but for now, just check for specific
@@ -1897,6 +1910,10 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
             {
                 srcCount += BuildDelayFreeUses(intrinEmbOp2->Op(argNum), intrinEmbOp2->Op(1));
             }
+        }
+        else if (intrin.id == NI_Sve_Store)
+        {
+            srcCount += BuildAddrUses(intrin.op2);
         }
         else
         {
