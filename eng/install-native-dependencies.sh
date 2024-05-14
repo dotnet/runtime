@@ -25,7 +25,8 @@ case "$os" in
         if [ "$ID" = "debian" ] || [ "$ID_LIKE" = "debian" ]; then
             apt update
 
-            xargs apt-get install -y < eng/debian-reqs.txt
+            apt-get install build-essential clang cmake curl gettext git libicu-dev libkrb5-dev liblldb-dev liblttng-ust-dev \
+                libssl-dev libunwind8-dev lld lldb llvm locales ninja-build python-is-python3 zlib1g-dev
 
             localedef -i en_US -c -f UTF-8 -A /usr/share/locale/locale.alias en_US.UTF-8
         elif [ "$ID" = "alpine" ]; then
