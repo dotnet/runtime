@@ -167,6 +167,27 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
+        public void DefineMethodOverride_ImplementGenericInterfaceMethodGenericTypeMismatchThrows()
+        {
+            PersistedAssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder typeBuilder);
+            TypeBuilder anotherType = ab.GetDynamicModule("MyModule").DefineType("AnotherType");
+            Type intfType = typeof(IConstructableDerived<>).MakeGenericType(typeBuilder);
+            typeBuilder.AddInterfaceImplementation(intfType);
+
+            MethodBuilder impl = typeBuilder.DefineMethod("Create", MethodAttributes.Public | MethodAttributes.Static, typeBuilder, [typeof(int)]);
+            impl.GetILGenerator().Emit(OpCodes.Ret);
+
+            MethodInfo intfMethod = TypeBuilder.GetMethod(typeof(IConstructable<>).MakeGenericType(anotherType), typeof(IConstructable<>).GetMethod("Create")!)!;
+            Assert.Throws<ArgumentException>("methodInfoBody", () => typeBuilder.DefineMethodOverride(impl, intfMethod));
+
+            MethodBuilder impl2 = typeBuilder.DefineMethod("Create2", MethodAttributes.Public | MethodAttributes.Static, typeBuilder, [typeof(int)]);
+            impl2.GetILGenerator().Emit(OpCodes.Ret);
+
+            MethodInfo intf2Method = TypeBuilder.GetMethod(typeof(IConstructableDerived<>).MakeGenericType(anotherType), typeof(IConstructableDerived<>).GetMethod("Create2")!)!;
+            Assert.Throws<ArgumentException>("methodInfoBody", () => typeBuilder.DefineMethodOverride(impl2, intf2Method));
+        }
+
+        [Fact]
         public void DefineMethodOverride_CalledAgainWithSameDeclaration_ThrowsArgumentException()
         {
             AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder type);
@@ -214,6 +235,15 @@ namespace System.Reflection.Emit.Tests
         public interface InterfaceWithMethod
         {
             int Method(string s, int i);
+        }
+
+        public abstract class Base<T> : GenericInterface<T>
+        {
+            public abstract T Method();
+        }
+
+        public abstract class Derived<T> : Base<T>
+        {
         }
 
         [Fact]
@@ -281,11 +311,16 @@ namespace System.Reflection.Emit.Tests
             static abstract T Create(int value);
         }
 
+        public interface IConstructableDerived<T> : IConstructable<T>
+        {
+            static abstract T Create2(int value);
+        }
+
         [Fact]
-        public void DefineMethodOverride_ImplementStaticAbstractMethodOfGenericInterface()
+        public void DefineMethodOverride_ImplementMethodsOfGenericInterfaceAndItsParentInterface()
         {
             PersistedAssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder typeBuilder);
-            Type intfType = typeof(IConstructable<>).MakeGenericType(typeBuilder);
+            Type intfType = typeof(IConstructableDerived<>).MakeGenericType(typeBuilder);
             typeBuilder.AddInterfaceImplementation(intfType);
             ConstructorBuilder ctor = typeBuilder.DefineConstructor(MethodAttributes.Public, CallingConventions.Standard, [typeof(int)]);
             var il = ctor.GetILGenerator();
@@ -297,9 +332,86 @@ namespace System.Reflection.Emit.Tests
             il.Emit(OpCodes.Call, ctor);
             il.Emit(OpCodes.Ret);
 
-            MethodInfo intfMethod = TypeBuilder.GetMethod(intfType, typeof(IConstructable<>).GetMethod("Create")!)!;
+            MethodInfo intfMethod = TypeBuilder.GetMethod(typeof(IConstructable<>).MakeGenericType(typeBuilder), typeof(IConstructable<>).GetMethod("Create")!)!;
             typeBuilder.DefineMethodOverride(impl, intfMethod);
+
+            MethodBuilder impl2 = typeBuilder.DefineMethod("Create2", MethodAttributes.Public | MethodAttributes.Static, typeBuilder, [typeof(int)]);
+            il = impl2.GetILGenerator();
+            il.Emit(OpCodes.Ldarg_0);
+            il.Emit(OpCodes.Call, ctor);
+            il.Emit(OpCodes.Ret);
+
+            MethodInfo intf2Method = TypeBuilder.GetMethod(intfType, typeof(IConstructableDerived<>).GetMethod("Create2")!)!;
+            typeBuilder.DefineMethodOverride(impl2, intf2Method);
+
             typeBuilder.CreateType(); // should succeed
+        }
+
+        [Fact]
+        public void DefineMethodOverride_OverrideMethodOfGenericTypeBuilderWithTypeBuilderGenericParameter()
+        {
+            PersistedAssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder typeBuilder);
+            TypeBuilder baseType = ab.GetDynamicModule("MyModule").DefineType("BaseType");
+            GenericTypeParameterBuilder[] parameters = baseType.DefineGenericParameters(["T"]);
+            MethodBuilder baseMethod = baseType.DefineMethod("Create", MethodAttributes.Abstract | MethodAttributes.Public, parameters[0], [parameters[0]]); 
+
+            Type constructedType = baseType.MakeGenericType(typeBuilder);
+            typeBuilder.SetParent(constructedType);
+
+            MethodBuilder impl = typeBuilder.DefineMethod("Create", MethodAttributes.Public | MethodAttributes.Virtual, typeBuilder, [typeBuilder]);
+            impl.GetILGenerator().Emit(OpCodes.Ret);
+
+            typeBuilder.DefineMethodOverride(impl, TypeBuilder.GetMethod(constructedType, baseMethod));
+        }
+
+        [Fact]
+        public void DefineMethodOverride_OverrideMethodOfParentOfGenericParentWithTypeBuilderParameter()
+        {
+            PersistedAssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder typeBuilder);
+            
+            Type constructedType = typeof(Derived<>).MakeGenericType(typeBuilder);
+            typeBuilder.SetParent(constructedType);
+            MethodInfo baseMethod = TypeBuilder.GetMethod(typeof(Base<>).MakeGenericType(typeBuilder), typeof(Base<>).GetMethod("Method"));
+
+            MethodBuilder impl = typeBuilder.DefineMethod("Method", MethodAttributes.Public | MethodAttributes.Virtual, typeBuilder, Type.EmptyTypes);
+            impl.GetILGenerator().Emit(OpCodes.Ret);
+
+            typeBuilder.DefineMethodOverride(impl, baseMethod);
+        }
+
+        [Fact]
+        public void ConstructedGenericTypeBuilder_IsAssignableFromTests()
+        {
+            PersistedAssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder typeBuilder);
+            Type baseTypeOfTypeBuilder = typeof(Base<>).MakeGenericType(typeBuilder);
+            Type derivedTypeOfTypeBuilder = typeof(Derived<>).MakeGenericType(typeBuilder);
+            Type derivedTypeOfInt = typeof(Derived<>).MakeGenericType(typeof(int));
+            Type grandParentIfaceOfTypeBuilder = typeof(GenericInterface<>).MakeGenericType(typeBuilder);
+            typeBuilder.SetParent(derivedTypeOfTypeBuilder);
+
+            Assert.True(derivedTypeOfTypeBuilder.IsAssignableFrom(derivedTypeOfTypeBuilder));
+            Assert.False(derivedTypeOfTypeBuilder.IsAssignableFrom(baseTypeOfTypeBuilder));
+            Assert.True(baseTypeOfTypeBuilder.IsAssignableFrom(derivedTypeOfTypeBuilder));
+            Assert.False(derivedTypeOfInt.IsAssignableFrom(baseTypeOfTypeBuilder));
+            Assert.False(baseTypeOfTypeBuilder.IsAssignableFrom(derivedTypeOfInt));
+            Assert.False(typeBuilder.IsAssignableFrom(baseTypeOfTypeBuilder));
+            Assert.True(derivedTypeOfTypeBuilder.IsAssignableFrom(typeBuilder));
+            Assert.True(baseTypeOfTypeBuilder.IsAssignableFrom(typeBuilder));
+            Assert.True(grandParentIfaceOfTypeBuilder.IsAssignableFrom(typeBuilder));
+
+            ModuleBuilder module = ab.GetDynamicModule("MyModule");
+            TypeBuilder genericType = module.DefineType("GenericType", TypeAttributes.Public);
+            GenericTypeParameterBuilder[] gParams = genericType.DefineGenericParameters("T");
+            Type constructedDerivedType2 = typeof(Derived<>).MakeGenericType(gParams[0]);
+            genericType.SetParent(constructedDerivedType2);
+            Type genericTypeOfTypeBuilder = genericType.MakeGenericType(typeBuilder);
+
+            Assert.True(derivedTypeOfTypeBuilder.IsAssignableFrom(genericTypeOfTypeBuilder));
+            Assert.True(baseTypeOfTypeBuilder.IsAssignableFrom(genericTypeOfTypeBuilder));
+            Assert.True(grandParentIfaceOfTypeBuilder.IsAssignableFrom(genericTypeOfTypeBuilder));
+            Assert.False(derivedTypeOfInt.IsAssignableFrom(genericTypeOfTypeBuilder));
+            Assert.False(typeof(Derived<>).IsAssignableFrom(genericType));
+            Assert.False(genericType.MakeGenericType(typeof(int)).IsAssignableFrom(genericTypeOfTypeBuilder));
         }
 
         [Fact]

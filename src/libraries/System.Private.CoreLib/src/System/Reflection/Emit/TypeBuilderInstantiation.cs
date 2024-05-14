@@ -183,8 +183,34 @@ namespace System.Reflection.Emit
         [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)]
         public override Type GetInterface(string name, bool ignoreCase) { throw new NotSupportedException(); }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2080:DynamicallyAccessedMemberTypes",
+            Justification = "Interfaces used in Reflection.Emit either dynamic or accessible")]
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)]
-        public override Type[] GetInterfaces() { throw new NotSupportedException(); }
+        public override Type[] GetInterfaces()
+        {
+            Type[] ifaces = _genericType.GetInterfaces();
+
+            if (ifaces.Length == 0)
+            {
+                return ifaces;
+            }
+
+            Type[] ifacesCopy = new Type[ifaces.Length];
+
+            for(int i = 0; i < ifaces.Length; i++)
+            {
+                if (ifaces[i] is TypeBuilderInstantiation typeBldrIface)
+                {
+                    typeBldrIface.Substitute(GetGenericArguments());
+                }
+                else
+                {
+                    ifacesCopy[i] = ifaces[i];
+                }
+            }
+
+            return ifacesCopy;
+        }
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicEvents | DynamicallyAccessedMemberTypes.NonPublicEvents)]
         public override EventInfo GetEvent(string name, BindingFlags bindingAttr) { throw new NotSupportedException(); }
@@ -254,7 +280,71 @@ namespace System.Reflection.Emit
         [RequiresUnreferencedCode("If some of the generic arguments are annotated (either with DynamicallyAccessedMembersAttribute, or generic constraints), trimming can't validate that the requirements of those annotations are met.")]
         public override Type MakeGenericType(params Type[] inst) { throw new InvalidOperationException(SR.Format(SR.Arg_NotGenericTypeDefinition, this)); }
 
-        public override bool IsAssignableFrom([NotNullWhen(true)] Type? c) => this == c;
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:DynamicallyAccessedMemberTypes",
+            Justification = "Interfaces used in Reflection.Emit either dynamic or accessible")]
+        public override bool IsAssignableFrom([NotNullWhen(true)] Type? c)
+        {
+            if (c == null)
+            {
+                return false;
+            }
+
+            if (this == c || IsAssignableFrom(c.BaseType))
+            {
+                return true;
+            }
+
+            if (!c.IsConstructedGenericType)
+            {
+                return false;
+            }
+
+            Type typeDefinition = c.GetGenericTypeDefinition();
+
+            if (typeDefinition.IsAssignableFrom(_genericType) &&
+                CheckArguments(c.GenericTypeArguments))
+            {
+                return true;
+            }
+
+            foreach (Type iface in typeDefinition.GetInterfaces())
+            {
+                if (iface.IsConstructedGenericType &&
+                    iface.GetGenericTypeDefinition().IsAssignableFrom(_genericType) &&
+                    CheckArguments(c.GenericTypeArguments))
+                {
+                    return true;
+                }
+            }
+
+            if (c.BaseType != null &&
+                c.BaseType.IsConstructedGenericType &&
+                c.BaseType.GetGenericTypeDefinition().IsAssignableFrom(_genericType) &&
+                CheckArguments(c.GenericTypeArguments))
+            {
+                return true;
+            }
+
+            return false;
+        }
+
+        private bool CheckArguments(Type[] genericTypeArguments)
+        {
+            if (_typeArguments.Length != genericTypeArguments.Length)
+            {
+                return false;
+            }
+
+            for (int i = 0; i < _typeArguments.Length; i++)
+            {
+                if (_typeArguments[i] != genericTypeArguments[i])
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
 
         public override bool IsSubclassOf(Type c)
         {

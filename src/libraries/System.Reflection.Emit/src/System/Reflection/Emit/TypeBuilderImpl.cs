@@ -418,7 +418,7 @@ namespace System.Reflection.Emit
                             declType = declType.GetElementType();
                         }
 
-                        if (bodyType == null || !bodyType.Equals(declType))
+                        if (declType == null || !declType.IsAssignableFrom(bodyType))
                         {
                             throw ArgumentExceptionInvalidMethodOverride(methodInfoDeclaration.Name);
                         }
