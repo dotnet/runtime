@@ -12,6 +12,7 @@ using Internal.JitInterface;
 using Internal.NativeFormat;
 using Internal.TypeSystem;
 using Internal.CorConstants;
+using static Internal.JitInterface.StructFloatFieldInfoFlags;
 
 
 namespace ILCompiler.DependencyAnalysis.ReadyToRun
@@ -1449,58 +1450,42 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
                 case TargetArchitecture.RiscV64:
                     {
+                        if (IsVarArg)
+                            throw new NotImplementedException("Varargs on RISC-V not supported yet");
+
                         int cFPRegs = 0;
-                        uint floatFieldFlags = (uint)StructFloatFieldInfoFlags.STRUCT_NO_FLOAT_FIELD;
+                        StructFloatFieldInfoFlags flags = STRUCT_NO_FLOAT_FIELD;
                         _hasArgLocDescForStructInRegs = false;
 
                         switch (argType)
                         {
                             case CorElementType.ELEMENT_TYPE_R4:
-                                // 32-bit floating point argument.
-                                cFPRegs = 1;
-                                break;
-
                             case CorElementType.ELEMENT_TYPE_R8:
-                                // 64-bit floating point argument.
+                                // Floating point argument
                                 cFPRegs = 1;
                                 break;
 
                             case CorElementType.ELEMENT_TYPE_VALUETYPE:
+                                flags = (StructFloatFieldInfoFlags)RISCV64PassStructInRegister.GetRISCV64PassStructInRegisterFlags(_argTypeHandle.GetRuntimeTypeHandle());
+                                if (flags != STRUCT_NO_FLOAT_FIELD)
                                 {
-                                    // Composite greater than 16 bytes should be passed by reference
-                                    if (argSize > _transitionBlock.EnregisteredParamTypeMaxSize)
-                                    {
-                                        argSize = _transitionBlock.PointerSize;
-                                    }
-                                    else
-                                    {
-                                        floatFieldFlags = RISCV64PassStructInRegister.GetRISCV64PassStructInRegisterFlags(_argTypeHandle.GetRuntimeTypeHandle());
-                                        if ((floatFieldFlags & (uint)StructFloatFieldInfoFlags.STRUCT_FLOAT_FIELD_ONLY_TWO) != 0)
-                                        {
-                                            cFPRegs = 2;
-                                        }
-                                        else if ((floatFieldFlags & (uint)StructFloatFieldInfoFlags.STRUCT_HAS_FLOAT_FIELDS_MASK) != 0)
-                                        {
-                                            cFPRegs = 1;
-                                        }
-                                    }
-
-                                    break;
+                                    // Struct may be passed according to hardware floating-point calling convention
+                                    cFPRegs = ((flags & STRUCT_FLOAT_FIELD_ONLY_TWO) != 0) ? 2 : 1;
                                 }
+                                break;
 
                             default:
                                 break;
                         }
 
-                        bool isValueType = (argType == CorElementType.ELEMENT_TYPE_VALUETYPE);
-                        int cbArg = _transitionBlock.StackElemSize(argSize, isValueType, false);
-
-                        if (cFPRegs > 0 && !IsVarArg)
+                        if (cFPRegs > 0)
                         {
-                            if (isValueType && ((floatFieldFlags & (uint)StructFloatFieldInfoFlags.STRUCT_HAS_ONE_FLOAT_MASK) != 0))
+                            // Pass according to hardware floating-point calling convention iff the argument can be fully enregistered
+                            if ((flags & (STRUCT_FLOAT_FIELD_FIRST | STRUCT_FLOAT_FIELD_SECOND)) != 0)
                             {
                                 Debug.Assert(cFPRegs == 1);
-                                if ((_riscv64IdxFPReg < 8) && (_riscv64IdxGenReg < 8))
+
+                                if ((1 + _riscv64IdxFPReg <= _transitionBlock.NumArgumentRegisters) && (1 + _riscv64IdxGenReg <= _transitionBlock.NumArgumentRegisters))
                                 {
                                     _argLocDescForStructInRegs = new ArgLocDesc();
                                     _argLocDescForStructInRegs.m_idxFloatReg = _riscv64IdxFPReg;
@@ -1509,64 +1494,67 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                                     _argLocDescForStructInRegs.m_idxGenReg = _riscv64IdxGenReg;
                                     _argLocDescForStructInRegs.m_cGenReg = 1;
 
+                                    _argLocDescForStructInRegs.m_floatFlags = (uint)flags;
                                     _hasArgLocDescForStructInRegs = true;
-                                    _argLocDescForStructInRegs.m_floatFlags = floatFieldFlags;
 
-                                    int argOfsInner = _transitionBlock.OffsetOfFloatArgumentRegisters + _riscv64IdxFPReg * 8;
+                                    int regOffset = _transitionBlock.OffsetOfFloatArgumentRegisters + _riscv64IdxFPReg * _transitionBlock.FloatRegisterSize;
                                     _riscv64IdxFPReg++;
                                     _riscv64IdxGenReg++;
-                                    return argOfsInner;
+                                    return regOffset;
                                 }
                             }
-                            else if (cFPRegs + _riscv64IdxFPReg <= 8)
+                            else if (cFPRegs + _riscv64IdxFPReg <= _transitionBlock.NumArgumentRegisters)
                             {
-                                // Each floating point register in the argument area is 8 bytes.
-                                int argOfsInner = _transitionBlock.OffsetOfFloatArgumentRegisters + _riscv64IdxFPReg * 8;
-                                if (floatFieldFlags == (uint)StructFloatFieldInfoFlags.STRUCT_FLOAT_FIELD_ONLY_TWO)
+                                int regOffset = _transitionBlock.OffsetOfFloatArgumentRegisters + _riscv64IdxFPReg * _transitionBlock.FloatRegisterSize;
+                                if (flags == STRUCT_FLOAT_FIELD_ONLY_TWO) // struct with two single-float fields
                                 {
-                                    // struct with two single-float fields.
                                     _argLocDescForStructInRegs = new ArgLocDesc();
                                     _argLocDescForStructInRegs.m_idxFloatReg = _riscv64IdxFPReg;
                                     _argLocDescForStructInRegs.m_cFloatReg = 2;
                                     Debug.Assert(cFPRegs == 2);
-                                    Debug.Assert(argSize == 8);
+                                    Debug.Assert(argSize == 2 * 4);
 
+                                    _argLocDescForStructInRegs.m_floatFlags = (uint)STRUCT_FLOAT_FIELD_ONLY_TWO;
                                     _hasArgLocDescForStructInRegs = true;
-                                    _argLocDescForStructInRegs.m_floatFlags = (uint)StructFloatFieldInfoFlags.STRUCT_FLOAT_FIELD_ONLY_TWO;
                                 }
                                 _riscv64IdxFPReg += cFPRegs;
-                                return argOfsInner;
-                            }
-                            else
-                            {
-                                _riscv64IdxFPReg = 8;
+                                return regOffset;
                             }
                         }
 
+                        // Pass according to integer calling convention
+
+                        if (argSize > _transitionBlock.EnregisteredParamTypeMaxSize)
+                            argSize = _transitionBlock.PointerSize; // pass by implicit reference
+
+                        bool isValueType = (argType == CorElementType.ELEMENT_TYPE_VALUETYPE);
+                        int cbArg = _transitionBlock.StackElemSize(argSize, isValueType, false);
+                        Debug.Assert((cbArg % _transitionBlock.PointerSize) == 0);
+
+                        int regSlots = ALIGN_UP(cbArg, _transitionBlock.PointerSize) / _transitionBlock.PointerSize;
+                        Debug.Assert(regSlots <= 2);
+                        if (_riscv64IdxGenReg + regSlots <= _transitionBlock.NumArgumentRegisters) // pass in register(s)
                         {
-                            Debug.Assert((cbArg % _transitionBlock.PointerSize) == 0);
+                            int regOffset = _transitionBlock.OffsetOfArgumentRegisters + _riscv64IdxGenReg * _transitionBlock.PointerSize;
+                            _riscv64IdxGenReg += regSlots;
+                            return regOffset;
+                        }
+                        else if (_riscv64IdxGenReg < _transitionBlock.NumArgumentRegisters)  // pass split; head in register, tail on stack
+                        {
+                            Debug.Assert(regSlots == 2);
+                            Debug.Assert(_riscv64IdxGenReg + 1 == _transitionBlock.NumArgumentRegisters, "last argument register should be free");
+                            Debug.Assert((_riscv64IdxGenReg + regSlots - _transitionBlock.NumArgumentRegisters) == 1, "one stack slot needed");
+                            Debug.Assert(_riscv64OfsStack == 0, "tail of a split argument should be the first slot on the stack");
 
-                            int regSlots = ALIGN_UP(cbArg, _transitionBlock.PointerSize) / _transitionBlock.PointerSize;
-                            // Only a0-a7 are valid argument registers.
-                            if (_riscv64IdxGenReg + regSlots <= 8)
-                            {
-                                // The entirety of the arg fits in the register slots.
-                                int argOfsInner = _transitionBlock.OffsetOfArgumentRegisters + _riscv64IdxGenReg * 8;
-                                _riscv64IdxGenReg += regSlots;
-                                return argOfsInner;
-                            }
-                            else if (_riscv64IdxGenReg < 8)
-                            {
-                                int argOfsInner = _transitionBlock.OffsetOfArgumentRegisters + _riscv64IdxGenReg * 8;
-                                _riscv64IdxGenReg = 8;
-                                _riscv64OfsStack += 8;
-                                return argOfsInner;
-                            }
+                            int regOffset = _transitionBlock.OffsetOfArgumentRegisters + _riscv64IdxGenReg * _transitionBlock.PointerSize;
+                            _riscv64OfsStack = 8;
+                            _riscv64IdxGenReg = _transitionBlock.NumArgumentRegisters;
+                            return regOffset;
                         }
 
-                        argOfs = _transitionBlock.OffsetOfArgs + _riscv64OfsStack;
-                        _riscv64OfsStack += cbArg;
-                        return argOfs;
+                        int stackOffset = _transitionBlock.OffsetOfArgs + _riscv64OfsStack; // pass entirely on stack
+                        _riscv64OfsStack += ALIGN_UP(cbArg, _transitionBlock.PointerSize);
+                        return stackOffset;
                     }
 
                 default:
