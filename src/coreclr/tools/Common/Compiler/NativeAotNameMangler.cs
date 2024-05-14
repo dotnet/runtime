@@ -202,6 +202,8 @@ namespace ILCompiler
                                 containingType = containingType.ContainingType;
                             }
 
+                            name = prependAssemblyName + "_" + SanitizeName(name, true);
+
                             // If this is one of the well known types, use a shorter name
                             // We know this won't conflict because all the other types are
                             // prefixed by the assembly name.
@@ -230,10 +232,6 @@ namespace ILCompiler
                                             name = "String";
                                         break;
                                 }
-                            }
-                            else
-                            {
-                                name = prependAssemblyName + "_" + SanitizeName(name, true);
                             }
 
                             // Ensure that name is unique and update our tables accordingly.
