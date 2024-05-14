@@ -3591,12 +3591,8 @@ void Lowering::MoveCFGCallArgs(GenTreeCall* call)
     for (CallArg& arg : call->gtArgs.EarlyArgs())
     {
         GenTree* node = arg.GetEarlyNode();
-        // Non-value nodes in early args are setup nodes for late args.
-        if (node->IsValue())
-        {
-            assert(node->OperIsPutArg() || node->OperIsFieldList());
-            MoveCFGCallArg(call, node);
-        }
+        assert(node->OperIsPutArg() || node->OperIsFieldList());
+        MoveCFGCallArg(call, node);
     }
 
     for (CallArg& arg : call->gtArgs.LateArgs())
@@ -5515,7 +5511,7 @@ GenTree* Lowering::CreateFrameLinkUpdate(FrameLinkAction action)
     const CORINFO_EE_INFO*                       pInfo         = comp->eeGetEEInfo();
     const CORINFO_EE_INFO::InlinedCallFrameInfo& callFrameInfo = pInfo->inlinedCallFrameInfo;
 
-    GenTree* TCB = new (comp, GT_LCL_VAR) GenTreeLclVar(GT_LCL_VAR, TYP_I_IMPL, comp->info.compLvFrameListRoot);
+    GenTree* TCB = comp->gtNewLclVarNode(comp->info.compLvFrameListRoot, TYP_I_IMPL);
 
     // Thread->m_pFrame
     GenTree* addr = new (comp, GT_LEA) GenTreeAddrMode(TYP_I_IMPL, TCB, nullptr, 1, pInfo->offsetOfThreadFrame);
@@ -5525,18 +5521,17 @@ GenTree* Lowering::CreateFrameLinkUpdate(FrameLinkAction action)
     if (action == PushFrame)
     {
         // Thread->m_pFrame = &inlinedCallFrame;
-        data = new (comp, GT_LCL_ADDR)
-            GenTreeLclFld(GT_LCL_ADDR, TYP_BYREF, comp->lvaInlinedPInvokeFrameVar, callFrameInfo.offsetOfFrameVptr);
+        data = comp->gtNewLclAddrNode(comp->lvaInlinedPInvokeFrameVar, callFrameInfo.offsetOfFrameVptr);
     }
     else
     {
         assert(action == PopFrame);
         // Thread->m_pFrame = inlinedCallFrame.m_pNext;
 
-        data = new (comp, GT_LCL_FLD) GenTreeLclFld(GT_LCL_FLD, TYP_BYREF, comp->lvaInlinedPInvokeFrameVar,
-                                                    pInfo->inlinedCallFrameInfo.offsetOfFrameLink);
+        data = comp->gtNewLclFldNode(comp->lvaInlinedPInvokeFrameVar, TYP_I_IMPL,
+                                     pInfo->inlinedCallFrameInfo.offsetOfFrameLink);
     }
-    GenTree* storeInd = new (comp, GT_STOREIND) GenTreeStoreInd(TYP_I_IMPL, addr, data);
+    GenTree* storeInd = comp->gtNewStoreIndNode(TYP_I_IMPL, addr, data);
     return storeInd;
 }
 
@@ -5558,27 +5553,21 @@ GenTree* Lowering::CreateFrameLinkUpdate(FrameLinkAction action)
 //  +08h    +04h    vptr for class InlinedCallFrame   offsetOfFrameVptr       method prolog
 //  +10h    +08h    m_Next                            offsetOfFrameLink       method prolog
 //  +18h    +0Ch    m_Datum                           offsetOfCallTarget      call site
-//  +20h    n/a     m_StubSecretArg                                           not set by JIT
-//  +28h    +10h    m_pCallSiteSP                     offsetOfCallSiteSP      x86: call site, and zeroed in method
+//  +20h    +10h    m_pCallSiteSP                     offsetOfCallSiteSP      x86: call site, and zeroed in method
 //                                                                              prolog;
 //                                                                            non-x86: method prolog (SP remains
 //                                                                              constant in function, after prolog: no
 //                                                                              localloc and PInvoke in same function)
-//  +30h    +14h    m_pCallerReturnAddress            offsetOfReturnAddress   call site
-//  +38h    +18h    m_pCalleeSavedFP                  offsetOfCalleeSavedFP   not set by JIT
-//          +1Ch    m_pThread
+//  +28h    +14h    m_pCallerReturnAddress            offsetOfReturnAddress   call site
+//  +30h    +18h    m_pCalleeSavedFP                  offsetOfCalleeSavedFP   not set by JIT
+//  +38h    +1Ch    m_pThread
 //          +20h    m_pSPAfterProlog                  offsetOfSPAfterProlog   arm only
-//          +20/24h JIT retval spill area (int)                               before call_gc    ???
-//          +24/28h JIT retval spill area (long)                              before call_gc    ???
-//          +28/2Ch Saved value of EBP                                        method prolog     ???
+//  +40h    +20/24h m_StubSecretArg                   offsetOfSecretStubArg   method prolog of IL stubs with secret arg
 //
 // Note that in the VM, InlinedCallFrame is a C++ class whose objects have a 'this' pointer that points
 // to the InlinedCallFrame vptr (the 2nd field listed above), and the GS cookie is stored *before*
 // the object. When we link the InlinedCallFrame onto the Frame chain, we must point at this location,
 // and not at the beginning of the InlinedCallFrame local, which is actually the GS cookie.
-//
-// Return Value:
-//    none
 //
 // See the usages for USE_PER_FRAME_PINVOKE_INIT for more information.
 void Lowering::InsertPInvokeMethodProlog()
@@ -5601,34 +5590,30 @@ void Lowering::InsertPInvokeMethodProlog()
     const CORINFO_EE_INFO*                       pInfo         = comp->eeGetEEInfo();
     const CORINFO_EE_INFO::InlinedCallFrameInfo& callFrameInfo = pInfo->inlinedCallFrameInfo;
 
-// First arg:  &compiler->lvaInlinedPInvokeFrameVar + callFrameInfo.offsetOfFrameVptr
-#if defined(DEBUG)
-    const LclVarDsc* inlinedPInvokeDsc = comp->lvaGetDesc(comp->lvaInlinedPInvokeFrameVar);
-    assert(inlinedPInvokeDsc->IsAddressExposed());
-#endif // DEBUG
-    GenTree* frameAddr = new (comp, GT_LCL_ADDR)
-        GenTreeLclFld(GT_LCL_ADDR, TYP_BYREF, comp->lvaInlinedPInvokeFrameVar, callFrameInfo.offsetOfFrameVptr);
+    assert(comp->lvaGetDesc(comp->lvaInlinedPInvokeFrameVar)->IsAddressExposed());
 
-    // Call runtime helper to fill in our InlinedCallFrame and push it on the Frame list:
-    //     TCB = CORINFO_HELP_INIT_PINVOKE_FRAME(&symFrameStart, secretArg);
-    GenTreeCall* call = comp->gtNewHelperCallNode(CORINFO_HELP_INIT_PINVOKE_FRAME, TYP_I_IMPL);
+    GenTree* const insertionPoint = firstBlockRange.FirstNonCatchArgNode();
 
-    NewCallArg frameAddrArg = NewCallArg::Primitive(frameAddr).WellKnown(WellKnownArg::PInvokeFrame);
-    call->gtArgs.PushBack(comp, frameAddrArg);
-// for x86/arm32 don't pass the secretArg.
-#if !defined(TARGET_X86) && !defined(TARGET_ARM)
-    GenTree* argNode;
+    // Store the stub secret arg if necessary. This has to be done before the
+    // call to the init helper below, which links the frame into the thread
+    // list on 32-bit platforms.
+    // InlinedCallFrame.m_StubSecretArg = stubSecretArg;
     if (comp->info.compPublishStubParam)
     {
-        argNode = comp->gtNewLclvNode(comp->lvaStubArgumentVar, TYP_I_IMPL);
+        GenTree* value = comp->gtNewLclvNode(comp->lvaStubArgumentVar, TYP_I_IMPL);
+        GenTree* store = comp->gtNewStoreLclFldNode(comp->lvaInlinedPInvokeFrameVar, TYP_I_IMPL,
+                                                    callFrameInfo.offsetOfSecretStubArg, value);
+        firstBlockRange.InsertBefore(insertionPoint, LIR::SeqTree(comp, store));
+        DISPTREERANGE(firstBlockRange, store);
     }
-    else
-    {
-        argNode = comp->gtNewIconNode(0, TYP_I_IMPL);
-    }
-    NewCallArg stubParamArg = NewCallArg::Primitive(argNode).WellKnown(WellKnownArg::SecretStubParam);
-    call->gtArgs.PushBack(comp, stubParamArg);
-#endif
+
+    // Call runtime helper to fill in our InlinedCallFrame and push it on the Frame list:
+    //     TCB = CORINFO_HELP_INIT_PINVOKE_FRAME(&symFrameStart);
+    GenTree*   frameAddr    = comp->gtNewLclAddrNode(comp->lvaInlinedPInvokeFrameVar, callFrameInfo.offsetOfFrameVptr);
+    NewCallArg frameAddrArg = NewCallArg::Primitive(frameAddr).WellKnown(WellKnownArg::PInvokeFrame);
+
+    GenTreeCall* call = comp->gtNewHelperCallNode(CORINFO_HELP_INIT_PINVOKE_FRAME, TYP_I_IMPL);
+    call->gtArgs.PushBack(comp, frameAddrArg);
 
     // some sanity checks on the frame list root vardsc
     const unsigned   lclNum = comp->info.compLvFrameListRoot;
@@ -5636,12 +5621,7 @@ void Lowering::InsertPInvokeMethodProlog()
     noway_assert(!varDsc->lvIsParam);
     noway_assert(varDsc->lvType == TYP_I_IMPL);
 
-    GenTree* store       = new (comp, GT_STORE_LCL_VAR) GenTreeLclVar(GT_STORE_LCL_VAR, TYP_I_IMPL, lclNum);
-    store->AsOp()->gtOp1 = call;
-    store->gtFlags |= GTF_VAR_DEF;
-
-    GenTree* const insertionPoint = firstBlockRange.FirstNonCatchArgNode();
-
+    GenTree* store = comp->gtNewStoreLclVarNode(lclNum, call);
     comp->fgMorphTree(store);
     firstBlockRange.InsertBefore(insertionPoint, LIR::SeqTree(comp, store));
     DISPTREERANGE(firstBlockRange, store);
@@ -5656,7 +5636,6 @@ void Lowering::InsertPInvokeMethodProlog()
     GenTree*       spValue = PhysReg(REG_SPBASE);
     GenTreeLclFld* storeSP = comp->gtNewStoreLclFldNode(comp->lvaInlinedPInvokeFrameVar, TYP_I_IMPL,
                                                         callFrameInfo.offsetOfCallSiteSP, spValue);
-    assert(inlinedPInvokeDsc->lvDoNotEnregister);
 
     firstBlockRange.InsertBefore(insertionPoint, LIR::SeqTree(comp, storeSP));
     DISPTREERANGE(firstBlockRange, storeSP);
@@ -5672,7 +5651,6 @@ void Lowering::InsertPInvokeMethodProlog()
     GenTree*       fpValue = PhysReg(REG_FPBASE);
     GenTreeLclFld* storeFP = comp->gtNewStoreLclFldNode(comp->lvaInlinedPInvokeFrameVar, TYP_I_IMPL,
                                                         callFrameInfo.offsetOfCalleeSavedFP, fpValue);
-    assert(inlinedPInvokeDsc->lvDoNotEnregister);
 
     firstBlockRange.InsertBefore(insertionPoint, LIR::SeqTree(comp, storeFP));
     DISPTREERANGE(firstBlockRange, storeFP);
@@ -8213,6 +8191,117 @@ void Lowering::ContainCheckBitCast(GenTree* node)
 }
 
 //------------------------------------------------------------------------
+// TryLowerBlockStoreAsGcBulkCopyCall: Lower a block store node as a CORINFO_HELP_BULK_WRITEBARRIER call
+//
+// Arguments:
+//    blkNode - The block store node to lower
+//
+bool Lowering::TryLowerBlockStoreAsGcBulkCopyCall(GenTreeBlk* blk)
+{
+    if (comp->opts.OptimizationDisabled())
+    {
+        return false;
+    }
+
+    // Replace STORE_BLK (struct copy) with CORINFO_HELP_BULK_WRITEBARRIER which performs
+    // bulk copy for byrefs.
+    const unsigned bulkCopyThreshold = 4;
+    if (!blk->OperIs(GT_STORE_BLK) || blk->OperIsInitBlkOp() || blk->IsVolatile() ||
+        (blk->GetLayout()->GetGCPtrCount() < bulkCopyThreshold))
+    {
+        return false;
+    }
+
+    GenTree* dest = blk->Addr();
+    GenTree* data = blk->Data();
+
+    if (data->OperIs(GT_IND))
+    {
+        if (data->AsIndir()->IsVolatile())
+        {
+            return false;
+        }
+
+        // Drop GT_IND nodes
+        BlockRange().Remove(data);
+        data = data->AsIndir()->Addr();
+    }
+    else
+    {
+        assert(data->OperIs(GT_LCL_VAR, GT_LCL_FLD));
+
+        // Convert local to LCL_ADDR
+        unsigned lclOffset = data->AsLclVarCommon()->GetLclOffs();
+        data->ChangeOper(GT_LCL_ADDR);
+        data->ChangeType(TYP_I_IMPL);
+        data->AsLclFld()->SetLclOffs(lclOffset);
+        data->ClearContained();
+    }
+
+    // Size is a constant
+    GenTreeIntCon* size = comp->gtNewIconNode((ssize_t)blk->GetLayout()->GetSize(), TYP_I_IMPL);
+    BlockRange().InsertBefore(data, size);
+
+    // A hacky way to safely call fgMorphTree in Lower
+    GenTree* destPlaceholder = comp->gtNewZeroConNode(dest->TypeGet());
+    GenTree* dataPlaceholder = comp->gtNewZeroConNode(genActualType(data));
+    GenTree* sizePlaceholder = comp->gtNewZeroConNode(genActualType(size));
+
+    GenTreeCall* call = comp->gtNewHelperCallNode(CORINFO_HELP_BULK_WRITEBARRIER, TYP_VOID, destPlaceholder,
+                                                  dataPlaceholder, sizePlaceholder);
+    comp->fgMorphArgs(call);
+
+    LIR::Range range      = LIR::SeqTree(comp, call);
+    GenTree*   rangeStart = range.FirstNode();
+    GenTree*   rangeEnd   = range.LastNode();
+
+    BlockRange().InsertBefore(blk, std::move(range));
+    blk->gtBashToNOP();
+
+    LIR::Use destUse;
+    LIR::Use sizeUse;
+    BlockRange().TryGetUse(destPlaceholder, &destUse);
+    BlockRange().TryGetUse(sizePlaceholder, &sizeUse);
+    destUse.ReplaceWith(dest);
+    sizeUse.ReplaceWith(size);
+    destPlaceholder->SetUnusedValue();
+    sizePlaceholder->SetUnusedValue();
+
+    LIR::Use dataUse;
+    BlockRange().TryGetUse(dataPlaceholder, &dataUse);
+    dataUse.ReplaceWith(data);
+    dataPlaceholder->SetUnusedValue();
+
+    LowerRange(rangeStart, rangeEnd);
+
+    // Finally move all GT_PUTARG_* nodes
+    // Re-use the existing logic for CFG call args here
+    MoveCFGCallArgs(call);
+
+    BlockRange().Remove(destPlaceholder);
+    BlockRange().Remove(sizePlaceholder);
+    BlockRange().Remove(dataPlaceholder);
+
+    // Add implicit nullchecks for dest and data if needed:
+    //
+    auto wrapWithNullcheck = [&](GenTree* node) {
+        if (comp->fgAddrCouldBeNull(node))
+        {
+            LIR::Use nodeUse;
+            BlockRange().TryGetUse(node, &nodeUse);
+            GenTree* nodeClone = comp->gtNewLclvNode(nodeUse.ReplaceWithLclVar(comp), genActualType(node));
+            GenTree* nullcheck = comp->gtNewNullCheck(nodeClone, comp->compCurBB);
+            BlockRange().InsertAfter(nodeUse.Def(), nodeClone, nullcheck);
+            LowerNode(nullcheck);
+        }
+    };
+    wrapWithNullcheck(dest);
+    wrapWithNullcheck(data);
+
+    return true;
+}
+
+//------------------------------------------------------------------------
 // LowerBlockStoreAsHelperCall: Lower a block store node as a memset/memcpy call
 //
 // Arguments:
@@ -8871,6 +8960,27 @@ GenTree* Lowering::LowerIndir(GenTreeIndir* ind)
         }
 #endif
 
+#ifdef TARGET_ARM64
+        LIR::Use use;
+        if (ind->OperIs(GT_IND) && ind->IsVolatile() && varTypeIsFloating(ind) && BlockRange().TryGetUse(ind, &use))
+        {
+            // Convert "IND<float>(addr)" to "BitCast<float>(IND<int>(addr))"
+            // for volatile loads since there is no ldar for SIMD regs
+            var_types targetType = ind->TypeGet();
+            ind->ChangeType(ind->TypeIs(TYP_DOUBLE) ? TYP_LONG : TYP_INT);
+
+            // Now it might be eligible for some addressing modes with LDAPUR:
+            const bool isContainable = IsInvariantInRange(ind->Addr(), ind);
+            TryCreateAddrMode(ind->Addr(), isContainable, ind);
+
+            // Wrap the resulting IND into BITCAST:
+            GenTree* castOp = comp->gtNewBitCastNode(targetType, ind);
+            BlockRange().InsertAfter(ind, castOp);
+            use.ReplaceWith(castOp);
+            return castOp;
+        }
+#endif
+
         // TODO-Cleanup: We're passing isContainable = true but ContainCheckIndir rejects
         // address containment in some cases so we end up creating trivial (reg + offfset)
         // or (reg + reg) LEAs that are not necessary.
@@ -9523,6 +9633,21 @@ void Lowering::TryRetypingFloatingPointStoreToIntegerStore(GenTree* store)
     {
         return;
     }
+
+    // Convert "STOREIND<float>(addr, floatVal)" to "STORIND<int>(addr, BitCast<int>(floatVal))"
+    // for volatile stores since there is no stlr for SIMD regs
+#ifdef TARGET_ARM64
+    if (store->OperIs(GT_STOREIND) && store->AsStoreInd()->IsVolatile())
+    {
+        GenTreeStoreInd* ind = store->AsStoreInd();
+        ind->ChangeType(ind->TypeIs(TYP_DOUBLE) ? TYP_LONG : TYP_INT);
+        GenTree* castOp = comp->gtNewBitCastNode(ind->TypeGet(), ind->Data());
+        BlockRange().InsertAfter(ind->Data(), castOp);
+        ind->Data() = castOp;
+        LowerNode(castOp);
+        return;
+    }
+#endif
 
     // We only want to transform memory stores, not definitions of candidate locals.
     //

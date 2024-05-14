@@ -2327,20 +2327,7 @@ void LinearScan::buildIntervals()
 
         if (isCandidateVar(argDsc))
         {
-            Interval*       interval = getIntervalForLocalVar(varIndex);
-            const var_types regType  = argDsc->GetRegisterType();
-            regMaskTP       mask     = allRegs(regType);
-            if (argDsc->lvIsRegArg && !stressInitialParamReg())
-            {
-                // Set this interval as currently assigned to that register
-                regNumber inArgReg = argDsc->GetArgReg();
-                assert(inArgReg < REG_COUNT);
-                mask = genRegMask(inArgReg);
-                assignPhysReg(inArgReg, interval);
-                INDEBUG(registersToDump |= getRegMask(inArgReg, interval->registerType));
-            }
-            RefPosition* pos = newRefPosition(interval, MinLocation, RefTypeParamDef, nullptr, mask);
-            pos->setRegOptional(true);
+            buildInitialParamDef(argDsc, argDsc->lvIsRegArg ? argDsc->GetArgReg() : REG_NA);
         }
         else if (argDsc->lvPromoted)
         {
@@ -2351,10 +2338,7 @@ void LinearScan::buildIntervals()
                 if (fieldVarDsc->lvLRACandidate)
                 {
                     assert(fieldVarDsc->lvTracked);
-                    Interval*    interval = getIntervalForLocalVar(fieldVarDsc->lvVarIndex);
-                    RefPosition* pos =
-                        newRefPosition(interval, MinLocation, RefTypeParamDef, nullptr, allRegs(TypeGet(fieldVarDsc)));
-                    pos->setRegOptional(true);
+                    buildInitialParamDef(fieldVarDsc, REG_NA);
                 }
             }
         }
@@ -2401,6 +2385,12 @@ void LinearScan::buildIntervals()
     if (compiler->info.compPublishStubParam)
     {
         intRegState->rsCalleeRegArgMaskLiveIn |= RBM_SECRET_STUB_PARAM;
+
+        LclVarDsc* stubParamDsc = compiler->lvaGetDesc(compiler->lvaStubArgumentVar);
+        if (isCandidateVar(stubParamDsc))
+        {
+            buildInitialParamDef(stubParamDsc, REG_SECRET_STUB_PARAM);
+        }
     }
 
 #ifdef DEBUG
@@ -2858,6 +2848,32 @@ void LinearScan::buildIntervals()
 #endif // DEBUG
 }
 
+//------------------------------------------------------------------------
+// buildInitialParamDef: Build the initial definition for a parameter.
+//
+// Parameters:
+//   varDsc   - LclVarDsc* for parameter
+//   paramReg - Register that parameter is in
+//
+void LinearScan::buildInitialParamDef(const LclVarDsc* varDsc, regNumber paramReg)
+{
+    assert(isCandidateVar(varDsc));
+
+    Interval*       interval = getIntervalForLocalVar(varDsc->lvVarIndex);
+    const var_types regType  = varDsc->GetRegisterType();
+    regMaskTP       mask     = allRegs(regType);
+    if ((paramReg != REG_NA) && !stressInitialParamReg())
+    {
+        // Set this interval as currently assigned to that register
+        assert(paramReg < REG_COUNT);
+        mask = genRegMask(paramReg);
+        assignPhysReg(paramReg, interval);
+        INDEBUG(registersToDump |= getRegMask(paramReg, interval->registerType));
+    }
+    RefPosition* pos = newRefPosition(interval, MinLocation, RefTypeParamDef, nullptr, mask);
+    pos->setRegOptional(true);
+}
+
 #ifdef DEBUG
 
 //------------------------------------------------------------------------
@@ -2898,7 +2914,7 @@ void LinearScan::stressSetRandomParameterPreferences()
 
         // Select a random register from all possible parameter registers
         // (of the right type). Preference this parameter to that register.
-        unsigned numBits = BitOperations::PopCount(*regs);
+        unsigned numBits = PopCount(*regs);
         if (numBits == 0)
         {
             continue;
@@ -3605,7 +3621,7 @@ int LinearScan::BuildDelayFreeUses(GenTree*      node,
     else if (node->OperIsHWIntrinsic())
     {
         assert(node->AsHWIntrinsic()->GetOperandCount() == 1);
-        use = BuildUse(node->AsHWIntrinsic()->Op(1), candidates);
+        return BuildDelayFreeUses(node->AsHWIntrinsic()->Op(1), rmwNode, candidates, useRefPositionRef);
     }
 #endif
     else if (!node->OperIsIndir())
@@ -4479,3 +4495,36 @@ int LinearScan::BuildCmpOperands(GenTree* tree)
     srcCount += BuildOperandUses(op2, op2Candidates);
     return srcCount;
 }
+
+#ifdef SWIFT_SUPPORT
+//------------------------------------------------------------------------
+// MarkSwiftErrorBusyForCall: Given a call set the appropriate RefTypeFixedReg
+// RefPosition for the Swift error register as delay free to ensure the error
+// register does not get allocated by LSRA before it has been consumed.
+//
+// Arguments:
+//    call - The call node
+//
+void LinearScan::MarkSwiftErrorBusyForCall(GenTreeCall* call)
+{
+    assert(call->HasSwiftErrorHandling());
+    // After a Swift call that might throw returns, we expect the error register to be consumed
+    // by a GT_SWIFT_ERROR node. However, we want to ensure the error register won't be trashed
+    // before GT_SWIFT_ERROR can consume it.
+    // (For example, by LSRA allocating the call's result to the same register.)
+    // To do so, delay the freeing of the error register until the next node.
+    // This only works if the next node after the call is the GT_SWIFT_ERROR node.
+    // (LowerNonvirtPinvokeCall should have moved the GT_SWIFT_ERROR node.)
+    assert(call->gtNext != nullptr);
+    assert(call->gtNext->OperIs(GT_SWIFT_ERROR));
+
+    // Conveniently we model the zeroing of the register as a non-standard constant zero argument,
+    // which will have created a RefPosition corresponding to the use of the error at the location
+    // of the uses. Marking this RefPosition as delay freed has the effect of keeping the register
+    // busy at the location of the definition of the call.
+    RegRecord* swiftErrorRegRecord = getRegisterRecord(REG_SWIFT_ERROR);
+    assert((swiftErrorRegRecord != nullptr) && (swiftErrorRegRecord->lastRefPosition != nullptr) &&
+           (swiftErrorRegRecord->lastRefPosition->nodeLocation == currentLoc));
+    setDelayFree(swiftErrorRegRecord->lastRefPosition);
+}
+#endif

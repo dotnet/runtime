@@ -141,6 +141,10 @@ public class DblArray3
     }
 
     [Fact]
+    [SkipOnCoreClr("This test is not compatible with GCStress.", RuntimeTestModes.AnyGCStress)]
+    [SkipOnMono("Needs triage")]
+    [OuterLoop]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/101284", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsNativeAot))]
     public static int TestEntryPoint()
     {
         Console.WriteLine(RuntimeInformation.ProcessArchitecture);
