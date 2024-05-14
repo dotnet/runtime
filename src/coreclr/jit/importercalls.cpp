@@ -9007,15 +9007,12 @@ GenTree* Compiler::impEstimateIntrinsic(CORINFO_METHOD_HANDLE method,
         case NI_System_Math_ReciprocalEstimate:
         case NI_System_Math_ReciprocalSqrtEstimate:
         {
-            GenTree* op1 = impImplicitR4orR8Cast(impPopStack().val, callType);
-
             if (intrinsicName == NI_System_Math_ReciprocalSqrtEstimate)
             {
                 assert(!IsIntrinsicImplementedByUserCall(NI_System_Math_Sqrt));
                 op1 = new (this, GT_INTRINSIC)
                     GenTreeIntrinsic(genActualType(callType), op1, NI_System_Math_Sqrt, nullptr);
             }
-
             return gtNewOperNode(GT_DIV, genActualType(callType), gtNewDconNode(1.0, callType), op1);
         }
 
