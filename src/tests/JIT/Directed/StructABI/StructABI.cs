@@ -672,6 +672,22 @@ struct Empty
 {
 }
 
+struct EmptyFloat
+{
+	Empty FieldE;
+	float FieldF;
+
+	public static EmptyFloat Get()
+	{
+		return new EmptyFloat { FieldF = 3.14159f };
+	}
+
+	public bool Equals(EmptyFloat other)
+	{
+		return FieldF.Equals(other.FieldF);
+	}
+}
+
 struct LongEmptyDouble
 {
 	long FieldL;
@@ -970,6 +986,9 @@ public static partial class StructABI
 	static extern DoubleAndByte EnoughRegistersSysV4(double a, double b, double c, double d, double e, double f, double g, DoubleAndByte value);
 
 	[DllImport("StructABILib")]
+	static extern EmptyFloat EchoEmptyFloatRiscV(EmptyFloat fa0);
+
+	[DllImport("StructABILib")]
 	static extern LongEmptyDouble EchoLongEmptyDoubleRiscV(LongEmptyDouble value);
 
 	[DllImport("StructABILib")]
@@ -1264,6 +1283,12 @@ public static partial class StructABI
 	static DoubleAndByte EnoughRegistersSysV4Managed(double a, double b, double c, double d, double e, double f, double g, DoubleAndByte value)
 	{
 		return value;
+	}
+
+	[MethodImpl(MethodImplOptions.NoInlining)]
+	static EmptyFloat EchoEmptyFloatRiscVManaged(EmptyFloat fa0)
+	{
+		return fa0;
 	}
 
 	[MethodImpl(MethodImplOptions.NoInlining)]
@@ -2422,6 +2447,28 @@ public static partial class StructABI
 		return ok;
 	}
 
+	static bool EchoEmptyFloatRiscVWrapper()
+	{
+		bool ok = true;
+		EmptyFloat expected = EmptyFloat.Get();
+		EmptyFloat native = EchoEmptyFloatRiscV(expected);
+		EmptyFloat managed = EchoEmptyFloatRiscVManaged(expected);
+
+		if (!expected.Equals(native))
+		{
+			Console.WriteLine("Native call for EchoEmptyFloatRiscV failed");
+			ok = false;
+		}
+
+		if (!expected.Equals(managed))
+		{
+			Console.WriteLine("Managed call for EchoEmptyFloatRiscV failed");
+			ok = false;
+		}
+
+		return ok;
+	}
+
 	static bool EchoLongEmptyDoubleRiscVWrapper()
 	{
 		bool ok = true;
@@ -2690,6 +2737,7 @@ public static partial class StructABI
 		if (!EnoughRegistersSysV2Wrapper()) ok = false;
 		if (!EnoughRegistersSysV3Wrapper()) ok = false;
 		if (!EnoughRegistersSysV4Wrapper()) ok = false;
+		if (!EchoEmptyFloatRiscVWrapper()) ok = false;
 		if (!EchoLongEmptyDoubleRiscVWrapper()) ok = false;
 		if (!EchoLongEmptyDoubleByImplicitRefRiscVWrapper()) ok = false;
 		if (!EchoNestedEmptyFloatDoubleInIntegerRegsRiscVWrapper()) ok = false;
