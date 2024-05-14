@@ -62,6 +62,16 @@ namespace System.Collections.Tests
             Assert.Equal(new[] { 3, 5, 7 }, set);
         }
 
+        // https://github.com/dotnet/runtime/issues/102118
+        [Fact]
+        public void SortedSet_Generic_SetEquals_UnbalancedWithDup()
+        {
+            var data = new[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 17 };
+            var set = new SortedSet<int>(data);
+
+            Assert.True(set.SetEquals(data));
+        }
+
         [Fact]
         public void SortedSet_Generic_GetViewBetween_MinMax_Exhaustive()
         {

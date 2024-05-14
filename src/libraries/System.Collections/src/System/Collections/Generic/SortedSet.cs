@@ -719,6 +719,7 @@ namespace System.Collections.Generic
         /// <para>
         /// This method is used with the <see cref="BitHelper"/> class. Note that this implementation is
         /// completely different from <see cref="TreeSubSet"/>'s, and that the two should not be mixed.
+        /// If this method is overridden, <see cref="MaxInternalIndexOfPlusOne"/> needs to be changed accordingly as well.
         /// </para>
         /// </remarks>
         internal virtual int InternalIndexOf(T item)
@@ -738,6 +739,15 @@ namespace System.Collections.Generic
             }
 
             return -1;
+        }
+
+        internal virtual int MaxInternalIndexOfPlusOne()
+        {
+            // The maximum height of a red-black tree is 2*lg(n+1).
+            // See page 264 of "Introduction to algorithms" by Thomas H. Cormen
+            int maximumHeight = 2 * Log2(Count + 1);
+            // Maximum count (of a full tree of height H) is M = 2^0 + 2^1 + ... + 2^(H-1) = 2^H - 1
+            return (1 << maximumHeight) - 1;
         }
 
         internal Node? FindRange(T? from, T? to) => FindRange(from, to, lowerBoundActive: true, upperBoundActive: true);
@@ -1385,8 +1395,8 @@ namespace System.Collections.Generic
                 return result;
             }
 
-            int originalLastIndex = Count;
-            int intArrayLength = BitHelper.ToIntArrayLength(originalLastIndex);
+            int maxCount = MaxInternalIndexOfPlusOne();
+            int intArrayLength = BitHelper.ToIntArrayLength(maxCount);
 
             Span<int> span = stackalloc int[StackAllocThreshold];
             BitHelper bitHelper = intArrayLength <= StackAllocThreshold ?
@@ -1403,6 +1413,7 @@ namespace System.Collections.Generic
                 int index = InternalIndexOf(item);
                 if (index >= 0)
                 {
+                    Debug.Assert(index < maxCount);
                     if (!bitHelper.IsMarked(index))
                     {
                         // item hasn't been seen yet
