@@ -29,6 +29,9 @@ public class ReflectionTests
         ms.Position = 0;
         using (ZipArchive archive = new ZipArchive(ms, ZipArchiveMode.Read, leaveOpen: false))
         {
+            FieldInfo archiveEncodingFieldInfo = typeof(ZipArchive).GetField("_entryNameAndCommentEncoding", BindingFlags.Instance | BindingFlags.NonPublic);
+            System.Text.Encoding archiveEncoding = (archiveEncodingFieldInfo.GetValue(archive) as System.Text.Encoding?) ?? System.Text.Encoding.UTF8;
+            
             foreach (ZipArchiveEntry entry in archive.Entries)
             {
                 FieldInfo fieldInfo = typeof(ZipArchiveEntry).GetField("_generalPurposeBitFlag", BindingFlags.Instance | BindingFlags.NonPublic);
@@ -36,7 +39,10 @@ public class ReflectionTests
                 ushort shortField = (ushort)fieldObject;
                 Assert.Equal(0, shortField & 0x800); // If it was UTF8, we would set the general purpose bit flag to 0x800 (UnicodeFileNameAndComment)
                 CheckCharacters(entry.Name);
-                CheckCharacters(entry.Comment); // Unavailable in .NET Framework
+                fieldInfo = typeof(ZipArchiveEntry).GetField("_fileComment", BindingFlags.Instance | BindingFlags.NonPublic);
+                byte[]? commentBytes = (byte[]?)fieldInfo.GetValue(archiveEntry);
+                
+                CheckCharacters(archiveEncoding.GetString(commentBytes));
             }
         }
 
