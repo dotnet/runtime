@@ -259,6 +259,10 @@ namespace System.Collections.Immutable.Tests
             AssertExtensions.Throws<ArgumentNullException>("other", () => builder.SetEquals(null));
             Assert.False(builder.SetEquals(new[] { "b" }));
             Assert.True(builder.SetEquals(new[] { "a" }));
+            Assert.False(builder.SetEquals(ImmutableHashSet.Create("b")));
+            Assert.True(builder.SetEquals(ImmutableHashSet.Create("a")));
+            Assert.False(builder.SetEquals(new HashSet<string> { "b" }));
+            Assert.True(builder.SetEquals(new HashSet<string> { "a" }));
             Assert.True(builder.SetEquals(builder));
         }
 

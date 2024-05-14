@@ -387,7 +387,13 @@ namespace System.Collections.Immutable
                 return true;
             }
 
-            var otherSet = new SortedSet<T>(other, this.KeyComparer);
+            ISet<T> otherSet = other switch
+            {
+                ImmutableSortedSet<T> immutableSortedSet => immutableSortedSet.WithComparer(this.KeyComparer),
+                SortedSet<T> sortedSet when this.KeyComparer == sortedSet.Comparer => sortedSet,
+                _ => new SortedSet<T>(other, this.KeyComparer)
+            };
+
             if (this.Count != otherSet.Count)
             {
                 return false;

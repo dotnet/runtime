@@ -754,8 +754,13 @@ namespace System.Collections.Immutable
         private static bool SetEquals(IEnumerable<T> other, MutationInput origin)
         {
             Requires.NotNull(other, nameof(other));
+            ISet<T> otherSet = other switch
+            {
+                ImmutableHashSet<T> immutableHashSet => immutableHashSet.WithComparer(origin.EqualityComparer),
+                HashSet<T> hashSet when origin.EqualityComparer == hashSet.Comparer => hashSet,
+                _ => new HashSet<T>(other, origin.EqualityComparer),
+            };
 
-            var otherSet = new HashSet<T>(other, origin.EqualityComparer);
             if (origin.Count != otherSet.Count)
             {
                 return false;
