@@ -5,9 +5,11 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.Tests;
+using System.Text.RegularExpressions;
 using System.Threading;
 using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace System.Numerics.Tests
 {
@@ -129,7 +131,7 @@ namespace System.Numerics.Tests
 
             Assert.True(BigInteger.TryParse("0F0000001", NumberStyles.HexNumber, null, out result));
             Assert.Equal(0xF0000001u, result);
-            
+
             Assert.True(BigInteger.TryParse("F00000001", NumberStyles.HexNumber, null, out result));
             Assert.Equal(-0xFFFFFFFFL, result);
 
@@ -1217,6 +1219,29 @@ namespace System.Numerics.Tests
             {
                 parseTest.RegressionIssueRuntime94610(text);
             }));
+        }
+
+        [Theory]
+        [MemberData(nameof(Cultures))]
+        [OuterLoop]
+        public static void Parse_RecursiveLarge(CultureInfo culture)
+        {
+#if DEBUG
+            int[] defaultIndexesArray = Number.PowersOf1e9.IndexesArray;
+            try
+            {
+                Number.PowersOf1e9.IndexesArray = defaultIndexesArray[..4];
+                BigIntTools.Utils.RunWithFakeThreshold(Number.BigIntegerParseNaiveThreshold, 0, () =>
+                BigIntTools.Utils.RunWithFakeThreshold(Number.BigIntegerParseNaiveThresholdInRecursive, 10, () =>
+                {
+                    parseTest.RunParseToStringTests(culture);
+                }));
+            }
+            finally
+            {
+                Number.PowersOf1e9.IndexesArray = defaultIndexesArray;
+            }
+#endif
         }
     }
 }
