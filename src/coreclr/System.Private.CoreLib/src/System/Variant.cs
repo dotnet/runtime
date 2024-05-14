@@ -14,6 +14,9 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
+
+#pragma warning disable CA1416 // COM interop is only supported on Windows
 
 namespace System
 {
@@ -355,6 +358,100 @@ namespace System
                 // the work is done to have all of our wrapper types implement
                 // IConvertible, this is a cheapo way to get the work done.
                 v = new Variant(o);
+            }
+        }
+
+        internal static unsafe object? MarshalComVariantForOleVariant(ref readonly ComVariant pOle)
+        {
+            // Note that the following check also covers VT_ILLEGAL.
+            if ((pOle.VarType & ~VarEnum.VT_BYREF & ~VarEnum.VT_ARRAY) >= (VarEnum)128)
+            {
+                throw new InvalidOleVariantTypeException();
+            }
+
+            if ((pOle.VarType & VarEnum.VT_BYREF) != 0 &&
+                pOle.GetRawDataRef<IntPtr>() == 0 &&
+                (pOle.VarType & ~VarEnum.VT_BYREF) is not (VarEnum.VT_EMPTY or VarEnum.VT_NULL))
+            {
+                throw new ArgumentException(SR.Arg_InvalidOleVariantTypeException);
+            }
+
+            if (pOle.VarType == (VarEnum.VT_BYREF | VarEnum.VT_VARIANT))
+            {
+                pOle = ref *(ComVariant*)pOle.GetRawDataRef<IntPtr>();
+
+                // Byref VARIANTS are not allowed to be nested.
+                if ((pOle.VarType & VarEnum.VT_BYREF) != 0)
+                {
+                    throw new InvalidOleVariantTypeException();
+                }
+            }
+
+            // TODO: VT_ARRAY
+
+            switch (pOle.VarType)
+            {
+                case VarEnum.VT_EMPTY:
+                case VarEnum.VT_BYREF | VarEnum.VT_EMPTY:
+                    return null;
+
+                case VarEnum.VT_NULL:
+                case VarEnum.VT_BYREF | VarEnum.VT_NULL:
+                    return System.DBNull.Value;
+
+                case VarEnum.VT_BOOL:
+                    return pOle.As<bool>();
+                case VarEnum.VT_BYREF | VarEnum.VT_BOOL:
+                    return *(short*)pOle.GetRawDataRef<IntPtr>() != 0;
+
+                case VarEnum.VT_DATE:
+                    return pOle.As<DateTime>();
+                case VarEnum.VT_BYREF | VarEnum.VT_DATE:
+                    return DateTime.FromOADate(*(double*)pOle.GetRawDataRef<IntPtr>());
+
+                case VarEnum.VT_DECIMAL:
+                    return pOle.As<decimal>();
+                case VarEnum.VT_BYREF | VarEnum.VT_DECIMAL:
+                    decimal decVal = *(decimal*)pOle.GetRawDataRef<IntPtr>();
+                    // Mashaling uses the reserved value to store the variant type, so clear it out when marshaling back
+                    *(ushort*)&decVal = 0;
+                    return decVal;
+
+                case VarEnum.VT_CY:
+                    return decimal.FromOACurrency(pOle.GetRawDataRef<long>());
+                case VarEnum.VT_BYREF | VarEnum.VT_CY:
+                    return decimal.FromOACurrency(*(long*)pOle.GetRawDataRef<IntPtr>());
+
+                case VarEnum.VT_BSTR:
+                    return pOle.As<string>();
+                case VarEnum.VT_BYREF | VarEnum.VT_BSTR:
+                    return null; // TODO: Check
+
+                case VarEnum.VT_UNKNOWN:
+                case VarEnum.VT_DISPATCH:
+                    return Marshal.GetObjectForIUnknown(pOle.GetRawDataRef<IntPtr>());
+                case VarEnum.VT_BYREF | VarEnum.VT_UNKNOWN:
+                case VarEnum.VT_BYREF | VarEnum.VT_DISPATCH:
+                    IntPtr ptr = pOle.GetRawDataRef<IntPtr>();
+                    return ptr == 0 ? null : Marshal.GetObjectForIUnknown(ptr);
+
+                // case VarEnum.VT_SAFEARRAY: // goto VariantArray
+
+                case VarEnum.VT_ERROR:
+                    int error = pOle.GetRawDataRef<int>();
+                    return error == HResults.DISP_E_PARAMNOTFOUND ? Reflection.Missing.Value : error;
+                case VarEnum.VT_BYREF | VarEnum.VT_ERROR:
+                    int refError = *(int*)pOle.GetRawDataRef<IntPtr>();
+                    return refError == HResults.DISP_E_PARAMNOTFOUND ? Reflection.Missing.Value : refError;
+
+                case VarEnum.VT_VOID:
+                case VarEnum.VT_BYREF | VarEnum.VT_VOID:
+                    return null; // CV_VOID
+
+                case VarEnum.VT_RECORD: // TODO: record
+                case VarEnum.VT_BYREF | VarEnum.VT_RECORD:
+                default:
+                    throw new ArgumentException("IDS_EE_COM_UNSUPPORTED_TYPE");
             }
         }
 
