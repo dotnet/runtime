@@ -11,6 +11,7 @@ using System.Diagnostics;
 using Internal.TypeSystem;
 using Internal.CorConstants;
 using Internal.JitInterface;
+using static Internal.JitInterface.StructFloatFieldInfoFlags;
 
 namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
@@ -397,7 +398,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                             {
                                 fpReturnSize = RISCV64PassStructInRegister.GetRISCV64PassStructInRegisterFlags(thRetType.GetRuntimeTypeHandle()) & 0xff;
 
-                                if (fpReturnSize != (uint)StructFloatFieldInfoFlags.STRUCT_NO_FLOAT_FIELD || size <= EnregisteredReturnTypeIntegerMaxSize)
+                                if (fpReturnSize != (uint)STRUCT_NO_FLOAT_FIELD || size <= EnregisteredReturnTypeIntegerMaxSize)
                                     break;
                             }
 
@@ -719,9 +720,12 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             {
                 Debug.Assert(!th.IsNull());
                 Debug.Assert(th.IsValueType());
+                if (th.GetSize() <= EnregisteredParamTypeMaxSize)
+                    return false;
 
-                // Composites greater than 16 bytes are passed by reference
-                return th.GetSize() > EnregisteredParamTypeMaxSize;
+                // Struct larger than 16 can still be passed in registers according to FP call conv if it has empty fields or more padding
+                uint flags = RISCV64PassStructInRegister.GetRISCV64PassStructInRegisterFlags(th.GetRuntimeTypeHandle());
+                return (flags == (uint)STRUCT_NO_FLOAT_FIELD);
             }
 
             public sealed override int GetRetBuffArgOffset(bool hasThis) => OffsetOfFirstGCRefMapSlot + (hasThis ? 8 : 0);

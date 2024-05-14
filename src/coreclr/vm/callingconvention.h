@@ -531,10 +531,13 @@ public:
 #elif defined(TARGET_RISCV64)
         if (th.GetSignatureCorElementType() == ELEMENT_TYPE_VALUETYPE)
         {
+            if (size <= ENREGISTERED_PARAMTYPE_MAXSIZE)
+                return FALSE;
+
+            // Struct larger than 16 can still be passed in registers according to FP call conv if it has empty fields or more padding
             int flags = MethodTable::GetRiscV64PassStructInRegisterFlags(th);
-            return (flags == STRUCT_NO_FLOAT_FIELD) && (size > ENREGISTERED_PARAMTYPE_MAXSIZE);
+            return (flags == STRUCT_NO_FLOAT_FIELD);
         }
-        assert(size <= ENREGISTERED_PARAMTYPE_MAXSIZE);
         return FALSE;
 #else
         PORTABILITY_ASSERT("ArgIteratorTemplate::IsArgPassedByRef");

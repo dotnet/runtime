@@ -626,12 +626,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                         }
                         return false;
                     case TargetArchitecture.RiscV64:
-                        if (_argType == CorElementType.ELEMENT_TYPE_VALUETYPE)
-                        {
-                            Debug.Assert(!_argTypeHandle.IsNull());
-                            return ((_argSize > _transitionBlock.EnregisteredParamTypeMaxSize) || _transitionBlock.IsArgPassedByRef(_argTypeHandle));
-                        }
-                        return false;
+                        return (_argType == CorElementType.ELEMENT_TYPE_VALUETYPE) && _transitionBlock.IsArgPassedByRef(_argTypeHandle);
                     default:
                         throw new NotImplementedException();
                 }
