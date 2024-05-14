@@ -15,7 +15,7 @@ namespace ILCompiler.DependencyAnalysis
         int INodeWithSize.Size => _size.Value;
 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
-            => sb.Append(nameMangler.CompilationUnitPrefix).Append("__FrozenSegmentStart");
+            => sb.Append(nameMangler.CompilationUnitPrefix).Append("__FrozenSegmentStart"u8);
 
         public int Offset => 0;
 
