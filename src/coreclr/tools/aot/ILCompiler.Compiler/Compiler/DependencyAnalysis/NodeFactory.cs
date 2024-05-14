@@ -25,7 +25,6 @@ namespace ILCompiler.DependencyAnalysis
         private VTableSliceProvider _vtableSliceProvider;
         private DictionaryLayoutProvider _dictionaryLayoutProvider;
         private InlinedThreadStatics _inlinedThreadStatics;
-        private ObjectDataInterner _interner;
         protected readonly ImportedNodeProvider _importedNodeProvider;
         private bool _markingComplete;
 
@@ -41,7 +40,8 @@ namespace ILCompiler.DependencyAnalysis
             InlinedThreadStatics inlinedThreadStatics,
             ImportedNodeProvider importedNodeProvider,
             PreinitializationManager preinitializationManager,
-            DevirtualizationManager devirtualizationManager)
+            DevirtualizationManager devirtualizationManager,
+            ObjectDataInterner dataInterner)
         {
             _target = context.Target;
             _context = context;
@@ -57,6 +57,7 @@ namespace ILCompiler.DependencyAnalysis
             _importedNodeProvider = importedNodeProvider;
             PreinitializationManager = preinitializationManager;
             DevirtualizationManager = devirtualizationManager;
+            ObjectInterner = dataInterner;
         }
 
         public void SetMarkingComplete()
@@ -118,10 +119,7 @@ namespace ILCompiler.DependencyAnalysis
 
         internal ObjectDataInterner ObjectInterner
         {
-            get
-            {
-                return _interner ??= new ObjectDataInterner(this);
-            }
+            get;
         }
 
         /// <summary>
@@ -999,6 +997,9 @@ namespace ILCompiler.DependencyAnalysis
 
         public IMethodNode FatAddressTakenFunctionPointer(MethodDesc method, bool isUnboxingStub = false)
         {
+            if (ObjectInterner.IsNull)
+                return FatFunctionPointer(method, isUnboxingStub);
+
             return _fatAddressTakenFunctionPointers.GetOrAdd(new MethodKey(method, isUnboxingStub));
         }
 
@@ -1056,7 +1057,7 @@ namespace ILCompiler.DependencyAnalysis
         private NodeCache<MethodDesc, AddressTakenMethodNode> _addressTakenMethods;
         public IMethodNode AddressTakenMethodEntrypoint(MethodDesc method, bool unboxingStub = false)
         {
-            if (unboxingStub)
+            if (unboxingStub || ObjectInterner.IsNull)
                 return MethodEntrypoint(method, unboxingStub);
 
             return _addressTakenMethods.GetOrAdd(method);

@@ -118,9 +118,7 @@ namespace ILCompiler.ObjectWriter
                 return false;
 
             // Foldable sections are always COMDATs
-            if (section == ObjectNodeSection.FoldableManagedCodeUnixContentSection ||
-                section == ObjectNodeSection.FoldableManagedCodeWindowsContentSection ||
-                section == ObjectNodeSection.FoldableReadOnlyDataSection)
+            if (section == ObjectNodeSection.FoldableReadOnlyDataSection)
                 return true;
 
             if (_isSingleFileCompilation)
@@ -396,7 +394,7 @@ namespace ILCompiler.ObjectWriter
                     continue;
 
                 ISymbolNode symbolNode = node as ISymbolNode;
-                if (_nodeFactory.ObjectInterner.GetDeduplicatedSymbol(symbolNode) != symbolNode)
+                if (_nodeFactory.ObjectInterner.GetDeduplicatedSymbol(_nodeFactory, symbolNode) != symbolNode)
                     continue;
 
                 ObjectData nodeContents = node.GetData(_nodeFactory);
@@ -458,7 +456,7 @@ namespace ILCompiler.ObjectWriter
             {
                 foreach (Relocation reloc in blockToRelocate.Relocations)
                 {
-                    ISymbolNode relocTarget = _nodeFactory.ObjectInterner.GetDeduplicatedSymbol(reloc.Target);
+                    ISymbolNode relocTarget = _nodeFactory.ObjectInterner.GetDeduplicatedSymbol(_nodeFactory, reloc.Target);
 
                     string relocSymbolName = GetMangledName(relocTarget);
 

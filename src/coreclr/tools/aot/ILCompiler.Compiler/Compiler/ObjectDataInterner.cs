@@ -10,17 +10,20 @@ using Debug = System.Diagnostics.Debug;
 
 namespace ILCompiler
 {
-    internal sealed class ObjectDataInterner
+    public sealed class ObjectDataInterner
     {
-        private readonly NodeFactory _factory;
+        private Dictionary<ISymbolNode, ISymbolNode> _symbolRemapping;
 
-        private readonly Dictionary<ISymbolNode, ISymbolNode> _symbolRemapping;
+        public static ObjectDataInterner Null { get; } = new ObjectDataInterner() { _symbolRemapping = new() };
 
-        public ObjectDataInterner(NodeFactory factory)
+        public bool IsNull => _symbolRemapping != null && _symbolRemapping.Count == 0;
+
+        private void EnsureMap(NodeFactory factory)
         {
             Debug.Assert(factory.MarkingComplete);
 
-            _factory = factory;
+            if (_symbolRemapping != null)
+                return;
 
             var symbolRemapping = new Dictionary<ISymbolNode, ISymbolNode>();
             var methodHash = new HashSet<MethodInternKey>(new MethodInternComparer(factory));
@@ -45,11 +48,13 @@ namespace ILCompiler
             _symbolRemapping = symbolRemapping;
         }
 
-        public ISymbolNode GetDeduplicatedSymbol(ISymbolNode original)
+        public ISymbolNode GetDeduplicatedSymbol(NodeFactory factory, ISymbolNode original)
         {
+            EnsureMap(factory);
+
             ISymbolNode target = original;
             if (target is ISymbolNodeWithLinkage symbolWithLinkage)
-                target = symbolWithLinkage.NodeForLinkage(_factory);
+                target = symbolWithLinkage.NodeForLinkage(factory);
 
             return _symbolRemapping.TryGetValue(target, out ISymbolNode result) ? result : original;
         }

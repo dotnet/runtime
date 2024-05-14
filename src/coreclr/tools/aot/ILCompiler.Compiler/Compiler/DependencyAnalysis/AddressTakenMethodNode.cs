@@ -40,7 +40,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public override bool ShouldSkipEmittingObjectNode(NodeFactory factory)
         {
-            return factory.ObjectInterner.GetDeduplicatedSymbol(RealBody) == RealBody;
+            return factory.ObjectInterner.GetDeduplicatedSymbol(factory, RealBody) == RealBody;
         }
 
         public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory factory) => null;
@@ -66,7 +66,7 @@ namespace ILCompiler.DependencyAnalysis
         {
             // If someone refers to this node but the target method still has a unique body,
             // refer to the target method.
-            return factory.ObjectInterner.GetDeduplicatedSymbol(RealBody) == RealBody ? RealBody : this;
+            return factory.ObjectInterner.GetDeduplicatedSymbol(factory, RealBody) == RealBody ? RealBody : this;
         }
 
         public override bool RepresentsIndirectionCell

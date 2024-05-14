@@ -479,13 +479,8 @@ namespace Internal.JitInterface
                 }
             }
 
-#pragma warning disable SA1001, SA1113, SA1115 // Comma should be on the same line as previous parameter
-            _methodCodeNode.SetCode(objectData
-#if !SUPPORT_JIT && !READYTORUN
-                , isFoldable: (_compilation._compilationOptions & RyuJitCompilationOptions.MethodBodyFolding) != 0
-#endif
-                );
-#pragma warning restore SA1001, SA1113, SA1115 // Comma should be on the same line as previous parameter
+            _methodCodeNode.SetCode(objectData);
+
 #if READYTORUN
             if (_methodColdCodeNode != null)
             {

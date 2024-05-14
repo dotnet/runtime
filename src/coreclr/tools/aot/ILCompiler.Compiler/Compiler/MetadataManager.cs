@@ -709,7 +709,7 @@ namespace ILCompiler
                     continue;
 
                 // If the method will be folded, no need to emit stack trace info for this one
-                ISymbolNode internedBody = factory.ObjectInterner.GetDeduplicatedSymbol(methodBody);
+                ISymbolNode internedBody = factory.ObjectInterner.GetDeduplicatedSymbol(factory, methodBody);
                 if (internedBody != methodBody)
                     continue;
 
