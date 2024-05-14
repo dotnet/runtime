@@ -3,7 +3,6 @@
 
 using System.Collections;
 using System.Diagnostics;
-using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Threading;
 
@@ -200,8 +199,6 @@ namespace System
                 return osVersion;
             }
         }
-
-        public static Version Version => Version.Parse(ProductVersionWithoutLabel);
 
         public static string StackTrace
         {

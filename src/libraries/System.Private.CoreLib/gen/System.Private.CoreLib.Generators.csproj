@@ -5,7 +5,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="DotnetProductVersionInfoGenerator.cs" />
+    <Compile Include="ProductVersionInfoGenerator.cs" />
     <Compile Include="EventSourceGenerator.cs" />
     <Compile Include="EventSourceGenerator.Emitter.cs" />
     <Compile Include="EventSourceGenerator.Parser.cs" />

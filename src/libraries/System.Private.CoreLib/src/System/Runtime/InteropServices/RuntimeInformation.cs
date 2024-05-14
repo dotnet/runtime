@@ -8,11 +8,6 @@ namespace System.Runtime.InteropServices
         private static string? s_runtimeIdentifier;
 
         /// <summary>
-        /// Gets the name of the .NET installation on which an app is running.
-        /// </summary>
-        public static string FrameworkDescription { get; } = ".NET " + Environment.ProductVersionWithLabel;
-
-        /// <summary>
         /// Returns an opaque string that identifies the platform on which an app is running.
         /// </summary>
         /// <remarks>
