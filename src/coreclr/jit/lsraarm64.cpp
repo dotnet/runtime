@@ -1881,6 +1881,21 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 candidates = RBM_SVE_INDEXED_S_ELEMENT_ALLOWED_REGS;
             }
         }
+        else if (intrin.id == NI_Sve_DotProductBySelectedScalar)
+        {
+            unsigned baseElementSize = genTypeSize(intrin.baseType);
+            // If this is common pattern, then we will add a flag in the table, but for now, just check for specific
+            // intrinsics
+            if (baseElementSize == 8)
+            {
+                candidates = RBM_SVE_INDEXED_D_ELEMENT_ALLOWED_REGS;
+            }
+            else
+            {
+                assert(baseElementSize == 4);
+                candidates = RBM_SVE_INDEXED_S_ELEMENT_ALLOWED_REGS;
+            }
+        }
 
         if ((intrin.id == NI_Sve_ConditionalSelect) && (intrin.op2->IsEmbMaskOp()) &&
             (intrin.op2->isRMWHWIntrinsic(compiler)))
