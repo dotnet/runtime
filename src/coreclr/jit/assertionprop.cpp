@@ -2652,6 +2652,7 @@ GenTree* Compiler::optVNBasedFoldExpr_Blk(BasicBlock* block, GenTree* parent, Ge
         if (src->OperIs(GT_BLK))
         {
             src = src->AsBlk()->Addr();
+            fgWrapWithNullcheck(&src, block);
         }
         else
         {
@@ -2662,18 +2663,18 @@ GenTree* Compiler::optVNBasedFoldExpr_Blk(BasicBlock* block, GenTree* parent, Ge
             lvaSetVarAddrExposed(srcLcl->GetLclNum() DEBUGARG(AddressExposedReason::ESCAPE_ADDRESS));
         }
 
+        // TODO: Consider using VNs to have a more precise non-null analysis
+        fgWrapWithNullcheck(&dst, block);
+
         // if op2 (src) is evaluated before op1 (dest), we need to preserve the
         // side-effects since dest is the first argument in the helper call.
         GenTree* rootEffects = nullptr;
         if (blk->IsReverseOp() && (((dst->gtFlags | src->gtFlags) & GTF_ALL_EFFECT) != 0))
         {
-            TempInfo tmp = fgMakeTemp(dst);
+            TempInfo tmp = fgMakeTemp(src);
             rootEffects  = tmp.store;
-            dst          = tmp.load;
+            src          = tmp.load;
         }
-        // TODO: Consider using VNs to have a more precise non-null analysis
-        fgWrapWithNullcheck(&dst, block);
-        fgWrapWithNullcheck(&src, block);
 
         GenTreeIntCon* size = gtNewIconNode((ssize_t)blk->GetLayout()->GetSize(), TYP_I_IMPL);
         GenTreeCall*   call = gtNewHelperCallNode(CORINFO_HELP_BULK_WRITEBARRIER, TYP_VOID, dst, src, size);
