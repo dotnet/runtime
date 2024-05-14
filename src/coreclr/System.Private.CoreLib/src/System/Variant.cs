@@ -15,6 +15,7 @@ using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
+using Microsoft.Win32;
 
 #pragma warning disable CA1416 // COM interop is only supported on Windows
 
@@ -317,6 +318,134 @@ namespace System
         // This routine will return an boxed enum.
         [MethodImpl(MethodImplOptions.InternalCall)]
         private extern object BoxEnum();
+
+        private unsafe VarEnum GetVarTypeForComVariant()
+        {
+            int type = CVType;
+            VarEnum vt = (VarEnum)((_flags & VTBitMask) >> VTBitShift);
+            if ((vt & (VarEnum)0x80) != 0)
+            {
+                vt &= (VarEnum)~0x80;
+                vt |= VarEnum.VT_ARRAY;
+            }
+
+            if (vt != VarEnum.VT_EMPTY)
+            {
+                // This variant was originally unmarshaled from unmanaged, and had the original VT recorded in it.
+                // We'll always use that over inference.
+                return vt;
+            }
+
+            if (type == CV_OBJECT)
+            {
+                // Null objects will be converted to VT_DISPATCH variants with a null
+                // IDispatch pointer.
+                if (_objref == null)
+                    return VarEnum.VT_DISPATCH;
+
+                // Retrieve the object's method table.
+                MethodTable* pMT = RuntimeHelpers.GetMethodTable(_objref);
+
+                // Handle the value class case.
+                if (pMT->IsValueType)
+                    return VarEnum.VT_RECORD;
+
+                // Handle the array case.
+                //if (pMT->IsArray)
+                //{
+                //    // TODO: handle array
+                //}
+
+                // SafeHandle's or CriticalHandle's cannot be stored in VARIANT's.
+                if (_objref is SafeHandle)
+                    throw new ArgumentException("IDS_EE_SH_IN_VARIANT_NOT_SUPPORTED");
+                if (_objref is CriticalHandle)
+                    throw new ArgumentException("IDS_EE_CH_IN_VARIANT_NOT_SUPPORTED");
+
+                // VariantWrappers cannot be stored in VARIANT's.
+                if (_objref is VariantWrapper)
+                    throw new ArgumentException("IDS_EE_VAR_WRAP_IN_VAR_NOT_SUPPORTED");
+
+                // We are dealing with a normal object (not a wrapper) so we will
+                // leave the VT as VT_DISPATCH for now and we will determine the actual
+                // VT when we convert the object to a COM IP.
+                return VarEnum.VT_DISPATCH;
+            }
+
+            // GetVarTypeForCVType
+            return type switch
+            {
+                CV_EMPTY => VarEnum.VT_EMPTY,
+                CV_VOID => VarEnum.VT_VOID,
+                CV_BOOLEAN => VarEnum.VT_BOOL,
+                CV_CHAR => VarEnum.VT_UI2,
+                // Primitive types
+                CV_STRING => VarEnum.VT_BSTR,
+                CV_DATETIME => VarEnum.VT_DATE,
+                CV_OBJECT => VarEnum.VT_DISPATCH,
+                CV_DECIMAL => VarEnum.VT_DECIMAL,
+                // CV_CURRENCY => VarEnum.VT_CY,
+                CV_ENUM => VarEnum.VT_I4,
+                CV_MISSING => VarEnum.VT_ERROR,
+                CV_NULL => VarEnum.VT_NULL,
+                _ => throw new ArgumentException("IDS_EE_COM_UNSUPPORTED_SIG")
+            };
+        }
+
+        internal static void MarshalOleVariantForComVariant(Variant o, out ComVariant pOle)
+        {
+            VarEnum vt = o.GetVarTypeForComVariant();
+            switch (vt) // Pseudo
+            {
+                case VarEnum.VT_DATE:
+                    pOle = ComVariant.Create((DateTime)o._objref!);
+                    break;
+                case VarEnum.VT_DECIMAL:
+                    pOle = ComVariant.Create((decimal)o._objref!);
+                    break;
+                case VarEnum.VT_CY:
+                    pOle = ComVariant.Create((CurrencyWrapper)o._objref!);
+                    break;
+                case VarEnum.VT_BSTR:
+                    pOle = ComVariant.Create((string)o._objref!);
+                    break;
+                case VarEnum.VT_UNKNOWN:
+                case VarEnum.VT_DISPATCH:
+                    VarEnum existingVT = (VarEnum)((o._flags & VTBitMask) >> VTBitShift);
+                    if (o._objref == null)
+                    {
+                        // If there is no VT set in the managed variant, then default to VT_UNKNOWN.
+                        if (existingVT == VarEnum.VT_EMPTY)
+                            existingVT = VarEnum.VT_UNKNOWN;
+
+                        pOle = ComVariant.CreateRaw(existingVT, IntPtr.Zero);
+                    }
+                    else
+                    {
+                        bool isIDispatch = existingVT == VarEnum.VT_DISPATCH;
+                        IntPtr ptr = existingVT switch
+                        {
+                            // We are dealing with an UnknownWrapper or DispatchWrapper.
+                            // In this case, we need to respect the VT.
+                            VarEnum.VT_UNKNOWN => Marshal.GetIUnknownForObject(o._objref),
+                            VarEnum.VT_DISPATCH => Marshal.GetIDispatchForObject(o._objref),
+                            // We are dealing with an UnknownWrapper or DispatchWrapper.
+                            // In this case, we need to respect the VT.
+                            _ => OAVariantLib.GetIUnknownOrIDispatchForObject(ObjectHandleOnStack.Create(ref o._objref), out isIDispatch),
+                        };
+                        pOle = ComVariant.CreateRaw(isIDispatch ? VarEnum.VT_DISPATCH : VarEnum.VT_UNKNOWN, ptr);
+                    }
+                    break;
+                // case VT_SAFEARRAY: // goto VariantArray;
+                case VarEnum.VT_ERROR:
+                    pOle = ComVariant.CreateRaw(VarEnum.VT_ERROR, o.CVType == CV_MISSING ? HResults.DISP_E_PARAMNOTFOUND : (int)o._data);
+                    break;
+                // case VT_RECORD: // TODO: handle record
+                default:
+                    pOle = ComVariant.CreateRaw(vt, o._data); // Foo
+                    break;
+            }
+        }
 
         // Helper code for marshaling managed objects to VARIANT's (we use
         // managed variants as an intermediate type.
