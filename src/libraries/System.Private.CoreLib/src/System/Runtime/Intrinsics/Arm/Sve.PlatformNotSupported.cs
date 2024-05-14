@@ -1423,221 +1423,182 @@ namespace System.Runtime.Intrinsics.Arm
         /// </summary>
         public static unsafe Vector<ulong> LoadVectorUInt32ZeroExtendToUInt64(Vector<ulong> mask, uint* address) { throw new PlatformNotSupportedException(); }
 
-
-        ///  LoadVectorx2 : Load two-element tuples into two vectors
-
         /// <summary>
         /// svuint8x2_t svld2[_u8](svbool_t pg, const uint8_t *base)
-        ///   LD2B {Zresult0.B, Zresult1.B}, Pg/Z, [Xarray, Xindex]
         ///   LD2B {Zresult0.B, Zresult1.B}, Pg/Z, [Xbase, #0, MUL VL]
         /// </summary>
         public static unsafe (Vector<byte>, Vector<byte>) LoadVectorx2(Vector<byte> mask, byte* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// svfloat64x2_t svld2[_f64](svbool_t pg, const float64_t *base)
-        ///   LD2D {Zresult0.D, Zresult1.D}, Pg/Z, [Xarray, Xindex, LSL #3]
         ///   LD2D {Zresult0.D, Zresult1.D}, Pg/Z, [Xbase, #0, MUL VL]
         /// </summary>
         public static unsafe (Vector<double>, Vector<double>) LoadVectorx2(Vector<double> mask, double* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// svint16x2_t svld2[_s16](svbool_t pg, const int16_t *base)
-        ///   LD2H {Zresult0.H, Zresult1.H}, Pg/Z, [Xarray, Xindex, LSL #1]
         ///   LD2H {Zresult0.H, Zresult1.H}, Pg/Z, [Xbase, #0, MUL VL]
         /// </summary>
         public static unsafe (Vector<short>, Vector<short>) LoadVectorx2(Vector<short> mask, short* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// svint32x2_t svld2[_s32](svbool_t pg, const int32_t *base)
-        ///   LD2W {Zresult0.S, Zresult1.S}, Pg/Z, [Xarray, Xindex, LSL #2]
         ///   LD2W {Zresult0.S, Zresult1.S}, Pg/Z, [Xbase, #0, MUL VL]
         /// </summary>
         public static unsafe (Vector<int>, Vector<int>) LoadVectorx2(Vector<int> mask, int* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// svint64x2_t svld2[_s64](svbool_t pg, const int64_t *base)
-        ///   LD2D {Zresult0.D, Zresult1.D}, Pg/Z, [Xarray, Xindex, LSL #3]
         ///   LD2D {Zresult0.D, Zresult1.D}, Pg/Z, [Xbase, #0, MUL VL]
         /// </summary>
         public static unsafe (Vector<long>, Vector<long>) LoadVectorx2(Vector<long> mask, long* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// svint8x2_t svld2[_s8](svbool_t pg, const int8_t *base)
-        ///   LD2B {Zresult0.B, Zresult1.B}, Pg/Z, [Xarray, Xindex]
         ///   LD2B {Zresult0.B, Zresult1.B}, Pg/Z, [Xbase, #0, MUL VL]
         /// </summary>
         public static unsafe (Vector<sbyte>, Vector<sbyte>) LoadVectorx2(Vector<sbyte> mask, sbyte* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// svfloat32x2_t svld2[_f32](svbool_t pg, const float32_t *base)
-        ///   LD2W {Zresult0.S, Zresult1.S}, Pg/Z, [Xarray, Xindex, LSL #2]
         ///   LD2W {Zresult0.S, Zresult1.S}, Pg/Z, [Xbase, #0, MUL VL]
         /// </summary>
         public static unsafe (Vector<float>, Vector<float>) LoadVectorx2(Vector<float> mask, float* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// svuint16x2_t svld2[_u16](svbool_t pg, const uint16_t *base)
-        ///   LD2H {Zresult0.H, Zresult1.H}, Pg/Z, [Xarray, Xindex, LSL #1]
         ///   LD2H {Zresult0.H, Zresult1.H}, Pg/Z, [Xbase, #0, MUL VL]
         /// </summary>
         public static unsafe (Vector<ushort>, Vector<ushort>) LoadVectorx2(Vector<ushort> mask, ushort* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// svuint32x2_t svld2[_u32](svbool_t pg, const uint32_t *base)
-        ///   LD2W {Zresult0.S, Zresult1.S}, Pg/Z, [Xarray, Xindex, LSL #2]
         ///   LD2W {Zresult0.S, Zresult1.S}, Pg/Z, [Xbase, #0, MUL VL]
         /// </summary>
         public static unsafe (Vector<uint>, Vector<uint>) LoadVectorx2(Vector<uint> mask, uint* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// svuint64x2_t svld2[_u64](svbool_t pg, const uint64_t *base)
-        ///   LD2D {Zresult0.D, Zresult1.D}, Pg/Z, [Xarray, Xindex, LSL #3]
         ///   LD2D {Zresult0.D, Zresult1.D}, Pg/Z, [Xbase, #0, MUL VL]
         /// </summary>
         public static unsafe (Vector<ulong>, Vector<ulong>) LoadVectorx2(Vector<ulong> mask, ulong* address) { throw new PlatformNotSupportedException(); }
 
-
-        ///  LoadVectorx3 : Load three-element tuples into three vectors
-
         /// <summary>
         /// svuint8x3_t svld3[_u8](svbool_t pg, const uint8_t *base)
-        ///   LD3B {Zresult0.B - Zresult2.B}, Pg/Z, [Xarray, Xindex]
         ///   LD3B {Zresult0.B - Zresult2.B}, Pg/Z, [Xbase, #0, MUL VL]
         /// </summary>
         public static unsafe (Vector<byte>, Vector<byte>, Vector<byte>) LoadVectorx3(Vector<byte> mask, byte* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// svfloat64x3_t svld3[_f64](svbool_t pg, const float64_t *base)
-        ///   LD3D {Zresult0.D - Zresult2.D}, Pg/Z, [Xarray, Xindex, LSL #3]
         ///   LD3D {Zresult0.D - Zresult2.D}, Pg/Z, [Xbase, #0, MUL VL]
         /// </summary>
         public static unsafe (Vector<double>, Vector<double>, Vector<double>) LoadVectorx3(Vector<double> mask, double* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// svint16x3_t svld3[_s16](svbool_t pg, const int16_t *base)
-        ///   LD3H {Zresult0.H - Zresult2.H}, Pg/Z, [Xarray, Xindex, LSL #1]
         ///   LD3H {Zresult0.H - Zresult2.H}, Pg/Z, [Xbase, #0, MUL VL]
         /// </summary>
         public static unsafe (Vector<short>, Vector<short>, Vector<short>) LoadVectorx3(Vector<short> mask, short* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// svint32x3_t svld3[_s32](svbool_t pg, const int32_t *base)
-        ///   LD3W {Zresult0.S - Zresult2.S}, Pg/Z, [Xarray, Xindex, LSL #2]
         ///   LD3W {Zresult0.S - Zresult2.S}, Pg/Z, [Xbase, #0, MUL VL]
         /// </summary>
         public static unsafe (Vector<int>, Vector<int>, Vector<int>) LoadVectorx3(Vector<int> mask, int* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// svint64x3_t svld3[_s64](svbool_t pg, const int64_t *base)
-        ///   LD3D {Zresult0.D - Zresult2.D}, Pg/Z, [Xarray, Xindex, LSL #3]
         ///   LD3D {Zresult0.D - Zresult2.D}, Pg/Z, [Xbase, #0, MUL VL]
         /// </summary>
         public static unsafe (Vector<long>, Vector<long>, Vector<long>) LoadVectorx3(Vector<long> mask, long* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// svint8x3_t svld3[_s8](svbool_t pg, const int8_t *base)
-        ///   LD3B {Zresult0.B - Zresult2.B}, Pg/Z, [Xarray, Xindex]
         ///   LD3B {Zresult0.B - Zresult2.B}, Pg/Z, [Xbase, #0, MUL VL]
         /// </summary>
         public static unsafe (Vector<sbyte>, Vector<sbyte>, Vector<sbyte>) LoadVectorx3(Vector<sbyte> mask, sbyte* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// svfloat32x3_t svld3[_f32](svbool_t pg, const float32_t *base)
-        ///   LD3W {Zresult0.S - Zresult2.S}, Pg/Z, [Xarray, Xindex, LSL #2]
         ///   LD3W {Zresult0.S - Zresult2.S}, Pg/Z, [Xbase, #0, MUL VL]
         /// </summary>
         public static unsafe (Vector<float>, Vector<float>, Vector<float>) LoadVectorx3(Vector<float> mask, float* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// svuint16x3_t svld3[_u16](svbool_t pg, const uint16_t *base)
-        ///   LD3H {Zresult0.H - Zresult2.H}, Pg/Z, [Xarray, Xindex, LSL #1]
         ///   LD3H {Zresult0.H - Zresult2.H}, Pg/Z, [Xbase, #0, MUL VL]
         /// </summary>
         public static unsafe (Vector<ushort>, Vector<ushort>, Vector<ushort>) LoadVectorx3(Vector<ushort> mask, ushort* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// svuint32x3_t svld3[_u32](svbool_t pg, const uint32_t *base)
-        ///   LD3W {Zresult0.S - Zresult2.S}, Pg/Z, [Xarray, Xindex, LSL #2]
         ///   LD3W {Zresult0.S - Zresult2.S}, Pg/Z, [Xbase, #0, MUL VL]
         /// </summary>
         public static unsafe (Vector<uint>, Vector<uint>, Vector<uint>) LoadVectorx3(Vector<uint> mask, uint* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// svuint64x3_t svld3[_u64](svbool_t pg, const uint64_t *base)
-        ///   LD3D {Zresult0.D - Zresult2.D}, Pg/Z, [Xarray, Xindex, LSL #3]
         ///   LD3D {Zresult0.D - Zresult2.D}, Pg/Z, [Xbase, #0, MUL VL]
         /// </summary>
         public static unsafe (Vector<ulong>, Vector<ulong>, Vector<ulong>) LoadVectorx3(Vector<ulong> mask, ulong* address) { throw new PlatformNotSupportedException(); }
 
-
-        ///  LoadVectorx4 : Load four-element tuples into four vectors
-
         /// <summary>
         /// svuint8x4_t svld4[_u8](svbool_t pg, const uint8_t *base)
-        ///   LD4B {Zresult0.B - Zresult3.B}, Pg/Z, [Xarray, Xindex]
         ///   LD4B {Zresult0.B - Zresult3.B}, Pg/Z, [Xbase, #0, MUL VL]
         /// </summary>
         public static unsafe (Vector<byte>, Vector<byte>, Vector<byte>, Vector<byte>) LoadVectorx4(Vector<byte> mask, byte* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// svfloat64x4_t svld4[_f64](svbool_t pg, const float64_t *base)
-        ///   LD4D {Zresult0.D - Zresult3.D}, Pg/Z, [Xarray, Xindex, LSL #3]
         ///   LD4D {Zresult0.D - Zresult3.D}, Pg/Z, [Xbase, #0, MUL VL]
         /// </summary>
         public static unsafe (Vector<double>, Vector<double>, Vector<double>, Vector<double>) LoadVectorx4(Vector<double> mask, double* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// svint16x4_t svld4[_s16](svbool_t pg, const int16_t *base)
-        ///   LD4H {Zresult0.H - Zresult3.H}, Pg/Z, [Xarray, Xindex, LSL #1]
         ///   LD4H {Zresult0.H - Zresult3.H}, Pg/Z, [Xbase, #0, MUL VL]
         /// </summary>
         public static unsafe (Vector<short>, Vector<short>, Vector<short>, Vector<short>) LoadVectorx4(Vector<short> mask, short* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// svint32x4_t svld4[_s32](svbool_t pg, const int32_t *base)
-        ///   LD4W {Zresult0.S - Zresult3.S}, Pg/Z, [Xarray, Xindex, LSL #2]
         ///   LD4W {Zresult0.S - Zresult3.S}, Pg/Z, [Xbase, #0, MUL VL]
         /// </summary>
         public static unsafe (Vector<int>, Vector<int>, Vector<int>, Vector<int>) LoadVectorx4(Vector<int> mask, int* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// svint64x4_t svld4[_s64](svbool_t pg, const int64_t *base)
-        ///   LD4D {Zresult0.D - Zresult3.D}, Pg/Z, [Xarray, Xindex, LSL #3]
         ///   LD4D {Zresult0.D - Zresult3.D}, Pg/Z, [Xbase, #0, MUL VL]
         /// </summary>
         public static unsafe (Vector<long>, Vector<long>, Vector<long>, Vector<long>) LoadVectorx4(Vector<long> mask, long* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// svint8x4_t svld4[_s8](svbool_t pg, const int8_t *base)
-        ///   LD4B {Zresult0.B - Zresult3.B}, Pg/Z, [Xarray, Xindex]
         ///   LD4B {Zresult0.B - Zresult3.B}, Pg/Z, [Xbase, #0, MUL VL]
         /// </summary>
         public static unsafe (Vector<sbyte>, Vector<sbyte>, Vector<sbyte>, Vector<sbyte>) LoadVectorx4(Vector<sbyte> mask, sbyte* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// svfloat32x4_t svld4[_f32](svbool_t pg, const float32_t *base)
-        ///   LD4W {Zresult0.S - Zresult3.S}, Pg/Z, [Xarray, Xindex, LSL #2]
         ///   LD4W {Zresult0.S - Zresult3.S}, Pg/Z, [Xbase, #0, MUL VL]
         /// </summary>
         public static unsafe (Vector<float>, Vector<float>, Vector<float>, Vector<float>) LoadVectorx4(Vector<float> mask, float* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// svuint16x4_t svld4[_u16](svbool_t pg, const uint16_t *base)
-        ///   LD4H {Zresult0.H - Zresult3.H}, Pg/Z, [Xarray, Xindex, LSL #1]
         ///   LD4H {Zresult0.H - Zresult3.H}, Pg/Z, [Xbase, #0, MUL VL]
         /// </summary>
         public static unsafe (Vector<ushort>, Vector<ushort>, Vector<ushort>, Vector<ushort>) LoadVectorx4(Vector<ushort> mask, ushort* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// svuint32x4_t svld4[_u32](svbool_t pg, const uint32_t *base)
-        ///   LD4W {Zresult0.S - Zresult3.S}, Pg/Z, [Xarray, Xindex, LSL #2]
         ///   LD4W {Zresult0.S - Zresult3.S}, Pg/Z, [Xbase, #0, MUL VL]
         /// </summary>
         public static unsafe (Vector<uint>, Vector<uint>, Vector<uint>, Vector<uint>) LoadVectorx4(Vector<uint> mask, uint* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// svuint64x4_t svld4[_u64](svbool_t pg, const uint64_t *base)
-        ///   LD4D {Zresult0.D - Zresult3.D}, Pg/Z, [Xarray, Xindex, LSL #3]
         ///   LD4D {Zresult0.D - Zresult3.D}, Pg/Z, [Xbase, #0, MUL VL]
         /// </summary>
         public static unsafe (Vector<ulong>, Vector<ulong>, Vector<ulong>, Vector<ulong>) LoadVectorx4(Vector<ulong> mask, ulong* address) { throw new PlatformNotSupportedException(); }
