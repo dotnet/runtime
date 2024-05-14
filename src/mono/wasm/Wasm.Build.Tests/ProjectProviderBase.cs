@@ -317,6 +317,7 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
         dict["dotnet.js.map"]=(Path.Combine(paths.BundleDir, "_framework", "dotnet.js.map"), true);
         dict["dotnet.runtime.js"]=(Path.Combine(paths.BundleDir, "_framework", "dotnet.runtime.js"), true);
         dict["dotnet.runtime.js.map"]=(Path.Combine(paths.BundleDir, "_framework", "dotnet.runtime.js.map"), true);
+        dict["dotnet.globalization.js"]=(Path.Combine(paths.BundleDir, "_framework", "dotnet.globalization.js"), true);
 
         return dict;
     }
