@@ -5009,6 +5009,8 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
 
                 /*
                     Check if A = B + C
+                    ADD : A = B + C
+                    SUB : B = A - C
                     In case of addition:
                     dst = src1 + src2
                     A = dst
