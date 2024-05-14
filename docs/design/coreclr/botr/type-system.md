@@ -198,8 +198,8 @@ This is enforced via an extensive and complicated set of enforcements within the
 Static variables in CoreCLR are handled by a combination of getting the "static base", and then adjusting it by an offset to get a pointer to the actual value.
 We define the statics base as either non-gc or gc for each field.
 Currently non-gc statics are any statics which are represented by primitive types (byte, sbyte, char, int, uint, long, ulong, float, double, pointers of various forms), and enums.
-GC statics are any statics which are represented by classes or by user defined structures.
-For user defined structure statics, the static variable is actually a pointer to a boxed instance of the structure.
+GC statics are any statics which are represented by classes or by non-primitive valuetypes.
+For struct statics, the static variable is actually a pointer to a boxed instance of the structure.
 
 ### Per type static variable information
 As of .NET 9, the static variable bases are now all associated with their particular type.
@@ -236,7 +236,7 @@ TLSIndex : 24bit int indexOffset
 
 In the above diagram, you can see that we have separate fields for non-gc and gc statics, as well as thread and normal statics.
 For normal statics, we use a single pointer sized field, which also happens to encode whether or not the class constructor has been run.
-This is done to allow a lock free atomic access to both get the static field address as well as determine if the class constructor needs to be triggered.
+This is done to allow lock free atomic access to both get the static field address as well as determine if the class constructor needs to be triggered.
 For TLS statics, handling of detecting whether or not the class constructor has been run is a more complex process described as part of the thread statics infrastructure.
 The `DynamicStaticsInfo` and `ThreadStaticsInfo` structures are accessed without any locks, so it is important to ensure that access to fields on these structures can be done with a single memory access, to avoid memory order tearing issues.
 
@@ -260,8 +260,6 @@ However, we have a few peculiarities in our approach.
 1. We segregate collectible and non-collectible thread statics (`TLSIndexType::NonCollectible` and `TLSIndexType::Collectible`)
 2. We provide an ability to share a non-gc thread static between native CoreCLR code and managed code (Subset of `TLSIndexType::DirectOnThreadLocalData`)
 3. We provide an extremely efficient means to access a small number of non-gc thread statics. (The rest of the usage of `TLSIndexType::DirectOnThreadLocalData`)
-
-For the purposes of t
 
 #### Per-Thread Statics Data structures
 ```mermaid
@@ -323,7 +321,7 @@ The pointer (`pCollectibleTlsArrayData`) in the `ThreadLocalData` is a pointer t
 At GC scan time, each managed object must individually be kept alive only if the type and thread is still alive. This requires properly handling several situations.
 1. If a collectible assembly becomes unreferenced, but a thread static variable associated with it has a finalizer, the object must move to the finalization queue.
 2. If a thread static variable associated with a collectible assembly refers to the collectible assembly `LoaderAllocator` via a series of object references, it must not provide a reason for the collectible assembly to be considered referenced.
-3. If a collectible assembly is collected, then the associated static variables no longer exist, and the TLSIndex values associated with that collectible assembly becomre re-useable.
+3. If a collectible assembly is collected, then the associated static variables no longer exist, and the TLSIndex values associated with that collectible assembly becomes re-useable.
 4. If a thread is no longer executing, then all thread statics associated with that thread are no longer kept alive.
 
 The approach chosen is to use a pair of different handle types.
