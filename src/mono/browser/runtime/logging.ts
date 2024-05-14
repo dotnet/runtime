@@ -21,12 +21,8 @@ export function mono_log_debug (messageFactory: string | (() => string)) {
         const message = (typeof messageFactory === "function"
             ? messageFactory()
             : messageFactory);
-        mono_always_log_debug( message);
+        console.debug(prefix + message);
     }
-}
-
-export function mono_always_log_debug (msg: string) {
-    console.debug(prefix + msg);
 }
 
 export function mono_log_info (msg: string, ...data: any) {

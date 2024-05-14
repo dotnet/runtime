@@ -14,7 +14,7 @@ import gitCommitInfo from "git-commit-info";
 import MagicString from "magic-string";
 
 const configuration = process.env.Configuration;
-const isDebug = configuration !== "Release";
+const isDebug = false;
 const isContinuousIntegrationBuild = process.env.ContinuousIntegrationBuild === "true" ? true : false;
 const productVersion = process.env.ProductVersion || "8.0.0-dev";
 const nativeBinDir = process.env.NativeBinDir ? process.env.NativeBinDir.replace(/"/g, "") : "bin";
@@ -73,23 +73,18 @@ const inlineAssert = [
         // eslint-disable-next-line quotes
         pattern: 'mono_log_debug\\(*"([^"]*)"\\);',
         // eslint-disable-next-line quotes
-        replacement: (match) => `if (loaderHelpers.diagnosticTracing) mono_always_log_debug("${match[2]}"); // inlined mono_log_debug condition`
+        replacement: (match) => `if (loaderHelpers.diagnosticTracing) mono_log_debug("${match[1]}"); // inlined mono_log_debug condition`
     },
     {
         // eslint-disable-next-line quotes
         pattern: 'mono_log_debug\\(\\(\\) => *`([^`]*)`\\);',
-        replacement: (match) => `if (loaderHelpers.diagnosticTracing) mono_always_log_debug(\`${match[1]}\`); // inlined mono_log_debug condition`
+        replacement: (match) => `if (loaderHelpers.diagnosticTracing) mono_log_debug(\`${match[1]}\`); // inlined mono_log_debug condition`
     },
 ];
 const checkAssert =
 {
     pattern: /^\s*mono_check/gm,
     failure: "previous regexp didn't inline all mono_check statements"
-};
-const checkDebugLog =
-{
-    pattern: /^\s*mono_log_debug/gm,
-    failure: "previous regexp didn't inline all mono_log_debug statements"
 };
 const checkNoLoader =
 {
@@ -180,7 +175,7 @@ const loaderConfig = {
         }
     ],
     external: externalDependencies,
-    plugins: [nodeResolve(), regexReplace(inlineAssert), regexCheck([checkAssert, checkNoRuntime, checkDebugLog]), ...outputCodePlugins],
+    plugins: [nodeResolve(), regexReplace(inlineAssert), regexCheck([checkAssert, checkNoRuntime]), ...outputCodePlugins],
     onwarn: onwarn
 };
 const runtimeConfig = {
@@ -197,7 +192,7 @@ const runtimeConfig = {
         }
     ],
     external: externalDependencies,
-    plugins: [regexReplace(inlineAssert), regexCheck([checkAssert, checkNoLoader, checkDebugLog]), ...outputCodePlugins],
+    plugins: [regexReplace(inlineAssert), regexCheck([checkAssert, checkNoLoader]), ...outputCodePlugins],
     onwarn: onwarn
 };
 const wasmImportsConfig = {
