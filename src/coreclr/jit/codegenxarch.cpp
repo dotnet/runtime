@@ -7531,8 +7531,12 @@ void CodeGen::genIntToFloatCast(GenTree* treeNode)
 
     // integral to floating-point conversions all have RMW semantics if VEX support
     // is not available
+
     const bool isRMW = !compiler->canUseVexEncoding();
 
+    // Handle the case of srcType = TYP_ULONG. SSE2 conversion instruction
+    // will interpret ULONG value as LONG.  Hence we need to adjust the
+    // result if sign-bit of srcType is set.
     if (srcType == TYP_ULONG)
     {
         assert(dstType == TYP_DOUBLE);
