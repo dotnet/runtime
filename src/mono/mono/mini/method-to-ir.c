@@ -7530,7 +7530,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					old_args [idx_param] = sp [idx_param];
 				}
 
-				GArray *new_params = g_array_new (FALSE, FALSE, sizeof (MonoType*));
+				GArray *new_params = g_array_sized_new (FALSE, FALSE, sizeof (MonoType*), n);
 				uint32_t new_param_count = 0;
 				MonoClass *swift_self = mono_class_try_get_swift_self_class ();
 				MonoClass *swift_error = mono_class_try_get_swift_error_class ();
@@ -7584,16 +7584,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					}
 				}
 
-				// Create a new dummy signature with the lowered arguments
-				MonoMethodSignature *swiftcall_signature = mono_metadata_signature_alloc (m_class_get_image (method->klass), new_param_count);
-				for (uint32_t idx_param = 0; idx_param < new_param_count; ++idx_param) {
-					swiftcall_signature->params [idx_param] = g_array_index (new_params, MonoType *, idx_param);
-				}
-				swiftcall_signature->ret = fsig->ret;
-				swiftcall_signature->pinvoke = fsig->pinvoke;
-				swiftcall_signature->ext_callconv = fsig->ext_callconv;
-				
-				fsig = swiftcall_signature;	
+				// Create a new dummy signature with the lowered arguments				
+				fsig = mono_metadata_signature_dup_new_params (cfg->mempool, fsig, new_param_count, (MonoType**)new_params->data);			
 			}
 #endif
 

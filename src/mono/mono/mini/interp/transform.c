@@ -3421,7 +3421,7 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 		StackInfo *sp_old_params = (StackInfo*) mono_mempool_alloc (td->mempool, sizeof (StackInfo) * csignature->param_count);
 		memcpy (sp_old_params, td->sp, sizeof (StackInfo) * csignature->param_count);
 
-		GArray *new_params = g_array_new (FALSE, FALSE, sizeof (MonoType*));
+		GArray *new_params = g_array_sized_new (FALSE, FALSE, sizeof (MonoType*), csignature->param_count);
 		uint32_t new_param_count = 0;
 		int align;
 		MonoClass *swift_self = mono_class_try_get_swift_self_class ();
@@ -3479,15 +3479,7 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 		++td->sp;
 
 		// Create a new dummy signature with the lowered arguments
-		MonoMethodSignature *swiftcall_signature = mono_metadata_signature_alloc (m_class_get_image (method->klass), new_param_count);
-		for (uint32_t idx_param = 0; idx_param < new_param_count; ++idx_param) {
-			swiftcall_signature->params [idx_param] = g_array_index (new_params, MonoType *, idx_param);
-		}
-		swiftcall_signature->ret = csignature->ret;
-		swiftcall_signature->pinvoke = csignature->pinvoke;
-		swiftcall_signature->ext_callconv = csignature->ext_callconv;
-		
-		csignature = swiftcall_signature;	
+		csignature = mono_metadata_signature_dup_new_params (td->mempool, csignature, new_param_count, (MonoType**)new_params->data);
 	}
 #endif
 
