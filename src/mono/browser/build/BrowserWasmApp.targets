@@ -88,8 +88,11 @@
       <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.runtime.js" />
       <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.native.wasm" Condition="'$(_HasDotnetWasm)' != 'true'" />
       <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.native.js" Condition="'$(_HasDotnetNativeJs)' != 'true'" />
-      <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.globalization.js" Condition="'$(_HasDotnetGlobalizationJs)' != 'true'" />
       <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.native.worker.js" Condition="'$(_HasDotnetJsWorker)' != 'true' and Exists('$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.native.worker.js')" />
+      <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.globalization.js"
+                       Condition="'$(HybridGlobalization)' == 'true' and
+                                  '$(_HasDotnetGlobalizationJs)' != 'true' and
+                                  Exists('$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.globalization.js')" />
       <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.native.js.symbols"
                        Condition="'$(WasmEmitSymbolMap)' == 'true' and
                                   '$(_HasDotnetJsSymbols)' != 'true' and
@@ -478,7 +481,7 @@
 
   <Target Name="_BrowserWasmLinkDotNet"
           Inputs="@(_WasmLinkDependencies);$(_WasmDefaultFlagsRsp);$(_WasmDefaultLinkFlagsRsp);$(_WasmLinkRsp)"
-          Outputs="$(_WasmIntermediateOutputPath)dotnet.native.js;$(_WasmIntermediateOutputPath)dotnet.native.wasm;$(_WasmIntermediateOutputPath)dotnet.globalization.js"
+          Outputs="$(_WasmIntermediateOutputPath)dotnet.native.js;$(_WasmIntermediateOutputPath)dotnet.native.wasm"
           Returns="@(FileWrites)" >
 
     <Message Text="Linking for initial memory %24(WasmInitialHeapSize)=$(WasmInitialHeapSize) bytes. Set this msbuild property to change the value." Importance="High" />
@@ -491,7 +494,7 @@
     <ItemGroup>
       <FileWrites Include="$(_WasmIntermediateOutputPath)dotnet.native.wasm" />
       <FileWrites Include="$(_WasmIntermediateOutputPath)dotnet.native.js" />
-      <FileWrites Include="$(_WasmIntermediateOutputPath)dotnet.globalization.js" />
+      <FileWrites Include="$(_WasmIntermediateOutputPath)dotnet.globalization.js" Condition="'$(HybridGlobalization)' == 'true'" />
       <FileWrites Include="$(_WasmIntermediateOutputPath)dotnet.native.js.symbols" Condition="'$(WasmEmitSymbolMap)' == 'true'" />
     </ItemGroup>
 
@@ -547,7 +550,7 @@
       <WasmNativeAsset Include="$(_WasmIntermediateOutputPath)dotnet.native.wasm" />
       <WasmNativeAsset Include="$(_WasmIntermediateOutputPath)dotnet.native.js" />
       <WasmNativeAsset Include="$(_WasmIntermediateOutputPath)dotnet.native.worker.js" Condition="Exists('$(_WasmIntermediateOutputPath)dotnet.native.worker.js')" />
-      <WasmNativeAsset Include="$(_WasmIntermediateOutputPath)dotnet.globalization.js" Condition="Exists('$(_WasmIntermediateOutputPath)dotnet.globalization.js')" />
+      <WasmNativeAsset Include="$(_WasmIntermediateOutputPath)dotnet.globalization.js" Condition="'$(HybridGlobalization)' == 'true' and Exists('$(_WasmIntermediateOutputPath)dotnet.globalization.js')" />
       <WasmNativeAsset Include="$(_WasmIntermediateOutputPath)dotnet.native.js.symbols" Condition="'$(WasmEmitSymbolMap)' == 'true' and Exists('$(_WasmIntermediateOutputPath)dotnet.native.js.symbols')" />
       <_WasmAssembliesInternal Remove="$(_WasmDedupAssembly)"/>
     </ItemGroup>

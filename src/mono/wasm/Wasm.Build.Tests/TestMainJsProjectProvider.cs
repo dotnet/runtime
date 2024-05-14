@@ -62,11 +62,11 @@ public class TestMainJsProjectProvider : ProjectProviderBase
             }
         }
 
+        if (assertOptions.GlobalizationMode is GlobalizationMode.Hybrid)
+            res.Add("dotnet.globalization.js");
+
         if (assertOptions.AssertSymbolsFile && assertOptions.ExpectSymbolsFile)
             res.Add("dotnet.native.js.symbols");
-
-        if (assertOptions.GlobalizationMode == GlobalizationMode.Hybrid)
-            res.Add("dotnet.globalization.js");
 
         return res ?? throw new ArgumentException($"Unknown runtime type: {assertOptions.RuntimeType}");
     }

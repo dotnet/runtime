@@ -40,12 +40,15 @@ public class WasmSdkBasedProjectProvider : ProjectProviderBase
            "dotnet.js",
            "dotnet.native.wasm",
            "dotnet.native.js",
-           "dotnet.globalization.js",
            "dotnet.runtime.js",
         };
         if (assertOptions.RuntimeType is RuntimeVariant.MultiThreaded)
         {
             res.Add("dotnet.native.worker.js");
+        }
+        if (assertOptions.GlobalizationMode is GlobalizationMode.Hybrid)
+        {
+            res.Add("dotnet.globalization.js");
         }
 
         if (!assertOptions.IsPublish)
