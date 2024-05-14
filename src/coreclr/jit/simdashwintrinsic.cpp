@@ -544,7 +544,6 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
             break;
         }
 
-
         case NI_Vector2_MultiplyAddEstimate:
         case NI_Vector3_MultiplyAddEstimate:
         case NI_Vector4_MultiplyAddEstimate:
