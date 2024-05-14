@@ -275,8 +275,9 @@ protected:
     void      genHomeRegisterParams(regNumber initReg, bool* initRegStillZeroed);
     regMaskTP genGetParameterHomingTempRegisterCandidates();
 
-    var_types genParamStackStoreType(LclVarDsc* dsc, const ABIPassingSegment& seg);
+    var_types genParamStackType(LclVarDsc* dsc, const ABIPassingSegment& seg);
     void      genSpillOrAddRegisterParam(unsigned lclNum, class RegGraph* graph);
+    void      genSpillOrAddNonStandardRegisterParam(unsigned lclNum, regNumber sourceReg, class RegGraph* graph);
     void      genEnregisterIncomingStackArgs();
 #if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     void genEnregisterOSRArgsAndLocals(regNumber initReg, bool* pInitRegZeroed);
@@ -959,38 +960,35 @@ protected:
 #ifdef FEATURE_HW_INTRINSICS
     void genHWIntrinsic(GenTreeHWIntrinsic* node);
 #if defined(TARGET_XARCH)
-    void genHWIntrinsic_R_RM(GenTreeHWIntrinsic* node,
-                             instruction         ins,
-                             emitAttr            attr,
-                             regNumber           reg,
-                             GenTree*            rmOp,
-                             insOpts             instOptions = INS_OPTS_NONE);
-    void genHWIntrinsic_R_RM_I(GenTreeHWIntrinsic* node, instruction ins, emitAttr attr, int8_t ival);
+    void genHWIntrinsic_R_RM(
+        GenTreeHWIntrinsic* node, instruction ins, emitAttr attr, regNumber reg, GenTree* rmOp, insOpts instOptions);
+    void genHWIntrinsic_R_RM_I(
+        GenTreeHWIntrinsic* node, instruction ins, emitAttr attr, int8_t ival, insOpts instOptions);
     void genHWIntrinsic_R_R_RM(GenTreeHWIntrinsic* node, instruction ins, emitAttr attr, insOpts instOptions);
-    void genHWIntrinsic_R_R_RM_I(GenTreeHWIntrinsic* node, instruction ins, emitAttr attr, int8_t ival);
-    void genHWIntrinsic_R_R_RM_R(GenTreeHWIntrinsic* node, instruction ins, emitAttr attr);
+    void genHWIntrinsic_R_R_RM_I(
+        GenTreeHWIntrinsic* node, instruction ins, emitAttr attr, int8_t ival, insOpts instOptions);
+    void genHWIntrinsic_R_R_RM_R(GenTreeHWIntrinsic* node, instruction ins, emitAttr attr, insOpts instOptions);
     void genHWIntrinsic_R_R_R_RM(instruction ins,
                                  emitAttr    attr,
                                  regNumber   targetReg,
                                  regNumber   op1Reg,
                                  regNumber   op2Reg,
                                  GenTree*    op3,
-                                 insOpts     instOptions = INS_OPTS_NONE);
-    void genHWIntrinsic_R_R_R_RM_I(GenTreeHWIntrinsic* node, instruction ins, emitAttr attr, int8_t ival);
+                                 insOpts     instOptions);
+    void genHWIntrinsic_R_R_R_RM_I(
+        GenTreeHWIntrinsic* node, instruction ins, emitAttr attr, int8_t ival, insOpts instOptions);
 
-    void genBaseIntrinsic(GenTreeHWIntrinsic* node);
-    void genX86BaseIntrinsic(GenTreeHWIntrinsic* node);
+    void genBaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions);
+    void genX86BaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions);
     void genSSEIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions);
     void genSSE2Intrinsic(GenTreeHWIntrinsic* node, insOpts instOptions);
-    void genSSE41Intrinsic(GenTreeHWIntrinsic* node);
-    void genSSE42Intrinsic(GenTreeHWIntrinsic* node);
+    void genSSE41Intrinsic(GenTreeHWIntrinsic* node, insOpts instOptions);
+    void genSSE42Intrinsic(GenTreeHWIntrinsic* node, insOpts instOptions);
     void genAvxFamilyIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions);
-    void genAESIntrinsic(GenTreeHWIntrinsic* node);
     void genBMI1OrBMI2Intrinsic(GenTreeHWIntrinsic* node, insOpts instOptions);
     void genFMAIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions);
-    void genPermuteVar2x(GenTreeHWIntrinsic* node);
+    void genPermuteVar2x(GenTreeHWIntrinsic* node, insOpts instOptions);
     void genLZCNTIntrinsic(GenTreeHWIntrinsic* node);
-    void genPCLMULQDQIntrinsic(GenTreeHWIntrinsic* node);
     void genPOPCNTIntrinsic(GenTreeHWIntrinsic* node);
     void genXCNTIntrinsic(GenTreeHWIntrinsic* node, instruction ins);
     void genX86SerializeIntrinsic(GenTreeHWIntrinsic* node);
@@ -1003,13 +1001,15 @@ protected:
                                          HWIntrinsicSwitchCaseBody emitSwCase);
 
     void genNonTableDrivenHWIntrinsicsJumpTableFallback(GenTreeHWIntrinsic* node, GenTree* lastOp);
+
+    static insOpts AddEmbBroadcastMode(insOpts instOptions);
 #endif // defined(TARGET_XARCH)
 
 #ifdef TARGET_ARM64
     class HWIntrinsicImmOpHelper final
     {
     public:
-        HWIntrinsicImmOpHelper(CodeGen* codeGen, GenTree* immOp, GenTreeHWIntrinsic* intrin);
+        HWIntrinsicImmOpHelper(CodeGen* codeGen, GenTree* immOp, GenTreeHWIntrinsic* intrin, int immNum = 1);
 
         void EmitBegin();
         void EmitCaseEnd();
@@ -1261,7 +1261,8 @@ protected:
     void        genCall(GenTreeCall* call);
     void        genCallInstruction(GenTreeCall* call X86_ARG(target_ssize_t stackArgBytes));
     void        genDefinePendingCallLabel(GenTreeCall* call);
-    void        genJmpMethod(GenTree* jmp);
+    void        genJmpPlaceArgs(GenTree* jmp);
+    void        genJmpPlaceVarArgs();
     BasicBlock* genCallFinally(BasicBlock* block);
 #if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     void genCodeForJumpCompare(GenTreeOpCC* tree);
@@ -1576,7 +1577,7 @@ public:
     void inst_TT(instruction ins, emitAttr size, GenTree* op1);
     void inst_RV_TT(instruction ins, emitAttr size, regNumber op1Reg, GenTree* op2);
     void inst_RV_RV_IV(instruction ins, emitAttr size, regNumber reg1, regNumber reg2, unsigned ival);
-    void inst_RV_TT_IV(instruction ins, emitAttr attr, regNumber reg1, GenTree* rmOp, int ival);
+    void inst_RV_TT_IV(instruction ins, emitAttr attr, regNumber reg1, GenTree* rmOp, int ival, insOpts instOptions);
     void inst_RV_RV_TT(instruction ins,
                        emitAttr    size,
                        regNumber   targetReg,
@@ -1584,8 +1585,14 @@ public:
                        GenTree*    op2,
                        bool        isRMW,
                        insOpts     instOptions);
-    void inst_RV_RV_TT_IV(
-        instruction ins, emitAttr size, regNumber targetReg, regNumber op1Reg, GenTree* op2, int8_t ival, bool isRMW);
+    void inst_RV_RV_TT_IV(instruction ins,
+                          emitAttr    size,
+                          regNumber   targetReg,
+                          regNumber   op1Reg,
+                          GenTree*    op2,
+                          int8_t      ival,
+                          bool        isRMW,
+                          insOpts     instOptions);
 #endif
 
     void inst_set_SV_var(GenTree* tree);

@@ -3,6 +3,7 @@
 
 using System;
 using System.Buffers.Binary;
+using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -16,6 +17,86 @@ public unsafe class TargetTests
     private const ulong ContractDescriptorAddr = 0xaaaaaaaa;
     private const uint JsonDescriptorAddr = 0xdddddddd;
     private const uint PointerDataAddr = 0xeeeeeeee;
+
+    private static readonly (DataType Type, Target.TypeInfo Info)[] TestTypes =
+    [
+        // Size and fields
+        (DataType.Thread, new(){
+            Size = 56,
+            Fields = {
+                { "Field1", new(){ Offset = 8, Type = DataType.uint16, TypeName = DataType.uint16.ToString() }},
+                { "Field2", new(){ Offset = 16, Type = DataType.GCHandle, TypeName = DataType.GCHandle.ToString() }},
+                { "Field3", new(){ Offset = 32 }}
+            }}),
+        // Fields only
+        (DataType.ThreadStore, new(){
+            Fields = {
+                { "Field1", new(){ Offset = 0, TypeName = "FieldType" }},
+                { "Field2", new(){ Offset = 8 }}
+            }}),
+        // Size only
+        (DataType.GCHandle, new(){
+            Size = 8
+        })
+    ];
+
+    [Theory]
+    [InlineData(true, true)]
+    [InlineData(true, false)]
+    [InlineData(false, true)]
+    [InlineData(false, false)]
+    public void GetTypeInfo(bool isLittleEndian, bool is64Bit)
+    {
+        string typesJson = string.Join(',', TestTypes.Select(t => GetTypeJson(t.Type.ToString(), t.Info)));
+        byte[] json = Encoding.UTF8.GetBytes($$"""
+        {
+            "version": 0,
+            "baseline": "empty",
+            "contracts": {},
+            "types": { {{typesJson}} },
+            "globals": {}
+        }
+        """);
+        Span<byte> descriptor = stackalloc byte[ContractDescriptor.Size(is64Bit)];
+        ContractDescriptor.Fill(descriptor, isLittleEndian, is64Bit, json.Length, 0);
+        fixed (byte* jsonPtr = json)
+        {
+            ReadContext context = new ReadContext
+            {
+                ContractDescriptor = (byte*)Unsafe.AsPointer(ref MemoryMarshal.GetReference(descriptor)),
+                ContractDescriptorLength = descriptor.Length,
+                JsonDescriptor = jsonPtr,
+                JsonDescriptorLength = json.Length,
+            };
+
+            bool success = Target.TryCreate(ContractDescriptorAddr, &ReadFromTarget, &context, out Target? target);
+            Assert.True(success);
+
+            foreach ((DataType type, Target.TypeInfo info) in TestTypes)
+            {
+                {
+                    // By known type
+                    Target.TypeInfo actual = target.GetTypeInfo(type);
+                    Assert.Equal(info.Size, actual.Size);
+                    Assert.Equal(info.Fields, actual.Fields);
+                }
+                {
+                    // By name
+                    Target.TypeInfo actual = target.GetTypeInfo(type.ToString());
+                    Assert.Equal(info.Size, actual.Size);
+                    Assert.Equal(info.Fields, actual.Fields);
+                }
+            }
+        }
+
+        static string GetTypeJson(string name, Target.TypeInfo info)
+        {
+            string ret = string.Empty;
+            List<string> fields = info.Size is null ? [] : [$"\"!\":{info.Size}"];
+            fields.AddRange(info.Fields.Select(f => $"\"{f.Key}\":{(f.Value.TypeName is null ? f.Value.Offset : $"[{f.Value.Offset},\"{f.Value.TypeName}\"]")}"));
+            return $"\"{name}\":{{{string.Join(',', fields)}}}";
+        }
+    }
 
     private static readonly (string Name, ulong Value, string? Type)[] TestGlobals =
     [
