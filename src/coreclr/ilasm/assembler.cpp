@@ -1420,6 +1420,15 @@ void Assembler::EmitOpcode(Instr* instr)
                 pLPC->PC = m_CurPC;
 
                 pLPC->pOwnerDocument = instr->pOwnerDocument;
+                if(m_pCurMethod->m_FirstDocument == NULL)
+                {
+                    m_pCurMethod->m_FirstDocument = instr->pOwnerDocument;
+                }
+                else if (instr->pOwnerDocument != NULL && m_pCurMethod->m_FirstDocument != instr->pOwnerDocument)
+                {
+                    m_pCurMethod->m_HasMultipleDocuments = TRUE;
+                }
+                
                 if (0xfeefee == instr->linenum &&
                     0xfeefee == instr->linenum_end &&
                     0 == instr->column &&

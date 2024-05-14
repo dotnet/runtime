@@ -145,10 +145,12 @@ namespace IlasmPortablePdbTests
 
         // Tests whether the portable PDB has appropriate sequence points defined
         // The test source file includes external source reference and thus has 2 variants depending on OS type
-        [Fact]
-        public void TestPortablePdbMethodDebugInformation2()
+        [Theory]
+        [InlineData("TestMethodDebugInformation")]
+        [InlineData("TestDocuments1")]
+        public void TestPortablePdbMethodDebugInformation2(string ilRoot)
         {
-            var ilSource = IsUnix ? "TestMethodDebugInformation_unix.il" : "TestMethodDebugInformation_win.il";
+            var ilSource = ilRoot + (IsUnix ? "_unix.il" : "_win.il");
 
             var expected = IlasmPortablePdbTesterCommon.GetExpectedForTestMethodDebugInformation(ilSource);
             var ilasm = IlasmPortablePdbTesterCommon.GetIlasmFullPath(CoreRootVar, IlasmFile);
@@ -174,10 +176,17 @@ namespace IlasmPortablePdbTests
 
                             // verify method debug information from portable pdb metadata
                             var methodDebugInformation = portablePdbMdReader.GetMethodDebugInformation(methodDefinitionHandle);
-                            var methodDocument = portablePdbMdReader.GetDocument(methodDebugInformation.Document);
-                            var methodDocumentName = portablePdbMdReader.GetString(methodDocument.Name);
-                            Assert.Equal(expectedMethodDbgInfo.Document.Name, methodDocumentName);
 
+                            if (expectedMethodDbgInfo.Document == null)
+                            {
+                                Assert.True(methodDebugInformation.Document.IsNil);
+                            }
+                            else
+                            {
+                                var methodDocument = portablePdbMdReader.GetDocument(methodDebugInformation.Document);
+                                var methodDocumentName = portablePdbMdReader.GetString(methodDocument.Name);
+                                Assert.Equal(expectedMethodDbgInfo.Document.Name, methodDocumentName);
+                            }
                             int i = 0;
                             foreach (var sequencePoint in methodDebugInformation.GetSequencePoints())
                             {

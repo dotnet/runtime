@@ -96,6 +96,7 @@ namespace IlasmPortablePdbTests
 
         public static Dictionary<string, MethodDebugInformationStub> GetExpectedForTestMethodDebugInformation(string testName)
         {
+            string structure;
             string method1;
             string method2;
             DocumentStub document1;
@@ -104,38 +105,52 @@ namespace IlasmPortablePdbTests
             switch (testName)
             {
                 case "TestMethodDebugInformation_unix.il":
+                    structure = "TestMethodDebugInformation";
                     method1 = ".ctor";
                     method2 = "Pow";
                     document1 = new DocumentStub("/tmp/TestMethodDebugInformation/SimpleMath.cs");
                     document2 = new DocumentStub("/tmp/TestMethodDebugInformation/SimpleMathMethods.cs");
                     break;
                 case "TestMethodDebugInformation_win.il":
+                    structure = "TestMethodDebugInformation";
                     method1 = ".ctor";
                     method2 = "Pow";
                     document1 = new DocumentStub("C:\\tmp\\TestMethodDebugInformation\\SimpleMath.cs");
                     document2 = new DocumentStub("C:\\tmp\\TestMethodDebugInformation\\SimpleMathMethods.cs");
                     break;
+                case "TestDocuments1_unix.il":
+                    structure = "TestDocuments1";
+                    method1 = "Foo";
+                    method2 = null;
+                    document1 = new DocumentStub("/tmp/non_existent_source1.cs");
+                    document2 = new DocumentStub("/tmp/non_existent_source2.cs");
+                    break;
+                case "TestDocuments1_win.il":
+                    structure = "TestDocuments1";
+                    method1 = "Foo";
+                    method2 = null;
+                    document1 = new DocumentStub("C:\\tmp\\non_existent_source1.cs");
+                    document2 = new DocumentStub("C:\\tmp\\non_existent_source2.cs");
+                    break;
                 default:
                     Assert.Fail();
                     return null;
             }
-
-            return new Dictionary<string, MethodDebugInformationStub>()
+            var result = new Dictionary<string, MethodDebugInformationStub>();
+            switch (structure)
             {
-                {
-                    method1,
-                    new MethodDebugInformationStub(method1, document1,
+                case "TestMethodDebugInformation":
+                    result.Add(method1,
+                        new MethodDebugInformationStub(method1, document1,
                         new List<SequencePointStub>()
                         {
                             new SequencePointStub(document1, false, 0x0, 6, 6, 9, 37),
                             new SequencePointStub(document1, false, 0x7, 7, 7, 9, 10),
                             new SequencePointStub(document1, false, 0x8, 8, 8, 13, 28),
                             new SequencePointStub(document1, false, 0xf, 9, 9, 9, 10),
-                        })
-                },
-                {
-                    method2,
-                    new MethodDebugInformationStub(method2, document2,
+                        }));
+                    result.Add(method2,
+                        new MethodDebugInformationStub(method2, document2,
                         new List<SequencePointStub>()
                         {
                             new SequencePointStub(document2, false, 0x0, 6, 6, 9, 10),
@@ -153,9 +168,19 @@ namespace IlasmPortablePdbTests
                             new SequencePointStub(document2, true,  0x1e),
                             new SequencePointStub(document2, false, 0x21, 15, 15, 13, 24),
                             new SequencePointStub(document2, false, 0x26, 16, 16, 9, 10),
-                        })
-                }
+                        }));
+                    break;
+                case "TestDocuments1":
+                    result.Add(method1,
+                        new MethodDebugInformationStub(method1, null,
+                        new List<SequencePointStub>()
+                        {
+                            new SequencePointStub(document1, false, 0x0, 1, 1, 9, 10),
+                            new SequencePointStub(document2, false, 0x1, 2, 2, 9, 10),
+                        }));
+                    break;
             };
+            return result;
         }
 
         public static List<LocalScopeStub> GetExpectedForTestLocalScopes(string testName)

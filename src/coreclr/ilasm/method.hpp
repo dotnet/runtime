@@ -337,6 +337,8 @@ public:
     unsigned m_LineNum;
     // debug info
     LinePCList m_LinePCList;
+    Document* m_FirstDocument;
+    BOOL m_HasMultipleDocuments;
     // custom values
     CustomDescrList m_CustomDescrList;
     // token relocs (used for OBJ generation only)
