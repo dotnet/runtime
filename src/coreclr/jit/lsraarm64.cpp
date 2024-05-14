@@ -1842,7 +1842,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
 
         assert(intrin.op1 != nullptr);
 
-        bool      forceOp2DelayFree = false;
+        bool      forceOp2DelayFree   = false;
         regMaskTP lowVectorCandidates = RBM_NONE;
         int       lowVectorOperandNum = -1;
         if ((intrin.id == NI_Vector64_GetElement) || (intrin.id == NI_Vector128_GetElement))

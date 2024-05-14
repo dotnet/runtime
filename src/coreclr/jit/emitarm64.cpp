@@ -4283,7 +4283,7 @@ void emitter::emitIns_Mov(
                     return;
                 }
                 srcReg = encodingSPtoZR(srcReg);
-                fmt = IF_SVE_CB_2A;
+                fmt    = IF_SVE_CB_2A;
             }
             else
             {

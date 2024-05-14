@@ -4998,8 +4998,9 @@ void CodeGen::genArm64EmitterUnitTestsSve()
                               INS_SCALABLE_OPTS_PREDICATE_MERGE); /* MOV     <Pd>.B, <Pg>/M, <Pn>.B */
 
     // IF_SVE_CZ_4A_L
-    theEmitter->emitIns_Mov(INS_sve_mov, EA_SCALABLE, REG_P0, REG_P15, /* canSkip */ false, INS_OPTS_SCALABLE_B); /* MOV     <Pd>.B, <Pn>.B
-                                                                                              */
+    theEmitter->emitIns_Mov(INS_sve_mov, EA_SCALABLE, REG_P0, REG_P15, /* canSkip */ false,
+                            INS_OPTS_SCALABLE_B); /* MOV     <Pd>.B, <Pn>.B
+                                                   */
 
     // IF_SVE_DA_4A
     theEmitter->emitIns_R_R_R_R(INS_sve_brkpa, EA_SCALABLE, REG_P0, REG_P1, REG_P10, REG_P15,
