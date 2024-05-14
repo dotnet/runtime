@@ -743,7 +743,7 @@ var_types Compiler::getArgTypeForStruct(CORINFO_CLASS_HANDLE clsHnd,
 
                 // Otherwise we pass this struct by value on the stack
                 // setup wbPassType and useType indicate that this is passed by value according to the X86/ARM32 ABI
-                // On LOONGARCH64 struct that is 1-16 bytes is passed by value in one/two register(s)
+                // On LOONGARCH64 and RISCV64 struct that is 1-16 bytes is returned by value in one/two register(s)
                 howToPassStruct = SPK_ByValue;
                 useType         = TYP_STRUCT;
 
@@ -757,7 +757,6 @@ var_types Compiler::getArgTypeForStruct(CORINFO_CLASS_HANDLE clsHnd,
         else // (structSize > MAX_PASS_MULTIREG_BYTES)
         {
             // We have a (large) struct that can't be replaced with a "primitive" type
-            // and can't be passed in multiple registers
 
 #if defined(TARGET_X86) || defined(TARGET_ARM) || defined(UNIX_AMD64_ABI)
 
@@ -767,11 +766,23 @@ var_types Compiler::getArgTypeForStruct(CORINFO_CLASS_HANDLE clsHnd,
             useType         = TYP_STRUCT;
 
 #elif defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-
-            // Otherwise we pass this struct by reference to a copy
-            // setup wbPassType and useType indicate that this is passed using one register (by reference to a copy)
-            howToPassStruct = SPK_ByReference;
-            useType         = TYP_UNKNOWN;
+#ifdef TARGET_RISCV64
+            // Struct larger than 16 can still be passed in registers according to FP call conv if it has empty fields
+            // or more padding
+            uint32_t flags = info.compCompHnd->getRISCV64PassStructInRegisterFlags(clsHnd);
+            if (flags != STRUCT_NO_FLOAT_FIELD)
+            {
+                howToPassStruct = SPK_ByValue;
+                useType         = TYP_STRUCT;
+            }
+            else
+#endif
+            {
+                // Otherwise we pass this struct by reference to a copy
+                // setup wbPassType and useType indicate that this is passed using one register (by reference to a copy)
+                howToPassStruct = SPK_ByReference;
+                useType         = TYP_UNKNOWN;
+            }
 
 #else //  TARGET_XXX
 
@@ -945,20 +956,17 @@ var_types Compiler::getReturnTypeForStruct(CORINFO_CLASS_HANDLE     clsHnd,
     }
 
 #elif defined(TARGET_RISCV64)
-    if (structSize <= (TARGET_POINTER_SIZE * 2))
+    uint32_t floatFieldFlags = info.compCompHnd->getRISCV64PassStructInRegisterFlags(clsHnd);
+    if ((floatFieldFlags & STRUCT_FLOAT_FIELD_ONLY_ONE) != 0)
     {
-        uint32_t floatFieldFlags = info.compCompHnd->getRISCV64PassStructInRegisterFlags(clsHnd);
-
-        if ((floatFieldFlags & STRUCT_FLOAT_FIELD_ONLY_ONE) != 0)
-        {
-            howToReturnStruct = SPK_PrimitiveType;
-            useType           = (structSize > 4) ? TYP_DOUBLE : TYP_FLOAT;
-        }
-        else if (floatFieldFlags & (STRUCT_HAS_FLOAT_FIELDS_MASK ^ STRUCT_FLOAT_FIELD_ONLY_ONE))
-        {
-            howToReturnStruct = SPK_ByValue;
-            useType           = TYP_STRUCT;
-        }
+        howToReturnStruct = SPK_PrimitiveType;
+        useType           = ((floatFieldFlags & STRUCT_FIRST_FIELD_SIZE_IS8) != 0) ? TYP_DOUBLE : TYP_FLOAT;
+    }
+    else if (floatFieldFlags != STRUCT_NO_FLOAT_FIELD)
+    {
+        assert((floatFieldFlags & (STRUCT_HAS_FLOAT_FIELDS_MASK ^ STRUCT_FLOAT_FIELD_ONLY_ONE)) != 0);
+        howToReturnStruct = SPK_ByValue;
+        useType           = TYP_STRUCT;
     }
 
 #endif
@@ -1105,7 +1113,8 @@ var_types Compiler::getReturnTypeForStruct(CORINFO_CLASS_HANDLE     clsHnd,
 
 #elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 
-                // On LOONGARCH64/RISCV64 struct that is 1-16 bytes is returned by value in one/two register(s)
+                // On LOONGARCH64 (always) and RISCV64 (integer calling convention) struct that is 1-16 bytes is
+                // returned by value in one/two register(s)
                 howToReturnStruct = SPK_ByValue;
                 useType           = TYP_STRUCT;
 
