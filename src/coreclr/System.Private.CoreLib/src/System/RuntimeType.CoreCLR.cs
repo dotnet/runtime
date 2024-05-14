@@ -932,7 +932,8 @@ namespace System
                     if (MdToken.IsNullToken(tkDeclaringType))
                         return;
 
-                    MetadataImport scope = RuntimeTypeHandle.GetMetadataImport(declaringType);
+                    RuntimeModule module = declaringType.GetRuntimeModule();
+                    MetadataImport scope = module.MetadataImport;
 
                     scope.EnumFields(tkDeclaringType, out MetadataEnumResult tkFields);
 
@@ -976,6 +977,7 @@ namespace System
                             list.Add(runtimeFieldInfo);
                         }
                     }
+                    GC.KeepAlive(module);
                 }
 
                 private void AddSpecialInterface(
@@ -1102,7 +1104,7 @@ namespace System
                     ListBuilder<RuntimeType> list = default;
 
                     ModuleHandle moduleHandle = new ModuleHandle(RuntimeTypeHandle.GetModule(declaringType));
-                    MetadataImport scope = ModuleHandle.GetMetadataImport(moduleHandle.GetRuntimeModule());
+                    MetadataImport scope = moduleHandle.GetRuntimeModule().MetadataImport;
 
                     scope.EnumNestedTypes(tkEnclosingType, out MetadataEnumResult tkNestedClasses);
 
@@ -1174,7 +1176,8 @@ namespace System
                     if (MdToken.IsNullToken(tkDeclaringType))
                         return;
 
-                    MetadataImport scope = RuntimeTypeHandle.GetMetadataImport(declaringType);
+                    RuntimeModule module = declaringType.GetRuntimeModule();
+                    MetadataImport scope = module.MetadataImport;
 
                     scope.EnumEvents(tkDeclaringType, out MetadataEnumResult tkEvents);
 
@@ -1220,6 +1223,7 @@ namespace System
 
                         list.Add(eventInfo);
                     }
+                    GC.KeepAlive(module);
                 }
 
                 private RuntimePropertyInfo[] PopulateProperties(Filter filter)
@@ -1286,7 +1290,8 @@ namespace System
                     if (MdToken.IsNullToken(tkDeclaringType))
                         return;
 
-                    MetadataImport scope = RuntimeTypeHandle.GetMetadataImport(declaringType);
+                    RuntimeModule module = declaringType.GetRuntimeModule();
+                    MetadataImport scope = module.MetadataImport;
 
                     scope.EnumProperties(tkDeclaringType, out MetadataEnumResult tkProperties);
 
@@ -1304,7 +1309,7 @@ namespace System
 
                         if (filter.RequiresStringComparison())
                         {
-                            MdUtf8String name = declaringType.GetRuntimeModule().MetadataImport.GetName(tkProperty);
+                            MdUtf8String name = scope.GetName(tkProperty);
 
                             if (!filter.Match(name))
                                 continue;
@@ -1399,6 +1404,7 @@ namespace System
 
                         list.Add(propertyInfo);
                     }
+                    GC.KeepAlive(module);
                 }
                 #endregion
 
@@ -1571,7 +1577,9 @@ namespace System
                     while (type.IsNested)
                         type = type.DeclaringType!;
 
-                    m_namespace = RuntimeTypeHandle.GetMetadataImport((RuntimeType)type).GetNamespace(type.MetadataToken).ToString();
+                    RuntimeModule module = ((RuntimeType)type).GetRuntimeModule();
+                    m_namespace = module.MetadataImport.GetNamespace(type.MetadataToken).ToString();
+                    GC.KeepAlive(module);
                 }
 
                 return m_namespace;
@@ -2373,7 +2381,9 @@ namespace System
         #region Private Data Members
 
 #pragma warning disable CA1823
+#pragma warning disable CS0169
         private readonly object m_keepalive; // This will be filled with a LoaderAllocator reference when this RuntimeType represents a collectible type
+#pragma warning restore CS0169
 #pragma warning restore CA1823
         private IntPtr m_cache;
         internal IntPtr m_handle;
@@ -3497,8 +3507,9 @@ namespace System
                 if (!IsGenericParameter)
                     throw new InvalidOperationException(SR.Arg_NotGenericParameter);
 
-
-                RuntimeTypeHandle.GetMetadataImport(this).GetGenericParamProps(MetadataToken, out GenericParameterAttributes attributes);
+                RuntimeModule module = GetRuntimeModule();
+                module.MetadataImport.GetGenericParamProps(MetadataToken, out GenericParameterAttributes attributes);
+                GC.KeepAlive(module);
 
                 return attributes;
             }
@@ -3661,9 +3672,6 @@ namespace System
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern bool CanValueSpecialCast(RuntimeType valueType, RuntimeType targetType);
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern object AllocateValueType(RuntimeType type, object? value);
 
         private CheckValueStatus TryChangeTypeSpecial(ref object value)
         {
@@ -3970,14 +3978,6 @@ namespace System
         #endregion
 
         #region Legacy internal static
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern object _CreateEnum(RuntimeType enumType, long value);
-
-        internal static object CreateEnum(RuntimeType enumType, long value)
-        {
-            return _CreateEnum(enumType, value);
-        }
 
 #if FEATURE_COMINTEROP
         [MethodImpl(MethodImplOptions.InternalCall)]

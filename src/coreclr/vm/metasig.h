@@ -259,6 +259,8 @@ DEFINE_METASIG(SM(Flt_RetFlt, f, f))
 DEFINE_METASIG(SM(Dbl_RetDbl, d, d))
 DEFINE_METASIG(SM(RefDbl_Dbl_RetDbl, r(d) d, d))
 DEFINE_METASIG(SM(RefDbl_Dbl_Dbl_RetDbl, r(d) d d, d))
+DEFINE_METASIG(SM(Long_Long_RetLong, l l, l))
+DEFINE_METASIG(SM(ULong_ULong_RetULong, L L, L))
 DEFINE_METASIG(SM(RefLong_Long_RetLong, r(l) l, l))
 DEFINE_METASIG(SM(RefLong_Long_Long_RetLong, r(l) l l, l))
 DEFINE_METASIG(SM(RefFlt_Flt_RetFlt, r(f) f, f))
@@ -588,6 +590,13 @@ DEFINE_METASIG_T(SM(RefCleanupWorkListElement_RetVoid, r(C(CLEANUP_WORK_LIST_ELE
 DEFINE_METASIG_T(SM(RefCleanupWorkListElement_SafeHandle_RetIntPtr, r(C(CLEANUP_WORK_LIST_ELEMENT)) C(SAFE_HANDLE), I))
 DEFINE_METASIG_T(SM(RefCleanupWorkListElement_Obj_RetVoid, r(C(CLEANUP_WORK_LIST_ELEMENT)) j, v))
 
+DEFINE_METASIG(SM(PtrVoid_RetPtrVoid, P(v), P(v)))
+DEFINE_METASIG(IM(PtrVoid_RetVoid, P(v), v))
+#if defined(TARGET_X86) && defined(TARGET_WINDOWS)
+DEFINE_METASIG_T(IM(PtrCopyConstructorCookie_RetVoid, P(g(COPY_CONSTRUCTOR_COOKIE)), v))
+#endif // defined(TARGET_X86) && defined(TARGET_WINDOWS)
+
+
 #ifdef FEATURE_ICASTABLE
 DEFINE_METASIG_T(SM(ICastable_RtType_RefException_RetBool, C(ICASTABLE) C(CLASS) r(C(EXCEPTION)), F))
 DEFINE_METASIG_T(SM(ICastable_RtType_RetRtType, C(ICASTABLE) C(CLASS), C(CLASS)))
@@ -608,8 +617,8 @@ DEFINE_METASIG(GM(RetT, IMAGE_CEE_CS_CALLCONV_DEFAULT, 1, _, M(0)))
 DEFINE_METASIG_T(SM(Array_Int_Array_Int_Int_RetVoid, C(ARRAY) i C(ARRAY) i i, v))
 DEFINE_METASIG_T(SM(Array_Int_Obj_RetVoid, C(ARRAY) i j, v))
 DEFINE_METASIG_T(SM(Array_Int_PtrVoid_RetRefObj, C(ARRAY) i P(v), r(j)))
-DEFINE_METASIG_T(SM(Array_IntPtr_Obj_RetVoid, C(ARRAY) I j, v))
-DEFINE_METASIG_T(SM(Array_IntPtr_PtrVoid_RetRefObj, C(ARRAY) I P(v), r(j)))
+DEFINE_METASIG(SM(ArrObject_IntPtr_Obj_RetVoid, a(j) I j, v))
+DEFINE_METASIG(SM(ArrObject_IntPtr_PtrVoid_RetRefObj, a(j) I P(v), r(j)))
 
 DEFINE_METASIG(SM(Obj_IntPtr_Bool_RetVoid, j I F, v))
 DEFINE_METASIG(SM(IntPtr_Obj_RetVoid, I j, v))

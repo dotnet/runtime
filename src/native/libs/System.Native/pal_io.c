@@ -49,7 +49,9 @@
 #elif HAVE_SYS_STATVFS_H && !HAVE_NON_LEGACY_STATFS // SunOS
 #include <sys/types.h>
 #include <sys/statvfs.h>
+#if HAVE_STATFS_VFS
 #include <sys/vfs.h>
+#endif
 #endif
 
 #ifdef _AIX
@@ -1050,6 +1052,8 @@ int32_t SystemNative_MAdvise(void* address, uint64_t length, int32_t advice)
             errno = ENOTSUP;
             return -1;
 #endif
+        default:
+            break; // fall through to error
     }
 
     assert_msg(false, "Unknown MemoryAdvice", (int)advice);
@@ -1087,6 +1091,8 @@ int64_t SystemNative_SysConf(int32_t name)
             return sysconf(_SC_CLK_TCK);
         case PAL_SC_PAGESIZE:
             return sysconf(_SC_PAGESIZE);
+        default:
+            break; // fall through to error
     }
 
     assert_msg(false, "Unknown SysConf name", (int)name);

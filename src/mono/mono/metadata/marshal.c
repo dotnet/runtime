@@ -5226,39 +5226,129 @@ mono_marshal_get_unsafe_accessor_wrapper (MonoMethod *accessor_method, MonoUnsaf
 	MonoMethod *res;
 	GHashTable *cache;
 	MonoGenericContext *ctx = NULL;
+	MonoGenericContainer *container = NULL;
 	MonoMethod *orig_method = NULL;
 	WrapperInfo *info;
+	/* generic_wrapper == TRUE means we will create a generic wrapper method. */
+	gboolean generic_wrapper = FALSE;
+	/* is_inflated == TRUE means we will inflate a wrapper method before returning. */
+	gboolean is_inflated = FALSE;
+	/* one or both of generic_wrapper or is_inflated might be set, depending on how we're called. */
 
 	if (member_name == NULL && kind != MONO_UNSAFE_ACCESSOR_CTOR)
 		member_name = accessor_method->name;
 
+	// printf("CAME IN: %s (generic = %d, inflated = %d)\n", mono_method_full_name(accessor_method, TRUE), accessor_method->is_generic?1:0, accessor_method->is_inflated?1:0);
+
+	/*
+	 * the method is either a generic method definition, or it might be inflated, not both at
+         * the same time.
+	 */
+	g_assert (!(accessor_method->is_generic && accessor_method->is_inflated));
+
+
+	if (accessor_method->is_inflated) {
+		MonoMethod *declaring = ((MonoMethodInflated*)accessor_method)->declaring;
+		if (declaring->is_generic) {
+			// JIT gets here sometimes.
+			generic_wrapper = TRUE;
+		}
+		is_inflated = TRUE;
+	}
+
+	if (accessor_method->is_generic) {
+		generic_wrapper = TRUE;
+	}
+
+	if (is_inflated) {
+		// TODO: this always tries to compile a generic version of the accessor method and
+		// then inflate it.  But maybe we dont' want to do that (particularly for field
+		// accessors).  In particular if there is no method_inst, we're looking at an
+		// accessor method inside a generic class (alwayst a ginst? or sometimes a gtd?)
+		// In that case we might just want to compile the instance.
+
+		orig_method = accessor_method;
+		ctx = &((MonoMethodInflated*)accessor_method)->context;
+		accessor_method = ((MonoMethodInflated*)accessor_method)->declaring;
+		container = mono_method_get_generic_container (accessor_method);
+		if (!container)
+		    container = mono_class_try_get_generic_container (accessor_method->klass);
+		g_assert (container);
+		// TODO:
+		// in the example below, do we need to mess with the context and container?
+		//
+		// class C<T> {
+		//    public static extern void AccessorMethod<U>(List<T> t, List<U> u);
+		// }
+		//
+		// when we make a wrapper
+		//
+		//    public static extern void wrapper_AccessorMethod<U2>(List<T>, List<U2> u);
+		//
+		// do we need to substitute the new gparams of the wrapper, but leave the
+		// gparams of C<T> unchanged?
+		//
+	}
+
+	// printf("work on: %s (generic = %d, inflated = %d)\n", mono_method_full_name(accessor_method, TRUE), accessor_method->is_generic?1:0, accessor_method->is_inflated?1:0);
+
 	/*
 	 * Check cache
 	 */
-	if (ctx) {
-		cache = NULL;
-		g_assert_not_reached ();
+	if (is_inflated) {
+		cache = get_cache (&((MonoMethodInflated*)orig_method)->owner->wrapper_caches.unsafe_accessor_cache , mono_aligned_addr_hash, NULL);
+		res = check_generic_wrapper_cache (cache, orig_method, orig_method, accessor_method);
+		if (res)
+			return res;
 	} else {
 		cache = get_cache (&mono_method_get_wrapper_cache (accessor_method)->unsafe_accessor_cache, mono_aligned_addr_hash, NULL);
 		if ((res = mono_marshal_find_in_cache (cache, accessor_method)))
 			return res;
 	}
-
-	sig = mono_metadata_signature_dup_full (get_method_image (accessor_method), mono_method_signature_internal (accessor_method));
-	sig->pinvoke = 0;
-
+	// printf ("Cache miss\n");
+	
 	mb = mono_mb_new (accessor_method->klass, accessor_method->name, MONO_WRAPPER_OTHER);
+	if (generic_wrapper) {
+		// If the accessor method was generic, make the wrapper generic, too.
+
+		// Load a copy of the generic params of the accessor method
+		mb->method->is_generic = generic_wrapper;
+		container = mono_class_try_get_generic_container (accessor_method->klass);
+		container = mono_metadata_load_generic_params (m_class_get_image (accessor_method->klass), accessor_method->token, container, /*owner:*/mb->method);
+		mono_method_set_generic_container (mb->method, container);
+
+		MonoGenericContext inst_ctx = {0,};
+		// FIXME: if is_inflated, do we need to mess with ctx?
+		inst_ctx.method_inst = container->context.method_inst;
+
+		ERROR_DECL (error);
+		// make a copy of the accessor signature, but replace the params of the accessor
+		// method, by the params we just loaded
+		sig = mono_inflate_generic_signature (mono_method_signature_internal (accessor_method), &inst_ctx, error);
+		mono_error_assert_ok (error); // FIXME
+	} else {
+		sig = mono_metadata_signature_dup_full (get_method_image (accessor_method), mono_method_signature_internal (accessor_method));
+	}
+	sig->pinvoke = 0;
 
 	get_marshal_cb ()->mb_skip_visibility (mb);
 
-	get_marshal_cb ()->emit_unsafe_accessor_wrapper (mb, accessor_method, sig, ctx, kind, member_name);
+	if (generic_wrapper || is_inflated) {
+		// wrapper data will mention MonoClassField* and MonoMethod* that need to be inflated
+		get_marshal_cb ()->mb_inflate_wrapper_data (mb);
+	}
+
+	// if the wrapper will be inflated (either now by us, or when it's called, because it is
+	// generic), mark the wrapper data to be inflated, too
+	gboolean inflate_generic_data = accessor_method->is_generic || is_inflated;
+	get_marshal_cb ()->emit_unsafe_accessor_wrapper (mb, inflate_generic_data, accessor_method, sig, kind, member_name);
 
 	info = mono_wrapper_info_create (mb, WRAPPER_SUBTYPE_UNSAFE_ACCESSOR);
 	info->d.unsafe_accessor.method = accessor_method;
 	info->d.unsafe_accessor.kind = kind;
 	info->d.unsafe_accessor.member_name = member_name;
 
-	if (ctx) {
+	if (is_inflated) {
 		MonoMethod *def;
 		def = mono_mb_create_and_cache_full (cache, accessor_method, mb, sig, sig->param_count + 16, info, NULL);
 		res = cache_generic_wrapper (cache, orig_method, def, ctx, orig_method);
@@ -5749,7 +5839,7 @@ MonoMarshalType *
 mono_marshal_load_type_info (MonoClass* klass)
 {
 	int j, count = 0;
-	guint32 native_size = 0, min_align = 1, packing;
+	guint32 native_size = 0, min_align = 1, packing, explicit_size = 0;
 	MonoMarshalType *info;
 	MonoClassField* field;
 	gpointer iter;
@@ -5793,7 +5883,7 @@ mono_marshal_load_type_info (MonoClass* klass)
 	info->num_fields = count;
 
 	/* Try to find a size for this type in metadata */
-	mono_metadata_packing_from_typedef (m_class_get_image (klass), m_class_get_type_token (klass), NULL, &native_size);
+	explicit_size = mono_metadata_packing_from_typedef (m_class_get_image (klass), m_class_get_type_token (klass), NULL, &native_size);
 
 	if (m_class_get_parent (klass)) {
 		int parent_size = mono_class_native_size (m_class_get_parent (klass), NULL);
@@ -5834,8 +5924,19 @@ mono_marshal_load_type_info (MonoClass* klass)
 		if (m_class_is_inlinearray (klass)) {
 			// Limit the max size of array instance to 1MiB
 			const int struct_max_size = 1024 * 1024;
+			guint32 initial_size = size;
 			size *= m_class_inlinearray_value (klass);
-			g_assert ((size > 0) && (size <= struct_max_size));
+			if(size == 0 || size > struct_max_size) {
+				if (mono_get_runtime_callbacks ()->mono_class_set_deferred_type_load_failure_callback) {
+					if (mono_get_runtime_callbacks ()->mono_class_set_deferred_type_load_failure_callback (klass, "Inline array struct size out of bounds, abnormally large."))
+						break;
+					else
+						size = initial_size; // failure occured during AOT compilation, continue execution
+				} else {
+					mono_class_set_type_load_failure (klass, "Inline array struct size out of bounds, abnormally large.");
+					break;
+				}
+			}
 		}
 
 		switch (layout) {
@@ -5868,6 +5969,9 @@ mono_marshal_load_type_info (MonoClass* klass)
 				align_size = FALSE;
 			else
 				min_align = MIN (min_align, packing);
+		} else if (layout == TYPE_ATTRIBUTE_SEQUENTIAL_LAYOUT) {
+			if (explicit_size && native_size == info->native_size)
+				align_size = FALSE;
 		}
 	}
 
@@ -6579,4 +6683,294 @@ mono_wrapper_caches_free (MonoWrapperCaches *cache)
 	free_hash (cache->unbox_wrapper_cache);
 	free_hash (cache->thunk_invoke_cache);
 	free_hash (cache->unsafe_accessor_cache);
+}
+
+typedef enum {
+	SWIFT_EMPTY = 0,
+	SWIFT_OPAQUE,
+	SWIFT_INT64,
+	SWIFT_FLOAT,
+	SWIFT_DOUBLE,
+} SwiftPhysicalLoweringKind;
+
+static int get_swift_lowering_alignment (SwiftPhysicalLoweringKind kind) {
+	switch (kind) {
+	case SWIFT_INT64:
+	case SWIFT_DOUBLE:
+		return 8;
+	case SWIFT_FLOAT:
+		return 4;
+	default:
+		return 1;
+	}
+}
+
+static void set_lowering_range(guint8* lowered_bytes, guint32 offset, guint32 size, SwiftPhysicalLoweringKind kind) {
+	bool force_opaque = false;
+	
+	if (offset != ALIGN_TO(offset, get_swift_lowering_alignment(kind))) {
+		// If the start of the range is not aligned, we need to force the entire range to be opaque.
+		force_opaque = true;
+	}
+	
+        // Check if any of the range is non-empty.
+        // If so, we need to force this range to be opaque
+        // and extend the range to the existing tag's range and mark as opaque in addition to the requested range.
+	
+	for (guint32 i = 0; i < size; ++i) {
+		SwiftPhysicalLoweringKind current = (SwiftPhysicalLoweringKind)lowered_bytes[offset + i];
+		if (current != SWIFT_EMPTY && current != kind) {
+			force_opaque = true;
+			offset = ALIGN_DOWN_TO(offset, get_swift_lowering_alignment(current));
+			size = ALIGN_TO(size + offset, get_swift_lowering_alignment(current)) - offset;
+			break;
+		}
+	}
+
+	if (force_opaque) {
+		kind = SWIFT_OPAQUE;
+	}
+
+	memset(lowered_bytes + offset, kind, size);
+}
+
+static void record_struct_field_physical_lowering (guint8* lowered_bytes, MonoType* type, guint32 offset);
+
+static void record_inlinearray_struct_physical_lowering (guint8* lowered_bytes, MonoClass* klass, guint32 offset) {
+	// Get the first field and record its physical lowering N times
+	MonoClassField* field = mono_class_get_fields_internal (klass, NULL);
+	MonoType* fieldType = field->type;
+	for (int i = 0; i < m_class_inlinearray_value(klass); ++i) {
+		record_struct_field_physical_lowering(lowered_bytes, fieldType, offset + m_field_get_offset(field) + i * mono_type_size(fieldType, NULL));
+	}
+}
+
+static void record_struct_physical_lowering (guint8* lowered_bytes, MonoClass* klass, guint32 offset)
+{
+	if (m_class_is_inlinearray(klass)) {
+		record_inlinearray_struct_physical_lowering(lowered_bytes, klass, offset);
+		return;
+	}
+
+	// For each field, we need to record the physical lowering of it.
+	gpointer iter = NULL;
+	MonoClassField* field;
+	while ((field = mono_class_get_fields_internal (klass, &iter))) {
+		if (field->type->attrs & FIELD_ATTRIBUTE_STATIC)
+			continue;
+		if (mono_field_is_deleted (field))
+			continue;
+
+		record_struct_field_physical_lowering(lowered_bytes, field->type, offset + m_field_get_offset(field));
+	}
+}
+
+static void record_struct_field_physical_lowering (guint8* lowered_bytes, MonoType* type, guint32 offset) {
+	// Normalize pointer types to IntPtr and resolve generic classes.
+	// We don't need to care about specific pointer types at this ABI level.
+	if (type->type == MONO_TYPE_PTR || type->type == MONO_TYPE_FNPTR) {
+		type = m_class_get_byval_arg (mono_defaults.int_class);
+	}
+	if (type->type == MONO_TYPE_VALUETYPE || (type->type == MONO_TYPE_GENERICINST && mono_type_generic_inst_is_valuetype (type))) {
+		// If a struct type is encountered, we need to record the physical lowering for each field of that struct recursively
+		record_struct_physical_lowering(lowered_bytes, mono_class_from_mono_type_internal(type), offset);
+	} else {
+		SwiftPhysicalLoweringKind kind = SWIFT_OPAQUE;
+		// The only types that are non-opaque are 64-bit integers, floats, doubles, and vector types.
+		// We currently don't support vector types, so we'll only handle the first three.
+		if (type->type == MONO_TYPE_I8 || type->type == MONO_TYPE_U8) {
+			kind = SWIFT_INT64;
+		}
+#if TARGET_SIZEOF_VOID_P == 8
+		else if (type->type == MONO_TYPE_PTR || type->type == MONO_TYPE_FNPTR
+			|| type->type == MONO_TYPE_I || type->type == MONO_TYPE_U) {
+			kind = SWIFT_INT64;
+		} 
+#endif
+		else if (type->type == MONO_TYPE_R4) {
+			kind = SWIFT_FLOAT;
+		} else if (type->type == MONO_TYPE_R8) {
+			kind = SWIFT_DOUBLE;
+		}
+
+		set_lowering_range(lowered_bytes, offset, mono_type_size(type, NULL), kind);
+	}
+}
+
+SwiftPhysicalLowering
+mono_marshal_get_swift_physical_lowering (MonoType *type, gboolean native_layout)
+{
+	// TODO: Add support for the native type layout.
+	g_assert (!native_layout);
+	SwiftPhysicalLowering lowering = { 0 };
+
+	// Normalize pointer types to IntPtr and resolve generic classes.
+	// We don't need to care about specific pointer types at this ABI level.
+	if (type->type == MONO_TYPE_PTR || type->type == MONO_TYPE_FNPTR) {
+		type = m_class_get_byval_arg (mono_defaults.int_class);
+	}
+
+	// Non-value types are illegal at the interop boundary.
+	if (type->type == MONO_TYPE_GENERICINST && !mono_type_generic_inst_is_valuetype (type)) {
+		lowering.by_reference = TRUE;
+		return lowering;
+	} else if (type->type != MONO_TYPE_VALUETYPE && !mono_type_is_primitive(type)) {
+		lowering.by_reference = TRUE;
+		return lowering;
+	}
+
+	MonoClass *klass = mono_class_from_mono_type_internal (type);
+
+	// TODO: We currently don't support vector types, so we can say that the maximum size of a non-by_reference struct
+	// is 4 * PointerSize.
+	// Strictly, this is inaccurate in the case where a struct has a fully-empty 8 bytes of padding using explicit layout,
+	// but that's not possible in the Swift layout algorithm.
+
+	if (m_class_get_instance_size(klass) > 4 * TARGET_SIZEOF_VOID_P) {
+		lowering.by_reference = TRUE;
+		return lowering;
+	}
+
+	guint8 lowered_bytes[TARGET_SIZEOF_VOID_P * 4] = { 0 };
+	
+	// Loop through all fields and get the physical lowering for each field
+	record_struct_physical_lowering(lowered_bytes, klass, 0);
+
+	struct _SwiftInterval {
+		guint32 start;
+		guint32 size;
+		SwiftPhysicalLoweringKind kind;
+	};
+
+	GArray* intervals = g_array_new(FALSE, TRUE, sizeof(struct _SwiftInterval));
+
+	// Now we'll build the intervals from the lowered_bytes array
+	int instance_size = m_class_get_instance_size(klass);
+	for (int i = 0; i < instance_size; ++i) {
+        	// Don't create an interval for empty bytes
+		if (lowered_bytes[i] == SWIFT_EMPTY) {
+			continue;
+		}
+
+		SwiftPhysicalLoweringKind current = (SwiftPhysicalLoweringKind)lowered_bytes[i];
+
+		bool start_new_interval =
+			// We're at the start of the type
+			i == 0
+			// We're starting a new float (as we're aligned)
+			|| (i == ALIGN_TO(i, 4) && current == SWIFT_FLOAT)
+			// We're starting a new double or int64_t (as we're aligned)
+			|| (i == ALIGN_TO(i, 8) && (current == SWIFT_DOUBLE || current == SWIFT_INT64))
+			// We've changed interval types
+			|| current != lowered_bytes[i - 1];
+		
+		if (start_new_interval) {
+			struct _SwiftInterval interval = { i, 1, current };
+			g_array_append_val(intervals, interval);
+		} else {
+			// Extend the current interval
+			(g_array_index(intervals, struct _SwiftInterval, intervals->len - 1)).size++;
+		}
+	}
+
+	// Merge opaque intervals that are in the same pointer-sized block
+	for (int i = 0; i < intervals->len - 1; ++i) {
+		struct _SwiftInterval current = g_array_index(intervals, struct _SwiftInterval, i);
+		struct _SwiftInterval next = g_array_index(intervals, struct _SwiftInterval, i + 1);
+
+		if (current.kind == SWIFT_OPAQUE && next.kind == SWIFT_OPAQUE && current.start / TARGET_SIZEOF_VOID_P == next.start / TARGET_SIZEOF_VOID_P) {
+			current.size = next.start + next.size - current.start;
+			g_array_remove_index(intervals, i + 1);
+			i--;
+		}
+	}
+
+	// Now that we have the intervals, we can calculate the lowering
+	MonoTypeEnum lowered_types[4];
+	guint32 offsets[4];
+	guint32 num_lowered_types = 0;
+	
+	for (int i = 0; i < intervals->len; ++i) {
+		if (num_lowered_types == 4) {
+			// We can't handle more than 4 fields
+			lowering.by_reference = TRUE;
+			g_array_free(intervals, TRUE);
+			return lowering;
+		}
+
+		struct _SwiftInterval interval = g_array_index(intervals, struct _SwiftInterval, i);
+		
+		offsets[num_lowered_types] = interval.start;
+
+		switch (interval.kind) {
+			case SWIFT_INT64:
+				lowered_types[num_lowered_types++] = MONO_TYPE_I8;
+				break;
+			case SWIFT_FLOAT:
+				lowered_types[num_lowered_types++] = MONO_TYPE_R4;
+				break;
+			case SWIFT_DOUBLE:
+				lowered_types[num_lowered_types++] = MONO_TYPE_R8;
+				break;
+			case SWIFT_OPAQUE:
+			{
+				// We need to split the opaque ranges into integer parameters.
+				// As part of this splitting, we must ensure that we don't introduce alignment padding.
+				// This lowering algorithm should produce a lowered type sequence that would have the same padding for
+				// a naturally-aligned struct with the lowered fields as the original type has.
+				// This algorithm intends to split the opaque range into the least number of lowered elements that covers the entire range.
+				// The lowered range is allowed to extend past the end of the opaque range (including past the end of the struct),
+				// but not into the next non-empty interval.
+				// However, due to the properties of the lowering (the only non-8 byte elements of the lowering are 4-byte floats),
+				// we'll never encounter a scenario where we need would need to account for a correctly-aligned
+				// opaque range of > 4 bytes that we must not pad to 8 bytes.
+
+
+				// As long as we need to fill more than 4 bytes and the sequence is currently 8-byte aligned, we'll split into 8-byte integers.
+				// If we have more than 2 bytes but less than 4 and the sequence is 4-byte aligned, we'll use a 4-byte integer to represent the rest of the parameters.
+				// If we have 2 bytes and the sequence is 2-byte aligned, we'll use a 2-byte integer to represent the rest of the parameters.
+				// If we have 1 byte, we'll use a 1-byte integer to represent the rest of the parameters.
+				guint32 opaque_interval_start = interval.start;
+				// The remaining size here may become negative, so use a signed type.
+				gint32 remaining_interval_size = (gint32)interval.size;
+				while (remaining_interval_size > 0) {
+					if (num_lowered_types == 4) {
+						// We can't handle more than 4 fields
+						lowering.by_reference = TRUE;
+						g_array_free(intervals, TRUE);
+						return lowering;
+					}
+
+					offsets[num_lowered_types] = opaque_interval_start;
+
+					if (remaining_interval_size > 8 && (opaque_interval_start % 8 == 0)) {
+						lowered_types[num_lowered_types] = MONO_TYPE_I8;
+						remaining_interval_size -= 8;
+						opaque_interval_start += 8;
+					} else if (remaining_interval_size > 4 && (opaque_interval_start % 4 == 0)) {
+						lowered_types[num_lowered_types] = MONO_TYPE_I4;
+						remaining_interval_size -= 4;
+						opaque_interval_start += 4;
+					} else if (remaining_interval_size > 2 && (opaque_interval_start % 2 == 0)) {
+						lowered_types[num_lowered_types] = MONO_TYPE_I2;
+						remaining_interval_size -= 2;
+						opaque_interval_start += 2;
+					} else {
+						lowered_types[num_lowered_types] = MONO_TYPE_U1;
+						remaining_interval_size -= 1;
+						opaque_interval_start += 1;
+					}
+
+					num_lowered_types++;
+				}
+			}
+		}
+	}
+
+	memcpy(lowering.lowered_elements, lowered_types, num_lowered_types * sizeof(MonoTypeEnum));
+	memcpy(lowering.offsets, offsets, num_lowered_types * sizeof(guint32));
+	lowering.num_lowered_elements = num_lowered_types;
+	lowering.by_reference = FALSE;
+
+	return lowering;
 }

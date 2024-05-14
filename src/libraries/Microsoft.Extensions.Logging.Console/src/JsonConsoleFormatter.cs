@@ -35,10 +35,16 @@ namespace Microsoft.Extensions.Logging.Console
             {
                 return;
             }
-            LogLevel logLevel = logEntry.LogLevel;
-            string category = logEntry.Category;
-            int eventId = logEntry.EventId.Id;
-            Exception? exception = logEntry.Exception;
+
+            // We extract most of the work into a non-generic method to save code size. If this was left in the generic
+            // method, we'd get generic specialization for all TState parameters, but that's unnecessary.
+            WriteInternal(scopeProvider, textWriter, message, logEntry.LogLevel, logEntry.Category, logEntry.EventId.Id, logEntry.Exception,
+                logEntry.State != null, logEntry.State?.ToString(), logEntry.State as IReadOnlyCollection<KeyValuePair<string, object>>);
+        }
+
+        private void WriteInternal(IExternalScopeProvider? scopeProvider, TextWriter textWriter, string message, LogLevel logLevel,
+            string category, int eventId, Exception? exception, bool hasState, string? stateMessage, IReadOnlyCollection<KeyValuePair<string, object>>? stateProperties)
+        {
             const int DefaultBufferSize = 1024;
             using (var output = new PooledByteBufferWriter(DefaultBufferSize))
             {
@@ -51,9 +57,9 @@ namespace Microsoft.Extensions.Logging.Console
                         DateTimeOffset dateTimeOffset = FormatterOptions.UseUtcTimestamp ? DateTimeOffset.UtcNow : DateTimeOffset.Now;
                         writer.WriteString("Timestamp", dateTimeOffset.ToString(timestampFormat));
                     }
-                    writer.WriteNumber(nameof(logEntry.EventId), eventId);
-                    writer.WriteString(nameof(logEntry.LogLevel), GetLogLevelString(logLevel));
-                    writer.WriteString(nameof(logEntry.Category), category);
+                    writer.WriteNumber(nameof(LogEntry<object>.EventId), eventId);
+                    writer.WriteString(nameof(LogEntry<object>.LogLevel), GetLogLevelString(logLevel));
+                    writer.WriteString(nameof(LogEntry<object>.Category), category);
                     writer.WriteString("Message", message);
 
                     if (exception != null)
@@ -61,11 +67,11 @@ namespace Microsoft.Extensions.Logging.Console
                         writer.WriteString(nameof(Exception), exception.ToString());
                     }
 
-                    if (logEntry.State != null)
+                    if (hasState)
                     {
-                        writer.WriteStartObject(nameof(logEntry.State));
-                        writer.WriteString("Message", logEntry.State.ToString());
-                        if (logEntry.State is IReadOnlyCollection<KeyValuePair<string, object>> stateProperties)
+                        writer.WriteStartObject(nameof(LogEntry<object>.State));
+                        writer.WriteString("Message", stateMessage);
+                        if (stateProperties != null)
                         {
                             foreach (KeyValuePair<string, object> item in stateProperties)
                             {
@@ -78,21 +84,30 @@ namespace Microsoft.Extensions.Logging.Console
                     writer.WriteEndObject();
                     writer.Flush();
                 }
-#if NETCOREAPP
+
                 var messageBytes = output.WrittenMemory.Span;
                 var logMessageBuffer = ArrayPool<char>.Shared.Rent(Encoding.UTF8.GetMaxCharCount(messageBytes.Length));
                 try
                 {
+ #if NET
                     var charsWritten = Encoding.UTF8.GetChars(messageBytes, logMessageBuffer);
+ #else
+                    int charsWritten;
+                    unsafe
+                    {
+                        fixed (byte* messageBytesPtr = messageBytes)
+                        fixed (char* logMessageBufferPtr = logMessageBuffer)
+                        {
+                            charsWritten = Encoding.UTF8.GetChars(messageBytesPtr, messageBytes.Length, logMessageBufferPtr, logMessageBuffer.Length);
+            }
+                    }
+ #endif
                     textWriter.Write(logMessageBuffer, 0, charsWritten);
                 }
                 finally
                 {
                     ArrayPool<char>.Shared.Return(logMessageBuffer);
                 }
-#else
-                textWriter.Write(Encoding.UTF8.GetString(output.WrittenMemory.Span.ToArray()));
-#endif
             }
             textWriter.Write(Environment.NewLine);
         }
@@ -152,7 +167,7 @@ namespace Microsoft.Extensions.Logging.Console
                     writer.WriteNumber(key, sbyteValue);
                     break;
                 case char charValue:
-#if NETCOREAPP
+#if NET
                     writer.WriteString(key, MemoryMarshal.CreateSpan(ref charValue, 1));
 #else
                     writer.WriteString(key, charValue.ToString());

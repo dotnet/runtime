@@ -174,7 +174,22 @@ namespace System.Speech.Internal.Synthesis
                     int cLen = (int)stream.Length;
                     MemoryStream memStream = new(cLen);
                     byte[] ab = new byte[cLen];
-                    stream.Read(ab, 0, ab.Length);
+
+#if NET
+                    stream.ReadExactly(ab);
+#else
+                    int totalRead = 0;
+                    while (totalRead < cLen)
+                    {
+                        int bytesRead = stream.Read(ab, totalRead, cLen - totalRead);
+                        if (bytesRead <= 0)
+                        {
+                            throw new EndOfStreamException();
+                        }
+                        totalRead += bytesRead;
+                    }
+#endif
+
                     _resourceLoader.UnloadFile(localPath);
                     memStream.Write(ab, 0, cLen);
                     memStream.Position = 0;

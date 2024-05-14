@@ -57,15 +57,14 @@ extends:
   template:  /eng/pipelines/common/templates/pipeline-with-resources.yml
   parameters:
     stages:
+    - ${{ if eq(variables['Build.Reason'], 'PullRequest') }}:
+      - stage: EvaluatePaths
+        displayName: Evaluate Paths
+        jobs:
+          - template: /eng/pipelines/common/evaluate-default-paths.yml
+
     - stage: Build
       jobs:
-
-      #
-      # Evaluate paths
-      #
-      - ${{ if eq(variables.dependOnEvaluatePaths, true) }}:
-        - template: /eng/pipelines/common/evaluate-default-paths.yml
-
       #
       # Build and Test ILLink in Release config vertical for Windows, Linux and OSX
       #
@@ -84,7 +83,7 @@ extends:
             nameSuffix: ILLink_Runtime_Testing
             condition:
               or(
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_tools_illink.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_tools_illink.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
             buildArgs: -s tools.illinktests -test -c $(_BuildConfig)
 
@@ -105,7 +104,7 @@ extends:
             nameSuffix: Runtime_Release
             condition:
               or(
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_non_mono_and_wasm.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_non_mono_and_wasm.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
             buildArgs: -s clr+libs+tools.illink -c $(_BuildConfig)
             postBuildSteps:
@@ -128,11 +127,12 @@ extends:
             condition:
               or(
                 eq(variables['isRollingBuild'], true),
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_wasm_specific_except_wbt_dbg.containsChange'], true),
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_tools_illink.containsChange'], true),
-                eq(dependencies.evaluate_paths.outputs['DarcDependenciesChanged.Microsoft_NET_ILLink_Tasks'], true))
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_wasm_specific_except_wbt_dbg.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_tools_illink.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['DarcDependenciesChanged.Microsoft_NET_ILLink_Tasks'], true))
             postBuildSteps:
               - template: /eng/pipelines/libraries/execute-trimming-tests-steps.yml
                 parameters:
                     extraTestArgs: '/p:WasmBuildNative=false'
+                    runAotTests: false

@@ -563,7 +563,7 @@ namespace System.Text.RegularExpressions
             }
 
             return
-#if NETCOREAPP2_1_OR_GREATER
+#if NET
                 string
 #else
                 StringExtensions
@@ -815,17 +815,23 @@ namespace System.Text.RegularExpressions
         /// If 0 is returned, no assumptions can be made about the characters.
         /// </returns>
         /// <remarks>
-        /// Only considers character classes that only contain sets (no categories)
-        /// and no subtraction... just simple sets containing starting/ending pairs.
-        /// The returned characters may be negated: if IsNegated(set) is false, then
-        /// the returned characters are the only ones that match; if it returns true,
-        /// then the returned characters are the only ones that don't match.
+        /// Only considers character classes that only contain sets (no categories),
+        /// just simple sets containing starting/ending pairs (subtraction from those pairs
+        /// is factored in, however).The returned characters may be negated: if IsNegated(set)
+        /// is false, then the returned characters are the only ones that match; if it returns
+        /// true, then the returned characters are the only ones that don't match.
         /// </remarks>
         public static int GetSetChars(string set, Span<char> chars)
         {
             // We get the characters by enumerating the set portion, so we validate that it's
             // set up to enable that, e.g. no categories.
-            if (!CanEasilyEnumerateSetContents(set))
+            if (!CanEasilyEnumerateSetContents(set, out bool hasSubtraction))
+            {
+                return 0;
+            }
+
+            // Negation with subtraction is too cumbersome to reason about efficiently.
+            if (hasSubtraction && IsNegated(set))
             {
                 return 0;
             }
@@ -837,38 +843,35 @@ namespace System.Text.RegularExpressions
             // based on it a) complicating things, and b) it being really unlikely to
             // be part of a small set.
             int setLength = set[SetLengthIndex];
-            int count = 0;
+            int count = 0, evaluated = 0;
             for (int i = SetStartIndex; i < SetStartIndex + setLength; i += 2)
             {
                 int curSetEnd = set[i + 1];
                 for (int c = set[i]; c < curSetEnd; c++)
                 {
-                    if (count >= chars.Length)
+                    // Keep track of how many characters we've checked. This could work
+                    // just comparing count rather than evaluated, but we also want to
+                    // limit how much work is done here, which we can do by constraining
+                    // the number of checks to the size of the storage provided.
+                    if (++evaluated > chars.Length)
                     {
                         return 0;
                     }
 
+                    // If the set is all ranges but has a subtracted class,
+                    // validate the char is actually in the set prior to storing it:
+                    // it might be in the subtracted range.
+                    if (hasSubtraction && !CharInClass((char)c, set))
+                    {
+                        continue;
+                    }
+
+                    Debug.Assert(count <= evaluated);
                     chars[count++] = (char)c;
                 }
             }
 
             return count;
-        }
-
-        public static bool TryGetAsciiSetChars(string set, [NotNullWhen(true)] out char[]? asciiChars)
-        {
-            Span<char> chars = stackalloc char[128];
-
-            chars = chars.Slice(0, GetSetChars(set, chars));
-
-            if (chars.IsEmpty || !IsAscii(chars))
-            {
-                asciiChars = null;
-                return false;
-            }
-
-            asciiChars = chars.ToArray();
-            return true;
         }
 
         /// <summary>
@@ -1301,7 +1304,7 @@ namespace System.Text.RegularExpressions
                 }
 
                 uint[]? cache = asciiLazyCache ?? Interlocked.CompareExchange(ref asciiLazyCache, new uint[CacheArrayLength], null) ?? asciiLazyCache;
-#if NET5_0_OR_GREATER
+#if NET
                 Interlocked
 #else
                 InterlockedExtensions
@@ -1591,7 +1594,7 @@ namespace System.Text.RegularExpressions
 #pragma warning disable CS8500 // takes address of managed type
             ReadOnlySpan<char> tmpChars = chars; // avoid address exposing the span and impacting the other code in the method that uses it
             return
-#if NETCOREAPP2_1_OR_GREATER
+#if NET
                 string
 #else
                 StringExtensions

@@ -2783,7 +2783,7 @@ MethodTableBuilder::EnumerateClassMethods()
             }
         }
 
-        bool hasGenericMethodArgsComputed;
+        bool hasGenericMethodArgsComputed = false;
         bool hasGenericMethodArgs = this->GetModule()->m_pMethodIsGenericMap->IsGeneric(tok, &hasGenericMethodArgsComputed);
         if (!hasGenericMethodArgsComputed)
         {
@@ -8419,7 +8419,7 @@ VOID    MethodTableBuilder::PlaceInstanceFields(MethodTable ** pByValueClassCach
             else
 #endif // FEATURE_64BIT_ALIGNMENT
             if (dwNumInstanceFieldBytes > TARGET_POINTER_SIZE) {
-                minAlign = containsGCPointers ? TARGET_POINTER_SIZE : (unsigned)largestAlignmentRequirement;
+                minAlign = (unsigned)(containsGCPointers ? TARGET_POINTER_SIZE : largestAlignmentRequirement);
             }
             else {
                 minAlign = 1;
@@ -8427,7 +8427,7 @@ VOID    MethodTableBuilder::PlaceInstanceFields(MethodTable ** pByValueClassCach
                     minAlign *= 2;
             }
 
-            if (minAlign != min(dwNumInstanceFieldBytes, TARGET_POINTER_SIZE))
+            if (minAlign != min(dwNumInstanceFieldBytes, (DWORD)TARGET_POINTER_SIZE))
             {
                 EnsureOptionalFieldsAreAllocated(GetHalfBakedClass(), m_pAllocMemTracker, GetLoaderAllocator()->GetLowFrequencyHeap());
                 GetHalfBakedClass()->GetOptionalFields()->m_requiredFieldAlignment = (BYTE)minAlign;
@@ -10052,6 +10052,14 @@ void MethodTableBuilder::CheckForSystemTypes()
                     // 16-byte alignment for __m256.
 
                     pLayout->m_ManagedLargestAlignmentRequirementOfAllMembers = 16;
+    #elif defined(TARGET_LOONGARCH64)
+                    // TODO-LoongArch64: Update alignment to proper value when implement LoongArch64 intrinsic.
+                    pLayout->m_ManagedLargestAlignmentRequirementOfAllMembers = 16;
+    #elif defined(TARGET_RISCV64)
+                    // TODO-RISCV64: Update alignment to proper value when we implement RISC-V intrinsic.
+                    // RISC-V Vector Extenstion Intrinsic Document
+                    // https://github.com/riscv-non-isa/riscv-elf-psabi-doc/blob/master/vector_type_infos.adoc
+                    pLayout->m_ManagedLargestAlignmentRequirementOfAllMembers = 16;
     #else
                     pLayout->m_ManagedLargestAlignmentRequirementOfAllMembers = 32; // sizeof(__m256)
     #endif // TARGET_ARM elif TARGET_ARM64
@@ -10067,6 +10075,15 @@ void MethodTableBuilder::CheckForSystemTypes()
                     // The Procedure Call Standard for ARM 64-bit (with SVE support) defaults to
                     // 16-byte alignment for __m256.
 
+                    pLayout->m_ManagedLargestAlignmentRequirementOfAllMembers = 16;
+
+    #elif defined(TARGET_LOONGARCH64)
+                    // TODO-LoongArch64: Update alignment to proper value when implement LoongArch64 intrinsic.
+                    pLayout->m_ManagedLargestAlignmentRequirementOfAllMembers = 16;
+    #elif defined(TARGET_RISCV64)
+                    // TODO-RISCV64: Update alignment to proper value when we implement RISC-V intrinsic.
+                    // RISC-V Vector Extenstion Intrinsic Document
+                    // https://github.com/riscv-non-isa/riscv-elf-psabi-doc/blob/master/vector_type_infos.adoc
                     pLayout->m_ManagedLargestAlignmentRequirementOfAllMembers = 16;
     #else
                     pLayout->m_ManagedLargestAlignmentRequirementOfAllMembers = 64; // sizeof(__m512)

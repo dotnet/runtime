@@ -171,39 +171,42 @@ namespace System.Reflection
         public override string ToString() => string.Create(CultureInfo.InvariantCulture, stackalloc char[64], $"0x{Value:x8}");
     }
 
-    internal unsafe struct MetadataEnumResult
+    internal ref struct MetadataEnumResult
     {
-        // Keep the definition in sync with vm\ManagedMdImport.hpp
-        private int[] largeResult;
-        private int length;
-        private fixed int smallResult[16];
+        internal int _length;
 
-        public int Length => length;
+        internal const int SmallIntArrayLength = 16;
+
+        [InlineArray(SmallIntArrayLength)]
+        internal struct SmallIntArray
+        {
+            public int e;
+        }
+        internal SmallIntArray _smallResult;
+        internal int[]? _largeResult;
+
+        public int Length => _length;
 
         public int this[int index]
         {
             get
             {
                 Debug.Assert(0 <= index && index < Length);
-                if (largeResult != null)
-                    return largeResult[index];
+                if (_largeResult != null)
+                    return _largeResult[index];
 
-                fixed (int* p = smallResult)
-                    return p[index];
+                return _smallResult[index];
             }
         }
     }
 
 #pragma warning disable CA1066 // IEquatable<MetadataImport> interface implementation isn't used
-    internal readonly struct MetadataImport
+    internal readonly partial struct MetadataImport
 #pragma warning restore CA1067
     {
         private readonly IntPtr m_metadataImport2;
-        private readonly object? m_keepalive;
 
         #region Override methods from Object
-        internal static readonly MetadataImport EmptyImport = new MetadataImport((IntPtr)0, null);
-
         public override int GetHashCode()
         {
             return HashCode.Combine(m_metadataImport2);
@@ -225,47 +228,104 @@ namespace System.Reflection
 
         #region Static Members
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern void _GetMarshalAs(IntPtr pNativeType, int cNativeType, out int unmanagedType, out int safeArraySubType, out string? safeArrayUserDefinedSubType,
-            out int arraySubType, out int sizeParamIndex, out int sizeConst, out string? marshalType, out string? marshalCookie,
+        private static extern unsafe bool GetMarshalAs(
+            IntPtr pNativeType,
+            int cNativeType,
+            out int unmanagedType,
+            out int safeArraySubType,
+            out byte* safeArrayUserDefinedSubType,
+            out int arraySubType,
+            out int sizeParamIndex,
+            out int sizeConst,
+            out byte* marshalType,
+            out byte* marshalCookie,
             out int iidParamIndex);
-        internal static void GetMarshalAs(ConstArray nativeType,
-            out UnmanagedType unmanagedType, out VarEnum safeArraySubType, out string? safeArrayUserDefinedSubType,
-            out UnmanagedType arraySubType, out int sizeParamIndex, out int sizeConst, out string? marshalType, out string? marshalCookie,
-            out int iidParamIndex)
-        {
 
-            _GetMarshalAs(nativeType.Signature, (int)nativeType.Length,
-                out int _unmanagedType, out int _safeArraySubType, out safeArrayUserDefinedSubType,
-                out int _arraySubType, out sizeParamIndex, out sizeConst, out marshalType, out marshalCookie,
-                out iidParamIndex);
-            unmanagedType = (UnmanagedType)_unmanagedType;
-            safeArraySubType = (VarEnum)_safeArraySubType;
-            arraySubType = (UnmanagedType)_arraySubType;
-        }
-        #endregion
-
-        #region Internal Static Members
-        internal static void ThrowError(int hResult)
+        internal static unsafe MarshalAsAttribute GetMarshalAs(ConstArray nativeType, RuntimeModule scope)
         {
-            throw new MetadataException(hResult);
+            if (!GetMarshalAs(
+                    nativeType.Signature,
+                    nativeType.Length,
+                    out int unmanagedTypeRaw,
+                    out int safeArraySubTypeRaw,
+                    out byte* safeArrayUserDefinedSubTypeRaw,
+                    out int arraySubTypeRaw,
+                    out int sizeParamIndex,
+                    out int sizeConst,
+                    out byte* marshalTypeRaw,
+                    out byte* marshalCookieRaw,
+                    out int iidParamIndex))
+            {
+                throw new BadImageFormatException();
+            }
+
+            string? safeArrayUserDefinedTypeName = safeArrayUserDefinedSubTypeRaw == null
+                ? null
+                : Text.Encoding.UTF8.GetString(MemoryMarshal.CreateReadOnlySpanFromNullTerminated(safeArrayUserDefinedSubTypeRaw));
+            string? marshalTypeName = marshalTypeRaw == null
+                ? null
+                : Text.Encoding.UTF8.GetString(MemoryMarshal.CreateReadOnlySpanFromNullTerminated(marshalTypeRaw));
+            string? marshalCookie = marshalCookieRaw == null
+                ? null
+                : Text.Encoding.UTF8.GetString(MemoryMarshal.CreateReadOnlySpanFromNullTerminated(marshalCookieRaw));
+
+            RuntimeType? safeArrayUserDefinedType = string.IsNullOrEmpty(safeArrayUserDefinedTypeName) ? null :
+                TypeNameResolver.GetTypeReferencedByCustomAttribute(safeArrayUserDefinedTypeName, scope);
+            RuntimeType? marshalTypeRef = null;
+
+            try
+            {
+                marshalTypeRef = marshalTypeName is null ? null : TypeNameResolver.GetTypeReferencedByCustomAttribute(marshalTypeName, scope);
+            }
+            catch (TypeLoadException)
+            {
+                // The user may have supplied a bad type name string causing this TypeLoadException
+                // Regardless, we return the bad type name
+                Debug.Assert(marshalTypeName is not null);
+            }
+
+            MarshalAsAttribute attribute = new MarshalAsAttribute((UnmanagedType)unmanagedTypeRaw);
+
+            attribute.SafeArraySubType = (VarEnum)safeArraySubTypeRaw;
+            attribute.SafeArrayUserDefinedSubType = safeArrayUserDefinedType;
+            attribute.IidParameterIndex = iidParamIndex;
+            attribute.ArraySubType = (UnmanagedType)arraySubTypeRaw;
+            attribute.SizeParamIndex = (short)sizeParamIndex;
+            attribute.SizeConst = sizeConst;
+            attribute.MarshalType = marshalTypeName;
+            attribute.MarshalTypeRef = marshalTypeRef;
+            attribute.MarshalCookie = marshalCookie;
+
+            return attribute;
         }
         #endregion
 
         #region Constructor
-        internal MetadataImport(IntPtr metadataImport2, object? keepalive)
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        private static extern unsafe IntPtr GetMetadataImport(RuntimeModule module);
+
+        internal MetadataImport(RuntimeModule module)
         {
-            m_metadataImport2 = metadataImport2;
-            m_keepalive = keepalive;
+            ArgumentNullException.ThrowIfNull(module);
+
+            // The MetadataImport instance needs to be acquired in this manner
+            // since the instance can be replaced during HotReload and EnC scenarios.
+            m_metadataImport2 = GetMetadataImport(module);
         }
         #endregion
 
-        #region FCalls
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern void _Enum(IntPtr scope, int type, int parent, out MetadataEnumResult result);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MetadataImport_Enum")]
+        private static unsafe partial void Enum(IntPtr scope, int type, int parent, ref int length, int* shortResult, ObjectHandleOnStack longResult);
 
-        public void Enum(MetadataTokenType type, int parent, out MetadataEnumResult result)
+        public unsafe void Enum(MetadataTokenType type, int parent, out MetadataEnumResult result)
         {
-            _Enum(m_metadataImport2, (int)type, parent, out result);
+            result = default;
+            int length = MetadataEnumResult.SmallIntArrayLength;
+            fixed (int* p = &result._smallResult.e)
+            {
+                Enum(m_metadataImport2, (int)type, parent, ref length, p, ObjectHandleOnStack.Create(ref result._largeResult));
+            }
+            result._length = length;
         }
 
         public void EnumNestedTypes(int mdTypeDef, out MetadataEnumResult result)
@@ -298,117 +358,131 @@ namespace System.Reflection
             Enum(MetadataTokenType.Event, mdTypeDef, out result);
         }
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern string? _GetDefaultValue(IntPtr scope, int mdToken, out long value, out int length, out int corElementType);
-        public string? GetDefaultValue(int mdToken, out long value, out int length, out CorElementType corElementType)
+        private static unsafe string? ConvertMetadataStringPermitInvalidContent(char* stringMetadataEncoding, int length)
         {
-            string? stringVal = _GetDefaultValue(m_metadataImport2, mdToken, out value, out length, out int _corElementType);
-            corElementType = (CorElementType)_corElementType;
-            return stringVal;
+            Debug.Assert(stringMetadataEncoding != null);
+            // Metadata encoding is always UTF-16LE, but user strings can be leveraged to encode invalid surrogates.
+            // This means we rely on the string's constructor rather than the stricter Encoding.Unicode API.
+            return new string(stringMetadataEncoding, 0, length);
+        }
+
+        #region FCalls
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        private static extern unsafe int GetDefaultValue(
+            IntPtr scope,
+            int mdToken,
+            out long value,
+            out char* stringMetadataEncoding,
+            out int length,
+            out int corElementType);
+
+        public unsafe string? GetDefaultValue(int mdToken, out long value, out int length, out CorElementType corElementType)
+        {
+            ThrowBadImageExceptionForHR(GetDefaultValue(m_metadataImport2, mdToken, out value, out char* stringMetadataEncoding, out length, out int corElementTypeRaw));
+
+            corElementType = (CorElementType)corElementTypeRaw;
+
+            if (corElementType is CorElementType.ELEMENT_TYPE_STRING
+                && stringMetadataEncoding != null)
+            {
+                return ConvertMetadataStringPermitInvalidContent(stringMetadataEncoding, length);
+            }
+
+            return null;
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern unsafe void _GetUserString(IntPtr scope, int mdToken, void** name, out int length);
+        private static extern unsafe int GetUserString(IntPtr scope, int mdToken, out char* stringMetadataEncoding, out int length);
+
         public unsafe string? GetUserString(int mdToken)
         {
-            void* name;
-            _GetUserString(m_metadataImport2, mdToken, &name, out int length);
+            ThrowBadImageExceptionForHR(GetUserString(m_metadataImport2, mdToken, out char* stringMetadataEncoding, out int length));
 
-            return name != null ?
-                new string((char*)name, 0, length) :
+            return stringMetadataEncoding != null ?
+                ConvertMetadataStringPermitInvalidContent(stringMetadataEncoding, length) :
                 null;
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern unsafe void _GetName(IntPtr scope, int mdToken, void** name);
+        private static extern unsafe int GetName(IntPtr scope, int mdToken, out byte* name);
+
         public unsafe MdUtf8String GetName(int mdToken)
         {
-            void* name;
-            _GetName(m_metadataImport2, mdToken, &name);
-
+            ThrowBadImageExceptionForHR(GetName(m_metadataImport2, mdToken, out byte* name));
             return new MdUtf8String(name);
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern unsafe void _GetNamespace(IntPtr scope, int mdToken, void** namesp);
+        private static extern unsafe int GetNamespace(IntPtr scope, int mdToken, out byte* namesp);
+
         public unsafe MdUtf8String GetNamespace(int mdToken)
         {
-            void* namesp;
-            _GetNamespace(m_metadataImport2, mdToken, &namesp);
-
+            ThrowBadImageExceptionForHR(GetNamespace(m_metadataImport2, mdToken, out byte* namesp));
             return new MdUtf8String(namesp);
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern unsafe void _GetEventProps(IntPtr scope, int mdToken, void** name, out int eventAttributes);
+        private static extern unsafe int GetEventProps(IntPtr scope, int mdToken, out void* name, out int eventAttributes);
+
         public unsafe void GetEventProps(int mdToken, out void* name, out EventAttributes eventAttributes)
         {
-            void* _name;
-            _GetEventProps(m_metadataImport2, mdToken, &_name, out int _eventAttributes);
-            name = _name;
-            eventAttributes = (EventAttributes)_eventAttributes;
+            ThrowBadImageExceptionForHR(GetEventProps(m_metadataImport2, mdToken, out name, out int eventAttributesRaw));
+            eventAttributes = (EventAttributes)eventAttributesRaw;
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern void _GetFieldDefProps(IntPtr scope, int mdToken, out int fieldAttributes);
+        private static extern int GetFieldDefProps(IntPtr scope, int mdToken, out int fieldAttributes);
+
         public void GetFieldDefProps(int mdToken, out FieldAttributes fieldAttributes)
         {
-            _GetFieldDefProps(m_metadataImport2, mdToken, out int _fieldAttributes);
-            fieldAttributes = (FieldAttributes)_fieldAttributes;
+            ThrowBadImageExceptionForHR(GetFieldDefProps(m_metadataImport2, mdToken, out int fieldAttributesRaw));
+            fieldAttributes = (FieldAttributes)fieldAttributesRaw;
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern unsafe void _GetPropertyProps(IntPtr scope,
-            int mdToken, void** name, out int propertyAttributes, out ConstArray signature);
+        private static extern unsafe int GetPropertyProps(IntPtr scope, int mdToken, out void* name, out int propertyAttributes, out ConstArray signature);
+
         public unsafe void GetPropertyProps(int mdToken, out void* name, out PropertyAttributes propertyAttributes, out ConstArray signature)
         {
-            void* _name;
-            _GetPropertyProps(m_metadataImport2, mdToken, &_name, out int _propertyAttributes, out signature);
-            name = _name;
-            propertyAttributes = (PropertyAttributes)_propertyAttributes;
+            ThrowBadImageExceptionForHR(GetPropertyProps(m_metadataImport2, mdToken, out name, out int propertyAttributesRaw, out signature));
+            propertyAttributes = (PropertyAttributes)propertyAttributesRaw;
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern void _GetParentToken(IntPtr scope,
-            int mdToken, out int tkParent);
+        private static extern int GetParentToken(IntPtr scope, int mdToken, out int tkParent);
+
         public int GetParentToken(int tkToken)
         {
-            _GetParentToken(m_metadataImport2, tkToken, out int tkParent);
+            ThrowBadImageExceptionForHR(GetParentToken(m_metadataImport2, tkToken, out int tkParent));
             return tkParent;
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern void _GetParamDefProps(IntPtr scope,
-            int parameterToken, out int sequence, out int attributes);
+        private static extern int GetParamDefProps(IntPtr scope, int parameterToken, out int sequence, out int attributes);
+
         public void GetParamDefProps(int parameterToken, out int sequence, out ParameterAttributes attributes)
         {
-
-            _GetParamDefProps(m_metadataImport2, parameterToken, out sequence, out int _attributes);
-
-            attributes = (ParameterAttributes)_attributes;
+            ThrowBadImageExceptionForHR(GetParamDefProps(m_metadataImport2, parameterToken, out sequence, out int attributesRaw));
+            attributes = (ParameterAttributes)attributesRaw;
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern void _GetGenericParamProps(IntPtr scope,
-            int genericParameter,
-            out int flags);
+        private static extern int GetGenericParamProps(IntPtr scope, int genericParameter, out int flags);
 
         public void GetGenericParamProps(
             int genericParameter,
             out GenericParameterAttributes attributes)
         {
-            _GetGenericParamProps(m_metadataImport2, genericParameter, out int _attributes);
-            attributes = (GenericParameterAttributes)_attributes;
+            ThrowBadImageExceptionForHR(GetGenericParamProps(m_metadataImport2, genericParameter, out int attributesRaw));
+            attributes = (GenericParameterAttributes)attributesRaw;
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern void _GetScopeProps(IntPtr scope,
-            out Guid mvid);
+        private static extern int GetScopeProps(IntPtr scope, out Guid mvid);
 
-        public void GetScopeProps(
-            out Guid mvid)
+        public void GetScopeProps(out Guid mvid)
         {
-            _GetScopeProps(m_metadataImport2, out mvid);
+            ThrowBadImageExceptionForHR(GetScopeProps(m_metadataImport2, out mvid));
         }
 
         public ConstArray GetMethodSignature(MetadataToken token)
@@ -420,47 +494,36 @@ namespace System.Reflection
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern void _GetSigOfMethodDef(IntPtr scope,
-            int methodToken,
-            ref ConstArray signature);
+        private static extern int GetSigOfMethodDef(IntPtr scope, int methodToken, ref ConstArray signature);
 
         public ConstArray GetSigOfMethodDef(int methodToken)
         {
             ConstArray signature = default;
-
-            _GetSigOfMethodDef(m_metadataImport2, methodToken, ref signature);
-
+            ThrowBadImageExceptionForHR(GetSigOfMethodDef(m_metadataImport2, methodToken, ref signature));
             return signature;
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern void _GetSignatureFromToken(IntPtr scope,
-            int methodToken,
-            ref ConstArray signature);
+        private static extern int GetSignatureFromToken(IntPtr scope, int methodToken, ref ConstArray signature);
 
         public ConstArray GetSignatureFromToken(int token)
         {
             ConstArray signature = default;
-
-            _GetSignatureFromToken(m_metadataImport2, token, ref signature);
-
+            ThrowBadImageExceptionForHR(GetSignatureFromToken(m_metadataImport2, token, ref signature));
             return signature;
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern void _GetMemberRefProps(IntPtr scope,
-            int memberTokenRef,
-            out ConstArray signature);
+        private static extern int GetMemberRefProps(IntPtr scope, int memberTokenRef, out ConstArray signature);
 
         public ConstArray GetMemberRefProps(int memberTokenRef)
         {
-            _GetMemberRefProps(m_metadataImport2, memberTokenRef, out ConstArray signature);
-
+            ThrowBadImageExceptionForHR(GetMemberRefProps(m_metadataImport2, memberTokenRef, out ConstArray signature));
             return signature;
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern void _GetCustomAttributeProps(IntPtr scope,
+        private static extern int GetCustomAttributeProps(IntPtr scope,
             int customAttributeToken,
             out int constructorToken,
             out ConstArray signature);
@@ -470,66 +533,62 @@ namespace System.Reflection
             out int constructorToken,
             out ConstArray signature)
         {
-            _GetCustomAttributeProps(m_metadataImport2, customAttributeToken,
-                out constructorToken, out signature);
+            ThrowBadImageExceptionForHR(GetCustomAttributeProps(m_metadataImport2, customAttributeToken, out constructorToken, out signature));
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern void _GetClassLayout(IntPtr scope,
-            int typeTokenDef, out int packSize, out int classSize);
+        private static extern int GetClassLayout(IntPtr scope, int typeTokenDef, out int packSize, out int classSize);
+
         public void GetClassLayout(
             int typeTokenDef,
             out int packSize,
             out int classSize)
         {
-            _GetClassLayout(m_metadataImport2, typeTokenDef, out packSize, out classSize);
+            ThrowBadImageExceptionForHR(GetClassLayout(m_metadataImport2, typeTokenDef, out packSize, out classSize));
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern bool _GetFieldOffset(IntPtr scope,
-            int typeTokenDef, int fieldTokenDef, out int offset);
+        private static extern int GetFieldOffset(IntPtr scope, int typeTokenDef, int fieldTokenDef, out int offset, out bool found);
+
         public bool GetFieldOffset(
             int typeTokenDef,
             int fieldTokenDef,
             out int offset)
         {
-            return _GetFieldOffset(m_metadataImport2, typeTokenDef, fieldTokenDef, out offset);
+            int hr = GetFieldOffset(m_metadataImport2, typeTokenDef, fieldTokenDef, out offset, out bool found);
+            if (!found && hr < 0)
+            {
+                throw new BadImageFormatException();
+            }
+            return found;
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern void _GetSigOfFieldDef(IntPtr scope,
-            int fieldToken,
-            ref ConstArray fieldMarshal);
+        private static extern int GetSigOfFieldDef(IntPtr scope, int fieldToken, ref ConstArray fieldMarshal);
 
         public ConstArray GetSigOfFieldDef(int fieldToken)
         {
-            ConstArray fieldMarshal = default;
-
-            _GetSigOfFieldDef(m_metadataImport2, fieldToken, ref fieldMarshal);
-
-            return fieldMarshal;
+            ConstArray sig = default;
+            ThrowBadImageExceptionForHR(GetSigOfFieldDef(m_metadataImport2, fieldToken, ref sig));
+            return sig;
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern void _GetFieldMarshal(IntPtr scope,
-            int fieldToken,
-            ref ConstArray fieldMarshal);
+        private static extern int GetFieldMarshal(IntPtr scope, int fieldToken, ref ConstArray fieldMarshal);
 
         public ConstArray GetFieldMarshal(int fieldToken)
         {
             ConstArray fieldMarshal = default;
-
-            _GetFieldMarshal(m_metadataImport2, fieldToken, ref fieldMarshal);
-
+            ThrowBadImageExceptionForHR(GetFieldMarshal(m_metadataImport2, fieldToken, ref fieldMarshal));
             return fieldMarshal;
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern unsafe void _GetPInvokeMap(IntPtr scope,
+        private static extern unsafe int GetPInvokeMap(IntPtr scope,
             int token,
             out int attributes,
-            void** importName,
-            void** importDll);
+            out byte* importName,
+            out byte* importDll);
 
         public unsafe void GetPInvokeMap(
             int token,
@@ -537,28 +596,28 @@ namespace System.Reflection
             out string importName,
             out string importDll)
         {
-            void* _importName, _importDll;
-            _GetPInvokeMap(m_metadataImport2, token, out int _attributes, &_importName, &_importDll);
-            importName = new MdUtf8String(_importName).ToString();
-            importDll = new MdUtf8String(_importDll).ToString();
+            ThrowBadImageExceptionForHR(GetPInvokeMap(m_metadataImport2, token, out int attributesRaw, out byte* importNameRaw, out byte* importDllRaw));
 
-            attributes = (PInvokeAttributes)_attributes;
+            importName = Text.Encoding.UTF8.GetString(MemoryMarshal.CreateReadOnlySpanFromNullTerminated(importNameRaw));
+            importDll = Text.Encoding.UTF8.GetString(MemoryMarshal.CreateReadOnlySpanFromNullTerminated(importDllRaw));
+            attributes = (PInvokeAttributes)attributesRaw;
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern bool _IsValidToken(IntPtr scope, int token);
+        private static extern bool IsValidToken(IntPtr scope, int token);
+
         public bool IsValidToken(int token)
         {
-            return _IsValidToken(m_metadataImport2, token);
+            return IsValidToken(m_metadataImport2, token);
         }
         #endregion
-    }
 
-    internal sealed class MetadataException : Exception
-    {
-        private readonly int m_hr;
-        internal MetadataException(int hr) { m_hr = hr; }
-
-        public override string ToString() => $"{nameof(MetadataException)} HResult = {m_hr:x}.";
+        private static void ThrowBadImageExceptionForHR(int hr)
+        {
+            if (hr < 0)
+            {
+                throw new BadImageFormatException();
+            }
+        }
     }
 }

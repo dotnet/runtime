@@ -7,8 +7,6 @@ namespace ILLink.RoslynAnalyzer.Tests
 	public sealed partial class SubstitutionsTests : LinkerTestBase
 	{
 
-		protected override string TestSuiteName => "Substitutions";
-
 		[Fact]
 		public Task EmbeddedFieldSubstitutionsInReferencedAssembly ()
 		{
@@ -41,6 +39,12 @@ namespace ILLink.RoslynAnalyzer.Tests
 
 		[Fact]
 		public Task EmbeddedSubstitutionsNotProcessedWithIgnoreSubstitutionsAndRemoved ()
+		{
+			return RunTest (allowMissingWarnings: true);
+		}
+
+		[Fact]
+		public Task FeatureGuardSubstitutionsDisabled ()
 		{
 			return RunTest (allowMissingWarnings: true);
 		}

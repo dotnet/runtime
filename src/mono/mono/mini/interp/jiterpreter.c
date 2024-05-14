@@ -1021,8 +1021,28 @@ mono_jiterp_get_options_as_json ()
 	return mono_options_get_as_json ();
 }
 
+EMSCRIPTEN_KEEPALIVE gint32
+mono_jiterp_get_option_as_int (const char *name)
+{
+	MonoOptionType type;
+	void *value_address;
+
+	if (!mono_options_get (name, &type, &value_address))
+		return INT32_MIN;
+
+	switch (type) {
+		case MONO_OPTION_BOOL:
+		case MONO_OPTION_BOOL_READONLY:
+			return (*(guint8 *)value_address) != 0;
+		case MONO_OPTION_INT:
+			return *(gint32 *)value_address;
+		default:
+			return INT32_MIN;
+	}
+}
+
 EMSCRIPTEN_KEEPALIVE int
-mono_jiterp_object_has_component_size (MonoObject ** ppObj)
+mono_jiterp_object_has_component_size (MonoObject **ppObj)
 {
 	MonoObject *obj = *ppObj;
 	if (!obj)
@@ -1179,7 +1199,9 @@ enum {
 	JITERP_MEMBER_VTABLE_KLASS,
 	JITERP_MEMBER_CLASS_RANK,
 	JITERP_MEMBER_CLASS_ELEMENT_CLASS,
-	JITERP_MEMBER_BOXED_VALUE_DATA
+	JITERP_MEMBER_BOXED_VALUE_DATA,
+	JITERP_MEMBER_BACKWARD_BRANCH_TAKEN,
+	JITERP_MEMBER_BAILOUT_OPCODE_COUNT,
 };
 
 
@@ -1222,6 +1244,10 @@ mono_jiterp_get_member_offset (int member) {
 		// see mono_object_get_data
 		case JITERP_MEMBER_BOXED_VALUE_DATA:
 			return MONO_ABI_SIZEOF (MonoObject);
+		case JITERP_MEMBER_BACKWARD_BRANCH_TAKEN:
+			return offsetof (JiterpreterCallInfo, backward_branch_taken);
+		case JITERP_MEMBER_BAILOUT_OPCODE_COUNT:
+			return offsetof (JiterpreterCallInfo, bailout_opcode_count);
 		default:
 			g_assert_not_reached();
 	}

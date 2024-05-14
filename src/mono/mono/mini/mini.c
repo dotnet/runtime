@@ -44,6 +44,7 @@
 #include <mono/metadata/threads-types.h>
 #include <mono/metadata/verify.h>
 #include <mono/metadata/mempool-internals.h>
+#include <mono/metadata/reflection-internals.h>
 #include <mono/metadata/runtime.h>
 #include <mono/metadata/attrdefs.h>
 #include <mono/utils/mono-math.h>
@@ -602,7 +603,7 @@ mono_decompose_op_imm (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *ins)
 	mono_bblock_insert_before_ins (bb, ins, temp);
 
 	if (opcode2 == -1)
-		g_error ("mono_op_imm_to_op failed for %s\n", mono_inst_name (ins->opcode));
+		g_error ("mono_op_imm_to_op failed for " M_PRI_INST "\n", mono_inst_name (ins->opcode));
 	ins->opcode = GINT_TO_OPCODE (opcode2);
 
 	if (ins->opcode == OP_LOCALLOC)
@@ -3038,6 +3039,9 @@ is_simd_supported (MonoCompile *cfg)
 #ifdef DISABLE_SIMD
     return FALSE;
 #endif
+#ifndef MONO_ARCH_SIMD_INTRINSICS
+	return FALSE;
+#endif
 	// FIXME: Clean this up
 #ifdef TARGET_WASM
 	if ((mini_get_cpu_features (cfg) & MONO_CPU_WASM_SIMD) == 0)
@@ -4319,6 +4323,7 @@ mini_handle_call_res_devirt (MonoMethod *cmethod)
 
 		inst = mono_class_inflate_generic_class_checked (mono_class_get_iequatable_class (), &ctx, error);
 		mono_error_assert_ok (error);
+		g_assert (inst);
 
 		// EqualityComparer<T>.Default returns specific types depending on T
 		// FIXME: Special case more types: byte, string, nullable, enum ?
@@ -4609,3 +4614,61 @@ mini_get_simd_type_info (MonoClass *klass, guint32 *nelems)
 	}
 }
 
+MonoMethod*
+mini_inflate_unsafe_accessor_wrapper (MonoMethod *extern_decl, MonoGenericContext *ctx, MonoUnsafeAccessorKind accessor_kind, const char *member_name, MonoError *error)
+{
+	MonoMethod *generic_wrapper = mono_marshal_get_unsafe_accessor_wrapper (extern_decl, accessor_kind, member_name);
+	MonoMethod *inflated_wrapper = mono_class_inflate_generic_method_checked (generic_wrapper, ctx, error);
+	return inflated_wrapper;
+}
+
+
+static MonoMethod*
+inflate_unsafe_accessor_like_decl (MonoMethod *extern_method_inst, MonoUnsafeAccessorKind accessor_kind, const char *member_name, MonoError *error)
+{
+	g_assert (extern_method_inst->is_inflated);
+	MonoMethodInflated *infl = (MonoMethodInflated*)extern_method_inst;
+	MonoMethod *extern_decl = infl->declaring;
+	MonoGenericContext *ctx = &infl->context;
+	return mini_inflate_unsafe_accessor_wrapper (extern_decl, ctx, accessor_kind, member_name, error);
+}
+
+/**
+ * Replaces some extern \c method by a wrapper.
+ *
+ * Unsafe accessor methods are static extern methods with no header.  Calls to
+ * them are replaced by calls to a wrapper.  So during AOT compilation when we
+ * collect methods to AOT, we replace these methods by the wrappers, too.
+ *
+ * Returns the wrapper method, or \c NULL if it doesn't need to be replaced.
+ * On error returns NULL and sets \c error.
+ */
+MonoMethod*
+mini_replace_generated_method (MonoMethod *method, MonoError *error)
+{
+	if (G_LIKELY (mono_method_metadata_has_header (method)))
+		return NULL;
+
+	/* Unsafe accessors methods.  Replace attempts to compile the accessor method by
+	 * its wrapper.
+	 */
+	char *member_name = NULL;
+	int accessor_kind = -1;
+	if (mono_method_get_unsafe_accessor_attr_data (method, &accessor_kind, &member_name, error)) {
+		MonoMethod *wrapper = NULL;
+		if (method->is_inflated) {
+			wrapper = inflate_unsafe_accessor_like_decl (method, (MonoUnsafeAccessorKind)accessor_kind, member_name, error);
+		} else {
+			wrapper = mono_marshal_get_unsafe_accessor_wrapper (method, (MonoUnsafeAccessorKind)accessor_kind, member_name);
+		}
+		if (is_ok (error)) {
+			if (mono_trace_is_traced (G_LOG_LEVEL_INFO, MONO_TRACE_AOT)) {
+				char * method_name = mono_method_get_full_name (wrapper);
+				mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_AOT, "Replacing generated method by %s", method_name);
+				g_free (method_name);
+			}
+			return wrapper;
+		}
+	}
+	return NULL;
+}
