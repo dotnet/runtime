@@ -4912,7 +4912,8 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
                     {
                         if (attr == EA_4BYTE)
                         {
-                            emitIns_R_R(INS_sext_w, EA_8BYTE, dstReg, dstReg);
+                            emitIns_R_R_I(INS_slli, EA_8BYTE, dstReg, dstReg, 32);
+                            emitIns_R_R_I(INS_srli, EA_8BYTE, dstReg, dstReg, 32);
                         }
                     }
 
@@ -4967,11 +4968,13 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
                 {
                     if (src1->gtType == TYP_INT)
                     {
-                        emitIns_R_R(INS_sext_w, EA_8BYTE, src1Reg, src1Reg);
+                        emitIns_R_R_I(INS_slli, EA_8BYTE, src1Reg, src1Reg, 32);
+                        emitIns_R_R_I(INS_srli, EA_8BYTE, src1Reg, src1Reg, 32);
                     }
                     if (src2->gtType == TYP_INT)
                     {
-                        emitIns_R_R(INS_sext_w, EA_8BYTE, src2Reg, src2Reg);
+                        emitIns_R_R_I(INS_slli, EA_8BYTE, src2Reg, src2Reg, 32);
+                        emitIns_R_R_I(INS_srli, EA_8BYTE, src2Reg, src2Reg, 32);
                     }
                 }
 
