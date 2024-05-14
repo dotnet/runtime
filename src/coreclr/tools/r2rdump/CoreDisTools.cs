@@ -1225,128 +1225,91 @@ namespace R2RDump
             const int InstructionSize = 4;
             uint instr = BitConverter.ToUInt32(_reader.Image, imageOffset + rtfOffset);
 
-            /*
-                Pattern:
+            if (IsRiscV64JalrInstruction(instr))
+            {
+                /*
+                Supported patterns:
                     auipc
                     addi
                     ld
                     jalr
-                , where addi and ld may be repeated many times.
-                Instructions that have no effect on the jump 
-                address calculation are skipped.
-            */
-            if (IsRiscV64JalrInstruction(instr))
-            {
+            
+                    auipc
+                    ld
+                    jalr
+            
+                    auipc
+                    addi
+                    ld
+                    ld
+                    jalr
+
+                Irrelevant instructions for calle address calculations are skiped.
+                */
+
                 AnalyzeRiscV64Itype(instr, out uint rd, out uint rs1, out int imm);
                 uint register = rs1;
-                int immValue = imm;
+                int target = imm;
 
-                int target = 0;
                 bool isFound = false;
                 int currentInstrOffset = rtfOffset - InstructionSize;
-                // skip all subsequent ld,lw instructions until first non-ld,lw instruction
+                int currentPC = rtf.StartAddress + currentInstrOffset;
                 do
                 {
                     instr = BitConverter.ToUInt32(_reader.Image, imageOffset + currentInstrOffset);
 
-                    if (IsRiscV64LdInstruction(instr) || IsRiscV64LwInstruction(instr))
+                    if (IsRiscV64LdInstruction(instr))
                     {
                         AnalyzeRiscV64Itype(instr, out rd, out rs1, out imm);
                         if (rd == register)
                         {
-                            immValue = imm;
+                            target = imm;
                             register = rs1;
+                        }
+                    }
+                    else  if (IsRiscV64AddiInstruction(instr))
+                    {
+                        AnalyzeRiscV64Itype(instr, out rd, out rs1, out imm);
+                        if (rd == register)
+                        {
+                            target =+ imm;
+                            register = rs1;
+                        }
+                    }
+                    else if (IsRiscV64AuipcInstruction(instr))
+                    {
+                        AnalyzeRiscV64Utype(instr, out rd, out imm);
+                        if (rd == register)
+                        {
+                            target += currentPC + imm;
+                            isFound = true;
+                            break;
                         }
                     }
                     else
                     {
-                        // first non-ld instruction
-                        isFound = StaticAnalyzeRiscV64Assembly(
-                            rtf.StartAddress + currentInstrOffset, 
-                            currentInstrOffset, 
-                            imageOffset, 
-                            register, 
-                            ref target);
-                        break;
+                        // check if callee address is calculated using an unsupported instruction
+                        rd = (instr >> 7) & 0b_11111U;
+                        if (rd == register)
+                        {
+                            break;
+                        }
                     }
 
                     currentInstrOffset -= InstructionSize;
+                    currentPC -= InstructionSize;
                 } while (currentInstrOffset > 0);
 
                 if (isFound)
                 {
-                    if (!TryGetImportCellName(target + immValue, out string targetName) || string.IsNullOrWhiteSpace(targetName))
+                    if (!TryGetImportCellName(target, out string targetName) || string.IsNullOrWhiteSpace(targetName))
                     {
                         return;
                     }
 
-                    StringBuilder updatedInstruction = new();
-                    updatedInstruction.Append(instruction);
-                    updatedInstruction.Append(" // ");
-                    updatedInstruction.Append(targetName);
-                    instruction = updatedInstruction.ToString();
+                    instruction = $"{instruction} // {targetName}";
                 }
             }
-
-        }
-
-        /// <summary>
-        /// Counts the value stored in a given register.
-        /// </summary>
-        /// <param name="currentPC">Program Counter of analyzed instruction</param>
-        /// <param name="currentInstrOffset">Offset within the runtime function of analyzed instruction</param>
-        /// <param name="imageOffset">Offset within the image byte array</param>
-        /// <param name="register">Register whose value is being searched for</param>
-        /// <param name="registerValue">Found value of the register</param>
-        /// <returns>If the value stored in a given register is countable, the function returns true. Otherwise false</returns>
-        private bool StaticAnalyzeRiscV64Assembly(int currentPC, int currentInstrOffset, int imageOffset, uint register, ref int registerValue)
-        {
-            const int InstructionSize = 4;
-
-            // if currentInstrOffset is less than 0 then it is the end of this analyzed method
-            if (currentInstrOffset < 0)
-            {
-                return false;
-            }
-
-            do
-            {
-                uint instr = BitConverter.ToUInt32(_reader.Image, imageOffset + currentInstrOffset);
-                if (IsRiscV64AddiInstruction(instr))
-                {
-                    AnalyzeRiscV64Itype(instr, out uint rd, out uint rs1, out int imm);
-                    if (rd == register)
-                    {
-                        int rs1Value = 0;
-                        bool returnValue = StaticAnalyzeRiscV64Assembly(currentPC - InstructionSize, currentInstrOffset - InstructionSize, imageOffset, rs1, ref rs1Value);
-                        registerValue = rs1Value + imm;
-                        return returnValue;
-                    }
-                }
-                else if (IsRiscV64AuipcInstruction(instr))
-                {
-                    AnalyzeRiscV64Utype(instr, out uint rd, out int imm);
-                    if (rd == register)
-                    {
-                        registerValue = currentPC + imm;
-                        return true;
-                    }
-                }
-                else
-                {
-                    // check if "register" is calculated using an unsupported instruction
-                    uint rd = (instr >> 7) & 0b_11111U;
-                    if (rd == register)
-                    {
-                        return false;
-                    }
-                }
-
-                currentInstrOffset -= InstructionSize;
-                currentPC -= InstructionSize;
-            } while (currentInstrOffset > 0);
-
-            return false;
         }
 
         /// <summary>
@@ -1397,19 +1360,6 @@ namespace R2RDump
             const uint Funct3Ld = 0b_011;
             return (instruction & 0x7f) == OpcodeLd &&
                 ((instruction >> 12) & 0b_111) == Funct3Ld;
-        }
-
-        /// <summary>
-        /// Checks if instruction is lw.
-        /// </summary>
-        /// <param name="instruction">Assembly code of instruction</param>
-        /// <returns>It returns true if instruction is lw. Otherwise false</returns>
-        private bool IsRiscV64LwInstruction(uint instruction)
-        {
-            const uint OpcodeLw = 0b_0000011;
-            const uint Funct3Lw = 0b_010;
-            return (instruction & 0x7f) == OpcodeLw &&
-                ((instruction >> 12) & 0b_111) == Funct3Lw;
         }
 
         /// <summary>
