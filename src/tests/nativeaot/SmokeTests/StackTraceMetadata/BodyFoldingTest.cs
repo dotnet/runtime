@@ -113,6 +113,9 @@ class BodyFoldingTest
         static abstract object Return1Del();
         static abstract object Return2Del();
 
+        static virtual object Return1DelDefaultImpl() => new object();
+        static virtual object Return2DelDefaultImpl() => new object();
+
         public static void Test<T>() where T : IStaticInterfaceTargets
         {
             {
@@ -129,6 +132,21 @@ class BodyFoldingTest
                 if (!f1.Equals(f2))
                     throw new Exception();
             }
+
+            {
+                Func<object> f1 = T.Return1DelDefaultImpl;
+                Func<object> f2 = T.Return2DelDefaultImpl;
+                if (f1.Equals(f2))
+                    throw new Exception();
+            }
+
+            // Sanity check equality of delegates pointing to exact same thing
+            {
+                Func<object> f1 = T.Return1DelDefaultImpl;
+                Func<object> f2 = T.Return1DelDefaultImpl;
+                if (!f1.Equals(f2))
+                    throw new Exception();
+            }
         }
     }
 
@@ -137,6 +155,13 @@ class BodyFoldingTest
         public static object Return1Del() => new object();
         public static object Return2Del() => new object();
     }
+
+    class StaticInterfaceImplementedTargetsClass2 : IStaticInterfaceTargets
+    {
+        public static object Return1Del() => new object();
+        public static object Return2Del() => new object();
+    }
+
 
     struct StaticInterfaceImplementedTargetsStruct : IStaticInterfaceTargets
     {
@@ -190,6 +215,18 @@ class BodyFoldingTest
 
         public virtual object Return1Del<T>() => new object();
         public virtual object Return2Del<T>() => new object();
+    }
+
+    struct UnboxingThunkStruct<T>
+    {
+        public object Return1Del() => new object();
+        public object Return2Del() => new object();
+    }
+
+    struct ReflectedUnboxingThunkStruct<T>
+    {
+        public object Return1Del() => new object();
+        public object Return2Del() => new object();
     }
 
     public static void Run()
@@ -347,6 +384,11 @@ class BodyFoldingTest
 
         IStaticInterfaceTargets.Test<StaticInterfaceImplementedTargetsClass>();
         IStaticInterfaceTargets.Test<StaticInterfaceImplementedTargetsStruct>();
+        typeof(IStaticInterfaceTargets).GetMethod(nameof(IStaticInterfaceTargets.Test))
+            .MakeGenericMethod(GetStaticInterfaceImplementedTargetsClass2())
+            .Invoke(null, []);
+
+        static Type GetStaticInterfaceImplementedTargetsClass2() => typeof(StaticInterfaceImplementedTargetsClass2);
 
         {
             var f1 = typeof(ReflectedOnType).GetMethod(nameof(ReflectedOnType.Return1Del)).CreateDelegate<Func<object>>();
@@ -393,5 +435,41 @@ class BodyFoldingTest
             if (!f1.Equals(f2))
                 throw new Exception();
         }
+
+        // Instance method on struct (unshared)
+        {
+            var o = new UnboxingThunkStruct<int>();
+            Func<object> f1 = o.Return1Del;
+            Func<object> f2 = o.Return2Del;
+            if (f1.Equals(f2))
+                throw new Exception();
+        }
+
+        // Instance method on struct (shared)
+        {
+            var o = new UnboxingThunkStruct<object>();
+            Func<object> f1 = o.Return1Del;
+            Func<object> f2 = o.Return2Del;
+            if (f1.Equals(f2))
+                throw new Exception();
+        }
+
+        // Reflection-created open delegates to valuetypes (unshared)
+        {
+            var f1 = typeof(ReflectedUnboxingThunkStruct<int>).GetMethod(nameof(ReflectedUnboxingThunkStruct<int>.Return1Del)).CreateDelegate<RefParamDelegate<ReflectedUnboxingThunkStruct<int>>>();
+            var f2 = typeof(ReflectedUnboxingThunkStruct<int>).GetMethod(nameof(ReflectedUnboxingThunkStruct<int>.Return2Del)).CreateDelegate<RefParamDelegate<ReflectedUnboxingThunkStruct<int>>>();
+            if (f1.Equals(f2))
+                throw new Exception();
+        }
+
+        // Reflection-created open delegates to valuetypes (shared)
+        {
+            var f1 = typeof(ReflectedUnboxingThunkStruct<object>).GetMethod(nameof(ReflectedUnboxingThunkStruct<object>.Return1Del)).CreateDelegate<RefParamDelegate<ReflectedUnboxingThunkStruct<object>>>();
+            var f2 = typeof(ReflectedUnboxingThunkStruct<object>).GetMethod(nameof(ReflectedUnboxingThunkStruct<object>.Return2Del)).CreateDelegate<RefParamDelegate<ReflectedUnboxingThunkStruct<object>>>();
+            if (f1.Equals(f2))
+                throw new Exception();
+        }
     }
+
+    delegate object RefParamDelegate<T>(ref T inst);
 }

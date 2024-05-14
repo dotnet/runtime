@@ -501,8 +501,12 @@ namespace ILCompiler.DependencyAnalysis
                                 MethodDesc defaultIntfMethod = implMethod.GetCanonMethodTarget(CanonicalFormKind.Specific);
 
                                 // If the interface method is used virtually, the implementation body is used
-                                // BUGBUG: static virtual delegates?
                                 result.Add(new CombinedDependencyListEntry(factory.MethodEntrypoint(defaultIntfMethod), factory.VirtualMethodUse(interfaceMethod), "Interface method"));
+
+                                // If the interface method is virtual delegate target, the implementation is address taken
+                                result.Add(new CombinedDependencyListEntry(
+                                    factory.AddressTakenMethodEntrypoint(defaultIntfMethod),
+                                    factory.DelegateTargetVirtualMethod(interfaceMethod.GetCanonMethodTarget(CanonicalFormKind.Specific)), "Interface slot is delegate target"));
                             }
                             else
                             {
