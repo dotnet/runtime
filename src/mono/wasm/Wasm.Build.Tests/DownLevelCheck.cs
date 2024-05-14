@@ -68,7 +68,7 @@ namespace Wasm.Build.Tests
             if (!Version.TryParse(match.Groups[1].Value, out var actualVersion))
                 Assert.Fail($"Unable to parse version from regex match '{match.Groups[1].Value}'");
 
-            Assert.True(actualVersion >= computedVersion, $"Actually used version is not greater-or-equal then computed version in repository: (actually used version) '{actualVersion}' >= (computed version in repository) '{Versions.PackageVersionNet8}'");
+            Assert.True(actualVersion >= computedVersion, $"Actually used version is lower then computed version in repository: (actually used version) '{actualVersion}' >= (computed version in repository) '{Versions.PackageVersionNet8}'");
         }
     }
 }
