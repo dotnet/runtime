@@ -1353,6 +1353,12 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             assert(sig->numArgs == 3);
             assert(varTypeIsFloating(simdBaseType));
 
+            impSpillSideEffect(true, verCurrentState.esStackDepth -
+                                         3 DEBUGARG("Spilling op1 side effects for FusedMultiplyAdd"));
+
+            impSpillSideEffect(true, verCurrentState.esStackDepth -
+                                         2 DEBUGARG("Spilling op2 side effects for FusedMultiplyAdd"));
+
             op3 = impSIMDPopStack();
             op2 = impSIMDPopStack();
             op1 = impSIMDPopStack();

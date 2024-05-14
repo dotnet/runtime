@@ -23433,6 +23433,11 @@ GenTree* Compiler::gtNewSimdFmaNode(
     {
         intrinsic = NI_AdvSimd_FusedMultiplyAdd;
     }
+
+    // AdvSimd.FusedMultiplyAdd expects (addend, left, right), while the APIs take (left, right, addend)
+    // We expect op1 and op2 to have already been spilled
+
+    std::swap(op1, op3);
 #else
 #error Unsupported platform
 #endif // !TARGET_XARCH && !TARGET_ARM64

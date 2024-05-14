@@ -4001,6 +4001,12 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                     //        Vector64.Create{ScalarUnsafe}(x)
                     //    ).ToScalar();
 
+                    impSpillSideEffect(true, verCurrentState.esStackDepth -
+                                                     3 DEBUGARG("Spilling op1 side effects for FusedMultiplyAdd"));
+
+                    impSpillSideEffect(true, verCurrentState.esStackDepth -
+                                                     2 DEBUGARG("Spilling op2 side effects for FusedMultiplyAdd"));
+
                     GenTree* op3 = gtNewSimdCreateScalarUnsafeNode(TYP_SIMD8, impPopStack().val, callJitType, 8);
                     GenTree* op2 = gtNewSimdCreateScalarUnsafeNode(TYP_SIMD8, impPopStack().val, callJitType, 8);
                     GenTree* op1 = gtNewSimdCreateScalarUnsafeNode(TYP_SIMD8, impPopStack().val, callJitType, 8);
