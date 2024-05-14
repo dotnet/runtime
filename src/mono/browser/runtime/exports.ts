@@ -25,7 +25,7 @@ import { forceDisposeProxies } from "./gc-handles";
 import { mono_wasm_dump_threads } from "./pthreads";
 
 import { threads_c_functions as tcwraps } from "./cwraps";
-import { stringToUTF16, stringToUTF16Ptr, utf16ToString } from "./strings";
+import { stringToUTF16, stringToUTF16Ptr, utf16ToString, utf16ToStringLoop } from "./strings";
 import { localHeapViewU16, setI32, setU16_local } from "./memory";
 
 export let runtimeList: RuntimeList;
@@ -53,6 +53,7 @@ function initializeExports (globalObjects: GlobalObjects): RuntimeAPI {
         rh.stringToUTF16 = stringToUTF16;
         rh.stringToUTF16Ptr = stringToUTF16Ptr;
         rh.utf16ToString = utf16ToString;
+        rh.utf16ToStringLoop = utf16ToStringLoop;
         rh.localHeapViewU16 = localHeapViewU16;
         rh.setU16_local = setU16_local;
         rh.setI32 = setI32;

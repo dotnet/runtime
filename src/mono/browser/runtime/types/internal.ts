@@ -243,6 +243,7 @@ export type RuntimeHelpers = {
     stringToUTF16: (dstPtr: number, endPtr: number, text: string) => void,
     stringToUTF16Ptr: (str: string) => VoidPtr,
     utf16ToString: (startPtr: number, endPtr: number) => string,
+    utf16ToStringLoop: (startPtr: number, endPtr: number) => string,
     localHeapViewU16: () => Uint16Array,
     setU16_local: (heap: Uint16Array, ptr: number, value: number) => void,
     setI32: (offset: MemOffset, value: number) => void,

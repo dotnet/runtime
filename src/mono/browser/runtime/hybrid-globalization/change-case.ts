@@ -8,7 +8,7 @@ import { isSurrogate } from "./helpers";
 
 export function mono_wasm_change_case_invariant (src: number, srcLength: number, dst: number, dstLength: number, toUpper: number): VoidPtr {
     try {
-        const input = runtimeHelpers.utf16ToString(<any>src, <any>(src + 2 * srcLength));
+        const input = runtimeHelpers.utf16ToStringLoop(src, src + 2 * srcLength);
         const result = toUpper ? input.toUpperCase() : input.toLowerCase();
         // Unicode defines some codepoints which expand into multiple codepoints,
         // originally we do not support this expansion
@@ -65,7 +65,7 @@ export function mono_wasm_change_case (culture: number, cultureLength: number, s
         const cultureName = runtimeHelpers.utf16ToString(<any>culture, <any>(culture + 2 * cultureLength));
         if (!cultureName)
             throw new Error("Cannot change case, the culture name is null.");
-        const input = runtimeHelpers.utf16ToString(<any>src, <any>(src + 2 * srcLength));
+        const input = runtimeHelpers.utf16ToStringLoop(src, src + 2 * srcLength);
         const result = toUpper ? input.toLocaleUpperCase(cultureName) : input.toLocaleLowerCase(cultureName);
 
         if (result.length <= input.length) {
