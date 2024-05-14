@@ -7905,23 +7905,21 @@ void CodeGen::genSSE2BitwiseOp(GenTree* treeNode)
 {
     regNumber targetReg  = treeNode->GetRegNum();
     regNumber operandReg = genConsumeReg(treeNode->gtGetOp1());
-    emitAttr  size       = emitTypeSize(treeNode);
 
     assert(varTypeIsFloating(treeNode->TypeGet()));
     assert(treeNode->gtGetOp1()->isUsedFromReg());
 
-    CORINFO_FIELD_HANDLE* maskFld = nullptr;
-    UINT64                mask    = 0;
-    instruction           ins     = INS_invalid;
+    CORINFO_FIELD_HANDLE maskFld = NO_FIELD_HANDLE;
+    UINT64               mask    = 0;
+    instruction          ins     = INS_invalid;
 
     if (treeNode->OperIs(GT_NEG))
     {
         // Neg(x) = flip the sign bit.
         // Neg(f) = f ^ 0x80000000 x4 (packed)
         // Neg(d) = d ^ 0x8000000000000000 x2 (packed)
-        ins     = INS_xorps;
-        mask    = treeNode->TypeIs(TYP_FLOAT) ? 0x8000000080000000UL : 0x8000000000000000UL;
-        maskFld = treeNode->TypeIs(TYP_FLOAT) ? &negBitmaskFlt : &negBitmaskDbl;
+        ins  = INS_xorps;
+        mask = treeNode->TypeIs(TYP_FLOAT) ? 0x8000000080000000UL : 0x8000000000000000UL;
     }
     else if (treeNode->OperIs(GT_INTRINSIC))
     {
@@ -7929,30 +7927,24 @@ void CodeGen::genSSE2BitwiseOp(GenTree* treeNode)
         // Abs(x) = set sign-bit to zero
         // Abs(f) = f & 0x7fffffff x4 (packed)
         // Abs(d) = d & 0x7fffffffffffffff x2 (packed)
-        ins     = INS_andps;
-        mask    = treeNode->TypeIs(TYP_FLOAT) ? 0x7FFFFFFF7FFFFFFFUL : 0x7FFFFFFFFFFFFFFFUL;
-        maskFld = treeNode->TypeIs(TYP_FLOAT) ? &absBitmaskFlt : &absBitmaskDbl;
+        ins  = INS_andps;
+        mask = treeNode->TypeIs(TYP_FLOAT) ? 0x7FFFFFFF7FFFFFFFUL : 0x7FFFFFFFFFFFFFFFUL;
     }
     else
     {
         assert(!"genSSE2BitwiseOp: unsupported oper");
     }
 
-    if (*maskFld == nullptr)
-    {
-        simd16_t constValue;
-
-        constValue.u64[0] = mask;
-        constValue.u64[1] = mask;
-
+    simd16_t constValue;
+    constValue.u64[0] = mask;
+    constValue.u64[1] = mask;
 #if defined(FEATURE_SIMD)
-        *maskFld = GetEmitter()->emitSimd16Const(constValue);
+    maskFld = GetEmitter()->emitSimd16Const(constValue);
 #else
-        *maskFld = GetEmitter()->emitBlkConst(&constValue, 16, 16, treeNode->TypeGet());
+    maskFld = GetEmitter()->emitBlkConst(&constValue, 16, 16, treeNode->TypeGet());
 #endif
-    }
 
-    GetEmitter()->emitIns_SIMD_R_R_C(ins, EA_16BYTE, targetReg, operandReg, *maskFld, 0, INS_OPTS_NONE);
+    GetEmitter()->emitIns_SIMD_R_R_C(ins, EA_16BYTE, targetReg, operandReg, maskFld, 0, INS_OPTS_NONE);
 }
 
 //-----------------------------------------------------------------------------------------

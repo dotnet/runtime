@@ -47,19 +47,6 @@ public:
 
 private:
 #if defined(TARGET_XARCH)
-    // Bit masks used in negating a float or double number.
-    // This is to avoid creating more than one data constant for these bitmasks when a
-    // method has more than one GT_NEG operation on floating point values.
-    CORINFO_FIELD_HANDLE negBitmaskFlt;
-    CORINFO_FIELD_HANDLE negBitmaskDbl;
-
-    // Bit masks used in computing Math.Abs() of a float or double number.
-    CORINFO_FIELD_HANDLE absBitmaskFlt;
-    CORINFO_FIELD_HANDLE absBitmaskDbl;
-
-    // Bit mask used in zeroing the 3rd element of a SIMD12
-    CORINFO_FIELD_HANDLE zroSimd12Elm3;
-
     // Generates SSE2 code for the given tree as "Operand BitWiseOp BitMask"
     void genSSE2BitwiseOp(GenTree* treeNode);
 
