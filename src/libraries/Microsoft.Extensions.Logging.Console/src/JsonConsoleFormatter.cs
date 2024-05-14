@@ -99,7 +99,7 @@ namespace Microsoft.Extensions.Logging.Console
                         fixed (char* logMessageBufferPtr = logMessageBuffer)
                         {
                             charsWritten = Encoding.UTF8.GetChars(messageBytesPtr, messageBytes.Length, logMessageBufferPtr, logMessageBuffer.Length);
-            }
+                        }
                     }
  #endif
                     textWriter.Write(logMessageBuffer, 0, charsWritten);
