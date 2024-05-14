@@ -7,12 +7,11 @@ import { PThreadPtrNull, type AssetEntryInternal, type PThreadWorker, type Promi
 import type { AssetBehaviors, AssetEntry, LoadingResource, ResourceList, SingleAssetBehaviors as SingleAssetBehaviors, WebAssemblyBootResourceType } from "../types";
 import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL, ENVIRONMENT_IS_WEB, loaderHelpers, mono_assert, runtimeHelpers } from "./globals";
 import { createPromiseController } from "./promise-controller";
-import { mono_log_debug, mono_log_warn } from "./logging";
+import { mono_log_debug, mono_log_warn, mono_log_info } from "./logging";
 import { mono_exit } from "./exit";
 import { addCachedReponse, findCachedResponse } from "./assetsCache";
 import { getIcuResourceName } from "./icu";
 import { makeURLAbsoluteWithApplicationBase } from "./polyfills";
-import { mono_log_info } from "./logging";
 
 
 let throttlingPromise: PromiseAndController<void> | undefined;
@@ -178,19 +177,30 @@ export async function mono_download_assets (): Promise<void> {
         for (const downloadPromise of promises_of_assets) {
             promises_of_asset_instantiation.push((async () => {
                 const asset = await downloadPromise;
-                if (asset.buffer) {
+                if (asset.buffer || asset.stream) {
                     if (!skipInstantiateByAssetTypes[asset.behavior]) {
-                        mono_assert(asset.buffer && typeof asset.buffer === "object", "asset buffer must be array-like or buffer-like or promise of these");
+                        if (asset.buffer)
+                            mono_assert(asset.buffer && typeof asset.buffer === "object", "asset buffer must be array-like or buffer-like or promise of these");
+                        else if (asset.stream)
+                            mono_assert(asset.stream && typeof asset.stream === "object", "asset buffer must be a stream or promise of these");
+
                         mono_assert(typeof asset.resolvedUrl === "string", "resolvedUrl must be string");
                         const url = asset.resolvedUrl!;
-                        const buffer = await asset.buffer;
-                        const data = new Uint8Array(buffer);
-                        cleanupAsset(asset);
 
-                        // wait till after onRuntimeInitialized
+                        if (asset.buffer) {
+                            const buffer = await asset.buffer;
+                            const data = new Uint8Array(buffer);
+                            cleanupAsset(asset);
 
-                        await runtimeHelpers.beforeOnRuntimeInitialized.promise;
-                        runtimeHelpers.instantiate_asset(asset, url, data);
+                            await runtimeHelpers.beforeOnRuntimeInitialized.promise;
+                            await runtimeHelpers.instantiate_asset(asset, url, data);
+                        } else {
+                            const stream = await asset.stream;
+                            cleanupAsset(asset);
+
+                            await runtimeHelpers.beforeOnRuntimeInitialized.promise;
+                            await runtimeHelpers.instantiate_asset(asset, url, stream!);
+                        }
                     }
                 } else {
                     const headersOnly = skipBufferByAssetTypes[asset.behavior];
@@ -256,6 +266,12 @@ export function prepareAssets () {
         }
     } else if (config.resources) {
         const resources = config.resources;
+        const getKnownLength = (name: string) => {
+            if (resources.knownLengths)
+                return resources.knownLengths[name] || 0;
+            else
+                return 0;
+        };
 
         mono_assert(resources.wasmNative, "resources.wasmNative must be defined");
         mono_assert(resources.jsModuleNative, "resources.jsModuleNative must be defined");
@@ -273,7 +289,8 @@ export function prepareAssets () {
                 assetsToLoad.push({
                     name,
                     hash: resources.assembly[name],
-                    behavior: "assembly"
+                    behavior: "assembly",
+                    knownLength: getKnownLength(name),
                 });
             }
         }
@@ -283,7 +300,8 @@ export function prepareAssets () {
                 assetsToLoad.push({
                     name,
                     hash: resources.pdb[name],
-                    behavior: "pdb"
+                    behavior: "pdb",
+                    knownLength: getKnownLength(name),
                 });
             }
         }
@@ -295,7 +313,8 @@ export function prepareAssets () {
                         name,
                         hash: resources.satelliteResources[culture][name],
                         behavior: "resource",
-                        culture
+                        culture,
+                        knownLength: getKnownLength(name),
                     });
                 }
             }
@@ -308,7 +327,8 @@ export function prepareAssets () {
                         name,
                         hash: resources.vfs[virtualPath][name],
                         behavior: "vfs",
-                        virtualPath
+                        virtualPath,
+                        knownLength: getKnownLength(name),
                     });
                 }
             }
@@ -322,13 +342,15 @@ export function prepareAssets () {
                         name,
                         hash: resources.icu[name],
                         behavior: "icu",
-                        loadRemote: true
+                        loadRemote: true,
+                        knownLength: getKnownLength(name),
                     });
                 } else if (name === "segmentation-rules.json") {
                     assetsToLoad.push({
                         name,
                         hash: resources.icu[name],
                         behavior: "segmentation-rules",
+                        knownLength: getKnownLength(name),
                     });
                 }
             }
@@ -339,7 +361,8 @@ export function prepareAssets () {
                 assetsToLoad.push({
                     name,
                     hash: resources.wasmSymbols[name],
-                    behavior: "symbols"
+                    behavior: "symbols",
+                    knownLength: getKnownLength(name),
                 });
             }
         }
@@ -450,7 +473,17 @@ async function start_asset_download_with_throttle (asset: AssetEntryInternal): P
         if (skipBuffer) {
             return asset;
         }
-        asset.buffer = await response.arrayBuffer();
+        if (
+            (asset.behavior !== "vfs") && // vfs needs an arraybuffer so just use .arrayBuffer()
+            ("body" in response) && response.body && // in some cases response.body can be missing or null
+            asset.knownLength
+        ) {
+            asset.stream = response.body!;
+        } else {
+            if ((asset.behavior !== "vfs") && ENVIRONMENT_IS_WEB)
+                mono_log_warn(`Could not stream resource ${asset.resolvedUrl} with length ${asset.knownLength} and behavior ${asset.behavior}.`);
+            asset.buffer = await response.arrayBuffer();
+        }
         ++loaderHelpers.actual_downloaded_assets_count;
         return asset;
     } finally {

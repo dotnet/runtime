@@ -391,6 +391,9 @@ public class GenerateWasmBootJson : Task
             {
                 Log.LogMessage(MessageImportance.Low, "Added resource '{0}' to the manifest.", resource.ItemSpec);
                 resourceList.Add(resourceKey, $"sha256-{resource.GetMetadata("FileHash")}");
+                long knownLength = new FileInfo(resource.GetMetadata("FullPath")).Length;
+                result.resources.knownLengths ??= new Dictionary<string, long>();
+                result.resources.knownLengths[resourceKey] = knownLength;
             }
         }
     }
@@ -433,7 +436,10 @@ public class GenerateWasmBootJson : Task
             additionalResources.Add(resourceName, new AdditionalAsset
             {
                 hash = $"sha256-{resource.GetMetadata("FileHash")}",
-                behavior = behavior
+                behavior = behavior,
+                knownLength = File.Exists(resource.ItemSpec)
+                    ? (new FileInfo(resource.ItemSpec)).Length
+                    : 0
             });
         }
     }
