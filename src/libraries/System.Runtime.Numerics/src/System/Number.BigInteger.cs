@@ -370,7 +370,7 @@ namespace System
             }
 
             const double digitRatio = 0.10381025297; // log_{2^32}(10)
-            int resultLength = checked((int)(number.Scale * digitRatio) + 1 + 2);
+            int resultLength = checked((int)(digitRatio * number.Scale) + 1 + 2);
             uint[]? resultBufferFromPool = null;
             Span<uint> resultBuffer = (
                 resultLength <= BigIntegerCalculator.StackAllocThreshold
@@ -387,7 +387,7 @@ namespace System
             }
             else
             {
-                DivideAndConquer(base1E9, totalDigitCount, trailingZeroCount, resultBuffer);
+                DivideAndConquer(base1E9, trailingZeroCount, resultBuffer);
             }
 
             result = new BigInteger(resultBuffer, number.IsNegative);
@@ -399,12 +399,11 @@ namespace System
 
             return ParsingStatus.OK;
 
-            static void DivideAndConquer(ReadOnlySpan<uint> base1E9, int totalDigitCount, int trailingZeroCount, scoped Span<uint> bits)
+            static void DivideAndConquer(ReadOnlySpan<uint> base1E9, int trailingZeroCount, scoped Span<uint> bits)
             {
                 int valueDigits = (base1E9.Length - 1) * PowersOf1e9.MaxPartialDigits + FormattingHelpers.CountDigits(base1E9[^1]);
 
-                int log2 = PowersOf1e9.GetMaxIndex(Math.Max(valueDigits, trailingZeroCount + 1));
-                int powersOf1e9BufferLength = PowersOf1e9.GetBufferSize(log2);
+                int powersOf1e9BufferLength = PowersOf1e9.GetBufferSize(Math.Max(valueDigits, trailingZeroCount + 1), out int maxIndex);
                 uint[]? powersOf1e9BufferFromPool = null;
                 Span<uint> powersOf1e9Buffer = (
                     powersOf1e9BufferLength <= BigIntegerCalculator.StackAllocThreshold
@@ -416,7 +415,7 @@ namespace System
 
                 if (trailingZeroCount > 0)
                 {
-                    int leadingLength = checked((int)(digitRatio * totalDigitCount) + 2);
+                    int leadingLength = checked((int)(digitRatio * PowersOf1e9.MaxPartialDigits * base1E9.Length) + 3);
                     uint[]? leadingFromPool = null;
                     Span<uint> leading = (
                         leadingLength <= BigIntegerCalculator.StackAllocThreshold
@@ -424,7 +423,7 @@ namespace System
                         : leadingFromPool = ArrayPool<uint>.Shared.Rent(leadingLength)).Slice(0, leadingLength);
                     leading.Clear();
 
-                    Recursive(powersOf1e9, log2, base1E9, leading);
+                    Recursive(powersOf1e9, maxIndex, base1E9, leading);
                     leading = leading.Slice(0, BigIntegerCalculator.ActualLength(leading));
 
                     powersOf1e9.MultiplyPowerOfTen(leading, trailingZeroCount, bits);
@@ -434,7 +433,7 @@ namespace System
                 }
                 else
                 {
-                    Recursive(powersOf1e9, log2, base1E9, bits);
+                    Recursive(powersOf1e9, maxIndex, base1E9, bits);
                 }
 
                 if (powersOf1e9BufferFromPool != null)
@@ -460,12 +459,6 @@ namespace System
                 }
                 ReadOnlySpan<uint> multiplier = powersOf1e9.GetSpan(powersOf1e9Index);
                 int multiplierTrailingZeroCount = PowersOf1e9.OmittedLength(powersOf1e9Index);
-
-                if (multiplier1E9Length + multiplier1E9Length < base1E9.Length)
-                {
-                    RecursiveLarge(powersOf1e9, powersOf1e9Index, base1E9, bits);
-                    return;
-                }
 
                 Debug.Assert(multiplier1E9Length < base1E9.Length && base1E9.Length <= multiplier1E9Length * 2);
 
@@ -494,67 +487,6 @@ namespace System
 
                 if (bufferFromPool != null)
                     ArrayPool<uint>.Shared.Return(bufferFromPool);
-            }
-
-            [MethodImpl(MethodImplOptions.NoInlining)]
-            static void RecursiveLarge(
-                in PowersOf1e9 powersOf1e9, int powersOf1e9Index,
-                ReadOnlySpan<uint> base1E9, scoped Span<uint> bits)
-            {
-                int multiplier1E9Length = 1 << powersOf1e9Index;
-                ReadOnlySpan<uint> multiplier = powersOf1e9.GetSpan(powersOf1e9Index);
-                int multiplierTrailingZeroCount = PowersOf1e9.OmittedLength(powersOf1e9Index);
-
-                Span<uint> bitsDst = bits;
-
-                uint[]? bits2FromPool = null;
-                scoped Span<uint> bits2 = (
-                    bits.Length <= BigIntegerCalculator.StackAllocThreshold
-                    ? stackalloc uint[BigIntegerCalculator.StackAllocThreshold]
-                    : bits2FromPool = ArrayPool<uint>.Shared.Rent(bits.Length)).Slice(0, bits.Length);
-                bits2.Clear();
-
-                {
-                    int upperLength = base1E9.Length & (multiplier1E9Length - 1);
-                    if (upperLength == 0)
-                        upperLength = multiplier1E9Length;
-
-                    Recursive(powersOf1e9, powersOf1e9Index - 1, base1E9[^upperLength..], bits2);
-
-                    base1E9 = base1E9[..^upperLength];
-                }
-
-                while (base1E9.Length > 0)
-                {
-                    ReadOnlySpan<uint> bitsPrev = bits2.Slice(0, BigIntegerCalculator.ActualLength(bits2));
-
-                    Debug.Assert(base1E9.Length % multiplier1E9Length == 0);
-                    Span<uint> bitsUpper = bits.Slice(multiplierTrailingZeroCount, bitsPrev.Length + multiplier.Length);
-                    if (multiplier.Length < bitsPrev.Length)
-                        BigIntegerCalculator.Multiply(bitsPrev, multiplier, bitsUpper);
-                    else
-                        BigIntegerCalculator.Multiply(multiplier, bitsPrev, bitsUpper);
-
-                    bits2.Clear();
-                    Recursive(powersOf1e9, powersOf1e9Index - 1, base1E9[^multiplier1E9Length..], bits2);
-
-                    BigIntegerCalculator.AddSelf(bits, bits2);
-
-                    base1E9 = base1E9[..^multiplier1E9Length];
-
-                    Span<uint> bitsTmp = bits;
-                    bits = bits2;
-                    bits2 = bitsTmp;
-                    bits.Clear();
-                }
-
-                if (!Unsafe.AreSame(ref MemoryMarshal.GetReference(bits2), ref MemoryMarshal.GetReference(bitsDst)))
-                {
-                    bits2.CopyTo(bitsDst);
-                }
-
-                if (bits2FromPool != null)
-                    ArrayPool<uint>.Shared.Return(bits2FromPool);
             }
 
             static void Naive(ReadOnlySpan<uint> base1E9, int trailingZeroCount, scoped Span<uint> bits)
@@ -1024,11 +956,6 @@ namespace System
             //        indexes[i+1] = indexes[i] + length;
             //    }
             private static ReadOnlySpan<int> Indexes =>
-#if DEBUG
-                IndexesArray;
-
-            public static int[] IndexesArray =
-#endif
             [
                 0,
                 1,
@@ -1151,16 +1078,21 @@ namespace System
                 }
             }
 
-            public static int GetMaxIndex(int digits)
+            public static int GetBufferSize(int digits, out int maxIndex)
             {
                 uint scale1E9 = (uint)(digits - 1) / MaxPartialDigits;
-                return BitOperations.Log2(scale1E9);
-            }
+                maxIndex = BitOperations.Log2(scale1E9);
+                int index = maxIndex + 1;
+                int bufferSize;
+                if ((uint)index < (uint)Indexes.Length)
+                    bufferSize = Indexes[index];
+                else
+                {
+                    maxIndex = Indexes.Length - 2;
+                    bufferSize = Indexes[^1];
+                }
 
-            public static int GetBufferSize(int index)
-            {
-                ++index;
-                return ((uint)index < (uint)Indexes.Length ? Indexes[index] : Indexes[^1]) + 1;
+                return ++bufferSize;
             }
 
             public ReadOnlySpan<uint> GetSpan(int index)

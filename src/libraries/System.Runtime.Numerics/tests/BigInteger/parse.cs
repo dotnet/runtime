@@ -1220,28 +1220,5 @@ namespace System.Numerics.Tests
                 parseTest.RegressionIssueRuntime94610(text);
             }));
         }
-
-        [Theory]
-        [MemberData(nameof(Cultures))]
-        [OuterLoop]
-        public static void Parse_RecursiveLarge(CultureInfo culture)
-        {
-#if DEBUG
-            int[] defaultIndexesArray = Number.PowersOf1e9.IndexesArray;
-            try
-            {
-                Number.PowersOf1e9.IndexesArray = defaultIndexesArray[..4];
-                BigIntTools.Utils.RunWithFakeThreshold(Number.BigIntegerParseNaiveThreshold, 0, () =>
-                BigIntTools.Utils.RunWithFakeThreshold(Number.BigIntegerParseNaiveThresholdInRecursive, 10, () =>
-                {
-                    parseTest.RunParseToStringTests(culture);
-                }));
-            }
-            finally
-            {
-                Number.PowersOf1e9.IndexesArray = defaultIndexesArray;
-            }
-#endif
-        }
     }
 }
