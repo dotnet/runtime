@@ -3424,6 +3424,8 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 		GArray *new_params = g_array_new (FALSE, FALSE, sizeof (MonoType*));
 		uint32_t new_param_count = 0;
 		int align;
+		MonoClass *swift_self = mono_class_try_get_swift_self_class ();
+		MonoClass *swift_error = mono_class_try_get_swift_error_class ();
 		/*
 		* Go through the lowered arguments, if the argument is a struct, 
 		* we need to replace it with a sequence of lowered arguments.
@@ -3431,7 +3433,9 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 		*/
 		for (int idx_param = 0; idx_param < csignature->param_count; ++idx_param) {
 			MonoType *ptype = csignature->params [idx_param];
-			if (mono_type_is_struct (ptype)) {
+			MonoClass *klass = mono_class_from_mono_type_internal (ptype);
+			// SwiftSelf and SwiftError are special cases where we need to preserve the class information for the codegen to handle them correctly.
+			if (mono_type_is_struct (ptype) && !(klass == swift_self || klass == swift_error)) {
 				SwiftPhysicalLowering lowered_swift_struct = mono_marshal_get_swift_physical_lowering (ptype, FALSE);
 				if (!lowered_swift_struct.by_reference) {
 					for (uint32_t idx_lowered = 0; idx_lowered < lowered_swift_struct.num_lowered_elements; ++idx_lowered) {

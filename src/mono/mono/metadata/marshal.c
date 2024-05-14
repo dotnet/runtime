@@ -6732,11 +6732,6 @@ mono_marshal_get_swift_physical_lowering (MonoType *type, gboolean native_layout
 	}
 
 	MonoClass *klass = mono_class_from_mono_type_internal (type);
-	// SwiftSelf and SwiftError are special cases where we need to preserve the class information for the codegen to handle them correctly.
-	if (klass == mono_class_try_get_swift_self_class () || klass == mono_class_try_get_swift_error_class ()) {
-		lowering.by_reference = TRUE;
-		return lowering;
-	}
 	int vtype_size = mono_class_value_size (klass, NULL);
 	// TODO: We currently don't support vector types, so we can say that the maximum size of a non-by_reference struct
 	// is 4 * PointerSize.

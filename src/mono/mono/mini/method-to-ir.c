@@ -7514,6 +7514,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			if (cfg->gsharedvt_min && mini_is_gsharedvt_variable_signature (fsig))
 				GSHAREDVT_FAILURE (il_op);
 
+#ifdef MONO_ARCH_HAVE_SWIFTCALL
 			/*
 			 * We need to modify the signature of the swiftcall calli to account for the lowering of Swift structs.
  			 * This is done by replacing struct arguments on stack with a lowered sequence and updating the signature.
@@ -7531,6 +7532,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 				GArray *new_params = g_array_new (FALSE, FALSE, sizeof (MonoType*));
 				uint32_t new_param_count = 0;
+				MonoClass *swift_self = mono_class_try_get_swift_self_class ();
+				MonoClass *swift_error = mono_class_try_get_swift_error_class ();
 				/*
 				 * Go through the lowered arguments, if the argument is a struct, 
 				 * we need to replace it with a sequence of lowered arguments.
@@ -7538,7 +7541,10 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				 */
 				for (int idx_param = 0; idx_param < n; ++idx_param) {
 					MonoType *ptype = fsig->params [idx_param];
-					if (mono_type_is_struct (ptype)) {
+					MonoClass *klass = mono_class_from_mono_type_internal (ptype);
+
+					// SwiftSelf and SwiftError are special cases where we need to preserve the class information for the codegen to handle them correctly.
+					if (mono_type_is_struct (ptype) && !(klass == swift_self || klass == swift_error)) {
 						SwiftPhysicalLowering lowered_swift_struct = mono_marshal_get_swift_physical_lowering (ptype, FALSE);
 						if (!lowered_swift_struct.by_reference) {
 							// Create a new local variable to store the base address of the struct
@@ -7589,6 +7595,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				
 				fsig = swiftcall_signature;	
 			}
+#endif
 
 			if (method->dynamic && fsig->pinvoke) {
 				MonoInst *args [3];
