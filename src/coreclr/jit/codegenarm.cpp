@@ -1761,7 +1761,7 @@ void CodeGen::genProfilingLeaveCallback(unsigned helper)
         // For the tail call case, the helper call is introduced during lower,
         // so the allocator will arrange things so R0 is not in use here.
         //
-        // For the tail jump case, all reg args have been spilled via genJmpMethod,
+        // For the tail jump case, all reg args have been spilled via genJmpPlaceArgs,
         // so R0 is likewise not in use.
         r0InUse = false;
     }
