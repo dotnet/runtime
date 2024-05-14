@@ -3371,8 +3371,9 @@ EXTERN_C PALIMPORT inline RETURN_TYPE PALAPI METHOD_DECL        \
 /* Function multiversioning will never inline a method that is  \
    marked such. However, just to make sure that we don't see    \
    surprises, explicitely mark them as noinline. */             \
-__attribute__((target("lse")))  __attribute__((noinline))       \
-EXTERN_C PALIMPORT inline RETURN_TYPE PALAPI Lse_##METHOD_DECL  \
+EXTERN_C PALIMPORT inline RETURN_TYPE PALAPI                    \
+__attribute__((target("+lse")))  __attribute__((noinline))      \
+Lse_##METHOD_DECL                                               \
 {                                                               \
     return INTRINSIC_NAME;                                      \
 }                                                               \

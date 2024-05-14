@@ -17,7 +17,7 @@ extends:
 
     containers:
       linux_arm:
-        image: mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-cross-arm-net9.0-20240507035943-1390eea
+        image: mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-cross-arm-net9.0
         env:
           ROOTFS_DIR: /crossrootfs/arm
 
@@ -93,8 +93,8 @@ extends:
         env:
           ROOTFS_DIR: /crossrootfs/riscv64
 
-      debian-12-gcc13-amd64:
-        image: mcr.microsoft.com/dotnet-buildtools/prereqs:debian-12-gcc13-amd64
+      debian-12-gcc14-amd64:
+        image: mcr.microsoft.com/dotnet-buildtools/prereqs:debian-12-gcc14-amd64
 
       linux_x64_llvmaot:
         image: mcr.microsoft.com/dotnet-buildtools/prereqs:centos-stream8

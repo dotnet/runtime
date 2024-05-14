@@ -2,8 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Buffers.Binary;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 
@@ -19,6 +19,21 @@ public struct TargetPointer
 
 public sealed unsafe class Target
 {
+    public record struct TypeInfo
+    {
+        public uint? Size;
+        public Dictionary<string, FieldInfo> Fields = [];
+
+        public TypeInfo() { }
+    }
+
+    public record struct FieldInfo
+    {
+        public int Offset;
+        public DataType Type;
+        public string? TypeName;
+    }
+
     private const int StackAllocByteThreshold = 1024;
 
     private readonly struct Configuration
@@ -30,8 +45,13 @@ public sealed unsafe class Target
     private readonly Configuration _config;
     private readonly Reader _reader;
 
-    private readonly IReadOnlyDictionary<string, int> _contracts = new Dictionary<string, int>();
+    private readonly Dictionary<string, int> _contracts = [];
     private readonly IReadOnlyDictionary<string, (ulong Value, string? Type)> _globals = new Dictionary<string, (ulong, string?)>();
+    private readonly Dictionary<DataType, TypeInfo> _knownTypes = [];
+    private readonly Dictionary<string, TypeInfo> _types = [];
+
+    internal Contracts.Registry Contracts { get; }
+    internal DataCache ProcessedData { get; } = new DataCache();
 
     public static bool TryCreate(ulong contractDescriptor, delegate* unmanaged<ulong, byte*, uint, void*, int> readFromTarget, void* readContext, out Target? target)
     {
@@ -48,12 +68,42 @@ public sealed unsafe class Target
 
     private Target(Configuration config, ContractDescriptorParser.ContractDescriptor descriptor, TargetPointer[] pointerData, Reader reader)
     {
+        Contracts = new Contracts.Registry(this);
         _config = config;
         _reader = reader;
 
-        // TODO: [cdac] Read types
-        // note: we will probably want to store the globals and types into a more usable form
         _contracts = descriptor.Contracts ?? [];
+
+        // Read types and map to known data types
+        if (descriptor.Types is not null)
+        {
+            foreach ((string name, ContractDescriptorParser.TypeDescriptor type) in descriptor.Types)
+            {
+                TypeInfo typeInfo = new() { Size = type.Size };
+                if (type.Fields is not null)
+                {
+                    foreach ((string fieldName, ContractDescriptorParser.FieldDescriptor field) in type.Fields)
+                    {
+                        typeInfo.Fields[fieldName] = new FieldInfo()
+                        {
+                            Offset = field.Offset,
+                            Type = field.Type is null ? DataType.Unknown : GetDataType(field.Type),
+                            TypeName = field.Type
+                        };
+                    }
+                }
+
+                DataType dataType = GetDataType(name);
+                if (dataType is not DataType.Unknown)
+                {
+                    _knownTypes[dataType] = typeInfo;
+                }
+                else
+                {
+                    _types[name] = typeInfo;
+                }
+            }
+        }
 
         // Read globals and map indirect values to pointer data
         if (descriptor.Globals is not null)
@@ -159,16 +209,21 @@ public sealed unsafe class Target
         return true;
     }
 
-    public T Read<T>(ulong address, out T value) where T : unmanaged, IBinaryInteger<T>, IMinMaxValue<T>
+    private static DataType GetDataType(string type)
     {
-        if (!TryRead(address, out value))
+        if (Enum.TryParse(type, false, out DataType dataType) && Enum.IsDefined(dataType))
+            return dataType;
+
+        return DataType.Unknown;
+    }
+
+    public T Read<T>(ulong address) where T : unmanaged, IBinaryInteger<T>, IMinMaxValue<T>
+    {
+        if (!TryRead(address, _config.IsLittleEndian, _reader, out T value))
             throw new InvalidOperationException($"Failed to read {typeof(T)} at 0x{address:x8}.");
 
         return value;
     }
-
-    public bool TryRead<T>(ulong address, out T value) where T : unmanaged, IBinaryInteger<T>, IMinMaxValue<T>
-        => TryRead(address, _config.IsLittleEndian, _reader, out value);
 
     private static bool TryRead<T>(ulong address, bool isLittleEndian, Reader reader, out T value) where T : unmanaged, IBinaryInteger<T>, IMinMaxValue<T>
     {
@@ -190,14 +245,11 @@ public sealed unsafe class Target
 
     public TargetPointer ReadPointer(ulong address)
     {
-        if (!TryReadPointer(address, out TargetPointer pointer))
+        if (!TryReadPointer(address, _config, _reader, out TargetPointer pointer))
             throw new InvalidOperationException($"Failed to read pointer at 0x{address:x8}.");
 
         return pointer;
     }
-
-    public bool TryReadPointer(ulong address, out TargetPointer pointer)
-        => TryReadPointer(address, _config, _reader, out pointer);
 
     private static bool TryReadPointer(ulong address, Configuration config, Reader reader, out TargetPointer pointer)
     {
@@ -281,6 +333,58 @@ public sealed unsafe class Target
 
         pointer = new TargetPointer(global.Value);
         return true;
+    }
+
+    public TypeInfo GetTypeInfo(DataType type)
+    {
+        if (!_knownTypes.TryGetValue(type, out TypeInfo typeInfo))
+            throw new InvalidOperationException($"Failed to get type info for '{type}'");
+
+        return typeInfo;
+    }
+
+    public TypeInfo GetTypeInfo(string type)
+    {
+        if (_types.TryGetValue(type, out TypeInfo typeInfo))
+        return typeInfo;
+
+        DataType dataType = GetDataType(type);
+        if (dataType is not DataType.Unknown)
+            return GetTypeInfo(dataType);
+
+        throw new InvalidOperationException($"Failed to get type info for '{type}'");
+    }
+
+    internal bool TryGetContractVersion(string contractName, out int version)
+        => _contracts.TryGetValue(contractName, out version);
+
+    /// <summary>
+    /// Store of addresses that have already been read into corresponding data models.
+    /// This is simply used to avoid re-processing data on every request.
+    /// </summary>
+    internal sealed class DataCache
+    {
+        private readonly Dictionary<(ulong, Type), object?> _readDataByAddress = [];
+
+        public bool TryRegister<T>(ulong address, T data)
+        {
+            return _readDataByAddress.TryAdd((address, typeof(T)), data);
+        }
+
+        public bool TryGet<T>(ulong address, [NotNullWhen(true)] out T? data)
+        {
+            data = default;
+            if (!_readDataByAddress.TryGetValue((address, typeof(T)), out object? dataObj))
+                return false;
+
+            if (dataObj is T dataMaybe)
+            {
+                data = dataMaybe;
+                return true;
+            }
+
+            return false;
+        }
     }
 
     private sealed class Reader
