@@ -4177,6 +4177,18 @@ namespace System.Runtime.Intrinsics.Arm
         public static System.Numerics.Vector<long> Abs(System.Numerics.Vector<long> value) { throw null; }
         public static System.Numerics.Vector<float> Abs(System.Numerics.Vector<float> value) { throw null; }
         public static System.Numerics.Vector<double> Abs(System.Numerics.Vector<double> value) { throw null; }
+
+        public static System.Numerics.Vector<byte> AbsoluteDifference(System.Numerics.Vector<byte> left, System.Numerics.Vector<byte> right) { throw null; }
+        public static System.Numerics.Vector<double> AbsoluteDifference(System.Numerics.Vector<double> left, System.Numerics.Vector<double> right) { throw null; }
+        public static System.Numerics.Vector<short> AbsoluteDifference(System.Numerics.Vector<short> left, System.Numerics.Vector<short> right) { throw null; }
+        public static System.Numerics.Vector<int> AbsoluteDifference(System.Numerics.Vector<int> left, System.Numerics.Vector<int> right) { throw null; }
+        public static System.Numerics.Vector<long> AbsoluteDifference(System.Numerics.Vector<long> left, System.Numerics.Vector<long> right) { throw null; }
+        public static System.Numerics.Vector<sbyte> AbsoluteDifference(System.Numerics.Vector<sbyte> left, System.Numerics.Vector<sbyte> right) { throw null; }
+        public static System.Numerics.Vector<float> AbsoluteDifference(System.Numerics.Vector<float> left, System.Numerics.Vector<float> right) { throw null; }
+        public static System.Numerics.Vector<ushort> AbsoluteDifference(System.Numerics.Vector<ushort> left, System.Numerics.Vector<ushort> right) { throw null; }
+        public static System.Numerics.Vector<uint> AbsoluteDifference(System.Numerics.Vector<uint> left, System.Numerics.Vector<uint> right) { throw null; }
+        public static System.Numerics.Vector<ulong> AbsoluteDifference(System.Numerics.Vector<ulong> left, System.Numerics.Vector<ulong> right) { throw null; }        
+
         public static System.Numerics.Vector<sbyte> Add(System.Numerics.Vector<sbyte> left, System.Numerics.Vector<sbyte> right) { throw null; }
         public static System.Numerics.Vector<short> Add(System.Numerics.Vector<short> left, System.Numerics.Vector<short> right) { throw null; }
         public static System.Numerics.Vector<int> Add(System.Numerics.Vector<int> left, System.Numerics.Vector<int> right) { throw null; }
@@ -4187,6 +4199,7 @@ namespace System.Runtime.Intrinsics.Arm
         public static System.Numerics.Vector<ulong> Add(System.Numerics.Vector<ulong> left, System.Numerics.Vector<ulong> right) { throw null; }
         public static System.Numerics.Vector<float> Add(System.Numerics.Vector<float> left, System.Numerics.Vector<float> right) { throw null; }
         public static System.Numerics.Vector<double> Add(System.Numerics.Vector<double> left, System.Numerics.Vector<double> right) { throw null; }
+
         public static System.Numerics.Vector<double> AddAcross(System.Numerics.Vector<double> value) { throw null; }
         public static System.Numerics.Vector<long> AddAcross(System.Numerics.Vector<short> value) { throw null; }
         public static System.Numerics.Vector<long> AddAcross(System.Numerics.Vector<int> value) { throw null; }
@@ -4198,6 +4211,15 @@ namespace System.Runtime.Intrinsics.Arm
         public static System.Numerics.Vector<ulong> AddAcross(System.Numerics.Vector<uint> value) { throw null; }
         public static System.Numerics.Vector<ulong> AddAcross(System.Numerics.Vector<ulong> value) { throw null; }
 
+        public static System.Numerics.Vector<byte> AddSaturate(System.Numerics.Vector<byte> left, System.Numerics.Vector<byte> right) { throw null; }
+        public static System.Numerics.Vector<short> AddSaturate(System.Numerics.Vector<short> left, System.Numerics.Vector<short> right) { throw null; }
+        public static System.Numerics.Vector<int> AddSaturate(System.Numerics.Vector<int> left, System.Numerics.Vector<int> right) { throw null; }
+        public static System.Numerics.Vector<long> AddSaturate(System.Numerics.Vector<long> left, System.Numerics.Vector<long> right) { throw null; }
+        public static System.Numerics.Vector<sbyte> AddSaturate(System.Numerics.Vector<sbyte> left, System.Numerics.Vector<sbyte> right) { throw null; }
+        public static System.Numerics.Vector<ushort> AddSaturate(System.Numerics.Vector<ushort> left, System.Numerics.Vector<ushort> right) { throw null; }
+        public static System.Numerics.Vector<uint> AddSaturate(System.Numerics.Vector<uint> left, System.Numerics.Vector<uint> right) { throw null; }
+        public static System.Numerics.Vector<ulong> AddSaturate(System.Numerics.Vector<ulong> left, System.Numerics.Vector<ulong> right) { throw null; }
+
         public static System.Numerics.Vector<byte> And(System.Numerics.Vector<byte> left, System.Numerics.Vector<byte> right) { throw null; }
         public static System.Numerics.Vector<short> And(System.Numerics.Vector<short> left, System.Numerics.Vector<short> right) { throw null; }
         public static System.Numerics.Vector<int> And(System.Numerics.Vector<int> left, System.Numerics.Vector<int> right) { throw null; }
@@ -4206,6 +4228,7 @@ namespace System.Runtime.Intrinsics.Arm
         public static System.Numerics.Vector<ushort> And(System.Numerics.Vector<ushort> left, System.Numerics.Vector<ushort> right) { throw null; }
         public static System.Numerics.Vector<uint> And(System.Numerics.Vector<uint> left, System.Numerics.Vector<uint> right) { throw null; }
         public static System.Numerics.Vector<ulong> And(System.Numerics.Vector<ulong> left, System.Numerics.Vector<ulong> right) { throw null; }
+
         public static System.Numerics.Vector<byte> AndAcross(System.Numerics.Vector<byte> value) { throw null; }
         public static System.Numerics.Vector<short> AndAcross(System.Numerics.Vector<short> value) { throw null; }
         public static System.Numerics.Vector<int> AndAcross(System.Numerics.Vector<int> value) { throw null; }
@@ -4247,6 +4270,16 @@ namespace System.Runtime.Intrinsics.Arm
         public static System.Numerics.Vector<ulong> ConditionalSelect(System.Numerics.Vector<ulong> mask, System.Numerics.Vector<ulong> left, System.Numerics.Vector<ulong> right) { throw null; }
         public static System.Numerics.Vector<float> ConditionalSelect(System.Numerics.Vector<float> mask, System.Numerics.Vector<float> left, System.Numerics.Vector<float> right) { throw null; }
         public static System.Numerics.Vector<double> ConditionalSelect(System.Numerics.Vector<double> mask, System.Numerics.Vector<double> left, System.Numerics.Vector<double> right) { throw null; }
+        public static System.Numerics.Vector<byte> CreateFalseMaskByte() { throw null; }
+        public static System.Numerics.Vector<double> CreateFalseMaskDouble() { throw null; }
+        public static System.Numerics.Vector<short> CreateFalseMaskInt16() { throw null; }
+        public static System.Numerics.Vector<int> CreateFalseMaskInt32() { throw null; }
+        public static System.Numerics.Vector<long> CreateFalseMaskInt64() { throw null; }
+        public static System.Numerics.Vector<sbyte> CreateFalseMaskSByte() { throw null; }
+        public static System.Numerics.Vector<float> CreateFalseMaskSingle() { throw null; }
+        public static System.Numerics.Vector<ushort> CreateFalseMaskUInt16() { throw null; }
+        public static System.Numerics.Vector<uint> CreateFalseMaskUInt32() { throw null; }
+        public static System.Numerics.Vector<ulong> CreateFalseMaskUInt64() { throw null; }
         public static System.Numerics.Vector<byte> CreateTrueMaskByte([ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw null; }
         public static System.Numerics.Vector<double> CreateTrueMaskDouble([ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw null; }
         public static System.Numerics.Vector<short> CreateTrueMaskInt16([ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw null; }
@@ -4412,6 +4445,9 @@ namespace System.Runtime.Intrinsics.Arm
         public static System.Numerics.Vector<double> MultiplyBySelectedScalar(System.Numerics.Vector<double> left, System.Numerics.Vector<double> right, [ConstantExpected] byte rightIndex) { throw null; }
         public static System.Numerics.Vector<float> MultiplyBySelectedScalar(System.Numerics.Vector<float> left, System.Numerics.Vector<float> right, [ConstantExpected] byte rightIndex) { throw null; }
         
+        public static System.Numerics.Vector<double> MultiplyExtended(System.Numerics.Vector<double> left, System.Numerics.Vector<double> right) { throw null; }
+        public static System.Numerics.Vector<float> MultiplyExtended(System.Numerics.Vector<float> left, System.Numerics.Vector<float> right) { throw null; }
+        
         public static System.Numerics.Vector<byte> MultiplySubtract(System.Numerics.Vector<byte> minuend, System.Numerics.Vector<byte> left, System.Numerics.Vector<byte> right) { throw null; }
         public static System.Numerics.Vector<short> MultiplySubtract(System.Numerics.Vector<short> minuend, System.Numerics.Vector<short> left, System.Numerics.Vector<short> right) { throw null; }
         public static System.Numerics.Vector<int> MultiplySubtract(System.Numerics.Vector<int> minuend, System.Numerics.Vector<int> left, System.Numerics.Vector<int> right) { throw null; }
@@ -4420,6 +4456,13 @@ namespace System.Runtime.Intrinsics.Arm
         public static System.Numerics.Vector<ushort> MultiplySubtract(System.Numerics.Vector<ushort> minuend, System.Numerics.Vector<ushort> left, System.Numerics.Vector<ushort> right) { throw null; }
         public static System.Numerics.Vector<uint> MultiplySubtract(System.Numerics.Vector<uint> minuend, System.Numerics.Vector<uint> left, System.Numerics.Vector<uint> right) { throw null; }
         public static System.Numerics.Vector<ulong> MultiplySubtract(System.Numerics.Vector<ulong> minuend, System.Numerics.Vector<ulong> left, System.Numerics.Vector<ulong> right) { throw null; }        
+
+        public static System.Numerics.Vector<double> Negate(System.Numerics.Vector<double> value) { throw null; }
+        public static System.Numerics.Vector<short> Negate(System.Numerics.Vector<short> value) { throw null; }
+        public static System.Numerics.Vector<int> Negate(System.Numerics.Vector<int> value) { throw null; }
+        public static System.Numerics.Vector<long> Negate(System.Numerics.Vector<long> value) { throw null; }
+        public static System.Numerics.Vector<sbyte> Negate(System.Numerics.Vector<sbyte> value) { throw null; }
+        public static System.Numerics.Vector<float> Negate(System.Numerics.Vector<float> value) { throw null; }
 
         public static System.Numerics.Vector<byte> Or(System.Numerics.Vector<byte> left, System.Numerics.Vector<byte> right) { throw null; }
         public static System.Numerics.Vector<short> Or(System.Numerics.Vector<short> left, System.Numerics.Vector<short> right) { throw null; }
@@ -4463,6 +4506,15 @@ namespace System.Runtime.Intrinsics.Arm
         public static System.Numerics.Vector<ulong> Subtract(System.Numerics.Vector<ulong> left, System.Numerics.Vector<ulong> right) { throw null; }
         public static System.Numerics.Vector<float> Subtract(System.Numerics.Vector<float> left, System.Numerics.Vector<float> right) { throw null; }
         public static System.Numerics.Vector<double> Subtract(System.Numerics.Vector<double> left, System.Numerics.Vector<double> right) { throw null; }
+
+        public static System.Numerics.Vector<byte> SubtractSaturate(System.Numerics.Vector<byte> left, System.Numerics.Vector<byte> right) { throw null; }
+        public static System.Numerics.Vector<short> SubtractSaturate(System.Numerics.Vector<short> left, System.Numerics.Vector<short> right) { throw null; }
+        public static System.Numerics.Vector<int> SubtractSaturate(System.Numerics.Vector<int> left, System.Numerics.Vector<int> right) { throw null; }
+        public static System.Numerics.Vector<long> SubtractSaturate(System.Numerics.Vector<long> left, System.Numerics.Vector<long> right) { throw null; }
+        public static System.Numerics.Vector<sbyte> SubtractSaturate(System.Numerics.Vector<sbyte> left, System.Numerics.Vector<sbyte> right) { throw null; }
+        public static System.Numerics.Vector<ushort> SubtractSaturate(System.Numerics.Vector<ushort> left, System.Numerics.Vector<ushort> right) { throw null; }
+        public static System.Numerics.Vector<uint> SubtractSaturate(System.Numerics.Vector<uint> left, System.Numerics.Vector<uint> right) { throw null; }
+        public static System.Numerics.Vector<ulong> SubtractSaturate(System.Numerics.Vector<ulong> left, System.Numerics.Vector<ulong> right) { throw null; }
 
         public static System.Numerics.Vector<sbyte> UnzipEven(System.Numerics.Vector<sbyte> left, System.Numerics.Vector<sbyte> right) { throw null; }
         public static System.Numerics.Vector<short> UnzipEven(System.Numerics.Vector<short> left, System.Numerics.Vector<short> right) { throw null; }

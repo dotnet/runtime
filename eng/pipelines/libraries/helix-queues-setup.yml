@@ -26,7 +26,7 @@ jobs:
     # Linux arm
     - ${{ if eq(parameters.platform, 'linux_arm') }}:
       - ${{ if or(eq(parameters.jobParameters.isExtraPlatformsBuild, true), eq(parameters.jobParameters.includeAllPlatforms, true)) }}:
-        - (Debian.11.Arm32.Open)Ubuntu.2004.ArmArch.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-11-helix-arm32v7
+        - (Debian.12.Arm32.Open)Ubuntu.2004.ArmArch.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-12-helix-arm32v7
 
     # Linux armv6
     - ${{ if eq(parameters.platform, 'linux_armv6') }}:
