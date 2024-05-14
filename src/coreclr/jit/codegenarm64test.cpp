@@ -4998,7 +4998,7 @@ void CodeGen::genArm64EmitterUnitTestsSve()
                               INS_SCALABLE_OPTS_PREDICATE_MERGE); /* MOV     <Pd>.B, <Pg>/M, <Pn>.B */
 
     // IF_SVE_CZ_4A_L
-    theEmitter->emitIns_R_R(INS_sve_mov, EA_SCALABLE, REG_P0, REG_P15, INS_OPTS_SCALABLE_B); /* MOV     <Pd>.B, <Pn>.B
+    theEmitter->emitIns_Mov(INS_sve_mov, EA_SCALABLE, REG_P0, REG_P15, /* canSkip */ false, INS_OPTS_SCALABLE_B); /* MOV     <Pd>.B, <Pn>.B
                                                                                               */
 
     // IF_SVE_DA_4A
@@ -8892,15 +8892,15 @@ void CodeGen::genArm64EmitterUnitTestsSve()
     // DUP     <Zd>.<T>, <R><n|SP>
     theEmitter->emitIns_R_R(INS_sve_dup, EA_8BYTE, REG_V4, REG_SP, INS_OPTS_SCALABLE_D);
     // MOV     <Zd>.<T>, <R><n|SP>
-    theEmitter->emitIns_R_R(INS_sve_mov, EA_4BYTE, REG_V4, REG_R2, INS_OPTS_SCALABLE_B);
+    theEmitter->emitIns_Mov(INS_sve_mov, EA_4BYTE, REG_V4, REG_R2, /* canSkip */ false, INS_OPTS_SCALABLE_B);
     // MOV     <Zd>.<T>, <R><n|SP>
-    theEmitter->emitIns_R_R(INS_sve_mov, EA_4BYTE, REG_V4, REG_R2, INS_OPTS_SCALABLE_H);
+    theEmitter->emitIns_Mov(INS_sve_mov, EA_4BYTE, REG_V4, REG_R2, /* canSkip */ false, INS_OPTS_SCALABLE_H);
     // MOV     <Zd>.<T>, <R><n|SP>
-    theEmitter->emitIns_R_R(INS_sve_mov, EA_4BYTE, REG_V1, REG_R3, INS_OPTS_SCALABLE_S);
+    theEmitter->emitIns_Mov(INS_sve_mov, EA_4BYTE, REG_V1, REG_R3, /* canSkip */ false, INS_OPTS_SCALABLE_S);
     // MOV     <Zd>.<T>, <R><n|SP>
-    theEmitter->emitIns_R_R(INS_sve_mov, EA_8BYTE, REG_V5, REG_SP, INS_OPTS_SCALABLE_D);
+    theEmitter->emitIns_Mov(INS_sve_mov, EA_8BYTE, REG_V5, REG_SP, /* canSkip */ false, INS_OPTS_SCALABLE_D);
     // MOV     <Zd>.<T>, <R><n|SP>
-    theEmitter->emitIns_R_R(INS_sve_mov, EA_8BYTE, REG_V2, REG_R9, INS_OPTS_SCALABLE_D);
+    theEmitter->emitIns_Mov(INS_sve_mov, EA_8BYTE, REG_V2, REG_R9, /* canSkip */ false, INS_OPTS_SCALABLE_D);
 
     // IF_SVE_BJ_2A
     // FEXPA   <Zd>.<T>, <Zn>.<T>
