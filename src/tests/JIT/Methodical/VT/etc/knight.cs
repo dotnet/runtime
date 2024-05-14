@@ -16,6 +16,7 @@ namespace KnightMove_knight_cs
         public int visited;
 
         [Fact]
+        [OuterLoop]
         public static int TestEntryPoint()
         {
             const int SIZE = 5;

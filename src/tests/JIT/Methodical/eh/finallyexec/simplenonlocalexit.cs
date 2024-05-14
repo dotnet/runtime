@@ -25,6 +25,7 @@ namespace hello_simplenonlocalexit_finallyexec_cs
         }
 
         [Fact]
+        [OuterLoop]
         static public int TestEntryPoint()
         {
             //Start recording

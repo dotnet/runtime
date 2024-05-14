@@ -59,7 +59,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             if (configuration["Prop0"] is string value0)
             {
-                instance.Prop0 = ParseBool(value0, () => configuration.GetSection("Prop0").Path);
+                instance.Prop0 = ParseBool(value0, configuration.GetSection("Prop0").Path);
             }
             else if (defaultValueIfNotFound)
             {
@@ -68,7 +68,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             if (configuration["Prop1"] is string value1)
             {
-                instance.Prop1 = ParseByte(value1, () => configuration.GetSection("Prop1").Path);
+                instance.Prop1 = ParseByte(value1, configuration.GetSection("Prop1").Path);
             }
             else if (defaultValueIfNotFound)
             {
@@ -77,7 +77,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             if (configuration["Prop2"] is string value2)
             {
-                instance.Prop2 = ParseSbyte(value2, () => configuration.GetSection("Prop2").Path);
+                instance.Prop2 = ParseSbyte(value2, configuration.GetSection("Prop2").Path);
             }
             else if (defaultValueIfNotFound)
             {
@@ -86,7 +86,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             if (configuration["Prop3"] is string value3)
             {
-                instance.Prop3 = ParseChar(value3, () => configuration.GetSection("Prop3").Path);
+                instance.Prop3 = ParseChar(value3, configuration.GetSection("Prop3").Path);
             }
             else if (defaultValueIfNotFound)
             {
@@ -95,7 +95,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             if (configuration["Prop4"] is string value4)
             {
-                instance.Prop4 = ParseDouble(value4, () => configuration.GetSection("Prop4").Path);
+                instance.Prop4 = ParseDouble(value4, configuration.GetSection("Prop4").Path);
             }
             else if (defaultValueIfNotFound)
             {
@@ -109,7 +109,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             if (configuration["Prop6"] is string value6)
             {
-                instance.Prop6 = ParseInt(value6, () => configuration.GetSection("Prop6").Path);
+                instance.Prop6 = ParseInt(value6, configuration.GetSection("Prop6").Path);
             }
             else if (defaultValueIfNotFound)
             {
@@ -118,7 +118,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             if (configuration["Prop8"] is string value7)
             {
-                instance.Prop8 = ParseShort(value7, () => configuration.GetSection("Prop8").Path);
+                instance.Prop8 = ParseShort(value7, configuration.GetSection("Prop8").Path);
             }
             else if (defaultValueIfNotFound)
             {
@@ -127,7 +127,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             if (configuration["Prop9"] is string value8)
             {
-                instance.Prop9 = ParseLong(value8, () => configuration.GetSection("Prop9").Path);
+                instance.Prop9 = ParseLong(value8, configuration.GetSection("Prop9").Path);
             }
             else if (defaultValueIfNotFound)
             {
@@ -136,7 +136,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             if (configuration["Prop10"] is string value9)
             {
-                instance.Prop10 = ParseFloat(value9, () => configuration.GetSection("Prop10").Path);
+                instance.Prop10 = ParseFloat(value9, configuration.GetSection("Prop10").Path);
             }
             else if (defaultValueIfNotFound)
             {
@@ -145,7 +145,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             if (configuration["Prop13"] is string value10)
             {
-                instance.Prop13 = ParseUshort(value10, () => configuration.GetSection("Prop13").Path);
+                instance.Prop13 = ParseUshort(value10, configuration.GetSection("Prop13").Path);
             }
             else if (defaultValueIfNotFound)
             {
@@ -154,7 +154,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             if (configuration["Prop14"] is string value11)
             {
-                instance.Prop14 = ParseUint(value11, () => configuration.GetSection("Prop14").Path);
+                instance.Prop14 = ParseUint(value11, configuration.GetSection("Prop14").Path);
             }
             else if (defaultValueIfNotFound)
             {
@@ -163,7 +163,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             if (configuration["Prop15"] is string value12)
             {
-                instance.Prop15 = ParseUlong(value12, () => configuration.GetSection("Prop15").Path);
+                instance.Prop15 = ParseUlong(value12, configuration.GetSection("Prop15").Path);
             }
             else if (defaultValueIfNotFound)
             {
@@ -177,12 +177,12 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             if (configuration["Prop17"] is string value14)
             {
-                instance.Prop17 = ParseSystemGlobalizationCultureInfo(value14, () => configuration.GetSection("Prop17").Path);
+                instance.Prop17 = ParseSystemGlobalizationCultureInfo(value14, configuration.GetSection("Prop17").Path);
             }
 
             if (configuration["Prop19"] is string value15)
             {
-                instance.Prop19 = ParseSystemDateTime(value15, () => configuration.GetSection("Prop19").Path);
+                instance.Prop19 = ParseSystemDateTime(value15, configuration.GetSection("Prop19").Path);
             }
             else if (defaultValueIfNotFound)
             {
@@ -191,7 +191,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             if (configuration["Prop20"] is string value16)
             {
-                instance.Prop20 = ParseSystemDateTimeOffset(value16, () => configuration.GetSection("Prop20").Path);
+                instance.Prop20 = ParseSystemDateTimeOffset(value16, configuration.GetSection("Prop20").Path);
             }
             else if (defaultValueIfNotFound)
             {
@@ -200,7 +200,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             if (configuration["Prop21"] is string value17)
             {
-                instance.Prop21 = ParseDecimal(value17, () => configuration.GetSection("Prop21").Path);
+                instance.Prop21 = ParseDecimal(value17, configuration.GetSection("Prop21").Path);
             }
             else if (defaultValueIfNotFound)
             {
@@ -209,7 +209,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             if (configuration["Prop23"] is string value18)
             {
-                instance.Prop23 = ParseSystemTimeSpan(value18, () => configuration.GetSection("Prop23").Path);
+                instance.Prop23 = ParseSystemTimeSpan(value18, configuration.GetSection("Prop23").Path);
             }
             else if (defaultValueIfNotFound)
             {
@@ -218,7 +218,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             if (configuration["Prop24"] is string value19)
             {
-                instance.Prop24 = ParseSystemGuid(value19, () => configuration.GetSection("Prop24").Path);
+                instance.Prop24 = ParseSystemGuid(value19, configuration.GetSection("Prop24").Path);
             }
             else if (defaultValueIfNotFound)
             {
@@ -227,17 +227,17 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             if (configuration["Prop25"] is string value20)
             {
-                instance.Prop25 = ParseSystemUri(value20, () => configuration.GetSection("Prop25").Path);
+                instance.Prop25 = ParseSystemUri(value20, configuration.GetSection("Prop25").Path);
             }
 
             if (configuration["Prop26"] is string value21)
             {
-                instance.Prop26 = ParseSystemVersion(value21, () => configuration.GetSection("Prop26").Path);
+                instance.Prop26 = ParseSystemVersion(value21, configuration.GetSection("Prop26").Path);
             }
 
             if (configuration["Prop27"] is string value22)
             {
-                instance.Prop27 = ParseEnum<global::System.DayOfWeek>(value22, () => configuration.GetSection("Prop27").Path);
+                instance.Prop27 = ParseEnum<global::System.DayOfWeek>(value22, configuration.GetSection("Prop27").Path);
             }
             else if (defaultValueIfNotFound)
             {
@@ -246,7 +246,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             if (configuration["Prop7"] is string value23)
             {
-                instance.Prop7 = ParseSystemInt128(value23, () => configuration.GetSection("Prop7").Path);
+                instance.Prop7 = ParseSystemInt128(value23, configuration.GetSection("Prop7").Path);
             }
             else if (defaultValueIfNotFound)
             {
@@ -255,7 +255,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             if (configuration["Prop11"] is string value24)
             {
-                instance.Prop11 = ParseSystemHalf(value24, () => configuration.GetSection("Prop11").Path);
+                instance.Prop11 = ParseSystemHalf(value24, configuration.GetSection("Prop11").Path);
             }
             else if (defaultValueIfNotFound)
             {
@@ -264,7 +264,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             if (configuration["Prop12"] is string value25)
             {
-                instance.Prop12 = ParseSystemUInt128(value25, () => configuration.GetSection("Prop12").Path);
+                instance.Prop12 = ParseSystemUInt128(value25, configuration.GetSection("Prop12").Path);
             }
             else if (defaultValueIfNotFound)
             {
@@ -273,7 +273,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             if (configuration["Prop18"] is string value26)
             {
-                instance.Prop18 = ParseSystemDateOnly(value26, () => configuration.GetSection("Prop18").Path);
+                instance.Prop18 = ParseSystemDateOnly(value26, configuration.GetSection("Prop18").Path);
             }
             else if (defaultValueIfNotFound)
             {
@@ -282,7 +282,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             if (configuration["Prop22"] is string value27)
             {
-                instance.Prop22 = ParseSystemTimeOnly(value27, () => configuration.GetSection("Prop22").Path);
+                instance.Prop22 = ParseSystemTimeOnly(value27, configuration.GetSection("Prop22").Path);
             }
             else if (defaultValueIfNotFound)
             {
@@ -291,12 +291,12 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             if (configuration["Prop28"] is string value28)
             {
-                instance.Prop28 = ParseByteArray(value28, () => configuration.GetSection("Prop28").Path);
+                instance.Prop28 = ParseByteArray(value28, configuration.GetSection("Prop28").Path);
             }
 
             if (configuration["Prop29"] is string value29)
             {
-                instance.Prop29 = ParseInt(value29, () => configuration.GetSection("Prop29").Path);
+                instance.Prop29 = ParseInt(value29, configuration.GetSection("Prop29").Path);
             }
             else if (defaultValueIfNotFound)
             {
@@ -305,7 +305,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             if (configuration["Prop30"] is string value30)
             {
-                instance.Prop30 = ParseSystemDateTime(value30, () => configuration.GetSection("Prop30").Path);
+                instance.Prop30 = ParseSystemDateTime(value30, configuration.GetSection("Prop30").Path);
             }
             else if (defaultValueIfNotFound)
             {
@@ -336,7 +336,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
         }
 
-        public static T ParseEnum<T>(string value, Func<string?> getPath) where T : struct
+        public static T ParseEnum<T>(string value, string? path) where T : struct
         {
             try
             {
@@ -344,11 +344,11 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
             catch (Exception exception)
             {
-                throw new InvalidOperationException($"Failed to convert configuration value at '{getPath()}' to type '{typeof(T)}'.", exception);
+                throw new InvalidOperationException($"Failed to convert configuration value at '{path}' to type '{typeof(T)}'.", exception);
             }
         }
 
-        public static bool ParseBool(string value, Func<string?> getPath)
+        public static bool ParseBool(string value, string? path)
         {
             try
             {
@@ -356,11 +356,11 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
             catch (Exception exception)
             {
-                throw new InvalidOperationException($"Failed to convert configuration value at '{getPath()}' to type '{typeof(bool)}'.", exception);
+                throw new InvalidOperationException($"Failed to convert configuration value at '{path}' to type '{typeof(bool)}'.", exception);
             }
         }
 
-        public static byte ParseByte(string value, Func<string?> getPath)
+        public static byte ParseByte(string value, string? path)
         {
             try
             {
@@ -368,11 +368,11 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
             catch (Exception exception)
             {
-                throw new InvalidOperationException($"Failed to convert configuration value at '{getPath()}' to type '{typeof(byte)}'.", exception);
+                throw new InvalidOperationException($"Failed to convert configuration value at '{path}' to type '{typeof(byte)}'.", exception);
             }
         }
 
-        public static sbyte ParseSbyte(string value, Func<string?> getPath)
+        public static sbyte ParseSbyte(string value, string? path)
         {
             try
             {
@@ -380,11 +380,11 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
             catch (Exception exception)
             {
-                throw new InvalidOperationException($"Failed to convert configuration value at '{getPath()}' to type '{typeof(sbyte)}'.", exception);
+                throw new InvalidOperationException($"Failed to convert configuration value at '{path}' to type '{typeof(sbyte)}'.", exception);
             }
         }
 
-        public static char ParseChar(string value, Func<string?> getPath)
+        public static char ParseChar(string value, string? path)
         {
             try
             {
@@ -392,11 +392,11 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
             catch (Exception exception)
             {
-                throw new InvalidOperationException($"Failed to convert configuration value at '{getPath()}' to type '{typeof(char)}'.", exception);
+                throw new InvalidOperationException($"Failed to convert configuration value at '{path}' to type '{typeof(char)}'.", exception);
             }
         }
 
-        public static double ParseDouble(string value, Func<string?> getPath)
+        public static double ParseDouble(string value, string? path)
         {
             try
             {
@@ -404,11 +404,11 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
             catch (Exception exception)
             {
-                throw new InvalidOperationException($"Failed to convert configuration value at '{getPath()}' to type '{typeof(double)}'.", exception);
+                throw new InvalidOperationException($"Failed to convert configuration value at '{path}' to type '{typeof(double)}'.", exception);
             }
         }
 
-        public static int ParseInt(string value, Func<string?> getPath)
+        public static int ParseInt(string value, string? path)
         {
             try
             {
@@ -416,11 +416,11 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
             catch (Exception exception)
             {
-                throw new InvalidOperationException($"Failed to convert configuration value at '{getPath()}' to type '{typeof(int)}'.", exception);
+                throw new InvalidOperationException($"Failed to convert configuration value at '{path}' to type '{typeof(int)}'.", exception);
             }
         }
 
-        public static short ParseShort(string value, Func<string?> getPath)
+        public static short ParseShort(string value, string? path)
         {
             try
             {
@@ -428,11 +428,11 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
             catch (Exception exception)
             {
-                throw new InvalidOperationException($"Failed to convert configuration value at '{getPath()}' to type '{typeof(short)}'.", exception);
+                throw new InvalidOperationException($"Failed to convert configuration value at '{path}' to type '{typeof(short)}'.", exception);
             }
         }
 
-        public static long ParseLong(string value, Func<string?> getPath)
+        public static long ParseLong(string value, string? path)
         {
             try
             {
@@ -440,11 +440,11 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
             catch (Exception exception)
             {
-                throw new InvalidOperationException($"Failed to convert configuration value at '{getPath()}' to type '{typeof(long)}'.", exception);
+                throw new InvalidOperationException($"Failed to convert configuration value at '{path}' to type '{typeof(long)}'.", exception);
             }
         }
 
-        public static float ParseFloat(string value, Func<string?> getPath)
+        public static float ParseFloat(string value, string? path)
         {
             try
             {
@@ -452,11 +452,11 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
             catch (Exception exception)
             {
-                throw new InvalidOperationException($"Failed to convert configuration value at '{getPath()}' to type '{typeof(float)}'.", exception);
+                throw new InvalidOperationException($"Failed to convert configuration value at '{path}' to type '{typeof(float)}'.", exception);
             }
         }
 
-        public static ushort ParseUshort(string value, Func<string?> getPath)
+        public static ushort ParseUshort(string value, string? path)
         {
             try
             {
@@ -464,11 +464,11 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
             catch (Exception exception)
             {
-                throw new InvalidOperationException($"Failed to convert configuration value at '{getPath()}' to type '{typeof(ushort)}'.", exception);
+                throw new InvalidOperationException($"Failed to convert configuration value at '{path}' to type '{typeof(ushort)}'.", exception);
             }
         }
 
-        public static uint ParseUint(string value, Func<string?> getPath)
+        public static uint ParseUint(string value, string? path)
         {
             try
             {
@@ -476,11 +476,11 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
             catch (Exception exception)
             {
-                throw new InvalidOperationException($"Failed to convert configuration value at '{getPath()}' to type '{typeof(uint)}'.", exception);
+                throw new InvalidOperationException($"Failed to convert configuration value at '{path}' to type '{typeof(uint)}'.", exception);
             }
         }
 
-        public static ulong ParseUlong(string value, Func<string?> getPath)
+        public static ulong ParseUlong(string value, string? path)
         {
             try
             {
@@ -488,11 +488,11 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
             catch (Exception exception)
             {
-                throw new InvalidOperationException($"Failed to convert configuration value at '{getPath()}' to type '{typeof(ulong)}'.", exception);
+                throw new InvalidOperationException($"Failed to convert configuration value at '{path}' to type '{typeof(ulong)}'.", exception);
             }
         }
 
-        public static global::System.Globalization.CultureInfo ParseSystemGlobalizationCultureInfo(string value, Func<string?> getPath)
+        public static global::System.Globalization.CultureInfo ParseSystemGlobalizationCultureInfo(string value, string? path)
         {
             try
             {
@@ -500,11 +500,11 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
             catch (Exception exception)
             {
-                throw new InvalidOperationException($"Failed to convert configuration value at '{getPath()}' to type '{typeof(global::System.Globalization.CultureInfo)}'.", exception);
+                throw new InvalidOperationException($"Failed to convert configuration value at '{path}' to type '{typeof(global::System.Globalization.CultureInfo)}'.", exception);
             }
         }
 
-        public static global::System.DateTime ParseSystemDateTime(string value, Func<string?> getPath)
+        public static global::System.DateTime ParseSystemDateTime(string value, string? path)
         {
             try
             {
@@ -512,11 +512,11 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
             catch (Exception exception)
             {
-                throw new InvalidOperationException($"Failed to convert configuration value at '{getPath()}' to type '{typeof(global::System.DateTime)}'.", exception);
+                throw new InvalidOperationException($"Failed to convert configuration value at '{path}' to type '{typeof(global::System.DateTime)}'.", exception);
             }
         }
 
-        public static global::System.DateTimeOffset ParseSystemDateTimeOffset(string value, Func<string?> getPath)
+        public static global::System.DateTimeOffset ParseSystemDateTimeOffset(string value, string? path)
         {
             try
             {
@@ -524,11 +524,11 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
             catch (Exception exception)
             {
-                throw new InvalidOperationException($"Failed to convert configuration value at '{getPath()}' to type '{typeof(global::System.DateTimeOffset)}'.", exception);
+                throw new InvalidOperationException($"Failed to convert configuration value at '{path}' to type '{typeof(global::System.DateTimeOffset)}'.", exception);
             }
         }
 
-        public static decimal ParseDecimal(string value, Func<string?> getPath)
+        public static decimal ParseDecimal(string value, string? path)
         {
             try
             {
@@ -536,11 +536,11 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
             catch (Exception exception)
             {
-                throw new InvalidOperationException($"Failed to convert configuration value at '{getPath()}' to type '{typeof(decimal)}'.", exception);
+                throw new InvalidOperationException($"Failed to convert configuration value at '{path}' to type '{typeof(decimal)}'.", exception);
             }
         }
 
-        public static global::System.TimeSpan ParseSystemTimeSpan(string value, Func<string?> getPath)
+        public static global::System.TimeSpan ParseSystemTimeSpan(string value, string? path)
         {
             try
             {
@@ -548,11 +548,11 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
             catch (Exception exception)
             {
-                throw new InvalidOperationException($"Failed to convert configuration value at '{getPath()}' to type '{typeof(global::System.TimeSpan)}'.", exception);
+                throw new InvalidOperationException($"Failed to convert configuration value at '{path}' to type '{typeof(global::System.TimeSpan)}'.", exception);
             }
         }
 
-        public static global::System.Guid ParseSystemGuid(string value, Func<string?> getPath)
+        public static global::System.Guid ParseSystemGuid(string value, string? path)
         {
             try
             {
@@ -560,11 +560,11 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
             catch (Exception exception)
             {
-                throw new InvalidOperationException($"Failed to convert configuration value at '{getPath()}' to type '{typeof(global::System.Guid)}'.", exception);
+                throw new InvalidOperationException($"Failed to convert configuration value at '{path}' to type '{typeof(global::System.Guid)}'.", exception);
             }
         }
 
-        public static global::System.Uri ParseSystemUri(string value, Func<string?> getPath)
+        public static global::System.Uri ParseSystemUri(string value, string? path)
         {
             try
             {
@@ -572,11 +572,11 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
             catch (Exception exception)
             {
-                throw new InvalidOperationException($"Failed to convert configuration value at '{getPath()}' to type '{typeof(global::System.Uri)}'.", exception);
+                throw new InvalidOperationException($"Failed to convert configuration value at '{path}' to type '{typeof(global::System.Uri)}'.", exception);
             }
         }
 
-        public static global::System.Version ParseSystemVersion(string value, Func<string?> getPath)
+        public static global::System.Version ParseSystemVersion(string value, string? path)
         {
             try
             {
@@ -584,11 +584,11 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
             catch (Exception exception)
             {
-                throw new InvalidOperationException($"Failed to convert configuration value at '{getPath()}' to type '{typeof(global::System.Version)}'.", exception);
+                throw new InvalidOperationException($"Failed to convert configuration value at '{path}' to type '{typeof(global::System.Version)}'.", exception);
             }
         }
 
-        public static global::System.Int128 ParseSystemInt128(string value, Func<string?> getPath)
+        public static global::System.Int128 ParseSystemInt128(string value, string? path)
         {
             try
             {
@@ -596,11 +596,11 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
             catch (Exception exception)
             {
-                throw new InvalidOperationException($"Failed to convert configuration value at '{getPath()}' to type '{typeof(global::System.Int128)}'.", exception);
+                throw new InvalidOperationException($"Failed to convert configuration value at '{path}' to type '{typeof(global::System.Int128)}'.", exception);
             }
         }
 
-        public static global::System.Half ParseSystemHalf(string value, Func<string?> getPath)
+        public static global::System.Half ParseSystemHalf(string value, string? path)
         {
             try
             {
@@ -608,11 +608,11 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
             catch (Exception exception)
             {
-                throw new InvalidOperationException($"Failed to convert configuration value at '{getPath()}' to type '{typeof(global::System.Half)}'.", exception);
+                throw new InvalidOperationException($"Failed to convert configuration value at '{path}' to type '{typeof(global::System.Half)}'.", exception);
             }
         }
 
-        public static global::System.UInt128 ParseSystemUInt128(string value, Func<string?> getPath)
+        public static global::System.UInt128 ParseSystemUInt128(string value, string? path)
         {
             try
             {
@@ -620,11 +620,11 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
             catch (Exception exception)
             {
-                throw new InvalidOperationException($"Failed to convert configuration value at '{getPath()}' to type '{typeof(global::System.UInt128)}'.", exception);
+                throw new InvalidOperationException($"Failed to convert configuration value at '{path}' to type '{typeof(global::System.UInt128)}'.", exception);
             }
         }
 
-        public static global::System.DateOnly ParseSystemDateOnly(string value, Func<string?> getPath)
+        public static global::System.DateOnly ParseSystemDateOnly(string value, string? path)
         {
             try
             {
@@ -632,11 +632,11 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
             catch (Exception exception)
             {
-                throw new InvalidOperationException($"Failed to convert configuration value at '{getPath()}' to type '{typeof(global::System.DateOnly)}'.", exception);
+                throw new InvalidOperationException($"Failed to convert configuration value at '{path}' to type '{typeof(global::System.DateOnly)}'.", exception);
             }
         }
 
-        public static global::System.TimeOnly ParseSystemTimeOnly(string value, Func<string?> getPath)
+        public static global::System.TimeOnly ParseSystemTimeOnly(string value, string? path)
         {
             try
             {
@@ -644,11 +644,11 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
             catch (Exception exception)
             {
-                throw new InvalidOperationException($"Failed to convert configuration value at '{getPath()}' to type '{typeof(global::System.TimeOnly)}'.", exception);
+                throw new InvalidOperationException($"Failed to convert configuration value at '{path}' to type '{typeof(global::System.TimeOnly)}'.", exception);
             }
         }
 
-        public static byte[] ParseByteArray(string value, Func<string?> getPath)
+        public static byte[] ParseByteArray(string value, string? path)
         {
             try
             {
@@ -656,7 +656,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
             catch (Exception exception)
             {
-                throw new InvalidOperationException($"Failed to convert configuration value at '{getPath()}' to type '{typeof(byte[])}'.", exception);
+                throw new InvalidOperationException($"Failed to convert configuration value at '{path}' to type '{typeof(byte[])}'.", exception);
             }
         }
         #endregion Core binding extensions.

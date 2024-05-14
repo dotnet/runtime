@@ -186,7 +186,7 @@ public:
             // As of 4/11/2012 I could repro this by turning on the COMPLUS log and
             // the LOG() at line methodtablebuilder.cpp:7845
             // MethodTableBuilder::PlaceRegularStaticFields() calls GetOffset()
-            if((DWORD)(DWORD_PTR&)m_pMTOfEnclosingClass > 16)
+            if((DWORD)reinterpret_cast<DWORD_PTR&>(m_pMTOfEnclosingClass) > 16)
             {
                 _ASSERTE(!this->IsRVA() || (m_dwOffset == OutOfLine_BigRVAOffset()));
             }

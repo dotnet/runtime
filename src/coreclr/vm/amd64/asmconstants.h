@@ -119,10 +119,10 @@ ASMCONSTANTS_C_ASSERT(OFFSETOF__Thread__m_pFrame
 #define Thread_m_pFrame OFFSETOF__Thread__m_pFrame
 
 
-#define               OFFSET__Thread__m_alloc_context__alloc_ptr 0x50
+#define               OFFSET__Thread__m_alloc_context__alloc_ptr 0x48
 ASMCONSTANTS_C_ASSERT(OFFSET__Thread__m_alloc_context__alloc_ptr == offsetof(Thread, m_alloc_context) + offsetof(gc_alloc_context, alloc_ptr));
 
-#define               OFFSET__Thread__m_alloc_context__alloc_limit 0x58
+#define               OFFSET__Thread__m_alloc_context__alloc_limit 0x50
 ASMCONSTANTS_C_ASSERT(OFFSET__Thread__m_alloc_context__alloc_limit == offsetof(Thread, m_alloc_context) + offsetof(gc_alloc_context, alloc_limit));
 
 #define               OFFSETOF__gc_alloc_context__alloc_ptr 0x0
@@ -494,19 +494,19 @@ ASMCONSTANTS_C_ASSERT(OFFSETOF__StringObject__m_StringLength
 ASMCONSTANTS_C_ASSERT(OFFSETOF__InlinedCallFrame__m_Datum
                     == offsetof(InlinedCallFrame, m_Datum));
 
-#define               OFFSETOF__InlinedCallFrame__m_pCallSiteSP 0x20
+#define               OFFSETOF__InlinedCallFrame__m_pCallSiteSP 0x18
 ASMCONSTANTS_C_ASSERT(OFFSETOF__InlinedCallFrame__m_pCallSiteSP
                     == offsetof(InlinedCallFrame, m_pCallSiteSP));
 
-#define               OFFSETOF__InlinedCallFrame__m_pCallerReturnAddress 0x28
+#define               OFFSETOF__InlinedCallFrame__m_pCallerReturnAddress 0x20
 ASMCONSTANTS_C_ASSERT(OFFSETOF__InlinedCallFrame__m_pCallerReturnAddress
                     == offsetof(InlinedCallFrame, m_pCallerReturnAddress));
 
-#define               OFFSETOF__InlinedCallFrame__m_pCalleeSavedFP 0x30
+#define               OFFSETOF__InlinedCallFrame__m_pCalleeSavedFP 0x28
 ASMCONSTANTS_C_ASSERT(OFFSETOF__InlinedCallFrame__m_pCalleeSavedFP
                     == offsetof(InlinedCallFrame, m_pCalleeSavedFP));
 
-#define               OFFSETOF__InlinedCallFrame__m_pThread 0x38
+#define               OFFSETOF__InlinedCallFrame__m_pThread 0x30
 ASMCONSTANTS_C_ASSERT(OFFSETOF__InlinedCallFrame__m_pThread
                     == offsetof(InlinedCallFrame, m_pThread));
 

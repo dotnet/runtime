@@ -22,18 +22,48 @@ public class DispatchCoerceTesting : Server.Contract.IDispatchCoerceTesting
         return arg;
     }
 
-    public System.Reflection.Missing ReturnToManaged_Missing()
+    public string BoolToString()
+    {
+        throw new NotImplementedException();
+    }
+
+    public void ReturnToManaged_Void(int value)
+    {
+        throw new NotImplementedException();
+    }
+
+    public double ReturnToManaged_Double(int value)
+    {
+        throw new NotImplementedException();
+    }
+
+    public string ReturnToManaged_String(int value)
+    {
+        throw new NotImplementedException();
+    }
+
+    public decimal ReturnToManaged_Decimal(int value)
+    {
+        throw new NotImplementedException();
+    }
+
+    public DateTime ReturnToManaged_DateTime(int value)
+    {
+        throw new NotImplementedException();
+    }
+
+    public System.Drawing.Color ReturnToManaged_Color(int value)
+    {
+        throw new NotImplementedException();
+    }
+    
+    public System.Reflection.Missing ReturnToManaged_Missing(int value)
     {
         return System.Reflection.Missing.Value;
     }
 
-    public DBNull ReturnToManaged_DBNull()
+    public DBNull ReturnToManaged_DBNull(int value)
     {
         return DBNull.Value;
-    }
-
-    public string BoolToString()
-    {
-        throw new NotImplementedException();
     }
 }
