@@ -385,15 +385,20 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                                     break;
                                 }
                             }
-
-                            if (size <= EnregisteredReturnTypeIntegerMaxSize)
+                            else if (IsLoongArch64)
                             {
-                                if (IsLoongArch64)
+                                if (size <= EnregisteredReturnTypeIntegerMaxSize)
+                                {
                                     fpReturnSize = LoongArch64PassStructInRegister.GetLoongArch64PassStructInRegisterFlags(thRetType.GetRuntimeTypeHandle()) & 0xff;
-                                else if (IsRiscV64)
-                                    fpReturnSize = RISCV64PassStructInRegister.GetRISCV64PassStructInRegisterFlags(thRetType.GetRuntimeTypeHandle()) & 0xff;
-                                break;
+                                    break;
+                                }
+                            }
+                            else if (IsRiscV64)
+                            {
+                                fpReturnSize = RISCV64PassStructInRegister.GetRISCV64PassStructInRegisterFlags(thRetType.GetRuntimeTypeHandle()) & 0xff;
 
+                                if (fpReturnSize != (uint)StructFloatFieldInfoFlags.STRUCT_NO_FLOAT_FIELD || size <= EnregisteredReturnTypeIntegerMaxSize)
+                                    break;
                             }
 
                         }
