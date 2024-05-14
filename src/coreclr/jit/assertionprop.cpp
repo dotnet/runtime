@@ -2616,6 +2616,20 @@ AssertionIndex Compiler::optAssertionIsSubtype(GenTree* tree, GenTree* methodTab
     return NO_ASSERTION_INDEX;
 }
 
+//------------------------------------------------------------------------------
+// IsBulkWriteBarrierCandidate: Is given GT_STORE_BLK a good candidate to be folded into
+//    CORINFO_HELP_BULK_WRITEBARRIER call?
+//
+//    If the block store is used in order to copy a struct with several GC fields to, potentially,
+//    GC Heap, we should prefer the bulk copy helper over a set of individual write barriers
+//    Although, in some cases the latter is considered as more precise from GC's point of view.
+//
+// Arguments:
+//    blk  -  The GT_STORE_BLK blk to fold
+//
+// Return Value:
+//    Returns true if the store block should be folded into IsBulkWriteBarrierCandidate
+//
 static bool IsBulkWriteBarrierCandidate(GenTreeBlk* blk)
 {
     assert(blk->OperIs(GT_STORE_BLK));
@@ -2643,16 +2657,40 @@ static bool IsBulkWriteBarrierCandidate(GenTreeBlk* blk)
     return true;
 }
 
+//------------------------------------------------------------------------------
+// optVNBasedFoldExpr_Blk: Folds given BLK using VN to a simpler tree.
+//
+// Arguments:
+//    block  -  The block containing the tree.
+//    parent -  The parent node of the tree.
+//    blk    -  The GT_BLK/GT_STORE_BLK to fold
+//
+// Return Value:
+//    Returns a new tree or nullptr if nothing is changed.
+//
 GenTree* Compiler::optVNBasedFoldExpr_Blk(BasicBlock* block, GenTree* parent, GenTreeBlk* blk)
 {
-    if (IsBulkWriteBarrierCandidate(blk))
+    // Try to fold GT_STORE_BLK to CORINFO_HELP_BULK_WRITEBARRIER if profitable
+    // see IsBulkWriteBarrierCandidate's comments
+    if (blk->OperIs(GT_STORE_BLK) && IsBulkWriteBarrierCandidate(blk))
     {
+        auto wrapWithNullCheck = [&](GenTree** tree) {
+            // TODO: use vnStore->IsKnownNonNull inside fgAddrCouldBeNull once we're confident enough
+            // that we can use "vnStore != null" as a "VN can be trusted" check.
+            if (fgAddrCouldBeNull(*tree) &&
+                !vnStore->IsKnownNonNull(vnStore->VNConservativeNormalValue((*tree)->gtVNPair)))
+            {
+                GenTree* clone = fgMakeMultiUse(tree);
+                *tree          = gtNewOperNode(GT_COMMA, (*tree)->TypeGet(), gtNewNullCheck((*tree), block), clone);
+            }
+        };
+
         GenTree* dst = blk->Addr();
         GenTree* src = blk->Data();
         if (src->OperIs(GT_BLK))
         {
             src = src->AsBlk()->Addr();
-            fgWrapWithNullcheck(&src, block);
+            wrapWithNullCheck(&src);
         }
         else
         {
@@ -2662,12 +2700,10 @@ GenTree* Compiler::optVNBasedFoldExpr_Blk(BasicBlock* block, GenTree* parent, Ge
             src = gtNewLclAddrNode(srcLcl->GetLclNum(), srcLcl->GetLclOffs(), TYP_I_IMPL);
             lvaSetVarAddrExposed(srcLcl->GetLclNum() DEBUGARG(AddressExposedReason::ESCAPE_ADDRESS));
         }
-
-        // TODO: Consider using VNs to have a more precise non-null analysis
-        fgWrapWithNullcheck(&dst, block);
+        wrapWithNullCheck(&dst);
 
         // if op2 (src) is evaluated before op1 (dest), we need to preserve the
-        // side-effects since dest is the first argument in the helper call.
+        // side effects since dest is the first argument in the helper call.
         GenTree* rootEffects = nullptr;
         if (blk->IsReverseOp() && (((dst->gtFlags | src->gtFlags) & GTF_ALL_EFFECT) != 0))
         {
@@ -6496,6 +6532,7 @@ Compiler::fgWalkResult Compiler::optVNBasedFoldCurStmt(BasicBlock* block,
     // This can occur for HFA return values (see hfa_sf3E_r.exe)
     if (tree->TypeGet() == TYP_STRUCT)
     {
+        // The only exception for TYP_STRUCT that we fold today is IsBulkWriteBarrierCandidate
         if (tree->OperIs(GT_STORE_BLK) && IsBulkWriteBarrierCandidate(tree->AsBlk()))
         {
             goto DO_FOLD;

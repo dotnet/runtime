@@ -1912,16 +1912,6 @@ GenTree* Compiler::fgMakeMultiUse(GenTree** pOp)
     return fgInsertCommaFormTemp(pOp);
 }
 
-void Compiler::fgWrapWithNullcheck(GenTree** ppTree, BasicBlock* block)
-{
-    GenTree* const tree = *ppTree;
-    if (fgAddrCouldBeNull(tree))
-    {
-        GenTree* clone = fgMakeMultiUse(ppTree);
-        *ppTree        = gtNewOperNode(GT_COMMA, tree->TypeGet(), gtNewNullCheck(tree, block), clone);
-    }
-}
-
 //------------------------------------------------------------------------------
 // fgInsertCommaFormTemp: Create a new temporary variable to hold the result of *ppTree,
 //                        and replace *ppTree with comma(store<newLcl>(*ppTree)), newLcl)

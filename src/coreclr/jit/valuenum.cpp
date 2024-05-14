@@ -1633,7 +1633,36 @@ bool ValueNumStore::IsKnownNonNull(ValueNum vn)
     }
 
     VNFuncApp funcAttr;
-    return GetVNFunc(vn, &funcAttr) && (s_vnfOpAttribs[funcAttr.m_func] & VNFOA_KnownNonNull) != 0;
+    if (!GetVNFunc(vn, &funcAttr))
+    {
+        return false;
+    }
+
+    if (s_vnfOpAttribs[funcAttr.m_func] & VNFOA_KnownNonNull)
+    {
+        return true;
+    }
+
+    // TODO: repeat fgAddrCouldBeNull's logic here based on VN
+
+    // KnownNonNull + smallOffset:
+    if (funcAttr.m_func == VNFunc(GT_ADD))
+    {
+        ValueNum op1 = funcAttr.m_args[0];
+        ValueNum op2 = funcAttr.m_args[1];
+        if (IsVNConstant(op1) && !IsVNHandle(op1))
+        {
+            std::swap(op1, op2);
+        }
+
+        if (IsVNConstant(op2) && varTypeIsIntOrI(TypeOfVN(op2)) &&
+            !m_pComp->fgIsBigOffset(CoercedConstantValue<size_t>(op2)) && IsKnownNonNull(op1))
+        {
+            return true;
+        }
+    }
+
+    return false;
 }
 
 bool ValueNumStore::IsSharedStatic(ValueNum vn)
