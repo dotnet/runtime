@@ -196,8 +196,17 @@ namespace System.Runtime.InteropServices.RuntimeInformationTests
                 return;
 
             Assert.DoesNotContain("+", version); // no git hash
-            Assert.DoesNotContain("-", version); // no labels
-            Assert.True(Version.TryParse(version, out _));
+
+#if STABILIZE_PACKAGE_VERSION
+            // a stabilized version looks like 8.0.0
+            Assert.DoesNotContain("-", version);
+            Assert.True(Version.TryParse(version, out Version _));
+#else
+            // a non-stabilized version looks like 8.0.0-preview.5.23280.8 or 8.0.0-dev
+            Assert.Contains("-", version);
+            var versionNumber = version.Substring(0, version.IndexOf("-"));
+            Assert.True(Version.TryParse(versionNumber, out Version _));
+#endif
         }
 
         [Fact]

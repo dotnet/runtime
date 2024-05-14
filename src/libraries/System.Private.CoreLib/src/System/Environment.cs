@@ -201,19 +201,7 @@ namespace System
             }
         }
 
-        internal const string InternalVersion = "9.0.0";
-
-        public static Version Version
-        {
-            get
-            {
-                Debug.Assert(InternalVersion ==
-                    typeof(object).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion?.Split('-', '+')?[0],
-                    $"{nameof(InternalVersion)} mismatched! Keep {nameof(InternalVersion)} in sync with ProductVersion in eng/Versions.props.");
-
-                return Version.Parse(InternalVersion);
-            }
-        }
+        public static Version Version => Version.Parse(ProductVersionWithoutLabel);
 
         public static string StackTrace
         {

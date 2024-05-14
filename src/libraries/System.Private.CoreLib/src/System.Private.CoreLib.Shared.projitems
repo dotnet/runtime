@@ -2783,4 +2783,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\IUnaryPlusOperators.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\IUnsignedNumber.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <AdditionalFiles Include="$(Version).versionstring" />
+  </ItemGroup>
 </Project>

@@ -10,7 +10,7 @@ namespace System.Runtime.InteropServices
         /// <summary>
         /// Gets the name of the .NET installation on which an app is running.
         /// </summary>
-        public static string FrameworkDescription { get; } = ".NET " + Environment.InternalVersion;
+        public static string FrameworkDescription { get; } = ".NET " + Environment.ProductVersionWithLabel;
 
         /// <summary>
         /// Returns an opaque string that identifies the platform on which an app is running.
