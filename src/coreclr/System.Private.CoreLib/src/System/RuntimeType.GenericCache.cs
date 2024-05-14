@@ -99,18 +99,23 @@ namespace System
             public static TCache GetOrCreate(RuntimeType type)
             {
                 ref object? genericCache = ref type.Cache.GenericCache;
-                if (genericCache is null)
+                // Read the GenericCache once to avoid multiple reads of the same field.
+                object? currentCache = genericCache;
+                if (currentCache is null)
                 {
                     TCache newCache = TCache.Create(type);
-                    genericCache = newCache;
+                    currentCache = newCache;
                     return newCache;
                 }
-                else if (genericCache is TCache existing)
+                else if (currentCache is TCache existing)
                 {
                     return existing;
                 }
 
-                CompositeCacheEntry composite = GetOrUpgradeToCompositeCache(ref genericCache);
+                CompositeCacheEntry composite = GetOrUpgradeToCompositeCache(ref currentCache);
+                // Update the GenericCache with the new composite cache if it changed.
+                // If we race here it's okay, we might just end up re-creating a new entry next time.
+                genericCache = currentCache;
 
                 if (composite.GetNestedCache(TCache.Kind) is TCache cache)
                 {
