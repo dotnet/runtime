@@ -2829,6 +2829,24 @@ AGAIN:
                 }
                 break;
 
+            case GT_CNS_LNG:
+            {
+                if (op1->AsLngCon()->gtLconVal == op2->AsLngCon()->gtLconVal)
+                {
+                    return true;
+                }
+                break;
+            }
+
+            case GT_CNS_DBL:
+            {
+                if (op1->AsDblCon()->isBitwiseEqual(op2->AsDblCon()))
+                {
+                    return true;
+                }
+                break;
+            }
+
             case GT_CNS_STR:
                 if ((op1->AsStrCon()->gtSconCPX == op2->AsStrCon()->gtSconCPX) &&
                     (op1->AsStrCon()->gtScpHnd == op2->AsStrCon()->gtScpHnd))
@@ -2846,18 +2864,6 @@ AGAIN:
                 break;
             }
 
-#if 0
-            // TODO-CQ: Enable this in the future
-        case GT_CNS_LNG:
-            if  (op1->AsLngCon()->gtLconVal == op2->AsLngCon()->gtLconVal)
-                return true;
-            break;
-
-        case GT_CNS_DBL:
-            if  (op1->AsDblCon()->DconValue() == op2->AsDblCon()->DconValue())
-                return true;
-            break;
-#endif
             default:
                 break;
         }
@@ -13136,8 +13142,6 @@ const char* Compiler::gtGetWellKnownArgNameForArgMsg(WellKnownArg arg)
             return "retbuf";
         case WellKnownArg::PInvokeFrame:
             return "pinv frame";
-        case WellKnownArg::SecretStubParam:
-            return "stub param";
         case WellKnownArg::WrapperDelegateCell:
             return "wrap cell";
         case WellKnownArg::ShiftLow:
@@ -27955,7 +27959,7 @@ bool GenTreeLclVar::IsNeverNegative(Compiler* comp) const
     return comp->lvaGetDesc(GetLclNum())->IsNeverNegative();
 }
 
-#if defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
+#if (defined(TARGET_XARCH) || defined(TARGET_ARM64)) && defined(FEATURE_HW_INTRINSICS)
 //------------------------------------------------------------------------
 // GetResultOpNumForRmwIntrinsic: check if the result is written into one of the operands.
 // In the case that none of the operand is overwritten, check if any of them is lastUse.
@@ -27966,7 +27970,11 @@ bool GenTreeLclVar::IsNeverNegative(Compiler* comp) const
 //
 unsigned GenTreeHWIntrinsic::GetResultOpNumForRmwIntrinsic(GenTree* use, GenTree* op1, GenTree* op2, GenTree* op3)
 {
+#if defined(TARGET_XARCH)
     assert(HWIntrinsicInfo::IsFmaIntrinsic(gtHWIntrinsicId) || HWIntrinsicInfo::IsPermuteVar2x(gtHWIntrinsicId));
+#elif defined(TARGET_ARM64)
+    assert(HWIntrinsicInfo::IsFmaIntrinsic(gtHWIntrinsicId));
+#endif
 
     if (use != nullptr && use->OperIs(GT_STORE_LCL_VAR))
     {

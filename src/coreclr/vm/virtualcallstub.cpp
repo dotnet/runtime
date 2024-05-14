@@ -769,9 +769,7 @@ void VirtualCallStubManager::InitStatic()
     VirtualCallStubManagerManager::InitStatic();
 }
 
-// Static shutdown code.
-// At the moment, this doesn't do anything more than log statistics.
-void VirtualCallStubManager::UninitStatic()
+void VirtualCallStubManager::LogFinalStats()
 {
     CONTRACTL
     {

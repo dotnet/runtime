@@ -957,6 +957,8 @@ GenTree* Compiler::impNonConstFallback(NamedIntrinsic intrinsic, var_types simdT
 //    sig             -- signature of the intrinsic call.
 //    simdBaseJitType -- generic argument of the intrinsic.
 //    retType         -- return type of the intrinsic.
+//    mustExpand      -- true if the intrinsic must return a GenTree*; otherwise, false
+//
 // Return Value:
 //    the expanded intrinsic.
 //
@@ -966,7 +968,8 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                                        CORINFO_SIG_INFO*     sig,
                                        CorInfoType           simdBaseJitType,
                                        var_types             retType,
-                                       unsigned              simdSize)
+                                       unsigned              simdSize,
+                                       bool                  mustExpand)
 {
     GenTree* retNode = nullptr;
     GenTree* op1     = nullptr;
@@ -1098,7 +1101,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             {
                 // Vector<T> is TYP_SIMD32, so we should treat this as a call to Vector128.ToVector256
                 return impSpecialIntrinsic(NI_Vector128_ToVector256, clsHnd, method, sig, simdBaseJitType, retType,
-                                           simdSize);
+                                           simdSize, mustExpand);
             }
             else if (vectorTByteLength == XMM_REGSIZE_BYTES)
             {
@@ -1208,7 +1211,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 {
                     // Vector<T> is TYP_SIMD32, so we should treat this as a call to Vector256.GetLower
                     return impSpecialIntrinsic(NI_Vector256_GetLower, clsHnd, method, sig, simdBaseJitType, retType,
-                                               simdSize);
+                                               simdSize, mustExpand);
                 }
 
                 default:
@@ -1248,13 +1251,13 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                     if (intrinsic == NI_Vector256_AsVector)
                     {
                         return impSpecialIntrinsic(NI_Vector256_GetLower, clsHnd, method, sig, simdBaseJitType, retType,
-                                                   simdSize);
+                                                   simdSize, mustExpand);
                     }
                     else
                     {
                         assert(intrinsic == NI_Vector256_AsVector256);
                         return impSpecialIntrinsic(NI_Vector128_ToVector256, clsHnd, method, sig, simdBaseJitType,
-                                                   retType, 16);
+                                                   retType, 16, mustExpand);
                     }
                 }
             }
@@ -1281,13 +1284,13 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 if (intrinsic == NI_Vector512_AsVector)
                 {
                     return impSpecialIntrinsic(NI_Vector512_GetLower, clsHnd, method, sig, simdBaseJitType, retType,
-                                               simdSize);
+                                               simdSize, mustExpand);
                 }
                 else
                 {
                     assert(intrinsic == NI_Vector512_AsVector512);
                     return impSpecialIntrinsic(NI_Vector256_ToVector512, clsHnd, method, sig, simdBaseJitType, retType,
-                                               32);
+                                               32, mustExpand);
                 }
                 break;
             }
@@ -1301,13 +1304,13 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                     if (intrinsic == NI_Vector512_AsVector)
                     {
                         return impSpecialIntrinsic(NI_Vector512_GetLower128, clsHnd, method, sig, simdBaseJitType,
-                                                   retType, simdSize);
+                                                   retType, simdSize, mustExpand);
                     }
                     else
                     {
                         assert(intrinsic == NI_Vector512_AsVector512);
                         return impSpecialIntrinsic(NI_Vector128_ToVector512, clsHnd, method, sig, simdBaseJitType,
-                                                   retType, 16);
+                                                   retType, 16, mustExpand);
                     }
                 }
             }
@@ -1436,6 +1439,11 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             assert(sig->numArgs == 1);
             assert(simdBaseType == TYP_FLOAT);
 
+            if (BlockNonDeterministicIntrinsics(mustExpand))
+            {
+                break;
+            }
+
             op1     = impSIMDPopStack();
             retNode = gtNewSimdCvtNativeNode(retType, op1, CORINFO_TYPE_INT, simdBaseJitType, simdSize);
             break;
@@ -1462,6 +1470,11 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         {
             assert(sig->numArgs == 1);
             assert(simdBaseType == TYP_DOUBLE);
+
+            if (BlockNonDeterministicIntrinsics(mustExpand))
+            {
+                break;
+            }
 
             if (IsBaselineVector512IsaSupportedOpportunistically())
             {
@@ -1542,6 +1555,11 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             assert(sig->numArgs == 1);
             assert(simdBaseType == TYP_FLOAT);
 
+            if (BlockNonDeterministicIntrinsics(mustExpand))
+            {
+                break;
+            }
+
             if (IsBaselineVector512IsaSupportedOpportunistically())
             {
                 op1     = impSIMDPopStack();
@@ -1556,6 +1574,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         {
             assert(sig->numArgs == 1);
             assert(simdBaseType == TYP_DOUBLE);
+
             if (IsBaselineVector512IsaSupportedOpportunistically())
             {
                 op1     = impSIMDPopStack();
@@ -1570,6 +1589,11 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         {
             assert(sig->numArgs == 1);
             assert(simdBaseType == TYP_DOUBLE);
+
+            if (BlockNonDeterministicIntrinsics(mustExpand))
+            {
+                break;
+            }
 
             if (IsBaselineVector512IsaSupportedOpportunistically())
             {
@@ -4436,4 +4460,27 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
     return retNode;
 }
+
+//------------------------------------------------------------------------
+// getHWIntrinsicImmOps: Gets the immediate Ops for an intrinsic
+//
+// Arguments:
+//    intrinsic       -- NamedIntrinsic associated with the HWIntrinsic to lookup
+//    sig             -- signature of the intrinsic call.
+//    immOp1Ptr [OUT] -- The first immediate Op
+//    immOp2Ptr [OUT] -- The second immediate Op, if any. Otherwise unchanged.
+//
+void Compiler::getHWIntrinsicImmOps(NamedIntrinsic    intrinsic,
+                                    CORINFO_SIG_INFO* sig,
+                                    GenTree**         immOp1Ptr,
+                                    GenTree**         immOp2Ptr)
+{
+    if ((sig->numArgs > 0) && HWIntrinsicInfo::isImmOp(intrinsic, impStackTop().val))
+    {
+        // NOTE: The following code assumes that for all intrinsics
+        // taking an immediate operand, that operand will be last.
+        *immOp1Ptr = impStackTop().val;
+    }
+}
+
 #endif // FEATURE_HW_INTRINSICS

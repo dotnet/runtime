@@ -275,8 +275,9 @@ protected:
     void      genHomeRegisterParams(regNumber initReg, bool* initRegStillZeroed);
     regMaskTP genGetParameterHomingTempRegisterCandidates();
 
-    var_types genParamStackStoreType(LclVarDsc* dsc, const ABIPassingSegment& seg);
+    var_types genParamStackType(LclVarDsc* dsc, const ABIPassingSegment& seg);
     void      genSpillOrAddRegisterParam(unsigned lclNum, class RegGraph* graph);
+    void      genSpillOrAddNonStandardRegisterParam(unsigned lclNum, regNumber sourceReg, class RegGraph* graph);
     void      genEnregisterIncomingStackArgs();
 #if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     void genEnregisterOSRArgsAndLocals(regNumber initReg, bool* pInitRegZeroed);
@@ -1008,7 +1009,7 @@ protected:
     class HWIntrinsicImmOpHelper final
     {
     public:
-        HWIntrinsicImmOpHelper(CodeGen* codeGen, GenTree* immOp, GenTreeHWIntrinsic* intrin);
+        HWIntrinsicImmOpHelper(CodeGen* codeGen, GenTree* immOp, GenTreeHWIntrinsic* intrin, int immNum = 1);
 
         void EmitBegin();
         void EmitCaseEnd();
@@ -1260,7 +1261,8 @@ protected:
     void        genCall(GenTreeCall* call);
     void        genCallInstruction(GenTreeCall* call X86_ARG(target_ssize_t stackArgBytes));
     void        genDefinePendingCallLabel(GenTreeCall* call);
-    void        genJmpMethod(GenTree* jmp);
+    void        genJmpPlaceArgs(GenTree* jmp);
+    void        genJmpPlaceVarArgs();
     BasicBlock* genCallFinally(BasicBlock* block);
 #if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     void genCodeForJumpCompare(GenTreeOpCC* tree);
