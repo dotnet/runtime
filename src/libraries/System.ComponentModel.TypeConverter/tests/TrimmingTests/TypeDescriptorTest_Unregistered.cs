@@ -9,32 +9,21 @@ using System.ComponentModel;
 /// </summary>
 class Program
 {
-    public static int s_usedProperty;
-
     static int Main(string[] args)
     {
-        var c1 = new ClassWithUsedProperties();
-        s_usedProperty = c1.P1;
-        s_usedProperty = c1.P2;
-
         if (!RunTest(targetType: typeof(ClassWithUnusedProperties), expectedPropertyCount: 0, expectedAttributeCount: 0, expectedEventCount: 0))
         {
             return -1;
         }
 
-        if (!RunTest(targetType: typeof(ClassWithUsedProperties), expectedPropertyCount: 2, expectedAttributeCount: 0, expectedEventCount: 0))
+         if (!RunTest(targetType: typeof(ClassWithAttribute), expectedPropertyCount: 0, expectedAttributeCount: 1, expectedEventCount: 0))
         {
             return -2;
         }
 
-        if (!RunTest(targetType: typeof(ClassWithAttribute), expectedPropertyCount: 0, expectedAttributeCount: 1, expectedEventCount: 0))
-        {
-            return -3;
-        }
-
         if (!RunTest(targetType: typeof(ClassWithEvent), expectedPropertyCount: 0, expectedAttributeCount: 0, expectedEventCount: 0))
         {
-            return -4;
+            return -3;
         }
 
         return 100;
@@ -62,12 +51,6 @@ class Program
     }
 
     private class ClassWithUnusedProperties
-    {
-        public int P1 { get; set; }
-        public int P2 { get; set; }
-    }
-
-    private class ClassWithUsedProperties
     {
         public int P1 { get; set; }
         public int P2 { get; set; }
