@@ -484,10 +484,10 @@
           DestinationFolder="$(MicrosoftNetCoreAppRuntimePackNativeDir)"
           SkipUnchangedFiles="true" />
 
-    <Copy SourceFiles="$(NativeBinDir)dotnet.globalization.js;"
+    <Copy SourceFiles="$(NativeBinDir)dotnet.globalization.js"
           DestinationFolder="$(MicrosoftNetCoreAppRuntimePackNativeDir)"
           SkipUnchangedFiles="true"
-          Condition="'$(HybridGlobalization)' == 'true'" />
+          Condition="'$(HybridGlobalization)' == 'true' and Exists('$(NativeBinDir)dotnet.globalization.js')" />
 
     <Copy SourceFiles="$(NativeBinDir)dotnet.native.worker.js"
           DestinationFolder="$(MicrosoftNetCoreAppRuntimePackNativeDir)"
