@@ -5015,6 +5015,7 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
                     B = src1
                     C = src2
                     In case of subtraction:
+                    dst = src1 - src2
                     src1 = dst + src2
                     A = src1
                     B = dst
