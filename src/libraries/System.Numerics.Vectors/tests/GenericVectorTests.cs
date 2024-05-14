@@ -4526,7 +4526,7 @@ namespace System.Numerics.Tests
         private static void TestCreateSequence<T>(T start, T step)
             where T : INumber<T>
         {
-            Vector<T> sequence = new Vector<double>Sequence(start, step);
+            Vector<T> sequence = Vector.CreateSequence(start, step);
             T expected = start;
 
             for (int index = 0; index < Vector<T>.Count; index++)
