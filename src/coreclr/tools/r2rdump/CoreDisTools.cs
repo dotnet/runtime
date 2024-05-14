@@ -1245,7 +1245,6 @@ namespace R2RDump
                 //  We need to find relevant instructions based on rj to calculate the jump address.
                 uint register  = rj;
                 int  immediate = imm;
-                int  target    = 0;
                 bool isFound   = false;
                 int currentInsOffs = rtfOffset - InstructionSize;
                 int currentPC  = rtf.StartAddress + currentInsOffs;
@@ -1287,7 +1286,7 @@ namespace R2RDump
 
                 if (isFound)
                 {
-                    if (!TryGetImportCellName(target + immediate, out string targetName) || string.IsNullOrWhiteSpace(targetName))
+                    if (!TryGetImportCellName(immediate, out string targetName) || string.IsNullOrWhiteSpace(targetName))
                     {
                         return;
                     }
