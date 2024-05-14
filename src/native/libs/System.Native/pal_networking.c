@@ -1660,10 +1660,10 @@ int32_t SystemNative_Connectx(intptr_t socket, uint8_t* socketAddress, int32_t s
     struct iovec iovec;
     int flags = 0;
     iovec.iov_base = data;
-    iovec.iov_len = dataLen;
+    iovec.iov_len = (size_t)dataLen;
     memset(&eps, 0, sizeof(eps));
     eps.sae_dstaddr = (struct sockaddr *)socketAddress;
-    eps.sae_dstaddrlen = socketAddressLen;
+    eps.sae_dstaddrlen = (socklen_t)socketAddressLen;
 
     size_t length = 0;
     int err;
