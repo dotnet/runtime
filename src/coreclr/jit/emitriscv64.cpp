@@ -5011,8 +5011,14 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
                     Check if A = B + C
                     In case of addition:
                     dst = src1 + src2
+                    A = dst
+                    B = src1
+                    C = src2
                     In case of subtraction:
-                    src1 = src2 + dst
+                    src1 = dst + src2
+                    A = src1
+                    B = dst
+                    C = src2
                 */
                 if (needCheckOv)
                 {
@@ -5037,7 +5043,7 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
 
                     if (((dst->gtFlags & GTF_UNSIGNED) != 0))
                     {
-                        // if B > A then overflow
+                        // if A < B then overflow
                         branchIns  = INS_bltu;
                         branchReg1 = resultReg;
                         branchReg2 = regOp1;
