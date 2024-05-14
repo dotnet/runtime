@@ -3980,13 +3980,18 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                     //        Vector128.CreateScalarUnsafe(z)
                     //    ).ToScalar();
 
-                    GenTree* op3 = gtNewSimdCreateScalarUnsafeNode(TYP_SIMD16, impPopStack().val, callJitType, 16);
-                    GenTree* op2 = gtNewSimdCreateScalarUnsafeNode(TYP_SIMD16, impPopStack().val, callJitType, 16);
-                    GenTree* op1 = gtNewSimdCreateScalarUnsafeNode(TYP_SIMD16, impPopStack().val, callJitType, 16);
-                    GenTree* res =
-                        gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, op3, NI_FMA_MultiplyAddScalar, callJitType, 16);
+                    GenTree* op3 = impImplicitR4orR8Cast(impPopStack().val, callType);
+                    GenTree* op2 = impImplicitR4orR8Cast(impPopStack().val, callType);
+                    GenTree* op1 = impImplicitR4orR8Cast(impPopStack().val, callType);
 
-                    retNode = gtNewSimdToScalarNode(callType, res, callJitType, 16);
+                    op3 = gtNewSimdCreateScalarUnsafeNode(TYP_SIMD16, op3, callJitType, 16);
+                    op2 = gtNewSimdCreateScalarUnsafeNode(TYP_SIMD16, op2, callJitType, 16);
+                    op1 = gtNewSimdCreateScalarUnsafeNode(TYP_SIMD16, op1, callJitType, 16);
+
+                    retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, op3, NI_FMA_MultiplyAddScalar,
+                                                       callJitType, 16);
+
+                    retNode = gtNewSimdToScalarNode(callType, retNode, callJitType, 16);
                     break;
                 }
 #elif defined(TARGET_ARM64)
@@ -4007,9 +4012,13 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                     impSpillSideEffect(true, verCurrentState.esStackDepth -
                                                  2 DEBUGARG("Spilling op2 side effects for FusedMultiplyAdd"));
 
-                    GenTree* op3 = gtNewSimdCreateScalarUnsafeNode(TYP_SIMD8, impPopStack().val, callJitType, 8);
-                    GenTree* op2 = gtNewSimdCreateScalarUnsafeNode(TYP_SIMD8, impPopStack().val, callJitType, 8);
-                    GenTree* op1 = gtNewSimdCreateScalarUnsafeNode(TYP_SIMD8, impPopStack().val, callJitType, 8);
+                    GenTree* op3 = impImplicitR4orR8Cast(impPopStack().val, callType);
+                    GenTree* op2 = impImplicitR4orR8Cast(impPopStack().val, callType);
+                    GenTree* op1 = impImplicitR4orR8Cast(impPopStack().val, callType);
+
+                    op3 = gtNewSimdCreateScalarUnsafeNode(TYP_SIMD8, op3, callJitType, 8);
+                    op2 = gtNewSimdCreateScalarUnsafeNode(TYP_SIMD8, op2, callJitType, 8);
+                    op1 = gtNewSimdCreateScalarUnsafeNode(TYP_SIMD8, op1, callJitType, 8);
 
                     // Note that AdvSimd.FusedMultiplyAddScalar(op1,op2,op3) corresponds to op1 + op2 * op3
                     // while Math{F}.FusedMultiplyAddScalar(op1,op2,op3) corresponds to op1 * op2 + op3
@@ -8806,42 +8815,13 @@ GenTree* Compiler::impEstimateIntrinsic(CORINFO_METHOD_HANDLE method,
         return nullptr;
     }
 
-    GenTree* op3 = nullptr;
-    GenTree* op2 = nullptr;
-    GenTree* op1 = nullptr;
-
-    switch (sig->numArgs)
-    {
-        case 3:
-        {
-            op3 = impImplicitR4orR8Cast(impPopStack().val, callType);
-            FALLTHROUGH;
-        }
-
-        case 2:
-        {
-            op2 = impImplicitR4orR8Cast(impPopStack().val, callType);
-            FALLTHROUGH;
-        }
-
-        case 1:
-        {
-            op1 = impImplicitR4orR8Cast(impPopStack().val, callType);
-            break;
-        }
-
-        default:
-        {
-            unreached();
-        }
-    }
-
 #if defined(FEATURE_HW_INTRINSICS)
     // We use compExactlyDependsOn since these are estimate APIs where
     // the behavior is explicitly allowed to differ across machines
 
-    var_types      simdType    = TYP_UNKNOWN;
-    NamedIntrinsic intrinsicId = NI_Illegal;
+    var_types      simdType      = TYP_UNKNOWN;
+    NamedIntrinsic intrinsicId   = NI_Illegal;
+    bool           swapOp1AndOp3 = false;
 
     switch (intrinsicName)
     {
@@ -8860,6 +8840,16 @@ GenTree* Compiler::impEstimateIntrinsic(CORINFO_METHOD_HANDLE method,
             {
                 simdType    = TYP_SIMD8;
                 intrinsicId = NI_AdvSimd_FusedMultiplyAddScalar;
+
+                // AdvSimd.FusedMultiplyAdd expects (addend, left, right), while the APIs take (left, right, addend)
+
+                impSpillSideEffect(true, verCurrentState.esStackDepth -
+                                             3 DEBUGARG("Spilling op1 side effects for MultiplyAddEstimate"));
+
+                impSpillSideEffect(true, verCurrentState.esStackDepth -
+                                             2 DEBUGARG("Spilling op2 side effects for MultiplyAddEstimate"));
+
+                swapOp1AndOp3 = true;
             }
 #endif // TARGET_ARM64
             break;
@@ -8920,7 +8910,39 @@ GenTree* Compiler::impEstimateIntrinsic(CORINFO_METHOD_HANDLE method,
             unreached();
         }
     }
+#endif // FEATURE_HW_INTRINSICS
 
+    GenTree* op3 = nullptr;
+    GenTree* op2 = nullptr;
+    GenTree* op1 = nullptr;
+
+    switch (sig->numArgs)
+    {
+        case 3:
+        {
+            op3 = impImplicitR4orR8Cast(impPopStack().val, callType);
+            FALLTHROUGH;
+        }
+
+        case 2:
+        {
+            op2 = impImplicitR4orR8Cast(impPopStack().val, callType);
+            FALLTHROUGH;
+        }
+
+        case 1:
+        {
+            op1 = impImplicitR4orR8Cast(impPopStack().val, callType);
+            break;
+        }
+
+        default:
+        {
+            unreached();
+        }
+    }
+
+#if defined(FEATURE_HW_INTRINSICS)
     if (intrinsicId != NI_Illegal)
     {
         unsigned simdSize;
@@ -8939,6 +8961,11 @@ GenTree* Compiler::impEstimateIntrinsic(CORINFO_METHOD_HANDLE method,
         {
             case 3:
             {
+                if (swapOp1AndOp3)
+                {
+                    std::swap(op1, op3);
+                }
+
                 op3 = gtNewSimdCreateScalarUnsafeNode(simdType, op3, callJitType, simdSize);
                 op2 = gtNewSimdCreateScalarUnsafeNode(simdType, op2, callJitType, simdSize);
                 op1 = gtNewSimdCreateScalarUnsafeNode(simdType, op1, callJitType, simdSize);
@@ -8949,6 +8976,7 @@ GenTree* Compiler::impEstimateIntrinsic(CORINFO_METHOD_HANDLE method,
 
             case 1:
             {
+                assert(!swapOp1AndOp3);
                 op1 = gtNewSimdCreateScalarUnsafeNode(simdType, op1, callJitType, simdSize);
                 op1 = gtNewSimdHWIntrinsicNode(simdType, op1, intrinsicId, callJitType, simdSize);
                 break;
@@ -8962,6 +8990,8 @@ GenTree* Compiler::impEstimateIntrinsic(CORINFO_METHOD_HANDLE method,
 
         return gtNewSimdToScalarNode(callType, op1, callJitType, simdSize);
     }
+
+    assert(!swapOp1AndOp3);
 #endif // FEATURE_HW_INTRINSICS
 
     callType = genActualType(callType);

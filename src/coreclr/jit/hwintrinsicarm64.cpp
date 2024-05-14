@@ -1722,6 +1722,12 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 break;
             }
 
+            impSpillSideEffect(true, verCurrentState.esStackDepth -
+                                         3 DEBUGARG("Spilling op1 side effects for MultiplyAddEstimate"));
+
+            impSpillSideEffect(true, verCurrentState.esStackDepth -
+                                         2 DEBUGARG("Spilling op2 side effects for MultiplyAddEstimate"));
+
             op3 = impSIMDPopStack();
             op2 = impSIMDPopStack();
             op1 = impSIMDPopStack();
