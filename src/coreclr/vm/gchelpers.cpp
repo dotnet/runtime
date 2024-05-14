@@ -183,7 +183,43 @@ inline void CheckObjectSize(size_t alloc_size)
     }
 }
 
-inline Object* Alloc(ee_alloc_context* pEEAllocContext, size_t size, GC_ALLOC_FLAGS flags, bool& isSampled, size_t& samplingBudget)
+inline void FireAllocationSampled(GC_ALLOC_FLAGS flags, size_t size, size_t samplingBudgetOffset, Object* orObject)
+{
+    // Note: this code is duplicated from GCToCLREventSink::FireGCAllocationTick_V4
+    void* typeId = nullptr;
+    const WCHAR* name = nullptr;
+    InlineSString<MAX_CLASSNAME_LENGTH> strTypeName;
+    EX_TRY
+    {
+        TypeHandle th = GetThread()->GetTHAllocContextObj();
+
+        if (th != 0)
+        {
+            th.GetName(strTypeName);
+            name = strTypeName.GetUnicode();
+            typeId = th.GetMethodTable();
+        }
+    }
+    EX_CATCH{}
+    EX_END_CATCH(SwallowAllExceptions)
+    // end of duplication
+
+    if (typeId != nullptr)
+    {
+        unsigned int allocKind =
+            (flags & GC_ALLOC_PINNED_OBJECT_HEAP) ? 2 :
+            (flags & GC_ALLOC_LARGE_OBJECT_HEAP) ? 1 :
+            0;  // SOH
+        unsigned int heapIndex = 0;
+#ifdef BACKGROUND_GC
+        gc_heap* hp = gc_heap::heap_of((BYTE*)orObject);
+        heapIndex = hp->heap_number;
+#endif
+        FireEtwAllocationSampled(allocKind, GetClrInstanceId(), typeId, name, heapIndex, (BYTE*)orObject, size, samplingBudgetOffset);
+    }
+}
+
+inline Object* Alloc(ee_alloc_context* pEEAllocContext, size_t size, GC_ALLOC_FLAGS flags)
 {
     CONTRACTL {
         THROWS;
@@ -193,11 +229,11 @@ inline Object* Alloc(ee_alloc_context* pEEAllocContext, size_t size, GC_ALLOC_FL
 
     Object* retVal = nullptr;
     gc_alloc_context* pAllocContext = &pEEAllocContext->gc_alloc_context;
-    samplingBudget = (size_t)(pEEAllocContext->alloc_sampling - pAllocContext->alloc_ptr);
+    size_t samplingBudget = (size_t)(pEEAllocContext->alloc_sampling - pAllocContext->alloc_ptr);
     size_t availableSpace = (size_t)(pAllocContext->alloc_limit - pAllocContext->alloc_ptr);
     auto pCurrentThread = GetThread();
 
-    isSampled = false;
+    bool isSampled = false;
     if (ETW_TRACING_CATEGORY_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context,
                                      TRACE_LEVEL_INFORMATION,
                                      CLR_ALLOCATIONSAMPLING_KEYWORD))
@@ -209,7 +245,8 @@ inline Object* Alloc(ee_alloc_context* pEEAllocContext, size_t size, GC_ALLOC_FL
             // (only its alloc_bytes_uoh field will be updated),
             // so get a random size in the distribution and if it is less than the size of the object
             // then this object should be sampled
-            isSampled = ee_alloc_context::IsSampled(pCurrentThread->GetRandom(), size);
+            samplingBudget = ee_alloc_context::ComputeGeometricRandom(pCurrentThread->GetRandom());
+            isSampled = (samplingBudget < size);
         }
         else
         {
@@ -231,7 +268,8 @@ inline Object* Alloc(ee_alloc_context* pEEAllocContext, size_t size, GC_ALLOC_FL
             // the sampling budget only included at most the bytes inside the AC
             if (size > availableSpace && !isSampled)
             {
-                isSampled = ee_alloc_context::IsSampled(pCurrentThread->GetRandom(), size - availableSpace);
+                samplingBudget = ee_alloc_context::ComputeGeometricRandom(pCurrentThread->GetRandom());
+                isSampled = (samplingBudget < size - availableSpace);
             }
         }
     }
@@ -245,6 +283,11 @@ inline Object* Alloc(ee_alloc_context* pEEAllocContext, size_t size, GC_ALLOC_FL
     // Note: it might happen that the object to allocate is larger than an allocation context
     // in this case, both alloc_ptr and alloc_limit will share the same value
     // --> this already full allocation context will trigger the slow path in the next allocation
+
+    if (isSampled)
+    {
+        FireAllocationSampled(flags, size, samplingBudget, retVal);
+    }
 
     // only SOH allocations require sampling threshold to be recomputed
     if ((flags & GC_ALLOC_USER_OLD_HEAP) == 0)
@@ -269,7 +312,7 @@ inline Object* Alloc(ee_alloc_context* pEEAllocContext, size_t size, GC_ALLOC_FL
 //
 // You can get an exhaustive list of code sites that allocate GC objects by finding all calls to
 // code:ProfilerObjectAllocatedCallback (since the profiler has to hook them all).
-inline Object* Alloc(size_t size, GC_ALLOC_FLAGS flags, bool& isSampled, size_t& samplingBudget)
+inline Object* Alloc(size_t size, GC_ALLOC_FLAGS flags)
 {
     CONTRACTL {
         THROWS;
@@ -293,12 +336,12 @@ inline Object* Alloc(size_t size, GC_ALLOC_FLAGS flags, bool& isSampled, size_t&
 
     if (GCHeapUtilities::UseThreadAllocationContexts())
     {
-        retVal = Alloc(GetThreadAllocContext(), size, flags, isSampled, samplingBudget);
+        retVal = Alloc(GetThreadAllocContext(), size, flags);
     }
     else
     {
         GlobalAllocLockHolder holder(&g_global_alloc_lock);
-        retVal = Alloc(&g_global_ee_alloc_context, size, flags, isSampled, samplingBudget);
+        retVal = Alloc(&g_global_ee_alloc_context, size, flags);
     }
 
 
@@ -374,7 +417,7 @@ inline void LogAlloc(Object* object)
 
 // signals completion of the object to GC and sends events if necessary
 template <class TObj>
-void PublishObjectAndNotify(TObj* &orObject, size_t size, GC_ALLOC_FLAGS flags, bool isSampled, size_t samplingBudget)
+void PublishObjectAndNotify(TObj* &orObject, size_t size, GC_ALLOC_FLAGS flags)
 {
     _ASSERTE(orObject->HasEmptySyncBlockInfo());
 
@@ -407,50 +450,13 @@ void PublishObjectAndNotify(TObj* &orObject, size_t size, GC_ALLOC_FLAGS flags, 
         ETW::TypeSystemLog::SendObjectAllocatedEvent(orObject);
     }
 
-    if (isSampled && ETW_TRACING_CATEGORY_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context,
-                                                  TRACE_LEVEL_INFORMATION,
-                                                  CLR_ALLOCATIONSAMPLING_KEYWORD))
-    {
-        // Note: this code is duplicated from GCToCLREventSink::FireGCAllocationTick_V4
-        void* typeId = nullptr;
-        const WCHAR* name = nullptr;
-        InlineSString<MAX_CLASSNAME_LENGTH> strTypeName;
-        EX_TRY
-        {
-            TypeHandle th = GetThread()->GetTHAllocContextObj();
-
-            if (th != 0)
-            {
-                th.GetName(strTypeName);
-                name = strTypeName.GetUnicode();
-                typeId = th.GetMethodTable();
-            }
-        }
-        EX_CATCH{}
-        EX_END_CATCH(SwallowAllExceptions)
-        // end of duplication
-
-        if (typeId != nullptr)
-        {
-            unsigned int allocKind =
-                (flags & GC_ALLOC_PINNED_OBJECT_HEAP) ? 2 :
-                (flags & GC_ALLOC_LARGE_OBJECT_HEAP) ? 1 :
-                0;  // SOH
-            unsigned int heapIndex = 0;
-#ifdef BACKGROUND_GC
-            gc_heap* hp = gc_heap::heap_of((BYTE*)orObject);
-            heapIndex = hp->heap_number;
-#endif
-            FireEtwAllocationSampled(allocKind, GetClrInstanceId(),typeId, name, heapIndex, (BYTE*)orObject, size, samplingBudget);
-        }
-    }
 #endif // FEATURE_EVENT_TRACE
 }
 
 void PublishFrozenObject(Object*& orObject, size_t size)
 {
     // allocations in NGCH are not sampled
-    PublishObjectAndNotify(orObject, size, GC_ALLOC_NO_FLAGS, false, 0);
+    PublishObjectAndNotify(orObject, size, GC_ALLOC_NO_FLAGS);
 }
 
 inline SIZE_T MaxArrayLength()
@@ -522,12 +528,10 @@ OBJECTREF AllocateSzArray(MethodTable* pArrayMT, INT32 cElements, GC_ALLOC_FLAGS
     if (pArrayMT->ContainsPointers())
         flags |= GC_ALLOC_CONTAINS_REF;
 
-    bool isSampled = false;
-    size_t samplingBudget = 0;
     ArrayBase* orArray = NULL;
     if (flags & GC_ALLOC_USER_OLD_HEAP)
     {
-        orArray = (ArrayBase*)Alloc(totalSize, flags, isSampled, samplingBudget);
+        orArray = (ArrayBase*)Alloc(totalSize, flags);
         orArray->SetMethodTableForUOHObject(pArrayMT);
     }
     else
@@ -535,7 +539,7 @@ OBJECTREF AllocateSzArray(MethodTable* pArrayMT, INT32 cElements, GC_ALLOC_FLAGS
         if ((DATA_ALIGNMENT < sizeof(double)) && (pArrayMT->GetArrayElementType() == ELEMENT_TYPE_R8))
         {
             flags |= GC_ALLOC_ALIGN8;
-            orArray = (ArrayBase*)Alloc(totalSize, flags, isSampled, samplingBudget);
+            orArray = (ArrayBase*)Alloc(totalSize, flags);
         }
         else
         {
@@ -552,7 +556,7 @@ OBJECTREF AllocateSzArray(MethodTable* pArrayMT, INT32 cElements, GC_ALLOC_FLAGS
                 flags |= GC_ALLOC_ALIGN8;
             }
 #endif
-            orArray = (ArrayBase*)Alloc(totalSize, flags, isSampled, samplingBudget);
+            orArray = (ArrayBase*)Alloc(totalSize, flags);
         }
         orArray->SetMethodTable(pArrayMT);
     }
@@ -560,7 +564,7 @@ OBJECTREF AllocateSzArray(MethodTable* pArrayMT, INT32 cElements, GC_ALLOC_FLAGS
     // Initialize Object
     orArray->m_NumComponents = cElements;
 
-    PublishObjectAndNotify(orArray, totalSize, flags, isSampled, samplingBudget);
+    PublishObjectAndNotify(orArray, totalSize, flags);
     return ObjectToOBJECTREF((Object*)orArray);
 }
 
@@ -789,12 +793,10 @@ OBJECTREF AllocateArrayEx(MethodTable *pArrayMT, INT32 *pArgs, DWORD dwNumArgs, 
     if (pArrayMT->ContainsPointers())
         flags |= GC_ALLOC_CONTAINS_REF;
 
-    bool isSampled = false;
-    size_t samplingBudget = 0;
     ArrayBase* orArray = NULL;
     if (flags & GC_ALLOC_USER_OLD_HEAP)
     {
-        orArray = (ArrayBase*)Alloc(totalSize, flags, isSampled, samplingBudget);
+        orArray = (ArrayBase*)Alloc(totalSize, flags);
         orArray->SetMethodTableForUOHObject(pArrayMT);
     }
     else
@@ -812,7 +814,7 @@ OBJECTREF AllocateArrayEx(MethodTable *pArrayMT, INT32 *pArgs, DWORD dwNumArgs, 
             flags |= GC_ALLOC_ALIGN8;
         }
 #endif
-        orArray = (ArrayBase*)Alloc(totalSize, flags, isSampled, samplingBudget);
+        orArray = (ArrayBase*)Alloc(totalSize, flags);
         orArray->SetMethodTable(pArrayMT);
     }
 
@@ -830,7 +832,7 @@ OBJECTREF AllocateArrayEx(MethodTable *pArrayMT, INT32 *pArgs, DWORD dwNumArgs, 
         }
     }
 
-    PublishObjectAndNotify(orArray, totalSize, flags, isSampled, samplingBudget);
+    PublishObjectAndNotify(orArray, totalSize, flags);
 
     if (kind != ELEMENT_TYPE_ARRAY)
     {
@@ -995,15 +997,14 @@ STRINGREF AllocateString( DWORD cchStringLength )
     if (totalSize >= LARGE_OBJECT_SIZE && totalSize >= GCHeapUtilities::GetGCHeap()->GetLOHThreshold())
         flags |= GC_ALLOC_LARGE_OBJECT_HEAP;
 
-    bool isSampled = false;
-    size_t samplingBudget = 0;
-    StringObject* orString = (StringObject*)Alloc(totalSize, flags, isSampled, samplingBudget);
+
+    StringObject* orString = (StringObject*)Alloc(totalSize, flags);
 
     // Initialize Object
     orString->SetMethodTable(g_pStringClass);
     orString->SetStringLength(cchStringLength);
 
-    PublishObjectAndNotify(orString, totalSize, flags, isSampled, samplingBudget);
+    PublishObjectAndNotify(orString, totalSize, flags);
     return ObjectToSTRINGREF(orString);
 
 }
@@ -1162,9 +1163,7 @@ OBJECTREF AllocateObject(MethodTable *pMT
         }
 #endif // FEATURE_64BIT_ALIGNMENT
 
-        bool isSampled = false;
-        size_t samplingBudget = 0;
-        Object* orObject = (Object*)Alloc(totalSize, flags, isSampled, samplingBudget);
+        Object* orObject = (Object*)Alloc(totalSize, flags);
 
         if (flags & GC_ALLOC_USER_OLD_HEAP)
         {
@@ -1175,7 +1174,7 @@ OBJECTREF AllocateObject(MethodTable *pMT
             orObject->SetMethodTable(pMT);
         }
 
-        PublishObjectAndNotify(orObject, totalSize, flags, isSampled, samplingBudget);
+        PublishObjectAndNotify(orObject, totalSize, flags);
         oref = OBJECTREF_TO_UNCHECKED_OBJECTREF(orObject);
     }
 

@@ -60,13 +60,13 @@ typedef struct _ee_alloc_context
         }
     }
 
-    // it is expected that the caller of this function has already checked if sampling is on/off
+    // it is expected that the caller of these functions has already checked if sampling is on/off
     static inline bool IsSampled(CLRRandom* pRandomizer, size_t range)
     {
         size_t threshold = ComputeGeometricRandom(pRandomizer);
         return (threshold < range);
     }
-private:
+
     static inline size_t ComputeGeometricRandom(CLRRandom* pRandomizer)
     {
         // compute a random sample from the Geometric distribution
