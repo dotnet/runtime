@@ -1499,11 +1499,7 @@ namespace System
 
             #region Internal Members
 
-            internal object? GenericCache
-            {
-                get => m_genericCache;
-                set => m_genericCache = value;
-            }
+            internal ref object? GenericCache => ref m_genericCache;
 
             private sealed class FunctionPointerCache : IGenericCacheEntry<FunctionPointerCache>
             {
@@ -1931,15 +1927,6 @@ namespace System
 
             GC.KeepAlive(methodInstantiation);
             return retval;
-        }
-
-        /// <summary>
-        /// Generic cache for rare scenario specific data. See <see cref="IGenericCacheEntry" /> for more information on what data can be cached here.
-        /// </summary>
-        internal object? GenericCache
-        {
-            get => CacheIfExists?.GenericCache;
-            set => Cache.GenericCache = value;
         }
 
         internal T GetOrCreateCacheEntry<T>()
