@@ -2228,11 +2228,7 @@ namespace System.Globalization
 
         internal void GetNFIValues(NumberFormatInfo nfi)
         {
-#if TARGET_BROWSER
-            if (GlobalizationMode.InvariantFast || IsInvariantCulture)
-#else
-            if (GlobalizationMode.Invariant || IsInvariantCulture)
-#endif
+            if (GlobalizationMode.InvariantNoLoad || IsInvariantCulture)
             {
                 nfi._positiveSign = _sPositiveSign!;
                 nfi._negativeSign = _sNegativeSign!;
