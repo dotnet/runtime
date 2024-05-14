@@ -294,9 +294,6 @@ jobs:
         buildConfig: ${{ parameters.buildConfig }}
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
         crossBuild: true
-        cxxStandardLibrary: libc++
-        cxxStandardLibraryStatic: true
-        cxxAbiLibrary: libstdc++
         ${{ insert }}: ${{ parameters.jobParameters }}
 
 # Runtime-dev-innerloop build
