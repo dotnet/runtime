@@ -861,6 +861,11 @@ namespace System.ComponentModel
             return GetDescriptor(type, nameof(type)).GetConverter();
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+                  Justification = "The callers of this method ensure getting the converter is trim compatible - i.e. the type is not Nullable<T>.")]
+        internal static TypeConverter GetConverterTrimUnsafe([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type) =>
+                  GetConverter(type);
+
         /// <summary>
         /// Gets a type converter for the specified registered type.
         /// </summary>

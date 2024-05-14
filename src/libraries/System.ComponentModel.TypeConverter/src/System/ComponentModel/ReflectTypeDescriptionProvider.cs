@@ -282,9 +282,14 @@ namespace System.ComponentModel
         public override bool? RequireRegisteredTypes => true;
         public override bool IsRegisteredType(Type type)
         {
-            return _typeData != null &&
+            if (_typeData != null &&
                 _typeData.TryGetValue(type, out ReflectedTypeData? data) &&
-                data.IsRegistered;
+                data.IsRegistered)
+            {
+                return true;
+            }
+
+            return IsIntrinsicType(type);
         }
 
         /// <summary>

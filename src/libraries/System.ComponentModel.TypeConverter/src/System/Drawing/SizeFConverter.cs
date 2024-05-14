@@ -38,7 +38,7 @@ namespace System.Drawing
                 char sep = culture.TextInfo.ListSeparator[0];
                 string[] tokens = text.Split(sep);
                 float[] values = new float[tokens.Length];
-                TypeConverter floatConverter = TypeDescriptor.GetConverterFromRegisteredType(typeof(float));
+                TypeConverter floatConverter = TypeDescriptor.GetConverterTrimUnsafe(typeof(float));
                 for (int i = 0; i < values.Length; i++)
                 {
                     values[i] = (float)floatConverter.ConvertFromString(context, culture, tokens[i])!;
@@ -66,7 +66,7 @@ namespace System.Drawing
                     culture ??= CultureInfo.CurrentCulture;
 
                     string sep = culture.TextInfo.ListSeparator + " ";
-                    TypeConverter floatConverter = TypeDescriptor.GetConverterFromRegisteredType(typeof(float));
+                    TypeConverter floatConverter = TypeDescriptor.GetConverterTrimUnsafe(typeof(float));
                     var args = new string?[]
                     {
                         floatConverter.ConvertToString(context, culture, size.Width),
