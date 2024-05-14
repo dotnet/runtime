@@ -2827,7 +2827,7 @@ int LinearScan::BuildCast(GenTreeCast* cast)
     const var_types srcType  = genActualType(src->TypeGet());
     const var_types castType = cast->gtCastType;
 
-    if (varTypeIsLong(srcType) && (castType == TYP_DOUBLE) &&
+    if ((srcType == TYP_LONG) && (castType == TYP_DOUBLE) &&
         !compiler->compOpportunisticallyDependsOn(InstructionSet_AVX512F))
     {
         // We need two extra temp regs for LONG->DOUBLE cast
