@@ -1825,13 +1825,24 @@ void CodeGen::genGenerateMachineCode()
         printf(" for ");
 
 #if defined(TARGET_X86)
-        if (compiler->compOpportunisticallyDependsOn(InstructionSet_AVX10v1))
+        if (compiler->canUseEvexEncoding())
         {
-            printf("X86 with AVX10v1");
-        }
-        else if (compiler->canUseEvexEncoding())
-        {
-            printf("X86 with AVX512");
+            if (compiler->compOpportunisticallyDependsOn(InstructionSet_AVX10v1))
+            {
+                if (compiler->compOpportunisticallyDependsOn(InstructionSet_AVX512F))
+                {
+                    printf("X86 with AVX10/512");
+                }
+                else
+                {
+                    printf("X86 with AVX10/256");
+                }
+            }
+            else
+            {
+                assert(compiler->compIsaSupportedDebugOnly(InstructionSet_AVX512F));
+                printf("X86 with AVX512");
+            }
         }
         else if (compiler->canUseVexEncoding())
         {
@@ -1842,13 +1853,24 @@ void CodeGen::genGenerateMachineCode()
             printf("generic X86");
         }
 #elif defined(TARGET_AMD64)
-        if (compiler->compOpportunisticallyDependsOn(InstructionSet_AVX10v1))
+        if (compiler->canUseEvexEncoding())
         {
-            printf("X64 with AVX10v1");
-        }
-        else if (compiler->canUseEvexEncoding())
-        {
-            printf("X64 with AVX512");
+            if (compiler->compOpportunisticallyDependsOn(InstructionSet_AVX10v1))
+            {
+                if (compiler->compOpportunisticallyDependsOn(InstructionSet_AVX512F))
+                {
+                    printf("X64 with AVX10/512");
+                }
+                else
+                {
+                    printf("X64 with AVX10/256");
+                }
+            }
+            else
+            {
+                assert(compiler->compIsaSupportedDebugOnly(InstructionSet_AVX512F));
+                printf("X64 with AVX512");
+            }
         }
         else if (compiler->canUseVexEncoding())
         {

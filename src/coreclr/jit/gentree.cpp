@@ -20803,7 +20803,7 @@ GenTree* Compiler::gtNewSimdBinOpNode(
                             GenTree* widenedProduct = gtNewSimdBinOpNode(GT_MUL, widenedType, widenedOp1, widenedOp2,
                                                                          widenedSimdBaseJitType, widenedSimdSize);
 
-                            // Vector128<byte> product = Avx512BW.VL.ConvertToVector128Byte(widenedProduct)
+                            // Vector128<byte> product = Avx10v1.ConvertToVector128Byte(widenedProduct)
                             return gtNewSimdHWIntrinsicNode(type, widenedProduct, narrowIntrinsic,
                                                             widenedSimdBaseJitType, widenedSimdSize);
                         }
@@ -21737,7 +21737,7 @@ GenTree* Compiler::gtNewSimdCvtNativeNode(var_types   type,
            ((simdTargetBaseType == TYP_INT) &&
             ((simdSize == 16) || (simdSize == 32 && compIsaSupportedDebugOnly(InstructionSet_AVX)))));
 
-    if (compOpportunisticallyDependsOn(InstructionSet_AVX10v1))
+    if (simdSize != 64 && compOpportunisticallyDependsOn(InstructionSet_AVX10v1))
     {
         switch (simdSourceBaseJitType)
         {
