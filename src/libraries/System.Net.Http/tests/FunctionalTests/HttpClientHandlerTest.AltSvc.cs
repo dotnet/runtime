@@ -82,7 +82,7 @@ namespace System.Net.Http.Functional.Tests
             }
             _output.WriteLine("Starting AltSvc_ConnectionFrame_UpgradeFrom20_Success test");
             using Http2LoopbackServer firstServer = Http2LoopbackServer.CreateServer();
-            using Http3LoopbackServer secondServer = CreateHttp3LoopbackServer();
+            using Http3LoopbackServer secondServer = CreateHttp3LoopbackServer(options: new() { TestOutputHelper = _output });
             using HttpClient client = CreateHttpClient(HttpVersion.Version20);
 
             Task<HttpResponseMessage> firstResponseTask = client.GetAsync(firstServer.Address);

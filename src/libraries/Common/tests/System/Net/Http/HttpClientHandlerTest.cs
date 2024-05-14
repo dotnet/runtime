@@ -1241,7 +1241,7 @@ namespace System.Net.Http.Functional.Tests
                             break;
                     }
                 });
-            });
+            }, options: new() { TestOutputHelper = _output });
             listener?.Dispose();
         }
 

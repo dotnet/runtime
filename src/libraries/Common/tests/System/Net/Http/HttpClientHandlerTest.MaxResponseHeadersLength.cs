@@ -73,7 +73,7 @@ namespace System.Net.Http.Functional.Tests
                 (await client.GetStreamAsync(uri)).Dispose();
                 Assert.Throws<InvalidOperationException>(() => handler.MaxResponseHeadersLength = 1);
             },
-            server => server.AcceptConnectionSendResponseAndCloseAsync());
+            server => server.AcceptConnectionSendResponseAndCloseAsync(), options: new() { TestOutputHelper = _output });
             listener?.Dispose();
         }
 
