@@ -734,7 +734,7 @@ int LinearScan::BuildCall(GenTreeCall* call)
         regMaskTP candidates = RBM_NONE;
         if (call->IsFastTailCall())
         {
-            candidates = (allRegs(TYP_INT) & RBM_INT_CALLEE_TRASH) ^ RBM_GSCOOKIE_TMP;
+            candidates = (allRegs(TYP_INT) & (RBM_INT_CALLEE_TRASH & ~RBM_GSCOOKIE_TMP));
             assert(candidates != RBM_NONE);
         }
 
