@@ -87,6 +87,7 @@ class OptBoolsDsc;           // defined in optimizer.cpp
 struct RelopImplicationInfo; // defined in redundantbranchopts.cpp
 struct JumpThreadInfo;       // defined in redundantbranchopts.cpp
 class ProfileSynthesis;      // defined in profilesynthesis.h
+class LoopLocalOccurrences;  // defined in inductionvariableopts.cpp
 #ifdef DEBUG
 struct IndentStack;
 #endif
@@ -1024,7 +1025,7 @@ public:
             }
             else
             {
-#ifdef TARGET_XARCH
+#ifdef FEATURE_MASKED_HW_INTRINSICS
                 assert(varTypeUsesIntReg(this) || varTypeUsesMaskReg(this));
 #else
                 assert(varTypeUsesIntReg(this));
@@ -2541,6 +2542,7 @@ class Compiler
     friend class CSE_HeuristicReplay;
     friend class CSE_HeuristicRL;
     friend class CSE_HeuristicParameterized;
+    friend class CSE_HeuristicRLHook;
     friend class CSE_Heuristic;
     friend class CodeGenInterface;
     friend class CodeGen;
@@ -3792,6 +3794,7 @@ public:
     unsigned   lvaTableCnt; // lvaTable size (>= lvaCount)
 
     ABIPassingInformation* lvaParameterPassingInfo;
+    unsigned lvaParameterStackSize;
 
     unsigned lvaTrackedCount;             // actual # of locals being tracked
     unsigned lvaTrackedCountInSizeTUnits; // min # of size_t's sufficient to hold a bit for all the locals being tracked
@@ -3803,9 +3806,9 @@ public:
     VARSET_TP lvaLongVars; // set of long (64-bit) variables
 #endif
     VARSET_TP lvaFloatVars; // set of floating-point (32-bit and 64-bit) or SIMD variables
-#ifdef TARGET_XARCH
+#ifdef FEATURE_MASKED_HW_INTRINSICS
     VARSET_TP lvaMaskVars; // set of mask variables
-#endif // TARGET_XARCH
+#endif // FEATURE_MASKED_HW_INTRINSICS
 
     unsigned lvaCurEpoch; // VarSets are relative to a specific set of tracked var indices.
                           // It that changes, this changes.  VarSets from different epochs
@@ -3939,11 +3942,7 @@ public:
     void lvaUpdateArgWithInitialReg(LclVarDsc* varDsc);
     void lvaUpdateArgsWithInitialReg();
     void lvaAssignVirtualFrameOffsetsToArgs();
-#ifdef UNIX_AMD64_ABI
-    int lvaAssignVirtualFrameOffsetToArg(unsigned lclNum, unsigned argSize, int argOffs, int* callerArgOffset);
-#else  // !UNIX_AMD64_ABI
-    int lvaAssignVirtualFrameOffsetToArg(unsigned lclNum, unsigned argSize, int argOffs);
-#endif // !UNIX_AMD64_ABI
+    bool lvaGetRelativeOffsetToCallerAllocatedSpaceForParameter(unsigned lclNum, int* offset);
     void lvaAssignVirtualFrameOffsetsToLocals();
     bool lvaParamHasLocalStackSpace(unsigned lclNum);
     int lvaAllocLocalAndSetVirtualOffset(unsigned lclNum, unsigned size, int stkOffs);
@@ -4245,7 +4244,7 @@ public:
         return lvaGetDesc(lclNum)->lvInSsa;
     }
 
-    unsigned lvaStubArgumentVar; // variable representing the secret stub argument coming in EAX
+    unsigned lvaStubArgumentVar; // variable representing the secret stub argument
 
     unsigned lvaPSPSym; // variable representing the PSPSym
 
@@ -4532,7 +4531,7 @@ protected:
                                   CORINFO_SIG_INFO*     sig,
                                   CorInfoType           callJitType,
                                   NamedIntrinsic        intrinsicName,
-                                  bool                  tailCall);
+                                  bool                  mustExpand);
     GenTree* impMathIntrinsic(CORINFO_METHOD_HANDLE method,
                               CORINFO_SIG_INFO*     sig,
                               var_types             callType,
@@ -4563,7 +4562,8 @@ protected:
     GenTree* impPrimitiveNamedIntrinsic(NamedIntrinsic        intrinsic,
                                         CORINFO_CLASS_HANDLE  clsHnd,
                                         CORINFO_METHOD_HANDLE method,
-                                        CORINFO_SIG_INFO*     sig);
+                                        CORINFO_SIG_INFO*     sig,
+                                        bool                  mustExpand);
 
 #ifdef FEATURE_HW_INTRINSICS
     GenTree* impHWIntrinsic(NamedIntrinsic        intrinsic,
@@ -4575,7 +4575,8 @@ protected:
                                   CORINFO_CLASS_HANDLE  clsHnd,
                                   CORINFO_METHOD_HANDLE method,
                                   CORINFO_SIG_INFO*     sig,
-                                  GenTree*              newobjThis);
+                                  GenTree*              newobjThis,
+                                  bool                  mustExpand);
 
 protected:
     bool compSupportsHWIntrinsic(CORINFO_InstructionSet isa);
@@ -4586,7 +4587,8 @@ protected:
                                          var_types            retType,
                                          CorInfoType          simdBaseJitType,
                                          unsigned             simdSize,
-                                         GenTree*             newobjThis);
+                                         GenTree*             newobjThis,
+                                         bool                 mustExpand);
 
     GenTree* impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                                  CORINFO_CLASS_HANDLE  clsHnd,
@@ -4594,7 +4596,8 @@ protected:
                                  CORINFO_SIG_INFO*     sig,
                                  CorInfoType           simdBaseJitType,
                                  var_types             retType,
-                                 unsigned              simdSize);
+                                 unsigned              simdSize,
+                                 bool                  mustExpand);
 
     GenTree* getArgForHWIntrinsic(var_types            argType,
                                   CORINFO_CLASS_HANDLE argClass,
@@ -4604,6 +4607,34 @@ protected:
     GenTree* addRangeCheckIfNeeded(
         NamedIntrinsic intrinsic, GenTree* immOp, bool mustExpand, int immLowerBound, int immUpperBound);
     GenTree* addRangeCheckForHWIntrinsic(GenTree* immOp, int immLowerBound, int immUpperBound);
+
+    void getHWIntrinsicImmOps(NamedIntrinsic    intrinsic,
+                              CORINFO_SIG_INFO* sig,
+                              GenTree**         immOp1Ptr,
+                              GenTree**         immOp2Ptr);
+
+    bool CheckHWIntrinsicImmRange(NamedIntrinsic intrinsic,
+                                  CorInfoType simdBaseJitType,
+                                  GenTree* immOp,
+                                  bool mustExpand,
+                                  int immLowerBound,
+                                  int immUpperBound,
+                                  bool hasFullRangeImm,
+                                  bool *useFallback);
+
+#if defined(TARGET_ARM64)
+
+    void getHWIntrinsicImmTypes(NamedIntrinsic       intrinsic,
+                                CORINFO_SIG_INFO*    sig,
+                                unsigned             immNumber,
+                                var_types            simdBaseType,
+                                CorInfoType          simdBaseJitType,
+                                CORINFO_CLASS_HANDLE op2ClsHnd,
+                                CORINFO_CLASS_HANDLE op3ClsHnd,
+                                unsigned*            immSimdSize,
+                                var_types*           immSimdBaseType);
+
+#endif // TARGET_ARM64
 
 #endif // FEATURE_HW_INTRINSICS
     GenTree* impArrayAccessIntrinsic(CORINFO_CLASS_HANDLE clsHnd,
@@ -6793,11 +6824,11 @@ protected:
         int m_loopVarFPCount;
         int m_hoistedFPExprCount;
 
-#ifdef TARGET_XARCH
+#ifdef FEATURE_MASKED_HW_INTRINSICS
         int m_loopVarInOutMskCount;
         int m_loopVarMskCount;
         int m_hoistedMskExprCount;
-#endif // TARGET_XARCH
+#endif // FEATURE_MASKED_HW_INTRINSICS
 
         // Get the VN cache for current loop
         VNSet* GetHoistedInCurLoop(Compiler* comp)
@@ -7480,14 +7511,19 @@ public:
 #endif
 
     PhaseStatus optInductionVariables();
-    bool        optCanSinkWidenedIV(unsigned lclNum, FlowGraphNaturalLoop* loop);
-    bool        optIsIVWideningProfitable(unsigned                lclNum,
-                                          BasicBlock*             initBlock,
-                                          bool                    initedToConstant,
-                                          FlowGraphNaturalLoop*   loop,
-                                          ArrayStack<Statement*>& ivUses);
-    void        optBestEffortReplaceNarrowIVUses(
-               unsigned lclNum, unsigned ssaNum, unsigned newLclNum, BasicBlock* block, Statement* firstStmt);
+    bool        optWidenPrimaryIV(FlowGraphNaturalLoop* loop,
+                                  unsigned              lclNum,
+                                  ScevAddRec*           addRec,
+                                  LoopLocalOccurrences* loopLocals);
+
+    bool optCanSinkWidenedIV(unsigned lclNum, FlowGraphNaturalLoop* loop);
+    bool optIsIVWideningProfitable(unsigned              lclNum,
+                                   BasicBlock*           initBlock,
+                                   bool                  initedToConstant,
+                                   FlowGraphNaturalLoop* loop,
+                                   LoopLocalOccurrences* loopLocals);
+    void optBestEffortReplaceNarrowIVUses(
+        unsigned lclNum, unsigned ssaNum, unsigned newLclNum, BasicBlock* block, Statement* firstStmt);
     void optReplaceWidenedIV(unsigned lclNum, unsigned ssaNum, unsigned newLclNum, Statement* stmt);
     void optSinkWidenedIV(unsigned lclNum, unsigned newLclNum, FlowGraphNaturalLoop* loop);
 
@@ -7504,6 +7540,9 @@ public:
     BitVecTraits* optReachableBitVecTraits;
     BitVec        optReachableBitVec;
     void          optRelopImpliesRelop(RelopImplicationInfo* rii);
+    bool          optRelopTryInferWithOneEqualOperand(const VNFuncApp&      domApp,
+                                                      const VNFuncApp&      treeApp,
+                                                      RelopImplicationInfo* rii);
 
     /**************************************************************************
      *               Value/Assertion propagation
@@ -7536,7 +7575,6 @@ public:
         O1K_CONSTANT_LOOP_BND_UN,
         O1K_EXACT_TYPE,
         O1K_SUBTYPE,
-        O1K_VALUE_NUMBER,
         O1K_COUNT
     };
 
@@ -8242,6 +8280,22 @@ public:
     bool IsTargetAbi(CORINFO_RUNTIME_ABI abi)
     {
         return eeGetEEInfo()->targetAbi == abi;
+    }
+
+    bool BlockNonDeterministicIntrinsics(bool mustExpand)
+    {
+        // We explicitly block these APIs from being expanded in R2R
+        // since we know they are non-deterministic across hardware
+
+        if (opts.IsReadyToRun() && !IsTargetAbi(CORINFO_NATIVEAOT_ABI))
+        {
+            if (mustExpand)
+            {
+                implLimitation();
+            }
+            return true;
+        }
+        return false;
     }
 
 #if defined(FEATURE_EH_WINDOWS_X86)
@@ -9478,6 +9532,16 @@ private:
 #else
         return false;
 #endif
+    }
+
+    bool canUseEmbeddedBroadcast() const
+    {
+        return JitConfig.EnableEmbeddedBroadcast();
+    }
+
+    bool canUseEmbeddedMasking() const
+    {
+        return JitConfig.EnableEmbeddedMasking();
     }
 
 #ifdef TARGET_XARCH

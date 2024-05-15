@@ -55,6 +55,8 @@
 #define CoreLibSatelliteName_A "System.Private.CoreLib.resources"
 #define CoreLibSatelliteNameLen 32
 
+bool ValidateModuleName(LPCWSTR pwzModuleName);
+
 class StringArrayList;
 
 #if !defined(_DEBUG_IMPL) && defined(_DEBUG) && !defined(DACCESS_COMPILE)
@@ -843,7 +845,7 @@ template<typename T>
 class SimpleListNode
 {
 public:
-    SimpleListNode<T>(const T& _t)
+    SimpleListNode(const T& _t)
     {
         data = _t;
         next = 0;
@@ -859,7 +861,7 @@ class SimpleList
 public:
     typedef SimpleListNode<T> NodeType;
 
-    SimpleList<T>()
+    SimpleList()
     {
         head = NULL;
     }
@@ -3717,8 +3719,6 @@ namespace util
 }
 
 INDEBUG(BOOL DbgIsExecutable(LPVOID lpMem, SIZE_T length);)
-
-BOOL ThreadWillCreateGuardPage(SIZE_T sizeReservedStack, SIZE_T sizeCommittedStack);
 
 #ifdef FEATURE_COMINTEROP
 FORCEINLINE void HolderSysFreeString(BSTR str) { CONTRACT_VIOLATION(ThrowsViolation); SysFreeString(str); }

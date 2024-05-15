@@ -877,6 +877,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\PoolingAsyncValueTaskMethodBuilder.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\PoolingAsyncValueTaskMethodBuilderT.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\PreserveBaseOverridesAttribute.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\OverloadResolutionPriorityAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\RefSafetyRulesAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\RequiredMemberAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\RequiresLocationAttribute.cs" />
@@ -1482,19 +1483,19 @@
     <Compile Include="$(CommonPath)System\Reflection\AssemblyNameFormatter.cs">
       <Link>Common\System\Reflection\AssemblyNameFormatter.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)System\Reflection\Metadata\AssemblyNameInfo.cs">
+    <Compile Include="$(LibrariesProjectRoot)System.Reflection.Metadata\src\System\Reflection\Metadata\AssemblyNameInfo.cs">
       <Link>Common\System\Reflection\Metadata\AssemblyNameInfo.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)System\Reflection\Metadata\TypeName.cs">
+    <Compile Include="$(LibrariesProjectRoot)System.Reflection.Metadata\src\System\Reflection\Metadata\TypeName.cs">
       <Link>Common\System\Reflection\Metadata\TypeName.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)System\Reflection\Metadata\TypeNameHelpers.cs">
       <Link>Common\System\Reflection\Metadata\TypeNameHelpers.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)System\Reflection\Metadata\TypeNameParser.cs">
+    <Compile Include="$(LibrariesProjectRoot)System.Reflection.Metadata\src\System\Reflection\Metadata\TypeNameParser.cs">
       <Link>Common\System\Reflection\Metadata\TypeNameParser.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)System\Reflection\Metadata\TypeNameParserHelpers.cs">
+    <Compile Include="$(LibrariesProjectRoot)System.Reflection.Metadata\src\System\Reflection\Metadata\TypeNameParserHelpers.cs">
       <Link>Common\System\Reflection\Metadata\TypeNameParserHelpers.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)System\Runtime\Versioning\NonVersionableAttribute.cs">
@@ -2086,6 +2087,9 @@
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\OleAut32\Interop.SysFreeString.cs">
       <Link>Common\Interop\Windows\OleAut32\Interop.SysFreeString.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)Interop\Windows\OleAut32\Interop.VariantChangeTypeEx.cs">
+      <Link>Common\Interop\Windows\OleAut32\Interop.VariantChangeTypeEx.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Ole32\Interop.CLSIDFromProgID.cs">
       <Link>Common\Interop\Windows\Ole32\Interop.CLSIDFromProgID.cs</Link>

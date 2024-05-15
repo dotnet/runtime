@@ -957,6 +957,9 @@ ves_icall_System_Runtime_RuntimeImports_Memmove (guint8 *destination, guint8 *so
 void
 ves_icall_System_Buffer_BulkMoveWithWriteBarrier (guint8 *destination, guint8 *source, size_t len, MonoType *type)
 {
+	if (len == 0 || destination == source)
+		return;
+
 	if (MONO_TYPE_IS_REFERENCE (type))
 		mono_gc_wbarrier_arrayref_copy_internal (destination, source, (guint)len);
 	else

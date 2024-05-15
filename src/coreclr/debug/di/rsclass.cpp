@@ -34,8 +34,7 @@ CordbClass::CordbClass(CordbModule *m, mdTypeDef classMetadataToken)
     m_fIsValueClassKnown(false),
     m_fIsValueClass(false),
     m_fHasTypeParams(false),
-    m_continueCounterLastSync(0),
-    m_fCustomNotificationsEnabled(false)
+    m_continueCounterLastSync(0)
 {
     m_classInfo.Clear();
 }

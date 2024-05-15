@@ -474,12 +474,12 @@ private:
 template <class T> class CQuickArray : public CQuickArrayBase<T>
 {
 public:
-    CQuickArray<T>()
+    CQuickArray()
     {
         this->Init();
     }
 
-    ~CQuickArray<T>()
+    ~CQuickArray()
     {
         this->Destroy();
     }

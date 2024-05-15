@@ -46,7 +46,7 @@ public class Class1
             if (i == 0) throw new Exception();
         }
         Console.WriteLine("after middle1 finally");
-        L1:
+    L1:
         Console.WriteLine("middle1 L1");
     }
 
@@ -67,11 +67,12 @@ public class Class1
             if (i == 0) throw new Exception();
         }
         Console.WriteLine("after middle2 finally");
-        L2:
+    L2:
         Console.WriteLine("middle2 L2");
     }
 
     [Fact]
+    [OuterLoop]
     static public int TestEntryPoint()
     {
         // start recording
