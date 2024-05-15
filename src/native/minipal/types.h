@@ -4,6 +4,10 @@
 #ifndef HAVE_MINIPAL_TYPES_H
 #define HAVE_MINIPAL_TYPES_H
 
+#ifdef TARGET_WINDOWS
+#include <windows.h>
+#endif
+
 #if defined(TARGET_32BIT) || defined(TARGET_OSX) || defined(TARGET_WINDOWS)
 #define FORMAT_PREFIX "l"
 #else
