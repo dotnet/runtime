@@ -6,7 +6,6 @@
 
 #include <minipal/utils.h>
 #include <minipal/types.h>
-#include <stdlib.h>
 #include <stdbool.h>
 
 #define MINIPAL_MB_NO_REPLACE_INVALID_CHARS 0x00000008
