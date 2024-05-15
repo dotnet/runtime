@@ -915,7 +915,7 @@ bool Compiler::optMakeLoopDownwardsCounted(ScalarEvolutionContext& scevContext,
 
     // Making a loop downwards counted is profitable if there is a primary IV
     // that has no uses outside the loop test (and mutating itself). Check that
-    // now. This is usually rare.
+    // now.
     ArrayStack<unsigned> removableLocals(getAllocator(CMK_LoopOpt));
     for (Statement* stmt : loop->GetHeader()->Statements())
     {
@@ -948,6 +948,7 @@ bool Compiler::optMakeLoopDownwardsCounted(ScalarEvolutionContext& scevContext,
 
         if (visitResult == BasicBlockVisit::Abort)
         {
+            // Live into an exit.
             continue;
         }
 
@@ -1055,6 +1056,9 @@ bool Compiler::optMakeLoopDownwardsCounted(ScalarEvolutionContext& scevContext,
     BasicBlock* preheader = loop->GetPreheader();
     assert(preheader != nullptr);
 
+    // We are interested in phrasing the test as (--x == 0). That requires us
+    // to add one to the computed trip count. We do not need to worry about
+    // overflow here (even with wraparound we have the right behavior).
     Scev* decCount = scevContext.Simplify(
         scevContext.NewBinop(ScevOper::Add, tripCount, scevContext.NewConstant(tripCount->Type, 1)));
     GenTree* decCountNode = scevContext.Materialize(decCount);
@@ -1081,12 +1085,16 @@ bool Compiler::optMakeLoopDownwardsCounted(ScalarEvolutionContext& scevContext,
         exitOp = GT_NE;
     }
 
+    // Update the test.
     cond->SetOper(exitOp);
     cond->AsOp()->gtOp1 = gtNewLclVarNode(tripCountLcl, decCount->Type);
     cond->AsOp()->gtOp2 = gtNewZeroConNode(decCount->Type);
 
     gtSetStmtInfo(jtrueStmt);
     fgSetStmtSeq(jtrueStmt);
+
+    JITDUMP("\n  Updated exit test:\n");
+    DISPSTMT(jtrueStmt);
 
     GenTree* decremented = gtNewOperNode(GT_ADD, decCount->Type, gtNewLclVarNode(tripCountLcl, decCount->Type),
                                          gtNewIconNode(-1, decCount->Type));
@@ -1099,10 +1107,13 @@ bool Compiler::optMakeLoopDownwardsCounted(ScalarEvolutionContext& scevContext,
     JITDUMP("\n  Inserted decrement of tripcount local\n\n");
     DISPSTMT(newStmt);
 
+    JITDUMP("\n  Now removing uses of old IVs\n");
+
     for (int i = 0; i < removableLocals.Height(); i++)
     {
-        unsigned removableLcl    = removableLocals.Bottom(i);
-        auto     deleteStatement = [=](BasicBlock* block, Statement* stmt) {
+        unsigned removableLcl = removableLocals.Bottom(i);
+        JITDUMP("  Removing uses of V%02u\n", removableLcl);
+        auto deleteStatement = [=](BasicBlock* block, Statement* stmt) {
             if (stmt != jtrueStmt)
             {
                 fgRemoveStmt(block, stmt);

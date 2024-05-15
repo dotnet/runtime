@@ -961,9 +961,10 @@ Scev* ScalarEvolutionContext::Simplify(Scev* scev)
 
             if (op1->OperIs(ScevOper::AddRec))
             {
-                // TODO-Bug: This requires some proof that it is ok. If the
+                // TODO-Cleanup: This requires some proof that it is ok. If the
                 // original TYP_INT AddRec can overflow then this new TYP_LONG
-                // AddRec won't.
+                // AddRec won't. However, we currently do not rely on this
+                // anywhere.
                 ScevAddRec* addRec   = (ScevAddRec*)op1;
                 Scev*       newStart = Simplify(NewExtension(unop->Oper, TYP_LONG, addRec->Start));
                 Scev*       newStep  = Simplify(NewExtension(unop->Oper, TYP_LONG, addRec->Step));
