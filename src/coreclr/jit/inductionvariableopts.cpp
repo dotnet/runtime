@@ -861,6 +861,251 @@ bool Compiler::optWidenPrimaryIV(FlowGraphNaturalLoop* loop,
     return true;
 }
 
+bool Compiler::optMakeLoopInductionDownwards(ScalarEvolutionContext& scevContext,
+                                             FlowGraphNaturalLoop*   loop,
+                                             LoopLocalOccurrences*   loopLocals)
+{
+    JITDUMP("Checking if we should make " FMT_LP " downwards counted\n", loop->GetIndex());
+
+    if (loop->ExitEdges().size() != 1)
+    {
+        // With multiple exits we generally can only compute an upper bound on
+        // the trip count.
+        JITDUMP("  No; has multiple exits\n");
+        return false;
+    }
+
+    BasicBlock* exiting = loop->ExitEdge(0)->getSourceBlock();
+    if (!exiting->KindIs(BBJ_COND))
+    {
+        JITDUMP("  No; exit is not BBJ_COND\n");
+        return false;
+    }
+
+    Statement* jtrueStmt = exiting->lastStmt();
+    GenTree*   jtrue     = jtrueStmt->GetRootNode();
+    assert(jtrue->OperIs(GT_JTRUE));
+
+    if ((jtrue->gtFlags & GTF_SIDE_EFFECT) != 0)
+    {
+        // If the IV is used as part of the side effect then we can't
+        // transform; otherwise we could. TODO-CQ: Make this determination.
+        JITDUMP("  No; exit node has side effects\n");
+        return false;
+    }
+
+    GenTree* cond = jtrue->gtGetOp1();
+    if (cond->OperIsCompare() && (cond->gtGetOp1()->IsIntegralConst(0) || cond->gtGetOp2()->IsIntegralConst(0)))
+    {
+        JITDUMP("  No; operand of condition [%06u] is already 0\n", dspTreeID(cond));
+        return false;
+    }
+
+    // Making a loop downwards counted is profitable if there is a primary IV
+    // that has no uses outside the loop test (and mutating itself). Check that
+    // now. This is usually rare.
+    ArrayStack<unsigned> removableLocals(getAllocator(CMK_LoopOpt));
+    for (Statement* stmt : loop->GetHeader()->Statements())
+    {
+        if (!stmt->IsPhiDefnStmt())
+        {
+            break;
+        }
+
+        unsigned   candidateLclNum = stmt->GetRootNode()->AsLclVarCommon()->GetLclNum();
+        LclVarDsc* candidateVarDsc = lvaGetDesc(candidateLclNum);
+        if (candidateVarDsc->lvIsStructField && loopLocals->HasAnyOccurrences(loop, candidateVarDsc->lvParentLcl))
+        {
+            continue;
+        }
+
+        if (candidateVarDsc->lvDoNotEnregister)
+        {
+            // This filters out locals that may be live into exceptional exits.
+            continue;
+        }
+
+        BasicBlockVisit visitResult = loop->VisitRegularExitBlocks([=](BasicBlock* block) {
+            if (VarSetOps::IsMember(this, block->bbLiveIn, candidateVarDsc->lvVarIndex))
+            {
+                return BasicBlockVisit::Abort;
+            }
+
+            return BasicBlockVisit::Continue;
+        });
+
+        if (visitResult == BasicBlockVisit::Abort)
+        {
+            continue;
+        }
+
+        bool hasUseInTest      = false;
+        auto checkRemovableUse = [=, &hasUseInTest](BasicBlock* block, Statement* stmt) {
+            if (stmt == jtrueStmt)
+            {
+                // Use is inside the loop test that has no side effects (as we checked above), can remove
+                hasUseInTest = true;
+                return true;
+            }
+
+            GenTree* rootNode = stmt->GetRootNode();
+            if (!rootNode->OperIsLocalStore())
+            {
+                // Cannot reason about this use of the local, cannot remove
+                return false;
+            }
+
+            if (rootNode->AsLclVarCommon()->GetLclNum() != candidateLclNum)
+            {
+                // Used to compute a value stored to some other local, cannot remove
+                return false;
+            }
+
+            if ((rootNode->AsLclVarCommon()->Data()->gtFlags & GTF_SIDE_EFFECT) != 0)
+            {
+                // May be used inside the data node for something that has side effects, cannot remove
+                return false;
+            }
+
+            // Can remove this store
+            return true;
+        };
+
+        if (!loopLocals->VisitStatementsWithOccurrences(loop, candidateLclNum, checkRemovableUse))
+        {
+            // Aborted means we found a non-removable use
+            continue;
+        }
+
+        if (!hasUseInTest)
+        {
+            // This one we can remove, but we expect it to be removable even without this transformation.
+            continue;
+        }
+
+        JITDUMP("  Expecting to be able to remove V%02u by making this loop reverse counted\n", candidateLclNum);
+        removableLocals.Push(candidateLclNum);
+    }
+
+    if (removableLocals.Height() <= 0)
+    {
+        JITDUMP("  Found no potentially removable locals when making this loop downwards counted\n");
+        return false;
+    }
+
+    // Commonly there is only a single shared exit and backedge. In that case
+    // we do not even need to compute dominators since all backedges are
+    // definitely dominated by the exit.
+    if ((loop->BackEdges().size() == 1) && loop->BackEdge(0)->getSourceBlock() == loop->ExitEdge(0)->getSourceBlock())
+    {
+        // Exit definitely dominates the latch since they are the same block.
+        // Fall through.
+        JITDUMP("  Loop exit is also the only backedge\n");
+    }
+    else
+    {
+        for (FlowEdge* backedge : loop->BackEdges())
+        {
+            // We know dom(x, y) => ancestor(x, y), so we can utilize the
+            // contrapositive !ancestor(x, y) => !dom(x, y) to avoid computing
+            // dominators in some cases.
+            if (!m_dfsTree->IsAncestor(exiting, backedge->getSourceBlock()))
+            {
+                JITDUMP("  No; exiting block " FMT_BB " is not an ancestor of backedge source " FMT_BB "\n",
+                        exiting->bbNum, backedge->getSourceBlock()->bbNum);
+                return false;
+            }
+
+            if (m_domTree == nullptr)
+            {
+                m_domTree = FlowGraphDominatorTree::Build(m_dfsTree);
+            }
+
+            if (!m_domTree->Dominates(exiting, backedge->getSourceBlock()))
+            {
+                JITDUMP("  No; exiting block " FMT_BB " does not dominate backedge source " FMT_BB "\n", exiting->bbNum,
+                        backedge->getSourceBlock()->bbNum);
+                return false;
+            }
+        }
+    }
+
+    // At this point we know that the single exit dominates all backedges.
+    JITDUMP("  All backedges are dominated by exiting block " FMT_BB "\n", exiting->bbNum);
+
+    Scev* tripCount = scevContext.ComputeExitNotTakenCount(exiting);
+    if (tripCount == nullptr)
+    {
+        JITDUMP("  Could not compute trip count -- not a counted loop\n");
+        return false;
+    }
+
+    BasicBlock* preheader = loop->GetPreheader();
+    assert(preheader != nullptr);
+
+    Scev* decCount = scevContext.Simplify(
+        scevContext.NewBinop(ScevOper::Add, tripCount, scevContext.NewConstant(tripCount->Type, 1)));
+    GenTree* decCountNode = scevContext.Materialize(decCount);
+    if (decCountNode == nullptr)
+    {
+        JITDUMP("  Could not materialize trip count into IR\n");
+        return false;
+    }
+
+    JITDUMP("  Converting " FMT_LP " into a downwards loop\n", loop->GetIndex());
+
+    unsigned tripCountLcl = lvaGrabTemp(false DEBUGARG("Trip count IV"));
+    GenTree* store        = gtNewTempStore(tripCountLcl, decCountNode);
+
+    Statement* newStmt = fgNewStmtFromTree(store);
+    fgInsertStmtAtEnd(preheader, newStmt);
+
+    JITDUMP("  Inserted initialization of tripcount local\n\n");
+    DISPSTMT(newStmt);
+
+    genTreeOps exitOp = GT_EQ;
+    if (loop->ContainsBlock(exiting->GetTrueTarget()))
+    {
+        exitOp = GT_NE;
+    }
+
+    cond->SetOper(exitOp);
+    cond->AsOp()->gtOp1 = gtNewLclVarNode(tripCountLcl, decCount->Type);
+    cond->AsOp()->gtOp2 = gtNewZeroConNode(decCount->Type);
+
+    gtSetStmtInfo(jtrueStmt);
+    fgSetStmtSeq(jtrueStmt);
+
+    GenTree* decremented = gtNewOperNode(GT_ADD, decCount->Type, gtNewLclVarNode(tripCountLcl, decCount->Type),
+                                         gtNewIconNode(-1, decCount->Type));
+
+    store = gtNewTempStore(tripCountLcl, decremented);
+
+    newStmt = fgNewStmtFromTree(store);
+    fgInsertStmtNearEnd(exiting, newStmt);
+
+    JITDUMP("\n  Inserted decrement of tripcount local\n\n");
+    DISPSTMT(newStmt);
+
+    for (int i = 0; i < removableLocals.Height(); i++)
+    {
+        unsigned removableLcl    = removableLocals.Bottom(i);
+        auto     deleteStatement = [=](BasicBlock* block, Statement* stmt) {
+            if (stmt != jtrueStmt)
+            {
+                fgRemoveStmt(block, stmt);
+            }
+
+            return true;
+        };
+
+        loopLocals->VisitStatementsWithOccurrences(loop, removableLcl, deleteStatement);
+    }
+
+    JITDUMP("\n");
+    return true;
+}
+
 //------------------------------------------------------------------------
 // optInductionVariables: Try and optimize induction variables in the method.
 //
@@ -889,10 +1134,6 @@ PhaseStatus Compiler::optInductionVariables()
 
     bool changed = false;
 
-    // Currently we only do IV widening which generally is only profitable for
-    // x64 because arm64 addressing modes can include the zero/sign-extension
-    // of the index for free.
-#if defined(TARGET_XARCH) && defined(TARGET_64BIT)
     m_dfsTree = fgComputeDfs();
     m_loops   = FlowGraphNaturalLoops::Find(m_dfsTree);
 
@@ -907,6 +1148,25 @@ PhaseStatus Compiler::optInductionVariables()
         DBEXEC(verbose, FlowGraphNaturalLoop::Dump(loop));
         scevContext.ResetForLoop(loop);
 
+        // We may not have preheaders here since RBO/assertion prop may have changed
+        // the flow graph
+        BasicBlock* preheader = loop->GetPreheader();
+        if (preheader == nullptr)
+        {
+            JITDUMP("  No preheader; skipping\n");
+            continue;
+        }
+
+        if (optMakeLoopInductionDownwards(scevContext, loop, &loopLocals))
+        {
+            Metrics.LoopInductionsMadeDownwards++;
+            changed = true;
+        }
+
+        // IV widening is generally only profitable for x64 because arm64
+        // addressing modes can include the zero/sign-extension of the index
+        // for free.
+#if defined(TARGET_XARCH) && defined(TARGET_64BIT)
         int numWidened = 0;
 
         for (Statement* stmt : loop->GetHeader()->Statements())
@@ -964,10 +1224,10 @@ PhaseStatus Compiler::optInductionVariables()
         {
             Metrics.LoopsIVWidened++;
         }
+#endif
     }
 
     fgInvalidateDfsTree();
-#endif
 
     return changed ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
 }

@@ -165,7 +165,8 @@
 // (Though some of these may be labeled "illegal").
 enum VNFunc
 {
-    // Implicitly, elements of genTreeOps here.
+#define GTNODE(en, st, cm, ivn, ok) VNF_##en,
+#include "gtlist.h"
     VNF_Boundary = GT_COUNT,
 #define ValueNumFuncDef(nm, arity, commute, knownNonNull, sharedStatic, extra) VNF_##nm,
 #include "valuenumfuncs.h"
