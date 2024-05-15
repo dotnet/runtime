@@ -418,9 +418,9 @@ namespace Mono.Linker.Steps
 				}
 			}
 
-			// Setup empty scope - there has to be some scope setup since we're doing marking below
+			// Setup empty origin - there has to be some origin setup since we're doing marking below
 			// but there's no "origin" right now (command line is the origin really)
-			var emptyScope = new MessageOrigin (null as ICustomAttributeProvider);
+			var emptyOrigin = new MessageOrigin (null as ICustomAttributeProvider);
 
 			// Beware: this works on loaded assemblies, not marked assemblies, so it should not be tied to marking.
 			// We could further optimize this to only iterate through assemblies if the last mark iteration loaded
@@ -433,7 +433,7 @@ namespace Mono.Linker.Steps
 					continue;
 				if (!Annotations.IsProcessed (assembly))
 					markedNewAssembly = true;
-				MarkAssembly (assembly, new DependencyInfo (DependencyKind.AssemblyAction, null), emptyScope);
+				MarkAssembly (assembly, new DependencyInfo (DependencyKind.AssemblyAction, null), emptyOrigin);
 			}
 			return markedNewAssembly;
 		}
@@ -518,8 +518,8 @@ namespace Mono.Linker.Steps
 
 		void ProcessInterfaceMethods ()
 		{
-			foreach ((var method, var scope) in _interface_methods) {
-				ProcessInterfaceMethod (method, scope);
+			foreach ((var method, var origin) in _interface_methods) {
+				ProcessInterfaceMethod (method, origin);
 			}
 		}
 
@@ -1728,11 +1728,10 @@ namespace Mono.Linker.Steps
 			if (CheckProcessed (field))
 				return;
 
-			// Use the original scope for marking the declaring type - it provides better warning message location
+			// Use the original origin for marking the declaring type - it provides better warning message location
 			MarkType (field.DeclaringType, new DependencyInfo (DependencyKind.DeclaringType, field), origin);
 
 			var fieldOrigin = new MessageOrigin (field);
-
 			MarkType (field.FieldType, new DependencyInfo (DependencyKind.FieldType, field), fieldOrigin);
 			MarkCustomAttributes (field, new DependencyInfo (DependencyKind.CustomAttribute, field), fieldOrigin);
 			MarkMarshalSpec (field, new DependencyInfo (DependencyKind.FieldMarshalSpec, field), fieldOrigin);
@@ -1792,13 +1791,6 @@ namespace Mono.Linker.Steps
 
 		void ProcessAnalysisAnnotationsForField (FieldDefinition field, DependencyKind dependencyKind, in MessageOrigin origin)
 		{
-			//if (origin.Provider != ScopeStack.CurrentScope.Origin.Provider) {
-			//Debug.Assert (dependencyKind is DependencyKind.DynamicallyAccessedMemberOnType
-			////or DependencyKind.MemberOfType
-			//||
-			//(origin.Provider is MethodDefinition originMethod && CompilerGeneratedState.IsNestedFunctionOrStateMachineMember (originMethod)));
-			//}
-
 			switch (dependencyKind) {
 			// Marked through things like descriptor - don't want to warn as it's intentional choice
 			case DependencyKind.AlreadyMarked:
@@ -1973,7 +1965,7 @@ namespace Mono.Linker.Steps
 				Debug.Assert (Annotations.IsMarked (type));
 				break;
 			default:
-				Annotations.Mark (type, reason, (MessageOrigin) origin);
+				Annotations.Mark (type, reason, origin);
 				break;
 			}
 
@@ -1989,7 +1981,7 @@ namespace Mono.Linker.Steps
 				// Also don't warn when the type is marked due to an assembly being rooted.
 				if (!(reason.Source is IMemberDefinition sourceMemberDefinition && sourceMemberDefinition.DeclaringType == type) &&
 					reason.Kind is not DependencyKind.TypeInAssembly)
-					Context.LogWarning ((MessageOrigin) origin, DiagnosticId.AttributeIsReferencedButTrimmerRemoveAllInstances, type.GetDisplayName ());
+					Context.LogWarning (origin, DiagnosticId.AttributeIsReferencedButTrimmerRemoveAllInstances, type.GetDisplayName ());
 			}
 
 			if (CheckProcessed (type))
