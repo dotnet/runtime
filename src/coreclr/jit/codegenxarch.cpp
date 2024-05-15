@@ -7349,8 +7349,8 @@ void CodeGen::genIntToFloatCast(GenTree* treeNode)
         if (*cns == nullptr)
         {
             double d;
-            static_assert_no_msg(sizeof(double) == sizeof(__int64));
-            *((__int64*)&d) = 0x43f0000000000000LL;
+            static_assert_no_msg(sizeof(double) == sizeof(int64_t));
+            *((int64_t*)&d) = 0x43f0000000000000LL;
 
             *cns = GetEmitter()->emitFltOrDblConst(d, EA_8BYTE);
         }

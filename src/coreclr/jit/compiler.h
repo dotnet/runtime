@@ -123,7 +123,7 @@ void* operator new[](size_t n, Compiler* context, CompMemKind cmk);
 /*****************************************************************************/
 
 unsigned genLog2(unsigned value);
-unsigned genLog2(unsigned __int64 value);
+unsigned genLog2(uint64_t value);
 
 unsigned ReinterpretHexAsDecimal(unsigned in);
 
@@ -1656,12 +1656,12 @@ struct CompTimeInfo
     static bool PhaseReportsIRSize[];
 
     unsigned         m_byteCodeBytes;
-    unsigned __int64 m_totalCycles;
-    unsigned __int64 m_invokesByPhase[PHASE_NUMBER_OF];
-    unsigned __int64 m_cyclesByPhase[PHASE_NUMBER_OF];
+    uint64_t m_totalCycles;
+    uint64_t m_invokesByPhase[PHASE_NUMBER_OF];
+    uint64_t m_cyclesByPhase[PHASE_NUMBER_OF];
 #if MEASURE_CLRAPI_CALLS
-    unsigned __int64 m_CLRinvokesByPhase[PHASE_NUMBER_OF];
-    unsigned __int64 m_CLRcyclesByPhase[PHASE_NUMBER_OF];
+    uint64_t m_CLRinvokesByPhase[PHASE_NUMBER_OF];
+    uint64_t m_CLRcyclesByPhase[PHASE_NUMBER_OF];
 #endif
 
     unsigned m_nodeCountAfterPhase[PHASE_NUMBER_OF];
@@ -1674,16 +1674,16 @@ struct CompTimeInfo
     // it out in a report, so we can verify that it is, indeed, very small.  If it ever
     // isn't, this means that we're doing something significant between the end of the last
     // declared subphase and the end of its parent.
-    unsigned __int64 m_parentPhaseEndSlop;
+    uint64_t m_parentPhaseEndSlop;
     bool             m_timerFailure;
 
 #if MEASURE_CLRAPI_CALLS
     // The following measures the time spent inside each individual CLR API call.
     unsigned         m_allClrAPIcalls;
     unsigned         m_perClrAPIcalls[API_ICorJitInfo_Names::API_COUNT];
-    unsigned __int64 m_allClrAPIcycles;
-    unsigned __int64 m_perClrAPIcycles[API_ICorJitInfo_Names::API_COUNT];
-    unsigned __int32 m_maxClrAPIcycles[API_ICorJitInfo_Names::API_COUNT];
+    uint64_t m_allClrAPIcycles;
+    uint64_t m_perClrAPIcycles[API_ICorJitInfo_Names::API_COUNT];
+    uint32_t m_maxClrAPIcycles[API_ICorJitInfo_Names::API_COUNT];
 #endif // MEASURE_CLRAPI_CALLS
 
     CompTimeInfo(unsigned byteCodeBytes);
@@ -1741,12 +1741,12 @@ public:
 //
 class JitTimer
 {
-    unsigned __int64 m_start;         // Start of the compilation.
-    unsigned __int64 m_curPhaseStart; // Start of the current phase.
+    uint64_t m_start;         // Start of the compilation.
+    uint64_t m_curPhaseStart; // Start of the current phase.
 #if MEASURE_CLRAPI_CALLS
-    unsigned __int64 m_CLRcallStart;   // Start of the current CLR API call (if any).
-    unsigned __int64 m_CLRcallInvokes; // CLR API invokes under current outer so far
-    unsigned __int64 m_CLRcallCycles;  // CLR API  cycles under current outer so far.
+    uint64_t m_CLRcallStart;   // Start of the current CLR API call (if any).
+    uint64_t m_CLRcallInvokes; // CLR API invokes under current outer so far
+    uint64_t m_CLRcallCycles;  // CLR API  cycles under current outer so far.
     int              m_CLRcallAPInum;  // The enum/index of the current CLR API call (or -1).
     static double    s_cyclesPerSec;   // Cached for speedier measurements
 #endif
@@ -1792,7 +1792,7 @@ public:
     // Attempts to query the cycle counter of the current thread.  If successful, returns "true" and sets
     // *cycles to the cycle counter value.  Otherwise, returns false and sets the "m_timerFailure" flag of
     // "m_info" to true.
-    bool GetThreadCycles(unsigned __int64* cycles)
+    bool GetThreadCycles(uint64_t* cycles)
     {
         bool res = CycleTimer::GetThreadCyclesS(cycles);
         if (!res)
@@ -3006,7 +3006,7 @@ public:
     GenTree* gtNewStringLiteralNode(InfoAccessType iat, void* pValue);
     GenTreeIntCon* gtNewStringLiteralLength(GenTreeStrCon* node);
 
-    GenTree* gtNewLconNode(__int64 value);
+    GenTree* gtNewLconNode(int64_t value);
 
     GenTree* gtNewDconNodeF(float value);
     GenTree* gtNewDconNodeD(double value);
@@ -4256,7 +4256,7 @@ public:
     Compiler* impInlineRoot();
 
 #if defined(DEBUG)
-    unsigned __int64 getInlineCycleCount()
+    uint64_t getInlineCycleCount()
     {
         return m_compCycles;
     }
@@ -7627,7 +7627,7 @@ public:
             {
                 SsaVar        lcl;
                 IntVal        u1;
-                __int64       lconVal;
+                int64_t       lconVal;
                 double        dconVal;
                 IntegralRange u2;
             };
@@ -11067,9 +11067,9 @@ private:
 
 #if defined(DEBUG)
     // These variables are associated with maintaining SQM data about compile time.
-    unsigned __int64 m_compCyclesAtEndOfInlining; // The thread-virtualized cycle count at the end of the inlining phase
-                                                  // in the current compilation.
-    unsigned __int64 m_compCycles;                // Net cycle count for current compilation
+    uint64_t m_compCyclesAtEndOfInlining; // The thread-virtualized cycle count at the end of the inlining phase
+                                          // in the current compilation.
+    uint64_t m_compCycles;                // Net cycle count for current compilation
     DWORD m_compTickCountAtEndOfInlining; // The result of GetTickCount() (# ms since some epoch marker) at the end of
                                           // the inlining phase in the current compilation.
 #endif                                    // defined(DEBUG)
@@ -11207,14 +11207,11 @@ public:
     static void GetStructTypeOffset(const SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR& structDesc,
                                     var_types*                                                 type0,
                                     var_types*                                                 type1,
-                                    unsigned __int8*                                           offset0,
-                                    unsigned __int8*                                           offset1);
+                                    uint8_t*                                                   offset0,
+                                    uint8_t*                                                   offset1);
 
-    void GetStructTypeOffset(CORINFO_CLASS_HANDLE typeHnd,
-                             var_types*           type0,
-                             var_types*           type1,
-                             unsigned __int8*     offset0,
-                             unsigned __int8*     offset1);
+    void GetStructTypeOffset(
+        CORINFO_CLASS_HANDLE typeHnd, var_types* type0, var_types* type1, uint8_t* offset0, uint8_t* offset1);
 
 #endif // defined(UNIX_AMD64_ABI)
 
@@ -12057,16 +12054,16 @@ struct NodeSizeStats
     }
 
     // Count of tree nodes allocated.
-    unsigned __int64 genTreeNodeCnt;
+    uint64_t genTreeNodeCnt;
 
     // The size we allocate.
-    unsigned __int64 genTreeNodeSize;
+    uint64_t genTreeNodeSize;
 
     // The actual size of the node. Note that the actual size will likely be smaller
     // than the allocated size, but we sometimes use SetOper()/ChangeOper() to change
     // a smaller node to a larger one. TODO-Cleanup: add stats on
     // SetOper()/ChangeOper() usage to quantify this.
-    unsigned __int64 genTreeNodeActualSize;
+    uint64_t genTreeNodeActualSize;
 };
 extern NodeSizeStats genNodeSizeStats;        // Total node size stats
 extern NodeSizeStats genNodeSizeStatsPerFunc; // Per-function node size stats
