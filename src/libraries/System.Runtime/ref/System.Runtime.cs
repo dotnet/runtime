@@ -15164,7 +15164,6 @@ namespace System.Threading
         PublicationOnly = 1,
         ExecutionAndPublication = 2,
     }
-    [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
     public sealed partial class Lock
     {
         public Lock() { }
