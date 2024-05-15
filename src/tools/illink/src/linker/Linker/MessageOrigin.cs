@@ -17,9 +17,9 @@ namespace Mono.Linker
 
 		public int SourceLine { get; }
 		public int SourceColumn { get; }
-		public int ILOffset { get; }
+		internal int ILOffset { get; }
 
-		public const int UnsetILOffset = -1;
+		internal const int UnsetILOffset = -1;
 
 		const int HiddenLineNumber = 0xfeefee;
 
