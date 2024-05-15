@@ -7536,9 +7536,9 @@ public:
 #endif
 
     PhaseStatus optInductionVariables();
-    bool        optMakeLoopInductionDownwards(ScalarEvolutionContext& scevContext,
-                                              FlowGraphNaturalLoop*   loop,
-                                              LoopLocalOccurrences*   loopLocals);
+    bool        optMakeLoopDownwardsCounted(ScalarEvolutionContext& scevContext,
+                                            FlowGraphNaturalLoop*   loop,
+                                            LoopLocalOccurrences*   loopLocals);
     bool        optWidenPrimaryIV(FlowGraphNaturalLoop* loop,
                                   unsigned              lclNum,
                                   ScevAddRec*           addRec,

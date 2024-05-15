@@ -862,7 +862,7 @@ bool Compiler::optWidenPrimaryIV(FlowGraphNaturalLoop* loop,
 }
 
 //------------------------------------------------------------------------
-// optMakeLoopInductionDownwards: Transform a loop to be downwards counted if
+// optMakeLoopDownwardsCounted: Transform a loop to be downwards counted if
 // profitable and legal.
 //
 // Parameters:
@@ -873,9 +873,9 @@ bool Compiler::optWidenPrimaryIV(FlowGraphNaturalLoop* loop,
 // Returns:
 //   True if the loop was made downwards counted; otherwise false.
 //
-bool Compiler::optMakeLoopInductionDownwards(ScalarEvolutionContext& scevContext,
-                                             FlowGraphNaturalLoop*   loop,
-                                             LoopLocalOccurrences*   loopLocals)
+bool Compiler::optMakeLoopDownwardsCounted(ScalarEvolutionContext& scevContext,
+                                           FlowGraphNaturalLoop*   loop,
+                                           LoopLocalOccurrences*   loopLocals)
 {
     JITDUMP("Checking if we should make " FMT_LP " downwards counted\n", loop->GetIndex());
 
@@ -1169,7 +1169,7 @@ PhaseStatus Compiler::optInductionVariables()
             continue;
         }
 
-        if (optMakeLoopInductionDownwards(scevContext, loop, &loopLocals))
+        if (optMakeLoopDownwardsCounted(scevContext, loop, &loopLocals))
         {
             Metrics.LoopInductionsMadeDownwards++;
             changed = true;
