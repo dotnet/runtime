@@ -23,7 +23,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            sb.Append(nameMangler.CompilationUnitPrefix).Append("__RuntimeType_").Append(nameMangler.GetMangledTypeName(_type));
+            sb.Append(nameMangler.CompilationUnitPrefix).Append("__RuntimeType_"u8).Append(nameMangler.GetMangledTypeName(_type));
         }
 
         protected override int ContentSize => ObjectType.InstanceByteCount.AsInt;
