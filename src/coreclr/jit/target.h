@@ -398,6 +398,8 @@ typedef unsigned __int64 regMaskSmall;
 #define REG_MASK_ALL_FMT "%016llX"
 #endif
 
+typedef regMaskSmall SingleTypeRegSet;
+
 /*****************************************************************************/
 
 #ifdef DEBUG
