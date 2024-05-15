@@ -64,6 +64,28 @@ namespace System.Collections.Generic
 
         internal const int StackAllocThreshold = 100;
 
+        // If Count is below or equal InternalIndexOfCountThreshold, InternalIndexOf returns a index
+        // referring to the position in a full tree:
+        //
+        //    0
+        //  1   2
+        // 3 4 5 6
+        // .......
+        //
+        // If Count is above InternalIndexOfCountThreshold,  it simply returns the index if it is enumerated
+        // Note that this is not used in SortedSet.TreeSubSet
+        //
+        // Some values for threshold, their respective max height and count of all indices of a full tree:
+        //
+        // | Threshold | MaxHeight | Full tree count
+        // |        30 |         8 |             511
+        // |        62 |        10 |            2047
+        // |       126 |        12 |            8191
+        // |       254 |        14 |           32767
+        // |       510 |        16 |          131071
+        // |      1022 |        18 |          524287
+        private const int InternalIndexOfCountThreshold = 254;
+
         #endregion
 
         #region Constructors
@@ -726,6 +748,19 @@ namespace System.Collections.Generic
         {
             Node? current = root;
             int count = 0;
+
+            if (Count > InternalIndexOfCountThreshold)
+            {
+                foreach (T i in this)
+                {
+                    if (Comparer.Compare(item, i) == 0)
+                    {
+                        return count;
+                    }
+                    count++;
+                }
+            }
+
             while (current != null)
             {
                 int order = comparer.Compare(item, current.Item);
@@ -743,6 +778,11 @@ namespace System.Collections.Generic
 
         internal virtual int MaxInternalIndexOfPlusOne()
         {
+            if (Count > InternalIndexOfCountThreshold)
+            {
+                return Count;
+            }
+
             // The maximum height of a red-black tree is 2*lg(n+1).
             // See page 264 of "Introduction to algorithms" by Thomas H. Cormen
             int maximumHeight = 2 * Log2(Count + 1);
