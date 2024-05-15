@@ -17,17 +17,19 @@ namespace Mono.Linker
 
 		public int SourceLine { get; }
 		public int SourceColumn { get; }
-		public int? ILOffset { get; }
+		public int ILOffset { get; }
+
+		public const int UnsetILOffset = -1;
 
 		const int HiddenLineNumber = 0xfeefee;
 
-		public MessageOrigin (IMemberDefinition? memberDefinition, int? ilOffset = null)
+		public MessageOrigin (IMemberDefinition? memberDefinition, int ilOffset = UnsetILOffset)
 			: this (memberDefinition as ICustomAttributeProvider, ilOffset)
 		{
 		}
 
 		public MessageOrigin (ICustomAttributeProvider? provider)
-			: this (provider, null)
+			: this (provider, UnsetILOffset)
 		{
 		}
 
@@ -44,10 +46,10 @@ namespace Mono.Linker
 			SourceLine = sourceLine;
 			SourceColumn = sourceColumn;
 			Provider = assembly;
-			ILOffset = null;
+			ILOffset = UnsetILOffset;
 		}
 
-		public MessageOrigin (ICustomAttributeProvider? provider, int? ilOffset)
+		public MessageOrigin (ICustomAttributeProvider? provider, int ilOffset)
 		{
 			Debug.Assert (provider == null || provider is IMemberDefinition || provider is AssemblyDefinition);
 			FileName = null;
@@ -83,7 +85,7 @@ namespace Mono.Linker
 			string? fileName = FileName;
 			if (Provider is MethodDefinition method &&
 				method.DebugInformation.HasSequencePoints) {
-				var offset = ILOffset ?? method.DebugInformation.SequencePoints[0].Offset;
+				var offset = ILOffset == UnsetILOffset ? method.DebugInformation.SequencePoints[0].Offset : ILOffset;
 				SequencePoint? correspondingSequencePoint = method.DebugInformation.SequencePoints
 					.Where (s => s.Offset <= offset)?.Last ();
 
@@ -138,10 +140,10 @@ namespace Mono.Linker
 				if (result != 0)
 					return result;
 
-				if (ILOffset != null && other.ILOffset != null)
-					return ILOffset.Value.CompareTo (other.ILOffset);
+				if (ILOffset != UnsetILOffset && other.ILOffset != UnsetILOffset)
+					return ILOffset.CompareTo (other.ILOffset);
 
-				return ILOffset == null ? (other.ILOffset == null ? 0 : 1) : -1;
+				return ILOffset == UnsetILOffset ? (other.ILOffset == UnsetILOffset ? 0 : 1) : -1;
 			} else if (Provider == null && other.Provider == null) {
 				if (FileName != null && other.FileName != null) {
 					return string.Compare (FileName, other.FileName);
