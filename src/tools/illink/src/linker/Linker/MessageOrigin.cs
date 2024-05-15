@@ -23,8 +23,8 @@ namespace Mono.Linker
 
 		const int HiddenLineNumber = 0xfeefee;
 
-		public MessageOrigin (IMemberDefinition? memberDefinition, int ilOffset = UnsetILOffset)
-			: this (memberDefinition as ICustomAttributeProvider, ilOffset)
+		public MessageOrigin (IMemberDefinition? memberDefinition, int? ilOffset = null)
+			: this (memberDefinition as ICustomAttributeProvider, ilOffset ?? UnsetILOffset)
 		{
 		}
 
