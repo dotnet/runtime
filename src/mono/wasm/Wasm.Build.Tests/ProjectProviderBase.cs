@@ -404,7 +404,7 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
 
         BootJsonData bootJson = ParseBootData(bootJsonPath);
         string spcExpectedFilename = $"System.Private.CoreLib{WasmAssemblyExtension}";
-        string? spcActualFilename = bootJson.resources.assembly.Keys
+        string? spcActualFilename = bootJson.resources.coreAssembly.Keys
                                         .Where(a => Path.GetFileNameWithoutExtension(a) == "System.Private.CoreLib")
                                         .SingleOrDefault();
         if (spcActualFilename is null)

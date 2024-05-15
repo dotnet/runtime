@@ -196,15 +196,6 @@ void CodeGenInterface::CopyRegisterInfo()
 CodeGen::CodeGen(Compiler* theCompiler)
     : CodeGenInterface(theCompiler)
 {
-#if defined(TARGET_XARCH)
-    negBitmaskFlt  = nullptr;
-    negBitmaskDbl  = nullptr;
-    absBitmaskFlt  = nullptr;
-    absBitmaskDbl  = nullptr;
-    zroSimd12Elm3  = nullptr;
-    u8ToDblBitmask = nullptr;
-#endif // defined(TARGET_XARCH)
-
 #if defined(FEATURE_PUT_STRUCT_ARG_STK) && !defined(TARGET_X86)
     m_stkArgVarNum = BAD_VAR_NUM;
 #endif
@@ -3110,17 +3101,17 @@ public:
 };
 
 // -----------------------------------------------------------------------------
-// genParamStackStoreType: Get the type to use to store part of a parameter
-// passed in a register to stack.
+// genParamStackType: Get the type that a part of a parameter passed in a
+// register occupies on the stack.
 //
 // Parameters:
 //   dsc - The parameter
-//   seg - The segment that is being stored to stack
+//   seg - The segment passed in a register
 //
 // Return Value:
 //   Suitable type for the store.
 //
-var_types CodeGen::genParamStackStoreType(LclVarDsc* dsc, const ABIPassingSegment& seg)
+var_types CodeGen::genParamStackType(LclVarDsc* dsc, const ABIPassingSegment& seg)
 {
     assert(seg.IsPassedInRegister());
 
@@ -3145,9 +3136,9 @@ var_types CodeGen::genParamStackStoreType(LclVarDsc* dsc, const ABIPassingSegmen
             }
 
 #ifdef TARGET_ARM64
-            // We round struct sizes up to TYP_I_IMPL on the stack frame so we can
-            // always store the full register here. This allows us to use stp more
-            // often.
+            // We round struct sizes up to TYP_I_IMPL on the stack frame so we
+            // can always use the full register size here. This allows us to
+            // use stp more often.
             return TYP_I_IMPL;
 #else
             return genActualType(seg.GetRegisterType());
@@ -3199,7 +3190,7 @@ void CodeGen::genSpillOrAddRegisterParam(unsigned lclNum, RegGraph* graph)
 
         if (varDsc->lvOnFrame && (!varDsc->lvIsInReg() || varDsc->lvLiveInOutOfHndlr))
         {
-            var_types storeType = genParamStackStoreType(paramVarDsc, seg);
+            var_types storeType = genParamStackType(paramVarDsc, seg);
             if ((varDsc->TypeGet() != TYP_STRUCT) && (genTypeSize(genActualType(varDsc)) < genTypeSize(storeType)))
             {
                 // Can happen for struct fields due to padding.
@@ -3307,7 +3298,7 @@ void CodeGen::genHomeRegisterParams(regNumber initReg, bool* initRegStillZeroed)
                 const ABIPassingSegment& seg = abiInfo.Segments[i];
                 if (seg.IsPassedInRegister() && ((paramRegs & genRegMask(seg.GetRegister())) != 0))
                 {
-                    var_types storeType = genParamStackStoreType(lclDsc, seg);
+                    var_types storeType = genParamStackType(lclDsc, seg);
                     GetEmitter()->emitIns_S_R(ins_Store(storeType), emitActualTypeSize(storeType), seg.GetRegister(),
                                               lclNum, seg.Offset);
                 }
@@ -5302,28 +5293,6 @@ void CodeGen::genFnProlog()
     // will be skipped.
     bool      initRegZeroed = false;
     regMaskTP excludeMask   = intRegState.rsCalleeRegArgMaskLiveIn;
-    regMaskTP tempMask;
-
-    // We should not use the special PINVOKE registers as the initReg
-    // since they are trashed by the jithelper call to setup the PINVOKE frame
-    if (compiler->compMethodRequiresPInvokeFrame())
-    {
-        excludeMask |= RBM_PINVOKE_FRAME;
-
-        assert(!compiler->opts.ShouldUsePInvokeHelpers() || (compiler->info.compLvFrameListRoot == BAD_VAR_NUM));
-        if (!compiler->opts.ShouldUsePInvokeHelpers())
-        {
-            excludeMask |= (RBM_PINVOKE_TCB | RBM_PINVOKE_SCRATCH);
-
-            // We also must exclude the register used by compLvFrameListRoot when it is enregistered
-            //
-            const LclVarDsc* varDsc = compiler->lvaGetDesc(compiler->info.compLvFrameListRoot);
-            if (varDsc->lvRegister)
-            {
-                excludeMask |= genRegMask(varDsc->GetRegNum());
-            }
-        }
-    }
 
 #ifdef TARGET_ARM
     // If we have a variable sized frame (compLocallocUsed is true)
@@ -5342,7 +5311,7 @@ void CodeGen::genFnProlog()
     const bool isOSRx64Root = false;
 #endif // TARGET_AMD64
 
-    tempMask = initRegs & ~excludeMask & ~regSet.rsMaskResvd;
+    regMaskTP tempMask = initRegs & ~excludeMask & ~regSet.rsMaskResvd;
 
     if (tempMask != RBM_NONE)
     {
@@ -5395,17 +5364,6 @@ void CodeGen::genFnProlog()
         initReg = REG_SCRATCH; // REG_T0
     }
 #endif
-
-#if !defined(TARGET_LOONGARCH64) && !defined(TARGET_RISCV64)
-    // For LoongArch64's OSR root frames, we may need a scratch register for large
-    // offset addresses. But this does not conflict with the REG_PINVOKE_FRAME.
-    //
-    // RISC-V64's OSR root frames are similar to LoongArch64's. In this case
-    // REG_SCRATCH also shouldn't conflict with REG_PINVOKE_FRAME, even if
-    // technically they are the same register - REG_T0.
-    //
-    noway_assert(!compiler->compMethodRequiresPInvokeFrame() || (initReg != REG_PINVOKE_FRAME));
-#endif // !TARGET_LOONGARCH64 && !TARGET_RISCV64
 
 #if defined(TARGET_AMD64)
     // If we are a varargs call, in order to set up the arguments correctly this
@@ -7443,6 +7401,118 @@ void CodeGen::genStructReturn(GenTree* treeNode)
 #else // !FEATURE_MULTIREG_RET
     unreached();
 #endif
+}
+
+//------------------------------------------------------------------------
+// genJmpPlaceArgs: Place all parameters into their initial (ABI-decided)
+// registers in preparation for a GT_JMP node.
+//
+// Arguments:
+//    jmp - The GT_JMP node
+//
+void CodeGen::genJmpPlaceArgs(GenTree* jmp)
+{
+    assert(jmp->OperIs(GT_JMP));
+    assert(compiler->compJmpOpUsed);
+
+    // First move any en-registered stack arguments back to the stack.
+    // At the same time any reg arg not in correct reg is moved back to its stack location.
+    //
+    // We are not strictly required to spill reg args that are not in the desired reg for a jmp call
+    // But that would require us to deal with circularity while moving values around.  Spilling
+    // to stack makes the implementation simple, which is not a bad trade off given Jmp calls
+    // are not frequent.
+    for (unsigned varNum = 0; varNum < compiler->info.compArgsCount; varNum++)
+    {
+        LclVarDsc* varDsc = compiler->lvaGetDesc(varNum);
+        // Promotion is currently disabled entirely for methods using CEE_JMP.
+        assert(!varDsc->lvPromoted);
+
+        if (varDsc->GetRegNum() == REG_STK)
+        {
+            continue;
+        }
+
+        var_types storeType = varDsc->GetStackSlotHomeType();
+        GetEmitter()->emitIns_S_R(ins_Store(storeType), emitTypeSize(storeType), varDsc->GetRegNum(), varNum, 0);
+
+        // Update lvRegNum life and GC info to indicate lvRegNum is dead and varDsc stack slot is going live.
+        // Note that we cannot modify varDsc->GetRegNum() here because another basic block may not be expecting it.
+        // Therefore manually update life of varDsc->GetRegNum().
+        regMaskTP tempMask = varDsc->lvRegMask();
+        regSet.RemoveMaskVars(tempMask);
+        gcInfo.gcMarkRegSetNpt(tempMask);
+        if (compiler->lvaIsGCTracked(varDsc))
+        {
+#ifdef DEBUG
+            if (!VarSetOps::IsMember(compiler, gcInfo.gcVarPtrSetCur, varDsc->lvVarIndex))
+            {
+                JITDUMP("\t\t\t\t\t\t\tVar V%02u becoming live\n", varNum);
+            }
+            else
+            {
+                JITDUMP("\t\t\t\t\t\t\tVar V%02u continuing live\n", varNum);
+            }
+#endif // DEBUG
+
+            VarSetOps::AddElemD(compiler, gcInfo.gcVarPtrSetCur, varDsc->lvVarIndex);
+        }
+    }
+
+#ifdef PROFILING_SUPPORTED
+    // At this point all arg regs are free.
+    // Emit tail call profiler callback.
+    genProfilingLeaveCallback(CORINFO_HELP_PROF_FCN_TAILCALL);
+#endif
+
+    // Next move any un-enregistered register arguments back to their register.
+    for (unsigned varNum = 0; varNum < compiler->info.compArgsCount; varNum++)
+    {
+        LclVarDsc* varDsc = compiler->lvaGetDesc(varNum);
+
+        const ABIPassingInformation& abiInfo = compiler->lvaGetParameterABIInfo(varNum);
+        for (unsigned i = 0; i < abiInfo.NumSegments; i++)
+        {
+            const ABIPassingSegment& segment = abiInfo.Segments[i];
+            if (segment.IsPassedOnStack())
+            {
+                continue;
+            }
+
+            var_types stackType = genParamStackType(varDsc, segment);
+            GetEmitter()->emitIns_R_S(ins_Load(stackType), emitTypeSize(stackType), segment.GetRegister(), varNum,
+                                      segment.Offset);
+
+            // Update argReg life and GC Info to indicate varDsc stack slot is dead and argReg is going live.
+            // Note that we cannot modify varDsc->GetRegNum() here because another basic block may not be
+            // expecting it. Therefore manually update life of argReg.  Note that GT_JMP marks the end of the
+            // basic block and after which reg life and gc info will be recomputed for the new block in
+            // genCodeForBBList().
+            regSet.AddMaskVars(segment.GetRegisterMask());
+            gcInfo.gcMarkRegPtrVal(segment.GetRegister(), stackType);
+        }
+
+        if (compiler->lvaIsGCTracked(varDsc))
+        {
+#ifdef DEBUG
+            if (VarSetOps::IsMember(compiler, gcInfo.gcVarPtrSetCur, varDsc->lvVarIndex))
+            {
+                JITDUMP("\t\t\t\t\t\t\tVar V%02u becoming dead\n", varNum);
+            }
+            else
+            {
+                JITDUMP("\t\t\t\t\t\t\tVar V%02u continuing dead\n", varNum);
+            }
+#endif // DEBUG
+
+            VarSetOps::RemoveElemD(compiler, gcInfo.gcVarPtrSetCur, varDsc->lvVarIndex);
+        }
+    }
+
+    if (compFeatureVarArg() && compiler->info.compIsVarArgs)
+    {
+        genJmpPlaceVarArgs();
+    }
 }
 
 //----------------------------------------------------------------------------------

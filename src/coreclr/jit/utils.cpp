@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 // ===================================================================================================
@@ -2230,33 +2230,7 @@ unsigned CountDigits(double num, unsigned base /* = 10 */)
 
 double FloatingPointUtils::convertUInt64ToDouble(unsigned __int64 uIntVal)
 {
-    __int64 s64 = uIntVal;
-    double  d;
-    if (s64 < 0)
-    {
-#if defined(TARGET_XARCH)
-        // RyuJIT codegen and clang (or gcc) may produce different results for casting uint64 to
-        // double, and the clang result is more accurate. For example,
-        //    1) (double)0x84595161401484A0UL --> 43e08b2a2c280290  (RyuJIT codegen or VC++)
-        //    2) (double)0x84595161401484A0UL --> 43e08b2a2c280291  (clang or gcc)
-        // If the folding optimization below is implemented by simple casting of (double)uint64_val
-        // and it is compiled by clang, casting result can be inconsistent, depending on whether
-        // the folding optimization is triggered or the codegen generates instructions for casting. //
-        // The current solution is to force the same math as the codegen does, so that casting
-        // result is always consistent.
-
-        // d = (double)(int64_t)uint64 + 0x1p64
-        uint64_t adjHex = 0x43F0000000000000UL;
-        d               = (double)s64 + *(double*)&adjHex;
-#else
-        d = (double)uIntVal;
-#endif
-    }
-    else
-    {
-        d = (double)uIntVal;
-    }
-    return d;
+    return (double)uIntVal;
 }
 
 float FloatingPointUtils::convertUInt64ToFloat(unsigned __int64 u64)
@@ -2267,40 +2241,7 @@ float FloatingPointUtils::convertUInt64ToFloat(unsigned __int64 u64)
 
 unsigned __int64 FloatingPointUtils::convertDoubleToUInt64(double d)
 {
-    unsigned __int64 u64;
-    if (d >= 0.0)
-    {
-        // Work around a C++ issue where it doesn't properly convert large positive doubles
-        const double two63 = 2147483648.0 * 4294967296.0;
-        if (d < two63)
-        {
-            u64 = UINT64(d);
-        }
-        else
-        {
-            // subtract 0x8000000000000000, do the convert then add it back again
-            u64 = INT64(d - two63) + I64(0x8000000000000000);
-        }
-        return u64;
-    }
-
-#ifdef TARGET_XARCH
-
-    // While the Ecma spec does not specifically call this out,
-    // the case of conversion from negative double to unsigned integer is
-    // effectively an overflow and therefore the result is unspecified.
-    // With MSVC for x86/x64, such a conversion results in the bit-equivalent
-    // unsigned value of the conversion to integer. Other compilers convert
-    // negative doubles to zero when the target is unsigned.
-    // To make the behavior consistent across OS's on TARGET_XARCH,
-    // this double cast is needed to conform MSVC behavior.
-
-    u64 = UINT64(INT64(d));
-#else
-    u64 = UINT64(d);
-#endif // TARGET_XARCH
-
-    return u64;
+    return (uint64_t)d;
 }
 
 //------------------------------------------------------------------------

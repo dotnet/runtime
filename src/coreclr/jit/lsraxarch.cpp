@@ -2827,6 +2827,15 @@ int LinearScan::BuildCast(GenTreeCast* cast)
     const var_types srcType  = genActualType(src->TypeGet());
     const var_types castType = cast->gtCastType;
 
+    if ((srcType == TYP_LONG) && (castType == TYP_DOUBLE) &&
+        !compiler->compOpportunisticallyDependsOn(InstructionSet_AVX512F))
+    {
+        // We need two extra temp regs for LONG->DOUBLE cast
+        // if we don't have AVX512F available.
+        buildInternalIntRegisterDefForNode(cast);
+        buildInternalIntRegisterDefForNode(cast);
+    }
+
     regMaskTP candidates = RBM_NONE;
 #ifdef TARGET_X86
     if (varTypeIsByte(castType))

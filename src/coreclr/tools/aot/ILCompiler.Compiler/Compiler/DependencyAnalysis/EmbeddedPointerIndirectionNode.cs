@@ -49,7 +49,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public virtual void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            sb.Append("_embedded_ptr_");
+            sb.Append("_embedded_ptr_"u8);
             Target.AppendMangledName(nameMangler, sb);
         }
 

@@ -877,6 +877,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\PoolingAsyncValueTaskMethodBuilder.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\PoolingAsyncValueTaskMethodBuilderT.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\PreserveBaseOverridesAttribute.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\OverloadResolutionPriorityAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\RefSafetyRulesAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\RequiredMemberAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\RequiresLocationAttribute.cs" />
