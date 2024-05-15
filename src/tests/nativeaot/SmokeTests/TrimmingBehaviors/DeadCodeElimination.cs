@@ -346,19 +346,44 @@ class DeadCodeElimination
 
         sealed class Never { }
 
-        static Type s_type = null;
+        class Never2 { }
+        class Canary2 { }
+        class Never3 { }
+        class Canary3 { }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static Type GetTheType() => null;
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static object GetTheObject() => new object();
+
+        static volatile object s_sink;
 
         public static void Run()
         {
             // This was asserting the BCL because Never would not have reflection metadata
             // despite the typeof
-            Console.WriteLine(s_type == typeof(Never));
+            Console.WriteLine(GetTheType() == typeof(Never));
 
             // This was a compiler crash
             Console.WriteLine(typeof(object) == typeof(Gen<>));
 
 #if !DEBUG
             ThrowIfPresent(typeof(TestTypeEquals), nameof(Never));
+
+            Type someType = GetTheType();
+            if (someType == typeof(Never2))
+            {
+                s_sink = new Canary2();
+            }
+            ThrowIfPresentWithUsableMethodTable(typeof(TestTypeEquals), nameof(Canary2));
+
+            object someObject = GetTheObject();
+            if (someObject.GetType() == typeof(Never3))
+            {
+                s_sink = new Canary3();
+            }
+            ThrowIfPresentWithUsableMethodTable(typeof(TestTypeEquals), nameof(Canary3));
 #endif
         }
     }

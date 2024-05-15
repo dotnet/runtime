@@ -378,7 +378,8 @@ namespace ILCompiler
             }
 
             SubstitutionProvider substitutionProvider = new SubstitutionProvider(logger, featureSwitches, substitutions);
-            ilProvider = new SubstitutedILProvider(ilProvider, substitutionProvider);
+            ILProvider unsubstitutedILProvider = ilProvider;
+            ilProvider = new SubstitutedILProvider(ilProvider, substitutionProvider, new DevirtualizationManager());
 
             CompilerGeneratedState compilerGeneratedState = new CompilerGeneratedState(ilProvider, logger);
 
@@ -492,9 +493,16 @@ namespace ILCompiler
                 if (scanDgmlLogFileName != null)
                     scanResults.WriteDependencyLog(scanDgmlLogFileName);
 
+                DevirtualizationManager devirtualizationManager = scanResults.GetDevirtualizationManager();
+
                 metadataManager = ((UsageBasedMetadataManager)metadataManager).ToAnalysisBasedMetadataManager();
 
                 interopStubManager = scanResults.GetInteropStubManager(interopStateManager, pinvokePolicy);
+
+                ilProvider = new SubstitutedILProvider(unsubstitutedILProvider, substitutionProvider, devirtualizationManager);
+
+                // Use a more precise IL provider that uses whole program analysis for dead branch elimination
+                builder.UseILProvider(ilProvider);
 
                 // If we have a scanner, feed the vtable analysis results to the compilation.
                 // This could be a command line switch if we really wanted to.
@@ -507,7 +515,7 @@ namespace ILCompiler
                 // If we have a scanner, we can drive devirtualization using the information
                 // we collected at scanning time (effectively sealing unsealed types if possible).
                 // This could be a command line switch if we really wanted to.
-                builder.UseDevirtualizationManager(scanResults.GetDevirtualizationManager());
+                builder.UseDevirtualizationManager(devirtualizationManager);
 
                 // If we use the scanner's result, we need to consult it to drive inlining.
                 // This prevents e.g. devirtualizing and inlining methods on types that were
