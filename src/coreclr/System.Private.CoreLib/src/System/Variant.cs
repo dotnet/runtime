@@ -447,46 +447,116 @@ namespace System
             }
         }
 
-        // Helper code for marshaling managed objects to VARIANT's (we use
-        // managed variants as an intermediate type.
-        internal static void MarshalHelperConvertObjectToVariant(object o, ref Variant v)
+        // Helper code for marshaling managed objects to VARIANT's
+        internal static void MarshalHelperConvertObjectToVariant(object? o, out ComVariant pOle)
         {
-            if (o == null)
+            // Cases handled at native side: string, bool, primitives including (U)IntPtr excluding U(Int)64, array
+
+            switch (o)
             {
-                v = Empty;
-            }
-            else if (o is IConvertible ic)
-            {
-                IFormatProvider provider = CultureInfo.InvariantCulture;
-                v = ic.GetTypeCode() switch
-                {
-                    TypeCode.Empty => Empty,
-                    TypeCode.Object => new Variant((object)o),
-                    TypeCode.DBNull => DBNull,
-                    TypeCode.Boolean => new Variant(ic.ToBoolean(provider)),
-                    TypeCode.Char => new Variant(ic.ToChar(provider)),
-                    TypeCode.SByte => new Variant(ic.ToSByte(provider)),
-                    TypeCode.Byte => new Variant(ic.ToByte(provider)),
-                    TypeCode.Int16 => new Variant(ic.ToInt16(provider)),
-                    TypeCode.UInt16 => new Variant(ic.ToUInt16(provider)),
-                    TypeCode.Int32 => new Variant(ic.ToInt32(provider)),
-                    TypeCode.UInt32 => new Variant(ic.ToUInt32(provider)),
-                    TypeCode.Int64 => new Variant(ic.ToInt64(provider)),
-                    TypeCode.UInt64 => new Variant(ic.ToUInt64(provider)),
-                    TypeCode.Single => new Variant(ic.ToSingle(provider)),
-                    TypeCode.Double => new Variant(ic.ToDouble(provider)),
-                    TypeCode.Decimal => new Variant(ic.ToDecimal(provider)),
-                    TypeCode.DateTime => new Variant(ic.ToDateTime(provider)),
-                    TypeCode.String => new Variant(ic.ToString(provider)),
-                    _ => throw new NotSupportedException(SR.Format(SR.NotSupported_UnknownTypeCode, ic.GetTypeCode())),
-                };
-            }
-            else
-            {
-                // This path should eventually go away. But until
-                // the work is done to have all of our wrapper types implement
-                // IConvertible, this is a cheapo way to get the work done.
-                v = new Variant(o);
+                case null:
+                    pOle = default;
+                    break;
+
+                case IConvertible ic when ic.GetTypeCode() != TypeCode.Object:
+                    {
+                        IFormatProvider provider = CultureInfo.InvariantCulture;
+                        pOle = ic.GetTypeCode() switch
+                        {
+                            TypeCode.Empty => default,
+                            TypeCode.DBNull => ComVariant.Create(System.DBNull.Value),
+                            TypeCode.Boolean => ComVariant.Create(ic.ToBoolean(provider)),
+                            TypeCode.Char => ComVariant.Create((ushort)ic.ToChar(provider)),
+                            TypeCode.SByte => ComVariant.Create(ic.ToSByte(provider)),
+                            TypeCode.Byte => ComVariant.Create(ic.ToByte(provider)),
+                            TypeCode.Int16 => ComVariant.Create(ic.ToInt16(provider)),
+                            TypeCode.UInt16 => ComVariant.Create(ic.ToUInt16(provider)),
+                            TypeCode.Int32 => ComVariant.Create(ic.ToInt32(provider)),
+                            TypeCode.UInt32 => ComVariant.Create(ic.ToUInt32(provider)),
+                            TypeCode.Int64 => ComVariant.Create(ic.ToInt64(provider)),
+                            TypeCode.UInt64 => ComVariant.Create(ic.ToUInt64(provider)),
+                            TypeCode.Single => ComVariant.Create(ic.ToSingle(provider)),
+                            TypeCode.Double => ComVariant.Create(ic.ToDouble(provider)),
+                            TypeCode.Decimal => ComVariant.Create(ic.ToDecimal(provider)),
+                            TypeCode.DateTime => ComVariant.Create(ic.ToDateTime(provider)),
+                            TypeCode.String => ComVariant.Create(ic.ToString(provider)),
+                            _ => throw new NotSupportedException(SR.Format(SR.NotSupported_UnknownTypeCode, ic.GetTypeCode())),
+                        };
+                        break;
+                    }
+
+                case Reflection.Missing:
+                    pOle = ComVariant.CreateRaw(VarEnum.VT_ERROR, HResults.DISP_E_PARAMNOTFOUND);
+                    break;
+
+                // Array handled by native side
+
+                case UnknownWrapper wrapper:
+                    pOle = ComVariant.CreateRaw(VarEnum.VT_UNKNOWN,
+                        wrapper.WrappedObject is null ? IntPtr.Zero : Marshal.GetIUnknownForObject(wrapper.WrappedObject));
+                    break;
+                case DispatchWrapper wrapper:
+                    pOle = ComVariant.CreateRaw(VarEnum.VT_DISPATCH,
+                        wrapper.WrappedObject is null ? IntPtr.Zero : Marshal.GetIDispatchForObject(wrapper.WrappedObject));
+                    break;
+
+                case ErrorWrapper wrapper:
+                    pOle = ComVariant.Create(wrapper);
+                    break;
+#pragma warning disable 0618 // CurrencyWrapper is obsolete
+                case CurrencyWrapper wrapper:
+                    pOle = ComVariant.Create(wrapper);
+                    break;
+#pragma warning restore 0618
+                case BStrWrapper wrapper:
+                    pOle = ComVariant.Create(wrapper);
+                    break;
+
+                case System.Empty:
+                    pOle = default;
+                    break;
+                case System.DBNull:
+                    pOle = ComVariant.Create(System.DBNull.Value);
+                    break;
+
+                case { } when IsSystemDrawingColor(o.GetType()):
+                    // System.Drawing.Color is converted to UInt32
+                    pOle = ComVariant.Create(ConvertSystemColorToOleColor(ObjectHandleOnStack.Create(ref o)));
+                    break;
+
+                // DateTime, decimal handled by IConvertible case
+
+                case TimeSpan:
+                    throw new ArgumentException("IDS_EE_COM_UNSUPPORTED_SIG");
+                case Currency c:
+                    pOle = ComVariant.CreateRaw(VarEnum.VT_CY, c.m_value);
+                    break;
+
+                case Enum e: // TODO: Check precedence with IConvertable case
+                    pOle = ComVariant.Create(((IConvertible)e).ToInt32(null));
+                    break;
+
+                case ValueType:
+                    // RECORD
+                    throw new NotImplementedException();
+
+                // SafeHandle's or CriticalHandle's cannot be stored in VARIANT's.
+                case SafeHandle:
+                    throw new ArgumentException("IDS_EE_SH_IN_VARIANT_NOT_SUPPORTED");
+                case CriticalHandle:
+                    throw new ArgumentException("IDS_EE_CH_IN_VARIANT_NOT_SUPPORTED");
+
+                // VariantWrappers cannot be stored in VARIANT's.
+                case VariantWrapper:
+                    throw new ArgumentException("IDS_EE_VAR_WRAP_IN_VAR_NOT_SUPPORTED");
+
+                default:
+                    // We are dealing with a normal object (not a wrapper) so we will
+                    // leave the VT as VT_DISPATCH for now and we will determine the actual
+                    // VT when we convert the object to a COM IP.
+                    IntPtr ptr = OAVariantLib.GetIUnknownOrIDispatchForObject(ObjectHandleOnStack.Create(ref o), out bool isIDispatch);
+                    pOle = ComVariant.CreateRaw(isIDispatch ? VarEnum.VT_DISPATCH : VarEnum.VT_UNKNOWN, ptr);
+                    break;
             }
         }
 

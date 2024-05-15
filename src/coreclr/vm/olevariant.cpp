@@ -2873,22 +2873,7 @@ void OleVariant::MarshalOleVariantForObject(OBJECTREF * const & pObj, VARIANT *p
         }
         else
         {
-            MethodDescCallSite convertObjectToVariant(METHOD__VARIANT__CONVERT_OBJECT_TO_VARIANT);
-
-            VariantData managedVariant;
-            FillMemory(&managedVariant, sizeof(managedVariant), 0);
-            GCPROTECT_BEGIN_VARIANTDATA(managedVariant)
-            {
-                ARG_SLOT args[] = {
-                        ObjToArgSlot(*pObj),
-                        PtrToArgSlot(&managedVariant),
-                        };
-
-                convertObjectToVariant.Call(args);
-
-                OleVariant::MarshalOleVariantForComVariant(&managedVariant, pOle);
-            }
-            GCPROTECT_END_VARIANTDATA();
+            OleVariant::MarshalOleVariantForObjectUncommon(pObj, pOle);
         }
     }
 }
@@ -3534,14 +3519,15 @@ void OleVariant::MarshalObjectForOleVariantUncommon(const VARIANT *pOle, OBJECTR
 // the COM variant.
 //
 
-void OleVariant::MarshalOleVariantForComVariant(VariantData *pCom, VARIANT *pOle)
+void OleVariant::MarshalOleVariantForObjectUncommon(OBJECTREF * const & pObj, VARIANT *pOle)
 {
     CONTRACTL
     {
         THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
-        PRECONDITION(CheckPointer(pCom));
+        PRECONDITION(CheckPointer(pObj));
+        PRECONDITION(*pObj == NULL || (IsProtectedByGCFrame (pObj)));
         PRECONDITION(CheckPointer(pOle));
     }
     CONTRACTL_END;
@@ -3551,18 +3537,20 @@ void OleVariant::MarshalOleVariantForComVariant(VariantData *pCom, VARIANT *pOle
     VariantEmptyHolder veh;
     veh = pOle;
 
-    VARTYPE vt = GetVarTypeForComVariant(pCom);
-    V_VT(pOle) = vt;
-
-    const Marshaler *marshal = GetMarshalerForVarType(vt, TRUE);
-
-    if (marshal == NULL || marshal->ComToOleVariant == NULL)
+    if ((*pObj)->GetMethodTable()->IsArray())
     {
-        *(INT64*)&V_R8(pOle) = *(INT64*)pCom->GetData();
+        MarshalArrayVariantObjectToOle(pObj, pOle);
     }
     else
     {
-        marshal->ComToOleVariant(pCom, pOle);
+        MethodDescCallSite convertObjectToVariant(METHOD__VARIANT__CONVERT_OBJECT_TO_VARIANT);
+
+        ARG_SLOT args[] = {
+                ObjToArgSlot(*pObj),
+                PtrToArgSlot(pOle),
+                };
+
+        convertObjectToVariant.Call(args);
     }
 
     veh.SuppressRelease();
@@ -4155,6 +4143,51 @@ void OleVariant::MarshalArrayVariantComToOle(VariantData *pComVariant,
 
     SafeArrayPtrHolder pSafeArray = NULL;
     BASEARRAYREF *pArrayRef = (BASEARRAYREF *) pComVariant->GetObjRefPtr();
+    MethodTable *pElemMT = NULL;
+
+    _ASSERTE(pArrayRef);
+
+    VARTYPE vt = GetElementVarTypeForArrayRef(*pArrayRef);
+    if (vt == VT_ARRAY)
+        vt = VT_VARIANT;
+
+    pElemMT = GetArrayElementTypeWrapperAware(pArrayRef).GetMethodTable();
+
+    MethodDesc* pStructMarshalStub = nullptr;
+    GCPROTECT_BEGIN(*pArrayRef);
+    if (vt == VT_RECORD && !pElemMT->IsBlittable())
+    {
+        GCX_PREEMP();
+
+        pStructMarshalStub = NDirect::CreateStructMarshalILStub(pElemMT);
+    }
+    GCPROTECT_END();
+
+    if (*pArrayRef != NULL)
+    {
+        pSafeArray = CreateSafeArrayForArrayRef(pArrayRef, vt, pElemMT);
+        MarshalSafeArrayForArrayRef(pArrayRef, pSafeArray, vt, pElemMT, pStructMarshalStub != nullptr ? pStructMarshalStub->GetMultiCallableAddrOfCode() : NULL);
+    }
+    V_ARRAY(pOleVariant) = pSafeArray;
+    pSafeArray.SuppressRelease();
+}
+
+void OleVariant::MarshalArrayVariantObjectToOle(OBJECTREF * const & pObj,
+                                                VARIANT* pOleVariant)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_COOPERATIVE;
+        PRECONDITION(CheckPointer(pOleVariant));
+        PRECONDITION(CheckPointer(pObj));
+        PRECONDITION(*pObj == NULL || (IsProtectedByGCFrame (pObj)));
+    }
+    CONTRACTL_END;
+
+    SafeArrayPtrHolder pSafeArray = NULL;
+    BASEARRAYREF *pArrayRef = (BASEARRAYREF *) pObj;
     MethodTable *pElemMT = NULL;
 
     _ASSERTE(pArrayRef);
