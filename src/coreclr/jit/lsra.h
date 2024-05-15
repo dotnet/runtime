@@ -1233,10 +1233,11 @@ private:
     bool      canAssignNextConsecutiveRegisters(RefPosition* firstRefPosition, regNumber firstRegAssigned);
     void      assignConsecutiveRegisters(RefPosition* firstRefPosition, regNumber firstRegAssigned);
     regMaskTP getConsecutiveCandidates(regMaskTP candidates, RefPosition* refPosition, regMaskTP* busyCandidates);
-    regMaskTP filterConsecutiveCandidates(regMaskTP    candidates,
+    SingleTypeRegSet filterConsecutiveCandidates(SingleTypeRegSet    candidates,
                                           unsigned int registersNeeded,
-                                          regMaskTP*   allConsecutiveCandidates);
-    regMaskTP filterConsecutiveCandidatesForSpill(regMaskTP consecutiveCandidates, unsigned int registersNeeded);
+                                          SingleTypeRegSet*   allConsecutiveCandidates);
+    SingleTypeRegSet filterConsecutiveCandidatesForSpill(SingleTypeRegSet consecutiveCandidates,
+                                                         unsigned int     registersNeeded);
 #endif // TARGET_ARM64
 
     regMaskTP getFreeCandidates(regMaskTP candidates ARM_ARG(var_types regType))

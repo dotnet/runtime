@@ -13647,8 +13647,8 @@ regMaskTP LinearScan::RegisterSelection::select(Interval*                current
                 // Remove the `inUseOrBusyRegsMask` from the original candidates list and find one
                 // such range that is consecutive. Next, append that range to the `candidates`.
                 //
-                regMaskTP limitCandidatesForConsecutive = refPosition->registerAssignment & ~inUseOrBusyRegsMask;
-                regMaskTP overallLimitCandidates;
+                SingleTypeRegSet limitCandidatesForConsecutive = ((refPosition->registerAssignment & ~inUseOrBusyRegsMask) & linearScan->availableFloatRegs).getLow();
+                SingleTypeRegSet overallLimitCandidates;
                 regMaskTP limitConsecutiveResult =
                     linearScan->filterConsecutiveCandidates(limitCandidatesForConsecutive, refPosition->regCount,
                                                             &overallLimitCandidates);
