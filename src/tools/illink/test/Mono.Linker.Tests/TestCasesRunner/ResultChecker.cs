@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
@@ -758,7 +759,8 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 		void VerifyLoggedMessages (AssemblyDefinition original, TrimmingTestLogger logger, bool checkRemainingErrors)
 		{
-			List<MessageContainer> loggedMessages = logger.GetLoggedMessages ();
+			ImmutableArray<MessageContainer> allMessages = logger.GetLoggedMessages ();
+			List<MessageContainer> loggedMessages = [..allMessages];
 			List<(ICustomAttributeProvider, CustomAttribute)> expectedNoWarningsAttributes = new ();
 			List<string> missingMessageWarnings = [];
 			List<string> unexpectedMessageWarnings = [];
@@ -970,7 +972,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				int? unexpectedWarningCodeNumber = unexpectedWarningCode == null ? null : int.Parse (unexpectedWarningCode.Substring (2));
 
 				MessageContainer? unexpectedWarningMessage = null;
-				foreach (var mc in logger.GetLoggedMessages ()) {
+				foreach (var mc in allMessages) {
 					if (mc.Category != MessageCategory.Warning)
 						continue;
 
@@ -993,10 +995,10 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 			if (missingMessageWarnings.Any ())
 			{
-				missingMessageWarnings.Add ("Unexpected Messages:" + Environment.NewLine);
+				missingMessageWarnings.Add ("Unmatched Messages:" + Environment.NewLine);
 				missingMessageWarnings.AddRange (loggedMessages.Select (m => m.ToString ()));
 				missingMessageWarnings.Add (Environment.NewLine + "All Messages:" + Environment.NewLine);
-				missingMessageWarnings.AddRange (logger.GetLoggedMessages ().Select (m => m.ToString ()));
+				missingMessageWarnings.AddRange (allMessages.Select (m => m.ToString ()));
 				Assert.Fail (string.Join (Environment.NewLine, missingMessageWarnings));
 			}
 
