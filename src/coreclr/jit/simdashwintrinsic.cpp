@@ -253,7 +253,8 @@ GenTree* Compiler::impSimdAsHWIntrinsic(NamedIntrinsic        intrinsic,
                                         CORINFO_CLASS_HANDLE  clsHnd,
                                         CORINFO_METHOD_HANDLE method,
                                         CORINFO_SIG_INFO*     sig,
-                                        GenTree*              newobjThis)
+                                        GenTree*              newobjThis,
+                                        bool                  mustExpand)
 {
     if (!IsBaselineSimdIsaSupported())
     {
@@ -371,7 +372,8 @@ GenTree* Compiler::impSimdAsHWIntrinsic(NamedIntrinsic        intrinsic,
     if (hwIntrinsic == intrinsic)
     {
         // The SIMD intrinsic requires special handling outside the normal code path
-        return impSimdAsHWIntrinsicSpecial(intrinsic, clsHnd, sig, retType, simdBaseJitType, simdSize, newobjThis);
+        return impSimdAsHWIntrinsicSpecial(intrinsic, clsHnd, sig, retType, simdBaseJitType, simdSize, newobjThis,
+                                           mustExpand);
     }
 
     CORINFO_InstructionSet hwIntrinsicIsa = HWIntrinsicInfo::lookupIsa(hwIntrinsic);
@@ -442,6 +444,7 @@ GenTree* Compiler::impSimdAsHWIntrinsic(NamedIntrinsic        intrinsic,
 //    retType         -- the return type of the intrinsic call
 //    simdBaseJitType -- the base JIT type of SIMD type of the intrinsic
 //    simdSize        -- the size of the SIMD type of the intrinsic
+//    mustExpand      -- true if the intrinsic must return a GenTree*; otherwise, false
 //
 // Return Value:
 //    The GT_HWINTRINSIC node, or nullptr if not a supported intrinsic
@@ -452,7 +455,8 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                                                var_types            retType,
                                                CorInfoType          simdBaseJitType,
                                                unsigned             simdSize,
-                                               GenTree*             newobjThis)
+                                               GenTree*             newobjThis,
+                                               bool                 mustExpand)
 {
     var_types simdBaseType = JitType2PreciseVarType(simdBaseJitType);
 
@@ -512,8 +516,35 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
 
     switch (intrinsic)
     {
-#if defined(TARGET_XARCH)
+        case NI_VectorT_ConvertToInt32Native:
+        {
+            if (BlockNonDeterministicIntrinsics(mustExpand))
+            {
+                return nullptr;
+            }
+            break;
+        }
 
+        case NI_VectorT_ConvertToInt64Native:
+        case NI_VectorT_ConvertToUInt32Native:
+        case NI_VectorT_ConvertToUInt64Native:
+        {
+            if (BlockNonDeterministicIntrinsics(mustExpand))
+            {
+                return nullptr;
+            }
+
+#if defined(TARGET_XARCH)
+            if (!IsBaselineVector512IsaSupportedOpportunistically())
+            {
+                return nullptr;
+            }
+#endif // TARGET_XARCH
+
+            break;
+        }
+
+#if defined(TARGET_XARCH)
         case NI_VectorT_ConvertToDouble:
         {
             if (IsBaselineVector512IsaSupportedOpportunistically())
@@ -533,11 +564,8 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
         }
 
         case NI_VectorT_ConvertToInt64:
-        case NI_VectorT_ConvertToInt64Native:
         case NI_VectorT_ConvertToUInt32:
-        case NI_VectorT_ConvertToUInt32Native:
         case NI_VectorT_ConvertToUInt64:
-        case NI_VectorT_ConvertToUInt64Native:
         {
             if (IsBaselineVector512IsaSupportedOpportunistically())
             {

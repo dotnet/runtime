@@ -18,6 +18,7 @@
 #if HAVE_NETINET_TCP_VAR_H
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wreserved-id-macro"
+#pragma clang diagnostic ignored "-Wunused-macros"
 #define _WANT_INPCB
 #define _WANT_TCPCB
 #pragma clang diagnostic pop

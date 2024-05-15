@@ -643,7 +643,8 @@ public:
             PgoInstrumentationSchema** pSchema, /* OUT */
             uint32_t* pCountSchemaItems, /* OUT */
             uint8_t**pInstrumentationData, /* OUT */
-            PgoSource *pPgoSource /* OUT */
+            PgoSource *pPgoSource, /* OUT */
+            bool* pDynamicPgo /* OUT */
             ) override final;
 
     void recordCallSite(
@@ -1082,7 +1083,7 @@ EXTERN_C TypeHandle::CastResult STDCALL ObjIsInstanceOfCached(Object *pObject, T
 
 #ifdef HOST_64BIT
 class InlinedCallFrame;
-Thread * __stdcall JIT_InitPInvokeFrame(InlinedCallFrame *pFrame, PTR_VOID StubSecretArg);
+Thread * JIT_InitPInvokeFrame(InlinedCallFrame *pFrame);
 #endif
 
 #ifdef _DEBUG

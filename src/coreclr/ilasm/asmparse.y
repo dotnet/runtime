@@ -42,13 +42,13 @@
 };
 
         /* These are returned by the LEXER and have values */
-%token ERROR_ BAD_COMMENT_ BAD_LITERAL_                         /* bad strings,    */
+%token BAD_COMMENT_ BAD_LITERAL_                         /* bad strings,    */
 %token <string>  ID             /* testing343 */
 %token <string>  DOTTEDNAME     /* System.Object */
 %token <binstr>  QSTRING        /* "Hello World\n" */
 %token <string>  SQSTRING       /* 'Hello World\n' */
-%token <int32>   INT32          /* 3425 0x34FA  0352  */
-%token <int64>   INT64          /* 342534523534534      0x34FA434644554 */
+%token <int32>   INT32_V        /* 3425 0x34FA  0352  */
+%token <int64>   INT64_V        /* 342534523534534      0x34FA434644554 */
 %token <float64> FLOAT64        /* -334234 24E-34 */
 %token <int32>   HEXBYTE        /* 05 1A FA */
 %token <tdd>     TYPEDEF_T
@@ -96,7 +96,7 @@
 %token _CLASS _NAMESPACE _METHOD _FIELD _DATA _THIS _BASE _NESTER
 %token _EMITBYTE _TRY _MAXSTACK _LOCALS _ENTRYPOINT _ZEROINIT
 %token _EVENT _ADDON _REMOVEON _FIRE _OTHER
-%token _PROPERTY _SET _GET DEFAULT_
+%token _PROPERTY _SET _GET
 %token _PERMISSION _PERMISSIONSET
 
                 /* security actions */
@@ -259,11 +259,11 @@ dottedName              : id                                  { $$ = $1; }
                         | dottedName '.' dottedName           { $$ = newStringWDel($1, '.', $3); }
                         ;
 
-int32                   : INT32                               { $$ = $1; }
+int32                   : INT32_V                             { $$ = $1; }
                         ;
 
-int64                   : INT64                               { $$ = $1; }
-                        | INT32                               { $$ = neg ? new __int64($1) : new __int64((unsigned)$1); }
+int64                   : INT64_V                             { $$ = $1; }
+                        | INT32_V                             { $$ = neg ? new __int64($1) : new __int64((unsigned)$1); }
                         ;
 
 float64                 : FLOAT64                             { $$ = $1; }

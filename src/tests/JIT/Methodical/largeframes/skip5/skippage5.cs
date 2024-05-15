@@ -22,7 +22,8 @@ public class Program
     }
 
     [Fact]
-    public static void TestEntryPoint() => Test(new C());
+        [OuterLoop]
+        public static void TestEntryPoint() => Test(new C());
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     static void Call(int r0, int r1, int r2, int r3, int r4, int r5, int r6, S s)
