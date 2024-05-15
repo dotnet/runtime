@@ -9442,167 +9442,8 @@ GenTree* Compiler::impMinMaxIntrinsic(CORINFO_METHOD_HANDLE method,
     }
 
 #if defined(FEATURE_HW_INTRINSICS) && defined(TARGET_XARCH)
-    if (compOpportunisticallyDependsOn(InstructionSet_AVX10v1))
-    {
-        // We are constructing a chain of intrinsics similar to:
-        //    var op1 = Vector128.CreateScalarUnsafe(x);
-        //    var op2 = Vector128.CreateScalarUnsafe(y);
-        //
-        //    var tmp = Avx10v1.RangeScalar(op1, op2, imm8);
-        //    var tbl = Vector128.CreateScalarUnsafe(0x00);
-        //
-        //    tmp = Avx10v1.FixupScalar(tmp, op2, tbl, 0x00);
-        //    tmp = Avx10v1.FixupScalar(tmp, op1, tbl, 0x00);
-        //
-        //    return tmp.ToScalar();
-
-        // RangeScalar operates by default almost as MaxNumber or MinNumber
-        // but, it propagates sNaN and does not propagate qNaN. So we need
-        // an additional fixup to ensure we propagate qNaN as well.
-
-        uint8_t imm8;
-
-        if (isMax)
-        {
-            if (isMagnitude)
-            {
-                // 0b01_11: Sign(CompareResult), Max-Abs Value
-                imm8 = 0x07;
-            }
-            else
-            {
-                // 0b01_01: Sign(CompareResult), Max Value
-                imm8 = 0x05;
-            }
-        }
-        else if (isMagnitude)
-        {
-            // 0b01_10: Sign(CompareResult), Min-Abs Value
-            imm8 = 0x06;
-        }
-        else
-        {
-            // 0b01_00: Sign(CompareResult), Min Value
-            imm8 = 0x04;
-        }
-
-        GenTree* op3 = gtNewIconNode(imm8);
-        GenTree* op2 = gtNewSimdCreateScalarUnsafeNode(TYP_SIMD16, impPopStack().val, callJitType, 16);
-        GenTree* op1 = gtNewSimdCreateScalarUnsafeNode(TYP_SIMD16, impPopStack().val, callJitType, 16);
-
-        GenTree* op2Clone;
-        op2 = impCloneExpr(op2, &op2Clone, CHECK_SPILL_ALL, nullptr DEBUGARG("Cloning op2 for Math.Max/Min"));
-
-        GenTree* op1Clone;
-        op1 = impCloneExpr(op1, &op1Clone, CHECK_SPILL_ALL, nullptr DEBUGARG("Cloning op1 for Math.Max/Min"));
-
-        GenTree* tmp = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, op3, NI_AVX10v1_RangeScalar, callJitType, 16);
-
-        // FixupScalar(left, right, table, control) computes the input type of right
-        // adjusts it based on the table and then returns
-        //
-        // In our case, left is going to be the result of the RangeScalar operation,
-        // which is either sNaN or a normal value, and right is going to be op1 or op2.
-
-        GenTree* tbl1 = gtNewVconNode(TYP_SIMD16);
-        GenTree* tbl2;
-
-        // We currently have (commutative)
-        // * snan, snan = snan
-        // * snan, qnan = snan
-        // * snan, norm = snan
-        // * qnan, qnan = qnan
-        // * qnan, norm = norm
-        // * norm, norm = norm
-
-        if (isNumber)
-        {
-            // We need to fixup the case of:
-            // * snan, norm = snan
-            //
-            // Instead, it should be:
-            // * snan, norm = norm
-
-            // First look at op1 and op2 using op2 as the classification
-            //
-            // If op2 is norm, we take op2 (norm)
-            // If op2 is  nan, we take op1 ( nan or norm)
-            //
-            // Thus, if one input was norm the fixup is now norm
-
-            // QNAN: 0b0000:  Preserve left
-            // SNAN: 0b0000
-            // ZERO: 0b0001:  Preserve right
-            // +ONE: 0b0001
-            // -INF: 0b0001
-            // +INF: 0b0001
-            // -VAL: 0b0001
-            // +VAL: 0b0001
-            tbl1->AsVecCon()->gtSimdVal.i32[0] = 0x11111100;
-
-            // Next look at result and fixup using result as the classification
-            //
-            // If result is norm, we take the result (norm)
-            // If result is  nan, we take the fixup  ( nan or norm)
-            //
-            // Thus if either input was snan, we now have norm as expected
-            // Otherwise, the result was already correct
-
-            tbl1 = impCloneExpr(tbl1, &tbl2, CHECK_SPILL_ALL, nullptr DEBUGARG("Cloning tbl for Math.Max/Min"));
-
-            op1Clone = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1Clone, op2Clone, tbl1, gtNewIconNode(0),
-                                                NI_AVX10v1_FixupScalar, callJitType, 16);
-
-            tmp = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1Clone, tmp, tbl2, gtNewIconNode(0), NI_AVX10v1_FixupScalar,
-                                           callJitType, 16);
-        }
-        else
-        {
-            // We need to fixup the case of:
-            // * qnan, norm = norm
-            //
-            // Instead, it should be:
-            // * qnan, norm = qnan
-
-            // First look at op1 and op2 using op2 as the classification
-            //
-            // If op2 is norm, we take op1 ( nan or norm)
-            // If op2 is snan, we take op1 ( nan or norm)
-            // If op2 is qnan, we take op2 (qnan)
-            //
-            // Thus, if either input was qnan the fixup is now qnan
-
-            // QNAN: 0b0001:  Preserve right
-            // SNAN: 0b0000:  Preserve left
-            // ZERO: 0b0000
-            // +ONE: 0b0000
-            // -INF: 0b0000
-            // +INF: 0b0000
-            // -VAL: 0b0000
-            // +VAL: 0b0000
-            tbl1->AsVecCon()->gtSimdVal.i32[0] = 0x00000001;
-
-            // Next look at result and fixup using fixup as the classification
-            //
-            // If fixup is norm, we take the result (norm)
-            // If fixup is sNaN, we take the result (sNaN)
-            // If fixup is qNaN, we take the fixup  (qNaN)
-            //
-            // Thus if the fixup was qnan, we now have qnan as expected
-            // Otherwise, the result was already correct
-
-            tbl1 = impCloneExpr(tbl1, &tbl2, CHECK_SPILL_ALL, nullptr DEBUGARG("Cloning tbl for Math.Max/Min"));
-
-            op1Clone = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1Clone, op2Clone, tbl1, gtNewIconNode(0),
-                                                NI_AVX10v1_FixupScalar, callJitType, 16);
-
-            tmp = gtNewSimdHWIntrinsicNode(TYP_SIMD16, tmp, op1Clone, tbl2, gtNewIconNode(0), NI_AVX10v1_FixupScalar,
-                                           callJitType, 16);
-        }
-
-        return gtNewSimdToScalarNode(callType, tmp, callJitType, 16);
-    }
-    else if (compOpportunisticallyDependsOn(InstructionSet_AVX512DQ))
+    if (compOpportunisticallyDependsOn(InstructionSet_AVX512DQ) ||
+        compOpportunisticallyDependsOn(InstructionSet_AVX10v1))
     {
         // We are constructing a chain of intrinsics similar to:
         //    var op1 = Vector128.CreateScalarUnsafe(x);
@@ -9675,6 +9516,8 @@ GenTree* Compiler::impMinMaxIntrinsic(CORINFO_METHOD_HANDLE method,
         // * qnan, norm = norm
         // * norm, norm = norm
 
+        NamedIntrinsic fixupHwIntrinsicID =
+            compOpportunisticallyDependsOn(InstructionSet_AVX10v1) ? NI_AVX10v1_FixupScalar : NI_AVX512F_FixupScalar;
         if (isNumber)
         {
             // We need to fixup the case of:
@@ -9711,9 +9554,9 @@ GenTree* Compiler::impMinMaxIntrinsic(CORINFO_METHOD_HANDLE method,
             tbl1 = impCloneExpr(tbl1, &tbl2, CHECK_SPILL_ALL, nullptr DEBUGARG("Cloning tbl for Math.Max/Min"));
 
             op1Clone = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1Clone, op2Clone, tbl1, gtNewIconNode(0),
-                                                NI_AVX512F_FixupScalar, callJitType, 16);
+                                                fixupHwIntrinsicID, callJitType, 16);
 
-            tmp = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1Clone, tmp, tbl2, gtNewIconNode(0), NI_AVX512F_FixupScalar,
+            tmp = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1Clone, tmp, tbl2, gtNewIconNode(0), fixupHwIntrinsicID,
                                            callJitType, 16);
         }
         else
@@ -9754,9 +9597,9 @@ GenTree* Compiler::impMinMaxIntrinsic(CORINFO_METHOD_HANDLE method,
             tbl1 = impCloneExpr(tbl1, &tbl2, CHECK_SPILL_ALL, nullptr DEBUGARG("Cloning tbl for Math.Max/Min"));
 
             op1Clone = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1Clone, op2Clone, tbl1, gtNewIconNode(0),
-                                                NI_AVX512F_FixupScalar, callJitType, 16);
+                                                fixupHwIntrinsicID, callJitType, 16);
 
-            tmp = gtNewSimdHWIntrinsicNode(TYP_SIMD16, tmp, op1Clone, tbl2, gtNewIconNode(0), NI_AVX512F_FixupScalar,
+            tmp = gtNewSimdHWIntrinsicNode(TYP_SIMD16, tmp, op1Clone, tbl2, gtNewIconNode(0), fixupHwIntrinsicID,
                                            callJitType, 16);
         }
 

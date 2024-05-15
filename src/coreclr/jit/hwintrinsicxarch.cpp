@@ -1472,21 +1472,8 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         {
             assert(sig->numArgs == 1);
             assert(varTypeIsLong(simdBaseType));
-            if ((simdSize != 64) && compOpportunisticallyDependsOn(InstructionSet_AVX10v1))
-            {
-                if (simdSize == 32)
-                {
-                    intrinsic = NI_AVX10v1_ConvertToVector256Double;
-                }
-                else
-                {
-                    assert(simdSize == 16);
-                    intrinsic = NI_AVX10v1_ConvertToVector128Double;
-                }
-                op1     = impSIMDPopStack();
-                retNode = gtNewSimdHWIntrinsicNode(retType, op1, intrinsic, simdBaseJitType, simdSize);
-            }
-            else if (IsBaselineVector512IsaSupportedOpportunistically())
+            if (IsBaselineVector512IsaSupportedOpportunistically() ||
+                ((simdSize != 64) && compOpportunisticallyDependsOn(InstructionSet_AVX10v1)))
             {
                 if (simdSize == 64)
                 {
@@ -1494,12 +1481,16 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 }
                 else if (simdSize == 32)
                 {
-                    intrinsic = NI_AVX512DQ_VL_ConvertToVector256Double;
+                    intrinsic = compOpportunisticallyDependsOn(InstructionSet_AVX10v1)
+                                    ? NI_AVX10v1_ConvertToVector256Double
+                                    : NI_AVX512DQ_VL_ConvertToVector256Double;
                 }
                 else
                 {
                     assert(simdSize == 16);
-                    intrinsic = NI_AVX512DQ_VL_ConvertToVector128Double;
+                    intrinsic = compOpportunisticallyDependsOn(InstructionSet_AVX10v1)
+                                    ? NI_AVX10v1_ConvertToVector128Double
+                                    : NI_AVX512DQ_VL_ConvertToVector128Double;
                 }
                 op1     = impSIMDPopStack();
                 retNode = gtNewSimdHWIntrinsicNode(retType, op1, intrinsic, simdBaseJitType, simdSize);
