@@ -205,7 +205,7 @@ namespace System.Net.Http
 
                             if (!IsAuthenticationChallenge(response, isProxyAuth))
                             {
-                                // Tail response for Negoatiate on successful authentication. Validate it before we proceed.
+                                // Tail response for Negotiate on successful authentication. Validate it before we proceed.
                                 authContext.GetOutgoingBlob(challengeData, out statusCode);
                                 if (statusCode > NegotiateAuthenticationStatusCode.ContinueNeeded)
                                 {

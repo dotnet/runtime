@@ -1655,7 +1655,6 @@ namespace System.Net
             return CreateHttpClient(parameters, this);
         }
 
-        [UnconditionalSuppressMessage("AssemblyLoadTrimming", "IL2075:")]
         private static HttpClient CreateHttpClient(HttpClientParameters parameters, HttpWebRequest? request)
         {
             HttpClient? client = null;
@@ -1672,33 +1671,15 @@ namespace System.Net
                 handler.Expect100ContinueTimeout = parameters.ContinueTimeout;
                 client.Timeout = parameters.Timeout;
 
-                if (request != null && request.ImpersonationLevel != TokenImpersonationLevel.Delegation)
+                if (request != null && request.ImpersonationLevel != TokenImpersonationLevel.None)
                 {
-                    // This is legacy hack.
-                    //var setting = //typeof(handler).GetMember("_setting:, Reflection.BindingFlags.NonPublic | Reflection.BindingFlags.Instance);
-                    var setting = typeof(SocketsHttpHandler).InvokeMember("_settings", BindingFlags.GetField | BindingFlags.NonPublic | BindingFlags.Instance, null, handler, null);
-                    //
-                    if (setting != null)
-                    {
-                        Type type = setting.GetType();
-                        foreach (var m in type.GetMembers(BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public))
-                        {
-                        //    Console.WriteLine(m);
-                        }
-                        Console.WriteLine("Memmbers dfone !!!!");
-                        var field = type.InvokeMember("_impersonationLevel", BindingFlags.GetField | BindingFlags.NonPublic | BindingFlags.Instance, null, setting, null);
-
-                        //var filed = type.InvokeMember("_impersonationLevel", Reflection.BindingFlags.GetField | Reflection.BindingFlags.NonPublic | Reflection.BindingFlags.Instance, null, setting, null);
-                        //FieldInfo? field = setting.GetType().GetField("_impersonationLevel", BindingFlags.NonPublic | BindingFlags.Instance);
-                        //setting.GetType().InvokeMember("_impersonationLevel", Reflection.BindingFlags.SetField | Reflection.BindingFlags.NonPublic | Reflection.BindingFlags.Instance, null, setting,
-                        Console.WriteLine("Setting: {0} {1}", setting, field);
-
-                        type.InvokeMember("_impersonationLevel", BindingFlags.SetField | BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance, null, setting, new object[] { request!.ImpersonationLevel });
-
-                        field = type.InvokeMember("_impersonationLevel", BindingFlags.GetField | BindingFlags.NonPublic | BindingFlags.Instance, null, setting, null);
-                        Console.WriteLine("Setting: {0} {1}", setting, field);
-
-                    }
+                    // This is legacy feature and we don't have public API at the moment.
+                    // So we want to process it only if explicitly set.
+                    var settings = typeof(SocketsHttpHandler).GetField("_settings", BindingFlags.NonPublic | BindingFlags.Instance)?.GetValue(handler);
+                    Debug.Assert(settings != null);
+                    FieldInfo? fi = Type.GetType("System.Net.Http.HttpConnectionSettings, System.Net.Http")?.GetField("_impersonationLevel", BindingFlags.NonPublic | BindingFlags.Instance);
+                    Debug.Assert(fi != null);
+                    fi.SetValue(settings, request.ImpersonationLevel);
                 }
 
                 if (parameters.CookieContainer != null)
