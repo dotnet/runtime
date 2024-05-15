@@ -987,7 +987,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 				if (unexpectedWarningMessage is not null)
 				{
-					unexpectedMessageWarnings.Add($"Unexpected warning found: {unexpectedWarningMessage}")
+					unexpectedMessageWarnings.Add($"Unexpected warning found: {unexpectedWarningMessage}");
 				}
 			}
 
@@ -996,7 +996,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				missingMessageWarnings.Add ("Unexpected Messages:" + Environment.NewLine);
 				missingMessageWarnings.AddRange (loggedMessages.Select (m => m.ToString ()));
 				missingMessageWarnings.Add (Environment.NewLine + "All Messages:" + Environment.NewLine);
-				missingMessageWarnings.AddRange (logger.GetLoggedMessages ());
+				missingMessageWarnings.AddRange (logger.GetLoggedMessages ().Select (m => m.ToString ()));
 				Assert.Fail (string.Join (Environment.NewLine, missingMessageWarnings));
 			}
 
