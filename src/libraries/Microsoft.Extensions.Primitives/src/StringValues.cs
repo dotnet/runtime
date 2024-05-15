@@ -59,6 +59,7 @@ namespace Microsoft.Extensions.Primitives
         /// Defines an implicit conversion of a given string array to a <see cref="StringValues"/>.
         /// </summary>
         /// <param name="values">A string array to implicitly convert.</param>
+        [OverloadResolutionPriority(1)] // see https://github.com/dotnet/runtime/issues/101261
         public static implicit operator StringValues(string?[]? values)
         {
             return new StringValues(values);

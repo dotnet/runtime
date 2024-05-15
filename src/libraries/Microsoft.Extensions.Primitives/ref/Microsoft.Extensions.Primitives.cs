@@ -168,6 +168,7 @@ namespace Microsoft.Extensions.Primitives
         public static implicit operator string?(Microsoft.Extensions.Primitives.StringValues values) { throw null; }
         public static implicit operator string?[]?(Microsoft.Extensions.Primitives.StringValues value) { throw null; }
         public static implicit operator Microsoft.Extensions.Primitives.StringValues(string? value) { throw null; }
+        [System.Runtime.CompilerServices.OverloadResolutionPriorityAttribute(1)]
         public static implicit operator Microsoft.Extensions.Primitives.StringValues(string?[]? values) { throw null; }
         public static bool operator !=(Microsoft.Extensions.Primitives.StringValues left, Microsoft.Extensions.Primitives.StringValues right) { throw null; }
         public static bool operator !=(Microsoft.Extensions.Primitives.StringValues left, object? right) { throw null; }

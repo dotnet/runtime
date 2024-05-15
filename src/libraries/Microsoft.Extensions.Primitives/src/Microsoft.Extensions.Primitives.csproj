@@ -25,6 +25,11 @@ Microsoft.Extensions.Primitives.StringSegment</PackageDescription>
              Link="Common\src\Extensions\EmptyDisposable.cs" />
   </ItemGroup>
 
+  <ItemGroup Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net9.0'))">
+    <Compile Include="$(CoreLibSharedDir)\System\Runtime\CompilerServices\OverloadResolutionPriorityAttribute.cs"
+             Link="System\Runtime\CompilerServices\OverloadResolutionPriorityAttribute.cs" />
+  </ItemGroup>
+
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
     <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
     <PackageReference Include="System.Runtime.CompilerServices.Unsafe" Version="$(SystemRuntimeCompilerServicesUnsafeVersion)" />

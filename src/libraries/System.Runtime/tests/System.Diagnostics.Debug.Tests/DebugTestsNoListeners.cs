@@ -81,12 +81,15 @@ namespace System.Diagnostics.Tests
         [Fact]
         public void Asserts()
         {
-            VerifyLogged(() => Debug.Assert(true), "");
+            // Test the overload via reflection. It's deprioritized via OverloadResolutionPriority.
+            Action<bool> debugBool = typeof(Debug).GetMethod("Assert", [typeof(bool)]).CreateDelegate<Action<bool>>();
+
+            VerifyLogged(() => debugBool(true), "");
             VerifyLogged(() => Debug.Assert(true, "assert passed"), "");
             VerifyLogged(() => Debug.Assert(true, "assert passed", "nothing is wrong"), "");
             VerifyLogged(() => Debug.Assert(true, "assert passed", "nothing is wrong {0} {1}", 'a', 'b'), "");
 
-            VerifyAssert(() => Debug.Assert(false), "");
+            VerifyAssert(() => debugBool(false), "");
             VerifyAssert(() => Debug.Assert(false, "assert passed"), "assert passed");
             VerifyAssert(() => Debug.Assert(false, "assert passed", "nothing is wrong"), "assert passed", "nothing is wrong");
             VerifyAssert(() => Debug.Assert(false, "assert passed", "nothing is wrong {0} {1}", 'a', 'b'), "assert passed", "nothing is wrong a b");

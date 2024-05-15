@@ -82,10 +82,12 @@ namespace System.Diagnostics
             Assert(condition, string.Empty, string.Empty);
 
         [Conditional("DEBUG")]
-        public static void Assert([DoesNotReturnIf(false)] bool condition, string? message) =>
+        [OverloadResolutionPriority(1)] // so that the caller argument expression is used when no message is provided
+        public static void Assert([DoesNotReturnIf(false)] bool condition, [CallerArgumentExpression(nameof(condition))] string? message = "") =>
             Assert(condition, message, string.Empty);
 
         [Conditional("DEBUG")]
+        [OverloadResolutionPriority(2)] // so that interpolation still wins out over strings
         public static void Assert([DoesNotReturnIf(false)] bool condition, [InterpolatedStringHandlerArgument(nameof(condition))] ref AssertInterpolatedStringHandler message) =>
             Assert(condition, message.ToStringAndClear());
 
