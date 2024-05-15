@@ -176,7 +176,7 @@ namespace Microsoft.Extensions.Options.Tests
             sc.AddOptions<FakeOptions>("name3").Configure(o => o.Message += "3").Validate(o => o.Message.Length > 0).ValidateOnStart();
             sc.AddOptions<FakeOptions>("name4").Configure(o => o.Message += "4").Validate(o => o.Message.Length > 0).ValidateOnStart();
 
-            Assert.Equal(1, sc.Where(sd => sd.ServiceType == typeof(IStartupValidator)).ToArray().Length);
+            Assert.Equal(1, sc.Count(sd => sd.ServiceType == typeof(IStartupValidator)));
         }
 
         public static TheoryData Configure_GetsNullableOptionsFromConfiguration_Data
