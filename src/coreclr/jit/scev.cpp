@@ -127,7 +127,14 @@ void Scev::Dump(Compiler* comp)
         case ScevOper::Constant:
         {
             ScevConstant* cns = (ScevConstant*)this;
-            printf("%zd", (ssize_t)cns->Value);
+            if (genTypeSize(cns->Type) == 4)
+            {
+                printf("%d", (int32_t)cns->Value);
+            }
+            else
+            {
+                printf("%lld", (int64_t)cns->Value);
+            }
             break;
         }
         case ScevOper::Local:
