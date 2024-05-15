@@ -1,7 +1,0 @@
-gymnasium
-numpy
-pydantic
-pandas
-stable_baselines3
-stable-baselines3[extra]
-torch
