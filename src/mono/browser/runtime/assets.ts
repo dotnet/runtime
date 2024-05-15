@@ -52,7 +52,10 @@ export function instantiate_asset (asset: AssetEntry, url: string, bytes: Uint8A
             if (fileName.startsWith("/"))
                 fileName = fileName.substring(1);
             if (parentDirectory) {
-                mono_log_debug(() => `Creating directory '${parentDirectory}'`);
+                if (!parentDirectory.startsWith("/"))
+                    parentDirectory = "/" + parentDirectory;
+
+                mono_log_debug(`Creating directory '${parentDirectory}'`);
 
                 Module.FS_createPath(
                     "/", parentDirectory, true, true // fixme: should canWrite be false?
@@ -85,8 +88,7 @@ export function instantiate_asset (asset: AssetEntry, url: string, bytes: Uint8A
     } else if (asset.behavior === "pdb") {
         cwraps.mono_wasm_add_assembly(virtualName, offset!, bytes.length);
     } else if (asset.behavior === "icu") {
-        if (!mono_wasm_load_icu_data(offset!))
-            Module.err(`Error loading ICU asset ${asset.name}`);
+        mono_wasm_load_icu_data(offset!);
     } else if (asset.behavior === "resource") {
         cwraps.mono_wasm_add_satellite_assembly(virtualName, asset.culture || "", offset!, bytes.length);
     }

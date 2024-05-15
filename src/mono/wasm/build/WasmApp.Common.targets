@@ -435,7 +435,7 @@
     </RuntimeConfigParserTask>
 
     <ItemGroup>
-      <WasmFilesToIncludeInFileSystem Condition="'$(WasmSingleFileBundle)' != 'true'" Include="$(_ParsedRuntimeConfigFilePath)" />
+      <WasmFilesToIncludeInFileSystem Condition="'$(WasmSingleFileBundle)' != 'true'" Include="$(_ParsedRuntimeConfigFilePath)" LoadingStage="Core" />
     </ItemGroup>
   </Target>
 

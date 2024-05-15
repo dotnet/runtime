@@ -2327,20 +2327,7 @@ void LinearScan::buildIntervals()
 
         if (isCandidateVar(argDsc))
         {
-            Interval*       interval = getIntervalForLocalVar(varIndex);
-            const var_types regType  = argDsc->GetRegisterType();
-            regMaskTP       mask     = allRegs(regType);
-            if (argDsc->lvIsRegArg && !stressInitialParamReg())
-            {
-                // Set this interval as currently assigned to that register
-                regNumber inArgReg = argDsc->GetArgReg();
-                assert(inArgReg < REG_COUNT);
-                mask = genRegMask(inArgReg);
-                assignPhysReg(inArgReg, interval);
-                INDEBUG(registersToDump |= getRegMask(inArgReg, interval->registerType));
-            }
-            RefPosition* pos = newRefPosition(interval, MinLocation, RefTypeParamDef, nullptr, mask);
-            pos->setRegOptional(true);
+            buildInitialParamDef(argDsc, argDsc->lvIsRegArg ? argDsc->GetArgReg() : REG_NA);
         }
         else if (argDsc->lvPromoted)
         {
@@ -2351,10 +2338,7 @@ void LinearScan::buildIntervals()
                 if (fieldVarDsc->lvLRACandidate)
                 {
                     assert(fieldVarDsc->lvTracked);
-                    Interval*    interval = getIntervalForLocalVar(fieldVarDsc->lvVarIndex);
-                    RefPosition* pos =
-                        newRefPosition(interval, MinLocation, RefTypeParamDef, nullptr, allRegs(TypeGet(fieldVarDsc)));
-                    pos->setRegOptional(true);
+                    buildInitialParamDef(fieldVarDsc, REG_NA);
                 }
             }
         }
@@ -2401,6 +2385,12 @@ void LinearScan::buildIntervals()
     if (compiler->info.compPublishStubParam)
     {
         intRegState->rsCalleeRegArgMaskLiveIn |= RBM_SECRET_STUB_PARAM;
+
+        LclVarDsc* stubParamDsc = compiler->lvaGetDesc(compiler->lvaStubArgumentVar);
+        if (isCandidateVar(stubParamDsc))
+        {
+            buildInitialParamDef(stubParamDsc, REG_SECRET_STUB_PARAM);
+        }
     }
 
 #ifdef DEBUG
@@ -2858,6 +2848,32 @@ void LinearScan::buildIntervals()
 #endif // DEBUG
 }
 
+//------------------------------------------------------------------------
+// buildInitialParamDef: Build the initial definition for a parameter.
+//
+// Parameters:
+//   varDsc   - LclVarDsc* for parameter
+//   paramReg - Register that parameter is in
+//
+void LinearScan::buildInitialParamDef(const LclVarDsc* varDsc, regNumber paramReg)
+{
+    assert(isCandidateVar(varDsc));
+
+    Interval*       interval = getIntervalForLocalVar(varDsc->lvVarIndex);
+    const var_types regType  = varDsc->GetRegisterType();
+    regMaskTP       mask     = allRegs(regType);
+    if ((paramReg != REG_NA) && !stressInitialParamReg())
+    {
+        // Set this interval as currently assigned to that register
+        assert(paramReg < REG_COUNT);
+        mask = genRegMask(paramReg);
+        assignPhysReg(paramReg, interval);
+        INDEBUG(registersToDump |= getRegMask(paramReg, interval->registerType));
+    }
+    RefPosition* pos = newRefPosition(interval, MinLocation, RefTypeParamDef, nullptr, mask);
+    pos->setRegOptional(true);
+}
+
 #ifdef DEBUG
 
 //------------------------------------------------------------------------
@@ -2898,7 +2914,7 @@ void LinearScan::stressSetRandomParameterPreferences()
 
         // Select a random register from all possible parameter registers
         // (of the right type). Preference this parameter to that register.
-        unsigned numBits = BitOperations::PopCount(*regs);
+        unsigned numBits = PopCount(*regs);
         if (numBits == 0)
         {
             continue;

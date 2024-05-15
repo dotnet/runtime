@@ -417,11 +417,6 @@ const char* dspRegRange(regMaskTP regMask, size_t& minSiz, const char* sep, regN
             sep        = " ";
         }
 
-        if (regBit > regMask)
-        {
-            break;
-        }
-
         regPrev = regNum;
     }
 
@@ -2272,40 +2267,7 @@ float FloatingPointUtils::convertUInt64ToFloat(unsigned __int64 u64)
 
 unsigned __int64 FloatingPointUtils::convertDoubleToUInt64(double d)
 {
-    unsigned __int64 u64;
-    if (d >= 0.0)
-    {
-        // Work around a C++ issue where it doesn't properly convert large positive doubles
-        const double two63 = 2147483648.0 * 4294967296.0;
-        if (d < two63)
-        {
-            u64 = UINT64(d);
-        }
-        else
-        {
-            // subtract 0x8000000000000000, do the convert then add it back again
-            u64 = INT64(d - two63) + I64(0x8000000000000000);
-        }
-        return u64;
-    }
-
-#ifdef TARGET_XARCH
-
-    // While the Ecma spec does not specifically call this out,
-    // the case of conversion from negative double to unsigned integer is
-    // effectively an overflow and therefore the result is unspecified.
-    // With MSVC for x86/x64, such a conversion results in the bit-equivalent
-    // unsigned value of the conversion to integer. Other compilers convert
-    // negative doubles to zero when the target is unsigned.
-    // To make the behavior consistent across OS's on TARGET_XARCH,
-    // this double cast is needed to conform MSVC behavior.
-
-    u64 = UINT64(INT64(d));
-#else
-    u64 = UINT64(d);
-#endif // TARGET_XARCH
-
-    return u64;
+    return (uint64_t)d;
 }
 
 //------------------------------------------------------------------------
