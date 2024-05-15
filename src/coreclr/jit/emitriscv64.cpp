@@ -3344,27 +3344,33 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
     return sz;
 }
 
-bool emitter::emitDispBranchInstrType(unsigned opcode2) const
+bool emitter::emitDispBranchInstrType(unsigned opcode2, bool is_zero_reg, bool& print_second_reg) const
 {
     switch (opcode2)
     {
         case 0:
-            printf("beq ");
+            printf(is_zero_reg ? "beqz" : "beq ");
+            print_second_reg = !is_zero_reg;
             break;
         case 1:
-            printf("bne ");
+            printf(is_zero_reg ? "bne " : "bnez");
+            print_second_reg = !is_zero_reg;
             break;
         case 4:
             printf("blt ");
+            print_second_reg = true;
             break;
         case 5:
             printf("bge ");
+            print_second_reg = true;
             break;
         case 6:
             printf("bltu");
+            print_second_reg = true;
             break;
         case 7:
             printf("bgeu");
+            print_second_reg = true;
             break;
         default:
             return false;
@@ -3404,17 +3410,19 @@ void emitter::emitDispBranchLabel(const instrDesc* id) const
     printf("L_M%03u_", FMT_BB, emitComp->compMethodID, id->idAddr()->iiaBBlabel->bbNum);
 }
 
-bool emitter::emitDispBranch(unsigned         opcode2,
-                             const char*      register1Name,
-                             const char*      register2Name,
-                             const instrDesc* id,
-                             const insGroup*  ig) const
+bool emitter::emitDispBranch(
+    unsigned opcode2, unsigned rs1, unsigned rs2, const instrDesc* id, const insGroup* ig) const
 {
-    if (!emitDispBranchInstrType(opcode2))
+    bool print_second_reg = true;
+    if (!emitDispBranchInstrType(opcode2, rs2 == 0, print_second_reg))
     {
         return false;
     }
-    printf("           %s, %s, ", register1Name, register2Name);
+    printf("           %s, ", RegNames[rs1]);
+    if (print_second_reg)
+    {
+        printf("%s, ", RegNames[rs2]);
+    }
     assert(id != nullptr);
     if (id->idAddr()->iiaHasInstrCount())
     {
@@ -3804,9 +3812,11 @@ void emitter::emitDispInsName(
         }
         case 0x63: // BRANCH
         {
-            unsigned int opcode2 = (code >> 12) & 0x7;
-            const char*  rs1     = RegNames[(code >> 15) & 0x1f];
-            const char*  rs2     = RegNames[(code >> 20) & 0x1f];
+            unsigned    opcode2 = (code >> 12) & 0x7;
+            unsigned    rs1     = (code >> 15) & 0x1f;
+            unsigned    rs2     = (code >> 20) & 0x1f;
+            const char* rs1     = RegNames[];
+            const char* rs2     = RegNames[];
             // int offset = (((code >> 31) & 0x1) << 12) | (((code >> 7) & 0x1) << 11) | (((code >> 25) & 0x3f) << 5) |
             //              (((code >> 8) & 0xf) << 1);
             // if (offset & 0x800)
