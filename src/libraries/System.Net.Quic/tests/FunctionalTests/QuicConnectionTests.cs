@@ -191,42 +191,39 @@ namespace System.Net.Quic.Tests
         [Fact]
         public async Task GetAvailableStreamsCount_OpenCloseStream_CountsCorrectly()
         {
-            (QuicConnection clientConnection, QuicConnection serverConnection) = await CreateConnectedQuicConnection();
-            Assert.Equal(QuicDefaults.DefaultServerMaxInboundBidirectionalStreams, clientConnection.AvailableBidirectionalStreamsCount);
-            Assert.Equal(QuicDefaults.DefaultServerMaxInboundUnidirectionalStreams, clientConnection.AvailableUnidirectionalStreamsCount);
-            Assert.Equal(QuicDefaults.DefaultClientMaxInboundBidirectionalStreams, serverConnection.AvailableBidirectionalStreamsCount);
-            Assert.Equal(QuicDefaults.DefaultClientMaxInboundUnidirectionalStreams, serverConnection.AvailableUnidirectionalStreamsCount);
-
             SemaphoreSlim streamsAvailableFired = new SemaphoreSlim(0);
             int bidiIncrement = -1, unidiIncrement = -1;
-            clientConnection.StreamsAvailable += (sender, eventArgs) =>
+
+            var clientOptions = CreateQuicClientOptions(new IPEndPoint(0, 0));
+            clientOptions.StreamsAvailableCallback = (sender, bidirectionalStreamsCountIncrement, unidirectionalStreamsCountIncrement) =>
             {
-                bidiIncrement = eventArgs.BidirectionalStreamsCountIncrement;
-                unidiIncrement = eventArgs.UnidirectionalStreamsCountIncrement;
+                bidiIncrement = bidirectionalStreamsCountIncrement;
+                unidiIncrement = unidirectionalStreamsCountIncrement;
                 streamsAvailableFired.Release();
             };
 
+            (QuicConnection clientConnection, QuicConnection serverConnection) = await CreateConnectedQuicConnection(clientOptions);
+            await streamsAvailableFired.WaitAsync();
+            Assert.Equal(QuicDefaults.DefaultServerMaxInboundBidirectionalStreams, bidiIncrement);
+            Assert.Equal(QuicDefaults.DefaultServerMaxInboundUnidirectionalStreams, unidiIncrement);
+
             var clientStreamBidi = await clientConnection.OpenOutboundStreamAsync(QuicStreamType.Bidirectional);
-            Assert.Equal(QuicDefaults.DefaultServerMaxInboundBidirectionalStreams - 1, clientConnection.AvailableBidirectionalStreamsCount);
             await clientStreamBidi.DisposeAsync();
             var serverStreamBidi = await serverConnection.AcceptInboundStreamAsync();
             await serverStreamBidi.DisposeAsync();
 
             // STREAMS_AVAILABLE event comes asynchronously, give it a chance to propagate
             await streamsAvailableFired.WaitAsync();
-            Assert.Equal(QuicDefaults.DefaultServerMaxInboundBidirectionalStreams, clientConnection.AvailableBidirectionalStreamsCount);
             Assert.Equal(1, bidiIncrement);
             Assert.Equal(0, unidiIncrement);
 
             var clientStreamUnidi = await clientConnection.OpenOutboundStreamAsync(QuicStreamType.Unidirectional);
-            Assert.Equal(QuicDefaults.DefaultServerMaxInboundUnidirectionalStreams - 1, clientConnection.AvailableUnidirectionalStreamsCount);
             await clientStreamUnidi.DisposeAsync();
             var serverStreamUnidi = await serverConnection.AcceptInboundStreamAsync();
             await serverStreamUnidi.DisposeAsync();
 
             // STREAMS_AVAILABLE event comes asynchronously, give it a chance to propagate
             await streamsAvailableFired.WaitAsync();
-            Assert.Equal(QuicDefaults.DefaultServerMaxInboundUnidirectionalStreams, clientConnection.AvailableUnidirectionalStreamsCount);
             Assert.Equal(0, bidiIncrement);
             Assert.Equal(1, unidiIncrement);
         }

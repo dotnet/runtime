@@ -252,6 +252,7 @@ public sealed partial class QuicStream
     {
         _startedTcs.TryInitialize(out ValueTask valueTask, this, cancellationToken);
         {
+            _decrementAvailableStreamCount = decrementAvailableStreamCount;
             unsafe
             {
                 int status = MsQuicApi.Api.StreamStart(
@@ -265,7 +266,6 @@ public sealed partial class QuicStream
             }
         }
 
-        _decrementAvailableStreamCount = decrementAvailableStreamCount;
         return valueTask;
     }
 
