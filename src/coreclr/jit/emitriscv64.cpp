@@ -3425,7 +3425,7 @@ bool emitter::emitDispBranch(
     unsigned opcode2, unsigned rs1, unsigned rs2, const instrDesc* id, const insGroup* ig) const
 {
     bool print_second_reg = true;
-    if (!emitDispBranchInstrType(opcode2, rs2 == 0, print_second_reg))
+    if (!emitDispBranchInstrType(opcode2, rs2 == REG_ZERO, print_second_reg))
     {
         return false;
     }
@@ -3528,7 +3528,7 @@ void emitter::emitDispInsName(
                     {
                         printLength = printf("addi");
                     }
-                    else if (rd || rs1)
+                    else if ((rd != REG_ZERO) || (rs1 != REG_ZERO))
                     {
                         printLength  = printf("mv");
                         hasImmediate = false;
@@ -3898,7 +3898,7 @@ void emitter::emitDispInsName(
             {
                 offset |= 0xfff00000;
             }
-            if (rd == 0)
+            if (rd == REG_ZERO)
             {
                 printf("j              %d", offset);
             }
