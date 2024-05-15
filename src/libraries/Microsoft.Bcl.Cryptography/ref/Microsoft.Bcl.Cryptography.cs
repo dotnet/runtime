@@ -54,7 +54,7 @@ namespace System.Security.Cryptography.X509Certificates
     {
         public Pkcs12LoadLimitExceededException(string propertyName) { }
     }
-#if NETCOREAPP
+#if NET
     [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
 #endif
     public static partial class X509CertificateLoader

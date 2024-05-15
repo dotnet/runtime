@@ -17,7 +17,7 @@ namespace System.Security.Cryptography.X509Certificates
         private const int CRYPT_E_BAD_DECODE = unchecked((int)0x80092002);
         private const int ERROR_INVALID_PASSWORD = unchecked((int)0x80070056);
 
-#if NETCOREAPP
+#if NET
         private const int NTE_FAIL = unchecked((int)0x80090020);
 #endif
 
@@ -242,8 +242,6 @@ namespace System.Security.Cryptography.X509Certificates
                     }
                     else
                     {
-                        // Should there be an option here to preserve this?
-                        // Ignore this?
                         throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
                     }
 
@@ -294,7 +292,7 @@ namespace System.Security.Cryptography.X509Certificates
                                     oid switch
                                     {
                                         Oids.LocalKeyId => true,
-                                        "1.2.840.113549.1.9.20" => limits.PreserveCertificateAlias,
+                                        Oids.Pkcs9FriendlyName => limits.PreserveCertificateAlias,
                                         _ => limits.PreserveUnknownAttributes,
                                     });
                         }
@@ -346,8 +344,8 @@ namespace System.Security.Cryptography.X509Certificates
                                 attrType switch
                                 {
                                     Oids.LocalKeyId => true,
-                                    "1.2.840.113549.1.9.20" => limits.PreserveKeyName,
-                                    "1.3.6.1.4.1.311.17.1" => limits.PreserveStorageProvider,
+                                    Oids.Pkcs9FriendlyName => limits.PreserveKeyName,
+                                    Oids.MsPkcs12KeyProviderName => limits.PreserveStorageProvider,
                                     _ => limits.PreserveUnknownAttributes,
                                 });
                     }
@@ -662,7 +660,7 @@ namespace System.Security.Cryptography.X509Certificates
 
                     _decryptBufferOffset = saveOffset;
 
-#if NETCOREAPP
+#if NET
                     if (e.HResult != CRYPT_E_BAD_DECODE)
                     {
                         e.HResult = ConfirmedPassword ? NTE_FAIL : ERROR_INVALID_PASSWORD;
@@ -817,7 +815,11 @@ namespace System.Security.Cryptography.X509Certificates
                 }
             }
 
-            internal ArraySegment<byte> ToPfx(ReadOnlySpan<char> password)
+            internal
+#if !NET
+                unsafe
+#endif
+                ArraySegment<byte> ToPfx(ReadOnlySpan<char> password)
             {
                 Debug.Assert(_certBags is not null);
                 Debug.Assert(_keyBags is not null);
@@ -828,53 +830,66 @@ namespace System.Security.Cryptography.X509Certificates
                 };
 
                 AsnWriter writer = new AsnWriter(AsnEncodingRules.BER);
-                writer.PushOctetString();
-                writer.PushSequence();
 
-                for (int i = 0; i < _certCount; i++)
+                using (writer.PushOctetString())
+                using (writer.PushSequence())
                 {
-                    SafeBagAsn bag = _certBags[i];
-                    bag.Encode(writer);
+                    for (int i = 0; i < _certCount; i++)
+                    {
+                        SafeBagAsn bag = _certBags[i];
+                        bag.Encode(writer);
+                    }
+
+                    for (int i = 0; i < _keyCount; i++)
+                    {
+                        SafeBagAsn bag = _keyBags[i];
+                        bag.Encode(writer);
+                    }
                 }
 
-                for (int i = 0; i < _keyCount; i++)
-                {
-                    SafeBagAsn bag = _keyBags[i];
-                    bag.Encode(writer);
-                }
-
-                writer.PopSequence();
-                writer.PopOctetString();
                 safeContents.Content = writer.Encode();
                 writer.Reset();
 
-                writer.PushSequence();
-                safeContents.Encode(writer);
-                writer.PopSequence();
+                using (writer.PushSequence())
+                {
+                    safeContents.Encode(writer);
+                }
+
                 byte[] authSafe = writer.Encode();
                 writer.Reset();
 
+                const int Sha1MacSize = 20;
                 HashAlgorithmName hashAlgorithm = HashAlgorithmName.SHA1;
-                byte[] macKey = new byte[20];
-                Span<byte> salt = stackalloc byte[macKey.Length];
-
+                Span<byte> salt = stackalloc byte[Sha1MacSize];
                 Helpers.RngFill(salt);
 
-                Pkcs12Kdf.DeriveMacKey(
-                    password,
-                    hashAlgorithm,
-                    1,
-                    salt,
-                    macKey);
+#if NET
+                Span<byte> macKey = stackalloc byte[Sha1MacSize];
+#else
+                byte[] macKey = new byte[Sha1MacSize];
+#endif
 
-                using (IncrementalHash mac = IncrementalHash.CreateHMAC(hashAlgorithm, macKey))
+                // Pin macKey (if it's on the heap), derive the key into it, then overwrite it with the MAC output.
+#if !NET
+                fixed (byte* macKeyPin = macKey)
+#endif
                 {
-                    mac.AppendData(authSafe);
+                    Pkcs12Kdf.DeriveMacKey(
+                        password,
+                        hashAlgorithm,
+                        1,
+                        salt,
+                        macKey);
 
-                    if (!mac.TryGetHashAndReset(macKey, out int bytesWritten) || bytesWritten != macKey.Length)
+                    using (IncrementalHash mac = IncrementalHash.CreateHMAC(hashAlgorithm, macKey))
                     {
-                        Debug.Fail($"TryGetHashAndReset wrote {bytesWritten} of {macKey.Length} bytes");
-                        throw new CryptographicException();
+                        mac.AppendData(authSafe);
+
+                        if (!mac.TryGetHashAndReset(macKey, out int bytesWritten) || bytesWritten != macKey.Length)
+                        {
+                            Debug.Fail($"TryGetHashAndReset wrote {bytesWritten} of {macKey.Length} bytes");
+                            throw new CryptographicException();
+                        }
                     }
                 }
 
@@ -885,24 +900,20 @@ namespace System.Security.Cryptography.X509Certificates
                 //   authSafe   ContentInfo,
                 //   macData    MacData OPTIONAL
                 // }
+                using (writer.PushSequence())
                 {
-                    writer.PushSequence();
-
                     writer.WriteInteger(3);
 
-                    writer.PushSequence();
+                    using (writer.PushSequence())
                     {
                         writer.WriteObjectIdentifierForCrypto(Oids.Pkcs7Data);
 
                         Asn1Tag contextSpecific0 = new Asn1Tag(TagClass.ContextSpecific, 0);
 
-                        writer.PushSequence(contextSpecific0);
+                        using (writer.PushSequence(contextSpecific0))
                         {
                             writer.WriteOctetString(authSafe);
-                            writer.PopSequence(contextSpecific0);
                         }
-
-                        writer.PopSequence();
                     }
 
                     // https://tools.ietf.org/html/rfc7292#section-4
@@ -914,25 +925,20 @@ namespace System.Security.Cryptography.X509Certificates
                     //   -- Note: The default is for historical reasons and its use is
                     //   -- deprecated.
                     // }
-                    writer.PushSequence();
+                    using (writer.PushSequence())
                     {
-                        writer.PushSequence();
+                        using (writer.PushSequence())
                         {
-                            writer.PushSequence();
+                            using (writer.PushSequence())
                             {
                                 writer.WriteObjectIdentifierForCrypto(Oids.Sha1);
-                                writer.PopSequence();
                             }
 
                             writer.WriteOctetString(macKey);
-                            writer.PopSequence();
                         }
 
                         writer.WriteOctetString(salt);
-                        writer.PopSequence();
                     }
-
-                    writer.PopSequence();
                 }
 
                 byte[] ret = CryptoPool.Rent(writer.GetEncodedLength());

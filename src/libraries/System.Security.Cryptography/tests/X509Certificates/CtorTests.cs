@@ -211,8 +211,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [Fact]
         public static void Loader_Lifetime_Independent()
         {
-            var c1 = X509CertificateLoader.LoadPkcs12(TestData.PfxData, TestData.PfxDataPassword);
-            using (var c2 = X509CertificateLoader.LoadPkcs12(TestData.PfxData, TestData.PfxDataPassword))
+            X509Certificate2 c1 = X509CertificateLoader.LoadPkcs12(TestData.PfxData, TestData.PfxDataPassword);
+            using (X509Certificate2 c2 = X509CertificateLoader.LoadPkcs12(TestData.PfxData, TestData.PfxDataPassword))
             {
                 RSA rsa = c2.GetRSAPrivateKey();
                 byte[] hash = new byte[SHA256.HashSizeInBytes];

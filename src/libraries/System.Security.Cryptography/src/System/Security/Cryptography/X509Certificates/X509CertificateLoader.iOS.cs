@@ -19,7 +19,6 @@ namespace System.Security.Cryptography.X509Certificates
 
             if (X509Certificate2.GetCertContentType(data) != X509ContentType.Cert)
             {
-
                 throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
             }
 

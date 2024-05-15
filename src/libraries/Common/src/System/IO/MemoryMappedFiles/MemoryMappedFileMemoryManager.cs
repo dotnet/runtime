@@ -70,14 +70,9 @@ namespace System.IO.MemoryMappedFiles
             _length = -1;
             _accessor?.SafeMemoryMappedViewHandle.ReleasePointer();
             _accessor?.Dispose();
-            _mappedFile.Dispose();
+            _mappedFile?.Dispose();
             _accessor = null!;
             _mappedFile = null!;
-
-            if (disposing)
-            {
-                GC.SuppressFinalize(this);
-            }
         }
 
         public override Span<byte> GetSpan()
@@ -100,7 +95,7 @@ namespace System.IO.MemoryMappedFiles
 
         private void ThrowIfDisposed()
         {
-#if NETCOREAPP
+#if NET
             ObjectDisposedException.ThrowIf(_length < 0, this);
 #else
             if (_length < 0)

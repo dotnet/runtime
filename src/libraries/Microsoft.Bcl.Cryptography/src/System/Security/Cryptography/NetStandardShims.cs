@@ -95,7 +95,6 @@ namespace System.Security.Cryptography
             }
         }
 
-#if NETSTANDARD2_0
         internal static bool TryGetHashAndReset(
             this IncrementalHash hash,
             Span<byte> destination,
@@ -124,7 +123,6 @@ namespace System.Security.Cryptography
             bytesWritten = actual.Length;
             return true;
         }
-#endif
     }
 
     internal static class CryptographicOperations

@@ -24,16 +24,9 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         {
             protected override X509Certificate2 LoadCertificate(byte[] data)
             {
-                string path = Path.GetTempFileName();
-
-                try
+                using (TempFileHolder holder = new TempFileHolder(data))
                 {
-                    File.WriteAllBytes(path, data);
-                    return X509CertificateLoader.LoadCertificateFromFile(path);
-                }
-                finally
-                {
-                    File.Delete(path);
+                    return X509CertificateLoader.LoadCertificateFromFile(holder.FilePath);
                 }
             }
         }
@@ -49,16 +42,9 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         {
             protected override X509Certificate2 LoadCertificate(byte[] data)
             {
-                string path = Path.GetTempFileName();
-
-                try
+                using (TempFileHolder holder = new TempFileHolder(data))
                 {
-                    File.WriteAllBytes(path, data);
-                    return new X509Certificate2(path);
-                }
-                finally
-                {
-                    File.Delete(path);
+                    return new X509Certificate2(holder.FilePath);
                 }
             }
         }

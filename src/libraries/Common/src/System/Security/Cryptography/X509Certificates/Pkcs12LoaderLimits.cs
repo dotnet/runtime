@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Runtime.CompilerServices;
+
 namespace System.Security.Cryptography.X509Certificates
 {
     /// <summary>
@@ -95,10 +97,12 @@ namespace System.Security.Cryptography.X509Certificates
         /// </exception>
         public Pkcs12LoaderLimits(Pkcs12LoaderLimits copyFrom)
         {
-#pragma warning disable CA1510
+#if NET
+            ArgumentNullException.ThrowIfNull(copyFrom);
+#else
             if (copyFrom is null)
                 throw new ArgumentNullException(nameof(copyFrom));
-#pragma warning restore CA1510
+#endif
 
             // Do not copy _isReadOnly.
 
@@ -148,7 +152,7 @@ namespace System.Security.Cryptography.X509Certificates
         /// <summary>
         ///   Gets or sets the iteration limit for the MAC calculation.
         /// </summary>
-        /// <value>The iteration limit for the MAC calculation.</value>
+        /// <value>The iteration limit for the MAC calculation, or <see langword="null" /> for no limit.</value>
         public int? MacIterationLimit
         {
             get => _macIterationLimit;
@@ -166,16 +170,15 @@ namespace System.Security.Cryptography.X509Certificates
         ///   Gets or sets the iteration limit for the individual Key Derivation Function (KDF) calculations.
         /// </summary>
         /// <value>
-        ///   The iteration limit for the individual Key Derivation Function (KDF) calculations.
+        ///   The iteration limit for the individual Key Derivation Function (KDF) calculations,
+        ///   or <see langword="null" /> for no limit.
         /// </value>
         public int? IndividualKdfIterationLimit
         {
             get => _individualKdfIterationLimit;
             set
             {
-                if (value < 0)
-                    throw new ArgumentOutOfRangeException(nameof(value), SR.ArgumentOutOfRange_NeedNonNegNum);
-
+                CheckNonNegative(value);
                 CheckReadOnly();
                 _individualKdfIterationLimit = value;
             }
@@ -185,16 +188,15 @@ namespace System.Security.Cryptography.X509Certificates
         ///   Gets or sets the total iteration limit for the Key Derivation Function (KDF) calculations.
         /// </summary>
         /// <value>
-        ///   The total iteration limit for the Key Derivation Function (KDF) calculations.
+        ///   The total iteration limit for the Key Derivation Function (KDF) calculations,
+        ///   or <see langword="null" /> for no limit.
         /// </value>
         public int? TotalKdfIterationLimit
         {
             get => _totalKdfIterationLimit;
             set
             {
-                if (value < 0)
-                    throw new ArgumentOutOfRangeException(nameof(value), SR.ArgumentOutOfRange_NeedNonNegNum);
-
+                CheckNonNegative(value);
                 CheckReadOnly();
                 _totalKdfIterationLimit = value;
             }
@@ -204,16 +206,14 @@ namespace System.Security.Cryptography.X509Certificates
         ///   Gets or sets the maximum number of keys permitted.
         /// </summary>
         /// <value>
-        ///   The maximum number of keys permitted.
+        ///   The maximum number of keys permitted, or <see langword="null" /> for no maximum.
         /// </value>
         public int? MaxKeys
         {
             get => _maxKeys;
             set
             {
-                if (value < 0)
-                    throw new ArgumentOutOfRangeException(nameof(value), SR.ArgumentOutOfRange_NeedNonNegNum);
-
+                CheckNonNegative(value);
                 CheckReadOnly();
                 _maxKeys = value;
             }
@@ -223,16 +223,14 @@ namespace System.Security.Cryptography.X509Certificates
         ///   Gets or sets the maximum number of certificates permitted.
         /// </summary>
         /// <value>
-        ///   The maximum number of certificates permitted.
+        ///   The maximum number of certificates permitted, or <see langword="null" /> for no maximum.
         /// </value>
         public int? MaxCertificates
         {
             get => _maxCertificates;
             set
             {
-                if (value < 0)
-                    throw new ArgumentOutOfRangeException(nameof(value), SR.ArgumentOutOfRange_NeedNonNegNum);
-
+                CheckNonNegative(value);
                 CheckReadOnly();
                 _maxCertificates = value;
             }
@@ -369,5 +367,28 @@ namespace System.Security.Cryptography.X509Certificates
                 _ignoreEncryptedAuthSafes = value;
             }
         }
+
+        private static void CheckNonNegative(
+            int? value,
+            [CallerArgumentExpression(nameof(value))] string? paramName = null)
+        {
+            // Null turns to 0, 0 is non-negative, so null is non-negative.
+            CheckNonNegative(value.GetValueOrDefault(), paramName);
+        }
+
+        private static void CheckNonNegative(
+            int value,
+            [CallerArgumentExpression(nameof(value))] string? paramName = null)
+        {
+#if NET
+            ArgumentOutOfRangeException.ThrowIfNegative(value, paramName);
+#else
+            if (value < 0)
+            {
+                throw new ArgumentOutOfRangeException(paramName, SR.ArgumentOutOfRange_NeedNonNegNum);
+            }
+#endif
+        }
+
     }
 }

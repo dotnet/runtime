@@ -24,6 +24,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
         protected override bool TryGetContentType(byte[] bytes, string path, out X509ContentType contentType)
         {
+            // If the test data only provides data from a file, don't check the content type
+            // (it will be checked by the file variant).
             if (bytes is null)
             {
                 contentType = X509ContentType.Unknown;
@@ -61,6 +63,13 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
         protected override bool TryGetContentType(byte[] bytes, string path, out X509ContentType contentType)
         {
+            // All test data is either from a byte[] or a file.
+            // If it comes from a byte[], it'll get verified by _FromByteArray;
+            // likewise with a file and _FromFile.
+            //
+            // Since there are no uniquely span inputs, and not all the applicable TFMs have
+            // a GetContentType(ReadOnlySpan), just always return false and skip the file
+            // format sanity test in the _FromByteSpan variant.
             contentType = X509ContentType.Unknown;
             return false;
         }
@@ -97,6 +106,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
         protected override bool TryGetContentType(byte[] bytes, string path, out X509ContentType contentType)
         {
+            // If the test data only provides data from a byte[], don't check the content type
+            // (it will be checked by the byte array variant).
             if (path is null)
             {
                 contentType = X509ContentType.Unknown;
@@ -269,7 +280,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
         internal static void AssertRawDataEquals(byte[] expected, X509Certificate2 cert)
         {
-#if NETCOREAPP
+#if NET
                 AssertExtensions.SequenceEqual(TestData.MsCertificate, cert.RawDataMemory.Span);
 #else
                 AssertExtensions.SequenceEqual(TestData.MsCertificate, cert.RawData);

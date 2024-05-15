@@ -32,7 +32,7 @@ namespace System.Security.Cryptography.X509Certificates
 
                 if (!OpenSslX509CertificateReader.TryReadX509Der(fileBio, out pal))
                 {
-                    Interop.Crypto.BioSeek(fileBio, bioPosition);
+                    OpenSslX509CertificateReader.RewindBio(fileBio, bioPosition);
 
                     if (!OpenSslX509CertificateReader.TryReadX509Pem(fileBio, out pal))
                     {
