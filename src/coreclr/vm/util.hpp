@@ -94,7 +94,7 @@ FORCEINLINE LONG  FastInterlockedCompareExchange(
 {
     if (g_arm64_atomics_present)
     {
-        return (LONG) __casal32((uint32_t*) Destination, (unsigned  int32_t)Comperand, (uint32_t)Exchange);
+        return (LONG) __casal32((unsigned __int32*) Destination, (unsigned  __int32)Comperand, (unsigned __int32)Exchange);
     }
     else
     {
@@ -110,7 +110,7 @@ FORCEINLINE LONG FastInterlockedCompareExchangeAcquire(
 {
     if (g_arm64_atomics_present)
     {
-        return (LONG) __casa32((uint32_t*) Destination, (unsigned  int32_t)Comperand, (uint32_t)Exchange);
+        return (LONG) __casa32((unsigned __int32*) Destination, (unsigned  __int32)Comperand, (unsigned __int32)Exchange);
     }
     else
     {
@@ -126,7 +126,7 @@ FORCEINLINE LONG FastInterlockedCompareExchangeRelease(
 {
     if (g_arm64_atomics_present)
     {
-        return (LONG) __casl32((uint32_t*) Destination, (unsigned  int32_t)Comperand, (uint32_t)Exchange);
+        return (LONG) __casl32((unsigned __int32*) Destination, (unsigned  __int32)Comperand, (unsigned __int32)Exchange);
     }
     else
     {
