@@ -2,6 +2,7 @@
   <assembly fullname="System.Private.CoreLib">
     <type fullname="System.Diagnostics.Tracing.EventSource" feature="System.Diagnostics.Tracing.EventSource.IsSupported" featurevalue="false">
       <method signature="System.Boolean get_IsSupported()" body="stub" value="false" />
+      <method signature="System.Void Finalize()" body="stub" />
       <method signature="System.Boolean IsEnabled()" body="stub" value="false" />
       <method signature="System.Boolean IsEnabled(System.Diagnostics.Tracing.EventLevel,System.Diagnostics.Tracing.EventKeywords)" body="stub" value="false" />
       <method signature="System.Boolean IsEnabled(System.Diagnostics.Tracing.EventLevel,System.Diagnostics.Tracing.EventKeywords,System.Diagnostics.Tracing.EventChannel)" body="stub" value="false" />
@@ -10,6 +11,7 @@
          to be trimmed when Invariant=true, and allows for the Settings static cctor (on Unix) to be preserved when Invariant=false. -->
     <type fullname="System.Globalization.GlobalizationMode">
       <method signature="System.Boolean get_Invariant()" body="stub" value="true" feature="System.Globalization.Invariant" featurevalue="true" />
+      <method signature="System.Boolean get_InvariantNoLoad()" body="stub" value="true" feature="System.Globalization.Invariant" featurevalue="true" />
       <method signature="System.Boolean get_PredefinedCulturesOnly()" body="stub" value="true" feature="System.Globalization.PredefinedCulturesOnly" featurevalue="true" />
     </type>
     <type fullname="System.Globalization.GlobalizationMode/Settings">
