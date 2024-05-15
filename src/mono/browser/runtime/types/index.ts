@@ -310,7 +310,6 @@ export type SingleAssetBehaviors =
      * The javascript module for threads.
      */
     | "js-module-threads"
-    | "js-module-globalization"
     /**
      * The javascript module for runtime.
      */
