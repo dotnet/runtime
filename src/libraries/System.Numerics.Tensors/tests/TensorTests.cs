@@ -1242,7 +1242,7 @@ namespace System.Numerics.Tensors.Tests
                 Assert.Equal(0, tensorEnum.Current);
             }
 
-            Assert.Throws<ArgumentOutOfRangeException>(() =>
+            Assert.Throws<ArgumentException>(() =>
             {
                 var l = leftData.AsTensorSpan(3, 3, 3);
                 var r = new TensorSpan<int>();
