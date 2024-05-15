@@ -13091,6 +13091,12 @@ namespace System.Runtime.CompilerServices
         public readonly bool IncludesInternals;
         public NullablePublicOnlyAttribute(bool value) { }
     }
+    [System.AttributeUsageAttribute(System.AttributeTargets.Method | System.AttributeTargets.Constructor | System.AttributeTargets.Property, AllowMultiple=false, Inherited=false)]
+    public sealed partial class OverloadResolutionPriorityAttribute : System.Attribute
+    {
+        public OverloadResolutionPriorityAttribute(int priority) { }
+		public int Priority { get { throw null; } }
+    }
     [System.AttributeUsageAttribute(System.AttributeTargets.Parameter, Inherited = true, AllowMultiple = false)]
     public sealed partial class ParamCollectionAttribute : System.Attribute
     {
