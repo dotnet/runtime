@@ -141,7 +141,7 @@ bool emitter::emitInsWritesToLclVarStackLoc(instrDesc* id)
 inline bool emitter::emitInsMayWriteToGCReg(instruction ins)
 {
     assert(ins != INS_invalid);
-    return (ins <= INS_remuw) && (ins >= INS_mv) && !(ins >= INS_jal && ins <= INS_bgeu && ins != INS_jalr) &&
+    return (ins <= INS_remuw) && (ins >= INS_mov) && !(ins >= INS_jal && ins <= INS_bgeu && ins != INS_jalr) &&
                    (CodeGenInterface::instInfo[ins] & ST) == 0
                ? true
                : false;
@@ -525,7 +525,7 @@ void emitter::emitIns_Mov(
 {
     if (!canSkip || (dstReg != srcReg))
     {
-        if ((EA_4BYTE == attr) && (INS_mv == ins))
+        if ((EA_4BYTE == attr) && (INS_mov == ins))
         {
             assert(isGeneralRegisterOrR0(srcReg));
             assert(isGeneralRegisterOrR0(dstReg));
@@ -588,7 +588,7 @@ void emitter::emitIns_R_R(
 {
     code_t code = emitInsCode(ins);
 
-    if (INS_mv == ins)
+    if (INS_mov == ins)
     {
         assert(isGeneralRegisterOrR0(reg1));
         assert(isGeneralRegisterOrR0(reg2));
@@ -2415,7 +2415,7 @@ static constexpr unsigned kInstructionFunct2Mask = 0x06000000;
 {
     switch (ins)
     {
-        case INS_mv:
+        case INS_mov:
         case INS_jalr:
         case INS_lb:
         case INS_lh:
@@ -4842,7 +4842,7 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
 
         if (needCheckOv)
         {
-            emitIns_R_R(INS_mv, attr, tempReg, nonIntReg->GetRegNum());
+            emitIns_R_R(INS_mov, attr, tempReg, nonIntReg->GetRegNum());
         }
 
         emitIns_R_R_I(ins, attr, dstReg, nonIntReg->GetRegNum(), imm);
@@ -5193,7 +5193,7 @@ bool emitter::IsMovInstruction(instruction ins)
 {
     switch (ins)
     {
-        case INS_mv:
+        case INS_mov:
         case INS_fsgnj_s:
         case INS_fsgnj_d:
         {
