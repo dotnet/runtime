@@ -182,6 +182,19 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
+        public void SetEntryAssembly()
+        {
+            Assembly? originalAssembly = Assembly.GetEntryAssembly();
+            Assert.NotNull(originalAssembly);
+
+            Assembly.SetEntryAssembly(null);
+            Assert.Null(Assembly.GetEntryAssembly());
+
+            Assembly.SetEntryAssembly(originalAssembly);
+            Assert.Equal(Assembly.GetEntryAssembly(), originalAssembly);
+        }
+
+        [Fact]
         public void GetFile()
         {
             var asm = typeof(AssemblyTests).Assembly;

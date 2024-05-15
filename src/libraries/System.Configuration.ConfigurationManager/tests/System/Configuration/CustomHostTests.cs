@@ -31,14 +31,12 @@ namespace System.Configuration.Tests
         }
 
         /// <summary>
-        /// Makes Assembly.GetEntryAssembly() return null using private reflection.
+        /// Makes Assembly.GetEntryAssembly() return null by passing the null literal
+        /// to Assembly.SetEntryAssembly().
         /// </summary>
         private static void MakeAssemblyGetEntryAssemblyReturnNull()
         {
-            typeof(Assembly)
-                .GetField("s_overriddenEntryAssembly", BindingFlags.NonPublic | BindingFlags.Static)
-                .SetValue(null, true);
-
+            Assembly.SetEntryAssembly(null);
             Assert.Null(Assembly.GetEntryAssembly());
         }
     }

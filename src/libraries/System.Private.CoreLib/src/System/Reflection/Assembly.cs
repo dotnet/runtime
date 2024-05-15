@@ -217,7 +217,7 @@ namespace System.Reflection
             return type.Module?.Assembly;
         }
 
-        private static Assembly? s_overriddenEntryAssembly;
+        private static object? s_overriddenEntryAssembly;
 
         /// <summary>
         /// Sets the application's entry assembly to the provided assembly object
@@ -228,10 +228,17 @@ namespace System.Reflection
         /// </param>
         /// <remarks>
         /// It is important to mention that the assembly passed to this function
-        /// has to be a RuntimeAssembly type. Otherwise, an exception will be thrown.
+        /// has to be a runtime defined Assembly type object. Otherwise, an exception
+        /// will be thrown.
         /// </remarks>
         public static void SetEntryAssembly(Assembly? assembly)
         {
+            if (assembly is null)
+            {
+                s_overriddenEntryAssembly = new object();
+                return;
+            }
+
             if (assembly is not RuntimeAssembly)
                 throw new ArgumentException(SR.Argument_MustBeRuntimeAssembly);
 
@@ -241,7 +248,7 @@ namespace System.Reflection
         public static Assembly? GetEntryAssembly()
         {
             if (s_overriddenEntryAssembly is not null)
-                return s_overriddenEntryAssembly;
+                return s_overriddenEntryAssembly as Assembly;
 
             return GetEntryAssemblyInternal();
         }
