@@ -307,7 +307,8 @@
                             PgoInstrument=false;
                             NoPgoOptimize=true;
                             CrossBuild=$(CrossBuild);
-                            BuildSubdirectory=unsanitized"
+                            BuildSubdirectory=unsanitized;
+                            $(TargetCxxLibraryProperties)"
       UndefineProperties="EnableNativeSanitizers"
       Category="clr" />
   </ItemGroup>
