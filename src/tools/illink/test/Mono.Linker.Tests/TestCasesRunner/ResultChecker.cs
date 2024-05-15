@@ -760,6 +760,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			List<MessageContainer> loggedMessages = logger.GetLoggedMessages ();
 			List<(ICustomAttributeProvider, CustomAttribute)> expectedNoWarningsAttributes = new ();
 			List<string> missingMessageWarnings = [];
+			List<string> unexpectedMessageWarnings = [];
 			foreach (var attrProvider in GetAttributeProviders (original)) {
 				foreach (var attr in attrProvider.CustomAttributes) {
 					if (!IsProducedByLinker (attr))
@@ -793,7 +794,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 									foundMatch = !loggedMessage.ToString ().Contains (unexpectedMessage);
 
 								if (!foundMatch)
-									missingMessageWarnings.Add ($"Expected to not find logged message matching `{unexpectedMessage}`, but found:{Environment.NewLine}{loggedMessage.ToString ()}");
+									unexpectedMessageWarnings.Add ($"Expected to not find logged message matching `{unexpectedMessage}`, but found:{Environment.NewLine}{loggedMessage.ToString ()}");
 							}
 						}
 						break;
@@ -803,20 +804,21 @@ namespace Mono.Linker.Tests.TestCasesRunner
 							if (!expectedWarningCode.StartsWith ("IL")) {
 								Assert.Fail ($"The warning code specified in {attr.AttributeType.Name} must start with the 'IL' prefix. Specified value: '{expectedWarningCode}'.");
 							}
-							IEnumerable<string> expectedMessageContains = attr.Constructor.Parameters switch {
-							// ExpectedWarningAttribute(string warningCode, params string[] expectedMessages)
-							// ExpectedWarningAttribute(string warningCode, string[] expectedMessages, Tool producedBy, string issueLink)
-							[_, { ParameterType.IsArray: true }, ..]
-								=> ((CustomAttributeArgument[]) attr.ConstructorArguments[1].Value)
-									.Select (caa => (string) caa.Value),
-									// ExpectedWarningAttribute(string warningCode, string expectedMessage1, string expectedMessage2, Tool producedBy, string issueLink)
-									[_, { ParameterType.Name: "String" }, { ParameterType.Name: "String" }, { ParameterType.Name: "Tool" }, _]
-											=> [(string) attr.GetConstructorArgumentValue (1), (string) attr.GetConstructorArgumentValue (2)],
-											// ExpectedWarningAttribute(string warningCode, string expectedMessage, Tool producedBy, string issueLink)
-											[_, { ParameterType.Name: "String" }, { ParameterType.Name: "Tool" }, _]
-										=> [(string) attr.GetConstructorArgumentValue (1)],
-										// ExpectedWarningAttribute(string warningCode, Tool producedBy, string issueLink)
-										[_, { ParameterType.Name: "Tool" }, _]
+							IEnumerable<string> expectedMessageContains = attr.Constructor.Parameters switch
+							{
+								// ExpectedWarningAttribute(string warningCode, params string[] expectedMessages)
+								// ExpectedWarningAttribute(string warningCode, string[] expectedMessages, Tool producedBy, string issueLink)
+								[_, { ParameterType.IsArray: true }, ..]
+									=> ((CustomAttributeArgument[]) attr.ConstructorArguments[1].Value)
+										.Select (caa => (string) caa.Value),
+								// ExpectedWarningAttribute(string warningCode, string expectedMessage1, string expectedMessage2, Tool producedBy, string issueLink)
+								[_, { ParameterType.Name: "String" }, { ParameterType.Name: "String" }, { ParameterType.Name: "Tool" }, _]
+										=> [(string) attr.GetConstructorArgumentValue (1), (string) attr.GetConstructorArgumentValue (2)],
+								// ExpectedWarningAttribute(string warningCode, string expectedMessage, Tool producedBy, string issueLink)
+								[_, { ParameterType.Name: "String" }, { ParameterType.Name: "Tool" }, _]
+									=> [(string) attr.GetConstructorArgumentValue (1)],
+								// ExpectedWarningAttribute(string warningCode, Tool producedBy, string issueLink)
+								[_, { ParameterType.Name: "Tool" }, _]
 										=> [],
 								_ => throw new UnreachableException (),
 							};
@@ -983,13 +985,24 @@ namespace Mono.Linker.Tests.TestCasesRunner
 					break;
 				}
 
-				if (missingMessageWarnings.Any ()) {
-					missingMessageWarnings.Add ("Logged Messages:" + Environment.NewLine);
-					missingMessageWarnings.AddRange (loggedMessages.Select (m => m.ToString ()));
-					Assert.Fail (string.Join (Environment.NewLine, missingMessageWarnings));
+				if (unexpectedWarningMessage is not null)
+				{
+					unexpectedMessageWarnings.Add($"Unexpected warning found: {unexpectedWarningMessage}")
 				}
-				Assert.IsNull (unexpectedWarningMessage,
-					$"Unexpected warning found: {unexpectedWarningMessage}");
+			}
+
+			if (missingMessageWarnings.Any ())
+			{
+				missingMessageWarnings.Add ("Unexpected Messages:" + Environment.NewLine);
+				missingMessageWarnings.AddRange (loggedMessages.Select (m => m.ToString ()));
+				missingMessageWarnings.Add (Environment.NewLine + "All Messages:" + Environment.NewLine);
+				missingMessageWarnings.AddRange (logger.GetLoggedMessages ());
+				Assert.Fail (string.Join (Environment.NewLine, missingMessageWarnings));
+			}
+
+			if (unexpectedMessageWarnings.Any())
+			{
+				Assert.Fail (string.Join (Environment.NewLine, unexpectedMessageWarnings));
 			}
 
 			if (checkRemainingErrors) {
