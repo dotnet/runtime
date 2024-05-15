@@ -3475,6 +3475,8 @@ void emitter::emitDispIllegalInstruction(code_t instructionCode)
 void emitter::emitDispInsName(
     code_t code, const BYTE* addr, bool doffs, unsigned insOffset, const instrDesc* id, const insGroup* ig)
 {
+    static constexpr int kMaxInstructionLength = 14;
+
     const BYTE* insAdr = addr - writeableOffset;
 
     unsigned int opcode = code & 0x7f;
@@ -3511,8 +3513,6 @@ void emitter::emitDispInsName(
         }
         case 0x13:
         {
-            static constexpr int kMaxInstructionLength = 14;
-
             unsigned opcode2      = (code >> 12) & 0x7;
             unsigned rd           = (code >> 7) & 0x1f;
             unsigned rs1          = (code >> 15) & 0x1f;
@@ -3812,9 +3812,9 @@ void emitter::emitDispInsName(
         }
         case 0x63: // BRANCH
         {
-            unsigned    opcode2 = (code >> 12) & 0x7;
-            unsigned    rs1     = (code >> 15) & 0x1f;
-            unsigned    rs2     = (code >> 20) & 0x1f;
+            unsigned opcode2 = (code >> 12) & 0x7;
+            unsigned rs1     = (code >> 15) & 0x1f;
+            unsigned rs2     = (code >> 20) & 0x1f;
             // int offset = (((code >> 31) & 0x1) << 12) | (((code >> 7) & 0x1) << 11) | (((code >> 25) & 0x3f) << 5) |
             //              (((code >> 8) & 0xf) << 1);
             // if (offset & 0x800)
@@ -3891,14 +3891,21 @@ void emitter::emitDispInsName(
         }
         case 0x6f:
         {
-            const char* rd = RegNames[(code >> 7) & 0x1f];
-            int offset = (((code >> 31) & 0x1) << 20) | (((code >> 12) & 0xff) << 12) | (((code >> 20) & 0x1) << 11) |
+            unsigned rd = (code >> 7) & 0x1f;
+            int offset  = (((code >> 31) & 0x1) << 20) | (((code >> 12) & 0xff) << 12) | (((code >> 20) & 0x1) << 11) |
                          (((code >> 21) & 0x3ff) << 1);
             if (offset & 0x80000)
             {
                 offset |= 0xfff00000;
             }
-            printf("jal            %s, %d", rd, offset);
+            if (rd == 0)
+            {
+                printf("j              %d", offset);
+            }
+            else
+            {
+                printf("jal            %s, %d", RegNames[rd], offset);
+            }
             CORINFO_METHOD_HANDLE handle = (CORINFO_METHOD_HANDLE)id->idDebugOnlyInfo()->idMemCookie;
             if (handle != 0)
             {
