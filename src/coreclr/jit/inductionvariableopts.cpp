@@ -1171,7 +1171,7 @@ PhaseStatus Compiler::optInductionVariables()
 
         if (optMakeLoopDownwardsCounted(scevContext, loop, &loopLocals))
         {
-            Metrics.LoopInductionsMadeDownwards++;
+            Metrics.LoopsMadeDownwardsCounted++;
             changed = true;
         }
 
