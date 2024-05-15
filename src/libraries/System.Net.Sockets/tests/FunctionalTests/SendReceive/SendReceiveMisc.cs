@@ -304,7 +304,7 @@ namespace System.Net.Sockets.Tests
                     {
                         if (async)
                         {
-                            var cts = new CancellationTokenSource();
+                            using var cts = new CancellationTokenSource();
                             cts.CancelAfter(100);
                             receivedLength = socket.ReceiveFromAsync(buffer, SocketFlags.None, address, cts.Token).AsTask().GetAwaiter().GetResult();
                         }
