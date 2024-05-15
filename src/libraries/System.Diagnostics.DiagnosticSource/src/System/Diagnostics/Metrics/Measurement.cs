@@ -59,7 +59,7 @@ namespace System.Diagnostics.Metrics
         /// </summary>
         /// <param name="value">The measurement value.</param>
         /// <param name="tags">The measurement associated tags list.</param>
-        public Measurement(T value, ReadOnlySpan<KeyValuePair<string, object?>> tags)
+        public Measurement(T value, /*params*/ ReadOnlySpan<KeyValuePair<string, object?>> tags)
         {
             _tags = tags.ToArray();
             Value = value;

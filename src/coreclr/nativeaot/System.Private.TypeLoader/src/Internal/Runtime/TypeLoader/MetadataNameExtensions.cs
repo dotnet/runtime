@@ -84,7 +84,7 @@ namespace Internal.Runtime.TypeLoader
         {
             var typeSpec = typeSpecHandle.GetTypeSpecification(reader);
 
-            if (typeSpec.Signature.IsNull(reader))
+            if (typeSpec.Signature.IsNil)
                 return null;
 
             return typeSpec.Signature.GetFullName(reader);
@@ -94,7 +94,7 @@ namespace Internal.Runtime.TypeLoader
         {
             var typeInstSig = typeInstSigHandle.GetTypeInstantiationSignature(reader);
 
-            if (typeInstSig.GenericType.IsNull(reader))
+            if (typeInstSig.GenericType.IsNil)
                 return null;
 
             var name = typeInstSig.GenericType.GetFullName(reader);
@@ -118,11 +118,11 @@ namespace Internal.Runtime.TypeLoader
         {
             var typeDef = typeDefHandle.GetTypeDefinition(reader);
 
-            Debug.Assert(!typeDef.Name.IsNull(reader));
+            Debug.Assert(!typeDef.Name.IsNil);
 
             name = typeDef.Name.GetConstantStringValue(reader).Value;
-            enclosing = typeDef.EnclosingType.IsNull(reader) ? null : typeDef.EnclosingType.GetFullName(reader);
-            nspace = typeDef.NamespaceDefinition.IsNull(reader) ? null : typeDef.NamespaceDefinition.GetFullName(reader);
+            enclosing = typeDef.EnclosingType.IsNil ? null : typeDef.EnclosingType.GetFullName(reader);
+            nspace = typeDef.NamespaceDefinition.IsNil ? null : typeDef.NamespaceDefinition.GetFullName(reader);
         }
 
         public static string GetFullName(this TypeDefinitionHandle typeDefHandle, MetadataReader reader)
@@ -144,16 +144,16 @@ namespace Internal.Runtime.TypeLoader
         {
             var typeDef = typeDefHandle.GetTypeDefinition(reader);
 
-            Handle currentHandle = !typeDef.EnclosingType.IsNull(reader) ? (Handle)typeDef.EnclosingType : (Handle)typeDef.NamespaceDefinition;
-            Debug.Assert(!currentHandle.IsNull(reader));
+            Handle currentHandle = !typeDef.EnclosingType.IsNil ? (Handle)typeDef.EnclosingType : (Handle)typeDef.NamespaceDefinition;
+            Debug.Assert(!currentHandle.IsNil);
 
-            while (!currentHandle.IsNull(reader))
+            while (!currentHandle.IsNil)
             {
                 switch (currentHandle.HandleType)
                 {
                     case HandleType.TypeDefinition:
                         typeDef = currentHandle.ToTypeDefinitionHandle(reader).GetTypeDefinition(reader);
-                        currentHandle = !typeDef.EnclosingType.IsNull(reader) ? (Handle)typeDef.EnclosingType : (Handle)typeDef.NamespaceDefinition;
+                        currentHandle = !typeDef.EnclosingType.IsNil ? (Handle)typeDef.EnclosingType : (Handle)typeDef.NamespaceDefinition;
                         break;
 
                     case HandleType.NamespaceDefinition:
@@ -174,11 +174,11 @@ namespace Internal.Runtime.TypeLoader
         {
             var nspace = namespaceHandle.GetNamespaceDefinition(reader);
 
-            if (nspace.Name.IsNull(reader))
+            if (nspace.Name.IsNil)
                 return null;
 
             var name = nspace.Name.GetConstantStringValue(reader).Value;
-            var containingNamespace = nspace.ParentScopeOrNamespace.IsNull(reader) ? null : nspace.ParentScopeOrNamespace.GetFullName(reader);
+            var containingNamespace = nspace.ParentScopeOrNamespace.IsNil ? null : nspace.ParentScopeOrNamespace.GetFullName(reader);
 
             if (containingNamespace != null)
                 return containingNamespace + "." + name;
@@ -190,7 +190,7 @@ namespace Internal.Runtime.TypeLoader
         {
             var typeRef = typeRefHandle.GetTypeReference(reader);
 
-            Debug.Assert(!typeRef.TypeName.IsNull(reader));
+            Debug.Assert(!typeRef.TypeName.IsNil);
 
             name = typeRef.TypeName.GetConstantStringValue(reader).Value;
             enclosing = typeRef.ParentNamespaceOrType.HandleType == HandleType.TypeReference ? typeRef.ParentNamespaceOrType.GetFullName(reader) : null;
@@ -217,9 +217,9 @@ namespace Internal.Runtime.TypeLoader
             var typeRef = typeRefHandle.GetTypeReference(reader);
 
             Handle currentHandle = typeRef.ParentNamespaceOrType;
-            Debug.Assert(!currentHandle.IsNull(reader));
+            Debug.Assert(!currentHandle.IsNil);
 
-            while (!currentHandle.IsNull(reader))
+            while (!currentHandle.IsNil)
             {
                 switch (currentHandle.HandleType)
                 {
@@ -243,11 +243,11 @@ namespace Internal.Runtime.TypeLoader
         {
             var nspace = namespaceHandle.GetNamespaceReference(reader);
 
-            if (nspace.Name.IsNull(reader))
+            if (nspace.Name.IsNil)
                 return null;
 
             var name = nspace.Name.GetConstantStringValue(reader).Value;
-            var containingNamespace = nspace.ParentScopeOrNamespace.IsNull(reader) ? null : nspace.ParentScopeOrNamespace.GetFullName(reader);
+            var containingNamespace = nspace.ParentScopeOrNamespace.IsNil ? null : nspace.ParentScopeOrNamespace.GetFullName(reader);
 
             if (containingNamespace != null)
                 return containingNamespace + "." + name;

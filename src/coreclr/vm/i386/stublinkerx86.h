@@ -186,24 +186,24 @@ class StubLinkerCPU : public StubLinker
         VOID X64EmitCmp32RegIndexImm32(X86Reg reg, INT32 offs, INT32 imm32); // cmp dword ptr [reg+offs], imm32
 
         VOID X64EmitMovXmmXmm(X86Reg destXmmreg, X86Reg srcXmmReg);
-        VOID X64EmitMovdqaFromMem(X86Reg Xmmreg, X86Reg baseReg, __int32 ofs = 0);
-        VOID X64EmitMovdqaToMem(X86Reg Xmmreg, X86Reg baseReg, __int32 ofs = 0);
-        VOID X64EmitMovSDFromMem(X86Reg Xmmreg, X86Reg baseReg, __int32 ofs = 0);
-        VOID X64EmitMovSDToMem(X86Reg Xmmreg, X86Reg baseReg, __int32 ofs = 0);
-        VOID X64EmitMovSSFromMem(X86Reg Xmmreg, X86Reg baseReg, __int32 ofs = 0);
-        VOID X64EmitMovSSToMem(X86Reg Xmmreg, X86Reg baseReg, __int32 ofs = 0);
+        VOID X64EmitMovdqaFromMem(X86Reg Xmmreg, X86Reg baseReg, int32_t ofs = 0);
+        VOID X64EmitMovdqaToMem(X86Reg Xmmreg, X86Reg baseReg, int32_t ofs = 0);
+        VOID X64EmitMovSDFromMem(X86Reg Xmmreg, X86Reg baseReg, int32_t ofs = 0);
+        VOID X64EmitMovSDToMem(X86Reg Xmmreg, X86Reg baseReg, int32_t ofs = 0);
+        VOID X64EmitMovSSFromMem(X86Reg Xmmreg, X86Reg baseReg, int32_t ofs = 0);
+        VOID X64EmitMovSSToMem(X86Reg Xmmreg, X86Reg baseReg, int32_t ofs = 0);
         VOID X64EmitMovqRegXmm(X86Reg reg, X86Reg Xmmreg);
         VOID X64EmitMovqXmmReg(X86Reg Xmmreg, X86Reg reg);
 
-        VOID X64EmitMovXmmWorker(BYTE prefix, BYTE opcode, X86Reg Xmmreg, X86Reg baseReg, __int32 ofs = 0);
+        VOID X64EmitMovXmmWorker(BYTE prefix, BYTE opcode, X86Reg Xmmreg, X86Reg baseReg, int32_t ofs = 0);
         VOID X64EmitMovqWorker(BYTE opcode, X86Reg Xmmreg, X86Reg reg);
 #endif
 
         VOID X86EmitZeroOutReg(X86Reg reg);
         VOID X86EmitJumpReg(X86Reg reg);
 
-        VOID X86EmitOffsetModRM(BYTE opcode, X86Reg altreg, X86Reg indexreg, __int32 ofs);
-        VOID X86EmitOffsetModRmSIB(BYTE opcode, X86Reg opcodeOrReg, X86Reg baseReg, X86Reg indexReg, __int32 scale, __int32 ofs);
+        VOID X86EmitOffsetModRM(BYTE opcode, X86Reg altreg, X86Reg indexreg, int32_t ofs);
+        VOID X86EmitOffsetModRmSIB(BYTE opcode, X86Reg opcodeOrReg, X86Reg baseReg, X86Reg indexReg, int32_t scale, int32_t ofs);
 
         VOID X86EmitTailcallWithESPAdjust(CodeLabel *pTarget, INT32 imm32);
         VOID X86EmitTailcallWithSinglePop(CodeLabel *pTarget, X86Reg reg);
@@ -218,27 +218,27 @@ class StubLinkerCPU : public StubLinker
 
         VOID X86EmitCurrentThreadFetch(X86Reg dstreg, unsigned preservedRegSet);
 
-        VOID X86EmitIndexRegLoad(X86Reg dstreg, X86Reg srcreg, __int32 ofs = 0);
-        VOID X86EmitIndexRegStore(X86Reg dstreg, __int32 ofs, X86Reg srcreg);
+        VOID X86EmitIndexRegLoad(X86Reg dstreg, X86Reg srcreg, int32_t ofs = 0);
+        VOID X86EmitIndexRegStore(X86Reg dstreg, int32_t ofs, X86Reg srcreg);
 #if defined(TARGET_AMD64)
-        VOID X86EmitIndexRegStoreRSP(__int32 ofs, X86Reg srcreg);
-        VOID X86EmitIndexRegStoreR12(__int32 ofs, X86Reg srcreg);
+        VOID X86EmitIndexRegStoreRSP(int32_t ofs, X86Reg srcreg);
+        VOID X86EmitIndexRegStoreR12(int32_t ofs, X86Reg srcreg);
 #endif // defined(TARGET_AMD64)
 
-        VOID X86EmitIndexPush(X86Reg srcreg, __int32 ofs);
-        VOID X86EmitBaseIndexPush(X86Reg baseReg, X86Reg indexReg, __int32 scale, __int32 ofs);
-        VOID X86EmitIndexPop(X86Reg srcreg, __int32 ofs);
-        VOID X86EmitIndexLea(X86Reg dstreg, X86Reg srcreg, __int32 ofs);
+        VOID X86EmitIndexPush(X86Reg srcreg, int32_t ofs);
+        VOID X86EmitBaseIndexPush(X86Reg baseReg, X86Reg indexReg, int32_t scale, int32_t ofs);
+        VOID X86EmitIndexPop(X86Reg srcreg, int32_t ofs);
+        VOID X86EmitIndexLea(X86Reg dstreg, X86Reg srcreg, int32_t ofs);
 #if defined(TARGET_AMD64)
-        VOID X86EmitIndexLeaRSP(X86Reg dstreg, X86Reg srcreg, __int32 ofs);
+        VOID X86EmitIndexLeaRSP(X86Reg dstreg, X86Reg srcreg, int32_t ofs);
 #endif // defined(TARGET_AMD64)
 
-        VOID X86EmitSPIndexPush(__int32 ofs);
+        VOID X86EmitSPIndexPush(int32_t ofs);
         VOID X86EmitSubEsp(INT32 imm32);
         VOID X86EmitAddEsp(INT32 imm32);
         VOID X86EmitEspOffset(BYTE opcode,
                               X86Reg altreg,
-                              __int32 ofs
+                              int32_t ofs
                     AMD64_ARG(X86OperandSize OperandSize = k64BitOp)
                               );
         VOID X86EmitPushEBPframe();
@@ -266,7 +266,7 @@ class StubLinkerCPU : public StubLinker
         VOID X86EmitOp(WORD    opcode,
                        X86Reg  altreg,
                        X86Reg  basereg,
-                       __int32 ofs = 0,
+                       int32_t ofs = 0,
                        X86Reg  scaledreg = (X86Reg)0,
                        BYTE    scale = 0
              AMD64_ARG(X86OperandSize OperandSize = k32BitOp)
@@ -277,7 +277,7 @@ class StubLinkerCPU : public StubLinker
         VOID X86EmitOp(WORD    opcode,
                        X86Reg  altreg,
                        X86Reg  basereg,
-                       __int32 ofs,
+                       int32_t ofs,
                        X86OperandSize OperandSize
                        )
         {
@@ -306,7 +306,7 @@ class StubLinkerCPU : public StubLinker
 
         VOID X86EmitRegLoad(X86Reg reg, UINT_PTR imm);
 
-        VOID X86EmitRegSave(X86Reg altreg, __int32 ofs)
+        VOID X86EmitRegSave(X86Reg altreg, int32_t ofs)
         {
             LIMITED_METHOD_CONTRACT;
             X86EmitEspOffset(0x89, altreg, ofs);
@@ -323,9 +323,6 @@ class StubLinkerCPU : public StubLinker
         }
 
 #if defined(FEATURE_COMINTEROP) && defined(TARGET_X86)
-        VOID EmitEnable(CodeLabel *pForwardRef);
-        VOID EmitRareEnable(CodeLabel *pRejoinPoint);
-
         VOID EmitDisable(CodeLabel *pForwardRef, BOOL fCallIn, X86Reg ThreadReg);
         VOID EmitRareDisable(CodeLabel *pRejoinPoint);
         VOID EmitRareDisableHRESULT(CodeLabel *pRejoinPoint, CodeLabel *pExitPoint);

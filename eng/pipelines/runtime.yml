@@ -498,7 +498,7 @@ extends:
           jobParameters:
             testScope: innerloop
             nameSuffix: CoreCLR_NonPortable
-            buildArgs: -s clr.native+clr.tools+clr.corelib+clr.nativecorelib+clr.aot+clr.packages -c $(_BuildConfig) /p:PortableBuild=false
+            buildArgs: -s clr.native+clr.tools+clr.corelib+clr.nativecorelib+clr.aot+clr.packages --outputrid tizen.9.0.0-armel -c $(_BuildConfig) /p:PortableBuild=false
             timeoutInMinutes: 120
             condition: >-
               or(
@@ -843,6 +843,7 @@ extends:
           scenarios:
             - WasmTestOnV8
             - WasmTestOnChrome
+            - WasmTestOnFirefox
 
       - template: /eng/pipelines/common/templates/wasm-library-tests.yml
         parameters:
@@ -861,10 +862,12 @@ extends:
             #- browser_wasm_win
           nameSuffix: _Threading
           extraBuildArgs: /p:WasmEnableThreads=true /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
+          extraHelixArguments: /p:WasmEnableThreads=true
           alwaysRun: ${{ variables.isRollingBuild }}
           shouldRunSmokeOnly: onLibrariesAndIllinkChanges
           scenarios:
             - WasmTestOnChrome
+            - WasmTestOnFirefox
             #- WasmTestOnNodeJS - this is not supported yet, https://github.com/dotnet/runtime/issues/85592
 
       # EAT Library tests - only run on linux
@@ -885,7 +888,6 @@ extends:
             - browser_wasm
             - browser_wasm_win
             - wasi_wasm
-            - wasi_wasm_win
           nameSuffix: _Smoke_AOT
           runAOT: true
           shouldRunSmokeOnly: true

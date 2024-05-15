@@ -383,6 +383,21 @@ export function back3(arg1, arg2, arg3) {
     }
 }
 
+export function back4(arg1, arg2, arg3, arg4) {
+    if (globalThis.gc) {
+        // console.log('globalThis.gc');
+        globalThis.gc();
+    }
+    try {
+        if (!(arg1 instanceof Function)) throw new Error('expecting Function!')
+
+        return arg1(arg2, arg3, arg4);
+    }
+    catch (ex) {
+        throw ex;
+    }
+}
+
 export function backback(arg1, arg2, arg3) {
     if (globalThis.gc) {
         // console.log('globalThis.gc');

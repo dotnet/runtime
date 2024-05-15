@@ -56,7 +56,7 @@ PELoader *              g_pPELoader;
 void *                  g_pMetaData;
 unsigned                g_cbMetaData;
 IMAGE_COR20_HEADER *    g_CORHeader;
-DynamicArray<__int32>  *g_pPtrTags = NULL;      //to keep track of all "ldptr"
+DynamicArray<int32_t>  *g_pPtrTags = NULL;      //to keep track of all "ldptr"
 DynamicArray<DWORD>    *g_pPtrSize= NULL;      //to keep track of all "ldptr"
 int                     g_iPtrCount = 0;
 mdToken *               g_cl_list = NULL;
@@ -5053,8 +5053,8 @@ void DumpVTables(IMAGE_COR20_HEADER *CORHeader, void* GUICookie)
             }
             else
             {
-                sprintf_s(szString,SZSTRING_SIZE,"//         [0x%04x]            (0x%16llx)", iSlot, VAL64(*(unsigned __int64 *) pSlot));
-                pSlot += sizeof(unsigned __int64);
+                sprintf_s(szString,SZSTRING_SIZE,"//         [0x%04x]            (0x%16llx)", iSlot, VAL64(*(uint64_t *) pSlot));
+                pSlot += sizeof(uint64_t);
             }
             printLine(GUICookie,szStr);
 
@@ -5880,7 +5880,7 @@ IMetaDataTables *pITables = NULL;
 //ULONG sizeRec, count;
 //int   size, size2;
 int   metaSize = 0;
-__int64 fTableSeen;
+int64_t fTableSeen;
 inline void TableSeen(unsigned long n) { fTableSeen |= (I64(1) << n); }
 inline int IsTableSeen(unsigned long n) { return (fTableSeen & (I64(1) << n)) ? 1 : 0;}
 inline void TableSeenReset() { fTableSeen = 0;}
@@ -6904,8 +6904,8 @@ void DumpVtable(void* GUICookie)
                                 }
                                 else
                                 {
-                                    szptr+=sprintf_s(szptr,SZSTRING_REMAINING_SIZE(szptr)," %016I64X", VAL64(*(unsigned __int64 *)pSlot));
-                                    pSlot += sizeof(unsigned __int64);
+                                    szptr+=sprintf_s(szptr,SZSTRING_REMAINING_SIZE(szptr)," %016I64X", VAL64(*(uint64_t *)pSlot));
+                                    pSlot += sizeof(uint64_t);
                                 }
                                 if (g_prVTableRef == NULL)
                                 {

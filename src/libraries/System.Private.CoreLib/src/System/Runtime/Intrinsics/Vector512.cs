@@ -348,7 +348,7 @@ namespace System.Runtime.Intrinsics
             );
         }
 
-        /// <summary>Converts a <see cref="Vector512{Single}" /> to a <see cref="Vector512{Int32}" />.</summary>
+        /// <summary>Converts a <see cref="Vector512{Single}" /> to a <see cref="Vector512{Int32}" /> using saturation on overflow.</summary>
         /// <param name="vector">The vector to convert.</param>
         /// <returns>The converted vector.</returns>
         [Intrinsic]
@@ -361,7 +361,20 @@ namespace System.Runtime.Intrinsics
             );
         }
 
-        /// <summary>Converts a <see cref="Vector512{Double}" /> to a <see cref="Vector512{Int64}" />.</summary>
+        /// <summary>Converts a <see cref="Vector512{Single}" /> to a <see cref="Vector512{Int32}" /> using platform specific behavior on overflow.</summary>
+        /// <param name="vector">The vector to convert.</param>
+        /// <returns>The converted vector.</returns>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector512<int> ConvertToInt32Native(Vector512<float> vector)
+        {
+            return Create(
+                Vector256.ConvertToInt32Native(vector._lower),
+                Vector256.ConvertToInt32Native(vector._upper)
+            );
+        }
+
+        /// <summary>Converts a <see cref="Vector512{Double}" /> to a <see cref="Vector512{Int64}" /> using saturation on overflow.</summary>
         /// <param name="vector">The vector to convert.</param>
         /// <returns>The converted vector.</returns>
         [Intrinsic]
@@ -371,6 +384,19 @@ namespace System.Runtime.Intrinsics
             return Create(
                 Vector256.ConvertToInt64(vector._lower),
                 Vector256.ConvertToInt64(vector._upper)
+            );
+        }
+
+        /// <summary>Converts a <see cref="Vector512{Double}" /> to a <see cref="Vector512{Int64}" /> using platform specific behavior on overflow.</summary>
+        /// <param name="vector">The vector to convert.</param>
+        /// <returns>The converted vector.</returns>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector512<long> ConvertToInt64Native(Vector512<double> vector)
+        {
+            return Create(
+                Vector256.ConvertToInt64Native(vector._lower),
+                Vector256.ConvertToInt64Native(vector._upper)
             );
         }
 
@@ -401,7 +427,7 @@ namespace System.Runtime.Intrinsics
             );
         }
 
-        /// <summary>Converts a <see cref="Vector512{Single}" /> to a <see cref="Vector512{UInt32}" />.</summary>
+        /// <summary>Converts a <see cref="Vector512{Single}" /> to a <see cref="Vector512{UInt32}" /> using saturation on overflow.</summary>
         /// <param name="vector">The vector to convert.</param>
         /// <returns>The converted vector.</returns>
         [Intrinsic]
@@ -415,7 +441,21 @@ namespace System.Runtime.Intrinsics
             );
         }
 
-        /// <summary>Converts a <see cref="Vector512{Double}" /> to a <see cref="Vector512{UInt64}" />.</summary>
+        /// <summary>Converts a <see cref="Vector512{Single}" /> to a <see cref="Vector512{UInt32}" /> using platform specific behavior on overflow.</summary>
+        /// <param name="vector">The vector to convert.</param>
+        /// <returns>The converted vector.</returns>
+        [Intrinsic]
+        [CLSCompliant(false)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector512<uint> ConvertToUInt32Native(Vector512<float> vector)
+        {
+            return Create(
+                Vector256.ConvertToUInt32Native(vector._lower),
+                Vector256.ConvertToUInt32Native(vector._upper)
+            );
+        }
+
+        /// <summary>Converts a <see cref="Vector512{Double}" /> to a <see cref="Vector512{UInt64}" /> using saturation on overflow.</summary>
         /// <param name="vector">The vector to convert.</param>
         /// <returns>The converted vector.</returns>
         [Intrinsic]
@@ -426,6 +466,20 @@ namespace System.Runtime.Intrinsics
             return Create(
                 Vector256.ConvertToUInt64(vector._lower),
                 Vector256.ConvertToUInt64(vector._upper)
+            );
+        }
+
+        /// <summary>Converts a <see cref="Vector512{Double}" /> to a <see cref="Vector512{UInt64}" /> using platform specific behavior on overflow.</summary>
+        /// <param name="vector">The vector to convert.</param>
+        /// <returns>The converted vector.</returns>
+        [Intrinsic]
+        [CLSCompliant(false)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector512<ulong> ConvertToUInt64Native(Vector512<double> vector)
+        {
+            return Create(
+                Vector256.ConvertToUInt64Native(vector._lower),
+                Vector256.ConvertToUInt64Native(vector._upper)
             );
         }
 

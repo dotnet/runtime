@@ -413,7 +413,7 @@ public:
 // BasicBlockFlags: a bitmask of flags for BasicBlock
 //
 // clang-format off
-enum BasicBlockFlags : unsigned __int64
+enum BasicBlockFlags : uint64_t
 {
 #define MAKE_BBFLAG(bit) (1ULL << (bit))
     BBF_EMPTY                = 0,
@@ -500,31 +500,31 @@ enum BasicBlockFlags : unsigned __int64
 FORCEINLINE
 constexpr BasicBlockFlags operator ~(BasicBlockFlags a)
 {
-    return (BasicBlockFlags)(~(unsigned __int64)a);
+    return (BasicBlockFlags)(~(uint64_t)a);
 }
 
 FORCEINLINE
 constexpr BasicBlockFlags operator |(BasicBlockFlags a, BasicBlockFlags b)
 {
-    return (BasicBlockFlags)((unsigned __int64)a | (unsigned __int64)b);
+    return (BasicBlockFlags)((uint64_t)a | (uint64_t)b);
 }
 
 FORCEINLINE
 constexpr BasicBlockFlags operator &(BasicBlockFlags a, BasicBlockFlags b)
 {
-    return (BasicBlockFlags)((unsigned __int64)a & (unsigned __int64)b);
+    return (BasicBlockFlags)((uint64_t)a & (uint64_t)b);
 }
 
 FORCEINLINE 
 BasicBlockFlags& operator |=(BasicBlockFlags& a, BasicBlockFlags b)
 {
-    return a = (BasicBlockFlags)((unsigned __int64)a | (unsigned __int64)b);
+    return a = (BasicBlockFlags)((uint64_t)a | (uint64_t)b);
 }
 
 FORCEINLINE 
 BasicBlockFlags& operator &=(BasicBlockFlags& a, BasicBlockFlags b)
 {
-    return a = (BasicBlockFlags)((unsigned __int64)a & (unsigned __int64)b);
+    return a = (BasicBlockFlags)((uint64_t)a & (uint64_t)b);
 }
 
 enum class BasicBlockVisit
@@ -1256,27 +1256,6 @@ public:
         this->scaleBBWeight(BB_ZERO_WEIGHT);
     }
 
-    // makeBlockHot()
-    //     This is used to override any profiling data
-    //     and force a block to be in the hot region.
-    //     We only call this method for handler entry point
-    //     and only when HANDLER_ENTRY_MUST_BE_IN_HOT_SECTION is 1.
-    //     Doing this helps fgReorderBlocks() by telling
-    //     it to try to move these blocks into the hot region.
-    //     Note that we do this strictly as an optimization,
-    //     not for correctness. fgDetermineFirstColdBlock()
-    //     will find all handler entry points and ensure that
-    //     for now we don't place them in the cold section.
-    //
-    void makeBlockHot()
-    {
-        if (this->bbWeight == BB_ZERO_WEIGHT)
-        {
-            this->RemoveFlags(BBF_RUN_RARELY | BBF_PROF_WEIGHT);
-            this->bbWeight = 1;
-        }
-    }
-
     bool isMaxBBWeight() const
     {
         return (bbWeight >= BB_MAX_WEIGHT);
@@ -1820,7 +1799,7 @@ public:
     BasicBlockVisit VisitEHEnclosedHandlerSecondPassSuccs(Compiler* comp, TFunc func);
 
     template <typename TFunc>
-    BasicBlockVisit VisitAllSuccs(Compiler* comp, TFunc func);
+    BasicBlockVisit VisitAllSuccs(Compiler* comp, TFunc func, const bool useProfile = false);
 
     template <typename TFunc>
     BasicBlockVisit VisitEHSuccs(Compiler* comp, TFunc func);
@@ -2518,7 +2497,7 @@ class AllSuccessorEnumerator
 
 public:
     // Constructs an enumerator of all `block`'s successors.
-    AllSuccessorEnumerator(Compiler* comp, BasicBlock* block);
+    AllSuccessorEnumerator(Compiler* comp, BasicBlock* block, const bool useProfile = false);
 
     // Gets the block whose successors are enumerated.
     BasicBlock* Block()

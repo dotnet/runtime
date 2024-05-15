@@ -730,7 +730,7 @@ private:
     friend LONG WINAPI CLRVectoredExceptionHandlerShim(PEXCEPTION_POINTERS pExceptionInfo);
 #endif
 #ifdef HOST_64BIT
-    friend Thread * __stdcall JIT_InitPInvokeFrame(InlinedCallFrame *pFrame, PTR_VOID StubSecretArg);
+    friend Thread * JIT_InitPInvokeFrame(InlinedCallFrame *pFrame);
 #endif
 #ifdef FEATURE_EH_FUNCLETS
     friend class ExceptionTracker;
@@ -1332,7 +1332,7 @@ public:
     FORCEINLINE void Poll()
     {
         WRAPPER_NO_CONTRACT;
-        if (m_pThread->CatchAtSafePointOpportunistic())
+        if (m_pThread->CatchAtSafePoint())
             CommonTripThread();
     }
 #endif // DACCESS_COMPILE
@@ -2852,31 +2852,10 @@ public:
     // method if the current InlinedCallFrame is inactive.
     PTR_MethodDesc GetActualInteropMethodDesc()
     {
-#if defined(TARGET_X86) || defined(TARGET_ARM)
-        // Important: This code relies on the way JIT lays out frames. Keep it in sync
-        // with code:Compiler.lvaAssignFrameOffsets.
-        //
-        // |        ...         |
-        // +--------------------+
-        // | lvaStubArgumentVar | <= filled with EAX in prolog          |
-        // +--------------------+                                       |
-        // |                    |                                       |
-        // |  InlinedCallFrame  |                                       |
-        // |                    | <= m_pCrawl.pFrame                    | to lower addresses
-        // +--------------------+                                       V
-        // |        ...         |
-        //
-        // Extract the actual MethodDesc to report from the InlinedCallFrame.
+        // The VM instructs the JIT to publish the secret stub arg at the end
+        // of the InlinedCallFrame structure when it exists.
         TADDR addr = dac_cast<TADDR>(this) + sizeof(InlinedCallFrame);
         return PTR_MethodDesc(*PTR_TADDR(addr));
-#elif defined(HOST_64BIT)
-        // On 64bit, the actual interop MethodDesc is saved off in a field off the InlinedCrawlFrame
-        // which is populated by the JIT. Refer to JIT_InitPInvokeFrame for details.
-        return PTR_MethodDesc(m_StubSecretArg);
-#else
-        _ASSERTE(!"NYI - Interop method reporting for this architecture!");
-        return NULL;
-#endif // defined(TARGET_X86) || defined(TARGET_ARM)
     }
 
     virtual void UpdateRegDisplay(const PREGDISPLAY, bool updateFloats = false);
@@ -2889,13 +2868,6 @@ public:
     // - bit 2 indicates CallCatchFunclet or CallFinallyFunclet
     // See code:HasFunction.
     PTR_NDirectMethodDesc   m_Datum;
-
-#ifdef HOST_64BIT
-    // IL stubs fill this field with the incoming secret argument when they erect
-    // InlinedCallFrame so we know which interop method was invoked even if the frame
-    // is not active at the moment.
-    PTR_VOID                m_StubSecretArg;
-#endif // HOST_64BIT
 
     // X86: ESP after pushing the outgoing arguments, and just before calling
     // out to unmanaged code.
