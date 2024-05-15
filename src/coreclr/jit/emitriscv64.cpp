@@ -3503,51 +3503,60 @@ void emitter::emitDispInsName(
         }
         case 0x13:
         {
-            unsigned int opcode2 = (code >> 12) & 0x7;
-            const char*  rd      = RegNames[(code >> 7) & 0x1f];
-            const char*  rs1     = RegNames[(code >> 15) & 0x1f];
-            int          imm12   = (((int)code) >> 20); // & 0xfff;
-            // if (imm12 & 0x800)
-            //{
-            //    imm12 |= 0xfffff000;
-            //}
-            switch (opcode2)
-            {
+            static constexpr int kMaxInstructionLength = 15;
+
+            unsigned opcode2 = (code >> 12) & 0x7;
+            unsigned  rd = (code >> 7) & 0x1f;
+            unsigned  rs1 = (code >> 15) & 0x1f;
+            int imm12 = static_cast<int>(code) >> 20;
+            bool isHex = false;
+            int printLength = 0;
+
+            switch (opcode2) {
                 case 0x0: // ADDI
-                    printf("addi           %s, %s, %d\n", rd, rs1, imm12);
-                    return;
-                case 0x1:                                                         // SLLI
-                    printf("slli           %s, %s, %d\n", rd, rs1, imm12 & 0x3f); // 6 BITS for SHAMT in RISCV64
-                    return;
+                    printLength = printf("addi");
+                    break;
+                case 0x1: // SLLI
+                    printLength = printf("slli");
+                    imm12 &= 0x3f; // 6 BITS for SHAMT in RISCV64
+                    break;
                 case 0x2: // SLTI
-                    printf("slti           %s, %s, %d\n", rd, rs1, imm12);
-                    return;
+                    printLength = printf("slti");
+                    break;
                 case 0x3: // SLTIU
-                    printf("sltiu          %s, %s, %d\n", rd, rs1, imm12);
-                    return;
+                    printLength = printf("sltiu");
+                    break;
                 case 0x4: // XORI
-                    printf("xori           %s, %s, 0x%x\n", rd, rs1, imm12);
-                    return;
+                    printLength = printf("xori");
+                    isHex = true;
+                    break;
                 case 0x5: // SRLI & SRAI
-                    if (((code >> 30) & 0x1) == 0)
-                    {
-                        printf("srli           %s, %s, %d\n", rd, rs1, imm12 & 0x3f); // 6BITS for SHAMT in RISCV64
-                    }
-                    else
-                    {
-                        printf("srai           %s, %s, %d\n", rd, rs1, imm12 & 0x3f); // 6BITS for SHAMT in RISCV64
-                    }
-                    return;
+                    printLength = printf((((code >> 30) & 0x1) == 0) ? "srli" : "srai");
+                    imm12 &= 0x3f; // 6BITS for SHAMT in RISCV64
+                break;
                 case 0x6: // ORI
-                    printf("ori            %s, %s, 0x%x\n", rd, rs1, imm12 & 0xfff);
-                    return;
+                    printLength = printf("ori");
+                    imm12 &= 0xfff;
+                    isHex = true;
+                    break;
                 case 0x7: // ANDI
-                    printf("andi           %s, %s, 0x%x\n", rd, rs1, imm12 & 0xfff);
-                    return;
+                    printLength = printf("andi");
+                    imm12 &= 0xfff;
+                    isHex = true;
+                    break;
                 default:
                     printf("RISCV64 illegal instruction: 0x%08X\n", code);
                     return;
             }
+            assert(printLength > 0);
+            int paddingLength = kMaxInstructionLength - printLength;
+            assert(paddingLength > 0);
+
+            printf("%*s", paddingLength, "");
+            printf("%s, %s, ", RegNames[rd], RegNames[rs1]);
+            printf(isHex ? "0x%x\n" : "%d\n", imm12);
+
+            return;
         }
         case 0x1b:
         {
