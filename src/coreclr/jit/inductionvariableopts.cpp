@@ -46,152 +46,83 @@ class LoopLocalOccurrences
 
     typedef JitHashTable<unsigned, JitSmallPrimitiveKeyFuncs<unsigned>, Occurrence*> LocalToOccurrenceMap;
 
-    LocalToOccurrenceMap* m_map;
+    FlowGraphNaturalLoops* m_loops;
+    // For every loop, we track all occurrences exclusive to that loop.
+    // Occurrences in descendant loops are not kept in their ancestor's maps.
+    LocalToOccurrenceMap** m_maps;
+    // Blocks whose IR we have visited to find local occurrences in.
+    BitVec m_visitedBlocks;
 
-    LoopLocalOccurrences(LocalToOccurrenceMap* map)
-        : m_map(map)
-    {
-    }
+    LocalToOccurrenceMap* GetOrCreateMap(FlowGraphNaturalLoop* loop);
 
+    template <typename TFunc>
+    bool VisitLoopNestMaps(FlowGraphNaturalLoop* loop, TFunc& func);
 public:
-    bool HasAnyOccurrences(unsigned lclNum);
+    LoopLocalOccurrences(FlowGraphNaturalLoops* loops);
 
     template <typename TFunc>
-    bool VisitOccurrences(unsigned lclNum, TFunc func);
+    bool VisitOccurrences(FlowGraphNaturalLoop* loop, unsigned lclNum, TFunc func);
+
+    bool HasAnyOccurrences(FlowGraphNaturalLoop* loop, unsigned lclNum);
 
     template <typename TFunc>
-    bool VisitStatementsWithOccurrences(unsigned lclNum, TFunc func);
-
-    static LoopLocalOccurrences* Find(FlowGraphNaturalLoop* loop);
+    bool VisitStatementsWithOccurrences(FlowGraphNaturalLoop* loop, unsigned lclNum, TFunc func);
 };
 
-//------------------------------------------------------------------------------
-// LoopLocalOccurrences:HasAnyOccurrences:
-//   Check if this loop has any occurrences of the specified local.
-//
-// Returns:
-//   True if it does.
-//
-// Remarks:
-//   Does not take promotion into account.
-//
-bool LoopLocalOccurrences::HasAnyOccurrences(unsigned lclNum)
+LoopLocalOccurrences::LoopLocalOccurrences(FlowGraphNaturalLoops* loops)
+    : m_loops(loops)
 {
-    return m_map->Lookup(lclNum);
+    Compiler* comp = loops->GetDfsTree()->GetCompiler();
+    m_maps = loops->NumLoops() == 0 ? nullptr : new (comp, CMK_LoopOpt) LocalToOccurrenceMap* [loops->NumLoops()] {};
+    BitVecTraits poTraits = loops->GetDfsTree()->PostOrderTraits();
+    m_visitedBlocks       = BitVecOps::MakeEmpty(&poTraits);
 }
 
 //------------------------------------------------------------------------------
-// LoopLocalOccurrences:VisitOccurrences:
-//   Visit all occurrences of the specified local inside the loop.
-//
-// Type parameters:
-//   TFunc - Functor of type bool(Block*, Statement*, GenTree*)
+// LoopLocalOccurrences:GetOrCreateMap:
+//   Get or create the map of occurrences exclusive to a single loop.
 //
 // Parameters:
-//   lclNum - The local whose occurrences to visit
-//   func   - Functor instance. Return true to continue the visit, and
-//            false to abort it.
+//   loop - The loop
 //
 // Returns:
-//   True if the visit completed and false if it was aborted by the functor
-//   returning false.
-//
-template <typename TFunc>
-bool LoopLocalOccurrences::VisitOccurrences(unsigned lclNum, TFunc func)
-{
-    Occurrence* occurrence;
-    if (!m_map->Lookup(lclNum, &occurrence))
-    {
-        return true;
-    }
-
-    assert(occurrence != nullptr);
-
-    do
-    {
-        if (!func(occurrence->Block, occurrence->Statement, occurrence->Node))
-        {
-            return false;
-        }
-
-        occurrence = occurrence->Next;
-    } while (occurrence != nullptr);
-
-    return true;
-}
-
-//------------------------------------------------------------------------------
-// LoopLocalOccurrences:VisitStatementsWithOccurrences:
-//   Visit all statements with occurrences of the specified local inside
-//   the loop.
-//
-// Type parameters:
-//   TFunc - Functor of type bool(Block*, Statement*)
-//
-// Parameters:
-//   lclNum - The local whose occurrences to visit
-//   func   - Functor instance. Return true to continue the visit, and
-//            false to abort it.
-//
-// Returns:
-//   True if the visit completed and false if it was aborted by the functor
-//   returning false.
+//   Map of occurrences.
 //
 // Remarks:
-//   A statement with multiple occurrences of the local is only visited
-//   once.
+//   As a precondition occurrences of all descendant loops must already have
+//   been found.
 //
-template <typename TFunc>
-bool LoopLocalOccurrences::VisitStatementsWithOccurrences(unsigned lclNum, TFunc func)
+LoopLocalOccurrences::LocalToOccurrenceMap* LoopLocalOccurrences::GetOrCreateMap(FlowGraphNaturalLoop* loop)
 {
-    Occurrence* occurrence;
-    if (!m_map->Lookup(lclNum, &occurrence))
+    LocalToOccurrenceMap* map = m_maps[loop->GetIndex()];
+    if (map != nullptr)
     {
-        return true;
+        return map;
     }
 
-    assert(occurrence != nullptr);
+    BitVecTraits poTraits = m_loops->GetDfsTree()->PostOrderTraits();
 
-    while (true)
+#ifdef DEBUG
+    // As an invariant the map contains only the locals exclusive to each loop
+    // (i.e. occurrences inside descendant loops are not contained in ancestor
+    // loop maps). Double check that we've already computed the child maps to
+    // make sure we do not visit descendant blocks below.
+    for (FlowGraphNaturalLoop* child = loop->GetChild(); child != nullptr; child = child->GetSibling())
     {
-        if (!func(occurrence->Block, occurrence->Statement))
-        {
-            return false;
-        }
-
-        Statement* curStmt = occurrence->Statement;
-        while (true)
-        {
-            occurrence = occurrence->Next;
-
-            if (occurrence == nullptr)
-            {
-                return true;
-            }
-
-            if (occurrence->Statement != curStmt)
-            {
-                break;
-            }
-        }
+        assert(BitVecOps::IsMember(&poTraits, m_visitedBlocks, child->GetHeader()->bbPostorderNum));
     }
+#endif
 
-    return true;
-}
+    Compiler* comp           = m_loops->GetDfsTree()->GetCompiler();
+    map                      = new (comp, CMK_LoopOpt) LocalToOccurrenceMap(comp->getAllocator(CMK_LoopOpt));
+    m_maps[loop->GetIndex()] = map;
 
-//------------------------------------------------------------------------------
-// LoopLocalOccurrences:Find:
-//   Find all local occurrences inside the specified loop.
-//
-// Returns:
-//   Data structure of the occurrences.
-//
-LoopLocalOccurrences* LoopLocalOccurrences::Find(FlowGraphNaturalLoop* loop)
-{
-    Compiler*             comp = loop->GetDfsTree()->GetCompiler();
-    LocalToOccurrenceMap* map  = new (comp, CMK_LoopOpt) LocalToOccurrenceMap(comp->getAllocator(CMK_LoopOpt));
+    loop->VisitLoopBlocksReversePostOrder([=, &poTraits](BasicBlock* block) {
+        if (!BitVecOps::TryAddElemD(&poTraits, m_visitedBlocks, block->bbPostorderNum))
+        {
+            return BasicBlockVisit::Continue;
+        }
 
-    loop->VisitLoopBlocksReversePostOrder([comp, map](BasicBlock* block) {
         for (Statement* stmt : block->NonPhiStatements())
         {
             for (GenTree* node : stmt->TreeList())
@@ -216,7 +147,171 @@ LoopLocalOccurrences* LoopLocalOccurrences::Find(FlowGraphNaturalLoop* loop)
         return BasicBlockVisit::Continue;
     });
 
-    return new (comp, CMK_LoopOpt) LoopLocalOccurrences(map);
+    return map;
+}
+
+//------------------------------------------------------------------------------
+// LoopLocalOccurrences:VisitLoopNestMaps:
+//   Visit all occurrence maps of the specified loop nest.
+//
+// Type parameters:
+//   TFunc - bool(LocalToOccurrenceMap*) functor that returns true to continue
+//           the visit and false to abort.
+//
+// Parameters:
+//   loop - Root loop of the nest.
+//   func - Functor instance
+//
+// Returns:
+//   True if the visit completed; false if "func" returned false for any map.
+//
+template <typename TFunc>
+bool LoopLocalOccurrences::VisitLoopNestMaps(FlowGraphNaturalLoop* loop, TFunc& func)
+{
+    for (FlowGraphNaturalLoop* child = loop->GetChild(); child != nullptr; child = child->GetSibling())
+    {
+        if (!VisitLoopNestMaps(child, func))
+        {
+            return false;
+        }
+    }
+
+    return func(GetOrCreateMap(loop));
+}
+
+//------------------------------------------------------------------------------
+// LoopLocalOccurrences:VisitOccurrences:
+//   Visit all occurrences of the specified local inside the loop.
+//
+// Type parameters:
+//   TFunc - Functor of type bool(Block*, Statement*, GenTree*)
+//
+// Parameters:
+//   loop   - The loop
+//   lclNum - The local whose occurrences to visit
+//   func   - Functor instance. Return true to continue the visit, and
+//            false to abort it.
+//
+// Returns:
+//   True if the visit completed and false if it was aborted by the functor
+//   returning false.
+//
+template <typename TFunc>
+bool LoopLocalOccurrences::VisitOccurrences(FlowGraphNaturalLoop* loop, unsigned lclNum, TFunc func)
+{
+    auto visitor = [=, &func](LocalToOccurrenceMap* map) {
+        Occurrence* occurrence;
+        if (!map->Lookup(lclNum, &occurrence))
+        {
+            return true;
+        }
+
+        assert(occurrence != nullptr);
+
+        do
+        {
+            if (!func(occurrence->Block, occurrence->Statement, occurrence->Node))
+            {
+                return false;
+            }
+
+            occurrence = occurrence->Next;
+        } while (occurrence != nullptr);
+
+        return true;
+    };
+
+    return VisitLoopNestMaps(loop, visitor);
+}
+
+//------------------------------------------------------------------------------
+// LoopLocalOccurrences:HasAnyOccurrences:
+//   Check if this loop has any occurrences of the specified local.
+//
+// Parameters:
+//   loop   - The loop
+//   lclNum - Local to check occurrences of
+//
+// Returns:
+//   True if it does.
+//
+// Remarks:
+//   Does not take promotion into account.
+//
+bool LoopLocalOccurrences::HasAnyOccurrences(FlowGraphNaturalLoop* loop, unsigned lclNum)
+{
+    if (!VisitOccurrences(loop, lclNum, [](BasicBlock* block, Statement* stmt, GenTree* tree) {
+        return false;
+    }))
+    {
+        return true;
+    }
+
+    return false;
+}
+
+//------------------------------------------------------------------------------
+// LoopLocalOccurrences:VisitStatementsWithOccurrences:
+//   Visit all statements with occurrences of the specified local inside
+//   the loop.
+//
+// Type parameters:
+//   TFunc - Functor of type bool(Block*, Statement*)
+//
+// Parameters:
+//   loop   - The loop
+//   lclNum - The local whose occurrences to visit
+//   func   - Functor instance. Return true to continue the visit, and
+//            false to abort it.
+//
+// Returns:
+//   True if the visit completed and false if it was aborted by the functor
+//   returning false.
+//
+// Remarks:
+//   A statement with multiple occurrences of the local is only visited
+//   once.
+//
+template <typename TFunc>
+bool LoopLocalOccurrences::VisitStatementsWithOccurrences(FlowGraphNaturalLoop* loop, unsigned lclNum, TFunc func)
+{
+    auto visitor = [=, &func](LocalToOccurrenceMap* map) {
+        Occurrence* occurrence;
+        if (!map->Lookup(lclNum, &occurrence))
+        {
+            return true;
+        }
+
+        assert(occurrence != nullptr);
+
+        while (true)
+        {
+            if (!func(occurrence->Block, occurrence->Statement))
+            {
+                return false;
+            }
+
+            Statement* curStmt = occurrence->Statement;
+            while (true)
+            {
+                occurrence = occurrence->Next;
+
+                if (occurrence == nullptr)
+                {
+                    return true;
+                }
+
+                if (occurrence->Statement != curStmt)
+                {
+                    break;
+                }
+            }
+        }
+
+        return true;
+    };
+
+    return VisitLoopNestMaps(loop, visitor);
 }
 
 //------------------------------------------------------------------------
@@ -380,7 +475,7 @@ bool Compiler::optIsIVWideningProfitable(unsigned              lclNum,
         return true;
     };
 
-    loopLocals->VisitOccurrences(lclNum, measure);
+    loopLocals->VisitOccurrences(loop, lclNum, measure);
 
     if (!initedToConstant)
     {
@@ -760,7 +855,7 @@ bool Compiler::optWidenPrimaryIV(FlowGraphNaturalLoop* loop,
         return true;
     };
 
-    loopLocals->VisitStatementsWithOccurrences(lclNum, replace);
+    loopLocals->VisitStatementsWithOccurrences(loop, lclNum, replace);
 
     optSinkWidenedIV(lclNum, newLclNum, loop);
     return true;
@@ -801,6 +896,8 @@ PhaseStatus Compiler::optInductionVariables()
     m_dfsTree = fgComputeDfs();
     m_loops   = FlowGraphNaturalLoops::Find(m_dfsTree);
 
+    LoopLocalOccurrences loopLocals(m_loops);
+
     ScalarEvolutionContext scevContext(this);
     JITDUMP("Optimizing induction variables:\n");
 
@@ -809,8 +906,6 @@ PhaseStatus Compiler::optInductionVariables()
         JITDUMP("Processing ");
         DBEXEC(verbose, FlowGraphNaturalLoop::Dump(loop));
         scevContext.ResetForLoop(loop);
-
-        LoopLocalOccurrences* loopLocals = nullptr;
 
         int numWidened = 0;
 
@@ -848,21 +943,16 @@ PhaseStatus Compiler::optInductionVariables()
 
             assert(!lclDsc->lvPromoted);
 
-            if (loopLocals == nullptr)
-            {
-                loopLocals = LoopLocalOccurrences::Find(loop);
-            }
-
             // For a struct field with occurrences of the parent local we won't
             // be able to do much.
-            if (lclDsc->lvIsStructField && loopLocals->HasAnyOccurrences(lclDsc->lvParentLcl))
+            if (lclDsc->lvIsStructField && loopLocals.HasAnyOccurrences(loop, lclDsc->lvParentLcl))
             {
                 JITDUMP("  V%02u is a struct field whose parent local V%02u has occurrences inside the loop\n", lclNum,
                         lclDsc->lvParentLcl);
                 continue;
             }
 
-            if (optWidenPrimaryIV(loop, lclNum, addRec, loopLocals))
+            if (optWidenPrimaryIV(loop, lclNum, addRec, &loopLocals))
             {
                 numWidened++;
                 changed = true;
