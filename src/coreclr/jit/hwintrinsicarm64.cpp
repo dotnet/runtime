@@ -2380,9 +2380,9 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             CORINFO_ARG_LIST_HANDLE arg3     = info.compCompHnd->getArgNext(arg2);
             var_types               argType  = TYP_UNKNOWN;
             CORINFO_CLASS_HANDLE    argClass = NO_CLASS_HANDLE;
-            argType                = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg3, &argClass)));
-            op3                    = impPopStack().val;
-            unsigned fieldCount    = info.compCompHnd->getClassNumInstanceFields(argClass);
+            argType             = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg3, &argClass)));
+            op3                 = impPopStack().val;
+            unsigned fieldCount = info.compCompHnd->getClassNumInstanceFields(argClass);
 
             if (op3->TypeGet() == TYP_STRUCT)
             {
