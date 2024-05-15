@@ -1262,7 +1262,7 @@ The C and C++ standard headers are available for usage in the CoreCLR code-base.
 
 Code that will only run in other processes, such as `createdump` or other extraneous tools, do not have the same set of restrictions.
 
-To ensure we're using a supported and easily updatable standard library implementation, we use a specially-built libc++ implementation in our shipping products. This enables us to use a modern C++ standard library implementation while still targeting older rootfs targets with outdated C++ library implementations.
+To ensure we're using a supported and easily updatable standard library implementation, we use a specially built libc++ implementation, in our Linux Docker containers, in our shipping products. This enables us to use a modern C++ standard library implementation while still targeting older rootfs targets with outdated C++ library implementations.
 
 ### <a name="2.11.1"></a> 2.11.1 Do not use wchar_t
 
