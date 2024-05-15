@@ -2082,23 +2082,9 @@ mono_arch_set_native_call_context_ret (CallContext *ccontext, gpointer frame, Mo
 		else
 			storage = arg_get_storage (ccontext, ainfo);
 
-#ifdef MONO_ARCH_HAVE_SWIFTCALL
-		int swift_error_preserved_val = 0;
-		if (ccontext->gregs [PARAM_REGS + 2]) {
-			swift_error_preserved_val = ccontext->gregs [PARAM_REGS + 2];
-		}
-#endif
-
-		memset (ccontext, 0, sizeof (CallContext)); // FIXME
 		interp_cb->frame_arg_to_data ((MonoInterpFrameHandle)frame, sig, -1, storage);
 		if (temp_size)
 			arg_set_val (ccontext, ainfo, storage);
-
-#ifdef MONO_ARCH_HAVE_SWIFTCALL
-	if (swift_error_preserved_val > 0) {
-		ccontext->gregs [PARAM_REGS + 2] = swift_error_preserved_val;
-	}
-#endif
 	}
 }
 
