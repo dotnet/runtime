@@ -1854,7 +1854,7 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* lclNode)
                 assert(data->AsIntCon()->IconValue() == 0);
                 emitAttr attr = emitActualTypeSize(targetType);
                 // need to load the address from thread pointer reg
-                emit->emitIns_R_R(INS_mov, attr, targetReg, REG_TP);
+                emit->emitIns_R_R(INS_mv, attr, targetReg, REG_TP);
             }
             else
             {
