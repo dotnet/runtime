@@ -8,6 +8,7 @@ internal static class Constants
     internal static class Globals
     {
         // See src/coreclr/debug/runtimeinfo/datadescriptor.h
+        internal const string ThreadStore = nameof(ThreadStore);
         internal const string SOSBreakingChangeVersion = nameof(SOSBreakingChangeVersion);
     }
 }

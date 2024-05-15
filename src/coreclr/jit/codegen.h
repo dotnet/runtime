@@ -47,22 +47,6 @@ public:
 
 private:
 #if defined(TARGET_XARCH)
-    // Bit masks used in negating a float or double number.
-    // This is to avoid creating more than one data constant for these bitmasks when a
-    // method has more than one GT_NEG operation on floating point values.
-    CORINFO_FIELD_HANDLE negBitmaskFlt;
-    CORINFO_FIELD_HANDLE negBitmaskDbl;
-
-    // Bit masks used in computing Math.Abs() of a float or double number.
-    CORINFO_FIELD_HANDLE absBitmaskFlt;
-    CORINFO_FIELD_HANDLE absBitmaskDbl;
-
-    // Bit mask used in zeroing the 3rd element of a SIMD12
-    CORINFO_FIELD_HANDLE zroSimd12Elm3;
-
-    // Bit mask used in U8 -> double conversion to adjust the result.
-    CORINFO_FIELD_HANDLE u8ToDblBitmask;
-
     // Generates SSE2 code for the given tree as "Operand BitWiseOp BitMask"
     void genSSE2BitwiseOp(GenTree* treeNode);
 
@@ -275,7 +259,7 @@ protected:
     void      genHomeRegisterParams(regNumber initReg, bool* initRegStillZeroed);
     regMaskTP genGetParameterHomingTempRegisterCandidates();
 
-    var_types genParamStackStoreType(LclVarDsc* dsc, const ABIPassingSegment& seg);
+    var_types genParamStackType(LclVarDsc* dsc, const ABIPassingSegment& seg);
     void      genSpillOrAddRegisterParam(unsigned lclNum, class RegGraph* graph);
     void      genSpillOrAddNonStandardRegisterParam(unsigned lclNum, regNumber sourceReg, class RegGraph* graph);
     void      genEnregisterIncomingStackArgs();
@@ -1009,7 +993,7 @@ protected:
     class HWIntrinsicImmOpHelper final
     {
     public:
-        HWIntrinsicImmOpHelper(CodeGen* codeGen, GenTree* immOp, GenTreeHWIntrinsic* intrin);
+        HWIntrinsicImmOpHelper(CodeGen* codeGen, GenTree* immOp, GenTreeHWIntrinsic* intrin, int immNum = 1);
 
         void EmitBegin();
         void EmitCaseEnd();
@@ -1261,7 +1245,8 @@ protected:
     void        genCall(GenTreeCall* call);
     void        genCallInstruction(GenTreeCall* call X86_ARG(target_ssize_t stackArgBytes));
     void        genDefinePendingCallLabel(GenTreeCall* call);
-    void        genJmpMethod(GenTree* jmp);
+    void        genJmpPlaceArgs(GenTree* jmp);
+    void        genJmpPlaceVarArgs();
     BasicBlock* genCallFinally(BasicBlock* block);
 #if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     void genCodeForJumpCompare(GenTreeOpCC* tree);

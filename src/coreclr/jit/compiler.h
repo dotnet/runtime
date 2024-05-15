@@ -87,6 +87,7 @@ class OptBoolsDsc;           // defined in optimizer.cpp
 struct RelopImplicationInfo; // defined in redundantbranchopts.cpp
 struct JumpThreadInfo;       // defined in redundantbranchopts.cpp
 class ProfileSynthesis;      // defined in profilesynthesis.h
+class LoopLocalOccurrences;  // defined in inductionvariableopts.cpp
 #ifdef DEBUG
 struct IndentStack;
 #endif
@@ -4530,7 +4531,7 @@ protected:
                                   CORINFO_SIG_INFO*     sig,
                                   CorInfoType           callJitType,
                                   NamedIntrinsic        intrinsicName,
-                                  bool                  tailCall);
+                                  bool                  mustExpand);
     GenTree* impMathIntrinsic(CORINFO_METHOD_HANDLE method,
                               CORINFO_SIG_INFO*     sig,
                               var_types             callType,
@@ -4561,7 +4562,8 @@ protected:
     GenTree* impPrimitiveNamedIntrinsic(NamedIntrinsic        intrinsic,
                                         CORINFO_CLASS_HANDLE  clsHnd,
                                         CORINFO_METHOD_HANDLE method,
-                                        CORINFO_SIG_INFO*     sig);
+                                        CORINFO_SIG_INFO*     sig,
+                                        bool                  mustExpand);
 
 #ifdef FEATURE_HW_INTRINSICS
     GenTree* impHWIntrinsic(NamedIntrinsic        intrinsic,
@@ -4573,7 +4575,8 @@ protected:
                                   CORINFO_CLASS_HANDLE  clsHnd,
                                   CORINFO_METHOD_HANDLE method,
                                   CORINFO_SIG_INFO*     sig,
-                                  GenTree*              newobjThis);
+                                  GenTree*              newobjThis,
+                                  bool                  mustExpand);
 
 protected:
     bool compSupportsHWIntrinsic(CORINFO_InstructionSet isa);
@@ -4584,7 +4587,8 @@ protected:
                                          var_types            retType,
                                          CorInfoType          simdBaseJitType,
                                          unsigned             simdSize,
-                                         GenTree*             newobjThis);
+                                         GenTree*             newobjThis,
+                                         bool                 mustExpand);
 
     GenTree* impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                                  CORINFO_CLASS_HANDLE  clsHnd,
@@ -4592,7 +4596,8 @@ protected:
                                  CORINFO_SIG_INFO*     sig,
                                  CorInfoType           simdBaseJitType,
                                  var_types             retType,
-                                 unsigned              simdSize);
+                                 unsigned              simdSize,
+                                 bool                  mustExpand);
 
     GenTree* getArgForHWIntrinsic(var_types            argType,
                                   CORINFO_CLASS_HANDLE argClass,
@@ -4602,6 +4607,34 @@ protected:
     GenTree* addRangeCheckIfNeeded(
         NamedIntrinsic intrinsic, GenTree* immOp, bool mustExpand, int immLowerBound, int immUpperBound);
     GenTree* addRangeCheckForHWIntrinsic(GenTree* immOp, int immLowerBound, int immUpperBound);
+
+    void getHWIntrinsicImmOps(NamedIntrinsic    intrinsic,
+                              CORINFO_SIG_INFO* sig,
+                              GenTree**         immOp1Ptr,
+                              GenTree**         immOp2Ptr);
+
+    bool CheckHWIntrinsicImmRange(NamedIntrinsic intrinsic,
+                                  CorInfoType simdBaseJitType,
+                                  GenTree* immOp,
+                                  bool mustExpand,
+                                  int immLowerBound,
+                                  int immUpperBound,
+                                  bool hasFullRangeImm,
+                                  bool *useFallback);
+
+#if defined(TARGET_ARM64)
+
+    void getHWIntrinsicImmTypes(NamedIntrinsic       intrinsic,
+                                CORINFO_SIG_INFO*    sig,
+                                unsigned             immNumber,
+                                var_types            simdBaseType,
+                                CorInfoType          simdBaseJitType,
+                                CORINFO_CLASS_HANDLE op2ClsHnd,
+                                CORINFO_CLASS_HANDLE op3ClsHnd,
+                                unsigned*            immSimdSize,
+                                var_types*           immSimdBaseType);
+
+#endif // TARGET_ARM64
 
 #endif // FEATURE_HW_INTRINSICS
     GenTree* impArrayAccessIntrinsic(CORINFO_CLASS_HANDLE clsHnd,
@@ -7478,14 +7511,19 @@ public:
 #endif
 
     PhaseStatus optInductionVariables();
-    bool        optCanSinkWidenedIV(unsigned lclNum, FlowGraphNaturalLoop* loop);
-    bool        optIsIVWideningProfitable(unsigned                lclNum,
-                                          BasicBlock*             initBlock,
-                                          bool                    initedToConstant,
-                                          FlowGraphNaturalLoop*   loop,
-                                          ArrayStack<Statement*>& ivUses);
-    void        optBestEffortReplaceNarrowIVUses(
-               unsigned lclNum, unsigned ssaNum, unsigned newLclNum, BasicBlock* block, Statement* firstStmt);
+    bool        optWidenPrimaryIV(FlowGraphNaturalLoop* loop,
+                                  unsigned              lclNum,
+                                  ScevAddRec*           addRec,
+                                  LoopLocalOccurrences* loopLocals);
+
+    bool optCanSinkWidenedIV(unsigned lclNum, FlowGraphNaturalLoop* loop);
+    bool optIsIVWideningProfitable(unsigned              lclNum,
+                                   BasicBlock*           initBlock,
+                                   bool                  initedToConstant,
+                                   FlowGraphNaturalLoop* loop,
+                                   LoopLocalOccurrences* loopLocals);
+    void optBestEffortReplaceNarrowIVUses(
+        unsigned lclNum, unsigned ssaNum, unsigned newLclNum, BasicBlock* block, Statement* firstStmt);
     void optReplaceWidenedIV(unsigned lclNum, unsigned ssaNum, unsigned newLclNum, Statement* stmt);
     void optSinkWidenedIV(unsigned lclNum, unsigned newLclNum, FlowGraphNaturalLoop* loop);
 
@@ -8242,6 +8280,22 @@ public:
     bool IsTargetAbi(CORINFO_RUNTIME_ABI abi)
     {
         return eeGetEEInfo()->targetAbi == abi;
+    }
+
+    bool BlockNonDeterministicIntrinsics(bool mustExpand)
+    {
+        // We explicitly block these APIs from being expanded in R2R
+        // since we know they are non-deterministic across hardware
+
+        if (opts.IsReadyToRun() && !IsTargetAbi(CORINFO_NATIVEAOT_ABI))
+        {
+            if (mustExpand)
+            {
+                implLimitation();
+            }
+            return true;
+        }
+        return false;
     }
 
 #if defined(FEATURE_EH_WINDOWS_X86)

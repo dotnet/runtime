@@ -89,7 +89,7 @@ switch (testCase) {
 const { setModuleImports, getAssemblyExports, getConfig, INTERNAL } = await dotnet.create();
 const config = getConfig();
 const exports = await getAssemblyExports(config.mainAssemblyName);
-const assemblyExtension = config.resources.assembly['System.Private.CoreLib.wasm'] !== undefined ? ".wasm" : ".dll";
+const assemblyExtension = config.resources.coreAssembly['System.Private.CoreLib.wasm'] !== undefined ? ".wasm" : ".dll";
 
 // Run the test case
 try {
