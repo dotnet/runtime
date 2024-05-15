@@ -58,16 +58,16 @@ typedef struct CaValue
     union
     {
         uint8_t     boolean;
-        int8_t       i1;
+        int8_t      i1;
         uint8_t     u1;
-        int16_t      i2;
+        int16_t     i2;
         uint16_t    u2;
-        int32_t      i4;
+        int32_t     i4;
         uint32_t    u4;
-        int64_t      i8;
+        int64_t     i8;
         uint64_t    u8;
-        float               r4;
-        double              r8;
+        float       r4;
+        double      r8;
 
         struct
         {
