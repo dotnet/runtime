@@ -3503,7 +3503,7 @@ void emitter::emitDispInsName(
         }
         case 0x13:
         {
-            static constexpr int kMaxInstructionLength = 15;
+            static constexpr int kMaxInstructionLength = 14;
 
             unsigned opcode2 = (code >> 12) & 0x7;
             unsigned  rd = (code >> 7) & 0x1f;
@@ -3552,8 +3552,7 @@ void emitter::emitDispInsName(
             int paddingLength = kMaxInstructionLength - printLength;
             assert(paddingLength > 0);
 
-            printf("%*s", paddingLength, "");
-            printf("%s, %s, ", RegNames[rd], RegNames[rs1]);
+            printf("%*s %s, %s, ", paddingLength, "", RegNames[rd], RegNames[rs1]);
             printf(isHex ? "0x%x\n" : "%d\n", imm12);
 
             return;
