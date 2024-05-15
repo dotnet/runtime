@@ -8,6 +8,7 @@
 //
 
 #include <minipal/strings.h>
+#include <inttypes.h>
 
 typedef struct
 {

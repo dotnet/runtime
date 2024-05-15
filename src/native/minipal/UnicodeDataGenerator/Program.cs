@@ -16,7 +16,7 @@ Console.WriteLine(@"
 // IF YOU NEED TO UPDATE UNICODE VERSION FOLLOW THE GUIDE AT src/libraries/System.Private.CoreLib/Tools/GenUnicodeProp/Updating-Unicode-Versions.md
 //
 
-#include <minipal/utf8.h>
+#include <minipal/strings.h>
 #include <inttypes.h>
 
 typedef struct
