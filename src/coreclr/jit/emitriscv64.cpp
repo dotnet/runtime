@@ -3344,6 +3344,17 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
     return sz;
 }
 
+/*****************************************************************************/
+/*****************************************************************************/
+
+// clang-format off
+static const char* const RegNames[] =
+{
+    #define REGDEF(name, rnum, mask, sname) sname,
+    #include "register.h"
+};
+// clang-format on
+
 bool emitter::emitDispBranchInstrType(unsigned opcode2, bool is_zero_reg, bool& print_second_reg) const
 {
     switch (opcode2)
@@ -3353,7 +3364,7 @@ bool emitter::emitDispBranchInstrType(unsigned opcode2, bool is_zero_reg, bool& 
             print_second_reg = !is_zero_reg;
             break;
         case 1:
-            printf(is_zero_reg ? "bne " : "bnez");
+            printf(is_zero_reg ? "bnez" : "bne ");
             print_second_reg = !is_zero_reg;
             break;
         case 4:
@@ -3442,17 +3453,6 @@ void emitter::emitDispIllegalInstruction(code_t instructionCode)
 {
     printf("RISCV64 illegal instruction: 0x%08X\n", instructionCode);
 }
-
-/*****************************************************************************/
-/*****************************************************************************/
-
-// clang-format off
-static const char* const RegNames[] =
-{
-    #define REGDEF(name, rnum, mask, sname) sname,
-    #include "register.h"
-};
-// clang-format on
 
 //----------------------------------------------------------------------------------------
 // Disassemble the given instruction.
