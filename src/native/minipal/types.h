@@ -22,4 +22,10 @@
 #define PRIu64 FORMAT_PREFIX "lu"
 #endif
 
+#ifdef TARGET_WINDOWS
+typedef wchar_t CHAR16_T;
+#else
+typedef unsigned short CHAR16_T;
+#endif
+
 #endif // HAVE_MINIPAL_TYPES_H

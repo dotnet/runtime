@@ -1,10 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#ifndef HAVE_MINIPAL_STRING_H
-#define HAVE_MINIPAL_STRING_H
+#ifndef HAVE_MINIPAL_STRINGS_H
+#define HAVE_MINIPAL_STRINGS_H
 
-#include <minipal/utf8.h>
+#include <minipal/types.h>
 
 #ifdef __cplusplus
 extern "C"
@@ -31,4 +31,4 @@ CHAR16_T minipal_tolower_invariant(CHAR16_T code);
 }
 #endif // __cplusplus
 
-#endif /* HAVE_MINIPAL_STRING_H */
+#endif /* HAVE_MINIPAL_STRINGS_H */
