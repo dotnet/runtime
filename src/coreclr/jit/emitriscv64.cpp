@@ -3505,17 +3505,31 @@ void emitter::emitDispInsName(
         {
             static constexpr int kMaxInstructionLength = 14;
 
-            unsigned opcode2     = (code >> 12) & 0x7;
-            unsigned rd          = (code >> 7) & 0x1f;
-            unsigned rs1         = (code >> 15) & 0x1f;
-            int      imm12       = static_cast<int>(code) >> 20;
-            bool     isHex       = false;
-            int      printLength = 0;
+            unsigned opcode2      = (code >> 12) & 0x7;
+            unsigned rd           = (code >> 7) & 0x1f;
+            unsigned rs1          = (code >> 15) & 0x1f;
+            int      imm12        = static_cast<int>(code) >> 20;
+            bool     isHex        = false;
+            bool     hasImmediate = true;
+            int      printLength  = 0;
 
             switch (opcode2)
             {
-                case 0x0: // ADDI
-                    printLength = printf("addi");
+                case 0x0: // ADDI & MV & NOP
+                    if (imm12 != 0)
+                    {
+                        printLength = printf("addi");
+                    }
+                    else if (rd || rs1)
+                    {
+                        printLength  = printf("mv");
+                        hasImmediate = false;
+                    }
+                    else
+                    {
+                        printf("nop\n");
+                        return;
+                    }
                     break;
                 case 0x1: // SLLI
                     printLength = printf("slli");
@@ -3553,8 +3567,12 @@ void emitter::emitDispInsName(
             int paddingLength = kMaxInstructionLength - printLength;
             assert(paddingLength > 0);
 
-            printf("%*s %s, %s, ", paddingLength, "", RegNames[rd], RegNames[rs1]);
-            printf(isHex ? "0x%x\n" : "%d\n", imm12);
+            printf("%*s %s, %s", paddingLength, "", RegNames[rd], RegNames[rs1]);
+            if (hasImmediate)
+            {
+                printf(isHex ? ", 0x%x" : ", %d", imm12);
+            }
+            printf("\n");
 
             return;
         }
