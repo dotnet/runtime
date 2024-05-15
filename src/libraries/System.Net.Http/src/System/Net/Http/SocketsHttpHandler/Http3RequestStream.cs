@@ -1270,6 +1270,13 @@ namespace System.Net.Http
                     _connection.Abort(exception);
                     throw exception;
 
+                case QuicException e when (e.QuicError == QuicError.OperationAborted && _connection.AbortException != null):
+                    // we closed the connection already, propagate the AbortException
+                    HttpRequestError httpRequestError = _connection.AbortException is HttpProtocolException
+                        ? HttpRequestError.HttpProtocolError
+                        : HttpRequestError.Unknown;
+                    throw new HttpRequestException(httpRequestError, SR.net_http_client_execution_error, _connection.AbortException);
+
                 case HttpIOException:
                     _connection.Abort(ex);
                     ExceptionDispatchInfo.Throw(ex); // Rethrow.
