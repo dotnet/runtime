@@ -481,8 +481,8 @@ inline bool isByteReg(regNumber reg)
 }
 #endif
 
-inline regMaskTP genRegMask(regNumber reg);
-inline regMaskTP genRegMaskFloat(regNumber reg ARM_ARG(var_types type = TYP_DOUBLE));
+inline SingleTypeRegSet genRegMask(regNumber reg);
+inline SingleTypeRegSet genRegMaskFloat(regNumber reg ARM_ARG(var_types type = TYP_DOUBLE));
 
 /*****************************************************************************
  * Return true if the register number is valid
@@ -712,7 +712,7 @@ inline bool floatRegCanHoldType(regNumber reg, var_types type)
 
 extern const regMaskSmall regMasks[REG_COUNT];
 
-inline regMaskTP genRegMask(regNumber reg)
+inline SingleTypeRegSet genRegMask(regNumber reg)
 {
     assert((unsigned)reg < ArrLen(regMasks));
 #ifdef TARGET_AMD64
@@ -720,7 +720,7 @@ inline regMaskTP genRegMask(regNumber reg)
     // (L1 latency on sandy bridge is 4 cycles for [base] and 5 for [base + index*c] )
     // the reason this is AMD-only is because the x86 BE will try to get reg masks for REG_STK
     // and the result needs to be zero.
-    regMaskTP result = 1ULL << reg;
+    SingleTypeRegSet result = 1ULL << reg;
     assert(result == regMasks[reg]);
     return result;
 #else
@@ -733,7 +733,7 @@ inline regMaskTP genRegMask(regNumber reg)
  *  Map a register number to a floating-point register mask.
  */
 
-inline regMaskTP genRegMaskFloat(regNumber reg ARM_ARG(var_types type /* = TYP_DOUBLE */))
+inline SingleTypeRegSet genRegMaskFloat(regNumber reg ARM_ARG(var_types type /* = TYP_DOUBLE */))
 {
 #if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_X86) || defined(TARGET_LOONGARCH64) ||            \
     defined(TARGET_RISCV64)
