@@ -30,7 +30,7 @@ namespace System.Net.Http
 
         internal bool _preAuthenticate = HttpHandlerDefaults.DefaultPreAuthenticate;
         internal ICredentials? _credentials;
-        internal TokenImpersonationLevel _impersonationLevel = HttpHandlerDefaults.DefaultImpersonationLevel;	// this is here to support impersonation on HttpWebRequest
+        internal TokenImpersonationLevel _impersonationLevel = HttpHandlerDefaults.DefaultImpersonationLevel;   // this is here to support impersonation on HttpWebRequest
 
         internal bool _allowAutoRedirect = HttpHandlerDefaults.DefaultAutomaticRedirection;
         internal int _maxAutomaticRedirections = HttpHandlerDefaults.DefaultMaxAutomaticRedirections;
