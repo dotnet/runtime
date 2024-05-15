@@ -212,7 +212,20 @@ namespace System.Numerics.Tensors
             }
             set
             {
+                TensorSpan<T> srcSpan;
+                if (ranges == ReadOnlySpan<NRange>.Empty)
+                {
+                    if (!Lengths.SequenceEqual(value.Lengths))
+                        ThrowHelper.ThrowArgument_SetSliceNoRange(nameof(value));
+                    srcSpan = AsTensorSpan().Slice(Lengths);
+                }
+                else
+                    srcSpan = AsTensorSpan().Slice(ranges);
 
+                if (!srcSpan.Lengths.SequenceEqual(value.Lengths))
+                    ThrowHelper.ThrowArgument_SetSliceInvalidShapes(nameof(value));
+
+                value.AsTensorSpan().CopyTo(srcSpan);
             }
         }
 
@@ -224,7 +237,7 @@ namespace System.Numerics.Tensors
         /// <exception cref="IndexOutOfRangeException">
         /// Thrown when index less than 0 or index greater than or equal to FlattenedLength
         /// </exception>
-        T ITensor<Tensor<T>, T>.this[params scoped ReadOnlySpan<nint> indexes]
+        T ITensor<Tensor<T>, T>.this[params ReadOnlySpan<nint> indexes]
         {
             get
             {
@@ -244,7 +257,7 @@ namespace System.Numerics.Tensors
         /// <exception cref="IndexOutOfRangeException">
         /// Thrown when index less than 0 or index greater than or equal to FlattenedLength
         /// </exception>
-        T ITensor<Tensor<T>, T>.this[params scoped ReadOnlySpan<NIndex> indexes]
+        T ITensor<Tensor<T>, T>.this[params ReadOnlySpan<NIndex> indexes]
         {
             get
             {
@@ -264,7 +277,7 @@ namespace System.Numerics.Tensors
         /// <exception cref="IndexOutOfRangeException">
         /// Thrown when index less than 0 or index greater than or equal to FlattenedLength
         /// </exception>
-        T IReadOnlyTensor<Tensor<T>, T>.this[params scoped ReadOnlySpan<nint> indexes] => AsReadOnlyTensorSpan()[indexes];
+        T IReadOnlyTensor<Tensor<T>, T>.this[params ReadOnlySpan<nint> indexes] => AsReadOnlyTensorSpan()[indexes];
 
         /// <summary>
         /// Returns the specified element of the ReadOnlyTensor.
@@ -274,7 +287,7 @@ namespace System.Numerics.Tensors
         /// <exception cref="IndexOutOfRangeException">
         /// Thrown when index less than 0 or index greater than or equal to FlattenedLength
         /// </exception>
-        T IReadOnlyTensor<Tensor<T>, T>.this[params scoped ReadOnlySpan<NIndex> indexes] => AsReadOnlyTensorSpan()[indexes];
+        T IReadOnlyTensor<Tensor<T>, T>.this[params ReadOnlySpan<NIndex> indexes] => AsReadOnlyTensorSpan()[indexes];
 
         /// <summary>
         /// Returns a slice of the ReadOnlyTensor.
@@ -284,7 +297,7 @@ namespace System.Numerics.Tensors
         /// <exception cref="IndexOutOfRangeException">
         /// Thrown when any index is less than 0 or any index is greater than or equal to FlattenedLength
         /// </exception>
-        Tensor<T> IReadOnlyTensor<Tensor<T>, T>.this[params scoped ReadOnlySpan<NRange> ranges]
+        Tensor<T> IReadOnlyTensor<Tensor<T>, T>.this[params ReadOnlySpan<NRange> ranges]
         {
             get
             {
@@ -412,7 +425,7 @@ namespace System.Numerics.Tensors
         /// <param name="start">The ranges for the slice</param>
         /// <returns><see cref="Tensor{T}"/> as a copy of the provided ranges.</returns>
         // REVIEW: CURRENTLY DOES A COPY.
-        public Tensor<T> Slice(params scoped ReadOnlySpan<NRange> start)
+        public Tensor<T> Slice(params ReadOnlySpan<NRange> start)
         {
             if (start.Length != Lengths.Length)
                 throw new ArgumentOutOfRangeException(nameof(start), "Number of dimensions to slice does not equal the number of dimensions in the span");
@@ -430,7 +443,7 @@ namespace System.Numerics.Tensors
         /// <param name="start">The start indexes for the slice</param>
         /// <returns><see cref="Tensor{T}"/> as a copy of the provided ranges.</returns>
         // REVIEW: CURRENTLY DOES A COPY.
-        public Tensor<T> Slice(params scoped ReadOnlySpan<nint> start)
+        public Tensor<T> Slice(params ReadOnlySpan<nint> start)
         {
             NRange[] ranges = new NRange[start.Length];
             for (int i = 0; i < start.Length; i++)
@@ -446,7 +459,7 @@ namespace System.Numerics.Tensors
         /// <param name="startIndex">The start indexes for the slice</param>
         /// <returns><see cref="Tensor{T}"/> as a copy of the provided ranges.</returns>
         // REVIEW: CURRENTLY DOES A COPY.
-        public Tensor<T> Slice(params scoped ReadOnlySpan<NIndex> startIndex)
+        public Tensor<T> Slice(params ReadOnlySpan<NIndex> startIndex)
         {
             NRange[] ranges = new NRange[startIndex.Length];
             for (int i = 0; i < startIndex.Length; i++)
@@ -472,7 +485,7 @@ namespace System.Numerics.Tensors
         /// Thrown when the destination TensorSpan is shorter than the source Tensor.
         /// </exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void CopyTo(scoped TensorSpan<T> destination) => AsTensorSpan().CopyTo(destination);
+        public void CopyTo(TensorSpan<T> destination) => AsTensorSpan().CopyTo(destination);
 
         /// <summary>
         /// Fills the contents of this span with the given value.
@@ -488,19 +501,19 @@ namespace System.Numerics.Tensors
         /// <param name="destination">The span to copy items into.</param>
         /// <returns>If the destination span is shorter than the source tensor, this method
         /// return false and no data is written to the destination.</returns>
-        public bool TryCopyTo(scoped TensorSpan<T> destination) => AsTensorSpan().TryCopyTo(destination);
+        public bool TryCopyTo(TensorSpan<T> destination) => AsTensorSpan().TryCopyTo(destination);
 
         /// <summary>
         /// Flattens the contents of this Tensor into the provided <see cref="Span{T}"/>.
         /// </summary>
         /// <param name="destination">The span to copy items into.</param>
-        public void FlattenTo(scoped Span<T> destination) => AsTensorSpan().FlattenTo(destination);
+        public void FlattenTo(Span<T> destination) => AsTensorSpan().FlattenTo(destination);
 
         /// <summary>
         /// Flattens the contents of this Tensor into the provided <see cref="Span{T}"/>.
         /// </summary>
         /// <param name="destination">The span to copy items into.</param>
-        public bool TryFlattenTo(scoped Span<T> destination) => AsTensorSpan().TryFlattenTo(destination);
+        public bool TryFlattenTo(Span<T> destination) => AsTensorSpan().TryFlattenTo(destination);
 
         // IEnumerable
         /// <summary>
@@ -546,7 +559,7 @@ namespace System.Numerics.Tensors
             /// <summary>Advances the enumerator to the next element of the span.</summary>
             public bool MoveNext()
             {
-                TensorSpanHelpers.AdjustIndices(_tensor.Rank - 1, 1, ref _curIndices, _tensor.Lengths);
+                TensorSpanHelpers.AdjustIndexes(_tensor.Rank - 1, 1, ref _curIndices, _tensor.Lengths);
 
                 _items++;
                 return _items < _tensor.FlattenedLength;
@@ -619,7 +632,7 @@ namespace System.Numerics.Tensors
         /// </summary>
         /// <param name="maximumLengths">Maximum Length of each dimension</param>
         /// <returns>A <see cref="string"/> representation of the <see cref="Tensor{T}"/></returns>
-        public string ToString(params scoped ReadOnlySpan<nint> maximumLengths)
+        public string ToString(params ReadOnlySpan<nint> maximumLengths)
         {
             var sb = new StringBuilder();
             sb.AppendLine(ToMetadataString());

@@ -14,6 +14,16 @@ namespace System.Numerics.Tensors.Tests
     public class TensorSpanTests
     {
         [Fact]
+        public static void ConstructorTests()
+        {
+            int[] a = [1, 2, 3];
+            TensorSpan<int> span = new TensorSpan<int>(a, 0, [3, 3], [0, 1]);
+
+
+
+        }
+
+        [Fact]
         public static void IntArrayAsTensorSpan()
         {
             int[] a = { 91, 92, -93, 94 };

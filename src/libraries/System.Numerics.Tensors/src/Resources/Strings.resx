@@ -213,4 +213,10 @@
   <data name="ThrowArgument_ValueNonNegative" xml:space="preserve">
     <value>The provided value must be non-negative.</value>
   </data>
+  <data name="ThrowArgument_InvalidStridesAndLengths" xml:space="preserve">
+    <value>The provided lengths and strides would allow you to access elements outside the provided memory.</value>
+  </data>
+  <data name="ThrowArgument_StrideLessThan0" xml:space="preserve">
+    <value>Strides cannot be less than 0.</value>
+  </data>
 </root>

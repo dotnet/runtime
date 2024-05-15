@@ -103,8 +103,8 @@ namespace System.Numerics.Tensors
         private readonly object _dummy;
         private readonly int _dummyPrimitive;
         public ReadOnlyTensorSpan(System.Array? array) { throw null; }
-        public ReadOnlyTensorSpan(System.Array? array, System.ReadOnlySpan<System.Buffers.NIndex> startIndex, scoped System.ReadOnlySpan<nint> lengths, scoped System.ReadOnlySpan<nint> strides) { throw null; }
-        public ReadOnlyTensorSpan(System.Array? array, System.ReadOnlySpan<int> start, scoped System.ReadOnlySpan<nint> lengths, scoped System.ReadOnlySpan<nint> strides) { throw null; }
+        public ReadOnlyTensorSpan(System.Array? array, scoped System.ReadOnlySpan<System.Buffers.NIndex> startIndex, scoped System.ReadOnlySpan<nint> lengths, scoped System.ReadOnlySpan<nint> strides) { throw null; }
+        public ReadOnlyTensorSpan(System.Array? array, scoped System.ReadOnlySpan<int> start, scoped System.ReadOnlySpan<nint> lengths, scoped System.ReadOnlySpan<nint> strides) { throw null; }
         public ReadOnlyTensorSpan(System.ReadOnlySpan<T> span) { throw null; }
         public ReadOnlyTensorSpan(System.ReadOnlySpan<T> span, scoped System.ReadOnlySpan<nint> lengths, scoped System.ReadOnlySpan<nint> strides) { throw null; }
         [System.CLSCompliantAttribute(false)]
@@ -126,7 +126,7 @@ namespace System.Numerics.Tensors
         [System.Diagnostics.CodeAnalysis.UnscopedRefAttribute]
         public System.ReadOnlySpan<nint> Strides { get { throw null; } }
         public static System.Numerics.Tensors.ReadOnlyTensorSpan<T> CastUp<TDerived>(System.Numerics.Tensors.ReadOnlyTensorSpan<TDerived> items) where TDerived : class?, T? { throw null; }
-        public void CopyTo(System.Numerics.Tensors.TensorSpan<T> destination) { }
+        public void CopyTo(scoped System.Numerics.Tensors.TensorSpan<T> destination) { }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         [System.ObsoleteAttribute("Equals() on ReadOnlyTensorSpan will always throw an exception. Use the equality operator instead.")]
 #pragma warning disable CS0809 // Obsolete member overrides non-obsolete member
@@ -146,8 +146,9 @@ namespace System.Numerics.Tensors
         public System.Numerics.Tensors.ReadOnlyTensorSpan<T> Slice(scoped System.ReadOnlySpan<System.Buffers.NIndex> indexes) { throw null; }
         public System.Numerics.Tensors.ReadOnlyTensorSpan<T> Slice(scoped System.ReadOnlySpan<System.Buffers.NRange> ranges) { throw null; }
         public override string ToString() { throw null; }
-        public bool TryCopyTo(System.Numerics.Tensors.TensorSpan<T> destination) { throw null; }
+        public bool TryCopyTo(scoped System.Numerics.Tensors.TensorSpan<T> destination) { throw null; }
         public bool TryFlattenTo(scoped System.Span<T> destination) { throw null; }
+        public void FlattenTo(scoped System.Span<T> destination) { throw null; }
         public ref partial struct Enumerator
         {
             private object _dummy;
@@ -429,8 +430,8 @@ namespace System.Numerics.Tensors
         private readonly object _dummy;
         private readonly int _dummyPrimitive;
         public TensorSpan(System.Array? array) { throw null; }
-        public TensorSpan(System.Array? array, System.ReadOnlySpan<System.Buffers.NIndex> startIndex, scoped System.ReadOnlySpan<nint> lengths, scoped System.ReadOnlySpan<nint> strides) { throw null; }
-        public TensorSpan(System.Array? array, System.ReadOnlySpan<int> start, scoped System.ReadOnlySpan<nint> lengths, scoped System.ReadOnlySpan<nint> strides) { throw null; }
+        public TensorSpan(System.Array? array, scoped System.ReadOnlySpan<System.Buffers.NIndex> startIndex, scoped System.ReadOnlySpan<nint> lengths, scoped System.ReadOnlySpan<nint> strides) { throw null; }
+        public TensorSpan(System.Array? array, scoped System.ReadOnlySpan<int> start, scoped System.ReadOnlySpan<nint> lengths, scoped System.ReadOnlySpan<nint> strides) { throw null; }
         public TensorSpan(System.Span<T> span) { throw null; }
         public TensorSpan(System.Span<T> span, scoped System.ReadOnlySpan<nint> lengths, scoped System.ReadOnlySpan<nint> strides) { throw null; }
         [System.CLSCompliantAttribute(false)]
@@ -514,9 +515,9 @@ namespace System.Numerics.Tensors
         public System.Numerics.Tensors.TensorSpan<T> AsTensorSpan(scoped System.ReadOnlySpan<System.Buffers.NRange> start) { throw null; }
         public System.Numerics.Tensors.TensorSpan<T> AsTensorSpan(scoped System.ReadOnlySpan<nint> start) { throw null; }
         public void Clear() { }
-        public void CopyTo(scoped System.Numerics.Tensors.TensorSpan<T> destination) { }
+        public void CopyTo(System.Numerics.Tensors.TensorSpan<T> destination) { }
         public void Fill(T value) { }
-        public void FlattenTo(scoped System.Span<T> destination) { }
+        public void FlattenTo(System.Span<T> destination) { }
         public System.Collections.Generic.IEnumerator<T> GetEnumerator() { throw null; }
         public override int GetHashCode() { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
@@ -537,7 +538,7 @@ namespace System.Numerics.Tensors
         static System.Numerics.Tensors.Tensor<T> System.Numerics.Tensors.ITensor<System.Numerics.Tensors.Tensor<T>, T>.CreateUninitialized(scoped System.ReadOnlySpan<nint> lengths, bool pinned) { throw null; }
         static System.Numerics.Tensors.Tensor<T> System.Numerics.Tensors.ITensor<System.Numerics.Tensors.Tensor<T>, T>.CreateUninitialized(scoped System.ReadOnlySpan<nint> lengths, scoped System.ReadOnlySpan<nint> strides, bool pinned) { throw null; }
         public string ToString(scoped System.ReadOnlySpan<nint> maximumLengths) { throw null; }
-        public bool TryCopyTo(scoped System.Numerics.Tensors.TensorSpan<T> destination) { throw null; }
-        public bool TryFlattenTo(scoped System.Span<T> destination) { throw null; }
+        public bool TryCopyTo(System.Numerics.Tensors.TensorSpan<T> destination) { throw null; }
+        public bool TryFlattenTo(System.Span<T> destination) { throw null; }
     }
 }

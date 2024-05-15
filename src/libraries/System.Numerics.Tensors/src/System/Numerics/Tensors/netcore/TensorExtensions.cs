@@ -281,7 +281,7 @@ namespace System.Numerics.Tensors
                 {
                     TensorSpanHelpers.Memmove(ref Unsafe.Add(ref oslice._reference, TensorSpanHelpers.ComputeLinearIndex(oIndices, input.Strides, input.Lengths)), ref Unsafe.Add(ref islice._reference, TensorSpanHelpers.ComputeLinearIndex(iIndices, islice.Strides, islice.Lengths)), copyLength);
                     TensorSpanHelpers.AdjustIndexes((int)axis, 1, oIndices, input._lengths);
-                    TensorSpanHelpers.AdjustIndicesDown((int)axis, 1, iIndices, input._lengths);
+                    TensorSpanHelpers.AdjustIndexesDown((int)axis, 1, iIndices, input._lengths);
                     copiedValues += copyLength;
                 }
 
@@ -353,7 +353,7 @@ namespace System.Numerics.Tensors
                 {
                     TensorSpanHelpers.Memmove(ref Unsafe.Add(ref values, TensorSpanHelpers.ComputeLinearIndex(oIndices, input.Strides, input.Lengths)), ref Unsafe.Add(ref islice._reference, TensorSpanHelpers.ComputeLinearIndex(iIndices, islice.Strides, islice.Lengths)), copyLength);
                     TensorSpanHelpers.AdjustIndexes((int)axis, 1, oIndices, input.Lengths);
-                    TensorSpanHelpers.AdjustIndicesDown((int)axis, 1, iIndices, input.Lengths);
+                    TensorSpanHelpers.AdjustIndexesDown((int)axis, 1, iIndices, input.Lengths);
                     copiedValues += copyLength;
                 }
                 TensorSpanHelpers.Memmove(ref input._reference, ref values[0], input.FlattenedLength);

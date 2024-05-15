@@ -192,5 +192,17 @@ namespace System
         {
             throw new ArgumentException(SR.ThrowArgument_InPlaceInvalidShape);
         }
+
+        [DoesNotReturn]
+        public static void ThrowArgument_InvalidStridesAndLengths()
+        {
+            throw new ArgumentException(SR.ThrowArgument_InvalidStridesAndLengths);
+        }
+
+        [DoesNotReturn]
+        public static void ThrowArgument_StrideLessThan0()
+        {
+            throw new ArgumentException(SR.ThrowArgument_StrideLessThan0);
+        }
     }
 }
