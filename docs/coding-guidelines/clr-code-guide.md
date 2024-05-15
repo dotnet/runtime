@@ -1262,6 +1262,8 @@ The C and C++ standard headers are available for usage in the CoreCLR code-base.
 
 Code that will only run in other processes, such as `createdump` or other extraneous tools, do not have the same set of restrictions.
 
+To ensure we're using a supported and easily updatable standard library implementation, we use a specially-built libc++ implementation in our shipping products. This enables us to use a modern C++ standard library implementation while still targeting older rootfs targets with outdated C++ library implementations.
+
 ### <a name="2.11.1"></a> 2.11.1 Do not use wchar_t
 
 The `wchar_t` type is implementation-defined, with Windows and Unix-based platforms using different definitions (2 byte vs 4 byte). Use the `WCHAR` alias instead, which is always 2 bytes. The CoreCLR PAL provides implementations of a variety of the C standard `wchar_t` APIs with the `WCHAR` type instead. These methods, as well as the methods in the [CoreCLR minipal](https://github.com/dotnet/runtime/tree/main/src/coreclr/minipal) and in the [repo minipal](https://github.com/dotnet/runtime/tree/main/src/native/minipal) should be used. In these minipals, the APIs may use `char16_t` or a locally-defined `CHAR16_T` type. In both cases, these types are compatible with the `WCHAR` alias in CoreCLR. If a minipal API exists, it should be used instead of the PAL API.
