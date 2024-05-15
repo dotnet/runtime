@@ -1625,6 +1625,8 @@ Scev* ScalarEvolutionContext::ComputeExitNotTakenCount(BasicBlock* exiting)
             case GT_GE:
                 exitOpStr = ">=";
                 break;
+            default:
+                unreached();
         }
         printf(" %s ", exitOpStr);
         rhs->Dump(m_comp);
