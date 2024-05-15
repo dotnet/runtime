@@ -331,7 +331,7 @@ regMaskTP LinearScan::filterConsecutiveCandidatesForSpill(regMaskTP consecutiveC
     regMaskTP unprocessedRegs          = consecutiveCandidates;
     unsigned  regAvailableStartIndex = 0, regAvailableEndIndex = 0;
     int       maxSpillRegs        = registersNeeded;
-    regMaskTP registersNeededMask = (1ULL << registersNeeded) - 1;
+    SingleTypeRegSet registersNeededMask = (1ULL << registersNeeded) - 1;
     do
     {
         // From LSB, find the first available register (bit `1`)

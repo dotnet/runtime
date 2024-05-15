@@ -13656,7 +13656,7 @@ regMaskTP LinearScan::RegisterSelection::select(Interval*                current
 
                 unsigned startRegister = BitScanForward(limitConsecutiveResult);
 
-                regMaskTP registersNeededMask = (1ULL << refPosition->regCount) - 1;
+                SingleTypeRegSet registersNeededMask = (1ULL << refPosition->regCount) - 1;
                 candidates |= (registersNeededMask << startRegister);
             }
 
