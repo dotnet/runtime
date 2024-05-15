@@ -361,7 +361,7 @@ class OleVariant
     static BSTR AllocateEmptyBSTRForString(STRINGREF *pStringObj);
     static void ConvertContentsStringToBSTR(STRINGREF *pStringObj, BSTR bstr);
     static BSTR ConvertStringToBSTR(STRINGREF *pStringObj);
-    static void MarshalComVariantForOleVariant(VARIANT *pOle, VariantData *pCom);
+    static void MarshalObjectForOleVariantUncommon(const VARIANT *pOle, OBJECTREF * const & pObj);
     static void MarshalOleVariantForComVariant(VariantData *pCom, VARIANT *pOle);
 #endif // FEATURE_COMINTEROP
 
@@ -603,6 +603,7 @@ private:
     static void MarshalRecordVariantOleToCom(VARIANT* pOleVariant, VariantData* pComVariant);
     static void MarshalRecordVariantComToOle(VariantData* pComVariant, VARIANT* pOleVariant);
     static void MarshalRecordVariantOleRefToCom(VARIANT* pOleVariant, VariantData* pComVariant);
+    static void MarshalRecordVariantOleToObject(const VARIANT* pOleVariant, OBJECTREF * const & pComVariant);
 #endif
 
     static void MarshalCurrencyVariantOleToCom(VARIANT* pOleVariant, VariantData* pComVariant);
@@ -627,6 +628,8 @@ private:
     static void MarshalArrayVariantOleToCom(VARIANT* pOleVariant, VariantData* pComVariant);
     static void MarshalArrayVariantComToOle(VariantData* pComVariant, VARIANT* pOleVariant);
     static void MarshalArrayVariantOleRefToCom(VARIANT* pOleVariant, VariantData* pComVariant);
+    static void MarshalArrayVariantOleToObject(const VARIANT* pOleVariant, OBJECTREF * const & pObj);
+    static void MarshalArrayVariantOleRefToObject(const VARIANT* pOleVariant, OBJECTREF * const & pObj);
 #endif
 
     static void MarshalErrorVariantOleToCom(VARIANT* pOleVariant, VariantData* pComVariant);

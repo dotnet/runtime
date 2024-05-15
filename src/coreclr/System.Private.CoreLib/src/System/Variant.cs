@@ -490,36 +490,27 @@ namespace System
             }
         }
 
-        internal static unsafe object? MarshalComVariantForOleVariant(ref readonly ComVariant pOle)
+        // Helper code for marshaling VARIANTS to managed objects
+        internal static unsafe object? MarshalHelperConvertVariantToObject(ref readonly ComVariant pOle)
         {
-            // Note that the following check also covers VT_ILLEGAL.
-            if ((pOle.VarType & ~VarEnum.VT_BYREF & ~VarEnum.VT_ARRAY) >= (VarEnum)128)
-            {
-                throw new InvalidOleVariantTypeException();
-            }
-
-            if ((pOle.VarType & VarEnum.VT_BYREF) != 0 &&
-                pOle.GetRawDataRef<IntPtr>() == 0 &&
-                (pOle.VarType & ~VarEnum.VT_BYREF) is not (VarEnum.VT_EMPTY or VarEnum.VT_NULL))
-            {
-                throw new ArgumentException(SR.Arg_InvalidOleVariantTypeException);
-            }
-
-            if (pOle.VarType == (VarEnum.VT_BYREF | VarEnum.VT_VARIANT))
-            {
-                pOle = ref *(ComVariant*)pOle.GetRawDataRef<IntPtr>();
-
-                // Byref VARIANTS are not allowed to be nested.
-                if ((pOle.VarType & VarEnum.VT_BYREF) != 0)
-                {
-                    throw new InvalidOleVariantTypeException();
-                }
-            }
-
-            // TODO: VT_ARRAY
+            // Invalid and common types are handled at native side
+            Debug.Assert((pOle.VarType & VarEnum.VT_ARRAY) == 0, "Array should be handled at native side.");
+            Debug.Assert((pOle.VarType & ~VarEnum.VT_BYREF) is (< VarEnum.VT_I2 or > VarEnum.VT_R8) and (< VarEnum.VT_I1 or > VarEnum.VT_UI4),
+                "Primitives are currently handled at native side.");
+            Debug.Assert((pOle.VarType & ~VarEnum.VT_BYREF) is not (VarEnum.VT_BOOL or VarEnum.VT_BSTR or VarEnum.VT_RECORD or VarEnum.VT_VARIANT), "Should be handled at native side.");
 
             switch (pOle.VarType)
             {
+                case VarEnum.VT_I8:
+                    return pOle.As<long>();
+                case VarEnum.VT_BYREF | VarEnum.VT_I8:
+                    return *(long*)pOle.GetRawDataRef<IntPtr>();
+
+                case VarEnum.VT_UI8:
+                    return pOle.As<ulong>();
+                case VarEnum.VT_BYREF | VarEnum.VT_UI8:
+                    return *(ulong*)pOle.GetRawDataRef<IntPtr>();
+
                 case VarEnum.VT_EMPTY:
                 case VarEnum.VT_BYREF | VarEnum.VT_EMPTY:
                     return null;
@@ -527,11 +518,6 @@ namespace System
                 case VarEnum.VT_NULL:
                 case VarEnum.VT_BYREF | VarEnum.VT_NULL:
                     return System.DBNull.Value;
-
-                case VarEnum.VT_BOOL:
-                    return pOle.As<bool>();
-                case VarEnum.VT_BYREF | VarEnum.VT_BOOL:
-                    return *(short*)pOle.GetRawDataRef<IntPtr>() != 0;
 
                 case VarEnum.VT_DATE:
                     return pOle.As<DateTime>();
@@ -551,11 +537,6 @@ namespace System
                 case VarEnum.VT_BYREF | VarEnum.VT_CY:
                     return decimal.FromOACurrency(*(long*)pOle.GetRawDataRef<IntPtr>());
 
-                case VarEnum.VT_BSTR:
-                    return pOle.As<string>();
-                case VarEnum.VT_BYREF | VarEnum.VT_BSTR:
-                    return null; // TODO: Check
-
                 case VarEnum.VT_UNKNOWN:
                 case VarEnum.VT_DISPATCH:
                     return Marshal.GetObjectForIUnknown(pOle.GetRawDataRef<IntPtr>());
@@ -563,8 +544,6 @@ namespace System
                 case VarEnum.VT_BYREF | VarEnum.VT_DISPATCH:
                     IntPtr ptr = pOle.GetRawDataRef<IntPtr>();
                     return ptr == 0 ? null : Marshal.GetObjectForIUnknown(ptr);
-
-                // case VarEnum.VT_SAFEARRAY: // goto VariantArray
 
                 case VarEnum.VT_ERROR:
                     int error = pOle.GetRawDataRef<int>();
@@ -577,18 +556,9 @@ namespace System
                 case VarEnum.VT_BYREF | VarEnum.VT_VOID:
                     return null; // CV_VOID
 
-                case VarEnum.VT_RECORD: // TODO: record
-                case VarEnum.VT_BYREF | VarEnum.VT_RECORD:
                 default:
                     throw new ArgumentException("IDS_EE_COM_UNSUPPORTED_TYPE");
             }
-        }
-
-        // Helper code for marshaling VARIANTS to managed objects (we use
-        // managed variants as an intermediate type.
-        internal static object? MarshalHelperConvertVariantToObject(ref Variant v)
-        {
-            return v.ToObject();
         }
 
         // Helper code: on the back propagation path where a VT_BYREF VARIANT*
