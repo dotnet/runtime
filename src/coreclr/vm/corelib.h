@@ -378,7 +378,7 @@ BEGIN_ILLINK_FEATURE_SWITCH(System.Runtime.InteropServices.BuiltInComInterop.IsS
 #ifdef FEATURE_COMINTEROP
 DEFINE_CLASS(VARIANT,               System,                 Variant)
 DEFINE_METHOD(VARIANT,              CONVERT_OBJECT_TO_VARIANT,MarshalHelperConvertObjectToVariant,SM_Obj_RefComVariant_RetVoid)
-DEFINE_METHOD(VARIANT,              CAST_VARIANT,           MarshalHelperCastVariant,   SM_Obj_Int_RefVariant_RetVoid)
+DEFINE_METHOD(VARIANT,              CAST_VARIANT,           MarshalHelperCastVariant,   SM_Obj_Int_RefComVariant_RetVoid)
 DEFINE_METHOD(VARIANT,              CONVERT_VARIANT_TO_OBJECT,MarshalHelperConvertVariantToObject,SM_RefComVariant_RetObject)
 
 DEFINE_CLASS_U(System,              Variant,                VariantData)

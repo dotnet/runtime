@@ -319,134 +319,6 @@ namespace System
         [MethodImpl(MethodImplOptions.InternalCall)]
         private extern object BoxEnum();
 
-        private unsafe VarEnum GetVarTypeForComVariant()
-        {
-            int type = CVType;
-            VarEnum vt = (VarEnum)((_flags & VTBitMask) >> VTBitShift);
-            if ((vt & (VarEnum)0x80) != 0)
-            {
-                vt &= (VarEnum)~0x80;
-                vt |= VarEnum.VT_ARRAY;
-            }
-
-            if (vt != VarEnum.VT_EMPTY)
-            {
-                // This variant was originally unmarshaled from unmanaged, and had the original VT recorded in it.
-                // We'll always use that over inference.
-                return vt;
-            }
-
-            if (type == CV_OBJECT)
-            {
-                // Null objects will be converted to VT_DISPATCH variants with a null
-                // IDispatch pointer.
-                if (_objref == null)
-                    return VarEnum.VT_DISPATCH;
-
-                // Retrieve the object's method table.
-                MethodTable* pMT = RuntimeHelpers.GetMethodTable(_objref);
-
-                // Handle the value class case.
-                if (pMT->IsValueType)
-                    return VarEnum.VT_RECORD;
-
-                // Handle the array case.
-                //if (pMT->IsArray)
-                //{
-                //    // TODO: handle array
-                //}
-
-                // SafeHandle's or CriticalHandle's cannot be stored in VARIANT's.
-                if (_objref is SafeHandle)
-                    throw new ArgumentException("IDS_EE_SH_IN_VARIANT_NOT_SUPPORTED");
-                if (_objref is CriticalHandle)
-                    throw new ArgumentException("IDS_EE_CH_IN_VARIANT_NOT_SUPPORTED");
-
-                // VariantWrappers cannot be stored in VARIANT's.
-                if (_objref is VariantWrapper)
-                    throw new ArgumentException("IDS_EE_VAR_WRAP_IN_VAR_NOT_SUPPORTED");
-
-                // We are dealing with a normal object (not a wrapper) so we will
-                // leave the VT as VT_DISPATCH for now and we will determine the actual
-                // VT when we convert the object to a COM IP.
-                return VarEnum.VT_DISPATCH;
-            }
-
-            // GetVarTypeForCVType
-            return type switch
-            {
-                CV_EMPTY => VarEnum.VT_EMPTY,
-                CV_VOID => VarEnum.VT_VOID,
-                CV_BOOLEAN => VarEnum.VT_BOOL,
-                CV_CHAR => VarEnum.VT_UI2,
-                // Primitive types
-                CV_STRING => VarEnum.VT_BSTR,
-                CV_DATETIME => VarEnum.VT_DATE,
-                CV_OBJECT => VarEnum.VT_DISPATCH,
-                CV_DECIMAL => VarEnum.VT_DECIMAL,
-                // CV_CURRENCY => VarEnum.VT_CY,
-                CV_ENUM => VarEnum.VT_I4,
-                CV_MISSING => VarEnum.VT_ERROR,
-                CV_NULL => VarEnum.VT_NULL,
-                _ => throw new ArgumentException("IDS_EE_COM_UNSUPPORTED_SIG")
-            };
-        }
-
-        internal static void MarshalOleVariantForComVariant(Variant o, out ComVariant pOle)
-        {
-            VarEnum vt = o.GetVarTypeForComVariant();
-            switch (vt) // Pseudo
-            {
-                case VarEnum.VT_DATE:
-                    pOle = ComVariant.Create((DateTime)o._objref!);
-                    break;
-                case VarEnum.VT_DECIMAL:
-                    pOle = ComVariant.Create((decimal)o._objref!);
-                    break;
-                case VarEnum.VT_CY:
-                    pOle = ComVariant.Create((CurrencyWrapper)o._objref!);
-                    break;
-                case VarEnum.VT_BSTR:
-                    pOle = ComVariant.Create((string)o._objref!);
-                    break;
-                case VarEnum.VT_UNKNOWN:
-                case VarEnum.VT_DISPATCH:
-                    VarEnum existingVT = (VarEnum)((o._flags & VTBitMask) >> VTBitShift);
-                    if (o._objref == null)
-                    {
-                        // If there is no VT set in the managed variant, then default to VT_UNKNOWN.
-                        if (existingVT == VarEnum.VT_EMPTY)
-                            existingVT = VarEnum.VT_UNKNOWN;
-
-                        pOle = ComVariant.CreateRaw(existingVT, IntPtr.Zero);
-                    }
-                    else
-                    {
-                        bool isIDispatch = existingVT == VarEnum.VT_DISPATCH;
-                        IntPtr ptr = existingVT switch
-                        {
-                            // We are dealing with an UnknownWrapper or DispatchWrapper.
-                            // In this case, we need to respect the VT.
-                            VarEnum.VT_UNKNOWN => Marshal.GetIUnknownForObject(o._objref),
-                            VarEnum.VT_DISPATCH => Marshal.GetIDispatchForObject(o._objref),
-                            // We are dealing with an UnknownWrapper or DispatchWrapper.
-                            // In this case, we need to respect the VT.
-                            _ => OAVariantLib.GetIUnknownOrIDispatchForObject(ObjectHandleOnStack.Create(ref o._objref), out isIDispatch),
-                        };
-                        pOle = ComVariant.CreateRaw(isIDispatch ? VarEnum.VT_DISPATCH : VarEnum.VT_UNKNOWN, ptr);
-                    }
-                    break;
-                // case VT_SAFEARRAY: // goto VariantArray;
-                case VarEnum.VT_ERROR:
-                    pOle = ComVariant.CreateRaw(VarEnum.VT_ERROR, o.CVType == CV_MISSING ? HResults.DISP_E_PARAMNOTFOUND : (int)o._data);
-                    break;
-                // case VT_RECORD: // TODO: handle record
-                default:
-                    pOle = ComVariant.CreateRaw(vt, o._data); // Foo
-                    break;
-            }
-        }
-
         // Helper code for marshaling managed objects to VARIANT's
         internal static void MarshalHelperConvertObjectToVariant(object? o, out ComVariant pOle)
         {
@@ -634,33 +506,33 @@ namespace System
         // Helper code: on the back propagation path where a VT_BYREF VARIANT*
         // is marshaled to a "ref Object", we use this helper to force the
         // updated object back to the original type.
-        internal static void MarshalHelperCastVariant(object pValue, int vt, ref Variant v)
+        internal static void MarshalHelperCastVariant(object pValue, int vt, out ComVariant v)
         {
-            if (!(pValue is IConvertible iv))
+            if (pValue is not IConvertible iv)
             {
-                switch (vt)
+                switch ((VarEnum)vt)
                 {
-                    case 9: /*VT_DISPATCH*/
+                    case VarEnum.VT_DISPATCH:
                         Debug.Assert(OperatingSystem.IsWindows());
-                        v = new Variant(new DispatchWrapper(pValue));
+                        v = ComVariant.CreateRaw(VarEnum.VT_DISPATCH,
+                            pValue is null ? IntPtr.Zero : Marshal.GetIDispatchForObject(pValue));
                         break;
 
-                    case 12: /*VT_VARIANT*/
-                        v = new Variant(pValue);
+                    case VarEnum.VT_VARIANT:
+                        throw new UnreachableException("Should be handled at native side.");
+
+                    case VarEnum.VT_UNKNOWN:
+                        v = ComVariant.CreateRaw(VarEnum.VT_UNKNOWN,
+                            pValue is null ? IntPtr.Zero : Marshal.GetIUnknownForObject(pValue));
                         break;
 
-                    case 13: /*VT_UNKNOWN*/
-                        v = new Variant(new UnknownWrapper(pValue));
-                        break;
+                    case VarEnum.VT_RECORD:
+                        throw new NotImplementedException(); // TODO: RECORD
 
-                    case 36: /*VT_RECORD*/
-                        v = new Variant(pValue);
-                        break;
-
-                    case 8: /*VT_BSTR*/
+                    case VarEnum.VT_BSTR: /*VT_BSTR*/
                         if (pValue == null)
                         {
-                            v = new Variant(null) { _flags = CV_STRING };
+                            v = ComVariant.CreateRaw(VarEnum.VT_BSTR, IntPtr.Zero);
                             break;
                         }
                         goto default;
@@ -672,36 +544,32 @@ namespace System
             else
             {
                 IFormatProvider provider = CultureInfo.InvariantCulture;
-                v = vt switch
+                v = (VarEnum)vt switch
                 {
-                    0 => /*VT_EMPTY*/ Empty,
-                    1 => /*VT_NULL*/ DBNull,
-                    2 => /*VT_I2*/ new Variant(iv.ToInt16(provider)),
-                    3 => /*VT_I4*/ new Variant(iv.ToInt32(provider)),
-                    4 => /*VT_R4*/ new Variant(iv.ToSingle(provider)),
-                    5 => /*VT_R8*/ new Variant(iv.ToDouble(provider)),
-#pragma warning disable 0618 // CurrencyWrapper is obsolete
-                    6 => /*VT_CY*/ new Variant(new CurrencyWrapper(iv.ToDecimal(provider))),
-#pragma warning restore 0618
-                    7 => /*VT_DATE*/ new Variant(iv.ToDateTime(provider)),
-                    8 => /*VT_BSTR*/ new Variant(iv.ToString(provider)),
-#pragma warning disable CA1416 // Validate platform compatibility
-                    9 => /*VT_DISPATCH*/ new Variant(new DispatchWrapper((object)iv)),
-#pragma warning restore CA1416
-                    10 => /*VT_ERROR*/ new Variant(new ErrorWrapper(iv.ToInt32(provider))),
-                    11 => /*VT_BOOL*/ new Variant(iv.ToBoolean(provider)),
-                    12 => /*VT_VARIANT*/ new Variant((object)iv),
-                    13 => /*VT_UNKNOWN*/ new Variant(new UnknownWrapper((object)iv)),
-                    14 => /*VT_DECIMAL*/ new Variant(iv.ToDecimal(provider)),
+                    VarEnum.VT_EMPTY => default,
+                    VarEnum.VT_NULL => ComVariant.Create(System.DBNull.Value),
+                    VarEnum.VT_I2 => ComVariant.Create(iv.ToInt16(provider)),
+                    VarEnum.VT_I4 => ComVariant.Create(iv.ToInt32(provider)),
+                    VarEnum.VT_R4 => ComVariant.Create(iv.ToSingle(provider)),
+                    VarEnum.VT_R8 => ComVariant.Create(iv.ToDouble(provider)),
+                    VarEnum.VT_CY => ComVariant.CreateRaw(VarEnum.VT_CY, decimal.ToOACurrency(iv.ToDecimal(provider))),
+                    VarEnum.VT_DATE => ComVariant.Create(iv.ToDateTime(provider)),
+                    VarEnum.VT_BSTR => ComVariant.Create(iv.ToString(provider)),
+                    VarEnum.VT_DISPATCH => ComVariant.CreateRaw(VarEnum.VT_DISPATCH, Marshal.GetIDispatchForObject(iv)),
+                    VarEnum.VT_ERROR => ComVariant.CreateRaw(VarEnum.VT_ERROR, iv.ToInt32(provider)),
+                    VarEnum.VT_BOOL => ComVariant.Create(iv.ToBoolean(provider)),
+                    VarEnum.VT_VARIANT => throw new UnreachableException("Should be handled at native side."),
+                    VarEnum.VT_UNKNOWN => ComVariant.CreateRaw(VarEnum.VT_UNKNOWN, Marshal.GetIUnknownForObject(iv)),
+                    VarEnum.VT_DECIMAL => ComVariant.Create(iv.ToDecimal(provider)),
                     // 15 => : /*unused*/ NOT SUPPORTED
-                    16 => /*VT_I1*/ new Variant(iv.ToSByte(provider)),
-                    17 => /*VT_UI1*/ new Variant(iv.ToByte(provider)),
-                    18 => /*VT_UI2*/ new Variant(iv.ToUInt16(provider)),
-                    19 => /*VT_UI4*/ new Variant(iv.ToUInt32(provider)),
-                    20 => /*VT_I8*/ new Variant(iv.ToInt64(provider)),
-                    21 => /*VT_UI8*/ new Variant(iv.ToUInt64(provider)),
-                    22 => /*VT_INT*/ new Variant(iv.ToInt32(provider)),
-                    23 => /*VT_UINT*/ new Variant(iv.ToUInt32(provider)),
+                    VarEnum.VT_I1 => ComVariant.Create(iv.ToSByte(provider)),
+                    VarEnum.VT_UI1 => ComVariant.Create(iv.ToByte(provider)),
+                    VarEnum.VT_UI2 => ComVariant.Create(iv.ToUInt16(provider)),
+                    VarEnum.VT_UI4 => ComVariant.Create(iv.ToUInt32(provider)),
+                    VarEnum.VT_I8 => ComVariant.Create(iv.ToInt64(provider)),
+                    VarEnum.VT_UI8 => ComVariant.Create(iv.ToUInt64(provider)),
+                    VarEnum.VT_INT => ComVariant.Create(iv.ToInt32(provider)),
+                    VarEnum.VT_UINT => ComVariant.Create(iv.ToUInt32(provider)),
                     _ => throw new InvalidCastException(SR.InvalidCast_CannotCoerceByRefVariant),
                 };
             }

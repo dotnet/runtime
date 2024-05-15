@@ -2910,49 +2910,42 @@ void OleVariant::MarshalOleRefVariantForObject(OBJECTREF *pObj, VARIANT *pOle)
 
             // MarshalOleRefVariantForObjectNoCast has checked that the variant is not an array
             // so we can use the marshal cast helper to coerce the object to the proper type.
-            VariantData vd;
-            FillMemory(&vd, sizeof(vd), 0);
+            VARIANT vtmp;
+            VariantInit(&vtmp);
             VARTYPE vt = V_VT(pOle) & ~VT_BYREF;
 
-            GCPROTECT_BEGIN_VARIANTDATA(vd);
+            ARG_SLOT args[3];
+            args[0] = ObjToArgSlot(*pObj);
+            args[1] = (ARG_SLOT)vt;
+            args[2] = PtrToArgSlot(&vtmp);
+            castVariant.Call(args);
+
+            // If the variant types are still not the same then call VariantChangeType to
+            // try and coerse them.
+            if (V_VT(&vtmp) != vt)
             {
-                ARG_SLOT args[3];
-                args[0] = ObjToArgSlot(*pObj);
-                args[1] = (ARG_SLOT)vt;
-                args[2] = PtrToArgSlot(&vd);
-                castVariant.Call(args);
-                VARIANT vtmp;
-                VariantInit(&vtmp);
-                OleVariant::MarshalOleVariantForComVariant(&vd, &vtmp);
+                VARIANT vtmp2;
+                memset(&vtmp2, 0, sizeof(VARIANT));
 
-                // If the variant types are still not the same then call VariantChangeType to
-                // try and coerse them.
-                if (V_VT(&vtmp) != vt)
+                // The type of the variant has changed so attempt to change
+                // the type back.
+                hr = SafeVariantChangeType(&vtmp2, &vtmp, 0, vt);
+                if (FAILED(hr))
                 {
-                    VARIANT vtmp2;
-                    memset(&vtmp2, 0, sizeof(VARIANT));
-
-                    // The type of the variant has changed so attempt to change
-                    // the type back.
-                    hr = SafeVariantChangeType(&vtmp2, &vtmp, 0, vt);
-                    if (FAILED(hr))
-                    {
-                        if (hr == DISP_E_TYPEMISMATCH)
-                            COMPlusThrow(kInvalidCastException, IDS_EE_CANNOT_COERCE_BYREF_VARIANT);
-                        else
-                            COMPlusThrowHR(hr);
-                    }
-
-                    // Copy the converted variant back into the original variant and clear the temp.
-                    InsertContentsIntoByrefVariant(&vtmp2, pOle);
-                    SafeVariantClear(&vtmp);
+                    if (hr == DISP_E_TYPEMISMATCH)
+                        COMPlusThrow(kInvalidCastException, IDS_EE_CANNOT_COERCE_BYREF_VARIANT);
+                    else
+                        COMPlusThrowHR(hr);
                 }
-                else
-                {
-                    InsertContentsIntoByrefVariant(&vtmp, pOle);
-                }
+
+                // Copy the converted variant back into the original variant and clear the temp.
+                InsertContentsIntoByrefVariant(&vtmp2, pOle);
+                SafeVariantClear(&vtmp);
             }
-            GCPROTECT_END_VARIANTDATA();
+            else
+            {
+                InsertContentsIntoByrefVariant(&vtmp, pOle);
+            }
         }
     }
 }
