@@ -8,6 +8,7 @@ namespace System.Linq
 {
     public static partial class Enumerable
     {
+        public static TSource Last<TSource>(this IList<TSource> source) => source[source.Count - 1];
         public static TSource Last<TSource>(this IEnumerable<TSource> source)
         {
             TSource? last = source.TryGetLast(out bool found);
