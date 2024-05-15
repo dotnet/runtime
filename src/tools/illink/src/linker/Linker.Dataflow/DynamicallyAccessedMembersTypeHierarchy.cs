@@ -116,7 +116,7 @@ namespace Mono.Linker.Dataflow
 			return (annotation, apply);
 		}
 
-		public DynamicallyAccessedMemberTypes ApplyDynamicallyAccessedMembersToTypeHierarchy (TypeDefinition type)
+		public DynamicallyAccessedMemberTypes ApplyDynamicallyAccessedMembersToTypeHierarchy (TypeDefinition type) //, MessageOrigin origin)
 		{
 			(var annotation, var applied) = ProcessMarkedTypeForDynamicallyAccessedMembersHierarchy (type);
 
