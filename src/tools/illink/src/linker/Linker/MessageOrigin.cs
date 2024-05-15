@@ -49,14 +49,14 @@ namespace Mono.Linker
 			ILOffset = UnsetILOffset;
 		}
 
-		public MessageOrigin (ICustomAttributeProvider? provider, int ilOffset)
+		public MessageOrigin (ICustomAttributeProvider? provider, int? ilOffset)
 		{
 			Debug.Assert (provider == null || provider is IMemberDefinition || provider is AssemblyDefinition);
 			FileName = null;
 			Provider = provider;
 			SourceLine = 0;
 			SourceColumn = 0;
-			ILOffset = ilOffset;
+			ILOffset = ilOffset ?? UnsetILOffset;
 		}
 
 		public MessageOrigin (MessageOrigin other)
