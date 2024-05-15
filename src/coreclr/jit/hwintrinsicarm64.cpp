@@ -211,17 +211,153 @@ bool HWIntrinsicInfo::isScalarIsa(CORINFO_InstructionSet isa)
 }
 
 //------------------------------------------------------------------------
+// getHWIntrinsicImmOps: Gets the immediate Ops for an intrinsic
+//
+// Arguments:
+//    intrinsic       -- NamedIntrinsic associated with the HWIntrinsic to lookup
+//    sig             -- signature of the intrinsic call.
+//    immOp1Ptr [OUT] -- The first immediate Op
+//    immOp2Ptr [OUT] -- The second immediate Op, if any. Otherwise unchanged.
+//
+void Compiler::getHWIntrinsicImmOps(NamedIntrinsic    intrinsic,
+                                    CORINFO_SIG_INFO* sig,
+                                    GenTree**         immOp1Ptr,
+                                    GenTree**         immOp2Ptr)
+{
+    if (!HWIntrinsicInfo::HasImmediateOperand(intrinsic))
+    {
+        return;
+    }
+
+    // Position of the immediates from top of stack
+    int imm1Pos = -1;
+    int imm2Pos = -1;
+
+    switch (intrinsic)
+    {
+        case NI_AdvSimd_Insert:
+        case NI_AdvSimd_InsertScalar:
+        case NI_AdvSimd_LoadAndInsertScalar:
+        case NI_AdvSimd_LoadAndInsertScalarVector64x2:
+        case NI_AdvSimd_LoadAndInsertScalarVector64x3:
+        case NI_AdvSimd_LoadAndInsertScalarVector64x4:
+        case NI_AdvSimd_Arm64_LoadAndInsertScalar:
+        case NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x2:
+        case NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x3:
+        case NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x4:
+            assert(sig->numArgs == 3);
+            imm1Pos = 1;
+            break;
+
+        case NI_AdvSimd_Arm64_InsertSelectedScalar:
+            assert(sig->numArgs == 4);
+            imm1Pos = 2;
+            imm2Pos = 0;
+            break;
+
+        default:
+            assert(sig->numArgs > 0);
+            imm1Pos = 0;
+            break;
+    }
+
+    if (imm1Pos >= 0)
+    {
+        *immOp1Ptr = impStackTop(imm1Pos).val;
+        assert(HWIntrinsicInfo::isImmOp(intrinsic, *immOp1Ptr));
+    }
+
+    if (imm2Pos >= 0)
+    {
+        *immOp2Ptr = impStackTop(imm2Pos).val;
+        assert(HWIntrinsicInfo::isImmOp(intrinsic, *immOp2Ptr));
+    }
+}
+
+//------------------------------------------------------------------------
+// getHWIntrinsicImmTypes: Gets the type/size for an immediate for an intrinsic
+//                         if it differs from the default type/size of the instrinsic
+//
+// Arguments:
+//    intrinsic                -- NamedIntrinsic associated with the HWIntrinsic to lookup
+//    sig                      -- signature of the intrinsic call.
+//    immNumber                -- Which immediate to use (1 for most intrinsics)
+//    simdBaseType             -- base type of the intrinsic
+//    simdType                 -- vector size of the intrinsic
+//    op2ClsHnd                -- cls handler for op2
+//    op2ClsHnd                -- cls handler for op3
+//    immSimdSize [IN/OUT]     -- Size of the immediate to override
+//    immSimdBaseType [IN/OUT] -- Base type of the immediate to override
+//
+void Compiler::getHWIntrinsicImmTypes(NamedIntrinsic       intrinsic,
+                                      CORINFO_SIG_INFO*    sig,
+                                      unsigned             immNumber,
+                                      var_types            simdBaseType,
+                                      CorInfoType          simdBaseJitType,
+                                      CORINFO_CLASS_HANDLE op2ClsHnd,
+                                      CORINFO_CLASS_HANDLE op3ClsHnd,
+                                      unsigned*            immSimdSize,
+                                      var_types*           immSimdBaseType)
+{
+    HWIntrinsicCategory category = HWIntrinsicInfo::lookupCategory(intrinsic);
+
+    if (category == HW_Category_SIMDByIndexedElement)
+    {
+        assert(immNumber == 1);
+
+        CorInfoType indexedElementBaseJitType;
+        var_types   indexedElementBaseType;
+        *immSimdSize = 0;
+
+        if (sig->numArgs == 3)
+        {
+            indexedElementBaseJitType = getBaseJitTypeAndSizeOfSIMDType(op2ClsHnd, immSimdSize);
+            indexedElementBaseType    = JitType2PreciseVarType(indexedElementBaseJitType);
+        }
+        else
+        {
+            assert(sig->numArgs == 4);
+            indexedElementBaseJitType = getBaseJitTypeAndSizeOfSIMDType(op3ClsHnd, immSimdSize);
+            indexedElementBaseType    = JitType2PreciseVarType(indexedElementBaseJitType);
+
+            if (intrinsic == NI_Dp_DotProductBySelectedQuadruplet)
+            {
+                assert(((simdBaseType == TYP_INT) && (indexedElementBaseType == TYP_BYTE)) ||
+                       ((simdBaseType == TYP_UINT) && (indexedElementBaseType == TYP_UBYTE)));
+                // The second source operand of sdot, udot instructions is an indexed 32-bit element.
+                indexedElementBaseType = simdBaseType;
+            }
+        }
+
+        assert(indexedElementBaseType == simdBaseType);
+    }
+    else if (intrinsic == NI_AdvSimd_Arm64_InsertSelectedScalar)
+    {
+        if (immNumber == 2)
+        {
+            CorInfoType otherBaseJitType = getBaseJitTypeAndSizeOfSIMDType(op3ClsHnd, immSimdSize);
+            *immSimdBaseType             = JitType2PreciseVarType(otherBaseJitType);
+            assert(otherBaseJitType == simdBaseJitType);
+        }
+        // For imm1 use default simd sizes.
+    }
+
+    // For all other imms, use default simd sizes
+}
+
+//------------------------------------------------------------------------
 // lookupImmBounds: Gets the lower and upper bounds for the imm-value of a given NamedIntrinsic
 //
 // Arguments:
 //    intrinsic -- NamedIntrinsic associated with the HWIntrinsic to lookup
 //    simdType  -- vector size
 //    baseType  -- base type of the Vector64/128<T>
+//    immNumber -- which immediate operand to check for (most intrinsics only have one)
 //    pImmLowerBound [OUT] - The lower incl. bound for a value of the intrinsic immediate operand
 //    pImmUpperBound [OUT] - The upper incl. bound for a value of the intrinsic immediate operand
 //
 void HWIntrinsicInfo::lookupImmBounds(
-    NamedIntrinsic intrinsic, int simdSize, var_types baseType, int* pImmLowerBound, int* pImmUpperBound)
+    NamedIntrinsic intrinsic, int simdSize, var_types baseType, int immNumber, int* pImmLowerBound, int* pImmUpperBound)
 {
     HWIntrinsicCategory category            = HWIntrinsicInfo::lookupCategory(intrinsic);
     bool                hasImmediateOperand = HasImmediateOperand(intrinsic);
@@ -337,6 +473,7 @@ GenTree* Compiler::impNonConstFallback(NamedIntrinsic intrinsic, var_types simdT
 //    sig             -- signature of the intrinsic call.
 //    simdBaseJitType -- generic argument of the intrinsic.
 //    retType         -- return type of the intrinsic.
+//    mustExpand      -- true if the intrinsic must return a GenTree*; otherwise, false
 //
 // Return Value:
 //    The GT_HWINTRINSIC node, or nullptr if not a supported intrinsic
@@ -347,7 +484,8 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                                        CORINFO_SIG_INFO*     sig,
                                        CorInfoType           simdBaseJitType,
                                        var_types             retType,
-                                       unsigned              simdSize)
+                                       unsigned              simdSize,
+                                       bool                  mustExpand)
 {
     const HWIntrinsicCategory category = HWIntrinsicInfo::lookupCategory(intrinsic);
     const int                 numArgs  = sig->numArgs;
@@ -626,10 +764,18 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
-        case NI_Vector64_ConvertToInt32:
         case NI_Vector64_ConvertToInt32Native:
-        case NI_Vector128_ConvertToInt32:
         case NI_Vector128_ConvertToInt32Native:
+        {
+            if (BlockNonDeterministicIntrinsics(mustExpand))
+            {
+                break;
+            }
+            FALLTHROUGH;
+        }
+
+        case NI_Vector64_ConvertToInt32:
+        case NI_Vector128_ConvertToInt32:
         {
             assert(sig->numArgs == 1);
             assert(simdBaseType == TYP_FLOAT);
@@ -639,10 +785,18 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
-        case NI_Vector64_ConvertToInt64:
         case NI_Vector64_ConvertToInt64Native:
-        case NI_Vector128_ConvertToInt64:
         case NI_Vector128_ConvertToInt64Native:
+        {
+            if (BlockNonDeterministicIntrinsics(mustExpand))
+            {
+                break;
+            }
+            FALLTHROUGH;
+        }
+
+        case NI_Vector64_ConvertToInt64:
+        case NI_Vector128_ConvertToInt64:
         {
             assert(sig->numArgs == 1);
             assert(simdBaseType == TYP_DOUBLE);
@@ -663,10 +817,18 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
-        case NI_Vector64_ConvertToUInt32:
         case NI_Vector64_ConvertToUInt32Native:
-        case NI_Vector128_ConvertToUInt32:
         case NI_Vector128_ConvertToUInt32Native:
+        {
+            if (BlockNonDeterministicIntrinsics(mustExpand))
+            {
+                break;
+            }
+            FALLTHROUGH;
+        }
+
+        case NI_Vector64_ConvertToUInt32:
+        case NI_Vector128_ConvertToUInt32:
         {
             assert(sig->numArgs == 1);
             assert(simdBaseType == TYP_FLOAT);
@@ -676,10 +838,18 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
-        case NI_Vector64_ConvertToUInt64:
         case NI_Vector64_ConvertToUInt64Native:
-        case NI_Vector128_ConvertToUInt64:
         case NI_Vector128_ConvertToUInt64Native:
+        {
+            if (BlockNonDeterministicIntrinsics(mustExpand))
+            {
+                break;
+            }
+            FALLTHROUGH;
+        }
+
+        case NI_Vector64_ConvertToUInt64:
+        case NI_Vector128_ConvertToUInt64:
         {
             assert(sig->numArgs == 1);
             assert(simdBaseType == TYP_DOUBLE);
@@ -1909,7 +2079,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             }
 
             assert(HWIntrinsicInfo::isImmOp(intrinsic, op3));
-            HWIntrinsicInfo::lookupImmBounds(intrinsic, simdSize, simdBaseType, &immLowerBound, &immUpperBound);
+            HWIntrinsicInfo::lookupImmBounds(intrinsic, simdSize, simdBaseType, 1, &immLowerBound, &immUpperBound);
             op3     = addRangeCheckIfNeeded(intrinsic, op3, (!op3->IsCnsIntOrI()), immLowerBound, immUpperBound);
             argType = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg1, &argClass)));
             op1     = getArgForHWIntrinsic(argType, argClass);

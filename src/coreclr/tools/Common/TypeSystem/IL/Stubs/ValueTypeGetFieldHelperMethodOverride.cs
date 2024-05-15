@@ -48,10 +48,7 @@ namespace Internal.IL.Stubs
                     TypeDesc int32Type = context.GetWellKnownType(WellKnownType.Int32);
                     TypeDesc eeTypePtrType = context.SystemModule.GetKnownType("Internal.Runtime", "MethodTable").MakePointerType();
 
-                    _signature = new MethodSignature(0, 0, int32Type, new[] {
-                        int32Type,
-                        eeTypePtrType.MakeByRefType()
-                    });
+                    _signature = new MethodSignature(0, 0, int32Type, [ int32Type, eeTypePtrType.MakeByRefType() ]);
                 }
 
                 return _signature;

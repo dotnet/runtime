@@ -1348,7 +1348,15 @@ bool Lowering::IsValidConstForMovImm(GenTreeHWIntrinsic* node)
         // can catch those cases as well.
 
         castOp = op1->AsCast()->CastOp();
-        op1    = castOp;
+
+        if (varTypeIsIntegral(castOp))
+        {
+            op1 = castOp;
+        }
+        else
+        {
+            castOp = nullptr;
+        }
     }
 
     if (op1->IsCnsIntOrI())

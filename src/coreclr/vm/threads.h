@@ -4300,6 +4300,15 @@ public:
     void OnMaxGenerationGCStarted();
     bool ShouldTriggerGCForDeadThreads();
     void TriggerGCForDeadThreadsIfNecessary();
+
+    template<typename T> friend struct ::cdac_offsets;
+};
+
+template<>
+struct cdac_offsets<ThreadStore>
+{
+    static constexpr size_t ThreadList = offsetof(ThreadStore, m_ThreadList);
+    static constexpr size_t ThreadCount = offsetof(ThreadStore, m_ThreadCount);
 };
 
 struct TSSuspendHelper {

@@ -350,7 +350,7 @@ namespace System.Runtime.Intrinsics
 
             for (int i = 0; i < Vector64<int>.Count; i++)
             {
-                int value = (int)vector.GetElementUnsafe(i);
+                int value = float.ConvertToInteger<int>(vector.GetElementUnsafe(i));
                 result.SetElementUnsafe(i, value);
             }
 
@@ -362,7 +362,18 @@ namespace System.Runtime.Intrinsics
         /// <returns>The converted vector.</returns>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe Vector64<int> ConvertToInt32Native(Vector64<float> vector) => ConvertToInt32(vector);
+        public static unsafe Vector64<int> ConvertToInt32Native(Vector64<float> vector)
+        {
+            Unsafe.SkipInit(out Vector64<int> result);
+
+            for (int i = 0; i < Vector64<int>.Count; i++)
+            {
+                int value = float.ConvertToIntegerNative<int>(vector.GetElementUnsafe(i));
+                result.SetElementUnsafe(i, value);
+            }
+
+            return result;
+        }
 
         /// <summary>Converts a <see cref="Vector64{Double}" /> to a <see cref="Vector64{Int64}" /> using saturation on overflow.</summary>
         /// <param name="vector">The vector to convert.</param>
@@ -375,7 +386,7 @@ namespace System.Runtime.Intrinsics
 
             for (int i = 0; i < Vector64<long>.Count; i++)
             {
-                long value = (long)vector.GetElementUnsafe(i);
+                long value = double.ConvertToInteger<long>(vector.GetElementUnsafe(i));
                 result.SetElementUnsafe(i, value);
             }
 
@@ -387,7 +398,18 @@ namespace System.Runtime.Intrinsics
         /// <returns>The converted vector.</returns>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe Vector64<long> ConvertToInt64Native(Vector64<double> vector) => ConvertToInt64(vector);
+        public static unsafe Vector64<long> ConvertToInt64Native(Vector64<double> vector)
+        {
+            Unsafe.SkipInit(out Vector64<long> result);
+
+            for (int i = 0; i < Vector64<long>.Count; i++)
+            {
+                long value = double.ConvertToIntegerNative<long>(vector.GetElementUnsafe(i));
+                result.SetElementUnsafe(i, value);
+            }
+
+            return result;
+        }
 
         /// <summary>Converts a <see cref="Vector64{Int32}" /> to a <see cref="Vector64{Single}" />.</summary>
         /// <param name="vector">The vector to convert.</param>
@@ -438,7 +460,7 @@ namespace System.Runtime.Intrinsics
 
             for (int i = 0; i < Vector64<uint>.Count; i++)
             {
-                uint value = (uint)vector.GetElementUnsafe(i);
+                uint value = float.ConvertToInteger<uint>(vector.GetElementUnsafe(i));
                 result.SetElementUnsafe(i, value);
             }
 
@@ -451,7 +473,18 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe Vector64<uint> ConvertToUInt32Native(Vector64<float> vector) => ConvertToUInt32(vector);
+        public static unsafe Vector64<uint> ConvertToUInt32Native(Vector64<float> vector)
+        {
+            Unsafe.SkipInit(out Vector64<uint> result);
+
+            for (int i = 0; i < Vector64<uint>.Count; i++)
+            {
+                uint value = float.ConvertToIntegerNative<uint>(vector.GetElementUnsafe(i));
+                result.SetElementUnsafe(i, value);
+            }
+
+            return result;
+        }
 
         /// <summary>Converts a <see cref="Vector64{Double}" /> to a <see cref="Vector64{UInt64}" /> using saturation on overflow.</summary>
         /// <param name="vector">The vector to convert.</param>
@@ -465,7 +498,7 @@ namespace System.Runtime.Intrinsics
 
             for (int i = 0; i < Vector64<ulong>.Count; i++)
             {
-                ulong value = (ulong)vector.GetElementUnsafe(i);
+                ulong value = double.ConvertToInteger<ulong>(vector.GetElementUnsafe(i));
                 result.SetElementUnsafe(i, value);
             }
 
@@ -478,7 +511,18 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe Vector64<ulong> ConvertToUInt64Native(Vector64<double> vector) => ConvertToUInt64(vector);
+        public static unsafe Vector64<ulong> ConvertToUInt64Native(Vector64<double> vector)
+        {
+            Unsafe.SkipInit(out Vector64<ulong> result);
+
+            for (int i = 0; i < Vector64<ulong>.Count; i++)
+            {
+                ulong value = double.ConvertToIntegerNative<ulong>(vector.GetElementUnsafe(i));
+                result.SetElementUnsafe(i, value);
+            }
+
+            return result;
+        }
 
         /// <summary>Copies a <see cref="Vector64{T}" /> to a given array.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
