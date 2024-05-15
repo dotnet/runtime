@@ -219,10 +219,17 @@ struct regMaskTP
 {
 private:
     uint64_t low;
+    uint64_t high;
 
 public:
+    constexpr regMaskTP(uint64_t lowRegMask, uint64_t highRegMask)
+        : low(lowRegMask)
+        , high(highRegMask)
+    {
+    }
     constexpr regMaskTP(uint64_t regMask)
         : low(regMask)
+        , high(RBM_NONE)
     {
     }
 
@@ -249,23 +256,28 @@ public:
     {
         return low;
     }
+
+    uint64_t getHigh() const
+    {
+        return high;
+    }
 };
 
 static regMaskTP operator^(regMaskTP first, regMaskTP second)
 {
-    regMaskTP result(first.getLow() ^ second.getLow());
+    regMaskTP result(first.getLow() ^ second.getLow(), first.getHigh() ^ second.getHigh());
     return result;
 }
 
 static regMaskTP operator&(regMaskTP first, regMaskTP second)
 {
-    regMaskTP result(first.getLow() & second.getLow());
+    regMaskTP result(first.getLow() & second.getLow(), first.getHigh() & second.getHigh());
     return result;
 }
 
 static regMaskTP operator|(regMaskTP first, regMaskTP second)
 {
-    regMaskTP result(first.getLow() | second.getLow());
+    regMaskTP result(first.getLow() | second.getLow(), first.getHigh() | second.getHigh());
     return result;
 }
 
@@ -325,17 +337,17 @@ static regMaskTP& operator&=(regMaskTP& first, regMaskTP second)
 
 static bool operator==(regMaskTP first, regMaskTP second)
 {
-    return (first.getLow() == second.getLow());
+    return (first.getLow() == second.getLow()) && (first.getHigh() == second.getHigh());
 }
 
 static bool operator!=(regMaskTP first, regMaskTP second)
 {
-    return (first.getLow() != second.getLow());
+    return !(first == second);
 }
 
 static regMaskTP operator~(regMaskTP first)
 {
-    regMaskTP result(~first.getLow());
+    regMaskTP result(~first.getLow(), ~first.getHigh());
     return result;
 }
 
@@ -346,7 +358,7 @@ typedef unsigned regMaskTP;
 static uint32_t PopCount(regMaskTP value)
 {
 #ifdef TARGET_ARM64
-    return BitOperations::PopCount(value.getLow());
+    return BitOperations::PopCount(value.getLow()) + BitOperations::PopCount(value.getHigh());
 #else
     return BitOperations::PopCount(value);
 #endif
@@ -355,7 +367,14 @@ static uint32_t PopCount(regMaskTP value)
 static uint32_t BitScanForward(regMaskTP mask)
 {
 #ifdef TARGET_ARM64
+    if (mask.getLow() != RBM_NONE)
+    {
     return BitOperations::BitScanForward(mask.getLow());
+    }
+    else
+    {
+        return 64 + BitOperations::BitScanForward(mask.getHigh());
+    }
 #else
     return BitOperations::BitScanForward(mask);
 #endif
