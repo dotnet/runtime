@@ -2043,6 +2043,9 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         case NI_AdvSimd_Arm64_LoadAndReplicateToVector128x2:
         case NI_AdvSimd_Arm64_LoadAndReplicateToVector128x3:
         case NI_AdvSimd_Arm64_LoadAndReplicateToVector128x4:
+        case NI_Sve_LoadVectorx2:
+        case NI_Sve_LoadVectorx3:
+        case NI_Sve_LoadVectorx4:
             info.compNeedsConsecutiveRegisters = true;
             FALLTHROUGH;
         case NI_AdvSimd_Arm64_LoadPairScalarVector64:
