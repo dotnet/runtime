@@ -13,7 +13,77 @@ using Xunit.Abstractions;
 
 namespace Wasm.Build.Tests.TestAppScenarios;
 
-public class DebugLevelTests : AppTestBase
+public class WasmSdkDebugLevelTests : DebugLevelTests
+{
+    public WasmSdkDebugLevelTests(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
+        : base(output, buildContext)
+    {
+    }
+
+    protected override void SetupProject(string projectId) => CopyTestAsset("WasmBasicTestApp", projectId, "App");
+    
+    protected override Task<RunResult> RunForBuild(string configuration) => RunSdkStyleAppForBuild(new(
+        Configuration: configuration,
+        TestScenario: "DebugLevelTest"
+    ));
+
+    protected override Task<RunResult> RunForPublish(string configuration) => RunSdkStyleAppForPublish(new(
+        Configuration: configuration,
+        TestScenario: "DebugLevelTest"
+    ));
+}
+
+public class WasmAppBuilderDebugLevelTests : DebugLevelTests
+{
+    public WasmAppBuilderDebugLevelTests(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
+        : base(output, buildContext)
+    {
+    }
+
+    protected override void SetupProject(string projectId)
+    {
+        string projectfile = CreateWasmTemplateProject(projectId, "wasmconsole");
+        string projectDir = Path.GetDirectoryName(projectfile)!;
+        string mainJs = Path.Combine(projectDir, "main.mjs");
+        string mainJsContent = File.ReadAllText(mainJs);
+        mainJsContent = mainJsContent
+            .Replace("import { dotnet }", "import { dotnet, exit }")
+            .Replace("await runMainAndExit()", "testOutput('TestOutput -> ' + config.debugLevel); exit(0)");
+        File.WriteAllText(mainJs, mainJsContent);
+    }
+
+    protected override Task<RunResult> RunForBuild(string configuration)
+    {
+        CommandResult res = new RunCommand(s_buildEnv, _testOutput)
+            .WithWorkingDirectory(_projectDir!)
+            .ExecuteWithCapturedOutput($"run --no-silent --no-build -c {configuration}");
+
+        return Task.FromResult(ProcessRunOutput(res));
+    }
+
+    private static RunResult ProcessRunOutput(CommandResult res)
+    {
+        var output = res.Output.Split(Environment.NewLine);
+        var testOutput = output
+            .Where(l => l.StartsWith("TestOutput -> "))
+            .Select(l => l.Substring("TestOutput -> ".Length))
+            .ToArray();
+
+        return new RunResult(res.ExitCode, testOutput, output, []);
+    }
+
+    protected override Task<RunResult> RunForPublish(string configuration)
+    {
+        // TODO: Fix publish
+        CommandResult res = new RunCommand(s_buildEnv, _testOutput)
+            .WithWorkingDirectory(_projectDir!)
+            .ExecuteWithCapturedOutput($"run --no-silent --no-build -c {configuration}");
+
+        return Task.FromResult(ProcessRunOutput(res));
+    }
+}
+
+public abstract class DebugLevelTests : AppTestBase
 {
     public DebugLevelTests(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
         : base(output, buildContext)
@@ -28,18 +98,19 @@ public class DebugLevelTests : AppTestBase
         );
     }
 
+    protected abstract void SetupProject(string projectId);
+    protected abstract Task<RunResult> RunForBuild(string configuration);
+    protected abstract Task<RunResult> RunForPublish(string configuration);
+
     [Theory]
     [InlineData("Debug")]
     [InlineData("Release")]
     public async Task BuildWithDefaultLevel(string configuration)
     {
-        CopyTestAsset("WasmBasicTestApp", $"DebugLevelTests_BuildWithDefaultLevel_{configuration}", "App");
+        SetupProject($"DebugLevelTests_BuildWithDefaultLevel_{configuration}");
         BuildProject(configuration);
 
-        var result = await RunSdkStyleAppForBuild(new(
-            Configuration: configuration,
-            TestScenario: "DebugLevelTest"
-        ));
+        var result = await RunForBuild(configuration);
         AssertDebugLevel(result, -1);
     }
 
@@ -50,13 +121,10 @@ public class DebugLevelTests : AppTestBase
     [InlineData("Release", 0)]
     public async Task BuildWithExplicitValue(string configuration, int debugLevel)
     {
-        CopyTestAsset("WasmBasicTestApp", $"DebugLevelTests_BuildWithExplicitValue_{configuration}", "App");
+        SetupProject($"DebugLevelTests_BuildWithExplicitValue_{configuration}");
         BuildProject(configuration: configuration, extraArgs: $"-p:WasmDebugLevel={debugLevel}");
 
-        var result = await RunSdkStyleAppForBuild(new(
-            Configuration: configuration,
-            TestScenario: "DebugLevelTest"
-        ));
+        var result = await RunForBuild(configuration);
         AssertDebugLevel(result, debugLevel);
     }
 
@@ -65,13 +133,10 @@ public class DebugLevelTests : AppTestBase
     [InlineData("Release")]
     public async Task PublishWithDefaultLevel(string configuration)
     {
-        CopyTestAsset("WasmBasicTestApp", $"DebugLevelTests_PublishWithDefaultLevel_{configuration}", "App");
+        SetupProject($"DebugLevelTests_PublishWithDefaultLevel_{configuration}");
         PublishProject(configuration);
 
-        var result = await RunSdkStyleAppForPublish(new(
-            Configuration: configuration,
-            TestScenario: "DebugLevelTest"
-        ));
+        var result = await RunForPublish(configuration);
         AssertDebugLevel(result, 0);
     }
 
@@ -82,13 +147,10 @@ public class DebugLevelTests : AppTestBase
     [InlineData("Release", -1)]
     public async Task PublishWithExplicitValue(string configuration, int debugLevel)
     {
-        CopyTestAsset("WasmBasicTestApp", $"DebugLevelTests_PublishWithExplicitValue_{configuration}", "App");
+        SetupProject($"DebugLevelTests_PublishWithExplicitValue_{configuration}");
         PublishProject(configuration, RuntimeVariant.SingleThreaded, assertAppBundle: true, $"-p:WasmDebugLevel={debugLevel}");
 
-        var result = await RunSdkStyleAppForPublish(new(
-            Configuration: configuration,
-            TestScenario: "DebugLevelTest"
-        ));
+        var result = await RunForPublish(configuration);
         AssertDebugLevel(result, debugLevel);
     }
 
@@ -97,13 +159,10 @@ public class DebugLevelTests : AppTestBase
     [InlineData("Release")]
     public async Task PublishWithDefaultLevelAndPdbs(string configuration)
     {
-        CopyTestAsset("WasmBasicTestApp", $"DebugLevelTests_PublishWithDefaultLevelAndPdbs_{configuration}", "App");
+        SetupProject($"DebugLevelTests_PublishWithDefaultLevelAndPdbs_{configuration}");
         PublishProject(configuration, RuntimeVariant.SingleThreaded, assertAppBundle: true, $"-p:CopyOutputSymbolsToPublishDirectory=true");
 
-        var result = await RunSdkStyleAppForPublish(new(
-            Configuration: configuration,
-            TestScenario: "DebugLevelTest"
-        ));
+        var result = await RunForPublish(configuration);
         AssertDebugLevel(result, -1);
     }
 }
