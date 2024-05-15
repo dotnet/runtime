@@ -7525,9 +7525,9 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				n = fsig->param_count;
 				sp -= n;
 				// Save the old arguments				
-				MonoInst **old_args = g_newa (MonoInst*, n);
+				MonoInst **old_params = (MonoInst**) mono_mempool_alloc (cfg->mempool, sizeof (MonoInst*) * n);
 				for (int idx_param = 0; idx_param < n; ++idx_param) {
-					old_args [idx_param] = sp [idx_param];
+					old_params [idx_param] = sp [idx_param];
 				}
 
 				GArray *new_params = g_array_sized_new (FALSE, FALSE, sizeof (MonoType*), n);
@@ -7577,7 +7577,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 						}
 					} else {
 						// Copy over non-struct arguments
-						*sp++ = old_args [idx_param];
+						*sp++ = old_params [idx_param];
 
 						++new_param_count;
 						g_array_append_val (new_params, ptype);
@@ -7585,7 +7585,10 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				}
 
 				// Create a new dummy signature with the lowered arguments				
-				fsig = mono_metadata_signature_dup_new_params (cfg->mempool, fsig, new_param_count, (MonoType**)new_params->data);			
+				fsig = mono_metadata_signature_dup_new_params (cfg->mempool, fsig, new_param_count, (MonoType**)new_params->data);
+
+				// Deallocate temp array
+				g_array_free (new_params, TRUE);
 			}
 #endif
 

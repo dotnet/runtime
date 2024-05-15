@@ -3323,6 +3323,7 @@ interp_try_devirt (MonoClass *this_klass, MonoMethod *target_method)
 static MonoMethodSignature*
 interp_emit_swiftcall_struct_lowering (TransformData *td, MonoMethodSignature *csignature)
 {
+	MonoMethodSignature *new_csignature;
 	g_assert (!csignature->hasthis); // P/Invoke calls shouldn't contain 'this'
 
 	// Save the function pointer
@@ -3332,7 +3333,8 @@ interp_emit_swiftcall_struct_lowering (TransformData *td, MonoMethodSignature *c
 	// Save the old arguments				
 	td->sp -= csignature->param_count;
 	StackInfo *sp_old_params = (StackInfo*) mono_mempool_alloc (td->mempool, sizeof (StackInfo) * csignature->param_count);
-	memcpy (sp_old_params, td->sp, sizeof (StackInfo) * csignature->param_count);
+	for (int i = 0; i < csignature->param_count; ++i)
+		sp_old_params [i] = td->sp [i];
 
 	GArray *new_params = g_array_sized_new (FALSE, FALSE, sizeof (MonoType*), csignature->param_count);
 	uint32_t new_param_count = 0;
@@ -3392,7 +3394,12 @@ interp_emit_swiftcall_struct_lowering (TransformData *td, MonoMethodSignature *c
 	++td->sp;
 
 	// Create a new dummy signature with the lowered arguments
-	return mono_metadata_signature_dup_new_params (td->mempool, csignature, new_param_count, (MonoType**)new_params->data);
+	new_csignature = mono_metadata_signature_dup_new_params (td->mempool, csignature, new_param_count, (MonoType**)new_params->data);
+
+	// Deallocate temp array
+	g_array_free (new_params, TRUE);
+
+	return new_csignature;
 }
 
 /* Return FALSE if error, including inline failure */
