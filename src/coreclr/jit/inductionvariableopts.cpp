@@ -861,6 +861,18 @@ bool Compiler::optWidenPrimaryIV(FlowGraphNaturalLoop* loop,
     return true;
 }
 
+//------------------------------------------------------------------------
+// optMakeLoopInductionDownwards: Transform a loop to be downwards counted if
+// profitable and legal.
+//
+// Parameters:
+//   scevContext - Context for scalar evolution
+//   loop        - Loop to transform
+//   loopLocals  - Data structure that tracks occurrences of locals in the loop
+//
+// Returns:
+//   True if the loop was made downwards counted; otherwise false.
+//
 bool Compiler::optMakeLoopInductionDownwards(ScalarEvolutionContext& scevContext,
                                              FlowGraphNaturalLoop*   loop,
                                              LoopLocalOccurrences*   loopLocals)
