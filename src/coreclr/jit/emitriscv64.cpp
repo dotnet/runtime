@@ -3815,8 +3815,6 @@ void emitter::emitDispInsName(
             unsigned    opcode2 = (code >> 12) & 0x7;
             unsigned    rs1     = (code >> 15) & 0x1f;
             unsigned    rs2     = (code >> 20) & 0x1f;
-            const char* rs1     = RegNames[];
-            const char* rs2     = RegNames[];
             // int offset = (((code >> 31) & 0x1) << 12) | (((code >> 7) & 0x1) << 11) | (((code >> 25) & 0x3f) << 5) |
             //              (((code >> 8) & 0xf) << 1);
             // if (offset & 0x800)
