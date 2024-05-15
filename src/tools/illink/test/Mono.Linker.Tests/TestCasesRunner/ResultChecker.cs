@@ -66,12 +66,13 @@ namespace Mono.Linker.Tests.TestCasesRunner
 						throw new NotImplementedException ($"Unexpected scope type '{exportedType.Scope.GetType ()}' for exported type '{exportedType.FullName}'");
 					}
 					continue;
-				case AssemblyNameReference: {
-						// There should be an AssemblyRef row for this assembly
-						var assemblyRef = linked.MainModule.AssemblyReferences.Single (ar => ar.Name == typeRef.Scope.Name);
-						Assert.IsNotNull (assemblyRef, $"Type reference '{typeRef.FullName}' has a reference to assembly '{typeRef.Scope.Name}' which is not a reference of '{linked.FullName}'");
-						continue;
-					}
+				case AssemblyNameReference:
+				{
+					// There should be an AssemblyRef row for this assembly
+					var assemblyRef = linked.MainModule.AssemblyReferences.Single (ar => ar.Name == typeRef.Scope.Name);
+					Assert.IsNotNull (assemblyRef, $"Type reference '{typeRef.FullName}' has a reference to assembly '{typeRef.Scope.Name}' which is not a reference of '{linked.FullName}'");
+					continue;
+				}
 				default:
 					throw new NotImplementedException ($"Unexpected scope type '{typeRef.Scope.GetType ()}' for type reference '{typeRef.FullName}'");
 				}
@@ -97,10 +98,10 @@ namespace Mono.Linker.Tests.TestCasesRunner
 					PerformOutputAssemblyChecks (original, linkResult.OutputAssemblyPath.Parent);
 					PerformOutputSymbolChecks (original, linkResult.OutputAssemblyPath.Parent);
 
-					if (!HasActiveSkipKeptItemsValidationAttribute (linkResult.TestCase.FindTypeDefinition (original))) {
+					if (!HasActiveSkipKeptItemsValidationAttribute(linkResult.TestCase.FindTypeDefinition (original))) {
 						CreateAssemblyChecker (original, linked, linkResult).Verify ();
 					}
-					CreateILChecker ().Check (linkResult, original);
+					CreateILChecker ().Check(linkResult, original);
 				}
 
 				VerifyLinkingOfOtherAssemblies (original);
@@ -217,12 +218,12 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 		void VerifyExitCode (TrimmedTestCaseResult linkResult, AssemblyDefinition original)
 		{
-			if (TryGetCustomAttribute (original, nameof (ExpectNonZeroExitCodeAttribute), out var attr)) {
+			if (TryGetCustomAttribute (original, nameof(ExpectNonZeroExitCodeAttribute), out var attr)) {
 				var expectedExitCode = (int) attr.ConstructorArguments[0].Value;
-				Assert.AreEqual (expectedExitCode, linkResult.ExitCode, $"Expected exit code {expectedExitCode} but got {linkResult.ExitCode}.  Output was:\n{FormatLinkerOutput ()}");
+				Assert.AreEqual (expectedExitCode, linkResult.ExitCode, $"Expected exit code {expectedExitCode} but got {linkResult.ExitCode}.  Output was:\n{FormatLinkerOutput()}");
 			} else {
 				if (linkResult.ExitCode != 0) {
-					Assert.Fail ($"Linker exited with an unexpected non-zero exit code of {linkResult.ExitCode} and output:\n{FormatLinkerOutput ()}");
+					Assert.Fail ($"Linker exited with an unexpected non-zero exit code of {linkResult.ExitCode} and output:\n{FormatLinkerOutput()}");
 				}
 			}
 
@@ -734,7 +735,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 		static bool IsProducedByLinker (CustomAttribute attr)
 		{
 			if (attr.Constructor.Parameters.Count > 2 && attr.ConstructorArguments[^2].Type.Name == "Tool") {
-				return ((Tool) attr.ConstructorArguments[^2].Value).HasFlag (Tool.Trimmer) == true;
+				return ((Tool)attr.ConstructorArguments[^2].Value).HasFlag (Tool.Trimmer) == true;
 			}
 			var producedBy = attr.GetPropertyValue ("ProducedBy");
 			return producedBy is null ? true : ((Tool) producedBy).HasFlag (Tool.Trimmer);
@@ -787,19 +788,18 @@ namespace Mono.Linker.Tests.TestCasesRunner
 					case nameof (LogDoesNotContainAttribute): {
 							var unexpectedMessage = (string) attr.ConstructorArguments[0].Value;
 							foreach (var loggedMessage in loggedMessages) {
-								bool foundMatch;
-								if ((bool) attr.ConstructorArguments[1].Value)
-									foundMatch = !Regex.IsMatch (loggedMessage.ToString (), unexpectedMessage);
-								else
-									foundMatch = !loggedMessage.ToString ().Contains (unexpectedMessage);
+								bool isRegex = (bool) attr.ConstructorArguments[1].Value;
+								bool foundMatch = isRegex
+									? Regex.IsMatch (loggedMessage.ToString (), unexpectedMessage)
+									: loggedMessage.ToString ().Contains (unexpectedMessage);
 
-								if (!foundMatch)
+								if (foundMatch)
 									unexpectedMessageWarnings.Add ($"Expected to not find logged message matching `{unexpectedMessage}`, but found:{Environment.NewLine}{loggedMessage.ToString ()}");
 							}
 						}
 						break;
 
-					case nameof (ExpectedWarningAttribute) or nameof (UnexpectedWarningAttribute): {
+					case nameof (ExpectedWarningAttribute) or nameof(UnexpectedWarningAttribute): {
 							var expectedWarningCode = (string) attr.GetConstructorArgumentValue (0);
 							if (!expectedWarningCode.StartsWith ("IL")) {
 								Assert.Fail ($"The warning code specified in {attr.AttributeType.Name} must start with the 'IL' prefix. Specified value: '{expectedWarningCode}'.");
@@ -809,18 +809,18 @@ namespace Mono.Linker.Tests.TestCasesRunner
 								// ExpectedWarningAttribute(string warningCode, params string[] expectedMessages)
 								// ExpectedWarningAttribute(string warningCode, string[] expectedMessages, Tool producedBy, string issueLink)
 								[_, { ParameterType.IsArray: true }, ..]
-									=> ((CustomAttributeArgument[]) attr.ConstructorArguments[1].Value)
-										.Select (caa => (string) caa.Value),
+									=> ((CustomAttributeArgument[])attr.ConstructorArguments[1].Value)
+										.Select(caa => (string)caa.Value),
 								// ExpectedWarningAttribute(string warningCode, string expectedMessage1, string expectedMessage2, Tool producedBy, string issueLink)
 								[_, { ParameterType.Name: "String" }, { ParameterType.Name: "String" }, { ParameterType.Name: "Tool" }, _]
-										=> [(string) attr.GetConstructorArgumentValue (1), (string) attr.GetConstructorArgumentValue (2)],
+									=> [(string)attr.GetConstructorArgumentValue(1), (string)attr.GetConstructorArgumentValue(2)],
 								// ExpectedWarningAttribute(string warningCode, string expectedMessage, Tool producedBy, string issueLink)
 								[_, { ParameterType.Name: "String" }, { ParameterType.Name: "Tool" }, _]
-									=> [(string) attr.GetConstructorArgumentValue (1)],
+									=> [(string)attr.GetConstructorArgumentValue(1)],
 								// ExpectedWarningAttribute(string warningCode, Tool producedBy, string issueLink)
 								[_, { ParameterType.Name: "Tool" }, _]
-										=> [],
-								_ => throw new UnreachableException (),
+									=> [],
+								_ => throw new UnreachableException(),
 							};
 							string fileName = (string) attr.GetPropertyValue ("FileName");
 							int? sourceLine = (int?) attr.GetPropertyValue ("SourceLine");
