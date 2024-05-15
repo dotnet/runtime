@@ -45,7 +45,7 @@ inline static bool isHighSimdReg(regNumber reg)
 // code_t is a type used to accumulate bits of opcode + prefixes. On amd64, it must be 64 bits
 // to support the REX prefixes. On both x86 and amd64, it must be 64 bits to support AVX, with
 // its 3-byte VEX prefix.
-typedef unsigned __int64 code_t;
+typedef uint64_t code_t;
 
 struct CnsVal
 {

@@ -260,14 +260,14 @@ void  Thread::SetFrame(Frame *pFrame)
 // PRIVATE GLOBALS
 //************************************************************************
 
-extern unsigned __int64 getTimeStamp();
+extern uint64_t getTimeStamp();
 
-extern unsigned __int64 getTickFrequency();
+extern uint64_t getTickFrequency();
 
-unsigned __int64 tgetFrequency() {
-    static unsigned __int64 cachedFreq = (unsigned __int64) -1;
+uint64_t tgetFrequency() {
+    static uint64_t cachedFreq = (uint64_t) -1;
 
-    if (cachedFreq != (unsigned __int64) -1)
+    if (cachedFreq != (uint64_t) -1)
         return cachedFreq;
     else {
         cachedFreq = getTickFrequency();

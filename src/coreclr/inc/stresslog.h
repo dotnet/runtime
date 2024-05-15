@@ -314,8 +314,8 @@ public:
     unsigned padding;                       // Preserve the layout for SOS
     Volatile<LONG> deadCount;               // count of dead threads in the log
     CRITSEC_COOKIE lock;                    // lock
-    unsigned __int64 tickFrequency;         // number of ticks per second
-    unsigned __int64 startTimeStamp;        // start time from when tick counter started
+    uint64_t tickFrequency;         // number of ticks per second
+    uint64_t startTimeStamp;        // start time from when tick counter started
     FILETIME startTime;                     // time the application started
     SIZE_T   moduleOffset;                  // Used to compute format strings.
     struct ModuleDesc

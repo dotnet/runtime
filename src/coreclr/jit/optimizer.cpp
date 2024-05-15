@@ -872,8 +872,8 @@ bool Compiler::optComputeLoopRep(int        constInit,
 {
     noway_assert(genActualType(iterOperType) == TYP_INT);
 
-    __int64 constInitX;
-    __int64 constLimitX;
+    int64_t constInitX;
+    int64_t constLimitX;
 
     unsigned loopCount;
     int      iterSign;
@@ -953,7 +953,7 @@ bool Compiler::optComputeLoopRep(int        constInit,
 
     switch (testOper)
     {
-        __int64 iterAtExitX;
+        int64_t iterAtExitX;
 
         case GT_EQ:
             // Something like "for (i=init; i == lim; i++)" doesn't make any sense.
@@ -3266,8 +3266,8 @@ bool Compiler::optNarrowTree(GenTree* tree, var_types srct, var_types dstt, Valu
             /* Constants can usually be narrowed by changing their value */
 
 #ifndef TARGET_64BIT
-            __int64 lval;
-            __int64 lmask;
+            int64_t lval;
+            int64_t lmask;
 
             case GT_CNS_LNG:
                 lval  = tree->AsIntConCommon()->LngValue();

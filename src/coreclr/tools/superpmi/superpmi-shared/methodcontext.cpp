@@ -6226,13 +6226,13 @@ bool MethodContext::repGetSystemVAmd64PassStructInRegisterDescriptor(
     DEBUG_REP(dmpGetSystemVAmd64PassStructInRegisterDescriptor(key, value));
 
     structPassInRegDescPtr->passedInRegisters = value.passedInRegisters ? true : false;
-    structPassInRegDescPtr->eightByteCount    = (unsigned __int8)value.eightByteCount;
+    structPassInRegDescPtr->eightByteCount    = (uint8_t)value.eightByteCount;
     for (int i = 0; i < CLR_SYSTEMV_MAX_EIGHTBYTES_COUNT_TO_PASS_IN_REGISTERS; i++)
     {
         structPassInRegDescPtr->eightByteClassifications[i] =
             (SystemVClassificationType)value.eightByteClassifications[i];
-        structPassInRegDescPtr->eightByteSizes[i]   = (unsigned __int8)value.eightByteSizes[i];
-        structPassInRegDescPtr->eightByteOffsets[i] = (unsigned __int8)value.eightByteOffsets[i];
+        structPassInRegDescPtr->eightByteSizes[i]   = (uint8_t)value.eightByteSizes[i];
+        structPassInRegDescPtr->eightByteOffsets[i] = (uint8_t)value.eightByteOffsets[i];
     }
 
     return value.result ? true : false;
