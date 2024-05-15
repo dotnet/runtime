@@ -3359,7 +3359,7 @@ interp_emit_swiftcall_struct_lowering (TransformData *td, MonoMethodSignature *c
 					// Load the lowered elements of the struct
 					interp_add_ins (td, MINT_MOV_SRC_OFF);
 					interp_ins_set_sreg (td->last_ins, sp_old_params [idx_param].var);
-					td->last_ins->data [0] = lowered_swift_struct.offsets [idx_lowered];
+					td->last_ins->data [0] = (guint16) lowered_swift_struct.offsets [idx_lowered];
 					td->last_ins->data [1] = GINT_TO_UINT16 (mt_lowered);
 					td->last_ins->data [2] = GINT_TO_UINT16 (lowered_elem_size);
 					push_mono_type (td, lowered_swift_struct.lowered_elements [idx_lowered], mt_lowered, mono_class_from_mono_type_internal (lowered_swift_struct.lowered_elements [idx_lowered]));
