@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Collections.Generic;
 using System.Buffers;
 using System.Buffers.Binary;
 using System.IO;
@@ -149,18 +148,10 @@ namespace System.Net.Security.Tests
             Assert.False(fakeNtlmServer.IsMICPresent);
         }
 
-        public static IEnumerable<object[]> TestCredentials()
+        [ConditionalFact(nameof(IsNtlmAvailable))]
+        public void NtlmCorrectExchangeTest()
         {
-            yield return new object[] { new NetworkCredential("rightusername", "rightpassword") };
-            yield return new object[] { new NetworkCredential("rightusername", "rightpassword", "rightdomain") };
-            yield return new object[] { new NetworkCredential("rightusername@rightdomain.com", "rightpassword") };
-        }
-
-        [ConditionalTheory(nameof(IsNtlmAvailable))]
-        [MemberData(nameof(TestCredentials))]
-        public void NtlmCorrectExchangeTest(NetworkCredential credential)
-        {
-            using FakeNtlmServer fakeNtlmServer = new FakeNtlmServer(credential);
+            using FakeNtlmServer fakeNtlmServer = new FakeNtlmServer(s_testCredentialRight);
             NegotiateAuthentication ntAuth = new NegotiateAuthentication(
                 new NegotiateAuthenticationClientOptions
                 {
