@@ -7,8 +7,11 @@ using System.Reflection;
 using ILLink.RoslynAnalyzer;
 using ILLink.RoslynAnalyzer.DataFlow;
 using ILLink.RoslynAnalyzer.TrimAnalysis;
+using ILLink.Shared.DataFlow;
 using ILLink.Shared.TypeSystemProxy;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.Operations;
+using MultiValue = ILLink.Shared.DataFlow.ValueSet<ILLink.Shared.DataFlow.SingleValue>;
 
 namespace ILLink.Shared.TrimAnalysis
 {
@@ -20,15 +23,125 @@ namespace ILLink.Shared.TrimAnalysis
 		readonly ISymbol _owningSymbol;
 		readonly IOperation _operation;
 		readonly ReflectionAccessAnalyzer _reflectionAccessAnalyzer;
+		ValueSetLattice<SingleValue> _multiValueLattice;
 
-		public HandleCallAction (in DiagnosticContext diagnosticContext, ISymbol owningSymbol, IOperation operation)
+		public HandleCallAction (
+			in DiagnosticContext diagnosticContext,
+			ISymbol owningSymbol,
+			IOperation operation,
+			ValueSetLattice<SingleValue> multiValueLattice)
 		{
 			_owningSymbol = owningSymbol;
 			_operation = operation;
+			_isNewObj = operation.Kind == OperationKind.ObjectCreation;
 			_diagnosticContext = diagnosticContext;
 			_annotations = FlowAnnotations.Instance;
 			_reflectionAccessAnalyzer = default;
 			_requireDynamicallyAccessedMembersAction = new (diagnosticContext, _reflectionAccessAnalyzer);
+			_multiValueLattice = multiValueLattice;
+		}
+
+		private partial bool TryHandleIntrinsic (
+			MethodProxy calledMethod,
+			MultiValue instanceValue,
+			IReadOnlyList<MultiValue> argumentValues,
+			IntrinsicId intrinsicId,
+			out MultiValue? methodReturnValue)
+		{
+			MultiValue? maybeMethodReturnValue = methodReturnValue = null;
+			ValueSetLattice<SingleValue> multiValueLattice = _multiValueLattice;
+
+			switch (intrinsicId) {
+			case IntrinsicId.Array_Empty:
+				AddReturnValue (ArrayValue.Create (0));
+				break;
+
+			case IntrinsicId.TypeDelegator_Ctor:
+				if (_operation is IObjectCreationOperation)
+					AddReturnValue (argumentValues[0]);
+
+				break;
+
+			case IntrinsicId.Object_GetType: {
+					foreach (var valueNode in instanceValue.AsEnumerable ()) {
+						// Note that valueNode can be statically typed as some generic argument type.
+						// For example:
+						//   void Method<T>(T instance) { instance.GetType().... }
+						// But it could be that T is annotated with for example PublicMethods:
+						//   void Method<[DAM(PublicMethods)] T>(T instance) { instance.GetType().GetMethod("Test"); }
+						// In this case it's in theory possible to handle it, by treating the T basically as a base class
+						// for the actual type of "instance". But the analysis for this would be pretty complicated (as the marking
+						// has to happen on the callsite, which doesn't know that GetType() will be used...).
+						// For now we're intentionally ignoring this case - it will produce a warning.
+						// The counter example is:
+						//   Method<Base>(new Derived);
+						// In this case to get correct results, trimmer would have to mark all public methods on Derived. Which
+						// currently it won't do.
+
+						// To emulate IL tools behavior (trimmer, NativeAOT compiler), we're going to intentionally "forget" the static type
+						// if it is a generic argument type.
+
+						ITypeSymbol? staticType = (valueNode as IValueWithStaticType)?.StaticType?.Type;
+						if (staticType?.TypeKind == TypeKind.TypeParameter)
+							staticType = null;
+
+						if (staticType is null) {
+							// We don't know anything about the type GetType was called on. Track this as a usual "result of a method call without any annotations"
+							AddReturnValue (FlowAnnotations.Instance.GetMethodReturnValue (calledMethod, _isNewObj));
+						} else if (staticType.IsSealed || staticType.IsTypeOf ("System", "Delegate") || staticType.TypeKind == TypeKind.Array) {
+							// We can treat this one the same as if it was a typeof() expression
+
+							// We can allow Object.GetType to be modeled as System.Delegate because we keep all methods
+							// on delegates anyway so reflection on something this approximation would miss is actually safe.
+
+							// We can also treat all arrays as "sealed" since it's not legal to derive from Array type (even though it is not sealed itself)
+
+							// We ignore the fact that the type can be annotated (see below for handling of annotated types)
+							// This means the annotations (if any) won't be applied - instead we rely on the exact knowledge
+							// of the type. So for example even if the type is annotated with PublicMethods
+							// but the code calls GetProperties on it - it will work - mark properties, don't mark methods
+							// since we ignored the fact that it's annotated.
+							// This can be seen a little bit as a violation of the annotation, but we already have similar cases
+							// where a parameter is annotated and if something in the method sets a specific known type to it
+							// we will also make it just work, even if the annotation doesn't match the usage.
+							AddReturnValue (new SystemTypeValue (new (staticType)));
+						} else {
+							var annotation = FlowAnnotations.GetTypeAnnotation (staticType);
+							AddReturnValue (FlowAnnotations.Instance.GetMethodReturnValue (calledMethod, _isNewObj, annotation));
+						}
+					}
+				break;
+			}
+
+			// Some intrinsics are unimplemented by the analyzer.
+			// These will fall back to the usual return-value handling.
+			case IntrinsicId.Array_CreateInstance:
+			case IntrinsicId.Assembly_GetFile:
+			case IntrinsicId.Assembly_GetFiles:
+			case IntrinsicId.AssemblyName_get_EscapedCodeBase:
+			case IntrinsicId.Assembly_get_Location:
+			case IntrinsicId.AssemblyName_get_CodeBase:
+			case IntrinsicId.Delegate_get_Method:
+			case IntrinsicId.Enum_GetValues:
+			case IntrinsicId.Marshal_DestroyStructure:
+			case IntrinsicId.Marshal_GetDelegateForFunctionPointer:
+			case IntrinsicId.Marshal_OffsetOf:
+			case IntrinsicId.Marshal_PtrToStructure:
+			case IntrinsicId.Marshal_SizeOf:
+			case IntrinsicId.RuntimeReflectionExtensions_GetMethodInfo:
+				break;
+
+			default:
+				return false;
+			}
+
+			methodReturnValue = maybeMethodReturnValue;
+			return true;
+
+			void AddReturnValue (MultiValue value)
+			{
+				maybeMethodReturnValue = (maybeMethodReturnValue is null) ? value : multiValueLattice.Meet ((MultiValue) maybeMethodReturnValue, value);
+			}
 		}
 
 		private partial IEnumerable<SystemReflectionMethodBaseValue> GetMethodsOnTypeHierarchy (TypeProxy type, string name, BindingFlags? bindingFlags)

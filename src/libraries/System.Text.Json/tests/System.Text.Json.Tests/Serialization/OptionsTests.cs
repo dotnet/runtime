@@ -516,6 +516,57 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<BasicCompany>(BasicCompany.s_data, options));
         }
 
+        [Theory]
+        [InlineData(new char[] { '\n' }, '\r')]
+        [InlineData(new char[] { '\r', '\n' }, null)]
+        public static void NewLine(char[] newLineChars, char? notExpectedNewLineChars)
+        {
+            var obj = new BasicCompany();
+            obj.Initialize();
+
+            var newLine = new string(newLineChars);
+            var options = new JsonSerializerOptions();
+            var json = JsonSerializer.Serialize(obj, options);
+            Assert.DoesNotContain(newLine, json);
+
+            // Set custom newLine with indentation enabled
+            options = new JsonSerializerOptions();
+            options.WriteIndented = true;
+            options.NewLine = newLine;
+            json = JsonSerializer.Serialize(obj, options);
+            Assert.Contains(newLine, json);
+
+            if (notExpectedNewLineChars is { } notExpected)
+            {
+                Assert.DoesNotContain(notExpected, json);
+            }
+        }
+
+        [Theory]
+        [InlineData("")]
+        [InlineData(" ")]
+        [InlineData("\r")]
+        [InlineData("\n\n")]
+        [InlineData("\r\n\r\n")]
+        [InlineData("0")]
+        [InlineData("a")]
+        [InlineData("foo")]
+        [InlineData("$")]
+        [InlineData(".")]
+        [InlineData("\u03b1")]
+        public static void TestNewLineInvalid(string value)
+        {
+            var options = new JsonSerializerOptions();
+            Assert.Throws<ArgumentOutOfRangeException>("value", () => options.NewLine = value);
+        }
+
+        [Fact]
+        public static void TestNewLineNullThrows()
+        {
+            var options = new JsonSerializerOptions();
+            Assert.Throws<ArgumentNullException>("value", () => options.NewLine = null);
+        }
+
         private class TestClassForEncoding
         {
             public string MyString { get; set; }
@@ -1416,7 +1467,14 @@ namespace System.Text.Json.Serialization.Tests
                 }
                 else if (propertyType == typeof(string))
                 {
-                    property.SetValue(options, "\t");
+                    if (property.Name is nameof(JsonSerializerOptions.NewLine))
+                    {
+                        property.SetValue(options, "\n");
+                    }
+                    else
+                    {
+                        property.SetValue(options, "\t");
+                    }
                 }
                 else if (propertyType == typeof(IList<JsonConverter>))
                 {

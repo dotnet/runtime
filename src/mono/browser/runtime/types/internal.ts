@@ -111,6 +111,7 @@ export interface AssetEntryInternal extends AssetEntry {
     pendingDownloadInternal?: LoadingResource
     noCache?: boolean
     useCredentials?: boolean
+    isCore?: boolean
 }
 
 export type LoaderHelpers = {
@@ -209,11 +210,13 @@ export type RuntimeHelpers = {
     proxyGCHandle: GCHandle | undefined,
     managedThreadTID: PThreadPtr,
     ioThreadTID: PThreadPtr,
+    deputyWorker: PThreadWorker,
     currentThreadTID: PThreadPtr,
     isManagedRunningOnCurrentThread: boolean,
     isPendingSynchronousCall: boolean, // true when we are in the middle of a synchronous call from managed code from same thread
     cspPolicy: boolean,
 
+    coreAssetsInMemory: PromiseAndController<void>,
     allAssetsInMemory: PromiseAndController<void>,
     dotnetReady: PromiseAndController<any>,
     afterInstantiateWasm: PromiseAndController<void>,
@@ -221,7 +224,8 @@ export type RuntimeHelpers = {
     afterPreInit: PromiseAndController<void>,
     afterPreRun: PromiseAndController<void>,
     beforeOnRuntimeInitialized: PromiseAndController<void>,
-    afterMonoStarted: PromiseAndController<GCHandle | undefined>,
+    afterMonoStarted: PromiseAndController<void>,
+    afterDeputyReady: PromiseAndController<GCHandle | undefined>,
     afterIOStarted: PromiseAndController<void>,
     afterOnRuntimeInitialized: PromiseAndController<void>,
     afterPostRun: PromiseAndController<void>,
@@ -237,6 +241,7 @@ export type RuntimeHelpers = {
     jiterpreter_dump_stats?: (concise?: boolean) => void,
     forceDisposeProxies: (disposeMethods: boolean, verbose: boolean) => void,
     dumpThreads: () => void,
+    mono_wasm_print_thread_dump: () => void,
 }
 
 export type AOTProfilerOptions = {
@@ -500,12 +505,14 @@ export const enum WorkerToMainMessageType {
     deputyCreated = "createdDeputy",
     deputyFailed = "deputyFailed",
     deputyStarted = "monoStarted",
+    deputyReady = "deputyReady",
     ioStarted = "ioStarted",
     preload = "preload",
 }
 
 export const enum MainToWorkerMessageType {
-    applyConfig = "apply_mono_config",
+    applyConfig = "applyConfig",
+    allAssetsLoaded = "allAssetsLoaded",
 }
 
 export interface PThreadWorker extends Worker {

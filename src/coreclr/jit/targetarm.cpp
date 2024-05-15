@@ -85,11 +85,11 @@ ABIPassingInformation Arm32Classifier::Classify(Compiler*    comp,
         m_nextIntReg = roundUp(m_nextIntReg, 2);
     }
 
-    unsigned size        = type == TYP_STRUCT ? structLayout->GetSize() : genTypeSize(type);
-    unsigned alignedSize = roundUp(size, alignment);
+    unsigned size     = type == TYP_STRUCT ? structLayout->GetSize() : genTypeSize(type);
+    unsigned numSlots = (size + 3) / 4;
 
-    unsigned numInRegs  = min(alignedSize / 4, 4 - m_nextIntReg);
-    bool     anyOnStack = numInRegs < (alignedSize / 4);
+    unsigned numInRegs  = min(numSlots, 4 - m_nextIntReg);
+    bool     anyOnStack = numInRegs < numSlots;
 
     // If we already passed anything on stack (due to float args) then we
     // cannot split an arg.
@@ -116,7 +116,7 @@ ABIPassingInformation Arm32Classifier::Classify(Compiler*    comp,
     {
         m_stackArgSize           = roundUp(m_stackArgSize, alignment);
         unsigned stackSize       = size - (numInRegs * 4);
-        info.Segments[numInRegs] = ABIPassingSegment::OnStack(m_stackArgSize, 0, stackSize);
+        info.Segments[numInRegs] = ABIPassingSegment::OnStack(m_stackArgSize, numInRegs * 4, stackSize);
         m_stackArgSize += roundUp(stackSize, 4);
 
         // As soon as any int arg goes on stack we cannot put anything else in

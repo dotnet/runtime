@@ -290,7 +290,7 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
             }
         }
 
-#if NETCOREAPP
+#if NET
         [Theory]
         [MemberData(nameof(HashDerivationTestCases))]
         public static void HashDerivation_KnownResults(

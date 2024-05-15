@@ -780,7 +780,7 @@ public:
 #endif // _PREFAST_
 
         VMPTR_This dummy;
-        dummy.m_addr = NULL;
+        dummy.m_addr = (TADDR)NULL;
         return dummy;
 
 #ifdef _PREFAST_
@@ -2053,6 +2053,19 @@ struct MSLAYOUT DebuggerIPCEvent
             mdMethodDef funcMetadataToken;
             VMPTR_Module pModule;
         } DisableOptData;
+
+        struct MSLAYOUT
+        {
+            BOOL enableEvents;
+            VMPTR_Object vmObj;
+        } ForceCatchHandlerFoundData;
+
+        struct MSLAYOUT
+        {
+            VMPTR_Module vmModule;
+            mdTypeDef    classMetadataToken;
+            BOOL Enabled;
+        } CustomNotificationData;
 
         struct MSLAYOUT
         {

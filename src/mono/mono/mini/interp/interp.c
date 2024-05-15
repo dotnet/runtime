@@ -266,8 +266,6 @@ static gboolean debugger_enabled = FALSE;
 
 static MonoException* do_transform_method (InterpMethod *imethod, InterpFrame *method, ThreadContext *context);
 
-static InterpMethod* lookup_method_pointer (gpointer addr);
-
 typedef void (*ICallMethod) (InterpFrame *frame);
 
 static MonoNativeTlsKey thread_context_id;
@@ -2826,10 +2824,13 @@ do_jit_call (ThreadContext *context, stackval *ret_sp, stackval *sp, InterpFrame
 	}
 
 	JitCallCbData cb_data;
-	memset (&cb_data, 0, sizeof (cb_data));
 	cb_data.pindex = pindex;
 	cb_data.args = args;
+	cb_data.ftndesc.interp_method = NULL;
+	cb_data.ftndesc.method = NULL;
 	if (cinfo->no_wrapper) {
+		cb_data.ftndesc.addr = NULL;
+		cb_data.ftndesc.arg = NULL;
 		cb_data.jit_wrapper = cinfo->addr;
 		cb_data.extra_arg = cinfo->extra_arg;
 	} else {
@@ -3262,20 +3263,6 @@ interp_compile_interp_method (MonoMethod *method, MonoError *error)
 	return imethod->jinfo;
 }
 
-static InterpMethod*
-lookup_method_pointer (gpointer addr)
-{
-	InterpMethod *res = NULL;
-	MonoJitMemoryManager *jit_mm = get_default_jit_mm ();
-
-	jit_mm_lock (jit_mm);
-	if (jit_mm->interp_method_pointer_hash)
-		res = (InterpMethod*)g_hash_table_lookup (jit_mm->interp_method_pointer_hash, addr);
-	jit_mm_unlock (jit_mm);
-
-	return res;
-}
-
 #ifndef MONO_ARCH_HAVE_INTERP_NATIVE_TO_MANAGED
 static void
 interp_no_native_to_managed (void)
@@ -3357,13 +3344,11 @@ interp_create_method_pointer_llvmonly (MonoMethod *method, gboolean unbox, MonoE
 	) {
 		jiterp_preserve_module();
 
-		const char *name = mono_method_full_name (method, FALSE);
 		gpointer wasm_entry_func = mono_interp_jit_wasm_entry_trampoline (
 			imethod, method, sig->param_count, (MonoType *)sig->params,
 			unbox, sig->hasthis, sig->ret->type != MONO_TYPE_VOID,
-			name, entry_func
+			entry_func
 		);
-		g_free((void *)name);
 
 		// Compiling a trampoline can fail for various reasons, so in that case we will fall back to the pre-existing ones below
 		if (wasm_entry_func)
@@ -3379,13 +3364,6 @@ interp_create_method_pointer_llvmonly (MonoMethod *method, gboolean unbox, MonoE
 	MonoFtnDesc *entry_ftndesc = mini_llvmonly_create_ftndesc (method, entry_func, entry_arg);
 
 	addr = mini_llvmonly_create_ftndesc (method, entry_wrapper, entry_ftndesc);
-
-	MonoJitMemoryManager *jit_mm = jit_mm_for_method (method);
-	jit_mm_lock (jit_mm);
-	if (!jit_mm->interp_method_pointer_hash)
-		jit_mm->interp_method_pointer_hash = g_hash_table_new (NULL, NULL);
-	g_hash_table_insert (jit_mm->interp_method_pointer_hash, addr, imethod);
-	jit_mm_unlock (jit_mm);
 
 	mono_memory_barrier ();
 	if (unbox)
@@ -3538,13 +3516,6 @@ interp_create_method_pointer (MonoMethod *method, gboolean compile, MonoError *e
 
 	addr = mono_create_ftnptr_arg_trampoline (ftndesc, entry_wrapper);
 
-	MonoJitMemoryManager *jit_mm = get_default_jit_mm ();
-	jit_mm_lock (jit_mm);
-	if (!jit_mm->interp_method_pointer_hash)
-		jit_mm->interp_method_pointer_hash = g_hash_table_new (NULL, NULL);
-	g_hash_table_insert (jit_mm->interp_method_pointer_hash, addr, imethod);
-	jit_mm_unlock (jit_mm);
-
 	mono_memory_barrier ();
 	imethod->jit_entry = addr;
 
@@ -3555,23 +3526,16 @@ static void
 interp_free_method (MonoMethod *method)
 {
 	MonoJitMemoryManager *jit_mm = jit_mm_for_method (method);
-	InterpMethod *imethod;
 	MonoDynamicMethod *dmethod = (MonoDynamicMethod*)method;
 
 	jit_mm_lock (jit_mm);
-	imethod = (InterpMethod*)mono_internal_hash_table_lookup (&jit_mm->interp_code_hash, method);
 
 #if HOST_BROWSER
+	InterpMethod *imethod = (InterpMethod*)mono_internal_hash_table_lookup (&jit_mm->interp_code_hash, method);
 	mono_jiterp_free_method_data (method, imethod);
 #endif
 
 	mono_internal_hash_table_remove (&jit_mm->interp_code_hash, method);
-	if (imethod && jit_mm->interp_method_pointer_hash) {
-		if (imethod->jit_entry)
-			g_hash_table_remove (jit_mm->interp_method_pointer_hash, imethod->jit_entry);
-		if (imethod->llvmonly_unbox_entry)
-			g_hash_table_remove (jit_mm->interp_method_pointer_hash, imethod->llvmonly_unbox_entry);
-	}
 	jit_mm_unlock (jit_mm);
 
 	if (dmethod->mp) {
@@ -4135,6 +4099,8 @@ main_loop:
 					// Not created from interpreted code
 					g_assert (del->method);
 					del_imethod = mono_interp_get_imethod (del->method);
+					if (del->target && m_method_is_virtual (del->method))
+						del_imethod = get_virtual_method (del_imethod, del->target->vtable);
 					del->interp_method = del_imethod;
 					del->interp_invoke_impl = del_imethod;
 				} else {

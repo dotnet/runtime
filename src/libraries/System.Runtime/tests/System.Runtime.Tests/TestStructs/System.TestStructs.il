@@ -57,18 +57,6 @@
             ret
         }
     }
-
-    .class public sequential sealed StructWithDefaultConstructorThatThrows
-        extends [System.Runtime]System.ValueType
-    {
-        .size 1
-
-        .method public hidebysig specialname rtspecialname instance void .ctor () cil managed 
-        {
-            newobj instance void [System.Runtime]System.Exception::.ctor()
-            throw
-        }
-    }
 }
 
 .class public sequential sealed '.GlobalStructStartingWithDot'

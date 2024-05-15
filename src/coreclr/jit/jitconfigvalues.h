@@ -138,7 +138,6 @@ CONFIG_INTEGER(JitNoForceFallback, W("JitNoForceFallback"), 0) // Set to non-zer
                                                                // flags.
 CONFIG_INTEGER(JitNoForwardSub, W("JitNoForwardSub"), 0)       // Disables forward sub
 CONFIG_INTEGER(JitNoHoist, W("JitNoHoist"), 0)
-CONFIG_INTEGER(JitNoInline, W("JitNoInline"), 0)                   // Disables inlining of all methods
 CONFIG_INTEGER(JitNoMemoryBarriers, W("JitNoMemoryBarriers"), 0)   // If 1, don't generate memory barriers
 CONFIG_INTEGER(JitNoStructPromotion, W("JitNoStructPromotion"), 0) // Disables struct promotion 1 - for all, 2 - for
                                                                    // params.
@@ -158,9 +157,13 @@ CONFIG_INTEGER(JitPrintInlinedMethodsVerbose, W("JitPrintInlinedMethodsVerboseLe
 CONFIG_METHODSET(JitPrintInlinedMethods, W("JitPrintInlinedMethods"))
 
 CONFIG_METHODSET(JitPrintDevirtualizedMethods, W("JitPrintDevirtualizedMethods"))
-
 // -1: just do internal checks (CHECK_HASLIKELIHOOD | CHECK_LIKELIHOODSUM | RAISE_ASSERT)
-// Else bitflag of ProfileChecks enum.
+// Else bitflag:
+//  - 0x1: check edges have likelihoods
+//  - 0x2: check edge likelihoods sum to 1.0
+//  - 0x4: fully check likelihoods
+//  - 0x8: assert on check failure
+//  - 0x10: check block profile weights
 CONFIG_INTEGER(JitProfileChecks, W("JitProfileChecks"), -1)
 
 CONFIG_INTEGER(JitRequired, W("JITRequired"), -1)
@@ -354,10 +357,15 @@ RELEASE_CONFIG_INTEGER(EnableEHWriteThru, W("EnableEHWriteThru"), 1)
 // Enable the enregistration of locals that are defined or used in a multireg context.
 RELEASE_CONFIG_INTEGER(EnableMultiRegLocals, W("EnableMultiRegLocals"), 1)
 
-// Enable EVEX encoding for SIMD instructions when AVX-512VL is available.
-CONFIG_INTEGER(JitStressEvexEncoding, W("JitStressEvexEncoding"), 0)
+// Disables inlining of all methods
+RELEASE_CONFIG_INTEGER(JitNoInline, W("JitNoInline"), 0)
 
 // clang-format off
+
+#if defined(TARGET_AMD64) || defined(TARGET_X86)
+// Enable EVEX encoding for SIMD instructions when AVX-512VL is available.
+CONFIG_INTEGER(JitStressEvexEncoding, W("JitStressEvexEncoding"), 0)
+#endif
 
 RELEASE_CONFIG_INTEGER(PreferredVectorBitWidth,     W("PreferredVectorBitWidth"),   0) // The preferred decimal width, in bits, to use for any implicit vectorization emitted. A value less than 128 is treated as the system default.
 
@@ -413,6 +421,9 @@ RELEASE_CONFIG_INTEGER(EnableArm64Sha1,             W("EnableArm64Sha1"),       
 RELEASE_CONFIG_INTEGER(EnableArm64Sha256,           W("EnableArm64Sha256"),         1) // Allows Arm64 Sha256+ hardware intrinsics to be disabled
 RELEASE_CONFIG_INTEGER(EnableArm64Sve,              W("EnableArm64Sve"),            1) // Allows Arm64 Sve+ hardware intrinsics to be disabled
 #endif
+
+RELEASE_CONFIG_INTEGER(EnableEmbeddedBroadcast,     W("EnableEmbeddedBroadcast"),   1) // Allows embedded broadcasts to be disabled
+RELEASE_CONFIG_INTEGER(EnableEmbeddedMasking,       W("EnableEmbeddedMasking"),     1) // Allows embedded masking to be disabled
 
 // clang-format on
 
@@ -491,6 +502,15 @@ CONFIG_STRING(JitRLCSEAlpha, W("JitRLCSEAlpha"))
 
 // If nonzero, dump candidate feature values
 CONFIG_INTEGER(JitRLCSECandidateFeatures, W("JitRLCSECandidateFeatures"), 0)
+
+// Enable CSE_HeuristicRLHook
+CONFIG_INTEGER(JitRLHook, W("JitRLHook"), 0) // If 1, emit RL callbacks
+
+// If 1, emit feature column names
+CONFIG_INTEGER(JitRLHookEmitFeatureNames, W("JitRLHookEmitFeatureNames"), 0)
+
+// A list of CSEs to choose, in the order they should be applied.
+CONFIG_STRING(JitRLHookCSEDecisions, W("JitRLHookCSEDecisions"))
 
 #if !defined(DEBUG) && !defined(_DEBUG)
 RELEASE_CONFIG_INTEGER(JitEnableNoWayAssert, W("JitEnableNoWayAssert"), 0)
@@ -719,9 +739,6 @@ CONFIG_INTEGER(JitRandomlyCollect64BitCounts, W("JitRandomlyCollect64BitCounts")
 // 3: profile synthesis for root methods, blend with existing PGO data
 CONFIG_INTEGER(JitSynthesizeCounts, W("JitSynthesizeCounts"), 0)
 
-// Check if synthesis left consistent counts
-CONFIG_INTEGER(JitCheckSynthesizedCounts, W("JitCheckSynthesizedCounts"), 0)
-
 // If instrumenting the method, run synthesis and save the synthesis results
 // as edge or block profile data. Do not actually instrument.
 CONFIG_INTEGER(JitPropagateSynthesizedCountsToProfileData, W("JitPropagateSynthesizedCountsToProfileData"), 0)
@@ -729,8 +746,8 @@ CONFIG_INTEGER(JitPropagateSynthesizedCountsToProfileData, W("JitPropagateSynthe
 // Use general (gauss-seidel) solver
 CONFIG_INTEGER(JitSynthesisUseSolver, W("JitSynthesisUseSolver"), 1)
 
-// Relative likelihood of exceptions for synthesis
-CONFIG_STRING(JitSynthesisExceptionScale, W("JitSynthesisExceptionScale"))
+// Weight for exception regions for synthesis
+CONFIG_STRING(JitSynthesisExceptionWeight, W("JitSynthesisExceptionWeight"))
 
 // Devirtualize virtual calls with getExactClasses (NativeAOT only for now)
 RELEASE_CONFIG_INTEGER(JitEnableExactDevirtualization, W("JitEnableExactDevirtualization"), 1)
@@ -752,6 +769,9 @@ RELEASE_CONFIG_INTEGER(JitEnablePhysicalPromotion, W("JitEnablePhysicalPromotion
 
 // Enable cross-block local assertion prop
 RELEASE_CONFIG_INTEGER(JitEnableCrossBlockLocalAssertionProp, W("JitEnableCrossBlockLocalAssertionProp"), 1)
+
+// Do greedy RPO-based layout in Compiler::fgReorderBlocks.
+RELEASE_CONFIG_INTEGER(JitDoReversePostOrderLayout, W("JitDoReversePostOrderLayout"), 0);
 
 // JitFunctionFile: Name of a file that contains a list of functions. If the currently compiled function is in the
 // file, certain other JIT config variables will be active. If the currently compiled function is not in the file,

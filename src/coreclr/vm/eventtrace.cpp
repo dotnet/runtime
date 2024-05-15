@@ -577,7 +577,7 @@ VOID ETW::ThreadLog::FireThreadCreated(Thread * pThread)
 
     FireEtwThreadCreated(
         (ULONGLONG)pThread,
-        (ULONGLONG)pThread->GetDomain(),
+        (ULONGLONG)AppDomain::GetCurrentDomain(),
         GetEtwThreadFlags(pThread),
         pThread->GetThreadId(),
         pThread->GetOSThreadId(),
@@ -590,7 +590,7 @@ VOID ETW::ThreadLog::FireThreadDC(Thread * pThread)
 
     FireEtwThreadDC(
         (ULONGLONG)pThread,
-        (ULONGLONG)pThread->GetDomain(),
+        (ULONGLONG)AppDomain::GetCurrentDomain(),
         GetEtwThreadFlags(pThread),
         pThread->GetThreadId(),
         pThread->GetOSThreadId(),
@@ -643,7 +643,7 @@ public:
     static bool IsNull(const element_t &e)
     {
         LIMITED_METHOD_CONTRACT;
-        return (e.th.AsTAddr() == NULL);
+        return (e.th.AsTAddr() == 0);
     }
 
     static const element_t Null()
@@ -4211,7 +4211,7 @@ static void GetCodeViewInfo(Module * pModule, CV_INFO_PDB70 * pCvInfoIL, CV_INFO
 
         // Some compilers set PointerToRawData but not AddressOfRawData as they put the
         // data at the end of the file in an unmapped part of the file
-        RVA rvaOfRawData = (rgDebugEntries[i].AddressOfRawData != NULL) ?
+        RVA rvaOfRawData = (rgDebugEntries[i].AddressOfRawData != 0) ?
             rgDebugEntries[i].AddressOfRawData :
             pLayout->OffsetToRva(rgDebugEntries[i].PointerToRawData);
 

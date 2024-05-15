@@ -40,12 +40,31 @@ namespace System.Text.Json.Nodes
         }
 
         /// <summary>
+        ///   Initializes a new instance of the <see cref="JsonArray"/> class that contains items from the specified params span.
+        /// </summary>
+        /// <param name="options">Options to control the behavior.</param>
+        /// <param name="items">The items to add to the new <see cref="JsonArray"/>.</param>
+        public JsonArray(JsonNodeOptions options, /*params*/ ReadOnlySpan<JsonNode?> items) : base(options)
+        {
+            InitializeFromSpan(items);
+        }
+
+        /// <summary>
         ///   Initializes a new instance of the <see cref="JsonArray"/> class that contains items from the specified array.
         /// </summary>
         /// <param name="items">The items to add to the new <see cref="JsonArray"/>.</param>
         public JsonArray(params JsonNode?[] items) : base()
         {
             InitializeFromArray(items);
+        }
+
+        /// <summary>
+        ///   Initializes a new instance of the <see cref="JsonArray"/> class that contains items from the specified span.
+        /// </summary>
+        /// <param name="items">The items to add to the new <see cref="JsonArray"/>.</param>
+        public JsonArray(/*params*/ ReadOnlySpan<JsonNode?> items) : base()
+        {
+            InitializeFromSpan(items);
         }
 
         internal override JsonValueKind GetValueKindCore() => JsonValueKind.Array;
@@ -129,9 +148,30 @@ namespace System.Text.Json.Nodes
         {
             var list = new List<JsonNode?>(items);
 
-            for (int i = 0; i < items.Length; i++)
+            for (int i = 0; i < list.Count; i++)
             {
-                items[i]?.AssignParent(this);
+                list[i]?.AssignParent(this);
+            }
+
+            _list = list;
+        }
+
+        private void InitializeFromSpan(ReadOnlySpan<JsonNode?> items)
+        {
+            List<JsonNode?> list = new(items.Length);
+
+#if NET8_0_OR_GREATER
+            list.AddRange(items);
+#else
+            foreach (JsonNode? item in items)
+            {
+                list.Add(item);
+            }
+#endif
+
+            for (int i = 0; i < list.Count; i++)
+            {
+                list[i]?.AssignParent(this);
             }
 
             _list = list;
@@ -206,7 +246,7 @@ namespace System.Text.Json.Nodes
                 Debug.Assert(index >= 0);
 
                 path.Append('[');
-#if NETCOREAPP
+#if NET
                 Span<char> chars = stackalloc char[JsonConstants.MaximumFormatUInt32Length];
                 bool formatted = ((uint)index).TryFormat(chars, out int charsWritten);
                 Debug.Assert(formatted);
