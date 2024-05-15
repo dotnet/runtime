@@ -90,6 +90,17 @@ namespace System.Buffers.Text
                         }
                     }
 
+                    end = srcMax - 66;
+                    if (AdvSimd.Arm64.IsSupported && (end >= src))
+                    {
+                        AdvSimdDecode(ref src, ref dest, end, maxSrcLength, destLength, srcBytes, destBytes);
+
+                        if (src == srcEnd)
+                        {
+                            goto DoneExit;
+                        }
+                    }
+
                     end = srcMax - 24;
                     if ((Ssse3.IsSupported || AdvSimd.Arm64.IsSupported) && BitConverter.IsLittleEndian && (end >= src))
                     {
@@ -842,6 +853,141 @@ namespace System.Buffers.Text
             }
 
             return Vector128.ShuffleUnsafe(left, right);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
+        private static unsafe void AdvSimdDecode(ref byte* srcBytes, ref byte* destBytes, byte* srcEnd, int sourceLength, int destLength, byte* srcStart, byte* destStart)
+        {
+            // C# implementation of https://github.com/aklomp/base64/blob/3a5add8652076612a8407627a42c768736a4263f/lib/arch/neon64/dec_loop.c
+            // If we have AdvSimd support, pick off 64 bytes at a time for as long as we can,
+            // but make sure that we quit before seeing any == markers at the end of the
+            // string. 64 + 2 = 66 bytes.
+
+            // In the decoding process, we want to map each byte, representing a Base64 value, to its 6-bit (0-63) representation.
+            // It uses the following mapping. Values outside the following groups are invalid and, we abort decoding when encounter one.
+            //
+            // #    From       To         Char
+            // 1    [43]       [62]       +
+            // 2    [47]       [63]       /
+            // 3    [48..57]   [52..61]   0..9
+            // 4    [65..90]   [0..25]    A..Z
+            // 5    [97..122]  [26..51]   a..z
+            //
+            // To map an input value to its Base64 representation, we use look-up tables 'decLutOne' and 'decLutTwo'.
+            // 'decLutOne' helps to map groups 1, 2 and 3 while 'decLutTwo' maps groups 4 and 5 in the above list.
+            // After mapping, each value falls between 0-63. Consequently, the last six bits of each byte now hold a valid value.
+            // We then compress four such bytes (with valid 4 * 6 = 24 bits) to three UTF8 bytes (3 * 8 = 24 bits).
+            // For faster decoding, we use SIMD operations that allow the processing of multiple bytes together.
+            // However, the compress operation on adjacent values of a vector could be slower. Thus, we de-interleave while reading
+            // the input bytes that store adjacent bytes in separate vectors. This later simplifies the compress step with the help
+            // of logical operations. This requires interleaving while storing the decoded result.
+
+            // Values in 'decLutOne' maps input values from 0 to 63.
+            //   255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255
+            //   255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255
+            //   255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,  62, 255, 255, 255,  63
+            //    52,  53,  54,  55,  56,  57,  58,  59,  60,  61, 255, 255, 255, 255, 255, 255
+            var decLutOne = (Vector128<byte>.AllBitsSet,
+                             Vector128<byte>.AllBitsSet,
+                             Vector128.Create(0xFFFFFFFF, 0xFFFFFFFF, 0x3EFFFFFF, 0x3FFFFFFF).AsByte(),
+                             Vector128.Create(0x37363534, 0x3B3A3938, 0xFFFF3D3C, 0xFFFFFFFF).AsByte());
+
+            // Values in 'decLutTwo' maps input values from 63 to 127.
+            //    0, 255,   0,   1,   2,   3,   4,   5,   6,   7,   8,   9,  10,  11,  12,  13
+            //   14,  15,  16,  17,  18,  19,  20,  21,  22,  23,  24,  25, 255, 255, 255, 255
+            //  255, 255,  26,  27,  28,  29,  30,  31,  32,  33,  34,  35,  36,  37,  38,  39
+            //   40,  41,  42,  43,  44,  45,  46,  47,  48,  49,  50,  51, 255, 255, 255, 255
+            var decLutTwo = (Vector128.Create(0x0100FF00, 0x05040302, 0x09080706, 0x0D0C0B0A).AsByte(),
+                             Vector128.Create(0x11100F0E, 0x15141312, 0x19181716, 0xFFFFFFFF).AsByte(),
+                             Vector128.Create(0x1B1AFFFF, 0x1F1E1D1C, 0x23222120, 0x27262524).AsByte(),
+                             Vector128.Create(0x2B2A2928, 0x2F2E2D2C, 0x33323130, 0xFFFFFFFF).AsByte());
+
+            byte* src = srcBytes;
+            byte* dest = destBytes;
+            Vector128<byte> offset = Vector128.Create<byte>(63);
+
+            do
+            {
+                // Step 1: Load 64 bytes and de-interleave.
+                AssertRead<Vector128<byte>>(src, srcStart, sourceLength);
+                var (str1, str2, str3, str4) = AdvSimd.Arm64.LoadVector128x4AndUnzip(src);
+
+                // Step 2: Map each valid input to its Base64 value.
+                // We use two look-ups to compute partial results and combine them later.
+
+                // Step 2.1: Detect valid Base64 values from the first three groups. Maps input as,
+                //  0 to  63 (Invalid) => 255
+                //  0 to  63 (Valid)   => Their Base64 equivalent
+                // 64 to 255           => 0
+
+                // Each input value acts as an index in the look-up table 'decLutOne'.
+                // e.g., for group 1: index 43 maps to 62 (Base64 '+').
+                // Group 4 and 5 values are out-of-range (>64), so they are mapped to zero.
+                // Other valid indices but invalid values are mapped to 255.
+                Vector128<byte> decOne1 = AdvSimd.Arm64.VectorTableLookup(decLutOne, str1);
+                Vector128<byte> decOne2 = AdvSimd.Arm64.VectorTableLookup(decLutOne, str2);
+                Vector128<byte> decOne3 = AdvSimd.Arm64.VectorTableLookup(decLutOne, str3);
+                Vector128<byte> decOne4 = AdvSimd.Arm64.VectorTableLookup(decLutOne, str4);
+
+                // Step 2.2: Detect valid Base64 values from groups 4 and 5. Maps input as,
+                //   0 to  63           => 0
+                //  64 to 122 (Valid)   => Their Base64 equivalent
+                //  64 to 122 (Invalid) => 255
+                // 123 to 255           => Remains unchanged
+
+                // Subtract/offset each input value by 63 so that it can be used as a valid offset.
+                // Subtract saturate makes values from the first three groups set to zero that are
+                // then mapped to zero in the subsequent look-up.
+                Vector128<byte> decTwo1 = AdvSimd.SubtractSaturate(str1, offset);
+                Vector128<byte> decTwo2 = AdvSimd.SubtractSaturate(str2, offset);
+                Vector128<byte> decTwo3 = AdvSimd.SubtractSaturate(str3, offset);
+                Vector128<byte> decTwo4 = AdvSimd.SubtractSaturate(str4, offset);
+
+                // We use VTBX to map values where out-of-range indices are unchanged.
+                decTwo1 = AdvSimd.Arm64.VectorTableLookupExtension(decTwo1, decLutTwo, decTwo1);
+                decTwo2 = AdvSimd.Arm64.VectorTableLookupExtension(decTwo2, decLutTwo, decTwo2);
+                decTwo3 = AdvSimd.Arm64.VectorTableLookupExtension(decTwo3, decLutTwo, decTwo3);
+                decTwo4 = AdvSimd.Arm64.VectorTableLookupExtension(decTwo4, decLutTwo, decTwo4);
+
+                // Step 3: Combine the partial result.
+                // Each look-up above maps valid values to their Base64 equivalent or zero.
+                // Thus the intermediate results 'decOne' and 'decTwo' could be OR-ed to get final values.
+                str1 = (decOne1 | decTwo1);
+                str2 = (decOne2 | decTwo2);
+                str3 = (decOne3 | decTwo3);
+                str4 = (decOne4 | decTwo4);
+
+                // Step 4: Detect an invalid input value.
+                // Invalid values < 122 are set to 255 while the ones above 122 are unchanged.
+                // Check for invalid input, any value larger than 63.
+                Vector128<byte> classified = (Vector128.GreaterThan(str1, offset)
+                                            | Vector128.GreaterThan(str2, offset)
+                                            | Vector128.GreaterThan(str3, offset)
+                                            | Vector128.GreaterThan(str4, offset));
+
+                // Check that all bits are zero.
+                if (classified != Vector128<byte>.Zero)
+                {
+                    break;
+                }
+
+                // Step 5: Compress four bytes into three.
+                Vector128<byte> res1 = ((str1 << 2) | (str2 >> 4));
+                Vector128<byte> res2 = ((str2 << 4) | (str3 >> 2));
+                Vector128<byte> res3 = ((str3 << 6) | str4);
+
+                // Step 6: Interleave and store decoded results.
+                AssertWrite<Vector128<byte>>(dest, destStart, destLength);
+                AdvSimd.Arm64.StoreVector128x3AndZip(dest, (res1, res2, res3));
+
+                src += 64;
+                dest += 48;
+            }
+            while (src <= srcEnd);
+
+            srcBytes = src;
+            destBytes = dest;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

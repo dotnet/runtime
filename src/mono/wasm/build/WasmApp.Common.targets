@@ -44,6 +44,8 @@
 
       - $(EmccLinkOptimizationFlag)         - Optimization flag to use for the link step
       - $(EmccCompileOptimizationFlag)      - Optimization flag to use for compiling native files
+      - $(WasmBitcodeCompileOptimizationFlag)
+                                            - Optimization flag to use for compiling bitcode files
 
       - $(EmccFlags)                        - Emcc flags used for both compiling native files, and linking
       - $(EmccExtraLDFlags)                 - Extra emcc flags for linking
@@ -251,9 +253,16 @@
   <ItemGroup>
     <UpToDateCheckInput Include="@(NativeFileReference)" />
   </ItemGroup>
-
-  <ItemGroup Condition="'$(Configuration)' == 'Debug' and '@(_MonoComponent->Count())' == 0">
-    <_MonoComponent Include="hot_reload;debugger" />
+  
+  <PropertyGroup>
+    <_WasmDebuggerSupport Condition="'$(WasmDebugLevel)' != '' and '$(WasmDebugLevel)' != '0'">true</_WasmDebuggerSupport>
+    <_WasmDebuggerSupport Condition="'$(WasmDebugLevel)' != '' and '$(WasmDebugLevel)' == '0'">false</_WasmDebuggerSupport>
+    <_WasmDebuggerSupport Condition="'$(_WasmDebuggerSupport)' == '' and '$(WasmBuildingForNestedPublish)' == 'true'">false</_WasmDebuggerSupport> <!-- publish -->
+    <_WasmDebuggerSupport Condition="'$(_WasmDebuggerSupport)' == ''">true</_WasmDebuggerSupport>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(_WasmDebuggerSupport)' == 'true'">
+    <_MonoComponent Include="debugger" />
+    <_MonoComponent Include="hot_reload" />
   </ItemGroup>
   <!-- PUBLISH -->
 
@@ -287,6 +296,11 @@
       <_WasmShouldAOT Condition="'$(RunAOTCompilationAfterBuild)' == 'true' and '$(RunAOTCompilation)' == 'true'">true</_WasmShouldAOT>
       <_WasmShouldAOT Condition="'$(_WasmShouldAOT)' == ''">false</_WasmShouldAOT>
     </PropertyGroup>
+
+    <ItemGroup>
+      <_ExistingNativeLibrary Include="@(NativeLibrary->Exists())" />
+      <NativeFileReference Include="@(_ExistingNativeLibrary->'%(Identity)')" />
+    </ItemGroup>
 
     <ItemGroup Condition="'$(MicrosoftNetCoreAppRuntimePackRidLibTfmDir)' == ''">
       <!-- find the path with the assemblies, so we don't have to hardcode the tfm.
@@ -421,7 +435,7 @@
     </RuntimeConfigParserTask>
 
     <ItemGroup>
-      <WasmFilesToIncludeInFileSystem Condition="'$(WasmSingleFileBundle)' != 'true'" Include="$(_ParsedRuntimeConfigFilePath)" />
+      <WasmFilesToIncludeInFileSystem Condition="'$(WasmSingleFileBundle)' != 'true'" Include="$(_ParsedRuntimeConfigFilePath)" LoadingStage="Core" />
     </ItemGroup>
   </Target>
 
@@ -590,7 +604,7 @@
   </Target>
 
   <Target Name="_ScanAssembliesDecideLightweightMarshaler">
-     <ItemGroup>
+    <ItemGroup>
       <_AssembliesToScan Include="@(_WasmAssembliesInternal)" />
     </ItemGroup>
 
@@ -793,11 +807,11 @@
   <Target Name="_WasmSelectRuntimeComponentsForLinking" Condition="'$(WasmIsWorkloadAvailable)' == 'true'" DependsOnTargets="_MonoSelectRuntimeComponents" />
 
   <!--
-    Inputs: @(_BitcodeLDFlags), $(_WasmCompileBitcodeRsp)
+    Inputs: @(_BitcodeCompileFlags), $(_WasmCompileBitcodeRsp)
     Outputs: file @(_WasmCompileBitcodeRsp
   -->
   <Target Name="_WasmWriteRspForCompilingBitcode">
-    <WriteLinesToFile Lines="@(_BitcodeLDFlags)" File="$(_WasmCompileBitcodeRsp)" Overwrite="true" WriteOnlyWhenDifferent="true" />
+    <WriteLinesToFile Lines="@(_BitcodeCompileFlags)" File="$(_WasmCompileBitcodeRsp)" Overwrite="true" WriteOnlyWhenDifferent="true" />
     <ItemGroup>
       <FileWrites Include="$(_WasmCompileBitcodeRsp)" />
     </ItemGroup>

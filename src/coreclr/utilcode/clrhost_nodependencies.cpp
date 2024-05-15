@@ -202,102 +202,33 @@ ClrDebugState *CLRInitDebugState()
 
 #endif //defined(_DEBUG_IMPL) && defined(ENABLE_CONTRACTS_IMPL)
 
-const NoThrow nothrow = { 0 };
+// use standard heap functions for AddressSanitizer and for the DAC build.
+#if !defined(HAS_ADDRESS_SANITIZER) && !defined(DACCESS_COMPILE)
 
-#if defined(HAS_ADDRESS_SANITIZER) || defined(DACCESS_COMPILE)
-// use standard heap functions for address sanitizer
-#else
-
-#ifdef _DEBUG
-#ifdef TARGET_X86
-#define OS_HEAP_ALIGN 8
-#else
-#define OS_HEAP_ALIGN 16
-#endif
-#define CLRALLOC_TAG 0x2ce145f1
-#endif
-
-#ifdef HOST_WINDOWS
-static HANDLE g_hProcessHeap;
-#endif
-
-FORCEINLINE void* ClrMalloc(size_t size)
+#if defined(SELF_NO_HOST)
+namespace
 {
-    STATIC_CONTRACT_NOTHROW;
-
-#ifdef FAILPOINTS_ENABLED
-    if (RFS_HashStack())
-        return NULL;
-#endif
-
-    void* p;
-
-#ifdef _DEBUG
-    size += OS_HEAP_ALIGN;
-#endif
-
-#ifdef HOST_WINDOWS
-    HANDLE hHeap = g_hProcessHeap;
-    if (hHeap == NULL)
+    void ReportOOM(size_t size)
     {
-        InterlockedCompareExchangeT(&g_hProcessHeap, ::GetProcessHeap(), NULL);
-        hHeap = g_hProcessHeap;
+        // With no host, we have nowhere to report the OOM.
     }
-
-    p = HeapAlloc(hHeap, 0, size);
+}
 #else
-    if (size == 0)
+// If we have the CLR host, we should report OOMs to the StressLog.
+namespace
+{
+    FORCEINLINE void ReportOOM(size_t size)
     {
-        // Allocate at least one byte.
-        size = 1;
-    }
-    p = malloc(size);
-#endif
-
-#ifdef _DEBUG
-    // Store the tag to detect heap contamination
-    if (p != NULL)
-    {
-        *((DWORD*)p) = CLRALLOC_TAG;
-        p = (BYTE*)p + OS_HEAP_ALIGN;
-    }
-#endif
-
-#ifndef SELF_NO_HOST
-    if (p == NULL
+        STATIC_CONTRACT_NOTHROW;
         // If we have not created StressLog ring buffer, we should not try to use it.
         // StressLog is going to do a memory allocation.  We may enter an endless loop.
-        && StressLog::t_pCurrentThreadLog != NULL)
-    {
-        STRESS_LOG_OOM_STACK(size);
+        if (StressLog::t_pCurrentThreadLog != NULL)
+        {
+            STRESS_LOG_OOM_STACK(size);
+        }
     }
-#endif
-
-    return p;
 }
-
-FORCEINLINE void ClrFree(void* p)
-{
-    STATIC_CONTRACT_NOTHROW;
-
-#ifdef _DEBUG
-    if (p != NULL)
-    {
-        // Check the heap handle to detect heap contamination
-        p = (BYTE*)p - OS_HEAP_ALIGN;
-        if (*((DWORD*)p) != CLRALLOC_TAG)
-            _ASSERTE(!"Heap contamination detected! HeapFree was called on a heap other than the one that memory was allocated from.\n"
-                "Possible cause: you used new (executable) to allocate the memory, but didn't use DeleteExecutable() to free it.");
-    }
 #endif
-
-#ifdef HOST_WINDOWS
-    if (p != NULL)
-        HeapFree(g_hProcessHeap, 0, p);
-#else
-    free(p);
-#endif
-}
 
 void * __cdecl
 operator new(size_t n)
@@ -311,8 +242,9 @@ operator new(size_t n)
     STATIC_CONTRACT_FAULT;
     STATIC_CONTRACT_SUPPORTS_DAC_HOST_ONLY;
 
-    void* result = ClrMalloc(n);
+    void* result = malloc(n == 0 ? 1 : n);
     if (result == NULL) {
+        ReportOOM(n);
         ThrowOutOfMemory();
     }
     TRASH_LASTERROR;
@@ -322,31 +254,11 @@ operator new(size_t n)
 void * __cdecl
 operator new[](size_t n)
 {
-#ifdef _DEBUG_IMPL
-    CLRThrowsExceptionWorker();
-#endif
+    return ::operator new(n);
+}
 
-    STATIC_CONTRACT_THROWS;
-    STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FAULT;
-    STATIC_CONTRACT_SUPPORTS_DAC_HOST_ONLY;
-
-    void* result = ClrMalloc(n);
-    if (result == NULL) {
-        ThrowOutOfMemory();
-    }
-    TRASH_LASTERROR;
-    return result;
-};
-
-#endif // HAS_ADDRESS_SANITIZER || DACCESS_COMPILE
-
-void * __cdecl operator new(size_t n, const NoThrow&) NOEXCEPT
+void* __cdecl operator new(size_t size, const std::nothrow_t&) noexcept
 {
-#if defined(HAS_ADDRESS_SANITIZER) || defined(DACCESS_COMPILE)
-    // use standard heap functions for address sanitizer (which doesn't provide for NoThrow)
-	void * result = operator new(n);
-#else
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
     STATIC_CONTRACT_FAULT;
@@ -354,181 +266,37 @@ void * __cdecl operator new(size_t n, const NoThrow&) NOEXCEPT
 
     INCONTRACT(_ASSERTE(!ARE_FAULTS_FORBIDDEN()));
 
-    void* result = ClrMalloc(n);
-#endif // HAS_ADDRESS_SANITIZER || DACCESS_COMPILE
-	TRASH_LASTERROR;
-    return result;
-}
-
-void * __cdecl operator new[](size_t n, const NoThrow&) NOEXCEPT
-{
-#if defined(HAS_ADDRESS_SANITIZER) || defined(DACCESS_COMPILE)
-    // use standard heap functions for address sanitizer (which doesn't provide for NoThrow)
-	void * result = operator new[](n);
-#else
-    STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FAULT;
-    STATIC_CONTRACT_SUPPORTS_DAC_HOST_ONLY;
-
-    INCONTRACT(_ASSERTE(!ARE_FAULTS_FORBIDDEN()));
-
-    void* result = ClrMalloc(n);
-#endif // HAS_ADDRESS_SANITIZER || DACCESS_COMPILE
-	TRASH_LASTERROR;
-    return result;
-}
-
-#if defined(HAS_ADDRESS_SANITIZER) || defined(DACCESS_COMPILE)
-// use standard heap functions for address sanitizer
-#else
-void __cdecl
-operator delete(void *p) NOEXCEPT
-{
-    STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_SUPPORTS_DAC_HOST_ONLY;
-
-    ClrFree(p);
-
-    TRASH_LASTERROR;
-}
-
-void __cdecl
-operator delete[](void *p) NOEXCEPT
-{
-    STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_SUPPORTS_DAC_HOST_ONLY;
-
-    ClrFree(p);
-    TRASH_LASTERROR;
-}
-
-#endif // HAS_ADDRESS_SANITIZER || DACCESS_COMPILE
-
-/* ------------------------------------------------------------------------ *
- * New operator overloading for the executable heap
- * ------------------------------------------------------------------------ */
-
-#ifdef HOST_WINDOWS
-
-HANDLE ClrGetProcessExecutableHeap()
-{
-    // Note: this can be called a little early for real contracts, so we use static contracts instead.
-    STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_GC_NOTRIGGER;
-
-    static HANDLE g_ExecutableHeapHandle;
-
-    //
-    // Create the executable heap lazily
-    //
-    if (g_ExecutableHeapHandle == NULL)
+    void* result = malloc(size == 0 ? 1 : size);
+    if (result == nullptr)
     {
-
-        HANDLE ExecutableHeapHandle = HeapCreate(
-            HEAP_CREATE_ENABLE_EXECUTE,                 // heap allocation attributes
-            0,                                          // initial heap size
-            0                                           // maximum heap size; 0 == growable
-        );
-
-        if (ExecutableHeapHandle == NULL)
-            return NULL;
-
-        HANDLE ExistingValue = InterlockedCompareExchangeT(&g_ExecutableHeapHandle, ExecutableHeapHandle, NULL);
-        if (ExistingValue != NULL)
-        {
-            HeapDestroy(ExecutableHeapHandle);
-        }
-    }
-
-    return g_ExecutableHeapHandle;
-}
-
-const CExecutable executable = { 0 };
-
-void * __cdecl operator new(size_t n, const CExecutable&)
-{
-#if defined(_DEBUG_IMPL)
-    CLRThrowsExceptionWorker();
-#endif
-
-    STATIC_CONTRACT_THROWS;
-    STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FAULT;
-
-    HANDLE hExecutableHeap = ClrGetProcessExecutableHeap();
-    if (hExecutableHeap == NULL) {
-        ThrowOutOfMemory();
-    }
-
-    void * result = HeapAlloc(hExecutableHeap, 0, n);
-    if (result == NULL) {
-        ThrowOutOfMemory();
+        ReportOOM(size);
     }
     TRASH_LASTERROR;
     return result;
 }
 
-void * __cdecl operator new[](size_t n, const CExecutable&)
+void* __cdecl operator new[](size_t size, const std::nothrow_t&) noexcept
 {
-#if defined(_DEBUG_IMPL)
-    CLRThrowsExceptionWorker();
-#endif
-
-    STATIC_CONTRACT_THROWS;
-    STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FAULT;
-
-    HANDLE hExecutableHeap = ClrGetProcessExecutableHeap();
-    if (hExecutableHeap == NULL) {
-        ThrowOutOfMemory();
-    }
-
-    void * result = HeapAlloc(hExecutableHeap, 0, n);
-    if (result == NULL) {
-        ThrowOutOfMemory();
-    }
-    TRASH_LASTERROR;
-    return result;
+    return ::operator new(size, std::nothrow);
 }
 
-void * __cdecl operator new(size_t n, const CExecutable&, const NoThrow&)
+void __cdecl operator delete(void* p) noexcept
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FAULT;
+    STATIC_CONTRACT_SUPPORTS_DAC_HOST_ONLY;
 
-    INCONTRACT(_ASSERTE(!ARE_FAULTS_FORBIDDEN()));
+    free(p);
 
-    HANDLE hExecutableHeap = ClrGetProcessExecutableHeap();
-    if (hExecutableHeap == NULL)
-        return NULL;
-
-    void * result = HeapAlloc(hExecutableHeap, 0, n);
     TRASH_LASTERROR;
-    return result;
 }
 
-void * __cdecl operator new[](size_t n, const CExecutable&, const NoThrow&)
+void __cdecl operator delete[](void* p) noexcept
 {
-    STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FAULT;
-
-    INCONTRACT(_ASSERTE(!ARE_FAULTS_FORBIDDEN()));
-
-    HANDLE hExecutableHeap = ClrGetProcessExecutableHeap();
-    if (hExecutableHeap == NULL)
-        return NULL;
-
-    void * result = HeapAlloc(hExecutableHeap, 0, n);
-    TRASH_LASTERROR;
-    return result;
+    ::operator delete(p);
 }
 
-#endif // HOST_WINDOWS
+#endif // !HAS_ADDRESS_SANITIZER && !DACCESS_COMPILE
 
 #ifdef _DEBUG
 
@@ -536,7 +304,7 @@ void * __cdecl operator new[](size_t n, const CExecutable&, const NoThrow&)
 BOOL DbgIsExecutable(LPVOID lpMem, SIZE_T length)
 {
 #if defined(TARGET_UNIX)
-    // No NX support on PAL or for crossgen compilations.
+    // No NX support on PAL
     return TRUE;
 #else // !(TARGET_UNIX)
     BYTE *regionStart = (BYTE*) ALIGN_DOWN((BYTE*)lpMem, GetOsPageSize());

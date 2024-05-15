@@ -140,10 +140,10 @@ inline void FATAL_GC_ERROR()
 //
 // This means any empty regions can be freely used for any generation. For
 // Server GC we will balance regions between heaps.
-// For now disable regions for StandAlone GC, NativeAOT and MacOS builds
+// For now disable regions for standalone GC and macOS builds
 #if defined (HOST_64BIT) && !defined (BUILD_AS_STANDALONE) && !defined(__APPLE__)
 #define USE_REGIONS
-#endif //HOST_64BIT && BUILD_AS_STANDALONE
+#endif //HOST_64BIT && BUILD_AS_STANDALONE && !__APPLE__
 
 //#define SPINLOCK_HISTORY
 //#define RECORD_LOH_STATE
@@ -1752,6 +1752,8 @@ private:
 
     PER_HEAP_ISOLATED_METHOD void add_to_history();
 
+    PER_HEAP_ISOLATED_METHOD void get_and_reset_uoh_alloc_info();
+
 #ifdef BGC_SERVO_TUNING
     // Currently BGC servo tuning is an experimental feature.
     class bgc_tuning
@@ -1997,7 +1999,6 @@ private:
     };
 
     PER_HEAP_ISOLATED_METHOD void check_and_adjust_bgc_tuning (int gen_number, size_t physical_size, ptrdiff_t virtual_fl_size);
-    PER_HEAP_ISOLATED_METHOD void get_and_reset_loh_alloc_info();
 #endif //BGC_SERVO_TUNING
 
 #ifndef USE_REGIONS
@@ -2230,6 +2231,8 @@ private:
     PER_HEAP_METHOD BOOL bgc_loh_allocate_spin();
 
     PER_HEAP_METHOD BOOL bgc_poh_allocate_spin();
+
+    PER_HEAP_METHOD void bgc_record_uoh_allocation(int gen_number, size_t size);
 #endif //BACKGROUND_GC
 
     PER_HEAP_METHOD void add_saved_spinlock_info (
@@ -3436,6 +3439,11 @@ private:
 
     PER_HEAP_FIELD_SINGLE_GC uint8_t* next_sweep_obj;
     PER_HEAP_FIELD_SINGLE_GC uint8_t* current_sweep_pos;
+
+    PER_HEAP_FIELD_SINGLE_GC size_t uoh_a_no_bgc[uoh_generation_count];
+    PER_HEAP_FIELD_SINGLE_GC size_t uoh_a_bgc_marking[uoh_generation_count];
+    PER_HEAP_FIELD_SINGLE_GC size_t uoh_a_bgc_planning[uoh_generation_count];
+
 #ifdef DOUBLY_LINKED_FL
     PER_HEAP_FIELD_SINGLE_GC heap_segment* current_sweep_seg;
 #endif //DOUBLY_LINKED_FL
@@ -3461,9 +3469,6 @@ private:
 #endif //SNOOP_STATS
 
 #ifdef BGC_SERVO_TUNING
-    PER_HEAP_FIELD_SINGLE_GC uint64_t   loh_a_no_bgc;
-    PER_HEAP_FIELD_SINGLE_GC uint64_t   loh_a_bgc_marking;
-    PER_HEAP_FIELD_SINGLE_GC uint64_t   loh_a_bgc_planning;
     PER_HEAP_FIELD_SINGLE_GC size_t     bgc_maxgen_end_fl_size;
 #endif //BGC_SERVO_TUNING
 #endif //BACKGROUND_GC
@@ -4097,11 +4102,9 @@ private:
 
     PER_HEAP_ISOLATED_FIELD_SINGLE_GC GCEvent bgc_start_event;
 
-#ifdef BGC_SERVO_TUNING
     // Total allocated last BGC's plan + between last and this bgc +
     // this bgc's mark
-    PER_HEAP_ISOLATED_FIELD_SINGLE_GC uint64_t   total_loh_a_last_bgc;
-#endif //BGC_SERVO_TUNING
+    PER_HEAP_ISOLATED_FIELD_SINGLE_GC uint64_t   total_uoh_a_last_bgc;
 #endif //BACKGROUND_GC
 
 #ifdef USE_REGIONS

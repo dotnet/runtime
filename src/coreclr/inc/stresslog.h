@@ -314,8 +314,8 @@ public:
     unsigned padding;                       // Preserve the layout for SOS
     Volatile<LONG> deadCount;               // count of dead threads in the log
     CRITSEC_COOKIE lock;                    // lock
-    unsigned __int64 tickFrequency;         // number of ticks per second
-    unsigned __int64 startTimeStamp;        // start time from when tick counter started
+    uint64_t tickFrequency;         // number of ticks per second
+    uint64_t startTimeStamp;        // start time from when tick counter started
     FILETIME startTime;                     // time the application started
     SIZE_T   moduleOffset;                  // Used to compute format strings.
     struct ModuleDesc
@@ -539,7 +539,7 @@ typedef USHORT
 };
 
 #ifndef STRESS_LOG_ANALYZER
-typedef Holder<CRITSEC_COOKIE, StressLog::Enter, StressLog::Leave, NULL, CompareDefault<CRITSEC_COOKIE>> StressLogLockHolder;
+typedef Holder<CRITSEC_COOKIE, StressLog::Enter, StressLog::Leave, 0, CompareDefault<CRITSEC_COOKIE>> StressLogLockHolder;
 #endif //!STRESS_LOG_ANALYZER
 
 #if defined(DACCESS_COMPILE)
@@ -807,7 +807,7 @@ public:
 #endif //!STRESS_LOG_READONLY && !STRESS_LOG_ANALYZER
 
 #if defined(MEMORY_MAPPED_STRESSLOG) && !defined(STRESS_LOG_ANALYZER)
-    void* __cdecl operator new(size_t n, const NoThrow&) NOEXCEPT;
+    void* __cdecl operator new(size_t n, const std::nothrow_t&) noexcept;
     void __cdecl operator delete (void * chunk);
 #endif
 

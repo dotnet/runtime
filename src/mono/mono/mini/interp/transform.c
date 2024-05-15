@@ -419,11 +419,12 @@ interp_create_var_explicit (TransformData *td, MonoType *type, int size)
 	if (td->vars_size == td->vars_capacity) {
 		td->vars_capacity *= 2;
 		if (td->vars_capacity == 0)
-			td->vars_capacity = 2;
+			td->vars_capacity = 16;
 		td->vars = (InterpVar*) g_realloc (td->vars, td->vars_capacity * sizeof (InterpVar));
 	}
 	int mt = mono_mint_type (type);
 	InterpVar *local = &td->vars [td->vars_size];
+	// FIXME: We don't need to do this memset unless we realloc'd, since we malloc0 vars initially
 	memset (local, 0, sizeof (InterpVar));
 
 	local->type = type;
@@ -2906,6 +2907,9 @@ interp_method_check_inlining (TransformData *td, MonoMethod *method, MonoMethodS
 	if (g_list_find (td->dont_inline, method))
 		return FALSE;
 
+	if (m_class_is_exception_class (method->klass) && !strcmp (method->name, ".ctor"))
+		return FALSE;
+
 	return TRUE;
 }
 
@@ -4342,15 +4346,18 @@ interp_method_compute_offsets (TransformData *td, InterpMethod *imethod, MonoMet
 	int num_args = sig->hasthis + sig->param_count;
 	int num_il_locals = header->num_locals;
 	int num_locals = num_args + num_il_locals;
+	// HACK: Pre-reserve extra space to reduce the number of times we realloc during codegen, since it's expensive
+	// 64 vars * 72 bytes = 4608 bytes. Many methods need less than this
+	int target_vars_capacity = num_locals + 64;
 
 	imethod->local_offsets = (guint32*)g_malloc (num_il_locals * sizeof(guint32));
-	td->vars = (InterpVar*)g_malloc0 (num_locals * sizeof (InterpVar));
+	td->vars = (InterpVar*)g_malloc0 (target_vars_capacity * sizeof (InterpVar));
 	td->vars_size = num_locals;
-	td->vars_capacity = td->vars_size;
+	td->vars_capacity = target_vars_capacity;
 
-	td->renamable_vars = (InterpRenamableVar*)g_malloc (num_locals * sizeof (InterpRenamableVar));
+	td->renamable_vars = (InterpRenamableVar*)g_malloc (target_vars_capacity * sizeof (InterpRenamableVar));
 	td->renamable_vars_size = 0;
-	td->renamable_vars_capacity = num_locals;
+	td->renamable_vars_capacity = target_vars_capacity;
 	offset = 0;
 
 	/*
@@ -4637,6 +4644,18 @@ interp_emit_sfld_access (TransformData *td, MonoClassField *field, MonoClass *fi
 			}
 			interp_ins_set_dreg (td->last_ins, td->sp [-1].var);
 		} else {
+			// Fields from hotreload update and fields from collectible assemblies are not
+			// stored inside fixed gc roots but rather in other objects. This means that
+			// storing into these fields requires write barriers.
+			if ((mt == MINT_TYPE_VT || mt == MINT_TYPE_O) &&
+					(m_field_is_from_update (field) ||
+					mono_image_get_alc (m_class_get_image (m_field_get_parent (field)))->collectible)) {
+				interp_emit_ldsflda (td, field, error);
+				return_if_nok (error);
+				interp_emit_stobj (td, field_class, TRUE);
+				return;
+			}
+
 			if (G_LIKELY (!wide_data))
 				interp_add_ins (td, (mt == MINT_TYPE_VT) ? MINT_STSFLD_VT : (MINT_STSFLD_I1 + mt - MINT_TYPE_I1));
 			else

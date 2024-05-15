@@ -705,12 +705,7 @@ REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalStartBackgroundGCThread(_In_ Background
 
 REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalStartFinalizerThread(_In_ BackgroundCallback callback, _In_opt_ void* pCallbackContext)
 {
-#ifdef HOST_WASM
-    // WASMTODO: No threads so we can't start the finalizer thread
-    return true;
-#else // HOST_WASM
     return PalStartBackgroundWork(callback, pCallbackContext, UInt32_TRUE);
-#endif // HOST_WASM
 }
 
 REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalStartEventPipeHelperThread(_In_ BackgroundCallback callback, _In_opt_ void* pCallbackContext)
@@ -989,6 +984,7 @@ extern "C" uint16_t RtlCaptureStackBackTrace(uint32_t arg1, uint32_t arg2, void*
     return 0;
 }
 
+#ifdef FEATURE_HIJACK
 static PalHijackCallback g_pHijackCallback;
 static struct sigaction g_previousActivationHandler;
 
@@ -1076,6 +1072,7 @@ REDHAWK_PALEXPORT void REDHAWK_PALAPI PalHijack(HANDLE hThread, _In_opt_ void* p
         abort();
     }
 }
+#endif // FEATURE_HIJACK
 
 extern "C" uint32_t WaitForSingleObjectEx(HANDLE handle, uint32_t milliseconds, UInt32_BOOL alertable)
 {

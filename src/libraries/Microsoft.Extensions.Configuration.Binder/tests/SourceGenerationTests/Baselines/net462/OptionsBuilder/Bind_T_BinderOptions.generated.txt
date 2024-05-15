@@ -103,7 +103,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             {
                 if (section.Value is string value)
                 {
-                    instance.Add(ParseInt(value, () => section.Path));
+                    instance.Add(ParseInt(value, section.Path));
                 }
             }
         }
@@ -119,7 +119,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             if (configuration["MyInt"] is string value2)
             {
-                instance.MyInt = ParseInt(value2, () => configuration.GetSection("MyInt").Path);
+                instance.MyInt = ParseInt(value2, configuration.GetSection("MyInt").Path);
             }
             else if (defaultValueIfNotFound)
             {
@@ -194,7 +194,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             return binderOptions;
         }
 
-        public static int ParseInt(string value, Func<string?> getPath)
+        public static int ParseInt(string value, string? path)
         {
             try
             {
@@ -202,7 +202,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
             catch (Exception exception)
             {
-                throw new InvalidOperationException($"Failed to convert configuration value at '{getPath()}' to type '{typeof(int)}'.", exception);
+                throw new InvalidOperationException($"Failed to convert configuration value at '{path}' to type '{typeof(int)}'.", exception);
             }
         }
         #endregion Core binding extensions.

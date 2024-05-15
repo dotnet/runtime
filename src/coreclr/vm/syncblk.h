@@ -602,6 +602,12 @@ public:
         LIMITED_METHOD_CONTRACT;
         return m_HoldingThread;
     }
+
+    static int GetOffsetOfHoldingOSThreadId()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return (int)offsetof(AwareLock, m_HoldingOSThreadId);
+    }
 };
 
 #ifdef FEATURE_COMINTEROP

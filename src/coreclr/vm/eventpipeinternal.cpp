@@ -104,7 +104,7 @@ extern "C" INT_PTR QCALLTYPE EventPipeInternal_CreateProvider(
 extern "C" INT_PTR QCALLTYPE EventPipeInternal_DefineEvent(
     INT_PTR provHandle,
     UINT32 eventID,
-    __int64 keywords,
+    int64_t keywords,
     UINT32 eventVersion,
     UINT32 level,
     void *pMetadata,
@@ -146,7 +146,7 @@ extern "C" void QCALLTYPE EventPipeInternal_DeleteProvider(INT_PTR provHandle)
     QCALL_CONTRACT;
     BEGIN_QCALL;
 
-    if (provHandle != NULL)
+    if (provHandle != 0)
     {
         EventPipeProvider *pProvider = reinterpret_cast<EventPipeProvider *>(provHandle);
         EventPipeAdapter::DeleteProvider(pProvider);

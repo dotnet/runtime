@@ -263,6 +263,7 @@ class Object
     }
 
     static DWORD ComputeHashCode();
+    static DWORD GetGlobalNewHashCode();
 
 #ifndef DACCESS_COMPILE
     INT32 GetHashCodeEx();
@@ -382,10 +383,10 @@ class Object
         return * PTR_BYTE(GetData() + dwOffset);
     }
 
-    __int64 GetOffset64(DWORD dwOffset)
+    int64_t GetOffset64(DWORD dwOffset)
     {
         WRAPPER_NO_CONTRACT;
-        return (__int64) * PTR_ULONG64(GetData() + dwOffset);
+        return (int64_t) * PTR_ULONG64(GetData() + dwOffset);
     }
 
     void *GetPtrOffset(DWORD dwOffset)
@@ -422,10 +423,10 @@ class Object
         *(BYTE *) &GetData()[dwOffset] = (BYTE) dwValue;
     }
 
-    void SetOffset64(DWORD dwOffset, __int64 qwValue)
+    void SetOffset64(DWORD dwOffset, int64_t qwValue)
     {
         WRAPPER_NO_CONTRACT;
-        *(__int64 *) &GetData()[dwOffset] = qwValue;
+        *(int64_t *) &GetData()[dwOffset] = qwValue;
     }
 
 #endif // #ifndef DACCESS_COMPILE
@@ -1853,7 +1854,7 @@ class DelegateObject : public Object
     friend class CoreLibBinder;
 
 public:
-    BOOL IsWrapperDelegate() { LIMITED_METHOD_CONTRACT; return _methodPtrAux == NULL; }
+    BOOL IsWrapperDelegate() { LIMITED_METHOD_CONTRACT; return _methodPtrAux == 0; }
 
     OBJECTREF GetTarget() { LIMITED_METHOD_CONTRACT; return _target; }
     void SetTarget(OBJECTREF target) { WRAPPER_NO_CONTRACT; SetObjectReference(&_target, target); }
@@ -2324,7 +2325,7 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
 
-        return (_ipForWatsonBuckets != NULL);
+        return (_ipForWatsonBuckets != 0);
     }
 
     // This method returns the IP for Watson Buckets.
@@ -2455,7 +2456,7 @@ public:
     static BOOL UnBox(void* dest, OBJECTREF boxedVal, MethodTable* destMT);
     static BOOL UnBoxNoGC(void* dest, OBJECTREF boxedVal, MethodTable* destMT);
     static void UnBoxNoCheck(void* dest, OBJECTREF boxedVal, MethodTable* destMT);
-    static OBJECTREF BoxedNullableNull(TypeHandle nullableType) { return 0; }
+    static OBJECTREF BoxedNullableNull(TypeHandle nullableType) { return NULL; }
 
     // if 'Obj' is a true boxed nullable, return the form we want (either null or a boxed T)
     static OBJECTREF NormalizeBox(OBJECTREF obj);

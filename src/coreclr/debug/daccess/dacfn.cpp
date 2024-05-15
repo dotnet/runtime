@@ -154,7 +154,7 @@ DacReadAll(TADDR addr, PVOID buffer, ULONG32 size, bool throwEx)
     ULONG32 returned;
 
 #if defined(DAC_MEASURE_PERF)
-    unsigned __int64  nStart, nEnd;
+    uint64_t  nStart, nEnd;
     nStart = GetCycleCount();
 #endif // #if defined(DAC_MEASURE_PERF)
 
@@ -1525,7 +1525,7 @@ HRESULT DacReplacePatchesInHostMemory(MemoryRange range, PVOID pBuffer)
     {
         CORDB_ADDRESS patchAddress = (CORDB_ADDRESS)dac_cast<TADDR>(pPatch->address);
 
-        if (patchAddress != NULL)
+        if (patchAddress != (CORDB_ADDRESS)NULL)
         {
             PRD_TYPE opcode = pPatch->opcode;
 

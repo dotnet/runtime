@@ -55,8 +55,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 			[Kept]
 			[KeptAttributeAttribute (typeof (KeepsPublicMethodsAttribute))]
-            // Trimmer/NativeAot only for now - https://github.com/dotnet/runtime/issues/95118
-            [ExpectedWarning ("IL2026", "--ClassWithKeptPublicMethodsKeptByName--", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
+            // Trimmer/NativeAot only for now
+            [ExpectedWarning ("IL2026", "--ClassWithKeptPublicMethodsKeptByName--", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/95118")]
 			[KeepsPublicMethods (TypeName = "Mono.Linker.Tests.Cases.DataFlow.AttributePropertyDataflow+AttributesOnMethod+ClassWithKeptPublicMethodsKeptByName")]
 			public static void TestKeepsPublicMethodsByName ()
 			{
@@ -211,8 +211,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		{
 			[Kept]
 			[KeptAttributeAttribute (typeof (KeepsPublicMethodsAttribute))]
-			// Trimmer/NativeAot only for now - https://github.com/dotnet/linker/issues/2273
-			[ExpectedWarning ("IL2026", "--ClassWithKeptPublicMethods--", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
+			// Trimmer/NativeAot only for now
+			[ExpectedWarning ("IL2026", "--ClassWithKeptPublicMethods--", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/95118")]
 			[KeepsPublicMethods (TypeName = 1 + 1 == 2 ? "Mono.Linker.Tests.Cases.DataFlow.AttributePropertyDataflow+AttributeWithConditionalExpression+ClassWithKeptPublicMethods" : null)]
 			public static void Test ()
 			{
@@ -224,7 +224,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			// where the owning symbol is not a method.
 			[Kept]
 			[KeptAttributeAttribute (typeof (KeepsPublicMethodsAttribute))]
-			[ExpectedWarning ("IL2026", "--ClassWithKeptPublicMethods--", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
+			[ExpectedWarning ("IL2026", "--ClassWithKeptPublicMethods--", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/95118")]
 			[KeepsPublicMethods (TypeName = 1 + 1 == 2 ? "Mono.Linker.Tests.Cases.DataFlow.AttributePropertyDataflow+AttributeWithConditionalExpression+ClassWithKeptPublicMethods" : null)]
 			public static int field;
 

@@ -262,7 +262,7 @@ void Compiler::fgPerNodeLocalVarLiveness(GenTree* tree)
         {
             GenTreeCall* call    = tree->AsCall();
             bool         modHeap = true;
-            if (call->gtCallType == CT_HELPER)
+            if (call->IsHelperCall())
             {
                 CorInfoHelpFunc helpFunc = eeGetHelperNum(call->gtCallMethHnd);
 
@@ -1762,8 +1762,8 @@ void Compiler::fgComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VARSET_VALAR
                             operand->SetUnusedValue();
                         }
 
-                        // Special-case PUTARG_STK: since this operator is not considered a value, DCE will not remove
-                        // these nodes.
+                        // Special-case PUTARG_STK: since this operator is not considered a value, DCE will not
+                        // remove these nodes.
                         if (operand->OperIs(GT_PUTARG_STK))
                         {
                             operand->AsPutArgStk()->gtOp1->SetUnusedValue();
@@ -1939,6 +1939,7 @@ void Compiler::fgComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VARSET_VALAR
             case GT_PUTARG_STK:
             case GT_IL_OFFSET:
             case GT_KEEPALIVE:
+            case GT_SWIFT_ERROR_RET:
                 // Never remove these nodes, as they are always side-effecting.
                 //
                 // NOTE: the only side-effect of some of these nodes (GT_CMP, GT_SUB_HI) is a write to the flags

@@ -118,7 +118,7 @@ enum _regNumber_enum : unsigned
     ACTUAL_REG_COUNT = REG_COUNT - 1 // everything but REG_STK (only real regs)
 };
 
-enum _regMask_enum : unsigned __int64
+enum _regMask_enum : uint64_t
 {
     RBM_NONE = 0,
 #define REGDEF(name, rnum, mask, sname) RBM_##name = mask,
@@ -139,7 +139,7 @@ enum _regNumber_enum : unsigned
     ACTUAL_REG_COUNT = REG_COUNT - 1 // everything but REG_STK (only real regs)
 };
 
-enum _regMask_enum : unsigned __int64
+enum _regMask_enum : uint64_t
 {
     RBM_NONE = 0,
 #define REGDEF(name, rnum, mask, xname, wname) RBM_##name = mask,
@@ -208,11 +208,158 @@ enum _regMask_enum : unsigned
 // In any case, we believe that is OK to freely cast between these types; no information will
 // be lost.
 
-#if defined(TARGET_AMD64) || defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-typedef unsigned __int64 regMaskTP;
+typedef _regNumber_enum regNumber;
+typedef unsigned char   regNumberSmall;
+
+#if defined(TARGET_AMD64) || defined(TARGET_ARM) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+typedef uint64_t regMaskTP;
+#elif defined(TARGET_ARM64)
+typedef uint64_t regMaskSmall;
+struct regMaskTP
+{
+private:
+    uint64_t low;
+
+public:
+    constexpr regMaskTP(uint64_t regMask)
+        : low(regMask)
+    {
+    }
+
+    regMaskTP()
+    {
+    }
+
+    explicit operator bool() const
+    {
+        return low != RBM_NONE;
+    }
+
+    explicit operator regMaskSmall() const
+    {
+        return (regMaskSmall)low;
+    }
+
+    explicit operator unsigned int() const
+    {
+        return (unsigned int)low;
+    }
+
+    uint64_t getLow() const
+    {
+        return low;
+    }
+};
+
+static regMaskTP operator^(regMaskTP first, regMaskTP second)
+{
+    regMaskTP result(first.getLow() ^ second.getLow());
+    return result;
+}
+
+static regMaskTP operator&(regMaskTP first, regMaskTP second)
+{
+    regMaskTP result(first.getLow() & second.getLow());
+    return result;
+}
+
+static regMaskTP operator|(regMaskTP first, regMaskTP second)
+{
+    regMaskTP result(first.getLow() | second.getLow());
+    return result;
+}
+
+static regMaskTP operator<<(regMaskTP first, const int b)
+{
+    regMaskTP result(first.getLow() << b);
+    return result;
+}
+
+static regMaskTP operator>>(regMaskTP first, const int b)
+{
+    regMaskTP result(first.getLow() >> b);
+    return result;
+}
+
+static regMaskTP& operator>>=(regMaskTP& first, const int b)
+{
+    first = first >> b;
+    return first;
+}
+
+static regMaskTP& operator|=(regMaskTP& first, regMaskTP second)
+{
+    first = first | second;
+    return first;
+}
+
+static regMaskTP& operator^=(regMaskTP& first, regMaskTP second)
+{
+    first = first ^ second;
+    return first;
+}
+
+static regMaskSmall operator^=(regMaskSmall& first, regMaskTP second)
+{
+    first ^= second.getLow();
+    return first;
+}
+
+static regMaskSmall operator&=(regMaskSmall& first, regMaskTP second)
+{
+    first &= second.getLow();
+    return first;
+}
+
+static regMaskSmall operator|=(regMaskSmall& first, regMaskTP second)
+{
+    first |= second.getLow();
+    return first;
+}
+
+static regMaskTP& operator&=(regMaskTP& first, regMaskTP second)
+{
+    first = first & second;
+    return first;
+}
+
+static bool operator==(regMaskTP first, regMaskTP second)
+{
+    return (first.getLow() == second.getLow());
+}
+
+static bool operator!=(regMaskTP first, regMaskTP second)
+{
+    return (first.getLow() != second.getLow());
+}
+
+static regMaskTP operator~(regMaskTP first)
+{
+    regMaskTP result(~first.getLow());
+    return result;
+}
+
 #else
 typedef unsigned regMaskTP;
 #endif
+
+static uint32_t PopCount(regMaskTP value)
+{
+#ifdef TARGET_ARM64
+    return BitOperations::PopCount(value.getLow());
+#else
+    return BitOperations::PopCount(value);
+#endif
+}
+
+static uint32_t BitScanForward(regMaskTP mask)
+{
+#ifdef TARGET_ARM64
+    return BitOperations::BitScanForward(mask.getLow());
+#else
+    return BitOperations::BitScanForward(mask);
+#endif
+}
 
 #if REGMASK_BITS == 8
 typedef unsigned char regMaskSmall;
@@ -227,13 +374,10 @@ typedef unsigned regMaskSmall;
 #define REG_MASK_INT_FMT "%08X"
 #define REG_MASK_ALL_FMT "%08X"
 #else
-typedef unsigned __int64 regMaskSmall;
+typedef uint64_t regMaskSmall;
 #define REG_MASK_INT_FMT "%04llX"
 #define REG_MASK_ALL_FMT "%016llX"
 #endif
-
-typedef _regNumber_enum regNumber;
-typedef unsigned char   regNumberSmall;
 
 /*****************************************************************************/
 
@@ -673,8 +817,7 @@ inline regMaskTP genRegMask(regNumber regNum, var_types type)
  *  These arrays list the callee-saved register numbers (and bitmaps, respectively) for
  *  the current architecture.
  */
-extern const regNumber raRegCalleeSaveOrder[CNT_CALLEE_SAVED];
-extern const regMaskTP raRbmCalleeSaveOrder[CNT_CALLEE_SAVED];
+extern const regMaskTP raRbmCalleeSaveOrder[CNT_CALL_GC_REGS];
 
 // This method takes a "compact" bitset of the callee-saved registers, and "expands" it to a full register mask.
 regMaskSmall genRegMaskFromCalleeSavedMask(unsigned short);
@@ -764,8 +907,8 @@ C_ASSERT((RBM_INT_CALLEE_SAVED & RBM_FPBASE) == RBM_NONE);
 /*****************************************************************************/
 
 #ifdef TARGET_64BIT
-typedef unsigned __int64 target_size_t;
-typedef __int64          target_ssize_t;
+typedef uint64_t target_size_t;
+typedef int64_t  target_ssize_t;
 #define TARGET_SIGN_BIT (1ULL << 63)
 
 #else // !TARGET_64BIT
