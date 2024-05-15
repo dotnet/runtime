@@ -553,12 +553,12 @@ PCODE Thread::VirtualUnwindCallFrame(T_CONTEXT* pContext,
     UINT_PTR            uImageBase;
     PT_RUNTIME_FUNCTION pFunctionEntry;
 
-#if !defined(TARGET_UNIX) && defined(CONTEXT_UNWOUND_TO_CALL)
+#if !defined(TARGET_UNIX) && defined(TARGET_ARM64)
     if ((pContext->ContextFlags & CONTEXT_UNWOUND_TO_CALL) != 0)
     {
         uControlPc -= STACKWALK_CONTROLPC_ADJUST_OFFSET;
     }
-#endif // !TARGET_UNIX && CONTEXT_UNWOUND_TO_CALL
+#endif // !TARGET_UNIX && TARGET_ARM64
 
     if (pCodeInfo == NULL)
     {
