@@ -8815,6 +8815,16 @@ GenTree* Compiler::impEstimateIntrinsic(CORINFO_METHOD_HANDLE method,
             }
             else if ((callType == TYP_FLOAT) && compExactlyDependsOn(InstructionSet_SSE))
             {
+                if (!IsBaselineSimdIsaSupported())
+                {
+                    // While the actual intrinsic only requires SSE, the
+                    // ToScalar intrinsic asserts that the BaselineSimdIsa
+                    // (SSE2) is supported to help simplify the overall logic
+                    // it has to maintain
+                    assert(intrinsicId == NI_Illegal);
+                    break;
+                }
+
                 simdType    = TYP_SIMD16;
                 intrinsicId = NI_SSE_ReciprocalScalar;
             }
@@ -8838,6 +8848,16 @@ GenTree* Compiler::impEstimateIntrinsic(CORINFO_METHOD_HANDLE method,
             }
             else if ((callType == TYP_FLOAT) && compExactlyDependsOn(InstructionSet_SSE))
             {
+                if (!IsBaselineSimdIsaSupported())
+                {
+                    // While the actual intrinsic only requires SSE, the
+                    // ToScalar intrinsic asserts that the BaselineSimdIsa
+                    // (SSE2) is supported to help simplify the overall logic
+                    // it has to maintain
+                    assert(intrinsicId == NI_Illegal);
+                    break;
+                }
+
                 simdType    = TYP_SIMD16;
                 intrinsicId = NI_SSE_ReciprocalSqrtScalar;
             }
