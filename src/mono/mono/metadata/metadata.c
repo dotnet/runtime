@@ -2565,11 +2565,11 @@ mono_metadata_signature_dup_new_params (MonoMemPool *mp, MonoMethodSignature *si
 	if (sig->ret)
 		new_sig_size += mono_sizeof_type (sig->ret);
 	
-	MonoMethodSignature *res = (MonoMethodSignature *)mono_mempool_alloc0 (mp, new_sig_size);
+	MonoMethodSignature *res = (MonoMethodSignature *)mono_mempool_alloc0 (mp, (unsigned int)new_sig_size);
 	memcpy (res, sig, MONO_SIZEOF_METHOD_SIGNATURE);
 	res->param_count = GUINT32_TO_UINT16 (num_params);
 
-	for (int i = 0; i < num_params; i++) {
+	for (uint16_t i = 0; i < res->param_count; i++) {
 		res->params [i] = new_params [i];
 	}
 	res->ret = sig->ret;
