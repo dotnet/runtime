@@ -293,24 +293,6 @@ static regMaskTP& operator^=(regMaskTP& first, regMaskTP second)
     return first;
 }
 
-static regMaskSmall operator^=(regMaskSmall& first, regMaskTP second)
-{
-    first ^= second.getLow();
-    return first;
-}
-
-static regMaskSmall operator&=(regMaskSmall& first, regMaskTP second)
-{
-    first &= second.getLow();
-    return first;
-}
-
-static regMaskSmall operator|=(regMaskSmall& first, regMaskTP second)
-{
-    first |= second.getLow();
-    return first;
-}
-
 static regMaskTP& operator&=(regMaskTP& first, regMaskTP second)
 {
     first = first & second;
@@ -820,7 +802,7 @@ inline regMaskTP genRegMask(regNumber regNum, var_types type)
  *  These arrays list the callee-saved register numbers (and bitmaps, respectively) for
  *  the current architecture.
  */
-extern const regMaskTP raRbmCalleeSaveOrder[CNT_CALL_GC_REGS];
+extern const regMaskSmall raRbmCalleeSaveOrder[CNT_CALL_GC_REGS];
 
 // This method takes a "compact" bitset of the callee-saved registers, and "expands" it to a full register mask.
 regMaskSmall genRegMaskFromCalleeSavedMask(unsigned short);
