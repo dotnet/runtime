@@ -180,23 +180,25 @@ regMaskTP LinearScan::filterConsecutiveCandidates(regMaskTP    candidates,
                                                   unsigned int registersNeeded,
                                                   regMaskTP*   allConsecutiveCandidates)
 {
-    if (PopCount(candidates) < registersNeeded)
+    SingleTypeRegSet floatCandidates = (candidates & availableFloatRegs)
+                                           .getLow();
+    if (PopCount(floatCandidates) < registersNeeded)
     {
         // There is no way the register demanded can be satisfied for this RefPosition
         // based on the candidates from which it can allocate a register.
         return RBM_NONE;
     }
 
-    regMaskTP currAvailableRegs = candidates;
-    regMaskTP overallResult     = RBM_NONE;
-    regMaskTP consecutiveResult = RBM_NONE;
+    SingleTypeRegSet currAvailableRegs = floatCandidates;
+    SingleTypeRegSet overallResult     = RBM_NONE;
+    SingleTypeRegSet consecutiveResult = RBM_NONE;
 
 // At this point, for 'n' registers requirement, if Rm, Rm+1, Rm+2, ..., Rm+k-1 are
 // available, create the mask only for Rm, Rm+1, ..., Rm+(k-n) to convey that it
 // is safe to assign any of those registers, but not beyond that.
 #define AppendConsecutiveMask(startIndex, endIndex, availableRegistersMask)                                            \
-    regMaskTP selectionStartMask = (1ULL << regAvailableStartIndex) - 1;                                               \
-    regMaskTP selectionEndMask   = (1ULL << (regAvailableEndIndex - registersNeeded + 1)) - 1;                         \
+    SingleTypeRegSet selectionStartMask = (1ULL << regAvailableStartIndex) - 1;                                               \
+    SingleTypeRegSet selectionEndMask   = (1ULL << (regAvailableEndIndex - registersNeeded + 1)) - 1;                         \
     consecutiveResult |= availableRegistersMask & (selectionEndMask & ~selectionStartMask);                            \
     overallResult |= availableRegistersMask;
 
@@ -206,10 +208,10 @@ regMaskTP LinearScan::filterConsecutiveCandidates(regMaskTP    candidates,
     {
         // From LSB, find the first available register (bit `1`)
         regAvailableStartIndex = BitScanForward(currAvailableRegs);
-        regMaskTP startMask    = (1ULL << regAvailableStartIndex) - 1;
+        SingleTypeRegSet startMask = (1ULL << regAvailableStartIndex) - 1;
 
         // Mask all the bits that are processed from LSB thru regAvailableStart until the last `1`.
-        regMaskTP maskProcessed = ~(currAvailableRegs | startMask);
+        SingleTypeRegSet maskProcessed = ~(currAvailableRegs | startMask);
 
         // From regAvailableStart, find the first unavailable register (bit `0`).
         if (maskProcessed == RBM_NONE)
@@ -225,7 +227,7 @@ regMaskTP LinearScan::filterConsecutiveCandidates(regMaskTP    candidates,
         {
             regAvailableEndIndex = BitScanForward(maskProcessed);
         }
-        regMaskTP endMask = (1ULL << regAvailableEndIndex) - 1;
+        SingleTypeRegSet endMask = (1ULL << regAvailableEndIndex) - 1;
 
         // Anything between regAvailableStart and regAvailableEnd is the range of consecutive registers available.
         // If they are equal to or greater than our register requirements, then add all of them to the result.
@@ -236,8 +238,8 @@ regMaskTP LinearScan::filterConsecutiveCandidates(regMaskTP    candidates,
         currAvailableRegs &= ~endMask;
     } while (currAvailableRegs != RBM_NONE);
 
-    regMaskTP v0_v31_mask = RBM_V0 | RBM_V31;
-    if ((candidates & v0_v31_mask) == v0_v31_mask)
+    SingleTypeRegSet v0_v31_mask = RBM_V0 | RBM_V31;
+    if ((floatCandidates & v0_v31_mask) == v0_v31_mask)
     {
         // Finally, check for round robin case where sequence of last register
         // round to first register is available.
@@ -251,7 +253,7 @@ regMaskTP LinearScan::filterConsecutiveCandidates(regMaskTP    candidates,
         {
             case 2:
             {
-                if ((candidates & v0_v31_mask) != RBM_NONE)
+                if ((floatCandidates & v0_v31_mask) != RBM_NONE)
                 {
                     consecutiveResult |= RBM_V31;
                     overallResult |= v0_v31_mask;
@@ -260,15 +262,15 @@ regMaskTP LinearScan::filterConsecutiveCandidates(regMaskTP    candidates,
             }
             case 3:
             {
-                regMaskTP v0_v30_v31_mask = RBM_V0 | RBM_V30 | RBM_V31;
-                if ((candidates & v0_v30_v31_mask) != RBM_NONE)
+                SingleTypeRegSet v0_v30_v31_mask = RBM_V0 | RBM_V30 | RBM_V31;
+                if ((floatCandidates & v0_v30_v31_mask) != RBM_NONE)
                 {
                     consecutiveResult |= RBM_V30;
                     overallResult |= v0_v30_v31_mask;
                 }
 
-                regMaskTP v0_v1_v31_mask = RBM_V0 | RBM_V1 | RBM_V31;
-                if ((candidates & v0_v1_v31_mask) != RBM_NONE)
+                SingleTypeRegSet v0_v1_v31_mask = RBM_V0 | RBM_V1 | RBM_V31;
+                if ((floatCandidates & v0_v1_v31_mask) != RBM_NONE)
                 {
                     consecutiveResult |= RBM_V31;
                     overallResult |= v0_v1_v31_mask;
@@ -277,21 +279,21 @@ regMaskTP LinearScan::filterConsecutiveCandidates(regMaskTP    candidates,
             }
             case 4:
             {
-                regMaskTP v0_v29_v30_v31_mask = RBM_V0 | RBM_V29 | RBM_V30 | RBM_V31;
+                SingleTypeRegSet v0_v29_v30_v31_mask = RBM_V0 | RBM_V29 | RBM_V30 | RBM_V31;
                 if ((candidates & v0_v29_v30_v31_mask) != RBM_NONE)
                 {
                     consecutiveResult |= RBM_V29;
                     overallResult |= v0_v29_v30_v31_mask;
                 }
 
-                regMaskTP v0_v1_v30_v31_mask = RBM_V0 | RBM_V29 | RBM_V30 | RBM_V31;
+                SingleTypeRegSet v0_v1_v30_v31_mask = RBM_V0 | RBM_V29 | RBM_V30 | RBM_V31;
                 if ((candidates & v0_v1_v30_v31_mask) != RBM_NONE)
                 {
                     consecutiveResult |= RBM_V30;
                     overallResult |= v0_v1_v30_v31_mask;
                 }
 
-                regMaskTP v0_v1_v2_v31_mask = RBM_V0 | RBM_V29 | RBM_V30 | RBM_V31;
+                SingleTypeRegSet v0_v1_v2_v31_mask = RBM_V0 | RBM_V29 | RBM_V30 | RBM_V31;
                 if ((candidates & v0_v1_v2_v31_mask) != RBM_NONE)
                 {
                     consecutiveResult |= RBM_V31;
