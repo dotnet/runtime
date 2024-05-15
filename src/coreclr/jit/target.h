@@ -281,24 +281,6 @@ static regMaskTP operator|(regMaskTP first, regMaskTP second)
     return result;
 }
 
-static regMaskTP operator<<(regMaskTP first, const int b)
-{
-    regMaskTP result(first.getLow() << b);
-    return result;
-}
-
-static regMaskTP operator>>(regMaskTP first, const int b)
-{
-    regMaskTP result(first.getLow() >> b);
-    return result;
-}
-
-static regMaskTP& operator>>=(regMaskTP& first, const int b)
-{
-    first = first >> b;
-    return first;
-}
-
 static regMaskTP& operator|=(regMaskTP& first, regMaskTP second)
 {
     first = first | second;
@@ -369,7 +351,7 @@ static uint32_t BitScanForward(regMaskTP mask)
 #ifdef TARGET_ARM64
     if (mask.getLow() != RBM_NONE)
     {
-    return BitOperations::BitScanForward(mask.getLow());
+        return BitOperations::BitScanForward(mask.getLow());
     }
     else
     {
