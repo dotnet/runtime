@@ -3505,14 +3505,15 @@ void emitter::emitDispInsName(
         {
             static constexpr int kMaxInstructionLength = 14;
 
-            unsigned opcode2 = (code >> 12) & 0x7;
-            unsigned  rd = (code >> 7) & 0x1f;
-            unsigned  rs1 = (code >> 15) & 0x1f;
-            int imm12 = static_cast<int>(code) >> 20;
-            bool isHex = false;
-            int printLength = 0;
+            unsigned opcode2     = (code >> 12) & 0x7;
+            unsigned rd          = (code >> 7) & 0x1f;
+            unsigned rs1         = (code >> 15) & 0x1f;
+            int      imm12       = static_cast<int>(code) >> 20;
+            bool     isHex       = false;
+            int      printLength = 0;
 
-            switch (opcode2) {
+            switch (opcode2)
+            {
                 case 0x0: // ADDI
                     printLength = printf("addi");
                     break;
@@ -3528,12 +3529,12 @@ void emitter::emitDispInsName(
                     break;
                 case 0x4: // XORI
                     printLength = printf("xori");
-                    isHex = true;
+                    isHex       = true;
                     break;
                 case 0x5: // SRLI & SRAI
                     printLength = printf((((code >> 30) & 0x1) == 0) ? "srli" : "srai");
                     imm12 &= 0x3f; // 6BITS for SHAMT in RISCV64
-                break;
+                    break;
                 case 0x6: // ORI
                     printLength = printf("ori");
                     imm12 &= 0xfff;
