@@ -1432,7 +1432,7 @@ private:
         return nextConsecutiveRefPositionMap;
     }
     FORCEINLINE RefPosition* getNextConsecutiveRefPosition(RefPosition* refPosition);
-    void getLowVectorOperandAndCandidates(HWIntrinsic intrin, int* operandNum, regMaskTP* candidates);
+    void getLowVectorOperandAndCandidates(HWIntrinsic intrin, size_t* operandNum, regMaskTP* candidates);
 #endif
 
 #ifdef DEBUG
