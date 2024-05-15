@@ -1017,7 +1017,8 @@ void emitIns_Call(EmitCallType          callType,
                   regNumber             xreg     = REG_NA,
                   unsigned              xmul     = 0,
                   ssize_t               disp     = 0,
-                  bool                  isJump   = false);
+                  bool                  isJump   = false,
+                  bool                  isNoGCframe   = false);
 // clang-format on
 
 #ifdef TARGET_AMD64

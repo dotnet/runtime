@@ -9664,7 +9664,8 @@ void emitter::emitIns_Call(EmitCallType          callType,
                            regNumber             xreg,
                            unsigned              xmul,
                            ssize_t               disp,
-                           bool                  isJump)
+                           bool                  isJump,
+                           bool                  isNoGCframe)
 // clang-format on
 {
     /* Sanity check the arguments depending on callType */
@@ -9790,7 +9791,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
     id->idIns(ins);
 
     // for the purpose of GC safepointing tail-calls are not real calls
-    id->idSetIsNoGC(isJump || emitNoGChelper(methHnd));
+    id->idSetIsNoGC(isJump || isNoGCframe || emitNoGChelper(methHnd));
 
     UNATIVE_OFFSET sz;
 

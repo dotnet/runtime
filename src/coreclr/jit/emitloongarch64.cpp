@@ -2392,7 +2392,8 @@ void emitter::emitIns_Call(EmitCallType          callType,
                            regNumber        xreg /* = REG_NA */,
                            unsigned         xmul /* = 0     */,
                            ssize_t          disp /* = 0     */,
-                           bool             isJump /* = false */)
+                           bool             isJump /* = false */,
+                           bool             isNoGCframe /* = false */)
 {
     /* Sanity check the arguments depending on callType */
 
@@ -2489,7 +2490,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
     emitThisByrefRegs = byrefRegs;
 
     // for the purpose of GC safepointing tail-calls are not real calls
-    id->idSetIsNoGC(isJump || emitNoGChelper(methHnd));
+    id->idSetIsNoGC(isJump || isNoGCframe || emitNoGChelper(methHnd));
 
     /* Set the instruction - special case jumping a function */
     instruction ins;
