@@ -66,8 +66,13 @@ namespace System.Collections.Tests
         [Fact]
         public void SortedSet_Generic_SetEquals_UnbalancedWithDup()
         {
-            var data = new[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 17 };
-            var set = new SortedSet<int>(data);
+            var data = new[] { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 17 };
+            var set = new SortedSet<int>();
+
+            foreach(var item in data)
+            {
+                set.Add(item);
+            }
 
             Assert.True(set.SetEquals(data));
         }
