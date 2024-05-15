@@ -217,12 +217,25 @@ namespace System.Reflection
             return type.Module?.Assembly;
         }
 
-        // internal test hook
         private static Assembly? s_overriddenEntryAssembly;
 
-        public static void SetEntryAssembly(Assembly newAssembly)
+        /// <summary>
+        /// Sets the application's entry assembly to the provided assembly object
+        /// as argument.
+        /// </summary>
+        /// <param name="assembly">
+        /// Assembly object that represents the application's new entry assembly.
+        /// </param>
+        /// <remarks>
+        /// It is important to mention that the assembly passed to this function
+        /// has to be a RuntimeAssembly type. Otherwise, an exception will be thrown.
+        /// </remarks>
+        public static void SetEntryAssembly(Assembly? assembly)
         {
-            s_overriddenEntryAssembly = newAssembly;
+            if (assembly is not RuntimeAssembly)
+                throw new ArgumentException(SR.Argument_MustBeRuntimeAssembly);
+
+            s_overriddenEntryAssembly = assembly;
         }
 
         public static Assembly? GetEntryAssembly()

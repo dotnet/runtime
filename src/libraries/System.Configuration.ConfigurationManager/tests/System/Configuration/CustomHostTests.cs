@@ -36,7 +36,7 @@ namespace System.Configuration.Tests
         private static void MakeAssemblyGetEntryAssemblyReturnNull()
         {
             typeof(Assembly)
-                .GetField("s_forceNullEntryPoint", BindingFlags.NonPublic | BindingFlags.Static)
+                .GetField("s_overriddenEntryAssembly", BindingFlags.NonPublic | BindingFlags.Static)
                 .SetValue(null, true);
 
             Assert.Null(Assembly.GetEntryAssembly());
