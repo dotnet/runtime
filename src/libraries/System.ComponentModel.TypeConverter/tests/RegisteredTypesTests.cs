@@ -120,6 +120,17 @@ namespace System.ComponentModel.Tests
                     Assert.Null(converter.GetProperties(null, new C1()));
                 }
 
+                // C2 has a base class; base class properties are included.
+                TypeDescriptor.RegisterType<C2>();
+                PropertyDescriptorCollection collection = TypeDescriptor.GetPropertiesFromRegisteredType(typeof(C2));
+                Assert.Equal(2, collection.Count);
+                Assert.Equal("Bool", collection[0].Name);
+                Assert.Equal("String", collection[1].Name);
+                Assert.Equal("Base", collection[1].ComponentType.Name);
+
+                // Since the base class is not explicitly registered, we throw on GetPropertiesFromRegisteredType().
+                Assert.Throws<InvalidOperationException>(() => TypeDescriptor.GetPropertiesFromRegisteredType(typeof(Base)));
+
             }, options).Dispose();
         }
 

@@ -17,13 +17,14 @@ class Program
         var c1 = new ClassWithUsedProperties();
         s_usedProperty = c1.P1;
         s_usedProperty = c1.P2;
+        s_usedProperty = c1.P3;
 
-        if (!RunTest(targetType: typeof(ClassWithUnusedProperties), expectedPropertyCount: 2))
+        if (!RunTest(targetType: typeof(ClassWithUnusedProperties), expectedPropertyCount: 3))
         {
             return -1;
         }
 
-        if (!RunTest(targetType: typeof(ClassWithUsedProperties), expectedPropertyCount: 2))
+        if (!RunTest(targetType: typeof(ClassWithUsedProperties), expectedPropertyCount: 3))
         {
             return -2;
         }
@@ -39,15 +40,20 @@ class Program
         return (properties.Count == expectedPropertyCount);
     }
 
-    private class ClassWithUnusedProperties
+    private class ClassWithUnusedProperties : BaseClass
     {
         public int P1 { get; set; }
         public int P2 { get; set; }
     }
 
-    private class ClassWithUsedProperties
+    private class ClassWithUsedProperties : BaseClass
     {
         public int P1 { get; set; }
         public int P2 { get; set; }
+    }
+
+    private class BaseClass
+    {
+        public int P3 { get; set; }
     }
 }
