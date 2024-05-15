@@ -1719,7 +1719,7 @@ Scev* ScalarEvolutionContext::ComputeExitNotTakenCount(BasicBlock* exiting)
 
     divisor = Simplify(divisor);
     int64_t divisorVal;
-    if (!divisor->GetConstantValue(m_comp, &divisorVal) || (abs(divisorVal) != 1))
+    if (!divisor->GetConstantValue(m_comp, &divisorVal) || ((divisorVal != 1) && (divisorVal != -1)))
     {
         // TODO-CQ: Enable. Likely need to add a division operator to SCEV.
         return nullptr;
