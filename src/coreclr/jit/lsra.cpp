@@ -234,13 +234,13 @@ weight_t LinearScan::getWeight(RefPosition* refPos)
 // allRegs represents a set of registers that can
 // be used to allocate the specified type in any point
 // in time (more of a 'bank' of registers).
-regMaskTP LinearScan::allRegs(RegisterType rt)
+SingleTypeRegSet LinearScan::allRegs(RegisterType rt)
 {
     assert((rt != TYP_UNDEF) && (rt != TYP_STRUCT));
     return *availableRegs[rt];
 }
 
-regMaskTP LinearScan::allByteRegs()
+SingleTypeRegSet LinearScan::allByteRegs()
 {
 #ifdef TARGET_X86
     return availableIntRegs & RBM_BYTE_REGS;
@@ -249,7 +249,7 @@ regMaskTP LinearScan::allByteRegs()
 #endif
 }
 
-regMaskTP LinearScan::allSIMDRegs()
+SingleTypeRegSet LinearScan::allSIMDRegs()
 {
     return availableFloatRegs;
 }
@@ -262,7 +262,7 @@ regMaskTP LinearScan::allSIMDRegs()
 // Return Value:
 // Register mask of the SSE/VEX-only SIMD registers
 //
-regMaskTP LinearScan::lowSIMDRegs()
+SingleTypeRegSet LinearScan::lowSIMDRegs()
 {
 #if defined(TARGET_AMD64)
     return (availableFloatRegs & RBM_LOWFLOAT);
@@ -436,7 +436,7 @@ void LinearScan::updateRegsFreeBusyState(RefPosition&               refPosition,
 //    that it will select a callee-save register.  But to be safe, we restrict
 //    the set of candidates if compFloatingPointUsed is not already set.
 //
-regMaskTP LinearScan::internalFloatRegCandidates()
+SingleTypeRegSet LinearScan::internalFloatRegCandidates()
 {
     needNonIntegerRegisters = true;
 
@@ -481,12 +481,12 @@ RegRecord* LinearScan::getRegisterRecord(regNumber regNum)
 //     New regMask that has minRegCount registers after intersection.
 //     Otherwise returns regMaskActual.
 //
-regMaskTP LinearScan::getConstrainedRegMask(RefPosition* refPosition,
-                                            regMaskTP    regMaskActual,
-                                            regMaskTP    regMaskConstraint,
+SingleTypeRegSet LinearScan::getConstrainedRegMask(RefPosition*     refPosition,
+                                            SingleTypeRegSet regMaskActual,
+                                            SingleTypeRegSet regMaskConstraint,
                                             unsigned     minRegCount)
 {
-    regMaskTP newMask = regMaskActual & regMaskConstraint;
+    SingleTypeRegSet newMask = regMaskActual & regMaskConstraint;
     if (genCountBits(newMask) < minRegCount)
     {
         // Constrained mask does not have minimum required registers needed.
@@ -495,7 +495,7 @@ regMaskTP LinearScan::getConstrainedRegMask(RefPosition* refPosition,
 
     if ((refPosition != nullptr) && !refPosition->RegOptional())
     {
-        regMaskTP busyRegs = regsBusyUntilKill | regsInUseThisLocation;
+        SingleTypeRegSet busyRegs = (regsBusyUntilKill | regsInUseThisLocation).GetRegSetForType(TYP_VOID); //TODO: Pass the right type
         if ((newMask & ~busyRegs) == RBM_NONE)
         {
             // Constrained mask does not have at least one free register to allocate.
@@ -532,8 +532,8 @@ static const regMaskTP LsraLimitUpperSimdSet =
 static const regMaskTP LsraLimitSmallIntSet = (RBM_R0 | RBM_R1 | RBM_R2 | RBM_R3 | RBM_R4 | RBM_R5);
 static const regMaskTP LsraLimitSmallFPSet  = (RBM_F0 | RBM_F1 | RBM_F2 | RBM_F16 | RBM_F17);
 #elif defined(TARGET_ARM64)
-static const regMaskTP LsraLimitSmallIntSet = (RBM_R0 | RBM_R1 | RBM_R2 | RBM_R19 | RBM_R20);
-static const regMaskTP LsraLimitSmallFPSet  = (RBM_V0 | RBM_V1 | RBM_V2 | RBM_V8 | RBM_V9);
+static const SingleTypeRegSet LsraLimitSmallIntSet = (RBM_R0 | RBM_R1 | RBM_R2 | RBM_R19 | RBM_R20);
+static const SingleTypeRegSet LsraLimitSmallFPSet  = (RBM_V0 | RBM_V1 | RBM_V2 | RBM_V8 | RBM_V9);
 #elif defined(TARGET_X86)
 static const regMaskTP LsraLimitSmallIntSet = (RBM_EAX | RBM_ECX | RBM_EDI);
 static const regMaskTP LsraLimitSmallFPSet  = (RBM_XMM0 | RBM_XMM1 | RBM_XMM2 | RBM_XMM6 | RBM_XMM7);
@@ -561,7 +561,7 @@ static const regMaskTP LsraLimitSmallFPSet  = (RBM_F0 | RBM_F1 | RBM_F2 | RBM_F8
 //    This is the method used to implement the stress options that limit
 //    the set of registers considered for allocation.
 //
-regMaskTP LinearScan::stressLimitRegs(RefPosition* refPosition, regMaskTP mask)
+SingleTypeRegSet LinearScan::stressLimitRegs(RefPosition* refPosition, SingleTypeRegSet mask)
 {
 #ifdef TARGET_ARM64
     if ((refPosition != nullptr) && refPosition->isLiveAtConsecutiveRegistersLoc(consecutiveRegistersLocation))
@@ -831,7 +831,7 @@ LinearScan::LinearScan(Compiler* theCompiler)
     // Note: one known reason why we exclude LR is because NativeAOT has dependency on not
     //       using LR as a GPR. See: https://github.com/dotnet/runtime/issues/101932
     //       Once that is addressed, we may consider allowing LR in availableIntRegs.
-    availableIntRegs = (RBM_ALLINT & ~(RBM_PR | RBM_FP | RBM_LR) & ~compiler->codeGen->regSet.rsMaskResvd);
+    availableIntRegs = ((RBM_ALLINT & ~(RBM_PR | RBM_FP | RBM_LR) & ~compiler->codeGen->regSet.rsMaskResvd)).getLow();
 #elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     availableIntRegs = (RBM_ALLINT & ~(RBM_FP | RBM_RA) & ~compiler->codeGen->regSet.rsMaskResvd);
 #else
@@ -2786,7 +2786,7 @@ void LinearScan::setFrameType()
 
     // If we are using FPBASE as the frame register, we cannot also use it for
     // a local var.
-    regMaskTP removeMask = RBM_NONE;
+    SingleTypeRegSet removeMask = RBM_NONE;
     if (frameType == FT_EBP_FRAME)
     {
         removeMask |= RBM_FPBASE;
@@ -2986,7 +2986,7 @@ regNumber LinearScan::allocateRegMinimal(Interval*                currentInterva
 {
     assert(!enregisterLocalVars);
     regNumber  foundReg;
-    regMaskTP  foundRegBit;
+    SingleTypeRegSet foundRegBit;
     RegRecord* availablePhysRegRecord;
     foundRegBit = regSelector->selectMinimal(currentInterval, refPosition DEBUG_ARG(registerScore));
     if (foundRegBit == RBM_NONE)
@@ -3501,7 +3501,7 @@ void LinearScan::checkAndAssignInterval(RegRecord* regRec, Interval* interval)
 // Assign the given physical register interval to the given interval
 void LinearScan::assignPhysReg(RegRecord* regRec, Interval* interval)
 {
-    regMaskTP assignedRegMask = genRegMask(regRec->regNum);
+    SingleTypeRegSet assignedRegMask = genRegMask(regRec->regNum);
     compiler->codeGen->regSet.rsSetRegsModified(assignedRegMask DEBUGARG(true));
 
     interval->assignedReg = regRec;
@@ -5254,7 +5254,7 @@ void LinearScan::allocateRegistersMinimal()
             INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_RELOAD, currentInterval, assignedRegister));
         }
 
-        regMaskTP assignedRegBit = RBM_NONE;
+        SingleTypeRegSet assignedRegBit = RBM_NONE;
         bool      isInRegister   = false;
         if (assignedRegister != REG_NA)
         {
@@ -6186,7 +6186,7 @@ void LinearScan::allocateRegisters()
             INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_RELOAD, currentInterval, assignedRegister));
         }
 
-        regMaskTP assignedRegBit = RBM_NONE;
+        SingleTypeRegSet assignedRegBit = RBM_NONE;
         bool      isInRegister   = false;
         if (assignedRegister != REG_NA)
         {
@@ -13319,7 +13319,7 @@ void LinearScan::RegisterSelection::calculateCoversSets()
 //      Register bit selected (a single register) and REG_NA if no register was selected.
 //
 template <bool needsConsecutiveRegisters>
-regMaskTP LinearScan::RegisterSelection::select(Interval*                currentInterval,
+SingleTypeRegSet LinearScan::RegisterSelection::select(Interval*                currentInterval,
                                                 RefPosition* refPosition DEBUG_ARG(RegisterScore* registerScore))
 {
 #ifdef DEBUG
@@ -13778,7 +13778,8 @@ Selection_Done:
 //  select the REG_ORDER heuristics (if there are any free candidates) or REG_NUM (if all registers
 //  are busy).
 //
-regMaskTP LinearScan::RegisterSelection::selectMinimal(Interval*                currentInterval,
+SingleTypeRegSet LinearScan::RegisterSelection::selectMinimal(
+    Interval* currentInterval,
                                                        RefPosition* refPosition DEBUG_ARG(RegisterScore* registerScore))
 {
     assert(!linearScan->enregisterLocalVars);

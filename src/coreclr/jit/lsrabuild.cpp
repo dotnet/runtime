@@ -251,8 +251,8 @@ void LinearScan::resolveConflictingDefAndUse(Interval* interval, RefPosition* de
     assert(!interval->isLocalVar);
 
     RefPosition* useRefPosition   = defRefPosition->nextRefPosition;
-    regMaskTP    defRegAssignment = defRefPosition->registerAssignment;
-    regMaskTP    useRegAssignment = useRefPosition->registerAssignment;
+    SingleTypeRegSet defRegAssignment = defRefPosition->registerAssignment;
+    SingleTypeRegSet useRegAssignment = useRefPosition->registerAssignment;
     RegRecord*   defRegRecord     = nullptr;
     RegRecord*   useRegRecord     = nullptr;
     regNumber    defReg           = REG_NA;
@@ -352,7 +352,7 @@ void LinearScan::resolveConflictingDefAndUse(Interval* interval, RefPosition* de
         RegisterType regType = interval->registerType;
         assert((getRegisterType(interval, defRefPosition) == regType) &&
                (getRegisterType(interval, useRefPosition) == regType));
-        regMaskTP candidates               = allRegs(regType);
+        SingleTypeRegSet candidates        = allRegs(regType);
         defRefPosition->registerAssignment = candidates;
         defRefPosition->isFixedRegRef      = false;
         return;
@@ -423,8 +423,8 @@ void LinearScan::checkConflictingDefUse(RefPosition* useRP)
 
     // All defs must have a valid treeNode, but we check it below to be conservative.
     assert(defRP->treeNode != nullptr);
-    regMaskTP prevAssignment = defRP->registerAssignment;
-    regMaskTP newAssignment  = (prevAssignment & useRP->registerAssignment);
+    SingleTypeRegSet prevAssignment = defRP->registerAssignment;
+    SingleTypeRegSet newAssignment  = (prevAssignment & useRP->registerAssignment);
     if (newAssignment != RBM_NONE)
     {
         if (!isSingleRegister(newAssignment) || !theInterval->hasInterferingUses)
@@ -519,7 +519,7 @@ void LinearScan::associateRefPosWithInterval(RefPosition* rp)
 //     a new RefPosition
 //
 RefPosition* LinearScan::newRefPosition(
-    regNumber reg, LsraLocation theLocation, RefType theRefType, GenTree* theTreeNode, regMaskTP mask)
+    regNumber reg, LsraLocation theLocation, RefType theRefType, GenTree* theTreeNode, SingleTypeRegSet mask)
 {
     RefPosition* newRP = newRefPositionRaw(theLocation, theTreeNode, theRefType);
 
@@ -558,7 +558,7 @@ RefPosition* LinearScan::newRefPosition(Interval*    theInterval,
                                         LsraLocation theLocation,
                                         RefType      theRefType,
                                         GenTree*     theTreeNode,
-                                        regMaskTP    mask,
+                                        SingleTypeRegSet mask,
                                         unsigned     multiRegIdx /* = 0 */)
 {
     if (theInterval != nullptr)

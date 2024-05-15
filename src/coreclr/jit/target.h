@@ -211,10 +211,30 @@ enum _regMask_enum : unsigned
 typedef _regNumber_enum regNumber;
 typedef unsigned char   regNumberSmall;
 
+
+#if REGMASK_BITS == 8
+typedef unsigned char regMaskSmall;
+#define REG_MASK_INT_FMT "%02X"
+#define REG_MASK_ALL_FMT "%02X"
+#elif REGMASK_BITS == 16
+typedef unsigned short regMaskSmall;
+#define REG_MASK_INT_FMT "%04X"
+#define REG_MASK_ALL_FMT "%04X"
+#elif REGMASK_BITS == 32
+typedef unsigned regMaskSmall;
+#define REG_MASK_INT_FMT "%08X"
+#define REG_MASK_ALL_FMT "%08X"
+#else
+typedef unsigned __int64 regMaskSmall;
+#define REG_MASK_INT_FMT "%04llX"
+#define REG_MASK_ALL_FMT "%016llX"
+#endif
+
+typedef regMaskSmall SingleTypeRegSet;
+
 #if defined(TARGET_AMD64) || defined(TARGET_ARM) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 typedef unsigned __int64 regMaskTP;
 #elif defined(TARGET_ARM64)
-typedef unsigned __int64 regMaskSmall;
 struct regMaskTP
 {
 private:
@@ -252,14 +272,19 @@ public:
         return (unsigned int)low;
     }
 
-    uint64_t getLow() const
+    SingleTypeRegSet getLow() const
     {
         return low;
     }
 
-    uint64_t getHigh() const
+    SingleTypeRegSet getHigh() const
     {
         return high;
+    }
+
+    SingleTypeRegSet GetRegSetForType(var_types type) const
+    {
+        return getLow();
     }
 };
 
@@ -344,25 +369,6 @@ static uint32_t BitScanForward(regMaskTP mask)
 #endif
 }
 
-#if REGMASK_BITS == 8
-typedef unsigned char regMaskSmall;
-#define REG_MASK_INT_FMT "%02X"
-#define REG_MASK_ALL_FMT "%02X"
-#elif REGMASK_BITS == 16
-typedef unsigned short regMaskSmall;
-#define REG_MASK_INT_FMT "%04X"
-#define REG_MASK_ALL_FMT "%04X"
-#elif REGMASK_BITS == 32
-typedef unsigned regMaskSmall;
-#define REG_MASK_INT_FMT "%08X"
-#define REG_MASK_ALL_FMT "%08X"
-#else
-typedef unsigned __int64 regMaskSmall;
-#define REG_MASK_INT_FMT "%04llX"
-#define REG_MASK_ALL_FMT "%016llX"
-#endif
-
-typedef regMaskSmall SingleTypeRegSet;
 
 /*****************************************************************************/
 

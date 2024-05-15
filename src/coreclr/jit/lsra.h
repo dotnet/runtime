@@ -775,11 +775,11 @@ private:
         return (LsraStressLimitRegs)(lsraStressMask & LSRA_LIMIT_MASK);
     }
 
-    regMaskTP getConstrainedRegMask(RefPosition* refPosition,
-                                    regMaskTP    regMaskActual,
-                                    regMaskTP    regMaskConstrain,
+    SingleTypeRegSet getConstrainedRegMask(RefPosition* refPosition,
+                                           SingleTypeRegSet regMaskActual,
+                                           SingleTypeRegSet regMaskConstrain,
                                     unsigned     minRegCount);
-    regMaskTP stressLimitRegs(RefPosition* refPosition, regMaskTP mask);
+    SingleTypeRegSet stressLimitRegs(RefPosition* refPosition, SingleTypeRegSet mask);
 
     // This controls the heuristics used to select registers
     // These can be combined.
@@ -1103,11 +1103,11 @@ private:
     // Given some tree node add refpositions for all the registers this node kills
     bool buildKillPositionsForNode(GenTree* tree, LsraLocation currentLoc, regMaskTP killMask);
 
-    regMaskTP allRegs(RegisterType rt);
-    regMaskTP allByteRegs();
-    regMaskTP allSIMDRegs();
-    regMaskTP lowSIMDRegs();
-    regMaskTP internalFloatRegCandidates();
+    SingleTypeRegSet allRegs(RegisterType rt);
+    SingleTypeRegSet allByteRegs();
+    SingleTypeRegSet allSIMDRegs();
+    SingleTypeRegSet lowSIMDRegs();
+    SingleTypeRegSet internalFloatRegCandidates();
 
     void makeRegisterInactive(RegRecord* physRegRecord);
     void freeRegister(RegRecord* physRegRecord);
@@ -1170,11 +1170,11 @@ private:
                                 LsraLocation theLocation,
                                 RefType      theRefType,
                                 GenTree*     theTreeNode,
-                                regMaskTP    mask,
+                                SingleTypeRegSet mask,
                                 unsigned     multiRegIdx = 0);
 
     RefPosition* newRefPosition(
-        regNumber reg, LsraLocation theLocation, RefType theRefType, GenTree* theTreeNode, regMaskTP mask);
+        regNumber reg, LsraLocation theLocation, RefType theRefType, GenTree* theTreeNode, SingleTypeRegSet mask);
 
     void applyCalleeSaveHeuristics(RefPosition* rp);
 
@@ -1270,10 +1270,10 @@ private:
 
         // Perform register selection and update currentInterval or refPosition
         template <bool hasConsecutiveRegister = false>
-        FORCEINLINE regMaskTP select(Interval*                currentInterval,
+        FORCEINLINE SingleTypeRegSet select(Interval*                currentInterval,
                                      RefPosition* refPosition DEBUG_ARG(RegisterScore* registerScore));
 
-        FORCEINLINE regMaskTP selectMinimal(Interval*                currentInterval,
+        FORCEINLINE SingleTypeRegSet selectMinimal(Interval*                currentInterval,
                                             RefPosition* refPosition DEBUG_ARG(RegisterScore* registerScore));
 
         // If the register is from unassigned set such that it was not already
@@ -1710,13 +1710,13 @@ private:
     // A temporary VarToRegMap used during the resolution of critical edges.
     VarToRegMap          sharedCriticalVarToRegMap;
     PhasedVar<regMaskTP> actualRegistersMask;
-    PhasedVar<regMaskTP> availableIntRegs;
-    PhasedVar<regMaskTP> availableFloatRegs;
-    PhasedVar<regMaskTP> availableDoubleRegs;
+    PhasedVar<SingleTypeRegSet> availableIntRegs;
+    PhasedVar<SingleTypeRegSet> availableFloatRegs;
+    PhasedVar<SingleTypeRegSet> availableDoubleRegs;
 #if defined(TARGET_XARCH) || defined(TARGET_ARM64)
-    PhasedVar<regMaskTP> availableMaskRegs;
+    PhasedVar<SingleTypeRegSet> availableMaskRegs;
 #endif
-    PhasedVar<regMaskTP>* availableRegs[TYP_COUNT];
+    PhasedVar<SingleTypeRegSet>* availableRegs[TYP_COUNT];
 
 #if defined(TARGET_XARCH) || defined(TARGET_ARM64)
 #define allAvailableRegs (availableIntRegs | availableFloatRegs | availableMaskRegs)
@@ -1897,7 +1897,7 @@ private:
     regMaskTP regsInUseThisLocation;
     regMaskTP regsInUseNextLocation;
 #ifdef TARGET_ARM64
-    regMaskTP consecutiveRegsInUseThisLocation;
+    SingleTypeRegSet consecutiveRegsInUseThisLocation;
 #endif
     bool isRegBusy(regNumber reg, var_types regType)
     {
@@ -2221,10 +2221,10 @@ public:
     void setLocalNumber(Compiler* compiler, unsigned lclNum, LinearScan* l);
 
     // Fixed registers for which this Interval has a preference
-    regMaskTP registerPreferences;
+    SingleTypeRegSet registerPreferences;
 
     // Registers that should be avoided for this interval
-    regMaskTP registerAversion;
+    SingleTypeRegSet registerAversion;
 
     // The relatedInterval is:
     //  - for any other interval, it is the interval to which this interval
@@ -2373,12 +2373,12 @@ public:
     // definitions. This method will return the current assigned register if any, or
     // the 'registerPreferences' otherwise.
     //
-    regMaskTP getCurrentPreferences()
+    SingleTypeRegSet getCurrentPreferences()
     {
         return (assignedReg == nullptr) ? registerPreferences : genRegMask(assignedReg->regNum);
     }
 
-    void mergeRegisterPreferences(regMaskTP preferences)
+    void mergeRegisterPreferences(SingleTypeRegSet preferences)
     {
         // We require registerPreferences to have been initialized.
         assert(registerPreferences != RBM_NONE);
@@ -2393,7 +2393,7 @@ public:
             return;
         }
 
-        regMaskTP commonPreferences = (registerPreferences & preferences);
+        SingleTypeRegSet commonPreferences = (registerPreferences & preferences);
         if (commonPreferences != RBM_NONE)
         {
             registerPreferences = commonPreferences;
@@ -2428,11 +2428,13 @@ public:
         // Keep only the callee-save preferences, if not empty.
         // Otherwise, take the union of the preferences.
 
-        regMaskTP newPreferences = registerPreferences | preferences;
+        SingleTypeRegSet newPreferences = registerPreferences | preferences;
 
         if (preferCalleeSave)
         {
-            regMaskTP calleeSaveMask = (LinearScan::calleeSaveRegs(this->registerType) & newPreferences);
+            SingleTypeRegSet calleeSaveMask =
+                (LinearScan::calleeSaveRegs(this->registerType) & newPreferences).GetRegSetForType(this-registerType);
+
             if (calleeSaveMask != RBM_NONE)
             {
                 newPreferences = calleeSaveMask;
@@ -2447,7 +2449,7 @@ public:
     // An exception is made in the case where one of the existing or new
     // preferences are all callee-save, in which case we "prefer" the callee-save
 
-    void updateRegisterPreferences(regMaskTP preferences)
+    void updateRegisterPreferences(SingleTypeRegSet preferences)
     {
         // If this interval is preferenced, that interval may have already been assigned a
         // register, and we want to include that in the preferences.
@@ -2485,7 +2487,7 @@ public:
     // Prior to the allocation pass, registerAssignment captures the valid registers
     // for this RefPosition.
     // After the allocation pass, this contains the actual assignment
-    regMaskTP registerAssignment;
+    SingleTypeRegSet registerAssignment;
 
     RefType refType;
 
