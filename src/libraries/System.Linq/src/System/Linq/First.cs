@@ -8,6 +8,7 @@ namespace System.Linq
 {
     public static partial class Enumerable
     {
+        public static TSource First<TSource>(this IList<TSource> source) => source[0];
         public static TSource First<TSource>(this IEnumerable<TSource> source)
         {
             TSource? first = source.TryGetFirst(out bool found);
