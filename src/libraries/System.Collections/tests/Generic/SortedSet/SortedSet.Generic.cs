@@ -99,9 +99,14 @@ namespace System.Collections.Tests
             var subSetData = new int[AboveInternalIndexOfCountThreshold - 1];
             Array.Copy(setData, subSetData, AboveInternalIndexOfCountThreshold - 1);
 
+            var differentSet = new int[AboveInternalIndexOfCountThreshold];
+            Array.Copy(setData, differentSet, AboveInternalIndexOfCountThreshold);
+            differentSet[0] = -1;
+
             Assert.True(set.SetEquals(setData));
             Assert.False(set.SetEquals(superSetData));
             Assert.False(set.SetEquals(subSetData));
+            Assert.False(set.SetEquals(differentSet));
         }
 #endif
 
