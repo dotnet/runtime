@@ -442,7 +442,7 @@ int LinearScan::BuildNode(GenTree* tree)
             // Comparand is preferenced to RAX.
             // The remaining two operands can be in any reg other than RAX.
 
-            const unsigned nonRaxCandidates = availableIntRegs & ~RBM_RAX;
+            const unsigned nonRaxCandidates = ((regMaskTP)availableIntRegs).getLow() & ~RBM_RAX;
             BuildUse(addr, nonRaxCandidates);
             BuildUse(data, varTypeIsByte(tree) ? (nonRaxCandidates & RBM_BYTE_REGS) : nonRaxCandidates);
             BuildUse(comparand, RBM_RAX);

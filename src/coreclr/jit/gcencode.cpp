@@ -2874,7 +2874,7 @@ size_t GCInfo::gcMakeRegPtrTable(BYTE* dest, int mask, const InfoHdr& header, un
 
         if (compiler->lvaKeepAliveAndReportThis() && compiler->lvaTable[compiler->info.compThisArg].lvRegister)
         {
-            unsigned thisRegMask   = genRegMask(compiler->lvaTable[compiler->info.compThisArg].GetRegNum());
+            regMaskSmall thisRegMask   = genRegMask(compiler->lvaTable[compiler->info.compThisArg].GetRegNum()).getLow();
             unsigned thisPtrRegEnc = gceEncodeCalleeSavedRegs(thisRegMask) << 4;
 
             if (thisPtrRegEnc)

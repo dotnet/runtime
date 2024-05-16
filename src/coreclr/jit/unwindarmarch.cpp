@@ -200,21 +200,22 @@ void Compiler::unwindPushPopMaskInt(regMaskTP maskInt, bool useOpsize16)
 {
     // floating point registers cannot be specified in 'maskInt'
     assert((maskInt & RBM_ALLFLOAT) == 0);
+    regMaskSmall regSetInt = maskInt.getLow();
 
     UnwindInfo* pu = &funCurrentFunc()->uwi;
 
     if (useOpsize16)
     {
         // The 16-bit opcode only encode R0-R7 and LR
-        assert((maskInt & ~(RBM_R0 | RBM_R1 | RBM_R2 | RBM_R3 | RBM_R4 | RBM_R5 | RBM_R6 | RBM_R7 | RBM_LR)) == 0);
+        assert((regSetInt & ~(RBM_R0 | RBM_R1 | RBM_R2 | RBM_R3 | RBM_R4 | RBM_R5 | RBM_R6 | RBM_R7 | RBM_LR)) == 0);
 
         bool shortFormat = false;
         BYTE val         = 0;
 
-        if ((maskInt & (RBM_R0 | RBM_R1 | RBM_R2 | RBM_R3)) == 0)
+        if ((regSetInt & (RBM_R0 | RBM_R1 | RBM_R2 | RBM_R3)) == 0)
         {
-            regMaskTP matchMask = maskInt & (RBM_R4 | RBM_R5 | RBM_R6 | RBM_R7);
-            regMaskTP valMask   = RBM_R4;
+            regMaskSmall matchMask = regSetInt & ( RBM_R4 | RBM_R5 | RBM_R6 | RBM_R7 );
+            regMaskSmall valMask   = RBM_R4;
             while (val < 4)
             {
                 if (matchMask == valMask)
@@ -233,27 +234,27 @@ void Compiler::unwindPushPopMaskInt(regMaskTP maskInt, bool useOpsize16)
         if (shortFormat)
         {
             // D0-D7 : pop {r4-rX,lr} (X=4-7) (opsize 16)
-            pu->AddCode(0xD0 | ((maskInt >> 12) & 0x4) | val);
+            pu->AddCode(0xD0 | ((regSetInt >> 12 ) & 0x4 ) | val);
         }
         else
         {
             // EC-ED : pop {r0-r7,lr} (opsize 16)
-            pu->AddCode(0xEC | ((maskInt >> 14) & 0x1), (BYTE)maskInt);
+            pu->AddCode(0xEC | ((regSetInt >> 14 ) & 0x1 ), (BYTE)regSetInt);
         }
     }
     else
     {
-        assert((maskInt & ~(RBM_R0 | RBM_R1 | RBM_R2 | RBM_R3 | RBM_R4 | RBM_R5 | RBM_R6 | RBM_R7 | RBM_R8 | RBM_R9 |
+        assert((regSetInt & ~(RBM_R0 | RBM_R1 | RBM_R2 | RBM_R3 | RBM_R4 | RBM_R5 | RBM_R6 | RBM_R7 | RBM_R8 | RBM_R9 |
                             RBM_R10 | RBM_R11 | RBM_R12 | RBM_LR)) == 0);
 
         bool shortFormat = false;
         BYTE val         = 0;
 
-        if (((maskInt & (RBM_R0 | RBM_R1 | RBM_R2 | RBM_R3)) == 0) &&
-            ((maskInt & (RBM_R4 | RBM_R5 | RBM_R6 | RBM_R7 | RBM_R8)) == (RBM_R4 | RBM_R5 | RBM_R6 | RBM_R7 | RBM_R8)))
+        if ((( regSetInt & (RBM_R0 | RBM_R1 | RBM_R2 | RBM_R3)) == 0) &&
+            (( regSetInt & (RBM_R4 | RBM_R5 | RBM_R6 | RBM_R7 | RBM_R8)) == (RBM_R4 | RBM_R5 | RBM_R6 | RBM_R7 | RBM_R8)))
         {
-            regMaskTP matchMask = maskInt & (RBM_R4 | RBM_R5 | RBM_R6 | RBM_R7 | RBM_R8 | RBM_R9 | RBM_R10 | RBM_R11);
-            regMaskTP valMask   = RBM_R4 | RBM_R5 | RBM_R6 | RBM_R7 | RBM_R8;
+            regMaskSmall matchMask = regSetInt & (RBM_R4 | RBM_R5 | RBM_R6 | RBM_R7 | RBM_R8 | RBM_R9 | RBM_R10 | RBM_R11);
+            regMaskSmall valMask   = RBM_R4 | RBM_R5 | RBM_R6 | RBM_R7 | RBM_R8;
             while (val < 4)
             {
                 if (matchMask == valMask)
@@ -272,12 +273,12 @@ void Compiler::unwindPushPopMaskInt(regMaskTP maskInt, bool useOpsize16)
         if (shortFormat)
         {
             // D8-DF : pop {r4-rX,lr} (X=8-11) (opsize 32)
-            pu->AddCode(0xD8 | ((maskInt >> 12) & 0x4) | val);
+            pu->AddCode(0xD8 | (( regSetInt >> 12) & 0x4) | val);
         }
         else
         {
             // 80-BF : pop {r0-r12,lr} (opsize 32)
-            pu->AddCode(0x80 | ((maskInt >> 8) & 0x1F) | ((maskInt >> 9) & 0x20), (BYTE)maskInt);
+            pu->AddCode(0x80 | (( regSetInt >> 8) & 0x1F) | (( regSetInt >> 9) & 0x20), (BYTE)regSetInt);
         }
     }
 }
@@ -297,7 +298,7 @@ void Compiler::unwindPushPopMaskFloat(regMaskTP maskFloat)
     UnwindInfo* pu = &funCurrentFunc()->uwi;
 
     BYTE      val     = 0;
-    regMaskTP valMask = (RBM_F16 | RBM_F17);
+    regMaskSmall valMask = (RBM_F16 | RBM_F17);
 
     while (maskFloat != valMask)
     {

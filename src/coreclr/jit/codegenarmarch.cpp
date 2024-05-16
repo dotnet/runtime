@@ -4684,8 +4684,8 @@ void CodeGen::genPushCalleeSavedRegisters()
 
     maskPushRegsInt |= genStackAllocRegisterMask(compiler->compLclFrameSize, maskPushRegsFloat);
 
-    assert(FitsIn<int>(maskPushRegsInt));
-    inst_IV(INS_push, (int)maskPushRegsInt);
+    assert(FitsIn<int>(maskPushRegsInt.getLow()));
+    inst_IV(INS_push, (int)maskPushRegsInt.getLow());
     compiler->unwindPushMaskInt(maskPushRegsInt);
 
     if (maskPushRegsFloat != 0)

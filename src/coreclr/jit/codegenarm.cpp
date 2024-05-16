@@ -1932,7 +1932,7 @@ void CodeGen::genPushFltRegs(regMaskTP regMask)
     regNumber lowReg = genRegNumFromMask(genFindLowestBit(regMask));
     int       slots  = genCountBits(regMask);
     // regMask should be contiguously set
-    regMaskTP tmpMask = ((regMask >> lowReg) + 1); // tmpMask should have a single bit set
+    regMaskSmall tmpMask = ((regMask.getLow() >> lowReg ) + 1 ); // tmpMask should have a single bit set
     assert((tmpMask & (tmpMask - 1)) == 0);
     assert(lowReg == REG_F16); // Currently we expect to start at F16 in the unwind codes
 
@@ -1951,7 +1951,7 @@ void CodeGen::genPopFltRegs(regMaskTP regMask)
     regNumber lowReg = genRegNumFromMask(genFindLowestBit(regMask));
     int       slots  = genCountBits(regMask);
     // regMask should be contiguously set
-    regMaskTP tmpMask = ((regMask >> lowReg) + 1); // tmpMask should have a single bit set
+    regMaskSmall tmpMask = ((regMask.getLow() >> lowReg ) + 1 ); // tmpMask should have a single bit set
     assert((tmpMask & (tmpMask - 1)) == 0);
 
     // Our calling convention requires that we only use vpop for TYP_DOUBLE registers
@@ -2191,8 +2191,8 @@ void CodeGen::genPopCalleeSavedRegisters(bool jmpEpilog)
         genUsedPopToReturn = false;
     }
 
-    assert(FitsIn<int>(maskPopRegsInt));
-    inst_IV(INS_pop, (int)maskPopRegsInt);
+    assert(FitsIn<int>(maskPopRegsInt.getLow()));
+    inst_IV(INS_pop, (int)maskPopRegsInt.getLow());
     compiler->unwindPopMaskInt(maskPopRegsInt);
 }
 
@@ -2319,8 +2319,8 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
     regMaskTP maskStackAlloc = genStackAllocRegisterMask(genFuncletInfo.fiSpDelta, maskPushRegsFloat);
     maskPushRegsInt |= maskStackAlloc;
 
-    assert(FitsIn<int>(maskPushRegsInt));
-    inst_IV(INS_push, (int)maskPushRegsInt);
+    assert(FitsIn<int>(maskPushRegsInt.getLow()));
+    inst_IV(INS_push, (int)maskPushRegsInt.getLow());
     compiler->unwindPushMaskInt(maskPushRegsInt);
 
     if (maskPushRegsFloat != RBM_NONE)
@@ -2436,8 +2436,8 @@ void CodeGen::genFuncletEpilog()
         compiler->unwindPopMaskFloat(maskPopRegsFloat);
     }
 
-    assert(FitsIn<int>(maskPopRegsInt));
-    inst_IV(INS_pop, (int)maskPopRegsInt);
+    assert(FitsIn<int>(maskPopRegsInt.getLow()));
+    inst_IV(INS_pop, (int)maskPopRegsInt.getLow());
     compiler->unwindPopMaskInt(maskPopRegsInt);
 
     compiler->unwindEndEpilog();
@@ -2701,7 +2701,7 @@ void CodeGen::genZeroInitFrameUsingBlockInit(int untrLclHi, int untrLclLo, regNu
 
     rZero1 = genGetZeroReg(initReg, pInitRegZeroed);
     instGen_Set_Reg_To_Zero(EA_PTRSIZE, rZero2);
-    target_ssize_t stmImm = (target_ssize_t)(genRegMask(rZero1) | genRegMask(rZero2));
+    target_ssize_t stmImm = (target_ssize_t)(genRegMask(rZero1) | genRegMask(rZero2)).getLow();
 
     if (!useLoop)
     {
