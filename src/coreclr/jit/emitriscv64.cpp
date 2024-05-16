@@ -3357,6 +3357,7 @@ static const char* const RegNames[] =
 
 bool emitter::emitDispBranchInstrType(unsigned opcode2, bool is_zero_reg, bool& print_second_reg) const
 {
+    print_second_reg = true;
     switch (opcode2)
     {
         case 0:
@@ -3369,19 +3370,15 @@ bool emitter::emitDispBranchInstrType(unsigned opcode2, bool is_zero_reg, bool& 
             break;
         case 4:
             printf("blt ");
-            print_second_reg = true;
             break;
         case 5:
             printf("bge ");
-            print_second_reg = true;
             break;
         case 6:
             printf("bltu");
-            print_second_reg = true;
             break;
         case 7:
             printf("bgeu");
-            print_second_reg = true;
             break;
         default:
             return false;
@@ -3524,19 +3521,19 @@ void emitter::emitDispInsName(
             switch (opcode2)
             {
                 case 0x0: // ADDI & MV & NOP
-                    if (imm12 != 0)
-                    {
-                        printLength = printf("addi");
-                    }
-                    else if ((rd != REG_ZERO) || (rs1 != REG_ZERO))
-                    {
-                        printLength  = printf("mv");
-                        hasImmediate = false;
-                    }
-                    else
+                    if (code == emitInsCode(INS_nop))
                     {
                         printf("nop\n");
                         return;
+                    }
+                    else if (imm12 != 0)
+                    {
+                        printLength = printf("addi");
+                    }
+                    else
+                    {
+                        printLength  = printf("mv");
+                        hasImmediate = false;
                     }
                     break;
                 case 0x1: // SLLI
