@@ -10656,8 +10656,8 @@ void* CEEJitInfo::getHelperFtn(CorInfoHelpFunc    ftnNum,         /* IN  */
                                void **            ppIndirection)  /* OUT */
 {
     CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
+        THROWS;
+        GC_TRIGGERS;
         MODE_PREEMPTIVE;
     } CONTRACTL_END;
 
@@ -10736,6 +10736,16 @@ void* CEEJitInfo::getHelperFtn(CorInfoHelpFunc    ftnNum,         /* IN  */
             dynamicFtnNum == DYNAMIC_CORINFO_HELP_DBL2ULNG_OVF)
         {
             Precode* pPrecode = Precode::GetPrecodeFromEntryPoint((PCODE)hlpDynamicFuncTable[dynamicFtnNum].pfnHelper);
+            if (pPrecode->GetType() == PRECODE_STUB)
+            {
+                // The only case when we might get here is when TC and ReJIT are disabled and we don't have any R2R
+                // version for this helper.
+                pPrecode->GetMethodDesc()->DoPrestub(nullptr);
+                hlpFinalTierAddrTable[dynamicFtnNum] = (LPVOID)pPrecode->GetMethodDesc()->GetNativeCode();
+                result = hlpFinalTierAddrTable[dynamicFtnNum];
+                goto exit;
+            }
+
             _ASSERTE(pPrecode->GetType() == PRECODE_FIXUP);
 
             // Check if the target MethodDesc is already jitted to its final Tier
