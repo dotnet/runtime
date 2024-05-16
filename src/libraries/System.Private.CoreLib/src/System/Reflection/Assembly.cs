@@ -235,7 +235,7 @@ namespace System.Reflection
         {
             if (assembly is null)
             {
-                s_overriddenEntryAssembly = new object();
+                s_overriddenEntryAssembly = string.Empty;
                 return;
             }
 
