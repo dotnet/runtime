@@ -21591,7 +21591,7 @@ GenTree* Compiler::gtNewSimdCvtNode(var_types   type,
         }
         else
         {
-            fixupHwIntrinsicID = isAvx10v1 ? NI_AVX10v1_Fixup : NI_AVX512F_Fixup;
+            fixupHwIntrinsicID = isAvx10v1 ? NI_AVX10v1_Fixup : NI_AVX512F_VL_Fixup;
         }
         // run vfixupimmsd base on table and no flags reporting
         fixupVal = gtNewSimdHWIntrinsicNode(type, op1, op1Clone, tblCon, gtNewIconNode(0), fixupHwIntrinsicID,

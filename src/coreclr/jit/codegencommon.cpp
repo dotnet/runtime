@@ -1829,7 +1829,7 @@ void CodeGen::genGenerateMachineCode()
         {
             if (compiler->compOpportunisticallyDependsOn(InstructionSet_AVX10v1))
             {
-                if (compiler->compOpportunisticallyDependsOn(InstructionSet_AVX512F))
+                if (compiler->compOpportunisticallyDependsOn(InstructionSet_AVX10v1_V512))
                 {
                     printf("X86 with AVX10/512");
                 }
@@ -1857,19 +1857,19 @@ void CodeGen::genGenerateMachineCode()
         {
             if (compiler->compOpportunisticallyDependsOn(InstructionSet_AVX10v1))
             {
-                if (compiler->compOpportunisticallyDependsOn(InstructionSet_AVX512F))
+                if (compiler->compOpportunisticallyDependsOn(InstructionSet_AVX10v1_V512))
                 {
-                    printf("X64 with AVX10/512");
+                    printf("X86 with AVX10/512");
                 }
                 else
                 {
-                    printf("X64 with AVX10/256");
+                    printf("X86 with AVX10/256");
                 }
             }
             else
             {
                 assert(compiler->compIsaSupportedDebugOnly(InstructionSet_AVX512F));
-                printf("X64 with AVX512");
+                printf("X86 with AVX512");
             }
         }
         else if (compiler->canUseVexEncoding())
