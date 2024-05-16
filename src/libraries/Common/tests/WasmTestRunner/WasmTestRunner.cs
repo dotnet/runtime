@@ -57,9 +57,6 @@ public class WasmTestRunner : WasmApplicationEntryPoint
                     includedMethods.Add(args[i + 1]);
                     i++;
                     break;
-                case "-backgroundExec":
-                    backgroundExec = true;
-                    break;
                 case "-untilFailed":
                     untilFailed = true;
                     break;
