@@ -1221,6 +1221,27 @@ bool ScalarEvolutionContext::Materialize(Scev* scev, bool createIR, GenTree** re
             *resultVN = m_comp->vnStore->VNForFunc(binop->Type, VNFunc(oper), op1VN, op2VN);
             if (createIR)
             {
+                if (oper == GT_MUL)
+                {
+                    if (op1->IsIntegralConst(-1))
+                    {
+                        *result = m_comp->gtNewOperNode(GT_NEG, op2->TypeGet(), op2);
+                        break;
+                    }
+                    if (op2->IsIntegralConst(-1))
+                    {
+                        *result = m_comp->gtNewOperNode(GT_NEG, op1->TypeGet(), op1);
+                        break;
+                    }
+                }
+
+#ifndef TARGET_64BIT
+                if ((oper == GT_MUL) && binop->TypeIs(TYP_LONG))
+                {
+                    // These require helper calls. Just don't bother.
+                    return false;
+                }
+#endif
                 *result = m_comp->gtNewOperNode(oper, binop->Type, op1, op2);
             }
 
