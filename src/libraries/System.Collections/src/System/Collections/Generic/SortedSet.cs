@@ -755,7 +755,7 @@ namespace System.Collections.Generic
                 int index = -1;
                 InOrderTreeWalk(current =>
                 {
-                    int order = comparer.Compare(item, current);
+                    int order = comparer.Compare(item, current.Item);
                     if (order == 0)
                     {
                         index = count;
