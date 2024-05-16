@@ -177,24 +177,3 @@ extends:
             timeoutInMinutes: 95
             condition:
                 eq(dependencies.evaluate_paths.outputs['SetPathVars_non_mono_and_wasm.containsChange'], true)
-
-      #
-      # Build CoreCLR as a non-portable build
-      #
-      - template: /eng/pipelines/common/platform-matrix.yml
-        parameters:
-          jobTemplate: /eng/pipelines/common/global-build-job.yml
-          helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
-          buildConfig: checked
-          runtimeFlavor: coreclr
-          platforms:
-          - tizen_armel
-          jobParameters:
-            testScope: innerloop
-            nameSuffix: CoreCLR_NonPortable
-            buildArgs: -s clr.native+clr.tools+clr.corelib+clr.nativecorelib+clr.aot+clr.packages -c $(_BuildConfig) /p:PortableBuild=false
-            timeoutInMinutes: 120
-            condition: >-
-              or(
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
-                eq(variables['isRollingBuild'], true))
