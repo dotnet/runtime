@@ -1096,8 +1096,8 @@ bool Compiler::optMakeLoopDownwardsCounted(ScalarEvolutionContext& scevContext,
     JITDUMP("\n  Updated exit test:\n");
     DISPSTMT(jtrueStmt);
 
-    GenTree* decremented = gtNewOperNode(GT_ADD, decCount->Type, gtNewLclVarNode(tripCountLcl, decCount->Type),
-                                         gtNewIconNode(-1, decCount->Type));
+    GenTree* negOne      = decCount->TypeIs(TYP_LONG) ? gtNewLconNode(-1) : gtNewIconNode(-1, decCount->Type);
+    GenTree* decremented = gtNewOperNode(GT_ADD, decCount->Type, gtNewLclVarNode(tripCountLcl, decCount->Type), negOne);
 
     store = gtNewTempStore(tripCountLcl, decremented);
 

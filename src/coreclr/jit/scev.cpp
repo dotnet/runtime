@@ -1142,7 +1142,14 @@ bool ScalarEvolutionContext::Materialize(Scev* scev, bool createIR, GenTree** re
             *resultVN         = m_comp->vnStore->VNForGenericCon(scev->Type, reinterpret_cast<uint8_t*>(&cns->Value));
             if (createIR)
             {
-                *result = m_comp->gtNewIconNode((ssize_t)cns->Value, scev->Type);
+                if (scev->TypeIs(TYP_LONG))
+                {
+                    *result = m_comp->gtNewLconNode(cns->Value);
+                }
+                else
+                {
+                    *result = m_comp->gtNewIconNode((ssize_t)cns->Value, scev->Type);
+                }
             }
 
             break;
