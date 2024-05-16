@@ -1311,7 +1311,7 @@ PTR_ILCodeVersioningState CodeVersionManager::GetILCodeVersioningState(PTR_Modul
     LIMITED_METHOD_DAC_CONTRACT;
 
     PTR_MethodDesc pMethod = pModule->LookupMethodDef(methodDef);
-    _ASSERTE(pMethod != (TADDR)NULL);
+    _ASSERTE(pMethod != NULL);
     return pMethod->GetILCodeVersionState();
 }
 
@@ -1338,7 +1338,7 @@ HRESULT CodeVersionManager::GetOrCreateILCodeVersioningState(Module* pModule, md
 
     LOG((LF_TIEREDCOMPILATION, LL_INFO100, "CVM::GetOrCreateILCodeVersioningState Module=%p Method=0x%08x\n", pModule, methodDef));
     PTR_MethodDesc pMethod = pModule->LookupMethodDef(methodDef);
-    _ASSERTE(pMethod != (TADDR)NULL);
+    _ASSERTE(pMethod != NULL);
     _ASSERTE(pMethod->IsTypicalMethodDefinition());
 
     ILCodeVersioningState* pILCodeVersioningState = pMethod->GetILCodeVersionState();
@@ -1419,7 +1419,7 @@ ILCodeVersion CodeVersionManager::GetActiveILCodeVersion(PTR_MethodDesc pMethod)
     _ASSERTE(IsLockOwnedByCurrentThread());
 
     PTR_ILCodeVersioningState pILCodeVersioningState = pMethod->GetILCodeVersionState();
-    if (pILCodeVersioningState == (TADDR)NULL)
+    if (pILCodeVersioningState == NULL)
         return ILCodeVersion(dac_cast<PTR_Module>(pMethod->GetModule()), pMethod->GetMemberDef());
 
     return pILCodeVersioningState->GetActiveVersion();
@@ -1431,7 +1431,7 @@ ILCodeVersion CodeVersionManager::GetActiveILCodeVersion(PTR_Module pModule, mdM
     _ASSERTE(IsLockOwnedByCurrentThread());
 
     PTR_MethodDesc pMethod = pModule->LookupMethodDef(methodDef);
-    if (pMethod == (TADDR)NULL)
+    if (pMethod == NULL)
         return ILCodeVersion(pModule, methodDef);
 
     return GetActiveILCodeVersion(pMethod);
