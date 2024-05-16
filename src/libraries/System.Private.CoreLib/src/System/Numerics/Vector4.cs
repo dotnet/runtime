@@ -3,6 +3,7 @@
 
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
@@ -33,26 +34,31 @@ namespace System.Numerics
 
         /// <summary>Creates a new <see cref="Vector4" /> object whose four elements have the same value.</summary>
         /// <param name="value">The value to assign to all four elements.</param>
-        [Intrinsic]
-        public Vector4(float value) : this(value, value, value, value)
+        public Vector4(float value)
         {
+            this = Vector128.Create(value).AsVector4();
         }
 
         /// <summary>Creates a   new <see cref="Vector4" /> object from the specified <see cref="Vector2" /> object and a Z and a W component.</summary>
         /// <param name="value">The vector to use for the X and Y components.</param>
         /// <param name="z">The Z component.</param>
         /// <param name="w">The W component.</param>
-        [Intrinsic]
-        public Vector4(Vector2 value, float z, float w) : this(value.X, value.Y, z, w)
+        public Vector4(Vector2 value, float z, float w)
         {
+            this = value.AsVector128()
+                        .WithElement(2, z)
+                        .WithElement(3, w)
+                        .AsVector4();
         }
 
         /// <summary>Constructs a new <see cref="Vector4" /> object from the specified <see cref="Vector3" /> object and a W component.</summary>
         /// <param name="value">The vector to use for the X, Y, and Z components.</param>
         /// <param name="w">The W component.</param>
-        [Intrinsic]
-        public Vector4(Vector3 value, float w) : this(value.X, value.Y, value.Z, w)
+        public Vector4(Vector3 value, float w)
         {
+            this = value.AsVector128()
+                        .WithElement(3, w)
+                        .AsVector4();
         }
 
         /// <summary>Creates a vector whose elements have the specified values.</summary>
@@ -60,32 +66,22 @@ namespace System.Numerics
         /// <param name="y">The value to assign to the <see cref="Y" /> field.</param>
         /// <param name="z">The value to assign to the <see cref="Z" /> field.</param>
         /// <param name="w">The value to assign to the <see cref="W" /> field.</param>
-        [Intrinsic]
         public Vector4(float x, float y, float z, float w)
         {
-            X = x;
-            Y = y;
-            Z = z;
-            W = w;
+            this = Vector128.Create(x, y, z, w).AsVector4();
         }
 
         /// <summary>Constructs a vector from the given <see cref="ReadOnlySpan{Single}" />. The span must contain at least 4 elements.</summary>
         /// <param name="values">The span of elements to assign to the vector.</param>
         public Vector4(ReadOnlySpan<float> values)
         {
-            if (values.Length < 4)
-            {
-                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.values);
-            }
-
-            this = Unsafe.ReadUnaligned<Vector4>(ref Unsafe.As<float, byte>(ref MemoryMarshal.GetReference(values)));
+            this = Vector128.Create(values).AsVector4();
         }
 
         /// <summary>Gets a vector whose 4 elements are equal to zero.</summary>
         /// <value>A vector whose four elements are equal to zero (that is, it returns the vector <c>(0,0,0,0)</c>.</value>
         public static Vector4 Zero
         {
-            [Intrinsic]
             get => default;
         }
 
@@ -94,15 +90,13 @@ namespace System.Numerics
         /// <remarks>A vector whose four elements are equal to one (that is, it returns the vector <c>(1,1,1,1)</c>.</remarks>
         public static Vector4 One
         {
-            [Intrinsic]
-            get => new Vector4(1.0f);
+            get => new Vector4(1);
         }
 
         /// <summary>Gets the vector (1,0,0,0).</summary>
         /// <value>The vector <c>(1,0,0,0)</c>.</value>
         public static Vector4 UnitX
         {
-            [Intrinsic]
             get => new Vector4(1.0f, 0.0f, 0.0f, 0.0f);
         }
 
@@ -110,7 +104,6 @@ namespace System.Numerics
         /// <value>The vector <c>(0,1,0,0)</c>.</value>
         public static Vector4 UnitY
         {
-            [Intrinsic]
             get => new Vector4(0.0f, 1.0f, 0.0f, 0.0f);
         }
 
@@ -118,7 +111,6 @@ namespace System.Numerics
         /// <value>The vector <c>(0,0,1,0)</c>.</value>
         public static Vector4 UnitZ
         {
-            [Intrinsic]
             get => new Vector4(0.0f, 0.0f, 1.0f, 0.0f);
         }
 
@@ -126,7 +118,6 @@ namespace System.Numerics
         /// <value>The vector <c>(0,0,0,1)</c>.</value>
         public static Vector4 UnitW
         {
-            [Intrinsic]
             get => new Vector4(0.0f, 0.0f, 0.0f, 1.0f);
         }
 
@@ -136,7 +127,6 @@ namespace System.Numerics
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="index" /> was less than zero or greater than the number of elements.</exception>
         public float this[int index]
         {
-            [Intrinsic]
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             readonly get => this.GetElement(index);
 
@@ -149,16 +139,10 @@ namespace System.Numerics
         /// <param name="right">The second vector to add.</param>
         /// <returns>The summed vector.</returns>
         /// <remarks>The <see cref="op_Addition" /> method defines the addition operation for <see cref="Vector4" /> objects.</remarks>
-        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector4 operator +(Vector4 left, Vector4 right)
         {
-            return new Vector4(
-                left.X + right.X,
-                left.Y + right.Y,
-                left.Z + right.Z,
-                left.W + right.W
-            );
+            return (left.AsVector128() + right.AsVector128()).AsVector4();
         }
 
         /// <summary>Divides the first vector by the second.</summary>
@@ -166,16 +150,10 @@ namespace System.Numerics
         /// <param name="right">The second vector.</param>
         /// <returns>The vector that results from dividing <paramref name="left" /> by <paramref name="right" />.</returns>
         /// <remarks>The <see cref="Vector4.op_Division" /> method defines the division operation for <see cref="Vector4" /> objects.</remarks>
-        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector4 operator /(Vector4 left, Vector4 right)
         {
-            return new Vector4(
-                left.X / right.X,
-                left.Y / right.Y,
-                left.Z / right.Z,
-                left.W / right.W
-            );
+            return (left.AsVector128() / right.AsVector128()).AsVector4();
         }
 
         /// <summary>Divides the specified vector by a specified scalar value.</summary>
@@ -183,7 +161,6 @@ namespace System.Numerics
         /// <param name="value2">The scalar value.</param>
         /// <returns>The result of the division.</returns>
         /// <remarks>The <see cref="Vector4.op_Division" /> method defines the division operation for <see cref="Vector4" /> objects.</remarks>
-        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector4 operator /(Vector4 value1, float value2)
         {
@@ -195,21 +172,16 @@ namespace System.Numerics
         /// <param name="right">The second vector to compare.</param>
         /// <returns><see langword="true" /> if <paramref name="left" /> and <paramref name="right" /> are equal; otherwise, <see langword="false" />.</returns>
         /// <remarks>Two <see cref="Vector4" /> objects are equal if each element in <paramref name="left" /> is equal to the corresponding element in <paramref name="right" />.</remarks>
-        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool operator ==(Vector4 left, Vector4 right)
         {
-            return (left.X == right.X)
-                && (left.Y == right.Y)
-                && (left.Z == right.Z)
-                && (left.W == right.W);
+            return left.AsVector128() == right.AsVector128();
         }
 
         /// <summary>Returns a value that indicates whether two specified vectors are not equal.</summary>
         /// <param name="left">The first vector to compare.</param>
         /// <param name="right">The second vector to compare.</param>
         /// <returns><see langword="true" /> if <paramref name="left" /> and <paramref name="right" /> are not equal; otherwise, <see langword="false" />.</returns>
-        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool operator !=(Vector4 left, Vector4 right)
         {
@@ -221,16 +193,10 @@ namespace System.Numerics
         /// <param name="right">The second vector.</param>
         /// <returns>The element-wise product vector.</returns>
         /// <remarks>The <see cref="Vector4.op_Multiply" /> method defines the multiplication operation for <see cref="Vector4" /> objects.</remarks>
-        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector4 operator *(Vector4 left, Vector4 right)
         {
-            return new Vector4(
-                left.X * right.X,
-                left.Y * right.Y,
-                left.Z * right.Z,
-                left.W * right.W
-            );
+            return (left.AsVector128() * right.AsVector128()).AsVector4();
         }
 
         /// <summary>Multiplies the specified vector by the specified scalar value.</summary>
@@ -238,7 +204,6 @@ namespace System.Numerics
         /// <param name="right">The scalar value.</param>
         /// <returns>The scaled vector.</returns>
         /// <remarks>The <see cref="Vector4.op_Multiply" /> method defines the multiplication operation for <see cref="Vector4" /> objects.</remarks>
-        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector4 operator *(Vector4 left, float right)
         {
@@ -250,7 +215,6 @@ namespace System.Numerics
         /// <param name="right">The scalar value.</param>
         /// <returns>The scaled vector.</returns>
         /// <remarks>The <see cref="Vector4.op_Multiply" /> method defines the multiplication operation for <see cref="Vector4" /> objects.</remarks>
-        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector4 operator *(float left, Vector4 right)
         {
@@ -262,49 +226,35 @@ namespace System.Numerics
         /// <param name="right">The second vector.</param>
         /// <returns>The vector that results from subtracting <paramref name="right" /> from <paramref name="left" />.</returns>
         /// <remarks>The <see cref="op_Subtraction" /> method defines the subtraction operation for <see cref="Vector4" /> objects.</remarks>
-        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector4 operator -(Vector4 left, Vector4 right)
         {
-            return new Vector4(
-                left.X - right.X,
-                left.Y - right.Y,
-                left.Z - right.Z,
-                left.W - right.W
-            );
+            return (left.AsVector128() - right.AsVector128()).AsVector4();
         }
 
         /// <summary>Negates the specified vector.</summary>
         /// <param name="value">The vector to negate.</param>
         /// <returns>The negated vector.</returns>
         /// <remarks>The <see cref="op_UnaryNegation" /> method defines the unary negation operation for <see cref="Vector4" /> objects.</remarks>
-        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector4 operator -(Vector4 value)
         {
-            return Zero - value;
+            return (-value.AsVector128()).AsVector4();
         }
 
         /// <summary>Returns a vector whose elements are the absolute values of each of the specified vector's elements.</summary>
         /// <param name="value">A vector.</param>
         /// <returns>The absolute value vector.</returns>
-        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector4 Abs(Vector4 value)
         {
-            return new Vector4(
-                MathF.Abs(value.X),
-                MathF.Abs(value.Y),
-                MathF.Abs(value.Z),
-                MathF.Abs(value.W)
-            );
+            return Vector128.Abs(value.AsVector128()).AsVector4();
         }
 
         /// <summary>Adds two vectors together.</summary>
         /// <param name="left">The first vector to add.</param>
         /// <param name="right">The second vector to add.</param>
         /// <returns>The summed vector.</returns>
-        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector4 Add(Vector4 left, Vector4 right)
         {
@@ -316,7 +266,6 @@ namespace System.Numerics
         /// <param name="min">The minimum value.</param>
         /// <param name="max">The maximum value.</param>
         /// <returns>The restricted vector.</returns>
-        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector4 Clamp(Vector4 value1, Vector4 min, Vector4 max)
         {
@@ -328,31 +277,26 @@ namespace System.Numerics
         /// <param name="value1">The first point.</param>
         /// <param name="value2">The second point.</param>
         /// <returns>The distance.</returns>
-        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float Distance(Vector4 value1, Vector4 value2)
         {
-            float distanceSquared = DistanceSquared(value1, value2);
-            return MathF.Sqrt(distanceSquared);
+            return MathF.Sqrt(DistanceSquared(value1, value2));
         }
 
         /// <summary>Returns the Euclidean distance squared between two specified points.</summary>
         /// <param name="value1">The first point.</param>
         /// <param name="value2">The second point.</param>
         /// <returns>The distance squared.</returns>
-        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float DistanceSquared(Vector4 value1, Vector4 value2)
         {
-            Vector4 difference = value1 - value2;
-            return Dot(difference, difference);
+            return (value1 - value2).LengthSquared();
         }
 
         /// <summary>Divides the first vector by the second.</summary>
         /// <param name="left">The first vector.</param>
         /// <param name="right">The second vector.</param>
         /// <returns>The vector resulting from the division.</returns>
-        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector4 Divide(Vector4 left, Vector4 right)
         {
@@ -363,7 +307,6 @@ namespace System.Numerics
         /// <param name="left">The vector.</param>
         /// <param name="divisor">The scalar value.</param>
         /// <returns>The vector that results from the division.</returns>
-        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector4 Divide(Vector4 left, float divisor)
         {
@@ -374,14 +317,10 @@ namespace System.Numerics
         /// <param name="vector1">The first vector.</param>
         /// <param name="vector2">The second vector.</param>
         /// <returns>The dot product.</returns>
-        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float Dot(Vector4 vector1, Vector4 vector2)
         {
-            return (vector1.X * vector2.X)
-                 + (vector1.Y * vector2.Y)
-                 + (vector1.Z * vector2.Z)
-                 + (vector1.W * vector2.W);
+            return Vector128.Dot(vector1.AsVector128(), vector2.AsVector128());
         }
 
         /// <summary>Performs a linear interpolation between two vectors based on the given weighting.</summary>
@@ -392,7 +331,6 @@ namespace System.Numerics
         /// <remarks><format type="text/markdown"><![CDATA[
         /// The behavior of this method changed in .NET 5.0. For more information, see [Behavior change for Vector2.Lerp and Vector4.Lerp](/dotnet/core/compatibility/3.1-5.0#behavior-change-for-vector2lerp-and-vector4lerp).
         /// ]]></format></remarks>
-        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector4 Lerp(Vector4 value1, Vector4 value2, float amount)
         {
@@ -403,39 +341,26 @@ namespace System.Numerics
         /// <param name="value1">The first vector.</param>
         /// <param name="value2">The second vector.</param>
         /// <returns>The maximized vector.</returns>
-        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector4 Max(Vector4 value1, Vector4 value2)
         {
-            return new Vector4(
-                (value1.X > value2.X) ? value1.X : value2.X,
-                (value1.Y > value2.Y) ? value1.Y : value2.Y,
-                (value1.Z > value2.Z) ? value1.Z : value2.Z,
-                (value1.W > value2.W) ? value1.W : value2.W
-            );
+            return Vector128.Max(value1.AsVector128(), value2.AsVector128()).AsVector4();
         }
 
         /// <summary>Returns a vector whose elements are the minimum of each of the pairs of elements in two specified vectors.</summary>
         /// <param name="value1">The first vector.</param>
         /// <param name="value2">The second vector.</param>
         /// <returns>The minimized vector.</returns>
-        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector4 Min(Vector4 value1, Vector4 value2)
         {
-            return new Vector4(
-                (value1.X < value2.X) ? value1.X : value2.X,
-                (value1.Y < value2.Y) ? value1.Y : value2.Y,
-                (value1.Z < value2.Z) ? value1.Z : value2.Z,
-                (value1.W < value2.W) ? value1.W : value2.W
-            );
+            return Vector128.Min(value1.AsVector128(), value2.AsVector128()).AsVector4();
         }
 
         /// <summary>Returns a new vector whose values are the product of each pair of elements in two specified vectors.</summary>
         /// <param name="left">The first vector.</param>
         /// <param name="right">The second vector.</param>
         /// <returns>The element-wise product vector.</returns>
-        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector4 Multiply(Vector4 left, Vector4 right)
         {
@@ -446,7 +371,6 @@ namespace System.Numerics
         /// <param name="left">The vector to multiply.</param>
         /// <param name="right">The scalar value.</param>
         /// <returns>The scaled vector.</returns>
-        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector4 Multiply(Vector4 left, float right)
         {
@@ -457,7 +381,6 @@ namespace System.Numerics
         /// <param name="left">The scaled value.</param>
         /// <param name="right">The vector.</param>
         /// <returns>The scaled vector.</returns>
-        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector4 Multiply(float left, Vector4 right)
         {
@@ -467,7 +390,6 @@ namespace System.Numerics
         /// <summary>Negates a specified vector.</summary>
         /// <param name="value">The vector to negate.</param>
         /// <returns>The negated vector.</returns>
-        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector4 Negate(Vector4 value)
         {
@@ -477,7 +399,6 @@ namespace System.Numerics
         /// <summary>Returns a vector with the same direction as the specified vector, but with a length of one.</summary>
         /// <param name="vector">The vector to normalize.</param>
         /// <returns>The normalized vector.</returns>
-        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector4 Normalize(Vector4 vector)
         {
@@ -487,23 +408,16 @@ namespace System.Numerics
         /// <summary>Returns a vector whose elements are the square root of each of a specified vector's elements.</summary>
         /// <param name="value">A vector.</param>
         /// <returns>The square root vector.</returns>
-        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector4 SquareRoot(Vector4 value)
         {
-            return new Vector4(
-                MathF.Sqrt(value.X),
-                MathF.Sqrt(value.Y),
-                MathF.Sqrt(value.Z),
-                MathF.Sqrt(value.W)
-            );
+            return Vector128.Sqrt(value.AsVector128()).AsVector4();
         }
 
         /// <summary>Subtracts the second vector from the first.</summary>
         /// <param name="left">The first vector.</param>
         /// <param name="right">The second vector.</param>
         /// <returns>The difference vector.</returns>
-        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector4 Subtract(Vector4 left, Vector4 right)
         {
@@ -664,14 +578,7 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public readonly void CopyTo(float[] array)
         {
-            // We explicitly don't check for `null` because historically this has thrown `NullReferenceException` for perf reasons
-
-            if (array.Length < Count)
-            {
-                ThrowHelper.ThrowArgumentException_DestinationTooShort();
-            }
-
-            Unsafe.WriteUnaligned(ref Unsafe.As<float, byte>(ref array[0]), this);
+            this.AsVector128().CopyTo(array);
         }
 
         /// <summary>Copies the elements of the vector to a specified array starting at a specified index position.</summary>
@@ -687,19 +594,7 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public readonly void CopyTo(float[] array, int index)
         {
-            // We explicitly don't check for `null` because historically this has thrown `NullReferenceException` for perf reasons
-
-            if ((uint)index >= (uint)array.Length)
-            {
-                ThrowHelper.ThrowStartIndexArgumentOutOfRange_ArgumentOutOfRange_IndexMustBeLess();
-            }
-
-            if ((array.Length - index) < Count)
-            {
-                ThrowHelper.ThrowArgumentException_DestinationTooShort();
-            }
-
-            Unsafe.WriteUnaligned(ref Unsafe.As<float, byte>(ref array[index]), this);
+            this.AsVector128().CopyTo(array, index);
         }
 
         /// <summary>Copies the vector to the given <see cref="Span{T}" />. The length of the destination span must be at least 4.</summary>
@@ -708,12 +603,7 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public readonly void CopyTo(Span<float> destination)
         {
-            if (destination.Length < Count)
-            {
-                ThrowHelper.ThrowArgumentException_DestinationTooShort();
-            }
-
-            Unsafe.WriteUnaligned(ref Unsafe.As<float, byte>(ref MemoryMarshal.GetReference(destination)), this);
+            this.AsVector128().CopyTo(destination);
         }
 
         /// <summary>Attempts to copy the vector to the given <see cref="Span{Single}" />. The length of the destination span must be at least 4.</summary>
@@ -722,13 +612,7 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public readonly bool TryCopyTo(Span<float> destination)
         {
-            if (destination.Length < Count)
-            {
-                return false;
-            }
-
-            Unsafe.WriteUnaligned(ref Unsafe.As<float, byte>(ref MemoryMarshal.GetReference(destination)), this);
-            return true;
+            return this.AsVector128().TryCopyTo(destination);
         }
 
         /// <summary>Returns a value that indicates whether this instance and another vector are equal.</summary>
@@ -738,23 +622,7 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public readonly bool Equals(Vector4 other)
         {
-            // This function needs to account for floating-point equality around NaN
-            // and so must behave equivalently to the underlying float/double.Equals
-
-            if (Vector128.IsHardwareAccelerated)
-            {
-                return this.AsVector128().Equals(other.AsVector128());
-            }
-
-            return SoftwareFallback(in this, other);
-
-            static bool SoftwareFallback(in Vector4 self, Vector4 other)
-            {
-                return self.X.Equals(other.X)
-                    && self.Y.Equals(other.Y)
-                    && self.Z.Equals(other.Z)
-                    && self.W.Equals(other.W);
-            }
+            return this.AsVector128().Equals(other.AsVector128());
         }
 
         /// <summary>Returns a value that indicates whether this instance and a specified object are equal.</summary>
@@ -777,19 +645,16 @@ namespace System.Numerics
         /// <summary>Returns the length of this vector object.</summary>
         /// <returns>The vector's length.</returns>
         /// <altmember cref="LengthSquared"/>
-        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public readonly float Length()
         {
-            float lengthSquared = LengthSquared();
-            return MathF.Sqrt(lengthSquared);
+            return MathF.Sqrt(LengthSquared());
         }
 
         /// <summary>Returns the length of the vector squared.</summary>
         /// <returns>The vector's length squared.</returns>
         /// <remarks>This operation offers better performance than a call to the <see cref="Length" /> method.</remarks>
         /// <altmember cref="Length"/>
-        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public readonly float LengthSquared()
         {

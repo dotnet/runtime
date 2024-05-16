@@ -717,7 +717,6 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
         case NI_Quaternion_WithElement:
         case NI_Vector2_WithElement:
         case NI_Vector3_WithElement:
-        case NI_Vector4_WithElement:
         case NI_VectorT_WithElement:
         {
             assert(sig->numArgs == 3);
@@ -801,7 +800,6 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
         case NI_Quaternion_WithElement:
         case NI_Vector2_WithElement:
         case NI_Vector3_WithElement:
-        case NI_Vector4_WithElement:
         case NI_VectorT_WithElement:
         {
             assert(numArgs == 3);
@@ -907,7 +905,6 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
 
                 case NI_Vector2_get_One:
                 case NI_Vector3_get_One:
-                case NI_Vector4_get_One:
                 case NI_VectorT_get_One:
                 {
                     return gtNewOneConNode(retType, simdBaseType);
@@ -915,7 +912,6 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
 
                 case NI_Vector2_get_UnitX:
                 case NI_Vector3_get_UnitX:
-                case NI_Vector4_get_UnitX:
                 {
                     GenTreeVecCon* vecCon = gtNewVconNode(retType);
 
@@ -929,7 +925,6 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
 
                 case NI_Vector2_get_UnitY:
                 case NI_Vector3_get_UnitY:
-                case NI_Vector4_get_UnitY:
                 {
                     GenTreeVecCon* vecCon = gtNewVconNode(retType);
 
@@ -942,7 +937,6 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                 }
 
                 case NI_Vector3_get_UnitZ:
-                case NI_Vector4_get_UnitZ:
                 {
                     GenTreeVecCon* vecCon = gtNewVconNode(retType);
 
@@ -955,7 +949,6 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                 }
 
                 case NI_Quaternion_get_Identity:
-                case NI_Vector4_get_UnitW:
                 {
                     GenTreeVecCon* vecCon = gtNewVconNode(retType);
 
@@ -970,7 +963,6 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                 case NI_Quaternion_get_Zero:
                 case NI_Vector2_get_Zero:
                 case NI_Vector3_get_Zero:
-                case NI_Vector4_get_Zero:
                 case NI_VectorT_get_Zero:
                 {
                     return gtNewZeroConNode(retType);
@@ -1012,7 +1004,6 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
             {
                 case NI_Vector2_Abs:
                 case NI_Vector3_Abs:
-                case NI_Vector4_Abs:
                 case NI_VectorT_Abs:
                 {
                     return gtNewSimdAbsNode(retType, op1, simdBaseJitType, simdSize);
@@ -1066,7 +1057,6 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                 case NI_Quaternion_Length:
                 case NI_Vector2_Length:
                 case NI_Vector3_Length:
-                case NI_Vector4_Length:
                 {
                     GenTree* clonedOp1;
                     op1 =
@@ -1081,7 +1071,6 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                 case NI_Quaternion_LengthSquared:
                 case NI_Vector2_LengthSquared:
                 case NI_Vector3_LengthSquared:
-                case NI_Vector4_LengthSquared:
                 {
                     GenTree* clonedOp1;
                     op1 = impCloneExpr(op1, &clonedOp1, CHECK_SPILL_ALL,
@@ -1131,8 +1120,6 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                 case NI_Vector2_op_UnaryNegation:
                 case NI_Vector3_Negate:
                 case NI_Vector3_op_UnaryNegation:
-                case NI_Vector4_Negate:
-                case NI_Vector4_op_UnaryNegation:
                 case NI_VectorT_Negate:
                 case NI_VectorT_op_UnaryNegation:
                 {
@@ -1142,7 +1129,6 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                 case NI_Quaternion_Normalize:
                 case NI_Vector2_Normalize:
                 case NI_Vector3_Normalize:
-                case NI_Vector4_Normalize:
                 {
                     GenTree* clonedOp1;
                     op1 = impCloneExpr(op1, &clonedOp1, CHECK_SPILL_ALL,
@@ -1166,7 +1152,6 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
 
                 case NI_Vector2_Sqrt:
                 case NI_Vector3_Sqrt:
-                case NI_Vector4_Sqrt:
                 case NI_VectorT_Sqrt:
                 {
                     return gtNewSimdSqrtNode(retType, op1, simdBaseJitType, simdSize);
@@ -1390,8 +1375,6 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                 case NI_Vector2_op_Addition:
                 case NI_Vector3_Add:
                 case NI_Vector3_op_Addition:
-                case NI_Vector4_Add:
-                case NI_Vector4_op_Addition:
                 case NI_VectorT_Add:
                 case NI_VectorT_op_Addition:
                 {
@@ -1417,7 +1400,6 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
 
                 case NI_Vector2_CreateBroadcast:
                 case NI_Vector3_CreateBroadcast:
-                case NI_Vector4_CreateBroadcast:
                 case NI_VectorT_CreateBroadcast:
                 {
                     assert(retType == TYP_VOID);
@@ -1444,7 +1426,6 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
 
                 case NI_Vector2_Distance:
                 case NI_Vector3_Distance:
-                case NI_Vector4_Distance:
                 {
                     op1 = gtNewSimdBinOpNode(GT_SUB, simdType, op1, op2, simdBaseJitType, simdSize);
 
@@ -1460,7 +1441,6 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
 
                 case NI_Vector2_DistanceSquared:
                 case NI_Vector3_DistanceSquared:
-                case NI_Vector4_DistanceSquared:
                 {
                     op1 = gtNewSimdBinOpNode(GT_SUB, simdType, op1, op2, simdBaseJitType, simdSize);
 
@@ -1477,8 +1457,6 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                 case NI_Vector2_op_Division:
                 case NI_Vector3_Divide:
                 case NI_Vector3_op_Division:
-                case NI_Vector4_Divide:
-                case NI_Vector4_op_Division:
                 case NI_VectorT_Divide:
                 case NI_VectorT_op_Division:
                 {
@@ -1489,7 +1467,6 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                 case NI_Quaternion_Dot:
                 case NI_Vector2_Dot:
                 case NI_Vector3_Dot:
-                case NI_Vector4_Dot:
                 case NI_VectorT_Dot:
                 {
                     op1 = gtNewSimdDotProdNode(simdType, op1, op2, simdBaseJitType, simdSize);
@@ -1505,7 +1482,6 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                 case NI_Quaternion_op_Equality:
                 case NI_Vector2_op_Equality:
                 case NI_Vector3_op_Equality:
-                case NI_Vector4_op_Equality:
                 case NI_VectorT_EqualsAll:
                 case NI_VectorT_op_Equality:
                 {
@@ -1529,8 +1505,6 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                 case NI_Vector2_GetElement:
                 case NI_Vector3_get_Item:
                 case NI_Vector3_GetElement:
-                case NI_Vector4_get_Item:
-                case NI_Vector4_GetElement:
                 case NI_VectorT_get_Item:
                 case NI_VectorT_GetElement:
                 {
@@ -1571,7 +1545,6 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                 case NI_Quaternion_op_Inequality:
                 case NI_Vector2_op_Inequality:
                 case NI_Vector3_op_Inequality:
-                case NI_Vector4_op_Inequality:
                 case NI_VectorT_op_Inequality:
                 {
                     return gtNewSimdCmpOpAnyNode(GT_NE, retType, op1, op2, simdBaseJitType, simdSize);
@@ -1626,7 +1599,6 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
 
                 case NI_Vector2_Max:
                 case NI_Vector3_Max:
-                case NI_Vector4_Max:
                 case NI_VectorT_Max:
                 {
                     return gtNewSimdMaxNode(retType, op1, op2, simdBaseJitType, simdSize);
@@ -1634,7 +1606,6 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
 
                 case NI_Vector2_Min:
                 case NI_Vector3_Min:
-                case NI_Vector4_Min:
                 case NI_VectorT_Min:
                 {
                     return gtNewSimdMinNode(retType, op1, op2, simdBaseJitType, simdSize);
@@ -1646,8 +1617,6 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                 case NI_Vector2_op_Multiply:
                 case NI_Vector3_Multiply:
                 case NI_Vector3_op_Multiply:
-                case NI_Vector4_Multiply:
-                case NI_Vector4_op_Multiply:
                 case NI_VectorT_Multiply:
                 case NI_VectorT_op_Multiply:
                 {
@@ -1724,8 +1693,6 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                 case NI_Vector2_op_Subtraction:
                 case NI_Vector3_Subtract:
                 case NI_Vector3_op_Subtraction:
-                case NI_Vector4_Subtract:
-                case NI_Vector4_op_Subtraction:
                 case NI_VectorT_Subtract:
                 case NI_VectorT_op_Subtraction:
                 {
@@ -1785,7 +1752,6 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
             {
                 case NI_Vector2_Clamp:
                 case NI_Vector3_Clamp:
-                case NI_Vector4_Clamp:
                 {
                     GenTree* maxNode = gtNewSimdMaxNode(retType, op1, op2, simdBaseJitType, simdSize);
                     return gtNewSimdMinNode(retType, maxNode, op3, simdBaseJitType, simdSize);
@@ -1798,7 +1764,6 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
 
                 case NI_Vector2_Lerp:
                 case NI_Vector3_Lerp:
-                case NI_Vector4_Lerp:
                 {
                     // We generate nodes equivalent to `(op1 * (1.0f - op3)) + (op2 * op3)`
                     // optimizing for xarch by doing a single broadcast and for arm64 by
@@ -1904,7 +1869,6 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                 case NI_Plane_CreateFromVector3:
                 case NI_Quaternion_CreateFromVector3:
                 case NI_Vector3_CreateFromVector2:
-                case NI_Vector4_CreateFromVector3:
                 {
                     assert(retType == TYP_VOID);
                     assert(simdBaseType == TYP_FLOAT);
@@ -1942,7 +1906,6 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                 case NI_Quaternion_WithElement:
                 case NI_Vector2_WithElement:
                 case NI_Vector3_WithElement:
-                case NI_Vector4_WithElement:
                 case NI_VectorT_WithElement:
                 {
                     return gtNewSimdWithElementNode(retType, op1, op2, op3, simdBaseJitType, simdSize);
@@ -2035,38 +1998,6 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                     break;
                 }
 
-                case NI_Vector4_CreateFromVector2:
-                {
-                    assert(retType == TYP_VOID);
-                    assert(simdBaseType == TYP_FLOAT);
-                    assert(simdSize == 16);
-
-                    // TODO-CQ: We should be able to check for contiguous args here after
-                    // the relevant methods are updated to support more than just float
-
-                    if (op2->IsCnsVec() && op3->IsCnsFltOrDbl() && op4->IsCnsFltOrDbl())
-                    {
-                        GenTreeVecCon* vecCon = op2->AsVecCon();
-                        vecCon->gtType        = simdType;
-
-                        vecCon->gtSimdVal.f32[2] = static_cast<float>(op3->AsDblCon()->DconValue());
-                        vecCon->gtSimdVal.f32[3] = static_cast<float>(op4->AsDblCon()->DconValue());
-
-                        copyBlkSrc = vecCon;
-                    }
-                    else
-                    {
-                        GenTree* idx = gtNewIconNode(2, TYP_INT);
-                        op2          = gtNewSimdWithElementNode(simdType, op2, idx, op3, simdBaseJitType, simdSize);
-
-                        idx        = gtNewIconNode(3, TYP_INT);
-                        copyBlkSrc = gtNewSimdWithElementNode(simdType, op2, idx, op4, simdBaseJitType, simdSize);
-                    }
-
-                    copyBlkDst = op1;
-                    break;
-                }
-
                 default:
                 {
                     // Some platforms warn about unhandled switch cases
@@ -2120,7 +2051,6 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
             {
                 case NI_Plane_Create:
                 case NI_Quaternion_Create:
-                case NI_Vector4_Create:
                 {
                     assert(retType == TYP_VOID);
                     assert(simdBaseType == TYP_FLOAT);

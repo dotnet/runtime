@@ -1400,10 +1400,6 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                             case NI_Vector3_Create:
                             case NI_Vector3_CreateBroadcast:
                             case NI_Vector3_CreateFromVector2:
-                            case NI_Vector4_Create:
-                            case NI_Vector4_CreateBroadcast:
-                            case NI_Vector4_CreateFromVector2:
-                            case NI_Vector4_CreateFromVector3:
                             case NI_Vector128_Create:
                             case NI_Vector128_CreateScalar:
                             case NI_Vector128_CreateScalarUnsafe:
@@ -1660,7 +1656,6 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                             case NI_Vector128_AsUInt16:
                             case NI_Vector128_AsUInt32:
                             case NI_Vector128_AsUInt64:
-                            case NI_Vector128_AsVector4:
                             case NI_Vector128_op_UnaryPlus:
                             case NI_VectorT_As:
                             case NI_VectorT_AsVectorByte:
@@ -1730,8 +1725,6 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                             case NI_Vector2_get_Zero:
                             case NI_Vector3_get_One:
                             case NI_Vector3_get_Zero:
-                            case NI_Vector4_get_One:
-                            case NI_Vector4_get_Zero:
                             case NI_Vector128_get_AllBitsSet:
                             case NI_Vector128_get_One:
                             case NI_Vector128_get_Zero:

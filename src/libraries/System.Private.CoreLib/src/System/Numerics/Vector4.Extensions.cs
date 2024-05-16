@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using System.Runtime.Intrinsics;
 
 namespace System.Numerics
 {
@@ -13,16 +14,10 @@ namespace System.Numerics
         /// <param name="index">The index of the element to get.</param>
         /// <returns>The value of the element at <paramref name="index" />.</returns>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="index" /> was less than zero or greater than the number of elements.</exception>
-        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static float GetElement(this Vector4 vector, int index)
         {
-            if ((uint)(index) >= (uint)(Vector4.Count))
-            {
-                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
-            }
-
-            return vector.GetElementUnsafe(index);
+            return vector.AsVector128().GetElement(index);
         }
 
         /// <summary>Creates a new <see cref="Vector4" /> with the element at the specified index set to the specified value and the remaining elements set to the same value as that in the given vector.</summary>
@@ -31,17 +26,9 @@ namespace System.Numerics
         /// <param name="value">The value to set the element to.</param>
         /// <returns>A <see cref="Vector4" /> with the value of the element at <paramref name="index" /> set to <paramref name="value" /> and the remaining elements set to the same value as that in <paramref name="vector" />.</returns>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="index" /> was less than zero or greater than the number of elements.</exception>
-        [Intrinsic]
         internal static Vector4 WithElement(this Vector4 vector, int index, float value)
         {
-            if ((uint)(index) >= (uint)(Vector4.Count))
-            {
-                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
-            }
-
-            Vector4 result = vector;
-            result.SetElementUnsafe(index, value);
-            return result;
+            return vector.AsVector128().WithElement(index, value).AsVector4();
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
