@@ -19,7 +19,6 @@ namespace System.Net.Http
     [SupportedOSPlatform("macos")]
     internal sealed class Http3Connection : HttpConnectionBase
     {
-        private readonly HttpConnectionPool _pool;
         private readonly HttpAuthority _authority;
         private readonly byte[]? _altUsedEncodedHeader;
         private QuicConnection? _connection;
@@ -33,7 +32,7 @@ namespace System.Net.Http
 
         // Our control stream.
         private QuicStream? _clientControl;
-        private Task _sendSettingsTask;
+        private Task? _sendSettingsTask;
 
         // Server-advertised SETTINGS_MAX_FIELD_SECTION_SIZE
         // https://www.rfc-editor.org/rfc/rfc9114.html#section-7.2.4.1-2.2.1
@@ -54,9 +53,8 @@ namespace System.Net.Http
         public Exception? AbortException => Volatile.Read(ref _abortException);
         private object SyncObj => _activeRequests;
 
-        private int _reservedStreams;
+        private int _availableRequestStreamsCount;
         private TaskCompletionSource<bool>? _availableStreamsWaiter;
-        private bool _streamsAvailableRegistered;
 
         /// <summary>
         /// If true, we've received GOAWAY, are aborting due to a connection-level error, or are disposing due to pool limits.
@@ -70,15 +68,10 @@ namespace System.Net.Http
             }
         }
 
-
-        public int AvailableRequestStreamsCount => _connection?.AvailableBidirectionalStreamsCount ?? 0;
-
-        public Http3Connection(HttpConnectionPool pool, HttpAuthority authority, QuicConnection connection, bool includeAltUsedHeader)
-            : base(pool, connection.RemoteEndPoint)
+        public Http3Connection(HttpConnectionPool pool, HttpAuthority authority, bool includeAltUsedHeader)
+            : base(pool)
         {
-            _pool = pool;
             _authority = authority;
-            _connection = connection;
 
             if (includeAltUsedHeader)
             {
@@ -94,6 +87,13 @@ namespace System.Net.Http
                 // Use this as an initial value before we receive the SETTINGS frame.
                 _maxHeaderListSize = maxHeaderListSize;
             }
+        }
+
+        public void InitQuicConnection(QuicConnection connection)
+        {
+            MarkConnectionAsEstablished(connection.RemoteEndPoint);
+
+            _connection = connection;
 
             // Errors are observed via Abort().
             _sendSettingsTask = SendSettingsAsync();
@@ -161,7 +161,7 @@ namespace System.Net.Http
 
                     if (_clientControl != null)
                     {
-                        await _sendSettingsTask.ConfigureAwait(false);
+                        await _sendSettingsTask!.ConfigureAwait(false);
                         await _clientControl.DisposeAsync().ConfigureAwait(false);
                         _clientControl = null;
                     }
@@ -176,11 +176,18 @@ namespace System.Net.Http
         {
             lock (SyncObj)
             {
-                if (_reservedStreams >= AvailableRequestStreamsCount)
+                Debug.Assert(_availableRequestStreamsCount >= 0);
+
+                if (_availableRequestStreamsCount == 0)
                 {
                     return false;
                 }
-                ++_reservedStreams;
+
+                if (_activeRequests.Count == 0)
+                {
+                    MarkConnectionAsNotIdle();
+                }
+                --_availableRequestStreamsCount;
                 return true;
             }
         }
@@ -189,8 +196,23 @@ namespace System.Net.Http
         {
             lock (SyncObj)
             {
-                Debug.Assert(_reservedStreams > 0);
-                --_reservedStreams;
+                Debug.Assert(_availableRequestStreamsCount >= 0);
+
+                ++_availableRequestStreamsCount;
+            }
+        }
+
+        public void StreamsAvailableCallback(QuicConnection sender, int bidirectionalStreamsCountIncrement, int _)
+        {
+            Debug.Assert(_connection is null || sender == _connection);
+
+            lock (SyncObj)
+            {
+                Debug.Assert(_availableRequestStreamsCount >= 0);
+
+                _availableRequestStreamsCount += bidirectionalStreamsCountIncrement;
+                _availableStreamsWaiter?.SetResult(!ShuttingDown);
+                _availableStreamsWaiter = null;
             }
         }
 
@@ -198,29 +220,18 @@ namespace System.Net.Http
         {
             lock (SyncObj)
             {
+                Debug.Assert(_availableRequestStreamsCount >= 0);
+
                 if (ShuttingDown)
                 {
                     return Task.FromResult(false);
                 }
-                if (_reservedStreams < AvailableRequestStreamsCount)
+                if (_availableRequestStreamsCount > 0)
                 {
                     return Task.FromResult(true);
                 }
 
-                Debug.Assert(_availableStreamsWaiter is null);
                 _availableStreamsWaiter = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
-                if (!_streamsAvailableRegistered)
-                {
-                    _connection!.StreamsAvailable += (_, _) =>
-                    {
-                        lock (SyncObj)
-                        {
-                            _availableStreamsWaiter?.SetResult(!ShuttingDown);
-                            _availableStreamsWaiter = null;
-                        }
-                    };
-                    _streamsAvailableRegistered = true;
-                }
                 return _availableStreamsWaiter.Task;
             }
         }
@@ -243,11 +254,6 @@ namespace System.Net.Http
                         requestStream = new Http3RequestStream(request, this, quicStream);
                         lock (SyncObj)
                         {
-                            if (_activeRequests.Count == 0)
-                            {
-                                MarkConnectionAsNotIdle();
-                            }
-
                             _activeRequests.Add(quicStream, requestStream);
                         }
                     }
@@ -425,18 +431,6 @@ namespace System.Net.Http
                     }
                 }
             }
-        }
-
-        public override long GetIdleTicks(long nowTicks)
-        {
-            // The pool is holding the lock as part of its scavenging logic.
-            // We must not lock on Http3Connection.SyncObj here as that could lead to lock ordering problems.
-            Debug.Assert(_pool.HasSyncObjLock);
-
-            // There is a race condition here where the connection pool may see this connection as idle right before
-            // we start processing a new request and start its disposal. This is okay as we will either
-            // return false from TryReserveStream, or process pending requests before tearing down the transport.
-            return _activeRequests.Count == 0 && _reservedStreams == 0 ? base.GetIdleTicks(nowTicks) : 0;
         }
 
         public override void Trace(string message, [CallerMemberName] string? memberName = null) =>

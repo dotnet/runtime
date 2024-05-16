@@ -251,17 +251,24 @@ namespace System.Net.Http
             waiter.ConnectionCancellationTokenSource = cts;
             try
             {
-                QuicConnection quicConnection = await ConnectHelper.ConnectQuicAsync(queueItem.Request, new DnsEndPoint(authority.IdnHost, authority.Port), _poolManager.Settings._pooledConnectionIdleTimeout, _sslOptionsHttp3!, cts.Token).ConfigureAwait(false);
+                // If the authority was sent as an option through alt-svc then include alt-used header.
+                connection = new Http3Connection(this, authority, includeAltUsedHeader: _http3Authority == authority);
 
-                // if the authority was sent as an option through alt-svc then include alt-used header
-                connection = new Http3Connection(this, authority, quicConnection, includeAltUsedHeader: _http3Authority == authority);
-
+                QuicConnection quicConnection = await ConnectHelper.ConnectQuicAsync(queueItem.Request, new DnsEndPoint(authority.IdnHost, authority.Port), _poolManager.Settings._pooledConnectionIdleTimeout, _sslOptionsHttp3!, connection.StreamsAvailableCallback, cts.Token).ConfigureAwait(false);
+                if (quicConnection.NegotiatedApplicationProtocol != SslApplicationProtocol.Http3)
+                {
+                    await quicConnection.DisposeAsync().ConfigureAwait(false);
+                    throw new HttpRequestException(HttpRequestError.ConnectionError, "QUIC connected but no HTTP/3 indicated via ALPN.", null, RequestRetryType.RetryOnConnectionFailure);
+                }
+                connection.InitQuicConnection(quicConnection);
             }
             catch (Exception e)
             {
                 connectionException = e is OperationCanceledException oce && oce.CancellationToken == cts.Token && !waiter.CancelledByOriginatingRequestCompletion ?
                     CreateConnectTimeoutException(oce) :
                     e;
+                // If the connection hasn't been initialized with QuicConnection there's no need to dispose it.
+                connection = null;
             }
             finally
             {

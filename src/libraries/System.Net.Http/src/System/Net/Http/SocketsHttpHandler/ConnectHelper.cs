@@ -112,13 +112,13 @@ namespace System.Net.Http
         [SupportedOSPlatform("windows")]
         [SupportedOSPlatform("linux")]
         [SupportedOSPlatform("macos")]
-        public static async ValueTask<QuicConnection> ConnectQuicAsync(HttpRequestMessage request, DnsEndPoint endPoint, TimeSpan idleTimeout, SslClientAuthenticationOptions clientAuthenticationOptions, CancellationToken cancellationToken)
+        public static async ValueTask<QuicConnection> ConnectQuicAsync(HttpRequestMessage request, DnsEndPoint endPoint, TimeSpan idleTimeout, SslClientAuthenticationOptions clientAuthenticationOptions, QuicConnectionStreamsAvailableCallback streamsAvailableCallback, CancellationToken cancellationToken)
         {
             clientAuthenticationOptions = SetUpRemoteCertificateValidationCallback(clientAuthenticationOptions, request);
 
             try
             {
-                QuicConnection quicConnection = await QuicConnection.ConnectAsync(new QuicClientConnectionOptions()
+                return await QuicConnection.ConnectAsync(new QuicClientConnectionOptions()
                 {
                     MaxInboundBidirectionalStreams = 0, // Client doesn't support inbound streams: https://www.rfc-editor.org/rfc/rfc9114.html#name-bidirectional-streams. An extension might change this.
                     MaxInboundUnidirectionalStreams = 5, // Minimum is 3: https://www.rfc-editor.org/rfc/rfc9114.html#unidirectional-streams (1x control stream + 2x QPACK). Set to 100 if/when support for PUSH streams is added.
@@ -126,16 +126,9 @@ namespace System.Net.Http
                     DefaultStreamErrorCode = (long)Http3ErrorCode.RequestCancelled,
                     DefaultCloseErrorCode = (long)Http3ErrorCode.NoError,
                     RemoteEndPoint = endPoint,
-                    ClientAuthenticationOptions = clientAuthenticationOptions
+                    ClientAuthenticationOptions = clientAuthenticationOptions,
+                    StreamsAvailableCallback = streamsAvailableCallback,
                 }, cancellationToken).ConfigureAwait(false);
-
-                if (quicConnection.NegotiatedApplicationProtocol != SslApplicationProtocol.Http3)
-                {
-                    await quicConnection.DisposeAsync().ConfigureAwait(false);
-                    throw new HttpRequestException(HttpRequestError.ConnectionError, "QUIC connected but no HTTP/3 indicated via ALPN.", null, RequestRetryType.RetryOnConnectionFailure);
-                }
-
-                return quicConnection;
             }
             catch (Exception ex) when (ex is not OperationCanceledException)
             {
