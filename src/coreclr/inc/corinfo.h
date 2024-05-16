@@ -356,6 +356,31 @@ enum StructFloatFieldInfoFlags
     STRUCT_HAS_8BYTES_FIELDS_MASK = (STRUCT_FIRST_FIELD_SIZE_IS8 | STRUCT_SECOND_FIELD_SIZE_IS8),
 };
 
+// On RISC-V and LoongArch a struct with up to two non-empty fields, at least one of them floating,
+// can be passed in registers. FPStructInfo represents passing information for such structs.
+struct FPStructInfo
+{
+    struct Field
+    {
+        bool isFloating;
+        uint8_t size;
+        uint32_t offset;
+
+        bool Empty() const
+        {
+            static_assert(sizeof(*this) == sizeof(uint64_t), "sizeof(FPStructField) must be 64 bits");
+            return *(uint64_t*)this == 0;
+        }
+    };
+
+    Field fields[2];
+
+    bool IsIntegerOnly() const
+    {
+        return fields[0].Empty() && fields[1].Empty();
+    }
+};
+
 #include "corinfoinstructionset.h"
 
 // CorInfoHelpFunc defines the set of helpers (accessed via the ICorDynamicInfo::getHelperFtn())
