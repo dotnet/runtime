@@ -42,6 +42,7 @@ public class WasmAppBuilderDebugLevelTests : DebugLevelTests
 
     protected override void SetupProject(string projectId)
     {
+        Id = projectId;
         string projectfile = CreateWasmTemplateProject(projectId, "wasmconsole");
         string projectDir = Path.GetDirectoryName(projectfile)!;
         string mainJs = Path.Combine(projectDir, "main.mjs");
@@ -108,7 +109,7 @@ public abstract class DebugLevelTests : AppTestBase
     public async Task BuildWithDefaultLevel(string configuration)
     {
         SetupProject($"DebugLevelTests_BuildWithDefaultLevel_{configuration}");
-        BuildProject(configuration);
+        BuildProject(configuration, assertAppBundle: false);
 
         var result = await RunForBuild(configuration);
         AssertDebugLevel(result, -1);
@@ -122,7 +123,7 @@ public abstract class DebugLevelTests : AppTestBase
     public async Task BuildWithExplicitValue(string configuration, int debugLevel)
     {
         SetupProject($"DebugLevelTests_BuildWithExplicitValue_{configuration}");
-        BuildProject(configuration: configuration, extraArgs: $"-p:WasmDebugLevel={debugLevel}");
+        BuildProject(configuration, assertAppBundle: false, extraArgs: $"-p:WasmDebugLevel={debugLevel}");
 
         var result = await RunForBuild(configuration);
         AssertDebugLevel(result, debugLevel);
@@ -148,7 +149,7 @@ public abstract class DebugLevelTests : AppTestBase
     public async Task PublishWithExplicitValue(string configuration, int debugLevel)
     {
         SetupProject($"DebugLevelTests_PublishWithExplicitValue_{configuration}");
-        PublishProject(configuration, RuntimeVariant.SingleThreaded, assertAppBundle: true, $"-p:WasmDebugLevel={debugLevel}");
+        PublishProject(configuration, assertAppBundle: false, extraArgs: $"-p:WasmDebugLevel={debugLevel}");
 
         var result = await RunForPublish(configuration);
         AssertDebugLevel(result, debugLevel);
@@ -160,7 +161,7 @@ public abstract class DebugLevelTests : AppTestBase
     public async Task PublishWithDefaultLevelAndPdbs(string configuration)
     {
         SetupProject($"DebugLevelTests_PublishWithDefaultLevelAndPdbs_{configuration}");
-        PublishProject(configuration, RuntimeVariant.SingleThreaded, assertAppBundle: true, $"-p:CopyOutputSymbolsToPublishDirectory=true");
+        PublishProject(configuration, assertAppBundle: false, extraArgs: $"-p:CopyOutputSymbolsToPublishDirectory=true");
 
         var result = await RunForPublish(configuration);
         AssertDebugLevel(result, -1);
