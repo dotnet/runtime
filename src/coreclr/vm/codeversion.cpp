@@ -1309,10 +1309,7 @@ bool CodeVersionManager::s_initialNativeCodeVersionMayNotBeTheDefaultNativeCodeV
 PTR_ILCodeVersioningState CodeVersionManager::GetILCodeVersioningState(PTR_Module pModule, mdMethodDef methodDef) const
 {
     LIMITED_METHOD_DAC_CONTRACT;
-
-    PTR_MethodDesc pMethod = pModule->LookupMethodDef(methodDef);
-    _ASSERTE(pMethod != NULL);
-    return pMethod->GetILCodeVersionState();
+    return pModule->LookupILCodeVersioningState(methodDef);
 }
 
 PTR_MethodDescVersioningState CodeVersionManager::GetMethodDescVersioningState(PTR_MethodDesc pClosedMethodDesc) const
@@ -1330,28 +1327,35 @@ HRESULT CodeVersionManager::GetOrCreateILCodeVersioningState(Module* pModule, md
     {
         NOTHROW;
         GC_NOTRIGGER;
+        PRECONDITION(IsLockOwnedByCurrentThread());
         PRECONDITION(pModule != NULL);
         PRECONDITION(methodDef != mdTokenNil);
         PRECONDITION(ppILCodeVersioningState != NULL);
     }
     CONTRACTL_END;
 
-    LOG((LF_TIEREDCOMPILATION, LL_INFO100, "CVM::GetOrCreateILCodeVersioningState Module=%p Method=0x%08x\n", pModule, methodDef));
-    PTR_MethodDesc pMethod = pModule->LookupMethodDef(methodDef);
-    _ASSERTE(pMethod != NULL);
-    _ASSERTE(pMethod->IsTypicalMethodDefinition());
+    LOG((LF_TIEREDCOMPILATION, LL_INFO100, "CVM::GetOrCreateILCodeVersioningState Module=%p MethodDef=0x%08x\n", pModule, methodDef));
 
-    ILCodeVersioningState* pILCodeVersioningState = pMethod->GetILCodeVersionState();
+    ILCodeVersioningState* pILCodeVersioningState = pModule->LookupILCodeVersioningState(methodDef);
     if (pILCodeVersioningState == NULL)
     {
         pILCodeVersioningState = new (nothrow) ILCodeVersioningState(pModule, methodDef);
         if (pILCodeVersioningState == NULL)
             return E_OUTOFMEMORY;
 
-        if (!pMethod->SetILCodeVersionState(pILCodeVersioningState))
+        HRESULT hr = S_OK;
+        EX_TRY
+        {
+            pModule->EnsureILCodeVersioningStateCanBeStored(methodDef);
+        }
+        EX_CATCH_HRESULT(hr);
+        if (FAILED(hr))
+        {
             delete pILCodeVersioningState;
+            return hr;
+        }
+        pModule->EnsuredStoreILCodeVersioningState(methodDef, pILCodeVersioningState);
 
-        pILCodeVersioningState = pMethod->GetILCodeVersionState();
         LOG((LF_TIEREDCOMPILATION, LL_INFO100, "CVM::GetOrCreateILCodeVersioningState Created state: %p\n", pILCodeVersioningState));
 
         // Record that we've created at least one IL version.
@@ -1417,24 +1421,22 @@ ILCodeVersion CodeVersionManager::GetActiveILCodeVersion(PTR_MethodDesc pMethod)
 {
     LIMITED_METHOD_DAC_CONTRACT;
     _ASSERTE(IsLockOwnedByCurrentThread());
-
-    PTR_ILCodeVersioningState pILCodeVersioningState = pMethod->GetILCodeVersionState();
-    if (pILCodeVersioningState == NULL)
-        return ILCodeVersion(dac_cast<PTR_Module>(pMethod->GetModule()), pMethod->GetMemberDef());
-
-    return pILCodeVersioningState->GetActiveVersion();
+    return GetActiveILCodeVersion(dac_cast<PTR_Module>(pMethod->GetModule()), pMethod->GetMemberDef());
 }
 
 ILCodeVersion CodeVersionManager::GetActiveILCodeVersion(PTR_Module pModule, mdMethodDef methodDef)
 {
     LIMITED_METHOD_DAC_CONTRACT;
     _ASSERTE(IsLockOwnedByCurrentThread());
-
-    PTR_MethodDesc pMethod = pModule->LookupMethodDef(methodDef);
-    if (pMethod == NULL)
+    ILCodeVersioningState* pILCodeVersioningState = GetILCodeVersioningState(pModule, methodDef);
+    if (pILCodeVersioningState == NULL)
+    {
         return ILCodeVersion(pModule, methodDef);
-
-    return GetActiveILCodeVersion(pMethod);
+    }
+    else
+    {
+        return pILCodeVersioningState->GetActiveVersion();
+    }
 }
 
 ILCodeVersion CodeVersionManager::GetILCodeVersion(PTR_MethodDesc pMethod, ReJITID rejitId)

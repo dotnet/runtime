@@ -274,6 +274,22 @@ inline PTR_MethodDesc Module::LookupMethodDef(mdMethodDef token)
     return m_MethodDefToDescMap.GetElement(RidFromToken(token));
 }
 
+inline PTR_ILCodeVersioningState Module::LookupILCodeVersioningState(mdMethodDef token)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_ANY;
+        SUPPORTS_DAC;
+    }
+    CONTRACTL_END
+
+    _ASSERTE(CodeVersionManager::IsLockOwnedByCurrentThread());
+    _ASSERTE(TypeFromToken(token) == mdtMethodDef);
+    return m_ILCodeVersioningStateMap.GetElement(RidFromToken(token));
+}
+
 inline MethodDesc *Module::LookupMemberRefAsMethod(mdMemberRef token)
 {
     LIMITED_METHOD_DAC_CONTRACT;
