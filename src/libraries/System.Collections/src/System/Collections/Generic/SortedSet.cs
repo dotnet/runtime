@@ -736,7 +736,8 @@ namespace System.Collections.Generic
         /// <returns>The item's zero-based index in this set, or -1 if it isn't found.</returns>
         /// <remarks>
         /// <para>
-        /// This implementation is based off of http://en.wikipedia.org/wiki/Binary_Tree#Methods_for_storing_binary_trees.
+        /// This implementation is based off of http://en.wikipedia.org/wiki/Binary_Tree#Methods_for_storing_binary_trees
+        /// if Count is not greater than InternalIndexOfCountThreshold, otherwise it returns the index according to the order of the set's elements.
         /// </para>
         /// <para>
         /// This method is used with the <see cref="BitHelper"/> class. Note that this implementation is
@@ -751,14 +752,17 @@ namespace System.Collections.Generic
 
             if (Count > InternalIndexOfCountThreshold)
             {
-                foreach (T i in this)
+                int index = -1;
+                InOrderTreeWalk(current =>
                 {
-                    if (Comparer.Compare(item, i) == 0)
+                    int order = comparer.Compare(item, current);
+                    if (order == 0)
                     {
-                        return count;
+                        index = count;
                     }
                     count++;
-                }
+                    return order < 0;
+                });
             }
 
             while (current != null)
