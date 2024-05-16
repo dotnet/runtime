@@ -897,26 +897,32 @@ bool Compiler::optMakeLoopDownwardsCounted(ScalarEvolutionContext& scevContext,
     Statement* jtrueStmt = exiting->lastStmt();
     GenTree*   jtrue     = jtrueStmt->GetRootNode();
     assert(jtrue->OperIs(GT_JTRUE));
-
-    if ((jtrue->gtFlags & GTF_SIDE_EFFECT) != 0)
-    {
-        // If the IV is used as part of the side effect then we can't
-        // transform; otherwise we could. TODO-CQ: Make this determination.
-        JITDUMP("  No; exit node has side effects\n");
-        return false;
-    }
-
     GenTree* cond = jtrue->gtGetOp1();
-    if (cond->OperIsCompare() && (cond->gtGetOp1()->IsIntegralConst(0) || cond->gtGetOp2()->IsIntegralConst(0)))
+
+    bool validate = compStressCompile(STRESS_VALIDATE_TRIP_COUNTS, 50);
+
+    if (!validate)
     {
-        JITDUMP("  No; operand of condition [%06u] is already 0\n", dspTreeID(cond));
-        return false;
+        if ((jtrue->gtFlags & GTF_SIDE_EFFECT) != 0)
+        {
+            // If the IV is used as part of the side effect then we can't
+            // transform; otherwise we could. TODO-CQ: Make this determination.
+            JITDUMP("  No; exit node has side effects\n");
+            return false;
+        }
+
+        if (cond->OperIsCompare() && (cond->gtGetOp1()->IsIntegralConst(0) || cond->gtGetOp2()->IsIntegralConst(0)))
+        {
+            JITDUMP("  No; operand of condition [%06u] is already 0\n", dspTreeID(cond));
+            return false;
+        }
     }
 
     // Making a loop downwards counted is profitable if there is a primary IV
     // that has no uses outside the loop test (and mutating itself). Check that
     // now.
     ArrayStack<unsigned> removableLocals(getAllocator(CMK_LoopOpt));
+
     for (Statement* stmt : loop->GetHeader()->Statements())
     {
         if (!stmt->IsPhiDefnStmt())
@@ -1000,7 +1006,7 @@ bool Compiler::optMakeLoopDownwardsCounted(ScalarEvolutionContext& scevContext,
         removableLocals.Push(candidateLclNum);
     }
 
-    if (removableLocals.Height() <= 0)
+    if (!validate && (removableLocals.Height() <= 0))
     {
         JITDUMP("  Found no potentially removable locals when making this loop downwards counted\n");
         return false;
@@ -1068,7 +1074,14 @@ bool Compiler::optMakeLoopDownwardsCounted(ScalarEvolutionContext& scevContext,
         return false;
     }
 
-    JITDUMP("  Converting " FMT_LP " into a downwards loop\n", loop->GetIndex());
+    if (validate)
+    {
+        JITDUMP("  Inserting validation of computed trip count for " FMT_LP "\n", loop->GetIndex());
+    }
+    else
+    {
+        JITDUMP("  Converting " FMT_LP " into a downwards loop\n", loop->GetIndex());
+    }
 
     unsigned tripCountLcl = lvaGrabTemp(false DEBUGARG("Trip count IV"));
     GenTree* store        = gtNewTempStore(tripCountLcl, decCountNode);
@@ -1085,17 +1098,6 @@ bool Compiler::optMakeLoopDownwardsCounted(ScalarEvolutionContext& scevContext,
         exitOp = GT_NE;
     }
 
-    // Update the test.
-    cond->SetOper(exitOp);
-    cond->AsOp()->gtOp1 = gtNewLclVarNode(tripCountLcl, decCount->Type);
-    cond->AsOp()->gtOp2 = gtNewZeroConNode(decCount->Type);
-
-    gtSetStmtInfo(jtrueStmt);
-    fgSetStmtSeq(jtrueStmt);
-
-    JITDUMP("\n  Updated exit test:\n");
-    DISPSTMT(jtrueStmt);
-
     GenTree* negOne      = decCount->TypeIs(TYP_LONG) ? gtNewLconNode(-1) : gtNewIconNode(-1, decCount->Type);
     GenTree* decremented = gtNewOperNode(GT_ADD, decCount->Type, gtNewLclVarNode(tripCountLcl, decCount->Type), negOne);
 
@@ -1107,22 +1109,63 @@ bool Compiler::optMakeLoopDownwardsCounted(ScalarEvolutionContext& scevContext,
     JITDUMP("\n  Inserted decrement of tripcount local\n\n");
     DISPSTMT(newStmt);
 
-    JITDUMP("\n  Now removing uses of old IVs\n");
-
-    for (int i = 0; i < removableLocals.Height(); i++)
+    if (validate)
     {
-        unsigned removableLcl = removableLocals.Bottom(i);
-        JITDUMP("  Removing uses of V%02u\n", removableLcl);
-        auto deleteStatement = [=](BasicBlock* block, Statement* stmt) {
-            if (stmt != jtrueStmt)
+        loop->VisitRegularExitBlocks([=](BasicBlock* exit) {
+            bool hasNonLoopPred = false;
+            for (BasicBlock* pred : exit->PredBlocks())
             {
-                fgRemoveStmt(block, stmt);
+                if (!loop->ContainsBlock(pred))
+                {
+                    hasNonLoopPred = true;
+                    break;
+                }
             }
 
-            return true;
-        };
+            if (!hasNonLoopPred)
+            {
+                GenTree* tripCountIsZero = gtNewOperNode(GT_EQ, TYP_INT, gtNewLclVarNode(tripCountLcl, decCount->Type),
+                                                         gtNewZeroConNode(decCount->Type));
+                GenTreeCall* callAssert =
+                    gtNewHelperCallNode(CORINFO_HELP_JIT_RUNTIME_ASSERT, TYP_VOID, tripCountIsZero, gtNewIconNode(10));
+                callAssert         = fgMorphArgs(callAssert);
+                Statement* newStmt = fgNewStmtFromTree(callAssert);
+                fgInsertStmtAtBeg(exit, newStmt);
+            }
 
-        loopLocals->VisitStatementsWithOccurrences(loop, removableLcl, deleteStatement);
+            return BasicBlockVisit::Continue;
+        });
+    }
+    else
+    {
+        // Update the test.
+        cond->SetOper(exitOp);
+        cond->AsOp()->gtOp1 = gtNewLclVarNode(tripCountLcl, decCount->Type);
+        cond->AsOp()->gtOp2 = gtNewZeroConNode(decCount->Type);
+
+        gtSetStmtInfo(jtrueStmt);
+        fgSetStmtSeq(jtrueStmt);
+
+        JITDUMP("\n  Updated exit test:\n");
+        DISPSTMT(jtrueStmt);
+
+        JITDUMP("\n  Now removing uses of old IVs\n");
+
+        for (int i = 0; i < removableLocals.Height(); i++)
+        {
+            unsigned removableLcl = removableLocals.Bottom(i);
+            JITDUMP("  Removing uses of V%02u\n", removableLcl);
+            auto deleteStatement = [=](BasicBlock* block, Statement* stmt) {
+                if (stmt != jtrueStmt)
+                {
+                    fgRemoveStmt(block, stmt);
+                }
+
+                return true;
+            };
+
+            loopLocals->VisitStatementsWithOccurrences(loop, removableLcl, deleteStatement);
+        }
     }
 
     JITDUMP("\n");

@@ -7536,13 +7536,14 @@ public:
 #endif
 
     PhaseStatus optInductionVariables();
-    bool        optMakeLoopDownwardsCounted(ScalarEvolutionContext& scevContext,
-                                            FlowGraphNaturalLoop*   loop,
-                                            LoopLocalOccurrences*   loopLocals);
-    bool        optWidenPrimaryIV(FlowGraphNaturalLoop* loop,
-                                  unsigned              lclNum,
-                                  ScevAddRec*           addRec,
-                                  LoopLocalOccurrences* loopLocals);
+
+    bool optMakeLoopDownwardsCounted(ScalarEvolutionContext& scevContext,
+                                     FlowGraphNaturalLoop*   loop,
+                                     LoopLocalOccurrences*   loopLocals);
+    bool optWidenPrimaryIV(FlowGraphNaturalLoop* loop,
+                           unsigned              lclNum,
+                           ScevAddRec*           addRec,
+                           LoopLocalOccurrences* loopLocals);
 
     bool optCanSinkWidenedIV(unsigned lclNum, FlowGraphNaturalLoop* loop);
     bool optIsIVWideningProfitable(unsigned              lclNum,
@@ -10219,6 +10220,7 @@ public:
         STRESS_MODE(UNWIND) /* stress unwind info; e.g., create function fragments */           \
         STRESS_MODE(OPT_REPEAT) /* stress JitOptRepeat */                                       \
         STRESS_MODE(INITIAL_PARAM_REG) /* Stress initial register assigned to parameters */     \
+        STRESS_MODE(VALIDATE_TRIP_COUNTS) /* Validate trip counts computed by the JIT */        \
                                                                                                 \
         /* After COUNT_VARN, stress level 2 does all of these all the time */                   \
                                                                                                 \
