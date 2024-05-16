@@ -9442,8 +9442,9 @@ GenTree* Compiler::impMinMaxIntrinsic(CORINFO_METHOD_HANDLE method,
     }
 
 #if defined(FEATURE_HW_INTRINSICS) && defined(TARGET_XARCH)
+    bool isAvx10v1 = false;
     if (compOpportunisticallyDependsOn(InstructionSet_AVX512DQ) ||
-        compOpportunisticallyDependsOn(InstructionSet_AVX10v1))
+        (isAvx10v1 = compOpportunisticallyDependsOn(InstructionSet_AVX10v1)))
     {
         // We are constructing a chain of intrinsics similar to:
         //    var op1 = Vector128.CreateScalarUnsafe(x);
@@ -9516,8 +9517,7 @@ GenTree* Compiler::impMinMaxIntrinsic(CORINFO_METHOD_HANDLE method,
         // * qnan, norm = norm
         // * norm, norm = norm
 
-        NamedIntrinsic fixupHwIntrinsicID =
-            compOpportunisticallyDependsOn(InstructionSet_AVX10v1) ? NI_AVX10v1_FixupScalar : NI_AVX512F_FixupScalar;
+        NamedIntrinsic fixupHwIntrinsicID = isAvx10v1 ? NI_AVX10v1_FixupScalar : NI_AVX512F_FixupScalar;
         if (isNumber)
         {
             // We need to fixup the case of:
