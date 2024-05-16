@@ -3538,9 +3538,11 @@ void emitter::emitDispInsName(
                     break;
                 case 0x1: // SLLI
                 {
+                    static constexpr kSlliFunct6 = 0b000000;
+
                     unsigned funct6 = (imm12 >> 6) & 0x3f;
                     // SLLI's instruction code's upper 6 bits have to be equal to zero
-                    if (funct6)
+                    if (funct6 != kSlliFunct6)
                     {
                         return emitDispIllegalInstruction(code);
                     }
@@ -3616,9 +3618,11 @@ void emitter::emitDispInsName(
                     return;
                 case 0x1: // SLLIW
                 {
+                    static constexpr unsigned kSlliwFunct7 = 0b0000000;
+
                     unsigned funct7 = (imm12 >> 5) & 0x7f;
                     // SLLIW's instruction code's upper 7 bits have to be equal to zero
-                    if (funct7 == 0)
+                    if (funct7 == kSlliwFunct7)
                     {
                         printf("slliw          %s, %s, %d\n", rd, rs1, imm12 & 0x1f); // 5 BITS for SHAMT in RISCV64
                     }
