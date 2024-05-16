@@ -6,6 +6,7 @@
     <IsPackable>true</IsPackable>
     <PackageDescription>Provides support for operating over tensors.</PackageDescription>
     <GenAPIExcludeApiList>ReferenceAssemblyExclusions.txt</GenAPIExcludeApiList>
+    <ApiCompatValidateAssemblies>true</ApiCompatValidateAssemblies>
   </PropertyGroup>
 
   <ItemGroup>
@@ -15,6 +16,20 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
+    <Compile Include="System\Numerics\Tensors\netcore\Common\IReadOnlyTensor.cs" />
+    <Compile Include="System\Numerics\Tensors\netcore\TensorHelpers.cs" />
+    <Compile Include="System\Numerics\Tensors\netcore\TensorExtensions.cs" />
+    <Compile Include="System\Numerics\Tensors\netcore\Tensor.Factory.cs" />
+    <Compile Include="System\Numerics\Tensors\netcore\Tensor.cs" />
+    <Compile Include="System\Numerics\Tensors\netcore\ITensor.cs" />
+    <Compile Include="System\Numerics\Tensors\netcore\TensorSpanDebugView.cs" />
+    <Compile Include="System\Numerics\Tensors\netcore\TensorSpanExtensions.cs" />
+    <Compile Include="System\Numerics\Tensors\netcore\ReadOnlyTensorSpan.cs" />
+    <Compile Include="System\Numerics\Tensors\netcore\TensorSpanHelpers.cs" />
+    <Compile Include="System\Numerics\Tensors\netcore\TensorSpanHelpers.T.cs" />
+    <Compile Include="System\Numerics\Tensors\netcore\TensorSpan.cs" />
+    <Compile Include="System\NIndex.cs" />
+    <Compile Include="System\NRange.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\Common\TensorPrimitives.IAggregationOperator.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\Common\TensorPrimitives.IBinaryOperator.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\Common\TensorPrimitives.IIndexOfOperator.cs" />
