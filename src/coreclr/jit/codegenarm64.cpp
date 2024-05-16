@@ -2406,14 +2406,31 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
                     }
                     else
                     {
-                        // Get a temp integer register to compute long address.
-                        regNumber addrReg = internalRegisters.GetSingle(tree);
+                        simd8_t val = vecCon->gtSimd8Val;
+                        if (ElementsAreSame(val.i32, 2) && emitter::emitIns_valid_imm_for_movi(val.i32[0], EA_4BYTE))
+                        {
+                            emit->emitIns_R_I(INS_movi, attr, targetReg, val.i32[0], INS_OPTS_2S);
+                        }
+                        else if (ElementsAreSame(val.i16, 4) &&
+                                 emitter::emitIns_valid_imm_for_movi(val.i16[0], EA_2BYTE))
+                        {
+                            emit->emitIns_R_I(INS_movi, attr, targetReg, val.i16[0], INS_OPTS_4H);
+                        }
+                        else if (ElementsAreSame(val.i8, 8) && emitter::emitIns_valid_imm_for_movi(val.i8[0], EA_1BYTE))
+                        {
+                            emit->emitIns_R_I(INS_movi, attr, targetReg, val.i8[0], INS_OPTS_8B);
+                        }
+                        else
+                        {
+                            // Get a temp integer register to compute long address.
+                            regNumber addrReg = internalRegisters.GetSingle(tree);
 
-                        simd8_t constValue;
-                        memcpy(&constValue, &vecCon->gtSimdVal, sizeof(simd8_t));
+                            simd8_t constValue;
+                            memcpy(&constValue, &vecCon->gtSimdVal, sizeof(simd8_t));
 
-                        CORINFO_FIELD_HANDLE hnd = emit->emitSimd8Const(constValue);
-                        emit->emitIns_R_C(INS_ldr, attr, targetReg, addrReg, hnd, 0);
+                            CORINFO_FIELD_HANDLE hnd = emit->emitSimd8Const(constValue);
+                            emit->emitIns_R_C(INS_ldr, attr, targetReg, addrReg, hnd, 0);
+                        }
                     }
                     break;
                 }
@@ -2454,14 +2471,32 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
                     }
                     else
                     {
-                        // Get a temp integer register to compute long address.
-                        regNumber addrReg = internalRegisters.GetSingle(tree);
+                        simd16_t val = vecCon->gtSimd16Val;
+                        if (ElementsAreSame(val.i32, 4) && emitter::emitIns_valid_imm_for_movi(val.i32[0], EA_4BYTE))
+                        {
+                            emit->emitIns_R_I(INS_movi, attr, targetReg, val.i32[0], INS_OPTS_4S);
+                        }
+                        else if (ElementsAreSame(val.i16, 8) &&
+                                 emitter::emitIns_valid_imm_for_movi(val.i16[0], EA_2BYTE))
+                        {
+                            emit->emitIns_R_I(INS_movi, attr, targetReg, val.i16[0], INS_OPTS_8H);
+                        }
+                        else if (ElementsAreSame(val.i8, 16) &&
+                                 emitter::emitIns_valid_imm_for_movi(val.i8[0], EA_1BYTE))
+                        {
+                            emit->emitIns_R_I(INS_movi, attr, targetReg, val.i8[0], INS_OPTS_16B);
+                        }
+                        else
+                        {
+                            // Get a temp integer register to compute long address.
+                            regNumber addrReg = internalRegisters.GetSingle(tree);
 
-                        simd16_t constValue;
-                        memcpy(&constValue, &vecCon->gtSimdVal, sizeof(simd16_t));
+                            simd16_t constValue;
+                            memcpy(&constValue, &vecCon->gtSimdVal, sizeof(simd16_t));
 
-                        CORINFO_FIELD_HANDLE hnd = emit->emitSimd16Const(constValue);
-                        emit->emitIns_R_C(INS_ldr, attr, targetReg, addrReg, hnd, 0);
+                            CORINFO_FIELD_HANDLE hnd = emit->emitSimd16Const(constValue);
+                            emit->emitIns_R_C(INS_ldr, attr, targetReg, addrReg, hnd, 0);
+                        }
                     }
                     break;
                 }
