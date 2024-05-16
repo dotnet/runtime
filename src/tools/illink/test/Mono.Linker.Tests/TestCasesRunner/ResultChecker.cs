@@ -9,11 +9,13 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
+using Microsoft.VisualStudio.TestPlatform.ObjectModel;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Cases.Expectations.Metadata;
 using Mono.Linker.Tests.Extensions;
+using Mono.Linker.Tests.TestCases;
 using Mono.Linker.Tests.TestCasesRunner.ILVerification;
 using NUnit.Framework;
 using WellKnownType = ILLink.Shared.TypeSystemProxy.WellKnownType;
@@ -276,9 +278,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			bool checkRemainingErrors = !HasAttribute (linkResult.TestCase.FindTypeDefinition (original), nameof (SkipRemainingErrorsValidationAttribute));
 			VerifyLoggedMessages (original, linkResult.Logger, checkRemainingErrors);
 			VerifyRecordedDependencies (original, linkResult.Customizations.DependencyRecorder);
-
-			// VerifyExpectedDependencyTrace (original, linkResult.MetadataProvider.)
-			// VerifyExpectedDependencyTrace (original, linkResult.TestCase.TestSuiteDirectory, linkResult.OutputAssemblyPath);
+			VerifyExpectedDependencyTrace (linkResult.TestCase, linkResult.OutputAssemblyPath);
 		}
 
 		protected virtual void InitialChecking (TrimmedTestCaseResult linkResult, AssemblyDefinition original, AssemblyDefinition linked)
@@ -1054,13 +1054,12 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			}
 		}
 
-		void VerifyExpectedDependencyTrace (AssemblyDefinition original, NPath testSuiteDirectory, NPath outputAssemblyPath)
+		void VerifyExpectedDependencyTrace (Mono.Linker.Tests.TestCases.TestCase testCase, NPath outputAssemblyPath)
 		{
-			if (!TryGetCustomAttribute (original.EntryPoint.DeclaringType, nameof (ExpectedDependencyTraceAttribute), out var attr))
-				return;
+			if (AppContext.TryGetSwitch ("GenerateExpectedDependencyTraces", out var generateExpectedDependencyTrace) && generateExpectedDependencyTrace)
+				return; // No validation if we are generating the expected traces.
 
-			var expectedTrace = (string) attr.ConstructorArguments[0].Value;
-			var expectedTracePath = testSuiteDirectory.Combine (expectedTrace);
+			var expectedTracePath = testCase.TestSuiteDirectory.Combine ("Dependencies").Combine (testCase.Name + ".linker-dependencies.xml");
 			Assert.IsTrue (expectedTracePath.FileExists (), $"Expected dependency trace file '{expectedTracePath}' does not exist.");
 
 			// linker-dependencies.xml in same dir as output

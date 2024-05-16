@@ -48,9 +48,6 @@ using Mono.Cecil.Cil;
 using Mono.Collections.Generic;
 using Mono.Linker.Dataflow;
 
-using DependencyList = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<Mono.Linker.Steps.MarkStep.NodeFactory>.DependencyList;
-
-
 namespace Mono.Linker.Steps
 {
 
@@ -394,7 +391,7 @@ namespace Mono.Linker.Steps
 
 			ProcessPendingTypeChecks ();
 
-			bool ProcessAllPendingItems (ref DependencyList dependencies)
+			bool ProcessAllPendingItems ()
 				=> ProcessPrimaryQueue () ||
 				ProcessMarkedPending () ||
 				ProcessLazyAttributes () ||
@@ -1957,12 +1954,6 @@ namespace Mono.Linker.Steps
 			MarkStaticConstructor (type, reason, origin);
 		}
 
-		// Old-style method. Marks a type without returning a list of dependencies.
-		internal virtual TypeDefinition? MarkType (TypeReference reference, DependencyInfo reason, MessageOrigin? origin = null)
-		{
-			DependencyList? dependencies = null;
-			return MarkType (reference, reason, ref dependencies);
-		}
 
 		/// <summary>
 		/// Marks the specified <paramref name="reference"/> as referenced.
@@ -1970,9 +1961,7 @@ namespace Mono.Linker.Steps
 		/// <param name="reference">The type reference to mark.</param>
 		/// <param name="reason">The reason why the marking is occuring</param>
 		/// <returns>The resolved type definition if the reference can be resolved</returns>
-		/// Aside from the overload above, this should only be called with non-null dependencies.
-		/// Then it will log dependencies so that the calling Node can return them to the analysis framework.
-		internal virtual TypeDefinition? MarkType (TypeReference reference, DependencyInfo reason, ref DependencyList? dependencies, MessageOrigin? origin = null)
+		protected internal virtual TypeDefinition? MarkType (TypeReference reference, DependencyInfo reason, MessageOrigin? origin = null)
 		{
 #if DEBUG
 			if (!_typeReasons.Contains (reason.Kind))
@@ -2002,14 +1991,7 @@ namespace Mono.Linker.Steps
 				Debug.Assert (Annotations.IsMarked (type));
 				break;
 			default:
-				if (dependencies == null) {
-					Annotations.Mark (type, reason, ScopeStack.CurrentScope.Origin);
-				} else {
-#pragma warning disable CS0618
-					// The dependency analysis framework will record the reason.
-					Annotations.Mark (type);
-#pragma warning restore CS0618
-				}
+				Annotations.Mark (type, reason, ScopeStack.CurrentScope.Origin);
 				break;
 			}
 
@@ -2034,28 +2016,18 @@ namespace Mono.Linker.Steps
 			if (type.Scope is ModuleDefinition module)
 				MarkModule (module, new DependencyInfo (DependencyKind.ScopeOfType, type));
 
-			var typeNode = _nodeFactory.GetTypeNode (type);
-			if (dependencies != null) {
-				// We got here from a call to GetStaticDependencies on some dependency analysis node.
-				// Attach this type node to
-				dependencies.Add (typeNode, Enum.GetName (reason.Kind));
-			} else {
-				// We got here along some path that did not come directly from a node.
-				// (It's possible we reached this MarkType call indirectly from marking logic triggered by a node though.)
-				// In this case, just add it as a root. The Annotations.Mark call abouve would have logged the reason.
-				_dependencyGraph.AddRoot (typeNode, Enum.GetName (reason.Kind));
-			}
+			_dependencyGraph.AddRoot (_nodeFactory.GetTypeNode (type), Enum.GetName (reason.Kind));
 			return type;
 		}
 
-		internal virtual void ProcessType (TypeDefinition type, ref DependencyList? dependencies)
+		protected internal virtual void ProcessType (TypeDefinition type)
 		{
 			using var typeScope = ScopeStack.PushLocalScope (new MessageOrigin (type));
 
 			foreach (Action<TypeDefinition> handleMarkType in MarkContext.MarkTypeActions)
 				handleMarkType (type);
 
-			MarkType (type.BaseType, new DependencyInfo (DependencyKind.BaseType, type), ref dependencies);
+			MarkType (type.BaseType, new DependencyInfo (DependencyKind.BaseType, type));
 
 			// The DynamicallyAccessedMembers hierarchy processing must be done after the base type was marked
 			// (to avoid inconsistencies in the cache), but before anything else as work done below
@@ -2063,7 +2035,7 @@ namespace Mono.Linker.Steps
 			DynamicallyAccessedMembersTypeHierarchy.ProcessMarkedTypeForDynamicallyAccessedMembersHierarchy (type);
 
 			if (type.DeclaringType != null)
-				MarkType (type.DeclaringType, new DependencyInfo (DependencyKind.DeclaringType, type), ref dependencies);
+				MarkType (type.DeclaringType, new DependencyInfo (DependencyKind.DeclaringType, type));
 			MarkCustomAttributes (type, new DependencyInfo (DependencyKind.CustomAttribute, type));
 			MarkSecurityDeclarations (type, new DependencyInfo (DependencyKind.CustomAttribute, type));
 
@@ -3194,7 +3166,7 @@ namespace Mono.Linker.Steps
 			return (method, reason);
 		}
 
-		internal virtual void ProcessMethod (MethodDefinition method, in DependencyInfo reason, ref DependencyList? dependencies)
+		protected virtual void ProcessMethod (MethodDefinition method, in DependencyInfo reason)
 		{
 #if DEBUG
 			if (!_methodReasons.Contains (reason.Kind))
@@ -3212,7 +3184,7 @@ namespace Mono.Linker.Steps
 				handleMarkMethod (method);
 
 			if (!markedForCall)
-				MarkType (method.DeclaringType, new DependencyInfo (DependencyKind.DeclaringType, method), ref dependencies);
+				MarkType (method.DeclaringType, new DependencyInfo (DependencyKind.DeclaringType, method));
 			MarkCustomAttributes (method, new DependencyInfo (DependencyKind.CustomAttribute, method));
 			MarkSecurityDeclarations (method, new DependencyInfo (DependencyKind.CustomAttribute, method));
 
@@ -3236,7 +3208,7 @@ namespace Mono.Linker.Steps
 			if (method.HasMetadataParameters ()) {
 #pragma warning disable RS0030 // MethodReference.Parameters is banned. It's easiest to leave the code as is for now
 				foreach (ParameterDefinition pd in method.Parameters) {
-					MarkType (pd.ParameterType, new DependencyInfo (DependencyKind.ParameterType, method), ref dependencies);
+					MarkType (pd.ParameterType, new DependencyInfo (DependencyKind.ParameterType, method));
 					MarkCustomAttributes (pd, new DependencyInfo (DependencyKind.ParameterAttribute, method));
 					MarkMarshalSpec (pd, new DependencyInfo (DependencyKind.ParameterMarshalSpec, method));
 				}

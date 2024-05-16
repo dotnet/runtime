@@ -52,6 +52,9 @@
     <RuntimeHostConfigurationOption Include="Mono.Linker.Tests.CecilPackageVersion">
       <Value>$(MicrosoftDotNetCecilVersion)</Value>
     </RuntimeHostConfigurationOption>
+
+    <RuntimeHostConfigurationOption Include="GenerateExpectedDependencyTraces" Value="true"
+                                    Condition="'$(GenerateExpectedDependencyTraces)' == 'true'" />
   </ItemGroup>
 
   <Import Project="..\Trimming.Tests.Shared\Trimming.Tests.Shared.projitems" Label="Shared" />

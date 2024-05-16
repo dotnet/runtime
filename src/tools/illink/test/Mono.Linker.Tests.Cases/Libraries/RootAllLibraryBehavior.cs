@@ -7,9 +7,6 @@ using Mono.Linker.Tests.Cases.Libraries.Dependencies;
 
 namespace Mono.Linker.Tests.Cases.Libraries
 {
-	[SetupLinkerArgument ("--dump-dependencies")]
-	[ExpectedDependencyTrace ("Dependencies/RootAllLibraryBehavior_ExpectedDependencyTrace.xml")]
-
 	[IgnoreTestCase ("NativeAOT doesn't implement library trimming the same way", IgnoredBy = Tool.NativeAot)]
 	[KeptAttributeAttribute (typeof (IgnoreTestCaseAttribute), By = Tool.Trimmer)]
 	// This validates the trimming behavior of a library when it is trimmed following

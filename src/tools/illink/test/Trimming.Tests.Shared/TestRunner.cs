@@ -177,12 +177,14 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 			builder.ProcessOptions (caseDefinedOptions);
 
-			// Uncomment this to produce traces into the src directory.
-			var expectedTracePath = metadataProvider.GetExpectedDependencyTrace ();
-			builder.AddAdditionalArgument ("--dump-dependencies", null);
-			builder.AddAdditionalArgument ("--dependencies-file", [expectedTracePath]);
+			// Dump dependencies only for the test assembly.
+			builder.AddAdditionalArgument ("--dump-dependencies", [compilationResult.InputAssemblyPath.FileNameWithoutExtension]);
 
-			// builder.AddAdditionalArgument ("--dump-dependencies", null);
+			if (AppContext.TryGetSwitch ("GenerateExpectedDependencyTrace", out var generateExpectedDependencyTrace) && generateExpectedDependencyTrace) {
+				// If running with GenerateExpectedDependencyTrace=true, generate the traces directly into the expected src directory.
+				var expectedTracePath = metadataProvider.GetExpectedDependencyTrace ();
+				builder.AddAdditionalArgument ("--dependencies-file", [expectedTracePath]);
+			}
 
 			builder.ProcessTestInputAssembly (compilationResult.InputAssemblyPath);
 		}
