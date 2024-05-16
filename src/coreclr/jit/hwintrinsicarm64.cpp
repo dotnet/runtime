@@ -537,8 +537,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
-        case NI_Vector64_Add:
-        case NI_Vector128_Add:
         case NI_Vector64_op_Addition:
         case NI_Vector128_op_Addition:
         {
@@ -563,32 +561,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
-        case NI_Vector64_As:
-        case NI_Vector64_AsByte:
-        case NI_Vector64_AsDouble:
-        case NI_Vector64_AsInt16:
-        case NI_Vector64_AsInt32:
-        case NI_Vector64_AsInt64:
-        case NI_Vector64_AsNInt:
-        case NI_Vector64_AsNUInt:
-        case NI_Vector64_AsSByte:
-        case NI_Vector64_AsSingle:
-        case NI_Vector64_AsUInt16:
-        case NI_Vector64_AsUInt32:
-        case NI_Vector64_AsUInt64:
-        case NI_Vector128_As:
-        case NI_Vector128_AsByte:
-        case NI_Vector128_AsDouble:
-        case NI_Vector128_AsInt16:
-        case NI_Vector128_AsInt32:
-        case NI_Vector128_AsInt64:
-        case NI_Vector128_AsNInt:
-        case NI_Vector128_AsNUInt:
-        case NI_Vector128_AsSByte:
-        case NI_Vector128_AsSingle:
-        case NI_Vector128_AsUInt16:
-        case NI_Vector128_AsUInt32:
-        case NI_Vector128_AsUInt64:
         case NI_Vector128_AsVector:
         {
             assert(!sig->hasThis());
@@ -704,8 +676,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
-        case NI_Vector64_BitwiseAnd:
-        case NI_Vector128_BitwiseAnd:
         case NI_Vector64_op_BitwiseAnd:
         case NI_Vector128_op_BitwiseAnd:
         {
@@ -718,8 +688,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
-        case NI_Vector64_BitwiseOr:
-        case NI_Vector128_BitwiseOr:
         case NI_Vector64_op_BitwiseOr:
         case NI_Vector128_op_BitwiseOr:
         {
@@ -1088,8 +1056,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
-        case NI_Vector64_Divide:
-        case NI_Vector128_Divide:
         case NI_Vector64_op_Division:
         case NI_Vector128_op_Division:
         {
@@ -1146,8 +1112,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
-        case NI_Vector64_EqualsAll:
-        case NI_Vector128_EqualsAll:
         case NI_Vector64_op_Equality:
         case NI_Vector128_op_Equality:
         {
@@ -1373,14 +1337,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
-        case NI_Vector64_get_Zero:
-        case NI_Vector128_get_Zero:
-        {
-            assert(sig->numArgs == 0);
-            retNode = gtNewZeroConNode(retType);
-            break;
-        }
-
         case NI_Vector64_GetElement:
         case NI_Vector128_GetElement:
         {
@@ -1566,8 +1522,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
         case NI_AdvSimd_LoadVector64:
         case NI_AdvSimd_LoadVector128:
-        case NI_Vector64_Load:
-        case NI_Vector128_Load:
         case NI_Vector64_LoadUnsafe:
         case NI_Vector128_LoadUnsafe:
         {
@@ -1673,8 +1627,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
-        case NI_Vector64_Multiply:
-        case NI_Vector128_Multiply:
         case NI_Vector64_op_Multiply:
         case NI_Vector128_op_Multiply:
         {
@@ -1713,8 +1665,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
-        case NI_Vector64_Negate:
-        case NI_Vector128_Negate:
         case NI_Vector64_op_UnaryNegation:
         case NI_Vector128_op_UnaryNegation:
         {
@@ -1724,8 +1674,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
-        case NI_Vector64_OnesComplement:
-        case NI_Vector128_OnesComplement:
         case NI_Vector64_op_OnesComplement:
         case NI_Vector128_op_OnesComplement:
         {
@@ -1748,16 +1696,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
-        case NI_Vector64_op_UnaryPlus:
-        case NI_Vector128_op_UnaryPlus:
-        {
-            assert(sig->numArgs == 1);
-            retNode = impSIMDPopStack();
-            break;
-        }
-
-        case NI_Vector64_Subtract:
-        case NI_Vector128_Subtract:
         case NI_Vector64_op_Subtraction:
         case NI_Vector128_op_Subtraction:
         {
@@ -1770,8 +1708,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
-        case NI_Vector64_ShiftLeft:
-        case NI_Vector128_ShiftLeft:
         case NI_Vector64_op_LeftShift:
         case NI_Vector128_op_LeftShift:
         {
@@ -1784,8 +1720,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
-        case NI_Vector64_ShiftRightArithmetic:
-        case NI_Vector128_ShiftRightArithmetic:
         case NI_Vector64_op_RightShift:
         case NI_Vector128_op_RightShift:
         {
@@ -1799,8 +1733,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
-        case NI_Vector64_ShiftRightLogical:
-        case NI_Vector128_ShiftRightLogical:
         case NI_Vector64_op_UnsignedRightShift:
         case NI_Vector128_op_UnsignedRightShift:
         {
@@ -1870,9 +1802,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
-        case NI_Vector64_Store:
         case NI_Vector64_StoreUnsafe:
-        case NI_Vector128_Store:
         case NI_Vector128_StoreUnsafe:
         {
             assert(retType == TYP_VOID);
@@ -2191,8 +2121,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
-        case NI_Vector64_Xor:
-        case NI_Vector128_Xor:
         case NI_Vector64_op_ExclusiveOr:
         case NI_Vector128_op_ExclusiveOr:
         {

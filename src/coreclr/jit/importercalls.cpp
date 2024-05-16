@@ -3045,15 +3045,15 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
 #if defined(TARGET_XARCH)
                 // We can't guarantee that all overloads for the xplat intrinsics can be
                 // handled by the AltJit, so limit only the platform specific intrinsics
-                assert((NI_Vector512_Xor + 1) == NI_X86Base_BitScanForward);
+                assert((NI_Vector512_WithUpper + 1) == NI_X86Base_BitScanForward);
 
-                if (ni < NI_Vector512_Xor)
+                if (ni < NI_Vector512_WithUpper)
 #elif defined(TARGET_ARM64)
                 // We can't guarantee that all overloads for the xplat intrinsics can be
                 // handled by the AltJit, so limit only the platform specific intrinsics
-                assert((NI_Vector128_Xor + 1) == NI_AdvSimd_Abs);
+                assert((NI_Vector128_WithUpper + 1) == NI_AdvSimd_Abs);
 
-                if (ni < NI_Vector128_Xor)
+                if (ni < NI_Vector128_WithUpper)
 #else
 #error Unsupported platform
 #endif
