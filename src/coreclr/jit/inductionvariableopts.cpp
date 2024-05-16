@@ -899,23 +899,22 @@ bool Compiler::optMakeLoopDownwardsCounted(ScalarEvolutionContext& scevContext,
     assert(jtrue->OperIs(GT_JTRUE));
     GenTree* cond = jtrue->gtGetOp1();
 
+    if ((jtrue->gtFlags & GTF_SIDE_EFFECT) != 0)
+    {
+        // If the IV is used as part of the side effect then we can't
+        // transform; otherwise we could. TODO-CQ: Make this determination and
+        // extract side effects from the jtrue to make this work.
+        JITDUMP("  No; exit node has side effects\n");
+        return false;
+    }
+
     bool checkProfitability = !compStressCompile(STRESS_DOWNWARDS_COUNTED_LOOPS, 50);
 
-    if (checkProfitability)
+    if (checkProfitability && cond->OperIsCompare() &&
+        (cond->gtGetOp1()->IsIntegralConst(0) || cond->gtGetOp2()->IsIntegralConst(0)))
     {
-        if ((jtrue->gtFlags & GTF_SIDE_EFFECT) != 0)
-        {
-            // If the IV is used as part of the side effect then we can't
-            // transform; otherwise we could. TODO-CQ: Make this determination.
-            JITDUMP("  No; exit node has side effects\n");
-            return false;
-        }
-
-        if (cond->OperIsCompare() && (cond->gtGetOp1()->IsIntegralConst(0) || cond->gtGetOp2()->IsIntegralConst(0)))
-        {
-            JITDUMP("  No; operand of condition [%06u] is already 0\n", dspTreeID(cond));
-            return false;
-        }
+        JITDUMP("  No; operand of condition [%06u] is already 0\n", dspTreeID(cond));
+        return false;
     }
 
     // Making a loop downwards counted is profitable if there is a primary IV
@@ -963,13 +962,7 @@ bool Compiler::optMakeLoopDownwardsCounted(ScalarEvolutionContext& scevContext,
             if (stmt == jtrueStmt)
             {
                 hasUseInTest = true;
-
-                if ((jtrueStmt->GetRootNode()->gtFlags & GTF_SIDE_EFFECT) != 0)
-                {
-                    return false;
-                }
-
-                // Use is inside the loop test that has no side effects, can remove
+                // Use is inside the loop test that has no side effects (as we checked above), can remove
                 return true;
             }
 
