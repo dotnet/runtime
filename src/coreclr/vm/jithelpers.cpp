@@ -4845,7 +4845,8 @@ static void DoJITRuntimeAssertFail(int id)
     LOG((LF_ALWAYS, LL_FATALERROR, "JIT runtime assertion with ID %d failed", id));
     printf("JIT runtime assert with ID %d failed\n", id);
 
-    CrashDumpAndTerminateProcess(STATUS_ASSERTION_FAILURE);
+    const unsigned assertFailureExit = 0xC0000420L;
+    CrashDumpAndTerminateProcess(assertFailureExit);
 }
 #endif
 
