@@ -3617,7 +3617,7 @@ void emitter::emitDispInsName(
                 case 0x1: // SLLIW
                 {
                     unsigned funct7 = (imm12 >> 5) & 0x7f;
-                    // SLLI's instruction code's upper 7 bits have to be equal to zero
+                    // SLLIW's instruction code's upper 7 bits have to be equal to zero
                     if (funct7 == 0)
                     {
                         printf("slliw          %s, %s, %d\n", rd, rs1, imm12 & 0x1f); // 5 BITS for SHAMT in RISCV64
