@@ -24,66 +24,6 @@
 #define VTHACK_WINBOOL         254
 
 
-//These types must be kept in sync with the CorElementTypes defined in cor.h
-//NOTE: If you add values to this enum you need to look at OAVariant.cpp.  There is
-//      a mapping between CV type and VT types found there.
-//NOTE: This is also found in a table in OleVariant.cpp.
-//NOTE: These are also found in Variant.cs
-typedef enum
-{
-    CV_EMPTY               = 0x0,                   // CV_EMPTY
-    CV_VOID                = ELEMENT_TYPE_VOID,
-    CV_BOOLEAN             = ELEMENT_TYPE_BOOLEAN,
-    CV_CHAR                = ELEMENT_TYPE_CHAR,
-    CV_I1                  = ELEMENT_TYPE_I1,
-    CV_U1                  = ELEMENT_TYPE_U1,
-    CV_I2                  = ELEMENT_TYPE_I2,
-    CV_U2                  = ELEMENT_TYPE_U2,
-    CV_I4                  = ELEMENT_TYPE_I4,
-    CV_U4                  = ELEMENT_TYPE_U4,
-    CV_I8                  = ELEMENT_TYPE_I8,
-    CV_U8                  = ELEMENT_TYPE_U8,
-    CV_R4                  = ELEMENT_TYPE_R4,
-    CV_R8                  = ELEMENT_TYPE_R8,
-    CV_STRING              = ELEMENT_TYPE_STRING,
-
-    // For the rest, we map directly if it is defined in CorHdr.h and fill
-    //  in holes for the rest.
-    CV_PTR                 = ELEMENT_TYPE_PTR,
-    CV_DATETIME            = 0x10,      // ELEMENT_TYPE_BYREF
-    CV_TIMESPAN            = 0x11,      // ELEMENT_TYPE_VALUETYPE
-    CV_OBJECT              = ELEMENT_TYPE_CLASS,
-    CV_DECIMAL             = 0x13,      // ELEMENT_TYPE_UNUSED1
-    CV_CURRENCY            = 0x14,      // ELEMENT_TYPE_ARRAY
-    CV_ENUM                = 0x15,      //
-    CV_MISSING             = 0x16,      //
-    CV_NULL                = 0x17,      //
-    CV_LAST                = 0x18,      //
-} CVTypes;
-
-//Mapping from CVType to type handle. Used for conversion between the two internally.
-extern const BinderClassID CVTypeToBinderClassID[];
-
-inline TypeHandle GetTypeHandleForCVType(CVTypes elemType)
-{
-    CONTRACT (TypeHandle)
-    {
-        WRAPPER(THROWS);
-        WRAPPER(GC_TRIGGERS);
-        MODE_ANY;
-        PRECONDITION(elemType < CV_LAST);
-    }
-    CONTRACT_END;
-
-    RETURN TypeHandle(CoreLibBinder::GetClass(CVTypeToBinderClassID[elemType]));
-}
-
-// Use this very carefully.  There is not a direct mapping between
-//  CorElementType and CVTypes for a bunch of things.  In this case
-//  we return CV_LAST.  You need to check this at the call site.
-extern CVTypes CorElementTypeToCVTypes(CorElementType type);
-
-
 class OleVariant
 {
   public:
@@ -158,8 +98,7 @@ class OleVariant
     static void CreateByrefVariantForVariant(VARIANT* pSrcVar, VARIANT* pByrefVar);
 #endif // FEATURE_COMINTEROP
 
-    static CVTypes GetCVTypeForVarType(VARTYPE vt);
-    static VARTYPE GetVarTypeForCVType(CVTypes);
+    static TypeHandle GetTypeHandleForVarType(VARTYPE vt);
     static VARTYPE GetVarTypeForTypeHandle(TypeHandle typeHnd);
 
     static VARTYPE GetVarTypeForValueClassArrayName(LPCUTF8 pArrayClassName);

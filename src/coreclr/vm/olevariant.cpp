@@ -22,60 +22,14 @@
  * Local constants
  * ------------------------------------------------------------------------- */
 
-#define NO_MAPPING ((BYTE) -1)
+#define NO_MAPPING -1
 
-
-//Mapping from CVType to type handle. Used for conversion between the two internally.
-const BinderClassID CVTypeToBinderClassID[] =
-{
-    CLASS__EMPTY,       //CV_EMPTY
-    CLASS__VOID,        //CV_VOID, Changing this to object messes up signature resolution very badly.
-    CLASS__BOOLEAN,     //CV_BOOLEAN
-    CLASS__CHAR,        //CV_CHAR
-    CLASS__SBYTE,       //CV_I1
-    CLASS__BYTE,        //CV_U1
-    CLASS__INT16,       //CV_I2
-    CLASS__UINT16,      //CV_U2
-    CLASS__INT32,       //CV_I4
-    CLASS__UINT32,      //CV_UI4
-    CLASS__INT64,       //CV_I8
-    CLASS__UINT64,      //CV_UI8
-    CLASS__SINGLE,      //CV_R4
-    CLASS__DOUBLE,      //CV_R8
-    CLASS__STRING,      //CV_STRING
-    CLASS__VOID,        //CV_PTR...We treat this as void
-    CLASS__DATE_TIME,   //CV_DATETIME
-    CLASS__TIMESPAN,    //CV_TIMESPAN
-    CLASS__OBJECT,      //CV_OBJECT
-    CLASS__DECIMAL,     //CV_DECIMAL
-    CLASS__CURRENCY,    //CV_CURRENCY
-    CLASS__OBJECT,      //ENUM...We treat this as OBJECT
-    CLASS__MISSING,     //CV_MISSING
-    CLASS__NULL,        //CV_NULL
-    CLASS__NIL,         //CV_LAST
-};
-
-// Use this very carefully.  There is not a direct mapping between
-//  CorElementType and CVTypes for a bunch of things.  In this case
-//  we return CV_LAST.  You need to check this at the call site.
-CVTypes CorElementTypeToCVTypes(CorElementType type)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    if (type <= ELEMENT_TYPE_STRING)
-        return (CVTypes) type;
-
-    if (type == ELEMENT_TYPE_CLASS || type == ELEMENT_TYPE_OBJECT)
-        return (CVTypes) ELEMENT_TYPE_CLASS;
-
-    return CV_LAST;
-}
 
 /* ------------------------------------------------------------------------- *
  * Mapping routines
  * ------------------------------------------------------------------------- */
 
-VARTYPE OleVariant::GetVarTypeForCVType(CVTypes type)
+VARTYPE GetVarTypeForCorElementType(CorElementType type)
 {
     CONTRACTL
     {
@@ -87,33 +41,24 @@ VARTYPE OleVariant::GetVarTypeForCVType(CVTypes type)
 
     static const BYTE map[] =
     {
-        VT_EMPTY,           // CV_EMPTY
-        VT_VOID,            // CV_VOID
-        VT_BOOL,            // CV_BOOLEAN
-        VT_UI2,             // CV_CHAR
-        VT_I1,              // CV_I1
-        VT_UI1,             // CV_U1
-        VT_I2,              // CV_I2
-        VT_UI2,             // CV_U2
-        VT_I4,              // CV_I4
-        VT_UI4,             // CV_U4
-        VT_I8,              // CV_I8
-        VT_UI8,             // CV_U8
-        VT_R4,              // CV_R4
-        VT_R8,              // CV_R8
-        VT_BSTR,            // CV_STRING
-        NO_MAPPING,         // CV_PTR
-        VT_DATE,            // CV_DATETIME
-        NO_MAPPING,         // CV_TIMESPAN
-        VT_DISPATCH,        // CV_OBJECT
-        VT_DECIMAL,         // CV_DECIMAL
-        VT_CY,              // CV_CURRENCY
-        VT_I4,              // CV_ENUM
-        VT_ERROR,           // CV_MISSING
-        VT_NULL             // CV_NULL
+        VT_EMPTY,           // ELEMENT_TYPE_END
+        VT_VOID,            // ELEMENT_TYPE_VOID
+        VT_BOOL,            // ELEMENT_TYPE_BOOLEAN
+        VT_UI2,             // ELEMENT_TYPE_CHAR
+        VT_I1,              // ELEMENT_TYPE_I1
+        VT_UI1,             // ELEMENT_TYPE_U1
+        VT_I2,              // ELEMENT_TYPE_I2
+        VT_UI2,             // ELEMENT_TYPE_U2
+        VT_I4,              // ELEMENT_TYPE_I4
+        VT_UI4,             // ELEMENT_TYPE_U4
+        VT_I8,              // ELEMENT_TYPE_I8
+        VT_UI8,             // ELEMENT_TYPE_U8
+        VT_R4,              // ELEMENT_TYPE_R4
+        VT_R8,              // ELEMENT_TYPE_R8
+        VT_BSTR,            // ELEMENT_TYPE_STRING
     };
 
-    _ASSERTE(type < (CVTypes) (sizeof(map) / sizeof(map[0])));
+    _ASSERTE(type < (CorElementType) (sizeof(map) / sizeof(map[0])));
 
     VARTYPE vt = VARTYPE(map[type]);
 
@@ -124,12 +69,12 @@ VARTYPE OleVariant::GetVarTypeForCVType(CVTypes type)
 }
 
 //
-// GetCVTypeForVarType returns the COM+ variant type for a given
+// GetTypeHandleForVarType returns the TypeHandle for a given
 // VARTYPE.  This is called by the marshaller in the context of
 // a function call.
 //
 
-CVTypes OleVariant::GetCVTypeForVarType(VARTYPE vt)
+TypeHandle OleVariant::GetTypeHandleForVarType(VARTYPE vt)
 {
     CONTRACTL
     {
@@ -139,33 +84,33 @@ CVTypes OleVariant::GetCVTypeForVarType(VARTYPE vt)
     }
     CONTRACTL_END;
 
-    static const BYTE map[] =
+    static const int map[] =
     {
-        CV_EMPTY,           // VT_EMPTY
-        CV_NULL,            // VT_NULL
-        CV_I2,              // VT_I2
-        CV_I4,              // VT_I4
-        CV_R4,              // VT_R4
-        CV_R8,              // VT_R8
-        CV_DECIMAL,         // VT_CY
-        CV_DATETIME,        // VT_DATE
-        CV_STRING,          // VT_BSTR
-        CV_OBJECT,          // VT_DISPATCH
-        CV_I4,              // VT_ERROR
-        CV_BOOLEAN,         // VT_BOOL
+        CLASS__EMPTY,       // VT_EMPTY
+        CLASS__NULL,        // VT_NULL
+        CLASS__INT16,       // VT_I2
+        CLASS__INT32,       // VT_I4
+        CLASS__SINGLE,      // VT_R4
+        CLASS__DOUBLE,      // VT_R8
+        CLASS__DECIMAL,     // VT_CY
+        CLASS__DATE_TIME,   // VT_DATE
+        CLASS__STRING,      // VT_BSTR
+        CLASS__OBJECT,      // VT_DISPATCH
+        CLASS__INT32,       // VT_ERROR
+        CLASS__BOOLEAN,     // VT_BOOL
         NO_MAPPING,         // VT_VARIANT
-        CV_OBJECT,          // VT_UNKNOWN
-        CV_DECIMAL,         // VT_DECIMAL
+        CLASS__OBJECT,      // VT_UNKNOWN
+        CLASS__DECIMAL,     // VT_DECIMAL
         NO_MAPPING,         // unused
-        CV_I1,              // VT_I1
-        CV_U1,              // VT_UI1
-        CV_U2,              // VT_UI2
-        CV_U4,              // VT_UI4
-        CV_I8,              // VT_I8
-        CV_U8,              // VT_UI8
-        CV_I4,              // VT_INT
-        CV_U4,              // VT_UINT
-        CV_VOID,            // VT_VOID
+        CLASS__SBYTE,       // VT_I1
+        CLASS__BYTE,        // VT_UI1
+        CLASS__UINT16,      // VT_UI2
+        CLASS__UINT32,      // VT_UI4
+        CLASS__INT64,       // VT_I8
+        CLASS__UINT64,      // VT_UI8
+        CLASS__INT32,       // VT_INT
+        CLASS__UINT32,      // VT_UINT
+        CLASS__VOID,        // VT_VOID
         NO_MAPPING,         // VT_HRESULT
         NO_MAPPING,         // VT_PTR
         NO_MAPPING,         // VT_SAFEARRAY
@@ -177,23 +122,23 @@ CVTypes OleVariant::GetCVTypeForVarType(VARTYPE vt)
         NO_MAPPING,         // unused
         NO_MAPPING,         // unused
         NO_MAPPING,         // unused
-        CV_OBJECT,          // VT_RECORD
+        CLASS__OBJECT,      // VT_RECORD
     };
 
-    CVTypes type = CV_LAST;
+    BinderClassID type = CLASS__NIL;
 
     // Validate the arguments.
     _ASSERTE((vt & VT_BYREF) == 0);
 
-    // Array's map to CV_OBJECT.
+    // Array's map to object.
     if (vt & VT_ARRAY)
-        return CV_OBJECT;
+        return TypeHandle(CoreLibBinder::GetClass(CLASS__OBJECT));
 
     // This is prety much a workaround because you cannot cast a CorElementType into a CVTYPE
-    if (vt > VT_RECORD || (BYTE)(type = (CVTypes) map[vt]) == NO_MAPPING)
+    if (vt > VT_RECORD || (type = (BinderClassID) map[vt]) == NO_MAPPING)
         COMPlusThrow(kArgumentException, IDS_EE_COM_UNSUPPORTED_TYPE);
 
-    return type;
+    return TypeHandle(CoreLibBinder::GetClass(type));
 } // CVTypes OleVariant::GetCVTypeForVarType()
 
 VARTYPE OleVariant::GetVarTypeForTypeHandle(TypeHandle type)
@@ -209,7 +154,7 @@ VARTYPE OleVariant::GetVarTypeForTypeHandle(TypeHandle type)
     // Handle primitive types.
     CorElementType elemType = type.GetSignatureCorElementType();
     if (elemType <= ELEMENT_TYPE_R8)
-        return GetVarTypeForCVType(CorElementTypeToCVTypes(elemType));
+        return GetVarTypeForCorElementType(elemType);
 
     // Types incompatible with interop.
     if (type.IsTypeDesc())
@@ -263,7 +208,7 @@ VARTYPE OleVariant::GetVarTypeForTypeHandle(TypeHandle type)
 #endif // FEATURE_COMINTEROP
 
     if (pMT->IsEnum())
-        return GetVarTypeForCVType((CVTypes)type.GetInternalCorElementType());
+        return GetVarTypeForCorElementType(type.GetInternalCorElementType());
 
     if (pMT->IsValueType())
         return VT_RECORD;
