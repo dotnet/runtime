@@ -1005,6 +1005,10 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                 // New inliner morph it in impImportCall.
                 // This will allow us to inline the call to the delegate constructor.
                 call = fgOptimizeDelegateConstructor(call->AsCall(), &exactContextHnd, ldftnInfo);
+                if (compDonotInline())
+                {
+                    return TYP_UNDEF;
+                }
             }
 
             if (!bIntrinsicImported)
