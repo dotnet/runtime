@@ -507,44 +507,17 @@ private:
     mdMethodDef m_methodDef;
 };
 
-class ILCodeVersioningStateHashTraits : public NoRemoveSHashTraits<DefaultSHashTraits<PTR_ILCodeVersioningState>>
-{
-public:
-    typedef typename DefaultSHashTraits<PTR_ILCodeVersioningState>::element_t element_t;
-    typedef typename DefaultSHashTraits<PTR_ILCodeVersioningState>::count_t count_t;
-
-    typedef const ILCodeVersioningState::Key key_t;
-
-    static key_t GetKey(element_t e)
-    {
-        LIMITED_METHOD_CONTRACT;
-        return e->GetKey();
-    }
-    static BOOL Equals(key_t k1, key_t k2)
-    {
-        LIMITED_METHOD_CONTRACT;
-        return k1 == k2;
-    }
-    static count_t Hash(key_t k)
-    {
-        LIMITED_METHOD_CONTRACT;
-        return (count_t)k.Hash();
-    }
-
-    static element_t Null() { LIMITED_METHOD_CONTRACT; return dac_cast<PTR_ILCodeVersioningState>(nullptr); }
-    static bool IsNull(const element_t &e) { LIMITED_METHOD_CONTRACT; return e == NULL; }
-};
-
-typedef SHash<ILCodeVersioningStateHashTraits> ILCodeVersioningStateHash;
-
 class CodeVersionManager
 {
     friend class ILCodeVersion;
+    friend struct _DacGlobals;
+
+    SVAL_DECL(BOOL, s_HasNonDefaultILVersions);
 
 public:
     CodeVersionManager() = default;
 
-    DWORD GetNonDefaultILVersionCount();
+    BOOL HasNonDefaultILVersions();
     ILCodeVersionCollection GetILCodeVersions(PTR_MethodDesc pMethod);
     ILCodeVersionCollection GetILCodeVersions(PTR_Module pModule, mdMethodDef methodDef);
     ILCodeVersion GetActiveILCodeVersion(PTR_MethodDesc pMethod);
@@ -572,9 +545,13 @@ public:
         CallerGCMode callerGCMode,
         bool *doBackpatchRef,
         bool *doFullBackpatchRef);
+
+private:
     HRESULT PublishNativeCodeVersion(MethodDesc* pMethodDesc, NativeCodeVersion nativeCodeVersion);
     HRESULT GetOrCreateMethodDescVersioningState(MethodDesc* pMethod, MethodDescVersioningState** ppMethodDescVersioningState);
     HRESULT GetOrCreateILCodeVersioningState(Module* pModule, mdMethodDef methodDef, ILCodeVersioningState** ppILCodeVersioningState);
+
+public:
     HRESULT SetActiveILCodeVersions(ILCodeVersion* pActiveVersions, DWORD cActiveVersions, CDynArray<CodePublishError> * pPublishErrors);
     static HRESULT AddCodePublishError(Module* pModule, mdMethodDef methodDef, MethodDesc* pMD, HRESULT hrStatus, CDynArray<CodePublishError> * pErrors);
     static HRESULT AddCodePublishError(NativeCodeVersion nativeCodeVersion, HRESULT hrStatus, CDynArray<CodePublishError> * pErrors);
@@ -614,9 +591,6 @@ private:
 
     static bool s_initialNativeCodeVersionMayNotBeTheDefaultNativeCodeVersion;
 #endif
-
-    //Module,MethodDef -> ILCodeVersioningState
-    ILCodeVersioningStateHash m_ilCodeVersioningStateMap;
 
 private:
     static CrstStatic s_lock;

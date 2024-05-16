@@ -161,6 +161,7 @@ enum MethodDescFlags
 struct MethodDescCodeData
 {
     PTR_MethodDescVersioningState MDState;
+    PTR_ILCodeVersioningState ILCodeState;
 };
 using PTR_MethodDescCodeData = DPTR(MethodDescCodeData);
 
@@ -1641,9 +1642,11 @@ public:
     void AllocateCodeData(LoaderHeap* pHeap, AllocMemTracker* pamTracker);
 
     bool SetMethodDescVersionState(PTR_MethodDescVersioningState state);
+    bool SetILCodeVersionState(PTR_ILCodeVersioningState state);
 #endif //!DACCESS_COMPILE
 
     PTR_MethodDescVersioningState GetMethodDescVersionState();
+    PTR_ILCodeVersioningState GetILCodeVersionState();
 
 public:
     inline DWORD GetClassification() const

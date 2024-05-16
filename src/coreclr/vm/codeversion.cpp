@@ -1309,8 +1309,10 @@ bool CodeVersionManager::s_initialNativeCodeVersionMayNotBeTheDefaultNativeCodeV
 PTR_ILCodeVersioningState CodeVersionManager::GetILCodeVersioningState(PTR_Module pModule, mdMethodDef methodDef) const
 {
     LIMITED_METHOD_DAC_CONTRACT;
-    ILCodeVersioningState::Key key = ILCodeVersioningState::Key(pModule, methodDef);
-    return m_ilCodeVersioningStateMap.Lookup(key);
+
+    PTR_MethodDesc pMethod = pModule->LookupMethodDef(methodDef);
+    _ASSERTE(pMethod != (TADDR)NULL);
+    return pMethod->GetILCodeVersionState();
 }
 
 PTR_MethodDescVersioningState CodeVersionManager::GetMethodDescVersioningState(PTR_MethodDesc pClosedMethodDesc) const
@@ -1319,31 +1321,41 @@ PTR_MethodDescVersioningState CodeVersionManager::GetMethodDescVersioningState(P
     return pClosedMethodDesc->GetMethodDescVersionState();
 }
 
+SVAL_IMPL_INIT(BOOL, CodeVersionManager, s_HasNonDefaultILVersions, FALSE);
+
 #ifndef DACCESS_COMPILE
 HRESULT CodeVersionManager::GetOrCreateILCodeVersioningState(Module* pModule, mdMethodDef methodDef, ILCodeVersioningState** ppILCodeVersioningState)
 {
-    LIMITED_METHOD_CONTRACT;
-    HRESULT hr = S_OK;
-    ILCodeVersioningState* pILCodeVersioningState = GetILCodeVersioningState(pModule, methodDef);
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        PRECONDITION(pModule != NULL);
+        PRECONDITION(methodDef != mdTokenNil);
+        PRECONDITION(ppILCodeVersioningState != NULL);
+    }
+    CONTRACTL_END;
+
+    LOG((LF_TIEREDCOMPILATION, LL_INFO100, "CVM::GetOrCreateILCodeVersioningState Module=%p Method=0x%08x\n", pModule, methodDef));
+    PTR_MethodDesc pMethod = pModule->LookupMethodDef(methodDef);
+    _ASSERTE(pMethod != (TADDR)NULL);
+    _ASSERTE(pMethod->IsTypicalMethodDefinition());
+
+    ILCodeVersioningState* pILCodeVersioningState = pMethod->GetILCodeVersionState();
     if (pILCodeVersioningState == NULL)
     {
         pILCodeVersioningState = new (nothrow) ILCodeVersioningState(pModule, methodDef);
         if (pILCodeVersioningState == NULL)
-        {
             return E_OUTOFMEMORY;
-        }
-        EX_TRY
-        {
-            // This throws when out of memory, but remains internally
-            // consistent (without adding the new element)
-            m_ilCodeVersioningStateMap.Add(pILCodeVersioningState);
-        }
-        EX_CATCH_HRESULT(hr);
-        if (FAILED(hr))
-        {
+
+        if (!pMethod->SetILCodeVersionState(pILCodeVersioningState))
             delete pILCodeVersioningState;
-            return hr;
-        }
+
+        pILCodeVersioningState = pMethod->GetILCodeVersionState();
+        LOG((LF_TIEREDCOMPILATION, LL_INFO100, "CVM::GetOrCreateILCodeVersioningState Created state: %p\n", pILCodeVersioningState));
+
+        // Record that we've created at least one IL version.
+        s_HasNonDefaultILVersions = TRUE;
     }
     *ppILCodeVersioningState = pILCodeVersioningState;
     return S_OK;
@@ -1377,14 +1389,14 @@ HRESULT CodeVersionManager::GetOrCreateMethodDescVersioningState(MethodDesc* pMe
 }
 #endif // DACCESS_COMPILE
 
-DWORD CodeVersionManager::GetNonDefaultILVersionCount()
+BOOL CodeVersionManager::HasNonDefaultILVersions()
 {
     LIMITED_METHOD_DAC_CONTRACT;
 
     //This function is legal to call WITHOUT taking the lock
     //It is used to do a quick check if work might be needed without paying the overhead
     //of acquiring the lock and doing dictionary lookups
-    return m_ilCodeVersioningStateMap.GetCount();
+    return s_HasNonDefaultILVersions;
 }
 
 ILCodeVersionCollection CodeVersionManager::GetILCodeVersions(PTR_MethodDesc pMethod)
@@ -1405,22 +1417,24 @@ ILCodeVersion CodeVersionManager::GetActiveILCodeVersion(PTR_MethodDesc pMethod)
 {
     LIMITED_METHOD_DAC_CONTRACT;
     _ASSERTE(IsLockOwnedByCurrentThread());
-    return GetActiveILCodeVersion(dac_cast<PTR_Module>(pMethod->GetModule()), pMethod->GetMemberDef());
+
+    PTR_ILCodeVersioningState pILCodeVersioningState = pMethod->GetILCodeVersionState();
+    if (pILCodeVersioningState == (TADDR)NULL)
+        return ILCodeVersion(dac_cast<PTR_Module>(pMethod->GetModule()), pMethod->GetMemberDef());
+
+    return pILCodeVersioningState->GetActiveVersion();
 }
 
 ILCodeVersion CodeVersionManager::GetActiveILCodeVersion(PTR_Module pModule, mdMethodDef methodDef)
 {
     LIMITED_METHOD_DAC_CONTRACT;
     _ASSERTE(IsLockOwnedByCurrentThread());
-    ILCodeVersioningState* pILCodeVersioningState = GetILCodeVersioningState(pModule, methodDef);
-    if (pILCodeVersioningState == NULL)
-    {
+
+    PTR_MethodDesc pMethod = pModule->LookupMethodDef(methodDef);
+    if (pMethod == (TADDR)NULL)
         return ILCodeVersion(pModule, methodDef);
-    }
-    else
-    {
-        return pILCodeVersioningState->GetActiveVersion();
-    }
+
+    return GetActiveILCodeVersion(pMethod);
 }
 
 ILCodeVersion CodeVersionManager::GetILCodeVersion(PTR_MethodDesc pMethod, ReJITID rejitId)
@@ -1911,36 +1925,38 @@ HRESULT CodeVersionManager::PublishNativeCodeVersion(MethodDesc* pMethod, Native
 
     _ASSERTE(!pMethod->MayHaveEntryPointSlotsToBackpatch() || MethodDescBackpatchInfoTracker::IsLockOwnedByCurrentThread());
     _ASSERTE(IsLockOwnedByCurrentThread());
-    _ASSERTE(pMethod->IsVersionable());
 
-    HRESULT hr = S_OK;
-    PCODE pCode = nativeCodeVersion.IsNull() ? (PCODE)NULL : nativeCodeVersion.GetNativeCode();
-    if (pMethod->IsVersionable())
-    {
-        EX_TRY
-        {
-            if (pCode == (PCODE)NULL)
-            {
-                pMethod->ResetCodeEntryPoint();
-            }
-            else
-            {
-            #ifdef FEATURE_TIERED_COMPILATION
-                bool wasSet = CallCountingManager::SetCodeEntryPoint(nativeCodeVersion, pCode, false, nullptr);
-                _ASSERTE(wasSet);
-            #else
-                pMethod->SetCodeEntryPoint(pCode);
-            #endif
-            }
-        }
-        EX_CATCH_HRESULT(hr);
-        return hr;
-    }
-    else
+    if (!pMethod->IsVersionable())
     {
         _ASSERTE(!"This method doesn't support versioning but was requested to be versioned.");
         return E_FAIL;
     }
+
+    HRESULT hr = S_OK;
+    PCODE pCode = nativeCodeVersion.IsNull() ? (PCODE)NULL : nativeCodeVersion.GetNativeCode();
+    EX_TRY
+    {
+        if (pCode == (PCODE)NULL)
+        {
+            LOG((LF_TIEREDCOMPILATION, LL_INFO100, "CVM::PublishNativeCodeVersion pMethod=%p - Resetting\n", pMethod));
+            pMethod->ResetCodeEntryPoint();
+        }
+        else
+        {
+            LOG((LF_TIEREDCOMPILATION, LL_INFO100, "CVM::PublishNativeCodeVersion pMethod=%p - Set to ver=%u\n",
+                pMethod,
+                nativeCodeVersion.GetVersionId()));
+
+        #ifdef FEATURE_TIERED_COMPILATION
+            bool wasSet = CallCountingManager::SetCodeEntryPoint(nativeCodeVersion, pCode, false, nullptr);
+            _ASSERTE(wasSet);
+        #else
+            pMethod->SetCodeEntryPoint(pCode);
+        #endif
+        }
+    }
+    EX_CATCH_HRESULT(hr);
+    return hr;
 }
 
 // static

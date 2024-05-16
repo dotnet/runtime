@@ -259,7 +259,7 @@ inline PTR_Assembly Module::GetAssembly() const
     return m_pAssembly;
 }
 
-inline MethodDesc *Module::LookupMethodDef(mdMethodDef token)
+inline PTR_MethodDesc Module::LookupMethodDef(mdMethodDef token)
 {
     CONTRACTL
     {

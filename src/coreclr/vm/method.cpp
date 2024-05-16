@@ -231,6 +231,13 @@ bool MethodDesc::SetMethodDescVersionState(PTR_MethodDescVersioningState state)
     return InterlockedCompareExchangeT(&m_codeData->MDState, state, NULL) == NULL;
 }
 
+bool MethodDesc::SetILCodeVersionState(PTR_ILCodeVersioningState state)
+{
+    WRAPPER_NO_CONTRACT;
+    _ASSERTE(m_codeData != NULL);
+    return InterlockedCompareExchangeT(&m_codeData->ILCodeState, state, NULL) == NULL;
+}
+
 #endif //!DACCESS_COMPILE
 
 PTR_MethodDescVersioningState MethodDesc::GetMethodDescVersionState()
@@ -238,6 +245,13 @@ PTR_MethodDescVersioningState MethodDesc::GetMethodDescVersionState()
     WRAPPER_NO_CONTRACT;
     _ASSERTE(m_codeData != NULL);
     return m_codeData->MDState;
+}
+
+PTR_ILCodeVersioningState MethodDesc::GetILCodeVersionState()
+{
+    WRAPPER_NO_CONTRACT;
+    _ASSERTE(m_codeData != NULL);
+    return m_codeData->ILCodeState;
 }
 
 //*******************************************************************************

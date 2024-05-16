@@ -1215,7 +1215,7 @@ public:
     }
 #endif // !DACCESS_COMPILE
 
-    MethodDesc *LookupMethodDef(mdMethodDef token);
+    PTR_MethodDesc LookupMethodDef(mdMethodDef token);
 
 #ifndef DACCESS_COMPILE
     void EnsureMethodDefCanBeStored(mdMethodDef token)
