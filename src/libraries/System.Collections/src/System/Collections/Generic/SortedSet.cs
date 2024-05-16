@@ -763,6 +763,7 @@ namespace System.Collections.Generic
                     count++;
                     return order < 0;
                 });
+                return index;
             }
 
             while (current != null)
