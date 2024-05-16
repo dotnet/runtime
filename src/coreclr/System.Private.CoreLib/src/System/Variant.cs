@@ -32,6 +32,9 @@ namespace System
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Variant_ConvertOleColorToSystemColor")]
         internal static partial void ConvertOleColorToSystemColor(ObjectHandleOnStack objret, uint value, IntPtr pMT);
 
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Variant_ConvertValueTypeToRecord")]
+        private static partial void ConvertValueTypeToRecord(ObjectHandleOnStack obj, out ComVariant pOle);
+
         // Helper code for marshaling managed objects to VARIANT's
         internal static void MarshalHelperConvertObjectToVariant(object? o, out ComVariant pOle)
         {
@@ -122,8 +125,8 @@ namespace System
                     break;
 
                 case ValueType:
-                    // RECORD
-                    throw new NotImplementedException();
+                    ConvertValueTypeToRecord(ObjectHandleOnStack.Create(ref o), out pOle);
+                    break;
 
                 // SafeHandle's or CriticalHandle's cannot be stored in VARIANT's.
                 case SafeHandle:
@@ -240,7 +243,13 @@ namespace System
                         break;
 
                     case VarEnum.VT_RECORD:
-                        throw new NotImplementedException(); // TODO: RECORD
+                        if (pValue is ValueType)
+                        {
+                            MarshalHelperConvertObjectToVariant(pValue, out v);
+                            if (v.VarType == VarEnum.VT_RECORD)
+                                break;
+                        }
+                        throw new InvalidCastException(SR.InvalidCast_CannotCoerceByRefVariant);
 
                     case VarEnum.VT_BSTR: /*VT_BSTR*/
                         if (pValue == null)

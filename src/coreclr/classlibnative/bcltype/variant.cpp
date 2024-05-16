@@ -49,4 +49,15 @@ extern "C" void QCALLTYPE Variant_ConvertOleColorToSystemColor(QCall::ObjectHand
     END_QCALL;
 }
 
+extern "C" void QCALLTYPE Variant_ConvertValueTypeToRecord(QCall::ObjectHandleOnStack obj, VARIANT * pOle)
+{
+    QCALL_CONTRACT;
+
+    BEGIN_QCALL;
+
+    GCX_COOP();
+    OBJECTREF objRef = obj.Get();
+    OleVariant::ConvertValueClassToVariant(&objRef, pOle);
+    END_QCALL;
+}
 #endif // FEATURE_COMINTEROP
