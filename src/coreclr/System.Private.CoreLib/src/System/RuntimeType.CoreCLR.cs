@@ -1455,8 +1455,7 @@ namespace System
             private static object? s_methodInstantiationsLock;
             private string? m_defaultMemberName;
             // Generic cache for rare scenario specific data.
-            // See IGenericCacheEntry for more information.
-            private object? m_genericCache;
+            private IGenericCacheEntry? m_genericCache;
             private object[]? _emptyArray; // Object array cache for Attribute.GetCustomAttributes() pathological no-result case.
             private RuntimeType? _genericTypeDefinition;
             #endregion
@@ -1499,11 +1498,11 @@ namespace System
 
             #region Internal Members
 
-            internal ref object? GenericCache => ref m_genericCache;
+            internal ref IGenericCacheEntry? GenericCache => ref m_genericCache;
 
             private sealed class FunctionPointerCache : IGenericCacheEntry<FunctionPointerCache>
             {
-                static IGenericCacheEntry.GenericCacheKind IGenericCacheEntry.Kind => IGenericCacheEntry.GenericCacheKind.FunctionPointer;
+                static IGenericCacheEntry.GenericCacheKind IGenericCacheEntry<FunctionPointerCache>.Kind => IGenericCacheEntry.GenericCacheKind.FunctionPointer;
 
                 public Type[] FunctionPointerReturnAndParameterTypes { get; }
 
