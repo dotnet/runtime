@@ -16,7 +16,6 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
-using Microsoft.Win32;
 
 #pragma warning disable CA1416 // COM interop is only supported on Windows
 
@@ -34,6 +33,15 @@ namespace System
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Variant_ConvertValueTypeToRecord")]
         private static partial void ConvertValueTypeToRecord(ObjectHandleOnStack obj, out ComVariant pOle);
+
+        internal static ComVariant GetComIPFromObjectRef(object? obj)
+        {
+            IntPtr pUnk = GetIUnknownOrIDispatchForObject(ObjectHandleOnStack.Create(ref obj), out bool isIDispatch);
+            return ComVariant.CreateRaw(isIDispatch ? VarEnum.VT_DISPATCH : VarEnum.VT_UNKNOWN, pUnk);
+        }
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MarshalNative_GetIUnknownOrIDispatchForObject")]
+        private static partial IntPtr GetIUnknownOrIDispatchForObject(ObjectHandleOnStack o, [MarshalAs(UnmanagedType.Bool)] out bool isIDispatch);
 
         // Helper code for marshaling managed objects to VARIANT's
         internal static void MarshalHelperConvertObjectToVariant(object? o, out ComVariant pOle)
@@ -142,8 +150,7 @@ namespace System
                     // We are dealing with a normal object (not a wrapper) so we will
                     // leave the VT as VT_DISPATCH for now and we will determine the actual
                     // VT when we convert the object to a COM IP.
-                    IntPtr ptr = OAVariantLib.GetIUnknownOrIDispatchForObject(ObjectHandleOnStack.Create(ref o), out bool isIDispatch);
-                    pOle = ComVariant.CreateRaw(isIDispatch ? VarEnum.VT_DISPATCH : VarEnum.VT_UNKNOWN, ptr);
+                    pOle = GetComIPFromObjectRef(o);
                     break;
             }
         }
