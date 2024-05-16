@@ -4661,7 +4661,7 @@ void emitter::emitIns_J_R(instruction ins, emitAttr attr, BasicBlock* dst, regNu
  * For ARM xreg, xmul and disp are never used and should always be 0/REG_NA.
  *
  * noSafePoint - force not making this call a safe point in partially interruptible code
- * 
+ *
  *  Please consult the "debugger team notification" comment in genFnProlog().
  */
 

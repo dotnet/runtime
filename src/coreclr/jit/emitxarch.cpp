@@ -9647,7 +9647,7 @@ void emitter::emitAdjustStackDepth(instruction ins, ssize_t val)
  * EC_INDIR_ARD        : "call [ireg+xreg*xmul+disp]"
  *
  * noSafePoint - force not making this call a safe point in partially interruptible code
- * 
+ *
  */
 
 // clang-format off

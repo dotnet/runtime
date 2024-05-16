@@ -1288,7 +1288,7 @@ void emitter::emitLoadImmediate(emitAttr size, regNumber reg, ssize_t imm)
  * EC_INDIR_R          : "call ireg".
  *
  * noSafePoint - force not making this call a safe point in partially interruptible code
- * 
+ *
  */
 
 void emitter::emitIns_Call(EmitCallType          callType,
