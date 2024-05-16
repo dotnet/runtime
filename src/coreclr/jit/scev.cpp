@@ -1667,7 +1667,7 @@ Scev* ScalarEvolutionContext::ComputeExitNotTakenCount(BasicBlock* exiting)
         case VNF_GE:
         case VNF_GE_UN:
         {
-            // Exit on <L00, start, step> >= rhs.
+            // Exit on <L, start, step> >= rhs.
             // Trip count expression is ceil((rhs - start) / step) = (rhs + (step - 1) - start) / step.
             Scev* stepNegOne  = NewBinop(ScevOper::Add, ((ScevAddRec*)lhs)->Step, NewConstant(rhs->Type, -1));
             Scev* rhsWithStep = NewBinop(ScevOper::Add, rhs, stepNegOne);
@@ -1679,7 +1679,7 @@ Scev* ScalarEvolutionContext::ComputeExitNotTakenCount(BasicBlock* exiting)
         case VNF_GT:
         case VNF_GT_UN:
         {
-            // Exit on <L00, start, step> > rhs.
+            // Exit on <L, start, step> > rhs.
             // Trip count expression is ceil((rhs + 1 - start) / step) = (rhs + step - start) / step.
             lowerBound = ((ScevAddRec*)lhs)->Start;
             upperBound = NewBinop(ScevOper::Add, rhs, ((ScevAddRec*)lhs)->Step);
@@ -1689,11 +1689,11 @@ Scev* ScalarEvolutionContext::ComputeExitNotTakenCount(BasicBlock* exiting)
         case VNF_LE:
         case VNF_LE_UN:
         {
-            // Exit on <L00, start, step> <= rhs.
+            // Exit on <L, start, step> <= rhs.
             // Trip count expression is ceil((start - rhs) / -step) = (start + (-step - 1) - rhs) / -step
             // = (start - step - 1 - rhs) / -step = start - (rhs + step + 1) / -step.
             Scev* stepPlusOne = NewBinop(ScevOper::Add, ((ScevAddRec*)lhs)->Step, NewConstant(rhs->Type, 1));
-            Scev* rhsWithStep = NewBinop(ScevOper::Add, rhs, ((ScevAddRec*)lhs)->Step);
+            Scev* rhsWithStep = NewBinop(ScevOper::Add, rhs, stepPlusOne);
             lowerBound        = rhsWithStep;
             upperBound        = ((ScevAddRec*)lhs)->Start;
             divisor           = NewBinop(ScevOper::Mul, ((ScevAddRec*)lhs)->Step, NewConstant(lhs->Type, -1));
@@ -1702,7 +1702,7 @@ Scev* ScalarEvolutionContext::ComputeExitNotTakenCount(BasicBlock* exiting)
         case VNF_LT:
         case VNF_LT_UN:
         {
-            // Exit on <L00, start, step> < rhs.
+            // Exit on <L, start, step> < rhs.
             // Trip count expression is ceil((start - (rhs - 1)) / -step) = (start + (-step - 1) - (rhs - 1)) / -step
             // = (start - (rhs + step)) / -step.
             lowerBound = NewBinop(ScevOper::Add, rhs, ((ScevAddRec*)lhs)->Step);
