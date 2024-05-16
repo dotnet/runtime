@@ -5,7 +5,7 @@
 #define HAVE_MINIPAL_UTF8_H
 
 #include <minipal/utils.h>
-#include <stdlib.h>
+#include <minipal/types.h>
 #include <stdbool.h>
 
 #define MINIPAL_MB_NO_REPLACE_INVALID_CHARS 0x00000008
@@ -17,12 +17,6 @@
 extern "C"
 {
 #endif // __cplusplus
-
-#ifdef TARGET_WINDOWS
-typedef wchar_t CHAR16_T;
-#else
-typedef unsigned short CHAR16_T;
-#endif
 
 /**
  * Get length of destination needed for UTF-8 to UTF-16 (UCS-2) conversion

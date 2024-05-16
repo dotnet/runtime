@@ -1842,8 +1842,9 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
 
         assert(intrin.op1 != nullptr);
 
-        bool      forceOp2DelayFree = false;
-        regMaskTP candidates        = RBM_NONE;
+        bool      forceOp2DelayFree   = false;
+        regMaskTP lowVectorCandidates = RBM_NONE;
+        size_t    lowVectorOperandNum = 0;
         if ((intrin.id == NI_Vector64_GetElement) || (intrin.id == NI_Vector128_GetElement))
         {
             if (!intrin.op2->IsCnsIntOrI() && (!intrin.op1->isContained() || intrin.op1->OperIsLocal()))
@@ -1865,21 +1866,9 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 compiler->getSIMDInitTempVarNum(requiredSimdTempType);
             }
         }
-
-        if ((intrin.id == NI_Sve_FusedMultiplyAddBySelectedScalar) ||
-            (intrin.id == NI_Sve_FusedMultiplySubtractBySelectedScalar))
+        else if (HWIntrinsicInfo::IsLowVectorOperation(intrin.id))
         {
-            // If this is common pattern, then we will add a flag in the table, but for now, just check for specific
-            // intrinsics
-            if (intrin.baseType == TYP_DOUBLE)
-            {
-                candidates = RBM_SVE_INDEXED_D_ELEMENT_ALLOWED_REGS;
-            }
-            else
-            {
-                assert(intrin.baseType == TYP_FLOAT);
-                candidates = RBM_SVE_INDEXED_S_ELEMENT_ALLOWED_REGS;
-            }
+            getLowVectorOperandAndCandidates(intrin, &lowVectorOperandNum, &lowVectorCandidates);
         }
 
         if ((intrin.id == NI_Sve_ConditionalSelect) && (intrin.op2->IsEmbMaskOp()) &&
@@ -1890,33 +1879,45 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
             GenTreeHWIntrinsic* intrinEmbOp2 = intrin.op2->AsHWIntrinsic();
             size_t              numArgs      = intrinEmbOp2->GetOperandCount();
             assert((numArgs == 1) || (numArgs == 2));
+            const HWIntrinsic intrinEmb(intrinEmbOp2);
+            if (HWIntrinsicInfo::IsLowVectorOperation(intrinEmb.id))
+            {
+                getLowVectorOperandAndCandidates(intrinEmb, &lowVectorOperandNum, &lowVectorCandidates);
+            }
+
             tgtPrefUse = BuildUse(intrinEmbOp2->Op(1));
             srcCount += 1;
 
             for (size_t argNum = 2; argNum <= numArgs; argNum++)
             {
-                srcCount += BuildDelayFreeUses(intrinEmbOp2->Op(argNum), intrinEmbOp2->Op(1));
+                srcCount += BuildDelayFreeUses(intrinEmbOp2->Op(argNum), intrinEmbOp2->Op(1),
+                                               (argNum == lowVectorOperandNum) ? lowVectorCandidates : RBM_NONE);
             }
         }
         else
         {
+            regMaskTP candidates = lowVectorOperandNum == 2 ? lowVectorCandidates : RBM_NONE;
             if (forceOp2DelayFree)
             {
-                srcCount += BuildDelayFreeUses(intrin.op2);
+                srcCount += BuildDelayFreeUses(intrin.op2, nullptr, candidates);
             }
             else
             {
-                srcCount += isRMW ? BuildDelayFreeUses(intrin.op2, intrin.op1) : BuildOperandUses(intrin.op2);
+                srcCount += isRMW ? BuildDelayFreeUses(intrin.op2, intrin.op1, candidates)
+                                  : BuildOperandUses(intrin.op2, candidates);
             }
         }
 
         if (intrin.op3 != nullptr)
         {
+            regMaskTP candidates = lowVectorOperandNum == 3 ? lowVectorCandidates : RBM_NONE;
+
             srcCount += isRMW ? BuildDelayFreeUses(intrin.op3, intrin.op1, candidates)
                               : BuildOperandUses(intrin.op3, candidates);
 
             if (intrin.op4 != nullptr)
             {
+                assert(lowVectorOperandNum != 4);
                 srcCount += isRMW ? BuildDelayFreeUses(intrin.op4, intrin.op1) : BuildOperandUses(intrin.op4);
             }
         }
@@ -2207,8 +2208,48 @@ bool RefPosition::isLiveAtConsecutiveRegistersLoc(LsraLocation consecutiveRegist
     }
     return false;
 }
-#endif
+#endif // DEBUG
 
-#endif
+//------------------------------------------------------------------------
+// getLowVectorOperandAndCandidates: Instructions for certain intrinsics operate on low vector registers
+//      depending on the size of the element. The method returns the candidates based on that size and
+//      the operand number of the intrinsics that has the restriction.
+//
+// Arguments:
+//    intrin - Intrinsics
+//    operandNum (out) - The operand number having the low vector register restriction
+//    candidates (out) - The restricted low vector registers
+//
+void LinearScan::getLowVectorOperandAndCandidates(HWIntrinsic intrin, size_t* operandNum, regMaskTP* candidates)
+{
+    assert(HWIntrinsicInfo::IsLowVectorOperation(intrin.id));
+    unsigned baseElementSize = genTypeSize(intrin.baseType);
+
+    if (baseElementSize == 8)
+    {
+        *candidates = RBM_SVE_INDEXED_D_ELEMENT_ALLOWED_REGS;
+    }
+    else
+    {
+        assert(baseElementSize == 4);
+        *candidates = RBM_SVE_INDEXED_S_ELEMENT_ALLOWED_REGS;
+    }
+
+    switch (intrin.id)
+    {
+        case NI_Sve_DotProductBySelectedScalar:
+        case NI_Sve_FusedMultiplyAddBySelectedScalar:
+        case NI_Sve_FusedMultiplySubtractBySelectedScalar:
+            *operandNum = 3;
+            break;
+        case NI_Sve_MultiplyBySelectedScalar:
+            *operandNum = 2;
+            break;
+        default:
+            unreached();
+    }
+}
+
+#endif // FEATURE_HW_INTRINSICS
 
 #endif // TARGET_ARM64

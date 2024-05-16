@@ -15,7 +15,7 @@ import { setSegmentationRulesFromJson } from "./hybrid-globalization/grapheme-se
 
 // this need to be run only after onRuntimeInitialized event, when the memory is ready
 export function instantiate_asset (asset: AssetEntry, url: string, bytes: Uint8Array): void {
-    mono_log_debug(`Loaded:${asset.name} as ${asset.behavior} size ${bytes.length} from ${url}`);
+    mono_log_debug(() => `Loaded:${asset.name} as ${asset.behavior} size ${bytes.length} from ${url}`);
     const mark = startMeasure();
 
     const virtualName: string = typeof (asset.virtualPath) === "string"
@@ -64,7 +64,7 @@ export function instantiate_asset (asset: AssetEntry, url: string, bytes: Uint8A
                 parentDirectory = "/";
             }
 
-            mono_log_debug(`Creating file '${fileName}' in directory '${parentDirectory}'`);
+            mono_log_debug(() => `Creating file '${fileName}' in directory '${parentDirectory}'`);
 
             Module.FS_createDataFile(
                 parentDirectory, fileName,

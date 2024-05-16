@@ -3963,9 +3963,6 @@ PALIMPORT DLLEXPORT int __cdecl _putenv(const char *);
 
 #define ERANGE          34
 
-PALIMPORT WCHAR __cdecl PAL_ToUpperInvariant(WCHAR);
-PALIMPORT WCHAR __cdecl PAL_ToLowerInvariant(WCHAR);
-
 /****************PAL Perf functions for PInvoke*********************/
 #if PAL_PERF
 PALIMPORT

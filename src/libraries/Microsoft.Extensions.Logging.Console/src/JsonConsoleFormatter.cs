@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
@@ -81,11 +82,30 @@ namespace Microsoft.Extensions.Logging.Console
                     writer.WriteEndObject();
                     writer.Flush();
                 }
-#if NET
-                textWriter.Write(Encoding.UTF8.GetString(output.WrittenMemory.Span));
-#else
-                textWriter.Write(Encoding.UTF8.GetString(output.WrittenMemory.Span.ToArray()));
-#endif
+
+                var messageBytes = output.WrittenMemory.Span;
+                var logMessageBuffer = ArrayPool<char>.Shared.Rent(Encoding.UTF8.GetMaxCharCount(messageBytes.Length));
+                try
+                {
+ #if NET
+                    var charsWritten = Encoding.UTF8.GetChars(messageBytes, logMessageBuffer);
+ #else
+                    int charsWritten;
+                    unsafe
+                    {
+                        fixed (byte* messageBytesPtr = messageBytes)
+                        fixed (char* logMessageBufferPtr = logMessageBuffer)
+                        {
+                            charsWritten = Encoding.UTF8.GetChars(messageBytesPtr, messageBytes.Length, logMessageBufferPtr, logMessageBuffer.Length);
+                        }
+                    }
+ #endif
+                    textWriter.Write(logMessageBuffer, 0, charsWritten);
+                }
+                finally
+                {
+                    ArrayPool<char>.Shared.Return(logMessageBuffer);
+                }
             }
             textWriter.Write(Environment.NewLine);
         }
