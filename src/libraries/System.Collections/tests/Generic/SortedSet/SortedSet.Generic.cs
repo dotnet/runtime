@@ -77,7 +77,7 @@ namespace System.Collections.Tests
             Assert.True(set.SetEquals(data));
         }
 
-#if !TARGET_64BIT
+#if TARGET_64BIT
         // Cover InternalIndexOf when Count > SuperSet.InternalIndexOfCountThreshold
         // Since the algorithm has time complexity O(n^2) and n is quite large, only run it for 64-bit
         [Fact]
