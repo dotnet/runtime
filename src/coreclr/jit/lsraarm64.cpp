@@ -1936,21 +1936,13 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
 
     buildInternalRegisterUses();
 
-    if ((dstCount == 1) || (dstCount == 2) || (dstCount == 3) || (dstCount == 4))
+    if ((dstCount == 1) || (dstCount == 2))
     {
         BuildDef(intrinsicTree, dstCandidates);
 
-        if (dstCount >= 2)
+        if (dstCount == 2)
         {
             BuildDef(intrinsicTree, dstCandidates, 1);
-        }
-        if (dstCount >= 3)
-        {
-            BuildDef(intrinsicTree, dstCandidates, 2);
-        }
-        if (dstCount == 4)
-        {
-            BuildDef(intrinsicTree, dstCandidates, 3);
         }
     }
     else
