@@ -260,4 +260,12 @@
     <MicrosoftDotnetSdkInternalVersion>8.0.101</MicrosoftDotnetSdkInternalVersion>
     <SdkVersionForWorkloadTesting>$(MicrosoftDotnetSdkInternalVersion)</SdkVersionForWorkloadTesting>
   </PropertyGroup>
+  <PropertyGroup>
+    <!--
+      Targeting pack package for NETStandard 2.1 gets rebuilt on demand.
+
+      Set to rebuild with 8.0.7 release, and automatically disabled after that.
+    -->
+    <BuildNETStandard21TargetingPack Condition="'$(PatchVersion)' == '7'">true</BuildNETStandard21TargetingPack>
+  </PropertyGroup>
 </Project>
