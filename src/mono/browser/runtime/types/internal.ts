@@ -243,7 +243,6 @@ export type RuntimeHelpers = {
     dumpThreads: () => void,
     mono_wasm_print_thread_dump: () => void,
 
-    //used by hybrid globalization module
     stringToUTF16: (dstPtr: number, endPtr: number, text: string) => void,
     stringToUTF16Ptr: (str: string) => VoidPtr,
     utf16ToString: (startPtr: number, endPtr: number) => string,
@@ -251,6 +250,8 @@ export type RuntimeHelpers = {
     localHeapViewU16: () => Uint16Array,
     setU16_local: (heap: Uint16Array, ptr: number, value: number) => void,
     setI32: (offset: MemOffset, value: number) => void,
+}
+export type GlobalizationHelpers = {
 
     mono_wasm_change_case_invariant: (src: number, srcLength: number, dst: number, dstLength: number, toUpper: number) => VoidPtr;
     mono_wasm_change_case: (culture: number, cultureLength: number, src: number, srcLength: number, dst: number, dstLength: number, toUpper: number) => VoidPtr;
@@ -309,6 +310,7 @@ export type GlobalObjects = {
     module: DotnetModuleInternal,
     loaderHelpers: LoaderHelpers,
     runtimeHelpers: RuntimeHelpers,
+    globalizationHelpers: GlobalizationHelpers,
     api: RuntimeAPI,
 };
 export type EmscriptenReplacements = {
@@ -509,7 +511,7 @@ export type NativeModuleExportsInternal = {
 }
 
 export type HybridGlobalizationModuleExportsInternal = {
-    initHybrid: (rh: RuntimeHelpers) => void;
+    initHybrid: (gh: GlobalizationHelpers, rh: RuntimeHelpers) => void;
 }
 
 export type WeakRefInternal<T extends object> = WeakRef<T> & {

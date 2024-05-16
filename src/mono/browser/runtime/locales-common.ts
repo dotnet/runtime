@@ -1,11 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { VoidPtrNull } from "../types/internal";
-import { Int32Ptr, VoidPtr } from "../types/emscripten";
-import { OUTER_SEPARATOR, normalizeLocale } from "./helpers";
-import { stringToUTF16, stringToUTF16Ptr, utf16ToString } from "../strings";
-import { setI32 } from "../memory";
+import { VoidPtrNull } from "./types/internal";
+import { Int32Ptr, VoidPtr } from "./types/emscripten";
+import { OUTER_SEPARATOR, normalizeLocale } from "./hybrid-globalization/helpers";
+import { stringToUTF16, stringToUTF16Ptr, utf16ToString } from "./strings";
+import { setI32 } from "./memory";
 
 // functions common for Hybrid Globalization -> true | false :
 

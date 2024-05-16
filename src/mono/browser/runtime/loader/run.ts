@@ -12,7 +12,7 @@ import { installUnhandledErrorHandler, mono_exit, registerEmscriptenExitHandlers
 import { setup_proxy_console, mono_log_info, mono_log_debug } from "./logging";
 import { mono_download_assets, preloadWorkers, prepareAssets, prepareAssetsWorker, resolve_single_asset_path, streamingCompileWasm } from "./assets";
 import { detect_features_and_polyfill } from "./polyfills";
-import { runtimeHelpers, loaderHelpers } from "./globals";
+import { runtimeHelpers, loaderHelpers, globalizationHelpers } from "./globals";
 import { init_globalization } from "./icu";
 import { setupPreloadChannelToMainThread } from "./worker";
 import { importLibraryInitializers, invokeLibraryInitializers } from "./libraryInitializers";
@@ -458,7 +458,7 @@ async function initializeModules (es6Modules: [RuntimeModuleExportsInternal, Nat
     if (loaderHelpers.config.globalizationMode === GlobalizationMode.Hybrid) {
         const hybridModule = await getHybridModuleExports();
         const { initHybrid } = hybridModule;
-        initHybrid(runtimeHelpers);
+        initHybrid(globalizationHelpers, runtimeHelpers);
     }
     await configureRuntimeStartup(emscriptenModule);
     loaderHelpers.runtimeModuleLoaded.promise_control.resolve();
