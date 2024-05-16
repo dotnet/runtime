@@ -4360,6 +4360,13 @@ interp_method_compute_offsets (TransformData *td, InterpMethod *imethod, MonoMet
 	td->renamable_vars_capacity = target_vars_capacity;
 	offset = 0;
 
+#ifdef MONO_ARCH_HAVE_SWIFTCALL
+	int swift_error_index = -1;
+	imethod->swift_error_offset = -1;
+	MonoClass *swift_error = mono_class_try_get_swift_error_class ();
+	MonoClass *swift_error_ptr = mono_class_create_ptr (m_class_get_this_arg (swift_error));
+#endif
+
 	/*
 	 * We will load arguments as if they are locals. Unlike normal locals, every argument
 	 * is stored in a stackval sized slot and valuetypes have special semantics since we
@@ -4384,6 +4391,16 @@ interp_method_compute_offsets (TransformData *td, InterpMethod *imethod, MonoMet
 		td->vars [i].offset = offset;
 		interp_mark_ref_slots_for_var (td, i);
 		offset += size;
+
+#ifdef MONO_ARCH_HAVE_SWIFTCALL
+	if (swift_error_index < 0 && mono_method_signature_has_ext_callconv (sig, MONO_EXT_CALLCONV_SWIFTCALL)) {
+		MonoClass *klass = mono_class_from_mono_type_internal (type);
+		if (klass == swift_error_ptr) {
+			swift_error_index = i;
+		}
+	}
+#endif
+
 	}
 	offset = ALIGN_TO (offset, MINT_STACK_ALIGNMENT);
 
@@ -4418,39 +4435,12 @@ interp_method_compute_offsets (TransformData *td, InterpMethod *imethod, MonoMet
 	td->total_locals_size = offset;
 
 #ifdef MONO_ARCH_HAVE_SWIFTCALL
-	// Allocate SwiftError
-	if (mono_method_signature_has_ext_callconv (sig, MONO_EXT_CALLCONV_SWIFTCALL)) {
-		imethod->swift_error_offset = -1;
-
-		MonoClass *swift_error = mono_class_try_get_swift_error_class ();
-		MonoClass *swift_error_ptr = mono_class_create_ptr (m_class_get_this_arg (swift_error));
-
-		int swift_error_index = -1;
-		for (int i = 0; i < sig->param_count; i++) {
-			MonoClass *klass = mono_class_from_mono_type_internal (sig->params [i]);
-			if (klass == swift_error_ptr) {
-				swift_error_index = i;
-				break;
-			}
-		}
-
-		if (swift_error_index >= 0)
-		{
-			MonoType* type =  mono_method_signature_internal (td->method)->params [swift_error_index - sig->hasthis];
-			int index = num_args + num_il_locals;
-			int mt = mono_mint_type (type);
-
-			td->vars [index].type = type;
-			td->vars [index].global = TRUE;
-			td->vars [index].offset = offset;
-			size = mono_interp_type_size (type, mt, &align);
-			td->vars [index].size = size;
-			interp_mark_ref_slots_for_var (td, index);
-
-			offset += size;
-			offset = ALIGN_TO (offset, MINT_STACK_ALIGNMENT);
-			imethod->swift_error_offset = td->vars [index].offset;
-		}
+	if (mono_method_signature_has_ext_callconv (sig, MONO_EXT_CALLCONV_SWIFTCALL) && swift_error_index >= 0) {
+		MonoType* type =  mono_method_signature_internal (td->method)->params [swift_error_index - sig->hasthis];
+		int var = interp_create_var_explicit(td, type, sizeof(gpointer));
+		td->vars [var].global = TRUE;
+		interp_alloc_global_var_offset (td, var);
+		imethod->swift_error_offset = td->vars [var].offset;
 	}
 #endif
 

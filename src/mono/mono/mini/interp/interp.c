@@ -3186,6 +3186,7 @@ interp_entry_from_trampoline (gpointer ccontext_untyped, gpointer rmethod_untype
 		int swift_error_offset = frame.imethod->swift_error_offset;
 		if (swift_error_offset >= 0) {
 			swift_error_pointer = (gpointer*)((guchar*)frame.stack + swift_error_offset);
+			*swift_error_pointer = *(gpointer*)swift_error_data;
 		}
 	}
 #endif
@@ -3484,7 +3485,7 @@ interp_create_method_pointer (MonoMethod *method, gboolean compile, MonoError *e
 		return (gpointer)no_llvmonly_interp_method_pointer;
 	}
 
-#if !defined(MONO_ARCH_HAVE_FTNPTR_ARG_TRAMPOLINE) && !defined(MONO_ARCH_HAVE_SWIFTCALL)
+#ifndef MONO_ARCH_HAVE_FTNPTR_ARG_TRAMPOLINE
 	/*
 	 * Interp in wrappers get the argument in the rgctx register. If
 	 * MONO_ARCH_HAVE_FTNPTR_ARG_TRAMPOLINE is defined it means that
@@ -3492,9 +3493,18 @@ interp_create_method_pointer (MonoMethod *method, gboolean compile, MonoError *e
 	 * separate temp register. We should update the wrappers for this
 	 * if we really care about those architectures (arm).
 	 */
-	MonoMethod *wrapper = mini_get_interp_in_wrapper (sig);
 
-	entry_wrapper = mono_jit_compile_method_jit_only (wrapper, error);
+	bool skipWrapper = false;
+#ifdef MONO_ARCH_HAVE_SWIFTCALL
+	if (mono_method_signature_has_ext_callconv (sig, MONO_EXT_CALLCONV_SWIFTCALL))
+		/* Methods with Swift cconv should go to trampoline */
+		skipWrapper = true;
+#endif
+
+	if (!skipWrapper) {
+		MonoMethod *wrapper = mini_get_interp_in_wrapper (sig);
+		entry_wrapper = mono_jit_compile_method_jit_only (wrapper, error);
+	}
 #endif
 	if (!entry_wrapper) {
 #ifndef MONO_ARCH_HAVE_INTERP_ENTRY_TRAMPOLINE
