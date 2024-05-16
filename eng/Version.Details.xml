@@ -99,9 +99,9 @@
       <Sha>a1cd44fdc64aa1f1c4630ddcd95580800d229180</Sha>
       <SourceBuild RepoName="emsdk" ManagedOnly="true" />
     </Dependency>
-    <Dependency Name="Microsoft.SourceBuild.Intermediate.source-build-reference-packages" Version="8.0.0-alpha.1.24163.3">
+    <Dependency Name="Microsoft.SourceBuild.Intermediate.source-build-reference-packages" Version="8.0.0-alpha.1.24257.2">
       <Uri>https://github.com/dotnet/source-build-reference-packages</Uri>
-      <Sha>79827eed138fd2575a8b24820b4f385ee4ffb6e6</Sha>
+      <Sha>6ed73280a6d70f7e7ac39c86f2abe8c10983f0bb</Sha>
       <SourceBuild RepoName="source-build-reference-packages" ManagedOnly="true" />
     </Dependency>
     <Dependency Name="Microsoft.SourceBuild.Intermediate.source-build-externals" Version="8.0.0-alpha.1.24216.1">
