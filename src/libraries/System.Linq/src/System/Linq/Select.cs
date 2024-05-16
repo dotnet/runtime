@@ -68,21 +68,7 @@ namespace System.Linq
                 return [];
             }
 
-            return SelectIterator(source, selector);
-        }
-
-        private static IEnumerable<TResult> SelectIterator<TSource, TResult>(IEnumerable<TSource> source, Func<TSource, int, TResult> selector)
-        {
-            int index = -1;
-            foreach (TSource element in source)
-            {
-                checked
-                {
-                    index++;
-                }
-
-                yield return selector(element, index);
-            }
+            return new IEnumerableSelect2Iterator<TSource, TResult>(source, selector);
         }
 
         /// <summary>
@@ -143,6 +129,64 @@ namespace System.Linq
 
             public override IEnumerable<TResult2> Select<TResult2>(Func<TResult, TResult2> selector) =>
                 new IEnumerableSelectIterator<TSource, TResult2>(_source, CombineSelectors(_selector, selector));
+        }
+
+        private sealed partial class IEnumerableSelect2Iterator<TSource, TResult> : Iterator<TResult>
+        {
+            private readonly IEnumerable<TSource> _source;
+            private readonly Func<TSource, int, TResult> _selector;
+            private int _index;
+            private IEnumerator<TSource>? _enumerator;
+
+            public IEnumerableSelect2Iterator(IEnumerable<TSource> source, Func<TSource, int, TResult> selector)
+            {
+                Debug.Assert(source is not null);
+                Debug.Assert(selector is not null);
+                _source = source;
+                _selector = selector;
+            }
+
+            private protected override Iterator<TResult> Clone() =>
+                new IEnumerableSelect2Iterator<TSource, TResult>(_source, _selector);
+
+            public override void Dispose()
+            {
+                if (_enumerator is not null)
+                {
+                    _enumerator.Dispose();
+                    _enumerator = null;
+                }
+
+                base.Dispose();
+            }
+
+            public override bool MoveNext()
+            {
+                switch (_state)
+                {
+                    case 1:
+                        _enumerator = _source.GetEnumerator();
+                        _index = -1;
+                        _state = 2;
+                        goto case 2;
+                    case 2:
+                        Debug.Assert(_enumerator is not null);
+
+                        if (_enumerator.MoveNext())
+                        {
+                            _current = _selector(_enumerator.Current, checked(++_index));
+                            return true;
+                        }
+
+                        Dispose();
+                        break;
+                }
+
+                return false;
+            }
+
+            public override IEnumerable<TResult2> Select<TResult2>(Func<TResult, TResult2> selector) =>
+                new IEnumerableSelect2Iterator<TSource, TResult2>(_source, CombineSelectors(_selector, selector));
         }
 
         /// <summary>

@@ -129,6 +129,156 @@ namespace System.Linq
             }
         }
 
+        private sealed partial class IEnumerableSelect2Iterator<TSource, TResult>
+        {
+            public override TResult[] ToArray()
+            {
+                Func<TSource, int, TResult> selector = _selector;
+                int index = -1;
+
+                if (_source.TryGetNonEnumeratedCount(out int known))
+                {
+                    var array = new TResult[known];
+
+                    foreach (TSource item in _source)
+                    {
+                        array[checked(++index)] = selector(item, index);
+                    }
+
+                    return array;
+                }
+
+                SegmentedArrayBuilder<TResult>.ScratchBuffer scratch = default;
+                SegmentedArrayBuilder<TResult> builder = new(scratch);
+
+                foreach (TSource item in _source)
+                {
+                    builder.Add(selector(item, checked(++index)));
+                }
+
+                TResult[] result = builder.ToArray();
+                builder.Dispose();
+                return result;
+            }
+
+            public override List<TResult> ToList()
+            {
+                List<TResult> list = _source.TryGetNonEnumeratedCount(out int known) ? new(known) : [];
+                Func<TSource, int, TResult> selector = _selector;
+                int index = -1;
+
+                foreach (TSource item in _source)
+                {
+                    list.Add(selector(item, checked(++index)));
+                }
+
+                return list;
+            }
+
+            public override int GetCount(bool onlyIfCheap)
+            {
+                // In case someone uses Count() to force evaluation of
+                // the selector, run it provided `onlyIfCheap` is false.
+                if (onlyIfCheap)
+                {
+                    return _source.TryGetNonEnumeratedCount(out int known) ? known : -1;
+                }
+
+                int count = 0;
+
+                foreach (TSource item in _source)
+                {
+                    _selector(item, checked(count++));
+                }
+
+                return count;
+            }
+
+            public override TResult? TryGetElementAt(int index, out bool found)
+            {
+                if (_source is Iterator<TSource> iterator)
+                {
+                    return iterator.TryGetElementAt(index, out found) is var element && found
+                        ? _selector(element!, 0)
+                        : default;
+                }
+
+                if (index >= 0)
+                {
+                    IEnumerator<TSource> e = _source.GetEnumerator();
+                    int enumeratorIndex = -1;
+
+                    try
+                    {
+                        while (e.MoveNext())
+                        {
+                            if (index == 0)
+                            {
+                                found = true;
+                                return _selector(e.Current, checked(++enumeratorIndex));
+                            }
+
+                            index--;
+                        }
+                    }
+                    finally
+                    {
+                        (e as IDisposable)?.Dispose();
+                    }
+                }
+
+                found = false;
+                return default;
+            }
+
+            public override TResult? TryGetFirst(out bool found)
+            {
+                if (_source is Iterator<TSource> iterator)
+                {
+                    return iterator.TryGetFirst(out found) is var first && found ? _selector(first!, 0) : default;
+                }
+
+                using IEnumerator<TSource> e = _source.GetEnumerator();
+
+                if (e.MoveNext())
+                {
+                    found = true;
+                    return _selector(e.Current, 0);
+                }
+
+                found = false;
+                return default;
+            }
+
+            public override TResult? TryGetLast(out bool found)
+            {
+                if (_source is Iterator<TSource> iterator && iterator.GetCount(true) is not -1 and var count)
+                {
+                    return iterator.TryGetLast(out found) is var last && found ? _selector(last!, count - 1) : default;
+                }
+
+                using IEnumerator<TSource> e = _source.GetEnumerator();
+
+                if (e.MoveNext())
+                {
+                    found = true;
+                    TSource lastElement = e.Current;
+                    int lastIndex = -1;
+
+                    while (e.MoveNext())
+                    {
+                        lastElement = e.Current;
+                        lastIndex++;
+                    }
+
+                    return _selector(lastElement, lastIndex);
+                }
+
+                found = false;
+                return default;
+            }
+        }
+
         private sealed partial class ArraySelectIterator<TSource, TResult>
         {
             public override TResult[] ToArray()

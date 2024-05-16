@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics;
+using static System.Linq.Utilities;
 
 namespace System.Linq
 {
@@ -22,22 +24,11 @@ namespace System.Linq
             {
                 return [];
             }
-
-            return IndexIterator(source);
-        }
-
-        private static IEnumerable<(int Index, TSource Item)> IndexIterator<TSource>(IEnumerable<TSource> source)
-        {
-            int index = -1;
-            foreach (TSource element in source)
-            {
-                checked
-                {
-                    index++;
-                }
-
-                yield return (index, element);
-            }
+#if OPTIMIZE_FOR_SIZE
+            return new IEnumerableSelect2Iterator<TSource, (int Index, TSource Item)>(source, (x, i) => (i, x));
+#else
+            return new IEnumerableIndexIterator<TSource>(source);
+#endif
         }
     }
 }

@@ -24,6 +24,7 @@
     <Compile Include="System\Linq\DefaultIfEmpty.SpeedOpt.cs" />
     <Compile Include="System\Linq\Distinct.SpeedOpt.cs" />
     <Compile Include="System\Linq\Grouping.SpeedOpt.cs" />
+    <Compile Include="System\Linq\Index.SpeedOpt.cs" />
     <Compile Include="System\Linq\Iterator.SpeedOpt.cs" />
     <Compile Include="System\Linq\Lookup.SpeedOpt.cs" />
     <Compile Include="System\Linq\OfType.SpeedOpt.cs" />
