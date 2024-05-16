@@ -3537,9 +3537,17 @@ void emitter::emitDispInsName(
                     }
                     break;
                 case 0x1: // SLLI
+                {
+                    unsigned funct6 = (imm12 >> 6) & 0x3f;
+                    // SLLI's instruction code's upper 6 bits have to be equal to zero
+                    if (funct6)
+                    {
+                        return emitDispIllegalInstruction(code);
+                    }
                     printLength = printf("slli");
                     imm12 &= 0x3f; // 6 BITS for SHAMT in RISCV64
-                    break;
+                }
+                break;
                 case 0x2: // SLTI
                     printLength = printf("slti");
                     break;
@@ -3551,9 +3559,20 @@ void emitter::emitDispInsName(
                     isHex       = true;
                     break;
                 case 0x5: // SRLI & SRAI
-                    printLength = printf((((code >> 30) & 0x1) == 0) ? "srli" : "srai");
+                {
+                    static constexpr unsigned kLogicalShiftFunct6    = 0x00;
+                    static constexpr unsigned kArithmeticShiftFunct6 = 0x10;
+
+                    unsigned funct6         = (imm12 >> 6) & 0x3f;
+                    bool     isLogicalShift = funct6 == kLogicalShiftFunct6;
+                    if ((!isLogicalShift) && (funct6 != kArithmeticShiftFunct6))
+                    {
+                        return emitDispIllegalInstruction(code);
+                    }
+                    printLength = printf(isLogicalShift ? "srli" : "srai");
                     imm12 &= 0x3f; // 6BITS for SHAMT in RISCV64
-                    break;
+                }
+                break;
                 case 0x6: // ORI
                     printLength = printf("ori");
                     imm12 &= 0xfff;
@@ -3565,8 +3584,7 @@ void emitter::emitDispInsName(
                     isHex = true;
                     break;
                 default:
-                    printf("RISCV64 illegal instruction: 0x%08X\n", code);
-                    return;
+                    return emitDispIllegalInstruction(code);
             }
             assert(printLength > 0);
             int paddingLength = kMaxInstructionLength - printLength;
