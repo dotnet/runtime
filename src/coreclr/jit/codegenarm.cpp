@@ -1926,13 +1926,14 @@ void CodeGen::genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pIni
 
 void CodeGen::genPushFltRegs(regMaskTP regMask)
 {
-    assert(regMask != 0);                        // Don't call uness we have some registers to push
-    assert((regMask & RBM_ALLFLOAT) == regMask); // Only floasting point registers should be in regMask
+    assert(regMask != 0);                        // Don't call unless we have some registers to push
+    assert((regMask & RBM_ALLFLOAT) == regMask); // Only floating point registers should be in regMask
 
     regNumber lowReg = genRegNumFromMask(genFindLowestBit(regMask));
     int       slots  = genCountBits(regMask);
+
     // regMask should be contiguously set
-    regMaskSmall tmpMask = ((regMask.getLow() >> lowReg ) + 1 ); // tmpMask should have a single bit set
+    regMaskSmall tmpMask = ((regMask.getLow() >> lowReg ) + 1); // tmpMask should have a single bit set
     assert((tmpMask & (tmpMask - 1)) == 0);
     assert(lowReg == REG_F16); // Currently we expect to start at F16 in the unwind codes
 
@@ -2192,7 +2193,7 @@ void CodeGen::genPopCalleeSavedRegisters(bool jmpEpilog)
     }
 
     assert(FitsIn<int>(maskPopRegsInt.getLow()));
-    inst_IV(INS_pop, (int)maskPopRegsInt.getLow());
+    inst_IV(INS_pop, (int)maskPopRegsInt);
     compiler->unwindPopMaskInt(maskPopRegsInt);
 }
 
@@ -2320,7 +2321,7 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
     maskPushRegsInt |= maskStackAlloc;
 
     assert(FitsIn<int>(maskPushRegsInt.getLow()));
-    inst_IV(INS_push, (int)maskPushRegsInt.getLow());
+    inst_IV(INS_push, (int)maskPushRegsInt);
     compiler->unwindPushMaskInt(maskPushRegsInt);
 
     if (maskPushRegsFloat != RBM_NONE)
@@ -2437,7 +2438,7 @@ void CodeGen::genFuncletEpilog()
     }
 
     assert(FitsIn<int>(maskPopRegsInt.getLow()));
-    inst_IV(INS_pop, (int)maskPopRegsInt.getLow());
+    inst_IV(INS_pop, (int)maskPopRegsInt);
     compiler->unwindPopMaskInt(maskPopRegsInt);
 
     compiler->unwindEndEpilog();
@@ -2701,7 +2702,7 @@ void CodeGen::genZeroInitFrameUsingBlockInit(int untrLclHi, int untrLclLo, regNu
 
     rZero1 = genGetZeroReg(initReg, pInitRegZeroed);
     instGen_Set_Reg_To_Zero(EA_PTRSIZE, rZero2);
-    target_ssize_t stmImm = (target_ssize_t)(genRegMask(rZero1) | genRegMask(rZero2)).getLow();
+    target_ssize_t stmImm = (target_ssize_t)(genRegMask(rZero1) | genRegMask(rZero2));
 
     if (!useLoop)
     {

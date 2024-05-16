@@ -4883,8 +4883,8 @@ void CodeGen::genFinalizeFrame()
 
 #if defined(TARGET_ARM)
     // TODO-ARM64-Bug?: enable some variant of this for FP on ARM64?
-    regMaskSmall maskPushRegsFloat = (maskCalleeRegsPushed & RBM_ALLFLOAT).getLow();
-    regMaskSmall maskPushRegsInt   = (maskCalleeRegsPushed & ~maskPushRegsFloat).getLow();
+    regMaskTP maskPushRegsFloat = maskCalleeRegsPushed & RBM_ALLFLOAT;
+    regMaskTP maskPushRegsInt   = maskCalleeRegsPushed & ~maskPushRegsFloat;
 
     if ((maskPushRegsFloat != RBM_NONE) ||
         (compiler->opts.MinOpts() && (regSet.rsMaskResvd & maskCalleeRegsPushed & RBM_OPT_RSVD)))
@@ -4912,7 +4912,7 @@ void CodeGen::genFinalizeFrame()
     //
     if (maskPushRegsFloat != RBM_NONE)
     {
-        regMaskSmall contiguousMask = genRegMaskFloat(REG_F16).getLow();
+        regMaskTP contiguousMask = genRegMaskFloat(REG_F16);
         while (maskPushRegsFloat > contiguousMask)
         {
             contiguousMask <<= 2;
@@ -4920,7 +4920,7 @@ void CodeGen::genFinalizeFrame()
         }
         if (maskPushRegsFloat != contiguousMask)
         {
-            regMaskSmall maskExtraRegs = contiguousMask - maskPushRegsFloat;
+            regMaskTP maskExtraRegs = contiguousMask - maskPushRegsFloat;
             maskPushRegsFloat |= maskExtraRegs;
             regSet.rsSetRegsModified(maskExtraRegs);
             maskCalleeRegsPushed |= maskExtraRegs;
@@ -5392,7 +5392,7 @@ void CodeGen::genFnProlog()
 
     if (regSet.rsMaskPreSpillRegs(true) != RBM_NONE)
     {
-        inst_IV(INS_push, (int)regSet.rsMaskPreSpillRegs(true).getLow());
+        inst_IV(INS_push, (int)regSet.rsMaskPreSpillRegs(true));
         compiler->unwindPushMaskInt(regSet.rsMaskPreSpillRegs(true));
     }
 #endif // TARGET_ARM

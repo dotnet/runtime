@@ -254,6 +254,17 @@ public:
         return (regMaskSmall)low;
     }
 
+#ifdef TARGET_ARM
+    explicit operator int() const
+    {
+        return (int)low;
+    }
+    explicit operator BYTE() const
+    {
+        return (BYTE)low;
+    }
+#endif
+
 #ifndef TARGET_X86
     explicit operator unsigned int() const
     {
@@ -266,6 +277,18 @@ public:
         return low;
     }
 };
+
+#ifdef TARGET_ARM
+static regMaskTP operator-(regMaskTP first, regMaskTP second)
+{
+    regMaskTP result(first.getLow() - second.getLow());
+    return result;
+}
+
+static bool operator>(regMaskTP first, regMaskTP second) {
+    return first.getLow() > second.getLow();
+}
+#endif
 
 static regMaskTP operator^(regMaskTP first, regMaskTP second)
 {
@@ -300,6 +323,11 @@ static regMaskTP operator>>(regMaskTP first, const int b)
 static regMaskTP& operator>>=(regMaskTP& first, const int b)
 {
     first = first >> b;
+    return first;
+}
+
+static regMaskTP& operator<<=(regMaskTP& first, const int b) {
+    first = first << b;
     return first;
 }
 

@@ -8787,7 +8787,7 @@ void emitter::emitRecordGCcall(BYTE* codePos, unsigned char callInstrSize)
     callDsc* call;
 
 #ifdef JIT32_GCENCODER
-    regMaskSmall regs = ((emitThisGCrefRegs | emitThisByrefRegs) & ~RBM_INTRET).getLow();
+    unsigned regs = (unsigned)(emitThisGCrefRegs | emitThisByrefRegs) & ~RBM_INTRET;
 
     // The JIT32 GCInfo encoder allows us to (as the comment previously here said):
     // "Bail if this is a totally boring call", but the GCInfoEncoder/Decoder interface
