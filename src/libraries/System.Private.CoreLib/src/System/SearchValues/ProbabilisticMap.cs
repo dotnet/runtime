@@ -886,6 +886,9 @@ namespace System.Buffers
             {
                 index = 31 - BitOperations.LeadingZeroCount(mask);
 
+                // Clear the highest set bit
+                mask = BitOperations.FlipBit(mask, index);
+
                 if (index >= Vector256<ushort>.Count)
                 {
                     // The potential match is in the second vector.
@@ -897,9 +900,6 @@ namespace System.Buffers
                 {
                     return true;
                 }
-
-                // Clear the highest set bit
-                mask = BitOperations.FlipBit(mask, index);
             }
             while (mask != 0);
 
@@ -937,6 +937,9 @@ namespace System.Buffers
             {
                 index = 63 - BitOperations.LeadingZeroCount(mask);
 
+                // Clear the highest set bit
+                mask = BitOperations.FlipBit(mask, index);
+
                 if (index >= Vector512<ushort>.Count)
                 {
                     // The potential match is in the second vector.
@@ -948,9 +951,6 @@ namespace System.Buffers
                 {
                     return true;
                 }
-
-                // Clear the highest set bit
-                mask = BitOperations.FlipBit(mask, index);
             }
             while (mask != 0);
 
