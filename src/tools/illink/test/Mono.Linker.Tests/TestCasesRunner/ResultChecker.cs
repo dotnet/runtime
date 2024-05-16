@@ -972,7 +972,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				int? unexpectedWarningCodeNumber = unexpectedWarningCode == null ? null : int.Parse (unexpectedWarningCode.Substring (2));
 
 				MessageContainer? unexpectedWarningMessage = null;
-				foreach (var mc in allMessages) {
+				foreach (var mc in loggedMessages) {
 					if (mc.Category != MessageCategory.Warning)
 						continue;
 
