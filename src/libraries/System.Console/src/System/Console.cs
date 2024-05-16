@@ -400,8 +400,7 @@ namespace System
             [UnsupportedOSPlatform("tvos")]
             get { return ConsolePal.WindowWidth; }
             [SupportedOSPlatform("windows")]
-            set
-            { ConsolePal.WindowWidth = value; }
+            set { ConsolePal.WindowWidth = value; }
         }
 
         public static int WindowHeight
