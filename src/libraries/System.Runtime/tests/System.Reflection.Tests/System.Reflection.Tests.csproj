@@ -2,6 +2,7 @@
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <TestRuntime>true</TestRuntime>
+    <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <!-- SYSLIB0013: Uri.EscapeUriString is obsolete
          SYSLIB0037: AssemblyName members HashAlgorithm, ProcessorArchitecture, and VersionCompatibility are obsolete. -->
