@@ -8,6 +8,7 @@ using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Security;
 using System.Security.Authentication.ExtendedProtection;
+using System.Security.Principal;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -72,7 +73,7 @@ namespace System.Net.Http
             return false;
         }
 
-        private static async Task<HttpResponseMessage> SendWithNtAuthAsync(HttpRequestMessage request, Uri authUri, bool async, ICredentials credentials, bool isProxyAuth, HttpConnection connection, HttpConnectionPool connectionPool, CancellationToken cancellationToken)
+        private static async Task<HttpResponseMessage> SendWithNtAuthAsync(HttpRequestMessage request, Uri authUri, bool async, ICredentials credentials, TokenImpersonationLevel impersonationLevel, bool isProxyAuth, HttpConnection connection, HttpConnectionPool connectionPool, CancellationToken cancellationToken)
         {
             HttpResponseMessage response = await InnerSendAsync(request, async, isProxyAuth, connectionPool, connection, cancellationToken).ConfigureAwait(false);
             if (!isProxyAuth && connection.Kind == HttpConnectionKind.Proxy && !ProxySupportsConnectionAuth(response))
@@ -173,7 +174,8 @@ namespace System.Net.Http
                             Credential = challenge.Credential,
                             TargetName = spn,
                             RequiredProtectionLevel = requiredProtectionLevel,
-                            Binding = connection.TransportContext?.GetChannelBinding(ChannelBindingKind.Endpoint)
+                            Binding = connection.TransportContext?.GetChannelBinding(ChannelBindingKind.Endpoint),
+                            AllowedImpersonationLevel = impersonationLevel
                         };
 
                         using NegotiateAuthentication authContext = new NegotiateAuthentication(authClientOptions);
@@ -203,7 +205,7 @@ namespace System.Net.Http
 
                             if (!IsAuthenticationChallenge(response, isProxyAuth))
                             {
-                                // Tail response for Negoatiate on successful authentication. Validate it before we proceed.
+                                // Tail response for Negotiate on successful authentication. Validate it before we proceed.
                                 authContext.GetOutgoingBlob(challengeData, out statusCode);
                                 if (statusCode > NegotiateAuthenticationStatusCode.ContinueNeeded)
                                 {
@@ -230,15 +232,15 @@ namespace System.Net.Http
             return response!;
         }
 
-        public static Task<HttpResponseMessage> SendWithNtProxyAuthAsync(HttpRequestMessage request, Uri proxyUri, bool async, ICredentials proxyCredentials, HttpConnection connection, HttpConnectionPool connectionPool, CancellationToken cancellationToken)
+        public static Task<HttpResponseMessage> SendWithNtProxyAuthAsync(HttpRequestMessage request, Uri proxyUri, bool async, ICredentials proxyCredentials, TokenImpersonationLevel impersonationLevel, HttpConnection connection, HttpConnectionPool connectionPool, CancellationToken cancellationToken)
         {
-            return SendWithNtAuthAsync(request, proxyUri, async, proxyCredentials, isProxyAuth: true, connection, connectionPool, cancellationToken);
+            return SendWithNtAuthAsync(request, proxyUri, async, proxyCredentials, impersonationLevel, isProxyAuth: true, connection, connectionPool, cancellationToken);
         }
 
-        public static Task<HttpResponseMessage> SendWithNtConnectionAuthAsync(HttpRequestMessage request, bool async, ICredentials credentials, HttpConnection connection, HttpConnectionPool connectionPool, CancellationToken cancellationToken)
+        public static Task<HttpResponseMessage> SendWithNtConnectionAuthAsync(HttpRequestMessage request, bool async, ICredentials credentials, TokenImpersonationLevel impersonationLevel, HttpConnection connection, HttpConnectionPool connectionPool, CancellationToken cancellationToken)
         {
             Debug.Assert(request.RequestUri != null);
-            return SendWithNtAuthAsync(request, request.RequestUri, async, credentials, isProxyAuth: false, connection, connectionPool, cancellationToken);
+            return SendWithNtAuthAsync(request, request.RequestUri, async, credentials, impersonationLevel, isProxyAuth: false, connection, connectionPool, cancellationToken);
         }
     }
 }
