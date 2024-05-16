@@ -5,16 +5,22 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 
 internal sealed class ThreadStore
 {
-    public ThreadStore(Target target, TargetPointer pointer)
+    public ThreadStore(Target target, TargetPointer address)
     {
         Target.TypeInfo type = target.GetTypeInfo(DataType.ThreadStore);
-        TargetPointer addr = target.ReadPointer(pointer.Value);
 
-        ThreadCount = target.Read<int>(addr.Value + (ulong)type.Fields[nameof(ThreadCount)].Offset);
-        FirstThread = TargetPointer.Null;
+        ThreadCount = target.Read<int>(address + (ulong)type.Fields[nameof(ThreadCount)].Offset);
+        FirstThreadLink = target.ReadPointer(address + (ulong)type.Fields[nameof(FirstThreadLink)].Offset);
+        UnstartedCount = target.Read<int>(address + (ulong)type.Fields[nameof(UnstartedCount)].Offset);
+        BackgroundCount = target.Read<int>(address + (ulong)type.Fields[nameof(BackgroundCount)].Offset);
+        PendingCount = target.Read<int>(address + (ulong)type.Fields[nameof(PendingCount)].Offset);
+        DeadCount = target.Read<int>(address + (ulong)type.Fields[nameof(DeadCount)].Offset);
     }
 
     public int ThreadCount { get; init; }
-
-    public TargetPointer FirstThread { get; init; }
+    public TargetPointer FirstThreadLink { get; init; }
+    public int UnstartedCount { get; init; }
+    public int BackgroundCount { get; init; }
+    public int PendingCount { get; init; }
+    public int DeadCount { get; init; }
 }

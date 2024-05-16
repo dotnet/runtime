@@ -4307,8 +4307,12 @@ public:
 template<>
 struct cdac_offsets<ThreadStore>
 {
-    static constexpr size_t ThreadList = offsetof(ThreadStore, m_ThreadList);
+    static constexpr size_t FirstThreadLink = offsetof(ThreadStore, m_ThreadList) + offsetof(ThreadList, m_link);
     static constexpr size_t ThreadCount = offsetof(ThreadStore, m_ThreadCount);
+    static constexpr size_t UnstartedCount = offsetof(ThreadStore, m_UnstartedThreadCount);
+    static constexpr size_t BackgroundCount = offsetof(ThreadStore, m_BackgroundThreadCount);
+    static constexpr size_t PendingCount = offsetof(ThreadStore, m_PendingThreadCount);
+    static constexpr size_t DeadCount = offsetof(ThreadStore, m_DeadThreadCount);
 };
 
 struct TSSuspendHelper {
