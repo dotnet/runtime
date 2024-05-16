@@ -18,6 +18,6 @@ namespace System.Net.Http
         public const string RequestActivityStopName        = RequestActivityName + ".Stop";
 
         public const string ConnectionNamespace            = "System.Net.Http.Connections";
-        public const string ConnectionActivityName = ConnectionNamespace + ".HttpConnectionOut";
+        public const string ConnectionActivityName         = ConnectionNamespace + ".HttpConnectionOut";
     }
 }
