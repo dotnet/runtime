@@ -865,4 +865,10 @@
     <DiagnosticId>CP0015</DiagnosticId>
     <Target>M:System.Diagnostics.Tracing.EventSource.WriteEventWithRelatedActivityIdCore(System.Int32,System.Guid*,System.Int32,System.Diagnostics.Tracing.EventSource.EventData*):[T:System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute]</Target>
   </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0016</DiagnosticId>
+    <Target>M:System.Reflection.Assembly.LoadFrom(System.String,System.Byte[],System.Configuration.Assemblies.AssemblyHashAlgorithm):[T:System.ObsoleteAttribute]</Target>
+    <Left>ref/net9.0/System.Private.CoreLib.dll</Left>
+    <Right>lib/net9.0/System.Private.CoreLib.dll</Right>
+  </Suppression>
 </Suppressions>
