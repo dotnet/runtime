@@ -3747,72 +3747,67 @@ void emitter::emitDispInsName(
         }
         case 0x3b:
         {
-            unsigned int opcode2 = (code >> 25) & 0x3;
+            unsigned int opcode2 = (code >> 25) & 0x7f;
             unsigned int opcode3 = (code >> 12) & 0x7;
             const char*  rd      = RegNames[(code >> 7) & 0x1f];
             const char*  rs1     = RegNames[(code >> 15) & 0x1f];
             const char*  rs2     = RegNames[(code >> 20) & 0x1f];
 
-            if (opcode2 == 0)
+            switch (opcode2)
             {
-                switch (opcode3)
-                {
-                    case 0x0: // ADDW & SUBW
-                        if (((code >> 30) & 0x1) == 0)
-                        {
+                case 0b0000000:
+                    switch (opcode3)
+                    {
+                        case 0x0: // ADDW
                             printf("addw           %s, %s, %s\n", rd, rs1, rs2);
-                        }
-                        else
-                        {
-                            printf("subw           %s, %s, %s\n", rd, rs1, rs2);
-                        }
-                        return;
-                    case 0x1: // SLLW
-                        printf("sllw           %s, %s, %s\n", rd, rs1, rs2);
-                        return;
-                    case 0x5: // SRLW & SRAW
-                        if (((code >> 30) & 0x1) == 0)
-                        {
+                            return;
+                        case 0x1: // SLLW
+                            printf("sllw           %s, %s, %s\n", rd, rs1, rs2);
+                            return;
+                        case 0x5: // SRLW
                             printf("srlw           %s, %s, %s\n", rd, rs1, rs2);
-                        }
-                        else
-                        {
+                            return;
+                        default:
+                            return emitDispIllegalInstruction(code);
+                    }
+                    return;
+                case 0b0100000:
+                    switch (opcode3)
+                    {
+                        case 0x0: //  SUBW
+                            printf("subw           %s, %s, %s\n", rd, rs1, rs2);
+                            return;
+                        case 0x5: // SRAW
                             printf("sraw           %s, %s, %s\n", rd, rs1, rs2);
-                        }
-                        return;
-                    default:
-                        printf("RISCV64 illegal instruction: 0x%08X\n", code);
-                        return;
-                }
-            }
-            else if (opcode2 == 1)
-            {
-                switch (opcode3)
-                {
-                    case 0x0: // MULW
-                        printf("mulw           %s, %s, %s\n", rd, rs1, rs2);
-                        return;
-                    case 0x4: // DIVW
-                        printf("divw           %s, %s, %s\n", rd, rs1, rs2);
-                        return;
-                    case 0x5: // DIVUW
-                        printf("divuw          %s, %s, %s\n", rd, rs1, rs2);
-                        return;
-                    case 0x6: // REMW
-                        printf("remw           %s, %s, %s\n", rd, rs1, rs2);
-                        return;
-                    case 0x7: // REMUW
-                        printf("remuw          %s, %s, %s\n", rd, rs1, rs2);
-                        return;
-                    default:
-                        printf("RISCV64 illegal instruction: 0x%08X\n", code);
-                        return;
-                }
-            }
-            else
-            {
-                printf("RISCV64 illegal instruction: 0x%08X\n", code);
-                return;
+                            return;
+                        default:
+                            return emitDispIllegalInstruction(code);
+                    }
+                    return;
+                case 0b0000001:
+                    switch (opcode3)
+                    {
+                        case 0x0: // MULW
+                            printf("mulw           %s, %s, %s\n", rd, rs1, rs2);
+                            return;
+                        case 0x4: // DIVW
+                            printf("divw           %s, %s, %s\n", rd, rs1, rs2);
+                            return;
+                        case 0x5: // DIVUW
+                            printf("divuw          %s, %s, %s\n", rd, rs1, rs2);
+                            return;
+                        case 0x6: // REMW
+                            printf("remw           %s, %s, %s\n", rd, rs1, rs2);
+                            return;
+                        case 0x7: // REMUW
+                            printf("remuw          %s, %s, %s\n", rd, rs1, rs2);
+                            return;
+                        default:
+                            return emitDispIllegalInstruction(code);
+                    }
+                    return;
+                default:
+                    return emitDispIllegalInstruction(code);
             }
         }
         case 0x23:
