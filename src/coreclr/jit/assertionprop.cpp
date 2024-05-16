@@ -2766,6 +2766,16 @@ GenTree* Compiler::optVNBasedFoldConstExpr(BasicBlock* block, GenTree* parent, G
     // Check if node evaluates to a constant
     if (!vnStore->IsVNConstant(vnCns))
     {
+        // Last chance - propagate VNF_PtrToLoc(lcl, offset) as GT_LCL_ADDR node
+        VNFuncApp funcApp;
+        if (((tree->gtFlags & GTF_SIDE_EFFECT) == 0) && vnStore->GetVNFunc(vnCns, &funcApp) &&
+            (funcApp.m_func == VNF_PtrToLoc))
+        {
+            unsigned lcl  = (unsigned)vnStore->CoercedConstantValue<size_t>(funcApp.m_args[0]);
+            unsigned offs = (unsigned)vnStore->CoercedConstantValue<size_t>(funcApp.m_args[1]);
+            return gtNewLclAddrNode(lcl, offs, tree->TypeGet());
+        }
+
         return nullptr;
     }
 
@@ -3929,6 +3939,18 @@ void Compiler::optAssertionProp_RangeProperties(ASSERT_VALARG_TP assertions,
     while (iter.NextElem(&index))
     {
         AssertionDsc* curAssertion = optGetAssertion(GetAssertionIndex(index));
+
+        // if treeVN has a bound-check assertion where it's an index, then
+        // it means it's not negative, example:
+        //
+        //   array[idx] = 42; // creates 'BoundsCheckNoThrow' assertion
+        //   return idx % 8;  // idx is known to be never negative here, hence, MOD->UMOD
+        //
+        if (curAssertion->IsBoundsCheckNoThrow() && (curAssertion->op1.bnd.vnIdx == treeVN))
+        {
+            *isKnownNonNegative = true;
+            continue;
+        }
 
         // First, analyze possible X ==/!= CNS assertions.
         if (curAssertion->IsConstantInt32Assertion() && (curAssertion->op1.vn == treeVN))

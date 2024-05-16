@@ -12,7 +12,7 @@
   <PropertyGroup Condition="'$(TargetArchitecture)' == 'arm64'">
     <LLVMArchitectureSuffix>arm64</LLVMArchitectureSuffix>
   </PropertyGroup>
-  <ItemGroup Condition="'$(TargetOS)' != 'windows'">
+  <ItemGroup Condition="'$(TargetOS)' != 'windows' and '$(EnableNativeSanitizers)' != ''">
     <LinkerArg Include="-fsanitize=$(EnableNativeSanitizers)" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetOS)' == 'osx'">
