@@ -184,7 +184,7 @@ namespace JIT.HardwareIntrinsics.Arm
             //TODO-SVE: Once register allocation exists for predicates, move loadMask into DataTable
             {Op1VectorType}<{Op1BaseType}> loadMask = Sve.CreateTrueMask{RetBaseType}(SveMaskPattern.All);
 
-            var result = typeof({Isa}).GetMethod(nameof({Isa}.{Method}), new Type[] { typeof({Op1BaseType}*) })
+            var result = typeof({Isa}).GetMethod(nameof({Isa}.{Method}), new Type[] { typeof(Vector<{Op1BaseType}>), typeof({Op1BaseType}*) })
                                      .Invoke(null, new object[] {
                                         loadMask,
                                         Pointer.Box(_dataTable.inArrayPtr, typeof({Op1BaseType}*))

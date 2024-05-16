@@ -1751,11 +1751,20 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
             case NI_AdvSimd_Arm64_LoadAndReplicateToVector128x2:
             case NI_AdvSimd_Arm64_LoadAndReplicateToVector128x3:
             case NI_AdvSimd_Arm64_LoadAndReplicateToVector128x4:
+            {
+                assert(intrin.op1 != nullptr);
+                BuildConsecutiveRegistersForDef(intrinsicTree, dstCount);
+                *pDstCount = dstCount;
+                break;
+            }
+
             case NI_Sve_LoadVectorx2:
             case NI_Sve_LoadVectorx3:
             case NI_Sve_LoadVectorx4:
             {
                 assert(intrin.op1 != nullptr);
+                assert(intrin.op2 != nullptr);
+                srcCount += BuildOperandUses(intrin.op2);
                 BuildConsecutiveRegistersForDef(intrinsicTree, dstCount);
                 *pDstCount = dstCount;
                 break;
@@ -1927,13 +1936,21 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
 
     buildInternalRegisterUses();
 
-    if ((dstCount == 1) || (dstCount == 2))
+    if ((dstCount == 1) || (dstCount == 2) || (dstCount == 3) || (dstCount == 4))
     {
         BuildDef(intrinsicTree, dstCandidates);
 
-        if (dstCount == 2)
+        if (dstCount >= 2)
         {
             BuildDef(intrinsicTree, dstCandidates, 1);
+        }
+        if (dstCount >= 3)
+        {
+            BuildDef(intrinsicTree, dstCandidates, 2);
+        }
+        if (dstCount == 4)
+        {
+            BuildDef(intrinsicTree, dstCandidates, 3);
         }
     }
     else

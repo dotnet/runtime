@@ -1635,7 +1635,15 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
         if (!varTypeIsMask(op1))
         {
             // Op1 input is a vector. HWInstrinsic requires a mask.
-            retNode->AsHWIntrinsic()->Op(1) = gtNewSimdConvertVectorToMaskNode(retType, op1, simdBaseJitType, simdSize);
+            retNode->AsHWIntrinsic()->Op(1) =
+                gtNewSimdConvertVectorToMaskNode(retType, op1, simdBaseJitType, simdSize);
+        }
+
+        if (HWIntrinsicInfo::IsMultiReg(intrinsic))
+        {
+            assert(HWIntrinsicInfo::IsExplicitMaskedOperation(retNode->AsHWIntrinsic()->GetHWIntrinsicId()));
+            assert(HWIntrinsicInfo::IsMultiReg(retNode->AsHWIntrinsic()->GetHWIntrinsicId()));
+            retNode = impStoreMultiRegValueToVar(retNode, sig->retTypeSigClass DEBUGARG(CorInfoCallConvExtension::Managed));
         }
     }
 
