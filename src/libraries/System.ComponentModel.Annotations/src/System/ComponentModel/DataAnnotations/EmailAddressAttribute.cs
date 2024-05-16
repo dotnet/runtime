@@ -30,7 +30,7 @@ namespace System.ComponentModel.DataAnnotations
                 return false;
             }
 
-            if (!EnableFullDomainLiterals && (valueAsString.Contains('\r') || valueAsString.Contains('\n')))
+            if (!EnableFullDomainLiterals && valueAsString.AsSpan().ContainsAny('\r', '\n'))
             {
                 return false;
             }

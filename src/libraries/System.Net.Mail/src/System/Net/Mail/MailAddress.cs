@@ -220,7 +220,7 @@ namespace System.Net.Mail
                 }
             }
 
-            if (!EnableFullDomainLiterals && domain.AsSpan().IndexOfAny('\r', '\n') >= 0)
+            if (!EnableFullDomainLiterals && domain.AsSpan().ContainsAny('\r', '\n'))
             {
                 throw new SmtpException(SR.Format(SR.SmtpInvalidHostName, Address));
             }
