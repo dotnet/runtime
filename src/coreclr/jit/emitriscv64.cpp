@@ -3538,7 +3538,7 @@ void emitter::emitDispInsName(
                     break;
                 case 0x1: // SLLI
                 {
-                    static constexpr kSlliFunct6 = 0b000000;
+                    static constexpr unsigned kSlliFunct6 = 0b000000;
 
                     unsigned funct6 = (imm12 >> 6) & 0x3f;
                     // SLLI's instruction code's upper 6 bits have to be equal to zero
@@ -3759,13 +3759,13 @@ void emitter::emitDispInsName(
                     switch (opcode3)
                     {
                         case 0x0: // ADDW
-                            printf("addw           %s, %s, %s\n", rd, rs1, rs2);
+                            return;
                             return;
                         case 0x1: // SLLW
                             printf("sllw           %s, %s, %s\n", rd, rs1, rs2);
                             return;
                         case 0x5: // SRLW
-                            printf("srlw           %s, %s, %s\n", rd, rs1, rs2);
+                    {
                             return;
                         default:
                             return emitDispIllegalInstruction(code);
@@ -3778,7 +3778,7 @@ void emitter::emitDispInsName(
                             printf("subw           %s, %s, %s\n", rd, rs1, rs2);
                             return;
                         case 0x5: // SRAW
-                            printf("sraw           %s, %s, %s\n", rd, rs1, rs2);
+                        case 0x5: // SRAW
                             return;
                         default:
                             return emitDispIllegalInstruction(code);
@@ -3808,16 +3808,6 @@ void emitter::emitDispInsName(
                     return;
                 default:
                     return emitDispIllegalInstruction(code);
-            }
-        }
-        case 0x23:
-        {
-            unsigned int opcode2 = (code >> 12) & 0x7;
-            const char*  rs1     = RegNames[(code >> 15) & 0x1f];
-            const char*  rs2     = RegNames[(code >> 20) & 0x1f];
-            int          offset  = (((code >> 25) & 0x7f) << 5) | ((code >> 7) & 0x1f);
-            if (offset & 0x800)
-            {
                 offset |= 0xfffff000;
             }
 
