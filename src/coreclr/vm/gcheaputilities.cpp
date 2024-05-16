@@ -177,7 +177,7 @@ HMODULE LoadStandaloneGc(LPCWSTR libFileName, LPCWSTR libFilePath)
     // These are trusted locations, and therefore even if it is a relative path, there is no security risk.
     //
     // However, users often don't know the absolute path to their coreclr module, especially on production. 
-    // Theerfore we allow referencing it from an arbitrary location through libFilePath instead. Users, however
+    // Therefore we allow referencing it from an arbitrary location through libFilePath instead. Users, however
     // are warned that they should keep the file in a secure location such that it cannot be tampered. 
     //
     if (!ValidateModuleName(libFileName))
