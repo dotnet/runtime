@@ -1750,9 +1750,11 @@ void CodeGen::psiBegProlog()
                 var_types regType;
                 if (varTypeIsStruct(lclVarDsc))
                 {
+#ifdef TARGET_LOONGARCH
                     // Must be <= 16 bytes or else it wouldn't be passed in registers,
                     // which can be bigger (and is handled above).
                     noway_assert(EA_SIZE_IN_BYTES(lclVarDsc->lvSize()) <= 16);
+#endif // TARGET_LOONGARCH
                     if (emitter::isFloatReg(lclVarDsc->GetArgReg()))
                     {
                         regType = TYP_DOUBLE;

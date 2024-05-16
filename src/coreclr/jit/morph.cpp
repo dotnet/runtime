@@ -2882,7 +2882,7 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
                     }
                     else if ((floatFieldFlags & STRUCT_FLOAT_FIELD_ONLY_ONE) != 0)
                     {
-                        structBaseType = structSize == 8 ? TYP_DOUBLE : TYP_FLOAT;
+                        structBaseType = (floatFieldFlags & STRUCT_FIRST_FIELD_SIZE_IS8) ? TYP_DOUBLE : TYP_FLOAT;
                         fltArgRegNum += 1;
                         arg.AbiInfo.StructFloatFieldType[0] = structBaseType;
                     }
@@ -3294,7 +3294,13 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
                     // We have a struct argument that fits into a register, and it is either a power of 2,
                     // or a local.
                     // Change our argument, as needed, into a value of the appropriate type.
-                    assert((structBaseType != TYP_STRUCT) && (genTypeSize(structBaseType) >= originalSize));
+                    assert(structBaseType != TYP_STRUCT);
+
+                    // On RISC-V / LoongArch the passing size may be smaller than the original size if we pass a struct
+                    // according to hardware FP calling convention and it has empty fields
+#if !defined(TARGET_LOONGARCH64) && !defined(TARGET_RISCV64)
+                    assert(genTypeSize(structBaseType) >= originalSize);
+#endif
 
                     if (argObj->OperIsLoad())
                     {
@@ -3627,7 +3633,10 @@ GenTree* Compiler::fgMorphMultiregStructArg(CallArg* arg)
     }
     else
     {
+#ifndef TARGET_RISCV64
         assert(structSize <= MAX_ARG_REG_COUNT * TARGET_POINTER_SIZE);
+#endif
+        assert(arg->AbiInfo.NumRegs <= MAX_ARG_REG_COUNT);
 
         auto getSlotType = [layout](unsigned inx) {
             return (layout != nullptr) ? layout->GetGCPtrType(inx) : TYP_I_IMPL;
@@ -3709,9 +3718,9 @@ GenTree* Compiler::fgMorphMultiregStructArg(CallArg* arg)
     }
 
 #if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-    // For LoongArch64's ABI, the struct {long a; float b;} may be passed
-    // by integer and float registers and it needs to include the padding here.
-    assert(roundUp(structSize, TARGET_POINTER_SIZE) == roundUp(loadExtent, TARGET_POINTER_SIZE));
+    // For LoongArch64's and RISC-V ABI, struct { long a; float b; } or struct { int a; float b; struct {/*empty*/}; }
+    // may be passed by integer and float registers and it needs to include the padding here.
+    assert(roundUp(structSize, TARGET_POINTER_SIZE) >= roundUp(loadExtent, TARGET_POINTER_SIZE));
 #else
     if (argNode->IsLocal())
     {

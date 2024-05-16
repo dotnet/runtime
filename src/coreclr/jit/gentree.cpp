@@ -27358,35 +27358,40 @@ void ReturnTypeDesc::InitializeStructReturnType(Compiler*                comp,
             }
 
 #elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-            assert((structSize >= TARGET_POINTER_SIZE) && (structSize <= (2 * TARGET_POINTER_SIZE)));
+            assert(structSize >= TARGET_POINTER_SIZE);
 
 #ifdef TARGET_LOONGARCH64
+            assert(structSize <= (2 * TARGET_POINTER_SIZE));
             uint32_t floatFieldFlags = comp->info.compCompHnd->getLoongArch64PassStructInRegisterFlags(retClsHnd);
-#else
+            BYTE     gcPtrs[2]       = {TYPE_GC_NONE, TYPE_GC_NONE};
+#else // TARGET_RISCV64
             uint32_t floatFieldFlags = comp->info.compCompHnd->getRISCV64PassStructInRegisterFlags(retClsHnd);
+            // Most cases will be up to 2 floating/integer fields with an occasional empty field
+            BYTE     gcPtrsStack[4] = {TYPE_GC_NONE, TYPE_GC_NONE, TYPE_GC_NONE, TYPE_GC_NONE};
+            unsigned wordCount      = roundUp(structSize, TARGET_POINTER_SIZE) / TARGET_POINTER_SIZE;
+            BYTE*    gcPtrs         = (wordCount <= 4) ? gcPtrsStack : new (comp, CMK_GC) BYTE[wordCount];
+            // TODO: we need field offsets along with getRISCV64PassStructInRegisterFlags because we don't know which of
+            // gcPtrs to inspect below
+            // TODO: doesn't ClassLayout encapsulate GC info already?
 #endif
-            BYTE gcPtrs[2] = {TYPE_GC_NONE, TYPE_GC_NONE};
             comp->info.compCompHnd->getClassGClayout(retClsHnd, &gcPtrs[0]);
 
             if (floatFieldFlags & STRUCT_FLOAT_FIELD_ONLY_TWO)
             {
                 comp->compFloatingPointUsed = true;
-                assert((structSize > 8) == ((floatFieldFlags & STRUCT_HAS_8BYTES_FIELDS_MASK) > 0));
-                m_regType[0] = (floatFieldFlags & STRUCT_FIRST_FIELD_SIZE_IS8) ? TYP_DOUBLE : TYP_FLOAT;
-                m_regType[1] = (floatFieldFlags & STRUCT_SECOND_FIELD_SIZE_IS8) ? TYP_DOUBLE : TYP_FLOAT;
+                m_regType[0]                = (floatFieldFlags & STRUCT_FIRST_FIELD_SIZE_IS8) ? TYP_DOUBLE : TYP_FLOAT;
+                m_regType[1]                = (floatFieldFlags & STRUCT_SECOND_FIELD_SIZE_IS8) ? TYP_DOUBLE : TYP_FLOAT;
             }
             else if (floatFieldFlags & STRUCT_FLOAT_FIELD_FIRST)
             {
                 comp->compFloatingPointUsed = true;
-                assert((structSize > 8) == ((floatFieldFlags & STRUCT_HAS_8BYTES_FIELDS_MASK) > 0));
-                m_regType[0] = (floatFieldFlags & STRUCT_FIRST_FIELD_SIZE_IS8) ? TYP_DOUBLE : TYP_FLOAT;
+                m_regType[0]                = (floatFieldFlags & STRUCT_FIRST_FIELD_SIZE_IS8) ? TYP_DOUBLE : TYP_FLOAT;
                 m_regType[1] =
                     (floatFieldFlags & STRUCT_SECOND_FIELD_SIZE_IS8) ? comp->getJitGCType(gcPtrs[1]) : TYP_INT;
             }
             else if (floatFieldFlags & STRUCT_FLOAT_FIELD_SECOND)
             {
                 comp->compFloatingPointUsed = true;
-                assert((structSize > 8) == ((floatFieldFlags & STRUCT_HAS_8BYTES_FIELDS_MASK) > 0));
                 m_regType[0] =
                     (floatFieldFlags & STRUCT_FIRST_FIELD_SIZE_IS8) ? comp->getJitGCType(gcPtrs[0]) : TYP_INT;
                 m_regType[1] = (floatFieldFlags & STRUCT_SECOND_FIELD_SIZE_IS8) ? TYP_DOUBLE : TYP_FLOAT;
@@ -27398,6 +27403,10 @@ void ReturnTypeDesc::InitializeStructReturnType(Compiler*                comp,
                     m_regType[i] = comp->getJitGCType(gcPtrs[i]);
                 }
             }
+#ifdef TARGET_RISCV64
+            if (wordCount > 4)
+                delete[] gcPtrs;
+#endif
 
 #elif defined(TARGET_X86)
 
