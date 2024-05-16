@@ -301,12 +301,6 @@ namespace System.ComponentModel
         /// return a custom type descriptor for the object. If the method is not
         /// interested in providing type information for the object it should
         /// return base.
-        ///
-        /// This method is prototyped as virtual, and by default returns a
-        /// custom type descriptor that returns empty collections for all values
-        /// if no parent provider was passed. If a parent provider was passed,
-        /// this method will invoke the parent provider's GetTypeDescriptor
-        /// method.
         /// </summary>
         public ICustomTypeDescriptor? GetTypeDescriptorFromRegisteredType(Type objectType)
         {
@@ -351,7 +345,7 @@ namespace System.ComponentModel
         /// This method is prototyped as virtual, and by default returns a
         /// custom type descriptor that returns empty collections for all values
         /// if no parent provider was passed. If a parent provider was passed,
-        /// this method will invoke the parent provider's GetTypeDescriptor
+        /// this method will invoke the parent provider's GetTypeDescriptorFromRegisteredType
         /// method.
         /// </summary>
         // This method doesn't contain [DynamicallyAccessedMembers(All)] unlike GetTypeDescriptor(type,object). It does this to

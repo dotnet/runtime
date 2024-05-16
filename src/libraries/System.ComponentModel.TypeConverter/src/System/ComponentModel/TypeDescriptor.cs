@@ -150,7 +150,7 @@ namespace System.ComponentModel
             ? isEnabled : false;
 
         /// <summary>
-        /// Indicates whether types require registeration in order to be used with <see cref="TypeDescriptor"/>.
+        /// Indicates whether types require registration in order to be used with <see cref="TypeDescriptor"/>.
         /// </summary>
         /// <remarks>
         /// The value of the property is backed by the "System.ComponentModel.TypeDescriptor.RequireRegisteredTypes"
@@ -864,7 +864,7 @@ namespace System.ComponentModel
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
                   Justification = "The callers of this method ensure getting the converter is trim compatible - i.e. the type is not Nullable<T>.")]
         internal static TypeConverter GetConverterTrimUnsafe([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type) =>
-                  GetConverter(type);
+            GetConverter(type);
 
         /// <summary>
         /// Gets a type converter for the specified registered type.

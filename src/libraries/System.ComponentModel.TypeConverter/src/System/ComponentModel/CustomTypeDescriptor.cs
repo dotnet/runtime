@@ -133,10 +133,7 @@ namespace System.ComponentModel
 
         /// <summary>
         /// The GetEvents method returns a collection of event descriptors
-        /// for the object this type descriptor is representing. An optional
-        /// attribute array may be provided to filter the collection that is
-        /// returned. If no parent is provided,this will return an empty
-        /// event collection.
+        /// for the object this type descriptor is representing.
         /// </summary>
         public virtual EventDescriptorCollection GetEvents()
         {
@@ -168,10 +165,7 @@ namespace System.ComponentModel
 
         /// <summary>
         /// Returns a collection of event descriptors
-        /// for the object this type descriptor is representing. An optional
-        /// attribute array may be provided to filter the collection that is
-        /// returned. If no parent is provided,this will return an empty
-        /// event collection.
+        /// for the object this type descriptor is representing.
         /// </summary>
         public virtual EventDescriptorCollection GetEventsFromRegisteredType()
         {
@@ -197,10 +191,7 @@ namespace System.ComponentModel
 
         /// <summary>
         /// The GetProperties method returns a collection of property descriptors
-        /// for the object this type descriptor is representing. An optional
-        /// attribute array may be provided to filter the collection that is returned.
-        /// If no parent is provided,this will return an empty
-        /// property collection.
+        /// for the object this type descriptor is representing.
         /// </summary>
         [RequiresUnreferencedCode(PropertyDescriptor.PropertyDescriptorPropertyTypeMessage)]
         public virtual PropertyDescriptorCollection GetProperties()
@@ -215,10 +206,7 @@ namespace System.ComponentModel
 
         /// <summary>
         /// The GetProperties method returns a collection of property descriptors
-        /// for the object this type descriptor is representing. An optional
-        /// attribute array may be provided to filter the collection that is returned.
-        /// If no parent is provided,this will return an empty
-        /// property collection.
+        /// for the object this type descriptor is representing.
         /// </summary>
         public virtual PropertyDescriptorCollection GetPropertiesFromRegisteredType()
         {
