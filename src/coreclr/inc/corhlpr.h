@@ -22,11 +22,6 @@
 #include "corhdr.h"
 #include "corerror.h"
 #include "unreachable.h"
-
-// This header is consumed both within the runtime and externally. In the former
-// case we need to wrap memory allocations, in the latter there is no
-// infrastructure to support this. Detect which way we're building and provide a
-// very simple abstraction layer (handles allocating bytes only).
 #include <new>
 
 using std::nothrow;
