@@ -3947,7 +3947,8 @@ namespace System
                 throw new MissingMethodException(SR.Format(SR.Arg_NoDefCTor, this));
             }
 
-            object? obj = GetOrCreateCacheEntry<CreateUninitializedCache>().CreateUninitializedObject(this);
+            // We reuse ActivatorCache here to ensure that we aren't always creating two entries in the cache.
+            object? obj = GetOrCreateCacheEntry<ActivatorCache>().CreateUninitializedObject(this);
             try
             {
                 cache.CallConstructor(obj);
