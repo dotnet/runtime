@@ -97,6 +97,7 @@ namespace System
                 return ref Unsafe.Unbox<CompositeCacheEntry>(currentCache);
             }
 
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static TCache GetOrCreate(RuntimeType type)
             {
                 ref object? genericCache = ref type.Cache.GenericCache;
@@ -126,6 +127,7 @@ namespace System
                 return composite.OverwriteNestedCache(TCache.Create(type));
             }
 
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static TCache? Find(RuntimeType type)
             {
                 object? genericCache = type.CacheIfExists?.GenericCache;
@@ -147,6 +149,7 @@ namespace System
                 }
             }
 
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static void Overwrite(RuntimeType type, TCache cache)
             {
                 ref object? genericCache = ref type.Cache.GenericCache;
