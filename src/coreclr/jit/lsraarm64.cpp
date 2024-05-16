@@ -416,9 +416,9 @@ SingleTypeRegSet LinearScan::filterConsecutiveCandidatesForSpill(SingleTypeRegSe
 //      allCandidates = 0x1C080D0F00000000, the consecutive register mask returned
 //      will be 0x400000300000000.
 //
-regMaskTP LinearScan::getConsecutiveCandidates(regMaskTP    allCandidates,
+SingleTypeRegSet LinearScan::getConsecutiveCandidates(SingleTypeRegSet    allCandidates,
                                                RefPosition* refPosition,
-                                               regMaskTP*   busyCandidates)
+                                               SingleTypeRegSet*   busyCandidates)
 {
     assert(compiler->info.compNeedsConsecutiveRegisters);
     assert(refPosition->isFirstRefPositionOfConsecutiveRegisters());
@@ -555,7 +555,7 @@ regMaskTP LinearScan::getConsecutiveCandidates(regMaskTP    allCandidates,
             // `allCandidates` that are mix of free and busy. Since `busyCandidates` just has bit set for first
             // register of such series, return the mask that starts with free register, if possible. The busy
             // registers will be spilled during assignment of subsequent RefPosition.
-            *busyCandidates = (m_AvailableRegs & consecutiveResultForBusy);
+            *busyCandidates = (m_AvailableRegs.GetRegSetForType(TYP_FLOAT) & consecutiveResultForBusy);
         }
     }
 

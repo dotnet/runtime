@@ -3290,8 +3290,9 @@ void LinearScan::UpdatePreferencesOfDyingLocal(Interval* interval)
         }
 #endif
 
-        interval->registerAversion |= unpref;
-        regMaskTP newPreferences = allRegs(interval->registerType) & ~unpref;
+        SingleTypeRegSet unprefSet = unpref.GetRegSetForType(interval->registerType);
+        interval->registerAversion |= unprefSet;
+        SingleTypeRegSet newPreferences = allRegs(interval->registerType) & ~unprefSet;
         interval->updateRegisterPreferences(newPreferences);
     }
 }

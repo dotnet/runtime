@@ -124,7 +124,7 @@ regNumber NodeInternalRegisters::Extract(GenTree* tree, SingleTypeRegSet mask)
 //
 regNumber NodeInternalRegisters::GetSingle(GenTree* tree, SingleTypeRegSet mask)
 {
-    regMaskTP* regs = m_table.LookupPointer(tree);
+    SingleTypeRegSet* regs = m_table.LookupPointer(tree);
     assert(regs != nullptr);
 
     regMaskTP availableSet = *regs & mask;

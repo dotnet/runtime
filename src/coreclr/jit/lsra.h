@@ -1232,7 +1232,7 @@ private:
 #if defined(TARGET_ARM64)
     bool      canAssignNextConsecutiveRegisters(RefPosition* firstRefPosition, regNumber firstRegAssigned);
     void      assignConsecutiveRegisters(RefPosition* firstRefPosition, regNumber firstRegAssigned);
-    regMaskTP getConsecutiveCandidates(regMaskTP candidates, RefPosition* refPosition, regMaskTP* busyCandidates);
+    SingleTypeRegSet getConsecutiveCandidates(SingleTypeRegSet candidates, RefPosition* refPosition, SingleTypeRegSet* busyCandidates);
     SingleTypeRegSet filterConsecutiveCandidates(SingleTypeRegSet    candidates,
                                           unsigned int registersNeeded,
                                           SingleTypeRegSet*   allConsecutiveCandidates);
@@ -1240,7 +1240,7 @@ private:
                                                          unsigned int     registersNeeded);
 #endif // TARGET_ARM64
 
-    SingleTypeRegSet getFreeCandidates(regMaskTP candidates ARM_ARG(var_types regType))
+    SingleTypeRegSet getFreeCandidates(regMaskTP candidates, var_types regType)
     {
         regMaskTP result = candidates & m_AvailableRegs;
 #ifdef TARGET_ARM
@@ -1251,7 +1251,7 @@ private:
             result &= (m_AvailableRegs >> 1);
         }
 #endif // TARGET_ARM
-        return result;
+        return result.GetRegSetForType(regType);
     }
 
 #ifdef DEBUG
@@ -1862,7 +1862,7 @@ private:
         regMaskTP regMask = getRegMask(reg, regType);
         return (m_RegistersWithConstants & regMask) == regMask;
     }
-    regMaskTP getMatchingConstants(regMaskTP mask, Interval* currentInterval, RefPosition* refPosition);
+    SingleTypeRegSet getMatchingConstants(SingleTypeRegSet mask, Interval* currentInterval, RefPosition* refPosition);
 
     regMaskTP    fixedRegs;
     LsraLocation nextFixedRef[REG_COUNT];
@@ -2147,10 +2147,10 @@ private:
     //------------------------------------------------------------------------
     // callerSaveRegs: Get the set of caller-save registers of the given RegisterType
     //
-    FORCEINLINE regMaskTP callerSaveRegs(RegisterType rt) const
+    FORCEINLINE SingleTypeRegSet callerSaveRegs(RegisterType rt) const
     {
 #if !defined(TARGET_XARCH)
-        static const regMaskTP varTypeCalleeTrashRegs[] = {
+        static const SingleTypeRegSet varTypeCalleeTrashRegs[] = {
 #define DEF_TP(tn, nm, jitType, sz, sze, asze, st, al, regTyp, regFld, csr, ctr, tf) ctr,
 #include "typelist.h"
 #undef DEF_TP
