@@ -14,7 +14,7 @@ namespace Wasm.Build.Tests
     public class DownlevelCheck : BuildTestBase
     {
         public DownlevelCheck(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
-                    : base(new TestMainJsProjectProvider(output), output, buildContext)
+            : base(new TestMainJsProjectProvider(output), output, buildContext)
         {
         }
 
