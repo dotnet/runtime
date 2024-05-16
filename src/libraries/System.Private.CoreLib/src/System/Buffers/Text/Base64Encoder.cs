@@ -35,10 +35,12 @@ namespace System.Buffers.Text
         /// It does not return InvalidData since that is not possible for base64 encoding.
         /// </returns>
         public static unsafe OperationStatus EncodeToUtf8(ReadOnlySpan<byte> bytes, Span<byte> utf8, out int bytesConsumed, out int bytesWritten, bool isFinalBlock = true) =>
-            EncodeToUtf8<Base64Encoder>(bytes, utf8, out bytesConsumed, out bytesWritten, isFinalBlock);
+            EncodeTo<Base64EncoderByte, byte>(bytes, utf8, out bytesConsumed, out bytesWritten, isFinalBlock);
 
-        internal static unsafe OperationStatus EncodeToUtf8<TBase64Encoder>(ReadOnlySpan<byte> bytes, Span<byte> utf8, out int bytesConsumed, out int bytesWritten, bool isFinalBlock = true)
-            where TBase64Encoder : IBase64Encoder
+        internal static unsafe OperationStatus EncodeTo<TBase64Encoder, T>(ReadOnlySpan<byte> bytes,
+            Span<T> utf8, out int bytesConsumed, out int bytesWritten, bool isFinalBlock = true)
+            where TBase64Encoder : IBase64Encoder<T>
+            where T : unmanaged
         {
             if (bytes.IsEmpty)
             {
@@ -48,14 +50,14 @@ namespace System.Buffers.Text
             }
 
             fixed (byte* srcBytes = &MemoryMarshal.GetReference(bytes))
-            fixed (byte* destBytes = &MemoryMarshal.GetReference(utf8))
+            fixed (T* destBytes = &MemoryMarshal.GetReference(utf8))
             {
                 int srcLength = bytes.Length;
                 int destLength = utf8.Length;
                 int maxSrcLength = TBase64Encoder.GetMaxSrcLength(srcLength, destLength);
 
                 byte* src = srcBytes;
-                byte* dest = destBytes;
+                T* dest = destBytes;
                 byte* srcEnd = srcBytes + (uint)srcLength;
                 byte* srcMax = srcBytes + (uint)maxSrcLength;
 
@@ -64,7 +66,7 @@ namespace System.Buffers.Text
                     byte* end = srcMax - 64;
                     if (Vector512.IsHardwareAccelerated && Avx512Vbmi.IsSupported && (end >= src))
                     {
-                        Avx512Encode<TBase64Encoder>(ref src, ref dest, end, maxSrcLength, destLength, srcBytes, destBytes);
+                        Avx512Encode<TBase64Encoder, T>(ref src, ref dest, end, maxSrcLength, destLength, srcBytes, destBytes);
 
                         if (src == srcEnd)
                             goto DoneExit;
@@ -73,7 +75,7 @@ namespace System.Buffers.Text
                     end = srcMax - 32;
                     if (Avx2.IsSupported && (end >= src))
                     {
-                        Avx2Encode<TBase64Encoder>(ref src, ref dest, end, maxSrcLength, destLength, srcBytes, destBytes);
+                        Avx2Encode<TBase64Encoder, T>(ref src, ref dest, end, maxSrcLength, destLength, srcBytes, destBytes);
 
                         if (src == srcEnd)
                             goto DoneExit;
@@ -82,7 +84,7 @@ namespace System.Buffers.Text
                     end = srcMax - 48;
                     if (AdvSimd.Arm64.IsSupported && (end >= src))
                     {
-                        AdvSimdEncode<TBase64Encoder>(ref src, ref dest, end, maxSrcLength, destLength, srcBytes, destBytes);
+                        AdvSimdEncode<TBase64Encoder, T>(ref src, ref dest, end, maxSrcLength, destLength, srcBytes, destBytes);
 
                         if (src == srcEnd)
                             goto DoneExit;
@@ -91,7 +93,7 @@ namespace System.Buffers.Text
                     end = srcMax - 16;
                     if ((Ssse3.IsSupported || AdvSimd.Arm64.IsSupported) && BitConverter.IsLittleEndian && (end >= src))
                     {
-                        Vector128Encode<TBase64Encoder>(ref src, ref dest, end, maxSrcLength, destLength, srcBytes, destBytes);
+                        Vector128Encode<TBase64Encoder, T>(ref src, ref dest, end, maxSrcLength, destLength, srcBytes, destBytes);
 
                         if (src == srcEnd)
                             goto DoneExit;
@@ -99,13 +101,11 @@ namespace System.Buffers.Text
                 }
 
                 ref byte encodingMap = ref MemoryMarshal.GetReference(TBase64Encoder.EncodingMap);
-                uint result = 0;
 
                 srcMax -= 2;
                 while (src < srcMax)
                 {
-                    result = Encode(src, ref encodingMap);
-                    Unsafe.WriteUnaligned(dest, result);
+                    TBase64Encoder.EncodeThreeAndWrite(src, dest, ref encodingMap);
                     src += 3;
                     dest += 4;
                 }
@@ -123,15 +123,13 @@ namespace System.Buffers.Text
 
                 if (src + 1 == srcEnd)
                 {
-                    result = TBase64Encoder.EncodeOneOptionallyPadTwo(src, ref encodingMap);
-                    Unsafe.WriteUnaligned(dest, result);
+                    TBase64Encoder.EncodeOneOptionallyPadTwo(src, dest, ref encodingMap);
                     src += 1;
                     dest += TBase64Encoder.IncrementPadTwo;
                 }
                 else if (src + 2 == srcEnd)
                 {
-                    result = TBase64Encoder.EncodeTwoOptionallyPadOne(src, ref encodingMap);
-                    Unsafe.WriteUnaligned(dest, result);
+                    TBase64Encoder.EncodeTwoOptionallyPadOne(src, dest, ref encodingMap);
                     src += 2;
                     dest += TBase64Encoder.IncrementPadOne;
                 }
@@ -183,7 +181,11 @@ namespace System.Buffers.Text
         /// It does not return NeedMoreData since this method tramples the data in the buffer and hence can only be called once with all the data in the buffer.
         /// It does not return InvalidData since that is not possible for base 64 encoding.
         /// </returns>
-        public static unsafe OperationStatus EncodeToUtf8InPlace(Span<byte> buffer, int dataLength, out int bytesWritten)
+        public static unsafe OperationStatus EncodeToUtf8InPlace(Span<byte> buffer, int dataLength, out int bytesWritten) =>
+            EncodeToUtf8InPlace<Base64EncoderByte>(buffer, dataLength, out bytesWritten);
+
+        internal static unsafe OperationStatus EncodeToUtf8InPlace<TBase64Encoder>(Span<byte> buffer, int dataLength, out int bytesWritten)
+            where TBase64Encoder : IBase64Encoder<byte>
         {
             if (buffer.IsEmpty)
             {
@@ -193,40 +195,38 @@ namespace System.Buffers.Text
 
             fixed (byte* bufferBytes = &MemoryMarshal.GetReference(buffer))
             {
-                int encodedLength = GetMaxEncodedToUtf8Length(dataLength);
+                int encodedLength = TBase64Encoder.GetMaxEncodedLength(dataLength);
                 if (buffer.Length < encodedLength)
                 {
                     bytesWritten = 0;
                     return OperationStatus.DestinationTooSmall;
                 }
 
-                int leftover = dataLength - (dataLength / 3) * 3; // how many bytes after packs of 3
+                int leftover = dataLength % 3; // how many bytes after packs of 3
 
-                uint destinationIndex = (uint)(encodedLength - 4);
+                uint destinationIndex = TBase64Encoder.GetInPlaceDestinationLength(encodedLength, leftover);
                 uint sourceIndex = (uint)(dataLength - leftover);
-                uint result = 0;
-                ref byte encodingMap = ref MemoryMarshal.GetReference(Base64Encoder.EncodingMap);
+                ref byte encodingMap = ref MemoryMarshal.GetReference(TBase64Encoder.EncodingMap);
 
                 // encode last pack to avoid conditional in the main loop
                 if (leftover != 0)
                 {
                     if (leftover == 1)
                     {
-                        result = Base64Encoder.EncodeOneOptionallyPadTwo(bufferBytes + sourceIndex, ref encodingMap);
+                        TBase64Encoder.EncodeOneOptionallyPadTwo(bufferBytes + sourceIndex, bufferBytes + destinationIndex, ref encodingMap);
                     }
                     else
                     {
-                        result = Base64Encoder.EncodeTwoOptionallyPadOne(bufferBytes + sourceIndex, ref encodingMap);
+                        TBase64Encoder.EncodeTwoOptionallyPadOne(bufferBytes + sourceIndex, bufferBytes + destinationIndex, ref encodingMap);
                     }
 
-                    Unsafe.WriteUnaligned(bufferBytes + destinationIndex, result);
                     destinationIndex -= 4;
                 }
 
                 sourceIndex -= 3;
                 while ((int)sourceIndex >= 0)
                 {
-                    result = Encode(bufferBytes + sourceIndex, ref encodingMap);
+                    uint result = Encode(bufferBytes + sourceIndex, ref encodingMap);
                     Unsafe.WriteUnaligned(bufferBytes + destinationIndex, result);
                     destinationIndex -= 4;
                     sourceIndex -= 3;
@@ -240,8 +240,9 @@ namespace System.Buffers.Text
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CompExactlyDependsOn(typeof(Avx512BW))]
         [CompExactlyDependsOn(typeof(Avx512Vbmi))]
-        private static unsafe void Avx512Encode<TBase64Encoder>(ref byte* srcBytes, ref byte* destBytes, byte* srcEnd, int sourceLength, int destLength, byte* srcStart, byte* destStart)
-            where TBase64Encoder : IBase64Encoder
+        private static unsafe void Avx512Encode<TBase64Encoder, T>(ref byte* srcBytes, ref T* destBytes, byte* srcEnd, int sourceLength, int destLength, byte* srcStart, T* destStart)
+            where TBase64Encoder : IBase64Encoder<T>
+            where T : unmanaged
         {
             // Reference for VBMI implementation : https://github.com/WojciechMula/base64simd/tree/master/encode
             // If we have AVX512 support, pick off 48 bytes at a time for as long as we can.
@@ -249,7 +250,7 @@ namespace System.Buffers.Text
             // full 64-byte read without segfaulting.
 
             byte* src = srcBytes;
-            byte* dest = destBytes;
+            T* dest = destBytes;
 
             // The JIT won't hoist these "constants", so help it
             Vector512<sbyte> shuffleVecVbmi = Vector512.Create(
@@ -295,8 +296,7 @@ namespace System.Buffers.Text
                 // Step 2: Now we have the indices calculated. Next step is to use these indices to translate.
                 str = Avx512Vbmi.PermuteVar64x8(vbmiLookup, str);
 
-                AssertWrite<Vector512<sbyte>>(dest, destStart, destLength);
-                str.Store((sbyte*)dest);
+                TBase64Encoder.StoreToDestination(dest, destStart, destLength, str.AsByte());
 
                 src += 48;
                 dest += 64;
@@ -314,8 +314,9 @@ namespace System.Buffers.Text
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CompExactlyDependsOn(typeof(Avx2))]
-        private static unsafe void Avx2Encode<TBase64Encoder>(ref byte* srcBytes, ref byte* destBytes, byte* srcEnd, int sourceLength, int destLength, byte* srcStart, byte* destStart)
-            where TBase64Encoder : IBase64Encoder
+        private static unsafe void Avx2Encode<TBase64Encoder, T>(ref byte* srcBytes, ref T* destBytes, byte* srcEnd, int sourceLength, int destLength, byte* srcStart, T* destStart)
+            where TBase64Encoder : IBase64Encoder<T>
+            where T : unmanaged
         {
             // If we have AVX2 support, pick off 24 bytes at a time for as long as we can.
             // But because we read 32 bytes at a time, ensure we have enough room to do a
@@ -341,14 +342,14 @@ namespace System.Buffers.Text
                 10, 9, 11, 10);
 
             Vector256<sbyte> lut = Vector256.Create(
-                            65, 71, -4, -4,
-                            -4, -4, -4, -4,
-                            -4, -4, -4, -4,
-                            TBase64Encoder.Avx2LutChar62, TBase64Encoder.Avx2LutChar63, 0, 0,
-                            65, 71, -4, -4,
-                            -4, -4, -4, -4,
-                            -4, -4, -4, -4,
-                            TBase64Encoder.Avx2LutChar62, TBase64Encoder.Avx2LutChar63, 0, 0);
+                65, 71, -4, -4,
+                -4, -4, -4, -4,
+                -4, -4, -4, -4,
+                TBase64Encoder.Avx2LutChar62, TBase64Encoder.Avx2LutChar63, 0, 0,
+                65, 71, -4, -4,
+                -4, -4, -4, -4,
+                -4, -4, -4, -4,
+                TBase64Encoder.Avx2LutChar62, TBase64Encoder.Avx2LutChar63, 0, 0);
 
             Vector256<sbyte> maskAC = Vector256.Create(0x0fc0fc00).AsSByte();
             Vector256<sbyte> maskBB = Vector256.Create(0x003f03f0).AsSByte();
@@ -358,7 +359,7 @@ namespace System.Buffers.Text
             Vector256<sbyte> const25 = Vector256.Create((sbyte)25);
 
             byte* src = srcBytes;
-            byte* dest = destBytes;
+            T* dest = destBytes;
 
             // first load is done at c-0 not to get a segfault
             AssertRead<Vector256<sbyte>>(src, srcStart, sourceLength);
@@ -466,8 +467,7 @@ namespace System.Buffers.Text
                 // Add offsets to input values:
                 str = Avx2.Add(str, Avx2.Shuffle(lut, tmp));
 
-                AssertWrite<Vector256<sbyte>>(dest, destStart, destLength);
-                Avx.Store(dest, str.AsByte());
+                TBase64Encoder.StoreToDestination(dest, destStart, destLength, str.AsByte());
 
                 src += 24;
                 dest += 32;
@@ -486,8 +486,9 @@ namespace System.Buffers.Text
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
-        private static unsafe void AdvSimdEncode<TBase64Encoder>(ref byte* srcBytes, ref byte* destBytes, byte* srcEnd, int sourceLength, int destLength, byte* srcStart, byte* destStart)
-            where TBase64Encoder : IBase64Encoder
+        private static unsafe void AdvSimdEncode<TBase64Encoder, T>(ref byte* srcBytes, ref T* destBytes, byte* srcEnd, int sourceLength, int destLength, byte* srcStart, T* destStart)
+            where TBase64Encoder : IBase64Encoder<T>
+            where T : unmanaged
         {
             // C# implementation of https://github.com/aklomp/base64/blob/3a5add8652076612a8407627a42c768736a4263f/lib/arch/neon64/enc_loop.c
             Vector128<byte> str1;
@@ -502,7 +503,7 @@ namespace System.Buffers.Text
             Vector128<byte> tblEnc3 = Vector128.Create("ghijklmnopqrstuv"u8).AsByte();
             Vector128<byte> tblEnc4 = Vector128.Create(TBase64Encoder.AdvSimdLut4).AsByte();
             byte* src = srcBytes;
-            byte* dest = destBytes;
+            T* dest = destBytes;
 
             // If we have Neon support, pick off 48 bytes at a time for as long as we can.
             do
@@ -532,8 +533,7 @@ namespace System.Buffers.Text
                 res4 = AdvSimd.Arm64.VectorTableLookup((tblEnc1, tblEnc2, tblEnc3, tblEnc4), res4);
 
                 // Interleave and store result:
-                AssertWrite<Vector128<byte>>(dest, destStart, destLength);
-                AdvSimd.Arm64.StoreVector128x4AndZip(dest, (res1, res2, res3, res4));
+                TBase64Encoder.StoreToDestination(dest, destStart, destLength, res1, res2, res3, res4);
 
                 src += 48;
                 dest += 64;
@@ -546,8 +546,9 @@ namespace System.Buffers.Text
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CompExactlyDependsOn(typeof(Ssse3))]
         [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
-        private static unsafe void Vector128Encode<TBase64Encoder>(ref byte* srcBytes, ref byte* destBytes, byte* srcEnd, int sourceLength, int destLength, byte* srcStart, byte* destStart)
-            where TBase64Encoder : IBase64Encoder
+        private static unsafe void Vector128Encode<TBase64Encoder, T>(ref byte* srcBytes, ref T* destBytes, byte* srcEnd, int sourceLength, int destLength, byte* srcStart, T* destStart)
+            where TBase64Encoder : IBase64Encoder<T>
+            where T : unmanaged
         {
             // If we have SSSE3 support, pick off 12 bytes at a time for as long as we can.
             // But because we read 16 bytes at a time, ensure we have enough room to do a
@@ -568,7 +569,7 @@ namespace System.Buffers.Text
             Vector128<byte>   mask8F = Vector128.Create((byte)0x8F);
 
             byte* src = srcBytes;
-            byte* dest = destBytes;
+            T* dest = destBytes;
 
             //while (remaining >= 16)
             do
@@ -656,8 +657,7 @@ namespace System.Buffers.Text
                 // Add offsets to input values:
                 str += SimdShuffle(lut, tmp.AsByte(), mask8F);
 
-                AssertWrite<Vector128<sbyte>>(dest, destStart, destLength);
-                str.Store(dest);
+                TBase64Encoder.StoreToDestination(dest, destStart, destLength, str);
 
                 src += 12;
                 dest += 16;
@@ -696,13 +696,13 @@ namespace System.Buffers.Text
 
         internal const int MaximumEncodeLength = (int.MaxValue / 4) * 3; // 1610612733
 
-        private readonly struct Base64Encoder : IBase64Encoder
+        private readonly struct Base64EncoderByte : IBase64Encoder<byte>
         {
             public static ReadOnlySpan<byte> EncodingMap => "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"u8;
 
             public static sbyte Avx2LutChar62 => -19;  // char '+' diff
 
-            public static sbyte Avx2LutChar63 => -16;  // char '/' diff
+            public static sbyte Avx2LutChar63 => -16;   // char '/' diff
 
             public static ReadOnlySpan<byte> AdvSimdLut4 => "wxyz0123456789+/"u8;
 
@@ -713,10 +713,15 @@ namespace System.Buffers.Text
             public static int IncrementPadOne => 4;
 
             public static int GetMaxSrcLength(int srcLength, int destLength) =>
-                srcLength <= MaximumEncodeLength && destLength >= GetMaxEncodedToUtf8Length(srcLength) ? srcLength : (destLength >> 2) * 3;
+                srcLength <= MaximumEncodeLength && destLength >= GetMaxEncodedToUtf8Length(srcLength) ?
+                srcLength : (destLength >> 2) * 3;
+
+            public static uint GetInPlaceDestinationLength(int encodedLength, int _) => (uint)(encodedLength - 4);
+
+            public static int GetMaxEncodedLength(int srcLength) => GetMaxEncodedToUtf8Length(srcLength);
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static unsafe uint EncodeOneOptionallyPadTwo(byte* oneByte, ref byte encodingMap)
+            public static unsafe void EncodeOneOptionallyPadTwo(byte* oneByte, byte* dest, ref byte encodingMap)
             {
                 uint t0 = oneByte[0];
 
@@ -727,16 +732,22 @@ namespace System.Buffers.Text
 
                 if (BitConverter.IsLittleEndian)
                 {
-                    return i0 | (i1 << 8) | (EncodingPad << 16) | (EncodingPad << 24);
+                    dest[0] = (byte)i0;
+                    dest[1] = (byte)i1;
+                    dest[2] = (byte)EncodingPad;
+                    dest[3] = (byte)EncodingPad;
                 }
                 else
                 {
-                    return (i0 << 24) | (i1 << 16) | (EncodingPad << 8) | EncodingPad;
+                    dest[3] = (byte)i0;
+                    dest[2] = (byte)i1;
+                    dest[1] = (byte)EncodingPad;
+                    dest[0] = (byte)EncodingPad;
                 }
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static unsafe uint EncodeTwoOptionallyPadOne(byte* twoBytes, ref byte encodingMap)
+            public static unsafe void EncodeTwoOptionallyPadOne(byte* twoBytes, byte* dest, ref byte encodingMap)
             {
                 uint t0 = twoBytes[0];
                 uint t1 = twoBytes[1];
@@ -749,11 +760,78 @@ namespace System.Buffers.Text
 
                 if (BitConverter.IsLittleEndian)
                 {
-                    return i0 | (i1 << 8) | (i2 << 16) | (EncodingPad << 24);
+                    dest[0] = (byte)i0;
+                    dest[1] = (byte)i1;
+                    dest[2] = (byte)i2;
+                    dest[3] = (byte)EncodingPad;
                 }
                 else
                 {
-                    return (i0 << 24) | (i1 << 16) | (i2 << 8) | EncodingPad;
+                    dest[3] = (byte)i0;
+                    dest[2] = (byte)i1;
+                    dest[1] = (byte)i2;
+                    dest[0] = (byte)EncodingPad;
+                }
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static unsafe void StoreToDestination(byte* dest, byte* destStart, int destLength, Vector512<byte> str)
+            {
+                AssertWrite<Vector512<sbyte>>(dest, destStart, destLength);
+                str.Store(dest);
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            [CompExactlyDependsOn(typeof(Avx2))]
+            public static unsafe void StoreToDestination(byte* dest, byte* destStart, int destLength, Vector256<byte> str)
+            {
+                AssertWrite<Vector256<sbyte>>(dest, destStart, destLength);
+                Avx.Store(dest, str.AsByte());
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static unsafe void StoreToDestination(byte* dest, byte* destStart, int destLength, Vector128<byte> str)
+            {
+                AssertWrite<Vector128<sbyte>>(dest, destStart, destLength);
+                str.Store(dest);
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
+            public static unsafe void StoreToDestination(byte* dest, byte* destStart, int destLength,
+                Vector128<byte> res1, Vector128<byte> res2, Vector128<byte> res3, Vector128<byte> res4)
+            {
+                AssertWrite<Vector128<byte>>(dest, destStart, destLength);
+                AdvSimd.Arm64.StoreVector128x4AndZip(dest, (res1, res2, res3, res4));
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static unsafe void EncodeThreeAndWrite(byte* threeBytes, byte* destination, ref byte encodingMap)
+            {
+                uint t0 = threeBytes[0];
+                uint t1 = threeBytes[1];
+                uint t2 = threeBytes[2];
+
+                uint i = (t0 << 16) | (t1 << 8) | t2;
+
+                byte i0 = Unsafe.Add(ref encodingMap, (IntPtr)(i >> 18));
+                byte i1 = Unsafe.Add(ref encodingMap, (IntPtr)((i >> 12) & 0x3F));
+                byte i2 = Unsafe.Add(ref encodingMap, (IntPtr)((i >> 6) & 0x3F));
+                byte i3 = Unsafe.Add(ref encodingMap, (IntPtr)(i & 0x3F));
+
+                if (BitConverter.IsLittleEndian)
+                {
+                    destination[0] = i0;
+                    destination[1] = i1;
+                    destination[2] = i2;
+                    destination[3] = i3;
+                }
+                else
+                {
+                    destination[3] = i0;
+                    destination[2] = i1;
+                    destination[1] = i2;
+                    destination[0] = i3;
                 }
             }
         }

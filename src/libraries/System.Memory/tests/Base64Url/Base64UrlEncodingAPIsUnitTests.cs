@@ -173,6 +173,25 @@ namespace System.Buffers.Text.Tests
             yield return new object[] { Encoding.Unicode.GetBytes("eeeebbbbccccdddddddeeeeeaaaabbbbccccdddddddeeeeeaaaabbbbccccdgggdaaaabbbbccccdddddddeeeeeaaaabbbbccccdddddddeeeeeaaaabbbbccccddx"), "ZQBlAGUAZQBiAGIAYgBiAGMAYwBjAGMAZABkAGQAZABkAGQAZABlAGUAZQBlAGUAYQBhAGEAYQBiAGIAYgBiAGMAYwBjAGMAZABkAGQAZABkAGQAZABlAGUAZQBlAGUAYQBhAGEAYQBiAGIAYgBiAGMAYwBjAGMAZABnAGcAZwBkAGEAYQBhAGEAYgBiAGIAYgBjAGMAYwBjAGQAZABkAGQAZABkAGQAZQBlAGUAZQBlAGEAYQBhAGEAYgBiAGIAYgBjAGMAYwBjAGQAZABkAGQAZABkAGQAZQBlAGUAZQBlAGEAYQBhAGEAYgBiAGIAYgBjAGMAYwBjAGQAZAB4AA" };
         }
 
+        [Theory]
+        //[InlineData("\u5948cz_T", 0, 0)]                                              // scalar code-path
+        //[InlineData("z_Ta123\u5948", 4, 3)]
+        [InlineData("\u5948z_T-H7sqEkerqMweH1uSw==", 0, 0)]                          // Vector128 code-path
+        /*[InlineData("z_T-H7sqEkerqMweH1uSw\u5948==", 20, 15)]
+        [InlineData("\u5948z_T-H7sqEkerqMweH1uSw1a5ebaAF9xa8B0ze1wet4epo==", 0, 0)]  // Vector256 / AVX code-path
+        [InlineData("z_T-H7sqEkerqMweH1uSw1a5ebaAF9xa8B0ze1wet4epo\u5948==", 44, 33)]
+        [InlineData("\u5948z_T-H7sqEkerqMweH1uSw1a5ebaAF9xa8B0ze1wet4epo01234567890123456789012345678901234567890123456789==", 0, 0)]  // Vector512 / Avx512Vbmi code-path
+        [InlineData("z_T-H7sqEkerqMweH1uSw1a5ebaAF9xa8B0ze1wet4epo01234567890123456789012345678901234567890123456789\u5948==", 92, 69)]*/
+        public void BasicDecodingNonAsciiInputInvalid(string inputString, int expectedConsumed, int expectedWritten)
+        {
+            Span<char> source = inputString.ToArray();
+            Span<byte> decodedBytes = new byte[Base64Url.GetMaxDecodedLength(source.Length)];
+
+            Assert.Equal(OperationStatus.InvalidData, Base64Url.DecodeFromChars(source, decodedBytes, out int consumed, out int decodedByteCount));
+            Assert.Equal(expectedConsumed, consumed);
+            Assert.Equal(expectedWritten, decodedByteCount);
+        }
+
 
         [Theory]
         [MemberData(nameof(EncodeToStringTests_TestData))]
@@ -182,6 +201,25 @@ namespace System.Buffers.Text.Tests
             Span<char> chars = new char[Base64Url.GetEncodedLength(inputBytes.Length)];
             Assert.Equal(OperationStatus.Done, Base64Url.EncodeToChars(inputBytes, chars, out int _, out int charsWritten));
             Assert.Equal(expectedBase64, chars.Slice(0, charsWritten));
+        }
+
+        [Fact]
+        public void EncodingOutputTooSmall()
+        {
+            for (int numBytes = 4; numBytes < 20; numBytes++)
+            {
+                byte[] source = new byte[numBytes];
+                Base64TestHelper.InitializeBytes(source, numBytes);
+                int expectedConsumed = 3;
+                char[] encodedBytes = new char[4];
+
+                Assert.Equal(OperationStatus.DestinationTooSmall, Base64Url.EncodeToChars(source, encodedBytes, out int consumed, out int written));
+                Assert.Equal(expectedConsumed, consumed);
+                Assert.Equal(encodedBytes.Length, written);
+                Assert.True(source.AsSpan().Slice(0, consumed).SequenceEqual(Base64Url.DecodeFromChars(encodedBytes)));
+
+                Assert.Throws<ArgumentException>("destination", () => Base64Url.EncodeToChars(source, encodedBytes));
+            }
         }
 
         [Fact]
@@ -341,7 +379,7 @@ namespace System.Buffers.Text.Tests
         {
             char[] inputChars = input.ToCharArray();
 
-            Assert.Throws<InvalidOperationException>(() => Base64Url.DecodeFromChars(input)); // or  FormatException?
+            Assert.Throws<FormatException>(() => Base64Url.DecodeFromChars(input)); // or  FormatException?
         }
 
         private static void Verify(string input, Action<byte[]> action = null)

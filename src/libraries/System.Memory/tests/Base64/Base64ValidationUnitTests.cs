@@ -69,6 +69,7 @@ namespace System.Buffers.Text.Tests
                 } while (numBytes % 4 == 0);    // ensure we have a invalid length
 
                 Span<byte> source = new byte[numBytes];
+                Base64TestHelper.InitializeDecodableBytes(source, numBytes);
 
                 Assert.False(Base64.IsValid(source));
                 Assert.False(Base64.IsValid(source, out int decodedLength));
@@ -88,10 +89,16 @@ namespace System.Buffers.Text.Tests
                     numBytes = rnd.Next(100, 1000 * 1000);
                 } while (numBytes % 4 == 0);    // ensure we have a invalid length
 
-                Span<char> source = new char[numBytes];
+                Span<byte> source = new byte[numBytes];
+                Base64TestHelper.InitializeDecodableBytes(source, numBytes);
+                Span<char> chars = source
+                    .ToArray()
+                    .Select(Convert.ToChar)
+                    .ToArray()
+                    .AsSpan();
 
-                Assert.False(Base64.IsValid(source));
-                Assert.False(Base64.IsValid(source, out int decodedLength));
+                Assert.False(Base64.IsValid(chars));
+                Assert.False(Base64.IsValid(chars, out int decodedLength));
                 Assert.Equal(0, decodedLength);
             }
         }
@@ -236,19 +243,6 @@ namespace System.Buffers.Text.Tests
         }
 
         [Theory]
-        [InlineData("YQ==", 1)]
-        [InlineData("YWI=", 2)]
-        [InlineData("YWJj", 3)]
-        public void DecodeEmptySpan(string utf8WithByteToBeIgnored, int expectedLength)
-        {
-            ReadOnlySpan<char> utf8BytesWithByteToBeIgnored = utf8WithByteToBeIgnored.ToArray();
-
-            Assert.True(Base64.IsValid(utf8BytesWithByteToBeIgnored));
-            Assert.True(Base64.IsValid(utf8BytesWithByteToBeIgnored, out int decodedLength));
-            Assert.Equal(expectedLength, decodedLength);
-        }
-
-        [Theory]
         [InlineData("YWJ")]
         [InlineData("YW")]
         [InlineData("Y")]
@@ -329,10 +323,10 @@ namespace System.Buffers.Text.Tests
         [InlineData("    a    ")]
         public void InvalidBase64Chars(string utf8WithByteToBeIgnored)
         {
-            byte[] utf8BytesWithByteToBeIgnored = UTF8Encoding.UTF8.GetBytes(utf8WithByteToBeIgnored);
+            ReadOnlySpan<char> utf8CharsWithCharToBeIgnored = utf8WithByteToBeIgnored;
 
-            Assert.False(Base64.IsValid(utf8BytesWithByteToBeIgnored));
-            Assert.False(Base64.IsValid(utf8BytesWithByteToBeIgnored, out int decodedLength));
+            Assert.False(Base64.IsValid(utf8CharsWithCharToBeIgnored));
+            Assert.False(Base64.IsValid(utf8CharsWithCharToBeIgnored, out int decodedLength));
             Assert.Equal(0, decodedLength);
         }
     }

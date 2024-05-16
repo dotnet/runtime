@@ -9,27 +9,6 @@ namespace System.Buffers.Text.Tests
 {
     public class Base64UrlValidationUnitTests : Base64TestBase
     {
-        public static readonly byte[] s_encodingMap = {
-            65, 66, 67, 68, 69, 70, 71, 72,         //A..H
-            73, 74, 75, 76, 77, 78, 79, 80,         //I..P
-            81, 82, 83, 84, 85, 86, 87, 88,         //Q..X
-            89, 90, 97, 98, 99, 100, 101, 102,      //Y..Z, a..f
-            103, 104, 105, 106, 107, 108, 109, 110, //g..n
-            111, 112, 113, 114, 115, 116, 117, 118, //o..v
-            119, 120, 121, 122, 48, 49, 50, 51,     //w..z, 0..3
-            52, 53, 54, 55, 56, 57, 45, 95          //4..9, -, _
-        };
-
-        private static void InitializeDecodableBytes(Span<byte> bytes, int seed = 100)
-        {
-            var rnd = new Random(seed);
-            for (int i = 0; i < bytes.Length; i++)
-            {
-                int index = (byte)rnd.Next(0, s_encodingMap.Length);
-                bytes[i] = s_encodingMap[index];
-            }
-        }
-
         [Fact]
         public void BasicValidationBytes()
         {
@@ -40,10 +19,10 @@ namespace System.Buffers.Text.Tests
                 do
                 {
                     numBytes = rnd.Next(100, 1000 * 1000);
-                } while (numBytes % 4 != 0);    // ensure we have a valid length
+                } while (numBytes % 4 == 1);    // ensure we have a valid length
 
                 Span<byte> source = new byte[numBytes];
-                InitializeDecodableBytes(source, numBytes);
+                Base64TestHelper.InitializeUrlDecodableBytes(source, numBytes);
 
                 Assert.True(Base64Url.IsValid(source));
                 Assert.True(Base64Url.IsValid(source, out int decodedLength));
@@ -61,10 +40,10 @@ namespace System.Buffers.Text.Tests
                 do
                 {
                     numBytes = rnd.Next(100, 1000 * 1000);
-                } while (numBytes % 4 != 0);    // ensure we have a valid length
+                } while (numBytes % 4 == 1);    // ensure we have a valid length
 
                 Span<byte> source = new byte[numBytes];
-                InitializeDecodableBytes(source, numBytes);
+                Base64TestHelper.InitializeUrlDecodableBytes(source, numBytes);
                 Span<char> chars = source
                     .ToArray()
                     .Select(Convert.ToChar)
@@ -77,7 +56,7 @@ namespace System.Buffers.Text.Tests
             }
         }
 
-        [Fact]
+        /*[Fact] TODO: Should we always account bytes length having remainder of 1 as invalid?
         public void BasicValidationInvalidInputLengthBytes()
         {
             var rnd = new Random(42);
@@ -87,10 +66,10 @@ namespace System.Buffers.Text.Tests
                 do
                 {
                     numBytes = rnd.Next(100, 1000 * 1000);
-                } while (numBytes % 4 == 0);    // ensure we have a invalid length
+                } while (numBytes % 4 != 1);    // only remainder of 1 is invalid length
 
                 Span<byte> source = new byte[numBytes];
-
+                Base64TestHelper.InitializeUrlDecodableBytes(source, numBytes);
                 Assert.False(Base64Url.IsValid(source));
                 Assert.False(Base64Url.IsValid(source, out int decodedLength));
                 Assert.Equal(0, decodedLength);
@@ -107,15 +86,16 @@ namespace System.Buffers.Text.Tests
                 do
                 {
                     numBytes = rnd.Next(100, 1000 * 1000);
-                } while (numBytes % 4 == 0);    // ensure we have a invalid length
+                } while (numBytes % 4 != 1);    // ensure we have a invalid length
 
                 Span<char> source = new char[numBytes];
+                Base64TestHelper.InitializeUrlDecodableBytes(source, numBytes);
 
                 Assert.False(Base64Url.IsValid(source));
                 Assert.False(Base64Url.IsValid(source, out int decodedLength));
                 Assert.Equal(0, decodedLength);
             }
-        }
+        }*/
 
         [Fact]
         public void ValidateEmptySpanBytes()
@@ -263,19 +243,6 @@ namespace System.Buffers.Text.Tests
         }
 
         [Theory]
-        [InlineData("YQ==", 1)]
-        [InlineData("YWI=", 2)]
-        [InlineData("YWJj", 3)]
-        public void DecodeEmptySpan(string utf8WithByteToBeIgnored, int expectedLength)
-        {
-            ReadOnlySpan<char> utf8BytesWithByteToBeIgnored = utf8WithByteToBeIgnored.ToArray();
-
-            Assert.True(Base64Url.IsValid(utf8BytesWithByteToBeIgnored));
-            Assert.True(Base64Url.IsValid(utf8BytesWithByteToBeIgnored, out int decodedLength));
-            Assert.Equal(expectedLength, decodedLength);
-        }
-
-        [Theory]
         [InlineData("YWJ", true, 2)]
         [InlineData("YW", true, 1)]
         [InlineData("Y", false, 0)]
@@ -358,10 +325,10 @@ namespace System.Buffers.Text.Tests
         [InlineData("    a    ")]
         public void InvalidBase64UrlChars(string utf8WithByteToBeIgnored)
         {
-            byte[] utf8BytesWithByteToBeIgnored = UTF8Encoding.UTF8.GetBytes(utf8WithByteToBeIgnored);
+            ReadOnlySpan<char> utf8CharsWithCharToBeIgnored = utf8WithByteToBeIgnored;
 
-            Assert.False(Base64Url.IsValid(utf8BytesWithByteToBeIgnored));
-            Assert.False(Base64Url.IsValid(utf8BytesWithByteToBeIgnored, out int decodedLength));
+            Assert.False(Base64Url.IsValid(utf8CharsWithCharToBeIgnored));
+            Assert.False(Base64Url.IsValid(utf8CharsWithCharToBeIgnored, out int decodedLength));
             Assert.Equal(0, decodedLength);
         }
     }

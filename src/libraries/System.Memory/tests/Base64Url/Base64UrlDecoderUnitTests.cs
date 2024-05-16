@@ -80,7 +80,7 @@ namespace System.Buffers.Text.Tests
                 do
                 {
                     numBytes = rnd.Next(100, 1000 * 1000);
-                } while (numBytes % 4 != 0);    // ensure we have a valid length
+                } while (numBytes % 4 != 0);    // ensure we have a complete length
 
                 Span<byte> source = new byte[numBytes];
                 Base64TestHelper.InitializeUrlDecodableBytes(source, numBytes);
@@ -105,7 +105,7 @@ namespace System.Buffers.Text.Tests
                 do
                 {
                     numBytes = rnd.Next(100, 1000 * 1000);
-                } while (numBytes % 4 == 0);    // ensure we have a invalid length
+                } while (numBytes % 4 == 0);    // ensure we have a incomplete length
 
                 Span<byte> source = new byte[numBytes];
                 Base64TestHelper.InitializeUrlDecodableBytes(source, numBytes);
@@ -271,7 +271,7 @@ namespace System.Buffers.Text.Tests
 
         [Theory]
         [InlineData("A", 0, 0, OperationStatus.InvalidData)]
-        [InlineData("AQ", 2, 1, OperationStatus.Done)]
+        [InlineData("AQ", 2, 1, OperationStatus.Done)]  // Padding is optional
         [InlineData("AQI", 3, 2, OperationStatus.Done)]
         [InlineData("AQIDBA", 6, 4, OperationStatus.Done)]
         [InlineData("AQIDBAU", 7, 5, OperationStatus.Done)]
@@ -287,12 +287,14 @@ namespace System.Buffers.Text.Tests
         }
 
         [Theory]
-        [InlineData("\u00ecz_T", 0, 0)]                                              // scalar code-path
-        [InlineData("z_Ta123\u00ec", 4, 3)]
-        [InlineData("\u00ecz_T-H7sqEkerqMweH1uSw==", 0, 0)]                          // Vector128 code-path
-        [InlineData("z_T-H7sqEkerqMweH1uSw\u00ec==", 20, 15)]
-        [InlineData("\u00ecz_T-H7sqEkerqMweH1uSw1a5ebaAF9xa8B0ze1wet4epo==", 0, 0)]  // Vector256 / AVX code-path
-        [InlineData("z_T-H7sqEkerqMweH1uSw1a5ebaAF9xa8B0ze1wet4epo\u00ec==", 44, 33)]
+        [InlineData("\u5948cz_T", 0, 0)]                                              // scalar code-path
+        [InlineData("z_Ta123\u5948", 4, 3)]
+        [InlineData("\u5948z_T-H7sqEkerqMweH1uSw==", 0, 0)]                          // Vector128 code-path
+        [InlineData("z_T-H7sqEkerqMweH1uSw\u5948==", 20, 15)]
+        [InlineData("\u5948z_T-H7sqEkerqMweH1uSw1a5ebaAF9xa8B0ze1wet4epo==", 0, 0)]  // Vector256 / AVX code-path
+        [InlineData("z_T-H7sqEkerqMweH1uSw1a5ebaAF9xa8B0ze1wet4epo\u5948==", 44, 33)]
+        [InlineData("\u5948z_T-H7sqEkerqMweH1uSw1a5ebaAF9xa8B0ze1wet4epo01234567890123456789012345678901234567890123456789==", 0, 0)]  // Vector512 / Avx512Vbmi code-path
+        [InlineData("z_T-H7sqEkerqMweH1uSw1a5ebaAF9xa8B0ze1wet4epo01234567890123456789012345678901234567890123456789\u5948==", 92, 69)]
         public void BasicDecodingNonAsciiInputInvalid(string inputString, int expectedConsumed, int expectedWritten)
         {
             Span<byte> source = Encoding.UTF8.GetBytes(inputString);
@@ -320,8 +322,8 @@ namespace System.Buffers.Text.Tests
 
         [Theory]
         [InlineData("A", 0, 0)]
-        [InlineData("AQ", 0, 0)]
-        [InlineData("AQI", 0, 0)]
+        [InlineData("AQ", 0, 0)] // when FinalBlock: false incomplete bytes ignored
+        [InlineData("AQI", 0, 0)] 
         [InlineData("AQIDB", 4, 3)]
         [InlineData("AQIDBA", 4, 3)]
         [InlineData("AQIDBAU", 4, 3)]
@@ -400,7 +402,7 @@ namespace System.Buffers.Text.Tests
                 }
             }
 
-            // Input that is not a multiple of 4 is not considered invalid, even if isFinalBlock = true
+            // When isFinalBlock = true input that is not a multiple of 4 is invalid for Base64, but valid for Base64Url
             if (isFinalBlock)
             {
                 Span<byte> source = "2222PPP"u8.ToArray(); // incomplete input
@@ -567,7 +569,7 @@ namespace System.Buffers.Text.Tests
         }
 
         [Fact]
-        public void DecodeInPlaceInvalidBytes()
+        public void DecodeInPlaceInvalidBytesThrowsFormatException()
         {
             byte[] invalidBytes = Base64TestHelper.UrlInvalidBytes;
 
@@ -575,7 +577,7 @@ namespace System.Buffers.Text.Tests
             {
                 for (int i = 0; i < invalidBytes.Length; i++)
                 {
-                    Span<byte> buffer = "2222PPPP"u8.ToArray(); // valid input
+                    byte[] buffer = "2222PPPP"u8.ToArray(); // valid input
 
                     // Don't test padding (byte 61 i.e. '='), which is tested in DecodeInPlaceInvalidBytesPadding
                     // Don't test chars to be ignored (spaces: 9, 10, 13, 32 i.e. '\n', '\t', '\r', ' ')
@@ -587,73 +589,44 @@ namespace System.Buffers.Text.Tests
 
                     // replace one byte with an invalid input
                     buffer[j] = invalidBytes[i];
-                    string sourceString = Encoding.ASCII.GetString(buffer.Slice(0, 4).ToArray());
-                    int bytesWritten = Base64Url.DecodeFromUtf8InPlace(buffer);
 
-                    if (j < 4)
-                    {
-                        Assert.Equal(0, bytesWritten);
-                    }
-                    else
-                    {
-                        Assert.Equal(3, bytesWritten);
-                        Assert.True(VerifyUrlDecodingCorrectness(sourceString, buffer.Slice(0, bytesWritten)));
-                    }
+                    Assert.Throws<FormatException>(() => Base64Url.DecodeFromUtf8InPlace(buffer));
                 }
             }
 
             // Input that is not a multiple of 4 is valid for remainder 2-3, but invalid for 1
             {
-                Span<byte> buffer = "2222P"u8.ToArray(); // incomplete input
-                int bytesWritten = Base64Url.DecodeFromUtf8InPlace(buffer);
-
-                Assert.Equal(3, bytesWritten); // last byte is ignored
+                byte[] buffer = "2222P"u8.ToArray(); // incomplete input
+                Assert.Throws<FormatException>(() => Base64Url.DecodeFromUtf8InPlace(buffer));
             }
         }
 
         [Fact]
-        public void DecodeInPlaceInvalidBytesPadding()
+        public void DecodeInPlaceInvalidBytesPaddingThrowsFormatException()
         {
             // Only last 2 bytes can be padding, all other occurrence of padding is invalid
             for (int j = 0; j < 7; j++)
             {
-                Span<byte> buffer = "2222PPPP"u8.ToArray(); // valid input
+                byte[] buffer = "2222PPPP"u8.ToArray(); // valid input
                 buffer[j] = Base64TestHelper.EncodingPad;
-                string sourceString = Encoding.ASCII.GetString(buffer.Slice(0, 4).ToArray());
-                int bytesWritten = Base64Url.DecodeFromUtf8InPlace(buffer);
 
-                if (j < 4)
-                {
-                    Assert.Equal(0, bytesWritten);
-                }
-                else
-                {
-                    Assert.Equal(3, bytesWritten);
-                    Assert.True(VerifyUrlDecodingCorrectness(sourceString, buffer.Slice(0, bytesWritten)));
-                }
+                Assert.Throws<FormatException>(() => Base64Url.DecodeFromUtf8InPlace(buffer));
             }
 
             // Invalid input with valid padding
             {
-                Span<byte> buffer = new byte[] { 50, 50, 50, 50, 80, 42, 42, 42 };
+                byte[] buffer = new byte[] { 50, 50, 50, 50, 80, 42, 42, 42 };
                 buffer[6] = Base64TestHelper.EncodingPad;
                 buffer[7] = Base64TestHelper.EncodingPad; // invalid input - "2222P*=="
-                string sourceString = Encoding.ASCII.GetString(buffer.Slice(0, 4).ToArray());
-                int bytesWritten = Base64Url.DecodeFromUtf8InPlace(buffer);
 
-                Assert.Equal(3, bytesWritten);
-                Assert.True(VerifyUrlDecodingCorrectness(sourceString, buffer.Slice(0, bytesWritten)));
+                Assert.Throws<FormatException>(() => Base64Url.DecodeFromUtf8InPlace(buffer));
             }
 
             {
-                Span<byte> buffer = new byte[] { 50, 50, 50, 50, 80, 42, 42, 42 };
+                byte[] buffer = new byte[] { 50, 50, 50, 50, 80, 42, 42, 42 };
                 buffer[7] = Base64TestHelper.EncodingPad; // invalid input - "2222P**="
-                string sourceString = Encoding.ASCII.GetString(buffer.Slice(0, 4).ToArray());
-                int bytesWritten = Base64Url.DecodeFromUtf8InPlace(buffer);
 
-                Assert.Equal(3, bytesWritten);
-                Span<byte> expectedBytes = Convert.FromBase64String(sourceString);
-                Assert.True(expectedBytes.SequenceEqual(buffer.Slice(0, bytesWritten)));
+                Assert.Throws<FormatException>(() => Base64Url.DecodeFromUtf8InPlace(buffer));
             }
 
             // The last byte or the last 2 bytes being the padding character is valid
@@ -675,6 +648,17 @@ namespace System.Buffers.Text.Tests
                 int bytesWritten = Base64Url.DecodeFromUtf8InPlace(buffer);
 
                 Assert.Equal(5, bytesWritten);
+                Assert.True(VerifyUrlDecodingCorrectness(sourceString, buffer.Slice(0, bytesWritten)));
+            }
+
+            // The last byte or the last 2 bytes being the padding character is valid
+            {
+                Span<byte> buffer = new byte[] { 50, 50, 50, 50, 80, 80 }; // valid input without padding "2222PP"
+
+                string sourceString = Encoding.ASCII.GetString(buffer.ToArray());
+                int bytesWritten = Base64Url.DecodeFromUtf8InPlace(buffer);
+
+                Assert.Equal(4, bytesWritten);
                 Assert.True(VerifyUrlDecodingCorrectness(sourceString, buffer.Slice(0, bytesWritten)));
             }
         }
