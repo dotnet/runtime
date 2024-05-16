@@ -868,26 +868,14 @@ const OleVariant::Marshaler *OleVariant::GetMarshalerForVarType(VARTYPE vt, BOOL
     }
     CONTRACT_END;
 
-#ifdef FEATURE_COMINTEROP
-
-#define RETURN_MARSHALER(OleToCom, ComToOle, OleRefToCom, ArrayOleToCom, ArrayComToOle, ClearArray) \
-    { static const Marshaler marshaler = { OleToCom, ComToOle, OleRefToCom, ArrayOleToCom, ArrayComToOle, ClearArray }; RETURN &marshaler; }
-
-#else // FEATURE_COMINTEROP
-
-#define RETURN_MARSHALER(OleToCom, ComToOle, OleRefToCom, ArrayOleToCom, ArrayComToOle, ClearArray) \
+#define RETURN_MARSHALER(ArrayOleToCom, ArrayComToOle, ClearArray) \
     { static const Marshaler marshaler = { ArrayOleToCom, ArrayComToOle, ClearArray }; RETURN &marshaler; }
-
-#endif // FEATURE_COMINTEROP
 
 #ifdef FEATURE_COMINTEROP
     if (vt & VT_ARRAY)
     {
 VariantArray:
         RETURN_MARSHALER(
-            MarshalArrayVariantOleToCom,
-            MarshalArrayVariantComToOle,
-            MarshalArrayVariantOleRefToCom,
             NULL,
             NULL,
             ClearVariantArray
@@ -899,9 +887,6 @@ VariantArray:
     {
     case VT_BOOL:
         RETURN_MARSHALER(
-            MarshalBoolVariantOleToCom,
-            NULL,
-            NULL,
             MarshalBoolArrayOleToCom,
             MarshalBoolArrayComToOle,
             NULL
@@ -909,28 +894,14 @@ VariantArray:
 
     case VT_DATE:
         RETURN_MARSHALER(
-            MarshalDateVariantOleToCom,
-            MarshalDateVariantComToOle,
-            MarshalDateVariantOleRefToCom,
             MarshalDateArrayOleToCom,
             MarshalDateArrayComToOle,
             NULL
         );
 
-    case VT_DECIMAL:
-        RETURN_MARSHALER(
-            MarshalDecimalVariantOleToCom,
-            MarshalDecimalVariantComToOle,
-            MarshalDecimalVariantOleRefToCom,
-            NULL, NULL, NULL
-        );
-
 #ifdef FEATURE_COMINTEROP
     case VT_CY:
         RETURN_MARSHALER(
-            MarshalCurrencyVariantOleToCom,
-            MarshalCurrencyVariantComToOle,
-            MarshalCurrencyVariantOleRefToCom,
             MarshalCurrencyArrayOleToCom,
             MarshalCurrencyArrayComToOle,
             NULL
@@ -938,9 +909,6 @@ VariantArray:
 
     case VT_BSTR:
         RETURN_MARSHALER(
-            MarshalBSTRVariantOleToCom,
-            MarshalBSTRVariantComToOle,
-            NULL,
             MarshalBSTRArrayOleToCom,
             MarshalBSTRArrayComToOle,
             ClearBSTRArray
@@ -948,9 +916,6 @@ VariantArray:
 
     case VT_UNKNOWN:
         RETURN_MARSHALER(
-            MarshalInterfaceVariantOleToCom,
-            MarshalInterfaceVariantComToOle,
-            MarshalInterfaceVariantOleRefToCom,
             MarshalInterfaceArrayOleToCom,
             MarshalIUnknownArrayComToOle,
             ClearInterfaceArray
@@ -958,9 +923,6 @@ VariantArray:
 
     case VT_DISPATCH:
         RETURN_MARSHALER(
-            MarshalInterfaceVariantOleToCom,
-            MarshalInterfaceVariantComToOle,
-            MarshalInterfaceVariantOleRefToCom,
             MarshalInterfaceArrayOleToCom,
             MarshalIDispatchArrayComToOle,
             ClearInterfaceArray
@@ -971,24 +933,15 @@ VariantArray:
 
     case VT_VARIANT:
         RETURN_MARSHALER(
-            NULL, NULL, NULL,
             MarshalVariantArrayOleToCom,
             MarshalVariantArrayComToOle,
             ClearVariantArray
         );
 
-    case VT_ERROR:
-        RETURN_MARSHALER(
-            MarshalErrorVariantOleToCom,
-            MarshalErrorVariantComToOle,
-            MarshalErrorVariantOleRefToCom,
-            NULL, NULL, NULL
-        );
 #endif // FEATURE_COMINTEROP
 
     case VTHACK_NONBLITTABLERECORD:
         RETURN_MARSHALER(
-            NULL, NULL, NULL,
             MarshalNonBlittableRecordArrayOleToCom,
             MarshalNonBlittableRecordArrayComToOle,
             ClearNonBlittableRecordArray
@@ -999,9 +952,6 @@ VariantArray:
 
     case VTHACK_WINBOOL:
         RETURN_MARSHALER(
-            MarshalWinBoolVariantOleToCom,
-            MarshalWinBoolVariantComToOle,
-            MarshalWinBoolVariantOleRefToCom,
             MarshalWinBoolArrayOleToCom,
             MarshalWinBoolArrayComToOle,
             NULL
@@ -1009,9 +959,6 @@ VariantArray:
 
     case VTHACK_CBOOL:
         RETURN_MARSHALER(
-            MarshalCBoolVariantOleToCom,
-            MarshalCBoolVariantComToOle,
-            MarshalCBoolVariantOleRefToCom,
             MarshalCBoolArrayOleToCom,
             MarshalCBoolArrayComToOle,
             NULL
@@ -1019,9 +966,6 @@ VariantArray:
 
     case VTHACK_ANSICHAR:
         RETURN_MARSHALER(
-            MarshalAnsiCharVariantOleToCom,
-            MarshalAnsiCharVariantComToOle,
-            MarshalAnsiCharVariantOleRefToCom,
             MarshalAnsiCharArrayOleToCom,
             MarshalAnsiCharArrayComToOle,
             NULL
@@ -1029,7 +973,6 @@ VariantArray:
 
     case VT_LPSTR:
         RETURN_MARSHALER(
-            NULL, NULL, NULL,
             MarshalLPSTRArrayOleToCom,
             MarshalLPSTRRArrayComToOle,
             ClearLPSTRArray
@@ -1037,7 +980,6 @@ VariantArray:
 
     case VT_LPWSTR:
         RETURN_MARSHALER(
-            NULL, NULL, NULL,
             MarshalLPWSTRArrayOleToCom,
             MarshalLPWSTRRArrayComToOle,
             ClearLPWSTRArray
@@ -1046,16 +988,12 @@ VariantArray:
     case VT_RECORD:
 #ifdef FEATURE_COMINTEROP
         RETURN_MARSHALER(
-            MarshalRecordVariantOleToCom,
-            MarshalRecordVariantComToOle,
-            MarshalRecordVariantOleRefToCom,
             MarshalRecordArrayOleToCom,
             MarshalRecordArrayComToOle,
             ClearRecordArray
         );
 #else
         RETURN_MARSHALER(
-            NULL, NULL, NULL,
             MarshalRecordArrayOleToCom,
             MarshalRecordArrayComToOle,
             ClearRecordArray
@@ -1226,26 +1164,6 @@ public:
  * Boolean marshaling routines
  * ------------------------------------------------------------------------- */
 
-#ifdef FEATURE_COMINTEROP
-
-void OleVariant::MarshalBoolVariantOleToCom(VARIANT *pOleVariant,
-                                            VariantData *pComVariant)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        PRECONDITION(CheckPointer(pComVariant));
-        PRECONDITION(CheckPointer(pOleVariant));
-    }
-    CONTRACTL_END;
-
-    *(INT64*)pComVariant->GetData() = V_BOOL(pOleVariant) ? 1 : 0;
-}
-
-#endif // FEATURE_COMINTEROP
-
 void OleVariant::MarshalBoolArrayOleToCom(void *oleArray, BASEARRAYREF *pComArray,
                                           MethodTable *pInterfaceMT, PCODE pManagedMarshalerCode)
 {
@@ -1311,32 +1229,6 @@ void OleVariant::MarshalBoolArrayComToOle(BASEARRAYREF *pComArray, void *oleArra
  * WinBoolean marshaling routines
  * ------------------------------------------------------------------------- */
 
-#ifdef FEATURE_COMINTEROP
-void OleVariant::MarshalWinBoolVariantOleToCom(VARIANT *pOleVariant,
-                                            VariantData *pComVariant)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    _ASSERTE(!"Not supposed to get here.");
-}
-
-void OleVariant::MarshalWinBoolVariantComToOle(VariantData *pComVariant,
-                                            VARIANT *pOleVariant)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    _ASSERTE(!"Not supposed to get here.");
-}
-
-void OleVariant::MarshalWinBoolVariantOleRefToCom(VARIANT *pOleVariant,
-                                            VariantData *pComVariant)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    _ASSERTE(!"Not supposed to get here.");
-}
-#endif // FEATURE_COMINTEROP
-
 void OleVariant::MarshalWinBoolArrayOleToCom(void *oleArray, BASEARRAYREF *pComArray,
                                           MethodTable *pInterfaceMT, PCODE pManagedMarshalerCode)
 {
@@ -1401,29 +1293,6 @@ void OleVariant::MarshalWinBoolArrayComToOle(BASEARRAYREF *pComArray, void *oleA
 /* ------------------------------------------------------------------------- *
  * CBool marshaling routines
  * ------------------------------------------------------------------------- */
-
-#ifdef FEATURE_COMINTEROP
-void OleVariant::MarshalCBoolVariantOleToCom(VARIANT* pOleVariant, VariantData* pComVariant)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    _ASSERTE(!"Not supposed to get here.");
-}
-
-void OleVariant::MarshalCBoolVariantComToOle(VariantData* pComVariant, VARIANT* pOleVariant)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    _ASSERTE(!"Not supposed to get here.");
-}
-
-void OleVariant::MarshalCBoolVariantOleRefToCom(VARIANT* pOleVariant, VariantData* pComVariant)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    _ASSERTE(!"Not supposed to get here.");
-}
-#endif // FEATURE_COMINTEROP
 
 void OleVariant::MarshalCBoolArrayOleToCom(void* oleArray, BASEARRAYREF* pComArray,
                                         MethodTable* pInterfaceMT, PCODE pManagedMarshalerCode)
@@ -1496,32 +1365,6 @@ void OleVariant::MarshalCBoolArrayComToOle(BASEARRAYREF* pComArray, void* oleArr
  * Ansi char marshaling routines
  * ------------------------------------------------------------------------- */
 
-#ifdef FEATURE_COMINTEROP
-void OleVariant::MarshalAnsiCharVariantOleToCom(VARIANT *pOleVariant,
-                                            VariantData *pComVariant)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    _ASSERTE(!"Not supposed to get here.");
-}
-
-void OleVariant::MarshalAnsiCharVariantComToOle(VariantData *pComVariant,
-                                            VARIANT *pOleVariant)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    _ASSERTE(!"Not supposed to get here.");
-}
-
-void OleVariant::MarshalAnsiCharVariantOleRefToCom(VARIANT *pOleVariant,
-                                            VariantData *pComVariant)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    _ASSERTE(!"Not supposed to get here.");
-}
-#endif // FEATURE_COMINTEROP
-
 void OleVariant::MarshalAnsiCharArrayOleToCom(void *oleArray, BASEARRAYREF *pComArray,
                                           MethodTable *pInterfaceMT, PCODE pManagedMarshalerCode)
 {
@@ -1593,118 +1436,6 @@ void OleVariant::MarshalAnsiCharArrayComToOle(BASEARRAYREF *pComArray, void *ole
  * ------------------------------------------------------------------------- */
 
 #ifdef FEATURE_COMINTEROP
-void OleVariant::MarshalInterfaceVariantOleToCom(VARIANT *pOleVariant,
-                                                 VariantData *pComVariant)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-        PRECONDITION(CheckPointer(pOleVariant));
-        PRECONDITION(CheckPointer(pComVariant));
-    }
-    CONTRACTL_END;
-
-    IUnknown *unk = V_UNKNOWN(pOleVariant);
-
-    OBJECTREF obj = NULL;
-    if (unk != NULL)
-    {
-        GCPROTECT_BEGIN(obj);
-        GetObjectRefFromComIP(&obj, V_UNKNOWN(pOleVariant));
-        GCPROTECT_END();
-    }
-
-    pComVariant->SetObjRef(obj);
-}
-
-void OleVariant::MarshalInterfaceVariantComToOle(VariantData *pComVariant,
-                                                 VARIANT *pOleVariant)
-
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-        PRECONDITION(CheckPointer(pOleVariant));
-        PRECONDITION(CheckPointer(pComVariant));
-    }
-    CONTRACTL_END;
-
-    OBJECTREF *obj = pComVariant->GetObjRefPtr();
-    VARTYPE vt = pComVariant->GetVT();
-
-    ASSERT_PROTECTED(obj);
-
-    if (*obj == NULL)
-    {
-        // If there is no VT set in the managed variant, then default to VT_UNKNOWN.
-        if (vt == VT_EMPTY)
-            vt = VT_UNKNOWN;
-
-        V_UNKNOWN(pOleVariant) = NULL;
-        V_VT(pOleVariant) = vt;
-    }
-    else
-    {
-#ifdef FEATURE_COMINTEROP
-        ComIpType FetchedIpType = ComIpType_None;
-        ComIpType ReqIpType;
-
-        if (vt != VT_EMPTY)
-        {
-            // We are dealing with an UnknownWrapper or DispatchWrapper.
-            // In this case, we need to respect the VT.
-            _ASSERTE(vt == VT_DISPATCH || vt == VT_UNKNOWN);
-            ReqIpType = vt == VT_DISPATCH ? ComIpType_Dispatch : ComIpType_Unknown;
-        }
-        else
-        {
-            // We are dealing with a normal object so we can give either
-            // IDispatch or IUnknown out depending on what it supports.
-            ReqIpType = ComIpType_Both;
-        }
-
-        IUnknown *unk = GetComIPFromObjectRef(obj, ReqIpType, &FetchedIpType);
-        BOOL ItfIsDispatch = FetchedIpType == ComIpType_Dispatch;
-
-        V_UNKNOWN(pOleVariant) = unk;
-        V_VT(pOleVariant) = static_cast<VARTYPE>(ItfIsDispatch ? VT_DISPATCH : VT_UNKNOWN);
-#else // FEATURE_COMINTEROP
-        V_UNKNOWN(pOleVariant) = GetComIPFromObjectRef(obj);
-        V_VT(pOleVariant) = VT_UNKNOWN;
-#endif // FEATURE_COMINTEROP
-    }
-}
-
-void OleVariant::MarshalInterfaceVariantOleRefToCom(VARIANT *pOleVariant,
-                                                 VariantData *pComVariant)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-        PRECONDITION(CheckPointer(pOleVariant));
-        PRECONDITION(CheckPointer(pComVariant));
-    }
-    CONTRACTL_END;
-
-    IUnknown *unk = V_UNKNOWN(pOleVariant);
-
-    OBJECTREF obj = NULL;
-    if (unk != NULL)
-    {
-        GCPROTECT_BEGIN(obj);
-        GetObjectRefFromComIP(&obj, *V_UNKNOWNREF(pOleVariant));
-        GCPROTECT_END();
-    }
-
-    pComVariant->SetObjRef(obj);
-}
-
 void OleVariant::MarshalInterfaceArrayOleToCom(void *oleArray, BASEARRAYREF *pComArray,
                                                MethodTable *pElementMT, PCODE pManagedMarshalerCode)
 {
@@ -1814,55 +1545,6 @@ void OleVariant::ClearInterfaceArray(void *oleArray, SIZE_T cElements, MethodTab
 /* ------------------------------------------------------------------------- *
  * BSTR marshaling routines
  * ------------------------------------------------------------------------- */
-
-void OleVariant::MarshalBSTRVariantOleToCom(VARIANT *pOleVariant,
-                                            VariantData *pComVariant)
-{
-    CONTRACTL
-    {
-        WRAPPER(THROWS);
-        WRAPPER(GC_TRIGGERS);
-        MODE_COOPERATIVE;
-        INJECT_FAULT(COMPlusThrowOM());
-        PRECONDITION(CheckPointer(pOleVariant));
-        PRECONDITION(CheckPointer(pComVariant));
-    }
-    CONTRACTL_END;
-
-    BSTR bstr = V_BSTR(pOleVariant);
-
-    STRINGREF stringObj = NULL;
-    GCPROTECT_BEGIN(stringObj)
-    {
-        ConvertBSTRToString(bstr, &stringObj);
-        pComVariant->SetObjRef((OBJECTREF) stringObj);
-    }
-    GCPROTECT_END();
-
-    pComVariant->SetObjRef((OBJECTREF) stringObj);
-}
-
-void OleVariant::MarshalBSTRVariantComToOle(VariantData *pComVariant,
-                                            VARIANT *pOleVariant)
-{
-    CONTRACTL
-    {
-        THROWS;
-        WRAPPER(GC_TRIGGERS);
-        MODE_COOPERATIVE;
-        INJECT_FAULT(COMPlusThrowOM());
-        PRECONDITION(CheckPointer(pOleVariant));
-        PRECONDITION(CheckPointer(pComVariant));
-    }
-    CONTRACTL_END;
-
-    STRINGREF stringObj = (STRINGREF) pComVariant->GetObjRef();
-    GCPROTECT_BEGIN(stringObj)
-    {
-        V_BSTR(pOleVariant) = ConvertStringToBSTR(&stringObj);
-    }
-    GCPROTECT_END();
-}
 
 void OleVariant::MarshalBSTRArrayOleToCom(void *oleArray, BASEARRAYREF *pComArray,
                                           MethodTable *pInterfaceMT, PCODE pManagedMarshalerCode)
@@ -2381,32 +2063,6 @@ void OleVariant::ClearLPSTRArray(void *oleArray, SIZE_T cElements, MethodTable *
  * Date marshaling routines
  * ------------------------------------------------------------------------- */
 
-#ifdef FEATURE_COMINTEROP
-void OleVariant::MarshalDateVariantOleToCom(VARIANT *pOleVariant,
-                                            VariantData *pComVariant)
-{
-    WRAPPER_NO_CONTRACT;
-
-    *(INT64*)pComVariant->GetData() = COMDateTime::DoubleDateToTicks(V_DATE(pOleVariant));
-}
-
-void OleVariant::MarshalDateVariantComToOle(VariantData *pComVariant,
-                                            VARIANT *pOleVariant)
-{
-    WRAPPER_NO_CONTRACT;
-
-    V_DATE(pOleVariant) = COMDateTime::TicksToDoubleDate(*(INT64*)pComVariant->GetData());
-}
-
-void OleVariant::MarshalDateVariantOleRefToCom(VARIANT *pOleVariant,
-                                               VariantData *pComVariant)
-{
-    WRAPPER_NO_CONTRACT;
-
-    *(INT64*)pComVariant->GetData() = COMDateTime::DoubleDateToTicks(*V_DATEREF(pOleVariant));
-}
-#endif // FEATURE_COMINTEROP
-
 void OleVariant::MarshalDateArrayOleToCom(void *oleArray, BASEARRAYREF *pComArray,
                                           MethodTable *pInterfaceMT, PCODE pManagedMarshalerCode)
 {
@@ -2470,136 +2126,10 @@ void OleVariant::MarshalDateArrayComToOle(BASEARRAYREF *pComArray, void *oleArra
 }
 
 /* ------------------------------------------------------------------------- *
- * Decimal marshaling routines
- * ------------------------------------------------------------------------- */
-
-#ifdef FEATURE_COMINTEROP
-
-void OleVariant::MarshalDecimalVariantOleToCom(VARIANT *pOleVariant,
-                                               VariantData *pComVariant)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-        INJECT_FAULT(COMPlusThrowOM());
-        PRECONDITION(CheckPointer(pOleVariant));
-        PRECONDITION(CheckPointer(pComVariant));
-    }
-    CONTRACTL_END;
-
-    OBJECTREF pDecimalRef = AllocateObject(CoreLibBinder::GetClass(CLASS__DECIMAL));
-
-    DECIMAL* pDecimal = (DECIMAL *) pDecimalRef->UnBox();
-    *pDecimal = V_DECIMAL(pOleVariant);
-    // Mashaling uses the reserved value to store the variant type, so clear it out when marshaling back
-    pDecimal->wReserved = 0;
-
-    pComVariant->SetObjRef(pDecimalRef);
-}
-
-void OleVariant::MarshalDecimalVariantComToOle(VariantData *pComVariant,
-                                               VARIANT *pOleVariant)
-{
-    CONTRACTL
-    {
-        WRAPPER(THROWS);
-        WRAPPER(GC_TRIGGERS);
-        MODE_COOPERATIVE;
-        PRECONDITION(CheckPointer(pOleVariant));
-        PRECONDITION(CheckPointer(pComVariant));
-    }
-    CONTRACTL_END;
-
-    VARTYPE vt = V_VT(pOleVariant);
-    _ASSERTE(vt == VT_DECIMAL);
-    V_DECIMAL(pOleVariant) = * (DECIMAL*) pComVariant->GetObjRef()->UnBox();
-    V_VT(pOleVariant) = vt;
-}
-
-void OleVariant::MarshalDecimalVariantOleRefToCom(VARIANT *pOleVariant,
-                                                  VariantData *pComVariant )
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-        INJECT_FAULT(COMPlusThrowOM());
-        PRECONDITION(CheckPointer(pOleVariant));
-        PRECONDITION(CheckPointer(pComVariant));
-    }
-    CONTRACTL_END;
-
-    OBJECTREF pDecimalRef = AllocateObject(CoreLibBinder::GetClass(CLASS__DECIMAL));
-
-    DECIMAL* pDecimal = (DECIMAL *) pDecimalRef->UnBox();
-    *pDecimal = *V_DECIMALREF(pOleVariant);
-    // Mashaling uses the reserved value to store the variant type, so clear it out when marshaling back
-    pDecimal->wReserved = 0;
-
-    pComVariant->SetObjRef(pDecimalRef);
-}
-#endif // FEATURE_COMINTEROP
-
-/* ------------------------------------------------------------------------- *
  * Record marshaling routines
  * ------------------------------------------------------------------------- */
 
 #ifdef FEATURE_COMINTEROP
-void OleVariant::MarshalRecordVariantOleToCom(VARIANT *pOleVariant,
-                                              VariantData *pComVariant)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-        INJECT_FAULT(COMPlusThrowOM());
-        PRECONDITION(CheckPointer(pOleVariant));
-        PRECONDITION(CheckPointer(pComVariant));
-    }
-    CONTRACTL_END;
-
-    HRESULT hr = S_OK;
-    IRecordInfo *pRecInfo = V_RECORDINFO(pOleVariant);
-    if (!pRecInfo)
-        COMPlusThrow(kArgumentException, IDS_EE_INVALID_OLE_VARIANT);
-
-    LPVOID pvRecord = V_RECORD(pOleVariant);
-    if (pvRecord == NULL)
-    {
-        pComVariant->SetObjRef(NULL);
-        return;
-    }
-
-    MethodTable* pValueClass = NULL;
-    {
-        GCX_PREEMP();
-        pValueClass = GetMethodTableForRecordInfo(pRecInfo);
-    }
-
-    if (pValueClass == NULL)
-    {
-        // This value type should have been registered through
-        // a TLB. CoreCLR doesn't support dynamic type mapping.
-        COMPlusThrow(kArgumentException, IDS_EE_CANNOT_MAP_TO_MANAGED_VC);
-    }
-    _ASSERTE(pValueClass->IsBlittable());
-
-    OBJECTREF BoxedValueClass = NULL;
-    GCPROTECT_BEGIN(BoxedValueClass)
-    {
-        // Now that we have a blittable value class, allocate an instance of the
-        // boxed value class and copy the contents of the record into it.
-        BoxedValueClass = AllocateObject(pValueClass);
-        memcpyNoGCRefs(BoxedValueClass->GetData(), (BYTE*)pvRecord, pValueClass->GetNativeSize());
-        pComVariant->SetObjRef(BoxedValueClass);
-    }
-    GCPROTECT_END();
-}
-
 void OleVariant::MarshalRecordVariantOleToObject(const VARIANT *pOleVariant,
                                                  OBJECTREF * const & pObj)
 {
@@ -2651,38 +2181,6 @@ void OleVariant::MarshalRecordVariantOleToObject(const VARIANT *pOleVariant,
         SetObjectReference(pObj, BoxedValueClass);
     }
     GCPROTECT_END();
-}
-
-void OleVariant::MarshalRecordVariantComToOle(VariantData *pComVariant,
-                                              VARIANT *pOleVariant)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-        PRECONDITION(CheckPointer(pOleVariant));
-        PRECONDITION(CheckPointer(pComVariant));
-    }
-    CONTRACTL_END;
-
-    OBJECTREF BoxedValueClass = pComVariant->GetObjRef();
-    GCPROTECT_BEGIN(BoxedValueClass)
-    {
-        _ASSERTE(BoxedValueClass != NULL);
-        ConvertValueClassToVariant(&BoxedValueClass, pOleVariant);
-    }
-    GCPROTECT_END();
-}
-
-void OleVariant::MarshalRecordVariantOleRefToCom(VARIANT *pOleVariant,
-                                                 VariantData *pComVariant)
-{
-    WRAPPER_NO_CONTRACT;
-
-    // The representation of a VT_RECORD and a VT_BYREF | VT_RECORD VARIANT are
-    // the same so we can simply forward the call to the non byref API.
-    MarshalRecordVariantOleToCom(pOleVariant, pComVariant);
 }
 #endif // FEATURE_COMINTEROP
 
@@ -3744,79 +3242,6 @@ void OleVariant::MarshalIDispatchArrayComToOle(BASEARRAYREF *pComArray, void *ol
  * Currency marshaling routines
  * ------------------------------------------------------------------------- */
 
-void OleVariant::MarshalCurrencyVariantOleToCom(VARIANT *pOleVariant,
-                                                VariantData *pComVariant)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-        INJECT_FAULT(COMPlusThrowOM());
-        PRECONDITION(CheckPointer(pOleVariant));
-        PRECONDITION(CheckPointer(pComVariant));
-    }
-    CONTRACTL_END;
-
-    OBJECTREF pDecimalRef = AllocateObject(CoreLibBinder::GetClass(CLASS__DECIMAL));
-    DECIMAL DecVal;
-
-    // Convert the currency to a decimal.
-    VarDecFromCyCanonicalize(V_CY(pOleVariant), &DecVal);
-
-    // Store the value into the unboxes decimal and store the decimal in the variant.
-    *(DECIMAL *) pDecimalRef->UnBox() = DecVal;
-    pComVariant->SetObjRef(pDecimalRef);
-}
-
-void OleVariant::MarshalCurrencyVariantComToOle(VariantData *pComVariant,
-                                                VARIANT *pOleVariant)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-        PRECONDITION(CheckPointer(pOleVariant));
-        PRECONDITION(CheckPointer(pComVariant));
-    }
-    CONTRACTL_END;
-
-    CURRENCY CyVal;
-
-    // Convert the decimal to a currency.
-    HRESULT hr = VarCyFromDec((DECIMAL*)pComVariant->GetObjRef()->UnBox(), &CyVal);
-    IfFailThrow(hr);
-
-    // Store the currency in the VARIANT and set the VT.
-    V_CY(pOleVariant) = CyVal;
-}
-
-void OleVariant::MarshalCurrencyVariantOleRefToCom(VARIANT *pOleVariant,
-                                                   VariantData *pComVariant)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-        INJECT_FAULT(COMPlusThrowOM());
-        PRECONDITION(CheckPointer(pOleVariant));
-        PRECONDITION(CheckPointer(pComVariant));
-    }
-    CONTRACTL_END;
-
-    OBJECTREF pDecimalRef = AllocateObject(CoreLibBinder::GetClass(CLASS__DECIMAL));
-    DECIMAL DecVal;
-
-    // Convert the currency to a decimal.
-    VarDecFromCyCanonicalize(*V_CYREF(pOleVariant), &DecVal);
-
-    // Store the value into the unboxes decimal and store the decimal in the variant.
-    *(DECIMAL *) pDecimalRef->UnBox() = DecVal;
-    pComVariant->SetObjRef(pDecimalRef);
-}
-
 void OleVariant::MarshalCurrencyArrayOleToCom(void *oleArray, BASEARRAYREF *pComArray,
                                               MethodTable *pInterfaceMT, PCODE pManagedMarshalerCode)
 {
@@ -4032,50 +3457,6 @@ void OleVariant::ClearVariantArray(void *oleArray, SIZE_T cElements, MethodTable
  * ------------------------------------------------------------------------- */
 #ifdef FEATURE_COMINTEROP
 
-void OleVariant::MarshalArrayVariantOleToCom(VARIANT *pOleVariant,
-                                             VariantData *pComVariant)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-        PRECONDITION(CheckPointer(pOleVariant));
-        PRECONDITION(CheckPointer(pComVariant));
-    }
-    CONTRACTL_END;
-
-    SAFEARRAY *pSafeArray = V_ARRAY(pOleVariant);
-
-    VARTYPE vt = V_VT(pOleVariant) & ~VT_ARRAY;
-
-    if (pSafeArray)
-    {
-        if (vt == VT_EMPTY)
-            COMPlusThrow(kInvalidOleVariantTypeException, IDS_EE_INVALID_OLE_VARIANT);
-
-        MethodTable *pElemMT = NULL;
-        if (vt == VT_RECORD)
-            pElemMT = GetElementTypeForRecordSafeArray(pSafeArray).GetMethodTable();
-
-        MethodDesc* pStructMarshalStub = nullptr;
-        if (vt == VT_RECORD && !pElemMT->IsBlittable())
-        {
-            GCX_PREEMP();
-
-            pStructMarshalStub = NDirect::CreateStructMarshalILStub(pElemMT);
-        }
-
-        BASEARRAYREF pArrayRef = CreateArrayRefForSafeArray(pSafeArray, vt, pElemMT);
-        pComVariant->SetObjRef((OBJECTREF) pArrayRef);
-        MarshalArrayRefForSafeArray(pSafeArray, (BASEARRAYREF *) pComVariant->GetObjRefPtr(), vt, pStructMarshalStub != nullptr ? pStructMarshalStub->GetMultiCallableAddrOfCode() : NULL, pElemMT);
-    }
-    else
-    {
-        pComVariant->SetObjRef(NULL);
-    }
-}
-
 void OleVariant::MarshalArrayVariantOleToObject(const VARIANT* pOleVariant,
                                                 OBJECTREF * const & pObj)
 {
@@ -4119,50 +3500,6 @@ void OleVariant::MarshalArrayVariantOleToObject(const VARIANT* pOleVariant,
     {
         SetObjectReference(pObj, NULL);
     }
-}
-
-void OleVariant::MarshalArrayVariantComToOle(VariantData *pComVariant,
-                                             VARIANT *pOleVariant)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-        PRECONDITION(CheckPointer(pOleVariant));
-        PRECONDITION(CheckPointer(pComVariant));
-    }
-    CONTRACTL_END;
-
-    SafeArrayPtrHolder pSafeArray = NULL;
-    BASEARRAYREF *pArrayRef = (BASEARRAYREF *) pComVariant->GetObjRefPtr();
-    MethodTable *pElemMT = NULL;
-
-    _ASSERTE(pArrayRef);
-
-    VARTYPE vt = GetElementVarTypeForArrayRef(*pArrayRef);
-    if (vt == VT_ARRAY)
-        vt = VT_VARIANT;
-
-    pElemMT = GetArrayElementTypeWrapperAware(pArrayRef).GetMethodTable();
-
-    MethodDesc* pStructMarshalStub = nullptr;
-    GCPROTECT_BEGIN(*pArrayRef);
-    if (vt == VT_RECORD && !pElemMT->IsBlittable())
-    {
-        GCX_PREEMP();
-
-        pStructMarshalStub = NDirect::CreateStructMarshalILStub(pElemMT);
-    }
-    GCPROTECT_END();
-
-    if (*pArrayRef != NULL)
-    {
-        pSafeArray = CreateSafeArrayForArrayRef(pArrayRef, vt, pElemMT);
-        MarshalSafeArrayForArrayRef(pArrayRef, pSafeArray, vt, pElemMT, pStructMarshalStub != nullptr ? pStructMarshalStub->GetMultiCallableAddrOfCode() : NULL);
-    }
-    V_ARRAY(pOleVariant) = pSafeArray;
-    pSafeArray.SuppressRelease();
 }
 
 void OleVariant::MarshalArrayVariantObjectToOle(OBJECTREF * const & pObj,
@@ -4210,47 +3547,6 @@ void OleVariant::MarshalArrayVariantObjectToOle(OBJECTREF * const & pObj,
     pSafeArray.SuppressRelease();
 }
 
-void OleVariant::MarshalArrayVariantOleRefToCom(VARIANT *pOleVariant,
-                                                VariantData *pComVariant)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-        PRECONDITION(CheckPointer(pOleVariant));
-        PRECONDITION(CheckPointer(pComVariant));
-    }
-    CONTRACTL_END;
-
-    SAFEARRAY *pSafeArray = *V_ARRAYREF(pOleVariant);
-
-    VARTYPE vt = V_VT(pOleVariant) & ~(VT_ARRAY|VT_BYREF);
-
-    if (pSafeArray)
-    {
-        MethodTable *pElemMT = NULL;
-        if (vt == VT_RECORD)
-            pElemMT = GetElementTypeForRecordSafeArray(pSafeArray).GetMethodTable();
-
-        MethodDesc* pStructMarshalStub = nullptr;
-        if (vt == VT_RECORD && !pElemMT->IsBlittable())
-        {
-            GCX_PREEMP();
-
-            pStructMarshalStub = NDirect::CreateStructMarshalILStub(pElemMT);
-        }
-
-        BASEARRAYREF pArrayRef = CreateArrayRefForSafeArray(pSafeArray, vt, pElemMT);
-        pComVariant->SetObjRef((OBJECTREF) pArrayRef);
-        MarshalArrayRefForSafeArray(pSafeArray, (BASEARRAYREF *) pComVariant->GetObjRefPtr(), vt, pStructMarshalStub != nullptr ? pStructMarshalStub->GetMultiCallableAddrOfCode() : NULL, pElemMT);
-    }
-    else
-    {
-        pComVariant->SetObjRef(NULL);
-    }
-}
-
 void OleVariant::MarshalArrayVariantOleRefToObject(const VARIANT *pOleVariant,
                                                    OBJECTREF * const & pObj)
 {
@@ -4293,82 +3589,6 @@ void OleVariant::MarshalArrayVariantOleRefToObject(const VARIANT *pOleVariant,
     }
 }
 #endif //FEATURE_COMINTEROP
-
-
-/* ------------------------------------------------------------------------- *
- * Error marshaling routines
- * ------------------------------------------------------------------------- */
-
-void OleVariant::MarshalErrorVariantOleToCom(VARIANT *pOleVariant,
-                                             VariantData *pComVariant)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        PRECONDITION(CheckPointer(pOleVariant));
-        PRECONDITION(CheckPointer(pComVariant));
-    }
-    CONTRACTL_END;
-
-    // Check to see if the variant represents a missing argument.
-    if (V_ERROR(pOleVariant) == DISP_E_PARAMNOTFOUND)
-    {
-        pComVariant->SetType(CV_MISSING);
-    }
-    else
-    {
-        pComVariant->SetDataAsInt32(V_ERROR(pOleVariant));
-    }
-}
-
-void OleVariant::MarshalErrorVariantOleRefToCom(VARIANT *pOleVariant,
-                                                 VariantData *pComVariant)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        PRECONDITION(CheckPointer(pOleVariant));
-        PRECONDITION(CheckPointer(pComVariant));
-    }
-    CONTRACTL_END;
-
-    // Check to see if the variant represents a missing argument.
-    if (*V_ERRORREF(pOleVariant) == DISP_E_PARAMNOTFOUND)
-    {
-        pComVariant->SetType(CV_MISSING);
-    }
-    else
-    {
-        pComVariant->SetDataAsInt32(*V_ERRORREF(pOleVariant));
-    }
-}
-
-void OleVariant::MarshalErrorVariantComToOle(VariantData *pComVariant,
-                                             VARIANT *pOleVariant)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        PRECONDITION(CheckPointer(pOleVariant));
-        PRECONDITION(CheckPointer(pComVariant));
-    }
-    CONTRACTL_END;
-
-    if (pComVariant->GetType() == CV_MISSING)
-    {
-        V_ERROR(pOleVariant) = DISP_E_PARAMNOTFOUND;
-    }
-    else
-    {
-        V_ERROR(pOleVariant) = pComVariant->GetDataAsInt32();
-    }
-}
 
 
 /* ------------------------------------------------------------------------- *

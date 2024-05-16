@@ -450,11 +450,6 @@ class OleVariant
 
     struct Marshaler
     {
-#ifdef FEATURE_COMINTEROP
-        void (*OleToComVariant)(VARIANT* pOleVariant, VariantData* pComVariant);
-        void (*ComToOleVariant)(VariantData* pComVariant, VARIANT* pOleVariant);
-        void (*OleRefToComVariant)(VARIANT* pOleVariant, VariantData* pComVariant);
-#endif // FEATURE_COMINTEROP
         void (*OleToComArray)(void* oleArray, BASEARRAYREF* pComArray, MethodTable* pInterfaceMT, PCODE pManagedMarshalerCode);
         void (*ComToOleArray)(BASEARRAYREF* pComArray, void* oleArray, MethodTable* pInterfaceMT,
         	                  BOOL fBestFitMapping, BOOL fThrowOnUnmappableChar,
@@ -488,9 +483,6 @@ private:
                                             MethodTable* pInterfaceMT, BOOL fBestFitMapping,
                                             BOOL fThrowOnUnmappableChar, BOOL fOleArrayValid,
                                             SIZE_T cElements, PCODE pManagedMarshalerCode);
-    static void MarshalCBoolVariantOleToCom(VARIANT* pOleVariant, VariantData* pComVariant);
-    static void MarshalCBoolVariantComToOle(VariantData* pComVariant, VARIANT* pOleVariant);
-    static void MarshalCBoolVariantOleRefToCom(VARIANT* pOleVariant, VariantData* pComVariant);
     static void MarshalCBoolArrayOleToCom(void* oleArray, BASEARRAYREF* pComArray,
                                             MethodTable* pInterfaceMT, PCODE pManagedMarshalerCode);
     static void MarshalCBoolArrayComToOle(BASEARRAYREF* pComArray, void* oleArray,
@@ -574,41 +566,10 @@ private:
                                             SIZE_T cElements, PCODE pManagedMarshalerCode);
     static void ClearInterfaceArray(void* oleArray, SIZE_T cElements, MethodTable* pInterfaceMT, PCODE pManagedMarshalerCode);
 
-    static void MarshalBoolVariantOleToCom(VARIANT* pOleVariant, VariantData* pComVariant);
-
-    static void MarshalWinBoolVariantOleToCom(VARIANT* pOleVariant, VariantData* pComVariant);
-    static void MarshalWinBoolVariantComToOle(VariantData* pComVariant, VARIANT* pOleVariant);
-    static void MarshalWinBoolVariantOleRefToCom(VARIANT* pOleVariant, VariantData* pComVariant);
-
-    static void MarshalAnsiCharVariantOleToCom(VARIANT* pOleVariant, VariantData* pComVariant);
-    static void MarshalAnsiCharVariantComToOle(VariantData* pComVariant, VARIANT* pOleVariant);
-    static void MarshalAnsiCharVariantOleRefToCom(VARIANT* pOleVariant, VariantData* pComVariant);
-
-    static void MarshalInterfaceVariantOleToCom(VARIANT* pOleVariant, VariantData* pComVariant);
-    static void MarshalInterfaceVariantComToOle(VariantData* pComVariant, VARIANT* pOleVariant);
-    static void MarshalInterfaceVariantOleRefToCom(VARIANT* pOleVariant, VariantData* pComVariant);
-
-    static void MarshalBSTRVariantOleToCom(VARIANT* pOleVariant, VariantData* pComVariant);
-    static void MarshalBSTRVariantComToOle(VariantData* pComVariant, VARIANT* pOleVariant);
-
-    static void MarshalDateVariantOleToCom(VARIANT* pOleVariant, VariantData* pComVariant);
-    static void MarshalDateVariantComToOle(VariantData* pComVariant, VARIANT* pOleVariant);
-    static void MarshalDateVariantOleRefToCom(VARIANT* pOleVariant, VariantData* pComVariant);
-
-    static void MarshalDecimalVariantOleToCom(VARIANT* pOleVariant, VariantData* pComVariant);
-    static void MarshalDecimalVariantComToOle(VariantData* pComVariant, VARIANT* pOleVariant);
-    static void MarshalDecimalVariantOleRefToCom(VARIANT* pOleVariant, VariantData* pComVariant);
-
 #ifdef FEATURE_COMINTEROP
-    static void MarshalRecordVariantOleToCom(VARIANT* pOleVariant, VariantData* pComVariant);
-    static void MarshalRecordVariantComToOle(VariantData* pComVariant, VARIANT* pOleVariant);
-    static void MarshalRecordVariantOleRefToCom(VARIANT* pOleVariant, VariantData* pComVariant);
     static void MarshalRecordVariantOleToObject(const VARIANT* pOleVariant, OBJECTREF * const & pComVariant);
 #endif
 
-    static void MarshalCurrencyVariantOleToCom(VARIANT* pOleVariant, VariantData* pComVariant);
-    static void MarshalCurrencyVariantComToOle(VariantData* pComVariant, VARIANT* pOleVariant);
-    static void MarshalCurrencyVariantOleRefToCom(VARIANT* pOleVariant, VariantData* pComVariant);
     static void MarshalCurrencyArrayOleToCom(void* oleArray, BASEARRAYREF* pComArray,
                                             MethodTable* pInterfaceMT, PCODE pManagedMarshalerCode);
     static void MarshalCurrencyArrayComToOle(BASEARRAYREF* pComArray, void* oleArray,
@@ -625,17 +586,10 @@ private:
     static void ClearVariantArray(void* oleArray, SIZE_T cElements, MethodTable* pInterfaceMT, PCODE pManagedMarshalerCode);
 
 #ifdef FEATURE_COMINTEROP
-    static void MarshalArrayVariantOleToCom(VARIANT* pOleVariant, VariantData* pComVariant);
-    static void MarshalArrayVariantComToOle(VariantData* pComVariant, VARIANT* pOleVariant);
-    static void MarshalArrayVariantOleRefToCom(VARIANT* pOleVariant, VariantData* pComVariant);
     static void MarshalArrayVariantOleToObject(const VARIANT* pOleVariant, OBJECTREF * const & pObj);
     static void MarshalArrayVariantOleRefToObject(const VARIANT* pOleVariant, OBJECTREF * const & pObj);
     static void MarshalArrayVariantObjectToOle(OBJECTREF * const & pObj, VARIANT* pOleVariant);
 #endif
-
-    static void MarshalErrorVariantOleToCom(VARIANT* pOleVariant, VariantData* pComVariant);
-    static void MarshalErrorVariantOleRefToCom(VARIANT* pOleVariant, VariantData* pComVariant);
-    static void MarshalErrorVariantComToOle(VariantData* pComVariant, VARIANT* pOleVariant);
 #endif // FEATURE_COMINTEROP
 };
 
