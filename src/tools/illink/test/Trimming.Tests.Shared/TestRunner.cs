@@ -180,7 +180,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			// Dump dependencies only for the test assembly.
 			builder.AddAdditionalArgument ("--dump-dependencies", [compilationResult.InputAssemblyPath.FileNameWithoutExtension]);
 
-			if (AppContext.TryGetSwitch ("GenerateExpectedDependencyTrace", out var generateExpectedDependencyTrace) && generateExpectedDependencyTrace) {
+			if (AppContext.TryGetSwitch ("GenerateExpectedDependencyTraces", out var generateExpectedDependencyTraces) && generateExpectedDependencyTraces) {
 				// If running with GenerateExpectedDependencyTrace=true, generate the traces directly into the expected src directory.
 				var expectedTracePath = metadataProvider.GetExpectedDependencyTrace ();
 				builder.AddAdditionalArgument ("--dependencies-file", [expectedTracePath]);

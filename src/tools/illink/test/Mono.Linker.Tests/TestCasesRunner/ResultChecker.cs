@@ -278,7 +278,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			bool checkRemainingErrors = !HasAttribute (linkResult.TestCase.FindTypeDefinition (original), nameof (SkipRemainingErrorsValidationAttribute));
 			VerifyLoggedMessages (original, linkResult.Logger, checkRemainingErrors);
 			VerifyRecordedDependencies (original, linkResult.Customizations.DependencyRecorder);
-			VerifyExpectedDependencyTrace (linkResult.TestCase, linkResult.OutputAssemblyPath);
+			VerifyExpectedDependencyTrace (linkResult.MetadataProvider, linkResult.OutputAssemblyPath);
 		}
 
 		protected virtual void InitialChecking (TrimmedTestCaseResult linkResult, AssemblyDefinition original, AssemblyDefinition linked)
@@ -1054,12 +1054,12 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			}
 		}
 
-		void VerifyExpectedDependencyTrace (Mono.Linker.Tests.TestCases.TestCase testCase, NPath outputAssemblyPath)
+		void VerifyExpectedDependencyTrace (TestCaseMetadataProvider testCaseMetadata, NPath outputAssemblyPath)
 		{
 			if (AppContext.TryGetSwitch ("GenerateExpectedDependencyTraces", out var generateExpectedDependencyTrace) && generateExpectedDependencyTrace)
 				return; // No validation if we are generating the expected traces.
 
-			var expectedTracePath = testCase.TestSuiteDirectory.Combine ("Dependencies").Combine (testCase.Name + ".linker-dependencies.xml");
+			var expectedTracePath = testCaseMetadata.GetExpectedDependencyTrace ();
 			Assert.IsTrue (expectedTracePath.FileExists (), $"Expected dependency trace file '{expectedTracePath}' does not exist.");
 
 			// linker-dependencies.xml in same dir as output

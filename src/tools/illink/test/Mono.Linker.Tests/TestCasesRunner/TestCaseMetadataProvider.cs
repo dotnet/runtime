@@ -187,12 +187,15 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				.FirstOrDefault (attr => attr.AttributeType.Name == nameof (SetupLinkerLinkAllAttribute)) != null;
 		}
 
-		public virtual string GetExpectedDependencyTrace ()
+		public virtual NPath GetExpectedDependencyTrace ()
 		{
-			return _testCase.SourceFile.Parent
+			var testPrefix = _testCase.SourceFile.Parent.RelativeTo (_testCase.TestSuiteDirectory)
+				.ToString ()
+				.Replace (Path.DirectorySeparatorChar, '.');
+			var testName = _testCase.SourceFile.FileNameWithoutExtension;
+			return _testCase.TestSuiteDirectory
 				.Combine("Dependencies")
-				.Combine(_testCase.SourceFile.FileName)
-				.ChangeExtension(".linker-dependencies.xml");
+				.Combine($"{testPrefix}.{testName}.linker-dependencies.xml");
 		}
 	}
 }
