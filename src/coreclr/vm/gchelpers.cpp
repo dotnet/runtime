@@ -229,6 +229,11 @@ inline Object* Alloc(ee_alloc_context* pEEAllocContext, size_t size, GC_ALLOC_FL
 
     Object* retVal = nullptr;
     gc_alloc_context* pAllocContext = &pEEAllocContext->gc_alloc_context;
+    // the GC is aligning the allocated objects
+    // see gc_heap::allocate() for more details
+    size_t alignment = sizeof(uintptr_t) - 1;
+    size_t allocatedBytes = (size + alignment) & ~alignment;
+
     size_t samplingBudget = (size_t)(pEEAllocContext->alloc_sampling - pAllocContext->alloc_ptr);
     size_t availableSpace = (size_t)(pAllocContext->alloc_limit - pAllocContext->alloc_ptr);
     auto pCurrentThread = GetThread();
@@ -246,14 +251,14 @@ inline Object* Alloc(ee_alloc_context* pEEAllocContext, size_t size, GC_ALLOC_FL
             // so get a random size in the distribution and if it is less than the size of the object
             // then this object should be sampled
             samplingBudget = ee_alloc_context::ComputeGeometricRandom(pCurrentThread->GetRandom());
-            isSampled = (samplingBudget < size);
+            isSampled = (samplingBudget < allocatedBytes);
         }
         else
         {
             // Check to see if the allocated object overlaps a sampled byte
             // in this AC. This happens when both:
             // 1) The AC contains a sampled byte (alloc_sampling < alloc_limit)
-            // 2) The object is large enough to overlap it (size > samplingBudget)
+            // 2) The object is large enough to overlap it (allocatedBytes > samplingBudget)
             //
             // Note that the AC could have no remaining space for allocations (alloc_ptr =
             // alloc_limit = alloc_sampling). When a thread hasn't done any SOH allocations
@@ -262,14 +267,14 @@ inline Object* Alloc(ee_alloc_context* pEEAllocContext, size_t size, GC_ALLOC_FL
             // properly as an empty AC can not have a sampled byte inside of it.
             isSampled =
                 (pEEAllocContext->alloc_sampling < pAllocContext->alloc_limit) &&
-                (size > samplingBudget);
+                (allocatedBytes > samplingBudget);
 
             // if the object overflows the AC, we need to sample the remaining bytes
             // the sampling budget only included at most the bytes inside the AC
-            if (size > availableSpace && !isSampled)
+            if (allocatedBytes > availableSpace && !isSampled)
             {
                 samplingBudget = ee_alloc_context::ComputeGeometricRandom(pCurrentThread->GetRandom());
-                isSampled = (samplingBudget < size - availableSpace);
+                isSampled = (samplingBudget < allocatedBytes - availableSpace);
             }
         }
     }
@@ -287,10 +292,6 @@ inline Object* Alloc(ee_alloc_context* pEEAllocContext, size_t size, GC_ALLOC_FL
 
     if (isSampled)
     {
-        // the GC is aligning the allocated objects
-        // see gc_heap::allocate() for more details
-        size_t alignment = sizeof(uintptr_t) - 1;
-        size_t allocatedBytes = (size + alignment) & ~alignment;
         FireAllocationSampled(flags, allocatedBytes, samplingBudget, retVal);
     }
 
