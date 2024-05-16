@@ -40,7 +40,7 @@ namespace Allocate
                     break;
                 case Scenario.PerThread:
                     allocationsRun = new ThreadedAllocations();
-                    allocatedTypes = "Object24;Object48;Object72";
+                    allocatedTypes = "Object24;Object48;Object72;Object32;Object64;Object96";
                     break;
                 case Scenario.ArrayOfDouble:
                     allocationsRun = new AllocateArraysOfDoubles();

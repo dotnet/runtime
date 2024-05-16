@@ -14,6 +14,7 @@ namespace DynamicAllocationSampling
         public int Count;
         public long Size;
         public long TotalSize;
+        public long RemainderSize;
 
         public override int GetHashCode()
         {
@@ -130,21 +131,21 @@ namespace DynamicAllocationSampling
         }
 
         private const long SAMPLING_MEAN = 100 * 1024;
-
-        private static long UpscaleSize(long totalSize, int count, long mean)
+        private const double SAMPLING_RATIO = 0.99999 / 0.00001;
+        private static long UpscaleSize(long totalSize, int count, long mean, long sizeRemainder)
         {
-            // This is the Poisson process based scaling
-            var averageSize = (double)totalSize / (double)count;
-            var scale = 1 / (1 - Math.Exp(-averageSize / mean));
-            return (long)(totalSize * scale);
+            //// This is the Poisson process based scaling
+            //var averageSize = (double)totalSize / (double)count;
+            //var scale = 1 / (1 - Math.Exp(-averageSize / mean));
+            //return (long)(totalSize * scale);
 
-            // TODO: use the other upscaling method
+            // use the upscaling method detailed in the PR
             // = sq/p + u
             //   s = # of samples for a type
             //   q = 0.99999
             //   p = 0.00001
             //   u = sum of object remainders = Sum(object_size - sampledByteOffset) for all samples
-            // The problem I see is that the size of the object does not appear in the formula (q/p is a constant ~= 100.000)
+            return (long)(SAMPLING_RATIO * count + sizeRemainder);
         }
 
         private static void OnAllocationTick(GCAllocationTickTraceData payload)
@@ -172,7 +173,7 @@ namespace DynamicAllocationSampling
 
                 if (!_sampledTypes.TryGetValue(payload.TypeName+payload.ObjectSize, out TypeInfo typeInfo))
                 {
-                    typeInfo = new TypeInfo() { TypeName = payload.TypeName, Count = 0, Size = (int)payload.ObjectSize, TotalSize = 0 };
+                    typeInfo = new TypeInfo() { TypeName = payload.TypeName, Count = 0, Size = (int)payload.ObjectSize, TotalSize = 0, RemainderSize = payload.ObjectSize - payload.SampledByteOffset };
                     _sampledTypes.Add(payload.TypeName + payload.ObjectSize, typeInfo);
                 }
                 typeInfo.Count++;
@@ -248,7 +249,7 @@ namespace DynamicAllocationSampling
                         typeDistribution.Add(info, distribution);
                     }
 
-                    var upscaledCount = (long)info.Count * UpscaleSize(info.TotalSize, info.Count, SAMPLING_MEAN) / info.TotalSize;
+                    var upscaledCount = (long)info.Count * UpscaleSize(info.TotalSize, info.Count, SAMPLING_MEAN, info.RemainderSize) / info.TotalSize;
                     var percentDiff = (double)(upscaledCount - _allocationsCount) / (double)_allocationsCount;
                     distribution.Add(percentDiff);
                 }
@@ -275,7 +276,7 @@ namespace DynamicAllocationSampling
 
         private static void ShowIterationResults()
         {
-            // TODO: need to compute the mean size in case of array types
+            // NOTE: need to take the size into account for array types
             // print the sampled types for both AllocationTick and AllocationSampled
             Console.WriteLine("Tag  SCount  TCount          SSize          TSize   UnitSize     UpscaledSize  UpscaledCount  Name");
             Console.WriteLine("--------------------------------------------------------------------------------------------------");
@@ -315,7 +316,7 @@ namespace DynamicAllocationSampling
 
                 if (type.Count != 0)
                 {
-                    Console.WriteLine($"  {type.TotalSize / type.Count,9}    {UpscaleSize(type.TotalSize, type.Count, SAMPLING_MEAN),13}     {(long)type.Count * UpscaleSize(type.TotalSize, type.Count, SAMPLING_MEAN) / type.TotalSize,10}  {typeName}");
+                    Console.WriteLine($"  {type.TotalSize / type.Count,9}    {UpscaleSize(type.TotalSize, type.Count, SAMPLING_MEAN, type.RemainderSize),13}     {(long)type.Count * UpscaleSize(type.TotalSize, type.Count, SAMPLING_MEAN, type.RemainderSize) / type.TotalSize,10}  {typeName}");
                 }
             }
 
@@ -345,7 +346,7 @@ namespace DynamicAllocationSampling
     //  <data name="HeapIndex" inType="win:UInt32" />
     //  <data name="Address" inType="win:Pointer" />
     //  <data name="ObjectSize" inType="win:UInt64" outType="win:HexInt64" />
-    //  <data name="SamplingBudget" inType="win:UInt64" outType="win:HexInt64" />
+    //  <data name="SampledByteOffset" inType="win:UInt64" outType="win:HexInt64" />
     class AllocationSampledData
     {
         const int EndOfStringCharLength = 2;
@@ -367,7 +368,7 @@ namespace DynamicAllocationSampling
         public int HeapIndex;
         public UInt64 Address;
         public long ObjectSize;
-        public long SamplingBudget;
+        public long SampledByteOffset;
 
         private void ComputeFields()
         {
@@ -381,7 +382,7 @@ namespace DynamicAllocationSampling
             HeapIndex = BitConverter.ToInt32(data.Slice(offsetBeforeString + TypeName.Length * 2 + EndOfStringCharLength, 4));
             Address = BitConverter.ToUInt64(data.Slice(offsetBeforeString + TypeName.Length * 2 + EndOfStringCharLength + 4, _pointerSize));
             ObjectSize = BitConverter.ToInt64(data.Slice(offsetBeforeString + TypeName.Length * 2 + EndOfStringCharLength + 4 + 8, 8));
-            SamplingBudget = BitConverter.ToInt64(data.Slice(offsetBeforeString + TypeName.Length * 2 + EndOfStringCharLength + 4 + 8 + 8, 8));
+            SampledByteOffset = BitConverter.ToInt64(data.Slice(offsetBeforeString + TypeName.Length * 2 + EndOfStringCharLength + 4 + 8 + 8, 8));
         }
     }
 

@@ -280,13 +280,18 @@ inline Object* Alloc(ee_alloc_context* pEEAllocContext, size_t size, GC_ALLOC_FL
     // the allocation will be done in place (like in the fast path),
     // otherwise a new allocation context will be provided
     retVal = GCHeapUtilities::GetGCHeap()->Alloc(pAllocContext, size, flags);
+
     // Note: it might happen that the object to allocate is larger than an allocation context
     // in this case, both alloc_ptr and alloc_limit will share the same value
     // --> this already full allocation context will trigger the slow path in the next allocation
 
     if (isSampled)
     {
-        FireAllocationSampled(flags, size, samplingBudget, retVal);
+        // the GC is aligning the allocated objects
+        // see gc_heap::allocate() for more details
+        size_t alignment = sizeof(uintptr_t) - 1;
+        size_t allocatedBytes = (size + alignment) & ~alignment;
+        FireAllocationSampled(flags, allocatedBytes, samplingBudget, retVal);
     }
 
     // only SOH allocations require sampling threshold to be recomputed
