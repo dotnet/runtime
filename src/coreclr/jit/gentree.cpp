@@ -25177,34 +25177,6 @@ GenTree* Compiler::gtNewSimdShuffleNode(
             // swap the operands to match the encoding requirements
             retNode = gtNewSimdHWIntrinsicNode(type, op2, op1, NI_AVX2_PermuteVar8x32, simdBaseJitType, simdSize);
         }
-        else if (((elementSize == 2) || (elementSize == 1)) && isAvx10v1)
-        {
-            if (elementSize == 2)
-            {
-                assert(compIsaSupportedDebugOnly(InstructionSet_AVX10v1));
-                for (uint32_t i = 0; i < elementCount; i++)
-                {
-                    vecCns.u16[i] = (uint8_t)(vecCns.u8[i * elementSize] / elementSize);
-                }
-
-                op2                        = gtNewVconNode(type);
-                op2->AsVecCon()->gtSimdVal = vecCns;
-
-                // swap the operands to match the encoding requirements
-                retNode =
-                    gtNewSimdHWIntrinsicNode(type, op2, op1, NI_AVX10v1_PermuteVar16x16, simdBaseJitType, simdSize);
-            }
-            else // elementSize == 1
-            {
-                assert(compIsaSupportedDebugOnly(InstructionSet_AVX10v1));
-                op2                        = gtNewVconNode(type);
-                op2->AsVecCon()->gtSimdVal = vecCns;
-
-                // swap the operands to match the encoding requirements
-                retNode =
-                    gtNewSimdHWIntrinsicNode(type, op2, op1, NI_AVX10v1_PermuteVar32x8, simdBaseJitType, simdSize);
-            }
-        }
         else if (elementSize == 2)
         {
             assert(compIsaSupportedDebugOnly(InstructionSet_AVX512BW_VL));
@@ -25217,7 +25189,8 @@ GenTree* Compiler::gtNewSimdShuffleNode(
             op2->AsVecCon()->gtSimdVal = vecCns;
 
             // swap the operands to match the encoding requirements
-            retNode =
+            retNode = isAvx10v1 ? 
+                gtNewSimdHWIntrinsicNode(type, op2, op1, NI_AVX10v1_PermuteVar16x16, simdBaseJitType, simdSize) :
                 gtNewSimdHWIntrinsicNode(type, op2, op1, NI_AVX512BW_VL_PermuteVar16x16, simdBaseJitType, simdSize);
         }
         else if (elementSize == 1)
@@ -25227,7 +25200,8 @@ GenTree* Compiler::gtNewSimdShuffleNode(
             op2->AsVecCon()->gtSimdVal = vecCns;
 
             // swap the operands to match the encoding requirements
-            retNode =
+            retNode = isAvx10v1 ?
+                gtNewSimdHWIntrinsicNode(type, op2, op1, NI_AVX10v1_PermuteVar32x8, simdBaseJitType, simdSize) :
                 gtNewSimdHWIntrinsicNode(type, op2, op1, NI_AVX512VBMI_VL_PermuteVar32x8, simdBaseJitType, simdSize);
         }
         else
