@@ -3631,7 +3631,7 @@ void emitter::emitDispInsName(
                 case 0x5: // SRLIW & SRAIW
                 {
                     static constexpr unsigned kLogicalShiftFunct7    = 0x00;
-                    static constexpr unsigned kArithmeticShiftFunct7 = 0x30;
+                    static constexpr unsigned kArithmeticShiftFunct7 = 0x20;
 
                     unsigned funct7 = (imm12 >> 5) & 0x7f;
                     if (funct7 == kLogicalShiftFunct7)
