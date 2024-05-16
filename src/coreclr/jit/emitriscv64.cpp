@@ -3560,8 +3560,8 @@ void emitter::emitDispInsName(
                     break;
                 case 0x5: // SRLI & SRAI
                 {
-                    static constexpr unsigned kLogicalShiftFunct6    = 0x00;
-                    static constexpr unsigned kArithmeticShiftFunct6 = 0x10;
+                    static constexpr unsigned kLogicalShiftFunct6    = 0b000000;
+                    static constexpr unsigned kArithmeticShiftFunct6 = 0b010000;
 
                     unsigned funct6         = (imm12 >> 6) & 0x3f;
                     bool     isLogicalShift = funct6 == kLogicalShiftFunct6;
@@ -3630,8 +3630,8 @@ void emitter::emitDispInsName(
                     return;
                 case 0x5: // SRLIW & SRAIW
                 {
-                    static constexpr unsigned kLogicalShiftFunct7    = 0x00;
-                    static constexpr unsigned kArithmeticShiftFunct7 = 0x20;
+                    static constexpr unsigned kLogicalShiftFunct7    = 0b0000000;
+                    static constexpr unsigned kArithmeticShiftFunct7 = 0b0100000;
 
                     unsigned funct7 = (imm12 >> 5) & 0x7f;
                     if (funct7 == kLogicalShiftFunct7)
