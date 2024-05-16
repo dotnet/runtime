@@ -252,7 +252,7 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector128<float> AsVector128(this Vector2 value)
-            => new Vector4(value, 0.0f, 0.0f).AsVector128();
+            => new Vector4(value.X, value.Y, 0.0f, 0.0f).AsVector128();
 
         /// <summary>Reinterprets a <see cref="Vector3" /> as a new <see cref="Vector128{Single}" />.</summary>
         /// <param name="value">The vector to reinterpret.</param>
@@ -260,7 +260,7 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector128<float> AsVector128(this Vector3 value)
-            => new Vector4(value, 0.0f).AsVector128();
+            => new Vector4(value.X, value.Y, value.Z, 0.0f).AsVector128();
 
         /// <summary>Reinterprets a <see cref="Vector4" /> as a new <see cref="Vector128{Single}" />.</summary>
         /// <param name="value">The vector to reinterpret.</param>
