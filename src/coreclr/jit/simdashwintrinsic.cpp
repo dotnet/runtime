@@ -1414,16 +1414,6 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                     return gtNewSimdCreateSequenceNode(simdType, op1, op2, simdBaseJitType, simdSize);
                 }
 
-                case NI_Plane_CreateFromVector4:
-                {
-                    assert(retType == TYP_VOID);
-
-                    copyBlkDst = op1;
-                    copyBlkSrc = op2;
-
-                    break;
-                }
-
                 case NI_Vector2_Distance:
                 case NI_Vector3_Distance:
                 {
@@ -1463,7 +1453,6 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                     return gtNewSimdBinOpNode(GT_DIV, retType, op1, op2, simdBaseJitType, simdSize);
                 }
 
-                case NI_Plane_Dot:
                 case NI_Quaternion_Dot:
                 case NI_Vector2_Dot:
                 case NI_Vector3_Dot:
@@ -1478,7 +1467,6 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                     return gtNewSimdCmpOpNode(GT_EQ, retType, op1, op2, simdBaseJitType, simdSize);
                 }
 
-                case NI_Plane_op_Equality:
                 case NI_Quaternion_op_Equality:
                 case NI_Vector2_op_Equality:
                 case NI_Vector3_op_Equality:
@@ -1541,7 +1529,6 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                     return gtNewSimdCmpOpAnyNode(GT_GE, retType, op1, op2, simdBaseJitType, simdSize);
                 }
 
-                case NI_Plane_op_Inequality:
                 case NI_Quaternion_op_Inequality:
                 case NI_Vector2_op_Inequality:
                 case NI_Vector3_op_Inequality:
@@ -1866,7 +1853,6 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                     break;
                 }
 
-                case NI_Plane_CreateFromVector3:
                 case NI_Quaternion_CreateFromVector3:
                 case NI_Vector3_CreateFromVector2:
                 {
@@ -2049,7 +2035,6 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
 
             switch (intrinsic)
             {
-                case NI_Plane_Create:
                 case NI_Quaternion_Create:
                 {
                     assert(retType == TYP_VOID);

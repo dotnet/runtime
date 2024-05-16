@@ -27,30 +27,24 @@ namespace System.Numerics
         /// <param name="y">The Y component of the normal.</param>
         /// <param name="z">The Z component of the normal.</param>
         /// <param name="d">The distance of the plane along its normal from the origin.</param>
-        [Intrinsic]
         public Plane(float x, float y, float z, float d)
         {
-            Normal = new Vector3(x, y, z);
-            D = d;
+            this = Vector128.Create(x, y, z, d).AsPlane();
         }
 
         /// <summary>Creates a <see cref="Plane" /> object from a specified normal and the distance along the normal from the origin.</summary>
         /// <param name="normal">The plane's normal vector.</param>
         /// <param name="d">The plane's distance from the origin along its normal vector.</param>
-        [Intrinsic]
         public Plane(Vector3 normal, float d)
         {
-            Normal = normal;
-            D = d;
+            this = new Vector4(normal, d).AsPlane();
         }
 
         /// <summary>Creates a <see cref="Plane" /> object from a specified four-dimensional vector.</summary>
         /// <param name="value">A vector whose first three elements describe the normal vector, and whose <see cref="Vector4.W" /> defines the distance along that normal from the origin.</param>
-        [Intrinsic]
         public Plane(Vector4 value)
         {
-            Normal = new Vector3(value.X, value.Y, value.Z);
-            D = value.W;
+            this = value.AsPlane();
         }
 
         /// <summary>Creates a <see cref="Plane" /> object that contains three specified points.</summary>
@@ -109,14 +103,10 @@ namespace System.Numerics
         /// <param name="plane">The plane.</param>
         /// <param name="value">The four-dimensional vector.</param>
         /// <returns>The dot product.</returns>
-        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float Dot(Plane plane, Vector4 value)
         {
-            return (plane.Normal.X * value.X)
-                 + (plane.Normal.Y * value.Y)
-                 + (plane.Normal.Z * value.Z)
-                 + (plane.D * value.W);
+            return Vector128.Dot(plane.AsVector128(), value.AsVector128());
         }
 
         /// <summary>Returns the dot product of a specified three-dimensional vector and the normal vector of this plane plus the distance (<see cref="D" />) value of the plane.</summary>
@@ -265,12 +255,10 @@ namespace System.Numerics
         /// <returns><see langword="true" /> if <paramref name="value1" /> and <paramref name="value2" /> are equal; otherwise, <see langword="false" />.</returns>
         /// <remarks>Two <see cref="Plane" /> objects are equal if their <see cref="Normal" /> and <see cref="D" /> fields are equal.
         /// The <see cref="op_Equality" /> method defines the operation of the equality operator for <see cref="Plane" /> objects.</remarks>
-        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool operator ==(Plane value1, Plane value2)
         {
-            return (value1.Normal == value2.Normal)
-                && (value1.D == value2.D);
+            return value1.AsVector128() == value2.AsVector128();
         }
 
         /// <summary>Returns a value that indicates whether two planes are not equal.</summary>
@@ -278,7 +266,6 @@ namespace System.Numerics
         /// <param name="value2">The second plane to compare.</param>
         /// <returns><see langword="true" /> if <paramref name="value1" /> and <paramref name="value2" /> are not equal; otherwise, <see langword="false" />.</returns>
         /// <remarks>The <see cref="op_Inequality" /> method defines the operation of the inequality operator for <see cref="Plane" /> objects.</remarks>
-        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool operator !=(Plane value1, Plane value2)
         {

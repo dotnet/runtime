@@ -9,6 +9,13 @@ namespace System.Numerics
 {
     public static unsafe partial class Vector
     {
+        /// <summary>Reinterprets a <see cref="Vector4" /> as a new <see cref="Plane" />.</summary>
+        /// <param name="value">The vector to reinterpret.</param>
+        /// <returns><paramref name="value" /> reinterpreted as a new <see cref="Plane" />.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static Plane AsPlane(this Vector4 value)
+            => Unsafe.BitCast<Vector4, Plane>(value);
+
         /// <summary>Gets the element at the specified index.</summary>
         /// <param name="vector">The vector to get the element from.</param>
         /// <param name="index">The index of the element to get.</param>
