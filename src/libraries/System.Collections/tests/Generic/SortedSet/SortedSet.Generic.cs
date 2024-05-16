@@ -77,6 +77,34 @@ namespace System.Collections.Tests
             Assert.True(set.SetEquals(data));
         }
 
+#if !TARGET_64BIT
+        // Cover InternalIndexOf when Count > SuperSet.InternalIndexOfCountThreshold
+        // Since the algorithm has time complexity O(n^2) and n is quite large, only run it for 64-bit
+        [Fact]
+        public void SortedSet_Generic_SetEquals_AboveInternalIndexOfCountThreshold()
+        {
+            const int AboveInternalIndexOfCountThreshold = 253;
+
+            var setData = new int[AboveInternalIndexOfCountThreshold];
+            for(int i = 0; i < AboveInternalIndexOfCountThreshold; i++)
+            {
+                setData[i] = 0;
+            }
+            var set = new SortedSet<int>(setData);
+
+            var superSetData = new int[AboveInternalIndexOfCountThreshold + 1];
+            Array.Copy(setData, superSetData, AboveInternalIndexOfCountThreshold);
+            superSetData[AboveInternalIndexOfCountThreshold] = -1;
+
+            var subSetData = new int[AboveInternalIndexOfCountThreshold - 1];
+            Array.Copy(setData, subSetData, AboveInternalIndexOfCountThreshold - 1);
+
+            Assert.True(set.SetEquals(setData));
+            Assert.False(set.SetEquals(superSetData));
+            Assert.False(set.SetEquals(subSetData));
+        }
+#endif
+
         [Fact]
         public void SortedSet_Generic_GetViewBetween_MinMax_Exhaustive()
         {
