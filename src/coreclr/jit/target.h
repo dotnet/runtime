@@ -211,7 +211,6 @@ enum _regMask_enum : unsigned
 typedef _regNumber_enum regNumber;
 typedef unsigned char   regNumberSmall;
 
-
 #if REGMASK_BITS == 8
 typedef unsigned char regMaskSmall;
 #define REG_MASK_INT_FMT "%02X"
@@ -285,7 +284,8 @@ static regMaskTP operator-(regMaskTP first, regMaskTP second)
     return result;
 }
 
-static bool operator>(regMaskTP first, regMaskTP second) {
+static bool operator>(regMaskTP first, regMaskTP second)
+{
     return first.getLow() > second.getLow();
 }
 #endif
@@ -326,7 +326,8 @@ static regMaskTP& operator>>=(regMaskTP& first, const int b)
     return first;
 }
 
-static regMaskTP& operator<<=(regMaskTP& first, const int b) {
+static regMaskTP& operator<<=(regMaskTP& first, const int b)
+{
     first = first << b;
     return first;
 }

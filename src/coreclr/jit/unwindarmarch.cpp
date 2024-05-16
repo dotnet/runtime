@@ -238,7 +238,7 @@ void Compiler::unwindPushPopMaskInt(regMaskTP maskInt, bool useOpsize16)
         else
         {
             // EC-ED : pop {r0-r7,lr} (opsize 16)
-            pu->AddCode((BYTE)(0xEC | ((maskInt >> 14 ) & 0x1), (BYTE)maskInt));
+            pu->AddCode((BYTE)(0xEC | ((maskInt >> 14) & 0x1), (BYTE)maskInt));
         }
     }
     else

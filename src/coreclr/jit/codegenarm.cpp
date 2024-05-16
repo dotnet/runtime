@@ -1933,7 +1933,7 @@ void CodeGen::genPushFltRegs(regMaskTP regMask)
     int       slots  = genCountBits(regMask);
 
     // regMask should be contiguously set
-    regMaskSmall tmpMask = ((regMask.getLow() >> lowReg ) + 1); // tmpMask should have a single bit set
+    regMaskSmall tmpMask = ((regMask.getLow() >> lowReg) + 1); // tmpMask should have a single bit set
     assert((tmpMask & (tmpMask - 1)) == 0);
     assert(lowReg == REG_F16); // Currently we expect to start at F16 in the unwind codes
 
@@ -1952,7 +1952,7 @@ void CodeGen::genPopFltRegs(regMaskTP regMask)
     regNumber lowReg = genRegNumFromMask(genFindLowestBit(regMask));
     int       slots  = genCountBits(regMask);
     // regMask should be contiguously set
-    regMaskSmall tmpMask = ((regMask.getLow() >> lowReg ) + 1 ); // tmpMask should have a single bit set
+    regMaskSmall tmpMask = ((regMask.getLow() >> lowReg) + 1); // tmpMask should have a single bit set
     assert((tmpMask & (tmpMask - 1)) == 0);
 
     // Our calling convention requires that we only use vpop for TYP_DOUBLE registers
