@@ -899,9 +899,9 @@ bool Compiler::optMakeLoopDownwardsCounted(ScalarEvolutionContext& scevContext,
     assert(jtrue->OperIs(GT_JTRUE));
     GenTree* cond = jtrue->gtGetOp1();
 
-    bool validate = compStressCompile(STRESS_VALIDATE_TRIP_COUNTS, 50);
+    bool checkProfitability = !compStressCompile(STRESS_DOWNWARDS_COUNTED_LOOPS, 50);
 
-    if (!validate)
+    if (checkProfitability)
     {
         if ((jtrue->gtFlags & GTF_SIDE_EFFECT) != 0)
         {
@@ -962,8 +962,14 @@ bool Compiler::optMakeLoopDownwardsCounted(ScalarEvolutionContext& scevContext,
         auto checkRemovableUse = [=, &hasUseInTest](BasicBlock* block, Statement* stmt) {
             if (stmt == jtrueStmt)
             {
-                // Use is inside the loop test that has no side effects (as we checked above), can remove
                 hasUseInTest = true;
+
+                if ((jtrueStmt->GetRootNode()->gtFlags & GTF_SIDE_EFFECT) != 0)
+                {
+                    return false;
+                }
+
+                // Use is inside the loop test that has no side effects, can remove
                 return true;
             }
 
@@ -1006,7 +1012,7 @@ bool Compiler::optMakeLoopDownwardsCounted(ScalarEvolutionContext& scevContext,
         removableLocals.Push(candidateLclNum);
     }
 
-    if (!validate && (removableLocals.Height() <= 0))
+    if (checkProfitability && (removableLocals.Height() <= 0))
     {
         JITDUMP("  Found no potentially removable locals when making this loop downwards counted\n");
         return false;
@@ -1074,14 +1080,7 @@ bool Compiler::optMakeLoopDownwardsCounted(ScalarEvolutionContext& scevContext,
         return false;
     }
 
-    if (validate)
-    {
-        JITDUMP("  Inserting validation of computed trip count for " FMT_LP "\n", loop->GetIndex());
-    }
-    else
-    {
-        JITDUMP("  Converting " FMT_LP " into a downwards loop\n", loop->GetIndex());
-    }
+    JITDUMP("  Converting " FMT_LP " into a downwards loop\n", loop->GetIndex());
 
     unsigned tripCountLcl = lvaGrabTemp(false DEBUGARG("Trip count IV"));
     GenTree* store        = gtNewTempStore(tripCountLcl, decCountNode);
@@ -1109,63 +1108,33 @@ bool Compiler::optMakeLoopDownwardsCounted(ScalarEvolutionContext& scevContext,
     JITDUMP("\n  Inserted decrement of tripcount local\n\n");
     DISPSTMT(newStmt);
 
-    if (validate)
+    // Update the test.
+    cond->SetOper(exitOp);
+    cond->AsOp()->gtOp1 = gtNewLclVarNode(tripCountLcl, decCount->Type);
+    cond->AsOp()->gtOp2 = gtNewZeroConNode(decCount->Type);
+
+    gtSetStmtInfo(jtrueStmt);
+    fgSetStmtSeq(jtrueStmt);
+
+    JITDUMP("\n  Updated exit test:\n");
+    DISPSTMT(jtrueStmt);
+
+    JITDUMP("\n  Now removing uses of old IVs\n");
+
+    for (int i = 0; i < removableLocals.Height(); i++)
     {
-        loop->VisitRegularExitBlocks([=](BasicBlock* exit) {
-            bool hasNonLoopPred = false;
-            for (BasicBlock* pred : exit->PredBlocks())
+        unsigned removableLcl = removableLocals.Bottom(i);
+        JITDUMP("  Removing uses of V%02u\n", removableLcl);
+        auto deleteStatement = [=](BasicBlock* block, Statement* stmt) {
+            if (stmt != jtrueStmt)
             {
-                if (!loop->ContainsBlock(pred))
-                {
-                    hasNonLoopPred = true;
-                    break;
-                }
+                fgRemoveStmt(block, stmt);
             }
 
-            if (!hasNonLoopPred)
-            {
-                GenTree* tripCountIsZero = gtNewOperNode(GT_EQ, TYP_INT, gtNewLclVarNode(tripCountLcl, decCount->Type),
-                                                         gtNewZeroConNode(decCount->Type));
-                GenTreeCall* callAssert =
-                    gtNewHelperCallNode(CORINFO_HELP_JIT_RUNTIME_ASSERT, TYP_VOID, tripCountIsZero, gtNewIconNode(10));
-                callAssert         = fgMorphArgs(callAssert);
-                Statement* newStmt = fgNewStmtFromTree(callAssert);
-                fgInsertStmtAtBeg(exit, newStmt);
-            }
+            return true;
+        };
 
-            return BasicBlockVisit::Continue;
-        });
-    }
-    else
-    {
-        // Update the test.
-        cond->SetOper(exitOp);
-        cond->AsOp()->gtOp1 = gtNewLclVarNode(tripCountLcl, decCount->Type);
-        cond->AsOp()->gtOp2 = gtNewZeroConNode(decCount->Type);
-
-        gtSetStmtInfo(jtrueStmt);
-        fgSetStmtSeq(jtrueStmt);
-
-        JITDUMP("\n  Updated exit test:\n");
-        DISPSTMT(jtrueStmt);
-
-        JITDUMP("\n  Now removing uses of old IVs\n");
-
-        for (int i = 0; i < removableLocals.Height(); i++)
-        {
-            unsigned removableLcl = removableLocals.Bottom(i);
-            JITDUMP("  Removing uses of V%02u\n", removableLcl);
-            auto deleteStatement = [=](BasicBlock* block, Statement* stmt) {
-                if (stmt != jtrueStmt)
-                {
-                    fgRemoveStmt(block, stmt);
-                }
-
-                return true;
-            };
-
-            loopLocals->VisitStatementsWithOccurrences(loop, removableLcl, deleteStatement);
-        }
+        loopLocals->VisitStatementsWithOccurrences(loop, removableLcl, deleteStatement);
     }
 
     JITDUMP("\n");

@@ -4833,35 +4833,6 @@ HCIMPL0(void, JIT_DebugLogLoopCloning)
 }
 HCIMPLEND
 
-#ifdef _DEBUG
-static void DoJITRuntimeAssertFail(int id)
-{
-    CONTRACTL {
-        MODE_ANY;
-        WRAPPER(GC_TRIGGERS);
-        WRAPPER(THROWS);
-    } CONTRACTL_END;
-
-    LOG((LF_ALWAYS, LL_FATALERROR, "JIT runtime assertion with ID %d failed", id));
-    printf("JIT runtime assert with ID %d failed\n", id);
-
-    const unsigned assertFailureExit = 0xC0000420L;
-    CrashDumpAndTerminateProcess(assertFailureExit);
-}
-#endif
-
-HCIMPL2(void, JIT_RuntimeAssert, int condition, int id)
-{
-    FCALL_CONTRACT;
-#ifdef DEBUG
-    if (condition == 0)
-    {
-        DoJITRuntimeAssertFail(id);
-    }
-#endif
-}
-HCIMPLEND
-
 #ifdef FEATURE_ON_STACK_REPLACEMENT
 
 // Helper method to jit the OSR version of a method.
