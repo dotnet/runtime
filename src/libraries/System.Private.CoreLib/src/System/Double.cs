@@ -1216,6 +1216,17 @@ namespace System
             return y;
         }
 
+        /// <inheritdoc cref="INumberBase{TSelf}.MultiplyAddEstimate(TSelf, TSelf, TSelf)" />
+        [Intrinsic]
+        public static double MultiplyAddEstimate(double left, double right, double addend)
+        {
+#if MONO
+            return (left * right) + addend;
+#else
+            return MultiplyAddEstimate(left, right, addend);
+#endif
+        }
+
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertFromChecked{TOther}(TOther, out TSelf)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static bool INumberBase<double>.TryConvertFromChecked<TOther>(TOther value, out double result)
