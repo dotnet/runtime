@@ -2258,32 +2258,9 @@ void OleVariant::MarshalOleRefVariantForObject(OBJECTREF *pObj, VARIANT *pOle)
             args[2] = PtrToArgSlot(&vtmp);
             castVariant.Call(args);
 
-            // If the variant types are still not the same then call VariantChangeType to
-            // try and coerse them.
-            if (V_VT(&vtmp) != vt)
-            {
-                VARIANT vtmp2;
-                memset(&vtmp2, 0, sizeof(VARIANT));
-
-                // The type of the variant has changed so attempt to change
-                // the type back.
-                hr = SafeVariantChangeType(&vtmp2, &vtmp, 0, vt);
-                if (FAILED(hr))
-                {
-                    if (hr == DISP_E_TYPEMISMATCH)
-                        COMPlusThrow(kInvalidCastException, IDS_EE_CANNOT_COERCE_BYREF_VARIANT);
-                    else
-                        COMPlusThrowHR(hr);
-                }
-
-                // Copy the converted variant back into the original variant and clear the temp.
-                InsertContentsIntoByrefVariant(&vtmp2, pOle);
-                SafeVariantClear(&vtmp);
-            }
-            else
-            {
-                InsertContentsIntoByrefVariant(&vtmp, pOle);
-            }
+            // Managed implementation of CastVariant should either return correct type or throw.
+            _ASSERTE(V_VT(&vtmp) == vt);
+            InsertContentsIntoByrefVariant(&vtmp, pOle);
         }
     }
 }
