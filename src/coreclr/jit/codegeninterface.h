@@ -48,17 +48,17 @@ CodeGenInterface* getCodeGenerator(Compiler* comp);
 
 class NodeInternalRegisters
 {
-    typedef JitHashTable<GenTree*, JitPtrKeyFuncs<GenTree>, regMaskTP> NodeInternalRegistersTable;
+    typedef JitHashTable<GenTree*, JitPtrKeyFuncs<GenTree>, SingleTypeRegSet> NodeInternalRegistersTable;
     NodeInternalRegistersTable                                         m_table;
 
 public:
     NodeInternalRegisters(Compiler* comp);
 
-    void      Add(GenTree* tree, regMaskTP reg);
-    regNumber Extract(GenTree* tree, regMaskTP mask = static_cast<regMaskTP>(-1));
-    regNumber GetSingle(GenTree* tree, regMaskTP mask = static_cast<regMaskTP>(-1));
-    regMaskTP GetAll(GenTree* tree);
-    unsigned  Count(GenTree* tree, regMaskTP mask = static_cast<regMaskTP>(-1));
+    void      Add(GenTree* tree, SingleTypeRegSet reg);
+    regNumber Extract(GenTree* tree, SingleTypeRegSet mask = static_cast<SingleTypeRegSet>(-1));
+    regNumber GetSingle(GenTree* tree, SingleTypeRegSet mask = static_cast<SingleTypeRegSet>(-1));
+    SingleTypeRegSet GetAll(GenTree* tree);
+    unsigned  Count(GenTree* tree, SingleTypeRegSet mask = static_cast<SingleTypeRegSet>(-1));
 };
 
 class CodeGenInterface

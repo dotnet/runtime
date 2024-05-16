@@ -185,7 +185,7 @@ int LinearScan::BuildCall(GenTreeCall* call)
         {
             // For R2R and VSD we have stub address in REG_R2R_INDIRECT_PARAM
             // and will load call address into the temp register from this register.
-            regMaskTP candidates = allRegs(TYP_INT) & RBM_INT_CALLEE_TRASH;
+            SingleTypeRegSet candidates = allRegs(TYP_INT) & RBM_INT_CALLEE_TRASH;
             assert(candidates != RBM_NONE);
             buildInternalIntRegisterDefForNode(call, candidates);
         }
@@ -521,13 +521,14 @@ int LinearScan::BuildPutArgSplit(GenTreePutArgSplit* argNode)
     int dstCount = argNode->gtNumRegs;
 
     regNumber argReg  = argNode->GetRegNum();
-    regMaskTP argMask = RBM_NONE;
+    SingleTypeRegSet argMask = RBM_NONE;
     for (unsigned i = 0; i < argNode->gtNumRegs; i++)
     {
         regNumber thisArgReg = (regNumber)((unsigned)argReg + i);
         argMask |= genRegMask(thisArgReg);
         argNode->SetRegNumByIdx(thisArgReg, i);
     }
+    assert((argMask == RBM_NONE) || ((argMask & availableIntRegs) != RBM_NONE) || ((argMask & availableFloatRegs) != RBM_NONE));
 
     if (src->OperGet() == GT_FIELD_LIST)
     {
@@ -585,7 +586,7 @@ int LinearScan::BuildPutArgSplit(GenTreePutArgSplit* argNode)
             if (argNode->gtNumRegs == 1)
             {
                 // We can use a ldr/str sequence so we need an internal register
-                buildInternalIntRegisterDefForNode(argNode, allRegs(TYP_INT) & ~argMask);
+                buildInternalIntRegisterDefForNode(argNode, (allRegs(TYP_INT) & ~argMask));
             }
 
             // We will generate code that loads from the OBJ's address, which must be in a register.
@@ -619,9 +620,9 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
 
     GenTree* srcAddrOrFill = nullptr;
 
-    regMaskTP dstAddrRegMask = RBM_NONE;
-    regMaskTP srcRegMask     = RBM_NONE;
-    regMaskTP sizeRegMask    = RBM_NONE;
+    SingleTypeRegSet dstAddrRegMask = RBM_NONE;
+    SingleTypeRegSet srcRegMask     = RBM_NONE;
+    SingleTypeRegSet sizeRegMask    = RBM_NONE;
 
     if (blkNode->OperIsInitBlkOp())
     {
@@ -678,7 +679,7 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
                 // We don't need to materialize the struct size but we still need
                 // a temporary register to perform the sequence of loads and stores.
                 // We can't use the special Write Barrier registers, so exclude them from the mask
-                regMaskTP internalIntCandidates =
+                SingleTypeRegSet internalIntCandidates =
                     allRegs(TYP_INT) & ~(RBM_WRITE_BARRIER_DST_BYREF | RBM_WRITE_BARRIER_SRC_BYREF);
                 buildInternalIntRegisterDefForNode(blkNode, internalIntCandidates);
 

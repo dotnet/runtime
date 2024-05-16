@@ -282,6 +282,16 @@ public:
         return high;
     }
 
+    bool IsEmpty()
+    {
+        return (low | high) == RBM_NONE;
+    }
+
+    bool IsNonEmpty()
+    {
+        return !IsEmpty();
+    }
+
     SingleTypeRegSet GetRegSetForType(var_types type) const
     {
         return getLow();

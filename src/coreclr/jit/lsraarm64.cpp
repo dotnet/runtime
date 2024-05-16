@@ -423,7 +423,7 @@ regMaskTP LinearScan::getConsecutiveCandidates(regMaskTP    allCandidates,
     assert(compiler->info.compNeedsConsecutiveRegisters);
     assert(refPosition->isFirstRefPositionOfConsecutiveRegisters());
     regMaskTP freeCandidates = allCandidates & m_AvailableRegs;
-    assert((freeCandidates == RBM_NONE) || (freeCandidates & availableFloatRegs) != 0);
+    assert((freeCandidates.IsEmpty()) || (freeCandidates.getLow() & availableFloatRegs));
     SingleTypeRegSet floatFreeCandidates = freeCandidates.getLow();
 
 #ifdef DEBUG

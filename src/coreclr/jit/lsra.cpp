@@ -8684,7 +8684,7 @@ regNumber LinearScan::getTempRegForResolution(BasicBlock*      fromBlock,
                                               BasicBlock*      toBlock,
                                               var_types        type,
                                               VARSET_VALARG_TP sharedCriticalLiveSet,
-                                              regMaskTP        terminatorConsumedRegs)
+                                              SingleTypeRegSet terminatorConsumedRegs)
 {
     // TODO-Throughput: This would be much more efficient if we add RegToVarMaps instead of VarToRegMaps
     // and they would be more space-efficient as well.
@@ -8703,7 +8703,7 @@ regNumber LinearScan::getTempRegForResolution(BasicBlock*      fromBlock,
         freeRegs = allRegs(type);
     }
 #else  // !TARGET_ARM
-    regMaskTP freeRegs = allRegs(type);
+    SingleTypeRegSet freeRegs = allRegs(type);
 #endif // !TARGET_ARM
 
 #ifdef DEBUG
@@ -8990,7 +8990,7 @@ void LinearScan::handleOutgoingCriticalEdges(BasicBlock* block)
     //
     // Note: Only switches and JCMP/JTEST (for Arm4) have input regs (and so can be fed by copies), so those
     // are the only block-ending branches that need special handling.
-    regMaskTP consumedRegs = RBM_NONE;
+    SingleTypeRegSet consumedRegs = RBM_NONE;
     if (block->KindIs(BBJ_SWITCH))
     {
         // At this point, Lowering has transformed any non-switch-table blocks into
@@ -9518,7 +9518,7 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
                              BasicBlock*      toBlock,
                              ResolveType      resolveType,
                              VARSET_VALARG_TP liveSet,
-                             regMaskTP        terminatorConsumedRegs)
+                             SingleTypeRegSet        terminatorConsumedRegs)
 {
     VarToRegMap fromVarToRegMap = getOutVarToRegMap(fromBlock->bbNum);
     VarToRegMap toVarToRegMap;
@@ -12560,9 +12560,9 @@ void LinearScan::RegisterSelection::reset(Interval* interval, RefPosition* refPo
 //  Return Values:
 //      'true' if there was a single register candidate available after the heuristic is applied.
 //
-bool LinearScan::RegisterSelection::applySelection(int selectionScore, regMaskTP selectionCandidates)
+bool LinearScan::RegisterSelection::applySelection(int selectionScore, SingleTypeRegSet selectionCandidates)
 {
-    regMaskTP newCandidates = candidates & selectionCandidates;
+    SingleTypeRegSet newCandidates = candidates & selectionCandidates;
     if (newCandidates != RBM_NONE)
     {
         candidates = newCandidates;
@@ -12581,10 +12581,10 @@ bool LinearScan::RegisterSelection::applySelection(int selectionScore, regMaskTP
 //  Return Values:
 //      'true' if there was a single register candidate available after the heuristic is applied.
 //
-bool LinearScan::RegisterSelection::applySingleRegSelection(int selectionScore, regMaskTP selectionCandidate)
+bool LinearScan::RegisterSelection::applySingleRegSelection(int selectionScore, SingleTypeRegSet selectionCandidate)
 {
     assert(LinearScan::isSingleRegister(selectionCandidate));
-    regMaskTP newCandidates = candidates & selectionCandidate;
+    SingleTypeRegSet newCandidates = candidates & selectionCandidate;
     if (newCandidates != RBM_NONE)
     {
         candidates = newCandidates;
@@ -12631,7 +12631,7 @@ void LinearScan::RegisterSelection::try_CONST_AVAILABLE()
 
     if (currentInterval->isConstant && RefTypeIsDef(refPosition->refType))
     {
-        regMaskTP newCandidates = candidates & matchingConstants;
+        SingleTypeRegSet newCandidates = candidates & matchingConstants;
         if (newCandidates != RBM_NONE)
         {
             candidates            = newCandidates;
@@ -12792,7 +12792,7 @@ void LinearScan::RegisterSelection::try_COVERS_FULL()
     calculateCoversSets();
 #endif
 
-    regMaskTP newCandidates = candidates & coversFullSet & freeCandidates;
+    SingleTypeRegSet newCandidates = candidates & coversFullSet & freeCandidates;
     if (newCandidates != RBM_NONE)
     {
         candidates        = newCandidates;
@@ -13216,11 +13216,11 @@ void LinearScan::RegisterSelection::calculateUnassignedSets() // TODO: Seperate 
         return;
     }
 
-    regMaskTP coversCandidates = candidates;
+    SingleTypeRegSet coversCandidates = candidates;
     for (; coversCandidates != RBM_NONE;)
     {
         regNumber coversCandidateRegNum = genFirstRegNumFromMask(coversCandidates);
-        regMaskTP coversCandidateBit    = genRegMask(coversCandidateRegNum);
+        SingleTypeRegSet coversCandidateBit    = genRegMask(coversCandidateRegNum);
         coversCandidates ^= coversCandidateBit;
 
         // The register is considered unassigned if it has no assignedInterval, OR
@@ -13244,11 +13244,11 @@ void LinearScan::RegisterSelection::calculateCoversSets()
     }
 
     preferenceSet              = (candidates & preferences);
-    regMaskTP coversCandidates = (preferenceSet == RBM_NONE) ? candidates : preferenceSet;
+    SingleTypeRegSet coversCandidates = (preferenceSet == RBM_NONE) ? candidates : preferenceSet;
     for (; coversCandidates != RBM_NONE;)
     {
         regNumber coversCandidateRegNum = genFirstRegNumFromMask(coversCandidates);
-        regMaskTP coversCandidateBit    = genRegMask(coversCandidateRegNum);
+        SingleTypeRegSet coversCandidateBit    = genRegMask(coversCandidateRegNum);
         coversCandidates ^= coversCandidateBit;
 
         // If we have a single candidate we don't need to compute the preference-related sets, but we
@@ -13477,11 +13477,11 @@ SingleTypeRegSet LinearScan::RegisterSelection::select(Interval*                
 
     if (preferCalleeSave)
     {
-        regMaskTP calleeSaveCandidates = linearScan->calleeSaveRegs(currentInterval->registerType);
+        SingleTypeRegSet calleeSaveCandidates = linearScan->calleeSaveRegs(currentInterval->registerType);
         if (currentInterval->isWriteThru)
         {
             // We'll only prefer a callee-save register if it's already been used.
-            regMaskTP unusedCalleeSaves =
+            SingleTypeRegSet unusedCalleeSaves =
                 calleeSaveCandidates & ~(linearScan->compiler->codeGen->regSet.rsGetModifiedRegsMask());
             callerCalleePrefs = calleeSaveCandidates & ~unusedCalleeSaves;
             preferences &= ~unusedCalleeSaves;
@@ -13836,7 +13836,7 @@ SingleTypeRegSet LinearScan::RegisterSelection::selectMinimal(
 #endif
 
     // Is this a fixedReg?
-    regMaskTP fixedRegMask = RBM_NONE;
+    SingleTypeRegSet fixedRegMask = RBM_NONE;
     if (refPosition->isFixedRegRef)
     {
         assert(genMaxOneBit(refPosition->registerAssignment));
@@ -13854,7 +13854,7 @@ SingleTypeRegSet LinearScan::RegisterSelection::selectMinimal(
     // When we allocate for USE, we see that the register is busy at current location
     // and we end up with that candidate is no longer available.
     regMaskTP busyRegs = linearScan->regsBusyUntilKill | linearScan->regsInUseThisLocation;
-    candidates &= ~busyRegs;
+    candidates &= ~busyRegs.GetRegSetForType(regType);
 
 #ifdef TARGET_ARM
     // For TYP_DOUBLE on ARM, we can only use an even floating-point register for which the odd half
@@ -13871,11 +13871,11 @@ SingleTypeRegSet LinearScan::RegisterSelection::selectMinimal(
     // Also eliminate as busy any register with a conflicting fixed reference at this or
     // the next location.
     // Note that this will eliminate the fixedReg, if any, but we'll add it back below.
-    regMaskTP checkConflictMask = candidates & linearScan->fixedRegs;
+    SingleTypeRegSet checkConflictMask = candidates & linearScan->fixedRegs.GetRegSetForType(regType);
     while (checkConflictMask != RBM_NONE)
     {
         regNumber checkConflictReg = genFirstRegNumFromMask(checkConflictMask);
-        regMaskTP checkConflictBit = genRegMask(checkConflictReg);
+        SingleTypeRegSet checkConflictBit = genRegMask(checkConflictReg);
         checkConflictMask ^= checkConflictBit;
 
         LsraLocation checkConflictLocation = linearScan->nextFixedRef[checkConflictReg];

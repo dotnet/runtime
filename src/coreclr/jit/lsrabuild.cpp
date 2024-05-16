@@ -1311,7 +1311,7 @@ bool LinearScan::checkContainedOrCandidateLclVar(GenTreeLclVar* lclNode)
 //     currentLoc            -   Location of the temp Def position
 //     regMask               -   register mask of candidates for temp
 //
-RefPosition* LinearScan::defineNewInternalTemp(GenTree* tree, RegisterType regType, regMaskTP regMask)
+RefPosition* LinearScan::defineNewInternalTemp(GenTree* tree, RegisterType regType, SingleTypeRegSet regMask)
 {
     Interval* current   = newInterval(regType);
     current->isInternal = true;
@@ -1331,7 +1331,7 @@ RefPosition* LinearScan::defineNewInternalTemp(GenTree* tree, RegisterType regTy
 // Returns:
 //   The def RefPosition created for this internal temp.
 //
-RefPosition* LinearScan::buildInternalIntRegisterDefForNode(GenTree* tree, regMaskTP internalCands)
+RefPosition* LinearScan::buildInternalIntRegisterDefForNode(GenTree* tree, SingleTypeRegSet internalCands)
 {
     // The candidate set should contain only integer registers.
     assert((internalCands & ~availableIntRegs) == RBM_NONE);
@@ -1350,7 +1350,7 @@ RefPosition* LinearScan::buildInternalIntRegisterDefForNode(GenTree* tree, regMa
 // Returns:
 //   The def RefPosition created for this internal temp.
 //
-RefPosition* LinearScan::buildInternalFloatRegisterDefForNode(GenTree* tree, regMaskTP internalCands)
+RefPosition* LinearScan::buildInternalFloatRegisterDefForNode(GenTree* tree, SingleTypeRegSet internalCands)
 {
     // The candidate set should contain only float registers.
     assert((internalCands & ~availableFloatRegs) == RBM_NONE);
@@ -1360,7 +1360,7 @@ RefPosition* LinearScan::buildInternalFloatRegisterDefForNode(GenTree* tree, reg
 }
 
 #if defined(FEATURE_SIMD) && defined(TARGET_XARCH)
-RefPosition* LinearScan::buildInternalMaskRegisterDefForNode(GenTree* tree, regMaskTP internalCands)
+RefPosition* LinearScan::buildInternalMaskRegisterDefForNode(GenTree* tree, SingleTypeRegSet internalCands)
 {
     // The candidate set should contain only float registers.
     assert((internalCands & ~availableMaskRegs) == RBM_NONE);
@@ -1391,7 +1391,7 @@ void LinearScan::buildInternalRegisterUses()
     for (int i = 0; i < internalCount; i++)
     {
         RefPosition* def  = internalDefs[i];
-        regMaskTP    mask = def->registerAssignment;
+        SingleTypeRegSet mask = def->registerAssignment;
         RefPosition* use  = newRefPosition(def->getInterval(), currentLoc, RefTypeUse, def->treeNode, mask, 0);
         if (setInternalRegsDelayFree)
         {
@@ -1858,8 +1858,8 @@ void LinearScan::buildRefPositionsForNode(GenTree* tree, LsraLocation currentLoc
             if (newRefPosition->IsActualRef() && doReverseCallerCallee())
             {
                 Interval* interval       = newRefPosition->getInterval();
-                regMaskTP oldAssignment  = newRefPosition->registerAssignment;
-                regMaskTP calleeSaveMask = calleeSaveRegs(interval->registerType);
+                SingleTypeRegSet oldAssignment  = newRefPosition->registerAssignment;
+                SingleTypeRegSet calleeSaveMask = calleeSaveRegs(interval->registerType);
 #ifdef TARGET_ARM64
                 if (newRefPosition->isLiveAtConsecutiveRegistersLoc(consecutiveRegistersLocation))
                 {
@@ -2865,7 +2865,7 @@ void LinearScan::buildInitialParamDef(const LclVarDsc* varDsc, regNumber paramRe
 
     Interval*       interval = getIntervalForLocalVar(varDsc->lvVarIndex);
     const var_types regType  = varDsc->GetRegisterType();
-    regMaskTP       mask     = allRegs(regType);
+    SingleTypeRegSet mask     = allRegs(regType);
     if ((paramReg != REG_NA) && !stressInitialParamReg())
     {
         // Set this interval as currently assigned to that register
@@ -4121,7 +4121,7 @@ int LinearScan::BuildReturn(GenTree* tree)
                             if (srcType != dstType)
                             {
                                 hasMismatchedRegTypes = true;
-                                regMaskTP dstRegMask =
+                                SingleTypeRegSet dstRegMask =
                                     genRegMask(retTypeDesc.GetABIReturnReg(i, compiler->info.compCallConv));
 
                                 if (varTypeUsesIntReg(dstType))

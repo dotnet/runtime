@@ -725,7 +725,7 @@ public:
                      BasicBlock*      toBlock,
                      ResolveType      resolveType,
                      VARSET_VALARG_TP liveSet,
-                     regMaskTP        terminatorConsumedRegs);
+                     SingleTypeRegSet terminatorConsumedRegs);
 
     void resolveEdges();
 
@@ -1129,11 +1129,11 @@ private:
     }
 
     // Managing internal registers during the BuildNode process.
-    RefPosition* defineNewInternalTemp(GenTree* tree, RegisterType regType, regMaskTP candidates);
-    RefPosition* buildInternalIntRegisterDefForNode(GenTree* tree, regMaskTP internalCands = RBM_NONE);
-    RefPosition* buildInternalFloatRegisterDefForNode(GenTree* tree, regMaskTP internalCands = RBM_NONE);
+    RefPosition* defineNewInternalTemp(GenTree* tree, RegisterType regType, SingleTypeRegSet candidates);
+    RefPosition* buildInternalIntRegisterDefForNode(GenTree* tree, SingleTypeRegSet internalCands = RBM_NONE);
+    RefPosition* buildInternalFloatRegisterDefForNode(GenTree* tree, SingleTypeRegSet internalCands = RBM_NONE);
 #if defined(FEATURE_SIMD)
-    RefPosition* buildInternalMaskRegisterDefForNode(GenTree* tree, regMaskTP internalCands = RBM_NONE);
+    RefPosition* buildInternalMaskRegisterDefForNode(GenTree* tree, SingleTypeRegSet internalCands = RBM_NONE);
 #endif
     void buildInternalRegisterUses();
 
@@ -1240,7 +1240,7 @@ private:
                                                          unsigned int     registersNeeded);
 #endif // TARGET_ARM64
 
-    regMaskTP getFreeCandidates(regMaskTP candidates ARM_ARG(var_types regType))
+    SingleTypeRegSet getFreeCandidates(regMaskTP candidates ARM_ARG(var_types regType))
     {
         regMaskTP result = candidates & m_AvailableRegs;
 #ifdef TARGET_ARM
@@ -1315,34 +1315,34 @@ private:
 
         RegisterType regType = RegisterType::TYP_UNKNOWN;
 
-        regMaskTP candidates;
-        regMaskTP preferences     = RBM_NONE;
+        SingleTypeRegSet candidates;
+        SingleTypeRegSet preferences     = RBM_NONE;
         Interval* relatedInterval = nullptr;
 
-        regMaskTP    relatedPreferences = RBM_NONE;
+        SingleTypeRegSet relatedPreferences = RBM_NONE;
         LsraLocation rangeEndLocation;
         LsraLocation relatedLastLocation;
         bool         preferCalleeSave = false;
         RefPosition* rangeEndRefPosition;
         RefPosition* lastRefPosition;
-        regMaskTP    callerCalleePrefs = RBM_NONE;
+        SingleTypeRegSet callerCalleePrefs = RBM_NONE;
         LsraLocation lastLocation;
 
-        regMaskTP foundRegBit;
+        SingleTypeRegSet foundRegBit;
 
-        regMaskTP prevRegBit = RBM_NONE;
+        SingleTypeRegSet prevRegBit = RBM_NONE;
 
         // These are used in the post-selection updates, and must be set for any selection.
-        regMaskTP freeCandidates;
-        regMaskTP matchingConstants;
-        regMaskTP unassignedSet;
+        SingleTypeRegSet freeCandidates;
+        SingleTypeRegSet matchingConstants;
+        SingleTypeRegSet unassignedSet;
 
         // Compute the sets for COVERS, OWN_PREFERENCE, COVERS_RELATED, COVERS_FULL and UNASSIGNED together,
         // as they all require similar computation.
-        regMaskTP coversSet;
-        regMaskTP preferenceSet;
-        regMaskTP coversRelatedSet;
-        regMaskTP coversFullSet;
+        SingleTypeRegSet coversSet;
+        SingleTypeRegSet preferenceSet;
+        SingleTypeRegSet coversRelatedSet;
+        SingleTypeRegSet coversFullSet;
         bool      coversSetsCalculated  = false;
         bool      found                 = false;
         bool      skipAllocation        = false;
@@ -1356,8 +1356,8 @@ private:
             return (prevRegBit & preferences) == foundRegBit;
         }
 
-        bool             applySelection(int selectionScore, regMaskTP selectionCandidates);
-        bool             applySingleRegSelection(int selectionScore, regMaskTP selectionCandidate);
+        bool             applySelection(int selectionScore, SingleTypeRegSet selectionCandidates);
+        bool             applySingleRegSelection(int selectionScore, SingleTypeRegSet selectionCandidate);
         FORCEINLINE void calculateCoversSets();
         FORCEINLINE void calculateUnassignedSets();
         FORCEINLINE void reset(Interval* interval, RefPosition* refPosition);
@@ -1418,7 +1418,7 @@ private:
                                       BasicBlock*      toBlock,
                                       var_types        type,
                                       VARSET_VALARG_TP sharedCriticalLiveSet,
-                                      regMaskTP        terminatorConsumedRegs);
+                                      SingleTypeRegSet        terminatorConsumedRegs);
 
 #ifdef TARGET_ARM64
     typedef JitHashTable<RefPosition*, JitPtrKeyFuncs<RefPosition>, RefPosition*> NextConsecutiveRefPositionsMap;
@@ -2125,9 +2125,9 @@ private:
     // NOTE: we currently don't need a LinearScan `this` pointer for this definition, and some callers
     // don't have one available, so make is static.
     //
-    static FORCEINLINE regMaskTP calleeSaveRegs(RegisterType rt)
+    static FORCEINLINE SingleTypeRegSet calleeSaveRegs(RegisterType rt)
     {
-        static const regMaskTP varTypeCalleeSaveRegs[] = {
+        static const SingleTypeRegSet varTypeCalleeSaveRegs[] = {
 #define DEF_TP(tn, nm, jitType, sz, sze, asze, st, al, regTyp, regFld, csr, ctr, tf) csr,
 #include "typelist.h"
 #undef DEF_TP
@@ -2432,8 +2432,7 @@ public:
 
         if (preferCalleeSave)
         {
-            SingleTypeRegSet calleeSaveMask =
-                (LinearScan::calleeSaveRegs(this->registerType) & newPreferences).GetRegSetForType(this-registerType);
+            SingleTypeRegSet calleeSaveMask = LinearScan::calleeSaveRegs(this->registerType) & newPreferences;
 
             if (calleeSaveMask != RBM_NONE)
             {
