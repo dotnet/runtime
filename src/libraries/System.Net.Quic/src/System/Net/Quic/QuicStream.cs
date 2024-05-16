@@ -446,8 +446,7 @@ public sealed partial class QuicStream
         {
             return;
         }
-
-        ThrowHelper.ValidateErrorCode(nameof(Abort), errorCode);
+        ThrowHelper.ValidateErrorCode(nameof(errorCode), errorCode, $"{nameof(Abort)}.{nameof(errorCode)}");
 
         QUIC_STREAM_SHUTDOWN_FLAGS flags = QUIC_STREAM_SHUTDOWN_FLAGS.NONE;
         if (abortDirection.HasFlag(QuicAbortDirection.Read) && !_receiveTcs.IsCompleted)
