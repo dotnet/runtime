@@ -178,6 +178,7 @@ namespace DynamicAllocationSampling
                 }
                 typeInfo.Count++;
                 typeInfo.TotalSize += (int)payload.ObjectSize;
+                typeInfo.RemainderSize += (payload.ObjectSize - payload.SampledByteOffset);
 
                 return;
             }

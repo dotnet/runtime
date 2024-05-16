@@ -13,9 +13,9 @@ namespace Allocate
             Dictionary<string, AllocStats> allocations = Initialize();
             List<Object0> objects = new List<Object0>(1024 * 1024);
 
-            AllocateSmallThenBig(count, objects, allocations);
+            AllocateSmallThenBig(count/2, objects, allocations);
             Console.WriteLine();
-            AllocateBigThenSmall(count, objects, allocations);
+            AllocateBigThenSmall(count/2, objects, allocations);
             Console.WriteLine();
         }
 
@@ -24,23 +24,23 @@ namespace Allocate
             for (int i = 0; i < count; i++)
             {
                 // allocate from smaller to larger
-                objects.Add(new Object8());
-                objects.Add(new Object16());
+                objects.Add(new Object24());
                 objects.Add(new Object32());
-                objects.Add(new Object64());
-                objects.Add(new Object128());
+                objects.Add(new Object48());
+                objects.Add(new Object80());
+                objects.Add(new Object144());
             }
 
-            allocations[nameof(Object8)].Count = count;
-            allocations[nameof(Object8)].Size = count * 24;
-            allocations[nameof(Object16)].Count = count;
-            allocations[nameof(Object16)].Size = count * 32;
+            allocations[nameof(Object24)].Count = count;
+            allocations[nameof(Object24)].Size = count * 24;
             allocations[nameof(Object32)].Count = count;
-            allocations[nameof(Object32)].Size = count * 48;
-            allocations[nameof(Object64)].Count = count;
-            allocations[nameof(Object64)].Size = count * 80;
-            allocations[nameof(Object128)].Count = count;
-            allocations[nameof(Object128)].Size = count * 144;
+            allocations[nameof(Object32)].Size = count * 32;
+            allocations[nameof(Object48)].Count = count;
+            allocations[nameof(Object48)].Size = count * 48;
+            allocations[nameof(Object80)].Count = count;
+            allocations[nameof(Object80)].Size = count * 80;
+            allocations[nameof(Object144)].Count = count;
+            allocations[nameof(Object144)].Size = count * 144;
 
             DumpAllocations(allocations);
             Clear(allocations);
@@ -52,23 +52,23 @@ namespace Allocate
             for (int i = 0; i < count; i++)
             {
                 // allocate from larger to smaller
-                objects.Add(new Object128());
-                objects.Add(new Object64());
+                objects.Add(new Object144());
+                objects.Add(new Object80());
+                objects.Add(new Object48());
                 objects.Add(new Object32());
-                objects.Add(new Object16());
-                objects.Add(new Object8());
+                objects.Add(new Object24());
             }
 
-            allocations[nameof(Object8)].Count = count;
-            allocations[nameof(Object8)].Size = count * 24;
-            allocations[nameof(Object16)].Count = count;
-            allocations[nameof(Object16)].Size = count * 32;
+            allocations[nameof(Object24)].Count = count;
+            allocations[nameof(Object24)].Size = count * 24;
             allocations[nameof(Object32)].Count = count;
-            allocations[nameof(Object32)].Size = count * 48;
-            allocations[nameof(Object64)].Count = count;
-            allocations[nameof(Object64)].Size = count * 80;
-            allocations[nameof(Object128)].Count = count;
-            allocations[nameof(Object128)].Size = count * 144;
+            allocations[nameof(Object32)].Size = count * 32;
+            allocations[nameof(Object48)].Count = count;
+            allocations[nameof(Object48)].Size = count * 48;
+            allocations[nameof(Object80)].Count = count;
+            allocations[nameof(Object80)].Size = count * 80;
+            allocations[nameof(Object144)].Count = count;
+            allocations[nameof(Object144)].Size = count * 144;
 
             DumpAllocations(allocations);
             Clear(allocations);
@@ -78,11 +78,11 @@ namespace Allocate
         private Dictionary<string, AllocStats> Initialize()
         {
             var allocations = new Dictionary<string, AllocStats>(16);
-            allocations[nameof(Object8)] = new AllocStats();
-            allocations[nameof(Object16)] = new AllocStats();
+            allocations[nameof(Object24)] = new AllocStats();
             allocations[nameof(Object32)] = new AllocStats();
-            allocations[nameof(Object64)] = new AllocStats();
-            allocations[nameof(Object128)] = new AllocStats();
+            allocations[nameof(Object48)] = new AllocStats();
+            allocations[nameof(Object80)] = new AllocStats();
+            allocations[nameof(Object144)] = new AllocStats();
 
             Clear(allocations);
             return allocations;
@@ -90,16 +90,16 @@ namespace Allocate
 
         private void Clear(Dictionary<string, AllocStats> allocations)
         {
-            allocations[nameof(Object8)].Count = 0;
-            allocations[nameof(Object8)].Size = 0;
-            allocations[nameof(Object16)].Count = 0;
-            allocations[nameof(Object16)].Size = 0;
+            allocations[nameof(Object24)].Count = 0;
+            allocations[nameof(Object24)].Size = 0;
             allocations[nameof(Object32)].Count = 0;
             allocations[nameof(Object32)].Size = 0;
-            allocations[nameof(Object64)].Count = 0;
-            allocations[nameof(Object64)].Size = 0;
-            allocations[nameof(Object128)].Count = 0;
-            allocations[nameof(Object128)].Size = 0;
+            allocations[nameof(Object48)].Count = 0;
+            allocations[nameof(Object48)].Size = 0;
+            allocations[nameof(Object80)].Count = 0;
+            allocations[nameof(Object80)].Size = 0;
+            allocations[nameof(Object144)].Count = 0;
+            allocations[nameof(Object144)].Size = 0;
         }
 
         private void DumpAllocations(Dictionary<string, AllocStats> objects)
@@ -123,19 +123,19 @@ namespace Allocate
         {
         }
 
-        internal class Object8 : Object0
+        internal class Object24 : Object0
         {
             private readonly UInt32 _x1;
             private readonly UInt32 _x2;
         }
 
-        internal class Object16 : Object0
+        internal class Object32 : Object0
         {
             private readonly UInt64 _x1;
             private readonly UInt64 _x2;
         }
 
-        internal class Object32 : Object0
+        internal class Object48 : Object0
         {
             private readonly UInt64 _x1;
             private readonly UInt64 _x2;
@@ -143,7 +143,7 @@ namespace Allocate
             private readonly UInt64 _x4;
         }
 
-        internal class Object64 : Object0
+        internal class Object80 : Object0
         {
             private readonly UInt64 _x1;
             private readonly UInt64 _x2;
@@ -155,7 +155,7 @@ namespace Allocate
             private readonly UInt64 _x8;
         }
 
-        internal class Object128 : Object0
+        internal class Object144 : Object0
         {
             private readonly UInt64 _x1;
             private readonly UInt64 _x2;

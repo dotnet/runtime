@@ -36,7 +36,7 @@ namespace Allocate
             {
                 case Scenario.SmallAndBig:
                     allocationsRun = new AllocateSmallAndBig();
-                    allocatedTypes = "Object8;Object16;Object32;Object64;Object128";
+                    allocatedTypes = "Object24;Object32;Object48;Object80;Object144";
                     break;
                 case Scenario.PerThread:
                     allocationsRun = new ThreadedAllocations();
