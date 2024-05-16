@@ -11128,7 +11128,7 @@ void emitter::emitDispIns(
                     if  (id->idOpSize() <= EA_4BYTE)
                         printf("DD      %d \n", addr ? *(int     *)addr : 0);
                     else
-                        printf("DQ      %D \n", addr ? *(__int64 *)addr : 0);
+                        printf("DQ      %D \n", addr ? *(int64_t *)addr : 0);
                 }
             }
 #endif

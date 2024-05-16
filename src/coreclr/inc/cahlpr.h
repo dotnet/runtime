@@ -18,23 +18,23 @@ struct CaValue
 {
     union
     {
-        signed __int8       i1;
-        unsigned __int8     u1;
-        signed __int16      i2;
-        unsigned __int16    u2;
-        signed __int32      i4;
-        unsigned __int32    u4;
-        signed __int64      i8;
-        unsigned __int64    u8;
-        float               r4;
-        double              r8;
+        int8_t      i1;
+        uint8_t     u1;
+        int16_t     i2;
+        uint16_t    u2;
+        int32_t     i4;
+        uint32_t    u4;
+        int64_t     i8;
+        uint64_t    u8;
+        float       r4;
+        double      r8;
         struct
         {
             LPCUTF8         pStr;
             ULONG           cbStr;
         } str;
     };
-    unsigned __int8         tag;
+    uint8_t         tag;
 };
 
 #endif // __CAHLPR_H__

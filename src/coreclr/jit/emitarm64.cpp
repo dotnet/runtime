@@ -4275,6 +4275,16 @@ void emitter::emitIns_Mov(
                 }
                 fmt = IF_SVE_AU_3A;
             }
+            else if (isVectorRegister(dstReg) && isGeneralRegisterOrSP(srcReg))
+            {
+                assert(insOptsScalable(opt));
+                if (IsRedundantMov(ins, size, dstReg, srcReg, canSkip))
+                {
+                    return;
+                }
+                srcReg = encodingSPtoZR(srcReg);
+                fmt    = IF_SVE_CB_2A;
+            }
             else
             {
                 unreached();

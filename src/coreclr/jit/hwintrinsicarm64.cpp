@@ -327,6 +327,17 @@ void Compiler::getHWIntrinsicImmTypes(NamedIntrinsic       intrinsic,
                 // The second source operand of sdot, udot instructions is an indexed 32-bit element.
                 indexedElementBaseType = simdBaseType;
             }
+
+            if (intrinsic == NI_Sve_DotProductBySelectedScalar)
+            {
+                assert(((simdBaseType == TYP_INT) && (indexedElementBaseType == TYP_BYTE)) ||
+                       ((simdBaseType == TYP_UINT) && (indexedElementBaseType == TYP_UBYTE)) ||
+                       ((simdBaseType == TYP_LONG) && (indexedElementBaseType == TYP_SHORT)) ||
+                       ((simdBaseType == TYP_ULONG) && (indexedElementBaseType == TYP_USHORT)));
+
+                // The second source operand of sdot, udot instructions is an indexed 32-bit element.
+                indexedElementBaseType = simdBaseType;
+            }
         }
 
         assert(indexedElementBaseType == simdBaseType);

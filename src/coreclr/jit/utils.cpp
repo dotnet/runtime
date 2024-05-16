@@ -500,7 +500,7 @@ unsigned dumpSingleInstr(const BYTE* const codeAddr, IL_OFFSET offs, const char*
     }
 
     OPCODE opcode = (OPCODE)getU1LittleEndian(opcodePtr);
-    opcodePtr += sizeof(__int8);
+    opcodePtr += sizeof(int8_t);
 
 DECODE_OPCODE:
 
@@ -521,12 +521,12 @@ DECODE_OPCODE:
     {
         case CEE_PREFIX1:
             opcode = OPCODE(getU1LittleEndian(opcodePtr) + 256);
-            opcodePtr += sizeof(__int8);
+            opcodePtr += sizeof(int8_t);
             goto DECODE_OPCODE;
 
         default:
         {
-            __int64 iOp;
+            int64_t iOp;
             double  dOp;
             int     jOp;
             DWORD   jOp2;
@@ -558,7 +558,7 @@ DECODE_OPCODE:
                     goto INT_OP;
                 case InlineI8:
                     iOp = getU4LittleEndian(opcodePtr);
-                    iOp |= (__int64)getU4LittleEndian(opcodePtr + 4) << 32;
+                    iOp |= (int64_t)getU4LittleEndian(opcodePtr + 4) << 32;
                     goto INT_OP;
 
                 INT_OP:
@@ -2157,7 +2157,7 @@ CycleCount::CycleCount()
 {
 }
 
-bool CycleCount::GetCycles(unsigned __int64* time)
+bool CycleCount::GetCycles(uint64_t* time)
 {
     return CycleTimer::GetThreadCyclesS(time);
 }
@@ -2169,7 +2169,7 @@ bool CycleCount::Start()
 
 double CycleCount::ElapsedTime()
 {
-    unsigned __int64 nowCycles;
+    uint64_t nowCycles;
     (void)GetCycles(&nowCycles);
     return ((double)(nowCycles - beginCycles) / cps) * 1000.0;
 }
@@ -2228,18 +2228,18 @@ unsigned CountDigits(double num, unsigned base /* = 10 */)
 
 #endif // DEBUG
 
-double FloatingPointUtils::convertUInt64ToDouble(unsigned __int64 uIntVal)
+double FloatingPointUtils::convertUInt64ToDouble(uint64_t uIntVal)
 {
     return (double)uIntVal;
 }
 
-float FloatingPointUtils::convertUInt64ToFloat(unsigned __int64 u64)
+float FloatingPointUtils::convertUInt64ToFloat(uint64_t u64)
 {
     double d = convertUInt64ToDouble(u64);
     return (float)d;
 }
 
-unsigned __int64 FloatingPointUtils::convertDoubleToUInt64(double d)
+uint64_t FloatingPointUtils::convertDoubleToUInt64(double d)
 {
     return (uint64_t)d;
 }

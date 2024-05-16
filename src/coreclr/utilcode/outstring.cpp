@@ -119,7 +119,7 @@ OutString& OutString::dec(int i, size_t minWidth) {
 }
 
 /*****************************************************************/
-OutString& OutString::hex(unsigned __int64 i, int minWidth, unsigned flags) {
+OutString& OutString::hex(uint64_t i, int minWidth, unsigned flags) {
 
 	unsigned hi = unsigned(i >> 32);
 	unsigned low = unsigned(i);

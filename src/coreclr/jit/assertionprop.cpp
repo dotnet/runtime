@@ -923,7 +923,7 @@ void Compiler::optPrintAssertion(AssertionDsc* curAssertion, AssertionIndex asse
                 break;
 
             case O2K_CONST_DOUBLE:
-                if (*((__int64*)&curAssertion->op2.dconVal) == (__int64)I64(0x8000000000000000))
+                if (*((int64_t*)&curAssertion->op2.dconVal) == (int64_t)I64(0x8000000000000000))
                 {
                     printf("-0.00000");
                 }

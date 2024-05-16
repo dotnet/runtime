@@ -18,8 +18,6 @@
 
 #include "mbusafecrt_internal.h"
 
-//#define __int64 long long
-
 #define _SECURE_ITOA
 
 #define TCHAR char

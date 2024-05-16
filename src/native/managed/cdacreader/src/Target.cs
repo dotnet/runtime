@@ -276,63 +276,27 @@ public sealed unsafe class Target
     }
 
     public T ReadGlobal<T>(string name) where T : struct, INumber<T>
+        => ReadGlobal<T>(name, out _);
+
+    public T ReadGlobal<T>(string name, out string? type) where T : struct, INumber<T>
     {
-        if (!TryReadGlobal(name, out T value))
+        if (!_globals.TryGetValue(name, out (ulong Value, string? Type) global))
             throw new InvalidOperationException($"Failed to read global {typeof(T)} '{name}'.");
 
-        return value;
-    }
-
-    public bool TryReadGlobal<T>(string name, out T value) where T : struct, INumber<T>, INumberBase<T>
-    {
-        value = default;
-        if (!_globals.TryGetValue(name, out (ulong Value, string? Type) global))
-            return false;
-
-        // TODO: [cdac] Move type validation out of the read such that it does not have to happen for every read
-        if (global.Type is not null)
-        {
-            string? expectedType = Type.GetTypeCode(typeof(T)) switch
-            {
-                TypeCode.SByte => "int8",
-                TypeCode.Byte => "uint8",
-                TypeCode.Int16 => "int16",
-                TypeCode.UInt16 => "uint16",
-                TypeCode.Int32 => "int32",
-                TypeCode.UInt32 => "uint32",
-                TypeCode.Int64 => "int64",
-                TypeCode.UInt64 => "uint64",
-                _ => null,
-            };
-            if (expectedType is null || global.Type != expectedType)
-            {
-                return false;
-            }
-        }
-
-        value = T.CreateChecked(global.Value);
-        return true;
+        type = global.Type;
+        return T.CreateChecked(global.Value);
     }
 
     public TargetPointer ReadGlobalPointer(string name)
+        => ReadGlobalPointer(name, out _);
+
+    public TargetPointer ReadGlobalPointer(string name, out string? type)
     {
-        if (!TryReadGlobalPointer(name, out TargetPointer pointer))
+        if (!_globals.TryGetValue(name, out (ulong Value, string? Type) global))
             throw new InvalidOperationException($"Failed to read global pointer '{name}'.");
 
-        return pointer;
-    }
-
-    public bool TryReadGlobalPointer(string name, out TargetPointer pointer)
-    {
-        pointer = TargetPointer.Null;
-        if (!_globals.TryGetValue(name, out (ulong Value, string? Type) global))
-            return false;
-
-        if (global.Type is not null && Array.IndexOf(["pointer", "nint", "nuint"], global.Type) == -1)
-            return false;
-
-        pointer = new TargetPointer(global.Value);
-        return true;
+        type = global.Type;
+        return new TargetPointer(global.Value);
     }
 
     public TypeInfo GetTypeInfo(DataType type)

@@ -420,10 +420,10 @@ inline unsigned hashme(genTreeOps op1, genTreeOps op2)
 
 struct BashHashDsc
 {
-    unsigned __int32 bhFullHash; // the hash value (unique for all old->new pairs)
-    unsigned __int32 bhCount;    // the same old->new bashings seen so far
-    unsigned __int8  bhOperOld;  // original gtOper
-    unsigned __int8  bhOperNew;  // new      gtOper
+    uint32_t bhFullHash; // the hash value (unique for all old->new pairs)
+    uint32_t bhCount;    // the same old->new bashings seen so far
+    uint8_t  bhOperOld;  // original gtOper
+    uint8_t  bhOperNew;  // new      gtOper
 };
 
 static BashHashDsc BashHash[BASH_HASH_SIZE];
@@ -7852,7 +7852,7 @@ GenTreeIntCon* Compiler::gtNewStringLiteralLength(GenTreeStrCon* node)
 
 /*****************************************************************************/
 
-GenTree* Compiler::gtNewLconNode(__int64 value)
+GenTree* Compiler::gtNewLconNode(int64_t value)
 {
 #ifdef TARGET_64BIT
     GenTree* node = new (this, GT_CNS_INT) GenTreeIntCon(TYP_LONG, value);
@@ -15416,7 +15416,7 @@ GenTree* Compiler::gtFoldExprConst(GenTree* tree)
 #if defined(TARGET_64BIT)
                                 if (tree->IsUnsigned() && (lval1 < 0))
                                 {
-                                    f1 = FloatingPointUtils::convertUInt64ToFloat((unsigned __int64)lval1);
+                                    f1 = FloatingPointUtils::convertUInt64ToFloat((uint64_t)lval1);
                                 }
                                 else
                                 {
@@ -15429,8 +15429,7 @@ GenTree* Compiler::gtFoldExprConst(GenTree* tree)
 
                                 if (tree->IsUnsigned() && (lval1 < 0))
                                 {
-                                    f1 = forceCastToFloat(
-                                        FloatingPointUtils::convertUInt64ToDouble((unsigned __int64)lval1));
+                                    f1 = forceCastToFloat(FloatingPointUtils::convertUInt64ToDouble((uint64_t)lval1));
                                 }
                                 else
                                 {
@@ -15446,7 +15445,7 @@ GenTree* Compiler::gtFoldExprConst(GenTree* tree)
                             {
                                 if (tree->IsUnsigned() && (lval1 < 0))
                                 {
-                                    d1 = FloatingPointUtils::convertUInt64ToDouble((unsigned __int64)lval1);
+                                    d1 = FloatingPointUtils::convertUInt64ToDouble((uint64_t)lval1);
                                 }
                                 else
                                 {

@@ -10,7 +10,7 @@
 #include "sstring.h"
 #include "ex.h"
 #include "holder.h"
-
+#include <minipal/strings.h>
 
 #if defined(_MSC_VER)
 #pragma inline_depth (25)
@@ -87,7 +87,7 @@ static WCHAR MapChar(WCHAR wc, DWORD dwFlags)
 #ifdef SELF_NO_HOST
             toupper(wc);
 #else
-            PAL_ToUpperInvariant(wc);
+            minipal_toupper_invariant(wc);
 #endif
     }
     else
@@ -97,7 +97,7 @@ static WCHAR MapChar(WCHAR wc, DWORD dwFlags)
 #ifdef SELF_NO_HOST
             tolower(wc);
 #else
-            PAL_ToLowerInvariant(wc);
+            minipal_tolower_invariant(wc);
 #endif
     }
 #endif // !TARGET_UNIX
