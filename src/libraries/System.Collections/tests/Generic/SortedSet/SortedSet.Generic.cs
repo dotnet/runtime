@@ -88,7 +88,7 @@ namespace System.Collections.Tests
             var setData = new int[AboveInternalIndexOfCountThreshold];
             for(int i = 0; i < AboveInternalIndexOfCountThreshold; i++)
             {
-                setData[i] = 0;
+                setData[i] = i;
             }
             var set = new SortedSet<int>(setData);
 
