@@ -490,7 +490,8 @@ protected:
                      MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(emitAttr secondRetSize),
                      const DebugInfo&      di,
                      regNumber             base,
-                     bool                  isJump);
+                     bool                  isJump,
+                     bool                  noSafePoint = false);
     // clang-format on
 
     // clang-format off
