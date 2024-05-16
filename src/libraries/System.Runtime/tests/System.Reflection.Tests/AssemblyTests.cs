@@ -7,10 +7,12 @@ using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Reflection.Emit;
 using System.Reflection.Tests;
 using System.Runtime.CompilerServices;
 using System.Security;
 using System.Text;
+using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
 [assembly:
@@ -184,14 +186,27 @@ namespace System.Reflection.Tests
         [Fact]
         public void SetEntryAssembly()
         {
-            Assembly? originalAssembly = Assembly.GetEntryAssembly();
-            Assert.NotNull(originalAssembly);
+            Assert.NotNull(Assembly.GetEntryAssembly());
 
-            Assembly.SetEntryAssembly(null);
-            Assert.Null(Assembly.GetEntryAssembly());
+            RemoteExecutor.Invoke(() =>
+            {
+                Assembly.SetEntryAssembly(null);
+                Assert.Null(Assembly.GetEntryAssembly());
 
-            Assembly.SetEntryAssembly(originalAssembly);
-            Assert.Equal(Assembly.GetEntryAssembly(), originalAssembly);
+                Assembly originalAssembly = typeof(AssemblyTests).Assembly;
+
+                Assembly.SetEntryAssembly(originalAssembly);
+                Assert.Equal(Assembly.GetEntryAssembly(), originalAssembly);
+
+                var invalidAssembly = new PersistedAssemblyBuilder(
+                    new AssemblyName("NotaRuntimeAssemblyTest"),
+                    typeof(object).Assembly
+                );
+
+                Assert.Throws<ArgumentException>(
+                    () => Assembly.SetEntryAssembly(invalidAssembly)
+                );
+            }).Dispose();
         }
 
         [Fact]
