@@ -1430,20 +1430,11 @@ namespace Internal.JitInterface
 
                 pResult->kind = CORINFO_CALL_KIND.CORINFO_CALL_CODE_POINTER;
 
-                if (pResult->exactContextNeedsRuntimeLookup)
-                {
-                    pResult->codePointerOrStubLookup.lookupKind.needsRuntimeLookup = true;
-                    pResult->codePointerOrStubLookup.lookupKind.runtimeLookupFlags = 0;
-                    pResult->codePointerOrStubLookup.runtimeLookup.indirections = CORINFO.USEHELPER;
-                    pResult->codePointerOrStubLookup.lookupKind.runtimeLookupKind = GetGenericRuntimeLookupKind(HandleToObject(callerHandle));
-                    pResult->codePointerOrStubLookup.lookupKind.runtimeLookupFlags = (ushort)ReadyToRunHelperId.MethodEntry;
-                    pResult->codePointerOrStubLookup.lookupKind.runtimeLookupArgs = (void*)ObjectToHandle(GetRuntimeDeterminedObjectForToken(ref pResolvedToken));
-                }
-                else
-                {
-                    pResult->codePointerOrStubLookup.constLookup =
-                        CreateConstLookupToSymbol(_compilation.NodeFactory.FatFunctionPointer(targetMethod));
-                }
+                ComputeLookup(ref pResolvedToken,
+                    GetRuntimeDeterminedObjectForToken(ref pResolvedToken),
+                    ReadyToRunHelperId.MethodEntry,
+                    HandleToObject(callerHandle),
+                    ref pResult->codePointerOrStubLookup);
             }
             else if (directCall)
             {
