@@ -176,6 +176,13 @@ namespace System.Runtime.Intrinsics
         internal static Plane AsPlane(this Vector128<float> value)
             => Unsafe.BitCast<Vector128<float>, Plane>(value);
 
+        /// <summary>Reinterprets a <see cref="Vector128{Single}" /> as a new <see cref="Quaternion" />.</summary>
+        /// <param name="value">The vector to reinterpret.</param>
+        /// <returns><paramref name="value" /> reinterpreted as a new <see cref="Quaternion" />.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static Quaternion AsQuaternion(this Vector128<float> value)
+            => Unsafe.BitCast<Vector128<float>, Quaternion>(value);
+
         /// <summary>Reinterprets a <see cref="Vector128{T}" /> as a new <see cref="Vector128{SByte}" />.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
         /// <param name="vector">The vector to reinterpret.</param>
@@ -235,10 +242,9 @@ namespace System.Runtime.Intrinsics
         /// <summary>Reinterprets a <see cref="Quaternion" /> as a new <see cref="Vector128{Single}" />.</summary>
         /// <param name="value">The quaternion to reinterpret.</param>
         /// <returns><paramref name="value" /> reinterpreted as a new <see cref="Vector128{Single}" />.</returns>
-        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static Vector128<float> AsVector128(this Quaternion value)
-            => Unsafe.As<Quaternion, Vector128<float>>(ref value);
+            => Unsafe.BitCast<Quaternion, Vector128<float>>(value);
 
         /// <summary>Reinterprets a <see cref="Vector2" /> as a new <see cref="Vector128{Single}" />.</summary>
         /// <param name="value">The vector to reinterpret.</param>

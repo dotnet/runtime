@@ -714,7 +714,6 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
             break;
         }
 
-        case NI_Quaternion_WithElement:
         case NI_Vector2_WithElement:
         case NI_Vector3_WithElement:
         case NI_VectorT_WithElement:
@@ -797,7 +796,6 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
             break;
         }
 
-        case NI_Quaternion_WithElement:
         case NI_Vector2_WithElement:
         case NI_Vector3_WithElement:
         case NI_VectorT_WithElement:
@@ -948,19 +946,6 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                     return vecCon;
                 }
 
-                case NI_Quaternion_get_Identity:
-                {
-                    GenTreeVecCon* vecCon = gtNewVconNode(retType);
-
-                    vecCon->gtSimdVal.f32[0] = 0.0f;
-                    vecCon->gtSimdVal.f32[1] = 0.0f;
-                    vecCon->gtSimdVal.f32[2] = 0.0f;
-                    vecCon->gtSimdVal.f32[3] = 1.0f;
-
-                    return vecCon;
-                }
-
-                case NI_Quaternion_get_Zero:
                 case NI_Vector2_get_Zero:
                 case NI_Vector3_get_Zero:
                 case NI_VectorT_get_Zero:
@@ -1014,47 +999,11 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                     return gtNewSimdCeilNode(retType, op1, simdBaseJitType, simdSize);
                 }
 
-                case NI_Quaternion_Conjugate:
-                {
-                    GenTreeVecCon* vecCon = gtNewVconNode(retType);
-
-                    vecCon->gtSimdVal.f32[0] = -1.0f;
-                    vecCon->gtSimdVal.f32[1] = -1.0f;
-                    vecCon->gtSimdVal.f32[2] = -1.0f;
-                    vecCon->gtSimdVal.f32[3] = +1.0f;
-
-                    return gtNewSimdBinOpNode(GT_MUL, retType, op1, vecCon, simdBaseJitType, simdSize);
-                }
-
                 case NI_VectorT_Floor:
                 {
                     return gtNewSimdFloorNode(retType, op1, simdBaseJitType, simdSize);
                 }
 
-                case NI_Quaternion_Inverse:
-                {
-                    GenTree* clonedOp1;
-                    op1 = impCloneExpr(op1, &clonedOp1, CHECK_SPILL_ALL,
-                                       nullptr DEBUGARG("Clone op1 for quaternion inverse (1)"));
-
-                    GenTree* clonedOp2;
-                    clonedOp1 = impCloneExpr(clonedOp1, &clonedOp2, CHECK_SPILL_ALL,
-                                             nullptr DEBUGARG("Clone op1 for quaternion inverse (2)"));
-
-                    GenTreeVecCon* vecCon = gtNewVconNode(retType);
-
-                    vecCon->gtSimdVal.f32[0] = -1.0f;
-                    vecCon->gtSimdVal.f32[1] = -1.0f;
-                    vecCon->gtSimdVal.f32[2] = -1.0f;
-                    vecCon->gtSimdVal.f32[3] = +1.0f;
-
-                    GenTree* conjugate = gtNewSimdBinOpNode(GT_MUL, retType, op1, vecCon, simdBaseJitType, simdSize);
-                    op1                = gtNewSimdDotProdNode(retType, clonedOp1, clonedOp2, simdBaseJitType, simdSize);
-
-                    return gtNewSimdBinOpNode(GT_DIV, retType, conjugate, op1, simdBaseJitType, simdSize);
-                }
-
-                case NI_Quaternion_Length:
                 case NI_Vector2_Length:
                 case NI_Vector3_Length:
                 {
@@ -1068,7 +1017,6 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                     return gtNewSimdGetElementNode(retType, op1, gtNewIconNode(0), simdBaseJitType, simdSize);
                 }
 
-                case NI_Quaternion_LengthSquared:
                 case NI_Vector2_LengthSquared:
                 case NI_Vector3_LengthSquared:
                 {
@@ -1114,8 +1062,6 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                     return gtNewSimdLoadNonTemporalNode(retType, op1, simdBaseJitType, simdSize);
                 }
 
-                case NI_Quaternion_Negate:
-                case NI_Quaternion_op_UnaryNegation:
                 case NI_Vector2_Negate:
                 case NI_Vector2_op_UnaryNegation:
                 case NI_Vector3_Negate:
@@ -1126,7 +1072,6 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                     return gtNewSimdUnOpNode(GT_NEG, retType, op1, simdBaseJitType, simdSize);
                 }
 
-                case NI_Quaternion_Normalize:
                 case NI_Vector2_Normalize:
                 case NI_Vector3_Normalize:
                 {
@@ -1369,8 +1314,6 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
 
             switch (intrinsic)
             {
-                case NI_Quaternion_Add:
-                case NI_Quaternion_op_Addition:
                 case NI_Vector2_Add:
                 case NI_Vector2_op_Addition:
                 case NI_Vector3_Add:
@@ -1442,7 +1385,6 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                     return gtNewSimdGetElementNode(retType, op1, gtNewIconNode(0), simdBaseJitType, simdSize);
                 }
 
-                case NI_Quaternion_Divide:
                 case NI_Vector2_Divide:
                 case NI_Vector2_op_Division:
                 case NI_Vector3_Divide:
@@ -1453,7 +1395,6 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                     return gtNewSimdBinOpNode(GT_DIV, retType, op1, op2, simdBaseJitType, simdSize);
                 }
 
-                case NI_Quaternion_Dot:
                 case NI_Vector2_Dot:
                 case NI_Vector3_Dot:
                 case NI_VectorT_Dot:
@@ -1467,7 +1408,6 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                     return gtNewSimdCmpOpNode(GT_EQ, retType, op1, op2, simdBaseJitType, simdSize);
                 }
 
-                case NI_Quaternion_op_Equality:
                 case NI_Vector2_op_Equality:
                 case NI_Vector3_op_Equality:
                 case NI_VectorT_EqualsAll:
@@ -1487,8 +1427,6 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                     return gtNewSimdBinOpNode(GT_XOR, retType, op1, op2, simdBaseJitType, simdSize);
                 }
 
-                case NI_Quaternion_get_Item:
-                case NI_Quaternion_GetElement:
                 case NI_Vector2_get_Item:
                 case NI_Vector2_GetElement:
                 case NI_Vector3_get_Item:
@@ -1529,7 +1467,6 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                     return gtNewSimdCmpOpAnyNode(GT_GE, retType, op1, op2, simdBaseJitType, simdSize);
                 }
 
-                case NI_Quaternion_op_Inequality:
                 case NI_Vector2_op_Inequality:
                 case NI_Vector3_op_Inequality:
                 case NI_VectorT_op_Inequality:
@@ -1598,8 +1535,6 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                     return gtNewSimdMinNode(retType, op1, op2, simdBaseJitType, simdSize);
                 }
 
-                case NI_Quaternion_Multiply:
-                case NI_Quaternion_op_Multiply:
                 case NI_Vector2_Multiply:
                 case NI_Vector2_op_Multiply:
                 case NI_Vector3_Multiply:
@@ -1674,8 +1609,6 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                     return gtNewSimdStoreNonTemporalNode(op2, op1, simdBaseJitType, simdSize);
                 }
 
-                case NI_Quaternion_Subtract:
-                case NI_Quaternion_op_Subtraction:
                 case NI_Vector2_Subtract:
                 case NI_Vector2_op_Subtraction:
                 case NI_Vector3_Subtract:
@@ -1853,7 +1786,6 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                     break;
                 }
 
-                case NI_Quaternion_CreateFromVector3:
                 case NI_Vector3_CreateFromVector2:
                 {
                     assert(retType == TYP_VOID);
@@ -1889,7 +1821,6 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                     break;
                 }
 
-                case NI_Quaternion_WithElement:
                 case NI_Vector2_WithElement:
                 case NI_Vector3_WithElement:
                 case NI_VectorT_WithElement:
@@ -1977,99 +1908,6 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                         nodeBuilder.AddOperand(3, gtNewZeroConNode(TYP_FLOAT));
 
                         copyBlkSrc = gtNewSimdHWIntrinsicNode(TYP_SIMD12, std::move(nodeBuilder), NI_Vector128_Create,
-                                                              simdBaseJitType, 16);
-                    }
-
-                    copyBlkDst = op1;
-                    break;
-                }
-
-                default:
-                {
-                    // Some platforms warn about unhandled switch cases
-                    // We handle it more generally via the assert and nullptr return below.
-                    break;
-                }
-            }
-            break;
-        }
-
-        case 5:
-        {
-            assert(isInstanceMethod);
-            assert(SimdAsHWIntrinsicInfo::SpillSideEffectsOp1(intrinsic));
-            assert(!SimdAsHWIntrinsicInfo::SpillSideEffectsOp2(intrinsic));
-
-            if (newobjThis == nullptr)
-            {
-                impSpillSideEffect(true, verCurrentState.esStackDepth -
-                                             5 DEBUGARG("Spilling op1 side effects for SimdAsHWIntrinsic"));
-            }
-
-            CORINFO_ARG_LIST_HANDLE arg2 = argList;
-            CORINFO_ARG_LIST_HANDLE arg3 = info.compCompHnd->getArgNext(arg2);
-            CORINFO_ARG_LIST_HANDLE arg4 = info.compCompHnd->getArgNext(arg3);
-            CORINFO_ARG_LIST_HANDLE arg5 = info.compCompHnd->getArgNext(arg4);
-
-            argType = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg5, &argClass)));
-            op5     = getArgForHWIntrinsic(argType, argClass);
-
-            argType = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg4, &argClass)));
-            op4     = getArgForHWIntrinsic(argType, argClass);
-
-            argType = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg3, &argClass)));
-            op3     = getArgForHWIntrinsic(argType, argClass);
-
-            argType = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg2, &argClass)));
-            op2     = getArgForHWIntrinsic(argType, argClass);
-
-            if ((newobjThis == nullptr) && (retType == TYP_VOID))
-            {
-                op1 = getArgForHWIntrinsic(TYP_BYREF, argClass, isInstanceMethod, newobjThis);
-            }
-            else
-            {
-                op1 = getArgForHWIntrinsic(simdType, (newobjThis != nullptr) ? clsHnd : argClass, isInstanceMethod,
-                                           newobjThis);
-            }
-
-            switch (intrinsic)
-            {
-                case NI_Quaternion_Create:
-                {
-                    assert(retType == TYP_VOID);
-                    assert(simdBaseType == TYP_FLOAT);
-                    assert(simdSize == 16);
-
-                    if (op2->IsCnsFltOrDbl() && op3->IsCnsFltOrDbl() && op4->IsCnsFltOrDbl() && op5->IsCnsFltOrDbl())
-                    {
-                        GenTreeVecCon* vecCon = gtNewVconNode(TYP_SIMD16);
-
-                        float cnsVal = 0;
-
-                        vecCon->gtSimdVal.f32[0] = static_cast<float>(op2->AsDblCon()->DconValue());
-                        vecCon->gtSimdVal.f32[1] = static_cast<float>(op3->AsDblCon()->DconValue());
-                        vecCon->gtSimdVal.f32[2] = static_cast<float>(op4->AsDblCon()->DconValue());
-                        vecCon->gtSimdVal.f32[3] = static_cast<float>(op5->AsDblCon()->DconValue());
-
-                        copyBlkSrc = vecCon;
-                    }
-                    else if (areArgumentsContiguous(op2, op3) && areArgumentsContiguous(op3, op4) &&
-                             areArgumentsContiguous(op4, op5))
-                    {
-                        GenTree* op2Address = CreateAddressNodeForSimdHWIntrinsicCreate(op2, simdBaseType, 16);
-                        copyBlkSrc          = gtNewIndir(TYP_SIMD16, op2Address);
-                    }
-                    else
-                    {
-                        IntrinsicNodeBuilder nodeBuilder(getAllocator(CMK_ASTNode), 4);
-
-                        nodeBuilder.AddOperand(0, op2);
-                        nodeBuilder.AddOperand(1, op3);
-                        nodeBuilder.AddOperand(2, op4);
-                        nodeBuilder.AddOperand(3, op5);
-
-                        copyBlkSrc = gtNewSimdHWIntrinsicNode(TYP_SIMD16, std::move(nodeBuilder), NI_Vector128_Create,
                                                               simdBaseJitType, 16);
                     }
 

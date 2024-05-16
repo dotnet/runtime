@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using System.Runtime.Intrinsics;
 
 namespace System.Numerics
 {
@@ -13,16 +14,10 @@ namespace System.Numerics
         /// <param name="index">The index of the element to get.</param>
         /// <returns>The value of the element at <paramref name="index" />.</returns>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="index" /> was less than zero or greater than the number of elements.</exception>
-        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static float GetElement(this Quaternion quaternion, int index)
         {
-            if ((uint)(index) >= (uint)(Quaternion.Count))
-            {
-                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
-            }
-
-            return quaternion.GetElementUnsafe(index);
+            return quaternion.AsVector128().GetElement(index);
         }
 
         /// <summary>Creates a new <see cref="Quaternion" /> with the element at the specified index set to the specified value and the remaining elements set to the same value as that in the given quaternion.</summary>
@@ -31,17 +26,9 @@ namespace System.Numerics
         /// <param name="value">The value to set the element to.</param>
         /// <returns>A <see cref="Quaternion" /> with the value of the element at <paramref name="index" /> set to <paramref name="value" /> and the remaining elements set to the same value as that in <paramref name="quaternion" />.</returns>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="index" /> was less than zero or greater than the number of elements.</exception>
-        [Intrinsic]
         internal static Quaternion WithElement(this Quaternion quaternion, int index, float value)
         {
-            if ((uint)(index) >= (uint)(Quaternion.Count))
-            {
-                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
-            }
-
-            Quaternion result = quaternion;
-            result.SetElementUnsafe(index, value);
-            return result;
+            return quaternion.AsVector128().WithElement(index, value).AsQuaternion();
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

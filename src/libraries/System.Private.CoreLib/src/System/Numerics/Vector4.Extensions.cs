@@ -16,6 +16,13 @@ namespace System.Numerics
         internal static Plane AsPlane(this Vector4 value)
             => Unsafe.BitCast<Vector4, Plane>(value);
 
+        /// <summary>Reinterprets a <see cref="Vector4" /> as a new <see cref="Quaternion" />.</summary>
+        /// <param name="value">The vector to reinterpret.</param>
+        /// <returns><paramref name="value" /> reinterpreted as a new <see cref="Quaternion" />.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static Quaternion AsQuaternion(this Vector4 value)
+            => Unsafe.BitCast<Vector4, Quaternion>(value);
+
         /// <summary>Gets the element at the specified index.</summary>
         /// <param name="vector">The vector to get the element from.</param>
         /// <param name="index">The index of the element to get.</param>
