@@ -9646,6 +9646,8 @@ void emitter::emitAdjustStackDepth(instruction ins, ssize_t val)
  * EC_INDIR_C          : "call clsVar<disp>" (eg. call [clsVarAddr])
  * EC_INDIR_ARD        : "call [ireg+xreg*xmul+disp]"
  *
+ * noSafePoint - force not making this call a safe point in partially interruptible code
+ * 
  */
 
 // clang-format off
@@ -9665,7 +9667,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
                            unsigned              xmul,
                            ssize_t               disp,
                            bool                  isJump,
-                           bool                  isNoGCframe)
+                           bool                  noSafePoint)
 // clang-format on
 {
     /* Sanity check the arguments depending on callType */
@@ -9791,7 +9793,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
     id->idIns(ins);
 
     // for the purpose of GC safepointing tail-calls are not real calls
-    id->idSetIsNoGC(isJump || isNoGCframe || emitNoGChelper(methHnd));
+    id->idSetIsNoGC(isJump || noSafePoint || emitNoGChelper(methHnd));
 
     UNATIVE_OFFSET sz;
 

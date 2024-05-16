@@ -6397,7 +6397,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call X86_ARG(target_ssize_t stackA
                             di,
                             target->GetRegNum(),
                             call->IsFastTailCall(),
-                            true); // isNoGCframe
+                            true); // noSafePoint
                 // clang-format on
             }
         }

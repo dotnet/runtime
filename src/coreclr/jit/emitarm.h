@@ -336,7 +336,7 @@ void emitIns_Call(EmitCallType          callType,
                   unsigned         xmul        = 0,
                   ssize_t          disp        = 0,
                   bool             isJump      = false,
-                  bool             isNoGCframe = false);
+                  bool             noSafePoint = false);
 
 /*****************************************************************************
  *

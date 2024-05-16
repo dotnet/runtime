@@ -1287,6 +1287,8 @@ void emitter::emitLoadImmediate(emitAttr size, regNumber reg, ssize_t imm)
  * If callType is one of these emitCallTypes, addr has to be NULL.
  * EC_INDIR_R          : "call ireg".
  *
+ * noSafePoint - force not making this call a safe point in partially interruptible code
+ * 
  */
 
 void emitter::emitIns_Call(EmitCallType          callType,
@@ -1304,7 +1306,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
                            unsigned         xmul /* = 0     */,
                            ssize_t          disp /* = 0     */,
                            bool             isJump /* = false */,
-                           bool             isNoGCframe /* = false */)
+                           bool             noSafePoint /* = false */)
 {
     /* Sanity check the arguments depending on callType */
 
@@ -1401,7 +1403,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
     emitThisByrefRegs = byrefRegs;
 
     // for the purpose of GC safepointing tail-calls are not real calls
-    id->idSetIsNoGC(isJump || isNoGCframe || emitNoGChelper(methHnd));
+    id->idSetIsNoGC(isJump || noSafePoint || emitNoGChelper(methHnd));
 
     /* Set the instruction - special case jumping a function */
     instruction ins;

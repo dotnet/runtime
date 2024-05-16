@@ -2246,6 +2246,7 @@ void CodeGen::genTransferRegGCState(regNumber dst, regNumber src)
 //     pass in 'addr' for a relative call or 'base' for a indirect register call
 //     methHnd - optional, only used for pretty printing
 //     retSize - emitter type of return for GC purposes, should be EA_BYREF, EA_GCREF, or EA_PTRSIZE(not GC)
+//     noSafePoint - force not making this call a safe point in partially interruptible code
 //
 // clang-format off
 void CodeGen::genEmitCall(int                   callType,
@@ -2258,7 +2259,7 @@ void CodeGen::genEmitCall(int                   callType,
                           const DebugInfo& di,
                           regNumber             base,
                           bool                  isJump,
-                          bool                  isNoGCframe)
+                          bool                  noSafePoint)
 {
 #if !defined(TARGET_X86)
     int argSize = 0;
@@ -2278,7 +2279,7 @@ void CodeGen::genEmitCall(int                   callType,
                                gcInfo.gcVarPtrSetCur,
                                gcInfo.gcRegGCrefSetCur,
                                gcInfo.gcRegByrefSetCur,
-                               di, base, REG_NA, 0, 0, isJump, isNoGCframe);
+                               di, base, REG_NA, 0, 0, isJump, noSafePoint);
 }
 // clang-format on
 

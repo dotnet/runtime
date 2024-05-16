@@ -507,7 +507,7 @@ protected:
                      const DebugInfo&      di,
                      regNumber             base,
                      bool                  isJump,
-                     bool                  isNoGCframe = false);
+                     bool                  noSafePoint = false);
     // clang-format on
 
     // clang-format off

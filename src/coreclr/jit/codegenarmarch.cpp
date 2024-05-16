@@ -3599,7 +3599,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
         // We just need to emit "call reg" in this case.
         //
         assert(genIsValidIntReg(target->GetRegNum()));
-        bool isNoGCframe = false;
+        bool noSafePoint = false;
 
 #ifdef TARGET_ARM64
         bool isTlsHandleTarget =
@@ -3613,7 +3613,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
             GenTreeIntCon* iconNode = target->AsIntCon();
             methHnd                 = (CORINFO_METHOD_HANDLE)iconNode->gtIconVal;
             retSize                 = EA_SET_FLG(retSize, EA_CNS_TLSGD_RELOC);
-            isNoGCframe             = true;
+            noSafePoint             = true;
 
             // For NativeAOT, linux/arm64, linker wants the following pattern, so we will generate
             // it as part of the call. Generating individual instructions is tricky to get it
@@ -3650,7 +3650,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
                     di,
                     target->GetRegNum(),
                     call->IsFastTailCall(),
-                    isNoGCframe);
+                    noSafePoint);
 
 #ifdef TARGET_ARM64
         if (isTlsHandleTarget)
