@@ -31,8 +31,6 @@
 //   r  -- Ref  -- a byref
 //         Ret  -- indicates function return type
 //
-//         Var  -- Variant
-//
 //   b  -- Byte -- (unsigned) byte
 //   u  -- Char -- character (2 byte unsigned unicode)
 //   d  -- Dbl  -- double

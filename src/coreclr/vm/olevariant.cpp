@@ -24,16 +24,6 @@
 
 #define NO_MAPPING ((BYTE) -1)
 
-#define GCPROTECT_BEGIN_VARIANTDATA(/*VARIANTDATA*/vd) do {             \
-                GCFrame __gcframe(vd.GetObjRefPtr(), 1, FALSE);         \
-                /* work around unreachable code warning */              \
-                if (true) { DEBUG_ASSURE_NO_RETURN_BEGIN(GCPROTECT);
-
-
-#define GCPROTECT_END_VARIANTDATA()                                     \
-                DEBUG_ASSURE_NO_RETURN_END(GCPROTECT); }                \
-                } while(0)
-
 
 //Mapping from CVType to type handle. Used for conversion between the two internally.
 const BinderClassID CVTypeToBinderClassID[] =
@@ -205,83 +195,6 @@ CVTypes OleVariant::GetCVTypeForVarType(VARTYPE vt)
 
     return type;
 } // CVTypes OleVariant::GetCVTypeForVarType()
-
-#ifdef FEATURE_COMINTEROP
-
-// GetVarTypeForComVariant retusn the VARTYPE for the contents
-// of a COM+ variant.
-//
-VARTYPE OleVariant::GetVarTypeForComVariant(VariantData *pComVariant)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-    }
-    CONTRACTL_END;
-
-    CVTypes type = pComVariant->GetType();
-    VARTYPE vt;
-
-    vt = pComVariant->GetVT();
-    if (vt != VT_EMPTY)
-    {
-        // This variant was originally unmarshaled from unmanaged, and had the original VT recorded in it.
-        // We'll always use that over inference.
-        return vt;
-    }
-
-    if (type == CV_OBJECT)
-    {
-        OBJECTREF obj = pComVariant->GetObjRef();
-
-        // Null objects will be converted to VT_DISPATCH variants with a null
-        // IDispatch pointer.
-        if (obj == NULL)
-            return VT_DISPATCH;
-
-        // Retrieve the object's method table.
-        MethodTable *pMT = obj->GetMethodTable();
-
-        // Handle the value class case.
-        if (pMT->IsValueType())
-            return VT_RECORD;
-
-        // Handle the array case.
-        if (pMT->IsArray())
-        {
-            vt = GetElementVarTypeForArrayRef((BASEARRAYREF)obj);
-            if (vt == VT_ARRAY)
-                vt = VT_VARIANT;
-
-            return vt | VT_ARRAY;
-        }
-
-#ifdef FEATURE_COMINTEROP
-        // SafeHandle's or CriticalHandle's cannot be stored in VARIANT's.
-        if (pMT->CanCastToClass(CoreLibBinder::GetClass(CLASS__SAFE_HANDLE)))
-            COMPlusThrow(kArgumentException, IDS_EE_SH_IN_VARIANT_NOT_SUPPORTED);
-        if (pMT->CanCastToClass(CoreLibBinder::GetClass(CLASS__CRITICAL_HANDLE)))
-            COMPlusThrow(kArgumentException, IDS_EE_CH_IN_VARIANT_NOT_SUPPORTED);
-
-        // VariantWrappers cannot be stored in VARIANT's.
-        if (CoreLibBinder::IsClass(pMT, CLASS__VARIANT_WRAPPER))
-            COMPlusThrow(kArgumentException, IDS_EE_VAR_WRAP_IN_VAR_NOT_SUPPORTED);
-
-        // We are dealing with a normal object (not a wrapper) so we will
-        // leave the VT as VT_DISPATCH for now and we will determine the actual
-        // VT when we convert the object to a COM IP.
-        return VT_DISPATCH;
-#else // FEATURE_COMINTEROP
-        return VT_UNKNOWN;
-#endif  // FEATURE_COMINTEROP
-    }
-
-    return GetVarTypeForCVType(type);
-}
-
-#endif // FEATURE_COMINTEROP
 
 VARTYPE OleVariant::GetVarTypeForTypeHandle(TypeHandle type)
 {
@@ -1018,79 +931,6 @@ VariantArray:
 
 
 #ifdef FEATURE_COMINTEROP
-
-/*==================================NewVariant==================================
-**N.B.:  This method does a GC Allocation.  Any method calling it is required to
-**       GC_PROTECT the OBJECTREF.
-**
-**Actions:  Allocates a new Variant and fills it with the appropriate data.
-**Returns:  A new Variant with all of the appropriate fields filled out.
-**Exceptions: OutOfMemoryError if v can't be allocated.
-==============================================================================*/
-void VariantData::NewVariant(VariantData * const& dest, const CVTypes type, INT64 data
-                            DEBUG_ARG(BOOL bDestIsInterior))
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-        // Don't pass an object in for Empty.
-        PRECONDITION(CheckPointer(dest));
-        PRECONDITION((bDestIsInterior && IsProtectedByGCFrame ((OBJECTREF *) &dest))
-            || (!bDestIsInterior && IsProtectedByGCFrame (dest->GetObjRefPtr ())));
-        PRECONDITION((type == CV_EMPTY) || (type == CV_NULL) || (type == CV_U4) || (type == CV_U8));
-    }
-    CONTRACTL_END;
-
-    //If both arguments are null or both are specified, we're in an illegal situation.  Bail.
-    //If all three are null, we're creating an empty variant
-    if ( (type != CV_EMPTY) && (type != CV_NULL) && (type != CV_U4) && (type != CV_U8) )
-    {
-        COMPlusThrow(kArgumentException);
-    }
-
-    //Fill in the data.
-    dest->SetType(type);
-
-    switch (type)
-    {
-        case CV_U4:
-            dest->SetObjRef(NULL);
-            dest->SetDataAsUInt32((UINT32)data);
-            break;
-
-        case CV_U8:
-            dest->SetObjRef(NULL);
-            dest->SetDataAsInt64(data);
-            break;
-
-        case CV_NULL:
-        {
-            FieldDesc * pFD = CoreLibBinder::GetField(FIELD__NULL__VALUE);
-            _ASSERTE(pFD);
-
-            pFD->CheckRunClassInitThrowing();
-
-            OBJECTREF obj = pFD->GetStaticOBJECTREF();
-            _ASSERTE(obj!=NULL);
-
-            dest->SetObjRef(obj);
-            dest->SetDataAsInt64(0);
-            break;
-        }
-
-        case CV_EMPTY:
-        {
-            dest->SetObjRef(NULL);
-            break;
-        }
-
-        default:
-            // Did you add any new CVTypes?
-            COMPlusThrow(kNotSupportedException, W("Arg_InvalidOleVariantTypeException"));
-    }
-}
 
 void SafeVariantClear(VARIANT* pVar)
 {

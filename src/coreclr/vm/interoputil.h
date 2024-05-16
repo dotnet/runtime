@@ -8,8 +8,6 @@
 #include "debugmacros.h"
 #include "interopconverter.h"
 
-struct VariantData;
-
 // Out of memory helper.
 #define IfNullThrow(EXPR) \
 do {if ((EXPR) == 0) {ThrowOutOfMemory();} } while (0)
