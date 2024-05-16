@@ -188,10 +188,7 @@ namespace Internal.IL
                             int delta = (sbyte)ReadILByte();
                             int target = _currentOffset + delta;
                             if ((uint)target < (uint)_basicBlocks.Length)
-                            {
                                 CreateBasicBlock(target);
-                                OnLeaveTargetCreated(target);
-                            }
                             else
                                 ReportInvalidBranchTarget(target);
                         }
@@ -224,10 +221,7 @@ namespace Internal.IL
                             int delta = (int)ReadILUInt32();
                             int target = _currentOffset + delta;
                             if ((uint)target < (uint)_basicBlocks.Length)
-                            {
                                 CreateBasicBlock(target);
-                                OnLeaveTargetCreated(target);
-                            }
                             else
                                 ReportInvalidBranchTarget(target);
                         }
@@ -275,8 +269,6 @@ namespace Internal.IL
                 }
             }
         }
-
-        partial void OnLeaveTargetCreated(int target);
 
         private void FindEHTargets()
         {

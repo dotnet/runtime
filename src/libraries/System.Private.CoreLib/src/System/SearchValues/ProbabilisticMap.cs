@@ -10,6 +10,8 @@ using System.Runtime.Intrinsics.Arm;
 using System.Runtime.Intrinsics.Wasm;
 using System.Runtime.Intrinsics.X86;
 
+#pragma warning disable CS8500 // Takes the address of a managed type
+
 namespace System.Buffers
 {
     /// <summary>Data structure used to optimize checks for whether a char is in a set of chars.</summary>
@@ -97,7 +99,7 @@ namespace System.Buffers
             Contains(values, (char)ch);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool Contains(ReadOnlySpan<char> values, char ch) =>
+        internal static bool Contains(ReadOnlySpan<char> values, char ch) =>
             SpanHelpers.NonPackedContainsValueType(
                 ref Unsafe.As<char, short>(ref MemoryMarshal.GetReference(values)),
                 (short)ch,
@@ -343,78 +345,64 @@ namespace System.Buffers
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static int ProbabilisticIndexOfAny(ref char searchSpace, int searchSpaceLength, ref char values, int valuesLength)
+        private static unsafe int ProbabilisticIndexOfAny(ref char searchSpace, int searchSpaceLength, ref char values, int valuesLength)
         {
             var valuesSpan = new ReadOnlySpan<char>(ref values, valuesLength);
 
-            var map = new ProbabilisticMap(valuesSpan);
-            ref uint charMap = ref Unsafe.As<ProbabilisticMap, uint>(ref map);
+            // ProbabilisticMapState can hold either a precomputed hash table or a pointer to the values.
+            // Precomputing the table is relatively expensive, so we only do it when using SearchValues where instances can be reused.
+            var state = new ProbabilisticMapState(&valuesSpan);
 
-            return IndexOfAny(ref charMap, ref searchSpace, searchSpaceLength, valuesSpan);
+            // The FalseConst here indicates that we can't use the fast character checks and must instead check the values span.
+            return IndexOfAny<SearchValues.FalseConst>(ref searchSpace, searchSpaceLength, ref state);
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static int ProbabilisticLastIndexOfAny(ref char searchSpace, int searchSpaceLength, ref char values, int valuesLength)
+        private static unsafe int ProbabilisticLastIndexOfAny(ref char searchSpace, int searchSpaceLength, ref char values, int valuesLength)
         {
             var valuesSpan = new ReadOnlySpan<char>(ref values, valuesLength);
 
-            var map = new ProbabilisticMap(valuesSpan);
-            ref uint charMap = ref Unsafe.As<ProbabilisticMap, uint>(ref map);
+            // ProbabilisticMapState can hold either a precomputed hash table or a pointer to the values.
+            // Precomputing the table is relatively expensive, so we only do it when using SearchValues where instances can be reused.
+            var state = new ProbabilisticMapState(&valuesSpan);
 
-            return LastIndexOfAny(ref charMap, ref searchSpace, searchSpaceLength, valuesSpan);
+            // The FalseConst here indicates that we can't use the fast character checks and must instead check the values span.
+            return LastIndexOfAny<SearchValues.FalseConst>(ref searchSpace, searchSpaceLength, ref state);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static int IndexOfAny(ref uint charMap, ref char searchSpace, int searchSpaceLength, ReadOnlySpan<char> values)
+        internal static int IndexOfAny<TUseFastContains>(ref char searchSpace, int searchSpaceLength, ref ProbabilisticMapState state)
+            where TUseFastContains : struct, SearchValues.IRuntimeConst
         {
             if ((Sse41.IsSupported || AdvSimd.Arm64.IsSupported) && searchSpaceLength >= 16)
             {
                 return Vector512.IsHardwareAccelerated && Avx512Vbmi.VL.IsSupported
-                    ? IndexOfAnyVectorizedAvx512(ref charMap, ref searchSpace, searchSpaceLength, values)
-                    : IndexOfAnyVectorized(ref charMap, ref searchSpace, searchSpaceLength, values);
+                    ? IndexOfAnyVectorizedAvx512<TUseFastContains>(ref searchSpace, searchSpaceLength, ref state)
+                    : IndexOfAnyVectorized<TUseFastContains>(ref searchSpace, searchSpaceLength, ref state);
             }
 
-            ref char searchSpaceEnd = ref Unsafe.Add(ref searchSpace, searchSpaceLength);
-            ref char cur = ref searchSpace;
-
-            while (!Unsafe.AreSame(ref cur, ref searchSpaceEnd))
-            {
-                int ch = cur;
-                if (Contains(ref charMap, values, ch))
-                {
-                    return MatchOffset(ref searchSpace, ref cur);
-                }
-
-                cur = ref Unsafe.Add(ref cur, 1);
-            }
-
-            return -1;
+            return ProbabilisticMapState.IndexOfAnySimpleLoop<TUseFastContains, IndexOfAnyAsciiSearcher.DontNegate>(ref searchSpace, searchSpaceLength, ref state);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static int LastIndexOfAny(ref uint charMap, ref char searchSpace, int searchSpaceLength, ReadOnlySpan<char> values)
+        internal static int LastIndexOfAny<TUseFastContains>(ref char searchSpace, int searchSpaceLength, ref ProbabilisticMapState state)
+            where TUseFastContains : struct, SearchValues.IRuntimeConst
         {
-            for (int i = searchSpaceLength - 1; i >= 0; i--)
-            {
-                int ch = Unsafe.Add(ref searchSpace, i);
-                if (Contains(ref charMap, values, ch))
-                {
-                    return i;
-                }
-            }
+            // TODO: Implement vectorized LastIndexOfAny.
 
-            return -1;
+            return ProbabilisticMapState.LastIndexOfAnySimpleLoop<TUseFastContains, IndexOfAnyAsciiSearcher.DontNegate>(ref searchSpace, searchSpaceLength, ref state);
         }
 
         [CompExactlyDependsOn(typeof(Avx512Vbmi.VL))]
-        private static int IndexOfAnyVectorizedAvx512(ref uint charMap, ref char searchSpace, int searchSpaceLength, ReadOnlySpan<char> values)
+        private static int IndexOfAnyVectorizedAvx512<TUseFastContains>(ref char searchSpace, int searchSpaceLength, ref ProbabilisticMapState state)
+            where TUseFastContains : struct, SearchValues.IRuntimeConst
         {
             Debug.Assert(Avx512Vbmi.VL.IsSupported);
             Debug.Assert(searchSpaceLength >= 16);
 
             ref char searchSpaceEnd = ref Unsafe.Add(ref searchSpace, searchSpaceLength);
 
-            Vector256<byte> charMap256 = Vector256.LoadUnsafe(ref Unsafe.As<uint, byte>(ref charMap));
+            Vector256<byte> charMap256 = Vector256.LoadUnsafe(ref Unsafe.As<ProbabilisticMap, byte>(ref state.Map));
 
             if (searchSpaceLength > 32)
             {
@@ -431,7 +419,7 @@ namespace System.Buffers
 
                         if (result != Vector512<byte>.Zero)
                         {
-                            if (TryFindMatch(ref cur, PackedSpanHelpers.FixUpPackedVector512Result(result).ExtractMostSignificantBits(), values, out int index))
+                            if (TryFindMatch<TUseFastContains>(ref cur, PackedSpanHelpers.FixUpPackedVector512Result(result).ExtractMostSignificantBits(), ref state, out int index))
                             {
                                 return MatchOffset(ref searchSpace, ref cur) + index;
                             }
@@ -461,7 +449,7 @@ namespace System.Buffers
 
                     if (result != Vector512<byte>.Zero)
                     {
-                        if (TryFindMatchOverlapped(ref searchSpace, searchSpaceLength, PackedSpanHelpers.FixUpPackedVector512Result(result).ExtractMostSignificantBits(), values, out int index))
+                        if (TryFindMatchOverlapped<TUseFastContains>(ref searchSpace, searchSpaceLength, PackedSpanHelpers.FixUpPackedVector512Result(result).ExtractMostSignificantBits(), ref state, out int index))
                         {
                             return index;
                         }
@@ -478,7 +466,7 @@ namespace System.Buffers
 
                 if (result != Vector256<byte>.Zero)
                 {
-                    if (TryFindMatchOverlapped(ref searchSpace, searchSpaceLength, PackedSpanHelpers.FixUpPackedVector256Result(result).ExtractMostSignificantBits(), values, out int index))
+                    if (TryFindMatchOverlapped<TUseFastContains>(ref searchSpace, searchSpaceLength, PackedSpanHelpers.FixUpPackedVector256Result(result).ExtractMostSignificantBits(), ref state, out int index))
                     {
                         return index;
                     }
@@ -490,7 +478,8 @@ namespace System.Buffers
 
         [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
         [CompExactlyDependsOn(typeof(Sse41))]
-        private static int IndexOfAnyVectorized(ref uint charMap, ref char searchSpace, int searchSpaceLength, ReadOnlySpan<char> values)
+        private static int IndexOfAnyVectorized<TUseFastContains>(ref char searchSpace, int searchSpaceLength, ref ProbabilisticMapState state)
+            where TUseFastContains : struct, SearchValues.IRuntimeConst
         {
             Debug.Assert(Sse41.IsSupported || AdvSimd.Arm64.IsSupported);
             Debug.Assert(searchSpaceLength >= 16);
@@ -498,8 +487,8 @@ namespace System.Buffers
             ref char searchSpaceEnd = ref Unsafe.Add(ref searchSpace, searchSpaceLength);
             ref char cur = ref searchSpace;
 
-            Vector128<byte> charMapLower = Vector128.LoadUnsafe(ref Unsafe.As<uint, byte>(ref charMap));
-            Vector128<byte> charMapUpper = Vector128.LoadUnsafe(ref Unsafe.As<uint, byte>(ref charMap), (nuint)Vector128<byte>.Count);
+            Vector128<byte> charMapLower = Vector128.LoadUnsafe(ref Unsafe.As<ProbabilisticMap, byte>(ref state.Map));
+            Vector128<byte> charMapUpper = Vector128.LoadUnsafe(ref Unsafe.As<ProbabilisticMap, byte>(ref state.Map), (nuint)Vector128<byte>.Count);
 
 #pragma warning disable IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough // In this case, we have an else clause which has the same semantic meaning whether or not Avx2 is considered supported or unsupported
             if (Avx2.IsSupported && searchSpaceLength >= 32)
@@ -516,7 +505,7 @@ namespace System.Buffers
 
                     if (result != Vector256<byte>.Zero)
                     {
-                        if (TryFindMatch(ref cur, PackedSpanHelpers.FixUpPackedVector256Result(result).ExtractMostSignificantBits(), values, out int index))
+                        if (TryFindMatch<TUseFastContains>(ref cur, PackedSpanHelpers.FixUpPackedVector256Result(result).ExtractMostSignificantBits(), ref state, out int index))
                         {
                             return MatchOffset(ref searchSpace, ref cur) + index;
                         }
@@ -556,7 +545,7 @@ namespace System.Buffers
 
                 if (result != Vector128<byte>.Zero)
                 {
-                    if (TryFindMatch(ref cur, result.ExtractMostSignificantBits(), values, out int index))
+                    if (TryFindMatch<TUseFastContains>(ref cur, result.ExtractMostSignificantBits(), ref state, out int index))
                     {
                         return MatchOffset(ref searchSpace, ref cur) + index;
                     }
@@ -584,13 +573,14 @@ namespace System.Buffers
             (int)((nuint)Unsafe.ByteOffset(ref searchSpace, ref cur) / sizeof(char));
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool TryFindMatch(ref char cur, uint mask, ReadOnlySpan<char> values, out int index)
+        private static bool TryFindMatch<TUseFastContains>(ref char cur, uint mask, ref ProbabilisticMapState state, out int index)
+            where TUseFastContains : struct, SearchValues.IRuntimeConst
         {
             do
             {
                 index = BitOperations.TrailingZeroCount(mask);
 
-                if (Contains(values, Unsafe.Add(ref cur, index)))
+                if (state.ConfirmProbabilisticMatch<TUseFastContains>(Unsafe.Add(ref cur, index)))
                 {
                     return true;
                 }
@@ -604,7 +594,8 @@ namespace System.Buffers
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool TryFindMatchOverlapped(ref char cur, int searchSpaceLength, uint mask, ReadOnlySpan<char> values, out int index)
+        private static bool TryFindMatchOverlapped<TUseFastContains>(ref char cur, int searchSpaceLength, uint mask, ref ProbabilisticMapState state, out int index)
+            where TUseFastContains : struct, SearchValues.IRuntimeConst
         {
             do
             {
@@ -617,7 +608,7 @@ namespace System.Buffers
                     index += searchSpaceLength - (2 * Vector256<ushort>.Count);
                 }
 
-                if (Contains(values, Unsafe.Add(ref cur, index)))
+                if (state.ConfirmProbabilisticMatch<TUseFastContains>(Unsafe.Add(ref cur, index)))
                 {
                     return true;
                 }
@@ -631,13 +622,14 @@ namespace System.Buffers
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool TryFindMatch(ref char cur, ulong mask, ReadOnlySpan<char> values, out int index)
+        private static bool TryFindMatch<TUseFastContains>(ref char cur, ulong mask, ref ProbabilisticMapState state, out int index)
+            where TUseFastContains : struct, SearchValues.IRuntimeConst
         {
             do
             {
                 index = BitOperations.TrailingZeroCount(mask);
 
-                if (Contains(values, Unsafe.Add(ref cur, index)))
+                if (state.ConfirmProbabilisticMatch<TUseFastContains>(Unsafe.Add(ref cur, index)))
                 {
                     return true;
                 }
@@ -651,7 +643,8 @@ namespace System.Buffers
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool TryFindMatchOverlapped(ref char cur, int searchSpaceLength, ulong mask, ReadOnlySpan<char> values, out int index)
+        private static bool TryFindMatchOverlapped<TUseFastContains>(ref char cur, int searchSpaceLength, ulong mask, ref ProbabilisticMapState state, out int index)
+            where TUseFastContains : struct, SearchValues.IRuntimeConst
         {
             do
             {
@@ -664,7 +657,7 @@ namespace System.Buffers
                     index += searchSpaceLength - (2 * Vector512<ushort>.Count);
                 }
 
-                if (Contains(values, Unsafe.Add(ref cur, index)))
+                if (state.ConfirmProbabilisticMatch<TUseFastContains>(Unsafe.Add(ref cur, index)))
                 {
                     return true;
                 }
