@@ -3501,8 +3501,9 @@ interp_create_method_pointer (MonoMethod *method, gboolean compile, MonoError *e
 		skipWrapper = true;
 #endif
 
+	MonoMethod *wrapper;
 	if (!skipWrapper) {
-		MonoMethod *wrapper = mini_get_interp_in_wrapper (sig);
+		wrapper = mini_get_interp_in_wrapper (sig);
 		entry_wrapper = mono_jit_compile_method_jit_only (wrapper, error);
 	}
 #endif
