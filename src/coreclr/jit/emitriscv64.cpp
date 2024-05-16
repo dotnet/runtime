@@ -3614,22 +3614,42 @@ void emitter::emitDispInsName(
                 case 0x0: // ADDIW
                     printf("addiw          %s, %s, %d\n", rd, rs1, imm12);
                     return;
-                case 0x1:                                                         // SLLIW
-                    printf("slliw          %s, %s, %d\n", rd, rs1, imm12 & 0x3f); // 6 BITS for SHAMT in RISCV64
-                    return;
-                case 0x5: // SRLIW & SRAIW
-                    if (((code >> 30) & 0x1) == 0)
+                case 0x1: // SLLIW
+                {
+                    unsigned funct7 = (imm12 >> 5) & 0x7f;
+                    // SLLI's instruction code's upper 7 bits have to be equal to zero
+                    if (funct7 == 0)
                     {
-                        printf("srliw          %s, %s, %d\n", rd, rs1, imm12 & 0x1f); // 5BITS for SHAMT in RISCV64
+                        printf("slliw          %s, %s, %d\n", rd, rs1, imm12 & 0x1f); // 5 BITS for SHAMT in RISCV64
                     }
                     else
                     {
+                        emitDispIllegalInstruction(code);
+                    }
+                }
+                    return;
+                case 0x5: // SRLIW & SRAIW
+                {
+                    static constexpr unsigned kLogicalShiftFunct7    = 0x00;
+                    static constexpr unsigned kArithmeticShiftFunct7 = 0x30;
+
+                    unsigned funct7 = (imm12 >> 5) & 0x7f;
+                    if (funct7 == kLogicalShiftFunct7)
+                    {
+                        printf("srliw          %s, %s, %d\n", rd, rs1, imm12 & 0x1f); // 5BITS for SHAMT in RISCV64
+                    }
+                    else if (funct7 == kArithmeticShiftFunct7)
+                    {
                         printf("sraiw          %s, %s, %d\n", rd, rs1, imm12 & 0x1f); // 5BITS for SHAMT in RISCV64
                     }
+                    else
+                    {
+                        emitDispIllegalInstruction(code);
+                    }
+                }
                     return;
                 default:
-                    printf("RISCV64 illegal instruction: 0x%08X\n", code);
-                    return;
+                    return emitDispIllegalInstruction(code);
             }
         }
         case 0x33:
