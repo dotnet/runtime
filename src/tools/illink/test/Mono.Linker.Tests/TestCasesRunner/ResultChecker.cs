@@ -104,6 +104,8 @@ namespace Mono.Linker.Tests.TestCasesRunner
 						CreateAssemblyChecker (original, linked, linkResult).Verify ();
 					}
 					CreateILChecker ().Check(linkResult, original);
+
+					VerifyExpectedDependencyTrace (linkResult.MetadataProvider, linkResult.OutputAssemblyPath);
 				}
 
 				VerifyLinkingOfOtherAssemblies (original);
@@ -278,7 +280,6 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			bool checkRemainingErrors = !HasAttribute (linkResult.TestCase.FindTypeDefinition (original), nameof (SkipRemainingErrorsValidationAttribute));
 			VerifyLoggedMessages (original, linkResult.Logger, checkRemainingErrors);
 			VerifyRecordedDependencies (original, linkResult.Customizations.DependencyRecorder);
-			VerifyExpectedDependencyTrace (linkResult.MetadataProvider, linkResult.OutputAssemblyPath);
 		}
 
 		protected virtual void InitialChecking (TrimmedTestCaseResult linkResult, AssemblyDefinition original, AssemblyDefinition linked)
