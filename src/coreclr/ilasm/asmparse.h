@@ -313,7 +313,7 @@ private:
     friend char* skipBlanks(_In_ __nullterminated char*,unsigned*);
     friend char* nextBlank(_In_ __nullterminated char*);
     friend int ProcessEOF();
-    friend unsigned __int8* skipType(unsigned __int8* ptr, BOOL fFixupType);
+    friend uint8_t* skipType(uint8_t* ptr, BOOL fFixupType);
     friend void FixupConstraints();
 
 	Assembler* assem;			// This does most of the semantic processing

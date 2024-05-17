@@ -740,6 +740,9 @@ namespace System
         /// <inheritdoc cref="INumberBase{TSelf}.MinMagnitudeNumber(TSelf, TSelf)" />
         static uint INumberBase<uint>.MinMagnitudeNumber(uint x, uint y) => Min(x, y);
 
+        /// <inheritdoc cref="INumberBase{TSelf}.MultiplyAddEstimate(TSelf, TSelf, TSelf)" />
+        static uint INumberBase<uint>.MultiplyAddEstimate(uint left, uint right, uint addend) => (left * right) + addend;
+
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertFromChecked{TOther}(TOther, out TSelf)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static bool INumberBase<uint>.TryConvertFromChecked<TOther>(TOther value, out uint result) => TryConvertFromChecked(value, out result);

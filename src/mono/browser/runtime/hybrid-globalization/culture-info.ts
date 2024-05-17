@@ -1,15 +1,14 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { setI32 } from "../memory";
-import { stringToUTF16, stringToUTF16Ptr, utf16ToString } from "../strings";
-import { Int32Ptr, VoidPtr } from "../types/emscripten";
 import { VoidPtrNull } from "../types/internal";
+import { runtimeHelpers } from "./module-exports";
+import { Int32Ptr, VoidPtr } from "../types/emscripten";
 import { OUTER_SEPARATOR, normalizeLocale, normalizeSpaces } from "./helpers";
 
 export function mono_wasm_get_culture_info (culture: number, cultureLength: number, dst: number, dstMaxLength: number, dstLength: Int32Ptr): VoidPtr {
     try {
-        const cultureName = utf16ToString(<any>culture, <any>(culture + 2 * cultureLength));
+        const cultureName = runtimeHelpers.utf16ToString(<any>culture, <any>(culture + 2 * cultureLength));
         const cultureInfo = {
             AmDesignator: "",
             PmDesignator: "",
@@ -26,12 +25,12 @@ export function mono_wasm_get_culture_info (culture: number, cultureLength: numb
         if (result.length > dstMaxLength) {
             throw new Error(`Culture info exceeds length of ${dstMaxLength}.`);
         }
-        stringToUTF16(dst, dst + 2 * result.length, result);
-        setI32(dstLength, result.length);
+        runtimeHelpers.stringToUTF16(dst, dst + 2 * result.length, result);
+        runtimeHelpers.setI32(dstLength, result.length);
         return VoidPtrNull;
     } catch (ex: any) {
-        setI32(dstLength, -1);
-        return stringToUTF16Ptr(ex.toString());
+        runtimeHelpers.setI32(dstLength, -1);
+        return runtimeHelpers.stringToUTF16Ptr(ex.toString());
     }
 }
 

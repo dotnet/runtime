@@ -144,8 +144,8 @@ set(SOURCES
   init/sxs.cpp
   loader/module.cpp
   locale/unicode.cpp
-  locale/unicodedata.cpp
   ${CLR_SRC_NATIVE_DIR}/minipal/utf8.c
+  ${CLR_SRC_NATIVE_DIR}/minipal/unicodedata.c
   map/common.cpp
   map/map.cpp
   map/virtual.cpp
@@ -185,8 +185,6 @@ set(SOURCES
   safecrt/wcsncat_s.cpp
   safecrt/wcsncpy_s.cpp
   safecrt/wmakepath_s.cpp
-  safecrt/xtoa_s.cpp
-  safecrt/xtow_s.cpp
   sharedmemory/sharedmemory.cpp
   shmemory/shmemory.cpp
   sync/cs.cpp

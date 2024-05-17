@@ -1745,7 +1745,8 @@ void emitIns_Call(EmitCallType          callType,
                   regNumber        xreg,
                   unsigned         xmul,
                   ssize_t          disp,
-                  bool             isJump);
+                  bool             isJump,
+                  bool             noSafePoint = false);
 
 BYTE*    emitOutputLJ(insGroup* ig, BYTE* dst, instrDesc* i);
 unsigned emitOutputCall(insGroup* ig, BYTE* dst, instrDesc* i, code_t code);

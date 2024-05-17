@@ -1567,6 +1567,28 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector128<double> Floor(Vector128<double> vector) => Floor<double>(vector);
 
+        /// <inheritdoc cref="Vector64.FusedMultiplyAdd(Vector64{double}, Vector64{double}, Vector64{double})" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector128<double> FusedMultiplyAdd(Vector128<double> left, Vector128<double> right, Vector128<double> addend)
+        {
+            return Create(
+                Vector64.FusedMultiplyAdd(left._lower, right._lower, addend._lower),
+                Vector64.FusedMultiplyAdd(left._upper, right._upper, addend._upper)
+            );
+        }
+
+        /// <inheritdoc cref="Vector64.FusedMultiplyAdd(Vector64{float}, Vector64{float}, Vector64{float})" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector128<float> FusedMultiplyAdd(Vector128<float> left, Vector128<float> right, Vector128<float> addend)
+        {
+            return Create(
+                Vector64.FusedMultiplyAdd(left._lower, right._lower, addend._lower),
+                Vector64.FusedMultiplyAdd(left._upper, right._upper, addend._upper)
+            );
+        }
+
         /// <summary>Gets the element at the specified index.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
         /// <param name="vector">The vector to get the element from.</param>
@@ -2007,6 +2029,28 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector128<T> Multiply<T>(T left, Vector128<T> right) => left * right;
+
+        /// <inheritdoc cref="Vector64.MultiplyAddEstimate(Vector64{double}, Vector64{double}, Vector64{double})" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector128<double> MultiplyAddEstimate(Vector128<double> left, Vector128<double> right, Vector128<double> addend)
+        {
+            return Create(
+                Vector64.MultiplyAddEstimate(left._lower, right._lower, addend._lower),
+                Vector64.MultiplyAddEstimate(left._upper, right._upper, addend._upper)
+            );
+        }
+
+        /// <inheritdoc cref="Vector64.MultiplyAddEstimate(Vector64{float}, Vector64{float}, Vector64{float})" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector128<float> MultiplyAddEstimate(Vector128<float> left, Vector128<float> right, Vector128<float> addend)
+        {
+            return Create(
+                Vector64.MultiplyAddEstimate(left._lower, right._lower, addend._lower),
+                Vector64.MultiplyAddEstimate(left._upper, right._upper, addend._upper)
+            );
+        }
 
         /// <summary>Narrows two <see cref="Vector128{Double}"/> instances into one <see cref="Vector128{Single}" />.</summary>
         /// <param name="lower">The vector that will be narrowed to the lower half of the result vector.</param>

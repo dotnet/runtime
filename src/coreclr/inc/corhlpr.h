@@ -22,14 +22,9 @@
 #include "corhdr.h"
 #include "corerror.h"
 #include "unreachable.h"
+#include <new>
 
-// This header is consumed both within the runtime and externally. In the former
-// case we need to wrap memory allocations, in the latter there is no
-// infrastructure to support this. Detect which way we're building and provide a
-// very simple abstraction layer (handles allocating bytes only).
-#ifdef _BLD_CLR
-#include "new.hpp"
-
+using std::nothrow;
 
 #define NEW_NOTHROW(_bytes) new (nothrow) BYTE[_bytes]
 #define NEW_THROWS(_bytes) new BYTE[_bytes]
@@ -38,27 +33,6 @@ inline void DECLSPEC_NORETURN THROW_OUT_OF_MEMORY()
 {
     ThrowOutOfMemory();
 }
-#else
-#define NEW_NOTHROW(_bytes) new BYTE[_bytes]
-#define NEW_THROWS(_bytes) __CorHlprNewThrows(_bytes)
-static inline void DECLSPEC_NORETURN __CorHlprThrowOOM()
-{
-    RaiseException(STATUS_NO_MEMORY, 0, 0, NULL);
-    __UNREACHABLE();
-}
-static inline BYTE *__CorHlprNewThrows(size_t bytes)
-{
-    BYTE *pbMemory = new BYTE[bytes];
-    if (pbMemory == NULL)
-        __CorHlprThrowOOM();
-    return pbMemory;
-}
-inline void DECLSPEC_NORETURN THROW_OUT_OF_MEMORY()
-{
-    __CorHlprThrowOOM();
-}
-#endif
-
 
 //*****************************************************************************
 // There are a set of macros commonly used in the helpers which you will want

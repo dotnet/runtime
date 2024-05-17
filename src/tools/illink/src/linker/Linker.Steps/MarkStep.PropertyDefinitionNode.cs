@@ -30,10 +30,10 @@ namespace Mono.Linker.Steps
 
 			public override IEnumerable<DependencyListEntry>? GetStaticDependencies (NodeFactory context)
 			{
-				using var propertyScope = context.MarkStep.ScopeStack.PushLocalScope (new MessageOrigin (_property));
+				var propertyOrigin = new MessageOrigin (_property);
 
 				// Consider making this more similar to MarkEvent method?
-				context.MarkStep.MarkCustomAttributes (_property, new DependencyInfo (DependencyKind.CustomAttribute, _property));
+				context.MarkStep.MarkCustomAttributes (_property, new DependencyInfo (DependencyKind.CustomAttribute, _property), propertyOrigin);
 				context.MarkStep.DoAdditionalPropertyProcessing (_property);
 				return null;
 			}
