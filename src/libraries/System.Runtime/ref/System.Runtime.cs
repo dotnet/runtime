@@ -11157,6 +11157,7 @@ namespace System.Reflection
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Types and members the loaded assembly depends on might be removed")]
         public static System.Reflection.Assembly LoadFrom(string assemblyFile) { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Types and members the loaded assembly depends on might be removed")]
+        [System.ObsoleteAttribute("LoadFrom with a custom AssemblyHashAlgorithm is obsolete. Use overloads without an AssemblyHashAlgorithm.", DiagnosticId = "SYSLIB0056", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public static System.Reflection.Assembly LoadFrom(string assemblyFile, byte[]? hashValue, System.Configuration.Assemblies.AssemblyHashAlgorithm hashAlgorithm) { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Types and members the loaded module depends on might be removed")]
         public System.Reflection.Module LoadModule(string moduleName, byte[]? rawModule) { throw null; }
