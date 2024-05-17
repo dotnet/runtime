@@ -220,16 +220,14 @@ namespace System.Reflection
         private static object? s_overriddenEntryAssembly;
 
         /// <summary>
-        /// Sets the application's entry assembly to the provided assembly object
-        /// as argument.
+        /// Sets the application's entry assembly to the provided assembly object.
         /// </summary>
         /// <param name="assembly">
         /// Assembly object that represents the application's new entry assembly.
         /// </param>
         /// <remarks>
-        /// It is important to mention that the assembly passed to this function
-        /// has to be a runtime defined Assembly type object. Otherwise, an exception
-        /// will be thrown.
+        /// The assembly passed to this function has to be a runtime defined Assembly 
+        /// type object. Otherwise, an exception will be thrown.
         /// </remarks>
         public static void SetEntryAssembly(Assembly? assembly)
         {

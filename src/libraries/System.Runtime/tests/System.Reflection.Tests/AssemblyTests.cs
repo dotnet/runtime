@@ -183,7 +183,7 @@ namespace System.Reflection.Tests
             Assert.True(correct, $"Unexpected assembly name {assembly}");
         }
 
-        [Fact]
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void SetEntryAssembly()
         {
             Assert.NotNull(Assembly.GetEntryAssembly());
@@ -193,10 +193,10 @@ namespace System.Reflection.Tests
                 Assembly.SetEntryAssembly(null);
                 Assert.Null(Assembly.GetEntryAssembly());
 
-                Assembly originalAssembly = typeof(AssemblyTests).Assembly;
+                Assembly testAssembly = typeof(AssemblyTests).Assembly;
 
-                Assembly.SetEntryAssembly(originalAssembly);
-                Assert.Equal(Assembly.GetEntryAssembly(), originalAssembly);
+                Assembly.SetEntryAssembly(testAssembly);
+                Assert.Equal(Assembly.GetEntryAssembly(), testAssembly);
 
                 var invalidAssembly = new PersistedAssemblyBuilder(
                     new AssemblyName("NotaRuntimeAssemblyTest"),
