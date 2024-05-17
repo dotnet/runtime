@@ -3523,26 +3523,31 @@ mono_marshal_get_native_wrapper (MonoMethod *method, gboolean check_exceptions, 
 	ERROR_DECL (emitted_error);
 
 	g_assert (method != NULL);
-	g_assertf (mono_method_signature_internal (method)->pinvoke, "%s flags:%X iflags:%X param_count:%X",
-		method->name, method->flags, method->iflags, mono_method_signature_internal (method)->param_count);
+	sig = mono_method_signature_internal (method);
+	g_assert (sig != NULL);
+	g_assertf (sig->pinvoke, "%s flags:%X iflags:%X param_count:%X",
+		method->name, method->flags, method->iflags, sig->param_count);
 
 	if (MONO_CLASS_IS_IMPORT (method->klass)) {
 		mono_error_set_generic_error (emitted_error, "System", "PlatformNotSupportedException", "Built-in COM interop is not supported on Mono");
 	}
 
+	MonoWrapperCaches *wrapper_cache = mono_method_get_wrapper_cache (method);
+	g_assert (wrapper_cache);
 	if (aot) {
 		if (check_exceptions)
-			cache_ptr = &mono_method_get_wrapper_cache (method)->native_wrapper_aot_check_cache;
+			cache_ptr = &wrapper_cache->native_wrapper_aot_check_cache;
 		else
-			cache_ptr = &mono_method_get_wrapper_cache (method)->native_wrapper_aot_cache;
+			cache_ptr = &wrapper_cache->native_wrapper_aot_cache;
 	} else {
 		if (check_exceptions)
-			cache_ptr = &mono_method_get_wrapper_cache (method)->native_wrapper_check_cache;
+			cache_ptr = &wrapper_cache->native_wrapper_check_cache;
 		else
-			cache_ptr = &mono_method_get_wrapper_cache (method)->native_wrapper_cache;
+			cache_ptr = &wrapper_cache->native_wrapper_cache;
 	}
 
 	cache = get_cache (cache_ptr, mono_aligned_addr_hash, NULL);
+	g_assert (cache);
 
 	if ((res = mono_marshal_find_in_cache (cache, method)))
 		return res;
@@ -3555,11 +3560,11 @@ mono_marshal_get_native_wrapper (MonoMethod *method, gboolean check_exceptions, 
 		}
 	}
 
-	sig = mono_method_signature_internal (method);
-
 	if (!(method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) &&
 	    (method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL))
 		pinvoke = TRUE;
+
+	g_assert (piinfo);
 
 	if (!piinfo->addr) {
 		if (pinvoke) {
@@ -3573,6 +3578,7 @@ mono_marshal_get_native_wrapper (MonoMethod *method, gboolean check_exceptions, 
 	}
 
 	mb = mono_mb_new (method->klass, method->name, MONO_WRAPPER_MANAGED_TO_NATIVE);
+	g_assert (mb);
 	mb->method->save_lmf = 1;
 
 	if (G_UNLIKELY (pinvoke && mono_method_has_unmanaged_callers_only_attribute (method))) {
@@ -5306,7 +5312,7 @@ mono_marshal_get_unsafe_accessor_wrapper (MonoMethod *accessor_method, MonoUnsaf
 			return res;
 	}
 	// printf ("Cache miss\n");
-	
+
 	mb = mono_mb_new (accessor_method->klass, accessor_method->name, MONO_WRAPPER_OTHER);
 	if (generic_wrapper) {
 		// If the accessor method was generic, make the wrapper generic, too.
@@ -6707,16 +6713,16 @@ static int get_swift_lowering_alignment (SwiftPhysicalLoweringKind kind) {
 
 static void set_lowering_range(guint8* lowered_bytes, guint32 offset, guint32 size, SwiftPhysicalLoweringKind kind) {
 	bool force_opaque = false;
-	
+
 	if (offset != ALIGN_TO(offset, get_swift_lowering_alignment(kind))) {
 		// If the start of the range is not aligned, we need to force the entire range to be opaque.
 		force_opaque = true;
 	}
-	
+
         // Check if any of the range is non-empty.
         // If so, we need to force this range to be opaque
         // and extend the range to the existing tag's range and mark as opaque in addition to the requested range.
-	
+
 	for (guint32 i = 0; i < size; ++i) {
 		SwiftPhysicalLoweringKind current = (SwiftPhysicalLoweringKind)lowered_bytes[offset + i];
 		if (current != SWIFT_EMPTY && current != kind) {
@@ -6785,7 +6791,7 @@ static void record_struct_field_physical_lowering (guint8* lowered_bytes, MonoTy
 		else if (type->type == MONO_TYPE_PTR || type->type == MONO_TYPE_FNPTR
 			|| type->type == MONO_TYPE_I || type->type == MONO_TYPE_U) {
 			kind = SWIFT_INT64;
-		} 
+		}
 #endif
 		else if (type->type == MONO_TYPE_R4) {
 			kind = SWIFT_FLOAT;
@@ -6832,7 +6838,7 @@ mono_marshal_get_swift_physical_lowering (MonoType *type, gboolean native_layout
 	}
 
 	guint8 lowered_bytes[TARGET_SIZEOF_VOID_P * 4] = { 0 };
-	
+
 	// Loop through all fields and get the physical lowering for each field
 	record_struct_physical_lowering(lowered_bytes, klass, 0);
 
@@ -6863,7 +6869,7 @@ mono_marshal_get_swift_physical_lowering (MonoType *type, gboolean native_layout
 			|| (i == ALIGN_TO(i, 8) && (current == SWIFT_DOUBLE || current == SWIFT_INT64))
 			// We've changed interval types
 			|| current != lowered_bytes[i - 1];
-		
+
 		if (start_new_interval) {
 			struct _SwiftInterval interval = { i, 1, current };
 			g_array_append_val(intervals, interval);
@@ -6889,7 +6895,7 @@ mono_marshal_get_swift_physical_lowering (MonoType *type, gboolean native_layout
 	MonoTypeEnum lowered_types[4];
 	guint32 offsets[4];
 	guint32 num_lowered_types = 0;
-	
+
 	for (int i = 0; i < intervals->len; ++i) {
 		if (num_lowered_types == 4) {
 			// We can't handle more than 4 fields
@@ -6899,7 +6905,7 @@ mono_marshal_get_swift_physical_lowering (MonoType *type, gboolean native_layout
 		}
 
 		struct _SwiftInterval interval = g_array_index(intervals, struct _SwiftInterval, i);
-		
+
 		offsets[num_lowered_types] = interval.start;
 
 		switch (interval.kind) {

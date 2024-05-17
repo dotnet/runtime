@@ -3356,7 +3356,24 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 			 * The compiled interp entry wrapper is passed to runtime_invoke instead of
 			 * the InterpMethod pointer. FIXME
 			 */
-			native = csignature->pinvoke || method->wrapper_type == MONO_WRAPPER_RUNTIME_INVOKE;
+			native = csignature->pinvoke;
+			if (method->wrapper_type == MONO_WRAPPER_RUNTIME_INVOKE) {
+				if (target_method && mono_interp_jit_call_supported (target_method, csignature)) {
+					if (td->verbose_level > 2) {
+						g_printf (
+							"Enabling native invoke for runtime invoke wrapper because jit_call is supported for target %s\n",
+							target_method->name
+						);
+						native = 1;
+					}
+				} else if (td->verbose_level > 1) {
+					g_printf (
+						"Disabling native invoke for runtime invoke wrapper because jit_call is not supported for target %s\n",
+						target_method ? target_method->name : "(No target method)"
+					);
+				}
+			}
+
 			if (!method->dynamic && !method->wrapper_type && csignature->pinvoke && !mono_method_signature_has_ext_callconv (csignature, MONO_EXT_CALLCONV_SUPPRESS_GC_TRANSITION)) {
 				// native calli needs a wrapper
 				target_method = mono_marshal_get_native_func_wrapper_indirect (method->klass, csignature, FALSE);
@@ -3844,7 +3861,13 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 				/* Cache slot */
 				td->last_ins->data [3] = get_data_item_index_nonshared (td, NULL);
 			} else {
-				interp_add_ins (td, MINT_CALLI);
+				if (method->wrapper_type == MONO_WRAPPER_RUNTIME_INVOKE) {
+					if (td->verbose_level > 1)
+						g_print ("Using MINT_CALLI_MONOMETHOD for runtime invoke wrapper\n");
+					interp_add_ins (td, MINT_CALLI_MONOMETHOD);
+				} else {
+					interp_add_ins (td, MINT_CALLI);
+				}
 				interp_ins_set_dreg (td->last_ins, dreg);
 				interp_ins_set_sregs2 (td->last_ins, fp_sreg, MINT_CALL_ARGS_SREG);
 			}
@@ -9160,6 +9183,12 @@ retry:
 			if (strcmp (method->name, name) == 0)
 				td->verbose_level = 4;
 		}
+	}
+
+	if (method->wrapper_type == MONO_WRAPPER_RUNTIME_INVOKE) {
+		// HACK: Enable verbose for runtime invoke wrappers since I am making changes there, and if we
+		//  get CI failures I want diagnostic output in the log
+		td->verbose_level = 2;
 	}
 
 	interp_method_compute_offsets (td, rtm, mono_method_signature_internal (method), header, error);

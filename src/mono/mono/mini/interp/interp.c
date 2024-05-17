@@ -2177,6 +2177,7 @@ interp_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObject 
 	MonoMethodSignature *sig = mono_method_signature_internal (method);
 	stackval *sp = (stackval*)context->stack_pointer;
 	MonoMethod *target_method = method;
+	gboolean need_direct_wrapper = TRUE;
 
 	error_init (error);
 	if (exc)
@@ -2184,7 +2185,10 @@ interp_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObject 
 
 	if (method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL)
 		target_method = mono_marshal_get_native_wrapper (target_method, FALSE, FALSE);
-	MonoMethod *invoke_wrapper = mono_marshal_get_runtime_invoke_full (target_method, FALSE, TRUE);
+	if ((sig->param_count == 0) && !sig->hasthis && !strcmp(method->name, ".cctor"))
+		need_direct_wrapper = FALSE;
+
+	MonoMethod *invoke_wrapper = mono_marshal_get_runtime_invoke_full (target_method, FALSE, need_direct_wrapper);
 
 	//* <code>MonoObject *runtime_invoke (MonoObject *this_obj, void **params, MonoObject **exc, void* method)</code>
 
@@ -4179,6 +4183,19 @@ main_loop:
 			}
 			ip += 4;
 
+			goto jit_call;
+		}
+		MINT_IN_CASE(MINT_CALLI_MONOMETHOD) {
+			MonoMethod *mm = (MonoMethod *)LOCAL_VAR (ip [2], gpointer);
+			g_assert (mm);
+			cmethod = mono_interp_get_imethod (mm);
+			g_assert (cmethod);
+			g_assert (!(cmethod->method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL));
+
+			return_offset = ip [1];
+			call_args_offset = ip [3];
+
+			ip += 4;
 			goto jit_call;
 		}
 		MINT_IN_CASE(MINT_CALLI_NAT_FAST) {
