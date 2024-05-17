@@ -6,11 +6,10 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
     <EnableDefaultEmbeddedResourceItems>false</EnableDefaultEmbeddedResourceItems>
-    <TargetFramework>netstandard2.0</TargetFramework>
+    <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
     <SignAssembly>true</SignAssembly>
     <StrongNameKeyId>Open</StrongNameKeyId>
     <RunAnalyzers>false</RunAnalyzers>
-    <DefineConstants>NETSTANDARD2_0</DefineConstants>
   </PropertyGroup>
 
   <Import Project="ILVerification.projitems" />
