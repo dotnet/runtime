@@ -21143,31 +21143,6 @@ size_t gc_heap::get_current_gc_index (int gen_number)
 }
 #endif //BGC_SERVO_TUNING
 
-#ifdef MULTIPLE_HEAPS
-size_t gc_heap::get_total_soh_stable_size()
-{
-    size_t total_stable_size = 0;
-    bool use_max_gen_p = (dynamic_heap_count_data.current_gen2_samples_count > 0);
-    int gen_number = max_generation;
-    for (int i = 0; i < gc_heap::n_heaps; i++)
-    {
-        gc_heap* hp = g_heaps[i];
-
-        if (use_max_gen_p)
-        {
-            dynamic_data* dd = hp->dynamic_data_of (gen_number);
-            total_stable_size += dd_current_size (dd) + dd_desired_allocation (dd);
-        }
-        else
-        {
-            total_stable_size += hp->generation_size (max_generation - 1) / 2;
-        }
-    }
-
-    return total_stable_size;
-}
-#endif //MULTIPLE_HEAPS
-
 size_t gc_heap::current_generation_size (int gen_number)
 {
     dynamic_data* dd = dynamic_data_of (gen_number);
@@ -22823,6 +22798,29 @@ void gc_heap::gc1()
 }
 
 #ifdef DYNAMIC_HEAP_COUNT
+size_t gc_heap::get_total_soh_stable_size()
+{
+    size_t total_stable_size = 0;
+    bool use_max_gen_p = (dynamic_heap_count_data.current_gen2_samples_count > 0);
+    int gen_number = max_generation;
+    for (int i = 0; i < gc_heap::n_heaps; i++)
+    {
+        gc_heap* hp = g_heaps[i];
+
+        if (use_max_gen_p)
+        {
+            dynamic_data* dd = hp->dynamic_data_of (gen_number);
+            total_stable_size += dd_current_size (dd) + dd_desired_allocation (dd);
+        }
+        else
+        {
+            total_stable_size += hp->generation_size (max_generation - 1) / 2;
+        }
+        }
+
+    return total_stable_size;
+}
+
 void gc_heap::assign_new_budget (int gen_number, size_t desired_per_heap)
 {
     for (int i = 0; i < gc_heap::n_heaps; i++)
