@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Net.Security;
 using System.Threading;
 using System.Threading.Tasks;
+using static System.Net.Quic.ThrowHelper;
 
 namespace System.Net.Quic;
 
@@ -41,21 +42,15 @@ public sealed class QuicListenerOptions
     /// <param name="argumentName">Name of the from the caller.</param>
     internal void Validate(string argumentName)
     {
-        if (ListenEndPoint is null)
-        {
-            throw new ArgumentNullException(SR.Format(SR.net_quic_not_null_listener, nameof(QuicListenerOptions.ListenEndPoint)), argumentName);
-        }
+        ValidateNotNull(argumentName, SR.net_quic_not_null_listener, ListenEndPoint);
+        ValidateNotNull(argumentName, SR.net_quic_not_null_listener, ConnectionOptionsCallback);
         if (ApplicationProtocols is null || ApplicationProtocols.Count <= 0)
         {
-            throw new ArgumentNullException(SR.Format(SR.net_quic_not_null_not_empty_listener, nameof(QuicListenerOptions.ApplicationProtocols)), argumentName);
+            throw new ArgumentNullException(argumentName, SR.Format(SR.net_quic_not_null_not_empty_listener, nameof(ApplicationProtocols)));
         }
         if (ListenBacklog == 0)
         {
             ListenBacklog = QuicDefaults.DefaultListenBacklog;
-        }
-        if (ConnectionOptionsCallback is null)
-        {
-            throw new ArgumentNullException(SR.Format(SR.net_quic_not_null_listener, nameof(QuicListenerOptions.ConnectionOptionsCallback)), argumentName);
         }
     }
 }

@@ -52,6 +52,27 @@ namespace System.Net.Quic.Tests
             );
         }
 
+        [Theory]
+        [InlineData(-1)]
+        [InlineData(long.MaxValue)]
+        [InlineData(long.MinValue)]
+        public async Task Abort_InvalidCode_Throws(long errorCode)
+        {
+            using var sync = new SemaphoreSlim(0);
+
+            await RunClientServer(
+                async clientConnection =>
+                {
+                    await using var stream = await clientConnection.OpenOutboundStreamAsync(QuicStreamType.Bidirectional);
+                    Assert.Throws<ArgumentOutOfRangeException>(() => stream.Abort(QuicAbortDirection.Both, errorCode));
+                    sync.Release();
+                },
+                async serverConnection =>
+                {
+                    await sync.WaitAsync();
+                });
+        }
+
         [Fact]
         public async Task MultipleReadsAndWrites()
         {

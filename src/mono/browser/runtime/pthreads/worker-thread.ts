@@ -65,7 +65,7 @@ export function initWorkerThreadEvents () {
 // this is the message handler for the worker that receives messages from the main thread
 // extend this with new cases as needed
 function monoDedicatedChannelMessageFromMainToWorker (event: MessageEvent<string>): void {
-    mono_log_debug("got message from main on the dedicated channel", event.data);
+    mono_log_debug(() => `got message from main on the dedicated channel ${event.data}`);
 }
 
 export function on_emscripten_thread_init (pthread_ptr: PThreadPtr) {

@@ -331,11 +331,12 @@ void emitIns_Call(EmitCallType          callType,
                   regMaskTP        gcrefRegs,
                   regMaskTP        byrefRegs,
                   const DebugInfo& di,
-                  regNumber        ireg   = REG_NA,
-                  regNumber        xreg   = REG_NA,
-                  unsigned         xmul   = 0,
-                  ssize_t          disp   = 0,
-                  bool             isJump = false);
+                  regNumber        ireg        = REG_NA,
+                  regNumber        xreg        = REG_NA,
+                  unsigned         xmul        = 0,
+                  ssize_t          disp        = 0,
+                  bool             isJump      = false,
+                  bool             noSafePoint = false);
 
 unsigned emitOutputCall(const insGroup* ig, BYTE* dst, instrDesc* id, code_t code);
 
