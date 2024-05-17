@@ -98,7 +98,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 					context.Tracer.AddRecorder (customizations.DependencyRecorder);
 				};
 			}
-			
+
 			if (ValidatesLogMessages (_testCaseTypeDefinition)) {
 				customizations.CustomizeContext += context => {
 					context.LogMessages = true;

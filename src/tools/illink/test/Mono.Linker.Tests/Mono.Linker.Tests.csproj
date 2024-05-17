@@ -55,6 +55,8 @@
 
     <RuntimeHostConfigurationOption Include="GenerateExpectedDependencyTraces" Value="true"
                                     Condition="'$(GenerateExpectedDependencyTraces)' == 'true'" />
+    <RuntimeHostConfigurationOption Include="ValidateDependencyTraces" Value="true"
+                                    Condition="'$(ValidateDependencyTraces)' == 'true'" />
   </ItemGroup>
 
   <Import Project="..\Trimming.Tests.Shared\Trimming.Tests.Shared.projitems" Label="Shared" />

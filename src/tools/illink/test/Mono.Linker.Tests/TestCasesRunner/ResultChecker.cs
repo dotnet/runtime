@@ -1057,8 +1057,8 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 		void VerifyExpectedDependencyTrace (TestCaseMetadataProvider testCaseMetadata, NPath outputAssemblyPath)
 		{
-			if (AppContext.TryGetSwitch ("GenerateExpectedDependencyTraces", out var generateExpectedDependencyTrace) && generateExpectedDependencyTrace)
-				return; // No validation if we are generating the expected traces.
+			if (!AppContext.TryGetSwitch ("ValidateDependencyTraces", out var validateDependencyTraces) || !validateDependencyTraces)
+				return;
 
 			var expectedTracePath = testCaseMetadata.GetExpectedDependencyTrace ();
 			Assert.IsTrue (expectedTracePath.FileExists (), $"Expected dependency trace file '{expectedTracePath}' does not exist.");
