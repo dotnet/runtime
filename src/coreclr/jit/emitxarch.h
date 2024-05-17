@@ -316,6 +316,18 @@ void SetUseEvexEncoding(bool value)
     useEvexEncodings = value;
 }
 
+// Is Rex2 encoding supported.
+bool useRex2Encodings;
+bool UseRex2Encoding() const
+{
+    return useRex2Encodings;
+}
+
+void SetUseRex2Encoding(bool value)
+{
+    useRex2Encodings = value;
+}
+
 //------------------------------------------------------------------------
 // UseSimdEncoding: Returns true if either VEX or EVEX encoding is supported
 // contains Evex prefix.

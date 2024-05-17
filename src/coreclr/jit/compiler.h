@@ -9945,6 +9945,17 @@ public:
         return (compOpportunisticallyDependsOn(InstructionSet_EVEX));
     }
 
+    //------------------------------------------------------------------------
+    // canUseRex2Encoding - Answer the question: Is Rex2 encoding supported on this target.
+    //
+    // Returns:
+    //    `true` if Rex2 encoding is supported, `false` if not.
+    //
+    bool canUseRex2Encoding() const
+    {
+        return compOpportunisticallyDependsOn(InstructionSet_APX);
+    }
+
 private:
     //------------------------------------------------------------------------
     // DoJitStressEvexEncoding- Answer the question: Do we force EVEX encoding.
@@ -9990,9 +10001,9 @@ private:
     bool DoJitStressRex2Encoding() 
     {
 #ifdef DEBUG
-        // Using JitStressEVEXEncoding flag will force instructions which would
-        // otherwise use VEX encoding but can be EVEX encoded to use EVEX encoding
-        // This requires AVX512F, AVX512BW, AVX512CD, AVX512DQ, and AVX512VL support
+        // TODO-apx: currently to make sure APX can be encoded on non-APX machine,
+        //           we don't assert APX support here, we will need to revisit 
+        //           this part after we have the hardware.
 
         return this->m_jitStressRex2Encoding;
 #endif // DEBUG

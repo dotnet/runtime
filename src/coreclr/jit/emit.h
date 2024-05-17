@@ -470,6 +470,7 @@ public:
 #ifdef TARGET_XARCH
         SetUseVEXEncoding(false);
         SetUseEvexEncoding(false);
+        SetUseRex2Encoding(false);
 #endif // TARGET_XARCH
 
         emitDataSecCur = nullptr;

@@ -274,17 +274,23 @@ bool emitter::IsEvexEncodableInstruction(instruction ins) const
 //
 bool emitter::IsRex2EncodableInstruction(instruction ins) const
 {
+    // TODO-apx: as we don't 
+    // if(!UseRex2Encoding())
+    // {
+    //     return false;
+    // }
+
     return HasRex2Encoding(ins);
 }
 
 //------------------------------------------------------------------------
-// IsLegacyMap1: Answer the question- Is this instruction undefined when prefixed by REX2
+// IsLegacyMap1: Answer the question- Is this instruction on legacy-map-1
 //
 // Arguments:
 //    ins - The instruction to check.
 //
 // Returns:
-//    `true` if ins is undefined.
+//    `true` if ins is a legacy-map-1 instruction.
 //
 bool emitter::IsLegacyMap1(code_t code) const
 {
@@ -1367,7 +1373,7 @@ bool emitter::TakesRex2Prefix(const instrDesc* id) const
         return false;
     }
 
-    if(TakesEvexPrefix(id) || TakesVexPrefix(ins))
+    if(TakesEvexPrefix(id))
     {
         return false;
     }
@@ -1792,12 +1798,71 @@ bool emitter::HasHighSIMDReg(const instrDesc* id) const
 // true if instruction will require REX2 encoding for its register operands.
 bool emitter::HasExtendedGPReg(const instrDesc* id) const
 {
-
-    //  TODO-apx:
-    //  Not all instructions has 2 regs, this part needs to be updated later.
 #if defined(TARGET_AMD64)
-    if (IsExtendedGPReg(id->idReg1()) || IsExtendedGPReg(id->idReg2()))
-        return true;
+    int regCount = 0;
+
+    if(id->idHasReg1())
+    {
+        regCount++;
+    }
+
+    if(id->idHasReg2())
+    {
+        regCount++;
+    }
+
+    // TODO-apx: revisit code below, do we really have legacy map0/1 instructions taking 3/4 regs.
+    if(id->idHasReg3())
+    {
+        regCount++;
+    }
+
+    if(id->idHasReg4())
+    {
+        regCount++;
+    }
+
+    switch (regCount)
+    {
+        case 4:
+        {
+            if(IsExtendedGPReg(id->idReg4()))
+            {
+                return true;
+            }
+            FALLTHROUGH;
+        }
+
+        case 3:
+        {
+            if(IsExtendedGPReg(id->idReg3()))
+            {
+                return true;
+            }
+            FALLTHROUGH;
+        }
+
+        case 2:
+        {
+            if(IsExtendedGPReg(id->idReg2()))
+            {
+                return true;
+            }
+            FALLTHROUGH;
+        }
+
+        case 1:
+        {
+            if(IsExtendedGPReg(id->idReg1()))
+            {
+                return true;
+            }
+            FALLTHROUGH;
+        }
+        
+        default:
+            return false;
+    }
 #endif
     // X86 JIT operates in 32-bit mode and hence extended reg are not available.
     return false;
@@ -1864,14 +1929,14 @@ bool emitter::IsExtendedGPReg(regNumber reg) const
         return false;
     }
 
+    // TODO-apx: It would be better to have stress mode on LSRA to forcely allocate EGPRs,
+    //           instead of stressing here.
 #if defined(DEBUG)
     if (emitComp->DoJitStressRex2Encoding())
     {
         return true;
     }
 #endif // DEBUG
-    //  TODO-apx:
-    //  For now keep it returning false unless stress it.
     return false;
 }
 
@@ -2602,18 +2667,6 @@ unsigned emitter::emitOutputRexOrSimdPrefixIfNeeded(instruction ins, BYTE* dst, 
             // XX0F, remove the leading 0x0F byte as it have been recoreded in REX2.
             code = code >> 2;
         }
-
-        // TODO-apx: need to complete the opcode check like REX here,
-        //              as some of the opcode come with some prefix, we
-        //              need to handle everything right here as other
-        //              prefixs do.
-
-        //              REX2 only supports Map0, 1 instructions, I'm not sure
-        //              if there is any assumption we can make on the opcode
-        //              length.
-
-        //              Plus the pre-exist prefix seems only applies to SSE ins.
-        //              Maybe don't need to be considered?
 
         BYTE check = (code >> 24) & 0xFF;
         if (check == 0)
