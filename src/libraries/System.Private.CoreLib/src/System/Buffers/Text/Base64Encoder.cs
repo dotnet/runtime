@@ -669,7 +669,7 @@ namespace System.Buffers.Text
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static unsafe uint Encode(byte* threeBytes, ref byte encodingMap)
+        private static unsafe uint Encode(byte* threeBytes, ref byte encodingMap)
         {
             uint t0 = threeBytes[0];
             uint t1 = threeBytes[1];

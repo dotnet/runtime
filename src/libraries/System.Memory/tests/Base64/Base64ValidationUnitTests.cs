@@ -243,6 +243,19 @@ namespace System.Buffers.Text.Tests
         }
 
         [Theory]
+        [InlineData("YQ==", 1)]
+        [InlineData("YWI=", 2)]
+        [InlineData("YWJj", 3)]
+        public void DecodeEmptySpan(string utf8WithByteToBeIgnored, int expectedLength)
+        {
+            ReadOnlySpan<char> utf8BytesWithByteToBeIgnored = utf8WithByteToBeIgnored.ToArray();
+
+            Assert.True(Base64.IsValid(utf8BytesWithByteToBeIgnored));
+            Assert.True(Base64.IsValid(utf8BytesWithByteToBeIgnored, out int decodedLength));
+            Assert.Equal(expectedLength, decodedLength);
+        }
+
+        [Theory]
         [InlineData("YWJ")]
         [InlineData("YW")]
         [InlineData("Y")]

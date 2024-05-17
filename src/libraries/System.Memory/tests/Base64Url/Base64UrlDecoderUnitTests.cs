@@ -271,11 +271,14 @@ namespace System.Buffers.Text.Tests
 
         [Theory]
         [InlineData("A", 0, 0, OperationStatus.InvalidData)]
+        [InlineData("A===", 0, 0, OperationStatus.InvalidData)]
+        [InlineData("A==", 0, 0, OperationStatus.InvalidData)]
+        [InlineData("A=", 0, 0, OperationStatus.InvalidData)]
         [InlineData("AQ", 2, 1, OperationStatus.Done)]  // Padding is optional
         [InlineData("AQI", 3, 2, OperationStatus.Done)]
         [InlineData("AQIDBA", 6, 4, OperationStatus.Done)]
         [InlineData("AQIDBAU", 7, 5, OperationStatus.Done)]
-        public void BasicDecodingWithFinalBlockTrueInputWithoutPadding(string inputString, int expectedConsumed, int expectedWritten, OperationStatus expectedStatus)
+        public void BasicDecodingWithFinalBlockTrueInputWithoutPaddingOrInvalidData(string inputString, int expectedConsumed, int expectedWritten, OperationStatus expectedStatus)
         {
             Span<byte> source = Encoding.ASCII.GetBytes(inputString);
             Span<byte> decodedBytes = new byte[Base64Url.GetMaxDecodedLength(source.Length)];
@@ -283,7 +286,7 @@ namespace System.Buffers.Text.Tests
             Assert.Equal(expectedStatus, Base64Url.DecodeFromUtf8(source, decodedBytes, out int consumed, out int decodedByteCount));
             Assert.Equal(expectedConsumed, consumed);
             Assert.Equal(expectedWritten, decodedByteCount); // expectedWritten == decodedBytes.Length
-            Assert.True(Base64TestHelper.VerifyUrlDecodingCorrectness(expectedConsumed, decodedBytes.Length, source, decodedBytes));
+            Assert.True(Base64TestHelper.VerifyUrlDecodingCorrectness(expectedConsumed, expectedWritten, source, decodedBytes));
         }
 
         [Theory]

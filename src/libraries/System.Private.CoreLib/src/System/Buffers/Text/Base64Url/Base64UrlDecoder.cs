@@ -183,7 +183,7 @@ namespace System.Buffers.Text
             out int charsConsumed, out int bytesWritten, bool isFinalBlock = true) =>
             DecodeFrom<Base64UrlDecoderChar, ushort>(MemoryMarshal.Cast<char, ushort>(source), destination, out charsConsumed, out bytesWritten, isFinalBlock, ignoreWhiteSpace: true);
 
-        internal static OperationStatus DecodeWithWhiteSpaceBlockwise<TBase64Decoder>(ReadOnlySpan<ushort> utf8, Span<byte> bytes, ref int bytesConsumed, ref int bytesWritten, bool isFinalBlock = true)
+        private static OperationStatus DecodeWithWhiteSpaceBlockwise<TBase64Decoder>(ReadOnlySpan<ushort> utf8, Span<byte> bytes, ref int bytesConsumed, ref int bytesWritten, bool isFinalBlock = true)
             where TBase64Decoder : IBase64Decoder<ushort>
         {
             const int BlockSize = 4;

@@ -51,14 +51,15 @@ namespace System.Buffers.Text
 
         private static bool ValidateAndDecodeLength(int length, int paddingCount, out int decodedLength)
         {
-            if (length == 1)
+            // Padding is optional for Base64Url, so need to account remainder. If remainder is 1, then it's invalid.
+            int remainder = length % 4;
+
+            if (remainder == 1)
             {
                 decodedLength = 0;
                 return false;
             }
 
-            // Padding is optional for Base64Url, so need to account remainder.
-            int remainder = length % 4;
             decodedLength = (int)((uint)length / 4 * 3) + (remainder > 0 ? remainder - 1 : 0) - paddingCount;
             return true;
         }

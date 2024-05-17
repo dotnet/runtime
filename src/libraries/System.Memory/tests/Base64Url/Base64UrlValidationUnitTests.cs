@@ -56,7 +56,7 @@ namespace System.Buffers.Text.Tests
             }
         }
 
-        /*[Fact] TODO: Should we always account bytes length having remainder of 1 as invalid?
+        [Fact]
         public void BasicValidationInvalidInputLengthBytes()
         {
             var rnd = new Random(42);
@@ -95,7 +95,7 @@ namespace System.Buffers.Text.Tests
                 Assert.False(Base64Url.IsValid(source, out int decodedLength));
                 Assert.Equal(0, decodedLength);
             }
-        }*/
+        }
 
         [Fact]
         public void ValidateEmptySpanBytes()

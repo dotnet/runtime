@@ -272,6 +272,9 @@ namespace System.Buffers.Text.Tests
 
         [Theory]
         [InlineData("A", 0, 0)]
+        [InlineData("A===", 0, 0)]
+        [InlineData("A==", 0, 0)]
+        [InlineData("A=", 0, 0)]
         [InlineData("AQ", 0, 0)]
         [InlineData("AQI", 0, 0)]
         [InlineData("AQIDBA", 4, 3)]
@@ -284,7 +287,7 @@ namespace System.Buffers.Text.Tests
             Assert.Equal(OperationStatus.InvalidData, Base64.DecodeFromUtf8(source, decodedBytes, out int consumed, out int decodedByteCount));
             Assert.Equal(expectedConsumed, consumed);
             Assert.Equal(expectedWritten, decodedByteCount); // expectedWritten == decodedBytes.Length
-            Assert.True(Base64TestHelper.VerifyDecodingCorrectness(expectedConsumed, decodedBytes.Length, source, decodedBytes));
+            Assert.True(Base64TestHelper.VerifyDecodingCorrectness(expectedConsumed, expectedWritten, source, decodedBytes));
         }
 
         [Theory]

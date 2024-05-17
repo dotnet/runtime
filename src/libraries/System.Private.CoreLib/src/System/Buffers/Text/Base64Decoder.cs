@@ -577,7 +577,7 @@ namespace System.Buffers.Text
             return padding;
         }
 
-        internal static OperationStatus DecodeWithWhiteSpaceFromUtf8InPlace<TBase64Decoder>(Span<byte> utf8, ref int destIndex, uint sourceIndex)
+        private static OperationStatus DecodeWithWhiteSpaceFromUtf8InPlace<TBase64Decoder>(Span<byte> utf8, ref int destIndex, uint sourceIndex)
             where TBase64Decoder : IBase64Decoder<byte>
         {
             const int BlockSize = 4;
@@ -1004,7 +1004,7 @@ namespace System.Buffers.Text
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static unsafe int Decode(byte* encodedBytes, ref sbyte decodingMap)
+        private static unsafe int Decode(byte* encodedBytes, ref sbyte decodingMap)
         {
             uint t0 = encodedBytes[0];
             uint t1 = encodedBytes[1];
@@ -1028,25 +1028,11 @@ namespace System.Buffers.Text
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static unsafe void WriteThreeLowOrderBytes(byte* destination, int value)
+        private static unsafe void WriteThreeLowOrderBytes(byte* destination, int value)
         {
             destination[0] = (byte)(value >> 16);
             destination[1] = (byte)(value >> 8);
             destination[2] = (byte)value;
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static int IndexOfAnyExceptWhiteSpace(ReadOnlySpan<byte> span)
-        {
-            for (int i = 0; i < span.Length; i++)
-            {
-                if (!IsWhiteSpace(span[i]))
-                {
-                    return i;
-                }
-            }
-
-            return -1;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

@@ -174,14 +174,14 @@ namespace System.Buffers.Text.Tests
         }
 
         [Theory]
-        //[InlineData("\u5948cz_T", 0, 0)]                                              // scalar code-path
-        //[InlineData("z_Ta123\u5948", 4, 3)]
+        [InlineData("\u5948cz_T", 0, 0)]                                              // scalar code-path
+        [InlineData("z_Ta123\u5948", 4, 3)]
         [InlineData("\u5948z_T-H7sqEkerqMweH1uSw==", 0, 0)]                          // Vector128 code-path
-        /*[InlineData("z_T-H7sqEkerqMweH1uSw\u5948==", 20, 15)]
+        [InlineData("z_T-H7sqEkerqMweH1uSw\u5948==", 20, 15)]
         [InlineData("\u5948z_T-H7sqEkerqMweH1uSw1a5ebaAF9xa8B0ze1wet4epo==", 0, 0)]  // Vector256 / AVX code-path
         [InlineData("z_T-H7sqEkerqMweH1uSw1a5ebaAF9xa8B0ze1wet4epo\u5948==", 44, 33)]
         [InlineData("\u5948z_T-H7sqEkerqMweH1uSw1a5ebaAF9xa8B0ze1wet4epo01234567890123456789012345678901234567890123456789==", 0, 0)]  // Vector512 / Avx512Vbmi code-path
-        [InlineData("z_T-H7sqEkerqMweH1uSw1a5ebaAF9xa8B0ze1wet4epo01234567890123456789012345678901234567890123456789\u5948==", 92, 69)]*/
+        [InlineData("z_T-H7sqEkerqMweH1uSw1a5ebaAF9xa8B0ze1wet4epo01234567890123456789012345678901234567890123456789\u5948==", 92, 69)]
         public void BasicDecodingNonAsciiInputInvalid(string inputString, int expectedConsumed, int expectedWritten)
         {
             Span<char> source = inputString.ToArray();
