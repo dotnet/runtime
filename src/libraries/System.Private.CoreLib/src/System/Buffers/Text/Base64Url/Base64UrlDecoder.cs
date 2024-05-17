@@ -960,10 +960,10 @@ namespace System.Buffers.Text
                     return false;
                 }
 
-                str1 = Vector128.Narrow(s11, s12);
-                str2 = Vector128.Narrow(s21, s22);
-                str3 = Vector128.Narrow(s31, s32);
-                str4 = Vector128.Narrow(s41, s42);
+                str1 = AdvSimd.Arm64.UnzipEven(s11.AsByte(), s12.AsByte());
+                str2 = AdvSimd.Arm64.UnzipEven(s21.AsByte(), s22.AsByte());
+                str3 = AdvSimd.Arm64.UnzipEven(s31.AsByte(), s32.AsByte());
+                str4 = AdvSimd.Arm64.UnzipEven(s41.AsByte(), s42.AsByte());
 
                 return true;
             }

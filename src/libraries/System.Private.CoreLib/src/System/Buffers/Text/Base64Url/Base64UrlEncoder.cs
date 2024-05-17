@@ -321,12 +321,11 @@ namespace System.Buffers.Text
                 Vector128<byte> res1, Vector128<byte> res2, Vector128<byte> res3, Vector128<byte> res4)
             {
                 AssertWrite<Vector128<ushort>>(dest, destStart, destLength);
-                (Vector128<ushort> utf16LowVector1, Vector128<ushort> utf16HighVector1) = Vector128.Widen(res1);
-                (Vector128<ushort> utf16LowVector2, Vector128<ushort> utf16HighVector2) = Vector128.Widen(res2);
-                AdvSimd.Arm64.StoreVector128x4(dest, (utf16LowVector1, utf16HighVector1, utf16LowVector2, utf16HighVector2));
-                (Vector128<ushort> utf16LowVector3, Vector128<ushort> utf16HighVector3) = Vector128.Widen(res3);
-                (Vector128<ushort> utf16LowVector4, Vector128<ushort> utf16HighVector4) = Vector128.Widen(res4);
-                AdvSimd.Arm64.StoreVector128x4(dest, (utf16LowVector3, utf16HighVector3, utf16LowVector4, utf16HighVector4));
+                Vector128<ushort> vecWide1 = AdvSimd.Arm64.ZipLow(res1, Vector128<byte>.Zero).AsUInt16();
+                Vector128<ushort> vecWide2 = AdvSimd.Arm64.ZipLow(res2, Vector128<byte>.Zero).AsUInt16();
+                Vector128<ushort> vecWide3 = AdvSimd.Arm64.ZipLow(res3, Vector128<byte>.Zero).AsUInt16();
+                Vector128<ushort> vecWide4 = AdvSimd.Arm64.ZipLow(res4, Vector128<byte>.Zero).AsUInt16();
+                AdvSimd.Arm64.StoreVector128x4(dest, (vecWide1, vecWide2, vecWide3, vecWide4));
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
