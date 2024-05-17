@@ -17,6 +17,7 @@ typedef enum {
 
 typedef void (*free_bundled_resource_func)(void *, void*);
 
+// WARNING: The layout of these structs cannot change because EmitBundleBase.cs depends on it!
 typedef struct _MonoBundledResource {
 	MonoBundledResourceType type;
 	const char *id;

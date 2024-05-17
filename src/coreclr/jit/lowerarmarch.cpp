@@ -313,7 +313,7 @@ bool Lowering::IsContainableUnaryOrBinaryOp(GenTree* parentNode, GenTree* childN
             return false;
         }
 
-        const ssize_t wrapAmount = (static_cast<ssize_t>(genTypeSize(parentNode)) * BITS_PER_BYTE);
+        const ssize_t wrapAmount = (static_cast<ssize_t>(genTypeSize(childNode)) * BITS_PER_BYTE);
         assert((wrapAmount == 32) || (wrapAmount == 64));
 
         // Rotation is circular, so normalize to [0, wrapAmount - 1]
@@ -491,11 +491,21 @@ void Lowering::LowerStoreLoc(GenTreeLclVarCommon* storeLoc)
 //    node       - The indirect store node (GT_STORE_IND) of interest
 //
 // Return Value:
-//    None.
+//    Next node to lower.
 //
-void Lowering::LowerStoreIndir(GenTreeStoreInd* node)
+GenTree* Lowering::LowerStoreIndir(GenTreeStoreInd* node)
 {
+    GenTree* next = node->gtNext;
     ContainCheckStoreIndir(node);
+
+#ifdef TARGET_ARM64
+    if (comp->opts.OptimizationEnabled())
+    {
+        OptimizeForLdpStp(node);
+    }
+#endif
+
+    return next;
 }
 
 //------------------------------------------------------------------------
@@ -1354,7 +1364,15 @@ bool Lowering::IsValidConstForMovImm(GenTreeHWIntrinsic* node)
         // can catch those cases as well.
 
         castOp = op1->AsCast()->CastOp();
-        op1    = castOp;
+
+        if (varTypeIsIntegral(castOp))
+        {
+            op1 = castOp;
+        }
+        else
+        {
+            castOp = nullptr;
+        }
     }
 
     if (op1->IsCnsIntOrI())

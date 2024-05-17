@@ -16,7 +16,6 @@ namespace System.Threading
     /// that holds a lock may enter the lock repeatedly without exiting it, such as recursively, in which case the thread should
     /// eventually exit the lock the same number of times to fully exit the lock and allow other threads to enter the lock.
     /// </remarks>
-    [Runtime.Versioning.RequiresPreviewFeatures]
     public sealed partial class Lock
     {
         private const short DefaultMaxSpinCount = 22;

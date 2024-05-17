@@ -376,7 +376,7 @@ namespace System.Net
 
         public AuthenticationLevel AuthenticationLevel { get; set; } = AuthenticationLevel.MutualAuthRequested;
 
-        public TokenImpersonationLevel ImpersonationLevel { get; set; } = TokenImpersonationLevel.Delegation;
+        public TokenImpersonationLevel ImpersonationLevel { get; set; } = TokenImpersonationLevel.None;
 
         public virtual string? ConnectionGroupName
         {
