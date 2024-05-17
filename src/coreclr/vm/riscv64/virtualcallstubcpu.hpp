@@ -226,12 +226,12 @@ struct ResolveHolder
         //  addi t0, t0, -12
         _stub._resolveEntryPoint[n++] = 0xff428293;
 
-        // 	lw  t6, 0(t0)  #t6 = this._hashedToken
         constexpr size_t entryPointsLen = ResolveStub::resolveEntryPointLen+ResolveStub::slowEntryPointLen+ResolveStub::failEntryPointLen;
         constexpr size_t hashedTokenOffset = offsetof(ResolveStub, _hashedToken);
+        // 	lw  t6, 0(t0)  #t6 = this._hashedToken
         _stub._resolveEntryPoint[n++] = 0x0002af83 | (hashedTokenOffset << 20);
         static_assert_no_msg(entryPointsLen << 2 == hashedTokenOffset);
-        static_assert_no_msg(hashedTokenOffset == (hashedTokenOffset - offsetof(ResolveStub, _resolveEntryPoint[0])));
+        static_assert_no_msg(offsetof(ResolveStub, _resolveEntryPoint[0]) == 0);
 
         // 	xor	 t1, t1, t6
         _stub._resolveEntryPoint[n++] = 0x01f34333;
@@ -243,11 +243,10 @@ struct ResolveHolder
         _stub._resolveEntryPoint[n++] = 0x00cfdf9b;
         // 	and  t1, t1, t6
         _stub._resolveEntryPoint[n++] = 0x01f37333;
-        // 	ld  t6, 0(t0)    # t6 = this._cacheAddress
         constexpr size_t cacheAddressOffset = offsetof(ResolveStub, _cacheAddress);
+        // 	ld  t6, 0(t0)    # t6 = this._cacheAddress
         _stub._resolveEntryPoint[n++] = 0x0002bf83 | (cacheAddressOffset << 20);
         static_assert_no_msg((entryPointsLen+1+2) << 2 == cacheAddressOffset);
-        static_assert_no_msg(cacheAddressOffset == (cacheAddressOffset - offsetof(ResolveStub, _resolveEntryPoint[0])));
         //  add t1, t6, t1
         _stub._resolveEntryPoint[n++] = 0x006f8333;
         // 	ld  t1, 0(t1)    # t1 = e = this._cacheAddress[i]
@@ -255,11 +254,10 @@ struct ResolveHolder
 
         // 	ld  t6, 0(t1)    # t6 = Check mt == e.pMT;
         _stub._resolveEntryPoint[n++] = 0x00033f83 | ((offsetof(ResolveCacheElem, pMT) & 0xfff) << 20);
-        // 	ld  t2, 0(t0)  #  $t2 = this._token
         constexpr size_t tokenOffset = offsetof(ResolveStub, _token);
+        // 	ld  t2, 0(t0)  #  $t2 = this._token
         _stub._resolveEntryPoint[n++] = 0x0002b383 | (tokenOffset << 20);
         static_assert_no_msg((entryPointsLen+1+4) << 2 == tokenOffset);
-        static_assert_no_msg(tokenOffset == (tokenOffset - offsetof(ResolveStub, _resolveEntryPoint[0])));
 
         // 	bne  t6, t3, next
         _stub._resolveEntryPoint[n++] = 0x01cf9a63;// | PC_REL_OFFSET(_slowEntryPoint[0], n);
