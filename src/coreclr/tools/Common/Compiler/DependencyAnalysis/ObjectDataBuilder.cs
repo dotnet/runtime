@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Buffers.Binary;
 using System.Collections.Generic;
 using Internal.TypeSystem;
 
@@ -85,42 +86,37 @@ namespace ILCompiler.DependencyAnalysis
 
         public void EmitShort(short emit)
         {
-            EmitByte((byte)(emit & 0xFF));
-            EmitByte((byte)((emit >> 8) & 0xFF));
+            Span<byte> buffer = stackalloc byte[sizeof(short)];
+            BinaryPrimitives.WriteInt16LittleEndian(buffer, emit);
+            _data.Append(buffer);
         }
 
         public void EmitUShort(ushort emit)
         {
-            EmitByte((byte)(emit & 0xFF));
-            EmitByte((byte)((emit >> 8) & 0xFF));
+            Span<byte> buffer = stackalloc byte[sizeof(ushort)];
+            BinaryPrimitives.WriteUInt16LittleEndian(buffer, emit);
+            _data.Append(buffer);
         }
 
         public void EmitInt(int emit)
         {
-            EmitByte((byte)(emit & 0xFF));
-            EmitByte((byte)((emit >> 8) & 0xFF));
-            EmitByte((byte)((emit >> 16) & 0xFF));
-            EmitByte((byte)((emit >> 24) & 0xFF));
+            Span<byte> buffer = stackalloc byte[sizeof(int)];
+            BinaryPrimitives.WriteInt32LittleEndian(buffer, emit);
+            _data.Append(buffer);
         }
 
         public void EmitUInt(uint emit)
         {
-            EmitByte((byte)(emit & 0xFF));
-            EmitByte((byte)((emit >> 8) & 0xFF));
-            EmitByte((byte)((emit >> 16) & 0xFF));
-            EmitByte((byte)((emit >> 24) & 0xFF));
+            Span<byte> buffer = stackalloc byte[sizeof(uint)];
+            BinaryPrimitives.WriteUInt32LittleEndian(buffer, emit);
+            _data.Append(buffer);
         }
 
         public void EmitLong(long emit)
         {
-            EmitByte((byte)(emit & 0xFF));
-            EmitByte((byte)((emit >> 8) & 0xFF));
-            EmitByte((byte)((emit >> 16) & 0xFF));
-            EmitByte((byte)((emit >> 24) & 0xFF));
-            EmitByte((byte)((emit >> 32) & 0xFF));
-            EmitByte((byte)((emit >> 40) & 0xFF));
-            EmitByte((byte)((emit >> 48) & 0xFF));
-            EmitByte((byte)((emit >> 56) & 0xFF));
+            Span<byte> buffer = stackalloc byte[sizeof(long)];
+            BinaryPrimitives.WriteInt64LittleEndian(buffer, emit);
+            _data.Append(buffer);
         }
 
         public void EmitNaturalInt(int emit)
@@ -180,7 +176,7 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        public void EmitBytes(byte[] bytes)
+        public void EmitBytes(scoped ReadOnlySpan<byte> bytes)
         {
             _data.Append(bytes);
         }
