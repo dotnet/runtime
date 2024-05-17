@@ -159,7 +159,7 @@ void ReplacePid(LPCWSTR original, LPWSTR replaced, size_t replacedLength)
         // append the string representation of the PID
         DWORD pid = GetCurrentProcessId();
         WCHAR pidStr[20];
-        _itow_s(pid, pidStr, ARRAY_SIZE(pidStr), 10);
+        FormatInteger(pidStr, ARRAY_SIZE(pidStr), "%u", pid);
         wcscat_s(replaced, replacedLength, pidStr);
 
         // append the rest of the filename
