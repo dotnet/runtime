@@ -53,7 +53,9 @@ extends:
             publish/DotnetFuzzing.exe prepare-onefuzz deployment
           displayName: Prepare OneFuzz deployment
 
-# Temporary workaround - at the moment OneFuzz can't handle a single deployment where multiple jobs share similar assemblies/pdbs
+# OneFuzz can't currently handle a single deployment where multiple jobs share similar assemblies/pdbs.
+# As a workaround, we emit a task for every fuzzing target individually.
+# https://fuzzfest.visualstudio.com/Onefuzz/_workitems/edit/191504/ is tracking this issue.
 #       - task: onefuzz-task@0
 #         inputs:
 #           onefuzzOSes: 'Windows'
