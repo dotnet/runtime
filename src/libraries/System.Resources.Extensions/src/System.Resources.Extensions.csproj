@@ -42,6 +42,14 @@ System.Resources.Extensions.PreserializedResourceWriter</PackageDescription>
              Link="System\Numerics\Hashing\HashHelpers.cs" />
   </ItemGroup>
 
+  <!-- when System.Runtime.Serialization.BinaryFormat gets approved, this whole block will be repalced with a reference to package -->
+  <ItemGroup>
+    <Compile Include="$(LibrariesProjectRoot)\System.Runtime.Serialization.BinaryFormat\src\**\*.cs" LinkBase="System.Runtime.Serialization.BinaryFormat"/>
+    <ProjectReference Include="$(LibrariesProjectRoot)\System.IO.Hashing\src\System.IO.Hashing.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)\System.Reflection.Metadata\src\System.Reflection.Metadata.csproj" />
+    <PackageReference Include="System.ValueTuple" Version="$(SystemValueTupleVersion)" Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'" />
+  </ItemGroup>
+
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\RequiresUnreferencedCodeAttribute.cs" 
              Link="System\Diagnostics\CodeAnalysis\RequiresUnreferencedCodeAttribute.cs" />
