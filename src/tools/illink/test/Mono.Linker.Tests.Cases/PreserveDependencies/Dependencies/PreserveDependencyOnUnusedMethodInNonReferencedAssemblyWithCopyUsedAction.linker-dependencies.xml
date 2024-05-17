@@ -1,8 +1,0 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<dependencies version="1.2">
-	<edge mark="1" b="Assembly:test, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null" e="TypeDef:Mono.Linker.Tests.Cases.PreserveDependencies.PreserveDependencyOnUnusedMethodInNonReferencedAssemblyWithCopyUsedAction" />
-	<edge mark="1" b="TypeDef:Mono.Linker.Tests.Cases.PreserveDependencies.PreserveDependencyOnUnusedMethodInNonReferencedAssemblyWithCopyUsedAction" e="Method:System.Void Mono.Linker.Tests.Cases.PreserveDependencies.PreserveDependencyOnUnusedMethodInNonReferencedAssemblyWithCopyUsedAction::Main()" />
-	<edge mark="1" b="TypeDef:Mono.Linker.Tests.Cases.PreserveDependencies.PreserveDependencyOnUnusedMethodInNonReferencedAssemblyWithCopyUsedAction" e="Module:test.exe" />
-	<edge mark="1" b="Module:test.exe" e="Assembly:test, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null" />
-	<edge mark="1" b="Method:System.Void Mono.Linker.Tests.Cases.PreserveDependencies.PreserveDependencyOnUnusedMethodInNonReferencedAssemblyWithCopyUsedAction::Main()" e="TypeDef:System.Void" />
-</dependencies>
