@@ -4436,7 +4436,7 @@ interp_method_compute_offsets (TransformData *td, InterpMethod *imethod, MonoMet
 #ifdef MONO_ARCH_HAVE_SWIFTCALL
 	if (mono_method_signature_has_ext_callconv (sig, MONO_EXT_CALLCONV_SWIFTCALL) && swift_error_index >= 0) {
 		MonoType* type =  mono_method_signature_internal (td->method)->params [swift_error_index - sig->hasthis];
-		int var = interp_create_var_explicit(td, type, sizeof(gpointer));
+		int var = interp_create_var_explicit (td, type, sizeof(gpointer));
 		td->vars [var].global = TRUE;
 		interp_alloc_global_var_offset (td, var);
 		imethod->swift_error_offset = td->vars [var].offset;
