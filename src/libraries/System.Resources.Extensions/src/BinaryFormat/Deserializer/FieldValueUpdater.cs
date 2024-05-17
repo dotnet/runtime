@@ -4,7 +4,7 @@
 using System.Collections.Generic;
 using System.Reflection;
 
-namespace System.Windows.Forms.BinaryFormat.Deserializer;
+namespace System.Resources.Extensions.BinaryFormat.Deserializer;
 
 internal sealed class FieldValueUpdater : ValueUpdater
 {

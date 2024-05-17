@@ -6,7 +6,7 @@ using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
 
-namespace System.Windows.Forms.BinaryFormat;
+namespace System.Resources.Extensions.BinaryFormat;
 
 internal static class SerializationExtensions
 {

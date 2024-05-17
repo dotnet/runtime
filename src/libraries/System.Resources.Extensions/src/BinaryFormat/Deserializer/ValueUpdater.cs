@@ -3,7 +3,7 @@
 
 using System.Collections.Generic;
 
-namespace System.Windows.Forms.BinaryFormat.Deserializer;
+namespace System.Resources.Extensions.BinaryFormat.Deserializer;
 
 internal abstract class ValueUpdater
 {

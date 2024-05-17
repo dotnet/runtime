@@ -7,7 +7,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.Serialization;
 
-namespace System.Windows.Forms.BinaryFormat;
+namespace System.Resources.Extensions.BinaryFormat;
 
 internal sealed class SerializationEvents
 {

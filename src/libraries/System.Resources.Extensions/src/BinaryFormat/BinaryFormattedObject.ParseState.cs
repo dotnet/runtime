@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Runtime.Serialization.BinaryFormat;
 
-namespace System.Windows.Forms.BinaryFormat;
+namespace System.Resources.Extensions.BinaryFormat;
 
 internal sealed partial class BinaryFormattedObject
 {

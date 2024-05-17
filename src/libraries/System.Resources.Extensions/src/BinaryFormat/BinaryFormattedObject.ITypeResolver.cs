@@ -4,7 +4,7 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection.Metadata;
 
-namespace System.Windows.Forms.BinaryFormat;
+namespace System.Resources.Extensions.BinaryFormat;
 
 internal sealed partial class BinaryFormattedObject
 {

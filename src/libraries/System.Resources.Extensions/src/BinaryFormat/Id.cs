@@ -3,7 +3,7 @@
 
 using System.Diagnostics.CodeAnalysis;
 
-namespace System.Windows.Forms;
+namespace System.Resources.Extensions;
 
 /// <summary>
 ///  Identifier struct.

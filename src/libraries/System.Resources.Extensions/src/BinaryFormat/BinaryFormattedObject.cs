@@ -9,7 +9,7 @@ using System.Runtime.ExceptionServices;
 using System.Runtime.Serialization;
 using System.Runtime.Serialization.BinaryFormat;
 
-namespace System.Windows.Forms.BinaryFormat;
+namespace System.Resources.Extensions.BinaryFormat;
 
 /// <summary>
 ///  Object model for the binary format put out by BinaryFormatter. It parses and creates a model but does not

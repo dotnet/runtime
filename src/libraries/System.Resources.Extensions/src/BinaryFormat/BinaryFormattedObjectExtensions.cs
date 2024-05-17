@@ -6,10 +6,10 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Drawing;
+using System.Resources.Extensions.BinaryFormat.Deserializer;
 using System.Runtime.Serialization.BinaryFormat;
-using System.Windows.Forms.BinaryFormat.Deserializer;
 
-namespace System.Windows.Forms.BinaryFormat;
+namespace System.Resources.Extensions.BinaryFormat;
 
 internal static class BinaryFormattedObjectExtensions
 {

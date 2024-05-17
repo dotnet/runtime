@@ -12,7 +12,7 @@ using System.Runtime.Serialization.Formatters;
 
 #pragma warning disable SYSLIB0050 // Type or member is obsolete
 
-namespace System.Windows.Forms.BinaryFormat;
+namespace System.Resources.Extensions.BinaryFormat;
 
 internal sealed partial class BinaryFormattedObject
 {

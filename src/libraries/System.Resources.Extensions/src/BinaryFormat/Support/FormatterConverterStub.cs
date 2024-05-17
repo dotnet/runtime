@@ -3,7 +3,7 @@
 
 using System.Runtime.Serialization;
 
-namespace System.Windows.Forms.BinaryFormat;
+namespace System.Resources.Extensions.BinaryFormat;
 
 /// <summary>
 ///  <see cref="IFormatterConverter"/> that only returns default values.

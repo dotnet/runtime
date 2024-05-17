@@ -6,7 +6,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Runtime.Serialization.BinaryFormat;
 
-namespace System.Windows.Forms.BinaryFormat.Deserializer;
+namespace System.Resources.Extensions.BinaryFormat.Deserializer;
 
 internal sealed class ArrayRecordDeserializer : ObjectRecordDeserializer
 {
