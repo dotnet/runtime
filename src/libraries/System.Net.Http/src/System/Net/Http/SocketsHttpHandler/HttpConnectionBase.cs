@@ -110,13 +110,16 @@ namespace System.Net.Http
 
         public void LinkRequestActivity()
         {
-            Activity? requestActivity = Activity.Current;
-            if (_activity is null || requestActivity?.OperationName is not DiagnosticsHandlerLoggingStrings.RequestActivityName)
+            if (_activity is null)
             {
                 return;
             }
 
-            requestActivity.AddLink(new ActivityLink(_activity.Context));
+            Activity? requestActivity = Activity.Current;
+            if (requestActivity?.OperationName is DiagnosticsHandlerLoggingStrings.RequestActivityName)
+            {
+                requestActivity.AddLink(new ActivityLink(_activity.Context));
+            }
         }
 
         /// <summary>Uses <see cref="HeaderDescriptor.GetHeaderValue"/>, but first special-cases several known headers for which we can use caching.</summary>

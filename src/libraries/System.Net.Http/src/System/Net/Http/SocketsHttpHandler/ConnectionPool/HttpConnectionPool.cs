@@ -566,6 +566,7 @@ namespace System.Net.Http
         {
             Stream? stream = null;
             IPEndPoint? remoteEndPoint = null;
+
             // Connection activities should be new roots and not parented under whatever
             // request happens to be in progress when the connection is started.
             Activity.Current = null;
@@ -636,17 +637,6 @@ namespace System.Net.Http
             }
 
             static IPEndPoint? GetRemoteEndPoint(Stream stream) => (stream as NetworkStream)?.Socket?.RemoteEndPoint as IPEndPoint;
-
-            static Activity? CreateActivity()
-            {
-                if (s_connectionActivitySource.HasListeners())
-                {
-                    ActivityTraceId traceId = Activity.TraceIdGenerator?.Invoke() ?? ActivityTraceId.CreateRandom();
-                    ActivityContext activityContext = new ActivityContext(traceId, ActivitySpanId.CreateRandom(), ActivityTraceFlags.None);
-                    return s_connectionActivitySource.CreateActivity(DiagnosticsHandlerLoggingStrings.ConnectionActivityName, ActivityKind.Internal, activityContext);
-                }
-                return null;
-            }
 
             return (stream, transportContext, activity, remoteEndPoint);
         }
