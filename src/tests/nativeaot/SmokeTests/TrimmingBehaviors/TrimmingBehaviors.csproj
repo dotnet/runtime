@@ -4,6 +4,8 @@
     <CLRTestPriority>0</CLRTestPriority>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <NullabilityInfoContextSupport>false</NullabilityInfoContextSupport>
+    <DebugSymbols>false</DebugSymbols>
+
 
     <!-- We don't run the scanner in optimized builds -->
     <CLRTestTargetUnsupported Condition="'$(IlcMultiModule)' == 'true'">true</CLRTestTargetUnsupported>
