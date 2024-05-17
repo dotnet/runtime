@@ -16,23 +16,12 @@ public class MiscTypesTesting : Server.Contract.IMiscTypesTesting
             return null;
         }
 
-        if (obj is DBNull)
-        {
-            return DBNull.Value;
-        }
-
         if (obj.GetType().IsValueType)
         {
             return CallMemberwiseClone(obj);
         }
 
-        if (obj is string)
-        {
-            return obj;
-        }
-
-        Environment.FailFast($"Arguments must be ValueTypes or strings: {obj.GetType()}");
-        return null;
+        return obj;
 
         // object.MemberwiseClone() will bitwise copy for ValueTypes.
         // This is sufficient for the VARIANT marshalling scenario being

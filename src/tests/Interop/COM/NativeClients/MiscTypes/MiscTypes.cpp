@@ -100,6 +100,12 @@ void ValidationTests()
     }
     {
         VariantMarshalTest args{};
+        V_VT(&args.Input) = VT_VOID;
+        THROW_IF_FAILED(miscTypesTesting->Marshal_Variant(args.Input, &args.Result));
+        THROW_FAIL_IF_FALSE(VT_EMPTY == V_VT(&args.Result));
+    }
+    {
+        VariantMarshalTest args{};
         V_VT(&args.Input) = VT_I1;
         V_I1(&args.Input) = 0x0f;
         THROW_IF_FAILED(miscTypesTesting->Marshal_Variant(args.Input, &args.Result));
@@ -140,6 +146,84 @@ void ValidationTests()
         THROW_IF_FAILED(miscTypesTesting->Marshal_Variant(args.Input, &args.Result));
         THROW_FAIL_IF_FALSE(V_BOOL(&args.Input) == V_BOOL(&args.Result));
     }
+    {
+        VariantMarshalTest args{};
+        V_VT(&args.Input) = VT_INT;
+        V_INT(&args.Input) = 0x07ffffff;
+        THROW_IF_FAILED(miscTypesTesting->Marshal_Variant(args.Input, &args.Result));
+        THROW_FAIL_IF_FALSE(VT_I4 == V_VT(&args.Result));
+        THROW_FAIL_IF_FALSE(V_I4(&args.Input) == V_I4(&args.Result));
+    }
+    {
+        VariantMarshalTest args{};
+        V_VT(&args.Input) = VT_DECIMAL;
+        VarDecFromR8(123.456, &V_DECIMAL(&args.Input));
+        THROW_IF_FAILED(miscTypesTesting->Marshal_Variant(args.Input, &args.Result));
+        THROW_FAIL_IF_FALSE(VarDecCmp(&V_DECIMAL(&args.Input), &V_DECIMAL(&args.Result)) == VARCMP_EQ);
+    }
+    {
+        VariantMarshalTest args{};
+        V_VT(&args.Input) = VT_DATE;
+        V_R8(&args.Input) = -657434.0;
+        THROW_IF_FAILED(miscTypesTesting->Marshal_Variant(args.Input, &args.Result));
+        THROW_FAIL_IF_FALSE(V_DATE(&args.Input) == V_DATE(&args.Result));
+    }
+    {
+        VariantMarshalTest args{};
+        V_VT(&args.Input) = VT_CY;
+        VarCyFromR8(12.34, &V_CY(&args.Input));
+        DECIMAL d;
+        VarDecFromCy(V_CY(&args.Input), &d);
+        THROW_IF_FAILED(miscTypesTesting->Marshal_Variant(args.Input, &args.Result));
+        THROW_FAIL_IF_FALSE(VarDecCmp(&d, &V_DECIMAL(&args.Result)) == VARCMP_EQ);
+    }
+    {
+        VariantMarshalTest args{};
+        V_VT(&args.Input) = VT_ERROR;
+        V_ERROR(&args.Input) = E_FAIL;
+        THROW_IF_FAILED(miscTypesTesting->Marshal_Variant(args.Input, &args.Result));
+        THROW_FAIL_IF_FALSE(VT_I4 == V_VT(&args.Result));
+        THROW_FAIL_IF_FALSE(V_ERROR(&args.Input) == V_ERROR(&args.Result));
+    }
+    {
+        VariantMarshalTest args{};
+        V_VT(&args.Input) = VT_ERROR;
+        V_ERROR(&args.Input) = DISP_E_PARAMNOTFOUND;
+        THROW_IF_FAILED(miscTypesTesting->Marshal_Variant(args.Input, &args.Result));
+        THROW_FAIL_IF_FALSE(V_VT(&args.Input) == V_VT(&args.Result));
+        THROW_FAIL_IF_FALSE(V_ERROR(&args.Input) == V_ERROR(&args.Result));
+    }
+
+    ::printf("-- BYREF <=> VARIANT...\n");
+    {
+        VariantMarshalTest args{};
+        LONG value = 0x07ffffff;
+        V_VT(&args.Input) = VT_BYREF|VT_I4;
+        V_I4REF(&args.Input) = &value;
+        THROW_IF_FAILED(miscTypesTesting->Marshal_Variant(args.Input, &args.Result));
+        THROW_FAIL_IF_FALSE(value == V_I4(&args.Result));
+    }
+    {
+        VariantMarshalTest args{};
+        V_VT(&args.Input) = VT_BYREF|VT_EMPTY;
+        V_I4REF(&args.Input) = NULL;
+        THROW_IF_FAILED(miscTypesTesting->Marshal_Variant(args.Input, &args.Result));
+#ifdef HOST_64BIT
+        THROW_FAIL_IF_FALSE(VT_UI8 == V_VT(&args.Result));
+#else
+        THROW_FAIL_IF_FALSE(VT_UI4 == V_VT(&args.Result));
+#endif
+    }
+    {
+        VariantMarshalTest args{};
+        VARIANT nested{};
+        V_VT(&nested) = VT_I4;
+        V_I4(&nested) = 0x07ffffff;
+        V_VT(&args.Input) = VT_BYREF|VT_VARIANT;
+        V_VARIANTREF(&args.Input) = &nested;
+        THROW_IF_FAILED(miscTypesTesting->Marshal_Variant(args.Input, &args.Result));
+        THROW_FAIL_IF_FALSE(V_I4(&nested) == V_I4(&args.Result));
+    }
 
     ::printf("-- BSTR <=> VARIANT...\n");
     {
@@ -148,6 +232,30 @@ void ValidationTests()
         V_BSTR(&args.Input) = ::SysAllocString(W("The quick Fox jumped over the lazy Dog."));
         THROW_IF_FAILED(miscTypesTesting->Marshal_Variant(args.Input, &args.Result));
         THROW_FAIL_IF_FALSE(CompareStringOrdinal(V_BSTR(&args.Input), -1, V_BSTR(&args.Result), -1, FALSE) == CSTR_EQUAL);
+    }
+
+    ::printf("-- Array <=> VARIANT...\n");
+    {
+        VariantMarshalTest args{};
+        V_VT(&args.Input) = VT_ARRAY|VT_I2;
+        short data[3] = { 12, 34, 56 };
+        SAFEARRAYBOUND saBound;
+        saBound.lLbound = 0;
+        saBound.cElements = static_cast<ULONG>(sizeof(data) / sizeof(short));
+        V_ARRAY(&args.Input) = ::SafeArrayCreate(VT_I2, 1, &saBound);
+        memcpy(static_cast<short*>(V_ARRAY(&args.Input)->pvData), data, sizeof(data));
+        THROW_IF_FAILED(miscTypesTesting->Marshal_Variant(args.Input, &args.Result));
+        THROW_FAIL_IF_FALSE((VT_ARRAY|VT_I2) == V_VT(&args.Result));
+        THROW_FAIL_IF_FALSE(memcmp(V_ARRAY(&args.Result)->pvData, data, sizeof(data)) == 0);
+    }
+
+    ::printf("-- IUnknown <=> VARIANT...\n");
+    {
+        VariantMarshalTest args{};
+        V_VT(&args.Input) = VT_UNKNOWN;
+        (void)miscTypesTesting->QueryInterface(IID_IUnknown, (void**)&V_UNKNOWN(&args.Input));
+        THROW_IF_FAILED(miscTypesTesting->Marshal_Variant(args.Input, &args.Result));
+        THROW_FAIL_IF_FALSE(V_UNKNOWN(&args.Input) == V_UNKNOWN(&args.Result));
     }
 
     ::printf("-- System.Guid <=> VARIANT...\n");
@@ -167,5 +275,31 @@ void ValidationTests()
         THROW_IF_FAILED(miscTypesTesting->Marshal_Variant(args.Input, &args.Result));
         THROW_FAIL_IF_FALSE(V_VT(&args.Input) == V_VT(&args.Result));
         THROW_FAIL_IF_FALSE(memcmp(V_RECORD(&args.Input), V_RECORD(&args.Result), sizeof(expected)) == 0);
+    }
+
+    ::printf("-- Unsupported types <=> VARIANT...\n");
+    {
+        VariantMarshalTest args{};
+        V_VT(&args.Input) = VT_SAFEARRAY;
+        HRESULT hr = miscTypesTesting->Marshal_Variant(args.Input, &args.Result);
+        THROW_FAIL_IF_FALSE(hr == E_INVALIDARG);
+    }
+    {
+        VariantMarshalTest args{};
+        V_VT(&args.Input) = VT_HRESULT;
+        HRESULT hr = miscTypesTesting->Marshal_Variant(args.Input, &args.Result);
+        THROW_FAIL_IF_FALSE(hr == E_INVALIDARG);
+    }
+    {
+        VariantMarshalTest args{};
+        V_VT(&args.Input) = VT_VARIANT;
+        HRESULT hr = miscTypesTesting->Marshal_Variant(args.Input, &args.Result);
+        THROW_FAIL_IF_FALSE(hr == E_INVALIDARG);
+    }
+    {
+        VariantMarshalTest args{};
+        V_VT(&args.Input) = (VARENUM)0x8888;
+        HRESULT hr = miscTypesTesting->Marshal_Variant(args.Input, &args.Result);
+        THROW_FAIL_IF_FALSE(hr == 0x80131531); // COR_E_INVALIDOLEVARIANTTYPE
     }
 }
