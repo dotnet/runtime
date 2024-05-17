@@ -134,7 +134,7 @@ namespace System.Buffers.Text
 
         private static bool ValidateAndDecodeLength(int length, int paddingCount, out int decodedLength)
         {
-            if (length % 4 == 0)
+            if ((uint)length % 4 == 0)
             {
                 // Remove padding to get exact length.
                 decodedLength = (int)((uint)length / 4 * 3) - paddingCount;

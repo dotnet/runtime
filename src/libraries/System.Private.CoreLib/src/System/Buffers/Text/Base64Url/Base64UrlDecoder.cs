@@ -12,7 +12,7 @@ using static System.Buffers.Text.Base64;
 
 namespace System.Buffers.Text
 {
-    // AVX2 and Vector128 version based on https://github.com/gfoidl/Base64/blob/master/source/gfoidl.Base64/Internal/Encodings/Base64UrlEncoding.cs
+    // AVX2 and Vector128 version based on https://github.com/gfoidl/Base64/blob/5383320e28cac6c7ac6f86502fb05d23a048a21d/source/gfoidl.Base64/Internal/Encodings/Base64UrlEncoding.cs
 
     public static partial class Base64Url
     {
@@ -29,7 +29,7 @@ namespace System.Buffers.Text
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.length);
             }
 
-            int remainder = base64Length % 4;
+            int remainder = (int)((uint)base64Length % 4);
 
             return (base64Length >> 2) * 3 + (remainder > 0 ? remainder - 1 : 0);
         }
