@@ -1024,6 +1024,7 @@ Scev* ScalarEvolutionContext::Simplify(Scev* scev)
             else if (op2->OperIs(ScevOper::Constant))
             {
                 ScevConstant* cns2 = (ScevConstant*)op2;
+                // a +/<< 0 => a
                 if (binop->OperIs(ScevOper::Add, ScevOper::Lsh) && (cns2->Value == 0))
                 {
                     return op1;
@@ -1048,19 +1049,10 @@ Scev* ScalarEvolutionContext::Simplify(Scev* scev)
                         return cns2;
                     }
 
-                    // a * 1 => 1
+                    // a * 1 => a
                     if (cns2->Value == 1)
                     {
                         return op1;
-                    }
-
-                    // (a + b) * c2 => a * c2 + b * c2
-                    if (op1->OperIs(ScevOper::Add))
-                    {
-                        ScevBinop* newOp1 = NewBinop(ScevOper::Mul, ((ScevBinop*)op1)->Op1, cns2);
-                        ScevBinop* newOp2 = NewBinop(ScevOper::Mul, ((ScevBinop*)op1)->Op2, cns2);
-                        ScevBinop* newAdd = NewBinop(ScevOper::Add, newOp1, newOp2);
-                        return Simplify(newAdd);
                     }
 
                     // (a * c1) * c2 => a * (c1 * c2)
