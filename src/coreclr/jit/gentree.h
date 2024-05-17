@@ -171,7 +171,7 @@ enum TargetHandleType : BYTE
 /*****************************************************************************/
 
 struct BasicBlock;
-enum BasicBlockFlags : unsigned __int64;
+enum BasicBlockFlags : uint64_t;
 struct InlineCandidateInfo;
 struct HandleHistogramProfileCandidateInfo;
 struct LateDevirtualizationInfo;
@@ -3382,8 +3382,8 @@ public:
 
     bool isBitwiseEqual(GenTreeDblCon* other)
     {
-        unsigned __int64 bits      = *(unsigned __int64*)(&gtDconVal);
-        unsigned __int64 otherBits = *(unsigned __int64*)(&(other->gtDconVal));
+        uint64_t bits      = *(uint64_t*)(&gtDconVal);
+        uint64_t otherBits = *(uint64_t*)(&(other->gtDconVal));
         return (bits == otherBits);
     }
 
@@ -10025,7 +10025,7 @@ inline bool GenTree::IsCnsNonZeroFltOrDbl() const
     if (IsCnsFltOrDbl())
     {
         double constValue = AsDblCon()->DconValue();
-        return *(__int64*)&constValue != 0;
+        return *(int64_t*)&constValue != 0;
     }
 
     return false;

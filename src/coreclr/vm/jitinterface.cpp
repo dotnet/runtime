@@ -9505,7 +9505,7 @@ CORINFO_ARG_LIST_HANDLE CEEInfo::getArgNext(CORINFO_ARG_LIST_HANDLE args)
 
     JIT_TO_EE_TRANSITION();
 
-    SigPointer ptr((unsigned __int8*) args);
+    SigPointer ptr((uint8_t*) args);
     IfFailThrow(ptr.SkipExactlyOne());
 
     result = (CORINFO_ARG_LIST_HANDLE) ptr.GetPtr();
@@ -9538,7 +9538,7 @@ CorInfoTypeWithMod CEEInfo::getArgType (
    _ASSERTE((BYTE*) sig->args <= (BYTE*) args);
     INDEBUG(*vcTypeRet = CORINFO_CLASS_HANDLE((size_t)INVALID_POINTER_CC));
 
-    SigPointer ptr((unsigned __int8*) args);
+    SigPointer ptr((uint8_t*) args);
     CorElementType eType;
     IfFailThrow(ptr.PeekElemType(&eType));
     while (eType == ELEMENT_TYPE_PINNED)
@@ -9708,7 +9708,7 @@ CORINFO_CLASS_HANDLE CEEInfo::getArgClass (
 
     Module* pModule = GetModule(sig->scope);
 
-    SigPointer ptr((unsigned __int8*) args);
+    SigPointer ptr((uint8_t*) args);
 
     CorElementType eType;
     IfFailThrow(ptr.PeekElemType(&eType));

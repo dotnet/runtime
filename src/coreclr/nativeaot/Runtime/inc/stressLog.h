@@ -301,8 +301,8 @@ public:
     PTR_ThreadStressLog logs;               // the list of logs for every thread.
     int32_t deadCount;                        // count of dead threads in the log
     CrstStatic *pLock;                      // lock
-    unsigned __int64 tickFrequency;         // number of ticks per second
-    unsigned __int64 startTimeStamp;        // start time from when tick counter started
+    uint64_t tickFrequency;         // number of ticks per second
+    uint64_t startTimeStamp;        // start time from when tick counter started
     FILETIME startTime;                     // time the application started
     size_t   moduleOffset;                  // Used to compute format strings.
 

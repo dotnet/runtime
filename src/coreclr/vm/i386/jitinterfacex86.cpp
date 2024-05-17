@@ -813,7 +813,7 @@ void EmitFastGetSharedStaticBase(CPUSTUBLINKER *psl, CodeLabel *init, bool bCCto
     if (bGCStatic)
     {
         // Indirect to get the pointer to the first GC Static
-        psl->X86EmitIndexRegLoad(kEAX, kEAX, (__int32) DomainLocalModule::GetOffsetOfGCStaticPointer());
+        psl->X86EmitIndexRegLoad(kEAX, kEAX, (int32_t) DomainLocalModule::GetOffsetOfGCStaticPointer());
     }
 
     // ret

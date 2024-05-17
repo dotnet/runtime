@@ -1752,7 +1752,7 @@ DacInstanceManager::Find(TADDR addr)
 {
 
 #if defined(DAC_MEASURE_PERF)
-    unsigned _int64 nStart, nEnd;
+    uint64_t nStart, nEnd;
     g_nFindCalls++;
     nStart = GetCycleCount();
 #endif // #if defined(DAC_MEASURE_PERF)

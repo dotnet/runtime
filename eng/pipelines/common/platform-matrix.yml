@@ -253,6 +253,28 @@ jobs:
         crossBuild: true
         ${{ insert }}: ${{ parameters.jobParameters }}
 
+- ${{ if containsValue(parameters.platforms, 'linux_x64_sanitizer') }}:
+  - template: xplat-setup.yml
+    parameters:
+      jobTemplate: ${{ parameters.jobTemplate }}
+      helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
+      variables: ${{ parameters.variables }}
+      osGroup: linux
+      archType: x64
+      targetRid: linux-x64
+      platform: linux_x64
+      shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
+      container: linux_x64_sanitizer
+      jobParameters:
+        runtimeFlavor: ${{ parameters.runtimeFlavor }}
+        buildConfig: ${{ parameters.buildConfig }}
+        helixQueueGroup: ${{ parameters.helixQueueGroup }}
+        crossBuild: true
+        cxxStandardLibrary: libc++
+        cxxStandardLibraryStatic: true
+        cxxAbiLibrary: libstdc++
+        ${{ insert }}: ${{ parameters.jobParameters }}
+
 # Linux x86
 
 - ${{ if containsValue(parameters.platforms, 'linux_x86') }}:

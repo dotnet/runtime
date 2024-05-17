@@ -1324,7 +1324,7 @@ mono_arch_set_native_call_context_ret (CallContext *ccontext, gpointer frame, Mo
 			storage = alloca (temp_size);
 		else
 			storage = arg_get_storage (ccontext, ainfo);
-		memset (ccontext, 0, sizeof (CallContext)); // FIXME
+
 		interp_cb->frame_arg_to_data ((MonoInterpFrameHandle)frame, sig, -1, storage);
 		if (temp_size)
 			arg_set_val (ccontext, ainfo, storage);

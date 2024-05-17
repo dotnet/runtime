@@ -4,6 +4,17 @@
 #ifndef _SIMD_H_
 #define _SIMD_H_
 
+template <typename T>
+static bool ElementsAreSame(T* array, size_t size)
+{
+    for (size_t i = 1; i < size; i++)
+    {
+        if (array[0] != array[i])
+            return false;
+    }
+    return true;
+}
+
 struct simd8_t
 {
     union

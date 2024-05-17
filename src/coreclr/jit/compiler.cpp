@@ -66,7 +66,7 @@ LONG GlobalJitOptions::compUseSoftFPConfigured = 0;
 #if defined(_MSC_VER)
 
 #include <intrin.h>
-inline bool _our_GetThreadCycles(unsigned __int64* cycleOut)
+inline bool _our_GetThreadCycles(uint64_t* cycleOut)
 {
     *cycleOut = __rdtsc();
     return true;
@@ -74,11 +74,11 @@ inline bool _our_GetThreadCycles(unsigned __int64* cycleOut)
 
 #elif defined(__GNUC__)
 
-inline bool _our_GetThreadCycles(unsigned __int64* cycleOut)
+inline bool _our_GetThreadCycles(uint64_t* cycleOut)
 {
     uint32_t hi, lo;
     __asm__ __volatile__("rdtsc" : "=a"(lo), "=d"(hi));
-    *cycleOut = (static_cast<unsigned __int64>(hi) << 32) | static_cast<unsigned __int64>(lo);
+    *cycleOut = (static_cast<uint64_t>(hi) << 32) | static_cast<uint64_t>(lo);
     return true;
 }
 
@@ -2046,7 +2046,7 @@ void* Compiler::compGetHelperFtn(CorInfoHelpFunc ftnNum, /* IN  */
     else
     {
         // If we don't have a matched VM, we won't get valid results when asking for a helper function.
-        addr = UlongToPtr(0xCA11CA11); // "callcall"
+        addr = (void*)(uintptr_t)(0xCA11CA11); // "callcall"
     }
 
     return addr;
@@ -4839,6 +4839,14 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 
     if (opts.OptimizationEnabled())
     {
+        // Canonicalize entry to have unique entry BB to put IR in for the upcoming phases
+        //
+        DoPhase(this, PHASE_CANONICALIZE_ENTRY, &Compiler::fgCanonicalizeFirstBB);
+
+        // Build post-order and remove dead blocks
+        //
+        DoPhase(this, PHASE_DFS_BLOCKS, &Compiler::fgDfsBlocksAndRemove);
+
         fgNodeThreading = NodeThreading::AllLocals;
     }
 
@@ -4875,13 +4883,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     lvaStressLclFld();
     fgStress64RsltMul();
 #endif // DEBUG
-
-    if (opts.OptimizationEnabled())
-    {
-        // Build post-order that morph will use, and remove dead blocks
-        //
-        DoPhase(this, PHASE_DFS_BLOCKS, &Compiler::fgDfsBlocksAndRemove);
-    }
 
     // Morph the trees in all the blocks of the method
     //
@@ -8215,8 +8216,8 @@ var_types Compiler::GetEightByteType(const SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASS
 void Compiler::GetStructTypeOffset(const SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR& structDesc,
                                    var_types*                                                 type0,
                                    var_types*                                                 type1,
-                                   unsigned __int8*                                           offset0,
-                                   unsigned __int8*                                           offset1)
+                                   uint8_t*                                                   offset0,
+                                   uint8_t*                                                   offset1)
 {
     *offset0 = structDesc.eightByteOffsets[0];
     *offset1 = structDesc.eightByteOffsets[1];
@@ -8247,11 +8248,8 @@ void Compiler::GetStructTypeOffset(const SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSIN
 //    'offset0'    -  out param; returns the offset of the first eightbyte.
 //    'offset1'    -  out param; returns the offset of the second eightbyte.
 //
-void Compiler::GetStructTypeOffset(CORINFO_CLASS_HANDLE typeHnd,
-                                   var_types*           type0,
-                                   var_types*           type1,
-                                   unsigned __int8*     offset0,
-                                   unsigned __int8*     offset1)
+void Compiler::GetStructTypeOffset(
+    CORINFO_CLASS_HANDLE typeHnd, var_types* type0, var_types* type1, uint8_t* offset0, uint8_t* offset1)
 {
     SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR structDesc;
     eeGetSystemVAmd64PassStructInRegisterDescriptor(typeHnd, &structDesc);
@@ -8899,8 +8897,8 @@ void CompTimeSummaryInfo::Print(FILE* f)
                 if (calls == 0)
                     continue;
 
-                unsigned __int64 cycles = m_total.m_perClrAPIcycles[i];
-                double           millis = 1000.0 * cycles / countsPerSec;
+                uint64_t cycles = m_total.m_perClrAPIcycles[i];
+                double   millis = 1000.0 * cycles / countsPerSec;
 
                 // Don't show the small fry to keep the results manageable
                 if (millis < 0.5)
@@ -8924,8 +8922,8 @@ void CompTimeSummaryInfo::Print(FILE* f)
                     continue;
                 }
 
-                unsigned __int32 maxcyc = m_maximum.m_maxClrAPIcycles[i];
-                double           max_ms = 1000.0 * maxcyc / countsPerSec;
+                uint32_t maxcyc = m_maximum.m_maxClrAPIcycles[i];
+                double   max_ms = 1000.0 * maxcyc / countsPerSec;
 
                 fprintf(f, "     %-40s", APInames[i]);                                 // API name
                 fprintf(f, " %8u %9.1f ms", calls, millis);                            // #calls, total time
@@ -8975,7 +8973,7 @@ JitTimer::JitTimer(unsigned byteCodeSize)
 #endif
 #endif
 
-    unsigned __int64 threadCurCycles;
+    uint64_t threadCurCycles;
     if (_our_GetThreadCycles(&threadCurCycles))
     {
         m_start         = threadCurCycles;
@@ -8989,10 +8987,10 @@ void JitTimer::EndPhase(Compiler* compiler, Phases phase)
     // We re-run some phases currently, so this following assert doesn't work.
     // assert((int)phase > (int)m_lastPhase);  // We should end phases in increasing order.
 
-    unsigned __int64 threadCurCycles;
+    uint64_t threadCurCycles;
     if (_our_GetThreadCycles(&threadCurCycles))
     {
-        unsigned __int64 phaseCycles = (threadCurCycles - m_curPhaseStart);
+        uint64_t phaseCycles = (threadCurCycles - m_curPhaseStart);
 
         // If this is not a leaf phase, the assumption is that the last subphase must have just recently ended.
         // Credit the duration to "slop", the total of which should be very small.
@@ -9094,7 +9092,7 @@ void JitTimer::CLRApiCallLeave(unsigned apix)
     {
         if (JitConfig.JitEECallTimingInfo() != 0)
         {
-            unsigned __int64 threadCurCycles;
+            uint64_t threadCurCycles;
             if (_our_GetThreadCycles(&threadCurCycles))
             {
                 // Compute the cycles spent in the call.
@@ -9110,7 +9108,7 @@ void JitTimer::CLRApiCallLeave(unsigned apix)
 
                 m_info.m_perClrAPIcalls[apix] += 1;
                 m_info.m_perClrAPIcycles[apix] += threadCurCycles;
-                m_info.m_maxClrAPIcycles[apix] = max(m_info.m_maxClrAPIcycles[apix], (unsigned __int32)threadCurCycles);
+                m_info.m_maxClrAPIcycles[apix] = max(m_info.m_maxClrAPIcycles[apix], (uint32_t)threadCurCycles);
 
                 // Subtract the cycles from the enclosing phase by bumping its start time
                 m_curPhaseStart += threadCurCycles;
@@ -9254,7 +9252,7 @@ void JitTimer::PrintCsvMethodStats(Compiler* comp)
     fprintf(s_csvFile, "%d,", comp->Metrics.LoopsAligned);
 #endif // DEBUG
 #endif // FEATURE_LOOP_ALIGN
-    unsigned __int64 totCycles = 0;
+    uint64_t totCycles = 0;
     for (int i = 0; i < PHASE_NUMBER_OF; i++)
     {
         if (!PhaseHasChildren[i])
@@ -9399,8 +9397,8 @@ void Compiler::RecordStateAtEndOfCompilation()
 
     // Common portion
     m_compCycles = 0;
-    unsigned __int64 compCyclesAtEnd;
-    bool             b = CycleTimer::GetThreadCyclesS(&compCyclesAtEnd);
+    uint64_t compCyclesAtEnd;
+    bool     b = CycleTimer::GetThreadCyclesS(&compCyclesAtEnd);
     if (!b)
     {
         return; // We don't have a thread cycle counter.
