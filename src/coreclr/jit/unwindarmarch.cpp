@@ -238,7 +238,7 @@ void Compiler::unwindPushPopMaskInt(regMaskTP maskInt, bool useOpsize16)
         else
         {
             // EC-ED : pop {r0-r7,lr} (opsize 16)
-            pu->AddCode((BYTE)(0xEC | ((maskInt >> 14) & 0x1), (BYTE)maskInt));
+            pu->AddCode((BYTE)(0xEC | ((maskInt >> 14) & 0x1)), (BYTE)maskInt);
         }
     }
     else
@@ -277,7 +277,7 @@ void Compiler::unwindPushPopMaskInt(regMaskTP maskInt, bool useOpsize16)
         else
         {
             // 80-BF : pop {r0-r12,lr} (opsize 32)
-            pu->AddCode((BYTE)(0x80 | ((maskInt >> 8) & 0x1F) | ((maskInt >> 9) & 0x20), (BYTE)maskInt));
+            pu->AddCode((BYTE)(0x80 | ((maskInt >> 8) & 0x1F) | ((maskInt >> 9) & 0x20)), (BYTE)maskInt);
         }
     }
 }
