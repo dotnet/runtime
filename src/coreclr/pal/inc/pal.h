@@ -184,14 +184,6 @@ extern bool g_arm64_atomics_present;
 #define __has_cpp_attribute(x) (0)
 #endif
 
-#ifndef FALLTHROUGH
-#if __has_cpp_attribute(fallthrough)
-#define FALLTHROUGH [[fallthrough]]
-#else // __has_cpp_attribute(fallthrough)
-#define FALLTHROUGH
-#endif // __has_cpp_attribute(fallthrough)
-#endif // FALLTHROUGH
-
 /******************* PAL-Specific Entrypoints *****************************/
 
 #define IsDebuggerPresent PAL_IsDebuggerPresent
@@ -3379,8 +3371,9 @@ EXTERN_C PALIMPORT inline RETURN_TYPE PALAPI METHOD_DECL        \
 /* Function multiversioning will never inline a method that is  \
    marked such. However, just to make sure that we don't see    \
    surprises, explicitely mark them as noinline. */             \
-__attribute__((target("lse")))  __attribute__((noinline))       \
-EXTERN_C PALIMPORT inline RETURN_TYPE PALAPI Lse_##METHOD_DECL  \
+EXTERN_C PALIMPORT inline RETURN_TYPE PALAPI                    \
+__attribute__((target("+lse")))  __attribute__((noinline))      \
+Lse_##METHOD_DECL                                               \
 {                                                               \
     return INTRINSIC_NAME;                                      \
 }                                                               \
@@ -3780,7 +3773,7 @@ PALAPI
 FlushProcessWriteBuffers();
 
 typedef void (*PAL_ActivationFunction)(CONTEXT *context);
-typedef BOOL (*PAL_SafeActivationCheckFunction)(SIZE_T ip, BOOL checkingCurrentThread);
+typedef BOOL (*PAL_SafeActivationCheckFunction)(SIZE_T ip);
 
 PALIMPORT
 VOID
@@ -3969,9 +3962,6 @@ PALIMPORT DLLEXPORT char * __cdecl PAL_getenv(const char *);
 PALIMPORT DLLEXPORT int __cdecl _putenv(const char *);
 
 #define ERANGE          34
-
-PALIMPORT WCHAR __cdecl PAL_ToUpperInvariant(WCHAR);
-PALIMPORT WCHAR __cdecl PAL_ToLowerInvariant(WCHAR);
 
 /****************PAL Perf functions for PInvoke*********************/
 #if PAL_PERF
@@ -4428,6 +4418,8 @@ public:
 #define PAL_CPP_CATCH_EXCEPTION(ident)  } catch (Exception *ident) {
 #define PAL_CPP_CATCH_EXCEPTION_NOARG   } catch (Exception *) {
 #define PAL_CPP_CATCH_DERIVED(type, ident) } catch (type *ident) {
+#define PAL_CPP_CATCH_NON_DERIVED(type, ident) } catch (type ident) {
+#define PAL_CPP_CATCH_NON_DERIVED_NOARG(type) } catch (type) {
 #define PAL_CPP_CATCH_ALL               } catch (...) {                                           \
                                             try { throw; }                                        \
                                             catch (PAL_SEHException& ex) { ex.SecondPassDone(); } \

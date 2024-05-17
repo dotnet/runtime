@@ -1314,6 +1314,14 @@ namespace System
         /// <inheritdoc cref="IFloatingPoint{TSelf}.Ceiling(TSelf)" />
         public static Half Ceiling(Half x) => (Half)MathF.Ceiling((float)x);
 
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.ConvertToInteger{TInteger}(TSelf)" />
+        public static TInteger ConvertToInteger<TInteger>(Half value)
+            where TInteger : IBinaryInteger<TInteger> => TInteger.CreateSaturating(value);
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.ConvertToIntegerNative{TInteger}(TSelf)" />
+        public static TInteger ConvertToIntegerNative<TInteger>(Half value)
+            where TInteger : IBinaryInteger<TInteger> => TInteger.CreateSaturating(value);
+
         /// <inheritdoc cref="IFloatingPoint{TSelf}.Floor(TSelf)" />
         public static Half Floor(Half x) => (Half)MathF.Floor((float)x);
 
@@ -1911,6 +1919,9 @@ namespace System
 
             return y;
         }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.MultiplyAddEstimate(TSelf, TSelf, TSelf)" />
+        public static Half MultiplyAddEstimate(Half left, Half right, Half addend) => (Half)float.MultiplyAddEstimate((float)left, (float)right, (float)addend);
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertFromChecked{TOther}(TOther, out TSelf)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

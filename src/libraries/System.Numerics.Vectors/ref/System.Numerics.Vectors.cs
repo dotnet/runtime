@@ -235,14 +235,20 @@ namespace System.Numerics
         [System.CLSCompliantAttribute(false)]
         public static System.Numerics.Vector<System.Double> ConvertToDouble(System.Numerics.Vector<System.UInt64> value) { throw null; }
         public static System.Numerics.Vector<System.Int32> ConvertToInt32(System.Numerics.Vector<System.Single> value) { throw null; }
+        public static System.Numerics.Vector<System.Int32> ConvertToInt32Native(System.Numerics.Vector<System.Single> value) { throw null; }
         public static System.Numerics.Vector<System.Int64> ConvertToInt64(System.Numerics.Vector<System.Double> value) { throw null; }
+        public static System.Numerics.Vector<System.Int64> ConvertToInt64Native(System.Numerics.Vector<System.Double> value) { throw null; }
         public static System.Numerics.Vector<System.Single> ConvertToSingle(System.Numerics.Vector<System.Int32> value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static System.Numerics.Vector<System.Single> ConvertToSingle(System.Numerics.Vector<System.UInt32> value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static System.Numerics.Vector<System.UInt32> ConvertToUInt32(System.Numerics.Vector<System.Single> value) { throw null; }
         [System.CLSCompliantAttribute(false)]
+        public static System.Numerics.Vector<System.UInt32> ConvertToUInt32Native(System.Numerics.Vector<System.Single> value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
         public static System.Numerics.Vector<System.UInt64> ConvertToUInt64(System.Numerics.Vector<System.Double> value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static System.Numerics.Vector<System.UInt64> ConvertToUInt64Native(System.Numerics.Vector<System.Double> value) { throw null; }
         public static System.Numerics.Vector<T> CreateSequence<T>(T start, T step) { throw null; }
         public static System.Numerics.Vector<T> Divide<T>(System.Numerics.Vector<T> left, System.Numerics.Vector<T> right) { throw null; }
         public static System.Numerics.Vector<T> Divide<T>(System.Numerics.Vector<T> left, T right) { throw null; }
@@ -256,6 +262,8 @@ namespace System.Numerics
         public static System.Numerics.Vector<T> Equals<T>(System.Numerics.Vector<T> left, System.Numerics.Vector<T> right) { throw null; }
         public static System.Numerics.Vector<System.Double> Floor(System.Numerics.Vector<System.Double> value) { throw null; }
         public static System.Numerics.Vector<System.Single> Floor(System.Numerics.Vector<System.Single> value) { throw null; }
+        public static System.Numerics.Vector<double> FusedMultiplyAdd(System.Numerics.Vector<double> left, System.Numerics.Vector<double> right, System.Numerics.Vector<double> addend) { throw null; }
+        public static System.Numerics.Vector<float> FusedMultiplyAdd(System.Numerics.Vector<float> left, System.Numerics.Vector<float> right, System.Numerics.Vector<float> addend) { throw null; }
         public static T GetElement<T>(this System.Numerics.Vector<T> vector, int index) { throw null; }
         public static System.Numerics.Vector<System.Int64> GreaterThan(System.Numerics.Vector<System.Double> left, System.Numerics.Vector<System.Double> right) { throw null; }
         public static System.Numerics.Vector<System.Int32> GreaterThan(System.Numerics.Vector<System.Int32> left, System.Numerics.Vector<System.Int32> right) { throw null; }
@@ -301,6 +309,8 @@ namespace System.Numerics
         public static System.Numerics.Vector<T> Multiply<T>(System.Numerics.Vector<T> left, System.Numerics.Vector<T> right) { throw null; }
         public static System.Numerics.Vector<T> Multiply<T>(System.Numerics.Vector<T> left, T right) { throw null; }
         public static System.Numerics.Vector<T> Multiply<T>(T left, System.Numerics.Vector<T> right) { throw null; }
+        public static System.Numerics.Vector<double> MultiplyAddEstimate(System.Numerics.Vector<double> left, System.Numerics.Vector<double> right, System.Numerics.Vector<double> addend) { throw null; }
+        public static System.Numerics.Vector<float> MultiplyAddEstimate(System.Numerics.Vector<float> left, System.Numerics.Vector<float> right, System.Numerics.Vector<float> addend) { throw null; }
         public static System.Numerics.Vector<System.Single> Narrow(System.Numerics.Vector<System.Double> low, System.Numerics.Vector<System.Double> high) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static System.Numerics.Vector<System.SByte> Narrow(System.Numerics.Vector<System.Int16> low, System.Numerics.Vector<System.Int16> high) { throw null; }
@@ -427,6 +437,7 @@ namespace System.Numerics
         public static float Dot(System.Numerics.Vector2 value1, System.Numerics.Vector2 value2) { throw null; }
         public readonly bool Equals(System.Numerics.Vector2 other) { throw null; }
         public override readonly bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
+        public static System.Numerics.Vector2 FusedMultiplyAdd(System.Numerics.Vector2 left, System.Numerics.Vector2 right, System.Numerics.Vector2 addend) { throw null; }
         public override readonly int GetHashCode() { throw null; }
         public readonly float Length() { throw null; }
         public readonly float LengthSquared() { throw null; }
@@ -436,6 +447,7 @@ namespace System.Numerics
         public static System.Numerics.Vector2 Multiply(System.Numerics.Vector2 left, System.Numerics.Vector2 right) { throw null; }
         public static System.Numerics.Vector2 Multiply(System.Numerics.Vector2 left, float right) { throw null; }
         public static System.Numerics.Vector2 Multiply(float left, System.Numerics.Vector2 right) { throw null; }
+        public static System.Numerics.Vector2 MultiplyAddEstimate(System.Numerics.Vector2 left, System.Numerics.Vector2 right, System.Numerics.Vector2 addend) { throw null; }
         public static System.Numerics.Vector2 Negate(System.Numerics.Vector2 value) { throw null; }
         public static System.Numerics.Vector2 Normalize(System.Numerics.Vector2 value) { throw null; }
         public static System.Numerics.Vector2 operator +(System.Numerics.Vector2 left, System.Numerics.Vector2 right) { throw null; }
@@ -490,6 +502,7 @@ namespace System.Numerics
         public static float Dot(System.Numerics.Vector3 vector1, System.Numerics.Vector3 vector2) { throw null; }
         public readonly bool Equals(System.Numerics.Vector3 other) { throw null; }
         public override readonly bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
+        public static System.Numerics.Vector3 FusedMultiplyAdd(System.Numerics.Vector3 left, System.Numerics.Vector3 right, System.Numerics.Vector3 addend) { throw null; }
         public override readonly int GetHashCode() { throw null; }
         public readonly float Length() { throw null; }
         public readonly float LengthSquared() { throw null; }
@@ -499,6 +512,7 @@ namespace System.Numerics
         public static System.Numerics.Vector3 Multiply(System.Numerics.Vector3 left, System.Numerics.Vector3 right) { throw null; }
         public static System.Numerics.Vector3 Multiply(System.Numerics.Vector3 left, float right) { throw null; }
         public static System.Numerics.Vector3 Multiply(float left, System.Numerics.Vector3 right) { throw null; }
+        public static System.Numerics.Vector3 MultiplyAddEstimate(System.Numerics.Vector3 left, System.Numerics.Vector3 right, System.Numerics.Vector3 addend) { throw null; }
         public static System.Numerics.Vector3 Negate(System.Numerics.Vector3 value) { throw null; }
         public static System.Numerics.Vector3 Normalize(System.Numerics.Vector3 value) { throw null; }
         public static System.Numerics.Vector3 operator +(System.Numerics.Vector3 left, System.Numerics.Vector3 right) { throw null; }
@@ -553,6 +567,7 @@ namespace System.Numerics
         public static float Dot(System.Numerics.Vector4 vector1, System.Numerics.Vector4 vector2) { throw null; }
         public readonly bool Equals(System.Numerics.Vector4 other) { throw null; }
         public override readonly bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
+        public static System.Numerics.Vector4 FusedMultiplyAdd(System.Numerics.Vector4 left, System.Numerics.Vector4 right, System.Numerics.Vector4 addend) { throw null; }
         public override readonly int GetHashCode() { throw null; }
         public readonly float Length() { throw null; }
         public readonly float LengthSquared() { throw null; }
@@ -562,6 +577,7 @@ namespace System.Numerics
         public static System.Numerics.Vector4 Multiply(System.Numerics.Vector4 left, System.Numerics.Vector4 right) { throw null; }
         public static System.Numerics.Vector4 Multiply(System.Numerics.Vector4 left, float right) { throw null; }
         public static System.Numerics.Vector4 Multiply(float left, System.Numerics.Vector4 right) { throw null; }
+        public static System.Numerics.Vector4 MultiplyAddEstimate(System.Numerics.Vector4 left, System.Numerics.Vector4 right, System.Numerics.Vector4 addend) { throw null; }
         public static System.Numerics.Vector4 Negate(System.Numerics.Vector4 value) { throw null; }
         public static System.Numerics.Vector4 Normalize(System.Numerics.Vector4 vector) { throw null; }
         public static System.Numerics.Vector4 operator +(System.Numerics.Vector4 left, System.Numerics.Vector4 right) { throw null; }

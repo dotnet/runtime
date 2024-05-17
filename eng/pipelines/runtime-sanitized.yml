@@ -28,7 +28,7 @@ extends:
           buildConfig: Checked
           runtimeFlavor: coreclr
           platforms:
-            - linux_x64
+            - linux_x64_sanitizer
             - osx_x64
             - windows_x64
           variables:
@@ -63,7 +63,7 @@ extends:
           buildConfig: Debug
           runtimeFlavor: coreclr
           platforms:
-            - linux_x64
+            - linux_x64_sanitizer
             - osx_x64
           variables:
             - name: _nativeSanitizersArg
@@ -123,7 +123,7 @@ extends:
           helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
           buildConfig: release
           platforms:
-            - linux_x64
+            - linux_x64_sanitizer
             - osx_x64
             - windows_x64
           variables:
@@ -133,7 +133,7 @@ extends:
             testGroup: innerloop
             timeoutInMinutes: 120
             nameSuffix: NativeAOT
-            buildArgs: -s clr.aot+host.native+libs -rc $(_BuildConfig) -lc Release -hc Release $(_nativeSanitizersArg)
+            buildArgs: -s clr.aot+libs -rc $(_BuildConfig) -lc Release $(_nativeSanitizersArg)
             postBuildSteps:
               - template: /eng/pipelines/coreclr/nativeaot-post-build-steps.yml
                 parameters:

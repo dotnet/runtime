@@ -88,7 +88,7 @@ bool Compiler::impILConsumesAddr(const BYTE* codeAddr)
             // out if we need to do so.
 
             CORINFO_RESOLVED_TOKEN resolvedToken;
-            impResolveToken(codeAddr + sizeof(__int8), &resolvedToken, CORINFO_TOKENKIND_Field);
+            impResolveToken(codeAddr + sizeof(int8_t), &resolvedToken, CORINFO_TOKENKIND_Field);
 
             var_types lclTyp = JITtype2varType(info.compCompHnd->getFieldType(resolvedToken.hField));
 
@@ -5128,6 +5128,23 @@ void Compiler::impResetLeaveBlock(BasicBlock* block, unsigned jmpAddr)
     // reason we don't want to remove the block at this point is that if we call
     // fgInitBBLookup() again we will do it wrong as the BBJ_ALWAYS block won't be
     // added and the linked list length will be different than fgBBcount.
+    //
+    // Because of this incomplete cleanup. profile data may be left inconsistent.
+    //
+    if (block->hasProfileWeight())
+    {
+        // We are unlikely to be able to repair the profile.
+        // For now we don't even try.
+        //
+        JITDUMP("\nimpResetLeaveBlock: Profile data could not be locally repaired. Data %s inconsistent.\n",
+                fgPgoConsistent ? "is now" : "was already");
+
+        if (fgPgoConsistent)
+        {
+            Metrics.ProfileInconsistentResetLeave++;
+            fgPgoConsistent = false;
+        }
+    }
 }
 
 /*****************************************************************************/
@@ -5139,7 +5156,7 @@ OPCODE Compiler::impGetNonPrefixOpcode(const BYTE* codeAddr, const BYTE* codeEnd
     while (codeAddr < codeEndp)
     {
         OPCODE opcode = (OPCODE)getU1LittleEndian(codeAddr);
-        codeAddr += sizeof(__int8);
+        codeAddr += sizeof(int8_t);
 
         if (opcode == CEE_PREFIX1)
         {
@@ -5148,7 +5165,7 @@ OPCODE Compiler::impGetNonPrefixOpcode(const BYTE* codeAddr, const BYTE* codeEnd
                 break;
             }
             opcode = (OPCODE)(getU1LittleEndian(codeAddr) + 256);
-            codeAddr += sizeof(__int8);
+            codeAddr += sizeof(int8_t);
         }
 
         switch (opcode)
@@ -6119,7 +6136,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
         /* Get the next opcode and the size of its parameters */
 
         OPCODE opcode = (OPCODE)getU1LittleEndian(codeAddr);
-        codeAddr += sizeof(__int8);
+        codeAddr += sizeof(int8_t);
 
 #ifdef DEBUG
         impCurOpcOffs = (IL_OFFSET)(codeAddr - info.compCode - 1);
@@ -6180,14 +6197,14 @@ void Compiler::impImportBlockCode(BasicBlock* block)
             {
                 int     intVal;
                 float   fltVal;
-                __int64 lngVal;
+                int64_t lngVal;
                 double  dblVal;
             } cval;
 
             case CEE_PREFIX1:
                 opcode     = (OPCODE)(getU1LittleEndian(codeAddr) + 256);
                 opcodeOffs = (IL_OFFSET)(codeAddr - info.compCode);
-                codeAddr += sizeof(__int8);
+                codeAddr += sizeof(int8_t);
                 goto DECODE_OPCODE;
 
             SPILL_APPEND:
@@ -6606,7 +6623,11 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     return;
                 }
 
-                block->bbSetRunRarely(); // filters are rare
+                if (!fgPgoSynthesized)
+                {
+                    // filters are rare
+                    block->bbSetRunRarely();
+                }
 
                 if (info.compXcptnsCount == 0)
                 {
@@ -7160,12 +7181,12 @@ void Compiler::impImportBlockCode(BasicBlock* block)
             case CEE_LEAVE:
 
                 val     = getI4LittleEndian(codeAddr); // jump distance
-                jmpAddr = (IL_OFFSET)((codeAddr - info.compCode + sizeof(__int32)) + val);
+                jmpAddr = (IL_OFFSET)((codeAddr - info.compCode + sizeof(int32_t)) + val);
                 goto LEAVE;
 
             case CEE_LEAVE_S:
                 val     = getI1LittleEndian(codeAddr); // jump distance
-                jmpAddr = (IL_OFFSET)((codeAddr - info.compCode + sizeof(__int8)) + val);
+                jmpAddr = (IL_OFFSET)((codeAddr - info.compCode + sizeof(int8_t)) + val);
 
             LEAVE:
 
@@ -7294,19 +7315,73 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                     if (block->KindIs(BBJ_COND))
                     {
-                        if (op1->AsIntCon()->gtIconVal)
+                        bool const      isCondTrue   = op1->AsIntCon()->gtIconVal != 0;
+                        FlowEdge* const removedEdge  = isCondTrue ? block->GetFalseEdge() : block->GetTrueEdge();
+                        FlowEdge* const retainedEdge = isCondTrue ? block->GetTrueEdge() : block->GetFalseEdge();
+
+                        JITDUMP("\nThe conditional jump becomes an unconditional jump to " FMT_BB "\n",
+                                retainedEdge->getDestinationBlock()->bbNum);
+
+                        fgRemoveRefPred(removedEdge);
+                        block->SetKindAndTargetEdge(BBJ_ALWAYS, retainedEdge);
+                        Metrics.ImporterBranchFold++;
+
+                        // If we removed an edge carrying profile, try to do a local repair.
+                        //
+                        if (block->hasProfileWeight())
                         {
-                            JITDUMP("\nThe conditional jump becomes an unconditional jump to " FMT_BB "\n",
-                                    block->GetTrueTarget()->bbNum);
-                            fgRemoveRefPred(block->GetFalseEdge());
-                            block->SetKindAndTargetEdge(BBJ_ALWAYS, block->GetTrueEdge());
-                        }
-                        else
-                        {
-                            assert(block->NextIs(block->GetFalseTarget()));
-                            JITDUMP("\nThe block jumps to the next " FMT_BB "\n", block->Next()->bbNum);
-                            fgRemoveRefPred(block->GetTrueEdge());
-                            block->SetKindAndTargetEdge(BBJ_ALWAYS, block->GetFalseEdge());
+                            bool           repairWasComplete = true;
+                            weight_t const weight            = removedEdge->getLikelyWeight();
+
+                            if (weight > 0)
+                            {
+                                // Target block weight will increase.
+                                //
+                                BasicBlock* const target = block->GetTarget();
+                                assert(target->hasProfileWeight());
+                                target->setBBProfileWeight(target->bbWeight + weight);
+
+                                // Alternate weight will decrease
+                                //
+                                BasicBlock* const alternate = removedEdge->getDestinationBlock();
+                                assert(alternate->hasProfileWeight());
+                                weight_t const alternateNewWeight = alternate->bbWeight - weight;
+
+                                // If profile weights are consistent, expect at worst a slight underflow.
+                                //
+                                if (fgPgoConsistent && (alternateNewWeight < 0))
+                                {
+                                    assert(fgProfileWeightsEqual(alternateNewWeight, 0));
+                                }
+                                alternate->setBBProfileWeight(max(0.0, alternateNewWeight));
+
+                                // This will affect profile transitively, so in general
+                                // the profile will become inconsistent.
+                                //
+                                repairWasComplete = false;
+
+                                // But we can check for the special case where the
+                                // block's postdominator is target's target (simple
+                                // if/then/else/join).
+                                //
+                                if (target->KindIs(BBJ_ALWAYS))
+                                {
+                                    repairWasComplete = alternate->KindIs(BBJ_ALWAYS) &&
+                                                        (alternate->GetTarget() == target->GetTarget());
+                                }
+                            }
+
+                            if (!repairWasComplete)
+                            {
+                                JITDUMP("Profile data could not be locally repaired. Data %s inconsistent.\n",
+                                        fgPgoConsistent ? "is now" : "was already");
+
+                                if (fgPgoConsistent)
+                                {
+                                    Metrics.ProfileInconsistentImporterBranchFold++;
+                                    fgPgoConsistent = false;
+                                }
+                            }
                         }
                     }
 
@@ -7551,6 +7626,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     unsigned   jumpCnt   = block->GetSwitchTargets()->bbsCount;
                     FlowEdge** jumpTab   = block->GetSwitchTargets()->bbsDstTab;
                     bool       foundVal  = false;
+                    Metrics.ImporterSwitchFold++;
 
                     for (unsigned val = 0; val < jumpCnt; val++, jumpTab++)
                     {
@@ -7584,6 +7660,20 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         printf("\n");
                     }
 #endif
+                    if (block->hasProfileWeight())
+                    {
+                        // We are unlikely to be able to repair the profile.
+                        // For now we don't even try.
+                        //
+                        JITDUMP("Profile data could not be locally repaired. Data %s inconsistent.\n",
+                                fgPgoConsistent ? "is now" : "was already");
+
+                        if (fgPgoConsistent)
+                        {
+                            Metrics.ProfileInconsistentImporterSwitchFold++;
+                            fgPgoConsistent = false;
+                        }
+                    }
 
                     // Create a NOP node
                     op1 = gtNewNothingNode();
@@ -7926,6 +8016,14 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     /* Append the value to the tree list */
                     goto SPILL_APPEND;
                 }
+                else
+                {
+                    if (op1->IsBoxedValue())
+                    {
+                        JITDUMP("\n CEE_POP box...\n");
+                        gtTryRemoveBoxUpstreamEffects(op1);
+                    }
+                }
 
                 /* No side effects - just throw the <BEEP> thing away */
             }
@@ -8136,7 +8234,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
             PREFIX:
                 opcode     = (OPCODE)getU1LittleEndian(codeAddr);
                 opcodeOffs = (IL_OFFSET)(codeAddr - info.compCode);
-                codeAddr += sizeof(__int8);
+                codeAddr += sizeof(int8_t);
                 goto DECODE_OPCODE;
 
             case CEE_VOLATILE:
@@ -10065,8 +10163,11 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
             case CEE_THROW:
 
-                // Any block with a throw is rarely executed.
-                block->bbSetRunRarely();
+                if (!fgPgoSynthesized)
+                {
+                    // Any block with a throw is rarely executed.
+                    block->bbSetRunRarely();
+                }
 
                 // Pop the exception object and create the 'throw' helper call
                 op1 = gtNewHelperCallNode(CORINFO_HELP_THROW, TYP_VOID, impPopStack().val);
@@ -10464,21 +10565,6 @@ void Compiler::impLoadArg(unsigned ilArgNum, IL_OFFSET offset)
         {
             lclNum = lvaArg0Var;
         }
-#ifdef SWIFT_SUPPORT
-        else if (lclNum == lvaSwiftErrorArg)
-        {
-            // Convert any usages of the SwiftError pointer/ref parameter to pointers/refs to the SwiftError pseudolocal
-            // (set side effect flags so usages of references to pseudolocal aren't removed)
-            assert(info.compCallConv == CorInfoCallConvExtension::Swift);
-            assert(lvaSwiftErrorArg != BAD_VAR_NUM);
-            assert(lvaSwiftErrorLocal != BAD_VAR_NUM);
-            const var_types type               = lvaGetDesc(lvaSwiftErrorArg)->TypeGet();
-            GenTree* const  swiftErrorLocalRef = gtNewLclVarAddrNode(lvaSwiftErrorLocal, type);
-            impPushOnStack(swiftErrorLocalRef, typeInfo(type));
-            JITDUMP("\nCreated GT_LCL_ADDR of SwiftError pseudolocal\n");
-            return;
-        }
-#endif // SWIFT_SUPPORT
 
         impLoadVar(lclNum, offset);
     }

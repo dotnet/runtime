@@ -212,7 +212,7 @@ namespace System.Diagnostics.Tracing
     /// [EventSource(Name="Samples.Demos.Minimal")]
     /// sealed class MinimalEventSource : EventSource
     /// {
-    ///     public static MinimalEventSource Log = new MinimalEventSource();
+    ///     public static readonly MinimalEventSource Log = new MinimalEventSource();
     ///     public void Load(long ImageBase, string Name) { WriteEvent(1, ImageBase, Name); }
     ///     public void Unload(long ImageBase) { WriteEvent(2, ImageBase); }
     ///     private MinimalEventSource() {}
@@ -1461,6 +1461,8 @@ namespace System.Diagnostics.Tracing
         /// <param name="disposing">True if called from Dispose(), false if called from the finalizer.</param>
         protected virtual void Dispose(bool disposing)
         {
+            // NOTE: If !IsSupported, we use ILLink.Substitutions to nop out the finalizer.
+            //       Do not add any code before this line (or you'd need to delete the substitution).
             if (!IsSupported)
             {
                 return;
@@ -1504,6 +1506,7 @@ namespace System.Diagnostics.Tracing
         /// </summary>
         ~EventSource()
         {
+            // NOTE: we nop out this method body if !IsSupported using ILLink.Substitutions.
             this.Dispose(false);
         }
 #endregion
@@ -4851,12 +4854,12 @@ namespace System.Diagnostics.Tracing
         /// <param name="eventId">ID of the ETW event (an integer between 1 and 65535)</param>
         public EventAttribute(int eventId)
         {
-            this.EventId = eventId;
+            EventId = eventId;
             Level = EventLevel.Informational;
         }
 
         /// <summary>Event's ID</summary>
-        public int EventId { get; private set; }
+        public int EventId { get; }
         /// <summary>Event's severity level: indicates the severity or verbosity of the event</summary>
         public EventLevel Level { get; set; }
         /// <summary>Event's keywords: allows classification of events by "categories"</summary>
@@ -4867,8 +4870,8 @@ namespace System.Diagnostics.Tracing
             get => m_opcode;
             set
             {
-                this.m_opcode = value;
-                this.m_opcodeSet = true;
+                m_opcode = value;
+                m_opcodeSet = true;
             }
         }
 

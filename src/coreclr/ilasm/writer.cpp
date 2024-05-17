@@ -34,6 +34,14 @@ HRESULT Assembler::InitMetaData()
     if (FAILED(hr))
         goto exit;
 
+    if(m_wzMetadataVersion)
+    {
+        VARIANT optionValue;
+        V_VT(&optionValue) = VT_BSTR;
+        V_BSTR(&optionValue) = m_wzMetadataVersion; // IMetaDataDispenserEx does not require proper BSTR
+        hr = m_pDisp->SetOption(MetaDataRuntimeVersion, &optionValue);
+    }
+
     hr = m_pDisp->DefineScope(CLSID_CorMetaDataRuntime, 0, IID_IMetaDataEmit3,
                         (IUnknown **)&m_pEmitter);
     if (FAILED(hr))
@@ -131,7 +139,7 @@ HRESULT Assembler::CreateTLSDirectory() {
     }
     else
     {
-        DWORD sizeofptr = (DWORD)sizeof(__int64);
+        DWORD sizeofptr = (DWORD)sizeof(int64_t);
         DWORD sizeofdir = (DWORD)sizeof(IMAGE_TLS_DIRECTORY64);
         DWORD offsetofStartAddressOfRawData  = (DWORD)offsetof(IMAGE_TLS_DIRECTORY64, StartAddressOfRawData);
         DWORD offsetofEndAddressOfRawData    = (DWORD)offsetof(IMAGE_TLS_DIRECTORY64, EndAddressOfRawData);
@@ -141,7 +149,7 @@ HRESULT Assembler::CreateTLSDirectory() {
             // Get memory for the TLS directory block,as well as a spot for callback chain
         IMAGE_TLS_DIRECTORY64* tlsDir;
         if(FAILED(hr=m_pCeeFileGen->GetSectionBlock(tlsDirSec, sizeofdir + sizeofptr, sizeofptr, (void**) &tlsDir))) return(hr);
-        __int64* callBackChain = (__int64*) &tlsDir[1];
+        int64_t* callBackChain = (int64_t*) &tlsDir[1];
         *callBackChain = 0;
 
             // Find out where the tls directory will end up
@@ -530,7 +538,7 @@ DWORD   Assembler::EmitExportStub(DWORD dwVTFSlotRVA)
     else
     {
         report->error("Unmanaged exports are not implemented for unknown platform");
-        return NULL;
+        return 0;
     }
     // Addr must be aligned, not the stub!
     if (FAILED(m_pCeeFileGen->GetSectionDataLen (m_pILSection, &PEFileOffset))) return 0;
@@ -1212,7 +1220,7 @@ HRESULT Assembler::CreatePEFile(_In_ __nullterminated WCHAR *pwzOutputFilename)
     {
 #define ELEMENT_TYPE_TYPEDEF (ELEMENT_TYPE_MAX+1)
         TypeDefDescr* pTDD;
-        unsigned __int8* pb;
+        uint8_t* pb;
         unsigned namesize;
         while((pTDD = m_TypeDefDList.POP()))
         {

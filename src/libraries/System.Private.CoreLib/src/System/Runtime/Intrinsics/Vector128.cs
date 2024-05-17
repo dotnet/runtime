@@ -468,7 +468,7 @@ namespace System.Runtime.Intrinsics
             }
         }
 
-        /// <summary>Converts a <see cref="Vector128{Single}" /> to a <see cref="Vector128{Int32}" />.</summary>
+        /// <summary>Converts a <see cref="Vector128{Single}" /> to a <see cref="Vector128{Int32}" /> using saturation on overflow.</summary>
         /// <param name="vector">The vector to convert.</param>
         /// <returns>The converted vector.</returns>
         [Intrinsic]
@@ -481,7 +481,20 @@ namespace System.Runtime.Intrinsics
             );
         }
 
-        /// <summary>Converts a <see cref="Vector128{Double}" /> to a <see cref="Vector128{Int64}" />.</summary>
+        /// <summary>Converts a <see cref="Vector128{Single}" /> to a <see cref="Vector128{Int32}" /> platform specific behavior on overflow.</summary>
+        /// <param name="vector">The vector to convert.</param>
+        /// <returns>The converted vector.</returns>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static unsafe Vector128<int> ConvertToInt32Native(Vector128<float> vector)
+        {
+            return Create(
+                Vector64.ConvertToInt32Native(vector._lower),
+                Vector64.ConvertToInt32Native(vector._upper)
+            );
+        }
+
+        /// <summary>Converts a <see cref="Vector128{Double}" /> to a <see cref="Vector128{Int64}" /> using saturation on overflow.</summary>
         /// <param name="vector">The vector to convert.</param>
         /// <returns>The converted vector.</returns>
         [Intrinsic]
@@ -491,6 +504,19 @@ namespace System.Runtime.Intrinsics
             return Create(
                 Vector64.ConvertToInt64(vector._lower),
                 Vector64.ConvertToInt64(vector._upper)
+            );
+        }
+
+        /// <summary>Converts a <see cref="Vector128{Double}" /> to a <see cref="Vector128{Int64}" /> using platform specific behavior on overflow.</summary>
+        /// <param name="vector">The vector to convert.</param>
+        /// <returns>The converted vector.</returns>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static unsafe Vector128<long> ConvertToInt64Native(Vector128<double> vector)
+        {
+            return Create(
+                Vector64.ConvertToInt64Native(vector._lower),
+                Vector64.ConvertToInt64Native(vector._upper)
             );
         }
 
@@ -564,7 +590,7 @@ namespace System.Runtime.Intrinsics
             }
         }
 
-        /// <summary>Converts a <see cref="Vector128{Single}" /> to a <see cref="Vector128{UInt32}" />.</summary>
+        /// <summary>Converts a <see cref="Vector128{Single}" /> to a <see cref="Vector128{UInt32}" /> using saturation on overflow.</summary>
         /// <param name="vector">The vector to convert.</param>
         /// <returns>The converted vector.</returns>
         [Intrinsic]
@@ -578,7 +604,21 @@ namespace System.Runtime.Intrinsics
             );
         }
 
-        /// <summary>Converts a <see cref="Vector128{Double}" /> to a <see cref="Vector128{UInt64}" />.</summary>
+        /// <summary>Converts a <see cref="Vector128{Single}" /> to a <see cref="Vector128{UInt32}" /> using platform specific behavior on overflow.</summary>
+        /// <param name="vector">The vector to convert.</param>
+        /// <returns>The converted vector.</returns>
+        [Intrinsic]
+        [CLSCompliant(false)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static unsafe Vector128<uint> ConvertToUInt32Native(Vector128<float> vector)
+        {
+            return Create(
+                Vector64.ConvertToUInt32Native(vector._lower),
+                Vector64.ConvertToUInt32Native(vector._upper)
+            );
+        }
+
+        /// <summary>Converts a <see cref="Vector128{Double}" /> to a <see cref="Vector128{UInt64}" /> using saturation on overflow.</summary>
         /// <param name="vector">The vector to convert.</param>
         /// <returns>The converted vector.</returns>
         [Intrinsic]
@@ -589,6 +629,20 @@ namespace System.Runtime.Intrinsics
             return Create(
                 Vector64.ConvertToUInt64(vector._lower),
                 Vector64.ConvertToUInt64(vector._upper)
+            );
+        }
+
+        /// <summary>Converts a <see cref="Vector128{Double}" /> to a <see cref="Vector128{UInt64}" /> using platform specific behavior on overflow.</summary>
+        /// <param name="vector">The vector to convert.</param>
+        /// <returns>The converted vector.</returns>
+        [Intrinsic]
+        [CLSCompliant(false)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static unsafe Vector128<ulong> ConvertToUInt64Native(Vector128<double> vector)
+        {
+            return Create(
+                Vector64.ConvertToUInt64Native(vector._lower),
+                Vector64.ConvertToUInt64Native(vector._upper)
             );
         }
 
@@ -1041,7 +1095,7 @@ namespace System.Runtime.Intrinsics
             }
             else
             {
-                ThrowHelper.ThrowForUnsupportedIntrinsicsVector256BaseType<T>();
+                ThrowHelper.ThrowForUnsupportedIntrinsicsVector128BaseType<T>();
                 Unsafe.SkipInit(out Vector128<T> result);
 
                 result.SetLowerUnsafe(lower);
@@ -1513,6 +1567,28 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector128<double> Floor(Vector128<double> vector) => Floor<double>(vector);
 
+        /// <inheritdoc cref="Vector64.FusedMultiplyAdd(Vector64{double}, Vector64{double}, Vector64{double})" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector128<double> FusedMultiplyAdd(Vector128<double> left, Vector128<double> right, Vector128<double> addend)
+        {
+            return Create(
+                Vector64.FusedMultiplyAdd(left._lower, right._lower, addend._lower),
+                Vector64.FusedMultiplyAdd(left._upper, right._upper, addend._upper)
+            );
+        }
+
+        /// <inheritdoc cref="Vector64.FusedMultiplyAdd(Vector64{float}, Vector64{float}, Vector64{float})" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector128<float> FusedMultiplyAdd(Vector128<float> left, Vector128<float> right, Vector128<float> addend)
+        {
+            return Create(
+                Vector64.FusedMultiplyAdd(left._lower, right._lower, addend._lower),
+                Vector64.FusedMultiplyAdd(left._upper, right._upper, addend._upper)
+            );
+        }
+
         /// <summary>Gets the element at the specified index.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
         /// <param name="vector">The vector to get the element from.</param>
@@ -1953,6 +2029,28 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector128<T> Multiply<T>(T left, Vector128<T> right) => left * right;
+
+        /// <inheritdoc cref="Vector64.MultiplyAddEstimate(Vector64{double}, Vector64{double}, Vector64{double})" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector128<double> MultiplyAddEstimate(Vector128<double> left, Vector128<double> right, Vector128<double> addend)
+        {
+            return Create(
+                Vector64.MultiplyAddEstimate(left._lower, right._lower, addend._lower),
+                Vector64.MultiplyAddEstimate(left._upper, right._upper, addend._upper)
+            );
+        }
+
+        /// <inheritdoc cref="Vector64.MultiplyAddEstimate(Vector64{float}, Vector64{float}, Vector64{float})" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector128<float> MultiplyAddEstimate(Vector128<float> left, Vector128<float> right, Vector128<float> addend)
+        {
+            return Create(
+                Vector64.MultiplyAddEstimate(left._lower, right._lower, addend._lower),
+                Vector64.MultiplyAddEstimate(left._upper, right._upper, addend._upper)
+            );
+        }
 
         /// <summary>Narrows two <see cref="Vector128{Double}"/> instances into one <see cref="Vector128{Single}" />.</summary>
         /// <param name="lower">The vector that will be narrowed to the lower half of the result vector.</param>

@@ -1446,9 +1446,8 @@ private:
             flags |= AccessKindFlags::IsStoreSource;
         }
 
-        if (user->OperIs(GT_RETURN))
+        if (user->OperIs(GT_RETURN, GT_SWIFT_ERROR_RET))
         {
-            assert(user->gtGetOp1()->gtEffectiveVal() == lcl);
             flags |= AccessKindFlags::IsReturned;
         }
 #endif
@@ -1927,8 +1926,8 @@ void ReplaceVisitor::StartBlock(BasicBlock* block)
 #endif
 
     // OSR locals and parameters may need an initial read back, which we mark
-    // when we start the scratch BB.
-    if (!m_compiler->fgBBisScratch(block))
+    // when we start the initial BB.
+    if (block != m_compiler->fgFirstBB)
     {
         return;
     }
@@ -1941,7 +1940,7 @@ void ReplaceVisitor::StartBlock(BasicBlock* block)
             continue;
         }
 
-        JITDUMP("Marking fields of %s V%02u as needing read-back in scratch " FMT_BB "\n",
+        JITDUMP("Marking fields of %s V%02u as needing read-back in entry BB " FMT_BB "\n",
                 dsc->lvIsParam ? "parameter" : "OSR-local", agg->LclNum, block->bbNum);
 
         for (size_t i = 0; i < agg->Replacements.size(); i++)
@@ -1955,7 +1954,7 @@ void ReplaceVisitor::StartBlock(BasicBlock* block)
             }
             else
             {
-                JITDUMP("  V%02u (%s) not marked (not live-in to scratch BB)\n", rep.LclNum, rep.Description);
+                JITDUMP("  V%02u (%s) not marked (not live-in to entry BB)\n", rep.LclNum, rep.Description);
             }
         }
     }
@@ -2546,7 +2545,7 @@ void ReplaceVisitor::ReplaceLocal(GenTree** use, GenTree* user)
         JITDUMP("Processing struct use [%06u] of V%02u.[%03u..%03u)\n", Compiler::dspTreeID(lcl), lclNum, offs,
                 offs + lcl->GetLayout(m_compiler)->GetSize());
 
-        assert(effectiveUser->OperIs(GT_CALL, GT_RETURN));
+        assert(effectiveUser->OperIs(GT_CALL, GT_RETURN, GT_SWIFT_ERROR_RET));
         unsigned size = lcl->GetLayout(m_compiler)->GetSize();
         WriteBackBeforeUse(use, lclNum, lcl->GetLclOffs(), size);
 
@@ -2841,21 +2840,9 @@ PhaseStatus Promotion::Run()
         return PhaseStatus::MODIFIED_NOTHING;
     }
 
-    // Check for parameters and OSR locals that need to be read back on entry
-    // to the function.
-    for (AggregateInfo* agg : aggregates)
-    {
-        LclVarDsc* dsc = m_compiler->lvaGetDesc(agg->LclNum);
-        if (dsc->lvIsParam || dsc->lvIsOSRLocal)
-        {
-            // We will need an initial readback. We create the scratch BB ahead
-            // of time so that we get correct liveness and mark the
-            // parameters/OSR-locals as requiring read-back as part of
-            // ReplaceVisitor::StartBlock when we get to the scratch block.
-            m_compiler->fgEnsureFirstBBisScratch();
-            break;
-        }
-    }
+    // We should have a proper entry BB where we can put IR that will only be
+    // run once into. This is a precondition of the phase.
+    assert(m_compiler->fgFirstBB->bbPreds == nullptr);
 
     // Compute liveness for the fields and remainders.
     PromotionLiveness liveness(m_compiler, aggregates);
@@ -3011,8 +2998,8 @@ void Promotion::ExplicitlyZeroInitReplacementLocals(unsigned                    
 
 //------------------------------------------------------------------------
 // Promotion::InsertInitStatement:
-//   Insert a new statement after the specified statement in the scratch block,
-//   or at the beginning of the scratch block if no other statements were
+//   Insert a new statement after the specified statement in the entry block,
+//   or at the beginning of the entry block if no other statements were
 //   inserted yet.
 //
 // Parameters:
@@ -3021,7 +3008,6 @@ void Promotion::ExplicitlyZeroInitReplacementLocals(unsigned                    
 //
 void Promotion::InsertInitStatement(Statement** prevStmt, GenTree* tree)
 {
-    m_compiler->fgEnsureFirstBBisScratch();
     Statement* stmt = m_compiler->fgNewStmtFromTree(tree);
     if (*prevStmt != nullptr)
     {

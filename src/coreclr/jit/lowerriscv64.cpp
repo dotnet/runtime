@@ -215,11 +215,12 @@ void Lowering::LowerStoreLoc(GenTreeLclVarCommon* storeLoc)
 //    node       - The indirect store node (GT_STORE_IND) of interest
 //
 // Return Value:
-//    None.
+//    Next node to lower.
 //
-void Lowering::LowerStoreIndir(GenTreeStoreInd* node)
+GenTree* Lowering::LowerStoreIndir(GenTreeStoreInd* node)
 {
     ContainCheckStoreIndir(node);
+    return node->gtNext;
 }
 
 //------------------------------------------------------------------------
@@ -319,6 +320,12 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
         // CopyObj or CopyBlk
         if (doCpObj)
         {
+            // Try to use bulk copy helper
+            if (TryLowerBlockStoreAsGcBulkCopyCall(blkNode))
+            {
+                return;
+            }
+
             assert((dstAddr->TypeGet() == TYP_BYREF) || (dstAddr->TypeGet() == TYP_I_IMPL));
             blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindCpObjUnroll;
         }

@@ -3502,18 +3502,21 @@ namespace System.Runtime.Intrinsics.Arm
             /// uint16_t vqrshrns_n_u32 (uint32_t a, const int n)
             ///   A64: UQRSHRN Hd, Sn, #n
             /// </summary>
+            [Obsolete(Obsoletions.ArmIntrinsicPerformsUnsignedOperationMessage, DiagnosticId = Obsoletions.ArmIntrinsicPerformsUnsignedOperationDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
             public static Vector64<short> ShiftRightLogicalRoundedNarrowingSaturateScalar(Vector64<int> value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte count) { throw new PlatformNotSupportedException(); }
 
             /// <summary>
             /// uint32_t vqrshrnd_n_u64 (uint64_t a, const int n)
             ///   A64: UQRSHRN Sd, Dn, #n
             /// </summary>
+            [Obsolete(Obsoletions.ArmIntrinsicPerformsUnsignedOperationMessage, DiagnosticId = Obsoletions.ArmIntrinsicPerformsUnsignedOperationDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
             public static Vector64<int> ShiftRightLogicalRoundedNarrowingSaturateScalar(Vector64<long> value, [ConstantExpected(Min = 1, Max = (byte)(8))] byte count) { throw new PlatformNotSupportedException(); }
 
             /// <summary>
             /// uint8_t vqrshrnh_n_u16 (uint16_t a, const int n)
             ///   A64: UQRSHRN Bd, Hn, #n
             /// </summary>
+            [Obsolete(Obsoletions.ArmIntrinsicPerformsUnsignedOperationMessage, DiagnosticId = Obsoletions.ArmIntrinsicPerformsUnsignedOperationDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
             public static Vector64<sbyte> ShiftRightLogicalRoundedNarrowingSaturateScalar(Vector64<short> value, [ConstantExpected(Min = 1, Max = (byte)(32))] byte count) { throw new PlatformNotSupportedException(); }
 
             /// <summary>
@@ -15470,6 +15473,7 @@ namespace System.Runtime.Intrinsics.Arm
         ///   A32: VQRSHRN.U32 Dd, Qm, #n
         ///   A64: UQRSHRN Vd.4H, Vn.4S, #n
         /// </summary>
+        [Obsolete(Obsoletions.ArmIntrinsicPerformsUnsignedOperationMessage, DiagnosticId = Obsoletions.ArmIntrinsicPerformsUnsignedOperationDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public static Vector64<short> ShiftRightLogicalRoundedNarrowingSaturateLower(Vector128<int> value, [ConstantExpected(Min = 1, Max = (byte)(32))] byte count) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
@@ -15477,6 +15481,7 @@ namespace System.Runtime.Intrinsics.Arm
         ///   A32: VQRSHRN.U64 Dd, Qm, #n
         ///   A64: UQRSHRN Vd.2S, Vn.2D, #n
         /// </summary>
+        [Obsolete(Obsoletions.ArmIntrinsicPerformsUnsignedOperationMessage, DiagnosticId = Obsoletions.ArmIntrinsicPerformsUnsignedOperationDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public static Vector64<int> ShiftRightLogicalRoundedNarrowingSaturateLower(Vector128<long> value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte count) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
@@ -15484,6 +15489,7 @@ namespace System.Runtime.Intrinsics.Arm
         ///   A32: VQRSHRN.U16 Dd, Qm, #n
         ///   A64: UQRSHRN Vd.8B, Vn.8H, #n
         /// </summary>
+        [Obsolete(Obsoletions.ArmIntrinsicPerformsUnsignedOperationMessage, DiagnosticId = Obsoletions.ArmIntrinsicPerformsUnsignedOperationDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public static Vector64<sbyte> ShiftRightLogicalRoundedNarrowingSaturateLower(Vector128<short> value, [ConstantExpected(Min = 1, Max = (byte)(64))] byte count) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
@@ -15512,6 +15518,7 @@ namespace System.Runtime.Intrinsics.Arm
         ///   A32: VQRSHRN.U32 Dd+1, Dn, #n
         ///   A64: UQRSHRN2 Vd.8H, Vn.4S, #n
         /// </summary>
+        [Obsolete(Obsoletions.ArmIntrinsicPerformsUnsignedOperationMessage, DiagnosticId = Obsoletions.ArmIntrinsicPerformsUnsignedOperationDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public static Vector128<short> ShiftRightLogicalRoundedNarrowingSaturateUpper(Vector64<short> lower, Vector128<int> value, [ConstantExpected(Min = 1, Max = (byte)(32))] byte count) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
@@ -15519,6 +15526,7 @@ namespace System.Runtime.Intrinsics.Arm
         ///   A32: VQRSHRN.U64 Dd+1, Dn, #n
         ///   A64: UQRSHRN2 Vd.4S, Vn.2D, #n
         /// </summary>
+        [Obsolete(Obsoletions.ArmIntrinsicPerformsUnsignedOperationMessage, DiagnosticId = Obsoletions.ArmIntrinsicPerformsUnsignedOperationDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public static Vector128<int> ShiftRightLogicalRoundedNarrowingSaturateUpper(Vector64<int> lower, Vector128<long> value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte count) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
@@ -15526,6 +15534,7 @@ namespace System.Runtime.Intrinsics.Arm
         ///   A32: VQRSHRN.U16 Dd+1, Dn, #n
         ///   A64: UQRSHRN2 Vd.16B, Vn.8H, #n
         /// </summary>
+        [Obsolete(Obsoletions.ArmIntrinsicPerformsUnsignedOperationMessage, DiagnosticId = Obsoletions.ArmIntrinsicPerformsUnsignedOperationDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public static Vector128<sbyte> ShiftRightLogicalRoundedNarrowingSaturateUpper(Vector64<sbyte> lower, Vector128<short> value, [ConstantExpected(Min = 1, Max = (byte)(64))] byte count) { throw new PlatformNotSupportedException(); }
 
         /// <summary>

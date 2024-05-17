@@ -325,7 +325,24 @@ export function withStackAlloc<T1, T2, T3, TResult> (bytesWanted: number, f: (pt
 // @bytes must be a typed array. space is allocated for it in the native heap
 //  and it is copied to that location. returns the address of the allocation.
 export function mono_wasm_load_bytes_into_heap (bytes: Uint8Array): VoidPtr {
-    const memoryOffset = Module._malloc(bytes.length);
+    // pad sizes by 16 bytes for simd
+    const memoryOffset = Module._malloc(bytes.length + 16);
+    const heapBytes = new Uint8Array(localHeapViewU8().buffer, <any>memoryOffset, bytes.length);
+    heapBytes.set(bytes);
+    return memoryOffset;
+}
+
+// @bytes must be a typed array. space is allocated for it in memory
+//  and it is copied to that location. returns the address of the data.
+// the result pointer *cannot* be freed because malloc is bypassed for speed.
+export function mono_wasm_load_bytes_into_heap_persistent (bytes: Uint8Array): VoidPtr {
+    // pad sizes by 16 bytes for simd
+    const desiredSize = bytes.length + 16;
+    // wasm memory page size is 64kb. allocations smaller than that are probably best
+    //  serviced by malloc
+    const memoryOffset = (desiredSize < (64 * 1024))
+        ? Module._malloc(desiredSize)
+        : Module._sbrk(desiredSize);
     const heapBytes = new Uint8Array(localHeapViewU8().buffer, <any>memoryOffset, bytes.length);
     heapBytes.set(bytes);
     return memoryOffset;
@@ -430,8 +447,8 @@ export function copyBytes (srcPtr: VoidPtr, dstPtr: VoidPtr, bytes: number): voi
 // on non-MT build, this will be a no-op trimmed by rollup
 export function receiveWorkerHeapViews () {
     if (!WasmEnableThreads) return;
-    const memory = runtimeHelpers.getMemory();
-    if (memory.buffer !== Module.HEAPU8.buffer) {
+    const wasmMemory = runtimeHelpers.getMemory();
+    if (wasmMemory.buffer !== Module.HEAPU8.buffer) {
         runtimeHelpers.updateMemoryViews();
     }
 }
@@ -467,5 +484,7 @@ export function forceThreadMemoryViewRefresh () {
     This only works because their implementation does not skip doing work even when you ask to grow by 0 pages.
     */
     wasmMemory.grow(0);
-    runtimeHelpers.updateMemoryViews();
+    if (wasmMemory.buffer !== Module.HEAPU8.buffer) {
+        runtimeHelpers.updateMemoryViews();
+    }
 }

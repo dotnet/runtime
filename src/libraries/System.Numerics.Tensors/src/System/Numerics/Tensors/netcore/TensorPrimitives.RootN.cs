@@ -28,7 +28,7 @@ namespace System.Numerics.Tensors
         {
             private readonly int _n = n;
 
-            public static bool Vectorizable => typeof(T) == typeof(float) || typeof(T) == typeof(double);
+            public static bool Vectorizable => false; // typeof(T) == typeof(float) || typeof(T) == typeof(double); // TODO: https://github.com/dotnet/runtime/issues/100535
 
             public T Invoke(T x) => T.RootN(x, _n);
 

@@ -1434,63 +1434,48 @@ namespace System.Threading.Tasks.Dataflow
         public static Task<bool> OutputAvailableAsync<TOutput>(
             this ISourceBlock<TOutput> source, CancellationToken cancellationToken)
         {
-            if (source is null)
+            return
+                source is null ? throw new ArgumentNullException(nameof(source)) :
+                cancellationToken.IsCancellationRequested ? Common.CreateTaskFromCancellation<bool>(cancellationToken) :
+                Impl(source, cancellationToken);
+
+            static async Task<bool> Impl(ISourceBlock<TOutput> source, CancellationToken cancellationToken)
             {
-                throw new ArgumentNullException(nameof(source));
-            }
+                // In a method like this, normally we would want to check source.Completion.IsCompleted
+                // and avoid linking completely by simply returning a completed task.  However,
+                // some blocks that are completed still have data available, like WriteOnceBlock,
+                // which completes as soon as it gets a value and stores that value forever.
+                // As such, OutputAvailableAsync must link from the source so that the source
+                // can push data to us if it has it, at which point we can immediately unlink.
 
-            // Fast path for cancellation
-            if (cancellationToken.IsCancellationRequested)
-                return Common.CreateTaskFromCancellation<bool>(cancellationToken);
+                // Create a target task that will complete when it's offered a message (but it won't accept the message)
+                var target = new OutputAvailableAsyncTarget<TOutput>();
 
-            // In a method like this, normally we would want to check source.Completion.IsCompleted
-            // and avoid linking completely by simply returning a completed task.  However,
-            // some blocks that are completed still have data available, like WriteOnceBlock,
-            // which completes as soon as it gets a value and stores that value forever.
-            // As such, OutputAvailableAsync must link from the source so that the source
-            // can push data to us if it has it, at which point we can immediately unlink.
-
-            // Create a target task that will complete when it's offered a message (but it won't accept the message)
-            var target = new OutputAvailableAsyncTarget<TOutput>();
-            try
-            {
-                // Link from the source.  If the source propagates a message during or immediately after linking
-                // such that our target is already completed, just return its task.
-                target._unlinker = source.LinkTo(target, DataflowLinkOptions.UnlinkAfterOneAndPropagateCompletion);
-
-                // If the task is already completed (an exception may have occurred, or the source may have propagated
-                // a message to the target during LinkTo or soon thereafter), just return the task directly.
-                if (target.Task.IsCompleted)
+                // Link from the source.
+                using (source.LinkTo(target, DataflowLinkOptions.UnlinkAfterOneAndPropagateCompletion))
                 {
-                    return target.Task;
-                }
-
-                // If cancellation could be requested, hook everything up to be notified of cancellation requests.
-                if (cancellationToken.CanBeCanceled)
-                {
-                    // When cancellation is requested, unlink the target from the source and cancel the target.
-                    target._ctr = cancellationToken.Register(
-#if NET6_0_OR_GREATER
-                        OutputAvailableAsyncTarget<TOutput>.CancelAndUnlink,
+                    CancellationTokenRegistration registration = default;
+                    try
+                    {
+                        // Register for cancellation if the target isn't already completed (the source may have propagated
+                        // a message to the target during LinkTo or soon thereafter).
+                        if (!target.Task.IsCompleted)
+                        {
+                            registration =
+#if NET
+                                cancellationToken.UnsafeRegister(static (state, cancellationToken) => ((OutputAvailableAsyncTarget<TOutput>)state!).TrySetCanceled(cancellationToken), target);
 #else
-                        static state => OutputAvailableAsyncTarget<TOutput>.CancelAndUnlink(state, default),
+                                cancellationToken.Register(static state => ((OutputAvailableAsyncTarget<TOutput>)state!).TrySetCanceled(), target);
 #endif
-                        target);
+                        }
+
+                        return await target.Task.ConfigureAwait(false);
+                    }
+                    finally
+                    {
+                        registration.Dispose();
+                    }
                 }
-
-                return target.Task;
-            }
-            catch (Exception exc)
-            {
-                // Source.LinkTo could throw, as could cancellationToken.Register if cancellation was already requested
-                // such that it synchronously invokes the source's unlinker IDisposable, which could throw.
-                target.TrySetException(exc);
-
-                // Undo the link from the source to the target
-                target.AttemptThreadSafeUnlink();
-
-                // Return the now faulted task
-                return target.Task;
             }
         }
 
@@ -1504,46 +1489,6 @@ namespace System.Threading.Tasks.Dataflow
             {
             }
 
-            /// <summary>
-            /// Cached continuation delegate that unregisters from cancellation and
-            /// marshals the antecedent's result to the return value.
-            /// </summary>
-            internal static readonly Func<Task<bool>, object?, bool> s_handleCompletion = (antecedent, state) =>
-            {
-                var target = state as OutputAvailableAsyncTarget<T>;
-                Debug.Assert(target != null, "Expected non-null target");
-                target._ctr.Dispose();
-                return antecedent.GetAwaiter().GetResult();
-            };
-
-            /// <summary>Cancels the target and unlinks the target from the source.</summary>
-            /// <param name="state">An OutputAvailableAsyncTarget.</param>
-            /// <param name="cancellationToken">The token that triggered cancellation</param>
-            internal static void CancelAndUnlink(object? state, CancellationToken cancellationToken)
-            {
-                var target = state as OutputAvailableAsyncTarget<T>;
-                Debug.Assert(target != null, "Expected a non-null target");
-
-                target.TrySetCanceled(cancellationToken);
-                target.AttemptThreadSafeUnlink();
-            }
-
-            /// <summary>Disposes of _unlinker if the target has been linked.</summary>
-            internal void AttemptThreadSafeUnlink()
-            {
-                // A race is possible. Therefore use an interlocked operation.
-                IDisposable? cachedUnlinker = _unlinker;
-                if (cachedUnlinker != null && Interlocked.CompareExchange(ref _unlinker, null, cachedUnlinker) == cachedUnlinker)
-                {
-                    cachedUnlinker.Dispose();
-                }
-            }
-
-            /// <summary>The IDisposable used to unlink this target from its source.</summary>
-            internal IDisposable? _unlinker;
-            /// <summary>The registration used to unregister this target from the cancellation token.</summary>
-            internal CancellationTokenRegistration _ctr;
-
             /// <summary>Completes the task when offered a message (but doesn't consume the message).</summary>
             DataflowMessageStatus ITargetBlock<T>.OfferMessage(DataflowMessageHeader messageHeader, T messageValue, ISourceBlock<T>? source, bool consumeToAccept)
             {
@@ -1551,14 +1496,12 @@ namespace System.Threading.Tasks.Dataflow
                 if (source == null) throw new ArgumentNullException(nameof(source));
 
                 TrySetResult(true);
+
                 return DataflowMessageStatus.DecliningPermanently;
             }
 
             /// <include file='XmlDocs/CommonXmlDocComments.xml' path='CommonXmlDocComments/Blocks/Member[@name="Complete"]/*' />
-            void IDataflowBlock.Complete()
-            {
-                TrySetResult(false);
-            }
+            void IDataflowBlock.Complete() => TrySetResult(false);
 
             /// <include file='XmlDocs/CommonXmlDocComments.xml' path='CommonXmlDocComments/Blocks/Member[@name="Fault"]/*' />
             void IDataflowBlock.Fault(Exception exception)
@@ -1572,13 +1515,13 @@ namespace System.Threading.Tasks.Dataflow
             }
 
             /// <include file='XmlDocs/CommonXmlDocComments.xml' path='CommonXmlDocComments/Blocks/Member[@name="Completion"]/*' />
-            Task IDataflowBlock.Completion { get { throw new NotSupportedException(SR.NotSupported_MemberNotNeeded); } }
+            Task IDataflowBlock.Completion => throw new NotSupportedException(SR.NotSupported_MemberNotNeeded);
 
             /// <summary>The data to display in the debugger display attribute.</summary>
             private object DebuggerDisplayContent => $"{Common.GetNameForDebugger(this)} IsCompleted = {base.Task.IsCompleted}";
 
             /// <summary>Gets the data to display in the debugger display attribute for this instance.</summary>
-            object IDebuggerDisplay.Content { get { return DebuggerDisplayContent; } }
+            object IDebuggerDisplay.Content => DebuggerDisplayContent;
         }
 #endregion
 

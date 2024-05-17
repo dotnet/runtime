@@ -905,6 +905,9 @@ public:
     // of the length argument to a GT_BOUNDS_CHECK node.
     bool IsVNCheckedBound(ValueNum vn);
 
+    // Returns true if the VN is known to be a cast to ulong
+    bool IsVNCastToULong(ValueNum vn, ValueNum* castedOp);
+
     // Record that a VN is known to appear as the conservative value number of the length
     // argument to a GT_BOUNDS_CHECK node.
     void SetVNIsCheckedBound(ValueNum vn);
@@ -932,12 +935,14 @@ public:
         ValueNum vnBound;
         unsigned arrOper;
         ValueNum arrOp;
+        bool     arrOpLHS; // arrOp is on the left side of cmpOp expression
         unsigned cmpOper;
         ValueNum cmpOp;
         CompareCheckedBoundArithInfo()
             : vnBound(NoVN)
             , arrOper(GT_NONE)
             , arrOp(NoVN)
+            , arrOpLHS(false)
             , cmpOper(GT_NONE)
             , cmpOp(NoVN)
         {
@@ -1576,7 +1581,7 @@ private:
     {
         static bool Equals(double x, double y)
         {
-            return *(__int64*)&x == *(__int64*)&y;
+            return *(int64_t*)&x == *(int64_t*)&y;
         }
     };
 

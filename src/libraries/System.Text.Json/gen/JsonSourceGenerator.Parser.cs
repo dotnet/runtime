@@ -272,6 +272,7 @@ namespace System.Text.Json.SourceGeneration
                 bool? ignoreReadOnlyProperties = null;
                 bool? includeFields = null;
                 int? maxDepth = null;
+                string? newLine = null;
                 JsonNumberHandling? numberHandling = null;
                 JsonObjectCreationHandling? preferredObjectCreationHandling = null;
                 bool? propertyNameCaseInsensitive = null;
@@ -344,6 +345,10 @@ namespace System.Text.Json.SourceGeneration
                             maxDepth = (int)namedArg.Value.Value!;
                             break;
 
+                        case nameof(JsonSourceGenerationOptionsAttribute.NewLine):
+                            newLine = (string)namedArg.Value.Value!;
+                            break;
+
                         case nameof(JsonSourceGenerationOptionsAttribute.NumberHandling):
                             numberHandling = (JsonNumberHandling)namedArg.Value.Value!;
                             break;
@@ -411,6 +416,7 @@ namespace System.Text.Json.SourceGeneration
                     IgnoreReadOnlyProperties = ignoreReadOnlyProperties,
                     IncludeFields = includeFields,
                     MaxDepth = maxDepth,
+                    NewLine = newLine,
                     NumberHandling = numberHandling,
                     PreferredObjectCreationHandling = preferredObjectCreationHandling,
                     PropertyNameCaseInsensitive = propertyNameCaseInsensitive,

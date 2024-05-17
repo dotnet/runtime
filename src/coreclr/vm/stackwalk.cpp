@@ -175,7 +175,7 @@ TADDR CrawlFrame::GetAmbientSPFromCrawlFrame()
 #elif defined(TARGET_ARM)
     return GetRegisterSet()->pCurrentContext->Sp;
 #else
-    return NULL;
+    return 0;
 #endif
 }
 
@@ -553,6 +553,13 @@ PCODE Thread::VirtualUnwindCallFrame(T_CONTEXT* pContext,
     UINT_PTR            uImageBase;
     PT_RUNTIME_FUNCTION pFunctionEntry;
 
+#if !defined(TARGET_UNIX) && defined(TARGET_ARM64)
+    if ((pContext->ContextFlags & CONTEXT_UNWOUND_TO_CALL) != 0)
+    {
+        uControlPc -= STACKWALK_CONTROLPC_ADJUST_OFFSET;
+    }
+#endif // !TARGET_UNIX && TARGET_ARM64
+
     if (pCodeInfo == NULL)
     {
 #ifndef TARGET_UNIX
@@ -592,7 +599,23 @@ PCODE Thread::VirtualUnwindCallFrame(T_CONTEXT* pContext,
 
     if (pFunctionEntry)
     {
-        uControlPc = VirtualUnwindNonLeafCallFrame(pContext, pContextPointers, pFunctionEntry, uImageBase);
+    #ifdef HOST_64BIT
+        UINT64              EstablisherFrame;
+    #else  // HOST_64BIT
+        DWORD               EstablisherFrame;
+    #endif // HOST_64BIT
+        PVOID               HandlerData;
+
+        RtlVirtualUnwind(0,
+                         uImageBase,
+                         uControlPc,
+                         pFunctionEntry,
+                         pContext,
+                         &HandlerData,
+                         &EstablisherFrame,
+                         pContextPointers);
+
+        uControlPc = GetIP(pContext);
     }
     else
     {
@@ -658,54 +681,6 @@ PCODE Thread::VirtualUnwindLeafCallFrame(T_CONTEXT* pContext)
     SetIP(pContext, uControlPc);
 
 
-    return uControlPc;
-}
-
-// static
-PCODE Thread::VirtualUnwindNonLeafCallFrame(T_CONTEXT* pContext, KNONVOLATILE_CONTEXT_POINTERS* pContextPointers,
-    PT_RUNTIME_FUNCTION pFunctionEntry, UINT_PTR uImageBase)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        PRECONDITION(CheckPointer(pContext, NULL_NOT_OK));
-        PRECONDITION(CheckPointer(pContextPointers, NULL_OK));
-        PRECONDITION(CheckPointer(pFunctionEntry, NULL_OK));
-    }
-    CONTRACTL_END;
-
-    PCODE           uControlPc = GetIP(pContext);
-#ifdef HOST_64BIT
-    UINT64              EstablisherFrame;
-#else  // HOST_64BIT
-    DWORD               EstablisherFrame;
-#endif // HOST_64BIT
-    PVOID               HandlerData;
-
-    if (NULL == pFunctionEntry)
-    {
-#ifndef TARGET_UNIX
-        pFunctionEntry  = RtlLookupFunctionEntry(uControlPc,
-                                                 ARM_ONLY((DWORD*))(&uImageBase),
-                                                 NULL);
-#endif
-        if (NULL == pFunctionEntry)
-        {
-            return NULL;
-        }
-    }
-
-    RtlVirtualUnwind(NULL,
-                     uImageBase,
-                     uControlPc,
-                     pFunctionEntry,
-                     pContext,
-                     &HandlerData,
-                     &EstablisherFrame,
-                     pContextPointers);
-
-    uControlPc = GetIP(pContext);
     return uControlPc;
 }
 
@@ -1158,9 +1133,8 @@ BOOL StackFrameIterator::Init(Thread *    pThread,
 
 #endif // FEATURE_HIJACK
 
-    // FRAME_TOP and NULL must be distinct values. This assert
-    // will fire if someone changes this.
-    static_assert_no_msg(FRAME_TOP_VALUE != NULL);
+    // FRAME_TOP must not be 0/NULL.
+    static_assert_no_msg(FRAME_TOP_VALUE != 0);
 
     m_frameState = SFITER_UNINITIALIZED;
 
@@ -1454,7 +1428,7 @@ void StackFrameIterator::ResetCrawlFrame()
     m_crawl.isProfilerDoStackSnapshot = !!(this->m_flags & PROFILER_DO_STACK_SNAPSHOT);
     m_crawl.isNoFrameTransition = false;
 
-    m_crawl.taNoFrameTransitionMarker = NULL;
+    m_crawl.taNoFrameTransitionMarker = (TADDR)NULL;
 
 #if defined(FEATURE_EH_FUNCLETS)
     m_crawl.isFilterFunclet       = false;
