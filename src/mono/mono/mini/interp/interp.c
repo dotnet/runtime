@@ -3494,15 +3494,15 @@ interp_create_method_pointer (MonoMethod *method, gboolean compile, MonoError *e
 	 * if we really care about those architectures (arm).
 	 */
 
-	bool skipWrapper = false;
+	bool skip_wrapper = false;
 #ifdef MONO_ARCH_HAVE_SWIFTCALL
 	if (mono_method_signature_has_ext_callconv (sig, MONO_EXT_CALLCONV_SWIFTCALL))
 		/* Methods with Swift cconv should go to trampoline */
-		skipWrapper = true;
+		skip_wrapper = true;
 #endif
 
 	MonoMethod *wrapper = NULL;
-	if (!skipWrapper) {
+	if (!skip_wrapper) {
 		wrapper = mini_get_interp_in_wrapper (sig);
 		entry_wrapper = mono_jit_compile_method_jit_only (wrapper, error);
 	}
