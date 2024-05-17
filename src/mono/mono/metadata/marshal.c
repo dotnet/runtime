@@ -6603,7 +6603,8 @@ typedef enum {
 	SWIFT_DOUBLE,
 } SwiftPhysicalLoweringKind;
 
-static int get_swift_lowering_alignment (SwiftPhysicalLoweringKind kind) {
+static int get_swift_lowering_alignment (SwiftPhysicalLoweringKind kind) 
+{
 	switch (kind) {
 	case SWIFT_INT64:
 	case SWIFT_DOUBLE:
@@ -6615,7 +6616,8 @@ static int get_swift_lowering_alignment (SwiftPhysicalLoweringKind kind) {
 	}
 }
 
-static void set_lowering_range(guint8* lowered_bytes, guint32 offset, guint32 size, SwiftPhysicalLoweringKind kind) {
+static void set_lowering_range(guint8* lowered_bytes, guint32 offset, guint32 size, SwiftPhysicalLoweringKind kind) 
+{
 	bool force_opaque = false;
 	
 	if (offset != ALIGN_TO(offset, get_swift_lowering_alignment(kind))) {
@@ -6646,7 +6648,8 @@ static void set_lowering_range(guint8* lowered_bytes, guint32 offset, guint32 si
 
 static void record_struct_field_physical_lowering (guint8* lowered_bytes, MonoType* type, guint32 offset);
 
-static void record_inlinearray_struct_physical_lowering (guint8* lowered_bytes, MonoClass* klass, guint32 offset) {
+static void record_inlinearray_struct_physical_lowering (guint8* lowered_bytes, MonoClass* klass, guint32 offset) 
+{
 	// Get the first field and record its physical lowering N times
 	MonoClassField* field = mono_class_get_fields_internal (klass, NULL);
 	MonoType* fieldType = field->type;
@@ -6676,7 +6679,10 @@ static void record_struct_physical_lowering (guint8* lowered_bytes, MonoClass* k
 	}
 }
 
-static void record_struct_field_physical_lowering (guint8* lowered_bytes, MonoType* type, guint32 offset) {
+static void record_struct_field_physical_lowering (guint8* lowered_bytes, MonoType* type, guint32 offset) 
+{
+	int align;
+
 	// Normalize pointer types to IntPtr and resolve generic classes.
 	// We don't need to care about specific pointer types at this ABI level.
 	if (type->type == MONO_TYPE_PTR || type->type == MONO_TYPE_FNPTR) {
@@ -6704,7 +6710,6 @@ static void record_struct_field_physical_lowering (guint8* lowered_bytes, MonoTy
 			kind = SWIFT_DOUBLE;
 		}
 
-		int align;
 		set_lowering_range(lowered_bytes, offset, mono_type_size(type, &align), kind);
 	}
 }
