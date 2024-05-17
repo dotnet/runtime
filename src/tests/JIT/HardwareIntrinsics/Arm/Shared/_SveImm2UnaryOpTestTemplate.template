@@ -37,7 +37,7 @@ namespace JIT.HardwareIntrinsics.Arm
                 }
 
                 // Validates calling via reflection works, using Unsafe.Read
-                // test.RunReflectionScenario_UnsafeRead();
+                test.RunReflectionScenario_UnsafeRead();
 
                 // Validates passing a local works, using Unsafe.Read
                 test.RunLclVarScenario_UnsafeRead();
