@@ -29,6 +29,18 @@ namespace System.Collections.Generic
             _items[_count++] = item;
         }
 
+#if NET
+        public void Append(scoped ReadOnlySpan<T> newItems)
+        {
+            if (newItems.Length == 0)
+                return;
+
+            EnsureCapacity(_count + newItems.Length);
+            newItems.CopyTo(_items.AsSpan(_count));
+            _count += newItems.Length;
+        }
+#endif
+
         public void Append(T[] newItems)
         {
             Append(newItems, 0, newItems.Length);
