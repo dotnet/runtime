@@ -3211,9 +3211,8 @@ interp_entry_from_trampoline (gpointer ccontext_untyped, gpointer rmethod_untype
 			size = MINT_STACK_SLOT_SIZE;
 		}
 #ifdef MONO_ARCH_HAVE_SWIFTCALL
-		if (swift_error_arg_index >= 0 && swift_error_arg_index == i) {
-			newsp->data.p = swift_error_pointer;	
-		}
+		if (swift_error_arg_index >= 0 && swift_error_arg_index == i)
+			newsp->data.p = swift_error_pointer;
 #endif
 		newsp = STACK_ADD_BYTES (newsp, size);
 	}
@@ -3226,9 +3225,8 @@ interp_entry_from_trampoline (gpointer ccontext_untyped, gpointer rmethod_untype
 	MONO_EXIT_GC_UNSAFE;
 
 #ifdef MONO_ARCH_HAVE_SWIFTCALL
-	if (swift_error_arg_index >= 0) {
+	if (swift_error_arg_index >= 0)
 		*(gpointer*)swift_error_data = *(gpointer*)swift_error_pointer;
-	}
 #endif
 
 	context->stack_pointer = (guchar*)sp;
