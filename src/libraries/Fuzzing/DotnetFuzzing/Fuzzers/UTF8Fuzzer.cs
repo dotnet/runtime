@@ -11,7 +11,7 @@ namespace DotnetFuzzing.Fuzzers;
 internal sealed class UTF8Fuzzer : IFuzzer
 {
     public string[] TargetAssemblies => [];
-    public string[] TargetCoreLibPrefixes => ["System.Text"];
+    public string[] TargetCoreLibPrefixes { get; } = ["System.Text"];
 
     private static readonly Encoding s_encodingWithCustomReplacement =
         Encoding.GetEncoding("utf-8", EncoderFallback.ExceptionFallback, new DecoderReplacementFallback("{BAD}"));

@@ -8,7 +8,7 @@ namespace DotnetFuzzing.Fuzzers;
 
 internal sealed class HttpHeadersFuzzer : IFuzzer
 {
-    public string[] TargetAssemblies => ["System.Net.Http"];
+    public string[] TargetAssemblies { get; } = ["System.Net.Http"];
     public string[] TargetCoreLibPrefixes => [];
 
     // https://github.com/dotnet/runtime/blob/main/src/libraries/System.Net.Http/src/System/Net/Http/Headers/KnownHeaders.cs

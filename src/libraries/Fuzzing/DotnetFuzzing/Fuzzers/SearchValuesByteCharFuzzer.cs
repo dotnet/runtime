@@ -10,7 +10,7 @@ namespace DotnetFuzzing.Fuzzers;
 internal sealed class SearchValuesByteCharFuzzer : IFuzzer
 {
     public string[] TargetAssemblies => [];
-    public string[] TargetCoreLibPrefixes => ["System.Buffers", "System.SpanHelpers", "System.PackedSpanHelpers"];
+    public string[] TargetCoreLibPrefixes { get; } = ["System.Buffers", "System.SpanHelpers", "System.PackedSpanHelpers"];
 
     public void FuzzTarget(ReadOnlySpan<byte> bytes)
     {

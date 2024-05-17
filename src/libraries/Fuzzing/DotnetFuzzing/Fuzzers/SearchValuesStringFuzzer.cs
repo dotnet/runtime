@@ -9,7 +9,7 @@ namespace DotnetFuzzing.Fuzzers;
 internal sealed class SearchValuesStringFuzzer : IFuzzer
 {
     public string[] TargetAssemblies => [];
-    public string[] TargetCoreLibPrefixes => ["System.Buffers", "System.Globalization"];
+    public string[] TargetCoreLibPrefixes { get; } = ["System.Buffers", "System.Globalization"];
 
     public void FuzzTarget(ReadOnlySpan<byte> bytes)
     {
