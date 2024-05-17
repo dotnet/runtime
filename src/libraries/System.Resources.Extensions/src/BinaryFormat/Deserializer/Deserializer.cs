@@ -1,6 +1,9 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
 using System.Runtime.Serialization.BinaryFormat;
@@ -80,7 +83,7 @@ internal sealed partial class Deserializer : IDeserializer
 
     /// <inheritdoc cref="IDeserializer.IncompleteObjects"/>
     private readonly HashSet<int> _incompleteObjects = [];
-    public IReadOnlySet<int> IncompleteObjects => _incompleteObjects;
+    public HashSet<int> IncompleteObjects => _incompleteObjects;
 
     // For a given object id, the set of ids that it is waiting on to complete.
     private Dictionary<int, HashSet<int>>? _incompleteDependencies;
@@ -135,8 +138,10 @@ internal sealed partial class Deserializer : IDeserializer
 
         // Complete all pending SerializationInfo objects.
         int pendingCount = _pendingSerializationInfo?.Count ?? 0;
-        while (_pendingSerializationInfo is not null && _pendingSerializationInfo.TryDequeue(out PendingSerializationInfo? pending))
+        while (_pendingSerializationInfo is not null && _pendingSerializationInfo.Count > 0)
         {
+            PendingSerializationInfo? pending = _pendingSerializationInfo.Dequeue();
+
             // Using pendingCount to only requeue on the first pass.
             if (--pendingCount >= 0
                 && _pendingSerializationInfo.Count != 0
@@ -187,8 +192,9 @@ internal sealed partial class Deserializer : IDeserializer
         _parseStack.Push(rootId);
         _parserStack.Push(parser);
 
-        while (_parserStack.TryPop(out ObjectRecordDeserializer? currentParser))
+        while (_parserStack.Count > 0)
         {
+            ObjectRecordDeserializer? currentParser = _parserStack.Pop();
             int currentId = _parseStack.Pop();
             Debug.Assert(currentId == currentParser.ObjectRecord.ObjectId);
 
@@ -237,7 +243,7 @@ internal sealed partial class Deserializer : IDeserializer
             {
                 RecordType.BinaryObjectString => ((PrimitiveTypeRecord<string>)record).Value,
                 RecordType.MemberPrimitiveTyped => record.GetMemberPrimitiveTypedValue(),
-                RecordType.ArraySingleString => ((ArrayRecord<string>)record).ToArray(maxLength: Array.MaxLength),
+                RecordType.ArraySingleString => ((ArrayRecord<string>)record).ToArray(maxLength: ArrayRecordDeserializer.MaxArrayLength),
                 RecordType.ArraySinglePrimitive => ArrayRecordDeserializer.GetArraySinglePrimitive(record),
                 RecordType.BinaryArray => ArrayRecordDeserializer.GetSimpleBinaryArray((ArrayRecord)record, _typeResolver),
                 _ => null
@@ -318,8 +324,9 @@ internal sealed partial class Deserializer : IDeserializer
         _pendingCompletions.Enqueue(id);
         Id completed = Id.Null;
 
-        while (_pendingCompletions.TryDequeue(out int completedId))
+        while (_pendingCompletions.Count > 0)
         {
+            int completedId = _pendingCompletions.Dequeue();
             _incompleteObjects.Remove(completedId);
 
             // When we've recursed, we've done so because there are no more dependencies for the current id, so we can
@@ -367,8 +374,11 @@ internal sealed partial class Deserializer : IDeserializer
 
             Debug.Assert(_pendingUpdates is not null);
 
-            foreach ((int incompleteId, HashSet<int> dependencies) in _incompleteDependencies)
+            foreach (KeyValuePair<int, HashSet<int>> pair in _incompleteDependencies)
             {
+                int incompleteId = pair.Key;
+                HashSet<int> dependencies = pair.Value;
+
                 if (!dependencies.Remove(completedId))
                 {
                     continue;

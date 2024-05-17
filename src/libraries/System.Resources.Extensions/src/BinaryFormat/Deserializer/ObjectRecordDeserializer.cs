@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
 using System.Runtime.Serialization.BinaryFormat;
@@ -9,9 +10,6 @@ namespace System.Windows.Forms.BinaryFormat.Deserializer;
 
 #pragma warning disable SYSLIB0050 // Type or member is obsolete
 
-/// <summary>
-///  Base class for <see cref="BinaryFormat.ObjectRecord"/> deserialization.
-/// </summary>
 internal abstract partial class ObjectRecordDeserializer
 {
     // Used to indicate that the value is missing from the deserialized objects.

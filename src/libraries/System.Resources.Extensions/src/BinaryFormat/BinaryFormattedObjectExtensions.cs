@@ -2,8 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Drawing;
 using System.Runtime.Serialization.BinaryFormat;
+using System.Windows.Forms.BinaryFormat.Deserializer;
 
 namespace System.Windows.Forms.BinaryFormat;
 
@@ -162,22 +166,22 @@ internal static class BinaryFormattedObjectExtensions
             // BinaryFormatter serializes the entire backing array, so we need to trim it down to the size of the list.
             list = arrayRecord switch
             {
-                ArrayRecord<string> ar => ar.ToArray(maxLength: Array.MaxLength).CreateTrimmedList(size),
-                ArrayRecord<bool> ar => ar.ToArray(maxLength: Array.MaxLength).CreateTrimmedList(size),
-                ArrayRecord<byte> ar => ar.ToArray(maxLength: Array.MaxLength).CreateTrimmedList(size),
-                ArrayRecord<sbyte> ar => ar.ToArray(maxLength: Array.MaxLength).CreateTrimmedList(size),
-                ArrayRecord<char> ar => ar.ToArray(maxLength: Array.MaxLength).CreateTrimmedList(size),
-                ArrayRecord<short> ar => ar.ToArray(maxLength: Array.MaxLength).CreateTrimmedList(size),
-                ArrayRecord<ushort> ar => ar.ToArray(maxLength: Array.MaxLength).CreateTrimmedList(size),
-                ArrayRecord<int> ar => ar.ToArray(maxLength: Array.MaxLength).CreateTrimmedList(size),
-                ArrayRecord<uint> ar => ar.ToArray(maxLength: Array.MaxLength).CreateTrimmedList(size),
-                ArrayRecord<long> ar => ar.ToArray(maxLength: Array.MaxLength).CreateTrimmedList(size),
-                ArrayRecord<ulong> ar => ar.ToArray(maxLength: Array.MaxLength).CreateTrimmedList(size),
-                ArrayRecord<float> ar => ar.ToArray(maxLength: Array.MaxLength).CreateTrimmedList(size),
-                ArrayRecord<double> ar => ar.ToArray(maxLength: Array.MaxLength).CreateTrimmedList(size),
-                ArrayRecord<decimal> ar => ar.ToArray(maxLength: Array.MaxLength).CreateTrimmedList(size),
-                ArrayRecord<TimeSpan> ar => ar.ToArray(maxLength: Array.MaxLength).CreateTrimmedList(size),
-                ArrayRecord<DateTime> ar => ar.ToArray(maxLength: Array.MaxLength).CreateTrimmedList(size),
+                ArrayRecord<string> ar => ar.ToArray(maxLength: ArrayRecordDeserializer.MaxArrayLength).CreateTrimmedList(size),
+                ArrayRecord<bool> ar => ar.ToArray(maxLength: ArrayRecordDeserializer.MaxArrayLength).CreateTrimmedList(size),
+                ArrayRecord<byte> ar => ar.ToArray(maxLength: ArrayRecordDeserializer.MaxArrayLength).CreateTrimmedList(size),
+                ArrayRecord<sbyte> ar => ar.ToArray(maxLength: ArrayRecordDeserializer.MaxArrayLength).CreateTrimmedList(size),
+                ArrayRecord<char> ar => ar.ToArray(maxLength: ArrayRecordDeserializer.MaxArrayLength).CreateTrimmedList(size),
+                ArrayRecord<short> ar => ar.ToArray(maxLength: ArrayRecordDeserializer.MaxArrayLength).CreateTrimmedList(size),
+                ArrayRecord<ushort> ar => ar.ToArray(maxLength: ArrayRecordDeserializer.MaxArrayLength).CreateTrimmedList(size),
+                ArrayRecord<int> ar => ar.ToArray(maxLength: ArrayRecordDeserializer.MaxArrayLength).CreateTrimmedList(size),
+                ArrayRecord<uint> ar => ar.ToArray(maxLength: ArrayRecordDeserializer.MaxArrayLength).CreateTrimmedList(size),
+                ArrayRecord<long> ar => ar.ToArray(maxLength: ArrayRecordDeserializer.MaxArrayLength).CreateTrimmedList(size),
+                ArrayRecord<ulong> ar => ar.ToArray(maxLength: ArrayRecordDeserializer.MaxArrayLength).CreateTrimmedList(size),
+                ArrayRecord<float> ar => ar.ToArray(maxLength: ArrayRecordDeserializer.MaxArrayLength).CreateTrimmedList(size),
+                ArrayRecord<double> ar => ar.ToArray(maxLength: ArrayRecordDeserializer.MaxArrayLength).CreateTrimmedList(size),
+                ArrayRecord<decimal> ar => ar.ToArray(maxLength: ArrayRecordDeserializer.MaxArrayLength).CreateTrimmedList(size),
+                ArrayRecord<TimeSpan> ar => ar.ToArray(maxLength: ArrayRecordDeserializer.MaxArrayLength).CreateTrimmedList(size),
+                ArrayRecord<DateTime> ar => ar.ToArray(maxLength: ArrayRecordDeserializer.MaxArrayLength).CreateTrimmedList(size),
                 _ => throw new InvalidOperationException()
             };
 
@@ -241,22 +245,22 @@ internal static class BinaryFormattedObjectExtensions
 
             value = format.RootRecord switch
             {
-                ArrayRecord<string> ar => ar.ToArray(maxLength: Array.MaxLength),
-                ArrayRecord<bool> ar => ar.ToArray(maxLength: Array.MaxLength),
-                ArrayRecord<byte> ar => ar.ToArray(maxLength: Array.MaxLength),
-                ArrayRecord<sbyte> ar => ar.ToArray(maxLength: Array.MaxLength),
-                ArrayRecord<char> ar => ar.ToArray(maxLength: Array.MaxLength),
-                ArrayRecord<short> ar => ar.ToArray(maxLength: Array.MaxLength),
-                ArrayRecord<ushort> ar => ar.ToArray(maxLength: Array.MaxLength),
-                ArrayRecord<int> ar => ar.ToArray(maxLength: Array.MaxLength),
-                ArrayRecord<uint> ar => ar.ToArray(maxLength: Array.MaxLength),
-                ArrayRecord<long> ar => ar.ToArray(maxLength: Array.MaxLength),
-                ArrayRecord<ulong> ar => ar.ToArray(maxLength: Array.MaxLength),
-                ArrayRecord<float> ar => ar.ToArray(maxLength: Array.MaxLength),
-                ArrayRecord<double> ar => ar.ToArray(maxLength: Array.MaxLength),
-                ArrayRecord<decimal> ar => ar.ToArray(maxLength: Array.MaxLength),
-                ArrayRecord<TimeSpan> ar => ar.ToArray(maxLength: Array.MaxLength),
-                ArrayRecord<DateTime> ar => ar.ToArray(maxLength: Array.MaxLength),
+                ArrayRecord<string> ar => ar.ToArray(maxLength: ArrayRecordDeserializer.MaxArrayLength),
+                ArrayRecord<bool> ar => ar.ToArray(maxLength: ArrayRecordDeserializer.MaxArrayLength),
+                ArrayRecord<byte> ar => ar.ToArray(maxLength: ArrayRecordDeserializer.MaxArrayLength),
+                ArrayRecord<sbyte> ar => ar.ToArray(maxLength: ArrayRecordDeserializer.MaxArrayLength),
+                ArrayRecord<char> ar => ar.ToArray(maxLength: ArrayRecordDeserializer.MaxArrayLength),
+                ArrayRecord<short> ar => ar.ToArray(maxLength: ArrayRecordDeserializer.MaxArrayLength),
+                ArrayRecord<ushort> ar => ar.ToArray(maxLength: ArrayRecordDeserializer.MaxArrayLength),
+                ArrayRecord<int> ar => ar.ToArray(maxLength: ArrayRecordDeserializer.MaxArrayLength),
+                ArrayRecord<uint> ar => ar.ToArray(maxLength: ArrayRecordDeserializer.MaxArrayLength),
+                ArrayRecord<long> ar => ar.ToArray(maxLength: ArrayRecordDeserializer.MaxArrayLength),
+                ArrayRecord<ulong> ar => ar.ToArray(maxLength: ArrayRecordDeserializer.MaxArrayLength),
+                ArrayRecord<float> ar => ar.ToArray(maxLength: ArrayRecordDeserializer.MaxArrayLength),
+                ArrayRecord<double> ar => ar.ToArray(maxLength: ArrayRecordDeserializer.MaxArrayLength),
+                ArrayRecord<decimal> ar => ar.ToArray(maxLength: ArrayRecordDeserializer.MaxArrayLength),
+                ArrayRecord<TimeSpan> ar => ar.ToArray(maxLength: ArrayRecordDeserializer.MaxArrayLength),
+                ArrayRecord<DateTime> ar => ar.ToArray(maxLength: ArrayRecordDeserializer.MaxArrayLength),
                 _ => throw new InvalidOperationException()
             };
 
@@ -300,8 +304,8 @@ internal static class BinaryFormattedObjectExtensions
             }
 
             Hashtable temp = new((int)keysRecord.Length);
-            object?[] keys = keysRecord.ToArray(maxLength: Array.MaxLength);
-            object?[] values = valuesRecord.ToArray(maxLength: Array.MaxLength);
+            object?[] keys = keysRecord.ToArray(maxLength: ArrayRecordDeserializer.MaxArrayLength);
+            object?[] values = valuesRecord.ToArray(maxLength: ArrayRecordDeserializer.MaxArrayLength);
             for (int i = 0; i < keys.Length; i++)
             {
                 object? key = keys[i];

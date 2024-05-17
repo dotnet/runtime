@@ -1,18 +1,23 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.Linq;
 using System.Runtime.Serialization.BinaryFormat;
 
 namespace System.Windows.Forms.BinaryFormat.Deserializer;
 
 internal sealed class ArrayRecordDeserializer : ObjectRecordDeserializer
 {
+    internal const int MaxArrayLength = 2147483591;
+
     private readonly ArrayRecord _arrayRecord;
     private readonly Type _elementType;
     private readonly Array _arrayOfClassRecords;
     private readonly Array _arrayOfT;
-    private int _index;
-    private bool _hasFixups;
+    private readonly int[] _lengths, _indices;
+    private bool _hasFixups, _canIterate;
 
     [RequiresUnreferencedCode("Calls System.Windows.Forms.BinaryFormat.BinaryFormattedObject.TypeResolver.GetType(TypeName)")]
     internal ArrayRecordDeserializer(ArrayRecord arrayRecord, IDeserializer deserializer)
@@ -31,7 +36,7 @@ internal sealed class ArrayRecordDeserializer : ObjectRecordDeserializer
         };
         // Tricky part: for arrays of classes/structs the following record allocates and array of class records
         // (because the payload reader can not load types, instantiate objects and rehydrate them)
-        _arrayOfClassRecords = arrayRecord.ToArray(expectedArrayType, maxLength: Array.MaxLength);
+        _arrayOfClassRecords = arrayRecord.ToArray(expectedArrayType, maxLength: MaxArrayLength);
         // Now we need to create an array of the same length, but of a different, exact type
         Type elementType = _arrayOfClassRecords.GetType();
         while (elementType.IsArray)
@@ -46,13 +51,18 @@ internal sealed class ArrayRecordDeserializer : ObjectRecordDeserializer
         }
 
         Object = _arrayOfT = Array.CreateInstance(_elementType, lengths);
+        _lengths = lengths;
+        _indices = new int[lengths.Length];
     }
 
     internal override Id Continue()
     {
-        while (_index < _arrayRecord.Length)
+        int[] indices = _indices;
+        int[] lengths = _lengths;
+
+        while (_canIterate)
         {
-            (object? memberValue, Id reference) = UnwrapMemberValue(_arrayOfClassRecords.GetArrayData<object?>()[_index]);
+            (object? memberValue, Id reference) = UnwrapMemberValue(_arrayOfClassRecords.GetValue(indices));
 
             if (s_missingValueSentinel == memberValue)
             {
@@ -64,27 +74,28 @@ internal sealed class ArrayRecordDeserializer : ObjectRecordDeserializer
             {
                 // Need to track a fixup for this index.
                 _hasFixups = true;
-                Deserializer.PendValueUpdater(new ArrayUpdater(_arrayRecord.ObjectId, reference, _index));
+                Deserializer.PendValueUpdater(new ArrayUpdater(_arrayRecord.ObjectId, reference, indices.ToArray()));
             }
 
-            if (memberValue is null && !_elementType.IsValueType)
+            _arrayOfT.SetValue(memberValue, indices);
+
+            int dimension = indices.Length - 1;
+            while (dimension >= 0)
             {
-                // No point in setting a null. If we're a value type, let it flow to throw when setting.
-                _index++;
-                continue;
+                indices[dimension]++;
+                if (indices[dimension] < lengths[dimension])
+                {
+                    break;
+                }
+
+                indices[dimension] = 0;
+                dimension--;
             }
 
-            if (_elementType.IsValueType)
+            if (dimension < 0)
             {
-                _arrayOfT.SetArrayValueByFlattenedIndex(memberValue, _index);
+                _canIterate = false;
             }
-            else
-            {
-                Span<object?> flatSpan = _arrayOfT.GetArrayData<object?>();
-                flatSpan[_index] = memberValue;
-            }
-
-            _index++;
         }
 
         // No more missing member refs.
@@ -99,21 +110,21 @@ internal sealed class ArrayRecordDeserializer : ObjectRecordDeserializer
 
     internal static Array GetArraySinglePrimitive(SerializationRecord record) => record switch
     {
-        ArrayRecord<bool> primitiveArray => primitiveArray.ToArray(maxLength: Array.MaxLength),
-        ArrayRecord<byte> primitiveArray => primitiveArray.ToArray(maxLength: Array.MaxLength),
-        ArrayRecord<sbyte> primitiveArray => primitiveArray.ToArray(maxLength: Array.MaxLength),
-        ArrayRecord<char> primitiveArray => primitiveArray.ToArray(maxLength: Array.MaxLength),
-        ArrayRecord<short> primitiveArray => primitiveArray.ToArray(maxLength: Array.MaxLength),
-        ArrayRecord<ushort> primitiveArray => primitiveArray.ToArray(maxLength: Array.MaxLength),
-        ArrayRecord<int> primitiveArray => primitiveArray.ToArray(maxLength: Array.MaxLength),
-        ArrayRecord<uint> primitiveArray => primitiveArray.ToArray(maxLength: Array.MaxLength),
-        ArrayRecord<long> primitiveArray => primitiveArray.ToArray(maxLength: Array.MaxLength),
-        ArrayRecord<ulong> primitiveArray => primitiveArray.ToArray(maxLength: Array.MaxLength),
-        ArrayRecord<float> primitiveArray => primitiveArray.ToArray(maxLength: Array.MaxLength),
-        ArrayRecord<double> primitiveArray => primitiveArray.ToArray(maxLength: Array.MaxLength),
-        ArrayRecord<decimal> primitiveArray => primitiveArray.ToArray(maxLength: Array.MaxLength),
-        ArrayRecord<DateTime> primitiveArray => primitiveArray.ToArray(maxLength: Array.MaxLength),
-        ArrayRecord<TimeSpan> primitiveArray => primitiveArray.ToArray(maxLength: Array.MaxLength),
+        ArrayRecord<bool> primitiveArray => primitiveArray.ToArray(maxLength: MaxArrayLength),
+        ArrayRecord<byte> primitiveArray => primitiveArray.ToArray(maxLength: MaxArrayLength),
+        ArrayRecord<sbyte> primitiveArray => primitiveArray.ToArray(maxLength: MaxArrayLength),
+        ArrayRecord<char> primitiveArray => primitiveArray.ToArray(maxLength: MaxArrayLength),
+        ArrayRecord<short> primitiveArray => primitiveArray.ToArray(maxLength: MaxArrayLength),
+        ArrayRecord<ushort> primitiveArray => primitiveArray.ToArray(maxLength: MaxArrayLength),
+        ArrayRecord<int> primitiveArray => primitiveArray.ToArray(maxLength: MaxArrayLength),
+        ArrayRecord<uint> primitiveArray => primitiveArray.ToArray(maxLength: MaxArrayLength),
+        ArrayRecord<long> primitiveArray => primitiveArray.ToArray(maxLength: MaxArrayLength),
+        ArrayRecord<ulong> primitiveArray => primitiveArray.ToArray(maxLength: MaxArrayLength),
+        ArrayRecord<float> primitiveArray => primitiveArray.ToArray(maxLength: MaxArrayLength),
+        ArrayRecord<double> primitiveArray => primitiveArray.ToArray(maxLength: MaxArrayLength),
+        ArrayRecord<decimal> primitiveArray => primitiveArray.ToArray(maxLength: MaxArrayLength),
+        ArrayRecord<DateTime> primitiveArray => primitiveArray.ToArray(maxLength: MaxArrayLength),
+        ArrayRecord<TimeSpan> primitiveArray => primitiveArray.ToArray(maxLength: MaxArrayLength),
         _ => throw new NotSupportedException(),
     };
 
@@ -144,7 +155,7 @@ internal sealed class ArrayRecordDeserializer : ObjectRecordDeserializer
             _ => arrayRecordElementType.MakeArrayType()
         };
 
-        return arrayRecord.ToArray(expectedArrayType, maxLength: Array.MaxLength);
+        return arrayRecord.ToArray(expectedArrayType, maxLength: MaxArrayLength);
 
         static bool HasBuiltInSupport(Type elementType)
             => elementType == typeof(string)

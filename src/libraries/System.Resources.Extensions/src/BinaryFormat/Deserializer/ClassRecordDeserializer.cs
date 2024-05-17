@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
 using System.Runtime.Serialization.BinaryFormat;
@@ -40,7 +41,13 @@ internal abstract class ClassRecordDeserializer : ObjectRecordDeserializer
             throw new SerializationException($"Type '{type}' is not marked as serializable.");
         }
 
-        object @object = RuntimeHelpers.GetUninitializedObject(type);
+        object @object =
+#if NETCOREAPP
+            RuntimeHelpers.GetUninitializedObject(type);
+#else
+            // adsitnik: is this the best option we have?
+            Activator.CreateInstance(type);
+#endif
 
         // Invoke any OnDeserializing methods.
         SerializationEvents.GetOnDeserializingForType(type, @object)?.Invoke(deserializer.Options.StreamingContext);

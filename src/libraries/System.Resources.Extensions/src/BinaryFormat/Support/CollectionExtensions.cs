@@ -1,6 +1,8 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
+
 namespace System.Collections.Generic;
 
 internal static class CollectionExtensions
@@ -15,7 +17,7 @@ internal static class CollectionExtensions
     /// </remarks>
     internal static List<T> CreateTrimmedList<T>(this IReadOnlyList<T> readOnlyList, int count)
     {
-        ArgumentOutOfRangeException.ThrowIfLessThan(readOnlyList.Count, count, nameof(count));
+        Debug.Assert(count >= readOnlyList.Count);
 
         // List<T> will use ICollection<T>.CopyTo if it's available, which is faster than iterating over the list.
         // If we just have an array this can be done easily with ArraySegment<T>.
