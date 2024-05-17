@@ -3,10 +3,7 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.Numerics;
 using System.Runtime;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 using Internal.Runtime.Augments;
@@ -187,13 +184,13 @@ namespace Internal.Runtime.CompilerServices
             int hash1 = 0x449b3ad6;
             int hash2 = (length << 3) + 0x55399219;
 
-            hash1 = (hash1 + (int)BitOperations.RotateLeft((uint)hash1, 5)) ^ hashCode1;
-            hash2 = (hash2 + (int)BitOperations.RotateLeft((uint)hash2, 5)) ^ hashCode2;
-            hash1 = (hash1 + (int)BitOperations.RotateLeft((uint)hash1, 5)) ^ hashCode3;
-            hash2 = (hash2 + (int)BitOperations.RotateLeft((uint)hash2, 5)) ^ hashCode4;
+            hash1 = (hash1 + int.RotateLeft(hash1, 5)) ^ hashCode1;
+            hash2 = (hash2 + int.RotateLeft(hash2, 5)) ^ hashCode2;
+            hash1 = (hash1 + int.RotateLeft(hash1, 5)) ^ hashCode3;
+            hash2 = (hash2 + int.RotateLeft(hash2, 5)) ^ hashCode4;
 
-            hash1 += (int)BitOperations.RotateLeft((uint)hash1, 8);
-            hash2 += (int)BitOperations.RotateLeft((uint)hash2, 8);
+            hash1 += int.RotateLeft(hash1, 8);
+            hash2 += int.RotateLeft(hash2, 8);
 
             return hash1 ^ hash2;
         }

@@ -3,11 +3,9 @@
 
 using System;
 using System.Collections.Generic;
-using System.Runtime.CompilerServices;
 using Internal.Text;
 using Internal.TypeSystem;
 using ILCompiler.DependencyAnalysisFramework;
-using System.Numerics;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -312,7 +310,7 @@ namespace ILCompiler.DependencyAnalysis
                     foreach (NativeLayoutVertexNode node in Vertices)
                     {
                         hashcode ^= node.GetHashCode();
-                        hashcode = (int)BitOperations.RotateLeft((uint)hashcode, 5);
+                        hashcode = int.RotateLeft(hashcode, 5);
                     }
                     return hashcode;
                 }
@@ -345,7 +343,7 @@ namespace ILCompiler.DependencyAnalysis
                     foreach (uint u in obj)
                     {
                         hashcode ^= (int)u;
-                        hashcode = (int)BitOperations.RotateLeft((uint)hashcode, 5);
+                        hashcode = int.RotateLeft(hashcode, 5);
                     }
 
                     return hashcode;

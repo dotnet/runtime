@@ -2,9 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.ComponentModel;
-using System.Numerics;
-using System.Reflection;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
 
@@ -59,7 +56,7 @@ namespace System
             RuntimeAugments.TypeLoaderCallbacks.GetRuntimeFieldHandleComponents(this, out declaringType, out fieldName);
 
             int hashcode = declaringType.GetHashCode();
-            return (hashcode + (int)BitOperations.RotateLeft((uint)hashcode, 13)) ^ fieldName.GetHashCode();
+            return (hashcode + int.RotateLeft(hashcode, 13)) ^ fieldName.GetHashCode();
         }
 
         public static RuntimeFieldHandle FromIntPtr(IntPtr value) => new RuntimeFieldHandle(value);

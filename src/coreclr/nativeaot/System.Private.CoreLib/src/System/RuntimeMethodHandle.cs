@@ -2,9 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.ComponentModel;
-using System.Numerics;
-using System.Reflection;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
 
@@ -80,13 +77,13 @@ namespace System
             RuntimeAugments.TypeLoaderCallbacks.GetRuntimeMethodHandleComponents(this, out declaringType, out nameAndSignature, out genericArgs);
 
             int hashcode = declaringType.GetHashCode();
-            hashcode = (hashcode + (int)BitOperations.RotateLeft((uint)hashcode, 13)) ^ nameAndSignature.Name.GetHashCode();
+            hashcode = (hashcode + int.RotateLeft(hashcode, 13)) ^ nameAndSignature.Name.GetHashCode();
             if (genericArgs != null)
             {
                 for (int i = 0; i < genericArgs.Length; i++)
                 {
                     int argumentHashCode = genericArgs[i].GetHashCode();
-                    hashcode = (hashcode + (int)BitOperations.RotateLeft((uint)hashcode, 13)) ^ argumentHashCode;
+                    hashcode = (hashcode + int.RotateLeft(hashcode, 13)) ^ argumentHashCode;
                 }
             }
 

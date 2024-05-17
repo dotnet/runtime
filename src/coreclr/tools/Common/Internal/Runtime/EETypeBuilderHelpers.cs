@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
-using System.Numerics;
 
 using Internal.TypeSystem;
 
@@ -194,7 +193,7 @@ namespace Internal.Runtime
             if ((padding == 0) && (alignment == targetPointerSize))
                 return 0;
 
-            uint alignmentLog2 = (uint)BitOperations.TrailingZeroCount(alignment);
+            uint alignmentLog2 = uint.TrailingZeroCount(alignment);
 
             Debug.Assert(ValueTypePaddingMax >= padding);
 
