@@ -480,10 +480,11 @@ EXTERN_C intptr_t* RhpGetThunkData()
 }
 #endif //FEATURE_EMULATED_TLS
 
-EXTERN_C intptr_t RhGetCurrentThunkContext()
+FCIMPL0(intptr_t, RhGetCurrentThunkContext)
 {
     return tls_thunkData;
 }
+FCIMPLEND
 
 // Register the thread with OS to be notified when thread is about to be destroyed
 // It fails fast if a different thread was already registered.
