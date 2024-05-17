@@ -5,7 +5,12 @@ using System.Reflection.Metadata;
 
 namespace System.Runtime.Serialization.BinaryFormat;
 
-public sealed class PayloadOptions
+#if SYSTEM_RUNTIME_SERIALIZATION_BINARYFORMAT
+public
+#else
+internal
+#endif
+sealed class PayloadOptions
 {
     public PayloadOptions() { }
 

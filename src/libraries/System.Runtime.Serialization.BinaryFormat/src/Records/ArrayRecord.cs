@@ -5,7 +5,12 @@ using System.Reflection.Metadata;
 
 namespace System.Runtime.Serialization.BinaryFormat;
 
-public abstract class ArrayRecord : SerializationRecord
+#if SYSTEM_RUNTIME_SERIALIZATION_BINARYFORMAT
+public
+#else
+internal
+#endif
+abstract class ArrayRecord : SerializationRecord
 {
     internal const int DefaultMaxArrayLength = 64_000;
 
@@ -86,7 +91,12 @@ public abstract class ArrayRecord : SerializationRecord
     internal abstract (AllowedRecordTypes allowed, PrimitiveType primitiveType) GetAllowedRecordType();
 }
 
-public abstract class ArrayRecord<T> : ArrayRecord
+#if SYSTEM_RUNTIME_SERIALIZATION_BINARYFORMAT
+public
+#else
+internal
+#endif
+abstract class ArrayRecord<T> : ArrayRecord
 {
     private protected ArrayRecord(ArrayInfo arrayInfo) : base(arrayInfo)
     {

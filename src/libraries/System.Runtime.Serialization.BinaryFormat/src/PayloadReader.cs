@@ -8,7 +8,12 @@ using System.Text;
 
 namespace System.Runtime.Serialization.BinaryFormat;
 
-public static class PayloadReader
+#if SYSTEM_RUNTIME_SERIALIZATION_BINARYFORMAT
+public
+#else
+internal
+#endif
+static class PayloadReader
 {
     private static UTF8Encoding ThrowOnInvalidUtf8Encoding { get; } = new(false, throwOnInvalidBytes: true);
 

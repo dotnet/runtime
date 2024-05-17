@@ -15,7 +15,12 @@ namespace System.Runtime.Serialization.BinaryFormat;
 ///  </para>
 /// </remarks>
 [DebuggerDisplay("{RecordType}, {ObjectId}")]
-public abstract class SerializationRecord
+#if SYSTEM_RUNTIME_SERIALIZATION_BINARYFORMAT
+public
+#else
+internal
+#endif
+abstract class SerializationRecord
 {
     internal const int NoId = 0;
 

@@ -13,7 +13,12 @@ namespace System.Runtime.Serialization.BinaryFormat;
 ///   </see>
 ///  </para>
 /// </remarks>
-public enum ArrayType : byte
+#if SYSTEM_RUNTIME_SERIALIZATION_BINARYFORMAT
+public
+#else
+internal
+#endif
+enum ArrayType : byte
 {
     /// <summary>
     ///  A single-dimensional array.

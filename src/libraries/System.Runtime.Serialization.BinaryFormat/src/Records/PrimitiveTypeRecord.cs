@@ -21,7 +21,12 @@ namespace System.Runtime.Serialization.BinaryFormat;
 /// <para>Other serialization records are represented with <seealso cref="ClassRecord"/> or <seealso cref="ArrayRecord"/>.</para>
 /// </remarks>
 [DebuggerDisplay("{Value}")]
-public abstract class PrimitiveTypeRecord<T> : SerializationRecord
+#if SYSTEM_RUNTIME_SERIALIZATION_BINARYFORMAT
+public
+#else
+internal
+#endif
+abstract class PrimitiveTypeRecord<T> : SerializationRecord
 {
     private protected PrimitiveTypeRecord(T value) => Value = value;
 

@@ -18,7 +18,12 @@ namespace System.Runtime.Serialization.BinaryFormat;
 ///   </see>.
 ///  </para>
 /// </remarks>
-public abstract class ClassRecord : SerializationRecord
+#if SYSTEM_RUNTIME_SERIALIZATION_BINARYFORMAT
+public
+#else
+internal
+#endif
+abstract class ClassRecord : SerializationRecord
 {
     private const int MaxLength = ArrayRecord.DefaultMaxArrayLength;
 

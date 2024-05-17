@@ -5,6 +5,9 @@
     <EnableDefaultItems>true</EnableDefaultItems>
     <EnableAOTAnalyzer>false</EnableAOTAnalyzer>
     <CLSCompliant>false</CLSCompliant>
+    <!-- once the APIs get approved this is going to change -->
+    <IsPackable>false</IsPackable>
+    <DefineConstants>$(DefineConstants);SYSTEM_RUNTIME_SERIALIZATION_BINARYFORMAT</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="$(LibrariesProjectRoot)\System.IO.Hashing\src\System.IO.Hashing.csproj" />

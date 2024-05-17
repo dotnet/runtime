@@ -12,7 +12,12 @@ namespace System.Runtime.Serialization.BinaryFormat;
 ///   [MS-NRBF] 2.1.2.1</see>, but only those supported by the <seealso cref="PayloadReader"/>.
 ///  </para>
 /// </remarks>
-public enum RecordType : byte
+#if SYSTEM_RUNTIME_SERIALIZATION_BINARYFORMAT
+public
+#else
+internal
+#endif
+enum RecordType : byte
 {
     SerializedStreamHeader = 0,
     ClassWithId = 1,
