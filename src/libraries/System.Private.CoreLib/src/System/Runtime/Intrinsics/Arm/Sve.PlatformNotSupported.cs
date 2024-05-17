@@ -1571,7 +1571,7 @@ namespace System.Runtime.Intrinsics.Arm
         /// svint64x4_t svld4[_s64](svbool_t pg, const int64_t *base)
         ///   LD4D {Zresult0.D - Zresult3.D}, Pg/Z, [Xbase, #0, MUL VL]
         /// </summary>
-        public static unsafe (Vector<long>, Vector<long>, Vector<long>, Vector<long>) LoadVectorx4(Vector<long> mask, long* address) { throw new PlatformNotSupportedException(); }
+        public static unsafe (Vector<long>, Vector<long>, Vector<long>, Vector<long>) Load4xVectorAndUnzip(Vector<long> mask, long* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// svint8x4_t svld4[_s8](svbool_t pg, const int8_t *base)
