@@ -85,7 +85,7 @@ Written in 2006, by:
     * [2.10.6 For more details...](#2.10.6)
   * [2.11 Using standard headers](#2.11)
     * [2.11.1 Do not use wchar_t](#2.11.1)
-	* [2.11.2 Do not use C++ standard exceptions](#2.11.2)
+	* [2.11.2 Do not use C++ Standard-defined exceptions](#2.11.2)
 	* [2.11.3 Do not use getenv on Unix platforms](#2.11.3)
   * [2.12 Is your code DAC compliant?](#2.12)
 
@@ -1268,9 +1268,9 @@ To ensure we're using a supported and easily updatable standard library implemen
 
 The `wchar_t` type is implementation-defined, with Windows and Unix-based platforms using different definitions (2 byte vs 4 byte). Use the `WCHAR` alias instead, which is always 2 bytes. The CoreCLR PAL provides implementations of a variety of the C standard `wchar_t` APIs with the `WCHAR` type instead. These methods, as well as the methods in the [CoreCLR minipal](https://github.com/dotnet/runtime/tree/main/src/coreclr/minipal) and in the [repo minipal](https://github.com/dotnet/runtime/tree/main/src/native/minipal) should be used. In these minipals, the APIs may use `char16_t` or a locally-defined `CHAR16_T` type. In both cases, these types are compatible with the `WCHAR` alias in CoreCLR. If a minipal API exists, it should be used instead of the PAL API.
 
-### <a name="2.11.2"></a> 2.11.2 Do not use C++ standard exceptions
+### <a name="2.11.2"></a> 2.11.2 Do not use C++ Standard-defined exceptions
 
-The exception handling mechanisms in CoreCLR only handle `Exception`-derived types and `PAL_SEHException`. As a result, standard C++ exceptions, derived from `std::exception`, will cause runtime instability and should never be used. This includes using standard collection types with the default `std::allocator<T>` allocator.
+The exception handling mechanisms in CoreCLR only handle `Exception`-derived types and `PAL_SEHException`. As a result, standard C++ exceptions, derived from `std::exception`, will cause runtime instability and should never be used. There is one standard C++ exception type the CoreCLR infrastructure supports, `std::bad_alloc`. Since CoreCLR supports `std::bad_alloc`, the standard container allocators, `std::allocator<T>` and the standard C++ containers, can be used as long as only the non-throwing members are used.
 
 ### <a name="2.11.3"></a> 2.11.3 Do not use getenv on Unix platforms
 
