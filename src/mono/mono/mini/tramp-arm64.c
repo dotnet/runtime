@@ -874,6 +874,7 @@ mono_arch_get_native_to_interp_trampoline (MonoTrampInfo **info)
 	for (i = 0; i < CTX_REGS; i++)
 		arm_ldrx (code, i + CTX_REGS_OFFSET, ARMREG_FP, ccontext_offset +  MONO_STRUCT_OFFSET (CallContext, gregs) + (i + PARAM_REGS + 1) * sizeof (host_mgreg_t));
 #endif
+
 	/* reset stack and return */
 	arm_ldpx (code, ARMREG_FP, ARMREG_LR, ARMREG_SP, 0);
 	arm_addx_imm (code, ARMREG_SP, ARMREG_SP, framesize);
