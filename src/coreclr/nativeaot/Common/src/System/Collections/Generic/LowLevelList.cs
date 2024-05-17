@@ -33,9 +33,6 @@ namespace System.Collections.Generic
     // Code size is smaller because only functions called will be in the binary.
     // Use LowLevelListWithIList<T> for IList support
     [DebuggerDisplay("Count = {Count}")]
-#if TYPE_LOADER_IMPLEMENTATION
-    [System.Runtime.CompilerServices.ForceDictionaryLookups]
-#endif
     internal class LowLevelList<T>
     {
         private const int _defaultCapacity = 4;

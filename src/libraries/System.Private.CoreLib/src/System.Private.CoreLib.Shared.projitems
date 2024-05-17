@@ -48,7 +48,6 @@
     <DefineConstants Condition="'$(TargetsHaiku)' == 'true'">$(DefineConstants);TARGET_HAIKU</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
-    <ApiCompatSuppressionFile Include="$(MSBuildProjectDirectory)\CompatibilitySuppressions.xml" />
     <ApiCompatSuppressionFile Include="$(MSBuildThisFileDirectory)CompatibilitySuppressions.xml" />
   </ItemGroup>
   <ItemGroup>

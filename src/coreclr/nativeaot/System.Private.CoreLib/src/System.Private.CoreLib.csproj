@@ -4,6 +4,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <ApiCompatSuppressionFile Include="$(MSBuildProjectDirectory)\CompatibilitySuppressions.xml" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ILLinkSubstitutionsXmls Include="ILLink\ILLink.Substitutions.xml" />
     <ILLinkLinkAttributesXmls Include="ILLink\ILLink.LinkAttributes.xml" />
   </ItemGroup>
@@ -185,7 +189,6 @@
     <Compile Include="System\Runtime\ControlledExecution.NativeAot.cs" />
     <Compile Include="System\Runtime\DependentHandle.cs" />
     <Compile Include="System\Runtime\CompilerServices\EagerStaticClassConstructionAttribute.cs" />
-    <Compile Include="System\Runtime\CompilerServices\ForceDictionaryLookupsAttribute.cs" />
     <Compile Include="System\Runtime\CompilerServices\RuntimeFeature.NativeAot.cs" />
     <Compile Include="System\Runtime\CompilerServices\StaticClassConstructionContext.cs" />
     <Compile Include="System\Runtime\ExceptionIDs.cs" />

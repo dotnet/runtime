@@ -77,6 +77,7 @@ namespace System.Runtime.CompilerServices
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [return: NotNullIfNotNull(nameof(obj))]
         public static extern object? GetObjectValue(object? obj);
 
         [RequiresUnreferencedCode("Trimmer can't guarantee existence of class constructor")]
