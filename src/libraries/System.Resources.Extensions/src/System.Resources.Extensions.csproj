@@ -40,6 +40,7 @@ System.Resources.Extensions.PreserializedResourceWriter</PackageDescription>
     <Compile Include="System\Resources\Extensions\TypeNameComparer.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Numerics\Hashing\HashHelpers.cs"
              Link="System\Numerics\Hashing\HashHelpers.cs" />
+    <Compile Include="BinaryFormat\**\*.cs" LinkBase="BinaryFormat"/>
   </ItemGroup>
 
   <!-- when System.Runtime.Serialization.BinaryFormat gets approved, this whole block will be repalced with a reference to package -->
