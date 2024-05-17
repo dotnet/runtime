@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Numerics;
 using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -179,12 +180,6 @@ namespace Internal.Runtime.CompilerServices
             return RuntimeImports.RhResolveDispatchOnType(thisType.ToMethodTable(), resolver->_declaringType, (ushort)resolver->_methodHandleOrSlotOrCodePointer);
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static int _rotl(int value, int shift)
-        {
-            return (int)(((uint)value << shift) | ((uint)value >> (32 - shift)));
-        }
-
         private static int CalcHashCode(int hashCode1, int hashCode2, int hashCode3, int hashCode4)
         {
             int length = 4;
@@ -192,13 +187,13 @@ namespace Internal.Runtime.CompilerServices
             int hash1 = 0x449b3ad6;
             int hash2 = (length << 3) + 0x55399219;
 
-            hash1 = (hash1 + _rotl(hash1, 5)) ^ hashCode1;
-            hash2 = (hash2 + _rotl(hash2, 5)) ^ hashCode2;
-            hash1 = (hash1 + _rotl(hash1, 5)) ^ hashCode3;
-            hash2 = (hash2 + _rotl(hash2, 5)) ^ hashCode4;
+            hash1 = (hash1 + (int)BitOperations.RotateLeft((uint)hash1, 5)) ^ hashCode1;
+            hash2 = (hash2 + (int)BitOperations.RotateLeft((uint)hash2, 5)) ^ hashCode2;
+            hash1 = (hash1 + (int)BitOperations.RotateLeft((uint)hash1, 5)) ^ hashCode3;
+            hash2 = (hash2 + (int)BitOperations.RotateLeft((uint)hash2, 5)) ^ hashCode4;
 
-            hash1 += _rotl(hash1, 8);
-            hash2 += _rotl(hash2, 8);
+            hash1 += (int)BitOperations.RotateLeft((uint)hash1, 8);
+            hash2 += (int)BitOperations.RotateLeft((uint)hash2, 8);
 
             return hash1 ^ hash2;
         }
