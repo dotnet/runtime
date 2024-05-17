@@ -3323,9 +3323,16 @@ interp_try_devirt (MonoClass *this_klass, MonoMethod *target_method)
 static MonoMethodSignature*
 interp_emit_swiftcall_struct_lowering (TransformData *td, MonoMethodSignature *csignature)
 {
-	MonoMethodSignature *new_csignature;
-	g_assert (!csignature->hasthis); // P/Invoke calls shouldn't contain 'this'
+	// P/Invoke calls shouldn't contain 'this'
+	g_assert (!csignature->hasthis);
+ 	
+	/*
+	 * Argument reordering here doesn't handle on the fly offset allocation 
+	 * and requires the full var offset allocator pass that is only ran for optimized code
+	 */ 
+	g_assert (td->optimized);
 
+	MonoMethodSignature *new_csignature;
 	// Save the function pointer
 	StackInfo sp_fp = td->sp [-1];
 	--td->sp;
