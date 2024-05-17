@@ -94,9 +94,8 @@ namespace IlasmPortablePdbTests
             }
         }
 
-        public static Dictionary<string, MethodDebugInformationStub> GetExpectedForTestMethodDebugInformation(string testName)
+        public static Dictionary<string, MethodDebugInformationStub> GetExpectedForTestMethodDebugInformation(string testName, bool isUnix)
         {
-            string structure;
             string method1;
             string method2;
             DocumentStub document1;
@@ -104,40 +103,25 @@ namespace IlasmPortablePdbTests
 
             switch (testName)
             {
-                case "TestMethodDebugInformation_unix.il":
-                    structure = "TestMethodDebugInformation";
+                case "TestMethodDebugInformation":
                     method1 = ".ctor";
                     method2 = "Pow";
-                    document1 = new DocumentStub("/tmp/TestMethodDebugInformation/SimpleMath.cs");
-                    document2 = new DocumentStub("/tmp/TestMethodDebugInformation/SimpleMathMethods.cs");
+                    document1 = isUnix ? new DocumentStub("/tmp/TestMethodDebugInformation/SimpleMath.cs") : new DocumentStub("C:\\tmp\\TestMethodDebugInformation\\SimpleMath.cs");
+                    document2 = isUnix ? new DocumentStub("/tmp/TestMethodDebugInformation/SimpleMathMethods.cs") : new DocumentStub("C:\\tmp\\TestMethodDebugInformation\\SimpleMathMethods.cs");
                     break;
-                case "TestMethodDebugInformation_win.il":
-                    structure = "TestMethodDebugInformation";
-                    method1 = ".ctor";
-                    method2 = "Pow";
-                    document1 = new DocumentStub("C:\\tmp\\TestMethodDebugInformation\\SimpleMath.cs");
-                    document2 = new DocumentStub("C:\\tmp\\TestMethodDebugInformation\\SimpleMathMethods.cs");
-                    break;
-                case "TestDocuments1_unix.il":
-                    structure = "TestDocuments1";
+                case "TestDocuments1":
                     method1 = "Foo";
                     method2 = null;
-                    document1 = new DocumentStub("/tmp/non_existent_source1.cs");
-                    document2 = new DocumentStub("/tmp/non_existent_source2.cs");
-                    break;
-                case "TestDocuments1_win.il":
-                    structure = "TestDocuments1";
-                    method1 = "Foo";
-                    method2 = null;
-                    document1 = new DocumentStub("C:\\tmp\\non_existent_source1.cs");
-                    document2 = new DocumentStub("C:\\tmp\\non_existent_source2.cs");
+                    document1 = isUnix ? new DocumentStub("/tmp/non_existent_source1.cs") : new DocumentStub("C:\\tmp\\non_existent_source1.cs");
+                    document2 = isUnix ? new DocumentStub("/tmp/non_existent_source2.cs") : new DocumentStub("C:\\tmp\\non_existent_source2.cs");
                     break;
                 default:
                     Assert.Fail();
                     return null;
             }
+
             var result = new Dictionary<string, MethodDebugInformationStub>();
-            switch (structure)
+            switch (testName)
             {
                 case "TestMethodDebugInformation":
                     result.Add(method1,

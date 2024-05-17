@@ -148,11 +148,11 @@ namespace IlasmPortablePdbTests
         [Theory]
         [InlineData("TestMethodDebugInformation")]
         [InlineData("TestDocuments1")]
-        public void TestPortablePdbMethodDebugInformation2(string ilRoot)
+        public void TestPortablePdbMethodDebugInformation2(string testName)
         {
-            var ilSource = ilRoot + (IsUnix ? "_unix.il" : "_win.il");
+            var ilSource = testName + (IsUnix ? "_unix.il" : "_win.il");
 
-            var expected = IlasmPortablePdbTesterCommon.GetExpectedForTestMethodDebugInformation(ilSource);
+            var expected = IlasmPortablePdbTesterCommon.GetExpectedForTestMethodDebugInformation(testName, IsUnix);
             var ilasm = IlasmPortablePdbTesterCommon.GetIlasmFullPath(CoreRootVar, IlasmFile);
             IlasmPortablePdbTesterCommon.Assemble(ilasm, ilSource, TestDir, out string dll, out string pdb);
 
