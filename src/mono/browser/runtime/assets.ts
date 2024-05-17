@@ -5,13 +5,12 @@ import type { AssetEntryInternal } from "./types/internal";
 
 import cwraps from "./cwraps";
 import { mono_wasm_load_icu_data } from "./icu";
-import { Module, loaderHelpers, mono_assert, runtimeHelpers } from "./globals";
+import { Module, globalizationHelpers, loaderHelpers, mono_assert, runtimeHelpers } from "./globals";
 import { mono_log_info, mono_log_debug, parseSymbolMapFile } from "./logging";
 import { mono_wasm_load_bytes_into_heap_persistent } from "./memory";
 import { endMeasure, MeasuredBlock, startMeasure } from "./profiler";
 import { AssetEntry } from "./types";
 import { VoidPtr } from "./types/emscripten";
-import { setSegmentationRulesFromJson } from "./hybrid-globalization/grapheme-segmenter";
 
 // this need to be run only after onRuntimeInitialized event, when the memory is ready
 export function instantiate_asset (asset: AssetEntry, url: string, bytes: Uint8Array): void {
@@ -26,6 +25,7 @@ export function instantiate_asset (asset: AssetEntry, url: string, bytes: Uint8A
     switch (asset.behavior) {
         case "dotnetwasm":
         case "js-module-threads":
+        case "js-module-globalization":
         case "symbols":
         case "segmentation-rules":
             // do nothing
@@ -110,7 +110,7 @@ export async function instantiate_segmentation_rules_asset (pendingAsset: AssetE
     try {
         const response = await pendingAsset.pendingDownloadInternal!.response;
         const json = await response.json();
-        setSegmentationRulesFromJson(json);
+        globalizationHelpers.setSegmentationRulesFromJson(json);
     } catch (error: any) {
         mono_log_info(`Error loading static json asset ${pendingAsset.name}: ${JSON.stringify(error)}`);
     }
