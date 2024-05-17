@@ -21,6 +21,8 @@ namespace Mono.Linker.Steps
 
 			readonly NodeCache<MethodDefinition, MethodDefinitionNode> _methodNodes = new (static _ => throw new InvalidOperationException ("Creation of node requires more than the key."));
 
+			readonly NodeCache<PropertyDefinition, PropertyDefinitionNode> _propertyNodes = new (static p => new PropertyDefinitionNode(p));
+
 			readonly NodeCache<TypeDefinition, TypeIsRelevantToVariantCastingNode> _typeIsRelevantToVariantCastingNodes = new (static (t) => new TypeIsRelevantToVariantCastingNode (t));
 
 			internal TypeDefinitionNode GetTypeNode (TypeDefinition definition)
@@ -36,6 +38,11 @@ namespace Mono.Linker.Steps
 			internal TypeIsRelevantToVariantCastingNode GetTypeIsRelevantToVariantCastingNode (TypeDefinition type)
 			{
 				return _typeIsRelevantToVariantCastingNodes.GetOrAdd (type);
+			}
+
+			internal PropertyDefinitionNode GetPropertyNode (PropertyDefinition prop)
+			{
+				return _propertyNodes.GetOrAdd (prop);
 			}
 
 			struct NodeCache<TKey, TValue> where TKey : notnull
