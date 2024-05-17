@@ -39,6 +39,13 @@ namespace ComInterfaceGenerator.Unit.Tests
                    .WithLocation(1)
                    .WithArguments("Event", "INativeAPI"),
             } };
+
+            yield return new object[] { ID(), codeSnippets.DerivedComInterfaceTypeMismatchInWrappers, new[]
+            {
+               VerifyComInterfaceGenerator.Diagnostic(GeneratorDiagnostics.InvalidOptionsOnInterface)
+                   .WithLocation(0)
+                   .WithArguments("IComInterface2", SR.BaseInterfaceMustGenerateAtLeastSameWrappers),
+            } };
         }
 
         [Theory]
