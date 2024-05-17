@@ -8,7 +8,6 @@ namespace DotnetFuzzing.Fuzzers;
 
 internal sealed class HttpHeadersFuzzer : IFuzzer
 {
-    public string BlameAlias => "mizupan";
     public string[] TargetAssemblies => ["System.Net.Http"];
     public string[] TargetCoreLibPrefixes => [];
 

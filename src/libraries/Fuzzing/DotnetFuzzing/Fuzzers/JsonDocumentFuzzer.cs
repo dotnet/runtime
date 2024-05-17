@@ -8,7 +8,6 @@ namespace DotnetFuzzing.Fuzzers;
 
 internal sealed class JsonDocumentFuzzer : IFuzzer
 {
-    public string BlameAlias => "mizupan";
     public string[] TargetAssemblies => ["System.Text.Json"];
     public string[] TargetCoreLibPrefixes => [];
     public string Dictionary => "json.dict";

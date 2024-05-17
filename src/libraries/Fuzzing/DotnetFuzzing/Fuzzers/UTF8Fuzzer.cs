@@ -10,7 +10,6 @@ namespace DotnetFuzzing.Fuzzers;
 // Adapted from https://github.com/GrabYourPitchforks/utf8fuzz
 internal sealed class UTF8Fuzzer : IFuzzer
 {
-    public string BlameAlias => "mizupan";
     public string[] TargetAssemblies => [];
     public string[] TargetCoreLibPrefixes => ["System.Text"];
 

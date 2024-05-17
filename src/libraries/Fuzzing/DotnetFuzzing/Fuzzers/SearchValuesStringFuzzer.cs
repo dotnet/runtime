@@ -8,7 +8,6 @@ namespace DotnetFuzzing.Fuzzers;
 
 internal sealed class SearchValuesStringFuzzer : IFuzzer
 {
-    public string BlameAlias => "mizupan";
     public string[] TargetAssemblies => [];
     public string[] TargetCoreLibPrefixes => ["System.Buffers", "System.Globalization"];
 

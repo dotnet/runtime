@@ -306,7 +306,7 @@ public static class Program
                   "AdoTemplate": {
                     "Org": "dnceng",
                     "Project": "internal",
-                    "AssignedTo": "{{fuzzer.BlameAlias}}@microsoft.com",
+                    "AssignedTo": "mizupan@microsoft.com",
                     "AreaPath": "internal\\.NET Libraries",
                     "IterationPath": "internal"
                   }

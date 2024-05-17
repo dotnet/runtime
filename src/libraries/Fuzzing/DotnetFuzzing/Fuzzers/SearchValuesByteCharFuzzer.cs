@@ -9,7 +9,6 @@ namespace DotnetFuzzing.Fuzzers;
 
 internal sealed class SearchValuesByteCharFuzzer : IFuzzer
 {
-    public string BlameAlias => "mizupan";
     public string[] TargetAssemblies => [];
     public string[] TargetCoreLibPrefixes => ["System.Buffers", "System.SpanHelpers", "System.PackedSpanHelpers"];
 
