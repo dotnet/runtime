@@ -241,8 +241,7 @@ namespace ILCompiler.DependencyAnalysis
         public void EmitShort(Reservation reservation, short emit)
         {
             int offset = ReturnReservationTicket(reservation);
-            _data[offset] = (byte)(emit & 0xFF);
-            _data[offset + 1] = (byte)((emit >> 8) & 0xFF);
+            BinaryPrimitives.WriteInt16LittleEndian(_data.AsSpan(offset), emit);
         }
 
         public Reservation ReserveInt()
@@ -253,19 +252,13 @@ namespace ILCompiler.DependencyAnalysis
         public void EmitInt(Reservation reservation, int emit)
         {
             int offset = ReturnReservationTicket(reservation);
-            _data[offset] = (byte)(emit & 0xFF);
-            _data[offset + 1] = (byte)((emit >> 8) & 0xFF);
-            _data[offset + 2] = (byte)((emit >> 16) & 0xFF);
-            _data[offset + 3] = (byte)((emit >> 24) & 0xFF);
+            BinaryPrimitives.WriteInt32LittleEndian(_data.AsSpan(offset), emit);
         }
 
         public void EmitUInt(Reservation reservation, uint emit)
         {
             int offset = ReturnReservationTicket(reservation);
-            _data[offset] = (byte)(emit & 0xFF);
-            _data[offset + 1] = (byte)((emit >> 8) & 0xFF);
-            _data[offset + 2] = (byte)((emit >> 16) & 0xFF);
-            _data[offset + 3] = (byte)((emit >> 24) & 0xFF);
+            BinaryPrimitives.WriteUInt32LittleEndian(_data.AsSpan(offset), emit);
         }
 
         public void EmitReloc(ISymbolNode symbol, RelocType relocType, int delta = 0)

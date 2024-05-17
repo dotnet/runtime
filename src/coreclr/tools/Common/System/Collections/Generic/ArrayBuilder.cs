@@ -30,6 +30,8 @@ namespace System.Collections.Generic
         }
 
 #if NET
+        public readonly Span<T> AsSpan(int start) => _items.AsSpan(start);
+
         public void Append(scoped ReadOnlySpan<T> newItems)
         {
             if (newItems.Length == 0)
