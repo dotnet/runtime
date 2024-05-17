@@ -17,7 +17,9 @@
 #include <clrversion.h>
 #include "resource.h"
 
-#include "new.hpp"
+#include <new>
+
+using std::nothrow;
 
 #define MODE_DUMP_ALL               0
 #define MODE_DUMP_CLASS             1
@@ -463,10 +465,6 @@ int main(int argc, char* argv[])
         printError(g_pFile, "Error: Fail to PAL_Initialize\n");
         exit(1);
     }
-#endif
-
-#ifdef _DEBUG
-    DisableThrowCheck();
 #endif
 
     int     iCommandLineParsed = 0;

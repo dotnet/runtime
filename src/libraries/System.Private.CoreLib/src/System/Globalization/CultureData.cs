@@ -628,7 +628,7 @@ namespace System.Globalization
             // all available calendar type(s).  The first one is the default calendar
             invariant._waCalendars = new CalendarId[] { CalendarId.GREGORIAN };
 
-            if (!GlobalizationMode.Invariant)
+            if (!GlobalizationMode.InvariantNoLoad)
             {
                 // Store for specific data about each calendar
                 invariant._calendars = new CalendarData[CalendarData.MAX_CALENDARS];
@@ -646,7 +646,7 @@ namespace System.Globalization
             invariant._iDefaultMacCodePage = 10000;         // default macintosh code page
             invariant._iDefaultEbcdicCodePage = 037;        // default EBCDIC code page
 
-            if (GlobalizationMode.Invariant)
+            if (GlobalizationMode.InvariantNoLoad)
             {
                 invariant._sLocalizedCountry = invariant._sNativeCountry;
             }
@@ -814,7 +814,7 @@ namespace System.Globalization
             {
                 return null;
             }
-#if TARGET_BROWSER && !FEATURE_WASM_MANAGED_THREADS
+#if TARGET_BROWSER
             // populate fields for which ICU does not provide data in Hybrid mode
             if (GlobalizationMode.Hybrid && !string.IsNullOrEmpty(culture._sName))
             {
@@ -2228,7 +2228,7 @@ namespace System.Globalization
 
         internal void GetNFIValues(NumberFormatInfo nfi)
         {
-            if (GlobalizationMode.Invariant || IsInvariantCulture)
+            if (GlobalizationMode.InvariantNoLoad || IsInvariantCulture)
             {
                 nfi._positiveSign = _sPositiveSign!;
                 nfi._negativeSign = _sNegativeSign!;

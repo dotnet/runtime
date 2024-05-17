@@ -29,7 +29,7 @@ extern BOOL     g_fInsertSourceLines;
 extern BOOL     g_fTryInCode;
 extern BOOL     g_fQuoteAllNames;
 extern BOOL     g_fDumpTokens;
-extern DynamicArray<__int32>  *g_pPtrTags;       //to keep track of all "ldptr"
+extern DynamicArray<int32_t>  *g_pPtrTags;       //to keep track of all "ldptr"
 extern DynamicArray<DWORD>    *g_pPtrSize;       //to keep track of all "ldptr"
 extern int                     g_iPtrCount;
 static BOOL ConvToLiteral(__inout __nullterminated char* retBuff, const WCHAR* str, int cbStr);
@@ -527,7 +527,7 @@ char* DumpDataPtr(__inout __nullterminated char* buffer, DWORD ptr, DWORD size)
     if(i < dwNumberOfSections)
     { // yes, the pointer points to real data
         int j;
-        for(j=0; (j < g_iPtrCount)&&((*g_pPtrTags)[j] != (__int32)ptr); j++);
+        for(j=0; (j < g_iPtrCount)&&((*g_pPtrTags)[j] != (int32_t)ptr); j++);
         if(j == g_iPtrCount)
         {
             if (g_pPtrSize == NULL)
@@ -536,7 +536,7 @@ char* DumpDataPtr(__inout __nullterminated char* buffer, DWORD ptr, DWORD size)
             }
             if (g_pPtrTags == NULL)
             {
-                g_pPtrTags = new DynamicArray<__int32>;
+                g_pPtrTags = new DynamicArray<int32_t>;
             }
 
             (*g_pPtrSize)[g_iPtrCount] = size;
@@ -1526,14 +1526,14 @@ BOOL Disassemble(IMDInternalImport *pImport, BYTE *ILHeader, void *GUICookie, md
 
             case InlineI8:
             {
-                __int64 v = (__int64) pCode[PC] +
-                            (((__int64) pCode[PC+1]) << 8) +
-                            (((__int64) pCode[PC+2]) << 16) +
-                            (((__int64) pCode[PC+3]) << 24) +
-                            (((__int64) pCode[PC+4]) << 32) +
-                            (((__int64) pCode[PC+5]) << 40) +
-                            (((__int64) pCode[PC+6]) << 48) +
-                            (((__int64) pCode[PC+7]) << 56);
+                int64_t v = (int64_t) pCode[PC] +
+                            (((int64_t) pCode[PC+1]) << 8) +
+                            (((int64_t) pCode[PC+2]) << 16) +
+                            (((int64_t) pCode[PC+3]) << 24) +
+                            (((int64_t) pCode[PC+4]) << 32) +
+                            (((int64_t) pCode[PC+5]) << 40) +
+                            (((int64_t) pCode[PC+6]) << 48) +
+                            (((int64_t) pCode[PC+7]) << 56);
 
                 if(g_fShowBytes)
                 {
@@ -1552,10 +1552,10 @@ BOOL Disassemble(IMDInternalImport *pImport, BYTE *ILHeader, void *GUICookie, md
 
             case ShortInlineR:
             {
-                __int32 v = (__int32) pCode[PC] +
-                            (((__int32) pCode[PC+1]) << 8) +
-                            (((__int32) pCode[PC+2]) << 16) +
-                            (((__int32) pCode[PC+3]) << 24);
+                int32_t v = (int32_t) pCode[PC] +
+                            (((int32_t) pCode[PC+1]) << 8) +
+                            (((int32_t) pCode[PC+2]) << 16) +
+                            (((int32_t) pCode[PC+3]) << 24);
 
                 float f = (float&)v;
 
@@ -1575,7 +1575,7 @@ BOOL Disassemble(IMDInternalImport *pImport, BYTE *ILHeader, void *GUICookie, md
                 float fd = (float)atof(szf);
                 // Must compare as underlying bytes, not floating point otherwise optimizer will
                 // try to enregister and compare 80-bit precision number with 32-bit precision number!!!!
-                if(((__int32&)fd == v)&&!IsSpecialNumber(szf))
+                if(((int32_t&)fd == v)&&!IsSpecialNumber(szf))
                     szptr+=sprintf_s(szptr,SZSTRING_REMAINING_SIZE(szptr), "%-10s %s", pszInstrName, szf);
                 else
                     szptr+=sprintf_s(szptr,SZSTRING_REMAINING_SIZE(szptr), "%-10s (%2.2X %2.2X %2.2X %2.2X)",
@@ -1586,14 +1586,14 @@ BOOL Disassemble(IMDInternalImport *pImport, BYTE *ILHeader, void *GUICookie, md
 
             case InlineR:
             {
-                __int64 v = (__int64) pCode[PC] +
-                            (((__int64) pCode[PC+1]) << 8) +
-                            (((__int64) pCode[PC+2]) << 16) +
-                            (((__int64) pCode[PC+3]) << 24) +
-                            (((__int64) pCode[PC+4]) << 32) +
-                            (((__int64) pCode[PC+5]) << 40) +
-                            (((__int64) pCode[PC+6]) << 48) +
-                            (((__int64) pCode[PC+7]) << 56);
+                int64_t v = (int64_t) pCode[PC] +
+                            (((int64_t) pCode[PC+1]) << 8) +
+                            (((int64_t) pCode[PC+2]) << 16) +
+                            (((int64_t) pCode[PC+3]) << 24) +
+                            (((int64_t) pCode[PC+4]) << 32) +
+                            (((int64_t) pCode[PC+5]) << 40) +
+                            (((int64_t) pCode[PC+6]) << 48) +
+                            (((int64_t) pCode[PC+7]) << 56);
 
                 double d = (double&)v;
 
@@ -1614,7 +1614,7 @@ BOOL Disassemble(IMDInternalImport *pImport, BYTE *ILHeader, void *GUICookie, md
                 double df = strtod(szf, &pch); //atof(szf);
                 // Must compare as underlying bytes, not floating point otherwise optimizer will
                 // try to enregister and compare 80-bit precision number with 64-bit precision number!!!!
-                if (((__int64&)df == v)&&!IsSpecialNumber(szf))
+                if (((int64_t&)df == v)&&!IsSpecialNumber(szf))
                     szptr+=sprintf_s(szptr,SZSTRING_REMAINING_SIZE(szptr), "%-10s %s", pszInstrName, szf);
                 else
                     szptr+=sprintf_s(szptr,SZSTRING_REMAINING_SIZE(szptr),

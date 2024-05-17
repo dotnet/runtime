@@ -35,7 +35,7 @@
 // R2R Version 9.1 adds new helpers to allocate objects on frozen segments
 // R2R Version 9.2 adds MemZero and NativeMemSet helpers
 // R2R Version 9.3 adds BulkWriteBarrier helper
-
+//                 uses GCInfo v3, which makes safe points in partially interruptible code interruptible.
 
 struct READYTORUN_CORE_HEADER
 {

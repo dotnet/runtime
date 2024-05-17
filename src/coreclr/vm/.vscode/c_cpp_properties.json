@@ -22,7 +22,6 @@
             ],
             "defines": [
                 "HOST_AMD64",
-                "_BLD_CLR",
                 "_CRT_SECURE_NO_WARNINGS",
                 "_DBG",
                 "_SECURE_SCL=0",

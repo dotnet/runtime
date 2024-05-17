@@ -4644,6 +4644,18 @@ interp_emit_sfld_access (TransformData *td, MonoClassField *field, MonoClass *fi
 			}
 			interp_ins_set_dreg (td->last_ins, td->sp [-1].var);
 		} else {
+			// Fields from hotreload update and fields from collectible assemblies are not
+			// stored inside fixed gc roots but rather in other objects. This means that
+			// storing into these fields requires write barriers.
+			if ((mt == MINT_TYPE_VT || mt == MINT_TYPE_O) &&
+					(m_field_is_from_update (field) ||
+					mono_image_get_alc (m_class_get_image (m_field_get_parent (field)))->collectible)) {
+				interp_emit_ldsflda (td, field, error);
+				return_if_nok (error);
+				interp_emit_stobj (td, field_class, TRUE);
+				return;
+			}
+
 			if (G_LIKELY (!wide_data))
 				interp_add_ins (td, (mt == MINT_TYPE_VT) ? MINT_STSFLD_VT : (MINT_STSFLD_I1 + mt - MINT_TYPE_I1));
 			else
@@ -9329,6 +9341,8 @@ exit:
 	g_free (td->data_items);
 	g_free (td->stack);
 	g_free (td->vars);
+	g_free (td->renamable_vars);
+	g_free (td->renamed_fixed_vars);
 	g_free (td->local_ref_count);
 	g_hash_table_destroy (td->data_hash);
 #ifdef ENABLE_EXPERIMENT_TIERED

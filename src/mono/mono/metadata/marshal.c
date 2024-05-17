@@ -5226,39 +5226,129 @@ mono_marshal_get_unsafe_accessor_wrapper (MonoMethod *accessor_method, MonoUnsaf
 	MonoMethod *res;
 	GHashTable *cache;
 	MonoGenericContext *ctx = NULL;
+	MonoGenericContainer *container = NULL;
 	MonoMethod *orig_method = NULL;
 	WrapperInfo *info;
+	/* generic_wrapper == TRUE means we will create a generic wrapper method. */
+	gboolean generic_wrapper = FALSE;
+	/* is_inflated == TRUE means we will inflate a wrapper method before returning. */
+	gboolean is_inflated = FALSE;
+	/* one or both of generic_wrapper or is_inflated might be set, depending on how we're called. */
 
 	if (member_name == NULL && kind != MONO_UNSAFE_ACCESSOR_CTOR)
 		member_name = accessor_method->name;
 
+	// printf("CAME IN: %s (generic = %d, inflated = %d)\n", mono_method_full_name(accessor_method, TRUE), accessor_method->is_generic?1:0, accessor_method->is_inflated?1:0);
+
+	/*
+	 * the method is either a generic method definition, or it might be inflated, not both at
+         * the same time.
+	 */
+	g_assert (!(accessor_method->is_generic && accessor_method->is_inflated));
+
+
+	if (accessor_method->is_inflated) {
+		MonoMethod *declaring = ((MonoMethodInflated*)accessor_method)->declaring;
+		if (declaring->is_generic) {
+			// JIT gets here sometimes.
+			generic_wrapper = TRUE;
+		}
+		is_inflated = TRUE;
+	}
+
+	if (accessor_method->is_generic) {
+		generic_wrapper = TRUE;
+	}
+
+	if (is_inflated) {
+		// TODO: this always tries to compile a generic version of the accessor method and
+		// then inflate it.  But maybe we dont' want to do that (particularly for field
+		// accessors).  In particular if there is no method_inst, we're looking at an
+		// accessor method inside a generic class (alwayst a ginst? or sometimes a gtd?)
+		// In that case we might just want to compile the instance.
+
+		orig_method = accessor_method;
+		ctx = &((MonoMethodInflated*)accessor_method)->context;
+		accessor_method = ((MonoMethodInflated*)accessor_method)->declaring;
+		container = mono_method_get_generic_container (accessor_method);
+		if (!container)
+		    container = mono_class_try_get_generic_container (accessor_method->klass);
+		g_assert (container);
+		// TODO:
+		// in the example below, do we need to mess with the context and container?
+		//
+		// class C<T> {
+		//    public static extern void AccessorMethod<U>(List<T> t, List<U> u);
+		// }
+		//
+		// when we make a wrapper
+		//
+		//    public static extern void wrapper_AccessorMethod<U2>(List<T>, List<U2> u);
+		//
+		// do we need to substitute the new gparams of the wrapper, but leave the
+		// gparams of C<T> unchanged?
+		//
+	}
+
+	// printf("work on: %s (generic = %d, inflated = %d)\n", mono_method_full_name(accessor_method, TRUE), accessor_method->is_generic?1:0, accessor_method->is_inflated?1:0);
+
 	/*
 	 * Check cache
 	 */
-	if (ctx) {
-		cache = NULL;
-		g_assert_not_reached ();
+	if (is_inflated) {
+		cache = get_cache (&((MonoMethodInflated*)orig_method)->owner->wrapper_caches.unsafe_accessor_cache , mono_aligned_addr_hash, NULL);
+		res = check_generic_wrapper_cache (cache, orig_method, orig_method, accessor_method);
+		if (res)
+			return res;
 	} else {
 		cache = get_cache (&mono_method_get_wrapper_cache (accessor_method)->unsafe_accessor_cache, mono_aligned_addr_hash, NULL);
 		if ((res = mono_marshal_find_in_cache (cache, accessor_method)))
 			return res;
 	}
-
-	sig = mono_metadata_signature_dup_full (get_method_image (accessor_method), mono_method_signature_internal (accessor_method));
-	sig->pinvoke = 0;
-
+	// printf ("Cache miss\n");
+	
 	mb = mono_mb_new (accessor_method->klass, accessor_method->name, MONO_WRAPPER_OTHER);
+	if (generic_wrapper) {
+		// If the accessor method was generic, make the wrapper generic, too.
+
+		// Load a copy of the generic params of the accessor method
+		mb->method->is_generic = generic_wrapper;
+		container = mono_class_try_get_generic_container (accessor_method->klass);
+		container = mono_metadata_load_generic_params (m_class_get_image (accessor_method->klass), accessor_method->token, container, /*owner:*/mb->method);
+		mono_method_set_generic_container (mb->method, container);
+
+		MonoGenericContext inst_ctx = {0,};
+		// FIXME: if is_inflated, do we need to mess with ctx?
+		inst_ctx.method_inst = container->context.method_inst;
+
+		ERROR_DECL (error);
+		// make a copy of the accessor signature, but replace the params of the accessor
+		// method, by the params we just loaded
+		sig = mono_inflate_generic_signature (mono_method_signature_internal (accessor_method), &inst_ctx, error);
+		mono_error_assert_ok (error); // FIXME
+	} else {
+		sig = mono_metadata_signature_dup_full (get_method_image (accessor_method), mono_method_signature_internal (accessor_method));
+	}
+	sig->pinvoke = 0;
 
 	get_marshal_cb ()->mb_skip_visibility (mb);
 
-	get_marshal_cb ()->emit_unsafe_accessor_wrapper (mb, accessor_method, sig, ctx, kind, member_name);
+	if (generic_wrapper || is_inflated) {
+		// wrapper data will mention MonoClassField* and MonoMethod* that need to be inflated
+		get_marshal_cb ()->mb_inflate_wrapper_data (mb);
+	}
+
+	// if the wrapper will be inflated (either now by us, or when it's called, because it is
+	// generic), mark the wrapper data to be inflated, too
+	gboolean inflate_generic_data = accessor_method->is_generic || is_inflated;
+	get_marshal_cb ()->emit_unsafe_accessor_wrapper (mb, inflate_generic_data, accessor_method, sig, kind, member_name);
 
 	info = mono_wrapper_info_create (mb, WRAPPER_SUBTYPE_UNSAFE_ACCESSOR);
 	info->d.unsafe_accessor.method = accessor_method;
 	info->d.unsafe_accessor.kind = kind;
 	info->d.unsafe_accessor.member_name = member_name;
 
-	if (ctx) {
+	if (is_inflated) {
 		MonoMethod *def;
 		def = mono_mb_create_and_cache_full (cache, accessor_method, mb, sig, sig->param_count + 16, info, NULL);
 		res = cache_generic_wrapper (cache, orig_method, def, ctx, orig_method);

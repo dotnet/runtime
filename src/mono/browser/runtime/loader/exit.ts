@@ -119,7 +119,7 @@ export function mono_exit (exit_code: number, reason?: any): void {
             unregisterEmscriptenExitHandlers();
             uninstallUnhandledErrorHandler();
             if (!runtimeHelpers.runtimeReady) {
-                mono_log_debug("abort_startup, reason: " + reason);
+                mono_log_debug(() => `abort_startup, reason: ${reason}`);
                 abort_promises(reason);
             } else {
                 if (runtimeHelpers.jiterpreter_dump_stats) {

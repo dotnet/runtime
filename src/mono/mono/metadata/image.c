@@ -2066,9 +2066,9 @@ mono_image_close_except_pools (MonoImage *image)
 	}
 
 	if (image->method_cache)
-		g_hash_table_destroy (image->method_cache);
+		dn_simdhash_free (image->method_cache);
 	if (image->methodref_cache)
-		g_hash_table_destroy (image->methodref_cache);
+		dn_simdhash_free (image->methodref_cache);
 	mono_internal_hash_table_destroy (&image->class_cache);
 	mono_conc_hashtable_destroy (image->field_cache);
 	if (image->array_cache) {

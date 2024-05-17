@@ -31,18 +31,17 @@ namespace Mono.Linker.Steps
 
 			public override IEnumerable<DependencyListEntry>? GetStaticDependencies (NodeFactory context)
 			{
-				using (_ = context.MarkStep.ScopeStack.PushLocalScope (new MessageOrigin (method))) {
-					if (method.HasMetadataParameters ()) {
+				var methodOrigin = new MessageOrigin (method);
+				if (method.HasMetadataParameters ()) {
 #pragma warning disable RS0030 // MethodReference.Parameters is banned. It's easiest to leave the code as is for now
-						foreach (ParameterDefinition pd in method.Parameters) {
-							var type = context.MarkStep.MarkType (pd.ParameterType, new DependencyInfo (DependencyKind.ParameterType, method), null, false);
-							if (type is not null)
-								yield return new (context.GetTypeNode (type), nameof (DependencyKind.ParameterType));
-							context.MarkStep.MarkCustomAttributes (pd, new DependencyInfo (DependencyKind.ParameterAttribute, method));
-							context.MarkStep.MarkMarshalSpec (pd, new DependencyInfo (DependencyKind.ParameterMarshalSpec, method));
-						}
-#pragma warning restore RS0030
+					foreach (ParameterDefinition pd in method.Parameters) {
+						var type = context.MarkStep.MarkType (pd.ParameterType, new DependencyInfo (DependencyKind.ParameterType, method), methodOrigin, false);
+						if (type is not null)
+							yield return new (context.GetTypeNode (type), nameof (DependencyKind.ParameterType));
+						context.MarkStep.MarkCustomAttributes (pd, new DependencyInfo (DependencyKind.ParameterAttribute, method), methodOrigin);
+						context.MarkStep.MarkMarshalSpec (pd, new DependencyInfo (DependencyKind.ParameterMarshalSpec, method), methodOrigin);
 					}
+#pragma warning restore RS0030
 				}
 				context.MarkStep.ProcessMethod (method, reason);
 			}

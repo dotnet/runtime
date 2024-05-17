@@ -1669,45 +1669,6 @@ struct JIT_LOAD_DATA
 // Here's the global data for JIT load and initialization state.
 JIT_LOAD_DATA g_JitLoadData;
 
-//  Validate that the name used to load the JIT is just a simple file name
-//  and does not contain something that could be used in a non-qualified path.
-//  For example, using the string "..\..\..\myjit.dll" we might attempt to
-//  load a JIT from the root of the drive.
-//
-//  The minimal set of characters that we must check for and exclude are:
-//  On all platforms:
-//     '/'  - (forward slash)
-//  On Windows:
-//     '\\' - (backslash)
-//     ':'  - (colon)
-//
-//  Returns false if we find any of these characters in 'pwzJitName'
-//  Returns true if we reach the null terminator without encountering
-//  any of these characters.
-//
-static bool ValidateJitName(LPCWSTR pwzJitName)
-{
-    LPCWSTR pCurChar = pwzJitName;
-    wchar_t curChar;
-    do {
-        curChar = *pCurChar;
-        if (curChar == '/'
-#ifdef TARGET_WINDOWS
-            || (curChar == '\\') || (curChar == ':')
-#endif
-        )
-        {
-            //  Return false if we find any of these character in 'pwzJitName'
-            return false;
-        }
-        pCurChar++;
-    } while (curChar != 0);
-
-    //  Return true; we have reached the null terminator
-    //
-    return true;
-}
-
 CORINFO_OS getClrVmOs();
 
 #define LogJITInitializationError(...) \
@@ -1770,7 +1731,7 @@ static void LoadAndInitializeJIT(LPCWSTR pwzJitName DEBUGARG(LPCWSTR pwzJitPath)
             return;
         }
 
-        if (ValidateJitName(pwzJitName))
+        if (ValidateModuleName(pwzJitName))
         {
             // Load JIT from next to CoreCLR binary
             PathString CoreClrFolderHolder;
@@ -5555,7 +5516,7 @@ UINT32 ReadyToRunJitManager::JitTokenToGCInfoVersion(const METHODTOKEN& MethodTo
 
     READYTORUN_HEADER * header = JitTokenToReadyToRunInfo(MethodToken)->GetReadyToRunHeader();
 
-    return GCInfoToken::ReadyToRunVersionToGcInfoVersion(header->MajorVersion);
+    return GCInfoToken::ReadyToRunVersionToGcInfoVersion(header->MajorVersion, header->MinorVersion);
 }
 
 PTR_RUNTIME_FUNCTION ReadyToRunJitManager::JitTokenToRuntimeFunction(const METHODTOKEN& MethodToken)
