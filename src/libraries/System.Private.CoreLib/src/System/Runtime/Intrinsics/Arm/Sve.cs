@@ -2551,25 +2551,25 @@ namespace System.Runtime.Intrinsics.Arm
         /// int32_t svqdech_pat[_n_s32](int32_t op, enum svpattern pattern, uint64_t imm_factor)
         ///   SQDECH Xtied, Wtied, pattern, MUL #imm_factor
         /// </summary>
-        public static unsafe int SaturatingDecrementBy16BitElementCount(int value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) => SaturatingDecrementBy16BitElementCount(value, scale, pattern);
+        public static unsafe int SaturatingDecrementBy16BitElementCount(int value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) => SubtractSaturateScalar(value, (int)(scale * decodePredicateCount(Unsafe.SizeOf<Vector<short>>() / sizeof(short), pattern)));
 
         /// <summary>
         /// int64_t svqdech_pat[_n_s64](int64_t op, enum svpattern pattern, uint64_t imm_factor)
         ///   SQDECH Xtied, pattern, MUL #imm_factor
         /// </summary>
-        public static unsafe long SaturatingDecrementBy16BitElementCount(long value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) => SaturatingDecrementBy16BitElementCount(value, scale, pattern);
+        public static unsafe long SaturatingDecrementBy16BitElementCount(long value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) => SubtractSaturateScalar(value, (long)(scale * decodePredicateCount(Unsafe.SizeOf<Vector<short>>() / sizeof(short), pattern)));
 
         /// <summary>
         /// uint32_t svqdech_pat[_n_u32](uint32_t op, enum svpattern pattern, uint64_t imm_factor)
         ///   UQDECH Wtied, pattern, MUL #imm_factor
         /// </summary>
-        public static unsafe uint SaturatingDecrementBy16BitElementCount(uint value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) => SaturatingDecrementBy16BitElementCount(value, scale, pattern);
+        public static unsafe uint SaturatingDecrementBy16BitElementCount(uint value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) => SubtractSaturateScalar(value, (uint)(scale * decodePredicateCount(Unsafe.SizeOf<Vector<short>>() / sizeof(short), pattern)));
 
         /// <summary>
         /// uint64_t svqdech_pat[_n_u64](uint64_t op, enum svpattern pattern, uint64_t imm_factor)
         ///   UQDECH Xtied, pattern, MUL #imm_factor
         /// </summary>
-        public static unsafe ulong SaturatingDecrementBy16BitElementCount(ulong value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) => SaturatingDecrementBy16BitElementCount(value, scale, pattern);
+        public static unsafe ulong SaturatingDecrementBy16BitElementCount(ulong value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) => SubtractSaturateScalar(value, (ulong)(scale * decodePredicateCount(Unsafe.SizeOf<Vector<short>>() / sizeof(short), pattern)));
 
         /// <summary>
         /// svint16_t svqdech_pat[_s16](svint16_t op, enum svpattern pattern, uint64_t imm_factor)
@@ -2590,25 +2590,26 @@ namespace System.Runtime.Intrinsics.Arm
         /// int32_t svqdecw_pat[_n_s32](int32_t op, enum svpattern pattern, uint64_t imm_factor)
         ///   SQDECW Xtied, Wtied, pattern, MUL #imm_factor
         /// </summary>
-        public static unsafe int SaturatingDecrementBy32BitElementCount(int value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) => SaturatingDecrementBy32BitElementCount(value, scale, pattern);
+        public static unsafe int SaturatingDecrementBy32BitElementCount(int value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) => SubtractSaturateScalar(value, (int)(scale * decodePredicateCount(Unsafe.SizeOf<Vector<int>>() / sizeof(int), pattern)));
 
         /// <summary>
         /// int64_t svqdecw_pat[_n_s64](int64_t op, enum svpattern pattern, uint64_t imm_factor)
         ///   SQDECW Xtied, pattern, MUL #imm_factor
         /// </summary>
-        public static unsafe long SaturatingDecrementBy32BitElementCount(long value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) => SaturatingDecrementBy32BitElementCount(value, scale, pattern);
+        public static unsafe long SaturatingDecrementBy32BitElementCount(long value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) => SubtractSaturateScalar(value, (long)(scale * decodePredicateCount(Unsafe.SizeOf<Vector<int>>() / sizeof(int), pattern)));
 
         /// <summary>
         /// uint32_t svqdecw_pat[_n_u32](uint32_t op, enum svpattern pattern, uint64_t imm_factor)
         ///   UQDECW Wtied, pattern, MUL #imm_factor
         /// </summary>
-        public static unsafe uint SaturatingDecrementBy32BitElementCount(uint value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) => SaturatingDecrementBy32BitElementCount(value, scale, pattern);
+        public static unsafe uint SaturatingDecrementBy32BitElementCount(uint value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) => SubtractSaturateScalar(value, (uint)(scale * decodePredicateCount(Unsafe.SizeOf<Vector<int>>() / sizeof(int), pattern)));
 
         /// <summary>
         /// uint64_t svqdecw_pat[_n_u64](uint64_t op, enum svpattern pattern, uint64_t imm_factor)
         ///   UQDECW Xtied, pattern, MUL #imm_factor
         /// </summary>
-        public static unsafe ulong SaturatingDecrementBy32BitElementCount(ulong value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) => SaturatingDecrementBy32BitElementCount(value, scale, pattern);
+        public static unsafe ulong SaturatingDecrementBy32BitElementCount(ulong value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) => SubtractSaturateScalar(value, (ulong)(scale * decodePredicateCount(Unsafe.SizeOf<Vector<int>>() / sizeof(int), pattern)));
+
 
         /// <summary>
         /// svint32_t svqdecw_pat[_s32](svint32_t op, enum svpattern pattern, uint64_t imm_factor)
@@ -2629,25 +2630,25 @@ namespace System.Runtime.Intrinsics.Arm
         /// int32_t svqdecd_pat[_n_s32](int32_t op, enum svpattern pattern, uint64_t imm_factor)
         ///   SQDECD Xtied, Wtied, pattern, MUL #imm_factor
         /// </summary>
-        public static unsafe int SaturatingDecrementBy64BitElementCount(int value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) => SaturatingDecrementBy64BitElementCount(value, scale, pattern);
+        public static unsafe int SaturatingDecrementBy64BitElementCount(int value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) => SubtractSaturateScalar(value, (int)(scale * decodePredicateCount(Unsafe.SizeOf<Vector<long>>() / sizeof(long), pattern)));
 
         /// <summary>
         /// int64_t svqdecd_pat[_n_s64](int64_t op, enum svpattern pattern, uint64_t imm_factor)
         ///   SQDECD Xtied, pattern, MUL #imm_factor
         /// </summary>
-        public static unsafe long SaturatingDecrementBy64BitElementCount(long value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) => SaturatingDecrementBy64BitElementCount(value, scale, pattern);
+        public static unsafe long SaturatingDecrementBy64BitElementCount(long value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) => SubtractSaturateScalar(value, (long)(scale * decodePredicateCount(Unsafe.SizeOf<Vector<long>>() / sizeof(long), pattern)));
 
         /// <summary>
         /// uint32_t svqdecd_pat[_n_u32](uint32_t op, enum svpattern pattern, uint64_t imm_factor)
         ///   UQDECD Wtied, pattern, MUL #imm_factor
         /// </summary>
-        public static unsafe uint SaturatingDecrementBy64BitElementCount(uint value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) => SaturatingDecrementBy64BitElementCount(value, scale, pattern);
+        public static unsafe uint SaturatingDecrementBy64BitElementCount(uint value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) => SubtractSaturateScalar(value, (uint)(scale * decodePredicateCount(Unsafe.SizeOf<Vector<long>>() / sizeof(long), pattern)));
 
         /// <summary>
         /// uint64_t svqdecd_pat[_n_u64](uint64_t op, enum svpattern pattern, uint64_t imm_factor)
         ///   UQDECD Xtied, pattern, MUL #imm_factor
         /// </summary>
-        public static unsafe ulong SaturatingDecrementBy64BitElementCount(ulong value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) => SaturatingDecrementBy64BitElementCount(value, scale, pattern);
+        public static unsafe ulong SaturatingDecrementBy64BitElementCount(ulong value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) => SubtractSaturateScalar(value, (ulong)(scale * decodePredicateCount(Unsafe.SizeOf<Vector<long>>() / sizeof(long), pattern)));
 
         /// <summary>
         /// svint64_t svqdecd_pat[_s64](svint64_t op, enum svpattern pattern, uint64_t imm_factor)
@@ -2668,162 +2669,25 @@ namespace System.Runtime.Intrinsics.Arm
         /// int32_t svqdecb_pat[_n_s32](int32_t op, enum svpattern pattern, uint64_t imm_factor)
         ///   SQDECB Xtied, Wtied, pattern, MUL #imm_factor
         /// </summary>
-        public static unsafe int SaturatingDecrementBy8BitElementCount(int value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) => SaturatingDecrementBy8BitElementCount(value, scale, pattern);
+        public static unsafe int SaturatingDecrementBy8BitElementCount(int value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) => SubtractSaturateScalar(value, (int)(scale * decodePredicateCount(Unsafe.SizeOf<Vector<byte>>() / sizeof(byte), pattern)));
 
         /// <summary>
         /// int64_t svqdecb_pat[_n_s64](int64_t op, enum svpattern pattern, uint64_t imm_factor)
         ///   SQDECB Xtied, pattern, MUL #imm_factor
         /// </summary>
-        public static unsafe long SaturatingDecrementBy8BitElementCount(long value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) => SaturatingDecrementBy8BitElementCount(value, scale, pattern);
+        public static unsafe long SaturatingDecrementBy8BitElementCount(long value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) => SubtractSaturateScalar(value, (long)(scale * decodePredicateCount(Unsafe.SizeOf<Vector<byte>>() / sizeof(byte), pattern)));
 
         /// <summary>
         /// uint32_t svqdecb_pat[_n_u32](uint32_t op, enum svpattern pattern, uint64_t imm_factor)
         ///   UQDECB Wtied, pattern, MUL #imm_factor
         /// </summary>
-        public static unsafe uint SaturatingDecrementBy8BitElementCount(uint value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) => SaturatingDecrementBy8BitElementCount(value, scale, pattern);
+        public static unsafe uint SaturatingDecrementBy8BitElementCount(uint value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) => SubtractSaturateScalar(value, (uint)(scale * decodePredicateCount(Unsafe.SizeOf<Vector<byte>>() / sizeof(byte), pattern)));
 
         /// <summary>
         /// uint64_t svqdecb_pat[_n_u64](uint64_t op, enum svpattern pattern, uint64_t imm_factor)
         ///   UQDECB Xtied, pattern, MUL #imm_factor
         /// </summary>
-        public static unsafe ulong SaturatingDecrementBy8BitElementCount(ulong value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) => SaturatingDecrementBy8BitElementCount(value, scale, pattern);
-
-
-        /// Saturating decrement by active element count
-
-        /// <summary>
-        /// int32_t svqdecp[_n_s32]_b8(int32_t op, svbool_t pg)
-        ///   SQDECP Xtied, Pg.B, Wtied
-        /// </summary>
-        public static unsafe int SaturatingDecrementByActiveElementCount(int value, Vector<byte> from) => SaturatingDecrementByActiveElementCount(value, from);
-
-        /// <summary>
-        /// int64_t svqdecp[_n_s64]_b8(int64_t op, svbool_t pg)
-        ///   SQDECP Xtied, Pg.B
-        /// </summary>
-        public static unsafe long SaturatingDecrementByActiveElementCount(long value, Vector<byte> from) => SaturatingDecrementByActiveElementCount(value, from);
-
-        /// <summary>
-        /// uint32_t svqdecp[_n_u32]_b8(uint32_t op, svbool_t pg)
-        ///   UQDECP Wtied, Pg.B
-        /// </summary>
-        public static unsafe uint SaturatingDecrementByActiveElementCount(uint value, Vector<byte> from) => SaturatingDecrementByActiveElementCount(value, from);
-
-        /// <summary>
-        /// uint64_t svqdecp[_n_u64]_b8(uint64_t op, svbool_t pg)
-        ///   UQDECP Xtied, Pg.B
-        /// </summary>
-        public static unsafe ulong SaturatingDecrementByActiveElementCount(ulong value, Vector<byte> from) => SaturatingDecrementByActiveElementCount(value, from);
-
-        /// <summary>
-        /// svint16_t svqdecp[_s16](svint16_t op, svbool_t pg)
-        ///   SQDECP Ztied.H, Pg
-        /// </summary>
-        public static unsafe Vector<short> SaturatingDecrementByActiveElementCount(Vector<short> value, Vector<short> from) => SaturatingDecrementByActiveElementCount(value, from);
-
-        /// <summary>
-        /// svint32_t svqdecp[_s32](svint32_t op, svbool_t pg)
-        ///   SQDECP Ztied.S, Pg
-        /// </summary>
-        public static unsafe Vector<int> SaturatingDecrementByActiveElementCount(Vector<int> value, Vector<int> from) => SaturatingDecrementByActiveElementCount(value, from);
-
-        /// <summary>
-        /// svint64_t svqdecp[_s64](svint64_t op, svbool_t pg)
-        ///   SQDECP Ztied.D, Pg
-        /// </summary>
-        public static unsafe Vector<long> SaturatingDecrementByActiveElementCount(Vector<long> value, Vector<long> from) => SaturatingDecrementByActiveElementCount(value, from);
-
-        /// <summary>
-        /// int32_t svqdecp[_n_s32]_b16(int32_t op, svbool_t pg)
-        ///   SQDECP Xtied, Pg.H, Wtied
-        /// </summary>
-        public static unsafe int SaturatingDecrementByActiveElementCount(int value, Vector<ushort> from) => SaturatingDecrementByActiveElementCount(value, from);
-
-        /// <summary>
-        /// int64_t svqdecp[_n_s64]_b16(int64_t op, svbool_t pg)
-        ///   SQDECP Xtied, Pg.H
-        /// </summary>
-        public static unsafe long SaturatingDecrementByActiveElementCount(long value, Vector<ushort> from) => SaturatingDecrementByActiveElementCount(value, from);
-
-        /// <summary>
-        /// uint32_t svqdecp[_n_u32]_b16(uint32_t op, svbool_t pg)
-        ///   UQDECP Wtied, Pg.H
-        /// </summary>
-        public static unsafe uint SaturatingDecrementByActiveElementCount(uint value, Vector<ushort> from) => SaturatingDecrementByActiveElementCount(value, from);
-
-        /// <summary>
-        /// uint64_t svqdecp[_n_u64]_b16(uint64_t op, svbool_t pg)
-        ///   UQDECP Xtied, Pg.H
-        /// </summary>
-        public static unsafe ulong SaturatingDecrementByActiveElementCount(ulong value, Vector<ushort> from) => SaturatingDecrementByActiveElementCount(value, from);
-
-        /// <summary>
-        /// svuint16_t svqdecp[_u16](svuint16_t op, svbool_t pg)
-        ///   UQDECP Ztied.H, Pg
-        /// </summary>
-        public static unsafe Vector<ushort> SaturatingDecrementByActiveElementCount(Vector<ushort> value, Vector<ushort> from) => SaturatingDecrementByActiveElementCount(value, from);
-
-        /// <summary>
-        /// int32_t svqdecp[_n_s32]_b32(int32_t op, svbool_t pg)
-        ///   SQDECP Xtied, Pg.S, Wtied
-        /// </summary>
-        public static unsafe int SaturatingDecrementByActiveElementCount(int value, Vector<uint> from) => SaturatingDecrementByActiveElementCount(value, from);
-
-        /// <summary>
-        /// int64_t svqdecp[_n_s64]_b32(int64_t op, svbool_t pg)
-        ///   SQDECP Xtied, Pg.S
-        /// </summary>
-        public static unsafe long SaturatingDecrementByActiveElementCount(long value, Vector<uint> from) => SaturatingDecrementByActiveElementCount(value, from);
-
-        /// <summary>
-        /// uint32_t svqdecp[_n_u32]_b32(uint32_t op, svbool_t pg)
-        ///   UQDECP Wtied, Pg.S
-        /// </summary>
-        public static unsafe uint SaturatingDecrementByActiveElementCount(uint value, Vector<uint> from) => SaturatingDecrementByActiveElementCount(value, from);
-
-        /// <summary>
-        /// uint64_t svqdecp[_n_u64]_b32(uint64_t op, svbool_t pg)
-        ///   UQDECP Xtied, Pg.S
-        /// </summary>
-        public static unsafe ulong SaturatingDecrementByActiveElementCount(ulong value, Vector<uint> from) => SaturatingDecrementByActiveElementCount(value, from);
-
-        /// <summary>
-        /// svuint32_t svqdecp[_u32](svuint32_t op, svbool_t pg)
-        ///   UQDECP Ztied.S, Pg
-        ///   MOVPRFX Zresult, Zop; UQDECP Zresult.S, Pg
-        /// </summary>
-        public static unsafe Vector<uint> SaturatingDecrementByActiveElementCount(Vector<uint> value, Vector<uint> from) => SaturatingDecrementByActiveElementCount(value, from);
-
-        /// <summary>
-        /// int32_t svqdecp[_n_s32]_b64(int32_t op, svbool_t pg)
-        ///   SQDECP Xtied, Pg.D, Wtied
-        /// </summary>
-        public static unsafe int SaturatingDecrementByActiveElementCount(int value, Vector<ulong> from) => SaturatingDecrementByActiveElementCount(value, from);
-
-        /// <summary>
-        /// int64_t svqdecp[_n_s64]_b64(int64_t op, svbool_t pg)
-        ///   SQDECP Xtied, Pg.D
-        /// </summary>
-        public static unsafe long SaturatingDecrementByActiveElementCount(long value, Vector<ulong> from) => SaturatingDecrementByActiveElementCount(value, from);
-
-        /// <summary>
-        /// uint32_t svqdecp[_n_u32]_b64(uint32_t op, svbool_t pg)
-        ///   UQDECP Wtied, Pg.D
-        /// </summary>
-        public static unsafe uint SaturatingDecrementByActiveElementCount(uint value, Vector<ulong> from) => SaturatingDecrementByActiveElementCount(value, from);
-
-        /// <summary>
-        /// uint64_t svqdecp[_n_u64]_b64(uint64_t op, svbool_t pg)
-        ///   UQDECP Xtied, Pg.D
-        /// </summary>
-        public static unsafe ulong SaturatingDecrementByActiveElementCount(ulong value, Vector<ulong> from) => SaturatingDecrementByActiveElementCount(value, from);
-
-        /// <summary>
-        /// svuint64_t svqdecp[_u64](svuint64_t op, svbool_t pg)
-        ///   UQDECP Ztied.D, Pg
-        /// </summary>
-        public static unsafe Vector<ulong> SaturatingDecrementByActiveElementCount(Vector<ulong> value, Vector<ulong> from) => SaturatingDecrementByActiveElementCount(value, from);
-
+        public static unsafe ulong SaturatingDecrementBy8BitElementCount(ulong value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) => SubtractSaturateScalar(value, (ulong)(scale * decodePredicateCount(Unsafe.SizeOf<Vector<byte>>() / sizeof(byte), pattern)));
 
         /// Saturating increment by number of halfword elements
 
@@ -2831,25 +2695,25 @@ namespace System.Runtime.Intrinsics.Arm
         /// int32_t svqinch_pat[_n_s32](int32_t op, enum svpattern pattern, uint64_t imm_factor)
         ///   SQINCH Xtied, Wtied, pattern, MUL #imm_factor
         /// </summary>
-        public static unsafe int SaturatingIncrementBy16BitElementCount(int value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) => SaturatingIncrementBy16BitElementCount(value, scale, pattern);
+        public static unsafe int SaturatingIncrementBy16BitElementCount(int value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All)  => AddSaturateScalar(value, (int)(scale * decodePredicateCount(Unsafe.SizeOf<Vector<short>>() / sizeof(short), pattern)));
 
         /// <summary>
         /// int64_t svqinch_pat[_n_s64](int64_t op, enum svpattern pattern, uint64_t imm_factor)
         ///   SQINCH Xtied, pattern, MUL #imm_factor
         /// </summary>
-        public static unsafe long SaturatingIncrementBy16BitElementCount(long value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) => SaturatingIncrementBy16BitElementCount(value, scale, pattern);
+        public static unsafe long SaturatingIncrementBy16BitElementCount(long value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) => AddSaturateScalar(value, (long)(scale * decodePredicateCount(Unsafe.SizeOf<Vector<short>>() / sizeof(short), pattern)));
 
         /// <summary>
         /// uint32_t svqinch_pat[_n_u32](uint32_t op, enum svpattern pattern, uint64_t imm_factor)
         ///   UQINCH Wtied, pattern, MUL #imm_factor
         /// </summary>
-        public static unsafe uint SaturatingIncrementBy16BitElementCount(uint value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) => SaturatingIncrementBy16BitElementCount(value, scale, pattern);
+        public static unsafe uint SaturatingIncrementBy16BitElementCount(uint value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) => AddSaturateScalar(value, (uint)(scale * decodePredicateCount(Unsafe.SizeOf<Vector<short>>() / sizeof(short), pattern)));
 
         /// <summary>
         /// uint64_t svqinch_pat[_n_u64](uint64_t op, enum svpattern pattern, uint64_t imm_factor)
         ///   UQINCH Xtied, pattern, MUL #imm_factor
         /// </summary>
-        public static unsafe ulong SaturatingIncrementBy16BitElementCount(ulong value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) => SaturatingIncrementBy16BitElementCount(value, scale, pattern);
+        public static unsafe ulong SaturatingIncrementBy16BitElementCount(ulong value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) => AddSaturateScalar(value, (ulong)(scale * decodePredicateCount(Unsafe.SizeOf<Vector<short>>() / sizeof(short), pattern)));
 
         /// <summary>
         /// svint16_t svqinch_pat[_s16](svint16_t op, enum svpattern pattern, uint64_t imm_factor)
@@ -2870,25 +2734,25 @@ namespace System.Runtime.Intrinsics.Arm
         /// int32_t svqincw_pat[_n_s32](int32_t op, enum svpattern pattern, uint64_t imm_factor)
         ///   SQINCW Xtied, Wtied, pattern, MUL #imm_factor
         /// </summary>
-        public static unsafe int SaturatingIncrementBy32BitElementCount(int value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) => SaturatingIncrementBy32BitElementCount(value, scale, pattern);
+        public static unsafe int SaturatingIncrementBy32BitElementCount(int value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) => AddSaturateScalar(value, (int)(scale * decodePredicateCount(Unsafe.SizeOf<Vector<int>>() / sizeof(int), pattern)));
 
         /// <summary>
         /// int64_t svqincw_pat[_n_s64](int64_t op, enum svpattern pattern, uint64_t imm_factor)
         ///   SQINCW Xtied, pattern, MUL #imm_factor
         /// </summary>
-        public static unsafe long SaturatingIncrementBy32BitElementCount(long value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) => SaturatingIncrementBy32BitElementCount(value, scale, pattern);
+        public static unsafe long SaturatingIncrementBy32BitElementCount(long value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) => AddSaturateScalar(value, (long)(scale * decodePredicateCount(Unsafe.SizeOf<Vector<int>>() / sizeof(int), pattern)));
 
         /// <summary>
         /// uint32_t svqincw_pat[_n_u32](uint32_t op, enum svpattern pattern, uint64_t imm_factor)
         ///   UQINCW Wtied, pattern, MUL #imm_factor
         /// </summary>
-        public static unsafe uint SaturatingIncrementBy32BitElementCount(uint value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) => SaturatingIncrementBy32BitElementCount(value, scale, pattern);
+        public static unsafe uint SaturatingIncrementBy32BitElementCount(uint value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) => AddSaturateScalar(value, (uint)(scale * decodePredicateCount(Unsafe.SizeOf<Vector<int>>() / sizeof(int), pattern)));
 
         /// <summary>
         /// uint64_t svqincw_pat[_n_u64](uint64_t op, enum svpattern pattern, uint64_t imm_factor)
         ///   UQINCW Xtied, pattern, MUL #imm_factor
         /// </summary>
-        public static unsafe ulong SaturatingIncrementBy32BitElementCount(ulong value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) => SaturatingIncrementBy32BitElementCount(value, scale, pattern);
+        public static unsafe ulong SaturatingIncrementBy32BitElementCount(ulong value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) => AddSaturateScalar(value, (ulong)(scale * decodePredicateCount(Unsafe.SizeOf<Vector<int>>() / sizeof(int), pattern)));
 
         /// <summary>
         /// svint32_t svqincw_pat[_s32](svint32_t op, enum svpattern pattern, uint64_t imm_factor)
@@ -2909,25 +2773,25 @@ namespace System.Runtime.Intrinsics.Arm
         /// int32_t svqincd_pat[_n_s32](int32_t op, enum svpattern pattern, uint64_t imm_factor)
         ///   SQINCD Xtied, Wtied, pattern, MUL #imm_factor
         /// </summary>
-        public static unsafe int SaturatingIncrementBy64BitElementCount(int value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) => SaturatingIncrementBy64BitElementCount(value, scale, pattern);
+        public static unsafe int SaturatingIncrementBy64BitElementCount(int value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) => AddSaturateScalar(value, (int)(scale * decodePredicateCount(Unsafe.SizeOf<Vector<long>>() / sizeof(long), pattern)));
 
         /// <summary>
         /// int64_t svqincd_pat[_n_s64](int64_t op, enum svpattern pattern, uint64_t imm_factor)
         ///   SQINCD Xtied, pattern, MUL #imm_factor
         /// </summary>
-        public static unsafe long SaturatingIncrementBy64BitElementCount(long value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) => SaturatingIncrementBy64BitElementCount(value, scale, pattern);
+        public static unsafe long SaturatingIncrementBy64BitElementCount(long value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) => AddSaturateScalar(value, (long)(scale * decodePredicateCount(Unsafe.SizeOf<Vector<long>>() / sizeof(long), pattern)));
 
         /// <summary>
         /// uint32_t svqincd_pat[_n_u32](uint32_t op, enum svpattern pattern, uint64_t imm_factor)
         ///   UQINCD Wtied, pattern, MUL #imm_factor
         /// </summary>
-        public static unsafe uint SaturatingIncrementBy64BitElementCount(uint value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) => SaturatingIncrementBy64BitElementCount(value, scale, pattern);
+        public static unsafe uint SaturatingIncrementBy64BitElementCount(uint value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) => AddSaturateScalar(value, (uint)(scale * decodePredicateCount(Unsafe.SizeOf<Vector<long>>() / sizeof(long), pattern)));
 
         /// <summary>
         /// uint64_t svqincd_pat[_n_u64](uint64_t op, enum svpattern pattern, uint64_t imm_factor)
         ///   UQINCD Xtied, pattern, MUL #imm_factor
         /// </summary>
-        public static unsafe ulong SaturatingIncrementBy64BitElementCount(ulong value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) => SaturatingIncrementBy64BitElementCount(value, scale, pattern);
+        public static unsafe ulong SaturatingIncrementBy64BitElementCount(ulong value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) => AddSaturateScalar(value, (ulong)(scale * decodePredicateCount(Unsafe.SizeOf<Vector<long>>() / sizeof(long), pattern)));
 
         /// <summary>
         /// svint64_t svqincd_pat[_s64](svint64_t op, enum svpattern pattern, uint64_t imm_factor)
@@ -2948,160 +2812,24 @@ namespace System.Runtime.Intrinsics.Arm
         /// int32_t svqincb_pat[_n_s32](int32_t op, enum svpattern pattern, uint64_t imm_factor)
         ///   SQINCB Xtied, Wtied, pattern, MUL #imm_factor
         /// </summary>
-        public static unsafe int SaturatingIncrementBy8BitElementCount(int value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) => SaturatingIncrementBy8BitElementCount(value, scale, pattern);
+        public static unsafe int SaturatingIncrementBy8BitElementCount(int value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) => AddSaturateScalar(value, (int)(scale * decodePredicateCount(Unsafe.SizeOf<Vector<byte>>() / sizeof(byte), pattern)));
 
         /// <summary>
         /// int64_t svqincb_pat[_n_s64](int64_t op, enum svpattern pattern, uint64_t imm_factor)
         ///   SQINCB Xtied, pattern, MUL #imm_factor
         /// </summary>
-        public static unsafe long SaturatingIncrementBy8BitElementCount(long value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) => SaturatingIncrementBy8BitElementCount(value, scale, pattern);
-
+        public static unsafe long SaturatingIncrementBy8BitElementCount(long value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) => AddSaturateScalar(value, (long)(scale * decodePredicateCount(Unsafe.SizeOf<Vector<byte>>() / sizeof(byte), pattern)));
         /// <summary>
         /// uint32_t svqincb_pat[_n_u32](uint32_t op, enum svpattern pattern, uint64_t imm_factor)
         ///   UQINCB Wtied, pattern, MUL #imm_factor
         /// </summary>
-        public static unsafe uint SaturatingIncrementBy8BitElementCount(uint value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) => SaturatingIncrementBy8BitElementCount(value, scale, pattern);
+        public static unsafe uint SaturatingIncrementBy8BitElementCount(uint value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) => AddSaturateScalar(value, (uint)(scale * decodePredicateCount(Unsafe.SizeOf<Vector<byte>>() / sizeof(byte), pattern)));
 
         /// <summary>
         /// uint64_t svqincb_pat[_n_u64](uint64_t op, enum svpattern pattern, uint64_t imm_factor)
         ///   UQINCB Xtied, pattern, MUL #imm_factor
         /// </summary>
-        public static unsafe ulong SaturatingIncrementBy8BitElementCount(ulong value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) => SaturatingIncrementBy8BitElementCount(value, scale, pattern);
-
-
-        /// Saturating increment by active element count
-
-        /// <summary>
-        /// int32_t svqincp[_n_s32]_b8(int32_t op, svbool_t pg)
-        ///   SQINCP Xtied, Pg.B, Wtied
-        /// </summary>
-        public static unsafe int SaturatingIncrementByActiveElementCount(int value, Vector<byte> from) => SaturatingIncrementByActiveElementCount(value, from);
-
-        /// <summary>
-        /// int64_t svqincp[_n_s64]_b8(int64_t op, svbool_t pg)
-        ///   SQINCP Xtied, Pg.B
-        /// </summary>
-        public static unsafe long SaturatingIncrementByActiveElementCount(long value, Vector<byte> from) => SaturatingIncrementByActiveElementCount(value, from);
-
-        /// <summary>
-        /// uint32_t svqincp[_n_u32]_b8(uint32_t op, svbool_t pg)
-        ///   UQINCP Wtied, Pg.B
-        /// </summary>
-        public static unsafe uint SaturatingIncrementByActiveElementCount(uint value, Vector<byte> from) => SaturatingIncrementByActiveElementCount(value, from);
-
-        /// <summary>
-        /// uint64_t svqincp[_n_u64]_b8(uint64_t op, svbool_t pg)
-        ///   UQINCP Xtied, Pg.B
-        /// </summary>
-        public static unsafe ulong SaturatingIncrementByActiveElementCount(ulong value, Vector<byte> from) => SaturatingIncrementByActiveElementCount(value, from);
-
-        /// <summary>
-        /// svint16_t svqincp[_s16](svint16_t op, svbool_t pg)
-        ///   SQINCP Ztied.H, Pg
-        /// </summary>
-        public static unsafe Vector<short> SaturatingIncrementByActiveElementCount(Vector<short> value, Vector<short> from) => SaturatingIncrementByActiveElementCount(value, from);
-
-        /// <summary>
-        /// svint32_t svqincp[_s32](svint32_t op, svbool_t pg)
-        ///   SQINCP Ztied.S, Pg
-        /// </summary>
-        public static unsafe Vector<int> SaturatingIncrementByActiveElementCount(Vector<int> value, Vector<int> from) => SaturatingIncrementByActiveElementCount(value, from);
-
-        /// <summary>
-        /// svint64_t svqincp[_s64](svint64_t op, svbool_t pg)
-        ///   SQINCP Ztied.D, Pg
-        /// </summary>
-        public static unsafe Vector<long> SaturatingIncrementByActiveElementCount(Vector<long> value, Vector<long> from) => SaturatingIncrementByActiveElementCount(value, from);
-
-        /// <summary>
-        /// int32_t svqincp[_n_s32]_b16(int32_t op, svbool_t pg)
-        ///   SQINCP Xtied, Pg.H, Wtied
-        /// </summary>
-        public static unsafe int SaturatingIncrementByActiveElementCount(int value, Vector<ushort> from) => SaturatingIncrementByActiveElementCount(value, from);
-
-        /// <summary>
-        /// int64_t svqincp[_n_s64]_b16(int64_t op, svbool_t pg)
-        ///   SQINCP Xtied, Pg.H
-        /// </summary>
-        public static unsafe long SaturatingIncrementByActiveElementCount(long value, Vector<ushort> from) => SaturatingIncrementByActiveElementCount(value, from);
-
-        /// <summary>
-        /// uint32_t svqincp[_n_u32]_b16(uint32_t op, svbool_t pg)
-        ///   UQINCP Wtied, Pg.H
-        /// </summary>
-        public static unsafe uint SaturatingIncrementByActiveElementCount(uint value, Vector<ushort> from) => SaturatingIncrementByActiveElementCount(value, from);
-
-        /// <summary>
-        /// uint64_t svqincp[_n_u64]_b16(uint64_t op, svbool_t pg)
-        ///   UQINCP Xtied, Pg.H
-        /// </summary>
-        public static unsafe ulong SaturatingIncrementByActiveElementCount(ulong value, Vector<ushort> from) => SaturatingIncrementByActiveElementCount(value, from);
-
-        /// <summary>
-        /// svuint16_t svqincp[_u16](svuint16_t op, svbool_t pg)
-        ///   UQINCP Ztied.H, Pg
-        /// </summary>
-        public static unsafe Vector<ushort> SaturatingIncrementByActiveElementCount(Vector<ushort> value, Vector<ushort> from) => SaturatingIncrementByActiveElementCount(value, from);
-
-        /// <summary>
-        /// int32_t svqincp[_n_s32]_b32(int32_t op, svbool_t pg)
-        ///   SQINCP Xtied, Pg.S, Wtied
-        /// </summary>
-        public static unsafe int SaturatingIncrementByActiveElementCount(int value, Vector<uint> from) => SaturatingIncrementByActiveElementCount(value, from);
-
-        /// <summary>
-        /// int64_t svqincp[_n_s64]_b32(int64_t op, svbool_t pg)
-        ///   SQINCP Xtied, Pg.S
-        /// </summary>
-        public static unsafe long SaturatingIncrementByActiveElementCount(long value, Vector<uint> from) => SaturatingIncrementByActiveElementCount(value, from);
-
-        /// <summary>
-        /// uint32_t svqincp[_n_u32]_b32(uint32_t op, svbool_t pg)
-        ///   UQINCP Wtied, Pg.S
-        /// </summary>
-        public static unsafe uint SaturatingIncrementByActiveElementCount(uint value, Vector<uint> from) => SaturatingIncrementByActiveElementCount(value, from);
-
-        /// <summary>
-        /// uint64_t svqincp[_n_u64]_b32(uint64_t op, svbool_t pg)
-        ///   UQINCP Xtied, Pg.S
-        /// </summary>
-        public static unsafe ulong SaturatingIncrementByActiveElementCount(ulong value, Vector<uint> from) => SaturatingIncrementByActiveElementCount(value, from);
-
-        /// <summary>
-        /// svuint32_t svqincp[_u32](svuint32_t op, svbool_t pg)
-        ///   UQINCP Ztied.S, Pg
-        /// </summary>
-        public static unsafe Vector<uint> SaturatingIncrementByActiveElementCount(Vector<uint> value, Vector<uint> from) => SaturatingIncrementByActiveElementCount(value, from);
-
-        /// <summary>
-        /// int32_t svqincp[_n_s32]_b64(int32_t op, svbool_t pg)
-        ///   SQINCP Xtied, Pg.D, Wtied
-        /// </summary>
-        public static unsafe int SaturatingIncrementByActiveElementCount(int value, Vector<ulong> from) => SaturatingIncrementByActiveElementCount(value, from);
-
-        /// <summary>
-        /// int64_t svqincp[_n_s64]_b64(int64_t op, svbool_t pg)
-        ///   SQINCP Xtied, Pg.D
-        /// </summary>
-        public static unsafe long SaturatingIncrementByActiveElementCount(long value, Vector<ulong> from) => SaturatingIncrementByActiveElementCount(value, from);
-
-        /// <summary>
-        /// uint32_t svqincp[_n_u32]_b64(uint32_t op, svbool_t pg)
-        ///   UQINCP Wtied, Pg.D
-        /// </summary>
-        public static unsafe uint SaturatingIncrementByActiveElementCount(uint value, Vector<ulong> from) => SaturatingIncrementByActiveElementCount(value, from);
-
-        /// <summary>
-        /// uint64_t svqincp[_n_u64]_b64(uint64_t op, svbool_t pg)
-        ///   UQINCP Xtied, Pg.D
-        /// </summary>
-        public static unsafe ulong SaturatingIncrementByActiveElementCount(ulong value, Vector<ulong> from) => SaturatingIncrementByActiveElementCount(value, from);
-
-        /// <summary>
-        /// svuint64_t svqincp[_u64](svuint64_t op, svbool_t pg)
-        ///   UQINCP Ztied.D, Pg
-        /// </summary>
-        public static unsafe Vector<ulong> SaturatingIncrementByActiveElementCount(Vector<ulong> value, Vector<ulong> from) => SaturatingIncrementByActiveElementCount(value, from);
+        public static unsafe ulong SaturatingIncrementBy8BitElementCount(ulong value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) => AddSaturateScalar(value, (ulong)(scale * decodePredicateCount(Unsafe.SizeOf<Vector<byte>>() / sizeof(byte), pattern)));
 
 
         ///  SignExtend16 : Sign-extend the low 16 bits
@@ -3945,5 +3673,110 @@ namespace System.Runtime.Intrinsics.Arm
         ///   ZIP1 Presult.D, Pop1.D, Pop2.D
         /// </summary>
         public static unsafe Vector<ulong> ZipLow(Vector<ulong> left, Vector<ulong> right) => ZipLow(left, right);
+
+
+
+        private static int AddSaturateScalar(int left, int right)
+        {
+            int result = (int)(left + right);
+            bool overflow = (right < 0) ? (result > left) : (result < right);
+            return overflow ? (result > 0 ? int.MinValue : int.MaxValue) : result;
+        }
+
+        private static long AddSaturateScalar(long left, long right)
+        {
+            long result = (long)(left + right);
+            bool overflow = (right < 0) ? (result > left) : (result < right);
+            return overflow ? (result > 0 ? long.MinValue : long.MaxValue) : result;
+        }
+
+        private static uint AddSaturateScalar(uint left, uint right)
+        {
+            uint result = (uint)(left + right);
+            bool overflow = (result < left);
+            return overflow ? uint.MaxValue : result;
+        }
+
+        private static ulong AddSaturateScalar(ulong left, ulong right)
+        {
+            ulong result = (ulong)(left + right);
+            bool overflow = (result < left);
+            return overflow ? ulong.MaxValue : result;
+        }
+
+        private static int SubtractSaturateScalar(int left, int right)
+        {
+            int result = (int)(left - right);
+            bool overflow = (right < 0) ? (result < left) : (result > left);
+            return overflow ? (result > 0 ? int.MinValue : int.MaxValue) : result;
+        }
+
+        private static long SubtractSaturateScalar(long left, long right)
+        {
+            long result = (long)(left - right);
+            bool overflow = (right < 0) ? (result < left) : (result > left);
+            return overflow ? (result > 0 ? long.MinValue : long.MaxValue) : result;
+        }
+
+        private static uint SubtractSaturateScalar(uint left, uint right)
+        {
+            uint result = (uint)(left - right);
+            bool overflow = (left < right);
+            return overflow ? uint.MinValue : result;
+        }
+
+        private static ulong SubtractSaturateScalar(ulong left, ulong right)
+        {
+            ulong result = (ulong)(left - right);
+            bool overflow = (left < right);
+            return overflow ? ulong.MinValue : result;
+        }
+
+        // Given a vector length for a given type, return the number of elements when pattern is applied
+        private static int decodePredicateCount(int totalElems, SveMaskPattern pattern)
+        {
+            switch(pattern)
+            {
+                case SveMaskPattern.LargestPowerOf2:
+                    int ret = 1;
+                    while (totalElems >= (2^ret)) { ret++; }
+                    return 2^(ret - 1);
+                case SveMaskPattern.VectorCount1:
+                    return (totalElems > 1) ? 1 : 0;
+                case SveMaskPattern.VectorCount2:
+                    return (totalElems > 2) ? 2 : 0;
+                case SveMaskPattern.VectorCount3:
+                    return (totalElems > 3) ? 3 : 0;
+                case SveMaskPattern.VectorCount4:
+                    return (totalElems > 4) ? 4 : 0;
+                case SveMaskPattern.VectorCount5:
+                    return (totalElems > 5) ? 5 : 0;
+                case SveMaskPattern.VectorCount6:
+                    return (totalElems > 6) ? 6 : 0;
+                case SveMaskPattern.VectorCount7:
+                    return (totalElems > 7) ? 7 : 0;
+                case SveMaskPattern.VectorCount8:
+                    return (totalElems > 8) ? 8 : 0;
+                case SveMaskPattern.VectorCount16:
+                    return (totalElems > 16) ? 16 : 0;
+                case SveMaskPattern.VectorCount32:
+                    return (totalElems > 32) ? 32 : 0;
+                case SveMaskPattern.VectorCount64:
+                    return (totalElems > 64) ? 64 : 0;
+                case SveMaskPattern.VectorCount128:
+                    return (totalElems > 128) ? 128 : 0;
+                case SveMaskPattern.VectorCount256:
+                    return (totalElems > 256) ? 256 : 0;
+                case SveMaskPattern.LargestMultipleOf4:
+                    return totalElems - (totalElems % 4);
+                case SveMaskPattern.LargestMultipleOf3:
+                    return totalElems - (totalElems % 3);
+                case SveMaskPattern.All:
+                    return totalElems;
+                default:
+                    break;
+            }
+            return 0;
+        }
     }
 }

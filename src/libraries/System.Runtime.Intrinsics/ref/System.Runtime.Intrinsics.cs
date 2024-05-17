@@ -4531,28 +4531,7 @@ namespace System.Runtime.Intrinsics.Arm
         public static long SaturatingDecrementBy8BitElementCount(long value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw null; }
         public static uint SaturatingDecrementBy8BitElementCount(uint value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw null; }
         public static ulong SaturatingDecrementBy8BitElementCount(ulong value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw null; }
-        public static int SaturatingDecrementByActiveElementCount(int value, System.Numerics.Vector<byte> from) { throw null; }
-        public static long SaturatingDecrementByActiveElementCount(long value, System.Numerics.Vector<byte> from) { throw null; }
-        public static uint SaturatingDecrementByActiveElementCount(uint value, System.Numerics.Vector<byte> from) { throw null; }
-        public static ulong SaturatingDecrementByActiveElementCount(ulong value, System.Numerics.Vector<byte> from) { throw null; }
-        public static System.Numerics.Vector<short> SaturatingDecrementByActiveElementCount(System.Numerics.Vector<short> value, System.Numerics.Vector<short> from) { throw null; }
-        public static System.Numerics.Vector<int> SaturatingDecrementByActiveElementCount(System.Numerics.Vector<int> value, System.Numerics.Vector<int> from) { throw null; }
-        public static System.Numerics.Vector<long> SaturatingDecrementByActiveElementCount(System.Numerics.Vector<long> value, System.Numerics.Vector<long> from) { throw null; }
-        public static int SaturatingDecrementByActiveElementCount(int value, System.Numerics.Vector<ushort> from) { throw null; }
-        public static long SaturatingDecrementByActiveElementCount(long value, System.Numerics.Vector<ushort> from) { throw null; }
-        public static uint SaturatingDecrementByActiveElementCount(uint value, System.Numerics.Vector<ushort> from) { throw null; }
-        public static ulong SaturatingDecrementByActiveElementCount(ulong value, System.Numerics.Vector<ushort> from) { throw null; }
-        public static System.Numerics.Vector<ushort> SaturatingDecrementByActiveElementCount(System.Numerics.Vector<ushort> value, System.Numerics.Vector<ushort> from) { throw null; }
-        public static int SaturatingDecrementByActiveElementCount(int value, System.Numerics.Vector<uint> from) { throw null; }
-        public static long SaturatingDecrementByActiveElementCount(long value, System.Numerics.Vector<uint> from) { throw null; }
-        public static uint SaturatingDecrementByActiveElementCount(uint value, System.Numerics.Vector<uint> from) { throw null; }
-        public static ulong SaturatingDecrementByActiveElementCount(ulong value, System.Numerics.Vector<uint> from) { throw null; }
-        public static System.Numerics.Vector<uint> SaturatingDecrementByActiveElementCount(System.Numerics.Vector<uint> value, System.Numerics.Vector<uint> from) { throw null; }
-        public static int SaturatingDecrementByActiveElementCount(int value, System.Numerics.Vector<ulong> from) { throw null; }
-        public static long SaturatingDecrementByActiveElementCount(long value, System.Numerics.Vector<ulong> from) { throw null; }
-        public static uint SaturatingDecrementByActiveElementCount(uint value, System.Numerics.Vector<ulong> from) { throw null; }
-        public static ulong SaturatingDecrementByActiveElementCount(ulong value, System.Numerics.Vector<ulong> from) { throw null; }
-        public static System.Numerics.Vector<ulong> SaturatingDecrementByActiveElementCount(System.Numerics.Vector<ulong> value, System.Numerics.Vector<ulong> from) { throw null; }
+
         public static int SaturatingIncrementBy16BitElementCount(int value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw null; }
         public static long SaturatingIncrementBy16BitElementCount(long value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw null; }
         public static uint SaturatingIncrementBy16BitElementCount(uint value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw null; }
@@ -4579,25 +4558,7 @@ namespace System.Runtime.Intrinsics.Arm
         public static long SaturatingIncrementByActiveElementCount(long value, System.Numerics.Vector<byte> from) { throw null; }
         public static uint SaturatingIncrementByActiveElementCount(uint value, System.Numerics.Vector<byte> from) { throw null; }
         public static ulong SaturatingIncrementByActiveElementCount(ulong value, System.Numerics.Vector<byte> from) { throw null; }
-        public static System.Numerics.Vector<short> SaturatingIncrementByActiveElementCount(System.Numerics.Vector<short> value, System.Numerics.Vector<short> from) { throw null; }
-        public static System.Numerics.Vector<int> SaturatingIncrementByActiveElementCount(System.Numerics.Vector<int> value, System.Numerics.Vector<int> from) { throw null; }
-        public static System.Numerics.Vector<long> SaturatingIncrementByActiveElementCount(System.Numerics.Vector<long> value, System.Numerics.Vector<long> from) { throw null; }
-        public static int SaturatingIncrementByActiveElementCount(int value, System.Numerics.Vector<ushort> from) { throw null; }
-        public static long SaturatingIncrementByActiveElementCount(long value, System.Numerics.Vector<ushort> from) { throw null; }
-        public static uint SaturatingIncrementByActiveElementCount(uint value, System.Numerics.Vector<ushort> from) { throw null; }
-        public static ulong SaturatingIncrementByActiveElementCount(ulong value, System.Numerics.Vector<ushort> from) { throw null; }
-        public static System.Numerics.Vector<ushort> SaturatingIncrementByActiveElementCount(System.Numerics.Vector<ushort> value, System.Numerics.Vector<ushort> from) { throw null; }
-        public static int SaturatingIncrementByActiveElementCount(int value, System.Numerics.Vector<uint> from) { throw null; }
-        public static long SaturatingIncrementByActiveElementCount(long value, System.Numerics.Vector<uint> from) { throw null; }
-        public static uint SaturatingIncrementByActiveElementCount(uint value, System.Numerics.Vector<uint> from) { throw null; }
-        public static ulong SaturatingIncrementByActiveElementCount(ulong value, System.Numerics.Vector<uint> from) { throw null; }
-        public static System.Numerics.Vector<uint> SaturatingIncrementByActiveElementCount(System.Numerics.Vector<uint> value, System.Numerics.Vector<uint> from) { throw null; }
-        public static int SaturatingIncrementByActiveElementCount(int value, System.Numerics.Vector<ulong> from) { throw null; }
-        public static long SaturatingIncrementByActiveElementCount(long value, System.Numerics.Vector<ulong> from) { throw null; }
-        public static uint SaturatingIncrementByActiveElementCount(uint value, System.Numerics.Vector<ulong> from) { throw null; }
-        public static ulong SaturatingIncrementByActiveElementCount(ulong value, System.Numerics.Vector<ulong> from) { throw null; }
-        public static System.Numerics.Vector<ulong> SaturatingIncrementByActiveElementCount(System.Numerics.Vector<ulong> value, System.Numerics.Vector<ulong> from) { throw null; }
- 
+
         public static System.Numerics.Vector<int> SignExtend16(System.Numerics.Vector<int> value) { throw null; }
         public static System.Numerics.Vector<long> SignExtend16(System.Numerics.Vector<long> value) { throw null; }
         public static System.Numerics.Vector<long> SignExtend32(System.Numerics.Vector<long> value) { throw null; }
