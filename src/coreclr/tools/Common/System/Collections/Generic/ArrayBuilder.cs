@@ -86,27 +86,15 @@ namespace System.Collections.Generic
             }
         }
 
-        public int Count
+        public readonly int Count => _count;
+
+        public readonly T this[int index]
         {
-            get
-            {
-                return _count;
-            }
+            get => _items[index];
+            set => _items[index] = value;
         }
 
-        public T this[int index]
-        {
-            get
-            {
-                return _items[index];
-            }
-            set
-            {
-                _items[index] = value;
-            }
-        }
-
-        public bool Contains(T t)
+        public readonly bool Contains(T t)
         {
             for (int i = 0; i < _count; i++)
             {
@@ -119,7 +107,7 @@ namespace System.Collections.Generic
             return false;
         }
 
-        public bool Any(Func<T, bool> func)
+        public readonly bool Any(Func<T, bool> func)
         {
             for (int i = 0; i < _count; i++)
             {
