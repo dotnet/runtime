@@ -382,17 +382,20 @@ namespace System.Buffers.Text
 
                 ref sbyte decodingMap = ref MemoryMarshal.GetReference(TBase64Decoder.DecodingMap);
 
-                while (sourceIndex + 4 < bufferLength)
+                if (bufferLength > 4)
                 {
-                    int result = Decode(bufferBytes + sourceIndex, ref decodingMap);
-                    if (result < 0)
+                    while (sourceIndex < bufferLength - 4)
                     {
-                        goto InvalidExit;
-                    }
+                        int result = Decode(bufferBytes + sourceIndex, ref decodingMap);
+                        if (result < 0)
+                        {
+                            goto InvalidExit;
+                        }
 
-                    WriteThreeLowOrderBytes(bufferBytes + destIndex, result);
-                    destIndex += 3;
-                    sourceIndex += 4;
+                        WriteThreeLowOrderBytes(bufferBytes + destIndex, result);
+                        destIndex += 3;
+                        sourceIndex += 4;
+                    }
                 }
 
                 uint t0;
