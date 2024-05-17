@@ -183,7 +183,7 @@ namespace System.Reflection.Tests
             Assert.True(correct, $"Unexpected assembly name {assembly}");
         }
 
-        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void SetEntryAssembly()
         {
             Assert.NotNull(Assembly.GetEntryAssembly());
