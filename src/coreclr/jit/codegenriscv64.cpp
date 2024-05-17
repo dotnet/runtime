@@ -607,7 +607,7 @@ void CodeGen::genSaveCalleeSavedRegistersHelp(regMaskTP regsToSaveMask, int lowe
 
     assert((spDelta % STACK_ALIGN) == 0);
 
-    assert(regsToSaveCount <= genCountBits(RBM_CALLEE_SAVED));
+    assert(regsToSaveCount <= genCountBits(regMaskTP(RBM_CALLEE_SAVED)));
 
     // Save integer registers at higher addresses than floating-point registers.
     regMaskTP maskSaveRegsFloat = regsToSaveMask & RBM_ALLFLOAT;
@@ -718,7 +718,7 @@ void CodeGen::genRestoreCalleeSavedRegistersHelp(regMaskTP regsToRestoreMask, in
     assert((spDelta % STACK_ALIGN) == 0);
 
     // We also can restore FP and RA, even though they are not in RBM_CALLEE_SAVED.
-    assert(regsToRestoreCount <= genCountBits(RBM_CALLEE_SAVED | RBM_FP | RBM_RA));
+    assert(regsToRestoreCount <= genCountBits(regMaskTP(RBM_CALLEE_SAVED | RBM_FP | RBM_RA)));
 
     // Point past the end, to start. We predecrement to find the offset to load from.
     static_assert_no_msg(REGSIZE_BYTES == FPSAVE_REGSIZE_BYTES);
