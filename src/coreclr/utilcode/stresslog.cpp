@@ -484,6 +484,12 @@ ThreadStressLog* StressLog::CreateThreadStressLog() {
         t_pCurrentThreadLog = NULL;
     }
 #pragma warning(suppress: 4101)
+    PAL_CPP_CATCH_NON_DERIVED(const std::bad_alloc&, obj)
+    {
+        // Just leave on any exception. Note: can't goto or return from within EX_CATCH...
+        noFLSNow = TRUE;
+    }
+#pragma warning(suppress: 4101)
     PAL_CPP_CATCH_DERIVED(OutOfMemoryException, obj)
     {
         // Just leave on any exception. Note: can't goto or return from within EX_CATCH...
