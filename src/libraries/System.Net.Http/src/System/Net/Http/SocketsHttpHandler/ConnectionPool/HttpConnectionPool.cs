@@ -566,7 +566,10 @@ namespace System.Net.Http
         {
             Stream? stream = null;
             IPEndPoint? remoteEndPoint = null;
-            Activity? activity = CreateActivity()?.Start();
+            // Connection activities should be new roots and not parented under whatever
+            // request happens to be in progress when the connection is started.
+            Activity.Current = null;
+            Activity? activity = s_connectionActivitySource.StartActivity(DiagnosticsHandlerLoggingStrings.ConnectionActivityName);
 
             switch (_kind)
             {
