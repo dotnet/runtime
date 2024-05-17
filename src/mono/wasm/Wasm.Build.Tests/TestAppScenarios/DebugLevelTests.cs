@@ -49,7 +49,7 @@ public class WasmAppBuilderDebugLevelTests : DebugLevelTests
         string mainJsContent = File.ReadAllText(mainJs);
         mainJsContent = mainJsContent
             .Replace("import { dotnet }", "import { dotnet, exit }")
-            .Replace("await runMainAndExit()", "testOutput('TestOutput -> ' + config.debugLevel); exit(0)");
+            .Replace("await runMainAndExit()", "console.log('TestOutput -> ' + config.debugLevel); exit(0)");
         File.WriteAllText(mainJs, mainJsContent);
     }
 
