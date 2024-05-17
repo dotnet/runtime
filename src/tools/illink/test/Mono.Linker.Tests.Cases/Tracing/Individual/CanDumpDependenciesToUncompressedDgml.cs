@@ -2,8 +2,7 @@
 
 namespace Mono.Linker.Tests.Cases.Tracing.Individual
 {
-
-	[SetupLinkerArgument ("--dump-dependencies")]
+	[DumpDependencies]
 	[SetupLinkerArgument ("--dependencies-file-format", "Dgml")]
 	[SetupLinkerArgument ("--dependencies-file", "linker-dependencies.dgml")]
 	public class CanDumpDependenciesToUncompressedDgml

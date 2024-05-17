@@ -34,6 +34,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				StripDescriptors = GetOptionAttributeValue (nameof (StripDescriptorsAttribute), true),
 				StripSubstitutions = GetOptionAttributeValue (nameof (StripSubstitutionsAttribute), true),
 				StripLinkAttributes = GetOptionAttributeValue (nameof (StripLinkAttributesAttribute), true),
+				DumpDependencies = GetOptionAttribute (nameof (DumpDependenciesAttribute)),
 			};
 
 			foreach (var assemblyAction in _testCaseTypeDefinition.CustomAttributes.Where (attr => attr.AttributeType.Name == nameof (SetupLinkerActionAttribute))) {
@@ -189,13 +190,15 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 		public virtual NPath GetExpectedDependencyTrace ()
 		{
-			var testPrefix = _testCase.SourceFile.Parent.RelativeTo (_testCase.TestSuiteDirectory)
+			var traceFileName = _testCase.SourceFile
+				.ChangeExtension ("linker-dependencies.xml")
+				.RelativeTo (_testCase.TestSuiteDirectory)
 				.ToString ()
 				.Replace (Path.DirectorySeparatorChar, '.');
 			var testName = _testCase.SourceFile.FileNameWithoutExtension;
 			return _testCase.TestSuiteDirectory
 				.Combine("Dependencies")
-				.Combine($"{testPrefix}.{testName}.linker-dependencies.xml");
+				.Combine(traceFileName);
 		}
 	}
 }

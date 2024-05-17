@@ -177,13 +177,18 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 			builder.ProcessOptions (caseDefinedOptions);
 
-			// Dump dependencies only for the test assembly.
-			builder.AddAdditionalArgument ("--dump-dependencies", [compilationResult.InputAssemblyPath.FileNameWithoutExtension]);
+			if (!caseDefinedOptions.DumpDependencies) {
+				// The testcase didn't specify [DumpDependencies]
+				// Dump dependencies only for the test assembly.
+				builder.AddAdditionalArgument ("--dump-dependencies", [compilationResult.InputAssemblyPath.FileNameWithoutExtension]);
 
-			if (AppContext.TryGetSwitch ("GenerateExpectedDependencyTraces", out var generateExpectedDependencyTraces) && generateExpectedDependencyTraces) {
-				// If running with GenerateExpectedDependencyTrace=true, generate the traces directly into the expected src directory.
-				var expectedTracePath = metadataProvider.GetExpectedDependencyTrace ();
-				builder.AddAdditionalArgument ("--dependencies-file", [expectedTracePath]);
+				if (AppContext.TryGetSwitch ("GenerateExpectedDependencyTraces", out var generateExpectedDependencyTraces) && generateExpectedDependencyTraces) {
+					// If running with GenerateExpectedDependencyTrace=true, generate the traces directly into the expected src directory,
+					// (only for tests which did not especify [DumpDependencies] explicitly).
+					var expectedTracePath = metadataProvider.GetExpectedDependencyTrace ();
+					expectedTracePath.Parent.EnsureDirectoryExists ();
+					builder.AddAdditionalArgument ("--dependencies-file", [expectedTracePath]);
+				}
 			}
 
 			builder.ProcessTestInputAssembly (compilationResult.InputAssemblyPath);
