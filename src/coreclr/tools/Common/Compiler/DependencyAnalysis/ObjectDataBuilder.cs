@@ -86,37 +86,27 @@ namespace ILCompiler.DependencyAnalysis
 
         public void EmitShort(short emit)
         {
-            Span<byte> buffer = stackalloc byte[sizeof(short)];
-            BinaryPrimitives.WriteInt16LittleEndian(buffer, emit);
-            _data.Append(buffer);
+            BinaryPrimitives.WriteInt16LittleEndian(_data.GetSpan(sizeof(short)), emit);
         }
 
         public void EmitUShort(ushort emit)
         {
-            Span<byte> buffer = stackalloc byte[sizeof(ushort)];
-            BinaryPrimitives.WriteUInt16LittleEndian(buffer, emit);
-            _data.Append(buffer);
+            BinaryPrimitives.WriteUInt16LittleEndian(_data.GetSpan(sizeof(ushort)), emit);
         }
 
         public void EmitInt(int emit)
         {
-            Span<byte> buffer = stackalloc byte[sizeof(int)];
-            BinaryPrimitives.WriteInt32LittleEndian(buffer, emit);
-            _data.Append(buffer);
+            BinaryPrimitives.WriteInt32LittleEndian(_data.GetSpan(sizeof(int)), emit);
         }
 
         public void EmitUInt(uint emit)
         {
-            Span<byte> buffer = stackalloc byte[sizeof(uint)];
-            BinaryPrimitives.WriteUInt32LittleEndian(buffer, emit);
-            _data.Append(buffer);
+            BinaryPrimitives.WriteUInt32LittleEndian(_data.GetSpan(sizeof(uint)), emit);
         }
 
         public void EmitLong(long emit)
         {
-            Span<byte> buffer = stackalloc byte[sizeof(long)];
-            BinaryPrimitives.WriteInt64LittleEndian(buffer, emit);
-            _data.Append(buffer);
+            BinaryPrimitives.WriteInt64LittleEndian(_data.GetSpan(sizeof(long)), emit);
         }
 
         public void EmitNaturalInt(int emit)
@@ -176,7 +166,7 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        public void EmitBytes(scoped ReadOnlySpan<byte> bytes)
+        public void EmitBytes(byte[] bytes)
         {
             _data.Append(bytes);
         }
