@@ -375,9 +375,37 @@ struct FPStructInfo
 
     Field fields[2];
 
-    bool IsIntegerOnly() const
+    bool IsPassedWithIntegerCallConv() const
     {
         return fields[0].Empty() && fields[1].Empty();
+    }
+
+    bool IsFloatingOnly() const
+    {
+        return fields[0].isFloating && (fields[1].isFloating || fields[1].Empty());
+    }
+
+    unsigned NumFields() const
+    {
+        return !fields[0].Empty() + !fields[1].Empty();
+    }
+
+    // TODO: Remove, unless there are places where field offsets are unnecessary and it's difficult to pass FPStructInfo (CallDescrWorker?)
+    StructFloatFieldInfoFlags ToFlags() const
+    {
+        int flags =
+            (fields[0].size == 8 ? STRUCT_FIRST_FIELD_SIZE_IS8 : 0) |
+            (fields[1].size == 8 ? STRUCT_SECOND_FIELD_SIZE_IS8 : 0);
+
+        if (IsFloatingOnly())
+        {
+            return StructFloatFieldInfoFlags(
+                flags | (fields[1].Empty() ? STRUCT_FLOAT_FIELD_ONLY_ONE : STRUCT_FLOAT_FIELD_ONLY_TWO));
+        }
+
+        return StructFloatFieldInfoFlags(flags |
+            (fields[0].isFloating ? STRUCT_FLOAT_FIELD_FIRST : 0) |
+            (fields[1].isFloating ? STRUCT_FLOAT_FIELD_SECOND : 0));
     }
 };
 

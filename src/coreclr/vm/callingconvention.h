@@ -534,9 +534,9 @@ public:
             if (size <= ENREGISTERED_PARAMTYPE_MAXSIZE)
                 return FALSE;
 
-            // Struct larger than 16 can still be passed in registers according to FP call conv if it has empty fields or more padding
-            int flags = MethodTable::GetRiscV64PassStructInRegisterFlags(th);
-            return (flags == STRUCT_NO_FLOAT_FIELD);
+            // Struct larger than 16 can still be passed in registers according to FP call conv if it has empty fields or
+            // more padding, so make sure it's passed according to integer call conv which bounds struct to 16 bytes.
+            return MethodTable::GetRiscV64PassFPStructInfo(th).IsPassedWithIntegerCallConv();
         }
         return FALSE;
 #else
@@ -598,8 +598,10 @@ public:
         {
             _ASSERTE(!m_argTypeHandle.IsNull());
         #ifdef TARGET_RISCV64
-            int flags = MethodTable::GetRiscV64PassStructInRegisterFlags(m_argTypeHandle);
-            return (flags == STRUCT_NO_FLOAT_FIELD) && (m_argSize > ENREGISTERED_PARAMTYPE_MAXSIZE);
+            if (m_argSize <= ENREGISTERED_PARAMTYPE_MAXSIZE)
+                return FALSE;
+
+            return MethodTable::GetRiscV64PassFPStructInfo(m_argTypeHandle).IsPassedWithIntegerCallConv();
         #else
             return (m_argSize > ENREGISTERED_PARAMTYPE_MAXSIZE);
         #endif
@@ -1793,7 +1795,7 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
 #elif defined(TARGET_RISCV64)
     assert(!this->IsVarArg()); // Varargs on RISC-V not supported yet
     int cFPRegs = 0;
-    int flags = STRUCT_NO_FLOAT_FIELD;
+    FPStructInfo info = {};
 
     switch (argType)
     {
@@ -1804,11 +1806,11 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
         break;
 
     case ELEMENT_TYPE_VALUETYPE:
-        flags = MethodTable::GetRiscV64PassStructInRegisterFlags(thValueType);
-        if (flags != STRUCT_NO_FLOAT_FIELD)
+        info = MethodTable::GetRiscV64PassFPStructInfo(thValueType);
+        if (!info.IsPassedWithIntegerCallConv())
         {
             // Struct may be passed according to hardware floating-point calling convention
-            cFPRegs = ((flags & STRUCT_FLOAT_FIELD_ONLY_TWO) != 0) ? 2 : 1;
+            cFPRegs = info.fields[0].isFloating + info.fields[1].isFloating;
         }
         break;
 
@@ -1819,7 +1821,7 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
     if (cFPRegs > 0)
     {
         // Pass according to hardware floating-point calling convention iff the argument can be fully enregistered
-        if ((flags & (STRUCT_FLOAT_FIELD_FIRST | STRUCT_FLOAT_FIELD_SECOND)) != 0)
+        if (info.NumFields() == 2 && (info.fields[0].isFloating != info.fields[1].isFloating))
         {
             assert(cFPRegs == 1);
 
@@ -1832,7 +1834,7 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
                 m_argLocDescForStructInRegs.m_idxGenReg = m_idxGenReg;
                 m_argLocDescForStructInRegs.m_cGenReg = 1;
 
-                m_argLocDescForStructInRegs.m_structFields = flags;
+                m_argLocDescForStructInRegs.m_structFields = info.ToFlags();
                 m_hasArgLocDescForStructInRegs = true;
                 
                 int regOffset = TransitionBlock::GetOffsetOfFloatArgumentRegisters() + m_idxFPReg * FLOAT_REGISTER_SIZE;
@@ -1844,7 +1846,7 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
         else if (cFPRegs + m_idxFPReg <= NUM_ARGUMENT_REGISTERS)
         {
             int regOffset = TransitionBlock::GetOffsetOfFloatArgumentRegisters() + m_idxFPReg * FLOAT_REGISTER_SIZE;
-            if (flags == STRUCT_FLOAT_FIELD_ONLY_TWO) // struct with two single-float fields
+            if (info.fields[0].isFloating && info.fields[1].isFloating && info.fields[0].size != 8 && info.fields[1].size != 8)
             {
                 m_argLocDescForStructInRegs.Init();
                 m_argLocDescForStructInRegs.m_idxFloatReg = m_idxFPReg;
@@ -1852,7 +1854,7 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
                 assert(cFPRegs == 2);
                 assert(argSize == 2 * 4);
 
-                m_argLocDescForStructInRegs.m_structFields = STRUCT_FLOAT_FIELD_ONLY_TWO;
+                m_argLocDescForStructInRegs.m_structFields = info.ToFlags();
                 m_hasArgLocDescForStructInRegs = true;
             }
             m_idxFPReg += cFPRegs;

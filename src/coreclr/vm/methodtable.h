@@ -828,6 +828,7 @@ public:
     static int GetLoongArch64PassStructInRegisterFlags(TypeHandle th);
 #elif defined(TARGET_RISCV64)
     static int GetRiscV64PassStructInRegisterFlags(TypeHandle th);
+    static FPStructInfo GetRiscV64PassFPStructInfo(TypeHandle th);
 #endif
 
 #if defined(UNIX_AMD64_ABI_ITF)
