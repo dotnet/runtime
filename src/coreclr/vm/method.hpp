@@ -158,9 +158,12 @@ enum MethodDescFlags
     mdfIsIntrinsic                      = 0x8000  // Jit may expand method as an intrinsic
 };
 
-struct MethodDescCodeData
+// Used for storing additional items related to native code
+struct MethodDescCodeData final
 {
-    PTR_MethodDescVersioningState MDState;
+    PTR_MethodDescVersioningState VersioningState;
+
+    // [TODO] Move temporary entry points here.
 };
 using PTR_MethodDescCodeData = DPTR(MethodDescCodeData);
 

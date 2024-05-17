@@ -228,7 +228,7 @@ bool MethodDesc::SetMethodDescVersionState(PTR_MethodDescVersioningState state)
 {
     WRAPPER_NO_CONTRACT;
     _ASSERTE(m_codeData != NULL);
-    return InterlockedCompareExchangeT(&m_codeData->MDState, state, NULL) == NULL;
+    return InterlockedCompareExchangeT(&m_codeData->VersioningState, state, NULL) == NULL;
 }
 
 #endif //!DACCESS_COMPILE
@@ -237,7 +237,7 @@ PTR_MethodDescVersioningState MethodDesc::GetMethodDescVersionState()
 {
     WRAPPER_NO_CONTRACT;
     _ASSERTE(m_codeData != NULL);
-    return m_codeData->MDState;
+    return m_codeData->VersioningState;
 }
 
 //*******************************************************************************
