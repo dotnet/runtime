@@ -15,9 +15,6 @@ namespace System.Net.Mail
     //
     public partial class MailAddress
     {
-        private static bool EnableFullDomainLiterals { get; } =
-            AppContext.TryGetSwitch("System.Net.AllowFullDomainLiterals", out bool enable) ? enable : false;
-
         // These components form an e-mail address when assembled as follows:
         // "EncodedDisplayname" <userName@host>
         private readonly Encoding _displayNameEncoding;
@@ -220,7 +217,7 @@ namespace System.Net.Mail
                 }
             }
 
-            if (!EnableFullDomainLiterals && domain.AsSpan().ContainsAny('\r', '\n'))
+            if (domain.AsSpan().ContainsAny('\r', '\n'))
             {
                 throw new SmtpException(SR.Format(SR.SmtpInvalidHostName, Address));
             }

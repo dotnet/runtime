@@ -578,25 +578,6 @@ namespace System.Net.Mail.Tests
             Assert.Equal("GSSAPI", server.AuthMethodUsed, StringComparer.OrdinalIgnoreCase);
         }
 
-        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        [InlineData("foo@[\r\n bar]")]
-        [InlineData("foo@[bar\r\n ]")]
-        [InlineData("foo@[bar\r\n baz]")]
-        public void MultiLineDomainLiterals_Enabled_Success(string input)
-        {
-            RemoteExecutor.Invoke(static (string @input) =>
-            {
-                AppContext.SetSwitch("System.Net.AllowFullDomainLiterals", true);
-
-                var address = new MailAddress(@input);
-
-                // Using address with new line breaks the protocol so we cannot easily use LoopbackSmtpServer
-                // Instead we call internal method that does the extra validation.
-                string? host = (string?)typeof(MailAddress).InvokeMember("GetAddress", BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.InvokeMethod, null, address, new object[] { true });
-                Assert.Equal(input, host);
-            }, input).Dispose();
-        }
-
         [Theory]
         [MemberData(nameof(SendMail_MultiLineDomainLiterals_Data))]
         public async Task SendMail_MultiLineDomainLiterals_Disabled_Throws(string from, string to, bool asyncSend)
