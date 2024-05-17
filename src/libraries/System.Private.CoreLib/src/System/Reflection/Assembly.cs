@@ -226,7 +226,7 @@ namespace System.Reflection
         /// Assembly object that represents the application's new entry assembly.
         /// </param>
         /// <remarks>
-        /// The assembly passed to this function has to be a runtime defined Assembly 
+        /// The assembly passed to this function has to be a runtime defined Assembly
         /// type object. Otherwise, an exception will be thrown.
         /// </remarks>
         public static void SetEntryAssembly(Assembly? assembly)
