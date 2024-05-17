@@ -36,13 +36,14 @@ jobs:
         timeoutInMinutes: 180
         isFullMatrix: ${{ variables['isFullMatrix'] }}
         # extra steps, run tests
-        extraStepsTemplate: /eng/pipelines/libraries/helix.yml
-        extraStepsParameters:
-          scenarios:
-          - wasmtestonbrowser
-          testScope: outerloop
-          creator: dotnet-bot
-          testRunNamePrefixSuffix: Mono_$(_BuildConfig)
+        postBuildSteps:
+          - template: /eng/pipelines/libraries/helix.yml
+            parameters:
+              scenarios:
+              - wasmtestonbrowser
+              testScope: outerloop
+              creator: dotnet-bot
+              testRunNamePrefixSuffix: Mono_$(_BuildConfig)
     
   - ${{ if eq(variables['isFullMatrix'], false) }}:
     - template: /eng/pipelines/common/platform-matrix.yml
@@ -63,8 +64,9 @@ jobs:
           timeoutInMinutes: 180
           isFullMatrix: ${{ variables['isFullMatrix'] }}
           # extra steps, run tests
-          extraStepsTemplate: /eng/pipelines/libraries/helix.yml
-          extraStepsParameters:
-            testScope: outerloop
-            creator: dotnet-bot
-            testRunNamePrefixSuffix: Mono_$(_BuildConfig)
+          postBuildSteps:
+            - template: /eng/pipelines/libraries/helix.yml
+              parameters:
+                testScope: outerloop
+                creator: dotnet-bot
+                testRunNamePrefixSuffix: Mono_$(_BuildConfig)
