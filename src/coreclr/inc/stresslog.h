@@ -266,7 +266,6 @@
 
 #else //!_DEBUG
 #define STRESS_LOG_OOM_STACK(size)
-#define STRESS_LOG_OOM_STACK_NO_SIZE()
 #define STRESS_LOG_GC_STACK
 #endif //_DEBUG
 

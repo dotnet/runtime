@@ -569,32 +569,6 @@ void FatalErrorHandler(UINT errorCode, LPCWSTR pszMessage)
     EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(errorCode, pszMessage);
 }
 
-namespace
-{
-    void InstallStressLogOutOfMemoryRecorder()
-    {
-        static std::new_handler previous_new_handler = std::get_new_handler();
-        std::set_new_handler([]() {
-            STATIC_CONTRACT_NOTHROW;
-            // If we have not created StressLog ring buffer, we should not try to use it.
-            // StressLog is going to do a memory allocation.  We may enter an endless loop.
-            if (StressLog::t_pCurrentThreadLog != NULL)
-            {
-                STRESS_LOG_OOM_STACK_NO_SIZE();
-            }
-
-            if (previous_new_handler != nullptr)
-            {
-                previous_new_handler();
-            }
-            else
-            {
-                throw std::bad_alloc();
-            }
-        });
-    }
-}
-
 void EEStartupHelper()
 {
     CONTRACTL
@@ -702,7 +676,6 @@ void EEStartupHelper()
             CLRConfigStringHolder logFilename = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_StressLogFilename);
             StressLog::Initialize(facilities, level, bytesPerThread, totalBytes, GetClrModuleBase(), logFilename);
             g_pStressLog = &StressLog::theLog;
-            InstallStressLogOutOfMemoryRecorder();
         }
 #endif
 
