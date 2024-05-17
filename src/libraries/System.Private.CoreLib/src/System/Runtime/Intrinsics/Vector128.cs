@@ -1344,7 +1344,17 @@ namespace System.Runtime.Intrinsics
         /// <returns>The dot product of <paramref name="left" /> and <paramref name="right" />.</returns>
         /// <exception cref="NotSupportedException">The type of <paramref name="left" /> and <paramref name="right" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
-        public static T Dot<T>(Vector128<T> left, Vector128<T> right) => Sum(left * right);
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static T Dot<T>(Vector128<T> left, Vector128<T> right)
+        {
+            // Doing this as Dot(lower) + Dot(upper) is important for floating-point determinism
+            // This is because the underlying dpps instruction on x86/x64 will do this equivalently
+            // and otherwise the software vs accelerated implementations may differ in returned result.
+
+            T result = Vector64.Dot(left._lower, right._lower);
+            result = Scalar<T>.Add(result, Vector64.Dot(left._upper, right._upper));
+            return result;
+        }
 
         /// <summary>Compares two vectors to determine if they are equal on a per-element basis.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
