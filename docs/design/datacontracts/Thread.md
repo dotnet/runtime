@@ -159,7 +159,7 @@ ThreadData GetThreadData(TargetPointer threadPointer)
         AllocContextLimit : thread.m_alloc_context.alloc_limit,
         Frame : thread.m_pFrame,
         TEB : thread.Has_m_pTEB ? thread.m_pTEB : TargetPointer.Null,
-        LastThreadObjectHandle : new DacGCHandle(thread.m_LastThrownObjectHandle),
+        LastThrownObjectHandle : new DacGCHandle(thread.m_LastThrownObjectHandle),
         FirstNestedException : firstNestedException,
         NextThread : ThreadListReader.GetHead.GetNext(threadPointer)
     );

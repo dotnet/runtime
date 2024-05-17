@@ -17,6 +17,10 @@ internal record struct ThreadStoreCounts(
     int PendingThreadCount,
     int DeadThreadCount);
 
+internal record struct ThreadData(
+    uint Id,
+    TargetPointer NextThread);
+
 internal interface IThread : IContract
 {
     static string IContract.Name { get; } = nameof(Thread);
@@ -33,6 +37,7 @@ internal interface IThread : IContract
 
     public virtual ThreadStoreData GetThreadStoreData() => throw new NotImplementedException();
     public virtual ThreadStoreCounts GetThreadCounts() => throw new NotImplementedException();
+    public virtual ThreadData GetThreadData(TargetPointer thread) => throw new NotImplementedException();
 }
 
 internal readonly struct Thread : IThread
@@ -51,8 +56,10 @@ internal readonly struct Thread_1 : IThread
         _target = target;
         _threadStoreAddr = threadStore;
 
+        // Get the offset into Thread of the SLink. We use this to find the actual
+        // first thread from the linked list node contained by the first thread.
         Target.TypeInfo type = _target.GetTypeInfo(DataType.Thread);
-        _threadLinkOffset = (ulong)type.Fields["LinkNext"].Offset;
+        _threadLinkOffset = (ulong)type.Fields[nameof(Data.Thread.LinkNext)].Offset;
     }
 
     ThreadStoreData IThread.GetThreadStoreData()
@@ -68,7 +75,7 @@ internal readonly struct Thread_1 : IThread
 
         return new ThreadStoreData(
             threadStore.ThreadCount,
-            new TargetPointer(threadStore.FirstThreadLink - _threadLinkOffset),
+            GetThreadFromLink(threadStore.FirstThreadLink),
             _target.ReadGlobalPointer(Constants.Globals.FinalizerThread),
             _target.ReadGlobalPointer(Constants.Globals.GCThread));
     }
@@ -89,5 +96,30 @@ internal readonly struct Thread_1 : IThread
             threadStore.BackgroundCount,
             threadStore.PendingCount,
             threadStore.DeadCount);
+    }
+
+    ThreadData IThread.GetThreadData(TargetPointer threadPointer)
+    {
+        Data.Thread? thread;
+        if (!_target.ProcessedData.TryGet(threadPointer, out thread))
+        {
+            thread = new Data.Thread(_target, threadPointer);
+
+            // Still okay if processed data is already registered by someone else.
+            _ = _target.ProcessedData.TryRegister(threadPointer, thread);
+        }
+
+        return new ThreadData(
+            thread.Id,
+            GetThreadFromLink(thread.LinkNext));
+    }
+
+    private TargetPointer GetThreadFromLink(TargetPointer threadLink)
+    {
+        if (threadLink == TargetPointer.Null)
+            return TargetPointer.Null;
+
+        // Get the address of the thread containing the link
+        return new TargetPointer(threadLink - _threadLinkOffset);
     }
 }

@@ -107,7 +107,24 @@ internal sealed partial class SOSDacImpl : ISOSDacInterface, ISOSDacInterface9
     public unsafe int GetSyncBlockCleanupData(ulong addr, void* data) => HResults.E_NOTIMPL;
     public unsafe int GetSyncBlockData(uint number, void* data) => HResults.E_NOTIMPL;
     public unsafe int GetThreadAllocData(ulong thread, void* data) => HResults.E_NOTIMPL;
-    public unsafe int GetThreadData(ulong thread, DacpThreadData* data) => HResults.E_NOTIMPL;
+
+    public unsafe int GetThreadData(ulong thread, DacpThreadData* data)
+    {
+        try
+        {
+            Contracts.IThread contract = _target.Contracts.Thread;
+            Contracts.ThreadData threadData = contract.GetThreadData(thread);
+            data->corThreadId = (int)threadData.Id;
+            data->nextThread = threadData.NextThread;
+        }
+        catch (Exception ex)
+        {
+            return ex.HResult;
+        }
+
+        // TODO: [cdac] Implement/populate rest of thread data fields
+        return HResults.E_NOTIMPL;
+    }
     public unsafe int GetThreadFromThinlockID(uint thinLockId, ulong* pThread) => HResults.E_NOTIMPL;
     public unsafe int GetThreadLocalModuleData(ulong thread, uint index, void* data) => HResults.E_NOTIMPL;
     public unsafe int GetThreadpoolData(void* data) => HResults.E_NOTIMPL;
