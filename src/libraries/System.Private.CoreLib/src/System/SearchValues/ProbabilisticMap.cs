@@ -424,7 +424,7 @@ namespace System.Buffers
 
                         if (result != Vector512<byte>.Zero)
                         {
-                            if (TryFindMatch<TUseFastContains>(ref cur, PackedSpanHelpers.FixUpPackedVector512Result(result).ExtractMostSignificantBits(), ref state, out int index))
+                            if (TryFindMatchAvx512<TUseFastContains>(ref cur, PackedSpanHelpers.FixUpPackedVector512Result(result).ExtractMostSignificantBits(), ref state, out int index))
                             {
                                 return MatchOffset(ref searchSpace, ref cur) + index;
                             }
@@ -454,7 +454,7 @@ namespace System.Buffers
 
                     if (result != Vector512<byte>.Zero)
                     {
-                        if (TryFindMatchOverlapped<TUseFastContains>(ref searchSpace, searchSpaceLength, PackedSpanHelpers.FixUpPackedVector512Result(result).ExtractMostSignificantBits(), ref state, out int index))
+                        if (TryFindMatchOverlappedAvx512<TUseFastContains>(ref searchSpace, searchSpaceLength, PackedSpanHelpers.FixUpPackedVector512Result(result).ExtractMostSignificantBits(), ref state, out int index))
                         {
                             return index;
                         }
@@ -471,7 +471,7 @@ namespace System.Buffers
 
                 if (result != Vector256<byte>.Zero)
                 {
-                    if (TryFindMatchOverlapped<TUseFastContains>(ref searchSpace, searchSpaceLength, PackedSpanHelpers.FixUpPackedVector256Result(result).ExtractMostSignificantBits(), ref state, out int index))
+                    if (TryFindMatchOverlappedAvx512<TUseFastContains>(ref searchSpace, searchSpaceLength, PackedSpanHelpers.FixUpPackedVector256Result(result).ExtractMostSignificantBits(), ref state, out int index))
                     {
                         return index;
                     }
@@ -602,7 +602,7 @@ namespace System.Buffers
 
                         if (result != Vector512<byte>.Zero)
                         {
-                            if (TryFindLastMatch<TUseFastContains>(ref cur, PackedSpanHelpers.FixUpPackedVector512Result(result).ExtractMostSignificantBits(), ref state, out int index))
+                            if (TryFindLastMatchAvx512<TUseFastContains>(ref cur, PackedSpanHelpers.FixUpPackedVector512Result(result).ExtractMostSignificantBits(), ref state, out int index))
                             {
                                 return MatchOffset(ref searchSpace, ref cur) + index;
                             }
@@ -631,7 +631,7 @@ namespace System.Buffers
 
                     if (result != Vector512<byte>.Zero)
                     {
-                        if (TryFindLastMatchOverlapped<TUseFastContains>(ref searchSpace, searchSpaceLength, PackedSpanHelpers.FixUpPackedVector512Result(result).ExtractMostSignificantBits(), ref state, out int index))
+                        if (TryFindLastMatchOverlappedAvx512<TUseFastContains>(ref searchSpace, searchSpaceLength, PackedSpanHelpers.FixUpPackedVector512Result(result).ExtractMostSignificantBits(), ref state, out int index))
                         {
                             return index;
                         }
@@ -649,7 +649,7 @@ namespace System.Buffers
 
                 if (result != Vector256<byte>.Zero)
                 {
-                    if (TryFindLastMatchOverlapped<TUseFastContains>(ref searchSpace, searchSpaceLength, PackedSpanHelpers.FixUpPackedVector256Result(result).ExtractMostSignificantBits(), ref state, out int index))
+                    if (TryFindLastMatchOverlappedAvx512<TUseFastContains>(ref searchSpace, searchSpaceLength, PackedSpanHelpers.FixUpPackedVector256Result(result).ExtractMostSignificantBits(), ref state, out int index))
                     {
                         return index;
                     }
@@ -780,7 +780,7 @@ namespace System.Buffers
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool TryFindMatchOverlapped<TUseFastContains>(ref char cur, int searchSpaceLength, uint mask, ref ProbabilisticMapState state, out int index)
+        private static bool TryFindMatchOverlappedAvx512<TUseFastContains>(ref char cur, int searchSpaceLength, uint mask, ref ProbabilisticMapState state, out int index)
             where TUseFastContains : struct, SearchValues.IRuntimeConst
         {
             do
@@ -808,7 +808,7 @@ namespace System.Buffers
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool TryFindMatch<TUseFastContains>(ref char cur, ulong mask, ref ProbabilisticMapState state, out int index)
+        private static bool TryFindMatchAvx512<TUseFastContains>(ref char cur, ulong mask, ref ProbabilisticMapState state, out int index)
             where TUseFastContains : struct, SearchValues.IRuntimeConst
         {
             do
@@ -829,7 +829,7 @@ namespace System.Buffers
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool TryFindMatchOverlapped<TUseFastContains>(ref char cur, int searchSpaceLength, ulong mask, ref ProbabilisticMapState state, out int index)
+        private static bool TryFindMatchOverlappedAvx512<TUseFastContains>(ref char cur, int searchSpaceLength, ulong mask, ref ProbabilisticMapState state, out int index)
             where TUseFastContains : struct, SearchValues.IRuntimeConst
         {
             do
@@ -879,7 +879,7 @@ namespace System.Buffers
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool TryFindLastMatchOverlapped<TUseFastContains>(ref char cur, int searchSpaceLength, uint mask, ref ProbabilisticMapState state, out int index)
+        private static bool TryFindLastMatchOverlappedAvx512<TUseFastContains>(ref char cur, int searchSpaceLength, uint mask, ref ProbabilisticMapState state, out int index)
             where TUseFastContains : struct, SearchValues.IRuntimeConst
         {
             do
@@ -908,7 +908,7 @@ namespace System.Buffers
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool TryFindLastMatch<TUseFastContains>(ref char cur, ulong mask, ref ProbabilisticMapState state, out int index)
+        private static bool TryFindLastMatchAvx512<TUseFastContains>(ref char cur, ulong mask, ref ProbabilisticMapState state, out int index)
             where TUseFastContains : struct, SearchValues.IRuntimeConst
         {
             do
@@ -930,7 +930,7 @@ namespace System.Buffers
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool TryFindLastMatchOverlapped<TUseFastContains>(ref char cur, int searchSpaceLength, ulong mask, ref ProbabilisticMapState state, out int index)
+        private static bool TryFindLastMatchOverlappedAvx512<TUseFastContains>(ref char cur, int searchSpaceLength, ulong mask, ref ProbabilisticMapState state, out int index)
             where TUseFastContains : struct, SearchValues.IRuntimeConst
         {
             do
