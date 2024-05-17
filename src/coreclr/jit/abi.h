@@ -68,6 +68,10 @@ struct ABIPassingInformation
 
     static ABIPassingInformation FromSegment(Compiler* comp, const ABIPassingSegment& segment);
 
+#ifdef WINDOWS_AMD64_ABI
+    static bool GetShadowSpaceCallerOffsetForReg(regNumber reg, int* offset);
+#endif
+
 #ifdef DEBUG
     void Dump() const;
 #endif

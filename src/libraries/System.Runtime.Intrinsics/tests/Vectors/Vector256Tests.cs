@@ -5889,6 +5889,38 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
             AssertEqual(Vector256.Create(expectedResult), actualResult, Vector256.Create(variance));
         }
 
+        [Theory]
+        [MemberData(nameof(VectorTestMemberData.MultiplyAddDouble), MemberType = typeof(VectorTestMemberData))]
+        public void FusedMultiplyAddDoubleTest(double left, double right, double addend)
+        {
+            Vector256<double> actualResult = Vector256.FusedMultiplyAdd(Vector256.Create(left), Vector256.Create(right), Vector256.Create(addend));
+            AssertEqual(Vector256.Create(double.FusedMultiplyAdd(left, right, addend)), actualResult, Vector256<double>.Zero);
+        }
+
+        [Theory]
+        [MemberData(nameof(VectorTestMemberData.MultiplyAddSingle), MemberType = typeof(VectorTestMemberData))]
+        public void FusedMultiplyAddSingleTest(float left, float right, float addend)
+        {
+            Vector256<float> actualResult = Vector256.FusedMultiplyAdd(Vector256.Create(left), Vector256.Create(right), Vector256.Create(addend));
+            AssertEqual(Vector256.Create(float.FusedMultiplyAdd(left, right, addend)), actualResult, Vector256<float>.Zero);
+        }
+
+        [Theory]
+        [MemberData(nameof(VectorTestMemberData.MultiplyAddDouble), MemberType = typeof(VectorTestMemberData))]
+        public void MultiplyAddEstimateDoubleTest(double left, double right, double addend)
+        {
+            Vector256<double> actualResult = Vector256.MultiplyAddEstimate(Vector256.Create(left), Vector256.Create(right), Vector256.Create(addend));
+            AssertEqual(Vector256.Create(double.MultiplyAddEstimate(left, right, addend)), actualResult, Vector256<double>.Zero);
+        }
+
+        [Theory]
+        [MemberData(nameof(VectorTestMemberData.MultiplyAddSingle), MemberType = typeof(VectorTestMemberData))]
+        public void MultiplyAddEstimateSingleTest(float left, float right, float addend)
+        {
+            Vector256<float> actualResult = Vector256.MultiplyAddEstimate(Vector256.Create(left), Vector256.Create(right), Vector256.Create(addend));
+            AssertEqual(Vector256.Create(float.MultiplyAddEstimate(left, right, addend)), actualResult, Vector256<float>.Zero);
+        }
+
         [Fact]
         [SkipOnMono("https://github.com/dotnet/runtime/issues/100368")]
         public void ConvertToInt32Test()

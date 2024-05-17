@@ -3217,7 +3217,7 @@ HRESULT _FillMDDefaultValue(
             {
                 IfFailGo(CLDB_E_FILE_CORRUPT);
             }
-            __int32 Value = GET_UNALIGNED_VAL32(pValue);
+            int32_t Value = GET_UNALIGNED_VAL32(pValue);
             pMDDefaultValue->m_fltValue = (float &)Value;
         }
         break;
@@ -3227,7 +3227,7 @@ HRESULT _FillMDDefaultValue(
             {
                 IfFailGo(CLDB_E_FILE_CORRUPT);
             }
-            __int64 Value = GET_UNALIGNED_VAL64(pValue);
+            int64_t Value = GET_UNALIGNED_VAL64(pValue);
             pMDDefaultValue->m_dblValue = (double &) Value;
         }
         break;

@@ -239,6 +239,11 @@ enum HWIntrinsicFlag : unsigned int
     // The intrinsic is a FusedMultiplyAdd intrinsic
     HW_Flag_FmaIntrinsic = 0x40000000,
 
+#if defined(TARGET_ARM64)
+    // The intrinsic uses a mask in arg1 to select elements present in the result, and must use a low vector register.
+    HW_Flag_LowVectorOperation = 0x4000000,
+#endif
+
     HW_Flag_CanBenefitFromConstantProp = 0x80000000,
 };
 
@@ -891,6 +896,12 @@ struct HWIntrinsicInfo
     {
         const HWIntrinsicFlag flags = lookupFlags(id);
         return (flags & HW_Flag_LowMaskedOperation) != 0;
+    }
+
+    static bool IsLowVectorOperation(NamedIntrinsic id)
+    {
+        const HWIntrinsicFlag flags = lookupFlags(id);
+        return (flags & HW_Flag_LowVectorOperation) != 0;
     }
 
     static bool IsOptionalEmbeddedMaskedOperation(NamedIntrinsic id)

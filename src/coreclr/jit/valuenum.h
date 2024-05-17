@@ -1581,7 +1581,7 @@ private:
     {
         static bool Equals(double x, double y)
         {
-            return *(__int64*)&x == *(__int64*)&y;
+            return *(int64_t*)&x == *(int64_t*)&y;
         }
     };
 
