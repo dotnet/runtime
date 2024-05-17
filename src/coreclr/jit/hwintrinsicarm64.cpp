@@ -2071,9 +2071,9 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
-        case NI_Sve_LoadVectorx2:
-        case NI_Sve_LoadVectorx3:
-        case NI_Sve_LoadVectorx4:
+        case NI_Sve_Load2xVectorAndUnzip:
+        case NI_Sve_Load3xVectorAndUnzip:
+        case NI_Sve_Load4xVectorAndUnzip:
         {
             info.compNeedsConsecutiveRegisters = true;
 

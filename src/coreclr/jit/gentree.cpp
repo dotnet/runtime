@@ -26540,9 +26540,9 @@ bool GenTreeHWIntrinsic::OperIsMemoryLoad(GenTree** pAddr) const
             case NI_Sve_LoadVectorUInt16ZeroExtendToUInt64:
             case NI_Sve_LoadVectorUInt32ZeroExtendToInt64:
             case NI_Sve_LoadVectorUInt32ZeroExtendToUInt64:
-            case NI_Sve_LoadVectorx2:
-            case NI_Sve_LoadVectorx3:
-            case NI_Sve_LoadVectorx4:
+            case NI_Sve_Load2xVectorAndUnzip:
+            case NI_Sve_Load3xVectorAndUnzip:
+            case NI_Sve_Load4xVectorAndUnzip:
                 addr = Op(2);
                 break;
 #endif // TARGET_ARM64
@@ -27057,11 +27057,11 @@ ClassLayout* GenTreeHWIntrinsic::GetLayout(Compiler* compiler) const
         case NI_AdvSimd_Arm64_LoadAndReplicateToVector128x4:
             return compiler->typGetBlkLayout(64);
 
-        case NI_Sve_LoadVectorx2:
+        case NI_Sve_Load2xVectorAndUnzip:
             return compiler->typGetBlkLayout(compiler->getVectorTByteLength() * 2);
-        case NI_Sve_LoadVectorx3:
+        case NI_Sve_Load3xVectorAndUnzip:
             return compiler->typGetBlkLayout(compiler->getVectorTByteLength() * 3);
-        case NI_Sve_LoadVectorx4:
+        case NI_Sve_Load4xVectorAndUnzip:
             return compiler->typGetBlkLayout(compiler->getVectorTByteLength() * 4);
 
 #endif // TARGET_ARM64

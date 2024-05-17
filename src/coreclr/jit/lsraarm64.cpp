@@ -1733,6 +1733,12 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 FALLTHROUGH;
             }
 
+            case NI_Sve_Load2xVectorAndUnzip:
+            case NI_Sve_Load3xVectorAndUnzip:
+            case NI_Sve_Load4xVectorAndUnzip:
+                assert(intrin.op2 != nullptr);
+                srcCount += BuildOperandUses(intrin.op2);
+                FALLTHROUGH;
             case NI_AdvSimd_LoadVector64x2AndUnzip:
             case NI_AdvSimd_LoadVector64x3AndUnzip:
             case NI_AdvSimd_LoadVector64x4AndUnzip:
@@ -1753,18 +1759,6 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
             case NI_AdvSimd_Arm64_LoadAndReplicateToVector128x4:
             {
                 assert(intrin.op1 != nullptr);
-                BuildConsecutiveRegistersForDef(intrinsicTree, dstCount);
-                *pDstCount = dstCount;
-                break;
-            }
-
-            case NI_Sve_LoadVectorx2:
-            case NI_Sve_LoadVectorx3:
-            case NI_Sve_LoadVectorx4:
-            {
-                assert(intrin.op1 != nullptr);
-                assert(intrin.op2 != nullptr);
-                srcCount += BuildOperandUses(intrin.op2);
                 BuildConsecutiveRegistersForDef(intrinsicTree, dstCount);
                 *pDstCount = dstCount;
                 break;
