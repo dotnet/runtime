@@ -100,6 +100,8 @@ namespace System.Buffers.Text
             static abstract ReadOnlySpan<int> Vector128LutHigh { get; }
             static abstract ReadOnlySpan<int> Vector128LutLow { get; }
             static abstract ReadOnlySpan<uint> Vector128LutShift { get; }
+            static abstract ReadOnlySpan<uint> AdvSimdLutOne3 { get; }
+            static abstract uint AdvSimdLutTwo3Uint1 { get; }
             static abstract int SrcLength(bool isFinalBlock, int utf8Length);
             static abstract int GetMaxDecodedLength(int utf8Length);
             static abstract bool IsInValidLength(int bufferLength);
@@ -131,6 +133,8 @@ namespace System.Buffers.Text
             static abstract unsafe bool TryLoadVector512(T* src, T* srcStart, int sourceLength, out Vector512<sbyte> str);
             static abstract unsafe bool TryLoadAvxVector256(T* src, T* srcStart, int sourceLength, out Vector256<sbyte> str);
             static abstract unsafe bool TryLoadVector128(T* src, T* srcStart, int sourceLength, out Vector128<byte> str);
+            static abstract unsafe bool TryLoadArmVector128x4(T* src, T* srcStart, int sourceLength,
+                out Vector128<byte> str1, out Vector128<byte> str2, out Vector128<byte> str3, out Vector128<byte> str4);
         }
     }
 }

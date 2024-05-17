@@ -97,7 +97,7 @@ namespace System.Buffers.Text
                     end = srcMax - 66;
                     if (AdvSimd.Arm64.IsSupported && (end >= src))
                     {
-                        AdvSimdDecode(ref src, ref dest, end, maxSrcLength, destLength, srcBytes, destBytes);
+                        AdvSimdDecode<TBase64Decoder, T>(ref src, ref dest, end, maxSrcLength, destLength, srcBytes, destBytes);
 
                         if (src == srcEnd)
                         {
@@ -848,7 +848,9 @@ namespace System.Buffers.Text
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
-        private static unsafe void AdvSimdDecode(ref byte* srcBytes, ref byte* destBytes, byte* srcEnd, int sourceLength, int destLength, byte* srcStart, byte* destStart)
+        private static unsafe void AdvSimdDecode<TBase64Decoder, T>(ref T* srcBytes, ref byte* destBytes, T* srcEnd, int sourceLength, int destLength, T* srcStart, byte* destStart)
+            where TBase64Decoder : IBase64Decoder<T>
+            where T : unmanaged
         {
             // C# implementation of https://github.com/aklomp/base64/blob/3a5add8652076612a8407627a42c768736a4263f/lib/arch/neon64/dec_loop.c
             // If we have AdvSimd support, pick off 64 bytes at a time for as long as we can,
@@ -881,7 +883,7 @@ namespace System.Buffers.Text
             //    52,  53,  54,  55,  56,  57,  58,  59,  60,  61, 255, 255, 255, 255, 255, 255
             var decLutOne = (Vector128<byte>.AllBitsSet,
                              Vector128<byte>.AllBitsSet,
-                             Vector128.Create(0xFFFFFFFF, 0xFFFFFFFF, 0x3EFFFFFF, 0x3FFFFFFF).AsByte(),
+                             Vector128.Create(TBase64Decoder.AdvSimdLutOne3).AsByte(),
                              Vector128.Create(0x37363534, 0x3B3A3938, 0xFFFF3D3C, 0xFFFFFFFF).AsByte());
 
             // Values in 'decLutTwo' maps input values from 63 to 127.
@@ -891,18 +893,21 @@ namespace System.Buffers.Text
             //   40,  41,  42,  43,  44,  45,  46,  47,  48,  49,  50,  51, 255, 255, 255, 255
             var decLutTwo = (Vector128.Create(0x0100FF00, 0x05040302, 0x09080706, 0x0D0C0B0A).AsByte(),
                              Vector128.Create(0x11100F0E, 0x15141312, 0x19181716, 0xFFFFFFFF).AsByte(),
-                             Vector128.Create(0x1B1AFFFF, 0x1F1E1D1C, 0x23222120, 0x27262524).AsByte(),
+                             Vector128.Create(TBase64Decoder.AdvSimdLutTwo3Uint1, 0x1F1E1D1C, 0x23222120, 0x27262524).AsByte(),
                              Vector128.Create(0x2B2A2928, 0x2F2E2D2C, 0x33323130, 0xFFFFFFFF).AsByte());
 
-            byte* src = srcBytes;
+            T* src = srcBytes;
             byte* dest = destBytes;
             Vector128<byte> offset = Vector128.Create<byte>(63);
 
             do
             {
                 // Step 1: Load 64 bytes and de-interleave.
-                AssertRead<Vector128<byte>>(src, srcStart, sourceLength);
-                var (str1, str2, str3, str4) = AdvSimd.Arm64.LoadVector128x4AndUnzip(src);
+                if (!TBase64Decoder.TryLoadArmVector128x4(src, srcStart, sourceLength,
+                    out Vector128<byte> str1, out Vector128<byte> str2, out Vector128<byte> str3, out Vector128<byte> str4))
+                {
+                    break;
+                }
 
                 // Step 2: Map each valid input to its Base64 value.
                 // We use two look-ups to compute partial results and combine them later.
@@ -1287,6 +1292,10 @@ namespace System.Buffers.Text
 
             public static ReadOnlySpan<uint> Vector128LutShift => [0x04131000, 0xb9b9bfbf, 0x00000000, 0x00000000];
 
+            public static ReadOnlySpan<uint> AdvSimdLutOne3 => [0xFFFFFFFF, 0xFFFFFFFF, 0x3EFFFFFF, 0x3FFFFFFF];
+
+            public static uint AdvSimdLutTwo3Uint1 => 0x1B1AFFFF;
+
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static int GetMaxDecodedLength(int utf8Length) => Base64.GetMaxDecodedFromUtf8Length(utf8Length);
 
@@ -1465,6 +1474,17 @@ namespace System.Buffers.Text
             {
                 AssertRead<Vector128<sbyte>>(src, srcStart, sourceLength);
                 str = Vector128.LoadUnsafe(ref *src);
+                return true;
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
+            public static unsafe bool TryLoadArmVector128x4(byte* src, byte* srcStart, int sourceLength,
+                out Vector128<byte> str1, out Vector128<byte> str2, out Vector128<byte> str3, out Vector128<byte> str4)
+            {
+                AssertRead<Vector128<byte>>(src, srcStart, sourceLength);
+                (str1, str2, str3, str4) = AdvSimd.Arm64.LoadVector128x4AndUnzip(src);
+
                 return true;
             }
         }

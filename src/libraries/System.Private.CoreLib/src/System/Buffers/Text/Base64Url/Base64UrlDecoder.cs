@@ -420,6 +420,10 @@ namespace System.Buffers.Text
 
             public static ReadOnlySpan<uint> Vector128LutShift => [0x04110000, 0xb9b9bfbf, 0x00000000, 0x00000000];
 
+            public static ReadOnlySpan<uint> AdvSimdLutOne3 => [0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFF3EFF];
+
+            public static uint AdvSimdLutTwo3Uint1 => 0x1B1AFF3F;
+
             public static int GetMaxDecodedLength(int utf8Length) => Base64Url.GetMaxDecodedLength(utf8Length);
 
             public static bool IsInValidLength(int bufferLength) => bufferLength % 4 == 1; // One byte cannot be decoded completely
@@ -616,6 +620,17 @@ namespace System.Buffers.Text
                 str =  Vector128.LoadUnsafe(ref *src);
                 return true;
             }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
+            public static unsafe bool TryLoadArmVector128x4(byte* src, byte* srcStart, int sourceLength,
+                out Vector128<byte> str1, out Vector128<byte> str2, out Vector128<byte> str3, out Vector128<byte> str4)
+            {
+                AssertRead<Vector128<byte>>(src, srcStart, sourceLength);
+                (str1, str2, str3, str4) = AdvSimd.Arm64.LoadVector128x4AndUnzip(src);
+
+                return true;
+            }
         }
 
         private readonly struct Base64UrlDecoderChar : IBase64Decoder<ushort>
@@ -699,6 +714,10 @@ namespace System.Buffers.Text
             public static ReadOnlySpan<int> Vector128LutLow => [0x302d0101, 0x70615041, 0x01010101, 0x01010101];
 
             public static ReadOnlySpan<uint> Vector128LutShift => [0x04110000, 0xb9b9bfbf, 0x00000000, 0x00000000];
+
+            public static ReadOnlySpan<uint> AdvSimdLutOne3 => [0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFF3EFF];
+
+            public static uint AdvSimdLutTwo3Uint1 => 0x1B1AFF3F;
 
             public static int GetMaxDecodedLength(int utf8Length) => Base64Url.GetMaxDecodedLength(utf8Length);
 
@@ -920,6 +939,32 @@ namespace System.Buffers.Text
                 }
 
                 str = Vector128.Narrow(utf16VectorLower, utf16VectorUpper);
+                return true;
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
+            public static unsafe bool TryLoadArmVector128x4(ushort* src, ushort* srcStart, int sourceLength,
+                out Vector128<byte> str1, out Vector128<byte> str2, out Vector128<byte> str3, out Vector128<byte> str4)
+            {
+                AssertRead<Vector128<sbyte>>(src, srcStart, sourceLength);
+                var (s11, s12, s21, s22) = AdvSimd.Arm64.LoadVector128x4AndUnzip(src);
+                var (s31, s32, s41, s42) = AdvSimd.Arm64.LoadVector128x4AndUnzip(src + 32);
+
+                if (VectorContainsNonAsciiChar(s11) || VectorContainsNonAsciiChar(s12) ||
+                    VectorContainsNonAsciiChar(s21) || VectorContainsNonAsciiChar(s22) ||
+                    VectorContainsNonAsciiChar(s31) || VectorContainsNonAsciiChar(s32) ||
+                    VectorContainsNonAsciiChar(s41) || VectorContainsNonAsciiChar(s42))
+                {
+                    str1 = str2 = str3 = str4 = default;
+                    return false;
+                }
+
+                str1 = Vector128.Narrow(s11, s12);
+                str2 = Vector128.Narrow(s21, s22);
+                str3 = Vector128.Narrow(s31, s32);
+                str4 = Vector128.Narrow(s41, s42);
+
                 return true;
             }
 
