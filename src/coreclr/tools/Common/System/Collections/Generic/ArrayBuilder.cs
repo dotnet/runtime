@@ -32,13 +32,13 @@ namespace System.Collections.Generic
 #if NET
         public readonly Span<T> AsSpan(int start) => _items.AsSpan(start);
 
-        public Span<T> GetSpan(int size)
+        public Span<T> AppendSpan(int length)
         {
-            EnsureCapacity(_count + size);
+            int origCount = _count;
+            EnsureCapacity(origCount + length);
 
-            Span<T> buffer = _items.AsSpan(_count, size);
-            _count += size;
-            return buffer;
+            _count = origCount + length;
+            return _items.AsSpan(origCount, length);
         }
 #endif
 

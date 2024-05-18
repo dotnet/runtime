@@ -86,27 +86,27 @@ namespace ILCompiler.DependencyAnalysis
 
         public void EmitShort(short emit)
         {
-            BinaryPrimitives.WriteInt16LittleEndian(_data.GetSpan(sizeof(short)), emit);
+            BinaryPrimitives.WriteInt16LittleEndian(_data.AppendSpan(sizeof(short)), emit);
         }
 
         public void EmitUShort(ushort emit)
         {
-            BinaryPrimitives.WriteUInt16LittleEndian(_data.GetSpan(sizeof(ushort)), emit);
+            BinaryPrimitives.WriteUInt16LittleEndian(_data.AppendSpan(sizeof(ushort)), emit);
         }
 
         public void EmitInt(int emit)
         {
-            BinaryPrimitives.WriteInt32LittleEndian(_data.GetSpan(sizeof(int)), emit);
+            BinaryPrimitives.WriteInt32LittleEndian(_data.AppendSpan(sizeof(int)), emit);
         }
 
         public void EmitUInt(uint emit)
         {
-            BinaryPrimitives.WriteUInt32LittleEndian(_data.GetSpan(sizeof(uint)), emit);
+            BinaryPrimitives.WriteUInt32LittleEndian(_data.AppendSpan(sizeof(uint)), emit);
         }
 
         public void EmitLong(long emit)
         {
-            BinaryPrimitives.WriteInt64LittleEndian(_data.GetSpan(sizeof(long)), emit);
+            BinaryPrimitives.WriteInt64LittleEndian(_data.AppendSpan(sizeof(long)), emit);
         }
 
         public void EmitNaturalInt(int emit)
