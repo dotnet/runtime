@@ -49,7 +49,7 @@ public class WasmAppBuilderDebugLevelTests : DebugLevelTests
         string mainJsContent = File.ReadAllText(mainJs);
         mainJsContent = mainJsContent
             .Replace("import { dotnet }", "import { dotnet, exit }")
-            .Replace("await runMainAndExit()", "console.log('TestOutput -> ' + config.debugLevel); exit(0)");
+            .Replace("await runMainAndExit()", "console.log('TestOutput -> WasmDebugLevel: ' + config.debugLevel); exit(0)");
         File.WriteAllText(mainJs, mainJsContent);
     }
 
@@ -65,11 +65,13 @@ public class WasmAppBuilderDebugLevelTests : DebugLevelTests
     private static RunResult ProcessRunOutput(CommandResult res)
     {
         var output = res.Output.Split(Environment.NewLine);
+        _testOutput.WriteLine($"DEBUG: parsed lines '{String.Join(", ", output)}'");
         var testOutput = output
             .Where(l => l.StartsWith("TestOutput -> "))
             .Select(l => l.Substring("TestOutput -> ".Length))
             .ToArray();
 
+        _testOutput.WriteLine($"DEBUG: testOutput '{String.Join(", ", testOutput)}'");
         return new RunResult(res.ExitCode, testOutput, output, []);
     }
 
