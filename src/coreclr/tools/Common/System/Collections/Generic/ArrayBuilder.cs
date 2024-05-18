@@ -15,10 +15,14 @@ namespace System.Collections.Generic
         private T[] _items;
         private int _count;
 
+        public ArrayBuilder()
+        {
+            _items = Array.Empty<T>();
+            _count = 0;
+        }
+
         public T[] ToArray()
         {
-            if (_items == null)
-                return Array.Empty<T>();
             if (_count != _items.Length)
                 Array.Resize(ref _items, _count);
             return _items;
@@ -26,7 +30,7 @@ namespace System.Collections.Generic
 
         public void Add(T item)
         {
-            if (_items == null || _count == _items.Length)
+            if (_count == _items.Length)
                 Array.Resize(ref _items, 2 * _count + 1);
             _items[_count++] = item;
         }
@@ -80,7 +84,7 @@ namespace System.Collections.Generic
 
         public void EnsureCapacity(int requestedCapacity)
         {
-            if (requestedCapacity > ((_items != null) ? _items.Length : 0))
+            if (requestedCapacity > _items.Length)
             {
                 Grow(requestedCapacity);
             }
