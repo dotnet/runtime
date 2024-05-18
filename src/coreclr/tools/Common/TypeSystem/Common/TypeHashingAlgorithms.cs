@@ -6,6 +6,7 @@
 // ---------------------------------------------------------------------------
 
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Text;
 
 namespace Internal.NativeFormat
@@ -35,15 +36,15 @@ namespace Internal.NativeFormat
                 int startIndex = 0;
                 if ((_numCharactersHashed & 1) == 1)
                 {
-                    _hash2 = (_hash2 + int.RotateLeft(_hash2, 5)) ^ src[0];
+                    _hash2 = (_hash2 + _rotl(_hash2, 5)) ^ src[0];
                     startIndex = 1;
                 }
 
                 for (int i = startIndex; i < src.Length; i += 2)
                 {
-                    _hash1 = (_hash1 + int.RotateLeft(_hash1, 5)) ^ src[i];
+                    _hash1 = (_hash1 + _rotl(_hash1, 5)) ^ src[i];
                     if ((i + 1) < src.Length)
-                        _hash2 = (_hash2 + int.RotateLeft(_hash2, 5)) ^ src[i + 1];
+                        _hash2 = (_hash2 + _rotl(_hash2, 5)) ^ src[i + 1];
                 }
 
                 _numCharactersHashed += src.Length;
@@ -51,11 +52,17 @@ namespace Internal.NativeFormat
 
             public int ToHashCode()
             {
-                int hash1 = _hash1 + int.RotateLeft(_hash1, 8);
-                int hash2 = _hash2 + int.RotateLeft(_hash2, 8);
+                int hash1 = _hash1 + _rotl(_hash1, 8);
+                int hash2 = _hash2 + _rotl(_hash2, 8);
 
                 return hash1 ^ hash2;
             }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static int _rotl(int value, int shift)
+        {
+            return (int)(((uint)value << shift) | ((uint)value >> (32 - shift)));
         }
 
         //
@@ -68,13 +75,13 @@ namespace Internal.NativeFormat
 
             for (int i = 0; i < src.Length; i += 2)
             {
-                hash1 = (hash1 + int.RotateLeft(hash1, 5)) ^ src[i];
+                hash1 = (hash1 + _rotl(hash1, 5)) ^ src[i];
                 if ((i + 1) < src.Length)
-                    hash2 = (hash2 + int.RotateLeft(hash2, 5)) ^ src[i + 1];
+                    hash2 = (hash2 + _rotl(hash2, 5)) ^ src[i + 1];
             }
 
-            hash1 += int.RotateLeft(hash1, 8);
-            hash2 += int.RotateLeft(hash2, 8);
+            hash1 += _rotl(hash1, 8);
+            hash2 += _rotl(hash2, 8);
 
             return hash1 ^ hash2;
         }
@@ -89,17 +96,17 @@ namespace Internal.NativeFormat
             {
                 int b1 = data[i];
                 asciiMask |= b1;
-                hash1 = (hash1 + int.RotateLeft(hash1, 5)) ^ b1;
+                hash1 = (hash1 + _rotl(hash1, 5)) ^ b1;
                 if ((i + 1) < length)
                 {
                     int b2 = data[i];
                     asciiMask |= b2;
-                    hash2 = (hash2 + int.RotateLeft(hash2, 5)) ^ b2;
+                    hash2 = (hash2 + _rotl(hash2, 5)) ^ b2;
                 }
             }
 
-            hash1 += int.RotateLeft(hash1, 8);
-            hash2 += int.RotateLeft(hash2, 8);
+            hash1 += _rotl(hash1, 8);
+            hash2 += _rotl(hash2, 8);
 
             isAscii = (asciiMask & 0x80) == 0;
 
@@ -150,8 +157,8 @@ namespace Internal.NativeFormat
                 hashCode = ComputeNameHashCode("System.MDArrayRank" + IntToString(rank) + "`1");
             }
 
-            hashCode = (hashCode + int.RotateLeft(hashCode, 13)) ^ elementTypeHashCode;
-            return (hashCode + int.RotateLeft(hashCode, 15));
+            hashCode = (hashCode + _rotl(hashCode, 13)) ^ elementTypeHashCode;
+            return (hashCode + _rotl(hashCode, 15));
         }
 
         public static int ComputeArrayTypeHashCode<T>(T elementType, int rank)
@@ -162,7 +169,7 @@ namespace Internal.NativeFormat
 
         public static int ComputePointerTypeHashCode(int pointeeTypeHashCode)
         {
-            return (pointeeTypeHashCode + int.RotateLeft(pointeeTypeHashCode, 5)) ^ 0x12D0;
+            return (pointeeTypeHashCode + _rotl(pointeeTypeHashCode, 5)) ^ 0x12D0;
         }
 
         public static int ComputePointerTypeHashCode<T>(T pointeeType)
@@ -173,7 +180,7 @@ namespace Internal.NativeFormat
 
         public static int ComputeByrefTypeHashCode(int parameterTypeHashCode)
         {
-            return (parameterTypeHashCode + int.RotateLeft(parameterTypeHashCode, 7)) ^ 0x4C85;
+            return (parameterTypeHashCode + _rotl(parameterTypeHashCode, 7)) ^ 0x4C85;
         }
 
         public static int ComputeByrefTypeHashCode<T>(T parameterType)
@@ -184,7 +191,7 @@ namespace Internal.NativeFormat
 
         public static int ComputeNestedTypeHashCode(int enclosingTypeHashCode, int nestedTypeNameHash)
         {
-            return (enclosingTypeHashCode + int.RotateLeft(enclosingTypeHashCode, 11)) ^ nestedTypeNameHash;
+            return (enclosingTypeHashCode + _rotl(enclosingTypeHashCode, 11)) ^ nestedTypeNameHash;
         }
 
 
@@ -194,9 +201,9 @@ namespace Internal.NativeFormat
             for (int i = 0; i < genericTypeArguments.Length; i++)
             {
                 int argumentHashCode = genericTypeArguments[i].GetHashCode();
-                hashcode = (hashcode + int.RotateLeft(hashcode, 13)) ^ argumentHashCode;
+                hashcode = (hashcode + _rotl(hashcode, 13)) ^ argumentHashCode;
             }
-            return (hashcode + int.RotateLeft(hashcode, 15));
+            return (hashcode + _rotl(hashcode, 15));
         }
 
         public static int ComputeMethodSignatureHashCode<ARG>(int returnTypeHashCode, ARG[] parameters)
@@ -208,9 +215,9 @@ namespace Internal.NativeFormat
             for (int i = 0; i < parameters.Length; i++)
             {
                 int parameterHashCode = parameters[i].GetHashCode();
-                hashcode = (hashcode + int.RotateLeft(hashcode, 13)) ^ parameterHashCode;
+                hashcode = (hashcode + _rotl(hashcode, 13)) ^ parameterHashCode;
             }
-            return (hashcode + int.RotateLeft(hashcode, 15));
+            return (hashcode + _rotl(hashcode, 15));
         }
 
         /// <summary>
