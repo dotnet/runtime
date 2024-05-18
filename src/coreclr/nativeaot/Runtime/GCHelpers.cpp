@@ -29,6 +29,16 @@
 
 #include "gcdesc.h"
 
+#ifdef FEATURE_EVENT_TRACE
+   #include "clretwallmain.h"
+#else // FEATURE_EVENT_TRACE
+   #include "etmdummy.h"
+#endif // FEATURE_EVENT_TRACE
+
+// TODO: used for dynamic allocation sampling
+// but generate duplicated symbols
+//#include "..\..\..\inc\sstring.h"
+
 #define RH_LARGE_OBJECT_SIZE 85000
 
 MethodTable g_FreeObjectEEType;
@@ -444,6 +454,43 @@ EXTERN_C NATIVEAOT_API int64_t __cdecl RhGetTotalAllocatedBytesPrecise()
     return allocated;
 }
 
+inline void FireAllocationSampled(GC_ALLOC_FLAGS flags, size_t size, size_t samplingBudgetOffset, Object* orObject)
+{
+    // Note: this code is duplicated from GCToCLREventSink::FireGCAllocationTick_V4
+    void* typeId = nullptr;
+    const WCHAR* name = nullptr;
+    // TODO: this does not compile due to duplicated symbols when sstring.h is included
+    //InlineSString<MAX_CLASSNAME_LENGTH> strTypeName;
+    //EX_TRY
+    //{
+    //    TypeHandle th = GetThread()->GetTHAllocContextObj();
+
+    //    if (th != 0)
+    //    {
+    //        th.GetName(strTypeName);
+    //        name = strTypeName.GetUnicode();
+    //        typeId = th.GetMethodTable();
+    //    }
+    //}
+    //EX_CATCH{}
+    //EX_END_CATCH(SwallowAllExceptions)
+    // end of duplication
+
+    if (typeId != nullptr)
+    {
+        unsigned int allocKind =
+            (flags & GC_ALLOC_PINNED_OBJECT_HEAP) ? 2 :
+            (flags & GC_ALLOC_LARGE_OBJECT_HEAP) ? 1 :
+            0;  // SOH
+        unsigned int heapIndex = 0;
+#ifdef BACKGROUND_GC
+        gc_heap* hp = gc_heap::heap_of((BYTE*)orObject);
+        heapIndex = hp->heap_number;
+#endif
+        FireEtwAllocationSampled(allocKind, GetClrInstanceId(), typeId, name, heapIndex, (BYTE*)orObject, size, samplingBudgetOffset);
+    }
+}
+
 static Object* GcAllocInternal(MethodTable* pEEType, uint32_t uFlags, uintptr_t numElements, Thread* pThread)
 {
     ASSERT(!pThread->IsDoNotTriggerGcSet());
@@ -505,6 +552,9 @@ static Object* GcAllocInternal(MethodTable* pEEType, uint32_t uFlags, uintptr_t 
 
     // Save the MethodTable for instrumentation purposes.
     tls_pLastAllocationEEType = pEEType;
+
+    // TODO: handle dynamic allocation sampling
+    //ee_alloc_context* acontext = pThread->GetEEAllocContext();
 
     Object* pObject = GCHeapUtilities::GetGCHeap()->Alloc(pThread->GetAllocContext(), cbSize, uFlags);
     if (pObject == NULL)
