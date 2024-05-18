@@ -177,5 +177,8 @@ namespace System
 
         internal const string ArmIntrinsicPerformsUnsignedOperationMessage = "The underlying hardware instruction does not perform a signed saturate narrowing operation, and it always returns an unsigned result. Use the unsigned overload instead.";
         internal const string ArmIntrinsicPerformsUnsignedOperationDiagId = "SYSLIB0055";
+
+        internal const string LoadFromHashAlgorithmMessage = "LoadFrom with a custom AssemblyHashAlgorithm is obsolete. Use overloads without an AssemblyHashAlgorithm.";
+        internal const string LoadFromHashAlgorithmDiagId = "SYSLIB0056";
     }
 }

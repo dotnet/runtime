@@ -480,13 +480,14 @@
                        $(NativeBinDir)dotnet.native.js;
                        $(NativeBinDir)dotnet.d.ts;
                        $(NativeBinDir)package.json;
-                       $(NativeBinDir)dotnet.native.wasm"
+                       $(NativeBinDir)dotnet.native.wasm;
+                       $(NativeBinDir)dotnet.globalization.js"
           DestinationFolder="$(MicrosoftNetCoreAppRuntimePackNativeDir)"
           SkipUnchangedFiles="true" />
 
     <Copy SourceFiles="$(NativeBinDir)dotnet.native.worker.js"
           DestinationFolder="$(MicrosoftNetCoreAppRuntimePackNativeDir)"
-	  Condition="Exists('$(NativeBinDir)dotnet.native.worker.js')"
+	        Condition="Exists('$(NativeBinDir)dotnet.native.worker.js')"
           SkipUnchangedFiles="true" />
 
     <Copy SourceFiles="$(NativeBinDir)dotnet.native.js.symbols"

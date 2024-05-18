@@ -876,6 +876,7 @@ namespace System
         static byte System.Numerics.INumberBase<byte>.MaxMagnitudeNumber(byte x, byte y) { throw null; }
         static byte System.Numerics.INumberBase<byte>.MinMagnitude(byte x, byte y) { throw null; }
         static byte System.Numerics.INumberBase<byte>.MinMagnitudeNumber(byte x, byte y) { throw null; }
+        static byte System.Numerics.INumberBase<byte>.MultiplyAddEstimate(byte left, byte right, byte addend) { throw null; }
         static bool System.Numerics.INumberBase<byte>.TryConvertFromChecked<TOther>(TOther value, out byte result) { throw null; }
         static bool System.Numerics.INumberBase<byte>.TryConvertFromSaturating<TOther>(TOther value, out byte result) { throw null; }
         static bool System.Numerics.INumberBase<byte>.TryConvertFromTruncating<TOther>(TOther value, out byte result) { throw null; }
@@ -1063,6 +1064,7 @@ namespace System
         static char System.Numerics.INumberBase<char>.MaxMagnitudeNumber(char x, char y) { throw null; }
         static char System.Numerics.INumberBase<char>.MinMagnitude(char x, char y) { throw null; }
         static char System.Numerics.INumberBase<char>.MinMagnitudeNumber(char x, char y) { throw null; }
+        static char System.Numerics.INumberBase<char>.MultiplyAddEstimate(char left, char right, char addend) { throw null; }
         static char System.Numerics.INumberBase<char>.Parse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style, System.IFormatProvider? provider) { throw null; }
         static char System.Numerics.INumberBase<char>.Parse(string s, System.Globalization.NumberStyles style, System.IFormatProvider? provider) { throw null; }
         static bool System.Numerics.INumberBase<char>.TryConvertFromChecked<TOther>(TOther value, out char result) { throw null; }
@@ -2111,6 +2113,7 @@ namespace System
         static bool System.Numerics.INumberBase<decimal>.IsZero(decimal value) { throw null; }
         static decimal System.Numerics.INumberBase<decimal>.MaxMagnitudeNumber(decimal x, decimal y) { throw null; }
         static decimal System.Numerics.INumberBase<decimal>.MinMagnitudeNumber(decimal x, decimal y) { throw null; }
+        static decimal System.Numerics.INumberBase<decimal>.MultiplyAddEstimate(decimal left, decimal right, decimal addend) { throw null; }
         static bool System.Numerics.INumberBase<decimal>.TryConvertFromChecked<TOther>(TOther value, out decimal result) { throw null; }
         static bool System.Numerics.INumberBase<decimal>.TryConvertFromSaturating<TOther>(TOther value, out decimal result) { throw null; }
         static bool System.Numerics.INumberBase<decimal>.TryConvertFromTruncating<TOther>(TOther value, out decimal result) { throw null; }
@@ -2318,6 +2321,7 @@ namespace System
         public static double MinMagnitude(double x, double y) { throw null; }
         public static double MinMagnitudeNumber(double x, double y) { throw null; }
         public static double MinNumber(double x, double y) { throw null; }
+        public static double MultiplyAddEstimate(double left, double right, double addend) { throw null; }
         public static bool operator ==(double left, double right) { throw null; }
         public static bool operator >(double left, double right) { throw null; }
         public static bool operator >=(double left, double right) { throw null; }
@@ -2941,6 +2945,7 @@ namespace System
         public static System.Half MinMagnitude(System.Half x, System.Half y) { throw null; }
         public static System.Half MinMagnitudeNumber(System.Half x, System.Half y) { throw null; }
         public static System.Half MinNumber(System.Half x, System.Half y) { throw null; }
+        public static System.Half MultiplyAddEstimate(System.Half left, System.Half right, System.Half addend) { throw null; }
         public static System.Half operator +(System.Half left, System.Half right) { throw null; }
         public static explicit operator checked byte (System.Half value) { throw null; }
         public static explicit operator checked char (System.Half value) { throw null; }
@@ -3364,6 +3369,7 @@ namespace System
         static bool System.Numerics.INumberBase<System.Int128>.IsZero(System.Int128 value) { throw null; }
         static System.Int128 System.Numerics.INumberBase<System.Int128>.MaxMagnitudeNumber(System.Int128 x, System.Int128 y) { throw null; }
         static System.Int128 System.Numerics.INumberBase<System.Int128>.MinMagnitudeNumber(System.Int128 x, System.Int128 y) { throw null; }
+        static System.Int128 System.Numerics.INumberBase<System.Int128>.MultiplyAddEstimate(System.Int128 left, System.Int128 right, System.Int128 addend) { throw null; }
         static bool System.Numerics.INumberBase<System.Int128>.TryConvertFromChecked<TOther>(TOther value, out System.Int128 result) { throw null; }
         static bool System.Numerics.INumberBase<System.Int128>.TryConvertFromSaturating<TOther>(TOther value, out System.Int128 result) { throw null; }
         static bool System.Numerics.INumberBase<System.Int128>.TryConvertFromTruncating<TOther>(TOther value, out System.Int128 result) { throw null; }
@@ -3495,6 +3501,7 @@ namespace System
         static bool System.Numerics.INumberBase<short>.IsZero(short value) { throw null; }
         static short System.Numerics.INumberBase<short>.MaxMagnitudeNumber(short x, short y) { throw null; }
         static short System.Numerics.INumberBase<short>.MinMagnitudeNumber(short x, short y) { throw null; }
+        static short System.Numerics.INumberBase<short>.MultiplyAddEstimate(short left, short right, short addend) { throw null; }
         static bool System.Numerics.INumberBase<short>.TryConvertFromChecked<TOther>(TOther value, out short result) { throw null; }
         static bool System.Numerics.INumberBase<short>.TryConvertFromSaturating<TOther>(TOther value, out short result) { throw null; }
         static bool System.Numerics.INumberBase<short>.TryConvertFromTruncating<TOther>(TOther value, out short result) { throw null; }
@@ -3634,6 +3641,7 @@ namespace System
         static bool System.Numerics.INumberBase<int>.IsZero(int value) { throw null; }
         static int System.Numerics.INumberBase<int>.MaxMagnitudeNumber(int x, int y) { throw null; }
         static int System.Numerics.INumberBase<int>.MinMagnitudeNumber(int x, int y) { throw null; }
+        static int System.Numerics.INumberBase<int>.MultiplyAddEstimate(int left, int right, int addend) { throw null; }
         static bool System.Numerics.INumberBase<int>.TryConvertFromChecked<TOther>(TOther value, out int result) { throw null; }
         static bool System.Numerics.INumberBase<int>.TryConvertFromSaturating<TOther>(TOther value, out int result) { throw null; }
         static bool System.Numerics.INumberBase<int>.TryConvertFromTruncating<TOther>(TOther value, out int result) { throw null; }
@@ -3773,6 +3781,7 @@ namespace System
         static bool System.Numerics.INumberBase<long>.IsZero(long value) { throw null; }
         static long System.Numerics.INumberBase<long>.MaxMagnitudeNumber(long x, long y) { throw null; }
         static long System.Numerics.INumberBase<long>.MinMagnitudeNumber(long x, long y) { throw null; }
+        static long System.Numerics.INumberBase<long>.MultiplyAddEstimate(long left, long right, long addend) { throw null; }
         static bool System.Numerics.INumberBase<long>.TryConvertFromChecked<TOther>(TOther value, out long result) { throw null; }
         static bool System.Numerics.INumberBase<long>.TryConvertFromSaturating<TOther>(TOther value, out long result) { throw null; }
         static bool System.Numerics.INumberBase<long>.TryConvertFromTruncating<TOther>(TOther value, out long result) { throw null; }
@@ -3914,6 +3923,7 @@ namespace System
         static bool System.Numerics.INumberBase<nint>.IsZero(nint value) { throw null; }
         static nint System.Numerics.INumberBase<nint>.MaxMagnitudeNumber(nint x, nint y) { throw null; }
         static nint System.Numerics.INumberBase<nint>.MinMagnitudeNumber(nint x, nint y) { throw null; }
+        static nint System.Numerics.INumberBase<nint>.MultiplyAddEstimate(nint left, nint right, nint addend) { throw null; }
         static bool System.Numerics.INumberBase<nint>.TryConvertFromChecked<TOther>(TOther value, out nint result) { throw null; }
         static bool System.Numerics.INumberBase<nint>.TryConvertFromSaturating<TOther>(TOther value, out nint result) { throw null; }
         static bool System.Numerics.INumberBase<nint>.TryConvertFromTruncating<TOther>(TOther value, out nint result) { throw null; }
@@ -4918,6 +4928,7 @@ namespace System
         static bool System.Numerics.INumberBase<sbyte>.IsZero(sbyte value) { throw null; }
         static sbyte System.Numerics.INumberBase<sbyte>.MaxMagnitudeNumber(sbyte x, sbyte y) { throw null; }
         static sbyte System.Numerics.INumberBase<sbyte>.MinMagnitudeNumber(sbyte x, sbyte y) { throw null; }
+        static sbyte System.Numerics.INumberBase<sbyte>.MultiplyAddEstimate(sbyte left, sbyte right, sbyte addend) { throw null; }
         static bool System.Numerics.INumberBase<sbyte>.TryConvertFromChecked<TOther>(TOther value, out sbyte result) { throw null; }
         static bool System.Numerics.INumberBase<sbyte>.TryConvertFromSaturating<TOther>(TOther value, out sbyte result) { throw null; }
         static bool System.Numerics.INumberBase<sbyte>.TryConvertFromTruncating<TOther>(TOther value, out sbyte result) { throw null; }
@@ -5061,6 +5072,7 @@ namespace System
         public static float MinMagnitude(float x, float y) { throw null; }
         public static float MinMagnitudeNumber(float x, float y) { throw null; }
         public static float MinNumber(float x, float y) { throw null; }
+        public static float MultiplyAddEstimate(float left, float right, float addend) { throw null; }
         public static bool operator ==(float left, float right) { throw null; }
         public static bool operator >(float left, float right) { throw null; }
         public static bool operator >=(float left, float right) { throw null; }
@@ -6575,6 +6587,7 @@ namespace System
         static System.UInt128 System.Numerics.INumberBase<System.UInt128>.MaxMagnitudeNumber(System.UInt128 x, System.UInt128 y) { throw null; }
         static System.UInt128 System.Numerics.INumberBase<System.UInt128>.MinMagnitude(System.UInt128 x, System.UInt128 y) { throw null; }
         static System.UInt128 System.Numerics.INumberBase<System.UInt128>.MinMagnitudeNumber(System.UInt128 x, System.UInt128 y) { throw null; }
+        static System.UInt128 System.Numerics.INumberBase<System.UInt128>.MultiplyAddEstimate(System.UInt128 left, System.UInt128 right, System.UInt128 addend) { throw null; }
         static bool System.Numerics.INumberBase<System.UInt128>.TryConvertFromChecked<TOther>(TOther value, out System.UInt128 result) { throw null; }
         static bool System.Numerics.INumberBase<System.UInt128>.TryConvertFromSaturating<TOther>(TOther value, out System.UInt128 result) { throw null; }
         static bool System.Numerics.INumberBase<System.UInt128>.TryConvertFromTruncating<TOther>(TOther value, out System.UInt128 result) { throw null; }
@@ -6706,6 +6719,7 @@ namespace System
         static ushort System.Numerics.INumberBase<ushort>.MaxMagnitudeNumber(ushort x, ushort y) { throw null; }
         static ushort System.Numerics.INumberBase<ushort>.MinMagnitude(ushort x, ushort y) { throw null; }
         static ushort System.Numerics.INumberBase<ushort>.MinMagnitudeNumber(ushort x, ushort y) { throw null; }
+        static ushort System.Numerics.INumberBase<ushort>.MultiplyAddEstimate(ushort left, ushort right, ushort addend) { throw null; }
         static bool System.Numerics.INumberBase<ushort>.TryConvertFromChecked<TOther>(TOther value, out ushort result) { throw null; }
         static bool System.Numerics.INumberBase<ushort>.TryConvertFromSaturating<TOther>(TOther value, out ushort result) { throw null; }
         static bool System.Numerics.INumberBase<ushort>.TryConvertFromTruncating<TOther>(TOther value, out ushort result) { throw null; }
@@ -6845,6 +6859,7 @@ namespace System
         static uint System.Numerics.INumberBase<uint>.MaxMagnitudeNumber(uint x, uint y) { throw null; }
         static uint System.Numerics.INumberBase<uint>.MinMagnitude(uint x, uint y) { throw null; }
         static uint System.Numerics.INumberBase<uint>.MinMagnitudeNumber(uint x, uint y) { throw null; }
+        static uint System.Numerics.INumberBase<uint>.MultiplyAddEstimate(uint left, uint right, uint addend) { throw null; }
         static bool System.Numerics.INumberBase<uint>.TryConvertFromChecked<TOther>(TOther value, out uint result) { throw null; }
         static bool System.Numerics.INumberBase<uint>.TryConvertFromSaturating<TOther>(TOther value, out uint result) { throw null; }
         static bool System.Numerics.INumberBase<uint>.TryConvertFromTruncating<TOther>(TOther value, out uint result) { throw null; }
@@ -6984,6 +6999,7 @@ namespace System
         static ulong System.Numerics.INumberBase<ulong>.MaxMagnitudeNumber(ulong x, ulong y) { throw null; }
         static ulong System.Numerics.INumberBase<ulong>.MinMagnitude(ulong x, ulong y) { throw null; }
         static ulong System.Numerics.INumberBase<ulong>.MinMagnitudeNumber(ulong x, ulong y) { throw null; }
+        static ulong System.Numerics.INumberBase<ulong>.MultiplyAddEstimate(ulong left, ulong right, ulong addend) { throw null; }
         static bool System.Numerics.INumberBase<ulong>.TryConvertFromChecked<TOther>(TOther value, out ulong result) { throw null; }
         static bool System.Numerics.INumberBase<ulong>.TryConvertFromSaturating<TOther>(TOther value, out ulong result) { throw null; }
         static bool System.Numerics.INumberBase<ulong>.TryConvertFromTruncating<TOther>(TOther value, out ulong result) { throw null; }
@@ -7122,6 +7138,7 @@ namespace System
         static nuint System.Numerics.INumberBase<nuint>.MaxMagnitudeNumber(nuint x, nuint y) { throw null; }
         static nuint System.Numerics.INumberBase<nuint>.MinMagnitude(nuint x, nuint y) { throw null; }
         static nuint System.Numerics.INumberBase<nuint>.MinMagnitudeNumber(nuint x, nuint y) { throw null; }
+        static nuint System.Numerics.INumberBase<nuint>.MultiplyAddEstimate(nuint left, nuint right, nuint addend) { throw null; }
         static bool System.Numerics.INumberBase<nuint>.TryConvertFromChecked<TOther>(TOther value, out nuint result) { throw null; }
         static bool System.Numerics.INumberBase<nuint>.TryConvertFromSaturating<TOther>(TOther value, out nuint result) { throw null; }
         static bool System.Numerics.INumberBase<nuint>.TryConvertFromTruncating<TOther>(TOther value, out nuint result) { throw null; }
@@ -10929,6 +10946,7 @@ namespace System.Numerics
         static abstract TSelf MaxMagnitudeNumber(TSelf x, TSelf y);
         static abstract TSelf MinMagnitude(TSelf x, TSelf y);
         static abstract TSelf MinMagnitudeNumber(TSelf x, TSelf y);
+        static virtual TSelf MultiplyAddEstimate(TSelf left, TSelf right, TSelf addend) { throw null; }
         static virtual TSelf Parse(System.ReadOnlySpan<byte> utf8Text, System.Globalization.NumberStyles style, System.IFormatProvider? provider) { throw null; }
         static abstract TSelf Parse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style, System.IFormatProvider? provider);
         static abstract TSelf Parse(string s, System.Globalization.NumberStyles style, System.IFormatProvider? provider);
@@ -11139,6 +11157,7 @@ namespace System.Reflection
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Types and members the loaded assembly depends on might be removed")]
         public static System.Reflection.Assembly LoadFrom(string assemblyFile) { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Types and members the loaded assembly depends on might be removed")]
+        [System.ObsoleteAttribute("LoadFrom with a custom AssemblyHashAlgorithm is obsolete. Use overloads without an AssemblyHashAlgorithm.", DiagnosticId = "SYSLIB0056", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public static System.Reflection.Assembly LoadFrom(string assemblyFile, byte[]? hashValue, System.Configuration.Assemblies.AssemblyHashAlgorithm hashAlgorithm) { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Types and members the loaded module depends on might be removed")]
         public System.Reflection.Module LoadModule(string moduleName, byte[]? rawModule) { throw null; }

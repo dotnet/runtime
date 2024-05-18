@@ -159,7 +159,7 @@ void ReplacePid(LPCWSTR original, LPWSTR replaced, size_t replacedLength)
         // append the string representation of the PID
         DWORD pid = GetCurrentProcessId();
         WCHAR pidStr[20];
-        _itow_s(pid, pidStr, ARRAY_SIZE(pidStr), 10);
+        FormatInteger(pidStr, ARRAY_SIZE(pidStr), "%u", pid);
         wcscat_s(replaced, replacedLength, pidStr);
 
         // append the rest of the filename
@@ -482,6 +482,12 @@ ThreadStressLog* StressLog::CreateThreadStressLog() {
         // ahead and try to provoke that now, before we've altered the list of available stress logs, and bail if
         // we fail.
         t_pCurrentThreadLog = NULL;
+    }
+#pragma warning(suppress: 4101)
+    PAL_CPP_CATCH_NON_DERIVED(const std::bad_alloc&, obj)
+    {
+        // Just leave on any exception. Note: can't goto or return from within EX_CATCH...
+        noFLSNow = TRUE;
     }
 #pragma warning(suppress: 4101)
     PAL_CPP_CATCH_DERIVED(OutOfMemoryException, obj)

@@ -6231,6 +6231,30 @@ namespace JIT.HardwareIntrinsics.Arm
             return result;
         }
 
+        public static ulong DotProduct(ulong op1, ushort[] op2, int s, ushort[] op3, int t)
+        {
+            ulong result = op1;
+
+            for (int i = 0; i < 4; i++)
+            {
+                result += (ulong)((ulong)op2[s + i] * (ulong)op3[t + i]);
+            }
+
+            return result;
+        }
+
+        public static long DotProduct(long op1, short[] op2, int s, short[] op3, int t)
+        {
+            long result = op1;
+
+            for (int i = 0; i < 4; i++)
+            {
+                result += (long)((long)op2[s + i] * (long)op3[t + i]);
+            }
+
+            return result;
+        }
+
         public static int WhileLessThanMask(int op1, int op2)
         {
             return (op1 < op2) ? 1 : 0;
