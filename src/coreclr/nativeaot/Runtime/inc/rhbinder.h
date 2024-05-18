@@ -437,9 +437,9 @@ struct PInvokeTransitionFrame
 #elif defined(TARGET_ARM64)
 #define OFFSETOF__Thread__m_pTransitionFrame 0x40
 #elif defined(TARGET_X86)
-#define OFFSETOF__Thread__m_pTransitionFrame 0x2c
+#define OFFSETOF__Thread__m_pTransitionFrame 0x30
 #elif defined(TARGET_ARM)
-#define OFFSETOF__Thread__m_pTransitionFrame 0x2c
+#define OFFSETOF__Thread__m_pTransitionFrame 0x30
 #endif
 
 typedef DPTR(MethodTable) PTR_EEType;

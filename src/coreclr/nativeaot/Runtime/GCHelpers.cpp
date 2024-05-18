@@ -476,6 +476,8 @@ static Object* GcAllocInternal(MethodTable* pEEType, uint32_t uFlags, uintptr_t 
     ASSERT(!pThread->IsDoNotTriggerGcSet());
     ASSERT(pThread->IsCurrentThreadInCooperativeMode());
 
+    _ASSERT_EXPR(pThread->GetGeneration() == 0, "generation should be reset when running managed code");
+
     if (pEEType->ContainsPointers())
     {
         uFlags |= GC_ALLOC_CONTAINS_REF;

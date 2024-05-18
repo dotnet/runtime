@@ -87,6 +87,7 @@ struct ThreadBuffer
 {
     uint8_t                 m_rgbAllocContextBuffer[SIZEOF_ALLOC_CONTEXT];
     uint32_t volatile       m_ThreadStateFlags;                     // see Thread::ThreadStateFlags enum
+    uint32_t                m_generation;
     PInvokeTransitionFrame* m_pTransitionFrame;
     PInvokeTransitionFrame* m_pDeferredTransitionFrame;             // see Thread::EnablePreemptiveMode
     PInvokeTransitionFrame* m_pCachedTransitionFrame;
@@ -297,6 +298,8 @@ public:
     //
     void SetGCSpecial();
     bool IsGCSpecial();
+    int32_t  GetGeneration();
+    void  SetGeneration(int32_t age);
 
     //
     // Managed/unmanaged interop transitions support APIs

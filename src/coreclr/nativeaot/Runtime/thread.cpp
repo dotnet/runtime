@@ -328,6 +328,16 @@ bool Thread::IsGCSpecial()
     return IsStateSet(TSF_IsGcSpecialThread);
 }
 
+int32_t Thread::GetGeneration()
+{
+    return m_generation;
+}
+
+void Thread::SetGeneration(int32_t generation)
+{
+    m_generation = generation;
+}
+
 uint64_t Thread::GetPalThreadIdForLogging()
 {
     return m_threadId;
@@ -1011,7 +1021,10 @@ EXTERN_C NOINLINE void FASTCALL RhpWaitForGC2(PInvokeTransitionFrame * pFrame)
 {
     Thread * pThread = pFrame->m_pThread;
     if (pThread->IsDoNotTriggerGcSet())
+    {
+        pThread->SetGeneration(0);
         return;
+    }
 
     pThread->WaitForGC(pFrame);
 }
@@ -1203,6 +1216,8 @@ void Thread::ReversePInvokeAttachOrTrapThread(ReversePInvokeFrame * pFrame)
     {
         WaitForGC(pFrame->m_savedPInvokeTransitionFrame);
     }
+
+    m_generation = 0;
 }
 
 void Thread::EnsureRuntimeInitialized()

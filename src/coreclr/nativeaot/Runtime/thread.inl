@@ -108,10 +108,13 @@ FORCEINLINE void Thread::InlinePInvokeReturn(PInvokeTransitionFrame* pFrame)
 {
     // must be in cooperative mode when checking the trap flag
     VolatileStoreWithoutBarrier(&m_pTransitionFrame, (PInvokeTransitionFrame*)nullptr);
-    if (ThreadStore::IsTrapThreadsRequested())
+    if (!ThreadStore::IsTrapThreadsRequested())
     {
-        RhpWaitForGC2(pFrame);
+        m_generation = 0;
+        return;
     }
+
+    RhpWaitForGC2(pFrame);
 }
 
 FORCEINLINE bool Thread::InlineTryFastReversePInvoke(ReversePInvokeFrame* pFrame)
@@ -154,5 +157,6 @@ FORCEINLINE bool Thread::InlineTryFastReversePInvoke(ReversePInvokeFrame* pFrame
         return false; // need to trap the thread
     }
 
+    m_generation = 0;
     return true;
 }

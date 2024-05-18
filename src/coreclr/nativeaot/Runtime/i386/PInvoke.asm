@@ -30,6 +30,7 @@ FASTCALL_FUNC RhpPInvokeReturn, 4
         mov         dword ptr [edx + OFFSETOF__Thread__m_pTransitionFrame], 0
         cmp         [RhpTrapThreads], TrapThreadsFlags_None
         jne         @F                  ; forward branch - predicted not taken
+        mov         dword ptr [edx + OFFSETOF__Thread__m_generation], 0
         ret
 @@:
         ; passing transition frame pointer in rcx
