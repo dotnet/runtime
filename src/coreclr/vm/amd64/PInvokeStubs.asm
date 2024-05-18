@@ -199,6 +199,7 @@ LEAF_ENTRY JIT_PInvokeEnd, _TEXT
         ;; pThread->m_pFrame = pFrame->m_Next
         mov             rax, qword ptr [rcx + OFFSETOF__Frame__m_Next]
         mov             qword ptr [rdx + OFFSETOF__Thread__m_pFrame], rax
+        mov             dword ptr [rdx + OFFSETOF__Thread__m_generation], 0
 
         ret
 

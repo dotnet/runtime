@@ -148,6 +148,7 @@
     // pThread->m_pFrame = pFrame->m_Next
     ld  t4, (Frame__m_Next)(a0)
     sd  t4, (Thread_m_pFrame)(a1)
+    sw  zero, (Thread_m_generation)(a1)
 
     jr  ra
 

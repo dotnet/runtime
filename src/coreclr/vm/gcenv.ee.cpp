@@ -291,6 +291,10 @@ void GCToEEInterface::GcScanRoots(promote_func* fn, int condemned, int max_gen, 
     Thread* pThread = NULL;
     while ((pThread = ThreadStore::GetThreadList(pThread)) != NULL)
     {
+        // Skip threads that cannot point to anything of interest for this GC
+        if (pThread->m_generation > condemned)
+            continue;
+
         if (GCHeapUtilities::GetGCHeap()->IsThreadUsingAllocationContextHeap(
             pThread->GetAllocContext(), sc->thread_number))
         {
@@ -405,6 +409,22 @@ void GCToEEInterface::SyncBlockCacheDemote(int max_gen)
     CONTRACTL_END;
 
     SyncBlockCache::GetSyncBlockCache()->GCDone(TRUE, max_gen);
+
+    int condemned = GCHeapUtilities::GetGCHeap()->GetCondemnedGeneration();
+
+    Thread* pThread = NULL;
+    while ((pThread = ThreadStore::GetThreadList(pThread)) != NULL)
+    {
+        int32_t generation = pThread->m_generation;
+
+        // the stack is too old to be interesing in this GC
+        if (generation > condemned)
+            continue;
+
+        // We could compute the minimum age of all objects rooted by the current thread,
+        // but for simplicity we will just reset to 0.
+        pThread->m_generation = 0;
+    }
 }
 
 void GCToEEInterface::SyncBlockCachePromotionsGranted(int max_gen)
@@ -417,6 +437,29 @@ void GCToEEInterface::SyncBlockCachePromotionsGranted(int max_gen)
     CONTRACTL_END;
 
     SyncBlockCache::GetSyncBlockCache()->GCDone(FALSE, max_gen);
+
+    int condemned = GCHeapUtilities::GetGCHeap()->GetCondemnedGeneration();
+
+    Thread* pThread = NULL;
+    Thread* pCurrentThread = GetThreadNULLOk();
+    while ((pThread = ThreadStore::GetThreadList(pThread)) != NULL)
+    {
+        int32_t generation = pThread->m_generation;
+
+        // the stack is too old to be interesing in this GC
+        if (generation > condemned)
+            continue;
+
+        // the stack is as old as it can be
+        if (generation == max_gen)
+            continue;
+
+        // do not age the current thread
+        if (pThread == pCurrentThread)
+            continue;
+
+        pThread->m_generation = generation + 1;
+    }
 }
 
 uint32_t GCToEEInterface::GetActiveSyncBlockCount()

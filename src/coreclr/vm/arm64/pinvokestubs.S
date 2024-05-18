@@ -158,6 +158,7 @@ LOCAL_LABEL(\__PInvokeStubFuncName\()_0):
         // pThread->m_pFrame = pFrame->m_Next
         ldr     x9, [x0, #Frame__m_Next]
         str     x9, [x1, #Thread_m_pFrame]
+        str     wzr,[x1, #Thread_m_generation]
 
         ret
 

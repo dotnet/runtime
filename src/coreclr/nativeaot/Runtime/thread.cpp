@@ -86,6 +86,9 @@ void Thread::WaitForGC(PInvokeTransitionFrame* pTransitionFrame)
 
     // Restore the saved error
     PalSetLastError(lastErrorOnEntry);
+
+    // we may run managed code after this
+    m_generation = 0;
 }
 
 //
@@ -157,6 +160,9 @@ void Thread::DisablePreemptiveMode()
     {
         WaitForGC(m_pDeferredTransitionFrame);
     }
+
+    // we may run managed code after this
+    m_generation = 0;
 }
 
 // Setup the m_pDeferredTransitionFrame field for GC helpers entered from native helper thread

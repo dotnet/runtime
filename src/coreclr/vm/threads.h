@@ -997,14 +997,16 @@ public:
     // the top of the object.  Also, we want cache line filling to work for us
     // so the critical stuff is ordered based on frequency of use.
 
-    Volatile<ThreadState> m_State;   // Bits for the state of the thread
-
     // If TRUE, GC is scheduled cooperatively with this thread.
     // NOTE: This "byte" is actually a boolean - we don't allow
     // recursive disables.
     Volatile<ULONG>      m_fPreemptiveGCDisabled;
+    LONG                 m_generation;
 
     PTR_Frame            m_pFrame;  // The Current Frame
+
+    Volatile<ThreadState> m_State;   // Bits for the state of the thread
+
     // Unique thread id used for thin locks - kept as small as possible, as we have limited space
     // in the object header to store it.
     DWORD                m_ThreadId;
@@ -1357,10 +1359,14 @@ public:
 
         m_fPreemptiveGCDisabled.StoreWithoutBarrier(1);
 
-        if (g_TrapReturningThreads)
+        if (!g_TrapReturningThreads)
         {
-            RareDisablePreemptiveGC();
+            // we may run managed code after this
+            m_generation = 0;
+            return;
         }
+
+        RareDisablePreemptiveGC();
 #else
         LIMITED_METHOD_CONTRACT;
 #endif

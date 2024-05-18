@@ -192,6 +192,7 @@ private:
     void     InsertPInvokeMethodProlog();
     void     InsertPInvokeMethodEpilog(BasicBlock* returnBB DEBUGARG(GenTree* lastExpr));
     GenTree* SetGCState(int cns);
+    GenTree* ResetGCGen();
     GenTree* CreateReturnTrapSeq();
     enum FrameLinkAction
     {

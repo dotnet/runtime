@@ -49252,7 +49252,11 @@ bool GCHeap::StressHeap(gc_alloc_context * context)
     }
     Interlocked::Decrement(&OneAtATime);
 #endif // !MULTIPLE_HEAPS
-    if (IsConcurrentGCEnabled())
+
+    // When GCSTRESS_INSTR_JIT is set we see lots of GCs - on every GC-eligible instruction.
+    // We do not want all these GC to be gen2 as that is expensive and also would prevent
+    // the coverage of generation-aware behaviors.
+    if (IsConcurrentGCEnabled() || (g_pConfig->GetGCStressLevel() & EEConfig::GCSTRESS_INSTR_JIT))
     {
         int rgen = StressRNG(10);
 
@@ -49261,7 +49265,7 @@ bool GCHeap::StressHeap(gc_alloc_context * context)
             rgen = 2;
         else if (rgen >= 4)
             rgen = 1;
-    else
+        else
             rgen = 0;
 
         GarbageCollectTry (rgen, FALSE, collection_gcstress);

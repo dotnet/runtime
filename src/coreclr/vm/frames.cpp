@@ -919,6 +919,8 @@ GCFrame::GCFrame(Thread *pThread, OBJECTREF *pObjRefs, UINT numObjRefs, BOOL may
     }
     CONTRACTL_END;
 
+    _ASSERTE_MSG(pThread->m_generation == 0, "generation should be reset when running managed code");
+
 #ifdef USE_CHECKED_OBJECTREFS
     if (!maybeInterior) {
         UINT i;
@@ -1715,6 +1717,8 @@ void HelperMethodFrame::Push()
 
     Thread * pThread = ::GetThread();
     m_pThread = pThread;
+
+    _ASSERTE_MSG(pThread->m_generation == 0, "generation should be reset when running managed code");
 
     // Push the frame
     Frame::Push(pThread);

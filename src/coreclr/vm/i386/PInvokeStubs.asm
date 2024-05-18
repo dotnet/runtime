@@ -99,6 +99,7 @@ _JIT_PInvokeEnd@4 PROC public
         ;; pThread->m_pFrame = pFrame->m_Next
         mov             eax, dword ptr [ecx + Frame__m_Next]
         mov             dword ptr [edx + Thread_m_pFrame], eax
+        mov             dword ptr [edx + Thread_m_generation], 0
 
         ret
 

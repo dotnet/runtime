@@ -100,10 +100,18 @@ ASMCONSTANTS_C_ASSERT(SIZEOF__ComMethodFrame
 
 #endif // FEATURE_COMINTEROP
 
-#define               OFFSETOF__Thread__m_fPreemptiveGCDisabled     0x04
+#define               OFFSETOF__Thread__m_fPreemptiveGCDisabled     0x00
 ASMCONSTANTS_C_ASSERT(OFFSETOF__Thread__m_fPreemptiveGCDisabled
                     == offsetof(Thread, m_fPreemptiveGCDisabled));
 #define Thread_m_fPreemptiveGCDisabled OFFSETOF__Thread__m_fPreemptiveGCDisabled
+
+#define               OFFSETOF__Thread__m_generation                0x04
+ASMCONSTANTS_C_ASSERT(OFFSETOF__Thread__m_generation
+                    == offsetof(Thread, m_generation));
+#define Thread_m_generation OFFSETOF__Thread__generation
+
+ASMCONSTANTS_C_ASSERT(OFFSETOF__Thread__m_generation
+                    == OFFSETOF__Thread__m_fPreemptiveGCDisabled + sizeof(uint32_t));
 
 #define               OFFSETOF__Thread__m_pFrame                    0x08
 ASMCONSTANTS_C_ASSERT(OFFSETOF__Thread__m_pFrame

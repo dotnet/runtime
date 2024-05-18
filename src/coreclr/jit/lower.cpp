@@ -5493,6 +5493,18 @@ GenTree* Lowering::SetGCState(int state)
     return storeGcState;
 }
 
+GenTree* Lowering::ResetGCGen()
+{
+    const CORINFO_EE_INFO* pInfo = comp->eeGetEEInfo();
+
+    GenTree* base = new (comp, GT_LCL_VAR) GenTreeLclVar(GT_LCL_VAR, TYP_I_IMPL, comp->info.compLvFrameListRoot);
+
+    GenTree* stateNode    = new (comp, GT_CNS_INT) GenTreeIntCon(TYP_BYTE, 0);
+    GenTree* addr         = new (comp, GT_LEA) GenTreeAddrMode(TYP_I_IMPL, base, nullptr, 1, pInfo->offsetOfGCState + sizeof(uint32_t));
+    GenTree* storeGcGen   = new (comp, GT_STOREIND) GenTreeStoreInd(TYP_BYTE, addr, stateNode);
+    return storeGcGen;
+}
+
 //------------------------------------------------------------------------
 // CreateFrameLinkUpdate: Create a tree that either links or unlinks the
 // locally-allocated InlinedCallFrame from the Frame list.
@@ -5946,6 +5958,10 @@ void Lowering::InsertPInvokeCallEpilog(GenTreeCall* call)
     tree = CreateReturnTrapSeq();
     BlockRange().InsertBefore(insertionPoint, LIR::SeqTree(comp, tree));
     ContainCheckReturnTrap(tree->AsOp());
+
+    tree = ResetGCGen();
+    BlockRange().InsertBefore(insertionPoint, LIR::SeqTree(comp, tree));
+    ContainCheckStoreIndir(tree->AsStoreInd());
 
     // Pop the frame if necessary. On 32-bit targets this only happens in the method epilog; on 64-bit targets
     // this happens after every PInvoke call in non-stubs. 32-bit targets instead mark the frame as inactive.

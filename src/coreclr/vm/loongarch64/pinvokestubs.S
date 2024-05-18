@@ -153,6 +153,7 @@ LEAF_ENTRY JIT_PInvokeEnd, _TEXT
     // pThread->m_pFrame = pFrame->m_Next
     ld.d  $t4, $a0, Frame__m_Next
     st.d  $t4, $a1, Thread_m_pFrame
+    st.w  $zero, $a1, Thread_m_generation
 
     jirl  $r0, $ra, 0
 

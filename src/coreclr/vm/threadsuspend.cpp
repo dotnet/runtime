@@ -2231,6 +2231,9 @@ void Thread::RareDisablePreemptiveGC()
 
 Exit: ;
     END_PRESERVE_LAST_ERROR;
+
+    // we may run managed code after this
+    m_generation = 0;
 }
 
 void Thread::HandleThreadAbort ()

@@ -532,9 +532,12 @@ extern "C" UINT64 __stdcall COMToCLRWorker(Thread *pThread, ComMethodFrame* pFra
 
     _ASSERTE(pThread);
 
-    // At this point we should be in preemptive GC mode (regardless of if it happened
+    // At this point we should be in cooperative GC mode (regardless of if it happened
     // in the stub or in the worker).
     _ASSERTE(pThread->PreemptiveGCDisabled());
+
+    // we may run managed code after this
+    pThread->m_generation = 0;
 
     {
 #ifndef TARGET_X86
