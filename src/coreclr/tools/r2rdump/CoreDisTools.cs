@@ -353,7 +353,7 @@ namespace R2RDump
                         break;
 
                     case Machine.LoongArch64:
-                        //TODO-LoongArch64: maybe should add ProbeLoongArch64Quirks. At least it's unused now.
+                        ProbeLoongArch64Quirks(rtf, imageOffset, rtfOffset, ref fixedTranslatedLine);
                         break;
 
                     case Machine.ArmThumb2:
@@ -1390,6 +1390,212 @@ namespace R2RDump
             rd = (instruction >> 7) & 0b_11111U;
             rs1 = (instruction >> 15) & 0b_11111U;
             imm = unchecked((int)instruction) >> 20;
+        }
+
+        /// <summary>
+        /// Improves disassembler output for LoongArch64.
+        /// </summary>
+        /// <param name="rtf">Runtime function</param>
+        /// <param name="imageOffset">Offset within the image byte array</param>
+        /// <param name="rtfOffset">Offset within the runtime function</param>
+        /// <param name="instruction">Textual representation of the instruction</param>
+        private void ProbeLoongArch64Quirks(RuntimeFunction rtf, int imageOffset, int rtfOffset, ref string instruction)
+        {
+            const int InstructionSize = 4;
+            uint instr = BitConverter.ToUInt32(_reader.Image, imageOffset + rtfOffset);
+
+            // The list of PC-relative instructions: BCond(BEQ, BNE, BLT[U], BGE[U]), BEQZ, BNEZ, BCEQZ, BCNEZ, B, BL, JIRL.
+
+            // Handle a B, BL, BCond(BEQ, BNE, BLT[U], BGE[U]), BZ(BEQZ, BNEZ, BCEQZ, BCNEZ) instruction
+            if (IsLoongArch64BCondInstruction(instr, out int offs) ||
+                IsLoongArch64BOrBlInstruction(instr, out offs) ||
+                IsLoongArch64BZInstruction(instr, out offs))
+            {
+                ReplaceRelativeOffset(ref instruction, rtf.StartAddress + rtfOffset + offs, rtf);
+            }
+            else if (IsLoongArch64JirlRAInstruction(instr, out uint rj, out int imm))
+            {
+                // Common Pattern:
+                //      pcaddu12i
+                //      ld.d
+                //      jirl  ra, rj, 0
+                //
+                //      pcaddu12i
+                //      addi.d
+                //      ld.d
+                //      jirl  ra, rj, 0
+                //  There may exist some irrelevant instructions between pcaddu12i and jirl.
+                //  We need to find relevant instructions based on rj to calculate the jump address.
+                uint register  = rj;
+                int  immediate = imm;
+                bool isFound   = false;
+                int currentInsOffs = rtfOffset - InstructionSize;
+                int currentPC  = rtf.StartAddress + currentInsOffs;
+
+                do
+                {
+                    instr = BitConverter.ToUInt32(_reader.Image, imageOffset + currentInsOffs);
+
+                    if (IsLoongArch64Ld_dOrAddi_dInstruction(instr, out uint rd, out rj, out imm))
+                    {
+                        if (rd == register)
+                        {
+                            register = rj;
+                            immediate += imm;
+                        }
+                    }
+                    else if (IsLoongArch64Pcaddu12iInstruction(instr, out rd, out imm))
+                    {
+                        if (rd == register)
+                        {
+                            immediate += currentPC + imm;
+                            isFound = true;
+                            break;
+                        }
+                    }
+                    else
+                    {
+                        // check if target register is using by an unexpected instruction.
+                        rd = (instr & 0x1f);
+                        if ((rd == register) && !IsLoongArch64Fld_dInstruction(instr))
+                        {
+                            break;
+                        }
+                    }
+
+                    currentInsOffs -= InstructionSize;
+                    currentPC      -= InstructionSize;
+                } while (currentInsOffs > 0);
+
+                if (isFound)
+                {
+                    if (!TryGetImportCellName(immediate, out string targetName) || string.IsNullOrWhiteSpace(targetName))
+                    {
+                        return;
+                    }
+
+                    instruction = $"{instruction} // {targetName}";
+                }
+            }
+        }
+
+        /// <summary>
+        /// Determine whether a given instruction is a BCond(BEQ, BNE, BLT[U], BGE[U]).
+        /// </summary>
+        /// <param name="ins">Assembly code of instruction</param>
+        private bool IsLoongArch64BCondInstruction(uint ins, out int offs)
+        {
+            uint Opcode = (ins >> 26) & 0x3f;
+            offs = 0;
+            if ((Opcode == 0x16) || (Opcode == 0x17) || (Opcode == 0x18) || (Opcode == 0x19) || (Opcode == 0x1a) || (Opcode == 0x1b))
+            {
+                offs = (short)((ins >> 10) & 0xffff);
+                offs <<= 2;
+                return true;
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// Determine whether a given instruction is a B or a BL.
+        /// </summary>
+        /// <param name="ins">Assembly code of instruction</param>
+        private bool IsLoongArch64BOrBlInstruction(uint ins, out int offs)
+        {
+            uint Opcode = (ins >> 26) & 0x3f;
+            offs = 0;
+            if ((Opcode == 0x14) || (Opcode == 0x15))
+            {
+                offs = (int)(((ins >> 10) & 0xffff) | ((ins & 0x3ff) << 16)) << 6;
+                offs >>= 4;
+                return true;
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// Determine whether a given instruction is a BZ(BEQZ, BNEZ, BCEQZ, BCNEZ).
+        /// </summary>
+        /// <param name="ins">Assembly code of instruction</param>
+        private bool IsLoongArch64BZInstruction(uint ins, out int offs)
+        {
+            uint Opcode = (ins >> 26) & 0x3f;
+            offs = 0;
+            if ((Opcode == 0x10) || (Opcode == 0x11) || (Opcode == 0x12))
+            {
+                offs = (int)((((ins >> 10) & 0xffff) | ((ins & 0x1f) << 16)) << 11);
+                offs >>= 9;
+                return true;
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// Determine whether a given instruction is a JIRL RA.
+        /// </summary>
+        /// <param name="ins">Assembly code of instruction</param>
+        private bool IsLoongArch64JirlRAInstruction(uint ins, out uint rj, out int offs)
+        {
+            rj   = 0;
+            offs = 0;
+            if ((((ins >> 26) & 0x3f) == 0x13) && ((ins & 0x1f) == 1))
+            {
+                rj = (ins >> 5) & 0x1f;
+                offs = (short)((ins >> 10) & 0xffff);
+                offs <<= 2;
+                return true;
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// Determine whether a given instruction is a PCADDU12I.
+        /// </summary>
+        /// <param name="ins">Assembly code of instruction</param>
+        private bool IsLoongArch64Pcaddu12iInstruction(uint ins, out uint rd, out int imm)
+        {
+            rd = 0;
+            imm = 0;
+            if (((ins >> 25) & 0x3f) == 0xe)
+            {
+                rd = ins & 0x1f;
+                imm = (int)((ins >> 5) & 0xfffff) << 12;
+                return true;
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// Determine whether a given instruction is a LD.D or ADDI.D.
+        /// </summary>
+        /// <param name="ins">Assembly code of instruction</param>
+        private bool IsLoongArch64Ld_dOrAddi_dInstruction(uint ins, out uint rd, out uint rj, out int imm)
+        {
+            imm = 0;
+            rd = rj = 0;
+
+            if ((((ins >> 22) & 0x3ff) == 0xa3) || (((ins >> 22) & 0x3ff) == 0xb))
+            {
+                rd = ins & 0x1f;
+                rj = (ins >> 5) & 0x1f;
+                imm = (int)((ins >> 10) & 0xfff) << 20;
+                imm >>= 20;
+                return true;
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// Determine whether a given instruction is a FLD.D.
+        /// </summary>
+        /// <param name="ins">Assembly code of instruction</param>
+        private bool IsLoongArch64Fld_dInstruction(uint ins)
+        {
+            if (((ins >> 22) & 0x3ff) == 0xae)
+            {
+                return true;
+            }
+            return false;
         }
 
         /// <summary>
