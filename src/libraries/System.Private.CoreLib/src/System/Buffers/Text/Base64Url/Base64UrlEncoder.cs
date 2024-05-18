@@ -88,8 +88,9 @@ namespace System.Buffers.Text
         /// <remarks>The output will not be padded even if the input is not a multiple of 3.</remarks>
         public static byte[] EncodeToUtf8(ReadOnlySpan<byte> source)
         {
-            Span<byte> destination = stackalloc byte[GetEncodedLength(source.Length)];
+            Span<byte> destination = new byte[GetEncodedLength(source.Length)];
             EncodeToUtf8(source, destination, out _, out int bytesWritten);
+            Debug.Assert(destination.Length == bytesWritten);
 
             return destination.Slice(0, bytesWritten).ToArray();
         }
@@ -150,8 +151,9 @@ namespace System.Buffers.Text
         /// <remarks>The output will not be padded even if the input is not a multiple of 3.</remarks>
         public static char[] EncodeToChars(ReadOnlySpan<byte> source)
         {
-            Span<char> destination = stackalloc char[GetEncodedLength(source.Length)];
-            EncodeToChars(source, destination, out _, out _);
+            Span<char> destination = new char[GetEncodedLength(source.Length)];
+            EncodeToChars(source, destination, out int bytesWritten, out _);
+            Debug.Assert(destination.Length == bytesWritten);
 
             return destination.ToArray();
         }
@@ -164,8 +166,9 @@ namespace System.Buffers.Text
         /// <remarks>The output will not be padded even if the input is not a multiple of 3.</remarks>
         public static string EncodeToString(ReadOnlySpan<byte> source)
         {
-            Span<char> destination = stackalloc char[GetEncodedLength(source.Length)];
-            EncodeToChars(source, destination, out _, out _);
+            Span<char> destination = new char[GetEncodedLength(source.Length)];
+            EncodeToChars(source, destination, out int bytesWritten, out _);
+            Debug.Assert(destination.Length == bytesWritten);
 
             return new string(destination);
         }

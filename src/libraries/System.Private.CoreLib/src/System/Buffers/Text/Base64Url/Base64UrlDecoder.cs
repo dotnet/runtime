@@ -147,8 +147,27 @@ namespace System.Buffers.Text
         /// more than two padding characters, or a non-white space-character among the padding characters.</exception>
         public static byte[] DecodeFromUtf8(ReadOnlySpan<byte> source)
         {
-            Span<byte> destination = stackalloc byte[GetMaxDecodedLength(source.Length)];
+            int upperBound = GetMaxDecodedLength(source.Length);
+            Span<byte> destination = stackalloc byte[256];
+            byte[]? rented = null;
+
+            if (upperBound <= destination.Length)
+            {
+                destination = destination.Slice(0, upperBound);
+            }
+            else
+            {
+                rented = ArrayPool<byte>.Shared.Rent(upperBound);
+                destination = rented.AsSpan(0, upperBound);
+            }
+
             OperationStatus status = DecodeFromUtf8(source, destination, out _, out int bytesWritten);
+            byte[] ret = destination.Slice(0, bytesWritten).ToArray();
+
+            if (rented is not null)
+            {
+                ArrayPool<byte>.Shared.Return(rented);
+            }
 
             return OperationStatus.Done == status ? destination.Slice(0, bytesWritten).ToArray() :
                 throw new FormatException(SR.Format_BadBase64Char);
@@ -331,8 +350,27 @@ namespace System.Buffers.Text
         /// more than two padding characters, or a non-white space-character among the padding characters.</exception>
         public static byte[] DecodeFromChars(ReadOnlySpan<char> source)
         {
-            Span<byte> destination = stackalloc byte[GetMaxDecodedLength(source.Length)];
+            int upperBound = GetMaxDecodedLength(source.Length);
+            Span<byte> destination = stackalloc byte[256];
+            byte[]? rented = null;
+
+            if (upperBound <= destination.Length)
+            {
+                destination = destination.Slice(0, upperBound);
+            }
+            else
+            {
+                rented = ArrayPool<byte>.Shared.Rent(upperBound);
+                destination = rented.AsSpan(0, upperBound);
+            }
+
             OperationStatus status = DecodeFromChars(source, destination, out _, out int bytesWritten);
+            byte[] ret = destination.Slice(0, bytesWritten).ToArray();
+
+            if (rented is not null)
+            {
+                ArrayPool<byte>.Shared.Return(rented);
+            }
 
             return OperationStatus.Done == status ? destination.Slice(0, bytesWritten).ToArray() :
                 throw new FormatException(SR.Format_BadBase64Char);
