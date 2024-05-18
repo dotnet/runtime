@@ -23,11 +23,12 @@ public class NativeAOTTests : BlazorWasmTestBase
     {
     }
 
-    [Fact]
-    public async Task PublishAndRun()
+    [Theory]
+    [InlineData("NativeAOT")]
+    [InlineData("NativeAOT2")]
+    public async Task PublishAndRun(string assetName)
     {
         string config = "Release";
-        string assetName = "NativeAOT";
         string id = $"browser_{config}_{GetRandomId()}";
 
         InitBlazorWasmProjectDir(id);

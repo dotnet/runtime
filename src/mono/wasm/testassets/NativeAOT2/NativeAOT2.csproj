@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <RuntimeIdentifier>browser-wasm</RuntimeIdentifier>
+    <OutputType>Exe</OutputType>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <DotNetJsApi>true</DotNetJsApi>
+    <UsingBrowserRuntimeWorkload>false</UsingBrowserRuntimeWorkload>
+    <UsingWasiRuntimeWorkload>false</UsingWasiRuntimeWorkload>
+  </PropertyGroup>
+  <ItemGroup>
+    <WasmExtraFilesToDeploy Include="wwwroot\*" />
+    <PackageReference Include="Microsoft.DotNet.ILCompiler.LLVM" Version="9.0.0-preview.4.24257.3" />
+    <PackageReference Include="runtime.win-x64.Microsoft.DotNet.ILCompiler.LLVM" Version="9.0.0-preview.4.24257.3" />
+  </ItemGroup>
+</Project>
