@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Runtime.CompilerServices;
+
 using Debug = System.Diagnostics.Debug;
 
 namespace System.Collections.Generic
@@ -80,9 +82,15 @@ namespace System.Collections.Generic
         {
             if (requestedCapacity > ((_items != null) ? _items.Length : 0))
             {
-                int newCount = Math.Max(2 * _count + 1, requestedCapacity);
-                Array.Resize(ref _items, newCount);
+                Grow(requestedCapacity);
             }
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private void Grow(int requestedCapacity)
+        {
+            int newCount = Math.Max(2 * _count + 1, requestedCapacity);
+            Array.Resize(ref _items, newCount);
         }
 
         public readonly int Count => _count;
