@@ -498,6 +498,14 @@ namespace System.Net.Http.Tests
             Assert.Throws<InvalidOperationException>(() => { _headers.Add("Warning", "v"); });
         }
 
+        [Fact]
+        public void Ctor_Should_LazyLoad_ContentLength()
+        {
+            var result = new HttpContentHeaders(new ComputeLengthHttpContent(() => 41));
+            Assert.Contains("Content-Length", result.ToString());
+            Assert.Contains(result, h => h.Key == "Content-Length");
+        }
+
         private sealed class ComputeLengthHttpContent : HttpContent
         {
             private readonly Func<long?> _tryComputeLength;
