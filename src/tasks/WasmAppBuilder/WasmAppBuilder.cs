@@ -170,6 +170,9 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
             if (!IncludeThreadsWorker && name == "dotnet.native.worker.js")
                 continue;
 
+            if (!HybridGlobalization && name == "dotnet.globalization.js")
+                continue;
+
             if (name == "dotnet.runtime.js.map" || name == "dotnet.js.map")
             {
                 Log.LogMessage(MessageImportance.Low, $"Skipping {item.ItemSpec} from boot config");

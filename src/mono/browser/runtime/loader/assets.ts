@@ -4,7 +4,7 @@
 import WasmEnableThreads from "consts:wasmEnableThreads";
 
 import { PThreadPtrNull, type AssetEntryInternal, type PThreadWorker, type PromiseAndController } from "../types/internal";
-import type { AssetBehaviors, AssetEntry, LoadingResource, ResourceList, SingleAssetBehaviors as SingleAssetBehaviors, WebAssemblyBootResourceType } from "../types";
+import { GlobalizationMode, type AssetBehaviors, type AssetEntry, type LoadingResource, type ResourceList, type SingleAssetBehaviors as SingleAssetBehaviors, type WebAssemblyBootResourceType } from "../types";
 import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL, ENVIRONMENT_IS_WEB, ENVIRONMENT_IS_WORKER, loaderHelpers, mono_assert, runtimeHelpers } from "./globals";
 import { createPromiseController } from "./promise-controller";
 import { mono_log_debug, mono_log_warn } from "./logging";
@@ -29,6 +29,7 @@ const jsRuntimeModulesAssetTypes: {
     [k: string]: boolean
 } = {
     "js-module-threads": true,
+    "js-module-globalization": true,
     "js-module-runtime": true,
     "js-module-dotnet": true,
     "js-module-native": true,
@@ -293,6 +294,9 @@ export function prepareAssets () {
         convert_single_asset(modulesAssets, resources.jsModuleRuntime, "js-module-runtime");
         if (WasmEnableThreads) {
             convert_single_asset(modulesAssets, resources.jsModuleWorker, "js-module-threads");
+        }
+        if (config.globalizationMode == GlobalizationMode.Hybrid) {
+            convert_single_asset(modulesAssets, resources.jsModuleGlobalization, "js-module-globalization");
         }
 
         const addAsset = (asset: AssetEntryInternal, isCore: boolean) => {

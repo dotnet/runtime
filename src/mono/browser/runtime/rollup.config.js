@@ -225,6 +225,20 @@ const typesConfig = {
     plugins: [dts()],
     onwarn: onwarn
 };
+const hybridGlobalizationConfig = {
+    input: "./hybrid-globalization/module-exports.ts",
+    output: [
+        {
+            format: "es",
+            file: nativeBinDir + "/dotnet.globalization.js",
+            banner,
+            sourcemap: true,
+            sourcemapPathTransform,
+        }
+    ],
+    plugins: [...outputCodePlugins],
+    onwarn: onwarn
+};
 
 let diagnosticMockTypesConfig = undefined;
 
@@ -280,7 +294,9 @@ const allConfigs = [
     runtimeConfig,
     wasmImportsConfig,
     typesConfig,
-].concat(workerConfigs)
+    hybridGlobalizationConfig,
+]
+    .concat(workerConfigs)
     .concat(diagnosticMockTypesConfig ? [diagnosticMockTypesConfig] : []);
 export default defineConfig(allConfigs);
 

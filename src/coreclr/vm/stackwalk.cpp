@@ -554,7 +554,11 @@ PCODE Thread::VirtualUnwindCallFrame(T_CONTEXT* pContext,
     PT_RUNTIME_FUNCTION pFunctionEntry;
 
 #if !defined(TARGET_UNIX) && defined(TARGET_ARM64)
-    if ((pContext->ContextFlags & CONTEXT_UNWOUND_TO_CALL) != 0)
+    // We don't adjust the control PC when we have a code info, as the code info is always created from an unadjusted one
+    // and the debug sanity check below would fail in case when a managed method was represented by multiple
+    // RUNTIME_FUNCTION entries and the control PC and adjusted control PC happened to be represented by different
+    // RUNTIME_FUNCTION entries.
+    if ((pCodeInfo == NULL) && ((pContext->ContextFlags & CONTEXT_UNWOUND_TO_CALL) != 0))
     {
         uControlPc -= STACKWALK_CONTROLPC_ADJUST_OFFSET;
     }
