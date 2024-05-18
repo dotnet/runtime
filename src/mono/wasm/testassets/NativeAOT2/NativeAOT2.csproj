@@ -7,6 +7,7 @@
     <DotNetJsApi>true</DotNetJsApi>
     <UsingBrowserRuntimeWorkload>false</UsingBrowserRuntimeWorkload>
     <UsingWasiRuntimeWorkload>false</UsingWasiRuntimeWorkload>
+    <RestoreAdditionalProjectSources>$(RestoreAdditionalProjectSources);https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-experimental/nuget/v3/index.json</RestoreAdditionalProjectSources>
   </PropertyGroup>
   <ItemGroup>
     <WasmExtraFilesToDeploy Include="wwwroot\*" />
