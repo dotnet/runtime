@@ -4413,7 +4413,7 @@ private:
 
             // If we don't even have <= 3 entries, or have a really steep slope, it means we are far from target,
             // We should consider to adjust.
-            if ((tcp_count_in_rearrange <= avg_count) || (abs (tcp_slope_in_rearrange) > 3.0))
+            if ((tcp_count_in_rearrange <= avg_count) || (fabs (tcp_slope_in_rearrange) > 3.0))
             {
                 dprintf (6666, ("%d tcps, slope is %.3f, returning last one %.3f",
                     tcp_count_in_rearrange, tcp_slope_in_rearrange, recorded_tcp_rearranged[start_idx]));
@@ -4727,7 +4727,7 @@ private:
 
                         if (last_2nd_hc_change < 0)
                         {
-                            bool inc_too_quick_p = ((last_change_gc_index - last_2nd_change_gc_index) < (inc_factor * 2 * sample_size));
+                            bool inc_too_quick_p = ((last_change_gc_index - last_2nd_change_gc_index) < (size_t)(inc_factor * 2 * sample_size));
 
                             if (inc_too_quick_p)
                             {
@@ -4796,7 +4796,7 @@ private:
                 adj_metric = adjust_hc;
             }
 
-            float hc_change_pct = abs ((float)change_int / n_heaps);
+            float hc_change_pct = fabsf ((float)change_int / n_heaps);
 
             adjustment* adj = get_last_adjustment();
             size_t last_change_gc_index = adj->gc_index;
@@ -4830,7 +4830,7 @@ private:
                 }
                 else
                 {
-                    bool change_p = (num_gcs_since_change > (hc_change_factor * sample_size));
+                    bool change_p = (num_gcs_since_change > (size_t)(hc_change_factor * sample_size));
                     dprintf (6666, ("It's been %Id GCs since we wanted to change HC last time, thres %d GCs, %s",
                         num_gcs_since_change, (hc_change_factor * sample_size), (change_p ? "change" : "don't change yet")));
                     if (!change_p)
