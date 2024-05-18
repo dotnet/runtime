@@ -1457,7 +1457,7 @@ namespace R2RDump
                     {
                         // check if target register is using by an unexpected instruction.
                         rd = (instr & 0x1f);
-                        if ((rd == register) && !IsLoongArch64FLD_DInstruction(instr))
+                        if ((rd == register) && !IsLoongArch64Fld_dInstruction(instr))
                         {
                             break;
                         }
@@ -1589,7 +1589,7 @@ namespace R2RDump
         /// Determine whether a given instruction is a FLD.D.
         /// </summary>
         /// <param name="ins">Assembly code of instruction</param>
-        private bool IsLoongArch64FLD_DInstruction(uint ins)
+        private bool IsLoongArch64Fld_dInstruction(uint ins)
         {
             if (((ins >> 22) & 0x3ff) == 0xae)
             {
