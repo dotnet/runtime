@@ -179,7 +179,16 @@ ds_ipc_reset (DiagnosticsIpc *ipc)
 	if (!ipc)
 		return;
 
-	ipc->pipe = INVALID_HANDLE_VALUE;
+	if (ipc->pipe != INVALID_HANDLE_VALUE) {
+		CloseHandle (ipc->pipe);
+		ipc->pipe = INVALID_HANDLE_VALUE;
+	}
+
+	if (ipc->overlap.hEvent != INVALID_HANDLE_VALUE) {
+		CloseHandle (ipc->overlap.hEvent);
+		ipc->overlap.hEvent = INVALID_HANDLE_VALUE;
+	}
+
 	ipc->is_listening = false;
 }
 
