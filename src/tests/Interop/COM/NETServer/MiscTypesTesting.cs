@@ -40,4 +40,9 @@ public class MiscTypesTesting : Server.Contract.IMiscTypesTesting
         Environment.FailFast($"Unknown init value: {init}");
         return null;
     }
+
+    void Server.Contract.IMiscTypesTesting.Marshal_ByRefVariant(ref object result, object value)
+    {
+        result = value;
+    }
 }

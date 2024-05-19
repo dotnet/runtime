@@ -34,6 +34,7 @@ struct ComInit
 
 using ComMTA = ComInit<COINIT_MULTITHREADED>;
 void ValidationTests();
+void ValidationByrefTests();
 
 int __cdecl main()
 {
@@ -50,6 +51,7 @@ int __cdecl main()
     {
         CoreShimComActivation csact{ W("NETServer"), W("MiscTypesTesting") };
         ValidationTests();
+        ValidationByrefTests();
     }
     catch (HRESULT hr)
     {
@@ -301,5 +303,83 @@ void ValidationTests()
         V_VT(&args.Input) = (VARENUM)0x8888;
         HRESULT hr = miscTypesTesting->Marshal_Variant(args.Input, &args.Result);
         THROW_FAIL_IF_FALSE(hr == 0x80131531); // COR_E_INVALIDOLEVARIANTTYPE
+    }
+}
+
+void ValidationByrefTests()
+{
+    ::printf(__FUNCTION__ "() through CoCreateInstance...\n");
+
+    HRESULT hr;
+
+    IMiscTypesTesting *miscTypesTesting;
+    THROW_IF_FAILED(::CoCreateInstance(CLSID_MiscTypesTesting, nullptr, CLSCTX_INPROC, IID_IMiscTypesTesting, (void**)&miscTypesTesting));
+
+    ::printf("-- Primitives <=> BYREF VARIANT...\n");
+    {
+        VariantMarshalTest args{};
+        LONG value = 0;
+        V_VT(&args.Input) = VT_I4;
+        V_I4(&args.Input) = 0x07ffffff;
+        V_VT(&args.Result) = VT_BYREF|VT_I4;
+        V_I4REF(&args.Result) = &value;
+        THROW_IF_FAILED(miscTypesTesting->Marshal_ByRefVariant(&args.Result, args.Input));
+        THROW_FAIL_IF_FALSE(V_I4(&args.Input) == value);
+    }
+    {
+        VariantMarshalTest args{};
+        LONG value = 0;
+        V_VT(&args.Input) = VT_I8;
+        V_I8(&args.Input) = 0x07ffffff;
+        V_VT(&args.Result) = VT_BYREF|VT_I4;
+        V_I4REF(&args.Result) = &value;
+        THROW_IF_FAILED(miscTypesTesting->Marshal_ByRefVariant(&args.Result, args.Input));
+        THROW_FAIL_IF_FALSE(V_I8(&args.Input) == value);
+    }
+    ::printf("-- BSTR <=> BYREF VARIANT...\n");
+    {
+        VariantMarshalTest args{};
+        BSTR expected = ::SysAllocString(W("1234"));
+        V_VT(&args.Input) = VT_I4;
+        V_I4(&args.Input) = 1234;
+        BSTR value = ::SysAllocString(W("The quick Fox jumped over the lazy Dog."));
+        V_VT(&args.Result) = VT_BYREF|VT_BSTR;
+        V_BSTRREF(&args.Result) = &value;
+        THROW_IF_FAILED(miscTypesTesting->Marshal_ByRefVariant(&args.Result, args.Input));
+        THROW_FAIL_IF_FALSE(CompareStringOrdinal(expected, -1, value, -1, FALSE) == CSTR_EQUAL);
+        ::SysFreeString(expected);
+    }
+    
+    ::printf("-- System.Guid <=> BYREF VARIANT...\n");
+    {
+        /* 8EFAD956-B33D-46CB-90F4-45F55BA68A96 */
+        const GUID expected = { 0x8EFAD956, 0xB33D, 0x46CB, { 0x90, 0xF4, 0x45, 0xF5, 0x5B, 0xA6, 0x8A, 0x96} };
+
+        // Get a System.Guid into native
+        VariantMarshalTest guidVar;
+        THROW_IF_FAILED(miscTypesTesting->Marshal_Instance_Variant(W("{8EFAD956-B33D-46CB-90F4-45F55BA68A96}"), &guidVar.Input));
+        THROW_FAIL_IF_FALSE(V_VT(&guidVar.Input) == VT_RECORD);
+        THROW_FAIL_IF_FALSE(memcmp(V_RECORD(&guidVar.Input), &expected, sizeof(expected)) == 0);
+        THROW_IF_FAILED(miscTypesTesting->Marshal_Instance_Variant(W("{00000000-0000-0000-0000-000000000000}"), &guidVar.Result));
+        THROW_FAIL_IF_FALSE(V_VT(&guidVar.Result) == VT_RECORD);
+        
+        // Use the Guid as input.
+        VariantMarshalTest args{};
+        THROW_IF_FAILED(::VariantCopy(&args.Input, &guidVar.Input));
+        THROW_IF_FAILED(::VariantCopy(&args.Result, &guidVar.Result));
+        V_VT(&args.Result) = VT_BYREF|VT_RECORD;
+        THROW_IF_FAILED(miscTypesTesting->Marshal_ByRefVariant(&args.Result, args.Input));
+        THROW_FAIL_IF_FALSE((VT_BYREF|VT_RECORD) == V_VT(&args.Result));
+        THROW_FAIL_IF_FALSE(memcmp(V_RECORD(&args.Input), V_RECORD(&args.Result), sizeof(expected)) == 0);
+    }
+
+    ::printf("-- Type mismatch <=> BYREF VARIANT...\n");
+    {
+        VariantMarshalTest args{};
+        LONG value = 0;
+        V_VT(&args.Input) = VT_NULL;
+        V_VT(&args.Result) = VT_BYREF|VT_I4;
+        V_I4REF(&args.Result) = &value;
+        THROW_FAIL_IF_FALSE(miscTypesTesting->Marshal_ByRefVariant(&args.Result, args.Input) == 0x80004002); // COR_E_INVALIDCAST
     }
 }
