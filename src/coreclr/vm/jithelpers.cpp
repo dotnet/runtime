@@ -5980,6 +5980,10 @@ HCIMPL3_RAW(void, JIT_ReversePInvokeEnterTrackTransitions, ReversePInvokeFrame* 
             // not the next instruction in the stub.
             JIT_ReversePInvokeEnterRare2(frame, _ReturnAddress(), GetMethod(handle)->IsILStub() ? (UMEntryThunk*)secretArg : (UMEntryThunk*)NULL);
         }
+        else
+        {
+            thread->m_generation = 0;
+        }
     }
     else
     {
@@ -6014,6 +6018,10 @@ HCIMPL1_RAW(void, JIT_ReversePInvokeEnter, ReversePInvokeFrame* frame)
         if (g_TrapReturningThreads != 0)
         {
             JIT_ReversePInvokeEnterRare2(frame, _ReturnAddress());
+        }
+        else
+        {
+            thread->m_generation = 0;
         }
     }
     else

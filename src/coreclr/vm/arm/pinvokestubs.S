@@ -159,6 +159,8 @@
         ldr     r2, [r2]
         cbnz    r2, LOCAL_LABEL(RarePath)
 
+        str     r2, [r1, #Thread_m_generation]
+
         // pThread->m_pFrame = pFrame->m_Next
         ldr     r2, [r0, #Frame__m_Next]
         str     r2, [r1, #Thread_m_pFrame]

@@ -476,7 +476,7 @@ static Object* GcAllocInternal(MethodTable* pEEType, uint32_t uFlags, uintptr_t 
     ASSERT(!pThread->IsDoNotTriggerGcSet());
     ASSERT(pThread->IsCurrentThreadInCooperativeMode());
 
-    _ASSERT_EXPR(pThread->GetGeneration() == 0, "generation should be reset when running managed code");
+    ASSERT_MSG(pThread->GetGeneration() == 0, "generation should be reset when running managed code");
 
     if (pEEType->ContainsPointers())
     {

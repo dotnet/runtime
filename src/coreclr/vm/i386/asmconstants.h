@@ -174,17 +174,14 @@ ASMCONSTANTS_C_ASSERT(CORINFO_ArgumentException_ASM == CORINFO_ArgumentException
 
 
 
-#define               Thread__m_fPreemptiveGCDisabled   0x00
-#define               Thread__m_generation              0x04
-#define               Thread__m_pFrame                  0x08
+#define Thread_m_fPreemptiveGCDisabled     0x00
+ASMCONSTANTS_C_ASSERT(Thread_m_fPreemptiveGCDisabled == offsetof(Thread, m_fPreemptiveGCDisabled))
 
-ASMCONSTANTS_C_ASSERT(Thread__m_fPreemptiveGCDisabled == offsetof(Thread, m_fPreemptiveGCDisabled));
-ASMCONSTANTS_C_ASSERT(Thread__m_generation == offsetof(Thread, m_generation));
-ASMCONSTANTS_C_ASSERT(Thread__m_pFrame == offsetof(Thread, m_pFrame));
+#define Thread_m_generation     0x04
+ASMCONSTANTS_C_ASSERT(Thread_m_generation == offsetof(Thread, m_generation))
 
-#define Thread_m_pFrame Thread__m_pFrame
-#define Thread_m_fPreemptiveGCDisabled Thread__m_fPreemptiveGCDisabled
-#define Thread_m_generation Thread__m_generation
+#define Thread_m_pFrame     0x08
+ASMCONSTANTS_C_ASSERT(Thread_m_pFrame == offsetof(Thread, m_pFrame))
 
 
 #ifdef FEATURE_HIJACK

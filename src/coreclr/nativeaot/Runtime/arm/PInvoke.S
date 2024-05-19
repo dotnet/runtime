@@ -51,10 +51,10 @@ LEAF_ENTRY RhpPInvokeReturn, _TEXT
         mov     r2, #0
         str     r2, [r3, #OFFSETOF__Thread__m_pTransitionFrame]
 
-        PREPARE_EXTERNAL_VAR_INDIRECT RhpTrapThreads, r3
-        cbnz    r3, LOCAL_LABEL(ReturnRareTrapThread)  // TrapThreadsFlags_None = 0
+        PREPARE_EXTERNAL_VAR_INDIRECT RhpTrapThreads, r2
+        cbnz    r2, LOCAL_LABEL(ReturnRareTrapThread)  // TrapThreadsFlags_None = 0
 
-        str     r2, [x10, #OFFSETOF__Thread__m_generation]
+        str     r2, [r3, #OFFSETOF__Thread__m_generation]
         bx      lr
 LOCAL_LABEL(ReturnRareTrapThread):
         // passing transition frame pointer in r0
