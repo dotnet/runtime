@@ -294,6 +294,28 @@ namespace Microsoft.Extensions.Caching.Memory
         }
 
         [Fact]
+        public void ReplaceOldEntryWithSameSizeNewEntryAtSizeLimitCapacity()
+        {
+            var cache = new MemoryCache(new MemoryCacheOptions
+            {
+                SizeLimit = 6
+            });
+
+            AssertCacheSize(0, cache);
+
+            cache.Set("key", "oldValue", new MemoryCacheEntryOptions { Size = 6 });
+
+            Assert.Equal("oldValue", cache.Get("key"));
+
+            AssertCacheSize(6, cache);
+
+            cache.Set("key", "newValue", new MemoryCacheEntryOptions { Size = 6 });
+
+            Assert.Equal("newValue", cache.Get("key"));
+            AssertCacheSize(6, cache);
+        }
+
+        [Fact]
         public void RemovingEntryDecreasesCacheSize()
         {
             var cache = new MemoryCache(new MemoryCacheOptions { SizeLimit = 10 });
