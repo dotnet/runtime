@@ -160,12 +160,44 @@ namespace System
         {
             // Invalid and common types are handled at native side
             Debug.Assert((pOle.VarType & VarEnum.VT_ARRAY) == 0, "Array should be handled at native side.");
-            Debug.Assert((pOle.VarType & ~VarEnum.VT_BYREF) is (< VarEnum.VT_I2 or > VarEnum.VT_R8) and (< VarEnum.VT_I1 or > VarEnum.VT_UI4),
-                "Primitives are currently handled at native side.");
-            Debug.Assert((pOle.VarType & ~VarEnum.VT_BYREF) is not (VarEnum.VT_BOOL or VarEnum.VT_BSTR or VarEnum.VT_RECORD or VarEnum.VT_VARIANT), "Should be handled at native side.");
+            Debug.Assert((pOle.VarType & ~VarEnum.VT_BYREF) is not (VarEnum.VT_RECORD or VarEnum.VT_VARIANT), "Should be handled at native side.");
 
             switch (pOle.VarType)
             {
+                case VarEnum.VT_I4:
+                case VarEnum.VT_INT:
+                    return pOle.As<int>();
+                case VarEnum.VT_BYREF | VarEnum.VT_I4:
+                case VarEnum.VT_BYREF | VarEnum.VT_INT:
+                    return *(int*)pOle.GetRawDataRef<IntPtr>();
+
+                case VarEnum.VT_UI4:
+                case VarEnum.VT_UINT:
+                    return pOle.As<uint>();
+                case VarEnum.VT_BYREF | VarEnum.VT_UI4:
+                case VarEnum.VT_BYREF | VarEnum.VT_UINT:
+                    return *(uint*)pOle.GetRawDataRef<IntPtr>();
+
+                case VarEnum.VT_I1:
+                    return pOle.As<sbyte>();
+                case VarEnum.VT_BYREF | VarEnum.VT_I1:
+                    return *(sbyte*)pOle.GetRawDataRef<IntPtr>();
+
+                case VarEnum.VT_UI1:
+                    return pOle.As<byte>();
+                case VarEnum.VT_BYREF | VarEnum.VT_UI1:
+                    return *(byte*)pOle.GetRawDataRef<IntPtr>();
+
+                case VarEnum.VT_I2:
+                    return pOle.As<short>();
+                case VarEnum.VT_BYREF | VarEnum.VT_I2:
+                    return *(short*)pOle.GetRawDataRef<IntPtr>();
+
+                case VarEnum.VT_UI2:
+                    return pOle.As<ushort>();
+                case VarEnum.VT_BYREF | VarEnum.VT_UI2:
+                    return *(ushort*)pOle.GetRawDataRef<IntPtr>();
+
                 case VarEnum.VT_I8:
                     return pOle.As<long>();
                 case VarEnum.VT_BYREF | VarEnum.VT_I8:
@@ -176,9 +208,37 @@ namespace System
                 case VarEnum.VT_BYREF | VarEnum.VT_UI8:
                     return *(ulong*)pOle.GetRawDataRef<IntPtr>();
 
+                case VarEnum.VT_R4:
+                    return pOle.As<float>();
+                case VarEnum.VT_BYREF | VarEnum.VT_R4:
+                    return *(float*)pOle.GetRawDataRef<IntPtr>();
+
+                case VarEnum.VT_R8:
+                    return pOle.As<double>();
+                case VarEnum.VT_BYREF | VarEnum.VT_R8:
+                    return *(double*)pOle.GetRawDataRef<IntPtr>();
+
+                case VarEnum.VT_BOOL:
+                    return pOle.As<bool>();
+                case VarEnum.VT_BYREF | VarEnum.VT_BOOL:
+                    return *(short*)pOle.GetRawDataRef<IntPtr>() != 0;
+
+                case VarEnum.VT_BSTR:
+                    return pOle.As<string>();
+
+                case VarEnum.VT_BYREF | VarEnum.VT_BSTR:
+                    IntPtr bstr = *(IntPtr*)pOle.GetRawDataRef<IntPtr>();
+                    return bstr == IntPtr.Zero ? null : Marshal.PtrToStringBSTR(bstr);
+
                 case VarEnum.VT_EMPTY:
-                case VarEnum.VT_BYREF | VarEnum.VT_EMPTY:
                     return null;
+
+                case VarEnum.VT_BYREF | VarEnum.VT_EMPTY:
+#if TARGET_64BIT
+                    return 0UL;
+#else
+                    return 0U;
+#endif
 
                 case VarEnum.VT_NULL:
                 case VarEnum.VT_BYREF | VarEnum.VT_NULL:
