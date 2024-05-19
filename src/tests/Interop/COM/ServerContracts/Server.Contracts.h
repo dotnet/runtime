@@ -376,6 +376,10 @@ IMiscTypesTesting : IUnknown
       virtual HRESULT STDMETHODCALLTYPE Marshal_Instance_Variant (
         /*[in]*/ LPCWSTR init,
         /*[out,retval]*/ VARIANT* result) = 0;
+
+      virtual HRESULT STDMETHODCALLTYPE Marshal_ByRefVariant (
+        /*[inout]*/ VARIANT* result,
+        /*[in]*/ VARIANT value) = 0;
 };
 
 struct __declspec(uuid("592386a5-6837-444d-9de3-250815d18556"))
