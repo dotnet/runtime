@@ -68,61 +68,6 @@ namespace System.Net.Http.Functional.Tests
         [Theory]
         [InlineData(0)]
         [InlineData(1)]
-        [InlineData(9)]
-        public async Task GetAsync_RequestVersion0X_ThrowsNotSupportedException(int minorVersion)
-        {
-            if (IsWinHttpHandler)
-            {
-                return;
-            }
-
-            using (HttpClient client = CreateHttpClient())
-            {
-                HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, "http://nosuchhost.invalid");
-                request.Version = new Version(0, minorVersion);
-
-                Task<HttpResponseMessage> getResponseTask = client.SendAsync(TestAsync, request);
-
-                await Assert.ThrowsAsync<NotSupportedException>(() => getResponseTask);
-            }
-        }
-
-        [Theory]
-        [InlineData(1, 2)]
-        [InlineData(1, 6)]
-        [InlineData(2, 0)]  // Note, this is plain HTTP (not HTTPS), so 2.0 is not supported and should degrade to 1.1
-        [InlineData(2, 1)]
-        [InlineData(2, 7)]
-        [InlineData(3, 0)]
-        [InlineData(4, 2)]
-        public async Task GetAsync_UnknownRequestVersion_DegradesTo11(int majorVersion, int minorVersion)
-        {
-            // Sync API supported only up to HTTP/1.1
-            if (!TestAsync && majorVersion >= 2)
-            {
-                return;
-            }
-
-            await LoopbackServer.CreateServerAsync(async (server, url) =>
-            {
-                using (HttpClient client = CreateHttpClient())
-                {
-                    HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, url);
-                    request.Version = new Version(majorVersion, minorVersion);
-
-                    Task<HttpResponseMessage> getResponseTask = client.SendAsync(TestAsync, request);
-                    Task<List<string>> serverTask = server.AcceptConnectionSendResponseAndCloseAsync();
-
-                    await TestHelper.WhenAllCompletedOrAnyFailed(getResponseTask, serverTask);
-                    var requestLines = await serverTask;
-                    Assert.Equal($"GET {url.PathAndQuery} HTTP/1.1", requestLines[0]);
-                }
-            }, new LoopbackServer.Options { StreamWrapper = GetStream });
-        }
-
-        [Theory]
-        [InlineData(0)]
-        [InlineData(1)]
         public async Task GetAsync_ResponseVersion10or11_Success(int responseMinorVersion)
         {
             await LoopbackServer.CreateServerAsync(async (server, url) =>

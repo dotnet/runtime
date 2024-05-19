@@ -40,6 +40,11 @@ namespace System.Net.Http
                 ArgumentNullException.ThrowIfNull(value);
                 CheckDisposed();
 
+                if (value != HttpVersion.Version10 && value != HttpVersion.Version11 && value != HttpVersion.Version20 && value != HttpVersion.Version30)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(value), SR.net_http_request_invalid_version);
+                }
+
                 _version = value;
             }
         }

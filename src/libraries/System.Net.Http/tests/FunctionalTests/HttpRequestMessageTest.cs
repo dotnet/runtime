@@ -325,6 +325,13 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
+        [Fact]
+        public void Ctor_ShouldForbidNonValidVersion()
+        {
+            var rm = new HttpRequestMessage();
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(() => rm.Version = new Version(4, 0), "Request version value must be one of 1.0, 1.1, 2.0, or 3.0. (Parameter 'value')");
+        }
+
         #region Helper methods
 
         private class MockContent : HttpContent
@@ -349,5 +356,5 @@ namespace System.Net.Http.Functional.Tests
         }
 
         #endregion
-    }
+    }    
 }
