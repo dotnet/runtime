@@ -1070,7 +1070,7 @@ void StubLinkerCPU::EmitMovConstant(IntReg reg, UINT64 imm)
     if (high31 & 0x800)
     {
         // EmitAddImm does not allow negative immediate values, so use EmitSubImm.
-        EmitSubImm(reg, reg, ~high31 + 1 & 0xFFF);
+        EmitSubImm(reg, reg, (~high31 + 1) & 0xFFF);
     }
     else
     {
