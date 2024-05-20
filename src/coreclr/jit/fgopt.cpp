@@ -4536,24 +4536,28 @@ bool Compiler::fgReorderBlocks(bool useProfile)
 #endif
 
 //-----------------------------------------------------------------------------
-// fgMoveBlocksToHottestSuccessors: Try to create fallthrough between each block and its hottest successor.
+// fgMoveBackwardJumpsToSuccessors: Try to move backward unconditional jumps to fall into their successors.
 //
 // Template parameters:
 //    hasEH - If true, method has EH regions, so check that we don't try to move blocks in different regions
 //
 template <bool hasEH>
-void Compiler::fgMoveBlocksToHottestSuccessors()
+void Compiler::fgMoveBackwardJumpsToSuccessors()
 {
 #ifdef DEBUG
     if (verbose)
     {
-        printf("*************** In fgMoveBlocksToHottestSuccessors()\n");
+        printf("*************** In fgMoveBackwardJumpsToSuccessors()\n");
 
         printf("\nInitial BasicBlocks");
         fgDispBasicBlocks(verboseTrees);
         printf("\n");
     }
 #endif // DEBUG
+
+    EnsureBasicBlockEpoch();
+    BlockSet visitedBlocks(BlockSetOps::MakeEmpty(this));
+    BlockSetOps::AddElemD(this, visitedBlocks, fgFirstBB->bbNum);
 
     // Don't try to move the first block.
     // Also, if we have a funclet region, don't bother reordering anything in it.
@@ -4562,101 +4566,67 @@ void Compiler::fgMoveBlocksToHottestSuccessors()
     for (BasicBlock* block = fgFirstBB->Next(); block != fgFirstFuncletBB; block = next)
     {
         next = block->Next();
+        BlockSetOps::AddElemD(this, visitedBlocks, block->bbNum);
 
         // Don't bother trying to move cold blocks
         //
-        if (block->isRunRarely())
+        if (!block->KindIs(BBJ_ALWAYS) || block->isRunRarely())
         {
             continue;
         }
 
-        // If this block doesn't have any successors, we have nothing to move it up to
+        // We will consider moving only backward jumps
         //
-        if (block->NumSucc(this) == 0)
+        BasicBlock* const target = block->GetTarget();
+        if ((block == target) || !BlockSetOps::IsMember(this, visitedBlocks, target->bbNum))
         {
             continue;
         }
 
         if (hasEH)
         {
-            // Don't move the beginning of an EH region
+            // Don't move blocks in different EH regions
             //
-            if (bbIsTryBeg(block) || bbIsHandlerBeg(block))
+            if (!BasicBlock::sameEHRegion(block, target))
+            {
+                continue;
+            }
+
+            // block and target are in the same try/handler regions, and target is behind block,
+            // so block cannot possibly be the start of the region.
+            //
+            assert(!bbIsTryBeg(block) && !bbIsHandlerBeg(block));
+
+            // Don't change the entry block of an EH region
+            //
+            if (bbIsTryBeg(target) || bbIsHandlerBeg(target))
             {
                 continue;
             }
         }
 
-        // Find this block's most likely successor
-        //
-        FlowEdge* likelySuccEdge = block->GetSuccEdge(0, this);
-        for (FlowEdge* const succEdge : block->SuccEdges(this))
-        {
-            if (succEdge->getLikelihood() > likelySuccEdge->getLikelihood())
-            {
-                likelySuccEdge = succEdge;
-            }
-        }
-
-        // We don't want to change the first block, so if the most likely successor is the first block,
+        // We don't want to change the first block, so if the jump target is the first block,
         // don't try moving this block before it.
-        // Also, there's nothing to do if the most likely successor is this block, or the next block.
-        // Finally, if the most likely successor is cold, don't bother moving this block up to it.
+        // Also, if the target is cold, don't bother moving this block up to it.
         //
-        BasicBlock* const likelySucc = likelySuccEdge->getDestinationBlock();
-        if (likelySucc->IsFirst() || (block == likelySucc) || block->NextIs(likelySucc) || likelySucc->isRunRarely())
+        if (target->IsFirst() || target->isRunRarely())
         {
             continue;
         }
 
-        if (hasEH)
-        {
-            // Don't move blocks in different EH regions.
-            // Also, don't change the entry block of an EH region.
-            //
-            if (!BasicBlock::sameEHRegion(block, likelySucc) || bbIsTryBeg(likelySucc) || bbIsHandlerBeg(likelySucc))
-            {
-                continue;
-            }
-        }
-
-        // Check if likelySuccEdge has the heaviest edge weight of likelySucc's predecessors
+        // If moving block will break up existing fallthrough behavior into target, make sure it's worth it
         //
-        bool           isHeaviestEdge       = true;
-        const weight_t likelySuccEdgeWeight = likelySuccEdge->getLikelyWeight();
-        for (FlowEdge* const predEdge : likelySucc->PredEdges())
-        {
-            if (predEdge == likelySuccEdge)
-            {
-                continue;
-            }
-
-            if (predEdge->getLikelyWeight() >= likelySuccEdgeWeight)
-            {
-                isHeaviestEdge = false;
-                break;
-            }
-        }
-
-        if (!isHeaviestEdge)
+        FlowEdge* const fallthroughEdge = fgGetPredForBlock(target, target->Prev());
+        if ((fallthroughEdge != nullptr) &&
+            (fallthroughEdge->getLikelyWeight() >= block->GetTargetEdge()->getLikelyWeight()))
         {
             continue;
         }
 
-        // block is the hottest predecessor of likelySucc, but before we move block,
-        // make sure any fallthrough we are breaking is worth losing
-        //
-        assert(!block->IsFirst());
-        FlowEdge* const fallthroughEdge = fgGetPredForBlock(block, block->Prev());
-        if ((fallthroughEdge != nullptr) && (fallthroughEdge->getLikelyWeight() >= likelySuccEdgeWeight))
-        {
-            continue;
-        }
-
-        // Move block to before likelySucc
+        // Move block to before target
         //
         fgUnlinkBlock(block);
-        fgInsertBBbefore(likelySucc, block);
+        fgInsertBBbefore(target, block);
     }
 }
 
@@ -4692,12 +4662,12 @@ void Compiler::fgDoReversePostOrderLayout()
             fgInsertBBafter(block, blockToMove);
         }
 
-        // The RPO established a good base layout, but in some cases, it might not place the hottest predecessor
-        // behind a block.
-        // If a block isn't placed before its most-likely successor, and it is that successor's hottest predecessor,
-        // try creating fallthrough between them.
+        // The RPO established a good base layout, but in some cases, it might produce a subpar layout for loops.
+        // In particular, it may place the loop head after the loop exit, creating unnecessary branches.
+        // Fix this by moving unconditional backward jumps up to their targets,
+        // increasing the likelihood that the loop exit block is the last block in the loop.
         //
-        fgMoveBlocksToHottestSuccessors</* hasEH */ false>();
+        fgMoveBackwardJumpsToSuccessors</* hasEH */ false>();
 
         return;
     }
@@ -4777,7 +4747,7 @@ void Compiler::fgDoReversePostOrderLayout()
         }
     }
 
-    fgMoveBlocksToHottestSuccessors</* hasEH */ true>();
+    fgMoveBackwardJumpsToSuccessors</* hasEH */ true>();
 
     // Fix up call-finally pairs
     //

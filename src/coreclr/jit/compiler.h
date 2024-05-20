@@ -6097,7 +6097,7 @@ public:
     void fgMoveColdBlocks();
 
     template <bool hasEH>
-    void fgMoveBlocksToHottestSuccessors();
+    void fgMoveBackwardJumpsToSuccessors();
 
     bool fgFuncletsAreCold();
 
