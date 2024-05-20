@@ -2792,6 +2792,12 @@ void OleVariant::MarshalOleVariantForObjectUncommon(OBJECTREF * const & pObj, VA
 
     if ((*pObj)->GetMethodTable()->IsArray())
     {
+        // Get VarType for array
+        VARTYPE vt = GetElementVarTypeForArrayRef((BASEARRAYREF)*pObj);
+        if (vt == VT_ARRAY)
+            vt = VT_VARIANT;
+
+        V_VT(pOle) = vt | VT_ARRAY;
         MarshalArrayVariantObjectToOle(pObj, pOle);
     }
     else
@@ -3256,7 +3262,7 @@ void OleVariant::MarshalArrayVariantOleToObject(const VARIANT* pOleVariant,
 
         BASEARRAYREF pArrayRef = CreateArrayRefForSafeArray(pSafeArray, vt, pElemMT);
         SetObjectReference(pObj, pArrayRef);
-        MarshalArrayRefForSafeArray(pSafeArray, (BASEARRAYREF *) &pObj, vt, pStructMarshalStub != nullptr ? pStructMarshalStub->GetMultiCallableAddrOfCode() : NULL, pElemMT);
+        MarshalArrayRefForSafeArray(pSafeArray, (BASEARRAYREF *) pObj, vt, pStructMarshalStub != nullptr ? pStructMarshalStub->GetMultiCallableAddrOfCode() : NULL, pElemMT);
     }
     else
     {
@@ -3343,7 +3349,7 @@ void OleVariant::MarshalArrayVariantOleRefToObject(const VARIANT *pOleVariant,
 
         BASEARRAYREF pArrayRef = CreateArrayRefForSafeArray(pSafeArray, vt, pElemMT);
         SetObjectReference(pObj, pArrayRef);
-        MarshalArrayRefForSafeArray(pSafeArray, (BASEARRAYREF *) &pObj, vt, pStructMarshalStub != nullptr ? pStructMarshalStub->GetMultiCallableAddrOfCode() : NULL, pElemMT);
+        MarshalArrayRefForSafeArray(pSafeArray, (BASEARRAYREF *) pObj, vt, pStructMarshalStub != nullptr ? pStructMarshalStub->GetMultiCallableAddrOfCode() : NULL, pElemMT);
     }
     else
     {
