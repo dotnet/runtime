@@ -193,7 +193,7 @@ Crst DynamicIL
 End
 
 Crst DynamicMT
-    AcquiredBefore IbcProfile
+    AcquiredBefore IbcProfile CodeVersioning
 End
 
 Crst EventStore
