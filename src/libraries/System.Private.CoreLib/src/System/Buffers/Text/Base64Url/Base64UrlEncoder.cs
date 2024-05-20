@@ -88,11 +88,11 @@ namespace System.Buffers.Text
         /// <remarks>The output will not be padded even if the input is not a multiple of 3.</remarks>
         public static byte[] EncodeToUtf8(ReadOnlySpan<byte> source)
         {
-            Span<byte> destination = new byte[GetEncodedLength(source.Length)];
+            byte[] destination = new byte[GetEncodedLength(source.Length)];
             EncodeToUtf8(source, destination, out _, out int bytesWritten);
             Debug.Assert(destination.Length == bytesWritten);
 
-            return destination.Slice(0, bytesWritten).ToArray();
+            return destination;
         }
 
         /// <summary>
@@ -151,11 +151,11 @@ namespace System.Buffers.Text
         /// <remarks>The output will not be padded even if the input is not a multiple of 3.</remarks>
         public static char[] EncodeToChars(ReadOnlySpan<byte> source)
         {
-            Span<char> destination = new char[GetEncodedLength(source.Length)];
-            EncodeToChars(source, destination, out int bytesWritten, out _);
-            Debug.Assert(destination.Length == bytesWritten);
+            char[] destination = new char[GetEncodedLength(source.Length)];
+            EncodeToChars(source, destination, out _, out int charsWritten);
+            Debug.Assert(destination.Length == charsWritten);
 
-            return destination.ToArray();
+            return destination;
         }
 
         /// <summary>
@@ -166,9 +166,9 @@ namespace System.Buffers.Text
         /// <remarks>The output will not be padded even if the input is not a multiple of 3.</remarks>
         public static string EncodeToString(ReadOnlySpan<byte> source)
         {
-            Span<char> destination = new char[GetEncodedLength(source.Length)];
-            EncodeToChars(source, destination, out int bytesWritten, out _);
-            Debug.Assert(destination.Length == bytesWritten, $"The source length: {source.Length}, bytes written: {bytesWritten}");
+            char[] destination = new char[GetEncodedLength(source.Length)];
+            EncodeToChars(source, destination, out _, out int charsWritten);
+            Debug.Assert(destination.Length == charsWritten, $"The source length: {source.Length}, bytes written: {charsWritten}");
 
             return new string(destination);
         }
@@ -237,7 +237,7 @@ namespace System.Buffers.Text
 
             public static int GetMaxSrcLength(int srcLength, int destLength) =>
                 srcLength <= MaximumEncodeLength && destLength >= GetEncodedLength(srcLength) ?
-                srcLength : (destLength >> 2) * 3 + destLength % 4;
+                srcLength : GetMaxDecodedLength(destLength);
 
             public static uint GetInPlaceDestinationLength(int encodedLength, int _) => 0; // not used for char encoding
 
@@ -380,7 +380,7 @@ namespace System.Buffers.Text
 
             public static int GetMaxSrcLength(int srcLength, int destLength) =>
                 srcLength <= MaximumEncodeLength && destLength >= GetEncodedLength(srcLength) ?
-                srcLength : GetMaxDecodedLength(destLength); //(destLength >> 2) * 3 + destLength % 4;
+                srcLength : GetMaxDecodedLength(destLength);
 
             public static uint GetInPlaceDestinationLength(int encodedLength, int leftOver) =>
                 leftOver > 0 ? (uint)(encodedLength - leftOver - 1) : (uint)(encodedLength - 4);

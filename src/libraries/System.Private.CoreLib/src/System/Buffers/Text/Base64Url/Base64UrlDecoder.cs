@@ -150,18 +150,11 @@ namespace System.Buffers.Text
         public static byte[] DecodeFromUtf8(ReadOnlySpan<byte> source)
         {
             int upperBound = GetMaxDecodedLength(source.Length);
-            Span<byte> destination = stackalloc byte[MaxStackallocThreshold];
             byte[]? rented = null;
 
-            if (upperBound <= MaxStackallocThreshold)
-            {
-                destination = destination.Slice(0, upperBound);
-            }
-            else
-            {
-                rented = ArrayPool<byte>.Shared.Rent(upperBound);
-                destination = rented.AsSpan(0, upperBound);
-            }
+            Span<byte> destination = upperBound <= MaxStackallocThreshold
+                ? stackalloc byte[MaxStackallocThreshold]
+                : (rented = ArrayPool<byte>.Shared.Rent(upperBound));
 
             OperationStatus status = DecodeFromUtf8(source, destination, out _, out int bytesWritten);
             byte[] ret = destination.Slice(0, bytesWritten).ToArray();
@@ -171,8 +164,7 @@ namespace System.Buffers.Text
                 ArrayPool<byte>.Shared.Return(rented);
             }
 
-            return OperationStatus.Done == status ? destination.Slice(0, bytesWritten).ToArray() :
-                throw new FormatException(SR.Format_BadBase64Char);
+            return OperationStatus.Done == status ? ret : throw new FormatException(SR.Format_BadBase64Char);
         }
 
         /// <summary>
@@ -354,18 +346,11 @@ namespace System.Buffers.Text
         public static byte[] DecodeFromChars(ReadOnlySpan<char> source)
         {
             int upperBound = GetMaxDecodedLength(source.Length);
-            Span<byte> destination = stackalloc byte[MaxStackallocThreshold];
             byte[]? rented = null;
 
-            if (upperBound <= MaxStackallocThreshold)
-            {
-                destination = destination.Slice(0, upperBound);
-            }
-            else
-            {
-                rented = ArrayPool<byte>.Shared.Rent(upperBound);
-                destination = rented.AsSpan(0, upperBound);
-            }
+            Span<byte> destination = upperBound <= MaxStackallocThreshold
+                ? stackalloc byte[MaxStackallocThreshold]
+                : (rented = ArrayPool<byte>.Shared.Rent(upperBound));
 
             OperationStatus status = DecodeFromChars(source, destination, out _, out int bytesWritten);
             byte[] ret = destination.Slice(0, bytesWritten).ToArray();
@@ -375,8 +360,7 @@ namespace System.Buffers.Text
                 ArrayPool<byte>.Shared.Return(rented);
             }
 
-            return OperationStatus.Done == status ? destination.Slice(0, bytesWritten).ToArray() :
-                throw new FormatException(SR.Format_BadBase64Char);
+            return OperationStatus.Done == status ? ret : throw new FormatException(SR.Format_BadBase64Char);
         }
 
         private readonly struct Base64UrlDecoderByte : IBase64Decoder<byte>
@@ -993,8 +977,8 @@ namespace System.Buffers.Text
                 out Vector128<byte> str1, out Vector128<byte> str2, out Vector128<byte> str3, out Vector128<byte> str4)
             {
                 AssertRead<Vector128<sbyte>>(src, srcStart, sourceLength);
-                var (s11, s12, s21, s22) = AdvSimd.Arm64.LoadVector128x4AndUnzip(src);
-                var (s31, s32, s41, s42) = AdvSimd.Arm64.LoadVector128x4AndUnzip(src + 32);
+                var (s11, s12, s21, s22) = AdvSimd.Arm64.LoadVector128x4(src);
+                var (s31, s32, s41, s42) = AdvSimd.Arm64.LoadVector128x4(src + 32);
 
                 if (VectorContainsNonAsciiChar(s11) || VectorContainsNonAsciiChar(s12) ||
                     VectorContainsNonAsciiChar(s21) || VectorContainsNonAsciiChar(s22) ||
@@ -1005,10 +989,10 @@ namespace System.Buffers.Text
                     return false;
                 }
 
-                str1 = AdvSimd.Arm64.UnzipEven(s11.AsByte(), s12.AsByte());
-                str2 = AdvSimd.Arm64.UnzipEven(s21.AsByte(), s22.AsByte());
-                str3 = AdvSimd.Arm64.UnzipEven(s31.AsByte(), s32.AsByte());
-                str4 = AdvSimd.Arm64.UnzipEven(s41.AsByte(), s42.AsByte());
+                str1 = Vector128.Narrow(s11, s12);
+                str2 = Vector128.Narrow(s21, s22);
+                str3 = Vector128.Narrow(s31, s32);
+                str4 = Vector128.Narrow(s41, s42);
 
                 return true;
             }
