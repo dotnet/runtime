@@ -296,6 +296,10 @@ public:
     {
         return getLow();
     }
+
+    void RemoveRegNumFromMask(regNumber reg);
+
+    bool IsRegNumInMask(regNumber reg);
 };
 
 static regMaskTP operator^(regMaskTP first, regMaskTP second)

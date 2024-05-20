@@ -1562,7 +1562,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
         }
         else if (HWIntrinsicInfo::IsMaskedOperation(intrin.id))
         {
-            regMaskTP predMask = HWIntrinsicInfo::IsLowMaskedOperation(intrin.id) ? RBM_LOWMASK : RBM_ALLMASK;
+            SingleTypeRegSet predMask = HWIntrinsicInfo::IsLowMaskedOperation(intrin.id) ? RBM_LOWMASK : RBM_ALLMASK;
             srcCount += BuildOperandUses(intrin.op1, predMask);
         }
         else if (intrinsicTree->OperIsMemoryLoadOrStore())
@@ -1844,7 +1844,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
         assert(intrin.op1 != nullptr);
 
         bool      forceOp2DelayFree   = false;
-        regMaskTP lowVectorCandidates = RBM_NONE;
+        SingleTypeRegSet lowVectorCandidates = RBM_NONE;
         size_t    lowVectorOperandNum = 0;
         if ((intrin.id == NI_Vector64_GetElement) || (intrin.id == NI_Vector128_GetElement))
         {
@@ -1897,7 +1897,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
         }
         else
         {
-            regMaskTP candidates = lowVectorOperandNum == 2 ? lowVectorCandidates : RBM_NONE;
+            SingleTypeRegSet candidates = lowVectorOperandNum == 2 ? lowVectorCandidates : RBM_NONE;
             if (forceOp2DelayFree)
             {
                 srcCount += BuildDelayFreeUses(intrin.op2, nullptr, candidates);
@@ -1911,7 +1911,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
 
         if (intrin.op3 != nullptr)
         {
-            regMaskTP candidates = lowVectorOperandNum == 3 ? lowVectorCandidates : RBM_NONE;
+            SingleTypeRegSet candidates = lowVectorOperandNum == 3 ? lowVectorCandidates : RBM_NONE;
 
             srcCount += isRMW ? BuildDelayFreeUses(intrin.op3, intrin.op1, candidates)
                               : BuildOperandUses(intrin.op3, candidates);
@@ -2221,7 +2221,7 @@ bool RefPosition::isLiveAtConsecutiveRegistersLoc(LsraLocation consecutiveRegist
 //    operandNum (out) - The operand number having the low vector register restriction
 //    candidates (out) - The restricted low vector registers
 //
-void LinearScan::getLowVectorOperandAndCandidates(HWIntrinsic intrin, size_t* operandNum, regMaskTP* candidates)
+void LinearScan::getLowVectorOperandAndCandidates(HWIntrinsic intrin, size_t* operandNum, SingleTypeRegSet* candidates)
 {
     assert(HWIntrinsicInfo::IsLowVectorOperation(intrin.id));
     unsigned baseElementSize = genTypeSize(intrin.baseType);

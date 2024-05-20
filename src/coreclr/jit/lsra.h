@@ -1433,7 +1433,7 @@ private:
         return nextConsecutiveRefPositionMap;
     }
     FORCEINLINE RefPosition* getNextConsecutiveRefPosition(RefPosition* refPosition);
-    void getLowVectorOperandAndCandidates(HWIntrinsic intrin, size_t* operandNum, regMaskTP* candidates);
+    void getLowVectorOperandAndCandidates(HWIntrinsic intrin, size_t* operandNum, SingleTypeRegSet* candidates);
 #endif
 
 #ifdef DEBUG
@@ -1983,10 +1983,10 @@ private:
     bool isCandidateMultiRegLclVar(GenTreeLclVar* lclNode);
     bool checkContainedOrCandidateLclVar(GenTreeLclVar* lclNode);
 
-    RefPosition* BuildUse(GenTree* operand, regMaskTP candidates = RBM_NONE, int multiRegIdx = 0);
+    RefPosition* BuildUse(GenTree* operand, SingleTypeRegSet candidates = RBM_NONE, int multiRegIdx = 0);
     void         setDelayFree(RefPosition* use);
-    int          BuildBinaryUses(GenTreeOp* node, regMaskTP candidates = RBM_NONE);
-    int          BuildCastUses(GenTreeCast* cast, regMaskTP candidates);
+    int          BuildBinaryUses(GenTreeOp* node, SingleTypeRegSet candidates = RBM_NONE);
+    int          BuildCastUses(GenTreeCast* cast, SingleTypeRegSet candidates);
 #ifdef TARGET_XARCH
     int              BuildRMWUses(GenTree* node, GenTree* op1, GenTree* op2, regMaskTP candidates = RBM_NONE);
     inline regMaskTP BuildEvexIncompatibleMask(GenTree* tree);
@@ -2001,22 +2001,22 @@ private:
     bool supportsSpecialPutArg();
 
     int  BuildSimple(GenTree* tree);
-    int  BuildOperandUses(GenTree* node, regMaskTP candidates = RBM_NONE);
+    int  BuildOperandUses(GenTree* node, SingleTypeRegSet candidates = RBM_NONE);
     void AddDelayFreeUses(RefPosition* refPosition, GenTree* rmwNode);
     int  BuildDelayFreeUses(GenTree*      node,
                             GenTree*      rmwNode        = nullptr,
-                            regMaskTP     candidates     = RBM_NONE,
+                            SingleTypeRegSet     candidates     = RBM_NONE,
                             RefPosition** useRefPosition = nullptr);
-    int  BuildIndirUses(GenTreeIndir* indirTree, regMaskTP candidates = RBM_NONE);
-    int  BuildAddrUses(GenTree* addr, regMaskTP candidates = RBM_NONE);
+    int  BuildIndirUses(GenTreeIndir* indirTree, SingleTypeRegSet candidates = RBM_NONE);
+    int  BuildAddrUses(GenTree* addr, SingleTypeRegSet candidates = RBM_NONE);
     void HandleFloatVarArgs(GenTreeCall* call, GenTree* argNode, bool* callHasFloatRegArgs);
 
-    RefPosition* BuildDef(GenTree* tree, regMaskTP dstCandidates = RBM_NONE, int multiRegIdx = 0);
-    void         BuildDefs(GenTree* tree, int dstCount, regMaskTP dstCandidates = RBM_NONE);
+    RefPosition* BuildDef(GenTree* tree, SingleTypeRegSet dstCandidates = RBM_NONE, int multiRegIdx = 0);
+    void         BuildDefs(GenTree* tree, int dstCount, SingleTypeRegSet dstCandidates = RBM_NONE);
     void         BuildCallDefs(GenTree* tree, int dstCount, regMaskTP dstCandidates);
     void         BuildKills(GenTree* tree, regMaskTP killMask);
 #ifdef TARGET_ARMARCH
-    void BuildDefWithKills(GenTree* tree, regMaskTP dstCandidates, regMaskTP killMask);
+    void BuildDefWithKills(GenTree* tree, SingleTypeRegSet dstCandidates, regMaskTP killMask);
 #else
     void BuildDefWithKills(GenTree* tree, int dstCount, regMaskTP dstCandidates, regMaskTP killMask);
 #endif

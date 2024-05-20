@@ -708,7 +708,11 @@ void LinearScan::addKillForRegs(regMaskTP mask, LsraLocation currentLoc)
     // modified until codegen, which is too late.
     compiler->codeGen->regSet.rsSetRegsModified(mask DEBUGARG(true));
 
-    RefPosition* pos = newRefPosition((Interval*)nullptr, currentLoc, RefTypeKill, nullptr, mask);
+    RefPosition* pos = newRefPosition((Interval*)nullptr, currentLoc, RefTypeKill, nullptr, mask.getLow());
+    *killTail        = pos;
+    killTail         = &pos->nextRefPosition;
+
+    pos = newRefPosition((Interval*)nullptr, currentLoc, RefTypeKill, nullptr, mask.getHigh());
 
     *killTail = pos;
     killTail  = &pos->nextRefPosition;
@@ -1148,6 +1152,7 @@ bool LinearScan::buildKillPositionsForNode(GenTree* tree, LsraLocation currentLo
                     }
                 Interval*  interval   = getIntervalForLocalVar(varIndex);
                 const bool isCallKill = ((killMask == RBM_INT_CALLEE_TRASH) || (killMask == RBM_CALLEE_TRASH));
+                SingleTypeRegSet regsKillMask = killMask.GetRegSetForType(interval->registerType);
 
                 if (isCallKill)
                 {
@@ -1160,7 +1165,7 @@ bool LinearScan::buildKillPositionsForNode(GenTree* tree, LsraLocation currentLo
                 // See the "heuristics for writeThru intervals" in 'buildIntervals()'.
                 if (!interval->isWriteThru || !isCallKill)
                 {
-                    regMaskTP newPreferences = allRegs(interval->registerType) & (~killMask);
+                    SingleTypeRegSet newPreferences = allRegs(interval->registerType) & (~regsKillMask);
 
                     if (newPreferences != RBM_NONE)
                     {
@@ -1168,7 +1173,7 @@ bool LinearScan::buildKillPositionsForNode(GenTree* tree, LsraLocation currentLo
                         {
                             // Update the register aversion as long as this is not write-thru vars for
                             // reason mentioned above.
-                            interval->registerAversion |= killMask;
+                            interval->registerAversion |= regsKillMask;
                         }
                         interval->updateRegisterPreferences(newPreferences);
                     }
@@ -3056,7 +3061,7 @@ void setTgtPref(Interval* interval, RefPosition* tgtPrefUse)
 // Notes:
 //    Adds the RefInfo for the definition to the defList.
 //
-RefPosition* LinearScan::BuildDef(GenTree* tree, regMaskTP dstCandidates, int multiRegIdx)
+RefPosition* LinearScan::BuildDef(GenTree* tree, SingleTypeRegSet dstCandidates, int multiRegIdx)
 {
     assert(!tree->isContained());
 
@@ -3158,13 +3163,12 @@ void LinearScan::BuildCallDefs(GenTree* tree, int dstCount, regMaskTP dstCandida
     {
         // In case of multi-reg call node, we have to query the i'th position return register.
         // For all other cases of multi-reg definitions, the registers must be in sequential order.
-        regMaskTP thisDstCandidates =
-            genRegMask(tree->AsCall()->GetReturnTypeDesc()->GetABIReturnReg(i, tree->AsCall()->GetUnmanagedCallConv()));
+        regNumber thisReg = tree->AsCall()->GetReturnTypeDesc()->GetABIReturnReg(i, tree->AsCall()->GetUnmanagedCallConv());
 
-        assert((dstCandidates & thisDstCandidates) != RBM_NONE);
-        dstCandidates &= ~thisDstCandidates;
+        assert(dstCandidates.IsRegNumInMask(thisReg));
+        dstCandidates.RemoveRegNumFromMask(thisReg);
 
-        BuildDef(tree, thisDstCandidates, i);
+        BuildDef(tree, genRegMask(thisReg), i);
     }
 }
 
@@ -3181,7 +3185,7 @@ void LinearScan::BuildCallDefs(GenTree* tree, int dstCount, regMaskTP dstCandida
 //    Also, the `dstCandidates` is assumed to be of "onlyOne" type. If there are
 //    both gpr and float registers, use `BuildDefs` that takes `AllRegsMask`
 //
-void LinearScan::BuildDefs(GenTree* tree, int dstCount, regMaskTP dstCandidates)
+void LinearScan::BuildDefs(GenTree* tree, int dstCount, SingleTypeRegSet dstCandidates)
 {
     assert(dstCount > 0);
 
@@ -3197,7 +3201,7 @@ void LinearScan::BuildDefs(GenTree* tree, int dstCount, regMaskTP dstCandidates)
 
     for (int i = 0; i < dstCount; i++)
     {
-        regMaskTP thisDstCandidates = genFindLowestBit(dstCandidates);
+        SingleTypeRegSet thisDstCandidates = genFindLowestBit(dstCandidates);
         BuildDef(tree, thisDstCandidates, i);
         dstCandidates &= ~thisDstCandidates;
     }
@@ -3386,7 +3390,7 @@ void LinearScan::UpdatePreferencesOfDyingLocal(Interval* interval)
 // Notes:
 //    The node must not be contained, and must have been processed by buildRefPositionsForNode().
 //
-RefPosition* LinearScan::BuildUse(GenTree* operand, regMaskTP candidates, int multiRegIdx)
+RefPosition* LinearScan::BuildUse(GenTree* operand, SingleTypeRegSet candidates, int multiRegIdx)
 {
     assert(!operand->isContained());
     Interval* interval;
@@ -3456,12 +3460,12 @@ RefPosition* LinearScan::BuildUse(GenTree* operand, regMaskTP candidates, int mu
 // Notes:
 //    This method may only be used if the candidates are the same for all sources.
 //
-int LinearScan::BuildIndirUses(GenTreeIndir* indirTree, regMaskTP candidates)
+int LinearScan::BuildIndirUses(GenTreeIndir* indirTree, SingleTypeRegSet candidates)
 {
     return BuildAddrUses(indirTree->Addr(), candidates);
 }
 
-int LinearScan::BuildAddrUses(GenTree* addr, regMaskTP candidates)
+int LinearScan::BuildAddrUses(GenTree* addr, SingleTypeRegSet candidates)
 {
     if (!addr->isContained())
     {
@@ -3518,7 +3522,7 @@ int LinearScan::BuildAddrUses(GenTree* addr, regMaskTP candidates)
 // Return Value:
 //    The number of source registers used by the *parent* of this node.
 //
-int LinearScan::BuildOperandUses(GenTree* node, regMaskTP candidates)
+int LinearScan::BuildOperandUses(GenTree* node, SingleTypeRegSet candidates)
 {
     if (!node->isContained())
     {
@@ -3674,7 +3678,7 @@ void LinearScan::AddDelayFreeUses(RefPosition* useRefPosition, GenTree* rmwNode)
 //
 int LinearScan::BuildDelayFreeUses(GenTree*      node,
                                    GenTree*      rmwNode,
-                                   regMaskTP     candidates,
+                                   SingleTypeRegSet     candidates,
                                    RefPosition** useRefPositionRef)
 {
     RefPosition* use  = nullptr;
@@ -3771,7 +3775,7 @@ int LinearScan::BuildDelayFreeUses(GenTree*      node,
 //    The operands must already have been processed by buildRefPositionsForNode, and their
 //    RefInfoListNodes placed in the defList.
 //
-int LinearScan::BuildBinaryUses(GenTreeOp* node, regMaskTP candidates)
+int LinearScan::BuildBinaryUses(GenTreeOp* node, SingleTypeRegSet candidates)
 {
     GenTree* op1 = node->gtGetOp1();
     GenTree* op2 = node->gtGetOp2IfPresent();
@@ -3805,7 +3809,7 @@ int LinearScan::BuildBinaryUses(GenTreeOp* node, regMaskTP candidates)
 // Return Value:
 //    The number of actual register operands.
 //
-int LinearScan::BuildCastUses(GenTreeCast* cast, regMaskTP candidates)
+int LinearScan::BuildCastUses(GenTreeCast* cast, SingleTypeRegSet candidates)
 {
     GenTree* src = cast->CastOp();
 
@@ -3870,7 +3874,7 @@ void LinearScan::BuildStoreLocDef(GenTreeLclVarCommon* storeLoc,
         }
     }
 
-    regMaskTP defCandidates = RBM_NONE;
+    SingleTypeRegSet defCandidates = RBM_NONE;
     var_types type          = varDsc->GetRegisterType();
 
 #ifdef TARGET_X86
@@ -3956,7 +3960,7 @@ int LinearScan::BuildMultiRegStoreLoc(GenTreeLclVar* storeLoc)
 
         if (isMultiRegSrc)
         {
-            regMaskTP srcCandidates = RBM_NONE;
+            SingleTypeRegSet srcCandidates = RBM_NONE;
 #ifdef TARGET_X86
             var_types type = fieldVarDsc->TypeGet();
             if (varTypeIsByte(type))
@@ -4067,7 +4071,7 @@ int LinearScan::BuildStoreLoc(GenTreeLclVarCommon* storeLoc)
     else
     {
         srcCount                = 1;
-        regMaskTP srcCandidates = RBM_NONE;
+        SingleTypeRegSet srcCandidates = RBM_NONE;
 #ifdef TARGET_X86
         var_types type = varDsc->GetRegisterType(storeLoc);
         if (varTypeIsByte(type))
@@ -4158,7 +4162,7 @@ int LinearScan::BuildReturn(GenTree* tree)
 #endif // !defined(TARGET_64BIT)
         if ((tree->TypeGet() != TYP_VOID) && !op1->isContained())
         {
-            regMaskTP useCandidates = RBM_NONE;
+            SingleTypeRegSet useCandidates = RBM_NONE;
 
 #if FEATURE_MULTIREG_RET
 #ifdef TARGET_ARM64
@@ -4351,7 +4355,7 @@ int LinearScan::BuildPutArgReg(GenTreeUnOp* node)
 
     // To avoid redundant moves, have the argument operand computed in the
     // register in which the argument is passed to the call.
-    regMaskTP    argMask = genRegMask(argReg);
+    SingleTypeRegSet    argMask = genRegMask(argReg);
     RefPosition* use     = BuildUse(op1, argMask);
 
     // Record that this register is occupied by a register now.
@@ -4448,8 +4452,8 @@ int LinearScan::BuildGCWriteBarrier(GenTree* tree)
     // is an indir through an lea, we need to actually instantiate the
     // lea in a register
     assert(!addr->isContained() && !src->isContained());
-    regMaskTP addrCandidates = RBM_WRITE_BARRIER_DST;
-    regMaskTP srcCandidates  = RBM_WRITE_BARRIER_SRC;
+    SingleTypeRegSet addrCandidates = RBM_WRITE_BARRIER_DST;
+    SingleTypeRegSet srcCandidates  = RBM_WRITE_BARRIER_SRC;
 
 #if defined(TARGET_X86) && NOGC_WRITE_BARRIERS
 
@@ -4496,7 +4500,7 @@ int LinearScan::BuildCmp(GenTree* tree)
 
     if (!tree->TypeIs(TYP_VOID))
     {
-        regMaskTP dstCandidates = RBM_NONE;
+        SingleTypeRegSet dstCandidates = RBM_NONE;
 
 #ifdef TARGET_X86
         // If the compare is used by a jump, we just need to set the condition codes. If not, then we need
@@ -4520,8 +4524,8 @@ int LinearScan::BuildCmp(GenTree* tree)
 //
 int LinearScan::BuildCmpOperands(GenTree* tree)
 {
-    regMaskTP op1Candidates = RBM_NONE;
-    regMaskTP op2Candidates = RBM_NONE;
+    SingleTypeRegSet op1Candidates = RBM_NONE;
+    SingleTypeRegSet op2Candidates = RBM_NONE;
     GenTree*  op1           = tree->gtGetOp1();
     GenTree*  op2           = tree->gtGetOp2();
 

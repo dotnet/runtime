@@ -129,7 +129,7 @@ int LinearScan::BuildCall(GenTreeCall* call)
 {
     bool                  hasMultiRegRetVal   = false;
     const ReturnTypeDesc* retTypeDesc         = nullptr;
-    regMaskTP             singleDstCandidates = RBM_NONE;
+    SingleTypeRegSet             singleDstCandidates = RBM_NONE;
 
     int srcCount = 0;
     int dstCount = 0;
@@ -149,7 +149,7 @@ int LinearScan::BuildCall(GenTreeCall* call)
     }
 
     GenTree*  ctrlExpr           = call->gtControlExpr;
-    regMaskTP ctrlExprCandidates = RBM_NONE;
+    SingleTypeRegSet ctrlExprCandidates = RBM_NONE;
     if (call->gtCallType == CT_INDIRECT)
     {
         // either gtControlExpr != null or gtCallAddr != null.
@@ -444,7 +444,7 @@ int LinearScan::BuildCall(GenTreeCall* call)
 //    The def and kill functionality is folded into a single method so that the
 //    save and restores of upper vector registers can be bracketed around the def.
 //
-void LinearScan::BuildDefWithKills(GenTree* tree, regMaskTP dstCandidates, regMaskTP killMask)
+void LinearScan::BuildDefWithKills(GenTree* tree, SingleTypeRegSet dstCandidates, regMaskTP killMask)
 {
     assert(!tree->AsCall()->HasMultiRegRetVal());
     assert((int)genCountBits(dstCandidates) == 1);
@@ -602,7 +602,7 @@ int LinearScan::BuildPutArgSplit(GenTreePutArgSplit* argNode)
             // go into registers.
             for (unsigned regIndex = 0; regIndex < currentRegCount; regIndex++)
             {
-                regMaskTP sourceMask = RBM_NONE;
+                SingleTypeRegSet sourceMask = RBM_NONE;
                 if (sourceRegCount < argNode->gtNumRegs)
                 {
                     sourceMask = genRegMask((regNumber)((unsigned)argReg + sourceRegCount));
