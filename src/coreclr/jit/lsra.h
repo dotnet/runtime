@@ -2009,9 +2009,17 @@ private:
     int          BuildIndirUses(GenTreeIndir* indirTree, regMaskTP candidates = RBM_NONE);
     int          BuildAddrUses(GenTree* addr, regMaskTP candidates = RBM_NONE);
     void         HandleFloatVarArgs(GenTreeCall* call, GenTree* argNode, bool* callHasFloatRegArgs);
+
     RefPosition* BuildDef(GenTree* tree, regMaskTP dstCandidates = RBM_NONE, int multiRegIdx = 0);
     void         BuildDefs(GenTree* tree, int dstCount, regMaskTP dstCandidates = RBM_NONE);
-    void         BuildDefsWithKills(GenTree* tree, int dstCount, regMaskTP dstCandidates, regMaskTP killMask);
+    void         BuildCallDefs(GenTree* tree, int dstCount, regMaskTP dstCandidates);
+    void         BuildKills(GenTree* tree, regMaskTP killMask);
+#ifdef TARGET_ARMARCH
+    void BuildDefWithKills(GenTree* tree, regMaskTP dstCandidates, regMaskTP killMask);
+#else
+    void BuildDefWithKills(GenTree* tree, int dstCount, regMaskTP dstCandidates, regMaskTP killMask);
+#endif
+    void BuildCallDefsWithKills(GenTree* tree, int dstCount, regMaskTP dstCandidates, regMaskTP killMask);
 
     int BuildReturn(GenTree* tree);
 #ifdef TARGET_XARCH

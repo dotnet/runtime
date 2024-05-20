@@ -666,14 +666,14 @@ int LinearScan::BuildNode(GenTree* tree)
             srcCount = 0;
             assert(dstCount == 0);
             killMask = getKillSetForProfilerHook();
-            BuildDefsWithKills(tree, 0, RBM_NONE, killMask);
+            BuildKills(tree, killMask);
             break;
 
         case GT_START_PREEMPTGC:
             // This kills GC refs in callee save regs
             srcCount = 0;
             assert(dstCount == 0);
-            BuildDefsWithKills(tree, 0, RBM_NONE, RBM_NONE);
+            BuildKills(tree, RBM_NONE);
             break;
 
         case GT_CNS_DBL:
@@ -738,7 +738,7 @@ int LinearScan::BuildNode(GenTree* tree)
         case GT_RETURN:
             srcCount = BuildReturn(tree);
             killMask = getKillSetForReturn();
-            BuildDefsWithKills(tree, 0, RBM_NONE, killMask);
+            BuildKills(tree, killMask);
             break;
 
 #ifdef SWIFT_SUPPORT
@@ -747,7 +747,7 @@ int LinearScan::BuildNode(GenTree* tree)
             // Plus one for error register
             srcCount = BuildReturn(tree) + 1;
             killMask = getKillSetForReturn();
-            BuildDefsWithKills(tree, 0, RBM_NONE, killMask);
+            BuildKills(tree, killMask);
             break;
 #endif // SWIFT_SUPPORT
 
@@ -839,7 +839,7 @@ int LinearScan::BuildNode(GenTree* tree)
             srcCount = 1;
             assert(dstCount == 0);
             killMask = compiler->compHelperCallKillSet(CORINFO_HELP_STOP_FOR_GC);
-            BuildDefsWithKills(tree, 0, RBM_NONE, killMask);
+            BuildKills(tree, killMask);
             break;
 
         case GT_MOD:
@@ -1927,11 +1927,11 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
 
     if ((dstCount == 1) || (dstCount == 2))
     {
-        BuildDef(intrinsicTree, dstCandidates);
+        BuildDef(intrinsicTree);
 
         if (dstCount == 2)
         {
-            BuildDef(intrinsicTree, dstCandidates, 1);
+            BuildDef(intrinsicTree, RBM_NONE, 1);
         }
     }
     else

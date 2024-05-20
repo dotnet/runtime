@@ -249,6 +249,11 @@ public:
     {
         return low;
     }
+
+    unsigned Count() const
+    {
+        return BitOperations::PopCount(getLow());
+    }
 };
 
 static regMaskTP operator^(regMaskTP first, regMaskTP second)
