@@ -4691,12 +4691,14 @@ void Lowering::LowerStoreLocCommon(GenTreeLclVarCommon* lclStore)
             // x86 uses it only for long return type, not for structs.
             assert(slotCount == 1);
             assert(lclRegType != TYP_UNDEF);
-#else  // !TARGET_XARCH || UNIX_AMD64_ABI
+#else // !TARGET_XARCH || UNIX_AMD64_ABI
             if (!comp->IsHfa(layout->GetClassHandle()))
             {
                 if (slotCount > 1)
                 {
+#if !defined(TARGET_RISCV64) && !defined(TARGET_LOONGARCH64)
                     assert(call->HasMultiRegRetVal());
+#endif
                 }
                 else
                 {

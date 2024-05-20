@@ -901,7 +901,7 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
         var_types argRegTypeInStruct1 = TYP_UNKNOWN;
         var_types argRegTypeInStruct2 = TYP_UNKNOWN;
 
-        if ((strip(corInfoType) == CORINFO_TYPE_VALUECLASS) && (argSize <= MAX_PASS_MULTIREG_BYTES))
+        if ((strip(corInfoType) == CORINFO_TYPE_VALUECLASS) LOONGARCH64_ONLY(&&(argSize <= MAX_PASS_MULTIREG_BYTES)))
         {
 #if defined(TARGET_LOONGARCH64)
             floatFlags = info.compCompHnd->getLoongArch64PassStructInRegisterFlags(typeHnd);
@@ -916,16 +916,17 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
             int floatNum = 0;
             if ((floatFlags & STRUCT_FLOAT_FIELD_ONLY_ONE) != 0)
             {
-                assert(argSize <= 8);
                 assert(varDsc->lvExactSize() <= argSize);
 
+                cSlotsToEnregister    = 1;
                 floatNum              = 1;
                 canPassArgInRegisters = varDscInfo->canEnreg(TYP_DOUBLE, 1);
 
-                argRegTypeInStruct1 = (varDsc->lvExactSize() == 8) ? TYP_DOUBLE : TYP_FLOAT;
+                argRegTypeInStruct1 = (floatFlags & STRUCT_FIRST_FIELD_SIZE_IS8) ? TYP_DOUBLE : TYP_FLOAT;
             }
             else if ((floatFlags & STRUCT_FLOAT_FIELD_ONLY_TWO) != 0)
             {
+                cSlotsToEnregister    = 2;
                 floatNum              = 2;
                 canPassArgInRegisters = varDscInfo->canEnreg(TYP_DOUBLE, 2);
 
@@ -934,6 +935,7 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
             }
             else if ((floatFlags & STRUCT_FLOAT_FIELD_FIRST) != 0)
             {
+                cSlotsToEnregister    = 2;
                 floatNum              = 1;
                 canPassArgInRegisters = varDscInfo->canEnreg(TYP_DOUBLE, 1);
                 canPassArgInRegisters = canPassArgInRegisters && varDscInfo->canEnreg(TYP_I_IMPL, 1);
@@ -943,6 +945,7 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
             }
             else if ((floatFlags & STRUCT_FLOAT_FIELD_SECOND) != 0)
             {
+                cSlotsToEnregister    = 2;
                 floatNum              = 1;
                 canPassArgInRegisters = varDscInfo->canEnreg(TYP_DOUBLE, 1);
                 canPassArgInRegisters = canPassArgInRegisters && varDscInfo->canEnreg(TYP_I_IMPL, 1);
@@ -1098,7 +1101,7 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
                             genMapRegArgNumToRegNum(secondAllocatedRegArgNum, argRegTypeInStruct2, info.compCallConv));
                         varDsc->lvIs4Field2 = (genTypeSize(argRegTypeInStruct2) == 4) ? 1 : 0;
                     }
-                    else if (cSlots > 1)
+                    else if (cSlotsToEnregister > 1)
                     {
                         // Here a struct-arg which needs two registers but only one integer register available,
                         // it has to be split. But we reserved extra 8-bytes for the whole struct.
@@ -1279,7 +1282,7 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
                 }
                 printf("\n");
             }
-#endif    // DEBUG
+#endif // DEBUG
         } // end if (canPassArgInRegisters)
         else
         {
@@ -1942,7 +1945,6 @@ void Compiler::lvaClassifyParameterABI()
         // Old info does not take 4 shadow slots on win-x64 into account.
         oldStackSize += 32;
 #endif
-
         assert(lvaParameterStackSize == roundUp(oldStackSize, TARGET_POINTER_SIZE));
     }
 #endif

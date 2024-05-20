@@ -101,9 +101,14 @@ ABIPassingInformation RiscV64Classifier::Classify(Compiler*    comp,
         if ((floatFields == 1) && (intFields == 0))
         {
             if (flags == STRUCT_NO_FLOAT_FIELD)
+            {
                 assert(varTypeIsFloating(type)); // standalone floating-point real
+            }
             else
+            {
                 assert((flags & STRUCT_FLOAT_FIELD_ONLY_ONE) != 0); // struct containing just one FP real
+                passedSize = ((flags & STRUCT_FIRST_FIELD_SIZE_IS8) != 0) ? 8 : 4;
+            }
 
             return ABIPassingInformation::FromSegment(comp, ABIPassingSegment::InRegister(m_floatRegs.Dequeue(), 0,
                                                                                           passedSize));

@@ -14,9 +14,9 @@ struct Empty
 };
 static_assert(sizeof(Empty) == 1, "Empty struct must be sized like in .NET");
 
-struct EmptyFloat
+struct Empty8Float
 {
-	Empty FieldE;
+	Empty e0, e1, e2, e3, e4, e5, e6, e7;
 	float FieldF;
 };
 
@@ -110,7 +110,7 @@ static_assert(offsetof(ExplicitFloatLong, s.FieldL) == 5, "");
 extern "C"
 {
 
-DLLEXPORT EmptyFloat EchoEmptyFloatRiscV(EmptyFloat fa0)
+DLLEXPORT Empty8Float EchoEmpty8FloatRiscV(Empty8Float fa0)
 {
 	return fa0;
 }

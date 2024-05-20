@@ -672,17 +672,17 @@ struct Empty
 {
 }
 
-struct EmptyFloat
+struct Empty8Float
 {
-	Empty FieldE;
+	Empty e0, e1, e2, e3, e4, e5, e6, e7;
 	float FieldF;
 
-	public static EmptyFloat Get()
+	public static Empty8Float Get()
 	{
-		return new EmptyFloat { FieldF = 3.14159f };
+		return new Empty8Float { FieldF = 3.14159f };
 	}
 
-	public bool Equals(EmptyFloat other)
+	public bool Equals(Empty8Float other)
 	{
 		return FieldF.Equals(other.FieldF);
 	}
@@ -986,7 +986,7 @@ public static partial class StructABI
 	static extern DoubleAndByte EnoughRegistersSysV4(double a, double b, double c, double d, double e, double f, double g, DoubleAndByte value);
 
 	[DllImport("StructABILib")]
-	static extern EmptyFloat EchoEmptyFloatRiscV(EmptyFloat fa0);
+	static extern Empty8Float EchoEmpty8FloatRiscV(Empty8Float fa0);
 
 	[DllImport("StructABILib")]
 	static extern LongEmptyDouble EchoLongEmptyDoubleRiscV(LongEmptyDouble value);
@@ -1286,7 +1286,7 @@ public static partial class StructABI
 	}
 
 	[MethodImpl(MethodImplOptions.NoInlining)]
-	static EmptyFloat EchoEmptyFloatRiscVManaged(EmptyFloat fa0)
+	static Empty8Float EchoEmpty8FloatRiscVManaged(Empty8Float fa0)
 	{
 		return fa0;
 	}
@@ -2447,22 +2447,22 @@ public static partial class StructABI
 		return ok;
 	}
 
-	static bool EchoEmptyFloatRiscVWrapper()
+	static bool EchoEmpty8FloatRiscVWrapper()
 	{
 		bool ok = true;
-		EmptyFloat expected = EmptyFloat.Get();
-		EmptyFloat native = EchoEmptyFloatRiscV(expected);
-		EmptyFloat managed = EchoEmptyFloatRiscVManaged(expected);
+		Empty8Float expected = Empty8Float.Get();
+		Empty8Float native = EchoEmpty8FloatRiscV(expected);
+		Empty8Float managed = EchoEmpty8FloatRiscVManaged(expected);
 
 		if (!expected.Equals(native))
 		{
-			Console.WriteLine("Native call for EchoEmptyFloatRiscV failed");
+			Console.WriteLine("Native call for EchoEmpty8FloatRiscV failed");
 			ok = false;
 		}
 
 		if (!expected.Equals(managed))
 		{
-			Console.WriteLine("Managed call for EchoEmptyFloatRiscV failed");
+			Console.WriteLine("Managed call for EchoEmpty8FloatRiscV failed");
 			ok = false;
 		}
 
@@ -2737,7 +2737,7 @@ public static partial class StructABI
 		if (!EnoughRegistersSysV2Wrapper()) ok = false;
 		if (!EnoughRegistersSysV3Wrapper()) ok = false;
 		if (!EnoughRegistersSysV4Wrapper()) ok = false;
-		if (!EchoEmptyFloatRiscVWrapper()) ok = false;
+		if (!EchoEmpty8FloatRiscVWrapper()) ok = false;
 		if (!EchoLongEmptyDoubleRiscVWrapper()) ok = false;
 		if (!EchoLongEmptyDoubleByImplicitRefRiscVWrapper()) ok = false;
 		if (!EchoNestedEmptyFloatDoubleInIntegerRegsRiscVWrapper()) ok = false;
