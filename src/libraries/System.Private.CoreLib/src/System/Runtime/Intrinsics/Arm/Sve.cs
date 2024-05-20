@@ -3720,16 +3720,12 @@ namespace System.Runtime.Intrinsics.Arm
 
         private static uint SubtractSaturateScalar(uint left, uint right)
         {
-            uint result = (uint)(left - right);
-            bool overflow = (left < right);
-            return overflow ? uint.MinValue : result;
+            return (left < right) ? uint.MinValue : (left - right);
         }
 
         private static ulong SubtractSaturateScalar(ulong left, ulong right)
         {
-            ulong result = (ulong)(left - right);
-            bool overflow = (left < right);
-            return overflow ? ulong.MinValue : result;
+            return (left < right) ? ulong.MinValue : (left - right);
         }
 
         // Given a vector length for a given type, return the number of elements when pattern is applied
