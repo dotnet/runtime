@@ -1732,6 +1732,8 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 // and can be used directly (instead of via HWIntrinsicImmOpHelper).
 
                 assert(hasImmediateOperand);
+                assert(intrin.op2->IsCnsIntOrI());
+                assert(intrin.op3->IsCnsIntOrI());
                 int           scale   = (int)intrin.op2->AsIntCon()->gtIconVal;
                 insSvePattern pattern = (insSvePattern)intrin.op3->AsIntCon()->gtIconVal;
 
@@ -1757,6 +1759,8 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 // and can be used directly (instead of via HWIntrinsicImmOpHelper).
 
                 assert(hasImmediateOperand);
+                assert(intrin.op2->IsCnsIntOrI());
+                assert(intrin.op3->IsCnsIntOrI());
                 int           scale   = (int)intrin.op2->AsIntCon()->gtIconVal;
                 insSvePattern pattern = (insSvePattern)intrin.op3->AsIntCon()->gtIconVal;
 
