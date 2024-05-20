@@ -4,6 +4,7 @@
 using System.Buffers;
 using System.Collections.Generic;
 using System.IO.Pipelines;
+using System.Linq;
 using System.Text.Json.Serialization.Metadata;
 using System.Threading;
 using System.Threading.Tasks;
@@ -50,6 +51,48 @@ namespace System.Text.Json.Serialization.Tests
             pipe.Reader.Complete();
 
             await Assert.ThrowsAsync<OperationCanceledException>(() => JsonSerializer.SerializeAsync(pipe.Writer, 1));
+        }
+
+        [Fact]
+        public async Task FlushesPeriodicallyWhenWritingLargeJson()
+        {
+            Pipe pipe = new Pipe(new PipeOptions(pauseWriterThreshold: 1000000));
+            IEnumerable<int> obj = Enumerable.Range(0, PipeOptions.Default.MinimumSegmentSize * 2);
+            CustomPipeWriter writer = new CustomPipeWriter(pipe.Writer);
+            await JsonSerializer.SerializeAsync(writer, obj);
+
+            Assert.Equal(3, writer.Flushes.Count);
+            foreach (long flush in writer.Flushes)
+            {
+                // Fragile check, but since we're writing integers that are 5 or less digits
+                // it should always exit to a flush while under the flush threshold
+                Assert.True(flush < PipeOptions.Default.MinimumSegmentSize * 4);
+            }
+        }
+
+        class CustomPipeWriter : PipeWriter
+        {
+            private readonly PipeWriter _originalWriter;
+
+            public CustomPipeWriter(PipeWriter originalWriter)
+            {
+                _originalWriter = originalWriter;
+            }
+
+            public List<long> Flushes { get; } = new List<long>();
+
+            public override void Advance(int bytes) => _originalWriter.Advance(bytes);
+            public override void CancelPendingFlush() => _originalWriter.CancelPendingFlush();
+            public override void Complete(Exception? exception = null) => _originalWriter.Complete(exception);
+            public override ValueTask<FlushResult> FlushAsync(CancellationToken cancellationToken = default)
+            {
+                Flushes.Add(UnflushedBytes);
+                return _originalWriter.FlushAsync(cancellationToken);
+            }
+            public override Memory<byte> GetMemory(int sizeHint = 0) => _originalWriter.GetMemory(sizeHint);
+            public override Span<byte> GetSpan(int sizeHint = 0) => _originalWriter.GetSpan(sizeHint);
+            public override bool CanGetUnflushedBytes => _originalWriter.CanGetUnflushedBytes;
+            public override long UnflushedBytes => _originalWriter.UnflushedBytes;
         }
 
         [Fact]

@@ -173,7 +173,11 @@ namespace System.Text.Json.Serialization
 
         internal static bool ShouldFlush(Utf8JsonWriter writer, ref WriteStack state)
         {
-            // If surpassed flush threshold then return false which will flush stream.
+            // If surpassed flush threshold then return true which will flush stream.
+            if (state.PipeWriter is { CanGetUnflushedBytes: true } pipeWriter)
+            {
+                return state.FlushThreshold > 0 && pipeWriter.UnflushedBytes > state.FlushThreshold;
+            }
             return (state.FlushThreshold > 0 && writer.BytesPending > state.FlushThreshold);
         }
 

@@ -138,6 +138,11 @@ namespace System.Text.Json.Serialization.Metadata
                     supportContinuation: true,
                     supportAsync: true);
 
+                if (serializationContext.BufferWriter is PipeWriter pipeWriter)
+                {
+                    state.PipeWriter = pipeWriter;
+                }
+
                 state.CancellationToken = cancellationToken;
 
                 var writer = new Utf8JsonWriter(serializationContext.BufferWriter, Options.GetWriterOptions());
