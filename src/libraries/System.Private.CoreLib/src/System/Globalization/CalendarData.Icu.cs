@@ -144,7 +144,7 @@ namespace System.Globalization
             callbackContext.DisallowDuplicates = true;
 #pragma warning disable CS8500 // takes address of managed type
 #if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
-            callbackContext.Results.Add(GetCalendarInfoNative(localeName, calendarId, dataType).Split("||"));
+            callbackContext.Results.AddRange(GetCalendarInfoNative(localeName, calendarId, dataType).Split("||"));
             bool result = callbackContext.Results.Count > 0;
 #else
             bool result = EnumCalendarInfo(localeName, calendarId, dataType, &callbackContext);
