@@ -4535,6 +4535,12 @@ bool Compiler::fgReorderBlocks(bool useProfile)
 #pragma warning(pop)
 #endif
 
+//-----------------------------------------------------------------------------
+// fgMoveBlocksToHottestSuccessors: Try to create fallthrough between each block and its hottest successor.
+//
+// Template parameters:
+//    hasEH - If true, method has EH regions, so check that we don't try to move blocks in different regions
+//
 template <bool hasEH>
 void Compiler::fgMoveBlocksToHottestSuccessors()
 {
@@ -4549,29 +4555,40 @@ void Compiler::fgMoveBlocksToHottestSuccessors()
     }
 #endif // DEBUG
 
+    // Don't try to move the first block.
+    // Also, if we have a funclet region, don't bother reordering anything in it.
+    //
     BasicBlock* next;
     for (BasicBlock* block = fgFirstBB->Next(); block != fgFirstFuncletBB; block = next)
     {
         next = block->Next();
 
+        // Don't bother trying to move cold blocks
+        //
         if (block->isRunRarely())
         {
             continue;
         }
 
-        if (block->NumSucc() == 0)
+        // If this block doesn't have any successors, we have nothing to move it up to
+        //
+        if (block->NumSucc(this) == 0)
         {
             continue;
         }
 
         if (hasEH)
         {
+            // Don't move the beginning of an EH region
+            //
             if (bbIsTryBeg(block) || bbIsHandlerBeg(block))
             {
                 continue;
             }
         }
 
+        // Find this block's most likely successor
+        //
         FlowEdge* likelySuccEdge = block->GetSuccEdge(0, this);
         for (FlowEdge* const succEdge : block->SuccEdges(this))
         {
@@ -4581,6 +4598,11 @@ void Compiler::fgMoveBlocksToHottestSuccessors()
             }
         }
 
+        // We don't want to change the first block, so if the most likely successor is the first block,
+        // don't try moving this block before it.
+        // Also, there's nothing to do if the most likely successor is this block, or the next block.
+        // Finally, if the most likely successor is cold, don't bother moving this block up to it.
+        //
         BasicBlock* const likelySucc = likelySuccEdge->getDestinationBlock();
         if (likelySucc->IsFirst() || (block == likelySucc) || block->NextIs(likelySucc) || likelySucc->isRunRarely())
         {
@@ -4589,13 +4611,18 @@ void Compiler::fgMoveBlocksToHottestSuccessors()
 
         if (hasEH)
         {
+            // Don't move blocks in different EH regions.
+            // Also, don't change the entry block of an EH region.
+            //
             if (!BasicBlock::sameEHRegion(block, likelySucc) || bbIsTryBeg(likelySucc) || bbIsHandlerBeg(likelySucc))
             {
                 continue;
             }
         }
 
-        bool isHeaviestEdge = true;
+        // Check if likelySuccEdge has the heaviest edge weight of likelySucc's predecessors
+        //
+        bool           isHeaviestEdge       = true;
         const weight_t likelySuccEdgeWeight = likelySuccEdge->getLikelyWeight();
         for (FlowEdge* const predEdge : likelySucc->PredEdges())
         {
@@ -4616,6 +4643,9 @@ void Compiler::fgMoveBlocksToHottestSuccessors()
             continue;
         }
 
+        // block is the hottest predecessor of likelySucc, but before we move block,
+        // make sure any fallthrough we are breaking is worth losing
+        //
         assert(!block->IsFirst());
         FlowEdge* const fallthroughEdge = fgGetPredForBlock(block, block->Prev());
         if ((fallthroughEdge != nullptr) && (fallthroughEdge->getLikelyWeight() >= likelySuccEdgeWeight))
@@ -4623,15 +4653,12 @@ void Compiler::fgMoveBlocksToHottestSuccessors()
             continue;
         }
 
+        // Move block to before likelySucc
+        //
         fgUnlinkBlock(block);
         fgInsertBBbefore(likelySucc, block);
-        if (verbose)
-        {
-            fgDispBasicBlocks();
-        }
     }
 }
-
 
 //-----------------------------------------------------------------------------
 // fgDoReversePostOrderLayout: Reorder blocks using a greedy RPO traversal.
