@@ -25,6 +25,12 @@ namespace System.Globalization.Tests
             yield return new object[] { "dddd, dd MMMM yyyy" };
         }
 
+        public static IEnumerable<object[]> LongDatePattern_Get_TestData()
+        {
+            yield return new object[] { new CultureInfo("en-US").DateTimeFormat, "dddd, MMMM d, yyyy", "en-US" };
+            yield return new object[] { new CultureInfo("fr-FR").DateTimeFormat,  "dddd d MMMM yyyy", "fr-FR" };
+        }
+
         public static IEnumerable<object[]> LongDatePattern_Get_TestData_HybridGlobalization()
         {
             // see the comments on the right to check the non-Hybrid result, if it differs
@@ -148,7 +154,6 @@ namespace System.Globalization.Tests
             yield return new object[] { new CultureInfo("en-ZA").DateTimeFormat, "dddd, d MMMM yyyy" }; // "dddd, dd MMMM yyyy"
             yield return new object[] { new CultureInfo("en-ZM").DateTimeFormat, "dddd, d MMMM yyyy" };
             yield return new object[] { new CultureInfo("en-ZW").DateTimeFormat, "dddd, d MMMM yyyy" }; // "dddd, dd MMMM yyyy"
-            yield return new object[] { new CultureInfo("en-US").DateTimeFormat, "dddd, MMMM d, yyyy" };
             yield return new object[] { new CultureInfo("es-419").DateTimeFormat, "dddd, d de MMMM de yyyy" }; // dddd, d 'de' MMMM 'de' yyyy
             yield return new object[] { new CultureInfo("es-ES").DateTimeFormat, "dddd, d de MMMM de yyyy" }; // dddd, d 'de' MMMM 'de' yyyy
             yield return new object[] { new CultureInfo("es-MX").DateTimeFormat, "dddd, d de MMMM de yyyy" }; // dddd, d 'de' MMMM 'de' yyyy
@@ -214,6 +219,14 @@ namespace System.Globalization.Tests
             yield return new object[] { new CultureInfo("zh-SG").DateTimeFormat, "yyyy年M月d日dddd" };
             yield return new object[] { new CultureInfo("zh-HK").DateTimeFormat, "yyyy年M月d日dddd" };
             yield return new object[] { new CultureInfo("zh-TW").DateTimeFormat, "yyyy年M月d日 dddd" };
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsIcuGlobalization))]
+        [MemberData(nameof(LongDatePattern_Get_TestData))]
+        public void LongDatePattern_Get_ReturnsExpected(DateTimeFormatInfo format, string expected, string cultureName)
+        {
+            var result = format.LongDatePattern;
+            Assert.True(expected == result, $"Failed for {cultureName}, Expected: \"{expected}\", Actual: \"{result}\"");
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsHybridGlobalizationOnBrowser))]
