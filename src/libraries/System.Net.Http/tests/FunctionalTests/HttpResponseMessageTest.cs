@@ -312,8 +312,8 @@ namespace System.Net.Http.Functional.Tests
                 Assert.Equal(
                     "StatusCode: 400, ReasonPhrase: 'Bad Request', Version: 1.0, Content: " + typeof(StringContent).ToString() + ", Headers:" + Environment.NewLine +
                     "{" + Environment.NewLine +
-                    "  Content-Length: 7" + Environment.NewLine +
                     "  Content-Type: text/plain; charset=utf-8" + Environment.NewLine +
+                    "  Content-Length: 7" + Environment.NewLine +
                     "}", rm.ToString());
 
                 rm.Headers.AcceptRanges.Add("bytes");
@@ -327,8 +327,8 @@ namespace System.Net.Http.Functional.Tests
                     "  Accept-Ranges: bytes" + Environment.NewLine +
                     "  Accept-Ranges: pages" + Environment.NewLine +
                     "  Custom-Response-Header: value1" + Environment.NewLine +
-                    "  Content-Length: 7" + Environment.NewLine +
                     "  Content-Type: text/plain; charset=utf-8" + Environment.NewLine +
+                    "  Content-Length: 7" + Environment.NewLine +
                     "  Custom-Content-Header: value2" + Environment.NewLine +
                     "}", rm.ToString());
 
@@ -341,8 +341,8 @@ namespace System.Net.Http.Functional.Tests
                     "  Accept-Ranges: bytes" + Environment.NewLine +
                     "  Accept-Ranges: pages" + Environment.NewLine +
                     "  Custom-Response-Header: value1" + Environment.NewLine +
-                    "  Content-Length: 7" + Environment.NewLine +
                     "  Content-Type: text/plain; charset=utf-8" + Environment.NewLine +
+                    "  Content-Length: 7" + Environment.NewLine +
                     "  Custom-Content-Header: value2" + Environment.NewLine +
                     "}, Trailing Headers:" + Environment.NewLine +
                     "{" + Environment.NewLine +

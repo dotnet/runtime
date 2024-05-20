@@ -499,11 +499,12 @@ namespace System.Net.Http.Tests
         }
 
         [Fact]
-        public void Ctor_Should_LazyLoad_ContentLength()
+        public void Should_LazyLoad_ContentLengthWhenEnumeratingAndToString()
         {
             var result = new HttpContentHeaders(new ComputeLengthHttpContent(() => 41));
             Assert.Contains("Content-Length", result.ToString());
             Assert.Contains(result, h => h.Key == "Content-Length");
+            Assert.Contains(result.NonValidated, h => h.Key == "Content-Length");
         }
 
         private sealed class ComputeLengthHttpContent : HttpContent

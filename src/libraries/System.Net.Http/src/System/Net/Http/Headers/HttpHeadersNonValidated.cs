@@ -82,10 +82,25 @@ namespace System.Net.Http.Headers
 
         /// <summary>Gets an enumerator that iterates through the <see cref="HttpHeadersNonValidated"/>.</summary>
         /// <returns>An enumerator that iterates through the <see cref="HttpHeadersNonValidated"/>.</returns>
-        public Enumerator GetEnumerator() =>
-            _headers is HttpHeaders headers && headers.GetEntriesArray() is HeaderEntry[] entries ?
-                new Enumerator(entries, headers.Count) :
-                default;
+        public Enumerator GetEnumerator()
+        {
+            if (_headers != null)
+            {
+                if (_headers is HttpContentHeaders contentHeaders)
+                {
+                    _ = contentHeaders.ContentLength;
+                }
+
+                var entries = _headers.GetEntriesArray();
+
+                if (entries != null)
+                {
+                    return new Enumerator(entries, _headers.Count);
+                }
+            }
+
+            return default;
+        }
 
         /// <inheritdoc/>
         IEnumerator<KeyValuePair<string, HeaderStringValues>> IEnumerable<KeyValuePair<string, HeaderStringValues>>.GetEnumerator() => GetEnumerator();

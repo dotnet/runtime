@@ -110,16 +110,6 @@ namespace System.Net.Http.Headers
             : base(HttpHeaderType.Content | HttpHeaderType.Custom, HttpHeaderType.None)
         {
             _parent = parent;
-
-            if (parent != null)
-            {
-                // forces lazy loading so it can be consumed via foreach or via ToString()
-                try
-                {
-                    _ = ContentLength;
-                }
-                catch { }
-            }
         }
     }
 }

@@ -240,6 +240,7 @@ namespace System.Net.Http.Headers
             // HeaderName2: Value1
             // ...
 
+            TryLoadContentLength();
             var vsb = new ValueStringBuilder(stackalloc char[512]);
 
             foreach (HeaderEntry entry in GetEntries())
@@ -297,9 +298,24 @@ namespace System.Net.Http.Headers
 
         #region IEnumerable<KeyValuePair<string, IEnumerable<string>>> Members
 
-        public IEnumerator<KeyValuePair<string, IEnumerable<string>>> GetEnumerator() => _count == 0 ?
-                ((IEnumerable<KeyValuePair<string, IEnumerable<string>>>)Array.Empty<KeyValuePair<string, IEnumerable<string>>>()).GetEnumerator() :
-                GetEnumeratorCore();
+        public IEnumerator<KeyValuePair<string, IEnumerable<string>>> GetEnumerator()
+        {
+            if (_count == 0)
+            {
+                return ((IEnumerable<KeyValuePair<string, IEnumerable<string>>>)Array.Empty<KeyValuePair<string, IEnumerable<string>>>()).GetEnumerator();
+            }
+
+            TryLoadContentLength();
+            return GetEnumeratorCore();
+        }
+
+        private void TryLoadContentLength()
+        {
+            if (this is HttpContentHeaders contentHeaders)
+            {
+                _ = contentHeaders.ContentLength;
+            }
+        }
 
         private IEnumerator<KeyValuePair<string, IEnumerable<string>>> GetEnumeratorCore()
         {
