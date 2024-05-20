@@ -28,6 +28,11 @@ namespace JIT.HardwareIntrinsics.Arm
             return (int)(CountLeadingZeroBits((int)((ulong)op1 ^ ((ulong)op1 >> 1))) - 1);
         }
 
+        public static long CountLeadingSignBits(long op1)
+        {
+            return (long)(CountLeadingZeroBits((long)((ulong)op1 ^ ((ulong)op1 >> 1))) - 1);
+        }
+
         public static sbyte CountLeadingZeroBits(sbyte op1)
         {
             return (sbyte)(8 * sizeof(sbyte) - (HighestSetBit(op1) + 1));
@@ -126,6 +131,42 @@ namespace JIT.HardwareIntrinsics.Arm
         private static int HighestSetBit(uint op1)
         {
             for (int i = 8 * sizeof(uint) - 1; i >= 0; i--)
+            {
+                if (((ulong)op1 & (1UL << i)) != 0)
+                {
+                    return i;
+                }
+            }
+
+            return -1;
+        }
+
+        public static long CountLeadingZeroBits(long op1)
+        {
+            return (long)(8 * sizeof(long) - (HighestSetBit(op1) + 1));
+        }
+
+        private static int HighestSetBit(long op1)
+        {
+            for (int i = 8 * sizeof(long) - 1; i >= 0; i--)
+            {
+                if (((ulong)op1 & (1UL << i)) != 0)
+                {
+                    return i;
+                }
+            }
+
+            return -1;
+        }
+
+        public static ulong CountLeadingZeroBits(ulong op1)
+        {
+            return (ulong)(8 * sizeof(ulong) - (HighestSetBit(op1) + 1));
+        }
+
+        private static int HighestSetBit(ulong op1)
+        {
+            for (int i = 8 * sizeof(ulong) - 1; i >= 0; i--)
             {
                 if (((ulong)op1 & (1UL << i)) != 0)
                 {

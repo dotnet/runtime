@@ -4365,6 +4365,19 @@ namespace System.Runtime.Intrinsics.Arm
         public static System.Numerics.Vector<double> FusedMultiplySubtractNegated(System.Numerics.Vector<double> minuend, System.Numerics.Vector<double> left, System.Numerics.Vector<double> right) { throw null; }
         public static System.Numerics.Vector<float> FusedMultiplySubtractNegated(System.Numerics.Vector<float> minuend, System.Numerics.Vector<float> left, System.Numerics.Vector<float> right) { throw null; }
 
+        public static System.Numerics.Vector<byte> LeadingSignCount(System.Numerics.Vector<sbyte> value) { throw null; }
+        public static System.Numerics.Vector<ushort> LeadingSignCount(System.Numerics.Vector<short> value) { throw null; }
+        public static System.Numerics.Vector<uint> LeadingSignCount(System.Numerics.Vector<int> value) { throw null; }
+        public static System.Numerics.Vector<ulong> LeadingSignCount(System.Numerics.Vector<long> value) { throw null; }
+        public static System.Numerics.Vector<byte> LeadingZeroCount(System.Numerics.Vector<sbyte> value) { throw null; }
+        public static System.Numerics.Vector<byte> LeadingZeroCount(System.Numerics.Vector<byte> value) { throw null; }
+        public static System.Numerics.Vector<ushort> LeadingZeroCount(System.Numerics.Vector<short> value) { throw null; }
+        public static System.Numerics.Vector<ushort> LeadingZeroCount(System.Numerics.Vector<ushort> value) { throw null; }
+        public static System.Numerics.Vector<uint> LeadingZeroCount(System.Numerics.Vector<int> value) { throw null; }
+        public static System.Numerics.Vector<uint> LeadingZeroCount(System.Numerics.Vector<uint> value) { throw null; }
+        public static System.Numerics.Vector<ulong> LeadingZeroCount(System.Numerics.Vector<long> value) { throw null; }
+        public static System.Numerics.Vector<ulong> LeadingZeroCount(System.Numerics.Vector<ulong> value) { throw null; }
+
         public static unsafe System.Numerics.Vector<sbyte> LoadVector(System.Numerics.Vector<sbyte> mask, sbyte* address) { throw null; }
         public static unsafe System.Numerics.Vector<short> LoadVector(System.Numerics.Vector<short> mask, short* address) { throw null; }
         public static unsafe System.Numerics.Vector<int> LoadVector(System.Numerics.Vector<int> mask, int* address) { throw null; }
