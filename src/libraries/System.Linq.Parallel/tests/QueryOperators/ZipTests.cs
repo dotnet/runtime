@@ -181,6 +181,7 @@ namespace System.Linq.Parallel.Tests
         [Theory]
         [OuterLoop]
         [MemberData(nameof(ZipThreadedData), new[] { 1, 2, 16, 128, 1024 }, new[] { 1, 2, 4, 7, 8, 31, 32 })]
+        [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser.")]
         public static void Zip_AsOrdered_ThreadedDeadlock(Labeled<ParallelQuery<int>> left, int leftCount, Labeled<ParallelQuery<int>> right, int rightCount, int degree)
         {
             _ = leftCount;
