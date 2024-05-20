@@ -357,8 +357,8 @@ enum StructFloatFieldInfoFlags
 };
 
 // On RISC-V and LoongArch a struct with up to two non-empty fields, at least one of them floating,
-// can be passed in registers. FPStructInfo represents passing information for such structs.
-struct FPStructInfo
+// can be passed in registers. FpStructInRegistersInfo represents passing information for such structs.
+struct FpStructInRegistersInfo
 {
     struct Field
     {
@@ -390,7 +390,7 @@ struct FPStructInfo
         return !fields[0].Empty() + !fields[1].Empty();
     }
 
-    // TODO: Remove, unless there are places where field offsets are unnecessary and it's difficult to pass FPStructInfo (CallDescrWorker?)
+    // TODO: Remove, unless there are places where field offsets are unnecessary and it's difficult to pass FpStructInRegistersInfo (CallDescrWorker?)
     StructFloatFieldInfoFlags ToFlags() const
     {
         int flags =

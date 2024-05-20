@@ -536,7 +536,7 @@ public:
 
             // Struct larger than 16 can still be passed in registers according to FP call conv if it has empty fields or
             // more padding, so make sure it's passed according to integer call conv which bounds struct to 16 bytes.
-            return MethodTable::GetRiscV64PassFPStructInfo(th).IsPassedWithIntegerCallConv();
+            return MethodTable::GetRiscV64PassFpStructInRegistersInfo(th).IsPassedWithIntegerCallConv();
         }
         return FALSE;
 #else
@@ -601,7 +601,7 @@ public:
             if (m_argSize <= ENREGISTERED_PARAMTYPE_MAXSIZE)
                 return FALSE;
 
-            return MethodTable::GetRiscV64PassFPStructInfo(m_argTypeHandle).IsPassedWithIntegerCallConv();
+            return MethodTable::GetRiscV64PassFpStructInRegistersInfo(m_argTypeHandle).IsPassedWithIntegerCallConv();
         #else
             return (m_argSize > ENREGISTERED_PARAMTYPE_MAXSIZE);
         #endif
@@ -1795,7 +1795,7 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
 #elif defined(TARGET_RISCV64)
     assert(!this->IsVarArg()); // Varargs on RISC-V not supported yet
     int cFPRegs = 0;
-    FPStructInfo info = {};
+    FpStructInRegistersInfo info = {};
 
     switch (argType)
     {
@@ -1806,12 +1806,8 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
         break;
 
     case ELEMENT_TYPE_VALUETYPE:
-        info = MethodTable::GetRiscV64PassFPStructInfo(thValueType);
-        if (!info.IsPassedWithIntegerCallConv())
-        {
-            // Struct may be passed according to hardware floating-point calling convention
-            cFPRegs = info.fields[0].isFloating + info.fields[1].isFloating;
-        }
+        info = MethodTable::GetRiscV64PassFpStructInRegistersInfo(thValueType);
+        cFPRegs = info.fields[0].isFloating + info.fields[1].isFloating;
         break;
 
     default:

@@ -3014,7 +3014,7 @@ int MethodTable::GetRiscV64PassStructInRegisterFlags(TypeHandle th)
 #endif
 
 #if defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
-static bool HandleInlineArray(int elementTypeIndex, int nElements, FPStructInfo& info DEBUG_ARG(const char* fieldNames[2]))
+static bool HandleInlineArray(int elementTypeIndex, int nElements, FpStructInRegistersInfo& info DEBUG_ARG(const char* fieldNames[2]))
 {
     int typeIndex = info.NumFields();
     int nFlattenedFieldsPerElement = typeIndex - elementTypeIndex;
@@ -3040,7 +3040,7 @@ static bool HandleInlineArray(int elementTypeIndex, int nElements, FPStructInfo&
     return true;
 }
 
-static bool FlattenFields(TypeHandle th, uint32_t offset, FPStructInfo& info DEBUG_ARG(const char* fieldNames[2]))
+static bool FlattenFields(TypeHandle th, uint32_t offset, FpStructInRegistersInfo& info DEBUG_ARG(const char* fieldNames[2]))
 {
     bool isManaged = !th.IsTypeDesc();
     MethodTable* pMT = isManaged ? th.AsMethodTable() : th.AsNativeValueType();
@@ -3137,14 +3137,14 @@ static bool FlattenFields(TypeHandle th, uint32_t offset, FPStructInfo& info DEB
 #endif
 
 #if defined(TARGET_RISCV64)
-static void LogFPStructInfo(TypeHandle th, FPStructInfo info, const char* fieldNames[2], const char* message)
+static void LogFpStructInRegistersInfo(TypeHandle th, FpStructInRegistersInfo info, const char* fieldNames[2], const char* message)
 {
     if (!LoggingOn(LF_JIT, LL_EVERYTHING))
         return;
 
     SString name;
     th.GetName(name);
-    LOG((LF_JIT, LL_EVERYTHING, "GetRiscV64PassFPStructInfo: Struct %s %s, %u fields%s\n",
+    LOG((LF_JIT, LL_EVERYTHING, "GetRiscV64PassFpStructInRegistersInfo: Struct %s %s, %u fields%s\n",
          name.GetUTF8(), message, info.NumFields(), (info.NumFields() > 0 ? ":" : "")));
 
     if (!info.fields[0].Empty())
@@ -3159,31 +3159,31 @@ static void LogFPStructInfo(TypeHandle th, FPStructInfo info, const char* fieldN
     }
 }
 
-static FPStructInfo GetRiscV64PassFPStructInfoImpl(TypeHandle th)
+static FpStructInRegistersInfo GetRiscV64PassFpStructInRegistersInfoImpl(TypeHandle th)
 {
-    FPStructInfo info = {};
+    FpStructInRegistersInfo info = {};
     INDEBUG(const char* fieldNames[2] = {};)
     if (!FlattenFields(th, 0, info DEBUG_ARG(fieldNames)))
     {
-        INDEBUG(LogFPStructInfo(th, info, fieldNames, "cannot be passed according to floating-point calling convention");)
-        return FPStructInfo{};
+        INDEBUG(LogFpStructInRegistersInfo(th, info, fieldNames, "cannot be passed according to floating-point calling convention");)
+        return FpStructInRegistersInfo{};
     }
 
     assert(!(info.fields[0].Empty() && !info.fields[1].Empty()));
 
     if (!info.fields[0].isFloating && !info.fields[1].isFloating)
     {
-        INDEBUG(LogFPStructInfo(th, info, fieldNames, "does not have any floating fields");)
-        return FPStructInfo{};
+        INDEBUG(LogFpStructInRegistersInfo(th, info, fieldNames, "does not have any floating fields");)
+        return FpStructInRegistersInfo{};
     }
 
-    INDEBUG(LogFPStructInfo(th, info, fieldNames, "can be passed according to floating-point calling convention");)
+    INDEBUG(LogFpStructInRegistersInfo(th, info, fieldNames, "can be passed according to floating-point calling convention");)
     return info;
 }
 
-FPStructInfo MethodTable::GetRiscV64PassFPStructInfo(TypeHandle th)
+FpStructInRegistersInfo MethodTable::GetRiscV64PassFpStructInRegistersInfo(TypeHandle th)
 {
-    FPStructInfo info = GetRiscV64PassFPStructInfoImpl(th);
+    FpStructInRegistersInfo info = GetRiscV64PassFpStructInRegistersInfoImpl(th);
     int flags = GetRiscV64PassStructInRegisterFlags(th);
 
     if (info.IsPassedWithIntegerCallConv())
