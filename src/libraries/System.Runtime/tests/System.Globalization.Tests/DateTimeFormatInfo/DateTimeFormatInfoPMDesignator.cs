@@ -137,9 +137,9 @@ namespace System.Globalization.Tests
             yield return new object[] { new CultureInfo("en-ZA").DateTimeFormat, "pm" };
             yield return new object[] { new CultureInfo("en-ZM").DateTimeFormat, "pm" };
             yield return new object[] { new CultureInfo("en-ZW").DateTimeFormat, "pm" };
-            yield return new object[] { new CultureInfo("es-419").DateTimeFormat, "p.\u00A0m." }; // p.m.
+            yield return new object[] { new CultureInfo("es-419").DateTimeFormat, "p.m." };
             yield return new object[] { new CultureInfo("es-ES").DateTimeFormat, "p.\u00A0m." }; // p.m.
-            yield return new object[] { new CultureInfo("es-MX").DateTimeFormat, "p.\u00A0m." }; // p.m.
+            yield return new object[] { new CultureInfo("es-MX").DateTimeFormat, "p.m." };
             yield return new object[] { new CultureInfo("et-EE").DateTimeFormat, "PM" };
             yield return new object[] { new CultureInfo("fa-IR").DateTimeFormat, "بعدازظهر" };
             yield return new object[] { new CultureInfo("fi-FI").DateTimeFormat, "ip." };
@@ -188,10 +188,10 @@ namespace System.Globalization.Tests
             yield return new object[] { new CultureInfo("sw-KE").DateTimeFormat, "PM" };
             yield return new object[] { new CultureInfo("sw-TZ").DateTimeFormat, "PM" };
             yield return new object[] { new CultureInfo("sw-UG").DateTimeFormat, "PM" };
-            yield return new object[] { new CultureInfo("ta-IN").DateTimeFormat, "பிற்பகல்" };
-            yield return new object[] { new CultureInfo("ta-LK").DateTimeFormat, "பிற்பகல்" };
-            yield return new object[] { new CultureInfo("ta-MY").DateTimeFormat, "பிற்பகல்" };
-            yield return new object[] { new CultureInfo("ta-SG").DateTimeFormat, "பிற்பகல்" };
+            yield return new object[] { new CultureInfo("ta-IN").DateTimeFormat, "PM" }; // பிற்பகல்
+            yield return new object[] { new CultureInfo("ta-LK").DateTimeFormat, "PM" }; // பிற்பகல்
+            yield return new object[] { new CultureInfo("ta-MY").DateTimeFormat, "PM" }; // பிற்பகல்
+            yield return new object[] { new CultureInfo("ta-SG").DateTimeFormat, "PM" }; // பிற்பகல்
             yield return new object[] { new CultureInfo("te-IN").DateTimeFormat, "PM" };
             yield return new object[] { new CultureInfo("th-TH").DateTimeFormat, "หลังเที่ยง" };
             yield return new object[] { new CultureInfo("tr-CY").DateTimeFormat, "ÖS" };

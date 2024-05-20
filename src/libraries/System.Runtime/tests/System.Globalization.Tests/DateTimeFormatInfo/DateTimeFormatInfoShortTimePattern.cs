@@ -138,9 +138,9 @@ namespace System.Globalization.Tests
             yield return new object[] { new CultureInfo("en-ZM").DateTimeFormat, "h:mm tt" };
             yield return new object[] { new CultureInfo("en-ZW").DateTimeFormat, "HH:mm" };
             yield return new object[] { new CultureInfo("en-US").DateTimeFormat, "h:mm tt" };
-            yield return new object[] { new CultureInfo("es-419").DateTimeFormat, "HH:mm" };
+            yield return new object[] { new CultureInfo("es-419").DateTimeFormat, "h:mm tt" };
             yield return new object[] { new CultureInfo("es-ES").DateTimeFormat, "H:mm" };
-            yield return new object[] { new CultureInfo("es-MX").DateTimeFormat, "HH:mm" }; // H:mm
+            yield return new object[] { new CultureInfo("es-MX").DateTimeFormat, "h:mm tt" }; // H:mm
             yield return new object[] { new CultureInfo("et-EE").DateTimeFormat, "HH:mm" };
             yield return new object[] { new CultureInfo("fa-IR").DateTimeFormat, "H:mm" };
             yield return new object[] { new CultureInfo("fi-FI").DateTimeFormat, "H.mm" };
