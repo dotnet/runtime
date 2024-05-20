@@ -47,6 +47,90 @@ static const off_t MaxDoubleMappedSize = UINT_MAX;
 
 #endif // TARGET_OSX
 
+#if defined(TARGET_AMD64) && !defined(TARGET_OSX)
+
+extern "C" int VerifyDoubleMapping1();
+extern "C" void VerifyDoubleMapping1_End();
+extern "C" int VerifyDoubleMapping2();
+extern "C" void VerifyDoubleMapping2_End();
+
+// Verify that the double mapping works correctly, including cases when the executable code page is modified after
+// the code is executed. 
+bool VerifyDoubleMapping(int fd)
+{
+    bool result = false;
+    void *mapperHandle = (void*)(size_t)fd;
+    void *pCommittedPage = NULL;
+    void *pWriteablePage = NULL;
+    int testCallResult;
+
+    typedef int (*VerificationFunctionPtr)();
+    VerificationFunctionPtr pVerificationFunction;
+
+    size_t pageSize = getpagesize();
+
+    void *pExecutablePage = VMToOSInterface::ReserveDoubleMappedMemory(mapperHandle, 0, pageSize, NULL, NULL);
+    
+    if (pExecutablePage == NULL)
+    {
+        goto Cleanup;
+    }
+
+    pCommittedPage = VMToOSInterface::CommitDoubleMappedMemory(pExecutablePage, pageSize, true);
+    if (pCommittedPage == NULL)
+    {
+        goto Cleanup;
+    }
+
+    pWriteablePage = VMToOSInterface::GetRWMapping(mapperHandle, pCommittedPage, 0, pageSize);
+    if (pWriteablePage == NULL)
+    {
+        goto Cleanup;
+    }
+
+    // First copy a method of a simple function that returns 1 into the writeable mapping
+    memcpy(pWriteablePage, (void*)VerifyDoubleMapping1, (char*)VerifyDoubleMapping1_End - (char*)VerifyDoubleMapping1);
+    pVerificationFunction = (VerificationFunctionPtr)pExecutablePage;
+    // Invoke the function via the executable mapping. It should return 1.
+    testCallResult = pVerificationFunction();
+    if (testCallResult != 1)
+    {
+        goto Cleanup;
+    }
+
+    VMToOSInterface::ReleaseRWMapping(pWriteablePage, pageSize);
+    pWriteablePage = VMToOSInterface::GetRWMapping(mapperHandle, pCommittedPage, 0, pageSize);
+    if (pWriteablePage == NULL)
+    {
+        goto Cleanup;
+    }
+
+    // Now overwrite the first function by a second one that returns 2 using the writeable mapping
+    memcpy(pWriteablePage, (void*)VerifyDoubleMapping2, (char*)VerifyDoubleMapping2_End - (char*)VerifyDoubleMapping2);
+    pVerificationFunction = (VerificationFunctionPtr)pExecutablePage;
+    testCallResult = pVerificationFunction();
+    // Invoke the function via the executable mapping again. It should return 2 now.
+    // This doesn't work when running x64 code in docker on macOS Arm64 where the code is not re-translated by Rosetta
+    if (testCallResult == 2)
+    {
+        result = true;
+    }
+
+Cleanup:
+    if (pWriteablePage != NULL)
+    {
+        VMToOSInterface::ReleaseRWMapping(pWriteablePage, pageSize);
+    }
+
+    if (pExecutablePage != NULL)
+    {
+        VMToOSInterface::ReleaseDoubleMappedMemory(mapperHandle, pExecutablePage, 0, pageSize);
+    }
+
+    return result;
+}
+#endif // TARGET_AMD64 && !TARGET_OSX
+
 bool VMToOSInterface::CreateDoubleMemoryMapper(void** pHandle, size_t *pMaxExecutableCodeSize)
 {
 #ifndef TARGET_OSX
@@ -73,6 +157,14 @@ bool VMToOSInterface::CreateDoubleMemoryMapper(void** pHandle, size_t *pMaxExecu
         close(fd);
         return false;
     }
+
+#if defined(TARGET_AMD64) && !defined(TARGET_OSX)
+    if (!VerifyDoubleMapping(fd))
+    {
+        close(fd);
+        return false;
+    }
+#endif // TARGET_AMD64 && !TARGET_OSX
 
     *pMaxExecutableCodeSize = MaxDoubleMappedSize;
     *pHandle = (void*)(size_t)fd;

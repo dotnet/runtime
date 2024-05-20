@@ -348,3 +348,14 @@ LEAF_ENTRY GetTlsIndexObjectDescOffset, _TEXT
         int 3
 LEAF_END GetTlsIndexObjectDescOffset, _TEXT
 #endif
+
+# These functions are used to verify that double mapping used to implement W^X works.
+LEAF_ENTRY VerifyDoubleMapping1, _TEXT
+  mov rax, 1
+  ret
+LEAF_END_MARKED VerifyDoubleMapping1, _TEXT
+
+LEAF_ENTRY VerifyDoubleMapping2, _TEXT
+  mov rax, 2
+  ret
+LEAF_END_MARKED VerifyDoubleMapping2, _TEXT
