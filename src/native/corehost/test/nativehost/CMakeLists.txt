@@ -11,8 +11,6 @@ else()
     set(CMAKE_INSTALL_RPATH "\$ORIGIN")
 endif()
 
-include_directories(${CMAKE_CURRENT_LIST_DIR}/../../nethost)
-
 set(SOURCES
     ./error_writer_redirector.cpp
     ./get_native_search_directories_test.cpp
@@ -38,8 +36,6 @@ if(CLR_CMAKE_TARGET_WIN32)
 
     list(APPEND HEADERS
         ./comhost_test.h)
-
-    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /DELAYLOAD:nethost.dll")
 endif()
 
 add_executable(nativehost ${SOURCES})
@@ -55,6 +51,7 @@ endif()
 target_link_libraries(nativehost PRIVATE nethost hostmisc)
 
 if (CLR_CMAKE_TARGET_WIN32)
+    target_link_options(nativehost PRIVATE /DELAYLOAD:$<TARGET_FILE_NAME:nethost>)
     target_link_libraries(nativehost PRIVATE delayimp.lib)
 endif()
 

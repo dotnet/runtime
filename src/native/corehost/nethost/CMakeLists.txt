@@ -36,6 +36,8 @@ add_compile_definitions(
 add_library(nethost SHARED ${SOURCES})
 add_library(libnethost STATIC ${SOURCES})
 
+target_include_directories(nethost PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+target_include_directories(libnethost PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>)
 
 # Copy static lib PDB to the project output directory
 if (WIN32)
@@ -63,7 +65,8 @@ if (CLR_CMAKE_TARGET_ARCH_ARM)
     endif()
 endif()
 
-target_link_libraries (${DOTNET_PROJECT_NAME} PRIVATE ${CMAKE_DL_LIBS})
+target_link_libraries (nethost PRIVATE ${CMAKE_DL_LIBS})
+target_link_libraries (libnethost PUBLIC ${CMAKE_DL_LIBS})
 
 install(FILES ../coreclr_delegates.h DESTINATION corehost)
 install(FILES ../hostfxr.h DESTINATION corehost)
