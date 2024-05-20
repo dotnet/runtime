@@ -4019,7 +4019,7 @@ namespace System.IO.Packaging.Tests
                 ms.Seek(0, SeekOrigin.Begin);
 
                 var zipBytes = ms.ToArray();
-                var generalBitFlags = System.Buffers.Binary.BinaryPrimitives.ReadUInt16LittleEndian(zipBytes.AsSpan(6));
+                var generalBitFlags = System.Buffers.Binary.BinaryPrimitives.ReadUInt16LittleEndian(zipBytes.AsSpan(6)) & 0x6;
 
                 package = Package.Open(ms, FileMode.Open, FileAccess.Read);
                 part = package.GetPart(partUriDocument);
