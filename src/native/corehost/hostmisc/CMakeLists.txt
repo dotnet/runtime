@@ -48,3 +48,7 @@ if (CLR_CMAKE_TARGET_ARCH_ARM AND NOT CLR_CMAKE_TARGET_WIN32)
 endif()
 
 target_link_libraries (hostmisc INTERFACE ${CMAKE_DL_LIBS})
+
+if((CLR_CMAKE_TARGET_LINUX OR CLR_CMAKE_TARGET_FREEBSD) AND NOT CLR_CMAKE_TARGET_ANDROID)
+    target_link_libraries (hostmisc INTERFACE pthread)
+endif()

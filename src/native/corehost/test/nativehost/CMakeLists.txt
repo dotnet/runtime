@@ -3,8 +3,6 @@
 
 project(nativehost)
 
-set(DOTNET_PROJECT_NAME "nativehost")
-
 set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
 set(MACOSX_RPATH ON)
 if (CLR_CMAKE_TARGET_OSX)
@@ -44,19 +42,27 @@ if(CLR_CMAKE_TARGET_WIN32)
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /DELAYLOAD:nethost.dll")
 endif()
 
-include(../testexe.cmake)
+add_executable(nativehost ${SOURCES})
 
-target_link_libraries(${DOTNET_PROJECT_NAME} PRIVATE nethost hostmisc)
+add_sanitizer_runtime_support(nativehost)
+
+install_with_stripped_symbols(nativehost TARGETS corehost_test)
+
+if((CLR_CMAKE_TARGET_LINUX OR CLR_CMAKE_TARGET_FREEBSD) AND NOT CLR_CMAKE_TARGET_ANDROID)
+    target_link_libraries (nativehost PRIVATE pthread)
+endif()
+
+target_link_libraries(nativehost PRIVATE nethost hostmisc)
 
 if (CLR_CMAKE_TARGET_WIN32)
-    target_link_libraries(${DOTNET_PROJECT_NAME} PRIVATE delayimp.lib)
+    target_link_libraries(nativehost PRIVATE delayimp.lib)
 endif()
 
 # Specify non-default Windows libs to be used for Arm/Arm64 builds
 if (CLR_CMAKE_TARGET_WIN32 AND (CLR_CMAKE_TARGET_ARCH_ARM OR CLR_CMAKE_TARGET_ARCH_ARM64))
-    target_link_libraries(${DOTNET_PROJECT_NAME} PRIVATE Ole32.lib OleAut32.lib)
+    target_link_libraries(nativehost PRIVATE ole32 oleaut32)
 endif()
 
 if (CLR_CMAKE_TARGET_ARCH_ARMV6)
-    target_link_libraries(${DOTNET_PROJECT_NAME} PRIVATE atomic)
+    target_link_libraries(nativehost PRIVATE atomic)
 endif()
