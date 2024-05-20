@@ -8,12 +8,18 @@ namespace System.Globalization.Tests
 {
     public class DateTimeFormatInfoShortDatePattern
     {
+        [Fact]
+        public void ShortDatePattern_InvariantInfo_ReturnsExpected()
+        {
+            Assert.Equal("MM/dd/yyyy", DateTimeFormatInfo.InvariantInfo.ShortDatePattern);
+        }
+        
         public static IEnumerable<object[]> ShortDatePattern_Get_TestData()
         {
-            yield return new object[] { DateTimeFormatInfo.InvariantInfo, "MM/dd/yyyy", "invariant" };
             yield return new object[] { new CultureInfo("en-US").DateTimeFormat, "M/d/yyyy", "en-US" };
             yield return new object[] { new CultureInfo("fr-FR").DateTimeFormat, "dd/MM/yyyy", "fr-FR" };
         }
+
         public static IEnumerable<object[]> ShortDatePattern_Get_TestData_HybridGlobalization()
         {
             // see the comments on the right to check the non-Hybrid result, if it differs
@@ -205,11 +211,12 @@ namespace System.Globalization.Tests
             yield return new object[] { "zh-TW", "yyyy/M/d" };
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsHybridGlobalizationOnApplePlatform))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsIcuGlobalization))]
         [MemberData(nameof(ShortDatePattern_Get_TestData))]
         public void ShortDatePattern_Get_ReturnsExpected(DateTimeFormatInfo format, string expected, string cultureName)
         {
-            Assert.True(expected == format.ShortDatePattern, $"Failed for culture: {cultureName}. Expected: {expected}, Actual: {format.ShortDatePattern}");
+            var result = format.ShortDatePattern;
+            Assert.True(expected == result, $"Failed for culture: {cultureName}. Expected: {expected}, Actual: {result}");
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsHybridGlobalizationOnBrowser))]
