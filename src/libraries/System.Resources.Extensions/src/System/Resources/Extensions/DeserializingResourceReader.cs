@@ -11,6 +11,8 @@ namespace System.Resources.Extensions
 {
     public partial class DeserializingResourceReader
     {
+        private static readonly bool UseBinaryFormatter = GetUseBinaryFormatterSetting();
+
         private bool _assumeBinaryFormatter;
 
         private bool ValidateReaderType(string readerType)
@@ -33,15 +35,18 @@ namespace System.Resources.Extensions
             return false;
         }
 
-// Issue https://github.com/dotnet/runtime/issues/39292 tracks finding an alternative to BinaryFormatter
-#pragma warning disable SYSLIB0011
         private object ReadBinaryFormattedObject()
         {
+            if (UseBinaryFormatter)
+            {
+                return DeserializeUsingBinaryFormatter(_store.BaseStream);
+            }
+
             long position = _store.BaseStream.CanSeek ? _store.BaseStream.Position : -1;
 
             try
             {
-                BinaryFormattedObject binaryFormattedObject = new BinaryFormattedObject(_store.BaseStream);
+                BinaryFormattedObject binaryFormattedObject = new(_store.BaseStream);
 
                 return binaryFormattedObject.Deserialize();
             }
@@ -49,15 +54,21 @@ namespace System.Resources.Extensions
             {
                 _store.BaseStream.Position = position;
 
+                return DeserializeUsingBinaryFormatter(_store.BaseStream);
+            }
+
+            static object DeserializeUsingBinaryFormatter(Stream stream)
+            {
+#pragma warning disable SYSLIB0011
                 BinaryFormatter? formatter = new()
                 {
                     Binder = new UndoTruncatedTypeNameSerializationBinder()
                 };
 
-                return formatter.Deserialize(_store.BaseStream);
+                return formatter.Deserialize(stream);
+#pragma warning restore SYSLIB0011
             }
         }
-#pragma warning restore SYSLIB0011
 
         internal sealed class UndoTruncatedTypeNameSerializationBinder : SerializationBinder
         {
@@ -237,5 +248,17 @@ namespace System.Resources.Extensions
             return value;
         }
 
+        private static bool GetUseBinaryFormatterSetting()
+        {
+            if (AppContext.TryGetSwitch("System.Resources.Extensions.UseBinaryFormatter", out bool fileConfig))
+            {
+                return fileConfig;
+            }
+
+            string? envVar = Environment.GetEnvironmentVariable("DOTNET_SYSTEM_RESOURCES_EXTENSIONS_USE_BINARY_FORMATTER");
+            return envVar is null
+                ? false // disabled by default for security reasons!
+                : envVar.Equals("true", StringComparison.OrdinalIgnoreCase) || envVar.Equals("1");
+        }
     }
 }
