@@ -1,8 +1,6 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Text;
-
 namespace DotnetFuzzing;
 
 internal static class Assert
@@ -35,19 +33,5 @@ internal static class Assert
 
             throw new Exception($"Expected={expected[diffIndex]} Actual={actual[diffIndex]} at index {diffIndex}");
         }
-    }
-
-    public static void SequenceEqual(ReadOnlySpan<char> expected, StringBuilder actual)
-    {
-        Equal(expected.Length, actual.Length);
-
-        foreach (ReadOnlyMemory<char> chunk in actual.GetChunks())
-        {
-            SequenceEqual(expected.Slice(0, chunk.Length), chunk.Span);
-
-            expected = expected.Slice(chunk.Length);
-        }
-
-        Equal(0, expected.Length);
     }
 }

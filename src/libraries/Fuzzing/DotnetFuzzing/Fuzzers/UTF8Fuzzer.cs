@@ -16,7 +16,7 @@ internal sealed class UTF8Fuzzer : IFuzzer
     private static readonly Encoding s_encodingWithCustomReplacement =
         Encoding.GetEncoding("utf-8", EncoderFallback.ExceptionFallback, new DecoderReplacementFallback("{BAD}"));
 
-    private static readonly StringBuilder s_replacementStringBuilder = new(4096);
+    private static readonly ArrayBufferWriter<char> s_replacementBufferWriter = new(4096);
 
     public void FuzzTarget(ReadOnlySpan<byte> bytes)
     {
@@ -91,12 +91,12 @@ internal sealed class UTF8Fuzzer : IFuzzer
 
             using var decodedChars = PooledBoundedMemory<char>.Rent(decoded.Length, PoisonPagePlacement.After);
 
-            StringBuilder builder = s_replacementStringBuilder.Clear();
+            s_replacementBufferWriter.ResetWrittenCount();
 
             while (!utf8.IsEmpty)
             {
                 OperationStatus opStatus = Utf8.ToUtf16(utf8, decodedChars.Span, out int bytesReadJustNow, out int charsWrittenJustNow, replaceInvalidSequences: false, isFinalBlock: true);
-                builder.Append(decodedChars.Span.Slice(0, charsWrittenJustNow));
+                s_replacementBufferWriter.Write(decodedChars.Span.Slice(0, charsWrittenJustNow));
 
                 utf8 = utf8.Slice(bytesReadJustNow);
 
@@ -108,11 +108,11 @@ internal sealed class UTF8Fuzzer : IFuzzer
                     Rune.DecodeFromUtf8(utf8, out _, out int bytesToSkip);
                     utf8 = utf8.Slice(bytesToSkip);
 
-                    builder.Append("{BAD}");
+                    s_replacementBufferWriter.Write("{BAD}");
                 }
             }
 
-            Assert.SequenceEqual(decoded, builder);
+            Assert.SequenceEqual(decoded, s_replacementBufferWriter.WrittenSpan);
         }
     }
 
