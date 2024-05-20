@@ -40,6 +40,7 @@ namespace System.Net.Test.Common
         {
             _stream = stream;
             _output = output;
+            _output?.WriteLine($"Created stream {stream}, Readable: {stream.CanRead}, Writable: {stream.CanWrite}");
         }
 
         public ValueTask DisposeAsync() => _stream.DisposeAsync();
@@ -438,9 +439,11 @@ namespace System.Net.Test.Common
         public async Task<(long? frameType, byte[] payload)> ReadFrameAsync()
         {
             long? frameType = await ReadIntegerAsync().ConfigureAwait(false);
+            _output?.WriteLine($"Read frame type: {frameType}");
             if (frameType == null) return (null, null);
 
             long? payloadLength = await ReadIntegerAsync().ConfigureAwait(false);
+            _output?.WriteLine($"Read payload length: {payloadLength}");
             if (payloadLength == null) throw new Exception("Unable to read frame; unexpected end of stream.");
 
             byte[] payload = new byte[checked((int)payloadLength)];
@@ -449,11 +452,13 @@ namespace System.Net.Test.Common
             while (totalBytesRead != payloadLength)
             {
                 int bytesRead = await _stream.ReadAsync(payload.AsMemory(totalBytesRead)).ConfigureAwait(false);
+                _output?.WriteLine($"Read {bytesRead} bytes of payload");
                 if (bytesRead == 0) throw new Exception("Unable to read frame; unexpected end of stream.");
 
                 totalBytesRead += bytesRead;
             }
 
+            _output?.WriteLine($"Read frame payload: {payload}");
             return (frameType, payload);
         }
 

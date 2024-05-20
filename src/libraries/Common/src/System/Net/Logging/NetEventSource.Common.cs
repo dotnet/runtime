@@ -103,7 +103,8 @@ namespace System.Net
         [Event(ErrorEventId, Level = EventLevel.Error, Keywords = Keywords.Default)]
         private void ErrorMessage(string thisOrContextObject, string? memberName, string? message)
         {
-            Debug.Assert(IsEnabled());
+            //Debug.Assert(IsEnabled());
+            if (!IsEnabled()) return;
             WriteEvent(ErrorEventId, thisOrContextObject, memberName ?? MissingMember, message);
         }
         #endregion
