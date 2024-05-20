@@ -4,6 +4,8 @@ project(corehost)
 include(../../../eng/native/configurepaths.cmake)
 include(${CLR_ENG_NATIVE_DIR}/configurecompiler.cmake)
 
+set(COREHOST_ROOT_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
+
 if (MSVC)
     # Host components don't try to handle asynchronous exceptions
     set_property(DIRECTORY PROPERTY CLR_EH_OPTION /EHsc)

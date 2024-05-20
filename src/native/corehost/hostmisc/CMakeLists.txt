@@ -40,4 +40,11 @@ target_sources(hostmisc INTERFACE ${SOURCES})
 
 if (MSVC)
     target_sources(hostmisc INTERFACE ${HEADERS})
+    target_link_libraries(hostmisc INTERFACE advapi32)
 endif()
+
+if (CLR_CMAKE_TARGET_ARCH_ARM AND NOT CLR_CMAKE_TARGET_WIN32)
+    target_link_libraries(hostmisc INTERFACE atomic)
+endif()
+
+target_link_libraries (hostmisc INTERFACE ${CMAKE_DL_LIBS})
