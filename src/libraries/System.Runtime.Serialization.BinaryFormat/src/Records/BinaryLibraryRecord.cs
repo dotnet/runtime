@@ -18,7 +18,7 @@ namespace System.Runtime.Serialization.BinaryFormat;
 /// </remarks>
 internal sealed class BinaryLibraryRecord : SerializationRecord
 {
-    private BinaryLibraryRecord(int libraryId, string libraryName)
+    private BinaryLibraryRecord(int libraryId, AssemblyNameInfo libraryName)
     {
         ObjectId = libraryId;
         LibraryName = libraryName;
@@ -26,10 +26,10 @@ internal sealed class BinaryLibraryRecord : SerializationRecord
 
     public override RecordType RecordType => RecordType.BinaryLibrary;
 
-    internal string LibraryName { get; }
+    internal AssemblyNameInfo LibraryName { get; }
 
     public override int ObjectId { get; }
 
     internal static BinaryLibraryRecord Parse(BinaryReader reader)
-        => new(reader.ReadInt32(), reader.ReadString());
+        => new(reader.ReadInt32(), reader.ReadLibraryName());
 }

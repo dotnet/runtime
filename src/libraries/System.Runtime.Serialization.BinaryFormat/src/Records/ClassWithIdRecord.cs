@@ -26,7 +26,7 @@ internal sealed class ClassWithIdRecord : ClassRecord
 
     public override RecordType RecordType => RecordType.ClassWithId;
 
-    internal override string LibraryName => MetadataClass.LibraryName;
+    internal override AssemblyNameInfo LibraryName => MetadataClass.LibraryName;
 
     public override int ObjectId { get; }
 

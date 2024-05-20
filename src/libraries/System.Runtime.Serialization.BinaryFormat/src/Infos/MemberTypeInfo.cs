@@ -172,7 +172,7 @@ internal readonly struct MemberTypeInfo
 
                 BinaryLibraryRecord libraryRecord = (BinaryLibraryRecord)recordMap[typeInfo.LibraryId];
                 string assemblyName = FormatterServices.GetAssemblyNameIncludingTypeForwards(typeElement);
-                return assemblyName == libraryRecord.LibraryName;
+                return assemblyName == libraryRecord.LibraryName.FullName;
             default:
                 throw new NotSupportedException();
         }
@@ -252,8 +252,8 @@ internal readonly struct MemberTypeInfo
                 return ((TypeName)additionalInfo!).WithAssemblyName(FormatterServices.CoreLibAssemblyName.FullName);
             case BinaryType.Class:
                 ClassTypeInfo typeInfo = (ClassTypeInfo)additionalInfo!;
-                string libraryName = ((BinaryLibraryRecord)recordMap[typeInfo.LibraryId]).LibraryName;
-                return typeInfo.TypeName.WithAssemblyName(libraryName);
+                AssemblyNameInfo libraryName = ((BinaryLibraryRecord)recordMap[typeInfo.LibraryId]).LibraryName;
+                return typeInfo.TypeName.WithAssemblyName(libraryName.FullName);
             default:
                 throw new NotSupportedException();
         }

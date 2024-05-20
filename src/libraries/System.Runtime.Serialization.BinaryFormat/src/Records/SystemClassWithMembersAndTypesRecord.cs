@@ -16,7 +16,7 @@ internal sealed class SystemClassWithMembersAndTypesRecord : ClassRecord
 
     public override RecordType RecordType => RecordType.SystemClassWithMembersAndTypes;
 
-    internal override string LibraryName => FormatterServices.CoreLibRawName;
+    internal override AssemblyNameInfo LibraryName => FormatterServices.CoreLibAssemblyName;
 
     internal MemberTypeInfo MemberTypeInfo { get; }
 
@@ -24,7 +24,7 @@ internal sealed class SystemClassWithMembersAndTypesRecord : ClassRecord
 
     public override bool IsTypeNameMatching(Type type)
         => type.Assembly == typeof(object).Assembly
-        && FormatterServices.GetTypeFullNameIncludingTypeForwards(type) == TypeName.FullName;
+        && FormatterServices.GetTypeFullNameIncludingTypeForwards(type) == ClassInfo.Name.FullName;
 
     internal static SystemClassWithMembersAndTypesRecord Parse(BinaryReader reader, PayloadOptions options)
     {

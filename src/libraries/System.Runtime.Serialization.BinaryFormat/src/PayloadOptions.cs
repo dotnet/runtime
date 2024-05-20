@@ -15,6 +15,4 @@ sealed class PayloadOptions
     public PayloadOptions() { }
 
     public TypeNameParseOptions? TypeNameParseOptions { get; set; }
-
-    public bool SupportMangledNames { get; set; } = true; // adsitnik set to false and propagate
 }
