@@ -38,10 +38,12 @@ inline static bool isHighSimdReg(regNumber reg)
 #endif
 }
 
-inline static bool isSimdReg(regNumber reg)
+inline static bool isHighGPReg(regNumber reg)
 {
 #ifdef TARGET_AMD64
-    return ((reg >= REG_XMM0) && (reg <= REG_XMM31));
+    // TODO-apx: the definition here is incorrect, we will need to revisit this after we extend the register definition.
+    //           for now, we can simply use REX2 as REX.
+    return ((reg >= REG_R8) && (reg <= REG_R15));
 #else
     // X86 JIT operates in 32-bit mode and hence extended regs are not available.
     return false;
@@ -142,11 +144,8 @@ code_t insEncodeMIreg(const instrDesc* id, regNumber reg, emitAttr size, code_t 
 code_t AddRexWPrefix(const instrDesc* id, code_t code);
 code_t AddRex2WPrefix(const instrDesc* id, code_t code);
 code_t AddRexRPrefix(const instrDesc* id, code_t code);
-code_t AddRex2RPrefix(const instrDesc* id, regNumber reg, code_t code);
 code_t AddRexXPrefix(const instrDesc* id, code_t code);
-code_t AddRex2XPrefix(const instrDesc* id, regNumber reg, code_t code);
 code_t AddRexBPrefix(const instrDesc* id, code_t code);
-code_t AddRex2BPrefix(const instrDesc* id, regNumber reg, code_t code);
 code_t AddRexPrefix(instruction ins, code_t code);
 code_t AddRex2Prefix(instruction ins, code_t code);
 
