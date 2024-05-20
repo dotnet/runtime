@@ -231,7 +231,18 @@ public sealed partial class QuicConnection : IAsyncDisposable
         // Do not invoke user-defined event handler code on MsQuic thread.
         await Task.CompletedTask.ConfigureAwait(ConfigureAwaitOptions.ForceYielding);
 
-        _streamsAvailableCallback?.Invoke(this, bidirectionalStreamsCountIncrement, unidirectionalStreamsCountIncrement);
+        try
+        {
+            _streamsAvailableCallback(this, bidirectionalStreamsCountIncrement, unidirectionalStreamsCountIncrement);
+        }
+        catch (Exception ex)
+        {
+            // Just log the exception, we're on a thread-pool thread and there's no way to report this to anyone.
+            if (NetEventSource.Log.IsEnabled())
+            {
+                NetEventSource.Info(this, $"{this} {nameof(QuicConnectionOptions.StreamsAvailableCallback)} failed with {ex}.");
+            }
+        }
     }
 
     /// <summary>
@@ -800,7 +811,7 @@ public sealed partial class QuicConnection : IAsyncDisposable
 /// The initial capacity is reported with the first invocation of the callback that might happen before the <see cref="QuicConnection"/> instance is handed out via either
 /// <see cref="QuicConnection.ConnectAsync(QuicClientConnectionOptions, CancellationToken)"/> or <see cref="QuicListener.AcceptConnectionAsync(CancellationToken)"/>.
 /// </summary>
-/// <param name="sender">The <see cref="QuicConnection"/> that received the new stream limits.</param>
+/// <param name="connection">The <see cref="QuicConnection"/> that received the new stream limits.</param>
 /// <param name="bidirectionalStreamsCountIncrement">The increment saying how many additional bidirectional streams can be opened on the connection, increased via the latest STREAMS_AVAILABLE frame.</param>
 /// <param name="unidirectionalStreamsCountIncrement">The increment saying how many additional unidirectional streams can be opened on the connection, increased via the latest STREAMS_AVAILABLE frame.</param>
-public delegate void QuicConnectionStreamsAvailableCallback(QuicConnection sender, int bidirectionalStreamsCountIncrement, int unidirectionalStreamsCountIncrement);
+public delegate void QuicConnectionStreamsAvailableCallback(QuicConnection connection, int bidirectionalStreamsCountIncrement, int unidirectionalStreamsCountIncrement);

@@ -247,7 +247,7 @@ namespace System.Net.Http
             }
             if (IsHttp3Supported() && _http3Enabled)
             {
-                _http3RequestQueue = new RequestQueue<Http3Connection>();
+                _http3RequestQueue = new RequestQueue<Http3Connection?>();
             }
 
             if (_proxyUri != null && HttpUtilities.IsSupportedSecureScheme(_proxyUri.Scheme))
@@ -887,7 +887,8 @@ namespace System.Net.Http
 
                 if (IsHttp3Supported() && _availableHttp3Connections is not null)
                 {
-                    toDispose = [.. _availableHttp3Connections];
+                    toDispose ??= new();
+                    toDispose.AddRange(_availableHttp3Connections);
                     _associatedHttp3ConnectionCount -= _availableHttp3Connections.Count;
                     _availableHttp3Connections.Clear();
                 }
@@ -960,7 +961,7 @@ namespace System.Net.Http
                     // Note: Http11 connections will decrement the _associatedHttp11ConnectionCount when disposed.
                     // Http2 connections will not, hence the difference in handing _associatedHttp2ConnectionCount.
                 }
-                if (_availableHttp3Connections is not null)
+                if (IsHttp3Supported() && _availableHttp3Connections is not null)
                 {
                     int removed = ScavengeHttp3ConnectionList(_availableHttp3Connections, ref toDispose, nowTicks, pooledConnectionLifetime, pooledConnectionIdleTimeout);
                     _associatedHttp3ConnectionCount -= removed;

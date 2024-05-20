@@ -49,7 +49,7 @@ namespace System.Net.Quic
         public int MaxInboundUnidirectionalStreams { get { throw null; } set { } }
         public System.Net.Quic.QuicConnectionStreamsAvailableCallback? StreamsAvailableCallback { get { throw null; } set { } }
     }
-    public delegate void QuicConnectionStreamsAvailableCallback(System.Net.Quic.QuicConnection sender, int bidirectionalStreamsCountIncrement, int unidirectionalStreamsCountIncrement);
+    public delegate void QuicConnectionStreamsAvailableCallback(System.Net.Quic.QuicConnection connection, int bidirectionalStreamsCountIncrement, int unidirectionalStreamsCountIncrement);
     public enum QuicError
     {
         Success = 0,
