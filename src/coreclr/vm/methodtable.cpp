@@ -3014,9 +3014,36 @@ int MethodTable::GetRiscV64PassStructInRegisterFlags(TypeHandle th)
 #endif
 
 #if defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
-static bool HandleInlineArray(int elementTypeIndex, int nElements, FpStructInRegistersInfo& info DEBUG_ARG(const char* fieldNames[2]))
+static void SetFpStructInRegistersInfoField(FpStructInRegistersInfo& info, int index,
+    bool isFloating, unsigned size, uint32_t offset)
 {
-    int typeIndex = info.NumFields();
+    assert(index < 2);
+
+    int sizeShift =
+        (size == 1) ? 0 :
+        (size == 2) ? 1 :
+        (size == 4) ? 2 :
+        (size == 8) ? 3 :
+       -1;
+    assert(sizeShift != -1);
+
+    info.hasTwoFields = index;
+    if (index == 0)
+    {
+        info.isFloating1st = isFloating;
+        info.sizeShift1st = sizeShift;
+        info.offset1st = offset;
+    }
+    else
+    {
+        info.isFloating2nd = isFloating;
+        info.sizeShift2nd = sizeShift;
+        info.offset2nd = offset;
+    }
+}
+
+static bool HandleInlineArray(int elementTypeIndex, int nElements, FpStructInRegistersInfo& info, int& typeIndex DEBUG_ARG(const char* fieldNames[2]))
+{
     int nFlattenedFieldsPerElement = typeIndex - elementTypeIndex;
     if (nFlattenedFieldsPerElement == 0)
         return true;
@@ -3033,14 +3060,18 @@ static bool HandleInlineArray(int elementTypeIndex, int nElements, FpStructInReg
 
         assert(elementTypeIndex == 0);
         assert(typeIndex == 1);
-        info.fields[1] = info.fields[0]; // duplicate the array element type
-        info.fields[1].offset += info.fields[0].size;
+
+         // duplicate the array element type
+        info.hasTwoFields = 1;
+        info.isFloating2nd = info.isFloating1st;
+        info.sizeShift2nd = info.sizeShift1st;
+        info.offset2nd = info.offset1st + (1u << info.sizeShift1st);
         INDEBUG(fieldNames[1] = fieldNames[0];)
     }
     return true;
 }
 
-static bool FlattenFields(TypeHandle th, uint32_t offset, FpStructInRegistersInfo& info DEBUG_ARG(const char* fieldNames[2]))
+static bool FlattenFields(TypeHandle th, uint32_t offset, FpStructInRegistersInfo& info, int& typeIndex DEBUG_ARG(const char* fieldNames[2]))
 {
     bool isManaged = !th.IsTypeDesc();
     MethodTable* pMT = isManaged ? th.AsMethodTable() : th.AsNativeValueType();
@@ -3051,7 +3082,7 @@ static bool FlattenFields(TypeHandle th, uint32_t offset, FpStructInRegistersInf
     if (isManaged)
     {
         FieldDesc* fields = pMT->GetApproxFieldDescListRaw();
-        int elementTypeIndex = info.NumFields();
+        int elementTypeIndex = typeIndex;
         for (int i = 0; i < nFields; ++i)
         {
             if (i > 0 && fields[i-1].GetOffset() + fields[i-1].GetSize() > fields[i].GetOffset())
@@ -3061,21 +3092,20 @@ static bool FlattenFields(TypeHandle th, uint32_t offset, FpStructInRegistersInf
             if (type == ELEMENT_TYPE_VALUETYPE)
             {
                 MethodTable* nested = fields[i].GetApproxFieldTypeHandleThrowing().GetMethodTable();
-                if (!FlattenFields(TypeHandle(nested), offset + fields[i].GetOffset(), info DEBUG_ARG(fieldNames)))
+                if (!FlattenFields(TypeHandle(nested), offset + fields[i].GetOffset(), info, typeIndex DEBUG_ARG(fieldNames)))
                     return false;
             }
             else if (fields[i].GetSize() <= TARGET_POINTER_SIZE)
             {
-                int typeIndex = info.NumFields();
                 if (typeIndex >= 2)
                     return false;
 
-                info.fields[typeIndex] = {
-                    .isFloating = CorTypeInfo::IsFloat_NoThrow(type),
-                    .size = CorTypeInfo::Size_NoThrow(type),
-                    .offset = offset + fields[i].GetOffset(),
-                };
                 INDEBUG(fields[i].GetName_NoThrow(&fieldNames[typeIndex]);)
+                SetFpStructInRegistersInfoField(info, typeIndex++,
+                    CorTypeInfo::IsFloat_NoThrow(type),
+                    CorTypeInfo::Size_NoThrow(type),
+                    offset + fields[i].GetOffset()
+                );
             }
             else
             {
@@ -3087,7 +3117,7 @@ static bool FlattenFields(TypeHandle th, uint32_t offset, FpStructInRegistersInf
         {
             assert(nFields == 1);
             int nElements = pMT->GetNumInstanceFieldBytes() / fields[0].GetSize();
-            if (!HandleInlineArray(elementTypeIndex, nElements, info DEBUG_ARG(fieldNames)))
+            if (!HandleInlineArray(elementTypeIndex, nElements, info, typeIndex DEBUG_ARG(fieldNames)))
                 return false;
         }
     }
@@ -3102,29 +3132,28 @@ static bool FlattenFields(TypeHandle th, uint32_t offset, FpStructInRegistersInf
             NativeFieldCategory category = fields[i].GetCategory();
             if (category == NativeFieldCategory::NESTED)
             {
-                int elementTypeIndex = info.NumFields();
+                int elementTypeIndex = typeIndex;
 
                 MethodTable* nested = fields[i].GetNestedNativeMethodTable();
-                if (!FlattenFields(TypeHandle(nested), offset + fields[i].GetExternalOffset(), info DEBUG_ARG(fieldNames)))
+                if (!FlattenFields(TypeHandle(nested), offset + fields[i].GetExternalOffset(), info, typeIndex DEBUG_ARG(fieldNames)))
                     return false;
 
                 // In native layout fixed arrays are marked as NESTED just like structs
                 int nElements = fields[i].GetNumElements();
-                if (!HandleInlineArray(elementTypeIndex, nElements, info DEBUG_ARG(fieldNames)))
+                if (!HandleInlineArray(elementTypeIndex, nElements, info, typeIndex DEBUG_ARG(fieldNames)))
                     return false;
             }
             else if (fields[i].NativeSize() <= TARGET_POINTER_SIZE)
             {
-                int typeIndex = info.NumFields();
                 if (typeIndex >= 2)
                     return false;
 
-                info.fields[typeIndex] = {
-                    .isFloating = (category == NativeFieldCategory::FLOAT),
-                    .size = fields[i].NativeSize(),
-                    .offset = offset + fields[i].GetExternalOffset(),
-                };
                 INDEBUG(fields[i].GetFieldDesc()->GetName_NoThrow(&fieldNames[typeIndex]);)
+                SetFpStructInRegistersInfoField(info, typeIndex++,
+                    (category == NativeFieldCategory::FLOAT),
+                    fields[i].NativeSize(),
+                    offset + fields[i].GetExternalOffset()
+                );
             }
             else
             {
@@ -3137,47 +3166,49 @@ static bool FlattenFields(TypeHandle th, uint32_t offset, FpStructInRegistersInf
 #endif
 
 #if defined(TARGET_RISCV64)
-static void LogFpStructInRegistersInfo(TypeHandle th, FpStructInRegistersInfo info, const char* fieldNames[2], const char* message)
-{
-    if (!LoggingOn(LF_JIT, LL_EVERYTHING))
-        return;
-
-    SString name;
-    th.GetName(name);
-    LOG((LF_JIT, LL_EVERYTHING, "GetRiscV64PassFpStructInRegistersInfo: Struct %s %s, %u fields%s\n",
-         name.GetUTF8(), message, info.NumFields(), (info.NumFields() > 0 ? ":" : "")));
-
-    if (!info.fields[0].Empty())
-    {
-        LOG((LF_JIT, LL_EVERYTHING, "\t1st field %s: %s, %u bytes at offset %u\n",
-            (fieldNames[0] ? fieldNames[0] : ""), (info.fields[0].isFloating ? "floating" : "integer"), info.fields[0].size, info.fields[0].offset));
-    }
-    if (!info.fields[1].Empty())
-    {
-        LOG((LF_JIT, LL_EVERYTHING, "\t2nd field %s: %s, %u bytes at offset %u\n",
-            (fieldNames[1] ? fieldNames[1] : ""), (info.fields[1].isFloating ? "floating" : "integer"), info.fields[1].size, info.fields[1].offset));
-    }
-}
 
 static FpStructInRegistersInfo GetRiscV64PassFpStructInRegistersInfoImpl(TypeHandle th)
 {
+#ifdef _DEBUG
+    const char* fieldNames[2] = {};
+    SString nameStr;
+    th.GetName(nameStr);
+    const char* name = nameStr.GetUTF8();
+    if (name == nullptr)
+        name = "?";
+#endif
+
     FpStructInRegistersInfo info = {};
-    INDEBUG(const char* fieldNames[2] = {};)
-    if (!FlattenFields(th, 0, info DEBUG_ARG(fieldNames)))
+    int nFields = 0;
+    if (!FlattenFields(th, 0, info, nFields DEBUG_ARG(fieldNames)))
     {
-        INDEBUG(LogFpStructInRegistersInfo(th, info, fieldNames, "cannot be passed according to floating-point calling convention");)
+        LOG((LF_JIT, LL_EVERYTHING, "GetRiscV64PassFpStructInRegistersInfo: "
+            "Struct %s cannot be passed with floating-point calling convention\n", name));
         return FpStructInRegistersInfo{};
     }
 
-    assert(!(info.fields[0].Empty() && !info.fields[1].Empty()));
-
-    if (!info.fields[0].isFloating && !info.fields[1].isFloating)
+    if (!info.isFloating1st && !info.isFloating2nd)
     {
-        INDEBUG(LogFpStructInRegistersInfo(th, info, fieldNames, "does not have any floating fields");)
+        LOG((LF_JIT, LL_EVERYTHING, "GetRiscV64PassFpStructInRegistersInfo: "
+            "Struct %s does not have any floating fields\n", name));
         return FpStructInRegistersInfo{};
     }
 
-    INDEBUG(LogFpStructInRegistersInfo(th, info, fieldNames, "can be passed according to floating-point calling convention");)
+    assert((nFields == 2) == info.hasTwoFields);
+    assert(nFields == 1 || nFields == 2);
+    assert(info.hasTwoFields || (!info.isFloating2nd && info.sizeShift2nd == 0 && info.offset2nd == 0));
+    assert(!info.isFloating1st || info.sizeShift1st > 1);
+    assert(!info.isFloating2nd || info.sizeShift2nd > 1);
+
+    LOG((LF_JIT, LL_EVERYTHING, "GetRiscV64PassFpStructInRegistersInfo: "
+        "Struct %s can be passed with floating-point calling convention, %u fields:\n", name, 1 + info.hasTwoFields));
+    LOG((LF_JIT, LL_EVERYTHING, "\t1st field %s: %s, %u bytes at offset %u\n",
+        fieldNames[0], (info.isFloating1st ? "floating" : "integer"), 1 << info.sizeShift1st, info.offset1st));
+    if (info.hasTwoFields)
+    {
+        LOG((LF_JIT, LL_EVERYTHING, "\t2nd field %s: %s, %u bytes at offset %u\n",
+            fieldNames[1], (info.isFloating2nd ? "floating" : "integer"), 1 << info.sizeShift2nd, info.offset2nd));
+    }
     return info;
 }
 
@@ -3192,20 +3223,19 @@ FpStructInRegistersInfo MethodTable::GetRiscV64PassFpStructInRegistersInfo(TypeH
     }
     else if (info.IsFloatingOnly())
     {
-        unsigned n = info.NumFields();
-        assert(n > 0);
+        unsigned n = 1 + info.hasTwoFields;
         assert((n == 1) == !!(flags & STRUCT_FLOAT_FIELD_ONLY_ONE));
         assert((n == 2) == !!(flags & STRUCT_FLOAT_FIELD_ONLY_TWO));
     }
     else // mixed
     {
-        assert(info.NumFields() == 2);
-        assert(info.fields[0].isFloating == !!(flags & STRUCT_FLOAT_FIELD_FIRST));
-        assert(info.fields[1].isFloating == !!(flags & STRUCT_FLOAT_FIELD_SECOND));
+        assert(info.hasTwoFields);
+        assert(info.isFloating1st == !!(flags & STRUCT_FLOAT_FIELD_FIRST));
+        assert(info.isFloating2nd == !!(flags & STRUCT_FLOAT_FIELD_SECOND));
     }
 
-    assert((info.fields[0].size == 8) == !!(flags & STRUCT_FIRST_FIELD_SIZE_IS8));
-    assert((info.fields[1].size == 8) == !!(flags & STRUCT_SECOND_FIELD_SIZE_IS8));
+    assert((info.sizeShift1st == 3) == !!(flags & STRUCT_FIRST_FIELD_SIZE_IS8));
+    assert((info.sizeShift2nd == 3) == !!(flags & STRUCT_SECOND_FIELD_SIZE_IS8));
 
     assert(flags == info.ToFlags());
 

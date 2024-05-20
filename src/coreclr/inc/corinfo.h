@@ -360,54 +360,44 @@ enum StructFloatFieldInfoFlags
 // can be passed in registers. FpStructInRegistersInfo represents passing information for such structs.
 struct FpStructInRegistersInfo
 {
-    struct Field
-    {
-        bool isFloating;
-        uint8_t size;
-        uint32_t offset;
-
-        bool Empty() const
-        {
-            static_assert(sizeof(*this) == sizeof(uint64_t), "sizeof(FPStructField) must be 64 bits");
-            return *(uint64_t*)this == 0;
-        }
-    };
-
-    Field fields[2];
+    bool hasTwoFields : 1;
+    bool isFloating1st : 1;
+    bool isFloating2nd : 1;
+    uint8_t sizeShift1st : 2;
+    uint8_t sizeShift2nd : 2;
+    uint32_t offset1st;
+    uint32_t offset2nd;
 
     bool IsPassedWithIntegerCallConv() const
     {
-        return fields[0].Empty() && fields[1].Empty();
+        return !hasTwoFields && !isFloating1st;
     }
 
     bool IsFloatingOnly() const
     {
-        return fields[0].isFloating && (fields[1].isFloating || fields[1].Empty());
-    }
-
-    unsigned NumFields() const
-    {
-        return !fields[0].Empty() + !fields[1].Empty();
+        return isFloating1st && (isFloating2nd || !hasTwoFields);
     }
 
     // TODO: Remove, unless there are places where field offsets are unnecessary and it's difficult to pass FpStructInRegistersInfo (CallDescrWorker?)
     StructFloatFieldInfoFlags ToFlags() const
     {
         int flags =
-            (fields[0].size == 8 ? STRUCT_FIRST_FIELD_SIZE_IS8 : 0) |
-            (fields[1].size == 8 ? STRUCT_SECOND_FIELD_SIZE_IS8 : 0);
+            (sizeShift1st == 3 ? STRUCT_FIRST_FIELD_SIZE_IS8 : 0) |
+            (sizeShift2nd == 3 ? STRUCT_SECOND_FIELD_SIZE_IS8 : 0);
 
         if (IsFloatingOnly())
         {
             return StructFloatFieldInfoFlags(
-                flags | (fields[1].Empty() ? STRUCT_FLOAT_FIELD_ONLY_ONE : STRUCT_FLOAT_FIELD_ONLY_TWO));
+                flags | (hasTwoFields ? STRUCT_FLOAT_FIELD_ONLY_TWO : STRUCT_FLOAT_FIELD_ONLY_ONE));
         }
 
         return StructFloatFieldInfoFlags(flags |
-            (fields[0].isFloating ? STRUCT_FLOAT_FIELD_FIRST : 0) |
-            (fields[1].isFloating ? STRUCT_FLOAT_FIELD_SECOND : 0));
+            (isFloating1st ? STRUCT_FLOAT_FIELD_FIRST : 0) |
+            (isFloating2nd ? STRUCT_FLOAT_FIELD_SECOND : 0));
     }
 };
+
+static_assert(sizeof(FpStructInRegistersInfo) == 3 * sizeof(uint32_t), "");
 
 #include "corinfoinstructionset.h"
 

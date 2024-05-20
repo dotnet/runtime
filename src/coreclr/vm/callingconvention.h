@@ -1807,7 +1807,7 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
 
     case ELEMENT_TYPE_VALUETYPE:
         info = MethodTable::GetRiscV64PassFpStructInRegistersInfo(thValueType);
-        cFPRegs = info.fields[0].isFloating + info.fields[1].isFloating;
+        cFPRegs = info.isFloating1st + info.isFloating2nd;
         break;
 
     default:
@@ -1817,7 +1817,7 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
     if (cFPRegs > 0)
     {
         // Pass according to hardware floating-point calling convention iff the argument can be fully enregistered
-        if (info.NumFields() == 2 && (info.fields[0].isFloating != info.fields[1].isFloating))
+        if (info.hasTwoFields && (info.isFloating1st != info.isFloating2nd))
         {
             assert(cFPRegs == 1);
 
@@ -1842,8 +1842,9 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
         else if (cFPRegs + m_idxFPReg <= NUM_ARGUMENT_REGISTERS)
         {
             int regOffset = TransitionBlock::GetOffsetOfFloatArgumentRegisters() + m_idxFPReg * FLOAT_REGISTER_SIZE;
-            if (info.fields[0].isFloating && info.fields[1].isFloating && info.fields[0].size != 8 && info.fields[1].size != 8)
+            if (info.isFloating1st && info.isFloating2nd && info.sizeShift1st == 2 && info.sizeShift2nd == 2)
             {
+                // Two single-float arguments
                 m_argLocDescForStructInRegs.Init();
                 m_argLocDescForStructInRegs.m_idxFloatReg = m_idxFPReg;
                 m_argLocDescForStructInRegs.m_cFloatReg = 2;
