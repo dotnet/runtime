@@ -69,7 +69,7 @@ Abstract:
 #include "gcinfo.h"
 #include "eexcp.h"
 
-#if defined(TARGET_ARM64) && defined(_MSC_VER)
+#if defined(TARGET_ARM64)
 extern "C" DWORD64 __stdcall GetSveLengthFromOS();
 #endif
 
