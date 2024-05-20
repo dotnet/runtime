@@ -1147,10 +1147,10 @@ int LinearScan::BuildShiftRotate(GenTree* tree)
 //
 int LinearScan::BuildCall(GenTreeCall* call)
 {
-    bool                  hasMultiRegRetVal = false;
-    const ReturnTypeDesc* retTypeDesc       = nullptr;
-    int                   srcCount          = 0;
-    int                   dstCount          = 0;
+    bool                  hasMultiRegRetVal   = false;
+    const ReturnTypeDesc* retTypeDesc         = nullptr;
+    int                   srcCount            = 0;
+    int                   dstCount            = 0;
     regMaskTP             singleDstCandidates = RBM_NONE;
 
     assert(!call->isContained());
@@ -1197,7 +1197,7 @@ int LinearScan::BuildCall(GenTreeCall* call)
                 // The return value will be on the X87 stack, and we will need to move it.
                 singleDstCandidates = allRegs(registerType);
 #else  // !TARGET_X86
-                singleDstCandidates = RBM_FLOATRET;
+            singleDstCandidates = RBM_FLOATRET;
 #endif // !TARGET_X86
             }
             else

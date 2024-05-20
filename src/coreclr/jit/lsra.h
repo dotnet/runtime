@@ -1051,8 +1051,7 @@ private:
     void buildRefPositionsForNode(GenTree* tree, LsraLocation loc);
 
 #if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
-    void buildUpperVectorSaveRefPositions(GenTree*                tree,
-                                          LsraLocation currentLoc DEBUG_ARG(regMaskTP fpCalleeKillSet));
+    void buildUpperVectorSaveRefPositions(GenTree* tree, LsraLocation currentLoc DEBUG_ARG(regMaskTP fpCalleeKillSet));
     void buildUpperVectorRestoreRefPosition(
         Interval* lclVarInterval, LsraLocation currentLoc, GenTree* node, bool isUse, unsigned multiRegIdx);
 #endif // FEATURE_PARTIAL_SIMD_CALLEE_SAVE
@@ -2000,16 +1999,16 @@ private:
     void getTgtPrefOperands(GenTree* tree, GenTree* op1, GenTree* op2, bool* prefOp1, bool* prefOp2);
     bool supportsSpecialPutArg();
 
-    int          BuildSimple(GenTree* tree);
-    int          BuildOperandUses(GenTree* node, regMaskTP candidates = RBM_NONE);
-    void         AddDelayFreeUses(RefPosition* refPosition, GenTree* rmwNode);
-    int          BuildDelayFreeUses(GenTree*      node,
-                                    GenTree*      rmwNode        = nullptr,
-                                    regMaskTP     candidates     = RBM_NONE,
-                                    RefPosition** useRefPosition = nullptr);
-    int          BuildIndirUses(GenTreeIndir* indirTree, regMaskTP candidates = RBM_NONE);
-    int          BuildAddrUses(GenTree* addr, regMaskTP candidates = RBM_NONE);
-    void         HandleFloatVarArgs(GenTreeCall* call, GenTree* argNode, bool* callHasFloatRegArgs);
+    int  BuildSimple(GenTree* tree);
+    int  BuildOperandUses(GenTree* node, regMaskTP candidates = RBM_NONE);
+    void AddDelayFreeUses(RefPosition* refPosition, GenTree* rmwNode);
+    int  BuildDelayFreeUses(GenTree*      node,
+                            GenTree*      rmwNode        = nullptr,
+                            regMaskTP     candidates     = RBM_NONE,
+                            RefPosition** useRefPosition = nullptr);
+    int  BuildIndirUses(GenTreeIndir* indirTree, regMaskTP candidates = RBM_NONE);
+    int  BuildAddrUses(GenTree* addr, regMaskTP candidates = RBM_NONE);
+    void HandleFloatVarArgs(GenTreeCall* call, GenTree* argNode, bool* callHasFloatRegArgs);
 
     RefPosition* BuildDef(GenTree* tree, regMaskTP dstCandidates = RBM_NONE, int multiRegIdx = 0);
     void         BuildDefs(GenTree* tree, int dstCount, regMaskTP dstCandidates = RBM_NONE);
