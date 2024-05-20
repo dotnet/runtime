@@ -26,7 +26,7 @@ internal sealed class ClassRecordFieldInfoDeserializer : ClassRecordDeserializer
     internal ClassRecordFieldInfoDeserializer(
         Runtime.Serialization.BinaryFormat.ClassRecord classRecord,
         object @object,
-        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.NonPublicFields | DynamicallyAccessedMemberTypes.PublicFields)]
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
         Type type,
         IDeserializer deserializer)
         : base(classRecord, @object, deserializer)

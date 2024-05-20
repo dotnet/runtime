@@ -19,9 +19,6 @@ namespace System.Resources.Extensions.BinaryFormat;
 ///  <para>
 ///   This is useful for explicitly controlling the rehydration of binary formatted data.
 ///  </para>
-///  <para>
-///   NOTE: Multidimensional and jagged arrays are not yet implemented.
-///  </para>
 /// </remarks>
 internal sealed partial class BinaryFormattedObject
 {
