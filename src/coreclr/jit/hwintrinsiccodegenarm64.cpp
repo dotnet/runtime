@@ -1713,6 +1713,18 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                                             INS_SCALABLE_OPTS_UNPREDICATED);
                 break;
 
+
+            case NI_Sve_SaturatingDecrementBy16BitElementCountScalar:
+            case NI_Sve_SaturatingDecrementBy32BitElementCountScalar:
+            case NI_Sve_SaturatingDecrementBy64BitElementCountScalar:
+            case NI_Sve_SaturatingIncrementBy16BitElementCountScalar:
+            case NI_Sve_SaturatingIncrementBy32BitElementCountScalar:
+            case NI_Sve_SaturatingIncrementBy64BitElementCountScalar:
+                // Use scalar sizes.
+                emitSize = emitActualTypeSize(node->gtType);
+                opt = INS_OPTS_NONE;
+                FALLTHROUGH;
+
             case NI_Sve_SaturatingDecrementBy16BitElementCount:
             case NI_Sve_SaturatingDecrementBy32BitElementCount:
             case NI_Sve_SaturatingDecrementBy64BitElementCount:
@@ -1737,38 +1749,10 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 int           scale   = (int)intrin.op2->AsIntCon()->gtIconVal;
                 insSvePattern pattern = (insSvePattern)intrin.op3->AsIntCon()->gtIconVal;
 
-                // Use scalable vector sizes.
                 GetEmitter()->emitIns_R_PATTERN_I(ins, emitSize, targetReg, pattern, scale, opt);
                 break;
             }
 
-            case NI_Sve_SaturatingDecrementBy16BitElementCountScalar:
-            case NI_Sve_SaturatingDecrementBy32BitElementCountScalar:
-            case NI_Sve_SaturatingDecrementBy64BitElementCountScalar:
-            case NI_Sve_SaturatingIncrementBy16BitElementCountScalar:
-            case NI_Sve_SaturatingIncrementBy32BitElementCountScalar:
-            case NI_Sve_SaturatingIncrementBy64BitElementCountScalar:
-            {
-                assert(isRMW);
-                if (targetReg != op1Reg)
-                {
-                    GetEmitter()->emitIns_Mov(INS_mov, emitTypeSize(node), targetReg, op1Reg, /* canSkip */ true);
-                }
-
-                // Cannot use create a lookup table for 2 immediates. Therefore the immediates must be constants,
-                // and can be used directly (instead of via HWIntrinsicImmOpHelper).
-
-                assert(hasImmediateOperand);
-                assert(intrin.op2->IsCnsIntOrI());
-                assert(intrin.op3->IsCnsIntOrI());
-                int           scale   = (int)intrin.op2->AsIntCon()->gtIconVal;
-                insSvePattern pattern = (insSvePattern)intrin.op3->AsIntCon()->gtIconVal;
-
-                // Use scalar sizes.
-                emitSize = emitActualTypeSize(node->gtType);
-                GetEmitter()->emitIns_R_PATTERN_I(ins, emitSize, targetReg, pattern, scale);
-                break;
-            }
 
             default:
                 unreached();
