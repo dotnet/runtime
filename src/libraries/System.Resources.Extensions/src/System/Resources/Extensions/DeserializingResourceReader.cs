@@ -37,13 +37,25 @@ namespace System.Resources.Extensions
 #pragma warning disable SYSLIB0011
         private object ReadBinaryFormattedObject()
         {
-            BinaryFormattedObject binaryFormattedObject = new BinaryFormattedObject(_store.BaseStream,
-                new BinaryFormattedObject.Options()
+            long position = _store.BaseStream.CanSeek ? _store.BaseStream.Position : -1;
+
+            try
+            {
+                BinaryFormattedObject binaryFormattedObject = new BinaryFormattedObject(_store.BaseStream);
+
+                return binaryFormattedObject.Deserialize();
+            }
+            catch (NotSupportedException) when (position >= 0)
+            {
+                _store.BaseStream.Position = position;
+
+                BinaryFormatter? formatter = new()
                 {
                     Binder = new UndoTruncatedTypeNameSerializationBinder()
-                });
+                };
 
-            return binaryFormattedObject.Deserialize();
+                return formatter.Deserialize(_store.BaseStream);
+            }
         }
 #pragma warning restore SYSLIB0011
 

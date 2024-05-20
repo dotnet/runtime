@@ -68,7 +68,13 @@ internal static class BinaryReaderExtensions
         string name = binaryReader.ReadString();
         if (!TypeName.TryParse(name.AsSpan(), out TypeName? typeName, options.TypeNameParseOptions))
         {
-            throw new SerializationException($"Invalid type name: '{name}'");
+            throw
+#if SYSTEM_RUNTIME_SERIALIZATION_BINARYFORMAT
+                new SerializationException
+#else
+                new NotSupportedException
+#endif
+                ($"Invalid type name: '{name}'");
         }
         else if (typeName.AssemblyName is not null)
         {
@@ -83,7 +89,13 @@ internal static class BinaryReaderExtensions
         string name = binaryReader.ReadString();
         if (!AssemblyNameInfo.TryParse(name.AsSpan(), out AssemblyNameInfo? libraryName))
         {
-            throw new SerializationException($"Invalid library name: '{name}'");
+            throw
+#if SYSTEM_RUNTIME_SERIALIZATION_BINARYFORMAT
+                new SerializationException
+#else
+                new NotSupportedException
+#endif
+                ($"Invalid library name: '{name}'");
         }
 
         return libraryName;
