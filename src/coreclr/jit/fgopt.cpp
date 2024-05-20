@@ -4535,6 +4535,104 @@ bool Compiler::fgReorderBlocks(bool useProfile)
 #pragma warning(pop)
 #endif
 
+template <bool hasEH>
+void Compiler::fgMoveBlocksToHottestSuccessors()
+{
+#ifdef DEBUG
+    if (verbose)
+    {
+        printf("*************** In fgMoveBlocksToHottestSuccessors()\n");
+
+        printf("\nInitial BasicBlocks");
+        fgDispBasicBlocks(verboseTrees);
+        printf("\n");
+    }
+#endif // DEBUG
+
+    BasicBlock* next;
+    for (BasicBlock* block = fgFirstBB->Next(); block != fgFirstFuncletBB; block = next)
+    {
+        next = block->Next();
+
+        if (block->isRunRarely())
+        {
+            continue;
+        }
+
+        if (block->NumSucc() == 0)
+        {
+            continue;
+        }
+
+        if (hasEH)
+        {
+            if (bbIsTryBeg(block) || bbIsHandlerBeg(block))
+            {
+                continue;
+            }
+        }
+
+        FlowEdge* likelySuccEdge = block->GetSuccEdge(0, this);
+        for (FlowEdge* const succEdge : block->SuccEdges(this))
+        {
+            if (succEdge->getLikelihood() > likelySuccEdge->getLikelihood())
+            {
+                likelySuccEdge = succEdge;
+            }
+        }
+
+        BasicBlock* const likelySucc = likelySuccEdge->getDestinationBlock();
+        if (likelySucc->IsFirst() || (block == likelySucc) || block->NextIs(likelySucc) || likelySucc->isRunRarely())
+        {
+            continue;
+        }
+
+        if (hasEH)
+        {
+            if (!BasicBlock::sameEHRegion(block, likelySucc) || bbIsTryBeg(likelySucc) || bbIsHandlerBeg(likelySucc))
+            {
+                continue;
+            }
+        }
+
+        bool isHeaviestEdge = true;
+        const weight_t likelySuccEdgeWeight = likelySuccEdge->getLikelyWeight();
+        for (FlowEdge* const predEdge : likelySucc->PredEdges())
+        {
+            if (predEdge == likelySuccEdge)
+            {
+                continue;
+            }
+
+            if (predEdge->getLikelyWeight() >= likelySuccEdgeWeight)
+            {
+                isHeaviestEdge = false;
+                break;
+            }
+        }
+
+        if (!isHeaviestEdge)
+        {
+            continue;
+        }
+
+        assert(!block->IsFirst());
+        FlowEdge* const fallthroughEdge = fgGetPredForBlock(block, block->Prev());
+        if ((fallthroughEdge != nullptr) && (fallthroughEdge->getLikelyWeight() >= likelySuccEdgeWeight))
+        {
+            continue;
+        }
+
+        fgUnlinkBlock(block);
+        fgInsertBBbefore(likelySucc, block);
+        if (verbose)
+        {
+            fgDispBasicBlocks();
+        }
+    }
+}
+
+
 //-----------------------------------------------------------------------------
 // fgDoReversePostOrderLayout: Reorder blocks using a greedy RPO traversal.
 //
@@ -4566,6 +4664,8 @@ void Compiler::fgDoReversePostOrderLayout()
             fgUnlinkBlock(blockToMove);
             fgInsertBBafter(block, blockToMove);
         }
+
+        fgMoveBlocksToHottestSuccessors</* hasEH */ false>();
 
         return;
     }
@@ -4644,6 +4744,8 @@ void Compiler::fgDoReversePostOrderLayout()
             fgInsertBBafter(block, blockToMove);
         }
     }
+
+    fgMoveBlocksToHottestSuccessors</* hasEH */ true>();
 
     // Fix up call-finally pairs
     //
