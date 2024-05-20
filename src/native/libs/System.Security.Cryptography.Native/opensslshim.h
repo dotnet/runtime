@@ -187,6 +187,10 @@ int EVP_DigestSqueeze(EVP_MD_CTX *ctx, unsigned char *out, size_t outlen);
 
 #define API_EXISTS(fn) (fn != NULL)
 
+#if defined(TARGET_ARM) && defined(TARGET_LINUX)
+extern bool g_libSslUses32BitTime;
+#endif
+
 // List of all functions from the libssl that are used in the System.Security.Cryptography.Native.
 // Forgetting to add a function here results in build failure with message reporting the function
 // that needs to be added.
@@ -490,6 +494,7 @@ int EVP_DigestSqueeze(EVP_MD_CTX *ctx, unsigned char *out, size_t outlen);
     REQUIRED_FUNCTION(OCSP_RESPONSE_new) \
     LEGACY_FUNCTION(OPENSSL_add_all_algorithms_conf) \
     REQUIRED_FUNCTION(OPENSSL_cleanse) \
+    REQUIRED_FUNCTION(OPENSSL_gmtime) \
     REQUIRED_FUNCTION_110(OPENSSL_init_ssl) \
     RENAMED_FUNCTION(OPENSSL_sk_free, sk_free) \
     RENAMED_FUNCTION(OPENSSL_sk_new_null, sk_new_null) \
@@ -1018,6 +1023,7 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define OCSP_RESPONSE_new OCSP_RESPONSE_new_ptr
 #define OPENSSL_add_all_algorithms_conf OPENSSL_add_all_algorithms_conf_ptr
 #define OPENSSL_cleanse OPENSSL_cleanse_ptr
+#define OPENSSL_gmtime OPENSSL_gmtime_ptr
 #define OPENSSL_init_ssl OPENSSL_init_ssl_ptr
 #define OPENSSL_sk_free OPENSSL_sk_free_ptr
 #define OPENSSL_sk_new_null OPENSSL_sk_new_null_ptr

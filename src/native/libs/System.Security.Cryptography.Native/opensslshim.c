@@ -41,6 +41,15 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define MAKELIB(v)  SONAME_BASE v
 #endif
 
+#if defined(TARGET_ARM) && defined(TARGET_LINUX)
+// We support ARM32 linux distros that have Y2038-compatible glibc (those which support _TIME_BITS).
+// Some such distros have not yet switched to _TIME_BITS=64 by default, so we may be running against an openssl
+// that expects 32-bit time_t even though our time_t is 64-bit.
+// This can be deleted once the minimum supported Linux Arm32 distros are
+// at least Debian 13 and Ubuntu 24.04.
+bool g_libSslUses32BitTime = false;
+#endif
+
 static void DlOpen(const char* libraryName)
 {
     void* libsslNew = dlopen(libraryName, RTLD_LAZY);
@@ -215,4 +224,21 @@ void InitializeOpenSSLShim(void)
             abort();
         }
     }
+
+#if defined(TARGET_ARM) && defined(TARGET_LINUX)
+    // Detect whether openssl uses 32-bit or 64-bit time_t.
+    // This value will represent a time in year 2038 if 64-bit time is used,
+    // or 1901 if the lower 32 bits are interpreted as a 32-bit time_t value.
+    time_t timeVal = (time_t)INT_MAX + 1;
+    struct tm tmVal = { 0 };
+
+    // tm_year is the number of years since 1900.
+    if (!OPENSSL_gmtime(&timeVal, &tmVal) || (tmVal.tm_year != 138 && tmVal.tm_year != 1))
+    {
+        fprintf(stderr, "Cannot determine the time_t size used by libssl\n");
+        abort();
+    }
+
+    g_libSslUses32BitTime = (tmVal.tm_year == 1);
+#endif
 }

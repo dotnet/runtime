@@ -965,20 +965,23 @@ int32_t CryptoNative_X509StoreSetVerifyTime(X509_STORE* ctx,
     }
 
 #if defined(TARGET_ARM) && defined(TARGET_LINUX)
-    // We support ARM32 linux distros that have Y2038-compatible glibc (those which support _TIME_BITS).
-    // Some such distros have not yet switched to _TIME_BITS=64 by default, so we may be running against an openssl
-    // that expects 32-bit time_t even though our time_t is 64-bit.
+    if (g_libSslUses32BitTime)
+    {
+        if (verifyTime > INT_MAX || verifyTime < INT_MIN)
+        {
+            return 0;
+        }
 
-    // Builds of openssl that use 32-bit time_t expect it to be passed to X509_VERIFY_PARAM_set_time in r1.
-    // Builds that use 64-bit time_t expect it to be passed in r2:r3, because the ARM ABI specifies:
-    // > If the argument requires double-word alignment (8-byte), the NCRN is rounded up to the next even register number.
-
-    // Let's pretend we're calling a function that takes both an int32_t and a time_t. This ensures that we set both
-    // r1 (to the low bits of our time_t) and r2:r3 (to the full time_t) which will satisfy either ABI.
-    ((void (*)(X509_VERIFY_PARAM*, int32_t, time_t))(void*)(X509_VERIFY_PARAM_set_time))(verifyParams, (int32_t)verifyTime, verifyTime);
-#else
-    X509_VERIFY_PARAM_set_time(verifyParams, verifyTime);
+        // Builds of openssl that use 32-bit time_t expect it to be passed to X509_VERIFY_PARAM_set_time in r1.
+        // Builds that use 64-bit time_t expect it to be passed in r2:r3, because the ARM ABI specifies:
+        // > If the argument requires double-word alignment (8-byte), the NCRN is rounded up to the next even register number.
+        // Casting to a signature that takes int32_t ensures it will be passed in r1, not r2:r3.
+        ((void (*)(X509_VERIFY_PARAM*, int32_t))(void*)(X509_VERIFY_PARAM_set_time))(verifyParams, (int32_t)verifyTime);
+        return 1;
+    }
 #endif
+
+    X509_VERIFY_PARAM_set_time(verifyParams, verifyTime);
     return 1;
 }
 

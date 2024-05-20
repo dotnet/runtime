@@ -999,7 +999,22 @@ static X509VerifyStatusCode CheckOcspGetExpiry(OCSP_REQUEST* req,
                 {
                     time_t oldest = GetIssuanceWindowStart();
 
-                    if (X509_cmp_time(thisupd, &oldest) > 0)
+                    int cmp = 0;
+#if defined(TARGET_ARM) && defined(TARGET_LINUX)
+                    if (g_libSslUses32BitTime)
+                    {
+                        if (oldest <= INT_MAX && oldest >= INT_MIN)
+                        {
+                            cmp  = X509_cmp_time(thisupd, &oldest);
+                        }
+                    }
+                    else
+#endif
+                    {
+                        cmp = X509_cmp_time(thisupd, &oldest);
+                    }
+
+                    if (cmp > 0)
                     {
                         *canCache = 1;
 
