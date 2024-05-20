@@ -27,7 +27,7 @@ internal sealed class ClassWithMembersAndTypesRecord : ClassRecord
 
     public override RecordType RecordType => RecordType.ClassWithMembersAndTypes;
 
-    internal override AssemblyNameInfo LibraryName => Library.LibraryName;
+    internal override string LibraryName => Library.LibraryName;
 
     internal BinaryLibraryRecord Library { get; }
 
@@ -36,8 +36,8 @@ internal sealed class ClassWithMembersAndTypesRecord : ClassRecord
     internal override int ExpectedValuesCount => MemberTypeInfo.Infos.Count;
 
     public override bool IsTypeNameMatching(Type type)
-        => FormatterServices.GetTypeFullNameIncludingTypeForwards(type) == ClassInfo.Name.FullName
-        && FormatterServices.GetAssemblyNameIncludingTypeForwards(type) == Library.LibraryName.FullName;
+        => FormatterServices.GetTypeFullNameIncludingTypeForwards(type) == TypeName.FullName
+        && FormatterServices.GetAssemblyNameIncludingTypeForwards(type) == Library.LibraryName;
 
     internal static ClassWithMembersAndTypesRecord Parse(BinaryReader reader, RecordMap recordMap, PayloadOptions options)
     {

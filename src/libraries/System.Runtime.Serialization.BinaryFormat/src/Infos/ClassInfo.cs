@@ -18,26 +18,29 @@ namespace System.Runtime.Serialization.BinaryFormat;
 ///   </see>
 ///  </para>
 /// </remarks>
-[DebuggerDisplay("{Name}")]
+[DebuggerDisplay("{RawName}")]
 internal sealed class ClassInfo
 {
-    private ClassInfo(int objectId, TypeName name, Dictionary<string, int> memberNames)
+    private ClassInfo(int objectId, string name, Dictionary<string, int> memberNames, PayloadOptions payloadOptions)
     {
         ObjectId = objectId;
-        Name = name;
+        RawName = name;
         MemberNames = memberNames;
+        PayloadOptions = payloadOptions;
     }
 
     internal int ObjectId { get; }
 
-    internal TypeName Name { get; }
+    internal string RawName { get; }
 
     internal Dictionary<string, int> MemberNames { get; }
+
+    internal PayloadOptions PayloadOptions { get; }
 
     internal static ClassInfo Parse(BinaryReader reader, PayloadOptions payloadOptions)
     {
         int objectId = reader.ReadInt32();
-        TypeName typeName = reader.ReadTypeName(payloadOptions);
+        string typeName = reader.ReadString();
         int memberCount = reader.ReadInt32();
 
         // The attackers could create an input with MANY member names.
@@ -55,6 +58,37 @@ internal sealed class ClassInfo
             memberNames.Add(reader.ReadString(), i);
         }
 
-        return new(objectId, typeName, memberNames);
+        return new(objectId, typeName, memberNames, payloadOptions);
+    }
+
+    internal TypeName GetTypeNameEvenIfMangled(string libraryName)
+    {
+        if (TypeName.TryParse(RawName.AsSpan(), out TypeName? typeName, PayloadOptions.TypeNameParseOptions))
+        {
+            if (typeName.AssemblyName is not null)
+            {
+                throw new SerializationException("Type names must not contain assembly names");
+            }
+        }
+        else if (!PayloadOptions.SupportMangledNames)
+        {
+            throw new SerializationException($"Invalid type name: '{RawName}'");
+        }
+
+        // adsitnik: use array pool to avoid allocations (if it turns out to be the right direction)
+        string assemblyQualifiedName = $"{RawName}, {libraryName}";
+
+        if (!TypeName.TryParse(assemblyQualifiedName.AsSpan(), out typeName, PayloadOptions.TypeNameParseOptions))
+        {
+            throw new SerializationException($"Invalid type name: '{RawName}' or library name: '{libraryName}'");
+        }
+
+        if (typeName.AssemblyName is null)
+        {
+            typeName = typeName.WithAssemblyName(FormatterServices.CoreLibRawName);
+        }
+
+        Debug.Assert(typeName.AssemblyName is not null);
+        return typeName;
     }
 }

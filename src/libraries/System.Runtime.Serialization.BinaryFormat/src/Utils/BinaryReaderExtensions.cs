@@ -77,15 +77,4 @@ internal static class BinaryReaderExtensions
 
         return typeName;
     }
-
-    internal static AssemblyNameInfo ReadLibraryName(this BinaryReader binaryReader)
-    {
-        string name = binaryReader.ReadString();
-        if (!AssemblyNameInfo.TryParse(name.AsSpan(), out AssemblyNameInfo? libraryName))
-        {
-            throw new SerializationException($"Invalid library name: '{name}'");
-        }
-
-        return libraryName;
-    }
 }

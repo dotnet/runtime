@@ -10,8 +10,11 @@ namespace System.Runtime.Serialization.BinaryFormat;
 internal static class FormatterServices
 {
     private static AssemblyNameInfo? s_coreLibAssemblyName;
+    private static string? s_coreLibRawName;
 
     internal static AssemblyNameInfo CoreLibAssemblyName => s_coreLibAssemblyName ??= AssemblyNameInfo.Parse(GetAssemblyNameIncludingTypeForwards(typeof(object)).AsSpan());
+
+    internal static string CoreLibRawName => s_coreLibRawName ??= CoreLibAssemblyName.FullName;
 
     internal static string GetAssemblyNameIncludingTypeForwards(Type type)
     {

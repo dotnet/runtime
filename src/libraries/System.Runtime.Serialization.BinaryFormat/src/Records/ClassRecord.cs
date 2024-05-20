@@ -35,9 +35,9 @@ abstract class ClassRecord : SerializationRecord
         MemberValues = [];
     }
 
-    public TypeName TypeName => _typeName ??= ClassInfo.Name.WithAssemblyName(LibraryName.FullName);
+    public TypeName TypeName => _typeName ??= ClassInfo.GetTypeNameEvenIfMangled(LibraryName);
 
-    internal abstract AssemblyNameInfo LibraryName { get; }
+    internal abstract string LibraryName { get; }
 
     // Currently we don't expose raw values, so we are not preserving the order here.
     public IEnumerable<string> MemberNames => ClassInfo.MemberNames.Keys;
