@@ -351,8 +351,13 @@ class DeadCodeElimination
         class Never3 { }
         class Canary3 { }
 
+        class Maybe1<T, U> { }
+
         [MethodImpl(MethodImplOptions.NoInlining)]
         static Type GetTheType() => null;
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static Type GetThePointerType() => typeof(void*);
 
         [MethodImpl(MethodImplOptions.NoInlining)]
         static object GetTheObject() => new object();
@@ -371,19 +376,61 @@ class DeadCodeElimination
 #if !DEBUG
             ThrowIfPresent(typeof(TestTypeEquals), nameof(Never));
 
-            Type someType = GetTheType();
-            if (someType == typeof(Never2))
             {
-                s_sink = new Canary2();
-            }
-            ThrowIfPresentWithUsableMethodTable(typeof(TestTypeEquals), nameof(Canary2));
+                RunCheck(GetTheType());
 
-            object someObject = GetTheObject();
-            if (someObject.GetType() == typeof(Never3))
-            {
-                s_sink = new Canary3();
+                static void RunCheck(Type t)
+                {
+                    if (t == typeof(Never2))
+                    {
+                        s_sink = new Canary2();
+                    }
+                }
+
+                ThrowIfPresentWithUsableMethodTable(typeof(TestTypeEquals), nameof(Canary2));
             }
-            ThrowIfPresentWithUsableMethodTable(typeof(TestTypeEquals), nameof(Canary3));
+
+            {
+
+                RunCheck(GetTheObject());
+
+                static void RunCheck(object o)
+                {
+                    if (o.GetType() == typeof(Never3))
+                    {
+                        s_sink = new Canary3();
+                    }
+                }
+
+                ThrowIfPresentWithUsableMethodTable(typeof(TestTypeEquals), nameof(Canary3));
+            }
+
+            {
+                RunCheck(GetThePointerType());
+
+                static void RunCheck(Type t)
+                {
+                    if (t == typeof(void*))
+                    {
+                        return;
+                    }
+                    throw new Exception();
+                }
+            }
+
+            {
+                RunCheck<object>(typeof(Maybe1<object, string>));
+
+                [MethodImpl(MethodImplOptions.NoInlining)]
+                static void RunCheck<T>(Type t)
+                {
+                    if (t == typeof(Maybe1<T, string>))
+                    {
+                        return;
+                    }
+                    throw new Exception();
+                }
+            }
 #endif
         }
     }

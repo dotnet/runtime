@@ -1021,7 +1021,11 @@ namespace ILCompiler
             if (knownType.IsCanonicalDefinitionType(CanonicalFormKind.Any))
                 return false;
 
-            if (_devirtualizationManager.CanReferenceConstructedTypeOrCanonicalFormOfType(knownType))
+            // We don't track types without a constructed MethodTable very well.
+            if (!ConstructedEETypeNode.CreationAllowed(knownType))
+                return false;
+
+            if (_devirtualizationManager.CanReferenceConstructedTypeOrCanonicalFormOfType(knownType.NormalizeInstantiation()))
                 return false;
 
             constant = 0;
