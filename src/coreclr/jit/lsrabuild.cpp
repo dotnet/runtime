@@ -3143,9 +3143,7 @@ RefPosition* LinearScan::BuildDef(GenTree* tree, regMaskTP dstCandidates, int mu
 void LinearScan::BuildCallDefs(GenTree* tree, int dstCount, regMaskTP dstCandidates)
 {
     assert(dstCount > 0);
-#ifdef TARGET_ARM64
-    assert((int)dstCandidates.Count() == dstCount);
-#endif
+    assert((int)genCountBits(dstCandidates) == dstCount);
     assert(tree->IsMultiRegCall());
 
     const ReturnTypeDesc* retTypeDesc = tree->AsCall()->GetReturnTypeDesc();

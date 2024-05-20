@@ -129,7 +129,6 @@ int LinearScan::BuildCall(GenTreeCall* call)
 {
     bool                  hasMultiRegRetVal = false;
     const ReturnTypeDesc* retTypeDesc       = nullptr;
-    regMaskTP             multiDstCandidates;
     regMaskTP             singleDstCandidates = RBM_NONE;
 
     int srcCount = 0;
@@ -228,26 +227,24 @@ int LinearScan::BuildCall(GenTreeCall* call)
     {
         // The ARM CORINFO_HELP_INIT_PINVOKE_FRAME helper uses a custom calling convention that returns with
         // TCB in REG_PINVOKE_TCB. fgMorphCall() sets the correct argument registers.
-        dstCandidates = RBM_PINVOKE_TCB;
+        singleDstCandidates = RBM_PINVOKE_TCB;
     }
     else
 #endif // TARGET_ARM
-        if (hasMultiRegRetVal)
+        if (!hasMultiRegRetVal)
         {
-            assert(retTypeDesc != nullptr);
-            multiDstCandidates = retTypeDesc->GetABIReturnRegs(call->GetUnmanagedCallConv());
-        }
-        else if (varTypeUsesFloatArgReg(registerType))
-        {
-            singleDstCandidates = RBM_FLOATRET;
-        }
-        else if (registerType == TYP_LONG)
-        {
-            singleDstCandidates = RBM_LNGRET;
-        }
-        else
-        {
-            singleDstCandidates = RBM_INTRET;
+            if (varTypeUsesFloatArgReg(registerType))
+            {
+                singleDstCandidates = RBM_FLOATRET;
+            }
+            else if (registerType == TYP_LONG)
+            {
+                singleDstCandidates = RBM_LNGRET;
+            }
+            else
+            {
+                singleDstCandidates = RBM_INTRET;
+            }
         }
 
     // First, count reg args
@@ -404,7 +401,9 @@ int LinearScan::BuildCall(GenTreeCall* call)
     {
         if (hasMultiRegRetVal)
         {
-            assert(multiDstCandidates.Count() > 0);
+            assert(retTypeDesc != nullptr);
+            regMaskTP multiDstCandidates = retTypeDesc->GetABIReturnRegs(call->GetUnmanagedCallConv());
+            assert(genCountBits(multiDstCandidates) > 0);
             BuildCallDefsWithKills(call, dstCount, multiDstCandidates, killMask);
         }
         else
