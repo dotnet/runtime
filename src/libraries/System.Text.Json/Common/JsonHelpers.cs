@@ -11,7 +11,7 @@ namespace System.Text.Json
 {
     internal static partial class JsonHelpers
     {
-#if !NETCOREAPP
+#if !NET
         /// <summary>
         /// netstandard/netfx polyfill for Dictionary.TryAdd
         /// </summary>

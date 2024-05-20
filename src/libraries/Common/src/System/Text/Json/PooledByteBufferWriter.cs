@@ -27,7 +27,7 @@ namespace System.Text.Json
 
         private PooledByteBufferWriter()
         {
-#if NETCOREAPP
+#if NET
             // Ensure we are in sync with the Array.MaxLength implementation.
             Debug.Assert(MaximumBufferSize == Array.MaxLength);
 #endif
@@ -147,7 +147,7 @@ namespace System.Text.Json
             return _rentedBuffer.AsSpan(_index);
         }
 
-#if NETCOREAPP
+#if NET
         internal ValueTask WriteToStreamAsync(Stream destination, CancellationToken cancellationToken)
         {
             return destination.WriteAsync(WrittenMemory, cancellationToken);

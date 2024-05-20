@@ -952,7 +952,7 @@ namespace Microsoft.Extensions.Configuration
 
             Type genericTypeDefinition = type.GetGenericTypeDefinition();
             return genericTypeDefinition == typeof(ISet<>)
-#if NETCOREAPP
+#if NET
                    || genericTypeDefinition == typeof(IReadOnlySet<>)
 #endif
                    ;

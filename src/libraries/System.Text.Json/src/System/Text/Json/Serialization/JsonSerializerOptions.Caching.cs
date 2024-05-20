@@ -213,7 +213,7 @@ namespace System.Text.Json
         internal sealed class CachingContext
         {
             private readonly ConcurrentDictionary<Type, CacheEntry> _cache = new();
-#if !NETCOREAPP
+#if !NET
             private readonly Func<Type, CacheEntry> _cacheEntryFactory;
 #endif
 
@@ -221,7 +221,7 @@ namespace System.Text.Json
             {
                 Options = options;
                 HashCode = hashCode;
-#if !NETCOREAPP
+#if !NET
                 _cacheEntryFactory = type => CreateCacheEntry(type, this);
 #endif
             }
@@ -254,7 +254,7 @@ namespace System.Text.Json
 
             private CacheEntry GetOrAddCacheEntry(Type type)
             {
-#if NETCOREAPP
+#if NET
                 return _cache.GetOrAdd(type, CreateCacheEntry, this);
 #else
                 return _cache.GetOrAdd(type, _cacheEntryFactory);
@@ -605,7 +605,7 @@ namespace System.Text.Json
                 }
             }
 
-#if !NETCOREAPP
+#if !NET
             /// <summary>
             /// Polyfill for System.HashCode.
             /// </summary>

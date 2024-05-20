@@ -37,6 +37,7 @@ namespace ILLink.Shared.TrimAnalysis
 		{
 			_context = context;
 			_operation = operation;
+			_isNewObj = operation.OpCode == OpCodes.Newobj;
 			_markStep = markStep;
 			_reflectionMarker = reflectionMarker;
 			_diagnosticContext = diagnosticContext;
@@ -122,7 +123,7 @@ namespace ILLink.Shared.TrimAnalysis
 						TypeDefinition? staticType = (valueNode as IValueWithStaticType)?.StaticType?.Type;
 						if (staticType is null) {
 							// We don't know anything about the type GetType was called on. Track this as a usual result of a method call without any annotations
-							AddReturnValue (_context.Annotations.FlowAnnotations.GetMethodReturnValue (calledMethod));
+							AddReturnValue (_context.Annotations.FlowAnnotations.GetMethodReturnValue (calledMethod, _isNewObj));
 						} else if (staticType.IsSealed || staticType.IsTypeOf ("System", "Delegate") || staticType.IsTypeOf ("System", "Array")) {
 							// We can treat this one the same as if it was a typeof() expression
 
@@ -151,7 +152,7 @@ namespace ILLink.Shared.TrimAnalysis
 							// Return a value which is "unknown type" with annotation. For now we'll use the return value node
 							// for the method, which means we're loosing the information about which staticType this
 							// started with. For now we don't need it, but we can add it later on.
-							AddReturnValue (_context.Annotations.FlowAnnotations.GetMethodReturnValue (calledMethod, annotation));
+							AddReturnValue (_context.Annotations.FlowAnnotations.GetMethodReturnValue (calledMethod, _isNewObj, annotation));
 						}
 					}
 				}

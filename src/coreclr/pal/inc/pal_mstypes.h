@@ -1,20 +1,14 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-/*++
-
-
-
-
-
---*/
-
 ////////////////////////////////////////////////////////////////////////
 // Extensions to the usual posix header files
 ////////////////////////////////////////////////////////////////////////
 
 #ifndef __PAL_MSTYPES_H__
 #define __PAL_MSTYPES_H__
+
+#include <stdint.h>
 
 #ifdef  __cplusplus
 extern "C" {
@@ -30,8 +24,6 @@ extern "C" {
 #else
 #define EXTERN_C
 #endif // __cplusplus
-
-#ifndef _MSC_VER
 
 // Note:  Win32-hosted GCC predefines __stdcall and __cdecl, but Unix-
 // hosted GCC does not.
@@ -88,27 +80,13 @@ extern "C" {
 
 #define __forceinline   inline
 
-#endif // !_MSC_VER
-
-#ifdef _MSC_VER
-
-#if defined(PAL_IMPLEMENTATION)
 #define PALIMPORT
-#else
-#define PALIMPORT   __declspec(dllimport)
-#endif
-#define DLLEXPORT __declspec(dllexport)
-#define PAL_NORETURN __declspec(noreturn)
 
-#else
-
-#define PALIMPORT
 #ifndef DLLEXPORT
 #define DLLEXPORT __attribute__((visibility("default")))
 #endif
-#define PAL_NORETURN    __attribute__((noreturn))
 
-#endif
+#define PAL_NORETURN    __attribute__((noreturn))
 
 #define PALAPI             DLLEXPORT __cdecl
 #define PALAPI_NOEXPORT    __cdecl
@@ -147,19 +125,6 @@ extern "C" {
 // Misc. type helpers
 ////////////////////////////////////////////////////////////////////////
 
-#ifdef _MSC_VER
-
-// MSVC's way of declaring large integer constants
-// If you define these in one step, without the _HELPER macros, you
-// get extra whitespace when composing these with other concatenating macros.
-#define I64_HELPER(x) x ## i64
-#define I64(x)        I64_HELPER(x)
-
-#define UI64_HELPER(x) x ## ui64
-#define UI64(x)        UI64_HELPER(x)
-
-#else // _MSC_VER
-
 // GCC's way of declaring large integer constants
 // If you define these in one step, without the _HELPER macros, you
 // get extra whitespace when composing these with other concatenating macros.
@@ -169,63 +134,21 @@ extern "C" {
 #define UI64_HELPER(x) x ## ULL
 #define UI64(x)        UI64_HELPER(x)
 
-#endif // _MSC_VER
-
 ////////////////////////////////////////////////////////////////////////
 // Misc. types
 ////////////////////////////////////////////////////////////////////////
 
-#ifndef _MSC_VER
-
-// A bunch of source files (e.g. most of the ndp tree) include pal.h
-// but are written to be LLP64, not LP64.  (LP64 => long = 64 bits
-// LLP64 => longs = 32 bits, long long = 64 bits)
-//
-// To handle this difference, we #define long to be int (and thus 32 bits) when
-// compiling those files.  (See the bottom of this file or search for
-// #define long to see where we do this.)
-//
-// But this fix is more complicated than it seems, because we also use the
-// preprocessor to #define __int64 to long for LP64 architectures (__int64
-// isn't a builtin in gcc).   We don't want __int64 to be an int (by cascading
-// macro rules).  So we play this little trick below where we add
-// __cppmungestrip before "long", which is what we're really #defining __int64
-// to.  The preprocessor sees __cppmungestriplong as something different than
-// long, so it doesn't replace it with int.  The during the cppmunge phase, we
-// remove the __cppmungestrip part, leaving long for the compiler to see.
-//
-// Note that we can't just use a typedef to define __int64 as long before
-// #defining long because typedefed types can't be signedness-agnostic (i.e.
-// they must be either signed or unsigned) and we want to be able to use
-// __int64 as though it were intrinsic
-
-#if defined(HOST_64BIT) && !defined(__APPLE__)
-#define __int64     long
-#else // HOST_64BIT && !__APPLE__
-#define __int64     long long
-#endif // HOST_64BIT && !__APPLE__
-#define __int32     int
-#define __int16     short int
-#define __int8      char        // assumes char is signed
-
-#endif // _MSC_VER
-
-
-#ifndef _MSC_VER
-
 #if HOST_64BIT
 typedef long double LONG_DOUBLE;
 #endif
-
-#endif // _MSC_VER
 
 typedef void VOID;
 
 typedef int LONG;       // NOTE: diff from windows.h, for LP64 compat
 typedef unsigned int ULONG; // NOTE: diff from windows.h, for LP64 compat
 
-typedef __int64 LONGLONG;
-typedef unsigned __int64 ULONGLONG;
+typedef int64_t LONGLONG;
+typedef uint64_t ULONGLONG;
 typedef ULONGLONG DWORD64;
 typedef DWORD64 *PDWORD64;
 typedef LONGLONG *PLONG64;
@@ -271,286 +194,52 @@ typedef unsigned int *PUINT;
 typedef BYTE BOOLEAN;
 typedef BOOLEAN *PBOOLEAN;
 
-typedef unsigned __int8 UINT8;
-typedef signed __int8 INT8;
-typedef unsigned __int16 UINT16;
-typedef signed __int16 INT16;
-typedef unsigned __int32 UINT32, *PUINT32;
-typedef signed __int32 INT32, *PINT32;
-typedef unsigned __int64 UINT64, *PUINT64;
-typedef signed __int64 INT64, *PINT64;
+typedef uint8_t UINT8;
+typedef int8_t INT8;
+typedef uint16_t UINT16;
+typedef int16_t INT16;
+typedef uint32_t UINT32, *PUINT32;
+typedef int32_t INT32, *PINT32;
+typedef uint64_t UINT64, *PUINT64;
+typedef int64_t INT64, *PINT64;
 
-typedef unsigned __int32 ULONG32, *PULONG32;
-typedef signed __int32 LONG32, *PLONG32;
-typedef unsigned __int64 ULONG64;
-typedef signed __int64 LONG64;
+typedef uint32_t ULONG32, *PULONG32;
+typedef int32_t LONG32, *PLONG32;
+typedef uint64_t ULONG64;
+typedef int64_t LONG64;
 
-#if defined(HOST_X86) && _MSC_VER >= 1300
-#define _W64 __w64
-#else
-#define _W64
-#endif
+typedef intptr_t INT_PTR, *PINT_PTR;
+typedef uintptr_t UINT_PTR, *PUINT_PTR;
 
 #ifdef HOST_64BIT
 
-#define _atoi64 (__int64)atoll
+#define _atoi64 (int64_t)atoll
 
-typedef __int64 INT_PTR, *PINT_PTR;
-typedef unsigned __int64 UINT_PTR, *PUINT_PTR;
-typedef __int64 LONG_PTR, *PLONG_PTR;
-typedef unsigned __int64 ULONG_PTR, *PULONG_PTR;
-typedef unsigned __int64 DWORD_PTR, *PDWORD_PTR;
-
-/* maximum signed 64 bit value */
-#define LONG_PTR_MAX      I64(9223372036854775807)
-/* maximum unsigned 64 bit value */
-#define ULONG_PTR_MAX     UI64(0xffffffffffffffff)
-
-#ifndef SIZE_MAX
-#define SIZE_MAX _UI64_MAX
-#endif
-
-#define __int3264   __int64
-
-#if !defined(HOST_64BIT)
-__inline
-unsigned long
-HandleToULong(
-    const void *h
-    )
-{
-    return((unsigned long) (ULONG_PTR) h );
-}
-
-__inline
-long
-HandleToLong(
-    const void *h
-    )
-{
-    return((long) (LONG_PTR) h );
-}
-
-__inline
-void *
-ULongToHandle(
-    const unsigned long h
-    )
-{
-    return((void *) (UINT_PTR) h );
-}
-
-
-__inline
-void *
-LongToHandle(
-    const long h
-    )
-{
-    return((void *) (INT_PTR) h );
-}
-
-
-__inline
-unsigned long
-PtrToUlong(
-    const void  *p
-    )
-{
-    return((unsigned long) (ULONG_PTR) p );
-}
-
-__inline
-unsigned int
-PtrToUint(
-    const void  *p
-    )
-{
-    return((unsigned int) (UINT_PTR) p );
-}
-
-__inline
-unsigned short
-PtrToUshort(
-    const void  *p
-    )
-{
-    return((unsigned short) (unsigned long) (ULONG_PTR) p );
-}
-
-__inline
-long
-PtrToLong(
-    const void  *p
-    )
-{
-    return((long) (LONG_PTR) p );
-}
-
-__inline
-int
-PtrToInt(
-    const void  *p
-    )
-{
-    return((int) (INT_PTR) p );
-}
-
-__inline
-short
-PtrToShort(
-    const void  *p
-    )
-{
-    return((short) (long) (LONG_PTR) p );
-}
-
-__inline
-void *
-IntToPtr(
-    const int i
-    )
-// Caution: IntToPtr() sign-extends the int value.
-{
-    return( (void *)(INT_PTR)i );
-}
-
-__inline
-void *
-UIntToPtr(
-    const unsigned int ui
-    )
-// Caution: UIntToPtr() zero-extends the unsigned int value.
-{
-    return( (void *)(UINT_PTR)ui );
-}
-
-__inline
-void *
-LongToPtr(
-    const long l
-    )
-// Caution: LongToPtr() sign-extends the long value.
-{
-    return( (void *)(LONG_PTR)l );
-}
-
-__inline
-void *
-ULongToPtr(
-    const unsigned long ul
-    )
-// Caution: ULongToPtr() zero-extends the unsigned long value.
-{
-    return( (void *)(ULONG_PTR)ul );
-}
-
-__inline
-void *
-ShortToPtr(
-    const short s
-    )
-// Caution: ShortToPtr() sign-extends the short value.
-{
-    return( (void *)(INT_PTR)s );
-}
-
-__inline
-void *
-UShortToPtr(
-    const unsigned short us
-    )
-// Caution: UShortToPtr() zero-extends the unsigned short value.
-{
-    return( (void *)(UINT_PTR)us );
-}
-
-#else // !defined(HOST_64BIT)
-#define HandleToULong( h ) ((ULONG)(ULONG_PTR)(h) )
-#define HandleToLong( h )  ((LONG)(LONG_PTR) (h) )
-#define ULongToHandle( ul ) ((HANDLE)(ULONG_PTR) (ul) )
-#define LongToHandle( h )   ((HANDLE)(LONG_PTR) (h) )
-#define PtrToUlong( p ) ((ULONG)(ULONG_PTR) (p) )
-#define PtrToLong( p )  ((LONG)(LONG_PTR) (p) )
-#define PtrToUint( p ) ((UINT)(UINT_PTR) (p) )
-#define PtrToInt( p )  ((INT)(INT_PTR) (p) )
-#define PtrToUshort( p ) ((unsigned short)(ULONG_PTR)(p) )
-#define PtrToShort( p )  ((short)(LONG_PTR)(p) )
-#define IntToPtr( i )    ((VOID *)(INT_PTR)((int)(i)))
-#define UIntToPtr( ui )  ((VOID *)(UINT_PTR)((unsigned int)(ui)))
-#define LongToPtr( l )   ((VOID *)(LONG_PTR)((long)(l)))
-#define ULongToPtr( ul ) ((VOID *)(ULONG_PTR)((unsigned long)(ul)))
-#define ShortToPtr( s )  ((VOID *)(INT_PTR)((short)(s)))
-#define UShortToPtr( us )  ((VOID *)(UINT_PTR)((unsigned short)(s)))
-#endif // !defined(HOST_64BIT)
-
-
+typedef int64_t LONG_PTR, *PLONG_PTR;
+typedef uint64_t ULONG_PTR, *PULONG_PTR;
+typedef uint64_t DWORD_PTR, *PDWORD_PTR;
 
 #else
 
-typedef _W64 __int32 INT_PTR;
-typedef _W64 unsigned __int32 UINT_PTR;
-
-typedef _W64 __int32 LONG_PTR;
-typedef _W64 unsigned __int32 ULONG_PTR, *PULONG_PTR;
-typedef _W64 unsigned __int32 DWORD_PTR, *PDWORD_PTR;
-
-/* maximum signed 32 bit value */
-#define LONG_PTR_MAX      2147483647L
-/* maximum unsigned 32 bit value */
-#define ULONG_PTR_MAX     0xffffffffUL
-
-#ifndef SIZE_MAX
-#define SIZE_MAX UINT_MAX
-#endif
-
-#define __int3264   __int32
-
-#define HandleToULong( h ) ((ULONG)(ULONG_PTR)(h) )
-#define HandleToLong( h )  ((LONG)(LONG_PTR) (h) )
-#define ULongToHandle( ul ) ((HANDLE)(ULONG_PTR) (ul) )
-#define LongToHandle( h )   ((HANDLE)(LONG_PTR) (h) )
-#define PtrToUlong( p ) ((ULONG)(ULONG_PTR) (p) )
-#define PtrToLong( p )  ((LONG)(LONG_PTR) (p) )
-#define PtrToUint( p ) ((UINT)(UINT_PTR) (p) )
-#define PtrToInt( p )  ((INT)(INT_PTR) (p) )
-#define PtrToUshort( p ) ((unsigned short)(ULONG_PTR)(p) )
-#define PtrToShort( p )  ((short)(LONG_PTR)(p) )
-#define IntToPtr( i )    ((VOID *)(INT_PTR)((int)i))
-#define UIntToPtr( ui )  ((VOID *)(UINT_PTR)((unsigned int)ui))
-#define LongToPtr( l )   ((VOID *)(LONG_PTR)((long)l))
-#define ULongToPtr( ul ) ((VOID *)(ULONG_PTR)((unsigned long)ul))
-#define ShortToPtr( s )  ((VOID *)(INT_PTR)((short)s))
-#define UShortToPtr( us )  ((VOID *)(UINT_PTR)((unsigned short)s))
+typedef int32_t LONG_PTR, *PLONG_PTR;
+typedef uint32_t ULONG_PTR, *PULONG_PTR;
+typedef uint32_t DWORD_PTR, *PDWORD_PTR;
 
 #endif
 
-#define HandleToUlong(h)  HandleToULong(h)
-#define UlongToHandle(ul) ULongToHandle(ul)
-#define UlongToPtr(ul) ULongToPtr(ul)
-#define UintToPtr(ui)  UIntToPtr(ui)
-
-#ifdef HOST_64BIT
-typedef unsigned long SIZE_T;
-typedef long SSIZE_T;
-#else
-typedef unsigned int SIZE_T;
-typedef int SSIZE_T;
-#endif
-
-static_assert(sizeof(SIZE_T) == sizeof(void*), "SIZE_T should be pointer sized");
-static_assert(sizeof(SSIZE_T) == sizeof(void*), "SSIZE_T should be pointer sized");
+typedef uintptr_t SIZE_T;
+typedef intptr_t SSIZE_T;
 
 #ifndef SIZE_T_MAX
-#define SIZE_T_MAX ULONG_PTR_MAX
+#define SIZE_T_MAX UINTPTR_MAX
 #endif // SIZE_T_MAX
 
 #ifndef SSIZE_T_MAX
-#define SSIZE_T_MAX LONG_PTR_MAX
+#define SSIZE_T_MAX INTPTR_MAX
 #endif
 
 #ifndef SSIZE_T_MIN
-#define SSIZE_T_MIN (ssize_t)I64(0x8000000000000000)
+#define SSIZE_T_MIN INTPTR_MIN
 #endif
 
 typedef LONG_PTR LPARAM;

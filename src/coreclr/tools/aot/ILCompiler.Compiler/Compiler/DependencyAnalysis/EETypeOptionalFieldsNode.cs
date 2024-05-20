@@ -26,7 +26,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            sb.Append("__optionalfields_");
+            sb.Append("__optionalfields_"u8);
             _owner.AppendMangledName(nameMangler, sb);
         }
         public int Offset => 0;

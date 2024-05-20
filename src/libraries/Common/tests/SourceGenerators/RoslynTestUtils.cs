@@ -349,7 +349,7 @@ namespace SourceGenerators.Tests
         }
 
         private static string ReplaceLineEndings(string text) =>
-#if NETCOREAPP
+#if NET
             text.ReplaceLineEndings("\n");
 #else
             text.Replace("\r\n", "\n");

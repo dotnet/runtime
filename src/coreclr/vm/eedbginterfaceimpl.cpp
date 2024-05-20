@@ -652,7 +652,7 @@ void EEDbgInterfaceImpl::EnablePreemptiveGC(void)
     CONTRACTL
     {
         NOTHROW;
-        DISABLED(GC_TRIGGERS); // Disabled because disabled in RareEnablePreemptiveGC()
+        GC_NOTRIGGER;
     }
     CONTRACTL_END;
 

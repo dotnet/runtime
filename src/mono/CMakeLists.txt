@@ -635,9 +635,9 @@ if(LLVM_PREFIX)
   endif()
 
   if(HOST_LINUX AND NOT HOST_WASM AND NOT HOST_WASI AND ${llvm_api_version} GREATER_EQUAL 1600)
-    set(MONO_stdlib "-stdlib=libc++")
-    set(MONO_cxx_lib "-L${LLVM_PREFIX}/lib -lc++")
-    set(MONO_cxx_include "-I${LLVM_PREFIX}/include/c++/v1")
+    set(MONO_stdlib "-nostdinc++ -nostdlib++")
+    set(MONO_cxx_lib "-L${LLVM_PREFIX}/lib -lc++ -lc++abi")
+    set(MONO_cxx_include "-isystem ${LLVM_PREFIX}/include/c++/v1")
   endif()
 
   if(${llvm_api_version} GREATER_EQUAL 1600)
