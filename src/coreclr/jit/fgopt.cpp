@@ -4692,6 +4692,11 @@ void Compiler::fgDoReversePostOrderLayout()
             fgInsertBBafter(block, blockToMove);
         }
 
+        // The RPO established a good base layout, but in some cases, it might not place the hottest predecessor
+        // behind a block.
+        // If a block isn't placed before its most-likely successor, and it is that successor's hottest predecessor,
+        // try creating fallthrough between them.
+        //
         fgMoveBlocksToHottestSuccessors</* hasEH */ false>();
 
         return;
