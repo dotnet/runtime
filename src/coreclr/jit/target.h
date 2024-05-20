@@ -277,19 +277,6 @@ public:
     }
 };
 
-#ifdef TARGET_ARM
-static regMaskTP operator-(regMaskTP first, regMaskTP second)
-{
-    regMaskTP result(first.getLow() - second.getLow());
-    return result;
-}
-
-static bool operator>(regMaskTP first, regMaskTP second)
-{
-    return first.getLow() > second.getLow();
-}
-#endif
-
 static regMaskTP operator^(regMaskTP first, regMaskTP second)
 {
     regMaskTP result(first.getLow() ^ second.getLow());
@@ -323,12 +310,6 @@ static regMaskTP operator>>(regMaskTP first, const int b)
 static regMaskTP& operator>>=(regMaskTP& first, const int b)
 {
     first = first >> b;
-    return first;
-}
-
-static regMaskTP& operator<<=(regMaskTP& first, const int b)
-{
-    first = first << b;
     return first;
 }
 
@@ -377,6 +358,25 @@ static bool operator!=(regMaskTP first, regMaskTP second)
 {
     return (first.getLow() != second.getLow());
 }
+
+#ifdef TARGET_ARM
+static regMaskTP operator-(regMaskTP first, regMaskTP second)
+{
+    regMaskTP result(first.getLow() - second.getLow());
+    return result;
+}
+
+static bool operator>(regMaskTP first, regMaskTP second)
+{
+    return first.getLow() > second.getLow();
+}
+
+static regMaskTP& operator<<=(regMaskTP& first, const int b)
+{
+    first = first << b;
+    return first;
+}
+#endif
 
 static regMaskTP operator~(regMaskTP first)
 {
