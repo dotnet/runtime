@@ -14,16 +14,31 @@ set(HEADERS
     ../hostpolicy_resolver.h
 )
 
+if (CLR_CMAKE_TARGET_WIN32)
+    include_directories("${CLI_CMAKE_RESOURCE_DIR}/hostfxr")
+    list(APPEND SOURCES ../../native.rc)
+else()
+    list(APPEND SOURCES ${VERSION_FILE_PATH})
+endif()
+
+add_compile_definitions(
+    _NO_ASYNCRTIMP
+    _NO_PPLXIMP
+    EXPORT_SHARED_API)
+
 include(../../hostcommon/files.cmake)
 include(../files.cmake)
 
-include(../../lib_static.cmake)
+add_library(libhostfxr STATIC ${SOURCES})
+
+set_target_properties(libhostfxr PROPERTIES MACOSX_RPATH TRUE)
+set_target_properties(libhostfxr PROPERTIES PREFIX "")
 
 # Copy static lib PDB to the project output directory
 if (WIN32)
     set_target_properties(libhostfxr PROPERTIES
         COMPILE_PDB_NAME "libhostfxr"
-        COMPILE_PDB_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}"
+        COMPILE_PDB_OUTPUT_DIRECTORY "$<TARGET_FILE_DIR:libhostfxr>"
     )
 endif(WIN32)
 
