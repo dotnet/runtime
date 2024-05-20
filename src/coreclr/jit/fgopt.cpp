@@ -4644,11 +4644,15 @@ void Compiler::fgMoveBlocksToHottestSuccessors()
         }
 
         // block is the hottest predecessor of likelySucc, but before we move block,
-        // make sure any fallthrough we are breaking is worth losing
+        // make sure any fallthrough we are breaking is worth losing.
+        // We make an exception for loop heads: If a loop is not entered from the top,
+        // the RPO-based layout may not place the loop head at the top of the loop,
+        // so fix that here.
         //
         assert(!block->IsFirst());
         FlowEdge* const fallthroughEdge = fgGetPredForBlock(block, block->Prev());
-        if ((fallthroughEdge != nullptr) && (fallthroughEdge->getLikelyWeight() >= likelySuccEdgeWeight))
+        if ((fallthroughEdge != nullptr) && (fallthroughEdge->getLikelyWeight() >= likelySuccEdgeWeight) &&
+            !block->HasFlag(BBF_LOOP_HEAD))
         {
             continue;
         }
