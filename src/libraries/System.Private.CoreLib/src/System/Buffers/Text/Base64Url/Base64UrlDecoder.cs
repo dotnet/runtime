@@ -16,6 +16,8 @@ namespace System.Buffers.Text
 
     public static partial class Base64Url
     {
+        private const int MaxStackallocThreshold = 256;
+
         /// <summary>
         /// Returns the maximum length (in bytes) of the result if you were to decode base 64 encoded text within a byte span of size "base64Length".
         /// </summary>
@@ -148,10 +150,10 @@ namespace System.Buffers.Text
         public static byte[] DecodeFromUtf8(ReadOnlySpan<byte> source)
         {
             int upperBound = GetMaxDecodedLength(source.Length);
-            Span<byte> destination = stackalloc byte[256];
+            Span<byte> destination = stackalloc byte[MaxStackallocThreshold];
             byte[]? rented = null;
 
-            if (upperBound <= destination.Length)
+            if (upperBound <= MaxStackallocThreshold)
             {
                 destination = destination.Slice(0, upperBound);
             }
@@ -242,7 +244,7 @@ namespace System.Buffers.Text
                 // If this block contains padding and there's another block, then only whitespace may follow for being valid.
                 if (hasAnotherBlock)
                 {
-                    int paddingCount = GetPaddingCount(ref buffer[^1]);
+                    int paddingCount = GetPaddingCount<TBase64Decoder>(ref buffer[^1]);
                     if (paddingCount > 0)
                     {
                         hasAnotherBlock = false;
@@ -291,12 +293,13 @@ namespace System.Buffers.Text
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static int GetPaddingCount(ref ushort ptrToLastElement)
+        private static int GetPaddingCount<TBase64Decoder>(ref ushort ptrToLastElement)
+            where TBase64Decoder : IBase64Decoder<ushort>
         {
             int padding = 0;
 
-            if (ptrToLastElement == EncodingPad) padding++;
-            if (Unsafe.Subtract(ref ptrToLastElement, 1) == EncodingPad) padding++;
+            if (TBase64Decoder.IsValidPadding(ptrToLastElement)) padding++;
+            if (TBase64Decoder.IsValidPadding(Unsafe.Subtract(ref ptrToLastElement, 1))) padding++;
 
             return padding;
         }
@@ -351,10 +354,10 @@ namespace System.Buffers.Text
         public static byte[] DecodeFromChars(ReadOnlySpan<char> source)
         {
             int upperBound = GetMaxDecodedLength(source.Length);
-            Span<byte> destination = stackalloc byte[256];
+            Span<byte> destination = stackalloc byte[MaxStackallocThreshold];
             byte[]? rented = null;
 
-            if (upperBound <= destination.Length)
+            if (upperBound <= MaxStackallocThreshold)
             {
                 destination = destination.Slice(0, upperBound);
             }
@@ -464,7 +467,9 @@ namespace System.Buffers.Text
 
             public static int GetMaxDecodedLength(int utf8Length) => Base64Url.GetMaxDecodedLength(utf8Length);
 
-            public static bool IsInValidLength(int bufferLength) => bufferLength % 4 == 1; // One byte cannot be decoded completely
+            public static bool IsInvalidLength(int bufferLength) => bufferLength % 4 == 1; // One byte cannot be decoded completely
+
+            public static bool IsValidPadding(uint padChar) => padChar == EncodingPad || padChar == UrlEncodingPad;
 
             public static int SrcLength(bool isFinalBlock, int utf8Length) => isFinalBlock ? utf8Length : utf8Length & ~0x3;
 
@@ -759,7 +764,9 @@ namespace System.Buffers.Text
 
             public static int GetMaxDecodedLength(int utf8Length) => Base64Url.GetMaxDecodedLength(utf8Length);
 
-            public static bool IsInValidLength(int bufferLength) => bufferLength % 4 == 1; // One byte cannot be decoded completely
+            public static bool IsInvalidLength(int bufferLength) => bufferLength % 4 == 1; // One byte cannot be decoded completely
+
+            public static bool IsValidPadding(uint padChar) => padChar == EncodingPad || padChar == UrlEncodingPad;
 
             public static int SrcLength(bool isFinalBlock, int utf8Length) => isFinalBlock ? utf8Length : utf8Length & ~0x3;
 

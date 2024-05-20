@@ -286,5 +286,57 @@ namespace System.Buffers.Text.Tests
             Assert.False(Base64Url.TryEncodeToUtf8InPlace(testBytes, testBytes.Length, out int bytesWritten));
             Assert.Equal(0, bytesWritten);
         }
+
+        [Fact]
+        public void TryEncodeToUtf8()
+        {
+            const int numberOfBytes = 15;
+            Span<byte> testBytes = new byte[numberOfBytes / 3 * 4]; // slack since encoding inflates the data
+            Base64TestHelper.InitializeBytes(testBytes);
+
+            for (int numberOfBytesToTest = 0; numberOfBytesToTest <= numberOfBytes; numberOfBytesToTest++)
+            {
+                ReadOnlySpan<byte> source = testBytes.Slice(0, numberOfBytesToTest);
+                Span<byte> destination = new byte[Base64Url.GetEncodedLength(numberOfBytesToTest)];
+                Assert.True(Base64Url.TryEncodeToUtf8(source, destination, out int bytesWritten));
+                Assert.Equal(destination.Length, bytesWritten);
+                Assert.True(source.SequenceEqual(Base64Url.DecodeFromUtf8(destination).AsSpan()));
+            }
+        }
+
+        [Theory]
+        [InlineData(1, "AQ")]
+        [InlineData(2, "AQI")]
+        [InlineData(3, "AQID")]
+        [InlineData(4, "AQIDBA")]
+        [InlineData(5, "AQIDBAU")]
+        [InlineData(6, "AQIDBAUG")]
+        [InlineData(7, "AQIDBAUGBw")]
+        public void TryEncodeToUtf8EncodeUpToDestinationSize(int numBytes, string expectedText)
+        {
+            int expectedWritten = expectedText.Length;
+
+            Span<byte> source = new byte[numBytes];
+            for (int i = 0; i < numBytes; i++)
+            {
+                source[i] = (byte)(i + 1);
+            }
+            Span<byte> destination = new byte[6];
+
+            if (numBytes < 5)
+            {
+                Assert.True(Base64Url.TryEncodeToUtf8(source, destination, out int bytesWritten));
+                Assert.Equal(expectedWritten, bytesWritten);
+                string encodedText = Encoding.ASCII.GetString(destination.Slice(0, expectedWritten).ToArray());
+                Assert.Equal(expectedText, encodedText);
+            }
+            else
+            {
+                Assert.False(Base64Url.TryEncodeToUtf8(source, destination, out int bytesWritten));
+                Assert.Equal(4, bytesWritten);
+                string encodedText = Encoding.ASCII.GetString(destination.Slice(0, 4).ToArray());
+                Assert.Equal(expectedText.Substring(0, 4), encodedText);
+            }
+        }
     }
 }

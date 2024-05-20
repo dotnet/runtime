@@ -294,9 +294,11 @@ namespace System.Buffers.Text.Tests
         [InlineData("\u00ecz/T", 0, 0)]                                              // scalar code-path
         [InlineData("z/Ta123\u00ec", 4, 3)]
         [InlineData("\u00ecz/TpH7sqEkerqMweH1uSw==", 0, 0)]                          // Vector128 code-path
-        [InlineData("z/TpH7sqEkerqMweH1uSw\u00ec==", 20, 15)]
-        [InlineData("\u00ecz/TpH7sqEkerqMweH1uSw1a5ebaAF9xa8B0ze1wet4epo==", 0, 0)]  // Vector256 / AVX code-path
+        [InlineData("z/TpH7sqEkerqMweH1uSw\u5948==", 20, 15)]
+        [InlineData("\u5948/TpH7sqEkerqMweH1uSw1a5ebaAF9xa8B0ze1wet4epo==", 0, 0)]  // Vector256 / AVX code-path
         [InlineData("z/TpH7sqEkerqMweH1uSw1a5ebaAF9xa8B0ze1wet4epo\u00ec==", 44, 33)]
+        [InlineData("\u5948z+T/H7sqEkerqMweH1uSw1a5ebaAF9xa8B0ze1wet4epo01234567890123456789012345678901234567890123456789==", 0, 0)]  // Vector512 / Avx512Vbmi code-path
+        [InlineData("z/T+H7sqEkerqMweH1uSw1a5ebaAF9xa8B0ze1wet4epo01234567890123456789012345678901234567890123456789\u5948==", 92, 69)]
         public void BasicDecodingNonAsciiInputInvalid(string inputString, int expectedConsumed, int expectedWritten)
         {
             Span<byte> source = Encoding.UTF8.GetBytes(inputString);

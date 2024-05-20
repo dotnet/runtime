@@ -77,6 +77,7 @@ namespace System.Buffers.Text.Tests
         public static bool IsByteToBeIgnored(byte charByte) => charByte is (byte)' ' or (byte)'\t' or (byte)'\r' or (byte)'\n';
 
         public const byte EncodingPad = (byte)'=';      // '=', for padding
+        public const byte UrlEncodingPad = (byte)'%';   // '%', for url padding
         public const sbyte InvalidByte = -1;            // Designating -1 for invalid bytes in the decoding map
 
         public static byte[] InvalidBytes
@@ -198,7 +199,7 @@ namespace System.Buffers.Text.Tests
             string sourceString = Encoding.ASCII.GetString(source.Slice(0, expectedConsumed));
             string padded = sourceString.Length % 4 == 0 ? sourceString :
                 sourceString.PadRight(sourceString.Length + (4 - sourceString.Length % 4), '=');
-            string base64 = padded.Replace("_", "/").Replace("-", "+");
+            string base64 = padded.Replace('_', '/').Replace('-', '+').Replace('%', '=');
             byte[] expectedBytes = Convert.FromBase64String(base64);
             return expectedBytes.AsSpan().SequenceEqual(decodedBytes.Slice(0, expectedWritten));
         }

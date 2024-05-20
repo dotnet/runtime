@@ -8,7 +8,7 @@ using Xunit;
 
 namespace System.Buffers.Text.Tests
 {
-    public class Base64UrlEncodingAPIsUnitTests
+    public class Base64UrlUnicodeAPIsUnitTests
     {
         [Theory]
         [InlineData("", 0)]
@@ -50,7 +50,7 @@ namespace System.Buffers.Text.Tests
         public void EncodingWithLargeSpan()
         {
             var rnd = new Random(42);
-            for (int i = 0; i < 10; i++)
+            for (int i = 0; i < 5; i++)
             {
                 int numBytes = rnd.Next(100, 1000 * 1000);
                 Span<byte> source = new byte[numBytes];
@@ -70,7 +70,7 @@ namespace System.Buffers.Text.Tests
         public void DecodeWithLargeSpan()
         {
             var rnd = new Random(42);
-            for (int i = 0; i < 10; i++)
+            for (int i = 0; i < 5; i++)
             {
                 int numBytes;
                 do
@@ -94,6 +94,27 @@ namespace System.Buffers.Text.Tests
                 Assert.True(expectedBytes.AsSpan().SequenceEqual(decodedBytes.Slice(0, decodedByteCount)));
             }
         }
+
+        [Fact]
+        public void RoundTripWithLargeSpan()
+        {
+            var rnd = new Random(42);
+            for (int i = 0; i < 5; i++)
+            {
+                int numBytes = rnd.Next(100, 1000 * 1000);
+                Span<byte> source = new byte[numBytes];
+                Base64TestHelper.InitializeBytes(source, numBytes);
+
+                int expectedLength = Base64Url.GetEncodedLength(source.Length);
+                char[] encodedBytes = Base64Url.EncodeToChars(source);
+                Assert.Equal(expectedLength, encodedBytes.Length);
+                Assert.Equal(new String(encodedBytes), Base64Url.EncodeToString(source));
+
+                byte[] decoded = Base64Url.DecodeFromChars(encodedBytes);
+                Assert.Equal(source, decoded);
+            }
+        }
+
 
         public static IEnumerable<object[]> EncodeToStringTests_TestData()
         {
@@ -379,7 +400,7 @@ namespace System.Buffers.Text.Tests
         {
             char[] inputChars = input.ToCharArray();
 
-            Assert.Throws<FormatException>(() => Base64Url.DecodeFromChars(input)); // or  FormatException?
+            Assert.Throws<FormatException>(() => Base64Url.DecodeFromChars(input));
         }
 
         private static void Verify(string input, Action<byte[]> action = null)

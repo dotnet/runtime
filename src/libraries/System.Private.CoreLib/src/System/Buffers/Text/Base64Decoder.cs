@@ -180,7 +180,7 @@ namespace System.Buffers.Text
 
                 byte* destMax = destBytes + (uint)destLength;
 
-                if (t3 != EncodingPad)
+                if (!TBase64Decoder.IsValidPadding(t3))
                 {
                     int i2 = Unsafe.Add(ref decodingMap, (IntPtr)t2);
                     int i3 = Unsafe.Add(ref decodingMap, (IntPtr)t3);
@@ -203,7 +203,7 @@ namespace System.Buffers.Text
                     dest += 3;
                     src += 4;
                 }
-                else if (t2 != EncodingPad)
+                else if (!TBase64Decoder.IsValidPadding(t2))
                 {
                     int i2 = Unsafe.Add(ref decodingMap, (IntPtr)t2);
 
@@ -375,7 +375,7 @@ namespace System.Buffers.Text
                 uint sourceIndex = 0;
                 uint destIndex = 0;
 
-                if (TBase64Decoder.IsInValidLength(buffer.Length))
+                if (TBase64Decoder.IsInvalidLength(buffer.Length))
                 {
                     goto InvalidExit;
                 }
@@ -435,7 +435,7 @@ namespace System.Buffers.Text
 
                 i0 |= i1;
 
-                if (t3 != EncodingPad)
+                if (!TBase64Decoder.IsValidPadding(t3))
                 {
                     int i2 = Unsafe.Add(ref decodingMap, t2);
                     int i3 = Unsafe.Add(ref decodingMap, t3);
@@ -453,7 +453,7 @@ namespace System.Buffers.Text
                     WriteThreeLowOrderBytes(bufferBytes + destIndex, i0);
                     destIndex += 3;
                 }
-                else if (t2 != EncodingPad)
+                else if (!TBase64Decoder.IsValidPadding(t2))
                 {
                     int i2 = Unsafe.Add(ref decodingMap, t2);
 
@@ -532,7 +532,7 @@ namespace System.Buffers.Text
                 // If this block contains padding and there's another block, then only whitespace may follow for being valid.
                 if (hasAnotherBlock)
                 {
-                    int paddingCount = GetPaddingCount(ref buffer[^1]);
+                    int paddingCount = GetPaddingCount<TBase64Decoder>(ref buffer[^1]);
                     if (paddingCount > 0)
                     {
                         hasAnotherBlock = false;
@@ -581,12 +581,13 @@ namespace System.Buffers.Text
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static int GetPaddingCount(ref byte ptrToLastElement)
+        private static int GetPaddingCount<TBase64Decoder>(ref byte ptrToLastElement)
+            where TBase64Decoder : IBase64Decoder<byte>
         {
             int padding = 0;
 
-            if (ptrToLastElement == EncodingPad) padding++;
-            if (Unsafe.Subtract(ref ptrToLastElement, 1) == EncodingPad) padding++;
+            if (TBase64Decoder.IsValidPadding(ptrToLastElement)) padding++;
+            if (TBase64Decoder.IsValidPadding(Unsafe.Subtract(ref ptrToLastElement, 1))) padding++;
 
             return padding;
         }
@@ -1302,7 +1303,9 @@ namespace System.Buffers.Text
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static int GetMaxDecodedLength(int utf8Length) => Base64.GetMaxDecodedFromUtf8Length(utf8Length);
 
-            public static bool IsInValidLength(int bufferLength) => bufferLength % 4 != 0; // only decode input if it is a multiple of 4
+            public static bool IsInvalidLength(int bufferLength) => bufferLength % 4 != 0; // only decode input if it is a multiple of 4
+
+            public static bool IsValidPadding(uint padChar) => padChar == EncodingPad;
 
             public static int SrcLength(bool _, int utf8Length) => utf8Length & ~0x3;  // only decode input up to the closest multiple of 4.
 

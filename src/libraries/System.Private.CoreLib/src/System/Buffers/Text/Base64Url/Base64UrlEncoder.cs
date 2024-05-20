@@ -168,7 +168,7 @@ namespace System.Buffers.Text
         {
             Span<char> destination = new char[GetEncodedLength(source.Length)];
             EncodeToChars(source, destination, out int bytesWritten, out _);
-            Debug.Assert(destination.Length == bytesWritten);
+            Debug.Assert(destination.Length == bytesWritten, $"The source length: {source.Length}, bytes written: {bytesWritten}");
 
             return new string(destination);
         }
@@ -379,8 +379,8 @@ namespace System.Buffers.Text
             public static int IncrementPadOne => 3;
 
             public static int GetMaxSrcLength(int srcLength, int destLength) =>
-                srcLength <= MaximumEncodeLength && destLength >= Base64Url.GetEncodedLength(srcLength) ?
-                srcLength : (destLength >> 2) * 3 + destLength % 4;
+                srcLength <= MaximumEncodeLength && destLength >= GetEncodedLength(srcLength) ?
+                srcLength : GetMaxDecodedLength(destLength); //(destLength >> 2) * 3 + destLength % 4;
 
             public static uint GetInPlaceDestinationLength(int encodedLength, int leftOver) =>
                 leftOver > 0 ? (uint)(encodedLength - leftOver - 1) : (uint)(encodedLength - 4);
