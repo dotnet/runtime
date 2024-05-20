@@ -19,22 +19,51 @@ if(CLR_CMAKE_TARGET_WIN32)
         Exports.def)
 endif()
 
-include(../lib.cmake)
-include(../lib_static.cmake)
+if (CLR_CMAKE_TARGET_WIN32)
+    include_directories("${CLI_CMAKE_RESOURCE_DIR}/nethost")
+    list(APPEND SOURCES ../native.rc)
+else()
+    list(APPEND SOURCES ${VERSION_FILE_PATH})
+endif()
 
-add_definitions(-DFEATURE_LIBHOST=1)
-add_definitions(-DNETHOST_EXPORT)
+add_compile_definitions(
+    _NO_ASYNCRTIMP
+    _NO_PPLXIMP
+    EXPORT_SHARED_API
+    FEATURE_LIBHOST
+    NETHOST_EXPORT)
+
+add_library(nethost SHARED ${SOURCES})
+add_library(libnethost STATIC ${SOURCES})
+
 
 # Copy static lib PDB to the project output directory
 if (WIN32)
     set_target_properties(libnethost PROPERTIES
         COMPILE_PDB_NAME "libnethost"
-        COMPILE_PDB_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}"
+        COMPILE_PDB_OUTPUT_DIRECTORY "$<TARGET_FILE_DIR:libnethost>"
     )
 endif(WIN32)
 
 target_link_libraries(nethost PRIVATE hostmisc)
 target_link_libraries(libnethost PRIVATE hostmisc)
+target_compile_definitions(nethost PRIVATE FEATURE_LIBHOST NETHOST_EXPORT)
+target_compile_definitions(libnethost PRIVATE FEATURE_LIBHOST NETHOST_EXPORT)
+
+set_target_properties(nethost PROPERTIES MACOSX_RPATH TRUE)
+set_target_properties(libnethost PROPERTIES MACOSX_RPATH TRUE)
+set_target_properties(libnethost PROPERTIES PREFIX "")
+
+# Specify the import library to link against for Arm32 build since the default set is minimal
+if (CLR_CMAKE_TARGET_ARCH_ARM)
+    if (CLR_CMAKE_TARGET_WIN32)
+        target_link_libraries(nethost PRIVATE shell32.lib advapi32.lib)
+    else()
+        target_link_libraries(nethost PRIVATE atomic.a)
+    endif()
+endif()
+
+target_link_libraries (${DOTNET_PROJECT_NAME} PRIVATE ${CMAKE_DL_LIBS})
 
 install(FILES ../coreclr_delegates.h DESTINATION corehost)
 install(FILES ../hostfxr.h DESTINATION corehost)
