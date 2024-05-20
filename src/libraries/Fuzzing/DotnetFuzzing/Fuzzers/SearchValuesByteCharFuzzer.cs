@@ -3,6 +3,7 @@
 
 using System.Buffers;
 using System.Numerics;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 namespace DotnetFuzzing.Fuzzers;
@@ -12,7 +13,7 @@ internal sealed class SearchValuesByteCharFuzzer : IFuzzer
     public string[] TargetAssemblies => [];
     public string[] TargetCoreLibPrefixes { get; } = ["System.Buffers", "System.SpanHelpers", "System.PackedSpanHelpers"];
 
-    public void FuzzTarget(ReadOnlySpan<byte> bytes)
+    public unsafe void FuzzTarget(ReadOnlySpan<byte> bytes)
     {
         int newLine = bytes.IndexOf((byte)'\n');
         if (newLine < 0)
@@ -28,10 +29,17 @@ internal sealed class SearchValuesByteCharFuzzer : IFuzzer
 
         Test(byteHaystack0.Span, byteHaystack1.Span, values, SearchValues.Create(values));
 
+        if ((nuint)Unsafe.AsPointer(ref MemoryMarshal.GetReference(haystack)) % 2 != 0 && !haystack.IsEmpty)
+        {
+            // Ensure that the haystack is 2-byte aligned now that we're about to cast it to chars.
+            haystack = haystack.Slice(1);
+        }
+
         using var charHaystack0 = PooledBoundedMemory<char>.Rent(MemoryMarshal.Cast<byte, char>(haystack), PoisonPagePlacement.Before);
         using var charHaystack1 = PooledBoundedMemory<char>.Rent(MemoryMarshal.Cast<byte, char>(haystack), PoisonPagePlacement.After);
 
-        Test(charHaystack0.Span, charHaystack1.Span, MemoryMarshal.Cast<byte, char>(values), SearchValues.Create(MemoryMarshal.Cast<byte, char>(values)));
+        ReadOnlySpan<char> charValues = MemoryMarshal.Cast<byte, char>(values);
+        Test(charHaystack0.Span, charHaystack1.Span, charValues, SearchValues.Create(charValues));
     }
 
     private static void Test<T>(ReadOnlySpan<T> haystack, ReadOnlySpan<T> haystackCopy, ReadOnlySpan<T> values, SearchValues<T> searchValues)

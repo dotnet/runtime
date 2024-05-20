@@ -4,6 +4,7 @@
 using SharpFuzz;
 using System.Buffers;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text;
@@ -66,7 +67,7 @@ public static class Program
         RunFuzzer(fuzzer, inputFiles: args.Length > 1 ? args[1] : null);
     }
 
-    private static void RunFuzzer(IFuzzer fuzzer, string? inputFiles)
+    private static unsafe void RunFuzzer(IFuzzer fuzzer, string? inputFiles)
     {
         if (!string.IsNullOrEmpty(inputFiles))
         {
@@ -82,7 +83,13 @@ public static class Program
             return;
         }
 
-        Fuzzer.LibFuzzer.Run(fuzzer.FuzzTarget);
+        Fuzzer.LibFuzzer.Run(bytes =>
+        {
+            // Some fuzzers assume that the input is at least 2-byte aligned.
+            ArgumentOutOfRangeException.ThrowIfNotEqual((nuint)Unsafe.AsPointer(ref MemoryMarshal.GetReference(bytes)) % 8, 0U);
+
+            fuzzer.FuzzTarget(bytes);
+        });
     }
 
     private static async Task PrepareOneFuzzDeploymentAsync(IFuzzer[] fuzzers, string publishDirectory, string outputDirectory)

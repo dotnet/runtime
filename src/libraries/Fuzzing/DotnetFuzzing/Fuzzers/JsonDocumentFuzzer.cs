@@ -19,6 +19,8 @@ internal sealed class JsonDocumentFuzzer : IFuzzer
             return;
         }
 
+        // The first byte is used to select various options.
+        // The rest of the input is used as the UTF-8 JSON payload.
         byte optionsByte = bytes[0];
         bytes = bytes.Slice(1);
 

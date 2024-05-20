@@ -38,13 +38,16 @@ internal sealed class HttpHeadersFuzzer : IFuzzer
 
     public void FuzzTarget(ReadOnlySpan<byte> bytes)
     {
-        if (bytes.IsEmpty)
+        if (bytes.Length < 2)
         {
             return;
         }
 
+        // We use the first byte to select a known header name.
+        // The rest of the input is used as the UTF-16 header value.
+        // The second byte is skipped to keep the value chars 2-byte aligned.
         string name = s_knownHeaderNames[bytes[0] % s_knownHeaderNames.Length];
-        string value = MemoryMarshal.Cast<byte, char>(bytes.Slice(1)).ToString();
+        string value = MemoryMarshal.Cast<byte, char>(bytes.Slice(2)).ToString();
 
         Test(s_requestHeaders, name, value);
         Test(s_contentHeaders, name, value);
