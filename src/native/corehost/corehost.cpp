@@ -97,9 +97,15 @@ void need_newer_framework_error(const pal::string_t& dotnet_root, const pal::str
 
 #if defined(CURHOST_EXE)
 
+#if defined(FEATURE_STATIC_HOST) && (defined(TARGET_OSX) || defined(TARGET_LINUX)) && !defined(TARGET_X86)
+extern void initialize_static_createdump();
+#endif
+
 int exe_start(const int argc, const pal::char_t* argv[])
 {
-    pal::initialize_createdump();
+#if defined(FEATURE_STATIC_HOST) && (defined(TARGET_OSX) || defined(TARGET_LINUX)) && !defined(TARGET_X86)
+    initialize_static_createdump();
+#endif
 
     pal::string_t host_path;
     if (!pal::get_own_executable_path(&host_path) || !pal::realpath(&host_path))
