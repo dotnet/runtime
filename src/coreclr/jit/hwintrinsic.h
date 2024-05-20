@@ -232,6 +232,8 @@ enum HWIntrinsicFlag : unsigned int
     // The intrinsic has an enum operand. Using this implies HW_Flag_HasImmediateOperand.
     HW_Flag_HasEnumOperand = 0x1000000,
 
+    // The intrinsic comes in both vector and scalar variants. During the import stage if the basetype is scalar,
+    // then the intrinsic should be switched to a scalar only version.
     HW_Flag_HasScalarVariant = 0x2000000,
 
 #endif // TARGET_XARCH
