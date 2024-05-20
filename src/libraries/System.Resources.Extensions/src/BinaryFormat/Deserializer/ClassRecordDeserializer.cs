@@ -45,8 +45,7 @@ internal abstract class ClassRecordDeserializer : ObjectRecordDeserializer
 #if NETCOREAPP
             RuntimeHelpers.GetUninitializedObject(type);
 #else
-            // adsitnik: is this the best option we have?
-            Activator.CreateInstance(type);
+            Runtime.Serialization.FormatterServices.GetUninitializedObject(type);
 #endif
 
         // Invoke any OnDeserializing methods.

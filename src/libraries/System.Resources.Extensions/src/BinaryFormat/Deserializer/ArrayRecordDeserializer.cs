@@ -53,6 +53,7 @@ internal sealed class ArrayRecordDeserializer : ObjectRecordDeserializer
         Object = _arrayOfT = Array.CreateInstance(_elementType, lengths);
         _lengths = lengths;
         _indices = new int[lengths.Length];
+        _canIterate = _arrayOfT.Length > 0;
     }
 
     internal override Id Continue()
