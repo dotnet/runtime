@@ -4,6 +4,17 @@
     <_IsPublishing>true</_IsPublishing>
   </PropertyGroup>
 
+  <PropertyGroup>
+    <_ComObjectDescriptorSupport>false</_ComObjectDescriptorSupport>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <RuntimeHostConfigurationOption Include="System.ComponentModel.TypeDescriptor.IsComObjectDescriptorSupported"
+                                    Condition="'$(_ComObjectDescriptorSupport)' != ''"
+                                    Value="$(_ComObjectDescriptorSupport)"
+                                    Trim="true" />
+  </ItemGroup>  
+
   <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />
 
   <PropertyGroup>

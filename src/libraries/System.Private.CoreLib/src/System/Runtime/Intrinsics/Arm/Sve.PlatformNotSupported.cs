@@ -1160,6 +1160,60 @@ namespace System.Runtime.Intrinsics.Arm
         /// </summary>
         public static unsafe Vector<double> Divide(Vector<double> left, Vector<double> right) { throw new PlatformNotSupportedException(); }
 
+
+        ///  DotProduct : Dot product
+
+        /// <summary>
+        /// svint32_t svdot[_s32](svint32_t op1, svint8_t op2, svint8_t op3)
+        ///   SDOT Ztied1.S, Zop2.B, Zop3.B
+        /// </summary>
+        public static unsafe Vector<int> DotProduct(Vector<int> addend, Vector<sbyte> left, Vector<sbyte> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint64_t svdot[_s64](svint64_t op1, svint16_t op2, svint16_t op3)
+        ///   SDOT Ztied1.D, Zop2.H, Zop3.H
+        /// </summary>
+        public static unsafe Vector<long> DotProduct(Vector<long> addend, Vector<short> left, Vector<short> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint32_t svdot[_u32](svuint32_t op1, svuint8_t op2, svuint8_t op3)
+        ///   UDOT Ztied1.S, Zop2.B, Zop3.B
+        /// </summary>
+        public static unsafe Vector<uint> DotProduct(Vector<uint> addend, Vector<byte> left, Vector<byte> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint64_t svdot[_u64](svuint64_t op1, svuint16_t op2, svuint16_t op3)
+        ///   UDOT Ztied1.D, Zop2.H, Zop3.H
+        /// </summary>
+        public static unsafe Vector<ulong> DotProduct(Vector<ulong> addend, Vector<ushort> left, Vector<ushort> right) { throw new PlatformNotSupportedException(); }
+
+
+        ///  DotProductBySelectedScalar : Dot product
+
+        /// <summary>
+        /// svint32_t svdot_lane[_s32](svint32_t op1, svint8_t op2, svint8_t op3, uint64_t imm_index)
+        ///   SDOT Ztied1.S, Zop2.B, Zop3.B[imm_index]
+        /// </summary>
+        public static unsafe Vector<int> DotProductBySelectedScalar(Vector<int> addend, Vector<sbyte> left, Vector<sbyte> right, [ConstantExpected] byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint64_t svdot_lane[_s64](svint64_t op1, svint16_t op2, svint16_t op3, uint64_t imm_index)
+        ///   SDOT Ztied1.D, Zop2.H, Zop3.H[imm_index]
+        /// </summary>
+        public static unsafe Vector<long> DotProductBySelectedScalar(Vector<long> addend, Vector<short> left, Vector<short> right, [ConstantExpected] byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint32_t svdot_lane[_u32](svuint32_t op1, svuint8_t op2, svuint8_t op3, uint64_t imm_index)
+        ///   UDOT Ztied1.S, Zop2.B, Zop3.B[imm_index]
+        /// </summary>
+        public static unsafe Vector<uint> DotProductBySelectedScalar(Vector<uint> addend, Vector<byte> left, Vector<byte> right, [ConstantExpected] byte rightIndex) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint64_t svdot_lane[_u64](svuint64_t op1, svuint16_t op2, svuint16_t op3, uint64_t imm_index)
+        ///   UDOT Ztied1.D, Zop2.H, Zop3.H[imm_index]
+        /// </summary>
+        public static unsafe Vector<ulong> DotProductBySelectedScalar(Vector<ulong> addend, Vector<ushort> left, Vector<ushort> right, [ConstantExpected] byte rightIndex) { throw new PlatformNotSupportedException(); }
+
         ///  FusedMultiplyAdd : Multiply-add, addend first
 
         /// <summary>

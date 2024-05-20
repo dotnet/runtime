@@ -544,6 +544,18 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
             break;
         }
 
+        case NI_Vector2_MultiplyAddEstimate:
+        case NI_Vector3_MultiplyAddEstimate:
+        case NI_Vector4_MultiplyAddEstimate:
+        case NI_VectorT_MultiplyAddEstimate:
+        {
+            if (BlockNonDeterministicIntrinsics(mustExpand))
+            {
+                return nullptr;
+            }
+            break;
+        }
+
 #if defined(TARGET_XARCH)
         case NI_VectorT_ConvertToDouble:
         {
@@ -838,6 +850,26 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
             break;
         }
 #endif // TARGET_XARCH
+
+        case NI_Vector2_FusedMultiplyAdd:
+        case NI_Vector3_FusedMultiplyAdd:
+        case NI_Vector4_FusedMultiplyAdd:
+        case NI_VectorT_FusedMultiplyAdd:
+        {
+            bool isFmaAccelerated = false;
+
+#if defined(TARGET_XARCH)
+            isFmaAccelerated = compOpportunisticallyDependsOn(InstructionSet_FMA);
+#elif defined(TARGET_ARM64)
+            isFmaAccelerated = compOpportunisticallyDependsOn(InstructionSet_AdvSimd);
+#endif
+
+            if (!isFmaAccelerated)
+            {
+                return nullptr;
+            }
+            break;
+        }
 
 #if defined(TARGET_XARCH)
         case NI_VectorT_Multiply:
@@ -1796,6 +1828,14 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                     return gtNewSimdCndSelNode(retType, op1, op2, op3, simdBaseJitType, simdSize);
                 }
 
+                case NI_Vector2_FusedMultiplyAdd:
+                case NI_Vector3_FusedMultiplyAdd:
+                case NI_Vector4_FusedMultiplyAdd:
+                case NI_VectorT_FusedMultiplyAdd:
+                {
+                    return gtNewSimdFmaNode(retType, op1, op2, op3, simdBaseJitType, simdSize);
+                }
+
                 case NI_Vector2_Lerp:
                 case NI_Vector3_Lerp:
                 case NI_Vector4_Lerp:
@@ -1835,6 +1875,28 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
 
                     // return op1 + op2
                     return gtNewSimdBinOpNode(GT_ADD, retType, op1, op2, simdBaseJitType, simdSize);
+                }
+
+                case NI_Vector2_MultiplyAddEstimate:
+                case NI_Vector3_MultiplyAddEstimate:
+                case NI_Vector4_MultiplyAddEstimate:
+                case NI_VectorT_MultiplyAddEstimate:
+                {
+                    bool isFmaAccelerated = false;
+
+#if defined(TARGET_XARCH)
+                    isFmaAccelerated = compExactlyDependsOn(InstructionSet_FMA);
+#elif defined(TARGET_ARM64)
+                    isFmaAccelerated = compExactlyDependsOn(InstructionSet_AdvSimd);
+#endif
+
+                    if (isFmaAccelerated)
+                    {
+                        return gtNewSimdFmaNode(retType, op1, op2, op3, simdBaseJitType, simdSize);
+                    }
+
+                    GenTree* mulNode = gtNewSimdBinOpNode(GT_MUL, retType, op1, op2, simdBaseJitType, simdSize);
+                    return gtNewSimdBinOpNode(GT_ADD, retType, mulNode, op3, simdBaseJitType, simdSize);
                 }
 
                 case NI_VectorT_StoreUnsafeIndex:

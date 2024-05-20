@@ -49,12 +49,11 @@ public class Runtime_102138
     public static byte[] s_11;
 
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
         var vr3 = new short[][][]{new short[][]{new short[]{0}}};
         var vr8 = new S5();
         s_10 = M8(vr8, ref s_11, vr3);
-        return 100;
     }
 
     public static ref S3 M8(S5 argThis, ref byte[] arg0, short[][][] arg1)

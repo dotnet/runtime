@@ -168,6 +168,9 @@ Copyright (c) .NET Foundation. All rights reserved.
       <!-- if ICU comes from runtime pack then it is already included in ReferenceCopyLocalPaths -->
       <ReferenceCopyLocalPaths Include="$(_BlazorIcuDataFileName)" />
     </ItemGroup>
+    <ItemGroup Condition="'$(_IsHybridGlobalization)' == 'true' AND Exists('$(_RuntimePackNativeDir)dotnet.globalization.js')">
+      <WasmNativeAsset Include="$(_RuntimePackNativeDir)dotnet.globalization.js"/>
+    </ItemGroup>
     <Error Condition="'$(_LoadCustomIcuData)' == 'true' AND !Exists('$(_BlazorIcuDataFileName)')" Text="Could not find %24(BlazorIcuDataFileName)=$(BlazorIcuDataFileName), or when used as a path relative to the runtime pack (='$(_RuntimePackNativeDir)')."/>
   </Target>
 
@@ -355,7 +358,9 @@ Copyright (c) .NET Foundation. All rights reserved.
       TargetFrameworkVersion="$(TargetFrameworkVersion)"
       ModuleAfterConfigLoaded="@(WasmModuleAfterConfigLoaded)"
       ModuleAfterRuntimeReady="@(WasmModuleAfterRuntimeReady)"
-      IsPublish="false" />
+      IsPublish="false"
+      IsAot="$(RunAOTCompilation)"
+      IsMultiThreaded="$(WasmEnableThreads)" />
 
     <ItemGroup>
       <FileWrites Include="$(_WasmBuildBootJsonPath)" />
@@ -641,7 +646,9 @@ Copyright (c) .NET Foundation. All rights reserved.
       TargetFrameworkVersion="$(TargetFrameworkVersion)"
       ModuleAfterConfigLoaded="@(WasmModuleAfterConfigLoaded)"
       ModuleAfterRuntimeReady="@(WasmModuleAfterRuntimeReady)"
-      IsPublish="true" />
+      IsPublish="true"
+      IsAot="$(RunAOTCompilation)"
+      IsMultiThreaded="$(WasmEnableThreads)" />
 
     <ItemGroup>
       <FileWrites Include="$(IntermediateOutputPath)blazor.publish.boot.json" />

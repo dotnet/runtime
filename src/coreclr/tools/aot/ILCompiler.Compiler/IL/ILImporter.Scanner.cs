@@ -54,9 +54,6 @@ namespace Internal.IL
         private bool _isReadOnly;
         private TypeDesc _constrained;
 
-        private int _currentInstructionOffset;
-        private int _previousInstructionOffset;
-
         private sealed class ExceptionRegion
         {
             public ILExceptionRegion ILRegion;
@@ -226,15 +223,6 @@ namespace Internal.IL
                     }
                 }
             }
-
-            _currentInstructionOffset = -1;
-            _previousInstructionOffset = -1;
-        }
-
-        private void StartImportingInstruction()
-        {
-            _previousInstructionOffset = _currentInstructionOffset;
-            _currentInstructionOffset = _currentOffset;
         }
 
         private void EndImportingInstruction()
@@ -1399,6 +1387,7 @@ namespace Internal.IL
             return _compilation.TypeSystemContext.GetWellKnownType(wellKnownType);
         }
 
+        private static void StartImportingInstruction() { }
         private static void ImportNop() { }
         private static void ImportBreak() { }
         private static void ImportLoadVar(int index, bool argument) { }

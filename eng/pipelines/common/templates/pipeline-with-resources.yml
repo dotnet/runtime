@@ -17,7 +17,7 @@ extends:
 
     containers:
       linux_arm:
-        image: mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-cross-arm-net9.0
+        image: mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-cross-arm-net9.0-20240507035943-1390eea
         env:
           ROOTFS_DIR: /crossrootfs/arm
 
@@ -69,6 +69,11 @@ extends:
 
       linux_musl_x64_dev_innerloop:
         image: mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.19-WithNode
+
+      linux_x64_sanitizer:
+        image: mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-cross-amd64-net9.0-sanitizer
+        env:
+          ROOTFS_DIR: /crossrootfs/x64
 
       # We use a CentOS Stream 8 image here to test building from source on CentOS Stream 8.
       SourceBuild_centos_x64:
