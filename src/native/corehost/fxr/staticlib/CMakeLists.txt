@@ -17,7 +17,6 @@ set(HEADERS
 include(../../hostcommon/files.cmake)
 include(../files.cmake)
 
-include(../../hostmisc/hostmisc.cmake)
 include(../../lib_static.cmake)
 
 # Copy static lib PDB to the project output directory
@@ -44,3 +43,5 @@ if (WIN32)
 else()
     install(TARGETS libhostfxr DESTINATION corehost)
 endif(WIN32)
+
+target_link_libraries(libhostfxr PRIVATE hostmisc)

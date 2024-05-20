@@ -19,7 +19,38 @@ elseif (CMAKE_CXX_COMPILER_ID MATCHES GNU)
     add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-fno-use-cxa-atexit>)
 endif()
 
+set(CMAKE_INCLUDE_CURRENT_DIR ON)
+include_directories(${CMAKE_CURRENT_BINARY_DIR})
+include_directories(${CMAKE_CURRENT_SOURCE_DIR})
+include_directories(${CLR_ARTIFACTS_OBJ_DIR}) # Generated version files
+
+if (NOT ${CLR_SINGLE_FILE_HOST_ONLY})
+    if("${CLI_CMAKE_PKG_RID}" STREQUAL "")
+        message(FATAL_ERROR "A minimum supported package rid is not specified (ex: win7-x86 or ubuntu.14.04-x64, osx.10.12-x64, rhel.7-x64)")
+    endif()
+    if("${CLI_CMAKE_COMMIT_HASH}" STREQUAL "")
+        message(FATAL_ERROR "Commit hash needs to be specified to build the host")
+    endif()
+endif()
+
+if("${CLI_CMAKE_FALLBACK_OS}" STREQUAL "")
+    message(FATAL_ERROR "Fallback rid needs to be specified to build the host")
+endif()
+
+if("${CLI_CMAKE_FALLBACK_OS}" STREQUAL "${CLR_CMAKE_TARGET_OS}")
+    add_definitions(-DFALLBACK_OS_IS_SAME_AS_TARGET_OS)
+endif()
+
+configure_file(configure.h.in ${CMAKE_CURRENT_BINARY_DIR}/configure.h)
+
+# This is required to map a symbol reference to a matching definition local to the module (.so)
+# containing the reference instead of using definitions from other modules.
+if(CLR_CMAKE_TARGET_LINUX OR CLR_CMAKE_TARGET_SUNOS)
+    add_link_options(LINKER:-Bsymbolic)
+endif()
+
 add_subdirectory(hostcommon)
+add_subdirectory(hostmisc)
 add_subdirectory(fxr)
 add_subdirectory(hostpolicy)
 

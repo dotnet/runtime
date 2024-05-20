@@ -11,8 +11,6 @@ set(SOURCES
     test_fx_ver.cpp
 )
 
-include(${CMAKE_CURRENT_LIST_DIR}/../../hostmisc/hostmisc.cmake)
-
 include(../testexe.cmake)
 
-target_link_libraries(${DOTNET_PROJECT_NAME} PRIVATE libhostcommon)
+target_link_libraries(${DOTNET_PROJECT_NAME} PRIVATE libhostcommon hostmisc)

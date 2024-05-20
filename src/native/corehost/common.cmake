@@ -3,17 +3,10 @@
 
 project(${DOTNET_PROJECT_NAME})
 
-include(${CMAKE_CURRENT_LIST_DIR}/setup.cmake)
-
 # Include directories
 if(CLR_CMAKE_TARGET_WIN32)
     include_directories("${CLI_CMAKE_RESOURCE_DIR}/${DOTNET_PROJECT_NAME}")
 endif()
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/)
-include_directories(${CMAKE_CURRENT_LIST_DIR}/)
-include_directories(${CMAKE_CURRENT_LIST_DIR}/../)
-include_directories(${CMAKE_CURRENT_LIST_DIR}/hostmisc)
-include_directories(${CLR_ARTIFACTS_OBJ_DIR}) # Generated version files
 
 set(RESOURCES)
 if (CLR_CMAKE_TARGET_WIN32)
@@ -26,12 +19,6 @@ endif()
 
 if(CLR_CMAKE_TARGET_WIN32)
     list(APPEND SOURCES ${HEADERS})
-endif()
-
-# This is required to map a symbol reference to a matching definition local to the module (.so)
-# containing the reference instead of using definitions from other modules.
-if(CLR_CMAKE_TARGET_LINUX OR CLR_CMAKE_TARGET_SUNOS)
-    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Xlinker -Bsymbolic")
 endif()
 
 function(set_common_libs TargetType)

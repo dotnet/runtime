@@ -1,18 +1,23 @@
 # Licensed to the .NET Foundation under one or more agreements.
 # The .NET Foundation licenses this file to you under the MIT license.
 
-include(${CMAKE_CURRENT_LIST_DIR}/configure.cmake)
-include_directories(${CMAKE_CURRENT_BINARY_DIR})
-include_directories("${CLR_SRC_NATIVE_DIR}")
+include(configure.cmake)
+
+add_library(hostmisc INTERFACE)
+
+target_include_directories(hostmisc INTERFACE
+    ${CMAKE_CURRENT_BINARY_DIR}
+    ${CLR_SRC_NATIVE_DIR}
+    ${CMAKE_CURRENT_LIST_DIR})
 
 # CMake does not recommend using globbing since it messes with the freshness checks
-list(APPEND SOURCES
+set(SOURCES
     ${CMAKE_CURRENT_LIST_DIR}/trace.cpp
     ${CMAKE_CURRENT_LIST_DIR}/utils.cpp
     ${CMAKE_CURRENT_LIST_DIR}/../fxr/fx_ver.cpp
 )
 
-list(APPEND HEADERS
+set(HEADERS
     ${CMAKE_CURRENT_LIST_DIR}/trace.h
     ${CMAKE_CURRENT_LIST_DIR}/utils.h
     ${CMAKE_CURRENT_LIST_DIR}/pal.h
@@ -29,4 +34,10 @@ if(CLR_CMAKE_TARGET_WIN32)
 else()
     list(APPEND SOURCES
         ${CMAKE_CURRENT_LIST_DIR}/pal.unix.cpp)
+endif()
+
+target_sources(hostmisc INTERFACE ${SOURCES})
+
+if (MSVC)
+    target_sources(hostmisc INTERFACE ${HEADERS})
 endif()

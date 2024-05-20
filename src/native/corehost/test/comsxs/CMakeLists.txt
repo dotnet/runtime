@@ -13,6 +13,8 @@ set(SOURCES
 
 include(../testexe.cmake)
 
+target_link_libraries(comsxs PRIVATE hostmisc)
+
 target_link_libraries(comsxs PRIVATE ole32 oleaut32)
 
 install_with_stripped_symbols(comsxs TARGETS corehost_test)

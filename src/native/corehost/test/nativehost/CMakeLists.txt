@@ -44,11 +44,9 @@ if(CLR_CMAKE_TARGET_WIN32)
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /DELAYLOAD:nethost.dll")
 endif()
 
-include(../../hostmisc/hostmisc.cmake)
-
 include(../testexe.cmake)
 
-target_link_libraries(${DOTNET_PROJECT_NAME} PRIVATE nethost)
+target_link_libraries(${DOTNET_PROJECT_NAME} PRIVATE nethost hostmisc)
 
 if (CLR_CMAKE_TARGET_WIN32)
     target_link_libraries(${DOTNET_PROJECT_NAME} PRIVATE delayimp.lib)

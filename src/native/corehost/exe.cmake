@@ -4,7 +4,6 @@
 project (${DOTNET_PROJECT_NAME})
 
 include(${CMAKE_CURRENT_LIST_DIR}/common.cmake)
-include(${CMAKE_CURRENT_LIST_DIR}/hostmisc/hostmisc.cmake)
 
 # Include directories
 include_directories(${CMAKE_CURRENT_LIST_DIR}/fxr)
@@ -19,6 +18,8 @@ list(APPEND HEADERS
 )
 
 add_executable(${DOTNET_PROJECT_NAME} ${SOURCES} ${RESOURCES})
+
+target_link_libraries(${DOTNET_PROJECT_NAME} PRIVATE hostmisc)
 
 add_sanitizer_runtime_support(${DOTNET_PROJECT_NAME})
 

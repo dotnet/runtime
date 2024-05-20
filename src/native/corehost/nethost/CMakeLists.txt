@@ -33,6 +33,9 @@ if (WIN32)
     )
 endif(WIN32)
 
+target_link_libraries(nethost PRIVATE hostmisc)
+target_link_libraries(libnethost PRIVATE hostmisc)
+
 install(FILES ../coreclr_delegates.h DESTINATION corehost)
 install(FILES ../hostfxr.h DESTINATION corehost)
 install(FILES nethost.h DESTINATION corehost)
