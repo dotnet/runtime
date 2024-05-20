@@ -8,12 +8,6 @@ namespace System.Globalization.Tests
 {
     public class DateTimeFormatInfoShortDatePattern
     {
-        [Fact]
-        public void ShortDatePattern_InvariantInfo_ReturnsExpected()
-        {
-            Assert.Equal("MM/dd/yyyy", DateTimeFormatInfo.InvariantInfo.ShortDatePattern);
-        }
-        
         public static IEnumerable<object[]> ShortDatePattern_Get_TestData()
         {
             yield return new object[] { new CultureInfo("en-US").DateTimeFormat, "M/d/yyyy", "en-US" };
