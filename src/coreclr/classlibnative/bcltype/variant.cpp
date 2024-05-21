@@ -54,10 +54,13 @@ extern "C" void QCALLTYPE Variant_ConvertValueTypeToRecord(QCall::ObjectHandleOn
     QCALL_CONTRACT;
 
     BEGIN_QCALL;
-
     GCX_COOP();
+
     OBJECTREF objRef = obj.Get();
+    GCPROTECT_BEGIN(objRef);
     OleVariant::ConvertValueClassToVariant(&objRef, pOle);
+    GCPROTECT_END();
+
     END_QCALL;
 }
 #endif // FEATURE_COMINTEROP

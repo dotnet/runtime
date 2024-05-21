@@ -134,6 +134,7 @@ namespace System
 
                 case ValueType:
                     ConvertValueTypeToRecord(ObjectHandleOnStack.Create(ref o), out pOle);
+                    pOle.VarType = VarEnum.VT_RECORD;
                     break;
 
                 // SafeHandle's or CriticalHandle's cannot be stored in VARIANT's.

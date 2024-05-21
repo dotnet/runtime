@@ -3793,6 +3793,7 @@ void OleVariant::ConvertValueClassToVariant(OBJECTREF *pBoxedValueClass, VARIANT
         MODE_COOPERATIVE;
         PRECONDITION(CheckPointer(pBoxedValueClass));
         PRECONDITION(CheckPointer(pOleVariant));
+        PRECONDITION(*pBoxedValueClass == NULL || (IsProtectedByGCFrame (pBoxedValueClass)));
     }
     CONTRACTL_END;
 
