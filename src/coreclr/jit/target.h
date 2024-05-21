@@ -211,7 +211,6 @@ enum _regMask_enum : unsigned
 typedef _regNumber_enum regNumber;
 typedef unsigned char   regNumberSmall;
 
-
 #if REGMASK_BITS == 8
 typedef unsigned char regMaskSmall;
 #define REG_MASK_INT_FMT "%02X"
@@ -382,7 +381,6 @@ static uint32_t BitScanForward(regMaskTP mask)
     return BitOperations::BitScanForward(mask);
 #endif
 }
-
 
 /*****************************************************************************/
 

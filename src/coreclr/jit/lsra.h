@@ -775,10 +775,10 @@ private:
         return (LsraStressLimitRegs)(lsraStressMask & LSRA_LIMIT_MASK);
     }
 
-    SingleTypeRegSet getConstrainedRegMask(RefPosition* refPosition,
+    SingleTypeRegSet getConstrainedRegMask(RefPosition*     refPosition,
                                            SingleTypeRegSet regMaskActual,
                                            SingleTypeRegSet regMaskConstrain,
-                                    unsigned     minRegCount);
+                                           unsigned         minRegCount);
     SingleTypeRegSet stressLimitRegs(RefPosition* refPosition, SingleTypeRegSet mask);
 
     // This controls the heuristics used to select registers
@@ -1166,12 +1166,12 @@ private:
 
     RefPosition* newRefPositionRaw(LsraLocation nodeLocation, GenTree* treeNode, RefType refType);
 
-    RefPosition* newRefPosition(Interval*    theInterval,
-                                LsraLocation theLocation,
-                                RefType      theRefType,
-                                GenTree*     theTreeNode,
+    RefPosition* newRefPosition(Interval*        theInterval,
+                                LsraLocation     theLocation,
+                                RefType          theRefType,
+                                GenTree*         theTreeNode,
                                 SingleTypeRegSet mask,
-                                unsigned     multiRegIdx = 0);
+                                unsigned         multiRegIdx = 0);
 
     RefPosition* newRefPosition(
         regNumber reg, LsraLocation theLocation, RefType theRefType, GenTree* theTreeNode, SingleTypeRegSet mask);
@@ -1230,12 +1230,14 @@ private:
      ****************************************************************************/
 
 #if defined(TARGET_ARM64)
-    bool      canAssignNextConsecutiveRegisters(RefPosition* firstRefPosition, regNumber firstRegAssigned);
-    void      assignConsecutiveRegisters(RefPosition* firstRefPosition, regNumber firstRegAssigned);
-    SingleTypeRegSet getConsecutiveCandidates(SingleTypeRegSet candidates, RefPosition* refPosition, SingleTypeRegSet* busyCandidates);
-    SingleTypeRegSet filterConsecutiveCandidates(SingleTypeRegSet    candidates,
-                                          unsigned int registersNeeded,
-                                          SingleTypeRegSet*   allConsecutiveCandidates);
+    bool             canAssignNextConsecutiveRegisters(RefPosition* firstRefPosition, regNumber firstRegAssigned);
+    void             assignConsecutiveRegisters(RefPosition* firstRefPosition, regNumber firstRegAssigned);
+    SingleTypeRegSet getConsecutiveCandidates(SingleTypeRegSet  candidates,
+                                              RefPosition*      refPosition,
+                                              SingleTypeRegSet* busyCandidates);
+    SingleTypeRegSet filterConsecutiveCandidates(SingleTypeRegSet  candidates,
+                                                 unsigned int      registersNeeded,
+                                                 SingleTypeRegSet* allConsecutiveCandidates);
     SingleTypeRegSet filterConsecutiveCandidatesForSpill(SingleTypeRegSet consecutiveCandidates,
                                                          unsigned int     registersNeeded);
 #endif // TARGET_ARM64
@@ -1275,10 +1277,10 @@ private:
         // Perform register selection and update currentInterval or refPosition
         template <bool hasConsecutiveRegister = false>
         FORCEINLINE SingleTypeRegSet select(Interval*                currentInterval,
-                                     RefPosition* refPosition DEBUG_ARG(RegisterScore* registerScore));
+                                            RefPosition* refPosition DEBUG_ARG(RegisterScore* registerScore));
 
         FORCEINLINE SingleTypeRegSet selectMinimal(Interval*                currentInterval,
-                                            RefPosition* refPosition DEBUG_ARG(RegisterScore* registerScore));
+                                                   RefPosition* refPosition DEBUG_ARG(RegisterScore* registerScore));
 
         // If the register is from unassigned set such that it was not already
         // assigned to the current interval
@@ -1321,16 +1323,16 @@ private:
 
         SingleTypeRegSet candidates;
         SingleTypeRegSet preferences     = RBM_NONE;
-        Interval* relatedInterval = nullptr;
+        Interval*        relatedInterval = nullptr;
 
         SingleTypeRegSet relatedPreferences = RBM_NONE;
-        LsraLocation rangeEndLocation;
-        LsraLocation relatedLastLocation;
-        bool         preferCalleeSave = false;
-        RefPosition* rangeEndRefPosition;
-        RefPosition* lastRefPosition;
+        LsraLocation     rangeEndLocation;
+        LsraLocation     relatedLastLocation;
+        bool             preferCalleeSave = false;
+        RefPosition*     rangeEndRefPosition;
+        RefPosition*     lastRefPosition;
         SingleTypeRegSet callerCalleePrefs = RBM_NONE;
-        LsraLocation lastLocation;
+        LsraLocation     lastLocation;
 
         SingleTypeRegSet foundRegBit;
 
@@ -1347,11 +1349,11 @@ private:
         SingleTypeRegSet preferenceSet;
         SingleTypeRegSet coversRelatedSet;
         SingleTypeRegSet coversFullSet;
-        bool      coversSetsCalculated  = false;
-        bool      found                 = false;
-        bool      skipAllocation        = false;
-        bool      coversFullApplied     = false;
-        bool      constAvailableApplied = false;
+        bool             coversSetsCalculated  = false;
+        bool             found                 = false;
+        bool             skipAllocation        = false;
+        bool             coversFullApplied     = false;
+        bool             constAvailableApplied = false;
 
         // If the selected register is already assigned to the current internal
         FORCEINLINE bool isAlreadyAssigned()
@@ -1422,7 +1424,7 @@ private:
                                       BasicBlock*      toBlock,
                                       var_types        type,
                                       VARSET_VALARG_TP sharedCriticalLiveSet,
-                                      SingleTypeRegSet        terminatorConsumedRegs);
+                                      SingleTypeRegSet terminatorConsumedRegs);
 
 #ifdef TARGET_ARM64
     typedef JitHashTable<RefPosition*, JitPtrKeyFuncs<RefPosition>, RefPosition*> NextConsecutiveRefPositionsMap;
@@ -1713,8 +1715,8 @@ private:
     VarToRegMap* outVarToRegMaps;
 
     // A temporary VarToRegMap used during the resolution of critical edges.
-    VarToRegMap          sharedCriticalVarToRegMap;
-    PhasedVar<regMaskTP> actualRegistersMask;
+    VarToRegMap                 sharedCriticalVarToRegMap;
+    PhasedVar<regMaskTP>        actualRegistersMask;
     PhasedVar<SingleTypeRegSet> availableIntRegs;
     PhasedVar<SingleTypeRegSet> availableFloatRegs;
     PhasedVar<SingleTypeRegSet> availableDoubleRegs;
@@ -2007,10 +2009,10 @@ private:
     int  BuildSimple(GenTree* tree);
     int  BuildOperandUses(GenTree* node, SingleTypeRegSet candidates = RBM_NONE);
     void AddDelayFreeUses(RefPosition* refPosition, GenTree* rmwNode);
-    int  BuildDelayFreeUses(GenTree*      node,
-                            GenTree*      rmwNode        = nullptr,
-                            SingleTypeRegSet     candidates     = RBM_NONE,
-                            RefPosition** useRefPosition = nullptr);
+    int  BuildDelayFreeUses(GenTree*         node,
+                            GenTree*         rmwNode        = nullptr,
+                            SingleTypeRegSet candidates     = RBM_NONE,
+                            RefPosition**    useRefPosition = nullptr);
     int  BuildIndirUses(GenTreeIndir* indirTree, SingleTypeRegSet candidates = RBM_NONE);
     int  BuildAddrUses(GenTree* addr, SingleTypeRegSet candidates = RBM_NONE);
     void HandleFloatVarArgs(GenTreeCall* call, GenTree* argNode, bool* callHasFloatRegArgs);

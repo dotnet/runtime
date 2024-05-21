@@ -177,8 +177,8 @@ bool LinearScan::canAssignNextConsecutiveRegisters(RefPosition* firstRefPosition
 //      set.
 //
 SingleTypeRegSet LinearScan::filterConsecutiveCandidates(SingleTypeRegSet  floatCandidates,
-                                                  unsigned int registersNeeded,
-                                                  SingleTypeRegSet*   allConsecutiveCandidates)
+                                                         unsigned int      registersNeeded,
+                                                         SingleTypeRegSet* allConsecutiveCandidates)
 {
     assert((floatCandidates == RBM_NONE) || (floatCandidates & availableFloatRegs) != RBM_NONE);
 
@@ -196,10 +196,10 @@ SingleTypeRegSet LinearScan::filterConsecutiveCandidates(SingleTypeRegSet  float
 // At this point, for 'n' registers requirement, if Rm, Rm+1, Rm+2, ..., Rm+k-1 are
 // available, create the mask only for Rm, Rm+1, ..., Rm+(k-n) to convey that it
 // is safe to assign any of those registers, but not beyond that.
-#define AppendConsecutiveMask(startIndex, endIndex, availableRegistersMask)                                 \
-    SingleTypeRegSet selectionStartMask = (1ULL << regAvailableStartIndex) - 1;                             \
-    SingleTypeRegSet selectionEndMask   = (1ULL << (regAvailableEndIndex - registersNeeded + 1)) - 1;       \
-    consecutiveResult |= availableRegistersMask & (selectionEndMask & ~selectionStartMask);                 \
+#define AppendConsecutiveMask(startIndex, endIndex, availableRegistersMask)                                            \
+    SingleTypeRegSet selectionStartMask = (1ULL << regAvailableStartIndex) - 1;                                        \
+    SingleTypeRegSet selectionEndMask   = (1ULL << (regAvailableEndIndex - registersNeeded + 1)) - 1;                  \
+    consecutiveResult |= availableRegistersMask & (selectionEndMask & ~selectionStartMask);                            \
     overallResult |= availableRegistersMask;
 
     unsigned regAvailableStartIndex = 0, regAvailableEndIndex = 0;
@@ -207,7 +207,7 @@ SingleTypeRegSet LinearScan::filterConsecutiveCandidates(SingleTypeRegSet  float
     do
     {
         // From LSB, find the first available register (bit `1`)
-        regAvailableStartIndex = BitScanForward(currAvailableRegs);
+        regAvailableStartIndex     = BitScanForward(currAvailableRegs);
         SingleTypeRegSet startMask = (1ULL << regAvailableStartIndex) - 1;
 
         // Mask all the bits that are processed from LSB thru regAvailableStart until the last `1`.
@@ -332,8 +332,8 @@ SingleTypeRegSet LinearScan::filterConsecutiveCandidatesForSpill(SingleTypeRegSe
     assert((registersNeeded >= 2) && (registersNeeded <= 4));
     SingleTypeRegSet consecutiveResultForBusy = RBM_NONE;
     SingleTypeRegSet unprocessedRegs          = consecutiveCandidates;
-    unsigned  regAvailableStartIndex = 0, regAvailableEndIndex = 0;
-    int       maxSpillRegs        = registersNeeded;
+    unsigned         regAvailableStartIndex = 0, regAvailableEndIndex = 0;
+    int              maxSpillRegs        = registersNeeded;
     SingleTypeRegSet registersNeededMask = (1ULL << registersNeeded) - 1;
     do
     {
@@ -416,9 +416,9 @@ SingleTypeRegSet LinearScan::filterConsecutiveCandidatesForSpill(SingleTypeRegSe
 //      allCandidates = 0x1C080D0F00000000, the consecutive register mask returned
 //      will be 0x400000300000000.
 //
-SingleTypeRegSet LinearScan::getConsecutiveCandidates(SingleTypeRegSet    allCandidates,
-                                               RefPosition* refPosition,
-                                               SingleTypeRegSet*   busyCandidates)
+SingleTypeRegSet LinearScan::getConsecutiveCandidates(SingleTypeRegSet  allCandidates,
+                                                      RefPosition*      refPosition,
+                                                      SingleTypeRegSet* busyCandidates)
 {
     assert(compiler->info.compNeedsConsecutiveRegisters);
     assert(refPosition->isFirstRefPositionOfConsecutiveRegisters());
@@ -431,13 +431,13 @@ SingleTypeRegSet LinearScan::getConsecutiveCandidates(SingleTypeRegSet    allCan
     {
         // For stress, make only alternate registers available so we can stress the selection of free/busy registers.
         floatFreeCandidates &= (RBM_V0 | RBM_V2 | RBM_V4 | RBM_V6 | RBM_V8 | RBM_V10 | RBM_V12 | RBM_V14 | RBM_V16 |
-                           RBM_V18 | RBM_V20 | RBM_V22 | RBM_V24 | RBM_V26 | RBM_V28 | RBM_V30);
+                                RBM_V18 | RBM_V20 | RBM_V22 | RBM_V24 | RBM_V26 | RBM_V28 | RBM_V30);
     }
 #endif
 
     *busyCandidates = RBM_NONE;
-    SingleTypeRegSet    overallResult;
-    unsigned int registersNeeded = refPosition->regCount;
+    SingleTypeRegSet overallResult;
+    unsigned int     registersNeeded = refPosition->regCount;
 
     if (floatFreeCandidates != RBM_NONE)
     {
@@ -451,9 +451,9 @@ SingleTypeRegSet LinearScan::getConsecutiveCandidates(SingleTypeRegSet    allCan
             // register out of the `consecutiveResult` is available for the first RefPosition, then just use
             // that. This will avoid unnecessary copies.
 
-            regNumber firstRegNum  = REG_NA;
-            regNumber prevRegNum   = REG_NA;
-            int       foundCount   = 0;
+            regNumber firstRegNum = REG_NA;
+            regNumber prevRegNum  = REG_NA;
+            int       foundCount  = 0;
 
             RefPosition* consecutiveRefPosition = getNextConsecutiveRefPosition(refPosition);
             assert(consecutiveRefPosition != nullptr);
@@ -465,7 +465,7 @@ SingleTypeRegSet LinearScan::getConsecutiveCandidates(SingleTypeRegSet    allCan
 
                 if (!interval->isActive)
                 {
-                    foundCount   = 0;
+                    foundCount = 0;
                     continue;
                 }
 
@@ -482,7 +482,7 @@ SingleTypeRegSet LinearScan::getConsecutiveCandidates(SingleTypeRegSet    allCan
                     continue;
                 }
 
-                foundCount   = 0;
+                foundCount = 0;
                 break;
             }
 
@@ -1843,9 +1843,9 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
 
         assert(intrin.op1 != nullptr);
 
-        bool      forceOp2DelayFree   = false;
+        bool             forceOp2DelayFree   = false;
         SingleTypeRegSet lowVectorCandidates = RBM_NONE;
-        size_t    lowVectorOperandNum = 0;
+        size_t           lowVectorOperandNum = 0;
         if ((intrin.id == NI_Vector64_GetElement) || (intrin.id == NI_Vector128_GetElement))
         {
             if (!intrin.op2->IsCnsIntOrI() && (!intrin.op1->isContained() || intrin.op1->OperIsLocal()))

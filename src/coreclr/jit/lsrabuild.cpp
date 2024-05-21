@@ -250,15 +250,15 @@ void LinearScan::resolveConflictingDefAndUse(Interval* interval, RefPosition* de
 {
     assert(!interval->isLocalVar);
 
-    RefPosition* useRefPosition   = defRefPosition->nextRefPosition;
+    RefPosition*     useRefPosition   = defRefPosition->nextRefPosition;
     SingleTypeRegSet defRegAssignment = defRefPosition->registerAssignment;
     SingleTypeRegSet useRegAssignment = useRefPosition->registerAssignment;
-    RegRecord*   defRegRecord     = nullptr;
-    RegRecord*   useRegRecord     = nullptr;
-    regNumber    defReg           = REG_NA;
-    regNumber    useReg           = REG_NA;
-    bool         defRegConflict   = ((defRegAssignment & useRegAssignment) == RBM_NONE);
-    bool         useRegConflict   = defRegConflict;
+    RegRecord*       defRegRecord     = nullptr;
+    RegRecord*       useRegRecord     = nullptr;
+    regNumber        defReg           = REG_NA;
+    regNumber        useReg           = REG_NA;
+    bool             defRegConflict   = ((defRegAssignment & useRegAssignment) == RBM_NONE);
+    bool             useRegConflict   = defRegConflict;
 
     // If the useRefPosition is a "delayRegFree", we can't change the registerAssignment
     // on it, or we will fail to ensure that the fixedReg is busy at the time the target
@@ -554,12 +554,12 @@ RefPosition* LinearScan::newRefPosition(
 // Return Value:
 //     a new RefPosition
 //
-RefPosition* LinearScan::newRefPosition(Interval*    theInterval,
-                                        LsraLocation theLocation,
-                                        RefType      theRefType,
-                                        GenTree*     theTreeNode,
+RefPosition* LinearScan::newRefPosition(Interval*        theInterval,
+                                        LsraLocation     theLocation,
+                                        RefType          theRefType,
+                                        GenTree*         theTreeNode,
                                         SingleTypeRegSet mask,
-                                        unsigned     multiRegIdx /* = 0 */)
+                                        unsigned         multiRegIdx /* = 0 */)
 {
     if (theInterval != nullptr)
     {
@@ -713,7 +713,6 @@ void LinearScan::addKillForRegs(regMaskTP mask, LsraLocation currentLoc)
 #else
     RefPosition* pos = newRefPosition((Interval*)nullptr, currentLoc, RefTypeKill, nullptr, mask);
 #endif
-
 
     *killTail = pos;
     killTail  = &pos->nextRefPosition;
@@ -1400,9 +1399,9 @@ void LinearScan::buildInternalRegisterUses()
     assert(internalCount <= MaxInternalCount);
     for (int i = 0; i < internalCount; i++)
     {
-        RefPosition* def  = internalDefs[i];
+        RefPosition*     def  = internalDefs[i];
         SingleTypeRegSet mask = def->registerAssignment;
-        RefPosition* use  = newRefPosition(def->getInterval(), currentLoc, RefTypeUse, def->treeNode, mask, 0);
+        RefPosition*     use  = newRefPosition(def->getInterval(), currentLoc, RefTypeUse, def->treeNode, mask, 0);
         if (setInternalRegsDelayFree)
         {
             use->delayRegFree = true;
@@ -1868,7 +1867,7 @@ void LinearScan::buildRefPositionsForNode(GenTree* tree, LsraLocation currentLoc
             newRefPosition->minRegCandidateCount = minRegCountForRef;
             if (newRefPosition->IsActualRef() && doReverseCallerCallee())
             {
-                Interval* interval       = newRefPosition->getInterval();
+                Interval*        interval       = newRefPosition->getInterval();
                 SingleTypeRegSet oldAssignment  = newRefPosition->registerAssignment;
                 SingleTypeRegSet calleeSaveMask = calleeSaveRegs(interval->registerType);
 #ifdef TARGET_ARM64
@@ -2874,8 +2873,8 @@ void LinearScan::buildInitialParamDef(const LclVarDsc* varDsc, regNumber paramRe
 {
     assert(isCandidateVar(varDsc));
 
-    Interval*       interval = getIntervalForLocalVar(varDsc->lvVarIndex);
-    const var_types regType  = varDsc->GetRegisterType();
+    Interval*        interval = getIntervalForLocalVar(varDsc->lvVarIndex);
+    const var_types  regType  = varDsc->GetRegisterType();
     SingleTypeRegSet mask     = allRegs(regType);
     if ((paramReg != REG_NA) && !stressInitialParamReg())
     {
@@ -3168,7 +3167,8 @@ void LinearScan::BuildCallDefs(GenTree* tree, int dstCount, regMaskTP dstCandida
     {
         // In case of multi-reg call node, we have to query the i'th position return register.
         // For all other cases of multi-reg definitions, the registers must be in sequential order.
-        regNumber thisReg = tree->AsCall()->GetReturnTypeDesc()->GetABIReturnReg(i, tree->AsCall()->GetUnmanagedCallConv());
+        regNumber thisReg =
+            tree->AsCall()->GetReturnTypeDesc()->GetABIReturnReg(i, tree->AsCall()->GetUnmanagedCallConv());
 
 #ifdef TARGET_ARM64
         assert(dstCandidates.IsRegNumInMask(thisReg));
@@ -3177,7 +3177,6 @@ void LinearScan::BuildCallDefs(GenTree* tree, int dstCount, regMaskTP dstCandida
         assert((dstCandidates & genRegMask(thisReg)) != RBM_NONE);
         dstCandidates &= ~genRegMask(thisReg);
 #endif // TARGET_ARM64
-
 
         BuildDef(tree, genRegMask(thisReg), i);
     }
@@ -3691,10 +3690,10 @@ void LinearScan::AddDelayFreeUses(RefPosition* useRefPosition, GenTree* rmwNode)
 // Return Value:
 //    The number of source registers used by the *parent* of this node.
 //
-int LinearScan::BuildDelayFreeUses(GenTree*      node,
-                                   GenTree*      rmwNode,
-                                   SingleTypeRegSet     candidates,
-                                   RefPosition** useRefPositionRef)
+int LinearScan::BuildDelayFreeUses(GenTree*         node,
+                                   GenTree*         rmwNode,
+                                   SingleTypeRegSet candidates,
+                                   RefPosition**    useRefPositionRef)
 {
     RefPosition* use  = nullptr;
     GenTree*     addr = nullptr;
@@ -3890,7 +3889,7 @@ void LinearScan::BuildStoreLocDef(GenTreeLclVarCommon* storeLoc,
     }
 
     SingleTypeRegSet defCandidates = RBM_NONE;
-    var_types type          = varDsc->GetRegisterType();
+    var_types        type          = varDsc->GetRegisterType();
 
 #ifdef TARGET_X86
     if (varTypeIsByte(type))
@@ -4085,7 +4084,7 @@ int LinearScan::BuildStoreLoc(GenTreeLclVarCommon* storeLoc)
     }
     else
     {
-        srcCount                = 1;
+        srcCount                       = 1;
         SingleTypeRegSet srcCandidates = RBM_NONE;
 #ifdef TARGET_X86
         var_types type = varDsc->GetRegisterType(storeLoc);
@@ -4370,8 +4369,8 @@ int LinearScan::BuildPutArgReg(GenTreeUnOp* node)
 
     // To avoid redundant moves, have the argument operand computed in the
     // register in which the argument is passed to the call.
-    SingleTypeRegSet    argMask = genRegMask(argReg);
-    RefPosition* use     = BuildUse(op1, argMask);
+    SingleTypeRegSet argMask = genRegMask(argReg);
+    RefPosition*     use     = BuildUse(op1, argMask);
 
     // Record that this register is occupied by a register now.
     placedArgRegs |= argMask;
@@ -4541,8 +4540,8 @@ int LinearScan::BuildCmpOperands(GenTree* tree)
 {
     SingleTypeRegSet op1Candidates = RBM_NONE;
     SingleTypeRegSet op2Candidates = RBM_NONE;
-    GenTree*  op1           = tree->gtGetOp1();
-    GenTree*  op2           = tree->gtGetOp2();
+    GenTree*         op1           = tree->gtGetOp1();
+    GenTree*         op2           = tree->gtGetOp2();
 
 #ifdef TARGET_X86
     bool needByteRegs = false;
