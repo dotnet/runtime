@@ -6104,6 +6104,9 @@ public:
     void fgDoReversePostOrderLayout();
     void fgMoveColdBlocks();
 
+    template <bool hasEH>
+    void fgMoveBackwardJumpsToSuccessors();
+
     bool fgFuncletsAreCold();
 
     PhaseStatus fgDetermineFirstColdBlock();
