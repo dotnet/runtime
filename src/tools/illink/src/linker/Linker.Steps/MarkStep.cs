@@ -3517,8 +3517,10 @@ namespace Mono.Linker.Steps
 			MarkMethodIfNotNull (evt.InvokeMethod, new DependencyInfo (dependencyKind, evt), origin);
 			MarkMethodIfNotNull (evt.RemoveMethod, new DependencyInfo (dependencyKind, evt), origin);
 
-			var eventOrigin = new MessageOrigin (evt);
+			if (!Annotations.MarkProcessed (evt, reason))
+				return;
 
+			var eventOrigin = new MessageOrigin (evt);
 			MarkCustomAttributes (evt, new DependencyInfo (DependencyKind.CustomAttribute, evt), eventOrigin);
 			DoAdditionalEventProcessing (evt);
 		}
