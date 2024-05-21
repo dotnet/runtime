@@ -41,6 +41,7 @@ namespace System.Linq.Parallel.Tests
         [Theory]
         [MemberData(nameof(DegreeData), new[] { 1024 }, new[] { 1, 4, 512 })]
         [OuterLoop("Resource-intensive due to parallel processing", ~TestPlatforms.Browser)]
+        [SkipOnPlatform(TestPlatforms.Browser, "Not supported on browser")]
         public static void DegreeOfParallelism(Labeled<ParallelQuery<int>> labeled, int count, int degree)
         {
             Assert.Equal(Functions.SumRange(0, count), labeled.Item.WithDegreeOfParallelism(degree).Sum());
@@ -94,6 +95,7 @@ namespace System.Linq.Parallel.Tests
         [MemberData(nameof(NotLoadBalancedDegreeData), new[] { 1, 4 }, new int[] { /* same as count */ })]
         [MemberData(nameof(NotLoadBalancedDegreeData), new[] { 32, 512, 1024 }, new[] { 4, 16 })]
         [OuterLoop("Resource-intensive due to parallel processing", ~TestPlatforms.Browser)]
+        [SkipOnPlatform(TestPlatforms.Browser, "Not supported on browser")]
         public static void DegreeOfParallelism_Aggregate_Accumulator(Labeled<ParallelQuery<int>> labeled, int count, int degree)
         {
             ParallelQuery<int> query = labeled.Item;
@@ -112,6 +114,7 @@ namespace System.Linq.Parallel.Tests
         [MemberData(nameof(NotLoadBalancedDegreeData), new[] { 1, 4 }, new int[] { /* same as count */ })]
         [MemberData(nameof(NotLoadBalancedDegreeData), new[] { 32, 512, 1024 }, new[] { 4, 16 })]
         [OuterLoop("Resource-intensive due to parallel processing", ~TestPlatforms.Browser)]
+        [SkipOnPlatform(TestPlatforms.Browser, "Not supported on browser")]
         public static void DegreeOfParallelism_Aggregate_SeedFunction(Labeled<ParallelQuery<int>> labeled, int count, int degree)
         {
             ParallelQuery<int> query = labeled.Item;

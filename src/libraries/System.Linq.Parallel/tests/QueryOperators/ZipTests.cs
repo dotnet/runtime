@@ -180,6 +180,7 @@ namespace System.Linq.Parallel.Tests
         // This is included as a regression test for that particular repro.
         [Theory]
         [OuterLoop("Resource-intensive due to parallel processing", ~TestPlatforms.Browser)]
+        [SkipOnPlatform(TestPlatforms.Browser, "Not supported on browser")]
         [MemberData(nameof(ZipThreadedData), new[] { 1, 2, 16, 128, 1024 }, new[] { 1, 2, 4, 7, 8, 31, 32 })]
         public static void Zip_AsOrdered_ThreadedDeadlock(Labeled<ParallelQuery<int>> left, int leftCount, Labeled<ParallelQuery<int>> right, int rightCount, int degree)
         {
