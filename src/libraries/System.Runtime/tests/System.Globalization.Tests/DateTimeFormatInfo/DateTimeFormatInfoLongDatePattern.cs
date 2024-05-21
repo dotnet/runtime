@@ -188,32 +188,32 @@ namespace System.Globalization.Tests
             yield return new object[] {"pt-BR", "dddd, d de MMMM de yyyy" }; // dddd, d 'de' MMMM 'de' yyyy
             yield return new object[] {"pt-PT", "dddd, d de MMMM de yyyy" }; // dddd, d 'de' MMMM 'de' yyyy
             yield return new object[] {"ro-RO", "dddd, d MMMM yyyy" };
-            // yield return new object[] {"ru-RU", "dddd, d MMMM yyyy г." }; // "dddd, d MMMM yyyy 'г'."
-            // yield return new object[] {"sk-SK", "dddd d. MMMM yyyy" };
-            // yield return new object[] {"sl-SI", "dddd, d. MMMM yyyy" }; // "dddd, dd. MMMM yyyy"
-            // yield return new object[] {"sr-Cyrl-RS", "dddd, d. MMMM yyyy." }; // "dddd, dd. MMMM yyyy"
-            // yield return new object[] {"sr-Latn-RS", "dddd, d. MMMM yyyy." }; // "dddd, dd. MMMM yyyy"
-            // yield return new object[] {"sv-AX", "dddd d MMMM yyyy" };
-            // yield return new object[] {"sv-SE", "dddd d MMMM yyyy" };
-            // yield return new object[] {"sw-CD", "dddd, d MMMM yyyy" };
-            // yield return new object[] {"sw-KE", "dddd, d MMMM yyyy" };
-            // yield return new object[] {"sw-TZ", "dddd, d MMMM yyyy" };
-            // yield return new object[] {"sw-UG", "dddd, d MMMM yyyy" };
-            // yield return new object[] {"ta-IN", "dddd, d MMMM, yyyy" };
-            // yield return new object[] {"ta-LK", "dddd, d MMMM, yyyy" };
-            // yield return new object[] {"ta-MY", "dddd, d MMMM, yyyy" };
-            // yield return new object[] {"ta-SG", "dddd, d MMMM, yyyy" };
-            // yield return new object[] {"te-IN", "d, MMMM yyyy, dddd" };
-            // yield return new object[] {"th-TH", "ddddที่ d MMMM g yyyy" };
-            // yield return new object[] {"tr-CY", "d MMMM yyyy dddd" };
-            // yield return new object[] {"tr-TR", "d MMMM yyyy dddd" };
-            // yield return new object[] {"uk-UA", "dddd, d MMMM yyyy р." }; // "dddd, d MMMM yyyy 'р'."
-            // yield return new object[] {"vi-VN", "dddd, d MMMM, yyyy" };
-            // yield return new object[] {"zh-CN", "yyyy年M月d日dddd" };
-            // yield return new object[] {"zh-Hans-HK", "yyyy年M月d日dddd" };
-            // yield return new object[] {"zh-SG", "yyyy年M月d日dddd" };
-            // yield return new object[] {"zh-HK", "yyyy年M月d日dddd" };
-            // yield return new object[] {"zh-TW", "yyyy年M月d日 dddd" };
+            yield return new object[] {"ru-RU", "dddd, d MMMM yyyy г." }; // "dddd, d MMMM yyyy 'г'."
+            yield return new object[] {"sk-SK", "dddd d. MMMM yyyy" };
+            yield return new object[] {"sl-SI", "dddd, d. MMMM yyyy" }; // "dddd, dd. MMMM yyyy"
+            yield return new object[] {"sr-Cyrl-RS", "dddd, d. MMMM yyyy." }; // "dddd, dd. MMMM yyyy"
+            yield return new object[] {"sr-Latn-RS", "dddd, d. MMMM yyyy." }; // "dddd, dd. MMMM yyyy"
+            yield return new object[] {"sv-AX", "dddd d MMMM yyyy" };
+            yield return new object[] {"sv-SE", "dddd d MMMM yyyy" };
+            yield return new object[] {"sw-CD", "dddd, d MMMM yyyy" };
+            yield return new object[] {"sw-KE", "dddd, d MMMM yyyy" };
+            yield return new object[] {"sw-TZ", "dddd, d MMMM yyyy" };
+            yield return new object[] {"sw-UG", "dddd, d MMMM yyyy" };
+            yield return new object[] {"ta-IN", "dddd, d MMMM, yyyy" };
+            yield return new object[] {"ta-LK", "dddd, d MMMM, yyyy" };
+            yield return new object[] {"ta-MY", "dddd, d MMMM, yyyy" };
+            yield return new object[] {"ta-SG", "dddd, d MMMM, yyyy" };
+            yield return new object[] {"te-IN", "d, MMMM yyyy, dddd" };
+            yield return new object[] {"th-TH", "ddddที่ d MMMM g yyyy" };
+            yield return new object[] {"tr-CY", "d MMMM yyyy dddd" };
+            yield return new object[] {"tr-TR", "d MMMM yyyy dddd" };
+            yield return new object[] {"uk-UA", "dddd, d MMMM yyyy р." }; // "dddd, d MMMM yyyy 'р'."
+            yield return new object[] {"vi-VN", "dddd, d MMMM, yyyy" };
+            yield return new object[] {"zh-CN", "yyyy年M月d日dddd" };
+            yield return new object[] {"zh-Hans-HK", "yyyy年M月d日dddd" };
+            yield return new object[] {"zh-SG", "yyyy年M月d日dddd" };
+            yield return new object[] {"zh-HK", "yyyy年M月d日dddd" };
+            yield return new object[] {"zh-TW", "yyyy年M月d日 dddd" };
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsHybridGlobalizationOnBrowser))]
