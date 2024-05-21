@@ -6025,26 +6025,9 @@ bool Compiler::lvaGetRelativeOffsetToCallerAllocatedSpaceForParameter(unsigned l
         if (!segment.IsPassedOnStack())
         {
 #if defined(WINDOWS_AMD64_ABI)
-            switch (segment.GetRegister())
+            if (ABIPassingInformation::GetShadowSpaceCallerOffsetForReg(segment.GetRegister(), offset))
             {
-                case REG_ECX:
-                case REG_XMM0:
-                    *offset = 0;
-                    return true;
-                case REG_EDX:
-                case REG_XMM1:
-                    *offset = 8;
-                    return true;
-                case REG_R8:
-                case REG_XMM2:
-                    *offset = 16;
-                    return true;
-                case REG_R9:
-                case REG_XMM3:
-                    *offset = 24;
-                    return true;
-                default:
-                    break;
+                return true;
             }
 #elif defined(TARGET_ARM)
             regMaskTP prespills = codeGen->regSet.rsMaskPreSpillRegs(true);
@@ -6694,22 +6677,6 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
                 continue;
             }
 
-            // This should be low on the stack. Hence, it will be assigned later.
-            if (lclNum == lvaStubArgumentVar)
-            {
-#ifdef JIT32_GCENCODER
-                noway_assert(codeGen->isFramePointerUsed());
-#endif
-                continue;
-            }
-
-            // This should be low on the stack. Hence, it will be assigned later.
-            if (lclNum == lvaInlinedPInvokeFrameVar)
-            {
-                noway_assert(codeGen->isFramePointerUsed());
-                continue;
-            }
-
             if (varDsc->lvIsParam)
             {
 #ifdef TARGET_ARM64
@@ -6851,25 +6818,6 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
      *
      *-------------------------------------------------------------------------
      */
-
-    // lvaInlinedPInvokeFrameVar and lvaStubArgumentVar need to be assigned last
-    // Important: The stack walker depends on lvaStubArgumentVar immediately
-    // following lvaInlinedPInvokeFrameVar in the frame.
-
-    if (lvaStubArgumentVar != BAD_VAR_NUM)
-    {
-#ifdef JIT32_GCENCODER
-        noway_assert(codeGen->isFramePointerUsed());
-#endif
-        stkOffs = lvaAllocLocalAndSetVirtualOffset(lvaStubArgumentVar, lvaLclSize(lvaStubArgumentVar), stkOffs);
-    }
-
-    if (lvaInlinedPInvokeFrameVar != BAD_VAR_NUM)
-    {
-        noway_assert(codeGen->isFramePointerUsed());
-        stkOffs =
-            lvaAllocLocalAndSetVirtualOffset(lvaInlinedPInvokeFrameVar, lvaLclSize(lvaInlinedPInvokeFrameVar), stkOffs);
-    }
 
 #ifdef JIT32_GCENCODER
     // JIT32 encoder cannot handle GS cookie at fp+0 since NO_GS_COOKIE == 0.

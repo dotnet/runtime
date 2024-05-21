@@ -4597,7 +4597,7 @@ VOID UnwindManagedExceptionPass2(PAL_SEHException& ex, CONTEXT* unwindStartConte
     CONTEXT contextStorage;
     DISPATCHER_CONTEXT dispatcherContext;
     EECodeInfo codeInfo;
-    UINT_PTR establisherFrame = 0;
+    ULONG_PTR establisherFrame = 0;
     PVOID handlerData;
 
     // Indicate that we are performing second pass.
@@ -4780,7 +4780,7 @@ VOID DECLSPEC_NORETURN UnwindManagedExceptionPass1(PAL_SEHException& ex, CONTEXT
     DISPATCHER_CONTEXT dispatcherContext;
     EECodeInfo codeInfo;
     UINT_PTR controlPc;
-    UINT_PTR establisherFrame = 0;
+    ULONG_PTR establisherFrame = 0;
     PVOID handlerData;
 
 #ifdef FEATURE_HIJACK

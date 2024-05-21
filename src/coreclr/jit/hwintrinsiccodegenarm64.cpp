@@ -20,9 +20,10 @@
 //       intrinsic node. The register will be later used to store computed branch target address.
 //
 // Arguments:
-//    codeGen -- an instance of CodeGen class.
-//    immOp   -- an immediate operand of the intrinsic.
-//    intrin  -- a hardware intrinsic tree node.
+//    codeGen   -- an instance of CodeGen class.
+//    immOp     -- an immediate operand of the intrinsic.
+//    intrin    -- a hardware intrinsic tree node.
+//    immNumber -- which immediate operand to use (most intrinsics only have one).
 //
 // Note: This class is designed to be used in the following way
 //       HWIntrinsicImmOpHelper helper(this, immOp, intrin);
@@ -35,7 +36,10 @@
 //       This allows to combine logic for cases when immOp->isContainedIntOrIImmed() is either true or false in a form
 //       of a for-loop.
 //
-CodeGen::HWIntrinsicImmOpHelper::HWIntrinsicImmOpHelper(CodeGen* codeGen, GenTree* immOp, GenTreeHWIntrinsic* intrin)
+CodeGen::HWIntrinsicImmOpHelper::HWIntrinsicImmOpHelper(CodeGen*            codeGen,
+                                                        GenTree*            immOp,
+                                                        GenTreeHWIntrinsic* intrin,
+                                                        int                 immNumber /* = 1 */)
     : codeGen(codeGen)
     , endLabel(nullptr)
     , nonZeroLabel(nullptr)
@@ -75,12 +79,12 @@ CodeGen::HWIntrinsicImmOpHelper::HWIntrinsicImmOpHelper(CodeGen* codeGen, GenTre
 
             const unsigned int indexedElementSimdSize = genTypeSize(indexedElementOpType);
             HWIntrinsicInfo::lookupImmBounds(intrin->GetHWIntrinsicId(), indexedElementSimdSize,
-                                             intrin->GetSimdBaseType(), &immLowerBound, &immUpperBound);
+                                             intrin->GetSimdBaseType(), immNumber, &immLowerBound, &immUpperBound);
         }
         else
         {
             HWIntrinsicInfo::lookupImmBounds(intrin->GetHWIntrinsicId(), intrin->GetSimdSize(),
-                                             intrin->GetSimdBaseType(), &immLowerBound, &immUpperBound);
+                                             intrin->GetSimdBaseType(), immNumber, &immLowerBound, &immUpperBound);
         }
 
         nonConstImmReg = immOp->GetRegNum();
@@ -738,6 +742,9 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
 
             switch (intrin.numOperands)
             {
+                case 0:
+                    GetEmitter()->emitIns_R(ins, emitSize, targetReg, opt);
+                    break;
                 case 1:
                     GetEmitter()->emitIns_R_R(ins, emitSize, targetReg, op1Reg, opt);
                     break;

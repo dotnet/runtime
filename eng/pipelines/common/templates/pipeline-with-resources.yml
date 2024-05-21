@@ -70,6 +70,11 @@ extends:
       linux_musl_x64_dev_innerloop:
         image: mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.19-WithNode
 
+      linux_x64_sanitizer:
+        image: mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-cross-amd64-net9.0-sanitizer
+        env:
+          ROOTFS_DIR: /crossrootfs/x64
+
       # We use a CentOS Stream 8 image here to test building from source on CentOS Stream 8.
       SourceBuild_centos_x64:
         image: mcr.microsoft.com/dotnet-buildtools/prereqs:centos-stream8
@@ -93,8 +98,8 @@ extends:
         env:
           ROOTFS_DIR: /crossrootfs/riscv64
 
-      debian-12-gcc13-amd64:
-        image: mcr.microsoft.com/dotnet-buildtools/prereqs:debian-12-gcc13-amd64
+      debian-12-gcc14-amd64:
+        image: mcr.microsoft.com/dotnet-buildtools/prereqs:debian-12-gcc14-amd64
 
       linux_x64_llvmaot:
         image: mcr.microsoft.com/dotnet-buildtools/prereqs:centos-stream8

@@ -14,6 +14,9 @@
 #include <algorithm>
 #include <stdio.h>
 #include <limits.h>
+#include <new>
+
+using std::nothrow;
 
 #include "crtwrap.h"
 #include "winwrap.h"
@@ -29,7 +32,6 @@
 #include "corhlprpriv.h"
 #include "check.h"
 #include "safemath.h"
-#include "new.hpp"
 
 #include "contract.h"
 
@@ -845,7 +847,7 @@ template<typename T>
 class SimpleListNode
 {
 public:
-    SimpleListNode<T>(const T& _t)
+    SimpleListNode(const T& _t)
     {
         data = _t;
         next = 0;
@@ -861,7 +863,7 @@ class SimpleList
 public:
     typedef SimpleListNode<T> NodeType;
 
-    SimpleList<T>()
+    SimpleList()
     {
         head = NULL;
     }

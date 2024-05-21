@@ -501,19 +501,19 @@ ASMCONSTANTS_C_ASSERT(OFFSETOF__StringObject__m_StringLength
 ASMCONSTANTS_C_ASSERT(OFFSETOF__InlinedCallFrame__m_Datum
                     == offsetof(InlinedCallFrame, m_Datum));
 
-#define               OFFSETOF__InlinedCallFrame__m_pCallSiteSP 0x20
+#define               OFFSETOF__InlinedCallFrame__m_pCallSiteSP 0x18
 ASMCONSTANTS_C_ASSERT(OFFSETOF__InlinedCallFrame__m_pCallSiteSP
                     == offsetof(InlinedCallFrame, m_pCallSiteSP));
 
-#define               OFFSETOF__InlinedCallFrame__m_pCallerReturnAddress 0x28
+#define               OFFSETOF__InlinedCallFrame__m_pCallerReturnAddress 0x20
 ASMCONSTANTS_C_ASSERT(OFFSETOF__InlinedCallFrame__m_pCallerReturnAddress
                     == offsetof(InlinedCallFrame, m_pCallerReturnAddress));
 
-#define               OFFSETOF__InlinedCallFrame__m_pCalleeSavedFP 0x30
+#define               OFFSETOF__InlinedCallFrame__m_pCalleeSavedFP 0x28
 ASMCONSTANTS_C_ASSERT(OFFSETOF__InlinedCallFrame__m_pCalleeSavedFP
                     == offsetof(InlinedCallFrame, m_pCalleeSavedFP));
 
-#define               OFFSETOF__InlinedCallFrame__m_pThread 0x38
+#define               OFFSETOF__InlinedCallFrame__m_pThread 0x30
 ASMCONSTANTS_C_ASSERT(OFFSETOF__InlinedCallFrame__m_pThread
                     == offsetof(InlinedCallFrame, m_pThread));
 
