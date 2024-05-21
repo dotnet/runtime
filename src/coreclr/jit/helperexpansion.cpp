@@ -307,9 +307,8 @@ bool Compiler::fgExpandRuntimeLookupsForCall(BasicBlock** pBlock, Statement* stm
     // null-check basic block
     GenTree* fastPathValue = gtNewIndir(TYP_I_IMPL, gtCloneExpr(slotPtrTree), GTF_IND_NONFAULTING);
     // Save dictionary slot to a local (to be used by fast path)
-    GenTree* fastPathValueClone =
-        opts.OptimizationEnabled() ? fgMakeMultiUse(&fastPathValue) : gtCloneExpr(fastPathValue);
-    GenTree* nullcheckOp = gtNewOperNode(GT_EQ, TYP_INT, fastPathValue, gtNewIconNode(0, TYP_I_IMPL));
+    GenTree* fastPathValueClone = fgMakeMultiUse(&fastPathValue);
+    GenTree* nullcheckOp        = gtNewOperNode(GT_EQ, TYP_INT, fastPathValue, gtNewIconNode(0, TYP_I_IMPL));
     nullcheckOp->gtFlags |= GTF_RELOP_JMP_USED;
 
     // nullcheckBb conditionally jumps to fallbackBb, but we need to initialize fallbackBb last
@@ -1945,13 +1944,13 @@ static int PickCandidatesForTypeCheck(Compiler*              comp,
             isCastClass = false;
             break;
 
-        // These are never expanded:
-        // CORINFO_HELP_ISINSTANCEOF_EXCEPTION
-        // CORINFO_HELP_CHKCASTCLASS_SPECIAL
-        // CORINFO_HELP_READYTORUN_ISINSTANCEOF,
-        // CORINFO_HELP_READYTORUN_CHKCAST,
+            // These are never expanded:
+            // CORINFO_HELP_ISINSTANCEOF_EXCEPTION
+            // CORINFO_HELP_CHKCASTCLASS_SPECIAL
+            // CORINFO_HELP_READYTORUN_ISINSTANCEOF,
+            // CORINFO_HELP_READYTORUN_CHKCAST,
 
-        // Other helper calls are not cast helpers
+            // Other helper calls are not cast helpers
 
         default:
             return 0;
@@ -2440,7 +2439,7 @@ bool Compiler::fgLateCastExpansionForCall(BasicBlock** pBlock, Statement* stmt, 
     if (typeCheckNotNeeded || (typeCheckFailedAction == TypeCheckFailedAction::CallHelper_AlwaysThrows))
     {
         // fallback call is used only to throw InvalidCastException
-        call->gtCallMoreFlags |= GTF_CALL_M_DOES_NOT_RETURN;
+        setCallDoesNotReturn(call);
         fallbackBb = fgNewBBFromTreeAfter(BBJ_THROW, lastTypeCheckBb, call, debugInfo, true);
     }
     else if (typeCheckFailedAction == TypeCheckFailedAction::ReturnNull)

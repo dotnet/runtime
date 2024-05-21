@@ -66,7 +66,7 @@ LONG GlobalJitOptions::compUseSoftFPConfigured = 0;
 #if defined(_MSC_VER)
 
 #include <intrin.h>
-inline bool _our_GetThreadCycles(unsigned __int64* cycleOut)
+inline bool _our_GetThreadCycles(uint64_t* cycleOut)
 {
     *cycleOut = __rdtsc();
     return true;
@@ -74,11 +74,11 @@ inline bool _our_GetThreadCycles(unsigned __int64* cycleOut)
 
 #elif defined(__GNUC__)
 
-inline bool _our_GetThreadCycles(unsigned __int64* cycleOut)
+inline bool _our_GetThreadCycles(uint64_t* cycleOut)
 {
     uint32_t hi, lo;
     __asm__ __volatile__("rdtsc" : "=a"(lo), "=d"(hi));
-    *cycleOut = (static_cast<unsigned __int64>(hi) << 32) | static_cast<unsigned __int64>(lo);
+    *cycleOut = (static_cast<uint64_t>(hi) << 32) | static_cast<uint64_t>(lo);
     return true;
 }
 
@@ -645,11 +645,11 @@ var_types Compiler::getArgTypeForStruct(CORINFO_CLASS_HANDLE clsHnd,
         // have a struct that is larger than that.
         //
         if (structSize <= MAX_PASS_SINGLEREG_BYTES)
-    {
-        // We set the "primitive" useType based upon the structSize
-        // and also examine the clsHnd to see if it is an HFA of count one
-        useType = getPrimitiveTypeForStruct(structSize, clsHnd, isVarArg);
-    }
+        {
+            // We set the "primitive" useType based upon the structSize
+            // and also examine the clsHnd to see if it is an HFA of count one
+            useType = getPrimitiveTypeForStruct(structSize, clsHnd, isVarArg);
+        }
 #else
     if (isTrivialPointerSizedStruct(clsHnd))
     {
@@ -758,7 +758,6 @@ var_types Compiler::getArgTypeForStruct(CORINFO_CLASS_HANDLE clsHnd,
         {
             // We have a (large) struct that can't be replaced with a "primitive" type
             // and can't be passed in multiple registers
-            CLANG_FORMAT_COMMENT_ANCHOR;
 
 #if defined(TARGET_X86) || defined(TARGET_ARM) || defined(UNIX_AMD64_ABI)
 
@@ -1157,11 +1156,15 @@ struct FileLine
     unsigned m_line;
     char*    m_condStr;
 
-    FileLine() : m_file(nullptr), m_line(0), m_condStr(nullptr)
+    FileLine()
+        : m_file(nullptr)
+        , m_line(0)
+        , m_condStr(nullptr)
     {
     }
 
-    FileLine(const char* file, unsigned line, const char* condStr) : m_line(line)
+    FileLine(const char* file, unsigned line, const char* condStr)
+        : m_line(line)
     {
         size_t newSize = (strlen(file) + 1) * sizeof(char);
         m_file         = HostAllocator::getHostAllocator().allocate<char>(newSize);
@@ -1200,7 +1203,7 @@ struct FileLine
 };
 
 typedef JitHashTable<FileLine, FileLine, size_t, HostAllocator> FileLineToCountMap;
-FileLineToCountMap* NowayAssertMap;
+FileLineToCountMap*                                             NowayAssertMap;
 
 void Compiler::RecordNowayAssert(const char* filename, unsigned line, const char* condStr)
 {
@@ -1233,7 +1236,8 @@ struct NowayAssertCountMap
     size_t   count;
     FileLine fl;
 
-    NowayAssertCountMap() : count(0)
+    NowayAssertCountMap()
+        : count(0)
     {
     }
 
@@ -1859,6 +1863,11 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
 
     eeInfoInitialized = false;
 
+#if defined(FEATURE_EH_WINDOWS_X86)
+    // Cache Native AOT ABI check. This must happen *after* eeInfoInitialized is initialized, above.
+    eeIsNativeAotAbi = IsTargetAbi(CORINFO_NATIVEAOT_ABI);
+#endif
+
     compDoAggressiveInlining = false;
 
     if (compIsForInlining())
@@ -1903,7 +1912,6 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
         //
         // Initialize all the per-method statistics gathering data structures.
         //
-        CLANG_FORMAT_COMMENT_ANCHOR;
 #if LOOP_HOIST_STATS
         m_loopsConsidered             = 0;
         m_curLoopHasHoistedExpression = false;
@@ -2026,8 +2034,8 @@ void Compiler::compDone()
 #endif // LATE_DISASM
 }
 
-void* Compiler::compGetHelperFtn(CorInfoHelpFunc ftnNum,        /* IN  */
-                                 void**          ppIndirection) /* OUT */
+void* Compiler::compGetHelperFtn(CorInfoHelpFunc ftnNum, /* IN  */
+                                 void**          ppIndirection)   /* OUT */
 {
     void* addr;
 
@@ -2038,7 +2046,7 @@ void* Compiler::compGetHelperFtn(CorInfoHelpFunc ftnNum,        /* IN  */
     else
     {
         // If we don't have a matched VM, we won't get valid results when asking for a helper function.
-        addr = UlongToPtr(0xCA11CA11); // "callcall"
+        addr = (void*)(uintptr_t)(0xCA11CA11); // "callcall"
     }
 
     return addr;
@@ -2185,7 +2193,7 @@ const char* Compiler::compRegVarName(regNumber reg, bool displayVar, bool isFloa
                                                                 // consecutive calls before printing
             static int index = 0;                               // for circular index into the name array
 
-            index = (index + 1) % 2; // circular reuse of index
+            index ^= 1; // circular reuse of index
             sprintf_s(nameVarReg[index], NAME_VAR_REG_BUFFER_LEN, "%s'%s'", getRegName(reg), VarNameToStr(varName));
 
             return nameVarReg[index];
@@ -2274,7 +2282,6 @@ void Compiler::compSetProcessor()
     //
     // Processor specific optimizations
     //
-    CLANG_FORMAT_COMMENT_ANCHOR;
 
     CORINFO_InstructionSetFlags instructionSetFlags = jitFlags.GetInstructionSetFlags();
     opts.compSupportsISA.Reset();
@@ -2783,15 +2790,14 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     fgPgoSource      = ICorJitInfo::PgoSource::Unknown;
     fgPgoHaveWeights = false;
     fgPgoSynthesized = false;
-
-#ifdef DEBUG
-    fgPgoConsistent = false;
-#endif
+    fgPgoConsistent  = false;
+    fgPgoDynamic     = false;
 
     if (jitFlags->IsSet(JitFlags::JIT_FLAG_BBOPT))
     {
-        fgPgoQueryResult = info.compCompHnd->getPgoInstrumentationResults(info.compMethodHnd, &fgPgoSchema,
-                                                                          &fgPgoSchemaCount, &fgPgoData, &fgPgoSource);
+        fgPgoQueryResult =
+            info.compCompHnd->getPgoInstrumentationResults(info.compMethodHnd, &fgPgoSchema, &fgPgoSchemaCount,
+                                                           &fgPgoData, &fgPgoSource, &fgPgoDynamic);
 
         // a failed result that also has a non-NULL fgPgoSchema
         // indicates that the ILSize for the method no longer matches
@@ -2814,6 +2820,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
             fgPgoData        = nullptr;
             fgPgoSchema      = nullptr;
             fgPgoDisabled    = true;
+            fgPgoDynamic     = false;
         }
 #ifdef DEBUG
         // Optionally, enable use of profile data for only some methods.
@@ -2875,7 +2882,6 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     // The rest of the opts fields that we initialize here
     // should only be used when we generate code for the method
     // They should not be used when importing or inlining
-    CLANG_FORMAT_COMMENT_ANCHOR;
 
 #if FEATURE_TAILCALL_OPT
     opts.compTailCallLoopOpt = true;
@@ -2902,10 +2908,10 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     opts.disAlignment = false;
     opts.disCodeBytes = false;
 
-#ifdef OPT_CONFIG
-    opts.optRepeat      = false;
-    opts.optRepeatCount = 1;
-#endif // OPT_CONFIG
+    opts.optRepeat          = false;
+    opts.optRepeatIteration = 0;
+    opts.optRepeatCount     = 1;
+    opts.optRepeatActive    = false;
 
 #ifdef DEBUG
     opts.dspInstrs       = false;
@@ -3025,7 +3031,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         codeGen->setVerbose(true);
     }
 
-    treesBeforeAfterMorph = (JitConfig.TreesBeforeAfterMorph() == 1);
+    treesBeforeAfterMorph = (JitConfig.JitDumpBeforeAfterMorph() == 1);
     morphNum              = 0; // Initialize the morphed-trees counting.
 
     expensiveDebugCheckLevel = JitConfig.JitExpensiveDebugCheckLevel();
@@ -3081,6 +3087,13 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     {
         opts.disAsm = true;
     }
+
+    if ((JitConfig.JitEnableOptRepeat() != 0) &&
+        (JitConfig.JitOptRepeat().contains(info.compMethodHnd, info.compClassHnd, &info.compMethodInfo->args)))
+    {
+        opts.optRepeat      = true;
+        opts.optRepeatCount = JitConfig.JitOptRepeatCount();
+    }
 #endif // !DEBUG
 
 #ifndef DEBUG
@@ -3106,8 +3119,6 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         }
     }
 
-#ifdef OPT_CONFIG
-
     if (opts.optRepeat)
     {
         // Defer printing this until now, after the "START" line printed above.
@@ -3129,7 +3140,6 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
             JITDUMP("\n*************** JitOptRepeat enabled by JitOptRepeatRange; repetition count: %d\n\n",
                     opts.optRepeatCount);
         }
-#endif // DEBUG
 
         if (!opts.optRepeat && compStressCompile(STRESS_OPT_REPEAT, 10))
         {
@@ -3143,9 +3153,8 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
 
             JITDUMP("\n*************** JitOptRepeat for stress; repetition count: %d\n\n", opts.optRepeatCount);
         }
+#endif // DEBUG
     }
-
-#endif // OPT_CONFIG
 
 #ifdef DEBUG
     assert(!codeGen->isGCTypeFixed());
@@ -3403,11 +3412,10 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
             printf("OPTIONS: OSR variant with entry point 0x%x\n", info.compILEntry);
         }
 
-        printf("OPTIONS: compCodeOpt = %s\n",
-               (opts.compCodeOpt == BLENDED_CODE)
-                   ? "BLENDED_CODE"
-                   : (opts.compCodeOpt == SMALL_CODE) ? "SMALL_CODE"
-                                                      : (opts.compCodeOpt == FAST_CODE) ? "FAST_CODE" : "UNKNOWN_CODE");
+        printf("OPTIONS: compCodeOpt = %s\n", (opts.compCodeOpt == BLENDED_CODE) ? "BLENDED_CODE"
+                                              : (opts.compCodeOpt == SMALL_CODE) ? "SMALL_CODE"
+                                              : (opts.compCodeOpt == FAST_CODE)  ? "FAST_CODE"
+                                                                                 : "UNKNOWN_CODE");
 
         printf("OPTIONS: compDbgCode = %s\n", dspBool(opts.compDbgCode));
         printf("OPTIONS: compDbgInfo = %s\n", dspBool(opts.compDbgInfo));
@@ -3752,7 +3760,7 @@ void Compiler::dumpRegMask(regMaskTP regs) const
     {
         printf("[allDouble]");
     }
-#ifdef TARGET_XARCH
+#ifdef FEATURE_MASKED_HW_INTRINSICS
     else if (regs == RBM_ALLMASK)
     {
         printf("[allMask]");
@@ -4008,8 +4016,9 @@ void Compiler::compSetOptimizationLevel()
         }
         if (theMinOptsValue == true)
         {
-            JITLOG((LL_INFO10000, "IL Code Size,Instr %4d,%4d, Basic Block count %3d, Local Variable Num,Ref count "
-                                  "%3d,%3d for method %s\n",
+            JITLOG((LL_INFO10000,
+                    "IL Code Size,Instr %4d,%4d, Basic Block count %3d, Local Variable Num,Ref count "
+                    "%3d,%3d for method %s\n",
                     info.compILCodeSize, opts.instrCount, fgBBcount, lvaCount, opts.lvRefCount, info.compFullName));
             if (JitConfig.JitBreakOnMinOpts() != 0)
             {
@@ -4079,7 +4088,18 @@ _SetMinOpts:
     {
         info.compCompHnd->setMethodAttribs(info.compMethodHnd, CORINFO_FLG_SWITCHED_TO_MIN_OPT);
         opts.jitFlags->Clear(JitFlags::JIT_FLAG_TIER1);
+        opts.jitFlags->Clear(JitFlags::JIT_FLAG_BBOPT);
         compSwitchedToMinOpts = true;
+
+        // We may have read PGO data. Clear it out because we won't be using it.
+        //
+        fgPgoFailReason  = "method switched to min-opts";
+        fgPgoQueryResult = E_FAIL;
+        fgPgoHaveWeights = false;
+        fgPgoData        = nullptr;
+        fgPgoSchema      = nullptr;
+        fgPgoDisabled    = true;
+        fgPgoDynamic     = false;
     }
 
 #ifdef DEBUG
@@ -4582,11 +4602,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
             assert(lvaStubArgumentVar == BAD_VAR_NUM);
             lvaStubArgumentVar                     = lvaGrabTempWithImplicitUse(false DEBUGARG("stub argument"));
             lvaGetDesc(lvaStubArgumentVar)->lvType = TYP_I_IMPL;
-            // TODO-CQ: there is no need to mark it as doNotEnreg. There are no stores for this local
-            // before codegen so liveness and LSRA mark it as "liveIn" and always allocate a stack slot for it.
-            // However, it would be better to process it like other argument locals and keep it in
-            // a reg for the whole method without spilling to the stack when possible.
-            lvaSetVarDoNotEnregister(lvaStubArgumentVar DEBUGARG(DoNotEnregisterReason::VMNeedsStackAddr));
         }
     };
     DoPhase(this, PHASE_PRE_IMPORT, preImportPhase);
@@ -4693,6 +4708,11 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     // Record "start" values for post-inlining cycles and elapsed time.
     RecordStateAtEndOfInlining();
 
+    // Drop back to just checking profile likelihoods.
+    //
+    activePhaseChecks &= ~PhaseChecks::CHECK_PROFILE;
+    activePhaseChecks |= PhaseChecks::CHECK_LIKELIHOODS;
+
     // Transform each GT_ALLOCOBJ node into either an allocation helper call or
     // local variable allocation on the stack.
     ObjectAllocator objectAllocator(this); // PHASE_ALLOCATE_OBJECTS
@@ -4707,6 +4727,12 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     // Add any internal blocks/trees we may need
     //
     DoPhase(this, PHASE_MORPH_ADD_INTERNAL, &Compiler::fgAddInternal);
+
+#ifdef SWIFT_SUPPORT
+    // Transform GT_RETURN nodes into GT_SWIFT_ERROR_RET nodes if this method has Swift error handling
+    //
+    DoPhase(this, PHASE_SWIFT_ERROR_RET, &Compiler::fgAddSwiftErrorReturns);
+#endif // SWIFT_SUPPORT
 
     // Remove empty try regions
     //
@@ -4790,7 +4816,9 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     {
         // Tail merge
         //
-        DoPhase(this, PHASE_HEAD_TAIL_MERGE, [this]() { return fgHeadTailMerge(true); });
+        DoPhase(this, PHASE_HEAD_TAIL_MERGE, [this]() {
+            return fgHeadTailMerge(true);
+        });
 
         // Merge common throw blocks
         //
@@ -4811,6 +4839,14 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 
     if (opts.OptimizationEnabled())
     {
+        // Canonicalize entry to have unique entry BB to put IR in for the upcoming phases
+        //
+        DoPhase(this, PHASE_CANONICALIZE_ENTRY, &Compiler::fgCanonicalizeFirstBB);
+
+        // Build post-order and remove dead blocks
+        //
+        DoPhase(this, PHASE_DFS_BLOCKS, &Compiler::fgDfsBlocksAndRemove);
+
         fgNodeThreading = NodeThreading::AllLocals;
     }
 
@@ -4848,20 +4884,12 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     fgStress64RsltMul();
 #endif // DEBUG
 
-    if (opts.OptimizationEnabled())
-    {
-        // Build post-order that morph will use, and remove dead blocks
-        //
-        DoPhase(this, PHASE_DFS_BLOCKS, &Compiler::fgDfsBlocksAndRemove);
-    }
-
     // Morph the trees in all the blocks of the method
     //
     unsigned const preMorphBBCount = fgBBcount;
     DoPhase(this, PHASE_MORPH_GLOBAL, &Compiler::fgMorphBlocks);
 
     auto postMorphPhase = [this]() {
-
         // Fix any LclVar annotations on discarded struct promotion temps for implicit by-ref args
         fgMarkDemotedImplicitByRefArgs();
         lvaRefCountState       = RCS_INVALID;
@@ -4892,17 +4920,16 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     //
     DoPhase(this, PHASE_GS_COOKIE, &Compiler::gsPhase);
 
-    // Compute the block and edge weights
+    // Compute the block weights
     //
-    DoPhase(this, PHASE_COMPUTE_EDGE_WEIGHTS, &Compiler::fgComputeBlockAndEdgeWeights);
+    DoPhase(this, PHASE_COMPUTE_BLOCK_WEIGHTS, &Compiler::fgComputeBlockWeights);
 
-#if defined(FEATURE_EH_FUNCLETS)
-
-    // Create funclets from the EH handlers.
-    //
-    DoPhase(this, PHASE_CREATE_FUNCLETS, &Compiler::fgCreateFunclets);
-
-#endif // FEATURE_EH_FUNCLETS
+    if (UsesFunclets())
+    {
+        // Create funclets from the EH handlers.
+        //
+        DoPhase(this, PHASE_CREATE_FUNCLETS, &Compiler::fgCreateFunclets);
+    }
 
     if (opts.OptimizationEnabled())
     {
@@ -4916,7 +4943,9 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 
         // Second pass of tail merge
         //
-        DoPhase(this, PHASE_HEAD_TAIL_MERGE2, [this]() { return fgHeadTailMerge(false); });
+        DoPhase(this, PHASE_HEAD_TAIL_MERGE2, [this]() {
+            return fgHeadTailMerge(false);
+        });
 
         // Canonicalize entry to give a unique dominator tree root
         //
@@ -4993,7 +5022,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         bool doVNBasedIntrinExpansion  = true;
         bool doRangeAnalysis           = true;
         bool doVNBasedDeadStoreRemoval = true;
-        int  iterations                = 1;
 
 #if defined(OPT_CONFIG)
         doSsa                     = (JitConfig.JitDoSsa() != 0);
@@ -5008,15 +5036,23 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         doVNBasedIntrinExpansion  = doValueNum;
         doRangeAnalysis           = doAssertionProp && (JitConfig.JitDoRangeAnalysis() != 0);
         doVNBasedDeadStoreRemoval = doValueNum && (JitConfig.JitDoVNBasedDeadStoreRemoval() != 0);
+#endif // defined(OPT_CONFIG)
 
         if (opts.optRepeat)
         {
-            iterations = opts.optRepeatCount;
+            opts.optRepeatActive = true;
         }
-#endif // defined(OPT_CONFIG)
 
-        while (iterations > 0)
+        while (++opts.optRepeatIteration <= opts.optRepeatCount)
         {
+#ifdef DEBUG
+            if (verbose && opts.optRepeat)
+            {
+                printf("\n*************** JitOptRepeat: iteration %d of %d\n\n", opts.optRepeatIteration,
+                       opts.optRepeatCount);
+            }
+#endif // DEBUG
+
             fgModified = false;
 
             if (doSsa)
@@ -5122,24 +5158,15 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
                 // update the flowgraph if we modified it during the optimization phase
                 //
                 DoPhase(this, PHASE_OPT_UPDATE_FLOW_GRAPH, &Compiler::fgUpdateFlowGraphPhase);
-
-                // Recompute the edge weight if we have modified the flow graph
-                //
-                DoPhase(this, PHASE_COMPUTE_EDGE_WEIGHTS2, &Compiler::fgComputeEdgeWeights);
             }
-
-#ifdef DEBUG
-            if (verbose && opts.optRepeat)
-            {
-                printf("\n*************** JitOptRepeat: iterations remaining: %d\n\n", iterations - 1);
-            }
-#endif // DEBUG
 
             // Iterate if requested, resetting annotations first.
-            if (--iterations == 0)
+            if (opts.optRepeatIteration == opts.optRepeatCount)
             {
                 break;
             }
+
+            assert(opts.optRepeat);
 
             // We may have optimized away the canonical entry BB that SSA
             // depends on above, so if we are going for another iteration then
@@ -5157,6 +5184,11 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
                 fgDispBasicBlocks(true);
             }
 #endif // DEBUG
+        }
+
+        if (opts.optRepeat)
+        {
+            opts.optRepeatActive = false;
         }
     }
 
@@ -5264,7 +5296,9 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 
     // Now that lowering is completed we can proceed to perform register allocation
     //
-    auto linearScanPhase = [this]() { m_pLinearScan->doLinearScan(); };
+    auto linearScanPhase = [this]() {
+        m_pLinearScan->doLinearScan();
+    };
     DoPhase(this, PHASE_LINEAR_SCAN, linearScanPhase);
 
     // Copied from rpPredictRegUse()
@@ -5432,29 +5466,26 @@ bool Compiler::shouldAlignLoop(FlowGraphNaturalLoop* loop, BasicBlock* top)
 
     assert(!top->IsFirst());
 
-#if FEATURE_EH_CALLFINALLY_THUNKS
-    if (top->Prev()->KindIs(BBJ_CALLFINALLY))
+    if (UsesCallFinallyThunks() && top->Prev()->KindIs(BBJ_CALLFINALLY))
     {
         // It must be a retless BBJ_CALLFINALLY if we get here.
         assert(!top->Prev()->isBBCallFinallyPair());
 
         // If the block before the loop start is a retless BBJ_CALLFINALLY
-        // with FEATURE_EH_CALLFINALLY_THUNKS, we can't add alignment
+        // with UsesCallFinallyThunks, we can't add alignment
         // because it will affect reported EH region range. For x86 (where
-        // !FEATURE_EH_CALLFINALLY_THUNKS), we can allow this.
+        // !UsesCallFinallyThunks), we can allow this.
 
         JITDUMP("Skipping alignment for " FMT_LP "; its top block follows a CALLFINALLY block\n", loop->GetIndex());
         return false;
     }
-#endif // FEATURE_EH_CALLFINALLY_THUNKS
 
     if (top->Prev()->isBBCallFinallyPairTail())
     {
         // If the previous block is the BBJ_CALLFINALLYRET of a
         // BBJ_CALLFINALLY/BBJ_CALLFINALLYRET pair, then we can't add alignment
         // because we can't add instructions in that block. In the
-        // FEATURE_EH_CALLFINALLY_THUNKS case, it would affect the
-        // reported EH, as above.
+        // UsesCallFinallyThunks case, it would affect the reported EH, as above.
         JITDUMP("Skipping alignment for " FMT_LP "; its top block follows a CALLFINALLY/ALWAYS pair\n",
                 loop->GetIndex());
         return false;
@@ -5639,7 +5670,7 @@ void Compiler::SplitTreesRandomly()
     rng.Init(info.compMethodHash() ^ 0x077cc4d4);
 
     // Splitting creates a lot of new locals. Set a limit on how many we end up creating here.
-    unsigned maxLvaCount = max(lvaCount * 2, 50000);
+    unsigned maxLvaCount = max(lvaCount * 2, 50000u);
 
     for (BasicBlock* block : Blocks())
     {
@@ -5701,7 +5732,7 @@ void Compiler::SplitTreesRandomly()
 void Compiler::SplitTreesRemoveCommas()
 {
     // Splitting creates a lot of new locals. Set a limit on how many we end up creating here.
-    unsigned maxLvaCount = max(lvaCount * 2, 50000);
+    unsigned maxLvaCount = max(lvaCount * 2, 50000u);
 
     for (BasicBlock* block : Blocks())
     {
@@ -5805,7 +5836,6 @@ void Compiler::generatePatchpointInfo()
     //
     // For arm64, if the frame pointer is not at the top of the frame, we need to adjust the
     // offset.
-    CLANG_FORMAT_COMMENT_ANCHOR;
 
 #if defined(TARGET_AMD64)
     // We add +TARGET_POINTER_SIZE here is to account for the slot that Jit_Patchpoint
@@ -5905,7 +5935,7 @@ void Compiler::generatePatchpointInfo()
     // Record callee save registers.
     // Currently only needed for x64.
     //
-    regMaskTP rsPushRegs = codeGen->regSet.rsGetModifiedRegsMask() & RBM_CALLEE_SAVED;
+    regMaskTP rsPushRegs = codeGen->regSet.rsGetModifiedCalleeSavedRegsMask();
     rsPushRegs |= RBM_FPBASE;
     patchpointInfo->SetCalleeSaveRegisters((uint64_t)rsPushRegs);
     JITDUMP("--OSR-- Tier0 callee saves: ");
@@ -6161,12 +6191,12 @@ int Compiler::compCompile(CORINFO_MODULE_HANDLE classPtr,
         // We need to assume, by default, that all flags coming from the VM are invalid.
         instructionSetFlags.Reset();
 
-// We then add each available instruction set for the target architecture provided
-// that the corresponding JitConfig switch hasn't explicitly asked for it to be
-// disabled. This allows us to default to "everything" supported for altjit scenarios
-// while also still allowing instruction set opt-out providing users with the ability
-// to, for example, see and debug ARM64 codegen for any desired CPU configuration without
-// needing to have the hardware in question.
+        // We then add each available instruction set for the target architecture provided
+        // that the corresponding JitConfig switch hasn't explicitly asked for it to be
+        // disabled. This allows us to default to "everything" supported for altjit scenarios
+        // while also still allowing instruction set opt-out providing users with the ability
+        // to, for example, see and debug ARM64 codegen for any desired CPU configuration without
+        // needing to have the hardware in question.
 
 #if defined(TARGET_ARM64)
         if (JitConfig.EnableHWIntrinsic() != 0)
@@ -7512,7 +7542,7 @@ void Compiler::compInitVarScopeMap()
     compVarScopeMap = new (getAllocator()) VarNumToScopeDscMap(getAllocator());
 
     // 599 prime to limit huge allocations; for ex: duplicated scopes on single var.
-    compVarScopeMap->Reallocate(min(info.compVarScopesCount, 599));
+    compVarScopeMap->Reallocate(min(info.compVarScopesCount, 599u));
 
     for (unsigned i = 0; i < info.compVarScopesCount; ++i)
     {
@@ -7939,112 +7969,106 @@ START:
 #endif
     param.result = result;
 
-    setErrorTrap(compHnd, Param*, pParamOuter, &param)
-    {
-        setErrorTrap(nullptr, Param*, pParam, pParamOuter)
-        {
-            if (pParam->inlineInfo)
-            {
-                // Lazily create the inlinee compiler object
-                if (pParam->inlineInfo->InlinerCompiler->InlineeCompiler == nullptr)
-                {
-                    pParam->inlineInfo->InlinerCompiler->InlineeCompiler =
-                        (Compiler*)pParam->pAlloc->allocateMemory(roundUp(sizeof(*pParam->pComp)));
-                }
+    setErrorTrap(compHnd, Param*, pParamOuter, &param){setErrorTrap(nullptr, Param*, pParam, pParamOuter){
+        if (pParam->inlineInfo){// Lazily create the inlinee compiler object
+                                if (pParam->inlineInfo->InlinerCompiler->InlineeCompiler == nullptr){
+                                    pParam->inlineInfo->InlinerCompiler->InlineeCompiler =
+                                        (Compiler*)pParam->pAlloc->allocateMemory(roundUp(sizeof(*pParam->pComp)));
+}
 
-                // Use the inlinee compiler object
-                pParam->pComp = pParam->inlineInfo->InlinerCompiler->InlineeCompiler;
+// Use the inlinee compiler object
+pParam->pComp = pParam->inlineInfo->InlinerCompiler->InlineeCompiler;
 #ifdef DEBUG
 // memset(pParam->pComp, 0xEE, sizeof(Compiler));
 #endif
-            }
-            else
-            {
-                // Allocate create the inliner compiler object
-                pParam->pComp = (Compiler*)pParam->pAlloc->allocateMemory(roundUp(sizeof(*pParam->pComp)));
-            }
+}
+else
+{
+    // Allocate create the inliner compiler object
+    pParam->pComp = (Compiler*)pParam->pAlloc->allocateMemory(roundUp(sizeof(*pParam->pComp)));
+}
 
 #if MEASURE_CLRAPI_CALLS
-            pParam->wrapCLR = WrapICorJitInfo::makeOne(pParam->pAlloc, pParam->pComp, pParam->compHnd);
+pParam->wrapCLR = WrapICorJitInfo::makeOne(pParam->pAlloc, pParam->pComp, pParam->compHnd);
 #endif
 
-            // push this compiler on the stack (TLS)
-            pParam->pComp->prevCompiler = JitTls::GetCompiler();
-            JitTls::SetCompiler(pParam->pComp);
+// push this compiler on the stack (TLS)
+pParam->pComp->prevCompiler = JitTls::GetCompiler();
+JitTls::SetCompiler(pParam->pComp);
 
 // PREFIX_ASSUME gets turned into ASSERT_CHECK and we cannot have it here
 #if defined(_PREFAST_) || defined(_PREFIX_)
-            PREFIX_ASSUME(pParam->pComp != NULL);
+PREFIX_ASSUME(pParam->pComp != NULL);
 #else
-            assert(pParam->pComp != nullptr);
+assert(pParam->pComp != nullptr);
 #endif
 
-            pParam->pComp->compInit(pParam->pAlloc, pParam->methodHnd, pParam->compHnd, pParam->methodInfo,
-                                    pParam->inlineInfo);
+pParam->pComp->compInit(pParam->pAlloc, pParam->methodHnd, pParam->compHnd, pParam->methodInfo, pParam->inlineInfo);
 
 #ifdef DEBUG
-            pParam->pComp->jitFallbackCompile = pParam->jitFallbackCompile;
+pParam->pComp->jitFallbackCompile = pParam->jitFallbackCompile;
 #endif
 
-            // Now generate the code
-            pParam->result = pParam->pComp->compCompile(pParam->classPtr, pParam->methodCodePtr, pParam->methodCodeSize,
-                                                        pParam->compileFlags);
-        }
-        finallyErrorTrap()
-        {
-            Compiler* pCompiler = pParamOuter->pComp;
+// Now generate the code
+pParam->result =
+    pParam->pComp->compCompile(pParam->classPtr, pParam->methodCodePtr, pParam->methodCodeSize, pParam->compileFlags);
+}
+finallyErrorTrap()
+{
+    Compiler* pCompiler = pParamOuter->pComp;
 
-            // If OOM is thrown when allocating memory for a pComp, we will end up here.
-            // For this case, pComp and also pCompiler will be a nullptr
-            //
-            if (pCompiler != nullptr)
-            {
-                pCompiler->info.compCode = nullptr;
-
-                // pop the compiler off the TLS stack only if it was linked above
-                assert(JitTls::GetCompiler() == pCompiler);
-                JitTls::SetCompiler(pCompiler->prevCompiler);
-            }
-
-            if (pParamOuter->inlineInfo == nullptr)
-            {
-                // Free up the allocator we were using
-                pParamOuter->pAlloc->destroy();
-            }
-        }
-        endErrorTrap()
-    }
-    impJitErrorTrap()
+    // If OOM is thrown when allocating memory for a pComp, we will end up here.
+    // For this case, pComp and also pCompiler will be a nullptr
+    //
+    if (pCompiler != nullptr)
     {
-        // If we were looking at an inlinee....
-        if (inlineInfo != nullptr)
-        {
-            // Note that we failed to compile the inlinee, and that
-            // there's no point trying to inline it again anywhere else.
-            inlineInfo->inlineResult->NoteFatal(InlineObservation::CALLEE_COMPILATION_ERROR);
-        }
-        param.result = __errc;
+        pCompiler->info.compCode = nullptr;
+
+        // pop the compiler off the TLS stack only if it was linked above
+        assert(JitTls::GetCompiler() == pCompiler);
+        JitTls::SetCompiler(pCompiler->prevCompiler);
     }
-    endErrorTrap()
 
-        result = param.result;
-
-    if (!inlineInfo &&
-        (result == CORJIT_INTERNALERROR || result == CORJIT_RECOVERABLEERROR || result == CORJIT_IMPLLIMITATION) &&
-        !jitFallbackCompile)
+    if (pParamOuter->inlineInfo == nullptr)
     {
-        // If we failed the JIT, reattempt with debuggable code.
-        jitFallbackCompile = true;
-
-        // Update the flags for 'safer' code generation.
-        compileFlags->Set(JitFlags::JIT_FLAG_MIN_OPT);
-        compileFlags->Clear(JitFlags::JIT_FLAG_SIZE_OPT);
-        compileFlags->Clear(JitFlags::JIT_FLAG_SPEED_OPT);
-
-        goto START;
+        // Free up the allocator we were using
+        pParamOuter->pAlloc->destroy();
     }
+}
+endErrorTrap()
+}
+impJitErrorTrap()
+{
+    // If we were looking at an inlinee....
+    if (inlineInfo != nullptr)
+    {
+        // Note that we failed to compile the inlinee, and that
+        // there's no point trying to inline it again anywhere else.
+        inlineInfo->inlineResult->NoteFatal(InlineObservation::CALLEE_COMPILATION_ERROR);
+    }
+    param.result = __errc;
+}
+endErrorTrap()
 
-    return result;
+    result = param.result;
+
+if (!inlineInfo &&
+    (result == CORJIT_INTERNALERROR || result == CORJIT_RECOVERABLEERROR || result == CORJIT_IMPLLIMITATION) &&
+    !jitFallbackCompile)
+{
+    // If we failed the JIT, reattempt with debuggable code.
+    jitFallbackCompile = true;
+
+    // Update the flags for 'safer' code generation.
+    compileFlags->Set(JitFlags::JIT_FLAG_MIN_OPT);
+    compileFlags->Clear(JitFlags::JIT_FLAG_SIZE_OPT);
+    compileFlags->Clear(JitFlags::JIT_FLAG_SPEED_OPT);
+    compileFlags->Clear(JitFlags::JIT_FLAG_BBOPT);
+
+    goto START;
+}
+
+return result;
 }
 
 #if defined(UNIX_AMD64_ABI)
@@ -8192,8 +8216,8 @@ var_types Compiler::GetEightByteType(const SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASS
 void Compiler::GetStructTypeOffset(const SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR& structDesc,
                                    var_types*                                                 type0,
                                    var_types*                                                 type1,
-                                   unsigned __int8*                                           offset0,
-                                   unsigned __int8*                                           offset1)
+                                   uint8_t*                                                   offset0,
+                                   uint8_t*                                                   offset1)
 {
     *offset0 = structDesc.eightByteOffsets[0];
     *offset1 = structDesc.eightByteOffsets[1];
@@ -8224,11 +8248,8 @@ void Compiler::GetStructTypeOffset(const SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSIN
 //    'offset0'    -  out param; returns the offset of the first eightbyte.
 //    'offset1'    -  out param; returns the offset of the second eightbyte.
 //
-void Compiler::GetStructTypeOffset(CORINFO_CLASS_HANDLE typeHnd,
-                                   var_types*           type0,
-                                   var_types*           type1,
-                                   unsigned __int8*     offset0,
-                                   unsigned __int8*     offset1)
+void Compiler::GetStructTypeOffset(
+    CORINFO_CLASS_HANDLE typeHnd, var_types* type0, var_types* type1, uint8_t* offset0, uint8_t* offset1)
 {
     SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR structDesc;
     eeGetSystemVAmd64PassStructInRegisterDescriptor(typeHnd, &structDesc);
@@ -8393,7 +8414,7 @@ void Compiler::compCallArgStats()
 
                 if (call->AsCall()->gtCallThisArg == nullptr)
                 {
-                    if (call->AsCall()->gtCallType == CT_HELPER)
+                    if (call->AsCall()->IsHelperCall())
                     {
                         argHelperCalls++;
                     }
@@ -8795,8 +8816,9 @@ void CompTimeSummaryInfo::Print(FILE* f)
         double pslop_pct = 100.0 * m_total.m_parentPhaseEndSlop * 1000.0 / countsPerSec / totTime_ms;
         if (pslop_pct >= 1.0)
         {
-            fprintf(f, "\n  'End phase slop' should be very small (if not, there's unattributed time): %9.3f Mcycles = "
-                       "%3.1f%% of total.\n\n",
+            fprintf(f,
+                    "\n  'End phase slop' should be very small (if not, there's unattributed time): %9.3f Mcycles = "
+                    "%3.1f%% of total.\n\n",
                     m_total.m_parentPhaseEndSlop / 1000000.0, pslop_pct);
         }
     }
@@ -8836,8 +8858,9 @@ void CompTimeSummaryInfo::Print(FILE* f)
         double fslop_ms = m_filtered.m_parentPhaseEndSlop * 1000.0 / countsPerSec;
         if (fslop_ms > 1.0)
         {
-            fprintf(f, "\n  'End phase slop' should be very small (if not, there's unattributed time): %9.3f Mcycles = "
-                       "%3.1f%% of total.\n\n",
+            fprintf(f,
+                    "\n  'End phase slop' should be very small (if not, there's unattributed time): %9.3f Mcycles = "
+                    "%3.1f%% of total.\n\n",
                     m_filtered.m_parentPhaseEndSlop / 1000000.0, fslop_ms);
         }
     }
@@ -8874,8 +8897,8 @@ void CompTimeSummaryInfo::Print(FILE* f)
                 if (calls == 0)
                     continue;
 
-                unsigned __int64 cycles = m_total.m_perClrAPIcycles[i];
-                double           millis = 1000.0 * cycles / countsPerSec;
+                uint64_t cycles = m_total.m_perClrAPIcycles[i];
+                double   millis = 1000.0 * cycles / countsPerSec;
 
                 // Don't show the small fry to keep the results manageable
                 if (millis < 0.5)
@@ -8899,8 +8922,8 @@ void CompTimeSummaryInfo::Print(FILE* f)
                     continue;
                 }
 
-                unsigned __int32 maxcyc = m_maximum.m_maxClrAPIcycles[i];
-                double           max_ms = 1000.0 * maxcyc / countsPerSec;
+                uint32_t maxcyc = m_maximum.m_maxClrAPIcycles[i];
+                double   max_ms = 1000.0 * maxcyc / countsPerSec;
 
                 fprintf(f, "     %-40s", APInames[i]);                                 // API name
                 fprintf(f, " %8u %9.1f ms", calls, millis);                            // #calls, total time
@@ -8935,7 +8958,8 @@ void CompTimeSummaryInfo::Print(FILE* f)
     fprintf(f, "\n");
 }
 
-JitTimer::JitTimer(unsigned byteCodeSize) : m_info(byteCodeSize)
+JitTimer::JitTimer(unsigned byteCodeSize)
+    : m_info(byteCodeSize)
 {
 #if MEASURE_CLRAPI_CALLS
     m_CLRcallInvokes = 0;
@@ -8949,7 +8973,7 @@ JitTimer::JitTimer(unsigned byteCodeSize) : m_info(byteCodeSize)
 #endif
 #endif
 
-    unsigned __int64 threadCurCycles;
+    uint64_t threadCurCycles;
     if (_our_GetThreadCycles(&threadCurCycles))
     {
         m_start         = threadCurCycles;
@@ -8963,10 +8987,10 @@ void JitTimer::EndPhase(Compiler* compiler, Phases phase)
     // We re-run some phases currently, so this following assert doesn't work.
     // assert((int)phase > (int)m_lastPhase);  // We should end phases in increasing order.
 
-    unsigned __int64 threadCurCycles;
+    uint64_t threadCurCycles;
     if (_our_GetThreadCycles(&threadCurCycles))
     {
-        unsigned __int64 phaseCycles = (threadCurCycles - m_curPhaseStart);
+        uint64_t phaseCycles = (threadCurCycles - m_curPhaseStart);
 
         // If this is not a leaf phase, the assumption is that the last subphase must have just recently ended.
         // Credit the duration to "slop", the total of which should be very small.
@@ -9068,7 +9092,7 @@ void JitTimer::CLRApiCallLeave(unsigned apix)
     {
         if (JitConfig.JitEECallTimingInfo() != 0)
         {
-            unsigned __int64 threadCurCycles;
+            uint64_t threadCurCycles;
             if (_our_GetThreadCycles(&threadCurCycles))
             {
                 // Compute the cycles spent in the call.
@@ -9084,7 +9108,7 @@ void JitTimer::CLRApiCallLeave(unsigned apix)
 
                 m_info.m_perClrAPIcalls[apix] += 1;
                 m_info.m_perClrAPIcycles[apix] += threadCurCycles;
-                m_info.m_maxClrAPIcycles[apix] = max(m_info.m_maxClrAPIcycles[apix], (unsigned __int32)threadCurCycles);
+                m_info.m_maxClrAPIcycles[apix] = max(m_info.m_maxClrAPIcycles[apix], (uint32_t)threadCurCycles);
 
                 // Subtract the cycles from the enclosing phase by bumping its start time
                 m_curPhaseStart += threadCurCycles;
@@ -9187,7 +9211,7 @@ void JitTimer::PrintCsvMethodStats(Compiler* comp)
     // for a DEBUG build (presumably not for the time info), just re-use it.
     const char* methName = comp->info.compFullName;
 #else
-    const char*          methName  = comp->eeGetMethodFullName(comp->info.compMethodHnd);
+    const char* methName = comp->eeGetMethodFullName(comp->info.compMethodHnd);
 #endif
 
     // Try and access the SPMI index to report in the data set.
@@ -9228,7 +9252,7 @@ void JitTimer::PrintCsvMethodStats(Compiler* comp)
     fprintf(s_csvFile, "%d,", comp->Metrics.LoopsAligned);
 #endif // DEBUG
 #endif // FEATURE_LOOP_ALIGN
-    unsigned __int64 totCycles = 0;
+    uint64_t totCycles = 0;
     for (int i = 0; i < PHASE_NUMBER_OF; i++)
     {
         if (!PhaseHasChildren[i])
@@ -9373,8 +9397,8 @@ void Compiler::RecordStateAtEndOfCompilation()
 
     // Common portion
     m_compCycles = 0;
-    unsigned __int64 compCyclesAtEnd;
-    bool             b = CycleTimer::GetThreadCyclesS(&compCyclesAtEnd);
+    uint64_t compCyclesAtEnd;
+    bool     b = CycleTimer::GetThreadCyclesS(&compCyclesAtEnd);
     if (!b)
     {
         return; // We don't have a thread cycle counter.
@@ -9850,7 +9874,6 @@ JITDBGAPI void __cdecl cTreeFlags(Compiler* comp, GenTree* tree)
         chars += printf("flags=");
 
         // Node flags
-        CLANG_FORMAT_COMMENT_ANCHOR;
 
 #if defined(DEBUG)
         if (tree->gtDebugFlags & GTF_DEBUG_NODE_LARGE)
@@ -10902,10 +10925,6 @@ void Compiler::EnregisterStats::RecordLocal(const LclVarDsc* varDsc)
                 m_simdUserForcesDep++;
                 break;
 
-            case DoNotEnregisterReason::NonStandardParameter:
-                m_nonStandardParameter++;
-                break;
-
             default:
                 unreached();
                 break;
@@ -11033,7 +11052,6 @@ void Compiler::EnregisterStats::Dump(FILE* fout) const
     PRINT_STATS(m_returnSpCheck, notEnreg);
     PRINT_STATS(m_callSpCheck, notEnreg);
     PRINT_STATS(m_simdUserForcesDep, notEnreg);
-    PRINT_STATS(m_nonStandardParameter, notEnreg);
 
     fprintf(fout, "\nAddr exposed details:\n");
     if (m_addrExposed == 0)

@@ -66,7 +66,7 @@ namespace Mono.Linker
 		/// <summary>
 		/// Returns a list of all known methods that override <paramref name="method"/>. The list may be incomplete if other overrides exist in assemblies that haven't been processed by TypeMapInfo yet
 		/// </summary>
-		public IEnumerable<OverrideInformation>? GetOverrides (MethodDefinition method)
+		public List<OverrideInformation>? GetOverrides (MethodDefinition method)
 		{
 			EnsureProcessed (method.Module.Assembly);
 			override_methods.TryGetValue (method, out List<OverrideInformation>? overrides);
@@ -130,14 +130,15 @@ namespace Mono.Linker
 				MapType (nested);
 		}
 
-		internal List<(TypeReference, List<InterfaceImplementation>)>? GetRecursiveInterfaces (TypeDefinition type)
+		internal List<(TypeReference InterfaceType, List<InterfaceImplementation> ImplementationChain)>? GetRecursiveInterfaces (TypeDefinition type)
 		{
+			EnsureProcessed(type.Module.Assembly);
 			if (interfaces.TryGetValue (type, out var value))
 				return value;
 			return null;
 		}
 
-		List<(TypeReference, List<InterfaceImplementation>)> GetRecursiveInterfaceImplementations (TypeDefinition type)
+		List<(TypeReference InterfaceType, List<InterfaceImplementation> ImplementationChain)> GetRecursiveInterfaceImplementations (TypeDefinition type)
 		{
 			List<(TypeReference, List<InterfaceImplementation>)> firstImplementationChain = new ();
 

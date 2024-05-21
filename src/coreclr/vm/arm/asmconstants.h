@@ -114,13 +114,6 @@ ASMCONSTANTS_C_ASSERT(SIZEOF__FloatArgumentRegisters == sizeof(FloatArgumentRegi
 #define ASM_ENREGISTERED_RETURNTYPE_MAXSIZE 0x20
 ASMCONSTANTS_C_ASSERT(ASM_ENREGISTERED_RETURNTYPE_MAXSIZE == ENREGISTERED_RETURNTYPE_MAXSIZE)
 
-
-#define MethodDesc__m_wFlags DBG_FRE(0x1A, 0x06)
-ASMCONSTANTS_C_ASSERT(MethodDesc__m_wFlags == offsetof(MethodDesc, m_wFlags))
-
-#define MethodDesc__mdcClassification 0x7
-ASMCONSTANTS_C_ASSERT(MethodDesc__mdcClassification == mdcClassification)
-
 #ifdef FEATURE_COMINTEROP
 
 #define Stub__m_pCode DBG_FRE(0x10, 0x0c)

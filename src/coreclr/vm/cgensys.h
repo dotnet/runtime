@@ -84,8 +84,6 @@ BOOL GetAnyThunkTarget (T_CONTEXT *pctx, TADDR *pTarget, TADDR *pTargetMethodDes
 
 #endif // DACCESS_COMPILE
 
-
-
 //
 // ResetProcessorStateHolder saves/restores processor state around calls to
 // CoreLib during exception handling.

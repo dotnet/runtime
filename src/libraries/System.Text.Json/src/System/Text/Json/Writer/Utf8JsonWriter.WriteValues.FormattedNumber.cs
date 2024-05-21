@@ -69,9 +69,9 @@ namespace System.Text.Json
             int indent = Indentation;
             Debug.Assert(indent <= _indentLength * _options.MaxDepth);
 
-            Debug.Assert(utf8Value.Length < int.MaxValue - indent - 1 - s_newLineLength);
+            Debug.Assert(utf8Value.Length < int.MaxValue - indent - 1 - _newLineLength);
 
-            int maxRequired = indent + utf8Value.Length + 1 + s_newLineLength; // Optionally, 1 list separator and 1-2 bytes for new line
+            int maxRequired = indent + utf8Value.Length + 1 + _newLineLength; // Optionally, 1 list separator and 1-2 bytes for new line
 
             if (_memory.Length - BytesPending < maxRequired)
             {

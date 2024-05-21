@@ -914,6 +914,15 @@ bool interceptor_ICJI::isExactType(CORINFO_CLASS_HANDLE cls)
     return temp;
 }
 
+// Returns whether a class handle represents a Nullable type, if that can be statically determined.
+TypeCompareState interceptor_ICJI::isNullableType(CORINFO_CLASS_HANDLE cls)
+{
+    mc->cr->AddCall("isNullableType");
+    TypeCompareState temp = original_ICorJitInfo->isNullableType(cls);
+    mc->recIsNullableType(cls, temp);
+    return temp;
+}
+
 // Returns TypeCompareState::Must if cls is known to be an enum.
 // For enums with known exact type returns the underlying
 // type in underlyingType when the provided pointer is
@@ -1938,11 +1947,12 @@ HRESULT interceptor_ICJI::getPgoInstrumentationResults(CORINFO_METHOD_HANDLE    
                                                        PgoInstrumentationSchema **pSchema,                    // pointer to the schema table which describes the instrumentation results (pointer will not remain valid after jit completes)
                                                        uint32_t *                 pCountSchemaItems,          // pointer to the count schema items
                                                        uint8_t **                 pInstrumentationData,       // pointer to the actual instrumentation data (pointer will not remain valid after jit completes)
-                                                       PgoSource*                 pPgoSource)
+                                                       PgoSource*                 pPgoSource,
+                                                       bool*                      pDynamicPgo)
 {
     mc->cr->AddCall("getPgoInstrumentationResults");
-    HRESULT temp = original_ICorJitInfo->getPgoInstrumentationResults(ftnHnd, pSchema, pCountSchemaItems, pInstrumentationData, pPgoSource);
-    mc->recGetPgoInstrumentationResults(ftnHnd, pSchema, pCountSchemaItems, pInstrumentationData, pPgoSource, temp);
+    HRESULT temp = original_ICorJitInfo->getPgoInstrumentationResults(ftnHnd, pSchema, pCountSchemaItems, pInstrumentationData, pPgoSource, pDynamicPgo);
+    mc->recGetPgoInstrumentationResults(ftnHnd, pSchema, pCountSchemaItems, pInstrumentationData, pPgoSource, pDynamicPgo, temp);
     return temp;
 }
 

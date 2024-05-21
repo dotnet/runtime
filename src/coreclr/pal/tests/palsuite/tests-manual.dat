@@ -1,7 +1,6 @@
 # Licensed to the .NET Foundation under one or more agreements.
 # The .NET Foundation licenses this file to you under the MIT license.
 
-c_runtime/exit/test2,1
 pal_specific/pal_get_stderr/test1,1
 pal_specific/pal_get_stdin/test1,1
 pal_specific/pal_get_stdout/test1,1

@@ -623,10 +623,10 @@ namespace System.Text.Json.Serialization.Metadata
                 potentialNumberType == typeof(ushort) ||
                 potentialNumberType == typeof(uint) ||
                 potentialNumberType == typeof(ulong) ||
-#if NETCOREAPP
+#if NET
                 potentialNumberType == typeof(Half) ||
 #endif
-#if NET7_0_OR_GREATER
+#if NET
                 potentialNumberType == typeof(Int128) ||
                 potentialNumberType == typeof(UInt128) ||
 #endif

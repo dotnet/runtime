@@ -2587,6 +2587,7 @@ namespace System.Security.Cryptography
         public static bool IsSupported { get { throw null; } }
         public void AppendData(byte[] data) { }
         public void AppendData(System.ReadOnlySpan<byte> data) { }
+        public System.Security.Cryptography.Shake128 Clone() { throw null; }
         public void Dispose() { }
         public byte[] GetCurrentHash(int outputLength) { throw null; }
         public void GetCurrentHash(System.Span<byte> destination) { }
@@ -2599,6 +2600,9 @@ namespace System.Security.Cryptography
         public static void HashData(System.ReadOnlySpan<byte> source, System.Span<byte> destination) { }
         public static System.Threading.Tasks.ValueTask<byte[]> HashDataAsync(System.IO.Stream source, int outputLength, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public static System.Threading.Tasks.ValueTask HashDataAsync(System.IO.Stream source, System.Memory<byte> destination, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public byte[] Read(int outputLength) { throw null; }
+        public void Read(System.Span<byte> destination) { }
+        public void Reset() { }
     }
     public sealed partial class Shake256 : System.IDisposable
     {
@@ -2606,6 +2610,7 @@ namespace System.Security.Cryptography
         public static bool IsSupported { get { throw null; } }
         public void AppendData(byte[] data) { }
         public void AppendData(System.ReadOnlySpan<byte> data) { }
+        public System.Security.Cryptography.Shake256 Clone() { throw null; }
         public void Dispose() { }
         public byte[] GetCurrentHash(int outputLength) { throw null; }
         public void GetCurrentHash(System.Span<byte> destination) { }
@@ -2618,6 +2623,9 @@ namespace System.Security.Cryptography
         public static void HashData(System.ReadOnlySpan<byte> source, System.Span<byte> destination) { }
         public static System.Threading.Tasks.ValueTask<byte[]> HashDataAsync(System.IO.Stream source, int outputLength, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public static System.Threading.Tasks.ValueTask HashDataAsync(System.IO.Stream source, System.Memory<byte> destination, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public byte[] Read(int outputLength) { throw null; }
+        public void Read(System.Span<byte> destination) { }
+        public void Reset() { }
     }
     public partial class SignatureDescription
     {

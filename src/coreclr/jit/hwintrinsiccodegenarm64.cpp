@@ -20,9 +20,10 @@
 //       intrinsic node. The register will be later used to store computed branch target address.
 //
 // Arguments:
-//    codeGen -- an instance of CodeGen class.
-//    immOp   -- an immediate operand of the intrinsic.
-//    intrin  -- a hardware intrinsic tree node.
+//    codeGen   -- an instance of CodeGen class.
+//    immOp     -- an immediate operand of the intrinsic.
+//    intrin    -- a hardware intrinsic tree node.
+//    immNumber -- which immediate operand to use (most intrinsics only have one).
 //
 // Note: This class is designed to be used in the following way
 //       HWIntrinsicImmOpHelper helper(this, immOp, intrin);
@@ -35,8 +36,14 @@
 //       This allows to combine logic for cases when immOp->isContainedIntOrIImmed() is either true or false in a form
 //       of a for-loop.
 //
-CodeGen::HWIntrinsicImmOpHelper::HWIntrinsicImmOpHelper(CodeGen* codeGen, GenTree* immOp, GenTreeHWIntrinsic* intrin)
-    : codeGen(codeGen), endLabel(nullptr), nonZeroLabel(nullptr), branchTargetReg(REG_NA)
+CodeGen::HWIntrinsicImmOpHelper::HWIntrinsicImmOpHelper(CodeGen*            codeGen,
+                                                        GenTree*            immOp,
+                                                        GenTreeHWIntrinsic* intrin,
+                                                        int                 immNumber /* = 1 */)
+    : codeGen(codeGen)
+    , endLabel(nullptr)
+    , nonZeroLabel(nullptr)
+    , branchTargetReg(REG_NA)
 {
     assert(codeGen != nullptr);
     assert(varTypeIsIntegral(immOp));
@@ -72,12 +79,12 @@ CodeGen::HWIntrinsicImmOpHelper::HWIntrinsicImmOpHelper(CodeGen* codeGen, GenTre
 
             const unsigned int indexedElementSimdSize = genTypeSize(indexedElementOpType);
             HWIntrinsicInfo::lookupImmBounds(intrin->GetHWIntrinsicId(), indexedElementSimdSize,
-                                             intrin->GetSimdBaseType(), &immLowerBound, &immUpperBound);
+                                             intrin->GetSimdBaseType(), immNumber, &immLowerBound, &immUpperBound);
         }
         else
         {
             HWIntrinsicInfo::lookupImmBounds(intrin->GetHWIntrinsicId(), intrin->GetSimdSize(),
-                                             intrin->GetSimdBaseType(), &immLowerBound, &immUpperBound);
+                                             intrin->GetSimdBaseType(), immNumber, &immLowerBound, &immUpperBound);
         }
 
         nonConstImmReg = immOp->GetRegNum();
@@ -95,8 +102,7 @@ CodeGen::HWIntrinsicImmOpHelper::HWIntrinsicImmOpHelper(CodeGen* codeGen, GenTre
             // these by
             // using the same approach as in hwintrinsicxarch.cpp - adding an additional indirection level in form of a
             // branch table.
-            assert(!HWIntrinsicInfo::GeneratesMultipleIns(intrin->GetHWIntrinsicId()));
-            branchTargetReg = intrin->GetSingleTempReg();
+            branchTargetReg = codeGen->internalRegisters.GetSingle(intrin);
         }
 
         endLabel = codeGen->genCreateTempLabel();
@@ -377,7 +383,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 emitShift(intrin.op2, op1Reg);
             }
         }
-        else if (intrin.category == HW_Category_EnumPattern)
+        else if (HWIntrinsicInfo::HasEnumOperand(intrin.id))
         {
             assert(hasImmediateOperand);
 
@@ -398,12 +404,347 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                     unreached();
             }
         }
+        else if (intrin.numOperands >= 2 && intrin.op2->IsEmbMaskOp())
+        {
+            // Handle case where op2 is operation that needs embedded mask
+            GenTree* op2 = intrin.op2;
+            assert(intrin.id == NI_Sve_ConditionalSelect);
+            assert(op2->OperIsHWIntrinsic());
+            assert(op2->isContained());
+
+            // Get the registers and intrinsics that needs embedded mask
+            const HWIntrinsic intrinEmbMask(op2->AsHWIntrinsic());
+            instruction       insEmbMask = HWIntrinsicInfo::lookupIns(intrinEmbMask.id, intrinEmbMask.baseType);
+            const bool        instrIsRMW = op2->isRMWHWIntrinsic(compiler);
+
+            regNumber maskReg       = op1Reg;
+            regNumber embMaskOp1Reg = REG_NA;
+            regNumber embMaskOp2Reg = REG_NA;
+            regNumber embMaskOp3Reg = REG_NA;
+            regNumber falseReg      = op3Reg;
+
+            switch (intrinEmbMask.numOperands)
+            {
+                case 3:
+                    assert(intrinEmbMask.op3 != nullptr);
+                    embMaskOp3Reg = intrinEmbMask.op3->GetRegNum();
+                    FALLTHROUGH;
+
+                case 2:
+                    assert(intrinEmbMask.op2 != nullptr);
+                    embMaskOp2Reg = intrinEmbMask.op2->GetRegNum();
+                    FALLTHROUGH;
+
+                case 1:
+                    assert(intrinEmbMask.op1 != nullptr);
+                    embMaskOp1Reg = intrinEmbMask.op1->GetRegNum();
+                    break;
+
+                default:
+                    unreached();
+            }
+
+            switch (intrinEmbMask.numOperands)
+            {
+                case 1:
+                {
+                    assert(!instrIsRMW);
+
+                    if (targetReg != falseReg)
+                    {
+                        // If targetReg is not the same as `falseReg` then need to move
+                        // the `falseReg` to `targetReg`.
+
+                        if (intrin.op3->isContained())
+                        {
+                            assert(intrin.op3->IsVectorZero());
+                            if (intrin.op1->isContained() || intrin.op1->IsMaskAllBitsSet())
+                            {
+                                // We already skip importing ConditionalSelect if op1 == trueAll, however
+                                // if we still see it here, it is because we wrapped the predicated instruction
+                                // inside ConditionalSelect.
+                                // As such, no need to move the `falseReg` to `targetReg`
+                                // because the predicated instruction will eventually set it.
+                            }
+                            else
+                            {
+                                // If falseValue is zero, just zero out those lanes of targetReg using `movprfx`
+                                // and /Z
+                                GetEmitter()->emitIns_R_R_R(INS_sve_movprfx, emitSize, targetReg, maskReg, targetReg,
+                                                            opt);
+                            }
+                        }
+                        else if (targetReg == embMaskOp1Reg)
+                        {
+                            // target != falseValue, but we do not want to overwrite target with `embMaskOp1Reg`.
+                            // We will first do the predicate operation and then do conditionalSelect inactive
+                            // elements from falseValue
+
+                            // We cannot use use `movprfx` here to move falseReg to targetReg because that will
+                            // overwrite the value of embMaskOp1Reg which is present in targetReg.
+                            GetEmitter()->emitIns_R_R_R(insEmbMask, emitSize, targetReg, maskReg, embMaskOp1Reg, opt);
+
+                            GetEmitter()->emitIns_R_R_R_R(INS_sve_sel, emitSize, targetReg, maskReg, targetReg,
+                                                          falseReg, opt, INS_SCALABLE_OPTS_UNPREDICATED);
+                            break;
+                        }
+                        else
+                        {
+                            // At this point, target != embMaskOp1Reg != falseReg, so just go ahead
+                            // and move the falseReg unpredicated into targetReg.
+                            GetEmitter()->emitIns_R_R(INS_sve_movprfx, EA_SCALABLE, targetReg, falseReg);
+                        }
+                    }
+
+                    GetEmitter()->emitIns_R_R_R(insEmbMask, emitSize, targetReg, maskReg, embMaskOp1Reg, opt);
+                    break;
+                }
+
+                case 2:
+                {
+                    assert(instrIsRMW);
+
+                    if (intrin.op3->IsVectorZero())
+                    {
+                        // If `falseReg` is zero, then move the first operand of `intrinEmbMask` in the
+                        // destination using /Z.
+
+                        assert(targetReg != embMaskOp2Reg);
+                        GetEmitter()->emitIns_R_R_R(INS_sve_movprfx, emitSize, targetReg, maskReg, embMaskOp1Reg, opt);
+
+                        // Finally, perform the actual "predicated" operation so that `targetReg` is the first operand
+                        // and `embMaskOp2Reg` is the second operand.
+                        GetEmitter()->emitIns_R_R_R(insEmbMask, emitSize, targetReg, maskReg, embMaskOp2Reg, opt);
+                    }
+                    else if (targetReg != falseReg)
+                    {
+                        // If `targetReg` and `falseReg` are not same, then we need to move it to `targetReg` first
+                        // so the `insEmbMask` operation can be merged on top of it.
+
+                        if (falseReg != embMaskOp1Reg)
+                        {
+                            // At the point, targetReg != embMaskOp1Reg != falseReg
+                            if (HWIntrinsicInfo::IsOptionalEmbeddedMaskedOperation(intrinEmbMask.id))
+                            {
+                                // If the embedded instruction supports optional mask operation, use the "unpredicated"
+                                // version of the instruction, followed by "sel" to select the active lanes.
+                                GetEmitter()->emitIns_R_R_R(insEmbMask, emitSize, targetReg, embMaskOp1Reg,
+                                                            embMaskOp2Reg, opt, INS_SCALABLE_OPTS_UNPREDICATED);
+                            }
+                            else
+                            {
+                                // If the instruction just has "predicated" version, then move the "embMaskOp1Reg"
+                                // into targetReg. Next, do the predicated operation on the targetReg and last,
+                                // use "sel" to select the active lanes based on mask, and set inactive lanes
+                                // to falseReg.
+
+                                assert(targetReg != embMaskOp2Reg);
+                                assert(HWIntrinsicInfo::IsEmbeddedMaskedOperation(intrinEmbMask.id));
+
+                                GetEmitter()->emitIns_R_R(INS_sve_movprfx, EA_SCALABLE, targetReg, embMaskOp1Reg);
+
+                                GetEmitter()->emitIns_R_R_R(insEmbMask, emitSize, targetReg, maskReg, embMaskOp2Reg,
+                                                            opt);
+                            }
+
+                            GetEmitter()->emitIns_R_R_R_R(INS_sve_sel, emitSize, targetReg, maskReg, targetReg,
+                                                          falseReg, opt, INS_SCALABLE_OPTS_UNPREDICATED);
+                            break;
+                        }
+                        else if (targetReg != embMaskOp1Reg)
+                        {
+                            // embMaskOp1Reg is same as `falseReg`, but not same as `targetReg`. Move the
+                            // `embMaskOp1Reg` i.e. `falseReg` in `targetReg`, using "unpredicated movprfx", so the
+                            // subsequent `insEmbMask` operation can be merged on top of it.
+                            GetEmitter()->emitIns_R_R(INS_sve_movprfx, EA_SCALABLE, targetReg, falseReg);
+                        }
+
+                        // Finally, perform the actual "predicated" operation so that `targetReg` is the first operand
+                        // and `embMaskOp2Reg` is the second operand.
+                        GetEmitter()->emitIns_R_R_R(insEmbMask, emitSize, targetReg, maskReg, embMaskOp2Reg, opt);
+                    }
+                    else
+                    {
+                        // Just perform the actual "predicated" operation so that `targetReg` is the first operand
+                        // and `embMaskOp2Reg` is the second operand.
+                        GetEmitter()->emitIns_R_R_R(insEmbMask, emitSize, targetReg, maskReg, embMaskOp2Reg, opt);
+                    }
+
+                    break;
+                }
+                case 3:
+                {
+                    assert(instrIsRMW);
+                    assert(HWIntrinsicInfo::IsFmaIntrinsic(intrinEmbMask.id));
+                    assert(falseReg != embMaskOp1Reg);
+                    assert(falseReg != embMaskOp2Reg);
+                    assert(falseReg != embMaskOp3Reg);
+
+                    // For FMA, the operation we are trying to perform is:
+                    //      result = op1 + (op2 * op3)
+                    //
+                    // There are two instructions that can be used depending on which operand's register,
+                    // optionally, will store the final result.
+                    //
+                    // 1. If the result is stored in the operand that was used as an "addend" in the operation,
+                    // then we use `FMLA` format:
+                    //      reg1 = reg1 + (reg2 * reg3)
+                    //
+                    // 2. If the result is stored in the operand that was used as a "multiplicand" in the operation,
+                    // then we use `FMAD` format:
+                    //      reg1 = (reg1 * reg2) + reg3
+                    //
+                    // Check if the result's register is same as that of one of the operand's register and accordingly
+                    // pick the appropriate format. Suppose `targetReg` holds the result, then we have following cases:
+                    //
+                    // Case# 1: Result is stored in the operand that held the "addend"
+                    //      targetReg == reg1
+                    //
+                    // We generate the FMLA instruction format and no further changes are needed.
+                    //
+                    // Case# 2: Result is stored in the operand `op2` that held the "multiplicand"
+                    //      targetReg == reg2
+                    //
+                    // So we basically have an operation:
+                    //      reg2 = reg1 + (reg2 * reg3)
+                    //
+                    // Since, the result will be stored in the "multiplicand", we pick format `FMAD`.
+                    // Then, we rearrange the operands to ensure that the operation is done correctly.
+                    //      reg2 = reg1 + (reg2 * reg3)  // to start with
+                    //      reg2 = reg3 + (reg2 * reg1)  // swap reg1 <--> reg3
+                    //      reg1 = reg3 + (reg1 * reg2)  // swap reg1 <--> reg2
+                    //      reg1 = (reg1 * reg2) + reg3  // rearrange to get FMAD format
+                    //
+                    // Case# 3: Result is stored in the operand `op3` that held the "multiplier"
+                    //      targetReg == reg3
+                    //
+                    // So we basically have an operation:
+                    //      reg3 = reg1 + (reg2 * reg3)
+                    // Since, the result will be stored in the "multiplier", we again pick format `FMAD`.
+                    // Then, we rearrange the operands to ensure that the operation is done correctly.
+                    //      reg3 = reg1 + (reg2 * reg3)  // to start with
+                    //      reg1 = reg3 + (reg2 * reg1)  // swap reg1 <--> reg3
+                    //      reg1 = (reg1 * reg2) + reg3  // rearrange to get FMAD format
+
+                    bool useAddend = true;
+                    if (targetReg == embMaskOp2Reg)
+                    {
+                        // Case# 2
+                        useAddend = false;
+                        std::swap(embMaskOp1Reg, embMaskOp3Reg);
+                        std::swap(embMaskOp1Reg, embMaskOp2Reg);
+                    }
+                    else if (targetReg == embMaskOp3Reg)
+                    {
+                        // Case# 3
+                        useAddend = false;
+                        std::swap(embMaskOp1Reg, embMaskOp3Reg);
+                    }
+                    else
+                    {
+                        // Case# 1
+                    }
+
+                    switch (intrinEmbMask.id)
+                    {
+                        case NI_Sve_FusedMultiplyAdd:
+                            insEmbMask = useAddend ? INS_sve_fmla : INS_sve_fmad;
+                            break;
+
+                        case NI_Sve_FusedMultiplyAddNegated:
+                            insEmbMask = useAddend ? INS_sve_fnmla : INS_sve_fnmad;
+                            break;
+
+                        case NI_Sve_FusedMultiplySubtract:
+                            insEmbMask = useAddend ? INS_sve_fmls : INS_sve_fmsb;
+                            break;
+
+                        case NI_Sve_FusedMultiplySubtractNegated:
+                            insEmbMask = useAddend ? INS_sve_fnmls : INS_sve_fnmsb;
+                            break;
+
+                        case NI_Sve_MultiplyAdd:
+                            insEmbMask = useAddend ? INS_sve_mla : INS_sve_mad;
+                            break;
+
+                        case NI_Sve_MultiplySubtract:
+                            insEmbMask = useAddend ? INS_sve_mls : INS_sve_msb;
+                            break;
+
+                        default:
+                            unreached();
+                    }
+
+                    if (intrin.op3->IsVectorZero())
+                    {
+                        // If `falseReg` is zero, then move the first operand of `intrinEmbMask` in the
+                        // destination using /Z.
+
+                        assert(targetReg != embMaskOp2Reg);
+                        assert(intrin.op3->isContained() || !intrin.op1->IsMaskAllBitsSet());
+                        GetEmitter()->emitIns_R_R_R(INS_sve_movprfx, emitSize, targetReg, maskReg, embMaskOp1Reg, opt);
+                    }
+                    else
+                    {
+                        // Below are the considerations we need to handle:
+                        //
+                        // targetReg == falseReg && targetReg == embMaskOp1Reg
+                        //      fmla    Zd, P/m, Zn, Zm
+                        //
+                        // targetReg == falseReg && targetReg != embMaskOp1Reg
+                        //      movprfx target, P/m, embMaskOp1Reg
+                        //      fmla    target, P/m, embMaskOp2Reg, embMaskOp3Reg
+                        //
+                        // targetReg != falseReg && targetReg == embMaskOp1Reg
+                        //      sel     target, P/m, embMaskOp1Reg, falseReg
+                        //      fmla    target, P/m, embMaskOp2Reg, embMaskOp3Reg
+                        //
+                        // targetReg != falseReg && targetReg != embMaskOp1Reg
+                        //      sel     target, P/m, embMaskOp1Reg, falseReg
+                        //      fmla    target, P/m, embMaskOp2Reg, embMaskOp3Reg
+                        //
+                        // Note that, we just check if the targetReg/falseReg or targetReg/embMaskOp1Reg
+                        // coincides or not. Other combination like falseReg/embMaskOp*Reg cannot happen
+                        // because we marked embMaskOp*Reg as delayFree.
+
+                        if (targetReg != falseReg)
+                        {
+                            // If falseReg value is not present in targetReg yet, move the inactive lanes
+                            // into the targetReg using `sel`. Since this is RMW, the active lanes should
+                            // have the value from embMaskOp1Reg
+
+                            GetEmitter()->emitIns_R_R_R_R(INS_sve_sel, emitSize, targetReg, maskReg, embMaskOp1Reg,
+                                                          falseReg, opt, INS_SCALABLE_OPTS_UNPREDICATED);
+                        }
+                        else if (targetReg != embMaskOp1Reg)
+                        {
+                            // If target already contains the values of `falseReg`, just merge the lanes from
+                            // `embMaskOp1Reg`, again because this is RMW semantics.
+
+                            GetEmitter()->emitIns_R_R_R(INS_sve_movprfx, emitSize, targetReg, maskReg, embMaskOp1Reg,
+                                                        opt, INS_SCALABLE_OPTS_PREDICATE_MERGE);
+                        }
+                    }
+
+                    // Finally, perform the desired operation.
+                    GetEmitter()->emitIns_R_R_R_R(insEmbMask, emitSize, targetReg, maskReg, embMaskOp2Reg,
+                                                  embMaskOp3Reg, opt);
+
+                    break;
+                }
+                default:
+                    unreached();
+            }
+        }
         else
         {
             assert(!hasImmediateOperand);
 
             switch (intrin.numOperands)
             {
+                case 0:
+                    GetEmitter()->emitIns_R(ins, emitSize, targetReg, opt);
+                    break;
                 case 1:
                     GetEmitter()->emitIns_R_R(ins, emitSize, targetReg, op1Reg, opt);
                     break;
@@ -415,6 +756,14 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                         intrin.op2->IsVectorZero())
                     {
                         GetEmitter()->emitIns_R_R(ins, emitSize, targetReg, op1Reg, opt);
+                    }
+                    else if (HWIntrinsicInfo::IsScalable(intrin.id))
+                    {
+                        assert(!node->IsEmbMaskOp());
+                        // This generates an unpredicated version
+                        // Predicated should be taken care above `intrin.op2->IsEmbMaskOp()`
+                        GetEmitter()->emitIns_R_R_R(ins, emitSize, targetReg, op1Reg, op2Reg, opt,
+                                                    INS_SCALABLE_OPTS_UNPREDICATED);
                     }
                     else if (isRMW)
                     {
@@ -434,15 +783,23 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                     break;
 
                 case 3:
-                    assert(isRMW);
-                    if (targetReg != op1Reg)
+                    if (isRMW)
                     {
-                        assert(targetReg != op2Reg);
-                        assert(targetReg != op3Reg);
+                        if (targetReg != op1Reg)
+                        {
+                            assert(targetReg != op2Reg);
+                            assert(targetReg != op3Reg);
 
-                        GetEmitter()->emitIns_Mov(INS_mov, emitTypeSize(node), targetReg, op1Reg, /* canSkip */ true);
+                            GetEmitter()->emitIns_Mov(INS_mov, emitTypeSize(node), targetReg, op1Reg,
+                                                      /* canSkip */ true);
+                        }
+                        GetEmitter()->emitIns_R_R_R(ins, emitSize, targetReg, op2Reg, op3Reg, opt);
                     }
-                    GetEmitter()->emitIns_R_R_R(ins, emitSize, targetReg, op2Reg, op3Reg, opt);
+                    else
+                    {
+                        GetEmitter()->emitIns_R_R_R_R(ins, emitSize, targetReg, op1Reg, op2Reg, op3Reg, opt,
+                                                      INS_SCALABLE_OPTS_UNPREDICATED);
+                    }
                     break;
 
                 default:
@@ -830,7 +1187,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
 
                     GenTree* argNode = use.GetNode();
                     assert(argReg == argNode->GetRegNum());
-                    argReg = REG_NEXT(argReg);
+                    argReg = getNextSIMDRegWithWraparound(argReg);
                 }
                 assert((ins == INS_st2 && regCount == 2) || (ins == INS_st3 && regCount == 3) ||
                        (ins == INS_st4 && regCount == 4));
@@ -880,7 +1237,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
 
                     GenTree* argNode = use.GetNode();
                     assert(argReg == argNode->GetRegNum());
-                    argReg = REG_NEXT(argReg);
+                    argReg = getNextSIMDRegWithWraparound(argReg);
                 }
                 assert((ins == INS_st1_2regs && regCount == 2) || (ins == INS_st2 && regCount == 2) ||
                        (ins == INS_st1_3regs && regCount == 3) || (ins == INS_st3 && regCount == 3) ||
@@ -1031,7 +1388,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                         if (intrin.op1->OperIsLocal())
                         {
                             unsigned varNum = intrin.op1->AsLclVarCommon()->GetLclNum();
-                            baseReg         = node->ExtractTempReg();
+                            baseReg         = internalRegisters.Extract(node);
 
                             // Load the address of varNum
                             GetEmitter()->emitIns_R_S(INS_lea, EA_PTRSIZE, baseReg, varNum, 0);
@@ -1051,7 +1408,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                         unsigned simdInitTempVarNum = compiler->lvaSIMDInitTempVarNum;
                         noway_assert(simdInitTempVarNum != BAD_VAR_NUM);
 
-                        baseReg = node->ExtractTempReg();
+                        baseReg = internalRegisters.Extract(node);
 
                         // Load the address of simdInitTempVarNum
                         GetEmitter()->emitIns_R_S(INS_lea, EA_PTRSIZE, baseReg, simdInitTempVarNum, 0);
@@ -1183,7 +1540,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
 
                         GenTree* argNode = use.GetNode();
                         assert(argReg == argNode->GetRegNum());
-                        argReg = REG_NEXT(argReg);
+                        argReg = getNextSIMDRegWithWraparound(argReg);
 #endif
                     }
                 }
@@ -1238,7 +1595,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                         assert(argReg == argNode->GetRegNum());
                         // and they should not interfere with targetReg
                         assert(targetReg != argReg);
-                        argReg = REG_NEXT(argReg);
+                        argReg = getNextSIMDRegWithWraparound(argReg);
 #endif
                     }
                 }
@@ -1292,9 +1649,68 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 GetEmitter()->emitIns_R_R_R_I(ins, emitSize, targetReg, op1Reg, op2Reg, 0, opt);
                 break;
 
+            case NI_Sve_Count16BitElements:
+            case NI_Sve_Count32BitElements:
+            case NI_Sve_Count64BitElements:
+            case NI_Sve_Count8BitElements:
+            {
+                // Instruction has an additional immediate to multiply the result by. Use 1.
+                assert(hasImmediateOperand);
+                HWIntrinsicImmOpHelper helper(this, intrin.op1, node);
+                for (helper.EmitBegin(); !helper.Done(); helper.EmitCaseEnd())
+                {
+                    const insSvePattern pattern = (insSvePattern)helper.ImmValue();
+                    GetEmitter()->emitIns_R_PATTERN_I(ins, emitSize, targetReg, pattern, 1, opt);
+                }
+                break;
+            }
+
             case NI_Sve_CreateTrueMaskAll:
                 // Must use the pattern variant, as the non-pattern varient is SVE2.1.
                 GetEmitter()->emitIns_R_PATTERN(ins, emitSize, targetReg, opt, SVE_PATTERN_ALL);
+                break;
+
+            case NI_Sve_CreateWhileLessThanMask8Bit:
+            case NI_Sve_CreateWhileLessThanMask16Bit:
+            case NI_Sve_CreateWhileLessThanMask32Bit:
+            case NI_Sve_CreateWhileLessThanMask64Bit:
+            {
+                // Emit size and instruction is based on the scalar operands.
+                var_types auxType = node->GetAuxiliaryType();
+                emitSize          = emitActualTypeSize(auxType);
+                if (varTypeIsUnsigned(auxType))
+                {
+                    ins = INS_sve_whilelo;
+                }
+
+                GetEmitter()->emitIns_R_R_R(ins, emitSize, targetReg, op1Reg, op2Reg, opt);
+                break;
+            }
+
+            case NI_Sve_CreateWhileLessThanOrEqualMask8Bit:
+            case NI_Sve_CreateWhileLessThanOrEqualMask16Bit:
+            case NI_Sve_CreateWhileLessThanOrEqualMask32Bit:
+            case NI_Sve_CreateWhileLessThanOrEqualMask64Bit:
+            {
+                // Emit size and instruction is based on the scalar operands.
+                var_types auxType = node->GetAuxiliaryType();
+                emitSize          = emitActualTypeSize(auxType);
+                if (varTypeIsUnsigned(auxType))
+                {
+                    ins = INS_sve_whilels;
+                }
+
+                GetEmitter()->emitIns_R_R_R(ins, emitSize, targetReg, op1Reg, op2Reg, opt);
+                break;
+            }
+
+            case NI_Sve_UnzipEven:
+            case NI_Sve_UnzipOdd:
+            case NI_Sve_ZipHigh:
+            case NI_Sve_ZipLow:
+                // Use non-predicated version explicitly
+                GetEmitter()->emitIns_R_R_R(ins, emitSize, targetReg, op1Reg, op2Reg, opt,
+                                            INS_SCALABLE_OPTS_UNPREDICATED);
                 break;
 
             default:

@@ -344,7 +344,7 @@ namespace System.Net.WebSockets.Tests
             return stream;
         }
 
-        public static readonly object[][] EchoServers = System.Net.Test.Common.Configuration.WebSockets.EchoServers;
+        public static readonly object[][] EchoServers = System.Net.Test.Common.Configuration.WebSockets.GetEchoServers();
         public static readonly object[][] EchoServersAndBoolean = EchoServers.SelectMany(o => new object[][]
         {
             new object[] { o[0], false },

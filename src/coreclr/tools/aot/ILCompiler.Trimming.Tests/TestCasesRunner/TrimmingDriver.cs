@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Reflection.Metadata;
 using System.Runtime.InteropServices;
 using System.Xml;
 using ILCompiler;
@@ -190,7 +191,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			// Build a list of assemblies that have an initializer that needs to run before
 			// any user code runs.
 			foreach (string initAssemblyName in options.InitAssemblies) {
-				ModuleDesc assembly = context.ResolveAssembly (new AssemblyName (initAssemblyName), throwIfNotFound: true);
+				ModuleDesc assembly = context.ResolveAssembly (new AssemblyNameInfo (initAssemblyName), throwIfNotFound: true);
 				assembliesWithInitalizers.Add (assembly);
 			}
 

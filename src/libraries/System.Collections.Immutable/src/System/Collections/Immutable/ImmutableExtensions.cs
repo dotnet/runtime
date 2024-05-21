@@ -16,7 +16,7 @@ namespace System.Collections.Immutable
     {
         internal static bool IsValueType<T>()
         {
-#if NETCOREAPP
+#if NET
             return typeof(T).IsValueType;
 #else
             if (default(T) != null)

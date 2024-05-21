@@ -65,7 +65,7 @@ namespace System.Collections.Generic
         public override int GetHashCode() { throw null; }
         public override int GetHashCode(byte b) { throw null; }
     }
-    public sealed partial class EnumEqualityComparer<T> : System.Collections.Generic.EqualityComparer<T>, System.Runtime.Serialization.ISerializable where T : struct
+    public sealed partial class EnumEqualityComparer<T> : System.Collections.Generic.EqualityComparer<T>, System.Runtime.Serialization.ISerializable where T : struct, System.Enum
     {
         public EnumEqualityComparer() { }
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }

@@ -68,7 +68,7 @@ public:
 #endif
 
 #ifndef DACCESS_COMPILE
-    BOOL SetNativeCodeInterlocked(PCODE pCode, PCODE pExpected = NULL);
+    BOOL SetNativeCodeInterlocked(PCODE pCode, PCODE pExpected = 0);
 #endif
 
     // NOTE: Don't change existing values to avoid breaking changes in event tracing

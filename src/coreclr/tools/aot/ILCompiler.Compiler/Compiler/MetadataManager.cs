@@ -1030,7 +1030,12 @@ namespace ILCompiler
                 case TypeFlags.Array:
                 case TypeFlags.Pointer:
                 case TypeFlags.ByRef:
-                    return IsReflectionBlocked(((ParameterizedType)type).ParameterType);
+                    TypeDesc parameterType = ((ParameterizedType)type).ParameterType;
+
+                    if (parameterType.IsCanonicalDefinitionType(CanonicalFormKind.Any))
+                        return false;
+
+                    return IsReflectionBlocked(parameterType);
 
                 case TypeFlags.FunctionPointer:
                     MethodSignature pointerSignature = ((FunctionPointerType)type).Signature;

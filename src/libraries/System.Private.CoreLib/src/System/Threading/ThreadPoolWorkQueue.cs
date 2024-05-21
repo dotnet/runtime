@@ -21,23 +21,23 @@ namespace System.Threading
         internal static class WorkStealingQueueList
         {
 #pragma warning disable CA1825 // avoid the extra generic instantiation for Array.Empty<T>(); this is the only place we'll ever create this array
-            private static volatile WorkStealingQueue[] _queues = new WorkStealingQueue[0];
+            private static WorkStealingQueue[] s_queues = new WorkStealingQueue[0];
 #pragma warning restore CA1825
 
-            public static WorkStealingQueue[] Queues => _queues;
+            public static WorkStealingQueue[] Queues => s_queues;
 
             public static void Add(WorkStealingQueue queue)
             {
                 Debug.Assert(queue != null);
                 while (true)
                 {
-                    WorkStealingQueue[] oldQueues = _queues;
+                    WorkStealingQueue[] oldQueues = s_queues;
                     Debug.Assert(Array.IndexOf(oldQueues, queue) < 0);
 
                     var newQueues = new WorkStealingQueue[oldQueues.Length + 1];
                     Array.Copy(oldQueues, newQueues, oldQueues.Length);
                     newQueues[^1] = queue;
-                    if (Interlocked.CompareExchange(ref _queues, newQueues, oldQueues) == oldQueues)
+                    if (Interlocked.CompareExchange(ref s_queues, newQueues, oldQueues) == oldQueues)
                     {
                         break;
                     }
@@ -49,7 +49,7 @@ namespace System.Threading
                 Debug.Assert(queue != null);
                 while (true)
                 {
-                    WorkStealingQueue[] oldQueues = _queues;
+                    WorkStealingQueue[] oldQueues = s_queues;
                     if (oldQueues.Length == 0)
                     {
                         return;
@@ -77,7 +77,7 @@ namespace System.Threading
                         Array.Copy(oldQueues, pos + 1, newQueues, pos, newQueues.Length - pos);
                     }
 
-                    if (Interlocked.CompareExchange(ref _queues, newQueues, oldQueues) == oldQueues)
+                    if (Interlocked.CompareExchange(ref s_queues, newQueues, oldQueues) == oldQueues)
                     {
                         break;
                     }

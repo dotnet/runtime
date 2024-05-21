@@ -432,7 +432,7 @@ FCIMPLEND
 
 FCIMPL1(void*, StubHelpers::GetDelegateTarget, DelegateObject *pThisUNSAFE)
 {
-    PCODE pEntryPoint = NULL;
+    PCODE pEntryPoint = (PCODE)NULL;
 
 #ifdef _DEBUG
     BEGIN_PRESERVE_LAST_ERROR;
@@ -506,7 +506,7 @@ FCIMPL3(SIZE_T, StubHelpers::ProfilerBeginTransitionCallback, SIZE_T pSecretPara
     // even if the profiler doesn't want to track transitions.
     if (!CORProfilerTrackTransitions())
     {
-        return NULL;
+        return 0;
     }
 
     MethodDesc* pRealMD = NULL;

@@ -30,6 +30,7 @@ namespace JitTest_nested_etc_cs
     public class Test
     {
         [Fact]
+        [OuterLoop]
         public static void TestEntryPoint()
         {
             Struct1 str1 = new Struct1();

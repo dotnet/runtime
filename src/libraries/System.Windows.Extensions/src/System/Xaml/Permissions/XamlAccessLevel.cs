@@ -43,8 +43,8 @@ namespace System.Xaml.Permissions
             get { return new AssemblyName(AssemblyNameString); }
         }
 
-        public string? PrivateAccessToTypeName { get; private set; }
+        public string? PrivateAccessToTypeName { get; }
 
-        internal string AssemblyNameString { get; private set; }
+        internal string AssemblyNameString { get; }
     }
 }

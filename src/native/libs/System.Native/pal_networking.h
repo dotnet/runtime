@@ -206,6 +206,8 @@ typedef enum
     SocketFlags_MSG_DONTROUTE = 0x0004, // SocketFlags.DontRoute
     SocketFlags_MSG_TRUNC = 0x0100,     // SocketFlags.Truncated
     SocketFlags_MSG_CTRUNC = 0x0200,    // SocketFlags.ControlDataTruncated
+    SocketFlags_MSG_DONTWAIT = 0x1000,  // used privately by Ping
+    SocketFlags_MSG_ERRQUEUE = 0x2000,  // used privately by Ping
 } SocketFlags;
 
 /*
@@ -355,6 +357,8 @@ PALEXPORT int32_t SystemNative_SetSendTimeout(intptr_t socket, int32_t milliseco
 PALEXPORT int32_t SystemNative_Receive(intptr_t socket, void* buffer, int32_t bufferLen, int32_t flags, int32_t* received);
 
 PALEXPORT int32_t SystemNative_ReceiveMessage(intptr_t socket, MessageHeader* messageHeader, int32_t flags, int64_t* received);
+
+PALEXPORT int32_t SystemNative_ReceiveSocketError(intptr_t socket, MessageHeader* messageHeader);
 
 PALEXPORT int32_t SystemNative_Send(intptr_t socket, void* buffer, int32_t bufferLen, int32_t flags, int32_t* sent);
 
