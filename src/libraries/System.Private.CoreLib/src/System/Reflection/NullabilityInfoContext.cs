@@ -125,7 +125,6 @@ namespace System.Reflection
         private static ParameterInfo? GetMetaParameter(MethodBase metaMethod, ParameterInfo parameter)
         {
             ReadOnlySpan<ParameterInfo> parameters = metaMethod.GetParametersAsSpan();
-
             for (int i = 0; i < parameters.Length; i++)
             {
                 if (parameter.Position == i &&
