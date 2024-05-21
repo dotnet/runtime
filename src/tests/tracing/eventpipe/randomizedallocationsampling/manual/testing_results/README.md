@@ -5,8 +5,6 @@ This folder has the results of manual testing observed for this feature. It is h
 ## statistical distribution measures
 The manual folder contains code to allocate and count objects in different runs.
 
-TODO: Put a 
-
 # Perf benchmarking
 The performance impact of the PR has been measured against a baseline.
 Each branch is built on Windows for x64 with:
