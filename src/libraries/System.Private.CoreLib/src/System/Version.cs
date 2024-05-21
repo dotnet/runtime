@@ -170,7 +170,9 @@ namespace System
 
         public string ToString(int fieldCount)
         {
-            Span<char> dest = stackalloc char[(4 * (Number.Int32NumberBufferLength - 1)) + 3]; // at most 4 non-negative Int32s and 3 periods
+            // at most 4 non-negative Int32s and 3 periods: 2147483647.2147483647.2147483647.2147483647
+            const int MaximumVersionLength = 43;
+            Span<char> dest = stackalloc char[MaximumVersionLength];
             bool success = TryFormat(dest, fieldCount, out int charsWritten);
             Debug.Assert(success);
             return dest.Slice(0, charsWritten).ToString();
