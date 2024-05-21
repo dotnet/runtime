@@ -1764,7 +1764,8 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
             {
                 assert(intrin.op1 != nullptr);
                 assert(intrin.op2 != nullptr);
-                srcCount += BuildOperandUses(intrin.op2);
+                assert(intrinsicTree->OperIsMemoryLoadOrStore());
+                srcCount += BuildAddrUses(intrin.op2);
                 BuildConsecutiveRegistersForDef(intrinsicTree, dstCount);
                 *pDstCount = dstCount;
                 break;

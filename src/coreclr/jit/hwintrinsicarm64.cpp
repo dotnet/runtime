@@ -2304,17 +2304,18 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             info.compNeedsConsecutiveRegisters = true;
 
             assert(sig->numArgs == 2);
+            assert(simdSize == 0); // scalable
 
             op2 = impPopStack().val;
             op1 = impPopStack().val;
 
-            if (op1->OperIs(GT_CAST))
+            if (op2->OperIs(GT_CAST))
             {
                 // Although the API specifies a pointer, if what we have is a BYREF, that's what
                 // we really want, so throw away the cast.
-                if (op1->gtGetOp1()->TypeGet() == TYP_BYREF)
+                if (op2->gtGetOp1()->TypeGet() == TYP_BYREF)
                 {
-                    op1 = op1->gtGetOp1();
+                    op2 = op2->gtGetOp1();
                 }
             }
 

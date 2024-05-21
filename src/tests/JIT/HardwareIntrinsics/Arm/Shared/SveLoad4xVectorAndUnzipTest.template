@@ -315,7 +315,7 @@ namespace JIT.HardwareIntrinsics.Arm
 
             if (!succeeded)
             {
-                TestLibrary.TestFramework.LogInformation($"{nameof({Isa})}.{nameof({Isa}.{Method})}<Int32>({Op1VectorType}<{Op1BaseType}>): {Method} failed:");
+                TestLibrary.TestFramework.LogInformation($"{nameof({Isa})}.{nameof({Isa}.{Method})}({Op1VectorType}<{Op1BaseType}>): {Method} failed:");
                 TestLibrary.TestFramework.LogInformation($" input: ({string.Join(", ", input)})");
                 TestLibrary.TestFramework.LogInformation($" result1: ({string.Join(", ", result1)})");
                 TestLibrary.TestFramework.LogInformation($" result2: ({string.Join(", ", result2)})");
