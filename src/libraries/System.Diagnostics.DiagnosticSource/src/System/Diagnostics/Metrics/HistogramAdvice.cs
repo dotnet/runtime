@@ -19,8 +19,8 @@ namespace System.Diagnostics.Metrics
         /// <para>Explicit bucket boundaries advised to be used with the histogram.</para>
         /// <para>Notes:
         /// <list type="bullet">
-        /// <item>Bucket boundaries MUST be specified in ascending order and CANNOT contain duplicate values.</item>
-        /// <item>An empty set of bucket boundaries hints that the histogram should NOT contain buckets and should only track count and sum values.</item>
+        /// <item>An empty set of bucket boundaries hints that the histogram by default should NOT contain buckets and should only track count and sum values.</item>
+        /// <item>A set of distinct increasing values for bucket boundaries hints that the histogram should use those for its default bucket configuration.</item>
         /// </list>
         /// </para>
         /// </param>
@@ -49,7 +49,7 @@ namespace System.Diagnostics.Metrics
         /// <list type="bullet">
         /// <item>A <see langword="null"/> value means no bucket boundaries have been configured and default values should be used for bucket configuration.</item>
         /// <item>An empty set of bucket boundaries hints that the histogram by default should NOT contain buckets and should only track count and sum values.</item>
-        /// <item>A set of non-distinct increasing values for bucket boundaries hints that the histogram should use those for its default bucket configuration.</item>
+        /// <item>A set of distinct increasing values for bucket boundaries hints that the histogram should use those for its default bucket configuration.</item>
         /// </list>
         /// </remarks>
         public IReadOnlyList<T>? ExplicitBucketBoundaries { get; }
