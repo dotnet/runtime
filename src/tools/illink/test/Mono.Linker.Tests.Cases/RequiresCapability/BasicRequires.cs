@@ -137,7 +137,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 
 		class OnEventMethod
 		{
-			static event EventHandler EventToTestRemove {
+			static event EventHandler EventWithRequiresOnRemove {
 				add { }
 				[RequiresUnreferencedCode ("Message for --EventToTestRemove.remove--")]
 				[RequiresAssemblyFiles ("Message for --EventToTestRemove.remove--")]
@@ -145,7 +145,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				remove { }
 			}
 
-			static event EventHandler EventToTestAdd {
+			static event EventHandler EventWithRequiresOnAdd {
 				[RequiresUnreferencedCode ("Message for --EventToTestAdd.add--")]
 				[RequiresAssemblyFiles ("Message for --EventToTestAdd.add--")]
 				[RequiresDynamicCode ("Message for --EventToTestAdd.add--")]
@@ -164,9 +164,16 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			[ExpectedWarning ("IL3050", "--EventToTestAdd.add--", Tool.Analyzer | Tool.NativeAot, "")]
 			public static void Test ()
 			{
-				EventToTestRemove -= (sender, e) => { };
-				EventToTestAdd += (sender, e) => { };
+				EventWithRequiresOnRemove -= (sender, e) => { }; // Warns
+				EventWithRequiresOnAdd += (sender, e) => { }; // Warns
 				var evt = AnnotatedEvent;
+				TestNoWarnings ();
+			}
+
+			public static void TestNoWarnings()
+			{
+				EventWithRequiresOnRemove += (sender, e) => { };
+				EventWithRequiresOnAdd -= (sender, e) => { };
 			}
 		}
 
