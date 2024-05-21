@@ -1532,7 +1532,7 @@ namespace System.Collections.Immutable.Tests
             AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => array.RemoveRange(array.Length + 1, 1));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("length", () => array.RemoveRange(0, -1));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("length", () => array.RemoveRange(0, array.Length + 1));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("length", () => array.RemoveRange(Math.Max(0, array.Length), int.MaxValue));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("length", () => array.RemoveRange(array.Length, int.MaxValue));
         }
 
         [Theory]
