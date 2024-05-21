@@ -4766,8 +4766,6 @@ void Compiler::fgDoReversePostOrderLayout()
         }
     }
 
-    fgMoveBackwardJumpsToSuccessors</* hasEH */ true>();
-
     // Fix up call-finally pairs
     //
     for (int i = 0; i < callFinallyPairs.Height(); i++)
@@ -4776,6 +4774,8 @@ void Compiler::fgDoReversePostOrderLayout()
         fgUnlinkBlock(pair.callFinallyRet);
         fgInsertBBafter(pair.callFinally, pair.callFinallyRet);
     }
+
+    fgMoveBackwardJumpsToSuccessors</* hasEH */ true>();
 
     // The RPO won't change the entry blocks of any EH regions, but reordering can change the last block in a region
     // (for example, by pushing throw blocks unreachable via normal flow to the end of the region).
