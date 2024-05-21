@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 
 namespace System.Diagnostics.Metrics
 {
@@ -30,7 +31,7 @@ namespace System.Diagnostics.Metrics
                 throw new ArgumentNullException(nameof(explicitBucketBoundaries));
             }
 
-            List<T> explicitBucketBoundariesCopy = [.. explicitBucketBoundaries];
+            IReadOnlyList<T> explicitBucketBoundariesCopy = new ReadOnlyCollection<T>(new List<T>(explicitBucketBoundaries));
 
             if (!IsSortedAndDistinct(explicitBucketBoundariesCopy))
             {
@@ -43,9 +44,17 @@ namespace System.Diagnostics.Metrics
         /// <summary>
         /// Gets the explicit bucket boundaries advised to be used with the histogram.
         /// </summary>
+        /// <remarks>
+        /// Notes:
+        /// <list type="bullet">
+        /// <item>A <see langword="null"/> value means no bucket boundaries have been configured and default values should be used for bucket configuration.</item>
+        /// <item>An empty set of bucket boundaries hints that the histogram by default should NOT contain buckets and should only track count and sum values.</item>
+        /// <item>A set of non-distinct increasing values for bucket boundaries hints that the histogram should use those for its default bucket configuration.</item>
+        /// </list>
+        /// </remarks>
         public IReadOnlyList<T>? ExplicitBucketBoundaries { get; }
 
-        private static bool IsSortedAndDistinct(List<T> values)
+        private static bool IsSortedAndDistinct(IReadOnlyList<T> values)
         {
             Comparer<T> comparer = Comparer<T>.Default;
 

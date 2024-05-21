@@ -14,7 +14,8 @@ namespace System.Diagnostics.Metrics.Tests
 
             HistogramAdvice<int> emptyExplicitBucketBoundariesAdvice = new HistogramAdvice<int>(explicitBucketBoundaries: Array.Empty<int>());
 
-            Assert.Equal(Array.Empty<int>(), emptyExplicitBucketBoundariesAdvice.ExplicitBucketBoundaries);
+            Assert.NotNull(emptyExplicitBucketBoundariesAdvice.ExplicitBucketBoundaries);
+            Assert.Empty(emptyExplicitBucketBoundariesAdvice.ExplicitBucketBoundaries);
 
             int[] singleExplicitBucketBoundary = new int[] { 0 };
 

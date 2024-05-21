@@ -1463,20 +1463,21 @@ namespace System.Diagnostics.Metrics.Tests
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void TestHistogramCreationWithAdvice()
         {
-           RemoteExecutor.Invoke(() => {
-                using Meter meter = new Meter(nameof(TestHistogramCreationWithAdvice));
+           RemoteExecutor.Invoke(() =>
+           {
+               using Meter meter = new Meter(nameof(TestHistogramCreationWithAdvice));
 
-                int[] explicitBucketBoundaries = new int[] { 0, 100, 1000, 10000 };
+               Histogram<int> histogramWithoutAdvice = meter.CreateHistogram<int>(name: nameof(histogramWithoutAdvice));
 
-                Histogram<int> histogramWithoutAdvice = meter.CreateHistogram<int>(name: nameof(histogramWithoutAdvice));
+               Assert.Null(histogramWithoutAdvice.Advice);
 
-                Assert.Null(histogramWithoutAdvice.Advice);
+               int[] explicitBucketBoundaries = new int[] { 0, 100, 1000, 10000 };
 
-                Histogram<int> histogramWithAdvice = meter.CreateHistogram<int>(name: nameof(histogramWithAdvice), advice: new HistogramAdvice<int>(explicitBucketBoundaries));
+               Histogram<int> histogramWithAdvice = meter.CreateHistogram<int>(name: nameof(histogramWithAdvice), advice: new HistogramAdvice<int>(explicitBucketBoundaries));
 
-                Assert.NotNull(histogramWithAdvice.Advice?.ExplicitBucketBoundaries);
-                Assert.Equal(explicitBucketBoundaries, histogramWithAdvice.Advice.ExplicitBucketBoundaries);
-            }).Dispose();
+               Assert.NotNull(histogramWithAdvice.Advice?.ExplicitBucketBoundaries);
+               Assert.Equal(explicitBucketBoundaries, histogramWithAdvice.Advice.ExplicitBucketBoundaries);
+           }).Dispose();
         }
 
         private void PublishCounterMeasurement<T>(Counter<T> counter, T value, KeyValuePair<string, object?>[] tags) where T : struct
