@@ -1,15 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-/*============================================================
-**
-**
-**
-** Purpose: The CLR implementation of Variant.
-**
-**
-===========================================================*/
-
 using System.Diagnostics;
 using System.Globalization;
 using System.Reflection;
@@ -21,6 +12,7 @@ using System.Runtime.InteropServices.Marshalling;
 
 namespace System
 {
+    // Contains code for built-in marshalling of OLE VARIANT.
     internal static partial class Variant
     {
         internal static bool IsSystemDrawingColor(Type type) => type.FullName == "System.Drawing.Color"; // Matches the behavior of IsTypeRefOrDef
@@ -128,7 +120,7 @@ namespace System
                 // DateTime, decimal handled by IConvertible case
 
                 case TimeSpan:
-                    throw new ArgumentException("IDS_EE_COM_UNSUPPORTED_SIG");
+                    throw new ArgumentException(SR.ComVariant_UnsupportedSignature);
                 case Currency c:
                     pOle = ComVariant.CreateRaw(VarEnum.VT_CY, c.m_value);
                     break;
@@ -142,13 +134,13 @@ namespace System
 
                 // SafeHandle's or CriticalHandle's cannot be stored in VARIANT's.
                 case SafeHandle:
-                    throw new ArgumentException("IDS_EE_SH_IN_VARIANT_NOT_SUPPORTED");
+                    throw new ArgumentException(SR.ComVariant_SafeHandle_In_Variant);
                 case CriticalHandle:
-                    throw new ArgumentException("IDS_EE_CH_IN_VARIANT_NOT_SUPPORTED");
+                    throw new ArgumentException(SR.ComVariant_CriticalHandle_In_Variant);
 
                 // VariantWrappers cannot be stored in VARIANT's.
                 case VariantWrapper:
-                    throw new ArgumentException("IDS_EE_VAR_WRAP_IN_VAR_NOT_SUPPORTED");
+                    throw new ArgumentException(SR.ComVariant_VariantWrapper_In_Variant);
 
                 default:
                     // We are dealing with a normal object (not a wrapper) so we will
@@ -282,7 +274,7 @@ namespace System
                     return null; // CV_VOID
 
                 default:
-                    throw new ArgumentException("IDS_EE_COM_UNSUPPORTED_TYPE");
+                    throw new ArgumentException(SR.ComVariant_UnsupportedType);
             }
         }
 
@@ -291,6 +283,8 @@ namespace System
         // updated object back to the original type.
         internal static void MarshalHelperCastVariant(object pValue, int vt, out ComVariant v)
         {
+            Debug.Assert((VarEnum)vt != VarEnum.VT_VARIANT, "Should be handled at native side.");
+
             if (pValue is not IConvertible iv)
             {
                 switch ((VarEnum)vt)
@@ -300,9 +294,6 @@ namespace System
                         v = ComVariant.CreateRaw(VarEnum.VT_DISPATCH,
                             pValue is null ? IntPtr.Zero : Marshal.GetIDispatchForObject(pValue));
                         break;
-
-                    case VarEnum.VT_VARIANT:
-                        throw new UnreachableException("Should be handled at native side.");
 
                     case VarEnum.VT_UNKNOWN:
                         v = ComVariant.CreateRaw(VarEnum.VT_UNKNOWN,
@@ -347,7 +338,6 @@ namespace System
                     VarEnum.VT_DISPATCH => ComVariant.CreateRaw(VarEnum.VT_DISPATCH, Marshal.GetIDispatchForObject(iv)),
                     VarEnum.VT_ERROR => ComVariant.CreateRaw(VarEnum.VT_ERROR, iv.ToInt32(provider)),
                     VarEnum.VT_BOOL => ComVariant.Create(iv.ToBoolean(provider)),
-                    VarEnum.VT_VARIANT => throw new UnreachableException("Should be handled at native side."),
                     VarEnum.VT_UNKNOWN => ComVariant.CreateRaw(VarEnum.VT_UNKNOWN, Marshal.GetIUnknownForObject(iv)),
                     VarEnum.VT_DECIMAL => ComVariant.Create(iv.ToDecimal(provider)),
                     // 15 => : /*unused*/ NOT SUPPORTED
