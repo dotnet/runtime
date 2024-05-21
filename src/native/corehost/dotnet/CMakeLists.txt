@@ -9,11 +9,12 @@ endif()
 
 list(APPEND SOURCES
     ../apphost/standalone/hostfxr_resolver.cpp
+    ../corehost.cpp
 )
 
 add_executable(dotnet ${SOURCES})
 
-target_link_libraries(dotnet PRIVATE hostmisc hostfxr_resolver)
+target_link_libraries(dotnet PRIVATE hostmisc fxr_resolver)
 
 add_sanitizer_runtime_support(dotnet)
 

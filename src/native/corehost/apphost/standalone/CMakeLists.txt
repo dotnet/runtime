@@ -16,6 +16,7 @@ include_directories(..)
 set(SOURCES
     ../bundle_marker.cpp
     ./hostfxr_resolver.cpp
+    ../../corehost.cpp
 )
 
 set(HEADERS
@@ -40,7 +41,7 @@ add_compile_definitions(FEATURE_APPHOST)
 
 add_executable(apphost ${SOURCES} ${RESOURCES})
 
-target_link_libraries(apphost PRIVATE hostmisc hostfxr_resolver)
+target_link_libraries(apphost PRIVATE hostmisc fxr_resolver)
 
 add_sanitizer_runtime_support(apphost)
 

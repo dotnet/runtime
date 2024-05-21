@@ -69,9 +69,9 @@ if(CLR_CMAKE_TARGET_LINUX OR CLR_CMAKE_TARGET_SUNOS)
     add_link_options(LINKER:-Bsymbolic)
 endif()
 
-add_library(hostfxr_resolver INTERFACE)
-target_sources(hostfxr_resolver INTERFACE fxr_resolver.cpp corehost.cpp)
-target_include_directories(hostfxr_resolver INTERFACE fxr)
+add_library(fxr_resolver INTERFACE)
+target_sources(fxr_resolver INTERFACE fxr_resolver.cpp)
+target_include_directories(fxr_resolver INTERFACE fxr)
 
 add_subdirectory(hostcommon)
 add_subdirectory(hostmisc)

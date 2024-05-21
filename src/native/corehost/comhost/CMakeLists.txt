@@ -2,13 +2,11 @@
 # The .NET Foundation licenses this file to you under the MIT license.
 
 # Include directories
-include_directories(../fxr)
 include_directories(../json)
 
 # CMake does not recommend using globbing since it messes with the freshness checks
 set(SOURCES
     comhost.cpp
-    ../fxr_resolver.cpp
     clsidmap.cpp
     ../redirected_error_writer.cpp
 )
@@ -41,4 +39,4 @@ if (CLR_CMAKE_TARGET_WIN32)
 endif()
 
 install_with_stripped_symbols(comhost TARGETS corehost)
-target_link_libraries(comhost PRIVATE libhostcommon)
+target_link_libraries(comhost PRIVATE libhostcommon fxr_resolver)
