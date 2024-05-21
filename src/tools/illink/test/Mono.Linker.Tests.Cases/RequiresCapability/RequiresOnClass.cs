@@ -847,8 +847,6 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 
 			[ExpectedWarning ("IL2026", "StaticEvent.add")]
 			[ExpectedWarning ("IL3050", "StaticEvent.add", Tool.NativeAot, "")]
-			// https://github.com/dotnet/runtime/issues/100499
-			[ExpectedWarning ("IL2026", "StaticEvent.add", Tool.Trimmer, "")]
 			[ExpectedWarning ("IL2026", "StaticEvent.remove")]
 			[ExpectedWarning ("IL3050", "StaticEvent.remove", Tool.NativeAot, "")]
 			static void TestDirectReflectionAccess ()
