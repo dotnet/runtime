@@ -43,6 +43,11 @@ namespace System
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MarshalNative_GetIUnknownOrIDispatchForObject")]
         private static partial IntPtr GetIUnknownOrIDispatchForObject(ObjectHandleOnStack o, [MarshalAs(UnmanagedType.Bool)] out bool isIDispatch);
 
+        private static object? GetObjectRefFromComIP(IntPtr pUnk)
+        {
+            return pUnk == IntPtr.Zero ? null : Marshal.GetObjectForIUnknown(pUnk);
+        }
+
         // Helper code for marshaling managed objects to VARIANT's
         internal static void MarshalHelperConvertObjectToVariant(object? o, out ComVariant pOle)
         {
@@ -128,9 +133,7 @@ namespace System
                     pOle = ComVariant.CreateRaw(VarEnum.VT_CY, c.m_value);
                     break;
 
-                case Enum e: // TODO: Check precedence with IConvertable case
-                    pOle = ComVariant.Create(((IConvertible)e).ToInt32(null));
-                    break;
+                // Enums handled by IConvertible case
 
                 case ValueType:
                     ConvertValueTypeToRecord(ObjectHandleOnStack.Create(ref o), out pOle);
@@ -253,10 +256,7 @@ namespace System
                 case VarEnum.VT_DECIMAL:
                     return pOle.As<decimal>();
                 case VarEnum.VT_BYREF | VarEnum.VT_DECIMAL:
-                    decimal decVal = *(decimal*)pOle.GetRawDataRef<IntPtr>();
-                    // Mashaling uses the reserved value to store the variant type, so clear it out when marshaling back
-                    *(ushort*)&decVal = 0;
-                    return decVal;
+                    return *(decimal*)pOle.GetRawDataRef<IntPtr>();
 
                 case VarEnum.VT_CY:
                     return decimal.FromOACurrency(pOle.GetRawDataRef<long>());
@@ -265,11 +265,10 @@ namespace System
 
                 case VarEnum.VT_UNKNOWN:
                 case VarEnum.VT_DISPATCH:
-                    return Marshal.GetObjectForIUnknown(pOle.GetRawDataRef<IntPtr>());
+                    return GetObjectRefFromComIP(pOle.GetRawDataRef<IntPtr>());
                 case VarEnum.VT_BYREF | VarEnum.VT_UNKNOWN:
                 case VarEnum.VT_BYREF | VarEnum.VT_DISPATCH:
-                    IntPtr ptr = pOle.GetRawDataRef<IntPtr>();
-                    return ptr == 0 ? null : Marshal.GetObjectForIUnknown(ptr);
+                    return GetObjectRefFromComIP(*(IntPtr*)pOle.GetRawDataRef<IntPtr>());
 
                 case VarEnum.VT_ERROR:
                     int error = pOle.GetRawDataRef<int>();
