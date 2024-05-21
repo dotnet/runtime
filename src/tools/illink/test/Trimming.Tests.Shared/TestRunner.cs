@@ -177,24 +177,14 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 			builder.ProcessOptions (caseDefinedOptions);
 
-			if (!caseDefinedOptions.DumpDependencies) {
-				// The testcase didn't specify [DumpDependencies]
-				// Dump dependencies only for the test assembly.
-				builder.AddAdditionalArgument ("--dump-dependencies", [compilationResult.InputAssemblyPath.FileNameWithoutExtension]);
-
-				if (AppContext.TryGetSwitch ("GenerateExpectedDependencyTraces", out var generateExpectedDependencyTraces) && generateExpectedDependencyTraces) {
-					// If running with GenerateExpectedDependencyTrace=true, generate the traces directly into the expected src directory,
-					// (only for tests which did not especify [DumpDependencies] explicitly).
-					var expectedTracePath = metadataProvider.GetExpectedDependencyTrace ();
-					expectedTracePath.Parent.EnsureDirectoryExists ();
-					builder.AddAdditionalArgument ("--dependencies-file", [expectedTracePath]);
-				}
-			}
+			AddDumpDependenciesOptions (caseDefinedOptions, compilationResult, builder, metadataProvider);
 
 			builder.ProcessTestInputAssembly (compilationResult.InputAssemblyPath);
 		}
 
 		protected partial TrimmingCustomizations? CustomizeTrimming (TrimmingDriver linker, TestCaseMetadataProvider metadataProvider);
+
+		protected partial void AddDumpDependenciesOptions (TestCaseLinkerOptions caseDefinedOptions, ManagedCompilationResult compilationResult, TrimmingArgumentBuilder builder, TestCaseMetadataProvider metadataProvider);
 
 		static partial void AddOutputDirectory (TestCaseSandbox sandbox, ManagedCompilationResult compilationResult, TrimmingArgumentBuilder builder);
 
