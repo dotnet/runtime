@@ -292,5 +292,151 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
                 yield return new object[] { float.PositiveInfinity,  float.PositiveInfinity, 0.0f };
             }
         }
+
+        public static IEnumerable<object[]> MultiplyAddDouble
+        {
+            get
+            {
+                yield return new object[] { double.NegativeInfinity,  double.NegativeInfinity,  double.NegativeInfinity }; 
+                yield return new object[] { double.NegativeInfinity, -0.0,                      double.NegativeInfinity }; 
+                yield return new object[] { double.NegativeInfinity, -0.0,                     -3.1415926535897932 };      
+                yield return new object[] { double.NegativeInfinity, -0.0,                     -0.0 };                     
+                yield return new object[] { double.NegativeInfinity, -0.0,                      double.NaN };              
+                yield return new object[] { double.NegativeInfinity, -0.0,                      0.0 };                     
+                yield return new object[] { double.NegativeInfinity, -0.0,                      3.1415926535897932 };      
+                yield return new object[] { double.NegativeInfinity, -0.0,                      double.PositiveInfinity }; 
+                yield return new object[] { double.NegativeInfinity,  0.0,                      double.NegativeInfinity }; 
+                yield return new object[] { double.NegativeInfinity,  0.0,                     -3.1415926535897932 };      
+                yield return new object[] { double.NegativeInfinity,  0.0,                     -0.0 };                     
+                yield return new object[] { double.NegativeInfinity,  0.0,                      double.NaN };              
+                yield return new object[] { double.NegativeInfinity,  0.0,                      0.0 };                     
+                yield return new object[] { double.NegativeInfinity,  0.0,                      3.1415926535897932 };      
+                yield return new object[] { double.NegativeInfinity,  0.0,                      double.PositiveInfinity }; 
+                yield return new object[] { double.NegativeInfinity,  double.PositiveInfinity,  double.PositiveInfinity }; 
+                yield return new object[] {-1e308,                    2.0,                      1e308 };                   
+                yield return new object[] {-1e308,                    2.0,                      double.PositiveInfinity }; 
+                yield return new object[] {-5,                        4,                       -3 };                       
+                yield return new object[] {-0.0,                      double.NegativeInfinity,  double.NegativeInfinity }; 
+                yield return new object[] {-0.0,                      double.NegativeInfinity, -3.1415926535897932 };      
+                yield return new object[] {-0.0,                      double.NegativeInfinity, -0.0 };                     
+                yield return new object[] {-0.0,                      double.NegativeInfinity,  double.NaN };              
+                yield return new object[] {-0.0,                      double.NegativeInfinity,  0.0 };                     
+                yield return new object[] {-0.0,                      double.NegativeInfinity,  3.1415926535897932 };      
+                yield return new object[] {-0.0,                      double.NegativeInfinity,  double.PositiveInfinity }; 
+                yield return new object[] {-0.0,                      double.PositiveInfinity,  double.NegativeInfinity }; 
+                yield return new object[] {-0.0,                      double.PositiveInfinity, -3.1415926535897932 };      
+                yield return new object[] {-0.0,                      double.PositiveInfinity, -0.0 };                     
+                yield return new object[] {-0.0,                      double.PositiveInfinity,  double.NaN };              
+                yield return new object[] {-0.0,                      double.PositiveInfinity,  0.0 };                     
+                yield return new object[] {-0.0,                      double.PositiveInfinity,  3.1415926535897932 };      
+                yield return new object[] {-0.0,                      double.PositiveInfinity,  double.PositiveInfinity }; 
+                yield return new object[] { 0.0,                      double.NegativeInfinity,  double.NegativeInfinity }; 
+                yield return new object[] { 0.0,                      double.NegativeInfinity, -3.1415926535897932 };      
+                yield return new object[] { 0.0,                      double.NegativeInfinity, -0.0 };                     
+                yield return new object[] { 0.0,                      double.NegativeInfinity,  double.NaN };              
+                yield return new object[] { 0.0,                      double.NegativeInfinity,  0.0 };                     
+                yield return new object[] { 0.0,                      double.NegativeInfinity,  3.1415926535897932 };      
+                yield return new object[] { 0.0,                      double.NegativeInfinity,  double.PositiveInfinity }; 
+                yield return new object[] { 0.0,                      double.PositiveInfinity,  double.NegativeInfinity }; 
+                yield return new object[] { 0.0,                      double.PositiveInfinity, -3.1415926535897932 };      
+                yield return new object[] { 0.0,                      double.PositiveInfinity, -0.0 };                     
+                yield return new object[] { 0.0,                      double.PositiveInfinity,  double.NaN };              
+                yield return new object[] { 0.0,                      double.PositiveInfinity,  0.0 };                     
+                yield return new object[] { 0.0,                      double.PositiveInfinity,  3.1415926535897932 };      
+                yield return new object[] { 0.0,                      double.PositiveInfinity,  double.PositiveInfinity }; 
+                yield return new object[] { 5,                        4,                        3 };                       
+                yield return new object[] { 1e308,                    2.0,                     -1e308 };                   
+                yield return new object[] { 1e308,                    2.0,                      double.NegativeInfinity }; 
+                yield return new object[] { double.PositiveInfinity,  double.NegativeInfinity,  double.PositiveInfinity }; 
+                yield return new object[] { double.PositiveInfinity, -0.0,                      double.NegativeInfinity }; 
+                yield return new object[] { double.PositiveInfinity, -0.0,                     -3.1415926535897932 };      
+                yield return new object[] { double.PositiveInfinity, -0.0,                     -0.0 };                     
+                yield return new object[] { double.PositiveInfinity, -0.0,                      double.NaN };              
+                yield return new object[] { double.PositiveInfinity, -0.0,                      0.0 };                     
+                yield return new object[] { double.PositiveInfinity, -0.0,                      3.1415926535897932 };      
+                yield return new object[] { double.PositiveInfinity, -0.0,                      double.PositiveInfinity }; 
+                yield return new object[] { double.PositiveInfinity,  0.0,                      double.NegativeInfinity }; 
+                yield return new object[] { double.PositiveInfinity,  0.0,                     -3.1415926535897932 };      
+                yield return new object[] { double.PositiveInfinity,  0.0,                     -0.0 };                     
+                yield return new object[] { double.PositiveInfinity,  0.0,                      double.NaN };              
+                yield return new object[] { double.PositiveInfinity,  0.0,                      0.0 };                     
+                yield return new object[] { double.PositiveInfinity,  0.0,                      3.1415926535897932 };      
+                yield return new object[] { double.PositiveInfinity,  0.0,                      double.PositiveInfinity };
+                yield return new object[] { double.PositiveInfinity, double.PositiveInfinity, double.NegativeInfinity }; 
+            }
+        }
+
+        public static IEnumerable<object[]> MultiplyAddSingle
+        {
+            get
+            {
+                yield return new object[] {  float.NegativeInfinity,  float.NegativeInfinity,  float.NegativeInfinity };
+                yield return new object[] {  float.NegativeInfinity, -0.0f,                    float.NegativeInfinity };
+                yield return new object[] {  float.NegativeInfinity, -0.0f,                   -3.14159265f };
+                yield return new object[] {  float.NegativeInfinity, -0.0f,                   -0.0f };
+                yield return new object[] {  float.NegativeInfinity, -0.0f,                    float.NaN };
+                yield return new object[] {  float.NegativeInfinity, -0.0f,                    0.0f };
+                yield return new object[] {  float.NegativeInfinity, -0.0f,                    3.14159265f };
+                yield return new object[] {  float.NegativeInfinity, -0.0f,                    float.PositiveInfinity };
+                yield return new object[] {  float.NegativeInfinity,  0.0f,                    float.NegativeInfinity };
+                yield return new object[] {  float.NegativeInfinity,  0.0f,                   -3.14159265f };
+                yield return new object[] {  float.NegativeInfinity,  0.0f,                   -0.0f };
+                yield return new object[] {  float.NegativeInfinity,  0.0f,                    float.NaN };
+                yield return new object[] {  float.NegativeInfinity,  0.0f,                    0.0f };
+                yield return new object[] {  float.NegativeInfinity,  0.0f,                    3.14159265f };
+                yield return new object[] {  float.NegativeInfinity,  0.0f,                    float.PositiveInfinity };
+                yield return new object[] {  float.NegativeInfinity,  float.PositiveInfinity,  float.PositiveInfinity };
+                yield return new object[] { -1e38f,                   2.0f,                    1e38f };
+                yield return new object[] { -1e38f,                   2.0f,                    float.PositiveInfinity };
+                yield return new object[] { -5,                       4,                      -3 };
+                yield return new object[] { -0.0f,                    float.NegativeInfinity,  float.NegativeInfinity };
+                yield return new object[] { -0.0f,                    float.NegativeInfinity, -3.14159265f };
+                yield return new object[] { -0.0f,                    float.NegativeInfinity, -0.0f };
+                yield return new object[] { -0.0f,                    float.NegativeInfinity,  float.NaN };
+                yield return new object[] { -0.0f,                    float.NegativeInfinity,  0.0f };
+                yield return new object[] { -0.0f,                    float.NegativeInfinity,  3.14159265f };
+                yield return new object[] { -0.0f,                    float.NegativeInfinity,  float.PositiveInfinity };
+                yield return new object[] { -0.0f,                    float.PositiveInfinity,  float.NegativeInfinity };
+                yield return new object[] { -0.0f,                    float.PositiveInfinity, -3.14159265f };
+                yield return new object[] { -0.0f,                    float.PositiveInfinity, -0.0f };
+                yield return new object[] { -0.0f,                    float.PositiveInfinity,  float.NaN };
+                yield return new object[] { -0.0f,                    float.PositiveInfinity,  0.0f };
+                yield return new object[] { -0.0f,                    float.PositiveInfinity,  3.14159265f };
+                yield return new object[] { -0.0f,                    float.PositiveInfinity,  float.PositiveInfinity };
+                yield return new object[] {  0.0f,                    float.NegativeInfinity,  float.NegativeInfinity };
+                yield return new object[] {  0.0f,                    float.NegativeInfinity, -3.14159265f };
+                yield return new object[] {  0.0f,                    float.NegativeInfinity, -0.0f };
+                yield return new object[] {  0.0f,                    float.NegativeInfinity,  float.NaN };
+                yield return new object[] {  0.0f,                    float.NegativeInfinity,  0.0f };
+                yield return new object[] {  0.0f,                    float.NegativeInfinity,  3.14159265f };
+                yield return new object[] {  0.0f,                    float.NegativeInfinity,  float.PositiveInfinity };
+                yield return new object[] {  0.0f,                    float.PositiveInfinity,  float.NegativeInfinity };
+                yield return new object[] {  0.0f,                    float.PositiveInfinity, -3.14159265f };
+                yield return new object[] {  0.0f,                    float.PositiveInfinity, -0.0f };
+                yield return new object[] {  0.0f,                    float.PositiveInfinity,  float.NaN };
+                yield return new object[] {  0.0f,                    float.PositiveInfinity,  0.0f };
+                yield return new object[] {  0.0f,                    float.PositiveInfinity,  3.14159265f };
+                yield return new object[] {  0.0f,                    float.PositiveInfinity,  float.PositiveInfinity };
+                yield return new object[] {  5,                       4,                       3 };
+                yield return new object[] {  1e38f,                   2.0f,                   -1e38f };
+                yield return new object[] {  1e38f,                   2.0f,                    float.NegativeInfinity };
+                yield return new object[] {  float.PositiveInfinity,  float.NegativeInfinity,  float.PositiveInfinity };
+                yield return new object[] {  float.PositiveInfinity, -0.0f,                    float.NegativeInfinity };
+                yield return new object[] {  float.PositiveInfinity, -0.0f,                   -3.14159265f };
+                yield return new object[] {  float.PositiveInfinity, -0.0f,                   -0.0f };
+                yield return new object[] {  float.PositiveInfinity, -0.0f,                    float.NaN };
+                yield return new object[] {  float.PositiveInfinity, -0.0f,                    0.0f };
+                yield return new object[] {  float.PositiveInfinity, -0.0f,                    3.14159265f };
+                yield return new object[] {  float.PositiveInfinity, -0.0f,                    float.PositiveInfinity };
+                yield return new object[] {  float.PositiveInfinity,  0.0f,                    float.NegativeInfinity };
+                yield return new object[] {  float.PositiveInfinity,  0.0f,                   -3.14159265f };
+                yield return new object[] {  float.PositiveInfinity,  0.0f,                   -0.0f };
+                yield return new object[] {  float.PositiveInfinity,  0.0f,                    float.NaN };
+                yield return new object[] {  float.PositiveInfinity,  0.0f,                    0.0f };
+                yield return new object[] {  float.PositiveInfinity,  0.0f,                    3.14159265f };
+                yield return new object[] {  float.PositiveInfinity,  0.0f,                    float.PositiveInfinity };
+                yield return new object[] {  float.PositiveInfinity,  float.PositiveInfinity,  float.NegativeInfinity };
+            }
+        }
     }
 }

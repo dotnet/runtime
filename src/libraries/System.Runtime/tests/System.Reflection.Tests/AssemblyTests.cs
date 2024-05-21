@@ -442,11 +442,19 @@ namespace System.Reflection.Tests
             AssertExtensions.ThrowsContains<BadImageFormatException>(() => Assembly.LoadFile(path), path);
         }
 
+#pragma warning disable SYSLIB0056 // AssemblyHashAlgorithm overload is not supported and throws NotSupportedException.
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsAssemblyLoadingSupported))]
         public void LoadFromUsingHashValue()
         {
             Assert.Throws<NotSupportedException>(() => Assembly.LoadFrom("abc", null, System.Configuration.Assemblies.AssemblyHashAlgorithm.SHA1));
         }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsAssemblyLoadingSupported))]
+        public void LoadFrom_WithHashValue_ThrowsNotSupportedException()
+        {
+            Assert.Throws<NotSupportedException>(() => Assembly.LoadFrom(DestTestAssemblyPath, new byte[0], Configuration.Assemblies.AssemblyHashAlgorithm.None));
+        }
+#pragma warning restore SYSLIB0056 // AssemblyHashAlgorithm overload is not supported and throws NotSupportedException.
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsAssemblyLoadingSupported))]
         public void LoadFrom_SamePath_ReturnsEqualAssemblies()
@@ -494,12 +502,6 @@ namespace System.Reflection.Tests
             Assembly assembly1 = Assembly.UnsafeLoadFrom(DestTestAssemblyPath);
             Assembly assembly2 = Assembly.UnsafeLoadFrom(DestTestAssemblyPath);
             Assert.Equal(assembly1, assembly2);
-        }
-
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsAssemblyLoadingSupported))]
-        public void LoadFrom_WithHashValue_ThrowsNotSupportedException()
-        {
-            Assert.Throws<NotSupportedException>(() => Assembly.LoadFrom(DestTestAssemblyPath, new byte[0], Configuration.Assemblies.AssemblyHashAlgorithm.None));
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsAssemblyLoadingSupported))]

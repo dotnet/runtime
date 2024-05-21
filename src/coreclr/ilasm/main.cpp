@@ -151,11 +151,6 @@ extern "C" int _cdecl wmain(int argc, _In_ WCHAR **argv)
     memset(wzOutputFilename,0,sizeof(wzOutputFilename));
     memset(wzPdbFilename, 0, sizeof(wzPdbFilename));
 
-#ifdef _DEBUG
-    DisableThrowCheck();
-    //CONTRACT_VIOLATION(ThrowsViolation);
-#endif
-
     if(argc < 2) goto ErrorExit;
 #ifdef _PREFAST_
 #pragma warning(push)
