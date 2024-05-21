@@ -636,7 +636,7 @@ namespace System.Xml.Serialization
                         MemberInfo memberInfo = ReflectionXmlSerializationHelper.GetEffectiveSetInfo(o.GetType(), memberName);
                         Debug.Assert(memberInfo != null, "memberInfo could not be retrieved");
 
-                        if (type.IsValueType || !RuntimeFeature.IsDynamicCodeSupported)
+                        if (type.IsValueType || RuntimeFeature.IsDynamicCodeSupported)
                         {
                             if (memberInfo is PropertyInfo propInfo)
                             {
