@@ -231,7 +231,7 @@ namespace System.Collections.Immutable.Tests
 
             mutable.RemoveRange(new double[] { 2.4, 3.6 });
             Assert.Equal(new[] { 1.5, 4.7 }, mutable);
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("length", () => mutable.RemoveRange(1, int.MaxValue));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => mutable.RemoveRange(1, int.MaxValue));
 
             var absComparer = new DelegateEqualityComparer<double>(equals: (x, y) => Math.Abs(x) == Math.Abs(y));
             mutable.RemoveRange(new double[] { -1.5 }, absComparer);
@@ -239,7 +239,8 @@ namespace System.Collections.Immutable.Tests
 
             AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => mutable.RemoveRange(2, 3));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => mutable.RemoveRange(-1, 0));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("length", () => mutable.RemoveRange(0, -1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => mutable.RemoveRange(0, 2));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => mutable.RemoveRange(0, -1));
         }
 
         [Fact]
