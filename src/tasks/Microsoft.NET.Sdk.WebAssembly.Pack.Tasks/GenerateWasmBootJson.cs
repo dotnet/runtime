@@ -101,7 +101,7 @@ public class GenerateWasmBootJson : Task
 
         if (IsTargeting80OrLater())
         {
-            result.debugLevel = ParseOptionalInt(DebugLevel) ?? (DebugBuild ? 1 : 0);
+            result.debugLevel = ParseOptionalInt(DebugLevel) ?? (DebugBuild ? -1 : 0);
             result.mainAssemblyName = entryAssemblyName;
             result.globalizationMode = GetGlobalizationMode().ToString().ToLowerInvariant();
 
