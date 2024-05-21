@@ -431,30 +431,6 @@ int LinearScan::BuildCall(GenTreeCall* call)
 }
 
 //------------------------------------------------------------------------
-// BuildDefWithKills: Build one RefTypeDef RefPositions for the given node,
-//           as well as kills as specified by the given mask.
-//
-// Arguments:
-//    tree          - The call node that defines a register
-//    dstCandidates - The candidate registers for the definition
-//    killMask      - The mask of registers killed by this node
-//
-// Notes:
-//    Adds the RefInfo for the definitions to the defList.
-//    The def and kill functionality is folded into a single method so that the
-//    save and restores of upper vector registers can be bracketed around the def.
-//
-void LinearScan::BuildDefWithKills(GenTree* tree, regMaskTP dstCandidates, regMaskTP killMask)
-{
-    assert(!tree->AsCall()->HasMultiRegRetVal());
-    assert((int)genCountBits(dstCandidates) == 1);
-
-    // Build the kill RefPositions
-    BuildKills(tree, killMask);
-    BuildDef(tree, dstCandidates);
-}
-
-//------------------------------------------------------------------------
 // BuildPutArgStk: Set the NodeInfo for a GT_PUTARG_STK node
 //
 // Arguments:
