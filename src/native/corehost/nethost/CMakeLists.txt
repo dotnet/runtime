@@ -42,15 +42,6 @@ set_target_properties(nethost PROPERTIES MACOSX_RPATH TRUE)
 set_target_properties(libnethost PROPERTIES MACOSX_RPATH TRUE)
 set_target_properties(libnethost PROPERTIES PREFIX "")
 
-# Specify the import library to link against for Arm32 build since the default set is minimal
-if (CLR_CMAKE_TARGET_ARCH_ARM)
-    if (CLR_CMAKE_TARGET_WIN32)
-        target_link_libraries(nethost PRIVATE shell32.lib advapi32.lib)
-    else()
-        target_link_libraries(nethost PRIVATE atomic.a)
-    endif()
-endif()
-
 target_link_libraries (nethost PRIVATE ${CMAKE_DL_LIBS})
 target_link_libraries (libnethost PUBLIC ${CMAKE_DL_LIBS})
 

@@ -37,3 +37,7 @@ target_link_libraries(hostpolicy PRIVATE libhostcommon)
 if((CLR_CMAKE_TARGET_LINUX OR CLR_CMAKE_TARGET_FREEBSD) AND NOT CLR_CMAKE_TARGET_ANDROID)
     target_link_libraries (hostpolicy PRIVATE pthread)
 endif()
+
+if (CLR_CMAKE_TARGET_ARCH_ARMV6)
+    target_link_libraries(hostfxr PRIVATE atomic)
+endif()

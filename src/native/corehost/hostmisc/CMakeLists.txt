@@ -43,7 +43,7 @@ if (MSVC)
     target_link_libraries(hostmisc INTERFACE advapi32)
 endif()
 
-if (CLR_CMAKE_TARGET_ARCH_ARM AND NOT CLR_CMAKE_TARGET_WIN32)
+if (CLR_CMAKE_TARGET_ARCH_ARM OR CLR_CMAKE_TARGET_ARCH_ARMV6 AND NOT CLR_CMAKE_TARGET_WIN32)
     target_link_libraries(hostmisc INTERFACE atomic)
 endif()
 

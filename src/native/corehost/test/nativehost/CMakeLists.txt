@@ -52,14 +52,6 @@ target_link_libraries(nativehost PRIVATE nethost hostmisc)
 
 if (CLR_CMAKE_TARGET_WIN32)
     target_link_options(nativehost PRIVATE /DELAYLOAD:$<TARGET_FILE_NAME:nethost>)
-    target_link_libraries(nativehost PRIVATE delayimp.lib)
+    target_link_libraries(nativehost PRIVATE delayimp.lib ole32 oleaut32)
 endif()
 
-# Specify non-default Windows libs to be used for Arm/Arm64 builds
-if (CLR_CMAKE_TARGET_WIN32 AND (CLR_CMAKE_TARGET_ARCH_ARM OR CLR_CMAKE_TARGET_ARCH_ARM64))
-    target_link_libraries(nativehost PRIVATE ole32 oleaut32)
-endif()
-
-if (CLR_CMAKE_TARGET_ARCH_ARMV6)
-    target_link_libraries(nativehost PRIVATE atomic)
-endif()
