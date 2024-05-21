@@ -1459,7 +1459,8 @@ Interval* LinearScan::getUpperVectorInterval(unsigned varIndex)
 //        But we will use as a proxy any node that kills floating point registers.
 //        (Note that some calls are masquerading as other nodes at this point so we can't just check for calls.)
 //
-void LinearScan::buildUpperVectorSaveRefPositions(GenTree* tree, LsraLocation currentLoc, regMaskTP fpCalleeKillSet)
+void LinearScan::buildUpperVectorSaveRefPositions(GenTree*                tree,
+                                                  LsraLocation currentLoc DEBUG_ARG(regMaskTP fpCalleeKillSet))
 {
     if ((tree != nullptr) && tree->IsCall())
     {
@@ -3037,7 +3038,7 @@ void setTgtPref(Interval* interval, RefPosition* tgtPrefUse)
 #endif // !TARGET_ARM
 
 //------------------------------------------------------------------------
-// BuildDef: Build a RefTypeDef RefPosition for the given node
+// BuildDef: Build one RefTypeDef RefPosition for the given node at given index
 //
 // Arguments:
 //    tree          - The node that defines a register
@@ -3130,7 +3131,7 @@ RefPosition* LinearScan::BuildDef(GenTree* tree, regMaskTP dstCandidates, int mu
 }
 
 //------------------------------------------------------------------------
-// BuildDef: Build one or more RefTypeDef RefPositions for the given node
+// BuildDef: Build one or more RefTypeDef RefPositions for the given call node
 //
 // Arguments:
 //    tree          - The node that defines a register
@@ -3140,61 +3141,76 @@ RefPosition* LinearScan::BuildDef(GenTree* tree, regMaskTP dstCandidates, int mu
 // Notes:
 //    Adds the RefInfo for the definitions to the defList.
 //
-void LinearScan::BuildDefs(GenTree* tree, int dstCount, regMaskTP dstCandidates)
+void LinearScan::BuildCallDefs(GenTree* tree, int dstCount, regMaskTP dstCandidates)
 {
-    bool fixedReg = false;
-    if ((dstCount > 1) && (dstCandidates != RBM_NONE) && ((int)genCountBits(dstCandidates) == dstCount))
+    assert(dstCount > 0);
+    assert((int)genCountBits(dstCandidates) == dstCount);
+    assert(tree->IsMultiRegCall());
+
+    const ReturnTypeDesc* retTypeDesc = tree->AsCall()->GetReturnTypeDesc();
+    assert(retTypeDesc != nullptr);
+    if (retTypeDesc == nullptr)
     {
-        fixedReg = true;
+        return;
     }
-    const ReturnTypeDesc* retTypeDesc = nullptr;
-    if (tree->IsMultiRegCall())
-    {
-        retTypeDesc = tree->AsCall()->GetReturnTypeDesc();
-    }
+
     for (int i = 0; i < dstCount; i++)
     {
-        regMaskTP thisDstCandidates;
-        if (fixedReg)
-        {
-            // In case of multi-reg call node, we have to query the i'th position return register.
-            // For all other cases of multi-reg definitions, the registers must be in sequential order.
-            if (retTypeDesc != nullptr)
-            {
-                thisDstCandidates = genRegMask(
-                    tree->AsCall()->GetReturnTypeDesc()->GetABIReturnReg(i, tree->AsCall()->GetUnmanagedCallConv()));
-                assert((dstCandidates & thisDstCandidates) != RBM_NONE);
-            }
-            else
-            {
-                thisDstCandidates = genFindLowestBit(dstCandidates);
-            }
-            dstCandidates &= ~thisDstCandidates;
-        }
-        else
-        {
-            thisDstCandidates = dstCandidates;
-        }
+        // In case of multi-reg call node, we have to query the i'th position return register.
+        // For all other cases of multi-reg definitions, the registers must be in sequential order.
+        regMaskTP thisDstCandidates =
+            genRegMask(retTypeDesc->GetABIReturnReg(i, tree->AsCall()->GetUnmanagedCallConv()));
+
+        assert((dstCandidates & thisDstCandidates) != RBM_NONE);
+        dstCandidates &= ~thisDstCandidates;
+
         BuildDef(tree, thisDstCandidates, i);
     }
 }
 
 //------------------------------------------------------------------------
-// BuildDef: Build one or more RefTypeDef RefPositions for the given node,
-//           as well as kills as specified by the given mask.
+// BuildDef: Build one or more RefTypeDef RefPositions for the given node
 //
 // Arguments:
 //    tree          - The node that defines a register
 //    dstCount      - The number of registers defined by the node
-//    dstCandidates - The candidate registers for the definition
-//    killMask      - The mask of registers killed by this node
+//    dstCandidates - the candidate registers for the definition
 //
 // Notes:
 //    Adds the RefInfo for the definitions to the defList.
-//    The def and kill functionality is folded into a single method so that the
-//    save and restores of upper vector registers can be bracketed around the def.
+//    Also, the `dstCandidates` is assumed to be of "onlyOne" type. If there are
+//    both gpr and float registers, use `BuildDefs` that takes `AllRegsMask`
 //
-void LinearScan::BuildDefsWithKills(GenTree* tree, int dstCount, regMaskTP dstCandidates, regMaskTP killMask)
+void LinearScan::BuildDefs(GenTree* tree, int dstCount, regMaskTP dstCandidates)
+{
+    assert(dstCount > 0);
+
+    if ((dstCandidates == RBM_NONE) || ((int)genCountBits(dstCandidates) != dstCount))
+    {
+        // This is not fixedReg case, so just create definitions based on dstCandidates
+        for (int i = 0; i < dstCount; i++)
+        {
+            BuildDef(tree, dstCandidates, i);
+        }
+        return;
+    }
+
+    for (int i = 0; i < dstCount; i++)
+    {
+        regMaskTP thisDstCandidates = genFindLowestBit(dstCandidates);
+        BuildDef(tree, thisDstCandidates, i);
+        dstCandidates &= ~thisDstCandidates;
+    }
+}
+
+//------------------------------------------------------------------------
+// BuildDef: Build Kills RefPositions as specified by the given mask.
+//
+// Arguments:
+//    tree          - The node that defines a register
+//    killMask      - The mask of registers killed by this node
+//
+void LinearScan::BuildKills(GenTree* tree, regMaskTP killMask)
 {
     assert(killMask == getKillSetForNode(tree));
 
@@ -3217,13 +3233,101 @@ void LinearScan::BuildDefsWithKills(GenTree* tree, int dstCount, regMaskTP dstCa
         //
         if ((killMask & RBM_FLT_CALLEE_TRASH) != RBM_NONE)
         {
-            buildUpperVectorSaveRefPositions(tree, currentLoc + 1, killMask);
+            buildUpperVectorSaveRefPositions(tree, currentLoc + 1 DEBUG_ARG(killMask & RBM_FLT_CALLEE_TRASH));
         }
 #endif // FEATURE_PARTIAL_SIMD_CALLEE_SAVE
     }
+}
 
-    // Now, create the Def(s)
-    BuildDefs(tree, dstCount, dstCandidates);
+#if defined(TARGET_ARMARCH) || defined(TARGET_RISCV64)
+
+//------------------------------------------------------------------------
+// BuildDefWithKills: Build one RefTypeDef RefPositions for the given node,
+//           as well as kills as specified by the given mask.
+//
+// Arguments:
+//    tree          - The call node that defines a register
+//    dstCandidates - The candidate registers for the definition
+//    killMask      - The mask of registers killed by this node
+//
+// Notes:
+//    Adds the RefInfo for the definitions to the defList.
+//    The def and kill functionality is folded into a single method so that the
+//    save and restores of upper vector registers can be bracketed around the def.
+//
+void LinearScan::BuildDefWithKills(GenTree* tree, regMaskTP dstCandidates, regMaskTP killMask)
+{
+    assert(!tree->AsCall()->HasMultiRegRetVal());
+    assert((int)genCountBits(dstCandidates) == 1);
+
+    // Build the kill RefPositions
+    BuildKills(tree, killMask);
+    BuildDef(tree, dstCandidates);
+}
+
+#else
+//------------------------------------------------------------------------
+// BuildDefWithKills: Build one or two (for 32-bit) RefTypeDef RefPositions for the given node,
+//           as well as kills as specified by the given mask.
+//
+// Arguments:
+//    tree          - The call node that defines a register
+//    dstCandidates - The candidate registers for the definition
+//    killMask      - The mask of registers killed by this node
+//
+// Notes:
+//    Adds the RefInfo for the definitions to the defList.
+//    The def and kill functionality is folded into a single method so that the
+//    save and restores of upper vector registers can be bracketed around the def.
+//
+void LinearScan::BuildDefWithKills(GenTree* tree, int dstCount, regMaskTP dstCandidates, regMaskTP killMask)
+{
+    // Build the kill RefPositions
+    BuildKills(tree, killMask);
+
+#ifdef TARGET_64BIT
+    // For 64 bits,
+    assert(dstCount == 1);
+    BuildDef(tree, dstCandidates);
+#else
+    if (dstCount == 1)
+    {
+        BuildDef(tree, dstCandidates);
+    }
+    else
+    {
+        assert(dstCount == 2);
+        BuildDefs(tree, 2, dstCandidates);
+    }
+#endif // TARGET_64BIT
+}
+#endif
+
+//------------------------------------------------------------------------
+// BuildCallDefsWithKills: Build one or more RefTypeDef RefPositions for the given node,
+//           as well as kills as specified by the given mask.
+//
+// Arguments:
+//    tree          - The node that defines a register
+//    dstCount      - The number of registers defined by the node
+//    dstCandidates - The candidate registers for the definition
+//    killMask      - The mask of registers killed by this node
+//
+// Notes:
+//    Adds the RefInfo for the definitions to the defList.
+//    The def and kill functionality is folded into a single method so that the
+//    save and restores of upper vector registers can be bracketed around the def.
+//
+void LinearScan::BuildCallDefsWithKills(GenTree* tree, int dstCount, regMaskTP dstCandidates, regMaskTP killMask)
+{
+    assert(dstCount > 0);
+    assert(dstCandidates != RBM_NONE);
+
+    // Build the kill RefPositions
+    BuildKills(tree, killMask);
+
+    // And then the Def(s)
+    BuildCallDefs(tree, dstCount, dstCandidates);
 }
 
 //------------------------------------------------------------------------
