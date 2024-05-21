@@ -710,13 +710,10 @@ void LinearScan::addKillForRegs(regMaskTP mask, LsraLocation currentLoc)
 
 #ifdef TARGET_ARM64
     RefPosition* pos = newRefPosition((Interval*)nullptr, currentLoc, RefTypeKill, nullptr, mask.getLow());
-    *killTail        = pos;
-    killTail         = &pos->nextRefPosition;
-
-    pos = newRefPosition((Interval*)nullptr, currentLoc, RefTypeKill, nullptr, mask.getHigh());
 #else
     RefPosition* pos = newRefPosition((Interval*)nullptr, currentLoc, RefTypeKill, nullptr, mask);
 #endif
+
 
     *killTail = pos;
     killTail  = &pos->nextRefPosition;
