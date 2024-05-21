@@ -479,8 +479,7 @@ namespace System.Reflection
                 return method.ReturnType;
             }
 
-            ReadOnlySpan<ParameterInfo> parameters = property.GetSetMethod(true)!.GetParametersAsSpan();
-            return parameters[0].ParameterType;
+            return property.GetSetMethod(true)!.GetParametersAsSpan()[0].ParameterType;
         }
 
         private void CheckGenericParameters(NullabilityInfo nullability, MemberInfo metaMember, Type metaType, Type? reflectedType)
