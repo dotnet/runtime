@@ -161,7 +161,7 @@ namespace System
         {
             // Invalid and common types are handled at native side
             Debug.Assert((pOle.VarType & VarEnum.VT_ARRAY) == 0, "Array should be handled at native side.");
-            Debug.Assert((pOle.VarType & ~VarEnum.VT_BYREF) is not (VarEnum.VT_RECORD or VarEnum.VT_VARIANT), "Should be handled at native side.");
+            Debug.Assert((pOle.VarType & ~VarEnum.VT_BYREF) != VarEnum.VT_RECORD, "Records should be handled at native side.");
 
             switch (pOle.VarType)
             {
