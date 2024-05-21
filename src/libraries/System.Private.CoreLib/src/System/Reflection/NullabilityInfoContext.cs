@@ -11,7 +11,7 @@ namespace System.Reflection
     /// Provides APIs for populating nullability information/context from reflection members:
     /// <see cref="ParameterInfo"/>, <see cref="FieldInfo"/>, <see cref="PropertyInfo"/> and <see cref="EventInfo"/>.
     /// </summary>
-#if NETCOREAPP
+#if NET
     public
 #else
     internal
@@ -70,7 +70,7 @@ namespace System.Reflection
         /// <returns><see cref="NullabilityInfo" /></returns>
         public NullabilityInfo Create(ParameterInfo parameterInfo)
         {
-#if NETCOREAPP
+#if NET
             ArgumentNullException.ThrowIfNull(parameterInfo);
 #else
             NetstandardHelpers.ThrowIfNull(parameterInfo, nameof(parameterInfo));
@@ -200,7 +200,7 @@ namespace System.Reflection
         /// <returns><see cref="NullabilityInfo" /></returns>
         public NullabilityInfo Create(PropertyInfo propertyInfo)
         {
-#if NETCOREAPP
+#if NET
             ArgumentNullException.ThrowIfNull(propertyInfo);
 #else
             NetstandardHelpers.ThrowIfNull(propertyInfo, nameof(propertyInfo));
@@ -259,7 +259,7 @@ namespace System.Reflection
         /// <returns><see cref="NullabilityInfo" /></returns>
         public NullabilityInfo Create(EventInfo eventInfo)
         {
-#if NETCOREAPP
+#if NET
             ArgumentNullException.ThrowIfNull(eventInfo);
 #else
             NetstandardHelpers.ThrowIfNull(eventInfo, nameof(eventInfo));
@@ -280,7 +280,7 @@ namespace System.Reflection
         /// <returns><see cref="NullabilityInfo" /></returns>
         public NullabilityInfo Create(FieldInfo fieldInfo)
         {
-#if NETCOREAPP
+#if NET
             ArgumentNullException.ThrowIfNull(fieldInfo);
 #else
             NetstandardHelpers.ThrowIfNull(fieldInfo, nameof(fieldInfo));
@@ -522,7 +522,7 @@ namespace System.Reflection
             Debug.Assert(genericParameter.IsGenericParameter);
 
             if (reflectedType is not null
-#if NETCOREAPP
+#if NET
                 && !genericParameter.IsGenericMethodParameter
 #else
                 && !genericParameter.IsGenericMethodParameter()
@@ -558,7 +558,7 @@ namespace System.Reflection
         private bool TryUpdateGenericTypeParameterNullabilityFromReflectedType(NullabilityInfo nullability, Type genericParameter, Type context, Type reflectedType)
         {
             Debug.Assert(genericParameter.IsGenericParameter &&
-#if NETCOREAPP
+#if NET
                 !genericParameter.IsGenericMethodParameter);
 #else
                 !genericParameter.IsGenericMethodParameter());
@@ -701,7 +701,7 @@ namespace System.Reflection
         }
     }
 
-#if !NETCOREAPP
+#if !NET
     internal static class NetstandardHelpers
     {
         public static void ThrowIfNull(object? argument, string paramName)

@@ -8,7 +8,7 @@ namespace System.Reflection
     /// <summary>
     /// A class that represents nullability info
     /// </summary>
-#if NETCOREAPP
+#if NET
     public
 #else
     internal
@@ -51,7 +51,7 @@ namespace System.Reflection
     /// <summary>
     /// An enum that represents nullability state
     /// </summary>
-#if NETCOREAPP
+#if NET
     public
 #else
     internal
