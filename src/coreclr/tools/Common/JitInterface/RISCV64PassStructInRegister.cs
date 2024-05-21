@@ -6,6 +6,7 @@ using System.Diagnostics;
 using ILCompiler;
 using Internal.TypeSystem;
 using static Internal.JitInterface.StructFloatFieldInfoFlags;
+using static Internal.JitInterface.FpStruct;
 
 namespace Internal.JitInterface
 {
@@ -13,7 +14,7 @@ namespace Internal.JitInterface
     {
         private const int TARGET_POINTER_SIZE = 8;
 
-        private static bool HandleInlineArray(int elementTypeIndex, int nElements, Span<StructFloatFieldInfoFlags> types, ref int typeIndex)
+        private static bool HandleInlineArrayOld(int elementTypeIndex, int nElements, Span<StructFloatFieldInfoFlags> types, ref int typeIndex)
         {
             int nFlattenedFieldsPerElement = typeIndex - elementTypeIndex;
             if (nFlattenedFieldsPerElement == 0)
@@ -36,7 +37,7 @@ namespace Internal.JitInterface
             return true;
         }
 
-        private static bool FlattenFieldTypes(TypeDesc td, Span<StructFloatFieldInfoFlags> types, ref int typeIndex)
+        private static bool FlattenFieldTypesOld(TypeDesc td, Span<StructFloatFieldInfoFlags> types, ref int typeIndex)
         {
             IEnumerable<FieldDesc> fields = td.GetFields();
             int nFields = 0;
@@ -57,7 +58,7 @@ namespace Internal.JitInterface
                 if (category == TypeFlags.ValueType)
                 {
                     TypeDesc nested = field.FieldType;
-                    if (!FlattenFieldTypes(nested, types, ref typeIndex))
+                    if (!FlattenFieldTypesOld(nested, types, ref typeIndex))
                         return false;
                 }
                 else if (field.FieldType.GetElementSize().AsInt <= TARGET_POINTER_SIZE)
@@ -80,7 +81,7 @@ namespace Internal.JitInterface
             {
                 Debug.Assert(nFields == 1);
                 int nElements = td.GetElementSize().AsInt / prevField.FieldType.GetElementSize().AsInt;
-                if (!HandleInlineArray(elementTypeIndex, nElements, types, ref typeIndex))
+                if (!HandleInlineArrayOld(elementTypeIndex, nElements, types, ref typeIndex))
                     return false;
             }
             return true;
@@ -92,7 +93,7 @@ namespace Internal.JitInterface
                 STRUCT_NO_FLOAT_FIELD, STRUCT_NO_FLOAT_FIELD
             };
             int nFields = 0;
-            if (!FlattenFieldTypes(td, types, ref nFields) || nFields == 0)
+            if (!FlattenFieldTypesOld(td, types, ref nFields) || nFields == 0)
                 return (uint)STRUCT_NO_FLOAT_FIELD;
 
             Debug.Assert(nFields == 1 || nFields == 2);
@@ -117,6 +118,151 @@ namespace Internal.JitInterface
                 flags ^= (STRUCT_FLOAT_FIELD_FIRST | STRUCT_FLOAT_FIELD_ONLY_ONE); // replace FIRST with ONLY_ONE
             }
             return (uint)flags;
+        }
+
+
+        private static void SetFpStructInRegistersInfoField(ref FpStructInRegistersInfo info, int index,
+            bool isFloating, uint size, uint offset)
+        {
+            Debug.Assert(index < 2);
+
+            int sizeShift =
+                (size == 1) ? 0 :
+                (size == 2) ? 1 :
+                (size == 4) ? 2 :
+                (size == 8) ? 3 :
+                -1;
+            Debug.Assert(sizeShift != -1);
+
+            const int typeSize = (int)PosFloat2nd - (int)PosFloat1st;
+            Debug.Assert((Float2nd | SizeShift2nd) == (FpStruct)((uint)(Float1st | SizeShift1st) << typeSize),
+                "1st flags need to be 2nd flags shifted by typeSize");
+
+            int type = (Convert.ToInt32(isFloating) << (int)PosFloat1st) | (sizeShift << (int)PosSizeShift1st);
+            info.flags |= (FpStruct)(type << (typeSize * index));
+            info.offsets[index] = offset;
+        }
+
+        private static bool HandleInlineArray(int elementTypeIndex, int nElements, ref FpStructInRegistersInfo info, ref int typeIndex)
+        {
+            int nFlattenedFieldsPerElement = typeIndex - elementTypeIndex;
+            if (nFlattenedFieldsPerElement == 0)
+                return true;
+
+            Debug.Assert(nFlattenedFieldsPerElement == 1 || nFlattenedFieldsPerElement == 2);
+
+            if (nElements > 2)
+                return false;
+
+            if (nElements == 2)
+            {
+                if (typeIndex + nFlattenedFieldsPerElement > 2)
+                    return false;
+
+                Debug.Assert(elementTypeIndex == 0);
+                Debug.Assert(typeIndex == 1);
+
+                // duplicate the array element info
+                const int typeSize = (int)PosFloat2nd - (int)PosFloat1st;
+                info.flags = (FpStruct)((int)info.flags << typeSize) | info.flags;
+                info.offsets[1] = info.offsets[0] + info.GetSize1st();
+            }
+            return true;
+        }
+
+        private static bool FlattenFields(TypeDesc td, uint offset, ref FpStructInRegistersInfo info, ref int typeIndex)
+        {
+            IEnumerable<FieldDesc> fields = td.GetFields();
+            int nFields = 0;
+            int elementTypeIndex = typeIndex;
+            FieldDesc prevField = null;
+            foreach (FieldDesc field in fields)
+            {
+                if (field.IsStatic)
+                    continue;
+                nFields++;
+
+                if (prevField != null && prevField.Offset.AsInt + prevField.FieldType.GetElementSize().AsInt > field.Offset.AsInt)
+                    return false; // overlapping fields
+
+                prevField = field;
+
+                TypeFlags category = field.FieldType.Category;
+                if (category == TypeFlags.ValueType)
+                {
+                    TypeDesc nested = field.FieldType;
+                    if (!FlattenFields(nested, offset + (uint)field.Offset.AsInt, ref info, ref typeIndex))
+                        return false;
+                }
+                else if (field.FieldType.GetElementSize().AsInt <= TARGET_POINTER_SIZE)
+                {
+                    if (typeIndex >= 2)
+                        return false;
+
+                    SetFpStructInRegistersInfoField(ref info, typeIndex++,
+                        (category is TypeFlags.Single or TypeFlags.Double),
+                        (uint)field.FieldType.GetElementSize().AsInt,
+                        (uint)field.Offset.AsInt);
+                }
+                else
+                {
+                    return false;
+                }
+            }
+
+            if ((td as MetadataType).HasImpliedRepeatedFields())
+            {
+                Debug.Assert(nFields == 1);
+                int nElements = td.GetElementSize().AsInt / prevField.FieldType.GetElementSize().AsInt;
+                if (!HandleInlineArray(elementTypeIndex, nElements, ref info, ref typeIndex))
+                    return false;
+            }
+            return true;
+        }
+
+        private static FpStructInRegistersInfo GetRiscV64PassFpStructInRegistersInfoImpl(TypeDesc td)
+        {
+            FpStructInRegistersInfo info = new FpStructInRegistersInfo{};
+            int nFields = 0;
+            if (!FlattenFields(td, 0, ref info, ref nFields))
+            {
+                return new FpStructInRegistersInfo{};
+            }
+
+            if ((info.flags & (Float1st | Float2nd)) == 0)
+            {
+                return new FpStructInRegistersInfo{};
+            }
+            Debug.Assert(nFields == 1 || nFields == 2);
+
+            if ((info.flags & (Float1st | Float2nd)) == (Float1st | Float2nd))
+            {
+                Debug.Assert(nFields == 2);
+                info.flags ^= (Float1st | Float2nd | BothFloat); // replace (1st|2nd)Float with BothFloat
+            }
+            else if (nFields == 1)
+            {
+                Debug.Assert((info.flags & Float1st) != 0);
+                Debug.Assert((info.flags & (Float2nd | SizeShift2nd)) == 0);
+                Debug.Assert(info.offsets[1] == 0);
+                info.flags ^= (Float1st | OnlyOne); // replace Float1st with OnlyOne
+            }
+            Debug.Assert(nFields == 1 + Convert.ToInt32((info.flags & OnlyOne) == 0));
+            FpStruct floatFlags = info.flags & (OnlyOne | BothFloat | Float1st | Float2nd);
+            Debug.Assert(floatFlags != 0);
+            Debug.Assert(((uint)floatFlags & ((uint)floatFlags - 1)) == 0); // there can be only one of the above flags
+
+            return info;
+        }
+
+        public static FpStructInRegistersInfo GetRiscV64PassFpStructInRegistersInfo(TypeDesc td)
+        {
+            FpStructInRegistersInfo info = GetRiscV64PassFpStructInRegistersInfoImpl(td);
+            uint flags = GetRISCV64PassStructInRegisterFlags(td);
+
+            Debug.Assert(flags == (uint)info.ToOldFlags());
+
+            return info;
         }
     }
 }

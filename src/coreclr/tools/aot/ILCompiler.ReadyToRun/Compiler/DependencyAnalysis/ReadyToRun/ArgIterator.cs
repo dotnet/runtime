@@ -1449,7 +1449,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                             throw new NotImplementedException("Varargs on RISC-V not supported yet");
 
                         int cFPRegs = 0;
-                        StructFloatFieldInfoFlags flags = STRUCT_NO_FLOAT_FIELD;
+                        FpStructInRegistersInfo info = new FpStructInRegistersInfo{};
                         _hasArgLocDescForStructInRegs = false;
 
                         switch (argType)
@@ -1461,11 +1461,12 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                                 break;
 
                             case CorElementType.ELEMENT_TYPE_VALUETYPE:
-                                flags = (StructFloatFieldInfoFlags)RISCV64PassStructInRegister.GetRISCV64PassStructInRegisterFlags(_argTypeHandle.GetRuntimeTypeHandle());
-                                if (flags != STRUCT_NO_FLOAT_FIELD)
+                                TypeDesc td = _argTypeHandle.GetRuntimeTypeHandle();
+                                info = RISCV64PassStructInRegister.GetRiscV64PassFpStructInRegistersInfo(td);
+                                if (info.flags != FpStruct.UseIntCallConv)
                                 {
                                     // Struct may be passed according to hardware floating-point calling convention
-                                    cFPRegs = ((flags & STRUCT_FLOAT_FIELD_ONLY_TWO) != 0) ? 2 : 1;
+                                    cFPRegs = ((info.flags & FpStruct.BothFloat) != 0) ? 2 : 1;
                                 }
                                 break;
 
@@ -1476,7 +1477,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                         if (cFPRegs > 0)
                         {
                             // Pass according to hardware floating-point calling convention iff the argument can be fully enregistered
-                            if ((flags & (STRUCT_FLOAT_FIELD_FIRST | STRUCT_FLOAT_FIELD_SECOND)) != 0)
+                            if ((info.flags & (FpStruct.Float1st | FpStruct.Float2nd)) != 0)
                             {
                                 Debug.Assert(cFPRegs == 1);
 
@@ -1489,7 +1490,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                                     _argLocDescForStructInRegs.m_idxGenReg = _riscv64IdxGenReg;
                                     _argLocDescForStructInRegs.m_cGenReg = 1;
 
-                                    _argLocDescForStructInRegs.m_floatFlags = (uint)flags;
+                                    _argLocDescForStructInRegs.m_floatFlags = (uint)info.ToOldFlags();
                                     _hasArgLocDescForStructInRegs = true;
 
                                     int regOffset = _transitionBlock.OffsetOfFloatArgumentRegisters + _riscv64IdxFPReg * _transitionBlock.FloatRegisterSize;
@@ -1501,15 +1502,18 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                             else if (cFPRegs + _riscv64IdxFPReg <= _transitionBlock.NumArgumentRegisters)
                             {
                                 int regOffset = _transitionBlock.OffsetOfFloatArgumentRegisters + _riscv64IdxFPReg * _transitionBlock.FloatRegisterSize;
-                                if (flags == STRUCT_FLOAT_FIELD_ONLY_TWO) // struct with two single-float fields
+                                if (info.flags == (FpStruct.BothFloat | (FpStruct)(2 << (int)FpStruct.PosSizeShift1st) | (FpStruct)(2 << (int)FpStruct.PosSizeShift2nd)))
                                 {
+                                    // Struct with two single-float fields
+                                    Debug.Assert(info.GetSize1st() == sizeof(float));
+                                    Debug.Assert(info.GetSize2nd() == sizeof(float));
                                     _argLocDescForStructInRegs = new ArgLocDesc();
                                     _argLocDescForStructInRegs.m_idxFloatReg = _riscv64IdxFPReg;
                                     _argLocDescForStructInRegs.m_cFloatReg = 2;
                                     Debug.Assert(cFPRegs == 2);
-                                    Debug.Assert(argSize == 2 * 4);
+                                    Debug.Assert(argSize == 2 * sizeof(float));
 
-                                    _argLocDescForStructInRegs.m_floatFlags = (uint)STRUCT_FLOAT_FIELD_ONLY_TWO;
+                                    _argLocDescForStructInRegs.m_floatFlags = (uint)info.ToOldFlags();
                                     _hasArgLocDescForStructInRegs = true;
                                 }
                                 _riscv64IdxFPReg += cFPRegs;

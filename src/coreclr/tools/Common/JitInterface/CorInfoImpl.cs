@@ -3448,7 +3448,7 @@ namespace Internal.JitInterface
         private uint getRISCV64PassStructInRegisterFlags(CORINFO_CLASS_STRUCT_* cls)
         {
             TypeDesc typeDesc = HandleToObject(cls);
-            return RISCV64PassStructInRegister.GetRISCV64PassStructInRegisterFlags(typeDesc);
+            return (uint)RISCV64PassStructInRegister.GetRiscV64PassFpStructInRegistersInfo(typeDesc).ToOldFlags();
         }
 
         private uint getThreadTLSIndex(ref void* ppIndirection)

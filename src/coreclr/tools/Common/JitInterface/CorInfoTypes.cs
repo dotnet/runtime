@@ -1258,6 +1258,80 @@ namespace Internal.JitInterface
         STRUCT_HAS_8BYTES_FIELDS_MASK = (STRUCT_FIRST_FIELD_SIZE_IS8 | STRUCT_SECOND_FIELD_SIZE_IS8),
     };
 
+
+    // Bitfields for FpStructInRegistersInfo.flags
+    [Flags]
+    public enum FpStruct
+    {
+        // Positions of bitfields
+        PosOnlyOne      = 0,
+        PosBothFloat    = 1,
+        PosFloat1st     = 2,
+        PosSizeShift1st = 3,
+        PosFloat2nd     = 5,
+        PosSizeShift2nd = 6,
+        SizeShiftMask = 0b11,
+
+        UseIntCallConv = 0, // struct is passed according to integer calling convention
+
+        // The bitfields
+        OnlyOne   = 1 << PosOnlyOne,   // has only one field, which is floating-point
+        BothFloat = 1 << PosBothFloat, // has two fields, both are floating-point
+        Float1st  = 1 << PosFloat1st,  // has two fields, 1st is floating (and 2nd is integer)
+        SizeShift1st = SizeShiftMask << PosSizeShift1st, // log2(size) of 1st field
+        Float2nd  = 1 << PosFloat2nd,  // has two fields, 2nd is floating (and 1st is integer)
+        SizeShift2nd = SizeShiftMask << PosSizeShift2nd, // log2(size) of 2nd field
+        // Note: flags OnlyOne, BothFloat, Float1st, and Float2nd are mutually exclusive
+    };
+
+    // On RISC-V and LoongArch a struct with up to two non-empty fields, at least one of them floating-point,
+    // can be passed in registers according to hardware FP calling convention. FpStructInRegistersInfo represents
+    // passing information for such parameters.
+    public struct FpStructInRegistersInfo
+    {
+        [InlineArray(2)]
+        public struct Offsets
+        {
+            private uint _offset;
+        }
+
+        public FpStruct flags;
+        public Offsets offsets; // field offsets in bytes, [0] for 1st, [1] for 2nd
+
+        public uint GetSize1st()
+        {
+            int shift = ((int)flags >> (int)FpStruct.PosSizeShift1st) & (int)FpStruct.SizeShiftMask;
+            return 1u << shift;
+        }
+
+        public uint GetSize2nd()
+        {
+            int shift = ((int)flags >> (int)FpStruct.PosSizeShift2nd) & (int)FpStruct.SizeShiftMask;
+            return 1u << shift;
+        }
+
+        public bool IsSize1st8()
+        {
+            return (flags & FpStruct.SizeShift1st) == (FpStruct)(3 << (int)FpStruct.PosSizeShift1st);
+        }
+
+        public bool IsSize2nd8()
+        {
+            return (flags & FpStruct.SizeShift2nd) == (FpStruct)(3 << (int)FpStruct.PosSizeShift2nd);
+        }
+
+        public StructFloatFieldInfoFlags ToOldFlags()
+        {
+            return
+                ((flags & FpStruct.OnlyOne) != 0 ? StructFloatFieldInfoFlags.STRUCT_FLOAT_FIELD_ONLY_ONE : 0) |
+                ((flags & FpStruct.BothFloat) != 0 ? StructFloatFieldInfoFlags.STRUCT_FLOAT_FIELD_ONLY_TWO : 0) |
+                ((flags & FpStruct.Float1st) != 0 ? StructFloatFieldInfoFlags.STRUCT_FLOAT_FIELD_FIRST : 0) |
+                ((flags & FpStruct.Float2nd) != 0 ? StructFloatFieldInfoFlags.STRUCT_FLOAT_FIELD_SECOND : 0) |
+                (IsSize1st8() ? StructFloatFieldInfoFlags.STRUCT_FIRST_FIELD_SIZE_IS8 : 0) |
+                (IsSize2nd8() ? StructFloatFieldInfoFlags.STRUCT_SECOND_FIELD_SIZE_IS8 : 0);
+        }
+    };
+
     // DEBUGGER DATA
     public enum MappingTypes
     {

@@ -396,9 +396,11 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                             }
                             else if (IsRiscV64)
                             {
-                                fpReturnSize = RISCV64PassStructInRegister.GetRISCV64PassStructInRegisterFlags(thRetType.GetRuntimeTypeHandle()) & 0xff;
+                                TypeDesc td = thRetType.GetRuntimeTypeHandle();
+                                FpStructInRegistersInfo info = RISCV64PassStructInRegister.GetRiscV64PassFpStructInRegistersInfo(td);
+                                fpReturnSize = (uint)info.ToOldFlags() & 0xff;
 
-                                if (fpReturnSize != (uint)STRUCT_NO_FLOAT_FIELD || size <= EnregisteredReturnTypeIntegerMaxSize)
+                                if (info.flags != FpStruct.UseIntCallConv || size <= EnregisteredReturnTypeIntegerMaxSize)
                                     break;
                             }
 
@@ -724,8 +726,9 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     return false;
 
                 // Struct larger than 16 can still be passed in registers according to FP call conv if it has empty fields or more padding
-                uint flags = RISCV64PassStructInRegister.GetRISCV64PassStructInRegisterFlags(th.GetRuntimeTypeHandle());
-                return (flags == (uint)STRUCT_NO_FLOAT_FIELD);
+                TypeDesc td = th.GetRuntimeTypeHandle();
+                FpStructInRegistersInfo info = RISCV64PassStructInRegister.GetRiscV64PassFpStructInRegistersInfo(td);
+                return (info.flags == FpStruct.UseIntCallConv);
             }
 
             public sealed override int GetRetBuffArgOffset(bool hasThis) => OffsetOfFirstGCRefMapSlot + (hasThis ? 8 : 0);

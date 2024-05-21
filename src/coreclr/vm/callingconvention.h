@@ -1845,7 +1845,7 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
             int regOffset = TransitionBlock::GetOffsetOfFloatArgumentRegisters() + m_idxFPReg * FLOAT_REGISTER_SIZE;
             if (info.flags == (FpStruct::BothFloat | (2 << FpStruct::PosSizeShift1st) | (2 << FpStruct::PosSizeShift2nd)))
             {
-                // Two single-float arguments
+                // Struct with two single-float fields
                 assert(info.GetSize1st() == sizeof(float));
                 assert(info.GetSize2nd() == sizeof(float));
                 m_argLocDescForStructInRegs.Init();
