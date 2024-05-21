@@ -725,7 +725,10 @@ function fetchResource (asset: AssetEntryInternal): Promise<Response> {
         fetchOptions.credentials = "include";
     } else {
         // `disableIntegrityCheck` is to give developers an easy opt-out from the integrity check
-        if (!loaderHelpers.config.disableIntegrityCheck && asset.hash) {
+        const disableIntegrityCheck = (loaderHelpers.config.disableIntegrityCheck === undefined)
+            ? true
+            : loaderHelpers.config.disableIntegrityCheck;
+        if (!disableIntegrityCheck && asset.hash) {
             // Any other resource than configuration should provide integrity check
             fetchOptions.integrity = asset.hash;
         }
