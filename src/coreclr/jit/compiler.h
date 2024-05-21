@@ -6044,7 +6044,7 @@ public:
 
     bool fgCanCompactBlocks(BasicBlock* block, BasicBlock* bNext);
 
-    void fgCompactBlocks(BasicBlock* block, BasicBlock* bNext);
+    void fgCompactBlocks(BasicBlock* block, BasicBlock* bNext DEBUGARG(bool doDebugCheck = true));
 
     BasicBlock* fgConnectFallThrough(BasicBlock* bSrc, BasicBlock* bDst);
 

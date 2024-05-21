@@ -965,8 +965,10 @@ bool Compiler::fgCanCompactBlocks(BasicBlock* block, BasicBlock* bNext)
 // Arguments:
 //    block - move all code into this block.
 //    bNext - bbNext of `block`. This block will be removed.
+//    doDebugCheck - in Debug builds, check flowgraph for correctness after compaction
+//    (some callers might compact blocks during destructive flowgraph changes, and thus should skip checks)
 //
-void Compiler::fgCompactBlocks(BasicBlock* block, BasicBlock* bNext)
+void Compiler::fgCompactBlocks(BasicBlock* block, BasicBlock* bNext DEBUGARG(bool doDebugCheck /* = true */))
 {
     noway_assert(block != nullptr);
     noway_assert(bNext != nullptr);
@@ -1331,7 +1333,7 @@ void Compiler::fgCompactBlocks(BasicBlock* block, BasicBlock* bNext)
 #endif
 
 #if DEBUG
-    if (JitConfig.JitSlowDebugChecksEnabled() != 0)
+    if (doDebugCheck && (JitConfig.JitSlowDebugChecksEnabled() != 0))
     {
         // Make sure that the predecessor lists are accurate
         fgDebugCheckBBlist();
@@ -4554,6 +4556,23 @@ void Compiler::fgMoveBackwardJumpsToSuccessors()
         printf("\n");
     }
 #endif // DEBUG
+
+    // Compact blocks before trying to move any jumps.
+    // This can unlock more opportunities for fallthrough behavior.
+    //
+    for (BasicBlock* block = fgFirstBB; block != fgFirstFuncletBB;)
+    {
+        if (fgCanCompactBlocks(block, block->Next()))
+        {
+            // We haven't fixed EH information yet, so don't do any correctness checks here
+            //
+            fgCompactBlocks(block, block->Next() DEBUGARG(/* doDebugCheck */ false));
+        }
+        else
+        {
+            block = block->Next();
+        }
+    }
 
     EnsureBasicBlockEpoch();
     BlockSet visitedBlocks(BlockSetOps::MakeEmpty(this));
