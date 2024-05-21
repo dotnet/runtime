@@ -411,9 +411,12 @@ namespace System.Diagnostics.Metrics
         public Counter<T> CreateCounter<T>(string name, string? unit, string? description, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, object?>> tags) where T : struct  { throw null; }
         public UpDownCounter<T> CreateUpDownCounter<T>(string name, string? unit = null, string? description = null) where T : struct  { throw null; }
         public UpDownCounter<T> CreateUpDownCounter<T>(string name, string? unit, string? description, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, object?>> tags) where T : struct  { throw null; }
-        public Histogram<T> CreateHistogram<T>(string name, string? unit = null, string? description = null) where T : struct { throw null; }
+        public Histogram<T> CreateHistogram<T>(string name) where T : struct { throw null; }
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        public Histogram<T> CreateHistogram<T>(string name, string? unit, string? description) where T : struct { throw null; }
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         public Histogram<T> CreateHistogram<T>(string name, string? unit, string? description, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, object?>>? tags) where T : struct { throw null; }
-        public Histogram<T> CreateHistogram<T>(string name, string? unit, string? description, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, object?>>? tags, HistogramAdvice<T>? advice) where T : struct { throw null; }
+        public Histogram<T> CreateHistogram<T>(string name, string? unit = default, string? description = default, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, object?>>? tags = default, HistogramAdvice<T>? advice = default) where T : struct { throw null; }
         public ObservableCounter<T> CreateObservableCounter<T>(
                             string name,
                             Func<T> observeValue,
@@ -572,6 +575,7 @@ namespace System.Diagnostics.Metrics
     }
     public sealed class HistogramAdvice<T> where T : struct
     {
-        public System.Collections.Generic.IReadOnlyList<T>? ExplicitBucketBoundaries { get { throw null; } init { throw null; } }
+        public HistogramAdvice(System.Collections.Generic.IEnumerable<T> explicitBucketBoundaries) { throw null; }
+        public System.Collections.Generic.IReadOnlyList<T>? ExplicitBucketBoundaries { get { throw null; } }
     }
 }

@@ -15,6 +15,9 @@ namespace System.Diagnostics.Metrics
     /// </remarks>
     public sealed class Histogram<T> : Instrument<T> where T : struct
     {
+        /// <summary>
+        /// Gets the <see cref="HistogramAdvice{T}"/> associated with the instrument.
+        /// </summary>
         public HistogramAdvice<T>? Advice { get; }
 
         internal Histogram(Meter meter, string name, string? unit, string? description) : this(meter, name, unit, description, tags: null, advice: null)
