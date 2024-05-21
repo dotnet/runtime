@@ -29,6 +29,8 @@ namespace Mono.Linker.Steps
 				var eventOrigin = new MessageOrigin (_event);
 				context.MarkStep.MarkCustomAttributes (_event, new DependencyInfo (DependencyKind.CustomAttribute, _event), eventOrigin);
 				context.MarkStep.DoAdditionalEventProcessing (_event);
+				context.MarkStep.Annotations.MarkProcessed (_event);
+
 				return null;
 			}
 
