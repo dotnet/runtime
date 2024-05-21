@@ -62,7 +62,7 @@ public class WasmAppBuilderDebugLevelTests : DebugLevelTests
         return Task.FromResult(ProcessRunOutput(res));
     }
 
-    private static RunResult ProcessRunOutput(CommandResult res)
+    private RunResult ProcessRunOutput(CommandResult res)
     {
         var output = res.Output.Split(Environment.NewLine);
         _testOutput.WriteLine($"DEBUG: parsed lines '{String.Join(", ", output)}'");
