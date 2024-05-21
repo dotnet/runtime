@@ -234,22 +234,60 @@ namespace System.Text.Json.Serialization.Metadata
         internal bool IsSourceGenerated { get; set; }
 
         /// <summary>
-        /// Gets or sets a value indicating if the serializer should reject <see langword="null"/> property values during deserialization.
+        /// Gets or sets a value indicating whether the return type of the getter is annotated as nullable.
         /// </summary>
         /// <exception cref="InvalidOperationException">
         /// The <see cref="JsonPropertyInfo"/> instance has been locked for further modification.
         ///
         /// -or-
         ///
-        /// The current <see cref="PropertyType"/> is not a nullable type.
+        /// The current <see cref="PropertyType"/> is not a reference type or <see cref="Nullable{T}"/>.
         /// </exception>
         /// <remarks>
-        /// For contracts originating from <see cref="DefaultJsonTypeInfoResolver"/> or <see cref="JsonSerializerContext"/>,
-        /// the value of this property will be mapped from nullable reference type annotations.
+        /// Contracts originating from <see cref="DefaultJsonTypeInfoResolver"/> or <see cref="JsonSerializerContext"/>,
+        /// derive the value of this property from nullable reference type annotations, including annotations
+        /// from attributes such as <see cref="NotNullAttribute"/> or <see cref="MaybeNullAttribute"/>.
+        ///
+        /// This property has no effect on serialization unless the <see cref="JsonSerializerOptions.RespectNullableAnnotations"/>
+        /// has been enabled, in which case the serializer will reject any <see langword="null"/> values returned by the getter.
         /// </remarks>
-        public bool DisallowNullReads
+        public bool IsGetNullable
         {
-            get => _disallowNullReads;
+            get => _isGetNullable;
+            set
+            {
+                VerifyMutable();
+
+                if (value && !PropertyTypeCanBeNull)
+                {
+                    throw new InvalidOperationException("The property type is not nullable.");
+                }
+
+                _isGetNullable = value;
+            }
+        }
+
+        private bool _isGetNullable;
+
+        /// <summary>
+        /// Gets or sets a value indicating whether the input type of the setter is annotated as nullable.
+        /// </summary>
+        /// <exception cref="InvalidOperationException">
+        /// The <see cref="JsonPropertyInfo"/> instance has been locked for further modification.
+        ///
+        /// -or-
+        ///
+        /// The current <see cref="PropertyType"/> is not a reference type or <see cref="Nullable{T}"/>.
+        /// </exception>
+        /// Contracts originating from <see cref="DefaultJsonTypeInfoResolver"/> or <see cref="JsonSerializerContext"/>,
+        /// derive the value of this property from nullable reference type annotations, including annotations
+        /// from attributes such as <see cref="AllowNullAttribute"/> or <see cref="DisallowNullAttribute"/>.
+        ///
+        /// This property has no effect on deserialization unless the <see cref="JsonSerializerOptions.RespectNullableAnnotations"/>
+        /// has been enabled, in which case the serializer will reject any <see langword="null"/> deserialization results.
+        public bool IsSetNullable
+        {
+            get => _isSetNullable;
             set
             {
                 VerifyMutable();
@@ -261,46 +299,14 @@ namespace System.Text.Json.Serialization.Metadata
 
                 if (ParameterInfo != null)
                 {
-                    ParameterInfo.DisallowNullReads = value;
+                    ParameterInfo.IsNullable = value;
                 }
 
-                _disallowNullReads = value;
+                _isSetNullable = value;
             }
         }
 
-        private bool _disallowNullReads;
-
-        /// <summary>
-        /// Gets or sets a value indicating if the serializer should reject <see langword="null"/> property values during serialization.
-        /// </summary>
-        /// <exception cref="InvalidOperationException">
-        /// The <see cref="JsonPropertyInfo"/> instance has been locked for further modification.
-        ///
-        /// -or-
-        ///
-        /// The current <see cref="PropertyType"/> is not a nullable type.
-        /// </exception>
-        /// <remarks>
-        /// For contracts originating from <see cref="DefaultJsonTypeInfoResolver"/> or <see cref="JsonSerializerContext"/>,
-        /// the value of this property will be mapped from nullable reference type annotations.
-        /// </remarks>
-        public bool DisallowNullWrites
-        {
-            get => _disallowNullWrites;
-            set
-            {
-                VerifyMutable();
-
-                if (value && !PropertyTypeCanBeNull)
-                {
-                    throw new InvalidOperationException("The property type is not nullable.");
-                }
-
-                _disallowNullWrites = value;
-            }
-        }
-
-        private bool _disallowNullWrites;
+        private bool _isSetNullable;
 
         /// <summary>
         /// Specifies whether the current property is a special extension data property.
@@ -370,6 +376,8 @@ namespace System.Text.Json.Serialization.Metadata
             PropertyType = propertyType;
             DeclaringTypeInfo = declaringTypeInfo; // null declaringTypeInfo means it's not tied yet
             Options = options;
+
+            _isGetNullable = _isSetNullable = PropertyTypeCanBeNull;
         }
 
         internal static JsonPropertyInfo GetPropertyPlaceholder()
@@ -668,7 +676,7 @@ namespace System.Text.Json.Serialization.Metadata
             ParameterInfo = DeclaringTypeInfo.CreateMatchingParameterInfo(this);
             if (ParameterInfo != null)
             {
-                _disallowNullReads = ParameterInfo.DisallowNullReads;
+                _isSetNullable = ParameterInfo.IsNullable;
             }
         }
 

@@ -23,7 +23,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         protected NullableAnnotationsTests_Metadata(JsonSerializerWrapper serializer)
             : base(serializer) { }
 
-        [JsonSourceGenerationOptions(GenerationMode = JsonSourceGenerationMode.Metadata, IgnoreNullableAnnotations = false)]
+        [JsonSourceGenerationOptions(GenerationMode = JsonSourceGenerationMode.Metadata, RespectNullableAnnotations = false)]
         [JsonSerializable(typeof(NotNullablePropertyClass))]
         [JsonSerializable(typeof(NotNullableReadonlyPropertyClass))]
         [JsonSerializable(typeof(NotNullableFieldClass))]
@@ -81,7 +81,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         protected NullableAnnotationsTests_Default(JsonSerializerWrapper serializer)
             : base(serializer) { }
 
-        [JsonSourceGenerationOptions(GenerationMode = JsonSourceGenerationMode.Default, IgnoreNullableAnnotations = false)]
+        [JsonSourceGenerationOptions(GenerationMode = JsonSourceGenerationMode.Default, RespectNullableAnnotations = false)]
         [JsonSerializable(typeof(NotNullablePropertyClass))]
         [JsonSerializable(typeof(NotNullableReadonlyPropertyClass))]
         [JsonSerializable(typeof(NotNullableFieldClass))]

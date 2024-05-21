@@ -22,7 +22,7 @@ namespace System.Text.Json.Serialization.Converters
 
             if (success && !(arg == null && jsonParameterInfo.IgnoreNullTokensOnRead))
             {
-                if (arg == null && jsonParameterInfo.DisallowNullReads)
+                if (arg == null && !jsonParameterInfo.IsNullable && jsonParameterInfo.Options.RespectNullableAnnotations)
                 {
                     ThrowHelper.ThrowJsonException_ConstructorParameterDisallowNull(jsonParameterInfo.MatchingProperty.Name, state.Current.JsonTypeInfo.Type);
                 }

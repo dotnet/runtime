@@ -28,7 +28,7 @@ namespace System.Text.Json.SourceGeneration
 
         public required JsonKnownNamingPolicy? DictionaryKeyPolicy { get; init; }
 
-        public required bool? IgnoreNullableAnnotations { get; init; }
+        public required bool? RespectNullableAnnotations { get; init; }
 
         public required bool? IgnoreReadOnlyFields { get; init; }
 

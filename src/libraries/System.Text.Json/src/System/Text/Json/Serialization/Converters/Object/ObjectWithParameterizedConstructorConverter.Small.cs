@@ -75,7 +75,7 @@ namespace System.Text.Json.Serialization.Converters
                         // Use default value specified on parameter, if any.
                         value = info.DefaultValue;
                     }
-                    else if (info.DisallowNullReads)
+                    else if (!info.IsNullable && info.Options.RespectNullableAnnotations)
                     {
                         ThrowHelper.ThrowJsonException_ConstructorParameterDisallowNull(info.MatchingProperty.Name, state.Current.JsonTypeInfo.Type);
                     }

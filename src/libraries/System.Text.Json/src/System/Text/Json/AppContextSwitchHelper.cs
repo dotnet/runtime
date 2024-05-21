@@ -11,9 +11,9 @@ namespace System.Text.Json
                 isEnabled: out bool value)
             ? value : false;
 
-        public static bool IgnoreNullableAnnotationsDefault { get; } =
+        public static bool RespectNullableAnnotationsDefault { get; } =
             AppContext.TryGetSwitch(
-                switchName: "System.Text.Json.Serialization.IgnoreNullableAnnotationsDefault",
+                switchName: "System.Text.Json.Serialization.RespectNullableAnnotationsDefault",
                 isEnabled: out bool value)
             ? value : false;
     }

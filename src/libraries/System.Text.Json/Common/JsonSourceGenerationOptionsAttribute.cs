@@ -71,11 +71,6 @@ namespace System.Text.Json.Serialization
         public JsonKnownNamingPolicy DictionaryKeyPolicy { get; set; }
 
         /// <summary>
-        /// Specifies the default value of <see cref="JsonSerializerOptions.IgnoreNullableAnnotations"/> when set.
-        /// </summary>
-        public bool IgnoreNullableAnnotations { get; set; }
-
-        /// <summary>
         /// Specifies the default value of <see cref="JsonSerializerOptions.IgnoreReadOnlyFields"/> when set.
         /// </summary>
         public bool IgnoreReadOnlyFields { get; set; }
@@ -119,6 +114,11 @@ namespace System.Text.Json.Serialization
         /// Specifies the default value of <see cref="JsonSerializerOptions.ReadCommentHandling"/> when set.
         /// </summary>
         public JsonCommentHandling ReadCommentHandling { get; set; }
+
+        /// <summary>
+        /// Specifies the default value of <see cref="JsonSerializerOptions.RespectNullableAnnotations"/> when set.
+        /// </summary>
+        public bool RespectNullableAnnotations { get; set; }
 
         /// <summary>
         /// Specifies the default value of <see cref="JsonSerializerOptions.UnknownTypeHandling"/> when set.

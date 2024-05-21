@@ -86,7 +86,7 @@ namespace System.Text.Json
         private int _maxDepth;
         private bool _allowOutOfOrderMetadataProperties;
         private bool _allowTrailingCommas;
-        private bool _ignoreNullableAnnotations = AppContextSwitchHelper.IgnoreNullableAnnotationsDefault;
+        private bool _respectNullableAnnotations = AppContextSwitchHelper.RespectNullableAnnotationsDefault;
         private bool _ignoreNullValues;
         private bool _ignoreReadOnlyProperties;
         private bool _ignoreReadonlyFields;
@@ -140,7 +140,7 @@ namespace System.Text.Json
             _maxDepth = options._maxDepth;
             _allowOutOfOrderMetadataProperties = options._allowOutOfOrderMetadataProperties;
             _allowTrailingCommas = options._allowTrailingCommas;
-            _ignoreNullableAnnotations = options._ignoreNullableAnnotations;
+            _respectNullableAnnotations = options._respectNullableAnnotations;
             _ignoreNullValues = options._ignoreNullValues;
             _ignoreReadOnlyProperties = options._ignoreReadOnlyProperties;
             _ignoreReadonlyFields = options._ignoreReadonlyFields;
@@ -783,18 +783,23 @@ namespace System.Text.Json
         }
 
         /// <summary>
-        /// Gets or sets a value that indicates whether nullability annotations of nullable reference types are ignored during serialization and deserialization.
+        /// Gets or sets a value that indicates whether nullability annotations should be respected during serialization and deserialization.
         /// </summary>
         /// <exception cref="InvalidOperationException">
         /// Thrown if this property is set after serialization or deserialization has occurred.
         /// </exception>
-        public bool IgnoreNullableAnnotations
+        /// <remarks>
+        /// Due to restrictions in how nullable reference types are represented at run time,
+        /// this setting only governs nullability annotations of non-generic properties and fields.
+        /// It cannot be used to enforce nullability annotations of root-level types or generic parameters.
+        /// </remarks>
+        public bool RespectNullableAnnotations
         {
-            get => _ignoreNullableAnnotations;
+            get => _respectNullableAnnotations;
             set
             {
                 VerifyMutable();
-                _ignoreNullableAnnotations = value;
+                _respectNullableAnnotations = value;
             }
         }
 

@@ -196,7 +196,7 @@ namespace System.Text.Json.Serialization.Metadata
             {
                 Debug.Assert(PropertyTypeCanBeNull);
 
-                if (DisallowNullWrites && !Options.IgnoreNullableAnnotations)
+                if (!IsGetNullable && Options.RespectNullableAnnotations)
                 {
                     ThrowHelper.ThrowJsonException_PropertyGetterDisallowNull(Name, state.Current.JsonTypeInfo.Type);
                 }
@@ -280,7 +280,7 @@ namespace System.Text.Json.Serialization.Metadata
 
                 if (!IgnoreNullTokensOnRead)
                 {
-                    if (DisallowNullReads)
+                    if (!IsSetNullable && Options.RespectNullableAnnotations)
                     {
                         ThrowHelper.ThrowJsonException_PropertySetterDisallowNull(Name, state.Current.JsonTypeInfo.Type);
                     }
@@ -303,7 +303,7 @@ namespace System.Text.Json.Serialization.Metadata
                     // Optimize for internal converters by avoiding the extra call to TryRead.
                     T? fastValue = EffectiveConverter.Read(ref reader, PropertyType, Options);
 
-                    if (fastValue is null && DisallowNullReads)
+                    if (fastValue is null && !IsSetNullable && Options.RespectNullableAnnotations)
                     {
                         Debug.Fail("We currently don't have an internal converter that returns null that could trigger this, if you hit this, please add a test case.");
                         Debug.Assert(!EffectiveConverter.IsValueType);
@@ -334,7 +334,7 @@ namespace System.Text.Json.Serialization.Metadata
                             // We cannot do reader.Skip early because converter decides if populating will happen or not
                             if (CanDeserialize)
                             {
-                                if (value is null && DisallowNullReads)
+                                if (value is null && !IsSetNullable && Options.RespectNullableAnnotations)
                                 {
                                     ThrowHelper.ThrowJsonException_PropertySetterDisallowNull(Name, state.Current.JsonTypeInfo.Type);
                                 }

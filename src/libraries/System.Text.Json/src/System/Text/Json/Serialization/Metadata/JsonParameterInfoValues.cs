@@ -46,6 +46,6 @@ namespace System.Text.Json.Serialization.Metadata
         /// Whether the parameter allows <see langword="null"/> values.
         /// </summary>
         /// <remarks>This API is for use by the output of the System.Text.Json source generator and should not be called directly.</remarks>
-        public bool DisallowNullReads { get; init; }
+        public bool IsNullable { get; init; }
     }
 }

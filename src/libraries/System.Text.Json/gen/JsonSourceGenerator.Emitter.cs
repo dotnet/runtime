@@ -673,13 +673,13 @@ namespace System.Text.Json.SourceGeneration
                         writer.WriteLine($"properties[{i}].Order = {property.Order};");
                     }
 
-                    if (property.DisallowNullWrites)
+                    if (property.IsGetterNonNullableAnnotation)
                     {
-                        writer.WriteLine($"properties[{i}].DisallowNullWrites = !{OptionsLocalVariableName}.IgnoreNullableAnnotations;");
+                        writer.WriteLine($"properties[{i}].IsGetNullable = false;");
                     }
-                    if (property.DisallowNullReads)
+                    if (property.IsSetterNonNullableAnnotation)
                     {
-                        writer.WriteLine($"properties[{i}].DisallowNullReads = !{OptionsLocalVariableName}.IgnoreNullableAnnotations;");
+                        writer.WriteLine($"properties[{i}].IsSetNullable = false;");
                     }
 
                     writer.WriteLine();
@@ -712,7 +712,7 @@ namespace System.Text.Json.SourceGeneration
                             Position = {{spec.ParameterIndex}},
                             HasDefaultValue = {{FormatBoolLiteral(spec.HasDefaultValue)}},
                             DefaultValue = {{CSharpSyntaxUtilities.FormatLiteral(spec.DefaultValue, spec.ParameterType)}},
-                            DisallowNullReads = {{FormatBoolLiteral(spec.DisallowNullReads)}},
+                            IsNullable = {{FormatBoolLiteral(spec.IsNullable)}},
                         },
                         """);
 
@@ -1037,7 +1037,7 @@ namespace System.Text.Json.SourceGeneration
                 {
                     JsonIgnoreCondition.WhenWritingNull => propertySpec.PropertyType.CanBeNull ? SerializedValueCheckType.IgnoreWhenNull : SerializedValueCheckType.None,
                     JsonIgnoreCondition.WhenWritingDefault => propertySpec.PropertyType.CanBeNull ? SerializedValueCheckType.IgnoreWhenNull : SerializedValueCheckType.IgnoreWhenDefault,
-                    _ when propertySpec.DisallowNullWrites => SerializedValueCheckType.DisallowNull,
+                    _ when propertySpec.IsGetterNonNullableAnnotation && contextSpec.GeneratedOptionsSpec?.RespectNullableAnnotations is true => SerializedValueCheckType.DisallowNull,
                     _ => SerializedValueCheckType.None,
                 };
             }
@@ -1182,8 +1182,8 @@ namespace System.Text.Json.SourceGeneration
                 if (optionsSpec.DictionaryKeyPolicy is JsonKnownNamingPolicy dictionaryKeyPolicy)
                     writer.WriteLine($"DictionaryKeyPolicy = {FormatNamingPolicy(dictionaryKeyPolicy)},");
 
-                if (optionsSpec.IgnoreNullableAnnotations is bool ignoreNullableAnnotations)
-                    writer.WriteLine($"IgnoreNullableAnnotations = {FormatBoolLiteral(ignoreNullableAnnotations)},");
+                if (optionsSpec.RespectNullableAnnotations is bool ignoreNullableAnnotations)
+                    writer.WriteLine($"RespectNullableAnnotations = {FormatBoolLiteral(ignoreNullableAnnotations)},");
 
                 if (optionsSpec.IgnoreReadOnlyFields is bool ignoreReadOnlyFields)
                     writer.WriteLine($"IgnoreReadOnlyFields = {FormatBoolLiteral(ignoreReadOnlyFields)},");

@@ -317,7 +317,7 @@ namespace System.Text.Json.SourceGeneration
             }
         }
 
-        public static bool IsNonNullable(this IParameterSymbol parameter)
+        public static bool IsNullable(this IParameterSymbol parameter)
         {
             if (parameter.Type.IsNullableType())
             {
@@ -326,7 +326,7 @@ namespace System.Text.Json.SourceGeneration
                 // we derive nullability annotations from the original definition of the field and not instation.
                 // This preserves compatibility with the capabilities of the reflection-based NullabilityInfo reader.
                 parameter = parameter.OriginalDefinition;
-                return IsInputTypeNonNullable(parameter, parameter.Type);
+                return !IsInputTypeNonNullable(parameter, parameter.Type);
             }
 
             return false;

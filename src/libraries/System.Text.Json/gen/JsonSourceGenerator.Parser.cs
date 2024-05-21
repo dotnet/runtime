@@ -330,7 +330,7 @@ namespace System.Text.Json.SourceGeneration
                             dictionaryKeyPolicy = (JsonKnownNamingPolicy)namedArg.Value.Value!;
                             break;
 
-                        case nameof(JsonSourceGenerationOptionsAttribute.IgnoreNullableAnnotations):
+                        case nameof(JsonSourceGenerationOptionsAttribute.RespectNullableAnnotations):
                             ignoreNullableAnnotations = (bool)namedArg.Value.Value!;
                             break;
 
@@ -417,7 +417,7 @@ namespace System.Text.Json.SourceGeneration
                     Converters = converters?.ToImmutableEquatableArray(),
                     DefaultIgnoreCondition = defaultIgnoreCondition,
                     DictionaryKeyPolicy = dictionaryKeyPolicy,
-                    IgnoreNullableAnnotations = ignoreNullableAnnotations,
+                    RespectNullableAnnotations = ignoreNullableAnnotations,
                     IgnoreReadOnlyFields = ignoreReadOnlyFields,
                     IgnoreReadOnlyProperties = ignoreReadOnlyProperties,
                     IncludeFields = includeFields,
@@ -1127,8 +1127,8 @@ namespace System.Text.Json.SourceGeneration
                     out bool canUseSetter,
                     out bool hasJsonIncludeButIsInaccessible,
                     out bool setterIsInitOnly,
-                    out bool disallowNullWrites,
-                    out bool disallowNullReads);
+                    out bool isGetterNonNullable,
+                    out bool isSetterNonNullable);
 
                 if (hasJsonIncludeButIsInaccessible)
                 {
@@ -1192,8 +1192,8 @@ namespace System.Text.Json.SourceGeneration
                     PropertyType = propertyTypeRef,
                     DeclaringType = declaringType,
                     ConverterType = converterType,
-                    DisallowNullWrites = disallowNullWrites,
-                    DisallowNullReads = disallowNullReads,
+                    IsGetterNonNullableAnnotation = isGetterNonNullable,
+                    IsSetterNonNullableAnnotation = isSetterNonNullable,
                 };
             }
 
@@ -1312,8 +1312,8 @@ namespace System.Text.Json.SourceGeneration
                 out bool canUseSetter,
                 out bool hasJsonIncludeButIsInaccessible,
                 out bool isSetterInitOnly,
-                out bool disallowNullWrites,
-                out bool disallowNullReads)
+                out bool isGetterNonNullable,
+                out bool isSetterNonNullable)
             {
                 isAccessible = false;
                 isReadOnly = false;
@@ -1322,8 +1322,8 @@ namespace System.Text.Json.SourceGeneration
                 canUseSetter = false;
                 hasJsonIncludeButIsInaccessible = false;
                 isSetterInitOnly = false;
-                disallowNullWrites = false;
-                disallowNullReads = false;
+                isGetterNonNullable = false;
+                isSetterNonNullable = false;
 
                 switch (memberInfo)
                 {
@@ -1373,7 +1373,7 @@ namespace System.Text.Json.SourceGeneration
                             isReadOnly = true;
                         }
 
-                        propertyInfo.ResolveNullabilityAnnotations(out disallowNullWrites, out disallowNullReads);
+                        propertyInfo.ResolveNullabilityAnnotations(out isGetterNonNullable, out isSetterNonNullable);
                         break;
                     case IFieldSymbol fieldInfo:
                         isReadOnly = fieldInfo.IsReadOnly;
@@ -1397,7 +1397,7 @@ namespace System.Text.Json.SourceGeneration
                             hasJsonIncludeButIsInaccessible = hasJsonInclude;
                         }
 
-                        fieldInfo.ResolveNullabilityAnnotations(out disallowNullWrites, out disallowNullReads);
+                        fieldInfo.ResolveNullabilityAnnotations(out isGetterNonNullable, out isSetterNonNullable);
                         break;
                     default:
                         Debug.Fail("Method given an invalid symbol type.");
@@ -1448,7 +1448,7 @@ namespace System.Text.Json.SourceGeneration
                             HasDefaultValue = parameterInfo.HasExplicitDefaultValue,
                             DefaultValue = parameterInfo.HasExplicitDefaultValue ? parameterInfo.ExplicitDefaultValue : null,
                             ParameterIndex = i,
-                            DisallowNullReads = parameterInfo.IsNonNullable(),
+                            IsNullable = parameterInfo.IsNullable(),
                         };
                     }
                 }

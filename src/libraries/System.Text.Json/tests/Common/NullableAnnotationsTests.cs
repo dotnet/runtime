@@ -14,8 +14,8 @@ namespace System.Text.Json.Serialization.Tests
 {
     public abstract class NullableAnnotationsTests : SerializerTests
     {
-        private static readonly JsonSerializerOptions s_optionsWithIgnoredNullability = new JsonSerializerOptions { IgnoreNullValues = true };
-        private static readonly JsonSerializerOptions s_optionsWithEnforcedNullability = new JsonSerializerOptions { IgnoreNullValues = false };
+        private static readonly JsonSerializerOptions s_optionsWithIgnoredNullability = new JsonSerializerOptions { RespectNullableAnnotations = false };
+        private static readonly JsonSerializerOptions s_optionsWithEnforcedNullability = new JsonSerializerOptions { RespectNullableAnnotations = true };
 
         protected NullableAnnotationsTests(JsonSerializerWrapper serializerUnderTest)
             : base(serializerUnderTest) { }
@@ -50,10 +50,10 @@ namespace System.Text.Json.Serialization.Tests
             JsonPropertyInfo propertyInfo = typeInfo.Properties.FirstOrDefault(p => p.Name == propertyName);
 
             Assert.NotNull(propertyInfo);
-            Assert.True(propertyInfo.DisallowNullWrites);
+            Assert.False(propertyInfo.IsGetNullable);
 
-            propertyInfo.DisallowNullWrites = false;
-            Assert.False(propertyInfo.DisallowNullWrites);
+            propertyInfo.IsGetNullable = true;
+            Assert.True(propertyInfo.IsGetNullable);
 
             string json = await Serializer.SerializeWrapper(value, typeInfo);
             Assert.NotNull(json);
@@ -102,10 +102,10 @@ namespace System.Text.Json.Serialization.Tests
             JsonPropertyInfo propertyInfo = typeInfo.Properties.FirstOrDefault(p => p.Name == propertyName);
 
             Assert.NotNull(propertyInfo);
-            Assert.False(propertyInfo.DisallowNullWrites);
+            Assert.True(propertyInfo.IsGetNullable);
 
-            propertyInfo.DisallowNullWrites = true;
-            Assert.True(propertyInfo.DisallowNullWrites);
+            propertyInfo.IsGetNullable = false;
+            Assert.False(propertyInfo.IsGetNullable);
 
             JsonException ex = await Assert.ThrowsAsync<JsonException>(() => Serializer.SerializeWrapper(value, typeInfo));
 
@@ -164,10 +164,10 @@ namespace System.Text.Json.Serialization.Tests
             JsonPropertyInfo propertyInfo = typeInfo.Properties.FirstOrDefault(p => p.Name == propertyName);
 
             Assert.NotNull(propertyInfo);
-            Assert.True(propertyInfo.DisallowNullReads);
+            Assert.False(propertyInfo.IsSetNullable);
 
-            propertyInfo.DisallowNullReads = false;
-            Assert.False(propertyInfo.DisallowNullReads);
+            propertyInfo.IsSetNullable = true;
+            Assert.True(propertyInfo.IsSetNullable);
 
             object? result = await Serializer.DeserializeWrapper(json, typeInfo);
             Assert.IsType(type, result);
@@ -217,10 +217,10 @@ namespace System.Text.Json.Serialization.Tests
             JsonPropertyInfo propertyInfo = typeInfo.Properties.FirstOrDefault(p => p.Name == propertyName);
 
             Assert.NotNull(propertyInfo);
-            Assert.False(propertyInfo.DisallowNullReads);
+            Assert.True(propertyInfo.IsSetNullable);
 
-            propertyInfo.DisallowNullReads = true;
-            Assert.True(propertyInfo.DisallowNullReads);
+            propertyInfo.IsSetNullable = false;
+            Assert.False(propertyInfo.IsSetNullable);
 
             JsonException ex = await Assert.ThrowsAsync<JsonException>(() => Serializer.DeserializeWrapper(json, typeInfo));
 
@@ -335,7 +335,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task WriteNotNullPropertiesWithNullIgnoreConditions_Succeeds()
         {
-            // JsonIgnoreCondition.WhenWritingNull/Default takes precedence over DisallowNullWrites.
+            // JsonIgnoreCondition.WhenWritingNull/Default takes precedence over nullability enforcement.
             var value = new NotNullablePropertyWithIgnoreConditions { WhenWritingNull = null!, WhenWritingDefault = null! };
             string json = await Serializer.SerializeWrapper(value, s_optionsWithEnforcedNullability);
             Assert.Equal("{}", json);

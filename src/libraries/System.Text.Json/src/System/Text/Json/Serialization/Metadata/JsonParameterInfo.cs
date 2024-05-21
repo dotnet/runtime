@@ -17,7 +17,7 @@ namespace System.Text.Json.Serialization.Metadata
 
             Position = parameterInfoValues.Position;
             HasDefaultValue = parameterInfoValues.HasDefaultValue;
-            DisallowNullReads = parameterInfoValues.DisallowNullReads && !matchingProperty.Options.IgnoreNullableAnnotations;
+            IsNullable = parameterInfoValues.IsNullable;
             MatchingProperty = matchingProperty;
         }
 
@@ -27,7 +27,7 @@ namespace System.Text.Json.Serialization.Metadata
         // The default value of the parameter. This is `DefaultValue` of the `ParameterInfo`, if specified, or the `default` for the `ParameterType`.
         public object? DefaultValue { get; private protected init; }
         public JsonPropertyInfo MatchingProperty { get; }
-        public bool DisallowNullReads { get; internal set; }
+        public bool IsNullable { get; internal set; }
 
         public Type DeclaringType => MatchingProperty.DeclaringType;
         public Type ParameterType => MatchingProperty.PropertyType;
