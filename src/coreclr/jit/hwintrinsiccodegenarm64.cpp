@@ -1348,9 +1348,9 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
             }
             break;
 
-            case NI_Sve_Storex2:
-            case NI_Sve_Storex3:
-            case NI_Sve_Storex4:
+            case NI_Sve_StoreAndZipx2:
+            case NI_Sve_StoreAndZipx3:
+            case NI_Sve_StoreAndZipx4:
             {
                 assert(intrin.op3->OperIsFieldList());
                 GenTreeFieldList* fieldList  = intrin.op3->AsFieldList();
@@ -1403,7 +1403,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 break;
             }
 
-            case NI_Sve_Store:
+            case NI_Sve_StoreAndZip:
             {
                 GetEmitter()->emitIns_R_R_R_I(ins, emitSize, op3Reg, op1Reg, op2Reg, 0, opt);
                 break;

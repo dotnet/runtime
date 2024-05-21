@@ -26707,10 +26707,10 @@ bool GenTreeHWIntrinsic::OperIsMemoryStore(GenTree** pAddr) const
                 addr = Op(3);
                 break;
 #elif defined(TARGET_ARM64)
-            case NI_Sve_Store:
-            case NI_Sve_Storex2:
-            case NI_Sve_Storex3:
-            case NI_Sve_Storex4:
+            case NI_Sve_StoreAndZip:
+            case NI_Sve_StoreAndZipx2:
+            case NI_Sve_StoreAndZipx3:
+            case NI_Sve_StoreAndZipx4:
                 addr = Op(2);
                 break;
 #endif // TARGET_ARM64

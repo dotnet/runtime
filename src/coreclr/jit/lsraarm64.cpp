@@ -1758,9 +1758,9 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 break;
             }
 
-            case NI_Sve_Storex2:
-            case NI_Sve_Storex3:
-            case NI_Sve_Storex4:
+            case NI_Sve_StoreAndZipx2:
+            case NI_Sve_StoreAndZipx3:
+            case NI_Sve_StoreAndZipx4:
             {
                 assert(intrin.op2 != nullptr);
                 assert(intrin.op3 != nullptr);
@@ -1908,7 +1908,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                                                (argNum == lowVectorOperandNum) ? lowVectorCandidates : RBM_NONE);
             }
         }
-        else if (intrin.id == NI_Sve_Store)
+        else if (intrin.id == NI_Sve_StoreAndZip)
         {
             srcCount += BuildAddrUses(intrin.op2);
         }

@@ -2426,7 +2426,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
-        case NI_Sve_Store:
+        case NI_Sve_StoreAndZip:
         {
             assert(sig->numArgs == 3);
             assert(retType == TYP_VOID);
@@ -2446,15 +2446,15 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 switch (fieldCount)
                 {
                     case 2:
-                        intrinsic = NI_Sve_Storex2;
+                        intrinsic = NI_Sve_StoreAndZipx2;
                         break;
 
                     case 3:
-                        intrinsic = NI_Sve_Storex3;
+                        intrinsic = NI_Sve_StoreAndZipx3;
                         break;
 
                     case 4:
-                        intrinsic = NI_Sve_Storex4;
+                        intrinsic = NI_Sve_StoreAndZipx4;
                         break;
 
                     default:
