@@ -221,19 +221,12 @@ HRESULT MethodDesc::EnsureCodeDataExists()
     if (m_codeData != NULL)
         return S_OK;
 
-    AllocMemTracker amTracker;
-    MethodDescCodeData* alloc = NULL;
-
     LoaderHeap* heap = GetLoaderAllocator()->GetHighFrequencyHeap();
 
-    HRESULT hr = S_OK;
-    EX_TRY
-    {
-        alloc = (MethodDescCodeData*)amTracker.Track(heap->AllocMem(S_SIZE_T(sizeof(MethodDescCodeData))));
-    }
-    EX_CATCH_HRESULT(hr);
-    if (FAILED(hr))
-        return hr;
+    AllocMemTracker amTracker;
+    MethodDescCodeData* alloc = (MethodDescCodeData*)amTracker.Track(heap->AllocMem_NoThrow(S_SIZE_T(sizeof(MethodDescCodeData))));
+    if (alloc == NULL)
+        return E_OUTOFMEMORY;
 
     // Try to set the field. Suppress clean-up if we win the race.
     if (InterlockedCompareExchangeT(&m_codeData, (MethodDescCodeData*)alloc, NULL) == NULL)
