@@ -66,11 +66,11 @@ namespace System.Text.Json.Serialization.Tests
     {
         public DateTimeOffset Date { get; set; }
         public int TemperatureCelsius { get; set; }
-        public string Summary { get; set; }
-        public string SummaryField;
-        public List<DateTimeOffset> DatesAvailable { get; set; }
-        public Dictionary<string, HighLowTemps> TemperatureRanges { get; set; }
-        public string[] SummaryWords { get; set; }
+        public string? Summary { get; set; }
+        public string? SummaryField;
+        public List<DateTimeOffset>? DatesAvailable { get; set; }
+        public Dictionary<string, HighLowTemps>? TemperatureRanges { get; set; }
+        public string[]? SummaryWords { get; set; }
     }
 
     public class HighLowTemps

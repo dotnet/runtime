@@ -917,6 +917,7 @@ namespace System.Text.Json.Serialization.Tests
             JsonTestHelper.AssertJsonEqual("""{"Value":null,"Thing":null}""", json);
         }
 
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public static void Options_IgnoreNullableAnnotationsDefault_Net8CompatibilitySwitch()
         {
