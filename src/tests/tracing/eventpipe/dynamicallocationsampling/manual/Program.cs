@@ -21,7 +21,7 @@ namespace DynamicAllocationSampling
             return (TypeName+Size).GetHashCode();
         }
 
-        public override bool Equals(object? obj)
+        public override bool Equals(object obj)
         {
             if (obj == null)
             {
@@ -131,7 +131,7 @@ namespace DynamicAllocationSampling
         }
 
         private const long SAMPLING_MEAN = 100 * 1024;
-        private const double SAMPLING_RATIO = 0.99999 / 0.00001;
+        private const double SAMPLING_RATIO = 0.999990234375 / 0.000009765625;
         private static long UpscaleSize(long totalSize, int count, long mean, long sizeRemainder)
         {
             //// This is the Poisson process based scaling
@@ -267,9 +267,27 @@ namespace DynamicAllocationSampling
                 }
                 Console.WriteLine(typeName);
                 Console.WriteLine("-------------------------");
+                int current = 1;
                 foreach (var diff in distribution.OrderBy(v => v))
                 {
-                    Console.WriteLine($"{diff,8:0.0 %}");
+                    if (iterations > 20)
+                    {
+                        if ((current <= 5) || ((current >= 49) && (current < 52)) || (current >= 96))
+                        {
+                            Console.WriteLine($"{current,4} {diff,8:0.0 %}");
+                        }
+                        else
+                        if ((current == 6) || (current == 95))
+                        {
+                            Console.WriteLine("        ...");
+                        }
+                    }
+                    else
+                    {
+                        Console.WriteLine($"{current,4} {diff,8:0.0 %}");
+                    }
+
+                    current++;
                 }
                 Console.WriteLine();
             }

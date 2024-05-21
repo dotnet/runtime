@@ -275,6 +275,9 @@ inline Object* Alloc(ee_alloc_context* pEEAllocContext, size_t size, GC_ALLOC_FL
             {
                 samplingBudget = ee_alloc_context::ComputeGeometricRandom(pCurrentThread->GetRandom());
                 isSampled = (samplingBudget < allocatedBytes - availableSpace);
+
+                // we need to take the available space into account to be able to compute the remainder later
+                samplingBudget = availableSpace + samplingBudget;
             }
         }
     }
