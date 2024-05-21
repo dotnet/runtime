@@ -430,6 +430,7 @@ function_name() to call the system's implementation
 #undef va_list
 #undef va_start
 #undef va_end
+#undef va_arg
 #undef va_copy
 #undef stdin
 #undef stdout
