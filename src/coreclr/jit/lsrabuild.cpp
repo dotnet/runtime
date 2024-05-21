@@ -3148,7 +3148,11 @@ void LinearScan::BuildCallDefs(GenTree* tree, int dstCount, regMaskTP dstCandida
     assert(tree->IsMultiRegCall());
 
     const ReturnTypeDesc* retTypeDesc = tree->AsCall()->GetReturnTypeDesc();
-    noway_assert(retTypeDesc != nullptr);
+    assert(retTypeDesc != nullptr);
+    if (retTypeDesc == nullptr)
+    {
+        return;
+    }
 
     for (int i = 0; i < dstCount; i++)
     {
