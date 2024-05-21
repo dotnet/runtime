@@ -255,7 +255,7 @@ size_t minipal_convert_utf8_to_utf16(const char* source, size_t sourceLength, CH
     size_t destinationIndex = 0;
     bool useFallback = !(flags & MINIPAL_MB_NO_REPLACE_INVALID_CHARS);
 #if BIGENDIAN
-    bool treatAsLE = flags & MINIPAL_TREAT_AS_LITTLE_ENDIAN;
+    bool treatAsLE = !!(flags & MINIPAL_TREAT_AS_LITTLE_ENDIAN);
 #endif
 
     while (sourceIndex < sourceLength && destinationIndex < destinationLength)
@@ -505,7 +505,7 @@ size_t minipal_convert_utf16_to_utf8(const CHAR16_T* source, size_t sourceLength
     size_t destinationIndex = 0;
     bool useFallback = !(flags & MINIPAL_MB_NO_REPLACE_INVALID_CHARS);
 #if BIGENDIAN
-    bool treatAsLE = flags & MINIPAL_TREAT_AS_LITTLE_ENDIAN;
+    bool treatAsLE = !!(flags & MINIPAL_TREAT_AS_LITTLE_ENDIAN);
 #endif
 
     while (sourceIndex < sourceLength && destinationIndex < destinationLength)
