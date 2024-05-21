@@ -238,7 +238,7 @@ namespace System.Collections.Immutable.Tests
 
             AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => mutable.RemoveRange(2, 3));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => mutable.RemoveRange(-1, 0));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => mutable.RemoveRange(0, -1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("length", () => mutable.RemoveRange(0, -1));
         }
 
         [Fact]
