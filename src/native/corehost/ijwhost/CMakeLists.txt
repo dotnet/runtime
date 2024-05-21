@@ -21,6 +21,8 @@ endif()
 set (ASM_HELPERS_SOURCES
     ${ARCH_SOURCES_DIR}/asmhelpers.asm)
 
+convert_to_absolute_path(ASM_HELPERS_SOURCES ${ASM_HELPERS_SOURCES})
+
 add_compile_definitions(FEATURE_LIBHOST)
 
 if (CLR_CMAKE_TARGET_WIN32 AND CLR_CMAKE_TARGET_ARCH_ARM64)
