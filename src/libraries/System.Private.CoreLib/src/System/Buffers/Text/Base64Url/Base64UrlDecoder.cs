@@ -978,8 +978,8 @@ namespace System.Buffers.Text
                 out Vector128<byte> str1, out Vector128<byte> str2, out Vector128<byte> str3, out Vector128<byte> str4)
             {
                 AssertRead<Vector128<sbyte>>(src, srcStart, sourceLength);
-                var (s11, s12, s21, s22) = AdvSimd.Arm64.LoadVector128x4(src);
-                var (s31, s32, s41, s42) = AdvSimd.Arm64.LoadVector128x4(src + 32);
+                var (s11, s12, s21, s22) = AdvSimd.Arm64.LoadVector128x4AndUnzip(src);
+                var (s31, s32, s41, s42) = AdvSimd.Arm64.LoadVector128x4AndUnzip(src + 32);
 
                 if (VectorContainsNonAsciiChar(s11) || VectorContainsNonAsciiChar(s12) ||
                     VectorContainsNonAsciiChar(s21) || VectorContainsNonAsciiChar(s22) ||
@@ -1047,7 +1047,7 @@ namespace System.Buffers.Text
                 }
                 else if (AdvSimd.Arm64.IsSupported)
                 {
-                    // First we pick four chars, a larger one from all four pairs of adjecent chars in the vector.
+                    // First we pick four chars, a larger one from all four pairs of adjacent chars in the vector.
                     // If any of those four chars has a non-ASCII bit set, we have seen non-ASCII data.
                     Vector128<ushort> maxChars = AdvSimd.Arm64.MaxPairwise(utf16Vector, utf16Vector);
                     return (maxChars.AsUInt64().ToScalar() & 0xFF80FF80FF80FF80) != 0;
