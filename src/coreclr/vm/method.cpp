@@ -224,7 +224,7 @@ HRESULT MethodDesc::EnsureCodeDataExists()
     LoaderHeap* heap = GetLoaderAllocator()->GetHighFrequencyHeap();
 
     AllocMemTracker amTracker;
-    MethodDescCodeData* alloc = (MethodDescCodeData*)amTracker.Track(heap->AllocMem_NoThrow(S_SIZE_T(sizeof(MethodDescCodeData))));
+    MethodDescCodeData* alloc = (MethodDescCodeData*)amTracker.Track_NoThrow(heap->AllocMem_NoThrow(S_SIZE_T(sizeof(MethodDescCodeData))));
     if (alloc == NULL)
         return E_OUTOFMEMORY;
 
