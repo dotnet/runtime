@@ -2304,7 +2304,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             info.compNeedsConsecutiveRegisters = true;
 
             assert(sig->numArgs == 2);
-            assert(simdSize == 0); // scalable
 
             op2 = impPopStack().val;
             op1 = impPopStack().val;
