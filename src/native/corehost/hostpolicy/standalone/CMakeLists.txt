@@ -34,6 +34,7 @@ endif(CLR_CMAKE_HOST_UNIX)
 install_with_stripped_symbols(hostpolicy TARGETS corehost)
 target_link_libraries(hostpolicy PRIVATE libhostcommon)
 
-target_link_libraries(hostpolicy PRIVATE
-    $<$<BOOL:${ATOMIC_SUPPORT_LIB}>:${ATOMIC_SUPPORT_LIB}>
-    $<$<BOOL:${PTHREAD_LIB}>:${PTHREAD_LIB}>)
+if(CLR_CMAKE_TARGET_ARCH_ARM OR CLR_CMAKE_TARGET_ARCH_ARMV6)
+    target_link_libraries(hostpolicy INTERFACE 
+    $<$<BOOL:${ATOMIC_SUPPORT_LIB}>:${ATOMIC_SUPPORT_LIB}>)
+endif()

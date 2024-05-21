@@ -45,8 +45,12 @@ endif()
 
 target_link_libraries(hostmisc INTERFACE
     ${CMAKE_DL_LIBS}
-    $<$<BOOL:${ATOMIC_SUPPORT_LIB}>:${ATOMIC_SUPPORT_LIB}>
     $<$<BOOL:${PTHREAD_LIB}>:${PTHREAD_LIB}>)
+
+if(CLR_CMAKE_TARGET_ARCH_ARM OR CLR_CMAKE_TARGET_ARCH_ARMV6)
+    target_link_libraries(hostmisc INTERFACE 
+    $<$<BOOL:${ATOMIC_SUPPORT_LIB}>:${ATOMIC_SUPPORT_LIB}>)
+endif()
 
 target_compile_definitions(hostmisc INTERFACE
     _NO_ASYNCRTIMP

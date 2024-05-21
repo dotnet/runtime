@@ -45,6 +45,7 @@ install_with_stripped_symbols(hostfxr TARGETS corehost)
 
 target_link_libraries(hostfxr PRIVATE libhostcommon)
 
-target_link_libraries(hostfxr PRIVATE
+if(CLR_CMAKE_TARGET_ARCH_ARM OR CLR_CMAKE_TARGET_ARCH_ARMV6)
+    target_link_libraries(hostfxr INTERFACE 
     $<$<BOOL:${ATOMIC_SUPPORT_LIB}>:${ATOMIC_SUPPORT_LIB}>)
-
+endif()
