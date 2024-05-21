@@ -576,7 +576,6 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 {
                     assert(instrIsRMW);
                     assert(HWIntrinsicInfo::IsFmaIntrinsic(intrinEmbMask.id));
-                    assert(falseReg != embMaskOp1Reg);
                     assert(falseReg != embMaskOp2Reg);
                     assert(falseReg != embMaskOp3Reg);
 
@@ -704,17 +703,28 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                         //      fmla    target, P/m, embMaskOp2Reg, embMaskOp3Reg
                         //
                         // Note that, we just check if the targetReg/falseReg or targetReg/embMaskOp1Reg
-                        // coincides or not. Other combination like falseReg/embMaskOp*Reg cannot happen
-                        // because we marked embMaskOp*Reg as delayFree.
+                        // coincides or not. Other combination like falseReg/embMaskOp2Reg or
+                        // falseReg/embMaskOp3Reg cannot happen because we marked them as delayFree.
 
                         if (targetReg != falseReg)
                         {
-                            // If falseReg value is not present in targetReg yet, move the inactive lanes
-                            // into the targetReg using `sel`. Since this is RMW, the active lanes should
-                            // have the value from embMaskOp1Reg
+                            if (falseReg == embMaskOp1Reg)
+                            {
+                                // If falseReg value and embMaskOp1Reg value are same, then just mov the value
+                                // to the target.
 
-                            GetEmitter()->emitIns_R_R_R_R(INS_sve_sel, emitSize, targetReg, maskReg, embMaskOp1Reg,
-                                                          falseReg, opt, INS_SCALABLE_OPTS_UNPREDICATED);
+                                GetEmitter()->emitIns_Mov(INS_mov, emitTypeSize(node), targetReg, embMaskOp1Reg,
+                                                          /* canSkip */ true);
+                            }
+                            else
+                            {
+                                // If falseReg value is not present in targetReg yet, move the inactive lanes
+                                // into the targetReg using `sel`. Since this is RMW, the active lanes should
+                                // have the value from embMaskOp1Reg
+
+                                GetEmitter()->emitIns_R_R_R_R(INS_sve_sel, emitSize, targetReg, maskReg, embMaskOp1Reg,
+                                                              falseReg, opt, INS_SCALABLE_OPTS_UNPREDICATED);
+                            }
                         }
                         else if (targetReg != embMaskOp1Reg)
                         {
