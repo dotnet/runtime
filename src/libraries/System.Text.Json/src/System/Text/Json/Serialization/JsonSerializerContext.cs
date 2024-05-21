@@ -70,6 +70,7 @@ namespace System.Text.Json.Serialization
 
                 // Ensure options values are consistent with expected defaults.
                 options.DefaultIgnoreCondition == generatedSerializerOptions.DefaultIgnoreCondition &&
+                options.IgnoreNullableAnnotations == generatedSerializerOptions.IgnoreNullableAnnotations &&
                 options.IgnoreReadOnlyFields == generatedSerializerOptions.IgnoreReadOnlyFields &&
                 options.IgnoreReadOnlyProperties == generatedSerializerOptions.IgnoreReadOnlyProperties &&
                 options.IncludeFields == generatedSerializerOptions.IncludeFields &&

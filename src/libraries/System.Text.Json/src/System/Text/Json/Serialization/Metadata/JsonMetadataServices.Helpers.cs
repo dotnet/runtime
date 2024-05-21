@@ -20,6 +20,7 @@ namespace System.Text.Json.Serialization.Metadata
 
             // Plug in any converter configuration -- should be run last.
             converter.ConfigureJsonTypeInfo(typeInfo, options);
+            typeInfo.IsCustomized = false;
             return typeInfo;
         }
 
@@ -57,6 +58,7 @@ namespace System.Text.Json.Serialization.Metadata
 
             // Plug in any converter configuration -- should be run last.
             converter.ConfigureJsonTypeInfo(typeInfo, options);
+            typeInfo.IsCustomized = false;
             return typeInfo;
         }
 
@@ -94,6 +96,7 @@ namespace System.Text.Json.Serialization.Metadata
 
             // Plug in any converter configuration -- should be run last.
             converter.ConfigureJsonTypeInfo(typeInfo, options);
+            typeInfo.IsCustomized = false;
             return typeInfo;
         }
 
@@ -117,7 +120,7 @@ namespace System.Text.Json.Serialization.Metadata
 
             if (paramFactory?.Invoke() is JsonParameterInfoValues[] array)
             {
-                typeInfo.ParameterInfoValues = array;
+                typeInfo.PopulateParameterInfoValues(array);
             }
             else
             {

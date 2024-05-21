@@ -1071,7 +1071,10 @@ namespace System.Text.Json
             protected override void OnCollectionModifying()
             {
                 _options.VerifyMutable();
+            }
 
+            protected override void OnCollectionModified()
+            {
                 // Collection modified by the user: replace the main
                 // resolver with the resolver chain as our source of truth.
                 _options._typeInfoResolver = this;

@@ -8,10 +8,10 @@ namespace System.Reflection
     /// <summary>
     /// A class that represents nullability info
     /// </summary>
-#if !NETCOREAPP
-    internal
-#else
+#if NETCOREAPP
     public
+#else
+    internal
 #endif
     sealed class NullabilityInfo
     {
@@ -51,10 +51,10 @@ namespace System.Reflection
     /// <summary>
     /// An enum that represents nullability state
     /// </summary>
-#if !NETCOREAPP
-    internal
-#else
+#if NETCOREAPP
     public
+#else
+    internal
 #endif
     enum NullabilityState
     {

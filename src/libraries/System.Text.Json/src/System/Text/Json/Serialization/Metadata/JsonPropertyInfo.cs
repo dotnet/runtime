@@ -17,7 +17,7 @@ namespace System.Text.Json.Serialization.Metadata
     {
         internal static readonly JsonPropertyInfo s_missingProperty = GetPropertyPlaceholder();
 
-        internal JsonTypeInfo? ParentTypeInfo { get; private set; }
+        internal JsonTypeInfo? DeclaringTypeInfo { get; private set; }
 
         /// <summary>
         /// Converter after applying CustomConverter (i.e. JsonConverterAttribute)
@@ -234,14 +234,73 @@ namespace System.Text.Json.Serialization.Metadata
         internal bool IsSourceGenerated { get; set; }
 
         /// <summary>
-        /// Gets or sets a value indicating whether the <see cref="Set"/> allows <see langword="null"/> values on deserialization.
+        /// Gets or sets a value indicating if the serializer should reject <see langword="null"/> property values during deserialization.
         /// </summary>
-        public bool DisallowNullReads { get; set; }
+        /// <exception cref="InvalidOperationException">
+        /// The <see cref="JsonPropertyInfo"/> instance has been locked for further modification.
+        ///
+        /// -or-
+        ///
+        /// The current <see cref="PropertyType"/> is not a nullable type.
+        /// </exception>
+        /// <remarks>
+        /// For contracts originating from <see cref="DefaultJsonTypeInfoResolver"/> or <see cref="JsonSerializerContext"/>,
+        /// the value of this property will be mapped from nullable reference type annotations.
+        /// </remarks>
+        public bool DisallowNullReads
+        {
+            get => _disallowNullReads;
+            set
+            {
+                VerifyMutable();
+
+                if (value && !PropertyTypeCanBeNull)
+                {
+                    throw new InvalidOperationException("The property type is not nullable.");
+                }
+
+                if (ParameterInfo != null)
+                {
+                    ParameterInfo.DisallowNullReads = value;
+                }
+
+                _disallowNullReads = value;
+            }
+        }
+
+        private bool _disallowNullReads;
 
         /// <summary>
-        /// Gets or sets a value indicating whether the <see cref="Get"/> allows <see langword="null"/> values on serialization.
+        /// Gets or sets a value indicating if the serializer should reject <see langword="null"/> property values during serialization.
         /// </summary>
-        public bool DisallowNullWrites { get; set; }
+        /// <exception cref="InvalidOperationException">
+        /// The <see cref="JsonPropertyInfo"/> instance has been locked for further modification.
+        ///
+        /// -or-
+        ///
+        /// The current <see cref="PropertyType"/> is not a nullable type.
+        /// </exception>
+        /// <remarks>
+        /// For contracts originating from <see cref="DefaultJsonTypeInfoResolver"/> or <see cref="JsonSerializerContext"/>,
+        /// the value of this property will be mapped from nullable reference type annotations.
+        /// </remarks>
+        public bool DisallowNullWrites
+        {
+            get => _disallowNullWrites;
+            set
+            {
+                VerifyMutable();
+
+                if (value && !PropertyTypeCanBeNull)
+                {
+                    throw new InvalidOperationException("The property type is not nullable.");
+                }
+
+                _disallowNullWrites = value;
+            }
+        }
+
+        private bool _disallowNullWrites;
 
         /// <summary>
         /// Specifies whether the current property is a special extension data property.
@@ -301,13 +360,15 @@ namespace System.Text.Json.Serialization.Metadata
 
         private bool _isRequired;
 
+        internal JsonParameterInfo? ParameterInfo { get; private set; }
+
         internal JsonPropertyInfo(Type declaringType, Type propertyType, JsonTypeInfo? declaringTypeInfo, JsonSerializerOptions options)
         {
             Debug.Assert(declaringTypeInfo is null || declaringType.IsAssignableFrom(declaringTypeInfo.Type));
 
             DeclaringType = declaringType;
             PropertyType = propertyType;
-            ParentTypeInfo = declaringTypeInfo; // null parentTypeInfo means it's not tied yet
+            DeclaringTypeInfo = declaringTypeInfo; // null declaringTypeInfo means it's not tied yet
             Options = options;
         }
 
@@ -331,14 +392,14 @@ namespace System.Text.Json.Serialization.Metadata
 
         private protected void VerifyMutable()
         {
-            ParentTypeInfo?.VerifyMutable();
+            DeclaringTypeInfo?.VerifyMutable();
         }
 
         internal bool IsConfigured { get; private set; }
 
         internal void Configure()
         {
-            Debug.Assert(ParentTypeInfo != null);
+            Debug.Assert(DeclaringTypeInfo != null);
             Debug.Assert(!IsConfigured);
 
             if (IsIgnored)
@@ -472,10 +533,10 @@ namespace System.Text.Json.Serialization.Metadata
 
         private void DetermineNumberHandlingForTypeInfo()
         {
-            Debug.Assert(ParentTypeInfo != null, "We should have ensured parent is assigned in JsonTypeInfo");
-            Debug.Assert(!ParentTypeInfo.IsConfigured);
+            Debug.Assert(DeclaringTypeInfo != null, "We should have ensured parent is assigned in JsonTypeInfo");
+            Debug.Assert(!DeclaringTypeInfo.IsConfigured);
 
-            JsonNumberHandling? declaringTypeNumberHandling = ParentTypeInfo.NumberHandling;
+            JsonNumberHandling? declaringTypeNumberHandling = DeclaringTypeInfo.NumberHandling;
 
             if (declaringTypeNumberHandling != null && declaringTypeNumberHandling != JsonNumberHandling.Strict && !EffectiveConverter.IsInternalConverter)
             {
@@ -500,7 +561,7 @@ namespace System.Text.Json.Serialization.Metadata
 
         private void DetermineNumberHandlingForProperty()
         {
-            Debug.Assert(ParentTypeInfo != null, "We should have ensured parent is assigned in JsonTypeInfo");
+            Debug.Assert(DeclaringTypeInfo != null, "We should have ensured parent is assigned in JsonTypeInfo");
             Debug.Assert(!IsConfigured, "Should not be called post-configuration.");
             Debug.Assert(_jsonTypeInfo != null, "Must have already been determined on configuration.");
 
@@ -509,7 +570,7 @@ namespace System.Text.Json.Serialization.Metadata
             if (numberHandlingIsApplicable)
             {
                 // Priority 1: Get handling from attribute on property/field, its parent class type or property type.
-                JsonNumberHandling? handling = NumberHandling ?? ParentTypeInfo.NumberHandling ?? _jsonTypeInfo.NumberHandling;
+                JsonNumberHandling? handling = NumberHandling ?? DeclaringTypeInfo.NumberHandling ?? _jsonTypeInfo.NumberHandling;
 
                 // Priority 2: Get handling from JsonSerializerOptions instance.
                 if (!handling.HasValue && Options.NumberHandling != JsonNumberHandling.Strict)
@@ -528,7 +589,7 @@ namespace System.Text.Json.Serialization.Metadata
         private void DetermineEffectiveObjectCreationHandlingForProperty()
         {
             Debug.Assert(EffectiveConverter != null, "Must have calculated the effective converter.");
-            Debug.Assert(ParentTypeInfo != null, "We should have ensured parent is assigned in JsonTypeInfo");
+            Debug.Assert(DeclaringTypeInfo != null, "We should have ensured parent is assigned in JsonTypeInfo");
             Debug.Assert(!IsConfigured, "Should not be called post-configuration.");
 
             JsonObjectCreationHandling effectiveObjectCreationHandling = JsonObjectCreationHandling.Replace;
@@ -537,8 +598,8 @@ namespace System.Text.Json.Serialization.Metadata
                 // Consult type-level configuration, then global configuration.
                 // Ignore global configuration if we're using a parameterized constructor.
                 JsonObjectCreationHandling preferredCreationHandling =
-                    ParentTypeInfo.PreferredPropertyObjectCreationHandling
-                    ?? (ParentTypeInfo.DetermineUsesParameterizedConstructor()
+                    DeclaringTypeInfo.PreferredPropertyObjectCreationHandling
+                    ?? (DeclaringTypeInfo.DetermineUsesParameterizedConstructor()
                         ? JsonObjectCreationHandling.Replace
                         : Options.PreferredObjectCreationHandling);
 
@@ -547,7 +608,7 @@ namespace System.Text.Json.Serialization.Metadata
                     EffectiveConverter.CanPopulate &&
                     Get != null &&
                     (!PropertyType.IsValueType || Set != null) &&
-                    !ParentTypeInfo.SupportsPolymorphicDeserialization &&
+                    !DeclaringTypeInfo.SupportsPolymorphicDeserialization &&
                     !(Set == null && IgnoreReadOnlyMember);
 
                 effectiveObjectCreationHandling = canPopulate ? JsonObjectCreationHandling.Populate : JsonObjectCreationHandling.Replace;
@@ -586,7 +647,7 @@ namespace System.Text.Json.Serialization.Metadata
 
             if (effectiveObjectCreationHandling is JsonObjectCreationHandling.Populate)
             {
-                if (ParentTypeInfo.DetermineUsesParameterizedConstructor())
+                if (DeclaringTypeInfo.DetermineUsesParameterizedConstructor())
                 {
                     ThrowHelper.ThrowNotSupportedException_ObjectCreationHandlingPropertyDoesNotSupportParameterizedConstructors();
                 }
@@ -599,6 +660,16 @@ namespace System.Text.Json.Serialization.Metadata
 
             // Validation complete, commit configuration.
             EffectiveObjectCreationHandling = effectiveObjectCreationHandling;
+        }
+
+        private void DetermineParameterInfo()
+        {
+            Debug.Assert(DeclaringTypeInfo?.IsConfigured is false);
+            ParameterInfo = DeclaringTypeInfo.CreateMatchingParameterInfo(this);
+            if (ParameterInfo != null)
+            {
+                _disallowNullReads = ParameterInfo.DisallowNullReads;
+            }
         }
 
         private bool NumberHandingIsApplicable()
@@ -694,7 +765,7 @@ namespace System.Text.Json.Serialization.Metadata
         /// <summary>
         /// True if the corresponding cref="JsonTypeInfo.PropertyInfoForTypeInfo"/> is this instance.
         /// </summary>
-        internal bool IsForTypeInfo { get; set; }
+        internal bool IsForTypeInfo { get; init; }
 
         // There are 3 copies of the property name:
         // 1) Name. The unescaped property name.
@@ -852,14 +923,16 @@ namespace System.Text.Json.Serialization.Metadata
 
         internal void EnsureChildOf(JsonTypeInfo parent)
         {
-            if (ParentTypeInfo == null)
+            if (DeclaringTypeInfo is null)
             {
-                ParentTypeInfo = parent;
+                DeclaringTypeInfo = parent;
             }
-            else if (ParentTypeInfo != parent)
+            else if (DeclaringTypeInfo != parent)
             {
                 ThrowHelper.ThrowInvalidOperationException_JsonPropertyInfoIsBoundToDifferentJsonTypeInfo(this);
             }
+
+            DetermineParameterInfo();
         }
 
         /// <summary>

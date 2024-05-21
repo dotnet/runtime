@@ -1,8 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-//#nullable enable
-
 using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Tests;
 
@@ -25,7 +23,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         protected NullableAnnotationsTests_Metadata(JsonSerializerWrapper serializer)
             : base(serializer) { }
 
-        [JsonSourceGenerationOptions(GenerationMode = JsonSourceGenerationMode.Metadata)]
+        [JsonSourceGenerationOptions(GenerationMode = JsonSourceGenerationMode.Metadata, IgnoreNullableAnnotations = false)]
         [JsonSerializable(typeof(NotNullablePropertyClass))]
         [JsonSerializable(typeof(NotNullableReadonlyPropertyClass))]
         [JsonSerializable(typeof(NotNullableFieldClass))]
@@ -39,9 +37,29 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(NotNullablePropertiesLargeParameterizedCtorClass))]
         [JsonSerializable(typeof(NotNullablePropertyWithHandleNullConverterLargeParameterizedCtorClass))]
         [JsonSerializable(typeof(NotNullablePropertyWithAlwaysNullConverterLargeParameterizedCtorClass))]
+        [JsonSerializable(typeof(NotNullPropertyClass))]
+        [JsonSerializable(typeof(MaybeNullPropertyClass))]
+        [JsonSerializable(typeof(AllowNullPropertyClass))]
         [JsonSerializable(typeof(DisallowNullPropertyClass))]
+        [JsonSerializable(typeof(AllowNullConstructorParameter))]
+        [JsonSerializable(typeof(DisallowNullConstructorParameter))]
+        [JsonSerializable(typeof(NotNullPropertyClass<string>))]
+        [JsonSerializable(typeof(MaybeNullPropertyClass<string>))]
+        [JsonSerializable(typeof(AllowNullPropertyClass<string>))]
+        [JsonSerializable(typeof(DisallowNullPropertyClass<string>))]
+        [JsonSerializable(typeof(AllowNullConstructorParameter<string>))]
+        [JsonSerializable(typeof(DisallowNullConstructorParameter<string>))]
         [JsonSerializable(typeof(NullablePropertyClass))]
         [JsonSerializable(typeof(NullableFieldClass))]
+        [JsonSerializable(typeof(NullableObliviousPropertyClass))]
+        [JsonSerializable(typeof(NullableObliviousConstructorParameter))]
+        [JsonSerializable(typeof(GenericPropertyClass<string>))]
+        [JsonSerializable(typeof(NullableGenericPropertyClass<string>))]
+        [JsonSerializable(typeof(NotNullGenericPropertyClass<string>))]
+        [JsonSerializable(typeof(GenericConstructorParameter<string>))]
+        [JsonSerializable(typeof(NullableGenericConstructorParameter<string>))]
+        [JsonSerializable(typeof(NotNullGenericConstructorParameter<string>))]
+        [JsonSerializable(typeof(NotNullablePropertyWithIgnoreConditions))]
         internal sealed partial class NullableAnnotationsTestsContext_Metadata
             : JsonSerializerContext { }
     }
@@ -63,7 +81,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         protected NullableAnnotationsTests_Default(JsonSerializerWrapper serializer)
             : base(serializer) { }
 
-        [JsonSourceGenerationOptions(GenerationMode = JsonSourceGenerationMode.Default)]
+        [JsonSourceGenerationOptions(GenerationMode = JsonSourceGenerationMode.Default, IgnoreNullableAnnotations = false)]
         [JsonSerializable(typeof(NotNullablePropertyClass))]
         [JsonSerializable(typeof(NotNullableReadonlyPropertyClass))]
         [JsonSerializable(typeof(NotNullableFieldClass))]
@@ -77,9 +95,29 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(NotNullablePropertiesLargeParameterizedCtorClass))]
         [JsonSerializable(typeof(NotNullablePropertyWithHandleNullConverterLargeParameterizedCtorClass))]
         [JsonSerializable(typeof(NotNullablePropertyWithAlwaysNullConverterLargeParameterizedCtorClass))]
+        [JsonSerializable(typeof(NotNullPropertyClass))]
+        [JsonSerializable(typeof(MaybeNullPropertyClass))]
+        [JsonSerializable(typeof(AllowNullPropertyClass))]
         [JsonSerializable(typeof(DisallowNullPropertyClass))]
+        [JsonSerializable(typeof(AllowNullConstructorParameter))]
+        [JsonSerializable(typeof(DisallowNullConstructorParameter))]
+        [JsonSerializable(typeof(NotNullPropertyClass<string>))]
+        [JsonSerializable(typeof(MaybeNullPropertyClass<string>))]
+        [JsonSerializable(typeof(AllowNullPropertyClass<string>))]
+        [JsonSerializable(typeof(DisallowNullPropertyClass<string>))]
+        [JsonSerializable(typeof(AllowNullConstructorParameter<string>))]
+        [JsonSerializable(typeof(DisallowNullConstructorParameter<string>))]
         [JsonSerializable(typeof(NullablePropertyClass))]
         [JsonSerializable(typeof(NullableFieldClass))]
+        [JsonSerializable(typeof(NullableObliviousPropertyClass))]
+        [JsonSerializable(typeof(NullableObliviousConstructorParameter))]
+        [JsonSerializable(typeof(GenericPropertyClass<string>))]
+        [JsonSerializable(typeof(NullableGenericPropertyClass<string>))]
+        [JsonSerializable(typeof(NotNullGenericPropertyClass<string>))]
+        [JsonSerializable(typeof(GenericConstructorParameter<string>))]
+        [JsonSerializable(typeof(NullableGenericConstructorParameter<string>))]
+        [JsonSerializable(typeof(NotNullGenericConstructorParameter<string>))]
+        [JsonSerializable(typeof(NotNullablePropertyWithIgnoreConditions))]
         internal sealed partial class NullableAnnotationsTestsContext_Default
             : JsonSerializerContext
         { }

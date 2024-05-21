@@ -71,12 +71,14 @@ namespace System.Text.Json.Serialization.Metadata
 
             if (typeInfo.Kind is JsonTypeInfoKind.Object)
             {
-                PopulateProperties(typeInfo);
+                NullabilityInfoContext? nullabilityCtx = options.IgnoreNullableAnnotations ? null : new();
 
                 if (converter.ConstructorIsParameterized)
                 {
-                    PopulateParameterInfoValues(typeInfo);
+                    PopulateParameterInfoValues(typeInfo, nullabilityCtx);
                 }
+
+                PopulateProperties(typeInfo, nullabilityCtx);
             }
 
             // Plug in any converter configuration -- should be run last.
@@ -87,7 +89,7 @@ namespace System.Text.Json.Serialization.Metadata
 
         [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
         [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
-        private static void PopulateProperties(JsonTypeInfo typeInfo)
+        private static void PopulateProperties(JsonTypeInfo typeInfo, NullabilityInfoContext? nullabilityCtx)
         {
             Debug.Assert(!typeInfo.IsReadOnly);
             Debug.Assert(typeInfo.Kind is JsonTypeInfoKind.Object);
@@ -111,6 +113,7 @@ namespace System.Text.Json.Serialization.Metadata
                 AddMembersDeclaredBySuperType(
                     typeInfo,
                     currentType,
+                    nullabilityCtx,
                     constructorHasSetsRequiredMembersAttribute,
                     ref state);
             }
@@ -153,6 +156,7 @@ namespace System.Text.Json.Serialization.Metadata
         private static void AddMembersDeclaredBySuperType(
             JsonTypeInfo typeInfo,
             Type currentType,
+            NullabilityInfoContext? nullabilityCtx,
             bool constructorHasSetsRequiredMembersAttribute,
             ref JsonTypeInfo.PropertyHierarchyResolutionState state)
         {
@@ -183,6 +187,7 @@ namespace System.Text.Json.Serialization.Metadata
                         typeInfo,
                         typeToConvert: propertyInfo.PropertyType,
                         memberInfo: propertyInfo,
+                        nullabilityCtx,
                         shouldCheckMembersForRequiredMemberAttribute,
                         hasJsonIncludeAttribute,
                         ref state);
@@ -198,6 +203,7 @@ namespace System.Text.Json.Serialization.Metadata
                         typeInfo,
                         typeToConvert: fieldInfo.FieldType,
                         memberInfo: fieldInfo,
+                        nullabilityCtx,
                         shouldCheckMembersForRequiredMemberAttribute,
                         hasJsonIncludeAtribute,
                         ref state);
@@ -211,11 +217,12 @@ namespace System.Text.Json.Serialization.Metadata
             JsonTypeInfo typeInfo,
             Type typeToConvert,
             MemberInfo memberInfo,
+            NullabilityInfoContext? nullabilityCtx,
             bool shouldCheckForRequiredKeyword,
             bool hasJsonIncludeAttribute,
             ref JsonTypeInfo.PropertyHierarchyResolutionState state)
         {
-            JsonPropertyInfo? jsonPropertyInfo = CreatePropertyInfo(typeInfo, typeToConvert, memberInfo, typeInfo.Options, shouldCheckForRequiredKeyword, hasJsonIncludeAttribute);
+            JsonPropertyInfo? jsonPropertyInfo = CreatePropertyInfo(typeInfo, typeToConvert, memberInfo, nullabilityCtx, typeInfo.Options, shouldCheckForRequiredKeyword, hasJsonIncludeAttribute);
             if (jsonPropertyInfo == null)
             {
                 // ignored invalid property
@@ -232,6 +239,7 @@ namespace System.Text.Json.Serialization.Metadata
             JsonTypeInfo typeInfo,
             Type typeToConvert,
             MemberInfo memberInfo,
+            NullabilityInfoContext? nullabilityCtx,
             JsonSerializerOptions options,
             bool shouldCheckForRequiredKeyword,
             bool hasJsonIncludeAttribute)
@@ -259,7 +267,7 @@ namespace System.Text.Json.Serialization.Metadata
             }
 
             JsonPropertyInfo jsonPropertyInfo = typeInfo.CreatePropertyUsingReflection(typeToConvert, declaringType: memberInfo.DeclaringType);
-            PopulatePropertyInfo(jsonPropertyInfo, memberInfo, customConverter, ignoreCondition, shouldCheckForRequiredKeyword, hasJsonIncludeAttribute);
+            PopulatePropertyInfo(jsonPropertyInfo, memberInfo, customConverter, ignoreCondition, nullabilityCtx, shouldCheckForRequiredKeyword, hasJsonIncludeAttribute);
             return jsonPropertyInfo;
         }
 
@@ -289,7 +297,9 @@ namespace System.Text.Json.Serialization.Metadata
                 propertyInfo.PropertyType == ignoredMember.PropertyType;
         }
 
-        private static void PopulateParameterInfoValues(JsonTypeInfo typeInfo)
+        [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
+        [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
+        private static void PopulateParameterInfoValues(JsonTypeInfo typeInfo, NullabilityInfoContext? nullabilityCtx)
         {
             Debug.Assert(typeInfo.Converter.ConstructorInfo != null);
             ParameterInfo[] parameters = typeInfo.Converter.ConstructorInfo.GetParameters();
@@ -314,13 +324,16 @@ namespace System.Text.Json.Serialization.Metadata
                     Position = reflectionInfo.Position,
                     HasDefaultValue = reflectionInfo.HasDefaultValue,
                     DefaultValue = reflectionInfo.GetDefaultValue(),
-                    DisallowNullReads = DetermineParameterNullabilityAllowance(reflectionInfo)
+                    DisallowNullReads =
+                        nullabilityCtx != null &&
+                        reflectionInfo.ParameterType.IsNullableType() &&
+                        DetermineParameterNullability(reflectionInfo, nullabilityCtx) is NullabilityState.NotNull,
                 };
 
                 jsonParameters[i] = jsonInfo;
             }
 
-            typeInfo.ParameterInfoValues = jsonParameters;
+            typeInfo.PopulateParameterInfoValues(jsonParameters);
         }
 
         [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
@@ -330,6 +343,7 @@ namespace System.Text.Json.Serialization.Metadata
             MemberInfo memberInfo,
             JsonConverter? customConverter,
             JsonIgnoreCondition? ignoreCondition,
+            NullabilityInfoContext? nullabilityCtx,
             bool shouldCheckForRequiredKeyword,
             bool hasJsonIncludeAttribute)
         {
@@ -355,7 +369,7 @@ namespace System.Text.Json.Serialization.Metadata
             DeterminePropertyPolicies(jsonPropertyInfo, memberInfo);
             DeterminePropertyName(jsonPropertyInfo, memberInfo);
             DeterminePropertyIsRequired(jsonPropertyInfo, memberInfo, shouldCheckForRequiredKeyword);
-            DeterminePropertyNullabilityAllowance(jsonPropertyInfo, memberInfo);
+            DeterminePropertyNullability(jsonPropertyInfo, memberInfo, nullabilityCtx);
 
             if (ignoreCondition != JsonIgnoreCondition.Always)
             {
@@ -472,37 +486,103 @@ namespace System.Text.Json.Serialization.Metadata
 
         [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
         [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
-        private static void DeterminePropertyNullabilityAllowance(JsonPropertyInfo propertyInfo, MemberInfo memberInfo)
+        private static void DeterminePropertyNullability(JsonPropertyInfo propertyInfo, MemberInfo memberInfo, NullabilityInfoContext? nullabilityCtx)
         {
-            if (propertyInfo.PropertyType.IsValueType)
+            if (nullabilityCtx is null || !propertyInfo.PropertyTypeCanBeNull)
             {
                 return;
             }
 
-            NullabilityInfo nullability;
+            NullabilityInfo nullabilityInfo;
             if (propertyInfo.MemberType is MemberTypes.Property)
             {
-                nullability = new NullabilityInfoContext().Create((PropertyInfo)memberInfo);
+                nullabilityInfo = nullabilityCtx.Create((PropertyInfo)memberInfo);
             }
             else
             {
                 Debug.Assert(propertyInfo.MemberType is MemberTypes.Field);
-                nullability = new NullabilityInfoContext().Create((FieldInfo)memberInfo);
+                nullabilityInfo = nullabilityCtx.Create((FieldInfo)memberInfo);
             }
 
-            propertyInfo.DisallowNullReads = nullability.WriteState is NullabilityState.NotNull;
-            propertyInfo.DisallowNullWrites = nullability.ReadState is NullabilityState.NotNull;
+            propertyInfo.DisallowNullReads = nullabilityInfo.WriteState is NullabilityState.NotNull;
+            propertyInfo.DisallowNullWrites = nullabilityInfo.ReadState is NullabilityState.NotNull;
         }
 
-        private static bool DetermineParameterNullabilityAllowance(ParameterInfo parameterInfo)
+        [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
+        [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
+        private static NullabilityState DetermineParameterNullability(ParameterInfo parameterInfo, NullabilityInfoContext nullabilityCtx)
         {
-            if (parameterInfo.ParameterType.IsValueType)
+#if NETCOREAPP && !NET9_0_OR_GREATER
+            // Workaround for https://github.com/dotnet/runtime/issues/92487
+            // The fix has been incorporated into .NET 9 and later (and the polyfilled implementations in netfx).
+            if (parameterInfo.GetGenericParameterDefinition() is { ParameterType: { IsGenericParameter: true } typeParam })
             {
-                return false;
-            }
+                // Step 1. Look for nullable annotations on the type parameter.
+                if (GetNullableFlags(typeParam) is byte[] flags)
+                {
+                    return TranslateByte(flags[0]);
+                }
 
-            NullabilityInfo nullability = new NullabilityInfoContext().Create(parameterInfo);
-            return nullability.WriteState is NullabilityState.NotNull;
+                // Step 2. Look for nullable annotations on the generic method declaration.
+                if (typeParam.DeclaringMethod != null && GetNullableContextFlag(typeParam.DeclaringMethod) is byte flag)
+                {
+                    return TranslateByte(flag);
+                }
+
+                // Step 3. Look for nullable annotations on the generic method declaration.
+                if (GetNullableContextFlag(typeParam.DeclaringType!) is byte flag2)
+                {
+                    return TranslateByte(flag2);
+                }
+
+                // Default to nullable.
+                return NullabilityState.Nullable;
+
+                static byte[]? GetNullableFlags(MemberInfo member)
+                {
+                    foreach (Attribute attr in member.GetCustomAttributes())
+                    {
+                        Type attrType = attr.GetType();
+                        if (attrType.Namespace == "System.Runtime.CompilerServices" && attrType.Name == "NullableAttribute")
+                        {
+                            return (byte[])attr.GetType().GetField("NullableFlags")?.GetValue(attr)!;
+                        }
+                    }
+
+                    return null;
+                }
+
+                static byte? GetNullableContextFlag(MemberInfo member)
+                {
+                    foreach (Attribute attr in member.GetCustomAttributes())
+                    {
+                        Type attrType = attr.GetType();
+                        if (attrType.Namespace == "System.Runtime.CompilerServices" && attrType.Name == "NullableContextAttribute")
+                        {
+                            return (byte?)attr?.GetType().GetField("Flag")?.GetValue(attr)!;
+                        }
+                    }
+
+                    return null;
+                }
+
+                static NullabilityState TranslateByte(byte b) =>
+                    b switch
+                    {
+                        1 => NullabilityState.NotNull,
+                        2 => NullabilityState.Nullable,
+                        _ => NullabilityState.Unknown
+                    };
+            }
+#endif
+
+            //if (parameterInfo.ParameterType.IsValueType)
+            //{
+            //    return false;
+            //}
+
+            NullabilityInfo nullability = nullabilityCtx.Create(parameterInfo);
+            return nullability.WriteState;
         }
     }
 }

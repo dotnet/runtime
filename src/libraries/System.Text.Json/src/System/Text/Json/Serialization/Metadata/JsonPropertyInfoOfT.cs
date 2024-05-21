@@ -196,14 +196,13 @@ namespace System.Text.Json.Serialization.Metadata
             {
                 Debug.Assert(PropertyTypeCanBeNull);
 
+                if (DisallowNullWrites && !Options.IgnoreNullableAnnotations)
+                {
+                    ThrowHelper.ThrowJsonException_PropertyGetterDisallowNull(Name, state.Current.JsonTypeInfo.Type);
+                }
+
                 if (EffectiveConverter.HandleNullOnWrite)
                 {
-                    if (DisallowNullWrites && EffectiveConverter.IsInternalConverter && !Options.IgnoreNullableAnnotations)
-                    {
-                        Debug.Assert(!EffectiveConverter.IsValueType);
-                        ThrowHelper.ThrowJsonException_NullabilityDoesNotAllowNull(Name, state.Current.JsonTypeInfo.Type);
-                    }
-
                     if (state.Current.PropertyState < StackFramePropertyState.Name)
                     {
                         state.Current.PropertyState = StackFramePropertyState.Name;
@@ -219,12 +218,6 @@ namespace System.Text.Json.Serialization.Metadata
                 }
                 else
                 {
-                    if (DisallowNullWrites && !Options.IgnoreNullableAnnotations)
-                    {
-                        Debug.Assert(!EffectiveConverter.IsValueType);
-                        ThrowHelper.ThrowJsonException_NullabilityDoesNotAllowNull(Name, state.Current.JsonTypeInfo.Type);
-                    }
-
                     writer.WriteNullSection(EscapedNameSection);
                 }
 
@@ -287,10 +280,9 @@ namespace System.Text.Json.Serialization.Metadata
 
                 if (!IgnoreNullTokensOnRead)
                 {
-                    if (DisallowNullReads && !Options.IgnoreNullableAnnotations)
+                    if (DisallowNullReads)
                     {
-                        Debug.Assert(!EffectiveConverter.IsValueType);
-                        ThrowHelper.ThrowJsonException_NullabilityDoesNotAllowNull(Name, state.Current.JsonTypeInfo.Type);
+                        ThrowHelper.ThrowJsonException_PropertySetterDisallowNull(Name, state.Current.JsonTypeInfo.Type);
                     }
 
                     T? value = default;
@@ -311,11 +303,11 @@ namespace System.Text.Json.Serialization.Metadata
                     // Optimize for internal converters by avoiding the extra call to TryRead.
                     T? fastValue = EffectiveConverter.Read(ref reader, PropertyType, Options);
 
-                    if (fastValue is null && DisallowNullReads && !Options.IgnoreNullableAnnotations)
+                    if (fastValue is null && DisallowNullReads)
                     {
                         Debug.Fail("We currently don't have an internal converter that returns null that could trigger this, if you hit this, please add a test case.");
                         Debug.Assert(!EffectiveConverter.IsValueType);
-                        ThrowHelper.ThrowJsonException_NullabilityDoesNotAllowNull(Name, state.Current.JsonTypeInfo.Type);
+                        ThrowHelper.ThrowJsonException_PropertySetterDisallowNull(Name, state.Current.JsonTypeInfo.Type);
                     }
 
                     Set!(obj, fastValue!);
@@ -342,10 +334,9 @@ namespace System.Text.Json.Serialization.Metadata
                             // We cannot do reader.Skip early because converter decides if populating will happen or not
                             if (CanDeserialize)
                             {
-                                if (value is null && DisallowNullReads && !Options.IgnoreNullableAnnotations)
+                                if (value is null && DisallowNullReads)
                                 {
-                                    Debug.Assert(!EffectiveConverter.IsValueType);
-                                    ThrowHelper.ThrowJsonException_NullabilityDoesNotAllowNull(Name, state.Current.JsonTypeInfo.Type);
+                                    ThrowHelper.ThrowJsonException_PropertySetterDisallowNull(Name, state.Current.JsonTypeInfo.Type);
                                 }
 
                                 Set!(obj, value!);

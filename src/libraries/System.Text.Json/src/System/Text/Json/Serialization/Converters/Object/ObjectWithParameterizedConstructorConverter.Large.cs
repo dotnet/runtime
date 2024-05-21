@@ -22,9 +22,9 @@ namespace System.Text.Json.Serialization.Converters
 
             if (success && !(arg == null && jsonParameterInfo.IgnoreNullTokensOnRead))
             {
-                if (arg == null && jsonParameterInfo.DisallowNullReads && !jsonParameterInfo.Options.IgnoreNullableAnnotations)
+                if (arg == null && jsonParameterInfo.DisallowNullReads)
                 {
-                    ThrowHelper.ThrowJsonException_NullabilityDoesNotAllowNull(jsonParameterInfo.MatchingProperty.Name, state.Current.JsonTypeInfo.Type);
+                    ThrowHelper.ThrowJsonException_ConstructorParameterDisallowNull(jsonParameterInfo.MatchingProperty.Name, state.Current.JsonTypeInfo.Type);
                 }
 
                 ((object[])state.Current.CtorArgumentState!.Arguments)[jsonParameterInfo.Position] = arg!;
@@ -58,12 +58,9 @@ namespace System.Text.Json.Serialization.Converters
 
             Debug.Assert(typeInfo.ParameterCache != null);
 
-            List<KeyValuePair<string, JsonParameterInfo>> cache = typeInfo.ParameterCache.List;
-            object?[] arguments = ArrayPool<object>.Shared.Rent(cache.Count);
-
-            for (int i = 0; i < typeInfo.ParameterCount; i++)
+            object?[] arguments = ArrayPool<object>.Shared.Rent(typeInfo.ParameterCache.Count);
+            foreach (JsonParameterInfo parameterInfo in typeInfo.ParameterCache)
             {
-                JsonParameterInfo parameterInfo = cache[i].Value;
                 arguments[parameterInfo.Position] = parameterInfo.DefaultValue;
             }
 

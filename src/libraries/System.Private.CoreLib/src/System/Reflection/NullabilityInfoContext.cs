@@ -11,10 +11,10 @@ namespace System.Reflection
     /// Provides APIs for populating nullability information/context from reflection members:
     /// <see cref="ParameterInfo"/>, <see cref="FieldInfo"/>, <see cref="PropertyInfo"/> and <see cref="EventInfo"/>.
     /// </summary>
-#if !NETCOREAPP
-    internal
-#else
+#if NETCOREAPP
     public
+#else
+    internal
 #endif
     sealed class NullabilityInfoContext
     {
@@ -73,10 +73,7 @@ namespace System.Reflection
 #if NETCOREAPP
             ArgumentNullException.ThrowIfNull(parameterInfo);
 #else
-            if (parameterInfo is null)
-            {
-                throw new ArgumentNullException(nameof(parameterInfo));
-            }
+            NetstandardHelpers.ThrowIfNull(parameterInfo, nameof(parameterInfo));
 #endif
 
             EnsureIsSupported();
@@ -127,11 +124,8 @@ namespace System.Reflection
 
         private static ParameterInfo? GetMetaParameter(MethodBase metaMethod, ParameterInfo parameter)
         {
-#if NETCOREAPP
             ReadOnlySpan<ParameterInfo> parameters = metaMethod.GetParametersAsSpan();
-#else
-            ReadOnlySpan<ParameterInfo> parameters = metaMethod.GetParameters();
-#endif
+
             for (int i = 0; i < parameters.Length; i++)
             {
                 if (parameter.Position == i &&
@@ -209,10 +203,7 @@ namespace System.Reflection
 #if NETCOREAPP
             ArgumentNullException.ThrowIfNull(propertyInfo);
 #else
-            if (propertyInfo is null)
-            {
-                throw new ArgumentNullException(nameof(propertyInfo));
-            }
+            NetstandardHelpers.ThrowIfNull(propertyInfo, nameof(propertyInfo));
 #endif
 
             EnsureIsSupported();
@@ -235,12 +226,8 @@ namespace System.Reflection
 
             if (setter != null)
             {
-#if NETCOREAPP
-                ParameterInfo parameter = setter.GetParametersAsSpan()[^1];
-#else
-                ParameterInfo[] parameters = setter.GetParameters();
+                ReadOnlySpan<ParameterInfo> parameters = setter.GetParametersAsSpan();
                 ParameterInfo parameter = parameters[parameters.Length - 1];
-#endif
                 CheckNullabilityAttributes(nullability, parameter.GetCustomAttributesData());
             }
             else
@@ -275,10 +262,7 @@ namespace System.Reflection
 #if NETCOREAPP
             ArgumentNullException.ThrowIfNull(eventInfo);
 #else
-            if (eventInfo is null)
-            {
-                throw new ArgumentNullException(nameof(eventInfo));
-            }
+            NetstandardHelpers.ThrowIfNull(eventInfo, nameof(eventInfo));
 #endif
 
             EnsureIsSupported();
@@ -299,10 +283,7 @@ namespace System.Reflection
 #if NETCOREAPP
             ArgumentNullException.ThrowIfNull(fieldInfo);
 #else
-            if (fieldInfo is null)
-            {
-                throw new ArgumentNullException(nameof(fieldInfo));
-            }
+            NetstandardHelpers.ThrowIfNull(fieldInfo, nameof(fieldInfo));
 #endif
 
             EnsureIsSupported();
@@ -499,11 +480,7 @@ namespace System.Reflection
                 return method.ReturnType;
             }
 
-#if NETCOREAPP
             ReadOnlySpan<ParameterInfo> parameters = property.GetSetMethod(true)!.GetParametersAsSpan();
-#else
-            ParameterInfo[] parameters = property.GetSetMethod(true)!.GetParameters();
-#endif
             return parameters[0].ParameterType;
         }
 
@@ -548,7 +525,7 @@ namespace System.Reflection
 #if NETCOREAPP
                 && !genericParameter.IsGenericMethodParameter
 #else
-                && !NetstandardHelpers.IsGenericMethodParameter(genericParameter)
+                && !genericParameter.IsGenericMethodParameter()
 #endif
                 && TryUpdateGenericTypeParameterNullabilityFromReflectedType(nullability, genericParameter, reflectedType, reflectedType))
             {
@@ -584,7 +561,7 @@ namespace System.Reflection
 #if NETCOREAPP
                 !genericParameter.IsGenericMethodParameter);
 #else
-                !NetstandardHelpers.IsGenericMethodParameter(genericParameter));
+                !genericParameter.IsGenericMethodParameter());
 #endif
 
             Type contextTypeDefinition = context.IsGenericType && !context.IsGenericTypeDefinition ? context.GetGenericTypeDefinition() : context;
@@ -727,15 +704,21 @@ namespace System.Reflection
 #if !NETCOREAPP
     internal static class NetstandardHelpers
     {
+        public static void ThrowIfNull(object? argument, string paramName)
+        {
+            if (argument is null)
+            {
+                Throw(paramName);
+                static void Throw(string paramName) => throw new ArgumentNullException(paramName);
+            }
+        }
+
         [Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
             Justification = "This is finding the MemberInfo with the same MetadataToken as specified MemberInfo. If the specified MemberInfo " +
                             "exists and wasn't trimmed, then the current Type's MemberInfo couldn't have been trimmed.")]
         public static MemberInfo GetMemberWithSameMetadataDefinitionAs(this Type type, MemberInfo member)
         {
-            if (member is null)
-            {
-                throw new ArgumentNullException(nameof(member));
-            }
+            ThrowIfNull(member, nameof(member));
 
             const BindingFlags all = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance;
             foreach (MemberInfo myMemberInfo in type.GetMembers(all))
@@ -760,8 +743,11 @@ namespace System.Reflection
             return true;
         }
 
-        public static bool IsGenericMethodParameter(Type type)
+        public static bool IsGenericMethodParameter(this Type type)
             => type.IsGenericParameter && type.DeclaringMethod is not null;
+
+        public static ReadOnlySpan<ParameterInfo> GetParametersAsSpan(this MethodBase metaMethod)
+            => metaMethod.GetParameters();
     }
 #endif
 }

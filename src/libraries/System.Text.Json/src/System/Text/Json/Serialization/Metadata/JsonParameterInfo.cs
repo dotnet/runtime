@@ -11,47 +11,34 @@ namespace System.Text.Json.Serialization.Metadata
     /// </summary>
     internal abstract class JsonParameterInfo
     {
-        public JsonConverter EffectiveConverter => MatchingProperty.EffectiveConverter;
+        internal JsonParameterInfo(JsonParameterInfoValues parameterInfoValues, JsonPropertyInfo matchingProperty)
+        {
+            Debug.Assert(matchingProperty.PropertyType == parameterInfoValues.ParameterType);
+
+            Position = parameterInfoValues.Position;
+            HasDefaultValue = parameterInfoValues.HasDefaultValue;
+            DisallowNullReads = parameterInfoValues.DisallowNullReads && !matchingProperty.Options.IgnoreNullableAnnotations;
+            MatchingProperty = matchingProperty;
+        }
+
+        public int Position { get; }
+        public bool HasDefaultValue { get; }
 
         // The default value of the parameter. This is `DefaultValue` of the `ParameterInfo`, if specified, or the `default` for the `ParameterType`.
         public object? DefaultValue { get; private protected init; }
+        public JsonPropertyInfo MatchingProperty { get; }
+        public bool DisallowNullReads { get; internal set; }
 
-        public bool IgnoreNullTokensOnRead { get; }
-
-        public JsonSerializerOptions Options { get; }
+        public Type DeclaringType => MatchingProperty.DeclaringType;
+        public Type ParameterType => MatchingProperty.PropertyType;
+        public JsonConverter EffectiveConverter => MatchingProperty.EffectiveConverter;
+        public bool IgnoreNullTokensOnRead => MatchingProperty.IgnoreNullTokensOnRead;
+        public JsonSerializerOptions Options => MatchingProperty.Options;
 
         // The name of the parameter as UTF-8 bytes.
-        public byte[] NameAsUtf8Bytes { get; }
-
-        public JsonNumberHandling? NumberHandling { get; }
-
-        public int Position { get; }
-
+        public byte[] NameAsUtf8Bytes => MatchingProperty.NameAsUtf8Bytes;
+        public JsonNumberHandling? NumberHandling => MatchingProperty.EffectiveNumberHandling;
         public JsonTypeInfo JsonTypeInfo => MatchingProperty.JsonTypeInfo;
-
-        public Type ParameterType { get; }
-
-        public bool ShouldDeserialize { get; }
-
-        public JsonPropertyInfo MatchingProperty { get; }
-
-        public bool DisallowNullReads { get; }
-
-        public JsonParameterInfo(JsonParameterInfoValues parameterInfoValues, JsonPropertyInfo matchingProperty)
-        {
-            Debug.Assert(matchingProperty.IsConfigured);
-
-            MatchingProperty = matchingProperty;
-            ShouldDeserialize = !matchingProperty.IsIgnored;
-            Options = matchingProperty.Options;
-            Position = parameterInfoValues.Position;
-            DisallowNullReads = parameterInfoValues.DisallowNullReads;
-
-            ParameterType = matchingProperty.PropertyType;
-            NameAsUtf8Bytes = matchingProperty.NameAsUtf8Bytes;
-            IgnoreNullTokensOnRead = matchingProperty.IgnoreNullTokensOnRead;
-            NumberHandling = matchingProperty.EffectiveNumberHandling;
-            //DisallowNullWrites = matchingProperty.DisallowNullWrites;
-        }
+        public bool ShouldDeserialize => !MatchingProperty.IsIgnored;
     }
 }
