@@ -1430,9 +1430,30 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
         {
             case GenTreeBlk::BlkOpKindUnroll:
             {
-                const bool canUse16BytesSimdMov =
-                    !blkNode->IsOnHeapAndContainsReferences() && compiler->IsBaselineSimdIsaSupported();
-                const bool willUseSimdMov = canUse16BytesSimdMov && (size >= XMM_REGSIZE_BYTES);
+                bool willUseSimdMov = compiler->IsBaselineSimdIsaSupported() && (size >= XMM_REGSIZE_BYTES);
+                if (willUseSimdMov && blkNode->IsOnHeapAndContainsReferences())
+                {
+                    ClassLayout* layout = blkNode->GetLayout();
+
+                    unsigned xmmCandidates   = 0;
+                    unsigned continuousNonGc = 0;
+                    for (unsigned slot = 0; slot < layout->GetSlotCount(); slot++)
+                    {
+                        if (layout->IsGCPtr(slot))
+                        {
+                            xmmCandidates += ((continuousNonGc * TARGET_POINTER_SIZE) / XMM_REGSIZE_BYTES);
+                            continuousNonGc = 0;
+                        }
+                        else
+                        {
+                            continuousNonGc++;
+                        }
+                    }
+                    xmmCandidates += ((continuousNonGc * TARGET_POINTER_SIZE) / XMM_REGSIZE_BYTES);
+
+                    // Just one XMM candidate is not profitable
+                    willUseSimdMov = xmmCandidates > 1;
+                }
 
                 if (willUseSimdMov)
                 {
@@ -2543,7 +2564,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
 
                         for (GenTree* operand : op2->AsHWIntrinsic()->Operands())
                         {
-                            assert(varTypeIsSIMD(operand));
+                            assert(varTypeIsSIMD(operand) || varTypeIsInt(operand));
                             srcCount += BuildDelayFreeUses(operand, op1);
                         }
                     }
@@ -2556,7 +2577,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
 
                         for (GenTree* operand : op2->AsHWIntrinsic()->Operands())
                         {
-                            assert(varTypeIsSIMD(operand));
+                            assert(varTypeIsSIMD(operand) || varTypeIsInt(operand));
                             srcCount += BuildOperandUses(operand);
                         }
                     }
@@ -2789,10 +2810,11 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
     if (dstCount == 1)
     {
 #if defined(TARGET_AMD64)
-        if (!intrinsicTree->isEvexCompatibleHWIntrinsic() &&
-            (varTypeIsFloating(intrinsicTree->gtType) || varTypeIsSIMD(intrinsicTree->gtType)))
+        bool isEvexCompatible = intrinsicTree->isEvexCompatibleHWIntrinsic();
+
+        if (!isEvexCompatible)
         {
-            dstCandidates = lowSIMDRegs();
+            dstCandidates = BuildEvexIncompatibleMask(intrinsicTree);
         }
 #endif
 
@@ -2825,6 +2847,15 @@ int LinearScan::BuildCast(GenTreeCast* cast)
 
     const var_types srcType  = genActualType(src->TypeGet());
     const var_types castType = cast->gtCastType;
+
+    if ((srcType == TYP_LONG) && (castType == TYP_DOUBLE) &&
+        !compiler->compOpportunisticallyDependsOn(InstructionSet_AVX512F))
+    {
+        // We need two extra temp regs for LONG->DOUBLE cast
+        // if we don't have AVX512F available.
+        buildInternalIntRegisterDefForNode(cast);
+        buildInternalIntRegisterDefForNode(cast);
+    }
 
     regMaskTP candidates = RBM_NONE;
 #ifdef TARGET_X86
@@ -3101,7 +3132,9 @@ void LinearScan::SetContainsAVXFlags(unsigned sizeOfSIMDVector /* = 0*/)
 inline regMaskTP LinearScan::BuildEvexIncompatibleMask(GenTree* tree)
 {
 #if defined(TARGET_AMD64)
-    if (!(varTypeIsFloating(tree->gtType) || varTypeIsSIMD(tree->gtType)))
+    assert(!varTypeIsMask(tree));
+
+    if (!varTypeIsFloating(tree->gtType) && !varTypeIsSIMD(tree->gtType))
     {
         return RBM_NONE;
     }

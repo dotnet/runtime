@@ -897,5 +897,17 @@ namespace System.Text.Json
         {
             throw new ArgumentException(SR.JsonPolymorphismOptionsAssociatedWithDifferentJsonTypeInfo, paramName: parameterName);
         }
+
+        [DoesNotReturn]
+        public static void ThrowOperationCanceledException_PipeWriteCanceled()
+        {
+            throw new OperationCanceledException(SR.PipeWriterCanceled);
+        }
+
+        [DoesNotReturn]
+        public static void ThrowOperationCanceledException_PipeWriteCompleted()
+        {
+            throw new OperationCanceledException(SR.PipeWriterCompleted);
+        }
     }
 }

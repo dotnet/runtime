@@ -6,6 +6,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
+using System.IO.Pipelines;
 using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
 using System.Text.Json.Reflection;
@@ -989,7 +990,10 @@ namespace System.Text.Json.Serialization.Metadata
 
         // Untyped, root-level serialization methods
         internal abstract void SerializeAsObject(Utf8JsonWriter writer, object? rootValue);
+        internal abstract Task SerializeAsObjectAsync<TSerializationContext>(TSerializationContext serializationContext, object? rootValue, CancellationToken cancellationToken)
+            where TSerializationContext : struct, IAsyncSerializationBufferWriterContext;
         internal abstract Task SerializeAsObjectAsync(Stream utf8Json, object? rootValue, CancellationToken cancellationToken);
+        internal abstract Task SerializeAsObjectAsync(PipeWriter utf8Json, object? rootValue, CancellationToken cancellationToken);
         internal abstract void SerializeAsObject(Stream utf8Json, object? rootValue);
 
         // Untyped, root-level deserialization methods

@@ -102,6 +102,7 @@ The System.Text.Json library is built-in as part of the shared framework in .NET
     <Compile Include="System\Text\Json\Reader\Utf8JsonReader.TryGet.cs" />
     <Compile Include="System\Text\Json\Serialization\Arguments.cs" />
     <Compile Include="System\Text\Json\Serialization\ArgumentState.cs" />
+    <Compile Include="System\Text\Json\Serialization\AsyncSerializationBufferWriterContext.cs" />
     <Compile Include="System\Text\Json\Serialization\Attributes\JsonObjectCreationHandlingAttribute.cs" />
     <Compile Include="System\Text\Json\Serialization\Attributes\JsonConstructorAttribute.cs" />
     <Compile Include="System\Text\Json\Serialization\Attributes\JsonConverterAttribute.cs" />
@@ -252,6 +253,7 @@ The System.Text.Json library is built-in as part of the shared framework in .NET
     <Compile Include="System\Text\Json\Serialization\JsonSerializer.Write.HandleMetadata.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonSerializer.Write.Stream.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonSerializer.Write.String.cs" />
+    <Compile Include="System\Text\Json\Serialization\JsonSerializer.Write.Pipe.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonSerializer.Write.Utf8JsonWriter.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonSerializerOptions.Caching.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonSerializerOptions.Converters.cs" />
@@ -372,6 +374,7 @@ The System.Text.Json library is built-in as part of the shared framework in .NET
   <!-- Application tfms (.NETCoreApp, .NETFramework) need to use the same or higher version of .NETStandard's dependencies. -->
   <ItemGroup>
     <ProjectReference Include="$(LibrariesProjectRoot)System.Text.Encodings.Web\src\System.Text.Encodings.Web.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.IO.Pipelines\src\System.IO.Pipelines.csproj" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">

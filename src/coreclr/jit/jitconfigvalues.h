@@ -360,10 +360,12 @@ RELEASE_CONFIG_INTEGER(EnableMultiRegLocals, W("EnableMultiRegLocals"), 1)
 // Disables inlining of all methods
 RELEASE_CONFIG_INTEGER(JitNoInline, W("JitNoInline"), 0)
 
+// clang-format off
+
+#if defined(TARGET_AMD64) || defined(TARGET_X86)
 // Enable EVEX encoding for SIMD instructions when AVX-512VL is available.
 CONFIG_INTEGER(JitStressEvexEncoding, W("JitStressEvexEncoding"), 0)
-
-// clang-format off
+#endif
 
 RELEASE_CONFIG_INTEGER(PreferredVectorBitWidth,     W("PreferredVectorBitWidth"),   0) // The preferred decimal width, in bits, to use for any implicit vectorization emitted. A value less than 128 is treated as the system default.
 
@@ -419,6 +421,9 @@ RELEASE_CONFIG_INTEGER(EnableArm64Sha1,             W("EnableArm64Sha1"),       
 RELEASE_CONFIG_INTEGER(EnableArm64Sha256,           W("EnableArm64Sha256"),         1) // Allows Arm64 Sha256+ hardware intrinsics to be disabled
 RELEASE_CONFIG_INTEGER(EnableArm64Sve,              W("EnableArm64Sve"),            1) // Allows Arm64 Sve+ hardware intrinsics to be disabled
 #endif
+
+RELEASE_CONFIG_INTEGER(EnableEmbeddedBroadcast,     W("EnableEmbeddedBroadcast"),   1) // Allows embedded broadcasts to be disabled
+RELEASE_CONFIG_INTEGER(EnableEmbeddedMasking,       W("EnableEmbeddedMasking"),     1) // Allows embedded masking to be disabled
 
 // clang-format on
 
@@ -497,6 +502,15 @@ CONFIG_STRING(JitRLCSEAlpha, W("JitRLCSEAlpha"))
 
 // If nonzero, dump candidate feature values
 CONFIG_INTEGER(JitRLCSECandidateFeatures, W("JitRLCSECandidateFeatures"), 0)
+
+// Enable CSE_HeuristicRLHook
+CONFIG_INTEGER(JitRLHook, W("JitRLHook"), 0) // If 1, emit RL callbacks
+
+// If 1, emit feature column names
+CONFIG_INTEGER(JitRLHookEmitFeatureNames, W("JitRLHookEmitFeatureNames"), 0)
+
+// A list of CSEs to choose, in the order they should be applied.
+CONFIG_STRING(JitRLHookCSEDecisions, W("JitRLHookCSEDecisions"))
 
 #if !defined(DEBUG) && !defined(_DEBUG)
 RELEASE_CONFIG_INTEGER(JitEnableNoWayAssert, W("JitEnableNoWayAssert"), 0)

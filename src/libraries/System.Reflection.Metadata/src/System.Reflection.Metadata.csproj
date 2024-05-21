@@ -122,6 +122,11 @@ The System.Reflection.Metadata library is built-in as part of the shared framewo
     <Compile Include="System\Reflection\Metadata\TypeSystem\AssemblyDefinition.cs" />
     <Compile Include="System\Reflection\Metadata\TypeSystem\AssemblyFile.cs" />
     <Compile Include="System\Reflection\Metadata\TypeSystem\AssemblyReference.cs" />
+    <Compile Include="System\Reflection\Metadata\AssemblyNameInfo.cs" />
+    <Compile Include="System\Reflection\Metadata\TypeName.cs" />
+    <Compile Include="System\Reflection\Metadata\TypeNameParser.cs" />
+    <Compile Include="System\Reflection\Metadata\TypeNameParserHelpers.cs" />
+    <Compile Include="System\Reflection\Metadata\TypeNameParserOptions.cs" />
     <Compile Include="System\Reflection\Metadata\BlobReader.cs" />
     <Compile Include="System\Reflection\Metadata\TypeSystem\Constant.cs" />
     <Compile Include="System\Reflection\Metadata\Signatures\ConstantTypeCode.cs" />
@@ -255,11 +260,6 @@ The System.Reflection.Metadata library is built-in as part of the shared framewo
     <Compile Include="$(CommonPath)System\Obsoletions.cs" Link="Common\System\Obsoletions.cs" />
     <Compile Include="$(CommonPath)System\Reflection\AssemblyNameFormatter.cs" Link="System\Reflection\AssemblyNameFormatter.cs" />
     <Compile Include="$(CommonPath)System\Reflection\AssemblyNameParser.cs" Link="System\Reflection\AssemblyNameParser.cs" />
-    <Compile Include="$(CommonPath)System\Reflection\Metadata\AssemblyNameInfo.cs" Link="System\Reflection\Metadata\AssemblyNameInfo.cs" />
-    <Compile Include="$(CommonPath)System\Reflection\Metadata\TypeName.cs" Link="System\Reflection\Metadata\TypeName.cs" />
-    <Compile Include="$(CommonPath)System\Reflection\Metadata\TypeNameParser.cs" Link="System\Reflection\Metadata\TypeNameParser.cs" />
-    <Compile Include="$(CommonPath)System\Reflection\Metadata\TypeNameParserHelpers.cs" Link="System\Reflection\Metadata\TypeNameParserHelpers.cs" />
-    <Compile Include="$(CommonPath)System\Reflection\Metadata\TypeNameParserOptions.cs" Link="System\Reflection\Metadata\TypeNameParserOptions.cs" />
     <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.cs" Link="System\Text\ValueStringBuilder.cs" />
     <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.AppendSpanFormattable.cs" Link="System\Text\ValueStringBuilder.AppendSpanFormattable.cs" Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'" />
   </ItemGroup>

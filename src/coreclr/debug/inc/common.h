@@ -17,15 +17,11 @@
 inline CORDB_ADDRESS PTR_TO_CORDB_ADDRESS(const void* ptr)
 {
     SUPPORTS_DAC;
-    // Cast a void* to a ULONG is not 64-bit safe and triggers compiler warning C3411.
-    // But this is x86 only, so we know it's ok. Use PtrToUlong to do the conversion
-    // without invoking the error.
-    return (CORDB_ADDRESS)(PtrToUlong(ptr));
+    return (CORDB_ADDRESS)(ULONG)(UINT_PTR)ptr;
 }
 inline CORDB_ADDRESS PTR_TO_CORDB_ADDRESS(UINT_PTR ptr)
 {
     SUPPORTS_DAC;
-    // PtrToUlong
     return (CORDB_ADDRESS)(ULONG)(ptr);
 }
 #else

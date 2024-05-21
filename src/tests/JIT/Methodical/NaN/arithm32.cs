@@ -88,6 +88,7 @@ namespace JitTest
         }
 
         [Fact]
+        [OuterLoop]
         public static void TestEntryPoint()
         {
             RunTests(Single.NaN, Single.PositiveInfinity, Single.NegativeInfinity);

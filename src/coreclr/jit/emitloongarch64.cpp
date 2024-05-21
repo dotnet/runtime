@@ -2375,6 +2375,8 @@ void emitter::emitIns_I_la(emitAttr size, regNumber reg, ssize_t imm)
  *
  * For LOONGARCH xreg, xmul and disp are never used and should always be 0/REG_NA.
  *
+ * noSafePoint - force not making this call a safe point in partially interruptible code
+ *
  *  Please consult the "debugger team notification" comment in genFnProlog().
  */
 
@@ -2392,7 +2394,8 @@ void emitter::emitIns_Call(EmitCallType          callType,
                            regNumber        xreg /* = REG_NA */,
                            unsigned         xmul /* = 0     */,
                            ssize_t          disp /* = 0     */,
-                           bool             isJump /* = false */)
+                           bool             isJump /* = false */,
+                           bool             noSafePoint /* = false */)
 {
     /* Sanity check the arguments depending on callType */
 
@@ -2464,11 +2467,32 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
     /* Update the emitter's live GC ref sets */
 
+    // If the method returns a GC ref, mark RBM_INTRET appropriately
+    if (retSize == EA_GCREF)
+    {
+        gcrefRegs |= RBM_INTRET;
+    }
+    else if (retSize == EA_BYREF)
+    {
+        byrefRegs |= RBM_INTRET;
+    }
+
+    // If is a multi-register return method is called, mark RBM_INTRET_1 appropriately
+    if (secondRetSize == EA_GCREF)
+    {
+        gcrefRegs |= RBM_INTRET_1;
+    }
+    else if (secondRetSize == EA_BYREF)
+    {
+        byrefRegs |= RBM_INTRET_1;
+    }
+
     VarSetOps::Assign(emitComp, emitThisGCrefVars, ptrVars);
     emitThisGCrefRegs = gcrefRegs;
     emitThisByrefRegs = byrefRegs;
 
-    id->idSetIsNoGC(emitNoGChelper(methHnd));
+    // for the purpose of GC safepointing tail-calls are not real calls
+    id->idSetIsNoGC(isJump || noSafePoint || emitNoGChelper(methHnd));
 
     /* Set the instruction - special case jumping a function */
     instruction ins;

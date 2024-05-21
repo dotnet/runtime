@@ -52,7 +52,7 @@ namespace Profiler.Tests
                 if (loadAsNotification)
                 {
                     StringBuilder builder = new StringBuilder();
-                    for(int i = 0; i < notificationCopies; ++i)
+                    for (int i = 0; i < notificationCopies; ++i)
                     {
                         builder.Append(profilerPath);
                         builder.Append("=");
@@ -94,12 +94,10 @@ namespace Profiler.Tests
 
             envVars.Add("Profiler_Test_Name", testName);
 
-            if(!File.Exists(profilerPath))
+            if (!File.Exists(profilerPath))
             {
                 FailFastWithMessage("Profiler library not found at expected path: " + profilerPath);
             }
-
-            ProfileeOutputVerifier verifier = new ProfileeOutputVerifier();
 
             Process process = new Process();
             process.StartInfo.FileName = program;
@@ -117,15 +115,10 @@ namespace Profiler.Tests
                 process.StartInfo.EnvironmentVariables[key] = envVars[key];
             }
 
-            process.OutputDataReceived += (sender, args) =>
-            {
-                Console.WriteLine(args.Data);
-                verifier.WriteLine(args.Data);
-            };
             process.Start();
+            ProfileeOutputVerifier verifier = new ProfileeOutputVerifier(process.StandardOutput);
 
-            process.BeginOutputReadLine();
-
+            verifier.VerifyOutput();
             process.WaitForExit();
 
             // There are two conditions for profiler tests to pass, the output of the profiled program
@@ -198,21 +191,26 @@ namespace Profiler.Tests
             private volatile bool _hasPassingOutput;
 
             public string SuccessPhrase = "PROFILER TEST PASSES";
-            public bool HasPassingOutput => _hasPassingOutput;
+            private StreamReader standardOutput;
 
-            public void WriteLine(string message)
+            public ProfileeOutputVerifier(StreamReader standardOutput)
             {
-                if (message != null && message.Contains(SuccessPhrase))
-                {
-                    _hasPassingOutput = true;
-                }
+                this.standardOutput = standardOutput;
             }
 
-            public void WriteLine(string format, params object[] args)
+            public bool HasPassingOutput => _hasPassingOutput;
+
+            internal void VerifyOutput()
             {
-                if (string.Format(format,args).Contains(SuccessPhrase))
+                string line;
+                while ((line = standardOutput.ReadLine()) != null)
                 {
-                    _hasPassingOutput = true;
+                    if (line.Contains(SuccessPhrase))
+                    {
+                        _hasPassingOutput = true;
+                    }
+
+                    Console.WriteLine($"Profilee STDOUT: {line}");
                 }
             }
         }

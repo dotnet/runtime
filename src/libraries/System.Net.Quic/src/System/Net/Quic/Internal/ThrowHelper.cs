@@ -6,6 +6,7 @@ using System.Net.Security;
 using System.Net.Sockets;
 using System.Runtime.CompilerServices;
 using System.Security.Authentication;
+using System.Threading;
 using static Microsoft.Quic.MsQuic;
 
 namespace System.Net.Quic;
@@ -200,5 +201,32 @@ internal static class ThrowHelper
         else if (status == QUIC_STATUS_CERT_UNTRUSTED_ROOT) return "QUIC_STATUS_CERT_UNTRUSTED_ROOT";
         else if (status == QUIC_STATUS_CERT_NO_CERT) return "QUIC_STATUS_CERT_NO_CERT";
         else return $"Unknown (0x{status:x})";
+    }
+
+    public static void ValidateErrorCode(string argumentName, long value, [CallerArgumentExpression(nameof(value))] string? propertyName = null)
+     => ValidateInRange(argumentName, value, QuicDefaults.MaxErrorCodeValue, propertyName);
+
+    public static void ValidateInRange(string argumentName, long value, long max, [CallerArgumentExpression(nameof(value))] string? propertyName = null)
+    {
+        if (value < 0 || value > max)
+        {
+            throw new ArgumentOutOfRangeException(argumentName, value, SR.Format(SR.net_quic_in_range, propertyName, max));
+        }
+    }
+
+    public static void ValidateTimeSpan(string argumentName, TimeSpan value, [CallerArgumentExpression(nameof(value))] string? propertyName = null)
+    {
+        if (value < TimeSpan.Zero && value != Timeout.InfiniteTimeSpan)
+        {
+            throw new ArgumentOutOfRangeException(argumentName, value, SR.Format(SR.net_quic_timeout_use_gt_zero, propertyName));
+        }
+    }
+
+    public static void ValidateNotNull(string argumentName, string resourceName, object value, [CallerArgumentExpression(nameof(value))] string? propertyName = null)
+    {
+        if (value is null)
+        {
+            throw new ArgumentNullException(argumentName, SR.Format(resourceName, propertyName));
+        }
     }
 }
