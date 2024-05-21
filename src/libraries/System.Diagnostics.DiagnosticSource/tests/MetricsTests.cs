@@ -3,7 +3,6 @@
 
 using Microsoft.DotNet.RemoteExecutor;
 using System.Collections.Generic;
-using System.Diagnostics.Metrics;
 using System.Diagnostics.Tests;
 using System.Linq;
 using System.Threading;
@@ -26,7 +25,7 @@ namespace System.Diagnostics.Metrics.Tests
                 var measurement = new Measurement<int>(i, tags);
                 Assert.Equal(i, measurement.Value);
                 TagListTests.ValidateTags(new TagList(measurement.Tags), tagsArray);
-                
+
                 measurement = new Measurement<int>(i, tagsArray);
                 Assert.Equal(i, measurement.Value);
                 TagListTests.ValidateTags(new TagList(measurement.Tags), tagsArray);
@@ -335,7 +334,7 @@ namespace System.Diagnostics.Metrics.Tests
                 InstrumentMeasurementAggregationValidation(histogram6, (value, tags) => { Record(histogram6, value, tags, useSpan); } );
 
             }, useSpan.ToString()).Dispose();
-            
+
             void AddToCounter<T>(Counter<T> counter, T delta, KeyValuePair<string, object?>[] tags, bool useSpan) where T : struct
             {
                 if (useSpan)
@@ -1461,6 +1460,24 @@ namespace System.Diagnostics.Metrics.Tests
             }).Dispose();
         }
 
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void TestHistogramCreationWithAdvice()
+        {
+           RemoteExecutor.Invoke(() => {
+                using Meter meter = new Meter(nameof(TestHistogramCreationWithAdvice));
+
+                int[] explicitBucketBoundaries = new int[] { 0, 100, 1000, 10000 };
+
+                Histogram<int> histogramWithoutAdvice = meter.CreateHistogram<int>(name: nameof(histogramWithoutAdvice));
+
+                Assert.Null(histogramWithoutAdvice.Advice);
+
+                Histogram<int> histogramWithAdvice = meter.CreateHistogram<int>(name: nameof(histogramWithAdvice), advice: new HistogramAdvice<int>(explicitBucketBoundaries));
+
+                Assert.NotNull(histogramWithAdvice.Advice?.ExplicitBucketBoundaries);
+                Assert.Equal(explicitBucketBoundaries, histogramWithAdvice.Advice.ExplicitBucketBoundaries);
+            }).Dispose();
+        }
 
         private void PublishCounterMeasurement<T>(Counter<T> counter, T value, KeyValuePair<string, object?>[] tags) where T : struct
         {
