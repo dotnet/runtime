@@ -308,10 +308,20 @@ namespace System.Net.Http
             // Stop sending requests to this connection.
             _pool.InvalidateHttp3Connection(this);
 
+            if (NetEventSource.Log.IsEnabled())
+            {
+                Trace($"OnServerGoAway - Just before entering lock zone.");
+            }
+
             var streamsToGoAway = new List<Http3RequestStream>();
 
             lock (SyncObj)
             {
+                if (NetEventSource.Log.IsEnabled())
+                {
+                    Trace($"OnServerGoAway - After entering lock zone.");
+                }
+
                 if (_firstRejectedStreamId != -1 && firstRejectedStreamId > _firstRejectedStreamId)
                 {
                     // Server can send multiple GOAWAY frames.
@@ -334,7 +344,17 @@ namespace System.Net.Http
                     }
                 }
 
+                if (NetEventSource.Log.IsEnabled())
+                {
+                    Trace($"OnServerGoAway - Before CheckForShutdown");
+                }
+
                 CheckForShutdown();
+
+                if (NetEventSource.Log.IsEnabled())
+                {
+                    Trace($"OnServerGoAway - After CheckForShutdown");
+                }
             }
 
             // GOAWAY each stream outside of the lock, so they can acquire the lock to remove themselves from _activeRequests.
