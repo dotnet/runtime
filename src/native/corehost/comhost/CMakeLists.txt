@@ -1,10 +1,6 @@
 # Licensed to the .NET Foundation under one or more agreements.
 # The .NET Foundation licenses this file to you under the MIT license.
 
-project(comhost)
-
-set(DOTNET_PROJECT_NAME "comhost")
-
 # Include directories
 include_directories(../fxr)
 include_directories(../json)
@@ -26,9 +22,12 @@ if(CLR_CMAKE_TARGET_WIN32)
         Exports.def)
 endif()
 
-include(../lib.cmake)
+add_compile_definitions(FEATURE_LIBHOST)
+add_compile_definitions(EXPORT_SHARED_API)
 
-add_definitions(-DFEATURE_LIBHOST=1)
+add_library(comhost SHARED ${SOURCES})
+
+add_resources_to_target(comhost)
 
 if (CLR_CMAKE_TARGET_WIN32)
     set(WINLIBS wintrust.lib)

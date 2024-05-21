@@ -14,29 +14,34 @@ if (NOT CLR_CMAKE_TARGET_APPLE)
     set(CMAKE_INSTALL_RPATH "\$ORIGIN/netcoredeps")
 endif()
 
-set(SKIP_VERSIONING 1)
-
 include_directories(..)
+include_directories(../..)
+include_directories(../../hostmisc)
 include_directories(../../json)
 include_directories(${CLR_SRC_NATIVE_DIR}/libs/System.IO.Compression.Native)
 include_directories(${CLR_SRC_NATIVE_DIR}/libs/Common)
+include_directories(${CLR_ARTIFACTS_OBJ_DIR}) # Generated version files
+
+add_subdirectory(../../hostmisc hostmisc)
 
 set(SOURCES
     ../bundle_marker.cpp
     ./hostfxr_resolver.cpp
     ./hostpolicy_resolver.cpp
     ../../hostpolicy/static/coreclr_resolver.cpp
+    ../../fxr_resolver.cpp
+    ../../corehost.cpp
 )
 
 set(HEADERS
     ../bundle_marker.h
     ../../hostfxr_resolver.h
+    ../../fxr_resolver.h
 )
 
-add_definitions(-D_NO_ASYNCRTIMP)
-add_definitions(-D_NO_PPLXIMP)
-remove_definitions(-DEXPORT_SHARED_API)
-add_definitions(-DNATIVE_LIBS_EMBEDDED)
+add_compile_definitions(_NO_ASYNCRTIMP
+    _NO_PPLXIMP
+    NATIVE_LIBS_EMBEDDED)
 
 include(../../fxr/files.cmake)
 include(../../hostpolicy/files.cmake)
@@ -52,7 +57,7 @@ elseif (CMAKE_CXX_COMPILER_ID MATCHES GNU)
 endif()
 
 if(CLR_CMAKE_TARGET_WIN32)
-    add_definitions(-DUNICODE)
+    add_compile_definitions(UNICODE)
     list(APPEND SOURCES
         ../apphost.windows.cpp
         ${CLR_SRC_NATIVE_DIR}/libs/Common/delayloadhook_windows.cpp
@@ -78,11 +83,16 @@ else()
     set_exports_linker_option(${EXPORTS_FILE})
 endif()
 
-if (CLR_SINGLE_FILE_HOST_ONLY)
-    set(ADDITIONAL_INSTALL_ARGUMENTS COMPONENT runtime)
+add_executable(singlefilehost ${SOURCES})
+
+add_sanitizer_runtime_support(singlefilehost)
+
+if(NOT CLR_CMAKE_TARGET_WIN32)
+    disable_pax_mprotect(singlefilehost)
 endif()
 
-include(../../exe.cmake)
+install_with_stripped_symbols(singlefilehost TARGETS corehost COMPONENT runtime)
+
 include(configure.cmake)
 
 if(CLR_CMAKE_HOST_UNIX)
@@ -261,5 +271,7 @@ target_link_libraries(
     ${RUNTIMEINFO_LIB}
     ${END_WHOLE_ARCHIVE}
 )
+
+target_link_libraries(singlefilehost PRIVATE hostmisc)
 
 add_sanitizer_runtime_support(singlefilehost)

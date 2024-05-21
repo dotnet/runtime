@@ -1,9 +1,6 @@
 # Licensed to the .NET Foundation under one or more agreements.
 # The .NET Foundation licenses this file to you under the MIT license.
 
-project(apphost)
-set(DOTNET_PROJECT_NAME "apphost")
-
 # Add RPATH to the apphost binary that allows using local copies of shared libraries
 # dotnet core depends on for special scenarios when system wide installation of such
 # dependencies is not possible for some reason.
@@ -13,8 +10,6 @@ if (NOT CLR_CMAKE_TARGET_OSX)
     set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
     set(CMAKE_INSTALL_RPATH "\$ORIGIN/netcoredeps")
 endif()
-
-set(SKIP_VERSIONING 1)
 
 include_directories(..)
 
@@ -29,7 +24,7 @@ set(HEADERS
 )
 
 if(CLR_CMAKE_TARGET_WIN32)
-    add_definitions(-DUNICODE)
+    add_compile_definitions(UNICODE)
     list(APPEND SOURCES
         ../apphost.windows.cpp)
 
@@ -37,21 +32,31 @@ if(CLR_CMAKE_TARGET_WIN32)
         ../apphost.windows.h)
 endif()
 
-include(../../exe.cmake)
+if(CLR_CMAKE_TARGET_WIN32)
+    list(APPEND SOURCES ${HEADERS})
+endif()
 
-add_definitions(-DFEATURE_APPHOST=1)
+add_compile_definitions(FEATURE_APPHOST)
+
+add_executable(apphost ${SOURCES} ${RESOURCES})
+
+target_link_libraries(apphost PRIVATE hostmisc hostfxr_resolver)
+
+add_sanitizer_runtime_support(apphost)
+
+if(NOT CLR_CMAKE_TARGET_WIN32)
+    disable_pax_mprotect(apphost)
+endif()
+
+install_with_stripped_symbols(apphost TARGETS corehost)
 
 # Disable manifest generation into the file .exe on Windows
 if(CLR_CMAKE_TARGET_WIN32)
-    set_property(TARGET ${PROJECT_NAME} PROPERTY
-            LINK_FLAGS "/MANIFEST:NO"
-        )
+    add_link_options(apphost PRIVATE "/MANIFEST:NO")
 endif()
 
 # Specify non-default Windows libs to be used for Arm64 builds
-if (CLR_CMAKE_TARGET_WIN32 AND CLR_CMAKE_TARGET_ARCH_ARM64)
-    target_link_libraries(apphost PRIVATE shell32.lib)
-endif()
+target_link_libraries(apphost PRIVATE shell32)
 
 if (CLR_CMAKE_HOST_APPLE)
     adhoc_sign_with_entitlements(apphost "${CLR_ENG_NATIVE_DIR}/entitlements.plist")

@@ -45,11 +45,33 @@ endif()
 
 configure_file(configure.h.in ${CMAKE_CURRENT_BINARY_DIR}/configure.h)
 
+# add_resources_to_target(targetName [resourceDirName])
+function(add_resources_to_target targetName)
+    set(RESOURCE_INCLUDE_DIR ${targetName})
+    if (${ARGC} GREATER 1)
+        set(RESOURCE_INCLUDE_DIR ${ARGV1})
+    endif()
+
+    if (CLR_CMAKE_TARGET_WIN32)
+        target_sources(${targetName} PRIVATE ${CMAKE_CURRENT_FUNCTION_LIST_DIR}/native.rc)
+        set_property(SOURCE ${CMAKE_CURRENT_FUNCTION_LIST_DIR}/native.rc
+            TARGET_DIRECTORY ${targetName}
+            APPEND PROPERTY INCLUDE_DIRECTORIES
+            ${CLI_CMAKE_RESOURCE_DIR}/${RESOURCE_INCLUDE_DIR})
+    else()
+        target_sources(${targetName} PRIVATE ${VERSION_FILE_PATH})
+    endif()
+endfunction()
+
 # This is required to map a symbol reference to a matching definition local to the module (.so)
 # containing the reference instead of using definitions from other modules.
 if(CLR_CMAKE_TARGET_LINUX OR CLR_CMAKE_TARGET_SUNOS)
     add_link_options(LINKER:-Bsymbolic)
 endif()
+
+add_library(hostfxr_resolver INTERFACE)
+target_sources(hostfxr_resolver INTERFACE fxr_resolver.cpp corehost.cpp)
+target_include_directories(hostfxr_resolver INTERFACE fxr)
 
 add_subdirectory(hostcommon)
 add_subdirectory(hostmisc)

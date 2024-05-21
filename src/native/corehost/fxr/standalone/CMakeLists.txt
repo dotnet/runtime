@@ -27,7 +27,11 @@ else(CLR_CMAKE_TARGET_WIN32)
     set_exports_linker_option(${EXPORTS_FILE})
 endif(CLR_CMAKE_TARGET_WIN32)
 
-include(../../lib.cmake)
+add_compile_definitions(EXPORT_SHARED_API)
+
+add_library(hostfxr SHARED ${SOURCES})
+
+add_resources_to_target(hostfxr)
 
 if(CLR_CMAKE_HOST_UNIX)
     add_custom_target(hostfxr_exports DEPENDS ${EXPORTS_FILE})

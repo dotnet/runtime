@@ -52,3 +52,7 @@ target_link_libraries (hostmisc INTERFACE ${CMAKE_DL_LIBS})
 if((CLR_CMAKE_TARGET_LINUX OR CLR_CMAKE_TARGET_FREEBSD) AND NOT CLR_CMAKE_TARGET_ANDROID)
     target_link_libraries (hostmisc INTERFACE pthread)
 endif()
+
+target_compile_definitions(hostmisc INTERFACE
+    _NO_ASYNCRTIMP
+    _NO_PPLXIMP)

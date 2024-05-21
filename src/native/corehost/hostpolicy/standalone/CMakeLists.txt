@@ -1,10 +1,6 @@
 # Licensed to the .NET Foundation under one or more agreements.
 # The .NET Foundation licenses this file to you under the MIT license.
 
-project(hostpolicy)
-
-set(DOTNET_PROJECT_NAME "hostpolicy")
-
 set(SOURCES
     ./coreclr_resolver.cpp
 )
@@ -22,7 +18,10 @@ else(CLR_CMAKE_TARGET_WIN32)
     set_exports_linker_option(${EXPORTS_FILE})
 endif(CLR_CMAKE_TARGET_WIN32)
 
-include(../../lib.cmake)
+add_compile_definitions(EXPORT_SHARED_API)
+
+add_library(hostpolicy SHARED ${SOURCES})
+add_resources_to_target(hostpolicy)
 
 if(CLR_CMAKE_HOST_UNIX)
     add_custom_target(hostpolicy_exports DEPENDS ${EXPORTS_FILE})
