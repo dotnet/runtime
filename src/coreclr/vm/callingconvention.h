@@ -533,10 +533,9 @@ public:
         {
             if (size <= ENREGISTERED_PARAMTYPE_MAXSIZE)
                 return FALSE;
-
             // Struct larger than 16 can still be passed in registers according to FP call conv if it has empty fields or
             // more padding, so make sure it's passed according to integer call conv which bounds struct to 16 bytes.
-            return MethodTable::GetRiscV64PassFpStructInRegistersInfo(th).IsPassedWithIntegerCallConv();
+            return MethodTable::GetRiscV64PassFpStructInRegistersInfo(th).flags == FpStruct::UseIntCallConv;
         }
         return FALSE;
 #else
@@ -600,8 +599,7 @@ public:
         #ifdef TARGET_RISCV64
             if (m_argSize <= ENREGISTERED_PARAMTYPE_MAXSIZE)
                 return FALSE;
-
-            return MethodTable::GetRiscV64PassFpStructInRegistersInfo(m_argTypeHandle).IsPassedWithIntegerCallConv();
+            return MethodTable::GetRiscV64PassFpStructInRegistersInfo(m_argTypeHandle).flags == FpStruct::UseIntCallConv;
         #else
             return (m_argSize > ENREGISTERED_PARAMTYPE_MAXSIZE);
         #endif
@@ -1807,7 +1805,10 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
 
     case ELEMENT_TYPE_VALUETYPE:
         info = MethodTable::GetRiscV64PassFpStructInRegistersInfo(thValueType);
-        cFPRegs = info.isFloating1st + info.isFloating2nd;
+        if (info.flags != FpStruct::UseIntCallConv)
+        {
+            cFPRegs = (info.flags & FpStruct::BothFloat) ? 2 : 1;
+        }
         break;
 
     default:
@@ -1817,7 +1818,7 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
     if (cFPRegs > 0)
     {
         // Pass according to hardware floating-point calling convention iff the argument can be fully enregistered
-        if (info.hasTwoFields && (info.isFloating1st != info.isFloating2nd))
+        if (info.flags & (FpStruct::Float1st | FpStruct::Float2nd))
         {
             assert(cFPRegs == 1);
 
@@ -1830,9 +1831,9 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
                 m_argLocDescForStructInRegs.m_idxGenReg = m_idxGenReg;
                 m_argLocDescForStructInRegs.m_cGenReg = 1;
 
-                m_argLocDescForStructInRegs.m_structFields = info.ToFlags();
+                m_argLocDescForStructInRegs.m_structFields = info.ToOldFlags();
                 m_hasArgLocDescForStructInRegs = true;
-                
+
                 int regOffset = TransitionBlock::GetOffsetOfFloatArgumentRegisters() + m_idxFPReg * FLOAT_REGISTER_SIZE;
                 m_idxFPReg++;
                 m_idxGenReg++;
@@ -1842,16 +1843,18 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
         else if (cFPRegs + m_idxFPReg <= NUM_ARGUMENT_REGISTERS)
         {
             int regOffset = TransitionBlock::GetOffsetOfFloatArgumentRegisters() + m_idxFPReg * FLOAT_REGISTER_SIZE;
-            if (info.isFloating1st && info.isFloating2nd && info.sizeShift1st == 2 && info.sizeShift2nd == 2)
+            if (info.flags == (FpStruct::BothFloat | (2 << FpStruct::PosSizeShift1st) | (2 << FpStruct::PosSizeShift2nd)))
             {
                 // Two single-float arguments
+                assert(info.GetSize1st() == sizeof(float));
+                assert(info.GetSize2nd() == sizeof(float));
                 m_argLocDescForStructInRegs.Init();
                 m_argLocDescForStructInRegs.m_idxFloatReg = m_idxFPReg;
                 m_argLocDescForStructInRegs.m_cFloatReg = 2;
                 assert(cFPRegs == 2);
-                assert(argSize == 2 * 4);
+                assert(argSize == 2 * sizeof(float));
 
-                m_argLocDescForStructInRegs.m_structFields = info.ToFlags();
+                m_argLocDescForStructInRegs.m_structFields = info.ToOldFlags();
                 m_hasArgLocDescForStructInRegs = true;
             }
             m_idxFPReg += cFPRegs;

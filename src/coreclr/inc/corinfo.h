@@ -356,44 +356,72 @@ enum StructFloatFieldInfoFlags
     STRUCT_HAS_8BYTES_FIELDS_MASK = (STRUCT_FIRST_FIELD_SIZE_IS8 | STRUCT_SECOND_FIELD_SIZE_IS8),
 };
 
-// On RISC-V and LoongArch a struct with up to two non-empty fields, at least one of them floating,
-// can be passed in registers. FpStructInRegistersInfo represents passing information for such structs.
+// Bitfields for FpStructInRegistersInfo::flags
+namespace FpStruct
+{
+    enum Flags
+    {
+        // Positions of bitfields
+        PosOnlyOne      = 0,
+        PosBothFloat    = 1,
+        PosFloat1st     = 2,
+        PosSizeShift1st = 3,
+        PosFloat2nd     = 5,
+        PosSizeShift2nd = 6,
+        SizeShiftMask = 0b11,
+
+        UseIntCallConv = 0, // struct is passed according to integer calling convention
+
+        // The bitfields
+        OnlyOne   = 1 << PosOnlyOne,   // has only one field, which is floating-point
+        BothFloat = 1 << PosBothFloat, // has two fields, both are floating-point
+        Float1st  = 1 << PosFloat1st,  // has two fields, 1st is floating (and 2nd is integer)
+        SizeShift1st = SizeShiftMask << PosSizeShift1st, // log2(size) of 1st field
+        Float2nd  = 1 << PosFloat2nd,  // has two fields, 2nd is floating (and 1st is integer)
+        SizeShift2nd = SizeShiftMask << PosSizeShift2nd, // log2(size) of 2nd field
+        // Note: flags OnlyOne, BothFloat, Float1st, and Float2nd are mutually exclusive
+    };
+}
+
+// On RISC-V and LoongArch a struct with up to two non-empty fields, at least one of them floating-point,
+// can be passed in registers according to hardware FP calling convention. FpStructInRegistersInfo represents
+// passing information for such parameters.
 struct FpStructInRegistersInfo
 {
-    bool hasTwoFields : 1;
-    bool isFloating1st : 1;
-    bool isFloating2nd : 1;
-    uint8_t sizeShift1st : 2;
-    uint8_t sizeShift2nd : 2;
-    uint32_t offset1st;
-    uint32_t offset2nd;
+    FpStruct::Flags flags;
+    uint32_t offsets[2]; // field offsets in bytes, [0] for 1st, [1] for 2nd
 
-    bool IsPassedWithIntegerCallConv() const
+    unsigned GetSize1st() const
     {
-        return !hasTwoFields && !isFloating1st;
+        unsigned shift = (flags >> FpStruct::PosSizeShift1st) & FpStruct::SizeShiftMask;
+        return 1u << shift;
     }
 
-    bool IsFloatingOnly() const
+    unsigned GetSize2nd() const
     {
-        return isFloating1st && (isFloating2nd || !hasTwoFields);
+        unsigned shift = (flags >> FpStruct::PosSizeShift2nd) & FpStruct::SizeShiftMask;
+        return 1u << shift;
     }
 
-    // TODO: Remove, unless there are places where field offsets are unnecessary and it's difficult to pass FpStructInRegistersInfo (CallDescrWorker?)
-    StructFloatFieldInfoFlags ToFlags() const
+    bool IsSize1st8() const
     {
-        int flags =
-            (sizeShift1st == 3 ? STRUCT_FIRST_FIELD_SIZE_IS8 : 0) |
-            (sizeShift2nd == 3 ? STRUCT_SECOND_FIELD_SIZE_IS8 : 0);
+        return (flags & FpStruct::SizeShift1st) == (3 << FpStruct::PosSizeShift1st);
+    }
 
-        if (IsFloatingOnly())
-        {
-            return StructFloatFieldInfoFlags(
-                flags | (hasTwoFields ? STRUCT_FLOAT_FIELD_ONLY_TWO : STRUCT_FLOAT_FIELD_ONLY_ONE));
-        }
+    bool IsSize2nd8() const
+    {
+        return (flags & FpStruct::SizeShift2nd) == (3 << FpStruct::PosSizeShift2nd);
+    }
 
-        return StructFloatFieldInfoFlags(flags |
-            (isFloating1st ? STRUCT_FLOAT_FIELD_FIRST : 0) |
-            (isFloating2nd ? STRUCT_FLOAT_FIELD_SECOND : 0));
+    StructFloatFieldInfoFlags ToOldFlags() const
+    {
+        return StructFloatFieldInfoFlags(
+            ((flags & FpStruct::OnlyOne) ? STRUCT_FLOAT_FIELD_ONLY_ONE : 0) |
+            ((flags & FpStruct::BothFloat) ? STRUCT_FLOAT_FIELD_ONLY_TWO : 0) |
+            ((flags & FpStruct::Float1st) ? STRUCT_FLOAT_FIELD_FIRST : 0) |
+            ((flags & FpStruct::Float2nd) ? STRUCT_FLOAT_FIELD_SECOND : 0) |
+            (IsSize1st8() ? STRUCT_FIRST_FIELD_SIZE_IS8 : 0) |
+            (IsSize2nd8() ? STRUCT_SECOND_FIELD_SIZE_IS8 : 0));
     }
 };
 
