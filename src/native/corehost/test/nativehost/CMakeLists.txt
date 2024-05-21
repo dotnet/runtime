@@ -44,9 +44,9 @@ add_sanitizer_runtime_support(nativehost)
 
 install_with_stripped_symbols(nativehost TARGETS corehost_test)
 
-if((CLR_CMAKE_TARGET_LINUX OR CLR_CMAKE_TARGET_FREEBSD) AND NOT CLR_CMAKE_TARGET_ANDROID)
-    target_link_libraries (nativehost PRIVATE pthread)
-endif()
+target_link_libraries(nativehost PRIVATE
+    $<$<BOOL:${PTHREAD_LIB}>:${PTHREAD_LIB}>)
+
 
 target_link_libraries(nativehost PRIVATE nethost hostmisc)
 

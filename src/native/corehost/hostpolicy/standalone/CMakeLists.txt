@@ -34,10 +34,6 @@ endif(CLR_CMAKE_HOST_UNIX)
 install_with_stripped_symbols(hostpolicy TARGETS corehost)
 target_link_libraries(hostpolicy PRIVATE libhostcommon)
 
-if((CLR_CMAKE_TARGET_LINUX OR CLR_CMAKE_TARGET_FREEBSD) AND NOT CLR_CMAKE_TARGET_ANDROID)
-    target_link_libraries (hostpolicy PRIVATE pthread)
-endif()
-
-if (CLR_CMAKE_TARGET_ARCH_ARMV6)
-    target_link_libraries(hostfxr PRIVATE atomic)
-endif()
+target_link_libraries(hostpolicy PRIVATE
+    $<$<BOOL:${ATOMIC_SUPPORT_LIB}>:${ATOMIC_SUPPORT_LIB}>
+    $<$<BOOL:${PTHREAD_LIB}>:${PTHREAD_LIB}>)

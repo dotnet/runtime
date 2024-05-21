@@ -43,6 +43,10 @@ if("${CLI_CMAKE_FALLBACK_OS}" STREQUAL "${CLR_CMAKE_TARGET_OS}")
     add_definitions(-DFALLBACK_OS_IS_SAME_AS_TARGET_OS)
 endif()
 
+# Find support libraries that we need if they're present on the system.
+find_library(PTHREAD_LIB pthread)
+find_library(ATOMIC_SUPPORT_LIB atomic)
+
 configure_file(configure.h.in ${CMAKE_CURRENT_BINARY_DIR}/configure.h)
 
 # add_resources_to_target(targetName [resourceDirName])

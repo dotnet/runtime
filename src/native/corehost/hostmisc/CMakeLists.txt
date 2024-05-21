@@ -43,15 +43,10 @@ if (MSVC)
     target_link_libraries(hostmisc INTERFACE advapi32)
 endif()
 
-if (CLR_CMAKE_TARGET_ARCH_ARM OR CLR_CMAKE_TARGET_ARCH_ARMV6 AND NOT CLR_CMAKE_TARGET_WIN32)
-    target_link_libraries(hostmisc INTERFACE atomic)
-endif()
-
-target_link_libraries (hostmisc INTERFACE ${CMAKE_DL_LIBS})
-
-if((CLR_CMAKE_TARGET_LINUX OR CLR_CMAKE_TARGET_FREEBSD) AND NOT CLR_CMAKE_TARGET_ANDROID)
-    target_link_libraries (hostmisc INTERFACE pthread)
-endif()
+target_link_libraries(hostmisc INTERFACE
+    ${CMAKE_DL_LIBS}
+    $<$<BOOL:${ATOMIC_SUPPORT_LIB}>:${ATOMIC_SUPPORT_LIB}>
+    $<$<BOOL:${PTHREAD_LIB}>:${PTHREAD_LIB}>)
 
 target_compile_definitions(hostmisc INTERFACE
     _NO_ASYNCRTIMP
