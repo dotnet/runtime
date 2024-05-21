@@ -8229,7 +8229,7 @@ static void NotifyExceptionPassStarted(StackFrameIterator *pThis, Thread *pThrea
                 if (pFrame->GetVTablePtr() == ProtectValueClassFrame::GetMethodFrameVPtr())
                 {
                     pFrame = pFrame->PtrNextFrame();
-                    _ASSERTE((pFrame != FRAME_TOP) && (pFrame->GetVTablePtr() == FuncEvalFrame::GetMethodFrameVPtr()));
+                    _ASSERTE(pFrame != FRAME_TOP);
                 }
                 if ((pFrame->GetVTablePtr() == FuncEvalFrame::GetMethodFrameVPtr()) || (pFrame->GetVTablePtr() == DebuggerU2MCatchHandlerFrame::GetMethodFrameVPtr()))
                 {
