@@ -9640,7 +9640,7 @@ uint32_t CEEInfo::getLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE c
     return size;
 }
 
-uint32_t CEEInfo::getRISCV64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE cls)
+FpStructInRegistersInfo CEEInfo::getRiscV64PassFpStructInRegistersInfo(CORINFO_CLASS_HANDLE cls)
 {
     CONTRACTL {
         NOTHROW;
@@ -9650,15 +9650,15 @@ uint32_t CEEInfo::getRISCV64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE cls)
 
     JIT_TO_EE_TRANSITION_LEAF();
 
-    uint32_t size = STRUCT_NO_FLOAT_FIELD;
+    FpStructInRegistersInfo info = {};
 
 #if defined(TARGET_RISCV64)
-    size = (uint32_t)MethodTable::GetRiscV64PassFpStructInRegistersInfo(TypeHandle(cls)).ToOldFlags();
+    info = MethodTable::GetRiscV64PassFpStructInRegistersInfo(TypeHandle(cls));
 #endif // TARGET_RISCV64
 
     EE_TO_JIT_TRANSITION_LEAF();
 
-    return size;
+    return info;
 }
 
 /*********************************************************************/

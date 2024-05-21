@@ -87,7 +87,7 @@ namespace Internal.JitInterface
             return true;
         }
 
-        public static uint GetRISCV64PassStructInRegisterFlags(TypeDesc td)
+        private static uint GetRISCV64PassStructInRegisterFlags(TypeDesc td)
         {
             Span<StructFloatFieldInfoFlags> types = stackalloc StructFloatFieldInfoFlags[] {
                 STRUCT_NO_FLOAT_FIELD, STRUCT_NO_FLOAT_FIELD

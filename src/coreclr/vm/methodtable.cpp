@@ -2980,7 +2980,7 @@ int MethodTable::GetLoongArch64PassStructInRegisterFlags(TypeHandle th)
 #endif
 
 #if defined(TARGET_RISCV64)
-int MethodTable::GetRiscV64PassStructInRegisterFlags(TypeHandle th)
+static int GetRiscV64PassStructInRegisterFlags(TypeHandle th)
 {
     StructFloatFieldInfoFlags types[2] = {STRUCT_NO_FLOAT_FIELD, STRUCT_NO_FLOAT_FIELD};
     int nFields = 0;

@@ -769,7 +769,7 @@ var_types Compiler::getArgTypeForStruct(CORINFO_CLASS_HANDLE clsHnd,
 #ifdef TARGET_RISCV64
             // Struct larger than 16 can still be passed in registers according to FP call conv if it has empty fields
             // or more padding
-            uint32_t flags = info.compCompHnd->getRISCV64PassStructInRegisterFlags(clsHnd);
+            uint32_t flags = info.compCompHnd->getRiscV64PassFpStructInRegistersInfo(clsHnd).ToOldFlags();
             if (flags != STRUCT_NO_FLOAT_FIELD)
             {
                 howToPassStruct = SPK_ByValue;
@@ -956,7 +956,7 @@ var_types Compiler::getReturnTypeForStruct(CORINFO_CLASS_HANDLE     clsHnd,
     }
 
 #elif defined(TARGET_RISCV64)
-    uint32_t floatFieldFlags = info.compCompHnd->getRISCV64PassStructInRegisterFlags(clsHnd);
+    uint32_t floatFieldFlags = (uint32_t)info.compCompHnd->getRiscV64PassFpStructInRegistersInfo(clsHnd).ToOldFlags();
     if ((floatFieldFlags & STRUCT_FLOAT_FIELD_ONLY_ONE) != 0)
     {
         howToReturnStruct = SPK_PrimitiveType;

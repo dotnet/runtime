@@ -2019,10 +2019,10 @@ void ArgIteratorTemplate<ARGITERATOR_BASE>::ComputeReturnFlags()
             }
 #elif defined(TARGET_RISCV64)
             assert(!thValueType.IsTypeDesc());
-            int structFlags = MethodTable::GetRiscV64PassStructInRegisterFlags(thValueType);
-            flags |= (structFlags & 0xff) << RETURN_FP_SIZE_SHIFT;
+            FpStructInRegistersInfo info = MethodTable::GetRiscV64PassFpStructInRegistersInfo(thValueType);
+            flags |= (info.ToOldFlags() & 0xff) << RETURN_FP_SIZE_SHIFT;
 
-            if  (structFlags != STRUCT_NO_FLOAT_FIELD || size <= ENREGISTERED_RETURNTYPE_INTEGER_MAXSIZE)
+            if  (info.flags != FpStruct::UseIntCallConv || size <= ENREGISTERED_RETURNTYPE_INTEGER_MAXSIZE)
                 break;
 #else
             if  (size <= ENREGISTERED_RETURNTYPE_INTEGER_MAXSIZE)

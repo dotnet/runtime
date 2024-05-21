@@ -6339,28 +6339,35 @@ DWORD MethodContext::repGetLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_HA
     return value;
 }
 
-void MethodContext::recGetRISCV64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE structHnd, DWORD value)
+void MethodContext::recGetRiscV64PassFpStructInRegistersInfo(CORINFO_CLASS_HANDLE structHnd, FpStructInRegistersInfo value)
 {
-    if (GetRISCV64PassStructInRegisterFlags == nullptr)
-        GetRISCV64PassStructInRegisterFlags = new LightWeightMap<DWORDLONG, DWORD>();
+    if (GetRiscV64PassFpStructInRegistersInfo == nullptr)
+        GetRiscV64PassFpStructInRegistersInfo = new LightWeightMap<DWORDLONG, FpStructInRegistersInfo>();
 
     DWORDLONG key = CastHandle(structHnd);
 
-    GetRISCV64PassStructInRegisterFlags->Add(key, value);
-    DEBUG_REC(dmpGetRISCV64PassStructInRegisterFlags(key, value));
+    GetRiscV64PassFpStructInRegistersInfo->Add(key, value);
+    DEBUG_REC(dmpGetRiscV64PassFpStructInRegistersInfo(key, value));
 }
 
-void MethodContext::dmpGetRISCV64PassStructInRegisterFlags(DWORDLONG key, DWORD value)
+void MethodContext::dmpGetRiscV64PassFpStructInRegistersInfo(DWORDLONG key, FpStructInRegistersInfo value)
 {
-    printf("GetRISCV64PassStructInRegisterFlags key %016" PRIX64 " value-%08X", key, value);
+    printf("GetRiscV64PassFpStructInRegistersInfo key %016" PRIX64 " value-%#02x-"
+        "{OnlyOne=%i, BothFloat=%i, Float1st=%i, Size1st=%u, Float2nd=%i, Size2nd=%u, offset1st=%u, offset2nd=%u}",
+        key, value.flags,
+        (value.flags & FpStruct::OnlyOne) != 0,
+        (value.flags & FpStruct::BothFloat) != 0,
+        (value.flags & FpStruct::Float1st) != 0, value.GetSize1st(),
+        (value.flags & FpStruct::Float2nd) != 0, value.GetSize2nd(),
+        value.offsets[0], value.offsets[1]);
 }
 
-DWORD MethodContext::repGetRISCV64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE structHnd)
+FpStructInRegistersInfo MethodContext::repGetRiscV64PassFpStructInRegistersInfo(CORINFO_CLASS_HANDLE structHnd)
 {
     DWORDLONG key = CastHandle(structHnd);
 
-    DWORD value = LookupByKeyOrMissNoMessage(GetRISCV64PassStructInRegisterFlags, key);
-    DEBUG_REP(dmpGetRISCV64PassStructInRegisterFlags(key, value));
+    FpStructInRegistersInfo value = LookupByKeyOrMissNoMessage(GetRiscV64PassFpStructInRegistersInfo, key);
+    DEBUG_REP(dmpGetRiscV64PassFpStructInRegistersInfo(key, value));
     return value;
 }
 

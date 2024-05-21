@@ -67,8 +67,8 @@ ABIPassingInformation RiscV64Classifier::Classify(Compiler*    comp,
         passedSize = structLayout->GetSize();
         if (!structLayout->IsBlockLayout())
         {
-            flags = (StructFloatFieldInfoFlags)comp->info.compCompHnd->getRISCV64PassStructInRegisterFlags(
-                structLayout->GetClassHandle());
+            flags = comp->info.compCompHnd->getRiscV64PassFpStructInRegistersInfo(structLayout->GetClassHandle())
+                        .ToOldFlags();
 
             if ((flags & STRUCT_FLOAT_FIELD_ONLY_ONE) != 0)
             {

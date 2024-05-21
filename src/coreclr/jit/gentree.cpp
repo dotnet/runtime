@@ -27365,7 +27365,8 @@ void ReturnTypeDesc::InitializeStructReturnType(Compiler*                comp,
             uint32_t floatFieldFlags = comp->info.compCompHnd->getLoongArch64PassStructInRegisterFlags(retClsHnd);
             BYTE     gcPtrs[2]       = {TYPE_GC_NONE, TYPE_GC_NONE};
 #else // TARGET_RISCV64
-            uint32_t floatFieldFlags = comp->info.compCompHnd->getRISCV64PassStructInRegisterFlags(retClsHnd);
+            uint32_t floatFieldFlags =
+                (uint32_t)comp->info.compCompHnd->getRiscV64PassFpStructInRegistersInfo(retClsHnd).ToOldFlags();
             // Most cases will be up to 2 floating/integer fields with an occasional empty field
             BYTE     gcPtrsStack[4] = {TYPE_GC_NONE, TYPE_GC_NONE, TYPE_GC_NONE, TYPE_GC_NONE};
             unsigned wordCount      = roundUp(structSize, TARGET_POINTER_SIZE) / TARGET_POINTER_SIZE;

@@ -906,7 +906,7 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
 #if defined(TARGET_LOONGARCH64)
             floatFlags = info.compCompHnd->getLoongArch64PassStructInRegisterFlags(typeHnd);
 #else
-            floatFlags = info.compCompHnd->getRISCV64PassStructInRegisterFlags(typeHnd);
+            floatFlags = info.compCompHnd->getRiscV64PassFpStructInRegistersInfo(typeHnd).ToOldFlags();
 #endif
         }
 
