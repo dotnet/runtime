@@ -226,6 +226,15 @@ void ValidationTests()
         THROW_IF_FAILED(miscTypesTesting->Marshal_Variant(args.Input, &args.Result));
         THROW_FAIL_IF_FALSE(V_I4(&nested) == V_I4(&args.Result));
     }
+    {
+        VariantMarshalTest args{};
+        ComSmartPtr<IUnknown> unknown;
+        (void)miscTypesTesting->QueryInterface(IID_IUnknown, (void**)&unknown);
+        V_VT(&args.Input) = VT_BYREF|VT_UNKNOWN;
+        V_UNKNOWNREF(&args.Input) = &unknown;
+        THROW_IF_FAILED(miscTypesTesting->Marshal_Variant(args.Input, &args.Result));
+        THROW_FAIL_IF_FALSE(unknown == V_UNKNOWN(&args.Result));
+    }
 
     ::printf("-- BSTR <=> VARIANT...\n");
     {
@@ -258,6 +267,13 @@ void ValidationTests()
         (void)miscTypesTesting->QueryInterface(IID_IUnknown, (void**)&V_UNKNOWN(&args.Input));
         THROW_IF_FAILED(miscTypesTesting->Marshal_Variant(args.Input, &args.Result));
         THROW_FAIL_IF_FALSE(V_UNKNOWN(&args.Input) == V_UNKNOWN(&args.Result));
+    }
+    {
+        VariantMarshalTest args{};
+        V_VT(&args.Input) = VT_UNKNOWN;
+        V_UNKNOWN(&args.Input) = NULL;
+        THROW_IF_FAILED(miscTypesTesting->Marshal_Variant(args.Input, &args.Result));
+        THROW_FAIL_IF_FALSE(VT_EMPTY == V_VT(&args.Result));
     }
 
     ::printf("-- System.Guid <=> VARIANT...\n");
