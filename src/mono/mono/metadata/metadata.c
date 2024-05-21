@@ -2559,13 +2559,13 @@ mono_metadata_signature_dup_delegate_invoke_to_target (MonoMethodSignature *sig)
  * @return the new \c MonoMethodSignature structure.
  */
 MonoMethodSignature*
-mono_metadata_signature_dup_new_params (MonoMemPool *mp, MonoMethodSignature *sig, uint32_t num_params, MonoType **new_params)
+mono_metadata_signature_dup_new_params (MonoMemoryManager *mem_manager, MonoMethodSignature *sig, uint32_t num_params, MonoType **new_params)
 {
 	size_t new_sig_size = MONO_SIZEOF_METHOD_SIGNATURE + num_params * sizeof (MonoType*);
 	if (sig->ret)
 		new_sig_size += mono_sizeof_type (sig->ret);
 	
-	MonoMethodSignature *res = (MonoMethodSignature *)mono_mempool_alloc0 (mp, (unsigned int)new_sig_size);
+	MonoMethodSignature *res = (MonoMethodSignature *)mono_mem_manager_alloc (mem_manager, (unsigned int)new_sig_size);
 	memcpy (res, sig, MONO_SIZEOF_METHOD_SIGNATURE);
 	res->param_count = GUINT32_TO_UINT16 (num_params);
 
