@@ -1468,9 +1468,6 @@ static CRYPTO_RWLOCK* g_allocLock = NULL;
 static int g_allocatedMemory;
 static int g_allocationCount;
 
-static CRYPTO_malloc_fn  g_mallocFunction;
-static CRYPTO_realloc_fn g_reallocFunction;
-static CRYPTO_free_fn g_freefunction;
 static CRYPTO_allocation_cb g_memoryCallback;
 
 struct memoryEntry

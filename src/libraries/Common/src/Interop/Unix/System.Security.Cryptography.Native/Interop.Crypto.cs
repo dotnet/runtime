@@ -209,21 +209,21 @@ internal static partial class Interop
             Free = 3,
         }
 
-        private static readonly unsafe UIntPtr Offset = (UIntPtr)sizeof(MemoryEntry);
+        private static readonly unsafe nuint Offset = (nuint)sizeof(MemoryEntry);
         private static HashSet<UIntPtr>? _allocations;
 
         [UnmanagedCallersOnly]
         private static unsafe void MemoryTrackinCallback(MemoryOperation operation, UIntPtr ptr, UIntPtr oldPtr, int size, char* file, int line)
         {
-            Span<MemoryEntry> entry = new Span<MemoryEntry>((void*)ptr, 1);
+            ref MemoryEntry entry = ref *(MemoryEntry*)ptr;
 
-            Debug.Assert(entry[0].File != null);
+            Debug.Assert(entry.File != null);
             Debug.Assert(ptr != UIntPtr.Zero);
 
             switch (operation)
             {
                 case MemoryOperation.Malloc:
-                    Debug.Assert(size == entry[0].Size);
+                    Debug.Assert(size == entry.Size);
                     lock (_allocations!)
                     {
                         _allocations!.Add(ptr);
