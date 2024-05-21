@@ -19,59 +19,74 @@ const DWORD SamplingDistributionMean = (100 * 1024);
 // This struct adds some state that is only visible to the EE onto the standard gc_alloc_context
 typedef struct _ee_alloc_context
 {
-    // This is the address where the next allocation sampling should occur:
-    //  - if sampling is off, this is the same as alloc_limit
-    //  - if sampling is on, this is the next sampled byte in the gc_alloc_context
-    //  - if no such byte exists (i.e. the sampling threshold is outside of the allocation context),
-    //     this is the same as alloc_limit
-    uint8_t* alloc_sampling;
+    // Any allocation that would overlap combined_limit needs to be handled by the allocation slow path.
+    // combined_limit is the minimum of:
+    //  - gc_alloc_context.alloc_limit (the end of the current AC)
+    //  - the sampling_limit
+    //
+    // In the simple case that randomized sampling is disabled, combined_limit is always equal to alloc_limit.
+    //
+    // There are two different useful interpretations for the sampling_limit. One is to treat the sampling_limit
+    // as an address and when we allocate an object that overlaps that address we should emit a sampling event.
+    // The other is that we can treat (sampling_limit - alloc_ptr) as a budget of how many bytes we can allocate
+    // before emitting a sampling event. If we always allocated objects contiguously in the AC and incremented
+    // alloc_ptr by the size of the object, these two interpretations would be equivalent. However, when objects
+    // don't fit in the AC we allocate them in some other address range. The budget interpretation is more
+    // flexible to handle those cases.
+    //
+    // The sampling limit isn't stored in any separate field explicitly, instead it is implied:
+    // - if combined_limit == alloc_limit there is no sampled byte in the AC. In the budget interpretation
+    //   we can allocate (alloc_limit - alloc_ptr) unsampled bytes. We'll need a new random number after
+    //   that to determine whether future allocated bytes should be sampled.
+    //   This occurs either because the sampling feature is disabled, or because the randomized selection
+    //   of sampled bytes didn't select a byte in this AC.
+    // - if combined_limit < alloc_limit there is a sample limit in the AC. sample_limit = combined_limit.
+    uint8_t* combined_limit;
     gc_alloc_context gc_alloc_context;
 
  public:
     void init()
     {
         LIMITED_METHOD_CONTRACT;
-
-        // we can't compute a sampling limit
-        // because we don't know the size of the allocation context yet
-        alloc_sampling = nullptr;
+        combined_limit = nullptr;
         gc_alloc_context.init();
     }
 
-    inline void ComputeSamplingLimit(CLRRandom* pRandomizer)
+    static inline bool IsRandomizedSamplingEnabled()
     {
-        // the caller of this function does not have to check if sampling is on/off
-        // If sampling is off, this is just setting alloc_sampling = alloc_limit
-        // If sampling is on then we'd do some pseudo-random number generation to decide what is
-        // the next sampled byte in the gc_alloc_context, if any.
-        if (ETW_TRACING_CATEGORY_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context,
-                                         TRACE_LEVEL_INFORMATION,
-                                         CLR_ALLOCATIONSAMPLING_KEYWORD))
-        {
-            // compute the next sampling limit based on a geometric distribution
-            size_t threshold = ComputeGeometricRandom(pRandomizer);
+        return ETW_TRACING_CATEGORY_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context,
+                                        TRACE_LEVEL_INFORMATION,
+                                        CLR_ALLOCATIONSAMPLING_KEYWORD);
+    }
 
-            // if the threshold is larger than the allocation context, no sampling will occur
-            alloc_sampling = Min(gc_alloc_context.alloc_ptr + threshold, gc_alloc_context.alloc_limit);
+    // Regenerate the randomized sampling limit and update the combined_limit field.
+    inline void UpdateCombinedLimit(CLRRandom* pRandom)
+    {
+        UpdateCombinedLimit(IsRandomizedSamplingEnabled(), pRandom);
+    }
+
+    // Regenerate the randomized sampling limit and update the combined_limit field.
+    inline void UpdateCombinedLimit(bool samplingEnabled, CLRRandom* pRandom)
+    {
+        if (!samplingEnabled)
+        {
+            combined_limit = gc_alloc_context.alloc_limit;
         }
         else
         {
-            alloc_sampling = gc_alloc_context.alloc_limit;
+            // compute the next sampling limit based on a geometric distribution
+            uint8_t* sampling_limit = gc_alloc_context.alloc_ptr + ComputeGeometricRandom(pRandom);
+
+            // if the sampling limit is larger than the allocation context, no sampling will occur in this AC
+            combined_limit = Min(sampling_limit, gc_alloc_context.alloc_limit);
         }
     }
 
-    // it is expected that the caller of these functions has already checked if sampling is on/off
-    static inline bool IsSampled(CLRRandom* pRandomizer, size_t range)
-    {
-        size_t threshold = ComputeGeometricRandom(pRandomizer);
-        return (threshold < range);
-    }
-
-    static inline size_t ComputeGeometricRandom(CLRRandom* pRandomizer)
+    static inline int ComputeGeometricRandom(CLRRandom* pRandomizer)
     {
         // compute a random sample from the Geometric distribution
         double probability = pRandomizer->NextDouble();
-        size_t threshold = (size_t)(-log(1 - probability) * SamplingDistributionMean);
+        int threshold = (int)(-log(1 - probability) * SamplingDistributionMean);
         return threshold;
     }
 } ee_alloc_context;

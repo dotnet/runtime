@@ -4226,7 +4226,7 @@ private:
 
 #ifdef DYNAMIC_HEAP_COUNT
     // Sample collection -
-    //
+    // 
     // For every GC, we collect the msl wait time + GC pause duration info and use both to calculate the
     // throughput cost percentage. We will also be using the wait time and the GC pause duration separately
     // for other purposes in the future.

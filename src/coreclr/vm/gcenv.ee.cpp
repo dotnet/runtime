@@ -446,26 +446,28 @@ gc_alloc_context * GCToEEInterface::GetAllocContext()
 
 void InvokeGCAllocCallback(ee_alloc_context* pEEAllocContext, enum_alloc_context_func* fn, void* param)
 {
-    // NOTE: Its possible that alloc_ptr = alloc_limit = alloc_sampling = NULL at this point
+    // NOTE: Its possible that alloc_ptr = alloc_limit = combined_limit = NULL at this point
     gc_alloc_context* pAllocContext = &pEEAllocContext->gc_alloc_context;
 
     // The allocation context might be modified by the callback, so we need to save
     // the remaining sampling budget and restore it after the callback if needed.
-    size_t currentSamplingBudget = (size_t)(pEEAllocContext->alloc_sampling - pAllocContext->alloc_ptr);
+    size_t currentSamplingBudget = (size_t)(pEEAllocContext->combined_limit - pAllocContext->alloc_ptr);
     size_t currentSize = (size_t)(pAllocContext->alloc_limit - pAllocContext->alloc_ptr);
 
     fn(pAllocContext, param);
 
     // If the GC changed the size of the allocation context, we need to recompute the sampling limit
     // This includes the case where the AC was initially zero-sized/uninitialized.
+    // Functionally we'd get valid results if we called UpdateCombinedLimit() unconditionally but its
+    // empirically a little more performant to only call it when the AC size has changed.
     if (currentSize != (size_t)(pAllocContext->alloc_limit - pAllocContext->alloc_ptr))
     {
-        pEEAllocContext->ComputeSamplingLimit(GetThread()->GetRandom());
+        pEEAllocContext->UpdateCombinedLimit(GetThread()->GetRandom());
     }
     else
     {
         // Restore the remaining sampling budget as the size is the same.
-        pEEAllocContext->alloc_sampling = pAllocContext->alloc_ptr + currentSamplingBudget;
+        pEEAllocContext->combined_limit = pAllocContext->alloc_ptr + currentSamplingBudget;
     }
 }
 

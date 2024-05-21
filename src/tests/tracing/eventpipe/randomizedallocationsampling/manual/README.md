@@ -1,5 +1,13 @@
-This folder contains code that samples with AllocationTick and AllocationSampled + upscale the size/count.
-A first case allocates 200000 instances of each custom type (once from the smaller to the larger and once from the larger to the smaller). The resulting assembly is then run by corerun via VS with the right properties. It stops to let you copy the process ID to pass to the _DynamicAllocationSampling_ events listener program to obtain the following kind of result:
+# Manual Testing for Randomized Allocation Sampling
+
+This folder has a test app (Allocate sub-folder) and a profiler (AllocationProfiler.csproj) that together can be used to experimentally
+observe the distribution of sampling events that are generated for different allocation scenarios. To run it:
+
+1. Build both projects
+2. Run the Allocate app with corerun and use the --scenario argument to select an allocation scenario you want to validate
+3. The Allocate app will print its own PID to the console and wait.
+4. Run the AllocationProfiler passing in the allocate app PID as an argument
+5. Hit Enter in the Allocate app to begin the allocations. You will see output in the profiler app's console showing the measurements. For example:
 
  ```
  Tag  SCount  TCount       SSize       TSize  UnitSize  UpscaledSize  UpscaledCount  Name

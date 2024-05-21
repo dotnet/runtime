@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.9.34616.47
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DynamicAllocationSampling", "DynamicAllocationSampling.csproj", "{1530D7FB-8635-4267-A7B0-EB1280780CAA}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AllocationProfiler", "AllocationProfiler.csproj", "{1530D7FB-8635-4267-A7B0-EB1280780CAA}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Allocate", "Allocate\Allocate.csproj", "{883FD439-6B92-421F-A68B-D22FFC21BF0A}"
 EndProject

@@ -1,5 +1,11 @@
-# statistical distribution measures
+# Test Results
+
+This folder has the results of manual testing observed for this feature. It is here so reviewers can see it but is planned to be deleted before the PR is merged.
+
+## statistical distribution measures
 The manual folder contains code to allocate and count objects in different runs.
+
+TODO: Put a 
 
 # Perf benchmarking
 The performance impact of the PR has been measured against a baseline.

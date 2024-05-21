@@ -229,56 +229,46 @@ inline Object* Alloc(ee_alloc_context* pEEAllocContext, size_t size, GC_ALLOC_FL
 
     Object* retVal = nullptr;
     gc_alloc_context* pAllocContext = &pEEAllocContext->gc_alloc_context;
-    // the GC is aligning the allocated objects
-    // see gc_heap::allocate() for more details
-    size_t alignment = sizeof(uintptr_t) - 1;
-    size_t allocatedBytes = (size + alignment) & ~alignment;
-
-    size_t samplingBudget = (size_t)(pEEAllocContext->alloc_sampling - pAllocContext->alloc_ptr);
-    size_t availableSpace = (size_t)(pAllocContext->alloc_limit - pAllocContext->alloc_ptr);
     auto pCurrentThread = GetThread();
 
-    bool isSampled = false;
-    if (ETW_TRACING_CATEGORY_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context,
-                                     TRACE_LEVEL_INFORMATION,
-                                     CLR_ALLOCATIONSAMPLING_KEYWORD))
+    bool isRandomizedSamplingEnabled = ee_alloc_context::IsRandomizedSamplingEnabled();
+    if (isRandomizedSamplingEnabled)
     {
-        if (flags & GC_ALLOC_USER_OLD_HEAP)
+        // object allocations are always padded up to pointer size
+        size_t aligned_size = AlignUp(size, sizeof(uintptr_t));
+
+        // The number bytes we can allocate before we need to emit a sampling event.
+        // This calculation is only valid if combined_limit < alloc_limit.
+        size_t samplingBudget = (size_t)(pEEAllocContext->combined_limit - pAllocContext->alloc_ptr);
+
+        // The number of bytes available in the current allocation context
+        size_t availableSpace = (size_t)(pAllocContext->alloc_limit - pAllocContext->alloc_ptr);
+
+        // Check to see if the allocated object overlaps a sampled byte
+        // in this AC. This happens when both:
+        // 1) The AC contains a sampled byte (combined_limit < alloc_limit)
+        // 2) The object is large enough to overlap it (samplingBudget < aligned_size)
+        //
+        // Note that the AC could have no remaining space for allocations (alloc_ptr =
+        // alloc_limit = combined_limit). When a thread hasn't done any SOH allocations
+        // yet it also starts in an empty state where alloc_ptr = alloc_limit =
+        // combined_limit = nullptr. The (1) check handles both of these situations
+        // properly as an empty AC can not have a sampled byte inside of it.
+        bool isSampled =
+            (pEEAllocContext->combined_limit < pAllocContext->alloc_limit) &&
+            (samplingBudget < aligned_size);
+
+        // if the object overflows the AC, we need to sample the remaining bytes
+        // the sampling budget only included at most the bytes inside the AC
+        if (aligned_size > availableSpace && !isSampled)
         {
-            // if sampling is on, decide if this object should be sampled.
-            // the provided allocation context fields are not used for LOH/POH allocations
-            // (only its alloc_bytes_uoh field will be updated),
-            // so get a random size in the distribution and if it is less than the size of the object
-            // then this object should be sampled
-            samplingBudget = ee_alloc_context::ComputeGeometricRandom(pCurrentThread->GetRandom());
-            isSampled = (samplingBudget < allocatedBytes);
+            samplingBudget = ee_alloc_context::ComputeGeometricRandom(pCurrentThread->GetRandom()) + availableSpace;
+            isSampled = (samplingBudget < aligned_size);
         }
-        else
+
+        if (isSampled)
         {
-            // Check to see if the allocated object overlaps a sampled byte
-            // in this AC. This happens when both:
-            // 1) The AC contains a sampled byte (alloc_sampling < alloc_limit)
-            // 2) The object is large enough to overlap it (allocatedBytes > samplingBudget)
-            //
-            // Note that the AC could have no remaining space for allocations (alloc_ptr =
-            // alloc_limit = alloc_sampling). When a thread hasn't done any SOH allocations
-            // yet it also starts in an empty state where alloc_ptr = alloc_limit =
-            // alloc_sampling = nullptr. The (1) check handles both of these situations
-            // properly as an empty AC can not have a sampled byte inside of it.
-            isSampled =
-                (pEEAllocContext->alloc_sampling < pAllocContext->alloc_limit) &&
-                (allocatedBytes > samplingBudget);
-
-            // if the object overflows the AC, we need to sample the remaining bytes
-            // the sampling budget only included at most the bytes inside the AC
-            if (allocatedBytes > availableSpace && !isSampled)
-            {
-                samplingBudget = ee_alloc_context::ComputeGeometricRandom(pCurrentThread->GetRandom());
-                isSampled = (samplingBudget < allocatedBytes - availableSpace);
-
-                // we need to take the available space into account to be able to compute the remainder later
-                samplingBudget = availableSpace + samplingBudget;
-            }
+            FireAllocationSampled(flags, aligned_size, samplingBudget, retVal);
         }
     }
 
@@ -289,20 +279,13 @@ inline Object* Alloc(ee_alloc_context* pEEAllocContext, size_t size, GC_ALLOC_FL
     // otherwise a new allocation context will be provided
     retVal = GCHeapUtilities::GetGCHeap()->Alloc(pAllocContext, size, flags);
 
-    // Note: it might happen that the object to allocate is larger than an allocation context
-    // in this case, both alloc_ptr and alloc_limit will share the same value
-    // --> this already full allocation context will trigger the slow path in the next allocation
-
-    if (isSampled)
-    {
-        FireAllocationSampled(flags, allocatedBytes, samplingBudget, retVal);
-    }
-
-    // only SOH allocations require sampling threshold to be recomputed
-    if ((flags & GC_ALLOC_USER_OLD_HEAP) == 0)
-    {
-        pEEAllocContext->ComputeSamplingLimit(pCurrentThread->GetRandom());
-    }
+    // There are a variety of conditions that may have invalidated the previous combined_limit value
+    // such as not allocating the object in the AC memory region (UOH allocations), moving the AC, adding
+    // extra alignment padding, allocating a new AC, or allocating an object that consumed the sampling budget.
+    // Rather than test for all the different invalidation conditions individually we conservatively always
+    // recompute it. If sampling isn't enabled this inlined function is just trivially setting
+    // combined_limit=alloc_limit.
+    pEEAllocContext->UpdateCombinedLimit(isRandomizedSamplingEnabled, pCurrentThread->GetRandom());
 
     return retVal;
 }
@@ -426,7 +409,7 @@ inline void LogAlloc(Object* object)
 
 // signals completion of the object to GC and sends events if necessary
 template <class TObj>
-void PublishObjectAndNotify(TObj* &orObject, size_t size, GC_ALLOC_FLAGS flags)
+void PublishObjectAndNotify(TObj* &orObject, GC_ALLOC_FLAGS flags)
 {
     _ASSERTE(orObject->HasEmptySyncBlockInfo());
 
@@ -458,14 +441,12 @@ void PublishObjectAndNotify(TObj* &orObject, size_t size, GC_ALLOC_FLAGS flags)
     {
         ETW::TypeSystemLog::SendObjectAllocatedEvent(orObject);
     }
-
 #endif // FEATURE_EVENT_TRACE
 }
 
-void PublishFrozenObject(Object*& orObject, size_t size)
+void PublishFrozenObject(Object*& orObject)
 {
-    // allocations in NGCH are not sampled
-    PublishObjectAndNotify(orObject, size, GC_ALLOC_NO_FLAGS);
+    PublishObjectAndNotify(orObject, GC_ALLOC_NO_FLAGS);
 }
 
 inline SIZE_T MaxArrayLength()
@@ -573,7 +554,7 @@ OBJECTREF AllocateSzArray(MethodTable* pArrayMT, INT32 cElements, GC_ALLOC_FLAGS
     // Initialize Object
     orArray->m_NumComponents = cElements;
 
-    PublishObjectAndNotify(orArray, totalSize, flags);
+    PublishObjectAndNotify(orArray, flags);
     return ObjectToOBJECTREF((Object*)orArray);
 }
 
@@ -841,7 +822,7 @@ OBJECTREF AllocateArrayEx(MethodTable *pArrayMT, INT32 *pArgs, DWORD dwNumArgs, 
         }
     }
 
-    PublishObjectAndNotify(orArray, totalSize, flags);
+    PublishObjectAndNotify(orArray, flags);
 
     if (kind != ELEMENT_TYPE_ARRAY)
     {
@@ -1006,14 +987,13 @@ STRINGREF AllocateString( DWORD cchStringLength )
     if (totalSize >= LARGE_OBJECT_SIZE && totalSize >= GCHeapUtilities::GetGCHeap()->GetLOHThreshold())
         flags |= GC_ALLOC_LARGE_OBJECT_HEAP;
 
-
     StringObject* orString = (StringObject*)Alloc(totalSize, flags);
 
     // Initialize Object
     orString->SetMethodTable(g_pStringClass);
     orString->SetStringLength(cchStringLength);
 
-    PublishObjectAndNotify(orString, totalSize, flags);
+    PublishObjectAndNotify(orString, flags);
     return ObjectToSTRINGREF(orString);
 
 }
@@ -1183,7 +1163,7 @@ OBJECTREF AllocateObject(MethodTable *pMT
             orObject->SetMethodTable(pMT);
         }
 
-        PublishObjectAndNotify(orObject, totalSize, flags);
+        PublishObjectAndNotify(orObject, flags);
         oref = OBJECTREF_TO_UNCHECKED_OBJECTREF(orObject);
     }
 
