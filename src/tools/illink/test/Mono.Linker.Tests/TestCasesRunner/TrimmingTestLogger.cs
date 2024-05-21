@@ -1,9 +1,7 @@
 // Copyright (c) .NET Foundation and contributors. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
 using System.Collections.Generic;
-using System.Collections.Immutable;
 
 namespace Mono.Linker.Tests.TestCasesRunner
 {
@@ -16,9 +14,9 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			MessageContainers = new List<MessageContainer> ();
 		}
 
-		public ImmutableArray<MessageContainer> GetLoggedMessages ()
+		public List<MessageContainer> GetLoggedMessages ()
 		{
-			return MessageContainers.ToImmutableArray();
+			return MessageContainers;
 		}
 
 		public void LogMessage (MessageContainer message)
