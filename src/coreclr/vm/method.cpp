@@ -209,26 +209,51 @@ LoaderAllocator * MethodDesc::GetDomainSpecificLoaderAllocator()
 
 }
 
-void MethodDesc::AllocateCodeData(LoaderHeap* pHeap, AllocMemTracker* pamTracker)
+HRESULT MethodDesc::EnsureCodeDataExists()
 {
     CONTRACTL
     {
-        THROWS;
+        NOTHROW;
         GC_NOTRIGGER;
-        PRECONDITION(pHeap != NULL);
-        PRECONDITION(pamTracker != NULL);
     }
     CONTRACTL_END;
 
-    m_codeData = (MethodDescCodeData*)pamTracker->Track(
-        pHeap->AllocMem(S_SIZE_T(sizeof(MethodDescCodeData))));
+    if (m_codeData != NULL)
+        return S_OK;
+
+    AllocMemTracker amTracker;
+    MethodDescCodeData* alloc = NULL;
+
+    LoaderHeap* heap = GetLoaderAllocator()->GetHighFrequencyHeap();
+
+    HRESULT hr = S_OK;
+    EX_TRY
+    {
+        alloc = (MethodDescCodeData*)amTracker.Track(heap->AllocMem(S_SIZE_T(sizeof(MethodDescCodeData))));
+    }
+    EX_CATCH_HRESULT(hr);
+    if (FAILED(hr))
+        return hr;
+
+    // Try to set the field. Suppress clean-up if we win the race.
+    if (InterlockedCompareExchangeT(&m_codeData, (MethodDescCodeData*)alloc, NULL) == NULL)
+        amTracker.SuppressRelease();
+
+    return S_OK;
 }
 
-bool MethodDesc::SetMethodDescVersionState(PTR_MethodDescVersioningState state)
+HRESULT MethodDesc::SetMethodDescVersionState(PTR_MethodDescVersioningState state)
 {
     WRAPPER_NO_CONTRACT;
+
+    HRESULT hr;
+    IfFailRet(EnsureCodeDataExists());
+
     _ASSERTE(m_codeData != NULL);
-    return InterlockedCompareExchangeT(&m_codeData->VersioningState, state, NULL) == NULL;
+    if (InterlockedCompareExchangeT(&m_codeData->VersioningState, state, NULL) != NULL)
+        return S_FALSE;
+
+    return S_OK;
 }
 
 #endif //!DACCESS_COMPILE
@@ -236,7 +261,8 @@ bool MethodDesc::SetMethodDescVersionState(PTR_MethodDescVersioningState state)
 PTR_MethodDescVersioningState MethodDesc::GetMethodDescVersionState()
 {
     WRAPPER_NO_CONTRACT;
-    _ASSERTE(m_codeData != NULL);
+    if (m_codeData == NULL)
+        return NULL;
     return m_codeData->VersioningState;
 }
 
@@ -1747,7 +1773,6 @@ MethodDescChunk *MethodDescChunk::CreateChunk(LoaderHeap *pHeap, DWORD methodDes
         {
             pMD->SetChunkIndex(pChunk);
             pMD->SetMethodDescIndex(i);
-            pMD->AllocateCodeData(pHeap, pamTracker);
 
             pMD->SetClassification(classification);
             if (fNonVtableSlot)

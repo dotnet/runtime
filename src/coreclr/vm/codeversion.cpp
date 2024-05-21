@@ -1376,6 +1376,7 @@ HRESULT CodeVersionManager::GetOrCreateMethodDescVersioningState(MethodDesc* pMe
     }
     CONTRACTL_END;
 
+    HRESULT hr;
     MethodDescVersioningState* pMethodVersioningState = pMethod->GetMethodDescVersionState();
     if (pMethodVersioningState == NULL)
     {
@@ -1383,7 +1384,8 @@ HRESULT CodeVersionManager::GetOrCreateMethodDescVersioningState(MethodDesc* pMe
         if (pMethodVersioningState == NULL)
             return E_OUTOFMEMORY;
 
-        if (!pMethod->SetMethodDescVersionState(pMethodVersioningState))
+        IfFailRet(pMethod->SetMethodDescVersionState(pMethodVersioningState));
+        if (hr == S_FALSE)
             delete pMethodVersioningState;
 
         pMethodVersioningState = pMethod->GetMethodDescVersionState();

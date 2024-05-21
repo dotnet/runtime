@@ -1641,9 +1641,9 @@ public:
     }
 
 #ifndef DACCESS_COMPILE
-    void AllocateCodeData(LoaderHeap* pHeap, AllocMemTracker* pamTracker);
+    HRESULT EnsureCodeDataExists();
 
-    bool SetMethodDescVersionState(PTR_MethodDescVersioningState state);
+    HRESULT SetMethodDescVersionState(PTR_MethodDescVersioningState state);
 #endif //!DACCESS_COMPILE
 
     PTR_MethodDescVersioningState GetMethodDescVersionState();
