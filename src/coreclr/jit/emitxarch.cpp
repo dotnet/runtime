@@ -13375,9 +13375,6 @@ BYTE* emitter::emitOutputAM(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
         code = AddRexWPrefix(id, code);
     }
 
-    // TODO-apx:
-    // Logic here is basically checking if R/X/B bits are needed.
-    // Seems correct but may need better naming or arrangement.
     if (IsExtendedReg(reg, EA_PTRSIZE))
     {
         insEncodeReg012(id, reg, EA_PTRSIZE, &code);
@@ -15497,71 +15494,14 @@ BYTE* emitter::emitOutputRR(BYTE* dst, instrDesc* id)
         }
     }
 #endif // FEATURE_HW_INTRINSICS
-    else if(TakesRex2Prefix(id))
-    /*
-    TODO-apx: like VEX/EVEX, there should be an global switch on REX2, accessed by `useRex2Encoding`.
-                 Then check if the instruction is actually using the higher 16 GPRs, I assume REX2 is not
-                 preferred when it is optional, considering the larger code size.
-    */ 
-    {
-        code = insCodeMR(ins);
-        code = AddRex2Prefix(ins, code);
-        code = insEncodeMRreg(id, code);
-
-        if (ins != INS_test)
-        {
-            code |= 2;
-        }
-        switch (size)
-        {
-            case EA_1BYTE:
-                noway_assert(RBM_BYTE_REGS & genRegMask(reg1));
-                noway_assert(RBM_BYTE_REGS & genRegMask(reg2));
-                break;
-
-            case EA_2BYTE:
-                // Output a size prefix for a 16-bit operand
-                dst += emitOutputByte(dst, 0x66);
-                FALLTHROUGH;
-
-            case EA_4BYTE:
-                // Set the 'w' bit to get the large version
-                code |= 0x1;
-                break;
-                
-#ifdef TARGET_AMD64
-            case EA_8BYTE:
-                // Set the 'w' bit to get the large version
-                // TODO-AMD64-CQ: Better way to not emit REX.W when we don't need it
-                // Don't need to zero out the high bits explicitly
-                if ((ins != INS_xor) || (reg1 != reg2))
-                {
-                    code = AddRexWPrefix(id, code);
-                }
-                else
-                {
-                    id->idOpSize(EA_4BYTE);
-                }
-                code |= 0x1;
-                break;
-
-#endif // TARGET_AMD64
-
-            default:
-                assert(!"unexpected size");
-        }
-
-    }
-
-    // TODO-apx: we might be able to further merge the original legacy path and the new REX2 path, 
-    //              as most of the emitting logics is the same but with extra REX2 prefix handling.
-    //              If so, need some clean up in `AddRexWPrefix`, let this method handle the w bit
-    //              for REX/VEX/EVEX/REX2 all at once.
     else
     {
         assert(!TakesSimdPrefix(id));
         code = insCodeMR(ins);
-
+        if(TakesRex2Prefix(id))
+        {
+            code = AddRex2Prefix(ins, code);
+        }
         code = insEncodeMRreg(id, code);
 
         if (ins != INS_test)
