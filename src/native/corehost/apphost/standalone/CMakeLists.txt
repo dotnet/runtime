@@ -56,8 +56,9 @@ if(CLR_CMAKE_TARGET_WIN32)
     add_link_options(apphost PRIVATE "/MANIFEST:NO")
 endif()
 
-# Specify non-default Windows libs to be used for Arm64 builds
-target_link_libraries(apphost PRIVATE shell32)
+if (CLR_CMAKE_TARGET_WIN32)
+    target_link_libraries(apphost PRIVATE shell32)
+endif()
 
 if (CLR_CMAKE_HOST_APPLE)
     adhoc_sign_with_entitlements(apphost "${CLR_ENG_NATIVE_DIR}/entitlements.plist")
