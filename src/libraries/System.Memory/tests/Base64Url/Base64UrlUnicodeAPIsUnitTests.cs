@@ -79,7 +79,7 @@ namespace System.Buffers.Text.Tests
                 } while (numBytes % 4 == 1); // ensure we have a valid length
 
                 Span<char> source = new char[numBytes];
-                Base64TestHelper.InitializeUrlDecodableBytes(source, numBytes);
+                Base64TestHelper.InitializeUrlDecodableChars(source, numBytes);
 
                 Span<byte> decodedBytes = new byte[Base64Url.GetMaxDecodedLength(source.Length)];
                 Assert.Equal(OperationStatus.Done, Base64Url.DecodeFromChars(source, decodedBytes, out int consumed, out int decodedByteCount));
