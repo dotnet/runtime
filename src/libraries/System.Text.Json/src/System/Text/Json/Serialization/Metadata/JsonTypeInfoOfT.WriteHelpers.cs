@@ -149,10 +149,10 @@ namespace System.Text.Json.Serialization.Metadata
 
                 try
                 {
+                    state.FlushThreshold = serializationContext.FlushThreshold;
+
                     do
                     {
-                        state.FlushThreshold = serializationContext.FlushThreshold;
-
                         try
                         {
                             isFinalBlock = EffectiveConverter.WriteCore(writer, rootValue, Options, ref state);
@@ -275,10 +275,11 @@ namespace System.Text.Json.Serialization.Metadata
                 using var bufferWriter = new PooledByteBufferWriter(Options.DefaultBufferSize);
                 using var writer = new Utf8JsonWriter(bufferWriter, Options.GetWriterOptions());
 
+                state.PipeWriter = bufferWriter;
+                state.FlushThreshold = (int)(bufferWriter.Capacity * JsonSerializer.FlushThreshold);
+
                 do
                 {
-                    state.FlushThreshold = (int)(bufferWriter.Capacity * JsonSerializer.FlushThreshold);
-
                     isFinalBlock = EffectiveConverter.WriteCore(writer, rootValue, Options, ref state);
                     writer.Flush();
 

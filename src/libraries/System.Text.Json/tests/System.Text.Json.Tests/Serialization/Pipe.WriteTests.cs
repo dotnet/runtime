@@ -341,7 +341,50 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(0, pool.BufferCount);
             result = await pipe.Reader.ReadAsync();
             Assert.Equal(2002, result.Buffer.Length);
+        }
 
+        [Fact]
+        public async Task NestedSerializeAsyncCallsFlushAtThreshold()
+        {
+            string data = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+            var options = new JsonSerializerOptions();
+            options.Converters.Add(new MyStringConverter());
+
+            var pipe = new Pipe(new PipeOptions(pauseWriterThreshold: 1000000));
+            var writer = new CustomPipeWriter(pipe.Writer);
+            await JsonSerializer.SerializeAsync(writer, CreateManyTestObjects(), options);
+
+            // Flush should happen every ~14,745 bytes (+36 for writing data when just below threshold)
+            Assert.True(writer.Flushes.Count > (data.Length * 10_000 / 16_000));
+
+            foreach (long flush in writer.Flushes)
+            {
+                Assert.True(flush < PipeOptions.Default.MinimumSegmentSize * 4);
+            }
+
+            IEnumerable<string> CreateManyTestObjects()
+            {
+                int i = 0;
+                while (true)
+                {
+                    if (++i % 10_000 == 0)
+                    {
+                        break;
+                    }
+                    yield return data;
+                }
+            }
+        }
+
+        class MyStringConverter : JsonConverter<string>
+        {
+            public override string Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) =>
+                throw new NotImplementedException();
+
+            public override void Write(Utf8JsonWriter writer, string value, JsonSerializerOptions options)
+            {
+                JsonSerializer.Serialize(writer, value);
+            }
         }
 
         internal class TestPool : MemoryPool<byte>

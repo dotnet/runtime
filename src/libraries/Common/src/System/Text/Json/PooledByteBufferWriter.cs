@@ -5,13 +5,14 @@ using System.Buffers;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
+using System.IO.Pipelines;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace System.Text.Json
 {
-    internal sealed class PooledByteBufferWriter : IBufferWriter<byte>, IDisposable
+    internal sealed class PooledByteBufferWriter : PipeWriter, IDisposable
     {
         // This class allows two possible configurations: if rentedBuffer is not null then
         // it can be used as an IBufferWriter and holds a buffer that should eventually be
@@ -19,6 +20,7 @@ namespace System.Text.Json
         // cleared/disposed state and it must re-rent a buffer before it can be used again.
         private byte[]? _rentedBuffer;
         private int _index;
+        private readonly Stream? _stream;
 
         private const int MinimumBufferSize = 256;
 
@@ -39,6 +41,11 @@ namespace System.Text.Json
 
             _rentedBuffer = ArrayPool<byte>.Shared.Rent(initialCapacity);
             _index = 0;
+        }
+
+        public PooledByteBufferWriter(int initialCapacity, Stream stream) : this(initialCapacity)
+        {
+            _stream = stream;
         }
 
         public ReadOnlyMemory<byte> WrittenMemory
@@ -127,7 +134,7 @@ namespace System.Text.Json
 
         public static PooledByteBufferWriter CreateEmptyInstanceForCaching() => new PooledByteBufferWriter();
 
-        public void Advance(int count)
+        public override void Advance(int count)
         {
             Debug.Assert(_rentedBuffer != null);
             Debug.Assert(count >= 0);
@@ -135,13 +142,13 @@ namespace System.Text.Json
             _index += count;
         }
 
-        public Memory<byte> GetMemory(int sizeHint = MinimumBufferSize)
+        public override Memory<byte> GetMemory(int sizeHint = MinimumBufferSize)
         {
             CheckAndResizeBuffer(sizeHint);
             return _rentedBuffer.AsMemory(_index);
         }
 
-        public Span<byte> GetSpan(int sizeHint = MinimumBufferSize)
+        public override Span<byte> GetSpan(int sizeHint = MinimumBufferSize)
         {
             CheckAndResizeBuffer(sizeHint);
             return _rentedBuffer.AsSpan(_index);
@@ -217,6 +224,13 @@ namespace System.Text.Json
             Debug.Assert(_rentedBuffer.Length - _index > 0);
             Debug.Assert(_rentedBuffer.Length - _index >= sizeHint);
         }
+
+        public override void CancelPendingFlush() => throw new NotImplementedException();
+        public override void Complete(Exception? exception = null) => throw new NotImplementedException();
+        public override ValueTask<FlushResult> FlushAsync(CancellationToken cancellationToken = default) => throw new NotImplementedException();
+
+        public override bool CanGetUnflushedBytes => true;
+        public override long UnflushedBytes => _index;
     }
 
     internal static partial class ThrowHelper
