@@ -175,6 +175,6 @@
     <value>The instrument is of different generic type.</value>
   </data>
   <data name="InvalidHistogramExplicitBucketBoundaries" xml:space="preserve">
-    <value>Histogram explicit bucket boundaries MUST be specified in ascending order and CANNOT contain duplicate values.</value>
+    <value>Histogram explicit bucket boundaries must be specified in ascending order and cannot contain duplicate values.</value>
   </data>
 </root>

@@ -367,6 +367,11 @@ namespace System.Diagnostics.Metrics
         public void Record(T value, params System.ReadOnlySpan<System.Collections.Generic.KeyValuePair<string, object?>> tags) { throw null; }
         public void Record(T value, params System.Collections.Generic.KeyValuePair<string, object?>[] tags) { throw null; }
     }
+    public sealed class HistogramAdvice<T> where T : struct
+    {
+        public HistogramAdvice(System.Collections.Generic.IEnumerable<T> explicitBucketBoundaries) { throw null; }
+        public System.Collections.Generic.IReadOnlyList<T>? ExplicitBucketBoundaries { get { throw null; } }
+    }
     public interface IMeterFactory : System.IDisposable
     {
         System.Diagnostics.Metrics.Meter Create(System.Diagnostics.Metrics.MeterOptions options);
@@ -572,10 +577,5 @@ namespace System.Diagnostics.Metrics
         protected ObservableInstrument(Meter meter, string name, string? unit, string? description) : this(meter, name, unit, description, tags: null) { throw null; }
         protected ObservableInstrument(Meter meter, string name, string? unit, string? description, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, object?>> tags) : base(meter, name, unit, description) { throw null; }
         protected abstract System.Collections.Generic.IEnumerable<Measurement<T>> Observe();
-    }
-    public sealed class HistogramAdvice<T> where T : struct
-    {
-        public HistogramAdvice(System.Collections.Generic.IEnumerable<T> explicitBucketBoundaries) { throw null; }
-        public System.Collections.Generic.IReadOnlyList<T>? ExplicitBucketBoundaries { get { throw null; } }
     }
 }
