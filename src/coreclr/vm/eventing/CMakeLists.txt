@@ -39,6 +39,8 @@ add_dependencies(eventing_headers eventprovider)
 
 add_subdirectory(eventpipe)
 
+add_subdirectory(userevents)
+
 if(CLR_CMAKE_HOST_WIN32)
   add_subdirectory(EtwProvider)
 endif()

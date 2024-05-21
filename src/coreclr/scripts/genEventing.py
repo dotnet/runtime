@@ -495,7 +495,8 @@ def generateClrallEvents(eventNodes, allTemplates, target_cpp, runtimeFlavor, wr
 
                 if runtimeFlavor.coreclr or write_xplatheader or runtimeFlavor.nativeaot:
                     if os.name == 'posix':
-                        clrallEvents.append(" || UserEventsEnabled" + eventName + "()")
+                        if runtimeFlavor.coreclr:
+                            clrallEvents.append(" || UserEventsEventEnabled" + eventName + "()")
                         # native AOT does not support non-windows eventing other than via event pipe
                         if not runtimeFlavor.nativeaot:
                             clrallEvents.append(" || (XplatEventLogger" +
@@ -590,7 +591,7 @@ def generateClrallEvents(eventNodes, allTemplates, target_cpp, runtimeFlavor, wr
 
             fnbody.append("ActivityId,RelatedActivityId);\n")
 
-            if os.name == 'posix':
+            if runtimeFlavor.coreclr and os.name == 'posix':
                 fnbody.append("status &= UserEventsWriteEvent" + eventName + "(" + ''.join(line))
                 if len(line) > 0:
                     fnbody.append(",")
@@ -730,6 +731,63 @@ def generateClrEventPipeWriteEvents(eventNodes, allTemplates, extern, target_cpp
 
     return ''.join(clrallEvents)
 
+def generateClrUserEventsWriteEvents(eventNodes, allTemplates, extern, target_cpp, runtimeFlavor, providerName, inclusion_list):
+    clrallEvents = []
+    for eventNode in eventNodes:
+        eventName    = eventNode.getAttribute('symbol')
+        if not includeEvent(inclusion_list, providerName, eventName):
+            continue
+
+        templateName = eventNode.getAttribute('template')
+
+        #generate EventPipeEventEnabled and EventPipeWriteEvent functions
+        eventenabled = []
+        writeevent   = []
+        fnptypeline  = []
+
+        if extern:eventenabled.append('extern "C" ')
+        eventenabled.append("%s UserEventsEventEnabled" % (getEventPipeDataTypeMapping(runtimeFlavor)["BOOL"]))
+        eventenabled.append(eventName)
+        eventenabled.append("(void);\n")
+
+        if extern: writeevent.append('extern "C" ')
+        writeevent.append("%s UserEventsWriteEvent" % (getEventPipeDataTypeMapping(runtimeFlavor)["ULONG"]))
+        writeevent.append(eventName)
+        writeevent.append("(\n")
+
+        if templateName:
+            template = allTemplates[templateName]
+            fnSig    = template.signature
+
+            for params in fnSig.paramlist:
+                fnparam     = fnSig.getParam(params)
+                wintypeName = fnparam.winType
+                typewName   = getPalDataTypeMapping(runtimeFlavor)[wintypeName]
+                winCount    = fnparam.count
+                countw      = getPalDataTypeMapping(runtimeFlavor)[winCount]
+
+                if params in template.structs:
+                    fnptypeline.append("%sint %s_ElementSize,\n" % (lindent, params))
+
+                fnptypeline.append(lindent)
+                fnptypeline.append(typewName)
+                fnptypeline.append(countw)
+                fnptypeline.append(" ")
+                fnptypeline.append(fnparam.name)
+                fnptypeline.append(",\n")
+
+        fnptypeline.append(lindent)
+        fnptypeline.append("%s ActivityId%s\n" % (getEventPipeDataTypeMapping(runtimeFlavor)["LPCGUID"], " = nullptr," if target_cpp else ","))
+        fnptypeline.append(lindent)
+        fnptypeline.append("%s RelatedActivityId%s" % (getEventPipeDataTypeMapping(runtimeFlavor)["LPCGUID"], " = nullptr" if target_cpp else ""))
+
+        writeevent.extend(fnptypeline)
+        writeevent.append("\n);\n")
+        clrallEvents.extend(eventenabled)
+        clrallEvents.extend(writeevent)
+
+    return ''.join(clrallEvents)
+
 #generates the dummy header file which is used by the VM as entry point to the logging Functions
 def generateclrEtwDummy(eventNodes,allTemplates):
     clretmEvents = []
@@ -822,6 +880,10 @@ def updateclreventsfile(write_xplatheader, target_cpp, runtimeFlavor, eventpipe_
             if runtimeFlavor.coreclr or write_xplatheader:
                 Clrallevents.write('#include "clrxplatevents.h"\n')
             Clrallevents.write('#include "clreventpipewriteevents.h"\n')
+            if runtimeFlavor.coreclr:
+                Clrallevents.write('#ifdef TARGET_LINUX\n')
+                Clrallevents.write('#include "clrusereventswriteevents.h"\n')
+                Clrallevents.write('#endif // TARGET_LINUX\n')
         elif generatedFileType == "header":
             Clrallevents.write('#ifndef CLR_ETW_ALL_MAIN_H\n')
             Clrallevents.write('#define CLR_ETW_ALL_MAIN_H\n\n')
@@ -830,6 +892,10 @@ def updateclreventsfile(write_xplatheader, target_cpp, runtimeFlavor, eventpipe_
             Clrallevents.write('#include <PalRedhawk.h>\n')
             Clrallevents.write('#include "clretwallmain.h"\n')
             Clrallevents.write('#include "clreventpipewriteevents.h"\n')
+            if runtimeFlavor.coreclr:
+                Clrallevents.write('#ifdef TARGET_LINUX\n')
+                Clrallevents.write('#include "clrusereventswriteevents.h"\n')
+                Clrallevents.write('#endif // TARGET_LINUX\n')
             Clrallevents.write('#ifdef FEATURE_ETW\n')
             Clrallevents.write('#include "ClrEtwAll.h"\n')
             Clrallevents.write('#endif\n')
@@ -1017,6 +1083,20 @@ typedef struct _EVENT_DESCRIPTOR
 
             #eventpipe: create clreventpipewriteevents.h
             Clreventpipewriteevents.write(generateClrEventPipeWriteEvents(eventNodes, allTemplates, extern, target_cpp, runtimeFlavor, providerName, inclusion_list) + "\n")
+
+    if runtimeFlavor.coreclr and os.name == 'posix':
+        clrusereventswriteeventsPath = os.path.join(incDir, "clrusereventswriteevents.h")
+        with open_for_update(clrusereventswriteeventsPath) as clrusereventswriteevents:
+            clrusereventswriteevents.write(stdprolog + "\n")
+
+            for providerNode in tree.getElementsByTagName('provider'):
+                providerName = providerNode.getAttribute('name')
+                templateNodes = providerNode.getElementsByTagName('template')
+                allTemplates  = parseTemplateNodes(templateNodes)
+                eventNodes = providerNode.getElementsByTagName('event')
+
+                #user_events: create clrusereventswriteevents.h
+                clrusereventswriteevents.write(generateClrUserEventsWriteEvents(eventNodes, allTemplates, extern, target_cpp, runtimeFlavor, providerName, inclusion_list) + "\n")
 
     # Write secondary headers for FireEtXplat* and EventPipe* functions
     if write_xplatheader:

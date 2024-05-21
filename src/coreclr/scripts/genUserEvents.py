@@ -30,13 +30,13 @@ stdprolog_cmake = """#
 userevent_dirname = "userevents"
 
 def generateMethodSignatureEnabled(eventName, runtimeFlavor, providerName, eventLevel, eventKeywords):
-    return "%s UserEventEnabled%s(void)" % (getEventPipeDataTypeMapping(runtimeFlavor)["BOOL"], eventName,)#mayhbe add in genEventing.py
+    return "%s UserEventsEventEnabled%s(void)" % (getEventPipeDataTypeMapping(runtimeFlavor)["BOOL"], eventName,)#mayhbe add in genEventing.py
 
 def generateMethodSignatureWrite(eventName, template, extern, runtimeFlavor):
     sig_pieces = []
 
     if extern: sig_pieces.append('extern "C" ')
-    sig_pieces.append("%s UserEventWriteEvent" % (getEventPipeDataTypeMapping(runtimeFlavor)["ULONG"]))
+    sig_pieces.append("%s UserEventsWriteEvent" % (getEventPipeDataTypeMapping(runtimeFlavor)["ULONG"]))
     sig_pieces.append(eventName)
     sig_pieces.append("(")
 
@@ -105,7 +105,7 @@ def generateClrUserEventWriteEventsImpl(providerNode, providerPrettyName, provid
         # generate UserEventEnabled function
         eventEnabledImpl = generateMethodSignatureEnabled(eventName, runtimeFlavor, providerName, eventLevel, eventKeywords) + """
 {
-    return %s(UserEvent%s, %s, %s);
+    return IsUserEventsEnabled() && %s(UserEvent%s, %s, %s);
 }
 
 """ % (eventIsEnabledFunc, eventName, getUserEventLogLevelMapping(runtimeFlavor)[eventLevel], eventKeywordsMask)
@@ -121,7 +121,7 @@ def generateClrUserEventWriteEventsImpl(providerNode, providerPrettyName, provid
 
         fnptype.append(generateMethodSignatureWrite(eventName, template, extern, runtimeFlavor))
         fnptype.append("\n{\n")
-        checking = """    if (!UserEventEnabled%s())
+        checking = """    if (!UserEventsEventEnabled%s())
         return ERROR_SUCCESS;
 """ % (eventName)
 
@@ -138,9 +138,10 @@ def generateClrUserEventWriteEventsImpl(providerNode, providerPrettyName, provid
                 WriteEventImpl.append(
                     "    TraceLoggingWriteActivity(%s, \"%s\"" %(providerPrettyName, eventName) +
                     ", ActivityId, RelatedActivityId);\n")
+                WriteEventImpl.append("    return ERROR_SUCCESS;\n")
+                WriteEventImpl.append("}\n\n")
             elif (runtimeFlavor.mono or runtimeFlavor.nativeaot):
-
-            WriteEventImpl.append("\n    return ERROR_SUCCESS;\n}\n\n")
+                WriteEventImpl.append("\n    return ERROR_SUCCESS;\n}\n\n")
     return ''.join(WriteEventImpl)
 
 def generateWriteEventBody(template, providerPrettyName, eventName, runtimeFlavor, eventLevel, eventKeywordsMask):
@@ -196,75 +197,57 @@ def getCoreCLRUserEventHelperFileImplPrefix():
 
 """
 
-def getCoreCLRUserEventHelperFileImplSuffix():
-    return ""
-
-def getMonoUserEventHelperFileImplPrefix():
-    return ""
-
-def getMonoUserEventHelperFileImplSuffix():
-    return ""
-
-def getAotUserEventHelperFileImplPrefix():
-    return ""
-
-def getAotUserEventHelperFileImplSuffix():
-    return ""
-
 def generateUserEventHelperFile(etwmanifest, userevent_directory, target_cpp, runtimeFlavor, extern, dryRun):
-    usereventhelpersPath = os.path.join(userevent_directory, "usereventhelpers" + (".cpp" if target_cpp else ".c"))
+    usereventhelpersPath = os.path.join(userevent_directory, "usereventshelpers" + (".cpp" if target_cpp else ".c"))
     if dryRun:
         print(usereventhelpersPath)
     else:
         with open_for_update(usereventhelpersPath) as helper:
             helper.write(stdprolog_cpp)
-            if runtimeFlavor.coreclr:
-                helper.write(getCoreCLRUserEventHelperFileImplPrefix())
-            elif runtimeFlavor.mono:
-                helper.write(getMonoUserEventHelperFileImplPrefix())
-            elif runtimeFlavor.nativeaot:
-                helper.write(getAotUserEventHelperFileImplPrefix())
+            helper.write("""
+#include <user_events.h>
+#include <common.h>
+#include <configuration.h>
 
-            tree = DOM.parse(etwmanifest)
+#ifdef TARGET_UNIX
+bool s_userEventsEnabled = false;
 
-            for providerNode in tree.getElementsByTagName('provider'):
-                providerName = providerNode.getAttribute('name')
-                if includeProvider(providerName, runtimeFlavor):
-                    providerPrettyName = providerName.replace("Windows-", '')
-                    providerPrettyName = providerPrettyName.replace("Microsoft-", '')
-                    providerPrettyName = providerPrettyName.replace('-', '_')
-                    if extern: helper.write(
-                        'extern "C" '
-                    )
-                    helper.write(
-                        "void Init" +
-                        providerPrettyName +
-                        "(void);\n\n")
+void InitUserEvents()
+{
+    // TODO: What to call this runtimeconfig.json switch? S.D.T implies it supports EventSource
+    bool isEnabled = Configuration::GetKnobBooleanValue(W("System.Diagnostics.Tracing.UserEvents"), false); 
+    if (!isEnabled)
+    {
+        isEnabled = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_EnableUserEvents) != 0;
+    }
 
-            if extern: helper.write(
-                'extern "C" '
-            )
-            helper.write("void InitProvidersAndEvents(void);\n\n")
-            helper.write("void InitProvidersAndEvents(void)\n{\n")
-            for providerNode in tree.getElementsByTagName('provider'):
-                providerName = providerNode.getAttribute('name')
-                if includeProvider(providerName, runtimeFlavor):
-                    providerPrettyName = providerName.replace("Windows-", '')
-                    providerPrettyName = providerPrettyName.replace("Microsoft-", '')
-                    providerPrettyName = providerPrettyName.replace('-', '_')
-                    helper.write("    Init" + providerPrettyName + "();\n")
-            helper.write("}\n")
+    s_userEventsEnabled = isEnabled;
+}
 
-            if (runtimeFlavor.coreclr or runtimeFlavor.nativeaot):
-                helper.write(getCoreCLRUserEventHelperFileImplSuffix())
-            elif runtimeFlavor.mono:
-                helper.write(getMonoUserEventHelperFileImplSuffix())
+bool IsUserEventsEnabled()
+{
+    return s_userEventsEnabled;
+}
 
-        helper.close()
+#else // TARGET_UNIX
+void InitUserEvents()
+{
+
+}
+
+bool IsUserEventsEnabled()
+{
+    return false;
+}
+
+#endif // TARGET_UNIX
+                """)
+
 def getCoreCLRUserEventImplFilePrefix():
-    return """#include "common.h" //FIXME<>
+    return """#include "common.h"
 #include <stdint.h>
 #include <eventheader/TraceLoggingProvider.h>
+#include <user_events.h>
 """
 
 def getCoreCLRUserEventImplFileSuffix():

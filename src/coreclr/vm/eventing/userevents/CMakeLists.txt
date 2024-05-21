@@ -1,7 +1,7 @@
 include(FindPython)
 set (GENERATE_SCRIPT ${CLR_DIR}/scripts/genUserEvents.py)
 
-set(GENERATE_COMMAND ${Python_EXECUTABLE} ${GENERATE_SCRIPT} --man ${EVENT_MANIFEST} --intermediate ${CMAKE_CURRENT_BINARY_DIR})
+set(GENERATE_COMMAND ${Python_EXECUTABLE} ${GENERATE_SCRIPT} --man ${EVENT_MANIFEST} --exc ${EVENT_EXCLUSIONS} --intermediate ${CMAKE_CURRENT_BINARY_DIR} ${NONEXTERN_ARG})
 
 execute_process(
   COMMAND ${GENERATE_COMMAND} --dry-run
@@ -14,17 +14,24 @@ if (NOT GEN_USEREVENTS_RESULT EQUAL 0)
   message(FATAL_ERROR "Failed to generate user_events provider: ${GEN_USEREVENTS_ERRORS}")
 endif()
 
+add_subdirectory(LinuxTracepoints)
+
+include_directories(LinuxTracepoints/libtracepoint/include)
+include_directories(LinuxTracepoints/libeventheader-tracepoint/include)
+
 add_definitions(-DPAL_STDCPP_COMPAT=1)
 include_directories(${COREPAL_SOURCE_DIR}/inc/rt)
-# include_directories(${CMAKE_CURRENT_BINARY_DIR}/lttng)
 
 # TODO: keep in sync with providers in ClrEtwAll.man
 set (USEREVENTS_PROVIDER_SOURCES
-     userevents.cpp
-     dotnetruntime.cpp
-     dotnetruntimemonoprofiler.cpp
-     dotnetruntimerundown.cpp
-     dotnetruntimestress.cpp)
+     userevents/usereventshelpers.cpp
+     userevents/dotnetruntime.cpp
+     userevents/dotnetruntimerundown.cpp
+     userevents/dotnetruntimestress.cpp)
+
+set (CORECLR_USEREVENTS_SHIM_SOURCE_PATH "${CORECLR_USEREVENTS_SHIM_DIR}")
+
+addprefix(USEREVENTS_PROVIDER_SOURCES ${CMAKE_CURRENT_BINARY_DIR} "${USEREVENTS_PROVIDER_SOURCES}")
 
 add_custom_command(OUTPUT ${USEREVENTS_PROVIDER_SOURCES}
   COMMAND ${GENERATE_COMMAND}
@@ -38,7 +45,7 @@ add_custom_target(
   generated_userevents_headers
   DEPENDS ${USEREVENTS_HEADERS})
 
-add_library(usereventsprovider
+add_library_clr(usereventsprovider
   STATIC
   ${USEREVENTS_PROVIDER_SOURCES}
 )
