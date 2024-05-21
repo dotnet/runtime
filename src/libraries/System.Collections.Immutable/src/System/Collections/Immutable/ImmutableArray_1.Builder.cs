@@ -580,6 +580,7 @@ namespace System.Collections.Immutable
             public void RemoveRange(int index, int length)
             {
                 Requires.Range(index >= 0 && index + length <= _count, nameof(index));
+                Requires.Range(length >= 0, nameof(index));
 
                 if (length == 0)
                 {
