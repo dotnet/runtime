@@ -304,7 +304,7 @@ namespace System.Text.Json.SourceGeneration
             {
                 // Because System.Text.Json cannot distinguish between nullable and non-nullable type parameters,
                 // (e.g. the same metadata is being used for both KeyValuePair<string, string?> and KeyValuePair<string, string>),
-                // we derive nullability annotations from the original definition of the field and not instation.
+                // we derive nullability annotations from the original definition of the field and not its instantiation.
                 // This preserves compatibility with the capabilities of the reflection-based NullabilityInfo reader.
                 property = property.OriginalDefinition;
 
