@@ -494,8 +494,15 @@ enum gc_oh_num
 };
 
 const int total_oh_count = gc_oh_num::poh + 1;
+#ifdef USE_REGIONS
 const int recorded_committed_free_bucket = total_oh_count;
 const int recorded_committed_bookkeeping_bucket = recorded_committed_free_bucket + 1;
+const int recorded_committed_mark_array_bucket = recorded_committed_bookkeeping_bucket;
+#else
+const int recorded_committed_ignored_bucket = total_oh_count;
+const int recorded_committed_bookkeeping_bucket = recorded_committed_ignored_bucket + 1;
+const int recorded_committed_mark_array_bucket = recorded_committed_ignored_bucket;
+#endif //USE_REGIONS
 const int recorded_committed_bucket_counts = recorded_committed_bookkeeping_bucket + 1;
 
 gc_oh_num gen_to_oh (int gen);
@@ -1563,14 +1570,19 @@ private:
 
 #ifdef VERIFY_HEAP
     PER_HEAP_METHOD void verify_free_lists();
-    PER_HEAP_METHOD void verify_regions (int gen_number, bool can_verify_gen_num, bool can_verify_tail, size_t* p_total_committed = nullptr);
+#if defined (USE_REGIONS)
+    PER_HEAP_METHOD void verify_regions (int gen_number, bool can_verify_gen_num, bool can_verify_tail);
     PER_HEAP_METHOD void verify_regions (bool can_verify_gen_num, bool concurrent_p);
+#endif //USE_REGIONS
     PER_HEAP_ISOLATED_METHOD void enter_gc_lock_for_verify_heap();
     PER_HEAP_ISOLATED_METHOD void leave_gc_lock_for_verify_heap();
     PER_HEAP_METHOD void verify_heap (BOOL begin_gc_p);
     PER_HEAP_METHOD BOOL check_need_card (uint8_t* child_obj, int gen_num_for_cards,
                           uint8_t* low, uint8_t* high);
 #endif //VERIFY_HEAP
+
+    PER_HEAP_METHOD void verify_committed_bytes_per_heap();
+    PER_HEAP_ISOLATED_METHOD void verify_committed_bytes();
 
     PER_HEAP_ISOLATED_METHOD void fire_per_heap_hist_event (gc_history_per_heap* current_gc_data_per_heap, int heap_num);
 
@@ -1667,9 +1679,6 @@ private:
     // Compute the size committed for the mark array for this region.
     PER_HEAP_METHOD size_t get_mark_array_size(heap_segment* seg);
 
-    // Accumulate the committed bytes for both the region and the mark array for this list of regions.
-    PER_HEAP_METHOD void accumulate_committed_bytes(heap_segment* seg, size_t& committed_bytes, size_t& mark_array_committed_bytes, gc_oh_num oh = unknown);
-
     PER_HEAP_ISOLATED_METHOD void verify_region_to_generation_map();
 
     PER_HEAP_ISOLATED_METHOD void compute_gc_and_ephemeral_range (int condemned_gen_number, bool end_of_gc_p);
@@ -1677,6 +1686,9 @@ private:
     PER_HEAP_METHOD void pin_by_gc (uint8_t* object);
 #endif //STRESS_REGIONS
 #endif //USE_REGIONS
+
+    // Accumulate the committed bytes for both the region and the mark array for this list of regions.
+    PER_HEAP_METHOD void accumulate_committed_bytes(heap_segment* seg, size_t& committed_bytes, size_t& mark_array_committed_bytes, gc_oh_num oh = unknown);
 
     PER_HEAP_ISOLATED_METHOD gc_heap* make_gc_heap(
 #if defined (MULTIPLE_HEAPS)
@@ -2378,6 +2390,9 @@ private:
     PER_HEAP_ISOLATED_METHOD bool virtual_alloc_commit_for_heap (void* addr, size_t size, int h_number);
     PER_HEAP_ISOLATED_METHOD bool virtual_commit (void* address, size_t size, int bucket, int h_number=-1, bool* hard_limit_exceeded_p=NULL);
     PER_HEAP_ISOLATED_METHOD bool virtual_decommit (void* address, size_t size, int bucket, int h_number=-1);
+    PER_HEAP_ISOLATED_METHOD void reduce_committed_bytes (void* address, size_t size, int bucket, int h_number, bool decommit_succeeded_p);
+    friend void destroy_card_table (uint32_t*);
+    PER_HEAP_ISOLATED_METHOD void destroy_card_table_helper (uint32_t* c_table);
     PER_HEAP_ISOLATED_METHOD void virtual_free (void* add, size_t size, heap_segment* sg=NULL);
     PER_HEAP_ISOLATED_METHOD void reset_memory(uint8_t* o, size_t sizeo);
     PER_HEAP_METHOD void clear_gen0_bricks();
@@ -3349,11 +3364,11 @@ private:
     PER_HEAP_ISOLATED_METHOD bool compute_memory_settings(bool is_initialization, uint32_t& nhp, uint32_t nhp_from_config, size_t& seg_size_from_config,
         size_t new_current_total_committed);
 
-#ifdef USE_REGIONS
-    PER_HEAP_ISOLATED_METHOD void compute_committed_bytes(size_t& total_committed, size_t& committed_decommit, size_t& committed_free,
-                                  size_t& committed_bookkeeping, size_t& new_current_total_committed, size_t& new_current_total_committed_bookkeeping,
+    PER_HEAP_METHOD size_t compute_committed_bytes_per_heap(int oh, size_t& committed_bookkeeping);
+
+    PER_HEAP_ISOLATED_METHOD void compute_committed_bytes(size_t& total_committed, size_t& committed_decommit, size_t& committed_free, 
+                                  size_t& committed_bookkeeping, size_t& new_current_total_committed, size_t& new_current_total_committed_bookkeeping, 
                                   size_t* new_committed_by_oh);
-#endif
 
     PER_HEAP_METHOD void update_collection_counts ();
 
@@ -3892,13 +3907,10 @@ private:
     PER_HEAP_FIELD_DIAG_ONLY int gchist_index_per_heap;
     PER_HEAP_FIELD_DIAG_ONLY gc_history gchist_per_heap[max_history_count];
 
-#ifdef MULTIPLE_HEAPS
-#ifdef _DEBUG
+#if defined(MULTIPLE_HEAPS) && defined(_DEBUG)
     PER_HEAP_FIELD_DIAG_ONLY size_t committed_by_oh_per_heap[total_oh_count];
     PER_HEAP_FIELD_DIAG_ONLY size_t committed_by_oh_per_heap_refresh[total_oh_count];
-#endif //_DEBUG
-#else //MULTIPLE_HEAPS
-#endif //MULTIPLE_HEAPS
+#endif // MULTIPLE_HEAPS && _DEBUG
 
 #ifdef BACKGROUND_GC
     PER_HEAP_FIELD_DIAG_ONLY gc_history_per_heap bgc_data_per_heap;
@@ -5093,7 +5105,9 @@ private:
 
     // Used both in a GC and on the allocator code paths when heap_hard_limit is non zero
     PER_HEAP_ISOLATED_FIELD_INIT_ONLY CLRCriticalSection check_commit_cs;
+#ifdef COMMITTED_BYTES_SHADOW
     PER_HEAP_ISOLATED_FIELD_INIT_ONLY CLRCriticalSection decommit_lock;
+#endif
 
     // Indicate to use large pages. This only works if hardlimit is also enabled.
     PER_HEAP_ISOLATED_FIELD_INIT_ONLY bool use_large_pages_p;
