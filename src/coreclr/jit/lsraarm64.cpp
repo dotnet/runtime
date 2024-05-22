@@ -1758,6 +1758,20 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 break;
             }
 
+            case NI_Sve_StoreAndZipx2:
+            case NI_Sve_StoreAndZipx3:
+            case NI_Sve_StoreAndZipx4:
+            {
+                assert(intrin.op2 != nullptr);
+                assert(intrin.op3 != nullptr);
+                srcCount += BuildAddrUses(intrin.op2);
+                srcCount += BuildConsecutiveRegistersForUse(intrin.op3);
+                assert(dstCount == 0);
+                buildInternalRegisterUses();
+                *pDstCount = 0;
+                break;
+            }
+
             default:
                 noway_assert(!"Not a supported as multiple consecutive register intrinsic");
         }
@@ -1893,6 +1907,10 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 srcCount += BuildDelayFreeUses(intrinEmbOp2->Op(argNum), intrinEmbOp2->Op(1),
                                                (argNum == lowVectorOperandNum) ? lowVectorCandidates : RBM_NONE);
             }
+        }
+        else if (intrin.id == NI_Sve_StoreAndZip)
+        {
+            srcCount += BuildAddrUses(intrin.op2);
         }
         else
         {
