@@ -310,7 +310,7 @@ namespace System.Globalization
 
         private string IcuGetLanguageDisplayName(string cultureName)
         {
-#if TARGET_BROWSER && !FEATURE_WASM_MANAGED_THREADS
+#if TARGET_BROWSER
             return JSGetNativeDisplayName(CultureInfo.CurrentUICulture.Name, cultureName);
 #else
             return IcuGetLocaleInfo(cultureName, LocaleStringData.LocalizedDisplayName, CultureInfo.CurrentUICulture.Name);

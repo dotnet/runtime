@@ -160,7 +160,7 @@ namespace System.Text.Json.Serialization.Metadata
             T value = Get!(obj);
 
             if (
-#if NETCOREAPP
+#if NET
                 !typeof(T).IsValueType && // treated as a constant by recent versions of the JIT.
 #else
                 !EffectiveConverter.IsValueType &&

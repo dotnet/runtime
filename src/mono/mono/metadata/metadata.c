@@ -2546,6 +2546,37 @@ mono_metadata_signature_dup_delegate_invoke_to_target (MonoMethodSignature *sig)
 	return res;
 }
 
+/**
+ * mono_metadata_signature_dup_new_params:
+ * @param mp The memory pool to allocate the duplicated signature from.
+ * @param sig The original method signature.
+ * @param num_params The number parameters in the new signature.
+ * @param new_params An array of MonoType pointers representing the new parameters.
+ * 
+ * Duplicate an existing \c MonoMethodSignature but with a new set of parameters.
+ * This is a Mono runtime internal function.
+ * 
+ * @return the new \c MonoMethodSignature structure.
+ */
+MonoMethodSignature*
+mono_metadata_signature_dup_new_params (MonoMemPool *mp, MonoMethodSignature *sig, uint32_t num_params, MonoType **new_params)
+{
+	size_t new_sig_size = MONO_SIZEOF_METHOD_SIGNATURE + num_params * sizeof (MonoType*);
+	if (sig->ret)
+		new_sig_size += mono_sizeof_type (sig->ret);
+	
+	MonoMethodSignature *res = (MonoMethodSignature *)mono_mempool_alloc0 (mp, (unsigned int)new_sig_size);
+	memcpy (res, sig, MONO_SIZEOF_METHOD_SIGNATURE);
+	res->param_count = GUINT32_TO_UINT16 (num_params);
+
+	for (uint16_t i = 0; i < res->param_count; i++) {
+		res->params [i] = new_params [i];
+	}
+	res->ret = sig->ret;
+
+	return res;
+}
+
 /*
  * mono_metadata_signature_size:
  *
@@ -3449,9 +3480,10 @@ mono_metadata_get_canonical_generic_inst (MonoGenericInst *candidate)
 	mono_loader_lock ();
 
 	if (!mm->ginst_cache)
-		mm->ginst_cache = g_hash_table_new_full (mono_metadata_generic_inst_hash, mono_metadata_generic_inst_equal, NULL, (GDestroyNotify)free_generic_inst);
+		mm->ginst_cache = dn_simdhash_ght_new_full (mono_metadata_generic_inst_hash, mono_metadata_generic_inst_equal, NULL, (GDestroyNotify)free_generic_inst, 0, NULL);
 
-	MonoGenericInst *ginst = (MonoGenericInst *)g_hash_table_lookup (mm->ginst_cache, candidate);
+	MonoGenericInst *ginst = NULL;
+	dn_simdhash_ght_try_get_value (mm->ginst_cache, candidate, (void **)&ginst);
 	if (!ginst) {
 		int size = MONO_SIZEOF_GENERIC_INST + type_argc * sizeof (MonoType *);
 		ginst = (MonoGenericInst *)mono_mem_manager_alloc0 (mm, size);
@@ -3465,7 +3497,7 @@ mono_metadata_get_canonical_generic_inst (MonoGenericInst *candidate)
 		for (int i = 0; i < type_argc; ++i)
 			ginst->type_argv [i] = mono_metadata_type_dup (NULL, candidate->type_argv [i]);
 
-		g_hash_table_insert (mm->ginst_cache, ginst, ginst);
+		dn_simdhash_ght_insert (mm->ginst_cache, ginst, ginst);
 	}
 
 	mono_loader_unlock ();

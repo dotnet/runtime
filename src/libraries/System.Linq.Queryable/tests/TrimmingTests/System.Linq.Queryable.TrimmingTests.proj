@@ -2,7 +2,10 @@
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props))" />
 
   <ItemGroup>
-    <TestConsoleAppSourceFiles Include="QueryableTests.cs" />
+    <TestConsoleAppSourceFiles Include="QueryableTests.cs">
+      <!-- https://github.com/dotnet/runtime/issues/101903 -->
+      <NativeAotIncompatible>true</NativeAotIncompatible>
+    </TestConsoleAppSourceFiles>
   </ItemGroup>
 
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets))" />

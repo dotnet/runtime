@@ -33,6 +33,7 @@ namespace ILLink.Shared.TrimAnalysis
 		{
 			_owningSymbol = owningSymbol;
 			_operation = operation;
+			_isNewObj = operation.Kind == OperationKind.ObjectCreation;
 			_diagnosticContext = diagnosticContext;
 			_annotations = FlowAnnotations.Instance;
 			_reflectionAccessAnalyzer = default;
@@ -86,7 +87,7 @@ namespace ILLink.Shared.TrimAnalysis
 
 						if (staticType is null) {
 							// We don't know anything about the type GetType was called on. Track this as a usual "result of a method call without any annotations"
-							AddReturnValue (FlowAnnotations.Instance.GetMethodReturnValue (calledMethod));
+							AddReturnValue (FlowAnnotations.Instance.GetMethodReturnValue (calledMethod, _isNewObj));
 						} else if (staticType.IsSealed || staticType.IsTypeOf ("System", "Delegate") || staticType.TypeKind == TypeKind.Array) {
 							// We can treat this one the same as if it was a typeof() expression
 
@@ -106,7 +107,7 @@ namespace ILLink.Shared.TrimAnalysis
 							AddReturnValue (new SystemTypeValue (new (staticType)));
 						} else {
 							var annotation = FlowAnnotations.GetTypeAnnotation (staticType);
-							AddReturnValue (FlowAnnotations.Instance.GetMethodReturnValue (calledMethod, annotation));
+							AddReturnValue (FlowAnnotations.Instance.GetMethodReturnValue (calledMethod, _isNewObj, annotation));
 						}
 					}
 				break;

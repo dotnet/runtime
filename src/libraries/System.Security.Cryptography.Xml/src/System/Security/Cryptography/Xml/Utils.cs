@@ -761,7 +761,7 @@ namespace System.Security.Cryptography.Xml
         {
             AsymmetricAlgorithm? algorithm = (AsymmetricAlgorithm?)certificate.GetRSAPublicKey() ?? certificate.GetECDsaPublicKey();
 
-#if NETCOREAPP
+#if NET
             if (algorithm is null && !OperatingSystem.IsTvOS() && !OperatingSystem.IsIOS())
             {
                 algorithm = certificate.GetDSAPublicKey();

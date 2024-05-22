@@ -5,6 +5,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Arm;
+using System.Runtime.Intrinsics.X86;
 
 namespace System.Numerics.Tensors
 {
@@ -87,20 +88,30 @@ namespace System.Numerics.Tensors
             {
                 if (typeof(T) == typeof(float) || typeof(T) == typeof(double))
                 {
-                    if (AdvSimd.IsSupported && typeof(T) == typeof(float))
-                    {
-                        return AdvSimd.MaxNumber(x.AsSingle(), y.AsSingle()).As<float, T>();
-                    }
+                    // We can't use AdvSimd.MaxNumber here because it doesn't correctly
+                    // handle sNaN (it converts it to qNaN as per the now deprecated
+                    // maxNum function defined by IEEE 754:2008, but which is not inline
+                    // with the maximumNumber function that replaces it in IEEE 754:2019)
 
-                    if (AdvSimd.Arm64.IsSupported && typeof(T) == typeof(double))
+                    Vector128<T> max;
+
+                    if (Sse.IsSupported && typeof(T) == typeof(float))
                     {
-                        return AdvSimd.Arm64.MaxNumber(x.AsDouble(), y.AsDouble()).As<double, T>();
+                        max = Sse.Max(x.AsSingle(), y.AsSingle()).As<float, T>();
+                    }
+                    else if (Sse2.IsSupported && typeof(T) == typeof(double))
+                    {
+                        max = Sse2.Max(x.AsDouble(), y.AsDouble()).As<double, T>();
+                    }
+                    else
+                    {
+                        max = Vector128.ConditionalSelect(Vector128.LessThan(y, x), x, y);
                     }
 
                     return
                         Vector128.ConditionalSelect(Vector128.Equals(x, y),
                             Vector128.ConditionalSelect(IsNegative(y), x, y),
-                            Vector128.ConditionalSelect(Vector128.Equals(y, y), Vector128.Max(x, y), x));
+                            Vector128.ConditionalSelect(Vector128.Equals(y, y), max, x));
                 }
 
                 return Vector128.Max(x, y);
@@ -111,10 +122,25 @@ namespace System.Numerics.Tensors
             {
                 if (typeof(T) == typeof(float) || typeof(T) == typeof(double))
                 {
+                    Vector256<T> max;
+
+                    if (Avx.IsSupported && typeof(T) == typeof(float))
+                    {
+                        max = Avx.Max(x.AsSingle(), y.AsSingle()).As<float, T>();
+                    }
+                    else if (Avx.IsSupported && typeof(T) == typeof(double))
+                    {
+                        max = Avx.Max(x.AsDouble(), y.AsDouble()).As<double, T>();
+                    }
+                    else
+                    {
+                        max = Vector256.ConditionalSelect(Vector256.LessThan(y, x), x, y);
+                    }
+
                     return
                         Vector256.ConditionalSelect(Vector256.Equals(x, y),
                             Vector256.ConditionalSelect(IsNegative(y), x, y),
-                            Vector256.ConditionalSelect(Vector256.Equals(y, y), Vector256.Max(x, y), x));
+                            Vector256.ConditionalSelect(Vector256.Equals(y, y), max, x));
                 }
 
                 return Vector256.Max(x, y);
@@ -125,10 +151,25 @@ namespace System.Numerics.Tensors
             {
                 if (typeof(T) == typeof(float) || typeof(T) == typeof(double))
                 {
+                    Vector512<T> max;
+
+                    if (Avx512F.IsSupported && typeof(T) == typeof(float))
+                    {
+                        max = Avx512F.Max(x.AsSingle(), y.AsSingle()).As<float, T>();
+                    }
+                    else if (Avx512F.IsSupported && typeof(T) == typeof(double))
+                    {
+                        max = Avx512F.Max(x.AsDouble(), y.AsDouble()).As<double, T>();
+                    }
+                    else
+                    {
+                        max = Vector512.ConditionalSelect(Vector512.LessThan(y, x), x, y);
+                    }
+
                     return
                         Vector512.ConditionalSelect(Vector512.Equals(x, y),
                             Vector512.ConditionalSelect(IsNegative(y), x, y),
-                            Vector512.ConditionalSelect(Vector512.Equals(y, y), Vector512.Max(x, y), x));
+                            Vector512.ConditionalSelect(Vector512.Equals(y, y), max, x));
                 }
 
                 return Vector512.Max(x, y);

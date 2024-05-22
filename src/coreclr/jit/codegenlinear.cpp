@@ -348,7 +348,7 @@ void CodeGen::genCodeForBBlist()
             // Mark a label and update the current set of live GC refs
 
             block->bbEmitCookie = GetEmitter()->emitAddLabel(gcInfo.gcVarPtrSetCur, gcInfo.gcRegGCrefSetCur,
-                                                             gcInfo.gcRegByrefSetCur DEBUG_ARG(block));
+                                                             gcInfo.gcRegByrefSetCur, block->Prev());
         }
 
         if (block->IsFirstColdBlock(compiler))
@@ -714,8 +714,7 @@ void CodeGen::genCodeForBBlist()
                 }
                 // Do likewise for blocks that end in DOES_NOT_RETURN calls
                 // that were not caught by the above rules. This ensures that
-                // gc register liveness doesn't change across call instructions
-                // in fully-interruptible mode.
+                // gc register liveness doesn't change to some random state after call instructions
                 else
                 {
                     GenTree* call = block->lastNode();
@@ -2247,6 +2246,7 @@ void CodeGen::genTransferRegGCState(regNumber dst, regNumber src)
 //     pass in 'addr' for a relative call or 'base' for a indirect register call
 //     methHnd - optional, only used for pretty printing
 //     retSize - emitter type of return for GC purposes, should be EA_BYREF, EA_GCREF, or EA_PTRSIZE(not GC)
+//     noSafePoint - force not making this call a safe point in partially interruptible code
 //
 // clang-format off
 void CodeGen::genEmitCall(int                   callType,
@@ -2258,7 +2258,8 @@ void CodeGen::genEmitCall(int                   callType,
                           MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(emitAttr secondRetSize),
                           const DebugInfo& di,
                           regNumber             base,
-                          bool                  isJump)
+                          bool                  isJump,
+                          bool                  noSafePoint)
 {
 #if !defined(TARGET_X86)
     int argSize = 0;
@@ -2278,7 +2279,7 @@ void CodeGen::genEmitCall(int                   callType,
                                gcInfo.gcVarPtrSetCur,
                                gcInfo.gcRegGCrefSetCur,
                                gcInfo.gcRegByrefSetCur,
-                               di, base, REG_NA, 0, 0, isJump);
+                               di, base, REG_NA, 0, 0, isJump, noSafePoint);
 }
 // clang-format on
 

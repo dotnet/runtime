@@ -41,6 +41,18 @@ namespace JIT.HardwareIntrinsics.X86
                 // Validates calling via reflection works, using Unsafe.Read
                 test.RunReflectionScenario_UnsafeRead();
 
+                // Validates broadcast functionality works
+                test.RunBroadcastScenario();
+
+                // Validates masking with a value functionality works
+                test.RunMaskingValueScenario();
+
+                // Validates masking with zero functionality works
+                test.RunMaskingZeroScenario();
+
+                // Validates broadcast + masking functionality
+                test.RunBroadcastAndMaskingScenario();
+
                 // Validates passing a local works, using Unsafe.Read
                 test.RunLclVarScenario_UnsafeRead();
 
@@ -166,6 +178,73 @@ namespace JIT.HardwareIntrinsics.X86
             ValidateResult(_dataTable.inArrayPtr, _dataTable.outArrayPtr);
         }
 
+        public void RunBroadcastScenario()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunBroadcastScenario));
+
+            var result = {Isa}.{Method}(
+                {Op1VectorType}.Create<{Op1BaseType}>(Unsafe.Read<{Op1BaseType}>(_dataTable.inArrayPtr))
+            );
+
+            Unsafe.Write(_dataTable.outArrayPtr, result);
+            ValidateResult(_dataTable.inArrayPtr, _dataTable.outArrayPtr, isBroadcast: true);
+        }
+
+        public void RunMaskingValueScenario()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunMaskingValueScenario));
+
+            var op1 = Unsafe.Read<{Op1VectorType}<{Op1BaseType}>>(_dataTable.inArrayPtr);
+
+            var result = {RetVectorType}.ConditionalSelect(
+                {RetVectorType}.Equals<{RetBaseType}>(op1.As{RetBaseType}(), {RetVectorType}<{RetBaseType}>.Zero),
+                {Isa}.{Method}(
+                    Unsafe.Read<{Op1VectorType}<{Op1BaseType}>>(_dataTable.inArrayPtr)
+                ),
+                {RetVectorType}.Create<{RetBaseType}>(1)
+            );
+
+            Unsafe.Write(_dataTable.outArrayPtr, result);
+            ValidateResult(_dataTable.inArrayPtr, _dataTable.outArrayPtr, mask: 1);
+        }
+
+
+        public void RunMaskingZeroScenario()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunMaskingZeroScenario));
+
+            var op1 = Unsafe.Read<{Op1VectorType}<{Op1BaseType}>>(_dataTable.inArrayPtr);
+
+            var result = {RetVectorType}.ConditionalSelect(
+                {RetVectorType}.Equals<{RetBaseType}>(op1.As{RetBaseType}(), {RetVectorType}<{RetBaseType}>.Zero),
+                {Isa}.{Method}(
+                    Unsafe.Read<{Op1VectorType}<{Op1BaseType}>>(_dataTable.inArrayPtr)
+                ),
+                {RetVectorType}<{RetBaseType}>.Zero
+            );
+
+            Unsafe.Write(_dataTable.outArrayPtr, result);
+            ValidateResult(_dataTable.inArrayPtr, _dataTable.outArrayPtr, mask: 0);
+        }
+
+        public void RunBroadcastAndMaskingScenario()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunBroadcastAndMaskingScenario));
+
+            var op1 = Unsafe.Read<{Op1VectorType}<{Op1BaseType}>>(_dataTable.inArrayPtr);
+
+            var result = {RetVectorType}.ConditionalSelect(
+                {RetVectorType}.Equals<{RetBaseType}>(op1.As{RetBaseType}(), {RetVectorType}<{RetBaseType}>.Zero),
+                {Isa}.{Method}(
+                    {Op1VectorType}.Create<{Op1BaseType}>(Unsafe.Read<{Op1BaseType}>(_dataTable.inArrayPtr))
+                ),
+                {RetVectorType}<{RetBaseType}>.Zero
+            );
+
+            Unsafe.Write(_dataTable.outArrayPtr, result);
+            ValidateResult(_dataTable.inArrayPtr, _dataTable.outArrayPtr, isBroadcast: true, mask: 0);
+        }
+
         public void RunLclVarScenario_UnsafeRead()
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunLclVarScenario_UnsafeRead));
@@ -227,7 +306,7 @@ namespace JIT.HardwareIntrinsics.X86
             }
         }
 
-        private void ValidateResult({Op1VectorType}<{Op1BaseType}> op1, void* result, [CallerMemberName] string method = "")
+        private void ValidateResult({Op1VectorType}<{Op1BaseType}> op1, void* result, bool isBroadcast = false, {RetBaseType}? mask = null, [CallerMemberName] string method = "")
         {
             {Op1BaseType}[] inArray1 = new {Op1BaseType}[Op1ElementCount];
             {RetBaseType}[] outArray = new {RetBaseType}[RetElementCount];
@@ -235,10 +314,10 @@ namespace JIT.HardwareIntrinsics.X86
             Unsafe.WriteUnaligned(ref Unsafe.As<{Op1BaseType}, byte>(ref inArray1[0]), op1);
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<{RetBaseType}, byte>(ref outArray[0]), ref Unsafe.AsRef<byte>(result), (uint)Unsafe.SizeOf<{RetVectorType}<{RetBaseType}>>());
 
-            ValidateResult(inArray1, outArray, method);
+            ValidateResult(inArray1, outArray, isBroadcast, mask, method);
         }
 
-        private void ValidateResult(void* op1, void* result, [CallerMemberName] string method = "")
+        private void ValidateResult(void* op1, void* result, bool isBroadcast = false, {RetBaseType}? mask = null, [CallerMemberName] string method = "")
         {
             {Op1BaseType}[] inArray1 = new {Op1BaseType}[Op1ElementCount];
             {RetBaseType}[] outArray = new {RetBaseType}[RetElementCount];
@@ -246,12 +325,17 @@ namespace JIT.HardwareIntrinsics.X86
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op1BaseType}, byte>(ref inArray1[0]), ref Unsafe.AsRef<byte>(op1), (uint)Unsafe.SizeOf<{Op1VectorType}<{Op1BaseType}>>());
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<{RetBaseType}, byte>(ref outArray[0]), ref Unsafe.AsRef<byte>(result), (uint)Unsafe.SizeOf<{RetVectorType}<{RetBaseType}>>());
 
-            ValidateResult(inArray1, outArray, method);
+            ValidateResult(inArray1, outArray, isBroadcast, mask, method);
         }
 
-        private void ValidateResult({Op1BaseType}[] firstOp, {RetBaseType}[] result, [CallerMemberName] string method = "")
+        private void ValidateResult({Op1BaseType}[] firstOp, {RetBaseType}[] result, bool isBroadcast, {RetBaseType}? mask, [CallerMemberName] string method = "")
         {
             bool succeeded = true;
+
+            if (isBroadcast)
+            {
+                firstOp.AsSpan().Fill(firstOp[0]);
+            }
 
             {TemplateValidationLogic}
 

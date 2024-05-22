@@ -6,7 +6,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
-using Microsoft.DotNet.XUnitExtensions.Attributes;
 using Microsoft.Interop.UnitTests;
 using Xunit;
 using VerifyComInterfaceGenerator = Microsoft.Interop.UnitTests.Verifiers.CSharpSourceGeneratorVerifier<Microsoft.Interop.ComInterfaceGenerator>;
@@ -336,6 +335,10 @@ namespace ComInterfaceGenerator.Unit.Tests
         {
             CodeSnippets codeSnippets = new(new GeneratedComInterfaceAttributeProvider());
             yield return new object[] { ID(), codeSnippets.DerivedComInterfaceType };
+            yield return new object[] { ID(), codeSnippets.DerivedComInterfaceTypeWithShadowingMethod };
+            yield return new object[] { ID(), codeSnippets.DerivedComInterfaceTypeShadowsNonComMethod };
+            yield return new object[] { ID(), codeSnippets.DerivedComInterfaceTypeShadowsComAndNonComMethod };
+            yield return new object[] { ID(), codeSnippets.DerivedComInterfaceTypeTwoLevelShadows};
             yield return new object[] { ID(), codeSnippets.DerivedWithParametersDeclaredInOtherNamespace };
             yield return new object[] { ID(), codeSnippets.ComInterfaceParameters };
         }

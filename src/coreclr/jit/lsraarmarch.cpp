@@ -127,9 +127,9 @@ int LinearScan::BuildIndir(GenTreeIndir* indirTree)
 //
 int LinearScan::BuildCall(GenTreeCall* call)
 {
-    bool                  hasMultiRegRetVal = false;
-    const ReturnTypeDesc* retTypeDesc       = nullptr;
-    regMaskTP             dstCandidates     = RBM_NONE;
+    bool                  hasMultiRegRetVal   = false;
+    const ReturnTypeDesc* retTypeDesc         = nullptr;
+    regMaskTP             singleDstCandidates = RBM_NONE;
 
     int srcCount = 0;
     int dstCount = 0;
@@ -191,9 +191,9 @@ int LinearScan::BuildCall(GenTreeCall* call)
         }
         else
         {
-            // For arm64 we can use lr for non-tailcalls so we skip the
-            // internal register as a TP optimization. We could do the same for
-            // arm32, but loading into lr cannot be encoded in 2 bytes, so
+            // For arm64 we can use REG_INDIRECT_CALL_TARGET_REG (IP0) for non-tailcalls
+            // so we skip the internal register as a TP optimization. We could do the same for
+            // arm32, but loading into IP cannot be encoded in 2 bytes, so
             // another register is usually better.
 #ifdef TARGET_ARM
             buildInternalIntRegisterDefForNode(call);
@@ -227,26 +227,24 @@ int LinearScan::BuildCall(GenTreeCall* call)
     {
         // The ARM CORINFO_HELP_INIT_PINVOKE_FRAME helper uses a custom calling convention that returns with
         // TCB in REG_PINVOKE_TCB. fgMorphCall() sets the correct argument registers.
-        dstCandidates = RBM_PINVOKE_TCB;
+        singleDstCandidates = RBM_PINVOKE_TCB;
     }
     else
 #endif // TARGET_ARM
-        if (hasMultiRegRetVal)
+        if (!hasMultiRegRetVal)
         {
-            assert(retTypeDesc != nullptr);
-            dstCandidates = retTypeDesc->GetABIReturnRegs(call->GetUnmanagedCallConv());
-        }
-        else if (varTypeUsesFloatArgReg(registerType))
-        {
-            dstCandidates = RBM_FLOATRET;
-        }
-        else if (registerType == TYP_LONG)
-        {
-            dstCandidates = RBM_LNGRET;
-        }
-        else
-        {
-            dstCandidates = RBM_INTRET;
+            if (varTypeUsesFloatArgReg(registerType))
+            {
+                singleDstCandidates = RBM_FLOATRET;
+            }
+            else if (registerType == TYP_LONG)
+            {
+                singleDstCandidates = RBM_LNGRET;
+            }
+            else
+            {
+                singleDstCandidates = RBM_INTRET;
+            }
         }
 
     // First, count reg args
@@ -399,28 +397,30 @@ int LinearScan::BuildCall(GenTreeCall* call)
 
     // Now generate defs and kills.
     regMaskTP killMask = getKillSetForCall(call);
-    BuildDefsWithKills(call, dstCount, dstCandidates, killMask);
+    if (dstCount > 0)
+    {
+        if (hasMultiRegRetVal)
+        {
+            assert(retTypeDesc != nullptr);
+            regMaskTP multiDstCandidates = retTypeDesc->GetABIReturnRegs(call->GetUnmanagedCallConv());
+            assert(genCountBits(multiDstCandidates) > 0);
+            BuildCallDefsWithKills(call, dstCount, multiDstCandidates, killMask);
+        }
+        else
+        {
+            assert(dstCount == 1);
+            BuildDefWithKills(call, singleDstCandidates, killMask);
+        }
+    }
+    else
+    {
+        BuildKills(call, killMask);
+    }
 
 #ifdef SWIFT_SUPPORT
     if (call->HasSwiftErrorHandling())
     {
-        // Tree is a Swift call with error handling; error register should have been killed
-        assert((killMask & RBM_SWIFT_ERROR) != 0);
-
-        // After a Swift call that might throw returns, we expect the error register to be consumed
-        // by a GT_SWIFT_ERROR node. However, we want to ensure the error register won't be trashed
-        // before GT_SWIFT_ERROR can consume it.
-        // (For example, the PInvoke epilog comes before the error register store.)
-        // To do so, delay the freeing of the error register until the next node.
-        // This only works if the next node after the call is the GT_SWIFT_ERROR node.
-        // (InsertPInvokeCallEpilog should have moved the GT_SWIFT_ERROR node during lowering.)
-        assert(call->gtNext != nullptr);
-        assert(call->gtNext->OperIs(GT_SWIFT_ERROR));
-
-        // We could use RefTypeKill, but RefTypeFixedReg is used less commonly, so the check for delayRegFree
-        // during register allocation should be cheaper in terms of TP.
-        RefPosition* pos = newRefPosition(REG_SWIFT_ERROR, currentLoc, RefTypeFixedReg, call, RBM_SWIFT_ERROR);
-        setDelayFree(pos);
+        MarkSwiftErrorBusyForCall(call);
     }
 #endif // SWIFT_SUPPORT
 
@@ -852,7 +852,7 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
 
     buildInternalRegisterUses();
     regMaskTP killMask = getKillSetForBlockStore(blkNode);
-    BuildDefsWithKills(blkNode, 0, RBM_NONE, killMask);
+    BuildKills(blkNode, killMask);
     return useCount;
 }
 

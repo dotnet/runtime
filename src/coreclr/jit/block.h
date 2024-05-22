@@ -413,7 +413,7 @@ public:
 // BasicBlockFlags: a bitmask of flags for BasicBlock
 //
 // clang-format off
-enum BasicBlockFlags : unsigned __int64
+enum BasicBlockFlags : uint64_t
 {
 #define MAKE_BBFLAG(bit) (1ULL << (bit))
     BBF_EMPTY                = 0,
@@ -500,31 +500,31 @@ enum BasicBlockFlags : unsigned __int64
 FORCEINLINE
 constexpr BasicBlockFlags operator ~(BasicBlockFlags a)
 {
-    return (BasicBlockFlags)(~(unsigned __int64)a);
+    return (BasicBlockFlags)(~(uint64_t)a);
 }
 
 FORCEINLINE
 constexpr BasicBlockFlags operator |(BasicBlockFlags a, BasicBlockFlags b)
 {
-    return (BasicBlockFlags)((unsigned __int64)a | (unsigned __int64)b);
+    return (BasicBlockFlags)((uint64_t)a | (uint64_t)b);
 }
 
 FORCEINLINE
 constexpr BasicBlockFlags operator &(BasicBlockFlags a, BasicBlockFlags b)
 {
-    return (BasicBlockFlags)((unsigned __int64)a & (unsigned __int64)b);
+    return (BasicBlockFlags)((uint64_t)a & (uint64_t)b);
 }
 
 FORCEINLINE 
 BasicBlockFlags& operator |=(BasicBlockFlags& a, BasicBlockFlags b)
 {
-    return a = (BasicBlockFlags)((unsigned __int64)a | (unsigned __int64)b);
+    return a = (BasicBlockFlags)((uint64_t)a | (uint64_t)b);
 }
 
 FORCEINLINE 
 BasicBlockFlags& operator &=(BasicBlockFlags& a, BasicBlockFlags b)
 {
-    return a = (BasicBlockFlags)((unsigned __int64)a & (unsigned __int64)b);
+    return a = (BasicBlockFlags)((uint64_t)a & (uint64_t)b);
 }
 
 enum class BasicBlockVisit
@@ -1799,7 +1799,7 @@ public:
     BasicBlockVisit VisitEHEnclosedHandlerSecondPassSuccs(Compiler* comp, TFunc func);
 
     template <typename TFunc>
-    BasicBlockVisit VisitAllSuccs(Compiler* comp, TFunc func);
+    BasicBlockVisit VisitAllSuccs(Compiler* comp, TFunc func, const bool useProfile = false);
 
     template <typename TFunc>
     BasicBlockVisit VisitEHSuccs(Compiler* comp, TFunc func);
@@ -2497,7 +2497,7 @@ class AllSuccessorEnumerator
 
 public:
     // Constructs an enumerator of all `block`'s successors.
-    AllSuccessorEnumerator(Compiler* comp, BasicBlock* block);
+    AllSuccessorEnumerator(Compiler* comp, BasicBlock* block, const bool useProfile = false);
 
     // Gets the block whose successors are enumerated.
     BasicBlock* Block()
