@@ -8,6 +8,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="..\**\*.cs" />
+    <Compile Remove="..\BinaryFormatTests\**\*.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Numerics\Hashing\HashHelpers.cs"
              Link="System\Numerics\Hashing\HashHelpers.cs" />
     <Compile Include="..\..\src\System\Resources\Extensions\TypeNameComparer.cs"

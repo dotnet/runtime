@@ -3,8 +3,8 @@
 
 using System.Buffers;
 using System.Runtime.Serialization;
+using System.Runtime.Serialization.BinaryFormat;
 using System.Runtime.Serialization.Formatters;
-using FormatTests.Formatter;
 
 namespace FormatTests.Common;
 
@@ -85,5 +85,52 @@ public abstract class SerializationTest<TSerializer> where TSerializer : ISerial
         return selector;
     }
 
-    public static bool IsBinaryFormatterDeserializer => typeof(TSerializer) == typeof(BinaryFormatterSerializer);
+    public static bool IsBinaryFormatterDeserializer => false;
+
+    protected static void WriteSerializedStreamHeader(BinaryWriter writer, int major = 1, int minor = 0)
+    {
+        writer.Write((byte)RecordType.SerializedStreamHeader);
+        writer.Write(1); // root ID
+        writer.Write(1); // header ID
+        writer.Write(major); // major version
+        writer.Write(minor); // minor version
+    }
+
+    protected static void WriteBinaryLibrary(BinaryWriter writer, int objectId, string libraryName)
+    {
+        writer.Write((byte)RecordType.BinaryLibrary);
+        writer.Write(objectId);
+        writer.Write(libraryName);
+    }
+
+    protected static void WriteClassInfo(BinaryWriter writer, int objectId, string typeName, params string[] memberNames)
+    {
+        writer.Write((byte)RecordType.ClassWithMembersAndTypes);
+        writer.Write(objectId);
+        writer.Write(typeName);
+        writer.Write(memberNames.Length);
+
+        foreach (string memberName in memberNames)
+        {
+            writer.Write(memberName);
+        }
+    }
+
+    protected static void WriteClassFieldInfo(BinaryWriter writer, string typeName, int libraryId)
+    {
+        writer.Write((byte)BinaryType.Class);
+        writer.Write(typeName);
+        writer.Write(libraryId);
+    }
+
+    protected static void WriteMemberReference(BinaryWriter writer, int referencedObjectId)
+    {
+        writer.Write((byte)RecordType.MemberReference);
+        writer.Write(referencedObjectId);
+    }
+
+    protected static void WriteMessageEnd(BinaryWriter writer)
+    {
+        writer.Write((byte)RecordType.MessageEnd);
+    }
 }

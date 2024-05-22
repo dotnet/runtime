@@ -121,30 +121,6 @@ public partial class BinaryFormatterTests
         EqualityExtensions.CheckEquals(obj, BinaryFormatterHelpers.FromBase64String(netfxBlob, FormatterAssemblyStyle.Full), isSamePlatform: true);
     }
 
-    [Fact(Skip = "Needs updated.")]
-    public void ValidateDeserializationOfObjectWithDifferentAssemblyVersion()
-    {
-        // To generate this properly, change AssemblyVersion to a value which is unlikely to happen in production and generate base64(serialized-data)
-        // For this test 9.98.7.987 is being used
-        var obj = new SomeType() { SomeField = 7 };
-        string serializedObj = @"AAEAAAD/////AQAAAAAAAAAMAgAAAHBTeXN0ZW0uUnVudGltZS5TZXJpYWxpemF0aW9uLkZvcm1hdHRlcnMuVGVzdHMsIFZlcnNpb249NS4wLjAuMCwgQ3VsdHVyZT1uZXV0cmFsLCBQdWJsaWNLZXlUb2tlbj1jYzdiMTNmZmNkMmRkZDUxBQEAAAA2U3lzdGVtLlJ1bnRpbWUuU2VyaWFsaXphdGlvbi5Gb3JtYXR0ZXJzLlRlc3RzLlNvbWVUeXBlAQAAAAlTb21lRmllbGQACAIAAAAHAAAACw==";
-
-        var deserialized = (SomeType)BinaryFormatterHelpers.FromBase64String(serializedObj, FormatterAssemblyStyle.Simple);
-        Assert.Equal(obj, deserialized);
-    }
-
-    [Fact(Skip = "Needs updated.")]
-    public void ValidateDeserializationOfObjectWithGenericTypeWhichGenericArgumentHasDifferentAssemblyVersion()
-    {
-        // To generate this properly, change AssemblyVersion to a value which is unlikely to happen in production and generate base64(serialized-data)
-        // For this test 9.98.7.987 is being used
-        var obj = new GenericTypeWithArg<SomeType>() { Test = new SomeType() { SomeField = 9 } };
-        string serializedObj = @"AAEAAAD/////AQAAAAAAAAAMAgAAAHBTeXN0ZW0uUnVudGltZS5TZXJpYWxpemF0aW9uLkZvcm1hdHRlcnMuVGVzdHMsIFZlcnNpb249NS4wLjAuMCwgQ3VsdHVyZT1uZXV0cmFsLCBQdWJsaWNLZXlUb2tlbj1jYzdiMTNmZmNkMmRkZDUxBQEAAADuAVN5c3RlbS5SdW50aW1lLlNlcmlhbGl6YXRpb24uRm9ybWF0dGVycy5UZXN0cy5HZW5lcmljVHlwZVdpdGhBcmdgMVtbU3lzdGVtLlJ1bnRpbWUuU2VyaWFsaXphdGlvbi5Gb3JtYXR0ZXJzLlRlc3RzLlNvbWVUeXBlLCBTeXN0ZW0uUnVudGltZS5TZXJpYWxpemF0aW9uLkZvcm1hdHRlcnMuVGVzdHMsIFZlcnNpb249NS4wLjAuMCwgQ3VsdHVyZT1uZXV0cmFsLCBQdWJsaWNLZXlUb2tlbj1jYzdiMTNmZmNkMmRkZDUxXV0BAAAABFRlc3QENlN5c3RlbS5SdW50aW1lLlNlcmlhbGl6YXRpb24uRm9ybWF0dGVycy5UZXN0cy5Tb21lVHlwZQIAAAACAAAACQMAAAAFAwAAADZTeXN0ZW0uUnVudGltZS5TZXJpYWxpemF0aW9uLkZvcm1hdHRlcnMuVGVzdHMuU29tZVR5cGUBAAAACVNvbWVGaWVsZAAIAgAAAAkAAAAL";
-
-        var deserialized = (GenericTypeWithArg<SomeType>)BinaryFormatterHelpers.FromBase64String(serializedObj, FormatterAssemblyStyle.Simple);
-        Assert.Equal(obj, deserialized);
-    }
-
     [Theory]
     [MemberData(nameof(NonSerializableTypes_MemberData))]
     public void ValidateNonSerializableTypes(object obj, FormatterAssemblyStyle assemblyFormat, FormatterTypeStyle typeFormat)
@@ -174,40 +150,6 @@ public partial class BinaryFormatterTests
         var obj = new ObjRefReturnsObj { Real = 42 };
         object real = BinaryFormatterHelpers.Clone<object>(obj);
         Assert.Equal(42, real);
-    }
-
-    [Theory(Skip = "Crashes the runtime in some cases.")]
-    [MemberData(nameof(FuzzInputs_MemberData))]
-    public void Deserialize_FuzzInput(object obj, Random rand)
-    {
-        // Get the serialized data for the object
-        byte[] data = BinaryFormatterHelpers.ToByteArray(obj, FormatterAssemblyStyle.Simple);
-
-        // Make some "random" changes to it
-        for (int i = 1; i < rand.Next(1, 100); i++)
-        {
-            data[rand.Next(data.Length)] = (byte)rand.Next(256);
-        }
-
-        // Try to deserialize that.
-        try
-        {
-            BinaryFormatterHelpers.FromByteArray(data, FormatterAssemblyStyle.Simple);
-            // Since there's no checksum, it's possible we changed data that didn't corrupt the instance
-        }
-        catch (ArgumentOutOfRangeException) { }
-        catch (ArrayTypeMismatchException) { }
-        catch (DecoderFallbackException) { }
-        catch (FormatException) { }
-        catch (IndexOutOfRangeException) { }
-        catch (InvalidCastException) { }
-        catch (OutOfMemoryException) { }
-        catch (OverflowException) { }
-        catch (NullReferenceException) { }
-        catch (SerializationException) { }
-        catch (TargetInvocationException) { }
-        catch (ArgumentException) { }
-        catch (FileLoadException) { }
     }
 
     [Fact]
@@ -337,25 +279,6 @@ public partial class BinaryFormatterTests
             .Replace(lineSeparator, string.Empty)
             .Replace(paragraphSeparator, string.Empty);
 #pragma warning restore SYSLIB1045 // Convert to 'GeneratedRegexAttribute'.
-    }
-
-    [Fact(Skip = "Only used to update test data.")]
-    public void UpdateTestData()
-    {
-        List<string> serializedHashes = [];
-        foreach ((object obj, _) in SerializableEqualityComparers().Concat(SerializableObjects()))
-        {
-            BinaryFormatter bf = new();
-            using MemoryStream ms = new();
-            bf.Serialize(ms, obj);
-            string serializedHash = Convert.ToBase64String(ms.ToArray());
-            serializedHashes.Add(serializedHash);
-        }
-
-        string path = @"..\..\..\..\..\src\System.Private.Windows.Core\tests\BinaryFormatTests\FormatTests\Legacy\BinaryFormatterTestData.cs";
-        string[] blobs = [.. serializedHashes];
-
-        UpdateCoreTypeBlobs(path, blobs);
     }
 
     private static (int blobs, int foundBlobs, int updatedBlobs) UpdateCoreTypeBlobs(string testDataFilePath, string[] blobs)

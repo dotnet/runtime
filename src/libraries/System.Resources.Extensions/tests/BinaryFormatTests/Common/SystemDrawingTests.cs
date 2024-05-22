@@ -7,6 +7,7 @@ using System.Runtime.Versioning;
 
 namespace FormatTests.Common;
 
+[ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows))]
 public abstract class SystemDrawingTests<T> : SerializationTest<T> where T : ISerializer
 {
     [Theory]

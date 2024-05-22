@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Resources.Extensions.BinaryFormat;
 using System.Runtime.Serialization.BinaryFormat;
 using FormatTests.Common;
 
@@ -11,7 +12,7 @@ public class ExceptionTests : SerializationTest<FormattedObjectSerializer>
     [Fact]
     public void NotSupportedException_Parse()
     {
-        System.Windows.Forms.BinaryFormat.BinaryFormattedObject format = new(Serialize(new NotSupportedException()));
+        BinaryFormattedObject format = new(Serialize(new NotSupportedException()));
         var systemClass = (ClassRecord)format.RootRecord;
         systemClass.TypeName.FullName.Should().Be(typeof(NotSupportedException).FullName);
         systemClass.MemberNames.Should().BeEquivalentTo(

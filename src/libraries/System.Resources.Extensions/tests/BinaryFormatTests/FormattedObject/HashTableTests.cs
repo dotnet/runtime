@@ -3,9 +3,9 @@
 
 using System.Collections;
 using System.Drawing;
+using System.Resources.Extensions.BinaryFormat;
 using System.Runtime.Serialization;
 using System.Runtime.Serialization.BinaryFormat;
-using System.Runtime.Serialization.Formatters.Binary;
 using FormatTests.Common;
 
 namespace FormatTests.FormattedObject;
@@ -66,7 +66,7 @@ public class HashtableTests : SerializationTest<FormattedObjectSerializer>
             { "This", "That" }
         };
 
-        System.Windows.Forms.BinaryFormat.BinaryFormattedObject format = new(Serialize(hashtable));
+        BinaryFormattedObject format = new(Serialize(hashtable));
         ClassRecord systemClass = (ClassRecord)format.RootRecord;
         systemClass.RecordType.Should().Be(RecordType.SystemClassWithMembersAndTypes);
         systemClass.TypeName.FullName.Should().Be("System.Collections.Hashtable");
@@ -84,8 +84,8 @@ public class HashtableTests : SerializationTest<FormattedObjectSerializer>
             { "This", "That" }
         };
 
-        System.Windows.Forms.BinaryFormat.BinaryFormattedObject format = new(Serialize(hashtable));
-        System.Windows.Forms.BinaryFormat.BinaryFormattedObjectExtensions.TryGetPrimitiveHashtable(format, out Hashtable? deserialized).Should().BeFalse();
+        BinaryFormattedObject format = new(Serialize(hashtable));
+        BinaryFormattedObjectExtensions.TryGetPrimitiveHashtable(format, out Hashtable? deserialized).Should().BeFalse();
         deserialized.Should().BeNull();
     }
 
@@ -95,73 +95,13 @@ public class HashtableTests : SerializationTest<FormattedObjectSerializer>
         public int GetHashCode(object obj) => HashCode.Combine(obj);
     }
 
-    [Fact]
-    public void BinaryFormatWriter_WriteCustomComparerfails()
-    {
-        Hashtable hashtable = new(new CustomHashCodeProvider(), StringComparer.OrdinalIgnoreCase)
-        {
-            { "This", "That" }
-        };
-
-        using MemoryStream stream = new();
-        System.Windows.Forms.BinaryFormat.BinaryFormatWriter.TryWriteHashtable(stream, hashtable).Should().BeFalse();
-        stream.Position.Should().Be(0);
-    }
-
-    [Theory]
-    [MemberData(nameof(Hashtables_TestData))]
-    public void BinaryFormatWriter_WriteHashtables(Hashtable hashtable)
-    {
-        using MemoryStream stream = new();
-        System.Windows.Forms.BinaryFormat.BinaryFormatWriter.WritePrimitiveHashtable(stream, hashtable);
-        stream.Position = 0;
-
-        // cs/binary-formatter-without-binder
-        BinaryFormatter formatter = new(); // CodeQL [SM04191] : This is a test. Safe use because the deserialization process is performed on trusted data and the types are controlled and validated.
-
-        // cs/dangerous-binary-deserialization
-        Hashtable deserialized = (Hashtable)formatter.Deserialize(stream); // CodeQL [SM03722] : Testing legacy feature. This is a safe use of BinaryFormatter because the data is trusted and the types are controlled and validated.
-
-        deserialized.Count.Should().Be(hashtable.Count);
-        foreach (object? key in hashtable.Keys)
-        {
-            deserialized[key].Should().Be(hashtable[key]);
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(Hashtables_UnsupportedTestData))]
-    public void BinaryFormatWriter_WriteUnsupportedHashtables(Hashtable hashtable)
-    {
-        using MemoryStream stream = new();
-        Action action = () => System.Windows.Forms.BinaryFormat.BinaryFormatWriter.WritePrimitiveHashtable(stream, hashtable);
-        action.Should().Throw<ArgumentException>();
-    }
-
     [Theory]
     [MemberData(nameof(Hashtables_TestData))]
     public void BinaryFormattedObjectExtensions_TryGetPrimitiveHashtable(Hashtable hashtable)
     {
-        System.Windows.Forms.BinaryFormat.BinaryFormattedObject format = new(Serialize(hashtable));
-        System.Windows.Forms.BinaryFormat.BinaryFormattedObjectExtensions.TryGetPrimitiveHashtable(format, out Hashtable? deserialized).Should().BeTrue();
+        BinaryFormattedObject format = new(Serialize(hashtable));
+        System.Resources.Extensions.BinaryFormat.BinaryFormattedObjectExtensions.TryGetPrimitiveHashtable(format, out Hashtable? deserialized).Should().BeTrue();
 
-        deserialized!.Count.Should().Be(hashtable.Count);
-        foreach (object? key in hashtable.Keys)
-        {
-            deserialized[key].Should().Be(hashtable[key]);
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(Hashtables_TestData))]
-    public void RoundTripHashtables(Hashtable hashtable)
-    {
-        using MemoryStream stream = new();
-        System.Windows.Forms.BinaryFormat.BinaryFormatWriter.WritePrimitiveHashtable(stream, hashtable);
-        stream.Position = 0;
-
-        System.Windows.Forms.BinaryFormat.BinaryFormattedObject format = new(stream);
-        System.Windows.Forms.BinaryFormat.BinaryFormattedObjectExtensions.TryGetPrimitiveHashtable(format, out Hashtable? deserialized).Should().BeTrue();
         deserialized!.Count.Should().Be(hashtable.Count);
         foreach (object? key in hashtable.Keys)
         {

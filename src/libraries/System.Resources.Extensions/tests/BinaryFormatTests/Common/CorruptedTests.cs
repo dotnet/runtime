@@ -2,29 +2,30 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using FormatTests.Common.TestTypes;
+using FormatTests.FormattedObject;
 using System.Runtime.Serialization;
-using System.Windows.Forms.BinaryFormat;
+using System.Runtime.Serialization.BinaryFormat;
+using System.Text;
 
 namespace FormatTests.Common;
 
-public abstract class CorruptedTests<T> : SerializationTest<T> where T : ISerializer
+public class CorruptedTests : SerializationTest<FormattedObjectSerializer>
 {
+    private const int ClassId = 1, LibraryId = 2;
+
     [Fact]
     public void ValueTypeReferencesSelf()
     {
-        MemoryStream stream = new();
+        using MemoryStream stream = new();
+        BinaryWriter writer = new(stream, Encoding.UTF8);
 
-        using (BinaryFormatWriterScope writer = new(stream))
-        {
-            new BinaryLibrary(2, typeof(NodeStruct).Assembly.FullName!).Write(writer);
-
-            new ClassWithMembersAndTypes(
-                new ClassInfo(1, typeof(NodeStruct).FullName!, ["Node"]),
-                2,
-                new MemberTypeInfo(
-                    (BinaryType.Class, new ClassTypeInfo(typeof(NodeWithNodeStruct).FullName!, 2))),
-                new MemberReference(1)).Write(writer);
-        }
+        WriteSerializedStreamHeader(writer);
+        WriteBinaryLibrary(writer, LibraryId, typeof(NodeStruct).Assembly.FullName!);
+        WriteClassInfo(writer, ClassId, typeof(NodeStruct).FullName!, ["Node"]);
+        WriteClassFieldInfo(writer, typeof(NodeWithNodeStruct).FullName!, LibraryId);
+        writer.Write(LibraryId);
+        WriteMemberReference(writer, ClassId);
+        WriteMessageEnd(writer);
 
         stream.Position = 0;
 
@@ -35,68 +36,63 @@ public abstract class CorruptedTests<T> : SerializationTest<T> where T : ISerial
     }
 
     [Fact]
-    public virtual void ValueTypeReferencesSelf2()
+    public void ValueTypeReferencesSelf2()
     {
-        MemoryStream stream = new();
+        using MemoryStream stream = new();
+        BinaryWriter writer = new(stream, Encoding.UTF8);
 
-        using (BinaryFormatWriterScope writer = new(stream))
-        {
-            new BinaryLibrary(2, typeof(StructWithObject).Assembly.FullName!).Write(writer);
-
-            new ClassWithMembersAndTypes(
-                new ClassInfo(1, typeof(StructWithObject).FullName!, ["Value"]),
-                2,
-                new MemberTypeInfo(
-                    (BinaryType.Class, new ClassTypeInfo(typeof(StructWithObject).FullName!, 2))),
-                new MemberReference(1)).Write(writer);
-        }
+        WriteSerializedStreamHeader(writer);
+        WriteBinaryLibrary(writer, LibraryId, typeof(StructWithObject).Assembly.FullName!);
+        WriteClassInfo(writer, ClassId, typeof(StructWithObject).FullName!, ["Value"]);
+        WriteClassFieldInfo(writer, typeof(StructWithObject).FullName!, LibraryId);
+        writer.Write(LibraryId);
+        WriteMemberReference(writer, ClassId);
+        WriteMessageEnd(writer);
 
         stream.Position = 0;
-        Deserialize(stream);
+
+        Action action = () => Deserialize(stream);
+        action.Should().Throw<SerializationException>();
     }
 
     [Fact]
-    public virtual void ValueTypeReferencesSelf3()
+    public void ValueTypeReferencesSelf3()
     {
-        MemoryStream stream = new();
+        using MemoryStream stream = new();
+        BinaryWriter writer = new(stream, Encoding.UTF8);
 
-        using (BinaryFormatWriterScope writer = new(stream))
-        {
-            new BinaryLibrary(2, typeof(StructWithTwoObjects).Assembly.FullName!).Write(writer);
-
-            new ClassWithMembersAndTypes(
-                new ClassInfo(1, typeof(StructWithTwoObjects).FullName!, ["Value", "Value2"]),
-                2,
-                new MemberTypeInfo(
-                    (BinaryType.Object, null),
-                    (BinaryType.Object, null)),
-                new MemberReference(1),
-                new MemberReference(1)).Write(writer);
-        }
+        WriteSerializedStreamHeader(writer);
+        WriteBinaryLibrary(writer, LibraryId, typeof(StructWithTwoObjects).Assembly.FullName!);
+        WriteClassInfo(writer, ClassId, typeof(StructWithTwoObjects).FullName!, ["Value", "Value2"]);
+        writer.Write((byte)BinaryType.Object);
+        writer.Write((byte)BinaryType.Object);
+        writer.Write(LibraryId);
+        WriteMemberReference(writer, ClassId);
+        WriteMemberReference(writer, ClassId);
+        WriteMessageEnd(writer);
 
         // Both deserializers create this where every boxed struct is the exact same boxed instance.
         stream.Position = 0;
-        Deserialize(stream);
+
+        Action action = () => Deserialize(stream);
+        action.Should().Throw<SerializationException>();
     }
 
     [Fact]
     public virtual void ValueTypeReferencesSelf4()
     {
-        MemoryStream stream = new();
+        using MemoryStream stream = new();
+        BinaryWriter writer = new(stream, Encoding.UTF8);
 
-        using (BinaryFormatWriterScope writer = new(stream))
-        {
-            new BinaryLibrary(2, typeof(StructWithTwoObjectsISerializable).Assembly.FullName!).Write(writer);
-
-            new ClassWithMembersAndTypes(
-                new ClassInfo(1, typeof(StructWithTwoObjectsISerializable).FullName!, ["Value", "Value2"]),
-                2,
-                new MemberTypeInfo(
-                    (BinaryType.Object, null),
-                    (BinaryType.Object, null)),
-                new MemberReference(1),
-                new MemberReference(1)).Write(writer);
-        }
+        WriteSerializedStreamHeader(writer);
+        WriteBinaryLibrary(writer, LibraryId, typeof(StructWithTwoObjectsISerializable).Assembly.FullName!);
+        WriteClassInfo(writer, ClassId, typeof(StructWithTwoObjectsISerializable).FullName!, ["Value", "Value2"]);
+        writer.Write((byte)BinaryType.Object);
+        writer.Write((byte)BinaryType.Object);
+        writer.Write(LibraryId);
+        WriteMemberReference(writer, ClassId);
+        WriteMemberReference(writer, ClassId);
+        WriteMessageEnd(writer);
 
         stream.Position = 0;
         Deserialize(stream);
@@ -105,29 +101,25 @@ public abstract class CorruptedTests<T> : SerializationTest<T> where T : ISerial
     [Fact]
     public virtual void ValueTypeReferencesSelf5()
     {
-        MemoryStream stream = new();
+        const int NextClassId = 3;
+        using MemoryStream stream = new();
+        BinaryWriter writer = new(stream, Encoding.UTF8);
 
-        using (BinaryFormatWriterScope writer = new(stream))
-        {
-            new BinaryLibrary(2, typeof(StructWithTwoObjectsISerializable).Assembly.FullName!).Write(writer);
-
-            ClassWithMembersAndTypes root = new(
-                new ClassInfo(1, typeof(StructWithTwoObjectsISerializable).FullName!, ["Value", "Value2"]),
-                2,
-                new MemberTypeInfo(
-                    (BinaryType.Object, null),
-                    (BinaryType.Object, null)),
-                new MemberReference(3),
-                new MemberReference(3));
-
-            root.Write(writer);
-
-            new ClassWithId(
-                3,
-                root,
-                new MemberReference(1),
-                new MemberReference(3)).Write(writer);
-        }
+        WriteSerializedStreamHeader(writer);
+        WriteBinaryLibrary(writer, LibraryId, typeof(StructWithTwoObjectsISerializable).Assembly.FullName!);
+        WriteClassInfo(writer, ClassId, typeof(StructWithTwoObjectsISerializable).FullName!, ["Value", "Value2"]);
+        writer.Write((byte)BinaryType.Object);
+        writer.Write((byte)BinaryType.Object);
+        writer.Write(LibraryId);
+        WriteMemberReference(writer, NextClassId);
+        WriteMemberReference(writer, NextClassId);
+        // ClassWithId
+        writer.Write((byte)RecordType.ClassWithId);
+        writer.Write(NextClassId); // id
+        writer.Write(ClassId); // id of the class that provides metadata
+        WriteMemberReference(writer, ClassId);
+        WriteMemberReference(writer, NextClassId);
+        WriteMessageEnd(writer);
 
         stream.Position = 0;
         Deserialize(stream);

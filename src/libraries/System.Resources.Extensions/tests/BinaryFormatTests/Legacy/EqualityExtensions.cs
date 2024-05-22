@@ -19,6 +19,8 @@ using System.Runtime.Serialization;
 using FormatTests.Common.TestTypes;
 using System.Text.Json;
 using System.Collections.Concurrent;
+using System.Linq;
+using System.Threading;
 
 namespace BinaryFormatTests.FormatterTests;
 

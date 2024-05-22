@@ -3,8 +3,9 @@
 
 using System.Collections;
 using System.Drawing;
+using System.Linq;
+using System.Resources.Extensions.BinaryFormat;
 using System.Runtime.Serialization.BinaryFormat;
-using System.Runtime.Serialization.Formatters.Binary;
 using FormatTests.Common;
 
 namespace FormatTests.FormattedObject;
@@ -14,7 +15,7 @@ public class ListTests : SerializationTest<FormattedObjectSerializer>
     [Fact]
     public void BinaryFormattedObject_ParseEmptyArrayList()
     {
-        System.Windows.Forms.BinaryFormat.BinaryFormattedObject format = new(Serialize(new ArrayList()));
+        BinaryFormattedObject format = new(Serialize(new ArrayList()));
 
         VerifyArrayList((ClassRecord)format[1]);
 
@@ -34,7 +35,7 @@ public class ListTests : SerializationTest<FormattedObjectSerializer>
     [MemberData(nameof(ArrayList_Primitive_Data))]
     public void BinaryFormattedObject_ParsePrimitivesArrayList(object value)
     {
-        System.Windows.Forms.BinaryFormat.BinaryFormattedObject format = new(Serialize(new ArrayList()
+        BinaryFormattedObject format = new(Serialize(new ArrayList()
         {
             value
         }));
@@ -50,7 +51,7 @@ public class ListTests : SerializationTest<FormattedObjectSerializer>
     [Fact]
     public void BinaryFormattedObject_ParseStringArrayList()
     {
-        System.Windows.Forms.BinaryFormat.BinaryFormattedObject format = new(Serialize(new ArrayList()
+        BinaryFormattedObject format = new(Serialize(new ArrayList()
         {
             "JarJar"
         }));
@@ -123,7 +124,7 @@ public class ListTests : SerializationTest<FormattedObjectSerializer>
     [Fact]
     public void BinaryFormattedObject_ParseEmptyIntList()
     {
-        System.Windows.Forms.BinaryFormat.BinaryFormattedObject format = new(Serialize(new List<int>()));
+        BinaryFormattedObject format = new(Serialize(new List<int>()));
         ClassRecord classInfo = (ClassRecord)format[1];
         classInfo.RecordType.Should().Be(RecordType.SystemClassWithMembersAndTypes);
 
@@ -153,7 +154,7 @@ public class ListTests : SerializationTest<FormattedObjectSerializer>
     [Fact]
     public void BinaryFormattedObject_ParseEmptyStringList()
     {
-        System.Windows.Forms.BinaryFormat.BinaryFormattedObject format = new(Serialize(new List<string>()));
+        BinaryFormattedObject format = new(Serialize(new List<string>()));
 
         ClassRecord classInfo = (ClassRecord)format[1];
         classInfo.RecordType.Should().Be(RecordType.SystemClassWithMembersAndTypes);
@@ -166,35 +167,10 @@ public class ListTests : SerializationTest<FormattedObjectSerializer>
 
     [Theory]
     [MemberData(nameof(PrimitiveLists_TestData))]
-    public void BinaryFormatWriter_TryWritePrimitiveList(IList list)
-    {
-        using MemoryStream stream = new();
-        System.Windows.Forms.BinaryFormat.BinaryFormatWriter.TryWritePrimitiveList(stream, list).Should().BeTrue();
-        stream.Position = 0;
-
-        // cs/binary-formatter-without-binder
-        BinaryFormatter formatter = new(); // CodeQL [SM04191] : This is a test. Safe use because the deserialization process is performed on trusted data and the types are controlled and validated.
-        // cs/dangerous-binary-deserialization
-        IList deserialized = (IList)formatter.Deserialize(stream); // CodeQL[SM02229] : Testing legacy feature. This is a safe use of BinaryFormatter because the data is trusted and the types are controlled and validated.
-
-        deserialized.Should().BeEquivalentTo(list);
-    }
-
-    [Theory]
-    [MemberData(nameof(Lists_UnsupportedTestData))]
-    public void BinaryFormatWriter_TryWritePrimitiveList_Unsupported(IList list)
-    {
-        using MemoryStream stream = new();
-        System.Windows.Forms.BinaryFormat.BinaryFormatWriter.TryWritePrimitiveList(stream, list).Should().BeFalse();
-        stream.Position.Should().Be(0);
-    }
-
-    [Theory]
-    [MemberData(nameof(PrimitiveLists_TestData))]
     public void BinaryFormattedObjectExtensions_TryGetPrimitiveList(IList list)
     {
-        System.Windows.Forms.BinaryFormat.BinaryFormattedObject format = new(Serialize(list));
-        System.Windows.Forms.BinaryFormat.BinaryFormattedObjectExtensions.TryGetPrimitiveList(format, out object? deserialized).Should().BeTrue();
+        BinaryFormattedObject format = new(Serialize(list));
+        System.Resources.Extensions.BinaryFormat.BinaryFormattedObjectExtensions.TryGetPrimitiveList(format, out object? deserialized).Should().BeTrue();
         deserialized.Should().BeEquivalentTo(list);
     }
 

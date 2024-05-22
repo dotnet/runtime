@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections;
+using System.Linq;
+using System.Resources.Extensions.BinaryFormat;
 using System.Runtime.Serialization.BinaryFormat;
 using FormatTests.Common;
 
@@ -12,7 +14,7 @@ public class BinaryFormattedObjectTests : SerializationTest<FormattedObjectSeria
     [Fact]
     public void ReadHeader()
     {
-        System.Windows.Forms.BinaryFormat.BinaryFormattedObject format = new(Serialize("Hello World."));
+        BinaryFormattedObject format = new(Serialize("Hello World."));
         format.RootRecord.ObjectId.Should().Be(1);
     }
 
@@ -22,7 +24,7 @@ public class BinaryFormattedObjectTests : SerializationTest<FormattedObjectSeria
     [InlineData("Embedded\0 Null.")]
     public void ReadBinaryObjectString(string testString)
     {
-        System.Windows.Forms.BinaryFormat.BinaryFormattedObject format = new(Serialize(testString));
+        BinaryFormattedObject format = new(Serialize(testString));
         PrimitiveTypeRecord<string> stringRecord = (PrimitiveTypeRecord<string>)format[1];
         stringRecord.ObjectId.Should().Be(1);
         stringRecord.Value.Should().Be(testString);
@@ -31,7 +33,7 @@ public class BinaryFormattedObjectTests : SerializationTest<FormattedObjectSeria
     [Fact]
     public void ReadEmptyHashTable()
     {
-        System.Windows.Forms.BinaryFormat.BinaryFormattedObject format = new(Serialize(new Hashtable()));
+        BinaryFormattedObject format = new(Serialize(new Hashtable()));
 
         ClassRecord systemClass = (ClassRecord)format[1];
         VerifyHashTable(systemClass, expectedVersion: 0, expectedHashSize: 3);
@@ -70,7 +72,7 @@ public class BinaryFormattedObjectTests : SerializationTest<FormattedObjectSeria
     [Fact]
     public void ReadHashTableWithStringPair()
     {
-        System.Windows.Forms.BinaryFormat.BinaryFormattedObject format = new(Serialize(new Hashtable()
+        BinaryFormattedObject format = new(Serialize(new Hashtable()
         {
             { "This", "That" }
         }));
@@ -91,7 +93,7 @@ public class BinaryFormattedObjectTests : SerializationTest<FormattedObjectSeria
     [Fact]
     public void ReadHashTableWithRepeatedStrings()
     {
-        System.Windows.Forms.BinaryFormat.BinaryFormattedObject format = new(Serialize(new Hashtable()
+        BinaryFormattedObject format = new(Serialize(new Hashtable()
         {
             { "This", "That" },
             { "TheOther", "This" },
@@ -111,7 +113,7 @@ public class BinaryFormattedObjectTests : SerializationTest<FormattedObjectSeria
     [Fact]
     public void ReadHashTableWithNullValues()
     {
-        System.Windows.Forms.BinaryFormat.BinaryFormattedObject format = new(Serialize(new Hashtable()
+        BinaryFormattedObject format = new(Serialize(new Hashtable()
         {
             { "Yowza", null },
             { "Youza", null },
@@ -135,7 +137,7 @@ public class BinaryFormattedObjectTests : SerializationTest<FormattedObjectSeria
     [Fact]
     public void ReadObject()
     {
-        System.Windows.Forms.BinaryFormat.BinaryFormattedObject format = new(Serialize(new object()));
+        BinaryFormattedObject format = new(Serialize(new object()));
         format[1].RecordType.Should().Be(RecordType.SystemClassWithMembersAndTypes);
     }
 
@@ -143,14 +145,14 @@ public class BinaryFormattedObjectTests : SerializationTest<FormattedObjectSeria
     public void ReadStruct()
     {
         ValueTuple<int> tuple = new(355);
-        System.Windows.Forms.BinaryFormat.BinaryFormattedObject format = new(Serialize(tuple));
+        BinaryFormattedObject format = new(Serialize(tuple));
         format[1].RecordType.Should().Be(RecordType.SystemClassWithMembersAndTypes);
     }
 
     [Fact]
     public void ReadSimpleSerializableObject()
     {
-        System.Windows.Forms.BinaryFormat.BinaryFormattedObject format = new(Serialize(new SimpleSerializableObject()));
+        BinaryFormattedObject format = new(Serialize(new SimpleSerializableObject()));
 
         ClassRecord @class = (ClassRecord)format.RootRecord;
         @class.RecordType.Should().Be(RecordType.ClassWithMembersAndTypes);
@@ -163,7 +165,7 @@ public class BinaryFormattedObjectTests : SerializationTest<FormattedObjectSeria
     [Fact]
     public void ReadNestedSerializableObject()
     {
-        System.Windows.Forms.BinaryFormat.BinaryFormattedObject format = new(Serialize(new NestedSerializableObject()));
+        BinaryFormattedObject format = new(Serialize(new NestedSerializableObject()));
 
         ClassRecord @class = (ClassRecord)format.RootRecord;
         @class.RecordType.Should().Be(RecordType.ClassWithMembersAndTypes);
@@ -178,7 +180,7 @@ public class BinaryFormattedObjectTests : SerializationTest<FormattedObjectSeria
     [Fact]
     public void ReadTwoIntObject()
     {
-        System.Windows.Forms.BinaryFormat.BinaryFormattedObject format = new(Serialize(new TwoIntSerializableObject()));
+        BinaryFormattedObject format = new(Serialize(new TwoIntSerializableObject()));
 
         ClassRecord @class = (ClassRecord)format.RootRecord;
         @class.RecordType.Should().Be(RecordType.ClassWithMembersAndTypes);
@@ -193,7 +195,7 @@ public class BinaryFormattedObjectTests : SerializationTest<FormattedObjectSeria
     [Fact]
     public void ReadRepeatedNestedObject()
     {
-        System.Windows.Forms.BinaryFormat.BinaryFormattedObject format = new(Serialize(new RepeatedNestedSerializableObject()));
+        BinaryFormattedObject format = new(Serialize(new RepeatedNestedSerializableObject()));
         ClassRecord firstClass = (ClassRecord)format[3];
         firstClass.RecordType.Should().Be(RecordType.ClassWithMembersAndTypes);
         ClassRecord classWithId = (ClassRecord)format[4];
@@ -207,7 +209,7 @@ public class BinaryFormattedObjectTests : SerializationTest<FormattedObjectSeria
     {
         int[] input = [10, 9, 8, 7];
 
-        System.Windows.Forms.BinaryFormat.BinaryFormattedObject format = new(Serialize(input));
+        BinaryFormattedObject format = new(Serialize(input));
 
         ArrayRecord<int> array = (ArrayRecord<int>)format[1];
         array.Length.Should().Be(4);
@@ -219,7 +221,7 @@ public class BinaryFormattedObjectTests : SerializationTest<FormattedObjectSeria
     {
         string[] input = ["Monday", "Tuesday", "Wednesday"];
 
-        System.Windows.Forms.BinaryFormat.BinaryFormattedObject format = new(Serialize(input));
+        BinaryFormattedObject format = new(Serialize(input));
 
         ArrayRecord<string> array = (ArrayRecord<string>)format[1];
         array.ObjectId.Should().Be(1);
@@ -233,7 +235,7 @@ public class BinaryFormattedObjectTests : SerializationTest<FormattedObjectSeria
     {
         string?[] input = ["Monday", null, "Wednesday", null, null, null];
 
-        System.Windows.Forms.BinaryFormat.BinaryFormattedObject format = new(Serialize(input));
+        BinaryFormattedObject format = new(Serialize(input));
 
         ArrayRecord<string?> array = (ArrayRecord<string?>)format[1];
         array.ObjectId.Should().Be(1);
@@ -246,7 +248,7 @@ public class BinaryFormattedObjectTests : SerializationTest<FormattedObjectSeria
     {
         string[] input = ["Monday", "Tuesday", "Monday"];
 
-        System.Windows.Forms.BinaryFormat.BinaryFormattedObject format = new(Serialize(input));
+        BinaryFormattedObject format = new(Serialize(input));
 
         ArrayRecord<string> array = (ArrayRecord<string>)format[1];
         array.ObjectId.Should().Be(1);
@@ -258,7 +260,7 @@ public class BinaryFormattedObjectTests : SerializationTest<FormattedObjectSeria
     [Fact]
     public void ReadObjectWithNullableObjects()
     {
-        System.Windows.Forms.BinaryFormat.BinaryFormattedObject format = new(Serialize(new ObjectWithNullableObjects()));
+        BinaryFormattedObject format = new(Serialize(new ObjectWithNullableObjects()));
         ClassRecord classRecord = (ClassRecord)format.RootRecord;
         classRecord.RecordType.Should().Be(RecordType.ClassWithMembersAndTypes);
         classRecord.TypeName.AssemblyName!.FullName.Should().Be(typeof(ObjectWithNullableObjects).Assembly.FullName);
@@ -267,7 +269,7 @@ public class BinaryFormattedObjectTests : SerializationTest<FormattedObjectSeria
     [Fact]
     public void ReadNestedObjectWithNullableObjects()
     {
-        System.Windows.Forms.BinaryFormat.BinaryFormattedObject format = new(Serialize(new NestedObjectWithNullableObjects()));
+        BinaryFormattedObject format = new(Serialize(new NestedObjectWithNullableObjects()));
         ClassRecord classRecord = (ClassRecord)format.RootRecord;
         classRecord.RecordType.Should().Be(RecordType.ClassWithMembersAndTypes);
         classRecord.TypeName.AssemblyName!.FullName.Should().Be(typeof(NestedObjectWithNullableObjects).Assembly.FullName);

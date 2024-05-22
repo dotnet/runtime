@@ -1,7 +1,8 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Windows.Forms.BinaryFormat;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 namespace FormatTests.Common;
 
@@ -78,10 +79,7 @@ public abstract class MultidimensionalArrayTests<T> : SerializationTest<T> where
     {
         Array array = Array.CreateInstance(typeof(int), lengths);
 
-        for (int i = 0; i < array.LongLength; i++)
-        {
-            array.SetArrayValueByFlattenedIndex(i, i);
-        }
+        InitArray(array);
 
         Array deserialized = (Array)Deserialize(Serialize(array));
         deserialized.Should().BeEquivalentTo(deserialized);
@@ -107,12 +105,23 @@ public abstract class MultidimensionalArrayTests<T> : SerializationTest<T> where
         lengths.AsSpan().Fill(1);
         Array array = Array.CreateInstance(typeof(int), lengths);
 
-        for (int i = 0; i < array.LongLength; i++)
-        {
-            array.SetArrayValueByFlattenedIndex(i, i);
-        }
+        InitArray(array);
 
         Array deserialized = (Array)Deserialize(Serialize(array));
         deserialized.Should().BeEquivalentTo(deserialized);
+    }
+
+    private static void InitArray(Array array)
+    {
+        ref byte arrayDataRef = ref MemoryMarshal.GetArrayDataReference(array);
+        ref int elementRef = ref Unsafe.As<byte, int>(ref arrayDataRef);
+        nuint flattenedIndex = 0;
+
+        for (int i = 0; i < array.LongLength; i++)
+        {
+            ref int offsetElementRef = ref Unsafe.Add(ref elementRef, flattenedIndex);
+            offsetElementRef = i;
+            flattenedIndex++;
+        }
     }
 }

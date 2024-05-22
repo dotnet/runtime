@@ -176,4 +176,92 @@ public class InvalidInputTests : ReadTests
         stream.Position = 0;
         Assert.Throws<SerializationException>(() => PayloadReader.Read(stream));
     }
+
+    [Theory]
+    [InlineData(RecordType.ArraySingleObject)]
+    [InlineData(RecordType.ArraySinglePrimitive)]
+    [InlineData(RecordType.ArraySingleString)]
+    public void ThrowsForNegativeSingleArrayLength(RecordType recordType)
+    {
+        using MemoryStream stream = new();
+        BinaryWriter writer = new(stream, Encoding.UTF8);
+
+        WriteSerializedStreamHeader(writer);
+
+        writer.Write((byte)recordType);
+        writer.Write(1); // object Id
+        writer.Write(-1); // length!
+        writer.Write((byte)RecordType.MessageEnd);
+
+        stream.Position = 0;
+        Assert.Throws<SerializationException>(() => PayloadReader.Read(stream));
+    }
+
+    [Theory]
+    [InlineData(ArrayType.Single)]
+    [InlineData(ArrayType.Jagged)]
+    [InlineData(ArrayType.Rectangular)]
+    public void ThrowsForNegativeArrayLength(ArrayType arrayType)
+    {
+        using MemoryStream stream = new();
+        BinaryWriter writer = new(stream, Encoding.UTF8);
+
+        WriteSerializedStreamHeader(writer);
+
+        writer.Write((byte)RecordType.BinaryArray);
+        writer.Write(1); // object Id
+        writer.Write((byte)arrayType);
+        writer.Write(1); // rank
+        writer.Write(-1); // length!
+        writer.Write((byte)RecordType.MessageEnd);
+
+        stream.Position = 0;
+        Assert.Throws<SerializationException>(() => PayloadReader.Read(stream));
+    }
+
+    [Theory]
+    [InlineData(-1, ArrayType.Single)]
+    [InlineData(0, ArrayType.Single)]
+    [InlineData(-1, ArrayType.Jagged)]
+    [InlineData(0, ArrayType.Jagged)]
+    [InlineData(-1, ArrayType.Rectangular)]
+    [InlineData(0, ArrayType.Rectangular)]
+    public void ThrowsForInvalidArrayRank(int rank, ArrayType arrayType)
+    {
+        using MemoryStream stream = new();
+        BinaryWriter writer = new(stream, Encoding.UTF8);
+
+        WriteSerializedStreamHeader(writer);
+
+        writer.Write((byte)RecordType.BinaryArray);
+        writer.Write(1); // object Id
+        writer.Write((byte)arrayType);
+        writer.Write(rank); // rank!
+        writer.Write(1); // length
+        writer.Write((byte)RecordType.MessageEnd);
+
+        stream.Position = 0;
+        Assert.Throws<SerializationException>(() => PayloadReader.Read(stream));
+    }
+
+    [Theory]
+    [InlineData(2, ArrayType.Single)]
+    [InlineData(2, ArrayType.Jagged)]
+    public void ThrowsForInvalidPostiveArrayRank(int rank, ArrayType arrayType)
+    {
+        using MemoryStream stream = new();
+        BinaryWriter writer = new(stream, Encoding.UTF8);
+
+        WriteSerializedStreamHeader(writer);
+
+        writer.Write((byte)RecordType.BinaryArray);
+        writer.Write(1); // object Id
+        writer.Write((byte)arrayType);
+        writer.Write(rank); // rank!
+        writer.Write(1); // length
+        writer.Write((byte)RecordType.MessageEnd);
+
+        stream.Position = 0;
+        Assert.Throws<SerializationException>(() => PayloadReader.Read(stream));
+    }
 }
