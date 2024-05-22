@@ -9,6 +9,7 @@ using System.Net.Test.Common;
 using System.Net.Quic;
 using TestUtilities;
 using Microsoft.DotNet.XUnitExtensions;
+using System.Threading;
 
 namespace System.Net.Http.Functional.Tests
 {
@@ -33,9 +34,22 @@ namespace System.Net.Http.Functional.Tests
         [MemberData(nameof(AltSvcHeaderUpgradeVersions))]
         public async Task AltSvc_Header_Upgrade_Success(Version fromVersion, bool overrideHost)
         {
+            AsyncLocal<object> asyncLocal = new();
+            asyncLocal.Value = new();
+
+            TestEventListener? listener = null;
             if (UseVersion == HttpVersion30)
             {
-                return;
+                listener = new TestEventListener(e =>
+                {
+                    if (asyncLocal.Value is not null)
+                    {
+                        lock (_output)
+                        {
+                            _output.WriteLine($"[AltSvc_Header_Upgrade_Success]{e}");
+                        }
+                    }
+                }, TestEventListener.NetworkingEvents);
             }
             // The test makes a request to a HTTP/1 or HTTP/2 server first, which supplies an Alt-Svc header pointing to the second server.
             using GenericLoopbackServer firstServer =
@@ -85,12 +99,23 @@ namespace System.Net.Http.Functional.Tests
                 return;
             }
 
-            //TestEventListener? listener = null;
-            //if (UseVersion == HttpVersion30)
-            //{
-            //    listener = new TestEventListener(_output, TestEventListener.NetworkingEvents);
-            //}
-            //_output.WriteLine("Starting AltSvc_ConnectionFrame_UpgradeFrom20_Success test");
+            AsyncLocal<object> asyncLocal = new();
+            asyncLocal.Value = new();
+
+            TestEventListener? listener = null;
+            if (UseVersion == HttpVersion30)
+            {
+                listener = new TestEventListener(e =>
+                {
+                    if (asyncLocal.Value is not null)
+                    {
+                        lock (_output)
+                        {
+                            _output.WriteLine($"[AltSvc_ConnectionFrame_UpgradeFrom20_Success]{e}");
+                        }
+                    }
+                }, TestEventListener.NetworkingEvents);
+            }
             using Http2LoopbackServer firstServer = Http2LoopbackServer.CreateServer();
             using Http3LoopbackServer secondServer = CreateHttp3LoopbackServer(options: new() { TestOutputHelper = _output });
             using HttpClient client = CreateHttpClient(HttpVersion.Version20);
@@ -111,17 +136,12 @@ namespace System.Net.Http.Functional.Tests
             Assert.True(firstResponse.IsSuccessStatusCode);
 
             await AltSvc_Upgrade_Success(firstServer, secondServer, client);
-            //listener?.Dispose();
+            listener?.Dispose();
         }
 
         [Fact]
         public async Task AltSvc_ResponseFrame_UpgradeFrom20_Success()
         {
-            if (UseVersion == HttpVersion30)
-            {
-                return;
-            }
-
             using Http2LoopbackServer firstServer = Http2LoopbackServer.CreateServer();
             using Http3LoopbackServer secondServer = CreateHttp3LoopbackServer();
             using HttpClient client = CreateHttpClient(HttpVersion.Version20);

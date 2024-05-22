@@ -1027,7 +1027,10 @@ namespace System.Net.Http.Functional.Tests
                 {
                     if (asyncLocal.Value is not null)
                     {
-                        _output.WriteLine(e);
+                        lock (_output)
+                        {
+                            _output.WriteLine($"[ReadAsStreamAsync]{e}");
+                        }
                     }
                 }, TestEventListener.NetworkingEvents);
             }

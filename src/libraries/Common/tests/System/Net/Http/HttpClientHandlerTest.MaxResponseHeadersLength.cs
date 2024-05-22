@@ -57,20 +57,23 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public async Task SetAfterUse_Throws()
         {
-            //TestEventListener? listener = null;
-            //AsyncLocal<object> asyncLocal = new();
-            //asyncLocal.Value = new();
-            //if (UseVersion == HttpVersion30)
-            //{
-            //    listener = new TestEventListener(e =>
-            //    {
-            //        if (asyncLocal.Value is not null)
-            //        {
-            //            _output.WriteLine(e);
-            //        }
-            //    }, TestEventListener.NetworkingEvents);
-            //}
-            //_output.WriteLine("Starting SetAfterUse_Throws test");
+            AsyncLocal<object> asyncLocal = new();
+            asyncLocal.Value = new();
+
+            TestEventListener? listener = null;
+            if (UseVersion == HttpVersion30)
+            {
+                listener = new TestEventListener(e =>
+                {
+                    if (asyncLocal.Value is not null)
+                    {
+                        lock (_output)
+                        {
+                            _output.WriteLine($"[SetAfterUse]{e}");
+                        }
+                    }
+                }, TestEventListener.NetworkingEvents);
+            }
 
             await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
             {
@@ -82,7 +85,7 @@ namespace System.Net.Http.Functional.Tests
                 Assert.Throws<InvalidOperationException>(() => handler.MaxResponseHeadersLength = 1);
             },
             server => server.AcceptConnectionSendResponseAndCloseAsync(), options: new() { TestOutputHelper = _output });
-            //listener?.Dispose();
+            listener?.Dispose();
         }
 
         [Theory]
@@ -90,19 +93,23 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(15)]
         public async Task LargeSingleHeader_ThrowsException(int maxResponseHeadersLength)
         {
-            //TestEventListener? listener = null;
-            //AsyncLocal<object> asyncLocal = new();
-            //asyncLocal.Value = new();
-            //if (UseVersion == HttpVersion30)
-            //{
-            //    listener = new TestEventListener(e =>
-            //    {
-            //        if (asyncLocal.Value is not null)
-            //        {
-            //            _output.WriteLine(e);
-            //        }
-            //    }, TestEventListener.NetworkingEvents);
-            //}
+            AsyncLocal<object> asyncLocal = new();
+            asyncLocal.Value = new();
+
+            TestEventListener? listener = null;
+            if (UseVersion == HttpVersion30)
+            {
+                listener = new TestEventListener(e =>
+                {
+                    if (asyncLocal.Value is not null)
+                    {
+                        lock (_output)
+                        {
+                            _output.WriteLine($"[LargeSingleHeader_ThrowsException]{e}");
+                        }
+                    }
+                }, TestEventListener.NetworkingEvents);
+            }
 
             using HttpClientHandler handler = CreateHttpClientHandler();
             handler.MaxResponseHeadersLength = maxResponseHeadersLength;
@@ -131,7 +138,7 @@ namespace System.Net.Http.Functional.Tests
 #endif
             }, options: new() { TestOutputHelper = _output });
 
-            //listener?.Dispose();
+            listener?.Dispose();
         }
 
         [Theory]
