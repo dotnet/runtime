@@ -176,10 +176,11 @@ namespace System.Text.Json.Serialization
             Debug.Assert(state.FlushThreshold == 0 || (state.PipeWriter is not null && state.PipeWriter.CanGetUnflushedBytes),
                 "ShouldFlush should only be called by resumable serializers, all of which use the PipeWriter abstraction with CanGetUnflushedBytes == true.");
             // If surpassed flush threshold then return true which will flush stream.
-            if (state.PipeWriter is not null)
+            if (state.PipeWriter is { } pipeWriter)
             {
-                return state.FlushThreshold > 0 && state.PipeWriter.UnflushedBytes > state.FlushThreshold;
+                return state.FlushThreshold > 0 && pipeWriter.UnflushedBytes > state.FlushThreshold;
             }
+
             return false;
         }
 

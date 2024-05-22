@@ -64,8 +64,10 @@ namespace System.Text.Json.Serialization.Metadata
             CancellationToken cancellationToken,
             object? rootValueBoxed = null)
         {
-            return SerializeAsync(new PooledByteBufferWriter(Options.DefaultBufferSize, utf8Json), rootValue, cancellationToken,
-                (int)(Options.DefaultBufferSize * JsonSerializer.FlushThreshold), rootValueBoxed);
+            // Value chosen as 90% of the default buffer used in PooledByteBufferWriter.
+            // This is a tradeoff between likelihood of needing to grow the array vs. utilizing most of the buffer
+            int flushThreshold = (int)(Options.DefaultBufferSize * JsonSerializer.FlushThreshold);
+            return SerializeAsync(new PooledByteBufferWriter(Options.DefaultBufferSize, utf8Json), rootValue, flushThreshold, cancellationToken, rootValueBoxed);
         }
 
         internal Task SerializeAsync(PipeWriter utf8Json,
@@ -73,16 +75,17 @@ namespace System.Text.Json.Serialization.Metadata
             CancellationToken cancellationToken,
             object? rootValueBoxed = null)
         {
-            return SerializeAsync(utf8Json, rootValue, cancellationToken,
-                (int)((4 * PipeOptions.Default.MinimumSegmentSize) * JsonSerializer.FlushThreshold), rootValueBoxed);
+            // Value chosen as 90% of 4 buffer segments in Pipes. This is semi-arbitrarily chosen and may be changed in future iterations.
+            int flushThreshold = (int)(4 * PipeOptions.Default.MinimumSegmentSize * JsonSerializer.FlushThreshold);
+            return SerializeAsync(utf8Json, rootValue, flushThreshold, cancellationToken, rootValueBoxed);
         }
 
         // Root serialization method for async streaming serialization.
         private async Task SerializeAsync(
             PipeWriter pipeWriter,
             T? rootValue,
-            CancellationToken cancellationToken,
             int flushThreshold,
+            CancellationToken cancellationToken,
             object? rootValueBoxed = null)
         {
             Debug.Assert(IsConfigured);
@@ -153,6 +156,10 @@ namespace System.Text.Json.Serialization.Metadata
                     supportContinuation: true,
                     supportAsync: true);
 
+                if (!pipeWriter.CanGetUnflushedBytes)
+                {
+                    ThrowHelper.ThrowInvalidOperationException_PipeWriterDoesNotImplementUnflushedBytes(pipeWriter);
+                }
                 state.PipeWriter = pipeWriter;
                 state.CancellationToken = cancellationToken;
 
@@ -298,6 +305,10 @@ namespace System.Text.Json.Serialization.Metadata
                 using var bufferWriter = new PooledByteBufferWriter(Options.DefaultBufferSize);
                 using var writer = new Utf8JsonWriter(bufferWriter, Options.GetWriterOptions());
 
+                if (!bufferWriter.CanGetUnflushedBytes)
+                {
+                    ThrowHelper.ThrowInvalidOperationException_PipeWriterDoesNotImplementUnflushedBytes(bufferWriter);
+                }
                 state.PipeWriter = bufferWriter;
                 state.FlushThreshold = (int)(bufferWriter.Capacity * JsonSerializer.FlushThreshold);
 
@@ -327,7 +338,7 @@ namespace System.Text.Json.Serialization.Metadata
             => Serialize(writer, JsonSerializer.UnboxOnWrite<T>(rootValue), rootValue);
 
         internal sealed override Task SerializeAsObjectAsync(PipeWriter pipeWriter, object? rootValue, int flushThreshold, CancellationToken cancellationToken)
-            => SerializeAsync(pipeWriter, JsonSerializer.UnboxOnWrite<T>(rootValue), cancellationToken, flushThreshold, rootValue);
+            => SerializeAsync(pipeWriter, JsonSerializer.UnboxOnWrite<T>(rootValue), flushThreshold, cancellationToken, rootValue);
 
         internal sealed override Task SerializeAsObjectAsync(Stream utf8Json, object? rootValue, CancellationToken cancellationToken)
             => SerializeAsync(utf8Json, JsonSerializer.UnboxOnWrite<T>(rootValue), cancellationToken, rootValue);
