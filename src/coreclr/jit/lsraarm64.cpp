@@ -1561,7 +1561,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
         }
         else if (HWIntrinsicInfo::IsMaskedOperation(intrin.id))
         {
-            regMaskTP predMask;
+            regMaskTP predMask = RBM_ALLMASK;
             if (intrin.id == NI_Sve_ConditionalSelect)
             {
                 // If this is conditional select, make sure to check the embedded
@@ -1579,9 +1579,9 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                     }
                 }
             }
-            else
+            else if (HWIntrinsicInfo::IsLowMaskedOperation(intrin.id))
             {
-                predMask = HWIntrinsicInfo::IsLowMaskedOperation(intrin.id) ? RBM_LOWMASK : RBM_ALLMASK;
+                predMask = RBM_LOWMASK;
             }
 
             srcCount += BuildOperandUses(intrin.op1, predMask);
