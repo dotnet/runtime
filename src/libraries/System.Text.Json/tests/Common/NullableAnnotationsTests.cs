@@ -3,10 +3,10 @@
 
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
-using System.Threading.Tasks;
-using System.Text.Json.Serialization.Metadata;
-using Xunit;
 using System.Linq;
+using System.Text.Json.Serialization.Metadata;
+using System.Threading.Tasks;
+using Xunit;
 
 #nullable enable annotations
 
@@ -65,6 +65,7 @@ namespace System.Text.Json.Serialization.Tests
             yield return Wrap(typeof(NotNullableFieldClass), nameof(NotNullableFieldClass.Field));
             yield return Wrap(typeof(NotNullablePropertyWithConverterClass), nameof(NotNullablePropertyWithConverterClass.PropertyWithConverter));
             yield return Wrap(typeof(NotNullPropertyClass), nameof(NotNullPropertyClass.Property));
+            yield return Wrap(typeof(NotNullStructPropertyClass), nameof(NotNullStructPropertyClass.Property));
             yield return Wrap(typeof(NotNullPropertyClass<string>), nameof(NotNullPropertyClass<string>.Property));
             yield return Wrap(typeof(NotNullablePropertyParameterizedCtorClass), nameof(NotNullablePropertyParameterizedCtorClass.CtorProperty));
             yield return Wrap(typeof(NotNullablePropertiesLargeParameterizedCtorClass), nameof(NotNullablePropertiesLargeParameterizedCtorClass.CtorProperty2));
@@ -117,6 +118,8 @@ namespace System.Text.Json.Serialization.Tests
         {
             yield return Wrap(typeof(NullablePropertyClass), nameof(NullablePropertyClass.Property));
             yield return Wrap(typeof(NullableFieldClass), nameof(NullableFieldClass.Field));
+            yield return Wrap(typeof(NullStructPropertyClass), nameof(NullStructPropertyClass.Property));
+            yield return Wrap(typeof(NullStructConstructorParameterClass), nameof(NullStructConstructorParameterClass.Property));
             yield return Wrap(typeof(MaybeNullPropertyClass), nameof(MaybeNullPropertyClass.Property));
             yield return Wrap(typeof(MaybeNullPropertyClass<string>), nameof(MaybeNullPropertyClass<string>.Property));
             yield return Wrap(typeof(NullableObliviousPropertyClass), nameof(NullableObliviousPropertyClass.Property));
@@ -179,6 +182,8 @@ namespace System.Text.Json.Serialization.Tests
             yield return Wrap(typeof(NotNullableFieldClass), nameof(NotNullableFieldClass.Field));
             yield return Wrap(typeof(NotNullablePropertyWithConverterClass), nameof(NotNullablePropertyWithConverterClass.PropertyWithConverter));
             yield return Wrap(typeof(DisallowNullPropertyClass), nameof(DisallowNullPropertyClass.Property));
+            yield return Wrap(typeof(DisallowNullStructPropertyClass), nameof(DisallowNullStructPropertyClass.Property));
+            yield return Wrap(typeof(DisallowNullStructConstructorParameter), nameof(DisallowNullStructConstructorParameter.Property));
             yield return Wrap(typeof(DisallowNullPropertyClass<string>), nameof(DisallowNullPropertyClass<string>.Property));
             yield return Wrap(typeof(NotNullablePropertyParameterizedCtorClass), nameof(NotNullablePropertyParameterizedCtorClass.CtorProperty));
             yield return Wrap(typeof(NotNullablePropertiesLargeParameterizedCtorClass), nameof(NotNullablePropertiesLargeParameterizedCtorClass.CtorProperty2));
@@ -232,6 +237,8 @@ namespace System.Text.Json.Serialization.Tests
         {
             yield return Wrap(typeof(NullablePropertyClass), nameof(NullablePropertyClass.Property));
             yield return Wrap(typeof(NullableFieldClass), nameof(NullableFieldClass.Field));
+            yield return Wrap(typeof(NullStructPropertyClass), nameof(NullStructPropertyClass.Property));
+            yield return Wrap(typeof(NullStructConstructorParameterClass), nameof(NullStructConstructorParameterClass.Property));
             yield return Wrap(typeof(AllowNullPropertyClass), nameof(AllowNullPropertyClass.Property));
             yield return Wrap(typeof(AllowNullPropertyClass<string>), nameof(AllowNullPropertyClass<string>.Property));
             yield return Wrap(typeof(NullableObliviousPropertyClass), nameof(NullableObliviousPropertyClass.Property));
@@ -587,6 +594,49 @@ namespace System.Text.Json.Serialization.Tests
 
             [JsonConstructor]
             public DisallowNullConstructorParameter([DisallowNull] string? property)
+            {
+                Property = property;
+            }
+        }
+
+        public class NullStructPropertyClass
+        {
+            public int? Property { get; set; }
+        }
+
+        public class NullStructConstructorParameterClass
+        {
+            public int? Property { get; set; }
+
+            public NullStructConstructorParameterClass() { }
+
+            [JsonConstructor]
+            public NullStructConstructorParameterClass(int? property)
+            {
+                Property = property;
+            }
+        }
+
+        public class NotNullStructPropertyClass
+        {
+            [NotNull]
+            public int? Property { get; set; }
+        }
+
+        public class DisallowNullStructPropertyClass
+        {
+            [DisallowNull]
+            public int? Property { get; set; }
+        }
+
+        public class DisallowNullStructConstructorParameter
+        {
+            public int? Property { get; set; }
+
+            public DisallowNullStructConstructorParameter() { }
+
+            [JsonConstructor]
+            public DisallowNullStructConstructorParameter([DisallowNull] int? property)
             {
                 Property = property;
             }

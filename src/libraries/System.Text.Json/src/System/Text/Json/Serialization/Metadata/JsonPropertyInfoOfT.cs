@@ -305,8 +305,6 @@ namespace System.Text.Json.Serialization.Metadata
 
                     if (fastValue is null && !IsSetNullable && Options.RespectNullableAnnotations)
                     {
-                        Debug.Fail("We currently don't have an internal converter that returns null that could trigger this, if you hit this, please add a test case.");
-                        Debug.Assert(!EffectiveConverter.IsValueType);
                         ThrowHelper.ThrowJsonException_PropertySetterDisallowNull(Name, state.Current.JsonTypeInfo.Type);
                     }
 
