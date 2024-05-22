@@ -1182,8 +1182,8 @@ namespace System.Text.Json.SourceGeneration
                 if (optionsSpec.DictionaryKeyPolicy is JsonKnownNamingPolicy dictionaryKeyPolicy)
                     writer.WriteLine($"DictionaryKeyPolicy = {FormatNamingPolicy(dictionaryKeyPolicy)},");
 
-                if (optionsSpec.RespectNullableAnnotations is bool ignoreNullableAnnotations)
-                    writer.WriteLine($"RespectNullableAnnotations = {FormatBoolLiteral(ignoreNullableAnnotations)},");
+                if (optionsSpec.RespectNullableAnnotations is bool respectNullableAnnotations)
+                    writer.WriteLine($"RespectNullableAnnotations = {FormatBoolLiteral(respectNullableAnnotations)},");
 
                 if (optionsSpec.IgnoreReadOnlyFields is bool ignoreReadOnlyFields)
                     writer.WriteLine($"IgnoreReadOnlyFields = {FormatBoolLiteral(ignoreReadOnlyFields)},");
