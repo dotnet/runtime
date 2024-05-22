@@ -6,7 +6,7 @@ namespace Swift.Runtime
     // <summary>
     // Represents Swift UnsafeBufferPointer in C#.
     // </summary>
-    public unsafe readonly struct UnsafeBufferPointer<T> where T : unmanaged
+    internal readonly unsafe struct UnsafeBufferPointer<T> where T : unmanaged
     {
         private readonly T* _baseAddress;
         private readonly nint _count;
@@ -23,7 +23,7 @@ namespace Swift.Runtime
     // <summary>
     // Represents Swift UnsafeMutableBufferPointer in C#.
     // </summary>
-    public unsafe readonly struct UnsafeMutableBufferPointer<T> where T : unmanaged
+    internal readonly unsafe struct UnsafeMutableBufferPointer<T> where T : unmanaged
     {
         private readonly T* _baseAddress;
         private readonly nint _count;

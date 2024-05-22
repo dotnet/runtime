@@ -8,32 +8,36 @@ protocol NonceProtocol {
     init<D>(data: D) throws where D : DataProtocol
 }
 
-protocol SealedBoxProtocol<N> where N: NonceProtocol {
+protocol SealedBoxProtocol {
+    associatedtype Nonce : NonceProtocol
+
     var ciphertext: Data { get }
     var tag: Data { get }
 
     init<C, T>(
-        nonce: N,
+        nonce: Nonce,
         ciphertext: C,
         tag: T
     ) throws where C : DataProtocol, T : DataProtocol
 }
 
-protocol AEADSymmetricAlgorithm
-{
-    associatedtype Nonce : NonceProtocol
+protocol AEADSymmetricAlgorithm {
     associatedtype SealedBox : SealedBoxProtocol
 
-    static func seal<Plaintext, AuthenticatedData>(_ plaintext: Plaintext, using key: SymmetricKey, nonce: Nonce? = nil, authenticating additionalData: AuthenticatedData) throws -> SealedBox where Plaintext: DataProtocol, AuthenticatedData: DataProtocol
+    static func seal<Plaintext, AuthenticatedData>(_ plaintext: Plaintext, using key: SymmetricKey, nonce: SealedBox.Nonce?, authenticating additionalData: AuthenticatedData) throws -> SealedBox where Plaintext: DataProtocol, AuthenticatedData: DataProtocol
     static func open<AuthenticatedData>(_ sealedBox: SealedBox, using key: SymmetricKey, authenticating additionalData: AuthenticatedData) throws -> Data where AuthenticatedData: DataProtocol
 }
 
-extension AES.GCM.SealedBox: SealedBoxProtocol {}
 extension AES.GCM.Nonce: NonceProtocol {}
+extension AES.GCM.SealedBox: SealedBoxProtocol {
+    typealias Nonce = AES.GCM.Nonce
+}
 extension AES.GCM: AEADSymmetricAlgorithm {}
 
-extension ChaChaPoly.SealedBox: SealedBoxProtocol {}
 extension ChaChaPoly.Nonce: NonceProtocol {}
+extension ChaChaPoly.SealedBox: SealedBoxProtocol {
+    typealias Nonce = ChaChaPoly.Nonce
+}
 extension ChaChaPoly: AEADSymmetricAlgorithm {}
 
 func encrypt<Algorithm>(
@@ -47,12 +51,12 @@ func encrypt<Algorithm>(
 
     let symmetricKey = SymmetricKey(data: key)
 
-    let nonce = try Algorithm.Nonce(data: nonceData)
+    let nonce = try Algorithm.SealedBox.Nonce(data: nonceData)
 
     let result = try Algorithm.seal(plaintext, using: symmetricKey, nonce: nonce, authenticating: aad)
 
-    result.ciphertext.copyBytes(to: cipherText)
-    result.tag.copyBytes(to: tag)
+    _ = result.ciphertext.copyBytes(to: cipherText)
+    _ = result.tag.copyBytes(to: tag)
 }
 
 func decrypt<Algorithm>(
@@ -66,13 +70,13 @@ func decrypt<Algorithm>(
 
     let symmetricKey = SymmetricKey(data: key)
 
-    let nonce = try Algorithm.Nonce(data: nonceData)
+    let nonce = try Algorithm.SealedBox.Nonce(data: nonceData)
 
-    let sealedBox = try Algorithm.SealedBox(nonce: nonce, ciphertext: ciphertext, tag: tag)
+    let sealedBox = try Algorithm.SealedBox(nonce: nonce, ciphertext: cipherText, tag: tag)
 
     let result = try Algorithm.open(sealedBox, using: symmetricKey, authenticating: aad)
 
-    result.copyBytes(to: plaintext)
+    _ = result.copyBytes(to: plaintext)
 }
 
 @_silgen_name("AppleCryptoNative_ChaCha20Poly1305Encrypt")
@@ -85,7 +89,7 @@ public func AppleCryptoNative_ChaCha20Poly1305Encrypt(
     aad: UnsafeBufferPointer<UInt8>
 ) throws {
     return try encrypt(
-        algorithm: ChaChaPoly.self,
+        ChaChaPoly.self,
         key: key,
         nonceData: nonceData,
         plaintext: plaintext,
@@ -104,7 +108,7 @@ public func AppleCryptoNative_ChaCha20Poly1305Decrypt(
     aad: UnsafeBufferPointer<UInt8>
 ) throws {
     return try decrypt(
-        algorithm: ChaChaPoly.self,
+        ChaChaPoly.self,
         key: key,
         nonceData: nonceData,
         cipherText: cipherText,
@@ -123,7 +127,7 @@ public func AppleCryptoNative_AesGcmEncrypt(
     aad: UnsafeBufferPointer<UInt8>
 ) throws {
     return try encrypt(
-        algorithm: AES.GCM.self,
+        AES.GCM.self,
         key: key,
         nonceData: nonceData,
         plaintext: plaintext,
@@ -142,7 +146,7 @@ public func AppleCryptoNative_AesGcmDecrypt(
     aad: UnsafeBufferPointer<UInt8>
 ) throws {
     return try decrypt(
-        algorithm: AES.GCM.self,
+        AES.GCM.self,
         key: key,
         nonceData: nonceData,
         cipherText: cipherText,
@@ -153,5 +157,13 @@ public func AppleCryptoNative_AesGcmDecrypt(
 
 @_silgen_name("AppleCryptoNative_IsAuthenticationFailure")
 public func AppleCryptoNative_IsAuthenticationFailure(error: Error) -> Bool {
-    return error is CryptoKitError && error as! CryptoKitError == CryptoKitError.authenticationFailure
+    if let error = error as? CryptoKitError {
+        switch error {
+        case .authenticationFailure:
+            return true
+        default:
+            return false
+        }
+    }
+    return false
 }

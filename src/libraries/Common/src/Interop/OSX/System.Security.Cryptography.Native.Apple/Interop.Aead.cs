@@ -5,8 +5,10 @@ using System;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Swift;
 using System.Security.Cryptography;
 using System.Security.Cryptography.Apple;
+using Swift.Runtime;
 
 #pragma warning disable CS3016 // Arrays as attribute arguments are not CLS Compliant
 
@@ -75,7 +77,7 @@ internal static partial class Interop
                 {
                     CryptographicOperations.ZeroMemory(plaintext);
 
-                    if (AppleCryptoNative_IsAuthenticationFailure(error.Value) == AuthTagMismatch)
+                    if (AppleCryptoNative_IsAuthenticationFailure(error.Value))
                     {
                         throw new AuthenticationTagMismatchException();
                     }
@@ -102,7 +104,6 @@ internal static partial class Interop
             fixed (byte* tagPtr = tag)
             fixed (byte* aadPtr = aad)
             {
-                SwiftError error;
                 AppleCryptoNative_AesGcmEncrypt(
                     new(keyPtr, key.Length),
                     new(noncePtr, nonce.Length),
@@ -136,7 +137,6 @@ internal static partial class Interop
             fixed (byte* plaintextPtr = plaintext)
             fixed (byte* aadPtr = aad)
             {
-                SwiftError error;
                 AppleCryptoNative_AesGcmDecrypt(
                     new(keyPtr, key.Length),
                     new(noncePtr, nonce.Length),
@@ -150,7 +150,7 @@ internal static partial class Interop
                 {
                     CryptographicOperations.ZeroMemory(plaintext);
 
-                    if (AppleCryptoNative_IsAuthenticationFailure(error.Value) == AuthTagMismatch)
+                    if (AppleCryptoNative_IsAuthenticationFailure(error.Value))
                     {
                         throw new AuthenticationTagMismatchException();
                     }
