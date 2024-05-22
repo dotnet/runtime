@@ -20,3 +20,5 @@ add_compile_options($<$<COMPILE_LANG_AND_ID:C,MSVC>:/wd4244>) # 'function': conv
 set(SKIP_INSTALL_ALL ON)
 FetchContent_MakeAvailable(fetchzlibng)
 set(SKIP_INSTALL_ALL OFF)
+
+target_compile_options(zlibstatic PUBLIC $<$<COMPILE_LANG_AND_ID:C,Clang,AppleClang,GNU>:-Wno-error=unused-command-line-argument>) # Make sure MacOS respects ignoring unused CLI arguments
