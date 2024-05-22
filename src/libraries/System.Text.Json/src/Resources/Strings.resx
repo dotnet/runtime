@@ -360,6 +360,9 @@
   <data name="SerializationDataExtensionPropertyInvalid" xml:space="preserve">
     <value>The extension data property '{0}.{1}' is invalid. It must implement 'IDictionary&lt;string, JsonElement&gt;' or 'IDictionary&lt;string, object&gt;', or be 'JsonObject'.</value>
   </data>
+  <data name="PropertyTypeNotNullable" xml:space="preserve">
+    <value>The property type '{0}' does not support null values and therefore cannot be marked as nullable.</value>
+  </data>
   <data name="SerializationDuplicateTypeAttribute" xml:space="preserve">
     <value>The type '{0}' cannot have more than one member that has the attribute '{1}'.</value>
   </data>

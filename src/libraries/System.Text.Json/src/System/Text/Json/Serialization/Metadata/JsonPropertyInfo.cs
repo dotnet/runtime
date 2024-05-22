@@ -260,7 +260,7 @@ namespace System.Text.Json.Serialization.Metadata
 
                 if (value && !PropertyTypeCanBeNull)
                 {
-                    throw new InvalidOperationException("The property type is not nullable.");
+                    ThrowHelper.ThrowInvalidOperationException_PropertyTypeNotNullable(this);
                 }
 
                 _isGetNullable = value;
@@ -294,7 +294,7 @@ namespace System.Text.Json.Serialization.Metadata
 
                 if (value && !PropertyTypeCanBeNull)
                 {
-                    throw new InvalidOperationException("The property type is not nullable.");
+                    ThrowHelper.ThrowInvalidOperationException_PropertyTypeNotNullable(this);
                 }
 
                 if (ParameterInfo != null)
