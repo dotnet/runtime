@@ -623,7 +623,6 @@ extern bool g_libSslUses32BitTime;
     REQUIRED_FUNCTION(SSL_version) \
     FALLBACK_FUNCTION(X509_check_host) \
     REQUIRED_FUNCTION(X509_check_purpose) \
-    REQUIRED_FUNCTION(X509_cmp_current_time) \
     REQUIRED_FUNCTION(X509_cmp_time) \
     REQUIRED_FUNCTION(X509_CRL_free) \
     FALLBACK_FUNCTION(X509_CRL_get0_nextUpdate) \
@@ -1155,7 +1154,6 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define TLS_method TLS_method_ptr
 #define X509_check_host X509_check_host_ptr
 #define X509_check_purpose X509_check_purpose_ptr
-#define X509_cmp_current_time X509_cmp_current_time_ptr
 #define X509_cmp_time X509_cmp_time_ptr
 #define X509_CRL_free X509_CRL_free_ptr
 #define X509_CRL_get0_nextUpdate X509_CRL_get0_nextUpdate_ptr
