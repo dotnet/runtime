@@ -3526,8 +3526,8 @@ public:
         VarSetOps::AssignNoCopy(emitComp, debugPrevGCrefVars, VarSetOps::MakeEmpty(emitComp));
         VarSetOps::AssignNoCopy(emitComp, debugThisGCrefVars, VarSetOps::MakeEmpty(emitComp));
         debugPrevRegPtrDsc = nullptr;
-        debugPrevGCrefRegs = RBM_NONE;
-        debugPrevByrefRegs = RBM_NONE;
+        debugPrevGCrefRegs = regMaskTP(RBM_NONE, RBM_NONE);
+        debugPrevByrefRegs = regMaskTP(RBM_NONE, RBM_NONE);
 #endif
     }
 };

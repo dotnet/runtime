@@ -165,7 +165,7 @@ SingleTypeRegSet NodeInternalRegisters::GetAll(GenTree* tree)
 unsigned NodeInternalRegisters::Count(GenTree* tree, SingleTypeRegSet mask)
 {
     SingleTypeRegSet regs;
-    return m_table.Lookup(tree, &regs) ? genCountBits(regs & mask) : 0;
+    return m_table.Lookup(tree, &regs) ? PopCount(regs & mask) : 0;
 }
 
 // CodeGen constructor

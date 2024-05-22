@@ -489,7 +489,7 @@ SingleTypeRegSet LinearScan::getConstrainedRegMask(RefPosition*     refPosition,
                                                    unsigned         minRegCount)
 {
     SingleTypeRegSet newMask = regMaskActual & regMaskConstraint;
-    if (genCountBits(newMask) < minRegCount)
+    if (PopCount(newMask) < minRegCount)
     {
         // Constrained mask does not have minimum required registers needed.
         return regMaskActual;
@@ -13634,7 +13634,7 @@ SingleTypeRegSet LinearScan::RegisterSelection::select(Interval*                
         {
             // We should have a single candidate that will be used for subsequent
             // refpositions.
-            assert((refPosition->refType == RefTypeUpperVectorRestore) || (genCountBits(candidates) == 1));
+            assert((refPosition->refType == RefTypeUpperVectorRestore) || genMaxOneBit(candidates));
 
             freeCandidates = candidates & linearScan->m_AvailableRegs.GetRegSetForType(regType);
         }

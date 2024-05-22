@@ -3159,9 +3159,6 @@ void LinearScan::BuildCallDefs(GenTree* tree, int dstCount, regMaskTP dstCandida
     assert((int)genCountBits(dstCandidates) == dstCount);
     assert(tree->IsMultiRegCall());
 
-    const ReturnTypeDesc* retTypeDesc = tree->AsCall()->GetReturnTypeDesc();
-    assert(retTypeDesc != nullptr);
-
     for (int i = 0; i < dstCount; i++)
     {
         // In case of multi-reg call node, we have to query the i'th position return register.
@@ -3192,7 +3189,7 @@ void LinearScan::BuildDefs(GenTree* tree, int dstCount, SingleTypeRegSet dstCand
 {
     assert(dstCount > 0);
 
-    if ((dstCandidates == RBM_NONE) || ((int)genCountBits(dstCandidates) != dstCount))
+    if ((dstCandidates == RBM_NONE) || ((int)PopCount(dstCandidates) != dstCount))
     {
         // This is not fixedReg case, so just create definitions based on dstCandidates
         for (int i = 0; i < dstCount; i++)
@@ -3265,7 +3262,7 @@ void LinearScan::BuildKills(GenTree* tree, regMaskTP killMask)
 void LinearScan::BuildDefWithKills(GenTree* tree, SingleTypeRegSet dstCandidates, regMaskTP killMask)
 {
     assert(!tree->AsCall()->HasMultiRegRetVal());
-    assert((int)genCountBits(dstCandidates) == 1);
+    assert((int)PopCount(dstCandidates) == 1);
 
     // Build the kill RefPositions
     BuildKills(tree, killMask);
