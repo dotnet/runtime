@@ -5921,6 +5921,14 @@ void Compiler::optRemoveRedundantZeroInits()
                     hasGCSafePoint = true;
                 }
 
+                if (tree->OperIs(GT_STORE_BLK))
+                {
+                    // Such stores might be converted into calls (with gc safe points) in Lower.
+                    // This is quite a conservative fix as it's hard to prove Lower won't do it
+                    // at this point.
+                    hasGCSafePoint = true;
+                }
+
                 hasImplicitControlFlow |= hasEHSuccs && ((tree->gtFlags & GTF_EXCEPT) != 0);
 
                 switch (tree->gtOper)
@@ -5987,6 +5995,14 @@ void Compiler::optRemoveRedundantZeroInits()
                         if (!tree->OperIsLocalStore())
                         {
                             break;
+                        }
+
+                        if (varTypeIsStruct(lclDsc))
+                        {
+                            // Such stores might be converted into calls (with gc safe points) in Lower.
+                            // This is quite a conservative fix as it's hard to prove Lower won't do it
+                            // at this point.
+                            hasGCSafePoint = true;
                         }
 
                         // TODO-Cleanup: there is potential for cleaning this algorithm up by deleting
