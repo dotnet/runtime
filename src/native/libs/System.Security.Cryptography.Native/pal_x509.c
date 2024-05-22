@@ -966,28 +966,28 @@ static X509VerifyStatusCode CheckOcspGetExpiry(OCSP_REQUEST* req,
                 if (!g_libSslUses32BitTime || (currentTime >= INT_MIN && currentTime <= INT_MAX))
 #endif
                 {
-                // X509_cmp_current_time uses 0 for error already, so we can use it when there's a null value.
-                // 1 means the nextupd value is in the future, -1 means it is now-or-in-the-past.
-                // Following with OpenSSL conventions, we'll accept "now" as "the past".
+                    // X509_cmp_current_time uses 0 for error already, so we can use it when there's a null value.
+                    // 1 means the nextupd value is in the future, -1 means it is now-or-in-the-past.
+                    // Following with OpenSSL conventions, we'll accept "now" as "the past".
                     nextUpdComparison = nextupd == NULL ? 0 : X509_cmp_time(nextupd, &currentTime);
 
-                // Un-revoking is rare, so reporting revoked on an expired response has a low chance
-                // of a false-positive.
-                //
-                // For non-revoked responses, a next-update value in the past counts as expired.
-                if (status == V_OCSP_CERTSTATUS_REVOKED)
-                {
-                    ret = PAL_X509_V_ERR_CERT_REVOKED;
-                }
-                else
-                {
-                    if (nextupd != NULL && nextUpdComparison <= 0)
+                    // Un-revoking is rare, so reporting revoked on an expired response has a low chance
+                    // of a false-positive.
+                    //
+                    // For non-revoked responses, a next-update value in the past counts as expired.
+                    if (status == V_OCSP_CERTSTATUS_REVOKED)
                     {
-                        ret = PAL_X509_V_ERR_CRL_HAS_EXPIRED;
+                        ret = PAL_X509_V_ERR_CERT_REVOKED;
                     }
-                    else if (status == V_OCSP_CERTSTATUS_GOOD)
+                    else
                     {
-                        ret = PAL_X509_V_OK;
+                        if (nextupd != NULL && nextUpdComparison <= 0)
+                        {
+                            ret = PAL_X509_V_ERR_CRL_HAS_EXPIRED;
+                        }
+                        else if (status == V_OCSP_CERTSTATUS_GOOD)
+                        {
+                            ret = PAL_X509_V_OK;
                         }
                     }
                 }
