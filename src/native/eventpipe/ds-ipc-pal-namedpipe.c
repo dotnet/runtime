@@ -180,15 +180,17 @@ ds_ipc_reset (DiagnosticsIpc *ipc)
 		return;
 
 	if (ipc->pipe != INVALID_HANDLE_VALUE) {
+		DisconnectNamedPipe (ipc->pipe);
 		CloseHandle (ipc->pipe);
 		ipc->pipe = INVALID_HANDLE_VALUE;
 	}
 
 	if (ipc->overlap.hEvent != INVALID_HANDLE_VALUE) {
 		CloseHandle (ipc->overlap.hEvent);
-		ipc->overlap.hEvent = INVALID_HANDLE_VALUE;
 	}
 
+	memset(&ipc->overlap, 0, sizeof(OVERLAPPED)); // clear the overlapped objects state
+	ipc->overlap.hEvent = INVALID_HANDLE_VALUE;
 	ipc->is_listening = false;
 }
 
