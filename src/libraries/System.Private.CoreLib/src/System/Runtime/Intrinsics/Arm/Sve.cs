@@ -2648,6 +2648,99 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<ulong> OrAcross(Vector<ulong> value) => OrAcross(value);
 
 
+        ///  Count nonzero bits
+
+        /// <summary>
+        /// svuint8_t svcnt[_s8]_m(svuint8_t inactive, svbool_t pg, svint8_t op)
+        ///   CNT Ztied.B, Pg/M, Zop.B
+        /// svuint8_t svcnt[_s8]_x(svbool_t pg, svint8_t op)
+        ///   CNT Ztied.B, Pg/M, Ztied.B
+        /// svuint8_t svcnt[_s8]_z(svbool_t pg, svint8_t op)
+        /// </summary>
+        public static unsafe Vector<byte> PopCount(Vector<sbyte> value) => PopCount(value);
+
+        /// <summary>
+        /// svuint8_t svcnt[_u8]_m(svuint8_t inactive, svbool_t pg, svuint8_t op)
+        ///   CNT Ztied.B, Pg/M, Zop.B
+        /// svuint8_t svcnt[_u8]_x(svbool_t pg, svuint8_t op)
+        ///   CNT Ztied.B, Pg/M, Ztied.B
+        /// svuint8_t svcnt[_u8]_z(svbool_t pg, svuint8_t op)
+        /// </summary>
+        public static unsafe Vector<byte> PopCount(Vector<byte> value) => PopCount(value);
+
+        /// <summary>
+        /// svuint16_t svcnt[_s16]_m(svuint16_t inactive, svbool_t pg, svint16_t op)
+        ///   CNT Ztied.H, Pg/M, Zop.H
+        /// svuint16_t svcnt[_s16]_x(svbool_t pg, svint16_t op)
+        ///   CNT Ztied.H, Pg/M, Ztied.H
+        /// svuint16_t svcnt[_s16]_z(svbool_t pg, svint16_t op)
+        /// </summary>
+        public static unsafe Vector<ushort> PopCount(Vector<short> value) => PopCount(value);
+
+        /// <summary>
+        /// svuint16_t svcnt[_u16]_m(svuint16_t inactive, svbool_t pg, svuint16_t op)
+        ///   CNT Ztied.H, Pg/M, Zop.H
+        /// svuint16_t svcnt[_u16]_x(svbool_t pg, svuint16_t op)
+        ///   CNT Ztied.H, Pg/M, Ztied.H
+        /// svuint16_t svcnt[_u16]_z(svbool_t pg, svuint16_t op)
+        /// </summary>
+        public static unsafe Vector<ushort> PopCount(Vector<ushort> value) => PopCount(value);
+
+        /// <summary>
+        /// svuint32_t svcnt[_s32]_m(svuint32_t inactive, svbool_t pg, svint32_t op)
+        ///   CNT Ztied.S, Pg/M, Zop.S
+        /// svuint32_t svcnt[_s32]_x(svbool_t pg, svint32_t op)
+        ///   CNT Ztied.S, Pg/M, Ztied.S
+        /// svuint32_t svcnt[_s32]_z(svbool_t pg, svint32_t op)
+        /// </summary>
+        public static unsafe Vector<uint> PopCount(Vector<int> value) => PopCount(value);
+
+        /// <summary>
+        /// svuint32_t svcnt[_f32]_m(svuint32_t inactive, svbool_t pg, svfloat32_t op)
+        ///   CNT Ztied.S, Pg/M, Zop.S
+        /// svuint32_t svcnt[_f32]_x(svbool_t pg, svfloat32_t op)
+        ///   CNT Ztied.S, Pg/M, Ztied.S
+        /// svuint32_t svcnt[_f32]_z(svbool_t pg, svfloat32_t op)
+        /// </summary>
+        public static unsafe Vector<uint> PopCount(Vector<float> value) => PopCount(value);
+
+        /// <summary>
+        /// svuint32_t svcnt[_u32]_m(svuint32_t inactive, svbool_t pg, svuint32_t op)
+        ///   CNT Ztied.S, Pg/M, Zop.S
+        /// svuint32_t svcnt[_u32]_x(svbool_t pg, svuint32_t op)
+        ///   CNT Ztied.S, Pg/M, Ztied.S
+        /// svuint32_t svcnt[_u32]_z(svbool_t pg, svuint32_t op)
+        /// </summary>
+        public static unsafe Vector<uint> PopCount(Vector<uint> value) => PopCount(value);
+
+        /// <summary>
+        /// svuint64_t svcnt[_f64]_m(svuint64_t inactive, svbool_t pg, svfloat64_t op)
+        ///   CNT Ztied.D, Pg/M, Zop.D
+        /// svuint64_t svcnt[_f64]_x(svbool_t pg, svfloat64_t op)
+        ///   CNT Ztied.D, Pg/M, Ztied.D
+        /// svuint64_t svcnt[_f64]_z(svbool_t pg, svfloat64_t op)
+        /// </summary>
+        public static unsafe Vector<ulong> PopCount(Vector<double> value) => PopCount(value);
+
+        /// <summary>
+        /// svuint64_t svcnt[_s64]_m(svuint64_t inactive, svbool_t pg, svint64_t op)
+        ///   CNT Ztied.D, Pg/M, Zop.D
+        /// svuint64_t svcnt[_s64]_x(svbool_t pg, svint64_t op)
+        ///   CNT Ztied.D, Pg/M, Ztied.D
+        /// svuint64_t svcnt[_s64]_z(svbool_t pg, svint64_t op)
+        /// </summary>
+        public static unsafe Vector<ulong> PopCount(Vector<long> value) => PopCount(value);
+
+        /// <summary>
+        /// svuint64_t svcnt[_u64]_m(svuint64_t inactive, svbool_t pg, svuint64_t op)
+        ///   CNT Ztied.D, Pg/M, Zop.D
+        /// svuint64_t svcnt[_u64]_x(svbool_t pg, svuint64_t op)
+        ///   CNT Ztied.D, Pg/M, Ztied.D
+        /// svuint64_t svcnt[_u64]_z(svbool_t pg, svuint64_t op)
+        /// </summary>
+        public static unsafe Vector<ulong> PopCount(Vector<ulong> value) => PopCount(value);
+
+
         ///  SignExtend16 : Sign-extend the low 16 bits
 
         /// <summary>

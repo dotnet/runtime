@@ -4522,6 +4522,17 @@ namespace System.Runtime.Intrinsics.Arm
         public static System.Numerics.Vector<uint> OrAcross(System.Numerics.Vector<uint> value) { throw null; }
         public static System.Numerics.Vector<ulong> OrAcross(System.Numerics.Vector<ulong> value) { throw null; }
 
+        public static System.Numerics.Vector<byte> PopCount(System.Numerics.Vector<sbyte> value) { throw null; }
+        public static System.Numerics.Vector<byte> PopCount(System.Numerics.Vector<byte> value) { throw null; }
+        public static System.Numerics.Vector<ushort> PopCount(System.Numerics.Vector<short> value) { throw null; }
+        public static System.Numerics.Vector<ushort> PopCount(System.Numerics.Vector<ushort> value) { throw null; }
+        public static System.Numerics.Vector<uint> PopCount(System.Numerics.Vector<int> value) { throw null; }
+        public static System.Numerics.Vector<uint> PopCount(System.Numerics.Vector<float> value) { throw null; }
+        public static System.Numerics.Vector<uint> PopCount(System.Numerics.Vector<uint> value) { throw null; }
+        public static System.Numerics.Vector<ulong> PopCount(System.Numerics.Vector<double> value) { throw null; }
+        public static System.Numerics.Vector<ulong> PopCount(System.Numerics.Vector<long> value) { throw null; }
+        public static System.Numerics.Vector<ulong> PopCount(System.Numerics.Vector<ulong> value) { throw null; }
+
         public static System.Numerics.Vector<int> SignExtend16(System.Numerics.Vector<int> value) { throw null; }
         public static System.Numerics.Vector<long> SignExtend16(System.Numerics.Vector<long> value) { throw null; }
         public static System.Numerics.Vector<long> SignExtend32(System.Numerics.Vector<long> value) { throw null; }
