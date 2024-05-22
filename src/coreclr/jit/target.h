@@ -231,22 +231,21 @@ typedef unsigned __int64 regMaskSmall;
 
 typedef regMaskSmall SingleTypeRegSet;
 
-#if defined(TARGET_AMD64) || defined(TARGET_ARM) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-typedef uint64_t regMaskTP;
-#elif defined(TARGET_ARM64)
+#define REG_MASK_INT_FMT "%04llX"
+#define REG_MASK_ALL_FMT "%016llX"
+#endif
+
 struct regMaskTP
 {
 private:
-    uint64_t low;
+    regMaskSmall low;
     uint64_t high;
-
 public:
     constexpr regMaskTP(uint64_t lowRegMask, uint64_t highRegMask)
         : low(lowRegMask)
         , high(highRegMask)
     {
     }
-    constexpr regMaskTP(uint64_t regMask)
         : low(regMask)
         , high(RBM_NONE)
     {
@@ -266,10 +265,23 @@ public:
         return (regMaskSmall)low;
     }
 
+#ifdef TARGET_ARM
+    explicit operator int() const
+    {
+        return (int)low;
+    }
+    explicit operator BYTE() const
+    {
+        return (BYTE)low;
+    }
+#endif
+
+#ifndef TARGET_X86
     explicit operator unsigned int() const
     {
         return (unsigned int)low;
     }
+#endif
 
     SingleTypeRegSet getLow() const
     {
@@ -347,28 +359,38 @@ static bool operator!=(regMaskTP first, regMaskTP second)
     return !(first == second);
 }
 
-static regMaskTP operator~(regMaskTP first)
+#ifdef TARGET_ARM
+static regMaskTP operator-(regMaskTP first, regMaskTP second)
 {
     regMaskTP result(~first.getLow(), ~first.getHigh());
     return result;
 }
 
-#else
-typedef unsigned regMaskTP;
+static bool operator>(regMaskTP first, regMaskTP second)
+{
+    return first.getLow() > second.getLow();
+}
+
+static regMaskTP& operator<<=(regMaskTP& first, const int b)
+{
+    first = first << b;
+    return first;
+}
 #endif
+
+static regMaskTP operator~(regMaskTP first)
+{
+    regMaskTP result(~first.getLow());
+    return result;
+}
 
 static uint32_t PopCount(regMaskTP value)
 {
-#ifdef TARGET_ARM64
     return BitOperations::PopCount(value.getLow()) + BitOperations::PopCount(value.getHigh());
-#else
-    return BitOperations::PopCount(value);
-#endif
 }
 
 static uint32_t BitScanForward(regMaskTP mask)
 {
-#ifdef TARGET_ARM64
     if (mask.getLow() != RBM_NONE)
     {
         return BitOperations::BitScanForward(mask.getLow());
@@ -377,9 +399,6 @@ static uint32_t BitScanForward(regMaskTP mask)
     {
         return 64 + BitOperations::BitScanForward(mask.getHigh());
     }
-#else
-    return BitOperations::BitScanForward(mask);
-#endif
 }
 
 /*****************************************************************************/
