@@ -30,6 +30,7 @@ static const Entry s_cryptoAppleNative[] =
     DllImportEntry(AppleCryptoNative_AesGcmDecrypt)
     DllImportEntry(AppleCryptoNative_ChaCha20Poly1305Encrypt)
     DllImportEntry(AppleCryptoNative_ChaCha20Poly1305Decrypt)
+    DllImportEntry(AppleCryptoNative_IsAuthenticationFailure)
     DllImportEntry(AppleCryptoNative_DigestFree)
     DllImportEntry(AppleCryptoNative_DigestCreate)
     DllImportEntry(AppleCryptoNative_DigestUpdate)

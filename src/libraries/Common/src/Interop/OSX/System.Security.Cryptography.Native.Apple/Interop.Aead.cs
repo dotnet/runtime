@@ -29,18 +29,17 @@ internal static partial class Interop
             fixed (byte* tagPtr = tag)
             fixed (byte* aadPtr = aad)
             {
-                const int Success = 1;
-                int result = AppleCryptoNative_ChaCha20Poly1305Encrypt(
-                    keyPtr, key.Length,
-                    noncePtr, nonce.Length,
-                    plaintextPtr, plaintext.Length,
-                    ciphertextPtr, ciphertext.Length,
-                    tagPtr, tag.Length,
-                    aadPtr, aad.Length);
+                AppleCryptoNative_ChaCha20Poly1305Encrypt(
+                    new(keyPtr, key.Length),
+                    new(noncePtr, nonce.Length),
+                    new(plaintextPtr, plaintext.Length),
+                    new(ciphertextPtr, ciphertext.Length),
+                    new(tagPtr, tag.Length),
+                    new(aadPtr, aad.Length),
+                    out SwiftError error);
 
-                if (result != Success)
+                if (error.Value != null)
                 {
-                    Debug.Assert(result == 0);
                     CryptographicOperations.ZeroMemory(ciphertext);
                     CryptographicOperations.ZeroMemory(tag);
                     throw new CryptographicException();
@@ -63,27 +62,25 @@ internal static partial class Interop
             fixed (byte* plaintextPtr = plaintext)
             fixed (byte* aadPtr = aad)
             {
-                const int Success = 1;
-                const int AuthTagMismatch = -1;
-                int result = AppleCryptoNative_ChaCha20Poly1305Decrypt(
-                    keyPtr, key.Length,
-                    noncePtr, nonce.Length,
-                    ciphertextPtr, ciphertext.Length,
-                    tagPtr, tag.Length,
-                    plaintextPtr, plaintext.Length,
-                    aadPtr, aad.Length);
+                AppleCryptoNative_ChaCha20Poly1305Decrypt(
+                    new(keyPtr, key.Length),
+                    new(noncePtr, nonce.Length),
+                    new(ciphertextPtr, ciphertext.Length),
+                    new(tagPtr, tag.Length),
+                    new(plaintextPtr, plaintext.Length),
+                    new(aadPtr, aad.Length),
+                    out SwiftError error);
 
-                if (result != Success)
+                if (error.Value != null)
                 {
                     CryptographicOperations.ZeroMemory(plaintext);
 
-                    if (result == AuthTagMismatch)
+                    if (AppleCryptoNative_IsAuthenticationFailure(error.Value) == AuthTagMismatch)
                     {
                         throw new AuthenticationTagMismatchException();
                     }
                     else
                     {
-                        Debug.Assert(result == 0);
                         throw new CryptographicException();
                     }
                 }
@@ -105,18 +102,18 @@ internal static partial class Interop
             fixed (byte* tagPtr = tag)
             fixed (byte* aadPtr = aad)
             {
-                const int Success = 1;
-                int result = AppleCryptoNative_AesGcmEncrypt(
-                    keyPtr, key.Length,
-                    noncePtr, nonce.Length,
-                    plaintextPtr, plaintext.Length,
-                    ciphertextPtr, ciphertext.Length,
-                    tagPtr, tag.Length,
-                    aadPtr, aad.Length);
+                SwiftError error;
+                AppleCryptoNative_AesGcmEncrypt(
+                    new(keyPtr, key.Length),
+                    new(noncePtr, nonce.Length),
+                    new(plaintextPtr, plaintext.Length),
+                    new(ciphertextPtr, ciphertext.Length),
+                    new(tagPtr, tag.Length),
+                    new(aadPtr, aad.Length),
+                    out SwiftError error);
 
-                if (result != Success)
+                if (error.Value != null)
                 {
-                    Debug.Assert(result == 0);
                     CryptographicOperations.ZeroMemory(ciphertext);
                     CryptographicOperations.ZeroMemory(tag);
                     throw new CryptographicException();
@@ -139,27 +136,26 @@ internal static partial class Interop
             fixed (byte* plaintextPtr = plaintext)
             fixed (byte* aadPtr = aad)
             {
-                const int Success = 1;
-                const int AuthTagMismatch = -1;
-                int result = AppleCryptoNative_AesGcmDecrypt(
-                    keyPtr, key.Length,
-                    noncePtr, nonce.Length,
-                    ciphertextPtr, ciphertext.Length,
-                    tagPtr, tag.Length,
-                    plaintextPtr, plaintext.Length,
-                    aadPtr, aad.Length);
+                SwiftError error;
+                AppleCryptoNative_AesGcmDecrypt(
+                    new(keyPtr, key.Length),
+                    new(noncePtr, nonce.Length),
+                    new(ciphertextPtr, ciphertext.Length),
+                    new(tagPtr, tag.Length),
+                    new(plaintextPtr, plaintext.Length),
+                    new(aadPtr, aad.Length),
+                    out SwiftError error);
 
-                if (result != Success)
+                if (error.Value != null)
                 {
                     CryptographicOperations.ZeroMemory(plaintext);
 
-                    if (result == AuthTagMismatch)
+                    if (AppleCryptoNative_IsAuthenticationFailure(error.Value) == AuthTagMismatch)
                     {
                         throw new AuthenticationTagMismatchException();
                     }
                     else
                     {
-                        Debug.Assert(result == 0);
                         throw new CryptographicException();
                     }
                 }
@@ -168,66 +164,55 @@ internal static partial class Interop
 
         [LibraryImport(Libraries.AppleCryptoNative)]
         [UnmanagedCallConv(CallConvs = [ typeof(CallConvSwift) ])]
-        private static unsafe partial int AppleCryptoNative_ChaCha20Poly1305Encrypt(
-            byte* keyPtr,
-            int keyLength,
-            byte* noncePtr,
-            int nonceLength,
-            byte* plaintextPtr,
-            int plaintextLength,
-            byte* ciphertextPtr,
-            int ciphertextLength,
-            byte* tagPtr,
-            int tagLength,
-            byte* aadPtr,
-            int aadLength);
+        private static unsafe partial void AppleCryptoNative_ChaCha20Poly1305Encrypt(
+            UnsafeBufferPointer<byte> key,
+            UnsafeBufferPointer<byte> nonce,
+            UnsafeBufferPointer<byte> plaintext,
+            UnsafeMutableBufferPointer<byte> ciphertext,
+            UnsafeMutableBufferPointer<byte> tag,
+            UnsafeBufferPointer<byte> aad,
+            out SwiftError error
+        );
 
         [LibraryImport(Libraries.AppleCryptoNative)]
         [UnmanagedCallConv(CallConvs = [ typeof(CallConvSwift) ])]
-        private static unsafe partial int AppleCryptoNative_ChaCha20Poly1305Decrypt(
-            byte* keyPtr,
-            int keyLength,
-            byte* noncePtr,
-            int nonceLength,
-            byte* ciphertextPtr,
-            int ciphertextLength,
-            byte* tagPtr,
-            int tagLength,
-            byte* plaintextPtr,
-            int plaintextLength,
-            byte* aadPtr,
-            int aadLength);
+        private static unsafe partial void AppleCryptoNative_ChaCha20Poly1305Decrypt(
+            UnsafeBufferPointer<byte> key,
+            UnsafeBufferPointer<byte> nonce,
+            UnsafeBufferPointer<byte> ciphertext,
+            UnsafeBufferPointer<byte> tag,
+            UnsafeMutableBufferPointer<byte> plaintext,
+            UnsafeBufferPointer<byte> aad,
+            out SwiftError error
+        );
 
         [LibraryImport(Libraries.AppleCryptoNative)]
         [UnmanagedCallConv(CallConvs = [ typeof(CallConvSwift) ])]
-        private static unsafe partial int AppleCryptoNative_AesGcmEncrypt(
-            byte* keyPtr,
-            int keyLength,
-            byte* noncePtr,
-            int nonceLength,
-            byte* plaintextPtr,
-            int plaintextLength,
-            byte* ciphertextPtr,
-            int ciphertextLength,
-            byte* tagPtr,
-            int tagLength,
-            byte* aadPtr,
-            int aadLength);
+        private static unsafe partial void AppleCryptoNative_AesGcmEncrypt(
+            UnsafeBufferPointer<byte> key,
+            UnsafeBufferPointer<byte> nonce,
+            UnsafeBufferPointer<byte> plaintext,
+            UnsafeMutableBufferPointer<byte> ciphertext,
+            UnsafeMutableBufferPointer<byte> tag,
+            UnsafeBufferPointer<byte> aad,
+            out SwiftError error
+        );
 
         [LibraryImport(Libraries.AppleCryptoNative)]
         [UnmanagedCallConv(CallConvs = [ typeof(CallConvSwift) ])]
-        private static unsafe partial int AppleCryptoNative_AesGcmDecrypt(
-            byte* keyPtr,
-            int keyLength,
-            byte* noncePtr,
-            int nonceLength,
-            byte* ciphertextPtr,
-            int ciphertextLength,
-            byte* tagPtr,
-            int tagLength,
-            byte* plaintextPtr,
-            int plaintextLength,
-            byte* aadPtr,
-            int aadLength);
+        private static unsafe partial void AppleCryptoNative_AesGcmDecrypt(
+            UnsafeBufferPointer<byte> key,
+            UnsafeBufferPointer<byte> nonce,
+            UnsafeBufferPointer<byte> ciphertext,
+            UnsafeBufferPointer<byte> tag,
+            UnsafeMutableBufferPointer<byte> plaintext,
+            UnsafeBufferPointer<byte> aad,
+            out SwiftError error
+        );
+
+        [LibraryImport(Libraries.AppleCryptoNative)]
+        [UnmanagedCallConv(CallConvs = new[] { typeof(CallConvSwift) })]
+        [return: MarshalAs(UnmanagedType.U1)]
+        private static unsafe partial bool AppleCryptoNative_IsAuthenticationFailure(void* error);
     }
 }
