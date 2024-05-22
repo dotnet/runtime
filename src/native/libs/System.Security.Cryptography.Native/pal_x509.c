@@ -960,7 +960,7 @@ static X509VerifyStatusCode CheckOcspGetExpiry(OCSP_REQUEST* req,
             {
                 time_t currentTime = time(NULL);
                 int nextUpdComparison = 0;
-#if defined(TARGET_ARM) && defined(TARGET_LINUX)
+#if defined(FEATURE_DISTRO_AGNOSTIC_SSL) && defined(TARGET_ARM) && defined(TARGET_LINUX)
                 // If openssl uses 32-bit time_t and the current time doesn't fit in 32 bits,
                 // skip checking the status/nextupd, and fall through to return PAL_X509_V_ERR_UNABLE_TO_GET_CRL.
                 if (!g_libSslUses32BitTime || (currentTime >= INT_MIN && currentTime <= INT_MAX))

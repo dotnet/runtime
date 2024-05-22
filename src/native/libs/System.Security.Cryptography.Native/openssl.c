@@ -7,10 +7,7 @@
 #include "pal_safecrt.h"
 #include "pal_x509.h"
 #include "openssl.h"
-
-#ifdef FEATURE_DISTRO_AGNOSTIC_SSL
 #include "opensslshim.h"
-#endif
 
 #include <assert.h>
 #include <limits.h>
@@ -964,7 +961,7 @@ int32_t CryptoNative_X509StoreSetVerifyTime(X509_STORE* ctx,
         return 0;
     }
 
-#if defined(TARGET_ARM) && defined(TARGET_LINUX)
+#if defined(FEATURE_DISTRO_AGNOSTIC_SSL) && defined(TARGET_ARM) && defined(TARGET_LINUX)
     if (g_libSslUses32BitTime)
     {
         if (verifyTime > INT_MAX || verifyTime < INT_MIN)

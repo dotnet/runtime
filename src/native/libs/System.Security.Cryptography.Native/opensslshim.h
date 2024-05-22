@@ -187,7 +187,7 @@ int EVP_DigestSqueeze(EVP_MD_CTX *ctx, unsigned char *out, size_t outlen);
 
 #define API_EXISTS(fn) (fn != NULL)
 
-#if defined(TARGET_ARM) && defined(TARGET_LINUX)
+#if defined(FEATURE_DISTRO_AGNOSTIC_SSL) && defined(TARGET_ARM) && defined(TARGET_LINUX)
 extern bool g_libSslUses32BitTime;
 #endif
 
