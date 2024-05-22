@@ -1063,6 +1063,7 @@ regMaskTP LinearScan::getKillSetForNode(GenTree* tree)
         // profiler callback would trash these registers. See vm\amd64\asmhelpers.asm for
         // more details.
         case GT_RETURN:
+        case GT_SWIFT_ERROR_RET:
             killMask = getKillSetForReturn();
             break;
 
