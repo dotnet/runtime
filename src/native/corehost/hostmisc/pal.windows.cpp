@@ -6,9 +6,51 @@
 #include "utils.h"
 #include "longfile.h"
 
+// #include <string>
+// #include <cstring>
+// #include <cstdarg>
+// #include <cstdint>
+#include <windows.h>
 #include <cassert>
 #include <ShlObj.h>
 #include <ctime>
+
+
+void pal::file_vprintf(FILE* f, const pal::char_t* format, va_list vl) {
+    _locale_t loc = _create_locale(LC_ALL, ".utf8");
+    // In order to properly print characters in the GB18030 standard, we need to use the locale version of vfwprintf
+    ::_vfwprintf_l(f, format, loc, vl);
+    ::fputwc(_X('\n'), f);
+    _free_locale(loc);
+}
+
+// In order to properly print characters in the GB18030 standard, we need to use WriteConsoleW
+void pal::err_print_line(const pal::char_t* message) {
+    HANDLE e = ::GetStdHandle(STD_ERROR_HANDLE);
+    ::WriteConsoleW(e, message, (int)pal::strlen(message), NULL, NULL);
+    ::WriteConsoleW(e, _X("\n"), 1, NULL, NULL);
+}
+
+// In order to properly print characters in the GB18030 standard, we need to use WriteConsoleW
+void pal::out_vprint_line(const pal::char_t* format, va_list vl) {
+    // Get the length of the formatted string + newline + null terminator
+    va_list vl_copy;
+    va_copy(vl_copy, vl);
+    int len = 2 + pal::strlen_vprintf(format, vl_copy);
+    if (len < 0)
+    {
+        return;
+    }
+    std::vector<pal::char_t> buffer(len);
+    int written = pal::str_vprintf(&buffer[0], len - 1, format, vl);
+    if (written != len - 2)
+    {
+        return;
+    }
+    buffer[len - 2] = _X('\n');
+    buffer[len - 1] = _X('\0');
+    ::WriteConsoleW(::GetStdHandle(STD_OUTPUT_HANDLE), &buffer[0], len, NULL, NULL);
+}
 
 bool GetModuleFileNameWrapper(HMODULE hModule, pal::string_t* recv)
 {

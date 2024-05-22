@@ -162,44 +162,9 @@ namespace pal
     inline int str_vprintf(char_t* buffer, size_t count, const char_t* format, va_list vl) { return ::_vsnwprintf_s(buffer, count, _TRUNCATE, format, vl); }
     inline int strlen_vprintf(const char_t* format, va_list vl) { return ::_vscwprintf(format, vl); }
 
-    inline void file_vprintf(FILE* f, const char_t* format, va_list vl)
-    {
-        _locale_t loc = _create_locale(LC_ALL, ".utf8");
-        ::_vfwprintf_l(f, format, loc, vl);
-        ::fputwc(_X('\n'), f);
-        _free_locale(loc);
-    }
-
-    inline void err_fputs(const char_t* message) {
-        HANDLE e = GetStdHandle(STD_ERROR_HANDLE);
-        WriteConsoleW(e, message, (int)strlen(message), NULL, NULL);
-        WriteConsoleW(e, _X("\n"), 1, NULL, NULL);
-    }
-
-    inline void out_vprintf(const char_t* format, va_list vl) {
-        // Get the length of the formatted string + newline + null terminator
-        int len = 2 + strlen_vprintf(format, vl);
-        if (len < 0)
-        {
-            return;
-        }
-        char_t* buffer = (char_t*) malloc((len) * sizeof(char_t));
-        if (buffer == nullptr)
-        {
-            return;
-        }
-        int written = str_vprintf(buffer, len - 1, format, vl);
-        if (written != len - 2)
-        {
-            free(buffer);
-            return;
-        }
-        buffer[len - 2] = _X('\n');
-        buffer[len - 1] = _X('\0');
-        WriteConsoleW(GetStdHandle(STD_OUTPUT_HANDLE), buffer, len, NULL, NULL);
-
-        free(buffer);
-     }
+    void file_vprintf(FILE* f, const char_t* format, va_list vl);
+    void err_print_line(const char_t* message);
+    void out_vprint_line(const char_t* format, va_list vl);
 
     inline const string_t strerror(int errnum)
     {
@@ -261,8 +226,8 @@ namespace pal
     inline size_t strlen(const char_t* str) { return ::strlen(str); }
     inline FILE* file_open(const string_t& path, const char_t* mode) { return fopen(path.c_str(), mode); }
     inline void file_vprintf(FILE* f, const char_t* format, va_list vl) { ::vfprintf(f, format, vl); ::fputc('\n', f); }
-    inline void err_fputs(const char_t* message) { ::fputs(message, stderr); ::fputc(_X('\n'), stderr); }
-    inline void out_vprintf(const char_t* format, va_list vl) { ::vfprintf(stdout, format, vl); ::fputc('\n', stdout); }
+    inline void err_print_line(const char_t* message) { ::fputs(message, stderr); ::fputc(_X('\n'), stderr); }
+    inline void out_vprint_line(const char_t* format, va_list vl) { ::vfprintf(stdout, format, vl); ::fputc('\n', stdout); }
     inline int str_vprintf(char_t* str, size_t size, const char_t* format, va_list vl) { return ::vsnprintf(str, size, format, vl); }
     inline int strlen_vprintf(const char_t* format, va_list vl) { return ::vsnprintf(nullptr, 0, format, vl); }
 
