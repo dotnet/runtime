@@ -957,7 +957,7 @@ regMaskSmall genRegMaskFromCalleeSavedMask(unsigned short calleeSaveMask)
     regMaskSmall res = 0;
     for (int i = 0; i < CNT_CALL_GC_REGS; i++)
     {
-        if ((calleeSaveMask & ((regMaskTP)1 << i)) != 0)
+        if ((calleeSaveMask & (1 << i)) != 0)
         {
             res |= raRbmCalleeSaveOrder[i];
         }

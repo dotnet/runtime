@@ -2081,7 +2081,7 @@ mono_arch_set_native_call_context_ret (CallContext *ccontext, gpointer frame, Mo
 			storage = alloca (temp_size);
 		else
 			storage = arg_get_storage (ccontext, ainfo);
-		memset (ccontext, 0, sizeof (CallContext)); // FIXME
+
 		interp_cb->frame_arg_to_data ((MonoInterpFrameHandle)frame, sig, -1, storage);
 		if (temp_size)
 			arg_set_val (ccontext, ainfo, storage);
@@ -5398,6 +5398,13 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			g_assert (!cfg->method->save_lmf);
 
 			max_len += call->stack_usage / sizeof (target_mgreg_t) * ins_get_size (OP_TAILCALL_PARAMETER);
+			// HACK: In cpu-arm64.mdesc the tailcall opcodes have a len of 255, which is
+			// arbitrary, but it's the max uint8 value.  It looks like in some
+			// circumstances we need more space than that.
+			//
+			// Add some more space to acount for mono_arm_emit_destroy_frame and
+			// emit_load_regset, below
+			max_len += 64;
 			while (G_UNLIKELY (offset + max_len > cfg->code_size)) {
 				cfg->code_size *= 2;
 				cfg->native_code = (unsigned char *)mono_realloc_native_code (cfg);

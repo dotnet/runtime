@@ -325,14 +325,16 @@ namespace Server.Contract
     public interface IDispatchCoerceTesting
     {
         int ReturnToManaged(short vt);
-
         int ManagedArgument(int arg);
-
-        System.Reflection.Missing ReturnToManaged_Missing();
-
-        DBNull ReturnToManaged_DBNull();
-
         string BoolToString();
+        void ReturnToManaged_Void(int value);
+        double ReturnToManaged_Double(int value);
+        string ReturnToManaged_String(int value);
+        decimal ReturnToManaged_Decimal(int value);
+        DateTime ReturnToManaged_DateTime(int value);
+        Color ReturnToManaged_Color(int value);
+        System.Reflection.Missing ReturnToManaged_Missing(int value);
+        DBNull ReturnToManaged_DBNull(int value);
     }
 
     [ComVisible(true)]

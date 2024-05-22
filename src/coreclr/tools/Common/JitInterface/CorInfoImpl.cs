@@ -3283,7 +3283,7 @@ namespace Internal.JitInterface
             // In debug, write some bogus data to the struct to ensure we have filled everything
             // properly.
             fixed (CORINFO_EE_INFO* tmp = &pEEInfoOut)
-                MemoryHelper.FillMemory((byte*)tmp, 0xcc, Marshal.SizeOf<CORINFO_EE_INFO>());
+                NativeMemory.Fill(tmp, (nuint)sizeof(CORINFO_EE_INFO), 0xcc);
 #endif
 
             int pointerSize = this.PointerSize;

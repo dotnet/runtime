@@ -1155,7 +1155,7 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
 
         INDEBUG(ilInstsSet->bitVectSet((UINT)(codeAddr - codeBegp)));
 
-        codeAddr += sizeof(__int8);
+        codeAddr += sizeof(int8_t);
 
         if (!handled && preciseScan)
         {
@@ -1194,7 +1194,7 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                     goto TOO_FAR;
                 }
                 opcode = (OPCODE)(256 + getU1LittleEndian(codeAddr));
-                codeAddr += sizeof(__int8);
+                codeAddr += sizeof(int8_t);
                 goto DECODE_OPCODE;
             }
 
@@ -2255,10 +2255,10 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
 
             case CEE_UNALIGNED:
             {
-                noway_assert(sz == sizeof(__int8));
+                noway_assert(sz == sizeof(int8_t));
                 prefixFlags |= PREFIX_UNALIGNED;
 
-                codeAddr += sizeof(__int8);
+                codeAddr += sizeof(int8_t);
 
                 impValidateMemoryAccessOpcode(codeAddr, codeEndp, false);
                 handled = true;
@@ -3137,7 +3137,7 @@ void Compiler::fgMakeBasicBlocks(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
         BBswtDesc*      swtDsc  = nullptr;
         unsigned        nxtBBoffs;
         OPCODE          opcode = (OPCODE)getU1LittleEndian(codeAddr);
-        codeAddr += sizeof(__int8);
+        codeAddr += sizeof(int8_t);
         BBKinds jmpKind = BBJ_COUNT;
 
     DECODE_OPCODE:
@@ -3160,7 +3160,7 @@ void Compiler::fgMakeBasicBlocks(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                 }
 
                 opcode = (OPCODE)(256 + getU1LittleEndian(codeAddr));
-                codeAddr += sizeof(__int8);
+                codeAddr += sizeof(int8_t);
                 goto DECODE_OPCODE;
 
                 /* Check to see if we have a jump/return opcode */
@@ -6154,7 +6154,7 @@ BasicBlock* Compiler::fgNewBBFromTreeAfter(
  */
 void Compiler::fgInsertBBbefore(BasicBlock* insertBeforeBlk, BasicBlock* newBlk)
 {
-    if (insertBeforeBlk->IsFirst())
+    if (fgFirstBB == insertBeforeBlk)
     {
         newBlk->SetNext(fgFirstBB);
 

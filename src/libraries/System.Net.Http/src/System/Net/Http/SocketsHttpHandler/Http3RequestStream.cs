@@ -277,8 +277,12 @@ namespace System.Net.Http
             }
             catch (QuicException ex) when (ex.QuicError == QuicError.OperationAborted && _connection.AbortException != null)
             {
-                // we close the connection, propagate the AbortException
-                throw new HttpRequestException(HttpRequestError.Unknown, SR.net_http_client_execution_error, _connection.AbortException);
+                // we closed the connection already, propagate the AbortException
+                HttpRequestError httpRequestError = _connection.AbortException is HttpProtocolException
+                    ? HttpRequestError.HttpProtocolError
+                    : HttpRequestError.Unknown;
+
+                throw new HttpRequestException(httpRequestError, SR.net_http_client_execution_error, _connection.AbortException);
             }
             // It is possible for user's Content code to throw an unexpected OperationCanceledException.
             catch (OperationCanceledException ex) when (ex.CancellationToken == _requestBodyCancellationSource.Token || ex.CancellationToken == cancellationToken)
@@ -300,6 +304,16 @@ namespace System.Net.Http
                 _connection.Abort(ex);
                 throw new HttpRequestException(ex.HttpRequestError, SR.net_http_client_execution_error, ex);
             }
+            catch (QPackDecodingException ex)
+            {
+                Exception abortException = _connection.Abort(HttpProtocolException.CreateHttp3ConnectionException(Http3ErrorCode.QPackDecompressionFailed));
+                throw new HttpRequestException(HttpRequestError.InvalidResponse, SR.net_http_invalid_response, ex);
+            }
+            catch (QPackEncodingException ex)
+            {
+                _stream.Abort(QuicAbortDirection.Write, (long)Http3ErrorCode.InternalError);
+                throw new HttpRequestException(HttpRequestError.Unknown, SR.net_http_client_execution_error, ex);
+            }
             catch (Exception ex)
             {
                 _stream.Abort(QuicAbortDirection.Write, (long)Http3ErrorCode.InternalError);
@@ -307,6 +321,9 @@ namespace System.Net.Http
                 {
                     throw;
                 }
+
+                // all exceptions should be already handled above
+                Debug.Fail($"Unexpected exception type in Http3RequestStream.SendAsync: {ex}");
                 throw new HttpRequestException(HttpRequestError.Unknown, SR.net_http_client_execution_error, ex);
             }
             finally
@@ -1252,6 +1269,13 @@ namespace System.Net.Http
                     HttpProtocolException exception = HttpProtocolException.CreateHttp3ConnectionException((Http3ErrorCode)e.ApplicationErrorCode.Value, SR.net_http_http3_connection_close);
                     _connection.Abort(exception);
                     throw exception;
+
+                case QuicException e when (e.QuicError == QuicError.OperationAborted && _connection.AbortException != null):
+                    // we closed the connection already, propagate the AbortException
+                    HttpRequestError httpRequestError = _connection.AbortException is HttpProtocolException
+                        ? HttpRequestError.HttpProtocolError
+                        : HttpRequestError.Unknown;
+                    throw new HttpRequestException(httpRequestError, SR.net_http_client_execution_error, _connection.AbortException);
 
                 case HttpIOException:
                     _connection.Abort(ex);

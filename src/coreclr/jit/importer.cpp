@@ -88,7 +88,7 @@ bool Compiler::impILConsumesAddr(const BYTE* codeAddr)
             // out if we need to do so.
 
             CORINFO_RESOLVED_TOKEN resolvedToken;
-            impResolveToken(codeAddr + sizeof(__int8), &resolvedToken, CORINFO_TOKENKIND_Field);
+            impResolveToken(codeAddr + sizeof(int8_t), &resolvedToken, CORINFO_TOKENKIND_Field);
 
             var_types lclTyp = JITtype2varType(info.compCompHnd->getFieldType(resolvedToken.hField));
 
@@ -5156,7 +5156,7 @@ OPCODE Compiler::impGetNonPrefixOpcode(const BYTE* codeAddr, const BYTE* codeEnd
     while (codeAddr < codeEndp)
     {
         OPCODE opcode = (OPCODE)getU1LittleEndian(codeAddr);
-        codeAddr += sizeof(__int8);
+        codeAddr += sizeof(int8_t);
 
         if (opcode == CEE_PREFIX1)
         {
@@ -5165,7 +5165,7 @@ OPCODE Compiler::impGetNonPrefixOpcode(const BYTE* codeAddr, const BYTE* codeEnd
                 break;
             }
             opcode = (OPCODE)(getU1LittleEndian(codeAddr) + 256);
-            codeAddr += sizeof(__int8);
+            codeAddr += sizeof(int8_t);
         }
 
         switch (opcode)
@@ -6136,7 +6136,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
         /* Get the next opcode and the size of its parameters */
 
         OPCODE opcode = (OPCODE)getU1LittleEndian(codeAddr);
-        codeAddr += sizeof(__int8);
+        codeAddr += sizeof(int8_t);
 
 #ifdef DEBUG
         impCurOpcOffs = (IL_OFFSET)(codeAddr - info.compCode - 1);
@@ -6197,14 +6197,14 @@ void Compiler::impImportBlockCode(BasicBlock* block)
             {
                 int     intVal;
                 float   fltVal;
-                __int64 lngVal;
+                int64_t lngVal;
                 double  dblVal;
             } cval;
 
             case CEE_PREFIX1:
                 opcode     = (OPCODE)(getU1LittleEndian(codeAddr) + 256);
                 opcodeOffs = (IL_OFFSET)(codeAddr - info.compCode);
-                codeAddr += sizeof(__int8);
+                codeAddr += sizeof(int8_t);
                 goto DECODE_OPCODE;
 
             SPILL_APPEND:
@@ -7181,12 +7181,12 @@ void Compiler::impImportBlockCode(BasicBlock* block)
             case CEE_LEAVE:
 
                 val     = getI4LittleEndian(codeAddr); // jump distance
-                jmpAddr = (IL_OFFSET)((codeAddr - info.compCode + sizeof(__int32)) + val);
+                jmpAddr = (IL_OFFSET)((codeAddr - info.compCode + sizeof(int32_t)) + val);
                 goto LEAVE;
 
             case CEE_LEAVE_S:
                 val     = getI1LittleEndian(codeAddr); // jump distance
-                jmpAddr = (IL_OFFSET)((codeAddr - info.compCode + sizeof(__int8)) + val);
+                jmpAddr = (IL_OFFSET)((codeAddr - info.compCode + sizeof(int8_t)) + val);
 
             LEAVE:
 
@@ -8234,7 +8234,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
             PREFIX:
                 opcode     = (OPCODE)getU1LittleEndian(codeAddr);
                 opcodeOffs = (IL_OFFSET)(codeAddr - info.compCode);
-                codeAddr += sizeof(__int8);
+                codeAddr += sizeof(int8_t);
                 goto DECODE_OPCODE;
 
             case CEE_VOLATILE:

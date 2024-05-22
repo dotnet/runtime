@@ -164,8 +164,8 @@ ABIPassingInformation RiscV64Classifier::Classify(Compiler*    comp,
         {
             assert(varTypeIsStruct(type));
             return {2, new (comp, CMK_ABI)
-                           ABIPassingSegment[]{passSlot(0, TARGET_POINTER_SIZE),
-                                               passSlot(TARGET_POINTER_SIZE, passedSize - TARGET_POINTER_SIZE)}};
+                           ABIPassingSegment[2]{passSlot(0, TARGET_POINTER_SIZE),
+                                                passSlot(TARGET_POINTER_SIZE, passedSize - TARGET_POINTER_SIZE)}};
         }
     }
 }

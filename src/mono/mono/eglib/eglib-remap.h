@@ -98,6 +98,7 @@
 #define g_log_set_fatal_mask monoeg_g_log_set_fatal_mask
 #define g_logv monoeg_g_logv
 #define g_memdup monoeg_g_memdup
+#define g_memrchr monoeg_g_memrchr
 #define g_mem_set_vtable monoeg_g_mem_set_vtable
 #define g_mem_get_vtable monoeg_g_mem_get_vtable
 #define g_mkdtemp monoeg_g_mkdtemp

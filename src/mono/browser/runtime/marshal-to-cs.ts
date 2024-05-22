@@ -455,7 +455,7 @@ export function marshal_array_to_cs_impl (arg: JSMarshalerArgument, value: Array
         set_arg_type(arg, MarshalerType.None);
     } else {
         const element_size = array_element_size(element_type);
-        mono_assert(element_size != -1, () => `Element type ${MarshalerType[element_type]} not supported`);
+        mono_assert(element_size != -1, () => `Element type ${element_type} not supported`);
         const length = value.length;
         const buffer_length = element_size * length;
         const buffer_ptr = <any>Module._malloc(buffer_length);
@@ -540,7 +540,7 @@ function checkViewType (element_type: MarshalerType, viewType: MemoryViewType) {
     } else if (element_type == MarshalerType.Double) {
         mono_check(MemoryViewType.Double == viewType, "Expected MemoryViewType.Double");
     } else {
-        throw new Error(`NotImplementedException ${MarshalerType[element_type]} `);
+        throw new Error(`NotImplementedException ${element_type} `);
     }
 }
 

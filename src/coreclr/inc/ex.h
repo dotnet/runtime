@@ -827,6 +827,15 @@ Exception *ExThrowWithInnerHelper(Exception *inner);
                 }                                                                       \
                 SCAN_EHMARKER_END_TRY();                                                \
             }                                                                           \
+            PAL_CPP_CATCH_NON_DERIVED_NOARG (const std::bad_alloc&)                     \
+            {                                                                           \
+                SCAN_EHMARKER_CATCH();                                                  \
+                __state.SetCaughtCxx();                                                 \
+                __state.m_pExceptionPtr = Exception::GetOOMException();                 \
+                SCAN_EHMARKER_END_CATCH();                                              \
+                SCAN_IGNORE_THROW_MARKER;                                               \
+                ThrowOutOfMemory();                                                     \
+            }                                                                           \
             PAL_CPP_CATCH_DERIVED (DerivedExceptionClass, __pExceptionRaw)              \
             {                                                                           \
                 SCAN_EHMARKER_CATCH();                                                  \
@@ -862,18 +871,34 @@ Exception *ExThrowWithInnerHelper(Exception *inner);
         PAL_CPP_TRY                                                                 \
         {                                                                           \
             SCAN_EHMARKER_TRY();                                                    \
-            CAutoTryCleanup<STATETYPE> __autoCleanupTry(__state);                   \
-            /* prevent annotations from being dropped by optimizations in debug */  \
-            INDEBUG(static bool __alwayszero;)                                      \
-            INDEBUG(VolatileLoad(&__alwayszero);)                                   \
+            SCAN_EHMARKER();                                                        \
+            PAL_CPP_TRY                                                             \
             {                                                                       \
-                /* Disallow returns to make exception handling work. */             \
-                /* Some work is done after the catch, see EX_ENDTRY. */             \
-                DEBUG_ASSURE_NO_RETURN_BEGIN(EX_TRY)                                \
+                SCAN_EHMARKER_TRY();                                                \
+                CAutoTryCleanup<STATETYPE> __autoCleanupTry(__state);               \
+                /* prevent annotations from being dropped by optimizations in debug */ \
+                INDEBUG(static bool __alwayszero;)                                  \
+                INDEBUG(VolatileLoad(&__alwayszero);)                               \
+                {                                                                   \
+                    /* Disallow returns to make exception handling work. */         \
+                   /* Some work is done after the catch, see EX_ENDTRY. */          \
+                    DEBUG_ASSURE_NO_RETURN_BEGIN(EX_TRY)                            \
 
 #define EX_CATCH_IMPL_CPP_ONLY                                                      \
-                DEBUG_ASSURE_NO_RETURN_END(EX_TRY)                                  \
+                    DEBUG_ASSURE_NO_RETURN_END(EX_TRY)                              \
+                }                                                                   \
+                SCAN_EHMARKER_END_TRY();                                            \
             }                                                                       \
+            PAL_CPP_CATCH_NON_DERIVED_NOARG (const std::bad_alloc&)                 \
+            {                                                                       \
+                SCAN_EHMARKER_CATCH();                                              \
+                __state.SetCaughtCxx();                                             \
+                __state.m_pExceptionPtr = Exception::GetOOMException();             \
+                SCAN_EHMARKER_END_CATCH();                                          \
+                SCAN_IGNORE_THROW_MARKER;                                           \
+                ThrowOutOfMemory();                                                 \
+            }                                                                       \
+            PAL_CPP_ENDTRY                                                          \
             SCAN_EHMARKER_END_TRY();                                                \
         }                                                                           \
         PAL_CPP_CATCH_DERIVED (Exception, __pExceptionRaw)                          \

@@ -103,11 +103,17 @@
 CDAC_BASELINE("empty")
 CDAC_TYPES_BEGIN()
 
-CDAC_TYPE_BEGIN(ManagedThread)
-CDAC_TYPE_INDETERMINATE(ManagedThread)
-CDAC_TYPE_FIELD(ManagedThread, GCHandle, GCHandle, cdac_offsets<Thread>::ExposedObject)
-CDAC_TYPE_FIELD(ManagedThread, pointer, LinkNext, cdac_offsets<Thread>::Link)
-CDAC_TYPE_END(ManagedThread)
+CDAC_TYPE_BEGIN(Thread)
+CDAC_TYPE_INDETERMINATE(Thread)
+CDAC_TYPE_FIELD(Thread, GCHandle, GCHandle, cdac_offsets<Thread>::ExposedObject)
+CDAC_TYPE_FIELD(Thread, pointer, LinkNext, cdac_offsets<Thread>::Link)
+CDAC_TYPE_END(Thread)
+
+CDAC_TYPE_BEGIN(ThreadStore)
+CDAC_TYPE_INDETERMINATE(ThreadStore)
+CDAC_TYPE_FIELD(ThreadStore, /*omit type*/, ThreadCount, cdac_offsets<ThreadStore>::ThreadCount)
+CDAC_TYPE_FIELD(ThreadStore, /*omit type*/, ThreadList, cdac_offsets<ThreadStore>::ThreadList)
+CDAC_TYPE_END(ThreadStore)
 
 CDAC_TYPE_BEGIN(GCHandle)
 CDAC_TYPE_SIZE(sizeof(OBJECTHANDLE))
@@ -116,7 +122,7 @@ CDAC_TYPE_END(GCHandle)
 CDAC_TYPES_END()
 
 CDAC_GLOBALS_BEGIN()
-CDAC_GLOBAL_POINTER(ManagedThreadStore, &ThreadStore::s_pThreadStore)
+CDAC_GLOBAL_POINTER(ThreadStore, &ThreadStore::s_pThreadStore)
 #if FEATURE_EH_FUNCLETS
 CDAC_GLOBAL(FeatureEHFunclets, uint8, 1)
 #else
