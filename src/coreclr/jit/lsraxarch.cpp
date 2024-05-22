@@ -138,14 +138,14 @@ int LinearScan::BuildNode(GenTree* tree)
             // This kills GC refs in callee save regs
             srcCount = 0;
             assert(dstCount == 0);
-            BuildDefsWithKills(tree, 0, RBM_NONE, RBM_NONE);
+            BuildKills(tree, RBM_NONE);
             break;
 
         case GT_PROF_HOOK:
             srcCount = 0;
             assert(dstCount == 0);
             killMask = getKillSetForProfilerHook();
-            BuildDefsWithKills(tree, 0, RBM_NONE, killMask);
+            BuildKills(tree, killMask);
             break;
 
         case GT_CNS_INT:
@@ -190,7 +190,7 @@ int LinearScan::BuildNode(GenTree* tree)
         case GT_RETURN:
             srcCount = BuildReturn(tree);
             killMask = getKillSetForReturn();
-            BuildDefsWithKills(tree, 0, RBM_NONE, killMask);
+            BuildKills(tree, killMask);
             break;
 
 #ifdef SWIFT_SUPPORT
@@ -199,7 +199,7 @@ int LinearScan::BuildNode(GenTree* tree)
             // Plus one for error register
             srcCount = BuildReturn(tree) + 1;
             killMask = getKillSetForReturn();
-            BuildDefsWithKills(tree, 0, RBM_NONE, killMask);
+            BuildKills(tree, killMask);
             break;
 #endif // SWIFT_SUPPORT
 
@@ -306,7 +306,7 @@ int LinearScan::BuildNode(GenTree* tree)
             srcCount                 = BuildOperandUses(tree->gtGetOp1());
             buildInternalRegisterUses();
             killMask = compiler->compHelperCallKillSet(CORINFO_HELP_STOP_FOR_GC);
-            BuildDefsWithKills(tree, 0, RBM_NONE, killMask);
+            BuildKills(tree, killMask);
         }
         break;
 
@@ -442,7 +442,7 @@ int LinearScan::BuildNode(GenTree* tree)
             // Comparand is preferenced to RAX.
             // The remaining two operands can be in any reg other than RAX.
 
-            const unsigned nonRaxCandidates = availableIntRegs & ~RBM_RAX;
+            const regMaskTP nonRaxCandidates = availableIntRegs & ~RBM_RAX;
             BuildUse(addr, nonRaxCandidates);
             BuildUse(data, varTypeIsByte(tree) ? (nonRaxCandidates & RBM_BYTE_REGS) : nonRaxCandidates);
             BuildUse(comparand, RBM_RAX);
@@ -1147,11 +1147,11 @@ int LinearScan::BuildShiftRotate(GenTree* tree)
 //
 int LinearScan::BuildCall(GenTreeCall* call)
 {
-    bool                  hasMultiRegRetVal = false;
-    const ReturnTypeDesc* retTypeDesc       = nullptr;
-    int                   srcCount          = 0;
-    int                   dstCount          = 0;
-    regMaskTP             dstCandidates     = RBM_NONE;
+    bool                  hasMultiRegRetVal   = false;
+    const ReturnTypeDesc* retTypeDesc         = nullptr;
+    int                   srcCount            = 0;
+    int                   dstCount            = 0;
+    regMaskTP             singleDstCandidates = RBM_NONE;
 
     assert(!call->isContained());
     if (call->TypeGet() != TYP_VOID)
@@ -1185,36 +1185,33 @@ int LinearScan::BuildCall(GenTreeCall* call)
         // The x86 CORINFO_HELP_INIT_PINVOKE_FRAME helper uses a custom calling convention that returns with
         // TCB in REG_PINVOKE_TCB. AMD64/ARM64 use the standard calling convention. fgMorphCall() sets the
         // correct argument registers.
-        dstCandidates = RBM_PINVOKE_TCB;
+        singleDstCandidates = RBM_PINVOKE_TCB;
     }
     else
 #endif // TARGET_X86
-        if (hasMultiRegRetVal)
+        if (!hasMultiRegRetVal)
         {
-            assert(retTypeDesc != nullptr);
-            dstCandidates = retTypeDesc->GetABIReturnRegs(call->GetUnmanagedCallConv());
-            assert((int)genCountBits(dstCandidates) == dstCount);
-        }
-        else if (varTypeUsesFloatReg(registerType))
-        {
-#ifdef TARGET_X86
-            // The return value will be on the X87 stack, and we will need to move it.
-            dstCandidates = allRegs(registerType);
-#else  // !TARGET_X86
-        dstCandidates = RBM_FLOATRET;
-#endif // !TARGET_X86
-        }
-        else
-        {
-            assert(varTypeUsesIntReg(registerType));
-
-            if (registerType == TYP_LONG)
+            if (varTypeUsesFloatReg(registerType))
             {
-                dstCandidates = RBM_LNGRET;
+#ifdef TARGET_X86
+                // The return value will be on the X87 stack, and we will need to move it.
+                singleDstCandidates = allRegs(registerType);
+#else  // !TARGET_X86
+            singleDstCandidates = RBM_FLOATRET;
+#endif // !TARGET_X86
             }
             else
             {
-                dstCandidates = RBM_INTRET;
+                assert(varTypeUsesIntReg(registerType));
+
+                if (registerType == TYP_LONG)
+                {
+                    singleDstCandidates = RBM_LNGRET;
+                }
+                else
+                {
+                    singleDstCandidates = RBM_INTRET;
+                }
             }
         }
 
@@ -1375,7 +1372,25 @@ int LinearScan::BuildCall(GenTreeCall* call)
 
     // Now generate defs and kills.
     regMaskTP killMask = getKillSetForCall(call);
-    BuildDefsWithKills(call, dstCount, dstCandidates, killMask);
+    if (dstCount > 0)
+    {
+        if (hasMultiRegRetVal)
+        {
+            assert(retTypeDesc != nullptr);
+            regMaskTP multiDstCandidates = retTypeDesc->GetABIReturnRegs(call->GetUnmanagedCallConv());
+            assert((int)genCountBits(multiDstCandidates) == dstCount);
+            BuildCallDefsWithKills(call, dstCount, multiDstCandidates, killMask);
+        }
+        else
+        {
+            assert(dstCount == 1);
+            BuildDefWithKills(call, dstCount, singleDstCandidates, killMask);
+        }
+    }
+    else
+    {
+        BuildKills(call, killMask);
+    }
 
 #ifdef SWIFT_SUPPORT
     if (call->HasSwiftErrorHandling())
@@ -1667,7 +1682,7 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
 
     buildInternalRegisterUses();
     regMaskTP killMask = getKillSetForBlockStore(blkNode);
-    BuildDefsWithKills(blkNode, 0, RBM_NONE, killMask);
+    BuildKills(blkNode, killMask);
 
     return useCount;
 }
@@ -1959,7 +1974,7 @@ int LinearScan::BuildModDiv(GenTree* tree)
     buildInternalRegisterUses();
 
     regMaskTP killMask = getKillSetForModDiv(tree->AsOp());
-    BuildDefsWithKills(tree, 1, dstCandidates, killMask);
+    BuildDefWithKills(tree, 1, dstCandidates, killMask);
     return srcCount;
 }
 
@@ -3086,7 +3101,7 @@ int LinearScan::BuildMul(GenTree* tree)
         containedMemOp = op2;
     }
     regMaskTP killMask = getKillSetForMul(tree->AsOp());
-    BuildDefsWithKills(tree, dstCount, dstCandidates, killMask);
+    BuildDefWithKills(tree, dstCount, dstCandidates, killMask);
     return srcCount;
 }
 

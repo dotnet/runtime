@@ -157,11 +157,11 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			static event EventHandler AnnotatedEvent;
 
 			[ExpectedWarning ("IL2026", "--EventToTestRemove.remove--")]
-			[ExpectedWarning ("IL3002", "--EventToTestRemove.remove--", Tool.Analyzer | Tool.NativeAot, "")]
-			[ExpectedWarning ("IL3050", "--EventToTestRemove.remove--", Tool.Analyzer | Tool.NativeAot, "")]
+			[ExpectedWarning ("IL3002", "--EventToTestRemove.remove--", Tool.Analyzer | Tool.NativeAot, "NativeAOT Specific Warning")]
+			[ExpectedWarning ("IL3050", "--EventToTestRemove.remove--", Tool.Analyzer | Tool.NativeAot, "NativeAOT Specific Warning")]
 			[ExpectedWarning ("IL2026", "--EventToTestAdd.add--")]
-			[ExpectedWarning ("IL3002", "--EventToTestAdd.add--", Tool.Analyzer | Tool.NativeAot, "")]
-			[ExpectedWarning ("IL3050", "--EventToTestAdd.add--", Tool.Analyzer | Tool.NativeAot, "")]
+			[ExpectedWarning ("IL3002", "--EventToTestAdd.add--", Tool.Analyzer | Tool.NativeAot, "NativeAOT Specific Warning")]
+			[ExpectedWarning ("IL3050", "--EventToTestAdd.add--", Tool.Analyzer | Tool.NativeAot, "NativeAOT Specific Warning")]
 			public static void Test ()
 			{
 				EventWithRequiresOnRemove -= (sender, e) => { }; // Warns

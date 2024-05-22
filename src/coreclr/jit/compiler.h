@@ -6044,7 +6044,7 @@ public:
 
     bool fgCanCompactBlocks(BasicBlock* block, BasicBlock* bNext);
 
-    void fgCompactBlocks(BasicBlock* block, BasicBlock* bNext);
+    void fgCompactBlocks(BasicBlock* block, BasicBlock* bNext DEBUGARG(bool doDebugCheck = true));
 
     BasicBlock* fgConnectFallThrough(BasicBlock* bSrc, BasicBlock* bDst);
 
@@ -6103,6 +6103,9 @@ public:
     bool fgReorderBlocks(bool useProfile);
     void fgDoReversePostOrderLayout();
     void fgMoveColdBlocks();
+
+    template <bool hasEH>
+    void fgMoveBackwardJumpsToSuccessors();
 
     bool fgFuncletsAreCold();
 

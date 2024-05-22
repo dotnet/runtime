@@ -5771,15 +5771,15 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
     assert(REG_NA == (int)REG_NA);
 
     VARSET_TP GCvars(VarSetOps::UninitVal());
+    regMaskTP gcrefRegs;
+    regMaskTP byrefRegs;
 
     /* What instruction format have we got? */
 
     switch (fmt)
     {
-        int       imm;
-        BYTE*     addr;
-        regMaskTP gcrefRegs;
-        regMaskTP byrefRegs;
+        int   imm;
+        BYTE* addr;
 
         case IF_T1_A: // T1_A    ................
             sz   = SMALL_IDSC_SIZE;
