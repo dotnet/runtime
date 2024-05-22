@@ -576,7 +576,6 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 {
                     assert(instrIsRMW);
                     assert(HWIntrinsicInfo::IsFmaIntrinsic(intrinEmbMask.id));
-                    assert(falseReg != embMaskOp2Reg);
                     assert(falseReg != embMaskOp3Reg);
 
                     // For FMA, the operation we are trying to perform is:
@@ -703,8 +702,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                         //      fmla    target, P/m, embMaskOp2Reg, embMaskOp3Reg
                         //
                         // Note that, we just check if the targetReg/falseReg or targetReg/embMaskOp1Reg
-                        // coincides or not. Other combination like falseReg/embMaskOp2Reg or
-                        // falseReg/embMaskOp3Reg cannot happen because we marked them as delayFree.
+                        // coincides or not.
 
                         if (targetReg != falseReg)
                         {
