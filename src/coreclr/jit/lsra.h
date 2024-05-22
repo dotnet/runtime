@@ -1990,8 +1990,8 @@ private:
     int          BuildBinaryUses(GenTreeOp* node, SingleTypeRegSet candidates = RBM_NONE);
     int          BuildCastUses(GenTreeCast* cast, SingleTypeRegSet candidates);
 #ifdef TARGET_XARCH
-    int              BuildRMWUses(GenTree* node, GenTree* op1, GenTree* op2, regMaskTP candidates = RBM_NONE);
-    inline regMaskTP BuildEvexIncompatibleMask(GenTree* tree);
+    int              BuildRMWUses(GenTree* node, GenTree* op1, GenTree* op2, SingleTypeRegSet candidates = RBM_NONE);
+    inline SingleTypeRegSet BuildEvexIncompatibleMask(GenTree* tree);
 #endif // !TARGET_XARCH
     int BuildSelect(GenTreeOp* select);
     // This is the main entry point for building the RefPositions for a node.
@@ -2096,28 +2096,28 @@ private:
     int BuildLclHeap(GenTree* tree);
 
 #if defined(TARGET_AMD64)
-    regMaskTP rbmAllFloat;
-    regMaskTP rbmFltCalleeTrash;
+    SingleTypeRegSet rbmAllFloat;
+    SingleTypeRegSet rbmFltCalleeTrash;
 
-    FORCEINLINE regMaskTP get_RBM_ALLFLOAT() const
+    FORCEINLINE SingleTypeRegSet get_RBM_ALLFLOAT() const
     {
         return this->rbmAllFloat;
     }
-    FORCEINLINE regMaskTP get_RBM_FLT_CALLEE_TRASH() const
+    FORCEINLINE SingleTypeRegSet get_RBM_FLT_CALLEE_TRASH() const
     {
         return this->rbmFltCalleeTrash;
     }
 #endif // TARGET_AMD64
 
 #if defined(TARGET_XARCH)
-    regMaskTP rbmAllMask;
-    regMaskTP rbmMskCalleeTrash;
+    SingleTypeRegSet rbmAllMask;
+    SingleTypeRegSet rbmMskCalleeTrash;
 
-    FORCEINLINE regMaskTP get_RBM_ALLMASK() const
+    FORCEINLINE SingleTypeRegSet get_RBM_ALLMASK() const
     {
         return this->rbmAllMask;
     }
-    FORCEINLINE regMaskTP get_RBM_MSK_CALLEE_TRASH() const
+    FORCEINLINE SingleTypeRegSet get_RBM_MSK_CALLEE_TRASH() const
     {
         return this->rbmMskCalleeTrash;
     }
@@ -2152,7 +2152,7 @@ private:
     // Not all of the callee trash values are constant, so don't declare this as a method local static
     // doing so results in significantly more complex codegen and we'd rather just initialize this once
     // as part of initializing LSRA instead
-    regMaskTP varTypeCalleeTrashRegs[TYP_COUNT];
+    SingleTypeRegSet varTypeCalleeTrashRegs[TYP_COUNT];
 #endif // TARGET_XARCH
 
     //------------------------------------------------------------------------
