@@ -1000,9 +1000,6 @@ namespace System.Net.Http.Functional.Tests
         [ActiveIssue("https://github.com/dotnet/runtime/issues/65429", typeof(PlatformDetection), nameof(PlatformDetection.IsNodeJS))]
         public async Task ReadAsStreamAsync_HandlerProducesWellBehavedResponseStream(bool? chunked, bool enableWasmStreaming, bool slowChunks)
         {
-            if (UseVersion == HttpVersion30)
-                return;
-
             if (IsWinHttpHandler && UseVersion >= HttpVersion20.Value)
             {
                 return;
@@ -1020,11 +1017,21 @@ namespace System.Net.Http.Functional.Tests
                 return;
             }
 
+            AsyncLocal<object> asyncLocal = new();
+            asyncLocal.Value = new();
+
             TestEventListener? listener = null;
             if (UseVersion == HttpVersion30)
             {
-                listener = new TestEventListener(_output, TestEventListener.NetworkingEvents);
+                listener = new TestEventListener(e =>
+                {
+                    if (asyncLocal.Value is not null)
+                    {
+                        _output.WriteLine(e);
+                    }
+                }, TestEventListener.NetworkingEvents);
             }
+
             _output.WriteLine("Starting ReadAsStreamAsync_HandlerProducesWellBehavedResponseStream test");
 
             var tcs = new TaskCompletionSource<bool>();
