@@ -9,6 +9,7 @@ set -e
 # ./install-native-dependencies.sh <OS>
 
 os="$(echo "$1" | tr "[:upper:]" "[:lower:]")"
+scriptroot="$(dirname "$0")"
 
 if [ -z "$os" ]; then
     # shellcheck source-path=SCRIPTDIR
@@ -25,7 +26,7 @@ case "$os" in
         if [ "$ID" = "debian" ] || [ "$ID_LIKE" = "debian" ]; then
             apt update
 
-            xargs apt-get install -y < eng/debian-reqs.txt
+            xargs apt-get install -y < "$scriptroot/eng/debian-reqs.txt"
 
             localedef -i en_US -c -f UTF-8 -A /usr/share/locale/locale.alias en_US.UTF-8
         elif [ "$ID" = "alpine" ]; then
@@ -43,7 +44,7 @@ case "$os" in
         export HOMEBREW_NO_INSTALLED_DEPENDENTS_CHECK=1
         # Skip brew update for now, see https://github.com/actions/setup-python/issues/577
         # brew update --preinstall
-        brew bundle --no-upgrade --no-lock --file "$(dirname "$0")/Brewfile"
+        brew bundle --no-upgrade --no-lock --file "$scriptroot/Brewfile"
         ;;
 
     *)
