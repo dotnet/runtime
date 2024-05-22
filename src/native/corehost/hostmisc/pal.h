@@ -165,6 +165,7 @@ namespace pal
     void file_vprintf(FILE* f, const char_t* format, va_list vl);
     void err_print_line(const char_t* message);
     void out_vprint_line(const char_t* format, va_list vl);
+    void print_to_handle(const pal::char_t* message, HANDLE handle, FILE* filehandle);
 
     inline const string_t strerror(int errnum)
     {
