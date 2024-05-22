@@ -355,23 +355,23 @@ enum_type:
 int
 interp_make_var_renamable (TransformData *td, int var)
 {
+	g_assert (td->optimized);
+
 	// Check if already allocated
 	if (td->vars [var].ext_index != -1)
 		return td->vars [var].ext_index;
 
-	int ext_index = td->renamable_vars_size;
-
-	if (td->optimized) {
-		if (td->renamable_vars_size == td->renamable_vars_capacity) {
-			td->renamable_vars_capacity *= 2;
-			if (td->renamable_vars_capacity == 0)
-				td->renamable_vars_capacity = 2;
-			td->renamable_vars = (InterpRenamableVar*) g_realloc (td->renamable_vars, td->renamable_vars_capacity * sizeof (InterpRenamableVar));
-		}
-		InterpRenamableVar *ext = &td->renamable_vars [ext_index];
-		memset (ext, 0, sizeof (InterpRenamableVar));
-		ext->var_index = var;
+	if (td->renamable_vars_size == td->renamable_vars_capacity) {
+		td->renamable_vars_capacity *= 2;
+		if (td->renamable_vars_capacity == 0)
+			td->renamable_vars_capacity = 2;
+		td->renamable_vars = (InterpRenamableVar*) g_realloc (td->renamable_vars, td->renamable_vars_capacity * sizeof (InterpRenamableVar));
 	}
+
+	int ext_index = td->renamable_vars_size;
+	InterpRenamableVar *ext = &td->renamable_vars [ext_index];
+	memset (ext, 0, sizeof (InterpRenamableVar));
+	ext->var_index = var;
 
 	td->vars [var].ext_index = ext_index;
 
@@ -384,6 +384,8 @@ interp_make_var_renamable (TransformData *td, int var)
 int
 interp_create_renamed_fixed_var (TransformData *td, int var_index, int renamable_var_index)
 {
+	g_assert (td->optimized);
+
 	g_assert (td->vars [renamable_var_index].ext_index != -1);
 	g_assert (td->vars [var_index].ext_index == -1);
 	g_assert (td->vars [var_index].renamed_ssa_fixed);
@@ -4456,14 +4458,14 @@ interp_method_compute_offsets (TransformData *td, InterpMethod *imethod, MonoMet
 	td->vars_size = num_locals;
 	td->vars_capacity = target_vars_capacity;
 
-	td->renamable_vars_size = 0;
 	if (td->optimized) {
 		td->renamable_vars = (InterpRenamableVar*)g_malloc (num_locals * sizeof (InterpRenamableVar));
-		td->renamable_vars_capacity = num_locals;
+		td->renamable_vars_capacity = target_vars_capacity;
 	} else {
 		td->renamable_vars = NULL;
 		td->renamable_vars_capacity = 0;
 	}
+	td->renamable_vars_size = 0;
 	offset = 0;
 
 #ifdef MONO_ARCH_HAVE_SWIFTCALL
@@ -9502,8 +9504,7 @@ exit:
 	g_free (td->data_items);
 	g_free (td->stack);
 	g_free (td->vars);
-	if (td->renamable_vars)
-		g_free (td->renamable_vars);
+	g_free (td->renamable_vars);
 	g_free (td->renamed_fixed_vars);
 	g_free (td->local_ref_count);
 	g_hash_table_destroy (td->data_hash);
