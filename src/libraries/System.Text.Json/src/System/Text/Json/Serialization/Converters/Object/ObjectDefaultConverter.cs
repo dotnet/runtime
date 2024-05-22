@@ -185,6 +185,7 @@ namespace System.Text.Json.Serialization.Converters
                             unescapedPropertyName,
                             ref state,
                             options,
+                            out byte[] _,
                             out bool useExtensionProperty);
 
                         state.Current.UseExtensionProperty = useExtensionProperty;
@@ -296,6 +297,7 @@ namespace System.Text.Json.Serialization.Converters
                     unescapedPropertyName,
                     ref state,
                     options,
+                    out byte[] _,
                     out bool useExtensionProperty);
 
                 ReadPropertyValue(obj, ref state, ref reader, jsonPropertyInfo, useExtensionProperty);
