@@ -972,10 +972,7 @@ int32_t CryptoNative_X509StoreSetVerifyTime(X509_STORE* ctx,
             return 0;
         }
 
-        // Builds of openssl that use 32-bit time_t expect it to be passed to X509_VERIFY_PARAM_set_time in r1.
-        // Builds that use 64-bit time_t expect it to be passed in r2:r3, because the ARM ABI specifies:
-        // > If the argument requires double-word alignment (8-byte), the NCRN is rounded up to the next even register number.
-        // Casting to a signature that takes int32_t ensures it will be passed in r1, not r2:r3.
+        // Cast to a signature that takes a 32-bit value for the time.
         ((void (*)(X509_VERIFY_PARAM*, int32_t))(void*)(X509_VERIFY_PARAM_set_time))(verifyParams, (int32_t)verifyTime);
         return 1;
     }
