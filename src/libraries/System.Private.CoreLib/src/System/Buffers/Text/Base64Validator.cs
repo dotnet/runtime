@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Runtime.CompilerServices;
+
 namespace System.Buffers.Text
 {
     public static partial class Base64
@@ -132,19 +134,6 @@ namespace System.Buffers.Text
             return false;
         }
 
-        private static bool ValidateAndDecodeLength(int length, int paddingCount, out int decodedLength)
-        {
-            if ((uint)length % 4 == 0)
-            {
-                // Remove padding to get exact length.
-                decodedLength = (int)((uint)length / 4 * 3) - paddingCount;
-                return true;
-            }
-
-            decodedLength = 0;
-            return false;
-        }
-
         internal interface IBase64Validatable<T>
         {
             static abstract int IndexOfAnyExcept(ReadOnlySpan<T> span);
@@ -160,8 +149,9 @@ namespace System.Buffers.Text
             public static int IndexOfAnyExcept(ReadOnlySpan<char> span) => span.IndexOfAnyExcept(s_validBase64Chars);
             public static bool IsWhiteSpace(char value) => Base64.IsWhiteSpace(value);
             public static bool IsEncodingPad(char value) => value == EncodingPad;
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static bool ValidateAndDecodeLength(int length, int paddingCount, out int decodedLength) =>
-                Base64.ValidateAndDecodeLength(length, paddingCount, out decodedLength);
+                Base64ByteValidatable.ValidateAndDecodeLength(length, paddingCount, out decodedLength);
         }
 
         private readonly struct Base64ByteValidatable : IBase64Validatable<byte>
@@ -171,8 +161,19 @@ namespace System.Buffers.Text
             public static int IndexOfAnyExcept(ReadOnlySpan<byte> span) => span.IndexOfAnyExcept(s_validBase64Chars);
             public static bool IsWhiteSpace(byte value) => Base64.IsWhiteSpace(value);
             public static bool IsEncodingPad(byte value) => value == EncodingPad;
-            public static bool ValidateAndDecodeLength(int length, int paddingCount, out int decodedLength) =>
-                Base64.ValidateAndDecodeLength(length, paddingCount, out decodedLength);
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static bool ValidateAndDecodeLength(int length, int paddingCount, out int decodedLength)
+            {
+                if (length % 4 == 0)
+                {
+                    // Remove padding to get exact length.
+                    decodedLength = (int)((uint)length / 4 * 3) - paddingCount;
+                    return true;
+                }
+
+                decodedLength = 0;
+                return false;
+            }
         }
     }
 }
