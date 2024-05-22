@@ -268,7 +268,7 @@ namespace System.Text.Json.SourceGeneration
                 int? defaultBufferSize = null;
                 JsonIgnoreCondition? defaultIgnoreCondition = null;
                 JsonKnownNamingPolicy? dictionaryKeyPolicy = null;
-                bool? ignoreNullableAnnotations = null;
+                bool? respectNullableAnnotations = null;
                 bool? ignoreReadOnlyFields = null;
                 bool? ignoreReadOnlyProperties = null;
                 bool? includeFields = null;
@@ -331,7 +331,7 @@ namespace System.Text.Json.SourceGeneration
                             break;
 
                         case nameof(JsonSourceGenerationOptionsAttribute.RespectNullableAnnotations):
-                            ignoreNullableAnnotations = (bool)namedArg.Value.Value!;
+                            respectNullableAnnotations = (bool)namedArg.Value.Value!;
                             break;
 
                         case nameof(JsonSourceGenerationOptionsAttribute.IgnoreReadOnlyFields):
@@ -417,7 +417,7 @@ namespace System.Text.Json.SourceGeneration
                     Converters = converters?.ToImmutableEquatableArray(),
                     DefaultIgnoreCondition = defaultIgnoreCondition,
                     DictionaryKeyPolicy = dictionaryKeyPolicy,
-                    RespectNullableAnnotations = ignoreNullableAnnotations,
+                    RespectNullableAnnotations = respectNullableAnnotations,
                     IgnoreReadOnlyFields = ignoreReadOnlyFields,
                     IgnoreReadOnlyProperties = ignoreReadOnlyProperties,
                     IncludeFields = includeFields,
