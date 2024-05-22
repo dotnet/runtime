@@ -81,10 +81,10 @@ namespace System.Buffers.Text
             static abstract unsafe void EncodeThreeAndWrite(byte* threeBytes, T* destination, ref byte encodingMap);
             static abstract int IncrementPadTwo { get; }
             static abstract int IncrementPadOne { get; }
-            static abstract unsafe void StoreToDestination(T* dest, T* destStart, int destLength, Vector512<byte> str);
-            static abstract unsafe void StoreToDestination(T* dest, T* destStart, int destLength, Vector256<byte> str);
-            static abstract unsafe void StoreToDestination(T* dest, T* destStart, int destLength, Vector128<byte> str);
-            static abstract unsafe void StoreToDestination(T* dest, T* destStart, int destLength, Vector128<byte> res1,
+            static abstract unsafe void StoreVector512ToDestination(T* dest, T* destStart, int destLength, Vector512<byte> str);
+            static abstract unsafe void StoreVector256ToDestination(T* dest, T* destStart, int destLength, Vector256<byte> str);
+            static abstract unsafe void StoreVector128ToDestination(T* dest, T* destStart, int destLength, Vector128<byte> str);
+            static abstract unsafe void StoreArmVector128x4ToDestination(T* dest, T* destStart, int destLength, Vector128<byte> res1,
                 Vector128<byte> res2, Vector128<byte> res3, Vector128<byte> res4);
         }
 

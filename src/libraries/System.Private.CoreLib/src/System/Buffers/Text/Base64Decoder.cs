@@ -1212,7 +1212,7 @@ namespace System.Buffers.Text
             return value == 32;
         }
 
-        private readonly struct Base64DecoderByte : IBase64Decoder<byte>
+        internal readonly struct Base64DecoderByte : IBase64Decoder<byte>
         {
             // Pre-computing this table using a custom string(s_characters) and GenerateDecodingMapAndVerify (found in tests)
             public static ReadOnlySpan<sbyte> DecodingMap =>
@@ -1452,10 +1452,8 @@ namespace System.Buffers.Text
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static OperationStatus DecodeWithWhiteSpaceBlockwiseWrapper<TBase64Decoder>(ReadOnlySpan<byte> utf8,
                 Span<byte> bytes, ref int bytesConsumed, ref int bytesWritten, bool isFinalBlock = true)
-                where TBase64Decoder : IBase64Decoder<byte>
-            {
-                return DecodeWithWhiteSpaceBlockwise<TBase64Decoder>(utf8, bytes, ref bytesConsumed, ref bytesWritten, isFinalBlock);
-            }
+                where TBase64Decoder : IBase64Decoder<byte> =>
+                DecodeWithWhiteSpaceBlockwise<TBase64Decoder>(utf8, bytes, ref bytesConsumed, ref bytesWritten, isFinalBlock);
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static unsafe bool TryLoadVector512(byte* src, byte* srcStart, int sourceLength, out Vector512<sbyte> str)

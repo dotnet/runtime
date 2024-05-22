@@ -296,7 +296,7 @@ namespace System.Buffers.Text
                 // Step 2: Now we have the indices calculated. Next step is to use these indices to translate.
                 str = Avx512Vbmi.PermuteVar64x8(vbmiLookup, str);
 
-                TBase64Encoder.StoreToDestination(dest, destStart, destLength, str.AsByte());
+                TBase64Encoder.StoreVector512ToDestination(dest, destStart, destLength, str.AsByte());
 
                 src += 48;
                 dest += 64;
@@ -467,7 +467,7 @@ namespace System.Buffers.Text
                 // Add offsets to input values:
                 str = Avx2.Add(str, Avx2.Shuffle(lut, tmp));
 
-                TBase64Encoder.StoreToDestination(dest, destStart, destLength, str.AsByte());
+                TBase64Encoder.StoreVector256ToDestination(dest, destStart, destLength, str.AsByte());
 
                 src += 24;
                 dest += 32;
@@ -533,7 +533,7 @@ namespace System.Buffers.Text
                 res4 = AdvSimd.Arm64.VectorTableLookup((tblEnc1, tblEnc2, tblEnc3, tblEnc4), res4);
 
                 // Interleave and store result:
-                TBase64Encoder.StoreToDestination(dest, destStart, destLength, res1, res2, res3, res4);
+                TBase64Encoder.StoreArmVector128x4ToDestination(dest, destStart, destLength, res1, res2, res3, res4);
 
                 src += 48;
                 dest += 64;
@@ -657,7 +657,7 @@ namespace System.Buffers.Text
                 // Add offsets to input values:
                 str += SimdShuffle(lut, tmp.AsByte(), mask8F);
 
-                TBase64Encoder.StoreToDestination(dest, destStart, destLength, str);
+                TBase64Encoder.StoreVector128ToDestination(dest, destStart, destLength, str);
 
                 src += 12;
                 dest += 16;
@@ -696,7 +696,7 @@ namespace System.Buffers.Text
 
         internal const int MaximumEncodeLength = (int.MaxValue / 4) * 3; // 1610612733
 
-        private readonly struct Base64EncoderByte : IBase64Encoder<byte>
+        internal readonly struct Base64EncoderByte : IBase64Encoder<byte>
         {
             public static ReadOnlySpan<byte> EncodingMap => "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"u8;
 
@@ -775,7 +775,7 @@ namespace System.Buffers.Text
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static unsafe void StoreToDestination(byte* dest, byte* destStart, int destLength, Vector512<byte> str)
+            public static unsafe void StoreVector512ToDestination(byte* dest, byte* destStart, int destLength, Vector512<byte> str)
             {
                 AssertWrite<Vector512<sbyte>>(dest, destStart, destLength);
                 str.Store(dest);
@@ -783,14 +783,14 @@ namespace System.Buffers.Text
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             [CompExactlyDependsOn(typeof(Avx2))]
-            public static unsafe void StoreToDestination(byte* dest, byte* destStart, int destLength, Vector256<byte> str)
+            public static unsafe void StoreVector256ToDestination(byte* dest, byte* destStart, int destLength, Vector256<byte> str)
             {
                 AssertWrite<Vector256<sbyte>>(dest, destStart, destLength);
                 Avx.Store(dest, str.AsByte());
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static unsafe void StoreToDestination(byte* dest, byte* destStart, int destLength, Vector128<byte> str)
+            public static unsafe void StoreVector128ToDestination(byte* dest, byte* destStart, int destLength, Vector128<byte> str)
             {
                 AssertWrite<Vector128<sbyte>>(dest, destStart, destLength);
                 str.Store(dest);
@@ -798,7 +798,7 @@ namespace System.Buffers.Text
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
-            public static unsafe void StoreToDestination(byte* dest, byte* destStart, int destLength,
+            public static unsafe void StoreArmVector128x4ToDestination(byte* dest, byte* destStart, int destLength,
                 Vector128<byte> res1, Vector128<byte> res2, Vector128<byte> res3, Vector128<byte> res4)
             {
                 AssertWrite<Vector128<byte>>(dest, destStart, destLength);
