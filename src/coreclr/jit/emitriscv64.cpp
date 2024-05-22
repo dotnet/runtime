@@ -3590,7 +3590,6 @@ void emitter::emitDispInsName(
             }
             assert(printLength > 0);
             int paddingLength = kMaxInstructionLength - printLength;
-            assert(paddingLength > 0);
 
             printf("%*s %s, %s", paddingLength, "", RegNames[rd], RegNames[rs1]);
             if (hasImmediate)
