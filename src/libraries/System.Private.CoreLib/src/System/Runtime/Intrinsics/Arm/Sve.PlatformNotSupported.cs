@@ -1328,7 +1328,7 @@ namespace System.Runtime.Intrinsics.Arm
         /// svuint8_t svcls[_s8]_z(svbool_t pg, svint8_t op)
         ///   CLS Ztied.B, Pg/M, Zop.B
         /// </summary>
-        public static unsafe Vector<byte> LeadingSignCount(Vector<sbyte> value) => LeadingSignCount(value) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector<byte> LeadingSignCount(Vector<sbyte> value){ throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// svuint16_t svcls[_s16]_m(svuint16_t inactive, svbool_t pg, svint16_t op)
@@ -1336,7 +1336,7 @@ namespace System.Runtime.Intrinsics.Arm
         /// svuint16_t svcls[_s16]_z(svbool_t pg, svint16_t op)
         ///   CLS Ztied.H, Pg/M, Zop.H
         /// </summary>
-        public static unsafe Vector<ushort> LeadingSignCount(Vector<short> value) => LeadingSignCount(value) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector<ushort> LeadingSignCount(Vector<short> value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// svuint32_t svcls[_s32]_m(svuint32_t inactive, svbool_t pg, svint32_t op)
@@ -1344,7 +1344,7 @@ namespace System.Runtime.Intrinsics.Arm
         /// svuint32_t svcls[_s32]_z(svbool_t pg, svint32_t op)
         ///   CLS Ztied.S, Pg/M, Zop.S
         /// </summary>
-        public static unsafe Vector<uint> LeadingSignCount(Vector<int> value) => LeadingSignCount(value) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector<uint> LeadingSignCount(Vector<int> value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// svuint64_t svcls[_s64]_m(svuint64_t inactive, svbool_t pg, svint64_t op)
@@ -1352,7 +1352,7 @@ namespace System.Runtime.Intrinsics.Arm
         /// svuint64_t svcls[_s64]_z(svbool_t pg, svint64_t op)
         ///   CLS Ztied.D, Pg/M, Zop.D
         /// </summary>
-        public static unsafe Vector<ulong> LeadingSignCount(Vector<long> value) => LeadingSignCount(value); { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector<ulong> LeadingSignCount(Vector<long> value) { throw new PlatformNotSupportedException(); }
 
 
         /// Count leading zero bits
@@ -1363,7 +1363,7 @@ namespace System.Runtime.Intrinsics.Arm
         /// svuint8_t svclz[_s8]_z(svbool_t pg, svint8_t op)
         ///   CLZ Ztied.B, Pg/M, Zop.B
         /// </summary>
-        public static unsafe Vector<byte> LeadingZeroCount(Vector<sbyte> value) => LeadingZeroCount(value) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector<byte> LeadingZeroCount(Vector<sbyte> value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// svuint8_t svclz[_u8]_m(svuint8_t inactive, svbool_t pg, svuint8_t op)
@@ -1371,7 +1371,7 @@ namespace System.Runtime.Intrinsics.Arm
         /// svuint8_t svclz[_u8]_z(svbool_t pg, svuint8_t op)
         ///   CLZ Ztied.B, Pg/M, Zop.B
         /// </summary>
-        public static unsafe Vector<byte> LeadingZeroCount(Vector<byte> value) => LeadingZeroCount(value) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector<byte> LeadingZeroCount(Vector<byte> value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// svuint16_t svclz[_s16]_m(svuint16_t inactive, svbool_t pg, svint16_t op)
@@ -1379,7 +1379,7 @@ namespace System.Runtime.Intrinsics.Arm
         /// svuint16_t svclz[_s16]_z(svbool_t pg, svint16_t op)
         ///   CLZ Ztied.H, Pg/M, Zop.H
         /// </summary>
-        public static unsafe Vector<ushort> LeadingZeroCount(Vector<short> value) => LeadingZeroCount(value) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector<ushort> LeadingZeroCount(Vector<short> value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// svuint16_t svclz[_u16]_m(svuint16_t inactive, svbool_t pg, svuint16_t op)
@@ -1387,7 +1387,7 @@ namespace System.Runtime.Intrinsics.Arm
         /// svuint16_t svclz[_u16]_z(svbool_t pg, svuint16_t op)
         ///   CLZ Ztied.H, Pg/M, Zop.H
         /// </summary>
-        public static unsafe Vector<ushort> LeadingZeroCount(Vector<ushort> value) => LeadingZeroCount(value) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector<ushort> LeadingZeroCount(Vector<ushort> value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// svuint32_t svclz[_s32]_m(svuint32_t inactive, svbool_t pg, svint32_t op)
@@ -1395,7 +1395,7 @@ namespace System.Runtime.Intrinsics.Arm
         /// svuint32_t svclz[_s32]_z(svbool_t pg, svint32_t op)
         ///   CLZ Ztied.S, Pg/M, Zop.S
         /// </summary>
-        public static unsafe Vector<uint> LeadingZeroCount(Vector<int> value) => LeadingZeroCount(value) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector<uint> LeadingZeroCount(Vector<int> value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// svuint32_t svclz[_u32]_m(svuint32_t inactive, svbool_t pg, svuint32_t op)
@@ -1403,7 +1403,7 @@ namespace System.Runtime.Intrinsics.Arm
         /// svuint32_t svclz[_u32]_z(svbool_t pg, svuint32_t op)
         ///   CLZ Ztied.S, Pg/M, Zop.S
         /// </summary>
-        public static unsafe Vector<uint> LeadingZeroCount(Vector<uint> value) => LeadingZeroCount(value) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector<uint> LeadingZeroCount(Vector<uint> value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// svuint64_t svclz[_s64]_m(svuint64_t inactive, svbool_t pg, svint64_t op)
@@ -1411,7 +1411,7 @@ namespace System.Runtime.Intrinsics.Arm
         /// svuint64_t svclz[_s64]_z(svbool_t pg, svint64_t op)
         ///   CLZ Ztied.D, Pg/M, Zop.D
         /// </summary>
-        public static unsafe Vector<ulong> LeadingZeroCount(Vector<long> value) => LeadingZeroCount(value) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector<ulong> LeadingZeroCount(Vector<long> value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// svuint64_t svclz[_u64]_m(svuint64_t inactive, svbool_t pg, svuint64_t op)
@@ -1419,7 +1419,7 @@ namespace System.Runtime.Intrinsics.Arm
         /// svuint64_t svclz[_u64]_z(svbool_t pg, svuint64_t op)
         ///   CLZ Ztied.D, Pg/M, Zop.D
         /// </summary>
-        public static unsafe Vector<ulong> LeadingZeroCount(Vector<ulong> value) => LeadingZeroCount(value) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector<ulong> LeadingZeroCount(Vector<ulong> value) { throw new PlatformNotSupportedException(); }
 
 
         ///  LoadVector : Unextended load
