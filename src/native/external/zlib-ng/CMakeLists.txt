@@ -462,29 +462,31 @@ endif()
 #
 # check for ptrdiff_t support
 #
-check_c_source_compiles(
-    "#include <stddef.h>
-     int main() {
-         ptrdiff_t *a;
-         (void)a;
-         return 0;
-    }"
-    HAVE_PTRDIFF_T
-)
-if(NOT HAVE_PTRDIFF_T)
-    set(NEED_PTRDIFF_T 1)
 
-    check_type_size("void *" SIZEOF_DATA_PTR)
-    message(STATUS "sizeof(void *) is ${SIZEOF_DATA_PTR} bytes")
+# TODO: SIZEOF_DATA_PTR is undefined when using MSVC because /INCREMENTAL:NO keeps getting overwritten to /INCREMENTAL by CMake.
+# check_c_source_compiles(
+#     "#include <stddef.h>
+#      int main() {
+#          ptrdiff_t *a;
+#          (void)a;
+#          return 0;
+#     }"
+#     HAVE_PTRDIFF_T
+# )
+# if(NOT HAVE_PTRDIFF_T)
+#     set(NEED_PTRDIFF_T 1)
 
-    if(${SIZEOF_DATA_PTR} MATCHES "4")
-        set(PTRDIFF_TYPE "uint32_t")
-    elseif(${SIZEOF_DATA_PTR} MATCHES "8")
-        set(PTRDIFF_TYPE "uint64_t")
-    else()
-        message(FATAL_ERROR "sizeof(void *) is neither 32 nor 64 bit")
-    endif()
-endif()
+#     check_type_size("void *" SIZEOF_DATA_PTR)
+#     message(STATUS "sizeof(void *) is ${SIZEOF_DATA_PTR} bytes")
+
+#     if(${SIZEOF_DATA_PTR} MATCHES "4")
+#         set(PTRDIFF_TYPE "uint32_t")
+#     elseif(${SIZEOF_DATA_PTR} MATCHES "8")
+#         set(PTRDIFF_TYPE "uint64_t")
+#     else()
+#         message(FATAL_ERROR "sizeof(void *) is neither 32 nor 64 bit")
+#     endif()
+# endif()
 
 add_compile_options($<$<CONFIG:Debug>:-DZLIB_DEBUG>)
 
