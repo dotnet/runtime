@@ -1147,17 +1147,16 @@ namespace System.Text.Json.Serialization.Metadata
                 }
 
                 ParameterLookupKey paramKey = new(propertyInfo.PropertyType, propertyInfo.Name);
-                if (parameterIndex.TryGetValue(paramKey, out JsonParameterInfo? confictingParameterInfo))
+                if (!parameterIndex.TryAdd(paramKey, parameterInfo))
                 {
                     // Multiple object properties cannot bind to the same constructor parameter.
                     ThrowHelper.ThrowInvalidOperationException_MultiplePropertiesBindToConstructorParameters(
                         Type,
                         parameterInfo.Name,
                         propertyInfo.Name,
-                        confictingParameterInfo.MatchingProperty.Name);
+                        parameterIndex[paramKey].MatchingProperty.Name);
                 }
 
-                parameterIndex.Add(paramKey, parameterInfo);
                 parameterCache.Add(parameterInfo);
             }
 

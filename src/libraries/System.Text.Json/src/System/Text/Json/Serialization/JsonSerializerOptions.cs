@@ -789,6 +789,11 @@ namespace System.Text.Json
         /// Thrown if this property is set after serialization or deserialization has occurred.
         /// </exception>
         /// <remarks>
+        /// Nullability annotations are resolved from the properties, fields and constructor parameters
+        /// that are used by the serializer. This includes annotations stemming from attributes such as
+        /// <see cref="NotNullAttribute"/>, <see cref="MaybeNullAttribute"/>,
+        /// <see cref="AllowNullAttribute"/> and <see cref="DisallowNullAttribute"/>.
+        ///
         /// Due to restrictions in how nullable reference types are represented at run time,
         /// this setting only governs nullability annotations of non-generic properties and fields.
         /// It cannot be used to enforce nullability annotations of root-level types or generic parameters.

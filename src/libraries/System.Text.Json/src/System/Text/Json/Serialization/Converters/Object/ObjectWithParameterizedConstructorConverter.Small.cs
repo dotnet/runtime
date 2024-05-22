@@ -77,7 +77,7 @@ namespace System.Text.Json.Serialization.Converters
                     }
                     else if (!info.IsNullable && info.Options.RespectNullableAnnotations)
                     {
-                        ThrowHelper.ThrowJsonException_ConstructorParameterDisallowNull(info.MatchingProperty.Name, state.Current.JsonTypeInfo.Type);
+                        ThrowHelper.ThrowJsonException_ConstructorParameterDisallowNull(info.Name, state.Current.JsonTypeInfo.Type);
                     }
                 }
 

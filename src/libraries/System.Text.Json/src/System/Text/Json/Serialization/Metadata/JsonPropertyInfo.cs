@@ -249,7 +249,7 @@ namespace System.Text.Json.Serialization.Metadata
         /// from attributes such as <see cref="NotNullAttribute"/> or <see cref="MaybeNullAttribute"/>.
         ///
         /// This property has no effect on serialization unless the <see cref="JsonSerializerOptions.RespectNullableAnnotations"/>
-        /// has been enabled, in which case the serializer will reject any <see langword="null"/> values returned by the getter.
+        /// property has been enabled, in which case the serializer will reject any <see langword="null"/> values returned by the getter.
         /// </remarks>
         public bool IsGetNullable
         {
@@ -279,12 +279,17 @@ namespace System.Text.Json.Serialization.Metadata
         ///
         /// The current <see cref="PropertyType"/> is not a reference type or <see cref="Nullable{T}"/>.
         /// </exception>
+        /// <remarks>
         /// Contracts originating from <see cref="DefaultJsonTypeInfoResolver"/> or <see cref="JsonSerializerContext"/>,
         /// derive the value of this property from nullable reference type annotations, including annotations
         /// from attributes such as <see cref="AllowNullAttribute"/> or <see cref="DisallowNullAttribute"/>.
         ///
         /// This property has no effect on deserialization unless the <see cref="JsonSerializerOptions.RespectNullableAnnotations"/>
-        /// has been enabled, in which case the serializer will reject any <see langword="null"/> deserialization results.
+        /// property has been enabled, in which case the serializer will reject any <see langword="null"/> deserialization results.
+        ///
+        /// If the property has been associated with a deserialization constructor parameter,
+        /// this setting reflected the nullability annotation of the parameter and not the property setter.
+        /// </remarks>
         public bool IsSetNullable
         {
             get => _isSetNullable;
@@ -299,6 +304,7 @@ namespace System.Text.Json.Serialization.Metadata
 
                 if (ParameterInfo != null)
                 {
+                    // Ensure the new setting is reflected in the associated parameter.
                     ParameterInfo.IsNullable = value;
                 }
 
@@ -676,6 +682,9 @@ namespace System.Text.Json.Serialization.Metadata
             ParameterInfo = DeclaringTypeInfo.CreateMatchingParameterInfo(this);
             if (ParameterInfo != null)
             {
+                // Given that we have associated a constructor parameter to this property,
+                // deserialization is no longer governed by the property setter.
+                // Ensure nullability configuration is copied over from the parameter to the property.
                 _isSetNullable = ParameterInfo.IsNullable;
             }
         }

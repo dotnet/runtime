@@ -75,6 +75,8 @@ namespace System.Text.Json.Serialization.Metadata
 
                 if (converter.ConstructorIsParameterized)
                 {
+                    // NB parameter metadata must be populated *before* property metadata
+                    // so that properties can be linked to their associated parameters.
                     PopulateParameterInfoValues(typeInfo, nullabilityCtx);
                 }
 
@@ -511,9 +513,10 @@ namespace System.Text.Json.Serialization.Metadata
         [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
         private static NullabilityState DetermineParameterNullability(ParameterInfo parameterInfo, NullabilityInfoContext nullabilityCtx)
         {
-#if NET && !NET9_0_OR_GREATER
+#if NET8_0
             // Workaround for https://github.com/dotnet/runtime/issues/92487
-            // The fix has been incorporated into .NET 9 and later (and the polyfilled implementations in netfx).
+            // The fix has been incorporated into .NET 9 (and the polyfilled implementations in netfx).
+            // Should be removed once .NET 8 support is dropped.
             if (parameterInfo.GetGenericParameterDefinition() is { ParameterType: { IsGenericParameter: true } typeParam })
             {
                 // Step 1. Look for nullable annotations on the type parameter.

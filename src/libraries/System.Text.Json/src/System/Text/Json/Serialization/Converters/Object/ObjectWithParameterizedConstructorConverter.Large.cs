@@ -24,7 +24,7 @@ namespace System.Text.Json.Serialization.Converters
             {
                 if (arg == null && !jsonParameterInfo.IsNullable && jsonParameterInfo.Options.RespectNullableAnnotations)
                 {
-                    ThrowHelper.ThrowJsonException_ConstructorParameterDisallowNull(jsonParameterInfo.MatchingProperty.Name, state.Current.JsonTypeInfo.Type);
+                    ThrowHelper.ThrowJsonException_ConstructorParameterDisallowNull(jsonParameterInfo.Name, state.Current.JsonTypeInfo.Type);
                 }
 
                 ((object[])state.Current.CtorArgumentState!.Arguments)[jsonParameterInfo.Position] = arg!;
