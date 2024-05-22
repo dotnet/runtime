@@ -6990,13 +6990,12 @@ void gc_heap::gc_thread_function ()
             bool wait_on_time_out_p = gradual_decommit_in_progress_p;
             uint32_t wait_time = DECOMMIT_TIME_STEP_MILLISECONDS;
 #ifdef DYNAMIC_HEAP_COUNT
-#ifdef BACKGROUND_GC
-            bool background_running_p = gc_heap::background_running_p ();
-#else
-            bool background_running_p = false;
-#endif
             // background_running_p can only change from false to true during suspension.
-            if (!background_running_p && dynamic_heap_count_data.should_change_heap_count)
+            if (
+#ifdef BACKGROUND_GC
+                !gc_heap::background_running_p () &&
+#endif
+                dynamic_heap_count_data.should_change_heap_count)
             {
                 assert (dynamic_adaptation_mode == dynamic_adaptation_to_application_sizes);
 
