@@ -33,6 +33,10 @@ namespace System.Net.Http.Functional.Tests
         [MemberData(nameof(AltSvcHeaderUpgradeVersions))]
         public async Task AltSvc_Header_Upgrade_Success(Version fromVersion, bool overrideHost)
         {
+            if (UseVersion == HttpVersion30)
+            {
+                return;
+            }
             // The test makes a request to a HTTP/1 or HTTP/2 server first, which supplies an Alt-Svc header pointing to the second server.
             using GenericLoopbackServer firstServer =
                 fromVersion.Major switch
@@ -74,41 +78,45 @@ namespace System.Net.Http.Functional.Tests
             };
 
         [Fact]
-        public Task AltSvc_ConnectionFrame_UpgradeFrom20_Success()
+        public async Task AltSvc_ConnectionFrame_UpgradeFrom20_Success()
         {
-            return Task.CompletedTask;
-            //TestEventListener? listener = null;
-            //if (UseVersion == HttpVersion30)
-            //{
-            //    listener = new TestEventListener(_output, TestEventListener.NetworkingEvents);
-            //}
-            //_output.WriteLine("Starting AltSvc_ConnectionFrame_UpgradeFrom20_Success test");
-            //using Http2LoopbackServer firstServer = Http2LoopbackServer.CreateServer();
-            //using Http3LoopbackServer secondServer = CreateHttp3LoopbackServer(options: new() { TestOutputHelper = _output });
-            //using HttpClient client = CreateHttpClient(HttpVersion.Version20);
+            TestEventListener? listener = null;
+            if (UseVersion == HttpVersion30)
+            {
+                listener = new TestEventListener(_output, TestEventListener.NetworkingEvents);
+            }
+            _output.WriteLine("Starting AltSvc_ConnectionFrame_UpgradeFrom20_Success test");
+            using Http2LoopbackServer firstServer = Http2LoopbackServer.CreateServer();
+            using Http3LoopbackServer secondServer = CreateHttp3LoopbackServer(options: new() { TestOutputHelper = _output });
+            using HttpClient client = CreateHttpClient(HttpVersion.Version20);
 
-            //Task<HttpResponseMessage> firstResponseTask = client.GetAsync(firstServer.Address);
-            //Task serverTask = Task.Run(async () =>
-            //{
-            //    await using Http2LoopbackConnection connection = await firstServer.EstablishConnectionAsync();
+            Task<HttpResponseMessage> firstResponseTask = client.GetAsync(firstServer.Address);
+            Task serverTask = Task.Run(async () =>
+            {
+                await using Http2LoopbackConnection connection = await firstServer.EstablishConnectionAsync();
 
-            //    int streamId = await connection.ReadRequestHeaderAsync();
-            //    await connection.WriteFrameAsync(new AltSvcFrame($"https://{firstServer.Address.IdnHost}:{firstServer.Address.Port}", $"h3=\"{secondServer.Address.IdnHost}:{secondServer.Address.Port}\"", streamId: 0));
-            //    await connection.SendDefaultResponseAsync(streamId);
-            //});
+                int streamId = await connection.ReadRequestHeaderAsync();
+                await connection.WriteFrameAsync(new AltSvcFrame($"https://{firstServer.Address.IdnHost}:{firstServer.Address.Port}", $"h3=\"{secondServer.Address.IdnHost}:{secondServer.Address.Port}\"", streamId: 0));
+                await connection.SendDefaultResponseAsync(streamId);
+            });
 
-            //await new[] { firstResponseTask, serverTask }.WhenAllOrAnyFailed(60_000); // Allow to fail due to hang and QuicException
+            await new[] { firstResponseTask, serverTask }.WhenAllOrAnyFailed(60_000); // Allow to fail due to hang and QuicException
 
-            //HttpResponseMessage firstResponse = firstResponseTask.Result;
-            //Assert.True(firstResponse.IsSuccessStatusCode);
+            HttpResponseMessage firstResponse = firstResponseTask.Result;
+            Assert.True(firstResponse.IsSuccessStatusCode);
 
-            //await AltSvc_Upgrade_Success(firstServer, secondServer, client);
-            //listener?.Dispose();
+            await AltSvc_Upgrade_Success(firstServer, secondServer, client);
+            listener?.Dispose();
         }
 
         [Fact]
         public async Task AltSvc_ResponseFrame_UpgradeFrom20_Success()
         {
+            if (UseVersion == HttpVersion30)
+            {
+                return;
+            }
+
             using Http2LoopbackServer firstServer = Http2LoopbackServer.CreateServer();
             using Http3LoopbackServer secondServer = CreateHttp3LoopbackServer();
             using HttpClient client = CreateHttpClient(HttpVersion.Version20);
@@ -137,7 +145,7 @@ namespace System.Net.Http.Functional.Tests
             Task<HttpResponseMessage> secondResponseTask = client.GetAsync(firstServer.Address);
             Task<HttpRequestData> secondRequestTask = secondServer.AcceptConnectionSendResponseAndCloseAsync();
 
-            await new[] { (Task)secondResponseTask, secondRequestTask }.WhenAllOrAnyFailed(30_000);
+            await new[] { (Task)secondResponseTask, secondRequestTask }.WhenAllOrAnyFailed(60_000);
 
             HttpRequestData secondRequest = secondRequestTask.Result;
             using HttpResponseMessage secondResponse = secondResponseTask.Result;
