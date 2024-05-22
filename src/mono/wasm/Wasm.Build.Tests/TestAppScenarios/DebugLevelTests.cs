@@ -43,7 +43,7 @@ public class WasmAppBuilderDebugLevelTests : DebugLevelTests
     protected override void SetupProject(string projectId)
     {
         Id = $"{projectId}_{GetRandomId()}";
-        string projectfile = CreateWasmTemplateProject(projectId, "wasmconsole");
+        string projectfile = CreateWasmTemplateProject(Id, "wasmconsole");
         string projectDir = Path.GetDirectoryName(projectfile)!;
         string mainJs = Path.Combine(projectDir, "main.mjs");
         string mainJsContent = File.ReadAllText(mainJs);
