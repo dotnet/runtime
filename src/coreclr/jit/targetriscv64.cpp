@@ -58,29 +58,29 @@ ABIPassingInformation RiscV64Classifier::Classify(Compiler*    comp,
                                                   ClassLayout* structLayout,
                                                   WellKnownArg /*wellKnownParam*/)
 {
-    StructFloatFieldInfoFlags flags     = STRUCT_NO_FLOAT_FIELD;
-    unsigned                  intFields = 0, floatFields = 0;
-    unsigned                  passedSize;
+    FpStructInRegistersInfo info      = {};
+    unsigned                intFields = 0, floatFields = 0;
+    unsigned                passedSize;
 
+    using namespace FpStruct;
     if (varTypeIsStruct(type))
     {
         passedSize = structLayout->GetSize();
         if (!structLayout->IsBlockLayout())
         {
-            flags = comp->info.compCompHnd->getRiscV64PassFpStructInRegistersInfo(structLayout->GetClassHandle())
-                        .ToOldFlags();
+            info = comp->info.compCompHnd->getRiscV64PassFpStructInRegistersInfo(structLayout->GetClassHandle());
 
-            if ((flags & STRUCT_FLOAT_FIELD_ONLY_ONE) != 0)
+            if ((info.flags & OnlyOne) != 0)
             {
                 floatFields = 1;
             }
-            else if ((flags & STRUCT_FLOAT_FIELD_ONLY_TWO) != 0)
+            else if ((info.flags & BothFloat) != 0)
             {
                 floatFields = 2;
             }
-            else if (flags != STRUCT_NO_FLOAT_FIELD)
+            else if (info.flags != UseIntCallConv)
             {
-                assert((flags & (STRUCT_FLOAT_FIELD_FIRST | STRUCT_FLOAT_FIELD_SECOND)) != 0);
+                assert((info.flags & (Float1st | Float2nd)) != 0);
                 floatFields = 1;
                 intFields   = 1;
             }
@@ -100,40 +100,38 @@ ABIPassingInformation RiscV64Classifier::Classify(Compiler*    comp,
         // Hardware floating-point calling convention
         if ((floatFields == 1) && (intFields == 0))
         {
-            if (flags == STRUCT_NO_FLOAT_FIELD)
+            unsigned offset = 0;
+            if (info.flags == UseIntCallConv)
             {
                 assert(varTypeIsFloating(type)); // standalone floating-point real
             }
             else
             {
-                assert((flags & STRUCT_FLOAT_FIELD_ONLY_ONE) != 0); // struct containing just one FP real
-                passedSize = ((flags & STRUCT_FIRST_FIELD_SIZE_IS8) != 0) ? 8 : 4;
+                assert((info.flags & OnlyOne) != 0); // struct containing just one FP real
+                passedSize = info.GetSize1st();
+                offset     = info.offset1st;
             }
 
-            return ABIPassingInformation::FromSegment(comp, ABIPassingSegment::InRegister(m_floatRegs.Dequeue(), 0,
+            return ABIPassingInformation::FromSegment(comp, ABIPassingSegment::InRegister(m_floatRegs.Dequeue(), offset,
                                                                                           passedSize));
         }
         else
         {
             assert(varTypeIsStruct(type));
             assert((floatFields + intFields) == 2);
-            assert(flags != STRUCT_NO_FLOAT_FIELD);
-            assert((flags & STRUCT_FLOAT_FIELD_ONLY_ONE) == 0);
+            assert(info.flags != UseIntCallConv);
+            assert((info.flags & OnlyOne) == 0);
 
-            unsigned firstSize  = ((flags & STRUCT_FIRST_FIELD_SIZE_IS8) != 0) ? 8 : 4;
-            unsigned secondSize = ((flags & STRUCT_SECOND_FIELD_SIZE_IS8) != 0) ? 8 : 4;
-            unsigned offset = max(firstSize, secondSize); // TODO: cover empty fields and custom offsets / alignments
-
-            bool isFirstFloat  = (flags & (STRUCT_FLOAT_FIELD_ONLY_TWO | STRUCT_FLOAT_FIELD_FIRST)) != 0;
-            bool isSecondFloat = (flags & (STRUCT_FLOAT_FIELD_ONLY_TWO | STRUCT_FLOAT_FIELD_SECOND)) != 0;
+            bool isFirstFloat  = (info.flags & (BothFloat | Float1st)) != 0;
+            bool isSecondFloat = (info.flags & (BothFloat | Float2nd)) != 0;
             assert(isFirstFloat || isSecondFloat);
 
             regNumber firstReg  = (isFirstFloat ? m_floatRegs : m_intRegs).Dequeue();
             regNumber secondReg = (isSecondFloat ? m_floatRegs : m_intRegs).Dequeue();
 
-            return {2, new (comp, CMK_ABI)
-                           ABIPassingSegment[]{ABIPassingSegment::InRegister(firstReg, 0, firstSize),
-                                               ABIPassingSegment::InRegister(secondReg, offset, secondSize)}};
+            ABIPassingSegment seg1st = ABIPassingSegment::InRegister(firstReg, info.offset1st, info.GetSize1st());
+            ABIPassingSegment seg2nd = ABIPassingSegment::InRegister(secondReg, info.offset2nd, info.GetSize2nd());
+            return {2, new (comp, CMK_ABI) ABIPassingSegment[]{seg1st, seg2nd}};
         }
     }
     else
