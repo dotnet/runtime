@@ -231,18 +231,22 @@ inline Object* Alloc(ee_alloc_context* pEEAllocContext, size_t size, GC_ALLOC_FL
     gc_alloc_context* pAllocContext = &pEEAllocContext->gc_alloc_context;
     auto pCurrentThread = GetThread();
 
+    bool isSampled = false;
+    size_t availableSpace = 0;
+    size_t aligned_size = 0;
+    size_t samplingBudget = 0;
     bool isRandomizedSamplingEnabled = ee_alloc_context::IsRandomizedSamplingEnabled();
     if (isRandomizedSamplingEnabled)
     {
         // object allocations are always padded up to pointer size
-        size_t aligned_size = AlignUp(size, sizeof(uintptr_t));
+        aligned_size = AlignUp(size, sizeof(uintptr_t));
 
         // The number bytes we can allocate before we need to emit a sampling event.
         // This calculation is only valid if combined_limit < alloc_limit.
-        size_t samplingBudget = (size_t)(pEEAllocContext->combined_limit - pAllocContext->alloc_ptr);
+        samplingBudget = (size_t)(pEEAllocContext->combined_limit - pAllocContext->alloc_ptr);
 
         // The number of bytes available in the current allocation context
-        size_t availableSpace = (size_t)(pAllocContext->alloc_limit - pAllocContext->alloc_ptr);
+        availableSpace = (size_t)(pAllocContext->alloc_limit - pAllocContext->alloc_ptr);
 
         // Check to see if the allocated object overlaps a sampled byte
         // in this AC. This happens when both:
@@ -254,7 +258,7 @@ inline Object* Alloc(ee_alloc_context* pEEAllocContext, size_t size, GC_ALLOC_FL
         // yet it also starts in an empty state where alloc_ptr = alloc_limit =
         // combined_limit = nullptr. The (1) check handles both of these situations
         // properly as an empty AC can not have a sampled byte inside of it.
-        bool isSampled =
+        isSampled =
             (pEEAllocContext->combined_limit < pAllocContext->alloc_limit) &&
             (samplingBudget < aligned_size);
 
@@ -265,11 +269,6 @@ inline Object* Alloc(ee_alloc_context* pEEAllocContext, size_t size, GC_ALLOC_FL
             samplingBudget = ee_alloc_context::ComputeGeometricRandom(pCurrentThread->GetRandom()) + availableSpace;
             isSampled = (samplingBudget < aligned_size);
         }
-
-        if (isSampled)
-        {
-            FireAllocationSampled(flags, aligned_size, samplingBudget, retVal);
-        }
     }
 
     GCStress<gc_on_alloc>::MaybeTrigger(pAllocContext);
@@ -278,6 +277,11 @@ inline Object* Alloc(ee_alloc_context* pEEAllocContext, size_t size, GC_ALLOC_FL
     // the allocation will be done in place (like in the fast path),
     // otherwise a new allocation context will be provided
     retVal = GCHeapUtilities::GetGCHeap()->Alloc(pAllocContext, size, flags);
+
+    if (isSampled)
+    {
+        FireAllocationSampled(flags, aligned_size, samplingBudget, retVal);
+    }
 
     // There are a variety of conditions that may have invalidated the previous combined_limit value
     // such as not allocating the object in the AC memory region (UOH allocations), moving the AC, adding

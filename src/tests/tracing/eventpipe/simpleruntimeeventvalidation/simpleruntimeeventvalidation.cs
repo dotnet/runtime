@@ -34,24 +34,29 @@ namespace Tracing.Tests.SimpleRuntimeEventValidation
                 return ret;
 
             // Run the 2nd test scenario only if the first one passes
-            ret = IpcTraceTest.RunAndValidateEventCounts(
-                new Dictionary<string, ExpectedEventCount>(){{ "Microsoft-DotNETCore-EventPipe", 1 }},
-                _eventGeneratingActionForExceptions,
-                //ExceptionKeyword (0x8000): 0b1000_0000_0000_0000
-                new List<EventPipeProvider>(){new EventPipeProvider("Microsoft-Windows-DotNETRuntime", EventLevel.Warning, 0b1000_0000_0000_0000)},
-                1024, _DoesTraceContainExceptionEvents, enableRundownProvider:false);
-            if (ret != 100)
-                return ret;
+            if (ret == 100)
+            {
+                ret = IpcTraceTest.RunAndValidateEventCounts(
+                    new Dictionary<string, ExpectedEventCount>() { { "Microsoft-DotNETCore-EventPipe", 1 } },
+                    _eventGeneratingActionForExceptions,
+                    //ExceptionKeyword (0x8000): 0b1000_0000_0000_0000
+                    new List<EventPipeProvider>() { new EventPipeProvider("Microsoft-Windows-DotNETRuntime", EventLevel.Warning, 0b1000_0000_0000_0000) },
+                    1024, _DoesTraceContainExceptionEvents, enableRundownProvider: false);
 
-            ret = IpcTraceTest.RunAndValidateEventCounts(
-                new Dictionary<string, ExpectedEventCount>(){{ "Microsoft-Windows-DotNETRuntime", -1}},
-                _eventGeneratingActionForFinalizers,
-                new List<EventPipeProvider>(){new EventPipeProvider("Microsoft-Windows-DotNETRuntime", EventLevel.Informational, 0b1)},
-                1024, _DoesTraceContainFinalizerEvents, enableRundownProvider:false);
-            if (ret != 100)
-                return ret;
+                if (ret == 100)
+                {
+                    ret = IpcTraceTest.RunAndValidateEventCounts(
+                        new Dictionary<string, ExpectedEventCount>() { { "Microsoft-Windows-DotNETRuntime", -1 } },
+                        _eventGeneratingActionForFinalizers,
+                        new List<EventPipeProvider>() { new EventPipeProvider("Microsoft-Windows-DotNETRuntime", EventLevel.Informational, 0b1) },
+                        1024, _DoesTraceContainFinalizerEvents, enableRundownProvider: false);
+                }
+            }
 
-            return 100;
+            if (ret < 0)
+                return ret;
+            else
+                return 100;
         }
 
         private static Action _eventGeneratingActionForGC = () =>

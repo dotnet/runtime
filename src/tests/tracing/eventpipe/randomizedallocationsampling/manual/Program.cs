@@ -142,8 +142,8 @@ namespace DynamicAllocationSampling
             // use the upscaling method detailed in the PR
             // = sq/p + u
             //   s = # of samples for a type
-            //   q = 0.99999
-            //   p = 0.00001
+            //   q = 1 - 1/102400
+            //   p = 1/102400
             //   u = sum of object remainders = Sum(object_size - sampledByteOffset) for all samples
             return (long)(SAMPLING_RATIO * count + sizeRemainder);
         }
