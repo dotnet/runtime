@@ -23,11 +23,7 @@
 #endif
 #include <stdlib.h>
 #ifndef DISABLE_LOG_PROFILER_GZ
-#ifdef INTERNAL_ZLIB
-#include <external/zlib/zlib.h>
-#else
 #include <zlib.h>
-#endif
 #endif
 #include <glib.h>
 #include <mono/metadata/profiler.h>

@@ -249,7 +249,6 @@ elseif(CLR_CMAKE_HOST_OS STREQUAL "emscripten")
   set(DISABLE_SHARED_LIBS 1)
   # sys/random.h exists, but its not found
   set(HAVE_SYS_RANDOM_H 1)
-  set(INTERNAL_ZLIB 1)
 elseif(CLR_CMAKE_HOST_OS STREQUAL "wasi")
   set(HOST_WASI 1)
   add_definitions(-D_WASI_EMULATED_PROCESS_CLOCKS -D_WASI_EMULATED_SIGNAL -D_WASI_EMULATED_MMAN -DHOST_WASI)
@@ -261,7 +260,6 @@ elseif(CLR_CMAKE_HOST_OS STREQUAL "wasi")
   add_compile_options(-Wno-unused-but-set-variable)
   set(ENABLE_PERFTRACING 0)
   set(DISABLE_SHARED_LIBS 1)
-  set(INTERNAL_ZLIB 1)
   set(DISABLE_EXECUTABLES 1)
   set(STATIC_COMPONENTS 1)
 elseif(CLR_CMAKE_HOST_OS STREQUAL "windows")
@@ -270,7 +268,6 @@ elseif(CLR_CMAKE_HOST_OS STREQUAL "windows")
   set(HOST_NO_SYMLINKS 1)
   set(MONO_KEYWORD_THREAD "__declspec (thread)")
   set(MONO_ZERO_LEN_ARRAY 1)
-  set(INTERNAL_ZLIB 1)
   set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>") # statically link VC runtime library
   add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/W4>)      # set warning level 4
   add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/WX>)      # treat warnings as errors
@@ -511,17 +508,9 @@ if ((HOST_MACCAT AND HOST_ARM64) OR (TARGET_MACCAT AND TARGET_ARM64))
   set(TARGET_APPLE_MOBILE 1)
 endif()
 
-# Decide if we need zlib, and if so whether we want the system zlib or the in-tree copy.
+# Decide if we need zlib-ng.
 if(NOT DISABLE_EMBEDDED_PDB OR NOT DISABLE_LOG_PROFILER_GZ)
-  if(INTERNAL_ZLIB)
-    # defines ZLIB_SOURCES
-    include(${CLR_SRC_NATIVE_DIR}/external/zlib.cmake)
-  else()
-    # if we're not on a platform where we use the in-tree zlib, require system zlib
-    include(${CLR_SRC_NATIVE_DIR}/libs/System.IO.Compression.Native/extra_libs.cmake)
-    set(Z_LIBS)
-    append_extra_compression_libs(Z_LIBS)
-  endif()
+    include(${CLR_SRC_NATIVE_DIR}/external/zlib-ng.cmake)
 endif()
 
 ######################################

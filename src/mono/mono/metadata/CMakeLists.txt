@@ -5,7 +5,7 @@ project(metadata C)
 #
 if(DISABLE_ICALL_TABLES)
 add_library(mono-icall-table STATIC "icall-table.c")
-target_link_libraries(mono-icall-table PRIVATE monoapi eglib_api)
+target_link_libraries(mono-icall-table PRIVATE monoapi eglib_api zlibstatic)
 target_include_directories(mono-icall-table PRIVATE ${PROJECT_BINARY_DIR}/../..
   ${PROJECT_SOURCE_DIR}/../..
   ${PROJECT_SOURCE_DIR}/..)
@@ -200,10 +200,10 @@ set(metadata_sources "${metadata_platform_sources};${metadata_common_sources};${
 if(HOST_WIN32 AND NOT DISABLE_SHARED_LIBS)
     add_library(metadata_objects_shared OBJECT ${metadata_sources})
     target_compile_definitions(metadata_objects_shared PRIVATE ${metadata_compile_definitions})
-    target_link_libraries(metadata_objects_shared PRIVATE monoapi eglib_api utils_objects_shared)
+    target_link_libraries(metadata_objects_shared PRIVATE monoapi eglib_api utils_objects_shared zlibstatic)
     # note: metadata_objects is an object library, so this doesn't force linking with sgen,
     # it just adds the relevant include directories - which we need even with Boehm
-    target_link_libraries(metadata_objects_shared PRIVATE sgen_objects_shared)
+    target_link_libraries(metadata_objects_shared PRIVATE sgen_objects_shared zlibstatic)
     target_compile_definitions(metadata_objects_shared PRIVATE -DMONO_DLL_EXPORT)
     target_include_directories(metadata_objects_shared PRIVATE ${PROJECT_BINARY_DIR}/../..
         ${PROJECT_SOURCE_DIR}/../..
@@ -212,10 +212,10 @@ endif()
 
 add_library(metadata_objects OBJECT ${metadata_sources})
 target_compile_definitions(metadata_objects PRIVATE ${metadata_compile_definitions})
-target_link_libraries(metadata_objects PRIVATE monoapi eglib_api utils_objects)
+target_link_libraries(metadata_objects PRIVATE monoapi eglib_api utils_objects zlibstatic)
 # note: metadata_objects is an object library, so this doesn't force linking with sgen,
 # it just adds the relevant include directories - which we need even with Boehm
-target_link_libraries(metadata_objects PRIVATE sgen_objects)
+target_link_libraries(metadata_objects PRIVATE sgen_objects zlibstatic)
 if(NOT HOST_WIN32)
     target_compile_definitions(metadata_objects PRIVATE -DMONO_DLL_EXPORT)
 endif()

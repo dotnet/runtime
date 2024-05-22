@@ -1,9 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#define ZLIB_COMPAT 1
+
 #include <stdbool.h>
 #include <stdint.h>
-#include <external/zlib/zutil.h>
+#include <external/zlib-ng/zutil.h>
+#include <zlib_allocator.h>
 
 /* A custom allocator for zlib that provides some defense-in-depth over standard malloc / free.
  * (non-Windows version)
@@ -70,7 +73,7 @@ static void WriteAllocCookieUnaligned(void* pDest, DOTNET_ALLOC_COOKIE vCookie)
 const size_t DOTNET_ALLOC_HEADER_COOKIE_SIZE_WITH_PADDING = (sizeof(DOTNET_ALLOC_COOKIE) + MEMORY_ALLOCATION_ALIGNMENT - 1) & ~((size_t)MEMORY_ALLOCATION_ALIGNMENT  - 1);
 const size_t DOTNET_ALLOC_TRAILER_COOKIE_SIZE = sizeof(DOTNET_ALLOC_COOKIE);
 
-voidpf ZLIB_INTERNAL zcalloc(opaque, items, size)
+voidpf z_custom_calloc(opaque, items, size)
     voidpf opaque;
     unsigned items;
     unsigned size;
@@ -79,7 +82,7 @@ voidpf ZLIB_INTERNAL zcalloc(opaque, items, size)
 
     // If initializing a fixed-size structure, zero the memory.
     bool fZeroMemory = (items == 1);
-    
+
     size_t cbRequested;
     if (sizeof(items) + sizeof(size) <= sizeof(cbRequested))
     {
@@ -119,7 +122,7 @@ static void zcfree_trash_cookie(void* pCookie)
     memset(pCookie, 0, sizeof(DOTNET_ALLOC_COOKIE));
 }
 
-void ZLIB_INTERNAL zcfree(opaque, ptr)
+void z_custom_cfree(opaque, ptr)
     voidpf opaque;
     voidpf ptr;
 {
