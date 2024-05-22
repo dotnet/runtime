@@ -305,4 +305,32 @@ namespace System.Text.Json.SourceGeneration.Tests
     {
         public int Id { get; set; }
     }
+
+    public class PocoWithMixedVisibilityMembersBase
+    {
+        public string BaseProperty { get; set; }
+        public string ShadowProperty { get; set; }
+    }
+
+    public class PocoWithMixedVisibilityMembers : PocoWithMixedVisibilityMembersBase
+    {
+        public string PublicProperty { get; set; }
+
+        [JsonInclude]
+        public string PublicField;
+
+        [JsonInclude]
+        internal int InternalProperty { get; set; }
+
+        [JsonInclude]
+        internal int InternalField;
+
+        [JsonPropertyName("customProp")]
+        public string PropertyWithCustomName { get; set; }
+
+        [JsonInclude, JsonPropertyName("customField")]
+        public string FieldWithCustomName;
+
+        public new int ShadowProperty { get; set; }
+    }
 }

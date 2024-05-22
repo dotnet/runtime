@@ -551,7 +551,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
             Exception exception = Assert.Throws<CryptographicException>(
                 () =>
                 request.Create(request.SubjectName, generator, now, now.AddDays(1), new byte[1]));
-#if NETCOREAPP
+#if NET
             if (CultureInfo.CurrentCulture.Name == "en-US")
             {
                 Assert.Contains("ASN1", exception.Message, StringComparison.OrdinalIgnoreCase);

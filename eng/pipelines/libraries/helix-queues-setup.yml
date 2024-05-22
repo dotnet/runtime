@@ -8,7 +8,6 @@ parameters:
   pool: ''
   platform: ''
   shouldContinueOnError: false
-  dependOnEvaluatePaths: false
   jobParameters: {}
 
 jobs:
@@ -22,7 +21,6 @@ jobs:
     pool: ${{ parameters.pool }}
     platform: ${{ parameters.platform }}
     shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
-    dependOnEvaluatePaths: ${{ parameters.dependOnEvaluatePaths}}
     helixQueues:
 
     # Linux arm
@@ -148,7 +146,6 @@ jobs:
       - ${{ if notIn(parameters.jobParameters.framework, 'net48') }}:
         # mono outerloop
         - ${{ if and(eq(parameters.jobParameters.testScope, 'outerloop'), eq(parameters.jobParameters.runtimeFlavor, 'mono')) }}:
-          - Windows.7.Amd64.Open
           - Windows.11.Amd64.Client.Open
         # libraries on coreclr (outerloop and innerloop), or libraries on mono innerloop
         - ${{ if or(ne(parameters.jobParameters.testScope, 'outerloop'), ne(parameters.jobParameters.runtimeFlavor, 'mono')) }}:
@@ -157,7 +154,6 @@ jobs:
             - Windows.Amd64.Server2022.Open
           - ${{ if or(ne(parameters.jobParameters.isExtraPlatformsBuild, true), eq(parameters.jobParameters.includeAllPlatforms, true)) }}:
             - Windows.Amd64.Server2022.Open
-            - Windows.7.Amd64.Open
 
       # .NETFramework
       - ${{ if eq(parameters.jobParameters.framework, 'net48') }}:

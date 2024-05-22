@@ -4,17 +4,15 @@
 using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using Xunit;
 
 namespace GenerateUnmanagedEntryPoints
 {
-    public unsafe class Program
+    unsafe class Program
     {
         [UnmanagedCallersOnly(EntryPoint = "MainAssemblyMethod")]
         static void MainAssemblyMethod() => Console.WriteLine($"Hello from {nameof(MainAssemblyMethod)}");
 
-        [Fact]
-        public static int TestEntryPoint()
+        static int Main()
         {
             IntPtr methodAddress = IntPtr.Zero;
             IntPtr programHandle = IntPtr.Zero;

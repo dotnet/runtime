@@ -36,6 +36,8 @@ namespace System.Text.Json.SourceGeneration
 
         public required int? MaxDepth { get; init; }
 
+        public required string? NewLine { get; init; }
+
         public required JsonNumberHandling? NumberHandling { get; init; }
 
         public required JsonObjectCreationHandling? PreferredObjectCreationHandling { get; init; }

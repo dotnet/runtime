@@ -25,7 +25,9 @@
     <Compile Include="$(CommonTestPath)System\Threading\Tasks\TaskTimeoutExtensions.cs" Link="Common\System\Threading\Tasks\TaskTimeoutExtensions.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">
+    <Compile Include="NamedPipeTests\NamedPipeTest.CreateClient.Windows.cs" />
     <Compile Include="NamedPipeTests\NamedPipeTest.CurrentUserOnly.Windows.cs" />
+    <Compile Include="NamedPipeTests\NamedPipeTest.MessageMode.Windows.cs" />
     <Compile Include="NamedPipeTests\NamedPipeTest.RunAsClient.Windows.cs" />
     <Compile Include="InteropTest.Windows.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.CancelIoEx.cs" Link="Common\Interop\Windows\Interop.CancelIoEx.cs" />
@@ -36,6 +38,7 @@
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.MaxLengths.cs" Link="Common\Interop\Windows\Interop.MaxLengths.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'unix'">
+    <Compile Include="NamedPipeTests\NamedPipeTest.CreateClient.Unix.cs" />
     <Compile Include="NamedPipeTests\NamedPipeTest.CurrentUserOnly.Unix.cs" />
     <Compile Include="NamedPipeTests\NamedPipeTest.UnixDomainSockets.cs" />
     <Compile Include="NamedPipeTests\NamedPipeTest.RunAsClient.Unix.cs" />

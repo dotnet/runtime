@@ -1846,7 +1846,7 @@ void Interpreter::JitMethodIfAppropriate(InterpreterMethodInfo* interpMethInfo, 
             else
             {
                 COR_ILMETHOD_DECODER::DecoderStatus status;
-                pDecoder = new COR_ILMETHOD_DECODER(md->GetILHeader(TRUE),
+                pDecoder = new COR_ILMETHOD_DECODER(md->GetILHeader(),
                                                     md->GetMDImport(),
                                                     &status);
             }
@@ -1952,7 +1952,7 @@ static void MonitorEnter(Object* obj, BYTE* pbLockTaken)
 
     GCPROTECT_BEGININTERIOR(pbLockTaken);
 
-    if (GET_THREAD()->CatchAtSafePointOpportunistic())
+    if (GET_THREAD()->CatchAtSafePoint())
     {
         GET_THREAD()->PulseGCMode();
     }
@@ -7987,14 +7987,14 @@ void Interpreter::EnsureClassInit(MethodTable* pMT)
         pMT->CheckRestore();
         // This is tantamount to a call, so exempt it from the cycle count.
 #if INTERP_ILCYCLE_PROFILE
-        unsigned __int64 startCycles;
+        uint64_t startCycles;
         bool b = CycleTimer::GetThreadCyclesS(&startCycles); _ASSERTE(b);
 #endif // INTERP_ILCYCLE_PROFILE
 
         pMT->CheckRunClassInitThrowing();
 
 #if INTERP_ILCYCLE_PROFILE
-        unsigned __int64 endCycles;
+        uint64_t endCycles;
         b = CycleTimer::GetThreadCyclesS(&endCycles); _ASSERTE(b);
         m_exemptCycles += (endCycles - startCycles);
 #endif // INTERP_ILCYCLE_PROFILE
@@ -9117,9 +9117,9 @@ void Interpreter::DoCallWork(bool virtualCall, void* thisArg, CORINFO_RESOLVED_T
 #if INTERP_ILCYCLE_PROFILE
 #if 0
     // XXX
-    unsigned __int64 callStartCycles;
+    uint64_t callStartCycles;
     bool b = CycleTimer::GetThreadCyclesS(&callStartCycles); _ASSERTE(b);
-    unsigned __int64 callStartExemptCycles = m_exemptCycles;
+    uint64_t callStartExemptCycles = m_exemptCycles;
 #endif
 #endif // INTERP_ILCYCLE_PROFILE
 
@@ -9191,9 +9191,9 @@ void Interpreter::DoCallWork(bool virtualCall, void* thisArg, CORINFO_RESOLVED_T
 #if 0
             if (virtualCall)
             {
-                unsigned __int64 callEndCycles;
+                uint64_t callEndCycles;
                 b = CycleTimer::GetThreadCyclesS(&callEndCycles); _ASSERTE(b);
-                unsigned __int64 delta = (callEndCycles - callStartCycles);
+                uint64_t delta = (callEndCycles - callStartCycles);
                 delta -= (m_exemptCycles - callStartExemptCycles);
                 s_callCycles += delta;
                 s_calls++;
@@ -9269,19 +9269,6 @@ void Interpreter::DoCallWork(bool virtualCall, void* thisArg, CORINFO_RESOLVED_T
             InterlockedIncrement(&s_totalInterpCallsToIntrinsicsUnhandled);
 #endif // INTERP_TRACING
             break;
-        }
-
-        // Plus some other calls that we're going to treat "like" intrinsics...
-        if (methToCall == CoreLibBinder::GetMethod(METHOD__STUBHELPERS__SET_LAST_ERROR))
-        {
-            // If we're interpreting a method that calls "SetLastError", it's very likely that the call(i) whose
-            // error we're trying to capture was performed with MethodDescCallSite machinery that itself trashes
-            // the last error.  We solve this by saving the last error in a special interpreter-specific field of
-            // "Thread" in that case, and essentially implement SetLastError here, taking that field as the
-            // source for the last error.
-            Thread* thrd = GetThread();
-            thrd->m_dwLastError = thrd->m_dwLastErrorInterp;
-            didIntrinsic = true;
         }
 
         // TODO: The following check for hardware intrinsics is not a production-level
@@ -9989,7 +9976,7 @@ void Interpreter::DoCallWork(bool virtualCall, void* thisArg, CORINFO_RESOLVED_T
         Frame* topFrameBefore = thr->GetFrame();
 
 #if INTERP_ILCYCLE_PROFILE
-        unsigned __int64 startCycles;
+        uint64_t startCycles;
 #endif // INTERP_ILCYCLE_PROFILE
 
         // CYCLE PROFILE: BEFORE MDCS CREATION.
@@ -10076,7 +10063,7 @@ void Interpreter::DoCallWork(bool virtualCall, void* thisArg, CORINFO_RESOLVED_T
             }
         }
 #if INTERP_ILCYCLE_PROFILE
-        unsigned __int64 endCycles;
+        uint64_t endCycles;
         bool b = CycleTimer::GetThreadCyclesS(&endCycles); _ASSERTE(b);
         m_exemptCycles += (endCycles - startCycles);
 #endif // INTERP_ILCYCLE_PROFILE
@@ -11494,19 +11481,19 @@ int        Interpreter::s_ILInstrExecs[256] = {0, };
 int        Interpreter::s_ILInstrExecsByCategory[512] = {0, };
 int        Interpreter::s_ILInstr2ByteExecs[Interpreter::CountIlInstr2Byte] = {0, };
 #if INTERP_ILCYCLE_PROFILE
-unsigned __int64       Interpreter::s_ILInstrCycles[512] = { 0, };
-unsigned __int64       Interpreter::s_ILInstrCyclesByCategory[512] = { 0, };
+uint64_t       Interpreter::s_ILInstrCycles[512] = { 0, };
+uint64_t       Interpreter::s_ILInstrCyclesByCategory[512] = { 0, };
 // XXX
-unsigned __int64       Interpreter::s_callCycles = 0;
+uint64_t       Interpreter::s_callCycles = 0;
 unsigned               Interpreter::s_calls = 0;
 
 void Interpreter::UpdateCycleCount()
 {
-    unsigned __int64 endCycles;
+    uint64_t endCycles;
     bool b = CycleTimer::GetThreadCyclesS(&endCycles); _ASSERTE(b);
     if (m_instr != CEE_COUNT)
     {
-        unsigned __int64 delta = (endCycles - m_startCycles);
+        uint64_t delta = (endCycles - m_startCycles);
         if (m_exemptCycles > 0)
         {
             delta = delta - m_exemptCycles;
@@ -12228,7 +12215,7 @@ const int MIL = 1000000;
 
 // Leaving this disabled for now.
 #if 0
-unsigned __int64 ForceSigWalkCycles = 0;
+uint64_t ForceSigWalkCycles = 0;
 #endif
 
 void Interpreter::PrintPostMortemData()
@@ -12394,15 +12381,15 @@ void Interpreter::PrintPostMortemData()
     // First, classify by categories.
     unsigned totInstrs = 0;
 #if INTERP_ILCYCLE_PROFILE
-    unsigned __int64 totCycles = 0;
-    unsigned __int64 perMeasurementOverhead = CycleTimer::QueryOverhead();
+    uint64_t totCycles = 0;
+    uint64_t perMeasurementOverhead = CycleTimer::QueryOverhead();
 #endif // INTERP_ILCYCLE_PROFILE
     for (unsigned i = 0; i < 256; i++)
     {
         s_ILInstrExecsByCategory[s_ILInstrCategories[i]] += s_ILInstrExecs[i];
         totInstrs += s_ILInstrExecs[i];
 #if INTERP_ILCYCLE_PROFILE
-        unsigned __int64 cycles = s_ILInstrCycles[i];
+        uint64_t cycles = s_ILInstrCycles[i];
         if (cycles > s_ILInstrExecs[i] * perMeasurementOverhead) cycles -= s_ILInstrExecs[i] * perMeasurementOverhead;
         else cycles = 0;
         s_ILInstrCycles[i] = cycles;
@@ -12412,7 +12399,7 @@ void Interpreter::PrintPostMortemData()
     }
     unsigned totInstrs2Byte = 0;
 #if INTERP_ILCYCLE_PROFILE
-    unsigned __int64 totCycles2Byte = 0;
+    uint64_t totCycles2Byte = 0;
 #endif // INTERP_ILCYCLE_PROFILE
     for (unsigned i = 0; i < CountIlInstr2Byte; i++)
     {
@@ -12421,7 +12408,7 @@ void Interpreter::PrintPostMortemData()
         totInstrs += s_ILInstr2ByteExecs[i];
         totInstrs2Byte +=  s_ILInstr2ByteExecs[i];
 #if INTERP_ILCYCLE_PROFILE
-        unsigned __int64 cycles = s_ILInstrCycles[ind];
+        uint64_t cycles = s_ILInstrCycles[ind];
         if (cycles > s_ILInstrExecs[ind] * perMeasurementOverhead) cycles -= s_ILInstrExecs[ind] * perMeasurementOverhead;
         else cycles = 0;
         s_ILInstrCycles[i] = cycles;
@@ -12466,7 +12453,7 @@ void Interpreter::PrintPostMortemData()
     fprintf(GetLogFile(), "      MCycles (%lld total, %lld 1-byte, %lld calls (%d calls, %10.2f cyc/call):\n",
             totCycles/MIL, (totCycles - totCycles2Byte)/MIL, s_callCycles/MIL, s_calls, float(s_callCycles)/float(s_calls));
 #if 0
-    extern unsigned __int64 MetaSigCtor1Cycles;
+    extern uint64_t MetaSigCtor1Cycles;
     fprintf(GetLogFile(), "      MetaSig(MethodDesc, TypeHandle) ctor: %lld MCycles.\n",
         MetaSigCtor1Cycles/MIL);
     fprintf(GetLogFile(), "      ForceSigWalk: %lld MCycles.\n",
@@ -12540,7 +12527,7 @@ const int K = 1000;
 // static
 void Interpreter::PrintILProfile(Interpreter::InstrExecRecord *recs, unsigned int totInstrs
 #if INTERP_ILCYCLE_PROFILE
-                                 , unsigned __int64 totCycles
+                                 , uint64_t totCycles
 #endif // INTERP_ILCYCLE_PROFILE
                                  )
 {

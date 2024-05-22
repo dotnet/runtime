@@ -1121,7 +1121,7 @@ namespace System.Speech.Recognition
         private InternalGrammarData _internalData;
         private string _grammarName = string.Empty;
         private Collection<Grammar> _ruleRefs;
-        private static ResourceLoader s_resourceLoader = new();
+        private static readonly ResourceLoader s_resourceLoader = new();
 
 #if DEBUG
         private bool _loaded;

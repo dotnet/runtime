@@ -41,6 +41,7 @@
 #endif
 
 #include "ilinstrumentation.h"
+#include "codeversion.h"
 
 class Stub;
 class MethodDesc;
@@ -63,7 +64,6 @@ class SString;
 class Pending;
 class MethodTable;
 class DynamicMethodTable;
-class CodeVersionManager;
 class TieredCompilationManager;
 class JITInlineTrackingMap;
 
@@ -581,8 +581,7 @@ private:
 
 };
 
-// A code:Module represents a DLL or EXE file loaded from the disk. It could either be a IL module or a
-// Native code (NGEN module). A module live in a code:Assembly
+// A code:Module represents a DLL or EXE file loaded from the disk. A module live in a code:Assembly
 //
 // Some important fields are
 //    * code:Module.m_pPEAssembly - this points at a code:PEAssembly that understands the layout of a PE assembly. The most
@@ -726,6 +725,10 @@ private:
     // Linear mapping from MethodDef token to MethodDesc *
     // For generic methods, IsGenericTypeDefinition() is true i.e. instantiation at formals
     LookupMap<PTR_MethodDesc>       m_MethodDefToDescMap;
+
+    // Linear mapping from MethodDef token to ILCodeVersioningState *
+    // This is used for Code Versioning logic
+    LookupMap<PTR_ILCodeVersioningState>    m_ILCodeVersioningStateMap;
 
     // Linear mapping from FieldDef token to FieldDesc*
     LookupMap<PTR_FieldDesc>        m_FieldDefToDescMap;
@@ -1215,7 +1218,7 @@ public:
     }
 #endif // !DACCESS_COMPILE
 
-    MethodDesc *LookupMethodDef(mdMethodDef token);
+    PTR_MethodDesc LookupMethodDef(mdMethodDef token);
 
 #ifndef DACCESS_COMPILE
     void EnsureMethodDefCanBeStored(mdMethodDef token)
@@ -1230,6 +1233,25 @@ public:
 
         _ASSERTE(TypeFromToken(token) == mdtMethodDef);
         m_MethodDefToDescMap.SetElement(RidFromToken(token), value);
+    }
+#endif // !DACCESS_COMPILE
+
+    PTR_ILCodeVersioningState LookupILCodeVersioningState(mdMethodDef token);
+
+#ifndef DACCESS_COMPILE
+    void EnsureILCodeVersioningStateCanBeStored(mdMethodDef token)
+    {
+        WRAPPER_NO_CONTRACT; // THROWS/GC_NOTRIGGER/INJECT_FAULT()/MODE_ANY
+        _ASSERTE(CodeVersionManager::IsLockOwnedByCurrentThread());
+        m_ILCodeVersioningStateMap.EnsureElementCanBeStored(this, RidFromToken(token));
+    }
+
+    void EnsuredStoreILCodeVersioningState(mdMethodDef token, PTR_ILCodeVersioningState value)
+    {
+        WRAPPER_NO_CONTRACT; // NOTHROW/GC_NOTRIGGER/FORBID_FAULT/MODE_ANY
+        _ASSERTE(CodeVersionManager::IsLockOwnedByCurrentThread());
+        _ASSERTE(TypeFromToken(token) == mdtMethodDef);
+        m_ILCodeVersioningStateMap.SetElement(RidFromToken(token), value);
     }
 #endif // !DACCESS_COMPILE
 
@@ -1476,8 +1498,8 @@ public:
     void   StartUnload();
 
 public:
-    void SetDynamicIL(mdToken token, TADDR blobAddress, BOOL fTemporaryOverride);
-    TADDR GetDynamicIL(mdToken token, BOOL fAllowTemporary);
+    void SetDynamicIL(mdToken token, TADDR blobAddress);
+    TADDR GetDynamicIL(mdToken token);
 
     // store and retrieve the instrumented IL offset mapping for a particular method
 #if !defined(DACCESS_COMPILE)
@@ -1671,10 +1693,6 @@ private:
                                                 // maps tokens for EnC/dynamics/reflection emit to their corresponding IL blobs
                                                 // this map *always* overrides the Metadata RVA
         PTR_DynamicILBlobTable   m_pDynamicILBlobTable;
-
-                                                // maps tokens for to their corresponding overridden IL blobs
-                                                // this map conditionally overrides the Metadata RVA and the DynamicILBlobTable
-        PTR_DynamicILBlobTable   m_pTemporaryILBlobTable;
 
         // hash table storing any profiler-provided instrumented IL offset mapping
         PTR_ILOffsetMappingTable m_pILOffsetMappingTable;

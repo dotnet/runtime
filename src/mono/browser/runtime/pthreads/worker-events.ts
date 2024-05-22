@@ -30,10 +30,12 @@ export interface WorkerThreadEventTarget extends EventTarget {
 
 let WorkerThreadEventClassConstructor: new (type: keyof WorkerThreadEventMap, pthread_self: PThreadSelf) => WorkerThreadEvent;
 export const makeWorkerThreadEvent: (type: keyof WorkerThreadEventMap, pthread_self: PThreadSelf) => WorkerThreadEvent = !WasmEnableThreads
-    ? (() => { throw new Error("threads support disabled"); })
+    ? (() => {
+        throw new Error("threads support disabled");
+    })
     : ((type: keyof WorkerThreadEventMap, pthread_self: PThreadSelf) => {
         if (!WorkerThreadEventClassConstructor) WorkerThreadEventClassConstructor = class WorkerThreadEventImpl extends Event implements WorkerThreadEvent {
-            constructor(type: keyof WorkerThreadEventMap, readonly pthread_self: PThreadSelf) {
+            constructor (type: keyof WorkerThreadEventMap, readonly pthread_self: PThreadSelf) {
                 super(type);
             }
         };

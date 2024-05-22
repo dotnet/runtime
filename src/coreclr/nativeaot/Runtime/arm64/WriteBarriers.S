@@ -302,7 +302,6 @@ LEAF_END RhpAssignRef, _TEXT
 #endif
 
         mov    x10, x2
-    ALTERNATE_ENTRY RhpCheckedLockCmpXchgAVLocation
         casal  x10, x1, [x0]                  // exchange
         cmp    x2, x10
         bne    LOCAL_LABEL(CmpXchgNoUpdate)
@@ -311,7 +310,6 @@ LEAF_END RhpAssignRef, _TEXT
         b      LOCAL_LABEL(DoCardsCmpXchg)
 LOCAL_LABEL(CmpXchgRetry):
         // Check location value is what we expect.
-    ALTERNATE_ENTRY  RhpCheckedLockCmpXchgAVLocation2
         ldaxr   x10, [x0]
         cmp     x10, x2
         bne     LOCAL_LABEL(CmpXchgNoUpdate)
@@ -365,14 +363,12 @@ LOCAL_LABEL(NoBarrierCmpXchg):
         tbz    w16, #ARM64_ATOMICS_FEATURE_FLAG_BIT, LOCAL_LABEL(ExchangeRetry)
 #endif
 
-    ALTERNATE_ENTRY  RhpCheckedXchgAVLocation
         swpal  x1, x10, [x0]                   // exchange
 
 #ifndef LSE_INSTRUCTIONS_ENABLED_BY_DEFAULT
         b      LOCAL_LABEL(DoCardsXchg)
 LOCAL_LABEL(ExchangeRetry):
         // Read the existing memory location.
-    ALTERNATE_ENTRY  RhpCheckedXchgAVLocation2
         ldaxr   x10,  [x0]
 
         // Attempt to update with the new value.

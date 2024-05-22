@@ -4,7 +4,7 @@
 import { CommandSetId, ServerCommandId, EventPipeCommandId, ProcessCommandId } from "./types";
 import Magic from "./magic";
 
-function advancePos(pos: { pos: number }, count: number): void {
+function advancePos (pos: { pos: number }, count: number): void {
     pos.pos += count;
 }
 
@@ -12,7 +12,7 @@ function advancePos(pos: { pos: number }, count: number): void {
 function serializeHeader(buf: Uint8Array, pos: { pos: number }, commandSet: CommandSetId.EventPipe, command: EventPipeCommandId, len: number): void;
 function serializeHeader(buf: Uint8Array, pos: { pos: number }, commandSet: CommandSetId.Process, command: ProcessCommandId, len: number): void;
 function serializeHeader(buf: Uint8Array, pos: { pos: number }, commandSet: CommandSetId.Server, command: ServerCommandId, len: number): void;
-function serializeHeader(buf: Uint8Array, pos: { pos: number }, commandSet: CommandSetId, command: EventPipeCommandId | ProcessCommandId | ServerCommandId, len: number): void {
+function serializeHeader (buf: Uint8Array, pos: { pos: number }, commandSet: CommandSetId, command: EventPipeCommandId | ProcessCommandId | ServerCommandId, len: number): void {
     Serializer.serializeMagic(buf, pos);
     Serializer.serializeUint16(buf, pos, len);
     Serializer.serializeUint8(buf, pos, commandSet);
@@ -22,7 +22,7 @@ function serializeHeader(buf: Uint8Array, pos: { pos: number }, commandSet: Comm
 
 
 const Serializer = {
-    computeMessageByteLength(payload?: number | Uint8Array): number {
+    computeMessageByteLength (payload?: number | Uint8Array): number {
         const fullHeaderSize = Magic.MinimalHeaderSize // magic, len
             + 2 // commandSet, command
             + 2; // reserved ;
@@ -30,33 +30,33 @@ const Serializer = {
         const len = fullHeaderSize + payloadLength; // magic, size, commandSet, command, reserved
         return len;
     },
-    serializeMagic(buf: Uint8Array, pos: { pos: number }): void {
+    serializeMagic (buf: Uint8Array, pos: { pos: number }): void {
         buf.set(Magic.DOTNET_IPC_V1, pos.pos);
         advancePos(pos, Magic.DOTNET_IPC_V1.byteLength);
     },
-    serializeUint8(buf: Uint8Array, pos: { pos: number }, value: number): void {
+    serializeUint8 (buf: Uint8Array, pos: { pos: number }, value: number): void {
         buf[pos.pos++] = value;
     },
-    serializeUint16(buf: Uint8Array, pos: { pos: number }, value: number): void {
+    serializeUint16 (buf: Uint8Array, pos: { pos: number }, value: number): void {
         buf[pos.pos++] = value & 0xFF;
         buf[pos.pos++] = (value >> 8) & 0xFF;
     },
-    serializeUint32(buf: Uint8Array, pos: { pos: number }, value: number): void {
+    serializeUint32 (buf: Uint8Array, pos: { pos: number }, value: number): void {
         buf[pos.pos++] = value & 0xFF;
         buf[pos.pos++] = (value >> 8) & 0xFF;
         buf[pos.pos++] = (value >> 16) & 0xFF;
         buf[pos.pos++] = (value >> 24) & 0xFF;
     },
-    serializeUint64(buf: Uint8Array, pos: { pos: number }, value: [number, number]): void {
+    serializeUint64 (buf: Uint8Array, pos: { pos: number }, value: [number, number]): void {
         Serializer.serializeUint32(buf, pos, value[0]);
         Serializer.serializeUint32(buf, pos, value[1]);
     },
     serializeHeader,
-    serializePayload(buf: Uint8Array, pos: { pos: number }, payload: Uint8Array): void {
+    serializePayload (buf: Uint8Array, pos: { pos: number }, payload: Uint8Array): void {
         buf.set(payload, pos.pos);
         advancePos(pos, payload.byteLength);
     },
-    serializeString(buf: Uint8Array, pos: { pos: number }, s: string | null): void {
+    serializeString (buf: Uint8Array, pos: { pos: number }, s: string | null): void {
         if (s === null || s === undefined || s === "") {
             Serializer.serializeUint32(buf, pos, 0);
         } else {

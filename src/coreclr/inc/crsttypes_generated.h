@@ -172,7 +172,7 @@ int g_rgCrstLevelMap[] =
     0,          // CrstDelegateToFPtrHash
     18,         // CrstDomainLocalBlock
     0,          // CrstDynamicIL
-    3,          // CrstDynamicMT
+    10,         // CrstDynamicMT
     0,          // CrstEtwTypeLogHash
     20,         // CrstEventPipe
     0,          // CrstEventStore

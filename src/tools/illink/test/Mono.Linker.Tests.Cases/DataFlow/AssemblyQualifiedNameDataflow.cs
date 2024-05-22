@@ -58,10 +58,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			RequireNothing (type);
 		}
 
-		[ExpectedWarning ("IL2105",
-			"Type 'System.Invalid.TypeName' was not found in the caller assembly nor in the base library. " +
-			"Type name strings used for dynamically accessing a type should be assembly qualified.",
-			ProducedBy = Tool.Trimmer | Tool.NativeAot)]
+		[ExpectedWarning ("IL2105", "Type 'System.Invalid.TypeName' was not found in the caller assembly nor in the base library. " + "Type name strings used for dynamically accessing a type should be assembly qualified.", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/95118")]
 		static void TestUnqualifiedTypeNameWarns ()
 		{
 			RequirePublicConstructors ("System.Invalid.TypeName");

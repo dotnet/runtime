@@ -1018,7 +1018,7 @@ static void GetFuncEvalArgValue(DebuggerEval *pDE,
                         }
                         else
                         {
-                            *pArgument = NULL;
+                            *pArgument = (ARG_SLOT)NULL;
                         }
                     }
                 }
@@ -1051,7 +1051,7 @@ static void GetFuncEvalArgValue(DebuggerEval *pDE,
                     }
                     else
                     {
-                        *pArgument = NULL;
+                        *pArgument = (ARG_SLOT)NULL;
                     }
                 }
                 else
@@ -1069,7 +1069,7 @@ static void GetFuncEvalArgValue(DebuggerEval *pDE,
                     }
                     else
                     {
-                        *pArgument = NULL;
+                        *pArgument = (ARG_SLOT)NULL;
                     }
                 }
                 else
@@ -2806,7 +2806,7 @@ void PackArgumentArray(DebuggerEval *pDE,
 
 #ifdef FEATURE_HFA
         // The buffer for HFAs has to be always ENREGISTERED_RETURNTYPE_MAXSIZE
-        size = max(size, ENREGISTERED_RETURNTYPE_MAXSIZE);
+        size = max(size, (unsigned)ENREGISTERED_RETURNTYPE_MAXSIZE);
 #endif
 
         BYTE * pTemp = new (interopsafe) BYTE[ALIGN_UP(sizeof(ValueClassInfo), 8) + size];
@@ -2955,7 +2955,7 @@ void UnpackFuncEvalResult(DebuggerEval *pDE,
         IsElementTypeSpecial(retClassET))
     {
         LOG((LF_CORDB, LL_EVERYTHING, "Creating strong handle for boxed DoNormalFuncEval result.\n"));
-        OBJECTHANDLE oh = pDE->m_thread->GetDomain()->CreateStrongHandle(ArgSlotToObj(pDE->m_result[0]));
+        OBJECTHANDLE oh = AppDomain::GetCurrentDomain()->CreateStrongHandle(ArgSlotToObj(pDE->m_result[0]));
         pDE->m_result[0] = (INT64)(LONG_PTR)oh;
         pDE->m_vmObjectHandle = VMPTR_OBJECTHANDLE::MakePtr(oh);
     }
@@ -3139,7 +3139,7 @@ static void RecordFuncEvalException(DebuggerEval *pDE,
         pDE->m_result[0] = ObjToArgSlot(ppException);
 
         pDE->m_resultType = ppException->GetTypeHandle();
-        OBJECTHANDLE oh = pDE->m_thread->GetDomain()->CreateStrongHandle(ArgSlotToObj(pDE->m_result[0]));
+        OBJECTHANDLE oh = AppDomain::GetCurrentDomain()->CreateStrongHandle(ArgSlotToObj(pDE->m_result[0]));
         pDE->m_result[0] = (ARG_SLOT)(LONG_PTR)oh;
         pDE->m_vmObjectHandle = VMPTR_OBJECTHANDLE::MakePtr(oh);
 
@@ -3682,7 +3682,7 @@ void FuncEvalHijackRealWorker(DebuggerEval *pDE, Thread* pThread, FuncEvalFrame*
                 pDE->m_retValueBoxing = Debugger::AllBoxed;
 
                 // Make a strong handle for the result.
-                OBJECTHANDLE oh = pDE->m_thread->GetDomain()->CreateStrongHandle(newObj);
+                OBJECTHANDLE oh = AppDomain::GetCurrentDomain()->CreateStrongHandle(newObj);
                 pDE->m_result[0] = (ARG_SLOT)(LONG_PTR)oh;
                 pDE->m_vmObjectHandle = VMPTR_OBJECTHANDLE::MakePtr(oh);
 
@@ -3712,7 +3712,7 @@ void FuncEvalHijackRealWorker(DebuggerEval *pDE, Thread* pThread, FuncEvalFrame*
                 pDE->m_resultType = newObj->GetTypeHandle();
 
                 // Place the result in a strong handle to protect it from a collection.
-                OBJECTHANDLE oh = pDE->m_thread->GetDomain()->CreateStrongHandle(newObj);
+                OBJECTHANDLE oh = AppDomain::GetCurrentDomain()->CreateStrongHandle(newObj);
                 pDE->m_result[0] = (ARG_SLOT)(LONG_PTR)oh;
                 pDE->m_vmObjectHandle = VMPTR_OBJECTHANDLE::MakePtr(oh);
 
@@ -3758,7 +3758,7 @@ void FuncEvalHijackRealWorker(DebuggerEval *pDE, Thread* pThread, FuncEvalFrame*
                 pDE->m_resultType = newObj->GetTypeHandle();
 
                 // Place the result in a strong handle to protect it from a collection.
-                OBJECTHANDLE oh = pDE->m_thread->GetDomain()->CreateStrongHandle(newObj);
+                OBJECTHANDLE oh = AppDomain::GetCurrentDomain()->CreateStrongHandle(newObj);
                 pDE->m_result[0] = (ARG_SLOT)(LONG_PTR)oh;
                 pDE->m_vmObjectHandle = VMPTR_OBJECTHANDLE::MakePtr(oh);
 
@@ -3967,7 +3967,7 @@ void * STDCALL FuncEvalHijackWorker(DebuggerEval *pDE)
             //
             SENDIPCEVENT_BEGIN(g_pDebugger, pDE->m_thread);
 
-            if ((pDE->m_thread->GetDomain() != NULL) && pDE->m_thread->GetDomain()->IsDebuggerAttached())
+            if ((AppDomain::GetCurrentDomain() != NULL) && AppDomain::GetCurrentDomain()->IsDebuggerAttached())
             {
 
                 if (CORDebuggerAttached())

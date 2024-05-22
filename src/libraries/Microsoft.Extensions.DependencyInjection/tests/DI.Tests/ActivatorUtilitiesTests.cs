@@ -8,7 +8,7 @@ using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 using System.Runtime.CompilerServices;
 
-#if NETCOREAPP
+#if NET
 using System.Runtime.Loader;
 #endif
 
@@ -332,7 +332,7 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
 
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [InlineData(true)]
-#if NETCOREAPP
+#if NET
         [InlineData(false)]
 #endif
         public void CreateFactory_CreatesFactoryMethod_KeyedParams(bool useDynamicCode)
@@ -363,7 +363,7 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
 
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [InlineData(true)]
-#if NETCOREAPP
+#if NET
         [InlineData(false)]
 #endif
         public void CreateFactory_CreatesFactoryMethod_KeyedParams_5Types(bool useDynamicCode)
@@ -396,7 +396,7 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
 
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [InlineData(true)]
-#if NETCOREAPP
+#if NET
         [InlineData(false)]
 #endif
         public void CreateFactory_CreatesFactoryMethod_KeyedParams_1Injected(bool useDynamicCode)
@@ -426,7 +426,7 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
 
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [InlineData(true)]
-#if NETCOREAPP
+#if NET
         [InlineData(false)]
 #endif
         public void CreateFactory_RemoteExecutor_CreatesFactoryMethod(bool useDynamicCode)
@@ -460,7 +460,7 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
 
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [InlineData(true)]
-#if NETCOREAPP
+#if NET
         [InlineData(false)]
 #endif
         public void CreateFactory_RemoteExecutor_NullArguments_Throws(bool useDynamicCode)
@@ -483,7 +483,7 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
 
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [InlineData(true)]
-#if NETCOREAPP
+#if NET
         [InlineData(false)]
 #endif
         public void CreateFactory_RemoteExecutor_NoArguments_UseNullDefaultValue(bool useDynamicCode)
@@ -507,7 +507,7 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
 
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [InlineData(true)]
-#if NETCOREAPP
+#if NET
         [InlineData(false)]
 #endif
         public void CreateFactory_RemoteExecutor_NoArguments_ThrowRequiredValue(bool useDynamicCode)
@@ -531,7 +531,7 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
 
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [InlineData(true)]
-#if NETCOREAPP
+#if NET
         [InlineData(false)]
 #endif
         public void CreateFactory_RemoteExecutor_NullArgument_UseDefaultValue(bool useDynamicCode)
@@ -555,7 +555,7 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
 
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [InlineData(true)]
-#if NETCOREAPP
+#if NET
         [InlineData(false)]
 #endif
         public void CreateFactory_RemoteExecutor_NoParameters_Success(bool useDynamicCode)
@@ -577,7 +577,7 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             }, options);
         }
 
-#if NETCOREAPP
+#if NET
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34072", TestRuntimes.Mono)]
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [InlineData(true)]
@@ -1008,7 +1008,7 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
         }
     }
 
-#if NETCOREAPP
+#if NET
     internal class MyLoadContext : AssemblyLoadContext
     {
         private MyLoadContext() : base(isCollectible: true)

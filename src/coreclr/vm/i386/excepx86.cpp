@@ -1571,9 +1571,6 @@ EXCEPTION_HANDLER_IMPL(COMPlusFrameHandler)
 
     _ASSERTE((pContext == NULL) || ((pContext->ContextFlags & CONTEXT_CONTROL) == CONTEXT_CONTROL));
 
-    if (g_fNoExceptions)
-        return ExceptionContinueSearch; // No EH during EE shutdown.
-
     // Check if the exception represents a GCStress Marker. If it does,
     // we shouldnt record its entry in the TLS as such exceptions are
     // continuable and can confuse the VM to treat them as CSE,

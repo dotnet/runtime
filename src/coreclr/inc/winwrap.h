@@ -254,13 +254,4 @@ WszCreateProcess(
     LPPROCESS_INFORMATION lpProcessInformation
     );
 
-#ifdef HOST_WINDOWS
-
-//
-// Workaround for https://github.com/microsoft/WindowsAppSDK/issues/4074
-// Windows SDK is missing InterlockedCompareExchange8 definition.
-//
-#define InterlockedCompareExchange8 _InterlockedCompareExchange8
-
-#endif // HOST_WINDOWS
 #endif  // __WIN_WRAP_H__

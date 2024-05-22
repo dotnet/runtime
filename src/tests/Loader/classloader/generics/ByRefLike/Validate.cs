@@ -21,6 +21,7 @@ public class Validate
         Console.WriteLine($" -- Instantiate: {Exec.GenericValueType()}");
         Console.WriteLine($" -- Instantiate: {Exec.GenericByRefLike()}");
         Console.WriteLine($" -- Instantiate: {Exec.GenericByRefLike_ConstraintsAreIndependent_Int32_Int32()}");
+        Console.WriteLine($" -- Create: {Exec.CreateDefaultInstance()}");
 
         Assert.Throws<TypeLoadException>(() => { Exec.GenericClass_Invalid(); });
         Assert.Throws<TypeLoadException>(() => { Exec.GenericInterface_Invalid(); });

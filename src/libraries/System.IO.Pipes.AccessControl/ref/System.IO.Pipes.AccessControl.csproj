@@ -5,6 +5,7 @@
 
   <ItemGroup>
     <Compile Include="System.IO.Pipes.AccessControl.cs" />
+    <Compile Include="System.IO.Pipes.AccessControl.TypeForwards.cs" />
   </ItemGroup>
 
   <ItemGroup>

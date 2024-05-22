@@ -69,6 +69,7 @@ namespace BigFrames_skippage3
         }
 
         [Fact]
+        [OuterLoop]
         public static int TestEntryPoint()
         {
             Test1(); // force JIT of this

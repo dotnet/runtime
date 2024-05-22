@@ -20,7 +20,7 @@ namespace Internal.Runtime.TypeLoader
         /// <summary>
         /// Module handle is the TypeManager associated with this module.
         /// </summary>
-        public TypeManagerHandle Handle { get; private set; }
+        public TypeManagerHandle Handle { get; }
 
         /// <summary>
         /// Initialize module info and construct per-module metadata reader.
@@ -49,7 +49,7 @@ namespace Internal.Runtime.TypeLoader
         /// <summary>
         /// Module metadata reader for NativeFormat metadata
         /// </summary>
-        public MetadataReader MetadataReader { get; private set; }
+        public MetadataReader MetadataReader { get; }
 
         internal unsafe bool TryFindBlob(ReflectionMapBlob blobId, out byte* pBlob, out uint cbBlob)
         {

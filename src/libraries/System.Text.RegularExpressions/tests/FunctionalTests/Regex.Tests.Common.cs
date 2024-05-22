@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Linq;
@@ -123,6 +124,22 @@ namespace System.Text.RegularExpressions.Tests
                 new Regex(pattern, options.Value | OptionsFromEngine(engine), matchTimeout.Value);
         }
 
+        public static Regex[] GetRegexes(RegexEngine engine, params (string pattern, CultureInfo? culture, RegexOptions? options, TimeSpan? matchTimeout)[] regexes)
+        {
+            if (engine == RegexEngine.SourceGenerated)
+            {
+                // Source generated regex creation can complete asynchronously, which is why GetRegexesAsync is async.
+                // xunit theory member data in xunit v2 may only be synchronous, and Roslyn's APIs are only asynchronous.
+                // As such, they need to block to get the results. But if they block on xunit's limited synchronization
+                // scheduler, they could deadlock, so escape the context by queueing the work to a thread pool thread.
+                return Task.Run(() => GetRegexesAsync(engine, regexes)).GetAwaiter().GetResult();
+            }
+
+            Task<Regex[]> t = GetRegexesAsync(engine, regexes);
+            Debug.Assert(t.IsCompleted);
+            return t.GetAwaiter().GetResult();
+        }
+
         public static async Task<Regex[]> GetRegexesAsync(RegexEngine engine, params (string pattern, CultureInfo? culture, RegexOptions? options, TimeSpan? matchTimeout)[] regexes)
         {
             if (engine == RegexEngine.SourceGenerated)
@@ -170,7 +187,7 @@ namespace System.Text.RegularExpressions.Tests
         /// <summary>Set the AppContext variable REGEX_NONBACKTRACKING_MAX_AUTOMATA_SIZE to the given max value. Only used with Nonbacktracking engine.</summary>
         public static void SetSafeSizeThreshold(int maxSize)
         {
-#if NET7_0_OR_GREATER
+#if NET
             AppContext.SetData("REGEX_NONBACKTRACKING_MAX_AUTOMATA_SIZE", maxSize);
 #endif
         }
@@ -178,7 +195,7 @@ namespace System.Text.RegularExpressions.Tests
         /// <summary>Remove the AppContext variable REGEX_NONBACKTRACKING_MAX_AUTOMATA_SIZE value. Only used with Nonbacktracking engine.</summary>
         public static void RestoreSafeSizeThresholdToDefault()
         {
-#if NET7_0_OR_GREATER
+#if NET
             AppContext.SetData("REGEX_NONBACKTRACKING_MAX_AUTOMATA_SIZE", null);
 #endif
         }

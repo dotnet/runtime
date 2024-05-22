@@ -221,12 +221,8 @@ LEAF_END RhpCheckedAssignRef\EXPORT_REG_NAME, _TEXT
 // just one write barrier that assumes the input register is RSI.
 DEFINE_CHECKED_WRITE_BARRIER RSI, ESI
 
-// WARNING: Code in EHHelpers.cpp makes assumptions about write barrier code, in particular:
-// - Function "InWriteBarrierHelper" assumes an AV due to passed in null pointer will happen at RhpCheckedLockCmpXchgAVLocation
-// - Function "UnwindSimpleHelperToCaller" assumes the stack contains just the pushed return address
 LEAF_ENTRY RhpCheckedLockCmpXchg, _TEXT
     mov             rax, rdx
-ALTERNATE_ENTRY RhpCheckedLockCmpXchgAVLocation
     lock cmpxchg    [rdi], rsi
     jne             LOCAL_LABEL(RhpCheckedLockCmpXchg_NoBarrierRequired_RSI)
 
@@ -234,15 +230,11 @@ ALTERNATE_ENTRY RhpCheckedLockCmpXchgAVLocation
 
 LEAF_END RhpCheckedLockCmpXchg, _TEXT
 
-// WARNING: Code in EHHelpers.cpp makes assumptions about write barrier code, in particular:
-// - Function "InWriteBarrierHelper" assumes an AV due to passed in null pointer will happen at RhpCheckedXchgAVLocation
-// - Function "UnwindSimpleHelperToCaller" assumes the stack contains just the pushed return address
 LEAF_ENTRY RhpCheckedXchg, _TEXT
 
     // Setup rax with the new object for the exchange, that way it will automatically hold the correct result
     // afterwards and we can leave rdx unaltered ready for the GC write barrier below.
     mov             rax, rsi
-ALTERNATE_ENTRY RhpCheckedXchgAVLocation
     xchg            [rdi], rax
 
     DEFINE_CHECKED_WRITE_BARRIER_CORE RhpCheckedXchg, RSI

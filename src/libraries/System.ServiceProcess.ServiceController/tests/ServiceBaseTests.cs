@@ -70,7 +70,7 @@ namespace System.ServiceProcess.Tests
             }
         }
 
-#if NETCOREAPP
+#if NET
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsPrivilegedProcess))]
         [InlineData(-2)]
         [InlineData((long)int.MaxValue + 1)]

@@ -315,21 +315,6 @@ mono_thread_platform_create_thread (MonoThreadStart thread_fn, gpointer thread_d
 #endif
 }
 
-gboolean
-mono_thread_platform_external_eventloop_keepalive_check (void)
-{
-#if defined(HOST_BROWSER) && !defined(DISABLE_THREADS)
-	MONO_REQ_GC_SAFE_MODE;
-	/* if someone called emscripten_runtime_keepalive_push (), the
-	 * thread will stay alive in the JS event loop after returning
-	 * from the thread's main function.
-	 */
-	return emscripten_runtime_keepalive_check ();
-#else
-	return FALSE;
-#endif
-}
-
 void mono_threads_platform_init (void)
 {
 }
@@ -361,7 +346,6 @@ G_EXTERN_C
 extern void schedule_background_exec (void);
 
 // when this is called from ThreadPool, the cb would be System.Threading.ThreadPool.BackgroundJobHandler
-// when this is called from JSSynchronizationContext, the cb would be System.Runtime.InteropServices.JavaScript.JSSynchronizationContext.BackgroundJobHandler
 // when this is called from sgen it would be wrapper of sgen_perform_collection_inner
 // when this is called from gc, it would be mono_runtime_do_background_work
 #ifdef DISABLE_THREADS
@@ -369,77 +353,24 @@ void
 mono_main_thread_schedule_background_job (background_job_cb cb)
 {
 	g_assert (cb);
-	THREADS_DEBUG ("mono_main_thread_schedule_background_job2: thread %p queued job %p to current thread\n", (gpointer)pthread_self(), (gpointer) cb);
-	mono_current_thread_schedule_background_job (cb);
-}
-#endif /*DISABLE_THREADS*/
+	THREADS_DEBUG ("mono_main_thread_schedule_background_job: thread %p queued job %p to current thread\n", (gpointer)pthread_self(), (gpointer) cb);
 
-#ifndef DISABLE_THREADS
-MonoNativeTlsKey jobs_key;
-#else /* DISABLE_THREADS */
+	if (!jobs)
+		schedule_background_exec ();
+
+	if (!g_slist_find (jobs, (gconstpointer)cb))
+		jobs = g_slist_prepend (jobs, (gpointer)cb);
+}
+
 GSList *jobs;
-#endif /* DISABLE_THREADS */
-
-void
-mono_current_thread_schedule_background_job (background_job_cb cb)
-{
-	g_assert (cb);
-#ifdef DISABLE_THREADS
-
-	if (!jobs)
-		schedule_background_exec ();
-
-	if (!g_slist_find (jobs, (gconstpointer)cb))
-		jobs = g_slist_prepend (jobs, (gpointer)cb);
-
-#else /*DISABLE_THREADS*/
-
-	GSList *jobs = mono_native_tls_get_value (jobs_key);
-	THREADS_DEBUG ("mono_current_thread_schedule_background_job1: thread %p queuing job %p into %p\n", (gpointer)pthread_self(), (gpointer) cb, (gpointer) jobs);
-	if (!jobs)
-	{
-		THREADS_DEBUG ("mono_current_thread_schedule_background_job2: thread %p calling schedule_background_exec before job %p\n", (gpointer)pthread_self(), (gpointer) cb);
-		schedule_background_exec ();
-	}
-
-	if (!g_slist_find (jobs, (gconstpointer)cb))
-	{
-		jobs = g_slist_prepend (jobs, (gpointer)cb);
-		mono_native_tls_set_value (jobs_key, jobs);
-		THREADS_DEBUG ("mono_current_thread_schedule_background_job3: thread %p queued job %p\n", (gpointer)pthread_self(), (gpointer) cb);
-	}
-
-#endif /*DISABLE_THREADS*/
-}
-
-#ifndef DISABLE_THREADS
-void
-mono_target_thread_schedule_background_job (MonoNativeThreadId target_thread, background_job_cb cb)
-{
-	THREADS_DEBUG ("worker %p queued job %p to worker %p \n", (gpointer)pthread_self(), (gpointer) cb, (gpointer) target_thread);
-	// NOTE: here the cb is [UnmanagedCallersOnly] which wraps it with MONO_ENTER_GC_UNSAFE/MONO_EXIT_GC_UNSAFE
-	mono_threads_wasm_async_run_in_target_thread_vi ((pthread_t) target_thread, (void*)mono_current_thread_schedule_background_job, (gpointer)cb);
-}
-#endif /*DISABLE_THREADS*/
-
-G_EXTERN_C
-EMSCRIPTEN_KEEPALIVE void
-mono_background_exec (void);
 
 G_EXTERN_C
 EMSCRIPTEN_KEEPALIVE void
 mono_background_exec (void)
 {
 	MONO_ENTER_GC_UNSAFE;
-#ifdef DISABLE_THREADS
 	GSList *j = jobs, *cur;
 	jobs = NULL;
-#else /* DISABLE_THREADS */
-	THREADS_DEBUG ("mono_background_exec on thread %p started\n", (gpointer)pthread_self());
-	GSList *jobs = mono_native_tls_get_value (jobs_key);
-	GSList *j = jobs, *cur;
-	mono_native_tls_set_value (jobs_key, NULL);
-#endif /* DISABLE_THREADS */
 
 	for (cur = j; cur; cur = cur->next) {
 		background_job_cb cb = (background_job_cb)cur->data;
@@ -451,6 +382,17 @@ mono_background_exec (void)
 	g_slist_free (j);
 	MONO_EXIT_GC_UNSAFE;
 }
+
+#else /*DISABLE_THREADS*/
+
+extern void mono_wasm_schedule_synchronization_context ();
+
+void mono_target_thread_schedule_synchronization_context(MonoNativeThreadId target_thread)
+{
+	emscripten_dispatch_to_thread_async ((pthread_t) target_thread, EM_FUNC_SIG_V, mono_wasm_schedule_synchronization_context, NULL);
+}
+
+#endif /*DISABLE_THREADS*/
 
 gboolean
 mono_threads_platform_is_main_thread (void)
@@ -629,7 +571,6 @@ mono_wasm_register_ui_thread (void)
 	MONO_ENTER_GC_SAFE_UNBALANCED;
 }
 
-// TODO ideally we should not need to have UI thread registered as managed
 EMSCRIPTEN_KEEPALIVE void
 mono_wasm_register_io_thread (void)
 {
@@ -661,18 +602,33 @@ mono_threads_wasm_async_run_in_target_thread_vii (pthread_t target_thread, void 
 	emscripten_dispatch_to_thread_async (target_thread, EM_FUNC_SIG_VII, func, NULL, user_data1, user_data2);
 }
 
-static void mono_threads_wasm_sync_run_in_target_thread_vii_cb (MonoCoopSem *done, void (*func) (gpointer, gpointer), gpointer user_data1, gpointer user_data2)
+static void mono_threads_wasm_sync_run_in_target_thread_vii_cb (MonoCoopSem *done, void (*func) (gpointer, gpointer), gpointer user_data1, void* args)
 {
-	func (user_data1, user_data2);
-	mono_coop_sem_post (done);
+	// in UI thread we postpone the execution via safeSetTimeout so that emscripten_proxy_execute_queue is not blocked by this call
+	// see invoke_later_on_ui_thread
+	if (mono_threads_wasm_is_ui_thread()) {
+		MonoCoopSem **semPtrPtr = (MonoCoopSem **)(((char *) args) + 28/*JSMarshalerArgumentOffsets.SyncDoneSemaphorePtr*/);
+		*semPtrPtr = done;
+		func (user_data1, args);
+	}
+	else {
+		func (user_data1, args);
+		mono_coop_sem_post (done);
+	}
+}
+
+EMSCRIPTEN_KEEPALIVE void 
+mono_threads_wasm_sync_run_in_target_thread_done (MonoCoopSem *sem)
+{
+	mono_coop_sem_post (sem);
 }
 
 void
-mono_threads_wasm_sync_run_in_target_thread_vii (pthread_t target_thread, void (*func) (gpointer, gpointer), gpointer user_data1, gpointer user_data2)
+mono_threads_wasm_sync_run_in_target_thread_vii (pthread_t target_thread, void (*func) (gpointer, gpointer), gpointer user_data1, gpointer args)
 {
 	MonoCoopSem sem;
 	mono_coop_sem_init (&sem, 0);
-	emscripten_dispatch_to_thread_async (target_thread, EM_FUNC_SIG_VIIII, mono_threads_wasm_sync_run_in_target_thread_vii_cb, NULL, &sem, func, user_data1, user_data2);
+	emscripten_dispatch_to_thread_async (target_thread, EM_FUNC_SIG_VIIII, mono_threads_wasm_sync_run_in_target_thread_vii_cb, NULL, &sem, func, user_data1, args);
 
 	MONO_ENTER_GC_UNSAFE;
 	mono_coop_sem_wait (&sem, MONO_SEM_FLAGS_NONE);

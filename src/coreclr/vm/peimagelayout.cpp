@@ -416,7 +416,7 @@ void ConvertedImageLayout::FreeImageParts()
             CLRUnmapViewOfFile(PtrFromPart(imagePart));
         }
 
-        this->m_imageParts[i] = NULL;
+        this->m_imageParts[i] = 0;
     }
 }
 

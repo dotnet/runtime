@@ -245,7 +245,7 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public async void Ignore_BasePublicPropertyIgnored_ConflictWithDerivedPublicPropertyIgnored()
+        public async Task Ignore_BasePublicPropertyIgnored_ConflictWithDerivedPublicPropertyIgnored()
         {
             var obj = new ClassWithIgnoredPublicPropertyAndNewSlotPublicAndIgnoredToo();
 
