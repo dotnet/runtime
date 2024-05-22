@@ -389,7 +389,8 @@ namespace FpStruct
 struct FpStructInRegistersInfo
 {
     FpStruct::Flags flags;
-    uint32_t offsets[2]; // field offsets in bytes, [0] for 1st, [1] for 2nd
+    uint32_t offset1st;
+    uint32_t offset2nd;
 
     unsigned GetSize1st() const
     {

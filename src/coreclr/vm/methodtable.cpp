@@ -3018,6 +3018,7 @@ static void SetFpStructInRegistersInfoField(FpStructInRegistersInfo& info, int i
     bool isFloating, unsigned size, uint32_t offset)
 {
     assert(index < 2);
+    assert(!isFloating || size == sizeof(float) || size == sizeof(double));
 
     int sizeShift =
         (size == 1) ? 0 :
@@ -3034,7 +3035,7 @@ static void SetFpStructInRegistersInfoField(FpStructInRegistersInfo& info, int i
 
     int type = (isFloating << PosFloat1st) | (sizeShift << PosSizeShift1st);
     info.flags = FpStruct::Flags(info.flags | (type << (typeSize * index)));
-    info.offsets[index] = offset;
+    (index == 0 ? info.offset1st : info.offset2nd) = offset;
 }
 
 static bool HandleInlineArray(int elementTypeIndex, int nElements, FpStructInRegistersInfo& info, int& typeIndex DEBUG_ARG(const char* fieldNames[2]))
@@ -3059,7 +3060,7 @@ static bool HandleInlineArray(int elementTypeIndex, int nElements, FpStructInReg
         // duplicate the array element info
         static const int typeSize = FpStruct::PosFloat2nd - FpStruct::PosFloat1st;
         info.flags = FpStruct::Flags((info.flags << typeSize) | info.flags);
-        info.offsets[1] = info.offsets[0] + info.GetSize1st();
+        info.offset2nd = info.offset1st + info.GetSize1st();
         INDEBUG(fieldNames[1] = fieldNames[0];)
     }
     return true;
@@ -3194,13 +3195,21 @@ static FpStructInRegistersInfo GetRiscV64PassFpStructInRegistersInfoImpl(TypeHan
     {
         assert((info.flags & Float1st) != 0);
         assert((info.flags & (Float2nd | SizeShift2nd)) == 0);
-        assert(info.offsets[1] == 0);
+        assert(info.offset2nd == 0);
         info.flags = FpStruct::Flags(info.flags ^ (Float1st | OnlyOne)); // replace Float1st with OnlyOne
     }
     assert(nFields == 1+ !(info.flags & OnlyOne));
     int floatFlags = info.flags & (OnlyOne | BothFloat | Float1st | Float2nd);
     assert(floatFlags != 0);
     assert((floatFlags & (floatFlags - 1)) == 0); // there can be only one of the above flags
+    if (nFields == 2)
+    {
+        unsigned end1st = info.offset1st + info.GetSize1st();
+        unsigned end2nd = info.offset2nd + info.GetSize2nd();
+        assert(end1st <= info.offset2nd || end2nd <= info.offset1st); // fields must not overlap
+    }
+    assert(info.offset1st + info.GetSize1st() <= th.GetSize());
+    assert(info.offset2nd + info.GetSize2nd() <= th.GetSize());
 
 #ifdef _DEBUG
     LOG((LF_JIT, LL_EVERYTHING, "GetRiscV64PassFpStructInRegistersInfo: "
@@ -3208,12 +3217,12 @@ static FpStructInRegistersInfo GetRiscV64PassFpStructInRegistersInfoImpl(TypeHan
         name, info.flags, nFields));
     const char* type1st = (info.flags & (Float1st | OnlyOne | BothFloat)) ? "floating" : "integer";
     LOG((LF_JIT, LL_EVERYTHING, "\t1st field %s: %s, %u bytes at offset %u\n",
-        fieldNames[0], type1st, info.GetSize1st(), info.offsets[0]));
+        fieldNames[0], type1st, info.GetSize1st(), info.offset1st));
     if (nFields == 2)
     {
         const char* type2nd = (info.flags & (Float2nd | BothFloat)) ? "floating" : "integer";
         LOG((LF_JIT, LL_EVERYTHING, "\t2nd field %s: %s, %u bytes at offset %u\n",
-            fieldNames[1], type2nd, info.GetSize2nd(), info.offsets[1]));
+            fieldNames[1], type2nd, info.GetSize2nd(), info.offset2nd));
     }
 #endif
 

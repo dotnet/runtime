@@ -1289,14 +1289,9 @@ namespace Internal.JitInterface
     // passing information for such parameters.
     public struct FpStructInRegistersInfo
     {
-        [InlineArray(2)]
-        public struct Offsets
-        {
-            private uint _offset;
-        }
-
         public FpStruct flags;
-        public Offsets offsets; // field offsets in bytes, [0] for 1st, [1] for 2nd
+        public uint offset1st;
+        public uint offset2nd;
 
         public uint GetSize1st()
         {

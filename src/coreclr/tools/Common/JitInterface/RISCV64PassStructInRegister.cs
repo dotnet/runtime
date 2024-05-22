@@ -125,6 +125,7 @@ namespace Internal.JitInterface
             bool isFloating, uint size, uint offset)
         {
             Debug.Assert(index < 2);
+            Debug.Assert(!isFloating || size == sizeof(float) || size == sizeof(double));
 
             int sizeShift =
                 (size == 1) ? 0 :
@@ -140,7 +141,7 @@ namespace Internal.JitInterface
 
             int type = (Convert.ToInt32(isFloating) << (int)PosFloat1st) | (sizeShift << (int)PosSizeShift1st);
             info.flags |= (FpStruct)(type << (typeSize * index));
-            info.offsets[index] = offset;
+            (index == 0 ? ref info.offset1st : ref info.offset2nd) = offset;
         }
 
         private static bool HandleInlineArray(int elementTypeIndex, int nElements, ref FpStructInRegistersInfo info, ref int typeIndex)
@@ -165,7 +166,7 @@ namespace Internal.JitInterface
                 // duplicate the array element info
                 const int typeSize = (int)PosFloat2nd - (int)PosFloat1st;
                 info.flags = (FpStruct)((int)info.flags << typeSize) | info.flags;
-                info.offsets[1] = info.offsets[0] + info.GetSize1st();
+                info.offset2nd = info.offset1st + info.GetSize1st();
             }
             return true;
         }
@@ -202,7 +203,7 @@ namespace Internal.JitInterface
                     SetFpStructInRegistersInfoField(ref info, typeIndex++,
                         (category is TypeFlags.Single or TypeFlags.Double),
                         (uint)field.FieldType.GetElementSize().AsInt,
-                        (uint)field.Offset.AsInt);
+                        offset + (uint)field.Offset.AsInt);
                 }
                 else
                 {
@@ -244,13 +245,22 @@ namespace Internal.JitInterface
             {
                 Debug.Assert((info.flags & Float1st) != 0);
                 Debug.Assert((info.flags & (Float2nd | SizeShift2nd)) == 0);
-                Debug.Assert(info.offsets[1] == 0);
+                Debug.Assert(info.offset2nd == 0);
                 info.flags ^= (Float1st | OnlyOne); // replace Float1st with OnlyOne
             }
             Debug.Assert(nFields == 1 + Convert.ToInt32((info.flags & OnlyOne) == 0));
             FpStruct floatFlags = info.flags & (OnlyOne | BothFloat | Float1st | Float2nd);
             Debug.Assert(floatFlags != 0);
-            Debug.Assert(((uint)floatFlags & ((uint)floatFlags - 1)) == 0); // there can be only one of the above flags
+            Debug.Assert(((uint)floatFlags & ((uint)floatFlags - 1)) == 0,
+                "there can be only one of (OnlyOne | BothFloat | Float1st | Float2nd)");
+            if (nFields == 2)
+            {
+                uint end1st = info.offset1st + info.GetSize1st();
+                uint end2nd = info.offset2nd + info.GetSize2nd();
+                Debug.Assert(end1st <= info.offset2nd || end2nd <= info.offset1st, "fields must not overlap");
+            }
+            Debug.Assert(info.offset1st + info.GetSize1st() <= td.GetElementSize().AsInt);
+            Debug.Assert(info.offset2nd + info.GetSize2nd() <= td.GetElementSize().AsInt);
 
             return info;
         }

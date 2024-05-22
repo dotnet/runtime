@@ -6359,7 +6359,7 @@ void MethodContext::dmpGetRiscV64PassFpStructInRegistersInfo(DWORDLONG key, FpSt
         (value.flags & FpStruct::BothFloat) != 0,
         (value.flags & FpStruct::Float1st) != 0, value.GetSize1st(),
         (value.flags & FpStruct::Float2nd) != 0, value.GetSize2nd(),
-        value.offsets[0], value.offsets[1]);
+        value.offset1st, value.offset2nd);
 }
 
 FpStructInRegistersInfo MethodContext::repGetRiscV64PassFpStructInRegistersInfo(CORINFO_CLASS_HANDLE structHnd)
