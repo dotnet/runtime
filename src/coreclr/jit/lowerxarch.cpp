@@ -2991,7 +2991,7 @@ GenTree* Lowering::LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cm
 //
 GenTree* Lowering::LowerHWIntrinsicCndSel(GenTreeHWIntrinsic* node)
 {
-    assert(!comp->compIsaSupportedDebugOnly(InstructionSet_AVX512F_VL));
+    assert(!comp->IsAvx10OrIsaSupportedDebugOnly(InstructionSet_AVX512F_VL));
 
     var_types   simdType        = node->gtType;
     CorInfoType simdBaseJitType = node->GetSimdBaseJitType();
@@ -3115,7 +3115,7 @@ GenTree* Lowering::LowerHWIntrinsicCndSel(GenTreeHWIntrinsic* node)
 //
 GenTree* Lowering::LowerHWIntrinsicTernaryLogic(GenTreeHWIntrinsic* node)
 {
-    assert(comp->compIsaSupportedDebugOnly(InstructionSet_AVX512F_VL));
+    assert(comp->IsAvx10OrIsaSupportedDebugOnly(InstructionSet_AVX512F_VL));
 
     var_types   simdType        = node->gtType;
     CorInfoType simdBaseJitType = node->GetSimdBaseJitType();
@@ -9185,7 +9185,7 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
                 assert(childBaseType == TYP_DOUBLE);
             }
 
-            if (comp->compOpportunisticallyDependsOn(InstructionSet_AVX512F_VL) &&
+            if (comp->IsAvx10OrIsaSupportedOpportunistically(InstructionSet_AVX512F_VL) &&
                 parentNode->OperIsEmbBroadcastCompatible())
             {
                 GenTree* broadcastOperand = hwintrinsic->Op(1);

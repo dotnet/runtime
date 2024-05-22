@@ -56,6 +56,10 @@ static CORINFO_InstructionSet X64VersionOfIsa(CORINFO_InstructionSet isa)
             return InstructionSet_AVX512VBMI_X64;
         case InstructionSet_AVX512VBMI_VL:
             return InstructionSet_AVX512VBMI_VL_X64;
+        case InstructionSet_AVX10v1:
+            return InstructionSet_AVX10v1_X64;
+        case InstructionSet_AVX10v1_V512:
+            return InstructionSet_AVX10v1_V512_X64;
         case InstructionSet_AVXVNNI:
             return InstructionSet_AVXVNNI_X64;
         case InstructionSet_AES:
@@ -1971,7 +1975,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                     // generate better code. However, if it isn't then we need to fallback in the
                     // cases where multiplication isn't supported.
 
-                    if ((simdSize != 64) && !compOpportunisticallyDependsOn(InstructionSet_AVX512DQ_VL))
+                    if ((simdSize != 64) && !IsAvx10OrIsaSupportedOpportunistically(InstructionSet_AVX512DQ_VL))
                     {
                         // TODO-XARCH-CQ: We should support long/ulong multiplication
                         break;
@@ -2730,7 +2734,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
             if (varTypeIsLong(simdBaseType))
             {
-                if (simdSize != 64 && !compOpportunisticallyDependsOn(InstructionSet_AVX512DQ_VL))
+                if (simdSize != 64 && !IsAvx10OrIsaSupportedOpportunistically(InstructionSet_AVX512DQ_VL))
                 {
                     // TODO-XARCH-CQ: We should support long/ulong multiplication
                     break;
@@ -3007,6 +3011,73 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
                 retNode->AsHWIntrinsic()->SetMethodHandle(this, method R2RARG(*entryPoint));
                 break;
+            }
+
+            size_t elementSize  = genTypeSize(simdBaseType);
+            size_t elementCount = simdSize / elementSize;
+
+            if (simdSize == 32)
+            {
+                if (!compOpportunisticallyDependsOn(InstructionSet_AVX2))
+                {
+                    // While we could accelerate some functions on hardware with only AVX support
+                    // it's likely not worth it overall given that IsHardwareAccelerated reports false
+                    break;
+                }
+                else if ((varTypeIsByte(simdBaseType) &&
+                          !IsAvx10OrIsaSupportedOpportunistically(InstructionSet_AVX512VBMI_VL)) ||
+                         (varTypeIsShort(simdBaseType) && !IsAvx10OrIsaSupportedOpportunistically(InstructionSet_AVX512BW_VL)))
+                {
+                    bool crossLane = false;
+
+                    for (size_t index = 0; index < elementCount; index++)
+                    {
+                        uint64_t value = indices->GetIntegralVectorConstElement(index, simdBaseType);
+
+                        if (value >= elementCount)
+                        {
+                            continue;
+                        }
+
+                        if (index < (elementCount / 2))
+                        {
+                            if (value >= (elementCount / 2))
+                            {
+                                crossLane = true;
+                                break;
+                            }
+                        }
+                        else if (value < (elementCount / 2))
+                        {
+                            crossLane = true;
+                            break;
+                        }
+                    }
+
+                    if (crossLane)
+                    {
+                        // TODO-XARCH-CQ: We should emulate cross-lane shuffling for byte/sbyte and short/ushort
+                        break;
+                    }
+                }
+            }
+            else if (simdSize == 64)
+            {
+                if (varTypeIsByte(simdBaseType) && !compOpportunisticallyDependsOn(InstructionSet_AVX512VBMI))
+                {
+                    // TYP_BYTE, TYP_UBYTE need AVX512VBMI.
+                    break;
+                }
+            }
+            else
+            {
+                assert(simdSize == 16);
+
+                if (varTypeIsSmall(simdBaseType) && !compOpportunisticallyDependsOn(InstructionSet_SSSE3))
+                {
+                    // TYP_BYTE, TYP_UBYTE, TYP_SHORT, and TYP_USHORT need SSSE3 to be able to shuffle any operation
+                    break;
+                }
             }
 
             if (sig->numArgs == 2)

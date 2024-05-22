@@ -314,7 +314,7 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
             // Check if we are going from ulong->double->float
             if ((innerSrcType == TYP_ULONG) && (innerDstType == TYP_DOUBLE) && (dstType == TYP_FLOAT))
             {
-                if (compOpportunisticallyDependsOn(InstructionSet_AVX512F))
+                if (IsAvx10OrIsaSupportedOpportunistically(InstructionSet_AVX512F))
                 {
                     // One optimized (combined) cast here
                     tree = gtNewCastNode(TYP_FLOAT, innerOper, true, TYP_FLOAT);
@@ -341,7 +341,7 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
             // For pre-SSE41, the all src is converted to TYP_DOUBLE
             // and goes through helpers.
             && (tree->gtOverflow() || (dstType == TYP_LONG) ||
-                !(compOpportunisticallyDependsOn(InstructionSet_AVX512F) ||
+                !(IsAvx10OrIsaSupportedOpportunistically(InstructionSet_AVX512F) ||
                   (dstType == TYP_INT && compOpportunisticallyDependsOn(InstructionSet_SSE41))))
 #elif defined(TARGET_ARM)
             // Arm: src = float, dst = int64/uint64 or overflow conversion.
@@ -381,8 +381,7 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
                 //     float  -> int for SSE41
                 //     double -> int/uint/long for SSE41
                 // For all other conversions, we use helper functions.
-                if (compOpportunisticallyDependsOn(InstructionSet_AVX512F) ||
-                    compOpportunisticallyDependsOn(InstructionSet_AVX10v1) ||
+                if (IsAvx10OrIsaSupportedOpportunistically(InstructionSet_AVX512F) ||
                     ((dstType != TYP_ULONG) && compOpportunisticallyDependsOn(InstructionSet_SSE41)))
                 {
                     if (tree->CastOp() != oper)
@@ -502,7 +501,7 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
     {
         srcType = varTypeToUnsigned(srcType);
 
-        if (srcType == TYP_ULONG && !compOpportunisticallyDependsOn(InstructionSet_AVX512F))
+        if (srcType == TYP_ULONG && !IsAvx10OrIsaSupportedOpportunistically(InstructionSet_AVX512F))
         {
             if (dstType == TYP_FLOAT)
             {
