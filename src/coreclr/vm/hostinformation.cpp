@@ -73,7 +73,7 @@ SimpleNameToFileNameMap* HostInformation::GetHostAssemblyNames()
 
     char** assemblies;
     uint32_t assemblyCount = 0;
-    assemblies = s_hostContract->get_assemblies(assemblyCount, s_hostContract->context);
+    assemblies = s_hostContract->get_assemblies(&assemblyCount, s_hostContract->context);
 
     if (assemblies == nullptr)
         return m_simpleFileNameMap;

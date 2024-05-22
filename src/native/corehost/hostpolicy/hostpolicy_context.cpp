@@ -135,14 +135,14 @@ namespace
     }
 
     char** HOST_CONTRACT_CALLTYPE get_runtime_framework_assemblies(
-        uint32_t& assembly_count,
+        uint32_t* assembly_count,
         void* contract_context)
     {
         hostpolicy_context_t* context = static_cast<hostpolicy_context_t*>(contract_context);
 
         char** assemblies;
-        assembly_count = static_cast<uint32_t>(context->host_assemblies->size());
-        assemblies = new char*[assembly_count];
+        *assembly_count = static_cast<uint32_t>(context->host_assemblies->size());
+        assemblies = new char*[*assembly_count];
 
         int32_t item_count = 0;
         for (auto item = context->host_assemblies->begin(); item != context->host_assemblies->end(); ++item)

@@ -232,11 +232,11 @@ static void log_error_info(const char* line)
 }
 
 char** HOST_CONTRACT_CALLTYPE get_assemblies(
-    uint32_t& assembly_count,
+    uint32_t* assembly_count,
     void* contract_context)
 {
     configuration* config = static_cast<configuration *>(contract_context);
-    assembly_count = config->host_assembly_count;
+    *assembly_count = config->host_assembly_count;
     return config->host_assemblies;
 }
 

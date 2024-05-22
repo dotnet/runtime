@@ -54,7 +54,7 @@ struct host_runtime_contract
 
     // Gets the list of assemblies (name plus extension) identified by the host.
     char** (HOST_CONTRACT_CALLTYPE* get_assemblies)(
-        /*out*/ uint32_t& assembly_count,
+        /*out*/ uint32_t* assembly_count,
         void* contract_context);
     
     void (HOST_CONTRACT_CALLTYPE* destroy_assemblies)(
