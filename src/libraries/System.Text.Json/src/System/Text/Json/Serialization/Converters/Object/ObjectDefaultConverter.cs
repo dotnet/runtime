@@ -401,7 +401,7 @@ namespace System.Text.Json.Serialization.Converters
                         state.Current.EndProperty();
                         state.Current.EnumeratorIndex++;
 
-                        if (ShouldFlush(writer, ref state))
+                        if (ShouldFlush(ref state))
                         {
                             return false;
                         }
@@ -430,7 +430,7 @@ namespace System.Text.Json.Serialization.Converters
                         state.Current.EndProperty();
                         state.Current.EnumeratorIndex++;
 
-                        if (ShouldFlush(writer, ref state))
+                        if (ShouldFlush(ref state))
                         {
                             return false;
                         }

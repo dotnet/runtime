@@ -214,8 +214,6 @@ namespace System.Text.Json
             Debug.Assert(_rentedBuffer.Length - _index >= sizeHint);
         }
 
-        public override void CancelPendingFlush() => throw new NotImplementedException();
-        public override void Complete(Exception? exception = null) => throw new NotImplementedException();
         public override async ValueTask<FlushResult> FlushAsync(CancellationToken cancellationToken = default)
         {
             Debug.Assert(_stream is not null);
@@ -232,6 +230,11 @@ namespace System.Text.Json
 
         public override bool CanGetUnflushedBytes => true;
         public override long UnflushedBytes => _index;
+
+        // This type is used internally in JsonSerializer to help buffer and flush bytes to the underlying Stream.
+        // It's only pretending to be a PipeWriter and doesn't need Complete or CancelPendingFlush for the internal usage.
+        public override void CancelPendingFlush() => throw new NotImplementedException();
+        public override void Complete(Exception? exception = null) => throw new NotImplementedException();
     }
 
     internal static partial class ThrowHelper

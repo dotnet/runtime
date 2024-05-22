@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.IO.Pipelines;
 using System.Reflection;
 using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
@@ -908,6 +909,12 @@ namespace System.Text.Json
         public static void ThrowOperationCanceledException_PipeWriteCompleted()
         {
             throw new OperationCanceledException(SR.PipeWriterCompleted);
+        }
+
+        [DoesNotReturn]
+        public static void ThrowInvalidOperationException_PipeWriterDoesNotImplementUnflushedBytes(PipeWriter pipeWriter)
+        {
+            throw new InvalidOperationException(SR.Format(SR.PipeWriter_DoesNotImplementUnflushedBytes, pipeWriter.GetType().Name));
         }
     }
 }

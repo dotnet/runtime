@@ -89,7 +89,19 @@ namespace System.Text.Json
         /// </summary>
         public int FlushThreshold;
 
-        public PipeWriter? PipeWriter;
+        private PipeWriter? _pipeWriter;
+        public PipeWriter? PipeWriter
+        {
+            get => _pipeWriter;
+            set
+            {
+                _pipeWriter = value;
+                if (value is not null && !value.CanGetUnflushedBytes)
+                {
+                    ThrowHelper.ThrowInvalidOperationException_PipeWriterDoesNotImplementUnflushedBytes(value);
+                }
+            }
+        }
 
         /// <summary>
         /// Indicates that the state still contains suspended frames waiting re-entry.

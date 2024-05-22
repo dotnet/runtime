@@ -344,6 +344,26 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
+        public async Task ThrowForPipeWriterWithoutUnflushedBytesImplemented()
+        {
+            var pipeWriter = new BadPipeWriter();
+            var exception = await Assert.ThrowsAnyAsync<InvalidOperationException>(() => JsonSerializer.SerializeAsync(pipeWriter, 0));
+            Assert.Equal("The PipeWriter 'BadPipeWriter' does not implement PipeWriter.UnflushedBytes.", exception.Message);
+        }
+
+        class BadPipeWriter : PipeWriter
+        {
+            public override void Advance(int bytes) => throw new NotImplementedException();
+            public override void CancelPendingFlush() => throw new NotImplementedException();
+            public override void Complete(Exception? exception = null) => throw new NotImplementedException();
+            public override ValueTask<FlushResult> FlushAsync(CancellationToken cancellationToken = default) => throw new NotImplementedException();
+            public override Memory<byte> GetMemory(int sizeHint = 0) => throw new NotImplementedException();
+            public override Span<byte> GetSpan(int sizeHint = 0) => throw new NotImplementedException();
+            public override bool CanGetUnflushedBytes => false;
+            public override long UnflushedBytes => throw new NotImplementedException();
+        }
+
+        [Fact]
         public async Task NestedSerializeAsyncCallsFlushAtThreshold()
         {
             string data = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
