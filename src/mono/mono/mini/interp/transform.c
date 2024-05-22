@@ -2252,7 +2252,38 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 #endif
 		} else if (!strcmp (tm, "InitBlockUnaligned") || !strcmp (tm, "InitBlock")) {
 			*op = MINT_INITBLK;
+		} else if (!strcmp (tm, "IsNullRef")) {
+			*op = MINT_CEQ0_I4;
+		} else if (!strcmp (tm, "NullRef")) {
+			*op = MINT_LDC_I4_0;
 		}
+		/*
+		} else if (!strcmp (tm, "Add")) {
+			MonoGenericContext *ctx = mono_method_get_context (target_method);
+			g_assert (ctx);
+			g_assert (ctx->method_inst);
+			g_assert (ctx->method_inst->type_argc == 1);
+
+			// (ldarg 1) = (ldarg 1) mul (sizeof !!T)
+			MonoType *t = ctx->method_inst->type_argv [0];
+			int align;
+			int esize = mono_type_size (t, &align);
+			interp_add_ins (td, MINT_MUL_I4_IMM);
+			interp_ins_set_sreg (td->last_ins, td->sp [1].var);
+			push_simple_type (td, STACK_TYPE_I4);
+			interp_ins_set_dreg (td->last_ins, td->sp [1].var);
+			td->ip += 4;
+
+			// (ldarg 0) add (ldarg 1)
+			interp_add_ins (td, MINT_ADD_I4);
+			push_simple_type (td, STACK_TYPE_I4);
+			interp_ins_set_sregs2 (td->last_ins, td->sp [0].var, td->sp [1].var);
+			interp_ins_set_dreg (td->last_ins, td->sp [-1].var);
+
+			return TRUE;
+		}
+		*/
+		// FIXME: ReadUnaligned
 	} else if (in_corlib && !strcmp (klass_name_space, "System.Runtime.CompilerServices") && !strcmp (klass_name, "RuntimeHelpers")) {
 		if (!strcmp (tm, "get_OffsetToStringData")) {
 			g_assert (csignature->param_count == 0);
