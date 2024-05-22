@@ -1561,7 +1561,24 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
         }
         else if (HWIntrinsicInfo::IsMaskedOperation(intrin.id))
         {
-            regMaskTP predMask = HWIntrinsicInfo::IsLowMaskedOperation(intrin.id) ? RBM_LOWMASK : RBM_ALLMASK;
+            regMaskTP predMask;
+            if (intrin.id == NI_Sve_ConditionalSelect)
+            {
+                // If this is conditional select, make sure to check the embedded
+                // operation to determine the predicate mask.
+                assert(intrinsicTree->GetOperandCount() == 3);
+                GenTreeHWIntrinsic* embOp2Node = intrin.op2->AsHWIntrinsic();
+                const HWIntrinsic   intrinEmb(embOp2Node);
+                if (HWIntrinsicInfo::IsLowMaskedOperation(intrinEmb.id))
+                {
+                    predMask  = RBM_LOWMASK;
+                }
+            }
+            else
+            {
+                predMask = HWIntrinsicInfo::IsLowMaskedOperation(intrin.id) ? RBM_LOWMASK : RBM_ALLMASK;
+            }
+
             srcCount += BuildOperandUses(intrin.op1, predMask);
         }
         else if (intrinsicTree->OperIsMemoryLoadOrStore())
