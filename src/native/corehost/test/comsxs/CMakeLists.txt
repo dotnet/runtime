@@ -5,7 +5,7 @@ add_executable(comsxs
     comsxs.cpp
     App.manifest)
 
-add_sanitizer_runtime_support(test_fx_ver)
+add_sanitizer_runtime_support(comsxs)
 
 target_link_libraries(comsxs PRIVATE hostmisc ole32 oleaut32 shell32 advapi32)
 
