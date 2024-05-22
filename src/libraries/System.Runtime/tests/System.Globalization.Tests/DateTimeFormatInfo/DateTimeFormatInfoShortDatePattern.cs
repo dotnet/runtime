@@ -8,7 +8,7 @@ namespace System.Globalization.Tests
 {
     public class DateTimeFormatInfoShortDatePattern
     {
-        public static IEnumerable<object[]> ShortDatePattern_Get_TestData()
+        public static IEnumerable<object[]> ShortDatePattern_Get_TestData_ICU()
         {
             yield return new object[] { new CultureInfo("en-US").DateTimeFormat, "M/d/yyyy", "en-US" };
             yield return new object[] { new CultureInfo("fr-FR").DateTimeFormat, "dd/MM/yyyy", "fr-FR" };
@@ -206,8 +206,8 @@ namespace System.Globalization.Tests
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsIcuGlobalization))]
-        [MemberData(nameof(ShortDatePattern_Get_TestData))]
-        public void ShortDatePattern_Get_ReturnsExpected(DateTimeFormatInfo format, string expected, string cultureName)
+        [MemberData(nameof(ShortDatePattern_Get_TestData_ICU))]
+        public void ShortDatePattern_Get_ReturnsExpected_ICU(DateTimeFormatInfo format, string expected, string cultureName)
         {
             var result = format.ShortDatePattern;
             Assert.True(expected == result, $"Failed for culture: {cultureName}. Expected: {expected}, Actual: {result}");
