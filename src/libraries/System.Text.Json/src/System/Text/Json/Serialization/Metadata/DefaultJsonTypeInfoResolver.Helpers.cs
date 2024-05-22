@@ -511,7 +511,7 @@ namespace System.Text.Json.Serialization.Metadata
         [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
         private static NullabilityState DetermineParameterNullability(ParameterInfo parameterInfo, NullabilityInfoContext nullabilityCtx)
         {
-#if NETCOREAPP && !NET9_0_OR_GREATER
+#if NET && !NET9_0_OR_GREATER
             // Workaround for https://github.com/dotnet/runtime/issues/92487
             // The fix has been incorporated into .NET 9 and later (and the polyfilled implementations in netfx).
             if (parameterInfo.GetGenericParameterDefinition() is { ParameterType: { IsGenericParameter: true } typeParam })
@@ -528,7 +528,7 @@ namespace System.Text.Json.Serialization.Metadata
                     return TranslateByte(flag);
                 }
 
-                // Step 3. Look for nullable annotations on the generic method declaration.
+                // Step 3. Look for nullable annotations on the generic type declaration.
                 if (GetNullableContextFlag(typeParam.DeclaringType!) is byte flag2)
                 {
                     return TranslateByte(flag2);
@@ -574,12 +574,6 @@ namespace System.Text.Json.Serialization.Metadata
                     };
             }
 #endif
-
-            //if (parameterInfo.ParameterType.IsValueType)
-            //{
-            //    return false;
-            //}
-
             NullabilityInfo nullability = nullabilityCtx.Create(parameterInfo);
             return nullability.WriteState;
         }
