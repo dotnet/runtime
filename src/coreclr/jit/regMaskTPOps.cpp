@@ -3,7 +3,6 @@
 
 #include "target.h"
 
-#ifdef TARGET_ARM64
 struct regMaskTP;
 
 void regMaskTP::RemoveRegNumFromMask(regNumber reg)
@@ -15,4 +14,4 @@ bool regMaskTP::IsRegNumInMask(regNumber reg)
 {
     return (low & genRegMask(reg)) != 0;
 }
-#endif // TARGET_ARM64
+

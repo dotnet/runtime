@@ -3147,10 +3147,14 @@ RefPosition* LinearScan::BuildDef(GenTree* tree, SingleTypeRegSet dstCandidates,
 //    Adds the RefInfo for the definitions to the defList.
 //
 void LinearScan::BuildCallDefs(GenTree* tree, int dstCount, regMaskTP dstCandidates)
+{
     const ReturnTypeDesc* retTypeDesc = tree->AsCall()->GetReturnTypeDesc();
     assert(retTypeDesc != nullptr);
     if (retTypeDesc == nullptr)
-{
+    {
+        return;
+    }
+
     assert(dstCount > 0);
     assert((int)genCountBits(dstCandidates) == dstCount);
     assert(tree->IsMultiRegCall());
@@ -3242,7 +3246,33 @@ void LinearScan::BuildKills(GenTree* tree, regMaskTP killMask)
     }
 }
 
-#ifndef TARGET_ARMARCH
+#if defined(TARGET_ARMARCH) || defined(TARGET_RISCV64)
+
+//------------------------------------------------------------------------
+// BuildDefWithKills: Build one RefTypeDef RefPositions for the given node,
+//           as well as kills as specified by the given mask.
+//
+// Arguments:
+//    tree          - The call node that defines a register
+//    dstCandidates - The candidate registers for the definition
+//    killMask      - The mask of registers killed by this node
+//
+// Notes:
+//    Adds the RefInfo for the definitions to the defList.
+//    The def and kill functionality is folded into a single method so that the
+//    save and restores of upper vector registers can be bracketed around the def.
+//
+void LinearScan::BuildDefWithKills(GenTree* tree, SingleTypeRegSet dstCandidates, regMaskTP killMask)
+{
+    assert(!tree->AsCall()->HasMultiRegRetVal());
+    assert((int)genCountBits(dstCandidates) == 1);
+
+    // Build the kill RefPositions
+    BuildKills(tree, killMask);
+    BuildDef(tree, dstCandidates);
+}
+
+#else
 //------------------------------------------------------------------------
 // BuildDefWithKills: Build one or two (for 32-bit) RefTypeDef RefPositions for the given node,
 //           as well as kills as specified by the given mask.
@@ -3257,7 +3287,7 @@ void LinearScan::BuildKills(GenTree* tree, regMaskTP killMask)
 //    The def and kill functionality is folded into a single method so that the
 //    save and restores of upper vector registers can be bracketed around the def.
 //
-void LinearScan::BuildDefWithKills(GenTree* tree, int dstCount, regMaskTP dstCandidates, regMaskTP killMask)
+void LinearScan::BuildDefWithKills(GenTree* tree, int dstCount, SingleTypeRegSet dstCandidates, regMaskTP killMask)
 {
     // Build the kill RefPositions
     BuildKills(tree, killMask);
@@ -3278,33 +3308,7 @@ void LinearScan::BuildDefWithKills(GenTree* tree, int dstCount, regMaskTP dstCan
     }
 #endif // TARGET_64BIT
 }
-#endif
-
-//------------------------------------------------------------------------
-// BuildCallDefsWithKills: Build one or more RefTypeDef RefPositions for the given node,
-//           as well as kills as specified by the given mask.
-//
-// Arguments:
-//    tree          - The node that defines a register
-//    dstCount      - The number of registers defined by the node
-//    dstCandidates - The candidate registers for the definition
-//    killMask      - The mask of registers killed by this node
-//
-// Notes:
-//    Adds the RefInfo for the definitions to the defList.
-//    The def and kill functionality is folded into a single method so that the
-//    save and restores of upper vector registers can be bracketed around the def.
-//
-void LinearScan::BuildCallDefsWithKills(GenTree* tree, int dstCount, regMaskTP dstCandidates, regMaskTP killMask)
-{
-    assert(dstCount > 0);
-    assert(dstCandidates != RBM_NONE);
-
-    // Build the kill RefPositions
-    BuildKills(tree, killMask);
-
-    // And then the Def(s)
-    BuildCallDefs(tree, dstCount, dstCandidates);
+#endif // defined(TARGET_ARMARCH) || defined(TARGET_RISCV64)
 
 //------------------------------------------------------------------------
 // BuildCallDefsWithKills: Build one or more RefTypeDef RefPositions for the given node,
@@ -3377,11 +3381,11 @@ void LinearScan::UpdatePreferencesOfDyingLocal(Interval* interval)
         {
             // This local's value is going to be available in this register so
             // keep it in the preferences.
-            unpref &= ~genRegMask(placedArgLocals[i].Reg);
+            unpref.RemoveRegNumFromMask(placedArgLocals[i].Reg);
         }
     }
 
-    if (unpref != RBM_NONE)
+    if (unpref.IsNonEmpty())
     {
 #ifdef DEBUG
         if (VERBOSE)

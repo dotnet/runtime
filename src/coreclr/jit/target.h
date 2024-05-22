@@ -224,15 +224,15 @@ typedef unsigned regMaskSmall;
 #define REG_MASK_INT_FMT "%08X"
 #define REG_MASK_ALL_FMT "%08X"
 #else
-typedef unsigned __int64 regMaskSmall;
+typedef uint64_t regMaskSmall;
 #define REG_MASK_INT_FMT "%04llX"
 #define REG_MASK_ALL_FMT "%016llX"
 #endif
 
 typedef regMaskSmall SingleTypeRegSet;
-
-#define REG_MASK_INT_FMT "%04llX"
-#define REG_MASK_ALL_FMT "%016llX"
+//
+//#define REG_MASK_INT_FMT "%04llX"
+//#define REG_MASK_ALL_FMT "%016llX"
 #endif
 
 struct regMaskTP
@@ -244,10 +244,6 @@ public:
     constexpr regMaskTP(uint64_t lowRegMask, uint64_t highRegMask)
         : low(lowRegMask)
         , high(highRegMask)
-    {
-    }
-        : low(regMask)
-        , high(RBM_NONE)
     {
     }
 
@@ -362,7 +358,7 @@ static bool operator!=(regMaskTP first, regMaskTP second)
 #ifdef TARGET_ARM
 static regMaskTP operator-(regMaskTP first, regMaskTP second)
 {
-    regMaskTP result(~first.getLow(), ~first.getHigh());
+    regMaskTP result(first.getLow() - first.getHigh());
     return result;
 }
 
@@ -380,7 +376,7 @@ static regMaskTP& operator<<=(regMaskTP& first, const int b)
 
 static regMaskTP operator~(regMaskTP first)
 {
-    regMaskTP result(~first.getLow());
+    regMaskTP result(~first.getLow(), ~first.getHigh());
     return result;
 }
 
@@ -617,7 +613,7 @@ inline regNumber theFixedRetBuffReg(CorInfoCallConvExtension callConv)
 // theFixedRetBuffMask:
 //     Returns the regNumber to use for the fixed return buffer
 //
-inline regMaskTP theFixedRetBuffMask(CorInfoCallConvExtension callConv)
+inline SingleTypeRegSet theFixedRetBuffMask(CorInfoCallConvExtension callConv)
 {
     assert(hasFixedRetBuffReg(callConv)); // This predicate should be checked before calling this method
 #if defined(TARGET_ARM64)
@@ -652,9 +648,9 @@ inline unsigned theFixedRetBuffArgNum(CorInfoCallConvExtension callConv)
 //     Returns the full mask of all possible integer registers
 //     Note this includes the fixed return buffer register on Arm64
 //
-inline regMaskTP fullIntArgRegMask(CorInfoCallConvExtension callConv)
+inline SingleTypeRegSet fullIntArgRegMask(CorInfoCallConvExtension callConv)
 {
-    regMaskTP result = RBM_ARG_REGS;
+    SingleTypeRegSet result = RBM_ARG_REGS;
     if (hasFixedRetBuffReg(callConv))
     {
         result |= theFixedRetBuffMask(callConv);
@@ -813,10 +809,10 @@ inline SingleTypeRegSet genRegMaskFloat(regNumber reg ARM_ARG(var_types type /* 
 //    For registers that are used in pairs, the caller will be handling
 //    each member of the pair separately.
 //
-inline regMaskTP genRegMask(regNumber regNum, var_types type)
+inline SingleTypeRegSet genRegMask(regNumber regNum, var_types type)
 {
 #if defined(TARGET_ARM)
-    regMaskTP regMask = RBM_NONE;
+    SingleTypeRegSet regMask = RBM_NONE;
 
     if (varTypeUsesIntReg(type))
     {
