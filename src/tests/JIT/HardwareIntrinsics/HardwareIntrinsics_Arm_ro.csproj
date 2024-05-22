@@ -11,7 +11,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <MergedWrapperProjectReference Include="$(MSBuildThisFileDirectory)Arm/**/Sve*_ro.csproj" />
+    <MergedWrapperProjectReference Include="$(MSBuildThisFileDirectory)Arm/**/*_ro.csproj" />
   </ItemGroup>
 
   <Import Project="$(TestSourceDir)MergedTestRunner.targets" />
