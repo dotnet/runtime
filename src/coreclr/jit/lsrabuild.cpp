@@ -708,11 +708,7 @@ void LinearScan::addKillForRegs(regMaskTP mask, LsraLocation currentLoc)
     // modified until codegen, which is too late.
     compiler->codeGen->regSet.rsSetRegsModified(mask DEBUGARG(true));
 
-#ifdef TARGET_ARM64
     RefPosition* pos = newRefPosition((Interval*)nullptr, currentLoc, RefTypeKill, nullptr, mask.getLow());
-#else
-    RefPosition* pos = newRefPosition((Interval*)nullptr, currentLoc, RefTypeKill, nullptr, mask);
-#endif
 
     *killTail = pos;
     killTail  = &pos->nextRefPosition;
@@ -1152,11 +1148,7 @@ bool LinearScan::buildKillPositionsForNode(GenTree* tree, LsraLocation currentLo
                     }
                 Interval*  interval   = getIntervalForLocalVar(varIndex);
                 const bool isCallKill = ((killMask == RBM_INT_CALLEE_TRASH) || (killMask == RBM_CALLEE_TRASH));
-#ifdef TARGET_ARM64
                 SingleTypeRegSet regsKillMask = killMask.GetRegSetForType(interval->registerType);
-#else
-                SingleTypeRegSet regsKillMask = killMask;
-#endif
 
                 if (isCallKill)
                 {
@@ -3173,14 +3165,8 @@ void LinearScan::BuildCallDefs(GenTree* tree, int dstCount, regMaskTP dstCandida
         regNumber thisReg =
             tree->AsCall()->GetReturnTypeDesc()->GetABIReturnReg(i, tree->AsCall()->GetUnmanagedCallConv());
 
-#ifdef TARGET_ARM64
         assert(dstCandidates.IsRegNumInMask(thisReg));
         dstCandidates.RemoveRegNumFromMask(thisReg);
-#else
-        assert((dstCandidates & genRegMask(thisReg)) != RBM_NONE);
-        dstCandidates &= ~genRegMask(thisReg);
-#endif // TARGET_ARM64
-
         BuildDef(tree, genRegMask(thisReg), i);
     }
 }
@@ -3407,11 +3393,7 @@ void LinearScan::UpdatePreferencesOfDyingLocal(Interval* interval)
         }
 #endif
 
-#ifdef TARGET_ARM64
         SingleTypeRegSet unprefSet = unpref.GetRegSetForType(interval->registerType);
-#else
-        SingleTypeRegSet unprefSet = unpref;
-#endif
         interval->registerAversion |= unprefSet;
         SingleTypeRegSet newPreferences = allRegs(interval->registerType) & ~unprefSet;
         interval->updateRegisterPreferences(newPreferences);

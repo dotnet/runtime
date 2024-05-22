@@ -1253,11 +1253,7 @@ private:
             result &= (m_AvailableRegs >> 1);
         }
 #endif // TARGET_ARM
-#ifdef TARGET_ARM64
         return result.GetRegSetForType(regType);
-#else
-        return result;
-#endif
     }
 
 #ifdef DEBUG

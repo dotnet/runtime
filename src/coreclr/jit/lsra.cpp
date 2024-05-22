@@ -304,11 +304,7 @@ SingleTypeRegSet LinearScan::getMatchingConstants(SingleTypeRegSet mask,
                                                   RefPosition*     refPosition)
 {
     assert(currentInterval->isConstant && RefTypeIsDef(refPosition->refType));
-#ifdef TARGET_ARM64
     SingleTypeRegSet candidates = (mask & m_RegistersWithConstants).GetRegSetForType(currentInterval->registerType);
-#else
-    SingleTypeRegSet candidates = (mask & m_RegistersWithConstants);
-#endif
     SingleTypeRegSet result = RBM_NONE;
     while (candidates != RBM_NONE)
     {
@@ -501,12 +497,7 @@ SingleTypeRegSet LinearScan::getConstrainedRegMask(RefPosition*     refPosition,
 
     if ((refPosition != nullptr) && !refPosition->RegOptional())
     {
-#ifdef TARGET_ARM64
-        // TODO-lsra: Pass the right type
-        SingleTypeRegSet busyRegs = (regsBusyUntilKill | regsInUseThisLocation).GetRegSetForType(TYP_VOID);
-#else
-        SingleTypeRegSet busyRegs = (regsBusyUntilKill | regsInUseThisLocation);
-#endif
+        SingleTypeRegSet busyRegs = (regsBusyUntilKill | regsInUseThisLocation).GetRegSetForType(TYP_VOID); //TODO: Pass the right type
         if ((newMask & ~busyRegs) == RBM_NONE)
         {
             // Constrained mask does not have at least one free register to allocate.
@@ -13492,14 +13483,9 @@ SingleTypeRegSet LinearScan::RegisterSelection::select(Interval*                
         if (currentInterval->isWriteThru)
         {
             // We'll only prefer a callee-save register if it's already been used.
-#ifdef TARGET_ARM64
             SingleTypeRegSet unusedCalleeSaves =
                 calleeSaveCandidates &
                 ~(linearScan->compiler->codeGen->regSet.rsGetModifiedRegsMask()).GetRegSetForType(regType);
-#else
-            SingleTypeRegSet unusedCalleeSaves =
-                calleeSaveCandidates & ~(linearScan->compiler->codeGen->regSet.rsGetModifiedRegsMask());
-#endif
             callerCalleePrefs = calleeSaveCandidates & ~unusedCalleeSaves;
             preferences &= ~unusedCalleeSaves;
         }
@@ -13548,12 +13534,8 @@ SingleTypeRegSet LinearScan::RegisterSelection::select(Interval*                
         // TODO-CQ: We assign same registerAssignment to UPPER_RESTORE and the next USE.
         // When we allocate for USE, we see that the register is busy at current location
         // and we end up with that candidate is no longer available.
-#ifdef TARGET_ARM64
         SingleTypeRegSet busyRegs =
             (linearScan->regsBusyUntilKill | linearScan->regsInUseThisLocation).GetRegSetForType(regType);
-#else
-        SingleTypeRegSet busyRegs = (linearScan->regsBusyUntilKill | linearScan->regsInUseThisLocation);
-#endif
         candidates &= ~busyRegs;
 
 #ifdef TARGET_ARM
@@ -13575,11 +13557,7 @@ SingleTypeRegSet LinearScan::RegisterSelection::select(Interval*                
         // Also eliminate as busy any register with a conflicting fixed reference at this or
         // the next location.
         // Note that this will eliminate the fixedReg, if any, but we'll add it back below.
-#ifdef TARGET_ARM64
         SingleTypeRegSet checkConflictMask = candidates & linearScan->fixedRegs.GetRegSetForType(regType);
-#else
-        SingleTypeRegSet checkConflictMask = candidates & linearScan->fixedRegs;
-#endif
         while (checkConflictMask != RBM_NONE)
         {
             regNumber        checkConflictReg = genFirstRegNumFromMask(checkConflictMask);
@@ -13879,12 +13857,8 @@ SingleTypeRegSet LinearScan::RegisterSelection::selectMinimal(
     // TODO-CQ: We assign same registerAssignment to UPPER_RESTORE and the next USE.
     // When we allocate for USE, we see that the register is busy at current location
     // and we end up with that candidate is no longer available.
-#ifdef TARGET_ARM64
     SingleTypeRegSet busyRegs =
         (linearScan->regsBusyUntilKill | linearScan->regsInUseThisLocation).GetRegSetForType(regType);
-#else
-    SingleTypeRegSet busyRegs = (linearScan->regsBusyUntilKill | linearScan->regsInUseThisLocation);
-#endif // TARGET_ARM64
     candidates &= ~busyRegs;
 
 #ifdef TARGET_ARM
@@ -13902,11 +13876,7 @@ SingleTypeRegSet LinearScan::RegisterSelection::selectMinimal(
     // Also eliminate as busy any register with a conflicting fixed reference at this or
     // the next location.
     // Note that this will eliminate the fixedReg, if any, but we'll add it back below.
-#ifdef TARGET_ARM64
     SingleTypeRegSet checkConflictMask = candidates & linearScan->fixedRegs.GetRegSetForType(regType);
-#else
-    SingleTypeRegSet checkConflictMask = candidates & linearScan->fixedRegs;
-#endif
     while (checkConflictMask != RBM_NONE)
     {
         regNumber        checkConflictReg = genFirstRegNumFromMask(checkConflictMask);
