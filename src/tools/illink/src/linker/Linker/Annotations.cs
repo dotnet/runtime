@@ -280,7 +280,7 @@ namespace Mono.Linker
 			return processed.Add (provider);
 		}
 
-		public bool MarkProcessed (IMetadataTokenProvider provider)
+		internal bool MarkProcessed (IMetadataTokenProvider provider)
 		{
 			marked_pending.Remove (provider);
 			return processed.Add (provider);
