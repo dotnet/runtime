@@ -80,6 +80,7 @@ namespace System.Net.Http.Functional.Tests
             Assert.True(firstResponse.IsSuccessStatusCode);
 
             await AltSvc_Upgrade_Success(firstServer, secondServer, client);
+            listener?.Dispose();
         }
 
         public static TheoryData<Version, bool> AltSvcHeaderUpgradeVersions =>
