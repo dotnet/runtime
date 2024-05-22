@@ -233,7 +233,7 @@ ASMCONSTANTS_C_ASSERT(OFFSETOF__FrameHandlerExRecord__m_pEntryFrame == offsetof(
 
 #endif
 
-#define ComPlusCallMethodDesc__m_pComPlusCallInfo DBG_FRE(0x1C, 0x8)
+#define ComPlusCallMethodDesc__m_pComPlusCallInfo DBG_FRE(0x20, 0xC)
 ASMCONSTANTS_C_ASSERT(ComPlusCallMethodDesc__m_pComPlusCallInfo == offsetof(ComPlusCallMethodDesc, m_pComPlusCallInfo))
 
 #define ComPlusCallInfo__m_pRetThunk 0x10
