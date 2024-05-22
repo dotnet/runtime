@@ -2451,10 +2451,20 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
             case NI_AVX512F_FusedMultiplySubtractAdd:
             case NI_AVX512F_FusedMultiplySubtractNegated:
             case NI_AVX512F_FusedMultiplySubtractNegatedScalar:
-            case NI_AVX10v1_FusedMultiplyAddScalar:
             case NI_AVX10v1_FusedMultiplyAddNegatedScalar:
-            case NI_AVX10v1_FusedMultiplySubtractScalar:
+            case NI_AVX10v1_FusedMultiplyAddScalar:
             case NI_AVX10v1_FusedMultiplySubtractNegatedScalar:
+            case NI_AVX10v1_FusedMultiplySubtractScalar:
+            case NI_AVX10v1_MultiplyAdd:
+            case NI_AVX10v1_MultiplyAddNegated:
+            case NI_AVX10v1_MultiplyAddNegatedScalar:
+            case NI_AVX10v1_MultiplyAddScalar:
+            case NI_AVX10v1_MultiplyAddSubtract:
+            case NI_AVX10v1_MultiplySubtract:
+            case NI_AVX10v1_MultiplySubtractAdd:
+            case NI_AVX10v1_MultiplySubtractNegated:
+            case NI_AVX10v1_MultiplySubtractNegatedScalar:
+            case NI_AVX10v1_MultiplySubtractScalar:
             {
                 assert((numArgs == 3) || (intrinsicTree->OperIsEmbRoundingEnabled()));
                 assert(isRMW);

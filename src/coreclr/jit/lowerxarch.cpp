@@ -878,8 +878,8 @@ GenTree* Lowering::LowerCast(GenTree* tree)
         GenTree*    castOutput = nullptr;
         LIR::Use    castOpUse(BlockRange(), &(tree->AsCast()->CastOp()), tree);
         ReplaceWithLclVar(castOpUse);
-        castOp = tree->AsCast()->CastOp();
-        bool isAvx10v1 = false;
+        castOp               = tree->AsCast()->CastOp();
+        bool isV512Supported = false;
         /*The code below is to introduce saturating conversions on X86/X64.
         The C# equivalence of the code is given below -->
 
@@ -895,8 +895,7 @@ GenTree* Lowering::LowerCast(GenTree* tree)
                     Vector128.Create<long>(long.MaxValue)
                 );
         */
-        if ((isAvx10v1 = comp->compOpportunisticallyDependsOn(InstructionSet_AVX10v1)) ||
-            comp->IsBaselineVector512IsaSupportedOpportunistically())
+        if (comp->compIsEvexOpportunisticallySupported(isV512Supported))
         {
             // Clone the cast operand for usage.
             GenTree* op1Clone1 = comp->gtClone(castOp);
@@ -912,7 +911,7 @@ GenTree* Lowering::LowerCast(GenTree* tree)
             GenTree* ctrlByte = comp->gtNewIconNode(0);
             BlockRange().InsertAfter(tbl, ctrlByte);
 
-            NamedIntrinsic fixupHwIntrinsicID = isAvx10v1 ? NI_AVX10v1_FixupScalar : NI_AVX512F_FixupScalar;
+            NamedIntrinsic fixupHwIntrinsicID = !isV512Supported ? NI_AVX10v1_FixupScalar : NI_AVX512F_FixupScalar;
             if (varTypeIsUnsigned(dstType))
             {
                 // run vfixupimmsd base on table and no flags reporting
@@ -1304,28 +1303,30 @@ void Lowering::LowerHWIntrinsicCC(GenTreeHWIntrinsic* node, NamedIntrinsic newIn
 }
 
 //----------------------------------------------------------------------------------------------
-// LowerFusedMultiplyAdd: Changes NI_FMA_MultiplyAddScalar produced by Math(F).FusedMultiplyAdd
-//     to a better FMA intrinsics if there are GT_NEG around in order to eliminate them.
+// LowerFusedMultiplyAdd: Changes NI_FMA_MultiplyAddScalar / NI_AVX10v1_MultiplyAddScalar produced
+//     by Math(F).FusedMultiplyAdd to a better FMA intrinsics if there are GT_NEG around in order
+//     to eliminate them.
 //
 //  Arguments:
 //     node - The hardware intrinsic node
 //
 //  Notes:
-//     Math(F).FusedMultiplyAdd is expanded into NI_FMA_MultiplyAddScalar and
+//     Math(F).FusedMultiplyAdd is expanded into NI_FMA_MultiplyAddScalar / NI_AVX10v1_MultiplyAddScalar and
 //     depending on additional GT_NEG nodes around it can be:
 //
-//      x *  y + z -> NI_FMA_MultiplyAddScalar
-//      x * -y + z -> NI_FMA_MultiplyAddNegatedScalar
-//     -x *  y + z -> NI_FMA_MultiplyAddNegatedScalar
-//     -x * -y + z -> NI_FMA_MultiplyAddScalar
-//      x *  y - z -> NI_FMA_MultiplySubtractScalar
-//      x * -y - z -> NI_FMA_MultiplySubtractNegatedScalar
-//     -x *  y - z -> NI_FMA_MultiplySubtractNegatedScalar
-//     -x * -y - z -> NI_FMA_MultiplySubtractScalar
+//      x *  y + z -> NI_FMA_MultiplyAddScalar / NI_AVX10v1_MultiplyAddScalar
+//      x * -y + z -> NI_FMA_MultiplyAddNegatedScalar / NI_AVX10v1_MultiplyAddNegatedScalar
+//     -x *  y + z -> NI_FMA_MultiplyAddNegatedScalar / NI_AVX10v1_MultiplyAddNegatedScalar
+//     -x * -y + z -> NI_FMA_MultiplyAddScalar / NI_AVX10v1_MultiplyAddScalar
+//      x *  y - z -> NI_FMA_MultiplySubtractScalar / NI_AVX10v1_MultiplySubtractScalar
+//      x * -y - z -> NI_FMA_MultiplySubtractNegatedScalar / NI_AVX10v1_MultiplySubtractNegatedScalar
+//     -x *  y - z -> NI_FMA_MultiplySubtractNegatedScalar / NI_AVX10v1_MultiplySubtractNegatedScalar
+//     -x * -y - z -> NI_FMA_MultiplySubtractScalar / NI_AVX10v1_MultiplySubtractScalar
 //
 void Lowering::LowerFusedMultiplyAdd(GenTreeHWIntrinsic* node)
 {
-    assert(node->GetHWIntrinsicId() == NI_FMA_MultiplyAddScalar);
+    assert((node->GetHWIntrinsicId() == NI_FMA_MultiplyAddScalar) ||
+           (node->GetHWIntrinsicId() == NI_AVX10v1_MultiplyAddScalar));
     GenTreeHWIntrinsic* createScalarOps[3];
 
     for (size_t i = 1; i <= 3; i++)
@@ -1369,11 +1370,26 @@ void Lowering::LowerFusedMultiplyAdd(GenTreeHWIntrinsic* node)
         createScalarOps[2]->Op(1)->ClearContained();
         ContainCheckHWIntrinsic(createScalarOps[2]);
 
-        node->ChangeHWIntrinsicId(negMul ? NI_FMA_MultiplySubtractNegatedScalar : NI_FMA_MultiplySubtractScalar);
+        if (comp->compOpportunisticallyDependsOn(InstructionSet_AVX10v1))
+        {
+            node->ChangeHWIntrinsicId(negMul ? NI_AVX10v1_MultiplySubtractNegatedScalar
+                                             : NI_AVX10v1_MultiplySubtractScalar);
+        }
+        else
+        {
+            node->ChangeHWIntrinsicId(negMul ? NI_FMA_MultiplySubtractNegatedScalar : NI_FMA_MultiplySubtractScalar);
+        }
     }
     else
     {
-        node->ChangeHWIntrinsicId(negMul ? NI_FMA_MultiplyAddNegatedScalar : NI_FMA_MultiplyAddScalar);
+        if (comp->compOpportunisticallyDependsOn(InstructionSet_AVX10v1))
+        {
+            node->ChangeHWIntrinsicId(negMul ? NI_AVX10v1_MultiplyAddNegatedScalar : NI_AVX10v1_MultiplyAddScalar);
+        }
+        else
+        {
+            node->ChangeHWIntrinsicId(negMul ? NI_FMA_MultiplyAddNegatedScalar : NI_FMA_MultiplyAddScalar);
+        }
     }
 }
 
@@ -2134,6 +2150,7 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
             break;
 
         case NI_FMA_MultiplyAddScalar:
+        case NI_AVX10v1_MultiplyAddScalar:
             LowerFusedMultiplyAdd(node);
             break;
 
@@ -8909,6 +8926,8 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
                 case NI_AVX512F_ConvertScalarToVector128Single:
                 case NI_AVX512F_X64_ConvertScalarToVector128Double:
                 case NI_AVX512F_X64_ConvertScalarToVector128Single:
+                case NI_AVX10v1_X64_ConvertScalarToVector128Double:
+                case NI_AVX10v1_X64_ConvertScalarToVector128Single:
                 case NI_AVX10v1_ConvertScalarToVector128Single:
                 {
                     if (!varTypeIsIntegral(childNode->TypeGet()))

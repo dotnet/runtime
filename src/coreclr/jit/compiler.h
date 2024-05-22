@@ -9564,6 +9564,36 @@ private:
         return false;
 #endif
     }
+
+    //------------------------------------------------------------------------
+    // canUseEvexEncodingDebugOnly - Answer the question: Is Evex encoding supported on this target.
+    //
+    // Returns:
+    //    `true` if Evex encoding is supported, `false` if not.
+    //
+    bool canUseEvexEncodingDebugOnly() const
+    {
+#ifdef TARGET_XARCH
+        return (compIsaSupportedDebugOnly(InstructionSet_AVX10v1) || compIsaSupportedDebugOnly(InstructionSet_AVX512F));
+#else
+        return false;
+#endif
+    }
+
+    //------------------------------------------------------------------------
+    // IsAvx10OrIsaSupportedDebugOnly - Answer the question: Is AVX10v1 or the given ISA supported.
+    //
+    // Returns:
+    //    `true` if AVX10v1 or the given ISA is supported, `false` if not.
+    //
+    bool IsAvx10OrIsaSupportedDebugOnly(CORINFO_InstructionSet isa) const
+    {
+#ifdef TARGET_XARCH
+        return (compIsaSupportedDebugOnly(InstructionSet_AVX10v1) || compIsaSupportedDebugOnly(isa));
+#else
+        return false;
+#endif
+    }
 #endif // DEBUG
 
     //------------------------------------------------------------------------
@@ -9581,6 +9611,21 @@ private:
 #endif
     }
 
+    //------------------------------------------------------------------------
+    // IsAvx10OrIsaSupportedOpportunistically - Does opportunistic isa support exist for AVX10v1 or the given ISA.
+    //
+    // Returns:
+    //    `true` if AVX10v1 or the given ISA is supported, `false` if not.
+    //
+    bool IsAvx10OrIsaSupportedOpportunistically(CORINFO_InstructionSet isa) const
+    {
+#ifdef TARGET_XARCH
+        return (compOpportunisticallyDependsOn(InstructionSet_AVX10v1) || compOpportunisticallyDependsOn(isa));
+#else
+        return false;
+#endif
+    }
+
     bool canUseEmbeddedBroadcast() const
     {
         return JitConfig.EnableEmbeddedBroadcast();
@@ -9593,6 +9638,36 @@ private:
 
 #ifdef TARGET_XARCH
 public:
+
+    //------------------------------------------------------------------------
+    // compIsEvexOpportunisticallySupported - Checks for whether AVX10v1 or avx512InstructionSet is supported
+    // opportunistically.
+    //
+    // Returns:
+    //    returns true if AVX10v1 or avx512InstructionSet is supported opportunistically and
+    //    sets isV512Supported to true if AVX512F is supported, false otherwise.
+    //
+    bool compIsEvexOpportunisticallySupported(bool&                  isV512Supported,
+                                              CORINFO_InstructionSet avx512InstructionSet = InstructionSet_AVX512F)
+    {
+        // TODO: assert avx512InstructionSet is one of the AVX512 instruction sets
+        assert(avx512InstructionSet == InstructionSet_AVX512F || avx512InstructionSet == InstructionSet_AVX512F_VL ||
+               avx512InstructionSet == InstructionSet_AVX512BW || avx512InstructionSet == InstructionSet_AVX512BW_VL ||
+               avx512InstructionSet == InstructionSet_AVX512CD || avx512InstructionSet == InstructionSet_AVX512CD_VL ||
+               avx512InstructionSet == InstructionSet_AVX512DQ || avx512InstructionSet == InstructionSet_AVX512DQ_VL ||
+               avx512InstructionSet == InstructionSet_AVX512VBMI ||
+               avx512InstructionSet == InstructionSet_AVX512VBMI_VL);
+
+        if (compOpportunisticallyDependsOn(avx512InstructionSet))
+        {
+            isV512Supported = true;
+            return true;
+        }
+
+        isV512Supported = false;
+        return compOpportunisticallyDependsOn(InstructionSet_AVX10v1);
+    }
+
     bool canUseVexEncoding() const
     {
         return compOpportunisticallyDependsOn(InstructionSet_AVX);
@@ -9606,8 +9681,8 @@ public:
     //
     bool canUseEvexEncoding() const
     {
-        return (compOpportunisticallyDependsOn(InstructionSet_AVX512F) ||
-                compOpportunisticallyDependsOn(InstructionSet_AVX10v1));
+        return (compOpportunisticallyDependsOn(InstructionSet_AVX10v1) ||
+                compOpportunisticallyDependsOn(InstructionSet_AVX512F));
     }
 
 private:
@@ -9635,6 +9710,10 @@ private:
             assert(compIsaSupportedDebugOnly(InstructionSet_AVX512DQ));
             assert(compIsaSupportedDebugOnly(InstructionSet_AVX512DQ_VL));
 
+            return true;
+        }
+        else if (JitConfig.JitStressEvexEncoding() && compOpportunisticallyDependsOn(InstructionSet_AVX10v1))
+        {
             return true;
         }
 #endif // DEBUG
