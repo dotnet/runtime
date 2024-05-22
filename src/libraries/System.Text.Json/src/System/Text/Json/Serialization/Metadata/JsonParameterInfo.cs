@@ -16,12 +16,14 @@ namespace System.Text.Json.Serialization.Metadata
             Debug.Assert(matchingProperty.PropertyType == parameterInfoValues.ParameterType);
 
             Position = parameterInfoValues.Position;
+            Name = parameterInfoValues.Name;
             HasDefaultValue = parameterInfoValues.HasDefaultValue;
             IsNullable = parameterInfoValues.IsNullable;
             MatchingProperty = matchingProperty;
         }
 
         public int Position { get; }
+        public string Name { get; }
         public bool HasDefaultValue { get; }
 
         // The default value of the parameter. This is `DefaultValue` of the `ParameterInfo`, if specified, or the `default` for the `ParameterType`.
@@ -35,8 +37,8 @@ namespace System.Text.Json.Serialization.Metadata
         public bool IgnoreNullTokensOnRead => MatchingProperty.IgnoreNullTokensOnRead;
         public JsonSerializerOptions Options => MatchingProperty.Options;
 
-        // The name of the parameter as UTF-8 bytes.
-        public byte[] NameAsUtf8Bytes => MatchingProperty.NameAsUtf8Bytes;
+        // The effective name of the parameter as UTF-8 bytes.
+        public byte[] JsonNameAsUtf8Bytes => MatchingProperty.NameAsUtf8Bytes;
         public JsonNumberHandling? NumberHandling => MatchingProperty.EffectiveNumberHandling;
         public JsonTypeInfo JsonTypeInfo => MatchingProperty.JsonTypeInfo;
         public bool ShouldDeserialize => !MatchingProperty.IsIgnored;

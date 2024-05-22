@@ -1152,7 +1152,7 @@ namespace System.Text.Json.Serialization.Metadata
                     // Multiple object properties cannot bind to the same constructor parameter.
                     ThrowHelper.ThrowInvalidOperationException_MultiplePropertiesBindToConstructorParameters(
                         Type,
-                        propertyInfo.Name,
+                        parameterInfo.Name,
                         propertyInfo.Name,
                         confictingParameterInfo.MatchingProperty.Name);
                 }
