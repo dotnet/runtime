@@ -3776,9 +3776,10 @@ void emitter::emitInsSve_R_R_R(instruction     ins,
             }
             // TODO-SVE: Remove check for (opt == INS_OPTS_SCALABLE_B) when predicate registers
             //  are present.
-            else if ((opt == INS_OPTS_SCALABLE_B) && isPredicateRegister(reg3) && (sopt == INS_SCALABLE_OPTS_NONE || sopt == INS_SCALABLE_OPTS_PREDICATE_MERGE))
+            else if ((opt == INS_OPTS_SCALABLE_B) && isPredicateRegister(reg3) &&
+                     (sopt == INS_SCALABLE_OPTS_NONE || sopt == INS_SCALABLE_OPTS_PREDICATE_MERGE))
             {
-                //assert(opt == INS_OPTS_SCALABLE_B);
+                // assert(opt == INS_OPTS_SCALABLE_B);
                 assert(isPredicateRegister(reg1)); // DDDD
                 assert(isPredicateRegister(reg2)); // gggg
                 assert(isPredicateRegister(reg3)); // NNNN

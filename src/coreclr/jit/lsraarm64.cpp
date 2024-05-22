@@ -1575,7 +1575,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                     const HWIntrinsic   intrinEmb(embOp2Node);
                     if (HWIntrinsicInfo::IsLowMaskedOperation(intrinEmb.id))
                     {
-                        predMask  = RBM_LOWMASK;
+                        predMask = RBM_LOWMASK;
                     }
                 }
             }
