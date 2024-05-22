@@ -157,8 +157,8 @@ namespace JIT.HardwareIntrinsics.Arm
                 Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op1VectorType}<{Op1BaseType}>, byte>(ref testStruct._fld2), ref Unsafe.As<{Op1BaseType}, byte>(ref _data2[0]), (uint)Unsafe.SizeOf<{Op1VectorType}<{Op1BaseType}>>());
                 for (var i = 0; i < Op3ElementCount; i++) { _data3[i] = {NextValueOp1}; }
                 Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op1VectorType}<{Op1BaseType}>, byte>(ref testStruct._fld3), ref Unsafe.As<{Op1BaseType}, byte>(ref _data3[0]), (uint)Unsafe.SizeOf<{Op1VectorType}<{Op1BaseType}>>());
-                for (var i = 0; i < maskElementCount; i++) { _maskData[i] = ({Op1BaseType})1; }
-                for (var i = 0; i < maskElementCount / 2; i++) { _maskData[rnd.Next(maskElementCount)] = ({Op1BaseType})0; }
+                for (var i = 0; i < MaskElementCount; i++) { _maskData[i] = ({Op1BaseType})1; }
+                for (var i = 0; i < MaskElementCount / 2; i++) { _maskData[rnd.Next(MaskElementCount)] = ({Op1BaseType})0; }
                 Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op1VectorType}<{Op1BaseType}>, byte>(ref testStruct._storeMask), ref Unsafe.As<{Op1BaseType}, byte>(ref _maskData[0]), (uint)Unsafe.SizeOf<{Op1VectorType}<{Op1BaseType}>>());
 
                 ulong alignment  = (ulong)LargestVectorSize;
@@ -177,7 +177,7 @@ namespace JIT.HardwareIntrinsics.Arm
 
             public void RunStructFldScenario(Storex3Test__{TestName} testClass)
             {
-                Sve.StoreAndZip(_storeMask, ({Op1BaseType}*)_outArrayPtr, (_fld1, _fld2, _fld3));
+                Sve.{Method}(_storeMask, ({Op1BaseType}*)_outArrayPtr, (_fld1, _fld2, _fld3));
 
                 testClass.ValidateResult(_fld1, _fld2, _fld3, _outArrayPtr, _storeMask);
             }
@@ -189,12 +189,12 @@ namespace JIT.HardwareIntrinsics.Arm
         private static readonly int Op2ElementCount  = Unsafe.SizeOf<{Op1VectorType}<{Op1BaseType}>>() / sizeof({Op1BaseType});
         private static readonly int Op3ElementCount  = Unsafe.SizeOf<{Op1VectorType}<{Op1BaseType}>>() / sizeof({Op1BaseType});
         private static readonly int RetElementCount  = Unsafe.SizeOf<{RetVectorType}<{RetBaseType}>>() / sizeof({RetBaseType}) * 3;
-        private static readonly int maskElementCount = Unsafe.SizeOf<{Op1VectorType}<{Op1BaseType}>>() / sizeof({Op1BaseType});
+        private static readonly int MaskElementCount = Unsafe.SizeOf<{Op1VectorType}<{Op1BaseType}>>() / sizeof({Op1BaseType});
 
         private static {Op1BaseType}[] _data1    = new {Op1BaseType}[Op1ElementCount];
         private static {Op1BaseType}[] _data2    = new {Op1BaseType}[Op2ElementCount];
         private static {Op1BaseType}[] _data3    = new {Op1BaseType}[Op3ElementCount];
-        private static {Op1BaseType}[] _maskData = new {Op1BaseType}[maskElementCount];
+        private static {Op1BaseType}[] _maskData = new {Op1BaseType}[MaskElementCount];
 
         private DataTable _dataTable;
 
@@ -206,8 +206,8 @@ namespace JIT.HardwareIntrinsics.Arm
             for (var i = 0; i < Op1ElementCount; i++) { _data1[i] = {NextValueOp1}; }
             for (var i = 0; i < Op2ElementCount; i++) { _data2[i] = {NextValueOp1}; }
             for (var i = 0; i < Op3ElementCount; i++) { _data3[i] = {NextValueOp1}; }
-            for (var i = 0; i < maskElementCount; i++) { _maskData[i] = ({Op1BaseType})1; }
-            for (var i = 0; i < maskElementCount / 2; i++) { _maskData[rnd.Next(maskElementCount)] = ({Op1BaseType})0; }
+            for (var i = 0; i < MaskElementCount; i++) { _maskData[i] = ({Op1BaseType})1; }
+            for (var i = 0; i < MaskElementCount / 2; i++) { _maskData[rnd.Next(MaskElementCount)] = ({Op1BaseType})0; }
 
             _dataTable = new DataTable(_data1, _data2, _data3, new {RetBaseType}[RetElementCount], _maskData, LargestVectorSize);
         }
@@ -220,7 +220,7 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunBasicScenario_UnsafeRead));
 
-            Sve.StoreAndZip(Unsafe.Read<Vector<{Op1BaseType}>>(_dataTable.maskArrayPtr), ({Op1BaseType} *)_dataTable.outArrayPtr,
+            Sve.{Method}(Unsafe.Read<Vector<{Op1BaseType}>>(_dataTable.maskArrayPtr), ({Op1BaseType} *)_dataTable.outArrayPtr,
                 (Unsafe.Read<{Op1VectorType}<{Op1BaseType}>>(_dataTable.inArray1Ptr),
                  Unsafe.Read<{Op1VectorType}<{Op1BaseType}>>(_dataTable.inArray2Ptr),
                  Unsafe.Read<{Op1VectorType}<{Op1BaseType}>>(_dataTable.inArray3Ptr))
@@ -234,7 +234,7 @@ namespace JIT.HardwareIntrinsics.Arm
             TestLibrary.TestFramework.BeginScenario(nameof(RunBasicScenario_Load));
             {Op1VectorType}<{Op1BaseType}> loadMask = Sve.CreateTrueMask{Op1BaseType}(SveMaskPattern.All);
 
-            Sve.StoreAndZip(Sve.LoadVector(loadMask, ({Op1BaseType}*)(_dataTable.maskArrayPtr)), ({Op1BaseType} *)_dataTable.outArrayPtr,
+            Sve.{Method}(Sve.LoadVector(loadMask, ({Op1BaseType}*)(_dataTable.maskArrayPtr)), ({Op1BaseType} *)_dataTable.outArrayPtr,
                 (Sve.LoadVector(loadMask, ({Op1BaseType}*)(_dataTable.inArray1Ptr)),
                  Sve.LoadVector(loadMask, ({Op1BaseType}*)(_dataTable.inArray2Ptr)),
                  Sve.LoadVector(loadMask, ({Op1BaseType}*)(_dataTable.inArray3Ptr)))
@@ -247,7 +247,7 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunReflectionScenario_UnsafeRead));
 
-            typeof(Sve).GetMethod(nameof(Sve.StoreAndZip), new Type[] { typeof({Op1VectorType}<{Op1BaseType}>), typeof({Op1BaseType} *), typeof(({Op1VectorType}<{Op1BaseType}>, {Op1VectorType}<{Op1BaseType}>, {Op1VectorType}<{Op1BaseType}>)) })
+            typeof(Sve).GetMethod(nameof(Sve.{Method}), new Type[] { typeof({Op1VectorType}<{Op1BaseType}>), typeof({Op1BaseType} *), typeof(({Op1VectorType}<{Op1BaseType}>, {Op1VectorType}<{Op1BaseType}>, {Op1VectorType}<{Op1BaseType}>)) })
                                      .Invoke(null, new object[] { Unsafe.Read<Vector<{Op1BaseType}>>(_dataTable.maskArrayPtr),
                                         Pointer.Box(_dataTable.outArrayPtr, typeof({Op1BaseType}*)),
                                         (Unsafe.Read<{Op1VectorType}<{Op1BaseType}>>(_dataTable.inArray1Ptr),
@@ -267,7 +267,7 @@ namespace JIT.HardwareIntrinsics.Arm
             {Op1VectorType}<{Op1BaseType}> op3       = Unsafe.Read<{Op1VectorType}<{Op1BaseType}>>(_dataTable.inArray3Ptr);
             {Op1VectorType}<{Op1BaseType}> storeMask = Unsafe.Read<{Op1VectorType}<{Op1BaseType}>>(_dataTable.maskArrayPtr);
 
-            Sve.StoreAndZip(storeMask, ({Op1BaseType} *)_dataTable.outArrayPtr, (op1, op2, op3));
+            Sve.{Method}(storeMask, ({Op1BaseType} *)_dataTable.outArrayPtr, (op1, op2, op3));
 
             ValidateResult(op1, op2, op3, _dataTable.outArrayPtr, storeMask);
         }
@@ -281,7 +281,7 @@ namespace JIT.HardwareIntrinsics.Arm
             {Op1VectorType}<{Op1BaseType}> op3       = Unsafe.Read<{Op1VectorType}<{Op1BaseType}>>(_dataTable.inArray3Ptr);
             {Op1VectorType}<{Op1BaseType}> storeMask = Unsafe.Read<{Op1VectorType}<{Op1BaseType}>>(_dataTable.maskArrayPtr);
 
-            Sve.StoreAndZip(storeMask, ({Op1BaseType} *)_dataTable.outArrayPtr, (op1, op2, op3));
+            Sve.{Method}(storeMask, ({Op1BaseType} *)_dataTable.outArrayPtr, (op1, op2, op3));
 
             ValidateResult(op1, op2, op3, _dataTable.outArrayPtr, storeMask);
         }
@@ -291,7 +291,7 @@ namespace JIT.HardwareIntrinsics.Arm
             TestLibrary.TestFramework.BeginScenario(nameof(RunStructLclFldScenario));
 
             var test = TestStruct.Create();
-            Sve.StoreAndZip(test._storeMask, ({Op1BaseType} *)test._outArrayPtr, (test._fld1, test._fld2, test._fld3));
+            Sve.{Method}(test._storeMask, ({Op1BaseType} *)test._outArrayPtr, (test._fld1, test._fld2, test._fld3));
 
             ValidateResult(test._fld1, test._fld2, test._fld3, test._outArrayPtr, test._storeMask);
         }
@@ -331,7 +331,7 @@ namespace JIT.HardwareIntrinsics.Arm
             {Op1BaseType}[] inArray2  = new {Op1BaseType}[Op2ElementCount];
             {Op1BaseType}[] inArray3  = new {Op1BaseType}[Op3ElementCount];
             {RetBaseType}[] outArray  = new {RetBaseType}[RetElementCount];
-            {Op1BaseType}[] maskArray = new {Op1BaseType}[maskElementCount];
+            {Op1BaseType}[] maskArray = new {Op1BaseType}[MaskElementCount];
 
             Unsafe.WriteUnaligned(ref Unsafe.As<{Op1BaseType}, byte>(ref inArray1[0]), op1);
             Unsafe.WriteUnaligned(ref Unsafe.As<{Op1BaseType}, byte>(ref inArray2[0]), op2);
@@ -348,7 +348,7 @@ namespace JIT.HardwareIntrinsics.Arm
             {Op1BaseType}[] inArray2  = new {Op1BaseType}[Op2ElementCount];
             {Op1BaseType}[] inArray3  = new {Op1BaseType}[Op3ElementCount];
             {RetBaseType}[] outArray  = new {RetBaseType}[RetElementCount];
-            {Op1BaseType}[] maskArray = new {Op1BaseType}[maskElementCount];
+            {Op1BaseType}[] maskArray = new {Op1BaseType}[MaskElementCount];
 
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op1BaseType}, byte>(ref inArray1[0]), ref Unsafe.AsRef<byte>(op1), (uint)Unsafe.SizeOf<{Op1VectorType}<{Op1BaseType}>>());
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op1BaseType}, byte>(ref inArray2[0]), ref Unsafe.AsRef<byte>(op2), (uint)Unsafe.SizeOf<{Op1VectorType}<{Op1BaseType}>>());
@@ -375,7 +375,7 @@ namespace JIT.HardwareIntrinsics.Arm
 
             if (!succeeded)
             {
-                TestLibrary.TestFramework.LogInformation($"{nameof(Sve)}.{nameof(Sve.StoreAndZip)}<{Op1BaseType}>({Op1VectorType}<{Op1BaseType}>, {Op1BaseType}*, ({Op1VectorType}<{Op1BaseType}>, {Op1VectorType}<{Op1BaseType}>, {Op1VectorType}<{Op1BaseType}>)): {method} failed:");
+                TestLibrary.TestFramework.LogInformation($"{nameof(Sve)}.{nameof(Sve.{Method})}<{Op1BaseType}>({Op1VectorType}<{Op1BaseType}>, {Op1BaseType}*, ({Op1VectorType}<{Op1BaseType}>, {Op1VectorType}<{Op1BaseType}>, {Op1VectorType}<{Op1BaseType}>)): {method} failed:");
                 TestLibrary.TestFramework.LogInformation($"   first: ({string.Join(", ", first)})");
                 TestLibrary.TestFramework.LogInformation($"  second: ({string.Join(", ", second)})");
                 TestLibrary.TestFramework.LogInformation($"   third: ({string.Join(", ", third)})");
