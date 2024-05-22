@@ -33,7 +33,11 @@ SpinLock::SpinLock()
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
 
+    m_lock = 0;
+
+#ifdef _DEBUG
     m_Initialized = UnInitialized;
+#endif
 }
 
 void SpinLock::Init(LOCK_TYPE type, bool RequireCoopGC)
@@ -45,6 +49,7 @@ void SpinLock::Init(LOCK_TYPE type, bool RequireCoopGC)
     }
     CONTRACTL_END;
 
+#ifdef _DEBUG
     if (m_Initialized == Initialized)
     {
         _ASSERTE (type == m_LockType);
@@ -72,17 +77,12 @@ void SpinLock::Init(LOCK_TYPE type, bool RequireCoopGC)
         }
     }
 
-    {
-        m_lock = 0;
-    }
-
-#ifdef _DEBUG
     m_LockType = type;
     m_requireCoopGCMode = RequireCoopGC;
-#endif
 
     _ASSERTE (m_Initialized == BeingInitialized);
     m_Initialized = Initialized;
+#endif
 }
 
 #ifdef _DEBUG

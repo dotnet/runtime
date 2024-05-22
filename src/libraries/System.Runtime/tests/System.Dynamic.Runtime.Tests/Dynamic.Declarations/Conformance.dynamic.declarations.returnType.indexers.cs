@@ -262,6 +262,14 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.declarations.returnType
                     return d;
                 }
             }
+            public dynamic this[long x, dynamic d]
+            {
+                get
+                {
+                    MyClass.Status = 2;
+                    return d;
+                }
+            }
         }
 
         [Fact]

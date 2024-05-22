@@ -533,8 +533,14 @@ namespace ILCompiler
 
                             if (owningType.HasFinalizer)
                             {
-                                // Finalizer might have observable side effects
-                                return Status.Fail(methodIL.OwningMethod, opcode, "Finalizable class");
+                                // We have a finalizer. There's still a small chance it has been nopped out
+                                // with a feature switch. Check for that.
+                                byte[] finalizerMethodILBytes = _ilProvider.GetMethodIL(owningType.GetFinalizer()).GetILBytes();
+                                if (finalizerMethodILBytes.Length != 1 || finalizerMethodILBytes[0] != (byte)ILOpcode.ret)
+                                {
+                                    // Finalizer might have observable side effects
+                                    return Status.Fail(methodIL.OwningMethod, opcode, "Finalizable class");
+                                }
                             }
 
                             if (_flowAnnotations.RequiresDataflowAnalysisDueToSignature(ctor))
@@ -2797,16 +2803,16 @@ namespace ILCompiler
                 {
                     Debug.Assert(creationInfo.Constructor.Method.Name == "InitializeOpenStaticThunk");
 
-                    // m_firstParameter
+                    // _firstParameter
                     builder.EmitPointerReloc(thisNode);
 
-                    // m_helperObject
+                    // _helperObject
                     builder.EmitZeroPointer();
 
-                    // m_extraFunctionPointerOrData
+                    // _extraFunctionPointerOrData
                     builder.EmitPointerReloc(creationInfo.GetTargetNode(factory));
 
-                    // m_functionPointer
+                    // _functionPointer
                     Debug.Assert(creationInfo.Thunk != null);
                     builder.EmitPointerReloc(creationInfo.Thunk);
                 }
@@ -2814,16 +2820,16 @@ namespace ILCompiler
                 {
                     Debug.Assert(creationInfo.Constructor.Method.Name == "InitializeClosedInstance");
 
-                    // m_firstParameter
+                    // _firstParameter
                     _firstParameter.WriteFieldData(ref builder, factory);
 
-                    // m_helperObject
+                    // _helperObject
                     builder.EmitZeroPointer();
 
-                    // m_extraFunctionPointerOrData
+                    // _extraFunctionPointerOrData
                     builder.EmitZeroPointer();
 
-                    // m_functionPointer
+                    // _functionPointer
                     builder.EmitPointerReloc(factory.CanonicalEntrypoint(_methodPointed));
                 }
             }

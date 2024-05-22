@@ -102,7 +102,7 @@ namespace Mono.Linker
 		{
 			result = new Queue<string> ();
 			foreach (string arg in args) {
-				if (arg.StartsWith ("@")) {
+				if (arg.StartsWith ('@')) {
 					try {
 						string responseFileName = arg.Substring (1);
 						using (var responseFileText = new StreamReader (responseFileName))
@@ -239,9 +239,22 @@ namespace Mono.Linker
 
 						continue;
 
-					case "--dump-dependencies":
-						dumpDependencies = true;
-						continue;
+					case "--dump-dependencies": {
+							dumpDependencies = true;
+
+							string? assemblyName = GetNextStringValue ();
+							if (assemblyName != null) {
+								if (!IsValidAssemblyName (assemblyName)) {
+									context.LogError (null, DiagnosticId.InvalidAssemblyName, assemblyName);
+									return -1;
+								}
+
+								context.TraceAssembly ??= new HashSet<string> ();
+								context.TraceAssembly.Add (assemblyName);
+							}
+
+							continue;
+						}
 
 					case "--dependencies-file-format":
 						if (!GetStringParam (token, out var dependenciesFileFormat))
@@ -362,6 +375,12 @@ namespace Mono.Linker
 						}
 
 						context.SetCustomData (values[0], values[1]);
+						continue;
+
+					case "--keep-com-interfaces":
+						if (!GetBoolParam (token, l => context.KeepComInterfaces = l))
+							return -1;
+
 						continue;
 
 					case "--keep-compilers-resources":
@@ -935,7 +954,7 @@ namespace Mono.Linker
 		bool TryGetCustomAssembly (ref string arg, [NotNullWhen (true)] out Assembly? assembly)
 		{
 			assembly = null;
-			int pos = arg.IndexOf (",");
+			int pos = arg.IndexOf (',');
 			if (pos == -1)
 				return false;
 
@@ -965,7 +984,7 @@ namespace Mono.Linker
 				}
 				customStepName = parts[1];
 
-				if (!parts[0].StartsWith ("-") && !parts[0].StartsWith ("+")) {
+				if (!parts[0].StartsWith ('-') && !parts[0].StartsWith ('+')) {
 					Context.LogError (null, DiagnosticId.ExpectedSignToControlNewStepInsertion);
 					return false;
 				}
@@ -1181,6 +1200,9 @@ namespace Mono.Linker
 			case "sealer":
 				optimization = CodeOptimizations.Sealer;
 				return true;
+			case "substitutefeatureguards":
+				optimization = CodeOptimizations.SubstituteFeatureGuards;
+				return true;
 			}
 
 			Context.LogError (null, DiagnosticId.InvalidOptimizationValue, text);
@@ -1238,7 +1260,7 @@ namespace Mono.Linker
 				return true;
 			}
 
-			if (arg.StartsWith ("-") || arg.StartsWith ("/")) {
+			if (arg.StartsWith ('-') || arg.StartsWith ('/')) {
 				action (true);
 				return true;
 			}
@@ -1271,7 +1293,7 @@ namespace Mono.Linker
 				return null;
 
 			var arg = arguments.Peek ();
-			if (arg.StartsWith ("-") || arg.StartsWith ("/"))
+			if (arg.StartsWith ('-') || arg.StartsWith ('/'))
 				return null;
 
 			arguments.Dequeue ();
@@ -1283,6 +1305,7 @@ namespace Mono.Linker
 			return new LinkContext (pipeline, logger ?? new ConsoleLogger (), "output") {
 				TrimAction = AssemblyAction.Link,
 				DefaultAction = AssemblyAction.Link,
+				KeepComInterfaces = true,
 			};
 		}
 
@@ -1363,10 +1386,12 @@ namespace Mono.Linker
 			Console.WriteLine ("                               unreachablebodies: Instance methods that are marked but not executed are converted to throws");
 			Console.WriteLine ("                               unusedinterfaces: Removes interface types from declaration when not used");
 			Console.WriteLine ("                               unusedtypechecks: Inlines never successful type checks");
+			Console.WriteLine ("                               substitutefeatureguards: Substitutes properties annotated as FeatureGuard(typeof(RequiresUnreferencedCodeAttribute)) to false");
 			Console.WriteLine ("  --enable-opt NAME [ASM]    Enable one of the additional optimizations globaly or for a specific assembly name");
 			Console.WriteLine ("                               sealer: Any method or type which does not have override is marked as sealed");
 			Console.WriteLine ("  --explicit-reflection      Adds to members never used through reflection DisablePrivateReflection attribute. Defaults to false");
 			Console.WriteLine ("  --feature FEATURE VALUE    Apply any optimizations defined when this feature setting is a constant known at link time");
+			Console.WriteLine ("  --keep-com-interfaces      Keep COM interfaces implemented by kept types. Defaults to true");
 			Console.WriteLine ("  --keep-compilers-resources Keep assembly resources used for F# compilation resources. Defaults to false");
 			Console.WriteLine ("  --keep-dep-attributes      Keep attributes used for manual dependency tracking. Defaults to false");
 			Console.WriteLine ("  --keep-metadata NAME       Keep metadata which would otherwise be removed if not used");

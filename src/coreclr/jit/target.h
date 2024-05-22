@@ -68,27 +68,27 @@ inline bool compUnixX86Abi()
 // The following are intended to capture only those #defines that cannot be replaced
 // with static const members of Target
 #if defined(TARGET_AMD64)
-#define REGMASK_BITS 64
+#define REGMASK_BITS              64
 #define CSE_CONST_SHARED_LOW_BITS 16
 
 #elif defined(TARGET_X86)
-#define REGMASK_BITS 32
+#define REGMASK_BITS              32
 #define CSE_CONST_SHARED_LOW_BITS 16
 
 #elif defined(TARGET_ARM)
-#define REGMASK_BITS 64
+#define REGMASK_BITS              64
 #define CSE_CONST_SHARED_LOW_BITS 12
 
 #elif defined(TARGET_ARM64)
-#define REGMASK_BITS 64
+#define REGMASK_BITS              64
 #define CSE_CONST_SHARED_LOW_BITS 12
 
 #elif defined(TARGET_LOONGARCH64)
-#define REGMASK_BITS 64
+#define REGMASK_BITS              64
 #define CSE_CONST_SHARED_LOW_BITS 12
 
 #elif defined(TARGET_RISCV64)
-#define REGMASK_BITS 64
+#define REGMASK_BITS              64
 #define CSE_CONST_SHARED_LOW_BITS 12
 
 #else
@@ -110,7 +110,7 @@ inline bool compUnixX86Abi()
 enum _regNumber_enum : unsigned
 {
 #define REGDEF(name, rnum, mask, sname) REG_##name = rnum,
-#define REGALIAS(alias, realname) REG_##alias = REG_##realname,
+#define REGALIAS(alias, realname)       REG_##alias = REG_##realname,
 #include "register.h"
 
     REG_COUNT,
@@ -118,11 +118,11 @@ enum _regNumber_enum : unsigned
     ACTUAL_REG_COUNT = REG_COUNT - 1 // everything but REG_STK (only real regs)
 };
 
-enum _regMask_enum : unsigned __int64
+enum _regMask_enum : uint64_t
 {
     RBM_NONE = 0,
 #define REGDEF(name, rnum, mask, sname) RBM_##name = mask,
-#define REGALIAS(alias, realname) RBM_##alias = RBM_##realname,
+#define REGALIAS(alias, realname)       RBM_##alias = RBM_##realname,
 #include "register.h"
 };
 
@@ -131,7 +131,7 @@ enum _regMask_enum : unsigned __int64
 enum _regNumber_enum : unsigned
 {
 #define REGDEF(name, rnum, mask, xname, wname) REG_##name = rnum,
-#define REGALIAS(alias, realname) REG_##alias = REG_##realname,
+#define REGALIAS(alias, realname)              REG_##alias = REG_##realname,
 #include "register.h"
 
     REG_COUNT,
@@ -139,11 +139,11 @@ enum _regNumber_enum : unsigned
     ACTUAL_REG_COUNT = REG_COUNT - 1 // everything but REG_STK (only real regs)
 };
 
-enum _regMask_enum : unsigned __int64
+enum _regMask_enum : uint64_t
 {
     RBM_NONE = 0,
 #define REGDEF(name, rnum, mask, xname, wname) RBM_##name = mask,
-#define REGALIAS(alias, realname) RBM_##alias = RBM_##realname,
+#define REGALIAS(alias, realname)              RBM_##alias = RBM_##realname,
 #include "register.h"
 };
 
@@ -152,7 +152,7 @@ enum _regMask_enum : unsigned __int64
 enum _regNumber_enum : unsigned
 {
 #define REGDEF(name, rnum, mask, sname) REG_##name = rnum,
-#define REGALIAS(alias, realname) REG_##alias = REG_##realname,
+#define REGALIAS(alias, realname)       REG_##alias = REG_##realname,
 #include "register.h"
 
     REG_COUNT,
@@ -165,9 +165,8 @@ enum _regMask_enum : uint64_t
     RBM_NONE = 0,
 
 #define REGDEF(name, rnum, mask, sname) RBM_##name = mask,
-#define REGALIAS(alias, realname) RBM_##alias = RBM_##realname,
+#define REGALIAS(alias, realname)       RBM_##alias = RBM_##realname,
 #include "register.h"
-
 };
 
 #elif defined(TARGET_X86)
@@ -175,7 +174,7 @@ enum _regMask_enum : uint64_t
 enum _regNumber_enum : unsigned
 {
 #define REGDEF(name, rnum, mask, sname) REG_##name = rnum,
-#define REGALIAS(alias, realname) REG_##alias = REG_##realname,
+#define REGALIAS(alias, realname)       REG_##alias = REG_##realname,
 #include "register.h"
 
     REG_COUNT,
@@ -188,7 +187,7 @@ enum _regMask_enum : unsigned
     RBM_NONE = 0,
 
 #define REGDEF(name, rnum, mask, sname) RBM_##name = mask,
-#define REGALIAS(alias, realname) RBM_##alias = RBM_##realname,
+#define REGALIAS(alias, realname)       RBM_##alias = RBM_##realname,
 #include "register.h"
 };
 
@@ -209,11 +208,8 @@ enum _regMask_enum : unsigned
 // In any case, we believe that is OK to freely cast between these types; no information will
 // be lost.
 
-#if defined(TARGET_AMD64) || defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-typedef unsigned __int64 regMaskTP;
-#else
-typedef unsigned       regMaskTP;
-#endif
+typedef _regNumber_enum regNumber;
+typedef unsigned char   regNumberSmall;
 
 #if REGMASK_BITS == 8
 typedef unsigned char regMaskSmall;
@@ -228,20 +224,182 @@ typedef unsigned regMaskSmall;
 #define REG_MASK_INT_FMT "%08X"
 #define REG_MASK_ALL_FMT "%08X"
 #else
-typedef unsigned __int64 regMaskSmall;
+typedef uint64_t regMaskSmall;
 #define REG_MASK_INT_FMT "%04llX"
 #define REG_MASK_ALL_FMT "%016llX"
 #endif
 
-typedef _regNumber_enum regNumber;
-typedef unsigned char   regNumberSmall;
+struct regMaskTP
+{
+private:
+    regMaskSmall low;
+public:
+    constexpr regMaskTP(regMaskSmall regMask)
+        : low(regMask)
+    {
+    }
+
+    regMaskTP()
+    {
+    }
+
+    explicit operator bool() const
+    {
+        return low != RBM_NONE;
+    }
+
+    explicit operator regMaskSmall() const
+    {
+        return (regMaskSmall)low;
+    }
+
+#ifdef TARGET_ARM
+    explicit operator int() const
+    {
+        return (int)low;
+    }
+    explicit operator BYTE() const
+    {
+        return (BYTE)low;
+    }
+#endif
+
+#ifndef TARGET_X86
+    explicit operator unsigned int() const
+    {
+        return (unsigned int)low;
+    }
+#endif
+
+    regMaskSmall getLow() const
+    {
+        return low;
+    }
+};
+
+static regMaskTP operator^(regMaskTP first, regMaskTP second)
+{
+    regMaskTP result(first.getLow() ^ second.getLow());
+    return result;
+}
+
+static regMaskTP operator&(regMaskTP first, regMaskTP second)
+{
+    regMaskTP result(first.getLow() & second.getLow());
+    return result;
+}
+
+static regMaskTP operator|(regMaskTP first, regMaskTP second)
+{
+    regMaskTP result(first.getLow() | second.getLow());
+    return result;
+}
+
+static regMaskTP operator<<(regMaskTP first, const int b)
+{
+    regMaskTP result(first.getLow() << b);
+    return result;
+}
+
+static regMaskTP operator>>(regMaskTP first, const int b)
+{
+    regMaskTP result(first.getLow() >> b);
+    return result;
+}
+
+static regMaskTP& operator>>=(regMaskTP& first, const int b)
+{
+    first = first >> b;
+    return first;
+}
+
+static regMaskTP& operator|=(regMaskTP& first, regMaskTP second)
+{
+    first = first | second;
+    return first;
+}
+
+static regMaskTP& operator^=(regMaskTP& first, regMaskTP second)
+{
+    first = first ^ second;
+    return first;
+}
+
+static regMaskSmall operator^=(regMaskSmall& first, regMaskTP second)
+{
+    first ^= second.getLow();
+    return first;
+}
+
+static regMaskSmall operator&=(regMaskSmall& first, regMaskTP second)
+{
+    first &= second.getLow();
+    return first;
+}
+
+static regMaskSmall operator|=(regMaskSmall& first, regMaskTP second)
+{
+    first |= second.getLow();
+    return first;
+}
+
+static regMaskTP& operator&=(regMaskTP& first, regMaskTP second)
+{
+    first = first & second;
+    return first;
+}
+
+static bool operator==(regMaskTP first, regMaskTP second)
+{
+    return (first.getLow() == second.getLow());
+}
+
+static bool operator!=(regMaskTP first, regMaskTP second)
+{
+    return (first.getLow() != second.getLow());
+}
+
+#ifdef TARGET_ARM
+static regMaskTP operator-(regMaskTP first, regMaskTP second)
+{
+    regMaskTP result(first.getLow() - second.getLow());
+    return result;
+}
+
+static bool operator>(regMaskTP first, regMaskTP second)
+{
+    return first.getLow() > second.getLow();
+}
+
+static regMaskTP& operator<<=(regMaskTP& first, const int b)
+{
+    first = first << b;
+    return first;
+}
+#endif
+
+static regMaskTP operator~(regMaskTP first)
+{
+    regMaskTP result(~first.getLow());
+    return result;
+}
+
+static uint32_t PopCount(regMaskTP value)
+{
+    return BitOperations::PopCount(value.getLow());
+}
+
+static uint32_t BitScanForward(regMaskTP mask)
+{
+    return BitOperations::BitScanForward(mask.getLow());
+}
 
 /*****************************************************************************/
 
 #ifdef DEBUG
-#define DSP_SRC_OPER_LEFT 0
+#define DSP_SRC_OPER_LEFT  0
 #define DSP_SRC_OPER_RIGHT 1
-#define DSP_DST_OPER_LEFT 1
+#define DSP_DST_OPER_LEFT  1
 #define DSP_DST_OPER_RIGHT 0
 #endif
 
@@ -393,7 +551,7 @@ inline bool genIsValidFloatReg(regNumber reg)
     return reg >= REG_FP_FIRST && reg <= REG_FP_LAST;
 }
 
-#if defined(TARGET_XARCH)
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
 /*****************************************************************************
  * Return true if the register is a valid mask register
  */
@@ -401,7 +559,7 @@ inline bool genIsValidMaskReg(regNumber reg)
 {
     return reg >= REG_MASK_FIRST && reg <= REG_MASK_LAST;
 }
-#endif // TARGET_XARCH
+#endif // FEATURE_MASKED_HW_INTRINSICS
 
 #ifdef TARGET_ARM
 
@@ -419,10 +577,13 @@ inline bool genIsValidDoubleReg(regNumber reg)
 // hasFixedRetBuffReg:
 //     Returns true if our target architecture uses a fixed return buffer register
 //
-inline bool hasFixedRetBuffReg()
+inline bool hasFixedRetBuffReg(CorInfoCallConvExtension callConv)
 {
-#ifdef TARGET_ARM64
-    return true;
+#if defined(TARGET_ARM64)
+    // Windows does not use fixed ret buff arg for instance calls, but does otherwise.
+    return !TargetOS::IsWindows || !callConvIsInstanceMethodCallConv(callConv);
+#elif defined(TARGET_AMD64) && defined(SWIFT_SUPPORT)
+    return callConv == CorInfoCallConvExtension::Swift;
 #else
     return false;
 #endif
@@ -432,11 +593,14 @@ inline bool hasFixedRetBuffReg()
 // theFixedRetBuffReg:
 //     Returns the regNumber to use for the fixed return buffer
 //
-inline regNumber theFixedRetBuffReg()
+inline regNumber theFixedRetBuffReg(CorInfoCallConvExtension callConv)
 {
-    assert(hasFixedRetBuffReg()); // This predicate should be checked before calling this method
-#ifdef TARGET_ARM64
+    assert(hasFixedRetBuffReg(callConv)); // This predicate should be checked before calling this method
+#if defined(TARGET_ARM64)
     return REG_ARG_RET_BUFF;
+#elif defined(TARGET_AMD64) && defined(SWIFT_SUPPORT)
+    assert(callConv == CorInfoCallConvExtension::Swift);
+    return REG_SWIFT_ARG_RET_BUFF;
 #else
     return REG_NA;
 #endif
@@ -446,11 +610,14 @@ inline regNumber theFixedRetBuffReg()
 // theFixedRetBuffMask:
 //     Returns the regNumber to use for the fixed return buffer
 //
-inline regMaskTP theFixedRetBuffMask()
+inline regMaskTP theFixedRetBuffMask(CorInfoCallConvExtension callConv)
 {
-    assert(hasFixedRetBuffReg()); // This predicate should be checked before calling this method
-#ifdef TARGET_ARM64
+    assert(hasFixedRetBuffReg(callConv)); // This predicate should be checked before calling this method
+#if defined(TARGET_ARM64)
     return RBM_ARG_RET_BUFF;
+#elif defined(TARGET_AMD64) && defined(SWIFT_SUPPORT)
+    assert(callConv == CorInfoCallConvExtension::Swift);
+    return RBM_SWIFT_ARG_RET_BUFF;
 #else
     return 0;
 #endif
@@ -460,11 +627,14 @@ inline regMaskTP theFixedRetBuffMask()
 // theFixedRetBuffArgNum:
 //     Returns the argNum to use for the fixed return buffer
 //
-inline unsigned theFixedRetBuffArgNum()
+inline unsigned theFixedRetBuffArgNum(CorInfoCallConvExtension callConv)
 {
-    assert(hasFixedRetBuffReg()); // This predicate should be checked before calling this method
+    assert(hasFixedRetBuffReg(callConv)); // This predicate should be checked before calling this method
 #ifdef TARGET_ARM64
     return RET_BUFF_ARGNUM;
+#elif defined(TARGET_AMD64) && defined(SWIFT_SUPPORT)
+    assert(callConv == CorInfoCallConvExtension::Swift);
+    return SWIFT_RET_BUFF_ARGNUM;
 #else
     return BAD_VAR_NUM;
 #endif
@@ -475,16 +645,28 @@ inline unsigned theFixedRetBuffArgNum()
 //     Returns the full mask of all possible integer registers
 //     Note this includes the fixed return buffer register on Arm64
 //
-inline regMaskTP fullIntArgRegMask()
+inline regMaskTP fullIntArgRegMask(CorInfoCallConvExtension callConv)
 {
-    if (hasFixedRetBuffReg())
+    regMaskTP result = RBM_ARG_REGS;
+    if (hasFixedRetBuffReg(callConv))
     {
-        return RBM_ARG_REGS | theFixedRetBuffMask();
+        result |= theFixedRetBuffMask(callConv);
     }
-    else
+
+#ifdef SWIFT_SUPPORT
+    if (callConv == CorInfoCallConvExtension::Swift)
     {
-        return RBM_ARG_REGS;
+        result |= RBM_SWIFT_SELF;
+
+        // We don't pass any arguments in REG_SWIFT_ERROR, but as a quirk,
+        // we set the SwiftError* parameter to be passed in this register,
+        // and later ensure the parameter isn't given any registers/stack space
+        // to avoid interfering with other arguments.
+        result |= RBM_SWIFT_ERROR;
     }
+#endif
+
+    return result;
 }
 
 //-------------------------------------------------------------------------------------------
@@ -492,9 +674,9 @@ inline regMaskTP fullIntArgRegMask()
 //     Returns true if the register is a valid integer argument register
 //     Note this method also returns true on Arm64 when 'reg' is the RetBuff register
 //
-inline bool isValidIntArgReg(regNumber reg)
+inline bool isValidIntArgReg(regNumber reg, CorInfoCallConvExtension callConv)
 {
-    return (genRegMask(reg) & fullIntArgRegMask()) != 0;
+    return (genRegMask(reg) & fullIntArgRegMask(callConv)) != 0;
 }
 
 //-------------------------------------------------------------------------------------------
@@ -650,8 +832,7 @@ inline regMaskTP genRegMask(regNumber regNum, var_types type)
  *  These arrays list the callee-saved register numbers (and bitmaps, respectively) for
  *  the current architecture.
  */
-extern const regNumber raRegCalleeSaveOrder[CNT_CALLEE_SAVED];
-extern const regMaskTP raRbmCalleeSaveOrder[CNT_CALLEE_SAVED];
+extern const regMaskTP raRbmCalleeSaveOrder[CNT_CALL_GC_REGS];
 
 // This method takes a "compact" bitset of the callee-saved registers, and "expands" it to a full register mask.
 regMaskSmall genRegMaskFromCalleeSavedMask(unsigned short);
@@ -741,13 +922,13 @@ C_ASSERT((RBM_INT_CALLEE_SAVED & RBM_FPBASE) == RBM_NONE);
 /*****************************************************************************/
 
 #ifdef TARGET_64BIT
-typedef unsigned __int64 target_size_t;
-typedef __int64          target_ssize_t;
+typedef uint64_t target_size_t;
+typedef int64_t  target_ssize_t;
 #define TARGET_SIGN_BIT (1ULL << 63)
 
 #else // !TARGET_64BIT
-typedef unsigned int   target_size_t;
-typedef int            target_ssize_t;
+typedef unsigned int target_size_t;
+typedef int          target_ssize_t;
 #define TARGET_SIGN_BIT (1ULL << 31)
 
 #endif // !TARGET_64BIT

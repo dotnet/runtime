@@ -15,6 +15,8 @@ internal static partial class Interop
         private const int kSuccess = 1;
         private const int kErrorSeeError = -2;
         private const int kPlatformNotSupported = -5;
+        private const int kKeyIsSensitive = -6;
+        private const int kKeyIsNotExtractable = -7;
 
         internal enum PAL_KeyAlgorithm : uint
         {
@@ -125,8 +127,6 @@ internal static partial class Interop
             SafeSecKeyRefHandle key,
             out byte[] externalRepresentation)
         {
-            const int errSecPassphraseRequired = -25260;
-
             int result = AppleCryptoNative_SecKeyCopyExternalRepresentation(
                 key,
                 out SafeCFDataHandle data,
@@ -140,12 +140,12 @@ internal static partial class Interop
                     case kSuccess:
                         externalRepresentation = CoreFoundation.CFGetData(data);
                         return true;
+                    case kKeyIsSensitive:
+                        externalRepresentation = [];
+                        return false;
+                    case kKeyIsNotExtractable:
+                        throw new CryptographicException(SR.Cryptography_KeyNotExtractable);
                     case kErrorSeeError:
-                        if (Interop.CoreFoundation.GetErrorCode(errorHandle) == errSecPassphraseRequired)
-                        {
-                            externalRepresentation = Array.Empty<byte>();
-                            return false;
-                        }
                         throw CreateExceptionForCFError(errorHandle);
                     default:
                         Debug.Fail($"SecKeyCopyExternalRepresentation returned {result}");

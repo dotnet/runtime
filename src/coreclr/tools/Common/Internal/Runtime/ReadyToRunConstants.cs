@@ -57,7 +57,6 @@ namespace Internal.ReadyToRunConstants
     [Flags]
     public enum ReadyToRunFieldSigFlags : byte
     {
-        READYTORUN_FIELD_SIG_IndexInsteadOfToken = 0x08,
         READYTORUN_FIELD_SIG_MemberRefToken = 0x10,
         READYTORUN_FIELD_SIG_OwnerType = 0x40,
     }
@@ -234,6 +233,7 @@ namespace Internal.ReadyToRunConstants
         WriteBarrier                = 0x30,
         CheckedWriteBarrier         = 0x31,
         ByRefWriteBarrier           = 0x32,
+        BulkWriteBarrier            = 0x33,
 
         // Array helpers
         Stelem_Ref                  = 0x38,

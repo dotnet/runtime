@@ -9,7 +9,11 @@ namespace System.Runtime.CompilerServices
     public static partial class RuntimeHelpers
     {
         // The special dll name to be used for DllImport of QCalls
+#if NATIVEAOT
+        internal const string QCall = "*";
+#else
         internal const string QCall = "QCall";
+#endif
 
         public delegate void TryCode(object? userData);
 
@@ -125,6 +129,9 @@ namespace System.Runtime.CompilerServices
 
         [Intrinsic]
         internal static bool IsKnownConstant(char t) => false;
+
+        [Intrinsic]
+        internal static bool IsKnownConstant<T>(T t) where T : struct => false;
 #pragma warning restore IDE0060
     }
 }

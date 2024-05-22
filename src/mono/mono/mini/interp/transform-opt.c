@@ -32,7 +32,9 @@ alloc_var_offset (TransformData *td, int local, gint32 *ptos)
 int
 interp_alloc_global_var_offset (TransformData *td, int var)
 {
-	return alloc_var_offset (td, var, &td->total_locals_size);
+	int offset = alloc_var_offset (td, var, &td->total_locals_size);
+	interp_mark_ref_slots_for_var (td, var);
+	return offset;
 }
 
 static void
@@ -464,6 +466,8 @@ interp_alloc_offsets (TransformData *td)
 					add_active_call (td, &ac, td->vars [var].call);
 				} else if (!td->vars [var].global && td->vars [var].offset == -1) {
 					alloc_var_offset (td, var, &current_offset);
+					interp_mark_ref_slots_for_var (td, var);
+
 					if (current_offset > final_total_locals_size)
 						final_total_locals_size = current_offset;
 
@@ -492,6 +496,7 @@ interp_alloc_offsets (TransformData *td)
 		// These are allocated separately at the end of the stack
 		if (td->vars [i].call_args) {
 			td->vars [i].offset += td->param_area_offset;
+			interp_mark_ref_slots_for_var (td, i);
 			final_total_locals_size = MAX (td->vars [i].offset + td->vars [i].size, final_total_locals_size);
 		}
 	}
@@ -2236,6 +2241,7 @@ interp_fold_unop (TransformData *td, InterpInst *ins)
 	td->var_values [sreg].ref_count--;
 	result.def = ins;
 	result.ref_count = td->var_values [dreg].ref_count; // preserve ref count
+	result.liveness = td->var_values [dreg].liveness;
 	td->var_values [dreg] = result;
 
 	return ins;
@@ -2340,6 +2346,51 @@ interp_fold_binop (TransformData *td, InterpInst *ins, gboolean *folded)
 
 	if (!val1 || !val2)
 		return ins;
+
+	if ((val1->type == VAR_VALUE_I4 || val1->type == VAR_VALUE_I8) && val2->type == VAR_VALUE_NON_NULL) {
+		gint64 imm = (val1->type == VAR_VALUE_I4) ? (gint64)val1->i : val1->l;
+		if (imm == 0) {
+			result.type = VAR_VALUE_NONE;
+			switch (ins->opcode) {
+				case MINT_CEQ_I4:
+				case MINT_CEQ_I8:
+				case MINT_CGT_UN_I4:
+				case MINT_CGT_UN_I8:
+					result.type = VAR_VALUE_I4;
+					result.i = 0;
+					goto fold_ok;
+				case MINT_CNE_I4:
+				case MINT_CNE_I8:
+				case MINT_CLT_UN_I4:
+				case MINT_CLT_UN_I8:
+					result.type = VAR_VALUE_I4;
+					result.i = 1;
+					goto fold_ok;
+			}
+		}
+	} else if (val1->type == VAR_VALUE_NON_NULL && (val2->type == VAR_VALUE_I4 || val2->type == VAR_VALUE_I8)) {
+		gint64 imm = (val2->type == VAR_VALUE_I4) ? (gint64)val2->i : val2->l;
+		if (imm == 0) {
+			result.type = VAR_VALUE_NONE;
+			switch (ins->opcode) {
+				case MINT_CNE_I4:
+				case MINT_CNE_I8:
+				case MINT_CGT_UN_I4:
+				case MINT_CGT_UN_I8:
+					result.type = VAR_VALUE_I4;
+					result.i = 1;
+					goto fold_ok;
+				case MINT_CEQ_I4:
+				case MINT_CEQ_I8:
+				case MINT_CLT_UN_I4:
+				case MINT_CLT_UN_I8:
+					result.type = VAR_VALUE_I4;
+					result.i = 0;
+					goto fold_ok;
+			}
+		}
+	}
+
 	if (val1->type != VAR_VALUE_I4 && val1->type != VAR_VALUE_I8)
 		return ins;
 	if (val2->type != VAR_VALUE_I4 && val2->type != VAR_VALUE_I8)
@@ -2407,6 +2458,7 @@ interp_fold_binop (TransformData *td, InterpInst *ins, gboolean *folded)
 			return ins;
 	}
 
+fold_ok:
 	// We were able to compute the result of the ins instruction. We replace the binop
 	// with a LDC of the constant. We leave alone the sregs of this instruction, for
 	// deadce to kill the instructions initializing them.
@@ -2427,6 +2479,7 @@ interp_fold_binop (TransformData *td, InterpInst *ins, gboolean *folded)
 	td->var_values [sreg2].ref_count--;
 	result.def = ins;
 	result.ref_count = td->var_values [dreg].ref_count; // preserve ref count
+	result.liveness = td->var_values [dreg].liveness;
 	td->var_values [dreg] = result;
 
 	return ins;
@@ -3182,7 +3235,7 @@ retry_instruction:
 					td->var_values [ins->sregs [0]].ref_count--;
 					goto retry_instruction;
 				}
-			} else if (opcode == MINT_BOX) {
+			} else if (MINT_IS_BOX (opcode)) {
 				// TODO Add more relevant opcodes
 				td->var_values [dreg].type = VAR_VALUE_NON_NULL;
 			}

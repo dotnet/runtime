@@ -117,8 +117,8 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="InvalidOperation_CannotSaveMultipleTimes" xml:space="preserve">
-    <value>Cannot save an assembly multiple times.</value>
+  <data name="InvalidOperation_CannotPopulateMultipleTimes" xml:space="preserve">
+    <value>Cannot populate assembly metadata multiple times.</value>
   </data>
   <data name="Argument_CannotSetParentToInterface" xml:space="preserve">
     <value>Cannot set parent to an interface.</value>
@@ -249,9 +249,6 @@
   <data name="Argument_MustBeInterface" xml:space="preserve">
     <value>Type passed must be an interface.</value>
   </data>
-  <data name="TypeLoad_MissingMethod" xml:space="preserve">
-    <value>Abstract method '{0}' in type '{1}' does not have an implementation.</value>
-  </data>
   <data name="InvalidOperation_BadMethodBody" xml:space="preserve">
     <value>Method '{0}' cannot have a method body</value>
   </data>
@@ -299,5 +296,11 @@
   </data>
   <data name="NotSupported_SymbolMethod" xml:space="preserve">
     <value>Not supported in an array method of a type definition that is not complete.</value>
+  </data>
+  <data name="InvalidOperation_InvalidDocument" xml:space="preserve">
+    <value>Invalid source document.</value>
+  </data>
+  <data name="InvalidOperation_UnmatchingSymScope" xml:space="preserve">
+    <value>Unmatching symbol scope.</value>
   </data>
 </root>

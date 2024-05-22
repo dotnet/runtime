@@ -289,10 +289,7 @@ namespace System.Runtime.CompilerServices
             if (System.Linq.Expressions.LambdaExpression.CanCompileToIL
                 && target.IsGenericType && IsSimpleSignature(invoke, out Type[] args))
             {
-#pragma warning disable IL3050
-                // Analyzer doesn't yet understand feature switches
                 return MakeUpdateDelegateWhenCanCompileToIL();
-#pragma warning restore IL3050
             }
 
             s_cachedNoMatch = CreateCustomNoMatchDelegate(invoke);

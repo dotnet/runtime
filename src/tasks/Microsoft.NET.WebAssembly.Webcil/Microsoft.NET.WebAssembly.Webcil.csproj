@@ -8,10 +8,8 @@
     <IncludeSymbols>true</IncludeSymbols>
     <Serviceable>true</Serviceable>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <IsShipping>true</IsShipping>
-    <!-- this assembly should not produce a public package, rather it's meant to be shipped by the
-          WasmAppBuilder task and the BrowserDebugProxy -->
-    <IsShippingPackage>false</IsShippingPackage>
+    <IsShipping>false</IsShipping>
+    <IsPackable>true</IsPackable>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">

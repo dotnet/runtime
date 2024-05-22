@@ -9,22 +9,23 @@ parameters:
   crossBuild: false
   strategy: ''
   pool: ''
+  logsName: ''
 
   # arcade-specific parameters
   condition: ''
   continueOnError: false
   dependsOn: ''
-  dependOnEvaluatePaths: false
   displayName: ''
   timeoutInMinutes: ''
   enableMicrobuild: ''
   gatherAssetManifests: false
-  disableComponentGovernance: false
+  disableComponentGovernance: ''
+  templatePath: 'templates'
 
   variables: {} ## any extra variables to add to the defaults defined below
 
 jobs:
-- template: /eng/common/templates/job/job.yml
+- template: /eng/common/${{ parameters.templatePath }}/job/job.yml
   parameters:
 
     name: ${{ parameters.name }}
@@ -32,8 +33,6 @@ jobs:
     container: ${{ parameters.container }}
     condition: ${{ parameters.condition }}
     dependsOn:
-      - ${{ if eq(parameters.dependOnEvaluatePaths, true) }}:
-        - evaluate_paths
       - ${{ if ne(parameters.dependsOn, '') }}:
         - ${{ parameters.dependsOn }}
 
@@ -64,17 +63,28 @@ jobs:
     ${{ if eq(parameters.osGroup, 'windows') }}:
       agentOs: windows
 
-    # Disable component governance if requested or on musl machines where it does not work well
-    ${{ if or(eq(parameters.disableComponentGovernance, true), eq(parameters.osSubGroup, '_musl')) }}:
+    # Component governance does not work on musl machines
+    ${{ if eq(parameters.osSubGroup, '_musl') }}:
       disableComponentGovernance: true
+    ${{ else }}:
+      disableComponentGovernance: ${{ parameters.disableComponentGovernance }}
 
     # Setting this results in the arcade job template including a step
     # that gathers asset manifests and publishes them to pipeline
     # storage. Only relevant for build jobs.
     enablePublishBuildAssets: ${{ parameters.gatherAssetManifests }}
 
+    artifacts:
+      publish:
+        ${{ if ne(parameters.logsName, '') }}:
+          logs:
+            name: '${{ parameters.logsName }}'
+
     variables:
     - name: buildConfig
+      value: ${{ parameters.buildConfig }}
+
+    - name: _BuildConfig
       value: ${{ parameters.buildConfig }}
 
     - ${{ if and(eq(variables['System.TeamProject'], 'internal'), ne(variables['Build.Reason'], 'PullRequest')) }}:

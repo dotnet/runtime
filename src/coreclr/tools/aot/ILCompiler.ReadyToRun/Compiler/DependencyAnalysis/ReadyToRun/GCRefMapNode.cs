@@ -44,7 +44,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            sb.Append("GCRefMap->");
+            sb.Append("GCRefMap->"u8);
             sb.Append(_importSection.Name);
         }
 

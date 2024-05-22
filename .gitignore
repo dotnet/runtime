@@ -187,6 +187,7 @@ node_modules/
 *.metaproj
 *.metaproj.tmp
 bin.localpkg/
+.mono/
 
 # RIA/Silverlight projects
 Generated_Code/

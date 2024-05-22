@@ -185,7 +185,7 @@ public:
         uMThunkMarshInfoWriterHolder.GetRW()->RunTimeInit();
 
         // Ensure that we have either the managed target or the delegate.
-        if (m_pObjectHandle == NULL && m_pManagedTarget == NULL)
+        if (m_pObjectHandle == NULL && m_pManagedTarget == (TADDR)0)
             m_pManagedTarget = m_pMD->GetMultiCallableAddrOfCode();
 
         m_code.Encode(&pUMEntryThunkRX->m_code, (BYTE*)m_pUMThunkMarshInfo->GetExecStubEntryPoint(), pUMEntryThunkRX);
@@ -223,7 +223,7 @@ public:
         }
         else
         {
-            if (m_pManagedTarget != NULL)
+            if (m_pManagedTarget != (TADDR)0)
             {
                 RETURN m_pManagedTarget;
             }

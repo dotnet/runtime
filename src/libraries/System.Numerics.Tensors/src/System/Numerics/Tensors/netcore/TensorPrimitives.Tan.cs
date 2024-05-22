@@ -259,10 +259,16 @@ namespace System.Numerics.Tensors
                     return ApplyScalar<TanOperatorDouble>(x);
                 }
 
+                // dn = |x| * (2/π)
                 Vector128<double> dn = MultiplyAddEstimateOperator<double>.Invoke(uxMasked, Vector128.Create(2 / double.Pi), Vector128.Create(AlmHuge));
                 Vector128<ulong> odd = dn.AsUInt64() << 63;
                 dn -= Vector128.Create(AlmHuge);
-                Vector128<double> f = uxMasked.AsDouble() - (dn * (double.Pi / 2)) - (dn * HalfPi2) - (dn * HalfPi3);
+
+                // f = |x| - (dn * π/2)
+                Vector128<double> f = uxMasked;
+                f = MultiplyAddEstimateOperator<double>.Invoke(dn, Vector128.Create(-double.Pi / 2), f);
+                f = MultiplyAddEstimateOperator<double>.Invoke(dn, Vector128.Create(-HalfPi2), f);
+                f = MultiplyAddEstimateOperator<double>.Invoke(dn, Vector128.Create(-HalfPi3), f);
 
                 // POLY_EVAL_ODD_29
                 Vector128<double> g = f * f;
@@ -300,10 +306,16 @@ namespace System.Numerics.Tensors
                     return ApplyScalar<TanOperatorDouble>(x);
                 }
 
+                // dn = |x| * (2/π)
                 Vector256<double> dn = MultiplyAddEstimateOperator<double>.Invoke(uxMasked, Vector256.Create(2 / double.Pi), Vector256.Create(AlmHuge));
                 Vector256<ulong> odd = dn.AsUInt64() << 63;
                 dn -= Vector256.Create(AlmHuge);
-                Vector256<double> f = uxMasked.AsDouble() - (dn * (double.Pi / 2)) - (dn * HalfPi2) - (dn * HalfPi3);
+
+                // f = |x| - (dn * π/2)
+                Vector256<double> f = uxMasked;
+                f = MultiplyAddEstimateOperator<double>.Invoke(dn, Vector256.Create(-double.Pi / 2), f);
+                f = MultiplyAddEstimateOperator<double>.Invoke(dn, Vector256.Create(-HalfPi2), f);
+                f = MultiplyAddEstimateOperator<double>.Invoke(dn, Vector256.Create(-HalfPi3), f);
 
                 // POLY_EVAL_ODD_29
                 Vector256<double> g = f * f;
@@ -341,10 +353,16 @@ namespace System.Numerics.Tensors
                     return ApplyScalar<TanOperatorDouble>(x);
                 }
 
+                // dn = |x| * (2/π)
                 Vector512<double> dn = MultiplyAddEstimateOperator<double>.Invoke(uxMasked, Vector512.Create(2 / double.Pi), Vector512.Create(AlmHuge));
                 Vector512<ulong> odd = dn.AsUInt64() << 63;
                 dn -= Vector512.Create(AlmHuge);
-                Vector512<double> f = uxMasked.AsDouble() - (dn * (double.Pi / 2)) - (dn * HalfPi2) - (dn * HalfPi3);
+
+                // f = |x| - (dn * π/2)
+                Vector512<double> f = uxMasked;
+                f = MultiplyAddEstimateOperator<double>.Invoke(dn, Vector512.Create(-double.Pi / 2), f);
+                f = MultiplyAddEstimateOperator<double>.Invoke(dn, Vector512.Create(-HalfPi2), f);
+                f = MultiplyAddEstimateOperator<double>.Invoke(dn, Vector512.Create(-HalfPi3), f);
 
                 // POLY_EVAL_ODD_29
                 Vector512<double> g = f * f;

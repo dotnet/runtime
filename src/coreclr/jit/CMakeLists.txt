@@ -23,8 +23,6 @@ function(create_standalone_jit)
 
   if(TARGETDETAILS_OS STREQUAL "unix_osx" OR TARGETDETAILS_OS STREQUAL "unix_anyos")
     set(JIT_ARCH_LINK_LIBRARIES gcinfo_unix_${TARGETDETAILS_ARCH})
-  elseif(TARGETDETAILS_OS STREQUAL "win_aot")
-    set(JIT_ARCH_LINK_LIBRARIES gcinfo_win_${TARGETDETAILS_ARCH})
   else()
     set(JIT_ARCH_LINK_LIBRARIES gcinfo_${TARGETDETAILS_OS}_${TARGETDETAILS_ARCH})
   endif()
@@ -75,12 +73,14 @@ function(create_standalone_jit)
   if ((TARGETDETAILS_ARCH STREQUAL "x64") OR (TARGETDETAILS_ARCH STREQUAL "arm64") OR ((TARGETDETAILS_ARCH STREQUAL "x86") AND NOT (TARGETDETAILS_OS STREQUAL "unix")))
     target_compile_definitions(${TARGETDETAILS_TARGET} PRIVATE FEATURE_SIMD)
     target_compile_definitions(${TARGETDETAILS_TARGET} PRIVATE FEATURE_HW_INTRINSICS)
+    target_compile_definitions(${TARGETDETAILS_TARGET} PRIVATE FEATURE_MASKED_HW_INTRINSICS)
   endif ()
 endfunction()
 
 if (CLR_CMAKE_TARGET_ARCH_AMD64 OR CLR_CMAKE_TARGET_ARCH_ARM64 OR (CLR_CMAKE_TARGET_ARCH_I386 AND NOT CLR_CMAKE_HOST_UNIX))
   add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:IGNORE_DEFAULT_TARGET_ARCH>>>:FEATURE_SIMD>)
   add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:IGNORE_DEFAULT_TARGET_ARCH>>>:FEATURE_HW_INTRINSICS>)
+  add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:IGNORE_DEFAULT_TARGET_ARCH>>>:FEATURE_MASKED_HW_INTRINSICS>)
 endif ()
 
 # JIT_BUILD disables certain PAL_TRY debugging features
@@ -91,6 +91,7 @@ if(CLR_CMAKE_TARGET_WIN32)
 endif(CLR_CMAKE_TARGET_WIN32)
 
 set( JIT_SOURCES
+  abi.cpp
   alloc.cpp
   assertionprop.cpp
   bitset.cpp
@@ -237,6 +238,7 @@ set( JIT_ARM64_SOURCES
   codegenarm64.cpp
   codegenarm64test.cpp
   emitarm64.cpp
+  emitarm64sve.cpp
   lowerarmarch.cpp
   lsraarmarch.cpp
   lsraarm64.cpp
@@ -286,6 +288,7 @@ set( JIT_HEADERS
   ../inc/corjitflags.h
   ../inc/corjithost.h
   _typeinfo.h
+  abi.h
   alloc.h
   arraystack.h
   bitset.h
@@ -380,7 +383,6 @@ set( JIT_HEADERS
   targetamd64.h
   targetarm.h
   targetarm64.h
-  tinyarray.h
   treelifeupdater.h
   typelist.h
   unwind.h
@@ -654,7 +656,6 @@ else()
   create_standalone_jit(TARGET clrjit_universal_arm_${ARCH_HOST_NAME} OS universal ARCH arm DESTINATIONS .)
   target_compile_definitions(clrjit_universal_arm_${ARCH_HOST_NAME} PRIVATE ARM_SOFTFP CONFIGURABLE_ARM_ABI)
   create_standalone_jit(TARGET clrjit_win_x86_${ARCH_HOST_NAME} OS win ARCH x86 DESTINATIONS .)
-  create_standalone_jit(TARGET clrjit_win_aot_x86_${ARCH_HOST_NAME} OS win_aot ARCH x86 DESTINATIONS .)
 endif (CLR_CMAKE_TARGET_ARCH_RISCV64)
 
 if (CLR_CMAKE_TARGET_ARCH_I386 AND CLR_CMAKE_TARGET_UNIX)

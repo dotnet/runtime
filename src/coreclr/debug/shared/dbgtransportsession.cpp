@@ -1949,7 +1949,7 @@ void DbgTransportSession::TransportWorker()
                     DWORD   cbBytesToRead = sReceiveHeader.TypeSpecificData.MemoryAccess.m_cbLeftSideBuffer;
                     while (cbBytesToRead)
                     {
-                        DWORD cbTransfer = min(cbBytesToRead, sizeof(rgDummy));
+                        DWORD cbTransfer = min(cbBytesToRead, (DWORD)sizeof(rgDummy));
                         if (!ReceiveBlock(rgDummy, cbTransfer))
                             HANDLE_TRANSIENT_ERROR();
                         cbBytesToRead -= cbTransfer;
@@ -2203,6 +2203,7 @@ DWORD DbgTransportSession::GetEventSize(DebuggerIPCEvent *pEvent)
     case DB_IPCE_BEFORE_GARBAGE_COLLECTION:
     case DB_IPCE_AFTER_GARBAGE_COLLECTION:
     case DB_IPCE_DISABLE_OPTS_RESULT:
+    case DB_IPCE_CATCH_HANDLER_FOUND_RESULT:
         cbAdditionalSize = 0;
         break;
 
@@ -2500,6 +2501,14 @@ DWORD DbgTransportSession::GetEventSize(DebuggerIPCEvent *pEvent)
 
     case DB_IPCE_DISABLE_OPTS:
         cbAdditionalSize = sizeof(pEvent->DisableOptData);
+        break;
+
+    case DB_IPCE_FORCE_CATCH_HANDLER_FOUND:
+        cbAdditionalSize = sizeof(pEvent->ForceCatchHandlerFoundData);
+        break;
+
+    case DB_IPCE_SET_ENABLE_CUSTOM_NOTIFICATION:
+        cbAdditionalSize = sizeof(pEvent->CustomNotificationData);
         break;
 
     default:

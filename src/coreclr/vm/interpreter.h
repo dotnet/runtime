@@ -13,7 +13,7 @@
 #include "crst.h"
 #include "callhelpers.h"
 #include "codeversion.h"
-#include "clr_std/type_traits"
+#include <type_traits>
 
 typedef SSIZE_T NativeInt;
 typedef SIZE_T NativeUInt;
@@ -1402,8 +1402,8 @@ private:
 #if INTERP_ILCYCLE_PROFILE
     // Cycles we want to delete from the current instructions cycle count; e.g.,
     // cycles spent in a callee.
-    unsigned __int64 m_exemptCycles;
-    unsigned __int64 m_startCycles;
+    uint64_t m_exemptCycles;
+    uint64_t m_startCycles;
     unsigned short   m_instr;
 
     void UpdateCycleCount();
@@ -1533,16 +1533,16 @@ private:
     static int                   s_ILInstrExecs[256];
     static int                   s_ILInstrExecsByCategory[512];
 #if INTERP_ILCYCLE_PROFILE
-    static unsigned __int64       s_ILInstrCyclesByCategory[512];
+    static uint64_t       s_ILInstrCyclesByCategory[512];
 #endif // INTERP_ILCYCLE_PROFILE
 
     static const unsigned         CountIlInstr2Byte = 0x22;
     static int                   s_ILInstr2ByteExecs[CountIlInstr2Byte];
 
 #if INTERP_ILCYCLE_PROFILE
-    static unsigned __int64       s_ILInstrCycles[512];
+    static uint64_t       s_ILInstrCycles[512];
     // XXX
-    static unsigned __int64              s_callCycles;
+    static uint64_t              s_callCycles;
     static unsigned                      s_calls;
 #endif // INTERP_ILCYCLE_PROFILE
 #endif // INTERP_ILINSTR_PROFILE
@@ -1935,7 +1935,7 @@ private:
         bool           m_is2byte;
         unsigned m_execs;
 #if INTERP_ILCYCLE_PROFILE
-        unsigned __int64 m_cycles;
+        uint64_t m_cycles;
 #endif // INTERP_ILCYCLE_PROFILE
 
         static int _cdecl Compare(const void* v0, const void* v1)
@@ -1956,7 +1956,7 @@ private:
     // Prints the given array "recs", assumed to already be sorted.
     static void PrintILProfile(InstrExecRecord* recs, unsigned totInstrs
 #if INTERP_ILCYCLE_PROFILE
-                                 , unsigned __int64 totCycles
+                                 , uint64_t totCycles
 #endif // INTERP_ILCYCLE_PROFILE
                                  );
 #endif // INTERP_ILINSTR_PROFILE

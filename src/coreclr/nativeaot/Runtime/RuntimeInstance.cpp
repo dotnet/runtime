@@ -350,7 +350,7 @@ bool RuntimeInstance::ShouldHijackCallsiteForGcStress(uintptr_t CallsiteIP)
 }
 
 #ifdef FEATURE_CACHED_INTERFACE_DISPATCH
-EXTERN_C void REDHAWK_CALLCONV RhpInitialDynamicInterfaceDispatch();
+EXTERN_C void F_CALL_CONV RhpInitialDynamicInterfaceDispatch();
 
 FCIMPL2(void *, RhNewInterfaceDispatchCell, MethodTable * pInterface, int32_t slotNumber)
 {

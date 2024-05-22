@@ -255,6 +255,11 @@ namespace Mono.Linker
 			return new MessageContainer (MessageCategory.Info, text, null);
 		}
 
+		internal static MessageContainer CreateInfoMessage (MessageOrigin origin, string text)
+		{
+			return new MessageContainer (MessageCategory.Info, text, null, "", origin);
+		}
+
 		/// <summary>
 		/// Create a diagnostics message.
 		/// </summary>

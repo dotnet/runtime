@@ -1676,3 +1676,12 @@ namespace DebuggerBreakpointTests
         }
     }
 }
+
+public class SpanByte
+{
+    public static void Run()
+    {
+        System.Span<byte> span = new ();
+        System.Diagnostics.Debugger.Break();
+    }
+}

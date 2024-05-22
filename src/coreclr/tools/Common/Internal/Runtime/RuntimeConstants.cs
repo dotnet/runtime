@@ -73,5 +73,8 @@ namespace Internal.Runtime
         public const int IsObjectiveCMessageSendMask = 0x8;
         public const int ObjectiveCMessageSendFunctionMask = 0x70;
         public const int ObjectiveCMessageSendFunctionShift = 4;
+        // Uses the same bit as IsObjectiveCMessageSendMask since we never have
+        // TARGET_X86 and FEATURE_OBJCMARSHAL used at the same time.
+        public const int IsStdcall = 0x8;
     }
 }

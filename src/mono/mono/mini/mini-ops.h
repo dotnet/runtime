@@ -775,6 +775,7 @@ MINI_OP(OP_LDELEMA2D, "ldelema2d", NONE, NONE, NONE)
 MINI_OP(OP_MEMCPY, "memcpy", NONE, NONE, NONE)
 /* inlined small memset with constant length */
 MINI_OP(OP_MEMSET, "memset", NONE, NONE, NONE)
+MINI_OP(OP_MEMSET_ZERO, "memset_zero", NONE, IREG, IREG)
 /*
  * A RuntimeType object, the result ldtoken+GetTypeFromHandle.
  * inst_p0 is a MonoClass.
@@ -803,8 +804,6 @@ MINI_OP(OP_NOT_NULL, "not_null", NONE, IREG, NONE)
 MINI_OP(OP_LDTOKEN_FIELD, "ldtoken_field", VREG, VREG, NONE)
 
 /* SIMD opcodes. */
-
-#if defined(TARGET_X86) || defined(TARGET_AMD64) || defined(TARGET_WASM) || defined(TARGET_ARM64)
 
 MINI_OP(OP_ICONV_TO_R4_RAW, "iconv_to_r4_raw", FREG, IREG, NONE)
 
@@ -852,8 +851,6 @@ MINI_OP(OP_EXPAND_I4, "expand_i4", XREG, IREG, NONE)
 MINI_OP(OP_EXPAND_R4, "expand_r4", XREG, FREG, NONE)
 MINI_OP(OP_EXPAND_I8, "expand_i8", XREG, IREG, NONE)
 MINI_OP(OP_EXPAND_R8, "expand_r8", XREG, FREG, NONE)
-
-#endif
 
 // wasm specific SIMD v128
 

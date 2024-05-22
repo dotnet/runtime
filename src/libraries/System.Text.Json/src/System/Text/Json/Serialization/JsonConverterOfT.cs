@@ -214,7 +214,7 @@ namespace System.Text.Json.Serialization
             bool success;
 
             if (
-#if NETCOREAPP
+#if NET
                 !typeof(T).IsValueType &&
 #endif
                 CanBePolymorphic)
@@ -367,7 +367,7 @@ namespace System.Text.Json.Serialization
             bool success;
 
             if (
-#if NETCOREAPP
+#if NET
                 // Short-circuit the check against "is not null"; treated as a constant by recent versions of the JIT.
                 !typeof(T).IsValueType &&
 #else

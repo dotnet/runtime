@@ -80,8 +80,6 @@ namespace ILCompiler
             }
             else if (architecture == TargetArchitecture.X86)
             {
-                if (potentialType.Name == "X64")
-                    potentialType = (MetadataType)potentialType.ContainingType;
                 if (potentialType.Name == "VL")
                     potentialType = (MetadataType)potentialType.ContainingType;
                 if (potentialType.Namespace != "System.Runtime.Intrinsics.X86")
@@ -98,6 +96,10 @@ namespace ILCompiler
             {
                 if (potentialType.Namespace != "System.Runtime.Intrinsics.Arm")
                     return "";
+            }
+            else if (architecture == TargetArchitecture.LoongArch64)
+            {
+                return "";
             }
             else if (architecture == TargetArchitecture.RiscV64)
             {

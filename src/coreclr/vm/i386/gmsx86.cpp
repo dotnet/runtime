@@ -150,7 +150,7 @@ static bool shouldEnterCall(PTR_BYTE ip) {
                 // xxxx starts with a JMP [] then do what you would do for jmp XXXX
                 if (*ip == 0xE9 && callsInstrumented()) {        // jmp helper
                     PTR_BYTE tmpIp = ip + 5;
-                    PTR_BYTE target = tmpIp + (__int32)*((PTR_TADDR)(PTR_TO_TADDR(tmpIp) - 4));
+                    PTR_BYTE target = tmpIp + (int32_t)*((PTR_TADDR)(PTR_TO_TADDR(tmpIp) - 4));
                     if (target[0] == 0xFF && target[1] == 0x25) {                // jmp [xxxx] (to external dll)
                         ip = PTR_BYTE(*((PTR_TADDR)(PTR_TO_TADDR(ip) - 4)));
                     }
@@ -278,11 +278,11 @@ static bool shouldEnterCall(PTR_BYTE ip) {
                 break;
 
             case 0xEB:              // jmp <disp8>
-                ip += (signed __int8) ip[1] + 2;
+                ip += (int8_t) ip[1] + 2;
                 break;
 
             case 0xE9:              // jmp <disp32>
-                ip += (__int32)*PTR_DWORD(PTR_TO_TADDR(ip) + 1) + 5;
+                ip += (int32_t)*PTR_DWORD(PTR_TO_TADDR(ip) + 1) + 5;
                 break;
 
             case 0xF7:               // test r/m32, imm32
@@ -302,7 +302,7 @@ static bool shouldEnterCall(PTR_BYTE ip) {
                 // Magellan code coverage build
                 // We always follow forward jump to avoid possible looping.
                 {
-                    PTR_BYTE tmpIp = ip + (TADDR)(signed __int8) ip[1] + 2;
+                    PTR_BYTE tmpIp = ip + (TADDR)(int8_t) ip[1] + 2;
                     if (tmpIp > ip) {
                         ip = tmpIp;     // follow forwards jump
                     }
@@ -362,8 +362,7 @@ static bool shouldEnterCall(PTR_BYTE ip) {
 void LazyMachState::unwindLazyState(LazyMachState* baseState,
                                     MachState* lazyState,
                                     DWORD threadId,
-                                    int funCallDepth /* = 1 */,
-                                    HostCallPreference hostCallPreference /* = (HostCallPreference)(-1) */)
+                                    int funCallDepth /* = 1 */)
 {
     CONTRACTL {
         NOTHROW;
@@ -495,12 +494,12 @@ void LazyMachState::unwindLazyState(LazyMachState* baseState,
                 goto incIp1;
 
             case 0xEB:              // jmp <disp8>
-                ip += (signed __int8) ip[1] + 2;
+                ip += (int8_t) ip[1] + 2;
                 break;
 
             case 0x72:              // jb <disp8> for gcc.
                 {
-                    PTR_BYTE tmpIp = ip + (int)(signed __int8)ip[1] + 2;
+                    PTR_BYTE tmpIp = ip + (int)(int8_t)ip[1] + 2;
                     if (tmpIp > ip)
                         ip = tmpIp;
                     else
@@ -512,7 +511,7 @@ void LazyMachState::unwindLazyState(LazyMachState* baseState,
                 ip += 5;
                 if (epilogCallRet == 0)
                 {
-                    PTR_BYTE target = ip + (__int32)*PTR_DWORD(PTR_TO_TADDR(ip) - 4);    // calculate target
+                    PTR_BYTE target = ip + (int32_t)*PTR_DWORD(PTR_TO_TADDR(ip) - 4);    // calculate target
 
                     if (shouldEnterCall(target))
                     {
@@ -526,7 +525,7 @@ void LazyMachState::unwindLazyState(LazyMachState* baseState,
             case 0xE9:              // jmp <disp32>
                 {
                     PTR_BYTE tmpIp = ip
-                        + ((__int32)*dac_cast<PTR_DWORD>(ip + 1) + 5);
+                        + ((int32_t)*dac_cast<PTR_DWORD>(ip + 1) + 5);
                     ip = tmpIp;
                 }
                 break;
@@ -576,7 +575,7 @@ void LazyMachState::unwindLazyState(LazyMachState* baseState,
               else if (bFirstCondJmp) {
                   bFirstCondJmp = FALSE;
                   if (ip[1] == 0x85)  // jne <disp32>
-                      ip += (__int32)*dac_cast<PTR_DWORD>(ip + 2) + 6;
+                      ip += (int32_t)*dac_cast<PTR_DWORD>(ip + 2) + 6;
                   else if (ip[1] >= 0x80 && ip[1] <= 0x8F)  // jcc <disp32>
                       ip += 6;
                   else
@@ -584,7 +583,7 @@ void LazyMachState::unwindLazyState(LazyMachState* baseState,
               }
               else {
                   if ((ip[1] >= 0x80) && (ip[1] <= 0x8F)) {
-                      PTR_BYTE tmpIp = ip + (__int32)*dac_cast<PTR_DWORD>(ip + 2) + 6;
+                      PTR_BYTE tmpIp = ip + (int32_t)*dac_cast<PTR_DWORD>(ip + 2) + 6;
 
                       if ((tmpIp > ip) == (lastCondJmpIp != ip)) {
                           lastCondJmpIp = ip;
@@ -624,7 +623,7 @@ void LazyMachState::unwindLazyState(LazyMachState* baseState,
                     // xxxx starts with a JMP [] then do what you would do for call XXXX
                     if ((*ip & 0xFE) == 0xE8 && callsInstrumented()) {       // It is a call or a jump (E8 or E9)
                         PTR_BYTE tmpIp = ip + 5;
-                        PTR_BYTE target = tmpIp + (__int32)*PTR_DWORD(PTR_TO_TADDR(tmpIp) - 4);
+                        PTR_BYTE target = tmpIp + (int32_t)*PTR_DWORD(PTR_TO_TADDR(tmpIp) - 4);
                         if (target[0] == 0xFF && target[1] == 0x25) {                // jmp [xxxx] (to external dll)
                             target = PTR_BYTE(*PTR_TADDR(PTR_TO_TADDR(ip) - 4));
                             if (*ip == 0xE9) {                                       // Do logic for jmp
@@ -653,7 +652,7 @@ void LazyMachState::unwindLazyState(LazyMachState* baseState,
                 //
                 if (bFirstCondJmp) {
                     bFirstCondJmp = FALSE;
-                    ip += (signed __int8) ip[1] + 2;   // follow the non-zero path
+                    ip += (int8_t) ip[1] + 2;   // follow the non-zero path
                     break;
                 }
                 goto condJumpDisp8;
@@ -667,7 +666,7 @@ void LazyMachState::unwindLazyState(LazyMachState* baseState,
 
         condJumpDisp8:
                 {
-                    PTR_BYTE tmpIp = ip + (TADDR)(signed __int8) ip[1] + 2;
+                    PTR_BYTE tmpIp = ip + (TADDR)(int8_t) ip[1] + 2;
                     if ((tmpIp > ip) == (lastCondJmpIp != ip)) {
                         lastCondJmpIp = ip;
                         ip = tmpIp;
@@ -713,7 +712,7 @@ void LazyMachState::unwindLazyState(LazyMachState* baseState,
                     if ((ip[1] & 7) == ((ip[1] >> 3) & 7)) {        // reg1 == reg2?
                         if (ip[2] == 0x85 && ip[3] == ip[1]) {      // TEST reg, reg
                             if (ip[4] == 0x74) {
-                                ip += (signed __int8) ip[5] + 6;   // follow the non-zero path
+                                ip += (int8_t) ip[5] + 6;   // follow the non-zero path
                                 break;
                             }
                             _ASSERTE(ip[4] != 0x0f || ((ip[5] & 0xF0)!=0x80)); // If this goes off, we need the big jumps
@@ -722,7 +721,7 @@ void LazyMachState::unwindLazyState(LazyMachState* baseState,
                         {
                             if (ip[2]==0x74)
                             {
-                                ip += (signed __int8) ip[3] + 4;
+                                ip += (int8_t) ip[3] + 4;
                                 break;
                             }
                             _ASSERTE(ip[2] != 0x0f || ((ip[3] & 0xF0)!=0x80));              // If this goes off, we need the big jumps
@@ -877,11 +876,11 @@ void LazyMachState::unwindLazyState(LazyMachState* baseState,
             case 0x81:                           // OP r/m32, <imm32>
                 if (!b16bit && ip[1] == 0xC4) {  // ADD ESP, <imm32>
                     ESP = dac_cast<PTR_TADDR>(dac_cast<TADDR>(ESP) +
-                          (__int32)*dac_cast<PTR_DWORD>(ip + 2));
+                          (int32_t)*dac_cast<PTR_DWORD>(ip + 2));
                     ip += 6;
                     break;
                 } else if (!b16bit && ip[1] == 0xC5) { // ADD EBP, <imm32>
-                    lazyState->_ebp += (__int32)*dac_cast<PTR_DWORD>(ip + 2);
+                    lazyState->_ebp += (int32_t)*dac_cast<PTR_DWORD>(ip + 2);
                     ip += 6;
                     break;
                 }
@@ -904,22 +903,22 @@ void LazyMachState::unwindLazyState(LazyMachState* baseState,
                 goto decodeRM;
             case 0x83:                           // OP r/m32, <imm8>
                 if (ip[1] == 0xC4)  {            // ADD ESP, <imm8>
-                    ESP = dac_cast<PTR_TADDR>(dac_cast<TADDR>(ESP) + (signed __int8)ip[2]);
+                    ESP = dac_cast<PTR_TADDR>(dac_cast<TADDR>(ESP) + (int8_t)ip[2]);
                     ip += 3;
                     break;
                 }
                 if (ip[1] == 0xec) {            // SUB ESP, <imm8>
-                    ESP = PTR_TADDR(PTR_TO_TADDR(ESP) - (signed __int8)ip[2]);
+                    ESP = PTR_TADDR(PTR_TO_TADDR(ESP) - (int8_t)ip[2]);
                     ip += 3;
                     break;
                 }
                 if (ip[1] == 0xe4) {            // AND ESP, <imm8>
-                    ESP = PTR_TADDR(PTR_TO_TADDR(ESP) & (signed __int8)ip[2]);
+                    ESP = PTR_TADDR(PTR_TO_TADDR(ESP) & (int8_t)ip[2]);
                     ip += 3;
                     break;
                 }
                 if (ip[1] == 0xc5) {            // ADD EBP, <imm8>
-                    lazyState->_ebp += (signed __int8)ip[2];
+                    lazyState->_ebp += (int8_t)ip[2];
                     ip += 3;
                     break;
                 }
@@ -966,15 +965,15 @@ void LazyMachState::unwindLazyState(LazyMachState* baseState,
                 if ((ip[1] & 0xc7) == 0x44 && ip[2] == 0x24) // move reg, [esp+imm8]
                 {
                     if ( ip[1] == 0x5C ) {  // MOV EBX, [ESP+XX]
-                      lazyState->_pEbx = PTR_TADDR(PTR_TO_TADDR(ESP) + (signed __int8)ip[3]);
+                      lazyState->_pEbx = PTR_TADDR(PTR_TO_TADDR(ESP) + (int8_t)ip[3]);
                       lazyState->_ebx =  *lazyState->_pEbx ;
                     }
                     else if ( ip[1] == 0x74 ) {  // MOV ESI, [ESP+XX]
-                      lazyState->_pEsi = PTR_TADDR(PTR_TO_TADDR(ESP) + (signed __int8)ip[3]);
+                      lazyState->_pEsi = PTR_TADDR(PTR_TO_TADDR(ESP) + (int8_t)ip[3]);
                       lazyState->_esi =  *lazyState->_pEsi;
                     }
                     else if ( ip[1] == 0x7C ) {  // MOV EDI, [ESP+XX]
-                      lazyState->_pEdi = PTR_TADDR(PTR_TO_TADDR(ESP) + (signed __int8)ip[3]);
+                      lazyState->_pEdi = PTR_TADDR(PTR_TO_TADDR(ESP) + (int8_t)ip[3]);
                       lazyState->_edi =   *lazyState->_pEdi;
                     }
                     else if ( ip[1] == 0x64 /*ESP*/ || ip[1] == 0x6C /*EBP*/)
@@ -988,15 +987,15 @@ void LazyMachState::unwindLazyState(LazyMachState* baseState,
                     // gcc sometimes restores callee-preserved registers
                     // via 'mov reg, [ebp-xx]' instead of 'pop reg'
                     if ( ip[1] == 0x5D ) {  // MOV EBX, [EBP+XX]
-                      lazyState->_pEbx = PTR_TADDR(lazyState->_ebp + (signed __int8)ip[2]);
+                      lazyState->_pEbx = PTR_TADDR(lazyState->_ebp + (int8_t)ip[2]);
                       lazyState->_ebx =  *lazyState->_pEbx ;
                     }
                     else if ( ip[1] == 0x75 ) {  // MOV ESI, [EBP+XX]
-                      lazyState->_pEsi = PTR_TADDR(lazyState->_ebp + (signed __int8)ip[2]);
+                      lazyState->_pEsi = PTR_TADDR(lazyState->_ebp + (int8_t)ip[2]);
                       lazyState->_esi =  *lazyState->_pEsi;
                     }
                     else if ( ip[1] == 0x7D ) {  // MOV EDI, [EBP+XX]
-                      lazyState->_pEdi = PTR_TADDR(lazyState->_ebp + (signed __int8)ip[2]);
+                      lazyState->_pEdi = PTR_TADDR(lazyState->_ebp + (int8_t)ip[2]);
                       lazyState->_edi =   *lazyState->_pEdi;
                     }
                     else if ( ip[1] == 0x65 /*ESP*/ || ip[1] == 0x6D /*EBP*/)
@@ -1012,15 +1011,15 @@ void LazyMachState::unwindLazyState(LazyMachState* baseState,
                     // gcc sometimes restores callee-preserved registers
                     // via 'mov reg, [ebp-xx]' instead of 'pop reg'
                     if ( ip[1] == 0xDD ) {  // MOV EBX, [EBP+XXXXXXXX]
-                      lazyState->_pEbx = PTR_TADDR(lazyState->_ebp + (__int32)*dac_cast<PTR_DWORD>(ip + 2));
+                      lazyState->_pEbx = PTR_TADDR(lazyState->_ebp + (int32_t)*dac_cast<PTR_DWORD>(ip + 2));
                       lazyState->_ebx =  *lazyState->_pEbx ;
                     }
                     else if ( ip[1] == 0xF5 ) {  // MOV ESI, [EBP+XXXXXXXX]
-                      lazyState->_pEsi = PTR_TADDR(lazyState->_ebp + (__int32)*dac_cast<PTR_DWORD>(ip + 2));
+                      lazyState->_pEsi = PTR_TADDR(lazyState->_ebp + (int32_t)*dac_cast<PTR_DWORD>(ip + 2));
                       lazyState->_esi =  *lazyState->_pEsi;
                     }
                     else if ( ip[1] == 0xFD ) {  // MOV EDI, [EBP+XXXXXXXX]
-                      lazyState->_pEdi = PTR_TADDR(lazyState->_ebp + (__int32)*dac_cast<PTR_DWORD>(ip + 2));
+                      lazyState->_pEdi = PTR_TADDR(lazyState->_ebp + (int32_t)*dac_cast<PTR_DWORD>(ip + 2));
                       lazyState->_edi =   *lazyState->_pEdi;
                     }
                     else if ( ip[1] == 0xE5 /*ESP*/ || ip[1] == 0xED /*EBP*/)
@@ -1036,9 +1035,9 @@ void LazyMachState::unwindLazyState(LazyMachState* baseState,
             case 0x8D:                          // LEA
                 if ((ip[1] & 0x38) == 0x20) {                       // Don't allow ESP to be updated
                     if (ip[1] == 0xA5)          // LEA ESP, [EBP+XXXX]
-                        ESP = PTR_TADDR(lazyState->_ebp + (__int32)*dac_cast<PTR_DWORD>(ip + 2));
+                        ESP = PTR_TADDR(lazyState->_ebp + (int32_t)*dac_cast<PTR_DWORD>(ip + 2));
                     else if (ip[1] == 0x65)     // LEA ESP, [EBP+XX]
-                        ESP = PTR_TADDR(lazyState->_ebp + (signed __int8) ip[2]);
+                        ESP = PTR_TADDR(lazyState->_ebp + (int8_t) ip[2]);
                     else if (ip[1] == 0x24 && ip[2] == 0x24)    // LEA ESP, [ESP]
                         ;
                     else if (ip[1] == 0xa4 && ip[2] == 0x24 && *((DWORD *)(&ip[3])) == 0) // Another form of: LEA ESP, [ESP]
@@ -1071,7 +1070,7 @@ void LazyMachState::unwindLazyState(LazyMachState* baseState,
 
             case 0xC2:                  // ret N
                 {
-                unsigned __int16 disp = *dac_cast<PTR_WORD>(ip + 1);
+                uint16_t disp = *dac_cast<PTR_WORD>(ip + 1);
                 ip = PTR_BYTE(*ESP);
                 lazyState->_pRetAddr = ESP++;
                 _ASSERTE(disp < 64);    // sanity check (although strictly speaking not impossible)
@@ -1099,20 +1098,7 @@ void LazyMachState::unwindLazyState(LazyMachState* baseState,
                 {
                     // Determine  whether given IP resides in JITted code. (It returns nonzero in that case.)
                     // Use it now to see if we've unwound to managed code yet.
-                    BOOL fFailedReaderLock = FALSE;
-                    BOOL fIsManagedCode = ExecutionManager::IsManagedCode(*lazyState->pRetAddr(), hostCallPreference, &fFailedReaderLock);
-                    if (fFailedReaderLock)
-                    {
-                        // We don't know if we would have been able to find a JIT
-                        // manager, because we couldn't enter the reader lock without
-                        // yielding (and our caller doesn't want us to yield).  So abort
-                        // now.
-
-                        // Invalidate the lazyState we're returning, so the caller knows
-                        // we aborted before we could fully unwind
-                        lazyState->_pRetAddr = NULL;
-                        return;
-                    }
+                    BOOL fIsManagedCode = ExecutionManager::IsManagedCode(*lazyState->pRetAddr());
 
                     if (fIsManagedCode)
                         goto done;
@@ -1285,8 +1271,7 @@ done:
 void LazyMachState::unwindLazyState(LazyMachState* baseState,
                                     MachState* lazyState,
                                     DWORD threadId,
-                                    int funCallDepth /* = 1 */,
-                                    HostCallPreference hostCallPreference /* = (HostCallPreference)(-1) */)
+                                    int funCallDepth /* = 1 */)
 {
     CONTRACTL {
         NOTHROW;
@@ -1347,20 +1332,7 @@ void LazyMachState::unwindLazyState(LazyMachState* baseState,
         {
             // Determine  whether given IP resides in JITted code. (It returns nonzero in that case.)
             // Use it now to see if we've unwound to managed code yet.
-            BOOL fFailedReaderLock = FALSE;
-            BOOL fIsManagedCode = ExecutionManager::IsManagedCode(pvControlPc, hostCallPreference, &fFailedReaderLock);
-            if (fFailedReaderLock)
-            {
-                // We don't know if we would have been able to find a JIT
-                // manager, because we couldn't enter the reader lock without
-                // yielding (and our caller doesn't want us to yield).  So abort
-                // now.
-
-                // Invalidate the lazyState we're returning, so the caller knows
-                // we aborted before we could fully unwind
-                lazyState->_pRetAddr = NULL;
-                return;
-            }
+            BOOL fIsManagedCode = ExecutionManager::IsManagedCode(pvControlPc);
 
             if (fIsManagedCode)
                 break;

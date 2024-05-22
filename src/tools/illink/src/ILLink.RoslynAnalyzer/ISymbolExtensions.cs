@@ -74,8 +74,8 @@ namespace ILLink.RoslynAnalyzer
 		internal static ValueSet<string> GetFeatureGuardAnnotations (this IPropertySymbol propertySymbol)
 		{
 			HashSet<string> featureSet = new ();
-			foreach (var attributeData in propertySymbol.GetAttributes (DynamicallyAccessedMembersAnalyzer.FullyQualifiedFeatureGuardAttribute)) {
-				if (attributeData.ConstructorArguments is [TypedConstant { Value: INamedTypeSymbol featureType }])
+			foreach (var featureGuardAttribute in propertySymbol.GetAttributes (DynamicallyAccessedMembersAnalyzer.FullyQualifiedFeatureGuardAttribute)) {
+				if (featureGuardAttribute.ConstructorArguments is [TypedConstant { Value: INamedTypeSymbol featureType }])
 					featureSet.Add (featureType.GetDisplayName ());
 			}
 			return featureSet.Count == 0 ? ValueSet<string>.Empty : new ValueSet<string> (featureSet);

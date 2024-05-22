@@ -29,12 +29,7 @@ jobs:
     collectionName: ${{ parameters.collectionName }}
     # Test job depends on the corresponding build job
     dependsOn:
-     - ${{ format('coreclr__product_build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
-     # Depend on coreclr x64 so we can download it and use mcs.exe from it while publishing non-x64 arch SPMI collection
-     - ${{ if ne(parameters.archType, 'x64') }}:
-       - ${{ format('coreclr__product_build_{0}{1}_x64_{2}', parameters.osGroup, parameters.osSubgroup, parameters.buildConfig) }}
-     - ${{ if ne(parameters.liveLibrariesBuildConfig, '') }}:
-       - ${{ format('libraries_build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.liveLibrariesBuildConfig) }}
+     - 'build_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{ parameters.buildConfig }}_'
      - ${{ if eq(parameters.collectionName, 'coreclr_tests') }}:
         - 'coreclr_common_test_build_p1_AnyOS_AnyCPU_${{parameters.buildConfig }}'
 
@@ -43,32 +38,29 @@ jobs:
     steps:
     # Extra steps that will be passed to the superpmi template and run before sending the job to helix (all of which is done in the template)
 
-    # Optionally download live-built libraries
-    - ${{ if ne(parameters.liveLibrariesBuildConfig, '') }}:
-      - template: /eng/pipelines/common/download-artifact-step.yml
-        parameters:
-          unpackFolder: $(librariesDownloadDir)
-          cleanUnpackFolder: false
-          artifactFileName: '$(librariesBuildArtifactName)$(archiveExtension)'
-          artifactName: '$(librariesBuildArtifactName)'
-          displayName: 'live-built libraries'
-
-    # Download coreclr
+    # Download runtime artifacts
     - template: /eng/pipelines/common/download-artifact-step.yml
       parameters:
-        unpackFolder: $(buildProductRootFolderPath)
-        artifactFileName: '$(buildProductArtifactName)$(archiveExtension)'
-        artifactName: '$(buildProductArtifactName)'
-        displayName: 'Coreclr product build'
+        unpackFolder: $(Build.SourcesDirectory)/artifacts/bin
+        artifactFileName: 'BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)$(archiveExtension)'
+        artifactName: BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
+        displayName: 'Runtime build artifacts'
 
-    # Download x64 coreclr if running on non-x64 configuration
-    - ${{ if ne(parameters.archType, 'x64') }}:
+    # Unzip individual test projects
+    - ${{ if eq(parameters.collectionName, 'libraries_tests') }}:
       - template: /eng/pipelines/common/download-artifact-step.yml
         parameters:
-          unpackFolder: '$(Build.SourcesDirectory)/artifacts/bin/coreclr/$(osGroup).x64.$(buildConfigUpper)'
-          artifactFileName: 'CoreCLRProduct__$(osGroup)$(osSubgroup)_x64_$(buildConfig)$(archiveExtension)'
-          artifactName: 'CoreCLRProduct__$(osGroup)$(osSubgroup)_x64_$(buildConfig)'
-          displayName: 'Coreclr product build (x64)'
+          unpackFolder: '$(Build.SourcesDirectory)/artifacts/helix/'
+          artifactFileName: 'LibrariesTestArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)$(archiveExtension)'
+          artifactName: LibrariesTestArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
+          displayName: 'Libraries test artifacts'
+      - task: ExtractFiles@1
+        displayName: 'Unzip libraries tests'
+        inputs:
+          archiveFilePatterns: '$(Build.SourcesDirectory)/artifacts/helix/**/*.zip'
+          destinationFolder: '$(Build.SourcesDirectory)/artifacts/tests/libraries/$(osGroup).$(archType).$(buildConfigUpper)'
+          cleanDestinationFolder: true
+          overwriteExistingFiles: true
 
     # Download and unzip managed test artifacts
     - ${{ if eq(parameters.collectionName, 'coreclr_tests') }}:
@@ -78,25 +70,6 @@ jobs:
           artifactFileName: '$(managedGenericTestArtifactName).tar.gz'
           artifactName: '$(managedGenericTestArtifactName)'
           displayName: 'generic managed test artifacts'
-
-    # Download and unzip libraries test artifacts
-    - ${{ if eq(parameters.collectionName, 'libraries_tests') }}:
-      - template: /eng/pipelines/common/download-artifact-step.yml
-        parameters:
-          unpackFolder: '$(Build.SourcesDirectory)/artifacts/tests/libraries_zipped/$(osGroup).$(archType).$(buildConfigUpper)'
-          artifactFileName: 'libraries_test_assets_${{ parameters.osGroup }}_$(archType)_Release$(archiveExtension)'
-          artifactName: ${{ format('libraries_test_assets_{0}_$(archType)_Release', parameters.osGroup) }}
-          displayName: 'generic libraries test artifacts'
-
-    # Unzip individual test projects
-    - ${{ if eq(parameters.collectionName, 'libraries_tests') }}:
-      - task: ExtractFiles@1
-        displayName: 'Unzip Tests.zip'
-        inputs:
-          archiveFilePatterns: '$(Build.SourcesDirectory)/artifacts/tests/libraries_zipped/$(osGroup).$(archType).$(buildConfigUpper)/**/*.zip'
-          destinationFolder: '$(Build.SourcesDirectory)/artifacts/tests/libraries/$(osGroup).$(archType).$(buildConfigUpper)'
-          cleanDestinationFolder: true
-          overwriteExistingFiles: true
 
     # Create Core_Root
     - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) $(buildConfig) $(archType) generatelayoutonly $(librariesOverrideArg)

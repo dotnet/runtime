@@ -9,11 +9,13 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
+using Microsoft.VisualStudio.TestPlatform.ObjectModel;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Cases.Expectations.Metadata;
 using Mono.Linker.Tests.Extensions;
+using Mono.Linker.Tests.TestCases;
 using Mono.Linker.Tests.TestCasesRunner.ILVerification;
 using NUnit.Framework;
 using WellKnownType = ILLink.Shared.TypeSystemProxy.WellKnownType;
@@ -101,6 +103,9 @@ namespace Mono.Linker.Tests.TestCasesRunner
 					if (!HasActiveSkipKeptItemsValidationAttribute(linkResult.TestCase.FindTypeDefinition (original))) {
 						CreateAssemblyChecker (original, linked, linkResult).Verify ();
 					}
+					CreateILChecker ().Check(linkResult, original);
+
+					VerifyExpectedDependencyTrace (linkResult.MetadataProvider, linkResult.OutputAssemblyPath);
 				}
 
 				VerifyLinkingOfOtherAssemblies (original);
@@ -222,7 +227,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				Assert.AreEqual (expectedExitCode, linkResult.ExitCode, $"Expected exit code {expectedExitCode} but got {linkResult.ExitCode}.  Output was:\n{FormatLinkerOutput()}");
 			} else {
 				if (linkResult.ExitCode != 0) {
-					Assert.Fail($"Linker exited with an unexpected non-zero exit code of {linkResult.ExitCode} and output:\n{FormatLinkerOutput()}");
+					Assert.Fail ($"Linker exited with an unexpected non-zero exit code of {linkResult.ExitCode} and output:\n{FormatLinkerOutput()}");
 				}
 			}
 
@@ -279,7 +284,6 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 		protected virtual void InitialChecking (TrimmedTestCaseResult linkResult, AssemblyDefinition original, AssemblyDefinition linked)
 		{
-			CreateILChecker ().Check(linkResult, original);
 			ValidateTypeRefsHaveValidAssemblyRefs (linked);
 		}
 
@@ -734,6 +738,9 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 		static bool IsProducedByLinker (CustomAttribute attr)
 		{
+			if (attr.Constructor.Parameters.Count > 2 && attr.ConstructorArguments[^2].Type.Name == "Tool") {
+				return ((Tool)attr.ConstructorArguments[^2].Value).HasFlag (Tool.Trimmer) == true;
+			}
 			var producedBy = attr.GetPropertyValue ("ProducedBy");
 			return producedBy is null ? true : ((Tool) producedBy).HasFlag (Tool.Trimmer);
 		}
@@ -794,12 +801,29 @@ namespace Mono.Linker.Tests.TestCasesRunner
 						}
 						break;
 
-					case nameof (ExpectedWarningAttribute): {
+					case nameof (ExpectedWarningAttribute) or nameof(UnexpectedWarningAttribute): {
 							var expectedWarningCode = (string) attr.GetConstructorArgumentValue (0);
 							if (!expectedWarningCode.StartsWith ("IL")) {
-								Assert.Fail ($"The warning code specified in {nameof (ExpectedWarningAttribute)} must start with the 'IL' prefix. Specified value: '{expectedWarningCode}'.");
+								Assert.Fail ($"The warning code specified in {attr.AttributeType.Name} must start with the 'IL' prefix. Specified value: '{expectedWarningCode}'.");
 							}
-							var expectedMessageContains = ((CustomAttributeArgument[]) attr.GetConstructorArgumentValue (1)).Select (a => (string) a.Value).ToArray ();
+							IEnumerable<string> expectedMessageContains = attr.Constructor.Parameters switch
+							{
+								// ExpectedWarningAttribute(string warningCode, params string[] expectedMessages)
+								// ExpectedWarningAttribute(string warningCode, string[] expectedMessages, Tool producedBy, string issueLink)
+								[_, { ParameterType.IsArray: true }, ..]
+									=> ((CustomAttributeArgument[])attr.ConstructorArguments[1].Value)
+										.Select(caa => (string)caa.Value),
+								// ExpectedWarningAttribute(string warningCode, string expectedMessage1, string expectedMessage2, Tool producedBy, string issueLink)
+								[_, { ParameterType.Name: "String" }, { ParameterType.Name: "String" }, { ParameterType.Name: "Tool" }, _]
+									=> [(string)attr.GetConstructorArgumentValue(1), (string)attr.GetConstructorArgumentValue(2)],
+								// ExpectedWarningAttribute(string warningCode, string expectedMessage, Tool producedBy, string issueLink)
+								[_, { ParameterType.Name: "String" }, { ParameterType.Name: "Tool" }, _]
+									=> [(string)attr.GetConstructorArgumentValue(1)],
+								// ExpectedWarningAttribute(string warningCode, Tool producedBy, string issueLink)
+								[_, { ParameterType.Name: "Tool" }, _]
+									=> [],
+								_ => throw new UnreachableException(),
+							};
 							string fileName = (string) attr.GetPropertyValue ("FileName");
 							int? sourceLine = (int?) attr.GetPropertyValue ("SourceLine");
 							int? sourceColumn = (int?) attr.GetPropertyValue ("SourceColumn");
@@ -1029,6 +1053,22 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			{
 				return $"{dependency.Source} -> {dependency.Target} Marked: {dependency.Marked}";
 			}
+		}
+
+		void VerifyExpectedDependencyTrace (TestCaseMetadataProvider testCaseMetadata, NPath outputAssemblyPath)
+		{
+			if (!AppContext.TryGetSwitch ("ValidateDependencyTraces", out var validateDependencyTraces) || !validateDependencyTraces)
+				return;
+
+			var expectedTracePath = testCaseMetadata.GetExpectedDependencyTrace ();
+			Assert.IsTrue (expectedTracePath.FileExists (), $"Expected dependency trace file '{expectedTracePath}' does not exist.");
+
+			// linker-dependencies.xml in same dir as output
+			var tracePath = outputAssemblyPath.Parent.Combine ("linker-dependencies.xml");
+			Assert.IsTrue (tracePath.FileExists (), $"Dependency trace file '{tracePath}' does not exist.");
+
+			Assert.That (File.ReadAllLines (tracePath), Is.EquivalentTo (
+				File.ReadAllLines (expectedTracePath)));
 		}
 
 		void VerifyExpectedInstructionSequenceOnMemberInAssembly (CustomAttribute inAssemblyAttribute, TypeDefinition linkedType)

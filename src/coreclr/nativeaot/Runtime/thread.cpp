@@ -328,14 +328,6 @@ bool Thread::IsGCSpecial()
     return IsStateSet(TSF_IsGcSpecialThread);
 }
 
-bool Thread::CatchAtSafePoint()
-{
-    // This is only called by the GC on a background GC worker thread that's explicitly interested in letting
-    // a foreground GC proceed at that point. So it's always safe to return true.
-    ASSERT(IsGCSpecial());
-    return true;
-}
-
 uint64_t Thread::GetPalThreadIdForLogging()
 {
     return m_threadId;
@@ -578,7 +570,8 @@ void Thread::GcScanRootsWorker(ScanFunc * pfnEnumCallback, ScanContext * pvCallb
 
 #ifndef DACCESS_COMPILE
 
-EXTERN_C void FASTCALL RhpSuspendRedirected();
+#ifdef FEATURE_HIJACK
+
 EXTERN_C void FASTCALL RhpGcProbeHijack();
 EXTERN_C void FASTCALL RhpGcStressHijack();
 
@@ -815,6 +808,7 @@ void Thread::HijackReturnAddressWorker(StackFrameIterator* frameIterator, Hijack
             GetPalThreadIdForLogging(), frameIterator->GetRegisterSet()->GetIP());
     }
 }
+#endif // FEATURE_HIJACK
 
 NATIVE_CONTEXT* Thread::GetInterruptedContext()
 {
@@ -832,6 +826,16 @@ NATIVE_CONTEXT* Thread::EnsureRedirectionContext()
     }
 
     return m_interruptedContext;
+}
+
+EXTERN_C NOINLINE void FASTCALL RhpSuspendRedirected()
+{
+    Thread* pThread = ThreadStore::GetCurrentThread();
+    pThread->WaitForGC(INTERRUPTED_THREAD_MARKER);
+
+    // restore execution at interrupted location
+    PalRestoreContext(pThread->GetInterruptedContext());
+    UNREACHABLE();
 }
 
 bool Thread::Redirect()
@@ -861,6 +865,7 @@ bool Thread::Redirect()
 }
 #endif //FEATURE_SUSPEND_REDIRECTION
 
+#ifdef FEATURE_HIJACK
 bool Thread::InlineSuspend(NATIVE_CONTEXT* interruptedContext)
 {
     ASSERT(!IsDoNotTriggerGcSet());
@@ -948,6 +953,7 @@ void* Thread::GetHijackedReturnAddress()
     ASSERT(ThreadStore::GetCurrentThread() == this);
     return m_pvHijackedReturnAddress;
 }
+#endif // FEATURE_HIJACK
 
 void Thread::SetState(ThreadStateFlags flags)
 {
@@ -1021,20 +1027,6 @@ EXTERN_C NOINLINE void FASTCALL RhpGcPoll2(PInvokeTransitionFrame* pFrame)
     RhpWaitForGC2(pFrame);
 }
 
-#ifdef FEATURE_SUSPEND_REDIRECTION
-
-EXTERN_C NOINLINE void FASTCALL RhpSuspendRedirected()
-{
-    Thread* pThread = ThreadStore::GetCurrentThread();
-    pThread->WaitForGC(INTERRUPTED_THREAD_MARKER);
-
-    // restore execution at interrupted location
-    PalRestoreContext(pThread->GetInterruptedContext());
-    UNREACHABLE();
-}
-
-#endif //FEATURE_SUSPEND_REDIRECTION
-
 void Thread::PushExInfo(ExInfo * pExInfo)
 {
     ValidateExInfoStack();
@@ -1106,6 +1098,44 @@ void Thread::SetActivationPending(bool isPending)
         ClearState(TSF_ActivationPending);
     }
 }
+
+#ifdef TARGET_X86
+
+void Thread::SetPendingRedirect(PCODE eip)
+{
+    m_LastRedirectIP = eip;
+    m_SpinCount = 0;
+}
+
+bool Thread::CheckPendingRedirect(PCODE eip)
+{
+    if (eip == m_LastRedirectIP)
+    {
+        // We need to test for an infinite loop in assembly, as this will break the heuristic we
+        // are using.
+        const BYTE short_jmp = 0xeb;    // Machine code for a short jump.
+        const BYTE self = 0xfe;         // -2.  Short jumps are calculated as [ip]+2+[second_byte].
+
+        // If we find that we are in an infinite loop, we'll set the last redirected IP to 0 so that we will
+        // redirect the next time we attempt it.  Delaying one interation allows us to narrow the window of
+        // the race we are working around in this corner case.
+        BYTE *ip = (BYTE *)m_LastRedirectIP;
+        if (ip[0] == short_jmp && ip[1] == self)
+            m_LastRedirectIP = 0;
+
+        // We set a hard limit of 5 times we will spin on this to avoid any tricky race which we have not
+        // accounted for.
+        m_SpinCount++;
+        if (m_SpinCount >= 5)
+            m_LastRedirectIP = 0;
+
+        return true;
+    }
+
+    return false;
+}
+
+#endif // TARGET_X86
 
 #endif // !DACCESS_COMPILE
 

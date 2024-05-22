@@ -18,11 +18,8 @@ jobs:
   parameters:
     shouldContinueOnError: ${{ or(eq(parameters.shouldContinueOnError, true), and(ne(parameters.shouldContinueOnError, 'forceFalse'), endsWith(variables['Build.DefinitionName'], 'staging'), eq(variables['Build.Reason'], 'PullRequest'))) }}
 
-    # keep in sync with /eng/pipelines/common/variables.yml
-    dependOnEvaluatePaths: ${{ and(eq(variables['Build.Reason'], 'PullRequest'), in(variables['Build.DefinitionName'], 'runtime', 'runtime-community', 'runtime-extra-platforms', 'runtime-wasm', 'runtime-wasm-libtests', 'runtime-wasm-non-libtests', 'dotnet-linker-tests', 'runtime-dev-innerloop', 'runtime-coreclr superpmi-replay', 'runtime-coreclr superpmi-diffs')) }}
-
     variables:
-      - template: /eng/common/templates/variables/pool-providers.yml
+      - template: /eng/common/${{ coalesce(parameters.jobParameters.templatePath, 'templates') }}/variables/pool-providers.yml
       # Disable component governance in our CI builds. These builds are not shipping nor
       # are they a service. Also the component governance jobs issue lots of inconsequential
       # warnings and errors into our build timelines that make it hard to track down
@@ -45,7 +42,7 @@ jobs:
 
       - name: _BuildConfig
         value: $(buildConfigUpper)
-        
+
       - name: archType
         value: ${{ parameters.archType }}
 
@@ -117,22 +114,22 @@ jobs:
       - ${{ if eq(parameters.archType, 'wasm') }}:
         - name: wasmDarcDependenciesChanged
           value: $[ or(
-                      eq(dependencies.evaluate_paths.outputs['DarcDependenciesChanged.Microsoft_NET_Workload_Emscripten_Current_Manifest-9_0_100_Transport'], true),
-                      eq(dependencies.evaluate_paths.outputs['DarcDependenciesChanged.Microsoft_DotNet_Build_Tasks_Workloads'], true),
-                      eq(dependencies.evaluate_paths.outputs['DarcDependenciesChanged.System_Runtime_TimeZoneData'], true),
-                      eq(dependencies.evaluate_paths.outputs['DarcDependenciesChanged.Microsoft_Net_Compilers_Toolset'], true),
-                      eq(dependencies.evaluate_paths.outputs['DarcDependenciesChanged.Microsoft_CodeAnalysis'], true),
-                      eq(dependencies.evaluate_paths.outputs['DarcDependenciesChanged.Microsoft_CodeAnalysis_CSharp'], true),
-                      eq(dependencies.evaluate_paths.outputs['DarcDependenciesChanged.Microsoft_CodeAnalysis_Analyzers'], true),
-                      eq(dependencies.evaluate_paths.outputs['DarcDependenciesChanged.Microsoft_CodeAnalysis_NetAnalyzers'], true),
-                      eq(dependencies.evaluate_paths.outputs['DarcDependenciesChanged.Microsoft_NET_ILLink_Tasks'], true)) ]
+                      eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['DarcDependenciesChanged.Microsoft_NET_Workload_Emscripten_Current_Manifest-9_0_100_Transport'], true),
+                      eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['DarcDependenciesChanged.Microsoft_DotNet_Build_Tasks_Workloads'], true),
+                      eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['DarcDependenciesChanged.System_Runtime_TimeZoneData'], true),
+                      eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['DarcDependenciesChanged.Microsoft_Net_Compilers_Toolset'], true),
+                      eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['DarcDependenciesChanged.Microsoft_CodeAnalysis'], true),
+                      eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['DarcDependenciesChanged.Microsoft_CodeAnalysis_CSharp'], true),
+                      eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['DarcDependenciesChanged.Microsoft_CodeAnalysis_Analyzers'], true),
+                      eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['DarcDependenciesChanged.Microsoft_CodeAnalysis_NetAnalyzers'], true),
+                      eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['DarcDependenciesChanged.Microsoft_NET_ILLink_Tasks'], true)) ]
 
         - name: shouldRunWasmBuildTestsOnDefaultPipeline
           value: $[
             or(
               eq(variables['wasmDarcDependenciesChanged'], true),
-              eq(dependencies.evaluate_paths.outputs['SetPathVars_tools_illink.containsChange'], true),
-              eq(dependencies.evaluate_paths.outputs['SetPathVars_wasmbuildtests.containsChange'], true))
+              eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_tools_illink.containsChange'], true),
+              eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_wasmbuildtests.containsChange'], true))
             ]
 
         # needed for Wasm.Build.Tests
@@ -168,22 +165,28 @@ jobs:
         # Official Build Linux Pool
         ${{ if and(or(in(parameters.osGroup, 'linux', 'freebsd', 'android', 'tizen'), eq(parameters.jobParameters.hostedOs, 'linux')), ne(variables['System.TeamProject'], 'public')) }}:
           name: $(DncEngInternalBuildPool)
-          demands: ImageOverride -equals Build.Ubuntu.2204.Amd64
+          demands: ImageOverride -equals 1es-ubuntu-2204
+          os: linux
 
-        # OSX Build Pool (we don't have on-prem OSX BuildPool).
-        ${{ if in(parameters.osGroup, 'osx', 'maccatalyst', 'ios', 'iossimulator', 'tvos', 'tvossimulator') }}:
+        # OSX Public Build Pool (we don't have on-prem OSX BuildPool).
+        ${{ if and(in(parameters.osGroup, 'osx', 'maccatalyst', 'ios', 'iossimulator', 'tvos', 'tvossimulator'), eq(variables['System.TeamProject'], 'public')) }}:
           vmImage: 'macos-12'
+
+        # OSX Internal Pool
+        ${{ if and(in(parameters.osGroup, 'osx', 'maccatalyst', 'ios', 'iossimulator', 'tvos', 'tvossimulator'), ne(variables['System.TeamProject'], 'public')) }}:
+          name: "Azure Pipelines"
+          vmImage: 'macOS-12'
+          os: macOS
 
         # Official Build Windows Pool
         ${{ if and(or(eq(parameters.osGroup, 'windows'), eq(parameters.jobParameters.hostedOs, 'windows')), ne(variables['System.TeamProject'], 'public')) }}:
           name: $(DncEngInternalBuildPool)
-          demands: ImageOverride -equals windows.vs2022preview.amd64
+          demands: ImageOverride -equals windows.vs2022.amd64
 
         # Public Windows Build Pool
         ${{ if and(or(eq(parameters.osGroup, 'windows'), eq(parameters.jobParameters.hostedOs, 'windows')), eq(variables['System.TeamProject'], 'public')) }}:
           name: $(DncEngPublicBuildPool)
-          demands: ImageOverride -equals windows.vs2022preview.amd64.open
-
+          demands: ImageOverride -equals windows.vs2022.amd64.open
 
     ${{ if eq(parameters.helixQueuesTemplate, '') }}:
       # macOS hosted pool machines are slower so we need to give a greater timeout than the 60 mins default.

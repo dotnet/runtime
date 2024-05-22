@@ -47,7 +47,6 @@
 
 #ifdef FEATURE_COMINTEROP
 #include "variant.h"
-#include "oavariant.h"
 #include "mngstdinterfaces.h"
 #endif // FEATURE_COMINTEROP
 

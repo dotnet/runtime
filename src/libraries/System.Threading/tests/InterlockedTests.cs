@@ -810,7 +810,7 @@ namespace System.Threading.Tests
                     }
                 }));
             }
-            Task.WaitAll(threads.ToArray());
+            Task.WaitAll(threads);
             Assert.Equal(1000*1000, count);
         }
 

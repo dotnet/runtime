@@ -1166,6 +1166,18 @@ namespace System.Runtime.CompilerServices
             Assert.Throws<NotSupportedException>(() => Unsafe.BitCast<int, long>(5));
             Assert.Throws<NotSupportedException>(() => Unsafe.BitCast<long, int>(5));
 
+            // Conversion to/from a class should fail
+
+            Assert.Throws<NotSupportedException>(() => Unsafe.BitCast<string, long>(string.Empty));
+            Assert.Throws<NotSupportedException>(() => Unsafe.BitCast<long, string>(42));
+            Assert.Throws<NotSupportedException>(() => Unsafe.BitCast<string, string>(string.Empty));
+
+            // Conversion to/from nullable value types should fail
+
+            Assert.Throws<NotSupportedException>(() => Unsafe.BitCast<int?, long>(42));
+            Assert.Throws<NotSupportedException>(() => Unsafe.BitCast<long, int?>(42));
+            Assert.Throws<NotSupportedException>(() => Unsafe.BitCast<int?, int?>(42));
+
             // Conversion between floating-point and same sized integral should succeed
 
             Assert.Equal(0x8000_0000u, Unsafe.BitCast<float, uint>(-0.0f));

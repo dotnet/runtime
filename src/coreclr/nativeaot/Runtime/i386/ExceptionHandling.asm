@@ -334,7 +334,7 @@ FASTCALL_FUNC  RhpCallCatchFunclet, 16
 
         mov         ecx, [esp + esp_offsetof_ExInfo]                ;; ecx <- current ExInfo *
         mov         eax, [esp + esp_offsetof_RegDisplay]            ;; eax <- REGDISPLAY*
-        mov         eax, [eax + OFFSETOF__REGDISPLAY__SP]           ;; eax <- resume SP value
+        mov         eax, [eax + OFFSETOF__REGDISPLAY__ResumeSP]     ;; eax <- resume SP value
 
     @@: mov         ecx, [ecx + OFFSETOF__ExInfo__m_pPrevExInfo]    ;; ecx <- next ExInfo
         cmp         ecx, 0

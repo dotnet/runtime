@@ -16,7 +16,7 @@ namespace System.Net.Quic.Tests
 
     [Collection(nameof(QuicTestCollection))]
     [ConditionalClass(typeof(QuicTestBase), nameof(QuicTestBase.IsSupported), nameof(QuicTestBase.IsNotArm32CoreClrStressTest))]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/91757", typeof(PlatformDetection), nameof(PlatformDetection.IsAlpine), nameof(PlatformDetection.IsArmProcess))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/91757", typeof(PlatformDetection), nameof(PlatformDetection.IsArmProcess))]
     public sealed class QuicConnectionTests : QuicTestBase
     {
         const int ExpectedErrorCode = 1234;
@@ -91,6 +91,27 @@ namespace System.Net.Quic.Tests
                     // Subsequent attempts should fail
                     await AssertThrowsQuicExceptionAsync(QuicError.OperationAborted, async () => await serverConnection.AcceptInboundStreamAsync());
                     await Assert.ThrowsAsync<QuicException>(() => OpenAndUseStreamAsync(serverConnection));
+                });
+        }
+
+        [Theory]
+        [InlineData(-1)]
+        [InlineData(long.MaxValue)]
+        [InlineData(long.MinValue)]
+        public async Task CloseAsync_InvalidCode_Throws(long errorCode)
+        {
+            using var sync = new SemaphoreSlim(0);
+
+            await RunClientServer(
+                clientConnection =>
+                {
+                    Assert.Throws<ArgumentOutOfRangeException>(() => clientConnection.CloseAsync(errorCode));
+                    sync.Release();
+                    return Task.CompletedTask;
+                },
+                async serverConnection =>
+                {
+                    await sync.WaitAsync();
                 });
         }
 
