@@ -32,12 +32,12 @@ internal static partial class Interop
             fixed (byte* aadPtr = aad)
             {
                 AppleCryptoNative_ChaCha20Poly1305Encrypt(
-                    new(keyPtr, key.Length),
-                    new(noncePtr, nonce.Length),
-                    new(plaintextPtr, plaintext.Length),
-                    new(ciphertextPtr, ciphertext.Length),
-                    new(tagPtr, tag.Length),
-                    new(aadPtr, aad.Length),
+                    new UnsafeBufferPointer<byte>(keyPtr, key.Length),
+                    new UnsafeBufferPointer<byte>(noncePtr, nonce.Length),
+                    new UnsafeBufferPointer<byte>(plaintextPtr, plaintext.Length),
+                    new UnsafeMutableBufferPointer<byte>(ciphertextPtr, ciphertext.Length),
+                    new UnsafeMutableBufferPointer<byte>(tagPtr, tag.Length),
+                    new UnsafeBufferPointer<byte>(aadPtr, aad.Length),
                     out SwiftError error);
 
                 if (error.Value != null)
@@ -65,12 +65,12 @@ internal static partial class Interop
             fixed (byte* aadPtr = aad)
             {
                 AppleCryptoNative_ChaCha20Poly1305Decrypt(
-                    new(keyPtr, key.Length),
-                    new(noncePtr, nonce.Length),
-                    new(ciphertextPtr, ciphertext.Length),
-                    new(tagPtr, tag.Length),
-                    new(plaintextPtr, plaintext.Length),
-                    new(aadPtr, aad.Length),
+                    new UnsafeBufferPointer<byte>(keyPtr, key.Length),
+                    new UnsafeBufferPointer<byte>(noncePtr, nonce.Length),
+                    new UnsafeBufferPointer<byte>(ciphertextPtr, ciphertext.Length),
+                    new UnsafeBufferPointer<byte>(tagPtr, tag.Length),
+                    new UnsafeMutableBufferPointer<byte>(plaintextPtr, plaintext.Length),
+                    new UnsafeBufferPointer<byte>(aadPtr, aad.Length),
                     out SwiftError error);
 
                 if (error.Value != null)
@@ -105,12 +105,12 @@ internal static partial class Interop
             fixed (byte* aadPtr = aad)
             {
                 AppleCryptoNative_AesGcmEncrypt(
-                    new(keyPtr, key.Length),
-                    new(noncePtr, nonce.Length),
-                    new(plaintextPtr, plaintext.Length),
-                    new(ciphertextPtr, ciphertext.Length),
-                    new(tagPtr, tag.Length),
-                    new(aadPtr, aad.Length),
+                    new UnsafeBufferPointer<byte>(keyPtr, key.Length),
+                    new UnsafeBufferPointer<byte>(noncePtr, nonce.Length),
+                    new UnsafeBufferPointer<byte>(plaintextPtr, plaintext.Length),
+                    new UnsafeMutableBufferPointer<byte>(ciphertextPtr, ciphertext.Length),
+                    new UnsafeMutableBufferPointer<byte>(tagPtr, tag.Length),
+                    new UnsafeBufferPointer<byte>(aadPtr, aad.Length),
                     out SwiftError error);
 
                 if (error.Value != null)
@@ -138,12 +138,12 @@ internal static partial class Interop
             fixed (byte* aadPtr = aad)
             {
                 AppleCryptoNative_AesGcmDecrypt(
-                    new(keyPtr, key.Length),
-                    new(noncePtr, nonce.Length),
-                    new(ciphertextPtr, ciphertext.Length),
-                    new(tagPtr, tag.Length),
-                    new(plaintextPtr, plaintext.Length),
-                    new(aadPtr, aad.Length),
+                    new UnsafeBufferPointer<byte>(keyPtr, key.Length),
+                    new UnsafeBufferPointer<byte>(noncePtr, nonce.Length),
+                    new UnsafeBufferPointer<byte>(ciphertextPtr, ciphertext.Length),
+                    new UnsafeBufferPointer<byte>(tagPtr, tag.Length),
+                    new UnsafeMutableBufferPointer<byte>(plaintextPtr, plaintext.Length),
+                    new UnsafeBufferPointer<byte>(aadPtr, aad.Length),
                     out SwiftError error);
 
                 if (error.Value != null)
@@ -171,8 +171,7 @@ internal static partial class Interop
             UnsafeMutableBufferPointer<byte> ciphertext,
             UnsafeMutableBufferPointer<byte> tag,
             UnsafeBufferPointer<byte> aad,
-            out SwiftError error
-        );
+            out SwiftError error);
 
         [LibraryImport(Libraries.AppleCryptoNative)]
         [UnmanagedCallConv(CallConvs = [ typeof(CallConvSwift) ])]
@@ -183,8 +182,7 @@ internal static partial class Interop
             UnsafeBufferPointer<byte> tag,
             UnsafeMutableBufferPointer<byte> plaintext,
             UnsafeBufferPointer<byte> aad,
-            out SwiftError error
-        );
+            out SwiftError error);
 
         [LibraryImport(Libraries.AppleCryptoNative)]
         [UnmanagedCallConv(CallConvs = [ typeof(CallConvSwift) ])]
@@ -195,8 +193,7 @@ internal static partial class Interop
             UnsafeMutableBufferPointer<byte> ciphertext,
             UnsafeMutableBufferPointer<byte> tag,
             UnsafeBufferPointer<byte> aad,
-            out SwiftError error
-        );
+            out SwiftError error);
 
         [LibraryImport(Libraries.AppleCryptoNative)]
         [UnmanagedCallConv(CallConvs = [ typeof(CallConvSwift) ])]
@@ -207,8 +204,7 @@ internal static partial class Interop
             UnsafeBufferPointer<byte> tag,
             UnsafeMutableBufferPointer<byte> plaintext,
             UnsafeBufferPointer<byte> aad,
-            out SwiftError error
-        );
+            out SwiftError error);
 
         [LibraryImport(Libraries.AppleCryptoNative)]
         [UnmanagedCallConv(CallConvs = new[] { typeof(CallConvSwift) })]
