@@ -67,7 +67,7 @@ namespace System.Text.Json
 
         private static JsonSerializerOptions? s_webOptions;
 
-        // For any new option added, considered adding it to the options copied in the copy constructor below
+        // For any new option added, consider adding it to the options copied in the copy constructor below
         // and consider updating the EqualtyComparer used for comparing CachingContexts.
         private IJsonTypeInfoResolver? _typeInfoResolver;
         private JsonNamingPolicy? _dictionaryKeyPolicy;
