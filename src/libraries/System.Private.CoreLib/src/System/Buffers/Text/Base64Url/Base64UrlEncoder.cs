@@ -164,13 +164,18 @@ namespace System.Buffers.Text
         /// <param name="source">The input span which contains binary data that needs to be encoded.</param>
         /// <returns>A string which contains the result of the operation, i.e. the ASCII string in Base64Url.</returns>
         /// <remarks>The output will not be padded even if the input is not a multiple of 3.</remarks>
-        public static string EncodeToString(ReadOnlySpan<byte> source)
+        public static unsafe string EncodeToString(ReadOnlySpan<byte> source)
         {
-            char[] destination = new char[GetEncodedLength(source.Length)];
-            EncodeToChars(source, destination, out _, out int charsWritten);
-            Debug.Assert(destination.Length == charsWritten, $"The source length: {source.Length}, bytes written: {charsWritten}");
+            int encodedLength = GetEncodedLength(source.Length);
 
-            return new string(destination);
+#pragma warning disable CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type
+            return string.Create(encodedLength, (IntPtr)(&source), static (buffer, spanPtr) =>
+            {
+                ReadOnlySpan<byte> source = *(ReadOnlySpan<byte>*)spanPtr;
+                EncodeToChars(source, buffer, out _, out int charsWritten);
+                Debug.Assert(buffer.Length == charsWritten, $"The source length: {source.Length}, bytes written: {charsWritten}");
+            });
+#pragma warning restore CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type
         }
 
         /// <summary>
