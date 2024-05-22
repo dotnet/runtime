@@ -3776,10 +3776,10 @@ void emitter::emitInsSve_R_R_R(instruction     ins,
             }
             // TODO-SVE: Remove check for (opt == INS_OPTS_SCALABLE_B) when predicate registers
             //  are present.
-            else if ((opt == INS_OPTS_SCALABLE_B) && isPredicateRegister(reg3) &&
+            else if (isPredicateRegister(reg3) &&
                      (sopt == INS_SCALABLE_OPTS_NONE || sopt == INS_SCALABLE_OPTS_PREDICATE_MERGE))
             {
-                // assert(opt == INS_OPTS_SCALABLE_B);
+                assert(opt == INS_OPTS_SCALABLE_B);
                 assert(isPredicateRegister(reg1)); // DDDD
                 assert(isPredicateRegister(reg2)); // gggg
                 assert(isPredicateRegister(reg3)); // NNNN
@@ -3787,7 +3787,7 @@ void emitter::emitInsSve_R_R_R(instruction     ins,
                 // MOV is an alias for CPY, and is always the preferred disassembly.
                 ins = INS_sve_mov;
             }
-            // TODO-SVE: In addition to updating above check, also make this INS_SCALABLE_OPTS_PREDICATE_MERGE
+            // TODO-SVE: Change the below check to INS_SCALABLE_OPTS_PREDICATE_MERGE
             // once predicate registers are present.
             else if (sopt == INS_SCALABLE_OPTS_PREDICATE_MERGE_MOV)
             {
