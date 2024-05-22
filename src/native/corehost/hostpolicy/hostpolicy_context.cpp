@@ -276,7 +276,7 @@ int hostpolicy_context_t::initialize(const hostpolicy_init_t &hostpolicy_init, c
         }
     }
 
-    host_assemblies = std::make_unique<name_to_resolved_asset_map_t>();
+    host_assemblies = std::unique_ptr<name_to_resolved_asset_map_t>(new name_to_resolved_asset_map_t());
 
     probe_paths_t probe_paths;
 

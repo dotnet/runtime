@@ -31,8 +31,10 @@ private:
     HostInformation(const HostInformation&) = delete; // Delete copy constructor
     HostInformation& operator=(const HostInformation&) = delete; // Delete assignment operator
 
+/*
     LPCSTR ConvertToUTF8(LPCWSTR utf16String);
     LPCWSTR ConvertToUnicode(const char* utf8String);
+*/
 
 private:
     SimpleNameToFileNameMap* m_simpleFileNameMap;

@@ -424,7 +424,7 @@ bool deps_resolver_t::resolve_tpa_list(
         std::unordered_set<pal::string_t>* breadcrumb,
         bool ignore_missing_assemblies)
 {   
-    host_assemblies = std::make_unique<name_to_resolved_asset_map_t>();
+    host_assemblies = std::unique_ptr<name_to_resolved_asset_map_t>(new name_to_resolved_asset_map_t());
 
     auto process_entry = [&](const pal::string_t& deps_dir, const deps_entry_t& entry, int fx_level) -> bool
     {

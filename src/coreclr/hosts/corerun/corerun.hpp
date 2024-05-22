@@ -169,14 +169,14 @@ namespace pal
     inline string_utf8_t convert_to_utf8(const char_t* str);
 
     inline void add_files_from_directory(
-        const string_t& dir,
+        const string_t& directory,
         const char_t* ext,
         const int dir_type,
         std::unordered_map<string_utf8_t, host_file_t>& files)
     {
         assert(ext != nullptr);
 
-        string_t dir_local = dir;
+        string_t dir_local = directory;
         dir_local.append(W("*"));
         dir_local.append(ext);
 
@@ -431,7 +431,7 @@ struct host_file_t
         core_root
     };
 
-    string_t name;  // file name + extension
+    pal::string_t name;  // file name + extension
     host_dir_type dtype;
 };
 
@@ -604,7 +604,7 @@ namespace pal
     void ensure_trailing_delimiter(pal::string_t& dir);
 
     inline void add_files_from_directory(
-        const string_t& dir,
+        const string_t& directory,
         const char_t* ext,
         const int dir_type,
         std::unordered_map<string_utf8_t, host_file_t>& files)
@@ -661,8 +661,8 @@ namespace pal
                 file_name = file_local.substr(0, file_local.length() - ext_len);
 
             host_file_t file;
-            f.name = convert_to_utf8(file_local.c_str());
-            f.dtype = static_cast<host_dir_type>(dir_type);
+            file.name = convert_to_utf8(file_local.c_str());
+            file.dtype = static_cast<host_file_t::host_dir_type>(dir_type);
 
             files.insert({convert_to_utf8(file_name.c_str()), file});
         }

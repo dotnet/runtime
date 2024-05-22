@@ -128,6 +128,7 @@ void HostInformation::ResolveHostAssemblyPath(const SString& simpleName, SString
     }
 }
 
+/*
 LPCSTR HostInformation::ConvertToUTF8(LPCWSTR utf16String)
 {
     int length = WideCharToMultiByte(CP_ACP, 0, utf16String, -1, NULL, 0, NULL, NULL);
@@ -165,3 +166,4 @@ LPCWSTR HostInformation::ConvertToUnicode(const char* utf8String)
 
     return (length > 0) ? ret : L"";
 }
+*/

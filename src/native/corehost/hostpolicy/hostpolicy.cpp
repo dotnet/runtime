@@ -980,7 +980,7 @@ SHARED_API int HOSTPOLICY_CALLTYPE corehost_resolve_component_dependencies(
 
     // TO DO: Think of how resolve_probe_paths changes as a result of looking up paths on the host.
     probe_paths_t probe_paths;
-    std::unique_ptr<name_to_resolved_asset_map_t> host_assemblies = std::make_unique<name_to_resolved_asset_map_t>();
+    std::unique_ptr<name_to_resolved_asset_map_t> host_assemblies = std::unique_ptr<name_to_resolved_asset_map_t>(new name_to_resolved_asset_map_t());
     if (!resolver.resolve_probe_paths(&probe_paths, host_assemblies, nullptr, /* ignore_missing_assemblies */ true))
     {
         return StatusCode::ResolverResolveFailure;
