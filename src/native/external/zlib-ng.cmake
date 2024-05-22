@@ -13,7 +13,7 @@ add_compile_options($<$<COMPILE_LANG_AND_ID:C,Clang,AppleClang,GNU>:-Wno-error=u
 add_compile_options($<$<COMPILE_LANG_AND_ID:C,MSVC>:/wd4127>) # warning C4127: conditional expression is constant
 add_compile_options($<$<COMPILE_LANG_AND_ID:C,MSVC>:/wd4242>) # 'function': conversion from 'unsigned int' to 'Pos', possible loss of data, in various deflate_*.c files
 add_compile_options($<$<COMPILE_LANG_AND_ID:C,MSVC>:/wd4244>) # 'function': conversion from 'unsigned int' to 'Pos', possible loss of data, in various deflate_*.c files
-add_compile_options($<$<COMPILE_LANG_AND_ID:C,MSVC>:/W3>) # D9025: overriding '/W4' with '/W3'
+# add_compile_options($<$<COMPILE_LANG_AND_ID:C,MSVC>:/W3>) # D9025: overriding '/W4' with '/W3' # Commenting because it still fails. Workaround: Comment lines 186-187 in zlib-ng/CMakeLists.txt.
 
 # TODO: DO we still need to disable /wd4131 ?
 
