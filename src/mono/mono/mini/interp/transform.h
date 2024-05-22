@@ -296,11 +296,8 @@ typedef struct
 	unsigned int vars_capacity;
 
 	// Additional information for vars that are renamable
-	// This buffer is only allocated when optimizing
 	InterpRenamableVar *renamable_vars;
-	// Number of renamable vars (valid even if not optimizing)
 	unsigned int renamable_vars_size;
-	// Size of the renamable vars buffer (only when optimizing)
 	unsigned int renamable_vars_capacity;
 
 	// Newly created, renamed vars of fixed vars. We compute liveness on this subset
@@ -507,7 +504,7 @@ interp_dump_ins (InterpInst *ins, gpointer *data_items);
 InterpInst*
 interp_get_ldc_i4_from_const (TransformData *td, InterpInst *ins, gint32 ct, int dreg);
 
-gint32
+gint32 
 interp_get_const_from_ldc_i4 (InterpInst *ins);
 
 int
