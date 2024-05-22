@@ -30,8 +30,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Include="$(CommonTestPath)TestUtilities\System\DisableParallelization.cs"
-             Link="Common\TestUtilities\System\DisableParallelization.cs" />
     <!-- Core test suite shared with the Roslyn3.11 target. Do not add new tests here. -->
     <Compile Include="$(CommonTestPath)System\DateTimeTestHelpers.cs" Link="CommonTest\System\DateTimeTestHelpers.cs" />
     <Compile Include="..\Common\JsonSerializerWrapper.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\JsonSerializerWrapper.cs" />
