@@ -155,7 +155,6 @@ namespace System.Globalization.Tests
             yield return new object[] {"en-ZA", "dddd, d MMMM yyyy" }; // "dddd, dd MMMM yyyy"
             yield return new object[] {"en-ZM", "dddd, d MMMM yyyy" };
             yield return new object[] {"en-ZW", "dddd, d MMMM yyyy" }; // "dddd, dd MMMM yyyy"
-            yield return new object[] {"en-US", "dddd, MMMM d, yyyy" };
             yield return new object[] {"es-419", "dddd, d de MMMM de yyyy" }; // dddd, d 'de' MMMM 'de' yyyy
             yield return new object[] {"es-ES", "dddd, d de MMMM de yyyy" }; // dddd, d 'de' MMMM 'de' yyyy
             yield return new object[] {"es-MX", "dddd, d de MMMM de yyyy" }; // dddd, d 'de' MMMM 'de' yyyy
