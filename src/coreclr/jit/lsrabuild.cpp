@@ -3654,7 +3654,7 @@ void LinearScan::setDelayFree(RefPosition* use)
 //                   rmw node.
 //
 // Arguments:
-//    useRefPosition -    The use refposition that need to be delay-freed.
+//    useRefPosition - The use refposition that need to be delay-freed.
 //    rmwNode        - The node that has RMW semantics (if applicable)
 //
 void LinearScan::AddDelayFreeUses(RefPosition* useRefPosition, GenTree* rmwNode)
