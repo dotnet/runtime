@@ -72,6 +72,7 @@ public class NativeAOTTests : BlazorWasmTestBase
         }
         finally
         {
+            _testOutput.WriteLine($"Is64BitProcess '{Environment.Is64BitProcess}', Is64BitOperatingSystem '{Environment.Is64BitOperatingSystem}', OSVersion '{Environment.OSVersion}'");
             _testOutput.WriteLine($"Content of {_nugetPackagesDir}");
             foreach (string file in Directory.EnumerateFiles(_nugetPackagesDir, "*", SearchOption.AllDirectories))
                 _testOutput.WriteLine(file);
