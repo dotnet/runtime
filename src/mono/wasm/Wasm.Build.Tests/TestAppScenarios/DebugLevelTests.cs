@@ -66,9 +66,11 @@ public class WasmAppBuilderDebugLevelTests : DebugLevelTests
     {
         var output = res.Output.Split(Environment.NewLine);
         _testOutput.WriteLine($"DEBUG: parsed lines '{String.Join(", ", output)}'");
+
+        var prefix = "[] TestOutput -> ";
         var testOutput = output
-            .Where(l => l.StartsWith("TestOutput -> "))
-            .Select(l => l.Substring("TestOutput -> ".Length))
+            .Where(l => l.StartsWith(prefix))
+            .Select(l => l.Substring(prefix.Length))
             .ToArray();
 
         _testOutput.WriteLine($"DEBUG: testOutput '{String.Join(", ", testOutput)}'");
