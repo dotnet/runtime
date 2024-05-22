@@ -5918,7 +5918,7 @@ void Compiler::optRemoveRedundantZeroInits()
             {
                 if (((tree->gtFlags & GTF_CALL) != 0))
                 {
-                    // if this is not a No-GC heleper
+                    // if this is not a No-GC helper
                     if (!tree->IsCall() || !emitter::emitNoGChelper(tree->AsCall()->GetHelperNum()))
                     {
                         // assume that we have a safe point.
