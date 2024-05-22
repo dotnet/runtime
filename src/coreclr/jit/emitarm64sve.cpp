@@ -2057,6 +2057,7 @@ void emitter::emitInsSve_R_R(instruction     ins,
             break;
 
         case INS_sve_cntp:
+            assert(isScalableVectorSize(size));
             assert(insOptsScalableStandard(opt));
             assert(insScalableOptsWithVectorLength(sopt));         // l
             assert(isGeneralRegister(reg1));                       // ddddd
@@ -3918,7 +3919,7 @@ void emitter::emitInsSve_R_R_R(instruction     ins,
             break;
 
         case INS_sve_cntp:
-            assert(size == EA_8BYTE);
+            assert(isScalableVectorSize(size));
             assert(isGeneralRegister(reg1));                       // ddddd
             assert(isPredicateRegister(reg2));                     // gggg
             assert(isPredicateRegister(reg3));                     // NNNN
@@ -13077,7 +13078,7 @@ void emitter::emitInsSveSanityCheck(instrDesc* id)
             break;
 
         case IF_SVE_DK_3A: // ........xx...... ..gggg.NNNNddddd -- SVE predicate count
-            assert(id->idOpSize() == EA_8BYTE);
+            assert(isScalableVectorSize(id->idOpSize()));
             assert(insOptsScalableStandard(id->idInsOpt()));
             assert(isGeneralRegister(id->idReg1()));   // ddddd
             assert(isPredicateRegister(id->idReg2())); // gggg
@@ -13338,9 +13339,13 @@ void emitter::emitInsSveSanityCheck(instrDesc* id)
             break;
 
         case IF_SVE_DL_2A: // ........xx...... .....l.NNNNddddd -- SVE predicate count (predicate-as-counter)
-            assert(id->idOpSize() == EA_8BYTE);
+            assert(insOptsScalableStandard(id->idInsOpt()));
+            assert(isValidVectorElemsize(optGetSveElemsize(id->idInsOpt()))); // xx
+            assert(isGeneralRegister(id->idReg1()));                          // ddddd
+            assert(isPredicateRegister(id->idReg2()));                        // NNNN
+            assert(isScalableVectorSize(id->idOpSize()));
+            break;
 
-            FALLTHROUGH;
         case IF_SVE_DO_2A: // ........xx...... .....X.MMMMddddd -- SVE saturating inc/dec register by predicate count
         case IF_SVE_DM_2A: // ........xx...... .......MMMMddddd -- SVE inc/dec register by predicate count
             assert(insOptsScalableStandard(id->idInsOpt()));

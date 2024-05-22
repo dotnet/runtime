@@ -2426,6 +2426,30 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
+        case NI_Sve_GetActiveElementCount:
+        {
+            assert(sig->numArgs == 2);
+
+            CORINFO_ARG_LIST_HANDLE arg1     = sig->args;
+            CORINFO_ARG_LIST_HANDLE arg2     = info.compCompHnd->getArgNext(arg1);
+            var_types               argType  = TYP_UNKNOWN;
+            CORINFO_CLASS_HANDLE    argClass = NO_CLASS_HANDLE;
+
+            argType = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg2, &argClass)));
+            op2     = getArgForHWIntrinsic(argType, argClass);
+            argType = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg1, &argClass)));
+            op1     = impPopStack().val;
+
+            // Op1 and Op2 are masks. Op1 mask handling will be handled via IsExplicitMaskedOperation.
+            if (!varTypeIsMask(op2))
+            {
+                op2 = gtNewSimdConvertVectorToMaskNode(retType, op2, simdBaseJitType, simdSize);
+            }
+
+            retNode = gtNewSimdHWIntrinsicNode(retType, op1, op2, intrinsic, simdBaseJitType, simdSize);
+            break;
+        }
+
         case NI_Sve_StoreAndZip:
         {
             assert(sig->numArgs == 3);

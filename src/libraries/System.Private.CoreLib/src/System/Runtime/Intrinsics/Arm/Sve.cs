@@ -1376,6 +1376,69 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<float> FusedMultiplySubtractNegated(Vector<float> minuend, Vector<float> left, Vector<float> right) => FusedMultiplySubtractNegated(minuend, left, right);
 
 
+        ///  Count set predicate bits
+
+        /// <summary>
+        /// uint64_t svcntp_b8(svbool_t pg, svbool_t op)
+        ///   CNTP Xresult, Pg, Pop.B
+        /// </summary>
+        public static unsafe ulong GetActiveElementCount(Vector<byte> mask, Vector<byte> from) => GetActiveElementCount(mask, from);
+
+        /// <summary>
+        /// uint64_t svcntp_b8(svbool_t pg, svbool_t op)
+        ///   CNTP Xresult, Pg, Pop.B
+        /// </summary>
+        public static unsafe ulong GetActiveElementCount(Vector<double> mask, Vector<double> from) => GetActiveElementCount(mask, from);
+
+        /// <summary>
+        /// uint64_t svcntp_b8(svbool_t pg, svbool_t op)
+        ///   CNTP Xresult, Pg, Pop.B
+        /// </summary>
+        public static unsafe ulong GetActiveElementCount(Vector<short> mask, Vector<short> from) => GetActiveElementCount(mask, from);
+
+        /// <summary>
+        /// uint64_t svcntp_b8(svbool_t pg, svbool_t op)
+        ///   CNTP Xresult, Pg, Pop.B
+        /// </summary>
+        public static unsafe ulong GetActiveElementCount(Vector<int> mask, Vector<int> from) => GetActiveElementCount(mask, from);
+
+        /// <summary>
+        /// uint64_t svcntp_b8(svbool_t pg, svbool_t op)
+        ///   CNTP Xresult, Pg, Pop.B
+        /// </summary>
+        public static unsafe ulong GetActiveElementCount(Vector<long> mask, Vector<long> from) => GetActiveElementCount(mask, from);
+
+        /// <summary>
+        /// uint64_t svcntp_b8(svbool_t pg, svbool_t op)
+        ///   CNTP Xresult, Pg, Pop.B
+        /// </summary>
+        public static unsafe ulong GetActiveElementCount(Vector<sbyte> mask, Vector<sbyte> from) => GetActiveElementCount(mask, from);
+
+        /// <summary>
+        /// uint64_t svcntp_b8(svbool_t pg, svbool_t op)
+        ///   CNTP Xresult, Pg, Pop.B
+        /// </summary>
+        public static unsafe ulong GetActiveElementCount(Vector<float> mask, Vector<float> from) => GetActiveElementCount(mask, from);
+
+        /// <summary>
+        /// uint64_t svcntp_b16(svbool_t pg, svbool_t op)
+        ///   CNTP Xresult, Pg, Pop.H
+        /// </summary>
+        public static unsafe ulong GetActiveElementCount(Vector<ushort> mask, Vector<ushort> from) => GetActiveElementCount(mask, from);
+
+        /// <summary>
+        /// uint64_t svcntp_b32(svbool_t pg, svbool_t op)
+        ///   CNTP Xresult, Pg, Pop.S
+        /// </summary>
+        public static unsafe ulong GetActiveElementCount(Vector<uint> mask, Vector<uint> from) => GetActiveElementCount(mask, from);
+
+        /// <summary>
+        /// uint64_t svcntp_b64(svbool_t pg, svbool_t op)
+        ///   CNTP Xresult, Pg, Pop.D
+        /// </summary>
+        public static unsafe ulong GetActiveElementCount(Vector<ulong> mask, Vector<ulong> from) => GetActiveElementCount(mask, from);
+
+
         ///  LeadingSignCount : Count leading sign bits
 
         /// <summary>
