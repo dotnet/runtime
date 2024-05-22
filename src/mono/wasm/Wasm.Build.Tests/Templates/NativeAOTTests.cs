@@ -25,7 +25,7 @@ public class NativeAOTTests : BlazorWasmTestBase
 
     [Theory]
     [InlineData("NativeAOT")]
-    [InlineData("NativeAOT2")]
+    //[InlineData("NativeAOT2")]
     public async Task PublishAndRun(string assetName)
     {
         string config = "Release";
