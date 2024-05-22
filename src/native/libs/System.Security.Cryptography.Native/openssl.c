@@ -7,7 +7,10 @@
 #include "pal_safecrt.h"
 #include "pal_x509.h"
 #include "openssl.h"
+
+#ifdef FEATURE_DISTRO_AGNOSTIC_SSL
 #include "opensslshim.h"
+#endif
 
 #include <assert.h>
 #include <limits.h>
