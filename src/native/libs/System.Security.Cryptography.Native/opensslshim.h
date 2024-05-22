@@ -494,7 +494,6 @@ extern bool g_libSslUses32BitTime;
     REQUIRED_FUNCTION(OCSP_RESPONSE_new) \
     LEGACY_FUNCTION(OPENSSL_add_all_algorithms_conf) \
     REQUIRED_FUNCTION(OPENSSL_cleanse) \
-    REQUIRED_FUNCTION(OPENSSL_gmtime) \
     REQUIRED_FUNCTION_110(OPENSSL_init_ssl) \
     RENAMED_FUNCTION(OPENSSL_sk_free, sk_free) \
     RENAMED_FUNCTION(OPENSSL_sk_new_null, sk_new_null) \
@@ -721,7 +720,9 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #undef LIGHTUP_FUNCTION
 #undef REQUIRED_FUNCTION_110
 #undef REQUIRED_FUNCTION
-
+#if defined(TARGET_ARM) && defined(TARGET_LINUX)
+extern TYPEOF(OPENSSL_gmtime)* OPENSSL_gmtime_ptr;
+#endif
 // Redefine all calls to OpenSSL functions as calls through pointers that are set
 // to the functions from the libssl.so selected by the shim.
 #define a2d_ASN1_OBJECT a2d_ASN1_OBJECT_ptr

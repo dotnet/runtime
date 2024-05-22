@@ -25,6 +25,9 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #undef LIGHTUP_FUNCTION
 #undef REQUIRED_FUNCTION_110
 #undef REQUIRED_FUNCTION
+#if defined(TARGET_ARM) && defined(TARGET_LINUX)
+TYPEOF(OPENSSL_gmtime) OPENSSL_gmtime_ptr;
+#endif
 
 // x.x.x, considering the max number of decimal digits for each component
 #define MaxVersionStringLength 32
@@ -214,6 +217,10 @@ void InitializeOpenSSLShim(void)
 #undef LIGHTUP_FUNCTION
 #undef REQUIRED_FUNCTION_110
 #undef REQUIRED_FUNCTION
+#if defined(TARGET_ARM) && defined(TARGET_LINUX)
+    if (!(OPENSSL_gmtime_ptr = (TYPEOF(OPENSSL_gmtime))(dlsym(libssl, "OPENSSL_gmtime")))) { fprintf(stderr, "Cannot get required symbol OPENSSL_gmtime from libssl\n"); abort(); }
+#endif
+
 
     // Sanity check that we have at least one functioning way of reporting errors.
     if (ERR_put_error_ptr == &local_ERR_put_error)
