@@ -274,7 +274,7 @@ namespace System
         /// This determines whether the character is in the range 'A' through 'Z', inclusive,
         /// 'a' through 'z', inclusive, or '0' through '9', inclusive.
         /// </remarks>
-        // Use of the non-short-circuiting logical OR operator (|) here is an intentional optimization
+        // Use of the non-short-circuiting logical OR operator (|) here is an intentional optimization.
         // It avoids a low-level branch instruction.  (In other words, the overhead of branching
         // is greater than the cost of simply executing IsBetween.)
         public static bool IsAsciiLetterOrDigit(char c) => IsAsciiLetter(c) | IsBetween(c, '0', '9');
