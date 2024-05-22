@@ -220,6 +220,10 @@ namespace Internal.IL
                             // type with a runtime lookup
                             _dependencies.Add(GetGenericLookupHelper(ReadyToRunHelperId.TypeHandleForCasting, catchType), "EH filter");
                         }
+                        else
+                        {
+                            _dependencies.Add(_compilation.ComputeConstantLookup(ReadyToRunHelperId.TypeHandleForCasting, catchType), "EH");
+                        }
                     }
                 }
             }
