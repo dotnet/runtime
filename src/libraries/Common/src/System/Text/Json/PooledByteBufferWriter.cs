@@ -155,22 +155,11 @@ namespace System.Text.Json
         }
 
 #if NET
-        internal ValueTask WriteToStreamAsync(Stream destination, CancellationToken cancellationToken)
-        {
-            return destination.WriteAsync(WrittenMemory, cancellationToken);
-        }
-
         internal void WriteToStream(Stream destination)
         {
             destination.Write(WrittenMemory.Span);
         }
 #else
-        internal Task WriteToStreamAsync(Stream destination, CancellationToken cancellationToken)
-        {
-            Debug.Assert(_rentedBuffer != null);
-            return destination.WriteAsync(_rentedBuffer, 0, _index, cancellationToken);
-        }
-
         internal void WriteToStream(Stream destination)
         {
             Debug.Assert(_rentedBuffer != null);
@@ -227,7 +216,19 @@ namespace System.Text.Json
 
         public override void CancelPendingFlush() => throw new NotImplementedException();
         public override void Complete(Exception? exception = null) => throw new NotImplementedException();
-        public override ValueTask<FlushResult> FlushAsync(CancellationToken cancellationToken = default) => throw new NotImplementedException();
+        public override async ValueTask<FlushResult> FlushAsync(CancellationToken cancellationToken = default)
+        {
+            Debug.Assert(_stream is not null);
+#if NET
+            await _stream.WriteAsync(WrittenMemory, cancellationToken).ConfigureAwait(false);
+#else
+            Debug.Assert(_rentedBuffer != null);
+            await _stream.WriteAsync(_rentedBuffer, 0, _index, cancellationToken).ConfigureAwait(false);
+#endif
+            Clear();
+
+            return new FlushResult(isCanceled: false, isCompleted: false);
+        }
 
         public override bool CanGetUnflushedBytes => true;
         public override long UnflushedBytes => _index;

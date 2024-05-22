@@ -1,7 +1,6 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Buffers;
 using System.IO;
 using System.IO.Pipelines;
 using System.Runtime.CompilerServices;
@@ -17,32 +16,29 @@ namespace System.Text.Json.Serialization
 
         ValueTask FlushAsync(CancellationToken cancellationToken);
 
-        public IBufferWriter<byte> BufferWriter { get; }
+        public PipeWriter BufferWriter { get; }
     }
 
     internal readonly struct AsyncSerializationStreamContext : IAsyncSerializationBufferWriterContext
     {
-        private readonly Stream _stream;
         private readonly JsonSerializerOptions _options;
         private readonly PooledByteBufferWriter _bufferWriter;
 
         public AsyncSerializationStreamContext(Stream stream, JsonSerializerOptions options)
         {
-            _stream = stream;
             _options = options;
-            _bufferWriter = new PooledByteBufferWriter(_options.DefaultBufferSize);
+            _bufferWriter = new PooledByteBufferWriter(_options.DefaultBufferSize, stream);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public async ValueTask FlushAsync(CancellationToken cancellationToken)
         {
-            await _bufferWriter.WriteToStreamAsync(_stream, cancellationToken).ConfigureAwait(false);
-            _bufferWriter.Clear();
+            await _bufferWriter.FlushAsync(cancellationToken).ConfigureAwait(false);
         }
 
         public int FlushThreshold => (int)(_options.DefaultBufferSize * JsonSerializer.FlushThreshold);
 
-        public IBufferWriter<byte> BufferWriter => _bufferWriter;
+        public PipeWriter BufferWriter => _bufferWriter;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Dispose()
@@ -62,7 +58,7 @@ namespace System.Text.Json.Serialization
 
         public int FlushThreshold => (int)((4 * PipeOptions.Default.MinimumSegmentSize) * JsonSerializer.FlushThreshold);
 
-        public IBufferWriter<byte> BufferWriter => _pipe;
+        public PipeWriter BufferWriter => _pipe;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public async ValueTask FlushAsync(CancellationToken cancellationToken)
