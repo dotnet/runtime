@@ -259,7 +259,7 @@ inline PTR_Assembly Module::GetAssembly() const
     return m_pAssembly;
 }
 
-inline MethodDesc *Module::LookupMethodDef(mdMethodDef token)
+inline PTR_MethodDesc Module::LookupMethodDef(mdMethodDef token)
 {
     CONTRACTL
     {
@@ -272,6 +272,22 @@ inline MethodDesc *Module::LookupMethodDef(mdMethodDef token)
 
     _ASSERTE(TypeFromToken(token) == mdtMethodDef);
     return m_MethodDefToDescMap.GetElement(RidFromToken(token));
+}
+
+inline PTR_ILCodeVersioningState Module::LookupILCodeVersioningState(mdMethodDef token)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_ANY;
+        SUPPORTS_DAC;
+    }
+    CONTRACTL_END
+
+    _ASSERTE(CodeVersionManager::IsLockOwnedByCurrentThread());
+    _ASSERTE(TypeFromToken(token) == mdtMethodDef);
+    return m_ILCodeVersioningStateMap.GetElement(RidFromToken(token));
 }
 
 inline MethodDesc *Module::LookupMemberRefAsMethod(mdMemberRef token)

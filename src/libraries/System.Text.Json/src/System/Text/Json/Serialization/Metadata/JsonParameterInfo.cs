@@ -11,43 +11,36 @@ namespace System.Text.Json.Serialization.Metadata
     /// </summary>
     internal abstract class JsonParameterInfo
     {
-        public JsonConverter EffectiveConverter => MatchingProperty.EffectiveConverter;
+        internal JsonParameterInfo(JsonParameterInfoValues parameterInfoValues, JsonPropertyInfo matchingProperty)
+        {
+            Debug.Assert(matchingProperty.PropertyType == parameterInfoValues.ParameterType);
+
+            Position = parameterInfoValues.Position;
+            Name = parameterInfoValues.Name;
+            HasDefaultValue = parameterInfoValues.HasDefaultValue;
+            IsNullable = parameterInfoValues.IsNullable;
+            MatchingProperty = matchingProperty;
+        }
+
+        public int Position { get; }
+        public string Name { get; }
+        public bool HasDefaultValue { get; }
 
         // The default value of the parameter. This is `DefaultValue` of the `ParameterInfo`, if specified, or the `default` for the `ParameterType`.
         public object? DefaultValue { get; private protected init; }
-
-        public bool IgnoreNullTokensOnRead { get; }
-
-        public JsonSerializerOptions Options { get; }
-
-        // The name of the parameter as UTF-8 bytes.
-        public byte[] NameAsUtf8Bytes { get; }
-
-        public JsonNumberHandling? NumberHandling { get; }
-
-        public int Position { get; }
-
-        public JsonTypeInfo JsonTypeInfo => MatchingProperty.JsonTypeInfo;
-
-        public Type ParameterType { get; }
-
-        public bool ShouldDeserialize { get; }
-
         public JsonPropertyInfo MatchingProperty { get; }
+        public bool IsNullable { get; internal set; }
 
-        public JsonParameterInfo(JsonParameterInfoValues parameterInfoValues, JsonPropertyInfo matchingProperty)
-        {
-            Debug.Assert(matchingProperty.IsConfigured);
+        public Type DeclaringType => MatchingProperty.DeclaringType;
+        public Type ParameterType => MatchingProperty.PropertyType;
+        public JsonConverter EffectiveConverter => MatchingProperty.EffectiveConverter;
+        public bool IgnoreNullTokensOnRead => MatchingProperty.IgnoreNullTokensOnRead;
+        public JsonSerializerOptions Options => MatchingProperty.Options;
 
-            MatchingProperty = matchingProperty;
-            ShouldDeserialize = !matchingProperty.IsIgnored;
-            Options = matchingProperty.Options;
-            Position = parameterInfoValues.Position;
-
-            ParameterType = matchingProperty.PropertyType;
-            NameAsUtf8Bytes = matchingProperty.NameAsUtf8Bytes;
-            IgnoreNullTokensOnRead = matchingProperty.IgnoreNullTokensOnRead;
-            NumberHandling = matchingProperty.EffectiveNumberHandling;
-        }
+        // The effective name of the parameter as UTF-8 bytes.
+        public byte[] JsonNameAsUtf8Bytes => MatchingProperty.NameAsUtf8Bytes;
+        public JsonNumberHandling? NumberHandling => MatchingProperty.EffectiveNumberHandling;
+        public JsonTypeInfo JsonTypeInfo => MatchingProperty.JsonTypeInfo;
+        public bool ShouldDeserialize => !MatchingProperty.IsIgnored;
     }
 }
