@@ -1282,7 +1282,7 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
                 }
                 printf("\n");
             }
-#endif // DEBUG
+#endif    // DEBUG
         } // end if (canPassArgInRegisters)
         else
         {

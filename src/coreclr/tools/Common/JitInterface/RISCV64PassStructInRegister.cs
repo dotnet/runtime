@@ -5,8 +5,8 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using ILCompiler;
 using Internal.TypeSystem;
-using static Internal.JitInterface.StructFloatFieldInfoFlags;
 using static Internal.JitInterface.FpStruct;
+using static Internal.JitInterface.StructFloatFieldInfoFlags;
 
 namespace Internal.JitInterface
 {
