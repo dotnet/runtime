@@ -1567,11 +1567,16 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 // If this is conditional select, make sure to check the embedded
                 // operation to determine the predicate mask.
                 assert(intrinsicTree->GetOperandCount() == 3);
-                GenTreeHWIntrinsic* embOp2Node = intrin.op2->AsHWIntrinsic();
-                const HWIntrinsic   intrinEmb(embOp2Node);
-                if (HWIntrinsicInfo::IsLowMaskedOperation(intrinEmb.id))
+                assert(!HWIntrinsicInfo::IsLowMaskedOperation(intrin.id));
+
+                if (intrin.op2->OperIs(GT_HWINTRINSIC))
                 {
-                    predMask  = RBM_LOWMASK;
+                    GenTreeHWIntrinsic* embOp2Node = intrin.op2->AsHWIntrinsic();
+                    const HWIntrinsic   intrinEmb(embOp2Node);
+                    if (HWIntrinsicInfo::IsLowMaskedOperation(intrinEmb.id))
+                    {
+                        predMask  = RBM_LOWMASK;
+                    }
                 }
             }
             else
