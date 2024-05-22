@@ -3774,8 +3774,6 @@ void emitter::emitInsSve_R_R_R(instruction     ins,
                 // ORR is an alias for MOV, and is always the preferred disassembly.
                 ins = INS_sve_orr;
             }
-            // TODO-SVE: Remove check for (opt == INS_OPTS_SCALABLE_B) when predicate registers
-            //  are present.
             else if (isPredicateRegister(reg3) &&
                      (sopt == INS_SCALABLE_OPTS_NONE || sopt == INS_SCALABLE_OPTS_PREDICATE_MERGE))
             {
