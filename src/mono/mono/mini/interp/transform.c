@@ -4458,8 +4458,8 @@ interp_method_compute_offsets (TransformData *td, InterpMethod *imethod, MonoMet
 
 	td->renamable_vars_size = 0;
 	if (td->optimized) {
-		td->renamable_vars = (InterpRenamableVar*)g_malloc (target_vars_capacity * sizeof (InterpRenamableVar));
-		td->renamable_vars_capacity = target_vars_capacity;
+		td->renamable_vars = (InterpRenamableVar*)g_malloc (num_locals * sizeof (InterpRenamableVar));
+		td->renamable_vars_capacity = num_locals;
 	} else {
 		td->renamable_vars = NULL;
 		td->renamable_vars_capacity = 0;
