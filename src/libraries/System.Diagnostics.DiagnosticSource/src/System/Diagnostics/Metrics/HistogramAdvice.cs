@@ -15,15 +15,14 @@ namespace System.Diagnostics.Metrics
         /// <summary>
         /// Constructs a new instance of <see cref="HistogramAdvice{T}"/>.
         /// </summary>
-        /// <param name="explicitBucketBoundaries">
-        /// <para>Explicit bucket boundaries advised to be used with the histogram.</para>
-        /// <para>Notes:
+        /// <remarks>
+        /// Notes:
         /// <list type="bullet">
         /// <item>An empty set of bucket boundaries hints that the histogram by default should NOT contain buckets and should only track count and sum values.</item>
         /// <item>A set of distinct increasing values for bucket boundaries hints that the histogram should use those for its default bucket configuration.</item>
         /// </list>
-        /// </para>
-        /// </param>
+        /// </remarks>
+        /// <param name="explicitBucketBoundaries">Explicit bucket boundaries advised to be used with the histogram.</param>
         public HistogramAdvice(IEnumerable<T> explicitBucketBoundaries)
         {
             if (explicitBucketBoundaries is null)
@@ -31,14 +30,14 @@ namespace System.Diagnostics.Metrics
                 throw new ArgumentNullException(nameof(explicitBucketBoundaries));
             }
 
-            IReadOnlyList<T> explicitBucketBoundariesCopy = new ReadOnlyCollection<T>(new List<T>(explicitBucketBoundaries));
+            List<T> explicitBucketBoundariesCopy = new List<T>(explicitBucketBoundaries);
 
             if (!IsSortedAndDistinct(explicitBucketBoundariesCopy))
             {
                 throw new ArgumentException(SR.InvalidHistogramExplicitBucketBoundaries, nameof(explicitBucketBoundaries));
             }
 
-            ExplicitBucketBoundaries = explicitBucketBoundariesCopy;
+            ExplicitBucketBoundaries = new ReadOnlyCollection<T>(explicitBucketBoundariesCopy);
         }
 
         /// <summary>
@@ -54,7 +53,7 @@ namespace System.Diagnostics.Metrics
         /// </remarks>
         public IReadOnlyList<T>? ExplicitBucketBoundaries { get; }
 
-        private static bool IsSortedAndDistinct(IReadOnlyList<T> values)
+        private static bool IsSortedAndDistinct(List<T> values)
         {
             Comparer<T> comparer = Comparer<T>.Default;
 
