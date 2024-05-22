@@ -2563,7 +2563,6 @@ mono_metadata_signature_dup_delegate_invoke_to_target (MonoMethodSignature *sig)
 
 /**
  * mono_metadata_signature_dup_new_params:
- * @param image The image to allocate the new signature from.
  * @param mp The mempool to allocate the new signature from.
  * @param mem_manager The memory manager to allocate the new signature from.
  * @param sig The original method signature.
@@ -2576,13 +2575,13 @@ mono_metadata_signature_dup_delegate_invoke_to_target (MonoMethodSignature *sig)
  * @return the new \c MonoMethodSignature structure.
  */
 MonoMethodSignature*
-mono_metadata_signature_dup_new_params (MonoImage *image, MonoMemPool *mp, MonoMemoryManager *mem_manager, MonoMethodSignature *sig, uint32_t num_params, MonoType **new_params)
+mono_metadata_signature_dup_new_params (MonoMemPool *mp, MonoMemoryManager *mem_manager, MonoMethodSignature *sig, uint32_t num_params, MonoType **new_params)
 {
 	size_t new_sig_size = MONO_SIZEOF_METHOD_SIGNATURE + num_params * sizeof (MonoType*);
 	if (sig->ret)
 		new_sig_size += mono_sizeof_type (sig->ret);
 
-	MonoMethodSignature *res = mono_metadata_signature_allocate_internal (image, mp, mem_manager, new_sig_size);
+	MonoMethodSignature *res = mono_metadata_signature_allocate_internal (NULL, mp, mem_manager, new_sig_size);
 	memcpy (res, sig, MONO_SIZEOF_METHOD_SIGNATURE);
 	res->param_count = GUINT32_TO_UINT16 (num_params);
 
