@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.IO;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.Net.Test.Common;
 using System.Security.Authentication;
@@ -115,11 +116,19 @@ namespace System.Net.Security.Tests
                 }
             }
         }
+        public static IEnumerable<object[]> SslProtocolsAndBoolData()
+        {
+            foreach (object[] protocol in new SslProtocolSupport.SupportedSslProtocolsTestData())
+            {
+                yield return new object[] { protocol[0], true };
+                yield return new object[] { protocol[0], false };
+            }
+        }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
-        [ClassData(typeof(SslProtocolSupport.SupportedSslProtocolsTestData))]
+        [MemberData(nameof(SslProtocolsAndBoolData))]
         public async Task SslStream_CachedCredentials_IsMutuallyAuthenticatedCorrect(
-           SslProtocols protocol)
+           SslProtocols protocol, bool startWithMtls)
         {
             var clientOptions = new SslClientAuthenticationOptions
             {
@@ -129,18 +138,20 @@ namespace System.Net.Security.Tests
                 TargetHost = Guid.NewGuid().ToString("N")
             };
 
+            SslStreamCertificateContext context = SslStreamCertificateContext.Create(_serverCertificate, null);
+
             for (int i = 0; i < 5; i++)
             {
                 (SslStream client, SslStream server) = TestHelper.GetConnectedSslStreams();
                 using (client)
                 using (server)
                 {
-                    bool expectMutualAuthentication = (i % 2) == 0;
+                    bool expectMutualAuthentication = (i % 2) == (startWithMtls ? 0 : 1);
 
                     var serverOptions = new SslServerAuthenticationOptions
                     {
                         ClientCertificateRequired = expectMutualAuthentication,
-                        ServerCertificate = expectMutualAuthentication ? _serverCertificate : _selfSignedCertificate,
+                        ServerCertificateContext = context,
                         RemoteCertificateValidationCallback = delegate { return true; },
                         EnabledSslProtocols = protocol
                     };
@@ -193,7 +204,6 @@ namespace System.Net.Security.Tests
                         ServerCertificateContext = context,
                         ClientCertificateRequired = false,
                         EnabledSslProtocols = SslProtocols.Tls12,
-
                     });
 
                     await TestConfiguration.WhenAllOrAnyFailedWithTimeout(t1, t2);
@@ -266,7 +276,7 @@ namespace System.Net.Security.Tests
                     }
                     else
                     {
-                       Assert.Null(server.RemoteCertificate);
+                        Assert.Null(server.RemoteCertificate);
                     }
                 };
             }
@@ -320,7 +330,7 @@ namespace System.Net.Security.Tests
                     }
                     else
                     {
-                       Assert.Null(server.RemoteCertificate);
+                        Assert.Null(server.RemoteCertificate);
                     }
                 };
             }
@@ -357,7 +367,7 @@ namespace System.Net.Security.Tests
 
                     if (expectMutualAuthentication)
                     {
-                      clientOptions.LocalCertificateSelectionCallback = (s, t, l, r, a) => _clientCertificate;
+                        clientOptions.LocalCertificateSelectionCallback = (s, t, l, r, a) => _clientCertificate;
                     }
                     else
                     {
@@ -378,7 +388,7 @@ namespace System.Net.Security.Tests
                     }
                     else
                     {
-                       Assert.Null(server.RemoteCertificate);
+                        Assert.Null(server.RemoteCertificate);
                     }
                 };
             }
