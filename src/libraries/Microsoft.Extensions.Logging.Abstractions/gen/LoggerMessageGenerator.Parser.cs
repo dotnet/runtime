@@ -662,7 +662,6 @@ namespace Microsoft.Extensions.Logging.Generators
                     currentClassType = currentClassType.BaseType;
                 }
 
-#if ROSLYN4_8_OR_GREATER
                 // We prioritize fields over primary constructor parameters and avoid warnings if both exist.
                 if (loggerField is not null)
                 {
@@ -698,7 +697,6 @@ namespace Microsoft.Extensions.Logging.Generators
                         }
                     }
                 }
-#endif
 
                 return (loggerField, false);
             }

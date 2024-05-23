@@ -1,8 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <RoslynApiVersion>$(MicrosoftCodeAnalysisVersion_4_0)</RoslynApiVersion>
-    <DefineConstants>$(DefineConstants);ROSLYN4_0_OR_GREATER</DefineConstants>
+    <RoslynApiVersion>$(MicrosoftCodeAnalysisVersion_4_8)</RoslynApiVersion>
+    <DefineConstants>$(DefineConstants);ROSLYN4_0_OR_GREATER;ROSLYN4_8_OR_GREATER</DefineConstants>
     <IsHighAotMemoryUsageTest>true</IsHighAotMemoryUsageTest>
     <EmccLinkOptimizationFlag Condition="'$(ContinuousIntegrationBuild)' == 'true'">-O1</EmccLinkOptimizationFlag>
     <!-- this Roslyn version brings in NS1.x dependencies -->
