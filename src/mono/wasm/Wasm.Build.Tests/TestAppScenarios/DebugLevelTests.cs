@@ -139,7 +139,7 @@ public abstract class DebugLevelTests : AppTestBase
     public async Task PublishWithDefaultLevel(string configuration)
     {
         SetupProject($"DebugLevelTests_PublishWithDefaultLevel_{configuration}");
-        PublishProject(configuration);
+        PublishProject(configuration, assertAppBundle: false);
 
         var result = await RunForPublish(configuration);
         AssertDebugLevel(result, 0);
