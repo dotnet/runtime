@@ -991,7 +991,8 @@ void CodeGen::genDefineTempLabel(BasicBlock* label)
     label->bbEmitCookie =
         GetEmitter()->emitAddLabel(gcInfo.gcVarPtrSetCur, gcInfo.gcRegGCrefSetCur, gcInfo.gcRegByrefSetCur);
 
-    JITDUMP("bbEmitCookie TempLabel set with IG%02u for " FMT_BB "\n", label->bbNum, ((insGroup*)label->bbEmitCookie)->igNum);
+    JITDUMP("bbEmitCookie TempLabel set with IG%02u for " FMT_BB "\n", ((insGroup*)label->bbEmitCookie)->igNum,
+            label->bbNum);
 }
 
 // genDefineInlineTempLabel: Define an inline label that does not affect the GC
@@ -1009,7 +1010,8 @@ void CodeGen::genDefineInlineTempLabel(BasicBlock* label)
     genLogLabel(label);
     label->bbEmitCookie = GetEmitter()->emitAddInlineLabel();
 
-    JITDUMP("bbEmitCookie InlineTempLabel set with IG%02u for " FMT_BB "\n", label->bbNum, ((insGroup*)label->bbEmitCookie)->igNum);
+    JITDUMP("bbEmitCookie InlineTempLabel set with IG%02u for " FMT_BB "\n", ((insGroup*)label->bbEmitCookie)->igNum,
+            label->bbNum);
 }
 
 //------------------------------------------------------------------------
