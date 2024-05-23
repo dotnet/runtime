@@ -9,11 +9,13 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
+using Microsoft.VisualStudio.TestPlatform.ObjectModel;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Cases.Expectations.Metadata;
 using Mono.Linker.Tests.Extensions;
+using Mono.Linker.Tests.TestCases;
 using Mono.Linker.Tests.TestCasesRunner.ILVerification;
 using NUnit.Framework;
 using WellKnownType = ILLink.Shared.TypeSystemProxy.WellKnownType;
@@ -102,6 +104,8 @@ namespace Mono.Linker.Tests.TestCasesRunner
 						CreateAssemblyChecker (original, linked, linkResult).Verify ();
 					}
 					CreateILChecker ().Check(linkResult, original);
+
+					VerifyExpectedDependencyTrace (linkResult.MetadataProvider, linkResult.OutputAssemblyPath);
 				}
 
 				VerifyLinkingOfOtherAssemblies (original);
@@ -1049,6 +1053,22 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			{
 				return $"{dependency.Source} -> {dependency.Target} Marked: {dependency.Marked}";
 			}
+		}
+
+		void VerifyExpectedDependencyTrace (TestCaseMetadataProvider testCaseMetadata, NPath outputAssemblyPath)
+		{
+			if (!AppContext.TryGetSwitch ("ValidateDependencyTraces", out var validateDependencyTraces) || !validateDependencyTraces)
+				return;
+
+			var expectedTracePath = testCaseMetadata.GetExpectedDependencyTrace ();
+			Assert.IsTrue (expectedTracePath.FileExists (), $"Expected dependency trace file '{expectedTracePath}' does not exist.");
+
+			// linker-dependencies.xml in same dir as output
+			var tracePath = outputAssemblyPath.Parent.Combine ("linker-dependencies.xml");
+			Assert.IsTrue (tracePath.FileExists (), $"Dependency trace file '{tracePath}' does not exist.");
+
+			Assert.That (File.ReadAllLines (tracePath), Is.EquivalentTo (
+				File.ReadAllLines (expectedTracePath)));
 		}
 
 		void VerifyExpectedInstructionSequenceOnMemberInAssembly (CustomAttribute inAssemblyAttribute, TypeDefinition linkedType)
