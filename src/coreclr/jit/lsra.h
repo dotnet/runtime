@@ -776,10 +776,11 @@ private:
     }
 
     SingleTypeRegSet getConstrainedRegMask(RefPosition*     refPosition,
+                                           RegisterType     regType,
                                            SingleTypeRegSet regMaskActual,
                                            SingleTypeRegSet regMaskConstrain,
                                            unsigned         minRegCount);
-    SingleTypeRegSet stressLimitRegs(RefPosition* refPosition, SingleTypeRegSet mask);
+    SingleTypeRegSet stressLimitRegs(RefPosition* refPosition, RegisterType regType, SingleTypeRegSet mask);
 
     // This controls the heuristics used to select registers
     // These can be combined.

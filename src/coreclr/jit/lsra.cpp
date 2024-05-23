@@ -473,6 +473,7 @@ RegRecord* LinearScan::getRegisterRecord(regNumber regNum)
 //
 // Arguments:
 //     refPosition        -  RefPosition which we want to constrain.
+//     regType            -  Type of register for which we want constrained mask
 //     regMaskActual      -  regMask that needs to be constrained
 //     regMaskConstraint  -  regMask constraint that needs to be
 //                           applied to regMaskActual
@@ -484,6 +485,7 @@ RegRecord* LinearScan::getRegisterRecord(regNumber regNum)
 //     Otherwise returns regMaskActual.
 //
 SingleTypeRegSet LinearScan::getConstrainedRegMask(RefPosition*     refPosition,
+                                                   RegisterType     regType,
                                                    SingleTypeRegSet regMaskActual,
                                                    SingleTypeRegSet regMaskConstraint,
                                                    unsigned         minRegCount)
@@ -498,7 +500,7 @@ SingleTypeRegSet LinearScan::getConstrainedRegMask(RefPosition*     refPosition,
     if ((refPosition != nullptr) && !refPosition->RegOptional())
     {
         SingleTypeRegSet busyRegs =
-            (regsBusyUntilKill | regsInUseThisLocation).GetRegSetForType(TYP_VOID); // TODO: Pass the right type
+            (regsBusyUntilKill | regsInUseThisLocation).GetRegSetForType(regType);
         if ((newMask & ~busyRegs) == RBM_NONE)
         {
             // Constrained mask does not have at least one free register to allocate.
@@ -566,7 +568,7 @@ static const SingleTypeRegSet LsraLimitSmallFPSet  = (RBM_F0 | RBM_F1 | RBM_F2 |
 //    This is the method used to implement the stress options that limit
 //    the set of registers considered for allocation.
 //
-SingleTypeRegSet LinearScan::stressLimitRegs(RefPosition* refPosition, SingleTypeRegSet mask)
+SingleTypeRegSet LinearScan::stressLimitRegs(RefPosition* refPosition, RegisterType regType, SingleTypeRegSet mask)
 {
 #ifdef TARGET_ARM64
     if ((refPosition != nullptr) && refPosition->isLiveAtConsecutiveRegistersLoc(consecutiveRegistersLocation))
@@ -590,24 +592,24 @@ SingleTypeRegSet LinearScan::stressLimitRegs(RefPosition* refPosition, SingleTyp
             case LSRA_LIMIT_CALLEE:
                 if (!compiler->opts.compDbgEnC)
                 {
-                    mask = getConstrainedRegMask(refPosition, mask, RBM_CALLEE_SAVED, minRegCount);
+                    mask = getConstrainedRegMask(refPosition, regType, mask, RBM_CALLEE_SAVED, minRegCount);
                 }
                 break;
 
             case LSRA_LIMIT_CALLER:
             {
-                mask = getConstrainedRegMask(refPosition, mask, RBM_CALLEE_TRASH, minRegCount);
+                mask = getConstrainedRegMask(refPosition, regType, mask, RBM_CALLEE_TRASH, minRegCount);
             }
             break;
 
             case LSRA_LIMIT_SMALL_SET:
                 if ((mask & LsraLimitSmallIntSet) != RBM_NONE)
                 {
-                    mask = getConstrainedRegMask(refPosition, mask, LsraLimitSmallIntSet, minRegCount);
+                    mask = getConstrainedRegMask(refPosition, regType, mask, LsraLimitSmallIntSet, minRegCount);
                 }
                 else if ((mask & LsraLimitSmallFPSet) != RBM_NONE)
                 {
-                    mask = getConstrainedRegMask(refPosition, mask, LsraLimitSmallFPSet, minRegCount);
+                    mask = getConstrainedRegMask(refPosition, regType, mask, LsraLimitSmallFPSet, minRegCount);
                 }
                 break;
 
@@ -615,7 +617,7 @@ SingleTypeRegSet LinearScan::stressLimitRegs(RefPosition* refPosition, SingleTyp
             case LSRA_LIMIT_UPPER_SIMD_SET:
                 if ((mask & LsraLimitUpperSimdSet) != RBM_NONE)
                 {
-                    mask = getConstrainedRegMask(refPosition, mask, LsraLimitUpperSimdSet, minRegCount);
+                    mask = getConstrainedRegMask(refPosition, regType, mask, LsraLimitUpperSimdSet, minRegCount);
                 }
                 break;
 #endif
@@ -8717,7 +8719,7 @@ regNumber LinearScan::getTempRegForResolution(BasicBlock*      fromBlock,
         return REG_NA;
     }
 #endif // DEBUG
-    INDEBUG(freeRegs = stressLimitRegs(nullptr, freeRegs));
+    INDEBUG(freeRegs = stressLimitRegs(nullptr, type, freeRegs));
 
     freeRegs &= ~terminatorConsumedRegs;
 
@@ -13377,7 +13379,7 @@ SingleTypeRegSet LinearScan::RegisterSelection::select(Interval*                
     }
 
 #ifdef DEBUG
-    candidates = linearScan->stressLimitRegs(refPosition, candidates);
+    candidates = linearScan->stressLimitRegs(refPosition, regType, candidates);
 #endif
     assert(candidates != RBM_NONE);
 
@@ -13830,7 +13832,7 @@ SingleTypeRegSet LinearScan::RegisterSelection::selectMinimal(
     }
 
 #ifdef DEBUG
-    candidates = linearScan->stressLimitRegs(refPosition, candidates);
+    candidates = linearScan->stressLimitRegs(refPosition, regType, candidates);
 #endif
     assert(candidates != RBM_NONE);
 

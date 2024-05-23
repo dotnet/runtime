@@ -5,11 +5,23 @@
 
 struct regMaskTP;
 
+//------------------------------------------------------------------------
+// RemoveRegNumFromMask: Removes `reg` from the mask
+//
+// Parameters:
+//  reg - Register to remove
+//
 void regMaskTP::RemoveRegNumFromMask(regNumber reg)
 {
     low &= ~genRegMask(reg);
 }
 
+//------------------------------------------------------------------------
+// IsRegNumInMask: Checks if `reg` is in the mask
+//
+// Parameters:
+//  reg - Register to check
+//
 bool regMaskTP::IsRegNumInMask(regNumber reg)
 {
     return (low & genRegMask(reg)) != 0;
