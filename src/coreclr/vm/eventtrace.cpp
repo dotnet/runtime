@@ -2403,18 +2403,28 @@ VOID EtwCallbackCommon(
     // Special check for the runtime provider's ManagedHeapCollectKeyword.  Profilers
     // flick this to force a full GC.
     if (g_fEEStarted && !g_fEEShutDown && bIsPublicTraceHandle &&
-        ((MatchAnyKeyword & CLR_MANAGEDHEAPCOLLECT_KEYWORD) != 0))
+        ((MatchAnyKeyword & CLR_MANAGEDHEAPCOLLECT_KEYWORD) != 0) &&
+        (ControlCode == EVENT_CONTROL_CODE_ENABLE_PROVIDER) // only when the provider is enabled
+        )
     {
         // Profilers may (optionally) specify extra data in the filter parameter
         // to log with the GCStart event.
         LONGLONG l64ClientSequenceNumber = 0;
 #if !defined(HOST_UNIX)
         PEVENT_FILTER_DESCRIPTOR FilterData = (PEVENT_FILTER_DESCRIPTOR)pFilterData;
-        if ((FilterData != NULL) &&
-           (FilterData->Type == 1) &&
-           (FilterData->Size == sizeof(l64ClientSequenceNumber)))
+        if ((FilterData != NULL) && (FilterData->Type == 0) && (FilterData->Size > 0))
         {
-            l64ClientSequenceNumber = *(LONGLONG *) (FilterData->Ptr);
+            // look for the value without checking the provided id
+            char* clientSequenceNumberAsString = (char*)FilterData->Ptr;
+            clientSequenceNumberAsString += strlen(clientSequenceNumberAsString) + 1;
+
+            // extract the client sequence number from the string
+            int result = _snscanf_s(clientSequenceNumberAsString, FilterData->Size - (strlen((char*)FilterData->Ptr) + 1), "%I64u", &l64ClientSequenceNumber);
+            if (result != 1)
+            {
+                // in case of parsing failure, reset the sequence number to 0
+                l64ClientSequenceNumber = 0;
+            }
         }
 #endif // !defined(HOST_UNIX)
         ETW::GCLog::ForceGC(l64ClientSequenceNumber);

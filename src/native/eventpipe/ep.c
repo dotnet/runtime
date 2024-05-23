@@ -673,6 +673,7 @@ disable_helper (EventPipeSessionID id)
 
 		while (ep_provider_callback_data_queue_try_dequeue (provider_callback_data_queue, &provider_callback_data)) {
 			ep_rt_prepare_provider_invoke_callback (&provider_callback_data);
+			provider_callback_data.enabled = false;
 			provider_invoke_callback (&provider_callback_data);
 			ep_provider_callback_data_fini (&provider_callback_data);
 		}
