@@ -4,6 +4,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <ApiCompatSuppressionFile Include="$(MSBuildProjectDirectory)\CompatibilitySuppressions.xml" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ILLinkSubstitutionsXmls Include="ILLink\ILLink.Substitutions.xml" />
     <ILLinkLinkAttributesXmls Include="ILLink\ILLink.LinkAttributes.xml" />
   </ItemGroup>

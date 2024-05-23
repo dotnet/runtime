@@ -3143,6 +3143,11 @@ int32_t SystemNative_Disconnect(intptr_t socket)
 #elif HAVE_DISCONNECTX
     // disconnectx causes a FIN close on OSX. It's the best we can do.
     err = disconnectx(fd, SAE_ASSOCID_ANY, SAE_CONNID_ANY);
+    if (err != 0)
+    {
+        // This happens on Unix Domain Sockets as disconnectx is only supported on AF_INET and AF_INET6
+        err = shutdown(fd, SHUT_RDWR);
+    }
 #else
     // best-effort, this may cause a FIN close.
     err = shutdown(fd, SHUT_RDWR);
