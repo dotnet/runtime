@@ -788,11 +788,11 @@ FORCEINLINE void NewRCWHolderRelease(RCW* p)
     }
 };
 
-class NewRCWHolder : public Wrapper<RCW*, NewRCWHolderDoNothing, NewRCWHolderRelease, NULL>
+class NewRCWHolder : public Wrapper<RCW*, NewRCWHolderDoNothing, NewRCWHolderRelease, 0>
 {
 public:
     NewRCWHolder(RCW* p = NULL)
-        : Wrapper<RCW*, NewRCWHolderDoNothing, NewRCWHolderRelease, NULL>(p)
+        : Wrapper<RCW*, NewRCWHolderDoNothing, NewRCWHolderRelease, 0>(p)
     {
         WRAPPER_NO_CONTRACT;
     }
@@ -800,7 +800,7 @@ public:
     FORCEINLINE void operator=(RCW* p)
     {
         WRAPPER_NO_CONTRACT;
-        Wrapper<RCW*, NewRCWHolderDoNothing, NewRCWHolderRelease, NULL>::operator=(p);
+        Wrapper<RCW*, NewRCWHolderDoNothing, NewRCWHolderRelease, 0>::operator=(p);
     }
 };
 
@@ -1424,11 +1424,11 @@ FORCEINLINE void CtxEntryHolderRelease(CtxEntry *p)
     }
 }
 
-class CtxEntryHolder : public Wrapper<CtxEntry *, CtxEntryDoNothing, CtxEntryHolderRelease, NULL>
+class CtxEntryHolder : public Wrapper<CtxEntry *, CtxEntryDoNothing, CtxEntryHolderRelease, 0>
 {
 public:
     CtxEntryHolder(CtxEntry *p = NULL)
-        : Wrapper<CtxEntry *, CtxEntryDoNothing, CtxEntryHolderRelease, NULL>(p)
+        : Wrapper<CtxEntry *, CtxEntryDoNothing, CtxEntryHolderRelease, 0>(p)
     {
         WRAPPER_NO_CONTRACT;
     }
@@ -1437,7 +1437,7 @@ public:
     {
         WRAPPER_NO_CONTRACT;
 
-        Wrapper<CtxEntry *, CtxEntryDoNothing, CtxEntryHolderRelease, NULL>::operator=(p);
+        Wrapper<CtxEntry *, CtxEntryDoNothing, CtxEntryHolderRelease, 0>::operator=(p);
     }
 
 };

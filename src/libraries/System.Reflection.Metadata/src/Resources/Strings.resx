@@ -411,4 +411,25 @@
   <data name="SwitchInstructionEncoderTooManyBranches" xml:space="preserve">
     <value>The SwitchInstructionEncoder.Branch method was invoked too many times.</value>
   </data>
+  <data name="Argument_InvalidTypeName" xml:space="preserve">
+    <value>The name of the type is invalid.</value>
+  </data>
+  <data name="InvalidOperation_MaxNodesExceeded" xml:space="preserve">
+    <value>Maximum node count of {0} exceeded.</value>
+  </data>
+  <data name="Argument_HasToBeArrayClass" xml:space="preserve">
+    <value>Must be an array type.</value>
+  </data>
+  <data name="InvalidOperation_NotGenericType" xml:space="preserve">
+    <value>This operation is only valid on generic types.</value>
+  </data>
+  <data name="InvalidOperation_NotNestedType" xml:space="preserve">
+    <value>This operation is only valid on nested types.</value>
+  </data>
+  <data name="InvalidOperation_NoElement" xml:space="preserve">
+    <value>This operation is only valid on arrays, pointers and references.</value>
+  </data>
+  <data name="InvalidAssemblyName" xml:space="preserve">
+    <value>The given assembly name was invalid.</value>
+  </data>
 </root>

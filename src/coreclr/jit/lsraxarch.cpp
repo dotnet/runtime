@@ -46,7 +46,7 @@ int LinearScan::BuildNode(GenTree* tree)
 {
     assert(!tree->isContained());
     int       srcCount;
-    int       dstCount      = 0;
+    int       dstCount;
     regMaskTP killMask      = RBM_NONE;
     bool      isLocalDefUse = false;
 
@@ -138,14 +138,14 @@ int LinearScan::BuildNode(GenTree* tree)
             // This kills GC refs in callee save regs
             srcCount = 0;
             assert(dstCount == 0);
-            BuildDefsWithKills(tree, 0, RBM_NONE, RBM_NONE);
+            BuildKills(tree, RBM_NONE);
             break;
 
         case GT_PROF_HOOK:
             srcCount = 0;
             assert(dstCount == 0);
             killMask = getKillSetForProfilerHook();
-            BuildDefsWithKills(tree, 0, RBM_NONE, killMask);
+            BuildKills(tree, killMask);
             break;
 
         case GT_CNS_INT:
@@ -190,8 +190,18 @@ int LinearScan::BuildNode(GenTree* tree)
         case GT_RETURN:
             srcCount = BuildReturn(tree);
             killMask = getKillSetForReturn();
-            BuildDefsWithKills(tree, 0, RBM_NONE, killMask);
+            BuildKills(tree, killMask);
             break;
+
+#ifdef SWIFT_SUPPORT
+        case GT_SWIFT_ERROR_RET:
+            BuildUse(tree->gtGetOp1(), RBM_SWIFT_ERROR);
+            // Plus one for error register
+            srcCount = BuildReturn(tree) + 1;
+            killMask = getKillSetForReturn();
+            BuildKills(tree, killMask);
+            break;
+#endif // SWIFT_SUPPORT
 
         case GT_RETFILT:
             assert(dstCount == 0);
@@ -296,7 +306,7 @@ int LinearScan::BuildNode(GenTree* tree)
             srcCount                 = BuildOperandUses(tree->gtGetOp1());
             buildInternalRegisterUses();
             killMask = compiler->compHelperCallKillSet(CORINFO_HELP_STOP_FOR_GC);
-            BuildDefsWithKills(tree, 0, RBM_NONE, killMask);
+            BuildKills(tree, killMask);
         }
         break;
 
@@ -432,7 +442,7 @@ int LinearScan::BuildNode(GenTree* tree)
             // Comparand is preferenced to RAX.
             // The remaining two operands can be in any reg other than RAX.
 
-            const unsigned nonRaxCandidates = availableIntRegs & ~RBM_RAX;
+            const regMaskTP nonRaxCandidates = availableIntRegs & ~RBM_RAX;
             BuildUse(addr, nonRaxCandidates);
             BuildUse(data, varTypeIsByte(tree) ? (nonRaxCandidates & RBM_BYTE_REGS) : nonRaxCandidates);
             BuildUse(comparand, RBM_RAX);
@@ -590,7 +600,7 @@ int LinearScan::BuildNode(GenTree* tree)
             BuildDef(tree, RBM_EXCEPTION_OBJECT);
             break;
 
-#if !defined(FEATURE_EH_FUNCLETS)
+#if defined(FEATURE_EH_WINDOWS_X86)
         case GT_END_LFIN:
             srcCount = 0;
             assert(dstCount == 0);
@@ -649,8 +659,7 @@ int LinearScan::BuildNode(GenTree* tree)
     } // end switch (tree->OperGet())
 
     // We need to be sure that we've set srcCount and dstCount appropriately.
-    // Not that for XARCH, the maximum number of registers defined is 2.
-    assert((dstCount < 2) || ((dstCount == 2) && tree->IsMultiRegNode()));
+    assert((dstCount < 2) || tree->IsMultiRegNode());
     assert(isLocalDefUse == (tree->IsValue() && tree->IsUnusedValue()));
     assert(!tree->IsValue() || (dstCount != 0));
     assert(dstCount == tree->GetRegisterDstCount(compiler));
@@ -711,7 +720,6 @@ bool LinearScan::isRMWRegOper(GenTree* tree)
 {
     // TODO-XArch-CQ: Make this more accurate.
     // For now, We assume that most binary operators are of the RMW form.
-    CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifdef FEATURE_HW_INTRINSICS
     assert(tree->OperIsBinary() || (tree->OperIsMultiOp() && (tree->AsMultiOp()->GetOperandCount() <= 2)));
@@ -735,6 +743,7 @@ bool LinearScan::isRMWRegOper(GenTree* tree)
 #ifdef TARGET_X86
         case GT_LONG:
 #endif
+        case GT_SWIFT_ERROR_RET:
             return false;
 
         case GT_ADD:
@@ -1070,7 +1079,6 @@ int LinearScan::BuildShiftRotate(GenTree* tree)
     // TODO-CQ-XARCH: We can optimize generating 'test' instruction for GT_EQ/NE(shift, 0)
     // if the shift count is known to be non-zero and in the range depending on the
     // operand size.
-    CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifdef TARGET_X86
     // The first operand of a GT_LSH_HI and GT_RSH_LO oper is a GT_LONG so that
@@ -1139,11 +1147,11 @@ int LinearScan::BuildShiftRotate(GenTree* tree)
 //
 int LinearScan::BuildCall(GenTreeCall* call)
 {
-    bool                  hasMultiRegRetVal = false;
-    const ReturnTypeDesc* retTypeDesc       = nullptr;
-    int                   srcCount          = 0;
-    int                   dstCount          = 0;
-    regMaskTP             dstCandidates     = RBM_NONE;
+    bool                  hasMultiRegRetVal   = false;
+    const ReturnTypeDesc* retTypeDesc         = nullptr;
+    int                   srcCount            = 0;
+    int                   dstCount            = 0;
+    regMaskTP             singleDstCandidates = RBM_NONE;
 
     assert(!call->isContained());
     if (call->TypeGet() != TYP_VOID)
@@ -1170,7 +1178,6 @@ int LinearScan::BuildCall(GenTreeCall* call)
     RegisterType registerType = regType(call);
 
     // Set destination candidates for return value of the call.
-    CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifdef TARGET_X86
     if (call->IsHelperCall(compiler, CORINFO_HELP_INIT_PINVOKE_FRAME))
@@ -1178,38 +1185,35 @@ int LinearScan::BuildCall(GenTreeCall* call)
         // The x86 CORINFO_HELP_INIT_PINVOKE_FRAME helper uses a custom calling convention that returns with
         // TCB in REG_PINVOKE_TCB. AMD64/ARM64 use the standard calling convention. fgMorphCall() sets the
         // correct argument registers.
-        dstCandidates = RBM_PINVOKE_TCB;
+        singleDstCandidates = RBM_PINVOKE_TCB;
     }
     else
 #endif // TARGET_X86
-        if (hasMultiRegRetVal)
-    {
-        assert(retTypeDesc != nullptr);
-        dstCandidates = retTypeDesc->GetABIReturnRegs();
-        assert((int)genCountBits(dstCandidates) == dstCount);
-    }
-    else if (varTypeUsesFloatReg(registerType))
-    {
+        if (!hasMultiRegRetVal)
+        {
+            if (varTypeUsesFloatReg(registerType))
+            {
 #ifdef TARGET_X86
-        // The return value will be on the X87 stack, and we will need to move it.
-        dstCandidates = allRegs(registerType);
+                // The return value will be on the X87 stack, and we will need to move it.
+                singleDstCandidates = allRegs(registerType);
 #else  // !TARGET_X86
-        dstCandidates = RBM_FLOATRET;
+            singleDstCandidates = RBM_FLOATRET;
 #endif // !TARGET_X86
-    }
-    else
-    {
-        assert(varTypeUsesIntReg(registerType));
+            }
+            else
+            {
+                assert(varTypeUsesIntReg(registerType));
 
-        if (registerType == TYP_LONG)
-        {
-            dstCandidates = RBM_LNGRET;
+                if (registerType == TYP_LONG)
+                {
+                    singleDstCandidates = RBM_LNGRET;
+                }
+                else
+                {
+                    singleDstCandidates = RBM_INTRET;
+                }
+            }
         }
-        else
-        {
-            dstCandidates = RBM_INTRET;
-        }
-    }
 
     // number of args to a call =
     // callRegArgs + (callargs - placeholders, setup, etc)
@@ -1368,28 +1372,30 @@ int LinearScan::BuildCall(GenTreeCall* call)
 
     // Now generate defs and kills.
     regMaskTP killMask = getKillSetForCall(call);
-    BuildDefsWithKills(call, dstCount, dstCandidates, killMask);
+    if (dstCount > 0)
+    {
+        if (hasMultiRegRetVal)
+        {
+            assert(retTypeDesc != nullptr);
+            regMaskTP multiDstCandidates = retTypeDesc->GetABIReturnRegs(call->GetUnmanagedCallConv());
+            assert((int)genCountBits(multiDstCandidates) == dstCount);
+            BuildCallDefsWithKills(call, dstCount, multiDstCandidates, killMask);
+        }
+        else
+        {
+            assert(dstCount == 1);
+            BuildDefWithKills(call, dstCount, singleDstCandidates, killMask);
+        }
+    }
+    else
+    {
+        BuildKills(call, killMask);
+    }
 
 #ifdef SWIFT_SUPPORT
     if (call->HasSwiftErrorHandling())
     {
-        // Tree is a Swift call with error handling; error register should have been killed
-        assert((killMask & RBM_SWIFT_ERROR) != 0);
-
-        // After a Swift call that might throw returns, we expect the error register to be consumed
-        // by a GT_SWIFT_ERROR node. However, we want to ensure the error register won't be trashed
-        // before GT_SWIFT_ERROR can consume it.
-        // (For example, the PInvoke epilog comes before the error register store.)
-        // To do so, delay the freeing of the error register until the next node.
-        // This only works if the next node after the call is the GT_SWIFT_ERROR node.
-        // (InsertPInvokeCallEpilog should have moved the GT_SWIFT_ERROR node during lowering.)
-        assert(call->gtNext != nullptr);
-        assert(call->gtNext->OperIs(GT_SWIFT_ERROR));
-
-        // We could use RefTypeKill, but RefTypeFixedReg is used less commonly, so the check for delayRegFree
-        // during register allocation should be cheaper in terms of TP.
-        RefPosition* pos = newRefPosition(REG_SWIFT_ERROR, currentLoc, RefTypeFixedReg, call, RBM_SWIFT_ERROR);
-        setDelayFree(pos);
+        MarkSwiftErrorBusyForCall(call);
     }
 #endif // SWIFT_SUPPORT
 
@@ -1439,9 +1445,30 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
         {
             case GenTreeBlk::BlkOpKindUnroll:
             {
-                const bool canUse16BytesSimdMov =
-                    !blkNode->IsOnHeapAndContainsReferences() && compiler->IsBaselineSimdIsaSupported();
-                const bool willUseSimdMov = canUse16BytesSimdMov && (size >= XMM_REGSIZE_BYTES);
+                bool willUseSimdMov = compiler->IsBaselineSimdIsaSupported() && (size >= XMM_REGSIZE_BYTES);
+                if (willUseSimdMov && blkNode->IsOnHeapAndContainsReferences())
+                {
+                    ClassLayout* layout = blkNode->GetLayout();
+
+                    unsigned xmmCandidates   = 0;
+                    unsigned continuousNonGc = 0;
+                    for (unsigned slot = 0; slot < layout->GetSlotCount(); slot++)
+                    {
+                        if (layout->IsGCPtr(slot))
+                        {
+                            xmmCandidates += ((continuousNonGc * TARGET_POINTER_SIZE) / XMM_REGSIZE_BYTES);
+                            continuousNonGc = 0;
+                        }
+                        else
+                        {
+                            continuousNonGc++;
+                        }
+                    }
+                    xmmCandidates += ((continuousNonGc * TARGET_POINTER_SIZE) / XMM_REGSIZE_BYTES);
+
+                    // Just one XMM candidate is not profitable
+                    willUseSimdMov = xmmCandidates > 1;
+                }
 
                 if (willUseSimdMov)
                 {
@@ -1655,7 +1682,7 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
 
     buildInternalRegisterUses();
     regMaskTP killMask = getKillSetForBlockStore(blkNode);
-    BuildDefsWithKills(blkNode, 0, RBM_NONE, killMask);
+    BuildKills(blkNode, killMask);
 
     return useCount;
 }
@@ -1947,7 +1974,7 @@ int LinearScan::BuildModDiv(GenTree* tree)
     buildInternalRegisterUses();
 
     regMaskTP killMask = getKillSetForModDiv(tree->AsOp());
-    BuildDefsWithKills(tree, 1, dstCandidates, killMask);
+    BuildDefWithKills(tree, 1, dstCandidates, killMask);
     return srcCount;
 }
 
@@ -2552,7 +2579,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
 
                         for (GenTree* operand : op2->AsHWIntrinsic()->Operands())
                         {
-                            assert(varTypeIsSIMD(operand));
+                            assert(varTypeIsSIMD(operand) || varTypeIsInt(operand));
                             srcCount += BuildDelayFreeUses(operand, op1);
                         }
                     }
@@ -2565,7 +2592,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
 
                         for (GenTree* operand : op2->AsHWIntrinsic()->Operands())
                         {
-                            assert(varTypeIsSIMD(operand));
+                            assert(varTypeIsSIMD(operand) || varTypeIsInt(operand));
                             srcCount += BuildOperandUses(operand);
                         }
                     }
@@ -2798,10 +2825,11 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
     if (dstCount == 1)
     {
 #if defined(TARGET_AMD64)
-        if (!intrinsicTree->isEvexCompatibleHWIntrinsic() &&
-            (varTypeIsFloating(intrinsicTree->gtType) || varTypeIsSIMD(intrinsicTree->gtType)))
+        bool isEvexCompatible = intrinsicTree->isEvexCompatibleHWIntrinsic();
+
+        if (!isEvexCompatible)
         {
-            dstCandidates = lowSIMDRegs();
+            dstCandidates = BuildEvexIncompatibleMask(intrinsicTree);
         }
 #endif
 
@@ -2834,6 +2862,15 @@ int LinearScan::BuildCast(GenTreeCast* cast)
 
     const var_types srcType  = genActualType(src->TypeGet());
     const var_types castType = cast->gtCastType;
+
+    if ((srcType == TYP_LONG) && (castType == TYP_DOUBLE) &&
+        !compiler->compOpportunisticallyDependsOn(InstructionSet_AVX512F))
+    {
+        // We need two extra temp regs for LONG->DOUBLE cast
+        // if we don't have AVX512F available.
+        buildInternalIntRegisterDefForNode(cast);
+        buildInternalIntRegisterDefForNode(cast);
+    }
 
     regMaskTP candidates = RBM_NONE;
 #ifdef TARGET_X86
@@ -3020,7 +3057,6 @@ int LinearScan::BuildMul(GenTree* tree)
     // three-op form:   reg = r/m * imm
 
     // This special widening 32x32->64 MUL is not used on x64
-    CLANG_FORMAT_COMMENT_ANCHOR;
 #if defined(TARGET_X86)
     if (tree->OperGet() != GT_MUL_LONG)
 #endif
@@ -3065,7 +3101,7 @@ int LinearScan::BuildMul(GenTree* tree)
         containedMemOp = op2;
     }
     regMaskTP killMask = getKillSetForMul(tree->AsOp());
-    BuildDefsWithKills(tree, dstCount, dstCandidates, killMask);
+    BuildDefWithKills(tree, dstCount, dstCandidates, killMask);
     return srcCount;
 }
 
@@ -3111,7 +3147,9 @@ void LinearScan::SetContainsAVXFlags(unsigned sizeOfSIMDVector /* = 0*/)
 inline regMaskTP LinearScan::BuildEvexIncompatibleMask(GenTree* tree)
 {
 #if defined(TARGET_AMD64)
-    if (!(varTypeIsFloating(tree->gtType) || varTypeIsSIMD(tree->gtType)))
+    assert(!varTypeIsMask(tree));
+
+    if (!varTypeIsFloating(tree->gtType) && !varTypeIsSIMD(tree->gtType))
     {
         return RBM_NONE;
     }

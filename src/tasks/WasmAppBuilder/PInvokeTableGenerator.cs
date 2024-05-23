@@ -179,7 +179,7 @@ internal sealed class PInvokeTableGenerator
         if (pinvoke.WasmLinkage)
         {
             // We mangle the name to avoid collisions with symbols in other modules
-            return _fixupSymbolName($"{pinvoke.Module}_{pinvoke.EntryPoint}");
+            return _fixupSymbolName($"{pinvoke.Module}#{pinvoke.EntryPoint}");
         }
         return _fixupSymbolName(pinvoke.EntryPoint);
     }
@@ -304,7 +304,7 @@ internal sealed class PInvokeTableGenerator
         // it needs to match the key generated in get_native_to_interp
         var method = export.Method;
         string module_symbol = method.DeclaringType!.Module!.Assembly!.GetName()!.Name!;
-        return $"\"{module_symbol}_{method.DeclaringType.Name}_{method.Name}\"".Replace('.', '_');
+        return $"\"{_fixupSymbolName($"{module_symbol}_{method.DeclaringType.Name}_{method.Name}")}\"";
     }
 
 #pragma warning disable SYSLIB1045 // framework doesn't support GeneratedRegexAttribute
@@ -322,6 +322,14 @@ internal sealed class PInvokeTableGenerator
         // attribute.
         // Only blittable parameter/return types are supposed.
         int cb_index = 0;
+
+        w.Write(@"#include <mono/utils/details/mono-error-types.h>
+                #include <mono/metadata/assembly.h>
+                #include <mono/utils/mono-error.h>
+                #include <mono/metadata/object.h>
+                #include <mono/utils/details/mono-logger-types.h>
+                #include ""runtime.h""
+                ");
 
         // Arguments to interp entry functions in the runtime
         w.WriteLine($"InterpFtnDesc wasm_native_to_interp_ftndescs[{callbacks.Count}] = {{}};");
@@ -371,7 +379,16 @@ internal sealed class PInvokeTableGenerator
             if (!is_void)
                 sb.Append($"  {MapType(method.ReturnType)} res;\n");
 
-            //sb.Append($"  printf(\"{entry_name} called\\n\");\n");
+            // In case when null force interpreter to initialize the pointers
+            sb.Append($"  if (!(WasmInterpEntrySig_{cb_index})wasm_native_to_interp_ftndescs [{cb_index}].func) {{\n");
+            var assemblyFullName = cb.Method.DeclaringType == null ? "" : cb.Method.DeclaringType.Assembly.FullName;
+            var assemblyName = assemblyFullName != null && assemblyFullName.Split(',').Length > 0 ? assemblyFullName.Split(',')[0].Trim() : "";
+            var typeName = cb.Method.DeclaringType == null  || cb.Method.DeclaringType.FullName == null ? "" : cb.Method.DeclaringType.FullName;
+            var methodName = cb.Method.Name;
+            int numParams = method.GetParameters().Length;
+            sb.Append($"   mono_wasm_marshal_get_managed_wrapper (\"{assemblyName}\", \"{typeName}\", \"{methodName}\", {numParams});\n");
+            sb.Append($"  }}\n");
+
             sb.Append($"  ((WasmInterpEntrySig_{cb_index})wasm_native_to_interp_ftndescs [{cb_index}].func) (");
             if (!is_void)
             {

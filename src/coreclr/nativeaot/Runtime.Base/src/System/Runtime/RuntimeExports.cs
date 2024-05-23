@@ -75,6 +75,9 @@ namespace System.Runtime
         [RuntimeExport("RhBox")]
         public static unsafe object RhBox(MethodTable* pEEType, ref byte data)
         {
+            // A null can be passed for boxing of a null ref.
+            _ = Unsafe.ReadUnaligned<byte>(ref data);
+
             ref byte dataAdjustedForNullable = ref data;
 
             // Can box non-ByRefLike value types only (which also implies no finalizers).

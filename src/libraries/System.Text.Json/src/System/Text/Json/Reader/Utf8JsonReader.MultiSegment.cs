@@ -633,7 +633,7 @@ namespace System.Text.Json
 
             int indexOfFirstMismatch;
 
-#if NET7_0_OR_GREATER
+#if NET
             indexOfFirstMismatch = span.CommonPrefixLength(literal);
 #else
             int minLength = Math.Min(span.Length, literal.Length);

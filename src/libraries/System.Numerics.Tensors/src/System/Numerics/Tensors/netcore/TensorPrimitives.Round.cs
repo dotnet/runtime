@@ -106,13 +106,13 @@ namespace System.Numerics.Tensors
             if (typeof(T) == typeof(float))
             {
                 ReadOnlySpan<float> roundPower10Single = [1e0f, 1e1f, 1e2f, 1e3f, 1e4f, 1e5f, 1e6f];
-                roundPower10 = MemoryMarshal.CreateReadOnlySpan(ref Unsafe.As<float, T>(ref MemoryMarshal.GetReference(roundPower10Single)), roundPower10Single.Length);
+                roundPower10 = Rename<float, T>(roundPower10Single);
             }
             else if (typeof(T) == typeof(double))
             {
                 Debug.Assert(typeof(T) == typeof(double));
                 ReadOnlySpan<double> roundPower10Double = [1e0, 1e1, 1e2, 1e3, 1e4, 1e5, 1e6, 1e7, 1e8, 1e9, 1e10, 1e11, 1e12, 1e13, 1e14, 1e15];
-                roundPower10 = MemoryMarshal.CreateReadOnlySpan(ref Unsafe.As<double, T>(ref MemoryMarshal.GetReference(roundPower10Double)), roundPower10Double.Length);
+                roundPower10 = Rename<double, T>(roundPower10Double);
             }
             else
             {

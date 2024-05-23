@@ -79,7 +79,7 @@ namespace ILCompiler.Dataflow
                     MarkEvent(origin, @event, reason, accessKind);
                     break;
                     // case InterfaceImplementation
-                    //  Nothing to do currently as Native AOT will preserve all interfaces on a preserved type
+                    //  This is handled in the MetadataType case above
             }
         }
 
@@ -88,7 +88,7 @@ namespace ILCompiler.Dataflow
             ModuleDesc? callingModule = (diagnosticContext.Origin.MemberDefinition.GetOwningType() as MetadataType)?.Module;
 
             List<ModuleDesc> referencedModules = new();
-            TypeDesc foundType = System.Reflection.TypeNameParser.ResolveType(typeName, callingModule, diagnosticContext.Origin.MemberDefinition!.Context,
+            TypeDesc foundType = CustomAttributeTypeNameParser.GetTypeByCustomAttributeTypeNameForDataFlow(typeName, callingModule, diagnosticContext.Origin.MemberDefinition!.Context,
                 referencedModules, out bool typeWasNotFoundInAssemblyNorBaseLibrary);
             if (foundType == null)
             {

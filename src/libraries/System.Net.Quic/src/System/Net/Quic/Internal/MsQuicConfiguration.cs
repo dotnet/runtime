@@ -11,12 +11,12 @@ using Microsoft.Quic;
 
 namespace System.Net.Quic;
 
-internal static class MsQuicConfiguration
+internal static partial class MsQuicConfiguration
 {
     private static bool HasPrivateKey(this X509Certificate certificate)
         => certificate is X509Certificate2 certificate2 && certificate2.Handle != IntPtr.Zero && certificate2.HasPrivateKey;
 
-    public static MsQuicSafeHandle Create(QuicClientConnectionOptions options)
+    public static MsQuicConfigurationSafeHandle Create(QuicClientConnectionOptions options)
     {
         SslClientAuthenticationOptions authenticationOptions = options.ClientAuthenticationOptions;
 
@@ -79,7 +79,7 @@ internal static class MsQuicConfiguration
         return Create(options, flags, certificate, intermediates, authenticationOptions.ApplicationProtocols, authenticationOptions.CipherSuitesPolicy, authenticationOptions.EncryptionPolicy);
     }
 
-    public static MsQuicSafeHandle Create(QuicServerConnectionOptions options, string? targetHost)
+    public static MsQuicConfigurationSafeHandle Create(QuicServerConnectionOptions options, string? targetHost)
     {
         SslServerAuthenticationOptions authenticationOptions = options.ServerAuthenticationOptions;
 
@@ -117,7 +117,7 @@ internal static class MsQuicConfiguration
         return Create(options, flags, certificate, intermediates, authenticationOptions.ApplicationProtocols, authenticationOptions.CipherSuitesPolicy, authenticationOptions.EncryptionPolicy);
     }
 
-    private static unsafe MsQuicSafeHandle Create(QuicConnectionOptions options, QUIC_CREDENTIAL_FLAGS flags, X509Certificate? certificate, ReadOnlyCollection<X509Certificate2>? intermediates, List<SslApplicationProtocol>? alpnProtocols, CipherSuitesPolicy? cipherSuitesPolicy, EncryptionPolicy encryptionPolicy)
+    private static MsQuicConfigurationSafeHandle Create(QuicConnectionOptions options, QUIC_CREDENTIAL_FLAGS flags, X509Certificate? certificate, ReadOnlyCollection<X509Certificate2>? intermediates, List<SslApplicationProtocol>? alpnProtocols, CipherSuitesPolicy? cipherSuitesPolicy, EncryptionPolicy encryptionPolicy)
     {
         // Validate options and SSL parameters.
         if (alpnProtocols is null || alpnProtocols.Count <= 0)
@@ -157,16 +157,16 @@ internal static class MsQuicConfiguration
         }
 
         settings.IsSet.ConnFlowControlWindow = 1;
-        settings.ConnFlowControlWindow = (uint)(options._initialRecieveWindowSizes?.Connection ?? QuicDefaults.DefaultConnectionMaxData);
+        settings.ConnFlowControlWindow = (uint)(options._initialReceiveWindowSizes?.Connection ?? QuicDefaults.DefaultConnectionMaxData);
 
         settings.IsSet.StreamRecvWindowBidiLocalDefault = 1;
-        settings.StreamRecvWindowBidiLocalDefault = (uint)(options._initialRecieveWindowSizes?.LocallyInitiatedBidirectionalStream ?? QuicDefaults.DefaultStreamMaxData);
+        settings.StreamRecvWindowBidiLocalDefault = (uint)(options._initialReceiveWindowSizes?.LocallyInitiatedBidirectionalStream ?? QuicDefaults.DefaultStreamMaxData);
 
         settings.IsSet.StreamRecvWindowBidiRemoteDefault = 1;
-        settings.StreamRecvWindowBidiRemoteDefault = (uint)(options._initialRecieveWindowSizes?.RemotelyInitiatedBidirectionalStream ?? QuicDefaults.DefaultStreamMaxData);
+        settings.StreamRecvWindowBidiRemoteDefault = (uint)(options._initialReceiveWindowSizes?.RemotelyInitiatedBidirectionalStream ?? QuicDefaults.DefaultStreamMaxData);
 
         settings.IsSet.StreamRecvWindowUnidiDefault = 1;
-        settings.StreamRecvWindowUnidiDefault = (uint)(options._initialRecieveWindowSizes?.UnidirectionalStream ?? QuicDefaults.DefaultStreamMaxData);
+        settings.StreamRecvWindowUnidiDefault = (uint)(options._initialReceiveWindowSizes?.UnidirectionalStream ?? QuicDefaults.DefaultStreamMaxData);
 
         if (options.HandshakeTimeout != TimeSpan.Zero)
         {
@@ -176,6 +176,38 @@ internal static class MsQuicConfiguration
                     : 0; // 0 disables the timeout
         }
 
+        QUIC_ALLOWED_CIPHER_SUITE_FLAGS allowedCipherSuites = QUIC_ALLOWED_CIPHER_SUITE_FLAGS.NONE;
+
+        if (cipherSuitesPolicy != null)
+        {
+            flags |= QUIC_CREDENTIAL_FLAGS.SET_ALLOWED_CIPHER_SUITES;
+            allowedCipherSuites = CipherSuitePolicyToFlags(cipherSuitesPolicy);
+        }
+
+        if (!MsQuicApi.UsesSChannelBackend)
+        {
+            flags |= QUIC_CREDENTIAL_FLAGS.USE_PORTABLE_CERTIFICATES;
+        }
+
+        if (ConfigurationCacheEnabled)
+        {
+            return GetCachedCredentialOrCreate(settings, flags, certificate, intermediates, alpnProtocols, allowedCipherSuites);
+        }
+
+        return CreateInternal(settings, flags, certificate, intermediates, alpnProtocols, allowedCipherSuites);
+    }
+
+    private static unsafe MsQuicConfigurationSafeHandle CreateInternal(QUIC_SETTINGS settings, QUIC_CREDENTIAL_FLAGS flags, X509Certificate? certificate, ReadOnlyCollection<X509Certificate2>? intermediates, List<SslApplicationProtocol> alpnProtocols, QUIC_ALLOWED_CIPHER_SUITE_FLAGS allowedCipherSuites)
+    {
+        if (!MsQuicApi.UsesSChannelBackend && certificate is X509Certificate2 cert && intermediates is null)
+        {
+            // MsQuic will not lookup intermediates in local CA store if not explicitly provided,
+            // so we build the cert context to get on feature parity with SslStream. Note that this code
+            // path runs after the MsQuicConfigurationCache check.
+            SslStreamCertificateContext context = SslStreamCertificateContext.Create(cert, additionalCertificates: null, offline: true, trust: null);
+            intermediates = context.IntermediateCertificates;
+        }
+
         QUIC_HANDLE* handle;
 
         using MsQuicBuffers msquicBuffers = new MsQuicBuffers();
@@ -183,24 +215,21 @@ internal static class MsQuicConfiguration
         ThrowHelper.ThrowIfMsQuicError(MsQuicApi.Api.ConfigurationOpen(
             MsQuicApi.Api.Registration,
             msquicBuffers.Buffers,
-            (uint)alpnProtocols.Count,
+            (uint)msquicBuffers.Count,
             &settings,
             (uint)sizeof(QUIC_SETTINGS),
             (void*)IntPtr.Zero,
             &handle),
             "ConfigurationOpen failed");
-        MsQuicSafeHandle configurationHandle = new MsQuicSafeHandle(handle, SafeHandleType.Configuration);
+        MsQuicConfigurationSafeHandle configurationHandle = new MsQuicConfigurationSafeHandle(handle);
 
         try
         {
-            QUIC_CREDENTIAL_CONFIG config = new QUIC_CREDENTIAL_CONFIG { Flags = flags };
-            config.Flags |= (MsQuicApi.UsesSChannelBackend ? QUIC_CREDENTIAL_FLAGS.NONE : QUIC_CREDENTIAL_FLAGS.USE_PORTABLE_CERTIFICATES);
-
-            if (cipherSuitesPolicy != null)
+            QUIC_CREDENTIAL_CONFIG config = new QUIC_CREDENTIAL_CONFIG
             {
-                config.Flags |= QUIC_CREDENTIAL_FLAGS.SET_ALLOWED_CIPHER_SUITES;
-                config.AllowedCipherSuites = CipherSuitePolicyToFlags(cipherSuitesPolicy);
-            }
+                Flags = flags,
+                AllowedCipherSuites = allowedCipherSuites
+            };
 
             int status;
             if (certificate is null)

@@ -127,7 +127,7 @@ namespace Internal.Cryptography.Pal.Windows
 
                 if (keySpec == CryptKeySpec.CERT_NCRYPT_KEY_SPEC)
                 {
-#if NETSTANDARD || NETCOREAPP
+#if NETSTANDARD || NET
                     Debug.Assert(RuntimeInformation.IsOSPlatform(OSPlatform.Windows));
 #endif
 

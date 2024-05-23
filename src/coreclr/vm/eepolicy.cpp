@@ -41,8 +41,6 @@ void SafeExitProcess(UINT exitCode, ShutdownCompleteAction sca = SCA_ExitProcess
     // other DLLs call Release() on us in their detach [dangerous!], etc.
     GCX_PREEMP_NO_DTOR();
 
-    InterlockedExchange((LONG*)&g_fForbidEnterEE, TRUE);
-
     // Note that for free and retail builds StressLog must also be enabled
     if (g_pConfig && g_pConfig->StressLog())
     {
@@ -58,13 +56,6 @@ void SafeExitProcess(UINT exitCode, ShutdownCompleteAction sca = SCA_ExitProcess
             }
         }
     }
-
-    // Turn off exception processing, because if some other random DLL has a
-    //  fault in DLL_PROCESS_DETACH, we could get called for exception handling.
-    //  Since we've turned off part of the runtime, we can't, for instance,
-    //  properly execute the GC that handling an exception might trigger.
-    g_fNoExceptions = true;
-    LOG((LF_EH, LL_INFO10, "SafeExitProcess: turning off exceptions\n"));
 
     if (sca == SCA_TerminateProcessWhenShutdownComplete)
     {

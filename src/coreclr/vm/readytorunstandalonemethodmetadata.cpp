@@ -23,7 +23,7 @@ class ReadyToRunStandaloneMethodMetadataHelper
 public:
 
     ReadyToRunStandaloneMethodMetadataHelper(MethodDesc *pMD, SArray<uint32_t> *pTypeRefTokenStreamInput) :
-        header(pMD->GetILHeader(TRUE), pMD->GetMDImport(), NULL),
+        header(pMD->GetILHeader(), pMD->GetMDImport(), NULL),
         currentILStreamIterator(0),
         pTypeRefTokenStream(pTypeRefTokenStreamInput),
         pModule(pMD->GetModule()),

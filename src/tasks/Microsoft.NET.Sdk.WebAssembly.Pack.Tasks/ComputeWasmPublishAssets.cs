@@ -313,6 +313,7 @@ public class ComputeWasmPublishAssets : Task
     {
         var symbolStaticWebAssets = new List<ITaskItem>();
         var updateMap = new Dictionary<string, ITaskItem>();
+        var existingToRemove = new Dictionary<string, ITaskItem>();
 
         foreach (var kvp in symbolAssets)
         {
@@ -339,9 +340,14 @@ public class ComputeWasmPublishAssets : Task
                     resolvedPublishFilesToRemove.Remove(existing.ItemSpec);
                 }
             }
+            else
+            {
+                Log.LogMessage(MessageImportance.Low, "Marking '{0}' as removed for filtering compressed assets.", kvp.Key);
+                existingToRemove.Add(kvp.Key, kvp.Value);
+            }
         }
 
-        var compressedFiles = ProcessCompressedAssets(compressedRepresentations, symbolAssets, updateMap);
+        var compressedFiles = ProcessCompressedAssets(compressedRepresentations, symbolAssets, updateMap, existingToRemove);
 
         foreach (var file in compressedFiles)
         {
@@ -460,7 +466,8 @@ public class ComputeWasmPublishAssets : Task
     private List<ITaskItem> ProcessCompressedAssets(
         Dictionary<string, ITaskItem> compressedRepresentations,
         Dictionary<string, ITaskItem> assetsToUpdate,
-        Dictionary<string, ITaskItem> updatedAssets)
+        Dictionary<string, ITaskItem> updatedAssets,
+        Dictionary<string, ITaskItem> existingToRemove = null)
     {
         var processed = new List<string>();
         var runtimeAssetsToUpdate = new List<ITaskItem>();
@@ -470,7 +477,11 @@ public class ComputeWasmPublishAssets : Task
             var relatedAsset = compressedAsset.GetMetadata("RelatedAsset");
             if (assetsToUpdate.ContainsKey(relatedAsset))
             {
-                if (!updatedAssets.ContainsKey(relatedAsset))
+                if (existingToRemove?.ContainsKey(relatedAsset) == true)
+                {
+                    Log.LogMessage(MessageImportance.Low, "Removing compressed '{0}' because related '{1}' is not published.", compressedAsset.ItemSpec, relatedAsset);
+                }
+                else if (!updatedAssets.ContainsKey(relatedAsset))
                 {
                     Log.LogMessage(MessageImportance.Low, "Related assembly for '{0}' was not updated and the compressed asset can be reused.", relatedAsset);
                     var newCompressedAsset = new TaskItem(compressedAsset);

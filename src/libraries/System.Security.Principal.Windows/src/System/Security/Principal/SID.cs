@@ -861,7 +861,10 @@ namespace System.Security.Principal
 
         public int CompareTo(SecurityIdentifier? sid)
         {
-            ArgumentNullException.ThrowIfNull(sid);
+            if (sid is null)
+            {
+                return 1;
+            }
 
             if (this.IdentifierAuthority < sid.IdentifierAuthority)
             {

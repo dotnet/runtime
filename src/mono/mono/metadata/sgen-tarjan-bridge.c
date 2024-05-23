@@ -819,8 +819,10 @@ create_scc (ScanData *data)
 			g_error ("Invalid state when building SCC %d", other->state);
 		}
 
-		if (other->is_bridge)
+		if (other->is_bridge) {
+			g_assert (color_data);
 			dyn_array_ptr_add (&color_data->bridges, other->obj);
+		}
 
 		// Maybe we should make sure we are not adding duplicates here. It is not really a problem
 		// since we will get rid of duplicates before submitting the SCCs to the client in gather_xrefs

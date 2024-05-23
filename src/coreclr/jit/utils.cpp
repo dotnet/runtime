@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 // ===================================================================================================
@@ -323,7 +323,6 @@ const char* dspRegRange(regMaskTP regMask, size_t& minSiz, const char* sep, regN
                 minSiz -= strlen(sep) + strlen(nam);
 
                 // What kind of separator should we use for this range (if it is indeed going to be a range)?
-                CLANG_FORMAT_COMMENT_ANCHOR;
 
                 if (genIsValidIntReg(regNum))
                 {
@@ -355,7 +354,6 @@ const char* dspRegRange(regMaskTP regMask, size_t& minSiz, const char* sep, regN
                     }
 #elif defined(TARGET_X86)
                     // No register ranges
-                    CLANG_FORMAT_COMMENT_ANCHOR;
 #elif defined(TARGET_LOONGARCH64)
                     if (REG_A0 <= regNum && regNum <= REG_T8)
                     {
@@ -417,11 +415,6 @@ const char* dspRegRange(regMaskTP regMask, size_t& minSiz, const char* sep, regN
             regHead    = REG_NA;
             inRegRange = false;
             sep        = " ";
-        }
-
-        if (regBit > regMask)
-        {
-            break;
         }
 
         regPrev = regNum;
@@ -507,7 +500,7 @@ unsigned dumpSingleInstr(const BYTE* const codeAddr, IL_OFFSET offs, const char*
     }
 
     OPCODE opcode = (OPCODE)getU1LittleEndian(opcodePtr);
-    opcodePtr += sizeof(__int8);
+    opcodePtr += sizeof(int8_t);
 
 DECODE_OPCODE:
 
@@ -528,12 +521,12 @@ DECODE_OPCODE:
     {
         case CEE_PREFIX1:
             opcode = OPCODE(getU1LittleEndian(opcodePtr) + 256);
-            opcodePtr += sizeof(__int8);
+            opcodePtr += sizeof(int8_t);
             goto DECODE_OPCODE;
 
         default:
         {
-            __int64 iOp;
+            int64_t iOp;
             double  dOp;
             int     jOp;
             DWORD   jOp2;
@@ -565,7 +558,7 @@ DECODE_OPCODE:
                     goto INT_OP;
                 case InlineI8:
                     iOp = getU4LittleEndian(opcodePtr);
-                    iOp |= (__int64)getU4LittleEndian(opcodePtr + 4) << 32;
+                    iOp |= (int64_t)getU4LittleEndian(opcodePtr + 4) << 32;
                     goto INT_OP;
 
                 INT_OP:
@@ -1107,7 +1100,8 @@ void Counter::dump(FILE* output)
  *  Histogram class.
  */
 
-Histogram::Histogram(const unsigned* const sizeTable) : m_sizeTable(sizeTable)
+Histogram::Histogram(const unsigned* const sizeTable)
+    : m_sizeTable(sizeTable)
 {
     unsigned sizeCount = 0;
     do
@@ -1747,7 +1741,7 @@ void HelperCallProperties::init()
             case CORINFO_HELP_CHECKED_ASSIGN_REF:
             case CORINFO_HELP_ASSIGN_REF_ENSURE_NONHEAP:
             case CORINFO_HELP_ASSIGN_BYREF:
-            case CORINFO_HELP_ASSIGN_STRUCT:
+            case CORINFO_HELP_BULK_WRITEBARRIER:
 
                 mutatesHeap = true;
                 break;
@@ -1839,7 +1833,8 @@ void HelperCallProperties::init()
 //
 // You must use ';' as a separator; whitespace no longer works
 
-AssemblyNamesList2::AssemblyNamesList2(const WCHAR* list, HostAllocator alloc) : m_alloc(alloc)
+AssemblyNamesList2::AssemblyNamesList2(const WCHAR* list, HostAllocator alloc)
+    : m_alloc(alloc)
 {
     WCHAR          prevChar   = '?';     // dummy
     LPWSTR         nameStart  = nullptr; // start of the name currently being processed. nullptr if no current name
@@ -1926,7 +1921,9 @@ bool AssemblyNamesList2::IsInList(const char* assemblyName)
 // MethodSet
 //=============================================================================
 
-MethodSet::MethodSet(const WCHAR* filename, HostAllocator alloc) : m_pInfos(nullptr), m_alloc(alloc)
+MethodSet::MethodSet(const WCHAR* filename, HostAllocator alloc)
+    : m_pInfos(nullptr)
+    , m_alloc(alloc)
 {
     FILE* methodSetFile = _wfopen(filename, W("r"));
     if (methodSetFile == nullptr)
@@ -2155,11 +2152,12 @@ double CachedCyclesPerSecond()
 }
 
 #ifdef FEATURE_JIT_METHOD_PERF
-CycleCount::CycleCount() : cps(CachedCyclesPerSecond())
+CycleCount::CycleCount()
+    : cps(CachedCyclesPerSecond())
 {
 }
 
-bool CycleCount::GetCycles(unsigned __int64* time)
+bool CycleCount::GetCycles(uint64_t* time)
 {
     return CycleTimer::GetThreadCyclesS(time);
 }
@@ -2171,7 +2169,7 @@ bool CycleCount::Start()
 
 double CycleCount::ElapsedTime()
 {
-    unsigned __int64 nowCycles;
+    uint64_t nowCycles;
     (void)GetCycles(&nowCycles);
     return ((double)(nowCycles - beginCycles) / cps) * 1000.0;
 }
@@ -2230,79 +2228,20 @@ unsigned CountDigits(double num, unsigned base /* = 10 */)
 
 #endif // DEBUG
 
-double FloatingPointUtils::convertUInt64ToDouble(unsigned __int64 uIntVal)
+double FloatingPointUtils::convertUInt64ToDouble(uint64_t uIntVal)
 {
-    __int64 s64 = uIntVal;
-    double  d;
-    if (s64 < 0)
-    {
-#if defined(TARGET_XARCH)
-        // RyuJIT codegen and clang (or gcc) may produce different results for casting uint64 to
-        // double, and the clang result is more accurate. For example,
-        //    1) (double)0x84595161401484A0UL --> 43e08b2a2c280290  (RyuJIT codegen or VC++)
-        //    2) (double)0x84595161401484A0UL --> 43e08b2a2c280291  (clang or gcc)
-        // If the folding optimization below is implemented by simple casting of (double)uint64_val
-        // and it is compiled by clang, casting result can be inconsistent, depending on whether
-        // the folding optimization is triggered or the codegen generates instructions for casting. //
-        // The current solution is to force the same math as the codegen does, so that casting
-        // result is always consistent.
-
-        // d = (double)(int64_t)uint64 + 0x1p64
-        uint64_t adjHex = 0x43F0000000000000UL;
-        d               = (double)s64 + *(double*)&adjHex;
-#else
-        d = (double)uIntVal;
-#endif
-    }
-    else
-    {
-        d = (double)uIntVal;
-    }
-    return d;
+    return (double)uIntVal;
 }
 
-float FloatingPointUtils::convertUInt64ToFloat(unsigned __int64 u64)
+float FloatingPointUtils::convertUInt64ToFloat(uint64_t u64)
 {
     double d = convertUInt64ToDouble(u64);
     return (float)d;
 }
 
-unsigned __int64 FloatingPointUtils::convertDoubleToUInt64(double d)
+uint64_t FloatingPointUtils::convertDoubleToUInt64(double d)
 {
-    unsigned __int64 u64;
-    if (d >= 0.0)
-    {
-        // Work around a C++ issue where it doesn't properly convert large positive doubles
-        const double two63 = 2147483648.0 * 4294967296.0;
-        if (d < two63)
-        {
-            u64 = UINT64(d);
-        }
-        else
-        {
-            // subtract 0x8000000000000000, do the convert then add it back again
-            u64 = INT64(d - two63) + I64(0x8000000000000000);
-        }
-        return u64;
-    }
-
-#ifdef TARGET_XARCH
-
-    // While the Ecma spec does not specifically call this out,
-    // the case of conversion from negative double to unsigned integer is
-    // effectively an overflow and therefore the result is unspecified.
-    // With MSVC for x86/x64, such a conversion results in the bit-equivalent
-    // unsigned value of the conversion to integer. Other compilers convert
-    // negative doubles to zero when the target is unsigned.
-    // To make the behavior consistent across OS's on TARGET_XARCH,
-    // this double cast is needed to conform MSVC behavior.
-
-    u64 = UINT64(INT64(d));
-#else
-    u64   = UINT64(d);
-#endif // TARGET_XARCH
-
-    return u64;
+    return (uint64_t)d;
 }
 
 //------------------------------------------------------------------------
@@ -4037,7 +3976,7 @@ T GetSignedMagic(T denom, int* shift /*out*/)
     UT  t;
     T   result_magic;
 
-    absDenom = abs(denom);
+    absDenom = std::abs(denom);
     t        = two_nminus1 + (UT(denom) >> bits_minus_1);
     absNc    = t - 1 - (t % absDenom);        // absolute value of nc
     p        = bits_minus_1;                  // initialize p
@@ -4091,7 +4030,7 @@ int64_t GetSigned64Magic(int64_t d, int* shift /*out*/)
     return GetSignedMagic<int64_t>(d, shift);
 }
 #endif
-}
+} // namespace MagicDivide
 
 namespace CheckedOps
 {
@@ -4285,4 +4224,4 @@ bool CastFromDoubleOverflows(double fromValue, var_types toType)
             unreached();
     }
 }
-}
+} // namespace CheckedOps

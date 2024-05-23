@@ -6,7 +6,7 @@ using System.Runtime.CompilerServices;
 
 namespace System.Collections.Generic
 {
-#if !NETCOREAPP2_0_OR_GREATER
+#if !NET
     internal static class KeyValuePairExtensions
     {
         [EditorBrowsable(EditorBrowsableState.Never)]
@@ -18,7 +18,7 @@ namespace System.Collections.Generic
     }
 #endif
 
-#if !NET5_0_OR_GREATER
+#if !NET
     internal interface IReadOnlySet<T> : IReadOnlyCollection<T>
     {
         bool Contains(T item);
@@ -34,7 +34,7 @@ namespace System.Collections.Generic
 
 namespace System.Numerics
 {
-#if !NETCOREAPP3_0_OR_GREATER
+#if !NET
     internal static class BitOperations
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -45,7 +45,7 @@ namespace System.Numerics
 
 namespace System.Runtime.CompilerServices
 {
-#if !NETCOREAPP3_0_OR_GREATER
+#if !NET
     [AttributeUsage(AttributeTargets.Parameter, AllowMultiple = false, Inherited = false)]
     internal sealed class CallerArgumentExpressionAttribute : Attribute
     {

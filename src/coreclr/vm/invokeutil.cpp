@@ -692,7 +692,7 @@ OBJECTREF InvokeUtil::CreateTargetExcept(OBJECTREF* except) {
     }
     else
     {
-        args[1] = NULL;
+        args[1] = 0;
     }
 
     ctor.Call(args);

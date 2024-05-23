@@ -16,46 +16,6 @@ typedef DPTR(SLOT) PTR_SLOT;
 
 typedef LPVOID  DictionaryEntry;
 
-/* Define the implementation dependent size types */
-
-#ifndef _INTPTR_T_DEFINED
-#ifdef  HOST_64BIT
-typedef __int64             intptr_t;
-#else
-typedef int                 intptr_t;
-#endif
-#define _INTPTR_T_DEFINED
-#endif
-
-#ifndef _UINTPTR_T_DEFINED
-#ifdef  HOST_64BIT
-typedef unsigned __int64    uintptr_t;
-#else
-typedef unsigned int        uintptr_t;
-#endif
-#define _UINTPTR_T_DEFINED
-#endif
-
-#ifndef _PTRDIFF_T_DEFINED
-#ifdef  HOST_64BIT
-typedef __int64             ptrdiff_t;
-#else
-typedef int                 ptrdiff_t;
-#endif
-#define _PTRDIFF_T_DEFINED
-#endif
-
-
-#ifndef _SIZE_T_DEFINED
-#ifdef  HOST_64BIT
-typedef unsigned __int64 size_t;
-#else
-typedef unsigned int     size_t;
-#endif
-#define _SIZE_T_DEFINED
-#endif
-
-
 #include "util.hpp"
 #include <corpriv.h>
 #include <cordbpriv.h>
@@ -90,7 +50,7 @@ class RCWCleanupList;
 #endif // FEATURE_COMINTEROP
 
 typedef TADDR LOADERHANDLE;
-typedef TADDR RUNTIMETYPEHANDLE;
+typedef Object* RUNTIMETYPEHANDLE;
 
 #ifdef DACCESS_COMPILE
 void OBJECTHANDLE_EnumMemoryRegions(OBJECTHANDLE handle);
@@ -203,6 +163,26 @@ class OBJECTREF {
         //-------------------------------------------------------------
         OBJECTREF& operator=(const OBJECTREF &objref);
         OBJECTREF& operator=(TADDR nul);
+        
+        // We use this delayed check to avoid ambiguous overload issues with TADDR
+        // on platforms where NULL is defined as anything other than a uintptr_t constant
+        // or nullptr_t exactly.
+        // Without this, any valid "null pointer constant" that is not directly either type
+        // will be implicitly convertible to both TADDR and std::nullptr_t, causing ambiguity.
+        // With this, this constructor (and all similarly declared operators) drop out of
+        // consideration when used with NULL (and not nullptr_t).
+        // With this workaround, we get identical behavior between the Checked OBJECTREF builds
+        // and the release builds.
+        template<typename T, typename = typename std::enable_if<std::is_same<T, std::nullptr_t>::value>::type>
+        OBJECTREF(T)
+            : OBJECTREF(TADDR(0))
+        {
+        }
+        template<typename T, typename = typename std::enable_if<std::is_same<T, std::nullptr_t>::value>::type>
+        OBJECTREF& operator=(T)
+        {
+            return *this = TADDR(0);
+        }
 
             // allow explicit casts
         explicit OBJECTREF(Object *pObject);
@@ -223,17 +203,8 @@ template <class T>
 class REF : public OBJECTREF
 {
     public:
-
-        //-------------------------------------------------------------
-        // Default constructor, for non-initializing declarations:
-        //
-        //      OBJECTREF or;
-        //-------------------------------------------------------------
-      REF() :OBJECTREF ()
-        {
-            LIMITED_METHOD_CONTRACT;
-            // no op
-        }
+        REF() = default;
+        using OBJECTREF::OBJECTREF;
 
         //-------------------------------------------------------------
         // Copy constructor, for passing OBJECTREF's as function arguments.
@@ -242,16 +213,6 @@ class REF : public OBJECTREF
         {
             LIMITED_METHOD_CONTRACT;
             //no op
-        }
-
-
-        //-------------------------------------------------------------
-        // To allow NULL to be used as an OBJECTREF.
-        //-------------------------------------------------------------
-      REF(TADDR nul) : OBJECTREF (nul)
-        {
-            LIMITED_METHOD_CONTRACT;
-            // no op
         }
 
       explicit REF(T* pObject) : OBJECTREF(pObject)
@@ -334,7 +295,18 @@ class Module;
 // For [<I1, etc. up to and including [Object
 GARY_DECL(TypeHandle, g_pPredefinedArrayTypes, ELEMENT_TYPE_MAX);
 
-extern "C" Volatile<int32_t>   g_TrapReturningThreads;
+// g_TrapReturningThreads == 0 disables thread polling/traping.
+// This allows to short-circuit further examining of thread states in the most
+// common scenario - when we are not interested in trapping anything.
+// 
+// The bit #1 is reserved for controlling thread suspension.
+// Setting bit #1 allows to atomically indicate/check that EE suspension is in progress.
+// There could be only one EE suspension in progress at a time. (it requires holding ThreadStore lock)
+// .
+// Other bits are used as a counter to enable thread trapping for other reasons, such as ThreadAbort.
+// There could be several active reasons for thread trapping at a time, like aborting multiple threads,
+// thus g_TrapReturningThreads value could be > 3.
+extern "C" volatile int32_t g_TrapReturningThreads;
 
 #ifdef _DEBUG
 // next two variables are used to enforce an ASSERT in Thread::DbgFindThread
@@ -480,13 +452,11 @@ EXTERN BOOL g_fComStarted;
 GVAL_DECL(DWORD, g_fEEShutDown);
 EXTERN DWORD g_fFastExitProcess;
 EXTERN BOOL g_fFatalErrorOccurredOnGCThread;
-EXTERN Volatile<LONG> g_fForbidEnterEE;
 GVAL_DECL(bool, g_fProcessDetach);
 #ifdef FEATURE_METADATA_UPDATER
 GVAL_DECL(bool, g_metadataUpdatesApplied);
 #endif
 EXTERN bool g_fManagedAttach;
-EXTERN bool g_fNoExceptions;
 
 // Indicates whether we're executing shut down as a result of DllMain
 // (DLL_PROCESS_DETACH). See comments at code:EEShutDown for details.
@@ -687,15 +657,6 @@ PTR_GSCookie GetProcessGSCookiePtr() { return  PTR_GSCookie(&s_gsCookie); }
 
 inline
 GSCookie GetProcessGSCookie() { return *(RAW_KEYWORD(volatile) GSCookie *)(&s_gsCookie); }
-
-// Passed to JitManager APIs to determine whether to avoid calling into the host.
-// The profiling API stackwalking uses this to ensure to avoid re-entering the host
-// (particularly SQL) from a hijacked thread.
-enum HostCallPreference
-{
-    AllowHostCalls,
-    NoHostCalls,
-};
 
 #ifdef TARGET_WINDOWS
 typedef BOOL(WINAPI* PINITIALIZECONTEXT2)(PVOID Buffer, DWORD ContextFlags, PCONTEXT* Context, PDWORD ContextLength, ULONG64 XStateCompactionMask);

@@ -74,7 +74,7 @@ PCODE Precode::GetTarget()
     LIMITED_METHOD_CONTRACT;
     SUPPORTS_DAC;
 
-    PCODE target = NULL;
+    PCODE target = 0;
 
     PrecodeType precodeType = GetType();
     switch (precodeType)
@@ -108,7 +108,7 @@ MethodDesc* Precode::GetMethodDesc(BOOL fSpeculative /*= FALSE*/)
         SUPPORTS_DAC;
     } CONTRACTL_END;
 
-    TADDR pMD = NULL;
+    TADDR pMD = (TADDR)NULL;
 
     PrecodeType precodeType = GetType();
     switch (precodeType)
@@ -136,7 +136,7 @@ MethodDesc* Precode::GetMethodDesc(BOOL fSpeculative /*= FALSE*/)
         break;
     }
 
-    if (pMD == NULL)
+    if (pMD == (TADDR)NULL)
     {
         if (fSpeculative)
             return NULL;
@@ -196,9 +196,7 @@ PCODE Precode::TryToSkipFixupPrecode(PCODE addr)
         GC_NOTRIGGER;
     } CONTRACTL_END;
 
-    PCODE pTarget = NULL;
-
-    return pTarget;
+    return 0;
 }
 
 Precode* Precode::GetPrecodeForTemporaryEntryPoint(TADDR temporaryEntryPoints, int index)
@@ -444,15 +442,7 @@ TADDR Precode::AllocateTemporaryEntryPoints(MethodDescChunk *  pChunk,
 
 #ifdef HAS_FIXUP_PRECODE
     // Default to faster fixup precode if possible
-    if (!pFirstMD->RequiresMethodDescCallingConvention(count > 1))
-    {
-        t = PRECODE_FIXUP;
-
-    }
-    else
-    {
-        _ASSERTE(!pFirstMD->IsLCGMethod());
-    }
+    t = PRECODE_FIXUP;
 #endif // HAS_FIXUP_PRECODE
 
     SIZE_T totalSize = SizeOfTemporaryEntryPoints(t, count);
@@ -570,7 +560,7 @@ void StubPrecode::Init(StubPrecode* pPrecodeRX, MethodDesc* pMD, LoaderAllocator
     {
         // Use pMD == NULL in all precode initialization methods to allocate the initial jump stub in non-dynamic heap
         // that has the same lifetime like as the precode itself
-        if (target == NULL)
+        if (target == (TADDR)NULL)
             target = GetPreStubEntryPoint();
         pStubData->Target = target;
     }

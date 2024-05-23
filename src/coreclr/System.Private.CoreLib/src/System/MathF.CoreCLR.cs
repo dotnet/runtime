@@ -112,10 +112,6 @@ namespace System
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern float Tanh(float x);
 
-        [Intrinsic]
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern float FMod(float x, float y);
-
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern unsafe float ModF(float x, float* intptr);
 

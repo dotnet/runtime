@@ -19,7 +19,6 @@ namespace System.Text.Json.Serialization.Metadata
             : base(parameterInfoValues, matchingPropertyInfo)
         {
             Debug.Assert(parameterInfoValues.ParameterType == typeof(T));
-            Debug.Assert(matchingPropertyInfo.IsConfigured);
 
             MatchingProperty = matchingPropertyInfo;
             DefaultValue = parameterInfoValues.HasDefaultValue && parameterInfoValues.DefaultValue is not null

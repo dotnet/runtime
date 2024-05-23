@@ -148,8 +148,11 @@ private:
         // When encountering a reverse P/Invoke, unwind directly to the P/Invoke frame using the saved transition frame.
         SkipNativeFrames = 0x80,
 
+        // Set SP to an address that is valid for funclet resumption (x86 only)
+        UpdateResumeSp = 0x100,
+
         GcStackWalkFlags = (CollapseFunclets | RemapHardwareFaultsToSafePoint | SkipNativeFrames),
-        EHStackWalkFlags = ApplyReturnAddressAdjustment,
+        EHStackWalkFlags = (ApplyReturnAddressAdjustment | UpdateResumeSp),
         StackTraceStackWalkFlags = GcStackWalkFlags
     };
 

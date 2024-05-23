@@ -72,7 +72,7 @@ namespace ILCompiler
             // information proving that it isn't, give RyuJIT the constructed symbol even
             // though we just need the unconstructed one.
             // https://github.com/dotnet/runtimelab/issues/1128
-            bool canPotentiallyConstruct = NodeFactory.DevirtualizationManager.CanConstructType(type);
+            bool canPotentiallyConstruct = NodeFactory.DevirtualizationManager.CanReferenceConstructedMethodTable(type);
             if (canPotentiallyConstruct)
                 return _nodeFactory.MaximallyConstructableType(type);
 
@@ -81,7 +81,7 @@ namespace ILCompiler
 
         public FrozenRuntimeTypeNode NecessaryRuntimeTypeIfPossible(TypeDesc type)
         {
-            bool canPotentiallyConstruct = NodeFactory.DevirtualizationManager.CanConstructType(type);
+            bool canPotentiallyConstruct = NodeFactory.DevirtualizationManager.CanReferenceConstructedMethodTable(type);
             if (canPotentiallyConstruct)
                 return _nodeFactory.SerializedMaximallyConstructableRuntimeTypeObject(type);
 

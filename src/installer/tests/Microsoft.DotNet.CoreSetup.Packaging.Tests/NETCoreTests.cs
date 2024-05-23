@@ -8,7 +8,7 @@ namespace Microsoft.DotNet.CoreSetup.Packaging.Tests
 {
     public class NETCoreTests
     {
-        private readonly RepoDirectoriesProvider dirs = new RepoDirectoriesProvider();
+        private readonly RepoDirectoriesProvider dirs = RepoDirectoriesProvider.Default;
 
         [Fact]
         public void NETCoreTargetingPackIsValid()

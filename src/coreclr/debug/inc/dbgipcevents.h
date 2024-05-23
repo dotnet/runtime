@@ -10,7 +10,7 @@
 #ifndef _DbgIPCEvents_h_
 #define _DbgIPCEvents_h_
 
-#include <new.hpp>
+#include <new>
 #include <cor.h>
 #include <cordebug.h>
 #include <corjit.h> // for ICorDebugInfo::VarLocType & VarLoc
@@ -24,6 +24,8 @@
 #include "dbgappdomain.h"
 
 #include "./common.h"
+
+using std::nothrow;
 
 //-----------------------------------------------------------------------------
 // V3 additions to IPC protocol between LS and RS.
@@ -768,7 +770,7 @@ public:
     //
     // Operators to emulate Pointer semantics.
     //
-    bool IsNull() { SUPPORTS_DAC; return m_addr == NULL; }
+    bool IsNull() { SUPPORTS_DAC; return m_addr == (TADDR)0; }
 
     static VMPTR_This NullPtr()
     {
@@ -780,7 +782,7 @@ public:
 #endif // _PREFAST_
 
         VMPTR_This dummy;
-        dummy.m_addr = NULL;
+        dummy.m_addr = (TADDR)NULL;
         return dummy;
 
 #ifdef _PREFAST_
@@ -2053,6 +2055,19 @@ struct MSLAYOUT DebuggerIPCEvent
             mdMethodDef funcMetadataToken;
             VMPTR_Module pModule;
         } DisableOptData;
+
+        struct MSLAYOUT
+        {
+            BOOL enableEvents;
+            VMPTR_Object vmObj;
+        } ForceCatchHandlerFoundData;
+
+        struct MSLAYOUT
+        {
+            VMPTR_Module vmModule;
+            mdTypeDef    classMetadataToken;
+            BOOL Enabled;
+        } CustomNotificationData;
 
         struct MSLAYOUT
         {

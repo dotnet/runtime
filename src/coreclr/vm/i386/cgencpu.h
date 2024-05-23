@@ -51,10 +51,6 @@ EXTERN_C void SinglecastDelegateInvokeStub();
 #define JUMP_ALLOCATE_SIZE                      8   // # bytes to allocate for a jump instruction
 #define BACK_TO_BACK_JUMP_ALLOCATE_SIZE         8   // # bytes to allocate for a back to back jump instruction
 
-#ifdef FEATURE_EH_FUNCLETS
-#define USE_INDIRECT_CODEHEADER
-#endif // FEATURE_EH_FUNCLETS
-
 #define HAS_COMPACT_ENTRYPOINTS                 1
 
 // Needed for PInvoke inlining in ngened images
@@ -102,6 +98,9 @@ inline unsigned StackElemSize(unsigned parmSize, bool isValueType = false /* unu
     CALLEE_SAVED_REGISTER(Esi) \
     CALLEE_SAVED_REGISTER(Ebx) \
     CALLEE_SAVED_REGISTER(Ebp)
+
+// There are no FP callee saved registers on x86
+#define ENUM_FP_CALLEE_SAVED_REGISTERS()
 
 typedef DPTR(struct CalleeSavedRegisters) PTR_CalleeSavedRegisters;
 struct CalleeSavedRegisters {

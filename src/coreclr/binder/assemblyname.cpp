@@ -11,10 +11,10 @@
 //
 // ============================================================
 
+#include "common.h"
 #include "assemblyname.hpp"
 #include "assemblybindercommon.hpp"
 
-#include "common.h"
 #include "utils.hpp"
 
 #include "textualidentityparser.hpp"
