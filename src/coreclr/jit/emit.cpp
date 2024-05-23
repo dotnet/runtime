@@ -5893,7 +5893,7 @@ unsigned emitter::getLoopSize(insGroup* igLoopHeader,
             //
 
 #ifdef DEBUG
-            if ((igInLoop->igLoopBackEdge != nullptr) && (igInLoop->igLoopBackEdge != igLoopHeader->igNext))
+            if ((igInLoop->igLoopBackEdge != nullptr) && (igInLoop->igLoopBackEdge != igLoopHeader))
             {
                 char buffer[5000];
                 int  written = sprintf_s(buffer, 35, "Mismatch in align instruction.\n");
