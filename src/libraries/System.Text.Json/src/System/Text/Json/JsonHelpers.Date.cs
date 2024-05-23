@@ -99,7 +99,6 @@ namespace System.Text.Json
         public static bool TryParseAsIso(ReadOnlySpan<byte> source, out DateOnly value)
         {
             if (TryParseDateTimeOffset(source, out DateTimeParseData parseData) &&
-                parseData.IsCalendarDateOnly &&
                 TryCreateDateTime(parseData, DateTimeKind.Unspecified, out DateTime dateTime))
             {
                 value = DateOnly.FromDateTime(dateTime);

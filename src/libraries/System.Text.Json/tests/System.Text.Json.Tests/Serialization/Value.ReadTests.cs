@@ -583,6 +583,9 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData("1970-01-01")]
         [InlineData("2002-02-13")]
         [InlineData("2022-05-10")]
+        [InlineData("2022-05-10T20:53:01")]
+        [InlineData("2022-05-10T20:53:01.3552286")]
+        [InlineData("2022-05-10T20:53:01.3552286+01:00")]
         [InlineData("\\u0032\\u0030\\u0032\\u0032\\u002D\\u0030\\u0035\\u002D\\u0031\\u0030", "2022-05-10")]
         [InlineData("0001-01-01")] // DateOnly.MinValue
         [InlineData("9999-12-31")] // DateOnly.MaxValue
@@ -625,10 +628,6 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData("\\t2022-05-10")] // Otherwise valid but has leading whitespace
         [InlineData("2022-05-10   ")] // Otherwise valid but has trailing whitespace
         // Fail on arbitrary ISO dates
-        [InlineData("2022-05-10T20:53:01")]
-        [InlineData("2022-05-10T20:53:01.3552286")]
-        [InlineData("2022-05-10T20:53:01.3552286+01:00")]
-        [InlineData("2022-05-10T20:53Z")]
         [InlineData("\\u0030\\u0035\\u002F\\u0031\\u0030\\u002F\\u0032\\u0030\\u0032\\u0032")]
         [InlineData("00:00:01")]
         [InlineData("23:59:59")]
