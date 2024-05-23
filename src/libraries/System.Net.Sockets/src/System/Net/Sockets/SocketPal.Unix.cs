@@ -647,9 +647,12 @@ namespace System.Net.Sockets
             return false;
         }
 
-        public static unsafe bool TryStartConnect(SafeSocketHandle socket, Memory<byte> socketAddress, out SocketError errorCode)
+        public static unsafe bool TryStartConnect(SafeSocketHandle socket, Memory<byte> socketAddress, out SocketError errorCode) => TryStartConnect(socket, socketAddress, out errorCode, Span<byte>.Empty, false, out int _ );
+
+        public static unsafe bool TryStartConnect(SafeSocketHandle socket, Memory<byte> socketAddress, out SocketError errorCode, Span<byte> data, bool tfo, out int sent)
         {
             Debug.Assert(socketAddress.Length > 0, $"Unexpected socketAddressLen: {socketAddress.Length}");
+            sent = 0;
 
             if (socket.IsDisconnected)
             {
@@ -660,7 +663,16 @@ namespace System.Net.Sockets
             Interop.Error err;
             fixed (byte* rawSocketAddress = socketAddress.Span)
             {
-                err = Interop.Sys.Connect(socket, rawSocketAddress, socketAddress.Length);
+                if (data.Length > 0)
+                {
+                    int sentBytes = 0;
+                    err = Interop.Sys.Connectx(socket, rawSocketAddress, socketAddress.Length, data, data.Length, tfo ? 1 : 0, &sentBytes);
+                    sent = sentBytes;
+                }
+                else
+                {
+                    err = Interop.Sys.Connect(socket, rawSocketAddress, socketAddress.Length);
+                }
             }
 
             if (err == Interop.Error.SUCCESS)
@@ -1451,6 +1463,18 @@ namespace System.Net.Sockets
                 }
             }
 
+#if SYSTEM_NET_SOCKETS_APPLE_PLATFROM
+            // macOS fails to even query it if socket is not actively listening.
+            // To provide consistent platform experience we will track if
+            // it was ret and we will use it later as needed.
+            if (optionLevel == SocketOptionLevel.Tcp && optionName == SocketOptionName.FastOpen)
+            {
+                handle.TfoEnabled = optionValue != 0;
+                // Silently ignore errors - TFO is best effort and it may be disabled by configuration or not
+                // supported by OS.
+                err = Interop.Error.SUCCESS;
+            }
+#endif
             return GetErrorAndTrackSetting(handle, optionLevel, optionName, err);
         }
 
@@ -1579,6 +1603,17 @@ namespace System.Net.Sockets
             int value = 0;
             int optLen = sizeof(int);
             Interop.Error err = Interop.Sys.GetSockOpt(handle, optionLevel, optionName, (byte*)&value, &optLen);
+
+#if SYSTEM_NET_SOCKETS_APPLE_PLATFROM
+            // macOS fails to even query it if socket is not actively listening.
+            // To provide consistent platform experience we will track if
+            // it was set and we will use it later as needed.
+            if (optionLevel == SocketOptionLevel.Tcp && optionName == SocketOptionName.FastOpen && err != Interop.Error.SUCCESS)
+            {
+                value = handle.TfoEnabled ? 1 : 0;
+                err = Interop.Error.SUCCESS;
+            }
+#endif
 
             optionValue = value;
             return err == Interop.Error.SUCCESS ? SocketError.Success : GetSocketErrorForErrorCode(err);
