@@ -10,7 +10,6 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 	[ExpectedNoWarnings]
 	public class RequiresOnEvents
 	{
-		// The flow of marking goes Event.remove -> Event -> Event.add, so we get a warning for the add method, which is unintuitive.
 		public static void Main ()
 		{
 			Test ();
@@ -24,17 +23,13 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			[RequiresUnreferencedCode ("Message for --EventToTestAdd.add--")]
 			[RequiresAssemblyFiles ("Message for --EventToTestAdd.add--")]
 			[RequiresDynamicCode ("Message for --EventToTestAdd.add--")]
-			[Kept(By = Tool.Trimmer)]
+			[Kept (By = Tool.Trimmer)]
 			add { }
 			[Kept]
-			[UnexpectedWarning ("IL2026", "--EventToTestAdd.add--", Tool.Trimmer, "https://github.com/dotnet/runtime/issues/100499")]
 			remove { }
 		}
 
 		[Kept]
-		[ExpectedWarning ("IL2026", "--EventToTestAdd.add--", Tool.None, "https://github.com/dotnet/runtime/issues/100499")]
-		[ExpectedWarning ("IL3002", "--EventToTestAdd.add--", Tool.None, "https://github.com/dotnet/runtime/issues/100499")]
-		[ExpectedWarning ("IL3050", "--EventToTestAdd.add--", Tool.None, "https://github.com/dotnet/runtime/issues/100499")]
 		public static void Test ()
 		{
 			// Marking remove marks the event and all its methods in the trimmer
