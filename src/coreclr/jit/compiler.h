@@ -1016,7 +1016,7 @@ public:
 
     regMaskTP lvRegMask() const
     {
-        regMaskTP regMask(RBM_NONE, RBM_NONE);
+        regMaskTP regMask = RBM_NONE;
         if (GetRegNum() != REG_STK)
         {
             if (varTypeUsesFloatReg(this))

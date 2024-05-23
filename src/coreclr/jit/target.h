@@ -239,19 +239,10 @@ struct regMaskTP
 {
 private:
     regMaskSmall low;
-    uint64_t     high;
 public:
-    constexpr regMaskTP(regMaskSmall lowRegMask, uint64_t highRegMask)
-        : low(lowRegMask)
-        , high(highRegMask)
-    {
-    }
-
     constexpr regMaskTP(regMaskSmall lowRegMask)
         : low(lowRegMask)
-        , high(RBM_NONE)
     {
-        // intentionally do not initialize high
     }
 
     regMaskTP()
@@ -291,14 +282,9 @@ public:
         return low;
     }
 
-    uint64_t getHigh() const
-    {
-        return high;
-    }
-
     bool IsEmpty()
     {
-        return (low | high) == RBM_NONE;
+        return low == RBM_NONE;
     }
 
     bool IsNonEmpty()
@@ -318,25 +304,19 @@ public:
 
 static regMaskTP operator^(regMaskTP first, regMaskTP second)
 {
-    regMaskTP result(first.getLow() ^ second.getLow(), first.getHigh() ^ second.getHigh());
+    regMaskTP result(first.getLow() ^ second.getLow());
     return result;
 }
 
 static regMaskTP operator&(regMaskTP first, regMaskTP second)
 {
-    regMaskTP result(first.getLow() & second.getLow(), first.getHigh() & second.getHigh());
+    regMaskTP result(first.getLow() & second.getLow());
     return result;
 }
 
-// static SingleTypeRegSet operator&(regMaskTP first, SingleTypeRegSet second)
-//{
-//     regMaskTP result(first.getLow() & second.getLow(), first.getHigh() & second.getHigh());
-//     return result;
-// }
-
 static regMaskTP operator|(regMaskTP first, regMaskTP second)
 {
-    regMaskTP result(first.getLow() | second.getLow(), first.getHigh() | second.getHigh());
+    regMaskTP result(first.getLow() | second.getLow());
     return result;
 }
 
@@ -360,7 +340,7 @@ static regMaskTP& operator&=(regMaskTP& first, regMaskTP second)
 
 static bool operator==(regMaskTP first, regMaskTP second)
 {
-    return (first.getLow() == second.getLow()) && (first.getHigh() == second.getHigh());
+    return (first.getLow() == second.getLow());
 }
 
 static bool operator!=(regMaskTP first, regMaskTP second)
@@ -371,7 +351,7 @@ static bool operator!=(regMaskTP first, regMaskTP second)
 #ifdef TARGET_ARM
 static regMaskTP operator-(regMaskTP first, regMaskTP second)
 {
-    regMaskTP result(first.getLow() - first.getHigh());
+    regMaskTP result(first.getLow() - second.getLow());
     return result;
 }
 
@@ -401,25 +381,18 @@ static regMaskTP& operator<<=(regMaskTP& first, const int b)
 
 static regMaskTP operator~(regMaskTP first)
 {
-    regMaskTP result(~first.getLow(), ~first.getHigh());
+    regMaskTP result(~first.getLow());
     return result;
 }
 
 static uint32_t PopCount(regMaskTP value)
 {
-    return BitOperations::PopCount(value.getLow()) + BitOperations::PopCount(value.getHigh());
+    return BitOperations::PopCount(value.getLow());
 }
 
 static uint32_t BitScanForward(regMaskTP mask)
 {
-    if (mask.getLow() != RBM_NONE)
-    {
-        return BitOperations::BitScanForward(mask.getLow());
-    }
-    else
-    {
-        return 64 + BitOperations::BitScanForward(mask.getHigh());
-    }
+    return BitOperations::BitScanForward(mask.getLow());
 }
 
 /*****************************************************************************/
