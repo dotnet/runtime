@@ -274,8 +274,8 @@ internal static partial class Interop
                 int index = 0;
                 foreach (UIntPtr ptr in _allocations)
                 {
-                    Span<MemoryEntry> entry = new Span<MemoryEntry>((void*)ptr, 1);
-                    allocations[index] = new Tuple<UIntPtr, int, string>(ptr + Offset, entry[0].Size, $"{Marshal.PtrToStringAnsi((IntPtr)entry[0].File)}:{entry[0].Line}");
+                    ref MemoryEntry entry = ref *(MemoryEntry*)ptr;
+                    allocations[index] = new Tuple<UIntPtr, int, string>(ptr + Offset, entry.Size, $"{Marshal.PtrToStringAnsi((IntPtr)entry.File)}:{entry.Line}");
                     index++;
                 }
 
