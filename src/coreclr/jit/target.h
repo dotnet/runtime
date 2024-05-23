@@ -241,14 +241,14 @@ private:
     regMaskSmall low;
     uint64_t high;
 public:
-    constexpr regMaskTP(uint64_t lowRegMask, uint64_t highRegMask)
+    constexpr regMaskTP(regMaskSmall lowRegMask, uint64_t highRegMask)
         : low(lowRegMask)
         , high(highRegMask)
     {
     }
 
 
-    constexpr regMaskTP(uint64_t lowRegMask)
+    constexpr regMaskTP(regMaskSmall lowRegMask)
         : low(lowRegMask)
         , high(RBM_NONE)
     {
@@ -287,12 +287,12 @@ public:
     }
 #endif
 
-    SingleTypeRegSet getLow() const
+    regMaskSmall getLow() const
     {
         return low;
     }
 
-    SingleTypeRegSet getHigh() const
+    uint64_t getHigh() const
     {
         return high;
     }

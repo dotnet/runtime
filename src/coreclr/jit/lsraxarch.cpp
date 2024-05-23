@@ -787,7 +787,7 @@ int LinearScan::BuildRMWUses(GenTree* node, GenTree* op1, GenTree* op2, SingleTy
 #ifdef TARGET_X86
     if (varTypeIsByte(node))
     {
-        regMaskTP byteCandidates = (candidates == RBM_NONE) ? allByteRegs() : (candidates & allByteRegs());
+        SingleTypeRegSet byteCandidates = (candidates == RBM_NONE) ? allByteRegs() : (candidates & allByteRegs());
         if (!op1->isContained())
         {
             assert(byteCandidates != RBM_NONE);
