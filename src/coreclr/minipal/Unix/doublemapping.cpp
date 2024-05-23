@@ -22,7 +22,11 @@
 #include "minipal.h"
 #include "minipal/cpufeatures.h"
 
-#ifndef TARGET_OSX
+#ifdef TARGET_OSX
+
+#include <mach/mach.h>
+
+#else // TARGET_OSX
 
 #ifdef TARGET_64BIT
 static const off_t MaxDoubleMappedSize = 2048ULL*1024*1024*1024;
@@ -34,9 +38,9 @@ static const off_t MaxDoubleMappedSize = UINT_MAX;
 
 bool VMToOSInterface::CreateDoubleMemoryMapper(void** pHandle, size_t *pMaxExecutableCodeSize)
 {
-    if (minipal_detect_emulation())
+    if (minipal_detect_rosetta())
     {
-        // Rosetta or QEMU doesn't support double mapping correctly
+        // Rosetta doesn't support double mapping correctly
         return false;
     }
 

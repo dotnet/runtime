@@ -61,9 +61,9 @@ inline void *GetBotMemoryAddress(void)
 
 bool VMToOSInterface::CreateDoubleMemoryMapper(void **pHandle, size_t *pMaxExecutableCodeSize)
 {
-    if (minipal_detect_emulation())
+    if (minipal_detect_rosetta())
     {
-        // Rosetta or QEMU doesn't support double mapping correctly
+        // Rosetta doesn't support double mapping correctly
         return false;
     }
 
