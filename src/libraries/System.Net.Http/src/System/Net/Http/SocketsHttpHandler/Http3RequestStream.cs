@@ -101,15 +101,17 @@ namespace System.Net.Http
             }
         }
 
-        public async ValueTask DisposeAsync()
+        public ValueTask DisposeAsync()
         {
             if (!_disposed)
             {
                 _disposed = true;
                 AbortStream();
-                await _stream.DisposeAsync().ConfigureAwait(false);
+                _connection.QueueStreamForDisposal(_stream);
                 DisposeSyncHelper();
             }
+
+            return ValueTask.CompletedTask;
         }
 
         private void DisposeSyncHelper()

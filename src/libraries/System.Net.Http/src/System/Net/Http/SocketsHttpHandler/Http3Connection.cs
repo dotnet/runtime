@@ -28,6 +28,8 @@ namespace System.Net.Http
         // Keep a collection of requests around so we can process GOAWAY.
         private readonly Dictionary<QuicStream, Http3RequestStream> _activeRequests = new Dictionary<QuicStream, Http3RequestStream>();
 
+        internal readonly List<Task> _streamDisposals = [];
+
         // Set when GOAWAY is being processed, when aborting, or when disposing.
         private long _firstRejectedStreamId = -1;
 
@@ -105,6 +107,7 @@ namespace System.Net.Http
                 if (_firstRejectedStreamId == -1)
                 {
                     _firstRejectedStreamId = long.MaxValue;
+                    Task.WhenAll(_streamDisposals).GetAwaiter().GetResult();
                     CheckForShutdown();
                 }
             }
@@ -360,6 +363,14 @@ namespace System.Net.Http
                         MarkConnectionAsIdle();
                     }
                 }
+            }
+        }
+
+        public void QueueStreamForDisposal(QuicStream stream)
+        {
+            lock (SyncObj)
+            {
+                _streamDisposals.Add(stream.DisposeAsync().AsTask());
             }
         }
 
