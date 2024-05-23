@@ -499,8 +499,7 @@ SingleTypeRegSet LinearScan::getConstrainedRegMask(RefPosition*     refPosition,
 
     if ((refPosition != nullptr) && !refPosition->RegOptional())
     {
-        SingleTypeRegSet busyRegs =
-            (regsBusyUntilKill | regsInUseThisLocation).GetRegSetForType(regType);
+        SingleTypeRegSet busyRegs = (regsBusyUntilKill | regsInUseThisLocation).GetRegSetForType(regType);
         if ((newMask & ~busyRegs) == RBM_NONE)
         {
             // Constrained mask does not have at least one free register to allocate.
