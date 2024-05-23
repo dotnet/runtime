@@ -320,6 +320,24 @@ namespace Server.Contract
     };
 
     [ComVisible(true)]
+    [Guid("B630A508-4DA5-4C14-A7AB-618AD66B2EBF")]
+    [InterfaceType(ComInterfaceType.InterfaceIsIDispatch)]
+    public interface IDispatchCoerceTesting
+    {
+        int ReturnToManaged(short vt);
+        int ManagedArgument(int arg);
+        string BoolToString();
+        void ReturnToManaged_Void(int value);
+        double ReturnToManaged_Double(int value);
+        string ReturnToManaged_String(int value);
+        decimal ReturnToManaged_Decimal(int value);
+        DateTime ReturnToManaged_DateTime(int value);
+        Color ReturnToManaged_Color(int value);
+        System.Reflection.Missing ReturnToManaged_Missing(int value);
+        DBNull ReturnToManaged_DBNull(int value);
+    }
+
+    [ComVisible(true)]
     [Guid("98cc27f0-d521-4f79-8b63-e980e3a92974")]
     [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
     public interface IAggregationTesting

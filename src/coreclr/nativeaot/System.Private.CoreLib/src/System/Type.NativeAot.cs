@@ -95,7 +95,7 @@ namespace System
         [RequiresUnreferencedCode("The type might be removed")]
         public static Type GetType(string typeName, bool throwOnError, bool ignoreCase)
         {
-            return TypeNameParser.GetType(typeName, throwOnError: throwOnError, ignoreCase: ignoreCase);
+            return TypeNameResolver.GetType(typeName, throwOnError: throwOnError, ignoreCase: ignoreCase);
         }
 
         [Intrinsic]
@@ -108,7 +108,7 @@ namespace System
         [RequiresUnreferencedCode("The type might be removed")]
         public static Type GetType(string typeName, Func<AssemblyName, Assembly?>? assemblyResolver, Func<Assembly?, string, bool, Type?>? typeResolver, bool throwOnError, bool ignoreCase)
         {
-            return TypeNameParser.GetType(typeName, assemblyResolver, typeResolver, throwOnError: throwOnError, ignoreCase: ignoreCase);
+            return TypeNameResolver.GetType(typeName, assemblyResolver, typeResolver, throwOnError: throwOnError, ignoreCase: ignoreCase);
         }
     }
 }

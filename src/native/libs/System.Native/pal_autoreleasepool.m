@@ -20,9 +20,12 @@ void EnsureNSThreadIsMultiThreaded(void)
         // We need to use detachNewThreadSelector to put NSThread into multithreaded mode.
         // We can't use detachNewThreadWithBlock since it doesn't change NSThread into multithreaded mode for some reason.
         // See https://developer.apple.com/documentation/foundation/nswillbecomemultithreadednotification for more information.
-        id placeholderObject = [[NSMutableString alloc] init];		
+        id placeholderObject = [[NSMutableString alloc] init];
         [NSThread detachNewThreadSelector:@selector(appendString:) toTarget:placeholderObject withObject:@""];
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wobjc-messaging-id"
         [placeholderObject release];
+#pragma clang diagnostic pop
     }
     assert([NSThread isMultiThreaded]);
 }

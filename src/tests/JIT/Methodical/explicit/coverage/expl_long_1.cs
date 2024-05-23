@@ -83,6 +83,7 @@ internal struct BB
 public static class Test_expl_long_1
 {
     [Fact]
+    [OuterLoop]
     public static int TestEntrypoint()
     {
         return TestApp.RunAllTests();

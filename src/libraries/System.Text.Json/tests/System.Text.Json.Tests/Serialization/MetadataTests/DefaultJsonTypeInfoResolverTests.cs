@@ -196,7 +196,7 @@ namespace System.Text.Json.Serialization.Tests
 
         private class SomeClass
         {
-            public object ObjProp { get; set; }
+            public object? ObjProp { get; set; }
             public int IntProp { get; set; }
         }
 
@@ -227,7 +227,7 @@ namespace System.Text.Json.Serialization.Tests
         private class SomeRecursiveClass
         {
             public int IntProp { get; set; }
-            public SomeRecursiveClass RecursiveProperty { get; set; }
+            public SomeRecursiveClass? RecursiveProperty { get; set; }
         }
 
         [JsonDerivedType(typeof(DerivedClass))]
