@@ -3932,7 +3932,7 @@ namespace System
             object? obj = cache.CreateUninitializedObject(this);
             try
             {
-                cache.CallConstructor(obj);
+                cache.CallRefConstructor(obj);
             }
             catch (Exception e) when (wrapExceptions)
             {
@@ -3961,7 +3961,7 @@ namespace System
             object? obj = cache.CreateUninitializedObject(this);
             try
             {
-                cache.CallConstructor(obj);
+                cache.CallRefConstructor(obj);
             }
             catch (Exception e)
             {
@@ -3969,6 +3969,32 @@ namespace System
             }
 
             return obj;
+        }
+
+        // Specialized version of the above for Activator.CreateInstance<T>()
+        [DebuggerStepThrough]
+        [DebuggerHidden]
+        internal void CallDefaultStructConstructor(ref byte data)
+        {
+            if (GenericCache is not ActivatorCache cache)
+            {
+                cache = new ActivatorCache(this);
+                GenericCache = cache;
+            }
+
+            if (!cache.CtorIsPublic)
+            {
+                throw new MissingMethodException(SR.Format(SR.Arg_NoDefCTor, this));
+            }
+
+            try
+            {
+                cache.CallValueConstructor(ref data);
+            }
+            catch (Exception e)
+            {
+                throw new TargetInvocationException(e);
+            }
         }
 
         internal void InvalidateCachedNestedType() => Cache.InvalidateCachedNestedType();

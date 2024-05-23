@@ -21,7 +21,8 @@ namespace System
             private readonly void* _allocatorFirstArg;
 
             // The managed calli to the parameterless ctor, taking "this" (as object) as its first argument.
-            private readonly delegate*<object?, void> _pfnCtor;
+            private readonly delegate*<object?, void> _pfnRefCtor;
+            private readonly delegate*<ref byte, void> _pfnValueCtor;
             private readonly bool _ctorIsPublic;
 
             private CreateUninitializedCache? _createUninitializedCache;
@@ -48,7 +49,7 @@ namespace System
                 {
                     RuntimeTypeHandle.GetActivationInfo(rt,
                         out _pfnAllocator!, out _allocatorFirstArg,
-                        out _pfnCtor!, out _ctorIsPublic);
+                        out _pfnRefCtor!, out _pfnValueCtor!, out _ctorIsPublic);
                 }
                 catch (Exception ex)
                 {
@@ -87,12 +88,27 @@ namespace System
                 // would have thrown an exception if 'rt' were a normal reference type
                 // without a ctor.
 
-                if (_pfnCtor == null)
+                if (_pfnRefCtor == null)
                 {
-                    static void CtorNoopStub(object? uninitializedObject) { }
-                    _pfnCtor = &CtorNoopStub; // we use null singleton pattern if no ctor call is necessary
+                    static void RefCtorNoopStub(object? uninitializedObject) { }
+                    _pfnRefCtor = &RefCtorNoopStub; // we use null singleton pattern if no ctor call is necessary
 
                     Debug.Assert(_ctorIsPublic); // implicit parameterless ctor is always considered public
+                }
+
+                if (rt.IsValueType)
+                {
+                    if (_pfnValueCtor == null)
+                    {
+                        static void ValueRefCtorNoopStub(ref byte uninitializedObject) { }
+                        _pfnValueCtor = &ValueRefCtorNoopStub; // we use null singleton pattern if no ctor call is necessary
+
+                        Debug.Assert(_ctorIsPublic); // implicit parameterless ctor is always considered public
+                    }
+                }
+                else
+                {
+                    Debug.Assert(_pfnValueCtor == null); // Non-value types shouldn't have a value constructor.
                 }
 
                 // We don't need to worry about invoking cctors here. The runtime will figure it
@@ -120,7 +136,16 @@ namespace System
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            internal void CallConstructor(object? uninitializedObject) => _pfnCtor(uninitializedObject);
+            internal void CallRefConstructor(object? uninitializedObject) => _pfnRefCtor(uninitializedObject);
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            internal void CallValueConstructor(ref byte uninitializedObject)
+            {
+#if DEBUG
+                Debug.Assert(_originalRuntimeType.IsValueType);
+#endif
+                _pfnValueCtor(ref uninitializedObject);
+            }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             internal CreateUninitializedCache GetCreateUninitializedCache(RuntimeType rt)

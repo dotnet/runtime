@@ -137,7 +137,17 @@ namespace System
         [Intrinsic]
         public static T CreateInstance<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] T>()
         {
-            return (T)((RuntimeType)typeof(T)).CreateInstanceOfT()!;
+            var rtType = (RuntimeType)typeof(T);
+            if (!rtType.IsValueType)
+            {
+                return (T)rtType.CreateInstanceOfT()!;
+            }
+            else
+            {
+                T t = default!;
+                rtType.CallDefaultStructConstructor(ref Unsafe.As<T, byte>(ref t));
+                return t;
+            }
         }
 
         private static T CreateDefaultInstance<T>() where T : struct => default;
