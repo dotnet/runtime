@@ -1053,10 +1053,13 @@ namespace System.Formats.Tar
         {
             Debug.Assert(destination.Length == 8, "8 byte field expected.");
 
-            // Use GNU format to widen the range.
-            bool useGnuFormat = (value < 0 || value > Octal8ByteFieldMaxValue) && _format == TarEntryFormat.Gnu;
+            bool isOctalRange = value >= 0 && value <= Octal8ByteFieldMaxValue;
 
-            if (useGnuFormat)
+            if (isOctalRange || _format == TarEntryFormat.Pax)
+            {
+                return FormatOctal(value, destination);
+            }
+            else if (_format == TarEntryFormat.Gnu)
             {
                 // GNU format: store negative numbers in big endian format with leading '0xff' byte.
                 //             store positive numbers in big endian format with leading '0x80' byte.
@@ -1067,7 +1070,7 @@ namespace System.Formats.Tar
             }
             else
             {
-                return FormatOctal(value, destination);
+                throw new ArgumentException(SR.Format(SR.TarFieldTooLargeForEntryFormat, _format));
             }
         }
 
@@ -1076,10 +1079,13 @@ namespace System.Formats.Tar
             Debug.Assert(destination.Length == 12, "12 byte field expected.");
             const int Offset = 4; // 4 bytes before the long.
 
-            // Use GNU format to widen the range.
-            bool useGnuFormat = (value < 0 || value > Octal12ByteFieldMaxValue) && _format == TarEntryFormat.Gnu;
+            bool isOctalRange = value >= 0 && value <= Octal12ByteFieldMaxValue;
 
-            if (useGnuFormat)
+            if (isOctalRange || _format == TarEntryFormat.Pax)
+            {
+                return FormatOctal(value, destination);
+            }
+            else if (_format == TarEntryFormat.Gnu)
             {
                 // GNU format: store negative numbers in big endian format with leading '0xff' byte.
                 //             store positive numbers in big endian format with leading '0x80' byte.
@@ -1089,7 +1095,7 @@ namespace System.Formats.Tar
             }
             else
             {
-                return FormatOctal(value, destination);
+                throw new ArgumentException(SR.Format(SR.TarFieldTooLargeForEntryFormat, _format));
             }
         }
 
