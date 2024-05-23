@@ -5683,6 +5683,8 @@ void emitter::emitLoopAlign(unsigned paddingBytes, bool isFirstAlign DEBUG_ARG(b
         // first align instruction
         id->idaLoopHeadPredIG = emitCurIG;
         emitAlignLastGroup    = id;
+
+        JITDUMP("Loop head predecessor is IG%02u for first align instruction\n", id->idaLoopHeadPredIG->igNum);
     }
     else
     {
@@ -5762,6 +5764,9 @@ void emitter::emitConnectAlignInstrWithCurIG()
     // the emitAlignLastGroup points to the loop that is in process of getting aligned.
 
     emitAlignLastGroup->idaLoopHeadPredIG = emitCurIG;
+
+    JITDUMP("Loop head predecessor is IG%02u when connecting align instruction\n",
+            emitAlignLastGroup->idaLoopHeadPredIG->igNum);
 
     // For a new IG to ensure that loop doesn't start from IG that idaLoopHeadPredIG points to.
     emitNxtIG();

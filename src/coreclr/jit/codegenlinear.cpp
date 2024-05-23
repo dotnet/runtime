@@ -350,7 +350,7 @@ void CodeGen::genCodeForBBlist()
             block->bbEmitCookie = GetEmitter()->emitAddLabel(gcInfo.gcVarPtrSetCur, gcInfo.gcRegGCrefSetCur,
                                                              gcInfo.gcRegByrefSetCur, block->Prev());
 
-            JITDUMP("bbEmitCookie set with IG%02u for " FMT_BB "\n", ((insGroup*)block->bbEmitCookie)->igNum,
+            JITDUMP("Block emit cookie set with IG%02u for " FMT_BB "\n", ((insGroup*)block->bbEmitCookie)->igNum,
                     block->bbNum);
         }
 
