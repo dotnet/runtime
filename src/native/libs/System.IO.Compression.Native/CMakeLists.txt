@@ -1,8 +1,9 @@
 project(System.IO.Compression.Native C)
 
-include(FetchContent)
 include(${CMAKE_CURRENT_LIST_DIR}/extra_libs.cmake)
 include(${CLR_SRC_NATIVE_DIR}/external/zlib-ng.cmake)
+
+add_compile_definitions(ZLIB_COMPAT)
 
 configure_file(
     ${CMAKE_CURRENT_SOURCE_DIR}/../Common/pal_config.h.in
@@ -43,7 +44,6 @@ if (CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
 
     if (CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
         set(NATIVECOMPRESSION_SOURCES ${NATIVECOMPRESSION_SOURCES})
-        list(APPEND NATIVE_LIBS_EXTRA zlibstatic)
     endif()
 
     # Disable implicit fallthrough warning for Zlib and Brotli
@@ -73,7 +73,6 @@ if (CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
         target_link_libraries(System.IO.Compression.Native
             PRIVATE
             ${NATIVE_LIBS_EXTRA}
-            zlibstatic
         )
 
         if (NOT CLR_CMAKE_TARGET_MACCATALYST AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS AND NOT CLR_CMAKE_TARGET_ANDROID AND NOT CLR_CMAKE_USE_SYSTEM_BROTLI)
@@ -127,7 +126,7 @@ else ()
         )
         target_link_libraries(System.IO.Compression.Native
             PRIVATE
-            zlibstatic
+            zlib
         )
     endif ()
 
@@ -180,7 +179,7 @@ else ()
     endif ()
 
     if(STATIC_LIBS_ONLY)
-        install_static_library(zlibstatic aotsdk nativeaot)
+        install_static_library(zlib aotsdk nativeaot)
         install_static_library(System.IO.Compression.Native.Aot aotsdk nativeaot)
         install_static_library(System.IO.Compression.Native.Aot.GuardCF aotsdk nativeaot)
     endif()

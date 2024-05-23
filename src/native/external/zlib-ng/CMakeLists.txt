@@ -462,7 +462,6 @@ endif()
 #
 # check for ptrdiff_t support
 #
-
 check_c_source_compiles(
     "#include <stddef.h>
      int main() {

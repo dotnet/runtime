@@ -655,10 +655,10 @@ if(LLVM_PREFIX)
 
   if(HOST_LINUX)
     # llvm-config --system-libs
-    set(llvm_system_libs ${MONO_cxx_lib} "-lz" "-lrt" "-ldl" "-lpthread" "-lm")
+    set(llvm_system_libs ${MONO_cxx_lib} "-lrt" "-ldl" "-lpthread" "-lm")
   elseif(HOST_OSX)
     # llvm-config --system-libs
-    set(llvm_system_libs "-lz" "-lm")
+    set(llvm_system_libs "-lm")
   endif()
 
   # llvm-config --libs analysis core bitwriter mcjit orcjit

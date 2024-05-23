@@ -48,7 +48,6 @@
     </ItemGroup>
 
     <ItemGroup Condition="'$(_IsLibraryMode)' == 'true'">
-      <_CommonLinkerArgs Include="-l:libz.so" />
       <_CommonLinkerArgs Include="-l:liblog.so" />
       <_CommonLinkerArgs Include="-l:libc.so" />
       <_CommonLinkerArgs Include="-l:libm.so" />
@@ -211,6 +210,7 @@
       <DirectPInvokes Include="libSystem.Native" />
       <DirectPInvokes Include="libSystem.IO.Compression.Native" />
       <DirectPInvokes Include="libSystem.Security.Cryptography.Native.Android" />
+      <DirectPInvokes Include="libz" />
     </ItemGroup>
 
     <PropertyGroup>

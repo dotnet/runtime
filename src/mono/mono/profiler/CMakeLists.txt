@@ -14,7 +14,7 @@ if(NOT DISABLE_LIBS)
     # Build the logging profiler only for certain platforms
     add_library(mono-profiler-log SHARED helper.c log.c log-args.c)
     target_compile_definitions(mono-profiler-log PRIVATE -DMONO_DLL_EXPORT)
-    target_link_libraries(mono-profiler-log PRIVATE monosgen-shared monoapi eglib_objects zlibstatic)
+    target_link_libraries(mono-profiler-log PRIVATE monosgen-shared monoapi eglib_objects zlib)
     if(HOST_ANDROID)
       target_link_libraries(mono-profiler-log PRIVATE log)
     endif()
@@ -26,7 +26,7 @@ if(NOT DISABLE_LIBS)
     install(TARGETS mono-profiler-log-static LIBRARY)
 
     if(NOT DISABLE_LOG_PROFILER_GZ)
-      target_link_libraries(mono-profiler-log PRIVATE ${Z_LIBS})
+      target_link_libraries(mono-profiler-log PRIVATE zlib)
     endif()
   endif()
 

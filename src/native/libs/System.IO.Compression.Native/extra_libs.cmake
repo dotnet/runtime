@@ -1,5 +1,5 @@
-
 macro(append_extra_compression_libs NativeLibsExtra)
+  list(APPEND ${NativeLibsExtra} zlib)
   if (CLR_CMAKE_USE_SYSTEM_BROTLI)
     find_library(BROTLIDEC brotlidec REQUIRED)
     find_library(BROTLIENC brotlienc REQUIRED)

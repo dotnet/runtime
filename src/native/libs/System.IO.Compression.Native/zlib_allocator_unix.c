@@ -1,8 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#define ZLIB_COMPAT 1
-
 #include <stdbool.h>
 #include <stdint.h>
 #include <external/zlib-ng/zutil.h>
