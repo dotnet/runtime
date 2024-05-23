@@ -444,15 +444,15 @@ int LinearScan::BuildCall(GenTreeCall* call)
 ////    The def and kill functionality is folded into a single method so that the
 ////    save and restores of upper vector registers can be bracketed around the def.
 ////
-//void LinearScan::BuildDefWithKills(GenTree* tree, SingleTypeRegSet dstCandidates, regMaskTP killMask)
+// void LinearScan::BuildDefWithKills(GenTree* tree, SingleTypeRegSet dstCandidates, regMaskTP killMask)
 //{
-//    assert(!tree->AsCall()->HasMultiRegRetVal());
-//    assert((int)PopCount(dstCandidates) == 1);
+//     assert(!tree->AsCall()->HasMultiRegRetVal());
+//     assert((int)PopCount(dstCandidates) == 1);
 //
-//    // Build the kill RefPositions
-//    BuildKills(tree, killMask);
-//    BuildDef(tree, dstCandidates);
-//}
+//     // Build the kill RefPositions
+//     BuildKills(tree, killMask);
+//     BuildDef(tree, dstCandidates);
+// }
 
 //------------------------------------------------------------------------
 // BuildPutArgStk: Set the NodeInfo for a GT_PUTARG_STK node

@@ -14,4 +14,3 @@ bool regMaskTP::IsRegNumInMask(regNumber reg)
 {
     return (low & genRegMask(reg)) != 0;
 }
-

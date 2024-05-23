@@ -305,7 +305,7 @@ SingleTypeRegSet LinearScan::getMatchingConstants(SingleTypeRegSet mask,
 {
     assert(currentInterval->isConstant && RefTypeIsDef(refPosition->refType));
     SingleTypeRegSet candidates = (mask & m_RegistersWithConstants).GetRegSetForType(currentInterval->registerType);
-    SingleTypeRegSet result = RBM_NONE;
+    SingleTypeRegSet result     = RBM_NONE;
     while (candidates != RBM_NONE)
     {
         regNumber        regNum       = genFirstRegNumFromMask(candidates);
@@ -497,7 +497,8 @@ SingleTypeRegSet LinearScan::getConstrainedRegMask(RefPosition*     refPosition,
 
     if ((refPosition != nullptr) && !refPosition->RegOptional())
     {
-        SingleTypeRegSet busyRegs = (regsBusyUntilKill | regsInUseThisLocation).GetRegSetForType(TYP_VOID); //TODO: Pass the right type
+        SingleTypeRegSet busyRegs =
+            (regsBusyUntilKill | regsInUseThisLocation).GetRegSetForType(TYP_VOID); // TODO: Pass the right type
         if ((newMask & ~busyRegs) == RBM_NONE)
         {
             // Constrained mask does not have at least one free register to allocate.

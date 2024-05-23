@@ -780,7 +780,7 @@ bool LinearScan::isRMWRegOper(GenTree* tree)
 // Support for building RefPositions for RMW nodes.
 int LinearScan::BuildRMWUses(GenTree* node, GenTree* op1, GenTree* op2, SingleTypeRegSet candidates)
 {
-    int       srcCount      = 0;
+    int              srcCount      = 0;
     SingleTypeRegSet op1Candidates = candidates;
     SingleTypeRegSet op2Candidates = candidates;
 
@@ -1039,9 +1039,9 @@ int LinearScan::BuildShiftRotate(GenTree* tree)
     // For shift operations, we need that the number
     // of bits moved gets stored in CL in case
     // the number of bits to shift is not a constant.
-    int       srcCount      = 0;
-    GenTree*  shiftBy       = tree->gtGetOp2();
-    GenTree*  source        = tree->gtGetOp1();
+    int              srcCount      = 0;
+    GenTree*         shiftBy       = tree->gtGetOp2();
+    GenTree*         source        = tree->gtGetOp1();
     SingleTypeRegSet srcCandidates = RBM_NONE;
     SingleTypeRegSet dstCandidates = RBM_NONE;
 
@@ -1151,7 +1151,7 @@ int LinearScan::BuildCall(GenTreeCall* call)
     const ReturnTypeDesc* retTypeDesc         = nullptr;
     int                   srcCount            = 0;
     int                   dstCount            = 0;
-    SingleTypeRegSet             singleDstCandidates = RBM_NONE;
+    SingleTypeRegSet      singleDstCandidates = RBM_NONE;
 
     assert(!call->isContained());
     if (call->TypeGet() != TYP_VOID)
@@ -1913,10 +1913,10 @@ int LinearScan::BuildLclHeap(GenTree* tree)
 //
 int LinearScan::BuildModDiv(GenTree* tree)
 {
-    GenTree*  op1           = tree->gtGetOp1();
-    GenTree*  op2           = tree->gtGetOp2();
+    GenTree*         op1           = tree->gtGetOp1();
+    GenTree*         op2           = tree->gtGetOp2();
     SingleTypeRegSet dstCandidates = RBM_NONE;
-    int       srcCount      = 0;
+    int              srcCount      = 0;
 
     if (varTypeIsFloating(tree->TypeGet()))
     {
@@ -2922,7 +2922,7 @@ int LinearScan::BuildIndir(GenTreeIndir* indirTree)
     }
 #endif // FEATURE_SIMD
 
-    int       srcCount        = BuildIndirUses(indirTree);
+    int srcCount = BuildIndirUses(indirTree);
     if (indirTree->gtOper == GT_STOREIND)
     {
         GenTree* source = indirTree->gtGetOp2();
@@ -3043,8 +3043,8 @@ int LinearScan::BuildMul(GenTree* tree)
         return BuildSimple(tree);
     }
 
-    int       srcCount      = BuildBinaryUses(tree->AsOp());
-    int       dstCount      = 1;
+    int              srcCount      = BuildBinaryUses(tree->AsOp());
+    int              dstCount      = 1;
     SingleTypeRegSet dstCandidates = RBM_NONE;
 
     bool isUnsignedMultiply    = ((tree->gtFlags & GTF_UNSIGNED) != 0);

@@ -231,22 +231,21 @@ typedef uint64_t regMaskSmall;
 
 typedef regMaskSmall SingleTypeRegSet;
 //
-//#define REG_MASK_INT_FMT "%04llX"
-//#define REG_MASK_ALL_FMT "%016llX"
-//#endif
+// #define REG_MASK_INT_FMT "%04llX"
+// #define REG_MASK_ALL_FMT "%016llX"
+// #endif
 
 struct regMaskTP
 {
 private:
     regMaskSmall low;
-    uint64_t high;
+    uint64_t     high;
 public:
     constexpr regMaskTP(regMaskSmall lowRegMask, uint64_t highRegMask)
         : low(lowRegMask)
         , high(highRegMask)
     {
     }
-
 
     constexpr regMaskTP(regMaskSmall lowRegMask)
         : low(lowRegMask)
@@ -329,11 +328,11 @@ static regMaskTP operator&(regMaskTP first, regMaskTP second)
     return result;
 }
 
-//static SingleTypeRegSet operator&(regMaskTP first, SingleTypeRegSet second)
+// static SingleTypeRegSet operator&(regMaskTP first, SingleTypeRegSet second)
 //{
-//    regMaskTP result(first.getLow() & second.getLow(), first.getHigh() & second.getHigh());
-//    return result;
-//}
+//     regMaskTP result(first.getLow() & second.getLow(), first.getHigh() & second.getHigh());
+//     return result;
+// }
 
 static regMaskTP operator|(regMaskTP first, regMaskTP second)
 {

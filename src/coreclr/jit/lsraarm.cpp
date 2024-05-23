@@ -666,7 +666,7 @@ int LinearScan::BuildNode(GenTree* tree)
         case GT_BITCAST:
         {
             assert(dstCount == 1);
-            regNumber argReg  = tree->GetRegNum();
+            regNumber        argReg  = tree->GetRegNum();
             SingleTypeRegSet argMask = RBM_NONE;
             if (argReg != REG_COUNT)
             {
