@@ -3020,13 +3020,10 @@ static void SetFpStructInRegistersInfoField(FpStructInRegistersInfo& info, int i
     assert(index < 2);
     assert(!isFloating || size == sizeof(float) || size == sizeof(double));
 
-    int sizeShift =
-        (size == 1) ? 0 :
-        (size == 2) ? 1 :
-        (size == 4) ? 2 :
-        (size == 8) ? 3 :
-       -1;
-    assert(sizeShift != -1);
+    assert(size >= 1 && size <= 8);
+    assert((size & (size - 1)) == 0); // size needs to be a power of 2
+    static const int sizeShiftLUT = (0 << (1*2)) | (1 << (2*2)) | (2 << (4*2)) | (3 << (8*2));
+    int sizeShift = (sizeShiftLUT >> (size * 2)) & 0b11;
 
     using namespace FpStruct;
     static const int typeSize = PosFloat2nd - PosFloat1st;

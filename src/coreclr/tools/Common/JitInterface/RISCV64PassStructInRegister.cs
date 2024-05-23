@@ -127,13 +127,10 @@ namespace Internal.JitInterface
             Debug.Assert(index < 2);
             Debug.Assert(!isFloating || size == sizeof(float) || size == sizeof(double));
 
-            int sizeShift =
-                (size == 1) ? 0 :
-                (size == 2) ? 1 :
-                (size == 4) ? 2 :
-                (size == 8) ? 3 :
-                -1;
-            Debug.Assert(sizeShift != -1);
+            Debug.Assert(size >= 1 && size <= 8);
+            Debug.Assert((size & (size - 1)) == 0, "size needs to be a power of 2");
+            const int sizeShiftLUT = (0 << (1*2)) | (1 << (2*2)) | (2 << (4*2)) | (3 << (8*2));
+            int sizeShift = (sizeShiftLUT >> ((int)size * 2)) & 0b11;
 
             const int typeSize = (int)PosFloat2nd - (int)PosFloat1st;
             Debug.Assert((Float2nd | SizeShift2nd) == (FpStruct)((uint)(Float1st | SizeShift1st) << typeSize),
