@@ -272,23 +272,23 @@ jobs:
   #       logicalmachine: 'perftiger'
   #       experimentName: 'memoryRandomization'
 
-  # run coreclr perfowl microbenchmarks perf job
-  - template: /eng/pipelines/common/platform-matrix.yml
-    parameters:
-      jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
-      buildConfig: release
-      runtimeFlavor: coreclr
-      platforms:
-      # - linux_x64
-      - windows_x64
-      jobParameters:
-        testGroup: perf
-        liveLibrariesBuildConfig: Release
-        projectFile: microbenchmarks.proj
-        runKind: micro
-        runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
-        logicalmachine: 'perfowl'
-        onlySanityCheck: true
+  # # run coreclr perfowl microbenchmarks perf job
+  # - template: /eng/pipelines/common/platform-matrix.yml
+  #   parameters:
+  #     jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
+  #     buildConfig: release
+  #     runtimeFlavor: coreclr
+  #     platforms:
+  #     # - linux_x64
+  #     - windows_x64
+  #     jobParameters:
+  #       testGroup: perf
+  #       liveLibrariesBuildConfig: Release
+  #       projectFile: microbenchmarks.proj
+  #       runKind: micro
+  #       runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
+  #       logicalmachine: 'perfowl'
+  #       onlySanityCheck: true
 
   # run coreclr perfviper microbenchmarks perf job
   - template: /eng/pipelines/common/platform-matrix.yml
