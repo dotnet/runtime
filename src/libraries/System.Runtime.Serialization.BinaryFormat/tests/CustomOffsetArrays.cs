@@ -65,7 +65,7 @@ public class CustomOffsetArrays : ReadTests
 
         ArrayRecord arrayRecord = (ArrayRecord)PayloadReader.Read(Serialize(input));
 
-        Assert.Equal((uint)input.Length, arrayRecord.Length);
+        RectangularArraysTests.VerifyLength(input, arrayRecord);
         Array output = arrayRecord.ToArray(input.GetType());
 
         for (int i = 0; i < input.GetLength(0); i++)

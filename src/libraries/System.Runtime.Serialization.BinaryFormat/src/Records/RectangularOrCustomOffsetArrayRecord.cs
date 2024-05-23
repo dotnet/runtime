@@ -10,6 +10,7 @@ namespace System.Runtime.Serialization.BinaryFormat;
 
 internal sealed class RectangularOrCustomOffsetArrayRecord : ArrayRecord
 {
+    private readonly int[] _lengths;
     private TypeName? _elementTypeName;
 
     private RectangularOrCustomOffsetArrayRecord(Type elementType, ArrayInfo arrayInfo,
@@ -17,7 +18,7 @@ internal sealed class RectangularOrCustomOffsetArrayRecord : ArrayRecord
     {
         ElementType = elementType;
         MemberTypeInfo = memberTypeInfo;
-        Lengths = lengths;
+        _lengths = lengths;
         Offsets = offsets;
         RecordMap = recordMap;
         Values = new();
@@ -25,14 +26,14 @@ internal sealed class RectangularOrCustomOffsetArrayRecord : ArrayRecord
 
     public override RecordType RecordType => RecordType.BinaryArray;
 
+    public override ReadOnlySpan<int> Lengths => _lengths.AsSpan();
+
     public override TypeName ElementTypeName
         => _elementTypeName ??= MemberTypeInfo.GetElementTypeName(RecordMap);
 
     private Type ElementType { get; }
 
     private MemberTypeInfo MemberTypeInfo { get; }
-
-    private int[] Lengths { get; }
 
     private int[] Offsets { get; }
 
@@ -48,12 +49,7 @@ internal sealed class RectangularOrCustomOffsetArrayRecord : ArrayRecord
 
     private protected override Array Deserialize(Type arrayType, bool allowNulls, int maxLength)
     {
-        if (Length > maxLength)
-        {
-            ThrowHelper.ThrowMaxArrayLength(maxLength, Length);
-        }
-
-        Array result = Array.CreateInstance(ElementType, Lengths, Offsets);
+        Array result = Array.CreateInstance(ElementType, _lengths, Offsets);
 
 #if !NET8_0_OR_GREATER
         int[] indices = new int[Offsets.Length];

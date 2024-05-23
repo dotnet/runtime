@@ -16,7 +16,7 @@ public class JaggedArraysTests : ReadTests
 
         var arrayRecord = (ArrayRecord)PayloadReader.Read(Serialize(input));
 
-        Assert.Equal((uint)input.Length, arrayRecord.Length);
+        VerifyLength(input, arrayRecord);
         Assert.Equal(ArrayType.Jagged, arrayRecord.ArrayType);
         Assert.Equal(input, arrayRecord.ToArray(input.GetType()));
     }
@@ -33,7 +33,7 @@ public class JaggedArraysTests : ReadTests
 
         var arrayRecord = (ArrayRecord)PayloadReader.Read(Serialize(input));
 
-        Assert.Equal((uint)input.Length, arrayRecord.Length);
+        VerifyLength(input, arrayRecord);
         Assert.Equal(ArrayType.Jagged, arrayRecord.ArrayType);
         Assert.Equal(input, arrayRecord.ToArray(input.GetType()));
         Assert.Equal(1, arrayRecord.Rank);
@@ -50,7 +50,7 @@ public class JaggedArraysTests : ReadTests
 
         var arrayRecord = (ArrayRecord)PayloadReader.Read(Serialize(input));
 
-        Assert.Equal((uint)input.Length, arrayRecord.Length);
+        VerifyLength(input, arrayRecord);
         Assert.Equal(ArrayType.Jagged, arrayRecord.ArrayType);
         Assert.Equal(input, arrayRecord.ToArray(input.GetType()));
     }
@@ -66,7 +66,7 @@ public class JaggedArraysTests : ReadTests
 
         var arrayRecord = (ArrayRecord)PayloadReader.Read(Serialize(input));
 
-        Assert.Equal((uint)input.Length, arrayRecord.Length);
+        VerifyLength(input, arrayRecord);
         Assert.Equal(ArrayType.Jagged, arrayRecord.ArrayType);
         Assert.Equal(input, arrayRecord.ToArray(input.GetType()));
     }
@@ -88,7 +88,7 @@ public class JaggedArraysTests : ReadTests
 
         var arrayRecord = (ArrayRecord)PayloadReader.Read(Serialize(input));
 
-        Assert.Equal((uint)input.Length, arrayRecord.Length);
+        VerifyLength(input, arrayRecord);
         Assert.Equal(ArrayType.Jagged, arrayRecord.ArrayType);
         var output = (ClassRecord?[][])arrayRecord.ToArray(input.GetType());
         for (int i = 0; i < input.Length; i++)
@@ -98,5 +98,11 @@ public class JaggedArraysTests : ReadTests
                 Assert.Equal(input[i][j].SomeField, output[i][j]!.GetInt32(nameof(ComplexType.SomeField)));
             }
         }
+    }
+
+    private static void VerifyLength(Array input, ArrayRecord arrayRecord)
+    {
+        Assert.Equal(1, arrayRecord.Lengths.Length);
+        Assert.Equal(input.Length, arrayRecord.Lengths[0]);
     }
 }

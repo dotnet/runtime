@@ -44,15 +44,9 @@ internal sealed class ArrayRecordDeserializer : ObjectRecordDeserializer
             elementType = elementType.GetElementType()!;
         }
 
-        int[] lengths = new int[arrayRecord.Rank];
-        for (int dimension = 0; dimension < lengths.Length; dimension++)
-        {
-            lengths[dimension] = _arrayOfClassRecords.GetLength(dimension);
-        }
-
-        Object = _arrayOfT = Array.CreateInstance(_elementType, lengths);
-        _lengths = lengths;
-        _indices = new int[lengths.Length];
+        _lengths = arrayRecord.Lengths.ToArray();
+        Object = _arrayOfT = Array.CreateInstance(_elementType, _lengths);
+        _indices = new int[_lengths.Length];
         _canIterate = _arrayOfT.Length > 0;
     }
 

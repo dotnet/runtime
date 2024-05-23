@@ -16,7 +16,7 @@ internal static class ThrowHelper
     internal static Exception InvalidBinaryType(BinaryType binaryType)
         => new SerializationException($"Invalid binary type: {binaryType}");
 
-    internal static void ThrowMaxArrayLength(int limit, uint actual)
+    internal static void ThrowMaxArrayLength(int limit, long actual)
         => throw new SerializationException(
             $"The serialized array length ({actual}) was larger that the configured limit {limit}");
 

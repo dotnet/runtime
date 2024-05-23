@@ -30,8 +30,13 @@ internal sealed class BinaryArrayRecord : ArrayRecord
 
     public override RecordType RecordType => RecordType.BinaryArray;
 
+    /// <inheritdoc/>
+    public override ReadOnlySpan<int> Lengths => new int[1] { Length };
+
     public override TypeName ElementTypeName
         => _elementTypeName ??= MemberTypeInfo.GetElementTypeName(RecordMap);
+
+    private int Length => ArrayInfo.Length;
 
     private MemberTypeInfo MemberTypeInfo { get; }
 
@@ -160,7 +165,7 @@ internal sealed class BinaryArrayRecord : ArrayRecord
         }
 
         MemberTypeInfo memberTypeInfo = MemberTypeInfo.Parse(reader, 1, options);
-        ArrayInfo arrayInfo = new(objectId, (uint)totalElementCount, arrayType, rank);
+        ArrayInfo arrayInfo = new(objectId, (int)totalElementCount, arrayType, rank);
 
         if (isRectangular || hasCustomOffset)
         {

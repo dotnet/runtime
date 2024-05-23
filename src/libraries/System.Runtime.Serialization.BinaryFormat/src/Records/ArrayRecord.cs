@@ -21,9 +21,9 @@ abstract class ArrayRecord : SerializationRecord
     }
 
     /// <summary>
-    /// Length of the array.
+    /// Gets a buffer of integers that represent the number of elements in every dimension.
     /// </summary>
-    public uint Length => ArrayInfo.Length;
+    public abstract ReadOnlySpan<int> Lengths { get; }
 
     /// <summary>
     /// Rank of the array.
@@ -43,11 +43,30 @@ abstract class ArrayRecord : SerializationRecord
 
     private protected ArrayInfo ArrayInfo { get; }
 
+    /// <summary>
+    /// Allocates an array and fills it with the data provided in the serialized records (in case of primitive types like <see cref="string"/> or <see cref="int"/>) or the serialized records themselves.
+    /// </summary>
+    /// <param name="expectedArrayType">Expected array type.</param>
+    /// <param name="allowNulls">Specifies whether null values are allowed.</param>
+    /// <param name="maxLength">The total maximum number of elements in all the dimensions of the array.</param>
+    /// <exception cref="InvalidOperationException">When there is a type mismatch.</exception>
     public Array ToArray(Type expectedArrayType, bool allowNulls = true, int maxLength = DefaultMaxArrayLength)
     {
         if (!IsTypeNameMatching(expectedArrayType))
         {
             throw new InvalidOperationException();
+        }
+
+        ReadOnlySpan<int> lengths = Lengths;
+        long totalElementCount = lengths[0];
+        for (int i = 1; i < lengths.Length; i++)
+        {
+            totalElementCount *= lengths[i];
+        }
+
+        if (totalElementCount > maxLength)
+        {
+            ThrowHelper.ThrowMaxArrayLength(maxLength, totalElementCount);
         }
 
         return Deserialize(expectedArrayType, allowNulls, maxLength);
@@ -103,13 +122,21 @@ abstract class ArrayRecord<T> : ArrayRecord
     }
 
     /// <summary>
+    /// Length of the array.
+    /// </summary>
+    public int Length => ArrayInfo.Length;
+
+    /// <inheritdoc/>
+    public override ReadOnlySpan<int> Lengths => new int[1] { Length };
+
+    /// <summary>
     /// Allocates an array of <typeparamref name="T"/> and fills it with the data provided in the serialized records (in case of primitive types like <see cref="string"/> or <see cref="int"/>) or the serialized records themselves.
     /// </summary>
     /// <param name="allowNulls">Specifies whether null values are allowed.</param>
     /// <param name="maxLength">Specifies the max length of an array that can be allocated.</param>
     /// <remarks>
     /// <para>
-    /// The array has <seealso cref="ArrayRecord.Length"/> elements and can be used as a vector of attack.
+    /// The array has <seealso cref="ArrayRecord{T}.Length"/> elements and can be used as a vector of attack.
     /// Example: an array with Array.MaxLength elements that contains only nulls
     /// takes 15 bytes to serialize and more than 2 GB to deserialize!
     /// </para>

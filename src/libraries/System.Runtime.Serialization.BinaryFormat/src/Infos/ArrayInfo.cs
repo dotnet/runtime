@@ -19,7 +19,7 @@ namespace System.Runtime.Serialization.BinaryFormat;
 [DebuggerDisplay("Length={Length}, {ArrayType}, rank={Rank}")]
 internal readonly struct ArrayInfo
 {
-    internal ArrayInfo(int objectId, uint length, ArrayType arrayType = ArrayType.Single, int rank = 1)
+    internal ArrayInfo(int objectId, int length, ArrayType arrayType = ArrayType.Single, int rank = 1)
     {
         ObjectId = objectId;
         Length = length;
@@ -29,14 +29,14 @@ internal readonly struct ArrayInfo
 
     internal int ObjectId { get; }
 
-    internal uint Length { get; }
+    internal int Length { get; }
 
     internal ArrayType ArrayType { get; }
 
     internal int Rank { get; }
 
     internal static ArrayInfo Parse(BinaryReader reader)
-        => new(reader.ReadInt32(), (uint)ParseValidArrayLength(reader));
+        => new(reader.ReadInt32(), ParseValidArrayLength(reader));
 
     internal static int ParseValidArrayLength(BinaryReader reader)
     {
