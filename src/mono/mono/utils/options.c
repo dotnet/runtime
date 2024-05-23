@@ -10,13 +10,6 @@
 #include "options.h"
 #include "mono/utils/mono-error-internals.h"
 
-typedef enum {
-	MONO_OPTION_BOOL,
-	MONO_OPTION_BOOL_READONLY,
-	MONO_OPTION_INT,
-	MONO_OPTION_STRING
-} MonoOptionType;
-
 /* Define flags */
 #define DEFINE_OPTION_FULL(option_type, ctype, c_name, cmd_name, def_value, comment) \
 	ctype mono_opt_##c_name = def_value;
@@ -121,12 +114,13 @@ get_option_hash (void)
  *   Set options based on the command line arguments in ARGV/ARGC.
  * Remove processed arguments from ARGV and set *OUT_ARGC to the
  * number of remaining arguments.
+ * If PROCESSED is != NULL, add the processed arguments to it.
  *
  * NOTE: This only sets the variables, the caller might need to do
  * additional processing based on the new values of the variables.
  */
 void
-mono_options_parse_options (const char **argv, int argc, int *out_argc, MonoError *error)
+mono_options_parse_options (const char **argv, int argc, int *out_argc, GPtrArray *processed, MonoError *error)
 {
 	int aindex = 0;
 	GHashTable *option_hash = NULL;
@@ -187,6 +181,8 @@ mono_options_parse_options (const char **argv, int argc, int *out_argc, MonoErro
 				break;
 			}
 			*(gboolean*)option->addr = negate ? FALSE : TRUE;
+			if (processed)
+				g_ptr_array_add (processed, (gpointer)argv [aindex]);
 			argv [aindex] = NULL;
 			break;
 		}
@@ -202,12 +198,18 @@ mono_options_parse_options (const char **argv, int argc, int *out_argc, MonoErro
 					break;
 				}
 				value = argv [aindex + 1];
+				if (processed) {
+					g_ptr_array_add (processed, (gpointer)argv [aindex]);
+					g_ptr_array_add (processed, (gpointer)argv [aindex + 1]);
+				}
 				argv [aindex] = NULL;
 				argv [aindex + 1] = NULL;
 				aindex ++;
 			} else if (equals_sign_index != -1) {
 				// option=value
 				value = arg + equals_sign_index + 1;
+				if (processed)
+					g_ptr_array_add (processed, (gpointer)argv [aindex]);
 				argv [aindex] = NULL;
 			} else {
 				g_assert_not_reached ();
@@ -323,4 +325,23 @@ mono_options_get_as_json (void)
 	result_str = result->str;
 	g_string_free(result, FALSE);
 	return result_str;
+}
+
+gboolean
+mono_options_get (const char *name, MonoOptionType *type, void **value_address)
+{
+	GHashTable *hash = get_option_hash ();
+	OptionData *meta = (OptionData *)g_hash_table_lookup (hash, name);
+
+	if (!meta) {
+		if (value_address)
+			*value_address = NULL;
+		return FALSE;
+	}
+
+	if (type)
+		*type = meta->option_type;
+	if (value_address)
+		*value_address = meta->addr;
+	return TRUE;
 }

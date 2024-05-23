@@ -206,9 +206,6 @@ namespace System
         internal static extern bool HasInstantiation(QCallTypeHandle type);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern bool IsComObject(QCallTypeHandle type);
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern bool IsInstanceOfType(QCallTypeHandle type, [NotNullWhen(true)] object? o);
 
         internal static bool IsInstanceOfType(RuntimeType type, [NotNullWhen(true)] object? o)
@@ -234,10 +231,13 @@ namespace System
             return HasInstantiation(new QCallTypeHandle(ref type));
         }
 
+#pragma warning disable IDE0060
         internal static bool IsComObject(RuntimeType type, bool isGenericCOM)
         {
-            return isGenericCOM ? false : IsComObject(new QCallTypeHandle(ref type));
+            // Mono runtime doesn't support built-in COM.
+            return false;
         }
+#pragma warning restore IDE0060
 
 #pragma warning disable IDE0060
         internal static bool IsEquivalentTo(RuntimeType rtType1, RuntimeType rtType2)

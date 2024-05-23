@@ -22,6 +22,7 @@ struct ReplayResults
     bool IsMinOpts = false;
     uint32_t NumCodeBytes = 0;
     uint64_t NumExecutedInstructions = 0;
+    CompileResult* CompileResults = nullptr;
 };
 
 class JitInstance
@@ -81,6 +82,8 @@ public:
     void* allocateLongLivedArray(size_t size);
     void freeArray(void* array);
     void freeLongLivedArray(void* array);
+
+    void updateForceOptions(LightWeightMap<DWORD, DWORD>* newForceOptions);
 };
 
 #endif

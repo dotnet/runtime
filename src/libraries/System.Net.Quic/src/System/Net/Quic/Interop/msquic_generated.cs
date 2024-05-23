@@ -929,6 +929,7 @@ namespace Microsoft.Quic
         PATH_FAILURE,
         SEND_STATELESS_RESET,
         SEND_STATELESS_RETRY,
+        CONN_LOAD_REJECT,
         MAX,
     }
 

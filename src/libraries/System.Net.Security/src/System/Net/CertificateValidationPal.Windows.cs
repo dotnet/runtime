@@ -105,16 +105,15 @@ namespace System.Net
                 // This is TLS Resumed session. Windows can fail to query the local cert bellow.
                 // Instead, we will determine the usage form used credentials.
                 SafeFreeCredential_SECURITY creds = (SafeFreeCredential_SECURITY)_credentialsHandle!;
-                return creds.LocalCertificate != null;
+                return creds.HasLocalCertificate;
             }
 
             SafeFreeCertContext? localContext = null;
             try
             {
-                if (SSPIWrapper.QueryContextAttributes_SECPKG_ATTR_LOCAL_CERT_CONTEXT(GlobalSSPI.SSPISecureChannel, securityContext, out localContext) &&
-                    localContext != null)
+                if (SSPIWrapper.QueryContextAttributes_SECPKG_ATTR_LOCAL_CERT_CONTEXT(GlobalSSPI.SSPISecureChannel, securityContext, out localContext))
                 {
-                    return !localContext.IsInvalid;
+                    return localContext != null ? !localContext.IsInvalid : false;
                 }
             }
             finally

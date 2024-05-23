@@ -165,7 +165,7 @@ namespace System.Numerics.Tensors.Tests
         /// </summary>
         protected void RunForEachSpecialValue(Action action, BoundedMemory<T> x)
         {
-            foreach (T value in GetSpecialValues())
+            Assert.All(GetSpecialValues(), value =>
             {
                 int pos = Random.Next(x.Length);
                 T orig = x[pos];
@@ -174,7 +174,7 @@ namespace System.Numerics.Tensors.Tests
                 action();
 
                 x[pos] = orig;
-            }
+            });
         }
         #endregion
 
@@ -663,6 +663,8 @@ namespace System.Numerics.Tensors.Tests
         {
             if (!IsFloatingPoint) return;
 
+            T? tolerance = Helpers.DetermineTolerance<T>(doubleTolerance: 1e-14);
+
             Assert.All(VectorLengthAndIteratedRange(ConvertFromSingle(-100f), ConvertFromSingle(100f), ConvertFromSingle(3f)), arg =>
             {
                 T[] x = new T[arg.Length];
@@ -674,7 +676,7 @@ namespace System.Numerics.Tensors.Tests
                 T expected = Cosh(arg.Element);
                 foreach (T actual in dest)
                 {
-                    AssertEqualTolerance(expected, actual);
+                    AssertEqualTolerance(expected, actual, tolerance);
                 }
             });
         }
@@ -952,6 +954,8 @@ namespace System.Numerics.Tensors.Tests
         [Fact]
         public void Dot_AllLengths()
         {
+            T? tolerance = Helpers.DetermineTolerance<T>(doubleTolerance: 1e-14f, floatTolerance: 1e-5f);
+
             Assert.All(Helpers.TensorLengthsIncluding0, tensorLength =>
             {
                 using BoundedMemory<T> x = CreateAndFillTensor(tensorLength);
@@ -963,7 +967,7 @@ namespace System.Numerics.Tensors.Tests
                     dot = Add(dot, Multiply(x[i], y[i]));
                 }
 
-                AssertEqualTolerance(dot, Dot(x, y));
+                AssertEqualTolerance(dot, Dot(x, y), tolerance);
             });
         }
         #endregion
@@ -2879,6 +2883,8 @@ namespace System.Numerics.Tensors.Tests
         {
             if (!IsFloatingPoint) return;
 
+            T? tolerance = Helpers.DetermineTolerance<T>(doubleTolerance: 1e-14);
+
             Assert.All(VectorLengthAndIteratedRange(ConvertFromSingle(-100f), ConvertFromSingle(100f), ConvertFromSingle(3f)), args =>
             {
                 T[] x = new T[args.Length];
@@ -2890,7 +2896,7 @@ namespace System.Numerics.Tensors.Tests
                 T expected = Sinh(args.Element);
                 foreach (T actual in dest)
                 {
-                    AssertEqualTolerance(expected, actual);
+                    AssertEqualTolerance(expected, actual, tolerance);
                 }
             });
         }
@@ -3139,6 +3145,8 @@ namespace System.Numerics.Tensors.Tests
         [Fact]
         public void Sum_AllLengths()
         {
+            T? tolerance = Helpers.DetermineTolerance<T>(doubleTolerance: 1e-13, floatTolerance: 1e-5f);
+
             Assert.All(Helpers.TensorLengths, tensorLength =>
             {
                 using BoundedMemory<T> x = CreateAndFillTensor(tensorLength);
@@ -3148,7 +3156,7 @@ namespace System.Numerics.Tensors.Tests
                 {
                     sum = Add(sum, value);
                 }
-                AssertEqualTolerance(sum, Sum(x));
+                AssertEqualTolerance(sum, Sum(x), tolerance);
             });
         }
         #endregion
@@ -3157,6 +3165,8 @@ namespace System.Numerics.Tensors.Tests
         [Fact]
         public void SumOfMagnitudes_AllLengths()
         {
+            T? tolerance = Helpers.DetermineTolerance<T>(doubleTolerance: 1e-12, floatTolerance: 1e-6f);
+
             Assert.All(Helpers.TensorLengths, tensorLength =>
             {
                 using BoundedMemory<T> x = CreateTensor(tensorLength);
@@ -3167,7 +3177,7 @@ namespace System.Numerics.Tensors.Tests
                 {
                     sum = Add(sum, Abs(value));
                 }
-                AssertEqualTolerance(sum, SumOfMagnitudes(x));
+                AssertEqualTolerance(sum, SumOfMagnitudes(x), tolerance);
             });
         }
         #endregion
@@ -3176,6 +3186,8 @@ namespace System.Numerics.Tensors.Tests
         [Fact]
         public void SumOfSquares_AllLengths()
         {
+            T? tolerance = Helpers.DetermineTolerance<T>(doubleTolerance: 1e-12, floatTolerance: 1e-6f);
+
             Assert.All(Helpers.TensorLengths, tensorLength =>
             {
                 using BoundedMemory<T> x = CreateAndFillTensor(tensorLength);
@@ -3185,7 +3197,7 @@ namespace System.Numerics.Tensors.Tests
                 {
                     sum = Add(sum, Multiply(value, value));
                 }
-                AssertEqualTolerance(sum, SumOfSquares(x));
+                AssertEqualTolerance(sum, SumOfSquares(x), tolerance);
             });
         }
         #endregion

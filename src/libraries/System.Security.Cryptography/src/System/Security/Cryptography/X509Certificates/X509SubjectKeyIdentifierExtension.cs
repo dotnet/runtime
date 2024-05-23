@@ -186,9 +186,30 @@ namespace System.Security.Cryptography.X509Certificates
                 case X509SubjectKeyIdentifierHashAlgorithm.CapiSha1:
                     // CAPI SHA1 is the SHA-1 hash over the whole SubjectPublicKeyInfo
                     return HashSubjectPublicKeyInfo(key, HashAlgorithmName.SHA1);
+                case X509SubjectKeyIdentifierHashAlgorithm.Sha256:
+                    return HashSubjectPublicKeyInfo(key, HashAlgorithmName.SHA256);
+                case X509SubjectKeyIdentifierHashAlgorithm.Sha384:
+                    return HashSubjectPublicKeyInfo(key, HashAlgorithmName.SHA384);
+                case X509SubjectKeyIdentifierHashAlgorithm.Sha512:
+                    return HashSubjectPublicKeyInfo(key, HashAlgorithmName.SHA512);
+                case X509SubjectKeyIdentifierHashAlgorithm.ShortSha256:
+                    return HashSubjectPublicKeyLeft160Bits(key, HashAlgorithmName.SHA256);
+                case X509SubjectKeyIdentifierHashAlgorithm.ShortSha384:
+                    return HashSubjectPublicKeyLeft160Bits(key, HashAlgorithmName.SHA384);
+                case X509SubjectKeyIdentifierHashAlgorithm.ShortSha512:
+                    return HashSubjectPublicKeyLeft160Bits(key, HashAlgorithmName.SHA512);
                 default:
                     throw new ArgumentException(SR.Format(SR.Arg_EnumIllegalVal, algorithm), nameof(algorithm));
             }
+        }
+
+        private static byte[] HashSubjectPublicKeyLeft160Bits(PublicKey key, HashAlgorithmName hashAlgorithmName)
+        {
+            const int TruncateSize = 160 / 8;
+            Span<byte> hash = stackalloc byte[512 / 8]; // Largest known hash is 512-bits.
+            int written = CryptographicOperations.HashData(hashAlgorithmName, key.EncodedKeyValue.RawData, hash);
+            Debug.Assert(written >= TruncateSize);
+            return hash.Slice(0, TruncateSize).ToArray();
         }
 
         private static byte[] HashSubjectPublicKeyInfo(PublicKey key, HashAlgorithmName hashAlgorithmName)

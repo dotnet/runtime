@@ -359,24 +359,23 @@ namespace Internal.Runtime.CompilerHelpers
             if (charSetMangling == 0)
             {
                 // Look for the user-provided entry point name only
-                pTarget = Interop.Kernel32.GetProcAddress(hModule, methodName);
+                pTarget = GetProcAddressWithMangling(hModule, methodName, pCell);
             }
-            else
-            if (charSetMangling == CharSet.Ansi)
+            else if (charSetMangling == CharSet.Ansi)
             {
                 // For ANSI, look for the user-provided entry point name first.
                 // If that does not exist, try the charset suffix.
-                pTarget = Interop.Kernel32.GetProcAddress(hModule, methodName);
+                pTarget = GetProcAddressWithMangling(hModule, methodName, pCell);
                 if (pTarget == IntPtr.Zero)
-                    pTarget = GetProcAddressWithSuffix(hModule, methodName, (byte)'A');
+                    pTarget = GetProcAddressWithSuffix(hModule, methodName, (byte)'A', pCell);
             }
             else
             {
                 // For Unicode, look for the entry point name with the charset suffix first.
                 // The 'W' API takes precedence over the undecorated one.
-                pTarget = GetProcAddressWithSuffix(hModule, methodName, (byte)'W');
+                pTarget = GetProcAddressWithSuffix(hModule, methodName, (byte)'W', pCell);
                 if (pTarget == IntPtr.Zero)
-                    pTarget = Interop.Kernel32.GetProcAddress(hModule, methodName);
+                    pTarget = GetProcAddressWithMangling(hModule, methodName, pCell);
             }
 #else
             pTarget = Interop.Sys.GetProcAddress(hModule, methodName);
@@ -391,23 +390,43 @@ namespace Internal.Runtime.CompilerHelpers
         }
 
 #if TARGET_WINDOWS
-        private static unsafe IntPtr GetProcAddressWithSuffix(IntPtr hModule, byte* methodName, byte suffix)
+        private static unsafe IntPtr GetProcAddressWithMangling(IntPtr hModule, byte* methodName, MethodFixupCell* pCell)
+        {
+            IntPtr pMethod = Interop.Kernel32.GetProcAddress(hModule, methodName);
+#if TARGET_X86
+            if (pMethod == IntPtr.Zero && pCell->IsStdcall)
+            {
+                int nameLength = string.strlen(methodName);
+                // We need to add an extra bytes for the prefix, null terminator and stack size suffix:
+                // - 1 byte for '_' prefix
+                // - 1 byte for '@' suffix
+                // - up to 10 bytes for digits (maximum positive number representable by uint)
+                // - 1 byte for NULL termination character
+                byte* probedMethodName = stackalloc byte[nameLength + 13];
+                probedMethodName[0] = (byte)'_';
+                Unsafe.CopyBlock(probedMethodName + 1, methodName, (uint)nameLength);
+                probedMethodName[nameLength + 1] = (byte)'@';
+                pCell->SignatureBytes.TryFormat(new Span<byte>(probedMethodName + 2 + nameLength, 10), out int bytesWritten);
+                probedMethodName[nameLength + 2 + bytesWritten] = 0;
+                pMethod = Interop.Kernel32.GetProcAddress(hModule, probedMethodName);
+            }
+#else
+            _ = pCell;
+#endif
+            return pMethod;
+        }
+
+        private static unsafe IntPtr GetProcAddressWithSuffix(IntPtr hModule, byte* methodName, byte suffix, MethodFixupCell* pCell)
         {
             int nameLength = string.strlen(methodName);
 
             // We need to add an extra byte for the suffix, and an extra byte for the null terminator
             byte* probedMethodName = stackalloc byte[nameLength + 2];
-
-            for (int i = 0; i < nameLength; i++)
-            {
-                probedMethodName[i] = methodName[i];
-            }
-
+            Unsafe.CopyBlock(probedMethodName, methodName, (uint)nameLength);
+            probedMethodName[nameLength] = suffix;
             probedMethodName[nameLength + 1] = 0;
 
-            probedMethodName[nameLength] = suffix;
-
-            return Interop.Kernel32.GetProcAddress(hModule, probedMethodName);
+            return GetProcAddressWithMangling(hModule, probedMethodName, pCell);
         }
 #endif
 
@@ -625,11 +644,16 @@ namespace Internal.Runtime.CompilerHelpers
             public IntPtr Target;
             public IntPtr MethodName;
             public ModuleFixupCell* Module;
-            private int Flags;
+            private uint Flags;
 
             public CharSet CharSetMangling => (CharSet)(Flags & MethodFixupCellFlagsConstants.CharSetMask);
+#if FEATURE_OBJCMARSHAL
             public bool IsObjectiveCMessageSend => (Flags & MethodFixupCellFlagsConstants.IsObjectiveCMessageSendMask) != 0;
-            public int ObjectiveCMessageSendFunction => (Flags & MethodFixupCellFlagsConstants.ObjectiveCMessageSendFunctionMask) >> MethodFixupCellFlagsConstants.ObjectiveCMessageSendFunctionShift;
+            public int ObjectiveCMessageSendFunction => (int)((Flags & MethodFixupCellFlagsConstants.ObjectiveCMessageSendFunctionMask) >> MethodFixupCellFlagsConstants.ObjectiveCMessageSendFunctionShift);
+#elif TARGET_WINDOWS && TARGET_X86
+            public bool IsStdcall => (Flags & MethodFixupCellFlagsConstants.IsStdcall) != 0;
+            public ushort SignatureBytes => (ushort)(Flags >> 16);
+#endif
         }
 
         internal unsafe struct CustomMarshallerKey : IEquatable<CustomMarshallerKey>
@@ -671,7 +695,7 @@ namespace Internal.Runtime.CompilerHelpers
 
         internal sealed class CustomMarshallerTable : ConcurrentUnifier<CustomMarshallerKey, object>
         {
-            internal static CustomMarshallerTable s_customMarshallersTable = new CustomMarshallerTable();
+            internal static readonly CustomMarshallerTable s_customMarshallersTable = new CustomMarshallerTable();
 
             protected override unsafe object Factory(CustomMarshallerKey key)
             {

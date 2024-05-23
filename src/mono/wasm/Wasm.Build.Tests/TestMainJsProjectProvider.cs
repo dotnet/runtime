@@ -26,6 +26,7 @@ public class TestMainJsProjectProvider : ProjectProviderBase
                { "dotnet.js.map", false },
                { "dotnet.native.js", false },
                { "dotnet.native.js.symbols", false },
+               { "dotnet.globalization.js", false },
                { "dotnet.native.wasm", false },
                { "dotnet.native.worker.js", false },
                { "dotnet.runtime.js", false },
@@ -60,6 +61,9 @@ public class TestMainJsProjectProvider : ProjectProviderBase
                 res.Add("dotnet.native.worker.js.map");
             }
         }
+
+        if (assertOptions.GlobalizationMode is GlobalizationMode.Hybrid)
+            res.Add("dotnet.globalization.js");
 
         if (assertOptions.AssertSymbolsFile && assertOptions.ExpectSymbolsFile)
             res.Add("dotnet.native.js.symbols");
@@ -108,9 +112,9 @@ public class TestMainJsProjectProvider : ProjectProviderBase
         AssertBundle(assertOptions);
     }
 
-    public override string FindBinFrameworkDir(string config, bool forPublish, string framework, string? bundleDirName = null)
+    public override string FindBinFrameworkDir(string config, bool forPublish, string framework, string? bundleDirName = null, string? projectDir = null)
     {
         EnsureProjectDirIsSet();
-        return Path.Combine(ProjectDir!, "bin", config, framework, "browser-wasm", bundleDirName ?? this.BundleDirName, "_framework");
+        return Path.Combine(projectDir ?? ProjectDir!, "bin", config, framework, "browser-wasm", bundleDirName ?? this.BundleDirName, "_framework");
     }
 }

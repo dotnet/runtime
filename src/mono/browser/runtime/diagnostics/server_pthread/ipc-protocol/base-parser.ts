@@ -4,12 +4,12 @@
 import Magic from "./magic";
 import { BinaryProtocolCommand } from "./types";
 
-function advancePos(pos: { pos: number }, offset: number): void {
+function advancePos (pos: { pos: number }, offset: number): void {
     pos.pos += offset;
 }
 
 const Parser = {
-    tryParseHeader(buf: Uint8Array, pos: { pos: number }): boolean {
+    tryParseHeader (buf: Uint8Array, pos: { pos: number }): boolean {
         let j = pos.pos;
         for (let i = 0; i < Magic.DOTNET_IPC_V1.length; i++) {
             if (buf[j++] !== Magic.DOTNET_IPC_V1[i]) {
@@ -19,10 +19,10 @@ const Parser = {
         advancePos(pos, Magic.DOTNET_IPC_V1.length);
         return true;
     },
-    tryParseSize(buf: Uint8Array, pos: { pos: number }): number | undefined {
+    tryParseSize (buf: Uint8Array, pos: { pos: number }): number | undefined {
         return Parser.tryParseUint16(buf, pos);
     },
-    tryParseCommand(buf: Uint8Array, pos: { pos: number }): BinaryProtocolCommand | undefined {
+    tryParseCommand (buf: Uint8Array, pos: { pos: number }): BinaryProtocolCommand | undefined {
         const commandSet = Parser.tryParseUint8(buf, pos);
         if (commandSet === undefined)
             return undefined;
@@ -39,7 +39,7 @@ const Parser = {
         };
         return result;
     },
-    tryParseReserved(buf: Uint8Array, pos: { pos: number }): true | undefined {
+    tryParseReserved (buf: Uint8Array, pos: { pos: number }): true | undefined {
         const reservedLength = 2; // 2 bytes reserved, must be 0
         for (let i = 0; i < reservedLength; i++) {
             const reserved = Parser.tryParseUint8(buf, pos);
@@ -49,7 +49,7 @@ const Parser = {
         }
         return true;
     },
-    tryParseUint8(buf: Uint8Array, pos: { pos: number }): number | undefined {
+    tryParseUint8 (buf: Uint8Array, pos: { pos: number }): number | undefined {
         const j = pos.pos;
         if (j >= buf.byteLength) {
             return undefined;
@@ -58,7 +58,7 @@ const Parser = {
         advancePos(pos, 1);
         return size;
     },
-    tryParseUint16(buf: Uint8Array, pos: { pos: number }): number | undefined {
+    tryParseUint16 (buf: Uint8Array, pos: { pos: number }): number | undefined {
         const j = pos.pos;
         if (j + 1 >= buf.byteLength) {
             return undefined;
@@ -67,7 +67,7 @@ const Parser = {
         advancePos(pos, 2);
         return size;
     },
-    tryParseUint32(buf: Uint8Array, pos: { pos: number }): number | undefined {
+    tryParseUint32 (buf: Uint8Array, pos: { pos: number }): number | undefined {
         const j = pos.pos;
         if (j + 3 >= buf.byteLength) {
             return undefined;
@@ -76,7 +76,7 @@ const Parser = {
         advancePos(pos, 4);
         return size;
     },
-    tryParseUint64(buf: Uint8Array, pos: { pos: number }): [number, number] | undefined {
+    tryParseUint64 (buf: Uint8Array, pos: { pos: number }): [number, number] | undefined {
         const lo = Parser.tryParseUint32(buf, pos);
         if (lo === undefined)
             return undefined;
@@ -85,22 +85,22 @@ const Parser = {
             return undefined;
         return [lo, hi];
     },
-    tryParseBool(buf: Uint8Array, pos: { pos: number }): boolean | undefined {
+    tryParseBool (buf: Uint8Array, pos: { pos: number }): boolean | undefined {
         const r = Parser.tryParseUint8(buf, pos);
         if (r === undefined)
             return undefined;
         return r !== 0;
     },
-    tryParseArraySize(buf: Uint8Array, pos: { pos: number }): number | undefined {
+    tryParseArraySize (buf: Uint8Array, pos: { pos: number }): number | undefined {
         const r = Parser.tryParseUint32(buf, pos);
         if (r === undefined)
             return undefined;
         return r;
     },
-    tryParseStringLength(buf: Uint8Array, pos: { pos: number }): number | undefined {
+    tryParseStringLength (buf: Uint8Array, pos: { pos: number }): number | undefined {
         return Parser.tryParseArraySize(buf, pos);
     },
-    tryParseUtf16String(buf: Uint8Array, pos: { pos: number }): string | undefined {
+    tryParseUtf16String (buf: Uint8Array, pos: { pos: number }): string | undefined {
         const length = Parser.tryParseStringLength(buf, pos);
         if (length === undefined)
             return undefined;

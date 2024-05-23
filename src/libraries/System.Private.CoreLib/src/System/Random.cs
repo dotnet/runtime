@@ -294,7 +294,9 @@ namespace System
         public void Shuffle<T>(T[] values)
         {
             ArgumentNullException.ThrowIfNull(values);
-            Shuffle(values.AsSpan());
+            // this can't use AsSpan due to array covariance
+            // forcing it like this is safe due to everything being in the array already
+            Shuffle(new Span<T>(ref MemoryMarshal.GetArrayDataReference(values), values.Length));
         }
 
         /// <summary>

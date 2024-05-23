@@ -108,6 +108,11 @@ namespace System.Net
             return SafeFreeContextBufferChannelBinding.QueryContextChannelBinding(phContext, attribute, &bindings, refHandle);
         }
 
+        public unsafe int QueryContextAttributes(SafeDeleteContext phContext, Interop.SspiCli.ContextAttribute attribute, IntPtr* refHandle)
+        {
+            return SafeFreeContextBuffer.QueryContextAttributes(phContext, attribute, refHandle);
+        }
+
         public unsafe int QueryContextAttributes(SafeDeleteContext phContext, Interop.SspiCli.ContextAttribute attribute, Span<byte> buffer, Type? handleType, out SafeHandle? refHandle)
         {
             refHandle = null;

@@ -152,15 +152,6 @@ public:
     Instantiation GetClassOrArrayInstantiation();    // only meaningful for ParamTypeDesc; see above
     TypeHandle GetRootTypeParam();                   // only allowed for ParamTypeDesc, helper method used to avoid recursion
 
-    // Note that if the TypeDesc, e.g. a function pointer type, involves parts that may
-    // come from either a SharedDomain or an AppDomain then special rules apply to GetDomain.
-    // It returns the SharedDomain if all the
-    // constituent parts of the type are SharedDomain (i.e. domain-neutral),
-    // and returns an AppDomain if any of the parts are from an AppDomain,
-    // i.e. are domain-bound.  If any of the parts are domain-bound
-    // then they will all belong to the same domain.
-    PTR_BaseDomain GetDomain();
-
     PTR_LoaderAllocator GetLoaderAllocator()
     {
         SUPPORTS_DAC;
@@ -171,6 +162,25 @@ public:
     BOOL IsSharedByGenericInstantiations();
 
     BOOL ContainsGenericVariables(BOOL methodOnly);
+
+#ifndef DACCESS_COMPILE
+    OBJECTREF GetManagedClassObject();
+
+    OBJECTREF GetManagedClassObjectIfExists() const
+    {
+        CONTRACTL
+        {
+            NOTHROW;
+            GC_NOTRIGGER;
+            MODE_COOPERATIVE;
+        }
+        CONTRACTL_END;
+
+        const RUNTIMETYPEHANDLE handle = m_hExposedClassObject;
+        OBJECTREF retVal = ObjectToOBJECTREF(handle);
+        return retVal;
+    }
+#endif
 
  protected:
     // See methodtable.h for details of the flags with the same name there
@@ -191,6 +201,9 @@ public:
     // The remaining bits are available for flags
     //
     DWORD m_typeAndFlags;
+
+    // internal RuntimeType object handle
+    RUNTIMETYPEHANDLE m_hExposedClassObject;
 };
 
 
@@ -209,7 +222,7 @@ class ParamTypeDesc : public TypeDesc {
 public:
 #ifndef DACCESS_COMPILE
     ParamTypeDesc(CorElementType type, TypeHandle arg)
-        : TypeDesc(type), m_Arg(arg), m_hExposedClassObject(0) {
+        : TypeDesc(type), m_Arg(arg) {
 
         LIMITED_METHOD_CONTRACT;
 
@@ -227,46 +240,6 @@ public:
 #endif
 
     INDEBUGIMPL(BOOL Verify();)
-
-#ifndef DACCESS_COMPILE
-    OBJECTREF GetManagedClassObject();
-
-    OBJECTREF GetManagedClassObjectIfExists()
-    {
-        CONTRACTL
-        {
-            NOTHROW;
-            GC_NOTRIGGER;
-            MODE_COOPERATIVE;
-        }
-        CONTRACTL_END;
-
-        const RUNTIMETYPEHANDLE handle = m_hExposedClassObject;
-
-        OBJECTREF retVal;
-        if (!TypeHandle::GetManagedClassObjectFromHandleFast(handle, &retVal) &&
-            !GetLoaderAllocator()->GetHandleValueFastPhase2(handle, &retVal))
-        {
-            return NULL;
-        }
-
-        COMPILER_ASSUME(retVal != NULL);
-        return retVal;
-    }
-
-    OBJECTREF GetManagedClassObjectFast()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        OBJECTREF objRef;
-        if (!TypeHandle::GetManagedClassObjectFromHandleFast(m_hExposedClassObject, &objRef))
-        {
-            return FALSE;
-        }
-        COMPILER_ASSUME(objRef != NULL);
-        return objRef;
-    }
-#endif
 
     TypeHandle GetModifiedType()
     {
@@ -292,10 +265,6 @@ protected:
 
     // The type that is being modified
     TypeHandle        m_Arg;
-
-    // Non-unloadable context: internal RuntimeType object handle
-    // Unloadable context: slot index in LoaderAllocator's pinned table
-    RUNTIMETYPEHANDLE m_hExposedClassObject;
 };
 
 /*************************************************************************/
@@ -328,7 +297,6 @@ public:
         m_typeOrMethodDef = typeOrMethodDef;
         m_token = token;
         m_index = index;
-        m_hExposedClassObject = 0;
         m_constraints = NULL;
         m_numConstraints = (DWORD)-1;
     }
@@ -365,45 +333,6 @@ public:
         SUPPORTS_DAC;
         return m_typeOrMethodDef;
     }
-
-#ifndef DACCESS_COMPILE
-    OBJECTREF GetManagedClassObject();
-    OBJECTREF GetManagedClassObjectIfExists()
-    {
-        CONTRACTL
-        {
-            NOTHROW;
-            GC_NOTRIGGER;
-            MODE_COOPERATIVE;
-        }
-        CONTRACTL_END;
-
-        const RUNTIMETYPEHANDLE handle = m_hExposedClassObject;
-
-        OBJECTREF retVal;
-        if (!TypeHandle::GetManagedClassObjectFromHandleFast(handle, &retVal) &&
-            !GetLoaderAllocator()->GetHandleValueFastPhase2(handle, &retVal))
-        {
-            return NULL;
-        }
-
-        COMPILER_ASSUME(retVal != NULL);
-        return retVal;
-    }
-
-    OBJECTREF GetManagedClassObjectFast()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        OBJECTREF objRef;
-        if (!TypeHandle::GetManagedClassObjectFromHandleFast(m_hExposedClassObject, &objRef))
-        {
-            return FALSE;
-        }
-        COMPILER_ASSUME(objRef != NULL);
-        return objRef;
-    }
-#endif
 
     // Load the owning type. Note that the result is not guaranteed to be full loaded
     MethodDesc * LoadOwnerMethod();
@@ -448,10 +377,6 @@ protected:
     // Constraints, determined on first call to GetConstraints
     Volatile<DWORD> m_numConstraints;    // -1 until number has been determined
     PTR_TypeHandle m_constraints;
-
-    // Non-unloadable context: internal RuntimeType object handle
-    // Unloadable context: slot index in LoaderAllocator's pinned table
-    RUNTIMETYPEHANDLE m_hExposedClassObject;
 
     // token for GenericParam entry
     mdGenericParam    m_token;
@@ -535,51 +460,7 @@ public:
     void EnumMemoryRegions(CLRDataEnumMemoryFlags flags);
 #endif //DACCESS_COMPILE
 
-#ifndef DACCESS_COMPILE
-    OBJECTREF GetManagedClassObject();
-
-    OBJECTREF GetManagedClassObjectIfExists()
-    {
-        CONTRACTL
-        {
-            NOTHROW;
-            GC_NOTRIGGER;
-            MODE_COOPERATIVE;
-        }
-        CONTRACTL_END;
-
-        const RUNTIMETYPEHANDLE handle = m_hExposedClassObject;
-
-        OBJECTREF retVal;
-        if (!TypeHandle::GetManagedClassObjectFromHandleFast(handle, &retVal) &&
-            !GetLoaderAllocator()->GetHandleValueFastPhase2(handle, &retVal))
-        {
-            return NULL;
-        }
-
-        COMPILER_ASSUME(retVal != NULL);
-        return retVal;
-    }
-
-    OBJECTREF GetManagedClassObjectFast()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        OBJECTREF objRef;
-        if (!TypeHandle::GetManagedClassObjectFromHandleFast(m_hExposedClassObject, &objRef))
-        {
-            return FALSE;
-        }
-        COMPILER_ASSUME(objRef != NULL);
-        return objRef;
-    }
-#endif
-
 protected:
-    // Non-unloadable context: internal RuntimeType object handle
-    // Unloadable context: slot index in LoaderAllocator's pinned table
-    RUNTIMETYPEHANDLE m_hExposedClassObject;
-
     // Number of arguments
     DWORD m_NumArgs;
 

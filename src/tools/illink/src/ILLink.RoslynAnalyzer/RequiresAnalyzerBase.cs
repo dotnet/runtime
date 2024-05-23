@@ -5,13 +5,15 @@ using System;
 using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
-using ILLink.Shared;
 using ILLink.RoslynAnalyzer.DataFlow;
+using ILLink.Shared;
+using ILLink.Shared.DataFlow;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.Operations;
+using MultiValue = ILLink.Shared.DataFlow.ValueSet<ILLink.Shared.DataFlow.SingleValue>;
 
 namespace ILLink.RoslynAnalyzer
 {
@@ -19,9 +21,7 @@ namespace ILLink.RoslynAnalyzer
 	{
 		private protected abstract string RequiresAttributeName { get; }
 
-		internal abstract string FeatureName { get; }
-
-		private protected abstract string RequiresAttributeFullyQualifiedName { get; }
+		internal abstract string RequiresAttributeFullyQualifiedName { get; }
 
 		private protected abstract DiagnosticTargets AnalyzerDiagnosticTargets { get; }
 
@@ -301,7 +301,23 @@ namespace ILLink.RoslynAnalyzer
 		// - false return value indicating that a feature is supported
 		// - feature settings supplied by the project
 		// - custom feature checks defined in library code
-		internal virtual bool IsRequiresCheck (Compilation compilation, IPropertySymbol propertySymbol) => false;
+		private protected virtual bool IsRequiresCheck (IPropertySymbol propertySymbol, Compilation compilation) => false;
+
+		internal static bool IsAnnotatedFeatureGuard (IPropertySymbol propertySymbol, string featureName)
+		{
+			// Only respect FeatureGuardAttribute on static boolean properties.
+			if (!propertySymbol.IsStatic || propertySymbol.Type.SpecialType != SpecialType.System_Boolean || propertySymbol.SetMethod != null)
+				return false;
+
+			ValueSet<string> featureCheckAnnotations = propertySymbol.GetFeatureGuardAnnotations ();
+			return featureCheckAnnotations.Contains (featureName);
+		}
+
+		internal bool IsFeatureGuard (IPropertySymbol propertySymbol, Compilation compilation)
+		{
+			return IsAnnotatedFeatureGuard (propertySymbol, RequiresAttributeFullyQualifiedName)
+				|| IsRequiresCheck (propertySymbol, compilation);
+		}
 
 		internal bool CheckAndCreateRequiresDiagnostic (
 			IOperation operation,
@@ -312,7 +328,7 @@ namespace ILLink.RoslynAnalyzer
 			[NotNullWhen (true)] out Diagnostic? diagnostic)
 		{
 			// Warnings are not emitted if the featureContext says the feature is available.
-			if (featureContext.IsEnabled (FeatureName)) {
+			if (featureContext.IsEnabled (RequiresAttributeFullyQualifiedName)) {
 				diagnostic = null;
 				return false;
 			}
@@ -326,6 +342,15 @@ namespace ILLink.RoslynAnalyzer
 				containingSymbol,
 				incompatibleMembers,
 				out diagnostic);
+		}
+
+		internal virtual bool IsIntrinsicallyHandled (
+			IMethodSymbol calledMethod,
+			MultiValue instance,
+			ImmutableArray<MultiValue> arguments
+			)
+		{
+			return false;
 		}
 	}
 }

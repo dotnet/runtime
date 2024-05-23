@@ -2,6 +2,7 @@
   <PropertyGroup>
     <RootNamespace>System.Runtime.Loader.Tests</RootNamespace>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TestRuntime>true</TestRuntime>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <!-- Some tests rely on no deps.json file being present. -->
@@ -16,6 +17,7 @@
   <ItemGroup>
     <Compile Include="ApplyUpdateTest.cs" />
     <Compile Include="ApplyUpdateUtil.cs" />
+    <Compile Include="AssemblyExtensionsTest.cs" />
     <Compile Include="AssemblyLoadContextTest.cs" />
     <Compile Include="CollectibleAssemblyLoadContextTest.cs" />
     <Compile Include="ContextualReflection.cs" />
@@ -68,7 +70,8 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetOS)' == 'browser'">
     <WasmFilesToIncludeFromPublishDir Include="$(AssemblyName).dll" />
-
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetOS)' == 'browser' or ('$(TargetsAppleMobile)' == 'true' and '$(EnableAggressiveTrimming)' == 'true' and '$(UseNativeAotRuntime)' != 'true')">
     <TrimmerRootDescriptor Include="$(MSBuildThisFileDirectory)ILLink.Descriptors.xml" />
   </ItemGroup>
 
@@ -85,7 +88,7 @@
       <ManagedAssemblyToLink Condition="'%(FileName)%(Extension)' == '@(IntermediateAssembly->'%(FileName)%(Extension)')'">
         <TrimMode>copy</TrimMode>
       </ManagedAssemblyToLink>
-    </ItemGroup> 
+    </ItemGroup>
   </Target>
 
   <Target Name="IncludeDeltasInWasmBundle" BeforeTargets="PrepareForWasmBuildApp" Condition="'$(TargetOS)' == 'browser'">

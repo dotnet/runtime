@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 namespace System.Text.Json
 {
@@ -1243,7 +1244,7 @@ namespace System.Text.Json
             if (TokenType == JsonTokenType.Null)
             {
                 // This is different than Length == 0, in that it tests true for null, but false for ""
-                return utf8Text == default;
+                return Unsafe.IsNullRef(ref MemoryMarshal.GetReference(utf8Text));
             }
 
             return TextEqualsHelper(utf8Text, isPropertyName: false, shouldUnescape: true);
@@ -1271,7 +1272,7 @@ namespace System.Text.Json
             if (TokenType == JsonTokenType.Null)
             {
                 // This is different than Length == 0, in that it tests true for null, but false for ""
-                return text == default;
+                return Unsafe.IsNullRef(ref MemoryMarshal.GetReference(text));
             }
 
             return TextEqualsHelper(text, isPropertyName: false);

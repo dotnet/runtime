@@ -25,7 +25,7 @@ namespace System.Text.RegularExpressions
         /// <summary>Type count used to augment generated type names to create unique names.</summary>
         private static int s_typeCount;
 
-        private readonly AssemblyBuilder _assembly;
+        private readonly PersistedAssemblyBuilder _assembly;
         private readonly ModuleBuilder _module;
 
         internal RegexAssemblyCompiler(AssemblyName an, CustomAttributeBuilder[]? attribs, string? resourceFile)
@@ -36,7 +36,7 @@ namespace System.Text.RegularExpressions
                 throw new PlatformNotSupportedException();
             }
 
-            _assembly = AssemblyBuilder.DefinePersistedAssembly(an, typeof(object).Assembly, attribs is not null ? new List<CustomAttributeBuilder>(attribs) : null) ??
+            _assembly = new PersistedAssemblyBuilder(an, typeof(object).Assembly, attribs is not null ? new List<CustomAttributeBuilder>(attribs) : null) ??
                 throw new InvalidOperationException("DefinePersistedAssembly returned null");
 
             _module = _assembly.DefineDynamicModule(an.Name + ".dll");

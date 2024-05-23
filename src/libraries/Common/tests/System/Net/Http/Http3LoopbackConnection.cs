@@ -198,7 +198,6 @@ namespace System.Net.Test.Common
             await _currentStream.DisposeAsync().ConfigureAwait(false);
             _openStreams.Remove((int)_currentStreamId);
             _currentStream = null;
-            _currentStreamId = -4;
         }
 
         public override async Task<byte[]> ReadRequestBodyAsync()

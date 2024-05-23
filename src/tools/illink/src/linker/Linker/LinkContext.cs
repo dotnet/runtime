@@ -108,6 +108,8 @@ namespace Mono.Linker
 
 		public bool LinkSymbols { get; set; }
 
+		public bool KeepComInterfaces { get; set; }
+
 		public bool KeepMembersForDebugger { get; set; } = true;
 
 		public bool IgnoreUnresolved { get; set; } = true;
@@ -175,6 +177,8 @@ namespace Mono.Linker
 		public UnconditionalSuppressMessageAttributeState Suppressions { get; set; }
 
 		public Tracer Tracer { get; private set; }
+
+		internal HashSet<string>? TraceAssembly { get; set; }
 
 		public EmbeddedXmlInfo EmbeddedXmlInfo { get; private set; }
 
@@ -246,7 +250,8 @@ namespace Mono.Linker
 				CodeOptimizations.RemoveLinkAttributes |
 				CodeOptimizations.RemoveSubstitutions |
 				CodeOptimizations.RemoveDynamicDependencyAttribute |
-				CodeOptimizations.OptimizeTypeHierarchyAnnotations;
+				CodeOptimizations.OptimizeTypeHierarchyAnnotations |
+				CodeOptimizations.SubstituteFeatureGuards;
 
 			DisableEventSourceSpecialHandling = true;
 
@@ -266,7 +271,7 @@ namespace Mono.Linker
 
 		public TypeDefinition? GetType (string fullName)
 		{
-			int pos = fullName.IndexOf (",");
+			int pos = fullName.IndexOf (',');
 			fullName = TypeReferenceExtensions.ToCecilName (fullName);
 			if (pos == -1) {
 				foreach (AssemblyDefinition asm in GetReferencedAssemblies ()) {
@@ -605,7 +610,7 @@ namespace Mono.Linker
 		/// <param name="code">Unique warning ID. Please see https://github.com/dotnet/runtime/blob/main/docs/tools/illink/error-codes.md for the list of warnings and possibly add a new one</param>
 		/// <param name="origin">Type or member where the warning is coming from</param>
 		/// <param name="subcategory">Optionally, further categorize this warning</param>
-		public void LogWarning (string text, int code, IMemberDefinition origin, int? ilOffset = null, string subcategory = MessageSubCategory.None)
+		internal void LogWarning (string text, int code, IMemberDefinition origin, int ilOffset = MessageOrigin.UnsetILOffset, string subcategory = MessageSubCategory.None)
 		{
 			MessageOrigin _origin = new MessageOrigin (origin, ilOffset);
 			LogWarning (text, code, _origin, subcategory);
@@ -619,7 +624,7 @@ namespace Mono.Linker
 		/// <param name="origin">Type or member where the warning is coming from</param>
 		/// <param name="id">Unique warning ID. Please see https://github.com/dotnet/runtime/blob/main/docs/tools/illink/error-codes.md for the list of warnings and possibly add a new one</param>
 		/// <param name="args">Additional arguments to form a humanly readable message describing the warning</param>
-		public void LogWarning (IMemberDefinition origin, DiagnosticId id, int? ilOffset = null, params string[] args)
+		internal void LogWarning (IMemberDefinition origin, DiagnosticId id, int ilOffset = MessageOrigin.UnsetILOffset, params string[] args)
 		{
 			MessageOrigin _origin = new MessageOrigin (origin, ilOffset);
 			LogWarning (_origin, id, args);
@@ -1144,5 +1149,10 @@ namespace Mono.Linker
 		/// Otherwise, type annotation will only be applied with calls to object.GetType()
 		/// </summary>
 		OptimizeTypeHierarchyAnnotations = 1 << 24,
+
+		/// <summary>
+		/// Option to substitute properties annotated as FeatureGuard(typeof(RequiresUnreferencedCodeAttribute)) with false
+		/// </summary>
+		SubstituteFeatureGuards = 1 << 25,
 	}
 }

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Buffers;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
@@ -69,8 +70,8 @@ internal static partial class Interop
             out SafeCFDataHandle pEncryptedOut,
             out SafeCFErrorHandle pErrorOut);
 
-        [LibraryImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_RsaDecryptPkcs")]
-        private static partial int RsaDecryptPkcs(
+        [LibraryImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_RsaDecryptRaw")]
+        private static partial int RsaDecryptRaw(
             SafeSecKeyRefHandle publicKey,
             ReadOnlySpan<byte> pbData,
             int cbData,
@@ -166,17 +167,40 @@ internal static partial class Interop
             byte[] data,
             RSAEncryptionPadding padding)
         {
+            if (padding == RSAEncryptionPadding.Pkcs1)
+            {
+                byte[] padded = ExecuteTransform(
+                    data,
+                    (ReadOnlySpan<byte> source, out SafeCFDataHandle decrypted, out SafeCFErrorHandle error) =>
+                        RsaDecryptRaw(privateKey, source, source.Length, out decrypted, out error));
+
+                byte[] depad = CryptoPool.Rent(padded.Length);
+                OperationStatus status = RsaPaddingProcessor.DepadPkcs1Encryption(padded, depad, out int written);
+                byte[]? ret = null;
+
+                if (status == OperationStatus.Done)
+                {
+                    ret = depad.AsSpan(0, written).ToArray();
+                }
+
+                // Clear the whole thing, especially on failure.
+                CryptoPool.Return(depad);
+                CryptographicOperations.ZeroMemory(padded);
+
+                if (ret is null)
+                {
+                    throw new CryptographicException(SR.Cryptography_InvalidPadding);
+                }
+
+                return ret;
+            }
+
+            Debug.Assert(padding.Mode == RSAEncryptionPaddingMode.Oaep);
+
             return ExecuteTransform(
                 data,
                 (ReadOnlySpan<byte> source, out SafeCFDataHandle decrypted, out SafeCFErrorHandle error) =>
                 {
-                    if (padding == RSAEncryptionPadding.Pkcs1)
-                    {
-                        return RsaDecryptPkcs(privateKey, source, source.Length, out decrypted, out error);
-                    }
-
-                    Debug.Assert(padding.Mode == RSAEncryptionPaddingMode.Oaep);
-
                     return RsaDecryptOaep(
                         privateKey,
                         source,
@@ -195,14 +219,63 @@ internal static partial class Interop
             out int bytesWritten)
         {
             Debug.Assert(padding.Mode == RSAEncryptionPaddingMode.Pkcs1 || padding.Mode == RSAEncryptionPaddingMode.Oaep);
+
+            if (padding.Mode == RSAEncryptionPaddingMode.Pkcs1)
+            {
+                byte[] padded = CryptoPool.Rent(source.Length);
+                byte[] depad = CryptoPool.Rent(source.Length);
+
+                bool processed = TryExecuteTransform(
+                    source,
+                    padded,
+                    out int paddedLength,
+                    (ReadOnlySpan<byte> innerSource, out SafeCFDataHandle outputHandle, out SafeCFErrorHandle errorHandle) =>
+                        RsaDecryptRaw(privateKey, innerSource, innerSource.Length, out outputHandle, out errorHandle));
+
+                Debug.Assert(
+                    processed,
+                    "TryExecuteTransform should always return true for a large enough buffer.");
+
+                OperationStatus status = OperationStatus.InvalidData;
+                int depaddedLength = 0;
+
+                if (processed)
+                {
+                    status = RsaPaddingProcessor.DepadPkcs1Encryption(
+                        new ReadOnlySpan<byte>(padded, 0, paddedLength),
+                        depad,
+                        out depaddedLength);
+                }
+
+                CryptoPool.Return(padded);
+
+                if (status == OperationStatus.Done)
+                {
+                    if (depaddedLength <= destination.Length)
+                    {
+                        depad.AsSpan(0, depaddedLength).CopyTo(destination);
+                        CryptoPool.Return(depad);
+                        bytesWritten = depaddedLength;
+                        return true;
+                    }
+
+                    CryptoPool.Return(depad);
+                    bytesWritten = 0;
+                    return false;
+                }
+
+                CryptoPool.Return(depad);
+                Debug.Assert(status == OperationStatus.InvalidData);
+                throw new CryptographicException(SR.Cryptography_InvalidPadding);
+            }
+
             return TryExecuteTransform(
                 source,
                 destination,
                 out bytesWritten,
                 delegate (ReadOnlySpan<byte> innerSource, out SafeCFDataHandle outputHandle, out SafeCFErrorHandle errorHandle)
                 {
-                    return padding.Mode == RSAEncryptionPaddingMode.Pkcs1 ?
-                        RsaDecryptPkcs(privateKey, innerSource, innerSource.Length, out outputHandle, out errorHandle) :
+                    return
                         RsaDecryptOaep(privateKey, innerSource, innerSource.Length, PalAlgorithmFromAlgorithmName(padding.OaepHashAlgorithm), out outputHandle, out errorHandle);
                 });
         }

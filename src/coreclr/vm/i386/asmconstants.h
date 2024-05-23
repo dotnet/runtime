@@ -174,13 +174,13 @@ ASMCONSTANTS_C_ASSERT(CORINFO_ArgumentException_ASM == CORINFO_ArgumentException
 
 
 
-#define Thread_m_State      0x04
+#define Thread_m_State      0x00
 ASMCONSTANTS_C_ASSERT(Thread_m_State == offsetof(Thread, m_State))
 
-#define Thread_m_fPreemptiveGCDisabled     0x08
+#define Thread_m_fPreemptiveGCDisabled     0x04
 ASMCONSTANTS_C_ASSERT(Thread_m_fPreemptiveGCDisabled == offsetof(Thread, m_fPreemptiveGCDisabled))
 
-#define Thread_m_pFrame     0x0C
+#define Thread_m_pFrame     0x08
 ASMCONSTANTS_C_ASSERT(Thread_m_pFrame == offsetof(Thread, m_pFrame))
 
 
@@ -231,18 +231,9 @@ ASMCONSTANTS_C_ASSERT(OFFSETOF__FrameHandlerExRecord__m_pEntryFrame == offsetof(
 #define STACK_OVERWRITE_BARRIER_VALUE 0xabcdefab
 #endif
 
-#define SIZEOF_FrameHandlerExRecordWithBarrier 0x5c
-ASMCONSTANTS_C_ASSERT(SIZEOF_FrameHandlerExRecordWithBarrier == sizeof(FrameHandlerExRecordWithBarrier))
 #endif
 
-
-#define MethodDesc_m_wFlags                   DBG_FRE(0x1a, 0x06)
-ASMCONSTANTS_C_ASSERT(MethodDesc_m_wFlags == offsetof(MethodDesc, m_wFlags))
-
-#define MethodDesc_mdcClassification          7
-ASMCONSTANTS_C_ASSERT(MethodDesc_mdcClassification == mdcClassification)
-
-#define ComPlusCallMethodDesc__m_pComPlusCallInfo DBG_FRE(0x1C, 0x8)
+#define ComPlusCallMethodDesc__m_pComPlusCallInfo DBG_FRE(0x20, 0xC)
 ASMCONSTANTS_C_ASSERT(ComPlusCallMethodDesc__m_pComPlusCallInfo == offsetof(ComPlusCallMethodDesc, m_pComPlusCallInfo))
 
 #define ComPlusCallInfo__m_pRetThunk 0x10

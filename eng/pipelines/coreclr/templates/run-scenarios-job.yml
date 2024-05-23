@@ -23,7 +23,7 @@ parameters:
   additionalSetupParameters: ''   # optional -- additional setup parameters that are job-specific
 
 jobs:
-- template: xplat-pipeline-job.yml
+- template: /eng/pipelines/common/templates/runtimes/xplat-job.yml
   parameters:
     dependsOn: ${{ parameters.dependsOn }}
     buildConfig: ${{ parameters.buildConfig }}
@@ -34,6 +34,7 @@ jobs:
     enableTelemetry: ${{ parameters.enableTelemetry }}
     enablePublishBuildArtifacts: true
     continueOnError: ${{ parameters.continueOnError }}
+    logsName: 'Performance_Run_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)_${{ parameters.runtimeType }}_${{ parameters.codeGenType }}_${{ parameters.runKind }}_$(iOSLlvmBuild)_$(iOSStripSymbols)_$(hybridGlobalization)'
 
     ${{ if ne(parameters.displayName, '') }}:
       displayName: '${{ parameters.displayName }}'
@@ -107,6 +108,9 @@ jobs:
     - name: ExtraSetupArguments
       ${{ if ne(parameters.runtimeType, 'wasm') }}:
         value: --install-dir $(PayloadDirectory)/dotnet
+
+    - name: librariesDownloadDir
+      value: '$(Build.SourcesDirectory)/artifacts'
 
     workspace:
       clean: all
@@ -210,12 +214,3 @@ jobs:
         CorrelationPayloadDirectory: '$(PayloadDirectory)' # contains performance repo and built product
         ProjectFile: ${{ parameters.projectFile }}
         osGroup: ${{ parameters.osGroup }}
-
-    # publish logs
-    - task: PublishPipelineArtifact@1
-      displayName: Publish Logs
-      inputs:
-        targetPath: $(Build.SourcesDirectory)/artifacts/log
-        artifactName: 'Performance_Run_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)_${{ parameters.runtimeType }}_${{ parameters.codeGenType }}_${{ parameters.runKind }}_$(iOSLlvmBuild)_$(iOSStripSymbols)_$(hybridGlobalization)'
-      continueOnError: true
-      condition: always()

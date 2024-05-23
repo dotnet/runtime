@@ -75,17 +75,23 @@ get_storage (MonoType *type, MonoType **etype, gboolean is_return)
 	case MONO_TYPE_R8:
 		return ArgOnStack;
 
-	case MONO_TYPE_GENERICINST:
+	case MONO_TYPE_GENERICINST: {
 		if (!mono_type_generic_inst_is_valuetype (type))
 			return ArgOnStack;
 
 		if (mini_is_gsharedvt_variable_type (type))
 			return ArgGsharedVTOnStack;
-		/* fall through */
+
+		if (mini_wasm_is_scalar_vtype (type, etype))
+			return ArgVtypeAsScalar;
+
+		return is_return ? ArgValuetypeAddrInIReg : ArgValuetypeAddrOnStack;
+	}
 	case MONO_TYPE_VALUETYPE:
 	case MONO_TYPE_TYPEDBYREF: {
 		if (mini_wasm_is_scalar_vtype (type, etype))
 			return ArgVtypeAsScalar;
+
 		return is_return ? ArgValuetypeAddrInIReg : ArgValuetypeAddrOnStack;
 	}
 	case MONO_TYPE_VAR:
@@ -438,13 +444,16 @@ mono_arch_get_delegate_invoke_impl (MonoMethodSignature *sig, gboolean has_targe
 
 //functions exported to be used by JS
 G_BEGIN_DECLS
-EMSCRIPTEN_KEEPALIVE void mono_wasm_execute_timer (void);
 
 //JS functions imported that we use
+#ifdef DISABLE_THREADS
+EMSCRIPTEN_KEEPALIVE void mono_wasm_execute_timer (void);
+EMSCRIPTEN_KEEPALIVE void mono_background_exec (void);
 extern void mono_wasm_schedule_timer (int shortestDueTimeMs);
+#else
+extern void mono_target_thread_schedule_synchronization_context(MonoNativeThreadId target_thread);
+#endif // DISABLE_THREADS
 G_END_DECLS
-
-void mono_background_exec (void);
 
 #endif // HOST_BROWSER
 
@@ -582,6 +591,8 @@ mono_thread_state_init_from_handle (MonoThreadUnwindState *tctx, MonoThreadInfo 
 	return FALSE;
 }
 
+#ifdef DISABLE_THREADS
+
 // this points to System.Threading.TimerQueue.TimerHandler C# method
 static void *timer_handler;
 
@@ -594,10 +605,11 @@ mono_wasm_execute_timer (void)
 	}
 
 	background_job_cb cb = timer_handler;
+	MONO_ENTER_GC_UNSAFE;
 	cb ();
+	MONO_EXIT_GC_UNSAFE;
 }
 
-#ifdef DISABLE_THREADS
 void
 mono_wasm_main_thread_schedule_timer (void *timerHandler, int shortestDueTimeMs)
 {
@@ -618,7 +630,7 @@ mono_arch_register_icall (void)
 	mono_add_internal_call_internal ("System.Threading.TimerQueue::MainThreadScheduleTimer", mono_wasm_main_thread_schedule_timer);
 	mono_add_internal_call_internal ("System.Threading.ThreadPool::MainThreadScheduleBackgroundJob", mono_main_thread_schedule_background_job);
 #else
-	mono_add_internal_call_internal ("System.Runtime.InteropServices.JavaScript.JSSynchronizationContext::TargetThreadScheduleBackgroundJob", mono_target_thread_schedule_background_job);
+	mono_add_internal_call_internal ("System.Runtime.InteropServices.JavaScript.JSSynchronizationContext::ScheduleSynchronizationContext", mono_target_thread_schedule_synchronization_context);
 #endif /* DISABLE_THREADS */
 #endif /* HOST_BROWSER */
 }
@@ -769,12 +781,15 @@ mini_wasm_is_scalar_vtype (MonoType *type, MonoType **etype)
 		if (nfields > 1)
 			return FALSE;
 		MonoType *t = mini_get_underlying_type (field->type);
-		if (MONO_TYPE_ISSTRUCT (t)) {
+		int align, field_size = mono_type_size (t, &align);
+		// inlinearray and fixed both work by having a single field that is bigger than its element type.
+		// we also don't want to scalarize a struct that has padding in its metadata, even if it would fit.
+		if (field_size != size) {
+			return FALSE;
+		} else if (MONO_TYPE_ISSTRUCT (t)) {
 			if (!mini_wasm_is_scalar_vtype (t, etype))
 				return FALSE;
 		} else if (!((MONO_TYPE_IS_PRIMITIVE (t) || MONO_TYPE_IS_REFERENCE (t) || MONO_TYPE_IS_POINTER (t)))) {
-			return FALSE;
-		} else if (size == 8 && t->type != MONO_TYPE_R8) {
 			return FALSE;
 		} else {
 			if (etype)

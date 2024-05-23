@@ -10,6 +10,7 @@
 // and the corresponding array of string names for these enum members.
 
 // clang-format off
+CompMemKindMacro(ABI)
 CompMemKindMacro(AssertionProp)
 CompMemKindMacro(ASTNode)
 CompMemKindMacro(InstDesc)
@@ -50,6 +51,7 @@ CompMemKindMacro(LoopOpt)
 CompMemKindMacro(LoopClone)
 CompMemKindMacro(LoopUnroll)
 CompMemKindMacro(LoopHoist)
+CompMemKindMacro(LoopIVOpts)
 CompMemKindMacro(Unknown)
 CompMemKindMacro(RangeCheck)
 CompMemKindMacro(CopyProp)

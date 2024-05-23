@@ -117,9 +117,23 @@ The wrapper script used to actually run these tests, accepts:
 
 ### Using a local build of xharness
 
+XHarness consists of two pieces for WASM
+
+#### 1. CLI/host
+
 * set `XHARNESS_CLI_PATH=/path/to/xharness/artifacts/bin/Microsoft.DotNet.XHarness.CLI/Debug/net7.0/Microsoft.DotNet.XHarness.CLI.dll`
 
 **Note:** Additional msbuild arguments can be passed with: `make ..  MSBUILD_ARGS="/p:a=b"`
+
+#### 2. Test runner running inside of the browser
+
+All library tests are hosted by `WasmTestRunner.csproj`. The project references XHarness nuget for running tests using Xunit. To make changes and iterate quickly
+
+- Add property `<RestoreAdditionalProjectSources>$(RestoreAdditionalProjectSources);LOCAL_CLONE_OF_XHARNESS\artifacts\packages\Debug\Shipping</RestoreAdditionalProjectSources>` in `WasmTestRunner.csproj`.
+- Set environment variable in your terminal `$env:NUGET_PACKAGES="$pwd\.nuget"` (so that nuget packages are restored to local folder `.nuget`)
+- Run "Pack" in the XHarness solution in Visual Studio on `Microsoft.DotNet.XHarness.TestRunners.Common` or `Microsoft.DotNet.XHarness.TestRunners.Xunit` based on your changes (it will generate a nuget package in `LOCAL_CLONE_OF_XHARNESS\artifacts\packages\Debug\Shipping`).
+- Build WasmTestRunner `.\dotnet.cmd build -c Debug .\src\libraries\Common\tests\WasmTestRunner\WasmTestRunner.csproj`.
+- If you need to iterate, delete Xunit or Common nuget cache `rm -r .\.nuget\microsoft.dotnet.xharness.testrunners.xunit\` or `rm -r .\.nuget\microsoft.dotnet.xharness.testrunners.common\`.
 
 ### Symbolicating traces
 
@@ -348,18 +362,18 @@ npm update --lockfile-version=1
 
 Tests are run with V8, Chrome, node, and wasmtime for the various jobs.
 
-- V8: the version used is from `eng/testing/ChromeVersions.props`. This is used for all the library tests, and WBT, but *not* runtime tests.
+- V8: the version used is from `eng/testing/BrowserVersions.props`. This is used for all the library tests, and WBT, but *not* runtime tests.
 - Chrome: Same as V8.
 - Node: fixed version from emsdk
 - wasmtime - fixed version in `src/mono/wasi/wasi-sdk-version.txt`.
 
-### `eng/testing/ChromeVersions.props`
+### `eng/testing/BrowserVersions.props`
 
 This file is updated once a week by a github action `.github/workflows/bump-chrome-version.yml`, and the version is obtained by `src/tasks/WasmBuildTasks/GetChromeVersions.cs` task.
 
 # Perf pipeline
 
-- V8 version used to run the microbenchmarks is from `eng/testing/ChromeVersions.props`
+- V8 version used to run the microbenchmarks is from `eng/testing/BrowserVersions.props`
 
 TBD
 

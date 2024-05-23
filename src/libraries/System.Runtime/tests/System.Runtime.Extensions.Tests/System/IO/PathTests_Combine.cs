@@ -98,6 +98,7 @@ namespace System.IO.Tests
 
             // Combine(string[])
             Assert.Equal(expected, Path.Combine(paths));
+            Assert.Equal(expected, Path.Combine((ReadOnlySpan<string>)paths));
 
             // Verify special cases
             switch (paths.Length)
@@ -166,6 +167,10 @@ namespace System.IO.Tests
         private static void VerifyException<T>(string[] paths) where T : Exception
         {
             Assert.Throws<T>(() => Path.Combine(paths));
+            if (paths != null)
+            {
+                Assert.Throws<T>(() => Path.Combine((ReadOnlySpan<string>)paths));
+            }
 
             //verify passed as elements case
             if (paths != null)

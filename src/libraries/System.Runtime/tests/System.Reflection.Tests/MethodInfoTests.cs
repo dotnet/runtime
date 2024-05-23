@@ -301,6 +301,12 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
+        public void InvokeUninstantiatedGenericMethod()
+        {
+            Assert.Throws<InvalidOperationException>(() => GetMethod(typeof(MI_SubClass), nameof(MI_SubClass.StaticGenericMethod)).Invoke(null, [null]));
+        }
+
+        [Fact]
         public void GetHashCodeTest()
         {
             MethodInfo methodInfo = GetMethod(typeof(MI_SubClass), "VoidMethodReturningInt");

@@ -124,7 +124,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
 
             public SharedTestState()
             {
-                BaseDirectory = new TestArtifact(SharedFramework.CalculateUniqueTestDirectory(Path.Combine(TestArtifact.TestArtifactsPath, "argValidation")));
+                BaseDirectory = TestArtifact.Create("argValidation");
 
                 // Create an empty global.json file
                 Directory.CreateDirectory(BaseDirectory.Location);

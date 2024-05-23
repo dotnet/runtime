@@ -2751,7 +2751,7 @@ TypeHandle ClassLoader::CreateTypeHandleForTypeKey(const TypeKey* pKey, AllocMem
             // no parameterized type allowed on a reference
             if (paramType.GetInternalCorElementType() == ELEMENT_TYPE_BYREF)
             {
-                ThrowTypeLoadException(pKey, IDS_CLASSLOAD_GENERAL);
+                ThrowTypeLoadException(pKey, (kind == ELEMENT_TYPE_BYREF) ? IDS_CLASSLOAD_BYREF_OF_BYREF : IDS_CLASSLOAD_POINTER_OF_BYREF);
             }
 
             // We do allow parameterized types of ByRefLike types. Languages may restrict them to produce safe or verifiable code,
@@ -3065,7 +3065,7 @@ TypeHandle ClassLoader::LoadTypeHandleForTypeKeyNoLock(const TypeKey *pTypeKey,
 //
 class PendingTypeLoadHolder
 {
-    Thread * m_pThread;
+    static thread_local PendingTypeLoadHolder * t_pCurrent;
     PendingTypeLoadTable::Entry * m_pEntry;
     PendingTypeLoadHolder * m_pPrevious;
 
@@ -3074,26 +3074,25 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
 
-        m_pThread = GetThread();
         m_pEntry = pEntry;
 
-        m_pPrevious = m_pThread->GetPendingTypeLoad();
-        m_pThread->SetPendingTypeLoad(this);
+        m_pPrevious = t_pCurrent;
+        t_pCurrent = this;
     }
 
     ~PendingTypeLoadHolder()
     {
         LIMITED_METHOD_CONTRACT;
 
-        _ASSERTE(m_pThread->GetPendingTypeLoad() == this);
-        m_pThread->SetPendingTypeLoad(m_pPrevious);
+        _ASSERTE(t_pCurrent == this);
+        t_pCurrent = m_pPrevious;
     }
 
     static bool CheckForDeadLockOnCurrentThread(PendingTypeLoadTable::Entry * pEntry)
     {
         LIMITED_METHOD_CONTRACT;
 
-        PendingTypeLoadHolder * pCurrent = GetThread()->GetPendingTypeLoad();
+        PendingTypeLoadHolder * pCurrent = t_pCurrent;
 
         while (pCurrent != NULL)
         {
@@ -3106,6 +3105,8 @@ public:
         return false;
     }
 };
+
+thread_local PendingTypeLoadHolder * PendingTypeLoadHolder::t_pCurrent = NULL;
 
 //---------------------------------------------------------------------------------------
 //

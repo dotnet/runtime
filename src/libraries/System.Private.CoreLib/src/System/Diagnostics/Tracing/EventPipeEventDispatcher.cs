@@ -3,17 +3,15 @@
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.Win32.SafeHandles;
 
 namespace System.Diagnostics.Tracing
 {
-#if FEATURE_PERFTRACING
     internal sealed class EventPipeEventDispatcher
     {
         internal sealed class EventListenerSubscription
         {
-            internal EventKeywords MatchAnyKeywords { get; private set; }
-            internal EventLevel Level { get; private set; }
+            internal EventKeywords MatchAnyKeywords { get; }
+            internal EventLevel Level { get; }
 
             internal EventListenerSubscription(EventKeywords matchAnyKeywords, EventLevel level)
             {
@@ -227,5 +225,4 @@ namespace System.Diagnostics.Tracing
             return new DateTime(inTicks, DateTimeKind.Utc);
         }
     }
-#endif // FEATURE_PERFTRACING
 }

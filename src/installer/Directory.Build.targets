@@ -1,7 +1,7 @@
 <Project>
 
   <PropertyGroup>
-    <InstallerName Condition="'$(PgoInstrument)' != ''">$(InstallerName)-pgo</InstallerName>
+    <InstallerName>$(InstallerName)</InstallerName>
     <ArchiveName Condition="'$(PgoInstrument)' != ''">$(ArchiveName)-pgo</ArchiveName>
   </PropertyGroup>
 

@@ -274,6 +274,12 @@ dotnet_diagnostic.CA1512.severity = warning
 # CA1513: Use ObjectDisposedException throw helper
 dotnet_diagnostic.CA1513.severity = warning
 
+# CA1514: Avoid redundant length argument
+dotnet_diagnostic.CA1514.severity = warning
+
+# CA1515: Consider making public types internal
+dotnet_diagnostic.CA1515.severity = none
+
 # CA1700: Do not name enum values 'Reserved'
 dotnet_diagnostic.CA1700.severity = none
 
@@ -483,6 +489,15 @@ dotnet_diagnostic.CA1863.severity = suggestion
 # CA1864: Prefer the 'IDictionary.TryAdd(TKey, TValue)' method
 dotnet_diagnostic.CA1864.severity = warning
 
+# CA1865: Use char overload
+dotnet_diagnostic.CA1865.severity = warning
+
+# CA1866: Use char overload
+dotnet_diagnostic.CA1866.severity = warning
+
+# CA1867: Use char overload
+dotnet_diagnostic.CA1867.severity = warning
+
 # CA1868: Unnecessary call to 'Contains' for sets
 dotnet_diagnostic.CA1868.severity = warning
 
@@ -491,6 +506,12 @@ dotnet_diagnostic.CA1869.severity = warning
 
 # CA1870: Use a cached 'SearchValues' instance
 dotnet_diagnostic.CA1870.severity = warning
+
+# CA1871: Do not pass a nullable struct to 'ArgumentNullException.ThrowIfNull'
+dotnet_diagnostic.CA1871.severity = warning
+
+# CA1872: Prefer 'Convert.ToHexString' and 'Convert.ToHexStringLower' over call chains based on 'BitConverter.ToString'
+dotnet_diagnostic.CA1872.severity = warning
 
 # CA2000: Dispose objects before losing scope
 dotnet_diagnostic.CA2000.severity = none
@@ -539,6 +560,9 @@ dotnet_diagnostic.CA2020.severity = warning
 
 # CA2021: Do not call Enumerable.Cast<T> or Enumerable.OfType<T> with incompatible types
 dotnet_diagnostic.CA2021.severity = warning
+
+# CA2022: Avoid inexact read with 'Stream.Read'
+dotnet_diagnostic.CA2022.severity = warning
 
 # CA2100: Review SQL queries for security vulnerabilities
 dotnet_diagnostic.CA2100.severity = none
@@ -600,9 +624,6 @@ dotnet_diagnostic.CA2226.severity = none
 
 # CA2227: Collection properties should be read only
 dotnet_diagnostic.CA2227.severity = none
-
-# CA2229: Implement serialization constructors
-dotnet_diagnostic.CA2229.severity = warning
 
 # CA2231: Overload operator equals on overriding value type Equals
 dotnet_diagnostic.CA2231.severity = none
@@ -678,6 +699,18 @@ dotnet_diagnostic.CA2260.severity = warning
 
 # CA2261: Do not use ConfigureAwaitOptions.SuppressThrowing with Task<TResult>
 dotnet_diagnostic.CA2261.severity = warning
+
+# CA2262: Set 'MaxResponseHeadersLength' properly
+dotnet_diagnostic.CA2262.severity = warning
+
+# CA2263: Prefer generic overload when type is known
+dotnet_diagnostic.CA2263.severity = suggestion
+
+# CA2264: Do not pass a non-nullable value to 'ArgumentNullException.ThrowIfNull'
+dotnet_diagnostic.CA2264.severity = warning
+
+# CA2265: Do not compare Span<T> to 'null' or 'default'
+dotnet_diagnostic.CA2265.severity = warning
 
 # CA2300: Do not use insecure deserializer BinaryFormatter
 dotnet_diagnostic.CA2300.severity = none
@@ -1806,7 +1839,7 @@ dotnet_diagnostic.IDE0200.severity = warning
 # IDE0210: Use top-level statements
 dotnet_diagnostic.IDE0210.severity = none
 
-# IDE0211: Use program main
+# IDE0211: Convert to 'Program.Main' style program
 dotnet_diagnostic.IDE0211.severity = none
 
 # IDE0220: foreach cast
@@ -1824,6 +1857,9 @@ dotnet_diagnostic.IDE0241.severity = suggestion
 # IDE0250: Make struct readonly
 dotnet_diagnostic.IDE0250.severity = suggestion
 
+# IDE0251: Make member readonly
+dotnet_diagnostic.IDE0251.severity = suggestion
+
 # IDE0260: Use pattern matching
 dotnet_diagnostic.IDE0260.severity = suggestion
 
@@ -1832,6 +1868,27 @@ dotnet_diagnostic.IDE0270.severity = suggestion
 
 # IDE0280: Use 'nameof'
 dotnet_diagnostic.IDE0280.severity = warning
+
+# IDE0290: Use primary constructor
+dotnet_diagnostic.IDE0290.severity = suggestion
+
+# IDE0300: Use collection expression for array
+dotnet_diagnostic.IDE0300.severity = suggestion
+
+# IDE0301: Use collection expression for empty
+dotnet_diagnostic.IDE0301.severity = suggestion
+
+# IDE0302: Use collection expression for stackalloc
+dotnet_diagnostic.IDE0302.severity = suggestion
+
+# IDE0303: Use collection expression for Create()
+dotnet_diagnostic.IDE0303.severity = suggestion
+
+# IDE0304: Use collection expression for builder
+dotnet_diagnostic.IDE0304.severity = suggestion
+
+# IDE0305: Use collection expression for fluent
+dotnet_diagnostic.IDE0305.severity = suggestion
 
 # IDE1005: Delegate invocation can be simplified.
 dotnet_diagnostic.IDE1005.severity = warning
@@ -1853,3 +1910,9 @@ dotnet_diagnostic.IDE2003.severity = silent
 
 # IDE2004: Blank line not allowed after constructor initializer colon
 dotnet_diagnostic.IDE2004.severity = silent
+
+# IDE2005: Blank line not allowed after conditional expression token
+dotnet_diagnostic.IDE2005.severity = silent
+
+# IDE2006: Blank line not allowed after arrow expression clause token
+dotnet_diagnostic.IDE2006.severity = silent

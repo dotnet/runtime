@@ -1,10 +1,13 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
+using System.Diagnostics;
 using System.Net.Security;
 using System.Security.Authentication;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
+using System.Threading.Tasks;
 using Microsoft.Quic;
 using static Microsoft.Quic.MsQuic;
 
@@ -63,18 +66,122 @@ public partial class QuicConnection
             _certificateChainPolicy = certificateChainPolicy;
         }
 
-        public unsafe int ValidateCertificate(QUIC_BUFFER* certificatePtr, QUIC_BUFFER* chainPtr, out X509Certificate2? certificate)
+        internal async Task<bool> StartAsyncCertificateValidation(IntPtr certificatePtr, IntPtr chainPtr)
+        {
+            //
+            // The provided data pointers are valid only while still inside this function, so they need to be
+            // copied to separate buffers which are then handed off to threadpool.
+            //
+
+            X509Certificate2? certificate = null;
+
+            byte[]? certDataRented = null;
+            Memory<byte> certData = default;
+            byte[]? chainDataRented = null;
+            Memory<byte> chainData = default;
+
+            if (certificatePtr != IntPtr.Zero)
+            {
+                if (MsQuicApi.UsesSChannelBackend)
+                {
+                    // provided data is a pointer to a CERT_CONTEXT
+                    certificate = new X509Certificate2(certificatePtr);
+                    // TODO: what about chainPtr?
+                }
+                else
+                {
+                    unsafe
+                    {
+                        // On non-SChannel backends we specify USE_PORTABLE_CERTIFICATES and the contents are buffers
+                        // with DER encoded cert and chain.
+                        QUIC_BUFFER* certificateBuffer = (QUIC_BUFFER*)certificatePtr;
+                        QUIC_BUFFER* chainBuffer = (QUIC_BUFFER*)chainPtr;
+
+                        if (certificateBuffer->Length > 0)
+                        {
+                            certDataRented = ArrayPool<byte>.Shared.Rent((int)certificateBuffer->Length);
+                            certData = certDataRented.AsMemory(0, (int)certificateBuffer->Length);
+                            certificateBuffer->Span.CopyTo(certData.Span);
+                        }
+
+                        if (chainBuffer->Length > 0)
+                        {
+                            chainDataRented = ArrayPool<byte>.Shared.Rent((int)chainBuffer->Length);
+                            chainData = chainDataRented.AsMemory(0, (int)chainBuffer->Length);
+                            chainBuffer->Span.CopyTo(chainData.Span);
+                        }
+                    }
+                }
+            }
+
+            // We wan't to do the certificate validation asynchronously, but due to a bug in MsQuic, we need to call the callback synchronously on some versions
+            if (MsQuicApi.SupportsAsyncCertValidation)
+            {
+                // force yield to the thread pool to free up MsQuic worker thread.
+                await Task.CompletedTask.ConfigureAwait(ConfigureAwaitOptions.ForceYielding);
+            }
+
+            // certificatePtr and chainPtr are invalid beyond this point
+
+            QUIC_TLS_ALERT_CODES result;
+            try
+            {
+                if (certData.Length > 0)
+                {
+                    Debug.Assert(certificate == null);
+                    certificate = new X509Certificate2(certData.Span);
+                }
+
+                result = _connection._sslConnectionOptions.ValidateCertificate(certificate, certData.Span, chainData.Span);
+                _connection._remoteCertificate = certificate;
+            }
+            catch (Exception ex)
+            {
+                certificate?.Dispose();
+                _connection._connectedTcs.TrySetException(ex);
+                result = QUIC_TLS_ALERT_CODES.USER_CANCELED;
+            }
+            finally
+            {
+                if (certDataRented != null)
+                {
+                    ArrayPool<byte>.Shared.Return(certDataRented);
+                }
+
+                if (chainDataRented != null)
+                {
+                    ArrayPool<byte>.Shared.Return(chainDataRented);
+                }
+            }
+
+            if (MsQuicApi.SupportsAsyncCertValidation)
+            {
+                int status = MsQuicApi.Api.ConnectionCertificateValidationComplete(
+                    _connection._handle,
+                    result == QUIC_TLS_ALERT_CODES.SUCCESS ? (byte)1 : (byte)0,
+                    result);
+
+                if (MsQuic.StatusFailed(status))
+                {
+                    if (NetEventSource.Log.IsEnabled())
+                    {
+                        NetEventSource.Error(_connection, $"{_connection} ConnectionCertificateValidationComplete failed with {ThrowHelper.GetErrorMessageForStatus(status)}");
+                    }
+                }
+            }
+
+            return result == QUIC_TLS_ALERT_CODES.SUCCESS;
+        }
+
+        private QUIC_TLS_ALERT_CODES ValidateCertificate(X509Certificate2? certificate, Span<byte> certData, Span<byte> chainData)
         {
             SslPolicyErrors sslPolicyErrors = SslPolicyErrors.None;
-            IntPtr certificateBuffer = 0;
-            int certificateLength = 0;
             bool wrapException = false;
 
             X509Chain? chain = null;
-            X509Certificate2? result = null;
             try
             {
-                if (certificatePtr is not null)
+                if (certificate is not null)
                 {
                     chain = new X509Chain();
                     if (_certificateChainPolicy != null)
@@ -96,43 +203,26 @@ public partial class QuicConnection
                         chain.ChainPolicy.ApplicationPolicy.Add(_isClient ? s_serverAuthOid : s_clientAuthOid);
                     }
 
-                    if (MsQuicApi.UsesSChannelBackend)
+                    if (chainData.Length > 0)
                     {
-                        result = new X509Certificate2((IntPtr)certificatePtr);
+                        X509Certificate2Collection additionalCertificates = new X509Certificate2Collection();
+                        additionalCertificates.Import(chainData);
+                        chain.ChainPolicy.ExtraStore.AddRange(additionalCertificates);
                     }
-                    else
-                    {
-                        if (certificatePtr->Length > 0)
-                        {
-                            certificateBuffer = (IntPtr)certificatePtr->Buffer;
-                            certificateLength = (int)certificatePtr->Length;
-                            result = new X509Certificate2(certificatePtr->Span);
-                        }
 
-                        if (chainPtr->Length > 0)
-                        {
-                            X509Certificate2Collection additionalCertificates = new X509Certificate2Collection();
-                            additionalCertificates.Import(chainPtr->Span);
-                            chain.ChainPolicy.ExtraStore.AddRange(additionalCertificates);
-                        }
-                    }
-                }
-
-                if (result is not null)
-                {
                     bool checkCertName = !chain!.ChainPolicy!.VerificationFlags.HasFlag(X509VerificationFlags.IgnoreInvalidName);
-                    sslPolicyErrors |= CertificateValidation.BuildChainAndVerifyProperties(chain!, result, checkCertName, !_isClient, TargetHostNameHelper.NormalizeHostName(_targetHost), certificateBuffer, certificateLength);
+                    sslPolicyErrors |= CertificateValidation.BuildChainAndVerifyProperties(chain!, certificate, checkCertName, !_isClient, TargetHostNameHelper.NormalizeHostName(_targetHost), certData);
                 }
                 else if (_certificateRequired)
                 {
                     sslPolicyErrors |= SslPolicyErrors.RemoteCertificateNotAvailable;
                 }
 
-                int status = QUIC_STATUS_SUCCESS;
+                QUIC_TLS_ALERT_CODES result = QUIC_TLS_ALERT_CODES.SUCCESS;
                 if (_validationCallback is not null)
                 {
                     wrapException = true;
-                    if (!_validationCallback(_connection, result, chain, sslPolicyErrors))
+                    if (!_validationCallback(_connection, certificate, chain, sslPolicyErrors))
                     {
                         wrapException = false;
                         if (_isClient)
@@ -140,7 +230,7 @@ public partial class QuicConnection
                             throw new AuthenticationException(SR.net_quic_cert_custom_validation);
                         }
 
-                        status = QUIC_STATUS_USER_CANCELED;
+                        result = QUIC_TLS_ALERT_CODES.BAD_CERTIFICATE;
                     }
                 }
                 else if (sslPolicyErrors != SslPolicyErrors.None)
@@ -150,15 +240,13 @@ public partial class QuicConnection
                         throw new AuthenticationException(SR.Format(SR.net_quic_cert_chain_validation, sslPolicyErrors));
                     }
 
-                    status = QUIC_STATUS_HANDSHAKE_FAILURE;
+                    result = QUIC_TLS_ALERT_CODES.BAD_CERTIFICATE;
                 }
 
-                certificate = result;
-                return status;
+                return result;
             }
             catch (Exception ex)
             {
-                result?.Dispose();
                 if (wrapException)
                 {
                     throw new QuicException(QuicError.CallbackError, null, SR.net_quic_callback_error, ex);

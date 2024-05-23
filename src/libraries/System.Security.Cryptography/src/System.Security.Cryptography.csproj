@@ -371,6 +371,8 @@
     <Compile Include="System\Security\Cryptography\CngProvider.cs" />
     <Compile Include="System\Security\Cryptography\CngUIPolicy.cs" />
     <Compile Include="System\Security\Cryptography\CngUIProtectionLevels.cs" />
+    <Compile Include="System\Security\Cryptography\ConcurrencyBlock.cs" />
+    <Compile Include="System\Security\Cryptography\ConcurrentSafeKmac.cs" />
     <Compile Include="System\Security\Cryptography\CryptoConfigForwarder.cs" />
     <Compile Include="System\Security\Cryptography\CryptographicOperations.cs" />
     <Compile Include="System\Security\Cryptography\CryptographicUnexpectedOperationException.cs" />
@@ -403,6 +405,7 @@
     <Compile Include="System\Security\Cryptography\ECKeyXmlFormat.cs" />
     <Compile Include="System\Security\Cryptography\ECParameters.cs" />
     <Compile Include="System\Security\Cryptography\ECPoint.cs" />
+    <Compile Include="System\Security\Cryptography\FixedMemoryKeyBox.cs" />
     <Compile Include="System\Security\Cryptography\HashAlgorithm.cs" />
     <Compile Include="System\Security\Cryptography\HashAlgorithmName.cs" />
     <Compile Include="System\Security\Cryptography\HashAlgorithmNames.cs" />

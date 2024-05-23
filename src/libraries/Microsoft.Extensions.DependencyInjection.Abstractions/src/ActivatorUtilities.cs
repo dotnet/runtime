@@ -9,9 +9,10 @@ using System.Linq.Expressions;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
+using System.Runtime.InteropServices;
 using Microsoft.Extensions.Internal;
 
-#if NETCOREAPP
+#if NET
 [assembly: System.Reflection.Metadata.MetadataUpdateHandler(typeof(Microsoft.Extensions.DependencyInjection.ActivatorUtilities.ActivatorUtilitiesUpdateHandler))]
 #endif
 
@@ -22,21 +23,19 @@ namespace Microsoft.Extensions.DependencyInjection
     /// </summary>
     public static class ActivatorUtilities
     {
-#if NETCOREAPP
+#if NET
         // Support caching of constructor metadata for the common case of types in non-collectible assemblies.
         private static readonly ConcurrentDictionary<Type, ConstructorInfoEx[]> s_constructorInfos = new();
 
         // Support caching of constructor metadata for types in collectible assemblies.
         private static readonly Lazy<ConditionalWeakTable<Type, ConstructorInfoEx[]>> s_collectibleConstructorInfos = new();
-#endif
 
-#if NET8_0_OR_GREATER
         // Maximum number of fixed arguments for ConstructorInvoker.Invoke(arg1, etc).
         private const int FixedArgumentThreshold = 4;
 #endif
 
         private static readonly MethodInfo GetServiceInfo =
-            GetMethodInfo<Func<IServiceProvider, Type, Type, bool, object?, object?>>((sp, t, r, c, k) => GetService(sp, t, r, c, k));
+            new Func<IServiceProvider, Type, Type, bool, object?, object?>(GetService).Method;
 
         /// <summary>
         /// Instantiate a type with constructor arguments provided directly and/or from an <see cref="IServiceProvider"/>.
@@ -61,15 +60,28 @@ namespace Microsoft.Extensions.DependencyInjection
             }
 
             ConstructorInfoEx[]? constructors;
-#if NETCOREAPP
+#if NET
             if (!s_constructorInfos.TryGetValue(instanceType, out constructors))
             {
                 constructors = GetOrAddConstructors(instanceType);
             }
+
+            // Attempt to use the stack allocated arg values if <= 4 ctor args.
+            StackAllocatedObjects stackValues = default;
+            int maxArgs = GetMaxArgCount();
+            Span<object?> values = maxArgs <= StackAllocatedObjects.MaxStackAllocArgCount / 2 ?
+                stackValues :
+                new object?[maxArgs * 2];
+
+            Span<object?> ctorArgs = values.Slice(0, maxArgs);
+            Span<object?> bestCtorArgs = values.Slice(maxArgs, maxArgs);
 #else
             constructors = CreateConstructorInfoExs(instanceType);
+            object?[]? ctorArgs = null;
+            object?[]? bestCtorArgs = null;
 #endif
 
+            scoped ConstructorMatcher matcher = default;
             ConstructorInfoEx? constructor;
             IServiceProviderIsService? serviceProviderIsService = provider.GetService<IServiceProviderIsService>();
             // if container supports using IServiceProviderIsService, we try to find the longest ctor that
@@ -79,44 +91,71 @@ namespace Microsoft.Extensions.DependencyInjection
             // instance if all parameters given to CreateInstance only match with a single ctor
             if (serviceProviderIsService != null)
             {
-                int bestLength = -1;
-                bool seenPreferred = false;
-
-                ConstructorMatcher bestMatcher = default;
-                bool multipleBestLengthFound = false;
-
+                // Handle the case where the attribute is used.
                 for (int i = 0; i < constructors.Length; i++)
                 {
                     constructor = constructors[i];
-                    ConstructorMatcher matcher = new(constructor);
-                    bool isPreferred = constructor.IsPreferred;
-                    int length = matcher.Match(parameters, serviceProviderIsService);
 
-                    if (isPreferred)
+                    if (constructor.IsPreferred)
                     {
-                        if (seenPreferred)
+                        for (int j = i + 1; j < constructors.Length; j++)
                         {
-                            ThrowMultipleCtorsMarkedWithAttributeException();
+                            if (constructors[j].IsPreferred)
+                            {
+                                ThrowMultipleCtorsMarkedWithAttributeException();
+                            }
                         }
 
-                        if (length == -1)
+                        InitializeCtorArgValues(ref ctorArgs, constructor.Parameters.Length);
+                        matcher = new ConstructorMatcher(constructor, ctorArgs);
+                        if (matcher.Match(parameters, serviceProviderIsService) == -1)
                         {
                             ThrowMarkedCtorDoesNotTakeAllProvidedArguments();
                         }
-                    }
 
-                    if (isPreferred || bestLength < length)
+                        return matcher.CreateInstance(provider);
+                    }
+                }
+
+                int bestLength = -1;
+                scoped ConstructorMatcher bestMatcher = default;
+                bool multipleBestLengthFound = false;
+
+                // Find the constructor with the most matches.
+                for (int i = 0; i < constructors.Length; i++)
+                {
+                    constructor = constructors[i];
+
+                    InitializeCtorArgValues(ref ctorArgs, constructor.Parameters.Length);
+                    matcher = new ConstructorMatcher(constructor, ctorArgs);
+                    int length = matcher.Match(parameters, serviceProviderIsService);
+
+                    Debug.Assert(!constructor.IsPreferred);
+
+                    if (bestLength < length)
                     {
                         bestLength = length;
-                        bestMatcher = matcher;
+#if NET
+                        ctorArgs.CopyTo(bestCtorArgs);
+#else
+                        if (i == constructors.Length - 1)
+                        {
+                            // We can prevent an alloc for the last case.
+                            bestCtorArgs = ctorArgs;
+                        }
+                        else
+                        {
+                            bestCtorArgs = new object?[length];
+                            ctorArgs.CopyTo(bestCtorArgs, 0);
+                        }
+#endif
+                        bestMatcher = new ConstructorMatcher(matcher.ConstructorInfo, bestCtorArgs);
                         multipleBestLengthFound = false;
                     }
                     else if (bestLength == length)
                     {
                         multipleBestLengthFound = true;
                     }
-
-                    seenPreferred |= isPreferred;
                 }
 
                 if (bestLength != -1)
@@ -144,27 +183,46 @@ namespace Microsoft.Extensions.DependencyInjection
                 }
             }
 
-            FindApplicableConstructor(instanceType, argumentTypes, out ConstructorInfo constructorInfo, out int?[] parameterMap);
+            FindApplicableConstructor(instanceType, argumentTypes, constructors, out ConstructorInfo constructorInfo, out int?[] parameterMap);
+            constructor = FindConstructorEx(constructorInfo, constructors);
 
-            // Find the ConstructorInfoEx from the given constructorInfo.
-            constructor = null;
-            foreach (ConstructorInfoEx ctor in constructors)
+            InitializeCtorArgValues(ref ctorArgs, constructor.Parameters.Length);
+            matcher = new ConstructorMatcher(constructor, ctorArgs);
+            matcher.MapParameters(parameterMap, parameters);
+            return matcher.CreateInstance(provider);
+
+#if NET
+            int GetMaxArgCount()
             {
-                if (ReferenceEquals(ctor.Info, constructorInfo))
+                int max = 0;
+                for (int i = 0; i < constructors.Length; i++)
                 {
-                    constructor = ctor;
-                    break;
+                    max = int.Max(max, constructors[i].Parameters.Length);
                 }
+
+                return max;
             }
 
-            Debug.Assert(constructor != null);
-
-            var constructorMatcher = new ConstructorMatcher(constructor);
-            constructorMatcher.MapParameters(parameterMap, parameters);
-            return constructorMatcher.CreateInstance(provider);
+            static void InitializeCtorArgValues(ref Span<object?> ctorArgs, int _)
+            {
+                ctorArgs.Clear();
+            }
+#else
+            static void InitializeCtorArgValues(ref object[] ctorArgs, int length)
+            {
+                if (ctorArgs is not null && ctorArgs.Length == length)
+                {
+                    Array.Clear(ctorArgs, 0, length);
+                }
+                else
+                {
+                    ctorArgs = new object?[length];
+                }
+            }
+#endif
         }
 
-#if NETCOREAPP
+#if NET
         private static ConstructorInfoEx[] GetOrAddConstructors(
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type type)
         {
@@ -188,7 +246,7 @@ namespace Microsoft.Extensions.DependencyInjection
             s_collectibleConstructorInfos.Value.AddOrUpdate(type, value);
             return value;
         }
-#endif // NETCOREAPP
+#endif // NET
 
         private static ConstructorInfoEx[] CreateConstructorInfoExs(
                 [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type type)
@@ -219,7 +277,7 @@ namespace Microsoft.Extensions.DependencyInjection
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type instanceType,
             Type[] argumentTypes)
         {
-#if NETSTANDARD2_1_OR_GREATER || NETCOREAPP
+#if NETSTANDARD2_1_OR_GREATER || NET
             if (!RuntimeFeature.IsDynamicCodeCompiled)
             {
                 // Create a reflection-based factory when dynamic code is not compiled\jitted as would be the case with
@@ -256,7 +314,7 @@ namespace Microsoft.Extensions.DependencyInjection
             CreateFactory<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] T>(
                 Type[] argumentTypes)
         {
-#if NETSTANDARD2_1_OR_GREATER || NETCOREAPP
+#if NETSTANDARD2_1_OR_GREATER || NET
             if (!RuntimeFeature.IsDynamicCodeCompiled)
             {
                 // See the comment above in the non-generic CreateFactory() for why we use 'IsDynamicCodeCompiled' here.
@@ -275,7 +333,7 @@ namespace Microsoft.Extensions.DependencyInjection
 
         private static void CreateFactoryInternal([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type instanceType, Type[] argumentTypes, out ParameterExpression provider, out ParameterExpression argumentArray, out Expression factoryExpressionBody)
         {
-            FindApplicableConstructor(instanceType, argumentTypes, out ConstructorInfo constructor, out int?[] parameterMap);
+            FindApplicableConstructor(instanceType, argumentTypes, constructors: null, out ConstructorInfo constructor, out int?[] parameterMap);
 
             provider = Expression.Parameter(typeof(IServiceProvider), "provider");
             argumentArray = Expression.Parameter(typeof(object[]), "argumentArray");
@@ -316,12 +374,6 @@ namespace Microsoft.Extensions.DependencyInjection
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type type)
         {
             return provider.GetService(type) ?? CreateInstance(provider, type);
-        }
-
-        private static MethodInfo GetMethodInfo<T>(Expression<T> expr)
-        {
-            var mc = (MethodCallExpression)expr.Body;
-            return mc.Method;
         }
 
         private static object? GetService(IServiceProvider sp, Type type, Type requiredBy, bool hasDefaultValue, object? key)
@@ -385,7 +437,7 @@ namespace Microsoft.Extensions.DependencyInjection
                 Expression.New(constructor, constructorArguments));
         }
 
-#if NETSTANDARD2_1_OR_GREATER || NETCOREAPP
+#if NETSTANDARD2_1_OR_GREATER || NET
         [DoesNotReturn]
         private static void ThrowHelperArgumentNullExceptionServiceProvider()
         {
@@ -396,10 +448,10 @@ namespace Microsoft.Extensions.DependencyInjection
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type instanceType,
             Type?[] argumentTypes)
         {
-            FindApplicableConstructor(instanceType, argumentTypes, out ConstructorInfo constructor, out int?[] parameterMap);
+            FindApplicableConstructor(instanceType, argumentTypes, constructors: null, out ConstructorInfo constructor, out int?[] parameterMap);
             Type declaringType = constructor.DeclaringType!;
 
-#if NET8_0_OR_GREATER
+#if NET
             ConstructorInvoker invoker = ConstructorInvoker.Create(constructor);
 
             ParameterInfo[] constructorParameters = constructor.GetParameters();
@@ -468,7 +520,7 @@ namespace Microsoft.Extensions.DependencyInjection
 
             FactoryParameterContext[] parameters = GetFactoryParameterContext();
             return (serviceProvider, arguments) => ReflectionFactoryCanonical(constructor, parameters, declaringType, serviceProvider, arguments);
-#endif // NET8_0_OR_GREATER
+#endif // NET
 
             FactoryParameterContext[] GetFactoryParameterContext()
             {
@@ -490,7 +542,7 @@ namespace Microsoft.Extensions.DependencyInjection
                 return parameters;
             }
         }
-#endif // NETSTANDARD2_1_OR_GREATER || NETCOREAPP
+#endif // NETSTANDARD2_1_OR_GREATER || NET
 
         private readonly struct FactoryParameterContext
         {
@@ -513,13 +565,14 @@ namespace Microsoft.Extensions.DependencyInjection
         private static void FindApplicableConstructor(
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type instanceType,
             Type?[] argumentTypes,
+            ConstructorInfoEx[]? constructors,
             out ConstructorInfo matchingConstructor,
             out int?[] matchingParameterMap)
         {
             ConstructorInfo? constructorInfo;
             int?[]? parameterMap;
 
-            if (!TryFindPreferredConstructor(instanceType, argumentTypes, out constructorInfo, out parameterMap) &&
+            if (!TryFindPreferredConstructor(instanceType, argumentTypes, constructors, out constructorInfo, out parameterMap) &&
                 !TryFindMatchingConstructor(instanceType, argumentTypes, out constructorInfo, out parameterMap))
             {
                 throw new InvalidOperationException(SR.Format(SR.CtorNotLocated, instanceType));
@@ -527,6 +580,21 @@ namespace Microsoft.Extensions.DependencyInjection
 
             matchingConstructor = constructorInfo;
             matchingParameterMap = parameterMap;
+        }
+
+        // Find the ConstructorInfoEx from the given constructorInfo.
+        private static ConstructorInfoEx FindConstructorEx(ConstructorInfo constructorInfo, ConstructorInfoEx[] constructorExs)
+        {
+            for (int i = 0; i < constructorExs.Length; i++)
+            {
+                if (ReferenceEquals(constructorExs[i].Info, constructorInfo))
+                {
+                    return constructorExs[i];
+                }
+            }
+
+            Debug.Assert(false);
+            return null!;
         }
 
         // Tries to find constructor based on provided argument types
@@ -566,6 +634,7 @@ namespace Microsoft.Extensions.DependencyInjection
         private static bool TryFindPreferredConstructor(
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type instanceType,
             Type?[] argumentTypes,
+            ConstructorInfoEx[]? constructors,
             [NotNullWhen(true)] out ConstructorInfo? matchingConstructor,
             [NotNullWhen(true)] out int?[]? parameterMap)
         {
@@ -573,21 +642,33 @@ namespace Microsoft.Extensions.DependencyInjection
             matchingConstructor = null;
             parameterMap = null;
 
-            foreach (ConstructorInfo? constructor in instanceType.GetConstructors())
+            if (constructors is null)
             {
-                if (constructor.IsDefined(typeof(ActivatorUtilitiesConstructorAttribute), false))
+#if NET
+                if (!s_constructorInfos.TryGetValue(instanceType, out constructors))
+                {
+                    constructors = GetOrAddConstructors(instanceType);
+                }
+#else
+                constructors = CreateConstructorInfoExs(instanceType);
+#endif
+            }
+
+            foreach (ConstructorInfoEx constructor in constructors)
+            {
+                if (constructor.IsPreferred)
                 {
                     if (seenPreferred)
                     {
                         ThrowMultipleCtorsMarkedWithAttributeException();
                     }
 
-                    if (!TryCreateParameterMap(constructor.GetParameters(), argumentTypes, out int?[] tempParameterMap))
+                    if (!TryCreateParameterMap(constructor.Info.GetParameters(), argumentTypes, out int?[] tempParameterMap))
                     {
                         ThrowMarkedCtorDoesNotTakeAllProvidedArguments();
                     }
 
-                    matchingConstructor = constructor;
+                    matchingConstructor = constructor.Info;
                     parameterMap = tempParameterMap;
                     seenPreferred = true;
                 }
@@ -644,6 +725,17 @@ namespace Microsoft.Extensions.DependencyInjection
             public readonly ParameterInfo[] Parameters;
             public readonly bool IsPreferred;
             private readonly object?[]? _parameterKeys;
+#if NET
+            public ConstructorInvoker? _invoker;
+            public ConstructorInvoker Invoker
+            {
+                get
+                {
+                    _invoker ??= ConstructorInvoker.Create(Info);
+                    return _invoker;
+                }
+            }
+#endif
 
             public ConstructorInfoEx(ConstructorInfo constructor)
             {
@@ -705,16 +797,23 @@ namespace Microsoft.Extensions.DependencyInjection
             }
         }
 
-        private readonly struct ConstructorMatcher
+        private readonly ref struct ConstructorMatcher
         {
             private readonly ConstructorInfoEx _constructor;
-            private readonly object?[] _parameterValues;
 
-            public ConstructorMatcher(ConstructorInfoEx constructor)
+#if NET
+            private readonly Span<object?> _parameterValues;
+            public ConstructorMatcher(ConstructorInfoEx constructor, Span<object?> parameterValues)
+#else
+            private readonly object?[] _parameterValues;
+            public ConstructorMatcher(ConstructorInfoEx constructor, object?[] parameterValues)
+#endif
             {
                 _constructor = constructor;
-                _parameterValues = new object[constructor.Parameters.Length];
+                _parameterValues = parameterValues;
             }
+
+            public ConstructorInfoEx ConstructorInfo => _constructor;
 
             public int Match(object[] givenParameters, IServiceProviderIsService serviceProviderIsService)
             {
@@ -785,7 +884,9 @@ namespace Microsoft.Extensions.DependencyInjection
                     }
                 }
 
-#if NETFRAMEWORK || NETSTANDARD2_0
+#if NET
+                return _constructor.Invoker.Invoke(_parameterValues.Slice(0, _constructor.Parameters.Length));
+#else
                 try
                 {
                     return _constructor.Info.Invoke(_parameterValues);
@@ -796,8 +897,6 @@ namespace Microsoft.Extensions.DependencyInjection
                     // The above line will always throw, but the compiler requires we throw explicitly.
                     throw;
                 }
-#else
-                return _constructor.Info.Invoke(BindingFlags.DoNotWrapExceptions, binder: null, parameters: _parameterValues, culture: null);
 #endif
             }
 
@@ -823,7 +922,7 @@ namespace Microsoft.Extensions.DependencyInjection
             throw new InvalidOperationException(SR.Format(SR.MarkedCtorMissingArgumentTypes, nameof(ActivatorUtilitiesConstructorAttribute)));
         }
 
-#if NET8_0_OR_GREATER // Use the faster ConstructorInvoker which also has alloc-free APIs when <= 4 parameters.
+#if NET // Use the faster ConstructorInvoker which also has alloc-free APIs when <= 4 parameters.
         private static object ReflectionFactoryServiceOnlyFixed(
             ConstructorInvoker invoker,
             FactoryParameterContext[] parameters,
@@ -1068,7 +1167,7 @@ namespace Microsoft.Extensions.DependencyInjection
         {
             throw new NullReferenceException();
         }
-#elif NETSTANDARD2_1_OR_GREATER || NETCOREAPP
+#elif NETSTANDARD2_1_OR_GREATER || NET
         private static object ReflectionFactoryCanonical(
             ConstructorInfo constructor,
             FactoryParameterContext[] parameters,
@@ -1096,9 +1195,9 @@ namespace Microsoft.Extensions.DependencyInjection
 
             return constructor.Invoke(BindingFlags.DoNotWrapExceptions, binder: null, constructorArguments, culture: null);
         }
-#endif // NET8_0_OR_GREATER
+#endif
 
-#if NETCOREAPP
+#if NET
         internal static class ActivatorUtilitiesUpdateHandler
         {
             public static void ClearCache(Type[]? _)
@@ -1110,6 +1209,13 @@ namespace Microsoft.Extensions.DependencyInjection
                     s_collectibleConstructorInfos.Value.Clear();
                 }
             }
+        }
+
+        [InlineArray(MaxStackAllocArgCount)]
+        private struct StackAllocatedObjects
+        {
+            internal const int MaxStackAllocArgCount = 8;
+            private object? _arg0;
         }
 #endif
 

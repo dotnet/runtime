@@ -121,7 +121,7 @@ int32_t CryptoNative_EvpMacInit(EVP_MAC_CTX* ctx,
 
         size_t keyLengthT = Int32ToSizeT(keyLength);
 
-        OSSL_PARAM params[4] = { 0 };
+        OSSL_PARAM params[4] = {{0}};
         int i = 0;
         params[i++] = OSSL_PARAM_construct_octet_string(OSSL_MAC_PARAM_KEY, (void*) key, keyLengthT);
         params[i++] = OSSL_PARAM_construct_int32(OSSL_MAC_PARAM_XOF, &xof);
@@ -340,7 +340,7 @@ int32_t CryptoNative_EvpMacOneShot(EVP_MAC* mac,
         size_t dataLengthT = Int32ToSizeT(dataLength);
         size_t macLengthT = Int32ToSizeT(destinationLength);
 
-        OSSL_PARAM params[5] = { 0 };
+        OSSL_PARAM params[5] = {{0}};
         int i = 0;
 
         params[i++] = OSSL_PARAM_construct_octet_string(OSSL_MAC_PARAM_KEY, (void*)key, keyLengthT);

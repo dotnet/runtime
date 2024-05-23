@@ -370,6 +370,15 @@ inline UINT64 AlignDown(UINT64 value, UINT alignment)
     return (value&~(UINT64)(alignment-1));
 }
 
+#ifdef __APPLE__
+inline SIZE_T AlignDown(SIZE_T value, UINT alignment)
+{
+    STATIC_CONTRACT_LEAF;
+    STATIC_CONTRACT_SUPPORTS_DAC;
+    return (value&~(SIZE_T)(alignment-1));
+}
+#endif // __APPLE__
+
 inline UINT AlignmentPad(UINT value, UINT alignment)
 {
     STATIC_CONTRACT_WRAPPER;

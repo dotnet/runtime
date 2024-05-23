@@ -2,7 +2,7 @@
   <PropertyGroup>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <GenerateTargetFrameworkAttribute>false</GenerateTargetFrameworkAttribute>
-    <TargetFramework>netstandard2.0</TargetFramework>
+    <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
     <DefineConstants>FEATURE_GC_STRESS;$(DefineConstants)</DefineConstants>
@@ -218,10 +218,14 @@
     <Compile Include="Internal\Runtime\MethodTable.Runtime.cs" />
     <Compile Include="System\Runtime\CompilerServices\CastCache.cs" />
     <Compile Include="System\Runtime\CompilerServices\ClassConstructorRunner.cs" />
+    <Compile Include="System\Runtime\CompilerServices\InlineArrayAttribute.cs" />
     <Compile Include="System\Runtime\CompilerServices\StaticClassConstructionContext.cs" />
     <Compile Include="System\Runtime\InteropServices\InAttribute.cs" />
+    <Compile Include="System\Diagnostics\DebuggerStepThroughAttribute.cs" />
+    <Compile Include="System\Diagnostics\StackTraceHiddenAttribute.cs" />
     <Compile Include="System\Diagnostics\CodeAnalysis\DoesNotReturnIfAttribute.cs" />
     <Compile Include="System\Diagnostics\Debug.cs" />
+    <Compile Include="System\Runtime\InteropServices\MemoryMarshal.cs" />
     <Compile Include="System\Runtime\RuntimeImports.cs" />
     <Compile Include="System\Runtime\RuntimeHelpers.cs" />
     <Compile Include="System\Runtime\InitializeFinalizerThread.cs" />

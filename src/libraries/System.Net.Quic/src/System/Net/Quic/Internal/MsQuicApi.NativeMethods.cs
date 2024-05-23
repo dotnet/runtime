@@ -375,4 +375,55 @@ internal sealed unsafe partial class MsQuicApi
             }
         }
     }
+
+    public int DatagramSend(MsQuicSafeHandle connection, QUIC_BUFFER* buffers, uint buffersCount, QUIC_SEND_FLAGS flags, void* context)
+    {
+        bool success = false;
+        try
+        {
+            connection.DangerousAddRef(ref success);
+            return ApiTable->DatagramSend(connection.QuicHandle, buffers, buffersCount, flags, context);
+        }
+        finally
+        {
+            if (success)
+            {
+                connection.DangerousRelease();
+            }
+        }
+    }
+
+    public int ConnectionResumptionTicketValidationComplete(MsQuicSafeHandle connection, byte result)
+    {
+        bool success = false;
+        try
+        {
+            connection.DangerousAddRef(ref success);
+            return ApiTable->ConnectionResumptionTicketValidationComplete(connection.QuicHandle, result);
+        }
+        finally
+        {
+            if (success)
+            {
+                connection.DangerousRelease();
+            }
+        }
+    }
+
+    public int ConnectionCertificateValidationComplete(MsQuicSafeHandle connection, byte result, QUIC_TLS_ALERT_CODES alert)
+    {
+        bool success = false;
+        try
+        {
+            connection.DangerousAddRef(ref success);
+            return ApiTable->ConnectionCertificateValidationComplete(connection.QuicHandle, result, alert);
+        }
+        finally
+        {
+            if (success)
+            {
+                connection.DangerousRelease();
+            }
+        }
+    }
 }

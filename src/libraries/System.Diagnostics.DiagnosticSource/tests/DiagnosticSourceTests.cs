@@ -116,6 +116,10 @@ namespace System.Diagnostics.Tests
             listener.Dispose();
             Assert.True(observer.Completed);
 
+            // Subscriptions are removed when listener is disposed and don't receive further notifications
+            listener.Write("AnotherNotification", null);
+            Assert.Equal(1, result.Count);
+
             // confirm that we can unsubscribe without crashing
             subscription.Dispose();
 

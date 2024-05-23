@@ -142,71 +142,153 @@ public:
 #endif
 };
 
-// Reinforcement Learning CSE heuristic
-//
-// Uses a "linear" feature model with
-// softmax policy.
-//
-class CSE_HeuristicRL : public CSE_HeuristicCommon
+#endif // DEBUG
+
+// Parameterized Policy
+
+class CSE_HeuristicParameterized : public CSE_HeuristicCommon
 {
-private:
+protected:
     struct Choice
     {
-        Choice(CSEdsc* dsc, double preference) : m_dsc(dsc), m_preference(preference), m_softmax(0)
+        Choice(CSEdsc* dsc, double preference)
+            : m_dsc(dsc)
+            , m_preference(preference)
+            , m_softmax(0)
+            , m_performed(false)
         {
         }
+
         CSEdsc* m_dsc;
         double  m_preference;
         double  m_softmax;
+        bool    m_performed;
     };
 
     enum
     {
-        numParameters = 14,
+        numParameters = 25,
         booleanScale  = 5,
         maxSteps      = 65, // MAX_CSE_CNT + 1 (for stopping)
     };
-    double    m_parameters[numParameters];
-    double    m_alpha;
-    double    m_rewards[maxSteps];
-    CLRRandom m_cseRNG;
-    bool      m_updateParameters;
-    bool      m_greedy;
-    bool      m_verbose;
 
-    void GetFeatures(CSEdsc* dsc, double* features);
-    void DumpFeatures(CSEdsc* dsc, double* features);
-    double Preference(CSEdsc* dsc);
-    Choice& ChooseSoftmax(ArrayStack<Choice>& choices);
-    Choice& ChooseGreedy(ArrayStack<Choice>& choices);
-    void BuildChoices(ArrayStack<Choice>& choices);
-    void Softmax(ArrayStack<Choice>& choices);
-    void DumpChoices(ArrayStack<Choice>& choices, int higlight = -1);
-    void DumpChoices(ArrayStack<Choice>& choices, CSEdsc* higlight);
-    void UpdateParameters();
-    void GreedyPolicy();
-    void SoftmaxPolicy();
-    void UpdateParametersStep(CSEdsc* dsc, ArrayStack<Choice>& choices, double reward, double* delta);
-    Choice* FindChoice(CSEdsc* dsc, ArrayStack<Choice>& choices);
+    static double           s_defaultParameters[numParameters];
+    double                  m_parameters[numParameters];
+    unsigned                m_registerPressure;
+    jitstd::vector<double>* m_localWeights;
+    bool                    m_verbose;
 
 public:
-    CSE_HeuristicRL(Compiler*);
+    CSE_HeuristicParameterized(Compiler*);
+    void ConsiderCandidates();
+    bool ConsiderTree(GenTree* tree, bool isReturn);
+    void CaptureLocalWeights();
+    void GreedyPolicy();
+
+    void   GetFeatures(CSEdsc* dsc, double* features);
+    double Preference(CSEdsc* dsc);
+    void   GetStoppingFeatures(double* features);
+    double StoppingPreference();
+    void   BuildChoices(ArrayStack<Choice>& choices);
+
+    Choice& ChooseGreedy(ArrayStack<Choice>& choices, bool recompute);
+
+    virtual const char* Name() const
+    {
+        return "Parameterized CSE Heuristic";
+    }
+
+#ifdef DEBUG
+    void DumpFeatures(CSEdsc* dsc, double* features);
+    void DumpChoices(ArrayStack<Choice>& choices, int higlight = -1);
+    void DumpChoices(ArrayStack<Choice>& choices, CSEdsc* higlight);
+    void DumpMetrics();
+    void Announce();
+
+    // Likelihood of each choice made in the sequence
+    jitstd::vector<double>* m_likelihoods;
+    // Likelihood of each action from starting state
+    jitstd::vector<double>* m_baseLikelihoods;
+    // Features of each candidate
+    jitstd::vector<char*>* m_features;
+
+#endif
+};
+
+#ifdef DEBUG
+
+// General Reinforcement Learning CSE heuristic hook.
+//
+// Produces a wide set of data to train a RL model.
+// Consumes the decisions made by a model to perform CSEs.
+//
+class CSE_HeuristicRLHook : public CSE_HeuristicCommon
+{
+private:
+    static const char* const s_featureNameAndType[];
+
+    void GetFeatures(CSEdsc* cse, int* features);
+
+    enum
+    {
+        maxFeatures = 19,
+    };
+
+    enum
+    {
+        rlHookTypeOther  = 0,
+        rlHookTypeInt    = 1,
+        rlHookTypeLong   = 2,
+        rlHookTypeFloat  = 3,
+        rlHookTypeDouble = 4,
+        rlHookTypeStruct = 5,
+        rlHookTypeSimd   = 6,
+    };
+
+public:
+    CSE_HeuristicRLHook(Compiler*);
     void ConsiderCandidates();
     bool ConsiderTree(GenTree* tree, bool isReturn);
 
     const char* Name() const
     {
-        return "Reinforcement Learning CSE Heuristic";
+        return "RL Hook CSE Heuristic";
     }
 
 #ifdef DEBUG
     virtual void DumpMetrics();
+#endif
+};
+
+// Reinforcement Learning CSE heuristic
+//
+// Uses a "linear" feature model with
+// softmax policy.
+//
+class CSE_HeuristicRL : public CSE_HeuristicParameterized
+{
+private:
+    double    m_alpha;
+    double    m_rewards[maxSteps];
+    CLRRandom m_cseRNG;
+    bool      m_updateParameters;
+    bool      m_greedy;
+
+    Choice&     ChooseSoftmax(ArrayStack<Choice>& choices);
+    void        Softmax(ArrayStack<Choice>& choices);
+    void        SoftmaxPolicy();
+    void        UpdateParametersStep(CSEdsc* dsc, ArrayStack<Choice>& choices, double reward, double* delta);
+    void        UpdateParameters();
+    Choice*     FindChoice(CSEdsc* dsc, ArrayStack<Choice>& choices);
+    const char* Name() const;
+
+public:
+    CSE_HeuristicRL(Compiler*);
+    void ConsiderCandidates();
+    bool ConsiderTree(GenTree* tree, bool isReturn);
+#ifdef DEBUG
+    virtual void DumpMetrics();
     virtual void Announce();
-    // Likelihood of each choice made in the sequence
-    jitstd::vector<double>* m_likelihoods;
-    // Likelihood of each action from starting state
-    jitstd::vector<double>* m_baseLikelihoods;
-    jitstd::vector<char*>*  m_features;
 #endif
 };
 
@@ -261,9 +343,7 @@ struct CSEdsc
     ssize_t  csdConstDefValue; // When we CSE similar constants, this is the value that we use as the def
     ValueNum csdConstDefVN;    // When we CSE similar constants, this is the ValueNumber that we use for the LclVar
     // assignment
-    unsigned csdIndex;         // 1..optCSECandidateCount
-    bool     csdIsSharedConst; // true if this CSE is a shared const
-    bool     csdLiveAcrossCall;
+    unsigned csdIndex; // 1..optCSECandidateCount
 
     unsigned short csdDefCount; // definition   count
     unsigned short csdUseCount; // use          count  (excluding the implicit uses at defs)
@@ -289,6 +369,18 @@ struct CSEdsc
     // number, this will reflect it; otherwise, NoVN.
     // not used for shared const CSE's
     ValueNum defConservNormVN;
+
+    // Number of distinct locals referenced (in first def tree)
+    // and total number of local nodes.
+    //
+    unsigned short numDistinctLocals;
+    unsigned short numLocalOccurrences;
+
+    // true if this CSE is a shared const
+    bool csdIsSharedConst;
+
+    // true if this CSE is live across a call
+    bool csdLiveAcrossCall;
 
     // We may form candidates that we can't use.
     // Is this a viable cse?
@@ -317,6 +409,8 @@ struct CSEdsc
 
         return true;
     }
+
+    void ComputeNumLocals(Compiler* compiler);
 };
 
 //  The following class nested within CSE_Heuristic encapsulates the information

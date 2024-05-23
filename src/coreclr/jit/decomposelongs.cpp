@@ -188,7 +188,8 @@ GenTree* DecomposeLongs::DecomposeNode(GenTree* tree)
             break;
 
         case GT_RETURN:
-            assert(tree->AsOp()->gtOp1->OperGet() == GT_LONG);
+        case GT_SWIFT_ERROR_RET:
+            assert(tree->AsOp()->GetReturnValue()->OperIs(GT_LONG));
             break;
 
         case GT_STOREIND:
@@ -2169,22 +2170,12 @@ void DecomposeLongs::TryPromoteLongVar(unsigned lclNum)
     for (unsigned index = 0; index < 2; ++index)
     {
         // Grab the temp for the field local.
-        CLANG_FORMAT_COMMENT_ANCHOR;
-
-#ifdef DEBUG
-        char buf[200];
-        sprintf_s(buf, sizeof(buf), "%s V%02u.%s (fldOffset=0x%x)", "field", lclNum, index == 0 ? "lo" : "hi",
-                  index * 4);
-
-        // We need to copy 'buf' as lvaGrabTemp() below caches a copy to its argument.
-        size_t len  = strlen(buf) + 1;
-        char*  bufp = m_compiler->getAllocator(CMK_DebugOnly).allocate<char>(len);
-        strcpy_s(bufp, len, buf);
-#endif
 
         // Lifetime of field locals might span multiple BBs, so they are long lifetime temps.
-        unsigned fieldLclNum = m_compiler->lvaGrabTemp(false DEBUGARG(bufp));
-        varDsc               = m_compiler->lvaGetDesc(lclNum);
+        unsigned fieldLclNum = m_compiler->lvaGrabTemp(
+            false DEBUGARG(m_compiler->printfAlloc("%s V%02u.%s (fldOffset=0x%x)", "field", lclNum,
+                                                   index == 0 ? "lo" : "hi", index * 4)));
+        varDsc = m_compiler->lvaGetDesc(lclNum);
 
         LclVarDsc* fieldVarDsc       = m_compiler->lvaGetDesc(fieldLclNum);
         fieldVarDsc->lvType          = TYP_INT;

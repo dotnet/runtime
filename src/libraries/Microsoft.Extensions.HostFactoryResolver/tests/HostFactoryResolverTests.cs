@@ -37,7 +37,7 @@ namespace Microsoft.Extensions.Hosting.Tests
             Assert.IsAssignableFrom<IServiceProvider>(factory(Array.Empty<string>()));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(BuildWebHostInvalidSignature.Program))]
         public void BuildWebHostPattern__Invalid_CantFindWebHost()
         {
@@ -46,7 +46,7 @@ namespace Microsoft.Extensions.Hosting.Tests
             Assert.Null(factory);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(BuildWebHostInvalidSignature.Program))]
         public void BuildWebHostPattern__Invalid_CantFindServiceProvider()
         {
@@ -55,7 +55,7 @@ namespace Microsoft.Extensions.Hosting.Tests
             Assert.NotNull(factory);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(CreateWebHostBuilderPatternTestSite.Program))]
         public void CreateWebHostBuilderPattern_CanFindWebHostBuilder()
         {
@@ -65,7 +65,7 @@ namespace Microsoft.Extensions.Hosting.Tests
             Assert.IsAssignableFrom<IWebHostBuilder>(factory(Array.Empty<string>()));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(CreateWebHostBuilderPatternTestSite.Program))]
         [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(IWebHost))]
         public void CreateWebHostBuilderPattern_CanFindServiceProvider()
@@ -76,7 +76,7 @@ namespace Microsoft.Extensions.Hosting.Tests
             Assert.IsAssignableFrom<IServiceProvider>(factory(Array.Empty<string>()));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(CreateWebHostBuilderInvalidSignature.Program))]
         public void CreateWebHostBuilderPattern__Invalid_CantFindWebHostBuilder()
         {
@@ -85,7 +85,7 @@ namespace Microsoft.Extensions.Hosting.Tests
             Assert.Null(factory);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(CreateWebHostBuilderInvalidSignature.Program))]
         public void CreateWebHostBuilderPattern__InvalidReturnType_CanFindServiceProvider()
         {
@@ -95,7 +95,7 @@ namespace Microsoft.Extensions.Hosting.Tests
             Assert.Null(factory(Array.Empty<string>()));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(CreateHostBuilderPatternTestSite.Program))]
         public void CreateHostBuilderPattern_CanFindHostBuilder()
         {
@@ -105,7 +105,7 @@ namespace Microsoft.Extensions.Hosting.Tests
             Assert.IsAssignableFrom<IHostBuilder>(factory(Array.Empty<string>()));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(CreateHostBuilderPatternTestSite.Program))]
         [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(Host))]
         public void CreateHostBuilderPattern_CanFindServiceProvider()
@@ -116,7 +116,7 @@ namespace Microsoft.Extensions.Hosting.Tests
             Assert.IsAssignableFrom<IServiceProvider>(factory(Array.Empty<string>()));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(CreateHostBuilderInvalidSignature.Program))]
         public void CreateHostBuilderPattern__Invalid_CantFindHostBuilder()
         {

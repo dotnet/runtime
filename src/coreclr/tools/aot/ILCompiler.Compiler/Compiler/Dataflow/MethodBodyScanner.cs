@@ -188,8 +188,7 @@ namespace ILCompiler.Dataflow
                     _foundEndOfPrevBlock = false;
                 }
 
-                var reader = new ILReader(_methodBody.GetILBytes());
-                reader.Seek(offset);
+                var reader = new ILReader(_methodBody.GetILBytes(), offset);
                 ILOpcode opcode = reader.ReadILOpcode();
                 if (opcode.IsControlFlowInstruction())
                 {
@@ -1157,11 +1156,8 @@ namespace ILCompiler.Dataflow
             Stack<StackSlot> currentStack,
             MethodDesc methodCalled,
             MethodIL containingMethodBody,
-            bool isNewObj, int ilOffset,
-            out SingleValue? newObjValue)
+            bool isNewObj, int ilOffset)
         {
-            newObjValue = null;
-
             int countToPop = 0;
             if (!isNewObj && !methodCalled.Signature.IsStatic)
                 countToPop++;
@@ -1176,8 +1172,7 @@ namespace ILCompiler.Dataflow
 
             if (isNewObj)
             {
-                newObjValue = UnknownValue.Instance;
-                methodParams.Add(newObjValue);
+                methodParams.Add(UnknownValue.Instance);
             }
             methodParams.Reverse();
             return methodParams;
@@ -1276,9 +1271,7 @@ namespace ILCompiler.Dataflow
         {
             bool isNewObj = opcode == ILOpcode.newobj;
 
-            SingleValue? newObjValue;
-            ValueNodeList methodArguments = PopCallArguments(currentStack, calledMethod, callingMethodBody, isNewObj,
-                                                             offset, out newObjValue);
+            ValueNodeList methodArguments = PopCallArguments(currentStack, calledMethod, callingMethodBody, isNewObj, offset);
 
             // Multi-dimensional array access is represented as a call to a special Get method on the array (runtime provided method)
             // We don't track multi-dimensional arrays in any way, so return unknown value.
@@ -1291,33 +1284,12 @@ namespace ILCompiler.Dataflow
             var dereferencedMethodParams = new List<MultiValue>();
             foreach (var argument in methodArguments)
                 dereferencedMethodParams.Add(DereferenceValue(callingMethodBody, offset, argument, locals, ref interproceduralState));
-            MultiValue methodReturnValue;
-            bool handledFunction = HandleCall(
+            MultiValue methodReturnValue = HandleCall(
                 callingMethodBody,
                 calledMethod,
                 opcode,
                 offset,
-                new ValueNodeList(dereferencedMethodParams),
-                out methodReturnValue);
-
-            // Handle the return value or newobj result
-            if (!handledFunction)
-            {
-                if (isNewObj)
-                {
-                    if (newObjValue == null)
-                        methodReturnValue = UnknownValue.Instance;
-                    else
-                        methodReturnValue = newObjValue;
-                }
-                else
-                {
-                    if (!calledMethod.Signature.ReturnType.IsVoid)
-                    {
-                        methodReturnValue = UnknownValue.Instance;
-                    }
-                }
-            }
+                new ValueNodeList(dereferencedMethodParams));
 
             if (isNewObj || !calledMethod.Signature.ReturnType.IsVoid)
                 currentStack.Push(new StackSlot(methodReturnValue));
@@ -1336,13 +1308,12 @@ namespace ILCompiler.Dataflow
             }
         }
 
-        public abstract bool HandleCall(
+        public abstract MultiValue HandleCall(
             MethodIL callingMethodBody,
             MethodDesc calledMethod,
             ILOpcode operation,
             int offset,
-            ValueNodeList methodParams,
-            out MultiValue methodReturnValue);
+            ValueNodeList methodParams);
 
         // Limit tracking array values to 32 values for performance reasons. There are many arrays much longer than 32 elements in .NET, but the interesting ones for trimming are nearly always less than 32 elements.
         private const int MaxTrackedArrayValues = 32;

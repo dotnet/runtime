@@ -9,6 +9,8 @@ set(utils_win32_sources
 
 if(HOST_WIN32 AND HOST_AMD64)
     enable_language(ASM_MASM)
+    add_compile_options($<$<COMPILE_LANGUAGE:ASM_MASM>:/Zi>)      # enable debugging information
+    add_compile_options($<$<COMPILE_LANGUAGE:ASM_MASM>:/nologo>)  # Don't display the output header when building asm files
     set(CMAKE_ASM_MASM_COMPILE_OPTIONS_MSVC_RUNTIME_LIBRARY_MultiThreaded         "")
     set(CMAKE_ASM_MASM_COMPILE_OPTIONS_MSVC_RUNTIME_LIBRARY_MultiThreadedDLL      "")
     set(CMAKE_ASM_MASM_COMPILE_OPTIONS_MSVC_RUNTIME_LIBRARY_MultiThreadedDebug    "")
@@ -35,7 +37,6 @@ else()
 endif()
 
 set(utils_common_sources
-    mono-md5.c
     mono-sha1.c
     mono-logger.c
     mono-logger-internals.h
@@ -185,15 +186,9 @@ set(utils_arch_sources mach-support-unknown.c)
 elseif(HOST_AMD64)
 set(utils_arch_sources
     mach-support-amd64.c)
-elseif(HOST_X86)
-set(utils_arch_sources
-    mach-support-x86.c)
 elseif(HOST_ARM64)
 set(utils_arch_sources
     mach-support-arm64.c)
-elseif(HOST_ARM)
-set(utils_arch_sources
-    mach-support-arm.c)
 else()
 #message(FATAL_ERROR "")
 endif()
@@ -211,7 +206,7 @@ set(utils_arch_sources "${utils_arch_sources};mono-hwcap-riscv.c")
 elseif(TARGET_S390X)
 set(utils_arch_sources "${utils_arch_sources};mono-hwcap-s390x.c")
 elseif(TARGET_WASM)
-set(utils_arch_sources "${utils_arch_sources};mono-hwcap-wasm.c;mono-mmap-wasm.c")
+set(utils_arch_sources "${utils_arch_sources};mono-hwcap-wasm.c;mono-mmap-wasm.c;mono-wasm-pagemgr.c")
 elseif(TARGET_WASI)
 set(utils_arch_sources "${utils_arch_sources};mono-hwcap-wasm.c")
 elseif(TARGET_POWERPC OR TARGET_POWERPC64)

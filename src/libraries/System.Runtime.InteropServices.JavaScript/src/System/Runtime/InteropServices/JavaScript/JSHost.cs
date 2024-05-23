@@ -44,7 +44,9 @@ namespace System.Runtime.InteropServices.JavaScript
         /// <param name="moduleUrl">The location of the module file.</param>
         /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
         /// <returns>A proxy for the JavaScript object that contains the module's exports.</returns>
+#if !DEBUG
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+#endif
         public static Task<JSObject> ImportAsync(string moduleName, string moduleUrl, CancellationToken cancellationToken = default)
         {
             return JSHostImplementation.ImportAsync(moduleName, moduleUrl, cancellationToken);

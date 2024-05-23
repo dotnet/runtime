@@ -1914,8 +1914,8 @@ namespace System.Globalization
         internal const string JapaneseLangName = "ja";
         internal const string EnglishLangName = "en";
 
-        private static volatile DateTimeFormatInfo? s_jajpDTFI;
-        private static volatile DateTimeFormatInfo? s_zhtwDTFI;
+        private static DateTimeFormatInfo? s_jajpDTFI;
+        private static DateTimeFormatInfo? s_zhtwDTFI;
 
         /// <summary>
         /// Create a Japanese DTFI which uses JapaneseCalendar.  This is used to parse

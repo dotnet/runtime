@@ -22,7 +22,6 @@
             ],
             "defines": [
                 "HOST_AMD64",
-                "_BLD_CLR",
                 "_CRT_SECURE_NO_WARNINGS",
                 "_DBG",
                 "_SECURE_SCL=0",
@@ -31,6 +30,7 @@
                 "_UNICODE",
                 "_WIN32",
                 "_WIN32_WINNT=0x0602",
+                "NOMINMAX",
                 "HOST_64BIT",
                 "AMD64",
                 "HOST_64BIT=1",
@@ -71,7 +71,6 @@
                 "FEATURE_USE_ASM_GC_WRITE_BARRIERS",
                 "FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP",
                 "FEATURE_UTF8STRING=1",
-                "FEATURE_WIN32_REGISTRY",
                 "TARGET_WINDOWS=1",
                 "PROFILING_SUPPORTED_DATA",
                 "UNICODE",

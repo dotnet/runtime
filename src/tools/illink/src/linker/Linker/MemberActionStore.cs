@@ -2,7 +2,9 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using ILLink.Shared;
 using Mono.Cecil;
 
 namespace Mono.Linker
@@ -20,7 +22,7 @@ namespace Mono.Linker
 			_context = context;
 		}
 
-		public bool TryGetSubstitutionInfo (MemberReference member, [NotNullWhen (true)] out SubstitutionInfo? xmlInfo)
+		private bool TryGetSubstitutionInfo (MemberReference member, [NotNullWhen (true)] out SubstitutionInfo? xmlInfo)
 		{
 			var assembly = member.Module.Assembly;
 			if (!_embeddedXmlInfos.TryGetValue (assembly, out xmlInfo)) {
@@ -41,6 +43,9 @@ namespace Mono.Linker
 					return action;
 			}
 
+			if (TryGetFeatureCheckValue (method, out _))
+				return MethodAction.ConvertToStub;
+
 			return MethodAction.Nothing;
 		}
 
@@ -49,10 +54,78 @@ namespace Mono.Linker
 			if (PrimarySubstitutionInfo.MethodStubValues.TryGetValue (method, out value))
 				return true;
 
-			if (!TryGetSubstitutionInfo (method, out var embeddedXml))
+			if (TryGetSubstitutionInfo (method, out var embeddedXml)
+				&& embeddedXml.MethodStubValues.TryGetValue (method, out value))
+				return true;
+
+			if (TryGetFeatureCheckValue (method, out bool bValue)) {
+				value = bValue ? 1 : 0;
+				return true;
+			}
+
+			return false;
+		}
+
+		internal bool TryGetFeatureCheckValue (MethodDefinition method, out bool value)
+		{
+			value = false;
+
+			if (!method.IsStatic)
 				return false;
 
-			return embeddedXml.MethodStubValues.TryGetValue (method, out value);
+			if (method.ReturnType.MetadataType != MetadataType.Boolean)
+				return false;
+
+			if (FindProperty (method) is not PropertyDefinition property)
+				return false;
+
+			if (property.SetMethod != null)
+				return false;
+
+			foreach (var featureSwitchDefinitionAttribute in _context.CustomAttributes.GetCustomAttributes (property, "System.Diagnostics.CodeAnalysis", "FeatureSwitchDefinitionAttribute")) {
+				if (featureSwitchDefinitionAttribute.ConstructorArguments is not [CustomAttributeArgument { Value: string switchName }])
+					continue;
+
+				// If there's a FeatureSwitchDefinition, don't continue looking for FeatureGuard.
+				// We don't want to infer feature switch settings from FeatureGuard.
+				return _context.FeatureSettings.TryGetValue (switchName, out value);
+			}
+
+			if (!_context.IsOptimizationEnabled (CodeOptimizations.SubstituteFeatureGuards, method))
+				return false;
+
+			foreach (var featureGuardAttribute in _context.CustomAttributes.GetCustomAttributes (property, "System.Diagnostics.CodeAnalysis", "FeatureGuardAttribute")) {
+				if (featureGuardAttribute.ConstructorArguments is not [CustomAttributeArgument { Value: TypeReference featureType }])
+					continue;
+
+				if (featureType.Namespace == "System.Diagnostics.CodeAnalysis") {
+					switch (featureType.Name) {
+					case "RequiresUnreferencedCodeAttribute":
+						return true;
+					case "RequiresDynamicCodeAttribute":
+						if (_context.FeatureSettings.TryGetValue (
+								"System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported",
+								out bool isDynamicCodeSupported)
+							&& !isDynamicCodeSupported)
+							return true;
+						break;
+					}
+				}
+			}
+
+			return false;
+
+			static PropertyDefinition? FindProperty (MethodDefinition method) {
+				if (!method.IsGetter)
+					return null;
+
+				foreach (var property in method.DeclaringType.Properties) {
+					if (property.GetMethod == method)
+						return property;
+				}
+
+				return null;
+			}
 		}
 
 		public bool TryGetFieldUserValue (FieldDefinition field, out object? value)

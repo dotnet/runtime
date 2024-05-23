@@ -9,18 +9,18 @@ namespace System.Security.Cryptography
 {
     public sealed partial class AesCcm
     {
-        private byte[]? _key;
+        private FixedMemoryKeyBox _keyBox;
 
         public static bool IsSupported { get; } = Interop.OpenSslNoInit.OpenSslIsAvailable;
 
-        [MemberNotNull(nameof(_key))]
+        [MemberNotNull(nameof(_keyBox))]
         private void ImportKey(ReadOnlySpan<byte> key)
         {
             // OpenSSL does not allow setting nonce length after setting the key
             // we need to store it as bytes instead
-            // Pin the array on the POH so that the GC doesn't move it around to allow zeroing to be more effective.
-            _key = GC.AllocateArray<byte>(key.Length, pinned: true);
-            key.CopyTo(_key);
+            // We should only be calling this in the constructor, so there shouldn't be a previous key.
+            Debug.Assert(_keyBox is null);
+            _keyBox = new FixedMemoryKeyBox(key);
         }
 
         private void EncryptCore(
@@ -30,52 +30,65 @@ namespace System.Security.Cryptography
             Span<byte> tag,
             ReadOnlySpan<byte> associatedData = default)
         {
-            CheckDisposed();
+            bool acquired = false;
 
-            using (SafeEvpCipherCtxHandle ctx = Interop.Crypto.EvpCipherCreatePartial(GetCipher(_key.Length * 8)))
+            try
             {
-                Interop.Crypto.CheckValidOpenSslHandle(ctx);
+                _keyBox.DangerousAddRef(ref acquired);
+                ReadOnlySpan<byte> key = _keyBox.DangerousKeySpan;
 
-                // We need to set mode to encryption before setting the tag and nonce length
-                // otherwise older versions of OpenSSL (i.e. 1.0.1f which can be found on Ubuntu 14.04) will fail
-                Interop.Crypto.EvpCipherSetKeyAndIV(ctx, Span<byte>.Empty, Span<byte>.Empty, Interop.Crypto.EvpCipherDirection.Encrypt);
-                Interop.Crypto.EvpCipherSetCcmTagLength(ctx, tag.Length);
-                Interop.Crypto.EvpCipherSetCcmNonceLength(ctx, nonce.Length);
-                Interop.Crypto.EvpCipherSetKeyAndIV(ctx, _key, nonce, Interop.Crypto.EvpCipherDirection.NoChange);
-
-                if (associatedData.Length != 0)
+                using (SafeEvpCipherCtxHandle ctx = Interop.Crypto.EvpCipherCreatePartial(GetCipher(key.Length * 8)))
                 {
-                    // length needs to be known ahead of time in CCM mode
-                    Interop.Crypto.EvpCipherSetInputLength(ctx, plaintext.Length);
+                    Interop.Crypto.CheckValidOpenSslHandle(ctx);
 
-                    if (!Interop.Crypto.EvpCipherUpdate(ctx, Span<byte>.Empty, out _, associatedData))
+                    // We need to set mode to encryption before setting the tag and nonce length
+                    // otherwise older versions of OpenSSL (i.e. 1.0.1f which can be found on Ubuntu 14.04) will fail
+                    Interop.Crypto.EvpCipherSetKeyAndIV(ctx, Span<byte>.Empty, Span<byte>.Empty, Interop.Crypto.EvpCipherDirection.Encrypt);
+                    Interop.Crypto.EvpCipherSetCcmTagLength(ctx, tag.Length);
+                    Interop.Crypto.EvpCipherSetCcmNonceLength(ctx, nonce.Length);
+                    Interop.Crypto.EvpCipherSetKeyAndIV(ctx, key, nonce, Interop.Crypto.EvpCipherDirection.NoChange);
+
+                    if (associatedData.Length != 0)
+                    {
+                        // length needs to be known ahead of time in CCM mode
+                        Interop.Crypto.EvpCipherSetInputLength(ctx, plaintext.Length);
+
+                        if (!Interop.Crypto.EvpCipherUpdate(ctx, Span<byte>.Empty, out _, associatedData))
+                        {
+                            throw Interop.Crypto.CreateOpenSslCryptographicException();
+                        }
+                    }
+
+                    if (!Interop.Crypto.EvpCipherUpdate(ctx, ciphertext, out int ciphertextBytesWritten, plaintext))
                     {
                         throw Interop.Crypto.CreateOpenSslCryptographicException();
                     }
-                }
 
-                if (!Interop.Crypto.EvpCipherUpdate(ctx, ciphertext, out int ciphertextBytesWritten, plaintext))
+                    if (!Interop.Crypto.EvpCipherFinalEx(
+                        ctx,
+                        ciphertext.Slice(ciphertextBytesWritten),
+                        out int bytesWritten))
+                    {
+                        throw Interop.Crypto.CreateOpenSslCryptographicException();
+                    }
+
+                    ciphertextBytesWritten += bytesWritten;
+
+                    if (ciphertextBytesWritten != ciphertext.Length)
+                    {
+                        Debug.Fail($"CCM encrypt wrote {ciphertextBytesWritten} of {ciphertext.Length} bytes.");
+                        throw new CryptographicException();
+                    }
+
+                    Interop.Crypto.EvpCipherGetCcmTag(ctx, tag);
+                }
+            }
+            finally
+            {
+                if (acquired)
                 {
-                    throw Interop.Crypto.CreateOpenSslCryptographicException();
+                    _keyBox.DangerousRelease();
                 }
-
-                if (!Interop.Crypto.EvpCipherFinalEx(
-                    ctx,
-                    ciphertext.Slice(ciphertextBytesWritten),
-                    out int bytesWritten))
-                {
-                    throw Interop.Crypto.CreateOpenSslCryptographicException();
-                }
-
-                ciphertextBytesWritten += bytesWritten;
-
-                if (ciphertextBytesWritten != ciphertext.Length)
-                {
-                    Debug.Fail($"CCM encrypt wrote {ciphertextBytesWritten} of {ciphertext.Length} bytes.");
-                    throw new CryptographicException();
-                }
-
-                Interop.Crypto.EvpCipherGetCcmTag(ctx, tag);
             }
         }
 
@@ -86,41 +99,54 @@ namespace System.Security.Cryptography
             Span<byte> plaintext,
             ReadOnlySpan<byte> associatedData)
         {
-            CheckDisposed();
+            bool acquired = false;
 
-            using (SafeEvpCipherCtxHandle ctx = Interop.Crypto.EvpCipherCreatePartial(GetCipher(_key.Length * 8)))
+            try
             {
-                Interop.Crypto.CheckValidOpenSslHandle(ctx);
-                Interop.Crypto.EvpCipherSetCcmNonceLength(ctx, nonce.Length);
-                Interop.Crypto.EvpCipherSetCcmTag(ctx, tag);
+                _keyBox.DangerousAddRef(ref acquired);
+                ReadOnlySpan<byte> key = _keyBox.DangerousKeySpan;
 
-                Interop.Crypto.EvpCipherSetKeyAndIV(ctx, _key, nonce, Interop.Crypto.EvpCipherDirection.Decrypt);
-
-                if (associatedData.Length != 0)
+                using (SafeEvpCipherCtxHandle ctx = Interop.Crypto.EvpCipherCreatePartial(GetCipher(key.Length * 8)))
                 {
-                    // length needs to be known ahead of time in CCM mode
-                    Interop.Crypto.EvpCipherSetInputLength(ctx, ciphertext.Length);
+                    Interop.Crypto.CheckValidOpenSslHandle(ctx);
+                    Interop.Crypto.EvpCipherSetCcmNonceLength(ctx, nonce.Length);
+                    Interop.Crypto.EvpCipherSetCcmTag(ctx, tag);
 
-                    if (!Interop.Crypto.EvpCipherUpdate(ctx, Span<byte>.Empty, out _, associatedData))
+                    Interop.Crypto.EvpCipherSetKeyAndIV(ctx, key, nonce, Interop.Crypto.EvpCipherDirection.Decrypt);
+
+                    if (associatedData.Length != 0)
                     {
-                        throw Interop.Crypto.CreateOpenSslCryptographicException();
+                        // length needs to be known ahead of time in CCM mode
+                        Interop.Crypto.EvpCipherSetInputLength(ctx, ciphertext.Length);
+
+                        if (!Interop.Crypto.EvpCipherUpdate(ctx, Span<byte>.Empty, out _, associatedData))
+                        {
+                            throw Interop.Crypto.CreateOpenSslCryptographicException();
+                        }
                     }
-                }
 
-                if (!Interop.Crypto.EvpCipherUpdate(ctx, plaintext, out int plaintextBytesWritten, ciphertext))
+                    if (!Interop.Crypto.EvpCipherUpdate(ctx, plaintext, out int plaintextBytesWritten, ciphertext))
+                    {
+                        plaintext.Clear();
+                        throw new AuthenticationTagMismatchException();
+                    }
+
+                    if (plaintextBytesWritten != plaintext.Length)
+                    {
+                        Debug.Fail($"CCM decrypt wrote {plaintextBytesWritten} of {plaintext.Length} bytes.");
+                        throw new CryptographicException();
+                    }
+
+                    // The OpenSSL documentation says not to call EvpCipherFinalEx for CCM decryption, and calling it will report failure.
+                    // https://wiki.openssl.org/index.php/EVP_Authenticated_Encryption_and_Decryption#Authenticated_Decryption_using_CCM_mode
+                }
+            }
+            finally
+            {
+                if (acquired)
                 {
-                    plaintext.Clear();
-                    throw new AuthenticationTagMismatchException();
+                    _keyBox.DangerousRelease();
                 }
-
-                if (plaintextBytesWritten != plaintext.Length)
-                {
-                    Debug.Fail($"CCM decrypt wrote {plaintextBytesWritten} of {plaintext.Length} bytes.");
-                    throw new CryptographicException();
-                }
-
-                // The OpenSSL documentation says not to call EvpCipherFinalEx for CCM decryption, and calling it will report failure.
-                // https://wiki.openssl.org/index.php/EVP_Authenticated_Encryption_and_Decryption#Authenticated_Decryption_using_CCM_mode
             }
         }
 
@@ -137,16 +163,6 @@ namespace System.Security.Cryptography
             }
         }
 
-        public void Dispose()
-        {
-            CryptographicOperations.ZeroMemory(_key);
-            _key = null;
-        }
-
-        [MemberNotNull(nameof(_key))]
-        private void CheckDisposed()
-        {
-            ObjectDisposedException.ThrowIf(_key is null, this);
-        }
+        public void Dispose() => _keyBox.Dispose();
     }
 }

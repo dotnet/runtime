@@ -63,13 +63,13 @@ namespace System.Tests
         {
             var ids = new HashSet<int>();
             Barrier b = new Barrier(10);
-            Task.WaitAll((from i in Enumerable.Range(0, b.ParticipantCount)
-                          select Task.Factory.StartNew(() =>
-                          {
-                              b.SignalAndWait();
-                              lock (ids) ids.Add(Environment.CurrentManagedThreadId);
-                              b.SignalAndWait();
-                          }, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default)).ToArray());
+            Task.WaitAll(from i in Enumerable.Range(0, b.ParticipantCount)
+                         select Task.Factory.StartNew(() =>
+                         {
+                             b.SignalAndWait();
+                             lock (ids) ids.Add(Environment.CurrentManagedThreadId);
+                             b.SignalAndWait();
+                         }, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default));
             Assert.Equal(b.ParticipantCount, ids.Count);
         }
 

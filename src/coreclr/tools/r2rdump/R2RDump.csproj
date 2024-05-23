@@ -15,7 +15,7 @@
     <RunAnalyzers>false</RunAnalyzers>
   </PropertyGroup>
 
-  <Import Project="$(RepositoryEngineeringDir)coredistools.targets" Condition="'$(DotNetBuildFromSource)' != 'true'" />
+  <Import Project="$(RepositoryEngineeringDir)coredistools.targets" Condition="'$(DotNetBuildSourceOnly)' != 'true'" />
   <Import Project="$(RepositoryEngineeringDir)DiaSymReaderNative.targets" />
 
   <ItemGroup>
@@ -28,10 +28,6 @@
     </PackageReference>
     <ProjectReference Include="..\aot\ILCompiler.Diagnostics\ILCompiler.Diagnostics.csproj" />
     <ProjectReference Include="..\aot\ILCompiler.Reflection.ReadyToRun\ILCompiler.Reflection.ReadyToRun.csproj" />
-    <!-- Workaround until the SDK does this, see https://github.com/dotnet/sdk/issues/24799 -->
-    <PackageReference Include="NETStandard.Library">
-      <Version>$(NetStandardLibraryVersion)</Version>
-    </PackageReference>
     <Content Include="$(CoreDisToolsLibrary)" Condition="Exists('$(CoreDisToolsLibrary)')">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>

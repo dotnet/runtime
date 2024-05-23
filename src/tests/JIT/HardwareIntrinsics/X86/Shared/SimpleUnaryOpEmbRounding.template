@@ -1,0 +1,341 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+/******************************************************************************
+ * This file is auto-generated from a template file by the GenerateTests.csx  *
+ * script in tests\src\JIT\HardwareIntrinsics\X86\Shared. In order to make    *
+ * changes, please update the corresponding template and run according to the *
+ * directions listed in the file.                                             *
+ ******************************************************************************/
+
+using System;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Collections.Generic;
+using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.X86;
+using Xunit;
+
+namespace JIT.HardwareIntrinsics.X86
+{
+    public static partial class Program
+    {
+        [Fact]
+        public static void {Method}{Op1BaseType}to{RetBaseType}{RoundingMode}()
+        {
+            var test = new UnaryOpTest__{Method}{Op1BaseType}to{RetBaseType}{RoundingMode}();
+
+            if (test.IsSupported)
+            {
+                // Validates basic functionality works, using Unsafe.Read
+                test.RunBasicScenario_UnsafeRead();
+
+                if ({LoadIsa}.IsSupported)
+                {
+                    // Validates basic functionality works, using Load
+                    test.RunBasicScenario_Load();
+
+                    // Validates basic functionality works, using LoadAligned
+                    test.RunBasicScenario_LoadAligned();
+                }
+
+                // Validates calling via reflection works, using Unsafe.Read
+                test.RunReflectionScenario_UnsafeRead();
+
+                // Validates passing a local works, using Unsafe.Read
+                test.RunLclVarScenario_UnsafeRead();
+
+                // Validates passing an instance member of a class works
+                test.RunClassFldScenario();
+
+                // Validates passing the field of a local struct works
+                test.RunStructLclFldScenario();
+
+                // Validates passing an instance member of a struct works
+                test.RunStructFldScenario();
+            }
+            else
+            {
+                // Validates we throw on unsupported hardware
+                test.RunUnsupportedScenario();
+            }
+
+            if (!test.Succeeded)
+            {
+                throw new Exception("One or more scenarios did not complete as expected.");
+            }
+        }
+    }
+
+    public sealed unsafe class UnaryOpTest__{Method}{Op1BaseType}to{RetBaseType}{RoundingMode}
+    {
+        private struct TestStruct
+        {
+            public {Op1VectorType}<{Op1BaseType}> _fld1;
+
+            public static TestStruct Create()
+            {
+                var testStruct = new TestStruct();
+
+                for (var i = 0; i < Op1ElementCount; i++) { _data1[i] = ({Op1BaseType}){FixedInput}; }
+                Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op1VectorType}<{Op1BaseType}>, byte>(ref testStruct._fld1), ref Unsafe.As<{Op1BaseType}, byte>(ref _data1[0]), (uint)Unsafe.SizeOf<{Op1VectorType}<{Op1BaseType}>>());
+
+                return testStruct;
+            }
+
+            public void RunStructFldScenario(UnaryOpTest__{Method}{Op1BaseType}to{RetBaseType}{RoundingMode} testClass)
+            {
+                var result = {Isa}.{Method}(_fld1, FloatRoundingMode.{RoundingMode});
+
+                Unsafe.Write(testClass._dataTable.outArrayPtr, result);
+                testClass.ValidateResult(_fld1, testClass._dataTable.outArrayPtr);
+            }
+        }
+
+        private static readonly int LargestVectorSize = {LargestVectorSize};
+
+        private static readonly int Op1ElementCount = Unsafe.SizeOf<{Op1VectorType}<{Op1BaseType}>>() / sizeof({Op1BaseType});
+        private static readonly int RetElementCount = Unsafe.SizeOf<{RetVectorType}<{RetBaseType}>>() / sizeof({RetBaseType});
+
+        private static {Op1BaseType}[] _data1 = new {Op1BaseType}[Op1ElementCount];
+
+        private {Op1VectorType}<{Op1BaseType}> _fld1;
+
+        private SimpleUnaryOpTest__DataTable<{RetBaseType}, {Op1BaseType}> _dataTable;
+
+        public UnaryOpTest__{Method}{Op1BaseType}to{RetBaseType}{RoundingMode}()
+        {
+            Succeeded = true;
+
+            for (var i = 0; i < Op1ElementCount; i++) { _data1[i] = ({Op1BaseType}){FixedInput}; }
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op1VectorType}<{Op1BaseType}>, byte>(ref _fld1), ref Unsafe.As<{Op1BaseType}, byte>(ref _data1[0]), (uint)Unsafe.SizeOf<{Op1VectorType}<{Op1BaseType}>>());
+
+            for (var i = 0; i < Op1ElementCount; i++) { _data1[i] = ({Op1BaseType}){FixedInput}; }
+            _dataTable = new SimpleUnaryOpTest__DataTable<{RetBaseType}, {Op1BaseType}>(_data1, new {RetBaseType}[RetElementCount], LargestVectorSize);
+        }
+
+        public bool IsSupported => {Isa}.IsSupported;
+
+        public bool Succeeded { get; set; }
+
+        public void RunBasicScenario_UnsafeRead()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunBasicScenario_UnsafeRead));
+
+            var result = {Isa}.{Method}(
+                Unsafe.Read<{Op1VectorType}<{Op1BaseType}>>(_dataTable.inArrayPtr),
+                FloatRoundingMode.{RoundingMode}
+            );
+
+            Unsafe.Write(_dataTable.outArrayPtr, result);
+            ValidateResult(_dataTable.inArrayPtr, _dataTable.outArrayPtr);
+        }
+
+        public void RunBasicScenario_Load()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunBasicScenario_Load));
+
+            var result = {Isa}.{Method}(
+                {LoadIsa}.Load{Op1VectorType}(({Op1BaseType}*)(_dataTable.inArrayPtr)),
+                FloatRoundingMode.{RoundingMode}
+            );
+
+            Unsafe.Write(_dataTable.outArrayPtr, result);
+            ValidateResult(_dataTable.inArrayPtr, _dataTable.outArrayPtr);
+        }
+
+        public void RunBasicScenario_LoadAligned()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunBasicScenario_LoadAligned));
+
+            var result = {Isa}.{Method}(
+                {LoadIsa}.LoadAligned{Op1VectorType}(({Op1BaseType}*)(_dataTable.inArrayPtr)),
+                FloatRoundingMode.{RoundingMode}
+            );
+
+            Unsafe.Write(_dataTable.outArrayPtr, result);
+            ValidateResult(_dataTable.inArrayPtr, _dataTable.outArrayPtr);
+        }
+
+        public void RunReflectionScenario_UnsafeRead()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunReflectionScenario_UnsafeRead));
+
+            var result = typeof({Isa}).GetMethod(nameof({Isa}.{Method}), new Type[] { typeof({Op1VectorType}<{Op1BaseType}>), typeof(FloatRoundingMode) })
+                                     .Invoke(null, new object[] {
+                                        Unsafe.Read<{Op1VectorType}<{Op1BaseType}>>(_dataTable.inArrayPtr),
+                                        FloatRoundingMode.{RoundingMode}
+                                     });
+
+            Unsafe.Write(_dataTable.outArrayPtr, ({RetVectorType}<{RetBaseType}>)(result));
+            ValidateResult(_dataTable.inArrayPtr, _dataTable.outArrayPtr);
+        }
+
+        public void RunLclVarScenario_UnsafeRead()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunLclVarScenario_UnsafeRead));
+
+            var op1 = Unsafe.Read<{Op1VectorType}<{Op1BaseType}>>(_dataTable.inArrayPtr);
+            var result = {Isa}.{Method}(op1, FloatRoundingMode.{RoundingMode});
+
+            Unsafe.Write(_dataTable.outArrayPtr, result);
+            ValidateResult(op1, _dataTable.outArrayPtr);
+        }
+
+        public void RunClassFldScenario()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunClassFldScenario));
+
+            var result = {Isa}.{Method}(_fld1, FloatRoundingMode.{RoundingMode});
+
+            Unsafe.Write(_dataTable.outArrayPtr, result);
+            ValidateResult(_fld1, _dataTable.outArrayPtr);
+        }
+
+        public void RunStructLclFldScenario()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunStructLclFldScenario));
+
+            var test = TestStruct.Create();
+            var result = {Isa}.{Method}(test._fld1, FloatRoundingMode.{RoundingMode});
+
+            Unsafe.Write(_dataTable.outArrayPtr, result);
+            ValidateResult(test._fld1, _dataTable.outArrayPtr);
+        }
+
+        public void RunStructFldScenario()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunStructFldScenario));
+
+            var test = TestStruct.Create();
+            test.RunStructFldScenario(this);
+        }
+
+        public void RunUnsupportedScenario()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunUnsupportedScenario));
+
+            bool succeeded = false;
+
+            try
+            {
+                RunBasicScenario_UnsafeRead();
+            }
+            catch (PlatformNotSupportedException)
+            {
+                succeeded = true;
+            }
+
+            if (!succeeded)
+            {
+                Succeeded = false;
+            }
+        }
+
+        private void ValidateResult({Op1VectorType}<{Op1BaseType}> op1, void* result, [CallerMemberName] string method = "")
+        {
+            {Op1BaseType}[] inArray1 = new {Op1BaseType}[Op1ElementCount];
+            {RetBaseType}[] outArray = new {RetBaseType}[RetElementCount];
+
+            Unsafe.WriteUnaligned(ref Unsafe.As<{Op1BaseType}, byte>(ref inArray1[0]), op1);
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{RetBaseType}, byte>(ref outArray[0]), ref Unsafe.AsRef<byte>(result), (uint)Unsafe.SizeOf<{RetVectorType}<{RetBaseType}>>());
+
+            ValidateResult(inArray1, outArray, method);
+        }
+
+        private void ValidateResult(void* op1, void* result, [CallerMemberName] string method = "")
+        {
+            {Op1BaseType}[] inArray1 = new {Op1BaseType}[Op1ElementCount];
+            {RetBaseType}[] outArray = new {RetBaseType}[RetElementCount];
+
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op1BaseType}, byte>(ref inArray1[0]), ref Unsafe.AsRef<byte>(op1), (uint)Unsafe.SizeOf<{Op1VectorType}<{Op1BaseType}>>());
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{RetBaseType}, byte>(ref outArray[0]), ref Unsafe.AsRef<byte>(result), (uint)Unsafe.SizeOf<{RetVectorType}<{RetBaseType}>>());
+
+            ValidateResult(inArray1, outArray, method);
+        }
+
+        private void ValidateResult({Op1BaseType}[] firstOp, {RetBaseType}[] result, [CallerMemberName] string method = "")
+        {
+            bool succeeded = true;
+
+            for (int i = 0; i < result.Length; i++)
+            {
+                ulong[] answerTable = unaryEmbRoundingAnswerTable[("{Isa}", "{Op1BaseType}", "{RetBaseType}", "{Method}", "{RoundingMode}")];
+
+                if ({CastingMethod}(result[i]) != answerTable[i])
+                {
+                    succeeded = false;
+                    Console.WriteLine("Avx512 {Method} Embedded rounding failed on {RetBaseType} with {RoundingMode}:");
+                    foreach (var item in result)
+                    {
+                        Console.Write(item + ", ");
+                    }
+                    Console.WriteLine();
+                    Assert.Fail("");
+                }
+            }
+
+            if (!succeeded)
+            {
+                TestLibrary.TestFramework.LogInformation($"{nameof({Isa})}.{nameof({Isa}.{Method})}<{RetBaseType}>({Op1VectorType}<{Op1BaseType}>): {method} failed:");
+                TestLibrary.TestFramework.LogInformation($" firstOp: ({string.Join(", ", firstOp)})");
+                TestLibrary.TestFramework.LogInformation($"  result: ({string.Join(", ", result)})");
+                TestLibrary.TestFramework.LogInformation(string.Empty);
+
+                Succeeded = false;
+            }
+        }
+
+        private static Dictionary<(string, string, string, string, string), ulong[]> unaryEmbRoundingAnswerTable = new Dictionary<(string, string, string, string, string), ulong[]>
+        {
+            {("Avx512F", "Double", "UInt32", "ConvertToVector256UInt32", "ToNegativeInfinity"), new ulong[] {0x1d, 0x1d, 0x1d, 0x1d, 0x1d, 0x1d, 0x1d, 0x1d}},
+            {("Avx512F", "Double", "UInt32", "ConvertToVector256UInt32", "ToPositiveInfinity"), new ulong[] {0x1e, 0x1e, 0x1e, 0x1e, 0x1e, 0x1e, 0x1e, 0x1e}},
+            {("Avx512F", "Double", "UInt32", "ConvertToVector256UInt32", "ToZero"), new ulong[] {0x1d, 0x1d, 0x1d, 0x1d, 0x1d, 0x1d, 0x1d, 0x1d}},
+            {("Avx512F", "Single", "UInt32", "ConvertToVector512UInt32", "ToNegativeInfinity"), new ulong[] {0x1d, 0x1d, 0x1d, 0x1d, 0x1d, 0x1d, 0x1d, 0x1d, 0x1d, 0x1d, 0x1d, 0x1d, 0x1d, 0x1d, 0x1d, 0x1d}},
+            {("Avx512F", "Single", "UInt32", "ConvertToVector512UInt32", "ToPositiveInfinity"), new ulong[] {0x1e, 0x1e, 0x1e, 0x1e, 0x1e, 0x1e, 0x1e, 0x1e, 0x1e, 0x1e, 0x1e, 0x1e, 0x1e, 0x1e, 0x1e, 0x1e}},
+            {("Avx512F", "Single", "UInt32", "ConvertToVector512UInt32", "ToZero"), new ulong[] {0x1d, 0x1d, 0x1d, 0x1d, 0x1d, 0x1d, 0x1d, 0x1d, 0x1d, 0x1d, 0x1d, 0x1d, 0x1d, 0x1d, 0x1d, 0x1d}},
+            {("Avx512F", "Single", "Int32", "ConvertToVector512Int32", "ToNegativeInfinity"), new ulong[] {0x1d, 0x1d, 0x1d, 0x1d, 0x1d, 0x1d, 0x1d, 0x1d, 0x1d, 0x1d, 0x1d, 0x1d, 0x1d, 0x1d, 0x1d, 0x1d}},
+            {("Avx512F", "Single", "Int32", "ConvertToVector512Int32", "ToPositiveInfinity"), new ulong[] {0x1e, 0x1e, 0x1e, 0x1e, 0x1e, 0x1e, 0x1e, 0x1e, 0x1e, 0x1e, 0x1e, 0x1e, 0x1e, 0x1e, 0x1e, 0x1e}},
+            {("Avx512F", "Single", "Int32", "ConvertToVector512Int32", "ToZero"), new ulong[] {0x1d, 0x1d, 0x1d, 0x1d, 0x1d, 0x1d, 0x1d, 0x1d, 0x1d, 0x1d, 0x1d, 0x1d, 0x1d, 0x1d, 0x1d, 0x1d}},
+            {("Avx512F", "Double", "Int32", "ConvertToVector256Int32", "ToNegativeInfinity"), new ulong[] {0x1d, 0x1d, 0x1d, 0x1d, 0x1d, 0x1d, 0x1d, 0x1d}},
+            {("Avx512F", "Double", "Int32", "ConvertToVector256Int32", "ToPositiveInfinity"), new ulong[] {0x1e, 0x1e, 0x1e, 0x1e, 0x1e, 0x1e, 0x1e, 0x1e}},
+            {("Avx512F", "Double", "Int32", "ConvertToVector256Int32", "ToZero"), new ulong[] {0x1d, 0x1d, 0x1d, 0x1d, 0x1d, 0x1d, 0x1d, 0x1d}},
+            {("Avx512F", "Int32",  "Single", "ConvertToVector512Single", "ToNegativeInfinity"), new ulong[] {0x41e80000, 0x41e80000, 0x41e80000, 0x41e80000, 0x41e80000, 0x41e80000, 0x41e80000, 0x41e80000, 0x41e80000, 0x41e80000, 0x41e80000, 0x41e80000, 0x41e80000, 0x41e80000, 0x41e80000, 0x41e80000}},
+            {("Avx512F", "Int32",  "Single", "ConvertToVector512Single", "ToPositiveInfinity"), new ulong[] {0x41e80000, 0x41e80000, 0x41e80000, 0x41e80000, 0x41e80000, 0x41e80000, 0x41e80000, 0x41e80000, 0x41e80000, 0x41e80000, 0x41e80000, 0x41e80000, 0x41e80000, 0x41e80000, 0x41e80000, 0x41e80000}},
+            {("Avx512F", "Int32",  "Single", "ConvertToVector512Single", "ToZero"), new ulong[] {0x41e80000, 0x41e80000, 0x41e80000, 0x41e80000, 0x41e80000, 0x41e80000, 0x41e80000, 0x41e80000, 0x41e80000, 0x41e80000, 0x41e80000, 0x41e80000, 0x41e80000, 0x41e80000, 0x41e80000, 0x41e80000}},
+            {("Avx512F", "Double", "Single", "ConvertToVector256Single", "ToNegativeInfinity"), new ulong[] {0x41eaf5c2, 0x41eaf5c2, 0x41eaf5c2, 0x41eaf5c2, 0x41eaf5c2, 0x41eaf5c2, 0x41eaf5c2, 0x41eaf5c2}},
+            {("Avx512F", "Double", "Single", "ConvertToVector256Single", "ToPositiveInfinity"), new ulong[] {0x41eaf5c3, 0x41eaf5c3, 0x41eaf5c3, 0x41eaf5c3, 0x41eaf5c3, 0x41eaf5c3, 0x41eaf5c3, 0x41eaf5c3}},
+            {("Avx512F", "Double", "Single", "ConvertToVector256Single", "ToZero"), new ulong[] {0x41eaf5c2, 0x41eaf5c2, 0x41eaf5c2, 0x41eaf5c2, 0x41eaf5c2, 0x41eaf5c2, 0x41eaf5c2, 0x41eaf5c2}},
+            {("Avx512F", "Double", "Double", "Sqrt", "ToNegativeInfinity"), new ulong[] {0x4015ad79b34092ec, 0x4015ad79b34092ec, 0x4015ad79b34092ec, 0x4015ad79b34092ec, 0x4015ad79b34092ec, 0x4015ad79b34092ec, 0x4015ad79b34092ec, 0x4015ad79b34092ec}},
+            {("Avx512F", "Single", "Single", "Sqrt", "ToNegativeInfinity"), new ulong[] {0x40ad6bcd, 0x40ad6bcd, 0x40ad6bcd, 0x40ad6bcd, 0x40ad6bcd, 0x40ad6bcd, 0x40ad6bcd, 0x40ad6bcd, 0x40ad6bcd, 0x40ad6bcd, 0x40ad6bcd, 0x40ad6bcd, 0x40ad6bcd, 0x40ad6bcd, 0x40ad6bcd, 0x40ad6bcd}},
+            {("Avx512F", "Double", "Double", "Sqrt", "ToPositiveInfinity"), new ulong[] {0x4015ad79b34092ed, 0x4015ad79b34092ed, 0x4015ad79b34092ed, 0x4015ad79b34092ed, 0x4015ad79b34092ed, 0x4015ad79b34092ed, 0x4015ad79b34092ed, 0x4015ad79b34092ed}},
+            {("Avx512F", "Single", "Single", "Sqrt", "ToPositiveInfinity"), new ulong[] {0x40ad6bce, 0x40ad6bce, 0x40ad6bce, 0x40ad6bce, 0x40ad6bce, 0x40ad6bce, 0x40ad6bce, 0x40ad6bce, 0x40ad6bce, 0x40ad6bce, 0x40ad6bce, 0x40ad6bce, 0x40ad6bce, 0x40ad6bce, 0x40ad6bce, 0x40ad6bce}},
+            {("Avx512F", "Double", "Double", "Sqrt", "ToZero"), new ulong[] {0x4015ad79b34092ec, 0x4015ad79b34092ec, 0x4015ad79b34092ec, 0x4015ad79b34092ec, 0x4015ad79b34092ec, 0x4015ad79b34092ec, 0x4015ad79b34092ec, 0x4015ad79b34092ec}},
+            {("Avx512F", "Single", "Single", "Sqrt", "ToZero"), new ulong[] {0x40ad6bcd, 0x40ad6bcd, 0x40ad6bcd, 0x40ad6bcd, 0x40ad6bcd, 0x40ad6bcd, 0x40ad6bcd, 0x40ad6bcd, 0x40ad6bcd, 0x40ad6bcd, 0x40ad6bcd, 0x40ad6bcd, 0x40ad6bcd, 0x40ad6bcd, 0x40ad6bcd, 0x40ad6bcd}},
+            {("Avx512DQ", "Int64", "Double", "ConvertToVector512Double", "ToNegativeInfinity"), new ulong[] {0x4024000000000000, 0x4024000000000000, 0x4024000000000000, 0x4024000000000000, 0x4024000000000000, 0x4024000000000000, 0x4024000000000000, 0x4024000000000000}},
+            {("Avx512DQ", "Int64", "Double", "ConvertToVector512Double", "ToPositiveInfinity"), new ulong[] {0x4024000000000000, 0x4024000000000000, 0x4024000000000000, 0x4024000000000000, 0x4024000000000000, 0x4024000000000000, 0x4024000000000000, 0x4024000000000000}},
+            {("Avx512DQ", "Int64", "Double", "ConvertToVector512Double", "ToZero"), new ulong[] {0x4024000000000000, 0x4024000000000000, 0x4024000000000000, 0x4024000000000000, 0x4024000000000000, 0x4024000000000000, 0x4024000000000000, 0x4024000000000000}},
+            {("Avx512DQ", "Int64", "Single", "ConvertToVector256Single", "ToNegativeInfinity"), new ulong[] {0x41200000, 0x41200000, 0x41200000, 0x41200000, 0x41200000, 0x41200000, 0x41200000, 0x41200000}},
+            {("Avx512DQ", "Int64", "Single", "ConvertToVector256Single", "ToPositiveInfinity"), new ulong[] {0x41200000, 0x41200000, 0x41200000, 0x41200000, 0x41200000, 0x41200000, 0x41200000, 0x41200000}},
+            {("Avx512DQ", "Int64", "Single", "ConvertToVector256Single", "ToZero"), new ulong[] {0x41200000, 0x41200000, 0x41200000, 0x41200000, 0x41200000, 0x41200000, 0x41200000, 0x41200000}},
+            {("Avx512DQ", "UInt64", "Double", "ConvertToVector512Double", "ToNegativeInfinity"), new ulong[] {0x4024000000000000, 0x4024000000000000, 0x4024000000000000, 0x4024000000000000, 0x4024000000000000, 0x4024000000000000, 0x4024000000000000, 0x4024000000000000}},
+            {("Avx512DQ", "UInt64", "Double", "ConvertToVector512Double", "ToPositiveInfinity"), new ulong[] {0x4024000000000000, 0x4024000000000000, 0x4024000000000000, 0x4024000000000000, 0x4024000000000000, 0x4024000000000000, 0x4024000000000000, 0x4024000000000000}},
+            {("Avx512DQ", "UInt64", "Double", "ConvertToVector512Double", "ToZero"), new ulong[] {0x4024000000000000, 0x4024000000000000, 0x4024000000000000, 0x4024000000000000, 0x4024000000000000, 0x4024000000000000, 0x4024000000000000, 0x4024000000000000}},
+            {("Avx512DQ", "UInt64", "Single", "ConvertToVector256Single", "ToNegativeInfinity"), new ulong[] {0x41200000, 0x41200000, 0x41200000, 0x41200000, 0x41200000, 0x41200000, 0x41200000, 0x41200000}},
+            {("Avx512DQ", "UInt64", "Single", "ConvertToVector256Single", "ToPositiveInfinity"), new ulong[] {0x41200000, 0x41200000, 0x41200000, 0x41200000, 0x41200000, 0x41200000, 0x41200000, 0x41200000}},
+            {("Avx512DQ", "UInt64", "Single", "ConvertToVector256Single", "ToZero"), new ulong[] {0x41200000, 0x41200000, 0x41200000, 0x41200000, 0x41200000, 0x41200000, 0x41200000, 0x41200000}},
+            {("Avx512DQ", "Double", "Int64",  "ConvertToVector512Int64", "ToNegativeInfinity"), new ulong[] {0x1d, 0x1d, 0x1d, 0x1d, 0x1d, 0x1d, 0x1d, 0x1d}},
+            {("Avx512DQ", "Double", "Int64",  "ConvertToVector512Int64", "ToPositiveInfinity"), new ulong[] {0x1e, 0x1e, 0x1e, 0x1e, 0x1e, 0x1e, 0x1e, 0x1e}},
+            {("Avx512DQ", "Double", "Int64",  "ConvertToVector512Int64", "ToZero"), new ulong[] {0x1d, 0x1d, 0x1d, 0x1d, 0x1d, 0x1d, 0x1d, 0x1d}},
+            {("Avx512DQ", "Single", "Int64",  "ConvertToVector512Int64", "ToNegativeInfinity"), new ulong[] {0x1d, 0x1d, 0x1d, 0x1d, 0x1d, 0x1d, 0x1d, 0x1d}},
+            {("Avx512DQ", "Single", "Int64",  "ConvertToVector512Int64", "ToPositiveInfinity"), new ulong[] {0x1e, 0x1e, 0x1e, 0x1e, 0x1e, 0x1e, 0x1e, 0x1e}},
+            {("Avx512DQ", "Single", "Int64",  "ConvertToVector512Int64", "ToZero"), new ulong[] {0x1d, 0x1d, 0x1d, 0x1d, 0x1d, 0x1d, 0x1d, 0x1d}},
+            {("Avx512DQ", "Double", "UInt64",  "ConvertToVector512UInt64", "ToNegativeInfinity"), new ulong[] {0x1d, 0x1d, 0x1d, 0x1d, 0x1d, 0x1d, 0x1d, 0x1d}},
+            {("Avx512DQ", "Double", "UInt64",  "ConvertToVector512UInt64", "ToPositiveInfinity"), new ulong[] {0x1e, 0x1e, 0x1e, 0x1e, 0x1e, 0x1e, 0x1e, 0x1e}},
+            {("Avx512DQ", "Double", "UInt64",  "ConvertToVector512UInt64", "ToZero"), new ulong[] {0x1d, 0x1d, 0x1d, 0x1d, 0x1d, 0x1d, 0x1d, 0x1d}},
+            {("Avx512DQ", "Single", "UInt64",  "ConvertToVector512UInt64", "ToNegativeInfinity"), new ulong[] {0x1d, 0x1d, 0x1d, 0x1d, 0x1d, 0x1d, 0x1d, 0x1d}},
+            {("Avx512DQ", "Single", "UInt64",  "ConvertToVector512UInt64", "ToPositiveInfinity"), new ulong[] {0x1e, 0x1e, 0x1e, 0x1e, 0x1e, 0x1e, 0x1e, 0x1e}},
+            {("Avx512DQ", "Single", "UInt64",  "ConvertToVector512UInt64", "ToZero"), new ulong[] {0x1d, 0x1d, 0x1d, 0x1d, 0x1d, 0x1d, 0x1d, 0x1d}},
+        };
+    }
+}

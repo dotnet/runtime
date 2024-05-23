@@ -72,10 +72,11 @@ namespace System.Security.Cryptography.X509Certificates
             bool ephemeralSpecified,
             SafeKeychainHandle keychain)
         {
-            ApplePkcs12Reader reader = new ApplePkcs12Reader(rawData);
+            ApplePkcs12Reader reader = new ApplePkcs12Reader();
 
             try
             {
+                reader.ParsePkcs12(rawData);
                 reader.Decrypt(password, ephemeralSpecified);
                 return new ApplePkcs12CertLoader(reader, keychain, password, exportable);
             }

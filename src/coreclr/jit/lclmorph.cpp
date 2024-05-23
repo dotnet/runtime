@@ -14,7 +14,9 @@ public:
         UseExecutionOrder = true,
     };
 
-    LocalSequencer(Compiler* comp) : GenTreeVisitor(comp), m_prevNode(nullptr)
+    LocalSequencer(Compiler* comp)
+        : GenTreeVisitor(comp)
+        , m_prevNode(nullptr)
     {
     }
 
@@ -719,7 +721,7 @@ private:
         GenTreeCall* callUser           = user->IsCall() ? user->AsCall() : nullptr;
         bool         hasHiddenStructArg = false;
         if (m_compiler->opts.compJitOptimizeStructHiddenBuffer && (callUser != nullptr) &&
-            IsValidLclAddr(lclNum, val.Offset()))
+            m_compiler->IsValidLclAddr(lclNum, val.Offset()))
         {
             // We will only attempt this optimization for locals that are:
             // a) Not susceptible to liveness bugs (see "lvaSetHiddenBufferStructArg").
@@ -805,6 +807,7 @@ private:
         unsigned   indirSize = node->AsIndir()->Size();
         bool       isWide;
 
+        // TODO-Cleanup: delete "indirSize == 0", use "Compiler::IsValidLclAddr".
         if ((indirSize == 0) || ((offset + indirSize) > UINT16_MAX))
         {
             // If we can't figure out the indirection size then treat it as a wide indirection.
@@ -823,15 +826,6 @@ private:
             else
             {
                 isWide = endOffset.Value() > m_compiler->lvaLclExactSize(lclNum);
-
-                if ((varDsc->TypeGet() == TYP_STRUCT) && varDsc->GetLayout()->IsBlockLayout())
-                {
-                    // TODO-CQ: TYP_BLK used to always be exposed here. This is in principle not necessary, but
-                    // not doing so would require VN changes. For now, exposing gets better CQ as otherwise the
-                    // variable ends up untracked and VN treats untracked-not-exposed locals more conservatively
-                    // than exposed ones.
-                    m_compiler->lvaSetVarAddrExposed(lclNum DEBUGARG(AddressExposedReason::TOO_CONSERVATIVE));
-                }
             }
         }
 
@@ -865,7 +859,7 @@ private:
         assert(addr->TypeIs(TYP_BYREF, TYP_I_IMPL));
         assert(m_compiler->lvaVarAddrExposed(lclNum) || m_compiler->lvaGetDesc(lclNum)->IsHiddenBufferStructArg());
 
-        if (IsValidLclAddr(lclNum, offset))
+        if (m_compiler->IsValidLclAddr(lclNum, offset))
         {
             addr->ChangeOper(GT_LCL_ADDR);
             addr->AsLclFld()->SetLclNum(lclNum);
@@ -926,9 +920,9 @@ private:
                 break;
 
 #ifdef FEATURE_HW_INTRINSICS
-            // We have two cases we want to handle:
-            // 1. Vector2/3/4 and Quaternion where we have 4x float fields
-            // 2. Plane where we have 1x Vector3 and 1x float field
+                // We have two cases we want to handle:
+                // 1. Vector2/3/4 and Quaternion where we have 4x float fields
+                // 2. Plane where we have 1x Vector3 and 1x float field
 
             case IndirTransform::GetElement:
             {
@@ -942,7 +936,7 @@ private:
                     {
                         GenTree* indexNode = m_compiler->gtNewIconNode(offset / genTypeSize(elementType));
                         hwiNode            = m_compiler->gtNewSimdGetElementNode(elementType, lclNode, indexNode,
-                                                                      CORINFO_TYPE_FLOAT, genTypeSize(varDsc));
+                                                                                 CORINFO_TYPE_FLOAT, genTypeSize(varDsc));
                         break;
                     }
                     case TYP_SIMD12:
@@ -1053,9 +1047,9 @@ private:
                 }
                 if (isDef)
                 {
-                    GenTree* data = indir->Data();
+                    GenTree* value = indir->Data();
                     indir->ChangeOper(GT_STORE_LCL_VAR);
-                    indir->AsLclVar()->Data() = data;
+                    indir->AsLclVar()->Data() = value;
                 }
                 else
                 {
@@ -1068,9 +1062,9 @@ private:
             case IndirTransform::LclFld:
                 if (isDef)
                 {
-                    GenTree* data = indir->Data();
+                    GenTree* value = indir->Data();
                     indir->ChangeOper(GT_STORE_LCL_FLD);
-                    indir->AsLclFld()->Data() = data;
+                    indir->AsLclFld()->Data() = value;
                 }
                 else
                 {
@@ -1265,9 +1259,9 @@ private:
         {
             if (node->OperIs(GT_STOREIND, GT_STORE_BLK))
             {
-                GenTree* data = node->Data();
+                GenTree* value = node->Data();
                 node->ChangeOper(GT_STORE_LCL_VAR);
-                node->AsLclVar()->Data() = data;
+                node->AsLclVar()->Data() = value;
                 node->gtFlags |= GTF_VAR_DEF;
             }
             else
@@ -1458,24 +1452,6 @@ public:
     }
 
 private:
-    //------------------------------------------------------------------------
-    // IsValidLclAddr: Can the given local address be represented as "LCL_FLD_ADDR"?
-    //
-    // Local address nodes cannot point beyond the local and can only store
-    // 16 bits worth of offset.
-    //
-    // Arguments:
-    //    lclNum - The local's number
-    //    offset - The address' offset
-    //
-    // Return Value:
-    //    Whether "LCL_FLD_ADDR<lclNum> [+offset]" would be valid IR.
-    //
-    bool IsValidLclAddr(unsigned lclNum, unsigned offset) const
-    {
-        return (offset < UINT16_MAX) && (offset < m_compiler->lvaLclExactSize(lclNum));
-    }
-
     //------------------------------------------------------------------------
     // IsUnused: is the given node unused?
     //

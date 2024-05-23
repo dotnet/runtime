@@ -34,6 +34,7 @@
 #include "comdelegate.h"
 #include "typestring.h"
 #include "appdomain.inl"
+#include "stubhelpers.h"
 
 #ifdef FEATURE_COMINTEROP
 #include "comcallablewrapper.h"
@@ -103,7 +104,7 @@ extern "C" BOOL QCALLTYPE MarshalNative_TryGetStructMarshalStub(void* enregister
 
     if (th.IsBlittable())
     {
-        *pStructMarshalStub = NULL;
+        *pStructMarshalStub = (PCODE)NULL;
         *pSize = th.GetMethodTable()->GetNativeSize();
         ret = TRUE;
     }
@@ -130,7 +131,7 @@ extern "C" BOOL QCALLTYPE MarshalNative_TryGetStructMarshalStub(void* enregister
     }
     else
     {
-        *pStructMarshalStub = NULL;
+        *pStructMarshalStub = (PCODE)NULL;
         *pSize = 0;
     }
 
@@ -283,26 +284,46 @@ extern "C" IsInCooperativeGCMode_fn QCALLTYPE MarshalNative_GetIsInCooperativeGC
 #endif
 
 /************************************************************************
- * Marshal.GetLastPInvokeError
+ * Support for the last PInvoke error
  */
+static thread_local int t_lastPInvokeError;
+
 FCIMPL0(int, MarshalNative::GetLastPInvokeError)
 {
     FCALL_CONTRACT;
 
-    return (UINT32)(GetThread()->m_dwLastError);
+    return t_lastPInvokeError;
 }
 FCIMPLEND
 
-/************************************************************************
- * Marshal.SetLastPInvokeError
- */
 FCIMPL1(void, MarshalNative::SetLastPInvokeError, int error)
 {
     FCALL_CONTRACT;
 
-    GetThread()->m_dwLastError = (DWORD)error;
+    t_lastPInvokeError = error;
 }
 FCIMPLEND
+
+FCIMPL0(void, StubHelpers::SetLastError)
+{
+    // Make sure this is the first thing we do after returning from the target, as almost everything can cause the last error to get trashed
+    DWORD lastError = ::GetLastError();
+
+    FCALL_CONTRACT;
+
+    t_lastPInvokeError = lastError;
+}
+FCIMPLEND
+
+#ifdef FEATURE_IJW
+// GetLastError override for C++/CLI
+DWORD STDMETHODCALLTYPE FalseGetLastError()
+{
+    WRAPPER_NO_CONTRACT;
+
+    return t_lastPInvokeError;
+}
+#endif // FEATURE_IJW
 
 /************************************************************************
  * Support for the GCHandle class.
@@ -509,6 +530,33 @@ extern "C" IDispatch* QCALLTYPE MarshalNative_GetIDispatchForObject(QCall::Objec
     OBJECTREF oref = o.Get();
     GCPROTECT_BEGIN(oref);
     retVal = (IDispatch*)GetComIPFromObjectRef(&oref, ComIpType_Dispatch, NULL);
+    GCPROTECT_END();
+
+    END_QCALL;
+    return retVal;
+}
+
+//====================================================================
+// return the IUnknown* or IDispatch* for an Object.
+//====================================================================
+extern "C" void* QCALLTYPE MarshalNative_GetIUnknownOrIDispatchForObject(QCall::ObjectHandleOnStack o, BOOL* isIDispatch)
+{
+    QCALL_CONTRACT;
+
+    void* retVal = NULL;
+
+    BEGIN_QCALL;
+
+    // Ensure COM is started up.
+    EnsureComStarted();
+
+    GCX_COOP();
+
+    OBJECTREF oref = o.Get();
+    GCPROTECT_BEGIN(oref);
+    ComIpType fetchedIpType = ComIpType_None;
+    retVal = GetComIPFromObjectRef(&oref, ComIpType_Both, &fetchedIpType);
+    *isIDispatch = fetchedIpType == ComIpType_Dispatch;
     GCPROTECT_END();
 
     END_QCALL;

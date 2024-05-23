@@ -150,6 +150,12 @@ namespace ILLink.RoslynAnalyzer.Tests
 		}
 
 		[Fact]
+		public Task FeatureGuardAttributeDataFlow ()
+		{
+			return RunTest ();
+		}
+
+		[Fact]
 		public Task FieldDataFlow ()
 		{
 			return RunTest (nameof (FieldDataFlow));
@@ -180,13 +186,19 @@ namespace ILLink.RoslynAnalyzer.Tests
 		}
 
 		[Fact]
-		public Task InterpolatedStringHandlerDataFlow ()
+		public Task InterpolatedStringDataFlow ()
 		{
 			return RunTest ();
 		}
 
 		[Fact]
 		public Task MakeGenericDataFlow ()
+		{
+			return RunTest ();
+		}
+
+		[Fact]
+		public Task MakeGenericDataflowIntrinsics ()
 		{
 			return RunTest ();
 		}
@@ -278,6 +290,12 @@ namespace ILLink.RoslynAnalyzer.Tests
 		}
 
 		[Fact]
+		public Task MethodOutParameterDataFlow ()
+		{
+			return RunTest ();
+		}
+
+		[Fact]
 		public Task MethodParametersDataFlow ()
 		{
 			return RunTest (nameof (MethodParametersDataFlow));
@@ -297,6 +315,12 @@ namespace ILLink.RoslynAnalyzer.Tests
 
 		[Fact]
 		public Task NullableAnnotations ()
+		{
+			return RunTest ();
+		}
+
+		[Fact]
+		public Task ObjectGetTypeDataflow ()
 		{
 			return RunTest ();
 		}

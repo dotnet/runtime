@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>$(TargetFrameworkForNETCoreTasks)</TargetFramework>
+    <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
     <OutputType>Library</OutputType>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
@@ -23,7 +23,7 @@
   <Target Name="GetFilesToPackage" Returns="@(FilesToPackage)">
     <ItemGroup>
       <FilesToPackage Include="$(OutputPath)$(MSBuildProjectName)*"
-                      TargetPath="tasks\$(TargetFrameworkForNETCoreTasks)" />
+                      TargetPath="tasks\$(NetCoreAppToolCurrent)" />
     </ItemGroup>
   </Target>
 

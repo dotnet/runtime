@@ -25,7 +25,7 @@ namespace Microsoft.NET.HostModel.Bundle.Tests
 
         private static string BundlerHostName = Binaries.GetExeFileNameForCurrentPlatform(SharedTestState.AppName);
         private Bundler CreateBundlerInstance(BundleOptions bundleOptions = BundleOptions.None, Version version = null, bool macosCodesign = true)
-            => new Bundler(BundlerHostName, SharedFramework.CalculateUniqueTestDirectory($"{sharedTestState.App.Location}-bundle"), bundleOptions, targetFrameworkVersion: version, macosCodesign: macosCodesign);
+            => new Bundler(BundlerHostName, sharedTestState.App.GetUniqueSubdirectory("bundle"), bundleOptions, targetFrameworkVersion: version, macosCodesign: macosCodesign);
 
         [Fact]
         public void EnableCompression_Before60_Fails()
@@ -212,7 +212,7 @@ namespace Microsoft.NET.HostModel.Bundle.Tests
                     new FileSpec(app.RuntimeConfigJson, runtimeConfigName),
                 };
 
-                var bundleDir = Directory.CreateDirectory(SharedFramework.CalculateUniqueTestDirectory(Path.Combine(app.Location, "bundle")));
+                var bundleDir = new DirectoryInfo(app.GetUniqueSubdirectory("bundle"));
                 var bundler = new Bundler(hostName, bundleDir.FullName);
                 bundler.GenerateBundle(fileSpecs);
 

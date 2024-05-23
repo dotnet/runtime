@@ -30,7 +30,7 @@ namespace ILCompiler.DependencyAnalysis
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
             sb.Append(nameMangler.CompilationUnitPrefix)
-                .Append("__InterfaceDispatchCell_")
+                .Append("__InterfaceDispatchCell_"u8)
                 .Append(nameMangler.GetMangledMethodName(_targetMethod));
 
             if (_callSiteIdentifier != null)
@@ -54,7 +54,7 @@ namespace ILCompiler.DependencyAnalysis
         {
             DependencyList result = new DependencyList();
 
-            if (!factory.VTable(_targetMethod.OwningType).HasFixedSlots)
+            if (!factory.VTable(_targetMethod.OwningType).HasKnownVirtualMethodUse)
             {
                 result.Add(factory.VirtualMethodUse(_targetMethod), "Interface method use");
             }

@@ -299,6 +299,36 @@ namespace System.Tests
             Assert.True(obj1.Equals(obj2));
             Assert.Equal(obj1.GetHashCode(), obj2.GetHashCode());
         }
+        
+        [Fact]
+        public static void StructContainsPointerNestedCompareTest()
+        {
+            StructContainsPointerNested obj1 = new StructContainsPointerNested();
+            obj1.o = null;
+            obj1.value.value = 1;
+
+            StructContainsPointerNested obj2 = new StructContainsPointerNested();
+            obj2.o = null;
+            obj2.value.value = 1;
+
+            Assert.True(obj1.Equals(obj2));
+            Assert.Equal(obj1.GetHashCode(), obj2.GetHashCode());
+        }
+
+        [Fact]
+        public static void StructWithNestedOverriddenNotBitwiseComparableTest()
+        {
+            StructWithNestedOverriddenNotBitwiseComparable obj1 = new StructWithNestedOverriddenNotBitwiseComparable();
+            obj1.value1.value = 1;
+            obj1.value2.value = 0;
+
+            StructWithNestedOverriddenNotBitwiseComparable obj2 = new StructWithNestedOverriddenNotBitwiseComparable();
+            obj2.value1.value = -1;
+            obj2.value2.value = 0;
+
+            Assert.True(obj1.Equals(obj2));
+            Assert.Equal(obj1.GetHashCode(), obj2.GetHashCode());
+        }
 
         public struct S
         {
@@ -391,6 +421,27 @@ namespace System.Tests
             public string s;
             public double value1;
             public double value2;
+        }
+
+        public struct StructContainsPointerNested
+        {
+            public object o;
+            public StructNonOverriddenEqualsOrGetHasCode value;
+        }
+
+        public struct StructOverriddenNotBitwiseComparable
+        {
+            public int value;
+
+            public override bool Equals(object obj) => obj is StructOverriddenNotBitwiseComparable other && (value == other.value || value == -other.value);
+
+            public override int GetHashCode() => value < 0 ? -value : value;
+        }
+
+        public struct StructWithNestedOverriddenNotBitwiseComparable
+        {
+            public StructOverriddenNotBitwiseComparable value1;
+            public StructOverriddenNotBitwiseComparable value2;
         }
     }
 }

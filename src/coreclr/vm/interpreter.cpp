@@ -73,7 +73,7 @@ InterpreterMethodInfo::InterpreterMethodInfo(CEEInfo* comp, CORINFO_METHOD_INFO*
 #if defined(_DEBUG)
         m_methName = ::eeGetMethodFullName(comp, methInfo->ftn, &clsName);
 #else
-        m_methName = comp->getMethodNameFromMetadata(methInfo->ftn, &clsName, NULL, NULL);
+        m_methName = getMethodName(comp, methInfo->ftn, &clsName);
 #endif
         char* myClsName = new char[strlen(clsName) + 1];
         strcpy(myClsName, clsName);
@@ -752,7 +752,7 @@ CorJitResult Interpreter::GenerateInterpreterStub(CEEInfo* comp,
     if (!jmpCall)
     {
         const char* clsName;
-        const char* methName = comp->getMethodNameFromMetadata(info->ftn, &clsName, NULL, NULL);
+        const char* methName = getMethodName(comp, info->ftn, &clsName);
         if (   !s_InterpretMeths.contains(methName, clsName, info->args.pSig)
             || s_InterpretMethsExclude.contains(methName, clsName, info->args.pSig))
         {
@@ -1846,7 +1846,7 @@ void Interpreter::JitMethodIfAppropriate(InterpreterMethodInfo* interpMethInfo, 
             else
             {
                 COR_ILMETHOD_DECODER::DecoderStatus status;
-                pDecoder = new COR_ILMETHOD_DECODER(md->GetILHeader(TRUE),
+                pDecoder = new COR_ILMETHOD_DECODER(md->GetILHeader(),
                                                     md->GetMDImport(),
                                                     &status);
             }
@@ -1952,7 +1952,7 @@ static void MonitorEnter(Object* obj, BYTE* pbLockTaken)
 
     GCPROTECT_BEGININTERIOR(pbLockTaken);
 
-    if (GET_THREAD()->CatchAtSafePointOpportunistic())
+    if (GET_THREAD()->CatchAtSafePoint())
     {
         GET_THREAD()->PulseGCMode();
     }
@@ -6506,7 +6506,7 @@ void Interpreter::CkFinite()
         break;
     }
 
-    if (!_finite(val))
+    if (!isfinite(val))
         ThrowSysArithException();
 }
 
@@ -6828,6 +6828,16 @@ void Interpreter::SetILInstrCategories()
 }
 #endif // INTERP_ILINSTR_PROFILE
 
+#ifndef TARGET_WINDOWS
+namespace
+{
+    bool isnan(float val)
+    {
+        UINT32 bits = *reinterpret_cast<UINT32*>(&val);
+        return (bits & 0x7FFFFFFFU) > 0x7F800000U;
+    }
+}
+#endif
 
 template<int op>
 void Interpreter::CompareOp()
@@ -7135,7 +7145,7 @@ INT32 Interpreter::CompareOpRes(unsigned op1idx)
                 else if (op == CO_GT_UN)
                 {
                     // Check for NAN's here: if either is a NAN, they're unordered, so this comparison returns true.
-                    if (_isnan(val1) || _isnan(val2)) res = 1;
+                    if (isnan(val1) || isnan(val2)) res = 1;
                     else if (val1 > val2) res = 1;
                 }
                 else if (op == CO_LT)
@@ -7146,7 +7156,7 @@ INT32 Interpreter::CompareOpRes(unsigned op1idx)
                 {
                     _ASSERTE(op == CO_LT_UN);
                     // Check for NAN's here: if either is a NAN, they're unordered, so this comparison returns true.
-                    if (_isnan(val1) || _isnan(val2)) res = 1;
+                    if (isnan(val1) || isnan(val2)) res = 1;
                     else if (val1 < val2) res = 1;
                 }
             }
@@ -7177,7 +7187,7 @@ INT32 Interpreter::CompareOpRes(unsigned op1idx)
                 else if (op == CO_GT_UN)
                 {
                     // Check for NAN's here: if either is a NAN, they're unordered, so this comparison returns true.
-                    if (_isnan(val1) || _isnan(val2)) res = 1;
+                    if (isnan(val1) || isnan(val2)) res = 1;
                     else if (val1 > val2) res = 1;
                 }
                 else if (op == CO_LT)
@@ -7188,7 +7198,7 @@ INT32 Interpreter::CompareOpRes(unsigned op1idx)
                 {
                     _ASSERTE(op == CO_LT_UN);
                     // Check for NAN's here: if either is a NAN, they're unordered, so this comparison returns true.
-                    if (_isnan(val1) || _isnan(val2)) res = 1;
+                    if (isnan(val1) || isnan(val2)) res = 1;
                     else if (val1 < val2) res = 1;
                 }
             }
@@ -7977,14 +7987,14 @@ void Interpreter::EnsureClassInit(MethodTable* pMT)
         pMT->CheckRestore();
         // This is tantamount to a call, so exempt it from the cycle count.
 #if INTERP_ILCYCLE_PROFILE
-        unsigned __int64 startCycles;
+        uint64_t startCycles;
         bool b = CycleTimer::GetThreadCyclesS(&startCycles); _ASSERTE(b);
 #endif // INTERP_ILCYCLE_PROFILE
 
         pMT->CheckRunClassInitThrowing();
 
 #if INTERP_ILCYCLE_PROFILE
-        unsigned __int64 endCycles;
+        uint64_t endCycles;
         b = CycleTimer::GetThreadCyclesS(&endCycles); _ASSERTE(b);
         m_exemptCycles += (endCycles - startCycles);
 #endif // INTERP_ILCYCLE_PROFILE
@@ -9107,9 +9117,9 @@ void Interpreter::DoCallWork(bool virtualCall, void* thisArg, CORINFO_RESOLVED_T
 #if INTERP_ILCYCLE_PROFILE
 #if 0
     // XXX
-    unsigned __int64 callStartCycles;
+    uint64_t callStartCycles;
     bool b = CycleTimer::GetThreadCyclesS(&callStartCycles); _ASSERTE(b);
-    unsigned __int64 callStartExemptCycles = m_exemptCycles;
+    uint64_t callStartExemptCycles = m_exemptCycles;
 #endif
 #endif // INTERP_ILCYCLE_PROFILE
 
@@ -9181,9 +9191,9 @@ void Interpreter::DoCallWork(bool virtualCall, void* thisArg, CORINFO_RESOLVED_T
 #if 0
             if (virtualCall)
             {
-                unsigned __int64 callEndCycles;
+                uint64_t callEndCycles;
                 b = CycleTimer::GetThreadCyclesS(&callEndCycles); _ASSERTE(b);
-                unsigned __int64 delta = (callEndCycles - callStartCycles);
+                uint64_t delta = (callEndCycles - callStartCycles);
                 delta -= (m_exemptCycles - callStartExemptCycles);
                 s_callCycles += delta;
                 s_calls++;
@@ -9226,19 +9236,16 @@ void Interpreter::DoCallWork(bool virtualCall, void* thisArg, CORINFO_RESOLVED_T
     // Point A in our cycle count.
 
 
-    // TODO: enable when NamedIntrinsic is available to interpreter
-
-    /*
     // Is the method an intrinsic?  If so, and if it's one we've written special-case code for
     // handle intrinsically.
-    NamedIntrinsic intrinsicName;
+    InterpreterNamedIntrinsics intrinsicId;
     {
         GCX_PREEMP();
-        intrinsicName = getIntrinsicName(CORINFO_METHOD_HANDLE(methToCall), nullptr);
+        intrinsicId = getNamedIntrinsicID(&m_interpCeeInfo, CORINFO_METHOD_HANDLE(methToCall));
     }
 
 #if INTERP_TRACING
-    if (intrinsicName == NI_Illegal)
+    if (intrinsicId == NI_Illegal)
         InterlockedIncrement(&s_totalInterpCallsToIntrinsics);
 #endif // INTERP_TRACING
     bool didIntrinsic = false;
@@ -9246,6 +9253,10 @@ void Interpreter::DoCallWork(bool virtualCall, void* thisArg, CORINFO_RESOLVED_T
     {
         switch (intrinsicId)
         {
+        case NI_System_Runtime_InteropService_MemoryMarshal_GetArrayDataReference:
+            DoGetArrayDataReference();
+            didIntrinsic = true;
+            break;
 #if INTERP_ILSTUBS
         case NI_System_StubHelpers_GetStubContext:
             OpStackSet<void*>(m_curStackHt, GetStubContext());
@@ -9260,19 +9271,6 @@ void Interpreter::DoCallWork(bool virtualCall, void* thisArg, CORINFO_RESOLVED_T
             break;
         }
 
-        // Plus some other calls that we're going to treat "like" intrinsics...
-        if (methToCall == CoreLibBinder::GetMethod(METHOD__STUBHELPERS__SET_LAST_ERROR))
-        {
-            // If we're interpreting a method that calls "SetLastError", it's very likely that the call(i) whose
-            // error we're trying to capture was performed with MethodDescCallSite machinery that itself trashes
-            // the last error.  We solve this by saving the last error in a special interpreter-specific field of
-            // "Thread" in that case, and essentially implement SetLastError here, taking that field as the
-            // source for the last error.
-            Thread* thrd = GetThread();
-            thrd->m_dwLastError = thrd->m_dwLastErrorInterp;
-            didIntrinsic = true;
-        }
-
         // TODO: The following check for hardware intrinsics is not a production-level
         //       solution and may produce incorrect results.
         static ConfigDWORD s_InterpreterHWIntrinsicsIsSupportedFalse;
@@ -9283,15 +9281,26 @@ void Interpreter::DoCallWork(bool virtualCall, void* thisArg, CORINFO_RESOLVED_T
             // Hardware intrinsics are recognized by name.
             const char* namespaceName = NULL;
             const char* className = NULL;
-            const char* methodName = m_interpCeeInfo.getMethodNameFromMetadata((CORINFO_METHOD_HANDLE)methToCall, &className, &namespaceName, NULL);
+            const char* methodName = getMethodName(&m_interpCeeInfo, (CORINFO_METHOD_HANDLE)methToCall, &className, &namespaceName, NULL);
             if (
+                (strcmp(namespaceName, "System.Runtime.Intrinsics") == 0 ||
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
-                strcmp(namespaceName, "System.Runtime.Intrinsics.X86") == 0 &&
+                strcmp(namespaceName, "System.Runtime.Intrinsics.X86") == 0
 #elif defined(TARGET_ARM64)
-                strcmp(namespaceName, "System.Runtime.Intrinsics.Arm") == 0 &&
-#endif // defined(TARGET_X86) || defined(TARGET_AMD64)
+                strcmp(namespaceName, "System.Runtime.Intrinsics.Arm") == 0
+#else
+                0
+#endif
+                ) &&
                 strcmp(methodName, "get_IsSupported") == 0
             )
+            {
+                GCX_COOP();
+                DoGetIsSupported();
+                didIntrinsic = true;
+            }
+
+            if (strcmp(methodName, "get_IsHardwareAccelerated") == 0 && strcmp(namespaceName, "System.Runtime.Intrinsics") == 0)
             {
                 GCX_COOP();
                 DoGetIsSupported();
@@ -9310,7 +9319,7 @@ void Interpreter::DoCallWork(bool virtualCall, void* thisArg, CORINFO_RESOLVED_T
             // SIMD intrinsics are recognized by name.
             const char* namespaceName = NULL;
             const char* className = NULL;
-            const char* methodName = m_interpCeeInfo.getMethodNameFromMetadata((CORINFO_METHOD_HANDLE)methToCall, &className, &namespaceName, NULL);
+            const char* methodName = getMethodName(&m_interpCeeInfo, (CORINFO_METHOD_HANDLE)methToCall, &className, &namespaceName, NULL);
             if ((strcmp(methodName, "get_IsHardwareAccelerated") == 0) && (strcmp(className, "Vector") == 0) && (strcmp(namespaceName, "System.Numerics") == 0))
             {
                 GCX_COOP();
@@ -9339,7 +9348,6 @@ void Interpreter::DoCallWork(bool virtualCall, void* thisArg, CORINFO_RESOLVED_T
         // Now we can return.
         return;
     }
-    */
 
     // Handle other simple special cases:
 
@@ -9571,9 +9579,20 @@ void Interpreter::DoCallWork(bool virtualCall, void* thisArg, CORINFO_RESOLVED_T
     {
         _ASSERTE(m_callThisArg == NULL);  // "m_callThisArg" non-null only for .ctor, which are not callvirts.
 
-        CorInfoType argCIT = OpStackTypeGet(argsBase + arg).ToCorInfoType();
-        if (argCIT != CORINFO_TYPE_BYREF)
-            VerificationError("This arg of constrained call must be managed pointer.");
+        // The constrained. prefix will be immediately followed by a ldftn, call or callvirt instruction.
+        // See Ecma-335-Augments.md#iii21-constrained---prefix-invoke-a-member-on-a-value-of-a-variable-type-page-316 for more detail
+        if (sigInfo.hasThis())
+        {
+            // For the callvirt instruction, the ptr argument will be a managed pointer (&) to thisType.
+            CorInfoType argCIT = OpStackTypeGet(argsBase + arg).ToCorInfoType();
+            if (argCIT != CORINFO_TYPE_BYREF)
+                VerificationError("This arg of constrained call must be managed pointer.");
+        }
+        else
+        {
+            // If the constrained. prefix is applied to a call or ldftn instruction, method must be a virtual static method.
+            // TODO: Assert it is a virtual static method.
+        }
 
         // We only cache for the CORINFO_NO_THIS_TRANSFORM case, so we may assume that if we have a cached call site,
         // there's no thisTransform to perform.
@@ -9658,7 +9677,7 @@ void Interpreter::DoCallWork(bool virtualCall, void* thisArg, CORINFO_RESOLVED_T
     const char* methToCallName = NULL;
     {
         GCX_PREEMP();
-        methToCallName = m_interpCeeInfo.getMethodNameFromMetadata(CORINFO_METHOD_HANDLE(methToCall), &clsOfMethToCallName, NULL, NULL);
+        methToCallName = getMethodName(&m_interpCeeInfo, CORINFO_METHOD_HANDLE(methToCall), &clsOfMethToCallName);
     }
 #if INTERP_TRACING
     if (strncmp(methToCallName, "get_", 4) == 0)
@@ -9957,7 +9976,7 @@ void Interpreter::DoCallWork(bool virtualCall, void* thisArg, CORINFO_RESOLVED_T
         Frame* topFrameBefore = thr->GetFrame();
 
 #if INTERP_ILCYCLE_PROFILE
-        unsigned __int64 startCycles;
+        uint64_t startCycles;
 #endif // INTERP_ILCYCLE_PROFILE
 
         // CYCLE PROFILE: BEFORE MDCS CREATION.
@@ -10044,7 +10063,7 @@ void Interpreter::DoCallWork(bool virtualCall, void* thisArg, CORINFO_RESOLVED_T
             }
         }
 #if INTERP_ILCYCLE_PROFILE
-        unsigned __int64 endCycles;
+        uint64_t endCycles;
         bool b = CycleTimer::GetThreadCyclesS(&endCycles); _ASSERTE(b);
         m_exemptCycles += (endCycles - startCycles);
 #endif // INTERP_ILCYCLE_PROFILE
@@ -10851,6 +10870,39 @@ void Interpreter::DoGetIsSupported()
     m_curStackHt++;
 }
 
+void Interpreter::DoGetArrayDataReference()
+{
+    CONTRACTL {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_COOPERATIVE;
+    } CONTRACTL_END;
+
+    _ASSERTE(m_curStackHt > 0);
+    unsigned ind = m_curStackHt - 1;
+
+#ifdef _DEBUG
+    _ASSERTE(OpStackTypeGet(ind).ToCorInfoType() == CORINFO_TYPE_CLASS);
+#endif // _DEBUG
+
+    Object* obj = OpStackGet<Object*>(ind);
+
+    if (obj == NULL)
+    {
+        ThrowNullPointerException();
+    }
+
+#ifdef _DEBUG
+    _ASSERTE(obj->GetMethodTable()->IsArray());
+#endif // _DEBUG
+
+    ArrayBase* a = reinterpret_cast<ArrayBase*>(obj);
+    ThrowOnInvalidPointer(a);
+    PTR_BYTE dataPtr = a->GetDataPtr();
+    OpStackSet<void*>(ind, dataPtr);
+    OpStackTypeSet(ind, InterpreterType(CORINFO_TYPE_BYREF));
+}
+
 void Interpreter::RecordConstrainedCall()
 {
     CONTRACTL {
@@ -11429,19 +11481,19 @@ int        Interpreter::s_ILInstrExecs[256] = {0, };
 int        Interpreter::s_ILInstrExecsByCategory[512] = {0, };
 int        Interpreter::s_ILInstr2ByteExecs[Interpreter::CountIlInstr2Byte] = {0, };
 #if INTERP_ILCYCLE_PROFILE
-unsigned __int64       Interpreter::s_ILInstrCycles[512] = { 0, };
-unsigned __int64       Interpreter::s_ILInstrCyclesByCategory[512] = { 0, };
+uint64_t       Interpreter::s_ILInstrCycles[512] = { 0, };
+uint64_t       Interpreter::s_ILInstrCyclesByCategory[512] = { 0, };
 // XXX
-unsigned __int64       Interpreter::s_callCycles = 0;
+uint64_t       Interpreter::s_callCycles = 0;
 unsigned               Interpreter::s_calls = 0;
 
 void Interpreter::UpdateCycleCount()
 {
-    unsigned __int64 endCycles;
+    uint64_t endCycles;
     bool b = CycleTimer::GetThreadCyclesS(&endCycles); _ASSERTE(b);
     if (m_instr != CEE_COUNT)
     {
-        unsigned __int64 delta = (endCycles - m_startCycles);
+        uint64_t delta = (endCycles - m_startCycles);
         if (m_exemptCycles > 0)
         {
             delta = delta - m_exemptCycles;
@@ -11672,6 +11724,67 @@ static const char* CorInfoTypeNames[] = {
     "var"
 };
 
+// Also see Compiler::lookupNamedIntrinsic
+Interpreter::InterpreterNamedIntrinsics Interpreter::getNamedIntrinsicID(CEEInfo* info, CORINFO_METHOD_HANDLE methodHnd)
+{
+    InterpreterNamedIntrinsics result = NI_Illegal;
+
+    const char* namespaceName = NULL;
+    const char* className = NULL;
+    const char* methodName = getMethodName(info, (CORINFO_METHOD_HANDLE)methodHnd, &className, &namespaceName, NULL);
+
+    if (strncmp(namespaceName, "System", 6) == 0)
+    {
+        namespaceName += 6;
+        if (namespaceName[0] == '.')
+        {
+            namespaceName += 1;
+            if (strcmp(namespaceName, "StubHelpers") == 0)
+            {
+                if (strcmp(className, "StubHelpers") == 0)
+                {
+                    if (strcmp(methodName, "GetStubContext") == 0)
+                    {
+                        result = NI_System_StubHelpers_GetStubContext;
+                    }
+                }
+            }
+            else if (strncmp(namespaceName, "Runtime.", 8) == 0)
+            {
+                namespaceName += 8;
+                if (strcmp(namespaceName, "InteropServices") == 0)
+                {
+                    if (strcmp(className, "MemoryMarshal") == 0)
+                    {
+                        if (strcmp(methodName, "GetArrayDataReference") == 0)
+                        {
+                            result = NI_System_Runtime_InteropService_MemoryMarshal_GetArrayDataReference;
+                        }
+                    }
+                }
+            }
+        }
+    }
+    return result;
+}
+
+// Simple version of getMethodName which supports IL Stubs such as IL_STUB_PInvoke additionally.
+// Also see getMethodNameFromMetadata and printMethodName in corinfo.h
+const char* Interpreter::getMethodName(CEEInfo* info, CORINFO_METHOD_HANDLE hnd, const char** className, const char** namespaceName, const char **enclosingClassName)
+{
+    MethodDesc *pMD = GetMethod(hnd);
+    if (pMD->IsILStub())
+    {
+        if (className != NULL)
+        {
+            *className = ILStubResolver::GetStubClassName(pMD);
+        }
+        return pMD->GetName();
+    }
+
+    return info->getMethodNameFromMetadata(hnd, className, namespaceName, enclosingClassName);
+}
+
 const char* eeGetMethodFullName(CEEInfo* info, CORINFO_METHOD_HANDLE hnd, const char** clsName)
 {
     CONTRACTL {
@@ -11685,7 +11798,7 @@ const char* eeGetMethodFullName(CEEInfo* info, CORINFO_METHOD_HANDLE hnd, const 
     const char* returnType = NULL;
 
     const char* className;
-    const char* methodName = info->getMethodNameFromMetadata(hnd, &className, NULL, NULL);
+    const char* methodName = Interpreter::getMethodName(info, hnd, &className);
     if (clsName != NULL)
     {
         *clsName = className;
@@ -12102,7 +12215,7 @@ const int MIL = 1000000;
 
 // Leaving this disabled for now.
 #if 0
-unsigned __int64 ForceSigWalkCycles = 0;
+uint64_t ForceSigWalkCycles = 0;
 #endif
 
 void Interpreter::PrintPostMortemData()
@@ -12268,15 +12381,15 @@ void Interpreter::PrintPostMortemData()
     // First, classify by categories.
     unsigned totInstrs = 0;
 #if INTERP_ILCYCLE_PROFILE
-    unsigned __int64 totCycles = 0;
-    unsigned __int64 perMeasurementOverhead = CycleTimer::QueryOverhead();
+    uint64_t totCycles = 0;
+    uint64_t perMeasurementOverhead = CycleTimer::QueryOverhead();
 #endif // INTERP_ILCYCLE_PROFILE
     for (unsigned i = 0; i < 256; i++)
     {
         s_ILInstrExecsByCategory[s_ILInstrCategories[i]] += s_ILInstrExecs[i];
         totInstrs += s_ILInstrExecs[i];
 #if INTERP_ILCYCLE_PROFILE
-        unsigned __int64 cycles = s_ILInstrCycles[i];
+        uint64_t cycles = s_ILInstrCycles[i];
         if (cycles > s_ILInstrExecs[i] * perMeasurementOverhead) cycles -= s_ILInstrExecs[i] * perMeasurementOverhead;
         else cycles = 0;
         s_ILInstrCycles[i] = cycles;
@@ -12286,7 +12399,7 @@ void Interpreter::PrintPostMortemData()
     }
     unsigned totInstrs2Byte = 0;
 #if INTERP_ILCYCLE_PROFILE
-    unsigned __int64 totCycles2Byte = 0;
+    uint64_t totCycles2Byte = 0;
 #endif // INTERP_ILCYCLE_PROFILE
     for (unsigned i = 0; i < CountIlInstr2Byte; i++)
     {
@@ -12295,7 +12408,7 @@ void Interpreter::PrintPostMortemData()
         totInstrs += s_ILInstr2ByteExecs[i];
         totInstrs2Byte +=  s_ILInstr2ByteExecs[i];
 #if INTERP_ILCYCLE_PROFILE
-        unsigned __int64 cycles = s_ILInstrCycles[ind];
+        uint64_t cycles = s_ILInstrCycles[ind];
         if (cycles > s_ILInstrExecs[ind] * perMeasurementOverhead) cycles -= s_ILInstrExecs[ind] * perMeasurementOverhead;
         else cycles = 0;
         s_ILInstrCycles[i] = cycles;
@@ -12340,7 +12453,7 @@ void Interpreter::PrintPostMortemData()
     fprintf(GetLogFile(), "      MCycles (%lld total, %lld 1-byte, %lld calls (%d calls, %10.2f cyc/call):\n",
             totCycles/MIL, (totCycles - totCycles2Byte)/MIL, s_callCycles/MIL, s_calls, float(s_callCycles)/float(s_calls));
 #if 0
-    extern unsigned __int64 MetaSigCtor1Cycles;
+    extern uint64_t MetaSigCtor1Cycles;
     fprintf(GetLogFile(), "      MetaSig(MethodDesc, TypeHandle) ctor: %lld MCycles.\n",
         MetaSigCtor1Cycles/MIL);
     fprintf(GetLogFile(), "      ForceSigWalk: %lld MCycles.\n",
@@ -12414,7 +12527,7 @@ const int K = 1000;
 // static
 void Interpreter::PrintILProfile(Interpreter::InstrExecRecord *recs, unsigned int totInstrs
 #if INTERP_ILCYCLE_PROFILE
-                                 , unsigned __int64 totCycles
+                                 , uint64_t totCycles
 #endif // INTERP_ILCYCLE_PROFILE
                                  )
 {

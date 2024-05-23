@@ -11,7 +11,7 @@ using Xunit;
 
 namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
 {
-    public abstract class RidAssetResolutionBase : ComponentDependencyResolutionBase
+    public abstract class RidAssetResolutionBase
     {
         private static Version UseRidGraphDisabledVersion = new Version(8, 0);
         public class TestSetup

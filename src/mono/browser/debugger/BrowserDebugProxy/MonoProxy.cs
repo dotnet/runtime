@@ -911,16 +911,18 @@ namespace Microsoft.WebAssembly.Diagnostics
                     return true;
                 }
             }
-            catch (ReturnAsErrorException raee)
+            catch (ReturnAsErrorException ree)
             {
-                logger.LogDebug($"Unable to evaluate breakpoint condition '{condition}': {raee}");
-                SendLog(sessionId, $"Unable to evaluate breakpoint condition '{condition}': {raee.Message}", token, type: "error");
+                logger.LogDebug($"Unable to evaluate breakpoint condition '{condition}': {ree}");
+                SendLog(sessionId, $"Unable to evaluate breakpoint condition '{condition}': {ree.Message}", token, type: "error");
                 bp.ConditionAlreadyEvaluatedWithError = true;
+                SendExceptionToTelemetry(ree, "EvaluateCondition", sessionId, token);
             }
             catch (Exception e)
             {
                 Log("info", $"Unable to evaluate breakpoint condition '{condition}': {e}");
                 bp.ConditionAlreadyEvaluatedWithError = true;
+                SendExceptionToTelemetry(e, "EvaluateCondition", sessionId, token);
             }
             return false;
         }
@@ -1519,15 +1521,27 @@ namespace Microsoft.WebAssembly.Diagnostics
             catch (ReturnAsErrorException ree)
             {
                 SendResponse(msg_id, AddCallStackInfoToException(ree.Error, context, scopeId), token);
+                SendExceptionToTelemetry(ree, "OnEvaluateOnCallFrame", msg_id, token);
             }
             catch (Exception e)
             {
                 logger.LogDebug($"Error in EvaluateOnCallFrame for expression '{expression}' with '{e}.");
-                var exc = new ReturnAsErrorException(e.Message, e.GetType().Name);
-                SendResponse(msg_id, AddCallStackInfoToException(exc.Error, context, scopeId), token);
+                var ree = new ReturnAsErrorException(e.Message, e.GetType().Name);
+                SendResponse(msg_id, AddCallStackInfoToException(ree.Error, context, scopeId), token);
+                SendExceptionToTelemetry(e, "OnEvaluateOnCallFrame", msg_id, token);
             }
 
             return true;
+        }
+
+        private void SendExceptionToTelemetry(Exception exc, string callingFunction, SessionId msg_id, CancellationToken token)
+        {
+            JObject reportBlazorDebugError = JObject.FromObject(new
+            {
+                exceptionType = "uncaughtException",
+                error = $"{exc.Message} at {callingFunction}",
+            });
+            SendEvent(msg_id, "DotnetDebugger.reportBlazorDebugError", reportBlazorDebugError, token);
         }
 
         internal async Task<GetMembersResult> GetScopeProperties(SessionId msg_id, int scopeId, CancellationToken token)
@@ -1591,7 +1605,8 @@ namespace Microsoft.WebAssembly.Diagnostics
             await SendEvent(sessionId, "Debugger.scriptParsed", scriptSource, token);
             if (!resolveBreakpoints)
                 return;
-            foreach (var req in context.BreakpointRequests.Values)
+            var breakpointRequests = context.BreakpointRequests.Values.ToList<BreakpointRequest>(); //this can be changed while we are looping it and cause an exception
+            foreach (var req in breakpointRequests)
             {
                 if (req.TryResolve(source))
                 {

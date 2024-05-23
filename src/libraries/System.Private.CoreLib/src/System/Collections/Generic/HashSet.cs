@@ -1010,7 +1010,7 @@ namespace System.Collections.Generic
         /// Sets the capacity of a <see cref="HashSet{T}"/> object to the actual number of elements it contains,
         /// rounded up to a nearby, implementation-specific value.
         /// </summary>
-        public void TrimExcess() => SetCapacity(Count);
+        public void TrimExcess() => TrimExcess(Count);
 
         /// <summary>
         /// Sets the capacity of a <see cref="HashSet{T}"/> object to the specified number of entries,
@@ -1022,12 +1022,6 @@ namespace System.Collections.Generic
         {
             ArgumentOutOfRangeException.ThrowIfLessThan(capacity, Count);
 
-            SetCapacity(capacity);
-        }
-
-        private void SetCapacity(int capacity)
-        {
-            Debug.Assert(capacity >= Count);
             int newSize = HashHelpers.GetPrime(capacity);
             Entry[]? oldEntries = _entries;
             int currentCapacity = oldEntries == null ? 0 : oldEntries.Length;
@@ -1055,7 +1049,7 @@ namespace System.Collections.Generic
                 }
             }
 
-            _count = capacity;
+            _count = count;
             _freeCount = 0;
         }
 

@@ -3,6 +3,7 @@
 
 #pragma warning disable IDE0060 // implementations provided as intrinsics
 using System;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.Versioning;
 
@@ -241,15 +242,14 @@ namespace System.Runtime.CompilerServices
         /// <summary>
         /// Reinterprets the given value of type <typeparamref name="TFrom" /> as a value of type <typeparamref name="TTo" />.
         /// </summary>
-        /// <exception cref="NotSupportedException">The size of <typeparamref name="TFrom" /> and <typeparamref name="TTo" /> are not the same.</exception>
+        /// <exception cref="NotSupportedException">The sizes of <typeparamref name="TFrom" /> and <typeparamref name="TTo" /> are not the same
+        /// or the type parameters are not <see langword="struct"/>s.</exception>
         [Intrinsic]
         [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static TTo BitCast<TFrom, TTo>(TFrom source)
-            where TFrom : struct
-            where TTo : struct
         {
-            if (sizeof(TFrom) != sizeof(TTo))
+            if (sizeof(TFrom) != sizeof(TTo) || default(TFrom) is null || default(TTo) is null)
             {
                 ThrowHelper.ThrowNotSupportedException();
             }
@@ -906,6 +906,33 @@ namespace System.Runtime.CompilerServices
             // ldarg .0
             // unbox !!T
             // ret
+        }
+
+
+        // Internal helper methods:
+
+        // Determines if the address is aligned at least to `alignment` bytes.
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static bool IsOpportunisticallyAligned<T>(ref readonly T address, nuint alignment)
+        {
+            // `alignment` is expected to be a power of 2 in bytes.
+            // We use Unsafe.AsPointer to convert to a pointer,
+            // GC will keep alignment when moving objects (up to sizeof(void*)),
+            // otherwise alignment should be considered a hint if not pinned.
+            Debug.Assert(nuint.IsPow2(alignment));
+            return ((nuint)AsPointer(ref AsRef(in address)) & (alignment - 1)) == 0;
+        }
+
+        // Determines the misalignment of the address with respect to the specified `alignment`.
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static nuint OpportunisticMisalignment<T>(ref readonly T address, nuint alignment)
+        {
+            // `alignment` is expected to be a power of 2 in bytes.
+            // We use Unsafe.AsPointer to convert to a pointer,
+            // GC will keep alignment when moving objects (up to sizeof(void*)),
+            // otherwise alignment should be considered a hint if not pinned.
+            Debug.Assert(nuint.IsPow2(alignment));
+            return (nuint)AsPointer(ref AsRef(in address)) & (alignment - 1);
         }
     }
 }

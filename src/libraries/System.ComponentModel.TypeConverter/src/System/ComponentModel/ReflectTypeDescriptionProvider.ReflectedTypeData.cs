@@ -17,7 +17,6 @@ namespace System.ComponentModel
         /// </summary>
         private sealed class ReflectedTypeData
         {
-            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
             private readonly Type _type;
             private AttributeCollection? _attributes;
             private EventDescriptorCollection? _events;
@@ -26,10 +25,12 @@ namespace System.ComponentModel
             private object[]? _editors;
             private Type[]? _editorTypes;
             private int _editorCount;
+            private bool _isRegistered;
 
-            internal ReflectedTypeData([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type)
+            internal ReflectedTypeData(Type type, bool isRegisteredType)
             {
                 _type = type;
+                _isRegistered = isRegisteredType;
             }
 
             /// <summary>
@@ -37,6 +38,8 @@ namespace System.ComponentModel
             /// type descriptor has data in it.
             /// </summary>
             internal bool IsPopulated => (_attributes != null) | (_events != null) | (_properties != null);
+
+            internal bool IsRegistered => _isRegistered;
 
             /// <summary>
             /// Retrieves custom attributes.
@@ -95,7 +98,7 @@ namespace System.ComponentModel
                     // Next, walk the type's interfaces. We append these to
                     // the attribute array as well.
                     int ifaceStartIdx = attributes.Count;
-                    Type[] interfaces = _type.GetInterfaces();
+                    Type[] interfaces = TrimSafeReflectionHelper.GetInterfaces(_type);
                     for (int idx = 0; idx < interfaces.Length; idx++)
                     {
                         // Only do this for public interfaces.
@@ -172,8 +175,13 @@ namespace System.ComponentModel
             /// it will be used to retrieve attributes. Otherwise, _type
             /// will be used.
             /// </summary>
-            [RequiresUnreferencedCode("NullableConverter's UnderlyingType cannot be statically discovered. The Type of instance cannot be statically discovered.")]
-            internal TypeConverter GetConverter(object? instance)
+            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
+                Justification = "_type is annotated as preserve All members, so any Types returned from GetAttributes.")]
+            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2072:UnrecognizedReflectionPattern",
+                Justification = "_type is annotated as preserve All members, so any Types returned from CreateInstance.")]
+            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2077:UnrecognizedReflectionPattern",
+                Justification = "_type is annotated as preserve All members, so any Types returned from GetAttributes.")]
+            internal TypeConverter GetConverter(object? instance, bool verifyIsRegisteredType)
             {
                 TypeConverterAttribute? typeAttr = null;
 
@@ -191,6 +199,11 @@ namespace System.ComponentModel
                         Type? converterType = GetTypeFromName(instanceAttr.ConverterTypeName);
                         if (converterType != null && typeof(TypeConverter).IsAssignableFrom(converterType))
                         {
+                            if (verifyIsRegisteredType && !_isRegistered && !IsIntrinsicType(_type))
+                            {
+                                TypeDescriptor.ThrowHelper.ThrowInvalidOperationException_RegisterTypeRequired(_type);
+                            }
+
                             return (TypeConverter)ReflectTypeDescriptionProvider.CreateInstance(converterType, _type)!;
                         }
                     }
@@ -215,8 +228,14 @@ namespace System.ComponentModel
                         // We did not get a converter. Traverse up the base class chain until
                         // we find one in the stock hashtable.
                         _converter = GetIntrinsicTypeConverter(_type);
+
                         Debug.Assert(_converter != null, "There is no intrinsic setup in the hashtable for the Object type");
                     }
+                }
+
+                if (verifyIsRegisteredType && !_isRegistered && !IsIntrinsicType(_type))
+                {
+                    TypeDescriptor.ThrowHelper.ThrowInvalidOperationException_RegisterTypeRequired(_type);
                 }
 
                 return _converter;
@@ -292,7 +311,7 @@ namespace System.ComponentModel
             /// <summary>
             /// Retrieves the editor for the given base type.
             /// </summary>
-            [RequiresUnreferencedCode(TypeDescriptor.EditorRequiresUnreferencedCode + " The Type of instance cannot be statically discovered.")]
+            [RequiresUnreferencedCode(TypeDescriptor.DesignTimeAttributeTrimmed + " The Type of instance cannot be statically discovered.")]
             internal object? GetEditor(object? instance, Type editorBaseType)
             {
                 EditorAttribute? typeAttr;
@@ -391,6 +410,7 @@ namespace System.ComponentModel
             /// <summary>
             /// Helper method to return an editor attribute of the correct base type.
             /// </summary>
+            [RequiresUnreferencedCode("The type referenced by the Editor attribute may be trimmed away.")]
             private static EditorAttribute? GetEditorAttribute(AttributeCollection attributes, Type editorBaseType)
             {
                 foreach (Attribute attr in attributes)
@@ -478,6 +498,10 @@ namespace System.ComponentModel
 
                 return _properties;
             }
+
+            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+                Justification = "Before this method was called, the type was validated to be registered.")]
+            internal PropertyDescriptorCollection GetPropertiesFromRegisteredType() => GetProperties();
 
             /// <summary>
             /// Retrieves a type from a name. The Assembly of the type

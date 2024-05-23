@@ -510,7 +510,6 @@ namespace ILCompiler.ObjectWriter
                     break;
                 case VarLocType.VLT_STK:
                 case VarLocType.VLT_STK2:
-                case VarLocType.VLT_FPSTK:
                 case VarLocType.VLT_STK_BYREF:
                     e.OpBReg(loc.B, loc.C);
                     if (loc.LocationType == VarLocType.VLT_STK_BYREF)
@@ -531,10 +530,15 @@ namespace ILCompiler.ObjectWriter
                     e.OpPiece();
                     break;
                 case VarLocType.VLT_STK_REG:
-                    e.OpBReg(loc.C, loc.D);
+                    e.OpBReg(loc.B, loc.C);
                     e.OpPiece();
+                    e.OpReg(loc.D);
+                    e.OpPiece();
+                    break;
+                case VarLocType.VLT_FPSTK:
+                    // On ARM32 this is used to encode actual registers. This may be wrong for x86
+                    // which we don't support anyway.
                     e.OpReg(loc.B);
-                    e.OpPiece();
                     break;
                 default:
                     // Unsupported

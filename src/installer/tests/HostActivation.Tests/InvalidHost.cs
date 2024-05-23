@@ -109,7 +109,7 @@ namespace HostActivation.Tests
 
             public SharedTestState()
             {
-                BaseDirectory = new TestArtifact(SharedFramework.CalculateUniqueTestDirectory(Path.Combine(TestArtifact.TestArtifactsPath, nameof(InvalidHost))));
+                BaseDirectory = TestArtifact.Create(nameof(InvalidHost));
                 Directory.CreateDirectory(BaseDirectory.Location);
 
                 RenamedDotNet = Path.Combine(BaseDirectory.Location, Binaries.GetExeFileNameForCurrentPlatform("renamed"));

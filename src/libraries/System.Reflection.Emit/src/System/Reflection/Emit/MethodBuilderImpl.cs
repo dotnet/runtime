@@ -243,7 +243,7 @@ namespace System.Reflection.Emit
         public override CallingConventions CallingConvention => _callingConventions;
         public override Type? DeclaringType => _declaringType._isHiddenGlobalType ? null : _declaringType;
         public override Module Module => _module;
-        public override bool ContainsGenericParameters => throw new NotSupportedException();
+        public override bool ContainsGenericParameters => _typeParameters != null;
         public override bool IsGenericMethod => _typeParameters != null;
         public override bool IsGenericMethodDefinition => _typeParameters != null;
         public override bool IsSecurityCritical => true;
@@ -252,7 +252,21 @@ namespace System.Reflection.Emit
         public override int MetadataToken => _handle == default ? 0 : MetadataTokens.GetToken(_handle);
         public override RuntimeMethodHandle MethodHandle => throw new NotSupportedException(SR.NotSupported_DynamicModule);
         public override Type? ReflectedType => DeclaringType;
-        public override ParameterInfo ReturnParameter { get => throw new NotImplementedException(); }
+        public override ParameterInfo ReturnParameter
+        {
+            get
+            {
+                if (_parameterBuilders == null || _parameterBuilders[0] == null)
+                {
+                    return new ParameterInfoWrapper(new ParameterBuilderImpl(this, 0, ParameterAttributes.Retval, null), _returnType);
+                }
+                else
+                {
+                    return new ParameterInfoWrapper(_parameterBuilders[0], _returnType);
+                }
+            }
+        }
+
         public override Type ReturnType => _returnType;
         public override ICustomAttributeProvider ReturnTypeCustomAttributes { get => throw new NotImplementedException(); }
 

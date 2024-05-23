@@ -932,7 +932,8 @@ namespace System
                     if (MdToken.IsNullToken(tkDeclaringType))
                         return;
 
-                    MetadataImport scope = RuntimeTypeHandle.GetMetadataImport(declaringType);
+                    RuntimeModule module = declaringType.GetRuntimeModule();
+                    MetadataImport scope = module.MetadataImport;
 
                     scope.EnumFields(tkDeclaringType, out MetadataEnumResult tkFields);
 
@@ -976,6 +977,7 @@ namespace System
                             list.Add(runtimeFieldInfo);
                         }
                     }
+                    GC.KeepAlive(module);
                 }
 
                 private void AddSpecialInterface(
@@ -1102,7 +1104,7 @@ namespace System
                     ListBuilder<RuntimeType> list = default;
 
                     ModuleHandle moduleHandle = new ModuleHandle(RuntimeTypeHandle.GetModule(declaringType));
-                    MetadataImport scope = ModuleHandle.GetMetadataImport(moduleHandle.GetRuntimeModule());
+                    MetadataImport scope = moduleHandle.GetRuntimeModule().MetadataImport;
 
                     scope.EnumNestedTypes(tkEnclosingType, out MetadataEnumResult tkNestedClasses);
 
@@ -1174,7 +1176,8 @@ namespace System
                     if (MdToken.IsNullToken(tkDeclaringType))
                         return;
 
-                    MetadataImport scope = RuntimeTypeHandle.GetMetadataImport(declaringType);
+                    RuntimeModule module = declaringType.GetRuntimeModule();
+                    MetadataImport scope = module.MetadataImport;
 
                     scope.EnumEvents(tkDeclaringType, out MetadataEnumResult tkEvents);
 
@@ -1220,6 +1223,7 @@ namespace System
 
                         list.Add(eventInfo);
                     }
+                    GC.KeepAlive(module);
                 }
 
                 private RuntimePropertyInfo[] PopulateProperties(Filter filter)
@@ -1286,7 +1290,8 @@ namespace System
                     if (MdToken.IsNullToken(tkDeclaringType))
                         return;
 
-                    MetadataImport scope = RuntimeTypeHandle.GetMetadataImport(declaringType);
+                    RuntimeModule module = declaringType.GetRuntimeModule();
+                    MetadataImport scope = module.MetadataImport;
 
                     scope.EnumProperties(tkDeclaringType, out MetadataEnumResult tkProperties);
 
@@ -1304,7 +1309,7 @@ namespace System
 
                         if (filter.RequiresStringComparison())
                         {
-                            MdUtf8String name = declaringType.GetRuntimeModule().MetadataImport.GetName(tkProperty);
+                            MdUtf8String name = scope.GetName(tkProperty);
 
                             if (!filter.Match(name))
                                 continue;
@@ -1399,6 +1404,7 @@ namespace System
 
                         list.Add(propertyInfo);
                     }
+                    GC.KeepAlive(module);
                 }
                 #endregion
 
@@ -1438,7 +1444,6 @@ namespace System
             private string? m_toString;
             private string? m_namespace;
             private readonly bool m_isGlobal;
-            private bool m_bIsDomainInitialized;
             private MemberInfoCache<RuntimeMethodInfo>? m_methodInfoCache;
             private MemberInfoCache<RuntimeConstructorInfo>? m_constructorInfoCache;
             private MemberInfoCache<RuntimeFieldInfo>? m_fieldInfoCache;
@@ -1523,12 +1528,6 @@ namespace System
                 }
             }
 
-            internal bool DomainInitialized
-            {
-                get => m_bIsDomainInitialized;
-                set => m_bIsDomainInitialized = value;
-            }
-
             internal string? GetName(TypeNameKind kind)
             {
                 switch (kind)
@@ -1578,7 +1577,9 @@ namespace System
                     while (type.IsNested)
                         type = type.DeclaringType!;
 
-                    m_namespace = RuntimeTypeHandle.GetMetadataImport((RuntimeType)type).GetNamespace(type.MetadataToken).ToString();
+                    RuntimeModule module = ((RuntimeType)type).GetRuntimeModule();
+                    m_namespace = module.MetadataImport.GetNamespace(type.MetadataToken).ToString();
+                    GC.KeepAlive(module);
                 }
 
                 return m_namespace;
@@ -1933,12 +1934,6 @@ namespace System
         {
             get => CacheIfExists?.GenericCache;
             set => Cache.GenericCache = value;
-        }
-
-        internal bool DomainInitialized
-        {
-            get => Cache.DomainInitialized;
-            set => Cache.DomainInitialized = value;
         }
 
         internal static FieldInfo GetFieldInfo(IRuntimeFieldInfo fieldHandle)
@@ -2386,7 +2381,9 @@ namespace System
         #region Private Data Members
 
 #pragma warning disable CA1823
+#pragma warning disable CS0169
         private readonly object m_keepalive; // This will be filled with a LoaderAllocator reference when this RuntimeType represents a collectible type
+#pragma warning restore CS0169
 #pragma warning restore CA1823
         private IntPtr m_cache;
         internal IntPtr m_handle;
@@ -2770,7 +2767,12 @@ namespace System
                 MethodBase? rtTypeMethodBase = GetMethodBase(reflectedType, classRtMethodHandle);
                 // a class may not implement all the methods of an interface (abstract class) so null is a valid value
                 Debug.Assert(rtTypeMethodBase is null || rtTypeMethodBase is RuntimeMethodInfo);
-                im.TargetMethods[i] = (MethodInfo)rtTypeMethodBase!;
+                RuntimeMethodInfo? targetMethod = (RuntimeMethodInfo?)rtTypeMethodBase;
+                // the TargetMethod provided to us by runtime internals may be a generic method instance,
+                //  potentially with invalid arguments. TargetMethods in the InterfaceMap should never be
+                //  instances, only definitions.
+                im.TargetMethods[i] = (targetMethod is { IsGenericMethod: true, IsGenericMethodDefinition: false })
+                    ? targetMethod.GetGenericMethodDefinition() : targetMethod!;
             }
 
             return im;
@@ -3505,8 +3507,9 @@ namespace System
                 if (!IsGenericParameter)
                     throw new InvalidOperationException(SR.Arg_NotGenericParameter);
 
-
-                RuntimeTypeHandle.GetMetadataImport(this).GetGenericParamProps(MetadataToken, out GenericParameterAttributes attributes);
+                RuntimeModule module = GetRuntimeModule();
+                module.MetadataImport.GetGenericParamProps(MetadataToken, out GenericParameterAttributes attributes);
+                GC.KeepAlive(module);
 
                 return attributes;
             }
@@ -3669,9 +3672,6 @@ namespace System
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern bool CanValueSpecialCast(RuntimeType valueType, RuntimeType targetType);
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern object AllocateValueType(RuntimeType type, object? value);
 
         private CheckValueStatus TryChangeTypeSpecial(ref object value)
         {
@@ -3880,6 +3880,31 @@ namespace System
         }
 
         /// <summary>
+        /// Helper to get instances of uninitialized objects.
+        /// </summary>
+        [DebuggerStepThrough]
+        [DebuggerHidden]
+        internal object GetUninitializedObject()
+        {
+            object? genericCache = GenericCache;
+
+            if (genericCache is not CreateUninitializedCache cache)
+            {
+                if (genericCache is ActivatorCache activatorCache)
+                {
+                    cache = activatorCache.GetCreateUninitializedCache(this);
+                }
+                else
+                {
+                    cache = new CreateUninitializedCache(this);
+                    GenericCache = cache;
+                }
+            }
+
+            return cache.CreateUninitializedObject(this);
+        }
+
+        /// <summary>
         /// Helper to invoke the default (parameterless) constructor.
         /// </summary>
         [DebuggerStepThrough]
@@ -3953,14 +3978,6 @@ namespace System
         #endregion
 
         #region Legacy internal static
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern object _CreateEnum(RuntimeType enumType, long value);
-
-        internal static object CreateEnum(RuntimeType enumType, long value)
-        {
-            return _CreateEnum(enumType, value);
-        }
 
 #if FEATURE_COMINTEROP
         [MethodImpl(MethodImplOptions.InternalCall)]

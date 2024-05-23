@@ -42,7 +42,10 @@ size_t ArenaAllocator::getDefaultPageSize()
 // ArenaAllocator::ArenaAllocator:
 //    Default-constructs an arena allocator.
 ArenaAllocator::ArenaAllocator()
-    : m_firstPage(nullptr), m_lastPage(nullptr), m_nextFreeByte(nullptr), m_lastFreeByte(nullptr)
+    : m_firstPage(nullptr)
+    , m_lastPage(nullptr)
+    , m_nextFreeByte(nullptr)
+    , m_lastFreeByte(nullptr)
 {
 #if MEASURE_MEM_ALLOC
     memset(&m_stats, 0, sizeof(m_stats));
@@ -153,7 +156,11 @@ void* ArenaAllocator::allocateHostMemory(size_t size, size_t* pActualSize)
     if (bypassHostAllocator())
     {
         *pActualSize = size;
-        void* p      = malloc(size);
+        if (size == 0)
+        {
+            size = 1;
+        }
+        void* p = malloc(size);
         if (p == nullptr)
         {
             NOMEM();

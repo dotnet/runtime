@@ -125,12 +125,6 @@ namespace System.Net.Sockets.Tests
         [ActiveIssue("https://github.com/dotnet/runtime/issues/52124", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public async Task MulticastInterface_Set_IPv6_AnyInterface_Succeeds()
         {
-            if (PlatformDetection.IsRedHatFamily7)
-            {
-                // RH7 seems to have issues with multicast in Azure. Same code and setup can pass when executed outside of Azure.
-                throw new SkipTestException("IPv6 multicast environment not available");
-            }
-
             // On all platforms, index 0 means "any interface"
             await MulticastInterface_Set_IPv6_Helper(0);
         }

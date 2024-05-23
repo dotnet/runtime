@@ -23,6 +23,16 @@
       _WasmGenerateNodeScripts;
     </WasmGenerateAppBundleDependsOn>
 
+    <WasiWriteRspForLinkingDependsOn>
+      $(WasiWriteRspForLinkingDependsOn);
+      _WasmSelectRuntimeComponentsForLinking;
+      _WasiGetWasiOutputFileName;
+    </WasiWriteRspForLinkingDependsOn>
+    <WasiWriteRspForLinkingDependsOn Condition="'$(UsingWasiRuntimeWorkload)' == 'true'">
+      $(WasiWriteRspForLinkingDependsOn);
+      _MonoSelectRuntimeComponents;
+    </WasiWriteRspForLinkingDependsOn>
+
     <SelfContained Condition="'$(IsWasiProject)' == 'true'">true</SelfContained>
 
     <!-- Temporarily `false`, till sdk gets a fix for supporting the new file -->
@@ -39,7 +49,6 @@
   <ItemGroup>
     <_BoolPropertiesThatTriggerRelinking Include="WasmEnableSIMD" DefaultValueInRuntimePack="false" />
     <!--<_BoolPropertiesThatTriggerRelinking Include="WasmEnableExceptionHandling" DefaultValueInRuntimePack="true" />-->
-    <_BoolPropertiesThatTriggerRelinking Include="WasmNativeStrip" DefaultValueInRuntimePack="true" />
   </ItemGroup>
 
   <Target Name="_GetWasiGenerateAppBundleDependencies">
@@ -66,6 +75,11 @@
           Outputs="$(WasmAppDir)\.stamp"
           Condition="'$(WasmGenerateAppBundle)' == 'true'">
 
+    <PropertyGroup>
+      <_WasmOutputSymbolsToAppBundle Condition="'$(CopyOutputSymbolsToPublishDirectory)' == 'true' and '$(_IsPublishing)' == 'true'">true</_WasmOutputSymbolsToAppBundle>
+      <_WasmOutputSymbolsToAppBundle Condition="'$(_WasmOutputSymbolsToAppBundle)' == ''">false</_WasmOutputSymbolsToAppBundle>
+    </PropertyGroup>
+
     <WasiAppBuilder
       AppDir="$(WasmAppDir)"
       Assemblies="@(_WasmAssembliesInternal)"
@@ -80,7 +94,7 @@
       FilesToIncludeInFileSystem="@(WasmFilesToIncludeInFileSystem)"
       ExtraFilesToDeploy="@(WasmExtraFilesToDeploy)"
       NativeAssets="@(WasmNativeAsset)"
-      DebugLevel="$(WasmDebugLevel)"
+      OutputSymbolsToAppBundle="$(_WasmOutputSymbolsToAppBundle)"
       RuntimeConfigJsonPath="$(_WasmRuntimeConfigFilePath)"
       />
   </Target>
@@ -134,6 +148,8 @@
 
       <WasiClangCompileOptimizationFlag Condition="'$(WasiClangCompileOptimizationFlag)' == ''">$(_WasiClangOptimizationFlagDefault)</WasiClangCompileOptimizationFlag>
       <WasmCompileOptimizationFlag>$(WasiClangCompileOptimizationFlag)</WasmCompileOptimizationFlag>
+      <WasiBitcodeCompileOptimizationFlag Condition="'$(WasiBitcodeCompileOptimizationFlag)' == '' and '$(Configuration)' == 'Release'">-O2</WasiBitcodeCompileOptimizationFlag>
+      <WasiBitcodeCompileOptimizationFlag Condition="'$(WasiBitcodeCompileOptimizationFlag)' == ''"   >$(WasiClangCompileOptimizationFlag)</WasiBitcodeCompileOptimizationFlag>
       <WasiClangLinkOptimizationFlag    Condition="'$(WasiClangLinkOptimizationFlag)' == '' and '$(Configuration)' == 'Release'">-O2</WasiClangLinkOptimizationFlag>
       <WasiClangLinkOptimizationFlag    Condition="'$(WasiClangLinkOptimizationFlag)' == ''"   >$(WasiClangCompileOptimizationFlag)</WasiClangLinkOptimizationFlag>
       <WasmLinkOptimizationFlag>$(WasiClangLinkOptimizationFlag)</WasmLinkOptimizationFlag>
@@ -251,13 +267,14 @@
   <!-- FIXME: merge with some other target -->
   <Target Name="_WasiBeforeWriteRspForCompilingBitcodeRsp" BeforeTargets="_WasmWriteRspForCompilingBitcode">
     <ItemGroup>
-      <_BitcodeLDFlags Include="@(_WasiClangLDFlags)" />
-      <_BitcodeLDFlags Include="$(WasiClangExtraBitcodeLDFlags)" />
+      <_BitcodeCompileFlags Include="@(WasiBitcodeCompileOptimizationFlag)" />
+      <_BitcodeCompileFlags Include="@(_WasiClangCommonFlags)" />
+      <_BitcodeCompileFlags Include="$(WasiClangExtraBitcodeCompileFlags)" />
     </ItemGroup>
   </Target>
 
   <Target Name="_WasiWriteRspForLinking"
-          DependsOnTargets="_WasmSelectRuntimeComponentsForLinking;_WasiGetWasiOutputFileName"
+          DependsOnTargets="$(WasiWriteRspForLinkingDependsOn)"
           BeforeTargets="_WasmWriteRspForLinking"
           Returns="@(_WasmLinkStepArgs)">
 
@@ -293,11 +310,14 @@
     </PropertyGroup>
 
     <ItemGroup>
+      <_MonoRuntimeComponentDontLink Include="wasm-bundled-timezones.a" Condition="'$(InvariantTimezone)' == 'true'"/>
+      <_MonoRuntimeComponentDontLink Include="libmono-component-diagnostics_tracing-static.a" Condition="'$(UsingWasiRuntimeWorkload)' != 'true'" /> <!-- Just for in-tree build + CI -->
+    </ItemGroup>
+
+    <ItemGroup>
       <!-- order matters -->
       <_WasmNativeFileForLinking Include="%(_BitcodeFile.ObjectFile)" />
       <!--<_WasmNativeFileForLinking Include="%(_WasmSourceFileToCompile.ObjectFile)" />-->
-      <_MonoRuntimeComponentDontLink Include="libmono-component-diagnostics_tracing-static.a" />
-      <_MonoRuntimeComponentDontLink Include="wasm-bundled-timezones.a" Condition="'$(InvariantTimezone)' == 'true'"/>
 
       <_WasmNativeFileForLinking
           Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)*.a"

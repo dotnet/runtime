@@ -2,15 +2,24 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
+using System.Linq;
+using System.Text.RegularExpressions.Generator;
 using System.Threading.Tasks;
 using Xunit;
 
 namespace System.Text.RegularExpressions.Tests
 {
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported), nameof(PlatformDetection.IsNotMobile), nameof(PlatformDetection.IsNotBrowser))]
+    [ConditionalClass(typeof(RegexGeneratorOutputTests), nameof(GeneratorOutputTestsSupported))]
     public partial class RegexGeneratorOutputTests
     {
+        public static bool GeneratorOutputTestsSupported =>
+            PlatformDetection.IsReflectionEmitSupported &&
+            PlatformDetection.IsNotMobile &&
+            PlatformDetection.IsNotBrowser &&
+            typeof(RegexGenerator).Assembly.GetCustomAttributes(false).OfType<DebuggableAttribute>().Any(da => da.IsJITTrackingEnabled); // output differs between debug and release
+
         // This exists to ensure we're aware of any egregious breaks to formatting / readability.
         // Any updates that impact the generated code in these baselines will need to be updated
         // as changes are made to the code emitted by the generator.
@@ -258,6 +267,7 @@ namespace System.Text.RegularExpressions.Tests
                                         loop_iteration = 0;
 
                                         LoopBody:
+                                        Utilities.StackPush(ref base.runstack!, ref stackpos, 143337952);
                                         Utilities.StackPush(ref base.runstack!, ref stackpos, base.Crawlpos(), pos);
 
                                         loop_iteration++;
@@ -311,6 +321,7 @@ namespace System.Text.RegularExpressions.Tests
                                         }
                                         pos = base.runstack![--stackpos];
                                         UncaptureUntil(base.runstack![--stackpos]);
+                                        Utilities.ValidateStackCookie(143337952, base.runstack![--stackpos]);
                                         slice = inputSpan.Slice(pos);
                                         LoopEnd:;
                                     //}
@@ -381,6 +392,32 @@ namespace System.Text.RegularExpressions.Tests
                                 (WordCategoriesMask & (1 << (int)CharUnicodeInfo.GetUnicodeCategory(ch))) != 0;
                         }
 
+                        /// <summary>Pushes 1 value onto the backtracking stack.</summary>
+                        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+                        internal static void StackPush(ref int[] stack, ref int pos, int arg0)
+                        {
+                            // If there's space available for the value, store it.
+                            int[] s = stack;
+                            int p = pos;
+                            if ((uint)p < (uint)s.Length)
+                            {
+                                s[p] = arg0;
+                                pos++;
+                                return;
+                            }
+
+                            // Otherwise, resize the stack to make room and try again.
+                            WithResize(ref stack, ref pos, arg0);
+
+                            // <summary>Resize the backtracking stack array and push 1 value onto the stack.</summary>
+                            [MethodImpl(MethodImplOptions.NoInlining)]
+                            static void WithResize(ref int[] stack, ref int pos, int arg0)
+                            {
+                                Array.Resize(ref stack, (pos + 0) * 2);
+                                StackPush(ref stack, ref pos, arg0);
+                            }
+                        }
+
                         /// <summary>Pushes 2 values onto the backtracking stack.</summary>
                         [MethodImpl(MethodImplOptions.AggressiveInlining)]
                         internal static void StackPush(ref int[] stack, ref int pos, int arg0, int arg1)
@@ -406,6 +443,16 @@ namespace System.Text.RegularExpressions.Tests
                                 Array.Resize(ref stack, (pos + 1) * 2);
                                 StackPush(ref stack, ref pos, arg0, arg1);
                             }
+                        }
+
+                        /// <summary>Validates that a stack cookie popped off the backtracking stack holds the expected value. Debug only.</summary>
+                        internal static int ValidateStackCookie(int expected, int actual)
+                        {
+                            if (expected != actual)
+                            {
+                                throw new Exception($"Backtracking stack imbalance detected. Expected {expected}. Actual {actual}.");
+                            }
+                            return actual;
                         }
                     }
                 }

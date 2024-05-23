@@ -113,7 +113,7 @@ namespace System
                 return false;
             }
 
-            byte* p = number.GetDigitsPointer();
+            byte* p = number.DigitsPtr;
 
             Debug.Assert(p != null);
             TInteger n = TInteger.Zero;
@@ -725,7 +725,7 @@ namespace System
         {
             number.CheckConsistency();
 
-            byte* p = number.GetDigitsPointer();
+            byte* p = number.DigitsPtr;
             int e = number.Scale;
             bool sign = number.IsNegative;
             uint c = *p;
@@ -883,16 +883,16 @@ namespace System
         {
             if (typeof(TChar) == typeof(char))
             {
-                ReadOnlySpan<char> typedSpan = MemoryMarshal.CreateReadOnlySpan(ref Unsafe.As<TChar, char>(ref MemoryMarshal.GetReference(span)), span.Length);
-                ReadOnlySpan<char> typedValue = MemoryMarshal.CreateReadOnlySpan(ref Unsafe.As<TChar, char>(ref MemoryMarshal.GetReference(value)), value.Length);
+                ReadOnlySpan<char> typedSpan = MemoryMarshal.Cast<TChar, char>(span);
+                ReadOnlySpan<char> typedValue = MemoryMarshal.Cast<TChar, char>(value);
                 return typedSpan.StartsWith(typedValue, comparisonType);
             }
             else
             {
                 Debug.Assert(typeof(TChar) == typeof(byte));
 
-                ReadOnlySpan<byte> typedSpan = MemoryMarshal.CreateReadOnlySpan(ref Unsafe.As<TChar, byte>(ref MemoryMarshal.GetReference(span)), span.Length);
-                ReadOnlySpan<byte> typedValue = MemoryMarshal.CreateReadOnlySpan(ref Unsafe.As<TChar, byte>(ref MemoryMarshal.GetReference(value)), value.Length);
+                ReadOnlySpan<byte> typedSpan = MemoryMarshal.Cast<TChar, byte>(span);
+                ReadOnlySpan<byte> typedValue = MemoryMarshal.Cast<TChar, byte>(value);
                 return typedSpan.StartsWithUtf8(typedValue, comparisonType);
             }
         }
@@ -903,17 +903,13 @@ namespace System
         {
             if (typeof(TChar) == typeof(char))
             {
-                ReadOnlySpan<char> typedSpan = MemoryMarshal.CreateReadOnlySpan(ref Unsafe.As<TChar, char>(ref MemoryMarshal.GetReference(span)), span.Length);
-                ReadOnlySpan<char> result = typedSpan.Trim();
-                return MemoryMarshal.CreateReadOnlySpan(ref Unsafe.As<char, TChar>(ref MemoryMarshal.GetReference(result)), result.Length);
+                return MemoryMarshal.Cast<char, TChar>(MemoryMarshal.Cast<TChar, char>(span).Trim());
             }
             else
             {
                 Debug.Assert(typeof(TChar) == typeof(byte));
 
-                ReadOnlySpan<byte> typedSpan = MemoryMarshal.CreateReadOnlySpan(ref Unsafe.As<TChar, byte>(ref MemoryMarshal.GetReference(span)), span.Length);
-                ReadOnlySpan<byte> result = typedSpan.TrimUtf8();
-                return MemoryMarshal.CreateReadOnlySpan(ref Unsafe.As<byte, TChar>(ref MemoryMarshal.GetReference(result)), result.Length);
+                return MemoryMarshal.Cast<byte, TChar>(MemoryMarshal.Cast<TChar, byte>(span).TrimUtf8());
             }
         }
 
@@ -923,16 +919,16 @@ namespace System
         {
             if (typeof(TChar) == typeof(char))
             {
-                ReadOnlySpan<char> typedSpan = MemoryMarshal.CreateReadOnlySpan(ref Unsafe.As<TChar, char>(ref MemoryMarshal.GetReference(span)), span.Length);
-                ReadOnlySpan<char> typedValue = MemoryMarshal.CreateReadOnlySpan(ref Unsafe.As<TChar, char>(ref MemoryMarshal.GetReference(value)), value.Length);
+                ReadOnlySpan<char> typedSpan = MemoryMarshal.Cast<TChar, char>(span);
+                ReadOnlySpan<char> typedValue = MemoryMarshal.Cast<TChar, char>(value);
                 return typedSpan.EqualsOrdinalIgnoreCase(typedValue);
             }
             else
             {
                 Debug.Assert(typeof(TChar) == typeof(byte));
 
-                ReadOnlySpan<byte> typedSpan = MemoryMarshal.CreateReadOnlySpan(ref Unsafe.As<TChar, byte>(ref MemoryMarshal.GetReference(span)), span.Length);
-                ReadOnlySpan<byte> typedValue = MemoryMarshal.CreateReadOnlySpan(ref Unsafe.As<TChar, byte>(ref MemoryMarshal.GetReference(value)), value.Length);
+                ReadOnlySpan<byte> typedSpan = MemoryMarshal.Cast<TChar, byte>(span);
+                ReadOnlySpan<byte> typedValue = MemoryMarshal.Cast<TChar, byte>(value);
                 return typedSpan.EqualsOrdinalIgnoreCaseUtf8(typedValue);
             }
         }

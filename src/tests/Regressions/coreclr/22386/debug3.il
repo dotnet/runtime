@@ -15,7 +15,7 @@
   {
   }
 
-  .method public hidebysig newslot virtual 
+  .method public hidebysig newslot virtual
           instance int32  Add(int32 x) cil managed
   {
     ldarg.0
@@ -51,7 +51,7 @@
   {
   }
 
-  .method public hidebysig newslot virtual 
+  .method public hidebysig newslot virtual
           instance int32  Add(int32 x) cil managed
   {
     ldarg.0
@@ -96,88 +96,92 @@
 }
 
 
-.method public hidebysig static int32 Main() cil managed
+.class public auto ansi abstract sealed beforefieldinit debug3
+    extends [System.Runtime]System.Object
 {
-  .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
-      01 00 00 00
-  )
-  .entrypoint
-  .locals init (class I1 V_0,
-             valuetype Test1 V_1,
-             class [System.Runtime]System.Func`2<int32, int32> V_2,
-             class I2`1<class [System.Runtime]System.String> V_3,
-             valuetype Test2`1<class [System.Runtime]System.String> V_4)
+  .method public hidebysig static int32 Main() cil managed
+  {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
+    .entrypoint
+    .locals init (class I1 V_0,
+              valuetype Test1 V_1,
+              class [System.Runtime]System.Func`2<int32, int32> V_2,
+              class I2`1<class [System.Runtime]System.String> V_3,
+              valuetype Test2`1<class [System.Runtime]System.String> V_4)
 
-  //
-  // Nongeneric case
-  //
+    //
+    // Nongeneric case
+    //
 
-  ldloca.s   V_1
-  initobj    Test1
+    ldloca.s   V_1
+    initobj    Test1
 
-  // V_1.Value = 30
-  ldloca.s   V_1
-  ldc.i4 30
-  stfld int32 Test1::Value
+    // V_1.Value = 30
+    ldloca.s   V_1
+    ldc.i4 30
+    stfld int32 Test1::Value
 
-  // V_0 = (I1)V_1;
-  ldloc.1
-  box        Test1
-  stloc.0
+    // V_0 = (I1)V_1;
+    ldloc.1
+    box        Test1
+    stloc.0
 
-  // V_2 = V_0.Add
-  ldloc.0
-  dup
-  ldvirtftn  instance int32 I1::Add(int32)
-  newobj     instance void class [System.Runtime]System.Func`2<int32, int32>::.ctor(object, native int)
-  stloc.2
+    // V_2 = V_0.Add
+    ldloc.0
+    dup
+    ldvirtftn  instance int32 I1::Add(int32)
+    newobj     instance void class [System.Runtime]System.Func`2<int32, int32>::.ctor(object, native int)
+    stloc.2
 
-  // V_2(2)
-  ldloc.2
-  ldc.i4.2
-  callvirt   instance !1 class [System.Runtime]System.Func`2<int32, int32>::Invoke(!0)
+    // V_2(2)
+    ldloc.2
+    ldc.i4.2
+    callvirt   instance !1 class [System.Runtime]System.Func`2<int32, int32>::Invoke(!0)
 
-  //
-  // We expect 33 on the stack now
-  //
+    //
+    // We expect 33 on the stack now
+    //
 
-  //
-  // Generic case
-  //
+    //
+    // Generic case
+    //
 
-  ldloca.s   V_4
-  initobj    valuetype Test2`1<class [System.Runtime]System.String>
+    ldloca.s   V_4
+    initobj    valuetype Test2`1<class [System.Runtime]System.String>
 
-  // V_4.Value = 36
-  ldloca.s   V_4
-  ldc.i4 36
-  stfld int32 valuetype Test2`1<class [System.Runtime]System.String>::Value
+    // V_4.Value = 36
+    ldloca.s   V_4
+    ldc.i4 36
+    stfld int32 valuetype Test2`1<class [System.Runtime]System.String>::Value
 
-  // V_3 = (I1)V_4;
-  ldloc.s    4
-  box        valuetype Test2`1<class [System.Runtime]System.String>
-  stloc.3
+    // V_3 = (I1)V_4;
+    ldloc.s    4
+    box        valuetype Test2`1<class [System.Runtime]System.String>
+    stloc.3
 
-  // V_2 = V_3.Add
-  ldloc.3
-  dup
-  ldvirtftn  instance int32 class I2`1<class [System.Runtime]System.String>::Add(int32)
-  newobj     instance void class [System.Runtime]System.Func`2<int32, int32>::.ctor(object, native int)
-  stloc.2
+    // V_2 = V_3.Add
+    ldloc.3
+    dup
+    ldvirtftn  instance int32 class I2`1<class [System.Runtime]System.String>::Add(int32)
+    newobj     instance void class [System.Runtime]System.Func`2<int32, int32>::.ctor(object, native int)
+    stloc.2
 
-  ldloc.2
-  ldc.i4.2
-  callvirt   instance !1 class [System.Runtime]System.Func`2<int32, int32>::Invoke(!0)
+    ldloc.2
+    ldc.i4.2
+    callvirt   instance !1 class [System.Runtime]System.Func`2<int32, int32>::Invoke(!0)
 
-  //
-  // We expect this return 67
-  //
+    //
+    // We expect this return 67
+    //
 
-  //
-  // Add the two results - sum should be 100
-  //
+    //
+    // Add the two results - sum should be 100
+    //
 
-  add
+    add
 
-  ret
+    ret
+  }
 }

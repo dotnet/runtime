@@ -413,12 +413,6 @@ Here is an annotated list of the stubs implemented for Unix on Arm64.
         Today use of this feature on Unix requires hand-written IL. On Windows
         this feature is commonly used by C++/CLI
 
-3.  EH Correctness. Some helpers are written in assembly to provide well known
-    locations for NullReferenceExceptions to be generated out of a SIGSEGV
-    signal.
-
-    1.  `JIT_MemSet`, and `JIT_MemCpy` have this requirement
-
 #### cgencpu.h
 
 This header is included by various code in the VM directory. It provides a large

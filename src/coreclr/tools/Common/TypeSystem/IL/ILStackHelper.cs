@@ -25,16 +25,16 @@ namespace Internal.IL
         public static int ComputeMaxStack(this MethodIL methodIL)
         {
             const int StackHeightNotSet = int.MinValue;
+            const int StackAllocThreshold = 256 / sizeof(int);
 
-            byte[] ilbytes = methodIL.GetILBytes();
-            int currentOffset = 0;
+            var ilReader = new ILReader(methodIL.GetILBytes());
             int stackHeight = 0;
             int maxStack = 0;
 
-            // TODO: Use Span<T> for this and stackalloc the array if reasonably sized
-            int[] stackHeights = new int[ilbytes.Length];
-            for (int i = 0; i < stackHeights.Length; i++)
-                stackHeights[i] = StackHeightNotSet;
+            Span<int> stackHeights = ilReader.Size <= StackAllocThreshold ?
+                stackalloc int[StackAllocThreshold].Slice(0, ilReader.Size) : new int[ilReader.Size];
+
+            stackHeights.Fill(StackHeightNotSet);
 
             // Catch and filter clauses have a known non-zero stack height.
             foreach (ILExceptionRegion region in methodIL.GetExceptionRegions())
@@ -50,11 +50,10 @@ namespace Internal.IL
                 }
             }
 
-            while (currentOffset < ilbytes.Length)
+            while (ilReader.HasNext)
             {
-                ILOpcode opcode = (ILOpcode)ilbytes[currentOffset];
-                if (opcode == ILOpcode.prefix1)
-                    opcode = 0x100 + (ILOpcode)ilbytes[currentOffset + 1];
+                int currentOffset = ilReader.Offset;
+                ILOpcode opcode = ilReader.ReadILOpcode();
 
                 // The stack height could be unknown if the previous instruction
                 // was an unconditional control transfer.
@@ -73,7 +72,7 @@ namespace Internal.IL
                     || stackHeights[currentOffset] == stackHeight);
                 stackHeights[currentOffset] = stackHeight;
 
-                bool isVariableSize = false;
+                bool hasReadOperand = false;
                 switch (opcode)
                 {
                     case ILOpcode.arglist:
@@ -168,6 +167,7 @@ namespace Internal.IL
                     case ILOpcode.stloc_2:
                     case ILOpcode.stloc_3:
                     case ILOpcode.stloc_s:
+                    case ILOpcode.switch_:
                         Debug.Assert(stackHeight > 0);
                         stackHeight -= 1;
                         break;
@@ -191,43 +191,6 @@ namespace Internal.IL
                     case ILOpcode.blt:
                     case ILOpcode.blt_un:
                     case ILOpcode.bne_un:
-                        {
-                            int target = currentOffset + ReadInt32(ilbytes, currentOffset + 1) + 5;
-
-                            int adjustment;
-                            bool isConditional;
-                            if (opcode == ILOpcode.br || opcode == ILOpcode.leave)
-                            {
-                                isConditional = false;
-                                adjustment = 0;
-                            }
-                            else if (opcode == ILOpcode.brfalse || opcode == ILOpcode.brtrue)
-                            {
-                                isConditional = true;
-                                adjustment = 1;
-                            }
-                            else
-                            {
-                                isConditional = true;
-                                adjustment = 2;
-                            }
-
-                            Debug.Assert(stackHeight >= adjustment);
-                            stackHeight -= adjustment;
-
-                            Debug.Assert(stackHeights[target] == StackHeightNotSet
-                                || stackHeights[target] == stackHeight);
-
-                            // Forward branch carries information about stack height at a future
-                            // offset. We need to remember it.
-                            if (target > currentOffset)
-                                stackHeights[target] = stackHeight;
-
-                            if (!isConditional)
-                                stackHeight = StackHeightNotSet;
-                        }
-                        break;
-
                     case ILOpcode.br_s:
                     case ILOpcode.leave_s:
                     case ILOpcode.brfalse_s:
@@ -243,16 +206,17 @@ namespace Internal.IL
                     case ILOpcode.blt_un_s:
                     case ILOpcode.bne_un_s:
                         {
-                            int target = currentOffset + (sbyte)ilbytes[currentOffset + 1] + 2;
+                            int target = ilReader.ReadBranchDestination(opcode);
+                            hasReadOperand = true;
 
                             int adjustment;
                             bool isConditional;
-                            if (opcode == ILOpcode.br_s || opcode == ILOpcode.leave_s)
+                            if (opcode is ILOpcode.br or ILOpcode.br_s or ILOpcode.leave or ILOpcode.leave_s)
                             {
                                 isConditional = false;
                                 adjustment = 0;
                             }
-                            else if (opcode == ILOpcode.brfalse_s || opcode == ILOpcode.brtrue_s)
+                            else if (opcode is ILOpcode.brfalse or ILOpcode.brfalse_s or ILOpcode.brtrue_s or ILOpcode.brtrue)
                             {
                                 isConditional = true;
                                 adjustment = 1;
@@ -284,11 +248,11 @@ namespace Internal.IL
                     case ILOpcode.callvirt:
                     case ILOpcode.newobj:
                         {
-                            int token = ReadILToken(ilbytes, currentOffset + 1);
-                            object obj = methodIL.GetObject(token);
-                            MethodSignature sig = obj is MethodSignature ?
-                                (MethodSignature)obj :
-                                ((MethodDesc)obj).Signature;
+                            object obj = methodIL.GetObject(ilReader.ReadILToken());
+                            hasReadOperand = true;
+
+                            MethodSignature sig = obj is MethodSignature methodSignature ?
+                                methodSignature : ((MethodDesc)obj).Signature;
                             int adjustment = sig.Length;
                             if (opcode == ILOpcode.newobj)
                             {
@@ -436,38 +400,18 @@ namespace Internal.IL
                         Debug.Assert(stackHeight > 0);
                         break;
 
-                    case ILOpcode.switch_:
-                        Debug.Assert(stackHeight > 0);
-                        isVariableSize = true;
-                        stackHeight -= 1;
-                        currentOffset += 1 + (ReadInt32(ilbytes, currentOffset + 1) * 4) + 4;
-                        break;
-
                     default:
                         Debug.Fail("Unknown instruction");
                         break;
                 }
 
-                if (!isVariableSize)
-                    currentOffset += opcode.GetSize();
+                if (!hasReadOperand)
+                    ilReader.Skip(opcode);
 
                 maxStack = Math.Max(maxStack, stackHeight);
             }
 
             return maxStack;
-        }
-
-        private static int ReadInt32(byte[] ilBytes, int offset)
-        {
-            return ilBytes[offset]
-                + (ilBytes[offset + 1] << 8)
-                + (ilBytes[offset + 2] << 16)
-                + (ilBytes[offset + 3] << 24);
-        }
-
-        private static int ReadILToken(byte[] ilBytes, int offset)
-        {
-            return ReadInt32(ilBytes, offset);
         }
     }
 }

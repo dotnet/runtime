@@ -86,6 +86,7 @@ advapi32!CredWriteDomainCredentialsW
 advapi32!CredWriteW
 advapi32!DeleteAce
 advapi32!DeleteService
+advapi32!DeregisterEventSource
 advapi32!DestroyPrivateObjectSecurity
 advapi32!DuplicateToken
 advapi32!DuplicateTokenEx
@@ -206,6 +207,8 @@ advapi32!RegFlushKey
 advapi32!RegGetKeySecurity
 advapi32!RegGetValueA
 advapi32!RegGetValueW
+advapi32!RegisterEventSourceA
+advapi32!RegisterEventSourceW
 advapi32!RegisterServiceCtrlHandlerA
 advapi32!RegisterServiceCtrlHandlerExA
 advapi32!RegisterServiceCtrlHandlerExW
@@ -239,6 +242,8 @@ advapi32!RegSetValueExA
 advapi32!RegSetValueExW
 advapi32!RegUnLoadKeyA
 advapi32!RegUnLoadKeyW
+advapi32!ReportEventA
+advapi32!ReportEventW
 advapi32!RevertToSelf
 advapi32!SetAclInformation
 advapi32!SetFileSecurityW

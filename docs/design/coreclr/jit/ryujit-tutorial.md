@@ -447,6 +447,10 @@ This is the same diagram as before, but with additional links to indicate execut
   - Determine initial value for dependent phis
 - Eliminate checks where the range of the index is within the check range
 
+### Induction Variable Optimization
+- Perform scalar evolution analysis to describe values of IR nodes inside loops
+- Perform IV widening on x64 to avoid unnecessary zero extensions for array/span indexing
+
 ## RyuJIT Back-End
 
 ### Rationalization

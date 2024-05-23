@@ -87,7 +87,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         public DateTimeOffset Date { get; set; }
         public int TemperatureCelsius { get; set; }
         public string Summary { get; set; }
-        public string SummaryField;
+        public string? SummaryField;
         public List<DateTimeOffset> DatesAvailable { get; set; }
         public Dictionary<string, HighLowTemps> TemperatureRanges { get; set; }
         public string[] SummaryWords { get; set; }
@@ -115,7 +115,7 @@ namespace System.Text.Json.SourceGeneration.Tests
 
     public class MyType
     {
-        public MyType Type;
+        public MyType? Type;
     }
 
     public class MyType2
@@ -304,5 +304,33 @@ namespace System.Text.Json.SourceGeneration.Tests
     public class PocoWithNumberHandlingAttr
     {
         public int Id { get; set; }
+    }
+
+    public class PocoWithMixedVisibilityMembersBase
+    {
+        public string BaseProperty { get; set; }
+        public string ShadowProperty { get; set; }
+    }
+
+    public class PocoWithMixedVisibilityMembers : PocoWithMixedVisibilityMembersBase
+    {
+        public string PublicProperty { get; set; }
+
+        [JsonInclude]
+        public string PublicField;
+
+        [JsonInclude]
+        internal int InternalProperty { get; set; }
+
+        [JsonInclude]
+        internal int InternalField;
+
+        [JsonPropertyName("customProp")]
+        public string PropertyWithCustomName { get; set; }
+
+        [JsonInclude, JsonPropertyName("customField")]
+        public string FieldWithCustomName;
+
+        public new int ShadowProperty { get; set; }
     }
 }

@@ -209,6 +209,11 @@ public sealed partial class QuicListener : IAsyncDisposable
     /// <param name="clientHello">The TLS ClientHello data.</param>
     private async void StartConnectionHandshake(QuicConnection connection, SslClientHelloInfo clientHello)
     {
+        // Yield to the threadpool immediately. This makes sure the connection options callback
+        // provided by the user is not invoked from the MsQuic thread and cannot delay acks
+        // or other operations on other connections.
+        await Task.CompletedTask.ConfigureAwait(ConfigureAwaitOptions.ForceYielding);
+
         bool wrapException = false;
         CancellationToken cancellationToken = default;
 
@@ -330,6 +335,12 @@ public sealed partial class QuicListener : IAsyncDisposable
         }
 
         QuicConnection connection = new QuicConnection(data.Connection, data.Info);
+
+        if (NetEventSource.Log.IsEnabled())
+        {
+            NetEventSource.Info(this, $"{this} New inbound connection {connection}.");
+        }
+
         SslClientHelloInfo clientHello = new SslClientHelloInfo(data.Info->ServerNameLength > 0 ? Marshal.PtrToStringUTF8((IntPtr)data.Info->ServerName, data.Info->ServerNameLength) : "", SslProtocols.Tls13);
 
         // Kicks off the rest of the handshake in the background, the process itself will enqueue the result in the accept queue.
@@ -397,6 +408,11 @@ public sealed partial class QuicListener : IAsyncDisposable
         if (Interlocked.Exchange(ref _disposed, 1) != 0)
         {
             return;
+        }
+
+        if (NetEventSource.Log.IsEnabled())
+        {
+            NetEventSource.Info(this, $"{this} Disposing.");
         }
 
         // Check if the listener has been shut down and if not, shut it down.

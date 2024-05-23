@@ -15,7 +15,7 @@ const RUN_AOT_COMPILATION = process.env.RUN_AOT_COMPILATION === "1";
 var methodIndexByName = undefined;
 var gitHash = undefined;
 
-function setup(linkerSetup) {
+function setup(emscriptenBuildOptions) {
     // USE_PTHREADS is emscripten's define symbol, which is passed to acorn optimizer, so we could use it here
     #if USE_PTHREADS
     const modulePThread = PThread;
@@ -43,8 +43,7 @@ function setup(linkerSetup) {
         updateMemoryViews,
         getMemory: () => { return wasmMemory; },
         getWasmIndirectFunctionTable: () => { return wasmTable; },
-        ...linkerSetup
-    });
+    }, emscriptenBuildOptions);
 
     #if USE_PTHREADS
     if (ENVIRONMENT_IS_PTHREAD) {
@@ -77,17 +76,20 @@ function createWasmImportStubsFrom(collection) {
 // we will replace them with the real implementation in replace_linker_placeholders
 function injectDependencies() {
     createWasmImportStubsFrom(methodIndexByName.mono_wasm_imports);
+    // mono_wasm_hybrid_globalization_imports is empty in non-hybrid globalization mode
+    createWasmImportStubsFrom(methodIndexByName.mono_wasm_hybrid_globalization_imports);
 
     #if USE_PTHREADS
     createWasmImportStubsFrom(methodIndexByName.mono_wasm_threads_imports);
     #endif
 
     DotnetSupportLib["$DOTNET__postset"] = `DOTNET.setup({ ` +
-        `linkerWasmEnableSIMD: ${WASM_ENABLE_SIMD ? "true" : "false"},` +
-        `linkerWasmEnableEH: ${WASM_ENABLE_EH ? "true" : "false"},` +
-        `linkerEnableAotProfiler: ${ENABLE_AOT_PROFILER ? "true" : "false"}, ` +
-        `linkerEnableBrowserProfiler: ${ENABLE_BROWSER_PROFILER ? "true" : "false"}, ` +
-        `linkerRunAOTCompilation: ${RUN_AOT_COMPILATION ? "true" : "false"}, ` +
+        `wasmEnableSIMD: ${WASM_ENABLE_SIMD ? "true" : "false"},` +
+        `wasmEnableEH: ${WASM_ENABLE_EH ? "true" : "false"},` +
+        `enableAotProfiler: ${ENABLE_AOT_PROFILER ? "true" : "false"}, ` +
+        `enableBrowserProfiler: ${ENABLE_BROWSER_PROFILER ? "true" : "false"}, ` +
+        `runAOTCompilation: ${RUN_AOT_COMPILATION ? "true" : "false"}, ` +
+        `wasmEnableThreads: ${USE_PTHREADS ? "true" : "false"}, ` +
         `gitHash: "${gitHash}", ` +
         `});`;
 
@@ -96,4 +98,4 @@ function injectDependencies() {
 }
 
 
-// var methodIndexByName wil be appended below by the MSBuild in browser.proj
+// var methodIndexByName wil be appended below by the MSBuild in browser.proj via exports-linker.ts

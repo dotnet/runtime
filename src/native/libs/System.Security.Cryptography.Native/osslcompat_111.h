@@ -6,6 +6,9 @@
 #pragma once
 #include "pal_types.h"
 
+#undef BN_abs_is_word
+#undef BN_is_odd
+#undef BN_is_one
 #undef BN_is_zero
 #undef SSL_CTX_set_options
 #undef SSL_set_options
@@ -21,6 +24,9 @@ typedef struct stack_st OPENSSL_STACK;
 #define OPENSSL_INIT_LOAD_SSL_STRINGS 0x00200000L
 
 int ASN1_TIME_to_tm(const ASN1_TIME* s, struct tm* tm);
+int BN_abs_is_word(const BIGNUM *a, const BN_ULONG w);
+int BN_is_odd(const BIGNUM* a);
+int BN_is_one(const BIGNUM* a);
 int BN_is_zero(const BIGNUM* a);
 int BIO_up_ref(BIO* a);
 const BIGNUM* DSA_get0_key(const DSA* dsa, const BIGNUM** pubKey, const BIGNUM** privKey);
@@ -52,6 +58,7 @@ const RSA_METHOD* RSA_PKCS1_OpenSSL(void);
 void RSA_get0_crt_params(const RSA* rsa, const BIGNUM** dmp1, const BIGNUM** dmq1, const BIGNUM** iqmp);
 void RSA_get0_factors(const RSA* rsa, const BIGNUM** p, const BIGNUM** q);
 void RSA_get0_key(const RSA* rsa, const BIGNUM** n, const BIGNUM** e, const BIGNUM** d);
+int RSA_get_multi_prime_extra_count(const RSA* r);
 int32_t RSA_meth_get_flags(const RSA_METHOD* meth);
 int32_t RSA_pkey_ctx_ctrl(EVP_PKEY_CTX* ctx, int32_t optype, int32_t cmd, int32_t p1, void* p2);
 int32_t RSA_set0_crt_params(RSA* rsa, BIGNUM* dmp1, BIGNUM* dmq1, BIGNUM* iqmp);

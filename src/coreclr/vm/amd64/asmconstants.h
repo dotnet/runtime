@@ -98,22 +98,14 @@ ASMCONSTANTS_C_ASSERT(SIZEOF__ComPrestubMethodFrame
 ASMCONSTANTS_C_ASSERT(SIZEOF__ComMethodFrame
                     == sizeof(ComMethodFrame));
 
-#define               OFFSETOF__ComPlusCallMethodDesc__m_pComPlusCallInfo        DBG_FRE(0x30, 0x08)
-ASMCONSTANTS_C_ASSERT(OFFSETOF__ComPlusCallMethodDesc__m_pComPlusCallInfo
-                    == offsetof(ComPlusCallMethodDesc, m_pComPlusCallInfo));
-
-#define               OFFSETOF__ComPlusCallInfo__m_pILStub                       0x0
-ASMCONSTANTS_C_ASSERT(OFFSETOF__ComPlusCallInfo__m_pILStub
-                      == offsetof(ComPlusCallInfo, m_pILStub));
-
 #endif // FEATURE_COMINTEROP
 
-#define               OFFSETOF__Thread__m_fPreemptiveGCDisabled     0x0C
+#define               OFFSETOF__Thread__m_fPreemptiveGCDisabled     0x04
 ASMCONSTANTS_C_ASSERT(OFFSETOF__Thread__m_fPreemptiveGCDisabled
                     == offsetof(Thread, m_fPreemptiveGCDisabled));
 #define Thread_m_fPreemptiveGCDisabled OFFSETOF__Thread__m_fPreemptiveGCDisabled
 
-#define               OFFSETOF__Thread__m_pFrame                    0x10
+#define               OFFSETOF__Thread__m_pFrame                    0x08
 ASMCONSTANTS_C_ASSERT(OFFSETOF__Thread__m_pFrame
                     == offsetof(Thread, m_pFrame));
 #define Thread_m_pFrame OFFSETOF__Thread__m_pFrame
@@ -277,9 +269,6 @@ ASMCONSTANTS_C_ASSERT(OFFSETOF__LazyMachState__m_CaptureRip
                     == offsetof(LazyMachState, m_CaptureRip));
 ASMCONSTANTS_C_ASSERT(OFFSETOF__LazyMachState__m_CaptureRsp
                     == offsetof(LazyMachState, m_CaptureRsp));
-
-#define               OFFSETOF__MethodDesc__m_wFlags        DBG_FRE(0x2E, 0x06)
-ASMCONSTANTS_C_ASSERT(OFFSETOF__MethodDesc__m_wFlags == offsetof(MethodDesc, m_wFlags));
 
 #define               OFFSETOF__VASigCookie__pNDirectILStub     0x8
 ASMCONSTANTS_C_ASSERT(OFFSETOF__VASigCookie__pNDirectILStub
@@ -504,19 +493,19 @@ ASMCONSTANTS_C_ASSERT(OFFSETOF__StringObject__m_StringLength
 ASMCONSTANTS_C_ASSERT(OFFSETOF__InlinedCallFrame__m_Datum
                     == offsetof(InlinedCallFrame, m_Datum));
 
-#define               OFFSETOF__InlinedCallFrame__m_pCallSiteSP 0x20
+#define               OFFSETOF__InlinedCallFrame__m_pCallSiteSP 0x18
 ASMCONSTANTS_C_ASSERT(OFFSETOF__InlinedCallFrame__m_pCallSiteSP
                     == offsetof(InlinedCallFrame, m_pCallSiteSP));
 
-#define               OFFSETOF__InlinedCallFrame__m_pCallerReturnAddress 0x28
+#define               OFFSETOF__InlinedCallFrame__m_pCallerReturnAddress 0x20
 ASMCONSTANTS_C_ASSERT(OFFSETOF__InlinedCallFrame__m_pCallerReturnAddress
                     == offsetof(InlinedCallFrame, m_pCallerReturnAddress));
 
-#define               OFFSETOF__InlinedCallFrame__m_pCalleeSavedFP 0x30
+#define               OFFSETOF__InlinedCallFrame__m_pCalleeSavedFP 0x28
 ASMCONSTANTS_C_ASSERT(OFFSETOF__InlinedCallFrame__m_pCalleeSavedFP
                     == offsetof(InlinedCallFrame, m_pCalleeSavedFP));
 
-#define               OFFSETOF__InlinedCallFrame__m_pThread 0x38
+#define               OFFSETOF__InlinedCallFrame__m_pThread 0x30
 ASMCONSTANTS_C_ASSERT(OFFSETOF__InlinedCallFrame__m_pThread
                     == offsetof(InlinedCallFrame, m_pThread));
 

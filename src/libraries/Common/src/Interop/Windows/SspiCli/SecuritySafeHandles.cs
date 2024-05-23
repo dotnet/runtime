@@ -65,6 +65,23 @@ namespace System.Net.Security
             return new SafeFreeContextBuffer_SECURITY();
         }
 
+        public static unsafe int QueryContextAttributes(SafeDeleteContext phContext, Interop.SspiCli.ContextAttribute contextAttribute, IntPtr* handle)
+        {
+            bool mustRelease = false;
+            try
+            {
+                phContext.DangerousAddRef(ref mustRelease);
+                return Interop.SspiCli.QueryContextAttributesW(ref phContext._handle, contextAttribute, handle);
+            }
+            finally
+            {
+                if (mustRelease)
+                {
+                    phContext.DangerousRelease();
+                }
+            }
+        }
+
         //
         // After PInvoke call the method will fix the refHandle.handle with the returned value.
         // The caller is responsible for creating a correct SafeHandle template or null can be passed if no handle is returned.
@@ -98,7 +115,7 @@ namespace System.Net.Security
                 }
                 else
                 {
-                    ((SafeFreeCertContext)refHandle).Set(*(IntPtr*)buffer);
+                    Debug.Assert(false);
                 }
             }
 
@@ -318,13 +335,12 @@ namespace System.Net.Security
     {
 #pragma warning disable 0649
         // This is used only by SslStream but it is included elsewhere
-        public X509Certificate? LocalCertificate;
+        public bool HasLocalCertificate;
 #pragma warning restore 0649
         public SafeFreeCredential_SECURITY() : base() { }
 
         protected override bool ReleaseHandle()
         {
-            LocalCertificate?.Dispose();
             return Interop.SspiCli.FreeCredentialsHandle(ref _handle) == 0;
         }
     }

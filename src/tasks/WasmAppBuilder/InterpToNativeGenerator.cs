@@ -10,6 +10,7 @@ using System.Globalization;
 using Microsoft.Build.Utilities;
 using Microsoft.Build.Framework;
 using System.Diagnostics.CodeAnalysis;
+using WasmAppBuilder;
 
 //
 // This class generates the icall_trampoline_dispatch () function used by the interpreter to call native code on WASM.
@@ -20,9 +21,9 @@ using System.Diagnostics.CodeAnalysis;
 
 internal sealed class InterpToNativeGenerator
 {
-    private TaskLoggingHelper Log { get; set; }
+    private LogAdapter Log { get; set; }
 
-    public InterpToNativeGenerator(TaskLoggingHelper log) => Log = log;
+    public InterpToNativeGenerator(LogAdapter log) => Log = log;
 
     public void Generate(IEnumerable<string> cookies, string outputPath)
     {

@@ -387,7 +387,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                 string productDir = Path.Combine(BaseDirectory, "product");
                 Directory.CreateDirectory(productDir);
                 ProductHostFxrPath = Path.Combine(productDir, HostFxrName);
-                File.Copy(Path.Combine(RepoDirectories.HostArtifacts, HostFxrName), ProductHostFxrPath);
+                File.Copy(Binaries.HostFxr.FilePath, ProductHostFxrPath);
             }
 
             private string CreateHostFxr(string destinationDirectory)

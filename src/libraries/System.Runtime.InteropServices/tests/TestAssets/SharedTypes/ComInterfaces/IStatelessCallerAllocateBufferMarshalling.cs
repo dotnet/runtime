@@ -94,6 +94,7 @@ namespace SharedTypes.ComInterfaces
             {
                 var unmanaged = new StatelessCallerAllocatedBufferNative() { I = managed.I };
                 MemoryMarshal.Write(buffer, in unmanaged);
+                // Unsafe.AsPointer is safe since buffer is pinned
                 return (StatelessCallerAllocatedBufferNative*)Unsafe.AsPointer(ref MemoryMarshal.AsRef<StatelessCallerAllocatedBufferNative>(buffer));
             }
 

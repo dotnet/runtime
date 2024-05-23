@@ -206,7 +206,7 @@ namespace System.Xml.Xsl.Qil
                 foreach (QilNode n in fdecls)
                 {
                     // i.e. <Function id="$a"/>
-                    this.writer.WriteStartElement(Enum.GetName(typeof(QilNodeType), n.NodeType)!);
+                    this.writer.WriteStartElement(Enum.GetName(n.NodeType)!);
                     this.writer.WriteAttributeString("id", _ngen.NameOf(n));
                     WriteXmlType(n);
 
@@ -277,7 +277,7 @@ namespace System.Xml.Xsl.Qil
                 WriteAnnotations(node.Annotation);
 
             // Call WriteStartElement
-            this.writer.WriteStartElement("", Enum.GetName(typeof(QilNodeType), node.NodeType)!, "");
+            this.writer.WriteStartElement("", Enum.GetName(node.NodeType)!, "");
 
             // Write common attributes
 #if QIL_TRACE_NODE_CREATION

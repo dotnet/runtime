@@ -29,7 +29,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            sb.Append(nameMangler.CompilationUnitPrefix).Append("__method_to_entrypoint_map");
+            sb.Append(nameMangler.CompilationUnitPrefix).Append("__method_to_entrypoint_map"u8);
         }
         public int Offset => 0;
         public override bool IsShareable => false;
@@ -156,7 +156,7 @@ namespace ILCompiler.DependencyAnalysis
                 if (method.IsDefaultConstructor)
                     flags |= InvokeTableFlags.IsDefaultConstructor;
 
-                if (ReflectionVirtualInvokeMapNode.NeedsVirtualInvokeInfo(method))
+                if (ReflectionVirtualInvokeMapNode.NeedsVirtualInvokeInfo(factory, method))
                     flags |= InvokeTableFlags.HasVirtualInvoke;
 
                 if (!method.IsAbstract)

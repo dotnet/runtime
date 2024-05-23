@@ -12,8 +12,6 @@
   #define ROUND_FLOAT              0       // Do not round intermed float expression results
   #define CPU_HAS_BYTE_REGS        0
 
-  #define CPBLK_UNROLL_LIMIT       64     // Upper bound to let the code generator to loop unroll CpBlk
-  #define INITBLK_UNROLL_LIMIT     64     // Upper bound to let the code generator to loop unroll InitBlk
 
 #ifdef FEATURE_SIMD
 #pragma error("SIMD Unimplemented yet RISCV64")
@@ -44,7 +42,6 @@
                                            // need to track stack depth, but this is currently necessary to get GC information reported at call sites.
   #define TARGET_POINTER_SIZE      8       // equal to sizeof(void*) and the managed pointer size in bytes for this target
   #define FEATURE_EH               1       // To aid platform bring-up, eliminate exceptional EH clauses (catch, filter, filter-handler, fault) and directly execute 'finally' clauses.
-  #define FEATURE_EH_CALLFINALLY_THUNKS 1  // Generate call-to-finally code in "thunks" in the enclosing EH region, protected by "cloned finally" clauses.
   #define ETW_EBP_FRAMED           1       // if 1 we cannot use REG_FP as a scratch register and must setup the frame pointer for most methods
   #define CSE_CONSTS               1       // Enable if we want to CSE constants
 
@@ -81,7 +78,7 @@
   // REG_VAR_ORDER is: (CALLEE_TRASH & ~CALLEE_TRASH_NOGC), CALLEE_TRASH_NOGC, CALLEE_SAVED
   #define REG_VAR_ORDER            REG_A0,REG_A1,REG_A2,REG_A3,REG_A4,REG_A5,REG_A6,REG_A7, \
                                    REG_T0,REG_T1,REG_T2,REG_T3,REG_T4,REG_T5,REG_T6, \
-                                   REG_CALLEE_SAVED_ORDER
+                                   REG_S1,REG_S2,REG_S3,REG_S4,REG_S5,REG_S6,REG_S7,REG_S8,REG_S9,REG_S10,REG_S11
 
   #define REG_VAR_ORDER_FLT        REG_F12,REG_F13,REG_F14,REG_F15,REG_F16,REG_F17,REG_F18,REG_F19, \
                                    REG_F2,REG_F3,REG_F4,REG_F5,REG_F6,REG_F7,REG_F8,REG_F9,REG_F10, \
@@ -89,12 +86,13 @@
                                    REG_F24,REG_F25,REG_F26,REG_F27,REG_F28,REG_F29,REG_F30,REG_F31, \
                                    REG_F1,REG_F0
 
-  #define REG_CALLEE_SAVED_ORDER   REG_S1,REG_S2,REG_S3,REG_S4,REG_S5,REG_S6,REG_S7,REG_S8,REG_S9,REG_S10,REG_S11
-  #define RBM_CALLEE_SAVED_ORDER   RBM_S1,RBM_S2,RBM_S3,RBM_S4,RBM_S5,RBM_S6,RBM_S7,RBM_S8,RBM_S9,RBM_S10,RBM_S11
+  #define RBM_CALL_GC_REGS_ORDER   RBM_S1,RBM_S2,RBM_S3,RBM_S4,RBM_S5,RBM_S6,RBM_S7,RBM_S8,RBM_S9,RBM_S10,RBM_S11,RBM_INTRET,RBM_INTRET_1
+  #define RBM_CALL_GC_REGS         (RBM_S1|RBM_S2|RBM_S3|RBM_S4|RBM_S5|RBM_S6|RBM_S7|RBM_S8|RBM_S9|RBM_S10|RBM_S11|RBM_INTRET|RBM_INTRET_1)
 
   #define CNT_CALLEE_SAVED        (11)
   #define CNT_CALLEE_TRASH        (15)
   #define CNT_CALLEE_ENREG        (CNT_CALLEE_SAVED-1)
+  #define CNT_CALL_GC_REGS        (CNT_CALLEE_SAVED+2)
 
   #define CNT_CALLEE_SAVED_FLOAT  (12)
   #define CNT_CALLEE_TRASH_FLOAT  (20)

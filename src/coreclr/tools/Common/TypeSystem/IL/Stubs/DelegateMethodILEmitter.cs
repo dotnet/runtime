@@ -46,8 +46,8 @@ namespace Internal.IL.Stubs
 
                 ILEmitter emit = new ILEmitter();
                 TypeDesc delegateType = context.GetWellKnownType(WellKnownType.MulticastDelegate).BaseType;
-                FieldDesc firstParameterField = delegateType.GetKnownField("m_firstParameter");
-                FieldDesc functionPointerField = delegateType.GetKnownField("m_functionPointer");
+                FieldDesc firstParameterField = delegateType.GetKnownField("_firstParameter");
+                FieldDesc functionPointerField = delegateType.GetKnownField("_functionPointer");
                 ILCodeStream codeStream = emit.NewCodeStream();
 
                 codeStream.EmitLdArg(0);

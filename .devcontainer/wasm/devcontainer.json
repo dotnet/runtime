@@ -1,6 +1,6 @@
 // For format details, see https://aka.ms/devcontainer.json.
 {
-	"name": "WASM development (prebuilt)",
+	"name": "WASM singlethreaded development (prebuilt)",
 	"build": {
 		"dockerfile": "Dockerfile",
 		"args": {
@@ -10,7 +10,8 @@
 	},
 	"hostRequirements": {
 		"cpus": 4,
-		"memory": "8gb"
+		"memory": "8gb",
+		"storage": "40gb"
 	},
 
 	"features": {
@@ -40,7 +41,7 @@
 	"onCreateCommand": "${containerWorkspaceFolder}/.devcontainer/scripts/onCreateCommand.sh wasm",
 
 	// Use 'postCreateCommand' to run commands after the container is created.
-	"postCreateCommand": "${containerWorkspaceFolder}/.devcontainer/scripts/postCreateCommand.sh",
+	"postCreateCommand": "${containerWorkspaceFolder}/.devcontainer/scripts/postCreateCommand.sh wasm",
 
 	// Add the locally installed dotnet to the path to ensure that it is activated
 	// This allows developers to just use 'dotnet build' on the command-line, and the local dotnet version will be used.

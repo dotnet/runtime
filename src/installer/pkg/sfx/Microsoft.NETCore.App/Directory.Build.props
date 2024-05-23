@@ -107,6 +107,9 @@
     <PlatformManifestFileEntry Include="clrgc.dll" IsNative="true" />
     <PlatformManifestFileEntry Include="libclrgc.so" IsNative="true" />
     <PlatformManifestFileEntry Include="libclrgc.dylib" IsNative="true" />
+    <PlatformManifestFileEntry Include="clrgcexp.dll" IsNative="true" />
+    <PlatformManifestFileEntry Include="libclrgcexp.so" IsNative="true" />
+    <PlatformManifestFileEntry Include="libclrgcexp.dylib" IsNative="true" />    
     <PlatformManifestFileEntry Include="clretwrc.dll" IsNative="true" />
     <PlatformManifestFileEntry Include="clrjit.dll" IsNative="true" />
     <PlatformManifestFileEntry Condition="'$(PgoInstrument)' != ''" Include="pgort140.dll" IsNative="true" />
@@ -125,6 +128,7 @@
     <PlatformManifestFileEntry Include="msquic.dll" IsNative="true" FallbackFileVersion="$(MsQuicFileVersion)" />
     <PlatformManifestFileEntry Include="libmsquic.dylib" IsNative="true" FallbackFileVersion="$(MsQuicFileVersion)" Condition="'$(Configuration)' == 'Debug' or '$(LibrariesConfiguration)' == 'Debug'"/>
     <PlatformManifestFileEntry Include="System.IO.Compression.Native.dll" IsNative="true" />
+    <PlatformManifestFileEntry Include="System.Globalization.Native.dll" IsNative="true" />
     <PlatformManifestFileEntry Include="createdump.exe" IsNative="true" />
     <PlatformManifestFileEntry Include="createdump" IsNative="true" />
     <PlatformManifestFileEntry Include="libcoreclrtraceptprovider.so" IsNative="true" />
@@ -141,6 +145,8 @@
     <PlatformManifestFileEntry Include="libeventpipe-enabled.a" IsNative="true" />
     <PlatformManifestFileEntry Include="libRuntime.ServerGC.a" IsNative="true" />
     <PlatformManifestFileEntry Include="libRuntime.WorkstationGC.a" IsNative="true" />
+    <PlatformManifestFileEntry Include="libRuntime.VxSortDisabled.a" IsNative="true" />
+    <PlatformManifestFileEntry Include="libRuntime.VxSortEnabled.a" IsNative="true" />
     <PlatformManifestFileEntry Include="libstandalonegc-disabled.a" IsNative="true" />
     <PlatformManifestFileEntry Include="libstandalonegc-enabled.a" IsNative="true" />
     <PlatformManifestFileEntry Include="libstdc++compat.a" IsNative="true" />
@@ -228,6 +234,7 @@
     <PlatformManifestFileEntry Include="dotnet.runtime.js" IsNative="true" />
     <PlatformManifestFileEntry Include="dotnet.runtime.js.map" IsNative="true" />
     <PlatformManifestFileEntry Include="dotnet.native.js" IsNative="true" />
+    <PlatformManifestFileEntry Include="dotnet.globalization.js" IsNative="true" />
     <PlatformManifestFileEntry Include="dotnet.native.worker.js" IsNative="true" />
     <PlatformManifestFileEntry Include="dotnet.native.js.symbols" IsNative="true" />
     <PlatformManifestFileEntry Include="dotnet.d.ts" IsNative="true" />
@@ -277,7 +284,7 @@
     <ExcludeFromClosure Include="@(NetFxReference)" />
  </ItemGroup>
 
-  <ItemGroup Condition="'$(DotNetBuildFromSource)' != 'true'">
+  <ItemGroup Condition="'$(DotNetBuildSourceOnly)' != 'true'">
     <!-- Add a reference to Microsoft.DiaSymReader.Native if one does not already exist. -->
     <PackageReference Include="Microsoft.DiaSymReader.Native"
                       Exclude="@(PackageReference)"

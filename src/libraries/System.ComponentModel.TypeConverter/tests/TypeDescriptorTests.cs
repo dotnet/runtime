@@ -26,6 +26,10 @@ namespace System.ComponentModel.Tests
                 .Setup(p => p.IsSupportedType(typeof(int)))
                 .Returns(true)
                 .Verifiable();
+            mockProvider1
+                .Setup(p => p.RequireRegisteredTypes)
+                .Returns(false)
+                .Verifiable();
             var mockProvider2 = new Mock<TypeDescriptionProvider>(MockBehavior.Strict);
             mockProvider2
                 .Setup(p => p.IsSupportedType(typeof(int)))
@@ -34,6 +38,10 @@ namespace System.ComponentModel.Tests
             mockProvider2
                 .Setup(p => p.GetCache(instance))
                 .Returns(new Dictionary<int, string>());
+            mockProvider2
+                .Setup(p => p.RequireRegisteredTypes)
+                .Returns(false)
+                .Verifiable();
 
             TypeDescriptor.AddProvider(mockProvider1.Object, instance);
             TypeDescriptionProvider actualProvider1 = TypeDescriptor.GetProvider(instance);
@@ -218,6 +226,10 @@ namespace System.ComponentModel.Tests
                 .Setup(p => p.IsSupportedType(typeof(int)))
                 .Returns(true)
                 .Verifiable();
+            mockProvider1
+                .Setup(p => p.RequireRegisteredTypes)
+                .Returns(false)
+                .Verifiable();
             var mockProvider2 = new Mock<TypeDescriptionProvider>(MockBehavior.Strict);
             mockProvider2
                 .Setup(p => p.IsSupportedType(typeof(int)))
@@ -226,6 +238,10 @@ namespace System.ComponentModel.Tests
             mockProvider2
                 .Setup(p => p.GetCache(instance))
                 .Returns(new Dictionary<int, string>());
+            mockProvider2
+                .Setup(p => p.RequireRegisteredTypes)
+                .Returns(false)
+                .Verifiable();
 
             TypeDescriptor.AddProviderTransparent(mockProvider1.Object, instance);
             TypeDescriptionProvider actualProvider1 = TypeDescriptor.GetProvider(instance);
@@ -564,6 +580,10 @@ namespace System.ComponentModel.Tests
                 .Setup(p => p.IsSupportedType(typeof(int)))
                 .Returns(true)
                 .Verifiable();
+            mockProvider1
+                .Setup(p => p.RequireRegisteredTypes)
+                .Returns(false)
+                .Verifiable();
             var mockProvider2 = new Mock<TypeDescriptionProvider>(MockBehavior.Strict);
             mockProvider2
                 .Setup(p => p.GetCache(instance))
@@ -572,6 +592,10 @@ namespace System.ComponentModel.Tests
                 .Setup(p => p.IsSupportedType(typeof(int)))
                 .Returns(true)
                 .Verifiable();
+            mockProvider2
+                .Setup(p => p.RequireRegisteredTypes)
+                .Returns(false)
+                .Verifiable();
             var mockProvider3 = new Mock<TypeDescriptionProvider>(MockBehavior.Strict);
             mockProvider3
                 .Setup(p => p.GetCache(instance))
@@ -579,6 +603,10 @@ namespace System.ComponentModel.Tests
             mockProvider3
                 .Setup(p => p.IsSupportedType(typeof(int)))
                 .Returns(true)
+                .Verifiable();
+            mockProvider3
+                .Setup(p => p.RequireRegisteredTypes)
+                .Returns(false)
                 .Verifiable();
 
             TypeDescriptor.AddProvider(mockProvider1.Object, instance);
@@ -826,6 +854,10 @@ namespace System.ComponentModel.Tests
                 .Setup(p => p.IsSupportedType(typeof(int)))
                 .Returns(true)
                 .Verifiable();
+            mockProvider1
+                .Setup(p => p.RequireRegisteredTypes)
+                .Returns(false)
+                .Verifiable();
             var mockProvider2 = new Mock<TypeDescriptionProvider>(MockBehavior.Strict);
             mockProvider2
                 .Setup(p => p.GetCache(instance))
@@ -834,6 +866,10 @@ namespace System.ComponentModel.Tests
                 .Setup(p => p.IsSupportedType(typeof(int)))
                 .Returns(true)
                 .Verifiable();
+            mockProvider2
+                .Setup(p => p.RequireRegisteredTypes)
+                .Returns(false)
+                .Verifiable();
             var mockProvider3 = new Mock<TypeDescriptionProvider>(MockBehavior.Strict);
             mockProvider3
                 .Setup(p => p.GetCache(instance))
@@ -841,6 +877,10 @@ namespace System.ComponentModel.Tests
             mockProvider3
                 .Setup(p => p.IsSupportedType(typeof(int)))
                 .Returns(true)
+                .Verifiable();
+            mockProvider3
+                .Setup(p => p.RequireRegisteredTypes)
+                .Returns(false)
                 .Verifiable();
 
             TypeDescriptor.AddProvider(mockProvider1.Object, instance);
@@ -1395,7 +1435,7 @@ namespace System.ComponentModel.Tests
 
         [Theory]
         [MemberData(nameof(GetConverter_ByMultithread_ReturnsExpected_TestData))]
-        public async void GetConverter_ByMultithread_ReturnsExpected(Type typeForGetConverter, Type expectedConverterType)
+        public async Task GetConverter_ByMultithread_ReturnsExpected(Type typeForGetConverter, Type expectedConverterType)
         {
             TypeConverter[] actualConverters = await Task.WhenAll(
                 Enumerable.Range(0, 100).Select(_ =>
@@ -1415,7 +1455,7 @@ namespace System.ComponentModel.Tests
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]  // Mock will try to JIT
         [MemberData(nameof(GetConverterWithAddProvider_ByMultithread_Success_TestData))]
-        public async void GetConverterWithAddProvider_ByMultithread_Success(Type typeForGetConverter, Type expectedConverterType)
+        public async Task GetConverterWithAddProvider_ByMultithread_Success(Type typeForGetConverter, Type expectedConverterType)
         {
             TypeConverter[] actualConverters = await Task.WhenAll(
                 Enumerable.Range(0, 200).Select(_ =>

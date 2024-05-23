@@ -137,26 +137,57 @@ namespace System.Security.Cryptography.X509Certificates
                     chainPolicy.UrlRetrievalTimeout,
                     chainPolicy.DisableCertificateDownloads);
 
-                if (_pal == null)
-                    return false;
-
-                _chainElements = new X509ChainElementCollection(_pal.ChainElements!);
-
-                Exception? verificationException;
-                bool? verified = _pal.Verify(chainPolicy.VerificationFlags, out verificationException);
-                if (!verified.HasValue)
+                bool success = false;
+                if (_pal is not null)
                 {
-                    if (throwOnException)
+                    _chainElements = new X509ChainElementCollection(_pal.ChainElements!);
+
+                    Exception? verificationException;
+                    bool? verified = _pal.Verify(chainPolicy.VerificationFlags, out verificationException);
+                    if (!verified.HasValue)
                     {
-                        throw verificationException!;
+                        if (throwOnException)
+                        {
+                            throw verificationException!;
+                        }
+                        else
+                        {
+                            verified = false;
+                        }
                     }
-                    else
-                    {
-                        verified = false;
-                    }
+
+                    success = verified.Value;
                 }
 
-                return verified.Value;
+                // There are two reasons success might be false here.
+                //
+                // The most common reason is that we built the chain but the chain appears to run
+                // afoul of policy. This is represented by BuildChain returning a non-null object
+                // and storing potential policy violations in the chain structure. The public Build
+                // method returns false to the caller, and the caller can inspect the ChainStatus
+                // and ChainElements properties and evaluate the failure reason against app-level
+                // policies. If the caller does not care about these policy violations, they can
+                // choose to ignore them and to treat chain building as successful.
+                //
+                // The other type of failure is that BuildChain simply can't build the chain at all.
+                // Perhaps something within the certificate is not valid or is unsupported, or perhaps
+                // there's an internal failure within the OS layer we're invoking, etc. Whatever the
+                // reason, we're not meaningfully able to initialize the ChainStatus property, which
+                // means callers may observe a non-empty list of policy violations. Depending on the
+                // caller's logic, they might incorrectly interpret this as there being no policy
+                // violations at all, which means they might treat this condition as success.
+                //
+                // To avoid callers misinterpreting this latter condition as success, we'll throw an
+                // exception, which matches general .NET API behavior when a method cannot complete
+                // its objective. If throwOnException is false, it means the caller explicitly wants
+                // to suppress exceptions and normalize them to a false return value.
+
+                if (!success && throwOnException && _pal?.ChainStatus is not { Length: > 0 })
+                {
+                    throw new CryptographicException(SR.Cryptography_X509_ChainBuildingFailed);
+                }
+
+                return success;
             }
         }
 

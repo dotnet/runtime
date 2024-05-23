@@ -66,10 +66,10 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                 "comhost",
                 sharedState.ClsidString
             };
-            TestProjectFixture fixture = selfContained ? sharedState.ManagedHostFixture_SelfContained : sharedState.ManagedHostFixture_FrameworkDependent;
-            CommandResult result = Command.Create(fixture.TestProject.AppExe, args)
+            TestApp app = selfContained ? sharedState.ManagedHost_SelfContained : sharedState.ManagedHost_FrameworkDependent;
+            CommandResult result = Command.Create(app.AppExe, args)
                 .EnableTracingAndCaptureOutputs()
-                .DotNetRoot(fixture.BuiltDotnet.BinPath)
+                .DotNetRoot(TestContext.BuiltDotNet.BinPath)
                 .MultilevelLookup(false)
                 .Execute();
 
@@ -85,8 +85,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
 
             public string ComSxsPath { get; }
 
-            public TestProjectFixture ManagedHostFixture_FrameworkDependent { get; }
-            public TestProjectFixture ManagedHostFixture_SelfContained { get; }
+            public TestApp ManagedHost_FrameworkDependent { get; }
+            public TestApp ManagedHost_SelfContained { get; }
 
             public SharedTestState()
             {
@@ -122,15 +122,14 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                     Path.Combine(RepoDirectoriesProvider.Default.HostTestArtifacts, comsxsName),
                     ComSxsPath);
 
-                ManagedHostFixture_FrameworkDependent = new TestProjectFixture("ManagedHost", RepoDirectories)
-                    .EnsureRestored()
-                    .PublishProject(selfContained: false, extraArgs: "/p:RegFreeCom=true");
-                File.Copy(regFreeManifestPath, Path.Combine(ManagedHostFixture_FrameworkDependent.TestProject.BuiltApp.Location, regFreeManifestName));
+                ManagedHost_FrameworkDependent = TestApp.CreateFromBuiltAssets("RegFreeCom");
+                ManagedHost_FrameworkDependent.CreateAppHost();
+                File.Copy(regFreeManifestPath, Path.Combine(ManagedHost_FrameworkDependent.Location, regFreeManifestName));
 
-                ManagedHostFixture_SelfContained = new TestProjectFixture("ManagedHost", RepoDirectories)
-                    .EnsureRestored()
-                    .PublishProject(selfContained: true, extraArgs: "/p:RegFreeCom=true");
-                File.Copy(regFreeManifestPath, Path.Combine(ManagedHostFixture_SelfContained.TestProject.BuiltApp.Location, regFreeManifestName));
+                ManagedHost_SelfContained = TestApp.CreateFromBuiltAssets("RegFreeCom");
+                ManagedHost_SelfContained.PopulateSelfContained(TestApp.MockedComponent.None);
+                ManagedHost_FrameworkDependent.CreateAppHost();
+                File.Copy(regFreeManifestPath, Path.Combine(ManagedHost_SelfContained.Location, regFreeManifestName));
 
                 // Copy the ComLibrary output and comhost to the ComSxS and ManagedHost directories
                 string[] toCopy = {
@@ -142,15 +141,15 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                 foreach (string filePath in toCopy)
                 {
                     File.Copy(filePath, Path.Combine(comsxsDirectory, Path.GetFileName(filePath)));
-                    File.Copy(filePath, Path.Combine(ManagedHostFixture_FrameworkDependent.TestProject.BuiltApp.Location, Path.GetFileName(filePath)));
-                    File.Copy(filePath, Path.Combine(ManagedHostFixture_SelfContained.TestProject.BuiltApp.Location, Path.GetFileName(filePath)));
+                    File.Copy(filePath, Path.Combine(ManagedHost_FrameworkDependent.Location, Path.GetFileName(filePath)));
+                    File.Copy(filePath, Path.Combine(ManagedHost_SelfContained.Location, Path.GetFileName(filePath)));
                 }
             }
 
             protected override void Dispose(bool disposing)
             {
-                ManagedHostFixture_FrameworkDependent.Dispose();
-                ManagedHostFixture_SelfContained.Dispose();
+                ManagedHost_FrameworkDependent?.Dispose();
+                ManagedHost_SelfContained?.Dispose();
 
                 base.Dispose(disposing);
             }

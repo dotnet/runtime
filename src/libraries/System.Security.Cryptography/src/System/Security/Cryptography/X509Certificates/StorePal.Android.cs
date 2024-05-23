@@ -118,8 +118,9 @@ namespace System.Security.Cryptography.X509Certificates
             SafePasswordHandle password,
             bool ephemeralSpecified)
         {
-            using (var reader = new AndroidPkcs12Reader(rawData))
+            using (var reader = new AndroidPkcs12Reader())
             {
+                reader.ParsePkcs12(rawData);
                 reader.Decrypt(password, ephemeralSpecified);
 
                 ICertificatePal[] certs = new ICertificatePal[reader.GetCertCount()];

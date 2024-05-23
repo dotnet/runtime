@@ -363,14 +363,18 @@ GcInfoDecoder::GcInfoDecoder(
     }
 
 #ifdef PARTIALLY_INTERRUPTIBLE_GC_SUPPORTED
-    if(flags & (DECODE_GC_LIFETIMES))
+    if(flags & (DECODE_GC_LIFETIMES | DECODE_INTERRUPTIBILITY))
     {
         if(m_NumSafePoints)
         {
-            m_SafePointIndex = FindSafePoint(m_InstructionOffset);
+            // Safepoints are encoded with a -1 adjustment
+            // DECODE_GC_LIFETIMES adjusts the offset accordingly, but DECODE_INTERRUPTIBILITY does not
+            // adjust here
+            UINT32 offset = flags & DECODE_INTERRUPTIBILITY ? m_InstructionOffset - 1 : m_InstructionOffset;
+            m_SafePointIndex = FindSafePoint(offset);
         }
     }
-    else if(flags & (DECODE_FOR_RANGES_CALLBACK | DECODE_INTERRUPTIBILITY))
+    else if(flags & DECODE_FOR_RANGES_CALLBACK)
     {
         // Note that normalization as a code offset can be different than
         //  normalization as code length
@@ -381,7 +385,13 @@ GcInfoDecoder::GcInfoDecoder(
     }
 #endif
 
-    if(!m_IsInterruptible && (flags & DECODE_INTERRUPTIBILITY))
+    // we do not support both DECODE_INTERRUPTIBILITY and DECODE_FOR_RANGES_CALLBACK at the same time
+    // as both will enumerate and consume interruptible ranges.
+    _ASSERTE((flags & (DECODE_INTERRUPTIBILITY | DECODE_FOR_RANGES_CALLBACK)) !=
+        (DECODE_INTERRUPTIBILITY | DECODE_FOR_RANGES_CALLBACK));
+
+    _ASSERTE(!m_IsInterruptible);
+    if(flags & DECODE_INTERRUPTIBILITY)
     {
         EnumerateInterruptibleRanges(&SetIsInterruptibleCB, this);
     }
@@ -391,6 +401,28 @@ bool GcInfoDecoder::IsInterruptible()
 {
     _ASSERTE( m_Flags & DECODE_INTERRUPTIBILITY );
     return m_IsInterruptible;
+}
+
+bool GcInfoDecoder::HasInterruptibleRanges()
+{
+    _ASSERTE(m_Flags & (DECODE_INTERRUPTIBILITY | DECODE_GC_LIFETIMES));
+    return m_NumInterruptibleRanges > 0;
+}
+
+bool GcInfoDecoder::IsSafePoint()
+{
+    _ASSERTE(m_Flags & (DECODE_INTERRUPTIBILITY | DECODE_GC_LIFETIMES));
+    return m_SafePointIndex != m_NumSafePoints;
+}
+
+bool GcInfoDecoder::AreSafePointsInterruptible()
+{
+    return m_Version >= 3;
+}
+
+bool GcInfoDecoder::IsInterruptibleSafePoint()
+{
+    return IsSafePoint() && AreSafePointsInterruptible();
 }
 
 bool GcInfoDecoder::HasMethodDescGenericsInstContext()
@@ -515,7 +547,7 @@ void GcInfoDecoder::EnumerateSafePoints(EnumerateSafePointsCallback *pCallback, 
         offset--;
 #endif
 
-        pCallback(offset, hCallback);
+        pCallback(this, offset, hCallback);
     }
 }
 #endif
@@ -1434,7 +1466,7 @@ OBJECTREF* GcInfoDecoder::GetRegisterSlot(
     _ASSERTE(regNum != 4);  // rsp
 
 #ifdef FEATURE_NATIVEAOT
-    PTR_UIntNative* ppRax = &pRD->pRax;
+    PTR_uintptr_t* ppRax = &pRD->pRax;
     if (regNum > 4) regNum--; // rsp is skipped in NativeAOT RegDisplay
 #else
     // The fields of KNONVOLATILE_CONTEXT_POINTERS are in the same order as
@@ -1571,7 +1603,7 @@ OBJECTREF* GcInfoDecoder::GetRegisterSlot(
 #ifdef FEATURE_NATIVEAOT
     if(regNum < 14)
     {
-        PTR_UIntNative* ppReg = &pRD->pR0;
+        PTR_uintptr_t* ppReg = &pRD->pR0;
         return (OBJECTREF*)*(ppReg + regNum);
     }
     else
@@ -1692,7 +1724,7 @@ OBJECTREF* GcInfoDecoder::GetRegisterSlot(
     _ASSERTE(regNum != 18); // TEB
 
 #ifdef FEATURE_NATIVEAOT
-    PTR_UIntNative* ppReg = &pRD->pX0;
+    PTR_uintptr_t* ppReg = &pRD->pX0;
 
     return (OBJECTREF*)*(ppReg + regNum);
 #else
@@ -1853,7 +1885,7 @@ OBJECTREF* GcInfoDecoder::GetRegisterSlot(
     _ASSERTE((regNum == 1) || (regNum >= 4 && regNum <= 31));
 
 #ifdef FEATURE_NATIVEAOT
-    PTR_UIntNative* ppReg = &pRD->pR0;
+    PTR_uintptr_t* ppReg = &pRD->pR0;
 
     return (OBJECTREF*)*(ppReg + regNum);
 #else
@@ -1980,7 +2012,7 @@ OBJECTREF* GcInfoDecoder::GetRegisterSlot(
     _ASSERTE((regNum == 1) || (regNum >= 5 && regNum <= 31));
 
 #ifdef FEATURE_NATIVEAOT
-    PTR_UIntNative* ppReg = &pRD->pR0;
+    PTR_uintptr_t* ppReg = &pRD->pR0;
 
     return (OBJECTREF*)*(ppReg + regNum);
 #else

@@ -3,8 +3,7 @@
 
 using System;
 using System.IO;
-using System.Runtime.InteropServices;
-using Microsoft.DotNet.Cli.Build;
+
 using Microsoft.DotNet.Cli.Build.Framework;
 using Microsoft.DotNet.CoreSetup.Test;
 using Microsoft.DotNet.CoreSetup.Test.HostActivation;
@@ -30,7 +29,7 @@ namespace HostActivation.Tests
                 .DotNetRoot(TestContext.BuiltDotNet.BinPath, arch)
                 .Execute()
                 .Should().Pass()
-                .And.HaveUsedDotNetRootInstallLocation(TestContext.BuiltDotNet.BinPath, TestContext.TargetRID, arch);
+                .And.HaveUsedDotNetRootInstallLocation(TestContext.BuiltDotNet.BinPath, TestContext.BuildRID, arch);
         }
 
         [Fact]
@@ -42,7 +41,7 @@ namespace HostActivation.Tests
                 .DotNetRoot(TestContext.BuiltDotNet.BinPath)
                 .Execute()
                 .Should().Pass()
-                .And.HaveUsedDotNetRootInstallLocation(TestContext.BuiltDotNet.BinPath, TestContext.TargetRID);
+                .And.HaveUsedDotNetRootInstallLocation(TestContext.BuiltDotNet.BinPath, TestContext.BuildRID);
         }
 
         [Fact]
@@ -56,7 +55,7 @@ namespace HostActivation.Tests
                 .DotNetRoot(dotnet, arch)
                 .Execute()
                 .Should().Pass()
-                .And.HaveUsedDotNetRootInstallLocation(dotnet, TestContext.TargetRID, arch)
+                .And.HaveUsedDotNetRootInstallLocation(dotnet, TestContext.BuildRID, arch)
                 .And.NotHaveStdErrContaining("Using environment variable DOTNET_ROOT=");
         }
 
@@ -78,7 +77,7 @@ namespace HostActivation.Tests
                     .DotNetRoot(dotnet, arch)
                     .Execute()
                     .Should().Pass()
-                    .And.HaveUsedDotNetRootInstallLocation(dotnet, TestContext.TargetRID, arch)
+                    .And.HaveUsedDotNetRootInstallLocation(dotnet, TestContext.BuildRID, arch)
                     .And.NotHaveStdErrContaining("Using global install location");
             }
         }
@@ -120,7 +119,7 @@ namespace HostActivation.Tests
                         TestContext.BuiltDotNet.BinPath)
                     .Execute()
                     .Should().Fail()
-                    .And.HaveUsedDotNetRootInstallLocation(app.Location, TestContext.TargetRID)
+                    .And.HaveUsedDotNetRootInstallLocation(app.Location, TestContext.BuildRID)
                     // If DOTNET_ROOT points to a folder that exists we assume that there's a dotnet installation in it
                     .And.HaveStdErrContaining($"The required library {Binaries.HostFxr.FileName} could not be found.");
             }
@@ -225,15 +224,12 @@ namespace HostActivation.Tests
         public void InstallLocationFile_MissingFile()
         {
             var app = sharedTestState.App.Copy();
-            string testArtifactsPath = SharedFramework.CalculateUniqueTestDirectory(Path.Combine(TestArtifact.TestArtifactsPath, "missingInstallLocation"));
-            using (new TestArtifact(testArtifactsPath))
+            using (var testArtifact = TestArtifact.Create("missingInstallLocation"))
             using (var testOnlyProductBehavior = TestOnlyProductBehavior.Enable(app.AppExe))
             {
-                Directory.CreateDirectory(testArtifactsPath);
-
-                string installLocationDirectory = Path.Combine(testArtifactsPath, "installLocationOverride");
+                string installLocationDirectory = Path.Combine(testArtifact.Location, "installLocationOverride");
                 Directory.CreateDirectory(installLocationDirectory);
-                string defaultInstallLocation = Path.Combine(testArtifactsPath, "defaultInstallLocation");
+                string defaultInstallLocation = Path.Combine(testArtifact.Location, "defaultInstallLocation");
 
                 Command.Create(app.AppExe)
                     .CaptureStdErr()
@@ -252,7 +248,7 @@ namespace HostActivation.Tests
         [Fact]
         public void RegisteredInstallLocation_DotNetInfo_ListOtherArchitectures()
         {
-            using (var testArtifact = new TestArtifact(SharedFramework.CalculateUniqueTestDirectory(Path.Combine(TestArtifact.TestArtifactsPath, "listOtherArchs"))))
+            using (var testArtifact = TestArtifact.Create("listOtherArchs"))
             {
                 var dotnet = new DotNetBuilder(testArtifact.Location, TestContext.BuiltDotNet.BinPath, "exe").Build();
                 using (var registeredInstallLocationOverride = new RegisteredInstallLocationOverride(dotnet.GreatestVersionHostFxrFilePath))

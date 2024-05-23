@@ -110,6 +110,11 @@ void CommandLine::DumpHelp(const char* program)
     printf("     If 'workerCount' is not specified, the number of workers used is\n");
     printf("     the number of processors on the machine.\n");
     printf("\n");
+    printf(" -streaming filename\n");
+    printf("     Streaming mode. Read and execute work requests from indicated file (can be 'stdin').\n");
+    printf("     Each line is a method context number and additional force jit options for that method.\n");
+    printf("     Blank line or EOF terminates\n");
+    printf("\n");
     printf(" -failureLimit <limit>\n");
     printf("     For a positive 'limit' number, replay and asm diffs will exit if it sees more than 'limit' failures.\n");
     printf("     Otherwise, all methods will be compiled.\n");
@@ -170,7 +175,7 @@ void CommandLine::DumpHelp(const char* program)
     printf("     ; if there are any failures, record their MC numbers in the file fail.mcl\n");
 }
 
-static bool ParseJitOption(const char* optionString, WCHAR** key, WCHAR** value)
+bool CommandLine::ParseJitOption(const char* optionString, WCHAR** key, WCHAR** value)
 {
     char tempKey[1024];
 
@@ -468,6 +473,17 @@ bool CommandLine::Parse(int argc, char* argv[], /* OUT */ Options* o)
                 }
                 o->hash = argv[i];
             }
+            else if ((_strnicmp(&argv[i][1], "streaming", argLen) == 0))
+            {
+                if (++i >= argc)
+                {
+                    LogError("'-streaming' must be followed by a file name or 'stdin'.");
+                    DumpHelp(argv[0]);
+                    return false;
+                }
+
+                o->streamFile = argv[i];
+            }
             else if ((_strnicmp(&argv[i][1], "parallel", argLen) == 0))
             {
                 o->parallel = true;
@@ -673,6 +689,21 @@ bool CommandLine::Parse(int argc, char* argv[], /* OUT */ Options* o)
         {
             LogError("Illegal target architecture specified with -target (use 'x64', 'x86', 'arm64', or 'arm').");
             DumpHelp(argv[0]);
+            return false;
+        }
+    }
+
+    if (o->streamFile != nullptr)
+    {
+        if (o->parallel)
+        {
+            LogError("streaming mode and parallel mode are incompatible.");
+            return false;
+        }
+
+        if (o->nameOfJit2 != nullptr)
+        {
+            LogError("streaming mode and diff mode are incompatible.");
             return false;
         }
     }

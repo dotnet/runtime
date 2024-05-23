@@ -9,9 +9,8 @@ namespace System.Security.Cryptography.X509Certificates
 {
     internal sealed class OpenSslPkcs12Reader : UnixPkcs12Reader
     {
-        private OpenSslPkcs12Reader(ReadOnlySpan<byte> data)
+        private OpenSslPkcs12Reader()
         {
-            ParsePkcs12(data);
         }
 
         protected override ICertificatePalCore ReadX509Der(ReadOnlyMemory<byte> data)
@@ -89,7 +88,8 @@ namespace System.Security.Cryptography.X509Certificates
 
             try
             {
-                pkcs12Reader = new OpenSslPkcs12Reader(data);
+                pkcs12Reader = new OpenSslPkcs12Reader();
+                pkcs12Reader.ParsePkcs12(data);
                 return true;
             }
             catch (CryptographicException e)

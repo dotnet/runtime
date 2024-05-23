@@ -1292,7 +1292,7 @@ namespace System.Diagnostics
             if (Source.Length == 0)
                 throw new ArgumentException(SR.NeedSourceToWrite);
 
-            if (!Enum.IsDefined(typeof(EventLogEntryType), type))
+            if (!Enum.IsDefined(type))
                 throw new InvalidEnumArgumentException(nameof(type), (int)type, typeof(EventLogEntryType));
 
             string currentMachineName = machineName;

@@ -74,7 +74,7 @@ namespace System
                 if (pMT->ContainsGCPointers)
                     Buffer.BulkMoveWithWriteBarrier(ref dst, ref src, byteCount);
                 else
-                    Buffer.Memmove(ref dst, ref src, byteCount);
+                    SpanHelpers.Memmove(ref dst, ref src, byteCount);
 
                 // GC.KeepAlive(sourceArray) not required. pMT kept alive via sourceArray
                 return;
@@ -184,7 +184,7 @@ namespace System
                 }
                 else
                 {
-                    Buffer.Memmove(ref dest, ref obj.GetRawData(), destSize);
+                    SpanHelpers.Memmove(ref dest, ref obj.GetRawData(), destSize);
                 }
             }
         }
@@ -694,7 +694,7 @@ namespace System
     // it for type <T> and executes it.
     //
     // The "T" will reflect the interface used to invoke the method. The actual runtime "this" will be
-    // array that is castable to "T[]" (i.e. for primitivs and valuetypes, it will be exactly
+    // array that is castable to "T[]" (i.e. for primitives and valuetypes, it will be exactly
     // "T[]" - for orefs, it may be a "U[]" where U derives from T.)
     //----------------------------------------------------------------------------------------
     internal sealed class SZArrayHelper

@@ -417,7 +417,7 @@ namespace System.Reflection.Emit
                 throw new ArgumentException(SR.Argument_MustBeRuntimeMethodInfo, nameof(methodInfo));
 
             ReadOnlySpan<ParameterInfo> paramInfo = methodInfo.GetParametersAsSpan();
-            if (paramInfo != null && paramInfo.Length != 0)
+            if (paramInfo.Length != 0)
             {
                 parameterTypes = new Type[paramInfo.Length];
                 requiredCustomModifiers = new Type[parameterTypes.Length][];

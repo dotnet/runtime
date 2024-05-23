@@ -196,7 +196,7 @@ namespace System.IO.Hashing
         /// <param name="seed">The seed value for this hash computation. The default is zero.</param>
         /// <returns>
         ///   <see langword="true"/> if <paramref name="destination"/> is long enough to receive
-        ///   the computed hash value (4 bytes); otherwise, <see langword="false"/>.
+        ///   the computed hash value (8 bytes); otherwise, <see langword="false"/>.
         /// </returns>
         public static bool TryHash(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten, long seed = 0)
         {

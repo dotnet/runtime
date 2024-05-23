@@ -27,7 +27,7 @@ namespace System.Linq
 
         private static T? MinInteger<T>(this IEnumerable<T?> source) where T : struct, IBinaryInteger<T>
         {
-            if (source == null)
+            if (source is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
@@ -151,7 +151,7 @@ namespace System.Linq
 
         private static T? MinFloat<T>(this IEnumerable<T?> source) where T : struct, IFloatingPointIeee754<T>
         {
-            if (source == null)
+            if (source is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
@@ -249,7 +249,7 @@ namespace System.Linq
 
         public static decimal? Min(this IEnumerable<decimal?> source)
         {
-            if (source == null)
+            if (source is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
@@ -300,7 +300,7 @@ namespace System.Linq
         /// </remarks>
         public static TSource? Min<TSource>(this IEnumerable<TSource> source, IComparer<TSource>? comparer)
         {
-            if (source == null)
+            if (source is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
@@ -325,7 +325,7 @@ namespace System.Linq
             TSource? value = default;
             using (IEnumerator<TSource> e = source.GetEnumerator())
             {
-                if (value == null)
+                if (value is null)
                 {
                     do
                     {
@@ -336,12 +336,12 @@ namespace System.Linq
 
                         value = e.Current;
                     }
-                    while (value == null);
+                    while (value is null);
 
                     while (e.MoveNext())
                     {
                         TSource next = e.Current;
-                        if (next != null && comparer.Compare(next, value) < 0)
+                        if (next is not null && comparer.Compare(next, value) < 0)
                         {
                             value = next;
                         }
@@ -410,12 +410,12 @@ namespace System.Linq
         /// </remarks>
         public static TSource? MinBy<TSource, TKey>(this IEnumerable<TSource> source, Func<TSource, TKey> keySelector, IComparer<TKey>? comparer)
         {
-            if (source == null)
+            if (source is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
 
-            if (keySelector == null)
+            if (keySelector is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.keySelector);
             }
@@ -441,7 +441,7 @@ namespace System.Linq
 
             if (default(TKey) is null)
             {
-                if (key == null)
+                if (key is null)
                 {
                     TSource firstValue = value;
 
@@ -456,14 +456,14 @@ namespace System.Linq
                         value = e.Current;
                         key = keySelector(value);
                     }
-                    while (key == null);
+                    while (key is null);
                 }
 
                 while (e.MoveNext())
                 {
                     TSource nextValue = e.Current;
                     TKey nextKey = keySelector(nextValue);
-                    if (nextKey != null && comparer.Compare(nextKey, key) < 0)
+                    if (nextKey is not null && comparer.Compare(nextKey, key) < 0)
                     {
                         key = nextKey;
                         value = nextValue;
@@ -513,12 +513,12 @@ namespace System.Linq
 
         private static TResult MinInteger<TSource, TResult>(this IEnumerable<TSource> source, Func<TSource, TResult> selector) where TResult : struct, IBinaryInteger<TResult>
         {
-            if (source == null)
+            if (source is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
 
-            if (selector == null)
+            if (selector is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.selector);
             }
@@ -547,12 +547,12 @@ namespace System.Linq
 
         private static TResult? MinInteger<TSource, TResult>(this IEnumerable<TSource> source, Func<TSource, TResult?> selector) where TResult : struct, IBinaryInteger<TResult>
         {
-            if (source == null)
+            if (source is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
 
-            if (selector == null)
+            if (selector is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.selector);
             }
@@ -604,12 +604,12 @@ namespace System.Linq
 
         private static TResult MinFloat<TSource, TResult>(this IEnumerable<TSource> source, Func<TSource, TResult> selector) where TResult : struct, IFloatingPointIeee754<TResult>
         {
-            if (source == null)
+            if (source is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
 
-            if (selector == null)
+            if (selector is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.selector);
             }
@@ -656,12 +656,12 @@ namespace System.Linq
 
         private static TResult? MinFloat<TSource, TResult>(this IEnumerable<TSource> source, Func<TSource, TResult?> selector) where TResult : struct, IFloatingPointIeee754<TResult>
         {
-            if (source == null)
+            if (source is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
 
-            if (selector == null)
+            if (selector is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.selector);
             }
@@ -710,12 +710,12 @@ namespace System.Linq
 
         public static decimal Min<TSource>(this IEnumerable<TSource> source, Func<TSource, decimal> selector)
         {
-            if (source == null)
+            if (source is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
 
-            if (selector == null)
+            if (selector is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.selector);
             }
@@ -744,12 +744,12 @@ namespace System.Linq
 
         public static decimal? Min<TSource>(this IEnumerable<TSource> source, Func<TSource, decimal?> selector)
         {
-            if (source == null)
+            if (source is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
 
-            if (selector == null)
+            if (selector is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.selector);
             }
@@ -786,12 +786,12 @@ namespace System.Linq
 
         public static TResult? Min<TSource, TResult>(this IEnumerable<TSource> source, Func<TSource, TResult> selector)
         {
-            if (source == null)
+            if (source is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
 
-            if (selector == null)
+            if (selector is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.selector);
             }
@@ -799,7 +799,7 @@ namespace System.Linq
             TResult? value = default;
             using (IEnumerator<TSource> e = source.GetEnumerator())
             {
-                if (value == null)
+                if (value is null)
                 {
                     do
                     {
@@ -810,13 +810,13 @@ namespace System.Linq
 
                         value = selector(e.Current);
                     }
-                    while (value == null);
+                    while (value is null);
 
                     Comparer<TResult> comparer = Comparer<TResult>.Default;
                     while (e.MoveNext())
                     {
                         TResult x = selector(e.Current);
-                        if (x != null && comparer.Compare(x, value) < 0)
+                        if (x is not null && comparer.Compare(x, value) < 0)
                         {
                             value = x;
                         }

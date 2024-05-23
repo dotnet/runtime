@@ -26,10 +26,10 @@ public class LibraryInitializerTests : AppTestBase
     [Fact]
     public async Task LoadLibraryInitializer()
     {
-        CopyTestAsset("WasmBasicTestApp", "LibraryInitializerTests_LoadLibraryInitializer");
+        CopyTestAsset("WasmBasicTestApp", "LibraryInitializerTests_LoadLibraryInitializer", "App");
         PublishProject("Debug");
 
-        var result = await RunSdkStyleApp(new(Configuration: "Debug", TestScenario: "LibraryInitializerTest"));
+        var result = await RunSdkStyleAppForPublish(new(Configuration: "Debug", TestScenario: "LibraryInitializerTest"));
         Assert.Collection(
             result.TestOutput,
             m => Assert.Equal("LIBRARY_INITIALIZER_TEST = 1", m)
@@ -39,10 +39,10 @@ public class LibraryInitializerTests : AppTestBase
     [Fact]
     public async Task AbortStartupOnError()
     {
-        CopyTestAsset("WasmBasicTestApp", "LibraryInitializerTests_AbortStartupOnError");
+        CopyTestAsset("WasmBasicTestApp", "LibraryInitializerTests_AbortStartupOnError", "App");
         PublishProject("Debug");
 
-        var result = await RunSdkStyleApp(new(
+        var result = await RunSdkStyleAppForPublish(new(
             Configuration: "Debug",
             TestScenario: "LibraryInitializerTest",
             BrowserQueryString: new Dictionary<string, string> { ["throwError"] = "true" },

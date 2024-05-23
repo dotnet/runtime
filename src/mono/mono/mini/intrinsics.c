@@ -82,17 +82,13 @@ mini_emit_inst_for_ctor (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignat
 	if (!(cfg->opt & MONO_OPT_INTRINS))
 		return ins;
 
-#ifdef MONO_ARCH_SIMD_INTRINSICS
-	if (cfg->opt & MONO_OPT_SIMD) {
-		ins = mono_emit_simd_intrinsics (cfg, cmethod, fsig, args);
-		if (ins)
-			return ins;
-	}
+	ins = mono_emit_simd_intrinsics (cfg, cmethod, fsig, args);
+	if (ins)
+		return ins;
 
 	ins = mono_emit_common_intrinsics (cfg, cmethod, fsig, args);
 	if (ins)
 		return ins;
-#endif
 
 	return ins;
 }
@@ -287,7 +283,7 @@ llvm_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 		}
 	}
 
-	if (in_corlib && !strcmp (m_class_get_name (cmethod->klass), "Buffer")) {
+	if (in_corlib && !strcmp (m_class_get_name (cmethod->klass), "SpanHelpers")) {
 		if (!strcmp (cmethod->name, "Memmove") && fsig->param_count == 3 && m_type_is_byref (fsig->params [0]) && m_type_is_byref (fsig->params [1]) && !cmethod->is_inflated) {
 			MonoBasicBlock *end_bb;
 			NEW_BBLOCK (cfg, end_bb);
@@ -305,6 +301,41 @@ llvm_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			MONO_INST_NEW (cfg, ins, OP_MEMMOVE);
 			ins->sreg1 = args [0]->dreg; // i1* dst
 			ins->sreg2 = args [1]->dreg; // i1* src
+			ins->sreg3 = args [2]->dreg; // i32/i64 len
+			MONO_ADD_INS (cfg->cbb, ins);
+			MONO_START_BB (cfg, end_bb);
+		} else if (!strcmp (cmethod->name, "ClearWithoutReferences") && fsig->param_count == 2 && m_type_is_byref (fsig->params [0]) && !cmethod->is_inflated) {
+			MonoBasicBlock *end_bb;
+			NEW_BBLOCK (cfg, end_bb);
+
+			// do nothing if len == 0 (even if src is null)
+			MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, args [1]->dreg, 0);
+			MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_IBEQ, end_bb);
+
+			// throw NRE if src is null
+			MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, args [0]->dreg, 0);
+			MONO_EMIT_NEW_COND_EXC (cfg, EQ, "NullReferenceException");
+
+			MONO_INST_NEW (cfg, ins, OP_MEMSET_ZERO);
+			ins->sreg1 = args [0]->dreg; // i1* dst
+			ins->sreg2 = args [1]->dreg; // i32/i64 len
+			MONO_ADD_INS (cfg->cbb, ins);
+			MONO_START_BB (cfg, end_bb);
+		} else if (!strcmp (cmethod->name, "Fill") && fsig->param_count == 3 && m_type_is_byref (fsig->params [0]) && !cmethod->is_inflated) {
+			MonoBasicBlock *end_bb;
+			NEW_BBLOCK (cfg, end_bb);
+
+			// do nothing if len == 0 (even if src is null)
+			MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, args [1]->dreg, 0);
+			MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_IBEQ, end_bb);
+
+			// throw NRE if src is null
+			MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, args [0]->dreg, 0);
+			MONO_EMIT_NEW_COND_EXC (cfg, EQ, "NullReferenceException");
+
+			MONO_INST_NEW (cfg, ins, OP_MEMSET);
+			ins->sreg1 = args [0]->dreg; // i1* dst
+			ins->sreg2 = args [1]->dreg; // i8 value
 			ins->sreg3 = args [2]->dreg; // i32/i64 len
 			MONO_ADD_INS (cfg->cbb, ins);
 			MONO_START_BB (cfg, end_bb);
@@ -2095,17 +2126,13 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 		}
 	}
 
-#ifdef MONO_ARCH_SIMD_INTRINSICS
-	if (cfg->opt & MONO_OPT_SIMD) {
-		ins = mono_emit_simd_intrinsics (cfg, cmethod, fsig, args);
-		if (ins)
-			return ins;
-	}
+	ins = mono_emit_simd_intrinsics (cfg, cmethod, fsig, args);
+	if (ins)
+		return ins;
 
 	ins = mono_emit_common_intrinsics (cfg, cmethod, fsig, args);
 	if (ins)
 		return ins;
-#endif
 
 	/* Fallback if SIMD is disabled */
 	if (in_corlib && 

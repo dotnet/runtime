@@ -355,19 +355,22 @@ namespace System
                 // Invalidate before reading cached values.
                 CheckTerminalSettingsInvalidated();
 
-                Interop.Sys.WinSize winsize;
-                if (s_windowWidth == -1 &&
-                    s_terminalHandle != null &&
-                    Interop.Sys.GetWindowSize(s_terminalHandle, out winsize) == 0)
+                if (s_windowWidth == -1)
                 {
-                    s_windowWidth = winsize.Col;
-                    s_windowHeight = winsize.Row;
+                    Interop.Sys.WinSize winsize;
+                    if (s_terminalHandle != null &&
+                        Interop.Sys.GetWindowSize(s_terminalHandle, out winsize) == 0)
+                    {
+                        s_windowWidth = winsize.Col;
+                        s_windowHeight = winsize.Row;
+                    }
+                    else
+                    {
+                        s_windowWidth = TerminalFormatStringsInstance.Columns;
+                        s_windowHeight = TerminalFormatStringsInstance.Lines;
+                    }
                 }
-                else
-                {
-                    s_windowWidth = TerminalFormatStringsInstance.Columns;
-                    s_windowHeight = TerminalFormatStringsInstance.Lines;
-                }
+
                 width = s_windowWidth;
                 height = s_windowHeight;
             }

@@ -13,7 +13,6 @@
     <Compile Include="IriRelativeFileResolutionTest.cs" />
     <Compile Include="IriTest.cs" />
     <Compile Include="UncTest.cs" />
-    <Compile Include="PercentEncodingHelperTests.cs" />
     <Compile Include="UriBuilderParameterTest.cs" />
     <Compile Include="UriBuilderRefreshTest.cs" />
     <Compile Include="UriBuilderTests.cs" />

@@ -1,12 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Microsoft.DotNet.Cli.Build;
-using Microsoft.DotNet.Cli.Build.Framework;
 using System;
 using System.Diagnostics;
 using System.IO;
-using System.Runtime.InteropServices;
+
+using Microsoft.DotNet.Cli.Build.Framework;
 using Xunit;
 
 namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
@@ -267,10 +266,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         [InlineData(false)]
         public void AppHost_CLI_FrameworkDependent_MissingRuntimeFramework_ErrorReportedInStdErr(bool missingHostfxr)
         {
-            string invalidDotNet = SharedFramework.CalculateUniqueTestDirectory(Path.Combine(TestArtifact.TestArtifactsPath, "cliErrors"));
-            using (new TestArtifact(invalidDotNet))
+            using (var invalidDotNet = TestArtifact.Create("cliErrors"))
             {
-                Directory.CreateDirectory(invalidDotNet);
                 string expectedUrlQuery;
                 string expectedStdErr;
                 int expectedErrorCode = 0;
@@ -282,9 +279,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 }
                 else
                 {
-                    invalidDotNet = new DotNetBuilder(invalidDotNet, TestContext.BuiltDotNet.BinPath, "missingFramework")
-                        .Build()
-                        .BinPath;
+                    new DotNetBuilder(invalidDotNet.Location, TestContext.BuiltDotNet.BinPath, null)
+                        .Build();
 
                     expectedErrorCode = Constants.ErrorCode.FrameworkMissingFailure;
                     expectedStdErr = $"Framework: '{Constants.MicrosoftNETCoreApp}', " +
@@ -294,7 +290,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
 
                 CommandResult result = Command.Create(sharedTestState.App.AppExe)
                     .EnableTracingAndCaptureOutputs()
-                    .DotNetRoot(invalidDotNet)
+                    .DotNetRoot(invalidDotNet.Location)
                     .MultilevelLookup(false)
                     .Execute(expectedToFail: true);
 
@@ -316,22 +312,18 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             app.CreateAppHost(isWindowsGui: true);
             string appExe = app.AppExe;
 
-            string invalidDotNet = SharedFramework.CalculateUniqueTestDirectory(Path.Combine(TestArtifact.TestArtifactsPath, "guiErrors"));
-            using (new TestArtifact(invalidDotNet))
+            using (var invalidDotNet = TestArtifact.Create("guiMissingFramework"))
             {
-                Directory.CreateDirectory(invalidDotNet);
-
                 string expectedErrorCode;
                 string expectedUrlQuery;
-                invalidDotNet = new DotNetBuilder(invalidDotNet, TestContext.BuiltDotNet.BinPath, "missingFramework")
-                    .Build()
-                    .BinPath;
+                new DotNetBuilder(invalidDotNet.Location, TestContext.BuiltDotNet.BinPath, null)
+                    .Build();
 
                 expectedErrorCode = Constants.ErrorCode.FrameworkMissingFailure.ToString("x");
                 expectedUrlQuery = $"framework={Constants.MicrosoftNETCoreApp}&framework_version={TestContext.MicrosoftNETCoreAppVersion}";
                 Command command = Command.Create(appExe)
                     .EnableTracingAndCaptureOutputs()
-                    .DotNetRoot(invalidDotNet)
+                    .DotNetRoot(invalidDotNet.Location)
                     .MultilevelLookup(false)
                     .Start();
 
@@ -357,13 +349,11 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             app.CreateAppHost(isWindowsGui: true);
             string appExe = app.AppExe;
 
-            string invalidDotNet = SharedFramework.CalculateUniqueTestDirectory(Path.Combine(TestArtifact.TestArtifactsPath, "guiErrors"));
-            using (new TestArtifact(invalidDotNet))
+            using (var invalidDotNet = TestArtifact.Create("guiMissingRuntime"))
             {
-                Directory.CreateDirectory(invalidDotNet);
                 var command = Command.Create(appExe)
                     .EnableTracingAndCaptureOutputs()
-                    .DotNetRoot(invalidDotNet)
+                    .DotNetRoot(invalidDotNet.Location)
                     .MultilevelLookup(false)
                     .Start();
 
@@ -388,16 +378,13 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             app.CreateAppHost(isWindowsGui: true);
             string appExe = app.AppExe;
 
-            string dotnetWithMockHostFxr = SharedFramework.CalculateUniqueTestDirectory(Path.Combine(TestArtifact.TestArtifactsPath, "guiErrors"));
-            using (new TestArtifact(dotnetWithMockHostFxr))
+            // The mockhostfxrFrameworkMissingFailure folder name is used by mock hostfxr to return the appropriate error code
+            using (var dotnetWithMockHostFxr = TestArtifact.Create("mockhostfxrFrameworkMissingFailure"))
             {
-                Directory.CreateDirectory(dotnetWithMockHostFxr);
-                string expectedErrorCode = Constants.ErrorCode.FrameworkMissingFailure.ToString("x");
-
-                var dotnetBuilder = new DotNetBuilder(dotnetWithMockHostFxr, TestContext.BuiltDotNet.BinPath, "mockhostfxrFrameworkMissingFailure")
+                var dotnet = new DotNetBuilder(dotnetWithMockHostFxr.Location, TestContext.BuiltDotNet.BinPath, null)
                     .RemoveHostFxr()
-                    .AddMockHostFxr(new Version(2, 2, 0));
-                var dotnet = dotnetBuilder.Build();
+                    .AddMockHostFxr(new Version(2, 2, 0))
+                    .Build();
 
                 Command command = Command.Create(appExe)
                     .EnableTracingAndCaptureOutputs()
@@ -408,6 +395,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 WindowsUtils.WaitForPopupFromProcess(command.Process);
                 command.Process.Kill();
 
+                string expectedErrorCode = Constants.ErrorCode.FrameworkMissingFailure.ToString("x");
                 command.WaitForExit(true)
                     .Should().Fail()
                     .And.HaveStdErrContaining($"Showing error dialog for application: '{Path.GetFileName(appExe)}' - error code: 0x{expectedErrorCode}")
@@ -425,13 +413,11 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             app.CreateAppHost(isWindowsGui: true);
             string appExe = app.AppExe;
 
-            string invalidDotNet = SharedFramework.CalculateUniqueTestDirectory(Path.Combine(TestArtifact.TestArtifactsPath, "guiErrors"));
-            using (new TestArtifact(invalidDotNet))
+            using (var invalidDotNet = TestArtifact.Create("guiErrors"))
             {
-                Directory.CreateDirectory(invalidDotNet);
                 Command.Create(appExe)
                     .EnableTracingAndCaptureOutputs()
-                    .DotNetRoot(invalidDotNet)
+                    .DotNetRoot(invalidDotNet.Location)
                     .MultilevelLookup(false)
                     .EnvironmentVariable(Constants.DisableGuiErrors.EnvironmentVariable, "1")
                     .Execute()
@@ -450,8 +436,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 App = TestApp.CreateFromBuiltAssets("HelloWorld");
                 App.CreateAppHost();
 
-                MockApp = new TestApp(SharedFramework.CalculateUniqueTestDirectory(Path.Combine(TestArtifact.TestArtifactsPath, "portableAppActivation")), "App");
-                Directory.CreateDirectory(MockApp.Location);
+                MockApp = TestApp.CreateEmpty(nameof(MockApp));
                 File.WriteAllText(MockApp.AppDll, string.Empty);
                 MockApp.CreateAppHost(copyResources: false);
             }

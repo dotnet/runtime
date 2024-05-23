@@ -23,14 +23,30 @@ namespace System
             return a.CombineImpl(b);
         }
 
-        public static Delegate? Combine(params Delegate?[]? delegates)
-        {
-            if (delegates == null || delegates.Length == 0)
-                return null;
+        public static Delegate? Combine(params Delegate?[]? delegates) =>
+            Combine((ReadOnlySpan<Delegate?>)delegates);
 
-            Delegate? d = delegates[0];
-            for (int i = 1; i < delegates.Length; i++)
-                d = Combine(d, delegates[i]);
+        /// <summary>
+        /// Concatenates the invocation lists of an span of delegates.
+        /// </summary>
+        /// <param name="delegates">The span of delegates to combine.</param>
+        /// <returns>
+        /// A new delegate with an invocation list that concatenates the invocation lists of the delegates in the <paramref name="delegates"/> span.
+        /// Returns <see langword="null" /> if <paramref name="delegates"/> is <see langword="null" />,
+        /// if <paramref name="delegates"/> contains zero elements, or if every entry in <paramref name="delegates"/> is <see langword="null" />.
+        /// </returns>
+        public static Delegate? Combine(params ReadOnlySpan<Delegate?> delegates)
+        {
+            Delegate? d = null;
+
+            if (!delegates.IsEmpty)
+            {
+                d = delegates[0];
+                for (int i = 1; i < delegates.Length; i++)
+                {
+                    d = Combine(d, delegates[i]);
+                }
+            }
 
             return d;
         }
@@ -51,6 +67,7 @@ namespace System
         public static Delegate CreateDelegate(Type type, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type target, string method) => CreateDelegate(type, target, method, ignoreCase: false, throwOnBindFailure: true)!;
         public static Delegate CreateDelegate(Type type, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type target, string method, bool ignoreCase) => CreateDelegate(type, target, method, ignoreCase, throwOnBindFailure: true)!;
 
+#if !NATIVEAOT
         protected virtual Delegate CombineImpl(Delegate? d) => throw new MulticastNotSupportedException(SR.Multicast_Combine);
 
         protected virtual Delegate? RemoveImpl(Delegate d) => d.Equals(this) ? null : this;
@@ -62,6 +79,7 @@ namespace System
         /// </summary>
         /// <value>true if the <see cref="Delegate"/> has a single invocation target.</value>
         public bool HasSingleTarget => Unsafe.As<MulticastDelegate>(this).HasSingleTarget;
+#endif
 
         /// <summary>
         /// Gets an enumerator for the invocation targets of this delegate.

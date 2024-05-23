@@ -3,7 +3,7 @@
 TOP=../../../../
 
 BUILD_CONFIG?=Debug
-TARGET_ARCH?=$(shell . $(TOP)eng/native/init-os-and-arch.sh && echo $${arch})
+TARGET_ARCH?=$(shell . $(TOP)eng/common/native/init-os-and-arch.sh && echo $${arch})
 TARGET_OS?=iossimulator
 DEPLOY_AND_RUN?=false
 STRIP_DEBUG_SYMBOLS?=false

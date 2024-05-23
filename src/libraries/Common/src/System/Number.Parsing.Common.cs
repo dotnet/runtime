@@ -336,7 +336,7 @@ namespace System
         private static unsafe TChar* MatchChars<TChar>(TChar* p, TChar* pEnd, ReadOnlySpan<TChar> value)
             where TChar : unmanaged, IUtfChar<TChar>
         {
-            Debug.Assert((p != null) && (pEnd != null) && (p <= pEnd) && (value != null));
+            Debug.Assert((p != null) && (pEnd != null) && (p <= pEnd));
 
             fixed (TChar* stringPointer = &MemoryMarshal.GetReference(value))
             {

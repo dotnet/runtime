@@ -90,7 +90,9 @@
     <WasmFilesToIncludeFromPublishDir Include="System.Private.CoreLib.dll" />
     <WasmFilesToIncludeFromPublishDir Include="System.Reflection.MetadataLoadContext.Tests.dll" />
     <WasmFilesToIncludeFromPublishDir Include="mscorlib.dll" />
+  </ItemGroup>
 
+  <ItemGroup Condition="'$(TargetOS)' == 'browser' or ('$(TargetsAppleMobile)' == 'true' and '$(EnableAggressiveTrimming)' == 'true' and '$(UseNativeAotRuntime)' != 'true')">
     <TrimmerRootDescriptor Include="$(MSBuildThisFileDirectory)ILLink.Descriptors.xml" />
   </ItemGroup>
 

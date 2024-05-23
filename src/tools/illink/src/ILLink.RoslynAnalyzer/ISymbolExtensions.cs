@@ -1,9 +1,14 @@
 // Copyright (c) .NET Foundation and contributors. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.Collections.Immutable;
+using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.Linq;
 using System.Text;
 using Microsoft.CodeAnalysis;
+using ILLink.RoslynAnalyzer.DataFlow;
+using ILLink.Shared.DataFlow;
 
 namespace ILLink.RoslynAnalyzer
 {
@@ -34,6 +39,14 @@ namespace ILLink.RoslynAnalyzer
 			return false;
 		}
 
+		internal static IEnumerable<AttributeData> GetAttributes (this ISymbol member, string attributeName)
+		{
+			foreach (var attr in member.GetAttributes ()) {
+				if (attr.AttributeClass is { } attrClass && attrClass.HasName (attributeName))
+					yield return attr;
+			}
+		}
+
 		internal static DynamicallyAccessedMemberTypes GetDynamicallyAccessedMemberTypes (this ISymbol symbol)
 		{
 			if (!TryGetAttribute (symbol, DynamicallyAccessedMembersAnalyzer.DynamicallyAccessedMembersAttribute, out var dynamicallyAccessedMembers))
@@ -56,6 +69,16 @@ namespace ILLink.RoslynAnalyzer
 				return DynamicallyAccessedMemberTypes.None;
 
 			return (DynamicallyAccessedMemberTypes) dynamicallyAccessedMembers.ConstructorArguments[0].Value!;
+		}
+
+		internal static ValueSet<string> GetFeatureGuardAnnotations (this IPropertySymbol propertySymbol)
+		{
+			HashSet<string> featureSet = new ();
+			foreach (var featureGuardAttribute in propertySymbol.GetAttributes (DynamicallyAccessedMembersAnalyzer.FullyQualifiedFeatureGuardAttribute)) {
+				if (featureGuardAttribute.ConstructorArguments is [TypedConstant { Value: INamedTypeSymbol featureType }])
+					featureSet.Add (featureType.GetDisplayName ());
+			}
+			return featureSet.Count == 0 ? ValueSet<string>.Empty : new ValueSet<string> (featureSet);
 		}
 
 		internal static bool TryGetReturnAttribute (this IMethodSymbol member, string attributeName, [NotNullWhen (returnValue: true)] out AttributeData? attribute)

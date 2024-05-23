@@ -4,6 +4,10 @@
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(TargetOS)' == 'browser'">
+    <XunitShowProgress>true</XunitShowProgress>
+    <_WasmPThreadPoolUnusedSize>10</_WasmPThreadPoolUnusedSize>
+  </PropertyGroup>
   <ItemGroup>
     <Compile Include="Helpers.cs" />
     <Compile Include="Task\TaskArgumentValidationTests.cs" />

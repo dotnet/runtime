@@ -37,7 +37,7 @@
 
     <!-- Skip these projects during source-build as they rely on external prebuilts. -->
     <ProjectReference Remove="Microsoft.Extensions.DependencyInjection.Specification.Tests\src\Microsoft.Extensions.DependencyInjection.Specification.Tests.csproj"
-                      Condition="'$(DotNetBuildFromSource)' == 'true'" />
+                      Condition="'$(DotNetBuildSourceOnly)' == 'true'" />
   </ItemGroup>
 
 </Project>

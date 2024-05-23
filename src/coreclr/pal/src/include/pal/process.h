@@ -155,7 +155,10 @@ Parameters:
 
   Does not return
 --*/
+#if !defined(HOST_ARM)  // PAL_NORETURN produces broken unwinding information for this method
+                        // making crash dumps impossible to analyze
 PAL_NORETURN
+#endif
 VOID PROCAbort(int signal = SIGABRT, siginfo_t* siginfo = nullptr);
 
 /*++

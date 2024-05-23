@@ -1044,14 +1044,14 @@ mono_arch_unwindinfo_add_push_nonvol (PUNWIND_INFO unwindinfo, MonoUnwindOp *unw
 
 	codeindex = MONO_MAX_UNWIND_CODES - (++unwindinfo->CountOfCodes);
 	unwindcode = &unwindinfo->UnwindCode [codeindex];
-	unwindcode->UnwindOp = UWOP_PUSH_NONVOL;
-	unwindcode->CodeOffset = GUINT32_TO_UINT8 (unwind_op->when);
-	unwindcode->OpInfo = GUINT32_TO_UINT8 (unwind_op->reg);
+	unwindcode->UnwindCode.UnwindOp = UWOP_PUSH_NONVOL;
+	unwindcode->UnwindCode.CodeOffset = GUINT32_TO_UINT8 (unwind_op->when);
+	unwindcode->UnwindCode.OpInfo = GUINT32_TO_UINT8 (unwind_op->reg);
 
-	if (unwindinfo->SizeOfProlog >= unwindcode->CodeOffset)
+	if (unwindinfo->SizeOfProlog >= unwindcode->UnwindCode.CodeOffset)
 		g_error ("Adding unwind info in wrong order.");
 
-	unwindinfo->SizeOfProlog = unwindcode->CodeOffset;
+	unwindinfo->SizeOfProlog = unwindcode->UnwindCode.CodeOffset;
 }
 
 void
@@ -1067,17 +1067,17 @@ mono_arch_unwindinfo_add_set_fpreg (PUNWIND_INFO unwindinfo, MonoUnwindOp *unwin
 
 	codeindex = MONO_MAX_UNWIND_CODES - (++unwindinfo->CountOfCodes);
 	unwindcode = &unwindinfo->UnwindCode [codeindex];
-	unwindcode->UnwindOp = UWOP_SET_FPREG;
-	unwindcode->CodeOffset = (guchar)unwind_op->when;
+	unwindcode->UnwindCode.UnwindOp = UWOP_SET_FPREG;
+	unwindcode->UnwindCode.CodeOffset = (guchar)unwind_op->when;
 
 	g_assert (unwind_op->val % 16 == 0);
 	unwindinfo->FrameRegister = GUINT16_TO_UINT8 (unwind_op->reg);
 	unwindinfo->FrameOffset = GINT32_TO_UINT8 (unwind_op->val / 16);
 
-	if (unwindinfo->SizeOfProlog >= unwindcode->CodeOffset)
+	if (unwindinfo->SizeOfProlog >= unwindcode->UnwindCode.CodeOffset)
 		g_error ("Adding unwind info in wrong order.");
 
-	unwindinfo->SizeOfProlog = unwindcode->CodeOffset;
+	unwindinfo->SizeOfProlog = unwindcode->UnwindCode.CodeOffset;
 }
 
 void
@@ -1108,13 +1108,13 @@ mono_arch_unwindinfo_add_alloc_stack (PUNWIND_INFO unwindinfo, MonoUnwindOp *unw
 	codeindex = MONO_MAX_UNWIND_CODES - (unwindinfo->CountOfCodes += codesneeded);
 	unwindcode = &unwindinfo->UnwindCode [codeindex];
 
-	unwindcode->CodeOffset = (guchar)unwind_op->when;
+	unwindcode->UnwindCode.CodeOffset = (guchar)unwind_op->when;
 
 	if (codesneeded == 1) {
 		/*The size of the allocation is
 		  (the number in the OpInfo member) times 8 plus 8*/
-		unwindcode->UnwindOp = UWOP_ALLOC_SMALL;
-		unwindcode->OpInfo = GUINT_TO_UINT8 ((size - 8)/8);
+		unwindcode->UnwindCode.UnwindOp = UWOP_ALLOC_SMALL;
+		unwindcode->UnwindCode.OpInfo = GUINT_TO_UINT8 ((size - 8)/8);
 	}
 	else {
 		if (codesneeded == 3) {
@@ -1123,8 +1123,8 @@ mono_arch_unwindinfo_add_alloc_stack (PUNWIND_INFO unwindinfo, MonoUnwindOp *unw
 			  NOTE, unwind codes are allocated from end to beginning of list so
 			  unwind code will have right execution order. List is sorted on CodeOffset
 			  using descending sort order.*/
-			unwindcode->UnwindOp = UWOP_ALLOC_LARGE;
-			unwindcode->OpInfo = 1;
+			unwindcode->UnwindCode.UnwindOp = UWOP_ALLOC_LARGE;
+			unwindcode->UnwindCode.OpInfo = 1;
 			*((unsigned int*)(&(unwindcode + 1)->FrameOffset)) = size;
 		}
 		else {
@@ -1133,16 +1133,16 @@ mono_arch_unwindinfo_add_alloc_stack (PUNWIND_INFO unwindinfo, MonoUnwindOp *unw
 			  NOTE, unwind codes are allocated from end to beginning of list so
 			  unwind code will have right execution order. List is sorted on CodeOffset
 			  using descending sort order.*/
-			unwindcode->UnwindOp = UWOP_ALLOC_LARGE;
-			unwindcode->OpInfo = 0;
+			unwindcode->UnwindCode.UnwindOp = UWOP_ALLOC_LARGE;
+			unwindcode->UnwindCode.OpInfo = 0;
 			(unwindcode + 1)->FrameOffset = (gushort)(size/8);
 		}
 	}
 
-	if (unwindinfo->SizeOfProlog >= unwindcode->CodeOffset)
+	if (unwindinfo->SizeOfProlog >= unwindcode->UnwindCode.CodeOffset)
 		g_error ("Adding unwind info in wrong order.");
 
-	unwindinfo->SizeOfProlog = unwindcode->CodeOffset;
+	unwindinfo->SizeOfProlog = unwindcode->UnwindCode.CodeOffset;
 }
 
 static gboolean g_dyn_func_table_inited;
@@ -1879,10 +1879,10 @@ mono_arch_unwindinfo_install_method_unwind_info (PUNWIND_INFO *monoui, gpointer 
 		// In first iteration previous == current, this is intended to handle UWOP_ALLOC_LARGE as first item.
 		int previous = 0;
 		for (int current = 0; current < codecount; current++) {
-			g_assert_checked (targetinfo->UnwindCode [previous].CodeOffset >= targetinfo->UnwindCode [current].CodeOffset);
+			g_assert_checked (targetinfo->UnwindCode [previous].UnwindCode.CodeOffset >= targetinfo->UnwindCode [current].UnwindCode.CodeOffset);
 			previous = current;
-			if (targetinfo->UnwindCode [current].UnwindOp == UWOP_ALLOC_LARGE) {
-				if (targetinfo->UnwindCode [current].OpInfo == 0) {
+			if (targetinfo->UnwindCode [current].UnwindCode.UnwindOp == UWOP_ALLOC_LARGE) {
+				if (targetinfo->UnwindCode [current].UnwindCode.OpInfo == 0) {
 					current++;
 				} else {
 					current += 2;

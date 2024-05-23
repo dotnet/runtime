@@ -33,6 +33,11 @@ namespace System.Runtime.CompilerServices
         public const string ByRefFields = nameof(ByRefFields);
 
         /// <summary>
+        /// Represents a runtime feature where byref-like types can be used in Generic parameters.
+        /// </summary>
+        public const string ByRefLikeGenerics = nameof(ByRefLikeGenerics);
+
+        /// <summary>
         /// Indicates that this version of runtime supports virtual static members of interfaces.
         /// </summary>
         public const string VirtualStaticsInInterfaces = nameof(VirtualStaticsInInterfaces);
@@ -52,6 +57,7 @@ namespace System.Runtime.CompilerServices
                 case PortablePdb:
                 case CovariantReturnsOfClasses:
                 case ByRefFields:
+                case ByRefLikeGenerics:
                 case UnmanagedSignatureCallingConvention:
                 case DefaultImplementationsOfInterfaces:
                 case VirtualStaticsInInterfaces:
