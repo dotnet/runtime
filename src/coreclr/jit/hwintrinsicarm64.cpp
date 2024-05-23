@@ -2491,8 +2491,9 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             CORINFO_CLASS_HANDLE tmpClass = NO_CLASS_HANDLE;
 
             // The size of narrowed target elements is determined from the second argument of StoreNarrowing().
-            // Thus, we first extract the datatype of a pointer passed in the second argument and then store it as the auxiliary
-            // type of intrinsic. This auxiliary type is then used in the codegen to choose the correct instruction to emit.
+            // Thus, we first extract the datatype of a pointer passed in the second argument and then store it as the
+            // auxiliary type of intrinsic. This auxiliary type is then used in the codegen to choose the correct
+            // instruction to emit.
             ptrType = strip(info.compCompHnd->getArgType(sig, arg, &tmpClass));
             assert(ptrType == CORINFO_TYPE_PTR);
             ptrType = info.compCompHnd->getChildType(argClass, &tmpClass);
