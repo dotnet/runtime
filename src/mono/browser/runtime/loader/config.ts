@@ -150,6 +150,7 @@ export function normalizeConfig () {
                     toMerge.satelliteResources[asset.culture!] = resource;
                     break;
                 case "icu":
+                case "segmentation-rules":
                     toMerge.icu = resource;
                     break;
                 case "symbols":
