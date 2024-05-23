@@ -72,6 +72,7 @@ extern "C"
 #endif // __cplusplus
 
 int minipal_getcpufeatures(void);
+bool minipal_detect_emulation(void);
 
 #ifdef __cplusplus
 }
