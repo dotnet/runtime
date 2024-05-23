@@ -666,14 +666,14 @@ int LinearScan::BuildNode(GenTree* tree)
             srcCount = 0;
             assert(dstCount == 0);
             killMask = getKillSetForProfilerHook();
-            BuildDefsWithKills(tree, 0, RBM_NONE, killMask);
+            BuildKills(tree, killMask);
             break;
 
         case GT_START_PREEMPTGC:
             // This kills GC refs in callee save regs
             srcCount = 0;
             assert(dstCount == 0);
-            BuildDefsWithKills(tree, 0, RBM_NONE, RBM_NONE);
+            BuildKills(tree, RBM_NONE);
             break;
 
         case GT_CNS_DBL:
@@ -738,7 +738,7 @@ int LinearScan::BuildNode(GenTree* tree)
         case GT_RETURN:
             srcCount = BuildReturn(tree);
             killMask = getKillSetForReturn();
-            BuildDefsWithKills(tree, 0, RBM_NONE, killMask);
+            BuildKills(tree, killMask);
             break;
 
 #ifdef SWIFT_SUPPORT
@@ -747,7 +747,7 @@ int LinearScan::BuildNode(GenTree* tree)
             // Plus one for error register
             srcCount = BuildReturn(tree) + 1;
             killMask = getKillSetForReturn();
-            BuildDefsWithKills(tree, 0, RBM_NONE, killMask);
+            BuildKills(tree, killMask);
             break;
 #endif // SWIFT_SUPPORT
 
@@ -839,7 +839,7 @@ int LinearScan::BuildNode(GenTree* tree)
             srcCount = 1;
             assert(dstCount == 0);
             killMask = compiler->compHelperCallKillSet(CORINFO_HELP_STOP_FOR_GC);
-            BuildDefsWithKills(tree, 0, RBM_NONE, killMask);
+            BuildKills(tree, killMask);
             break;
 
         case GT_MOD:
@@ -1561,7 +1561,29 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
         }
         else if (HWIntrinsicInfo::IsMaskedOperation(intrin.id))
         {
-            regMaskTP predMask = HWIntrinsicInfo::IsLowMaskedOperation(intrin.id) ? RBM_LOWMASK : RBM_ALLMASK;
+            regMaskTP predMask = RBM_ALLMASK;
+            if (intrin.id == NI_Sve_ConditionalSelect)
+            {
+                // If this is conditional select, make sure to check the embedded
+                // operation to determine the predicate mask.
+                assert(intrinsicTree->GetOperandCount() == 3);
+                assert(!HWIntrinsicInfo::IsLowMaskedOperation(intrin.id));
+
+                if (intrin.op2->OperIs(GT_HWINTRINSIC))
+                {
+                    GenTreeHWIntrinsic* embOp2Node = intrin.op2->AsHWIntrinsic();
+                    const HWIntrinsic   intrinEmb(embOp2Node);
+                    if (HWIntrinsicInfo::IsLowMaskedOperation(intrinEmb.id))
+                    {
+                        predMask = RBM_LOWMASK;
+                    }
+                }
+            }
+            else if (HWIntrinsicInfo::IsLowMaskedOperation(intrin.id))
+            {
+                predMask = RBM_LOWMASK;
+            }
+
             srcCount += BuildOperandUses(intrin.op1, predMask);
         }
         else if (intrinsicTree->OperIsMemoryLoadOrStore())
@@ -1758,6 +1780,20 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 break;
             }
 
+            case NI_Sve_StoreAndZipx2:
+            case NI_Sve_StoreAndZipx3:
+            case NI_Sve_StoreAndZipx4:
+            {
+                assert(intrin.op2 != nullptr);
+                assert(intrin.op3 != nullptr);
+                srcCount += BuildAddrUses(intrin.op2);
+                srcCount += BuildConsecutiveRegistersForUse(intrin.op3);
+                assert(dstCount == 0);
+                buildInternalRegisterUses();
+                *pDstCount = 0;
+                break;
+            }
+
             default:
                 noway_assert(!"Not a supported as multiple consecutive register intrinsic");
         }
@@ -1894,6 +1930,10 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                                                (argNum == lowVectorOperandNum) ? lowVectorCandidates : RBM_NONE);
             }
         }
+        else if (intrin.id == NI_Sve_StoreAndZip)
+        {
+            srcCount += BuildAddrUses(intrin.op2);
+        }
         else
         {
             regMaskTP candidates = lowVectorOperandNum == 2 ? lowVectorCandidates : RBM_NONE;
@@ -1927,11 +1967,11 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
 
     if ((dstCount == 1) || (dstCount == 2))
     {
-        BuildDef(intrinsicTree, dstCandidates);
+        BuildDef(intrinsicTree);
 
         if (dstCount == 2)
         {
-            BuildDef(intrinsicTree, dstCandidates, 1);
+            BuildDef(intrinsicTree, RBM_NONE, 1);
         }
     }
     else

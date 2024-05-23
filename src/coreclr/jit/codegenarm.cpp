@@ -1927,14 +1927,15 @@ void CodeGen::genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pIni
 
 void CodeGen::genPushFltRegs(regMaskTP regMask)
 {
-    assert(regMask != 0);                        // Don't call uness we have some registers to push
-    assert((regMask & RBM_ALLFLOAT) == regMask); // Only floasting point registers should be in regMask
+    assert(regMask != 0);                        // Don't call unless we have some registers to push
+    assert((regMask & RBM_ALLFLOAT) == regMask); // Only floating point registers should be in regMask
 
     regNumber lowReg = genRegNumFromMask(genFindLowestBit(regMask));
     int       slots  = genCountBits(regMask);
+
     // regMask should be contiguously set
-    regMaskTP tmpMask = ((regMask >> lowReg) + 1); // tmpMask should have a single bit set
-    assert((tmpMask & (tmpMask - 1)) == 0);
+    regMaskSmall tmpMask = ((regMask.getLow() >> lowReg) + 1); // tmpMask should have a single bit set
+    assert(genMaxOneBit(tmpMask));
     assert(lowReg == REG_F16); // Currently we expect to start at F16 in the unwind codes
 
     // Our calling convention requires that we only use vpush for TYP_DOUBLE registers
@@ -1952,8 +1953,8 @@ void CodeGen::genPopFltRegs(regMaskTP regMask)
     regNumber lowReg = genRegNumFromMask(genFindLowestBit(regMask));
     int       slots  = genCountBits(regMask);
     // regMask should be contiguously set
-    regMaskTP tmpMask = ((regMask >> lowReg) + 1); // tmpMask should have a single bit set
-    assert((tmpMask & (tmpMask - 1)) == 0);
+    regMaskSmall tmpMask = ((regMask.getLow() >> lowReg) + 1); // tmpMask should have a single bit set
+    assert(genMaxOneBit(tmpMask));
 
     // Our calling convention requires that we only use vpop for TYP_DOUBLE registers
     noway_assert(floatRegCanHoldType(lowReg, TYP_DOUBLE));
@@ -2192,7 +2193,7 @@ void CodeGen::genPopCalleeSavedRegisters(bool jmpEpilog)
         genUsedPopToReturn = false;
     }
 
-    assert(FitsIn<int>(maskPopRegsInt));
+    assert(FitsIn<int>(maskPopRegsInt.getLow()));
     inst_IV(INS_pop, (int)maskPopRegsInt);
     compiler->unwindPopMaskInt(maskPopRegsInt);
 }
@@ -2320,7 +2321,7 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
     regMaskTP maskStackAlloc = genStackAllocRegisterMask(genFuncletInfo.fiSpDelta, maskPushRegsFloat);
     maskPushRegsInt |= maskStackAlloc;
 
-    assert(FitsIn<int>(maskPushRegsInt));
+    assert(FitsIn<int>(maskPushRegsInt.getLow()));
     inst_IV(INS_push, (int)maskPushRegsInt);
     compiler->unwindPushMaskInt(maskPushRegsInt);
 
@@ -2437,7 +2438,7 @@ void CodeGen::genFuncletEpilog()
         compiler->unwindPopMaskFloat(maskPopRegsFloat);
     }
 
-    assert(FitsIn<int>(maskPopRegsInt));
+    assert(FitsIn<int>(maskPopRegsInt.getLow()));
     inst_IV(INS_pop, (int)maskPopRegsInt);
     compiler->unwindPopMaskInt(maskPopRegsInt);
 

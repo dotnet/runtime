@@ -2666,6 +2666,250 @@ namespace System.Runtime.Intrinsics.Arm
         /// </summary>
         public static unsafe Vector<long> SignExtendWideningUpper(Vector<int> value) => SignExtendWideningUpper(value);
 
+
+        ///  Non-truncating store
+
+        /// <summary>
+        /// void svst1[_u8](svbool_t pg, uint8_t *base, svuint8_t data)
+        ///   ST1B Zdata.B, Pg, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe void StoreAndZip(Vector<byte> mask, byte* address, Vector<byte> data) => StoreAndZip(mask, address, data);
+
+        /// <summary>
+        /// void svst2[_u8](svbool_t pg, uint8_t *base, svuint8x2_t data)
+        ///   ST2B {Zdata0.B, Zdata1.B}, Pg, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe void StoreAndZip(Vector<byte> mask, byte* address, (Vector<byte> Value1, Vector<byte> Value2) data) => StoreAndZip(mask, address, data);
+
+        /// <summary>
+        /// void svst3[_u8](svbool_t pg, uint8_t *base, svuint8x3_t data)
+        ///   ST3B {Zdata0.B - Zdata2.B}, Pg, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe void StoreAndZip(Vector<byte> mask, byte* address, (Vector<byte> Value1, Vector<byte> Value2, Vector<byte> Value3) data) => StoreAndZip(mask, address, data);
+
+        /// <summary>
+        /// void svst4[_u8](svbool_t pg, uint8_t *base, svuint8x4_t data)
+        ///   ST4B {Zdata0.B - Zdata3.B}, Pg, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe void StoreAndZip(Vector<byte> mask, byte* address, (Vector<byte> Value1, Vector<byte> Value2, Vector<byte> Value3, Vector<byte> Value4) data) => StoreAndZip(mask, address, data);
+
+        /// <summary>
+        /// void svst1[_f64](svbool_t pg, float64_t *base, svfloat64_t data)
+        ///   ST1D Zdata.D, Pg, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe void StoreAndZip(Vector<double> mask, double* address, Vector<double> data) => StoreAndZip(mask, address, data);
+
+        /// <summary>
+        /// void svst2[_f64](svbool_t pg, float64_t *base, svfloat64x2_t data)
+        ///   ST2D {Zdata0.D, Zdata1.D}, Pg, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe void StoreAndZip(Vector<double> mask, double* address, (Vector<double> Value1, Vector<double> Value2) data) => StoreAndZip(mask, address, data);
+
+        /// <summary>
+        /// void svst3[_f64](svbool_t pg, float64_t *base, svfloat64x3_t data)
+        ///   ST3D {Zdata0.D - Zdata2.D}, Pg, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe void StoreAndZip(Vector<double> mask, double* address, (Vector<double> Value1, Vector<double> Value2, Vector<double> Value3) data) => StoreAndZip(mask, address, data);
+
+        /// <summary>
+        /// void svst4[_f64](svbool_t pg, float64_t *base, svfloat64x4_t data)
+        ///   ST4D {Zdata0.D - Zdata3.D}, Pg, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe void StoreAndZip(Vector<double> mask, double* address, (Vector<double> Value1, Vector<double> Value2, Vector<double> Value3, Vector<double> Value4) data) => StoreAndZip(mask, address, data);
+
+        /// <summary>
+        /// void svst1[_s16](svbool_t pg, int16_t *base, svint16_t data)
+        ///   ST1H Zdata.H, Pg, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe void StoreAndZip(Vector<short> mask, short* address, Vector<short> data) => StoreAndZip(mask, address, data);
+
+        /// <summary>
+        /// void svst2[_s16](svbool_t pg, int16_t *base, svint16x2_t data)
+        ///   ST2H {Zdata0.H, Zdata1.H}, Pg, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe void StoreAndZip(Vector<short> mask, short* address, (Vector<short> Value1, Vector<short> Value2) data) => StoreAndZip(mask, address, data);
+
+        /// <summary>
+        /// void svst3[_s16](svbool_t pg, int16_t *base, svint16x3_t data)
+        ///   ST3H {Zdata0.H - Zdata2.H}, Pg, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe void StoreAndZip(Vector<short> mask, short* address, (Vector<short> Value1, Vector<short> Value2, Vector<short> Value3) data) => StoreAndZip(mask, address, data);
+
+        /// <summary>
+        /// void svst4[_s16](svbool_t pg, int16_t *base, svint16x4_t data)
+        ///   ST4H {Zdata0.H - Zdata3.H}, Pg, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe void StoreAndZip(Vector<short> mask, short* address, (Vector<short> Value1, Vector<short> Value2, Vector<short> Value3, Vector<short> Value4) data) => StoreAndZip(mask, address, data);
+
+        /// <summary>
+        /// void svst1[_s32](svbool_t pg, int32_t *base, svint32_t data)
+        ///   ST1W Zdata.S, Pg, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe void StoreAndZip(Vector<int> mask, int* address, Vector<int> data) => StoreAndZip(mask, address, data);
+
+        /// <summary>
+        /// void svst2[_s32](svbool_t pg, int32_t *base, svint32x2_t data)
+        ///   ST2W {Zdata0.S, Zdata1.S}, Pg, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe void StoreAndZip(Vector<int> mask, int* address, (Vector<int> Value1, Vector<int> Value2) data) => StoreAndZip(mask, address, data);
+
+        /// <summary>
+        /// void svst3[_s32](svbool_t pg, int32_t *base, svint32x3_t data)
+        ///   ST3W {Zdata0.S - Zdata2.S}, Pg, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe void StoreAndZip(Vector<int> mask, int* address, (Vector<int> Value1, Vector<int> Value2, Vector<int> Value3) data) => StoreAndZip(mask, address, data);
+
+        /// <summary>
+        /// void svst4[_s32](svbool_t pg, int32_t *base, svint32x4_t data)
+        ///   ST4W {Zdata0.S - Zdata3.S}, Pg, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe void StoreAndZip(Vector<int> mask, int* address, (Vector<int> Value1, Vector<int> Value2, Vector<int> Value3, Vector<int> Value4) data) => StoreAndZip(mask, address, data);
+
+        /// <summary>
+        /// void svst1[_s64](svbool_t pg, int64_t *base, svint64_t data)
+        ///   ST1D Zdata.D, Pg, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe void StoreAndZip(Vector<long> mask, long* address, Vector<long> data) => StoreAndZip(mask, address, data);
+
+        /// <summary>
+        /// void svst2[_s64](svbool_t pg, int64_t *base, svint64x2_t data)
+        ///   ST2D {Zdata0.D, Zdata1.D}, Pg, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe void StoreAndZip(Vector<long> mask, long* address, (Vector<long> Value1, Vector<long> Value2) data) => StoreAndZip(mask, address, data);
+
+        /// <summary>
+        /// void svst3[_s64](svbool_t pg, int64_t *base, svint64x3_t data)
+        ///   ST3D {Zdata0.D - Zdata2.D}, Pg, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe void StoreAndZip(Vector<long> mask, long* address, (Vector<long> Value1, Vector<long> Value2, Vector<long> Value3) data) => StoreAndZip(mask, address, data);
+
+        /// <summary>
+        /// void svst4[_s64](svbool_t pg, int64_t *base, svint64x4_t data)
+        ///   ST4D {Zdata0.D - Zdata3.D}, Pg, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe void StoreAndZip(Vector<long> mask, long* address, (Vector<long> Value1, Vector<long> Value2, Vector<long> Value3, Vector<long> Value4) data) => StoreAndZip(mask, address, data);
+
+        /// <summary>
+        /// void svst1[_s8](svbool_t pg, int8_t *base, svint8_t data)
+        ///   ST1B Zdata.B, Pg, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe void StoreAndZip(Vector<sbyte> mask, sbyte* address, Vector<sbyte> data) => StoreAndZip(mask, address, data);
+
+        /// <summary>
+        /// void svst2[_s8](svbool_t pg, int8_t *base, svint8x2_t data)
+        ///   ST2B {Zdata0.B, Zdata1.B}, Pg, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe void StoreAndZip(Vector<sbyte> mask, sbyte* address, (Vector<sbyte> Value1, Vector<sbyte> Value2) data) => StoreAndZip(mask, address, data);
+
+        /// <summary>
+        /// void svst3[_s8](svbool_t pg, int8_t *base, svint8x3_t data)
+        ///   ST3B {Zdata0.B - Zdata2.B}, Pg, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe void StoreAndZip(Vector<sbyte> mask, sbyte* address, (Vector<sbyte> Value1, Vector<sbyte> Value2, Vector<sbyte> Value3) data) => StoreAndZip(mask, address, data);
+
+        /// <summary>
+        /// void svst4[_s8](svbool_t pg, int8_t *base, svint8x4_t data)
+        ///   ST4B {Zdata0.B - Zdata3.B}, Pg, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe void StoreAndZip(Vector<sbyte> mask, sbyte* address, (Vector<sbyte> Value1, Vector<sbyte> Value2, Vector<sbyte> Value3, Vector<sbyte> Value4) data) => StoreAndZip(mask, address, data);
+
+        /// <summary>
+        /// void svst1[_f32](svbool_t pg, float32_t *base, svfloat32_t data)
+        ///   ST1W Zdata.S, Pg, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe void StoreAndZip(Vector<float> mask, float* address, Vector<float> data) => StoreAndZip(mask, address, data);
+
+        /// <summary>
+        /// void svst2[_f32](svbool_t pg, float32_t *base, svfloat32x2_t data)
+        ///   ST2W {Zdata0.S, Zdata1.S}, Pg, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe void StoreAndZip(Vector<float> mask, float* address, (Vector<float> Value1, Vector<float> Value2) data) => StoreAndZip(mask, address, data);
+
+        /// <summary>
+        /// void svst3[_f32](svbool_t pg, float32_t *base, svfloat32x3_t data)
+        ///   ST3W {Zdata0.S - Zdata2.S}, Pg, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe void StoreAndZip(Vector<float> mask, float* address, (Vector<float> Value1, Vector<float> Value2, Vector<float> Value3) data) => StoreAndZip(mask, address, data);
+
+        /// <summary>
+        /// void svst4[_f32](svbool_t pg, float32_t *base, svfloat32x4_t data)
+        ///   ST4W {Zdata0.S - Zdata3.S}, Pg, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe void StoreAndZip(Vector<float> mask, float* address, (Vector<float> Value1, Vector<float> Value2, Vector<float> Value3, Vector<float> Value4) data) => StoreAndZip(mask, address, data);
+
+        /// <summary>
+        /// void svst1[_u16](svbool_t pg, uint16_t *base, svuint16_t data)
+        ///   ST1H Zdata.H, Pg, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe void StoreAndZip(Vector<ushort> mask, ushort* address, Vector<ushort> data) => StoreAndZip(mask, address, data);
+
+        /// <summary>
+        /// void svst2[_u16](svbool_t pg, uint16_t *base, svuint16x2_t data)
+        ///   ST2H {Zdata0.H, Zdata1.H}, Pg, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe void StoreAndZip(Vector<ushort> mask, ushort* address, (Vector<ushort> Value1, Vector<ushort> Value2) data) => StoreAndZip(mask, address, data);
+
+        /// <summary>
+        /// void svst3[_u16](svbool_t pg, uint16_t *base, svuint16x3_t data)
+        ///   ST3H {Zdata0.H - Zdata2.H}, Pg, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe void StoreAndZip(Vector<ushort> mask, ushort* address, (Vector<ushort> Value1, Vector<ushort> Value2, Vector<ushort> Value3) data) => StoreAndZip(mask, address, data);
+
+        /// <summary>
+        /// void svst4[_u16](svbool_t pg, uint16_t *base, svuint16x4_t data)
+        ///   ST4H {Zdata0.H - Zdata3.H}, Pg, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe void StoreAndZip(Vector<ushort> mask, ushort* address, (Vector<ushort> Value1, Vector<ushort> Value2, Vector<ushort> Value3, Vector<ushort> Value4) data) => StoreAndZip(mask, address, data);
+
+        /// <summary>
+        /// void svst1[_u32](svbool_t pg, uint32_t *base, svuint32_t data)
+        ///   ST1W Zdata.S, Pg, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe void StoreAndZip(Vector<uint> mask, uint* address, Vector<uint> data) => StoreAndZip(mask, address, data);
+
+        /// <summary>
+        /// void svst2[_u32](svbool_t pg, uint32_t *base, svuint32x2_t data)
+        ///   ST2W {Zdata0.S, Zdata1.S}, Pg, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe void StoreAndZip(Vector<uint> mask, uint* address, (Vector<uint> Value1, Vector<uint> Value2) data) => StoreAndZip(mask, address, data);
+
+        /// <summary>
+        /// void svst3[_u32](svbool_t pg, uint32_t *base, svuint32x3_t data)
+        ///   ST3W {Zdata0.S - Zdata2.S}, Pg, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe void StoreAndZip(Vector<uint> mask, uint* address, (Vector<uint> Value1, Vector<uint> Value2, Vector<uint> Value3) data) => StoreAndZip(mask, address, data);
+
+        /// <summary>
+        /// void svst4[_u32](svbool_t pg, uint32_t *base, svuint32x4_t data)
+        ///   ST4W {Zdata0.S - Zdata3.S}, Pg, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe void StoreAndZip(Vector<uint> mask, uint* address, (Vector<uint> Value1, Vector<uint> Value2, Vector<uint> Value3, Vector<uint> Value4) data) => StoreAndZip(mask, address, data);
+
+        /// <summary>
+        /// void svst1[_u64](svbool_t pg, uint64_t *base, svuint64_t data)
+        ///   ST1D Zdata.D, Pg, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe void StoreAndZip(Vector<ulong> mask, ulong* address, Vector<ulong> data) => StoreAndZip(mask, address, data);
+
+        /// <summary>
+        /// void svst2[_u64](svbool_t pg, uint64_t *base, svuint64x2_t data)
+        ///   ST2D {Zdata0.D, Zdata1.D}, Pg, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe void StoreAndZip(Vector<ulong> mask, ulong* address, (Vector<ulong> Value1, Vector<ulong> Value2) data) => StoreAndZip(mask, address, data);
+
+        /// <summary>
+        /// void svst3[_u64](svbool_t pg, uint64_t *base, svuint64x3_t data)
+        ///   ST3D {Zdata0.D - Zdata2.D}, Pg, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe void StoreAndZip(Vector<ulong> mask, ulong* address, (Vector<ulong> Value1, Vector<ulong> Value2, Vector<ulong> Value3) data) => StoreAndZip(mask, address, data);
+
+        /// <summary>
+        /// void svst4[_u64](svbool_t pg, uint64_t *base, svuint64x4_t data)
+        ///   ST4D {Zdata0.D - Zdata3.D}, Pg, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe void StoreAndZip(Vector<ulong> mask, ulong* address, (Vector<ulong> Value1, Vector<ulong> Value2, Vector<ulong> Value3, Vector<ulong> Value4) data) => StoreAndZip(mask, address, data);
+
+
         ///  Subtract : Subtract
 
         /// <summary>

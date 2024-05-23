@@ -2426,6 +2426,59 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
+        case NI_Sve_StoreAndZip:
+        {
+            assert(sig->numArgs == 3);
+            assert(retType == TYP_VOID);
+
+            CORINFO_ARG_LIST_HANDLE arg1     = sig->args;
+            CORINFO_ARG_LIST_HANDLE arg2     = info.compCompHnd->getArgNext(arg1);
+            CORINFO_ARG_LIST_HANDLE arg3     = info.compCompHnd->getArgNext(arg2);
+            var_types               argType  = TYP_UNKNOWN;
+            CORINFO_CLASS_HANDLE    argClass = NO_CLASS_HANDLE;
+            argType             = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg3, &argClass)));
+            op3                 = impPopStack().val;
+            unsigned fieldCount = info.compCompHnd->getClassNumInstanceFields(argClass);
+
+            if (op3->TypeGet() == TYP_STRUCT)
+            {
+                info.compNeedsConsecutiveRegisters = true;
+                switch (fieldCount)
+                {
+                    case 2:
+                        intrinsic = NI_Sve_StoreAndZipx2;
+                        break;
+
+                    case 3:
+                        intrinsic = NI_Sve_StoreAndZipx3;
+                        break;
+
+                    case 4:
+                        intrinsic = NI_Sve_StoreAndZipx4;
+                        break;
+
+                    default:
+                        assert("unsupported");
+                }
+
+                if (!op3->OperIs(GT_LCL_VAR))
+                {
+                    unsigned tmp = lvaGrabTemp(true DEBUGARG("SveStoreN"));
+
+                    impStoreToTemp(tmp, op3, CHECK_SPILL_NONE);
+                    op3 = gtNewLclvNode(tmp, argType);
+                }
+                op3 = gtConvertTableOpToFieldList(op3, fieldCount);
+            }
+
+            argType = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg2, &argClass)));
+            op2     = getArgForHWIntrinsic(argType, argClass);
+            argType = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg1, &argClass)));
+            op1     = getArgForHWIntrinsic(argType, argClass);
+            retNode = gtNewSimdHWIntrinsicNode(retType, op1, op2, op3, intrinsic, simdBaseJitType, simdSize);
+            break;
+        }
+
         default:
         {
             return nullptr;
