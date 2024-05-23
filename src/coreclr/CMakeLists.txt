@@ -29,7 +29,7 @@ if(CORECLR_SET_RPATH)
     set(MACOSX_RPATH ON)
 endif(CORECLR_SET_RPATH)
 
-if(CLR_CMAKE_HOST_MACCATALYST OR CLR_CMAKE_HOST_IOS OR CLR_CMAKE_HOST_TVOS)
+if(CLR_CMAKE_HOST_TVOS)
   set(FEATURE_STANDALONE_GC 0)
 endif()
 
@@ -101,8 +101,10 @@ if(CLR_CMAKE_HOST_UNIX)
       add_linker_flag(-Wl,-z,notext)
     endif()
 
-    if(NOT CLR_CMAKE_HOST_MACCATALYST AND NOT CLR_CMAKE_HOST_IOS AND NOT CLR_CMAKE_HOST_TVOS)
+    if(NOT CLR_CMAKE_HOST_TVOS)
       add_subdirectory(pal)
+    endif()
+    if(NOT CLR_CMAKE_HOST_MACCATALYST AND NOT CLR_CMAKE_HOST_IOS AND NOT CLR_CMAKE_HOST_TVOS)
       add_subdirectory(hosts)
     endif()
 else()
@@ -125,7 +127,7 @@ add_subdirectory(pal/prebuilt/inc)
 set(EP_GENERATED_HEADER_PATH "${GENERATED_INCLUDE_DIR}")
 include (${CLR_SRC_NATIVE_DIR}/eventpipe/configure.cmake)
 
-if(NOT CLR_CMAKE_HOST_MACCATALYST AND NOT CLR_CMAKE_HOST_IOS AND NOT CLR_CMAKE_HOST_TVOS)
+if(NOT CLR_CMAKE_HOST_TVOS)
   add_subdirectory(debug/debug-pal)
 endif()
 
@@ -242,12 +244,12 @@ if(CLR_CMAKE_HOST_UNIX)
   add_subdirectory(nativeresources)
 endif(CLR_CMAKE_HOST_UNIX)
 
-if(NOT CLR_CMAKE_HOST_MACCATALYST AND NOT CLR_CMAKE_HOST_IOS AND NOT CLR_CMAKE_HOST_TVOS)
+if(NOT CLR_CMAKE_HOST_TVOS)
   add_subdirectory(utilcode)
   add_subdirectory(inc)
 
   if(CLR_CMAKE_HOST_UNIX)
-      add_subdirectory(palrt)
+    add_subdirectory(palrt)
   endif(CLR_CMAKE_HOST_UNIX)
 
   add_subdirectory(ilasm)
@@ -260,14 +262,17 @@ if(NOT CLR_CMAKE_HOST_MACCATALYST AND NOT CLR_CMAKE_HOST_IOS AND NOT CLR_CMAKE_H
   add_subdirectory(binder)
   add_subdirectory(classlibnative)
   add_subdirectory(dlls)
-  add_subdirectory(tools)
   add_subdirectory(unwinder)
   add_subdirectory(interop)
+endif()
 
-  if(CLR_CMAKE_HOST_WIN32)
-    add_subdirectory(hosts)
-  endif(CLR_CMAKE_HOST_WIN32)
+if(NOT CLR_CMAKE_HOST_MACCATALYST AND NOT CLR_CMAKE_HOST_IOS AND NOT CLR_CMAKE_HOST_TVOS)
+  add_subdirectory(tools)
 endif(NOT CLR_CMAKE_HOST_MACCATALYST AND NOT CLR_CMAKE_HOST_IOS AND NOT CLR_CMAKE_HOST_TVOS)
+
+if(CLR_CMAKE_HOST_WIN32)
+  add_subdirectory(hosts)
+endif(CLR_CMAKE_HOST_WIN32)
 
 #----------------------------------------------------
 # Cross target Component install configuration

@@ -84,10 +84,8 @@ SET_DEFAULT_DEBUG_CHANNEL(PROCESS); // some headers have code with asserts, so d
 #endif
 
 #ifdef __APPLE__
-#include <libproc.h>
 #include <pwd.h>
 #include <sys/sysctl.h>
-#include <sys/posix_sem.h>
 #include <mach/task.h>
 #include <mach/vm_map.h>
 extern "C"
@@ -229,7 +227,7 @@ PathCharString* gSharedFilesPath = nullptr;
 #if defined(__NetBSD__)
 #define CLR_SEM_MAX_NAMELEN 15
 #elif defined(__APPLE__)
-#define CLR_SEM_MAX_NAMELEN PSEMNAMLEN
+#define CLR_SEM_MAX_NAMELEN 31
 #elif defined(NAME_MAX)
 #define CLR_SEM_MAX_NAMELEN (NAME_MAX - 4)
 #else
@@ -2197,6 +2195,9 @@ PROCCreateCrashDump(
     INT cbErrorMessageBuffer,
     bool serialize)
 {
+#if defined(TARGET_IOS)
+    return FALSE;
+#else
     _ASSERTE(argv.size() > 0);
     _ASSERTE(errorMessageBuffer == nullptr || cbErrorMessageBuffer > 0);
 
@@ -2321,6 +2322,7 @@ PROCCreateCrashDump(
         }
     }
     return true;
+#endif // !TARGET_IOS
 }
 
 /*++

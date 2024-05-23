@@ -40,11 +40,16 @@ SET_DEFAULT_DEBUG_CHANNEL(VIRTUAL); // some headers have code with asserts, so d
 #include <string.h>
 #include <unistd.h>
 #include <limits.h>
+#include <dlfcn.h>
 
 #if HAVE_VM_ALLOCATE
 #include <mach/vm_map.h>
 #include <mach/mach_init.h>
 #endif // HAVE_VM_ALLOCATE
+
+#if defined(TARGET_APPLE) && !defined(TARGET_OSX)
+#include <dlfcn.h>
+#endif
 
 using namespace CorUnix;
 
@@ -1231,7 +1236,30 @@ ExitVirtualProtect:
     return bRetVal;
 }
 
-#if defined(HOST_OSX) && defined(HOST_ARM64)
+#if defined(HOST_APPLE) && defined(HOST_ARM64)
+
+#if defined(TARGET_APPLE) && !defined(TARGET_OSX)
+
+void
+(*jit_write_protect_np)(int enabled);
+
+static struct jit_write_protect_helper
+{
+    jit_write_protect_helper()
+    {
+        jit_write_protect_np = (void (*)(int))dlsym(RTLD_DEFAULT, "pthread_jit_write_protect_np");
+        if (jit_write_protect_np == NULL)
+        {
+            ERROR( "pthread_jit_write_protect_np not available.\n" );
+            exit(1);
+        }
+    }
+} jit_write_protect_helper;
+
+#define pthread_jit_write_protect_np jit_write_protect_np
+
+#endif
+
 PALAPI VOID PAL_JitWriteProtect(bool writeEnable)
 {
     thread_local int enabledCount = 0;

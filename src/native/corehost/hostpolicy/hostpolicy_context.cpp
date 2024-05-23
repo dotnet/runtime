@@ -60,20 +60,24 @@ namespace
         // This function is only called with the library name specified for a p/invoke, not any variations.
         // It must handle exact matches to the names specified. See Interop.Libraries.cs for each platform.
 #if !defined(_WIN32)
+#if !defined(TARGET_TVOS)
         if (strcmp(library_name, LIB_NAME("System.Net.Security.Native")) == 0)
         {
             return SecurityResolveDllImport(entry_point_name);
         }
+#endif
 
         if (strcmp(library_name, LIB_NAME("System.Native")) == 0)
         {
             return SystemResolveDllImport(entry_point_name);
         }
 
+#if !defined(TARGET_APPLE) || defined(TARGET_OSX)
         if (strcmp(library_name, LIB_NAME("System.Security.Cryptography.Native.OpenSsl")) == 0)
         {
             return CryptoResolveDllImport(entry_point_name);
         }
+#endif
 #endif
 
         if (strcmp(library_name, LIB_NAME("System.IO.Compression.Native")) == 0)
@@ -95,7 +99,7 @@ namespace
             }
         }
 
-#if defined(TARGET_OSX)
+#if defined(TARGET_APPLE)
         if (strcmp(library_name, LIB_NAME("System.Security.Cryptography.Native.Apple")) == 0)
         {
             return CryptoAppleResolveDllImport(entry_point_name);

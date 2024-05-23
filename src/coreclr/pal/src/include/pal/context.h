@@ -624,7 +624,7 @@ const struct fpregs* GetConstNativeSigSimdContext(const native_context_t *mc)
     return GetNativeSigSimdContext(const_cast<native_context_t*>(mc));
 }
 
-#elif !defined(TARGET_OSX) // TARGET_FREEBSD
+#elif !defined(TARGET_APPLE) // TARGET_FREEBSD
 
 #define MCREG_X0(mc)      ((mc).regs[0])
 #define MCREG_X1(mc)      ((mc).regs[1])
@@ -699,7 +699,7 @@ const fpsimd_context* GetConstNativeSigSimdContext(const native_context_t *mc)
     return GetNativeSigSimdContext(const_cast<native_context_t*>(mc));
 }
 
-#else // TARGET_OSX
+#else // TARGET_APPLE
 
 #define MCREG_X0(mc)      ((mc)->__ss.__x[0])
 #define MCREG_X1(mc)      ((mc)->__ss.__x[1])
@@ -749,7 +749,7 @@ const _STRUCT_ARM_NEON_STATE64* GetConstNativeSigSimdContext(const native_contex
     return GetNativeSigSimdContext(const_cast<native_context_t*>(mc));
 }
 
-#endif // TARGET_OSX
+#endif // TARGET_APPLE
 
 #elif defined(HOST_LOONGARCH64)
 
@@ -789,7 +789,7 @@ const _STRUCT_ARM_NEON_STATE64* GetConstNativeSigSimdContext(const native_contex
 
 #else // HOST_ARM64
 
-#ifdef TARGET_OSX
+#ifdef TARGET_APPLE
 
 #define MCREG_Rbp(mc)      ((mc)->__ss.__rbp)
 #define MCREG_Rip(mc)      ((mc)->__ss.__rip)
@@ -874,7 +874,7 @@ inline void *FPREG_Xstate_Hi16Zmm(const ucontext_t *uc, uint32_t *featureSize)
     *featureSize = sizeof(_STRUCT_ZMM_REG) * 16;
     return reinterpret_cast<void *>(&((_STRUCT_X86_AVX512_STATE64&)FPSTATE(uc)).__fpu_zmm16);
 }
-#else //TARGET_OSX
+#else //TARGET_APPLE
 
     // For FreeBSD, as found in x86/ucontext.h
 #define MCREG_Rbp(mc)	    ((mc).mc_rbp)
@@ -911,7 +911,7 @@ inline void *FPREG_Xstate_Hi16Zmm(const ucontext_t *uc, uint32_t *featureSize)
 
 #define FPREG_Xmm(uc, index)    *(M128A*) &(FPSTATE(uc)->sv_xmm[index])
 #define FPREG_St(uc, index)     *(M128A*) &(FPSTATE(uc)->sv_fp[index].fp_acc)
-#endif // TARGET_OSX
+#endif // TARGET_APPLE
 #endif // HOST_ARM64
 
 #else // HOST_64BIT

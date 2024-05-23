@@ -47,10 +47,10 @@ target_link_libraries(daccess PRIVATE cdacreader_api)
 
 add_dependencies(daccess eventing_headers)
 
-if(CLR_CMAKE_HOST_FREEBSD OR CLR_CMAKE_HOST_NETBSD OR CLR_CMAKE_HOST_SUNOS)
+if(CLR_CMAKE_HOST_FREEBSD OR CLR_CMAKE_HOST_NETBSD OR CLR_CMAKE_HOST_SUNOS OR CLR_CMAKE_HOST_APPLE)
   add_definitions(-DUSE_DAC_TABLE_RVA)
 
-  set(args $<$<NOT:$<BOOL:${CLR_CMAKE_HOST_OSX}>>:--dynamic> $<TARGET_FILE:coreclr> ${GENERATED_INCLUDE_DIR}/dactablerva.h)
+  set(args $<$<NOT:$<BOOL:${CLR_CMAKE_HOST_APPLE}>>:--dynamic> $<TARGET_FILE:coreclr> ${GENERATED_INCLUDE_DIR}/dactablerva.h)
 
   add_custom_command(
     OUTPUT  ${GENERATED_INCLUDE_DIR}/dactablerva.h
@@ -72,4 +72,4 @@ if(CLR_CMAKE_HOST_FREEBSD OR CLR_CMAKE_HOST_NETBSD OR CLR_CMAKE_HOST_SUNOS)
   )
 
   add_dependencies(daccess dactablerva_header)
-endif(CLR_CMAKE_HOST_FREEBSD OR CLR_CMAKE_HOST_NETBSD OR CLR_CMAKE_HOST_SUNOS)
+endif(CLR_CMAKE_HOST_FREEBSD OR CLR_CMAKE_HOST_NETBSD OR CLR_CMAKE_HOST_SUNOS OR CLR_CMAKE_HOST_APPLE)
