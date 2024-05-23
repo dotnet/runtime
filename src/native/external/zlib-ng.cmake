@@ -13,7 +13,6 @@ add_compile_options($<$<COMPILE_LANG_AND_ID:C,Clang,AppleClang,GNU>:-Wno-error=u
 add_compile_options($<$<COMPILE_LANG_AND_ID:C,MSVC>:/wd4127>) # warning C4127: conditional expression is constant
 add_compile_options($<$<COMPILE_LANG_AND_ID:C,MSVC>:/wd4242>) # 'function': conversion from 'unsigned int' to 'Pos', possible loss of data, in various deflate_*.c files
 add_compile_options($<$<COMPILE_LANG_AND_ID:C,MSVC>:/wd4244>) # 'function': conversion from 'unsigned int' to 'Pos', possible loss of data, in various deflate_*.c files
-# add_compile_options($<$<COMPILE_LANG_AND_ID:C,MSVC>:/W3>) # D9025: overriding '/W4' with '/W3' # Commenting because it still fails. Workaround: Comment lines 186-187 in zlib-ng/CMakeLists.txt.
 
 # TODO: DO we still need to disable /wd4131 ?
 
@@ -22,3 +21,5 @@ FetchContent_MakeAvailable(fetchzlibng)
 set(SKIP_INSTALL_ALL OFF)
 
 target_compile_options(zlibstatic PUBLIC $<$<COMPILE_LANG_AND_ID:C,Clang,AppleClang,GNU>:-Wno-error=unused-command-line-argument>) # Make sure MacOS respects ignoring unused CLI arguments
+target_compile_options(zlibstatic PRIVATE $<$<COMPILE_LANG_AND_ID:C,MSVC>:/guard:cf>) # Enable CFG always for zlib-ng so we don't need to build two flavors.
+set_target_properties(zlibstatic PROPERTIES MSVC_WARNING_LEVEL 3) # Set the warning level for zlib-ng using the repo infrastructure to the same value that zlib-ng's build sets.
