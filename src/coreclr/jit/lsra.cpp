@@ -8696,7 +8696,7 @@ regNumber LinearScan::getTempRegForResolution(BasicBlock*      fromBlock,
     VarToRegMap toVarToRegMap   = toBlock == nullptr ? nullptr : getInVarToRegMap(toBlock->bbNum);
 
 #ifdef TARGET_ARM
-    regMaskTP freeRegs;
+    SingleTypeRegSet freeRegs;
     if (type == TYP_DOUBLE)
     {
         // We have to consider all float registers for TYP_DOUBLE

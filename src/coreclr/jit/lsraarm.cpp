@@ -667,7 +667,7 @@ int LinearScan::BuildNode(GenTree* tree)
         {
             assert(dstCount == 1);
             regNumber argReg  = tree->GetRegNum();
-            regMaskTP argMask = RBM_NONE;
+            SingleTypeRegSet argMask = RBM_NONE;
             if (argReg != REG_COUNT)
             {
                 argMask = genRegMask(argReg);

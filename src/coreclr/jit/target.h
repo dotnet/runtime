@@ -381,6 +381,18 @@ static bool operator>(regMaskTP first, regMaskTP second)
     return first.getLow() > second.getLow();
 }
 
+static regMaskTP operator<<(regMaskTP& first, const int b)
+{
+    regMaskTP result(first.getLow() << b);
+    return result;
+}
+
+static regMaskTP operator>>(regMaskTP& first, const int b)
+{
+    regMaskTP result(first.getLow() >> b);
+    return result;
+}
+
 static regMaskTP& operator<<=(regMaskTP& first, const int b)
 {
     first = first << b;
