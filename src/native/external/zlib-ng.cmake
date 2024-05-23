@@ -20,6 +20,7 @@ set(SKIP_INSTALL_ALL ON)
 FetchContent_MakeAvailable(fetchzlibng)
 set(SKIP_INSTALL_ALL OFF)
 
-target_compile_options(zlibstatic PUBLIC $<$<COMPILE_LANG_AND_ID:C,Clang,AppleClang,GNU>:-Wno-error=unused-command-line-argument>) # Make sure MacOS respects ignoring unused CLI arguments
+set_property(DIRECTORY ${CMAKE_CURRENT_LIST_DIR}/zlib-ng PROPERTY MSVC_WARNING_LEVEL 3) # Set the MSVC warning level for all zlib-ng targets to 3.
+
+target_compile_options(zlibstatic PRIVATE $<$<COMPILE_LANG_AND_ID:C,Clang,AppleClang,GNU>:-Wno-error=unused-command-line-argument>) # Make sure MacOS respects ignoring unused CLI arguments
 target_compile_options(zlibstatic PRIVATE $<$<COMPILE_LANG_AND_ID:C,MSVC>:/guard:cf>) # Enable CFG always for zlib-ng so we don't need to build two flavors.
-set_target_properties(zlibstatic PROPERTIES MSVC_WARNING_LEVEL 3) # Set the warning level for zlib-ng using the repo infrastructure to the same value that zlib-ng's build sets.
