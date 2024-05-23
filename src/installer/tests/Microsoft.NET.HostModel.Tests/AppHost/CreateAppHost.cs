@@ -207,7 +207,8 @@ namespace Microsoft.NET.HostModel.AppHost.Tests
             using (TestArtifact artifact = CreateTestDirectory())
             {
                 string testDirectory = Path.Combine(artifact.Location, subdir);
-                string sourceAppHostMock = PrepareAppHostMockFile(artifact.Location);
+                Directory.CreateDirectory(testDirectory);
+                string sourceAppHostMock = PrepareAppHostMockFile(testDirectory);
                 File.SetAttributes(sourceAppHostMock, FileAttributes.ReadOnly);
                 string destinationFilePath = Path.Combine(testDirectory, "DestinationAppHost.exe.mock");
                 string appBinaryFilePath = "Test/App/Binary/Path.dll";
