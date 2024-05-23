@@ -1416,6 +1416,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
             }
 
             case NI_Sve_StoreAndZip:
+            case NI_Sve_StoreNonTemporal:
             {
                 GetEmitter()->emitIns_R_R_R_I(ins, emitSize, op3Reg, op1Reg, op2Reg, 0, opt);
                 break;

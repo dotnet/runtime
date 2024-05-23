@@ -308,14 +308,7 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             bool succeeded = true;
 
-            for (var i = 0; i < Op1ElementCount; i++)
-            {
-                    if ({ValidateEntry})
-                    {
-                        succeeded = false;
-                        break;
-                    }
-            }
+            {TemplateValidationLogic}
 
             if (!succeeded)
             {

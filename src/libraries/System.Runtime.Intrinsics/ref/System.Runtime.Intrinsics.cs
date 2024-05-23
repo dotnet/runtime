@@ -4601,6 +4601,17 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe void StoreNarrowing(System.Numerics.Vector<ulong> mask, ushort* address, System.Numerics.Vector<ulong> data) { throw null; }
         public static unsafe void StoreNarrowing(System.Numerics.Vector<ulong> mask, uint* address, System.Numerics.Vector<ulong> data) { throw null; }
 
+        public static unsafe void StoreNonTemporal(System.Numerics.Vector<byte> mask, byte* address, System.Numerics.Vector<byte> data) { throw null; }
+        public static unsafe void StoreNonTemporal(System.Numerics.Vector<double> mask, double* address, System.Numerics.Vector<double> data) { throw null; }
+        public static unsafe void StoreNonTemporal(System.Numerics.Vector<short> mask, short* address, System.Numerics.Vector<short> data) { throw null; }
+        public static unsafe void StoreNonTemporal(System.Numerics.Vector<int> mask, int* address, System.Numerics.Vector<int> data) { throw null; }
+        public static unsafe void StoreNonTemporal(System.Numerics.Vector<long> mask, long* address, System.Numerics.Vector<long> data) { throw null; }
+        public static unsafe void StoreNonTemporal(System.Numerics.Vector<sbyte> mask, sbyte* address, System.Numerics.Vector<sbyte> data) { throw null; }
+        public static unsafe void StoreNonTemporal(System.Numerics.Vector<float> mask, float* address, System.Numerics.Vector<float> data) { throw null; }
+        public static unsafe void StoreNonTemporal(System.Numerics.Vector<ushort> mask, ushort* address, System.Numerics.Vector<ushort> data) { throw null; }
+        public static unsafe void StoreNonTemporal(System.Numerics.Vector<uint> mask, uint* address, System.Numerics.Vector<uint> data) { throw null; }
+        public static unsafe void StoreNonTemporal(System.Numerics.Vector<ulong> mask, ulong* address, System.Numerics.Vector<ulong> data) { throw null; }
+
         public static System.Numerics.Vector<sbyte> Subtract(System.Numerics.Vector<sbyte> left, System.Numerics.Vector<sbyte> right) { throw null; }
         public static System.Numerics.Vector<short> Subtract(System.Numerics.Vector<short> left, System.Numerics.Vector<short> right) { throw null; }
         public static System.Numerics.Vector<int> Subtract(System.Numerics.Vector<int> left, System.Numerics.Vector<int> right) { throw null; }
