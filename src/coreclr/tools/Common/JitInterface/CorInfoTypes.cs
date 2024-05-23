@@ -1271,21 +1271,25 @@ namespace Internal.JitInterface
         PosOnlyOne      = 0,
         PosBothFloat    = 1,
         PosFloat1st     = 2,
-        PosSizeShift1st = 3,
+        PosSizeShift1st = 3, // 2 bits
         PosFloat2nd     = 5,
-        PosSizeShift2nd = 6,
-        SizeShiftMask = 0b11,
+        PosSizeShift2nd = 6, // 2 bits
+        PosGcRef        = 8,
+        PosGcByRef      = 9,
 
         UseIntCallConv = 0, // struct is passed according to integer calling convention
 
         // The bitfields
-        OnlyOne   = 1 << PosOnlyOne,   // has only one field, which is floating-point
-        BothFloat = 1 << PosBothFloat, // has two fields, both are floating-point
-        Float1st  = 1 << PosFloat1st,  // has two fields, 1st is floating (and 2nd is integer)
-        SizeShift1st = SizeShiftMask << PosSizeShift1st, // log2(size) of 1st field
-        Float2nd  = 1 << PosFloat2nd,  // has two fields, 2nd is floating (and 1st is integer)
-        SizeShift2nd = SizeShiftMask << PosSizeShift2nd, // log2(size) of 2nd field
+        OnlyOne      =    1 << PosOnlyOne,      // has only one field, which is floating-point
+        BothFloat    =    1 << PosBothFloat,    // has two fields, both are floating-point
+        Float1st     =    1 << PosFloat1st,     // has two fields, 1st is floating (and 2nd is integer)
+        SizeShift1st = 0b11 << PosSizeShift1st, // log2(size) of 1st field
+        Float2nd     =    1 << PosFloat2nd,     // has two fields, 2nd is floating (and 1st is integer)
+        SizeShift2nd = 0b11 << PosSizeShift2nd, // log2(size) of 2nd field
+        GcRef        =    1 << PosGcRef,        // the integer field is a GC object reference
+        GcByRef      =    1 << PosGcByRef,      // the integer field is a GC interior pointer
         // Note: flags OnlyOne, BothFloat, Float1st, and Float2nd are mutually exclusive
+        // Note: flags GcRef, and ByRef are mutually exclusive and may only co-exist with either Float1st or Float2nd
     };
 
     // On RISC-V and LoongArch a struct with up to two non-empty fields, at least one of them floating-point,
@@ -1299,13 +1303,13 @@ namespace Internal.JitInterface
 
         public uint GetSize1st()
         {
-            int shift = ((int)flags >> (int)FpStruct.PosSizeShift1st) & (int)FpStruct.SizeShiftMask;
+            int shift = ((int)flags >> (int)FpStruct.PosSizeShift1st) & 0b11;
             return 1u << shift;
         }
 
         public uint GetSize2nd()
         {
-            int shift = ((int)flags >> (int)FpStruct.PosSizeShift2nd) & (int)FpStruct.SizeShiftMask;
+            int shift = ((int)flags >> (int)FpStruct.PosSizeShift2nd) & 0b11;
             return 1u << shift;
         }
 

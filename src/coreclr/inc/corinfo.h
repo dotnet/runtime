@@ -365,21 +365,25 @@ namespace FpStruct
         PosOnlyOne      = 0,
         PosBothFloat    = 1,
         PosFloat1st     = 2,
-        PosSizeShift1st = 3,
+        PosSizeShift1st = 3, // 2 bits
         PosFloat2nd     = 5,
-        PosSizeShift2nd = 6,
-        SizeShiftMask = 0b11,
+        PosSizeShift2nd = 6, // 2 bits
+        PosGcRef        = 8,
+        PosGcByRef      = 9,
 
         UseIntCallConv = 0, // struct is passed according to integer calling convention
 
         // The bitfields
-        OnlyOne   = 1 << PosOnlyOne,   // has only one field, which is floating-point
-        BothFloat = 1 << PosBothFloat, // has two fields, both are floating-point
-        Float1st  = 1 << PosFloat1st,  // has two fields, 1st is floating (and 2nd is integer)
-        SizeShift1st = SizeShiftMask << PosSizeShift1st, // log2(size) of 1st field
-        Float2nd  = 1 << PosFloat2nd,  // has two fields, 2nd is floating (and 1st is integer)
-        SizeShift2nd = SizeShiftMask << PosSizeShift2nd, // log2(size) of 2nd field
+        OnlyOne      =    1 << PosOnlyOne,      // has only one field, which is floating-point
+        BothFloat    =    1 << PosBothFloat,    // has two fields, both are floating-point
+        Float1st     =    1 << PosFloat1st,     // has two fields, 1st is floating (and 2nd is integer)
+        SizeShift1st = 0b11 << PosSizeShift1st, // log2(size) of 1st field
+        Float2nd     =    1 << PosFloat2nd,     // has two fields, 2nd is floating (and 1st is integer)
+        SizeShift2nd = 0b11 << PosSizeShift2nd, // log2(size) of 2nd field
+        GcRef        =    1 << PosGcRef,        // the integer field is a GC object reference
+        GcByRef      =    1 << PosGcByRef,      // the integer field is a GC interior pointer
         // Note: flags OnlyOne, BothFloat, Float1st, and Float2nd are mutually exclusive
+        // Note: flags GcRef, and ByRef are mutually exclusive and may only co-exist with either Float1st or Float2nd
     };
 }
 
@@ -394,13 +398,13 @@ struct FpStructInRegistersInfo
 
     unsigned GetSize1st() const
     {
-        unsigned shift = (flags >> FpStruct::PosSizeShift1st) & FpStruct::SizeShiftMask;
+        unsigned shift = (flags >> FpStruct::PosSizeShift1st) & 0b11;
         return 1u << shift;
     }
 
     unsigned GetSize2nd() const
     {
-        unsigned shift = (flags >> FpStruct::PosSizeShift2nd) & FpStruct::SizeShiftMask;
+        unsigned shift = (flags >> FpStruct::PosSizeShift2nd) & 0b11;
         return 1u << shift;
     }
 
@@ -423,6 +427,27 @@ struct FpStructInRegistersInfo
             ((flags & FpStruct::Float2nd) ? STRUCT_FLOAT_FIELD_SECOND : 0) |
             (IsSize1st8() ? STRUCT_FIRST_FIELD_SIZE_IS8 : 0) |
             (IsSize2nd8() ? STRUCT_SECOND_FIELD_SIZE_IS8 : 0));
+    }
+
+    static FpStructInRegistersInfo FromOldFlags(StructFloatFieldInfoFlags flags)
+    {
+        unsigned sizeShift1st = (flags & STRUCT_FIRST_FIELD_SIZE_IS8) ? 3 : 2;
+        unsigned sizeShift2nd = (flags & STRUCT_SECOND_FIELD_SIZE_IS8) ? 3 : 2;
+        bool hasTwo = !(flags & STRUCT_FLOAT_FIELD_ONLY_ONE);
+        return {
+            .flags = FpStruct::Flags(
+                ((flags & STRUCT_FLOAT_FIELD_ONLY_ONE) ? FpStruct::OnlyOne : 0) |
+                ((flags & STRUCT_FLOAT_FIELD_ONLY_TWO) ? FpStruct::BothFloat : 0) |
+                ((flags & STRUCT_FLOAT_FIELD_FIRST) ? FpStruct::Float1st : 0) |
+                ((flags & STRUCT_FLOAT_FIELD_SECOND) ? FpStruct::Float2nd : 0) |
+                (sizeShift1st << FpStruct::PosSizeShift1st) |
+                (hasTwo ? (sizeShift2nd << FpStruct::PosSizeShift2nd) : 0)
+                // No GC ref info in old flags
+            ),
+            // Lacking actual field offsets, assume fields are naturally aligned without empty fields or padding
+            .offset1st = 0,
+            .offset2nd = hasTwo ? (1u << (sizeShift1st > sizeShift2nd ? sizeShift1st : sizeShift2nd)) : 0,
+        };
     }
 };
 

@@ -122,7 +122,7 @@ namespace Internal.JitInterface
 
 
         private static void SetFpStructInRegistersInfoField(ref FpStructInRegistersInfo info, int index,
-            bool isFloating, uint size, uint offset)
+            bool isFloating, bool isGcRef, bool isGcByRef, uint size, uint offset)
         {
             Debug.Assert(index < 2);
             Debug.Assert(!isFloating || size == sizeof(float) || size == sizeof(double));
@@ -140,7 +140,10 @@ namespace Internal.JitInterface
                 "1st flags need to be 2nd flags shifted by typeSize");
 
             int type = (Convert.ToInt32(isFloating) << (int)PosFloat1st) | (sizeShift << (int)PosSizeShift1st);
-            info.flags |= (FpStruct)(type << (typeSize * index));
+            info.flags |= (FpStruct)(
+                (type << (typeSize * index)) |
+                (Convert.ToInt32(isGcRef) << (int)PosGcRef) |
+                (Convert.ToInt32(isGcByRef) << (int)PosGcByRef));
             (index == 0 ? ref info.offset1st : ref info.offset2nd) = offset;
         }
 
@@ -165,7 +168,7 @@ namespace Internal.JitInterface
 
                 // duplicate the array element info
                 const int typeSize = (int)PosFloat2nd - (int)PosFloat1st;
-                info.flags = (FpStruct)((int)info.flags << typeSize) | info.flags;
+                info.flags |= (FpStruct)((int)info.flags << typeSize);
                 info.offset2nd = info.offset1st + info.GetSize1st();
             }
             return true;
@@ -202,6 +205,8 @@ namespace Internal.JitInterface
 
                     SetFpStructInRegistersInfoField(ref info, typeIndex++,
                         (category is TypeFlags.Single or TypeFlags.Double),
+                        (category is TypeFlags.Class or TypeFlags.Interface or TypeFlags.Array or TypeFlags.SzArray),
+                        (category is TypeFlags.ByRef),
                         (uint)field.FieldType.GetElementSize().AsInt,
                         offset + (uint)field.Offset.AsInt);
                 }
@@ -220,6 +225,8 @@ namespace Internal.JitInterface
             }
             return true;
         }
+
+        private static bool IsAligned(uint val, uint alignment) => 0 == (val & (alignment - 1));
 
         private static FpStructInRegistersInfo GetRiscV64PassFpStructInRegistersInfoImpl(TypeDesc td)
         {
@@ -261,6 +268,13 @@ namespace Internal.JitInterface
             }
             Debug.Assert(info.offset1st + info.GetSize1st() <= td.GetElementSize().AsInt);
             Debug.Assert(info.offset2nd + info.GetSize2nd() <= td.GetElementSize().AsInt);
+            if ((info.flags & (GcRef | GcByRef)) != 0)
+            {
+                Debug.Assert((info.flags ^ (GcRef | GcByRef)) != 0, "either Ref or ByRef, not both");
+                Debug.Assert((info.flags & (Float1st | Float2nd)) != 0);
+                Debug.Assert((info.flags & Float1st) != 0 || (info.IsSize1st8() && IsAligned(info.offset1st, TARGET_POINTER_SIZE)));
+                Debug.Assert((info.flags & Float2nd) != 0 || (info.IsSize2nd8() && IsAligned(info.offset2nd, TARGET_POINTER_SIZE)));
+            }
 
             return info;
         }

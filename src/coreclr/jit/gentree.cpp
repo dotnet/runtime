@@ -27421,51 +27421,56 @@ void ReturnTypeDesc::InitializeStructReturnType(Compiler*                comp,
 #ifdef TARGET_LOONGARCH64
             assert(structSize <= (2 * TARGET_POINTER_SIZE));
             uint32_t floatFieldFlags = comp->info.compCompHnd->getLoongArch64PassStructInRegisterFlags(retClsHnd);
-            BYTE     gcPtrs[2]       = {TYPE_GC_NONE, TYPE_GC_NONE};
+            FpStructInRegistersInfo fpInfo =
+                FpStructInRegistersInfo::FromOldFlags((StructFloatFieldInfoFlags)floatFieldFlags);
 #else // TARGET_RISCV64
-            uint32_t floatFieldFlags =
-                (uint32_t)comp->info.compCompHnd->getRiscV64PassFpStructInRegistersInfo(retClsHnd).ToOldFlags();
-            // Most cases will be up to 2 floating/integer fields with an occasional empty field
-            BYTE     gcPtrsStack[4] = {TYPE_GC_NONE, TYPE_GC_NONE, TYPE_GC_NONE, TYPE_GC_NONE};
-            unsigned wordCount      = roundUp(structSize, TARGET_POINTER_SIZE) / TARGET_POINTER_SIZE;
-            BYTE*    gcPtrs         = (wordCount <= 4) ? gcPtrsStack : new (comp, CMK_GC) BYTE[wordCount];
-            // TODO: we need field offsets along with getRISCV64PassStructInRegisterFlags because we don't know which of
-            // gcPtrs to inspect below
-            // TODO: doesn't ClassLayout encapsulate GC info already?
+            FpStructInRegistersInfo fpInfo = comp->info.compCompHnd->getRiscV64PassFpStructInRegistersInfo(retClsHnd);
 #endif
-            comp->info.compCompHnd->getClassGClayout(retClsHnd, &gcPtrs[0]);
+            comp->compFloatingPointUsed = (fpInfo.flags != FpStruct::UseIntCallConv);
+            if ((fpInfo.flags & FpStruct::BothFloat) != 0)
+            {
+                m_regType[0] = fpInfo.IsSize1st8() ? TYP_DOUBLE : TYP_FLOAT;
+                m_regType[1] = fpInfo.IsSize2nd8() ? TYP_DOUBLE : TYP_FLOAT;
+            }
+            else if ((fpInfo.flags & (FpStruct::Float1st | FpStruct::Float2nd)) != 0)
+            {
+                var_types integerRegType;
+                if ((fpInfo.flags & FpStruct::GcRef) != 0)
+                {
+                    integerRegType = TYP_REF;
+                }
+                else if ((fpInfo.flags & FpStruct::GcByRef) != 0)
+                {
+                    integerRegType = TYP_BYREF;
+                }
+                else
+                {
+                    bool is8 = ((fpInfo.flags & FpStruct::Float1st) == 0) ? fpInfo.IsSize1st8() : fpInfo.IsSize2nd8();
+                    integerRegType = is8 ? TYP_LONG : TYP_INT;
+                }
 
-            if (floatFieldFlags & STRUCT_FLOAT_FIELD_ONLY_TWO)
-            {
-                comp->compFloatingPointUsed = true;
-                m_regType[0]                = (floatFieldFlags & STRUCT_FIRST_FIELD_SIZE_IS8) ? TYP_DOUBLE : TYP_FLOAT;
-                m_regType[1]                = (floatFieldFlags & STRUCT_SECOND_FIELD_SIZE_IS8) ? TYP_DOUBLE : TYP_FLOAT;
-            }
-            else if (floatFieldFlags & STRUCT_FLOAT_FIELD_FIRST)
-            {
-                comp->compFloatingPointUsed = true;
-                m_regType[0]                = (floatFieldFlags & STRUCT_FIRST_FIELD_SIZE_IS8) ? TYP_DOUBLE : TYP_FLOAT;
-                m_regType[1] =
-                    (floatFieldFlags & STRUCT_SECOND_FIELD_SIZE_IS8) ? comp->getJitGCType(gcPtrs[1]) : TYP_INT;
-            }
-            else if (floatFieldFlags & STRUCT_FLOAT_FIELD_SECOND)
-            {
-                comp->compFloatingPointUsed = true;
-                m_regType[0] =
-                    (floatFieldFlags & STRUCT_FIRST_FIELD_SIZE_IS8) ? comp->getJitGCType(gcPtrs[0]) : TYP_INT;
-                m_regType[1] = (floatFieldFlags & STRUCT_SECOND_FIELD_SIZE_IS8) ? TYP_DOUBLE : TYP_FLOAT;
+                if ((fpInfo.flags & FpStruct::Float1st) != 0)
+                {
+                    m_regType[0] = fpInfo.IsSize1st8() ? TYP_DOUBLE : TYP_FLOAT;
+                    m_regType[1] = integerRegType;
+                }
+                else
+                {
+                    m_regType[0] = integerRegType;
+                    m_regType[1] = fpInfo.IsSize2nd8() ? TYP_DOUBLE : TYP_FLOAT;
+                }
             }
             else
             {
+                assert(fpInfo.flags == FpStruct::UseIntCallConv);
+                assert(structSize <= (2 * TARGET_POINTER_SIZE));
+                BYTE     gcPtrs[2]       = {TYPE_GC_NONE, TYPE_GC_NONE};
+                comp->info.compCompHnd->getClassGClayout(retClsHnd, &gcPtrs[0]);
                 for (unsigned i = 0; i < 2; ++i)
                 {
                     m_regType[i] = comp->getJitGCType(gcPtrs[i]);
                 }
             }
-#ifdef TARGET_RISCV64
-            if (wordCount > 4)
-                delete[] gcPtrs;
-#endif
 
 #elif defined(TARGET_X86)
 
