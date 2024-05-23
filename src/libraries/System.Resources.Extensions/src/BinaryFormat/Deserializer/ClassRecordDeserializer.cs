@@ -38,7 +38,7 @@ internal abstract class ClassRecordDeserializer : ObjectRecordDeserializer
         if (!type.IsSerializable && surrogate is null)
         {
             // SurrogateSelectors allow populating types that are not marked as serializable.
-            throw new SerializationException($"Type '{type}' is not marked as serializable.");
+            throw new SerializationException(SR.Format(SR.Serialization_TypeNotSerializable, type));
         }
 
         object @object =
@@ -92,7 +92,7 @@ internal abstract class ClassRecordDeserializer : ObjectRecordDeserializer
         bool primitive = type.IsPrimitive || type.IsEnum || type == typeof(string);
         if (!primitive)
         {
-            throw new SerializationException($"IObjectReference type '{type}' can only have primitive member data.");
+            throw new SerializationException(SR.Format(SR.Serialization_IObjectReferenceOnlyPrimivite, type));
         }
     }
 }

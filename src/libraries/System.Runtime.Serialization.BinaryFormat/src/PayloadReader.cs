@@ -153,7 +153,7 @@ static class PayloadReader
                 }
                 else
                 {
-                    object value = reader.ReadPrimitiveType(nextInfo.PrimitiveType);
+                    object value = reader.ReadPrimitiveValue(nextInfo.PrimitiveType);
 
                     nextInfo.Parent.HandleNextValue(value, nextInfo);
                 }
@@ -195,8 +195,7 @@ static class PayloadReader
             RecordType.ObjectNullMultiple => ObjectNullMultipleRecord.Parse(reader),
             RecordType.ObjectNullMultiple256 => ObjectNullMultiple256Record.Parse(reader),
             RecordType.SerializedStreamHeader => SerializedStreamHeaderRecord.Parse(reader),
-            RecordType.SystemClassWithMembersAndTypes => SystemClassWithMembersAndTypesRecord.Parse(reader, options),
-            _ => throw new SerializationException($"Invalid RecordType value: {recordType}")
+            _ => SystemClassWithMembersAndTypesRecord.Parse(reader, options),
         };
 
         recordMap.Add(record);
@@ -206,7 +205,7 @@ static class PayloadReader
 
     private static SerializationRecord ParseMemberPrimitiveTypedRecord(BinaryReader reader)
     {
-        PrimitiveType primitiveType = (PrimitiveType)reader.ReadByte();
+        PrimitiveType primitiveType = reader.ReadPrimitiveType();
 
         return primitiveType switch
         {
@@ -224,16 +223,15 @@ static class PayloadReader
             PrimitiveType.Double => new MemberPrimitiveTypedRecord<double>(reader.ReadDouble()),
             PrimitiveType.Decimal => new MemberPrimitiveTypedRecord<decimal>(decimal.Parse(reader.ReadString(), CultureInfo.InvariantCulture)),
             PrimitiveType.DateTime => new MemberPrimitiveTypedRecord<DateTime>(BinaryReaderExtensions.CreateDateTimeFromData(reader.ReadInt64())),
-            PrimitiveType.TimeSpan => new MemberPrimitiveTypedRecord<TimeSpan>(new TimeSpan(reader.ReadInt64())),
             // String is handled with a record, never on it's own
-            _ => throw new SerializationException($"Failure trying to read primitive '{primitiveType}'"),
+            _ => new MemberPrimitiveTypedRecord<TimeSpan>(new TimeSpan(reader.ReadInt64())),
         };
     }
 
     private static SerializationRecord ParseArraySinglePrimitiveRecord(BinaryReader reader)
     {
         ArrayInfo info = ArrayInfo.Parse(reader);
-        PrimitiveType primitiveType = (PrimitiveType)reader.ReadByte();
+        PrimitiveType primitiveType = reader.ReadPrimitiveType();
 
         return primitiveType switch
         {
@@ -251,8 +249,7 @@ static class PayloadReader
             PrimitiveType.Double => Read<double>(info, reader),
             PrimitiveType.Decimal => Read<decimal>(info, reader),
             PrimitiveType.DateTime => Read<DateTime>(info, reader),
-            PrimitiveType.TimeSpan => Read<TimeSpan>(info, reader),
-            _ => throw new SerializationException($"Failure trying to read primitive '{primitiveType}'"),
+            _ => Read<TimeSpan>(info, reader),
         };
 
         static SerializationRecord Read<T>(ArrayInfo info, BinaryReader reader) where T : unmanaged

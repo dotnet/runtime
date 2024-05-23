@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using System.Collections.Generic;
+using System.IO;
 using System.Text;
 using Xunit;
 
@@ -247,7 +248,7 @@ public class InvalidInputTests : ReadTests
     [Theory]
     [InlineData(2, ArrayType.Single)]
     [InlineData(2, ArrayType.Jagged)]
-    public void ThrowsForInvalidPostiveArrayRank(int rank, ArrayType arrayType)
+    public void ThrowsForInvalidPositiveArrayRank(int rank, ArrayType arrayType)
     {
         using MemoryStream stream = new();
         BinaryWriter writer = new(stream, Encoding.UTF8);
@@ -259,6 +260,95 @@ public class InvalidInputTests : ReadTests
         writer.Write((byte)arrayType);
         writer.Write(rank); // rank!
         writer.Write(1); // length
+        writer.Write((byte)RecordType.MessageEnd);
+
+        stream.Position = 0;
+        Assert.Throws<SerializationException>(() => PayloadReader.Read(stream));
+    }
+
+    [Theory]
+    [InlineData(RecordType.ClassWithMembersAndTypes)]
+    [InlineData(RecordType.SystemClassWithMembersAndTypes)]
+    public void ThrowsForInvalidBinaryType(RecordType recordType)
+    {
+        const int LibraryId = 2;
+        using MemoryStream stream = new();
+        BinaryWriter writer = new(stream, Encoding.UTF8);
+
+        WriteSerializedStreamHeader(writer);
+        WriteBinaryLibrary(writer, LibraryId, "LibraryName");
+
+        // ClassInfo (always present)
+        writer.Write((byte)recordType);
+        writer.Write(1); // object ID
+        writer.Write("TypeName"); // type name
+        writer.Write(1); // member count
+        writer.Write("MemberName");
+        writer.Write((byte)8);
+
+        if (recordType is RecordType.ClassWithMembersAndTypes)
+        {
+            writer.Write(LibraryId);
+        }
+        writer.Write((byte)RecordType.MessageEnd);
+
+        stream.Position = 0;
+        Assert.Throws<SerializationException>(() => PayloadReader.Read(stream));
+    }
+
+    public static IEnumerable<object[]> ThrowsForInvalidPrimitiveType_Arguments()
+    {
+        foreach (RecordType recordType in new[] { RecordType.ClassWithMembersAndTypes, RecordType.SystemClassWithMembersAndTypes })
+        {
+            foreach (byte binaryType in new byte[] { (byte)0 /* BinaryType.Primitive */, (byte)7 /* BinaryType.PrimitiveArray */ })
+            {
+                yield return new object[] { recordType, binaryType, (byte)4 }; // value not used by the spec
+                yield return new object[] { recordType, binaryType, (byte)19 };
+            }
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(ThrowsForInvalidPrimitiveType_Arguments))]
+    public void ThrowsForInvalidPrimitiveType(RecordType recordType, byte binaryType, byte invalidPrimitiveType)
+    {
+        const int LibraryId = 2;
+        using MemoryStream stream = new();
+        BinaryWriter writer = new(stream, Encoding.UTF8);
+
+        WriteSerializedStreamHeader(writer);
+        WriteBinaryLibrary(writer, LibraryId, "LibraryName");
+
+        // ClassInfo (always present)
+        writer.Write((byte)recordType);
+        writer.Write(1); // object ID
+        writer.Write("TypeName"); // type name
+        writer.Write(1); // member count
+        writer.Write("MemberName");
+        writer.Write(binaryType);
+        writer.Write(invalidPrimitiveType);
+
+        if (recordType is RecordType.ClassWithMembersAndTypes)
+        {
+            writer.Write(LibraryId);
+        }
+        writer.Write((byte)RecordType.MessageEnd);
+
+        stream.Position = 0;
+        Assert.Throws<SerializationException>(() => PayloadReader.Read(stream));
+    }
+
+    [Fact]
+    public void ThrowsOnInvalidArrayType()
+    {
+        using MemoryStream stream = new();
+        BinaryWriter writer = new(stream, Encoding.UTF8);
+
+        WriteSerializedStreamHeader(writer);
+        writer.Write((byte)RecordType.BinaryArray);
+        writer.Write(1); // object id
+        writer.Write((byte)6);
+
         writer.Write((byte)RecordType.MessageEnd);
 
         stream.Position = 0;

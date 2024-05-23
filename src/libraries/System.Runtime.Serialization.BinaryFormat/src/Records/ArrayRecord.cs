@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection.Metadata;
 
 namespace System.Runtime.Serialization.BinaryFormat;
@@ -50,11 +51,12 @@ abstract class ArrayRecord : SerializationRecord
     /// <param name="allowNulls">Specifies whether null values are allowed.</param>
     /// <param name="maxLength">The total maximum number of elements in all the dimensions of the array.</param>
     /// <exception cref="InvalidOperationException">When there is a type mismatch.</exception>
+    [RequiresDynamicCode("The code for an array of the specified type might not be available.")]
     public Array ToArray(Type expectedArrayType, bool allowNulls = true, int maxLength = DefaultMaxArrayLength)
     {
         if (!IsTypeNameMatching(expectedArrayType))
         {
-            throw new InvalidOperationException();
+            throw new InvalidOperationException(SR.Format(SR.Serialization_TypeMismatch, expectedArrayType.AssemblyQualifiedName, ElementTypeName.AssemblyQualifiedName));
         }
 
         ReadOnlySpan<int> lengths = Lengths;
@@ -72,6 +74,7 @@ abstract class ArrayRecord : SerializationRecord
         return Deserialize(expectedArrayType, allowNulls, maxLength);
     }
 
+    [RequiresDynamicCode("May call Array.CreateInstance() and Type.MakeArrayType().")]
     private protected abstract Array Deserialize(Type arrayType, bool allowNulls, int maxLength);
 
     public override bool IsTypeNameMatching(Type type)
@@ -155,9 +158,10 @@ abstract class ArrayRecord<T> : ArrayRecord
     }
 
     // PERF: if allocating new arrays is not acceptable, then we could introduce CopyTo method
-
+#pragma warning disable IL3051 // RequiresDynamicCode is not required in this particualar case
     private protected override Array Deserialize(Type arrayType, bool allowNulls, int maxLength)
         => ToArray(allowNulls, maxLength);
+#pragma warning restore IL3051
 
     protected abstract T?[] ToArrayOfT(bool allowNulls);
 }

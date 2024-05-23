@@ -128,7 +128,7 @@ internal sealed class ArrayRecordDeserializer : ObjectRecordDeserializer
     {
         if (arrayRecord.ArrayType is not (ArrayType.Single or ArrayType.Jagged or ArrayType.Rectangular))
         {
-            throw new NotSupportedException("Only arrays with zero offsets are supported.");
+            throw new NotSupportedException(SR.NotSupported_NonZeroOffsets);
         }
 
         Type arrayRecordElementType = typeResolver.GetType(arrayRecord.ElementTypeName);

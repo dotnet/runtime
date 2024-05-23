@@ -53,7 +53,7 @@ internal sealed class ArraySingleObjectRecord : ArrayRecord<object?>
 
             if (!allowNulls)
             {
-                ThrowHelper.ThrowArrayContainedNull();
+                ThrowHelper.ThrowArrayContainedNulls();
             }
 
             do

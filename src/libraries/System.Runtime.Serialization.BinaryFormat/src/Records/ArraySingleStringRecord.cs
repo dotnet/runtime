@@ -62,7 +62,7 @@ internal sealed class ArraySingleStringRecord : ArrayRecord<string?>
 
                 if (record is not BinaryObjectStringRecord)
                 {
-                    throw new SerializationException("The string array contained a reference to non-string.");
+                    ThrowHelper.ThrowInvalidReference();
                 }
             }
 
@@ -74,7 +74,7 @@ internal sealed class ArraySingleStringRecord : ArrayRecord<string?>
 
             if (!allowNulls)
             {
-                throw new SerializationException("The array contained null(s).");
+                ThrowHelper.ThrowArrayContainedNulls();
             }
 
             int nullCount = ((NullsRecord)record).NullCount;

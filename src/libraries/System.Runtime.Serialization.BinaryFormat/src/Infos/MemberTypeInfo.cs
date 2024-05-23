@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Reflection.Metadata;
 
@@ -36,7 +37,7 @@ internal readonly struct MemberTypeInfo
         // There's not necessarily a 1:1 mapping; some enum values don't have associated AdditionalInfo.
         for (int i = 0; i < count; i++)
         {
-            info.Add(((BinaryType)reader.ReadByte(), null));
+            info.Add((reader.ReadBinaryType(), null));
         }
 
         // Check for more clarifying information
@@ -47,7 +48,7 @@ internal readonly struct MemberTypeInfo
             {
                 case BinaryType.Primitive:
                 case BinaryType.PrimitiveArray:
-                    info[i] = (type, (PrimitiveType)reader.ReadByte());
+                    info[i] = (type, reader.ReadPrimitiveType());
                     break;
                 case BinaryType.SystemClass:
                     info[i] = (type, reader.ReadTypeName(options));
@@ -55,14 +56,10 @@ internal readonly struct MemberTypeInfo
                 case BinaryType.Class:
                     info[i] = (type, ClassTypeInfo.Parse(reader, options));
                     break;
-                case BinaryType.String:
-                case BinaryType.ObjectArray:
-                case BinaryType.StringArray:
-                case BinaryType.Object:
-                    // Other types have no additional data.
-                    break;
                 default:
-                    throw new SerializationException("Unexpected binary type.");
+                    // Other types have no additional data.
+                    Debug.Assert(type is BinaryType.String or BinaryType.ObjectArray or BinaryType.StringArray or BinaryType.Object);
+                    break;
             }
         }
 
@@ -103,8 +100,7 @@ internal readonly struct MemberTypeInfo
             BinaryType.PrimitiveArray => (primitiveArray, default),
             BinaryType.Class => (nonSystemClass, default),
             BinaryType.SystemClass => (systemClass, default),
-            BinaryType.ObjectArray => (objectArray, default),
-            _ => throw new SerializationException($"Invalid binary type: {binaryType}.")
+            _ => (objectArray, default)
         };
     }
 
@@ -162,7 +158,9 @@ internal readonly struct MemberTypeInfo
                 TypeName typeName = (TypeName)additionalInfo!;
                 string fullSystemClassName = FormatterServices.GetTypeFullNameIncludingTypeForwards(typeElement);
                 return typeName.FullName == fullSystemClassName;
-            case BinaryType.Class:
+            default:
+                Debug.Assert(binaryType is BinaryType.Class, "The parsers should reject other inputs");
+
                 ClassTypeInfo typeInfo = (ClassTypeInfo)additionalInfo!;
                 string fullClassName = FormatterServices.GetTypeFullNameIncludingTypeForwards(typeElement);
                 if (typeInfo.TypeName.FullName != fullClassName)
@@ -173,8 +171,6 @@ internal readonly struct MemberTypeInfo
                 BinaryLibraryRecord libraryRecord = (BinaryLibraryRecord)recordMap[typeInfo.LibraryId];
                 string assemblyName = FormatterServices.GetAssemblyNameIncludingTypeForwards(typeElement);
                 return assemblyName == libraryRecord.LibraryName.FullName;
-            default:
-                throw new NotSupportedException();
         }
     }
 
@@ -240,8 +236,7 @@ internal readonly struct MemberTypeInfo
                     PrimitiveType.DateTime => typeof(DateTime).FullName,
                     PrimitiveType.UInt16 => typeof(ushort).FullName,
                     PrimitiveType.UInt32 => typeof(uint).FullName,
-                    PrimitiveType.UInt64 => typeof(ulong).FullName,
-                    _ => throw new NotSupportedException()
+                    _ => typeof(ulong).FullName,
                 };
 
                 return binaryType is BinaryType.PrimitiveArray
@@ -250,12 +245,12 @@ internal readonly struct MemberTypeInfo
 
             case BinaryType.SystemClass:
                 return ((TypeName)additionalInfo!).WithAssemblyName(FormatterServices.CoreLibAssemblyName.FullName);
-            case BinaryType.Class:
+            default:
+                Debug.Assert(binaryType is BinaryType.Class, "The parsers should reject other inputs");
+
                 ClassTypeInfo typeInfo = (ClassTypeInfo)additionalInfo!;
                 AssemblyNameInfo libraryName = ((BinaryLibraryRecord)recordMap[typeInfo.LibraryId]).LibraryName;
                 return typeInfo.TypeName.WithAssemblyName(libraryName.FullName);
-            default:
-                throw new NotSupportedException();
         }
     }
 }

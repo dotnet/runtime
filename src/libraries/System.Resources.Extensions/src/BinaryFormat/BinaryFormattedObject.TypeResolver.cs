@@ -80,7 +80,7 @@ internal sealed partial class BinaryFormattedObject
                 ? assembly.GetType(typeName.FullName)
                 : GetSimplyNamedTypeFromAssembly(assembly, typeName);
 
-            _types[typeName.AssemblyQualifiedName] = type ?? throw new SerializationException($"Could not find type '{typeName}'.");
+            _types[typeName.AssemblyQualifiedName] = type ?? throw new SerializationException(SR.Format(SR.Serialization_MissingType, typeName.AssemblyQualifiedName));
             return type;
         }
 

@@ -169,7 +169,7 @@ internal sealed partial class Deserializer : IDeserializer
         if (_incompleteObjects.Count > 0 || (_pendingUpdates is not null && _pendingUpdates.Count > 0))
         {
             // This should never happen outside of corrupted data.
-            throw new SerializationException("Objects could not be deserialized completely.");
+            throw new SerializationException(SR.Serialization_Incomplete);
         }
 
         // Notify [OnDeserialized] instance methods for all relevant deserialized objects,
@@ -212,7 +212,7 @@ internal sealed partial class Deserializer : IDeserializer
                     if (_parseStack.Contains(requiredId))
                     {
                         // All objects should be available before they're asked for a second time.
-                        throw new SerializationException("Unexpected parser cycle.");
+                        throw new SerializationException(SR.Serialization_Cycle);
                     }
 
                     // Push our current parser.
@@ -258,7 +258,7 @@ internal sealed partial class Deserializer : IDeserializer
             // Not a simple case, need to do a full deserialization of the record.
             _incompleteObjects.Add(id);
 
-            var deserializer = ObjectRecordDeserializer.Create(id, record, this);
+            var deserializer = ObjectRecordDeserializer.Create(record, this);
 
             // Add the object as soon as possible to support circular references.
             _deserializedObjects.Add(id, deserializer.Object);

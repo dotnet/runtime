@@ -93,11 +93,10 @@ internal abstract partial class ObjectRecordDeserializer
                 || (Deserializer.IncompleteObjects.Contains(valueRecord) && value.GetType().IsValueType));
 
     [RequiresUnreferencedCode("Calls System.Windows.Forms.BinaryFormat.Deserializer.ClassRecordParser.Create(ClassRecord, IDeserializer)")]
-    internal static ObjectRecordDeserializer Create(Id id, SerializationRecord record, IDeserializer deserializer) => record switch
+    internal static ObjectRecordDeserializer Create(SerializationRecord record, IDeserializer deserializer) => record switch
     {
         ClassRecord classRecord => ClassRecordDeserializer.Create(classRecord, deserializer),
-        ArrayRecord arrayRecord => new ArrayRecordDeserializer(arrayRecord, deserializer),
-        _ => throw new SerializationException($"Unexpected record type for {id}.")
+        _ => new ArrayRecordDeserializer((ArrayRecord)record, deserializer),
     };
 }
 

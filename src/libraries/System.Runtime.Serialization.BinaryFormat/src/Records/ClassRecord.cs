@@ -29,9 +29,10 @@ abstract class ClassRecord : SerializationRecord
 
     private TypeName? _typeName;
 
-    private protected ClassRecord(ClassInfo classInfo)
+    private protected ClassRecord(ClassInfo classInfo, MemberTypeInfo memberTypeInfo)
     {
         ClassInfo = classInfo;
+        MemberTypeInfo = memberTypeInfo;
         MemberValues = [];
     }
 
@@ -44,9 +45,11 @@ abstract class ClassRecord : SerializationRecord
 
     public override int ObjectId => ClassInfo.ObjectId;
 
-    internal abstract int ExpectedValuesCount { get; }
-
     internal ClassInfo ClassInfo { get; }
+
+    internal MemberTypeInfo MemberTypeInfo { get; }
+
+    internal int ExpectedValuesCount => MemberTypeInfo.Infos.Count;
 
     internal List<object?> MemberValues { get; }
 

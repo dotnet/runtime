@@ -44,7 +44,7 @@ internal readonly struct ArrayInfo
 
         if (length is < 0 or > 2147483591) // Array.MaxLength
         {
-            throw new SerializationException($"Invalid array length: {length}");
+            ThrowHelper.ThrowInvalidValue(length);
         }
 
         return length;

@@ -26,10 +26,6 @@ internal sealed class PendingSerializationInfo
         _info = info;
     }
 
-    [UnconditionalSuppressMessage(
-        "ReflectionAnalysis",
-        "IL2072:UnrecognizedReflectionPattern",
-        Justification = "Not sure how to attribute this.")]
     internal void Populate(IDictionary<int, object> objects, StreamingContext context)
     {
         object @object = objects[ObjectId];
@@ -54,7 +50,7 @@ internal sealed class PendingSerializationInfo
             // as they can never be observed in an unfinished state.
             if (!type.IsValueType && !ReferenceEquals(populated, @object))
             {
-                throw new SerializationException("Surrogate must return the same object that was provided in the 'obj' parameter.");
+                throw new SerializationException(SR.Serialization_Surrogates);
             }
 
             objects[ObjectId] = populated;
@@ -79,7 +75,7 @@ internal sealed class PendingSerializationInfo
             }
         }
 
-        throw new SerializationException($"The constructor to deserialize an object of type '{type.FullName}' was not found.");
+        throw new SerializationException(SR.Format(SR.Serialization_MissingCtor, type.FullName));
     }
 }
 

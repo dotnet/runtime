@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Reflection.Metadata;
 
@@ -44,11 +45,19 @@ internal sealed class BinaryArrayRecord : ArrayRecord
 
     private List<object> Values { get; }
 
+    [RequiresDynamicCode("May call Array.CreateInstance() and Type.MakeArrayType().")]
     private protected override Array Deserialize(Type arrayType, bool allowNulls, int maxLength)
     {
-        Type elementType = MapElementType(arrayType);
+        Type elementType = MapElementType(arrayType, out bool isClassRecord);
         Type actualElementType = arrayType.GetElementType()!;
-        Array array = Array.CreateInstance(elementType, Length);
+        Array array =
+#if NET9_0_OR_GREATER
+            isClassRecord
+                ? Array.CreateInstance(elementType, Length)
+                : Array.CreateInstanceFromArrayType(arrayType, Length);
+#else
+            Array.CreateInstance(elementType, Length);
+#endif
 
         int resultIndex = 0;
         foreach (object value in Values)
@@ -78,7 +87,7 @@ internal sealed class BinaryArrayRecord : ArrayRecord
                 case RecordType.ObjectNullMultiple:
                     if (!allowNulls)
                     {
-                        ThrowHelper.ThrowArrayContainedNull();
+                        ThrowHelper.ThrowArrayContainedNulls();
                     }
 
                     int nullCount = ((NullsRecord)item).NullCount;
@@ -101,14 +110,7 @@ internal sealed class BinaryArrayRecord : ArrayRecord
     internal static ArrayRecord Parse(BinaryReader reader, RecordMap recordMap, PayloadOptions options)
     {
         int objectId = reader.ReadInt32();
-
-        byte typeByte = reader.ReadByte();
-        if (typeByte is < 0 or > 5)
-        {
-            throw new SerializationException($"Unknown binary array type: {typeByte}");
-        }
-
-        ArrayType arrayType = (ArrayType)typeByte;
+        ArrayType arrayType = reader.ReadArrayType();
         int rank = reader.ReadInt32();
 
         bool isRectangular = arrayType is ArrayType.Rectangular or ArrayType.RectangularOffset;
@@ -117,23 +119,19 @@ internal sealed class BinaryArrayRecord : ArrayRecord
             || (rank != 1 && !isRectangular)
             || (rank == 1 && isRectangular))
         {
-            throw new SerializationException($"Invalid array rank ({rank}) for {arrayType}.");
+            ThrowHelper.ThrowInvalidValue(rank);
         }
 
         int[] lengths = new int[rank]; // adversary-controlled, but acceptable since upper limit of 32
+        long totalElementCount = 1;
         for (int i = 0; i < lengths.Length; i++)
         {
             lengths[i] = ArrayInfo.ParseValidArrayLength(reader);
-        }
-
-        long totalElementCount = lengths[0];
-        for (int i = 1; i < lengths.Length; i++)
-        {
             totalElementCount *= lengths[i];
 
             if (totalElementCount > uint.MaxValue)
             {
-                throw new SerializationException("Max array size exceeded"); // max array size exceeded
+                ThrowHelper.ThrowInvalidValue(lengths[i]); // max array size exceeded
             }
         }
 
@@ -147,7 +145,7 @@ internal sealed class BinaryArrayRecord : ArrayRecord
 
                 if (offset < 0)
                 {
-                    throw new SerializationException("Invalid offset");
+                    ThrowHelper.ThrowInvalidValue(offset);
                 }
                 else if (offset > 0)
                 {
@@ -156,7 +154,7 @@ internal sealed class BinaryArrayRecord : ArrayRecord
                     long maxIndex = lengths[i] + offset;
                     if (maxIndex > int.MaxValue)
                     {
-                        throw new SerializationException("Invalid length and offset");
+                        ThrowHelper.ThrowInvalidValue(maxIndex);
                     }
                 }
 
@@ -203,7 +201,8 @@ internal sealed class BinaryArrayRecord : ArrayRecord
     /// - int[][] => int[]
     /// - MyClass[][][] => ClassRecord[][]
     /// </summary>
-    private static Type MapElementType(Type arrayType)
+    [RequiresDynamicCode("May call Type.MakeArrayType().")]
+    private static Type MapElementType(Type arrayType, out bool isClassRecord)
     {
         Type elementType = arrayType;
         int arrayNestingDepth = 0;
@@ -216,10 +215,12 @@ internal sealed class BinaryArrayRecord : ArrayRecord
 
         if (PrimitiveTypes.Contains(elementType) || (Nullable.GetUnderlyingType(elementType) is Type nullable && PrimitiveTypes.Contains(nullable)))
         {
+            isClassRecord = false;
             return arrayNestingDepth == 1 ? elementType : arrayType.GetElementType()!;
         }
 
         // Complex types are never instantiated, but represented as ClassRecord
+        isClassRecord = true;
         Type complexType = typeof(ClassRecord);
         for (int i = 1; i < arrayNestingDepth; i++)
         {

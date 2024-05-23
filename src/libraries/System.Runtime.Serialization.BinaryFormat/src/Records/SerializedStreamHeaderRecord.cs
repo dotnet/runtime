@@ -44,9 +44,13 @@ internal sealed class SerializedStreamHeaderRecord : SerializationRecord
         int majorVersion = reader.ReadInt32();
         int minorVersion = reader.ReadInt32();
 
-        if (majorVersion != 1 || minorVersion != 0)
+        if (majorVersion != 1)
         {
-            throw new SerializationException();
+            ThrowHelper.ThrowInvalidValue(majorVersion);
+        }
+        else if (minorVersion != 0)
+        {
+            ThrowHelper.ThrowInvalidValue(minorVersion);
         }
 
         return new(rootId, headerId, majorVersion, minorVersion);

@@ -10,10 +10,41 @@ namespace System.Runtime.Serialization.BinaryFormat;
 
 internal static class BinaryReaderExtensions
 {
+    internal static ArrayType ReadArrayType(this BinaryReader reader)
+    {
+        byte arrayType = reader.ReadByte();
+        if (arrayType > 5)
+        {
+            ThrowHelper.ThrowInvalidValue(arrayType);
+        }
+
+        return (ArrayType)arrayType;
+    }
+
+    internal static BinaryType ReadBinaryType(this BinaryReader reader)
+    {
+        byte binaryType = reader.ReadByte();
+        if (binaryType > 7)
+        {
+            ThrowHelper.ThrowInvalidValue(binaryType);
+        }
+        return (BinaryType)binaryType;
+    }
+
+    internal static PrimitiveType ReadPrimitiveType(this BinaryReader reader)
+    {
+        byte primitiveType = reader.ReadByte();
+        if (primitiveType is > 18 or 4)
+        {
+            ThrowHelper.ThrowInvalidValue(primitiveType);
+        }
+        return (PrimitiveType)primitiveType;
+    }
+
     /// <summary>
     ///  Reads a primitive of <paramref name="primitiveType"/> from the given <paramref name="reader"/>.
     /// </summary>
-    internal static object ReadPrimitiveType(this BinaryReader reader, PrimitiveType primitiveType)
+    internal static object ReadPrimitiveValue(this BinaryReader reader, PrimitiveType primitiveType)
         => primitiveType switch
         {
             PrimitiveType.Boolean => reader.ReadBoolean(),
@@ -30,9 +61,7 @@ internal static class BinaryReaderExtensions
             PrimitiveType.Double => reader.ReadDouble(),
             PrimitiveType.Decimal => decimal.Parse(reader.ReadString(), CultureInfo.InvariantCulture),
             PrimitiveType.DateTime => CreateDateTimeFromData(reader.ReadInt64()),
-            PrimitiveType.TimeSpan => new TimeSpan(reader.ReadInt64()),
-            // String is handled with a record, never on it's own
-            _ => throw new SerializationException($"Failure trying to read primitive '{primitiveType}'"),
+            _ => new TimeSpan(reader.ReadInt64()),
         };
 
     // TODO: fix https://github.com/adamsitnik/SafePayloadReader/issues/2
@@ -66,7 +95,8 @@ internal static class BinaryReaderExtensions
     internal static TypeName ReadTypeName(this BinaryReader binaryReader, PayloadOptions options)
     {
         string name = binaryReader.ReadString();
-        if (!TypeName.TryParse(name.AsSpan(), out TypeName? typeName, options.TypeNameParseOptions))
+        if (!TypeName.TryParse(name.AsSpan(), out TypeName? typeName, options.TypeNameParseOptions)
+            || typeName.AssemblyName is not null) // Type names must not contain assembly names
         {
             throw
 #if SYSTEM_RUNTIME_SERIALIZATION_BINARYFORMAT
@@ -74,11 +104,7 @@ internal static class BinaryReaderExtensions
 #else
                 new NotSupportedException
 #endif
-                ($"Invalid type name: '{name}'");
-        }
-        else if (typeName.AssemblyName is not null)
-        {
-            throw new SerializationException("Type names must not contain assembly names");
+                (SR.Format(SR.Serialization_InvalidTypeName, name));
         }
 
         return typeName;
@@ -95,7 +121,7 @@ internal static class BinaryReaderExtensions
 #else
                 new NotSupportedException
 #endif
-                ($"Invalid library name: '{name}'");
+                (SR.Format(SR.Serialization_InvalidLibraryName, name));
         }
 
         return libraryName;

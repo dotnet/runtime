@@ -47,7 +47,7 @@ internal sealed class ArrayOfClassesRecord : ArrayRecord<ClassRecord>
             {
                 if (!allowNulls)
                 {
-                    ThrowHelper.ThrowArrayContainedNull();
+                    ThrowHelper.ThrowArrayContainedNulls();
                 }
 
                 int nullCount = ((NullsRecord)actual).NullCount;

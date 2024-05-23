@@ -9,18 +9,13 @@ namespace System.Runtime.Serialization.BinaryFormat;
 internal sealed class SystemClassWithMembersAndTypesRecord : ClassRecord
 {
     private SystemClassWithMembersAndTypesRecord(ClassInfo classInfo, MemberTypeInfo memberTypeInfo)
-        : base(classInfo)
+        : base(classInfo, memberTypeInfo)
     {
-        MemberTypeInfo = memberTypeInfo;
     }
 
     public override RecordType RecordType => RecordType.SystemClassWithMembersAndTypes;
 
     internal override AssemblyNameInfo LibraryName => FormatterServices.CoreLibAssemblyName;
-
-    internal MemberTypeInfo MemberTypeInfo { get; }
-
-    internal override int ExpectedValuesCount => MemberTypeInfo.Infos.Count;
 
     public override bool IsTypeNameMatching(Type type)
         => type.Assembly == typeof(object).Assembly

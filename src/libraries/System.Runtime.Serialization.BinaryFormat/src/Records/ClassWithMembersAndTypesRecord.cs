@@ -19,10 +19,9 @@ namespace System.Runtime.Serialization.BinaryFormat;
 internal sealed class ClassWithMembersAndTypesRecord : ClassRecord
 {
     private ClassWithMembersAndTypesRecord(ClassInfo classInfo, BinaryLibraryRecord library, MemberTypeInfo memberTypeInfo)
-        : base(classInfo)
+        : base(classInfo, memberTypeInfo)
     {
         Library = library;
-        MemberTypeInfo = memberTypeInfo;
     }
 
     public override RecordType RecordType => RecordType.ClassWithMembersAndTypes;
@@ -30,10 +29,6 @@ internal sealed class ClassWithMembersAndTypesRecord : ClassRecord
     internal override AssemblyNameInfo LibraryName => Library.LibraryName;
 
     internal BinaryLibraryRecord Library { get; }
-
-    internal MemberTypeInfo MemberTypeInfo { get; }
-
-    internal override int ExpectedValuesCount => MemberTypeInfo.Infos.Count;
 
     public override bool IsTypeNameMatching(Type type)
         => FormatterServices.GetTypeFullNameIncludingTypeForwards(type) == ClassInfo.Name.FullName

@@ -51,8 +51,8 @@ abstract class SerializationRecord
     internal virtual object? GetValue() => this;
 
     internal virtual void HandleNextRecord(SerializationRecord nextRecord, NextInfo info)
-        => throw new InvalidOperationException("This should never happen");
+        => Debug.Fail("This should never happen");
 
     internal virtual void HandleNextValue(object value, NextInfo info)
-        => throw new InvalidOperationException("This should never happen");
+        => Debug.Fail("This should never happen");
 }

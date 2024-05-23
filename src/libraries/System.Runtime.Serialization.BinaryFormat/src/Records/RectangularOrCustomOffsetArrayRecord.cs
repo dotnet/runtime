@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection.Metadata;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -47,9 +48,17 @@ internal sealed class RectangularOrCustomOffsetArrayRecord : ArrayRecord
     internal override bool IsElementType(Type typeElement)
         => MemberTypeInfo.IsElementType(typeElement, RecordMap);
 
+    [RequiresDynamicCode("May call Array.CreateInstance() and Type.MakeArrayType().")]
     private protected override Array Deserialize(Type arrayType, bool allowNulls, int maxLength)
     {
-        Array result = Array.CreateInstance(ElementType, _lengths, Offsets);
+        Array result =
+#if NET9_0_OR_GREATER
+            ElementType == typeof(ClassRecord)
+                ? Array.CreateInstance(ElementType, _lengths, Offsets)
+                : Array.CreateInstanceFromArrayType(arrayType, _lengths, Offsets);
+#else
+            Array.CreateInstance(ElementType, _lengths, Offsets);
+#endif
 
 #if !NET8_0_OR_GREATER
         int[] indices = new int[Offsets.Length];
@@ -149,11 +158,10 @@ internal sealed class RectangularOrCustomOffsetArrayRecord : ArrayRecord
         Type elementType = memberTypeInfo.Infos[0].BinaryType switch
         {
             BinaryType.Primitive => MapPrimitive((PrimitiveType)memberTypeInfo.Infos[0].AdditionalInfo!),
-            BinaryType.PrimitiveArray => MapPrimitive((PrimitiveType)memberTypeInfo.Infos[0].AdditionalInfo!).MakeArrayType(),
+            BinaryType.PrimitiveArray => MapPrimitiveArray((PrimitiveType)memberTypeInfo.Infos[0].AdditionalInfo!),
             BinaryType.String => typeof(string),
             BinaryType.Object => typeof(object),
-            BinaryType.SystemClass or BinaryType.Class => typeof(ClassRecord),
-            _ => throw ThrowHelper.InvalidBinaryType(memberTypeInfo.Infos[0].BinaryType)
+            _ => typeof(ClassRecord)
         };
 
         return new(elementType, arrayInfo, memberTypeInfo, lengths, offsets, recordMap);
@@ -176,8 +184,27 @@ internal sealed class RectangularOrCustomOffsetArrayRecord : ArrayRecord
             PrimitiveType.DateTime => typeof(DateTime),
             PrimitiveType.UInt16 => typeof(ushort),
             PrimitiveType.UInt32 => typeof(uint),
-            PrimitiveType.UInt64 => typeof(ulong),
-            _ => throw ThrowHelper.InvalidPrimitiveType(primitiveType),
+            _ => typeof(ulong)
+        };
+
+    private static Type MapPrimitiveArray(PrimitiveType primitiveType)
+        => primitiveType switch
+        {
+            PrimitiveType.Boolean => typeof(bool[]),
+            PrimitiveType.Byte => typeof(byte[]),
+            PrimitiveType.Char => typeof(char[]),
+            PrimitiveType.Decimal => typeof(decimal[]),
+            PrimitiveType.Double => typeof(double[]),
+            PrimitiveType.Int16 => typeof(short[]),
+            PrimitiveType.Int32 => typeof(int[]),
+            PrimitiveType.Int64 => typeof(long[]),
+            PrimitiveType.SByte => typeof(sbyte[]),
+            PrimitiveType.Single => typeof(float[]),
+            PrimitiveType.TimeSpan => typeof(TimeSpan[]),
+            PrimitiveType.DateTime => typeof(DateTime[]),
+            PrimitiveType.UInt16 => typeof(ushort[]),
+            PrimitiveType.UInt32 => typeof(uint[]),
+            _ => typeof(ulong[]),
         };
 
     private static object? GetActualValue(object value)

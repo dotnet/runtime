@@ -11,7 +11,7 @@ namespace System.Resources.Extensions
 {
     public partial class DeserializingResourceReader
     {
-        private static readonly bool UseBinaryFormatter = GetUseBinaryFormatterSetting();
+        private static readonly bool UseBinaryFormatter = AppContext.TryGetSwitch("System.Resources.Extensions.UseBinaryFormatter", out bool fileConfig) && fileConfig;
 
         private bool _assumeBinaryFormatter;
 
@@ -246,19 +246,6 @@ namespace System.Resources.Extensions
                 throw new BadImageFormatException(SR.Format(SR.BadImageFormat_ResType_SerBlobMismatch, type.FullName, value.GetType().FullName));
 
             return value;
-        }
-
-        private static bool GetUseBinaryFormatterSetting()
-        {
-            if (AppContext.TryGetSwitch("System.Resources.Extensions.UseBinaryFormatter", out bool fileConfig))
-            {
-                return fileConfig;
-            }
-
-            string? envVar = Environment.GetEnvironmentVariable("DOTNET_SYSTEM_RESOURCES_EXTENSIONS_USE_BINARY_FORMATTER");
-            return envVar is null
-                ? false // disabled by default for security reasons!
-                : envVar.Equals("true", StringComparison.OrdinalIgnoreCase) || envVar.Equals("1");
         }
     }
 }

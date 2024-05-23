@@ -18,7 +18,7 @@ namespace System.Runtime.Serialization.BinaryFormat;
 /// </remarks>
 internal sealed class ClassWithIdRecord : ClassRecord
 {
-    private ClassWithIdRecord(int objectId, ClassRecord metadataClass) : base(metadataClass.ClassInfo)
+    private ClassWithIdRecord(int objectId, ClassRecord metadataClass) : base(metadataClass.ClassInfo, metadataClass.MemberTypeInfo)
     {
         ObjectId = objectId;
         MetadataClass = metadataClass;
@@ -32,8 +32,6 @@ internal sealed class ClassWithIdRecord : ClassRecord
 
     internal ClassRecord MetadataClass { get; }
 
-    internal override int ExpectedValuesCount => MetadataClass.ExpectedValuesCount;
-
     internal static ClassWithIdRecord Parse(
         BinaryReader reader,
         RecordMap recordMap)
@@ -43,20 +41,12 @@ internal sealed class ClassWithIdRecord : ClassRecord
 
         if (recordMap[metadataId] is not ClassRecord referencedRecord)
         {
-            throw new SerializationException();
+            throw new SerializationException(SR.Serialization_InvalidReference);
         }
 
         return new(objectId, referencedRecord);
     }
 
     internal override (AllowedRecordTypes allowed, PrimitiveType primitiveType) GetNextAllowedRecordType()
-        => MetadataClass switch
-        {
-            ClassWithMembersAndTypesRecord classWithMembersAndTypes
-                => classWithMembersAndTypes.MemberTypeInfo.GetNextAllowedRecordType(MemberValues.Count),
-            SystemClassWithMembersAndTypesRecord systemClassWithMembersAndTypes
-                => systemClassWithMembersAndTypes.MemberTypeInfo.GetNextAllowedRecordType(MemberValues.Count),
-            // ClassWithMembersRecord and SystemClassWithMembersRecord allow for AnyData
-            _ => (AllowedRecordTypes.AnyObject, PrimitiveType.None)
-        };
+        => MetadataClass.MemberTypeInfo.GetNextAllowedRecordType(MemberValues.Count);
 }

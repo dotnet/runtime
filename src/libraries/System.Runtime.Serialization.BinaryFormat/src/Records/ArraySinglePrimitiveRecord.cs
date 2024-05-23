@@ -3,6 +3,7 @@
 
 using System.Buffers;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Reflection.Metadata;
@@ -44,10 +45,16 @@ internal sealed class ArraySinglePrimitiveRecord<T> : ArrayRecord<T>
     protected override T[] ToArrayOfT(bool allowNulls) => [.. Values];
 
     internal override (AllowedRecordTypes allowed, PrimitiveType primitiveType) GetAllowedRecordType()
-        => throw new InvalidOperationException("This should never happen");
+    {
+        Debug.Fail("This should never happen");
+        throw new InvalidOperationException();
+    }
 
     private protected override void AddValue(object value)
-        => throw new InvalidOperationException("This should never happen");
+    {
+        Debug.Fail("This should never happen");
+        throw new InvalidOperationException();
+    }
 
     internal static IReadOnlyList<T> ReadPrimitiveTypes(BinaryReader reader, int count)
     {
@@ -111,13 +118,11 @@ internal sealed class ArraySinglePrimitiveRecord<T> : ArrayRecord<T>
             {
                 values.Add((T)(object)BinaryReaderExtensions.CreateDateTimeFromData(reader.ReadInt64()));
             }
-            else if (typeof(T) == typeof(TimeSpan))
-            {
-                values.Add((T)(object)new TimeSpan(reader.ReadInt64()));
-            }
             else
             {
-                throw new SerializationException($"Failure trying to read primitive '{typeof(T)}'");
+                Debug.Assert(typeof(T) == typeof(TimeSpan));
+
+                values.Add((T)(object)new TimeSpan(reader.ReadInt64()));
             }
         }
 

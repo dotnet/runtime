@@ -7,21 +7,20 @@ namespace System.Runtime.Serialization.BinaryFormat;
 
 internal static class ThrowHelper
 {
+    internal static void ThrowInvalidValue(object value)
+        => throw new SerializationException(SR.Format(SR.Serialization_InvalidValue, value));
+
+    internal static void ThrowInvalidReference()
+        => throw new SerializationException(SR.Serialization_InvalidReference);
+
     internal static void ThrowUnexpectedNullRecordCount()
-        => throw new SerializationException("Unexpected Null Record count.");
-
-    internal static Exception InvalidPrimitiveType(PrimitiveType primitiveType)
-        => new SerializationException($"Invalid primitive type: {primitiveType}");
-
-    internal static Exception InvalidBinaryType(BinaryType binaryType)
-        => new SerializationException($"Invalid binary type: {binaryType}");
+        => throw new SerializationException(SR.Serialization_UnexpectedNullRecordCount);
 
     internal static void ThrowMaxArrayLength(int limit, long actual)
-        => throw new SerializationException(
-            $"The serialized array length ({actual}) was larger that the configured limit {limit}");
+        => throw new SerializationException(SR.Format(SR.Serialization_MaxArrayLength, actual, limit));
 
-    internal static void ThrowArrayContainedNull()
-        => throw new SerializationException("The array contained null(s)");
+    internal static void ThrowArrayContainedNulls()
+        => throw new SerializationException(SR.Serialization_ArrayContainedNulls);
 
     internal static void ThrowEndOfStreamException()
         => throw new EndOfStreamException();
@@ -34,19 +33,18 @@ internal static class ThrowHelper
 #pragma warning disable IDE0066 // Convert switch statement to expression
         switch ((int)recordType)
         {
-            case 2: // SystemClassWithMembers
-            case 3: // ClassWithMembers
-                throw new NotSupportedException("FormatterTypeStyle.TypesAlways is a must have.");
+            case 2: // SystemClassWithMembers (generated without FormatterTypeStyle.TypesAlways)
+            case 3: // ClassWithMembers (generated without FormatterTypeStyle.TypesAlways)
             // 18~20 are from the reference source but aren't in the OpenSpecs doc
             case 18: // CrossAppDomainMap
             case 19: // CrossAppDomainString
             case 20: // CrossAppDomainAssembly
-                throw new NotSupportedException("Cross domain is not supported by design");
             case 21: // MethodCall
             case 22: // MethodReturn
-                throw new NotSupportedException("Remote invocation is not supported by design");
+                throw new NotSupportedException(SR.Format(SR.NotSupported_RecordType, recordType));
             default:
-                throw new SerializationException($"Unexpected type seen: {recordType}.");
+                ThrowInvalidValue((int)recordType);
+                break;
         }
 #pragma warning restore IDE0066 // Convert switch statement to expression
     }
