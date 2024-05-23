@@ -312,7 +312,7 @@ dn_vector_custom_resize (
 {
 	DN_ASSERT (vector);
 
-	if (size == vector->_internal._capacity)
+	if (size == vector->size)
 		return true;
 
 	if (size > vector->_internal._capacity)
