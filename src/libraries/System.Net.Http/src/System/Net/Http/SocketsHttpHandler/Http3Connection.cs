@@ -264,7 +264,6 @@ namespace System.Net.Http
                 catch (QuicException e) when (e.QuicError != QuicError.OperationAborted) { }
                 finally
                 {
-                    ReleaseStream();
                     if (queueStartingTimestamp != 0)
                     {
                         TimeSpan duration = Stopwatch.GetElapsedTime(queueStartingTimestamp);
@@ -280,6 +279,7 @@ namespace System.Net.Http
 
                 if (quicStream == null)
                 {
+                    ReleaseStream();
                     throw new HttpRequestException(HttpRequestError.Unknown, SR.net_http_request_aborted, null, RequestRetryType.RetryOnConnectionFailure);
                 }
 
