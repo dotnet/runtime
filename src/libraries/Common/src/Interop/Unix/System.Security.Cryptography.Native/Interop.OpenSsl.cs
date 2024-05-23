@@ -24,7 +24,39 @@ internal static partial class Interop
         private const string TlsCacheSizeCtxName = "System.Net.Security.TlsCacheSize";
         private const string TlsCacheSizeEnvironmentVariable = "DOTNET_SYSTEM_NET_SECURITY_TLSCACHESIZE";
         private const SslProtocols FakeAlpnSslProtocol = (SslProtocols)1;   // used to distinguish server sessions with ALPN
-        private static readonly ConcurrentDictionary<SslProtocols, SafeSslContextHandle> s_clientSslContexts = new ConcurrentDictionary<SslProtocols, SafeSslContextHandle>();
+        private static readonly ConcurrentDictionary<SslContextCacheKey, SafeSslContextHandle> s_clientSslContexts = new ConcurrentDictionary<SslContextCacheKey, SafeSslContextHandle>();
+
+        internal readonly struct SslContextCacheKey : IEquatable<SslContextCacheKey>
+        {
+            public readonly byte[]? CertificateThumbprint;
+            public readonly SslProtocols SslProtocols;
+
+            public SslContextCacheKey(SslProtocols sslProtocols, byte[]? certificateThumbprint)
+            {
+                SslProtocols = sslProtocols;
+                CertificateThumbprint = certificateThumbprint;
+            }
+
+            public override bool Equals(object? obj) => obj is SslContextCacheKey key && Equals(key);
+
+            public bool Equals(SslContextCacheKey other) =>
+                SslProtocols == other.SslProtocols &&
+                (CertificateThumbprint == null && other.CertificateThumbprint == null ||
+                 CertificateThumbprint != null && other.CertificateThumbprint != null && CertificateThumbprint.AsSpan().SequenceEqual(other.CertificateThumbprint));
+
+            public override int GetHashCode()
+            {
+                HashCode hash = default;
+
+                hash.Add(SslProtocols);
+                if (CertificateThumbprint != null)
+                {
+                    hash.AddBytes(CertificateThumbprint);
+                }
+
+                return hash.ToHashCode();
+            }
+        }
 
         #region internal methods
         internal static SafeChannelBindingHandle? QueryChannelBinding(SafeSslHandle context, ChannelBindingKind bindingType)
@@ -188,7 +220,7 @@ internal static partial class Interop
                     Interop.Ssl.SslCtxSetAlpnSelectCb(sslCtx, &AlpnServerSelectCallback, IntPtr.Zero);
                 }
 
-                if (sslAuthenticationOptions.CertificateContext != null)
+                if (sslAuthenticationOptions.CertificateContext != null && sslAuthenticationOptions.IsServer)
                 {
                     SetSslCertificate(sslCtx, sslAuthenticationOptions.CertificateContext.CertificateHandle, sslAuthenticationOptions.CertificateContext.KeyHandle);
 
@@ -269,13 +301,12 @@ internal static partial class Interop
                 {
                     // We don't support client resume on old OpenSSL versions.
                     // We don't want to try on empty TargetName since that is our key.
-                    // And we don't want to mess up with client authentication. It may be possible
-                    // but it seems safe to get full new session.
+                    // If we already have CertificateContext, then we know which cert the user wants to use and we can cache.
+                    // The only client auth scenario where we can't cache is when user provides a cert callback and we don't know
+                    // beforehand which cert will be used. and wan't to avoid resuming session created with different certificate.
                     if (!Interop.Ssl.Capabilities.Tls13Supported ||
                        string.IsNullOrEmpty(sslAuthenticationOptions.TargetHost) ||
-                       sslAuthenticationOptions.CertificateContext != null ||
-                       sslAuthenticationOptions.ClientCertificates?.Count > 0 ||
-                       sslAuthenticationOptions.CertSelectionDelegate != null)
+                       (sslAuthenticationOptions.CertificateContext == null && sslAuthenticationOptions.CertSelectionDelegate != null))
                     {
                         cacheSslContext = false;
                     }
@@ -300,8 +331,8 @@ internal static partial class Interop
                 }
                 else
                 {
-
-                    s_clientSslContexts.TryGetValue(protocols, out sslCtxHandle);
+                    var key = new SslContextCacheKey(protocols, sslAuthenticationOptions.CertificateContext?.TargetCertificate.GetCertHash());
+                    s_clientSslContexts.TryGetValue(key, out sslCtxHandle);
                 }
             }
 
@@ -312,9 +343,18 @@ internal static partial class Interop
 
                 if (cacheSslContext)
                 {
-                    bool added = sslAuthenticationOptions.IsServer ?
-                                    sslAuthenticationOptions.CertificateContext!.SslContexts!.TryAdd(protocols | (SslProtocols)(hasAlpn ? 1 : 0), newCtxHandle) :
-                                    s_clientSslContexts.TryAdd(protocols, newCtxHandle);
+                    bool added;
+
+                    if (sslAuthenticationOptions.IsServer)
+                    {
+                        added = sslAuthenticationOptions.CertificateContext!.SslContexts!.TryAdd(protocols | (SslProtocols)(hasAlpn ? 1 : 0), newCtxHandle);
+                    }
+                    else
+                    {
+                        var key = new SslContextCacheKey(protocols, sslAuthenticationOptions.CertificateContext?.TargetCertificate.GetCertHash());
+                        added = s_clientSslContexts.TryAdd(key, newCtxHandle);
+                    }
+
                     if (added)
                     {
                         newCtxHandle = null;
@@ -373,7 +413,8 @@ internal static partial class Interop
 
                     // relevant to TLS 1.3 only: if user supplied a client cert or cert callback,
                     // advertise that we are willing to send the certificate post-handshake.
-                    if (sslAuthenticationOptions.ClientCertificates?.Count > 0 ||
+                    if (sslAuthenticationOptions.CertificateContext != null ||
+                        sslAuthenticationOptions.ClientCertificates?.Count > 0 ||
                         sslAuthenticationOptions.CertSelectionDelegate != null)
                     {
                         Ssl.SslSetPostHandshakeAuth(sslHandle, 1);
