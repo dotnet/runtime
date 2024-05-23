@@ -5897,7 +5897,6 @@ void Compiler::optRemoveRedundantZeroInits()
     LclVarRefCounts refCounts(allocator);
     BitVecTraits    bitVecTraits(lvaCount, this);
     BitVec          zeroInitLocals         = BitVecOps::MakeEmpty(&bitVecTraits);
-    bool            hasGCSafePoint         = false;
     bool            hasImplicitControlFlow = false;
 
     assert(fgNodeThreading == NodeThreading::AllTrees);
@@ -5916,24 +5915,6 @@ void Compiler::optRemoveRedundantZeroInits()
             Statement* next = stmt->GetNextStmt();
             for (GenTree* const tree : stmt->TreeList())
             {
-                if (((tree->gtFlags & GTF_CALL) != 0))
-                {
-                    // if this is not a No-GC helper
-                    if (!tree->IsCall() || !emitter::emitNoGChelper(tree->AsCall()->GetHelperNum()))
-                    {
-                        // assume that we have a safe point.
-                        hasGCSafePoint = true;
-                    }
-                }
-
-                if (tree->OperIs(GT_STORE_BLK))
-                {
-                    // Such stores might be converted into calls (with gc safe points) in Lower.
-                    // This is quite a conservative fix as it's hard to prove Lower won't do it
-                    // at this point.
-                    hasGCSafePoint = true;
-                }
-
                 hasImplicitControlFlow |= hasEHSuccs && ((tree->gtFlags & GTF_EXCEPT) != 0);
 
                 switch (tree->gtOper)
@@ -6000,14 +5981,6 @@ void Compiler::optRemoveRedundantZeroInits()
                         if (!tree->OperIsLocalStore())
                         {
                             break;
-                        }
-
-                        if (varTypeIsStruct(lclDsc))
-                        {
-                            // Such stores might be converted into calls (with gc safe points) in Lower.
-                            // This is quite a conservative fix as it's hard to prove Lower won't do it
-                            // at this point.
-                            hasGCSafePoint = true;
                         }
 
                         // TODO-Cleanup: there is potential for cleaning this algorithm up by deleting
@@ -6095,7 +6068,7 @@ void Compiler::optRemoveRedundantZeroInits()
                             // insert a call to CORINFO_HELP_INIT_PINVOKE_FRAME but that is not a gc-safe point.
                             assert(emitter::emitNoGChelper(CORINFO_HELP_INIT_PINVOKE_FRAME));
 
-                            if (!lclDsc->HasGCPtr() || (!GetInterruptible() && !hasGCSafePoint))
+                            if (!lclDsc->HasGCPtr() || (!GetInterruptible() && !IsPotentialGCSafePoint(tree)))
                             {
                                 // The local hasn't been used and won't be reported to the gc between
                                 // the prolog and this explicit initialization. Therefore, it doesn't
