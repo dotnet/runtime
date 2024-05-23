@@ -44,13 +44,8 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 */
 
-#ifdef SWIFT_SUPPORT
-    regMaskTP rsAllCalleeSavedMask;
-    regMaskTP rsIntCalleeSavedMask;
-#else  // !SWIFT_SUPPORT
-    static constexpr regMaskTP rsAllCalleeSavedMask = RBM_CALLEE_SAVED;
-    static constexpr regMaskTP rsIntCalleeSavedMask = RBM_INT_CALLEE_SAVED;
-#endif // !SWIFT_SUPPORT
+regMaskTP rsAllCalleeSavedMask = RBM_CALLEE_SAVED;
+regMaskTP rsIntCalleeSavedMask = RBM_INT_CALLEE_SAVED;
 
 regMaskTP RegSet::rsGetModifiedCalleeSavedRegsMask() const
 {
@@ -295,11 +290,6 @@ RegSet::RegSet(Compiler* compiler, GCInfo& gcInfo)
     rsMaskPreSpillRegArg = RBM_NONE;
     rsMaskPreSpillAlign  = RBM_NONE;
 #endif
-
-#ifdef SWIFT_SUPPORT
-    rsAllCalleeSavedMask = RBM_CALLEE_SAVED;
-    rsIntCalleeSavedMask = RBM_INT_CALLEE_SAVED;
-#endif // SWIFT_SUPPORT
 
 #ifdef DEBUG
     rsModifiedRegsMaskInitialized = false;
