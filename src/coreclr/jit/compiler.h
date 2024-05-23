@@ -11297,7 +11297,7 @@ private:
     SingleTypeRegSet rbmAllMask;
     SingleTypeRegSet rbmMskCalleeTrash;
     unsigned  cntCalleeTrashMask;
-    regMaskTP varTypeCalleeTrashRegs[TYP_COUNT];
+    SingleTypeRegSet varTypeCalleeTrashRegs[TYP_COUNT];
 
 public:
     FORCEINLINE SingleTypeRegSet get_RBM_ALLMASK() const
