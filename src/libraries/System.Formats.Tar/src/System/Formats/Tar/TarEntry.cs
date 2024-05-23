@@ -20,6 +20,9 @@ namespace System.Formats.Tar
         // Used to access the data section of this entry in an unseekable file
         private TarReader? _readerOfOrigin;
 
+        // These formats have a limited numeric range due to the octal number representation.
+        protected bool FormatIsOctalOnly => _header._format is TarEntryFormat.V7 or TarEntryFormat.Ustar;
+
         // Constructor called when reading a TarEntry from a TarReader.
         internal TarEntry(TarHeader header, TarReader readerOfOrigin, TarEntryFormat format)
         {
@@ -98,6 +101,10 @@ namespace System.Formats.Tar
             get => _header._mTime;
             set
             {
+                if (FormatIsOctalOnly)
+                {
+                    ArgumentOutOfRangeException.ThrowIfLessThan(value, DateTimeOffset.UnixEpoch);
+                }
                 _header._mTime = value;
             }
         }

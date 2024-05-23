@@ -1053,14 +1053,10 @@ namespace System.Formats.Tar
         {
             Debug.Assert(destination.Length == 8, "8 byte field expected.");
 
-            // Prefer the octal format. For non-PAX, use GNU format to widen the range.
-            bool useOctal = (value >= 0 && value <= Octal8ByteFieldMaxValue) || _format is TarEntryFormat.Pax;
+            // Use GNU format to widen the range.
+            bool useGnuFormat = (value < 0 || value > Octal8ByteFieldMaxValue) && _format == TarEntryFormat.Gnu;
 
-            if (useOctal)
-            {
-                return FormatOctal(value, destination);
-            }
-            else
+            if (useGnuFormat)
             {
                 // GNU format: store negative numbers in big endian format with leading '0xff' byte.
                 //             store positive numbers in big endian format with leading '0x80' byte.
@@ -1069,6 +1065,10 @@ namespace System.Formats.Tar
                 BinaryPrimitives.WriteInt64BigEndian(destination, destinationValue);
                 return Checksum(destination);
             }
+            else
+            {
+                return FormatOctal(value, destination);
+            }
         }
 
         private int FormatNumeric(long value, Span<byte> destination)
@@ -1076,20 +1076,20 @@ namespace System.Formats.Tar
             Debug.Assert(destination.Length == 12, "12 byte field expected.");
             const int Offset = 4; // 4 bytes before the long.
 
-            // Prefer the octal format. For non-PAX, use GNU format to widen the range.
-            bool useOctal = (value >= 0 && value <= Octal12ByteFieldMaxValue) || _format is TarEntryFormat.Pax;
+            // Use GNU format to widen the range.
+            bool useGnuFormat = (value < 0 || value > Octal12ByteFieldMaxValue) && _format == TarEntryFormat.Gnu;
 
-            if (useOctal)
-            {
-                return FormatOctal(value, destination);
-            }
-            else
+            if (useGnuFormat)
             {
                 // GNU format: store negative numbers in big endian format with leading '0xff' byte.
                 //             store positive numbers in big endian format with leading '0x80' byte.
                 BinaryPrimitives.WriteUInt32BigEndian(destination, value < 0 ? 0xffffffff : 1U << 31);
                 BinaryPrimitives.WriteInt64BigEndian(destination.Slice(Offset), value);
                 return Checksum(destination);
+            }
+            else
+            {
+                return FormatOctal(value, destination);
             }
         }
 

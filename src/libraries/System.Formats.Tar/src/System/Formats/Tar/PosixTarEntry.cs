@@ -62,6 +62,10 @@ namespace System.Formats.Tar
                 }
 
                 ArgumentOutOfRangeException.ThrowIfNegative(value);
+                if (FormatIsOctalOnly)
+                {
+                    ArgumentOutOfRangeException.ThrowIfGreaterThan(value, 0x1FFFFF); // 7777777 in octal
+                }
 
                 _header._devMajor = value;
             }
@@ -84,6 +88,10 @@ namespace System.Formats.Tar
                 }
 
                 ArgumentOutOfRangeException.ThrowIfNegative(value);
+                if (FormatIsOctalOnly)
+                {
+                    ArgumentOutOfRangeException.ThrowIfGreaterThan(value, 0x1FFFFF); // 7777777 in octal
+                }
 
                 _header._devMinor = value;
             }

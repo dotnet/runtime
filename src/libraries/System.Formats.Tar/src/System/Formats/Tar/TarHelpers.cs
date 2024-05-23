@@ -221,6 +221,7 @@ namespace System.Formats.Tar
             // This limits the range of values that can be stored in the fields.
             // To increase the supported range, a GNU extension defines that when the leading byte is
             // '0xff'/'0x80' the remaining bytes are a negative/positive big formatted endian value.
+            // Like the 'tar' tool we are permissive when encountering this representation in non GNU formats.
             byte leadingByte = buffer[0];
             if (leadingByte == 0xff)
             {
