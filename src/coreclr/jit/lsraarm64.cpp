@@ -1561,7 +1561,29 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
         }
         else if (HWIntrinsicInfo::IsMaskedOperation(intrin.id))
         {
-            regMaskTP predMask = HWIntrinsicInfo::IsLowMaskedOperation(intrin.id) ? RBM_LOWMASK : RBM_ALLMASK;
+            regMaskTP predMask = RBM_ALLMASK;
+            if (intrin.id == NI_Sve_ConditionalSelect)
+            {
+                // If this is conditional select, make sure to check the embedded
+                // operation to determine the predicate mask.
+                assert(intrinsicTree->GetOperandCount() == 3);
+                assert(!HWIntrinsicInfo::IsLowMaskedOperation(intrin.id));
+
+                if (intrin.op2->OperIs(GT_HWINTRINSIC))
+                {
+                    GenTreeHWIntrinsic* embOp2Node = intrin.op2->AsHWIntrinsic();
+                    const HWIntrinsic   intrinEmb(embOp2Node);
+                    if (HWIntrinsicInfo::IsLowMaskedOperation(intrinEmb.id))
+                    {
+                        predMask = RBM_LOWMASK;
+                    }
+                }
+            }
+            else if (HWIntrinsicInfo::IsLowMaskedOperation(intrin.id))
+            {
+                predMask = RBM_LOWMASK;
+            }
+
             srcCount += BuildOperandUses(intrin.op1, predMask);
         }
         else if (intrinsicTree->OperIsMemoryLoadOrStore())
@@ -1758,6 +1780,20 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 break;
             }
 
+            case NI_Sve_StoreAndZipx2:
+            case NI_Sve_StoreAndZipx3:
+            case NI_Sve_StoreAndZipx4:
+            {
+                assert(intrin.op2 != nullptr);
+                assert(intrin.op3 != nullptr);
+                srcCount += BuildAddrUses(intrin.op2);
+                srcCount += BuildConsecutiveRegistersForUse(intrin.op3);
+                assert(dstCount == 0);
+                buildInternalRegisterUses();
+                *pDstCount = 0;
+                break;
+            }
+
             default:
                 noway_assert(!"Not a supported as multiple consecutive register intrinsic");
         }
@@ -1893,6 +1929,10 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 srcCount += BuildDelayFreeUses(intrinEmbOp2->Op(argNum), intrinEmbOp2->Op(1),
                                                (argNum == lowVectorOperandNum) ? lowVectorCandidates : RBM_NONE);
             }
+        }
+        else if (intrin.id == NI_Sve_StoreAndZip)
+        {
+            srcCount += BuildAddrUses(intrin.op2);
         }
         else
         {

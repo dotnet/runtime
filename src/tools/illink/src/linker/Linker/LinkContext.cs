@@ -178,6 +178,8 @@ namespace Mono.Linker
 
 		public Tracer Tracer { get; private set; }
 
+		internal HashSet<string>? TraceAssembly { get; set; }
+
 		public EmbeddedXmlInfo EmbeddedXmlInfo { get; private set; }
 
 		public CodeOptimizationsSettings Optimizations { get; set; }

@@ -26706,7 +26706,14 @@ bool GenTreeHWIntrinsic::OperIsMemoryStore(GenTree** pAddr) const
             case NI_SSE2_MaskMove:
                 addr = Op(3);
                 break;
-#endif // TARGET_XARCH
+#elif defined(TARGET_ARM64)
+            case NI_Sve_StoreAndZip:
+            case NI_Sve_StoreAndZipx2:
+            case NI_Sve_StoreAndZipx3:
+            case NI_Sve_StoreAndZipx4:
+                addr = Op(2);
+                break;
+#endif // TARGET_ARM64
 
             default:
                 addr = Op(1);
