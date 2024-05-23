@@ -430,7 +430,8 @@ int minipal_getcpufeatures(void)
     return result;
 }
 
-bool minipal_detect_emulation(void)
+// Detect if the current process is running under the Apple Rosetta x64 emulator
+bool minipal_detect_rosetta(void)
 {
 #ifdef HOST_AMD64
     // Check for CPU brand indicating emulation
@@ -453,25 +454,11 @@ bool minipal_detect_emulation(void)
     brand[sizeof(brand) - 1] = '\0';
 
     // Check if CPU brand indicates emulation
-    if (strstr(brand, "VirtualApple") != NULL || strstr(brand, "QEMU") != NULL)
+    if (strstr(brand, "VirtualApple") != NULL)
     {
         return true;
     }
 #endif
-
-    // Check for process name of PID 1 indicating emulation
-    char cmdline[256];
-    FILE *cmdline_file = fopen("/proc/1/cmdline", "r");
-    if (cmdline_file != NULL)
-    {
-        fgets(cmdline, sizeof(cmdline), cmdline_file);
-        fclose(cmdline_file);
-
-        if (strstr(cmdline, "qemu") != NULL || strstr(cmdline, "rosetta") != NULL)
-        {
-            return true;
-        }
-    }
 
     return false;
 }
