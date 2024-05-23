@@ -187,7 +187,7 @@ HMODULE LoadStandaloneGc(LPCWSTR libFileName, LPCWSTR libFilePath)
     }
 
     SString appBase;
-    if (HostInformation::GetProperty("APP_CONTEXT_BASE_DIRECTORY", appBase))
+    if (HostInformation::Instance().GetProperty("APP_CONTEXT_BASE_DIRECTORY", appBase))
     {
         PathString libPath = appBase.GetUnicode();
         libPath.Append(libFileName);
