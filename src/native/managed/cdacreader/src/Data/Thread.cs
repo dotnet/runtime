@@ -14,5 +14,5 @@ internal sealed class Thread
     }
 
     public uint Id { get; init; }
-    internal TargetPointer LinkNext { get; init; }
+    public TargetPointer LinkNext { get; init; }
 }

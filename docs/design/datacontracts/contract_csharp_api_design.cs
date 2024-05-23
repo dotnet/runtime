@@ -78,7 +78,7 @@ namespace DataContracts
         uint Version { get; }
     }
 
-    class Target
+    sealed class Target
     {
         // Users of the data contract may adjust this number to force re-reading of all data
         public int CurrentEpoch = 0;
