@@ -471,6 +471,74 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
 
             Assert.Empty(diagnostics);
         }
+
+        [Fact]
+        public async Task PrimaryConstructorWithDifferentNameLoggerFieldOK()
+        {
+            IReadOnlyList<Diagnostic> diagnostics = await RunGenerator(@"
+                partial class C(ILogger logger)
+                {
+                    private readonly ILogger _logger = logger;
+
+                    [LoggerMessage(EventId = 0, Level = LogLevel.Debug, Message = ""M1"")]
+                    public partial void M1();
+                }
+            ");
+
+            Assert.Empty(diagnostics);
+        }
+
+        [Fact]
+        public async Task PrimaryConstructorWithSameNameLoggerFieldOK()
+        {
+            IReadOnlyList<Diagnostic> diagnostics = await RunGenerator(@"
+                partial class C(ILogger logger)
+                {
+                    private readonly ILogger logger = logger;
+
+                    [LoggerMessage(EventId = 0, Level = LogLevel.Debug, Message = ""M1"")]
+                    public partial void M1();
+                }
+            ");
+
+            Assert.Empty(diagnostics);
+        }
+
+        [Fact]
+        public async Task PrimaryConstructorLoggerShadowedByField()
+        {
+            IReadOnlyList<Diagnostic> diagnostics = await RunGenerator(@"
+                partial class C(ILogger logger)
+                {
+                    private readonly object logger = logger;
+
+                    [LoggerMessage(EventId = 0, Level = LogLevel.Debug, Message = ""M1"")]
+                    public partial void M1();
+                }
+            ");
+            
+            Assert.Single(diagnostics);
+            Assert.Equal(DiagnosticDescriptors.MissingLoggerField.Id, diagnostics[0].Id);
+        }
+
+        [Fact]
+        public async Task PrimaryConstructorLoggerShadowedByBaseClass()
+        {
+            IReadOnlyList<Diagnostic> diagnostics = await RunGenerator(@"
+                class Base(object logger) {
+                    protected readonly object logger = logger;
+                }
+
+                partial class Derived(ILogger logger) : Base(logger)
+                {
+                    [LoggerMessage(EventId = 0, Level = LogLevel.Debug, Message = ""M1"")]
+                    public partial void M1();
+                }
+            ");
+            
+            Assert.Single(diagnostics);
+            Assert.Equal(DiagnosticDescriptors.MissingLoggerField.Id, diagnostics[0].Id);
+        }
 #endif
 
         [Theory]

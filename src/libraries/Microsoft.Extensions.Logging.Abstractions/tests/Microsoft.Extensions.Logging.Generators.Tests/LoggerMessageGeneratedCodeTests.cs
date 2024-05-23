@@ -58,6 +58,17 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
             new ClassWithPrimaryConstructorInDifferentPartialDeclaration(logger).Test();
             Assert.Equal("Test.", logger.LastFormattedString);
         }
+
+        [Fact]
+        public void FindsLoggerInFieldInitializedFromPrimaryConstructorParameter()
+        {
+            var logger = new MockLogger();
+
+            logger.Reset();
+
+            new ClassWithPrimaryConstructor(logger).Test();
+            Assert.Equal("Test.", logger.LastFormattedString);
+        }
 #endif
 
         [Fact]

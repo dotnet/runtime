@@ -630,35 +630,14 @@ namespace Microsoft.Extensions.Logging.Generators
 
                 INamedTypeSymbol? classType = sm.GetDeclaredSymbol(classDec, _cancellationToken);
 
+                INamedTypeSymbol? currentClassType = classType;
                 bool onMostDerivedType = true;
 
-#if ROSLYN4_8_OR_GREATER
-                IEnumerable<IMethodSymbol> primaryConstructors = classType.InstanceConstructors
-                    .Where(ic => ic.DeclaringSyntaxReferences
-                        .Any(ds => ds.GetSyntax() is ClassDeclarationSyntax));
+                HashSet<string> shadowedNames = new(StringComparer.Ordinal);
 
-                foreach (IMethodSymbol primaryConstructor in primaryConstructors)
+                while (currentClassType is { SpecialType: not SpecialType.System_Object })
                 {
-                    foreach (IParameterSymbol parameter in primaryConstructor.Parameters)
-                    {
-                        if (IsBaseOrIdentity(parameter.Type, loggerSymbol))
-                        {
-                            if (loggerField == null)
-                            {
-                                loggerField = parameter.Name;
-                            }
-                            else
-                            {
-                                return (null, true);
-                            }
-                        }
-                    }
-                }
-#endif
-
-                while (classType is { SpecialType: not SpecialType.System_Object })
-                {
-                    foreach (IFieldSymbol fs in classType.GetMembers().OfType<IFieldSymbol>())
+                    foreach (IFieldSymbol fs in currentClassType.GetMembers().OfType<IFieldSymbol>())
                     {
                         if (!onMostDerivedType && fs.DeclaredAccessibility == Accessibility.Private)
                         {
@@ -675,11 +654,51 @@ namespace Microsoft.Extensions.Logging.Generators
                                 return (null, true);
                             }
                         }
+
+                        shadowedNames.Add(fs.Name);
                     }
 
                     onMostDerivedType = false;
-                    classType = classType.BaseType;
+                    currentClassType = currentClassType.BaseType;
                 }
+
+#if ROSLYN4_8_OR_GREATER
+                // We prioritize fields over primary constructor parameters and avoid warnings if both exist.
+                if (loggerField is not null)
+                {
+                    return (loggerField, false);
+                }
+
+                IEnumerable<IMethodSymbol> primaryConstructors = classType.InstanceConstructors
+                    .Where(ic => ic.DeclaringSyntaxReferences
+                        .Any(ds => ds.GetSyntax() is ClassDeclarationSyntax));
+
+                foreach (IMethodSymbol primaryConstructor in primaryConstructors)
+                {
+                    foreach (IParameterSymbol parameter in primaryConstructor.Parameters)
+                    {
+                        if (IsBaseOrIdentity(parameter.Type, loggerSymbol))
+                        {
+                            if (shadowedNames.Contains(parameter.Name))
+                            {
+                                // Accessible fields always shadow primary constructor parameters,
+                                // so we can't use the primary constructor parameter,
+                                // even if the field is not a valid logger.
+                                continue;
+                            }
+
+                            if (loggerField == null)
+                            {
+                                loggerField = parameter.Name;
+                            }
+                            else
+                            {
+                                return (null, true);
+                            }
+                        }
+                    }
+                }
+#endif
 
                 return (loggerField, false);
             }

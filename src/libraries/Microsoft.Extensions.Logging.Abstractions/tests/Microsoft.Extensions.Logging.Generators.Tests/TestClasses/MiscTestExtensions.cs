@@ -71,6 +71,14 @@ public partial class ClassWithPrimaryConstructorInDifferentPartialDeclaration
     [LoggerMessage(0, LogLevel.Debug, "Test.")]
     public partial void Test();
 }
+
+public partial class ClassWithPrimaryConstructorAndField(ILogger logger)
+{
+    private readonly ILogger _logger = logger;
+
+    [LoggerMessage(0, LogLevel.Debug, "Test.")]
+    public partial void Test();
+}
 #endif
 
 // Used to test use outside of a namespace
