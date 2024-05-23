@@ -74,11 +74,11 @@ NodeInternalRegisters::NodeInternalRegisters(Compiler* comp)
 //   tree - IR node to add internal allocated registers to
 //   regs - Registers to add
 //
-void NodeInternalRegisters::Add(GenTree* tree, SingleTypeRegSet regs)
+void NodeInternalRegisters::Add(GenTree* tree, regMaskTP regs)
 {
     assert(regs != RBM_NONE);
 
-    SingleTypeRegSet* result = m_table.LookupPointerOrAdd(tree, RBM_NONE);
+    regMaskTP* result = m_table.LookupPointerOrAdd(tree, RBM_NONE);
     *result |= regs;
 }
 
@@ -95,12 +95,12 @@ void NodeInternalRegisters::Add(GenTree* tree, SingleTypeRegSet regs)
 // Returns:
 //   Register number.
 //
-regNumber NodeInternalRegisters::Extract(GenTree* tree, SingleTypeRegSet mask)
+regNumber NodeInternalRegisters::Extract(GenTree* tree, regMaskTP mask)
 {
-    SingleTypeRegSet* regs = m_table.LookupPointer(tree);
+    regMaskTP* regs = m_table.LookupPointer(tree);
     assert(regs != nullptr);
 
-    SingleTypeRegSet availableSet = *regs & mask;
+    regMaskTP availableSet = *regs & mask;
     assert(availableSet != RBM_NONE);
 
     regNumber result = genFirstRegNumFromMask(availableSet);
@@ -122,9 +122,9 @@ regNumber NodeInternalRegisters::Extract(GenTree* tree, SingleTypeRegSet mask)
 // Returns:
 //   Register number.
 //
-regNumber NodeInternalRegisters::GetSingle(GenTree* tree, SingleTypeRegSet mask)
+regNumber NodeInternalRegisters::GetSingle(GenTree* tree, regMaskTP mask)
 {
-    SingleTypeRegSet* regs = m_table.LookupPointer(tree);
+    regMaskTP* regs = m_table.LookupPointer(tree);
     assert(regs != nullptr);
 
     regMaskTP availableSet = *regs & mask;
@@ -145,9 +145,9 @@ regNumber NodeInternalRegisters::GetSingle(GenTree* tree, SingleTypeRegSet mask)
 // Returns:
 //   Mask of registers.
 //
-SingleTypeRegSet NodeInternalRegisters::GetAll(GenTree* tree)
+regMaskTP NodeInternalRegisters::GetAll(GenTree* tree)
 {
-    SingleTypeRegSet regs;
+    regMaskTP regs;
     return m_table.Lookup(tree, &regs) ? regs : RBM_NONE;
 }
 
@@ -162,9 +162,9 @@ SingleTypeRegSet NodeInternalRegisters::GetAll(GenTree* tree)
 // Returns:
 //   Count of nodes
 //
-unsigned NodeInternalRegisters::Count(GenTree* tree, SingleTypeRegSet mask)
+unsigned NodeInternalRegisters::Count(GenTree* tree, regMaskTP mask)
 {
-    SingleTypeRegSet regs;
+    regMaskTP regs;
     return m_table.Lookup(tree, &regs) ? PopCount(regs & mask) : 0;
 }
 

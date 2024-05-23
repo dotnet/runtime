@@ -230,18 +230,14 @@ typedef uint64_t regMaskSmall;
 #endif
 
 typedef regMaskSmall SingleTypeRegSet;
-//
-// #define REG_MASK_INT_FMT "%04llX"
-// #define REG_MASK_ALL_FMT "%016llX"
-// #endif
 
 struct regMaskTP
 {
 private:
     regMaskSmall low;
 public:
-    constexpr regMaskTP(regMaskSmall lowRegMask)
-        : low(lowRegMask)
+    constexpr regMaskTP(regMaskSmall regMask)
+        : low(regMask)
     {
     }
 
