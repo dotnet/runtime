@@ -233,6 +233,10 @@ public sealed partial class QuicConnection : IAsyncDisposable
 
         try
         {
+            if (NetEventSource.Log.IsEnabled())
+            {
+                NetEventSource.Info(this, $"{this} Signaling StreamsAvailable with {bidirectionalStreamsCountIncrement} bidirectional increment (absolute value {_availableBidirectionalStreamsCount}) and {unidirectionalStreamsCountIncrement} unidirectional increment (absolute value {_availableUnidirectionalStreamsCount}).");
+            }
             _streamsAvailableCallback(this, bidirectionalStreamsCountIncrement, unidirectionalStreamsCountIncrement);
         }
         catch (Exception ex)
@@ -457,10 +461,18 @@ public sealed partial class QuicConnection : IAsyncDisposable
         if (streamType == QuicStreamType.Unidirectional)
         {
             --_availableUnidirectionalStreamsCount;
+            if (NetEventSource.Log.IsEnabled())
+            {
+                NetEventSource.Info(this, $"{this} decremented stream count for {streamType} to {_availableUnidirectionalStreamsCount}.");
+            }
         }
         else
         {
             --_availableBidirectionalStreamsCount;
+            if (NetEventSource.Log.IsEnabled())
+            {
+                NetEventSource.Info(this, $"{this} decremented stream count for {streamType} to {_availableBidirectionalStreamsCount}.");
+            }
         }
     }
 

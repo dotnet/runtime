@@ -178,6 +178,8 @@ namespace System.Net.Http
             {
                 Debug.Assert(_availableRequestStreamsCount >= 0);
 
+                if (NetEventSource.Log.IsEnabled()) Trace($"TryReserveStream: _availableRequestStreamsCount = {_availableRequestStreamsCount}");
+
                 if (_availableRequestStreamsCount == 0)
                 {
                     return false;
@@ -198,17 +200,20 @@ namespace System.Net.Http
             {
                 Debug.Assert(_availableRequestStreamsCount >= 0);
 
+                if (NetEventSource.Log.IsEnabled()) Trace($"ReleaseStream: _availableRequestStreamsCount = {_availableRequestStreamsCount}");
                 ++_availableRequestStreamsCount;
             }
         }
 
-        public void StreamsAvailableCallback(QuicConnection sender, int bidirectionalStreamsCountIncrement, int _)
+        public void StreamsAvailableCallback(QuicConnection connection, int bidirectionalStreamsCountIncrement, int _)
         {
-            Debug.Assert(_connection is null || sender == _connection);
+            Debug.Assert(_connection is null || connection == _connection);
 
             lock (SyncObj)
             {
                 Debug.Assert(_availableRequestStreamsCount >= 0);
+
+                if (NetEventSource.Log.IsEnabled()) Trace($"StreamsAvailableCallback: _availableRequestStreamsCount = {_availableRequestStreamsCount} + bidirectionalStreamsCountIncrement = {bidirectionalStreamsCountIncrement}");
 
                 _availableRequestStreamsCount += bidirectionalStreamsCountIncrement;
                 _availableStreamsWaiter?.SetResult(!ShuttingDown);
@@ -434,7 +439,7 @@ namespace System.Net.Http
         }
 
         public override void Trace(string message, [CallerMemberName] string? memberName = null) =>
-            Trace(0, message, memberName);
+            Trace(0, _connection is not null ? $"{_connection} {message}" : message, memberName);
 
         internal void Trace(long streamId, string message, [CallerMemberName] string? memberName = null) =>
             NetEventSource.Log.HandlerMessage(
