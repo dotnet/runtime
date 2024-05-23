@@ -74,14 +74,6 @@ private:
     bool rsModifiedRegsMaskInitialized; // Has rsModifiedRegsMask been initialized? Guards against illegal use.
 #endif                                  // DEBUG
 
-#ifdef SWIFT_SUPPORT
-    regMaskTP rsAllCalleeSavedMask;
-    regMaskTP rsIntCalleeSavedMask;
-#else  // !SWIFT_SUPPORT
-    static constexpr regMaskTP rsAllCalleeSavedMask = RBM_CALLEE_SAVED;
-    static constexpr regMaskTP rsIntCalleeSavedMask = RBM_INT_CALLEE_SAVED;
-#endif // !SWIFT_SUPPORT
-
 public:
     regMaskTP rsGetModifiedRegsMask() const
     {
@@ -89,24 +81,11 @@ public:
         return rsModifiedRegsMask;
     }
 
-    regMaskTP rsGetModifiedCalleeSavedRegsMask() const
-    {
-        assert(rsModifiedRegsMaskInitialized);
-        return (rsModifiedRegsMask & rsAllCalleeSavedMask);
-    }
-
-    regMaskTP rsGetModifiedIntCalleeSavedRegsMask() const
-    {
-        assert(rsModifiedRegsMaskInitialized);
-        return (rsModifiedRegsMask & rsIntCalleeSavedMask);
-    }
+    regMaskTP rsGetModifiedCalleeSavedRegsMask() const;
+    regMaskTP rsGetModifiedIntCalleeSavedRegsMask() const;
 
 #ifdef TARGET_AMD64
-    regMaskTP rsGetModifiedOsrIntCalleeSavedRegsMask() const
-    {
-        assert(rsModifiedRegsMaskInitialized);
-        return (rsModifiedRegsMask & (rsIntCalleeSavedMask | RBM_EBP));
-    }
+    regMaskTP rsGetModifiedOsrIntCalleeSavedRegsMask() const;
 #endif // TARGET_AMD64
 
     regMaskTP rsGetModifiedFltCalleeSavedRegsMask() const

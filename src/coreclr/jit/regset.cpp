@@ -44,6 +44,34 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 */
 
+#ifdef SWIFT_SUPPORT
+    regMaskTP rsAllCalleeSavedMask;
+    regMaskTP rsIntCalleeSavedMask;
+#else  // !SWIFT_SUPPORT
+    static constexpr regMaskTP rsAllCalleeSavedMask = RBM_CALLEE_SAVED;
+    static constexpr regMaskTP rsIntCalleeSavedMask = RBM_INT_CALLEE_SAVED;
+#endif // !SWIFT_SUPPORT
+
+regMaskTP RegSet::rsGetModifiedCalleeSavedRegsMask() const
+{
+    assert(rsModifiedRegsMaskInitialized);
+    return (rsModifiedRegsMask & rsAllCalleeSavedMask);
+}
+
+#ifdef TARGET_AMD64
+regMaskTP RegSet::rsGetModifiedOsrIntCalleeSavedRegsMask() const
+{
+    assert(rsModifiedRegsMaskInitialized);
+    return (rsModifiedRegsMask & (rsIntCalleeSavedMask | RBM_EBP));
+}
+#endif // TARGET_AMD64
+
+regMaskTP RegSet::rsGetModifiedIntCalleeSavedRegsMask() const
+{
+    assert(rsModifiedRegsMaskInitialized);
+    return (rsModifiedRegsMask & rsIntCalleeSavedMask);
+}
+
 //------------------------------------------------------------------------
 // verifyRegUsed: verify that the register is marked as used.
 //
