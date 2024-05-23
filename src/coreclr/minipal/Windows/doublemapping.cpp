@@ -63,7 +63,7 @@ bool VMToOSInterface::CreateDoubleMemoryMapper(void **pHandle, size_t *pMaxExecu
 {
     if (minipal_detect_rosetta())
     {
-        // Rosetta doesn't support double mapping correctly
+        // Rosetta doesn't support double mapping correctly. WINE on macOS ARM64 can be running under Rosetta.
         return false;
     }
 

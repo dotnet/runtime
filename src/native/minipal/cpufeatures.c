@@ -433,7 +433,7 @@ int minipal_getcpufeatures(void)
 // Detect if the current process is running under the Apple Rosetta x64 emulator
 bool minipal_detect_rosetta(void)
 {
-#ifdef HOST_AMD64
+#if defined(HOST_AMD64) || defined(HOST_X86)
     // Check for CPU brand indicating emulation
     int regs[4];
     char brand[49];
@@ -458,7 +458,7 @@ bool minipal_detect_rosetta(void)
     {
         return true;
     }
-#endif
+#endif // HOST_AMD64 || HOST_X86
 
     return false;
 }
