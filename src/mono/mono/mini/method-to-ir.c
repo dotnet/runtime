@@ -7585,7 +7585,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				}
 
 				// Create a new dummy signature with the lowered arguments				
-				fsig = mono_metadata_signature_dup_new_params (cfg->mempool, fsig, new_param_count, (MonoType**)new_params->data);
+				fsig = mono_metadata_signature_dup_new_params (cfg->mempool, NULL, fsig, new_param_count, (MonoType**)new_params->data);
 
 				// Deallocate temp array
 				g_array_free (new_params, TRUE);
