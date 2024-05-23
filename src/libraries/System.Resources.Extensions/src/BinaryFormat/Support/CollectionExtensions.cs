@@ -17,7 +17,7 @@ internal static class CollectionExtensions
     /// </remarks>
     internal static List<T> CreateTrimmedList<T>(this IReadOnlyList<T> readOnlyList, int count)
     {
-        Debug.Assert(count >= readOnlyList.Count);
+        Debug.Assert(count <= readOnlyList.Count);
 
         // List<T> will use ICollection<T>.CopyTo if it's available, which is faster than iterating over the list.
         // If we just have an array this can be done easily with ArraySegment<T>.
