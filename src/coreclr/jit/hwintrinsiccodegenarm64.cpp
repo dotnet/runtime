@@ -23,7 +23,6 @@
 //    codeGen   -- an instance of CodeGen class.
 //    immOp     -- an immediate operand of the intrinsic.
 //    intrin    -- a hardware intrinsic tree node.
-//    immNumber -- which immediate operand to use (most intrinsics only have one).
 //
 // Note: This class is designed to be used in the following way
 //       HWIntrinsicImmOpHelper helper(this, immOp, intrin);
@@ -38,8 +37,7 @@
 //
 CodeGen::HWIntrinsicImmOpHelper::HWIntrinsicImmOpHelper(CodeGen*            codeGen,
                                                         GenTree*            immOp,
-                                                        GenTreeHWIntrinsic* intrin,
-                                                        int                 immNumber /* = 1 */)
+                                                        GenTreeHWIntrinsic* intrin)
     : codeGen(codeGen)
     , endLabel(nullptr)
     , nonZeroLabel(nullptr)
@@ -79,12 +77,12 @@ CodeGen::HWIntrinsicImmOpHelper::HWIntrinsicImmOpHelper(CodeGen*            code
 
             const unsigned int indexedElementSimdSize = genTypeSize(indexedElementOpType);
             HWIntrinsicInfo::lookupImmBounds(intrin->GetHWIntrinsicId(), indexedElementSimdSize,
-                                             intrin->GetSimdBaseType(), immNumber, &immLowerBound, &immUpperBound);
+                                             intrin->GetSimdBaseType(), 1, &immLowerBound, &immUpperBound);
         }
         else
         {
             HWIntrinsicInfo::lookupImmBounds(intrin->GetHWIntrinsicId(), intrin->GetSimdSize(),
-                                             intrin->GetSimdBaseType(), immNumber, &immLowerBound, &immUpperBound);
+                                             intrin->GetSimdBaseType(), 1, &immLowerBound, &immUpperBound);
         }
 
         nonConstImmReg = immOp->GetRegNum();
@@ -107,6 +105,40 @@ CodeGen::HWIntrinsicImmOpHelper::HWIntrinsicImmOpHelper(CodeGen*            code
 
         endLabel = codeGen->genCreateTempLabel();
     }
+}
+
+CodeGen::HWIntrinsicImmOpHelper::HWIntrinsicImmOpHelper(CodeGen*            codeGen,
+                                                        regNumber           nonConstImmReg,
+                                                        int               immLowerBound,
+                                                        int               immUpperBound,
+                                                        GenTreeHWIntrinsic* intrin)
+    : codeGen(codeGen)
+    , endLabel(nullptr)
+    , nonZeroLabel(nullptr)
+    , immValue(immLowerBound)
+    , immLowerBound(immLowerBound)
+    , immUpperBound(immUpperBound)
+    , nonConstImmReg(nonConstImmReg)
+    , branchTargetReg(REG_NA)
+{
+    assert(codeGen != nullptr);
+
+    if (TestImmOpZeroOrOne())
+    {
+        nonZeroLabel = codeGen->genCreateTempLabel();
+    }
+    else
+    {
+        // At the moment, this helper supports only intrinsics that correspond to one machine instruction.
+        // If we ever encounter an intrinsic that is either lowered into multiple instructions or
+        // the number of instructions that correspond to each case is unknown apriori - we can extend support to
+        // these by
+        // using the same approach as in hwintrinsicxarch.cpp - adding an additional indirection level in form of a
+        // branch table.
+        branchTargetReg = codeGen->internalRegisters.GetSingle(intrin);
+    }
+
+    endLabel = codeGen->genCreateTempLabel();
 }
 
 //------------------------------------------------------------------------
@@ -1740,16 +1772,42 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                     GetEmitter()->emitIns_Mov(INS_mov, emitTypeSize(node), targetReg, op1Reg, /* canSkip */ true);
                 }
 
-                // Cannot use create a lookup table for 2 immediates. Therefore the immediates must be constants,
-                // and can be used directly (instead of via HWIntrinsicImmOpHelper).
+                if (intrin.op2->IsCnsIntOrI() && intrin.op3->IsCnsIntOrI())
+                {
+                    // Both immediates are constant, emit the intruction.
 
-                assert(hasImmediateOperand);
-                assert(intrin.op2->IsCnsIntOrI());
-                assert(intrin.op3->IsCnsIntOrI());
-                int           scale   = (int)intrin.op2->AsIntCon()->gtIconVal;
-                insSvePattern pattern = (insSvePattern)intrin.op3->AsIntCon()->gtIconVal;
+                    assert(intrin.op2->isContainedIntOrIImmed() && intrin.op3->isContainedIntOrIImmed());
+                    int           scale   = (int)intrin.op2->AsIntCon()->gtIconVal;
+                    insSvePattern pattern = (insSvePattern)intrin.op3->AsIntCon()->gtIconVal;
+                    GetEmitter()->emitIns_R_PATTERN_I(ins, emitSize, targetReg, pattern, scale, opt);
+                }
+                else
+                {
+                    // Use the helper to generate a table.
 
-                GetEmitter()->emitIns_R_PATTERN_I(ins, emitSize, targetReg, pattern, scale, opt);
+                    assert(!intrin.op2->isContainedIntOrIImmed() && !intrin.op3->isContainedIntOrIImmed());
+                    emitAttr scalarSize = emitActualTypeSize(node->gtType);
+
+                    // Combine the second immediate (pattern, op3) into the first (scale, op2).
+                    GetEmitter()->emitIns_R_R_I(INS_sub, scalarSize, op2Reg, op2Reg, 1);
+                    GetEmitter()->emitIns_R_R_I(INS_lsl, scalarSize, op3Reg, op3Reg, 4);
+                    GetEmitter()->emitIns_R_R_R(INS_orr, scalarSize, op2Reg, op2Reg, op3Reg);
+
+                    // Generate a table using the combined immediate.
+                    HWIntrinsicImmOpHelper helper(this, op2Reg, 0, 511, node);
+                    for (helper.EmitBegin(); !helper.Done(); helper.EmitCaseEnd())
+                    {
+                        const int           value   = helper.ImmValue();
+                        const int           scale   = (value & 0xF) + 1;
+                        const insSvePattern pattern = (insSvePattern)(value >> 4);
+                        GetEmitter()->emitIns_R_PATTERN_I(ins, emitSize, targetReg, pattern, scale, opt);
+                    }
+
+                    // Restore the immediates.
+                    GetEmitter()->emitIns_R_R_I(INS_and, scalarSize, op2Reg, op2Reg, 0xF);
+                    GetEmitter()->emitIns_R_R_I(INS_lsr, scalarSize, op3Reg, op3Reg, 4);
+                    GetEmitter()->emitIns_R_R_I(INS_add, scalarSize, op2Reg, op2Reg, 1);
+                }
                 break;
             }
 

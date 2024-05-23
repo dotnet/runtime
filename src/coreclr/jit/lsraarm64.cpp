@@ -1485,8 +1485,9 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                     case NI_Sve_SaturatingIncrementBy16BitElementCountScalar:
                     case NI_Sve_SaturatingIncrementBy32BitElementCountScalar:
                     case NI_Sve_SaturatingIncrementBy64BitElementCountScalar:
-                        assert(intrin.op2->isContainedIntOrIImmed());
-                        assert(intrin.op4->isContainedIntOrIImmed());
+                        // Can only avoid generating a table if both immediates are constant.
+                        assert(intrin.op2->isContainedIntOrIImmed() == intrin.op3->isContainedIntOrIImmed());
+                        needBranchTargetReg = !intrin.op2->isContainedIntOrIImmed();
                         break;
 
                     default:

@@ -3397,10 +3397,14 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
             case NI_Sve_SaturatingIncrementBy32BitElementCountScalar:
             case NI_Sve_SaturatingIncrementBy64BitElementCountScalar:
                 assert(hasImmediateOperand);
-                assert(intrin.op2->IsCnsIntOrI());
-                assert(intrin.op3->IsCnsIntOrI());
-                MakeSrcContained(node, intrin.op2);
-                MakeSrcContained(node, intrin.op3);
+                assert(varTypeIsIntegral(intrin.op2));
+                assert(varTypeIsIntegral(intrin.op3));
+                // Can only avoid generating a table if both immediates are constant.
+                if (intrin.op2->IsCnsIntOrI() && intrin.op3->IsCnsIntOrI())
+                {
+                    MakeSrcContained(node, intrin.op2);
+                    MakeSrcContained(node, intrin.op3);
+                }
                 break;
 
             default:
