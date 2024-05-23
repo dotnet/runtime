@@ -1412,6 +1412,7 @@ extends:
                   unpackFolder: $(Build.SourcesDirectory)/artifacts/bin
                   displayName: 'unified artifacts'
             enablePublishTestResults: true
+            testResultsFormat: 'vstest'
             testRunTitle: Installer-$(osGroup)$(osSubgroup)_$(archType)
             postBuildSteps:
               - template: /eng/pipelines/installer/steps/upload-job-artifacts.yml
@@ -1444,6 +1445,7 @@ extends:
                   unpackFolder: $(Build.SourcesDirectory)/artifacts/bin
                   displayName: 'unified artifacts'
             enablePublishTestResults: true
+            testResultsFormat: 'vstest'
             testRunTitle: Installer-$(osGroup)$(osSubgroup)_$(archType)
             postBuildSteps:
               - template: /eng/pipelines/installer/steps/upload-job-artifacts.yml

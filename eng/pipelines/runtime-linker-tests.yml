@@ -79,6 +79,7 @@ extends:
           jobParameters:
             testGroup: innerloop
             enablePublishTestResults: true
+            testResultsFormat: 'vstest'
             timeoutInMinutes: 120
             nameSuffix: ILLink_Runtime_Testing
             condition:
