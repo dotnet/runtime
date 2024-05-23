@@ -1063,6 +1063,7 @@ regMaskTP LinearScan::getKillSetForNode(GenTree* tree)
         // profiler callback would trash these registers. See vm\amd64\asmhelpers.asm for
         // more details.
         case GT_RETURN:
+        case GT_SWIFT_ERROR_RET:
             killMask = getKillSetForReturn();
             break;
 
@@ -3658,7 +3659,7 @@ void LinearScan::setDelayFree(RefPosition* use)
 //                   rmw node.
 //
 // Arguments:
-//    useRefPosition -    The use refposition that need to be delay-freed.
+//    useRefPosition - The use refposition that need to be delay-freed.
 //    rmwNode        - The node that has RMW semantics (if applicable)
 //
 void LinearScan::AddDelayFreeUses(RefPosition* useRefPosition, GenTree* rmwNode)
