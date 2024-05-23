@@ -3508,7 +3508,7 @@ namespace Mono.Linker.Steps
 
 		protected internal virtual void MarkEvent (EventDefinition evt, in DependencyInfo reason, MessageOrigin origin)
 		{
-			origin = reason.Source is IMemberDefinition ? new MessageOrigin((IMemberDefinition)reason.Source) : origin;
+			origin = reason.Source is IMemberDefinition member ? new MessageOrigin (member) : origin;
 			DependencyKind dependencyKind = DependencyKind.EventMethod;
 
 			MarkMethodIfNotNull (evt.AddMethod, new DependencyInfo (dependencyKind, evt), origin);
