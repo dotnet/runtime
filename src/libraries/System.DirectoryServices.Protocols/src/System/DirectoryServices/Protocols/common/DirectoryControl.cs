@@ -5,6 +5,7 @@ using System.Collections;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Formats.Asn1;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using System.Security.Principal;
@@ -105,6 +106,22 @@ namespace System.DirectoryServices.Protocols
 
         internal byte[] _directoryControlValue;
 
+        [ThreadStatic]
+        private static AsnWriter t_smallWriter;
+        [ThreadStatic]
+        private static AsnWriter t_mediumWriter;
+        [ThreadStatic]
+        private static AsnWriter t_largeWriter;
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static AsnWriter GetWriter(int expectedSize)
+            => expectedSize switch
+            {
+                > 0 and <= 32 => t_smallWriter ??= new AsnWriter(AsnEncodingRules.BER, 32),
+                > 32 and <= 128 => t_mediumWriter ??= new AsnWriter(AsnEncodingRules.BER, 128),
+                _ => t_largeWriter ??= new AsnWriter(AsnEncodingRules.BER, 256)
+            };
+
         public DirectoryControl(string type, byte[] value, bool isCritical, bool serverSide)
         {
             ArgumentNullException.ThrowIfNull(type);
@@ -139,128 +156,148 @@ namespace System.DirectoryServices.Protocols
         {
             Span<byte> attributeNameScratchSpace = stackalloc byte[AttributeNameStackAllocationThreshold];
 
-            for (int i = 0; i < controls.Length; i++)
+            try
             {
-                Debug.Assert(controls[i] != null);
-                byte[] value = controls[i]._directoryControlValue ?? Array.Empty<byte>();
-                Span<byte> asnSpan = value;
-                bool asnReadSuccessful;
-
-                if (controls[i].Type == "1.2.840.113556.1.4.319")
+                for (int i = 0; i < controls.Length; i++)
                 {
-                    // The control is a PageControl, as described in RFC 2696.
-                    byte[] cookie = Array.Empty<byte>();
+                    Debug.Assert(controls[i] != null);
+                    byte[] value = controls[i]._directoryControlValue ?? Array.Empty<byte>();
+                    Span<byte> asnSpan = value;
+                    bool asnReadSuccessful;
 
-                    AsnDecoder.ReadSequence(asnSpan, AsnEncodingRules.BER, out int sequenceContentOffset, out int sequenceContentLength, out _);
-                    Debug.Assert(sequenceContentLength > 0);
-
-                    asnReadSuccessful = AsnDecoder.TryReadInt32(asnSpan.Slice(sequenceContentOffset), AsnEncodingRules.BER, out int size, out int bytesConsumed);
-                    Debug.Assert(asnReadSuccessful);
-                    asnSpan = asnSpan.Slice(sequenceContentOffset + bytesConsumed);
-
-                    asnReadSuccessful = AsnDecoder.TryReadEncodedValue(asnSpan, AsnEncodingRules.BER, out _, out int _, out int cookieLength, out _);
-                    if (asnReadSuccessful)
+                    if (controls[i].Type == "1.2.840.113556.1.4.319")
                     {
-                        cookie = new byte[cookieLength];
+                        // The control is a PageControl, as described in RFC 2696.
+                        byte[] cookie = Array.Empty<byte>();
 
-                        // user expects cookie with length 0 as paged search is done.
-                        asnReadSuccessful = AsnDecoder.TryReadOctetString(asnSpan, cookie, AsnEncodingRules.BER, out _, out _);
-                        Debug.Assert(asnReadSuccessful);
+                        AsnDecoder.ReadSequence(asnSpan, AsnEncodingRules.BER, out int sequenceContentOffset, out int sequenceContentLength, out _);
+                        ThrowUnless(sequenceContentLength > 0);
+
+                        asnSpan = asnSpan.Slice(sequenceContentOffset, sequenceContentLength);
+                        asnReadSuccessful = AsnDecoder.TryReadInt32(asnSpan, AsnEncodingRules.BER, out int size, out int bytesConsumed);
+                        ThrowUnless(asnReadSuccessful);
+                        asnSpan = asnSpan.Slice(bytesConsumed);
+
+                        asnReadSuccessful = AsnDecoder.TryReadEncodedValue(asnSpan, AsnEncodingRules.BER, out _, out int _, out int cookieLength, out _);
+                        if (asnReadSuccessful)
+                        {
+                            cookie = new byte[cookieLength];
+
+                            // user expects cookie with length 0 as paged search is done.
+                            asnReadSuccessful = AsnDecoder.TryReadOctetString(asnSpan, cookie, AsnEncodingRules.BER, out bytesConsumed, out _);
+                            ThrowUnless(asnReadSuccessful && asnSpan.Length == bytesConsumed);
+                        }
+
+                        PageResultResponseControl pageControl = new PageResultResponseControl(size, cookie, controls[i].IsCritical, value);
+                        controls[i] = pageControl;
                     }
-
-                    PageResultResponseControl pageControl = new PageResultResponseControl(size, cookie, controls[i].IsCritical, value);
-                    controls[i] = pageControl;
-                }
-                else if (controls[i].Type == "1.2.840.113556.1.4.1504")
-                {
-                    // The control is an AsqControl, as described in MS-ADTS section 3.1.1.3.4.1.18
-                    AsnDecoder.ReadSequence(asnSpan, AsnEncodingRules.BER, out int sequenceContentOffset, out int sequenceContentLength, out _);
-                    Debug.Assert(sequenceContentLength > 0);
-
-                    ResultCode result = AsnDecoder.ReadEnumeratedValue<ResultCode>(asnSpan.Slice(sequenceContentOffset), AsnEncodingRules.BER, out _);
-
-                    AsqResponseControl asq = new AsqResponseControl(result, controls[i].IsCritical, value);
-                    controls[i] = asq;
-                }
-                else if (controls[i].Type == "1.2.840.113556.1.4.841")
-                {
-                    // The control is a DirSyncControl, as described in MS-ADTS section 3.1.1.3.4.1.3
-                    byte[] dirsyncCookie;
-
-                    AsnDecoder.ReadSequence(asnSpan, AsnEncodingRules.BER, out int sequenceContentOffset, out int sequenceContentLength, out _);
-                    Debug.Assert(sequenceContentLength > 0);
-                    asnSpan = asnSpan.Slice(sequenceContentOffset);
-
-                    asnReadSuccessful = AsnDecoder.TryReadInt32(asnSpan, AsnEncodingRules.BER, out int moreData, out int bytesConsumed);
-                    Debug.Assert(asnReadSuccessful);
-                    asnSpan = asnSpan.Slice(bytesConsumed);
-
-                    asnReadSuccessful = AsnDecoder.TryReadInt32(asnSpan, AsnEncodingRules.BER, out int count, out bytesConsumed);
-                    Debug.Assert(asnReadSuccessful);
-                    asnSpan = asnSpan.Slice(bytesConsumed);
-
-                    dirsyncCookie = AsnDecoder.ReadOctetString(asnSpan, AsnEncodingRules.BER, out _);
-
-                    DirSyncResponseControl dirsync = new DirSyncResponseControl(dirsyncCookie, moreData != 0, count, controls[i].IsCritical, value);
-                    controls[i] = dirsync;
-                }
-                else if (controls[i].Type == "1.2.840.113556.1.4.474")
-                {
-                    // The control is a SortControl, as described in RFC 2891.
-                    ResultCode result;
-                    string attribute = null;
-
-                    AsnDecoder.ReadSequence(asnSpan, AsnEncodingRules.BER, out int sequenceContentOffset, out int sequenceContentLength, out _);
-                    Debug.Assert(sequenceContentLength > 0);
-                    asnSpan = asnSpan.Slice(sequenceContentOffset);
-
-                    result = AsnDecoder.ReadEnumeratedValue<ResultCode>(asnSpan, AsnEncodingRules.BER, out int bytesConsumed);
-                    asnSpan = asnSpan.Slice(bytesConsumed);
-
-                    // Attribute name is optional: AD for example never returns attribute name
-                    asnReadSuccessful = AsnDecoder.TryReadEncodedValue(asnSpan, AsnEncodingRules.BER, out Asn1Tag octetStringTag, out _, out int octetStringLength, out _);
-                    if (asnReadSuccessful)
+                    else if (controls[i].Type == "1.2.840.113556.1.4.1504")
                     {
-                        Span<byte> attributeNameBuffer = octetStringLength <= AttributeNameStackAllocationThreshold ? attributeNameScratchSpace.Slice(0, octetStringLength) : new byte[octetStringLength];
+                        // The control is an AsqControl, as described in MS-ADTS section 3.1.1.3.4.1.18
+                        AsnDecoder.ReadSequence(asnSpan, AsnEncodingRules.BER, out int sequenceContentOffset, out int sequenceContentLength, out _);
+                        ThrowUnless(sequenceContentLength > 0);
 
-                        _ = AsnDecoder.TryReadOctetString(asnSpan, attributeNameBuffer, AsnEncodingRules.BER, out _, out _);
-                        attribute = s_utf8Encoding.GetString(attributeNameBuffer);
+                        ResultCode result = AsnDecoder.ReadEnumeratedValue<ResultCode>(asnSpan.Slice(sequenceContentOffset, sequenceContentLength), AsnEncodingRules.BER, out _);
+
+                        AsqResponseControl asq = new AsqResponseControl(result, controls[i].IsCritical, value);
+                        controls[i] = asq;
                     }
-
-                    SortResponseControl sort = new SortResponseControl(result, attribute, controls[i].IsCritical, value);
-                    controls[i] = sort;
-                }
-                else if (controls[i].Type == "2.16.840.1.113730.3.4.10")
-                {
-                    // The control is a VlvResponseControl, as described in MS-ADTS 3.1.1.3.4.1.17
-                    ResultCode result;
-                    byte[] context = null;
-
-                    AsnDecoder.ReadSequence(asnSpan, AsnEncodingRules.BER, out int sequenceContentOffset, out int sequenceContentLength, out _);
-                    Debug.Assert(sequenceContentLength > 0);
-                    asnSpan = asnSpan.Slice(sequenceContentOffset);
-
-                    asnReadSuccessful = AsnDecoder.TryReadInt32(asnSpan, AsnEncodingRules.BER, out int position, out int bytesConsumed);
-                    Debug.Assert(asnReadSuccessful);
-                    asnSpan = asnSpan.Slice(bytesConsumed);
-
-                    asnReadSuccessful = AsnDecoder.TryReadInt32(asnSpan, AsnEncodingRules.BER, out int count, out bytesConsumed);
-                    Debug.Assert(asnReadSuccessful);
-                    asnSpan = asnSpan.Slice(bytesConsumed);
-
-                    result = AsnDecoder.ReadEnumeratedValue<ResultCode>(asnSpan, AsnEncodingRules.BER, out bytesConsumed);
-                    asnSpan = asnSpan.Slice(bytesConsumed);
-
-                    asnReadSuccessful = AsnDecoder.TryReadEncodedValue(asnSpan, AsnEncodingRules.BER, out _, out _, out int octetStringLength, out _);
-                    if (asnReadSuccessful)
+                    else if (controls[i].Type == "1.2.840.113556.1.4.841")
                     {
-                        context = new byte[octetStringLength];
-                        _ = AsnDecoder.TryReadOctetString(asnSpan, context, AsnEncodingRules.BER, out _, out _);
-                    }
+                        // The control is a DirSyncControl, as described in MS-ADTS section 3.1.1.3.4.1.3
+                        byte[] dirsyncCookie;
 
-                    VlvResponseControl vlv = new VlvResponseControl(position, count, context, result, controls[i].IsCritical, value);
-                    controls[i] = vlv;
+                        AsnDecoder.ReadSequence(asnSpan, AsnEncodingRules.BER, out int sequenceContentOffset, out int sequenceContentLength, out _);
+                        ThrowUnless(sequenceContentLength > 0);
+                        asnSpan = asnSpan.Slice(sequenceContentOffset, sequenceContentLength);
+
+                        asnReadSuccessful = AsnDecoder.TryReadInt32(asnSpan, AsnEncodingRules.BER, out int moreData, out int bytesConsumed);
+                        ThrowUnless(asnReadSuccessful);
+                        asnSpan = asnSpan.Slice(bytesConsumed);
+
+                        asnReadSuccessful = AsnDecoder.TryReadInt32(asnSpan, AsnEncodingRules.BER, out int count, out bytesConsumed);
+                        ThrowUnless(asnReadSuccessful);
+                        asnSpan = asnSpan.Slice(bytesConsumed);
+
+                        dirsyncCookie = AsnDecoder.ReadOctetString(asnSpan, AsnEncodingRules.BER, out bytesConsumed);
+                        ThrowUnless(asnSpan.Length == bytesConsumed);
+
+                        DirSyncResponseControl dirsync = new DirSyncResponseControl(dirsyncCookie, moreData != 0, count, controls[i].IsCritical, value);
+                        controls[i] = dirsync;
+                    }
+                    else if (controls[i].Type == "1.2.840.113556.1.4.474")
+                    {
+                        // The control is a SortControl, as described in RFC 2891.
+                        ResultCode result;
+                        string attribute = null;
+
+                        AsnDecoder.ReadSequence(asnSpan, AsnEncodingRules.BER, out int sequenceContentOffset, out int sequenceContentLength, out _);
+                        ThrowUnless(sequenceContentLength > 0);
+                        asnSpan = asnSpan.Slice(sequenceContentOffset, sequenceContentLength);
+
+                        result = AsnDecoder.ReadEnumeratedValue<ResultCode>(asnSpan, AsnEncodingRules.BER, out int bytesConsumed);
+                        asnSpan = asnSpan.Slice(bytesConsumed);
+
+                        // Attribute name is optional: AD for example never returns attribute name
+                        asnReadSuccessful = AsnDecoder.TryReadEncodedValue(asnSpan, AsnEncodingRules.BER, out _, out _, out int octetStringLength, out _);
+                        if (asnReadSuccessful)
+                        {
+                            Span<byte> attributeNameBuffer = octetStringLength <= AttributeNameStackAllocationThreshold ? attributeNameScratchSpace.Slice(0, octetStringLength) : new byte[octetStringLength];
+
+                            asnReadSuccessful = AsnDecoder.TryReadOctetString(asnSpan, attributeNameBuffer, AsnEncodingRules.BER, out bytesConsumed, out _);
+                            ThrowUnless(asnReadSuccessful && asnSpan.Length == bytesConsumed);
+                            attribute = s_utf8Encoding.GetString(attributeNameBuffer);
+                        }
+
+                        SortResponseControl sort = new SortResponseControl(result, attribute, controls[i].IsCritical, value);
+                        controls[i] = sort;
+                    }
+                    else if (controls[i].Type == "2.16.840.1.113730.3.4.10")
+                    {
+                        // The control is a VlvResponseControl, as described in MS-ADTS 3.1.1.3.4.1.17
+                        ResultCode result;
+                        byte[] context = null;
+
+                        AsnDecoder.ReadSequence(asnSpan, AsnEncodingRules.BER, out int sequenceContentOffset, out int sequenceContentLength, out _);
+                        ThrowUnless(sequenceContentLength > 0);
+                        asnSpan = asnSpan.Slice(sequenceContentOffset, sequenceContentLength);
+
+                        asnReadSuccessful = AsnDecoder.TryReadInt32(asnSpan, AsnEncodingRules.BER, out int position, out int bytesConsumed);
+                        ThrowUnless(asnReadSuccessful);
+                        asnSpan = asnSpan.Slice(bytesConsumed);
+
+                        asnReadSuccessful = AsnDecoder.TryReadInt32(asnSpan, AsnEncodingRules.BER, out int count, out bytesConsumed);
+                        ThrowUnless(asnReadSuccessful);
+                        asnSpan = asnSpan.Slice(bytesConsumed);
+
+                        result = AsnDecoder.ReadEnumeratedValue<ResultCode>(asnSpan, AsnEncodingRules.BER, out bytesConsumed);
+                        asnSpan = asnSpan.Slice(bytesConsumed);
+
+                        asnReadSuccessful = AsnDecoder.TryReadEncodedValue(asnSpan, AsnEncodingRules.BER, out _, out _, out int octetStringLength, out _);
+                        if (asnReadSuccessful)
+                        {
+                            context = new byte[octetStringLength];
+                            asnReadSuccessful = AsnDecoder.TryReadOctetString(asnSpan, context, AsnEncodingRules.BER, out bytesConsumed, out _);
+                            ThrowUnless(asnReadSuccessful && asnSpan.Length == bytesConsumed);
+                        }
+
+                        VlvResponseControl vlv = new VlvResponseControl(position, count, context, result, controls[i].IsCritical, value);
+                        controls[i] = vlv;
+                    }
                 }
+            }
+            catch (AsnContentException asnEx)
+            {
+                throw new BerConversionException(SR.BerConversionError, asnEx);
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static void ThrowUnless(bool condition)
+        {
+            if (!condition)
+            {
+                throw new BerConversionException();
             }
         }
     }
@@ -281,13 +318,14 @@ namespace System.DirectoryServices.Protocols
         public override byte[] GetValue()
         {
             int sizeEstimate = 4 + (AttributeName?.Length ?? 0);
-            AsnWriter writer = new(AsnEncodingRules.BER, sizeEstimate);
+            AsnWriter writer = GetWriter(expectedSize: sizeEstimate);
 
+            writer.Reset();
             /* This is as laid out in MS-ADTS, 3.1.1.3.4.1.18.
              * ASQRequestValue ::= SEQUENCE {
              *                      sourceAttribute     OCTET STRING }
              */
-            using (AsnWriter.Scope outerSequence = writer.PushSequence())
+            using (writer.PushSequence())
             {
                 if (!string.IsNullOrEmpty(AttributeName))
                 {
@@ -304,6 +342,8 @@ namespace System.DirectoryServices.Protocols
                 }
             }
             _directoryControlValue = writer.Encode();
+            writer.Reset();
+
             return base.GetValue();
         }
     }
@@ -384,18 +424,19 @@ namespace System.DirectoryServices.Protocols
         }
         public override byte[] GetValue()
         {
-            int sizeEstimate = 8;
-            AsnWriter writer = new(AsnEncodingRules.BER, sizeEstimate);
+            AsnWriter writer = GetWriter(expectedSize: 8);
 
+            writer.Reset();
             /* This is as laid out in MS-ADTS, 3.1.1.3.4.1.5.
              * ExtendedDNRequestValue ::= SEQUENCE {
              *                              Flag     INTEGER }
              */
-            using (AsnWriter.Scope outerSequence = writer.PushSequence())
+            using (writer.PushSequence())
             {
                 writer.WriteInteger((int)Flag);
             }
             _directoryControlValue = writer.Encode();
+            writer.Reset();
 
             return base.GetValue();
         }
@@ -431,18 +472,19 @@ namespace System.DirectoryServices.Protocols
 
         public override byte[] GetValue()
         {
-            int sizeEstimate = 8;
-            AsnWriter writer = new(AsnEncodingRules.BER, sizeEstimate);
+            AsnWriter writer = GetWriter(expectedSize: 8);
 
+            writer.Reset();
             /* This is as laid out in MS-ADTS, 3.1.1.3.4.1.11.
              * SDFlagsRequestValue ::= SEQUENCE {
              *                          Flags     INTEGER }
              */
-            using (AsnWriter.Scope outerSequence = writer.PushSequence())
+            using (writer.PushSequence())
             {
                 writer.WriteInteger((int)SecurityMasks);
             }
             _directoryControlValue = writer.Encode();
+            writer.Reset();
 
             return base.GetValue();
         }
@@ -472,18 +514,19 @@ namespace System.DirectoryServices.Protocols
 
         public override byte[] GetValue()
         {
-            int sizeEstimate = 8;
-            AsnWriter writer = new(AsnEncodingRules.BER, sizeEstimate);
+            AsnWriter writer = GetWriter(expectedSize: 8);
 
+            writer.Reset();
             /* This is as laid out in MS-ADTS, 3.1.1.3.4.1.12.
              * SearchOptionsRequestValue ::= SEQUENCE {
              *                                  Flags     INTEGER }
              */
-            using (AsnWriter.Scope outerSequence = writer.PushSequence())
+            using (writer.PushSequence())
             {
                 writer.WriteInteger((int)SearchOption);
             }
             _directoryControlValue = writer.Encode();
+            writer.Reset();
 
             return base.GetValue();
         }
@@ -527,14 +570,15 @@ namespace System.DirectoryServices.Protocols
         public override byte[] GetValue()
         {
             int sizeEstimate = 10 + 2 * (ServerName?.Length ?? 0);
-            AsnWriter writer = new(AsnEncodingRules.BER, sizeEstimate);
+            AsnWriter writer = GetWriter(expectedSize: sizeEstimate);
 
+            writer.Reset();
             /* This is as laid out in MS-ADTS, 3.1.1.3.4.1.16.
              * VerifyNameRequestValue ::= SEQUENCE {
              *                              Flags       INTEGER,
              *                              ServerName  OCTET STRING }
              */
-            using (AsnWriter.Scope outerSequence = writer.PushSequence())
+            using (writer.PushSequence())
             {
                 writer.WriteInteger(Flag);
 
@@ -554,6 +598,7 @@ namespace System.DirectoryServices.Protocols
                 }
             }
             _directoryControlValue = writer.Encode();
+            writer.Reset();
 
             return base.GetValue();
         }
@@ -615,21 +660,23 @@ namespace System.DirectoryServices.Protocols
         public override byte[] GetValue()
         {
             int sizeEstimate = 16 + (_dirsyncCookie?.Length ?? 0);
-            AsnWriter writer = new(AsnEncodingRules.BER, sizeEstimate);
+            AsnWriter writer = GetWriter(expectedSize: sizeEstimate);
 
+            writer.Reset();
             /* This is as laid out in MS-ADTS, 3.1.1.3.4.1.3.
              * DirSyncRequestValue ::= SEQUENCE {
              *                          Flags       INTEGER,
              *                          MaxBytes    INTEGER,
              *                          Cookie  OCTET STRING }
              */
-            using (AsnWriter.Scope outerSequence = writer.PushSequence())
+            using (writer.PushSequence())
             {
                 writer.WriteInteger((int)Option);
                 writer.WriteInteger(AttributeCount);
                 writer.WriteOctetString(_dirsyncCookie ?? []);
             }
             _directoryControlValue = writer.Encode();
+            writer.Reset();
 
             return base.GetValue();
         }
@@ -712,19 +759,21 @@ namespace System.DirectoryServices.Protocols
         public override byte[] GetValue()
         {
             int sizeEstimate = 6 + (_pageCookie?.Length ?? 1);
-            AsnWriter writer = new(AsnEncodingRules.BER, sizeEstimate);
+            AsnWriter writer = GetWriter(expectedSize: sizeEstimate);
 
+            writer.Reset();
             /* This is as laid out in RFC2696.
              * realSearchControlValue ::= SEQUENCE {
              *                              size    INTEGER,
              *                              cookie  OCTET STRING }
              */
-            using (AsnWriter.Scope outerSequence = writer.PushSequence())
+            using (writer.PushSequence())
             {
                 writer.WriteInteger(PageSize);
                 writer.WriteOctetString(_pageCookie);
             }
             _directoryControlValue = writer.Encode();
+            writer.Reset();
 
             return base.GetValue();
         }
@@ -839,15 +888,16 @@ namespace System.DirectoryServices.Protocols
         public override byte[] GetValue()
         {
             int sizeEstimate = 12 + _keysAsnLength;
-            AsnWriter writer = new(AsnEncodingRules.BER, sizeEstimate);
+            AsnWriter writer = GetWriter(expectedSize: sizeEstimate);
 
+            writer.Reset();
             /* This is as laid out in RFC2891.
              * SortKeyList ::= SEQUENCE OF SEQUENCE {
              *                  attributeType   AttributeDescription,
              *                  orderingRule    [0] MatchingRuleId OPTIONAL,
              *                  reverseOrder    [1] BOOLEAN DEFAULT FALSE }
              * */
-            using (AsnWriter.Scope outerSequence = writer.PushSequence())
+            using (writer.PushSequence())
             {
                 // This scratch space is used for storing attribute names and matching rule OIDs.
                 // Active Directory's valid matching rule OIDs are listed in MS-ADTS 3.1.1.3.4.1.13,
@@ -859,7 +909,7 @@ namespace System.DirectoryServices.Protocols
                 {
                     SortKey key = _keys[i];
 
-                    using (AsnWriter.Scope keySequence = writer.PushSequence())
+                    using (writer.PushSequence())
                     {
                         if (!string.IsNullOrEmpty(key.AttributeName))
                         {
@@ -891,6 +941,7 @@ namespace System.DirectoryServices.Protocols
                 }
             }
             _directoryControlValue = writer.Encode();
+            writer.Reset();
 
             return base.GetValue();
         }
@@ -1034,8 +1085,9 @@ namespace System.DirectoryServices.Protocols
         public override byte[] GetValue()
         {
             int sizeEstimate = 16 + (_target?.Length ?? 12) + (_context?.Length ?? 1);
-            AsnWriter writer = new(AsnEncodingRules.BER, sizeEstimate);
+            AsnWriter writer = GetWriter(expectedSize: sizeEstimate);
 
+            writer.Reset();
             /* This is as laid out in MS-ADTS, 3.1.1.3.4.1.17.
              * VLVRequestValue ::= SEQUENCE {
              *                      beforeCount     INTEGER,
@@ -1047,7 +1099,7 @@ namespace System.DirectoryServices.Protocols
              *                          greaterThanOrEqual  [1] AssertionValue },
              *                      contextID       OCTET STRING OPTIONAL }
              */
-            using (AsnWriter.Scope outerSequence = writer.PushSequence())
+            using (writer.PushSequence())
             {
                 // first encode the before and the after count.
                 writer.WriteInteger(BeforeCount);
@@ -1075,6 +1127,7 @@ namespace System.DirectoryServices.Protocols
 
             }
             _directoryControlValue = writer.Encode();
+            writer.Reset();
 
             return base.GetValue();
         }
@@ -1127,17 +1180,19 @@ namespace System.DirectoryServices.Protocols
         public override byte[] GetValue()
         {
             int sizeEstimate = 4 + (_sid?.Length ?? 0);
-            AsnWriter writer = new(AsnEncodingRules.BER, sizeEstimate);
+            AsnWriter writer = GetWriter(expectedSize: sizeEstimate);
 
+            writer.Reset();
             /* This is as laid out in MS-ADTS, 3.1.1.3.4.1.19.
              * QuotaRequestValue ::= SEQUENCE {
              *                          querySID OCTET STRING }
              */
-            using (AsnWriter.Scope outerSequence = writer.PushSequence())
+            using (writer.PushSequence())
             {
                 writer.WriteOctetString(_sid);
             }
             _directoryControlValue = writer.Encode();
+            writer.Reset();
 
             return base.GetValue();
         }
