@@ -57,8 +57,8 @@ func encrypt<Algorithm>(
 
     let result = try Algorithm.seal(plaintext, using: symmetricKey, nonce: nonce, authenticating: aad)
 
-    _ = result.ciphertext.copyBytes(to: cipherText)
-    _ = result.tag.copyBytes(to: tag)
+    _ = result.ciphertext.copyBytes(to: cipherText.baseAddress!, count: cipherText.count)
+    _ = result.tag.copyBytes(to: tag.baseAddress!, count: tag.count)
 }
 
 func decrypt<Algorithm>(
@@ -78,7 +78,7 @@ func decrypt<Algorithm>(
 
     let result = try Algorithm.open(sealedBox, using: symmetricKey, authenticating: aad)
 
-    _ = result.copyBytes(to: plaintext)
+    _ = result.copyBytes(to: plaintext.baseAddress!, count: plaintext.count)
 }
 
 @_silgen_name("AppleCryptoNative_ChaCha20Poly1305Encrypt")
