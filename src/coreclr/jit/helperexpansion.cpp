@@ -456,7 +456,7 @@ bool Compiler::fgExpandRuntimeLookupsForCall(BasicBlock** pBlock, Statement* stm
 //------------------------------------------------------------------------------
 // fgExpandThreadLocalAccess: Inline the CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED,
 //      CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED, or
-//      CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE_NOCTOR_OPTIMIZEDhelper. See
+//      CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED2 helper. See
 //      fgExpandThreadLocalAccessForCall for details.
 //
 // Returns:
@@ -1034,8 +1034,6 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
         // All blocks are expected to be in the same EH region
         assert(BasicBlock::sameEHRegion(prevBb, block));
         assert(BasicBlock::sameEHRegion(prevBb, tlsBaseComputeBB));
-
-        JITDUMP("tlsBaseComputeBB: " FMT_BB "\n", tlsBaseComputeBB->bbNum);
     }
     else
     {
