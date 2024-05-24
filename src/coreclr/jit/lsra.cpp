@@ -4022,7 +4022,7 @@ void LinearScan::processKills(RefPosition* killRefPosition)
 {
     RefPosition* nextKill = killRefPosition->nextRefPosition;
 
-    regMaskTP killedRegs = killRefPosition->registerAssignment;
+    SingleTypeRegSet killedRegs = killRefPosition->registerAssignment;
     while (killedRegs != RBM_NONE)
     {
         regNumber  killedReg        = genFirstRegNumFromMaskAndToggle(killedRegs);
@@ -4064,7 +4064,7 @@ void LinearScan::spillGCRefs(RefPosition* killRefPosition)
 {
     // For each physical register that can hold a GC type,
     // if it is occupied by an interval of a GC type, spill that interval.
-    regMaskTP candidateRegs = killRefPosition->registerAssignment;
+    SingleTypeRegSet candidateRegs = killRefPosition->registerAssignment;
     INDEBUG(bool killedRegs = false);
     while (candidateRegs != RBM_NONE)
     {
@@ -4157,7 +4157,7 @@ regNumber LinearScan::rotateBlockStartLocation(Interval* interval, regNumber tar
     {
         // If we're rotating the register locations at block boundaries, try to use
         // the next higher register number of the appropriate register type.
-        regMaskTP candidateRegs = allRegs(interval->registerType) & availableRegs;
+        SingleTypeRegSet candidateRegs = allRegs(interval->registerType) & availableRegs.GetRegSetForType(interval->registerType);
         regNumber firstReg      = REG_NA;
         regNumber newReg        = REG_NA;
         while (candidateRegs != RBM_NONE)
@@ -12182,7 +12182,7 @@ void LinearScan::verifyFinalAllocation()
                 // However, we will assert that, at resolution time, no registers contain GC refs.
                 {
                     DBEXEC(VERBOSE, printf("           "));
-                    regMaskTP candidateRegs = currentRefPosition.registerAssignment;
+                    SingleTypeRegSet candidateRegs = currentRefPosition.registerAssignment;
                     while (candidateRegs != RBM_NONE)
                     {
                         regNumber nextReg = genFirstRegNumFromMaskAndToggle(candidateRegs);
