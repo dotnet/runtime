@@ -20,63 +20,48 @@ void pal::file_vprintf(FILE* f, const pal::char_t* format, va_list vl) {
     // In order to properly print characters in the GB18030 standard, we need to use the locale version of vfwprintf
     _locale_t loc = _create_locale(LC_ALL, ".utf8");
     ::_vfwprintf_l(f, format, loc, vl);
-    ::vfwprintf(f, format, vl);
     ::fputwc(_X('\n'), f);
     _free_locale(loc);
 }
 
-void pal::err_print_line(const pal::char_t* message) {
-    // In order to properly print characters in the GB18030 standard, we need to use WriteConsoleW
-    HANDLE e = ::GetStdHandle(STD_ERROR_HANDLE);
-    // BOOL success = ::WriteConsoleW(e, message, (int)pal::strlen(message), NULL, NULL);
-    // ::WriteConsoleW(e, _X("\n"), 1, NULL, NULL);
-    pal::print_to_handle(message, e, stderr);
-    pal::print_to_handle(_X("\n"), e, stderr);
-}
-
-void pal::print_to_handle(const pal::char_t* message, HANDLE handle, FILE* filehandle) {
+// Helper to write output to std handles and handle redirection to a file
+void print_line_to_handle(const pal::char_t* message, HANDLE handle, FILE* fallbackFileHandle) {
     DWORD output;
+    // GetConsoleMode fails when the output is redirected to a file
+    // In this case, we'll use the handle to print to the file
     BOOL success = ::GetConsoleMode(handle, &output);
     if (success == 0)
     {
-        _locale_t loc = _create_locale(LC_ALL, ".utf8");
-        ::_vfwprintf_l(filehandle, message, loc, va_list());
-        _free_locale(loc);
+        pal::file_vprintf(fallbackFileHandle, message, va_list());
         return;
     }
-    // In order to properly print characters in the GB18030 standard, we need to use WriteConsoleW
-    success = ::WriteConsoleW(handle, message, (int)pal::strlen(message), NULL, NULL);
-    if (success == 0)
-    {
-        ((pal::char_t*)NULL)[0] = _X('0'); // Trigger access violation
+    else {
+        // In order to properly print characters in the GB18030 standard, we need to use WriteConsoleW
+        ::WriteConsoleW(handle, message, (int)pal::strlen(message), NULL, NULL);
     }
 }
 
-void pal::out_vprint_line(const pal::char_t* format, va_list vl) {
+void pal::err_print_line(const pal::char_t* message) {
     // In order to properly print characters in the GB18030 standard, we need to use WriteConsoleW
-    // Get the length of the formatted string + newline + null terminator
+    print_line_to_handle(message, ::GetStdHandle(STD_ERROR_HANDLE), stderr);
+}
+
+void pal::out_vprint_line(const pal::char_t* format, va_list vl) {
     va_list vl_copy;
     va_copy(vl_copy, vl);
-    int len = 2 + pal::strlen_vprintf(format, vl_copy);
+    // Get the length of the formatted string + 1 for null terminator
+    int len = 1 + pal::strlen_vprintf(format, vl_copy);
     if (len < 0)
     {
         return;
     }
     std::vector<pal::char_t> buffer(len);
-    int written = pal::str_vprintf(&buffer[0], len - 1, format, vl);
-    if (written != len - 2)
+    int written = pal::str_vprintf(&buffer[0], len, format, vl);
+    if (written != len - 1)
     {
         return;
     }
-    buffer[len - 2] = _X('\n');
-    buffer[len - 1] = _X('\0');
-
-    pal::print_to_handle(&buffer[0], ::GetStdHandle(STD_OUTPUT_HANDLE), stdout);
-    // BOOL success = ::WriteConsoleW(::GetStdHandle(STD_OUTPUT_HANDLE), &buffer[0], len, NULL, NULL);
-    // if (success == 0)
-    // {
-    //     ((pal::char_t*)NULL)[0] = _X('0'); // Access violation
-    // }
+    print_line_to_handle(&buffer[0], ::GetStdHandle(STD_OUTPUT_HANDLE), stdout);
 }
 
 bool GetModuleFileNameWrapper(HMODULE hModule, pal::string_t* recv)

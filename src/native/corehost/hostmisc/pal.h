@@ -159,13 +159,12 @@ namespace pal
 
     inline FILE* file_open(const string_t& path, const char_t* mode) { return ::_wfsopen(path.c_str(), mode, _SH_DENYNO); }
 
-    inline int str_vprintf(char_t* buffer, size_t count, const char_t* format, va_list vl) { return ::_vsnwprintf_s(buffer, count, _TRUNCATE, format, vl); }
-    inline int strlen_vprintf(const char_t* format, va_list vl) { return ::_vscwprintf(format, vl); }
-
     void file_vprintf(FILE* f, const char_t* format, va_list vl);
     void err_print_line(const char_t* message);
     void out_vprint_line(const char_t* format, va_list vl);
-    void print_to_handle(const pal::char_t* message, HANDLE handle, FILE* filehandle);
+
+    inline int str_vprintf(char_t* buffer, size_t count, const char_t* format, va_list vl) { return ::_vsnwprintf_s(buffer, count, _TRUNCATE, format, vl); }
+    inline int strlen_vprintf(const char_t* format, va_list vl) { return ::_vscwprintf(format, vl); }
 
     inline const string_t strerror(int errnum)
     {
