@@ -4,6 +4,7 @@
 #ifndef _GCHEAPUTILITIES_H_
 #define _GCHEAPUTILITIES_H_
 
+#include "eventtrace.h"
 #include "gcinterface.h"
 #include "math.h"
 

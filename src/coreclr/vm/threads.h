@@ -3777,6 +3777,11 @@ private:
     // See ThreadStore::TriggerGCForDeadThreadsIfNecessary()
     bool m_fHasDeadThreadBeenConsideredForGCTrigger;
 
+    CLRRandom m_random;
+
+public:
+    CLRRandom* GetRandom() { return &m_random; }
+
 #ifdef FEATURE_COMINTEROP
 private:
     // Cookie returned from CoRegisterInitializeSpy

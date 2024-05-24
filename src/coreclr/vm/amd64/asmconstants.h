@@ -111,10 +111,10 @@ ASMCONSTANTS_C_ASSERT(OFFSETOF__Thread__m_pFrame
 #define Thread_m_pFrame OFFSETOF__Thread__m_pFrame
 
 
-#define               OFFSET__Thread__m_alloc_context__alloc_ptr 0x60
+#define               OFFSET__Thread__m_alloc_context__alloc_ptr 0x50
 ASMCONSTANTS_C_ASSERT(OFFSET__Thread__m_alloc_context__alloc_ptr == offsetof(Thread, m_alloc_context) + offsetof(ee_alloc_context, gc_alloc_context) + offsetof(gc_alloc_context, alloc_ptr));
 
-#define               OFFSET__Thread__m_alloc_context__combined_limit 0x58
+#define               OFFSET__Thread__m_alloc_context__combined_limit 0x48
 ASMCONSTANTS_C_ASSERT(OFFSET__Thread__m_alloc_context__combined_limit == offsetof(Thread, m_alloc_context) + offsetof(ee_alloc_context, combined_limit));
 
 #define               OFFSETOF__ee_alloc_context__alloc_ptr 0x8
