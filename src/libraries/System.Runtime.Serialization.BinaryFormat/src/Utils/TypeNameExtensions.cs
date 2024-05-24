@@ -2,12 +2,53 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
+using System.Diagnostics;
 using System.Reflection.Metadata;
 
 namespace System.Runtime.Serialization.BinaryFormat;
 
 internal static class TypeNameExtensions
 {
+    internal static TypeName ParseNonSystemClassRecordTypeName(this string rawName, BinaryLibraryRecord libraryRecord, PayloadOptions payloadOptions)
+    {
+        // Combining type and library name has two goals:
+        // 1. Handle truncated generic type names that may be present in resources.
+        // 2. Improve perf by parsing only once.
+        ArraySegment<char> assemblyQualifiedName = GetAssemblyQualifiedName(rawName, libraryRecord.LibraryName);
+        TypeName.TryParse(assemblyQualifiedName.AsSpan(), out TypeName? typeName, payloadOptions.TypeNameParseOptions);
+        ArrayPool<char>.Shared.Return(assemblyQualifiedName.Array!);
+
+        if (typeName is null || (typeName.AssemblyName is null && !payloadOptions.UndoTruncatedTypeNames))
+        {
+            throw new SerializationException(SR.Format(SR.Serialization_InvalidTypeOrAssemblyName, rawName, libraryRecord.LibraryName));
+        }
+
+        if (typeName.AssemblyName is null && payloadOptions.UndoTruncatedTypeNames)
+        {
+            // Sample invalid input that could lead us here:
+            // TypeName: System.Collections.Generic.List`1[[System.String
+            // LibraryName: 'mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089]]
+            // Since the flag is ON, we know it's mangling and we provide missing information.
+            typeName = typeName.WithCoreLibAssemblyName();
+        }
+
+        return typeName;
+    }
+
+    internal static TypeName ParseSystemRecordTypeName(this string rawName, PayloadOptions payloadOptions)
+    {
+        ArraySegment<char> assemblyQualifiedName = GetAssemblyQualifiedName(rawName,
+            FormatterServices.CoreLibAssemblyName.FullName); // We know it's a System Record, so we set the LibraryName to CoreLib
+
+        TypeName.TryParse(assemblyQualifiedName.AsSpan(), out TypeName? typeName, payloadOptions.TypeNameParseOptions);
+        ArrayPool<char>.Shared.Return(assemblyQualifiedName.Array!);
+
+        return typeName ?? throw new SerializationException(SR.Format(SR.Serialization_InvalidTypeName, rawName));
+    }
+
+    internal static TypeName WithCoreLibAssemblyName(this TypeName systemType)
+        => systemType.WithAssemblyName(FormatterServices.CoreLibAssemblyName.FullName);
+
     internal static TypeName WithAssemblyName(this TypeName typeName, string assemblyName)
     {
         // For ClassWithMembersAndTypesRecord, the TypeName and LibraryName and provided separately,
@@ -16,20 +57,22 @@ internal static class TypeNameExtensions
         // Ideally, we would just create TypeName with new AssemblyNameInfo.
         // This will be possible once https://github.com/dotnet/runtime/issues/102263 is done.
 
-        int length = typeName.FullName.Length + 1 + assemblyName.Length;
+        ArraySegment<char> assemblyQualifiedName = GetAssemblyQualifiedName(typeName.FullName, assemblyName);
+        TypeName result = TypeName.Parse(assemblyQualifiedName.AsSpan());
+        ArrayPool<char>.Shared.Return(assemblyQualifiedName.Array!);
+
+        return result;
+    }
+
+    private static ArraySegment<char> GetAssemblyQualifiedName(string typeName, string libraryName)
+    {
+        int length = typeName.Length + 1 + libraryName.Length;
         char[] rented = ArrayPool<char>.Shared.Rent(length);
 
-        try
-        {
-            typeName.FullName.AsSpan().CopyTo(rented);
-            rented[typeName.FullName.Length] = ',';
-            assemblyName.AsSpan().CopyTo(rented.AsSpan(typeName.FullName.Length + 1));
+        typeName.AsSpan().CopyTo(rented);
+        rented[typeName.Length] = ',';
+        libraryName.AsSpan().CopyTo(rented.AsSpan(typeName.Length + 1));
 
-            return TypeName.Parse(rented.AsSpan(0, length));
-        }
-        finally
-        {
-            ArrayPool<char>.Shared.Return(rented);
-        }
+        return new(rented, 0, length);
     }
 }

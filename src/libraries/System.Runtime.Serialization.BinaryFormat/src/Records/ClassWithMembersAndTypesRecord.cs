@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.IO;
-using System.Reflection.Metadata;
 
 namespace System.Runtime.Serialization.BinaryFormat;
 
@@ -18,31 +17,27 @@ namespace System.Runtime.Serialization.BinaryFormat;
 /// </remarks>
 internal sealed class ClassWithMembersAndTypesRecord : ClassRecord
 {
-    private ClassWithMembersAndTypesRecord(ClassInfo classInfo, BinaryLibraryRecord library, MemberTypeInfo memberTypeInfo)
+    private ClassWithMembersAndTypesRecord(ClassInfo classInfo, MemberTypeInfo memberTypeInfo)
         : base(classInfo, memberTypeInfo)
     {
-        Library = library;
     }
 
     public override RecordType RecordType => RecordType.ClassWithMembersAndTypes;
 
-    internal override AssemblyNameInfo LibraryName => Library.LibraryName;
-
-    internal BinaryLibraryRecord Library { get; }
-
     public override bool IsTypeNameMatching(Type type)
-        => FormatterServices.GetTypeFullNameIncludingTypeForwards(type) == ClassInfo.Name.FullName
-        && FormatterServices.GetAssemblyNameIncludingTypeForwards(type) == Library.LibraryName.FullName;
+        => FormatterServices.GetTypeFullNameIncludingTypeForwards(type) == ClassInfo.TypeName.FullName
+        && FormatterServices.GetAssemblyNameIncludingTypeForwards(type) == ClassInfo.TypeName.AssemblyName!.FullName;
 
     internal static ClassWithMembersAndTypesRecord Parse(BinaryReader reader, RecordMap recordMap, PayloadOptions options)
     {
-        ClassInfo classInfo = ClassInfo.Parse(reader, options);
-        MemberTypeInfo memberTypeInfo = MemberTypeInfo.Parse(reader, classInfo.MemberNames.Count, options);
+        ClassInfo classInfo = ClassInfo.Parse(reader);
+        MemberTypeInfo memberTypeInfo = MemberTypeInfo.Parse(reader, classInfo.MemberNames.Count, options, recordMap);
         int libraryId = reader.ReadInt32();
 
         BinaryLibraryRecord library = (BinaryLibraryRecord)recordMap[libraryId];
+        classInfo.ParseTypeName(library, options);
 
-        return new(classInfo, library, memberTypeInfo);
+        return new(classInfo, memberTypeInfo);
     }
 
     internal override (AllowedRecordTypes allowed, PrimitiveType primitiveType) GetNextAllowedRecordType()

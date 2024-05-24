@@ -21,11 +21,10 @@ internal sealed class BinaryArrayRecord : ArrayRecord
 
     private TypeName? _elementTypeName;
 
-    private BinaryArrayRecord(ArrayInfo arrayInfo, MemberTypeInfo memberTypeInfo, RecordMap recordMap)
+    private BinaryArrayRecord(ArrayInfo arrayInfo, MemberTypeInfo memberTypeInfo)
         : base(arrayInfo)
     {
         MemberTypeInfo = memberTypeInfo;
-        RecordMap = recordMap;
         Values = [];
     }
 
@@ -35,13 +34,11 @@ internal sealed class BinaryArrayRecord : ArrayRecord
     public override ReadOnlySpan<int> Lengths => new int[1] { Length };
 
     public override TypeName ElementTypeName
-        => _elementTypeName ??= MemberTypeInfo.GetElementTypeName(RecordMap);
+        => _elementTypeName ??= MemberTypeInfo.GetElementTypeName();
 
     private int Length => ArrayInfo.Length;
 
     private MemberTypeInfo MemberTypeInfo { get; }
-
-    private RecordMap RecordMap { get; }
 
     private List<object> Values { get; }
 
@@ -162,17 +159,17 @@ internal sealed class BinaryArrayRecord : ArrayRecord
             }
         }
 
-        MemberTypeInfo memberTypeInfo = MemberTypeInfo.Parse(reader, 1, options);
+        MemberTypeInfo memberTypeInfo = MemberTypeInfo.Parse(reader, 1, options, recordMap);
         ArrayInfo arrayInfo = new(objectId, (int)totalElementCount, arrayType, rank);
 
         if (isRectangular || hasCustomOffset)
         {
-            return RectangularOrCustomOffsetArrayRecord.Create(arrayInfo, memberTypeInfo, lengths, offsets, recordMap);
+            return RectangularOrCustomOffsetArrayRecord.Create(arrayInfo, memberTypeInfo, lengths, offsets);
         }
 
         return memberTypeInfo.ShouldBeRepresentedAsArrayOfClassRecords()
-            ? new ArrayOfClassesRecord(arrayInfo, memberTypeInfo, recordMap)
-            : new BinaryArrayRecord(arrayInfo, memberTypeInfo, recordMap);
+            ? new ArrayOfClassesRecord(arrayInfo, memberTypeInfo)
+            : new BinaryArrayRecord(arrayInfo, memberTypeInfo);
     }
 
     private protected override void AddValue(object value) => Values.Add(value);
@@ -191,7 +188,7 @@ internal sealed class BinaryArrayRecord : ArrayRecord
     }
 
     internal override bool IsElementType(Type typeElement)
-        => MemberTypeInfo.IsElementType(typeElement, RecordMap);
+        => MemberTypeInfo.IsElementType(typeElement);
 
     /// <summary>
     /// Complex types must not be instantiated, but represented as ClassRecord.

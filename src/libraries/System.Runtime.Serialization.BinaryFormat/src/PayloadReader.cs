@@ -195,7 +195,7 @@ static class PayloadReader
             RecordType.ObjectNullMultiple => ObjectNullMultipleRecord.Parse(reader),
             RecordType.ObjectNullMultiple256 => ObjectNullMultiple256Record.Parse(reader),
             RecordType.SerializedStreamHeader => SerializedStreamHeaderRecord.Parse(reader),
-            _ => SystemClassWithMembersAndTypesRecord.Parse(reader, options),
+            _ => SystemClassWithMembersAndTypesRecord.Parse(reader, recordMap, options),
         };
 
         recordMap.Add(record);

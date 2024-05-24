@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.IO;
-using System.Reflection.Metadata;
 
 namespace System.Runtime.Serialization.BinaryFormat;
 
@@ -15,17 +14,16 @@ internal sealed class SystemClassWithMembersAndTypesRecord : ClassRecord
 
     public override RecordType RecordType => RecordType.SystemClassWithMembersAndTypes;
 
-    internal override AssemblyNameInfo LibraryName => FormatterServices.CoreLibAssemblyName;
-
     public override bool IsTypeNameMatching(Type type)
         => type.Assembly == typeof(object).Assembly
-        && FormatterServices.GetTypeFullNameIncludingTypeForwards(type) == ClassInfo.Name.FullName;
+        && FormatterServices.GetTypeFullNameIncludingTypeForwards(type) == ClassInfo.TypeName.FullName;
 
-    internal static SystemClassWithMembersAndTypesRecord Parse(BinaryReader reader, PayloadOptions options)
+    internal static SystemClassWithMembersAndTypesRecord Parse(BinaryReader reader, RecordMap recordMap, PayloadOptions options)
     {
-        ClassInfo classInfo = ClassInfo.Parse(reader, options);
-        MemberTypeInfo memberTypeInfo = MemberTypeInfo.Parse(reader, classInfo.MemberNames.Count, options);
+        ClassInfo classInfo = ClassInfo.Parse(reader);
+        MemberTypeInfo memberTypeInfo = MemberTypeInfo.Parse(reader, classInfo.MemberNames.Count, options, recordMap);
         // the only difference with ClassWithMembersAndTypesRecord is that we don't read library id here
+        classInfo.ParseTypeName(options);
         return new(classInfo, memberTypeInfo);
     }
 

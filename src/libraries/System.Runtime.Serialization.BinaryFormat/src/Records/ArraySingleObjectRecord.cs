@@ -26,7 +26,7 @@ internal sealed class ArraySingleObjectRecord : ArrayRecord<object?>
     public override RecordType RecordType => RecordType.ArraySingleObject;
 
     public override TypeName ElementTypeName
-        => s_elementTypeName ??= TypeName.Parse(typeof(object).FullName.AsSpan()).WithAssemblyName(FormatterServices.CoreLibAssemblyName.FullName);
+        => s_elementTypeName ??= TypeName.Parse(typeof(object).FullName.AsSpan()).WithCoreLibAssemblyName();
 
     private List<SerializationRecord> Records { get; }
 

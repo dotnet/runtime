@@ -26,7 +26,7 @@ internal readonly struct MemberTypeInfo
 
     internal IReadOnlyList<(BinaryType BinaryType, object? AdditionalInfo)> Infos => _infos;
 
-    internal static MemberTypeInfo Parse(BinaryReader reader, int count, PayloadOptions options)
+    internal static MemberTypeInfo Parse(BinaryReader reader, int count, PayloadOptions options, RecordMap recordMap)
     {
         List<(BinaryType BinaryType, object? AdditionalInfo)> info = [];
 
@@ -51,10 +51,10 @@ internal readonly struct MemberTypeInfo
                     info[i] = (type, reader.ReadPrimitiveType());
                     break;
                 case BinaryType.SystemClass:
-                    info[i] = (type, reader.ReadTypeName(options));
+                    info[i] = (type, reader.ReadString().ParseSystemRecordTypeName(options));
                     break;
                 case BinaryType.Class:
-                    info[i] = (type, ClassTypeInfo.Parse(reader, options));
+                    info[i] = (type, ClassTypeInfo.Parse(reader, options, recordMap));
                     break;
                 default:
                     // Other types have no additional data.
@@ -104,7 +104,7 @@ internal readonly struct MemberTypeInfo
         };
     }
 
-    internal bool IsElementType(Type typeElement, RecordMap recordMap)
+    internal bool IsElementType(Type typeElement)
     {
         (BinaryType binaryType, object? additionalInfo) = Infos[0];
 
@@ -168,9 +168,8 @@ internal readonly struct MemberTypeInfo
                     return false;
                 }
 
-                BinaryLibraryRecord libraryRecord = (BinaryLibraryRecord)recordMap[typeInfo.LibraryId];
                 string assemblyName = FormatterServices.GetAssemblyNameIncludingTypeForwards(typeElement);
-                return assemblyName == libraryRecord.LibraryName.FullName;
+                return assemblyName == typeInfo.TypeName.AssemblyName!.FullName;
         }
     }
 
@@ -204,20 +203,20 @@ internal readonly struct MemberTypeInfo
         return false;
     }
 
-    internal TypeName GetElementTypeName(RecordMap recordMap)
+    internal TypeName GetElementTypeName()
     {
         (BinaryType binaryType, object? additionalInfo) = Infos[0];
 
         switch (binaryType)
         {
             case BinaryType.String:
-                return TypeName.Parse(typeof(string).FullName.AsSpan()).WithAssemblyName(FormatterServices.CoreLibAssemblyName.FullName);
+                return TypeName.Parse(typeof(string).FullName.AsSpan()).WithCoreLibAssemblyName();
             case BinaryType.StringArray:
-                return TypeName.Parse(typeof(string[]).FullName.AsSpan()).WithAssemblyName(FormatterServices.CoreLibAssemblyName.FullName); ;
+                return TypeName.Parse(typeof(string[]).FullName.AsSpan()).WithCoreLibAssemblyName();
             case BinaryType.Object:
-                return TypeName.Parse(typeof(object).FullName.AsSpan()).WithAssemblyName(FormatterServices.CoreLibAssemblyName.FullName); ;
+                return TypeName.Parse(typeof(object).FullName.AsSpan()).WithCoreLibAssemblyName();
             case BinaryType.ObjectArray:
-                return TypeName.Parse(typeof(object[]).FullName.AsSpan()).WithAssemblyName(FormatterServices.CoreLibAssemblyName.FullName); ;
+                return TypeName.Parse(typeof(object[]).FullName.AsSpan()).WithCoreLibAssemblyName();
             case BinaryType.Primitive:
             case BinaryType.PrimitiveArray:
                 string? name = ((PrimitiveType)additionalInfo!) switch
@@ -241,16 +240,13 @@ internal readonly struct MemberTypeInfo
 
                 return binaryType is BinaryType.PrimitiveArray
                     ? TypeName.Parse($"{name}[], {FormatterServices.CoreLibAssemblyName.FullName}".AsSpan())
-                    : TypeName.Parse(name.AsSpan()).WithAssemblyName(FormatterServices.CoreLibAssemblyName.FullName);
+                    : TypeName.Parse(name.AsSpan()).WithCoreLibAssemblyName();
 
             case BinaryType.SystemClass:
-                return ((TypeName)additionalInfo!).WithAssemblyName(FormatterServices.CoreLibAssemblyName.FullName);
+                return (TypeName)additionalInfo!;
             default:
                 Debug.Assert(binaryType is BinaryType.Class, "The parsers should reject other inputs");
-
-                ClassTypeInfo typeInfo = (ClassTypeInfo)additionalInfo!;
-                AssemblyNameInfo libraryName = ((BinaryLibraryRecord)recordMap[typeInfo.LibraryId]).LibraryName;
-                return typeInfo.TypeName.WithAssemblyName(libraryName.FullName);
+                return ((ClassTypeInfo)additionalInfo!).TypeName;
         }
     }
 }

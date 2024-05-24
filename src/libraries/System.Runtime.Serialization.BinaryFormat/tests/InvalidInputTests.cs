@@ -92,9 +92,11 @@ public class InvalidInputTests : ReadTests
     }
 
     [Theory]
-    [InlineData("TypeName, Hacked.dll")] // assembly names are NOT allowed
-    [InlineData("InvalidTypeName[]]")] // invalid type name
-    public void ThrowsWhenTypeNameIsInvalid(string typeName)
+    [InlineData("TypeName, Hacked.dll", true)] // assembly names are NOT allowed
+    [InlineData("TypeName, Hacked.dll", false)]
+    [InlineData("InvalidTypeName[]]", true)] // invalid type name
+    [InlineData("InvalidTypeName[]]", false)]
+    public void ThrowsWhenTypeNameIsInvalid(string typeName, bool mangling)
     {
         using MemoryStream stream = new();
         BinaryWriter writer = new(stream, Encoding.UTF8);
@@ -108,13 +110,16 @@ public class InvalidInputTests : ReadTests
         writer.Write((byte)RecordType.MessageEnd);
 
         stream.Position = 0;
-        Assert.Throws<SerializationException>(() => PayloadReader.Read(stream));
+        PayloadOptions options = new() { UndoTruncatedTypeNames = mangling };
+        Assert.Throws<SerializationException>(() => PayloadReader.Read(stream, options));
     }
 
     [Theory]
-    [InlineData("TypeName, Hacked.dll")] // assembly names are NOT allowed
-    [InlineData("InvalidTypeName[]]")] // invalid type name
-    public void ThrowsWhenMemberTypeNameIsInvalid_BinaryTypeSystemClass(string typeName)
+    [InlineData("TypeName, Hacked.dll", true)] // assembly names are NOT allowed
+    [InlineData("TypeName, Hacked.dll", false)]
+    [InlineData("InvalidTypeName[]]", true)] // invalid type name
+    [InlineData("InvalidTypeName[]]", false)]
+    public void ThrowsWhenMemberTypeNameIsInvalid_BinaryTypeSystemClass(string typeName, bool mangling)
     {
         using MemoryStream stream = new();
         BinaryWriter writer = new(stream, Encoding.UTF8);
@@ -132,14 +137,16 @@ public class InvalidInputTests : ReadTests
         writer.Write((byte)RecordType.MessageEnd);
 
         stream.Position = 0;
-        Assert.Throws<SerializationException>(() => PayloadReader.Read(stream));
+        PayloadOptions options = new() { UndoTruncatedTypeNames = mangling };
+        Assert.Throws<SerializationException>(() => PayloadReader.Read(stream, options));
     }
 
-
     [Theory]
-    [InlineData("TypeName, Hacked.dll")] // assembly names are NOT allowed
-    [InlineData("InvalidTypeName[]]")] // invalid type name
-    public void ThrowsWhenMemberTypeNameIsInvalid_BinaryTypeClass(string typeName)
+    [InlineData("TypeName, Hacked.dll", true)] // assembly names are NOT allowed
+    [InlineData("TypeName, Hacked.dll", false)]
+    [InlineData("InvalidTypeName[]]", true)] // invalid type name
+    [InlineData("InvalidTypeName[]]", false)]
+    public void ThrowsWhenMemberTypeNameIsInvalid_BinaryTypeClass(string typeName, bool mangling)
     {
         using MemoryStream stream = new();
         BinaryWriter writer = new(stream, Encoding.UTF8);
@@ -158,11 +165,14 @@ public class InvalidInputTests : ReadTests
         writer.Write((byte)RecordType.MessageEnd);
 
         stream.Position = 0;
-        Assert.Throws<SerializationException>(() => PayloadReader.Read(stream));
+        PayloadOptions options = new() { UndoTruncatedTypeNames = mangling };
+        Assert.Throws<SerializationException>(() => PayloadReader.Read(stream, options));
     }
 
-    [Fact]
-    public void ThrowsWhenLibraryNameIsInvalid()
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void ThrowsWhenLibraryNameIsInvalid(bool mangling)
     {
         using MemoryStream stream = new();
         BinaryWriter writer = new(stream, Encoding.UTF8);
@@ -170,12 +180,59 @@ public class InvalidInputTests : ReadTests
         WriteSerializedStreamHeader(writer);
 
         writer.Write((byte)RecordType.BinaryLibrary);
-        writer.Write(1); // library Id
+        writer.Write(2); // library Id
         writer.Write("Esc\\[aped"); // library name
+
+        writer.Write((byte)RecordType.ClassWithMembersAndTypes);
+        writer.Write(1); // class Id
+        writer.Write("ValidTypeName");
+        writer.Write(0); // member count
+        writer.Write(2); // library Id
+
         writer.Write((byte)RecordType.MessageEnd);
 
         stream.Position = 0;
-        Assert.Throws<SerializationException>(() => PayloadReader.Read(stream));
+        PayloadOptions options = new() { UndoTruncatedTypeNames = mangling };
+        Assert.Throws<SerializationException>(() => PayloadReader.Read(stream, options));
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void UndoTruncatedTypeNamesIsRespected(bool mangling)
+    {
+        const string TypeName = "System.Collections.Generic.Dictionary`2[[System.String";
+        const string LibraryName = "mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089],[System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089]]";
+
+        using MemoryStream stream = new();
+        BinaryWriter writer = new(stream, Encoding.UTF8);
+
+        WriteSerializedStreamHeader(writer);
+
+        writer.Write((byte)RecordType.BinaryLibrary);
+        writer.Write(2); // library Id
+        writer.Write(LibraryName);
+
+        writer.Write((byte)RecordType.ClassWithMembersAndTypes);
+        writer.Write(1); // class Id
+        writer.Write(TypeName);
+        writer.Write(0); // member count
+        writer.Write(2); // library Id
+
+        writer.Write((byte)RecordType.MessageEnd);
+
+        stream.Position = 0;
+        PayloadOptions options = new() { UndoTruncatedTypeNames = mangling };
+
+        if (mangling)
+        {
+            ClassRecord classRecord = (ClassRecord)PayloadReader.Read(stream, options);
+            Assert.Equal($"{TypeName}, {LibraryName}", classRecord.TypeName.FullName);
+        }
+        else
+        {
+            Assert.Throws<SerializationException>(() => PayloadReader.Read(stream, options));
+        }
     }
 
     [Theory]

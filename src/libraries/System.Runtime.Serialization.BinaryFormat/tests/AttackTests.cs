@@ -275,4 +275,8 @@ public class AttackTests : ReadTests
 
         SerializationRecord serializationRecord = PayloadReader.Read(stream);
     }
+
+    [Fact]
+    public void UndoTruncatedTypeNamesIsSetToFalseByDefault()
+        => Assert.False(new PayloadOptions().UndoTruncatedTypeNames);
 }

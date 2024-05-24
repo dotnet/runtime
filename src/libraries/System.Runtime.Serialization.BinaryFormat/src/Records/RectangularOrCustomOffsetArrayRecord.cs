@@ -15,13 +15,12 @@ internal sealed class RectangularOrCustomOffsetArrayRecord : ArrayRecord
     private TypeName? _elementTypeName;
 
     private RectangularOrCustomOffsetArrayRecord(Type elementType, ArrayInfo arrayInfo,
-        MemberTypeInfo memberTypeInfo, int[] lengths, int[] offsets, RecordMap recordMap) : base(arrayInfo)
+        MemberTypeInfo memberTypeInfo, int[] lengths, int[] offsets) : base(arrayInfo)
     {
         ElementType = elementType;
         MemberTypeInfo = memberTypeInfo;
         _lengths = lengths;
         Offsets = offsets;
-        RecordMap = recordMap;
         Values = new();
     }
 
@@ -30,7 +29,7 @@ internal sealed class RectangularOrCustomOffsetArrayRecord : ArrayRecord
     public override ReadOnlySpan<int> Lengths => _lengths.AsSpan();
 
     public override TypeName ElementTypeName
-        => _elementTypeName ??= MemberTypeInfo.GetElementTypeName(RecordMap);
+        => _elementTypeName ??= MemberTypeInfo.GetElementTypeName();
 
     private Type ElementType { get; }
 
@@ -38,15 +37,13 @@ internal sealed class RectangularOrCustomOffsetArrayRecord : ArrayRecord
 
     private int[] Offsets { get; }
 
-    private RecordMap RecordMap { get; }
-
     // This is the only array type that may have more elements than Array.MaxLength,
     // that is why we use Linked instead of regular List here.
     // TODO: verify my assumptions as I doubt them myself
     private LinkedList<object> Values { get; }
 
     internal override bool IsElementType(Type typeElement)
-        => MemberTypeInfo.IsElementType(typeElement, RecordMap);
+        => MemberTypeInfo.IsElementType(typeElement);
 
     [RequiresDynamicCode("May call Array.CreateInstance() and Type.MakeArrayType().")]
     private protected override Array Deserialize(Type arrayType, bool allowNulls, int maxLength)
@@ -153,7 +150,7 @@ internal sealed class RectangularOrCustomOffsetArrayRecord : ArrayRecord
     }
 
     internal static RectangularOrCustomOffsetArrayRecord Create(ArrayInfo arrayInfo,
-        MemberTypeInfo memberTypeInfo, int[] lengths, int[] offsets, RecordMap recordMap)
+        MemberTypeInfo memberTypeInfo, int[] lengths, int[] offsets)
     {
         Type elementType = memberTypeInfo.Infos[0].BinaryType switch
         {
@@ -164,7 +161,7 @@ internal sealed class RectangularOrCustomOffsetArrayRecord : ArrayRecord
             _ => typeof(ClassRecord)
         };
 
-        return new(elementType, arrayInfo, memberTypeInfo, lengths, offsets, recordMap);
+        return new(elementType, arrayInfo, memberTypeInfo, lengths, offsets);
     }
 
     private static Type MapPrimitive(PrimitiveType primitiveType)

@@ -27,6 +27,10 @@ internal sealed partial class BinaryFormattedObject
 #pragma warning restore SYSLIB0050
 
     private static readonly Options s_defaultOptions = new();
+    private static readonly PayloadOptions s_payloadOptions = new()
+    {
+        UndoTruncatedTypeNames = true // Required for backward compat
+    };
     private readonly Options _options;
 
     private ITypeResolver? _typeResolver;
@@ -41,7 +45,7 @@ internal sealed partial class BinaryFormattedObject
 
         try
         {
-            RootRecord = PayloadReader.Read(stream, out var readonlyRecordMap, leaveOpen: true);
+            RootRecord = PayloadReader.Read(stream, out var readonlyRecordMap, options: s_payloadOptions, leaveOpen: true);
             RecordMap = readonlyRecordMap;
         }
         catch (Exception ex) when (ex is ArgumentException or InvalidCastException or ArithmeticException or IOException)

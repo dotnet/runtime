@@ -20,16 +20,17 @@ namespace System.Runtime.Serialization.BinaryFormat;
 [DebuggerDisplay("{TypeName}")]
 internal sealed class ClassTypeInfo
 {
-    internal ClassTypeInfo(TypeName typeName, int libraryId)
-    {
-        TypeName = typeName;
-        LibraryId = libraryId;
-    }
+    internal ClassTypeInfo(TypeName typeName) => TypeName = typeName;
 
     internal TypeName TypeName { get; }
 
-    internal int LibraryId { get; }
+    internal static ClassTypeInfo Parse(BinaryReader reader, PayloadOptions options, RecordMap recordMap)
+    {
+        string rawName = reader.ReadString();
+        int libraryId = reader.ReadInt32();
 
-    internal static ClassTypeInfo Parse(BinaryReader reader, PayloadOptions options)
-        => new(reader.ReadTypeName(options), reader.ReadInt32());
+        BinaryLibraryRecord library = (BinaryLibraryRecord)recordMap[libraryId];
+
+        return new(rawName.ParseNonSystemClassRecordTypeName(library, options));
+    }
 }

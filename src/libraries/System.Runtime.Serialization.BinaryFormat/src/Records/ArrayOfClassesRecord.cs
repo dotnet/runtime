@@ -10,11 +10,10 @@ internal sealed class ArrayOfClassesRecord : ArrayRecord<ClassRecord>
 {
     private TypeName? _elementTypeName;
 
-    internal ArrayOfClassesRecord(ArrayInfo arrayInfo, MemberTypeInfo memberTypeInfo, RecordMap recordMap)
+    internal ArrayOfClassesRecord(ArrayInfo arrayInfo, MemberTypeInfo memberTypeInfo)
         : base(arrayInfo)
     {
         MemberTypeInfo = memberTypeInfo;
-        RecordMap = recordMap;
         Records = [];
     }
 
@@ -24,9 +23,7 @@ internal sealed class ArrayOfClassesRecord : ArrayRecord<ClassRecord>
 
     private MemberTypeInfo MemberTypeInfo { get; }
 
-    private RecordMap RecordMap { get; }
-
-    public override TypeName ElementTypeName => _elementTypeName ??= MemberTypeInfo.GetElementTypeName(RecordMap);
+    public override TypeName ElementTypeName => _elementTypeName ??= MemberTypeInfo.GetElementTypeName();
 
     protected override ClassRecord?[] ToArrayOfT(bool allowNulls)
     {
@@ -79,5 +76,5 @@ internal sealed class ArrayOfClassesRecord : ArrayRecord<ClassRecord>
     }
 
     internal override bool IsElementType(Type typeElement)
-        => MemberTypeInfo.IsElementType(typeElement, RecordMap);
+        => MemberTypeInfo.IsElementType(typeElement);
 }

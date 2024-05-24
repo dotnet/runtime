@@ -91,39 +91,4 @@ internal static class BinaryReaderExtensions
 
         return Unsafe.As<long, DateTime>(ref data);
     }
-
-    internal static TypeName ReadTypeName(this BinaryReader binaryReader, PayloadOptions options)
-    {
-        string name = binaryReader.ReadString();
-        if (!TypeName.TryParse(name.AsSpan(), out TypeName? typeName, options.TypeNameParseOptions)
-            || typeName.AssemblyName is not null) // Type names must not contain assembly names
-        {
-            throw
-#if SYSTEM_RUNTIME_SERIALIZATION_BINARYFORMAT
-                new SerializationException
-#else
-                new NotSupportedException
-#endif
-                (SR.Format(SR.Serialization_InvalidTypeName, name));
-        }
-
-        return typeName;
-    }
-
-    internal static AssemblyNameInfo ReadLibraryName(this BinaryReader binaryReader)
-    {
-        string name = binaryReader.ReadString();
-        if (!AssemblyNameInfo.TryParse(name.AsSpan(), out AssemblyNameInfo? libraryName))
-        {
-            throw
-#if SYSTEM_RUNTIME_SERIALIZATION_BINARYFORMAT
-                new SerializationException
-#else
-                new NotSupportedException
-#endif
-                (SR.Format(SR.Serialization_InvalidLibraryName, name));
-        }
-
-        return libraryName;
-    }
 }

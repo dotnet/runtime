@@ -222,9 +222,6 @@
   <data name="NotSupported_RecordType" xml:space="preserve">
     <value>{0} Record Type is not supported by design.</value>
   </data>
-  <data name="Serialization_InvalidLibraryName" xml:space="preserve">
-    <value>Invalid library name: `{0}`.</value>
-  </data>
   <data name="Serialization_InvalidReference" xml:space="preserve">
     <value>Member reference was pointing to a record of unexpected type.</value>
   </data>
@@ -260,5 +257,8 @@
   </data>
   <data name="Serialization_TypeNotSerializable" xml:space="preserve">
     <value>Type '{0}' is not marked as serializable.</value>
+  </data>
+  <data name="Serialization_InvalidTypeOrAssemblyName" xml:space="preserve">
+    <value>Invalid type or assembly name: `{0},{1}`.</value>
   </data>
 </root>

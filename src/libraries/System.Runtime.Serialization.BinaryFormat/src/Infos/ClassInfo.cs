@@ -18,26 +18,36 @@ namespace System.Runtime.Serialization.BinaryFormat;
 ///   </see>
 ///  </para>
 /// </remarks>
-[DebuggerDisplay("{Name}")]
+[DebuggerDisplay("{TypeName}")]
 internal sealed class ClassInfo
 {
-    private ClassInfo(int objectId, TypeName name, Dictionary<string, int> memberNames)
+    private readonly string _rawName;
+    private TypeName? _typeName;
+
+    private ClassInfo(int objectId, string rawName, Dictionary<string, int> memberNames)
     {
         ObjectId = objectId;
-        Name = name;
+        _rawName = rawName;
         MemberNames = memberNames;
     }
 
     internal int ObjectId { get; }
 
-    internal TypeName Name { get; }
+    internal TypeName TypeName
+    {
+        get
+        {
+            Debug.Assert(_typeName is not null);
+            return _typeName;
+        }
+    }
 
     internal Dictionary<string, int> MemberNames { get; }
 
-    internal static ClassInfo Parse(BinaryReader reader, PayloadOptions payloadOptions)
+    internal static ClassInfo Parse(BinaryReader reader)
     {
         int objectId = reader.ReadInt32();
-        TypeName typeName = reader.ReadTypeName(payloadOptions);
+        string typeName = reader.ReadString();
         int memberCount = reader.ReadInt32();
 
         // The attackers could create an input with MANY member names.
@@ -57,4 +67,10 @@ internal sealed class ClassInfo
 
         return new(objectId, typeName, memberNames);
     }
+
+    internal void ParseTypeName(BinaryLibraryRecord libraryRecord, PayloadOptions payloadOptions)
+        => _typeName = _rawName.ParseNonSystemClassRecordTypeName(libraryRecord, payloadOptions);
+
+    internal void ParseTypeName(PayloadOptions payloadOptions)
+        => _typeName = _rawName.ParseSystemRecordTypeName(payloadOptions);
 }
