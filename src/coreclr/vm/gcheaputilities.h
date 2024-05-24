@@ -4,7 +4,7 @@
 #ifndef _GCHEAPUTILITIES_H_
 #define _GCHEAPUTILITIES_H_
 
-#include "eventtrace.h"
+#include "common.h"
 #include "gcinterface.h"
 #include "math.h"
 
@@ -55,9 +55,13 @@ typedef struct _ee_alloc_context
 
     static inline bool IsRandomizedSamplingEnabled()
     {
+#ifdef FEATURE_EVENT_TRACE
         return ETW_TRACING_CATEGORY_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context,
                                         TRACE_LEVEL_INFORMATION,
                                         CLR_ALLOCATIONSAMPLING_KEYWORD);
+#else
+        return false;
+#endif // FEATURE_EVENT_TRACE
     }
 
     // Regenerate the randomized sampling limit and update the combined_limit field.
