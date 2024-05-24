@@ -2253,37 +2253,50 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 		} else if (!strcmp (tm, "InitBlockUnaligned") || !strcmp (tm, "InitBlock")) {
 			*op = MINT_INITBLK;
 		} else if (!strcmp (tm, "IsNullRef")) {
+#if SIZEOF_VOID_P == 4
 			*op = MINT_CEQ0_I4;
+#else
+			// FIXME: No CEQ0_I8
+#endif
 		} else if (!strcmp (tm, "NullRef")) {
+#if SIZEOF_VOID_P == 4
 			*op = MINT_LDC_I4_0;
-		}
-		/*
-		} else if (!strcmp (tm, "Add")) {
+#else
+			*op = MINT_LDC_I8_0;
+#endif
+		} /* else if (!strcmp (tm, "Add")) {
 			MonoGenericContext *ctx = mono_method_get_context (target_method);
 			g_assert (ctx);
 			g_assert (ctx->method_inst);
 			g_assert (ctx->method_inst->type_argc == 1);
-
-			// (ldarg 1) = (ldarg 1) mul (sizeof !!T)
 			MonoType *t = ctx->method_inst->type_argv [0];
-			int align;
-			int esize = mono_type_size (t, &align);
-			interp_add_ins (td, MINT_MUL_I4_IMM);
-			interp_ins_set_sreg (td->last_ins, td->sp [1].var);
-			push_simple_type (td, STACK_TYPE_I4);
-			interp_ins_set_dreg (td->last_ins, td->sp [1].var);
+
+			int base_var = td->sp[-2].var,
+				offset_var = td->sp[-1].var,
+				temp, align, esize;
+
+			push_simple_type (td, STACK_TYPE_I);
+			temp = td->sp [-1].var;
+			td->sp -= 3;
+
+			// temp = (ldarg 1) mul (sizeof !!T)
+			esize = mono_type_size (t, &align);
+			g_assert (esize <= 32767);
+			interp_add_ins (td, MINT_MUL_P_IMM);
+			td->last_ins->data[0] = (gint16)esize;
+			interp_ins_set_sreg (td->last_ins, offset_var);
+			interp_ins_set_dreg (td->last_ins, temp);
 			td->ip += 4;
 
-			// (ldarg 0) add (ldarg 1)
-			interp_add_ins (td, MINT_ADD_I4);
-			push_simple_type (td, STACK_TYPE_I4);
-			interp_ins_set_sregs2 (td->last_ins, td->sp [0].var, td->sp [1].var);
+			// (ldarg 0) add temp
+			interp_add_ins (td, MINT_ADD_P);
+			interp_ins_set_sregs2 (td->last_ins, base_var, temp);
+			push_simple_type (td, STACK_TYPE_MP);
 			interp_ins_set_dreg (td->last_ins, td->sp [-1].var);
+			td->ip += 4;
 
 			return TRUE;
-		}
-		*/
-		// FIXME: ReadUnaligned
+		} */
 	} else if (in_corlib && !strcmp (klass_name_space, "System.Runtime.CompilerServices") && !strcmp (klass_name, "RuntimeHelpers")) {
 		if (!strcmp (tm, "get_OffsetToStringData")) {
 			g_assert (csignature->param_count == 0);
