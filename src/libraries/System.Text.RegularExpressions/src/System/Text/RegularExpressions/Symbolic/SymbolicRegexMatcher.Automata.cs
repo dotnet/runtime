@@ -41,6 +41,16 @@ namespace System.Text.RegularExpressions.Symbolic
         private StateFlags[] _stateFlagsArray;
 
         /// <summary>
+        /// Used to short-circuit nullability in the hot loop
+        /// </summary>
+        private bool[] _canBeNullableArray;
+
+        /// <summary>
+        /// Used to short-circuit accelerated states in the hot loop
+        /// </summary>
+        private bool[] _canBeAcceleratedArray;
+
+        /// <summary>
         /// The transition function for DFA mode.
         /// Each state has a range of consecutive entries for each minterm ID. A range of size 2^L, where L is
         /// the number of bits required to represent the largest minterm ID <see cref="_mintermsLog"/>, is reserved
@@ -178,9 +188,13 @@ namespace System.Text.RegularExpressions.Symbolic
                     ArrayResizeAndVolatilePublish(ref _stateArray, newsize);
                     ArrayResizeAndVolatilePublish(ref _dfaDelta, newsize << _mintermsLog);
                     ArrayResizeAndVolatilePublish(ref _stateFlagsArray, newsize);
+                    ArrayResizeAndVolatilePublish(ref _canBeNullableArray, newsize);
+                    ArrayResizeAndVolatilePublish(ref _canBeAcceleratedArray, newsize);
                 }
                 _stateArray[state.Id] = state;
-                _stateFlagsArray[state.Id] = state.BuildStateFlags(Solver, isInitialState);
+                _stateFlagsArray[state.Id] = state.BuildStateFlags(isInitialState);
+                _canBeNullableArray[state.Id] = _stateFlagsArray[state.Id].CanBeNullable();
+                _canBeAcceleratedArray[state.Id] = _stateFlagsArray[state.Id].IsAccelerated();
             }
 
             return state;
