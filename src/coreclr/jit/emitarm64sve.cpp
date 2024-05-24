@@ -3785,7 +3785,9 @@ void emitter::emitInsSve_R_R_R(instruction     ins,
                 // MOV is an alias for CPY, and is always the preferred disassembly.
                 ins = INS_sve_mov;
             }
-            else if (sopt == INS_SCALABLE_OPTS_PREDICATE_MERGE)
+            // TODO-SVE: Change the below check to INS_SCALABLE_OPTS_PREDICATE_MERGE
+            // once predicate registers are present.
+            else if (sopt == INS_SCALABLE_OPTS_PREDICATE_MERGE_MOV)
             {
                 assert(isVectorRegister(reg1));
                 assert(isPredicateRegister(reg2));
@@ -4494,21 +4496,20 @@ void emitter::emitInsSve_R_R_R_I(instruction     ins,
             assert(isVectorRegister(reg2));    // nnnnn
             assert(isLowVectorRegister(reg3)); // mmmm
 
-            if (opt == INS_OPTS_SCALABLE_B)
+            if (opt == INS_OPTS_SCALABLE_H)
+            {
+                assert(isValidUimm<2>(imm)); // ii
+                fmt = IF_SVE_EG_3A;
+            }
+            else if (opt == INS_OPTS_SCALABLE_S)
             {
                 assert((REG_V0 <= reg3) && (reg3 <= REG_V7)); // mmm
                 assert(isValidUimm<2>(imm));                  // ii
                 fmt = IF_SVE_EY_3A;
             }
-            else if (opt == INS_OPTS_SCALABLE_H)
-            {
-                assert((REG_V0 <= reg3) && (reg3 <= REG_V7)); // mmm
-                assert(isValidUimm<2>(imm));                  // ii
-                fmt = IF_SVE_EG_3A;
-            }
             else
             {
-                assert(insOptsNone(opt));
+                assert(opt == INS_OPTS_SCALABLE_D);
                 assert(isValidUimm<1>(imm)); // i
                 opt = INS_OPTS_SCALABLE_H;
                 fmt = IF_SVE_EY_3B;
@@ -5892,7 +5893,7 @@ void emitter::emitInsSve_R_R_R_R(instruction     ins,
                 {
                     // mov is a preferred alias for sel
                     return emitInsSve_R_R_R(INS_sve_mov, attr, reg1, reg2, reg3, opt,
-                                            INS_SCALABLE_OPTS_PREDICATE_MERGE);
+                                            INS_SCALABLE_OPTS_PREDICATE_MERGE_MOV);
                 }
 
                 assert(insOptsScalableStandard(opt));

@@ -171,7 +171,7 @@ int g_rgCrstLevelMap[] =
     13,         // CrstDebuggerMutex
     0,          // CrstDelegateToFPtrHash
     0,          // CrstDynamicIL
-    3,          // CrstDynamicMT
+    10,         // CrstDynamicMT
     0,          // CrstEtwTypeLogHash
     20,         // CrstEventPipe
     0,          // CrstEventStore

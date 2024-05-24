@@ -425,12 +425,12 @@ void BulkStaticsLogger::FireBulkStaticsEvent()
     _ASSERTE(m_domain != NULL);
 
     unsigned short instance = GetClrInstanceId();
-    unsigned __int64 appDomain = (unsigned __int64)m_domain;
+    uint64_t appDomain = (uint64_t)m_domain;
 
 #if !defined(HOST_UNIX)
     EVENT_DATA_DESCRIPTOR eventData[4];
     EventDataDescCreate(&eventData[0], &m_count, sizeof(const unsigned int)  );
-    EventDataDescCreate(&eventData[1], &appDomain, sizeof(unsigned __int64)  );
+    EventDataDescCreate(&eventData[1], &appDomain, sizeof(uint64_t)  );
     EventDataDescCreate(&eventData[2], &instance, sizeof(const unsigned short)  );
     EventDataDescCreate(&eventData[3], m_buffer, m_used);
 

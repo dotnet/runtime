@@ -123,6 +123,7 @@ DEFINE_DACVAR(BOOL, dac__g_isNewExceptionHandlingEnabled, ::g_isNewExceptionHand
 DEFINE_DACVAR(PTR_SString, SString__s_Empty, SString::s_Empty)
 
 DEFINE_DACVAR(INT32, ArrayBase__s_arrayBoundsZero, ArrayBase::s_arrayBoundsZero)
+DEFINE_DACVAR(BOOL, CodeVersionManager__s_HasNonDefaultILVersions, CodeVersionManager::s_HasNonDefaultILVersions)
 
 DEFINE_DACVAR(PTR_JITNotification, dac__g_pNotificationTable, ::g_pNotificationTable)
 DEFINE_DACVAR(ULONG32, dac__g_dacNotificationFlags, ::g_dacNotificationFlags)

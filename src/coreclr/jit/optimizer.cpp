@@ -872,8 +872,8 @@ bool Compiler::optComputeLoopRep(int        constInit,
 {
     noway_assert(genActualType(iterOperType) == TYP_INT);
 
-    __int64 constInitX;
-    __int64 constLimitX;
+    int64_t constInitX;
+    int64_t constLimitX;
 
     unsigned loopCount;
     int      iterSign;
@@ -953,7 +953,7 @@ bool Compiler::optComputeLoopRep(int        constInit,
 
     switch (testOper)
     {
-        __int64 iterAtExitX;
+        int64_t iterAtExitX;
 
         case GT_EQ:
             // Something like "for (i=init; i == lim; i++)" doesn't make any sense.
@@ -3266,8 +3266,8 @@ bool Compiler::optNarrowTree(GenTree* tree, var_types srct, var_types dstt, Valu
             /* Constants can usually be narrowed by changing their value */
 
 #ifndef TARGET_64BIT
-            __int64 lval;
-            __int64 lmask;
+            int64_t lval;
+            int64_t lmask;
 
             case GT_CNS_LNG:
                 lval  = tree->AsIntConCommon()->LngValue();
@@ -5918,7 +5918,12 @@ void Compiler::optRemoveRedundantZeroInits()
             {
                 if (((tree->gtFlags & GTF_CALL) != 0))
                 {
-                    hasGCSafePoint = true;
+                    // if this is not a No-GC helper
+                    if (!tree->IsCall() || !emitter::emitNoGChelper(tree->AsCall()->GetHelperNum()))
+                    {
+                        // assume that we have a safe point.
+                        hasGCSafePoint = true;
+                    }
                 }
 
                 hasImplicitControlFlow |= hasEHSuccs && ((tree->gtFlags & GTF_EXCEPT) != 0);
@@ -6071,9 +6076,10 @@ void Compiler::optRemoveRedundantZeroInits()
                             (!hasImplicitControlFlow || (lclDsc->lvTracked && !lclDsc->lvLiveInOutOfHndlr)))
                         {
                             // If compMethodRequiresPInvokeFrame() returns true, lower may later
-                            // insert a call to CORINFO_HELP_INIT_PINVOKE_FRAME which is a gc-safe point.
-                            if (!lclDsc->HasGCPtr() ||
-                                (!GetInterruptible() && !hasGCSafePoint && !compMethodRequiresPInvokeFrame()))
+                            // insert a call to CORINFO_HELP_INIT_PINVOKE_FRAME but that is not a gc-safe point.
+                            assert(emitter::emitNoGChelper(CORINFO_HELP_INIT_PINVOKE_FRAME));
+
+                            if (!lclDsc->HasGCPtr() || (!GetInterruptible() && !hasGCSafePoint))
                             {
                                 // The local hasn't been used and won't be reported to the gc between
                                 // the prolog and this explicit initialization. Therefore, it doesn't

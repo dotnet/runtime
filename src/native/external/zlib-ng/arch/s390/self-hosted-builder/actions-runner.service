@@ -1,0 +1,24 @@
+[Unit]
+Description=Self-Hosted IBM Z Github Actions Runner
+Wants=qemu-user-static
+After=qemu-user-static
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+Restart=always
+ExecStartPre=-/usr/bin/docker rm --force actions-runner
+ExecStart=/usr/bin/docker run \
+              --env-file=/etc/actions-runner \
+              --init \
+              --interactive \
+              --name=actions-runner \
+              --rm \
+              --volume=actions-runner:/home/actions-runner \
+              iiilinuxibmcom/actions-runner
+ExecStop=/bin/sh -c "docker exec actions-runner kill -INT -- -1"
+ExecStop=/bin/sh -c "docker wait actions-runner"
+ExecStop=/bin/sh -c "docker rm actions-runner"
+
+[Install]
+WantedBy=multi-user.target

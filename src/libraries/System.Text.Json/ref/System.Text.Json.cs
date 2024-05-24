@@ -401,6 +401,7 @@ namespace System.Text.Json
         public System.Text.Json.JsonNamingPolicy? PropertyNamingPolicy { get { throw null; } set { } }
         public System.Text.Json.JsonCommentHandling ReadCommentHandling { get { throw null; } set { } }
         public System.Text.Json.Serialization.ReferenceHandler? ReferenceHandler { get { throw null; } set { } }
+        public bool RespectNullableAnnotations { get { throw null; } set { } }
         public System.Text.Json.Serialization.Metadata.IJsonTypeInfoResolver? TypeInfoResolver { get { throw null; } set { } }
         public System.Collections.Generic.IList<System.Text.Json.Serialization.Metadata.IJsonTypeInfoResolver> TypeInfoResolverChain { get { throw null; } }
         public System.Text.Json.Serialization.JsonUnknownTypeHandling UnknownTypeHandling { get { throw null; } set { } }
@@ -668,9 +669,9 @@ namespace System.Text.Json.Nodes
     public sealed partial class JsonArray : System.Text.Json.Nodes.JsonNode, System.Collections.Generic.ICollection<System.Text.Json.Nodes.JsonNode?>, System.Collections.Generic.IEnumerable<System.Text.Json.Nodes.JsonNode?>, System.Collections.Generic.IList<System.Text.Json.Nodes.JsonNode?>, System.Collections.IEnumerable
     {
         public JsonArray(System.Text.Json.Nodes.JsonNodeOptions? options = default(System.Text.Json.Nodes.JsonNodeOptions?)) { }
-        public JsonArray(System.Text.Json.Nodes.JsonNodeOptions options, System.ReadOnlySpan<System.Text.Json.Nodes.JsonNode?> items) { }
+        public JsonArray(System.Text.Json.Nodes.JsonNodeOptions options, params System.ReadOnlySpan<System.Text.Json.Nodes.JsonNode?> items) { }
         public JsonArray(System.Text.Json.Nodes.JsonNodeOptions options, params System.Text.Json.Nodes.JsonNode?[] items) { }
-        public JsonArray(System.ReadOnlySpan<System.Text.Json.Nodes.JsonNode?> items) { }
+        public JsonArray(params System.ReadOnlySpan<System.Text.Json.Nodes.JsonNode?> items) { }
         public JsonArray(params System.Text.Json.Nodes.JsonNode?[] items) { }
         public int Count { get { throw null; } }
         bool System.Collections.Generic.ICollection<System.Text.Json.Nodes.JsonNode?>.IsReadOnly { get { throw null; } }
@@ -1091,6 +1092,7 @@ namespace System.Text.Json.Serialization
         public bool PropertyNameCaseInsensitive { get { throw null; } set { } }
         public System.Text.Json.Serialization.JsonKnownNamingPolicy PropertyNamingPolicy { get { throw null; } set { } }
         public System.Text.Json.JsonCommentHandling ReadCommentHandling { get { throw null; } set { } }
+        public bool RespectNullableAnnotations { get { throw null; } set { } }
         public System.Text.Json.Serialization.JsonUnknownTypeHandling UnknownTypeHandling { get { throw null; } set { } }
         public System.Text.Json.Serialization.JsonUnmappedMemberHandling UnmappedMemberHandling { get { throw null; } set { } }
         public bool UseStringEnumConverter { get { throw null; } set { } }
@@ -1274,6 +1276,7 @@ namespace System.Text.Json.Serialization.Metadata
         public JsonParameterInfoValues() { }
         public object? DefaultValue { get { throw null; } init { } }
         public bool HasDefaultValue { get { throw null; } init { } }
+        public bool IsNullable { get { throw null; } init { } }
         public string Name { get { throw null; } init { } }
         public System.Type ParameterType { get { throw null; } init { } }
         public int Position { get { throw null; } init { } }
@@ -1294,7 +1297,9 @@ namespace System.Text.Json.Serialization.Metadata
         public System.Text.Json.Serialization.JsonConverter? CustomConverter { get { throw null; } set { } }
         public System.Func<object, object?>? Get { get { throw null; } set { } }
         public bool IsExtensionData { get { throw null; } set { } }
+        public bool IsGetNullable { get { throw null; } set { } }
         public bool IsRequired { get { throw null; } set { } }
+        public bool IsSetNullable { get { throw null; } set { } }
         public string Name { get { throw null; } set { } }
         public System.Text.Json.Serialization.JsonNumberHandling? NumberHandling { get { throw null; } set { } }
         public System.Text.Json.Serialization.JsonObjectCreationHandling? ObjectCreationHandling { get { throw null; } set { } }
@@ -1363,7 +1368,7 @@ namespace System.Text.Json.Serialization.Metadata
     }
     public static partial class JsonTypeInfoResolver
     {
-        public static System.Text.Json.Serialization.Metadata.IJsonTypeInfoResolver Combine(System.ReadOnlySpan<System.Text.Json.Serialization.Metadata.IJsonTypeInfoResolver?> resolvers) { throw null; }
+        public static System.Text.Json.Serialization.Metadata.IJsonTypeInfoResolver Combine(params System.ReadOnlySpan<System.Text.Json.Serialization.Metadata.IJsonTypeInfoResolver?> resolvers) { throw null; }
         public static System.Text.Json.Serialization.Metadata.IJsonTypeInfoResolver Combine(params System.Text.Json.Serialization.Metadata.IJsonTypeInfoResolver?[] resolvers) { throw null; }
         public static System.Text.Json.Serialization.Metadata.IJsonTypeInfoResolver WithAddedModifier(this System.Text.Json.Serialization.Metadata.IJsonTypeInfoResolver resolver, System.Action<System.Text.Json.Serialization.Metadata.JsonTypeInfo> modifier) { throw null; }
     }

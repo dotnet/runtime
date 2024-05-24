@@ -673,6 +673,9 @@
 
     <!-- NativeAOT specific -->
     <ItemGroup Condition="'$(XunitTestBinBase)' != '' and '$(TestBuildMode)' == 'nativeaot' and '$(RuntimeFlavor)' == 'coreclr'">
+        <ExcludeList Include="$(XunitTestBinBase)/baseservices/threading/regressions/beta2/437017/**">
+            <Issue>https://github.com/dotnet/runtime/issues/102544</Issue>
+        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/devdiv_902271/DevDiv_902271/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
@@ -1879,9 +1882,6 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/opt/Structs/MemsetMemcpyNullref/*">
             <Issue>https://github.com/dotnet/runtime/issues/98628</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/Interop/Swift/SwiftAbiStress/**">
-            <Issue>https://github.com/dotnet/runtime/issues/93631: Swift frozen struct support is not implemented on Mono yet</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Interop/Swift/SwiftRetAbiStress/**">
             <Issue>https://github.com/dotnet/runtime/issues/93631: Swift frozen struct support is not implemented on Mono yet</Issue>
         </ExcludeList>
@@ -2144,9 +2144,6 @@
         </ExcludeList>
         <ExcludeList Include = "$(XUnitTestBinBase)/JIT/Directed/Arrays/nintindexoutofrange/**">
             <Issue>https://github.com/dotnet/runtime/issues/71656</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/Interop/Swift/SwiftErrorHandling/**">
-            <Issue>Reverse P/Invokes not supported yet</Issue>
         </ExcludeList>
         <!-- End interpreter issues -->
     </ItemGroup>

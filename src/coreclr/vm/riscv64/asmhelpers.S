@@ -382,7 +382,7 @@ NESTED_ENTRY ThePreStub, _TEXT, NoHandler
     EPILOG_BRANCH_REG  t4
 NESTED_END ThePreStub, _TEXT
 
-// ------------------------------------------------------------------\
+// ------------------------------------------------------------------
 
 // EXTERN_C int __fastcall HelperMethodFrameRestoreState(
 // INDEBUG_COMMA(HelperMethodFrame *pFrame)

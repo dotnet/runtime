@@ -118,7 +118,7 @@ enum _regNumber_enum : unsigned
     ACTUAL_REG_COUNT = REG_COUNT - 1 // everything but REG_STK (only real regs)
 };
 
-enum _regMask_enum : unsigned __int64
+enum _regMask_enum : uint64_t
 {
     RBM_NONE = 0,
 #define REGDEF(name, rnum, mask, sname) RBM_##name = mask,
@@ -139,7 +139,7 @@ enum _regNumber_enum : unsigned
     ACTUAL_REG_COUNT = REG_COUNT - 1 // everything but REG_STK (only real regs)
 };
 
-enum _regMask_enum : unsigned __int64
+enum _regMask_enum : uint64_t
 {
     RBM_NONE = 0,
 #define REGDEF(name, rnum, mask, xname, wname) RBM_##name = mask,
@@ -211,17 +211,30 @@ enum _regMask_enum : unsigned
 typedef _regNumber_enum regNumber;
 typedef unsigned char   regNumberSmall;
 
-#if defined(TARGET_AMD64) || defined(TARGET_ARM) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-typedef unsigned __int64 regMaskTP;
-#elif defined(TARGET_ARM64)
-typedef unsigned __int64 regMaskSmall;
+#if REGMASK_BITS == 8
+typedef unsigned char regMaskSmall;
+#define REG_MASK_INT_FMT "%02X"
+#define REG_MASK_ALL_FMT "%02X"
+#elif REGMASK_BITS == 16
+typedef unsigned short regMaskSmall;
+#define REG_MASK_INT_FMT "%04X"
+#define REG_MASK_ALL_FMT "%04X"
+#elif REGMASK_BITS == 32
+typedef unsigned regMaskSmall;
+#define REG_MASK_INT_FMT "%08X"
+#define REG_MASK_ALL_FMT "%08X"
+#else
+typedef uint64_t regMaskSmall;
+#define REG_MASK_INT_FMT "%04llX"
+#define REG_MASK_ALL_FMT "%016llX"
+#endif
+
 struct regMaskTP
 {
 private:
-    uint64_t low;
-
+    regMaskSmall low;
 public:
-    constexpr regMaskTP(uint64_t regMask)
+    constexpr regMaskTP(regMaskSmall regMask)
         : low(regMask)
     {
     }
@@ -240,12 +253,25 @@ public:
         return (regMaskSmall)low;
     }
 
+#ifdef TARGET_ARM
+    explicit operator int() const
+    {
+        return (int)low;
+    }
+    explicit operator BYTE() const
+    {
+        return (BYTE)low;
+    }
+#endif
+
+#ifndef TARGET_X86
     explicit operator unsigned int() const
     {
         return (unsigned int)low;
     }
+#endif
 
-    uint64_t getLow() const
+    regMaskSmall getLow() const
     {
         return low;
     }
@@ -333,51 +359,40 @@ static bool operator!=(regMaskTP first, regMaskTP second)
     return (first.getLow() != second.getLow());
 }
 
+#ifdef TARGET_ARM
+static regMaskTP operator-(regMaskTP first, regMaskTP second)
+{
+    regMaskTP result(first.getLow() - second.getLow());
+    return result;
+}
+
+static bool operator>(regMaskTP first, regMaskTP second)
+{
+    return first.getLow() > second.getLow();
+}
+
+static regMaskTP& operator<<=(regMaskTP& first, const int b)
+{
+    first = first << b;
+    return first;
+}
+#endif
+
 static regMaskTP operator~(regMaskTP first)
 {
     regMaskTP result(~first.getLow());
     return result;
 }
 
-#else
-typedef unsigned regMaskTP;
-#endif
-
 static uint32_t PopCount(regMaskTP value)
 {
-#ifdef TARGET_ARM64
     return BitOperations::PopCount(value.getLow());
-#else
-    return BitOperations::PopCount(value);
-#endif
 }
 
 static uint32_t BitScanForward(regMaskTP mask)
 {
-#ifdef TARGET_ARM64
     return BitOperations::BitScanForward(mask.getLow());
-#else
-    return BitOperations::BitScanForward(mask);
-#endif
 }
-
-#if REGMASK_BITS == 8
-typedef unsigned char regMaskSmall;
-#define REG_MASK_INT_FMT "%02X"
-#define REG_MASK_ALL_FMT "%02X"
-#elif REGMASK_BITS == 16
-typedef unsigned short regMaskSmall;
-#define REG_MASK_INT_FMT "%04X"
-#define REG_MASK_ALL_FMT "%04X"
-#elif REGMASK_BITS == 32
-typedef unsigned regMaskSmall;
-#define REG_MASK_INT_FMT "%08X"
-#define REG_MASK_ALL_FMT "%08X"
-#else
-typedef unsigned __int64 regMaskSmall;
-#define REG_MASK_INT_FMT "%04llX"
-#define REG_MASK_ALL_FMT "%016llX"
-#endif
 
 /*****************************************************************************/
 
@@ -907,8 +922,8 @@ C_ASSERT((RBM_INT_CALLEE_SAVED & RBM_FPBASE) == RBM_NONE);
 /*****************************************************************************/
 
 #ifdef TARGET_64BIT
-typedef unsigned __int64 target_size_t;
-typedef __int64          target_ssize_t;
+typedef uint64_t target_size_t;
+typedef int64_t  target_ssize_t;
 #define TARGET_SIGN_BIT (1ULL << 63)
 
 #else // !TARGET_64BIT

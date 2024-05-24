@@ -51,7 +51,7 @@ lindent = "    "
 coreCLRPalDataTypeMapping={
     #constructed types
     "win:null"          :" ",
-    "win:Int64"         :"const __int64",
+    "win:Int64"         :"const int64_t",
     "win:ULong"         :"const ULONG",
     "win:count"         :"*",
     "win:Struct"        :"const void",
@@ -62,7 +62,7 @@ coreCLRPalDataTypeMapping={
     "win:Double"        :"const double",
     "win:Int32"         :"const signed int",
     "win:Boolean"       :"const BOOL",
-    "win:UInt64"        :"const unsigned __int64",
+    "win:UInt64"        :"const uint64_t",
     "win:UInt32"        :"const unsigned int",
     "win:UInt16"        :"const unsigned short",
     "win:UInt8"         :"const unsigned char",
@@ -115,7 +115,7 @@ monoEventPipeDataTypeMapping={
 aotPalDataTypeMapping={
     #constructed types
     "win:null"          :" ",
-    "win:Int64"         :"const __int64",
+    "win:Int64"         :"const int64_t",
     "win:ULong"         :"const ULONG",
     "win:count"         :"*",
     "win:Struct"        :"const void",
@@ -126,7 +126,7 @@ aotPalDataTypeMapping={
     "win:Double"        :"const double",
     "win:Int32"         :"const signed int",
     "win:Boolean"       :"const BOOL",
-    "win:UInt64"        :"const unsigned __int64",
+    "win:UInt64"        :"const uint64_t",
     "win:UInt32"        :"const unsigned int",
     "win:UInt16"        :"const unsigned short",
     "win:UInt8"         :"const unsigned char",
