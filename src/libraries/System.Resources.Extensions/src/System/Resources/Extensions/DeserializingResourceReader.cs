@@ -37,35 +37,20 @@ namespace System.Resources.Extensions
 
         private object ReadBinaryFormattedObject()
         {
-            if (UseBinaryFormatter)
-            {
-                return DeserializeUsingBinaryFormatter(_store.BaseStream);
-            }
-
-            long position = _store.BaseStream.CanSeek ? _store.BaseStream.Position : -1;
-
-            try
+            if (!UseBinaryFormatter)
             {
                 BinaryFormattedObject binaryFormattedObject = new(_store.BaseStream);
 
                 return binaryFormattedObject.Deserialize();
             }
-            catch (NotSupportedException) when (position >= 0)
-            {
-                _store.BaseStream.Position = position;
-
-                return DeserializeUsingBinaryFormatter(_store.BaseStream);
-            }
-
-            static object DeserializeUsingBinaryFormatter(Stream stream)
+            else
             {
 #pragma warning disable SYSLIB0011
                 BinaryFormatter? formatter = new()
                 {
                     Binder = new UndoTruncatedTypeNameSerializationBinder()
                 };
-
-                return formatter.Deserialize(stream);
+                return formatter.Deserialize(_store.BaseStream);
 #pragma warning restore SYSLIB0011
             }
         }
