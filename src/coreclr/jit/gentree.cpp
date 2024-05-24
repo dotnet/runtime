@@ -27464,7 +27464,7 @@ void ReturnTypeDesc::InitializeStructReturnType(Compiler*                comp,
             {
                 assert(fpInfo.flags == FpStruct::UseIntCallConv);
                 assert(structSize <= (2 * TARGET_POINTER_SIZE));
-                BYTE     gcPtrs[2]       = {TYPE_GC_NONE, TYPE_GC_NONE};
+                BYTE gcPtrs[2] = {TYPE_GC_NONE, TYPE_GC_NONE};
                 comp->info.compCompHnd->getClassGClayout(retClsHnd, &gcPtrs[0]);
                 for (unsigned i = 0; i < 2; ++i)
                 {

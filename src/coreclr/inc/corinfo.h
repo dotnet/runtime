@@ -435,7 +435,7 @@ struct FpStructInRegistersInfo
         unsigned sizeShift2nd = (flags & STRUCT_SECOND_FIELD_SIZE_IS8) ? 3 : 2;
         bool hasTwo = !(flags & STRUCT_FLOAT_FIELD_ONLY_ONE);
         return {
-            .flags = FpStruct::Flags(
+            FpStruct::Flags(
                 ((flags & STRUCT_FLOAT_FIELD_ONLY_ONE) ? FpStruct::OnlyOne : 0) |
                 ((flags & STRUCT_FLOAT_FIELD_ONLY_TWO) ? FpStruct::BothFloat : 0) |
                 ((flags & STRUCT_FLOAT_FIELD_FIRST) ? FpStruct::Float1st : 0) |
@@ -445,8 +445,8 @@ struct FpStructInRegistersInfo
                 // No GC ref info in old flags
             ),
             // Lacking actual field offsets, assume fields are naturally aligned without empty fields or padding
-            .offset1st = 0,
-            .offset2nd = hasTwo ? (1u << (sizeShift1st > sizeShift2nd ? sizeShift1st : sizeShift2nd)) : 0,
+            0,
+            hasTwo ? (1u << (sizeShift1st > sizeShift2nd ? sizeShift1st : sizeShift2nd)) : 0,
         };
     }
 };
