@@ -429,10 +429,10 @@ namespace System.Buffers.Text
                 AssertWrite<Vector128<ushort>>(dest, destStart, destLength);
                 (Vector128<ushort> utf16LowVector1, Vector128<ushort> utf16HighVector1) = Vector128.Widen(res1);
                 (Vector128<ushort> utf16LowVector2, Vector128<ushort> utf16HighVector2) = Vector128.Widen(res2);
-                AdvSimd.Arm64.StoreVector128x4AndZip(dest, (utf16LowVector1, utf16HighVector1, utf16LowVector2, utf16HighVector2));
                 (Vector128<ushort> utf16LowVector3, Vector128<ushort> utf16HighVector3) = Vector128.Widen(res3);
                 (Vector128<ushort> utf16LowVector4, Vector128<ushort> utf16HighVector4) = Vector128.Widen(res4);
-                AdvSimd.Arm64.StoreVector128x4AndZip(dest + 32, (utf16LowVector3, utf16HighVector3, utf16LowVector4, utf16HighVector4));
+                AdvSimd.Arm64.StoreVector128x4AndZip(dest, (utf16LowVector1, utf16LowVector2, utf16LowVector3, utf16LowVector4));
+                AdvSimd.Arm64.StoreVector128x4AndZip(dest + 32, (utf16HighVector1, utf16HighVector2, utf16HighVector3, utf16HighVector4));
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]

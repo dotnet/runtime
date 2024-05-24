@@ -82,7 +82,7 @@ namespace System.Buffers.Text
                     }
 
                     end = srcMax - 48;
-                    if (AdvSimd.Arm64.IsSupported && (end >= src) && typeof(T) == typeof(byte))
+                    if (AdvSimd.Arm64.IsSupported && (end >= src))
                     {
                         AdvSimdEncode<TBase64Encoder, T>(ref src, ref dest, end, maxSrcLength, destLength, srcBytes, destBytes);
 

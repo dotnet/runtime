@@ -774,9 +774,7 @@ namespace System.Buffers.Text
             public static unsafe bool TryLoadArmVector128x4(ushort* src, ushort* srcStart, int sourceLength,
                 out Vector128<byte> str1, out Vector128<byte> str2, out Vector128<byte> str3, out Vector128<byte> str4)
             {
-                str1 = str2 = str3 = str4 = default;
-                /* TODO: Fix interleaving of the 4 vectors
-                 * AssertRead<Vector128<sbyte>>(src, srcStart, sourceLength);
+                AssertRead<Vector128<sbyte>> (src, srcStart, sourceLength);
                 var (s11, s12, s21, s22) = AdvSimd.Arm64.LoadVector128x4AndUnzip(src);
                 var (s31, s32, s41, s42) = AdvSimd.Arm64.LoadVector128x4AndUnzip(src + 32);
 
@@ -789,12 +787,12 @@ namespace System.Buffers.Text
                     return false;
                 }
 
-                str1 = Vector128.Narrow(s11, s12);
-                str2 = Vector128.Narrow(s21, s22);
-                str3 = Vector128.Narrow(s31, s32);
-                str4 = Vector128.Narrow(s41, s42);*/
+                str1 = Vector128.Narrow(s11, s31);
+                str2 = Vector128.Narrow(s12, s32);
+                str3 = Vector128.Narrow(s21, s41);
+                str4 = Vector128.Narrow(s22, s42);
 
-                return false;
+                return true;
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
