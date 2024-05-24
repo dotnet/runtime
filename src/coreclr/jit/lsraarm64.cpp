@@ -531,7 +531,7 @@ SingleTypeRegSet LinearScan::getConsecutiveCandidates(SingleTypeRegSet  allCandi
     //
     SingleTypeRegSet overallResultForBusy;
     SingleTypeRegSet consecutiveResultForBusy =
-        filterConsecutiveCandidates(floatFreeCandidates, registersNeeded, &overallResultForBusy);
+        filterConsecutiveCandidates(allCandidates, registersNeeded, &overallResultForBusy);
 
     *busyCandidates = consecutiveResultForBusy;
 
