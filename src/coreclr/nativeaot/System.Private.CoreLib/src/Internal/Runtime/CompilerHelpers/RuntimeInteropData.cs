@@ -3,6 +3,7 @@
 
 
 using System;
+using System.Diagnostics;
 using System.Runtime;
 using System.Runtime.InteropServices;
 
@@ -14,41 +15,72 @@ namespace Internal.Runtime.CompilerHelpers
 {
     internal static class RuntimeInteropData
     {
+        private enum InteropDataResult
+        {
+            NotFound,
+            Invalid,
+            Found,
+        }
+
         public static uint GetStructFieldOffset(RuntimeTypeHandle structureTypeHandle, string fieldName)
         {
-            if (TryGetStructFieldOffset(structureTypeHandle, fieldName, out bool structExists, out uint offset))
+            if (TryGetStructData(structureTypeHandle, out _, out NativeParser entryParser))
             {
-                return offset;
+                uint mask = entryParser.GetUnsigned();
+                if ((mask & InteropDataConstants.HasInvalidLayout) != 0)
+                {
+                    throw new ArgumentException(SR.Format(SR.Arg_CannotMarshal, Type.GetTypeFromHandle(structureTypeHandle)), nameof(structureTypeHandle));
+                }
+
+                if ((mask & InteropDataConstants.HasMarshallers) != 0)
+                {
+                    // skip the first 4 IntPtrs(3 stubs and size)
+                    entryParser.SkipInteger();
+                    entryParser.SkipInteger();
+                    entryParser.SkipInteger();
+                    entryParser.SkipInteger();
+                }
+
+                uint fieldCount = mask >> InteropDataConstants.FieldCountShift;
+                for (uint index = 0; index < fieldCount; index++)
+                {
+                    string name = entryParser.GetString();
+                    uint offset = entryParser.GetUnsigned();
+                    if (name == fieldName)
+                    {
+                        return offset;
+                    }
+                }
+
+                throw new ArgumentException(SR.Format(SR.Argument_OffsetOfFieldNotFound, Type.GetTypeFromHandle(structureTypeHandle)), nameof(fieldName));
             }
 
-            Type structureType = Type.GetTypeFromHandle(structureTypeHandle)!;
-
-            // if we can find the struct but couldn't find its field, throw Argument Exception
-            if (structExists)
-            {
-                throw new ArgumentException(SR.Format(SR.Argument_OffsetOfFieldNotFound, structureType), nameof(fieldName));
-            }
-
-            throw new NotSupportedException(SR.Format(SR.StructMarshalling_MissingInteropData, structureType));
+            throw new NotSupportedException(SR.Format(SR.StructMarshalling_MissingInteropData, Type.GetTypeFromHandle(structureTypeHandle)!));
         }
 
         public static unsafe int GetStructUnsafeStructSize(RuntimeTypeHandle structureTypeHandle)
         {
-            if (TryGetStructUnsafeStructSize(structureTypeHandle, out int size))
-            {
-                return size;
-            }
-
             MethodTable* structureMT = structureTypeHandle.ToMethodTable();
-
-            // IsBlittable() checks whether the type contains GC references. It is approximate check with false positives.
-            // This fallback path will return incorrect answer for types that do not contain GC references, but that are
-            // not actually blittable; e.g. for types with bool fields.
-            if (structureTypeHandle.IsBlittable() && structureMT->IsValueType)
+            if (TryGetStructData(structureTypeHandle, out _, out NativeParser entryParser))
             {
+                uint mask = entryParser.GetUnsigned();
+                if ((mask & InteropDataConstants.HasInvalidLayout) != 0)
+                {
+                    throw new ArgumentException(SR.Format(SR.Arg_CannotMarshal, Type.GetTypeFromHandle(structureTypeHandle)), nameof(structureTypeHandle));
+                }
+
+                if ((mask & InteropDataConstants.HasMarshallers) != 0)
+                {
+                    return (int)entryParser.GetUnsigned();
+                }
+
+                // We expect a blittable value type at this point
+                Debug.Assert(!structureMT->ContainsGCPointers);
+                Debug.Assert(structureMT->IsValueType);
                 return (int)structureMT->ValueTypeSize;
             }
 
+            // No interop data.
             // If the type is an interface or a generic type, the reason is likely that.
             Type structureType = Type.GetTypeFromHandle(structureTypeHandle)!;
             if (structureMT->IsInterface || structureMT->IsGeneric)
@@ -61,34 +93,28 @@ namespace Internal.Runtime.CompilerHelpers
         }
 
         public static IntPtr GetStructUnmarshalStub(RuntimeTypeHandle structureTypeHandle)
-        {
-            if (TryGetStructUnmarshalStub(structureTypeHandle, out IntPtr stub))
+            => TryGetMarshallersForStruct(structureTypeHandle, out _, out IntPtr unmarshal, out _) switch
             {
-                return stub;
-            }
-
-            throw new NotSupportedException(SR.Format(SR.StructMarshalling_MissingInteropData, Type.GetTypeFromHandle(structureTypeHandle)));
-        }
+                InteropDataResult.Invalid => throw new ArgumentException(SR.Format(SR.Arg_CannotMarshal, Type.GetTypeFromHandle(structureTypeHandle)), nameof(structureTypeHandle)),
+                InteropDataResult.NotFound => throw new NotSupportedException(SR.Format(SR.StructMarshalling_MissingInteropData, Type.GetTypeFromHandle(structureTypeHandle))),
+                _ => unmarshal,
+            };
 
         public static IntPtr GetStructMarshalStub(RuntimeTypeHandle structureTypeHandle)
-        {
-            if (TryGetStructMarshalStub(structureTypeHandle, out IntPtr stub))
+            => TryGetMarshallersForStruct(structureTypeHandle, out IntPtr marshal, out _, out _) switch
             {
-                return stub;
-            }
+                InteropDataResult.Invalid => throw new ArgumentException(SR.Format(SR.Arg_CannotMarshal, Type.GetTypeFromHandle(structureTypeHandle)), nameof(structureTypeHandle)),
+                InteropDataResult.NotFound => throw new NotSupportedException(SR.Format(SR.StructMarshalling_MissingInteropData, Type.GetTypeFromHandle(structureTypeHandle))),
+                _ => marshal,
+            };
 
-            throw new NotSupportedException(SR.Format(SR.StructMarshalling_MissingInteropData, Type.GetTypeFromHandle(structureTypeHandle)));
-        }
-
-        public static IntPtr GetDestroyStructureStub(RuntimeTypeHandle structureTypeHandle, out bool hasInvalidLayout)
-        {
-            if (TryGetDestroyStructureStub(structureTypeHandle, out IntPtr stub, out hasInvalidLayout))
+        public static IntPtr GetDestroyStructureStub(RuntimeTypeHandle structureTypeHandle)
+            => TryGetMarshallersForStruct(structureTypeHandle, out _, out _, out IntPtr destroyStub) switch
             {
-                return stub;
-            }
-
-            throw new NotSupportedException(SR.Format(SR.StructMarshalling_MissingInteropData, Type.GetTypeFromHandle(structureTypeHandle)));
-        }
+                InteropDataResult.Invalid => throw new ArgumentException(SR.Format(SR.Arg_CannotMarshal, Type.GetTypeFromHandle(structureTypeHandle)), nameof(structureTypeHandle)),
+                InteropDataResult.NotFound => throw new NotSupportedException(SR.Format(SR.StructMarshalling_MissingInteropData, Type.GetTypeFromHandle(structureTypeHandle))),
+                _ => destroyStub,
+            };
 
 
         public static IntPtr GetForwardDelegateCreationStub(RuntimeTypeHandle delegateTypeHandle)
@@ -107,53 +133,6 @@ namespace Internal.Runtime.CompilerHelpers
                 throw new NotSupportedException(SR.Format(SR.DelegateMarshalling_MissingInteropData, Type.GetTypeFromHandle(delegateTypeHandle)));
             return pStub;
         }
-
-        #region "Struct Data"
-        public static bool TryGetStructUnmarshalStub(RuntimeTypeHandle structureTypeHandle, out IntPtr unmarshalStub)
-            => TryGetMarshallersForStruct(structureTypeHandle, out _, out unmarshalStub, out _, out _, out _);
-
-        public static bool TryGetStructMarshalStub(RuntimeTypeHandle structureTypeHandle, out IntPtr marshalStub)
-            => TryGetMarshallersForStruct(structureTypeHandle, out marshalStub, out _, out _, out _, out _);
-
-        public static bool TryGetDestroyStructureStub(RuntimeTypeHandle structureTypeHandle, out IntPtr destroyStub, out bool hasInvalidLayout)
-            => TryGetMarshallersForStruct(structureTypeHandle, out _, out _, out destroyStub, out hasInvalidLayout, out _);
-
-        public static bool TryGetStructUnsafeStructSize(RuntimeTypeHandle structureTypeHandle, out int size)
-            => TryGetMarshallersForStruct(structureTypeHandle, out _, out _, out _, out _, out size);
-
-        public static bool TryGetStructFieldOffset(RuntimeTypeHandle structureTypeHandle, string fieldName, out bool structExists, out uint offset)
-        {
-            NativeParser entryParser;
-            structExists = false;
-            if (TryGetStructData(structureTypeHandle, out _, out entryParser))
-            {
-                structExists = true;
-
-                uint mask = entryParser.GetUnsigned();
-                if ((mask & InteropDataConstants.HasMarshallers) != 0)
-                {
-                    // skip the first 4 IntPtrs(3 stubs and size)
-                    entryParser.SkipInteger();
-                    entryParser.SkipInteger();
-                    entryParser.SkipInteger();
-                    entryParser.SkipInteger();
-                }
-
-                uint fieldCount = mask >> InteropDataConstants.FieldCountShift;
-                for (uint index = 0; index < fieldCount; index++)
-                {
-                    string name = entryParser.GetString();
-                    offset = entryParser.GetUnsigned();
-                    if (name == fieldName)
-                    {
-                        return true;
-                    }
-                }
-            }
-            offset = 0;
-            return false;
-        }
-        #endregion
 
         private static unsafe bool TryGetNativeReaderForBlob(TypeManagerHandle module, ReflectionMapBlob blob, out NativeReader reader)
         {
@@ -235,32 +214,31 @@ namespace Internal.Runtime.CompilerHelpers
             return false;
         }
 
-        private static unsafe bool TryGetMarshallersForStruct(RuntimeTypeHandle structTypeHandle, out IntPtr marshalStub, out IntPtr unmarshalStub, out IntPtr destroyStub, out bool hasInvalidLayout, out int size)
+        private static unsafe InteropDataResult TryGetMarshallersForStruct(RuntimeTypeHandle structTypeHandle, out IntPtr marshalStub, out IntPtr unmarshalStub, out IntPtr destroyStub)
         {
             marshalStub = IntPtr.Zero;
             unmarshalStub = IntPtr.Zero;
             destroyStub = IntPtr.Zero;
-            hasInvalidLayout = true;
-            size = 0;
 
-            ExternalReferencesTable externalReferences;
-            NativeParser entryParser;
-            if (TryGetStructData(structTypeHandle, out externalReferences, out entryParser))
+            if (TryGetStructData(structTypeHandle, out ExternalReferencesTable externalReferences, out NativeParser entryParser))
             {
                 uint mask = entryParser.GetUnsigned();
+                if ((mask & InteropDataConstants.HasInvalidLayout) != 0)
+                {
+                    return InteropDataResult.Invalid;
+                }
+
                 if ((mask & InteropDataConstants.HasMarshallers) != 0)
                 {
-                    hasInvalidLayout = (mask & InteropDataConstants.HasInvalidLayout) != 0;
-
-                    size = (int)entryParser.GetUnsigned();
+                    entryParser.GetUnsigned(); // skip size
                     marshalStub = externalReferences.GetIntPtrFromIndex(entryParser.GetUnsigned());
                     unmarshalStub = externalReferences.GetIntPtrFromIndex(entryParser.GetUnsigned());
                     destroyStub = externalReferences.GetIntPtrFromIndex(entryParser.GetUnsigned());
-
-                    return true;
                 }
+
+                return InteropDataResult.Found;
             }
-            return false;
+            return InteropDataResult.NotFound;
         }
     }
 }
