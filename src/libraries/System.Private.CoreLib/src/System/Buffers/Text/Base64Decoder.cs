@@ -178,9 +178,8 @@ namespace System.Buffers.Text
 
                 // if isFinalBlock is false, we will never reach this point
                 // Handle remaining, for Base64 its always 4 bytes, for Base64Url it could be 2, 3, or 4 bytes left.
+                // If more than 4 bytes remained it means destination is smaller and would exit with InvalidDataExit
                 long remaining = srcEnd - src;
-                Debug.Assert(typeof(TBase64Decoder) == typeof(Base64DecoderByte) ? remaining == 4 : remaining <= 4);
-
                 int i0 = TBase64Decoder.DecodeRemaining(srcEnd, ref decodingMap, remaining, out uint t2, out uint t3);
 
                 byte* destMax = destBytes + (uint)destLength;
