@@ -130,7 +130,11 @@ namespace System.Buffers.Text
                     // Therefore, (destLength / 3) * 4 will always be less than 2147483641
                     Debug.Assert(destLength < (int.MaxValue / 4 * 3));
                     maxSrcLength = (destLength / 3) * 4;
-                    srcLength &= ~0x3; // Round down to multiple of 4, this only affect Base64UrlDecoder path
+                    int remainder = destLength % 3;
+                    if (isFinalBlock && remainder > 0)
+                    {
+                        srcLength &= ~0x3; // In case of Base64UrlDecoder source can be not a multiple of 4, round down to multiple of 4
+                    }
                 }
 
                 ref sbyte decodingMap = ref MemoryMarshal.GetReference(TBase64Decoder.DecodingMap);
@@ -175,6 +179,8 @@ namespace System.Buffers.Text
                 // if isFinalBlock is false, we will never reach this point
                 // Handle remaining, for Base64 its always 4 bytes, for Base64Url it could be 2, 3, or 4 bytes left.
                 long remaining = srcEnd - src;
+                Debug.Assert(typeof(TBase64Decoder) == typeof(Base64DecoderByte) ? remaining == 4 : remaining <= 4);
+
                 int i0 = TBase64Decoder.DecodeRemaining(srcEnd, ref decodingMap, remaining, out uint t2, out uint t3);
 
                 byte* destMax = destBytes + (uint)destLength;
@@ -330,7 +336,6 @@ namespace System.Buffers.Text
         /// <exception cref="ArgumentOutOfRangeException">
         /// Thrown when the specified <paramref name="length"/> is less than 0.
         /// </exception>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int GetMaxDecodedFromUtf8Length(int length)
         {
             if (length < 0)
@@ -1300,7 +1305,7 @@ namespace System.Buffers.Text
             public static uint AdvSimdLutTwo3Uint1 => 0x1B1AFFFF;
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static int GetMaxDecodedLength(int utf8Length) => Base64.GetMaxDecodedFromUtf8Length(utf8Length);
+            public static int GetMaxDecodedLength(int utf8Length) => GetMaxDecodedFromUtf8Length(utf8Length);
 
             public static bool IsInvalidLength(int bufferLength) => bufferLength % 4 != 0; // only decode input if it is a multiple of 4
 

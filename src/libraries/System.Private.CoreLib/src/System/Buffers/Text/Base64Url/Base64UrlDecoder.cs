@@ -28,7 +28,7 @@ namespace System.Buffers.Text
         {
             if (base64Length < 0)
             {
-                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.length);
+                ArgumentOutOfRangeException.ThrowIfNegative(base64Length);
             }
 
             int remainder = (int)((uint)base64Length % 4);
@@ -84,7 +84,7 @@ namespace System.Buffers.Text
             OperationStatus status = DecodeFromUtf8InPlace<Base64UrlDecoderByte>(buffer, out int bytesWritten, ignoreWhiteSpace: true);
 
             // Base64.DecodeFromUtf8InPlace returns OperationStatus, therefore doesn't throw.
-            // For the Base64Url case I think it is better to throw to inform that invalid data found.
+            // For Base64Url, this is not an OperationStatus API and thus throws.
             if (OperationStatus.InvalidData == status)
             {
                 throw new FormatException(SR.Format_BadBase64Char);
@@ -133,9 +133,16 @@ namespace System.Buffers.Text
         /// <param name="destination">The output span which contains the result of the operation, i.e. the decoded binary data.</param>
         /// <param name="bytesWritten">The number of bytes written into the output span. This can be used to slice the output for subsequent calls, if necessary.</param>
         /// <returns><see langword="true"/> if bytes decoded successfully, otherwise <see langword="false"/>.</returns>
+        /// <exception cref="FormatException"><paramref name="source"/> contains an invalid Base64Url character,
+        /// more than two padding characters, or a non-white space-character among the padding characters.</exception>
         public static bool TryDecodeFromUtf8(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten)
         {
             OperationStatus status = DecodeFromUtf8(source, destination, out _, out bytesWritten);
+
+            if (OperationStatus.InvalidData == status)
+            {
+                throw new FormatException(SR.Format_BadBase64Char);
+            }
 
             return status == OperationStatus.Done;
         }
@@ -330,9 +337,16 @@ namespace System.Buffers.Text
         /// <param name="destination">The output span which contains the result of the operation, i.e. the decoded binary data.</param>
         /// <param name="bytesWritten">The number of bytes written into the output span. This can be used to slice the output for subsequent calls, if necessary.</param>
         /// <returns><see langword="true"/> if bytes decoded successfully, otherwise <see langword="false"/>.</returns>
+        /// <exception cref="FormatException"><paramref name="source"/> contains an invalid Base64Url character,
+        /// more than two padding characters, or a non-white space-character among the padding characters.</exception>
         public static bool TryDecodeFromChars(ReadOnlySpan<char> source, Span<byte> destination, out int bytesWritten)
         {
             OperationStatus status = DecodeFromChars(source, destination, out _, out bytesWritten);
+
+            if (OperationStatus.InvalidData == status)
+            {
+                throw new FormatException(SR.Format_BadBase64Char);
+            }
 
             return OperationStatus.Done == status;
         }

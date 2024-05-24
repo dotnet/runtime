@@ -177,7 +177,7 @@ namespace System.Buffers.Text.Tests
 
                 Span<byte> decodedBytes = new byte[3];
                 int consumed, written;
-                if (numBytes >= 8)
+                if (numBytes >= 6)
                 {
                     Assert.True(OperationStatus.DestinationTooSmall ==
                         Base64Url.DecodeFromUtf8(source, decodedBytes, out consumed, out written), "Number of Input Bytes: " + numBytes);
@@ -321,16 +321,20 @@ namespace System.Buffers.Text.Tests
         [InlineData("AQIDBA%%", 4, true)]
         [InlineData("z_T-H7sqEkerqMweH1uSw1a5ebaAF9xa8B0ze1wet4epo\u5948==", 33, false)]
         [InlineData("\u5948z_T-H7sqEkerqMweH1uSw1a5ebaAF9xa8B0ze1wet4epo01234567890123456789012345678901234567890123456789==", 0, false)]
-        public void TryDecodeFromUtf8VariousInput(string inputString, int expectedWritten, bool expectedStatus)
+        public void TryDecodeFromUtf8VariousInput(string inputString, int expectedWritten, bool succeeds)
         {
-            Span<byte> source = Encoding.ASCII.GetBytes(inputString);
-            Span<byte> decodedBytes = new byte[Base64Url.GetMaxDecodedLength(source.Length)];
+            byte[] source = Encoding.ASCII.GetBytes(inputString);
+            byte[] decodedBytes = new byte[Base64Url.GetMaxDecodedLength(source.Length)];
 
-            Assert.Equal(expectedStatus, Base64Url.TryDecodeFromUtf8(source, decodedBytes, out int bytesWritten));
-            Assert.Equal(expectedWritten, bytesWritten);
-            if (expectedStatus)
+            if (succeeds)
             {
+                Assert.True(Base64Url.TryDecodeFromUtf8(source, decodedBytes, out int bytesWritten));
+                Assert.Equal(expectedWritten, bytesWritten);
                 Assert.True(Base64TestHelper.VerifyUrlDecodingCorrectness(inputString.Length, expectedWritten, source, decodedBytes));
+            }
+            else
+            {
+                Assert.Throws<FormatException>(() => Base64Url.TryDecodeFromUtf8(source, decodedBytes, out _));
             }
         }
 

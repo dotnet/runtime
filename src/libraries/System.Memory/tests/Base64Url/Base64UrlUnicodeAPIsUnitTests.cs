@@ -449,11 +449,11 @@ namespace System.Buffers.Text.Tests
         [MemberData(nameof(Base64TestData))]
         public static void TryDecodeFromChars(string encodedAsString, byte[] expected)
         {
-            ReadOnlySpan<char> encoded = encodedAsString;
+            char[] encoded = encodedAsString.ToCharArray();
             if (expected == null)
             {
-                Span<byte> actual = new byte[Base64Url.GetMaxDecodedLength(encodedAsString.Length)];
-                Assert.False(Base64Url.TryDecodeFromChars(encoded, actual, out int bytesWritten));
+                byte[] actual = new byte[Base64Url.GetMaxDecodedLength(encodedAsString.Length)];
+                Assert.Throws<FormatException>(() => Base64Url.TryDecodeFromChars(encoded, actual, out _));
             }
             else
             {
