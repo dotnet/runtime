@@ -386,14 +386,14 @@
       <Sha>40e6b96cad11400acb5b8999057ac8ba748df940</Sha>
       <SourceBuild RepoName="roslyn" ManagedOnly="true" />
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.ApiCompat.Task" Version="9.0.100-preview.5.24263.1">
+    <Dependency Name="Microsoft.DotNet.ApiCompat.Task" Version="9.0.100-preview.5.24272.19">
       <Uri>https://github.com/dotnet/sdk</Uri>
-      <Sha>190723c80d85721cdc58fd906e645c4029b947bb</Sha>
+      <Sha>a134a94cfb1209e4181072719d554eb232b51317</Sha>
     </Dependency>
     <!-- Intermediate is necessary for source build. -->
-    <Dependency Name="Microsoft.SourceBuild.Intermediate.sdk" Version="9.0.100-preview.5.24263.1">
+    <Dependency Name="Microsoft.SourceBuild.Intermediate.sdk" Version="9.0.100-preview.5.24272.19">
       <Uri>https://github.com/dotnet/sdk</Uri>
-      <Sha>190723c80d85721cdc58fd906e645c4029b947bb</Sha>
+      <Sha>a134a94cfb1209e4181072719d554eb232b51317</Sha>
       <SourceBuild RepoName="sdk" ManagedOnly="true" />
     </Dependency>
     <Dependency Name="optimization.windows_nt-arm64.MIBC.Runtime" Version="1.0.0-prerelease.24223.3">
@@ -409,10 +409,6 @@
     <Dependency Name="Nuget.ProjectModel" Version="6.2.4">
       <Uri>https://github.com/NuGet/NuGet.Client</Uri>
       <Sha>8fef55f5a55a3b4f2c96cd1a9b5ddc51d4b927f8</Sha>
-    </Dependency>
-    <Dependency Name="Microsoft.Dotnet.Sdk.Internal" Version="9.0.100-preview.5.24253.16">
-      <Uri>https://github.com/dotnet/installer</Uri>
-      <Sha>fa261b952d702c6bd604728fcbdb58ac071a22b1</Sha>
     </Dependency>
     <Dependency Name="runtime.linux-arm64.Microsoft.NETCore.Runtime.Wasm.Node.Transport" Version="9.0.0-alpha.1.24175.1">
       <Uri>https://github.com/dotnet/node</Uri>
