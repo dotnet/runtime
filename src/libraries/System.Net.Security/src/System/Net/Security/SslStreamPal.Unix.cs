@@ -187,7 +187,7 @@ namespace System.Net.Security
                     // this should happen only for clients
                     Debug.Assert(sslAuthenticationOptions.IsClient);
 
-                    // if we don't have a clien certificate ready, bubble up so
+                    // if we don't have a client certificate ready, bubble up so
                     // that the certificate selection routine runs again. This
                     // happens if the first call to LocalCertificateSelectionCallback
                     // returns null.
