@@ -231,12 +231,12 @@ typedef uint64_t regMaskSmall;
 
 #ifdef TARGET_ARM64
 #define HAS_MORE_THAN_64_REGISTERS 1
-#define MORE_THAN_64_REGISTERS(x) x
+#define MORE_THAN_64_REGISTERS(x)  x
 #else
 #define MORE_THAN_64_REGISTERS(x)
 #endif // TARGET_ARM64
 
-typedef regMaskSmall SingleTypeRegSet;
+typedef regMaskSmall    SingleTypeRegSet;
 inline SingleTypeRegSet genRegMask(regNumber reg);
 inline SingleTypeRegSet genRegMaskFloat(regNumber reg ARM_ARG(var_types type = TYP_DOUBLE));
 
@@ -249,7 +249,7 @@ private:
 public:
     regMaskTP(regMaskSmall regMask)
         : low(regMask)
-    {   
+    {
     }
 
     regMaskTP()
@@ -308,7 +308,6 @@ public:
 
     bool IsRegNumInMask(regNumber reg);
 
-    
     void operator|=(const regMaskTP& second)
     {
         low |= second.getLow();

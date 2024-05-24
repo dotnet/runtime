@@ -1016,8 +1016,6 @@ inline regNumber genFirstRegNumFromMaskAndToggle(SingleTypeRegSet& mask)
     return regNum;
 }
 
-
-
 /*****************************************************************************
  *
  *  Return the size in bytes of the given type.

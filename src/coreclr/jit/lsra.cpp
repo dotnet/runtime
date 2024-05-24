@@ -4157,9 +4157,10 @@ regNumber LinearScan::rotateBlockStartLocation(Interval* interval, regNumber tar
     {
         // If we're rotating the register locations at block boundaries, try to use
         // the next higher register number of the appropriate register type.
-        SingleTypeRegSet candidateRegs = allRegs(interval->registerType) & availableRegs.GetRegSetForType(interval->registerType);
-        regNumber firstReg      = REG_NA;
-        regNumber newReg        = REG_NA;
+        SingleTypeRegSet candidateRegs =
+            allRegs(interval->registerType) & availableRegs.GetRegSetForType(interval->registerType);
+        regNumber firstReg = REG_NA;
+        regNumber newReg   = REG_NA;
         while (candidateRegs != RBM_NONE)
         {
             regNumber nextReg = genFirstRegNumFromMaskAndToggle(candidateRegs);
