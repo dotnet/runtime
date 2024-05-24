@@ -106,21 +106,15 @@ namespace System.Text.RegularExpressions.Symbolic
         /// <summary>
         /// Builds a <see cref="StateFlags"/> with the relevant flags set.
         /// </summary>
-        /// <param name="solver">a solver for <typeparamref name="TSet"/></param>
         /// <param name="isInitial">whether this state is an initial state</param>
         /// <returns>the flags for this matching state</returns>
-        internal StateFlags BuildStateFlags(ISolver<TSet> solver, bool isInitial)
+        internal StateFlags BuildStateFlags(bool isInitial)
         {
             StateFlags info = 0;
 
             if (isInitial)
             {
                 info |= StateFlags.IsInitialFlag;
-            }
-
-            if (IsDeadend(solver))
-            {
-                info |= StateFlags.IsDeadendFlag;
             }
 
             if (Node.CanBeNullable)

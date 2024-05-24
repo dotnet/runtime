@@ -22,8 +22,13 @@ namespace System.Text.RegularExpressions.Symbolic
         /// processing starts out in DFA mode, even if we've previously triggered NFA mode for the same regex.
         /// We switch over into NFA mode the first time a given traversal (match operation) results in us needing
         /// to create a new node and the graph is already or newly beyond this threshold.
+        /// TODO: summarize this
+        /// this should be a very last resort action, going from DFA mode to NFA mode turns 500MB/s to 5MB/s
+        /// with an entirely different search-time algorithmic complexity
+        /// 100_000 isn't a really a high memory cost either,
+        /// i'd even put 1_000_000 on the table but that might push it for general purpose use
         /// </remarks>
-        internal const int NfaThreshold = 10_000;
+        internal const int NfaThreshold = 100_000;
 
         /// <summary>
         /// Default maximum estimated safe expansion size of a <see cref="SymbolicRegexNode{TSet}"/> AST
