@@ -310,31 +310,31 @@ public:
     bool IsRegNumInMask(regNumber reg);
 };
 
-static regMaskTP operator^(regMaskTP first, regMaskTP second)
+static regMaskTP operator^(const regMaskTP& first, const regMaskTP& second)
 {
     regMaskTP result(first.getLow() ^ second.getLow());
     return result;
 }
 
-static regMaskTP operator&(regMaskTP first, regMaskTP second)
+static regMaskTP operator&(const regMaskTP& first, const regMaskTP& second)
 {
     regMaskTP result(first.getLow() & second.getLow());
     return result;
 }
 
-static regMaskTP operator|(regMaskTP first, regMaskTP second)
+static regMaskTP operator|(const regMaskTP& first, const regMaskTP& second)
 {
     regMaskTP result(first.getLow() | second.getLow());
     return result;
 }
 
-static regMaskTP& operator|=(regMaskTP& first, regMaskTP second)
+static regMaskTP& operator|=(regMaskTP& first, const regMaskTP& second)
 {
     first = first | second;
     return first;
 }
 
-static regMaskTP& operator^=(regMaskTP& first, regMaskTP second)
+static regMaskTP& operator^=(regMaskTP& first, const regMaskTP& second)
 {
     first = first ^ second;
     return first;
@@ -346,18 +346,18 @@ static regMaskTP& operator^=(regMaskTP& first, const regNumber reg)
     return first;
 }
 
-static regMaskTP& operator&=(regMaskTP& first, regMaskTP second)
+static regMaskTP& operator&=(regMaskTP& first, const regMaskTP& second)
 {
     first = first & second;
     return first;
 }
 
-static bool operator==(regMaskTP first, regMaskTP second)
+static bool operator==(const regMaskTP& first, const regMaskTP& second)
 {
     return (first.getLow() == second.getLow());
 }
 
-static bool operator!=(regMaskTP first, regMaskTP second)
+static bool operator!=(const regMaskTP& first, const regMaskTP& second)
 {
     return !(first == second);
 }
@@ -393,18 +393,18 @@ static regMaskTP& operator<<=(regMaskTP& first, const int b)
 }
 #endif
 
-static regMaskTP operator~(regMaskTP first)
+static regMaskTP operator~(const regMaskTP& first)
 {
     regMaskTP result(~first.getLow());
     return result;
 }
 
-static uint32_t PopCount(regMaskTP value)
+static uint32_t PopCount(const regMaskTP& value)
 {
     return BitOperations::PopCount(value.getLow());
 }
 
-static uint32_t BitScanForward(regMaskTP mask)
+static uint32_t BitScanForward(const regMaskTP& mask)
 {
     return BitOperations::BitScanForward(mask.getLow());
 }
