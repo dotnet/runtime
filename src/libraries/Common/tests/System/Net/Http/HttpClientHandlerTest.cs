@@ -1052,7 +1052,7 @@ namespace System.Net.Http.Functional.Tests
                 }
 
                 using (var client = new HttpMessageInvoker(CreateHttpClientHandler()))
-                using (HttpResponseMessage response = await client.SendAsync(TestAsync, request, CancellationToken.None))
+                using (HttpResponseMessage response = await client.SendAsync(TestAsync, request, CancellationToken.None).ConfigureAwait(false))
                 {
                     using (Stream responseStream = await response.Content.ReadAsStreamAsync(TestAsync))
                     {
