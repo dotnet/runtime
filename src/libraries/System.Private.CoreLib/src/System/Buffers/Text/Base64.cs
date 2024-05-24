@@ -65,7 +65,6 @@ namespace System.Buffers.Text
             }
         }
 
-
         internal interface IBase64Encoder<T> where T : unmanaged
         {
             static abstract ReadOnlySpan<byte> EncodingMap { get; }

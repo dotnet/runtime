@@ -129,8 +129,8 @@ namespace System.Buffers.Text
                     // This should never overflow since destLength here is less than int.MaxValue / 4 * 3 (i.e. 1610612733)
                     // Therefore, (destLength / 3) * 4 will always be less than 2147483641
                     Debug.Assert(destLength < (int.MaxValue / 4 * 3));
-                    maxSrcLength = (destLength / 3) * 4;
-                    int remainder = destLength % 3;
+                    (maxSrcLength, int remainder) = int.DivRem(destLength, 3);
+                    maxSrcLength *= 4;
                     if (isFinalBlock && remainder > 0)
                     {
                         srcLength &= ~0x3; // In case of Base64UrlDecoder source can be not a multiple of 4, round down to multiple of 4
