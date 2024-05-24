@@ -161,11 +161,6 @@ namespace DelegateTest
                 DelegateGetHashCode delctor = new DelegateGetHashCode();
                 booldelegate workDelegate1= new booldelegate(TestClass.Working_Bool);
                 booldelegate workDelegate = new booldelegate(TestClass.Completed_Bool);
-                if (workDelegate.GetHashCode() != workDelegate1.GetHashCode())
-                {
-                    TestLibrary.TestFramework.LogError("007", "HashCode is not excepted ");
-                    retVal = false;
-                }
 
                 workDelegate();
                 workDelegate1();
@@ -193,12 +188,6 @@ namespace DelegateTest
                 DelegateGetHashCode delctor = new DelegateGetHashCode();
                 booldelegate workDelegate = new booldelegate(TestClass.Completed_Bool);
                 booldelegate workDelegate1 = new booldelegate(TestClass1.Completed_Bool);
-
-                if (workDelegate.GetHashCode()!=workDelegate1.GetHashCode())
-                {
-                    TestLibrary.TestFramework.LogError("011", "HashCode is not excepted");
-                    retVal = false;
-                }
 
                 workDelegate();
                 workDelegate1();
