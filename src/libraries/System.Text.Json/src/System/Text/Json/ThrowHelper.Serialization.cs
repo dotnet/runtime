@@ -906,12 +906,6 @@ namespace System.Text.Json
         }
 
         [DoesNotReturn]
-        public static void ThrowOperationCanceledException_PipeWriteCompleted()
-        {
-            throw new OperationCanceledException(SR.PipeWriterCompleted);
-        }
-
-        [DoesNotReturn]
         public static void ThrowInvalidOperationException_PipeWriterDoesNotImplementUnflushedBytes(PipeWriter pipeWriter)
         {
             throw new InvalidOperationException(SR.Format(SR.PipeWriter_DoesNotImplementUnflushedBytes, pipeWriter.GetType().Name));

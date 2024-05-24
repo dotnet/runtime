@@ -173,7 +173,7 @@ namespace System.Text.Json.Serialization
 
         internal static bool ShouldFlush(ref WriteStack state)
         {
-            Debug.Assert(state.FlushThreshold == 0 || (state.PipeWriter is not null && state.PipeWriter.CanGetUnflushedBytes),
+            Debug.Assert(state.FlushThreshold == 0 || (state.PipeWriter is { CanGetUnflushedBytes: true }),
                 "ShouldFlush should only be called by resumable serializers, all of which use the PipeWriter abstraction with CanGetUnflushedBytes == true.");
             // If surpassed flush threshold then return true which will flush stream.
             if (state.PipeWriter is { } pipeWriter)

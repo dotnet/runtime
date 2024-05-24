@@ -124,13 +124,11 @@ namespace System.Text.Json.Serialization.Metadata
                         {
                             ThrowHelper.ThrowOperationCanceledException_PipeWriteCanceled();
                         }
-
-                        ThrowHelper.ThrowOperationCanceledException_PipeWriteCompleted();
                     }
                 }
                 finally
                 {
-                    if (pipeWriter is IDisposable disposable)
+                    if (pipeWriter is PooledByteBufferWriter disposable)
                     {
                         disposable.Dispose();
                     }
@@ -192,7 +190,8 @@ namespace System.Text.Json.Serialization.Metadata
                                         ThrowHelper.ThrowOperationCanceledException_PipeWriteCanceled();
                                     }
 
-                                    ThrowHelper.ThrowOperationCanceledException_PipeWriteCompleted();
+                                    // Pipe is completed, no one is reading so no point in continuing serialization
+                                    return;
                                 }
                             }
                         }
@@ -241,7 +240,7 @@ namespace System.Text.Json.Serialization.Metadata
                 finally
                 {
                     writer.Dispose();
-                    if (pipeWriter is IDisposable disposable)
+                    if (pipeWriter is PooledByteBufferWriter disposable)
                     {
                         disposable.Dispose();
                     }

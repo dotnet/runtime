@@ -45,15 +45,6 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public async Task CompletedPipeThrowsFromSerialize()
-        {
-            Pipe pipe = new Pipe();
-            pipe.Reader.Complete();
-
-            await Assert.ThrowsAsync<OperationCanceledException>(() => JsonSerializer.SerializeAsync(pipe.Writer, 1));
-        }
-
-        [Fact]
         public async Task FlushesPeriodicallyWhenWritingLargeJson()
         {
             Pipe pipe = new Pipe(new PipeOptions(pauseWriterThreshold: 1000000));
@@ -375,7 +366,7 @@ namespace System.Text.Json.Serialization.Tests
             await JsonSerializer.SerializeAsync(writer, CreateManyTestObjects(), options);
 
             // Flush should happen every ~14,745 bytes (+36 for writing data when just below threshold)
-            Assert.True(writer.Flushes.Count > (data.Length * 10_000 / 16_000));
+            Assert.True(writer.Flushes.Count > (data.Length * 10_000 / 16_000), $"Flush count: {writer.Flushes.Count}");
 
             foreach (long flush in writer.Flushes)
             {

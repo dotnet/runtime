@@ -427,17 +427,13 @@ namespace System.Text.Json.Serialization.Tests
             JsonSerializer.Serialize(stream, CreateManyTestObjects(), options);
 
             // Flush should happen every ~460 bytes (+36 for writing data when just below threshold)
-            Assert.True(stream.TestWriteCount > (data.Length * 10_000 / 512));
+            Assert.True(stream.TestWriteCount > (data.Length * 10_000 / 512), $"Write count: {stream.TestWriteCount}");
 
             IEnumerable<string> CreateManyTestObjects()
             {
                 int i = 0;
-                while (true)
+                while (++i < 10_000)
                 {
-                    if (++i % 10_000 == 0)
-                    {
-                        break;
-                    }
                     yield return data;
                 }
             }
@@ -454,17 +450,13 @@ namespace System.Text.Json.Serialization.Tests
             await JsonSerializer.SerializeAsync(stream, CreateManyTestObjects(), options);
 
             // Flush should happen every ~460 bytes (+36 for writing data when just below threshold)
-            Assert.True(stream.TestAsyncWriteCount > (data.Length * 10_000 / 512));
+            Assert.True(stream.TestAsyncWriteCount > (data.Length * 10_000 / 512), $"Write count: {stream.TestAsyncWriteCount}");
 
             IEnumerable<string> CreateManyTestObjects()
             {
                 int i = 0;
-                while (true)
+                while (++i < 10_000)
                 {
-                    if (++i % 10_000 == 0)
-                    {
-                        break;
-                    }
                     yield return data;
                 }
             }
