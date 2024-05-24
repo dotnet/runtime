@@ -603,7 +603,7 @@ int LinearScan::BuildPutArgSplit(GenTreePutArgSplit* argNode)
             if (argNode->gtNumRegs == 1)
             {
                 // We can use a ldr/str sequence so we need an internal register
-                buildInternalIntRegisterDefForNode(argNode, (allRegs(TYP_INT) & ~argMask));
+                buildInternalIntRegisterDefForNode(argNode, allRegs(TYP_INT) & ~argMask);
             }
 
             // We will generate code that loads from the OBJ's address, which must be in a register.
