@@ -559,7 +559,7 @@ public sealed partial class QuicConnection : IAsyncDisposable
     {
         if (NetEventSource.Log.IsEnabled() && data.Status == QUIC_STATUS_CONNECTION_IDLE && data.ErrorCode == 1) // Idle
         {
-            NetEventSource.Info(this, $"{this} Connection idle.");
+            Environment.FailFast($"{LocalEndPoint}");
         }
 
         Exception exception = ExceptionDispatchInfo.SetCurrentStackTrace(ThrowHelper.GetExceptionForMsQuicStatus(data.Status, (long)data.ErrorCode));
