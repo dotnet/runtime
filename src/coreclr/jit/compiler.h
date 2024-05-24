@@ -3354,10 +3354,13 @@ public:
                                                    NamedIntrinsic hwIntrinsicID);
     GenTreeHWIntrinsic* gtNewScalarHWIntrinsicNode(
         var_types type, GenTree* op1, GenTree* op2, GenTree* op3, NamedIntrinsic hwIntrinsicID);
-    CorInfoType getBaseJitTypeFromArgIfNeeded(NamedIntrinsic       intrinsic,
+    var_types getRetTypeAndBaseJitTypeFromSig(NamedIntrinsic       intrinsic,
                                               CORINFO_CLASS_HANDLE clsHnd,
                                               CORINFO_SIG_INFO*    sig,
-                                              CorInfoType          simdBaseJitType);
+                                              CorInfoType*         simdBaseJitType);
+    CorInfoType getBaseJitTypeFromArgIfNeeded(NamedIntrinsic    intrinsic,
+                                              CORINFO_SIG_INFO* sig,
+                                              CorInfoType       simdBaseJitType);
 
 #ifdef TARGET_ARM64
     GenTreeFieldList* gtConvertTableOpToFieldList(GenTree* op, unsigned fieldCount);
@@ -3615,6 +3618,9 @@ public:
     GenTree* gtFoldExprCall(GenTreeCall* call);
     GenTree* gtFoldTypeCompare(GenTree* tree);
     GenTree* gtFoldTypeEqualityCall(bool isEq, GenTree* op1, GenTree* op2);
+#if defined(FEATURE_HW_INTRINSICS)
+    GenTree* gtFoldHWIntrinsicCall(GenTreeCall* call, NamedIntrinsic intrinsic);
+#endif // FEATURE_HW_INTRINSICS
 
     // Options to control behavior of gtTryRemoveBoxUpstreamEffects
     enum BoxRemovalOptions
@@ -4573,6 +4579,9 @@ protected:
                                         bool                  mustExpand);
 
 #ifdef FEATURE_HW_INTRINSICS
+    static bool isSupportedBaseType(NamedIntrinsic intrinsic, CorInfoType baseJitType);
+    bool IsValidForShuffle(GenTreeVecCon* vecCon, unsigned simdSize, var_types simdBaseType) const;
+
     GenTree* impHWIntrinsic(NamedIntrinsic        intrinsic,
                             CORINFO_CLASS_HANDLE  clsHnd,
                             CORINFO_METHOD_HANDLE method,

@@ -13684,6 +13684,13 @@ GenTree* Compiler::gtFoldExprCall(GenTreeCall* call)
     // Check for a new-style jit intrinsic.
     const NamedIntrinsic ni = lookupNamedIntrinsic(call->gtCallMethHnd);
 
+#if defined(FEATURE_HW_INTRINSICS)
+    if ((ni > NI_HW_INTRINSIC_START) && (ni < NI_SIMD_AS_HWINTRINSIC_END))
+    {
+        return gtFoldHWIntrinsicCall(call, ni);
+    }
+#endif // FEATURE_HW_INTRINSICS
+
     switch (ni)
     {
         case NI_System_Enum_HasFlag:
@@ -13755,6 +13762,103 @@ GenTree* Compiler::gtFoldTypeEqualityCall(bool isEq, GenTree* op1, GenTree* op2)
 
     return compare;
 }
+
+#if defined(FEATURE_HW_INTRINSICS)
+//------------------------------------------------------------------------
+// gtFoldHWIntrinsicCall: Fold a call to a hardware intrinsic API or return the original call
+//
+// Arguments:
+//    call      -- the call node to attempt to fold
+//    intrinsic -- the ID of the intrinsic represented by the call
+//
+// Returns:
+//    call if no folding happened.
+//    An alternative tree if folding happens.
+//
+GenTree* Compiler::gtFoldHWIntrinsicCall(GenTreeCall* call, NamedIntrinsic intrinsic)
+{
+    assert((intrinsic > NI_HW_INTRINSIC_START) && (intrinsic < NI_SIMD_AS_HWINTRINSIC_END));
+
+    if (intrinsic > NI_SIMD_AS_HWINTRINSIC_START)
+    {
+        // TODO-CQ: Handle SIMD_AS_HWINTRINSIC
+        return call;
+    }
+
+    CORINFO_CLASS_HANDLE  clsHnd = NO_CLASS_HANDLE;
+    CORINFO_METHOD_HANDLE method = call->gtCallMethHnd;
+
+    CORINFO_SIG_INFO sig;
+    eeGetMethodSig(method, &sig);
+
+    int         numArgs         = sig.numArgs;
+    CorInfoType simdBaseJitType = CORINFO_TYPE_UNDEF;
+    var_types   retType         = getRetTypeAndBaseJitTypeFromSig(intrinsic, clsHnd, &sig, &simdBaseJitType);
+    GenTree*    retNode         = call;
+
+    if (retType == TYP_UNKNOWN)
+    {
+        return retNode;
+    }
+
+    HWIntrinsicCategory    category = HWIntrinsicInfo::lookupCategory(intrinsic);
+    CORINFO_InstructionSet isa      = HWIntrinsicInfo::lookupIsa(intrinsic);
+
+    // Immediately return if the category is other than scalar/special and this is not a supported base type.
+    if ((category != HW_Category_Special) && (category != HW_Category_Scalar) && !HWIntrinsicInfo::isScalarIsa(isa) &&
+        !isSupportedBaseType(intrinsic, simdBaseJitType))
+    {
+        return retNode;
+    }
+
+    var_types simdBaseType = TYP_UNKNOWN;
+
+    if (simdBaseJitType != CORINFO_TYPE_UNDEF)
+    {
+        simdBaseType = JitType2PreciseVarType(simdBaseJitType);
+        assert(varTypeIsArithmetic(simdBaseType));
+    }
+
+    const unsigned simdSize = HWIntrinsicInfo::lookupSimdSize(this, intrinsic, &sig);
+
+    switch (intrinsic)
+    {
+        case NI_Vector128_Shuffle:
+#if defined(TARGET_XARCH)
+        case NI_Vector256_Shuffle:
+        case NI_Vector512_Shuffle:
+#elif defined(TARGET_ARM64)
+        case NI_Vector64_Shuffle:
+#endif
+        {
+            GenTree* op2 = call->gtArgs.GetUserArgByIndex(1)->GetNode();
+
+            if (!op2->IsVectorConst() || !IsValidForShuffle(op2->AsVecCon(), simdSize, simdBaseType))
+            {
+                // TODO-CQ: Handling non-constant indices is a bit more complex
+                break;
+            }
+
+            GenTree* op1 = call->gtArgs.GetUserArgByIndex(0)->GetNode();
+            retNode      = gtNewSimdShuffleNode(retType, op1, op2, simdBaseJitType, simdSize);
+
+            if (call->gtArgs.HasRetBuffer())
+            {
+                GenTree* retBuf = call->gtArgs.GetRetBufferArg()->GetNode();
+                retNode         = gtNewStoreIndNode(retType, retBuf, retNode);
+            }
+            break;
+        }
+
+        default:
+        {
+            break;
+        }
+    }
+
+    return retNode;
+}
+#endif // FEATURE_HW_INTRINSICS
 
 /*****************************************************************************
  *
@@ -18268,6 +18372,79 @@ bool GenTreeIntConCommon::AddrNeedsReloc(Compiler* comp)
 unsigned GenTreeVecCon::ElementCount(unsigned simdSize, var_types simdBaseType)
 {
     return simdSize / genTypeSize(simdBaseType);
+}
+
+bool Compiler::IsValidForShuffle(GenTreeVecCon* vecCon, unsigned simdSize, var_types simdBaseType) const
+{
+#if defined(TARGET_XARCH)
+    size_t elementSize  = genTypeSize(simdBaseType);
+    size_t elementCount = simdSize / elementSize;
+
+    if (simdSize == 32)
+    {
+        if (!compOpportunisticallyDependsOn(InstructionSet_AVX2))
+        {
+            // While we could accelerate some functions on hardware with only AVX support
+            // it's likely not worth it overall given that IsHardwareAccelerated reports false
+            return false;
+        }
+        else if ((varTypeIsByte(simdBaseType) && !compOpportunisticallyDependsOn(InstructionSet_AVX512VBMI_VL))
+              || (varTypeIsShort(simdBaseType) && !compOpportunisticallyDependsOn(InstructionSet_AVX512BW_VL)))
+        {
+            bool crossLane = false;
+
+            for (size_t index = 0; index < elementCount; index++)
+            {
+                uint64_t value = vecCon->GetIntegralVectorConstElement(index, simdBaseType);
+
+                if (value >= elementCount)
+                {
+                    continue;
+                }
+
+                if (index < (elementCount / 2))
+                {
+                    if (value >= (elementCount / 2))
+                    {
+                        crossLane = true;
+                        break;
+                    }
+                }
+                else if (value < (elementCount / 2))
+                {
+                    crossLane = true;
+                    break;
+                }
+            }
+
+            if (crossLane)
+            {
+                // TODO-XARCH-CQ: We should emulate cross-lane shuffling for byte/sbyte and short/ushort
+                return false;
+            }
+        }
+    }
+    else if (simdSize == 64)
+    {
+        if (varTypeIsByte(simdBaseType) && !compOpportunisticallyDependsOn(InstructionSet_AVX512VBMI))
+        {
+            // TYP_BYTE, TYP_UBYTE need AVX512VBMI.
+            return false;
+        }
+    }
+    else
+    {
+        assert(simdSize == 16);
+
+        if (varTypeIsSmall(simdBaseType) && !compOpportunisticallyDependsOn(InstructionSet_SSSE3))
+        {
+            // TYP_BYTE, TYP_UBYTE, TYP_SHORT, and TYP_USHORT need SSSE3 to be able to shuffle any operation
+            return false;
+        }
+    }
+#endif // TARGET_XARCH
+
+    return true;
 }
 #endif // FEATURE_HW_INTRINSICS*/
 

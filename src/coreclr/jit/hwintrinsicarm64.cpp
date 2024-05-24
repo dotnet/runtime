@@ -1867,7 +1867,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
             GenTree* indices = impStackTop(0).val;
 
-            if (!indices->IsVectorConst())
+            if (!indices->IsVectorConst() && !IsValidForShuffle(indices->AsVecCon(), simdSize, simdBaseType))
             {
                 // TODO-ARM64-CQ: Handling non-constant indices is a bit more complex
                 break;

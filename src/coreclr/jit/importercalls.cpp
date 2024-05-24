@@ -3040,6 +3040,8 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
 
         static_assert_no_msg((NI_HW_INTRINSIC_END + 1) == NI_SIMD_AS_HWINTRINSIC_START);
 
+        GenTree* hwintrinsic = nullptr;
+
         if (ni < NI_HW_INTRINSIC_END)
         {
             assert(ni > NI_HW_INTRINSIC_START);
@@ -3068,14 +3070,12 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 }
             }
 
-            GenTree* hwintrinsic = impHWIntrinsic(ni, clsHnd, method, sig, mustExpand);
+            hwintrinsic = impHWIntrinsic(ni, clsHnd, method, sig, mustExpand);
 
             if (mustExpand && (hwintrinsic == nullptr))
             {
-                return impUnsupportedNamedIntrinsic(CORINFO_HELP_THROW_NOT_IMPLEMENTED, method, sig, mustExpand);
+                hwintrinsic = impUnsupportedNamedIntrinsic(CORINFO_HELP_THROW_NOT_IMPLEMENTED, method, sig, mustExpand);
             }
-
-            return hwintrinsic;
         }
         else
         {
@@ -3083,9 +3083,19 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
 
             if (isIntrinsic)
             {
-                return impSimdAsHWIntrinsic(ni, clsHnd, method, sig, newobjThis, mustExpand);
+                hwintrinsic = impSimdAsHWIntrinsic(ni, clsHnd, method, sig, newobjThis, mustExpand);
             }
         }
+
+        if ((hwintrinsic == nullptr) && (isSpecialIntrinsic != nullptr))
+        {
+            // We want to report this as special so later phases, such as morph,
+            // can try to expand the intrinsic again in case this first expansion
+            // failed.
+
+            *isSpecialIntrinsic = true;
+        }
+        return hwintrinsic;
     }
 #endif // FEATURE_HW_INTRINSICS
 
@@ -7269,6 +7279,21 @@ void Compiler::impMarkInlineCandidateHelper(GenTreeCall*           call,
         inlineResult->NoteFatal(InlineObservation::CALLSITE_IS_CALL_TO_HELPER);
         return;
     }
+
+#if defined(FEATURE_HW_INTRINSICS)
+    /* Ignore hwintrinsic calls */
+    if (call->IsSpecialIntrinsic())
+    {
+        const NamedIntrinsic ni = lookupNamedIntrinsic(call->gtCallMethHnd);
+
+        if ((ni > NI_HW_INTRINSIC_START) && (ni < NI_SIMD_AS_HWINTRINSIC_END))
+        {
+            assert(!call->IsGuardedDevirtualizationCandidate());
+            inlineResult->NoteFatal(InlineObservation::CALLSITE_IS_CALL_TO_HELPER);
+            return;
+        }
+    }
+#endif // FEATURE_HW_INTRINSICS
 
     /* Ignore indirect calls */
     if (call->gtCallType == CT_INDIRECT)
