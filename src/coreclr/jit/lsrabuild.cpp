@@ -3241,7 +3241,7 @@ void LinearScan::BuildKills(GenTree* tree, regMaskTP killMask)
     }
 }
 
-#if defined(TARGET_ARMARCH) || defined(TARGET_RISCV64)
+#if defined(TARGET_ARMARCH) || defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
 
 //------------------------------------------------------------------------
 // BuildDefWithKills: Build one RefTypeDef RefPositions for the given node,
