@@ -749,6 +749,12 @@ internal static partial class Interop
             Debug.Assert(ssl != IntPtr.Zero);
             Debug.Assert(session != IntPtr.Zero);
 
+            // remember if the session used a certificate, this information is used after
+            // session resumption, the pointer is not being dereferenced and the refcount
+            // is not going to be manipulated.
+            IntPtr cert = Interop.Ssl.SslGetCertificate(ssl);
+            Interop.Ssl.SslSessionSetData(session, cert);
+
             IntPtr ptr = Ssl.SslGetData(ssl);
             if (ptr != IntPtr.Zero)
             {

@@ -13,6 +13,7 @@ namespace System.Net.Security.Tests
 {
     using Configuration = System.Net.Test.Common.Configuration;
 
+    [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.Linux)]
     public class SslStreamTlsResumeTests
     {
         private static FieldInfo connectionInfo = typeof(SslStream).GetField(
@@ -29,7 +30,6 @@ namespace System.Net.Security.Tests
         [ConditionalTheory]
         [InlineData(true)]
         [InlineData(false)]
-        [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.Linux)]
         public async Task SslStream_ClientDisableTlsResume_Succeeds(bool testClient)
         {
             SslServerAuthenticationOptions serverOptions = new SslServerAuthenticationOptions
