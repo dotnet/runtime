@@ -28,6 +28,11 @@ namespace JIT.HardwareIntrinsics.Arm
             return (int)(CountLeadingZeroBits((int)((ulong)op1 ^ ((ulong)op1 >> 1))) - 1);
         }
 
+        public static long CountLeadingSignBits(long op1)
+        {
+            return (long)(CountLeadingZeroBits((long)((ulong)op1 ^ ((ulong)op1 >> 1))) - 1);
+        }
+
         public static sbyte CountLeadingZeroBits(sbyte op1)
         {
             return (sbyte)(8 * sizeof(sbyte) - (HighestSetBit(op1) + 1));
@@ -136,6 +141,42 @@ namespace JIT.HardwareIntrinsics.Arm
             return -1;
         }
 
+        public static long CountLeadingZeroBits(long op1)
+        {
+            return (long)(8 * sizeof(long) - (HighestSetBit(op1) + 1));
+        }
+
+        private static int HighestSetBit(long op1)
+        {
+            for (int i = 8 * sizeof(long) - 1; i >= 0; i--)
+            {
+                if (((ulong)op1 & (1UL << i)) != 0)
+                {
+                    return i;
+                }
+            }
+
+            return -1;
+        }
+
+        public static ulong CountLeadingZeroBits(ulong op1)
+        {
+            return (ulong)(8 * sizeof(ulong) - (HighestSetBit(op1) + 1));
+        }
+
+        private static int HighestSetBit(ulong op1)
+        {
+            for (int i = 8 * sizeof(ulong) - 1; i >= 0; i--)
+            {
+                if (((ulong)op1 & (1UL << i)) != 0)
+                {
+                    return i;
+                }
+            }
+
+            return -1;
+        }
+
         public static sbyte BitCount(sbyte op1)
         {
             int result = 0;
@@ -165,6 +206,100 @@ namespace JIT.HardwareIntrinsics.Arm
 
             return (byte)result;
         }
+
+        public static short BitCount(short op1)
+        {
+            int result = 0;
+
+            for (int i = 0; i < 8 * sizeof(short); i++)
+            {
+                if (((ulong)op1 & (1UL << i)) != 0)
+                {
+                    result = result + 1;
+                }
+            }
+
+            return (short)result;
+        }
+
+        public static ushort BitCount(ushort op1)
+        {
+            int result = 0;
+
+            for (int i = 0; i < 8 * sizeof(ushort); i++)
+            {
+                if (((ulong)op1 & (1UL << i)) != 0)
+                {
+                    result = result + 1;
+                }
+            }
+
+            return (ushort)result;
+        }
+
+        public static int BitCount(int op1)
+        {
+            int result = 0;
+
+            for (int i = 0; i < 8 * sizeof(int); i++)
+            {
+                if (((ulong)op1 & (1UL << i)) != 0)
+                {
+                    result = result + 1;
+                }
+            }
+
+            return (int)result;
+        }
+
+        public static uint BitCount(uint op1)
+        {
+            int result = 0;
+
+            for (int i = 0; i < 8 * sizeof(uint); i++)
+            {
+                if (((ulong)op1 & (1UL << i)) != 0)
+                {
+                    result = result + 1;
+                }
+            }
+
+            return (uint)result;
+        }
+
+        public static long BitCount(long op1)
+        {
+            int result = 0;
+
+            for (int i = 0; i < 8 * sizeof(long); i++)
+            {
+                if (((ulong)op1 & (1UL << i)) != 0)
+                {
+                    result = result + 1;
+                }
+            }
+
+            return (long)result;
+        }
+
+        public static ulong BitCount(ulong op1)
+        {
+            int result = 0;
+
+            for (int i = 0; i < 8 * sizeof(ulong); i++)
+            {
+                if (((ulong)op1 & (1UL << i)) != 0)
+                {
+                    result = result + 1;
+                }
+            }
+
+            return (ulong)result;
+        }
+
+        public static int BitCount(float op1) => BitCount(BitConverter.SingleToInt32Bits(op1));
+
+        public static long BitCount(double op1) => BitCount(BitConverter.DoubleToInt64Bits(op1));
 
         public static byte ReverseElementBits(byte op1)
         {
@@ -1409,6 +1544,8 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static double Sqrt(double value) => Math.Sqrt(value);
 
+        public static long AbsoluteDifference(long op1, long op2) => op1 < op2 ? (long)(op2 - op1) : (long)(op1 - op2);
+
         public static byte AbsoluteDifference(sbyte op1, sbyte op2) => op1 < op2 ? (byte)(op2 - op1) : (byte)(op1 - op2);
 
         public static sbyte AbsoluteDifferenceAdd(sbyte op1, sbyte op2, sbyte op3) => (sbyte)(op1 + AbsoluteDifference(op2, op3));
@@ -1426,6 +1563,8 @@ namespace JIT.HardwareIntrinsics.Arm
         public static byte AbsoluteDifferenceAdd(byte op1, byte op2, byte op3) => (byte)(op1 + AbsoluteDifference(op2, op3));
 
         public static ushort AbsoluteDifference(ushort op1, ushort op2) => op1 < op2 ? (ushort)(op2 - op1) : (ushort)(op1 - op2);
+
+        public static ulong AbsoluteDifference(ulong op1, ulong op2) => op1 < op2 ? (ulong)(op2 - op1) : (ulong)(op1 - op2);
 
         public static ushort AbsoluteDifferenceAdd(ushort op1, ushort op2, ushort op3) => (ushort)(op1 + AbsoluteDifference(op2, op3));
 
@@ -1476,6 +1615,22 @@ namespace JIT.HardwareIntrinsics.Arm
         public static short AddWideningUpper(sbyte[] op1, sbyte[] op2, int i) => AddWidening(op1[i + op1.Length / 2], op2[i + op2.Length / 2]);
 
         public static short AddWideningUpper(short[] op1, sbyte[] op2, int i) => AddWidening(op1[i], op2[i + op2.Length / 2]);
+
+        public static sbyte BooleanNot(sbyte value) => (sbyte)(value == 0 ? 1 : 0);
+
+        public static byte BooleanNot(byte value) => (byte)(value == 0 ? 1 : 0);
+
+        public static short BooleanNot(short value) => (short)(value == 0 ? 1 : 0);
+
+        public static ushort BooleanNot(ushort value) => (ushort)(value == 0 ? 1 : 0);
+
+        public static int BooleanNot(int value) => (int)(value == 0 ? 1 : 0);
+
+        public static uint BooleanNot(uint value) => (uint)(value == 0 ? 1 : 0);
+
+        public static long BooleanNot(long value) => (long)(value == 0 ? 1 : 0);
+
+        public static ulong BooleanNot(ulong value) => (ulong)(value == 0 ? 1 : 0);
 
         public static sbyte ExtractNarrowing(short op1) => (sbyte)op1;
 
@@ -6206,6 +6361,30 @@ namespace JIT.HardwareIntrinsics.Arm
             for (int i = 0; i < 4; i++)
             {
                 result += (int)((int)op2[s + i] * (int)op3[t + i]);
+            }
+
+            return result;
+        }
+
+        public static ulong DotProduct(ulong op1, ushort[] op2, int s, ushort[] op3, int t)
+        {
+            ulong result = op1;
+
+            for (int i = 0; i < 4; i++)
+            {
+                result += (ulong)((ulong)op2[s + i] * (ulong)op3[t + i]);
+            }
+
+            return result;
+        }
+
+        public static long DotProduct(long op1, short[] op2, int s, short[] op3, int t)
+        {
+            long result = op1;
+
+            for (int i = 0; i < 4; i++)
+            {
+                result += (long)((long)op2[s + i] * (long)op3[t + i]);
             }
 
             return result;

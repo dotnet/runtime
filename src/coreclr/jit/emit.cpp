@@ -3510,7 +3510,7 @@ void emitter::emitDispRegSet(regMaskTP regs)
             continue;
         }
 
-        regs -= curReg;
+        regs ^= curReg;
 
         if (sp)
         {
@@ -3870,8 +3870,8 @@ void emitter::emitDispGCRegDelta(const char* title, regMaskTP prevRegs, regMaskT
     {
         emitDispGCDeltaTitle(title);
         regMaskTP sameRegs    = prevRegs & curRegs;
-        regMaskTP removedRegs = prevRegs - sameRegs;
-        regMaskTP addedRegs   = curRegs - sameRegs;
+        regMaskTP removedRegs = prevRegs ^ sameRegs;
+        regMaskTP addedRegs   = curRegs ^ sameRegs;
         if (removedRegs != RBM_NONE)
         {
             printf(" -");
@@ -8787,7 +8787,7 @@ void emitter::emitRecordGCcall(BYTE* codePos, unsigned char callInstrSize)
     callDsc* call;
 
 #ifdef JIT32_GCENCODER
-    unsigned regs = (emitThisGCrefRegs | emitThisByrefRegs) & ~RBM_INTRET;
+    unsigned regs = (unsigned)(emitThisGCrefRegs | emitThisByrefRegs) & ~RBM_INTRET;
 
     // The JIT32 GCInfo encoder allows us to (as the comment previously here said):
     // "Bail if this is a totally boring call", but the GCInfoEncoder/Decoder interface
@@ -8972,7 +8972,7 @@ void emitter::emitUpdateLiveGCregs(GCtype gcType, regMaskTP regs, BYTE* addr)
                 emitGCregDeadUpd(reg, addr);
             }
 
-            chg -= bit;
+            chg ^= bit;
         } while (chg);
 
         assert(emitThisXXrefRegs == regs);
@@ -9128,7 +9128,7 @@ unsigned char emitter::emitOutputSizeT(BYTE* dst, ssize_t val)
 
 //------------------------------------------------------------------------
 // Wrappers to emitOutputByte, emitOutputWord, emitOutputLong, emitOutputSizeT
-// that take unsigned __int64 or size_t type instead of ssize_t. Used on RyuJIT/x86.
+// that take uint64_t or size_t type instead of ssize_t. Used on RyuJIT/x86.
 //
 // Arguments:
 //    dst - passed through
@@ -9160,22 +9160,22 @@ unsigned char emitter::emitOutputSizeT(BYTE* dst, size_t val)
     return emitOutputSizeT(dst, (ssize_t)val);
 }
 
-unsigned char emitter::emitOutputByte(BYTE* dst, unsigned __int64 val)
+unsigned char emitter::emitOutputByte(BYTE* dst, uint64_t val)
 {
     return emitOutputByte(dst, (ssize_t)val);
 }
 
-unsigned char emitter::emitOutputWord(BYTE* dst, unsigned __int64 val)
+unsigned char emitter::emitOutputWord(BYTE* dst, uint64_t val)
 {
     return emitOutputWord(dst, (ssize_t)val);
 }
 
-unsigned char emitter::emitOutputLong(BYTE* dst, unsigned __int64 val)
+unsigned char emitter::emitOutputLong(BYTE* dst, uint64_t val)
 {
     return emitOutputLong(dst, (ssize_t)val);
 }
 
-unsigned char emitter::emitOutputSizeT(BYTE* dst, unsigned __int64 val)
+unsigned char emitter::emitOutputSizeT(BYTE* dst, uint64_t val)
 {
     return emitOutputSizeT(dst, (ssize_t)val);
 }

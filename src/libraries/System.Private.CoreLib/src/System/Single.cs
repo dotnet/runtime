@@ -658,7 +658,19 @@ namespace System
         /// <inheritdoc cref="IFloatingPoint{TSelf}.ConvertToIntegerNative{TInteger}(TSelf)" />
         [Intrinsic]
         public static TInteger ConvertToIntegerNative<TInteger>(float value)
-            where TInteger : IBinaryInteger<TInteger> => TInteger.CreateSaturating(value);
+            where TInteger : IBinaryInteger<TInteger>
+        {
+#if !MONO
+            if (typeof(TInteger).IsPrimitive)
+            {
+                // We need this to be recursive so indirect calls (delegates
+                // for example) produce the same result as direct invocation
+                return ConvertToIntegerNative<TInteger>(value);
+            }
+#endif
+
+            return TInteger.CreateSaturating(value);
+        }
 
         /// <inheritdoc cref="IFloatingPoint{TSelf}.Floor(TSelf)" />
         [Intrinsic]
@@ -1185,6 +1197,19 @@ namespace System
             }
 
             return y;
+        }
+
+
+
+        /// <inheritdoc cref="INumberBase{TSelf}.MultiplyAddEstimate(TSelf, TSelf, TSelf)" />
+        [Intrinsic]
+        public static float MultiplyAddEstimate(float left, float right, float addend)
+        {
+#if MONO
+            return (left * right) + addend;
+#else
+            return MultiplyAddEstimate(left, right, addend);
+#endif
         }
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertFromChecked{TOther}(TOther, out TSelf)" />

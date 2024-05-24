@@ -45,8 +45,6 @@
 
 
 #ifndef DACCESS_COMPILE
-
-extern "C" VOID __cdecl StubRareEnable(Thread *pThread);
 #ifdef FEATURE_COMINTEROP
 extern "C" HRESULT __cdecl StubRareDisableHR(Thread *pThread);
 #endif // FEATURE_COMINTEROP
@@ -144,7 +142,7 @@ class X64NearJumpSetup : public InstructionFormat
             }
         }
 
-        virtual VOID EmitInstruction(UINT refsize, __int64 fixedUpReference, BYTE *pOutBufferRX, BYTE *pOutBufferRW, UINT variationCode, BYTE *pDataBuffer)
+        virtual VOID EmitInstruction(UINT refsize, int64_t fixedUpReference, BYTE *pOutBufferRX, BYTE *pOutBufferRW, UINT variationCode, BYTE *pDataBuffer)
         {
             LIMITED_METHOD_CONTRACT
             if (k8 == refsize)
@@ -273,18 +271,18 @@ class X64NearJumpExecute : public InstructionFormat
             }
         }
 
-        virtual VOID EmitInstruction(UINT refsize, __int64 fixedUpReference, BYTE *pOutBufferRX, BYTE *pOutBufferRW, UINT variationCode, BYTE *pDataBuffer)
+        virtual VOID EmitInstruction(UINT refsize, int64_t fixedUpReference, BYTE *pOutBufferRX, BYTE *pOutBufferRW, UINT variationCode, BYTE *pDataBuffer)
         {
             LIMITED_METHOD_CONTRACT
             if (k8 == refsize)
             {
                 pOutBufferRW[0] = 0xeb;
-                *((__int8*)(pOutBufferRW+1)) = (__int8)fixedUpReference;
+                *((int8_t*)(pOutBufferRW+1)) = (int8_t)fixedUpReference;
             }
             else if (k32 == refsize)
             {
                 pOutBufferRW[0] = 0xe9;
-                *((__int32*)(pOutBufferRW+1)) = (__int32)fixedUpReference;
+                *((int32_t*)(pOutBufferRW+1)) = (int32_t)fixedUpReference;
             }
             else if (k64Small == refsize)
             {
@@ -409,18 +407,18 @@ class X86NearJump : public InstructionFormat
             }
         }
 
-        virtual VOID EmitInstruction(UINT refsize, __int64 fixedUpReference, BYTE *pOutBufferRX, BYTE *pOutBufferRW, UINT variationCode, BYTE *pDataBuffer)
+        virtual VOID EmitInstruction(UINT refsize, int64_t fixedUpReference, BYTE *pOutBufferRX, BYTE *pOutBufferRW, UINT variationCode, BYTE *pDataBuffer)
         {
             LIMITED_METHOD_CONTRACT
             if (k8 == refsize)
             {
                 pOutBufferRW[0] = 0xeb;
-                *((__int8*)(pOutBufferRW+1)) = (__int8)fixedUpReference;
+                *((int8_t*)(pOutBufferRW+1)) = (int8_t)fixedUpReference;
             }
             else if (k32 == refsize)
             {
                 pOutBufferRW[0] = 0xe9;
-                *((__int32*)(pOutBufferRW+1)) = (__int32)fixedUpReference;
+                *((int32_t*)(pOutBufferRW+1)) = (int32_t)fixedUpReference;
             }
 #ifdef TARGET_AMD64
             else if (k64Small == refsize)
@@ -543,19 +541,19 @@ class X86CondJump : public InstructionFormat
             return (refsize == k8 ? 2 : 6);
         }
 
-        virtual VOID EmitInstruction(UINT refsize, __int64 fixedUpReference, BYTE *pOutBufferRX, BYTE *pOutBufferRW, UINT variationCode, BYTE *pDataBuffer)
+        virtual VOID EmitInstruction(UINT refsize, int64_t fixedUpReference, BYTE *pOutBufferRX, BYTE *pOutBufferRW, UINT variationCode, BYTE *pDataBuffer)
         {
         LIMITED_METHOD_CONTRACT
         if (refsize == k8)
         {
                 pOutBufferRW[0] = static_cast<BYTE>(0x70 | variationCode);
-                *((__int8*)(pOutBufferRW+1)) = (__int8)fixedUpReference;
+                *((int8_t*)(pOutBufferRW+1)) = (int8_t)fixedUpReference;
         }
         else
         {
                 pOutBufferRW[0] = 0x0f;
                 pOutBufferRW[1] = static_cast<BYTE>(0x80 | variationCode);
-                *((__int32*)(pOutBufferRW+2)) = (__int32)fixedUpReference;
+                *((int32_t*)(pOutBufferRW+2)) = (int32_t)fixedUpReference;
             }
         }
 };
@@ -600,7 +598,7 @@ class X86Call : public InstructionFormat
             }
         }
 
-        virtual VOID EmitInstruction(UINT refsize, __int64 fixedUpReference, BYTE *pOutBufferRX, BYTE *pOutBufferRW, UINT variationCode, BYTE *pDataBuffer)
+        virtual VOID EmitInstruction(UINT refsize, int64_t fixedUpReference, BYTE *pOutBufferRX, BYTE *pOutBufferRW, UINT variationCode, BYTE *pDataBuffer)
         {
             LIMITED_METHOD_CONTRACT
 
@@ -608,7 +606,7 @@ class X86Call : public InstructionFormat
             {
             case k32:
                 pOutBufferRW[0] = 0xE8;
-                *((__int32*)(1+pOutBufferRW)) = (__int32)fixedUpReference;
+                *((int32_t*)(1+pOutBufferRW)) = (int32_t)fixedUpReference;
                 break;
 
 #ifdef TARGET_AMD64
@@ -719,14 +717,14 @@ class X86PushImm32 : public InstructionFormat
             return 5;
         }
 
-        virtual VOID EmitInstruction(UINT refsize, __int64 fixedUpReference, BYTE *pOutBufferRX, BYTE *pOutBufferRW, UINT variationCode, BYTE *pDataBuffer)
+        virtual VOID EmitInstruction(UINT refsize, int64_t fixedUpReference, BYTE *pOutBufferRX, BYTE *pOutBufferRW, UINT variationCode, BYTE *pDataBuffer)
         {
             LIMITED_METHOD_CONTRACT;
 
             pOutBufferRW[0] = 0x68;
             // only support absolute pushimm32 of the label address. The fixedUpReference is
             // the offset to the label from the current point, so add to get address
-            *((__int32*)(1+pOutBufferRW)) = (__int32)(fixedUpReference);
+            *((int32_t*)(1+pOutBufferRW)) = (int32_t)(fixedUpReference);
         }
 };
 
@@ -789,7 +787,7 @@ class X64LeaRIP : public InstructionFormat
             }
         }
 
-        virtual VOID EmitInstruction(UINT refsize, __int64 fixedUpReference, BYTE *pOutBufferRX, BYTE *pOutBufferRW, UINT variationCode, BYTE *pDataBuffer)
+        virtual VOID EmitInstruction(UINT refsize, int64_t fixedUpReference, BYTE *pOutBufferRX, BYTE *pOutBufferRW, UINT variationCode, BYTE *pDataBuffer)
         {
             LIMITED_METHOD_CONTRACT;
 
@@ -807,7 +805,7 @@ class X64LeaRIP : public InstructionFormat
             pOutBufferRW[2] = (BYTE)(0x05 | (reg << 3));
             // only support absolute pushimm32 of the label address. The fixedUpReference is
             // the offset to the label from the current point, so add to get address
-            *((__int32*)(3+pOutBufferRW)) = (__int32)(fixedUpReference);
+            *((int32_t*)(3+pOutBufferRW)) = (int32_t)(fixedUpReference);
         }
 };
 
@@ -1301,7 +1299,7 @@ VOID StubLinkerCPU::X86EmitPopRegs(unsigned regSet)
 //---------------------------------------------------------------
 VOID StubLinkerCPU::X86EmitIndexRegLoad(X86Reg dstreg,
                                         X86Reg srcreg,
-                                        __int32 ofs)
+                                        int32_t ofs)
 {
     STANDARD_VM_CONTRACT;
     X86EmitOffsetModRM(0x8b, dstreg, srcreg, ofs);
@@ -1317,7 +1315,7 @@ VOID StubLinkerCPU::X86EmitIndexRegLoad(X86Reg dstreg,
 //       using X86EmitIndexRegStoreRSP.
 //---------------------------------------------------------------
 VOID StubLinkerCPU::X86EmitIndexRegStore(X86Reg dstreg,
-                                         __int32 ofs,
+                                         int32_t ofs,
                                          X86Reg srcreg)
 {
     STANDARD_VM_CONTRACT;
@@ -1336,7 +1334,7 @@ VOID StubLinkerCPU::X86EmitIndexRegStore(X86Reg dstreg,
 // It marks the instruction has 64bit so that the processor
 // performs a 8byte data move to a RSP based stack location.
 //---------------------------------------------------------------
-VOID StubLinkerCPU::X86EmitIndexRegStoreRSP(__int32 ofs,
+VOID StubLinkerCPU::X86EmitIndexRegStoreRSP(int32_t ofs,
                                          X86Reg srcreg)
 {
     STANDARD_VM_CONTRACT;
@@ -1351,7 +1349,7 @@ VOID StubLinkerCPU::X86EmitIndexRegStoreRSP(__int32 ofs,
 // It marks the instruction has 64bit so that the processor
 // performs a 8byte data move to a R12 based stack location.
 //---------------------------------------------------------------
-VOID StubLinkerCPU::X86EmitIndexRegStoreR12(__int32 ofs,
+VOID StubLinkerCPU::X86EmitIndexRegStoreR12(int32_t ofs,
                                          X86Reg srcreg)
 {
     STANDARD_VM_CONTRACT;
@@ -1364,7 +1362,7 @@ VOID StubLinkerCPU::X86EmitIndexRegStoreR12(__int32 ofs,
 // Emits:
 //    push dword ptr [<srcreg> + <ofs>]
 //---------------------------------------------------------------
-VOID StubLinkerCPU::X86EmitIndexPush(X86Reg srcreg, __int32 ofs)
+VOID StubLinkerCPU::X86EmitIndexPush(X86Reg srcreg, int32_t ofs)
 {
     STANDARD_VM_CONTRACT;
 
@@ -1383,8 +1381,8 @@ VOID StubLinkerCPU::X86EmitIndexPush(X86Reg srcreg, __int32 ofs)
 VOID StubLinkerCPU::X86EmitBaseIndexPush(
         X86Reg baseReg,
         X86Reg indexReg,
-        __int32 scale,
-        __int32 ofs)
+        int32_t scale,
+        int32_t ofs)
 {
     STANDARD_VM_CONTRACT;
 
@@ -1396,12 +1394,12 @@ VOID StubLinkerCPU::X86EmitBaseIndexPush(
 // Emits:
 //    push dword ptr [ESP + <ofs>]
 //---------------------------------------------------------------
-VOID StubLinkerCPU::X86EmitSPIndexPush(__int32 ofs)
+VOID StubLinkerCPU::X86EmitSPIndexPush(int32_t ofs)
 {
     STANDARD_VM_CONTRACT;
 
-    __int8 ofs8 = (__int8) ofs;
-    if (ofs == (__int32) ofs8)
+    int8_t ofs8 = (int8_t) ofs;
+    if (ofs == (int32_t) ofs8)
     {
         // The offset can be expressed in a byte (can use the byte
         // form of the push esp instruction)
@@ -1415,7 +1413,7 @@ VOID StubLinkerCPU::X86EmitSPIndexPush(__int32 ofs)
         // of the push esp instruction)
 
         BYTE code[] = {0xff, 0xb4, 0x24, 0x0, 0x0, 0x0, 0x0};
-        *(__int32 *)(&code[3]) = ofs;
+        *(int32_t *)(&code[3]) = ofs;
         EmitBytes(code, sizeof(code));
     }
 
@@ -1427,7 +1425,7 @@ VOID StubLinkerCPU::X86EmitSPIndexPush(__int32 ofs)
 // Emits:
 //    pop dword ptr [<srcreg> + <ofs>]
 //---------------------------------------------------------------
-VOID StubLinkerCPU::X86EmitIndexPop(X86Reg srcreg, __int32 ofs)
+VOID StubLinkerCPU::X86EmitIndexPop(X86Reg srcreg, int32_t ofs)
 {
     STANDARD_VM_CONTRACT;
 
@@ -1443,7 +1441,7 @@ VOID StubLinkerCPU::X86EmitIndexPop(X86Reg srcreg, __int32 ofs)
 // Emits:
 //    lea <dstreg>, [<srcreg> + <ofs>
 //---------------------------------------------------------------
-VOID StubLinkerCPU::X86EmitIndexLea(X86Reg dstreg, X86Reg srcreg, __int32 ofs)
+VOID StubLinkerCPU::X86EmitIndexLea(X86Reg dstreg, X86Reg srcreg, int32_t ofs)
 {
     CONTRACTL
     {
@@ -1457,7 +1455,7 @@ VOID StubLinkerCPU::X86EmitIndexLea(X86Reg dstreg, X86Reg srcreg, __int32 ofs)
 }
 
 #if defined(TARGET_AMD64)
-VOID StubLinkerCPU::X86EmitIndexLeaRSP(X86Reg dstreg, X86Reg srcreg, __int32 ofs)
+VOID StubLinkerCPU::X86EmitIndexLeaRSP(X86Reg dstreg, X86Reg srcreg, int32_t ofs)
 {
     STANDARD_VM_CONTRACT;
 
@@ -1680,7 +1678,7 @@ VOID StubLinkerCPU::X64EmitMovXmmXmm(X86Reg destXmmreg, X86Reg srcXmmReg)
 //---------------------------------------------------------------
 // movdqa XmmN, [baseReg + offset]
 //---------------------------------------------------------------
-VOID StubLinkerCPU::X64EmitMovdqaFromMem(X86Reg Xmmreg, X86Reg baseReg, __int32 ofs)
+VOID StubLinkerCPU::X64EmitMovdqaFromMem(X86Reg Xmmreg, X86Reg baseReg, int32_t ofs)
 {
     STANDARD_VM_CONTRACT;
     X64EmitMovXmmWorker(0x66, 0x6F, Xmmreg, baseReg, ofs);
@@ -1689,7 +1687,7 @@ VOID StubLinkerCPU::X64EmitMovdqaFromMem(X86Reg Xmmreg, X86Reg baseReg, __int32 
 //---------------------------------------------------------------
 // movdqa [baseReg + offset], XmmN
 //---------------------------------------------------------------
-VOID StubLinkerCPU::X64EmitMovdqaToMem(X86Reg Xmmreg, X86Reg baseReg, __int32 ofs)
+VOID StubLinkerCPU::X64EmitMovdqaToMem(X86Reg Xmmreg, X86Reg baseReg, int32_t ofs)
 {
     STANDARD_VM_CONTRACT;
     X64EmitMovXmmWorker(0x66, 0x7F, Xmmreg, baseReg, ofs);
@@ -1698,7 +1696,7 @@ VOID StubLinkerCPU::X64EmitMovdqaToMem(X86Reg Xmmreg, X86Reg baseReg, __int32 of
 //---------------------------------------------------------------
 // movsd XmmN, [baseReg + offset]
 //---------------------------------------------------------------
-VOID StubLinkerCPU::X64EmitMovSDFromMem(X86Reg Xmmreg, X86Reg baseReg, __int32 ofs)
+VOID StubLinkerCPU::X64EmitMovSDFromMem(X86Reg Xmmreg, X86Reg baseReg, int32_t ofs)
 {
     STANDARD_VM_CONTRACT;
     X64EmitMovXmmWorker(0xF2, 0x10, Xmmreg, baseReg, ofs);
@@ -1707,7 +1705,7 @@ VOID StubLinkerCPU::X64EmitMovSDFromMem(X86Reg Xmmreg, X86Reg baseReg, __int32 o
 //---------------------------------------------------------------
 // movsd [baseReg + offset], XmmN
 //---------------------------------------------------------------
-VOID StubLinkerCPU::X64EmitMovSDToMem(X86Reg Xmmreg, X86Reg baseReg, __int32 ofs)
+VOID StubLinkerCPU::X64EmitMovSDToMem(X86Reg Xmmreg, X86Reg baseReg, int32_t ofs)
 {
     STANDARD_VM_CONTRACT;
     X64EmitMovXmmWorker(0xF2, 0x11, Xmmreg, baseReg, ofs);
@@ -1716,7 +1714,7 @@ VOID StubLinkerCPU::X64EmitMovSDToMem(X86Reg Xmmreg, X86Reg baseReg, __int32 ofs
 //---------------------------------------------------------------
 // movss XmmN, [baseReg + offset]
 //---------------------------------------------------------------
-VOID StubLinkerCPU::X64EmitMovSSFromMem(X86Reg Xmmreg, X86Reg baseReg, __int32 ofs)
+VOID StubLinkerCPU::X64EmitMovSSFromMem(X86Reg Xmmreg, X86Reg baseReg, int32_t ofs)
 {
     STANDARD_VM_CONTRACT;
     X64EmitMovXmmWorker(0xF3, 0x10, Xmmreg, baseReg, ofs);
@@ -1725,7 +1723,7 @@ VOID StubLinkerCPU::X64EmitMovSSFromMem(X86Reg Xmmreg, X86Reg baseReg, __int32 o
 //---------------------------------------------------------------
 // movss [baseReg + offset], XmmN
 //---------------------------------------------------------------
-VOID StubLinkerCPU::X64EmitMovSSToMem(X86Reg Xmmreg, X86Reg baseReg, __int32 ofs)
+VOID StubLinkerCPU::X64EmitMovSSToMem(X86Reg Xmmreg, X86Reg baseReg, int32_t ofs)
 {
     STANDARD_VM_CONTRACT;
     X64EmitMovXmmWorker(0xF3, 0x11, Xmmreg, baseReg, ofs);
@@ -1777,7 +1775,7 @@ VOID StubLinkerCPU::X64EmitMovqWorker(BYTE opcode, X86Reg Xmmreg, X86Reg reg)
 //---------------------------------------------------------------
 // Helper method for emitting of XMM from/to memory moves
 //---------------------------------------------------------------
-VOID StubLinkerCPU::X64EmitMovXmmWorker(BYTE prefix, BYTE opcode, X86Reg Xmmreg, X86Reg baseReg, __int32 ofs)
+VOID StubLinkerCPU::X64EmitMovXmmWorker(BYTE prefix, BYTE opcode, X86Reg Xmmreg, X86Reg baseReg, int32_t ofs)
 {
     STANDARD_VM_CONTRACT;
 
@@ -1835,7 +1833,7 @@ VOID StubLinkerCPU::X64EmitMovXmmWorker(BYTE prefix, BYTE opcode, X86Reg Xmmreg,
     }
     else
     {
-        *((__int32*)(codeBuffer+nBytes)) = ofs;
+        *((int32_t*)(codeBuffer+nBytes)) = ofs;
         nBytes += 4;
     }
 
@@ -1850,7 +1848,7 @@ VOID StubLinkerCPU::X64EmitMovXmmWorker(BYTE prefix, BYTE opcode, X86Reg Xmmreg,
 //---------------------------------------------------------------
 // Emits a MOD/RM for accessing a dword at [<indexreg> + ofs32]
 //---------------------------------------------------------------
-VOID StubLinkerCPU::X86EmitOffsetModRM(BYTE opcode, X86Reg opcodereg, X86Reg indexreg, __int32 ofs)
+VOID StubLinkerCPU::X86EmitOffsetModRM(BYTE opcode, X86Reg opcodereg, X86Reg indexreg, int32_t ofs)
 {
     STANDARD_VM_CONTRACT;
 
@@ -1898,7 +1896,7 @@ VOID StubLinkerCPU::X86EmitOffsetModRM(BYTE opcode, X86Reg opcodereg, X86Reg ind
     else
     {
         code[1] = 0x80|modrm;
-        *((__int32*)(2+code)) = ofs;
+        *((int32_t*)(2+code)) = ofs;
         nBytes += 5;
         EmitBytes(codeBuffer, nBytes);
     }
@@ -1907,7 +1905,7 @@ VOID StubLinkerCPU::X86EmitOffsetModRM(BYTE opcode, X86Reg opcodereg, X86Reg ind
 //---------------------------------------------------------------
 // Emits a MOD/RM for accessing a dword at [<baseReg> + <indexReg>*<scale> + ofs32]
 //---------------------------------------------------------------
-VOID StubLinkerCPU::X86EmitOffsetModRmSIB(BYTE opcode, X86Reg opcodeOrReg, X86Reg baseReg, X86Reg indexReg, __int32 scale, __int32 ofs)
+VOID StubLinkerCPU::X86EmitOffsetModRmSIB(BYTE opcode, X86Reg opcodeOrReg, X86Reg baseReg, X86Reg indexReg, int32_t scale, int32_t ofs)
 {
     CONTRACTL
     {
@@ -1951,7 +1949,7 @@ VOID StubLinkerCPU::X86EmitOffsetModRmSIB(BYTE opcode, X86Reg opcodeOrReg, X86Re
     {
         code[1] = static_cast<BYTE>(0x84 | (opcodeOrReg << 3));
         code[2] = sib;
-        *(__int32*)(&code[3]) = ofs;
+        *(int32_t*)(&code[3]) = ofs;
         nBytes += 6;
         EmitBytes(codeBuffer, nBytes);
     }
@@ -2022,7 +2020,7 @@ VOID StubLinkerCPU::X86EmitRegLoad(X86Reg reg, UINT_PTR imm)
 VOID StubLinkerCPU::X86EmitOp(WORD    opcode,
                               X86Reg  altreg,
                               X86Reg  basereg,
-                              __int32 ofs /*=0*/,
+                              int32_t ofs /*=0*/,
                               X86Reg  scaledreg /*=0*/,
                               BYTE    scale /*=0*/
                     AMD64_ARG(X86OperandSize OperandSize /*= k32BitOp*/))
@@ -2149,7 +2147,7 @@ VOID StubLinkerCPU::X86EmitOp(WORD    opcode,
     switch (ofssize)
     {
         case 0: break;
-        case 1: Emit8( (__int8)ofs ); break;
+        case 1: Emit8( (int8_t)ofs ); break;
         case 2: Emit32( ofs ); break;
         default: _ASSERTE(!"Can't get here.");
     }
@@ -2224,7 +2222,7 @@ VOID StubLinkerCPU::X86EmitR2ROp (WORD opcode,
 //---------------------------------------------------------------
 VOID StubLinkerCPU::X86EmitEspOffset(BYTE opcode,
                                      X86Reg altreg,
-                                     __int32 ofs
+                                     int32_t ofs
                            AMD64_ARG(X86OperandSize OperandSize /*= k64BitOp*/)
                                      )
 {
@@ -2277,7 +2275,7 @@ VOID StubLinkerCPU::X86EmitEspOffset(BYTE opcode,
     {
         code[1] = 0x80|modrm;
         code[2] = 0044;
-        *((__int32*)(3+code)) = ofs;
+        *((int32_t*)(3+code)) = ofs;
         EmitBytes(codeBuffer, 7 + nBytes);
     }
 
@@ -2506,9 +2504,9 @@ void StubLinkerCPU::EmitComMethodStubProlog(TADDR pFrameVptr,
         STANDARD_VM_CHECK;
 
         PRECONDITION(rgRareLabels != NULL);
-        PRECONDITION(rgRareLabels[0] != NULL && rgRareLabels[1] != NULL && rgRareLabels[2] != NULL);
+        PRECONDITION(rgRareLabels[0] != NULL && rgRareLabels[1] != NULL);
         PRECONDITION(rgRejoinLabels != NULL);
-        PRECONDITION(rgRejoinLabels[0] != NULL && rgRejoinLabels[1] != NULL && rgRejoinLabels[2] != NULL);
+        PRECONDITION(rgRejoinLabels[0] != NULL && rgRejoinLabels[1] != NULL);
     }
     CONTRACTL_END;
 
@@ -2612,9 +2610,11 @@ void StubLinkerCPU::EmitComMethodStubEpilog(TADDR pFrameVptr,
         STANDARD_VM_CHECK;
 
         PRECONDITION(rgRareLabels != NULL);
-        PRECONDITION(rgRareLabels[0] != NULL && rgRareLabels[1] != NULL && rgRareLabels[2] != NULL);
+        PRECONDITION(rgRareLabels[0] != NULL && rgRareLabels[1] != NULL);
         PRECONDITION(rgRejoinLabels != NULL);
-        PRECONDITION(rgRejoinLabels[0] != NULL && rgRejoinLabels[1] != NULL && rgRejoinLabels[2] != NULL);
+        PRECONDITION(rgRejoinLabels[0] != NULL && rgRejoinLabels[1] != NULL);
+        PRECONDITION(4 == sizeof( ((Thread*)0)->m_State ));
+        PRECONDITION(4 == sizeof( ((Thread*)0)->m_fPreemptiveGCDisabled ));
     }
     CONTRACTL_END;
 
@@ -2623,11 +2623,9 @@ void StubLinkerCPU::EmitComMethodStubEpilog(TADDR pFrameVptr,
     // mov [ebx + Thread.GetFrame()], edi  ;; restore previous frame
     X86EmitIndexRegStore(kEBX, Thread::GetOffsetOfCurrentFrame(), kEDI);
 
-    //-----------------------------------------------------------------------
-    // Generate the inline part of disabling preemptive GC
-    //-----------------------------------------------------------------------
-    EmitEnable(rgRareLabels[2]); // rare gc
-    EmitLabel(rgRejoinLabels[2]);        // rejoin for rare gc
+    // move byte ptr [ebx + Thread.m_fPreemptiveGCDisabled],0
+    X86EmitOffsetModRM(0xc6, (X86Reg)0, kEBX, Thread::GetOffsetOfGCFlag());
+    Emit8(0);
 
     // add esp, popstack
     X86EmitAddEsp(sizeof(GSCookie) + UnmanagedToManagedFrame::GetOffsetOfCalleeSavedRegisters());
@@ -2650,12 +2648,6 @@ void StubLinkerCPU::EmitComMethodStubEpilog(TADDR pFrameVptr,
     // indicates that no more code needs to be disassembled, if the stack-walker
     // keeps on going past the previous "jmp eax".
     X86EmitReturn(0);
-
-    //-----------------------------------------------------------------------
-    // The out-of-line portion of enabling preemptive GC - rarely executed
-    //-----------------------------------------------------------------------
-    EmitLabel(rgRareLabels[2]);  // label for rare enable gc
-    EmitRareEnable(rgRejoinLabels[2]); // emit rare enable gc
 
     //-----------------------------------------------------------------------
     // The out-of-line portion of disabling preemptive GC - rarely executed
@@ -2733,9 +2725,11 @@ void StubLinkerCPU::EmitSharedComMethodStubEpilog(TADDR pFrameVptr,
         STANDARD_VM_CHECK;
 
         PRECONDITION(rgRareLabels != NULL);
-        PRECONDITION(rgRareLabels[0] != NULL && rgRareLabels[1] != NULL && rgRareLabels[2] != NULL);
+        PRECONDITION(rgRareLabels[0] != NULL && rgRareLabels[1] != NULL);
         PRECONDITION(rgRejoinLabels != NULL);
-        PRECONDITION(rgRejoinLabels[0] != NULL && rgRejoinLabels[1] != NULL && rgRejoinLabels[2] != NULL);
+        PRECONDITION(rgRejoinLabels[0] != NULL && rgRejoinLabels[1] != NULL);
+        PRECONDITION(4 == sizeof( ((Thread*)0)->m_State ));
+        PRECONDITION(4 == sizeof( ((Thread*)0)->m_fPreemptiveGCDisabled ));
     }
     CONTRACTL_END;
 
@@ -2748,12 +2742,13 @@ void StubLinkerCPU::EmitSharedComMethodStubEpilog(TADDR pFrameVptr,
     X86EmitIndexRegStore(kEBX, Thread::GetOffsetOfCurrentFrame(), kEDI);
 
     //-----------------------------------------------------------------------
-    // Generate the inline part of enabling preemptive GC
+    // Generate enabling preemptive GC
     //-----------------------------------------------------------------------
     EmitLabel(NoEntryLabel);    // need to enable preemp mode even when we fail the disable as rare disable will return in coop mode
 
-    EmitEnable(rgRareLabels[2]);     // rare enable gc
-    EmitLabel(rgRejoinLabels[2]);        // rejoin for rare enable gc
+    // move byte ptr [ebx + Thread.m_fPreemptiveGCDisabled],0
+    X86EmitOffsetModRM(0xc6, (X86Reg)0, kEBX, Thread::GetOffsetOfGCFlag());
+    Emit8(0);
 
 #ifdef PROFILING_SUPPORTED
     // If profiling is active, emit code to notify profiler of transition
@@ -2799,12 +2794,6 @@ void StubLinkerCPU::EmitSharedComMethodStubEpilog(TADDR pFrameVptr,
     // indicates that no more code needs to be disassembled, if the stack-walker
     // keeps on going past the previous "jmp ecx".
     X86EmitReturn(0);
-
-    //-----------------------------------------------------------------------
-    // The out-of-line portion of enabling preemptive GC - rarely executed
-    //-----------------------------------------------------------------------
-    EmitLabel(rgRareLabels[2]);  // label for rare enable gc
-    EmitRareEnable(rgRejoinLabels[2]); // emit rare enable gc
 
     //-----------------------------------------------------------------------
     // The out-of-line portion of disabling preemptive GC - rarely executed
@@ -3334,77 +3323,6 @@ VOID StubLinkerCPU::EmitUnwindInfoCheckSubfunction()
 
 
 #if defined(FEATURE_COMINTEROP) && defined(TARGET_X86)
-
-//-----------------------------------------------------------------------
-// Generates the inline portion of the code to enable preemptive GC. Hopefully,
-// the inline code is all that will execute most of the time. If this code
-// path is entered at certain times, however, it will need to jump out to
-// a separate out-of-line path which is more expensive. The "pForwardRef"
-// label indicates the start of the out-of-line path.
-//
-// Assumptions:
-//      ebx = Thread
-// Preserves
-//      all registers except ecx.
-//
-//-----------------------------------------------------------------------
-VOID StubLinkerCPU::EmitEnable(CodeLabel *pForwardRef)
-{
-    CONTRACTL
-    {
-        STANDARD_VM_CHECK;
-
-        PRECONDITION(4 == sizeof( ((Thread*)0)->m_State ));
-        PRECONDITION(4 == sizeof( ((Thread*)0)->m_fPreemptiveGCDisabled ));
-    }
-    CONTRACTL_END;
-
-    // move byte ptr [ebx + Thread.m_fPreemptiveGCDisabled],0
-    X86EmitOffsetModRM(0xc6, (X86Reg)0, kEBX, Thread::GetOffsetOfGCFlag());
-    Emit8(0);
-
-    _ASSERTE(FitsInI1(Thread::TS_CatchAtSafePoint));
-
-    // test byte ptr [ebx + Thread.m_State], TS_CatchAtSafePoint
-    X86EmitOffsetModRM(0xf6, (X86Reg)0, kEBX, Thread::GetOffsetOfState());
-    Emit8(Thread::TS_CatchAtSafePoint);
-
-    // jnz RarePath
-    X86EmitCondJump(pForwardRef, X86CondCode::kJNZ);
-
-#ifdef _DEBUG
-    X86EmitDebugTrashReg(kECX);
-#endif
-
-}
-
-
-//-----------------------------------------------------------------------
-// Generates the out-of-line portion of the code to enable preemptive GC.
-// After the work is done, the code jumps back to the "pRejoinPoint"
-// which should be emitted right after the inline part is generated.
-//
-// Assumptions:
-//      ebx = Thread
-// Preserves
-//      all registers except ecx.
-//
-//-----------------------------------------------------------------------
-VOID StubLinkerCPU::EmitRareEnable(CodeLabel *pRejoinPoint)
-{
-    STANDARD_VM_CONTRACT;
-
-    X86EmitCall(NewExternalCodeLabel((LPVOID) StubRareEnable), 0);
-#ifdef _DEBUG
-    X86EmitDebugTrashReg(kECX);
-#endif
-    if (pRejoinPoint)
-    {
-        X86EmitNearJump(pRejoinPoint);
-    }
-
-}
-
 
 //-----------------------------------------------------------------------
 // Generates the inline portion of the code to disable preemptive GC. Hopefully,

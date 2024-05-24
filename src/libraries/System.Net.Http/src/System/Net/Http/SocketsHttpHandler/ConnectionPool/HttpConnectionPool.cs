@@ -380,7 +380,7 @@ namespace System.Net.Http
         {
             if (doRequestAuth && Settings._credentials != null)
             {
-                return AuthenticationHelper.SendWithNtConnectionAuthAsync(request, async, Settings._credentials, connection, this, cancellationToken);
+                return AuthenticationHelper.SendWithNtConnectionAuthAsync(request, async, Settings._credentials, Settings._impersonationLevel, connection, this, cancellationToken);
             }
 
             return SendWithNtProxyAuthAsync(connection, request, async, cancellationToken);
@@ -390,7 +390,7 @@ namespace System.Net.Http
         {
             if (DoProxyAuth && ProxyCredentials is not null)
             {
-                return AuthenticationHelper.SendWithNtProxyAuthAsync(request, ProxyUri!, async, ProxyCredentials, connection, this, cancellationToken);
+                return AuthenticationHelper.SendWithNtProxyAuthAsync(request, ProxyUri!, async, ProxyCredentials, HttpHandlerDefaults.DefaultImpersonationLevel, connection, this, cancellationToken);
             }
 
             return connection.SendAsync(request, async, cancellationToken);

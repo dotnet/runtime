@@ -22,7 +22,7 @@ namespace ILCompiler.DependencyAnalysis
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
             sb.Append(nameMangler.CompilationUnitPrefix)
-              .Append("__RuntimeFieldHandle_")
+              .Append("__RuntimeFieldHandle_"u8)
               .Append(nameMangler.GetMangledFieldName(_targetField));
         }
         public int Offset => 0;

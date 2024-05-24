@@ -85,15 +85,19 @@ public: // IDispatch
             }
             case 3:
             {
-                return ReturnToManaged_Missing_Dispatch(pDispParams, pVarResult);
+                return BoolToString_Dispatch(pDispParams, pVarResult);
             }
             case 4:
-            {
-                return ReturnToManaged_DBNull_Dispatch(pDispParams, pVarResult);
-            }
             case 5:
+            case 6:
+            case 7:
+            case 8:
+            case 9:
+            case 10:
+            case 11:
+            case 12:
             {
-                return BoolToString_Dispatch(pDispParams, pVarResult);
+                return ReturnToManaged_Any_Dispatch(pDispParams, pVarResult);
             }
             }
 
@@ -209,33 +213,31 @@ private:
         return S_OK;
     }
 
-    HRESULT ReturnToManaged_Missing_Dispatch(_In_ DISPPARAMS *pDispParams, _Inout_ VARIANT *pVarResult)
+    HRESULT ReturnToManaged_Any_Dispatch(_In_ DISPPARAMS *pDispParams, _Inout_ VARIANT *pVarResult)
     {
         HRESULT hr;
 
-        size_t expectedArgCount = 0;
+        int *args[1];
+        size_t expectedArgCount = 1;
         RETURN_IF_FAILED(VerifyValues(uint32_t(expectedArgCount), pDispParams->cArgs));
 
         if (pVarResult == nullptr)
             return E_POINTER;
 
-        V_VT(pVarResult) = VT_I4;
-        V_I4(pVarResult) = 1234;
-        return S_OK;
-    }
+        VARENUM currType;
+        VARIANTARG *currArg;
+        size_t argIdx = expectedArgCount - 1;
 
-    HRESULT ReturnToManaged_DBNull_Dispatch(_In_ DISPPARAMS *pDispParams, _Inout_ VARIANT *pVarResult)
-    {
-        HRESULT hr;
-
-        size_t expectedArgCount = 0;
-        RETURN_IF_FAILED(VerifyValues(uint32_t(expectedArgCount), pDispParams->cArgs));
-
-        if (pVarResult == nullptr)
-            return E_POINTER;
+        // Extract args
+        {
+            currType = VT_I4;
+            currArg = NextArg(pDispParams->rgvarg, argIdx);
+            RETURN_IF_FAILED(VerifyValues(VARENUM(currType), VARENUM(currArg->vt)));
+            args[0] = &currArg->intVal;
+        }
 
         V_VT(pVarResult) = VT_I4;
-        V_I4(pVarResult) = 1234;
+        V_I4(pVarResult) = *args[0];
         return S_OK;
     }
 
@@ -270,9 +272,15 @@ const WCHAR * const DispatchCoerceTesting::Names[] =
     W("__RESERVED__"),
     W("ReturnToManaged"),
     W("ManagedArgument"),
+    W("BoolToString"),
+    W("ReturnToManaged_Void"),
+    W("ReturnToManaged_Double"),
+    W("ReturnToManaged_String"),
+    W("ReturnToManaged_Decimal"),
+    W("ReturnToManaged_DateTime"),
+    W("ReturnToManaged_Color"),
     W("ReturnToManaged_Missing"),
     W("ReturnToManaged_DBNull"),
-    W("BoolToString")
 };
 
 const int DispatchCoerceTesting::NamesCount = ARRAY_SIZE(DispatchCoerceTesting::Names);
