@@ -38,7 +38,7 @@ namespace System.Text.RegularExpressions.Symbolic
         {
             Debug.Assert(minterms.Length > 0, "Requires at least");
 
-            var lookup = new int[ushort.MaxValue];
+            var lookup = new int[ushort.MaxValue + 1];
             if (minterms.Length == 1)
             {
                 // With only a single minterm, the mapping is trivial: everything maps to it (ID 0).
@@ -68,7 +68,7 @@ namespace System.Text.RegularExpressions.Symbolic
             // TODO: this could be initialized more efficiently but it's
             // a fundamentally different design choice that preallocates more memory.
             // the minterm slice [1..] contains the ranges that should be really initialized
-            for (int i = 0; i < ushort.MaxValue; i++)
+            for (int i = 0; i <= ushort.MaxValue; i++)
             {
                 lookup[i] = anyCharacterToMintermId.Find(i);
             }
