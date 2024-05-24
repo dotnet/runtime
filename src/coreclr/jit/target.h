@@ -249,8 +249,7 @@ private:
 public:
     regMaskTP(regMaskSmall regMask)
         : low(regMask)
-    {
-        
+    {   
     }
 
     regMaskTP()
@@ -323,6 +322,27 @@ public:
     void RemoveRegNumFromMask(regNumber reg);
 
     bool IsRegNumInMask(regNumber reg);
+
+    
+    void operator|=(const regMaskTP& second)
+    {
+        low |= second.getLow();
+    }
+
+    void operator^=(const regMaskTP& second)
+    {
+        low ^= second.getLow();
+    }
+
+    void operator^=(const regNumber reg)
+    {
+        low ^= genRegMask(reg);
+    }
+
+    void operator&=(const regMaskTP& second)
+    {
+        low &= second.getLow();
+    }
 };
 
 static regMaskTP operator^(const regMaskTP& first, const regMaskTP& second)
@@ -341,30 +361,6 @@ static regMaskTP operator|(const regMaskTP& first, const regMaskTP& second)
 {
     regMaskTP result(first.getLow() | second.getLow());
     return result;
-}
-
-static regMaskTP& operator|=(regMaskTP& first, const regMaskTP& second)
-{
-    first = first | second;
-    return first;
-}
-
-static regMaskTP& operator^=(regMaskTP& first, const regMaskTP& second)
-{
-    first = first ^ second;
-    return first;
-}
-
-static regMaskTP& operator^=(regMaskTP& first, const regNumber reg)
-{
-    first = first ^ genRegMask(reg);
-    return first;
-}
-
-static regMaskTP& operator&=(regMaskTP& first, const regMaskTP& second)
-{
-    first = first & second;
-    return first;
 }
 
 static bool operator==(const regMaskTP& first, const regMaskTP& second)
