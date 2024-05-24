@@ -24,8 +24,10 @@ protocol SealedBoxProtocol {
 protocol AEADSymmetricAlgorithm {
     associatedtype SealedBox : SealedBoxProtocol
 
+    static func seal<Plaintext>(_ plaintext: Plaintext, using key: SymmetricKey, nonce: SealedBox.Nonce?) throws -> SealedBox where Plaintext: DataProtocol
     static func seal<Plaintext, AuthenticatedData>(_ plaintext: Plaintext, using key: SymmetricKey, nonce: SealedBox.Nonce?, authenticating additionalData: AuthenticatedData) throws -> SealedBox where Plaintext: DataProtocol, AuthenticatedData: DataProtocol
     static func open<AuthenticatedData>(_ sealedBox: SealedBox, using key: SymmetricKey, authenticating additionalData: AuthenticatedData) throws -> Data where AuthenticatedData: DataProtocol
+    static func open(_ sealedBox: SealedBox, using key: SymmetricKey) throws -> Data
 }
 
 extension AES.GCM.Nonce: NonceProtocol {}

@@ -16,6 +16,17 @@ internal static partial class Interop
 {
     internal static partial class AppleCrypto
     {
+        private static byte NullSentinel;
+
+        // CryptoKit doesn't do well with a null pointer for the buffer data,
+        // so provide a sentinel pointer instead.
+        private static ref readonly byte GetSwiftRef(ReadOnlySpan<byte> b)
+        {
+            return ref (b.Length == 0
+                ? ref NullSentinel
+                : ref MemoryMarshal.GetReference(b));
+        }
+
         internal static unsafe void ChaCha20Poly1305Encrypt(
             ReadOnlySpan<byte> key,
             ReadOnlySpan<byte> nonce,
@@ -26,10 +37,10 @@ internal static partial class Interop
         {
             fixed (byte* keyPtr = key)
             fixed (byte* noncePtr = nonce)
-            fixed (byte* plaintextPtr = plaintext)
-            fixed (byte* ciphertextPtr = ciphertext)
+            fixed (byte* plaintextPtr = &GetSwiftRef(plaintext))
+            fixed (byte* ciphertextPtr = &GetSwiftRef(ciphertext))
             fixed (byte* tagPtr = tag)
-            fixed (byte* aadPtr = aad)
+            fixed (byte* aadPtr = &GetSwiftRef(aad))
             {
                 AppleCryptoNative_ChaCha20Poly1305Encrypt(
                     new UnsafeBufferPointer<byte>(keyPtr, key.Length),
@@ -59,10 +70,10 @@ internal static partial class Interop
         {
             fixed (byte* keyPtr = key)
             fixed (byte* noncePtr = nonce)
-            fixed (byte* ciphertextPtr = ciphertext)
+            fixed (byte* ciphertextPtr = &GetSwiftRef(ciphertext))
             fixed (byte* tagPtr = tag)
-            fixed (byte* plaintextPtr = plaintext)
-            fixed (byte* aadPtr = aad)
+            fixed (byte* plaintextPtr = &GetSwiftRef(plaintext))
+            fixed (byte* aadPtr = &GetSwiftRef(aad))
             {
                 AppleCryptoNative_ChaCha20Poly1305Decrypt(
                     new UnsafeBufferPointer<byte>(keyPtr, key.Length),
@@ -99,10 +110,10 @@ internal static partial class Interop
         {
             fixed (byte* keyPtr = key)
             fixed (byte* noncePtr = nonce)
-            fixed (byte* plaintextPtr = plaintext)
-            fixed (byte* ciphertextPtr = ciphertext)
+            fixed (byte* plaintextPtr = &GetSwiftRef(plaintext))
+            fixed (byte* ciphertextPtr = &GetSwiftRef(ciphertext))
             fixed (byte* tagPtr = tag)
-            fixed (byte* aadPtr = aad)
+            fixed (byte* aadPtr = &GetSwiftRef(aad))
             {
                 AppleCryptoNative_AesGcmEncrypt(
                     new UnsafeBufferPointer<byte>(keyPtr, key.Length),
@@ -132,10 +143,10 @@ internal static partial class Interop
         {
             fixed (byte* keyPtr = key)
             fixed (byte* noncePtr = nonce)
-            fixed (byte* ciphertextPtr = ciphertext)
+            fixed (byte* ciphertextPtr = &GetSwiftRef(ciphertext))
             fixed (byte* tagPtr = tag)
-            fixed (byte* plaintextPtr = plaintext)
-            fixed (byte* aadPtr = aad)
+            fixed (byte* plaintextPtr = &GetSwiftRef(plaintext))
+            fixed (byte* aadPtr = &GetSwiftRef(aad))
             {
                 AppleCryptoNative_AesGcmDecrypt(
                     new UnsafeBufferPointer<byte>(keyPtr, key.Length),
