@@ -1,0 +1,8 @@
+using System;
+
+public static class DownlevelVersions
+{
+    public static readonly Version PackageVersionNet6 = Version.Parse("${PackageVersionNet6}");
+    public static readonly Version PackageVersionNet7 = Version.Parse("${PackageVersionNet7}");
+    public static readonly Version PackageVersionNet8 = Version.Parse("${PackageVersionNet8}");
+}

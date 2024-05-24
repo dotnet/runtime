@@ -46,6 +46,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Microsoft.DotNet.Build.Tasks.Templating" Version="$(MicrosoftDotNetBuildTasksTemplatingVersion)" />
     <PackageReference Include="Microsoft.Playwright" Version="1.21.0" />
     <ProjectReference Include="$(RepoRoot)src\tasks\Microsoft.NET.Sdk.WebAssembly.Pack.Tasks\Microsoft.NET.Sdk.WebAssembly.Pack.Tasks.csproj" />
     <Compile Include="$(BrowserProjectRoot)debugger\DebuggerTestSuite\BrowserLocator.cs" />
@@ -54,6 +55,24 @@
     <None Include="..\testassets\**\*" Link="testassets\%(RecursiveDir)%(FileName)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
     <None Include="data\**\*" Link="data\%(RecursiveDir)%(FileName)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
+
+  <Target Name="GenerateVersions" BeforeTargets="CoreCompile">
+    <PropertyGroup>
+      <_DownlevelVersionsOutputPath>$(IntermediateOutputPath)\DownlevelVersions.cs</_DownlevelVersionsOutputPath>
+    </PropertyGroup>
+    <ItemGroup>
+      <_DownlevelVersionsProperty Include="PackageVersionNet6" Value="$(PackageVersionNet6)" />
+      <_DownlevelVersionsProperty Include="PackageVersionNet7" Value="$(PackageVersionNet7)" />
+      <_DownlevelVersionsProperty Include="PackageVersionNet8" Value="$(PackageVersionNet8)" />
+    </ItemGroup>
+    <GenerateFileFromTemplate
+      TemplateFile="DownlevelVersions.cs.in"
+      Properties="@(_DownlevelVersionsProperty->'%(Identity)=%(Value)')"
+      OutputPath="$(_DownlevelVersionsOutputPath)" />
+    <ItemGroup>
+      <Compile Include="$(_DownlevelVersionsOutputPath)" />
+    </ItemGroup>
+  </Target>
 
   <Target Name="UpdateRunScriptCommands" BeforeTargets="GenerateRunScript" DependsOnTargets="_SetPackageVersionForWorkloadsTesting">
     <Error Condition="'$(TestUsingWorkloads)' == 'true' and '$(PackageVersionForWorkloadManifests)' == ''" Text="%24(PackageVersionForWorkloadManifests) is not set. PackageVersion=$(PackageVersion)." />
