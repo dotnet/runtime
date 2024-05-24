@@ -2825,19 +2825,24 @@ void LinearScan::buildIntervals()
         availableRegCount = REG_INT_COUNT;
     }
 
-#ifdef HAS_MORE_THAN_64_REGISTERS
-    actualRegistersMask = regMaskTP(~RBM_NONE);
-#else
-    if (availableRegCount < (sizeof(regMaskTP) * 8))
+    static_assert(sizeof(regMaskTP) == 2 * sizeof(regMaskSmall));
+
+    if (availableRegCount < (sizeof(regMaskSmall) * 8))
     {
-        // Mask out the bits that are between 64 ~ availableRegCount
-        actualRegistersMask = (1ULL << availableRegCount) - 1;
+        // Mask out the bits that are between (8 * regMaskSmall) ~ availableRegCount
+        actualRegistersMask = regMaskTP((1ULL << availableRegCount) - 1);
+    }
+    else if (availableRegCount < (sizeof(regMaskTP) * 8))
+    {
+        // Mask out the bits that are between (8 * regMaskTP) ~ availableRegCount
+        // Subtract one extra for stack.
+        unsigned topRegCount = availableRegCount - sizeof(regMaskSmall) * 8 - 1;
+        actualRegistersMask  = regMaskTP(~RBM_NONE, (1ULL << topRegCount) - 1);
     }
     else
     {
-        actualRegistersMask = ~RBM_NONE;
+        actualRegistersMask = regMaskTP(~RBM_NONE, ~RBM_NONE);
     }
-#endif
 
 #ifdef DEBUG
     // Make sure we don't have any blocks that were not visited

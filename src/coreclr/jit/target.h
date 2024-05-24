@@ -229,13 +229,6 @@ typedef uint64_t regMaskSmall;
 #define REG_MASK_ALL_FMT "%016llX"
 #endif
 
-#ifdef TARGET_ARM64
-#define HAS_MORE_THAN_64_REGISTERS 1
-#define MORE_THAN_64_REGISTERS(x)  x
-#else
-#define MORE_THAN_64_REGISTERS(x)
-#endif // TARGET_ARM64
-
 typedef regMaskSmall    SingleTypeRegSet;
 inline SingleTypeRegSet genRegMask(regNumber reg);
 inline SingleTypeRegSet genRegMaskFloat(regNumber reg ARM_ARG(var_types type = TYP_DOUBLE));
@@ -244,9 +237,16 @@ struct regMaskTP
 {
 private:
     regMaskSmall low;
-    MORE_THAN_64_REGISTERS(regMaskSmall high);
+    regMaskSmall high;
 
 public:
+
+    regMaskTP(regMaskSmall lowMask, regMaskSmall highMask)
+        : low(lowMask)
+        , high(highMask)
+    {
+    }
+
     regMaskTP(regMaskSmall regMask)
         : low(regMask)
     {
