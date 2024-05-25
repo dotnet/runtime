@@ -6763,10 +6763,12 @@ VEH_ACTION WINAPI CLRVectoredExceptionHandler(PEXCEPTION_POINTERS pExceptionInfo
 
     if (pExceptionInfo->ExceptionRecord->ExceptionCode == STATUS_RETURN_ADDRESS_HIJACK_ATTEMPT)
     {
-        if (pThread == NULL || !pThread->PreemptiveGCDisabled())
+        if (pThread == NULL ||
+            !pThread->PreemptiveGCDisabled() ||
+            !pThread->HasThreadState(Thread::TS_Hijacked))
         {
-            // We are not running managed code, so this cannot be our hijack
-            // Perhaps some other runtime is responsible.
+            // If we are not in coop mode or the thread is not hijacked, this cannot be our hijack.
+            // Perhaps someone else is trying to hijack us.
             return VEH_CONTINUE_SEARCH;
         }
 

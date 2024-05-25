@@ -578,7 +578,7 @@ EXTERN_C void FASTCALL RhpGcStressHijack();
 // static
 bool Thread::IsHijackTarget(void* address)
 {
-    if (&RhpGcProbeHijack == address)
+    if (PalGetHijackTarget(/*defaultHijackTarget*/&RhpGcProbeHijack) == address)
         return true;
 #ifdef FEATURE_GC_STRESS
     if (&RhpGcStressHijack == address)
@@ -697,7 +697,9 @@ void Thread::HijackCallback(NATIVE_CONTEXT* pThreadContext, void* pThreadToHijac
 #endif //FEATURE_SUSPEND_REDIRECTION
     }
 
-    pThread->HijackReturnAddress(pThreadContext, &RhpGcProbeHijack);
+    pThread->HijackReturnAddress(
+        pThreadContext,
+        (HijackFunc*)PalGetHijackTarget(/*defaultHijackTarget*/&RhpGcProbeHijack));
 }
 
 #ifdef FEATURE_GC_STRESS

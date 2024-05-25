@@ -61,6 +61,11 @@ static HMODULE LoadKernel32dll()
     return LoadLibraryExW(L"kernel32", NULL, LOAD_LIBRARY_SEARCH_SYSTEM32);
 }
 
+static HMODULE LoadNtdlldll()
+{
+    return LoadLibraryExW(L"ntdll.dll", NULL, LOAD_LIBRARY_SEARCH_SYSTEM32);
+}
+
 void InitializeCurrentProcessCpuCount()
 {
     DWORD count;
@@ -327,6 +332,20 @@ REDHAWK_PALEXPORT HANDLE REDHAWK_PALAPI PalCreateEventW(_In_opt_ LPSECURITY_ATTR
     return CreateEventW(pEventAttributes, manualReset, initialState, pName);
 }
 
+REDHAWK_PALEXPORT UInt32_BOOL REDHAWK_PALAPI PalAreShadowStacksEnabled()
+{
+#if defined(TARGET_AMD64)
+        // The SSP is null when CET shadow stacks are not enabled. On processors that don't support shadow stacks, this is a
+        // no-op and the intrinsic returns 0. CET shadow stacks are enabled or disabled for all threads, so the result is the
+        // same from any thread.
+        return _rdsspq() != 0;
+#else
+        // When implementing AreShadowStacksEnabled() on other architectures, review all the places where this is used.
+        return false;
+#endif
+}
+
+
 #ifdef TARGET_X86
 
 #define EXCEPTION_HIJACK  0xe0434f4e    // 0xe0000000 | 'COM'+1
@@ -487,6 +506,10 @@ REDHAWK_PALEXPORT CONTEXT* PalAllocateCompleteOSContext(_Out_ uint8_t** contextB
         context = context | CONTEXT_XSTATE;
     }
 
+    // the context does not need XSTATE_MASK_CET_U because we should not be using
+    // redirection when CET is enabled and should not be here.
+    _ASSERTE(!PalAreShadowStacksEnabled());
+
     // Retrieve contextSize by passing NULL for Buffer
     DWORD contextSize = 0;
     ULONG64 xStateCompactionMask = XSTATE_MASK_LEGACY | XSTATE_MASK_AVX | XSTATE_MASK_MPX | XSTATE_MASK_AVX512;
@@ -611,6 +634,8 @@ static const CLONE_QUEUE_USER_APC_FLAGS SpecialUserModeApcWithContextFlags = (CL
                                     (CLONE_QUEUE_USER_APC_FLAGS_SPECIAL_USER_APC |
                                      CLONE_QUEUE_USER_APC_CALLBACK_DATA_CONTEXT);
 
+static void* g_returnAddressHijackTarget = NULL;
+
 static void NTAPI ActivationHandler(ULONG_PTR parameter)
 {
     CLONE_APC_CALLBACK_DATA* data = (CLONE_APC_CALLBACK_DATA*)parameter;
@@ -629,6 +654,58 @@ REDHAWK_PALEXPORT UInt32_BOOL REDHAWK_PALAPI PalRegisterHijackCallback(_In_ PalH
     return true;
 }
 
+void InitHijackingAPIs()
+{
+    HMODULE hKernel32 = LoadKernel32dll();
+
+#ifdef HOST_AMD64
+    typedef BOOL (WINAPI *IsWow64Process2Proc)(HANDLE hProcess, USHORT *pProcessMachine, USHORT *pNativeMachine);
+
+    IsWow64Process2Proc pfnIsWow64Process2Proc = (IsWow64Process2Proc)GetProcAddress(hKernel32, "IsWow64Process2");
+    USHORT processMachine, hostMachine;
+    if (pfnIsWow64Process2Proc != nullptr &&
+        (*pfnIsWow64Process2Proc)(GetCurrentProcess(), &processMachine, &hostMachine) &&
+        (hostMachine == IMAGE_FILE_MACHINE_ARM64) &&
+        !IsWindowsVersionOrGreater(10, 0, 26100))
+    {
+        // Special user-mode APCs are broken on WOW64 processes (x64 running on Arm64 machine) with Windows older than 11.0.26100 (24H2)
+        g_pfnQueueUserAPC2Proc = NULL;
+    }
+    else
+#endif // HOST_AMD64
+    {
+        g_pfnQueueUserAPC2Proc = (QueueUserAPC2Proc)GetProcAddress(hKernel32, "QueueUserAPC2");
+    }
+
+    if (PalAreShadowStacksEnabled())
+    {
+        // When shadow stacks are enabled, support for special user-mode APCs is required
+        _ASSERTE_ALL_BUILDS(g_pfnQueueUserAPC2Proc != NULL);
+
+        HMODULE hModNtdll = LoadNtdlldll();
+        if (hModNtdll != NULL)
+        {
+            typedef void* (*PFN_RtlGetReturnAddressHijackTarget)(void);
+
+            void* rtlGetReturnAddressHijackTarget = GetProcAddress(hModNtdll, "RtlGetReturnAddressHijackTarget");
+            if (rtlGetReturnAddressHijackTarget != NULL)
+            {
+                g_returnAddressHijackTarget = ((PFN_RtlGetReturnAddressHijackTarget)rtlGetReturnAddressHijackTarget)();
+            }
+        }
+
+        if (g_returnAddressHijackTarget == NULL)
+        {
+            _ASSERTE_ALL_BUILDS(!"RtlGetReturnAddressHijackTarget must provide a target when shadow stacks are enabled");
+        }
+    }
+}
+
+REDHAWK_PALIMPORT void* REDHAWK_PALAPI PalGetHijackTarget(void* defaultHijackTarget)
+{
+    return g_returnAddressHijackTarget ? g_returnAddressHijackTarget : defaultHijackTarget;
+}
+
 REDHAWK_PALEXPORT void REDHAWK_PALAPI PalHijack(HANDLE hThread, _In_opt_ void* pThreadToHijack)
 {
     _ASSERTE(hThread != INVALID_HANDLE_VALUE);
@@ -637,28 +714,10 @@ REDHAWK_PALEXPORT void REDHAWK_PALAPI PalHijack(HANDLE hThread, _In_opt_ void* p
 
     // initialize g_pfnQueueUserAPC2Proc on demand.
     // Note that only one thread at a time may perform suspension (guaranteed by the thread store lock)
-    // so simple conditional assignment is ok.
+    // so simple condition check is ok.
     if (g_pfnQueueUserAPC2Proc == QUEUE_USER_APC2_UNINITIALIZED)
     {
-        HMODULE hKernel32 = LoadKernel32dll();
-#ifdef HOST_AMD64
-        typedef BOOL (WINAPI *IsWow64Process2Proc)(HANDLE hProcess, USHORT *pProcessMachine, USHORT *pNativeMachine);
-
-        IsWow64Process2Proc pfnIsWow64Process2Proc = (IsWow64Process2Proc)GetProcAddress(hKernel32, "IsWow64Process2");
-        USHORT processMachine, hostMachine;
-        if (pfnIsWow64Process2Proc != nullptr &&
-            (*pfnIsWow64Process2Proc)(GetCurrentProcess(), &processMachine, &hostMachine) &&
-            (hostMachine == IMAGE_FILE_MACHINE_ARM64) &&
-            !IsWindowsVersionOrGreater(10, 0, 26100))
-        {
-            // Special user-mode APCs are broken on WOW64 processes (x64 running on Arm64 machine) with Windows older than 11.0.26100 (24H2)
-            g_pfnQueueUserAPC2Proc = NULL;
-        }
-        else
-#endif // HOST_AMD64
-        {
-            g_pfnQueueUserAPC2Proc = (QueueUserAPC2Proc)GetProcAddress(hKernel32, "QueueUserAPC2");
-        }
+        InitHijackingAPIs();
     }
 
     if (g_pfnQueueUserAPC2Proc)

@@ -536,6 +536,55 @@ int32_t __stdcall RhpVectoredExceptionHandler(PEXCEPTION_POINTERS pExPtrs)
         return EXCEPTION_CONTINUE_SEARCH;
     }
 
+    // the following would work on ARM64 as well, but there is no way to test right now.
+#ifdef TARGET_AMD64
+
+#ifndef STATUS_RETURN_ADDRESS_HIJACK_ATTEMPT
+#define STATUS_RETURN_ADDRESS_HIJACK_ATTEMPT ((uintptr_t)0x80000033L)
+#endif
+
+    if (faultCode == STATUS_RETURN_ADDRESS_HIJACK_ATTEMPT)
+    {
+        Thread * pThread = ThreadStore::GetCurrentThreadIfAvailable();
+        if (pThread == NULL ||
+            !pThread->IsCurrentThreadInCooperativeMode() ||
+            !pThread->IsHijacked())
+        {
+            // if we are not in coop mode or the thread is not hijacked, this cannot be our hijack
+            // Perhaps some other runtime is responsible.
+            return EXCEPTION_CONTINUE_SEARCH;
+        }
+
+        PCONTEXT interruptedContext = pExPtrs->ContextRecord;
+        bool areShadowStacksEnabled = PalAreShadowStacksEnabled();
+        if (areShadowStacksEnabled)
+        {
+            // When the CET is enabled, the interruption happens on the ret instruction in the calee.
+            // We need to "pop" rsp to the caller, as if the ret has consumed it.
+            interruptedContext->SetSp(interruptedContext->GetSp() + 8);
+        }
+
+        // Change the IP to be at the original return site, as if we have returned to the caller.
+        // That IP is an interruptible safe point, so we can suspend right there.
+        uintptr_t origIp = interruptedContext->GetIp();
+        interruptedContext->SetIp((uintptr_t)pThread->GetHijackedReturnAddress());
+
+        pThread->InlineSuspend(interruptedContext);
+
+        if (areShadowStacksEnabled)
+        {
+            // Undo the "pop", but fix the return to point to the original caller,
+            // so that the ret could now succeed.
+            interruptedContext->SetSp(interruptedContext->GetSp() - 8);
+            *(size_t *)interruptedContext->GetSp() = interruptedContext->GetIp();
+            interruptedContext->SetIp(origIp);
+        }
+
+        ASSERT(!pThread->IsHijacked());
+        return EXCEPTION_CONTINUE_EXECUTION;
+    }
+#endif // TARGET_AMD64    (support for STATUS_RETURN_ADDRESS_HIJACK_ATTEMPT)
+
     uintptr_t faultingIP = pExPtrs->ContextRecord->GetIp();
 
     ICodeManager * pCodeManager = GetRuntimeInstance()->GetCodeManagerForAddress((PTR_VOID)faultingIP);
