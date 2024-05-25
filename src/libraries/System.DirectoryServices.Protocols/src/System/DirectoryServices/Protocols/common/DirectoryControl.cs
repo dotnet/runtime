@@ -178,15 +178,15 @@ namespace System.DirectoryServices.Protocols
                         ThrowUnless(asnReadSuccessful);
                         asnSpan = asnSpan.Slice(bytesConsumed);
 
-                        asnReadSuccessful = AsnDecoder.TryReadEncodedValue(asnSpan, AsnEncodingRules.BER, out _, out int _, out int cookieLength, out _);
-                        if (asnReadSuccessful)
+                        // If present, the remaining bytes in the control are expected to be an octet string.
+                        if (!asnSpan.IsEmpty)
                         {
-                            cookie = new byte[cookieLength];
-
-                            // user expects cookie with length 0 as paged search is done.
-                            asnReadSuccessful = AsnDecoder.TryReadOctetString(asnSpan, cookie, AsnEncodingRules.BER, out bytesConsumed, out _);
-                            ThrowUnless(asnReadSuccessful && asnSpan.Length == bytesConsumed);
+                            // user expects cookie with length 0 as paged search is done. In this situation, there'll still be two bytes
+                            // for the ASN.1 tag.
+                            cookie = AsnDecoder.ReadOctetString(asnSpan, AsnEncodingRules.BER, out bytesConsumed);
+                            asnSpan = asnSpan.Slice(bytesConsumed);
                         }
+                        ThrowUnless(asnSpan.IsEmpty);
 
                         PageResultResponseControl pageControl = new PageResultResponseControl(size, cookie, controls[i].IsCritical, value);
                         controls[i] = pageControl;
@@ -238,16 +238,28 @@ namespace System.DirectoryServices.Protocols
                         result = AsnDecoder.ReadEnumeratedValue<ResultCode>(asnSpan, AsnEncodingRules.BER, out int bytesConsumed);
                         asnSpan = asnSpan.Slice(bytesConsumed);
 
-                        // Attribute name is optional: AD for example never returns attribute name
-                        asnReadSuccessful = AsnDecoder.TryReadEncodedValue(asnSpan, AsnEncodingRules.BER, out _, out _, out int octetStringLength, out _);
-                        if (asnReadSuccessful)
+                        // If present, the remaining bytes in the control are expected to be an octet string.
+                        if (!asnSpan.IsEmpty)
                         {
-                            Span<byte> attributeNameBuffer = octetStringLength <= AttributeNameStackAllocationThreshold ? attributeNameScratchSpace.Slice(0, octetStringLength) : new byte[octetStringLength];
+                            // Attribute name is optional: AD for example never returns attribute name
+                            scoped Span<byte> attributeNameBuffer;
 
-                            asnReadSuccessful = AsnDecoder.TryReadOctetString(asnSpan, attributeNameBuffer, AsnEncodingRules.BER, out bytesConsumed, out _);
-                            ThrowUnless(asnReadSuccessful && asnSpan.Length == bytesConsumed);
+                            if (asnSpan.Length <= AttributeNameStackAllocationThreshold)
+                            {
+                                asnReadSuccessful = AsnDecoder.TryReadOctetString(asnSpan, attributeNameScratchSpace, AsnEncodingRules.BER, out bytesConsumed, out int octetStringLength);
+                                Debug.Assert(asnReadSuccessful);
+                                attributeNameBuffer = attributeNameScratchSpace.Slice(0, octetStringLength);
+                            }
+                            else
+                            {
+                                attributeNameBuffer = AsnDecoder.ReadOctetString(asnSpan, AsnEncodingRules.BER, out bytesConsumed);
+                            }
+                            asnSpan = asnSpan.Slice(bytesConsumed);
+
                             attribute = s_utf8Encoding.GetString(attributeNameBuffer);
                         }
+
+                        ThrowUnless(asnSpan.IsEmpty);
 
                         SortResponseControl sort = new SortResponseControl(result, attribute, controls[i].IsCritical, value);
                         controls[i] = sort;
@@ -273,13 +285,15 @@ namespace System.DirectoryServices.Protocols
                         result = AsnDecoder.ReadEnumeratedValue<ResultCode>(asnSpan, AsnEncodingRules.BER, out bytesConsumed);
                         asnSpan = asnSpan.Slice(bytesConsumed);
 
-                        asnReadSuccessful = AsnDecoder.TryReadEncodedValue(asnSpan, AsnEncodingRules.BER, out _, out _, out int octetStringLength, out _);
-                        if (asnReadSuccessful)
+                        // If present, the remaining bytes in the control are expected to be an octet string.
+                        if (!asnSpan.IsEmpty)
                         {
-                            context = new byte[octetStringLength];
-                            asnReadSuccessful = AsnDecoder.TryReadOctetString(asnSpan, context, AsnEncodingRules.BER, out bytesConsumed, out _);
-                            ThrowUnless(asnReadSuccessful && asnSpan.Length == bytesConsumed);
+                            // user expects cookie with length 0 as paged search is done. In this situation, there'll still be two bytes
+                            // for the ASN.1 tag.
+                            context = AsnDecoder.ReadOctetString(asnSpan, AsnEncodingRules.BER, out bytesConsumed);
+                            asnSpan = asnSpan.Slice(bytesConsumed);
                         }
+                        ThrowUnless(asnSpan.IsEmpty);
 
                         VlvResponseControl vlv = new VlvResponseControl(position, count, context, result, controls[i].IsCritical, value);
                         controls[i] = vlv;
