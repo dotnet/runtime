@@ -546,14 +546,15 @@ int32_t __stdcall RhpVectoredExceptionHandler(PEXCEPTION_POINTERS pExPtrs)
     if (faultCode == STATUS_RETURN_ADDRESS_HIJACK_ATTEMPT)
     {
         Thread * pThread = ThreadStore::GetCurrentThreadIfAvailable();
-        if (pThread == NULL ||
-            !pThread->IsCurrentThreadInCooperativeMode() ||
-            !pThread->IsHijacked())
+        if (pThread == NULL || !pThread->IsCurrentThreadInCooperativeMode())
         {
             // if we are not in coop mode or the thread is not hijacked, this cannot be our hijack
             // Perhaps some other runtime is responsible.
             return EXCEPTION_CONTINUE_SEARCH;
         }
+
+        // Sanity check. The thread should be hijacked by us.
+        _ASSERTE_ALL_BUILDS(pThread->IsHijacked());
 
         PCONTEXT interruptedContext = pExPtrs->ContextRecord;
         bool areShadowStacksEnabled = PalAreShadowStacksEnabled();

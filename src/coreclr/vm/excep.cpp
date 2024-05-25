@@ -6763,14 +6763,15 @@ VEH_ACTION WINAPI CLRVectoredExceptionHandler(PEXCEPTION_POINTERS pExceptionInfo
 
     if (pExceptionInfo->ExceptionRecord->ExceptionCode == STATUS_RETURN_ADDRESS_HIJACK_ATTEMPT)
     {
-        if (pThread == NULL ||
-            !pThread->PreemptiveGCDisabled() ||
-            !pThread->HasThreadState(Thread::TS_Hijacked))
+        if (pThread == NULL || !pThread->PreemptiveGCDisabled())
         {
             // If we are not in coop mode or the thread is not hijacked, this cannot be our hijack.
             // Perhaps someone else is trying to hijack us.
             return VEH_CONTINUE_SEARCH;
         }
+
+        // Sanity check. The thread should be hijacked by us.
+        _ASSERTE_ALL_BUILDS(pThread->HasThreadState(Thread::TS_Hijacked));
 
         PCONTEXT interruptedContext = pExceptionInfo->ContextRecord;
         bool areShadowStacksEnabled = Thread::AreShadowStacksEnabled();
