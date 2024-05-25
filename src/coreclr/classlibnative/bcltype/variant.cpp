@@ -58,6 +58,7 @@ extern "C" void QCALLTYPE Variant_ConvertValueTypeToRecord(QCall::ObjectHandleOn
 
     OBJECTREF objRef = obj.Get();
     GCPROTECT_BEGIN(objRef);
+    V_VT(pOle) = VT_RECORD;
     OleVariant::ConvertValueClassToVariant(&objRef, pOle);
     GCPROTECT_END();
 

@@ -558,7 +558,7 @@ namespace System.Runtime.InteropServices.Marshalling
         public VarEnum VarType
         {
             readonly get => (VarEnum)_typeUnion._vt;
-            internal set => _typeUnion._vt = (ushort)value;
+            private set => _typeUnion._vt = (ushort)value;
         }
 
         /// <summary>
