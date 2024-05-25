@@ -498,15 +498,6 @@ namespace System.Net.Http.Tests
             Assert.Throws<InvalidOperationException>(() => { _headers.Add("Warning", "v"); });
         }
 
-        [Fact]
-        public void Should_LazyLoad_ContentLengthWhenEnumeratingAndToString()
-        {
-            var result = new HttpContentHeaders(new ComputeLengthHttpContent(() => 41));
-            Assert.Contains("Content-Length", result.ToString());
-            Assert.Contains(result, h => h.Key == "Content-Length");
-            Assert.Contains(result.NonValidated, h => h.Key == "Content-Length");
-        }
-
         private sealed class ComputeLengthHttpContent : HttpContent
         {
             private readonly Func<long?> _tryComputeLength;

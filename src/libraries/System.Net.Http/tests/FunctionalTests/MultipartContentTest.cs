@@ -160,10 +160,10 @@ namespace System.Net.Http.Functional.Tests
 
             Assert.Equal(
                 "--theBoundary\r\n" +
+                "Content-Length: 26\r\n" +
                 "someHeaderName: andSomeHeaderValue\r\n" +
                 "someOtherHeaderName: withNotOne, ButTwoValues\r\n" +
                 "oneMoreHeader: withNotOne, AndNotTwo, butThreeValues\r\n" +
-                "Content-Length: 26\r\n" +
                 "\r\n" +
                 "This is a ByteArrayContent\r\n" +
                 "--theBoundary--\r\n",
@@ -187,8 +187,8 @@ namespace System.Net.Http.Functional.Tests
                 "\r\n" +
                 "This is a ByteArrayContent\r\n" +
                 "--theBoundary\r\n" +
-                "Content-Type: text/plain; charset=utf-8\r\n" +
                 "Content-Length: 23\r\n" +
+                "Content-Type: text/plain; charset=utf-8\r\n" +
                 "\r\n" +
                 "This is a StringContent\r\n" +
                 "--theBoundary--\r\n",
@@ -480,33 +480,29 @@ namespace System.Net.Http.Functional.Tests
 
             byte[] expected = Concat(
                 "--fooBoundary\r\n"u8.ToArray(),
+                "Content-Length: 4\r\n"u8.ToArray(),
                 "Content-Type: text/plain; charset=utf-8\r\n"u8.ToArray(),
                 "latin1: "u8.ToArray(),
                 Encoding.Latin1.GetBytes("\U0001F600"),
-                "\r\n"u8.ToArray(),
-                "Content-Length: 4\r\n"u8.ToArray(),
-                "\r\n"u8.ToArray(),
+                "\r\n\r\n"u8.ToArray(),
                 "bar1"u8.ToArray(),
                 "\r\n--fooBoundary\r\n"u8.ToArray(),
+                "Content-Length: 4\r\n"u8.ToArray(),
                 "utf8: "u8.ToArray(),
                 "\U0001F600"u8.ToArray(),
-                "\r\n"u8.ToArray(),
-                "Content-Length: 4\r\n"u8.ToArray(),
-                "\r\n"u8.ToArray(),
+                "\r\n\r\n"u8.ToArray(),
                 "bar2"u8.ToArray(),
                 "\r\n--fooBoundary\r\n"u8.ToArray(),
+                "Content-Length: 4\r\n"u8.ToArray(),
                 "ascii: "u8.ToArray(),
                 Encoding.ASCII.GetBytes("\U0001F600"),
-                "\r\n"u8.ToArray(),
-                "Content-Length: 4\r\n"u8.ToArray(),
-                "\r\n"u8.ToArray(),
+                "\r\n\r\n"u8.ToArray(),
                 "bar3"u8.ToArray(),
                 "\r\n--fooBoundary\r\n"u8.ToArray(),
+                "Content-Length: 4\r\n"u8.ToArray(),
                 "default: "u8.ToArray(),
                 Encoding.Latin1.GetBytes("\U0001F600"),
-                "\r\n"u8.ToArray(),
-                "Content-Length: 4\r\n"u8.ToArray(),
-                "\r\n"u8.ToArray(),
+                "\r\n\r\n"u8.ToArray(),
                 "bar4"u8.ToArray(),
                 "\r\n--fooBoundary--\r\n"u8.ToArray());
             Assert.Equal(expected, ms.ToArray());
