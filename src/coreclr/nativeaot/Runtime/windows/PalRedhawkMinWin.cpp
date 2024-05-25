@@ -603,8 +603,6 @@ REDHAWK_PALIMPORT void REDHAWK_PALAPI PopulateControlSegmentRegisters(CONTEXT* p
 
 static PalHijackCallback g_pHijackCallback;
 
-#ifdef FEATURE_SPECIAL_USER_MODE_APC
-
 // These declarations are for a new special user-mode APC feature introduced in Windows. These are not yet available in Windows
 // SDK headers, so some names below are prefixed with "CLONE_" to avoid conflicts in the future. Once the prefixed declarations
 // become available in the Windows SDK headers, the prefixed declarations below can be removed in favor of the SDK ones.
@@ -644,7 +642,6 @@ static void NTAPI ActivationHandler(ULONG_PTR parameter)
     Thread* pThread = (Thread*)data->Parameter;
     pThread->SetActivationPending(false);
 }
-#endif
 
 REDHAWK_PALEXPORT UInt32_BOOL REDHAWK_PALAPI PalRegisterHijackCallback(_In_ PalHijackCallback callback)
 {
