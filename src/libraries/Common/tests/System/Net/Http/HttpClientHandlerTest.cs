@@ -1051,9 +1051,13 @@ namespace System.Net.Http.Functional.Tests
                     }
                 }
 
-                using (var client = new HttpMessageInvoker(CreateHttpClientHandler()))
-                using (HttpResponseMessage response = await client.SendAsync(TestAsync, request, CancellationToken.None).ConfigureAwait(false))
+                using var client = new HttpMessageInvoker(CreateHttpClientHandler());
+                _output.WriteLine("[ReadAsStreamAsync] Before SendAsync on test code");
+                Task<HttpResponseMessage> responseTask = client.SendAsync(TestAsync, request, CancellationToken.None);
+                _output.WriteLine("[ReadAsStreamAsync] After SendAsync on test code");
+                using (HttpResponseMessage response = await responseTask)
                 {
+                    _output.WriteLine("[ReadAsStreamAsync] After await of responseTask on test code");
                     using (Stream responseStream = await response.Content.ReadAsStreamAsync(TestAsync))
                     {
                         Assert.Same(responseStream, await response.Content.ReadAsStreamAsync(TestAsync));

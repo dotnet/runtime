@@ -74,12 +74,12 @@ namespace System.Net.Http.Functional.Tests
                 new HttpHeaderData("Alt-Svc", $"h3=\"{(overrideHost ? secondServer.Address.IdnHost : null)}:{secondServer.Address.Port}\"")
             });
 
-            await new[] { firstResponseTask, serverTask }.WhenAllOrAnyFailed(30_000);
+            await new[] { firstResponseTask, serverTask }.WhenAllOrAnyFailed(30_000).ConfigureAwait(false);
 
             using HttpResponseMessage firstResponse = firstResponseTask.Result;
             Assert.True(firstResponse.IsSuccessStatusCode);
 
-            await AltSvc_Upgrade_Success(firstServer, secondServer, client);
+            await AltSvc_Upgrade_Success(firstServer, secondServer, client).ConfigureAwait(false);
             listener?.Dispose();
         }
 
@@ -95,11 +95,6 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public async Task AltSvc_ConnectionFrame_UpgradeFrom20_Success()
         {
-            if (UseVersion == HttpVersion30)
-            {
-                return;
-            }
-
             AsyncLocal<object> asyncLocal = new();
             asyncLocal.Value = new();
 
@@ -124,19 +119,19 @@ namespace System.Net.Http.Functional.Tests
             Task<HttpResponseMessage> firstResponseTask = client.GetAsync(firstServer.Address);
             Task serverTask = Task.Run(async () =>
             {
-                await using Http2LoopbackConnection connection = await firstServer.EstablishConnectionAsync();
+                await using Http2LoopbackConnection connection = await firstServer.EstablishConnectionAsync().ConfigureAwait(false);
 
-                int streamId = await connection.ReadRequestHeaderAsync();
-                await connection.WriteFrameAsync(new AltSvcFrame($"https://{firstServer.Address.IdnHost}:{firstServer.Address.Port}", $"h3=\"{secondServer.Address.IdnHost}:{secondServer.Address.Port}\"", streamId: 0));
-                await connection.SendDefaultResponseAsync(streamId);
+                int streamId = await connection.ReadRequestHeaderAsync().ConfigureAwait(false);
+                await connection.WriteFrameAsync(new AltSvcFrame($"https://{firstServer.Address.IdnHost}:{firstServer.Address.Port}", $"h3=\"{secondServer.Address.IdnHost}:{secondServer.Address.Port}\"", streamId: 0)).ConfigureAwait(false);
+                await connection.SendDefaultResponseAsync(streamId).ConfigureAwait(false);
             });
 
-            await new[] { firstResponseTask, serverTask }.WhenAllOrAnyFailed(60_000); // Allow to fail due to hang and QuicException
+            await new[] { firstResponseTask, serverTask }.WhenAllOrAnyFailed(60_000).ConfigureAwait(false); // Allow to fail due to hang and QuicException
 
             HttpResponseMessage firstResponse = firstResponseTask.Result;
             Assert.True(firstResponse.IsSuccessStatusCode);
 
-            await AltSvc_Upgrade_Success(firstServer, secondServer, client);
+            await AltSvc_Upgrade_Success(firstServer, secondServer, client).ConfigureAwait(false);
             listener?.Dispose();
         }
 
@@ -171,7 +166,7 @@ namespace System.Net.Http.Functional.Tests
             Task<HttpResponseMessage> secondResponseTask = client.GetAsync(firstServer.Address);
             Task<HttpRequestData> secondRequestTask = secondServer.AcceptConnectionSendResponseAndCloseAsync();
 
-            await new[] { (Task)secondResponseTask, secondRequestTask }.WhenAllOrAnyFailed(60_000);
+            await new[] { (Task)secondResponseTask, secondRequestTask }.WhenAllOrAnyFailed(60_000).ConfigureAwait(false);
 
             HttpRequestData secondRequest = secondRequestTask.Result;
             using HttpResponseMessage secondResponse = secondResponseTask.Result;
