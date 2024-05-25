@@ -163,6 +163,23 @@ namespace System.Net.Http.Functional.Tests
 
         private async Task AltSvc_Upgrade_Success(GenericLoopbackServer firstServer, Http3LoopbackServer secondServer, HttpClient client)
         {
+            AsyncLocal<object> asyncLocal = new();
+            asyncLocal.Value = new();
+
+            TestEventListener? listener = null;
+            if (UseVersion == HttpVersion30)
+            {
+                listener = new TestEventListener(e =>
+                {
+                    if (asyncLocal.Value is not null)
+                    {
+                        lock (_output)
+                        {
+                            _output.WriteLine($"[AltSvc_Upgrade_Success]{e}");
+                        }
+                    }
+                }, TestEventListener.NetworkingEvents);
+            }
             Task<HttpResponseMessage> secondResponseTask = client.GetAsync(firstServer.Address);
             Task<HttpRequestData> secondRequestTask = secondServer.AcceptConnectionSendResponseAndCloseAsync();
 
@@ -174,6 +191,7 @@ namespace System.Net.Http.Functional.Tests
             string altUsed = secondRequest.GetSingleHeaderValue("Alt-Used");
             Assert.Equal($"{secondServer.Address.IdnHost}:{secondServer.Address.Port}", altUsed);
             Assert.True(secondResponse.IsSuccessStatusCode);
+            listener?.Dispose();
         }
     }
 }
