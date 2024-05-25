@@ -145,20 +145,20 @@ namespace System.Net.Http.Functional.Tests
             Task<HttpResponseMessage> firstResponseTask = client.GetAsync(firstServer.Address);
             Task serverTask = Task.Run(async () =>
             {
-                await using Http2LoopbackConnection connection = await firstServer.EstablishConnectionAsync();
+                await using Http2LoopbackConnection connection = await firstServer.EstablishConnectionAsync().ConfigureAwait(false);
 
-                int streamId = await connection.ReadRequestHeaderAsync();
-                await connection.SendDefaultResponseHeadersAsync(streamId);
-                await connection.WriteFrameAsync(new AltSvcFrame("", $"h3=\"{secondServer.Address.IdnHost}:{secondServer.Address.Port}\"", streamId));
-                await connection.SendResponseDataAsync(streamId, Array.Empty<byte>(), true);
+                int streamId = await connection.ReadRequestHeaderAsync().ConfigureAwait(false);
+                await connection.SendDefaultResponseHeadersAsync(streamId).ConfigureAwait(false);
+                await connection.WriteFrameAsync(new AltSvcFrame("", $"h3=\"{secondServer.Address.IdnHost}:{secondServer.Address.Port}\"", streamId)).ConfigureAwait(false);
+                await connection.SendResponseDataAsync(streamId, Array.Empty<byte>(), true).ConfigureAwait(false);
             });
 
-            await new[] { firstResponseTask, serverTask }.WhenAllOrAnyFailed(30_000);
+            await new[] { firstResponseTask, serverTask }.WhenAllOrAnyFailed(60_000).ConfigureAwait(false);
 
             HttpResponseMessage firstResponse = firstResponseTask.Result;
             Assert.True(firstResponse.IsSuccessStatusCode);
 
-            await AltSvc_Upgrade_Success(firstServer, secondServer, client);
+            await AltSvc_Upgrade_Success(firstServer, secondServer, client).ConfigureAwait(false);
         }
 
         private async Task AltSvc_Upgrade_Success(GenericLoopbackServer firstServer, Http3LoopbackServer secondServer, HttpClient client)

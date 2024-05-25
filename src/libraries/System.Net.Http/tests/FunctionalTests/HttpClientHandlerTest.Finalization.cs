@@ -21,7 +21,7 @@ namespace System.Net.Http.Functional.Tests
             return Task.Run(async () =>
             {
                 // Get the response stream, but don't dispose it or return it. Just drop it.
-                await client.GetStreamAsync(url);
+                _ = await client.GetStreamAsync(url).ConfigureAwait(false);
             });
         }
 
@@ -33,7 +33,7 @@ namespace System.Net.Http.Functional.Tests
                 bool stopGCs = false;
                 await LoopbackServerFactory.CreateClientAndServerAsync(async url =>
                 {
-                    await GetAndDropResponse(client, url);
+                    await GetAndDropResponse(client, url).ConfigureAwait(false);
 
                     while (!Volatile.Read(ref stopGCs))
                     {
@@ -46,15 +46,15 @@ namespace System.Net.Http.Functional.Tests
                 {
                     try
                     {
-                        HttpRequestData data = await connection.ReadRequestDataAsync(readBody: false);
-                        await connection.SendResponseHeadersAsync(headers: new HttpHeaderData[] { new HttpHeaderData("SomeHeaderName", "AndValue") });
-                        await connection.WaitForCancellationAsync();
+                        HttpRequestData data = await connection.ReadRequestDataAsync(readBody: false).ConfigureAwait(false);
+                        await connection.SendResponseHeadersAsync(headers: new HttpHeaderData[] { new HttpHeaderData("SomeHeaderName", "AndValue") }).ConfigureAwait(false);
+                        await connection.WaitForCancellationAsync().ConfigureAwait(false);
                     }
                     finally
                     {
                         Volatile.Write(ref stopGCs, true);
                     }
-                }));
+                })).ConfigureAwait(false);
             }
         }
     }
