@@ -935,7 +935,7 @@ inline unsigned Compiler::funGetFuncIdx(BasicBlock* block)
 
 inline regNumber genRegNumFromMask(regMaskTP mask)
 {
-    assert(mask != 0); // Must have one bit set, so can't have a mask of zero
+    assert(mask.IsNonEmpty()); // Must have one bit set, so can't have a mask of zero
 
     /* Convert the mask to a register number */
 
@@ -960,7 +960,7 @@ inline regNumber genRegNumFromMask(regMaskTP mask)
 
 inline regNumber genFirstRegNumFromMaskAndToggle(regMaskTP& mask)
 {
-    assert(mask != 0); // Must have one bit set, so can't have a mask of zero
+    assert(mask.IsNonEmpty()); // Must have one bit set, so can't have a mask of zero
 
     /* Convert the mask to a register number */
 
@@ -983,7 +983,7 @@ inline regNumber genFirstRegNumFromMaskAndToggle(regMaskTP& mask)
 
 inline regNumber genFirstRegNumFromMask(regMaskTP mask)
 {
-    assert(mask != 0); // Must have one bit set, so can't have a mask of zero
+    assert(mask.IsNonEmpty()); // Must have one bit set, so can't have a mask of zero
 
     /* Convert the mask to a register number */
 
@@ -3494,39 +3494,6 @@ inline unsigned genMapRegNumToRegArgNum(regNumber regNum, var_types type, CorInf
     {
         return genMapIntRegNumToRegArgNum(regNum, callConv);
     }
-}
-
-/*****************************************************************************/
-/* Return a register mask with the first 'numRegs' argument registers set.
- */
-
-inline regMaskTP genIntAllRegArgMask(unsigned numRegs)
-{
-    assert(numRegs <= MAX_REG_ARG);
-
-    regMaskTP result = RBM_NONE;
-    for (unsigned i = 0; i < numRegs; i++)
-    {
-        result |= intArgMasks[i];
-    }
-    return result;
-}
-
-inline regMaskTP genFltAllRegArgMask(unsigned numRegs)
-{
-#ifndef TARGET_X86
-    assert(numRegs <= MAX_FLOAT_REG_ARG);
-
-    regMaskTP result = RBM_NONE;
-    for (unsigned i = 0; i < numRegs; i++)
-    {
-        result |= fltArgMasks[i];
-    }
-    return result;
-#else
-    assert(!"no x86 float arg regs\n");
-    return RBM_NONE;
-#endif
 }
 
 /*

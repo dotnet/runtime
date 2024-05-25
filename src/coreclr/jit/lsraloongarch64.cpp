@@ -1078,9 +1078,9 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
 
     GenTree* srcAddrOrFill = nullptr;
 
-    regMaskTP dstAddrRegMask = RBM_NONE;
-    regMaskTP srcRegMask     = RBM_NONE;
-    regMaskTP sizeRegMask    = RBM_NONE;
+    SingleTypeRegSet dstAddrRegMask = RBM_NONE;
+    SingleTypeRegSet srcRegMask     = RBM_NONE;
+    SingleTypeRegSet sizeRegMask    = RBM_NONE;
 
     if (blkNode->OperIsInitBlkOp())
     {

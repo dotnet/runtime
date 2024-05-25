@@ -10062,7 +10062,7 @@ void emitter::emitStackPopLargeStk(BYTE* addr, bool isCall, unsigned char callIn
     // of callee-saved registers only).
     for (unsigned calleeSavedRegIdx = 0; calleeSavedRegIdx < CNT_CALL_GC_REGS; calleeSavedRegIdx++)
     {
-        regMaskTP calleeSavedRbm = raRbmCalleeSaveOrder[calleeSavedRegIdx];
+        regMaskSmall calleeSavedRbm = raRbmCalleeSaveOrder[calleeSavedRegIdx];
         if (emitThisGCrefRegs & calleeSavedRbm)
         {
             gcrefRegs |= (1 << calleeSavedRegIdx);

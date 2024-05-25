@@ -964,12 +964,10 @@ void LoaderAllocator::SetHandleValue(LOADERHANDLE handle, OBJECTREF value)
     {
         NOTHROW;
         GC_NOTRIGGER;
-        MODE_ANY;
+        MODE_COOPERATIVE;
         PRECONDITION(handle != NULL);
     }
     CONTRACTL_END;
-
-    GCX_COOP();
 
     GCPROTECT_BEGIN(value);
 
