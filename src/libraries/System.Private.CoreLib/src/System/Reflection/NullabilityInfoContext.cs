@@ -82,7 +82,16 @@ namespace System.Reflection
             NullableAttributeStateParser parser = parameterInfo.Member is MethodBase method && IsPrivateOrInternalMethodAndAnnotationDisabled(method)
                 ? NullableAttributeStateParser.Unknown
                 : CreateParser(attributes);
-            NullabilityInfo nullability = GetNullabilityInfo(parameterInfo.Member, parameterInfo.ParameterType, parser);
+
+            MemberInfo actualMember = parameterInfo.Member;
+            if (actualMember is PropertyInfo propertyInfo)
+            {
+                // NullabilityContextAttribute is annotated on the getter/setter method rather than the property itself.
+                // Getter & setter methods should have same nullability, if the IL is not manually edited. In such cases, there're no documented ways to determine whether the param is from getter/setter.
+                actualMember = (MemberInfo?)propertyInfo.GetMethod ?? (MemberInfo?)propertyInfo.SetMethod ?? propertyInfo;
+            }
+
+            NullabilityInfo nullability = GetNullabilityInfo(actualMember, parameterInfo.ParameterType, parser);
 
             if (nullability.ReadState != NullabilityState.Unknown)
             {
