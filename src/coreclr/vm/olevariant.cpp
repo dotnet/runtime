@@ -2114,6 +2114,11 @@ void OleVariant::MarshalOleVariantForObject(OBJECTREF * const & pObj, VARIANT *p
             V_I1(pOle) = *(CHAR*)( (*pObj)->GetData() );
             V_VT(pOle) = VT_I1;
         }
+        else if (pMT == CoreLibBinder::GetElementType(ELEMENT_TYPE_I8))
+        {
+            V_I8(pOle) = *(INT64*)( (*pObj)->GetData() );
+            V_VT(pOle) = VT_I8;
+        }
         else if (pMT == CoreLibBinder::GetElementType(ELEMENT_TYPE_U4))
         {
             V_UI4(pOle) = *(ULONG*)( (*pObj)->GetData() );
@@ -2128,6 +2133,11 @@ void OleVariant::MarshalOleVariantForObject(OBJECTREF * const & pObj, VARIANT *p
         {
             V_UI1(pOle) = *(BYTE*)( (*pObj)->GetData() );
             V_VT(pOle) = VT_UI1;
+        }
+        else if (pMT == CoreLibBinder::GetElementType(ELEMENT_TYPE_U8))
+        {
+            V_UI8(pOle) = *(UINT64*)( (*pObj)->GetData() );
+            V_VT(pOle) = VT_UI8;
         }
         else if (pMT == CoreLibBinder::GetElementType(ELEMENT_TYPE_R4))
         {
@@ -2249,6 +2259,13 @@ HRESULT OleVariant::MarshalCommonOleRefVariantForObject(OBJECTREF *pObj, VARIANT
         // deallocate for this vartype.
 
         *(V_I1REF(pOle)) = *(CHAR*)( (*pObj)->GetData() );
+    }
+    else if ( (V_VT(pOle) == (VT_BYREF | VT_I8) || V_VT(pOle) == (VT_BYREF | VT_UI8)) && (pMT == CoreLibBinder::GetElementType(ELEMENT_TYPE_I8) || pMT == CoreLibBinder::GetElementType(ELEMENT_TYPE_U8)) )
+    {
+        // deallocation of old value optimized away since there's nothing to
+        // deallocate for this vartype.
+
+        *(V_I8REF(pOle)) = *(INT64*)( (*pObj)->GetData() );
     }
     else if ( V_VT(pOle) == (VT_BYREF | VT_R4) && pMT == CoreLibBinder::GetElementType(ELEMENT_TYPE_R4) )
     {
@@ -2450,6 +2467,30 @@ void OleVariant::MarshalObjectForOleVariant(const VARIANT * pOle, OBJECTREF * co
             SetObjectReference( pObj,
                                 AllocateObject(CoreLibBinder::GetElementType(ELEMENT_TYPE_U1)) );
             *(BYTE*)((*pObj)->GetData()) = *(V_UI1REF(pOle));
+            break;
+            
+        case VT_I8:
+            SetObjectReference( pObj,
+                                AllocateObject(CoreLibBinder::GetElementType(ELEMENT_TYPE_I8)) );
+            *(INT64*)((*pObj)->GetData()) = V_I8(pOle);
+            break;
+
+        case VT_BYREF|VT_I8:
+            SetObjectReference( pObj,
+                                AllocateObject(CoreLibBinder::GetElementType(ELEMENT_TYPE_I8)) );
+            *(INT64*)((*pObj)->GetData()) = *(V_I8REF(pOle));
+            break;
+
+        case VT_UI8:
+            SetObjectReference( pObj,
+                                AllocateObject(CoreLibBinder::GetElementType(ELEMENT_TYPE_U8)) );
+            *(UINT64*)((*pObj)->GetData()) = V_UI8(pOle);
+            break;
+
+        case VT_BYREF|VT_UI8:
+            SetObjectReference( pObj,
+                                AllocateObject(CoreLibBinder::GetElementType(ELEMENT_TYPE_U8)) );
+            *(UINT64*)((*pObj)->GetData()) = *(V_UI8REF(pOle));
             break;
 
         case VT_R4:
