@@ -6,7 +6,6 @@
     <StringResourcesPath>..\src\Resources\Strings.resx</StringResourcesPath>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="BeepByBell.cs" />
     <Compile Include="CancelKeyPress.cs" />
     <Compile Include="Helpers.cs" />
     <Compile Include="ReadAndWrite.cs" />
