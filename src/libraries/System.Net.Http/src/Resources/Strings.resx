@@ -580,6 +580,6 @@
     <value>Failed to establish web socket connection over HTTP/2 because extended CONNECT is not supported. Try to downgrade the request version to HTTP/1.1.</value>
   </data>
   <data name="net_ping_request_timed_out" xml:space="preserve">
-    <value>The HTTP/2 server didn't respond to ping request during the allotted '{0}' ticks.</value>
+    <value>The HTTP/2 server didn't respond to a ping request within the configured KeepAlivePingDelay.</value>
   </data>
 </root>
