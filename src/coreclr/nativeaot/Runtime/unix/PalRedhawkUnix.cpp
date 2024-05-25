@@ -1075,7 +1075,7 @@ REDHAWK_PALEXPORT UInt32_BOOL REDHAWK_PALAPI PalRegisterHijackCallback(_In_ PalH
     return AddSignalHandler(INJECT_ACTIVATION_SIGNAL, ActivationHandler, &g_previousActivationHandler);
 }
 
-REDHAWK_PALIMPORT void* REDHAWK_PALAPI PalGetHijackTarget(void* defaultHijackTarget)
+REDHAWK_PALIMPORT HijackFunc* REDHAWK_PALAPI PalGetHijackTarget(HijackFunc* defaultHijackTarget)
 {
     return defaultHijackTarget;
 }

@@ -173,12 +173,6 @@ private:
 #ifdef FEATURE_HIJACK
     static void HijackCallback(NATIVE_CONTEXT* pThreadContext, void* pThreadToHijack);
 
-    //
-    // Hijack funcs are not called, they are "returned to". And when done, they return to the actual caller.
-    // Thus they cannot have any parameters or return anything.
-    //
-    typedef void HijackFunc();
-
     void HijackReturnAddress(PAL_LIMITED_CONTEXT* pSuspendCtx, HijackFunc* pfnHijackFunction);
     void HijackReturnAddress(NATIVE_CONTEXT* pSuspendCtx, HijackFunc* pfnHijackFunction);
     void HijackReturnAddressWorker(StackFrameIterator* frameIterator, HijackFunc* pfnHijackFunction);

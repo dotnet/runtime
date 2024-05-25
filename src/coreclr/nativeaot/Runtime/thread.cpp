@@ -699,7 +699,7 @@ void Thread::HijackCallback(NATIVE_CONTEXT* pThreadContext, void* pThreadToHijac
 
     pThread->HijackReturnAddress(
         pThreadContext,
-        (HijackFunc*)PalGetHijackTarget(/*defaultHijackTarget*/&RhpGcProbeHijack));
+        PalGetHijackTarget(/*defaultHijackTarget*/&RhpGcProbeHijack));
 }
 
 #ifdef FEATURE_GC_STRESS

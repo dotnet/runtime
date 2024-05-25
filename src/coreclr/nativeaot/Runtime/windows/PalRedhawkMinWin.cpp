@@ -701,9 +701,9 @@ void InitHijackingAPIs()
     }
 }
 
-REDHAWK_PALIMPORT void* REDHAWK_PALAPI PalGetHijackTarget(void* defaultHijackTarget)
+REDHAWK_PALIMPORT HijackFunc* REDHAWK_PALAPI PalGetHijackTarget(HijackFunc* defaultHijackTarget)
 {
-    return g_returnAddressHijackTarget ? g_returnAddressHijackTarget : defaultHijackTarget;
+    return g_returnAddressHijackTarget ? (HijackFunc*)g_returnAddressHijackTarget : defaultHijackTarget;
 }
 
 REDHAWK_PALEXPORT void REDHAWK_PALAPI PalHijack(HANDLE hThread, _In_opt_ void* pThreadToHijack)
