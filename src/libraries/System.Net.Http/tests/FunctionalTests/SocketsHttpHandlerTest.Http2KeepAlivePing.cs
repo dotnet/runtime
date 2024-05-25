@@ -197,6 +197,7 @@ namespace System.Net.Http.Functional.Tests
                 // The request should fail due to the connection being torn down due to KeepAlivePingTimeout.
                 HttpProtocolException pex = Assert.IsType<HttpProtocolException>(ex.InnerException);
                 Assert.Equal(HttpRequestError.HttpProtocolError, pex.HttpRequestError);
+                Assert.Matches("The HTTP/2 server didn't respond to ping request during the allotted '.*' ticks\\. \\(HttpProtocolError\\)", pex.Message);
 
                 // Let connection live until server finishes:
                 await _serverFinished.Task;
