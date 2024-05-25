@@ -498,8 +498,9 @@ void StackFrameIterator::InternalInit(Thread * pThreadToWalk, NATIVE_CONTEXT* pC
     // properly walk it in parallel.
     ResetNextExInfoForSP(pCtx->GetSp());
 
-    // This codepath is used by the hijack stackwalk. The IP must be in managed code.
-    ASSERT(m_pInstance->IsManaged(dac_cast<PTR_VOID>(pCtx->GetIp())));
+    // This codepath is used by the hijack stackwalk. The IP must be in managed code
+    // or in a conservatively reported assembly thunk.
+    ASSERT(IsValidReturnAddress((void*)pCtx->GetIp()));
 
     //
     // control state
@@ -616,6 +617,29 @@ void StackFrameIterator::InternalInit(Thread * pThreadToWalk, NATIVE_CONTEXT* pC
 #endif // TARGET_ARM
 
 #undef PTR_TO_REG
+
+    // This function guarantees that the final initialized context will refer to a managed
+    // frame.  In the rare case where the PC does not refer to managed code (and refers to an
+    // assembly thunk instead), unwind through the thunk sequence to find the nearest managed
+    // frame.
+    // NOTE: When thunks are present, the thunk sequence may report a conservative GC reporting
+    // lower bound that must be applied when processing the managed frame.
+
+    ReturnAddressCategory category = CategorizeUnadjustedReturnAddress(m_ControlPC);
+
+    if (category == InManagedCode)
+    {
+        ASSERT(m_pInstance->IsManaged(m_ControlPC));
+    }
+    else if (IsNonEHThunk(category))
+    {
+        UnwindNonEHThunkSequence();
+        ASSERT(m_pInstance->IsManaged(m_ControlPC));
+    }
+    else
+    {
+        FAILFAST_OR_DAC_FAIL_UNCONDITIONALLY("NATIVE_CONTEXT PC points to an unexpected assembly thunk kind.");
+    }
 }
 
 PTR_VOID StackFrameIterator::HandleExCollide(PTR_ExInfo pExInfo)
