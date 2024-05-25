@@ -2403,8 +2403,10 @@ VOID EtwCallbackCommon(
     // Special check for the runtime provider's ManagedHeapCollectKeyword.  Profilers
     // flick this to force a full GC.
     if (g_fEEStarted && !g_fEEShutDown && bIsPublicTraceHandle &&
-        ((MatchAnyKeyword & CLR_MANAGEDHEAPCOLLECT_KEYWORD) != 0) &&
-        (ControlCode == EVENT_CONTROL_CODE_ENABLE_PROVIDER) // only when the provider is enabled
+#if !defined(HOST_UNIX)
+        (ControlCode == EVENT_CONTROL_CODE_ENABLE_PROVIDER) && // only when the provider is enabled
+#endif
+        ((MatchAnyKeyword & CLR_MANAGEDHEAPCOLLECT_KEYWORD) != 0)
         )
     {
         // Profilers may (optionally) specify extra data in the filter parameter
