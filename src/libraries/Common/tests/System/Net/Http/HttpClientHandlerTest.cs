@@ -1055,7 +1055,7 @@ namespace System.Net.Http.Functional.Tests
                 _output.WriteLine("[ReadAsStreamAsync] Before SendAsync on test code");
                 Task<HttpResponseMessage> responseTask = client.SendAsync(TestAsync, request, CancellationToken.None);
                 _output.WriteLine("[ReadAsStreamAsync] After SendAsync on test code");
-                using (HttpResponseMessage response = await responseTask)
+                using (HttpResponseMessage response = await responseTask.ConfigureAwait(false))
                 {
                     _output.WriteLine("[ReadAsStreamAsync] After await of responseTask on test code");
                     using (Stream responseStream = await response.Content.ReadAsStreamAsync(TestAsync))
