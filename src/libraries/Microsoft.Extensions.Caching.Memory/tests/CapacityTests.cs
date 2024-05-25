@@ -293,8 +293,11 @@ namespace Microsoft.Extensions.Caching.Memory
             AssertCacheSize(0, cache); // addition was rejected due to size, and previous item with the same key removed
         }
 
-        [Fact]
-        public void ReplaceOldEntryWithSameSizeNewEntryAtSizeLimitCapacity()
+        [Theory]
+        [InlineData(6)]
+        [InlineData(5)]
+        [InlineData(2)]
+        public void ReplaceOldEntryWithSameSizeOrLessNewEntryAtSizeLimitCapacity(int newValueSize)
         {
             var cache = new MemoryCache(new MemoryCacheOptions
             {
@@ -309,10 +312,10 @@ namespace Microsoft.Extensions.Caching.Memory
 
             AssertCacheSize(6, cache);
 
-            cache.Set("key", "newValue", new MemoryCacheEntryOptions { Size = 6 });
+            cache.Set("key", "newValue", new MemoryCacheEntryOptions { Size = newValueSize });
 
             Assert.Equal("newValue", cache.Get("key"));
-            AssertCacheSize(6, cache);
+            AssertCacheSize(newValueSize, cache);
         }
 
         [Fact]

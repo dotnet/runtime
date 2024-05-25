@@ -200,12 +200,19 @@ namespace Microsoft.Extensions.Caching.Memory
 
                 priorEntry?.InvokeEvictionCallbacks();
             }
-            else if (_options.HasSizeLimit && priorEntry != null && priorEntry.Size == entry.Size)
+            else if (_options.HasSizeLimit && priorEntry != null && priorEntry.Size >= entry.Size)
             {
                 bool entryAdded = coherentState._entries.TryUpdate(entry.Key, entry, priorEntry);
 
                 if (entryAdded)
                 {
+                    long newSizeIncrement = entry.Size - priorEntry.Size;
+
+                    if (newSizeIncrement < 0)
+                    {
+                        Interlocked.Add(ref coherentState._cacheSize, newSizeIncrement);
+                    }
+
                     entry.AttachTokens();
                 }
                 else
