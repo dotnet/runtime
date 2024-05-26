@@ -65,6 +65,7 @@
 int mono_wasm_enable_gc = 1;
 
 /* Missing from public headers */
+char *mono_fixup_symbol_name (const char *prefix, const char *key, const char *suffix);
 void mono_icall_table_init (void);
 void mono_wasm_enable_debugging (int);
 void mono_ee_interp_init (const char *opts);
@@ -213,13 +214,9 @@ get_native_to_interp (MonoMethod *method, void *extra_arg)
 
 	assert (strlen (name) < 100);
 	snprintf (key, sizeof(key), "%s_%s_%s", name, class_name, method_name);
-	len = strlen (key);
-	for (int i = 0; i < len; ++i) {
-		if (key [i] == '.')
-			key [i] = '_';
-	}
-
-	addr = wasm_dl_get_native_to_interp (key, extra_arg);
+	char *fixedName = mono_fixup_symbol_name ("", key, "");
+	addr = wasm_dl_get_native_to_interp (fixedName, extra_arg);
+	free (fixedName);
 	MONO_EXIT_GC_UNSAFE;
 	return addr;
 }

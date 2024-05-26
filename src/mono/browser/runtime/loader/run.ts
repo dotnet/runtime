@@ -3,8 +3,8 @@
 
 import BuildConfiguration from "consts:configuration";
 
-import type { MonoConfig, DotnetHostBuilder, DotnetModuleConfig, RuntimeAPI, LoadBootResourceCallback } from "../types";
-import type { EmscriptenModuleInternal, RuntimeModuleExportsInternal, NativeModuleExportsInternal, } from "../types/internal";
+import { type MonoConfig, type DotnetHostBuilder, type DotnetModuleConfig, type RuntimeAPI, type LoadBootResourceCallback, GlobalizationMode } from "../types";
+import type { EmscriptenModuleInternal, RuntimeModuleExportsInternal, NativeModuleExportsInternal, HybridGlobalizationModuleExportsInternal, } from "../types/internal";
 
 import { ENVIRONMENT_IS_WEB, ENVIRONMENT_IS_WORKER, emscriptenModule, exportedRuntimeAPI, globalObjectsRoot, monoConfig, mono_assert } from "./globals";
 import { deep_merge_config, deep_merge_module, mono_wasm_load_config } from "./config";
@@ -12,7 +12,7 @@ import { installUnhandledErrorHandler, mono_exit, registerEmscriptenExitHandlers
 import { setup_proxy_console, mono_log_info, mono_log_debug } from "./logging";
 import { mono_download_assets, preloadWorkers, prepareAssets, prepareAssetsWorker, resolve_single_asset_path, streamingCompileWasm } from "./assets";
 import { detect_features_and_polyfill } from "./polyfills";
-import { runtimeHelpers, loaderHelpers } from "./globals";
+import { runtimeHelpers, loaderHelpers, globalizationHelpers } from "./globals";
 import { init_globalization } from "./icu";
 import { setupPreloadChannelToMainThread } from "./worker";
 import { importLibraryInitializers, invokeLibraryInitializers } from "./libraryInitializers";
@@ -158,6 +158,10 @@ export class HostBuilder implements DotnetHostBuilder {
                 interpreterPgo: value,
                 interpreterPgoSaveDelay: autoSaveDelay
             });
+            if (monoConfig.runtimeOptions)
+                monoConfig.runtimeOptions.push("--interp-pgo-recording");
+            else
+                monoConfig.runtimeOptions = ["--interp-pgo-recording"];
             return this;
         } catch (err) {
             mono_exit(1, err);
@@ -268,9 +272,10 @@ export class HostBuilder implements DotnetHostBuilder {
     withRuntimeOptions (runtimeOptions: string[]): DotnetHostBuilder {
         try {
             mono_assert(runtimeOptions && Array.isArray(runtimeOptions), "must be array of strings");
-            deep_merge_config(monoConfig, {
-                runtimeOptions
-            });
+            if (monoConfig.runtimeOptions)
+                monoConfig.runtimeOptions.push(...runtimeOptions);
+            else
+                monoConfig.runtimeOptions = runtimeOptions;
             return this;
         } catch (err) {
             mono_exit(1, err);
@@ -418,18 +423,31 @@ function importModules () {
     if (typeof jsModuleRuntimeAsset.moduleExports === "object") {
         jsModuleRuntimePromise = jsModuleRuntimeAsset.moduleExports;
     } else {
-        mono_log_debug(`Attempting to import '${jsModuleRuntimeAsset.resolvedUrl}' for ${jsModuleRuntimeAsset.name}`);
+        mono_log_debug(() => `Attempting to import '${jsModuleRuntimeAsset.resolvedUrl}' for ${jsModuleRuntimeAsset.name}`);
         jsModuleRuntimePromise = import(/*! webpackIgnore: true */jsModuleRuntimeAsset.resolvedUrl!);
     }
 
     if (typeof jsModuleNativeAsset.moduleExports === "object") {
         jsModuleNativePromise = jsModuleNativeAsset.moduleExports;
     } else {
-        mono_log_debug(`Attempting to import '${jsModuleNativeAsset.resolvedUrl}' for ${jsModuleNativeAsset.name}`);
+        mono_log_debug(() => `Attempting to import '${jsModuleNativeAsset.resolvedUrl}' for ${jsModuleNativeAsset.name}`);
         jsModuleNativePromise = import(/*! webpackIgnore: true */jsModuleNativeAsset.resolvedUrl!);
     }
-
     return [jsModuleRuntimePromise, jsModuleNativePromise];
+}
+
+async function getHybridModuleExports () : Promise<HybridGlobalizationModuleExportsInternal> {
+    let jsModuleHybridGlobalizationPromise: Promise<NativeModuleExportsInternal> | undefined = undefined;
+    // todo: move it for after runtime startup
+    const jsModuleHybridGlobalization = resolve_single_asset_path("js-module-globalization");
+    if (typeof jsModuleHybridGlobalization.moduleExports === "object") {
+        jsModuleHybridGlobalizationPromise = jsModuleHybridGlobalization.moduleExports;
+    } else {
+        mono_log_debug(`Attempting to import '${jsModuleHybridGlobalization.resolvedUrl}' for ${jsModuleHybridGlobalization.name}`);
+        jsModuleHybridGlobalizationPromise = import(/*! webpackIgnore: true */jsModuleHybridGlobalization.resolvedUrl!);
+    }
+    const hybridModule = await jsModuleHybridGlobalizationPromise;
+    return hybridModule as any;
 }
 
 async function initializeModules (es6Modules: [RuntimeModuleExportsInternal, NativeModuleExportsInternal]) {
@@ -437,6 +455,11 @@ async function initializeModules (es6Modules: [RuntimeModuleExportsInternal, Nat
     const { default: emscriptenFactory } = es6Modules[1];
     setRuntimeGlobals(globalObjectsRoot);
     initializeExports(globalObjectsRoot);
+    if (loaderHelpers.config.globalizationMode === GlobalizationMode.Hybrid) {
+        const hybridModule = await getHybridModuleExports();
+        const { initHybrid } = hybridModule;
+        initHybrid(globalizationHelpers, runtimeHelpers);
+    }
     await configureRuntimeStartup(emscriptenModule);
     loaderHelpers.runtimeModuleLoaded.promise_control.resolve();
 

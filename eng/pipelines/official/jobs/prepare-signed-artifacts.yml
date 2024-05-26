@@ -33,7 +33,7 @@ jobs:
         fetchDepth: 20
       - input: pipelineArtifact
         artifactName: IntermediateArtifacts
-        targetPath: $(Build.SourcesDirectory)\artifacts\PackageDownload
+        targetPath: $(Build.SourcesDirectory)\artifacts\PackageDownload\IntermediateArtifacts
       outputs:
       - output: pipelineArtifact
         displayName: 'Publish BuildLogs'

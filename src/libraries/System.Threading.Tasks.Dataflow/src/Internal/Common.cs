@@ -190,7 +190,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
                 // data, and we also want to dispose of that registration when we complete so that we don't
                 // leak into a long-living cancellation token.
                 CancellationTokenRegistration reg = cancellationToken.Register(
-#if NET6_0_OR_GREATER
+#if NET
                     completeAction, completeState
 #else
                     state =>

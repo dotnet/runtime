@@ -59,4 +59,19 @@ typedef struct dn_simdhash_str_key dn_simdhash_str_key;
 
 #include "dn-simdhash-ght-compatible.h"
 
+
+typedef struct dn_ptrpair_t {
+    void *first, *second;
+} dn_ptrpair_t;
+
+#define DN_SIMDHASH_T dn_simdhash_ptrpair_ptr
+#define DN_SIMDHASH_KEY_T dn_ptrpair_t
+#define DN_SIMDHASH_VALUE_T void *
+
+#include "dn-simdhash-specialization-declarations.h"
+
+#undef DN_SIMDHASH_T
+#undef DN_SIMDHASH_KEY_T
+#undef DN_SIMDHASH_VALUE_T
+
 #endif

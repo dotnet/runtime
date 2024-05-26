@@ -4,6 +4,7 @@
 using Microsoft.DotNet.RemoteExecutor;
 using System.Collections.Generic;
 using System.Diagnostics.Metrics;
+using System.Diagnostics.Tests;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -13,6 +14,29 @@ namespace System.Diagnostics.Metrics.Tests
 {
     public class MetricsTests
     {
+        [Fact]
+        public void MeasurementConstructionTest()
+        {
+            for (int i = 0; i < 30; i++)
+            {
+                TagListTests.CreateTagList(i, out TagList tags);
+                TagListTests.ValidateTags(in tags, i);
+                KeyValuePair<string, object>[] tagsArray = tags.ToArray();
+
+                var measurement = new Measurement<int>(i, tags);
+                Assert.Equal(i, measurement.Value);
+                TagListTests.ValidateTags(new TagList(measurement.Tags), tagsArray);
+                
+                measurement = new Measurement<int>(i, tagsArray);
+                Assert.Equal(i, measurement.Value);
+                TagListTests.ValidateTags(new TagList(measurement.Tags), tagsArray);
+
+                measurement = new Measurement<int>(i, tagsArray.AsSpan());
+                Assert.Equal(i, measurement.Value);
+                TagListTests.ValidateTags(new TagList(measurement.Tags), tagsArray);
+            }
+        }
+
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void MeterConstructionTest()
         {
@@ -238,76 +262,115 @@ namespace System.Diagnostics.Metrics.Tests
             }).Dispose();
         }
 
-        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public void InstrumentMeasurementTest()
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void InstrumentMeasurementTest(bool useSpan)
         {
-            RemoteExecutor.Invoke(() => {
+            RemoteExecutor.Invoke((string useSpanStr) => {
                 Meter meter = new Meter("InstrumentMeasurementTest");
+                bool useSpan = bool.Parse(useSpanStr);
 
                 Counter<byte> counter = meter.CreateCounter<byte>("byteCounter");
-                InstrumentMeasurementAggregationValidation(counter, (value, tags) => { counter.Add(value, tags); } );
+                InstrumentMeasurementAggregationValidation(counter, (value, tags) => { AddToCounter(counter, value, tags, useSpan); } );
 
                 UpDownCounter<byte> upDownCounter = meter.CreateUpDownCounter<byte>("byteUpDownCounter");
-                InstrumentMeasurementAggregationValidation(upDownCounter, (value, tags) => { upDownCounter.Add(value, tags); });
+                InstrumentMeasurementAggregationValidation(upDownCounter, (value, tags) => { AddToUpDownCounter(upDownCounter, value, tags, useSpan); });
 
                 Counter<short> counter1 = meter.CreateCounter<short>("shortCounter");
-                InstrumentMeasurementAggregationValidation(counter1, (value, tags) => { counter1.Add(value, tags); } );
+                InstrumentMeasurementAggregationValidation(counter1, (value, tags) => { AddToCounter(counter1, value, tags, useSpan); } );
 
                 UpDownCounter<short> upDownCounter1 = meter.CreateUpDownCounter<short>("shortUpDownCounter");
-                InstrumentMeasurementAggregationValidation(upDownCounter1, (value, tags) => { upDownCounter1.Add(value, tags); }, true);
+                InstrumentMeasurementAggregationValidation(upDownCounter1, (value, tags) => { AddToUpDownCounter(upDownCounter1, value, tags, useSpan); }, true);
 
                 Counter<int> counter2 = meter.CreateCounter<int>("intCounter");
-                InstrumentMeasurementAggregationValidation(counter2, (value, tags) => { counter2.Add(value, tags); } );
+                InstrumentMeasurementAggregationValidation(counter2, (value, tags) => { AddToCounter(counter2, value, tags, useSpan); } );
 
                 UpDownCounter<int> upDownCounter2 = meter.CreateUpDownCounter<int>("intUpDownCounter");
-                InstrumentMeasurementAggregationValidation(upDownCounter2, (value, tags) => { upDownCounter2.Add(value, tags); }, true);
+                InstrumentMeasurementAggregationValidation(upDownCounter2, (value, tags) => { AddToUpDownCounter(upDownCounter2, value, tags, useSpan); }, true);
 
                 Counter<long> counter3 = meter.CreateCounter<long>("longCounter");
-                InstrumentMeasurementAggregationValidation(counter3, (value, tags) => { counter3.Add(value, tags); } );
+                InstrumentMeasurementAggregationValidation(counter3, (value, tags) => { AddToCounter(counter3, value, tags, useSpan); } );
 
                 UpDownCounter<long> upDownCounter3 = meter.CreateUpDownCounter<long>("longUpDownCounter");
-                InstrumentMeasurementAggregationValidation(upDownCounter3, (value, tags) => { upDownCounter3.Add(value, tags); }, true);
+                InstrumentMeasurementAggregationValidation(upDownCounter3, (value, tags) => { AddToUpDownCounter(upDownCounter3, value, tags, useSpan); }, true);
 
                 Counter<float> counter4 = meter.CreateCounter<float>("floatCounter");
-                InstrumentMeasurementAggregationValidation(counter4, (value, tags) => { counter4.Add(value, tags); } );
+                InstrumentMeasurementAggregationValidation(counter4, (value, tags) => { AddToCounter(counter4, value, tags, useSpan); } );
 
                 UpDownCounter<float> upDownCounter4 = meter.CreateUpDownCounter<float>("floatUpDownCounter");
-                InstrumentMeasurementAggregationValidation(upDownCounter4, (value, tags) => { upDownCounter4.Add(value, tags); }, true);
+                InstrumentMeasurementAggregationValidation(upDownCounter4, (value, tags) => { AddToUpDownCounter(upDownCounter4, value, tags, useSpan); }, true);
 
                 Counter<double> counter5 = meter.CreateCounter<double>("doubleCounter");
-                InstrumentMeasurementAggregationValidation(counter5, (value, tags) => { counter5.Add(value, tags); } );
+                InstrumentMeasurementAggregationValidation(counter5, (value, tags) => { AddToCounter(counter5, value, tags, useSpan); } );
 
                 UpDownCounter<double> upDownCounter5 = meter.CreateUpDownCounter<double>("doubleUpDownCounter");
-                InstrumentMeasurementAggregationValidation(upDownCounter5, (value, tags) => { upDownCounter5.Add(value, tags); }, true);
+                InstrumentMeasurementAggregationValidation(upDownCounter5, (value, tags) => { AddToUpDownCounter(upDownCounter5, value, tags, useSpan); }, true);
 
                 Counter<decimal> counter6 = meter.CreateCounter<decimal>("decimalCounter");
-                InstrumentMeasurementAggregationValidation(counter6, (value, tags) => { counter6.Add(value, tags); } );
+                InstrumentMeasurementAggregationValidation(counter6, (value, tags) => { AddToCounter(counter6, value, tags, useSpan); } );
 
                 UpDownCounter<decimal> upDownCounter6 = meter.CreateUpDownCounter<decimal>("decimalUpDownCounter");
-                InstrumentMeasurementAggregationValidation(upDownCounter6, (value, tags) => { upDownCounter6.Add(value, tags); }, true);
+                InstrumentMeasurementAggregationValidation(upDownCounter6, (value, tags) => { AddToUpDownCounter(upDownCounter6, value, tags, useSpan); }, true);
 
                 Histogram<byte> histogram = meter.CreateHistogram<byte>("byteHistogram");
-                InstrumentMeasurementAggregationValidation(histogram, (value, tags) => { histogram.Record(value, tags); } );
+                InstrumentMeasurementAggregationValidation(histogram, (value, tags) => { Record(histogram, value, tags, useSpan); } );
 
                 Histogram<short> histogram1 = meter.CreateHistogram<short>("shortHistogram");
-                InstrumentMeasurementAggregationValidation(histogram1, (value, tags) => { histogram1.Record(value, tags); } );
+                InstrumentMeasurementAggregationValidation(histogram1, (value, tags) => { Record(histogram1, value, tags, useSpan); } );
 
                 Histogram<int> histogram2 = meter.CreateHistogram<int>("intHistogram");
-                InstrumentMeasurementAggregationValidation(histogram2, (value, tags) => { histogram2.Record(value, tags); } );
+                InstrumentMeasurementAggregationValidation(histogram2, (value, tags) => { Record(histogram2, value, tags, useSpan); } );
 
                 Histogram<long> histogram3 = meter.CreateHistogram<long>("longHistogram");
-                InstrumentMeasurementAggregationValidation(histogram3, (value, tags) => { histogram3.Record(value, tags); } );
+                InstrumentMeasurementAggregationValidation(histogram3, (value, tags) => { Record(histogram3, value, tags, useSpan); } );
 
                 Histogram<float> histogram4 = meter.CreateHistogram<float>("floatHistogram");
-                InstrumentMeasurementAggregationValidation(histogram4, (value, tags) => { histogram4.Record(value, tags); } );
+                InstrumentMeasurementAggregationValidation(histogram4, (value, tags) => { Record(histogram4, value, tags, useSpan); } );
 
                 Histogram<double> histogram5 = meter.CreateHistogram<double>("doubleHistogram");
-                InstrumentMeasurementAggregationValidation(histogram5, (value, tags) => { histogram5.Record(value, tags); } );
+                InstrumentMeasurementAggregationValidation(histogram5, (value, tags) => { Record(histogram5, value, tags, useSpan); } );
 
                 Histogram<decimal> histogram6 = meter.CreateHistogram<decimal>("decimalHistogram");
-                InstrumentMeasurementAggregationValidation(histogram6, (value, tags) => { histogram6.Record(value, tags); } );
+                InstrumentMeasurementAggregationValidation(histogram6, (value, tags) => { Record(histogram6, value, tags, useSpan); } );
 
-            }).Dispose();
+            }, useSpan.ToString()).Dispose();
+            
+            void AddToCounter<T>(Counter<T> counter, T delta, KeyValuePair<string, object?>[] tags, bool useSpan) where T : struct
+            {
+                if (useSpan)
+                {
+                    counter.Add(delta, (ReadOnlySpan<KeyValuePair<string, object?>>)tags);
+                }
+                else
+                {
+                    counter.Add(delta, tags);
+                }
+            }
+
+            void AddToUpDownCounter<T>(UpDownCounter<T> upDownCounter, T delta, KeyValuePair<string, object?>[] tags, bool useSpan) where T : struct
+            {
+                if (useSpan)
+                {
+                    upDownCounter.Add(delta, (ReadOnlySpan<KeyValuePair<string, object?>>)tags);
+                }
+                else
+                {
+                    upDownCounter.Add(delta, tags);
+                }
+            }
+
+            void Record<T>(Histogram<T> histogram, T value, KeyValuePair<string, object?>[] tags, bool useSpan) where T : struct
+            {
+                if (useSpan)
+                {
+                    histogram.Record(value, (ReadOnlySpan<KeyValuePair<string, object?>>)tags);
+                }
+                else
+                {
+                    histogram.Record(value, tags);
+                }
+            }
         }
 
 

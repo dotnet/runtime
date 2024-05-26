@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Text.Json;
 using System.Text.Unicode;
 using Xunit;
 
@@ -12,6 +13,7 @@ public class ContractDescriptorParserTests
     [Fact]
     public void ParsesEmptyContract()
     {
+        Assert.False(JsonSerializer.IsReflectionEnabledByDefault);
         ReadOnlySpan<byte> json = "{}"u8;
         ContractDescriptorParser.ContractDescriptor descriptor = ContractDescriptorParser.ParseCompact(json);
         Assert.Null(descriptor.Version);

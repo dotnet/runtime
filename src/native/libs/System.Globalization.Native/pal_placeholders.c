@@ -16,14 +16,6 @@
 #include "pal_timeZoneInfo.h"
 
 #ifdef DEBUG
-#define assert_err(cond, msg, err) do \
-{ \
-  if(!(cond)) \
-  { \
-    fprintf(stderr, "%s (%d): error %d: %s. %s (%s failed)\n", __FILE__, __LINE__, err, msg, strerror(err), #cond); \
-    assert(false && "assert_err failed"); \
-  } \
-} while(0)
 #define assert_msg(cond, msg, val) do \
 { \
   if(!(cond)) \
@@ -33,10 +25,12 @@
   } \
 } while(0)
 #else // DEBUG
-#define assert_err(cond, msg, err)
 #define assert_msg(cond, msg, val)
 #endif // DEBUG
 
+// don't generate warnings for placeholders
+#pragma clang diagnostic ignored "-Wunused-parameter"
+#pragma clang diagnostic ignored "-Wmissing-noreturn"
 
 // Placeholder for calendar data
 int32_t GlobalizationNative_GetCalendars(

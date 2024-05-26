@@ -50,7 +50,7 @@ namespace System.Data.Common
         private static readonly Regex s_connectionStringRegex = CreateConnectionStringRegex();
         private static readonly Regex s_connectionStringRegexOdbc = CreateConnectionStringRegexOdbc();
 
-#if NET7_0_OR_GREATER
+#if NET
         [GeneratedRegex(ConnectionStringPattern, RegexOptions.ExplicitCapture)]
         private static partial Regex CreateConnectionStringRegex();
 
@@ -67,7 +67,7 @@ namespace System.Data.Common
         private static readonly Regex s_connectionStringQuoteValueRegex = CreateConnectionStringQuoteValueRegex(); // generally do not quote the value if it matches the pattern
         private static readonly Regex s_connectionStringQuoteOdbcValueRegex = CreateConnectionStringQuoteOdbcValueRegex(); // do not quote odbc value if it matches this pattern
 
-#if NET7_0_OR_GREATER
+#if NET
         [GeneratedRegex("^(?![;\\s])[^\\p{Cc}]+(?<!\\s)$")]
         private static partial Regex CreateConnectionStringValidKeyRegex();
         [GeneratedRegex("^[^\"'=;\\s\\p{Cc}]*$")]

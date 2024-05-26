@@ -4742,7 +4742,7 @@ LONG InternalUnhandledExceptionFilter_Worker(
             // ignoring unhandled exceptions cannot be set on the default domain.
 
             if (IsFinalizerThread() || (pParam->pThread->IsThreadPoolThread()))
-                fIsProcessTerminating = !(pParam->pThread->GetDomain()->IgnoreUnhandledExceptions());
+                fIsProcessTerminating = !(AppDomain::GetCurrentDomain()->IgnoreUnhandledExceptions());
             else
                 fIsProcessTerminating = !(pParam->pThread->HasThreadStateNC(Thread::TSNC_IgnoreUnhandledExceptions));
 
@@ -6767,12 +6767,19 @@ VEH_ACTION WINAPI CLRVectoredExceptionHandler(PEXCEPTION_POINTERS pExceptionInfo
 
     if (pExceptionInfo->ExceptionRecord->ExceptionCode == STATUS_RETURN_ADDRESS_HIJACK_ATTEMPT)
     {
+        if (pThread == NULL || !pThread->PreemptiveGCDisabled())
+        {
+            // We are not running managed code, so this cannot be our hijack
+            // Perhaps some other runtime is responsible.
+            return VEH_CONTINUE_SEARCH;
+        }
+
         HijackArgs hijackArgs;
         hijackArgs.Rax = pExceptionInfo->ContextRecord->Rax;
         hijackArgs.Rsp = pExceptionInfo->ContextRecord->Rsp;
 
-        bool areCetShadowStacksEnabled = Thread::AreCetShadowStacksEnabled();
-        if (areCetShadowStacksEnabled)
+        bool areShadowStacksEnabled = Thread::AreShadowStacksEnabled();
+        if (areShadowStacksEnabled)
         {
             // When the CET is enabled, the return address is still on stack, so we need to set the Rsp as
             // if it was popped.
@@ -6790,7 +6797,7 @@ VEH_ACTION WINAPI CLRVectoredExceptionHandler(PEXCEPTION_POINTERS pExceptionInfo
         #undef CALLEE_SAVED_REGISTER
         pExceptionInfo->ContextRecord->Rax = hijackArgs.Rax;
 
-        if (areCetShadowStacksEnabled)
+        if (areShadowStacksEnabled)
         {
             // The context refers to the return instruction
             // Set the return address on the stack to the original one
@@ -7894,10 +7901,10 @@ LONG NotifyOfCHFFilterWrapper(
          (pThread->GetExceptionState()->GetContextRecord() == NULL)  ||
          (GetSP(pThread->GetExceptionState()->GetContextRecord()) != GetSP(pExceptionInfo->ContextRecord) ) )
     {
-        LOG((LF_EH, LL_INFO1000, "NotifyOfCHFFilterWrapper: not sending notices. pThread: %0x8", pThread));
+        LOG((LF_EH, LL_INFO1000, "NotifyOfCHFFilterWrapper: not sending notices. pThread: %p", pThread));
         if (pThread)
         {
-            LOG((LF_EH, LL_INFO1000, ", Thread SP: %0x8, Exception SP: %08x",
+            LOG((LF_EH, LL_INFO1000, ", Thread SP: %p, Exception SP: %p",
                  pThread->GetExceptionState()->GetContextRecord() ? GetSP(pThread->GetExceptionState()->GetContextRecord()) : NULL,
                  pExceptionInfo->ContextRecord ? GetSP(pExceptionInfo->ContextRecord) : NULL ));
         }

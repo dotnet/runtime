@@ -60,17 +60,6 @@ extern errno_t wcsncpy_s( WCHAR* outDest, size_t inDestBufferSize, const WCHAR* 
 
 extern size_t PAL_wcsnlen( const WCHAR* inString, size_t inMaxSize );
 
-extern errno_t _itoa_s( int inValue, char* outBuffer, size_t inDestBufferSize, int inRadix );
-extern errno_t _itow_s( int inValue, WCHAR* outBuffer, size_t inDestBufferSize, int inRadix );
-
-extern errno_t _ltoa_s( long inValue, char* outBuffer, size_t inDestBufferSize, int inRadix );
-extern errno_t _ltow_s( long inValue, WCHAR* outBuffer, size_t inDestBufferSize, int inRadix );
-
-extern errno_t _ultoa_s( unsigned long inValue, char* outBuffer, size_t inDestBufferSize, int inRadix );
-extern errno_t _ultow_s( unsigned long inValue, WCHAR* outBuffer, size_t inDestBufferSize, int inRadix );
-
-extern errno_t _i64tow_s( long long inValue, WCHAR* outBuffer, size_t inDestBufferSize, int inRadix );
-
 extern errno_t _makepath_s( char* outDest, size_t inDestBufferSize, const char* inDrive, const char* inDirectory, const char* inFilename, const char* inExtension );
 extern errno_t _wmakepath_s( WCHAR* outDest, size_t inDestBufferSize, const WCHAR* inDrive, const WCHAR* inDirectory, const WCHAR* inFilename, const WCHAR* inExtension );
 

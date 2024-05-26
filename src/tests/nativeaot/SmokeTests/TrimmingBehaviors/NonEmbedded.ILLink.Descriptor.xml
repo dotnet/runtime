@@ -4,4 +4,8 @@
       <method name="methodKeptViaStandaloneDescriptor"/>
     </type>
   </assembly>
+
+  <assembly fullname="ShimLibrary">
+    <type fullname="LibraryClass" />
+  </assembly>
 </linker>

@@ -15,7 +15,7 @@ namespace Microsoft.Extensions.Logging.Console
         private const string LoglevelPadding = ": ";
         private static readonly string _messagePadding = new string(' ', GetLogLevelString(LogLevel.Information).Length + LoglevelPadding.Length);
         private static readonly string _newLineWithMessagePadding = Environment.NewLine + _messagePadding;
-#if NETCOREAPP
+#if NET
         private static bool IsAndroidOrAppleMobile => OperatingSystem.IsAndroid() ||
                                                       OperatingSystem.IsTvOS() ||
                                                       OperatingSystem.IsIOS(); // returns true on MacCatalyst
@@ -51,7 +51,15 @@ namespace Microsoft.Extensions.Logging.Console
             {
                 return;
             }
-            LogLevel logLevel = logEntry.LogLevel;
+
+            // We extract most of the work into a non-generic method to save code size. If this was left in the generic
+            // method, we'd get generic specialization for all TState parameters, but that's unnecessary.
+            WriteInternal(scopeProvider, textWriter, message, logEntry.LogLevel, logEntry.EventId.Id, logEntry.Exception, logEntry.Category);
+        }
+
+        private void WriteInternal(IExternalScopeProvider? scopeProvider, TextWriter textWriter, string message, LogLevel logLevel,
+            int eventId, Exception? exception, string category)
+        {
             ConsoleColors logLevelColors = GetLogLevelConsoleColors(logLevel);
             string logLevelString = GetLogLevelString(logLevel);
 
@@ -70,14 +78,8 @@ namespace Microsoft.Extensions.Logging.Console
             {
                 textWriter.WriteColoredMessage(logLevelString, logLevelColors.Background, logLevelColors.Foreground);
             }
-            CreateDefaultLogMessage(textWriter, logEntry, message, scopeProvider);
-        }
 
-        private void CreateDefaultLogMessage<TState>(TextWriter textWriter, in LogEntry<TState> logEntry, string message, IExternalScopeProvider? scopeProvider)
-        {
             bool singleLine = FormatterOptions.SingleLine;
-            int eventId = logEntry.EventId.Id;
-            Exception? exception = logEntry.Exception;
 
             // Example:
             // info: ConsoleApp.Program[10]
@@ -85,10 +87,10 @@ namespace Microsoft.Extensions.Logging.Console
 
             // category and event id
             textWriter.Write(LoglevelPadding);
-            textWriter.Write(logEntry.Category);
+            textWriter.Write(category);
             textWriter.Write('[');
 
-#if NETCOREAPP
+#if NET
             Span<char> span = stackalloc char[10];
             if (eventId.TryFormat(span, out int charsWritten))
                 textWriter.Write(span.Slice(0, charsWritten));

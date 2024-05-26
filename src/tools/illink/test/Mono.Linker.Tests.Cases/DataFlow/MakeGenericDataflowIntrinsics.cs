@@ -34,10 +34,10 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			public static void TestRecognizedGenericIntrinsic<T> () => typeof (Gen<>).MakeGenericType (typeof (T));
 
 			[ExpectedWarning ("IL2055", nameof (Type.MakeGenericType))]
-			[ExpectedWarning ("IL3050", nameof (Type.MakeGenericType), ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", nameof (Type.MakeGenericType), Tool.Analyzer | Tool.NativeAot, "")]
 			public static void TestUnknownOwningType () => GrabUnknownType ().MakeGenericType (typeof (object));
 
-			[ExpectedWarning ("IL3050", nameof (Type.MakeGenericType), ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", nameof (Type.MakeGenericType), Tool.Analyzer | Tool.NativeAot, "")]
 			public static void TestUnknownArgument () => typeof (Gen<>).MakeGenericType (GrabUnknownType ());
 		}
 
@@ -62,10 +62,10 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			public static void TestRecognizedGenericIntrinsic<T> () => typeof (MakeGenericMethod).GetMethod (nameof (Gen)).MakeGenericMethod (typeof (T));
 
 			[ExpectedWarning ("IL2060", nameof (MethodInfo.MakeGenericMethod))]
-			[ExpectedWarning ("IL3050", nameof (MethodInfo.MakeGenericMethod), ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", nameof (MethodInfo.MakeGenericMethod), Tool.Analyzer | Tool.NativeAot, "")]
 			public static void TestUnknownOwningMethod () => GrabUnknownMethod ().MakeGenericMethod (typeof (object));
 
-			[ExpectedWarning ("IL3050", nameof (MethodInfo.MakeGenericMethod), ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", nameof (MethodInfo.MakeGenericMethod), Tool.Analyzer | Tool.NativeAot, "")]
 			public static void TestUnknownArgument () => typeof (MakeGenericMethod).GetMethod (nameof (Gen)).MakeGenericMethod (GrabUnknownType());
 		}
 	}
