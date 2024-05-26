@@ -99,8 +99,7 @@ namespace System.Text.RegularExpressions.Symbolic
         internal bool IsNullableFor(uint nextCharKind)
         {
             Debug.Assert(CharKind.IsValidCharKind(nextCharKind));
-            uint context = CharKind.Context(PrevCharKind, nextCharKind);
-            return Node.IsNullableFor(context);
+            return Node.IsNullableFor(CharKind.Context(PrevCharKind, nextCharKind));
         }
 
         /// <summary>

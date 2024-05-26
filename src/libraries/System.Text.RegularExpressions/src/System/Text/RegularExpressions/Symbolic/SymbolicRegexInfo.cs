@@ -17,6 +17,7 @@ namespace System.Text.RegularExpressions.Symbolic
         private const uint IsHighPriorityNullableMask = 64;
         private const uint ContainsEffectMask = 128;
         private const uint ContainsLineAnchorMask = 256;
+        private const uint ContainsEndZAnchorMask = 512;
 
         private readonly uint _info;
 
@@ -26,7 +27,7 @@ namespace System.Text.RegularExpressions.Symbolic
             bool isAlwaysNullable = false, bool canBeNullable = false,
             bool startsWithLineAnchor = false, bool containsLineAnchor = false,
             bool startsWithSomeAnchor = false, bool containsSomeAnchor = false,
-            bool isHighPriorityNullable = false, bool containsEffect = false)
+            bool isHighPriorityNullable = false, bool containsEffect = false, bool containsEndZAnchor = false)
         {
             // Assert that the expected implications hold. For example, every node that contains a line anchor
             // must also be marked as containing some anchor.
@@ -43,7 +44,8 @@ namespace System.Text.RegularExpressions.Symbolic
                 (startsWithSomeAnchor ? StartsWithSomeAnchorMask : 0) |
                 (containsSomeAnchor ? ContainsSomeAnchorMask : 0) |
                 (isHighPriorityNullable ? IsHighPriorityNullableMask : 0) |
-                (containsEffect ? ContainsEffectMask : 0));
+                (containsEffect ? ContainsEffectMask : 0) |
+                (containsEndZAnchor ? ContainsEndZAnchorMask : 0));
         }
 
         public bool IsNullable => (_info & IsAlwaysNullableMask) != 0;
@@ -53,7 +55,6 @@ namespace System.Text.RegularExpressions.Symbolic
         public bool StartsWithLineAnchor => (_info & StartsWithLineAnchorMask) != 0;
 
         public bool ContainsLineAnchor => (_info & ContainsLineAnchorMask) != 0;
-
         public bool StartsWithSomeAnchor => (_info & StartsWithSomeAnchorMask) != 0;
 
         public bool ContainsSomeAnchor => (_info & ContainsSomeAnchorMask) != 0;
@@ -63,6 +64,7 @@ namespace System.Text.RegularExpressions.Symbolic
         public bool IsHighPriorityNullable => (_info & IsHighPriorityNullableMask) != 0;
 
         public bool ContainsEffect => (_info & ContainsEffectMask) != 0;
+        public bool ContainsEndZAnchor => (_info & ContainsEndZAnchorMask) != 0;
 
         /// <summary>
         /// Used for any node that acts as an epsilon, i.e., something that always matches the empty string.
@@ -77,13 +79,15 @@ namespace System.Text.RegularExpressions.Symbolic
         /// Used for all anchors.
         /// </summary>
         /// <param name="isLineAnchor">whether this anchor is a line anchor</param>
-        public static SymbolicRegexInfo Anchor(bool isLineAnchor) =>
+        /// <param name="isEndZAnchor">whether this anchor is an end Z anchor</param>
+        public static SymbolicRegexInfo Anchor(bool isLineAnchor, bool isEndZAnchor) =>
             Create(
                 canBeNullable: true,
                 startsWithLineAnchor: isLineAnchor,
                 containsLineAnchor: isLineAnchor,
                 startsWithSomeAnchor: true,
-                containsSomeAnchor: true);
+                containsSomeAnchor: true,
+                containsEndZAnchor: isEndZAnchor);
 
         /// <summary>
         /// The alternation remains high priority nullable if the left alternative is so.
@@ -99,7 +103,8 @@ namespace System.Text.RegularExpressions.Symbolic
                 startsWithSomeAnchor: left_info.StartsWithSomeAnchor || right_info.StartsWithSomeAnchor,
                 containsSomeAnchor: left_info.ContainsSomeAnchor || right_info.ContainsSomeAnchor,
                 isHighPriorityNullable: left_info.IsHighPriorityNullable,
-                containsEffect: left_info.ContainsEffect || right_info.ContainsEffect);
+                containsEffect: left_info.ContainsEffect || right_info.ContainsEffect,
+                containsEndZAnchor: left_info.ContainsEndZAnchor || right_info.ContainsEndZAnchor);
 
         /// <summary>
         /// Concatenation remains high priority nullable if both left and right are so.
@@ -115,7 +120,9 @@ namespace System.Text.RegularExpressions.Symbolic
                 startsWithSomeAnchor: left_info.StartsWithSomeAnchor || (left_info.CanBeNullable && right_info.StartsWithSomeAnchor),
                 containsSomeAnchor: left_info.ContainsSomeAnchor || right_info.ContainsSomeAnchor,
                 isHighPriorityNullable: left_info.IsHighPriorityNullable && right_info.IsHighPriorityNullable,
-                containsEffect: left_info.ContainsEffect || right_info.ContainsEffect);
+                containsEffect: left_info.ContainsEffect || right_info.ContainsEffect,
+                containsEndZAnchor: left_info.ContainsEndZAnchor || right_info.ContainsEndZAnchor
+                );
 
         /// <summary>
         /// Inherits anchor visibility from the loop body.

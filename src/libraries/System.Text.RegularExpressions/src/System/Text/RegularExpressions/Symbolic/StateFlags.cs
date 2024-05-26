@@ -1,6 +1,8 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Runtime.CompilerServices;
+
 namespace System.Text.RegularExpressions.Symbolic
 {
     /// <summary>
@@ -13,6 +15,7 @@ namespace System.Text.RegularExpressions.Symbolic
     [Flags]
     internal enum StateFlags : byte
     {
+        None = 0,
         IsInitialFlag = 1,
         IsNullableFlag = 4,
         CanBeNullableFlag = 8,
@@ -25,10 +28,18 @@ namespace System.Text.RegularExpressions.Symbolic
     /// </summary>
     internal static class StateFlagsExtensions
     {
-        internal static bool IsInitial(this StateFlags info) => (info & StateFlags.IsInitialFlag) != 0;
-        internal static bool IsNullable(this StateFlags info) => (info & StateFlags.IsNullableFlag) != 0;
-        internal static bool CanBeNullable(this StateFlags info) => (info & StateFlags.CanBeNullableFlag) != 0;
-        internal static bool SimulatesBacktracking(this StateFlags info) => (info & StateFlags.SimulatesBacktrackingFlag) != 0;
-        internal static bool IsAccelerated(this StateFlags info) => (info & (StateFlags.IsAcceleratedFlag | StateFlags.IsInitialFlag)) != 0;
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static bool IsInitial(this StateFlags info) => (info & StateFlags.IsInitialFlag) != StateFlags.None;
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static bool IsNullable(this StateFlags info) => (info & StateFlags.IsNullableFlag) != StateFlags.None;
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static bool CanBeNullable(this StateFlags info) => (info & StateFlags.CanBeNullableFlag) != StateFlags.None;
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static bool SimulatesBacktracking(this StateFlags info) => (info & StateFlags.SimulatesBacktrackingFlag) != StateFlags.None;
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static bool IsAccelerated(this StateFlags info) => (info & (StateFlags.IsAcceleratedFlag | StateFlags.IsInitialFlag)) != StateFlags.None;
     }
 }

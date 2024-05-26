@@ -81,5 +81,6 @@ namespace System.Text.RegularExpressions.Symbolic
         {
             return _lookup[c];
         }
+        public int[] Lookup => _lookup;
     }
 }
