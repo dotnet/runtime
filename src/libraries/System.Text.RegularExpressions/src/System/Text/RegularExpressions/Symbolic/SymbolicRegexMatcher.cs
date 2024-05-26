@@ -96,6 +96,8 @@ namespace System.Text.RegularExpressions.Symbolic
         /// <remarks>If the pattern doesn't contain any anchors, there will only be a single initial state.</remarks>
         private readonly MatchingState<TSet>[] _reverseInitialStates;
 
+        private readonly (int, MatchingState<TSet>) _optimizedReversalState;
+
         /// <summary>Partition of the input space of sets.</summary>
         private readonly TSet[] _minterms;
 
@@ -171,6 +173,7 @@ namespace System.Text.RegularExpressions.Symbolic
                 bv64._classifier :
                 ((BitVectorSolver)(object)builder._solver)._classifier;
             _capsize = captureCount;
+
 
             // Initialization for fields in SymbolicRegexMatcher.Automata.cs
             _stateArray = new MatchingState<TSet>[InitialDfaStateCapacity];
@@ -261,6 +264,9 @@ namespace System.Text.RegularExpressions.Symbolic
                 reverseInitialStates[charKind] = GetOrCreateState_NoLock(_reversePattern, charKind);
             }
             _reverseInitialStates = reverseInitialStates;
+
+            // Create optimized reversal
+            _optimizedReversalState = CreateOptimizedReversal(_pattern.Reverse(builder));
 
             // Maps a minterm ID to a character kind
             uint CalculateMintermIdKind(int mintermId)
@@ -776,9 +782,29 @@ namespace System.Text.RegularExpressions.Symbolic
 
             // Get the starting state for the reverse pattern. This depends on previous character (which, because we're
             // going backwards, is character number i).
-            var currentState = new CurrentState(_reverseInitialStates[GetCharKind<TInputReader>(input, i)]);
-
+            CurrentState currentState;
             int lastStart = -1; // invalid sentinel value
+            // if possible use optimized reversal instead
+            if (_optimizedReversalState.Item1 > 0)
+            {
+                i -= _optimizedReversalState.Item1;
+                currentState = new CurrentState(_optimizedReversalState.Item2);
+                // anchor variant may need context to be computed if nullable
+                if (_pattern._info.ContainsSomeAnchor && _canBeNullableArray[currentState.DfaStateId])
+                {
+                    int positionId = TInputReader.GetPositionId(this, input, i);
+                    if (TNullabilityHandler.IsNullableAt<DfaStateHandler>(this,
+                            in currentState, positionId,
+                            DfaStateHandler.GetStateFlags(this, in currentState)))
+                    {
+                        lastStart = i;
+                    }
+                }
+            }
+            else
+            {
+                currentState = new CurrentState(_reverseInitialStates[GetCharKind<TInputReader>(input, i)]);
+            }
 
             // Walk backwards to the furthest accepting state of the reverse pattern but no earlier than matchStartBoundary.
             while (true)

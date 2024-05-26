@@ -19,6 +19,7 @@
     <Compile Include="GroupCollectionTests.cs" />
     <Compile Include="MatchCollectionTests.cs" />
     <Compile Include="MonoRegexTests.cs" />
+    <Compile Include="NonBacktrackingTests.cs" />
     <Compile Include="Regex.CompileToAssembly.Tests.cs" />
     <Compile Include="Regex.Ctor.Tests.cs" />
     <Compile Include="Regex.Cache.Tests.cs" />
