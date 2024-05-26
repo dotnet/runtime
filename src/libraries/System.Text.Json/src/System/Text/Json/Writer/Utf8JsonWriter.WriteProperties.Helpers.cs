@@ -36,7 +36,10 @@ namespace System.Text.Json
         {
             if (!_options.SkipValidation)
             {
-                if (!_inObject || _tokenType == JsonTokenType.PropertyName || _tokenType == JsonTokenType.StringSegment)
+                // Make sure a new property is not attempted within an unfinalized string.
+                ValidateNotWithinUnfinalizedString();
+
+                if (!_inObject || _tokenType == JsonTokenType.PropertyName)
                 {
                     Debug.Assert(_tokenType != JsonTokenType.StartObject);
                     ThrowHelper.ThrowInvalidOperationException(ExceptionResource.CannotWritePropertyWithinArray, currentDepth: default, maxDepth: _options.MaxDepth, token: default, _tokenType);
@@ -49,7 +52,10 @@ namespace System.Text.Json
         {
             if (!_options.SkipValidation)
             {
-                if (!_inObject || _tokenType == JsonTokenType.PropertyName || _tokenType == JsonTokenType.StringSegment)
+                // Make sure a new property is not attempted within an unfinalized string.
+                ValidateNotWithinUnfinalizedString();
+
+                if (!_inObject || _tokenType == JsonTokenType.PropertyName)
                 {
                     Debug.Assert(_tokenType != JsonTokenType.StartObject);
                     ThrowHelper.ThrowInvalidOperationException(ExceptionResource.CannotWritePropertyWithinArray, currentDepth: default, maxDepth: _options.MaxDepth, token: default, _tokenType);

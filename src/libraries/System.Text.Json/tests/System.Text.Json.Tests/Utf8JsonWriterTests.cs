@@ -6818,32 +6818,43 @@ namespace System.Text.Json.Tests
         [Fact]
         public static void WriteStringValueSegment_NotFinalized()
         {
-            static ArrayBufferWriter<byte> executeScenario(Action<Utf8JsonWriter> implementation)
+            static ArrayBufferWriter<byte> executeScenario(Action<Utf8JsonWriter> implementation, bool expectFailure)
             {
                 var output = new ArrayBufferWriter<byte>();
                 using var jsonUtf8 = new Utf8JsonWriter(output);
                 jsonUtf8.WriteStartObject();
                 jsonUtf8.WritePropertyName("test");
                 jsonUtf8.WriteStringValueSegment("Hello ".AsSpan(), isFinalSegment: false);
-                implementation(jsonUtf8);
-                jsonUtf8.WriteEndObject();
-                jsonUtf8.Flush();
-                return output;
+
+                if (expectFailure)
+                {
+                    InvalidOperationException invalidOperationexception = Assert.Throws<InvalidOperationException>(
+                        () => implementation(jsonUtf8));
+                    Assert.Contains("The current JSON string must be finalized before a token of type", invalidOperationexception.Message);
+                    return null;
+                }
+                else
+                {
+                    implementation(jsonUtf8);
+                    jsonUtf8.WriteEndObject();
+                    jsonUtf8.Flush();
+                    return output;
+                }
             }
 
             // The following are expected to fail.
-            Assert.Throws<InvalidOperationException>(static () => executeScenario(w => w.WriteEndArray()));
-            Assert.Throws<InvalidOperationException>(static () => executeScenario(w => w.WriteCommentValue("comment")));
-            Assert.Throws<InvalidOperationException>(static () => executeScenario(w => w.WriteEndArray()));
-            Assert.Throws<InvalidOperationException>(static () => executeScenario(w => w.WriteEndObject()));
-            Assert.Throws<InvalidOperationException>(static () => executeScenario(w => w.WriteNullValue()));
-            Assert.Throws<InvalidOperationException>(static () => executeScenario(w => w.WriteNumberValue(123)));
-            Assert.Throws<InvalidOperationException>(static () => executeScenario(w => w.WritePropertyName("test")));
-            Assert.Throws<InvalidOperationException>(static () => executeScenario(w => w.WriteStartArray()));
-            Assert.Throws<InvalidOperationException>(static () => executeScenario(w => w.WriteStartObject()));
+            executeScenario(w => w.WriteEndArray(), expectFailure: true);
+            executeScenario(w => w.WriteCommentValue("comment"), expectFailure: true);
+            executeScenario(w => w.WriteEndArray(), expectFailure: true);
+            executeScenario(w => w.WriteEndObject(), expectFailure: true);
+            executeScenario(w => w.WriteNullValue(), expectFailure: true);
+            executeScenario(w => w.WriteNumberValue(123), expectFailure: true);
+            executeScenario(w => w.WritePropertyName("test"), expectFailure: true);
+            executeScenario(w => w.WriteStartArray(), expectFailure: true);
+            executeScenario(w => w.WriteStartObject(), expectFailure: true);
 
             // WriteStringValue is a special case that implicitly finalizes.
-            ArrayBufferWriter<byte> writeStringValueOutput = executeScenario(w => w.WriteStringValue("World!"));
+            ArrayBufferWriter<byte> writeStringValueOutput = executeScenario(w => w.WriteStringValue("World!"), expectFailure: false);
             JsonTestHelper.AssertContents($"{{\"test\":\"Hello World!\"}}", writeStringValueOutput);
         }
 

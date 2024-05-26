@@ -37,6 +37,9 @@ namespace System.Text.Json
         private const int DefaultGrowthSize = 4096;
         private const int InitialGrowthSize = 256;
 
+        // A special value for JsonTokenType that lets the writer keep track of string segments.
+        private const JsonTokenType StringSegmentSentinel = (JsonTokenType)255;
+
         private IBufferWriter<byte>? _output;
         private Stream? _stream;
         private ArrayBufferWriter<byte>? _arrayBufferWriter;
@@ -534,6 +537,9 @@ namespace System.Text.Json
 
         private void ValidateStart()
         {
+            // Make sure a new object or array is not attempted within an unfinalized string.
+            ValidateNotWithinUnfinalizedString();
+
             if (_inObject)
             {
                 if (_tokenType != JsonTokenType.PropertyName)
@@ -959,7 +965,10 @@ namespace System.Text.Json
 
         private void ValidateEnd(byte token)
         {
-            if (_bitStack.CurrentDepth <= 0 || _tokenType == JsonTokenType.PropertyName || _tokenType == JsonTokenType.StringSegment)
+            // Make sure an object is not ended within an unfinalized string.
+            ValidateNotWithinUnfinalizedString();
+
+            if (_bitStack.CurrentDepth <= 0 || _tokenType == JsonTokenType.PropertyName)
                 ThrowHelper.ThrowInvalidOperationException(ExceptionResource.MismatchedObjectArray, currentDepth: default, maxDepth: _options.MaxDepth, token, _tokenType);
 
             if (token == JsonConstants.CloseBracket)

@@ -426,7 +426,6 @@ namespace System.Text.Json
         True = (byte)9,
         False = (byte)10,
         Null = (byte)11,
-        StringSegment = (byte)12,
     }
     public enum JsonValueKind : byte
     {
@@ -655,8 +654,6 @@ namespace System.Text.Json
         public void WriteStringValue(System.Text.Json.JsonEncodedText value) { }
         public void WriteStringValueSegment(System.ReadOnlySpan<byte> utf8Value, bool isFinalSegment) { }
         public void WriteStringValueSegment(ReadOnlySpan<char> value, bool isFinalSegment) { }
-        public void WriteStringValueSegment(string? value, bool isFinalSegment) { }
-        public void WriteStringValueSegment(System.Text.Json.JsonEncodedText value, bool isFinalSegment) { }
     }
 }
 namespace System.Text.Json.Nodes
