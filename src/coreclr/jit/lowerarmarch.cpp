@@ -1471,7 +1471,7 @@ GenTree* Lowering::LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cm
             {
                 GenTreeVecCon* andMask = op->AsHWIntrinsic()->Op(2)->AsVecCon();
                 simd16_t       val     = andMask->gtSimd16Val;
-                if (val.u64[0] == val.u64[1])
+                if ((val.u64[0] == val.u64[1]) && emitter::emitIns_valid_imm_for_alu(val.i64[0], EA_8BYTE))
                 {
                     scalarAndMask = val.u64[0];
                     BlockRange().Remove(op);
