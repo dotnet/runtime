@@ -396,7 +396,8 @@ namespace System.Text.RegularExpressions.Symbolic
                 SymbolicRegexNodeKind.EOLAnchor or SymbolicRegexNodeKind.BOLAnchor);
             return Create(builder, kind, null, null, -1, -1, default, SymbolicRegexInfo.Anchor(isLineAnchor: kind is
                     SymbolicRegexNodeKind.EndAnchorZ or SymbolicRegexNodeKind.EndAnchorZReverse or
-                    SymbolicRegexNodeKind.EOLAnchor or SymbolicRegexNodeKind.BOLAnchor));
+                    SymbolicRegexNodeKind.EOLAnchor or SymbolicRegexNodeKind.BOLAnchor,
+                        kind is SymbolicRegexNodeKind.EndAnchorZ));
         }
 
         #endregion
