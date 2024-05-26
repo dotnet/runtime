@@ -6764,34 +6764,59 @@ void CodeGen::genCompareInt(GenTree* treeNode)
         // emitter throughout.
         std::swap(op1, op2);
     }
-    else if (op1->isUsedFromReg() && op2->IsIntegralConst(0))
+    else if (op1->isUsedFromReg() && op2->OperIsConst())
     {
-        if (compiler->opts.OptimizationEnabled())
+        if (op2->IsIntegralConst(0))
         {
-            emitAttr op1Size = emitActualTypeSize(op1->TypeGet());
-            assert((int)op1Size >= 4);
-
-            // Optimize "x<0" and "x>=0" to "x>>31" if "x" is not a jump condition and in a reg.
-            // Morph/Lowering are responsible to rotate "0<x" to "x>0" so we won't handle it here.
-            if ((targetReg != REG_NA) && tree->OperIs(GT_LT, GT_GE) && !tree->IsUnsigned())
+            if (compiler->opts.OptimizationEnabled())
             {
-                inst_Mov(op1->TypeGet(), targetReg, op1->GetRegNum(), /* canSkip */ true);
-                if (tree->OperIs(GT_GE))
-                {
-                    // emit "not" for "x>=0" case
-                    inst_RV(INS_not, targetReg, op1->TypeGet());
-                }
-                inst_RV_IV(INS_shr_N, targetReg, (int)op1Size * 8 - 1, op1Size);
-                genProduceReg(tree);
-                return;
-            }
-            canReuseFlags = true;
-        }
+                emitAttr op1Size = emitActualTypeSize(op1->TypeGet());
+                assert((int)op1Size >= 4);
 
-        // We're comparing a register to 0 so we can generate "test reg1, reg1"
-        // instead of the longer "cmp reg1, 0"
-        ins = INS_test;
-        op2 = op1;
+                // Optimize "x<0" and "x>=0" to "x>>31" if "x" is not a jump condition and in a reg.
+                // Morph/Lowering are responsible to rotate "0<x" to "x>0" so we won't handle it here.
+                if ((targetReg != REG_NA) && tree->OperIs(GT_LT, GT_GE) && !tree->IsUnsigned())
+                {
+                    inst_Mov(op1->TypeGet(), targetReg, op1->GetRegNum(), /* canSkip */ true);
+                    if (tree->OperIs(GT_GE))
+                    {
+                        // emit "not" for "x>=0" case
+                        inst_RV(INS_not, targetReg, op1->TypeGet());
+                    }
+                    inst_RV_IV(INS_shr_N, targetReg, (int)op1Size * 8 - 1, op1Size);
+                    genProduceReg(tree);
+                    return;
+                }
+                canReuseFlags = true;
+            }
+
+            // We're comparing a register to 0 so we can generate "test reg1, reg1"
+            // instead of the longer "cmp reg1, 0"
+            ins = INS_test;
+            op2 = op1;
+        }
+        else
+        {
+            if (compiler->opts.OptimizationEnabled())
+            {
+                INT64 cnsVal = op2->AsIntConCommon()->IntegralValue();
+                if (op1->OperIs(GT_AND)) {
+                    GenTree* andCns = op1->gtGetOp2();
+                    canReuseFlags = andCns->OperIsConst() && andCns->AsIntConCommon()->IntegralValue() == cnsVal;
+                }
+
+#if defined(FEATURE_HW_INTRINSICS)
+                else if (op1->OperIs(GT_HWINTRINSIC) &&
+                         (op1->AsHWIntrinsic()->GetHWIntrinsicId() == NI_BMI1_AndNot ||
+                          op1->AsHWIntrinsic()->GetHWIntrinsicId() == NI_BMI1_X64_AndNot))
+                {
+                    GenTree* andNotCns = op1->AsHWIntrinsic()->Op(2);
+                    canReuseFlags = andNotCns->OperIsConst() && andNotCns->AsIntConCommon()->IntegralValue() == cnsVal;
+                }
+#endif
+            }
+            ins = INS_cmp;
+        }
     }
     else
     {
@@ -6837,7 +6862,7 @@ void CodeGen::genCompareInt(GenTree* treeNode)
     // TYP_UINT and TYP_ULONG should not appear here, only small types can be unsigned
     assert(!varTypeIsUnsigned(type) || varTypeIsSmall(type));
 
-    if (!canReuseFlags || !genCanAvoidEmittingCompareAgainstZero(tree, type))
+    if (!canReuseFlags || !genCanAvoidEmittingCompareEqualNotEqual(tree, type))
     {
         emitAttr size    = emitTypeSize(type);
         bool     canSkip = compiler->opts.OptimizationEnabled() && (ins == INS_cmp) && !op1->isUsedFromMemory() &&
@@ -6858,9 +6883,9 @@ void CodeGen::genCompareInt(GenTree* treeNode)
 }
 
 //------------------------------------------------------------------------
-// genCanAvoidEmittingCompareAgainstZero: A peephole to check if we can avoid
-// emitting a compare against zero because the register was previously used
-// with an instruction that sets the zero flag.
+// genCanAvoidEmittingCompareEqualNotEqual: A peephole to check if we can avoid
+// emitting a compare for equal/not equal because the register was previously
+// used with an instruction that sets the zero flag.
 //
 // Parameters:
 //    tree   - the compare node
@@ -6869,10 +6894,9 @@ void CodeGen::genCompareInt(GenTree* treeNode)
 // Returns:
 //    True if the compare can be omitted.
 //
-bool CodeGen::genCanAvoidEmittingCompareAgainstZero(GenTree* tree, var_types opType)
+bool CodeGen::genCanAvoidEmittingCompareEqualNotEqual(GenTree* tree, var_types opType)
 {
     GenTree* op1 = tree->gtGetOp1();
-    assert(tree->gtGetOp2()->IsIntegralConst(0));
 
     if (!op1->isUsedFromReg())
     {

@@ -1271,7 +1271,19 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
     {
         assert(!varTypeIsFloating(op2Type));
         var_types cmpType = (op1Type == op2Type) ? op1Type : TYP_INT;
-        emit->emitInsBinary(INS_cmp, emitTypeSize(cmpType), op1, op2);
+
+        // GT_AND_NOT can become bics (s == set flags) if comparison is eq/ne, so we might not need to emit a cmp
+        // Skip pattern is:
+        //   bics x, cns, x
+        //   cmp x, cns
+        // =>
+        //   bics x, cns, x
+        bool skipGenCmpBics = op1->OperIs(GT_AND_NOT) && ((op1->gtFlags & GTF_SET_FLAGS) != 0);
+
+        if (!skipGenCmpBics)
+        {
+            emit->emitInsBinary(INS_cmp, emitTypeSize(cmpType), op1, op2);
+        }
     }
 
     // Are we evaluating this into a register?

@@ -1,3 +1,4 @@
+#include "lower.h"
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
@@ -280,12 +281,14 @@ GenTree* Lowering::LowerMul(GenTreeOp* mul)
 //
 GenTree* Lowering::LowerBinaryArithmetic(GenTreeOp* binOp)
 {
-#ifdef FEATURE_HW_INTRINSICS
     if (comp->opts.OptimizationEnabled() && varTypeIsIntegral(binOp))
     {
         if (binOp->OperIs(GT_AND))
         {
-            GenTree* replacementNode = TryLowerAndOpToAndNot(binOp);
+            GenTree* replacementNode = nullptr;
+
+#ifdef FEATURE_HW_INTRINSICS
+            replacementNode = TryLowerAndOpToAndNot(binOp);
             if (replacementNode != nullptr)
             {
                 return replacementNode->gtNext;
@@ -302,7 +305,17 @@ GenTree* Lowering::LowerBinaryArithmetic(GenTreeOp* binOp)
             {
                 return replacementNode->gtNext;
             }
+#endif
+
+            replacementNode = TryLowerAndOpToTestOp(binOp);
+            if (replacementNode != nullptr)
+            {
+                return replacementNode->gtNext;
+            }
+
         }
+
+#ifdef FEATURE_HW_INTRINSICS
         else if (binOp->OperIs(GT_XOR))
         {
             GenTree* replacementNode = TryLowerXorOpToGetMaskUpToLowestSetBit(binOp);
@@ -311,8 +324,8 @@ GenTree* Lowering::LowerBinaryArithmetic(GenTreeOp* binOp)
                 return replacementNode->gtNext;
             }
         }
-    }
 #endif
+    }
 
     ContainCheckBinary(binOp);
 
@@ -6569,6 +6582,39 @@ GenTree* Lowering::TryLowerAndOpToAndNot(GenTreeOp* andNode)
     ContainCheckHWIntrinsic(andnNode);
 
     return andnNode;
+}
+
+//----------------------------------------------------------------------------------------------
+// Lowering::TryLowerAndOpToTestOp: Lowers a tree CMP(AND(X, Y)) to TEST(X, Y)
+//
+// Arguments:
+//    andNode - GT_AND node of integral type
+//
+// Return Value:
+//    Returns the replacement node if one is created else nullptr indicating no replacement
+//
+// Notes:
+//    Performs containment checks on the replacement node if one is created
+GenTree* Lowering::TryLowerAndOpToTestOp(GenTreeOp* andNode)
+{
+    assert(andNode->OperIs(GT_AND) && varTypeIsIntegral(andNode));
+
+    GenTree* andParent = andNode->gtGetParent(nullptr);
+
+    if (andParent != nullptr && andParent->OperIs(GT_EQ, GT_NE))
+    {
+        JITDUMP("Lower: AND is being used in EQ/NE context, transforming to TEST. Before:\n");
+        DISPNODE(andParent);
+        andParent->SetOper(GT_TEST);
+        JITDUMP("After:\n");
+        DISPNODE(andParent);
+
+        //ContainCheckBinary(testNode);
+
+        return andNode;
+    }
+
+    return nullptr;
 }
 
 //----------------------------------------------------------------------------------------------

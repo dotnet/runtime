@@ -4725,7 +4725,19 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
         }
         else
         {
-            emit->emitIns_R_R(ins, cmpSize, op1->GetRegNum(), op2->GetRegNum());
+            // GT_AND_NOT can become bics (s == set flags) if comparison is eq/ne, so we might not need to emit a cmp
+            // Skip pattern is:
+            //   bics x, cns, x
+            //   cmp x, cns
+            // =>
+            //   bics x, cns, x
+            bool skipGenCmpBics = op1->OperIs(GT_AND_NOT) && ((op1->gtFlags & GTF_SET_FLAGS) != 0);
+            // bool skipGenCmp_bics = tree->OperIs(GT_EQ, GT_NE) && op1->gtGetOp2()->IsCnsIntOrI() && op2->IsCnsIntOrI() && (tree->gtGetOp2()->AsIntConCommon()->IntegralValue() == op2->AsIntConCommon()->IntegralValue());
+
+            if (!skipGenCmpBics)
+            {
+                emit->emitIns_R_R(ins, cmpSize, op1->GetRegNum(), op2->GetRegNum());
+            }
         }
     }
 

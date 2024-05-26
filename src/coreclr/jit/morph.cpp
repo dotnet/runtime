@@ -8803,15 +8803,16 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac, bool* optA
                 }
             }
 
-            // Pattern-matching optimization:
-            //    (a % c) ==/!= 0
-            // for power-of-2 constant `c`
-            // =>
-            //    a & (c - 1) ==/!= 0
-            // For integer `a`, even if negative.
             if (opts.OptimizationEnabled() && !optValnumCSE_phase)
             {
                 assert(tree->OperIs(GT_EQ, GT_NE));
+
+                // Pattern-matching optimization:
+                //    (a % c) ==/!= 0
+                // for power-of-2 constant `c`
+                // =>
+                //    a & (c - 1) ==/!= 0
+                // For integer `a`, even if negative.
                 if (op1->OperIs(GT_MOD) && varTypeIsIntegral(op1) && op2->IsIntegralConst(0))
                 {
                     GenTree* op1op2 = op1->AsOp()->gtOp2;
@@ -8829,6 +8830,45 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac, bool* optA
 
                             JITDUMP("\ninto:\n");
                             DISPTREE(tree);
+                        }
+                    }
+                }
+
+                // Optimization for:
+                //    a & c ==/!= c
+                // =>
+                //    ~a & c ==/!= 0
+                // where c is a constant
+                // The optimization could also take the form of a & ~c but the comparison would have to switch between EQ to NE/NE to EQ
+                if (varTypeIsIntegral(op1) && varTypeIsIntegral(op2))
+                {
+                    if (op1->OperIs(GT_AND) && op2->OperIs(GT_CNS_INT))
+                    {
+                        GenTree* andOp1 = op1->gtGetOp1();
+                        GenTree* andOp2 = op1->gtGetOp2();
+
+                        ssize_t cnsVal = op2->AsIntCon()->IconValue();
+
+                        bool op1Match = andOp1->OperIs(GT_CNS_INT) && (andOp1->AsIntCon()->IconValue() == cnsVal);
+                        bool op2Match = andOp2->OperIs(GT_CNS_INT) && (andOp2->AsIntCon()->IconValue() == cnsVal);
+                        
+                        // We want GT_AND to look like AND(X, NOT(Y)) ==/!= X
+                        // One andOp will match otherOp. The 2nd andOp that *doesn't* match otherOp is the one to be negated, so might need to swap operands.
+                        // This AND node will transform into AND_NOT, which on arm will become 'bics', on xarch it can be also further optimized
+                        if (op1Match && !op2Match)
+                        {
+                            op1->AsOp()->gtOp2 = gtNewOperNode(GT_NOT, TYP_INT, andOp2);
+#if defined(TARGET_ARM) || defined(TARGET_ARM64)
+                            op1->gtFlags |= GTF_SET_FLAGS;
+#endif
+                        }
+                        else if (op2Match && !op1Match)
+                        {
+                            op1->AsOp()->gtOp2 = gtNewOperNode(GT_NOT, TYP_INT, andOp1);
+                            op1->AsOp()->gtOp1 = andOp2;
+#if defined(TARGET_ARM) || defined(TARGET_ARM64)
+                            op1->gtFlags |= GTF_SET_FLAGS;
+#endif
                         }
                     }
                 }
