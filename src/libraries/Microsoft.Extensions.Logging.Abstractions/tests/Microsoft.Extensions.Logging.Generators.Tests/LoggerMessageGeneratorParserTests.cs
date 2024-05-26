@@ -517,8 +517,14 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
                 }
             ");
             
-            Assert.Single(diagnostics);
-            Assert.Equal(DiagnosticDescriptors.MissingLoggerField.Id, diagnostics[0].Id);
+            Assert.Equal(2, diagnostics.Count);
+
+            Assert.Equal(DiagnosticDescriptors.PrimaryConstructorParameterLoggerHidden.Id, diagnostics[0].Id);
+            var lineSpan = diagnostics[0].Location.GetLineSpan();
+            Assert.Equal(4, lineSpan.StartLinePosition.Line);
+            Assert.Equal(40, lineSpan.StartLinePosition.Character);
+
+            Assert.Equal(DiagnosticDescriptors.MissingLoggerField.Id, diagnostics[1].Id);
         }
 
         [Fact]
@@ -535,9 +541,15 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
                     public partial void M1();
                 }
             ");
-            
-            Assert.Single(diagnostics);
-            Assert.Equal(DiagnosticDescriptors.MissingLoggerField.Id, diagnostics[0].Id);
+
+            Assert.Equal(2, diagnostics.Count);
+
+            Assert.Equal(DiagnosticDescriptors.PrimaryConstructorParameterLoggerHidden.Id, diagnostics[0].Id);
+            var lineSpan = diagnostics[0].Location.GetLineSpan();
+            Assert.Equal(8, lineSpan.StartLinePosition.Line);
+            Assert.Equal(46, lineSpan.StartLinePosition.Character);
+
+            Assert.Equal(DiagnosticDescriptors.MissingLoggerField.Id, diagnostics[1].Id);
         }
 #endif
 

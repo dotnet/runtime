@@ -683,6 +683,8 @@ namespace Microsoft.Extensions.Logging.Generators
                                 // Accessible fields always shadow primary constructor parameters,
                                 // so we can't use the primary constructor parameter,
                                 // even if the field is not a valid logger.
+                                Diag(DiagnosticDescriptors.PrimaryConstructorParameterLoggerHidden, parameter.Locations[0], classDec.Identifier.Text);
+
                                 continue;
                             }
 
