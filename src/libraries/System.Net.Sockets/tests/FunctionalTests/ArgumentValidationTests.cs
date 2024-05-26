@@ -1158,7 +1158,7 @@ namespace System.Net.Sockets.Tests
             Assert.Throws<ArgumentNullException>(() => Socket.CancelConnectAsync(null));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotOSX))]
         public void CanSetDontFragment_OnIPV6Address_DualModeSocket()
         {
             using Socket socket = new Socket(AddressFamily.InterNetworkV6, SocketType.Dgram, ProtocolType.Udp);
