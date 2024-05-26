@@ -239,7 +239,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 
             if (call != nullptr)
             {
-#ifdef FEATURE_READYTORUN
+#if defined(FEATURE_READYTORUN)
                 if (call->OperGet() == GT_INTRINSIC)
                 {
                     if (opts.IsReadyToRun())
@@ -253,7 +253,29 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                         call->AsIntrinsic()->gtEntryPoint.accessType = IAT_VALUE;
                     }
                 }
-#endif
+#if defined(FEATURE_HW_INTRINSICS)
+                else if (call->OperIsHWIntrinsic())
+                {
+                    if (call->AsHWIntrinsic()->IsUserCall())
+                    {
+                        CORINFO_CONST_LOOKUP entryPoint;
+
+                        if (opts.IsReadyToRun())
+                        {
+                            noway_assert(callInfo->kind == CORINFO_CALL);
+                            entryPoint = callInfo->codePointerLookup.constLookup;
+                        }
+                        else
+                        {
+                            entryPoint.addr       = nullptr;
+                            entryPoint.accessType = IAT_VALUE;
+                        }
+
+                        call->AsHWIntrinsic()->SetEntryPoint(this, entryPoint);
+                    }
+                }
+#endif // FEATURE_HW_INTRINSICS
+#endif // FEATURE_READYTORUN
 
                 bIntrinsicImported = true;
                 goto DONE_CALL;
