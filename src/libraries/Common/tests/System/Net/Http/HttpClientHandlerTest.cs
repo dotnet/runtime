@@ -999,11 +999,6 @@ namespace System.Net.Http.Functional.Tests
         [ActiveIssue("https://github.com/dotnet/runtime/issues/65429", typeof(PlatformDetection), nameof(PlatformDetection.IsNodeJS))]
         public async Task ReadAsStreamAsync_HandlerProducesWellBehavedResponseStream(bool? chunked, bool enableWasmStreaming, bool slowChunks)
         {
-            if (UseVersion == HttpVersion30)
-            {
-                throw new SkipTestException("https://github.com/dotnet/runtime/issues/91757");
-            }
-
             if (IsWinHttpHandler && UseVersion >= HttpVersion20.Value)
             {
                 return;
@@ -1036,11 +1031,11 @@ namespace System.Net.Http.Functional.Tests
                 }
 
                 using (var client = new HttpMessageInvoker(CreateHttpClientHandler()))
-                using (HttpResponseMessage response = await client.SendAsync(TestAsync, request, CancellationToken.None))
+                using (HttpResponseMessage response = await client.SendAsync(TestAsync, request, CancellationToken.None).ConfigureAwait(false))
                 {
-                    using (Stream responseStream = await response.Content.ReadAsStreamAsync(TestAsync))
+                    using (Stream responseStream = await response.Content.ReadAsStreamAsync(TestAsync).ConfigureAwait(false))
                     {
-                        Assert.Same(responseStream, await response.Content.ReadAsStreamAsync(TestAsync));
+                        Assert.Same(responseStream, await response.Content.ReadAsStreamAsync(TestAsync).ConfigureAwait(false));
 
                         // Boolean properties returning correct values
                         Assert.True(responseStream.CanRead);
@@ -1255,8 +1250,8 @@ namespace System.Net.Http.Functional.Tests
                 {
                     var request = new HttpRequestMessage(HttpMethod.Get, uri) { Version = UseVersion };
 
-                    using (HttpResponseMessage response = await client.SendAsync(TestAsync, request, CancellationToken.None))
-                    using (Stream responseStream = await response.Content.ReadAsStreamAsync(TestAsync))
+                    using (HttpResponseMessage response = await client.SendAsync(TestAsync, request, CancellationToken.None).ConfigureAwait(false))
+                    using (Stream responseStream = await response.Content.ReadAsStreamAsync(TestAsync).ConfigureAwait(false))
                     {
                         // Boolean properties returning correct values
                         Assert.True(responseStream.CanRead);
