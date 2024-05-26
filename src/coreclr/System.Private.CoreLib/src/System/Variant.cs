@@ -232,9 +232,9 @@ namespace System
 
                 case VarEnum.VT_BYREF | VarEnum.VT_EMPTY:
 #if TARGET_64BIT
-                    return 0UL;
+                    return (ulong)pOle.GetRawDataRef<IntPtr>();
 #else
-                    return 0U;
+                    return (uint)pOle.GetRawDataRef<IntPtr>();
 #endif
 
                 case VarEnum.VT_NULL:
