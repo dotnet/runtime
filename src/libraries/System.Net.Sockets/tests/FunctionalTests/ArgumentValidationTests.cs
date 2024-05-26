@@ -1157,5 +1157,14 @@ namespace System.Net.Sockets.Tests
         {
             Assert.Throws<ArgumentNullException>(() => Socket.CancelConnectAsync(null));
         }
+
+        [Fact]
+        public void CanSetDontFragment_OnIPV6Address_DualModeSocket()
+        {
+            using Socket socket = new Socket(AddressFamily.InterNetworkV6, SocketType.Dgram, ProtocolType.Udp);
+            socket.DualMode = true;
+            socket.DontFragment = true;
+            Assert.True(socket.DontFragment);
+        }
     }
 }
