@@ -2136,7 +2136,7 @@ namespace System.Net.Http
                     break;
                 case KeepAliveState.PingSent:
                     if (now > _keepAlivePingTimeoutTimestamp)
-                        ThrowProtocolError();
+                        ThrowKeepAlivePingTimeoutError(_keepAlivePingTimeout);
                     break;
                 default:
                     Debug.Fail($"Unexpected keep alive state ({_keepAliveState})");
@@ -2175,5 +2175,9 @@ namespace System.Net.Http
         [DoesNotReturn]
         private static void ThrowProtocolError(Http2ProtocolErrorCode errorCode, string? message = null) =>
             throw HttpProtocolException.CreateHttp2ConnectionException(errorCode, message);
+
+        [DoesNotReturn]
+        private static void ThrowKeepAlivePingTimeoutError(long keepAlivePingTimeout) =>
+            ThrowProtocolError(Http2ProtocolErrorCode.ProtocolError, SR.Format(SR.net_http_http2_keepalive_ping_timeout, keepAlivePingTimeout));
     }
 }
