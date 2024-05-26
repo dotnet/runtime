@@ -45,6 +45,8 @@ namespace System
         {
             // Cases handled at native side: string, bool, primitives including (U)IntPtr excluding U(Int)64, array
 
+            pOle = default; // ComVariant.Create doesn't initialize all fields
+
             switch (o)
             {
                 case null:
@@ -283,6 +285,8 @@ namespace System
         internal static void MarshalHelperCastVariant(object pValue, int vt, out ComVariant v)
         {
             Debug.Assert((VarEnum)vt != VarEnum.VT_VARIANT, "Should be handled at native side.");
+
+            v = default; // ComVariant.Create doesn't initialize all fields
 
             if (pValue is not IConvertible iv)
             {
