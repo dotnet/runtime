@@ -488,7 +488,7 @@ namespace System.Text.RegularExpressions.Symbolic
 
                 bool done = currentState.NfaState is not null ?
                     FindEndPositionDeltasNFA<NfaStateHandler, TInputReader, TFindOptimizationsHandler, TNullabilityHandler>(input, innerLoopLength, mode, ref pos, ref currentState, ref endPos, ref endStateId, ref initialStatePos, ref initialStatePosCandidate) :
-                    _findOpts is null ? FindEndPositionDeltasDFANoSkip(input, innerLoopLength, mode, ref pos, currentState.DfaStateId, ref endPos, ref endStateId, ref initialStatePos, ref initialStatePosCandidate) :
+                    _findOpts is null && pos < input.Length - 1 ? FindEndPositionDeltasDFANoSkip(input, innerLoopLength, mode, ref pos, currentState.DfaStateId, ref endPos, ref endStateId, ref initialStatePos, ref initialStatePosCandidate) :
                     FindEndPositionDeltasDFA<DfaStateHandler, TInputReader, TFindOptimizationsHandler, TNullabilityHandler>(input, innerLoopLength, mode, ref pos, ref currentState, ref endPos, ref endStateId, ref initialStatePos, ref initialStatePosCandidate);
 
                 // If the inner loop indicates that the search finished (for example due to reaching a deadend state) or
@@ -561,7 +561,6 @@ namespace System.Text.RegularExpressions.Symbolic
                             endPos = pos;
                             endStateId = currStateId;
                             initialStatePos = initialStatePosCandidate;
-
                             // A match is known to exist.  If that's all we need to know, we're done.
                             if (mode == RegexRunnerMode.ExistenceRequired)
                             {
@@ -597,8 +596,6 @@ namespace System.Text.RegularExpressions.Symbolic
             }
             finally
             {
-                // handle final pos here
-
                 // Write back the local copies of the ref values.
                 posRef = pos;
                 endPosRef = endPos;
