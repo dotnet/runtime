@@ -50,6 +50,15 @@ namespace System.Text.RegularExpressions.Symbolic
         /// </summary>
         private bool[] _canBeAcceleratedArray;
 
+#if DEBUG
+        // private readonly Action<string> _wout = st =>
+        // {
+        //     var a_cons = System.Reflection.Assembly.Load("System.Console");
+        //     var t_cons = a_cons.GetType("System.Console")!;
+        //     var wl = t_cons.GetMethod("WriteLine", [typeof(string)]);
+        //     wl!.Invoke(null, [st]);
+        // };
+#endif
         /// <summary>
         /// The transition function for DFA mode.
         /// Each state has a range of consecutive entries for each minterm ID. A range of size 2^L, where L is
@@ -160,6 +169,69 @@ namespace System.Text.RegularExpressions.Symbolic
         {
             Debug.Assert(Monitor.IsEntered(this));
             return GetOrCreateState_NoLock(node, prevCharKind);
+        }
+
+        /// <summary>
+        /// Optimized reversal state computation which takes skips the fixed length parts
+        /// </summary>
+        /// <param name="node"></param>
+        /// <returns></returns>
+        private (int, MatchingState<TSet>) CreateOptimizedReversal(SymbolicRegexNode<TSet> node)
+        {
+            var pos = 0;
+            var current = node;
+            var canLoop = true;
+            var incrPos = new Func<(int, SymbolicRegexNode<TSet>), (bool, SymbolicRegexNode<TSet>)>(value =>
+            {
+                pos += value.Item1;
+                return (true, value.Item2);
+            });
+            var decrLoop = new Func<SymbolicRegexNode<TSet>, (bool, SymbolicRegexNode<TSet>)>(value =>
+            {
+                var concat = value;
+                var loop = concat._left;
+                switch (loop!._left!.Kind)
+                {
+                    case SymbolicRegexNodeKind.Singleton:
+                        if (loop._lower == loop._upper)
+                        {
+                            pos += loop._lower;
+                            return (true, concat._right!);
+                        }
+                        if (loop._lower > 0)
+                        {
+                            var delta = loop._upper - loop._lower;
+                            var newLeft = _builder.CreateLoop(loop._left, loop.IsLazy, 0, delta);
+                            var newNode = _builder.CreateConcat(newLeft, concat._right!);
+                            pos += loop._lower;
+                            return (true, newNode);
+                        }
+                        return (false, concat);
+                    default:
+                        return (false, concat);
+                }
+            });
+            while (canLoop)
+            {
+#if DEBUG
+                // _wout($"{pos} {current._kind} l:{current._left!._kind} {current}");
+#endif
+                (bool loop, SymbolicRegexNode<TSet> next) = current switch
+                {
+                    {_kind:SymbolicRegexNodeKind.Concat, _left._kind: SymbolicRegexNodeKind.CaptureEnd} =>
+                        (true, current._right!),
+                    {_kind: SymbolicRegexNodeKind.Concat, _left._kind: SymbolicRegexNodeKind.BoundaryAnchor } =>
+                        (true, current._right!),
+                    {_kind:SymbolicRegexNodeKind.Concat, _left._kind: SymbolicRegexNodeKind.Singleton} =>
+                        incrPos((1, current._right!)),
+                    {_kind: SymbolicRegexNodeKind.Concat, _left._kind: SymbolicRegexNodeKind.Loop } =>
+                        decrLoop(current),
+                    _ => (false, current)
+                };
+                canLoop = loop;
+                current = next;
+            }
+            return (pos, GetOrCreateState_NoLock(_builder.CreateDisableBacktrackingSimulation(current), 0, false));
         }
 
         /// <summary>
