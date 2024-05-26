@@ -6815,6 +6815,62 @@ namespace System.Text.Json.Tests
         }
 
         [Fact]
+        public static void WriteStringValueSegment_BadSurrogatePairs()
+        {
+            const string result = "\\uFFFD\\uD83D\\uDE00\\uFFFD";
+
+            Span<char> surrogates = stackalloc char[] { '\uD83D', '\uD83D', '\uDE00', '\uDE00' };
+
+            var output = new ArrayBufferWriter<byte>();
+            using var jsonUtf8 = new Utf8JsonWriter(output);
+            jsonUtf8.WriteStartObject();
+            jsonUtf8.WritePropertyName("full");
+            // complete string -> expect 0xFFFD 0xD83D 0xDE00 0xFFFD 
+            jsonUtf8.WriteStringValue(surrogates);
+            jsonUtf8.WritePropertyName("segmented");
+            // only high surrogate -> expect cached
+            jsonUtf8.WriteStringValueSegment(surrogates.Slice(0, 1), isFinalSegment: false);
+            // only high surrogate -> expect 0xFFFD
+            jsonUtf8.WriteStringValueSegment(surrogates.Slice(0, 1), isFinalSegment: false);
+            // only low surrogate -> expect 0xD83D 0xDE00
+            jsonUtf8.WriteStringValueSegment(surrogates.Slice(2, 1), isFinalSegment: false);
+            // only low surrogate -> expect 0xFFFD
+            jsonUtf8.WriteStringValueSegment(surrogates.Slice(2, 1), isFinalSegment: true);
+            jsonUtf8.WriteEndObject();
+            jsonUtf8.Flush();
+
+            JsonTestHelper.AssertContents($"{{\"full\":\"{result}\",\"segmented\":\"{result}\"}}", output);
+        }
+
+        [Fact]
+        public static void WriteStringValueSegment_SplitInSurrogatePair()
+        {
+            const string result = "\\uD83D\\uDE00\\uD83D\\uDE00\\uD83D\\uDE00";
+
+            Span<char> surrogates = stackalloc char[] { '\uD83D', '\uDE00', '\uD83D', '\uDE00', '\uD83D', '\uDE00' };
+
+            var output = new ArrayBufferWriter<byte>();
+            using var jsonUtf8 = new Utf8JsonWriter(output);
+            jsonUtf8.WriteStartObject();
+            jsonUtf8.WritePropertyName("full");
+            // complete string -> expect 0xD83D 0xDE00 0xD83D 0xDE00 0xD83D 0xDE00
+            jsonUtf8.WriteStringValue(surrogates);
+            jsonUtf8.WritePropertyName("segmented");
+            // only high surrogate -> expect cached
+            jsonUtf8.WriteStringValueSegment(surrogates.Slice(0, 2), isFinalSegment: false);
+            // only low surrogate -> expect 0xD83D 0xDE00
+            jsonUtf8.WriteStringValueSegment(surrogates.Slice(0, 1), isFinalSegment: false);
+            // low surrogate followed by another high surrogate -> expect 0xD83D 0xDE00 + cached
+            jsonUtf8.WriteStringValueSegment(surrogates.Slice(1, 2), isFinalSegment: false);
+            // only low surrogate -> expect 0xD83D 0xDE00
+            jsonUtf8.WriteStringValueSegment(surrogates.Slice(1, 1), isFinalSegment: true);
+            jsonUtf8.WriteEndObject();
+            jsonUtf8.Flush();
+
+            JsonTestHelper.AssertContents($"{{\"full\":\"{result}\",\"segmented\":\"{result}\"}}", output);
+        }
+
+        [Fact]
         public static void WriteStringValueSegment_NotFinalized()
         {
             static ArrayBufferWriter<byte> executeScenario(Action<Utf8JsonWriter> implementation, bool expectFailure)

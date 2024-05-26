@@ -8,6 +8,8 @@ namespace System.Text.Json
 {
     public sealed partial class Utf8JsonWriter
     {
+        private char _cachedHighSurrogate;
+
         /// <summary>
         /// Writes the pre-encoded text value (as a JSON string) as an element of a JSON array.
         /// </summary>
@@ -98,6 +100,38 @@ namespace System.Text.Json
             JsonWriterHelper.ValidateValue(value);
 
             JsonTokenType nextTokenType = isFinalSegment ? JsonTokenType.String : StringSegmentSentinel;
+
+            // If we have a high surrogate left over from the last segment we need to make sure it's written out. When
+            // the first character of the current segment is a low surrogate we'll write as a complete pair, otherwise
+            // we'll write it on its own.
+            if (_cachedHighSurrogate != '\0')
+            {
+                if (value.Length > 0 && char.IsLowSurrogate(value[0]))
+                {
+                    ReadOnlySpan<char> surrogatePair = stackalloc char[] { _cachedHighSurrogate, value[0] };
+                    WriteStringEscape(surrogatePair, StringSegmentSentinel);
+                    value = value.Slice(1);
+                }
+                else
+                {
+                    ReadOnlySpan<char> surrogate = stackalloc char[] { _cachedHighSurrogate };
+                    WriteStringEscape(surrogate, StringSegmentSentinel);
+                }
+
+                _cachedHighSurrogate = '\0';
+            }
+
+            // If the last character of the segment is a high surrogate we need to cache it and write the rest of the
+            // string. The cached value will be written when the next segment is written.
+            if (value.Length > 0)
+            {
+                char finalChar = value[value.Length - 1];
+                if (char.IsHighSurrogate(finalChar))
+                {
+                    _cachedHighSurrogate = finalChar;
+                    value = value.Slice(0, value.Length - 1);
+                }
+            }
 
             WriteStringEscape(value, nextTokenType);
 
