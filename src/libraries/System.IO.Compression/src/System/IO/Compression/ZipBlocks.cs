@@ -323,6 +323,7 @@ namespace System.IO.Compression
         public const int SignatureSize = sizeof(uint);
 
         public const int SizeOfBlockWithoutSignature = 16;
+        public const long TotalSize = SizeOfBlockWithoutSignature + SignatureSize;
 
         public uint NumberOfDiskWithZip64EOCD;
         public ulong OffsetOfZip64EOCD;
@@ -355,6 +356,7 @@ namespace System.IO.Compression
     {
         private const uint SignatureConstant = 0x06064B50;
         private const ulong NormalSize = 0x2C; // the size of the data excluding the size/signature fields if no extra data included
+        public const long TotalSize = (long)NormalSize + 12;    // total size of the entire block
 
         public ulong SizeOfThisRecord;
         public ushort VersionMadeBy;
@@ -571,6 +573,8 @@ namespace System.IO.Compression
 
         // This is the minimum possible size, assuming the zip file comments variable section is empty
         public const int SizeOfBlockWithoutSignature = 18;
+        // This also assumes a zero-length comment.
+        public const long TotalSize = SizeOfBlockWithoutSignature + SignatureSize;
 
         // The end of central directory can have a variable size zip file comment at the end, but its max length can be 64K
         // The Zip File Format Specification does not explicitly mention a max size for this field, but we are assuming this
