@@ -8,11 +8,11 @@ using System.IO;
 using System.Linq;
 using System.Net.Cache;
 using System.Net.Http;
-using System.Net.Http.Functional.Tests;
 using System.Net.Sockets;
 using System.Net.Test.Common;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.Security.Cryptography.X509Certificates;
+using System.Security.Principal;
 using System.Text;
 using System.Text.Json;
 using System.Threading;
@@ -1065,6 +1065,25 @@ namespace System.Net.Tests
             HttpWebRequest request = WebRequest.CreateHttp("http://test");
             Assert.Throws<ArgumentOutOfRangeException>(() => { request.ReadWriteTimeout = 0; });
             Assert.Throws<ArgumentOutOfRangeException>(() => { request.ReadWriteTimeout = -10; });
+        }
+
+        [Theory]
+        [InlineData(TokenImpersonationLevel.Delegation)]
+        [InlineData(TokenImpersonationLevel.Impersonation)]
+        public async Task ImpersonationLevel_NonDefault_Ok(TokenImpersonationLevel impersonationLevel)
+        {
+            await LoopbackServer.CreateClientAndServerAsync(async uri =>
+            {
+                HttpWebRequest request = WebRequest.CreateHttp(uri);
+                request.UseDefaultCredentials = true;
+                // We really don't test the functionality here.
+                // We need to trigger the Reflection part to make sure it works
+                // e.g. verify that it was not trimmed away or broken by refactoring.
+                request.ImpersonationLevel = impersonationLevel;
+
+                using WebResponse response = await GetResponseAsync(request);
+                Assert.True(request.HaveResponse);
+            }, server => server.HandleRequestAsync());
         }
 
         [OuterLoop("Uses timeout")]

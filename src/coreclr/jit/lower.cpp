@@ -414,8 +414,7 @@ GenTree* Lowering::LowerNode(GenTree* node)
         }
 
         case GT_STOREIND:
-            LowerStoreIndirCommon(node->AsStoreInd());
-            break;
+            return LowerStoreIndirCommon(node->AsStoreInd());
 
         case GT_ADD:
         {
@@ -3591,12 +3590,8 @@ void Lowering::MoveCFGCallArgs(GenTreeCall* call)
     for (CallArg& arg : call->gtArgs.EarlyArgs())
     {
         GenTree* node = arg.GetEarlyNode();
-        // Non-value nodes in early args are setup nodes for late args.
-        if (node->IsValue())
-        {
-            assert(node->OperIsPutArg() || node->OperIsFieldList());
-            MoveCFGCallArg(call, node);
-        }
+        assert(node->OperIsPutArg() || node->OperIsFieldList());
+        MoveCFGCallArg(call, node);
     }
 
     for (CallArg& arg : call->gtArgs.LateArgs())
@@ -8899,7 +8894,10 @@ void Lowering::LowerStoreIndirCoalescing(GenTreeIndir* ind)
 // Arguments:
 //    ind - the store indirection node we are lowering.
 //
-void Lowering::LowerStoreIndirCommon(GenTreeStoreInd* ind)
+// Return Value:
+//    Next node to lower.
+//
+GenTree* Lowering::LowerStoreIndirCommon(GenTreeStoreInd* ind)
 {
     assert(ind->TypeGet() != TYP_STRUCT);
 
@@ -8914,28 +8912,30 @@ void Lowering::LowerStoreIndirCommon(GenTreeStoreInd* ind)
 #endif
     TryCreateAddrMode(ind->Addr(), isContainable, ind);
 
-    if (!comp->codeGen->gcInfo.gcIsWriteBarrierStoreIndNode(ind))
+    if (comp->codeGen->gcInfo.gcIsWriteBarrierStoreIndNode(ind))
     {
-#ifndef TARGET_XARCH
-        if (ind->Data()->IsIconHandle(GTF_ICON_OBJ_HDL))
-        {
-            const ssize_t handle = ind->Data()->AsIntCon()->IconValue();
-            if (!comp->info.compCompHnd->isObjectImmutable(reinterpret_cast<CORINFO_OBJECT_HANDLE>(handle)))
-            {
-                // On platforms with weaker memory model we need to make sure we use a store with the release semantic
-                // when we publish a potentially mutable object
-                // See relevant discussions https://github.com/dotnet/runtime/pull/76135#issuecomment-1257258310 and
-                // https://github.com/dotnet/runtime/pull/76112#discussion_r980639782
+        return ind->gtNext;
+    }
 
-                // This can be relaxed to "just make sure to use stlr/memory barrier" if needed
-                ind->gtFlags |= GTF_IND_VOLATILE;
-            }
+#ifndef TARGET_XARCH
+    if (ind->Data()->IsIconHandle(GTF_ICON_OBJ_HDL))
+    {
+        const ssize_t handle = ind->Data()->AsIntCon()->IconValue();
+        if (!comp->info.compCompHnd->isObjectImmutable(reinterpret_cast<CORINFO_OBJECT_HANDLE>(handle)))
+        {
+            // On platforms with weaker memory model we need to make sure we use a store with the release semantic
+            // when we publish a potentially mutable object
+            // See relevant discussions https://github.com/dotnet/runtime/pull/76135#issuecomment-1257258310 and
+            // https://github.com/dotnet/runtime/pull/76112#discussion_r980639782
+
+            // This can be relaxed to "just make sure to use stlr/memory barrier" if needed
+            ind->gtFlags |= GTF_IND_VOLATILE;
         }
+    }
 #endif
 
-        LowerStoreIndirCoalescing(ind);
-        LowerStoreIndir(ind);
-    }
+    LowerStoreIndirCoalescing(ind);
+    return LowerStoreIndir(ind);
 }
 
 //------------------------------------------------------------------------
@@ -9018,7 +9018,7 @@ GenTree* Lowering::LowerIndir(GenTreeIndir* ind)
 #ifdef TARGET_ARM64
     if (comp->opts.OptimizationEnabled() && ind->OperIs(GT_IND))
     {
-        OptimizeForLdp(ind);
+        OptimizeForLdpStp(ind);
     }
 #endif
 
@@ -9033,7 +9033,7 @@ GenTree* Lowering::LowerIndir(GenTreeIndir* ind)
 // cases passing the distance check, but 82 out of these 112 extra cases were
 // then rejected due to interference. So 16 seems like a good number to balance
 // the throughput costs.
-const int LDP_REORDERING_MAX_DISTANCE = 16;
+const int LDP_STP_REORDERING_MAX_DISTANCE = 16;
 
 //------------------------------------------------------------------------
 // OptimizeForLdp: Record information about an indirection, and try to optimize
@@ -9046,7 +9046,7 @@ const int LDP_REORDERING_MAX_DISTANCE = 16;
 // Returns:
 //    True if the optimization was successful.
 //
-bool Lowering::OptimizeForLdp(GenTreeIndir* ind)
+bool Lowering::OptimizeForLdpStp(GenTreeIndir* ind)
 {
     if (!ind->TypeIs(TYP_INT, TYP_LONG, TYP_FLOAT, TYP_DOUBLE, TYP_SIMD8, TYP_SIMD16) || ind->IsVolatile())
     {
@@ -9064,7 +9064,7 @@ bool Lowering::OptimizeForLdp(GenTreeIndir* ind)
 
     // Every indirection takes an expected 2+ nodes, so we only expect at most
     // half the reordering distance to be candidates for the optimization.
-    int maxCount = min(m_blockIndirs.Height(), LDP_REORDERING_MAX_DISTANCE / 2);
+    int maxCount = min(m_blockIndirs.Height(), LDP_STP_REORDERING_MAX_DISTANCE / 2);
     for (int i = 0; i < maxCount; i++)
     {
         SavedIndir& prev = m_blockIndirs.TopRef(i);
@@ -9079,11 +9079,22 @@ bool Lowering::OptimizeForLdp(GenTreeIndir* ind)
             continue;
         }
 
+        if (prevIndir->gtNext == nullptr)
+        {
+            // Deleted by other optimization
+            continue;
+        }
+
+        if (prevIndir->OperIsStore() != ind->OperIsStore())
+        {
+            continue;
+        }
+
         JITDUMP("[%06u] and [%06u] are indirs off the same base with offsets +%03u and +%03u\n",
                 Compiler::dspTreeID(ind), Compiler::dspTreeID(prevIndir), (unsigned)offs, (unsigned)prev.Offset);
         if (std::abs(offs - prev.Offset) == genTypeSize(ind))
         {
-            JITDUMP("  ..and they are amenable to ldp optimization\n");
+            JITDUMP("  ..and they are amenable to ldp/stp optimization\n");
             if (TryMakeIndirsAdjacent(prevIndir, ind))
             {
                 // Do not let the previous one participate in
@@ -9119,7 +9130,7 @@ bool Lowering::OptimizeForLdp(GenTreeIndir* ind)
 bool Lowering::TryMakeIndirsAdjacent(GenTreeIndir* prevIndir, GenTreeIndir* indir)
 {
     GenTree* cur = prevIndir;
-    for (int i = 0; i < LDP_REORDERING_MAX_DISTANCE; i++)
+    for (int i = 0; i < LDP_STP_REORDERING_MAX_DISTANCE; i++)
     {
         cur = cur->gtNext;
         if (cur == indir)
@@ -9176,8 +9187,16 @@ bool Lowering::TryMakeIndirsAdjacent(GenTreeIndir* prevIndir, GenTreeIndir* indi
     INDEBUG(dumpWithMarks());
     JITDUMP("\n");
 
+    if ((prevIndir->gtLIRFlags & LIR::Flags::Mark) != 0)
+    {
+        JITDUMP("Previous indir is part of the data flow of current indir\n");
+        UnmarkTree(indir);
+        return false;
+    }
+
     m_scratchSideEffects.Clear();
 
+    bool sawData = false;
     for (GenTree* cur = prevIndir->gtNext; cur != indir; cur = cur->gtNext)
     {
         if ((cur->gtLIRFlags & LIR::Flags::Mark) != 0)
@@ -9190,6 +9209,11 @@ bool Lowering::TryMakeIndirsAdjacent(GenTreeIndir* prevIndir, GenTreeIndir* indi
                 UnmarkTree(indir);
                 return false;
             }
+
+            if (indir->OperIsStore())
+            {
+                sawData |= cur == indir->Data();
+            }
         }
         else
         {
@@ -9201,6 +9225,13 @@ bool Lowering::TryMakeIndirsAdjacent(GenTreeIndir* prevIndir, GenTreeIndir* indi
 
     if (m_scratchSideEffects.InterferesWith(comp, indir, true))
     {
+        if (!indir->OperIsLoad())
+        {
+            JITDUMP("Have conservative interference with last store. Giving up.\n");
+            UnmarkTree(indir);
+            return false;
+        }
+
         // Try a bit harder, making use of the following facts:
         //
         // 1. We know the indir is non-faulting, so we do not need to worry
@@ -9297,8 +9328,39 @@ bool Lowering::TryMakeIndirsAdjacent(GenTreeIndir* prevIndir, GenTreeIndir* indi
         }
     }
 
-    JITDUMP("Interference checks passed. Moving nodes that are not part of data flow of [%06u]\n\n",
-            Compiler::dspTreeID(indir));
+    JITDUMP("Interference checks passed: can move unrelated nodes past second indir.\n");
+
+    if (sawData)
+    {
+        // If the data node of 'indir' is between 'prevIndir' and 'indir' then
+        // try to move the previous indir up to happen after the data
+        // computation. We will be moving all nodes unrelated to the data flow
+        // past 'indir', so we only need to check interference between
+        // 'prevIndir' and all nodes that are part of 'indir's dataflow.
+        m_scratchSideEffects.Clear();
+        m_scratchSideEffects.AddNode(comp, prevIndir);
+
+        for (GenTree* cur = prevIndir->gtNext;; cur = cur->gtNext)
+        {
+            if ((cur->gtLIRFlags & LIR::Flags::Mark) != 0)
+            {
+                if (m_scratchSideEffects.InterferesWith(comp, cur, true))
+                {
+                    JITDUMP("Cannot move prev indir [%06u] up past [%06u] to get it past the data computation\n",
+                            Compiler::dspTreeID(prevIndir), Compiler::dspTreeID(cur));
+                    UnmarkTree(indir);
+                    return false;
+                }
+            }
+
+            if (cur == indir->Data())
+            {
+                break;
+            }
+        }
+    }
+
+    JITDUMP("Moving nodes that are not part of data flow of [%06u]\n\n", Compiler::dspTreeID(indir));
 
     GenTree* previous = prevIndir;
     for (GenTree* node = prevIndir->gtNext;;)
@@ -9319,6 +9381,22 @@ bool Lowering::TryMakeIndirsAdjacent(GenTreeIndir* prevIndir, GenTreeIndir* indi
         }
 
         node = next;
+    }
+
+    if (sawData)
+    {
+        // For some reason LSRA is not able to reuse a constant if both LIR
+        // temps are live simultaneously, so skip moving in those cases and
+        // expect LSRA to reuse the constant instead.
+        if (indir->Data()->OperIs(GT_CNS_INT, GT_CNS_DBL) && GenTree::Compare(indir->Data(), prevIndir->Data()))
+        {
+            JITDUMP("Not moving previous indir since we are expecting constant reuse for the data\n");
+        }
+        else
+        {
+            BlockRange().Remove(prevIndir);
+            BlockRange().InsertAfter(indir->Data(), prevIndir);
+        }
     }
 
     JITDUMP("Result:\n\n");

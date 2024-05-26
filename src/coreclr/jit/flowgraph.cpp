@@ -1061,14 +1061,26 @@ GenTree* Compiler::fgOptimizeDelegateConstructor(GenTreeCall*            call,
                 else
                 {
                     assert(oper != GT_FTN_ADDR);
-                    CORINFO_CONST_LOOKUP genericLookup;
-                    info.compCompHnd->getReadyToRunHelper(&ldftnToken->m_token, &pLookup.lookupKind,
-                                                          CORINFO_HELP_READYTORUN_GENERIC_HANDLE, info.compMethodHnd,
-                                                          &genericLookup);
-                    GenTree* ctxTree = getRuntimeContextTree(pLookup.lookupKind.runtimeLookupKind);
-                    call             = gtNewHelperCallNode(CORINFO_HELP_READYTORUN_DELEGATE_CTOR, TYP_VOID, thisPointer,
-                                                           targetObjPointers, ctxTree);
-                    call->setEntryPoint(genericLookup);
+
+                    if (pLookup.lookupKind.runtimeLookupKind != CORINFO_LOOKUP_NOT_SUPPORTED)
+                    {
+                        CORINFO_CONST_LOOKUP genericLookup;
+                        info.compCompHnd->getReadyToRunHelper(&ldftnToken->m_token, &pLookup.lookupKind,
+                                                              CORINFO_HELP_READYTORUN_GENERIC_HANDLE,
+                                                              info.compMethodHnd, &genericLookup);
+                        GenTree* ctxTree = getRuntimeContextTree(pLookup.lookupKind.runtimeLookupKind);
+                        call = gtNewHelperCallNode(CORINFO_HELP_READYTORUN_DELEGATE_CTOR, TYP_VOID, thisPointer,
+                                                   targetObjPointers, ctxTree);
+                        call->setEntryPoint(genericLookup);
+                    }
+                    else
+                    {
+                        // Runtime does not support inlining of all shapes of runtime lookups
+                        // Inlining has to be aborted in such a case
+                        assert(compIsForInlining());
+                        compInlineResult->NoteFatal(InlineObservation::CALLSITE_GENERIC_DICTIONARY_LOOKUP);
+                        JITDUMP("not optimized, generic inlining restriction\n");
+                    }
                 }
             }
             else

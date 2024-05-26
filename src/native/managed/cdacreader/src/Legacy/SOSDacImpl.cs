@@ -106,7 +106,25 @@ internal sealed partial class SOSDacImpl : ISOSDacInterface, ISOSDacInterface9
     public unsafe int GetThreadFromThinlockID(uint thinLockId, ulong* pThread) => HResults.E_NOTIMPL;
     public unsafe int GetThreadLocalModuleData(ulong thread, uint index, void* data) => HResults.E_NOTIMPL;
     public unsafe int GetThreadpoolData(void* data) => HResults.E_NOTIMPL;
-    public unsafe int GetThreadStoreData(DacpThreadStoreData* data) => HResults.E_NOTIMPL;
+
+    public unsafe int GetThreadStoreData(DacpThreadStoreData* data)
+    {
+        try
+        {
+            Contracts.IThread thread = _target.Contracts.Thread;
+            Contracts.ThreadStoreData threadStoreData = thread.GetThreadStoreData();
+            data->threadCount = threadStoreData.ThreadCount;
+            data->firstThread = threadStoreData.FirstThread.Value;
+            data->fHostConfig = 0;
+        }
+        catch (Exception ex)
+        {
+            return ex.HResult;
+        }
+
+        return HResults.E_NOTIMPL;
+    }
+
     public unsafe int GetTLSIndex(uint* pIndex) => HResults.E_NOTIMPL;
     public unsafe int GetUsefulGlobals(void* data) => HResults.E_NOTIMPL;
     public unsafe int GetWorkRequestData(ulong addrWorkRequest, void* data) => HResults.E_NOTIMPL;

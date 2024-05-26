@@ -53,6 +53,7 @@
 #include <mono/metadata/marshal.h>
 #include <mono/metadata/gc-internals.h>
 #include <mono/metadata/threads-types.h>
+#include <mono/metadata/reflection-internals.h>
 #include <mono/metadata/mono-endian.h>
 #include <mono/utils/mono-logger-internals.h>
 #include <mono/utils/mono-mmap.h>
@@ -1077,9 +1078,22 @@ decode_method_ref_with_target (MonoAotModule *module, MethodRef *ref, MonoMethod
 					return FALSE;
 				MonoUnsafeAccessorKind kind = (MonoUnsafeAccessorKind) decode_value (p, &p);
 				uint32_t name_len = decode_value (p, &p);
-				const char *member_name = (const char*)p;
-				p += name_len + 1;
-				ref->method = mono_marshal_get_unsafe_accessor_wrapper (m, kind, member_name);
+				const char *member_name = NULL;
+				if (name_len > 0) {
+					member_name = (const char*)p;
+					p += name_len + 1;
+				}
+				int32_t inflated = decode_value (p, &p);
+				if (inflated) {
+					MonoGenericContext ctx = {0,};
+					decode_generic_context (module, &ctx, p, &p, error);
+					mono_error_assert_ok (error);
+					ref->method = mini_inflate_unsafe_accessor_wrapper (m, &ctx, kind, member_name, error);
+					if (!is_ok (error))
+						return FALSE;
+				} else {
+					ref->method = mono_marshal_get_unsafe_accessor_wrapper (m, kind, member_name);
+				}
 			} else if (subtype == WRAPPER_SUBTYPE_GSHAREDVT_IN) {
 				ref->method = mono_marshal_get_gsharedvt_in_wrapper ();
 			} else if (subtype == WRAPPER_SUBTYPE_GSHAREDVT_OUT) {
@@ -4609,6 +4623,10 @@ mono_aot_can_dedup (MonoMethod *method)
 			info->subtype == WRAPPER_SUBTYPE_INTERP_LMF ||
 			info->subtype == WRAPPER_SUBTYPE_AOT_INIT)
 			return FALSE;
+
+		// TODO: see if we can share these
+		if (info->subtype == WRAPPER_SUBTYPE_UNSAFE_ACCESSOR)
+			return FALSE;
 #if 0
 		// See is_linkonce_method () in mini-llvm.c
 		if (info->subtype == WRAPPER_SUBTYPE_GSHAREDVT_IN_SIG || info->subtype == WRAPPER_SUBTYPE_GSHAREDVT_OUT_SIG)
@@ -4931,6 +4949,7 @@ mono_aot_get_method (MonoMethod *method, MonoError *error)
 
 	gboolean dedupable = mono_aot_can_dedup (method);
 
+	// TODO: unsafe accessor methods should come here too?
 	if (method->is_inflated && !method->wrapper_type && mono_method_is_generic_sharable_full (method, TRUE, FALSE, FALSE) && !dedupable) {
 		MonoMethod *generic_orig_method = method;
 		/*
@@ -5051,6 +5070,19 @@ mono_aot_get_method (MonoMethod *method, MonoError *error)
 			method_index = find_aot_method (shared, &amodule);
 			if (method_index != 0xffffff)
 				method = shared;
+			if (method_index == 0xffffff && !mono_method_metadata_has_header (method)) {
+				// replace lookups for unsafe accessor instances by lookups of the wrapper
+				MonoMethod *wrapper = mini_replace_generated_method (method, error);
+				mono_error_assert_ok (error);
+				if (wrapper != NULL) {
+					shared = mini_get_shared_method_full (wrapper, SHARE_MODE_NONE, error);
+					return_val_if_nok (error, NULL);
+
+					method_index = find_aot_method (shared, &amodule);
+					if (method_index != 0xffffff)
+						method = shared;
+				}
+			}
 		}
 
 		if (method_index == 0xffffff && method->is_inflated && mono_method_is_generic_sharable_full (method, FALSE, FALSE, TRUE)) {
@@ -5058,14 +5090,40 @@ mono_aot_get_method (MonoMethod *method, MonoError *error)
 			/* gsharedvt */
 			/* Use the all-vt shared method since this is what was AOTed */
 			shared = mini_get_shared_method_full (method, SHARE_MODE_GSHAREDVT, error);
+			if (shared && !mono_method_metadata_has_header (shared)) {
+				MonoMethod *wrapper = mini_replace_generated_method (shared, error);
+				mono_error_assert_ok (error);
+				if (wrapper != NULL) {
+					shared = mini_get_shared_method_full (wrapper, SHARE_MODE_GSHAREDVT, error);
+					return_val_if_nok (error, NULL);
+
+					if (shared) {
+						method = wrapper;
+					}
+				}
+			}
+
 			if (!shared)
 				return NULL;
 
 			method_index = find_aot_method (shared, &amodule);
 			if (method_index != 0xffffff) {
+				// XXX AK: I don't understand why we call mini_get_shared_method_full twice
+				// in the gshared case, above, we just say method = shared, which seems right.
 				method = mini_get_shared_method_full (method, SHARE_MODE_GSHAREDVT, error);
 				if (!method)
 					return NULL;
+			}
+		}
+
+		if (method_index == 0xffffff && !mono_method_metadata_has_header (method)) {
+			// replace lookups for unsafe accessor instances by lookups of the wrapper
+			MonoMethod *wrapper = mini_replace_generated_method (method, error);
+			mono_error_assert_ok (error);
+			if (wrapper != NULL) {
+				method_index = find_aot_method (wrapper, &amodule);
+				if (method_index != 0xffffff)
+					method = wrapper;
 			}
 		}
 

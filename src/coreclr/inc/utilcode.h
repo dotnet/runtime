@@ -14,6 +14,9 @@
 #include <algorithm>
 #include <stdio.h>
 #include <limits.h>
+#include <new>
+
+using std::nothrow;
 
 #include "crtwrap.h"
 #include "winwrap.h"
@@ -29,7 +32,6 @@
 #include "corhlprpriv.h"
 #include "check.h"
 #include "safemath.h"
-#include "new.hpp"
 
 #include "contract.h"
 

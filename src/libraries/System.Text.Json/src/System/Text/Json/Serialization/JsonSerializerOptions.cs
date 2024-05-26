@@ -67,7 +67,8 @@ namespace System.Text.Json
 
         private static JsonSerializerOptions? s_webOptions;
 
-        // For any new option added, adding it to the options copied in the copy constructor below must be considered.
+        // For any new option added, consider adding it to the options copied in the copy constructor below
+        // and consider updating the EqualtyComparer used for comparing CachingContexts.
         private IJsonTypeInfoResolver? _typeInfoResolver;
         private JsonNamingPolicy? _dictionaryKeyPolicy;
         private JsonNamingPolicy? _jsonPropertyNamingPolicy;
@@ -85,6 +86,7 @@ namespace System.Text.Json
         private int _maxDepth;
         private bool _allowOutOfOrderMetadataProperties;
         private bool _allowTrailingCommas;
+        private bool _respectNullableAnnotations = AppContextSwitchHelper.RespectNullableAnnotationsDefault;
         private bool _ignoreNullValues;
         private bool _ignoreReadOnlyProperties;
         private bool _ignoreReadonlyFields;
@@ -138,6 +140,7 @@ namespace System.Text.Json
             _maxDepth = options._maxDepth;
             _allowOutOfOrderMetadataProperties = options._allowOutOfOrderMetadataProperties;
             _allowTrailingCommas = options._allowTrailingCommas;
+            _respectNullableAnnotations = options._respectNullableAnnotations;
             _ignoreNullValues = options._ignoreNullValues;
             _ignoreReadOnlyProperties = options._ignoreReadOnlyProperties;
             _ignoreReadonlyFields = options._ignoreReadonlyFields;
@@ -780,6 +783,32 @@ namespace System.Text.Json
         }
 
         /// <summary>
+        /// Gets or sets a value that indicates whether nullability annotations should be respected during serialization and deserialization.
+        /// </summary>
+        /// <exception cref="InvalidOperationException">
+        /// Thrown if this property is set after serialization or deserialization has occurred.
+        /// </exception>
+        /// <remarks>
+        /// Nullability annotations are resolved from the properties, fields and constructor parameters
+        /// that are used by the serializer. This includes annotations stemming from attributes such as
+        /// <see cref="NotNullAttribute"/>, <see cref="MaybeNullAttribute"/>,
+        /// <see cref="AllowNullAttribute"/> and <see cref="DisallowNullAttribute"/>.
+        ///
+        /// Due to restrictions in how nullable reference types are represented at run time,
+        /// this setting only governs nullability annotations of non-generic properties and fields.
+        /// It cannot be used to enforce nullability annotations of root-level types or generic parameters.
+        /// </remarks>
+        public bool RespectNullableAnnotations
+        {
+            get => _respectNullableAnnotations;
+            set
+            {
+                VerifyMutable();
+                _respectNullableAnnotations = value;
+            }
+        }
+
+        /// <summary>
         /// Returns true if options uses compatible built-in resolvers or a combination of compatible built-in resolvers.
         /// </summary>
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
@@ -1052,7 +1081,10 @@ namespace System.Text.Json
             protected override void OnCollectionModifying()
             {
                 _options.VerifyMutable();
+            }
 
+            protected override void OnCollectionModified()
+            {
                 // Collection modified by the user: replace the main
                 // resolver with the resolver chain as our source of truth.
                 _options._typeInfoResolver = this;

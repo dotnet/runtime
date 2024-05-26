@@ -2464,10 +2464,10 @@ public:
     unsigned char emitOutputLong(BYTE* dst, size_t val);
     unsigned char emitOutputSizeT(BYTE* dst, size_t val);
 
-    unsigned char emitOutputByte(BYTE* dst, unsigned __int64 val);
-    unsigned char emitOutputWord(BYTE* dst, unsigned __int64 val);
-    unsigned char emitOutputLong(BYTE* dst, unsigned __int64 val);
-    unsigned char emitOutputSizeT(BYTE* dst, unsigned __int64 val);
+    unsigned char emitOutputByte(BYTE* dst, uint64_t val);
+    unsigned char emitOutputWord(BYTE* dst, uint64_t val);
+    unsigned char emitOutputLong(BYTE* dst, uint64_t val);
+    unsigned char emitOutputSizeT(BYTE* dst, uint64_t val);
 #endif // defined(TARGET_X86)
 #endif // !defined(HOST_64BIT)
 

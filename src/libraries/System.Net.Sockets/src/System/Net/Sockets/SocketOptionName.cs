@@ -132,12 +132,34 @@ namespace System.Net.Sockets
         #endregion
 
         #region SocketOptionLevel.Tcp
-        // Disables the Nagle algorithm for send coalescing.
+        /// <summary>
+        /// Disables the Nagle algorithm for send coalescing.
+        /// </summary>
         NoDelay = 1,
+        /// <summary>
+        /// Use urgent data as defined in RFC-1222. This option can be set only once; after it is set, it cannot be turned off.
+        /// </summary>
         BsdUrgent = 2,
+        /// <summary>
+        /// Use expedited data as defined in RFC-1222. This option can be set only once; after it is set, it cannot be turned off.
+        /// </summary>
         Expedited = 2,
+        /// <summary>
+        /// This enables TCP Fast Open as defined in RFC-7413. The actual observed behavior depend on OS configuration and state of kernel TCP cookie cache.
+        /// Enabling TFO can impact interoperability and casue connectivity issues.
+        /// </summary>
+        FastOpen = 15,
+        /// <summary>
+        /// The number of TCP keep alive probes that will be sent before the connection is terminated.
+        /// </summary>
         TcpKeepAliveRetryCount = 16,
+        /// <summary>
+        /// The number of seconds a TCP connection will remain alive/idle before keepalive probes are sent to the remote.
+        /// </summary>
         TcpKeepAliveTime = 3,
+        /// <summary>
+        /// The number of seconds a TCP connection will wait for a keepalive response before sending another keepalive probe.
+        /// </summary>
         TcpKeepAliveInterval = 17,
         #endregion
 

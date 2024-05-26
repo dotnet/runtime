@@ -6025,26 +6025,9 @@ bool Compiler::lvaGetRelativeOffsetToCallerAllocatedSpaceForParameter(unsigned l
         if (!segment.IsPassedOnStack())
         {
 #if defined(WINDOWS_AMD64_ABI)
-            switch (segment.GetRegister())
+            if (ABIPassingInformation::GetShadowSpaceCallerOffsetForReg(segment.GetRegister(), offset))
             {
-                case REG_ECX:
-                case REG_XMM0:
-                    *offset = 0;
-                    return true;
-                case REG_EDX:
-                case REG_XMM1:
-                    *offset = 8;
-                    return true;
-                case REG_R8:
-                case REG_XMM2:
-                    *offset = 16;
-                    return true;
-                case REG_R9:
-                case REG_XMM3:
-                    *offset = 24;
-                    return true;
-                default:
-                    break;
+                return true;
             }
 #elif defined(TARGET_ARM)
             regMaskTP prespills = codeGen->regSet.rsMaskPreSpillRegs(true);

@@ -176,27 +176,29 @@ bool LinearScan::canAssignNextConsecutiveRegisters(RefPosition* firstRefPosition
 //      From `candidates`, the mask of series of consecutive registers of `registersNeeded` size with just the first-bit
 //      set.
 //
-regMaskTP LinearScan::filterConsecutiveCandidates(regMaskTP    candidates,
-                                                  unsigned int registersNeeded,
-                                                  regMaskTP*   allConsecutiveCandidates)
+SingleTypeRegSet LinearScan::filterConsecutiveCandidates(SingleTypeRegSet  floatCandidates,
+                                                         unsigned int      registersNeeded,
+                                                         SingleTypeRegSet* allConsecutiveCandidates)
 {
-    if (PopCount(candidates) < registersNeeded)
+    assert((floatCandidates == RBM_NONE) || (floatCandidates & availableFloatRegs) != RBM_NONE);
+
+    if (PopCount(floatCandidates) < registersNeeded)
     {
         // There is no way the register demanded can be satisfied for this RefPosition
         // based on the candidates from which it can allocate a register.
         return RBM_NONE;
     }
 
-    regMaskTP currAvailableRegs = candidates;
-    regMaskTP overallResult     = RBM_NONE;
-    regMaskTP consecutiveResult = RBM_NONE;
+    SingleTypeRegSet currAvailableRegs = floatCandidates;
+    SingleTypeRegSet overallResult     = RBM_NONE;
+    SingleTypeRegSet consecutiveResult = RBM_NONE;
 
 // At this point, for 'n' registers requirement, if Rm, Rm+1, Rm+2, ..., Rm+k-1 are
 // available, create the mask only for Rm, Rm+1, ..., Rm+(k-n) to convey that it
 // is safe to assign any of those registers, but not beyond that.
 #define AppendConsecutiveMask(startIndex, endIndex, availableRegistersMask)                                            \
-    regMaskTP selectionStartMask = (1ULL << regAvailableStartIndex) - 1;                                               \
-    regMaskTP selectionEndMask   = (1ULL << (regAvailableEndIndex - registersNeeded + 1)) - 1;                         \
+    SingleTypeRegSet selectionStartMask = (1ULL << regAvailableStartIndex) - 1;                                        \
+    SingleTypeRegSet selectionEndMask   = (1ULL << (regAvailableEndIndex - registersNeeded + 1)) - 1;                  \
     consecutiveResult |= availableRegistersMask & (selectionEndMask & ~selectionStartMask);                            \
     overallResult |= availableRegistersMask;
 
@@ -205,11 +207,11 @@ regMaskTP LinearScan::filterConsecutiveCandidates(regMaskTP    candidates,
     do
     {
         // From LSB, find the first available register (bit `1`)
-        regAvailableStartIndex = BitScanForward(currAvailableRegs);
-        regMaskTP startMask    = (1ULL << regAvailableStartIndex) - 1;
+        regAvailableStartIndex     = BitScanForward(currAvailableRegs);
+        SingleTypeRegSet startMask = (1ULL << regAvailableStartIndex) - 1;
 
         // Mask all the bits that are processed from LSB thru regAvailableStart until the last `1`.
-        regMaskTP maskProcessed = ~(currAvailableRegs | startMask);
+        SingleTypeRegSet maskProcessed = ~(currAvailableRegs | startMask);
 
         // From regAvailableStart, find the first unavailable register (bit `0`).
         if (maskProcessed == RBM_NONE)
@@ -225,7 +227,7 @@ regMaskTP LinearScan::filterConsecutiveCandidates(regMaskTP    candidates,
         {
             regAvailableEndIndex = BitScanForward(maskProcessed);
         }
-        regMaskTP endMask = (1ULL << regAvailableEndIndex) - 1;
+        SingleTypeRegSet endMask = (1ULL << regAvailableEndIndex) - 1;
 
         // Anything between regAvailableStart and regAvailableEnd is the range of consecutive registers available.
         // If they are equal to or greater than our register requirements, then add all of them to the result.
@@ -236,8 +238,8 @@ regMaskTP LinearScan::filterConsecutiveCandidates(regMaskTP    candidates,
         currAvailableRegs &= ~endMask;
     } while (currAvailableRegs != RBM_NONE);
 
-    regMaskTP v0_v31_mask = RBM_V0 | RBM_V31;
-    if ((candidates & v0_v31_mask) == v0_v31_mask)
+    SingleTypeRegSet v0_v31_mask = RBM_V0 | RBM_V31;
+    if ((floatCandidates & v0_v31_mask) == v0_v31_mask)
     {
         // Finally, check for round robin case where sequence of last register
         // round to first register is available.
@@ -251,7 +253,7 @@ regMaskTP LinearScan::filterConsecutiveCandidates(regMaskTP    candidates,
         {
             case 2:
             {
-                if ((candidates & v0_v31_mask) != RBM_NONE)
+                if ((floatCandidates & v0_v31_mask) != RBM_NONE)
                 {
                     consecutiveResult |= RBM_V31;
                     overallResult |= v0_v31_mask;
@@ -260,15 +262,15 @@ regMaskTP LinearScan::filterConsecutiveCandidates(regMaskTP    candidates,
             }
             case 3:
             {
-                regMaskTP v0_v30_v31_mask = RBM_V0 | RBM_V30 | RBM_V31;
-                if ((candidates & v0_v30_v31_mask) != RBM_NONE)
+                SingleTypeRegSet v0_v30_v31_mask = RBM_V0 | RBM_V30 | RBM_V31;
+                if ((floatCandidates & v0_v30_v31_mask) != RBM_NONE)
                 {
                     consecutiveResult |= RBM_V30;
                     overallResult |= v0_v30_v31_mask;
                 }
 
-                regMaskTP v0_v1_v31_mask = RBM_V0 | RBM_V1 | RBM_V31;
-                if ((candidates & v0_v1_v31_mask) != RBM_NONE)
+                SingleTypeRegSet v0_v1_v31_mask = RBM_V0 | RBM_V1 | RBM_V31;
+                if ((floatCandidates & v0_v1_v31_mask) != RBM_NONE)
                 {
                     consecutiveResult |= RBM_V31;
                     overallResult |= v0_v1_v31_mask;
@@ -277,22 +279,22 @@ regMaskTP LinearScan::filterConsecutiveCandidates(regMaskTP    candidates,
             }
             case 4:
             {
-                regMaskTP v0_v29_v30_v31_mask = RBM_V0 | RBM_V29 | RBM_V30 | RBM_V31;
-                if ((candidates & v0_v29_v30_v31_mask) != RBM_NONE)
+                SingleTypeRegSet v0_v29_v30_v31_mask = RBM_V0 | RBM_V29 | RBM_V30 | RBM_V31;
+                if ((floatCandidates & v0_v29_v30_v31_mask) != RBM_NONE)
                 {
                     consecutiveResult |= RBM_V29;
                     overallResult |= v0_v29_v30_v31_mask;
                 }
 
-                regMaskTP v0_v1_v30_v31_mask = RBM_V0 | RBM_V29 | RBM_V30 | RBM_V31;
-                if ((candidates & v0_v1_v30_v31_mask) != RBM_NONE)
+                SingleTypeRegSet v0_v1_v30_v31_mask = RBM_V0 | RBM_V29 | RBM_V30 | RBM_V31;
+                if ((floatCandidates & v0_v1_v30_v31_mask) != RBM_NONE)
                 {
                     consecutiveResult |= RBM_V30;
                     overallResult |= v0_v1_v30_v31_mask;
                 }
 
-                regMaskTP v0_v1_v2_v31_mask = RBM_V0 | RBM_V29 | RBM_V30 | RBM_V31;
-                if ((candidates & v0_v1_v2_v31_mask) != RBM_NONE)
+                SingleTypeRegSet v0_v1_v2_v31_mask = RBM_V0 | RBM_V29 | RBM_V30 | RBM_V31;
+                if ((floatCandidates & v0_v1_v2_v31_mask) != RBM_NONE)
                 {
                     consecutiveResult |= RBM_V31;
                     overallResult |= v0_v1_v2_v31_mask;
@@ -323,15 +325,16 @@ regMaskTP LinearScan::filterConsecutiveCandidates(regMaskTP    candidates,
 //  Returns:
 //      Filtered candidates that needs fewer spilling.
 //
-regMaskTP LinearScan::filterConsecutiveCandidatesForSpill(regMaskTP consecutiveCandidates, unsigned int registersNeeded)
+SingleTypeRegSet LinearScan::filterConsecutiveCandidatesForSpill(SingleTypeRegSet consecutiveCandidates,
+                                                                 unsigned int     registersNeeded)
 {
     assert(consecutiveCandidates != RBM_NONE);
     assert((registersNeeded >= 2) && (registersNeeded <= 4));
-    regMaskTP consecutiveResultForBusy = RBM_NONE;
-    regMaskTP unprocessedRegs          = consecutiveCandidates;
-    unsigned  regAvailableStartIndex = 0, regAvailableEndIndex = 0;
-    int       maxSpillRegs        = registersNeeded;
-    regMaskTP registersNeededMask = (1ULL << registersNeeded) - 1;
+    SingleTypeRegSet consecutiveResultForBusy = RBM_NONE;
+    SingleTypeRegSet unprocessedRegs          = consecutiveCandidates;
+    unsigned         regAvailableStartIndex = 0, regAvailableEndIndex = 0;
+    int              maxSpillRegs        = registersNeeded;
+    SingleTypeRegSet registersNeededMask = (1ULL << registersNeeded) - 1;
     do
     {
         // From LSB, find the first available register (bit `1`)
@@ -413,31 +416,33 @@ regMaskTP LinearScan::filterConsecutiveCandidatesForSpill(regMaskTP consecutiveC
 //      allCandidates = 0x1C080D0F00000000, the consecutive register mask returned
 //      will be 0x400000300000000.
 //
-regMaskTP LinearScan::getConsecutiveCandidates(regMaskTP    allCandidates,
-                                               RefPosition* refPosition,
-                                               regMaskTP*   busyCandidates)
+SingleTypeRegSet LinearScan::getConsecutiveCandidates(SingleTypeRegSet  allCandidates,
+                                                      RefPosition*      refPosition,
+                                                      SingleTypeRegSet* busyCandidates)
 {
     assert(compiler->info.compNeedsConsecutiveRegisters);
     assert(refPosition->isFirstRefPositionOfConsecutiveRegisters());
     regMaskTP freeCandidates = allCandidates & m_AvailableRegs;
+    assert((freeCandidates.IsEmpty()) || (freeCandidates.getLow() & availableFloatRegs));
+    SingleTypeRegSet floatFreeCandidates = freeCandidates.getLow();
 
 #ifdef DEBUG
     if (getStressLimitRegs() != LSRA_LIMIT_NONE)
     {
         // For stress, make only alternate registers available so we can stress the selection of free/busy registers.
-        freeCandidates &= (RBM_V0 | RBM_V2 | RBM_V4 | RBM_V6 | RBM_V8 | RBM_V10 | RBM_V12 | RBM_V14 | RBM_V16 |
-                           RBM_V18 | RBM_V20 | RBM_V22 | RBM_V24 | RBM_V26 | RBM_V28 | RBM_V30);
+        floatFreeCandidates &= (RBM_V0 | RBM_V2 | RBM_V4 | RBM_V6 | RBM_V8 | RBM_V10 | RBM_V12 | RBM_V14 | RBM_V16 |
+                                RBM_V18 | RBM_V20 | RBM_V22 | RBM_V24 | RBM_V26 | RBM_V28 | RBM_V30);
     }
 #endif
 
     *busyCandidates = RBM_NONE;
-    regMaskTP    overallResult;
-    unsigned int registersNeeded = refPosition->regCount;
+    SingleTypeRegSet overallResult;
+    unsigned int     registersNeeded = refPosition->regCount;
 
-    if (freeCandidates != RBM_NONE)
+    if (floatFreeCandidates != RBM_NONE)
     {
-        regMaskTP consecutiveResultForFree =
-            filterConsecutiveCandidates(freeCandidates, registersNeeded, &overallResult);
+        SingleTypeRegSet consecutiveResultForFree =
+            filterConsecutiveCandidates(floatFreeCandidates, registersNeeded, &overallResult);
 
         if (consecutiveResultForFree != RBM_NONE)
         {
@@ -446,10 +451,9 @@ regMaskTP LinearScan::getConsecutiveCandidates(regMaskTP    allCandidates,
             // register out of the `consecutiveResult` is available for the first RefPosition, then just use
             // that. This will avoid unnecessary copies.
 
-            regNumber firstRegNum  = REG_NA;
-            regNumber prevRegNum   = REG_NA;
-            int       foundCount   = 0;
-            regMaskTP foundRegMask = RBM_NONE;
+            regNumber firstRegNum = REG_NA;
+            regNumber prevRegNum  = REG_NA;
+            int       foundCount  = 0;
 
             RefPosition* consecutiveRefPosition = getNextConsecutiveRefPosition(refPosition);
             assert(consecutiveRefPosition != nullptr);
@@ -461,8 +465,7 @@ regMaskTP LinearScan::getConsecutiveCandidates(regMaskTP    allCandidates,
 
                 if (!interval->isActive)
                 {
-                    foundRegMask = RBM_NONE;
-                    foundCount   = 0;
+                    foundCount = 0;
                     continue;
                 }
 
@@ -470,7 +473,6 @@ regMaskTP LinearScan::getConsecutiveCandidates(regMaskTP    allCandidates,
                 if ((prevRegNum == REG_NA) || (prevRegNum == REG_PREV(currRegNum)) ||
                     ((prevRegNum == REG_FP_LAST) && (currRegNum == REG_FP_FIRST)))
                 {
-                    foundRegMask |= genRegMask(currRegNum);
                     if (prevRegNum == REG_NA)
                     {
                         firstRegNum = currRegNum;
@@ -480,8 +482,7 @@ regMaskTP LinearScan::getConsecutiveCandidates(regMaskTP    allCandidates,
                     continue;
                 }
 
-                foundRegMask = RBM_NONE;
-                foundCount   = 0;
+                foundCount = 0;
                 break;
             }
 
@@ -528,8 +529,8 @@ regMaskTP LinearScan::getConsecutiveCandidates(regMaskTP    allCandidates,
     // try_FAR_NEXT_REF(), etc. here which would complicate things. Instead, we just go with option# 1 and select
     // registers based on fewer number of registers that has to be spilled.
     //
-    regMaskTP overallResultForBusy;
-    regMaskTP consecutiveResultForBusy =
+    SingleTypeRegSet overallResultForBusy;
+    SingleTypeRegSet consecutiveResultForBusy =
         filterConsecutiveCandidates(allCandidates, registersNeeded, &overallResultForBusy);
 
     *busyCandidates = consecutiveResultForBusy;
@@ -541,7 +542,7 @@ regMaskTP LinearScan::getConsecutiveCandidates(regMaskTP    allCandidates,
         // If there is an overlap of that with free registers, then try to find a series that will need least
         // registers spilling as mentioned in #1 above.
 
-        regMaskTP optimalConsecutiveResultForBusy =
+        SingleTypeRegSet optimalConsecutiveResultForBusy =
             filterConsecutiveCandidatesForSpill(consecutiveResultForBusy, registersNeeded);
 
         if (optimalConsecutiveResultForBusy != RBM_NONE)
@@ -554,7 +555,7 @@ regMaskTP LinearScan::getConsecutiveCandidates(regMaskTP    allCandidates,
             // `allCandidates` that are mix of free and busy. Since `busyCandidates` just has bit set for first
             // register of such series, return the mask that starts with free register, if possible. The busy
             // registers will be spilled during assignment of subsequent RefPosition.
-            *busyCandidates = (m_AvailableRegs & consecutiveResultForBusy);
+            *busyCandidates = (m_AvailableRegs.GetRegSetForType(TYP_FLOAT) & consecutiveResultForBusy);
         }
     }
 
@@ -666,14 +667,14 @@ int LinearScan::BuildNode(GenTree* tree)
             srcCount = 0;
             assert(dstCount == 0);
             killMask = getKillSetForProfilerHook();
-            BuildDefsWithKills(tree, 0, RBM_NONE, killMask);
+            BuildKills(tree, killMask);
             break;
 
         case GT_START_PREEMPTGC:
             // This kills GC refs in callee save regs
             srcCount = 0;
             assert(dstCount == 0);
-            BuildDefsWithKills(tree, 0, RBM_NONE, RBM_NONE);
+            BuildKills(tree, RBM_NONE);
             break;
 
         case GT_CNS_DBL:
@@ -738,7 +739,7 @@ int LinearScan::BuildNode(GenTree* tree)
         case GT_RETURN:
             srcCount = BuildReturn(tree);
             killMask = getKillSetForReturn();
-            BuildDefsWithKills(tree, 0, RBM_NONE, killMask);
+            BuildKills(tree, killMask);
             break;
 
 #ifdef SWIFT_SUPPORT
@@ -747,7 +748,7 @@ int LinearScan::BuildNode(GenTree* tree)
             // Plus one for error register
             srcCount = BuildReturn(tree) + 1;
             killMask = getKillSetForReturn();
-            BuildDefsWithKills(tree, 0, RBM_NONE, killMask);
+            BuildKills(tree, killMask);
             break;
 #endif // SWIFT_SUPPORT
 
@@ -839,7 +840,7 @@ int LinearScan::BuildNode(GenTree* tree)
             srcCount = 1;
             assert(dstCount == 0);
             killMask = compiler->compHelperCallKillSet(CORINFO_HELP_STOP_FOR_GC);
-            BuildDefsWithKills(tree, 0, RBM_NONE, killMask);
+            BuildKills(tree, killMask);
             break;
 
         case GT_MOD:
@@ -1383,13 +1384,13 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
             assert(varTypeIsSIMD(indexedElementOpType));
 
             const unsigned int indexedElementSimdSize = genTypeSize(indexedElementOpType);
-            HWIntrinsicInfo::lookupImmBounds(intrin.id, indexedElementSimdSize, intrin.baseType, &immLowerBound,
+            HWIntrinsicInfo::lookupImmBounds(intrin.id, indexedElementSimdSize, intrin.baseType, 1, &immLowerBound,
                                              &immUpperBound);
         }
         else
         {
-            HWIntrinsicInfo::lookupImmBounds(intrin.id, intrinsicTree->GetSimdSize(), intrin.baseType, &immLowerBound,
-                                             &immUpperBound);
+            HWIntrinsicInfo::lookupImmBounds(intrin.id, intrinsicTree->GetSimdSize(), intrin.baseType, 1,
+                                             &immLowerBound, &immUpperBound);
         }
 
         if ((immLowerBound != 0) || (immUpperBound != 1))
@@ -1561,7 +1562,29 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
         }
         else if (HWIntrinsicInfo::IsMaskedOperation(intrin.id))
         {
-            regMaskTP predMask = HWIntrinsicInfo::IsLowMaskedOperation(intrin.id) ? RBM_LOWMASK : RBM_ALLMASK;
+            SingleTypeRegSet predMask = RBM_ALLMASK;
+            if (intrin.id == NI_Sve_ConditionalSelect)
+            {
+                // If this is conditional select, make sure to check the embedded
+                // operation to determine the predicate mask.
+                assert(intrinsicTree->GetOperandCount() == 3);
+                assert(!HWIntrinsicInfo::IsLowMaskedOperation(intrin.id));
+
+                if (intrin.op2->OperIs(GT_HWINTRINSIC))
+                {
+                    GenTreeHWIntrinsic* embOp2Node = intrin.op2->AsHWIntrinsic();
+                    const HWIntrinsic   intrinEmb(embOp2Node);
+                    if (HWIntrinsicInfo::IsLowMaskedOperation(intrinEmb.id))
+                    {
+                        predMask = RBM_LOWMASK;
+                    }
+                }
+            }
+            else if (HWIntrinsicInfo::IsLowMaskedOperation(intrin.id))
+            {
+                predMask = RBM_LOWMASK;
+            }
+
             srcCount += BuildOperandUses(intrin.op1, predMask);
         }
         else if (intrinsicTree->OperIsMemoryLoadOrStore())
@@ -1758,6 +1781,20 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 break;
             }
 
+            case NI_Sve_StoreAndZipx2:
+            case NI_Sve_StoreAndZipx3:
+            case NI_Sve_StoreAndZipx4:
+            {
+                assert(intrin.op2 != nullptr);
+                assert(intrin.op3 != nullptr);
+                srcCount += BuildAddrUses(intrin.op2);
+                srcCount += BuildConsecutiveRegistersForUse(intrin.op3);
+                assert(dstCount == 0);
+                buildInternalRegisterUses();
+                *pDstCount = 0;
+                break;
+            }
+
             default:
                 noway_assert(!"Not a supported as multiple consecutive register intrinsic");
         }
@@ -1842,8 +1879,9 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
 
         assert(intrin.op1 != nullptr);
 
-        bool      forceOp2DelayFree = false;
-        regMaskTP candidates        = RBM_NONE;
+        bool             forceOp2DelayFree   = false;
+        SingleTypeRegSet lowVectorCandidates = RBM_NONE;
+        size_t           lowVectorOperandNum = 0;
         if ((intrin.id == NI_Vector64_GetElement) || (intrin.id == NI_Vector128_GetElement))
         {
             if (!intrin.op2->IsCnsIntOrI() && (!intrin.op1->isContained() || intrin.op1->OperIsLocal()))
@@ -1865,21 +1903,9 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 compiler->getSIMDInitTempVarNum(requiredSimdTempType);
             }
         }
-
-        if ((intrin.id == NI_Sve_FusedMultiplyAddBySelectedScalar) ||
-            (intrin.id == NI_Sve_FusedMultiplySubtractBySelectedScalar))
+        else if (HWIntrinsicInfo::IsLowVectorOperation(intrin.id))
         {
-            // If this is common pattern, then we will add a flag in the table, but for now, just check for specific
-            // intrinsics
-            if (intrin.baseType == TYP_DOUBLE)
-            {
-                candidates = RBM_SVE_INDEXED_D_ELEMENT_ALLOWED_REGS;
-            }
-            else
-            {
-                assert(intrin.baseType == TYP_FLOAT);
-                candidates = RBM_SVE_INDEXED_S_ELEMENT_ALLOWED_REGS;
-            }
+            getLowVectorOperandAndCandidates(intrin, &lowVectorOperandNum, &lowVectorCandidates);
         }
 
         if ((intrin.id == NI_Sve_ConditionalSelect) && (intrin.op2->IsEmbMaskOp()) &&
@@ -1890,33 +1916,49 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
             GenTreeHWIntrinsic* intrinEmbOp2 = intrin.op2->AsHWIntrinsic();
             size_t              numArgs      = intrinEmbOp2->GetOperandCount();
             assert((numArgs == 1) || (numArgs == 2));
+            const HWIntrinsic intrinEmb(intrinEmbOp2);
+            if (HWIntrinsicInfo::IsLowVectorOperation(intrinEmb.id))
+            {
+                getLowVectorOperandAndCandidates(intrinEmb, &lowVectorOperandNum, &lowVectorCandidates);
+            }
+
             tgtPrefUse = BuildUse(intrinEmbOp2->Op(1));
             srcCount += 1;
 
             for (size_t argNum = 2; argNum <= numArgs; argNum++)
             {
-                srcCount += BuildDelayFreeUses(intrinEmbOp2->Op(argNum), intrinEmbOp2->Op(1));
+                srcCount += BuildDelayFreeUses(intrinEmbOp2->Op(argNum), intrinEmbOp2->Op(1),
+                                               (argNum == lowVectorOperandNum) ? lowVectorCandidates : RBM_NONE);
             }
+        }
+        else if (intrin.id == NI_Sve_StoreAndZip)
+        {
+            srcCount += BuildAddrUses(intrin.op2);
         }
         else
         {
+            SingleTypeRegSet candidates = lowVectorOperandNum == 2 ? lowVectorCandidates : RBM_NONE;
             if (forceOp2DelayFree)
             {
-                srcCount += BuildDelayFreeUses(intrin.op2);
+                srcCount += BuildDelayFreeUses(intrin.op2, nullptr, candidates);
             }
             else
             {
-                srcCount += isRMW ? BuildDelayFreeUses(intrin.op2, intrin.op1) : BuildOperandUses(intrin.op2);
+                srcCount += isRMW ? BuildDelayFreeUses(intrin.op2, intrin.op1, candidates)
+                                  : BuildOperandUses(intrin.op2, candidates);
             }
         }
 
         if (intrin.op3 != nullptr)
         {
+            SingleTypeRegSet candidates = lowVectorOperandNum == 3 ? lowVectorCandidates : RBM_NONE;
+
             srcCount += isRMW ? BuildDelayFreeUses(intrin.op3, intrin.op1, candidates)
                               : BuildOperandUses(intrin.op3, candidates);
 
             if (intrin.op4 != nullptr)
             {
+                assert(lowVectorOperandNum != 4);
                 srcCount += isRMW ? BuildDelayFreeUses(intrin.op4, intrin.op1) : BuildOperandUses(intrin.op4);
             }
         }
@@ -1926,11 +1968,11 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
 
     if ((dstCount == 1) || (dstCount == 2))
     {
-        BuildDef(intrinsicTree, dstCandidates);
+        BuildDef(intrinsicTree);
 
         if (dstCount == 2)
         {
-            BuildDef(intrinsicTree, dstCandidates, 1);
+            BuildDef(intrinsicTree, RBM_NONE, 1);
         }
     }
     else
@@ -2207,8 +2249,48 @@ bool RefPosition::isLiveAtConsecutiveRegistersLoc(LsraLocation consecutiveRegist
     }
     return false;
 }
-#endif
+#endif // DEBUG
 
-#endif
+//------------------------------------------------------------------------
+// getLowVectorOperandAndCandidates: Instructions for certain intrinsics operate on low vector registers
+//      depending on the size of the element. The method returns the candidates based on that size and
+//      the operand number of the intrinsics that has the restriction.
+//
+// Arguments:
+//    intrin - Intrinsics
+//    operandNum (out) - The operand number having the low vector register restriction
+//    candidates (out) - The restricted low vector registers
+//
+void LinearScan::getLowVectorOperandAndCandidates(HWIntrinsic intrin, size_t* operandNum, SingleTypeRegSet* candidates)
+{
+    assert(HWIntrinsicInfo::IsLowVectorOperation(intrin.id));
+    unsigned baseElementSize = genTypeSize(intrin.baseType);
+
+    if (baseElementSize == 8)
+    {
+        *candidates = RBM_SVE_INDEXED_D_ELEMENT_ALLOWED_REGS;
+    }
+    else
+    {
+        assert(baseElementSize == 4);
+        *candidates = RBM_SVE_INDEXED_S_ELEMENT_ALLOWED_REGS;
+    }
+
+    switch (intrin.id)
+    {
+        case NI_Sve_DotProductBySelectedScalar:
+        case NI_Sve_FusedMultiplyAddBySelectedScalar:
+        case NI_Sve_FusedMultiplySubtractBySelectedScalar:
+            *operandNum = 3;
+            break;
+        case NI_Sve_MultiplyBySelectedScalar:
+            *operandNum = 2;
+            break;
+        default:
+            unreached();
+    }
+}
+
+#endif // FEATURE_HW_INTRINSICS
 
 #endif // TARGET_ARM64
