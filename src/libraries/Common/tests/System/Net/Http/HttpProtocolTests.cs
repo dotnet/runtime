@@ -129,10 +129,11 @@ namespace System.Net.Http.Functional.Tests
 
             await LoopbackServer.CreateServerAsync(async (server, url) =>
             {
-                using (HttpClient client = CreateHttpClient())
+                Version version = new Version(majorVersion, minorVersion);
+                using (HttpClient client = CreateHttpClient(version.ToString()))
                 {
                     HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, url);
-                    request.Version = new Version(majorVersion, minorVersion);
+                    request.Version = version;
                     Task<HttpResponseMessage> getResponseTask = client.SendAsync(TestAsync, request);
                     Task<List<string>> serverTask = server.AcceptConnectionSendResponseAndCloseAsync();
                     await Assert.ThrowsAsync<NotSupportedException>(() => getResponseTask);
