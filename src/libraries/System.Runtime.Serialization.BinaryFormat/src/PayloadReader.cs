@@ -41,7 +41,8 @@ static class PayloadReader
 #if NETCOREAPP
         ArgumentNullException.ThrowIfNull(stream);
 #else
-        if (stream is null) throw new ArgumentNullException(nameof(stream));
+        if (stream is null)
+            throw new ArgumentNullException(nameof(stream));
 #endif
         long beginning = stream.Position;
         if (stream.Length - beginning < SerializedStreamHeaderRecord.Size + 2)
@@ -71,14 +72,14 @@ static class PayloadReader
     /// Reads the provided Binary Format payload.
     /// </summary>
     /// <param name="payload">The Binary Format payload.</param>
-    /// <param name="options">An object that describes optional <seealso cref="PayloadOptions"/> parameters to use.</param>
-    /// <param name="leaveOpen">True to leave the <paramref name="payload"/> payload open
-    /// after the reading is finished, otherwise, false.</param>
+    /// <param name="options">Options to control behavior during parsing.</param>
+    /// <param name="leaveOpen"><see langword="true" /> to leave <paramref name="payload"/> payload open
+    /// after the reading is finished; otherwise, <see langword="false" />.</param>
     /// <returns>A <seealso cref="SerializationRecord"/> that represents the root object.
     /// It can be either <seealso cref="PrimitiveTypeRecord{T}"/>,
     /// a <seealso cref="ClassRecord"/> or an <seealso cref="ArrayRecord"/>.</returns>
-    /// <exception cref="ArgumentNullException">When <paramref name="payload"/> is null.</exception>
-    /// <exception cref="ArgumentException">The <paramref name="payload"/> payload does not support reading or is already closed.</exception>
+    /// <exception cref="ArgumentNullException"><paramref name="payload"/> is <see langword="null" />.</exception>
+    /// <exception cref="ArgumentException"><paramref name="payload"/> does not support reading or is already closed.</exception>
     /// <exception cref="SerializationException">When reading input from <paramref name="payload"/> encounters invalid Binary Format data.</exception>
     /// <exception cref="DecoderFallbackException">When reading input from <paramref name="payload"/>
     /// encounters invalid sequence of UTF8 characters.</exception>
