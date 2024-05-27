@@ -25,6 +25,20 @@ namespace System.Runtime.CompilerServices
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern void WriteBarrier(ref object? dst, object? obj);
 
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        internal static extern bool CanCastTo_NoCacheLookup(void* fromTypeHnd, void* toTypeHnd);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static bool CanCastTo(void* fromTypeHnd, void* toTypeHnd)
+        {
+            CastResult result = CastCache.TryGet(s_table!, (nuint)fromTypeHnd, (nuint)toTypeHnd);
+
+            if (result != CastResult.MaybeCast)
+                return result == CastResult.CanCast;
+
+            return CanCastTo_NoCacheLookup(fromTypeHnd, toTypeHnd);
+        }
+
         // IsInstanceOf test used for unusual cases (naked type parameters, variant generic types)
         // Unlike the IsInstanceOfInterface and IsInstanceOfClass functions,
         // this test must deal with all kinds of type tests

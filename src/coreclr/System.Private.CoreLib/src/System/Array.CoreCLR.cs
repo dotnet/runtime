@@ -89,8 +89,58 @@ namespace System
             CopySlow(sourceArray, sourceIndex, destinationArray, destinationIndex, length);
         }
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern bool IsSimpleCopy(Array sourceArray, Array destinationArray);
+        private static unsafe bool IsSimpleCopy(Array sourceArray, Array destinationArray)
+        {
+            TypeHandle srcTH = RuntimeHelpers.GetMethodTable(sourceArray)->GetArrayElementTypeHandle();
+            TypeHandle destTH = RuntimeHelpers.GetMethodTable(destinationArray)->GetArrayElementTypeHandle();
+            if (TypeHandle.AreSameType(srcTH, destTH)) // This check kicks for different array kind or dimensions
+                return true;
+
+            if (srcTH.IsValueType)
+            {
+                // Value class boxing
+                if (!destTH.IsValueType)
+                    return false;
+
+                CorElementType srcElType = sourceArray.GetCorElementTypeOfElementType();
+                CorElementType destElType = destinationArray.GetCorElementTypeOfElementType();
+
+                // Copying primitives from one type to another
+                if (srcElType.IsPrimitiveType() && destElType.IsPrimitiveType())
+                {
+                    if (GetNormalizedIntegralArrayElementType(srcElType) == GetNormalizedIntegralArrayElementType(destElType))
+                        return true;
+                }
+            }
+            else
+            {
+                // Value class unboxing
+                if (destTH.IsValueType)
+                    return false;
+            }
+
+            return srcTH.CanCastTo(destTH);
+        }
+
+        private static CorElementType GetNormalizedIntegralArrayElementType(CorElementType elementType)
+        {
+            Debug.Assert(elementType.IsPrimitiveType());
+
+            // Array Primitive types such as E_T_I4 and E_T_U4 are interchangeable
+            // Enums with interchangeable underlying types are interchangeable
+            // BOOL is NOT interchangeable with I1/U1, neither CHAR -- with I2/U2
+            switch (elementType)
+            {
+                case CorElementType.ELEMENT_TYPE_U1:
+                case CorElementType.ELEMENT_TYPE_U2:
+                case CorElementType.ELEMENT_TYPE_U4:
+                case CorElementType.ELEMENT_TYPE_U8:
+                case CorElementType.ELEMENT_TYPE_U:
+                    return elementType - 1; // normalize to signed type
+                default:
+                    return elementType;
+            }
+        }
 
         // Reliability-wise, this method will either possibly corrupt your
         // instance & might fail when called from within a CER, or if the
@@ -100,9 +150,7 @@ namespace System
         {
             Debug.Assert(sourceArray.Rank == destinationArray.Rank);
 
-            void* srcTH = RuntimeHelpers.GetMethodTable(sourceArray)->ElementType;
-            void* destTH = RuntimeHelpers.GetMethodTable(destinationArray)->ElementType;
-            AssignArrayEnum r = CanAssignArrayType(srcTH, destTH);
+            AssignArrayEnum r = CanAssignArrayType(sourceArray, destinationArray);
 
             if (r == AssignArrayEnum.AssignWrongType)
                 ThrowHelper.ThrowArrayTypeMismatchException_CantAssignType();
@@ -144,8 +192,62 @@ namespace System
             AssignPrimitiveWiden,
         }
 
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Array_CanAssignArrayType")]
-        private static unsafe partial AssignArrayEnum CanAssignArrayType(void* srcTH, void* dstTH);
+        private static unsafe AssignArrayEnum CanAssignArrayType(Array sourceArray, Array destinationArray)
+        {
+            TypeHandle srcTH = RuntimeHelpers.GetMethodTable(sourceArray)->GetArrayElementTypeHandle();
+            TypeHandle destTH = RuntimeHelpers.GetMethodTable(destinationArray)->GetArrayElementTypeHandle();
+            Debug.Assert(!TypeHandle.AreSameType(srcTH, destTH)); // Handled by fast path
+
+            // Value class boxing
+            if (srcTH.IsValueType && !destTH.IsValueType)
+            {
+                if (srcTH.CanCastTo(destTH))
+                    return AssignArrayEnum.AssignBoxValueClassOrPrimitive;
+                else
+                    return AssignArrayEnum.AssignWrongType;
+            }
+
+            // Value class unboxing.
+            if (!srcTH.IsValueType && destTH.IsValueType)
+            {
+                if (srcTH.CanCastTo(destTH))
+                    return AssignArrayEnum.AssignUnboxValueClass;
+                else if (destTH.CanCastTo(srcTH))   // V extends IV. Copying from IV to V, or Object to V.
+                    return AssignArrayEnum.AssignUnboxValueClass;
+                else
+                    return AssignArrayEnum.AssignWrongType;
+            }
+
+            CorElementType srcElType = sourceArray.GetCorElementTypeOfElementType();
+            CorElementType destElType = destinationArray.GetCorElementTypeOfElementType();
+
+            // Copying primitives from one type to another
+            if (srcElType.IsPrimitiveType() && destElType.IsPrimitiveType())
+            {
+                Debug.Assert(srcElType != destElType); // Handled by fast path
+                if (RuntimeHelpers.CanPrimitiveWiden(srcElType, destElType))
+                    return AssignArrayEnum.AssignPrimitiveWiden;
+                else
+                    return AssignArrayEnum.AssignWrongType;
+            }
+
+            // dest Object extends src
+            Debug.Assert(!srcTH.CanCastTo(destTH)); // Handled by fast path
+
+            // src Object extends dest
+            if (destTH.CanCastTo(srcTH))
+                return AssignArrayEnum.AssignMustCast;
+
+            // class X extends/implements src and implements dest.
+            if (!destTH.IsInterface && srcElType != CorElementType.ELEMENT_TYPE_VALUETYPE)
+                return AssignArrayEnum.AssignMustCast;
+
+            // class X implements src and extends/implements dest
+            if (!srcTH.IsInterface && srcElType != CorElementType.ELEMENT_TYPE_VALUETYPE)
+                return AssignArrayEnum.AssignMustCast;
+
+            return AssignArrayEnum.AssignWrongType;
+        }
 
         // Unboxes from an Object[] into a value class or primitive array.
         private static unsafe void CopyImplUnBoxEachElement(Array sourceArray, int sourceIndex, Array destinationArray, int destinationIndex, int length)
