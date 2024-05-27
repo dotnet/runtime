@@ -231,7 +231,6 @@ jobs:
       scenarios:
         - WasmTestOnChrome
         - WasmTestOnFirefox
-        - WasmTestOnNodeJS
 
 - ${{ if and(ne(parameters.isRollingBuild, true), ne(parameters.excludeNonLibTests, true), ne(parameters.debuggerTestsOnly, true)) }}:
   # Builds only
