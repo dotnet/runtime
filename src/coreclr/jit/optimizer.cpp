@@ -5897,6 +5897,7 @@ void Compiler::optRemoveRedundantZeroInits()
     LclVarRefCounts refCounts(allocator);
     BitVecTraits    bitVecTraits(lvaCount, this);
     BitVec          zeroInitLocals         = BitVecOps::MakeEmpty(&bitVecTraits);
+    bool            hasGCSafePoint         = false;
     bool            hasImplicitControlFlow = false;
 
     assert(fgNodeThreading == NodeThreading::AllTrees);
@@ -5916,6 +5917,7 @@ void Compiler::optRemoveRedundantZeroInits()
             for (GenTree* const tree : stmt->TreeList())
             {
                 hasImplicitControlFlow |= hasEHSuccs && ((tree->gtFlags & GTF_EXCEPT) != 0);
+                hasGCSafePoint |= IsPotentialGCSafePoint(tree);
 
                 switch (tree->gtOper)
                 {
@@ -6068,7 +6070,7 @@ void Compiler::optRemoveRedundantZeroInits()
                             // insert a call to CORINFO_HELP_INIT_PINVOKE_FRAME but that is not a gc-safe point.
                             assert(emitter::emitNoGChelper(CORINFO_HELP_INIT_PINVOKE_FRAME));
 
-                            if (!lclDsc->HasGCPtr() || (!GetInterruptible() && !IsPotentialGCSafePoint(tree)))
+                            if (!lclDsc->HasGCPtr() || (!GetInterruptible() && !hasGCSafePoint))
                             {
                                 // The local hasn't been used and won't be reported to the gc between
                                 // the prolog and this explicit initialization. Therefore, it doesn't
