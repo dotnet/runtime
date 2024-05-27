@@ -5,7 +5,6 @@
 using System;
 using System.Diagnostics;
 using System.Runtime;
-using System.Runtime.InteropServices;
 
 using Internal.NativeFormat;
 using Internal.Runtime.Augments;
@@ -15,13 +14,6 @@ namespace Internal.Runtime.CompilerHelpers
 {
     internal static class RuntimeInteropData
     {
-        private enum InteropDataResult
-        {
-            NotFound,
-            Invalid,
-            Found,
-        }
-
         public static uint GetStructFieldOffset(RuntimeTypeHandle structureTypeHandle, string fieldName)
         {
             if (TryGetStructData(structureTypeHandle, out _, out NativeParser entryParser))
@@ -93,29 +85,22 @@ namespace Internal.Runtime.CompilerHelpers
         }
 
         public static IntPtr GetStructUnmarshalStub(RuntimeTypeHandle structureTypeHandle)
-            => TryGetMarshallersForStruct(structureTypeHandle, out _, out IntPtr unmarshal, out _) switch
-            {
-                InteropDataResult.Invalid => throw new ArgumentException(SR.Format(SR.Arg_CannotMarshal, Type.GetTypeFromHandle(structureTypeHandle)), nameof(structureTypeHandle)),
-                InteropDataResult.NotFound => throw new NotSupportedException(SR.Format(SR.StructMarshalling_MissingInteropData, Type.GetTypeFromHandle(structureTypeHandle))),
-                _ => unmarshal,
-            };
+        {
+            GetMarshallersForStruct(structureTypeHandle, out _, out IntPtr unmarshal, out _);
+            return unmarshal;
+        }
 
         public static IntPtr GetStructMarshalStub(RuntimeTypeHandle structureTypeHandle)
-            => TryGetMarshallersForStruct(structureTypeHandle, out IntPtr marshal, out _, out _) switch
-            {
-                InteropDataResult.Invalid => throw new ArgumentException(SR.Format(SR.Arg_CannotMarshal, Type.GetTypeFromHandle(structureTypeHandle)), nameof(structureTypeHandle)),
-                InteropDataResult.NotFound => throw new NotSupportedException(SR.Format(SR.StructMarshalling_MissingInteropData, Type.GetTypeFromHandle(structureTypeHandle))),
-                _ => marshal,
-            };
+        {
+            GetMarshallersForStruct(structureTypeHandle, out IntPtr marshal, out _, out _);
+            return marshal;
+        }
 
         public static IntPtr GetDestroyStructureStub(RuntimeTypeHandle structureTypeHandle)
-            => TryGetMarshallersForStruct(structureTypeHandle, out _, out _, out IntPtr destroyStub) switch
-            {
-                InteropDataResult.Invalid => throw new ArgumentException(SR.Format(SR.Arg_CannotMarshal, Type.GetTypeFromHandle(structureTypeHandle)), nameof(structureTypeHandle)),
-                InteropDataResult.NotFound => throw new NotSupportedException(SR.Format(SR.StructMarshalling_MissingInteropData, Type.GetTypeFromHandle(structureTypeHandle))),
-                _ => destroyStub,
-            };
-
+        {
+            GetMarshallersForStruct(structureTypeHandle, out _, out _, out IntPtr destroyStub);
+            return destroyStub;
+        }
 
         public static IntPtr GetForwardDelegateCreationStub(RuntimeTypeHandle delegateTypeHandle)
         {
@@ -214,7 +199,7 @@ namespace Internal.Runtime.CompilerHelpers
             return false;
         }
 
-        private static unsafe InteropDataResult TryGetMarshallersForStruct(RuntimeTypeHandle structTypeHandle, out IntPtr marshalStub, out IntPtr unmarshalStub, out IntPtr destroyStub)
+        private static unsafe void GetMarshallersForStruct(RuntimeTypeHandle structTypeHandle, out IntPtr marshalStub, out IntPtr unmarshalStub, out IntPtr destroyStub)
         {
             marshalStub = IntPtr.Zero;
             unmarshalStub = IntPtr.Zero;
@@ -225,7 +210,7 @@ namespace Internal.Runtime.CompilerHelpers
                 uint mask = entryParser.GetUnsigned();
                 if ((mask & InteropDataConstants.HasInvalidLayout) != 0)
                 {
-                    return InteropDataResult.Invalid;
+                    throw new ArgumentException(SR.Format(SR.Arg_CannotMarshal, Type.GetTypeFromHandle(structTypeHandle)));
                 }
 
                 if ((mask & InteropDataConstants.HasMarshallers) != 0)
@@ -235,10 +220,11 @@ namespace Internal.Runtime.CompilerHelpers
                     unmarshalStub = externalReferences.GetIntPtrFromIndex(entryParser.GetUnsigned());
                     destroyStub = externalReferences.GetIntPtrFromIndex(entryParser.GetUnsigned());
                 }
-
-                return InteropDataResult.Found;
             }
-            return InteropDataResult.NotFound;
+            else
+            {
+                throw new NotSupportedException(SR.Format(SR.StructMarshalling_MissingInteropData, Type.GetTypeFromHandle(structTypeHandle)));
+            }
         }
     }
 }
