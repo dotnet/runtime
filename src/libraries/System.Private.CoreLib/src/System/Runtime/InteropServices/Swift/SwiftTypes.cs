@@ -39,7 +39,7 @@ namespace System.Runtime.InteropServices.Swift
     }
 
     /// <summary>
-    /// Represents the Swift frozen struct T, which is either enregistered into multiple registers,
+    /// Represents the Swift 'self' context when the argument is Swift frozen struct T, which is either enregistered into multiple registers,
     /// or passed by reference in the 'self' register.
     /// </summary>
     /// <remarks>
