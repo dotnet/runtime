@@ -727,6 +727,7 @@ namespace Microsoft.Extensions
             private string? _testVirtualSet;
             public virtual string? TestVirtualSet
             {
+                get => _testVirtualSet;
                 set => _testVirtualSet = value;
             }
 
@@ -978,16 +979,9 @@ namespace Microsoft.Extensions
 
         public class ClassThatThrowsOnSetters
         {
-            private int _myIntProperty;
-
-            public ClassThatThrowsOnSetters()
+            public int? MyIntProperty
             {
-                _myIntProperty = 42;
-            }
-
-            public int MyIntProperty
-            {
-                get => _myIntProperty;
+                get => null;
                 set => throw new InvalidOperationException("Not expected");
             }
         }

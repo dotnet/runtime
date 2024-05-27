@@ -6,6 +6,9 @@
 // Suppress warnings about [Obsolete] member usage in generated code.
 #pragma warning disable CS0612, CS0618
 
+// Suppress warnings about null checks of value types.
+#pragma warning disable CS0183
+
 namespace System.Runtime.CompilerServices
 {
     using System;
@@ -56,14 +59,14 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             if (type == typeof(global::Program.MyClass2))
             {
                 var instance = new global::Program.MyClass2();
-                BindCore(configuration, ref instance, defaultValueIfNotFound: true, binderOptions);
+                BindCore(configuration, ref instance, binderOptions);
                 return instance;
             }
 
             throw new NotSupportedException($"Unable to bind to type '{type}': generator did not detect the type as input.");
         }
 
-        public static void BindCore(IConfiguration configuration, ref global::Program.MyClass2 instance, bool defaultValueIfNotFound, BinderOptions? binderOptions)
+        public static void BindCore(IConfiguration configuration, ref global::Program.MyClass2 instance, BinderOptions? binderOptions)
         {
             ValidateConfigurationKeys(typeof(global::Program.MyClass2), s_configKeys_ProgramMyClass2, configuration, binderOptions);
 
@@ -71,9 +74,13 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             {
                 instance.MyInt = ParseInt(value1, configuration.GetSection("MyInt").Path);
             }
-            else if (defaultValueIfNotFound)
+            else
             {
-                instance.MyInt = default;
+                var currentValue = instance.MyInt;
+                if (currentValue is object) 
+                {
+                    instance.MyInt = currentValue;
+                }
             }
         }
 

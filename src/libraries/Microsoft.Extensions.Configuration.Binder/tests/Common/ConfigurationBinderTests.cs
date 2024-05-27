@@ -1650,7 +1650,7 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
 
             var bound = config.GetSection("value").Get<StructWithNestedStructAndSetterLogic[]>();
             Assert.Null(bound[0].String);
-            Assert.Equal(0, bound[0].Int32);
+            Assert.Equal(42, bound[0].Int32);
         }
 
         [Fact]
@@ -1793,11 +1793,12 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
             Assert.Equal(123, options.IntWithDefault);
             Assert.True(options.WasIntWithDefaultSet);
             Assert.Equal("default", options.OtherCodeString);
+            Assert.True(options.WasOtherCodeStringSet);
             Assert.Equal("default", options.PocoWithDefault.Example);
             Assert.Equal(1, options.PocoListWithDefault.Count);
 
 #if !BUILDING_SOURCE_GENERATOR_TESTS
-            Assert.True(options.WasOtherCodeStringSet);
+            // Source generator omits calls to setters for nested objects and collections
             Assert.True(options.WasPocoWithDefaultSet);
             Assert.True(options.WasPocoListWithDefaultSet);
 #endif
@@ -1811,7 +1812,7 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
         }
 
         [Fact]
-        public void EnsureNotCallingSettersWhenGivenExistingInstanceNotInConfig()
+        public void EnsureNotCallingSettersWhenGivenExistingNullOnInstanceNotInConfig()
         {
             var builder = new ConfigurationBuilder();
             builder.AddInMemoryCollection(new KeyValuePair<string, string?>[] { });
@@ -1821,7 +1822,7 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
 
             // The setter for MyIntProperty throws, so this verifies that the setter is not called.
             config.GetSection("Dmy").Bind(instance);
-            Assert.Equal(42, instance.MyIntProperty);
+            Assert.Null(instance.MyIntProperty);
         }
 
         [Fact]
