@@ -1464,6 +1464,8 @@ GenTree* Lowering::LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cm
         GenTree* cmp           = op;
         if (simdSize != 8) // we don't need compression for Vector64
         {
+            CorInfoType pairwiseMaxType = CORINFO_TYPE_UINT;
+
             // If op is "vec & cnsVec" where both u64 components in that cnsVec are the same (for both SIMD12 and
             // SIMD16) then we'd better do this AND on top of TYP_LONG NI_AdvSimd_Extract in the end - it produces a
             // more optimal codegen.
@@ -1471,9 +1473,10 @@ GenTree* Lowering::LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cm
             {
                 GenTreeVecCon* andMask = op->AsHWIntrinsic()->Op(2)->AsVecCon();
                 simd16_t       val     = andMask->gtSimd16Val;
-                if ((val.u64[0] == val.u64[1]) && emitter::emitIns_valid_imm_for_alu(val.i64[0], EA_8BYTE))
+                if (ElementsAreSame(val.i8, 16) && emitter::emitIns_valid_imm_for_alu(val.i64[0], EA_8BYTE))
                 {
-                    scalarAndMask = val.u64[0];
+                    pairwiseMaxType = CORINFO_TYPE_UBYTE;
+                    scalarAndMask   = val.u64[0];
                     BlockRange().Remove(op);
                     BlockRange().Remove(andMask);
                     op = op->AsHWIntrinsic()->Op(1);
@@ -1487,7 +1490,7 @@ GenTree* Lowering::LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cm
             GenTree* opClone = comp->gtClone(op);
             BlockRange().InsertAfter(op, opClone);
 
-            cmp = comp->gtNewSimdHWIntrinsicNode(simdType, op, opClone, NI_AdvSimd_Arm64_MaxPairwise, CORINFO_TYPE_UINT,
+            cmp = comp->gtNewSimdHWIntrinsicNode(simdType, op, opClone, NI_AdvSimd_Arm64_MaxPairwise, pairwiseMaxType,
                                                  simdSize);
             BlockRange().InsertBefore(node, cmp);
             LowerNode(cmp);
