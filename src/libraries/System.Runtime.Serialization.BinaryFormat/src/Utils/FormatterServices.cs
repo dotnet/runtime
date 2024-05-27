@@ -11,7 +11,7 @@ internal static class FormatterServices
 {
     private static AssemblyNameInfo? s_coreLibAssemblyName;
 
-    internal static AssemblyNameInfo CoreLibAssemblyName => s_coreLibAssemblyName ??= AssemblyNameInfo.Parse(GetAssemblyNameIncludingTypeForwards(typeof(object)).AsSpan());
+    internal static AssemblyNameInfo CoreLibAssemblyName => s_coreLibAssemblyName ??= AssemblyNameInfo.Parse("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089");
 
     internal static string GetAssemblyNameIncludingTypeForwards(Type type)
     {

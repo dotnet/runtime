@@ -11,7 +11,7 @@ namespace System.Resources.Extensions
 {
     public partial class DeserializingResourceReader
     {
-        private static readonly bool UseBinaryFormatter = AppContext.TryGetSwitch("System.Resources.Extensions.UseBinaryFormatter", out bool fileConfig) && fileConfig;
+        private static readonly bool UseBinaryFormatter = AppContext.TryGetSwitch("System.Resources.Extensions.UseBinaryFormatter", out bool isEnabled) && isEnabled;
 
         private bool _assumeBinaryFormatter;
 
