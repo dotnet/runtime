@@ -4,7 +4,7 @@
 #ifndef _GCHEAPUTILITIES_H_
 #define _GCHEAPUTILITIES_H_
 
-#include "common.h"
+#include "eventtracebase.h"
 #include "gcinterface.h"
 #include "math.h"
 
@@ -16,6 +16,8 @@ extern "C" {
 #endif // !DACCESS_COMPILE
 
 const DWORD SamplingDistributionMean = (100 * 1024);
+
+CLRRandom* GetRandomizer();
 
 // This struct adds some state that is only visible to the EE onto the standard gc_alloc_context
 typedef struct _ee_alloc_context
@@ -65,13 +67,13 @@ typedef struct _ee_alloc_context
     }
 
     // Regenerate the randomized sampling limit and update the combined_limit field.
-    inline void UpdateCombinedLimit(CLRRandom* pRandom)
+    inline void UpdateCombinedLimit()
     {
-        UpdateCombinedLimit(IsRandomizedSamplingEnabled(), pRandom);
+        UpdateCombinedLimit(IsRandomizedSamplingEnabled());
     }
 
     // Regenerate the randomized sampling limit and update the combined_limit field.
-    inline void UpdateCombinedLimit(bool samplingEnabled, CLRRandom* pRandom)
+    inline void UpdateCombinedLimit(bool samplingEnabled)
     {
         if (!samplingEnabled)
         {
@@ -80,17 +82,17 @@ typedef struct _ee_alloc_context
         else
         {
             // compute the next sampling limit based on a geometric distribution
-            uint8_t* sampling_limit = gc_alloc_context.alloc_ptr + ComputeGeometricRandom(pRandom);
+            uint8_t* sampling_limit = gc_alloc_context.alloc_ptr + ComputeGeometricRandom();
 
             // if the sampling limit is larger than the allocation context, no sampling will occur in this AC
             combined_limit = Min(sampling_limit, gc_alloc_context.alloc_limit);
         }
     }
 
-    static inline int ComputeGeometricRandom(CLRRandom* pRandomizer)
+    static inline int ComputeGeometricRandom()
     {
         // compute a random sample from the Geometric distribution
-        double probability = pRandomizer->NextDouble();
+        double probability = GetRandomizer()->NextDouble();
         int threshold = (int)(-log(1 - probability) * SamplingDistributionMean);
         return threshold;
     }
