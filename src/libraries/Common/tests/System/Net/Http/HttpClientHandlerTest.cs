@@ -5,7 +5,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net.Http.Headers;
-using System.Net.Sockets;
 #if !NETFRAMEWORK
 using System.Net.Quic;
 #endif
@@ -1031,11 +1030,11 @@ namespace System.Net.Http.Functional.Tests
                 }
 
                 using (var client = new HttpMessageInvoker(CreateHttpClientHandler()))
-                using (HttpResponseMessage response = await client.SendAsync(TestAsync, request, CancellationToken.None).ConfigureAwait(false))
+                using (HttpResponseMessage response = await client.SendAsync(TestAsync, request, CancellationToken.None))
                 {
-                    using (Stream responseStream = await response.Content.ReadAsStreamAsync(TestAsync).ConfigureAwait(false))
+                    using (Stream responseStream = await response.Content.ReadAsStreamAsync(TestAsync))
                     {
-                        Assert.Same(responseStream, await response.Content.ReadAsStreamAsync(TestAsync).ConfigureAwait(false));
+                        Assert.Same(responseStream, await response.Content.ReadAsStreamAsync(TestAsync));
 
                         // Boolean properties returning correct values
                         Assert.True(responseStream.CanRead);
