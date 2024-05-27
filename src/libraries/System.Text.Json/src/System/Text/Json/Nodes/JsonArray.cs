@@ -44,7 +44,7 @@ namespace System.Text.Json.Nodes
         /// </summary>
         /// <param name="options">Options to control the behavior.</param>
         /// <param name="items">The items to add to the new <see cref="JsonArray"/>.</param>
-        public JsonArray(JsonNodeOptions options, /*params*/ ReadOnlySpan<JsonNode?> items) : base(options)
+        public JsonArray(JsonNodeOptions options, params ReadOnlySpan<JsonNode?> items) : base(options)
         {
             InitializeFromSpan(items);
         }
@@ -62,7 +62,7 @@ namespace System.Text.Json.Nodes
         ///   Initializes a new instance of the <see cref="JsonArray"/> class that contains items from the specified span.
         /// </summary>
         /// <param name="items">The items to add to the new <see cref="JsonArray"/>.</param>
-        public JsonArray(/*params*/ ReadOnlySpan<JsonNode?> items) : base()
+        public JsonArray(params ReadOnlySpan<JsonNode?> items) : base()
         {
             InitializeFromSpan(items);
         }

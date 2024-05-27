@@ -408,7 +408,7 @@ namespace System
         public static bool TryWrite<TArg0, TArg1>(this System.Span<char> destination, System.IFormatProvider? provider, System.Text.CompositeFormat format, out int charsWritten, TArg0 arg0, TArg1 arg1) { throw null; }
         public static bool TryWrite<TArg0, TArg1, TArg2>(this System.Span<char> destination, System.IFormatProvider? provider, System.Text.CompositeFormat format, out int charsWritten, TArg0 arg0, TArg1 arg1, TArg2 arg2) { throw null; }
         public static bool TryWrite(this Span<char> destination, System.IFormatProvider? provider, System.Text.CompositeFormat format, out int charsWritten, params object?[] args) { throw null; }
-        public static bool TryWrite(this Span<char> destination, System.IFormatProvider? provider, System.Text.CompositeFormat format, out int charsWritten, System.ReadOnlySpan<object?> args) { throw null; }
+        public static bool TryWrite(this Span<char> destination, System.IFormatProvider? provider, System.Text.CompositeFormat format, out int charsWritten, params System.ReadOnlySpan<object?> args) { throw null; }
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         [System.Runtime.CompilerServices.InterpolatedStringHandlerAttribute]
         public ref struct TryWriteInterpolatedStringHandler

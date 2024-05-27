@@ -192,14 +192,14 @@ namespace System.Text.Json.Tests
         public virtual string Company { get; set; }
         public virtual Range<decimal> DecimalRange { get; set; }
         public virtual Range<int> IntRange { get; set; }
-        public virtual Range<decimal> NullDecimalRange { get; set; }
+        public virtual Range<decimal>? NullDecimalRange { get; set; }
     }
 
     internal class MyClass
     {
-        public string Value { get; set; }
+        public string? Value { get; set; }
 
-        public IThing Thing { get; set; }
+        public IThing? Thing { get; set; }
     }
 
     internal interface IThing
@@ -215,6 +215,6 @@ namespace System.Text.Json.Tests
     internal class ByteArrayClass
     {
         public byte[] ByteArray { get; set; }
-        public byte[] NullByteArray { get; set; }
+        public byte[]? NullByteArray { get; set; }
     }
 }
