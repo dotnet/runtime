@@ -973,9 +973,6 @@
         <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/explicitlayout/Regressions/ASURT/ASURT150271/test3/*">
             <Issue>Won't fix https://github.com/dotnet/corert/issues/2396</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/generics/Instantiation/Negative/abstract01/*">
-            <Issue>https://github.com/dotnet/runtimelab/issues/155: Thorough checking of invalid inputs</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/MethodImpl/generics_override1/*">
             <Issue>https://github.com/dotnet/runtimelab/issues/207</Issue>
         </ExcludeList>
