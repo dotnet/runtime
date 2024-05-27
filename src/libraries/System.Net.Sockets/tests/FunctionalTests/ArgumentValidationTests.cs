@@ -1158,6 +1158,7 @@ namespace System.Net.Sockets.Tests
             Assert.Throws<ArgumentNullException>(() => Socket.CancelConnectAsync(null));
         }
 
+        // MacOS doesn't support setting don't-fragment (DF) bit
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotOSX))]
         public void CanSetDontFragment_OnIPV6Address_DualModeSocket()
         {
