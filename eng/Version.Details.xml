@@ -390,6 +390,10 @@
       <Uri>https://github.com/dotnet/sdk</Uri>
       <Sha>a134a94cfb1209e4181072719d554eb232b51317</Sha>
     </Dependency>
+    <Dependency Name="VS.Redist.Common.NetCore.SdkPlaceholder" Version="9.0.100-preview.5.24272.19">
+      <Uri>https://github.com/dotnet/sdk</Uri>
+      <Sha>a134a94cfb1209e4181072719d554eb232b51317</Sha>
+    </Dependency>
     <!-- Intermediate is necessary for source build. -->
     <Dependency Name="Microsoft.SourceBuild.Intermediate.sdk" Version="9.0.100-preview.5.24272.19">
       <Uri>https://github.com/dotnet/sdk</Uri>
