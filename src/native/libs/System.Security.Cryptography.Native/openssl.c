@@ -1278,7 +1278,6 @@ static void ExDataFreeNoOp(
     // do nothing.
 }
 
-
 static int ExDataDupNoOp(
     CRYPTO_EX_DATA* to,
 #if OPENSSL_VERSION_NUMBER >= OPENSSL_VERSION_1_1_0_RTM

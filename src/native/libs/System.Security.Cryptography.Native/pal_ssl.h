@@ -463,7 +463,7 @@ Shims the SSL_session_reused macro.
 PALEXPORT int32_t CryptoNative_SslSessionReused(SSL* ssl);
 
 /*
-Sets app data pointer to given session instance.
+Sets the app data pointer for the given session instance.
 */
 PALEXPORT void CryptoNative_SslSessionSetData(SSL_SESSION* session, void* val);
 

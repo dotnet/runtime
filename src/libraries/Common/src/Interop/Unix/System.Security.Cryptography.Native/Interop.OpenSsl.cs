@@ -331,7 +331,7 @@ internal static partial class Interop
                 }
                 else
                 {
-                    var key = new SslContextCacheKey(protocols, sslAuthenticationOptions.CertificateContext?.TargetCertificate.GetCertHash());
+                    var key = new SslContextCacheKey(protocols, sslAuthenticationOptions.CertificateContext?.TargetCertificate.GetCertHash(HashAlgorithmName.SHA256));
                     s_clientSslContexts.TryGetValue(key, out sslCtxHandle);
                 }
             }
