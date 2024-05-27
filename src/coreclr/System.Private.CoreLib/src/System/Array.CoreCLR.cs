@@ -62,7 +62,10 @@ namespace System
             if ((uint)(destinationIndex + length) > destinationArray.NativeLength)
                 throw new ArgumentException(SR.Arg_LongerThanDestArray, nameof(destinationArray));
 
-            if (sourceArray.GetType() == destinationArray.GetType() || IsSimpleCopy(sourceArray, destinationArray))
+            AssignArrayEnum assignType = AssignArrayEnum.AssignWrongType;
+
+            if (sourceArray.GetType() == destinationArray.GetType()
+                || (assignType = CanAssignArrayType(sourceArray, destinationArray)) == AssignArrayEnum.AssignSimpleCopy)
             {
                 MethodTable* pMT = RuntimeHelpers.GetMethodTable(sourceArray);
 
@@ -86,40 +89,7 @@ namespace System
                 throw new ArrayTypeMismatchException(SR.ArrayTypeMismatch_ConstrainedCopy);
 
             // Rare
-            CopySlow(sourceArray, sourceIndex, destinationArray, destinationIndex, length);
-        }
-
-        private static unsafe bool IsSimpleCopy(Array sourceArray, Array destinationArray)
-        {
-            TypeHandle srcTH = RuntimeHelpers.GetMethodTable(sourceArray)->GetArrayElementTypeHandle();
-            TypeHandle destTH = RuntimeHelpers.GetMethodTable(destinationArray)->GetArrayElementTypeHandle();
-            if (TypeHandle.AreSameType(srcTH, destTH)) // This check kicks for different array kind or dimensions
-                return true;
-
-            if (srcTH.IsValueType)
-            {
-                // Value class boxing
-                if (!destTH.IsValueType)
-                    return false;
-
-                CorElementType srcElType = sourceArray.GetCorElementTypeOfElementType();
-                CorElementType destElType = destinationArray.GetCorElementTypeOfElementType();
-
-                // Copying primitives from one type to another
-                if (srcElType.IsPrimitiveType() && destElType.IsPrimitiveType())
-                {
-                    if (GetNormalizedIntegralArrayElementType(srcElType) == GetNormalizedIntegralArrayElementType(destElType))
-                        return true;
-                }
-            }
-            else
-            {
-                // Value class unboxing
-                if (destTH.IsValueType)
-                    return false;
-            }
-
-            return srcTH.CanCastTo(destTH);
+            CopySlow(sourceArray, sourceIndex, destinationArray, destinationIndex, length, assignType);
         }
 
         private static CorElementType GetNormalizedIntegralArrayElementType(CorElementType elementType)
@@ -146,18 +116,16 @@ namespace System
         // instance & might fail when called from within a CER, or if the
         // reliable flag is true, it will either always succeed or always
         // throw an exception with no side effects.
-        private static unsafe void CopySlow(Array sourceArray, int sourceIndex, Array destinationArray, int destinationIndex, int length)
+        private static unsafe void CopySlow(Array sourceArray, int sourceIndex, Array destinationArray, int destinationIndex, int length, AssignArrayEnum assignType)
         {
             Debug.Assert(sourceArray.Rank == destinationArray.Rank);
 
-            AssignArrayEnum r = CanAssignArrayType(sourceArray, destinationArray);
-
-            if (r == AssignArrayEnum.AssignWrongType)
+            if (assignType == AssignArrayEnum.AssignWrongType)
                 ThrowHelper.ThrowArrayTypeMismatchException_CantAssignType();
 
             if (length > 0)
             {
-                switch (r)
+                switch (assignType)
                 {
                     case AssignArrayEnum.AssignUnboxValueClass:
                         CopyImplUnBoxEachElement(sourceArray, sourceIndex, destinationArray, destinationIndex, length);
@@ -185,6 +153,7 @@ namespace System
         // Must match the definition in arraynative.cpp
         private enum AssignArrayEnum
         {
+            AssignSimpleCopy,
             AssignWrongType,
             AssignMustCast,
             AssignBoxValueClassOrPrimitive,
@@ -196,7 +165,9 @@ namespace System
         {
             TypeHandle srcTH = RuntimeHelpers.GetMethodTable(sourceArray)->GetArrayElementTypeHandle();
             TypeHandle destTH = RuntimeHelpers.GetMethodTable(destinationArray)->GetArrayElementTypeHandle();
-            Debug.Assert(!TypeHandle.AreSameType(srcTH, destTH)); // Handled by fast path
+
+            if (TypeHandle.AreSameType(srcTH, destTH)) // This check kicks for different array kind or dimensions
+                return AssignArrayEnum.AssignSimpleCopy;
 
             // Value class boxing
             if (srcTH.IsValueType && !destTH.IsValueType)
@@ -224,15 +195,17 @@ namespace System
             // Copying primitives from one type to another
             if (srcElType.IsPrimitiveType() && destElType.IsPrimitiveType())
             {
-                Debug.Assert(srcElType != destElType); // Handled by fast path
-                if (RuntimeHelpers.CanPrimitiveWiden(srcElType, destElType))
+                if (GetNormalizedIntegralArrayElementType(srcElType) == GetNormalizedIntegralArrayElementType(destElType))
+                    return AssignArrayEnum.AssignSimpleCopy;
+                else if (RuntimeHelpers.CanPrimitiveWiden(srcElType, destElType))
                     return AssignArrayEnum.AssignPrimitiveWiden;
                 else
                     return AssignArrayEnum.AssignWrongType;
             }
 
             // dest Object extends src
-            Debug.Assert(!srcTH.CanCastTo(destTH)); // Handled by fast path
+            if (srcTH.CanCastTo(destTH))
+                return AssignArrayEnum.AssignSimpleCopy;
 
             // src Object extends dest
             if (destTH.CanCastTo(srcTH))
