@@ -20,7 +20,7 @@ static class PayloadReader
     /// <summary>
     /// Checks if given buffer contains only Binary Formatter payload.
     /// </summary>
-    /// <param name="bytes">The buffer to inspect</param>
+    /// <param name="bytes">The buffer to inspect.</param>
     /// <returns>True if the first and last bytes indicate Binary Format, otherwise false.</returns>
     public static bool ContainsBinaryFormatterPayload(ReadOnlySpan<byte> bytes)
         => bytes.Length >= SerializedStreamHeaderRecord.Size + 2
@@ -28,14 +28,14 @@ static class PayloadReader
             && bytes[bytes.Length - 1] == (byte)RecordType.MessageEnd;
 
     /// <summary>
-    /// Checks if given stream contains only Binary Formatter payload.
+    /// Determines if the provided stream contains represents an NRBF payload and no other content.
     /// </summary>
-    /// <param name="stream">The readable and seekable stream to inspect.</param>
-    /// <returns>True if the first and last bytes indicate Binary Format, otherwise false.</returns>
+    /// <param name="stream">The stream to inspect. The stream must be both readable and seekable.</param>
+    /// <returns><see langword="true" /> if the first and last bytes indicate Binary Format; otherwise, <see langword="false" />.</returns>
     /// <exception cref="ArgumentNullException">The stream is null.</exception>
     /// <exception cref="NotSupportedException">The stream does not support reading or seeking.</exception>
     /// <exception cref="ObjectDisposedException">The stream was closed.</exception>
-    /// <remarks><para>It does not modify the position of the stream.</para></remarks>
+    /// <remarks><para>When this method returns, <paramref name="stream" /> will be restored to its original position.</para></remarks>
     public static bool ContainsBinaryFormatterPayload(Stream stream)
     {
 #if NETCOREAPP

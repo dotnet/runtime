@@ -15,7 +15,6 @@ internal sealed partial class BinaryFormattedObject
         /// <summary>
         ///  How exactly assembly names need to match for deserialization.
         /// </summary>
-
         public FormatterAssemblyStyle AssemblyMatching { get; set; } = FormatterAssemblyStyle.Simple;
 
         /// <summary>

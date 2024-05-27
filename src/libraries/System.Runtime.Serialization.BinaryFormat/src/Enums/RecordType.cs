@@ -9,7 +9,7 @@ namespace System.Runtime.Serialization.BinaryFormat;
 /// <remarks>
 ///  <para>
 ///   The enumeration does not contain all values supported by the <see href="https://learn.microsoft.com/openspecs/windows_protocols/ms-nrbf/954a0657-b901-4813-9398-4ec732fe8b32">
-///   [MS-NRBF] 2.1.2.1</see>, but only those supported by the <seealso cref="PayloadReader"/>.
+///   [MS-NRBF] 2.1.2.1</see>, but only those supported by the <see cref="PayloadReader"/>.
 ///  </para>
 /// </remarks>
 #if SYSTEM_RUNTIME_SERIALIZATION_BINARYFORMAT
