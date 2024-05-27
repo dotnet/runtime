@@ -261,7 +261,13 @@ namespace System
                 // single UTF8 ASCII vector - the implementation can be shared with UTF8 paths.
                 Vector128<ushort> vec1 = Vector128.LoadUnsafe(ref srcRef, offset);
                 Vector128<ushort> vec2 = Vector128.LoadUnsafe(ref srcRef, offset + (nuint)Vector128<ushort>.Count);
-                Vector128<byte> vec = Vector128.Narrow(vec1, vec2);
+
+                // Pack the two UTF-16 vectors into a single UTF8 ASCII vector.
+                // PackUnsignedSaturate is cheaper than Vector128.Narrow on X86, but still correct in this case as
+                // any values that aren't valid ASCII will also not be valid Hex after narrowing, and get rejected below.
+                Vector128<byte> vec = Sse2.IsSupported
+                    ? Sse2.PackUnsignedSaturate(vec1.AsInt16(), vec2.AsInt16())
+                    : Vector128.Narrow(vec1, vec2);
 
                 // Based on "Algorithm #3" https://github.com/WojciechMula/toys/blob/master/simd-parse-hex/geoff_algorithm.cpp
                 // by Geoff Langdale and Wojciech Mula
