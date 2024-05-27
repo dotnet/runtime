@@ -13904,6 +13904,20 @@ namespace System.Runtime.InteropServices.Swift
         public unsafe SwiftSelf(void* value) { throw null; }
         public unsafe void* Value { get { throw null; } }
     }
+    [System.CLSCompliantAttribute(false)]
+    public readonly partial struct SwiftSelf<T> where T: unmanaged
+    {
+        private readonly int _dummyPrimitive;
+        public unsafe SwiftSelf(T value) { throw null; }
+        public unsafe T Value { get { throw null; } }
+    }
+    [System.CLSCompliantAttribute(false)]
+    public readonly partial struct SwiftIndirectResult
+    {
+        private readonly int _dummyPrimitive;
+        public unsafe SwiftIndirectResult(void* value) { throw null; }
+        public unsafe void* Value { get { throw null; } }
+    }
 }
 namespace System.Runtime.Remoting
 {
