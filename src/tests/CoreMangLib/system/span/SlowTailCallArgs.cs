@@ -9,7 +9,7 @@ using Xunit;
 
 public static class Program
 {
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
     public static int TestEntryPoint()
     {
         bool allPassed = true;

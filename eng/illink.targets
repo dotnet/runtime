@@ -33,8 +33,8 @@
     <!-- Only run the trim analyzer on libraries which have been annotated. -->
     <EnableTrimAnalyzer Condition="'$(EnableTrimAnalyzer)' == '' And (Exists('$(ILLinkSuppressionsXml)') Or Exists('$(ILLinkSuppressionsConfigurationSpecificXml)'))">false</EnableTrimAnalyzer>
 
-    <!-- if building a PDB, tell illink to rewrite the symbols file -->
-    <ILLinkRewritePDBs Condition="'$(ILLinkRewritePDBs)' == '' and '$(DebugSymbols)' != 'false'">true</ILLinkRewritePDBs>
+    <!-- tell illink to rewrite the symbols file -->
+    <ILLinkRewritePDBs Condition="'$(ILLinkRewritePDBs)' == ''">true</ILLinkRewritePDBs>
 
     <ILLinkResourcesSubstitutionIntermediatePath>$(IntermediateOutputPath)ILLink.Resources.Substitutions.xml</ILLinkResourcesSubstitutionIntermediatePath>
     <GenerateResourcesSubstitutions Condition="'$(GenerateResourcesSubstitutions)' == '' and '$(StringResourcesPath)' != ''">true</GenerateResourcesSubstitutions>

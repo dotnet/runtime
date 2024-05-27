@@ -365,7 +365,7 @@ namespace Mono.Linker.Steps
 
 			if (type.HasEvents) {
 				foreach (var ev in type.Events) {
-					MarkEventVisibleToReflection (ev, new DependencyInfo (DependencyKind.MemberOfType, origin), origin);
+					MarkEventVisibleToReflection (ev, new DependencyInfo (DependencyKind.MemberOfType, type), origin);
 				}
 			}
 		}
@@ -1920,7 +1920,7 @@ namespace Mono.Linker.Steps
 			// DependencyInfo used to access the event from reflection, to produce warnings for annotated
 			// event methods.
 			MarkMethodIfNotNull (@event.AddMethod, reason, origin);
-			MarkMethodIfNotNull (@event.InvokeMethod, reason, origin);
+			MarkMethodIfNotNull (@event.RemoveMethod, reason, origin);
 			MarkMethodIfNotNull (@event.InvokeMethod, reason, origin);
 			MarkMethodsIf (@event.OtherMethods, m => true, reason, origin);
 		}
@@ -2947,7 +2947,7 @@ namespace Mono.Linker.Steps
 
 		protected virtual MethodDefinition? MarkMethod (MethodReference reference, DependencyInfo reason, in MessageOrigin origin)
 		{
-			DependencyKind originalReasonKind = reason.Kind;
+			DependencyInfo originalReason = reason;
 			(reference, reason) = GetOriginalMethod (reference, reason, origin);
 
 			if (reference.DeclaringType is ArrayType arrayType) {
@@ -2977,7 +2977,7 @@ namespace Mono.Linker.Steps
 
 			// Use the original reason as it's important to correctly generate warnings
 			// the updated reason is only useful for better tracking of dependencies.
-			ProcessAnalysisAnnotationsForMethod (method, originalReasonKind, origin);
+			ProcessAnalysisAnnotationsForMethod (method, originalReason.Kind, origin);
 
 			// Record the reason for marking a method on each call.
 			switch (reason.Kind) {
@@ -3000,6 +3000,12 @@ namespace Mono.Linker.Steps
 				// this is for the same reason as for tracking, but this time so that we report potential
 				// warnings from a better place.
 				MarkType (method.DeclaringType, new DependencyInfo (DependencyKind.DeclaringTypeOfCalledMethod, method), new MessageOrigin (reason.Source as IMemberDefinition ?? method));
+			}
+
+			if (method.TryGetEvent (out EventDefinition? @event)
+				&& reason.Kind != DependencyKind.EventMethod) {
+				var kind = PropagateDependencyKindToAccessors (reason.Kind, DependencyKind.EventOfEventMethod);
+				MarkEvent (@event, new DependencyInfo (kind, originalReason.Source), origin);
 			}
 
 			// We will only enqueue a method to be processed if it hasn't been processed yet.
@@ -3070,6 +3076,7 @@ namespace Mono.Linker.Steps
 			// and the DependencyKind in that case will be one of the dynamic acccess kinds and not MemberOfType
 			// since in those cases the warnings are desirable (potential access through reflection).
 			case DependencyKind.MemberOfType:
+			case DependencyKind.EventMethod:
 
 			// Used when marking a cctor because a type or field is kept. This should not warn because we already warn
 			// on access to members of the type which could trigger the cctor.
@@ -3160,9 +3167,6 @@ namespace Mono.Linker.Steps
 					Annotations.ProcessSatelliteAssemblies = true;
 			} else if (method.TryGetProperty (out PropertyDefinition? property))
 				MarkProperty (property, new DependencyInfo (PropagateDependencyKindToAccessors (reason.Kind, DependencyKind.PropertyOfPropertyMethod), method));
-			else if (method.TryGetEvent (out EventDefinition? @event)) {
-				MarkEvent (@event, new DependencyInfo (PropagateDependencyKindToAccessors (reason.Kind, DependencyKind.EventOfEventMethod), method), methodOrigin);
-			}
 
 			if (method.HasMetadataParameters ()) {
 #pragma warning disable RS0030 // MethodReference.Parameters is banned. It's easiest to leave the code as is for now
@@ -3504,17 +3508,17 @@ namespace Mono.Linker.Steps
 
 		protected internal virtual void MarkEvent (EventDefinition evt, in DependencyInfo reason, MessageOrigin origin)
 		{
-			if (!Annotations.MarkProcessed (evt, reason))
-				return;
-
 			origin = reason.Source is IMemberDefinition member ? new MessageOrigin (member) : origin;
-			DependencyKind dependencyKind = PropagateDependencyKindToAccessors (reason.Kind, DependencyKind.EventMethod);
+			DependencyKind dependencyKind = DependencyKind.EventMethod;
+
 			MarkMethodIfNotNull (evt.AddMethod, new DependencyInfo (dependencyKind, evt), origin);
 			MarkMethodIfNotNull (evt.InvokeMethod, new DependencyInfo (dependencyKind, evt), origin);
 			MarkMethodIfNotNull (evt.RemoveMethod, new DependencyInfo (dependencyKind, evt), origin);
 
-			var eventOrigin = new MessageOrigin (evt);
+			if (!Annotations.MarkProcessed (evt, reason))
+				return;
 
+			var eventOrigin = new MessageOrigin (evt);
 			MarkCustomAttributes (evt, new DependencyInfo (DependencyKind.CustomAttribute, evt), eventOrigin);
 			DoAdditionalEventProcessing (evt);
 		}
