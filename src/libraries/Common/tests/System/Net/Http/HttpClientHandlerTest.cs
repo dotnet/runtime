@@ -1249,8 +1249,8 @@ namespace System.Net.Http.Functional.Tests
                 {
                     var request = new HttpRequestMessage(HttpMethod.Get, uri) { Version = UseVersion };
 
-                    using (HttpResponseMessage response = await client.SendAsync(TestAsync, request, CancellationToken.None).ConfigureAwait(false))
-                    using (Stream responseStream = await response.Content.ReadAsStreamAsync(TestAsync).ConfigureAwait(false))
+                    using (HttpResponseMessage response = await client.SendAsync(TestAsync, request, CancellationToken.None))
+                    using (Stream responseStream = await response.Content.ReadAsStreamAsync(TestAsync))
                     {
                         // Boolean properties returning correct values
                         Assert.True(responseStream.CanRead);
