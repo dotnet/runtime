@@ -116,6 +116,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Theory]
+        [InlineData(0, 0)]
         [InlineData(1, 2)]
         [InlineData(1, 6)]
         [InlineData(2, 1)]
