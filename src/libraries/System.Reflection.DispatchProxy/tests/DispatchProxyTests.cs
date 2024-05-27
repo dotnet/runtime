@@ -557,6 +557,28 @@ namespace DispatchProxyTests
             Assert.NotNull(propertyInfo);
         }
 
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public static void Proxy_Declares_Interface_Static_Virtual_Properties(bool useGenericCreate)
+        {
+            TestType_IStaticVirtualPropertyService proxy = CreateHelper<TestType_IStaticVirtualPropertyService, TestDispatchProxy>(useGenericCreate);
+            PropertyInfo propertyInfo = proxy.GetType().GetTypeInfo().GetDeclaredProperty(nameof(TestType_IStaticVirtualPropertyService.TestProperty));
+            Assert.NotNull(propertyInfo);
+            Assert.True((propertyInfo.GetMethod!.Attributes & MethodAttributes.Static) != 0);
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public static void Proxy_Declares_Interface_Static_Virtual_Methods(bool useGenericCreate)
+        {
+            TestType_IStaticVirtualMethodService proxy = CreateHelper<TestType_IStaticVirtualMethodService, TestDispatchProxy>(useGenericCreate);
+            MethodInfo methodInfo = proxy.GetType().GetTypeInfo().GetDeclaredMethod(nameof(TestType_IStaticVirtualMethodService.TestMethod));
+            Assert.NotNull(methodInfo);
+            Assert.True((methodInfo.Attributes & MethodAttributes.Static) != 0);
+        }
+
 #if NET
         [Fact]
         public static void Invoke_Event_Add_And_Remove_And_Raise_Invokes_Correct_Methods_Generic_And_Non_Generic_Tests()

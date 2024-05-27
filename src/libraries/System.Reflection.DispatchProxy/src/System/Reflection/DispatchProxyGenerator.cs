@@ -425,7 +425,14 @@ namespace System.Reflection
                     paramReqMods[i] = parameters[i].GetRequiredCustomModifiers();
                 }
 
-                MethodBuilder mdb = _tb.DefineMethod(mi.Name, MethodAttributes.Public | MethodAttributes.Virtual, CallingConventions.Standard,
+                MethodAttributes attributes = MethodAttributes.Public;
+
+                if ((mi.Attributes & MethodAttributes.Static) != 0)
+                    attributes |= MethodAttributes.Static;
+                else
+                    attributes |= MethodAttributes.Virtual;
+
+                MethodBuilder mdb = _tb.DefineMethod(mi.Name, attributes, CallingConventions.Standard,
                     mi.ReturnType, null, null,
                     paramTypes, paramReqMods, null);
 
