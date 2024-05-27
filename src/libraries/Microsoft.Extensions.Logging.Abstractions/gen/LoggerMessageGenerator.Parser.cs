@@ -633,6 +633,15 @@ namespace Microsoft.Extensions.Logging.Generators
                 INamedTypeSymbol? currentClassType = classType;
                 bool onMostDerivedType = true;
 
+                // We keep track of the names of all non-logger fields, since they prevent referring to logger
+                // primary constructor parameters with the same name. Example:
+                // partial class C(ILogger logger)
+                // {
+                //     private readonly object logger = logger;
+                //
+                //     [LoggerMessage(EventId = 0, Level = LogLevel.Debug, Message = ""M1"")]
+                //     public partial void M1(); // The ILogger primary constructor parameter cannot be used here.
+                // }
                 HashSet<string> shadowedNames = new(StringComparer.Ordinal);
 
                 while (currentClassType is { SpecialType: not SpecialType.System_Object })
@@ -656,8 +665,8 @@ namespace Microsoft.Extensions.Logging.Generators
                         }
                         else
                         {
-                        shadowedNames.Add(fs.Name);
-                    }
+                            shadowedNames.Add(fs.Name);
+                        }
                     }
 
                     onMostDerivedType = false;
