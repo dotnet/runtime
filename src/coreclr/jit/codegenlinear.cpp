@@ -937,9 +937,21 @@ void CodeGen::genSpillVar(GenTree* tree)
         // but we will kill the var in the reg (below).
         if (!varDsc->IsAlwaysAliveInMemory())
         {
-            instruction storeIns = ins_Store(lclType, compiler->isSIMDTypeLocalAligned(varNum));
             assert(varDsc->GetRegNum() == tree->GetRegNum());
-            inst_TT_RV(storeIns, size, tree, tree->GetRegNum());
+#if defined(FEATURE_SIMD)
+            if ((lclType == TYP_SIMD12) && !compiler->lvaMapSimd12ToSimd16(varDsc))
+            {
+                // Store SIMD12 to stack as 12 bytes
+                // TODO: an internal simd reg when SSE41 is not supported
+                GetEmitter()->emitStoreSimd12ToLclOffset(varNum, tree->AsLclVarCommon()->GetLclOffs(),
+                                                         tree->GetRegNum(), tree);
+            }
+            else
+#endif
+            {
+                instruction storeIns = ins_Store(lclType, compiler->isSIMDTypeLocalAligned(varNum));
+                inst_TT_RV(storeIns, size, tree, tree->GetRegNum());
+            }
         }
 
         // We should only have both GTF_SPILL (i.e. the flag causing this method to be called) and
