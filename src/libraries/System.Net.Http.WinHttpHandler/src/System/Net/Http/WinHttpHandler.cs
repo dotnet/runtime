@@ -903,6 +903,8 @@ namespace System.Net.Http
                 ThrowOnInvalidHandle(connectHandle, nameof(Interop.WinHttp.WinHttpConnect));
                 connectHandle.SetParentHandle(_sessionHandle);
 
+                // Try to use the requested version if a known/supported version was explicitly requested.
+                // Otherwise, we simply use winhttp's default.
                 string? httpVersion = null;
                 if (state.RequestMessage.Version == HttpVersion.Version10)
                 {

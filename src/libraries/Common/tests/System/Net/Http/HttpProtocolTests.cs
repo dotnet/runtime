@@ -104,8 +104,10 @@ namespace System.Net.Http.Functional.Tests
                 {
                     HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, url);
                     request.Version = new Version(majorVersion, minorVersion);
+
                     Task<HttpResponseMessage> getResponseTask = client.SendAsync(TestAsync, request);
                     Task<List<string>> serverTask = server.AcceptConnectionSendResponseAndCloseAsync();
+
                     await TestHelper.WhenAllCompletedOrAnyFailed(getResponseTask, serverTask);
                     var requestLines = await serverTask;
                     Assert.Equal($"GET {url.PathAndQuery} HTTP/1.1", requestLines[0]);
