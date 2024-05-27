@@ -353,6 +353,41 @@ public class InvalidInputTests : ReadTests
         Assert.Throws<SerializationException>(() => PayloadReader.Read(stream));
     }
 
+    [Theory]
+    [InlineData(RecordType.ClassWithMembersAndTypes)]
+    [InlineData(RecordType.SystemClassWithMembersAndTypes)]
+    public void ThrowsForDuplicateMemberNames(RecordType recordType)
+    {
+        const int LibraryId = 2;
+        using MemoryStream stream = new();
+        BinaryWriter writer = new(stream, Encoding.UTF8);
+
+        WriteSerializedStreamHeader(writer);
+        if (recordType is RecordType.ClassWithMembersAndTypes)
+        {
+            WriteBinaryLibrary(writer, LibraryId, "LibraryName");
+        }
+
+        // ClassInfo (always present)
+        writer.Write((byte)recordType);
+        writer.Write(1); // object ID
+        writer.Write("TypeName"); // type name
+        writer.Write(2); // member count
+        writer.Write("MemberName");
+        writer.Write("MemberName");
+        writer.Write(1); // BinaryType.String
+        writer.Write(1); // BinaryType.String
+
+        if (recordType is RecordType.ClassWithMembersAndTypes)
+        {
+            writer.Write(LibraryId);
+        }
+        writer.Write((byte)RecordType.MessageEnd);
+
+        stream.Position = 0;
+        Assert.Throws<SerializationException>(() => PayloadReader.Read(stream));
+    }
+
     public static IEnumerable<object[]> ThrowsForInvalidPrimitiveType_Arguments()
     {
         foreach (RecordType recordType in new[] { RecordType.ClassWithMembersAndTypes, RecordType.SystemClassWithMembersAndTypes })

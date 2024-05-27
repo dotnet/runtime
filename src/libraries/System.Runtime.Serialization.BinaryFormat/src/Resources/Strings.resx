@@ -144,4 +144,10 @@
   <data name="Serialization_InvalidTypeOrAssemblyName" xml:space="preserve">
     <value>Invalid type or assembly name: `{0},{1}`.</value>
   </data>
+  <data name="Serialization_DuplicateMemberName" xml:space="preserve">
+    <value>Duplicate member name: `{0}`.</value>
+  </data>
+  <data name="Argument_NonSeekableStream" xml:space="preserve">
+    <value>Stream does not support seeking.</value>
+  </data>
 </root>

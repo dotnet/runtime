@@ -5,7 +5,7 @@ using System.Drawing;
 using System.Runtime.Serialization.Formatters;
 using System.Runtime.Versioning;
 
-namespace FormatTests.Common;
+namespace System.Resources.Extensions.Tests.Common;
 
 [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows))]
 public abstract class SystemDrawingTests<T> : SerializationTest<T> where T : ISerializer

@@ -3,7 +3,7 @@
 
 using System.Runtime.Serialization;
 
-namespace FormatTests.Common;
+namespace System.Resources.Extensions.Tests.Common;
 
 public abstract class EventTests<T> : SerializationTest<T> where T : ISerializer
 {

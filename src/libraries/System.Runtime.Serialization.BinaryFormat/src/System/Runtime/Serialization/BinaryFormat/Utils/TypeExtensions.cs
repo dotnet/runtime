@@ -1,19 +1,14 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Reflection.Metadata;
 using System.Runtime.CompilerServices;
 using System.Text;
 
-namespace System.Runtime.Serialization.BinaryFormat;
+namespace System.Runtime.Serialization.BinaryFormat.Utils;
 
-internal static class FormatterServices
+internal static class TypeExtensions
 {
-    private static AssemblyNameInfo? s_coreLibAssemblyName;
-
-    internal static AssemblyNameInfo CoreLibAssemblyName => s_coreLibAssemblyName ??= AssemblyNameInfo.Parse("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089");
-
-    internal static string GetAssemblyNameIncludingTypeForwards(Type type)
+    internal static string GetAssemblyNameIncludingTypeForwards(this Type type)
     {
         // Special case types like arrays
         Type attributedType = type;
@@ -30,7 +25,7 @@ internal static class FormatterServices
         return type.Assembly.FullName!;
     }
 
-    internal static string GetTypeFullNameIncludingTypeForwards(Type type)
+    internal static string GetTypeFullNameIncludingTypeForwards(this Type type)
     {
         return type.IsArray ?
             GetClrTypeFullNameForArray(type) :

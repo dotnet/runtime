@@ -4,9 +4,9 @@
 using System.Drawing;
 using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
-using FormatTests.Common.TestTypes;
+using System.Resources.Extensions.Tests.Common.TestTypes;
 
-namespace FormatTests.Common;
+namespace System.Resources.Extensions.Tests.Common;
 
 public abstract class SurrogateTests<T> : SerializationTest<T> where T : ISerializer
 {

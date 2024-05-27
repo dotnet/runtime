@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Reflection.Metadata;
+using System.Runtime.Serialization.BinaryFormat.Utils;
 
 namespace System.Runtime.Serialization.BinaryFormat;
 
@@ -62,7 +63,20 @@ internal sealed class ClassInfo
             // The NRBF specification does not prohibit multiple members with the same names,
             // however it's impossible to get such output with BinaryFormatter,
             // so we prohibit that on purpose (Add is going to throw on duplicates).
-            memberNames.Add(reader.ReadString(), i);
+            string memberName = reader.ReadString();
+#if NETCOREAPP
+            if (memberNames.TryAdd(memberName, i))
+            {
+                continue;
+            }
+#else
+            if (!memberNames.ContainsKey(memberName))
+            {
+                memberNames.Add(memberName, i);
+                continue;
+            }
+#endif
+            throw new SerializationException(SR.Format(SR.Serialization_DuplicateMemberName, memberName));
         }
 
         return new(objectId, typeName, memberNames);

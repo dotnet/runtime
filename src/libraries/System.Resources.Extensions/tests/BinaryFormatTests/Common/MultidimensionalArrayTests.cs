@@ -4,7 +4,7 @@
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
-namespace FormatTests.Common;
+namespace System.Resources.Extensions.Tests.Common;
 
 public abstract class MultidimensionalArrayTests<T> : SerializationTest<T> where T : ISerializer
 {

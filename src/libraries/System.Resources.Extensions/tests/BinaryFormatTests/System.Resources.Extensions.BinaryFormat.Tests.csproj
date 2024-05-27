@@ -1,8 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-unix;</TargetFrameworks>
-    <!-- some of the embeded resources have this assembly name hardcoded -->
-    <AssemblyName>BinaryFormatTests</AssemblyName>
     <!--
      Turning off a number of warnings that would otherwise litter this project due to special
      test type cases for binary formatting.
@@ -51,7 +49,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Include="$(LibrariesProjectRoot)\System.Resources.Extensions\src\BinaryFormat\**\*.cs" LinkBase="System.Resources.Extensions" />
+    <Compile Include="$(LibrariesProjectRoot)\System.Resources.Extensions\src\System\Resources\Extensions\BinaryFormat\**\*.cs" LinkBase="System.Resources.Extensions" />
   </ItemGroup>
 
 </Project>

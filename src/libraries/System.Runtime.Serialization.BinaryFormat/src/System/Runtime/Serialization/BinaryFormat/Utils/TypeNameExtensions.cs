@@ -4,11 +4,15 @@
 using System.Buffers;
 using System.Diagnostics;
 using System.Reflection.Metadata;
+using System.Runtime.CompilerServices;
+using System.Text;
 
-namespace System.Runtime.Serialization.BinaryFormat;
+namespace System.Runtime.Serialization.BinaryFormat.Utils;
 
 internal static class TypeNameExtensions
 {
+    internal const string CoreLibAssemblyName = "mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089";
+
     internal static TypeName ParseNonSystemClassRecordTypeName(this string rawName, BinaryLibraryRecord libraryRecord, PayloadOptions payloadOptions)
     {
         // Combining type and library name has two goals:
@@ -38,7 +42,7 @@ internal static class TypeNameExtensions
     internal static TypeName ParseSystemRecordTypeName(this string rawName, PayloadOptions payloadOptions)
     {
         ArraySegment<char> assemblyQualifiedName = GetAssemblyQualifiedName(rawName,
-            FormatterServices.CoreLibAssemblyName.FullName); // We know it's a System Record, so we set the LibraryName to CoreLib
+            CoreLibAssemblyName); // We know it's a System Record, so we set the LibraryName to CoreLib
 
         TypeName.TryParse(assemblyQualifiedName.AsSpan(), out TypeName? typeName, payloadOptions.TypeNameParseOptions);
         ArrayPool<char>.Shared.Return(assemblyQualifiedName.Array!);
@@ -47,7 +51,7 @@ internal static class TypeNameExtensions
     }
 
     internal static TypeName WithCoreLibAssemblyName(this TypeName systemType)
-        => systemType.WithAssemblyName(FormatterServices.CoreLibAssemblyName.FullName);
+        => systemType.WithAssemblyName(CoreLibAssemblyName);
 
     internal static TypeName WithAssemblyName(this TypeName typeName, string assemblyName)
     {

@@ -3,7 +3,7 @@
 
 using System.Runtime.Serialization;
 
-namespace FormatTests.Common.TestTypes;
+namespace System.Resources.Extensions.Tests.Common.TestTypes;
 
 [Serializable]
 public class ClassWithValueISerializable<T> : ISerializable

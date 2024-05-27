@@ -3,7 +3,7 @@
 
 using System.Runtime.Serialization;
 
-namespace FormatTests.Common;
+namespace System.Resources.Extensions.Tests.Common;
 
 internal class DelegateBinder : SerializationBinder
 {

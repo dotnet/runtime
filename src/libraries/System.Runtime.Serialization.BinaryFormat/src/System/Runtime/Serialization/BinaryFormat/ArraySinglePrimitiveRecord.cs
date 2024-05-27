@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Reflection.Metadata;
+using System.Runtime.Serialization.BinaryFormat.Utils;
 
 namespace System.Runtime.Serialization.BinaryFormat;
 
@@ -34,7 +35,7 @@ internal sealed class ArraySinglePrimitiveRecord<T> : ArrayRecord<T>
     public override RecordType RecordType => RecordType.ArraySinglePrimitive;
 
     public override TypeName ElementTypeName
-        => s_elementTypeName ??= TypeName.Parse(typeof(T).FullName.AsSpan()).WithAssemblyName(FormatterServices.GetAssemblyNameIncludingTypeForwards(typeof(T)));
+        => s_elementTypeName ??= TypeName.Parse(typeof(T).FullName.AsSpan()).WithAssemblyName(typeof(T).GetAssemblyNameIncludingTypeForwards());
 
     internal IReadOnlyList<T> Values { get; }
 
@@ -116,7 +117,7 @@ internal sealed class ArraySinglePrimitiveRecord<T> : ArrayRecord<T>
             }
             else if (typeof(T) == typeof(DateTime))
             {
-                values.Add((T)(object)BinaryReaderExtensions.CreateDateTimeFromData(reader.ReadInt64()));
+                values.Add((T)(object)Utils.BinaryReaderExtensions.CreateDateTimeFromData(reader.ReadInt64()));
             }
             else
             {

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.IO;
+using System.Runtime.Serialization.BinaryFormat.Utils;
 
 namespace System.Runtime.Serialization.BinaryFormat;
 
@@ -25,8 +26,8 @@ internal sealed class ClassWithMembersAndTypesRecord : ClassRecord
     public override RecordType RecordType => RecordType.ClassWithMembersAndTypes;
 
     public override bool IsTypeNameMatching(Type type)
-        => FormatterServices.GetTypeFullNameIncludingTypeForwards(type) == ClassInfo.TypeName.FullName
-        && FormatterServices.GetAssemblyNameIncludingTypeForwards(type) == ClassInfo.TypeName.AssemblyName!.FullName;
+        => type.GetTypeFullNameIncludingTypeForwards() == ClassInfo.TypeName.FullName
+        && type.GetAssemblyNameIncludingTypeForwards() == ClassInfo.TypeName.AssemblyName!.FullName;
 
     internal static ClassWithMembersAndTypesRecord Parse(BinaryReader reader, RecordMap recordMap, PayloadOptions options)
     {

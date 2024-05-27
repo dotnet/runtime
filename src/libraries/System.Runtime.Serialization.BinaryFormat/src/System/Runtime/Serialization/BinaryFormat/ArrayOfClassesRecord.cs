@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Reflection.Metadata;
+using System.Runtime.Serialization.BinaryFormat.Utils;
 
 namespace System.Runtime.Serialization.BinaryFormat;
 

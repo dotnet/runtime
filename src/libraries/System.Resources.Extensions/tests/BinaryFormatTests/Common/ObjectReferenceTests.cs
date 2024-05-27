@@ -4,7 +4,7 @@
 using System.Runtime.Serialization;
 using System.Text;
 
-namespace FormatTests.Common;
+namespace System.Resources.Extensions.Tests.Common;
 
 public abstract class ObjectReferenceTests<T> : SerializationTest<T> where T : ISerializer
 {

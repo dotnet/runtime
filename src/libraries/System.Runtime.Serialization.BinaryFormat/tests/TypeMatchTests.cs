@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.Serialization.BinaryFormat.Utils;
 using Xunit;
 
 namespace System.Runtime.Serialization.BinaryFormat.Tests;
@@ -373,8 +374,8 @@ public class TypeMatchTests : ReadTests
 
         ArrayRecord arrayRecord = (ArrayRecord)PayloadReader.Read(Serialize(array));
 
-        Assert.Equal(FormatterServices.GetTypeFullNameIncludingTypeForwards(typeof(T)), arrayRecord.ElementTypeName.FullName);
-        Assert.Equal(FormatterServices.GetAssemblyNameIncludingTypeForwards(typeof(T)), arrayRecord.ElementTypeName.AssemblyName!.FullName);
+        Assert.Equal(typeof(T).GetTypeFullNameIncludingTypeForwards(), arrayRecord.ElementTypeName.FullName);
+        Assert.Equal(typeof(T).GetAssemblyNameIncludingTypeForwards(), arrayRecord.ElementTypeName.AssemblyName!.FullName);
 
         if (PrimitiveTypes.Contains(typeof(T)))
         {
@@ -384,7 +385,7 @@ public class TypeMatchTests : ReadTests
         {
             Assert.True(arrayRecord is ArrayRecord<ClassRecord>, userMessage: typeof(T).Name);
             Assert.True(arrayRecord.IsTypeNameMatching(typeof(T[])));
-            Assert.Equal(arrayRecord.ElementTypeName.AssemblyName.FullName, FormatterServices.GetAssemblyNameIncludingTypeForwards(typeof(T)));
+            Assert.Equal(arrayRecord.ElementTypeName.AssemblyName.FullName, typeof(T).GetAssemblyNameIncludingTypeForwards());
         }
 
         foreach (Type type in PrimitiveTypes)
@@ -405,7 +406,7 @@ public class TypeMatchTests : ReadTests
 
         ArrayRecord arrayRecord = (ArrayRecord)PayloadReader.Read(Serialize(jaggedArray));
 
-        Assert.Equal(FormatterServices.GetTypeFullNameIncludingTypeForwards(typeof(T[])), arrayRecord.ElementTypeName.FullName);
+        Assert.Equal(typeof(T[]).GetTypeFullNameIncludingTypeForwards(), arrayRecord.ElementTypeName.FullName);
 
         Assert.False(arrayRecord.IsTypeNameMatching(typeof(T[])));
         Assert.True(arrayRecord.IsTypeNameMatching(typeof(T[][])));
@@ -441,7 +442,7 @@ public class TypeMatchTests : ReadTests
         int arrayRank = array.GetType().GetArrayRank();
         ArrayRecord arrayRecord = (ArrayRecord)PayloadReader.Read(Serialize(array));
 
-        Assert.Equal(FormatterServices.GetTypeFullNameIncludingTypeForwards(typeof(T)), arrayRecord.ElementTypeName.FullName);
+        Assert.Equal(typeof(T).GetTypeFullNameIncludingTypeForwards(), arrayRecord.ElementTypeName.FullName);
         Assert.False(arrayRecord is ArrayRecord<T>, userMessage: typeof(T).Name);
         Assert.True(arrayRecord.ArrayType is ArrayType.Rectangular);
 
@@ -468,7 +469,7 @@ public class TypeMatchTests : ReadTests
 
         ArrayRecord arrayRecord = (ArrayRecord)PayloadReader.Read(Serialize(array));
 
-        Assert.Equal(FormatterServices.GetTypeFullNameIncludingTypeForwards(typeof(T)), arrayRecord.ElementTypeName.FullName);
+        Assert.Equal(typeof(T).GetTypeFullNameIncludingTypeForwards(), arrayRecord.ElementTypeName.FullName);
         Assert.False(arrayRecord is ArrayRecord<T>, userMessage: typeof(T).Name);
 
         foreach (Type type in PrimitiveTypes.Concat([typeof(T)]))

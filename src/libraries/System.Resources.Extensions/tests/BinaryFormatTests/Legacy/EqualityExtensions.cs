@@ -16,7 +16,7 @@ using System.Net.Sockets;
 using System.Reflection;
 using System.Security;
 using System.Runtime.Serialization;
-using FormatTests.Common.TestTypes;
+using System.Resources.Extensions.Tests.Common.TestTypes;
 using System.Text.Json;
 using System.Collections.Concurrent;
 using System.Linq;

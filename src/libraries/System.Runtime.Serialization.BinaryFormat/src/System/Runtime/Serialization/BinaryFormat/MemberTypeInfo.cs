@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Reflection.Metadata;
+using System.Runtime.Serialization.BinaryFormat.Utils;
 
 namespace System.Runtime.Serialization.BinaryFormat;
 
@@ -156,19 +157,19 @@ internal readonly struct MemberTypeInfo
                 }
 
                 TypeName typeName = (TypeName)additionalInfo!;
-                string fullSystemClassName = FormatterServices.GetTypeFullNameIncludingTypeForwards(typeElement);
+                string fullSystemClassName = typeElement.GetTypeFullNameIncludingTypeForwards();
                 return typeName.FullName == fullSystemClassName;
             default:
                 Debug.Assert(binaryType is BinaryType.Class, "The parsers should reject other inputs");
 
                 ClassTypeInfo typeInfo = (ClassTypeInfo)additionalInfo!;
-                string fullClassName = FormatterServices.GetTypeFullNameIncludingTypeForwards(typeElement);
+                string fullClassName = typeElement.GetTypeFullNameIncludingTypeForwards();
                 if (typeInfo.TypeName.FullName != fullClassName)
                 {
                     return false;
                 }
 
-                string assemblyName = FormatterServices.GetAssemblyNameIncludingTypeForwards(typeElement);
+                string assemblyName = typeElement.GetAssemblyNameIncludingTypeForwards();
                 return assemblyName == typeInfo.TypeName.AssemblyName!.FullName;
         }
     }
@@ -239,7 +240,7 @@ internal readonly struct MemberTypeInfo
                 };
 
                 return binaryType is BinaryType.PrimitiveArray
-                    ? TypeName.Parse($"{name}[], {FormatterServices.CoreLibAssemblyName.FullName}".AsSpan())
+                    ? TypeName.Parse($"{name}[], {TypeNameExtensions.CoreLibAssemblyName}".AsSpan())
                     : TypeName.Parse(name.AsSpan()).WithCoreLibAssemblyName();
 
             case BinaryType.SystemClass:

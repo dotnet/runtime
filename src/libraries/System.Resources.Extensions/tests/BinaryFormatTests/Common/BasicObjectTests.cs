@@ -6,7 +6,7 @@ using System.Runtime.Serialization.Formatters;
 using BinaryFormatTests;
 using BinaryFormatTests.FormatterTests;
 
-namespace FormatTests.Common;
+namespace System.Resources.Extensions.Tests.Common;
 
 public abstract class BasicObjectTests<T> : SerializationTest<T> where T : ISerializer
 {
@@ -20,6 +20,7 @@ public abstract class BasicObjectTests<T> : SerializationTest<T> where T : ISeri
 
         int platformIndex = serializedData.GetPlatformIndex();
         for (int i = 0; i < serializedData.Length; i++)
+        {
             for (FormatterAssemblyStyle assemblyMatching = 0; assemblyMatching <= FormatterAssemblyStyle.Full; assemblyMatching++)
             {
                 object deserialized = DeserializeFromBase64Chars(serializedData[i].Base64Blob, assemblyMatching: assemblyMatching);
@@ -37,6 +38,7 @@ public abstract class BasicObjectTests<T> : SerializationTest<T> where T : ISeri
                 bool isSamePlatform = i == platformIndex;
                 EqualityExtensions.CheckEquals(value, deserialized, isSamePlatform);
             }
+        }
     }
 
     [Theory]

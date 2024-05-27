@@ -3,7 +3,7 @@
 
 using System.IO;
 
-namespace System.Runtime.Serialization.BinaryFormat;
+namespace System.Runtime.Serialization.BinaryFormat.Utils;
 
 internal static class ThrowHelper
 {

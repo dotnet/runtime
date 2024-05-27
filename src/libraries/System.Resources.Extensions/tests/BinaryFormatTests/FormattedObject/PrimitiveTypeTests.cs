@@ -4,10 +4,10 @@
 using System.Runtime.Serialization.BinaryFormat;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.Resources.Extensions.BinaryFormat;
-using FormatTests.Common;
+using System.Resources.Extensions.Tests.Common;
 using PrimitiveType = System.Runtime.Serialization.BinaryFormat.PrimitiveType;
 
-namespace FormatTests.FormattedObject;
+namespace System.Resources.Extensions.Tests.FormattedObject;
 
 public class PrimitiveTypeTests : SerializationTest<FormattedObjectSerializer>
 {

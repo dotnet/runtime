@@ -365,4 +365,29 @@ internal static class BinaryFormattedObjectExtensions
 
     private static bool IsPrimitiveArrayRecord(SerializationRecord serializationRecord)
         => serializationRecord.RecordType is RecordType.ArraySingleString or RecordType.ArraySinglePrimitive;
+
+    /// <summary>
+    ///  Creates a list trimmed to the given count.
+    /// </summary>
+    /// <remarks>
+    ///  <para>
+    ///   This is an optimized implementation that avoids iterating over the entire list when possible.
+    ///  </para>
+    /// </remarks>
+    private static List<T> CreateTrimmedList<T>(this IReadOnlyList<T> readOnlyList, int count)
+    {
+        Debug.Assert(count <= readOnlyList.Count);
+
+        // List<T> will use ICollection<T>.CopyTo if it's available, which is faster than iterating over the list.
+        // If we just have an array this can be done easily with ArraySegment<T>.
+        if (readOnlyList is T[] array)
+        {
+            return new List<T>(new ArraySegment<T>(array, 0, count));
+        }
+
+        // Fall back to just setting the count (by removing).
+        List<T> list = new(readOnlyList);
+        list.RemoveRange(count, list.Count - count);
+        return list;
+    }
 }

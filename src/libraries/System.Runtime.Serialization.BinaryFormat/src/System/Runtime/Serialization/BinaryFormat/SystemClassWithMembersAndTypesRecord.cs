@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.IO;
+using System.Runtime.Serialization.BinaryFormat.Utils;
 
 namespace System.Runtime.Serialization.BinaryFormat;
 
@@ -16,7 +17,7 @@ internal sealed class SystemClassWithMembersAndTypesRecord : ClassRecord
 
     public override bool IsTypeNameMatching(Type type)
         => type.Assembly == typeof(object).Assembly
-        && FormatterServices.GetTypeFullNameIncludingTypeForwards(type) == ClassInfo.TypeName.FullName;
+        && type.GetTypeFullNameIncludingTypeForwards() == ClassInfo.TypeName.FullName;
 
     internal static SystemClassWithMembersAndTypesRecord Parse(BinaryReader reader, RecordMap recordMap, PayloadOptions options)
     {
@@ -80,7 +81,7 @@ internal sealed class SystemClassWithMembersAndTypesRecord : ClassRecord
             && MemberValues[0] is long value && MemberValues[1] is ulong
             && IsTypeNameMatching(typeof(DateTime)))
         {
-            return Create(BinaryReaderExtensions.CreateDateTimeFromData(value));
+            return Create(Utils.BinaryReaderExtensions.CreateDateTimeFromData(value));
         }
         else if(MemberValues.Count == 4
             && HasMember("lo") && HasMember("mid") && HasMember("hi") && HasMember("flags")

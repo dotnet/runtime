@@ -1,12 +1,12 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using FormatTests.Common;
 using System.Runtime.Serialization;
 using System.Runtime.Serialization.Formatters;
 using System.Resources.Extensions.BinaryFormat;
+using System.Resources.Extensions.Tests.Common;
 
-namespace FormatTests.FormattedObject;
+namespace System.Resources.Extensions.Tests.FormattedObject;
 
 public class FormattedObjectSerializer : ISerializer
 {

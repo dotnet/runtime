@@ -2,10 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Runtime.Serialization;
-using FormatTests.Common.TestTypes;
-using ValueType = FormatTests.Common.TestTypes.ValueType;
+using System.Resources.Extensions.Tests.Common.TestTypes;
 
-namespace FormatTests.Common;
+namespace System.Resources.Extensions.Tests.Common;
 
 [Collection("Sequential")]
 public abstract class EventOrderTests<T> : SerializationTest<T> where T : ISerializer
@@ -35,7 +34,7 @@ public abstract class EventOrderTests<T> : SerializationTest<T> where T : ISeria
         string[] expected = IsBinaryFormatterDeserializer
             ? ["p", "roots", "valuep", "valuei", "rooti"]
             : ["roots", "valuep", "rootp", "valuei", "rooti"];
-        BinaryTreeNodeWithEventsISerializable root = new() { Name = "root", Value = new ValueType() { Name = "value" } };
+        BinaryTreeNodeWithEventsISerializable root = new() { Name = "root", Value = new StructThatImplementsIDeserializationCallback() { Name = "value" } };
 
         try
         {
@@ -108,7 +107,7 @@ public abstract class EventOrderTests<T> : SerializationTest<T> where T : ISeria
         string[] expected = IsBinaryFormatterDeserializer
             ? ["rootp", "valuep", "valuei", "rooti"]
             : ["valuep", "rootp", "valuei", "rooti"];
-        BinaryTreeNodeWithEvents root = new() { Name = "root", Value = new ValueType() { Name = "value" } };
+        BinaryTreeNodeWithEvents root = new() { Name = "root", Value = new StructThatImplementsIDeserializationCallback() { Name = "value" } };
 
         try
         {
@@ -146,7 +145,7 @@ public abstract class EventOrderTests<T> : SerializationTest<T> where T : ISeria
             ? ["p", "roots", "valuep", "valuei", "rooti"]
             : ["roots", "valuep", "rootp", "valuei", "rooti"];
         SurrogateSelector selector = CreateSurrogateSelector<BinaryTreeNodeWithEvents>(new BinaryTreeNodeWithEventsSurrogate());
-        BinaryTreeNodeWithEvents root = new() { Name = "root", Value = new ValueType() { Name = "value" } };
+        BinaryTreeNodeWithEvents root = new() { Name = "root", Value = new StructThatImplementsIDeserializationCallback() { Name = "value" } };
 
         try
         {
@@ -209,7 +208,7 @@ public abstract class EventOrderTests<T> : SerializationTest<T> where T : ISeria
         string[] expected = IsBinaryFormatterDeserializer
             ? ["p", "roots", "valuep", "valuei", "rooti"]
             : ["roots", "valuep", "rootp", "valuei", "rooti"];
-        BinaryTreeNodeWithEventsISerializable root = new() { Name = "root", Value = new ValueType() { Name = "value" } };
+        BinaryTreeNodeWithEventsISerializable root = new() { Name = "root", Value = new StructThatImplementsIDeserializationCallback() { Name = "value" } };
         root.Left = root;
         try
         {
@@ -291,7 +290,7 @@ public abstract class EventOrderTests<T> : SerializationTest<T> where T : ISeria
         string[] expected = IsBinaryFormatterDeserializer
             ? ["rootp", "valuep", "valuei", "rooti"]
             : ["valuep", "rootp", "valuei", "rooti"];
-        BinaryTreeNodeWithEvents root = new() { Name = "root", Value = new ValueType() { Name = "value" } };
+        BinaryTreeNodeWithEvents root = new() { Name = "root", Value = new StructThatImplementsIDeserializationCallback() { Name = "value" } };
         root.Left = root;
 
         try
@@ -356,7 +355,7 @@ public abstract class EventOrderTests<T> : SerializationTest<T> where T : ISeria
             ? ["p", "childs", "roots", "valuep", "rootp", "valuei", "rooti", "childi"]
             : ["childs", "roots", "valuep", "childp", "rootp", "valuei", "childi", "rooti"];
         BinaryTreeNodeWithEventsISerializable child = new() { Name = "child" };
-        BinaryTreeNodeWithEventsISerializable root = new() { Name = "root", Left = child, Value = new ValueType() { Name = "value" } };
+        BinaryTreeNodeWithEventsISerializable root = new() { Name = "root", Left = child, Value = new StructThatImplementsIDeserializationCallback() { Name = "value" } };
 
         try
         {
@@ -468,7 +467,7 @@ public abstract class EventOrderTests<T> : SerializationTest<T> where T : ISeria
             ? ["childp", "valuep", "rootp", "valuei", "rooti", "childi"]
             : ["childp", "valuep", "rootp", "childi", "valuei", "rooti"];
         BinaryTreeNodeWithEvents child = new() { Name = "child" };
-        BinaryTreeNodeWithEvents root = new() { Name = "root", Left = child, Value = new ValueType() { Name = "value" } };
+        BinaryTreeNodeWithEvents root = new() { Name = "root", Left = child, Value = new StructThatImplementsIDeserializationCallback() { Name = "value" } };
 
         try
         {
@@ -533,8 +532,8 @@ public abstract class EventOrderTests<T> : SerializationTest<T> where T : ISeria
         string[] expected = IsBinaryFormatterDeserializer
             ? ["p", "childs", "roots", "value2p", "rootp", "value1p", "value2i", "rooti", "value1i", "childi"]
             : ["childs", "roots", "value1p", "value2p", "childp", "rootp", "value1i", "value2i", "childi", "rooti"];
-        BinaryTreeNodeWithEventsISerializable child = new() { Name = "child", Value = new ValueType() { Name = "value1" } };
-        BinaryTreeNodeWithEventsISerializable root = new() { Name = "root", Left = child, Value = new ValueType() { Name = "value2" } };
+        BinaryTreeNodeWithEventsISerializable child = new() { Name = "child", Value = new StructThatImplementsIDeserializationCallback() { Name = "value1" } };
+        BinaryTreeNodeWithEventsISerializable root = new() { Name = "root", Left = child, Value = new StructThatImplementsIDeserializationCallback() { Name = "value2" } };
         child.Left = root;
         try
         {
@@ -626,8 +625,8 @@ public abstract class EventOrderTests<T> : SerializationTest<T> where T : ISeria
         string[] expected = IsBinaryFormatterDeserializer
             ? ["childp", "value2p", "rootp", "value1p", "value2i", "rooti", "value1i", "childi"]
             : ["value1p", "childp", "value2p", "rootp", "value1i", "childi", "value2i", "rooti"];
-        BinaryTreeNodeWithEvents child = new() { Name = "child", Value = new ValueType() { Name = "value1" } };
-        BinaryTreeNodeWithEvents root = new() { Name = "root", Left = child, Value = new ValueType() { Name = "value2" } };
+        BinaryTreeNodeWithEvents child = new() { Name = "child", Value = new StructThatImplementsIDeserializationCallback() { Name = "value1" } };
+        BinaryTreeNodeWithEvents root = new() { Name = "root", Left = child, Value = new StructThatImplementsIDeserializationCallback() { Name = "value2" } };
         child.Left = root;
 
         try
@@ -698,7 +697,7 @@ public abstract class EventOrderTests<T> : SerializationTest<T> where T : ISeria
             : ["child2s", "child1s", "roots", "valuep", "child2p", "child1p", "rootp", "valuei", "child2i", "child1i", "rooti"];
         BinaryTreeNodeWithEventsISerializable child2 = new() { Name = "child2" };
         BinaryTreeNodeWithEventsISerializable child1 = new() { Name = "child1", Left = child2 };
-        BinaryTreeNodeWithEventsISerializable root = new() { Name = "root", Left = child1, Value = new ValueType() { Name = "value" } };
+        BinaryTreeNodeWithEventsISerializable root = new() { Name = "root", Left = child1, Value = new StructThatImplementsIDeserializationCallback() { Name = "value" } };
 
         try
         {
@@ -815,7 +814,7 @@ public abstract class EventOrderTests<T> : SerializationTest<T> where T : ISeria
             : ["child2p", "child1p", "valuep", "rootp", "child2i", "child1i", "valuei", "rooti"];
         BinaryTreeNodeWithEvents child2 = new() { Name = "child2" };
         BinaryTreeNodeWithEvents child1 = new() { Name = "child1", Left = child2 };
-        BinaryTreeNodeWithEvents root = new() { Name = "root", Left = child1, Value = new ValueType() { Name = "value" } };
+        BinaryTreeNodeWithEvents root = new() { Name = "root", Left = child1, Value = new StructThatImplementsIDeserializationCallback() { Name = "value" } };
 
         try
         {
@@ -882,9 +881,9 @@ public abstract class EventOrderTests<T> : SerializationTest<T> where T : ISeria
         string[] expected = IsBinaryFormatterDeserializer
             ? ["p", "child2s", "child1s", "roots", "value3p", "rootp", "value2p", "child1p", "value1p", "value3i", "rooti", "value2i", "child1i", "value1i", "child2i"]
             : ["child2s", "child1s", "roots", "value1p", "value2p", "value3p", "child2p", "child1p", "rootp", "value1i", "value2i", "value3i", "child2i", "child1i", "rooti"];
-        BinaryTreeNodeWithEventsISerializable child2 = new() { Name = "child2", Value = new ValueType() { Name = "value1" } };
-        BinaryTreeNodeWithEventsISerializable child1 = new() { Name = "child1", Left = child2, Value = new ValueType() { Name = "value2" } };
-        BinaryTreeNodeWithEventsISerializable root = new() { Name = "root", Left = child1, Value = new ValueType() { Name = "value3" } };
+        BinaryTreeNodeWithEventsISerializable child2 = new() { Name = "child2", Value = new StructThatImplementsIDeserializationCallback() { Name = "value1" } };
+        BinaryTreeNodeWithEventsISerializable child1 = new() { Name = "child1", Left = child2, Value = new StructThatImplementsIDeserializationCallback() { Name = "value2" } };
+        BinaryTreeNodeWithEventsISerializable root = new() { Name = "root", Left = child1, Value = new StructThatImplementsIDeserializationCallback() { Name = "value3" } };
         child2.Left = root;
         try
         {
@@ -979,9 +978,9 @@ public abstract class EventOrderTests<T> : SerializationTest<T> where T : ISeria
         string[] expected = IsBinaryFormatterDeserializer
             ? ["child2p", "value3p", "rootp", "value2p", "child1p", "value1p", "value3i", "rooti", "value2i", "child1i", "value1i", "child2i"]
             : ["value1p", "child2p", "value2p", "child1p", "value3p", "rootp", "value1i", "child2i", "value2i", "child1i", "value3i", "rooti"];
-        BinaryTreeNodeWithEvents child2 = new() { Name = "child2", Value = new ValueType() { Name = "value1" } };
-        BinaryTreeNodeWithEvents child1 = new() { Name = "child1", Left = child2, Value = new ValueType() { Name = "value2" } };
-        BinaryTreeNodeWithEvents root = new() { Name = "root", Left = child1, Value = new ValueType() { Name = "value3" } };
+        BinaryTreeNodeWithEvents child2 = new() { Name = "child2", Value = new StructThatImplementsIDeserializationCallback() { Name = "value1" } };
+        BinaryTreeNodeWithEvents child1 = new() { Name = "child1", Left = child2, Value = new StructThatImplementsIDeserializationCallback() { Name = "value2" } };
+        BinaryTreeNodeWithEvents root = new() { Name = "root", Left = child1, Value = new StructThatImplementsIDeserializationCallback() { Name = "value3" } };
         child2.Left = root;
 
         try

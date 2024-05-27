@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.IO;
+using System.Runtime.Serialization.BinaryFormat.Utils;
 
 namespace System.Runtime.Serialization.BinaryFormat;
 

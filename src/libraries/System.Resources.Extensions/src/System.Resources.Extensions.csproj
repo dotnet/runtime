@@ -38,14 +38,37 @@ System.Resources.Extensions.PreserializedResourceWriter</PackageDescription>
     <Compile Include="System\Resources\Extensions\PreserializedResourceWriter.cs" />
     <Compile Include="System\Resources\Extensions\SerializationFormat.cs" />
     <Compile Include="System\Resources\Extensions\TypeNameComparer.cs" />
+    <Compile Include="System\Resources\Extensions\BinaryFormat\BinaryFormattedObject.cs" />
+    <Compile Include="System\Resources\Extensions\BinaryFormat\BinaryFormattedObject.IParseState.cs" />
+    <Compile Include="System\Resources\Extensions\BinaryFormat\BinaryFormattedObject.ITypeResolver.cs" />
+    <Compile Include="System\Resources\Extensions\BinaryFormat\BinaryFormattedObject.Options.cs" />
+    <Compile Include="System\Resources\Extensions\BinaryFormat\BinaryFormattedObject.ParseState.cs" />
+    <Compile Include="System\Resources\Extensions\BinaryFormat\BinaryFormattedObject.TypeResolver.cs" />
+    <Compile Include="System\Resources\Extensions\BinaryFormat\BinaryFormattedObjectExtensions.cs" />
+    <Compile Include="System\Resources\Extensions\BinaryFormat\FormatterConverterStub.cs" />
+    <Compile Include="System\Resources\Extensions\BinaryFormat\Id.cs" />
+    <Compile Include="System\Resources\Extensions\BinaryFormat\SerializationEvents.cs" />
+    <Compile Include="System\Resources\Extensions\BinaryFormat\SerializationExtensions.cs" />
+    <Compile Include="System\Resources\Extensions\BinaryFormat\SerializationInfoExtensions.cs" />
+    <Compile Include="System\Resources\Extensions\BinaryFormat\Deserializer\ArrayRecordDeserializer.cs" />
+    <Compile Include="System\Resources\Extensions\BinaryFormat\Deserializer\ArrayUpdater.cs" />
+    <Compile Include="System\Resources\Extensions\BinaryFormat\Deserializer\ClassRecordDeserializer.cs" />
+    <Compile Include="System\Resources\Extensions\BinaryFormat\Deserializer\ClassRecordFieldInfoDeserializer.cs" />
+    <Compile Include="System\Resources\Extensions\BinaryFormat\Deserializer\ClassRecordSerializationInfoDeserializer.cs" />
+    <Compile Include="System\Resources\Extensions\BinaryFormat\Deserializer\Deserializer.cs" />
+    <Compile Include="System\Resources\Extensions\BinaryFormat\Deserializer\FieldValueUpdater.cs" />
+    <Compile Include="System\Resources\Extensions\BinaryFormat\Deserializer\IDeserializer.cs" />
+    <Compile Include="System\Resources\Extensions\BinaryFormat\Deserializer\ObjectRecordDeserializer.cs" />
+    <Compile Include="System\Resources\Extensions\BinaryFormat\Deserializer\PendingSerializationInfo.cs" />
+    <Compile Include="System\Resources\Extensions\BinaryFormat\Deserializer\SerializationInfoValueUpdater.cs" />
+    <Compile Include="System\Resources\Extensions\BinaryFormat\Deserializer\ValueUpdater.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Numerics\Hashing\HashHelpers.cs"
              Link="System\Numerics\Hashing\HashHelpers.cs" />
-    <Compile Include="BinaryFormat\**\*.cs" LinkBase="BinaryFormat"/>
   </ItemGroup>
 
   <!-- when System.Runtime.Serialization.BinaryFormat gets approved, this whole block will be repalced with a reference to package -->
   <ItemGroup>
-    <Compile Include="$(LibrariesProjectRoot)\System.Runtime.Serialization.BinaryFormat\src\**\*.cs" LinkBase="System.Runtime.Serialization.BinaryFormat"/>
+    <Compile Include="$(LibrariesProjectRoot)\System.Runtime.Serialization.BinaryFormat\src\**\*.cs" />
     <ProjectReference Include="$(LibrariesProjectRoot)\System.IO.Hashing\src\System.IO.Hashing.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)\System.Reflection.Metadata\src\System.Reflection.Metadata.csproj" />
     <PackageReference Include="System.ValueTuple" Version="$(SystemValueTupleVersion)" Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'" />

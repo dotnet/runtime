@@ -6,7 +6,7 @@ using System.Runtime.Serialization;
 using System.Runtime.Serialization.BinaryFormat;
 using System.Runtime.Serialization.Formatters;
 
-namespace FormatTests.Common;
+namespace System.Resources.Extensions.Tests.Common;
 
 public abstract class SerializationTest<TSerializer> where TSerializer : ISerializer
 {

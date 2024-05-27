@@ -6,7 +6,7 @@ using System.IO;
 using System.Reflection.Metadata;
 using System.Runtime.CompilerServices;
 
-namespace System.Runtime.Serialization.BinaryFormat;
+namespace System.Runtime.Serialization.BinaryFormat.Utils;
 
 internal static class BinaryReaderExtensions
 {

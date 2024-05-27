@@ -26,10 +26,7 @@ internal sealed class PendingSerializationInfo
         _info = info;
     }
 
-    [UnconditionalSuppressMessage(
-        "ReflectionAnalysis",
-        "IL2072:UnrecognizedReflectionPattern",
-        Justification = "We can't guarantee that the ctor will be present, as the type is not known up-front.")]
+    [RequiresUnreferencedCode("We can't guarantee that the ctor will be present, as the type is not known up-front.")]
     internal void Populate(IDictionary<int, object> objects, StreamingContext context)
     {
         object @object = objects[ObjectId];

@@ -4,7 +4,7 @@
 using System.Runtime.Serialization;
 using System.Runtime.Serialization.Formatters;
 
-namespace FormatTests.Common;
+namespace System.Resources.Extensions.Tests.Common;
 
 public abstract class FieldTests<T> : SerializationTest<T> where T : ISerializer
 {

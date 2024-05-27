@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
+using System.Runtime.Serialization.BinaryFormat.Utils;
 using System.Text;
 
 namespace System.Runtime.Serialization.BinaryFormat;
@@ -18,10 +19,10 @@ static class PayloadReader
     private static UTF8Encoding ThrowOnInvalidUtf8Encoding { get; } = new(false, throwOnInvalidBytes: true);
 
     /// <summary>
-    /// Checks if given buffer contains only Binary Formatter payload.
+    /// Checks if given buffer contains only NRBF payload.
     /// </summary>
     /// <param name="bytes">The buffer to inspect.</param>
-    /// <returns>True if the first and last bytes indicate Binary Format, otherwise false.</returns>
+    /// <returns>True if the first and last bytes indicate NRBF, otherwise false.</returns>
     public static bool ContainsBinaryFormatterPayload(ReadOnlySpan<byte> bytes)
         => bytes.Length >= SerializedStreamHeaderRecord.Size + 2
             && bytes[0] == (byte)RecordType.SerializedStreamHeader
@@ -31,7 +32,7 @@ static class PayloadReader
     /// Determines if the provided stream contains represents an NRBF payload and no other content.
     /// </summary>
     /// <param name="stream">The stream to inspect. The stream must be both readable and seekable.</param>
-    /// <returns><see langword="true" /> if the first and last bytes indicate Binary Format; otherwise, <see langword="false" />.</returns>
+    /// <returns><see langword="true" /> if the first and last bytes indicate NRBF; otherwise, <see langword="false" />.</returns>
     /// <exception cref="ArgumentNullException">The stream is null.</exception>
     /// <exception cref="NotSupportedException">The stream does not support reading or seeking.</exception>
     /// <exception cref="ObjectDisposedException">The stream was closed.</exception>
@@ -42,8 +43,15 @@ static class PayloadReader
         ArgumentNullException.ThrowIfNull(stream);
 #else
         if (stream is null)
+        {
             throw new ArgumentNullException(nameof(stream));
+        }
 #endif
+        if (!stream.CanSeek)
+        {
+            throw new ArgumentException(SR.Argument_NonSeekableStream, nameof(stream));
+        }
+
         long beginning = stream.Position;
         if (stream.Length - beginning < SerializedStreamHeaderRecord.Size + 2)
         {
@@ -69,35 +77,42 @@ static class PayloadReader
     }
 
     /// <summary>
-    /// Reads the provided Binary Format payload.
+    /// Reads the provided NRBF payload.
     /// </summary>
-    /// <param name="payload">The Binary Format payload.</param>
+    /// <param name="payload">The NRBF payload.</param>
     /// <param name="options">Options to control behavior during parsing.</param>
-    /// <param name="leaveOpen"><see langword="true" /> to leave <paramref name="payload"/> payload open
-    /// after the reading is finished; otherwise, <see langword="false" />.</param>
+    /// <param name="leaveOpen">
+    ///   <see langword="true" /> to leave <paramref name="payload"/> payload open
+    ///   after the reading is finished; otherwise, <see langword="false" />.
+    /// </param>
     /// <returns>A <seealso cref="SerializationRecord"/> that represents the root object.
     /// It can be either <seealso cref="PrimitiveTypeRecord{T}"/>,
     /// a <seealso cref="ClassRecord"/> or an <seealso cref="ArrayRecord"/>.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="payload"/> is <see langword="null" />.</exception>
     /// <exception cref="ArgumentException"><paramref name="payload"/> does not support reading or is already closed.</exception>
-    /// <exception cref="SerializationException">When reading input from <paramref name="payload"/> encounters invalid Binary Format data.</exception>
+    /// <exception cref="SerializationException">When reading input from <paramref name="payload"/> encounters invalid NRBF data.</exception>
     /// <exception cref="DecoderFallbackException">When reading input from <paramref name="payload"/>
     /// encounters invalid sequence of UTF8 characters.</exception>
     public static SerializationRecord Read(Stream payload, PayloadOptions? options = default, bool leaveOpen = false)
         => Read(payload, out _, options, leaveOpen);
 
-    /// <param name="payload">The Binary Format payload.</param>
+    /// <param name="payload">The NRBF payload.</param>
     /// <param name="recordMap">Record map</param>
     /// <param name="options">An object that describes optional <seealso cref="PayloadOptions"/> parameters to use.</param>
-    /// <param name="leaveOpen">True to leave the <paramref name="payload"/> payload open
-    /// after the reading is finished, otherwise, false.</param>
+    /// <param name="leaveOpen">
+    ///   <see langword="true" /> to leave <paramref name="payload"/> payload open
+    ///   after the reading is finished; otherwise, <see langword="false" />.
+    /// </param>
     /// <inheritdoc cref="Read(Stream, PayloadOptions?, bool)"/>
     public static SerializationRecord Read(Stream payload, out IReadOnlyDictionary<int, SerializationRecord> recordMap, PayloadOptions? options = default, bool leaveOpen = false)
     {
 #if NETCOREAPP
         ArgumentNullException.ThrowIfNull(payload);
 #else
-        if (payload is null) throw new ArgumentNullException(nameof(payload));
+        if (payload is null)
+        {
+            throw new ArgumentNullException(nameof(payload));
+        }
 #endif
 
         using BinaryReader reader = new(payload, ThrowOnInvalidUtf8Encoding, leaveOpen: leaveOpen);
@@ -105,7 +120,7 @@ static class PayloadReader
     }
 
     /// <summary>
-    /// Reads the provided Binary Format payload that is expected to contain an instance of any class (or struct) that is not an <seealso cref="Array"/> or a primitive type.
+    /// Reads the provided NRBF payload that is expected to contain an instance of any class (or struct) that is not an <seealso cref="Array"/> or a primitive type.
     /// </summary>
     /// <returns>A <seealso cref="ClassRecord"/> that represents the root object.</returns>
     /// <inheritdoc cref="Read(Stream, PayloadOptions?, bool)"/>
@@ -223,7 +238,7 @@ static class PayloadReader
             PrimitiveType.Single => new MemberPrimitiveTypedRecord<float>(reader.ReadSingle()),
             PrimitiveType.Double => new MemberPrimitiveTypedRecord<double>(reader.ReadDouble()),
             PrimitiveType.Decimal => new MemberPrimitiveTypedRecord<decimal>(decimal.Parse(reader.ReadString(), CultureInfo.InvariantCulture)),
-            PrimitiveType.DateTime => new MemberPrimitiveTypedRecord<DateTime>(BinaryReaderExtensions.CreateDateTimeFromData(reader.ReadInt64())),
+            PrimitiveType.DateTime => new MemberPrimitiveTypedRecord<DateTime>(Utils.BinaryReaderExtensions.CreateDateTimeFromData(reader.ReadInt64())),
             // String is handled with a record, never on it's own
             _ => new MemberPrimitiveTypedRecord<TimeSpan>(new TimeSpan(reader.ReadInt64())),
         };

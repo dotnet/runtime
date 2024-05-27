@@ -6,9 +6,9 @@ using System.Drawing;
 using System.Resources.Extensions.BinaryFormat;
 using System.Runtime.Serialization;
 using System.Runtime.Serialization.BinaryFormat;
-using FormatTests.Common;
+using System.Resources.Extensions.Tests.Common;
 
-namespace FormatTests.FormattedObject;
+namespace System.Resources.Extensions.Tests.FormattedObject;
 
 #pragma warning disable CS0618 // Type or member is obsolete
 
@@ -71,7 +71,7 @@ public class HashtableTests : SerializationTest<FormattedObjectSerializer>
         systemClass.RecordType.Should().Be(RecordType.SystemClassWithMembersAndTypes);
         systemClass.TypeName.FullName.Should().Be("System.Collections.Hashtable");
         systemClass.GetSerializationRecord("Comparer")!.Should().BeAssignableTo<ClassRecord>().Which.TypeName.FullName.Should().Be("System.OrdinalComparer");
-        systemClass.GetSerializationRecord("HashCodeProvider")!.Should().BeAssignableTo<ClassRecord>().Which.TypeName.FullName.Should().Be("FormatTests.FormattedObject.HashtableTests+CustomHashCodeProvider");
+        systemClass.GetSerializationRecord("HashCodeProvider")!.Should().BeAssignableTo<ClassRecord>().Which.TypeName.FullName.Should().Be("System.Resources.Extensions.Tests.FormattedObject.HashtableTests+CustomHashCodeProvider");
         systemClass.GetSerializationRecord("Keys")!.Should().BeAssignableTo<ArrayRecord<object>>();
         systemClass.GetSerializationRecord("Values")!.Should().BeAssignableTo<ArrayRecord<object>>();
     }
@@ -100,7 +100,7 @@ public class HashtableTests : SerializationTest<FormattedObjectSerializer>
     public void BinaryFormattedObjectExtensions_TryGetPrimitiveHashtable(Hashtable hashtable)
     {
         BinaryFormattedObject format = new(Serialize(hashtable));
-        System.Resources.Extensions.BinaryFormat.BinaryFormattedObjectExtensions.TryGetPrimitiveHashtable(format, out Hashtable? deserialized).Should().BeTrue();
+        BinaryFormattedObjectExtensions.TryGetPrimitiveHashtable(format, out Hashtable? deserialized).Should().BeTrue();
 
         deserialized!.Count.Should().Be(hashtable.Count);
         foreach (object? key in hashtable.Keys)

@@ -5,7 +5,7 @@ using System.Drawing;
 using System.Resources.Extensions.BinaryFormat;
 using System.Runtime.Serialization.BinaryFormat;
 
-namespace FormatTests.FormattedObject;
+namespace System.Resources.Extensions.Tests.FormattedObject;
 
 public class SystemDrawingTests : Common.SystemDrawingTests<FormattedObjectSerializer>
 {

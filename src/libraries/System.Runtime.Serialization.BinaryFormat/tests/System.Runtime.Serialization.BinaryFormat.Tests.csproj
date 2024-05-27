@@ -6,7 +6,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="..\src\Utils\FormatterServices.cs" Link="FormatterServices.cs" />
+    <Compile Include="..\src\System\Runtime\Serialization\BinaryFormat\Utils\TypeExtensions.cs" Link="TypeExtensions.cs" />
   </ItemGroup>
 
   <ItemGroup>

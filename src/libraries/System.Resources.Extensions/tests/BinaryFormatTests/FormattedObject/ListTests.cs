@@ -6,9 +6,9 @@ using System.Drawing;
 using System.Linq;
 using System.Resources.Extensions.BinaryFormat;
 using System.Runtime.Serialization.BinaryFormat;
-using FormatTests.Common;
+using System.Resources.Extensions.Tests.Common;
 
-namespace FormatTests.FormattedObject;
+namespace System.Resources.Extensions.Tests.FormattedObject;
 
 public class ListTests : SerializationTest<FormattedObjectSerializer>
 {

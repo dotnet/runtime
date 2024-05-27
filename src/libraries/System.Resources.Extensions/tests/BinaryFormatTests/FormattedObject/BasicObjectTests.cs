@@ -5,7 +5,7 @@ using System.Runtime.Serialization.Formatters.Binary;
 using System.Security.Cryptography;
 using BinaryFormatTests;
 
-namespace FormatTests.FormattedObject;
+namespace System.Resources.Extensions.Tests.FormattedObject;
 
 public class BasicObjectTests : Common.BasicObjectTests<FormattedObjectSerializer>
 {
