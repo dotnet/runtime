@@ -48,6 +48,10 @@ void Rationalizer::RewriteNodeAsCall(GenTree**             use,
         call->gtRetClsHnd = sig.retTypeClass;
         retType           = comp->impNormStructType(sig.retTypeClass);
 
+#if FEATURE_MULTIREG_RET
+        call->InitializeStructReturnType(comp, sig.retTypeClass, call->GetUnmanagedCallConv());
+#endif // FEATURE_MULTIREG_RET
+
         Compiler::structPassingKind howToReturnStruct;
         var_types                   returnType =
             comp->getReturnTypeForStruct(sig.retTypeClass, call->GetUnmanagedCallConv(), &howToReturnStruct);
