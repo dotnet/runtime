@@ -173,43 +173,50 @@ namespace System.Text.RegularExpressions.Symbolic
         }
 
         /// <summary>
-        /// Optimized reversal state computation which takes skips the fixed length parts
+        /// Optimized reversal state computation during construction which
+        /// skips the fixed length parts of reversal
+        /// e.g. for the pattern abc.*def
+        /// 1) the end is found at abc.*def|
+        /// 2) the reversal starts at abc.*|
         /// </summary>
-        /// <param name="node"></param>
-        /// <returns></returns>
+        /// <param name="node">reversed initial pattern</param>
+        /// <returns>returns n of chars to skip and adjusted reversal start state</returns>
         private (int, MatchingState<TSet>) CreateOptimizedReversal(SymbolicRegexNode<TSet> node)
         {
-            var pos = 0;
-            var current = node;
-            var canLoop = true;
-            var incrPos = new Func<(int, SymbolicRegexNode<TSet>), (bool, SymbolicRegexNode<TSet>)>(value =>
+            int pos = 0;
+            SymbolicRegexNode<TSet>? current = node;
+            bool canLoop = true;
+            var addSingleton = new Func<SymbolicRegexNode<TSet>, (bool, SymbolicRegexNode<TSet>)>(concatNode =>
             {
-                pos += value.Item1;
-                return (true, value.Item2);
+                pos += 1;
+                // continue with next concat
+                return (true, concatNode._right!);
             });
-            var decrLoop = new Func<SymbolicRegexNode<TSet>, (bool, SymbolicRegexNode<TSet>)>(value =>
+            var addFixedLengthLoop = new Func<SymbolicRegexNode<TSet>, (bool, SymbolicRegexNode<TSet>)>(concatNode =>
             {
-                var concat = value;
-                var loop = concat._left;
-                switch (loop!._left!.Kind)
+                SymbolicRegexNode<TSet>? loopNode = concatNode._left;
+                if (loopNode is { _lower: <= 0 })
+                {
+                    return (false, concatNode);
+                }
+                switch (loopNode!._left!.Kind)
                 {
                     case SymbolicRegexNodeKind.Singleton:
-                        if (loop._lower == loop._upper)
+
+                        if (loopNode._lower == loopNode._upper)
                         {
-                            pos += loop._lower;
-                            return (true, concat._right!);
+                            pos += loopNode._lower;
+                            // the entire loop is fixed, continue
+                            return (true, concatNode._right!);
                         }
-                        if (loop._lower > 0)
-                        {
-                            var delta = loop._upper - loop._lower;
-                            var newLeft = _builder.CreateLoop(loop._left, loop.IsLazy, 0, delta);
-                            var newNode = _builder.CreateConcat(newLeft, concat._right!);
-                            pos += loop._lower;
-                            return (true, newNode);
-                        }
-                        return (false, concat);
+                        // subtract the fixed part of the loop
+                        int loopRemainder = loopNode._upper - loopNode._lower;
+                        SymbolicRegexNode<TSet> newLeft = _builder.CreateLoop(loopNode._left, loopNode.IsLazy, 0, loopRemainder);
+                        SymbolicRegexNode<TSet> newNode = _builder.CreateConcat(newLeft, concatNode._right!);
+                        pos += loopNode._lower;
+                        return (true, newNode);
                     default:
-                        return (false, concat);
+                        return (false, concatNode);
                 }
             });
             while (canLoop)
@@ -224,15 +231,15 @@ namespace System.Text.RegularExpressions.Symbolic
                     {_kind: SymbolicRegexNodeKind.Concat, _left._kind: SymbolicRegexNodeKind.BoundaryAnchor } =>
                         (true, current._right!),
                     {_kind:SymbolicRegexNodeKind.Concat, _left._kind: SymbolicRegexNodeKind.Singleton} =>
-                        incrPos((1, current._right!)),
+                        addSingleton(current),
                     {_kind: SymbolicRegexNodeKind.Concat, _left._kind: SymbolicRegexNodeKind.Loop } =>
-                        decrLoop(current),
+                        addFixedLengthLoop(current),
                     _ => (false, current)
                 };
                 canLoop = loop;
                 current = next;
             }
-            return (pos, GetOrCreateState_NoLock(_builder.CreateDisableBacktrackingSimulation(current), 0, false));
+            return (pos, GetOrCreateState_NoLock(_builder.CreateDisableBacktrackingSimulation(current), 0));
         }
 
         /// <summary>
