@@ -5,6 +5,10 @@
 #include "pal_compiler.h"
 #include "opensslshim.h"
 
+// index for storing an opaque pointer of used (client) certificate in SSL_SESSION.
+// we need dedicated index in order to tell OpenSSL how to copy the pointer during SSL_SESSION_dup.
+extern int g_ssl_sess_cert_index;
+
 /*
 These values should be kept in sync with System.Security.Authentication.SslProtocols.
 */

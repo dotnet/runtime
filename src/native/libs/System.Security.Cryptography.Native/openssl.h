@@ -7,10 +7,6 @@
 #include "pal_compiler.h"
 #include "opensslshim.h"
 
-// index for storing an opaque pointer of used (client) certificate in SSL_SESSION.
-// we need dedicated index in order to tell OpenSSL how to copy the pointer during SSL_SESSION_dup.
-extern int g_ssl_sess_cert_index;
-
 PALEXPORT int32_t CryptoNative_GetX509Thumbprint(X509* x509, uint8_t* pBuf, int32_t cBuf);
 
 PALEXPORT const ASN1_TIME* CryptoNative_GetX509NotBefore(X509* x509);

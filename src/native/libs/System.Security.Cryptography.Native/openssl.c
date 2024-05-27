@@ -6,6 +6,7 @@
 #include "pal_utilities.h"
 #include "pal_safecrt.h"
 #include "pal_x509.h"
+#include "pal_ssl.h"
 #include "openssl.h"
 
 #ifdef FEATURE_DISTRO_AGNOSTIC_SSL
