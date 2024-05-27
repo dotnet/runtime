@@ -44,7 +44,7 @@ namespace System.Net.Http.Functional.Tests
         private static string GetCookieHeaderValue(string cookieName, string cookieValue) => $"{cookieName}={cookieValue}";
 
         [Fact]
-        public async Task GetAsync_DefaultCoookieContainer_NoCookieSent()
+        public virtual async Task GetAsync_DefaultCoookieContainer_NoCookieSent()
         {
             await LoopbackServerFactory.CreateClientAndServerAsync(
                 async uri =>
