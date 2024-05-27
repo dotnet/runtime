@@ -654,8 +654,10 @@ namespace Microsoft.Extensions.Logging.Generators
                                 return (null, true);
                             }
                         }
-
+                        else
+                        {
                         shadowedNames.Add(fs.Name);
+                    }
                     }
 
                     onMostDerivedType = false;
