@@ -7,8 +7,6 @@
   <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />
 
   <PropertyGroup>
-    <!-- block win-x86 PublishAot until preview 5 -->
-    <NativeAotCanExecuteOnHost Condition="'$(NativeAotCanExecuteOnHost)' == 'true' and $(OutputRID.EndsWith('-x86')) == 'true'">false</NativeAotCanExecuteOnHost>
     <PublishTrimmed>true</PublishTrimmed>
     <RuntimeIdentifier>$(PackageRID)</RuntimeIdentifier>
     <SelfContained>true</SelfContained>
