@@ -87,6 +87,9 @@ namespace System.Text.RegularExpressions.Symbolic
         /// <summary>TODO: summarize</summary>
         private readonly bool _containsAnyAnchor;
 
+        /// <summary>TODO: summarize</summary>
+        private readonly bool _containsEndZAnchor;
+
         /// <summary>The initial states for the original pattern, keyed off of the previous character kind.</summary>
         /// <remarks>If the pattern doesn't contain any anchors, there will only be a single initial state.</remarks>
         private readonly MatchingState<TSet>[] _initialStates;
@@ -233,7 +236,10 @@ namespace System.Text.RegularExpressions.Symbolic
 
             // Assign dead state id
             _deadStateId = GetOrCreateState_NoLock(_builder._nothing, 0).Id;
+
+            // Assign edge case info for quick lookup
             _containsAnyAnchor = _pattern._info.ContainsSomeAnchor;
+            _containsEndZAnchor = _pattern._info.ContainsEndZAnchor;
 
             // Create the initial states for the original pattern.
             var initialStates = new MatchingState<TSet>[statesCount];
@@ -488,7 +494,8 @@ namespace System.Text.RegularExpressions.Symbolic
 
                 bool done = currentState.NfaState is not null ?
                     FindEndPositionDeltasNFA<NfaStateHandler, TInputReader, TFindOptimizationsHandler, TNullabilityHandler>(input, innerLoopLength, mode, ref pos, ref currentState, ref endPos, ref endStateId, ref initialStatePos, ref initialStatePosCandidate) :
-                    _findOpts is null && pos < input.Length - 1 ? FindEndPositionDeltasDFANoSkip(input, innerLoopLength, mode, ref pos, currentState.DfaStateId, ref endPos, ref endStateId, ref initialStatePos, ref initialStatePosCandidate) :
+                    // If there are no edge cases then use the quicker loop
+                    (_findOpts is null && !_containsEndZAnchor && pos < input.Length - 1) ? FindEndPositionDeltasDFANoSkip(input, innerLoopLength, mode, ref pos, currentState.DfaStateId, ref endPos, ref endStateId, ref initialStatePos, ref initialStatePosCandidate) :
                     FindEndPositionDeltasDFA<DfaStateHandler, TInputReader, TFindOptimizationsHandler, TNullabilityHandler>(input, innerLoopLength, mode, ref pos, ref currentState, ref endPos, ref endStateId, ref initialStatePos, ref initialStatePosCandidate);
 
                 // If the inner loop indicates that the search finished (for example due to reaching a deadend state) or
@@ -570,20 +577,28 @@ namespace System.Text.RegularExpressions.Symbolic
                     }
 
                     // If there is more input available try to transition with the next character.
-                    if (pos >= final || !DfaStateHandler.TryTakeDFATransition(this, ref currStateId, positionId))
+                    // Note: the order here is important so the transition gets taken
+                    if (!DfaStateHandler.TryTakeDFATransition(this, ref currStateId, positionId) || pos >= final)
                     {
+                        // _wout($"end1: {_stateArray[currStateId]}");
                         if (pos < final)
                         {
                             return false;
                         }
+                        pos++;
+                        // _wout($"end: {_stateArray[currStateId]}");
+                        // final transition
+                        // DfaStateHandler.TryTakeDFATransition(this, ref currStateId, -1);
+                        //
                         // one off check for the final position
                         // this is just to move it out of the hot loop
                         if ((!_stateFlagsArray[currStateId].IsNullable() &&
                              !_stateArray[currStateId]!.IsNullableFor(
-                                 GetPositionKind(positionId))))
+                                 GetPositionKind(-1))))
                         {
                             return false;
                         }
+                        // the end position (-1) was nullable
                         endPos = pos;
                         endStateId = currStateId;
                         initialStatePos = initialStatePosCandidate;
