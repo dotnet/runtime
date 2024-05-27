@@ -3215,7 +3215,7 @@ inline bool Compiler::IsPotentialGCSafePoint(GenTree* tree) const
     // This is quite a conservative fix as it's hard to prove Lower won't do it at this point.
     if (tree->OperIsLocalStore())
     {
-        return lvaTable[tree->AsLclVarCommon()->GetLclNum()].TypeGet() == TYP_STRUCT;
+        return tree->TypeIs(TYP_STRUCT);
     }
     if (tree->OperIs(GT_STORE_BLK))
     {
