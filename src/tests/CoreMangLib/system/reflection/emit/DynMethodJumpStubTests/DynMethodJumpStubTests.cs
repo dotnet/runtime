@@ -10,7 +10,7 @@ using Xunit;
 
 public static class DynamicMethodJumpStubTests
 {
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
     public static void TestEntryPoint()
     {
         DynamicMethodJumpStubTest();
