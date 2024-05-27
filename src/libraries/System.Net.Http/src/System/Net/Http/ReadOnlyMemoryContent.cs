@@ -11,8 +11,11 @@ namespace System.Net.Http
     {
         private readonly ReadOnlyMemory<byte> _content;
 
-        public ReadOnlyMemoryContent(ReadOnlyMemory<byte> content) =>
+        public ReadOnlyMemoryContent(ReadOnlyMemory<byte> content)
+        {
             _content = content;
+            Headers.ContentLength = content.Length;
+        }
 
         protected override void SerializeToStream(Stream stream, TransportContext? context, CancellationToken cancellationToken)
         {
