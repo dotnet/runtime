@@ -59,14 +59,14 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             if (type == typeof(global::Program.MyClass))
             {
                 var instance = new global::Program.MyClass();
-                BindCore(configuration, ref instance, binderOptions);
+                BindCore(configuration, ref instance, defaultValueIfNotFound: true, binderOptions);
                 return instance;
             }
 
             throw new NotSupportedException($"Unable to bind to type '{type}': generator did not detect the type as input.");
         }
 
-        public static void BindCore(IConfiguration configuration, ref global::System.Collections.Generic.List<int> instance, BinderOptions? binderOptions)
+        public static void BindCore(IConfiguration configuration, ref global::System.Collections.Generic.List<int> instance, bool defaultValueIfNotFound, BinderOptions? binderOptions)
         {
             foreach (IConfigurationSection section in configuration.GetChildren())
             {
@@ -77,7 +77,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
         }
 
-        public static void BindCore(IConfiguration configuration, ref int[] instance, BinderOptions? binderOptions)
+        public static void BindCore(IConfiguration configuration, ref int[] instance, bool defaultValueIfNotFound, BinderOptions? binderOptions)
         {
             var temp1 = new List<int>();
 
@@ -94,7 +94,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             temp1.CopyTo(instance, originalCount);
         }
 
-        public static void BindCore(IConfiguration configuration, ref global::System.Collections.Generic.Dictionary<string, string> instance, BinderOptions? binderOptions)
+        public static void BindCore(IConfiguration configuration, ref global::System.Collections.Generic.Dictionary<string, string> instance, bool defaultValueIfNotFound, BinderOptions? binderOptions)
         {
             foreach (IConfigurationSection section in configuration.GetChildren())
             {
@@ -105,7 +105,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
         }
 
-        public static void BindCore(IConfiguration configuration, ref global::Program.MyClass instance, BinderOptions? binderOptions)
+        public static void BindCore(IConfiguration configuration, ref global::Program.MyClass instance, bool defaultValueIfNotFound, BinderOptions? binderOptions)
         {
             ValidateConfigurationKeys(typeof(global::Program.MyClass), s_configKeys_ProgramMyClass, configuration, binderOptions);
 
@@ -113,7 +113,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             {
                 instance.MyString = value2;
             }
-            else
+            else if (defaultValueIfNotFound)
             {
                 var currentValue = instance.MyString;
                 if (currentValue is object) 
@@ -126,7 +126,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             {
                 instance.MyInt = ParseInt(value3, configuration.GetSection("MyInt").Path);
             }
-            else
+            else if (defaultValueIfNotFound)
             {
                 var currentValue = instance.MyInt;
                 if (currentValue is object) 
@@ -139,7 +139,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             {
                 global::System.Collections.Generic.List<int>? temp6 = instance.MyList;
                 temp6 ??= new global::System.Collections.Generic.List<int>();
-                BindCore(section4, ref temp6, binderOptions);
+                BindCore(section4, ref temp6, defaultValueIfNotFound: false, binderOptions);
                 instance.MyList = temp6;
             }
 
@@ -147,7 +147,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             {
                 int[]? temp9 = instance.MyArray;
                 temp9 ??= new int[0];
-                BindCore(section7, ref temp9, binderOptions);
+                BindCore(section7, ref temp9, defaultValueIfNotFound: false, binderOptions);
                 instance.MyArray = temp9;
             }
 
@@ -155,7 +155,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             {
                 global::System.Collections.Generic.Dictionary<string, string>? temp12 = instance.MyDictionary;
                 temp12 ??= new global::System.Collections.Generic.Dictionary<string, string>();
-                BindCore(section10, ref temp12, binderOptions);
+                BindCore(section10, ref temp12, defaultValueIfNotFound: false, binderOptions);
                 instance.MyDictionary = temp12;
             }
         }

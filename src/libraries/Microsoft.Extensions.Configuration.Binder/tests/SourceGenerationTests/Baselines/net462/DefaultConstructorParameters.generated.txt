@@ -52,14 +52,14 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
 
             var typedObj = (global::Program.ClassWhereParametersHaveDefaultValue)instance;
-            BindCore(configuration, ref typedObj, binderOptions: null);
+            BindCore(configuration, ref typedObj, defaultValueIfNotFound: false, binderOptions: null);
         }
         #endregion IConfiguration extensions.
 
         #region Core binding extensions.
         private readonly static Lazy<HashSet<string>> s_configKeys_ProgramClassWhereParametersHaveDefaultValue = new(() => new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "Name", "Address", "Age", "F", "D", "M", "SC", "C", "NAge", "NF", "ND", "NM", "NSC", "NC" });
 
-        public static void BindCore(IConfiguration configuration, ref global::Program.ClassWhereParametersHaveDefaultValue instance, BinderOptions? binderOptions)
+        public static void BindCore(IConfiguration configuration, ref global::Program.ClassWhereParametersHaveDefaultValue instance, bool defaultValueIfNotFound, BinderOptions? binderOptions)
         {
             ValidateConfigurationKeys(typeof(global::Program.ClassWhereParametersHaveDefaultValue), s_configKeys_ProgramClassWhereParametersHaveDefaultValue, configuration, binderOptions);
         }

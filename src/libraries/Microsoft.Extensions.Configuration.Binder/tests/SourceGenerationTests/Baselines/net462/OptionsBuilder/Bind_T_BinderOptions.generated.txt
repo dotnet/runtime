@@ -93,14 +93,14 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             if (type == typeof(global::Program.MyClass))
             {
                 var temp = (global::Program.MyClass)instance;
-                BindCore(configuration, ref temp, binderOptions);
+                BindCore(configuration, ref temp, defaultValueIfNotFound: false, binderOptions);
                 return;
             }
 
             throw new NotSupportedException($"Unable to bind to type '{type}': generator did not detect the type as input.");
         }
 
-        public static void BindCore(IConfiguration configuration, ref global::System.Collections.Generic.List<int> instance, BinderOptions? binderOptions)
+        public static void BindCore(IConfiguration configuration, ref global::System.Collections.Generic.List<int> instance, bool defaultValueIfNotFound, BinderOptions? binderOptions)
         {
             foreach (IConfigurationSection section in configuration.GetChildren())
             {
@@ -111,7 +111,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
         }
 
-        public static void BindCore(IConfiguration configuration, ref global::Program.MyClass instance, BinderOptions? binderOptions)
+        public static void BindCore(IConfiguration configuration, ref global::Program.MyClass instance, bool defaultValueIfNotFound, BinderOptions? binderOptions)
         {
             ValidateConfigurationKeys(typeof(global::Program.MyClass), s_configKeys_ProgramMyClass, configuration, binderOptions);
 
@@ -119,7 +119,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             {
                 instance.MyString = value1;
             }
-            else
+            else if (defaultValueIfNotFound)
             {
                 var currentValue = instance.MyString;
                 if (currentValue is object) 
@@ -132,7 +132,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             {
                 instance.MyInt = ParseInt(value2, configuration.GetSection("MyInt").Path);
             }
-            else
+            else if (defaultValueIfNotFound)
             {
                 var currentValue = instance.MyInt;
                 if (currentValue is object) 
@@ -145,7 +145,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             {
                 global::System.Collections.Generic.List<int>? temp5 = instance.MyList;
                 temp5 ??= new global::System.Collections.Generic.List<int>();
-                BindCore(section3, ref temp5, binderOptions);
+                BindCore(section3, ref temp5, defaultValueIfNotFound: false, binderOptions);
                 instance.MyList = temp5;
             }
         }

@@ -52,14 +52,14 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
 
             var typedObj = (global::Program.MyClass)instance;
-            BindCore(configuration, ref typedObj, binderOptions: null);
+            BindCore(configuration, ref typedObj, defaultValueIfNotFound: false, binderOptions: null);
         }
         #endregion IConfiguration extensions.
 
         #region Core binding extensions.
         private readonly static Lazy<HashSet<string>> s_configKeys_ProgramMyClass = new(() => new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "Prop0", "Prop1", "Prop2", "Prop3", "Prop4", "Prop5", "Prop6", "Prop8", "Prop9", "Prop10", "Prop13", "Prop14", "Prop15", "Prop16", "Prop17", "Prop19", "Prop20", "Prop21", "Prop23", "Prop24", "Prop25", "Prop26", "Prop27", "Prop28", "Prop29", "Prop30" });
 
-        public static void BindCore(IConfiguration configuration, ref global::Program.MyClass instance, BinderOptions? binderOptions)
+        public static void BindCore(IConfiguration configuration, ref global::Program.MyClass instance, bool defaultValueIfNotFound, BinderOptions? binderOptions)
         {
             ValidateConfigurationKeys(typeof(global::Program.MyClass), s_configKeys_ProgramMyClass, configuration, binderOptions);
 
@@ -67,7 +67,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             {
                 instance.Prop0 = ParseBool(value0, configuration.GetSection("Prop0").Path);
             }
-            else
+            else if (defaultValueIfNotFound)
             {
                 var currentValue = instance.Prop0;
                 if (currentValue is object) 
@@ -80,7 +80,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             {
                 instance.Prop1 = ParseByte(value1, configuration.GetSection("Prop1").Path);
             }
-            else
+            else if (defaultValueIfNotFound)
             {
                 var currentValue = instance.Prop1;
                 if (currentValue is object) 
@@ -93,7 +93,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             {
                 instance.Prop2 = ParseSbyte(value2, configuration.GetSection("Prop2").Path);
             }
-            else
+            else if (defaultValueIfNotFound)
             {
                 var currentValue = instance.Prop2;
                 if (currentValue is object) 
@@ -106,7 +106,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             {
                 instance.Prop3 = ParseChar(value3, configuration.GetSection("Prop3").Path);
             }
-            else
+            else if (defaultValueIfNotFound)
             {
                 var currentValue = instance.Prop3;
                 if (currentValue is object) 
@@ -119,7 +119,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             {
                 instance.Prop4 = ParseDouble(value4, configuration.GetSection("Prop4").Path);
             }
-            else
+            else if (defaultValueIfNotFound)
             {
                 var currentValue = instance.Prop4;
                 if (currentValue is object) 
@@ -132,7 +132,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             {
                 instance.Prop5 = value5;
             }
-            else
+            else if (defaultValueIfNotFound)
             {
                 var currentValue = instance.Prop5;
                 if (currentValue is object) 
@@ -145,7 +145,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             {
                 instance.Prop6 = ParseInt(value6, configuration.GetSection("Prop6").Path);
             }
-            else
+            else if (defaultValueIfNotFound)
             {
                 var currentValue = instance.Prop6;
                 if (currentValue is object) 
@@ -158,7 +158,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             {
                 instance.Prop8 = ParseShort(value7, configuration.GetSection("Prop8").Path);
             }
-            else
+            else if (defaultValueIfNotFound)
             {
                 var currentValue = instance.Prop8;
                 if (currentValue is object) 
@@ -171,7 +171,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             {
                 instance.Prop9 = ParseLong(value8, configuration.GetSection("Prop9").Path);
             }
-            else
+            else if (defaultValueIfNotFound)
             {
                 var currentValue = instance.Prop9;
                 if (currentValue is object) 
@@ -184,7 +184,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             {
                 instance.Prop10 = ParseFloat(value9, configuration.GetSection("Prop10").Path);
             }
-            else
+            else if (defaultValueIfNotFound)
             {
                 var currentValue = instance.Prop10;
                 if (currentValue is object) 
@@ -197,7 +197,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             {
                 instance.Prop13 = ParseUshort(value10, configuration.GetSection("Prop13").Path);
             }
-            else
+            else if (defaultValueIfNotFound)
             {
                 var currentValue = instance.Prop13;
                 if (currentValue is object) 
@@ -210,7 +210,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             {
                 instance.Prop14 = ParseUint(value11, configuration.GetSection("Prop14").Path);
             }
-            else
+            else if (defaultValueIfNotFound)
             {
                 var currentValue = instance.Prop14;
                 if (currentValue is object) 
@@ -223,7 +223,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             {
                 instance.Prop15 = ParseUlong(value12, configuration.GetSection("Prop15").Path);
             }
-            else
+            else if (defaultValueIfNotFound)
             {
                 var currentValue = instance.Prop15;
                 if (currentValue is object) 
@@ -236,7 +236,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             {
                 instance.Prop16 = value13;
             }
-            else
+            else if (defaultValueIfNotFound)
             {
                 var currentValue = instance.Prop16;
                 if (currentValue is object) 
@@ -249,7 +249,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             {
                 instance.Prop17 = ParseSystemGlobalizationCultureInfo(value14, configuration.GetSection("Prop17").Path);
             }
-            else
+            else if (defaultValueIfNotFound)
             {
                 var currentValue = instance.Prop17;
                 if (currentValue is object) 
@@ -262,7 +262,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             {
                 instance.Prop19 = ParseSystemDateTime(value15, configuration.GetSection("Prop19").Path);
             }
-            else
+            else if (defaultValueIfNotFound)
             {
                 var currentValue = instance.Prop19;
                 if (currentValue is object) 
@@ -275,7 +275,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             {
                 instance.Prop20 = ParseSystemDateTimeOffset(value16, configuration.GetSection("Prop20").Path);
             }
-            else
+            else if (defaultValueIfNotFound)
             {
                 var currentValue = instance.Prop20;
                 if (currentValue is object) 
@@ -288,7 +288,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             {
                 instance.Prop21 = ParseDecimal(value17, configuration.GetSection("Prop21").Path);
             }
-            else
+            else if (defaultValueIfNotFound)
             {
                 var currentValue = instance.Prop21;
                 if (currentValue is object) 
@@ -301,7 +301,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             {
                 instance.Prop23 = ParseSystemTimeSpan(value18, configuration.GetSection("Prop23").Path);
             }
-            else
+            else if (defaultValueIfNotFound)
             {
                 var currentValue = instance.Prop23;
                 if (currentValue is object) 
@@ -314,7 +314,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             {
                 instance.Prop24 = ParseSystemGuid(value19, configuration.GetSection("Prop24").Path);
             }
-            else
+            else if (defaultValueIfNotFound)
             {
                 var currentValue = instance.Prop24;
                 if (currentValue is object) 
@@ -327,7 +327,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             {
                 instance.Prop25 = ParseSystemUri(value20, configuration.GetSection("Prop25").Path);
             }
-            else
+            else if (defaultValueIfNotFound)
             {
                 var currentValue = instance.Prop25;
                 if (currentValue is object) 
@@ -340,7 +340,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             {
                 instance.Prop26 = ParseSystemVersion(value21, configuration.GetSection("Prop26").Path);
             }
-            else
+            else if (defaultValueIfNotFound)
             {
                 var currentValue = instance.Prop26;
                 if (currentValue is object) 
@@ -353,7 +353,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             {
                 instance.Prop27 = ParseEnum<global::System.DayOfWeek>(value22, configuration.GetSection("Prop27").Path);
             }
-            else
+            else if (defaultValueIfNotFound)
             {
                 var currentValue = instance.Prop27;
                 if (currentValue is object) 
@@ -366,7 +366,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             {
                 instance.Prop28 = ParseByteArray(value23, configuration.GetSection("Prop28").Path);
             }
-            else
+            else if (defaultValueIfNotFound)
             {
                 var currentValue = instance.Prop28;
                 if (currentValue is object) 
@@ -379,7 +379,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             {
                 instance.Prop29 = ParseInt(value24, configuration.GetSection("Prop29").Path);
             }
-            else
+            else if (defaultValueIfNotFound)
             {
                 var currentValue = instance.Prop29;
                 if (currentValue is object) 
@@ -392,7 +392,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             {
                 instance.Prop30 = ParseSystemDateTime(value25, configuration.GetSection("Prop30").Path);
             }
-            else
+            else if (defaultValueIfNotFound)
             {
                 var currentValue = instance.Prop30;
                 if (currentValue is object) 

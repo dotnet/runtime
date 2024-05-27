@@ -1650,7 +1650,7 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
 
             var bound = config.GetSection("value").Get<StructWithNestedStructAndSetterLogic[]>();
             Assert.Null(bound[0].String);
-            Assert.Equal(42, bound[0].Int32);
+            Assert.Equal(0, bound[0].Int32);
         }
 
         [Fact]

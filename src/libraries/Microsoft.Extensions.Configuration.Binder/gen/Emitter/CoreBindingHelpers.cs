@@ -135,7 +135,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                             {
                                 if (_typeIndex.CanInstantiate(complexType))
                                 {
-                                    EmitBindingLogic(complexType, Identifier.instance, Identifier.configuration, InitializationKind.Declaration);
+                                    EmitBindingLogic(complexType, Identifier.instance, Identifier.configuration, InitializationKind.Declaration, ValueDefaulting.CallSetter);
                                     _writer.WriteLine($"return {Identifier.instance};");
                                 }
                                 else if (type is ObjectSpec { InitExceptionMessage: string exMsg })
@@ -239,7 +239,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
                     EmitStartBlock($"{conditionKindExpr} ({Identifier.type} == typeof({type.TypeRef.FullyQualifiedName}))");
                     _writer.WriteLine($"var {Identifier.temp} = ({effectiveType.TypeRef.FullyQualifiedName}){Identifier.instance};");
-                    EmitBindingLogic(type, Identifier.temp, Identifier.configuration, InitializationKind.None);
+                    EmitBindingLogic(type, Identifier.temp, Identifier.configuration, InitializationKind.None, ValueDefaulting.None);
                     _writer.WriteLine($"return;");
                     EmitEndBlock();
                 }
@@ -267,7 +267,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             private void EmitBindCoreMethod(ComplexTypeSpec type)
             {
                 string objParameterExpression = $"ref {type.TypeRef.FullyQualifiedName} {Identifier.instance}";
-                EmitStartBlock(@$"public static void {nameof(MethodsToGen_CoreBindingHelper.BindCore)}({Identifier.IConfiguration} {Identifier.configuration}, {objParameterExpression}, {Identifier.BinderOptions}? {Identifier.binderOptions})");
+                EmitStartBlock(@$"public static void {nameof(MethodsToGen_CoreBindingHelper.BindCore)}({Identifier.IConfiguration} {Identifier.configuration}, {objParameterExpression}, bool defaultValueIfNotFound, {Identifier.BinderOptions}? {Identifier.binderOptions})");
 
                 ComplexTypeSpec effectiveType = (ComplexTypeSpec)_typeIndex.GetEffectiveTypeSpec(type);
 
@@ -409,7 +409,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                         member,
                         member.Name,
                         sectionPathExpr: GetSectionPathFromConfigurationExpression(configKeyName),
-                        canSet: true,
+                        canSet: true, canGet: true,
                         InitializationKind.None);
 
                     if (canBindToMember)
@@ -714,7 +714,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                             // and this section should be skipped.
                             EmitBindCheckForSectionValue();
 
-                            EmitBindingLogic(complexType, Identifier.value, Identifier.section, InitializationKind.Declaration);
+                            EmitBindingLogic(complexType, Identifier.value, Identifier.section, InitializationKind.Declaration, ValueDefaulting.None);
                             _writer.WriteLine($"{addExpr}({Identifier.value});");
                         }
                         break;
@@ -819,7 +819,8 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                                         complexElementType,
                                         Identifier.element,
                                         Identifier.section,
-                                        InitializationKind.None);
+                                        InitializationKind.None,
+                                        ValueDefaulting.None);
 
                                     _writer.WriteLine($"{instanceIdentifier}[{parsedKeyExpr}] = {Identifier.element};");
                                 }
@@ -848,7 +849,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                             property,
                             memberAccessExpr: $"{containingTypeRef}.{property.Name}",
                             GetSectionPathFromConfigurationExpression(property.ConfigurationKeyName),
-                            canSet: property.CanSet,
+                            canSet: property.CanSet, canGet: property.CanGet,
                             InitializationKind.Declaration);
                     }
                 }
@@ -858,7 +859,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 MemberSpec member,
                 string memberAccessExpr,
                 string sectionPathExpr,
-                bool canSet,
+                bool canSet, bool canGet,
                 InitializationKind initializationKind)
             {
                 string sectionParseExpr = GetSectionFromConfigurationExpression(member.ConfigurationKeyName);
@@ -867,7 +868,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 {
                     case ParsableFromStringSpec stringParsableType:
                         {
-                            if (canSet)
+                            if (canSet && canGet)
                             {
                                 EmitBlankLineIfRequired();
                                 EmitBindingLogic(
@@ -976,6 +977,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     targetObjAccessExpr,
                     configArgExpr,
                     initKind,
+                    ValueDefaulting.None,
                     writeOnSuccess
                     );
             }
@@ -985,6 +987,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 string memberAccessExpr,
                 string configArgExpr,
                 InitializationKind initKind,
+                ValueDefaulting valueDefaulting,
                 Action<string>? writeOnSuccess = null)
             {
                 if (!_typeIndex.HasBindableMembers(type))
@@ -1023,7 +1026,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
                 void EmitBindingLogic(string instanceToBindExpr, InitializationKind initKind)
                 {
-                    string bindCoreCall = $@"{nameof(MethodsToGen_CoreBindingHelper.BindCore)}({configArgExpr}, ref {instanceToBindExpr}, {Identifier.binderOptions});";
+                    string bindCoreCall = $@"{nameof(MethodsToGen_CoreBindingHelper.BindCore)}({configArgExpr}, ref {instanceToBindExpr}, defaultValueIfNotFound: {FormatDefaultValueIfNotFound()}, {Identifier.binderOptions});";
 
                     if (_typeIndex.CanInstantiate(type))
                     {
@@ -1053,6 +1056,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                         _writer.WriteLine(bindCoreCall);
                         writeOnSuccess?.Invoke(instanceToBindExpr);
                     }
+                    string FormatDefaultValueIfNotFound() => valueDefaulting == ValueDefaulting.CallSetter ? "true" : "false";
                 }
             }
 
@@ -1085,7 +1089,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 {
                     Debug.Assert(checkForNullSectionValue);
 
-                    EmitStartBlock("else");
+                    EmitStartBlock($"else if (defaultValueIfNotFound)");
                     _writer.WriteLine($"var currentValue = {defaultValueSource};");
                     // `is object` will be happy with value types, but will give CS0183 which we suppress
                     // `is null` gives "Cannot convert null to 'int' because it is a non-nullable value type"

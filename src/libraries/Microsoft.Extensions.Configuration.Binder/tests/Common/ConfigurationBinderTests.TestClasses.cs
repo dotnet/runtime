@@ -727,7 +727,6 @@ namespace Microsoft.Extensions
             private string? _testVirtualSet;
             public virtual string? TestVirtualSet
             {
-                get => _testVirtualSet;
                 set => _testVirtualSet = value;
             }
 
