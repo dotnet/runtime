@@ -33,6 +33,7 @@ namespace System.Text.RegularExpressions.Symbolic
         /// <summary>
         /// Default maximum estimated safe expansion size of a <see cref="SymbolicRegexNode{TSet}"/> AST
         /// after the AST has been anlayzed for safe handling.
+        /// TODO: this is perhaps too conservative, consider raising this
         /// <remarks>
         /// If the AST exceeds this threshold then <see cref="NotSupportedException"/> is thrown.
         /// This default value may be overridden with the AppContext data

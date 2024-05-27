@@ -65,12 +65,18 @@ namespace System.Text.RegularExpressions.Symbolic
                 anyCharacterToMintermId = solver.Or(anyCharacterToMintermId, charToTargetMintermId);
             }
 
-            // TODO: this could be initialized more efficiently but it's
-            // a fundamentally different design choice that preallocates more memory.
-            // the minterm slice [1..] contains the ranges that should be really initialized
-            for (int i = 0; i <= ushort.MaxValue; i++)
+            // assign minterm category for every char
+            // unused characters in minterm 0 get mapped to zero
+            for (int mintermId = 1; mintermId < minterms.Length; mintermId++)
             {
-                lookup[i] = anyCharacterToMintermId.Find(i);
+                // precompute all assigned minterm categories
+                (uint, uint)[] mintermRanges = BDDRangeConverter.ToRanges(minterms[mintermId]);
+                foreach ((uint start, uint end) in mintermRanges)
+                {
+                    // assign character ranges in bulk
+                    Span<int> slice = lookup.AsSpan((int)start, (int)(end + 1 - start));
+                    slice.Fill(mintermId);
+                }
             }
             _lookup = lookup;
         }
