@@ -290,7 +290,7 @@ internal static partial class Interop
         {
             SafeSslHandle? sslHandle = null;
             SafeSslContextHandle? sslCtxHandle = null;
-            SafeSslContextHandle? newCtxHandle = null;
+            SafeSslContextHandle? toDisposeHandle = null;
             SslProtocols protocols = CalculateEffectiveProtocols(sslAuthenticationOptions);
             bool hasAlpn = sslAuthenticationOptions.ApplicationProtocols != null && sslAuthenticationOptions.ApplicationProtocols.Count != 0;
             bool cacheSslContext = sslAuthenticationOptions.AllowTlsResume && !SslStream.DisableTlsResume && sslAuthenticationOptions.EncryptionPolicy == EncryptionPolicy.RequireEncryption && sslAuthenticationOptions.CipherSuitesPolicy == null;
@@ -338,8 +338,13 @@ internal static partial class Interop
 
             if (sslCtxHandle == null)
             {
-                // We did not get SslContext from cache
-                sslCtxHandle = newCtxHandle = AllocateSslContext(sslAuthenticationOptions, protocols, cacheSslContext);
+                // We did not get SslContext from cache, allocate a one. If we
+                // won't end up caching the context, we will dispose the new
+                // SafeSslContextHandle at end of this method since we won't
+                // reuse it. SSL object created later keeps a reference to it
+                // and will free it when we close the SafeSslHandle.
+
+                sslCtxHandle = toDisposeHandle = AllocateSslContext(sslAuthenticationOptions, protocols, cacheSslContext);
 
                 if (cacheSslContext)
                 {
@@ -347,17 +352,22 @@ internal static partial class Interop
 
                     if (sslAuthenticationOptions.IsServer)
                     {
-                        added = sslAuthenticationOptions.CertificateContext!.SslContexts!.TryAdd(protocols | (SslProtocols)(hasAlpn ? 1 : 0), newCtxHandle);
+                        added = sslAuthenticationOptions.CertificateContext!.SslContexts!.TryAdd(protocols | (SslProtocols)(hasAlpn ? 1 : 0), sslCtxHandle);
                     }
                     else
                     {
                         var key = new SslContextCacheKey(protocols, sslAuthenticationOptions.CertificateContext?.TargetCertificate.GetCertHash());
-                        added = s_clientSslContexts.TryAdd(key, newCtxHandle);
+
+                        // Check for concurrent inserts, if not added, use the existing one,
+                        // the new one will be disposed.
+                        sslCtxHandle = s_clientSslContexts.GetOrAdd(key, sslCtxHandle);
+                        added = sslCtxHandle == toDisposeHandle;
                     }
 
                     if (added)
                     {
-                        newCtxHandle = null;
+                        // handle will be cached, don't dispose it
+                        toDisposeHandle = null;
                     }
                 }
             }
@@ -477,7 +487,7 @@ internal static partial class Interop
             }
             finally
             {
-                newCtxHandle?.Dispose();
+                toDisposeHandle?.Dispose();
             }
 
             return sslHandle;
