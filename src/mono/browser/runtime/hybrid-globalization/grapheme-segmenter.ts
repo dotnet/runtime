@@ -57,6 +57,8 @@ export class GraphemeSegmenter {
     private readonly ruleSortedKeys: string[];
 
     public constructor () {
+        if (!segmentationRules)
+            throw new Error("Grapheme segmentation rules are not set");
         this.rules = segmentationRules;
         this.ruleSortedKeys = Object.keys(this.rules).sort((a, b) => Number(a) - Number(b));
     }
