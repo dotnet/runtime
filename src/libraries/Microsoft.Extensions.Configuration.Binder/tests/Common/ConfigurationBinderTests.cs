@@ -1786,14 +1786,28 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
 
             Assert.Equal(401, options.HttpStatusCode); // exists in configuration and properly sets the property
 
-            // This doesn't exist in configuration but the setter should be called which defaults the to '2' from input of '0'.
+            // This doesn't exist in configuration but the setter should be called which defaults the to '2'
             Assert.Equal(2, options.OtherCode);
+
+            // Items not in config with non-null getter values should have setter called with getter value
+            Assert.Equal(123, options.IntWithDefault);
+            Assert.True(options.WasIntWithDefaultSet);
+            Assert.Equal("default", options.OtherCodeString);
+            Assert.Equal("default", options.PocoWithDefault.Example);
+            Assert.Equal(1, options.PocoListWithDefault.Count);
+
+#if !BUILDING_SOURCE_GENERATOR_TESTS
+            Assert.True(options.WasOtherCodeStringSet);
+            Assert.True(options.WasPocoWithDefaultSet);
+            Assert.True(options.WasPocoListWithDefaultSet);
+#endif
 
             // These don't exist in configuration and setters are not called since they are nullable.
             Assert.Equal(0, options.OtherCodeNullable);
-            Assert.Equal("default", options.OtherCodeString);
             Assert.Null(options.OtherCodeNull);
             Assert.Null(options.OtherCodeUri);
+            Assert.Null(options.StringWithNullDefault);
+            Assert.False(options.WasStringWithNullDefaultSet);
         }
 
         [Fact]
