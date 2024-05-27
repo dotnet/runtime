@@ -4054,6 +4054,8 @@ namespace System.Net.Http.Functional.Tests
     }
 
     [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsQuicSupported))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/101376")]
+
     public sealed class SocketsHttpHandler_HttpClientHandler_AltSvc_Test_Http3 : HttpClientHandler_AltSvc_Test
     {
         public SocketsHttpHandler_HttpClientHandler_AltSvc_Test_Http3(ITestOutputHelper output) : base(output) { }

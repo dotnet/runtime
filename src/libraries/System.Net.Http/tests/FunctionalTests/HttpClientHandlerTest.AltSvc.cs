@@ -33,11 +33,6 @@ namespace System.Net.Http.Functional.Tests
         [MemberData(nameof(AltSvcHeaderUpgradeVersions))]
         public async Task AltSvc_Header_Upgrade_Success(Version fromVersion, bool overrideHost)
         {
-            if (UseVersion == HttpVersion30)
-            {
-                throw new SkipTestException("https://github.com/dotnet/runtime/issues/101376");
-            }
-
             // The test makes a request to a HTTP/1 or HTTP/2 server first, which supplies an Alt-Svc header pointing to the second server.
             using GenericLoopbackServer firstServer =
                 fromVersion.Major switch
@@ -81,11 +76,6 @@ namespace System.Net.Http.Functional.Tests
         [ConditionalFact]
         public async Task AltSvc_ConnectionFrame_UpgradeFrom20_Success()
         {
-            if (UseVersion == HttpVersion30)
-            {
-                throw new SkipTestException("https://github.com/dotnet/runtime/issues/101376");
-            }
-
             using Http2LoopbackServer firstServer = Http2LoopbackServer.CreateServer();
             using Http3LoopbackServer secondServer = CreateHttp3LoopbackServer();
             using HttpClient client = CreateHttpClient(HttpVersion.Version20);
