@@ -2653,7 +2653,7 @@ namespace System
                 // So f = (2^TrailingSignificandLength + mantissa), e = exp - ExponentBias - TrailingSignificandLength;
 
                 fraction |= (1UL << TNumber.DenormalMantissaBits);
-                exponent -= TNumber.ExponentBias - TNumber.DenormalMantissaBits;
+                exponent -= TNumber.ExponentBias + TNumber.DenormalMantissaBits;
             }
             else
             {
