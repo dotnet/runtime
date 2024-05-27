@@ -4121,6 +4121,12 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
+        public void Send_MajorVersionZero_ThrowsNotSupportedException()
+        {
+            Throws<NotSupportedException>(new HttpRequestMessage { Version = new Version(0, 42) });
+        }
+
+        [Fact]
         public void Send_TransferEncodingChunkedWithNoContent_ThrowsHttpRequestException()
         {
             var request = new HttpRequestMessage();

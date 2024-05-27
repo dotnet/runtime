@@ -610,7 +610,7 @@ namespace System.Net.Http
 
         private static Exception? ValidateAndNormalizeRequest(HttpRequestMessage request)
         {
-            if (request.Version.Major == 0)
+            if (request.Version != HttpVersion.Version10 && request.Version != HttpVersion.Version11 && request.Version != HttpVersion.Version20 && request.Version != HttpVersion.Version30)
             {
                 return new NotSupportedException(SR.net_http_unsupported_version);
             }
