@@ -723,6 +723,10 @@ namespace System.Runtime.CompilerServices
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         public extern CorElementType GetVerifierCorElementType();
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        internal static extern bool CanCastTo_NoCacheLookup(void* fromTypeHnd, void* toTypeHnd);
+
     }
 
     // Subset of src\vm\methodtable.h
@@ -750,7 +754,7 @@ namespace System.Runtime.CompilerServices
     /// <summary>
     /// A type handle, which can wrap either a pointer to a <c>TypeDesc</c> or to a <see cref="MethodTable"/>.
     /// </summary>
-    internal unsafe struct TypeHandle
+    internal readonly unsafe struct TypeHandle
     {
         // Subset of src\vm\typehandle.h
 
@@ -812,7 +816,16 @@ namespace System.Runtime.CompilerServices
 
         public static bool AreSameType(TypeHandle left, TypeHandle right) => left.m_asTAddr == right.m_asTAddr;
 
-        public bool CanCastTo(TypeHandle destTH) => CastHelpers.CanCastTo(m_asTAddr, destTH.m_asTAddr);
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public bool CanCastTo(TypeHandle destTH)
+        {
+            CastResult result = CastCache.TryGet(CastHelpers.s_table!, (nuint)m_asTAddr, (nuint)destTH.m_asTAddr);
+
+            if (result != CastResult.MaybeCast)
+                return result == CastResult.CanCast;
+
+            return MethodTable.CanCastTo_NoCacheLookup(m_asTAddr, destTH.m_asTAddr);
+        }
 
         public bool IsValueType
         {

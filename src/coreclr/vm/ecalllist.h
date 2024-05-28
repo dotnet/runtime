@@ -353,6 +353,7 @@ FCFuncEnd()
 #endif // FEATURE_COMINTEROP
 
 FCFuncStart(gCastHelpers)
+    FCFuncElement("CanCastTo_NoCacheLookup", ::IsInstanceOfAny_NoCacheLookup)
     FCFuncElement("IsInstanceOfAny_NoCacheLookup", ::IsInstanceOfAny_NoCacheLookup)
     FCFuncElement("ChkCastAny_NoCacheLookup", ::ChkCastAny_NoCacheLookup)
     FCFuncElement("Unbox_Helper", ::Unbox_Helper)
@@ -454,6 +455,8 @@ FCFuncEnd()
 
 FCFuncStart(gMethodTableFuncs)
     FCFuncElement("GetNumInstanceFieldBytes", MethodTableNative::GetNumInstanceFieldBytes)
+    FCFuncElement("GetVerifierCorElementType", MethodTableNative::GetVerifierCorElementType)
+    FCFuncElement("CanCastTo_NoCacheLookup", MethodTableNative::CanCastTo)
 FCFuncEnd()
 
 FCFuncStart(gStubHelperFuncs)

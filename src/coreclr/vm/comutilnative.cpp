@@ -1787,6 +1787,20 @@ FCIMPL1(UINT32, MethodTableNative::GetNumInstanceFieldBytes, MethodTable* mt)
 }
 FCIMPLEND
 
+FCIMPL1(CorElementType, MethodTableNative::GetVerifierCorElementType, MethodTable* mt)
+{
+    FCALL_CONTRACT;
+    return mt->GetVerifierCorElementType();
+}
+FCIMPLEND
+
+FCIMPL2(FC_BOOL_RET, MethodTableNative::CanCastTo, void* fromType, void* toType)
+{
+    FCALL_CONTRACT;
+    FC_RETURN_BOOL(TypeHandle::FromPtr(fromType).CanCastTo(TypeHandle::FromPtr(toType)));
+}
+FCIMPLEND
+
 extern "C" BOOL QCALLTYPE MethodTable_AreTypesEquivalent(MethodTable* mta, MethodTable* mtb)
 {
     QCALL_CONTRACT;
