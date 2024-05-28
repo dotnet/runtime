@@ -231,6 +231,11 @@ typedef uint64_t regMaskSmall;
 
 typedef regMaskSmall SingleTypeRegSet;
 
+extern const regMaskSmall      regMasks[REG_COUNT];
+extern inline SingleTypeRegSet genSingleTypeRegMask(regNumber reg);
+extern inline SingleTypeRegSet genSingleTypeRegMask(regNumber reg, var_types type);
+extern inline SingleTypeRegSet genSingleTypeFloatMask(regNumber reg ARM_ARG(var_types type = TYP_DOUBLE));
+
 struct regMaskTP
 {
 private:
@@ -525,7 +530,7 @@ inline bool isByteReg(regNumber reg)
 
 inline regMaskTP        genRegMask(regNumber reg);
 inline regMaskTP        genRegMaskFloat(regNumber reg ARM_ARG(var_types type = TYP_DOUBLE));
-inline SingleTypeRegSet genSingleTypeRegMask(regNumber reg);
+
 
 /*****************************************************************************
  * Return true if the register number is valid
@@ -753,22 +758,10 @@ inline bool floatRegCanHoldType(regNumber reg, var_types type)
  *  Map a register number to a register mask.
  */
 
-extern const regMaskSmall regMasks[REG_COUNT];
-
 inline regMaskTP genRegMask(regNumber reg)
 {
-    assert((unsigned)reg < ArrLen(regMasks));
-#ifdef TARGET_AMD64
-    // shift is faster than a L1 hit on modern x86
-    // (L1 latency on sandy bridge is 4 cycles for [base] and 5 for [base + index*c] )
-    // the reason this is AMD-only is because the x86 BE will try to get reg masks for REG_STK
-    // and the result needs to be zero.
-    regMaskTP result = 1ULL << reg;
-    assert(result == regMasks[reg]);
-    return result;
-#else
-    return regMasks[reg];
-#endif
+    // TODO: Populate regMaskTP based on reg
+    return genSingleTypeRegMask(reg);
 }
 
 /*****************************************************************************
@@ -778,26 +771,7 @@ inline regMaskTP genRegMask(regNumber reg)
 
 inline regMaskTP genRegMaskFloat(regNumber reg ARM_ARG(var_types type /* = TYP_DOUBLE */))
 {
-#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_X86) || defined(TARGET_LOONGARCH64) ||            \
-    defined(TARGET_RISCV64)
-    assert(genIsValidFloatReg(reg));
-    assert((unsigned)reg < ArrLen(regMasks));
-    return regMasks[reg];
-#elif defined(TARGET_ARM)
-    assert(floatRegCanHoldType(reg, type));
-    assert(reg >= REG_F0 && reg <= REG_F31);
-
-    if (type == TYP_DOUBLE)
-    {
-        return regMasks[reg] | regMasks[reg + 1];
-    }
-    else
-    {
-        return regMasks[reg];
-    }
-#else
-#error Unsupported or unset target architecture
-#endif
+    return regMaskTP(genSingleTypeFloatMask(reg ARM_ARG(type)));
 }
 
 //------------------------------------------------------------------------
@@ -821,23 +795,8 @@ inline regMaskTP genRegMaskFloat(regNumber reg ARM_ARG(var_types type /* = TYP_D
 //
 inline regMaskTP genRegMask(regNumber regNum, var_types type)
 {
-#if defined(TARGET_ARM)
-    regMaskTP regMask = RBM_NONE;
-
-    if (varTypeUsesIntReg(type))
-    {
-        regMask = genRegMask(regNum);
-    }
-    else
-    {
-        assert(varTypeUsesFloatReg(type));
-        regMask = genRegMaskFloat(regNum, type);
-    }
-
-    return regMask;
-#else
-    return genRegMask(regNum);
-#endif
+    //TODO: Populate regMaskTP based on regNum/type
+    return genSingleTypeRegMask(regNum ARM_ARG(type));
 }
 
 /*****************************************************************************

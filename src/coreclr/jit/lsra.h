@@ -72,6 +72,8 @@ inline bool useFloatReg(var_types type)
     return (regType(type) == FloatRegisterType);
 }
 
+extern const regMaskSmall regMasks[REG_COUNT];
+
 //------------------------------------------------------------------------
 // genSingleTypeRegMask: Given a register, generate the appropriate regMask
 //
@@ -84,7 +86,18 @@ inline bool useFloatReg(var_types type)
 //
 inline SingleTypeRegSet genSingleTypeRegMask(regNumber reg)
 {
-    return genRegMask(reg).getLow();
+    assert((unsigned)reg < ArrLen(regMasks));
+#ifdef TARGET_AMD64
+    // shift is faster than a L1 hit on modern x86
+    // (L1 latency on sandy bridge is 4 cycles for [base] and 5 for [base + index*c] )
+    // the reason this is AMD-only is because the x86 BE will try to get reg masks for REG_STK
+    // and the result needs to be zero.
+    SingleTypeRegSet result = 1ULL << reg;
+    assert(result == regMasks[reg]);
+    return result;
+#else
+    return regMasks[reg];
+#endif
 }
 
 //------------------------------------------------------------------------
@@ -101,9 +114,54 @@ inline SingleTypeRegSet genSingleTypeRegMask(regNumber reg)
 //    (e.g. TYP_DOUBLE on ARM), it will return a regMask that includes
 //    all the registers for that type.
 //
-inline SingleTypeRegSet genSingleTypeRegMask(regNumber reg, var_types type)
+inline SingleTypeRegSet genSingleTypeRegMask(regNumber regNum, var_types type)
 {
-    return genRegMask(reg).getLow();
+#if defined(TARGET_ARM)
+    SingleTypeRegSet regMask = RBM_NONE;
+
+    if (varTypeUsesIntReg(type))
+    {
+        regMask = genSingleTypeRegMask(regNum);
+    }
+    else
+    {
+        assert(varTypeUsesFloatReg(type));
+        regMask = genSingleTypeFloatMask(regNum, type);
+    }
+
+    return regMask;
+#else
+    return genSingleTypeRegMask(regNum);
+#endif
+}
+
+/*****************************************************************************
+ *
+ *  Map a register number to a floating-point register mask.
+ */
+
+inline SingleTypeRegSet genSingleTypeFloatMask(regNumber reg ARM_ARG(var_types type /* = TYP_DOUBLE */))
+{
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_X86) || defined(TARGET_LOONGARCH64) ||            \
+    defined(TARGET_RISCV64)
+    assert(genIsValidFloatReg(reg));
+    assert((unsigned)reg < ArrLen(regMasks));
+    return regMasks[reg];
+#elif defined(TARGET_ARM)
+    assert(floatRegCanHoldType(reg, type));
+    assert(reg >= REG_F0 && reg <= REG_F31);
+
+    if (type == TYP_DOUBLE)
+    {
+        return regMasks[reg] | regMasks[reg + 1];
+    }
+    else
+    {
+        return regMasks[reg];
+    }
+#else
+#error Unsupported or unset target architecture
+#endif
 }
 
 //------------------------------------------------------------------------
