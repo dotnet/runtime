@@ -215,7 +215,6 @@ namespace System.Web.Util
             return UrlDecode(bytes.AsSpan(offset, count));
         }
 
-
         internal static byte[] UrlDecode(ReadOnlySpan<byte> bytes)
         {
             const int StackallocThreshold = 512;
