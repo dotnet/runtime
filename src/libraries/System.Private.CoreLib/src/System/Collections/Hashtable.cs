@@ -1139,6 +1139,11 @@ namespace System.Collections
                 }
             }
 
+            if (hashsize == 0)
+            {
+                hashsize = InitialSize;
+            }
+
             _loadsize = (int)(_loadFactor * hashsize);
 
             // V1 object doesn't has _keycomparer field.
