@@ -243,10 +243,13 @@ type ResourceExtensions = {
 };
 interface ResourceGroups {
     hash?: string;
+    coreAssembly?: ResourceList;
     assembly?: ResourceList;
     lazyAssembly?: ResourceList;
+    corePdb?: ResourceList;
     pdb?: ResourceList;
     jsModuleWorker?: ResourceList;
+    jsModuleGlobalization?: ResourceList;
     jsModuleNative: ResourceList;
     jsModuleRuntime: ResourceList;
     wasmSymbols?: ResourceList;
@@ -258,6 +261,9 @@ interface ResourceGroups {
     modulesAfterConfigLoaded?: ResourceList;
     modulesAfterRuntimeReady?: ResourceList;
     extensions?: ResourceExtensions;
+    coreVfs?: {
+        [virtualPath: string]: ResourceList;
+    };
     vfs?: {
         [virtualPath: string]: ResourceList;
     };
@@ -355,6 +361,10 @@ type SingleAssetBehaviors =
  * The javascript module for emscripten.
  */
  | "js-module-native"
+/**
+ * The javascript module for hybrid globalization.
+ */
+ | "js-module-globalization"
 /**
  * Typically blazor.boot.json
  */

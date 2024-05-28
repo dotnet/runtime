@@ -45,6 +45,7 @@
 
 #ifdef FEATURE_SPECIAL_USER_MODE_APC
 #include "asmconstants.h"
+#include <versionhelpers.h>
 #endif
 
 static const PortableTailCallFrame g_sentinelTailCallFrame = { NULL, NULL };
@@ -260,14 +261,14 @@ void  Thread::SetFrame(Frame *pFrame)
 // PRIVATE GLOBALS
 //************************************************************************
 
-extern unsigned __int64 getTimeStamp();
+extern uint64_t getTimeStamp();
 
-extern unsigned __int64 getTickFrequency();
+extern uint64_t getTickFrequency();
 
-unsigned __int64 tgetFrequency() {
-    static unsigned __int64 cachedFreq = (unsigned __int64) -1;
+uint64_t tgetFrequency() {
+    static uint64_t cachedFreq = (uint64_t) -1;
 
-    if (cachedFreq != (unsigned __int64) -1)
+    if (cachedFreq != (uint64_t) -1)
         return cachedFreq;
     else {
         cachedFreq = getTickFrequency();
@@ -371,13 +372,9 @@ void SetThread(Thread* t)
     {
         EnsureTlsDestructionMonitor();
     }
-}
 
-void SetAppDomain(AppDomain* ad)
-{
-    LIMITED_METHOD_CONTRACT
-
-    gCurrentThreadInfo.m_pAppDomain = ad;
+    // Clear or set the app domain to the one domain based on if the thread is being nulled out or set
+    gCurrentThreadInfo.m_pAppDomain = t == NULL ? NULL : AppDomain::GetCurrentDomain();
 }
 
 BOOL Thread::Alert ()
@@ -594,7 +591,6 @@ static void DeleteThread(Thread* pThread)
 
     //_ASSERTE (pThread == GetThread());
     SetThread(NULL);
-    SetAppDomain(NULL);
 
     if (pThread->HasThreadStateNC(Thread::TSNC_ExistInThreadStore))
     {
@@ -727,7 +723,6 @@ Thread* SetupThread()
     ThreadStore::AddThread(pThread);
 
     SetThread(pThread);
-    SetAppDomain(pThread->GetDomain());
 
 #ifdef FEATURE_INTEROP_DEBUGGING
     // Ensure that debugger word slot is allocated
@@ -1010,7 +1005,6 @@ HRESULT Thread::DetachThread(BOOL fDLLThreadDetach)
 
     // We need to make sure that TLS are touched last here.
     SetThread(NULL);
-    SetAppDomain(NULL);
 
     SetThreadState((Thread::ThreadState)(Thread::TS_Detached | Thread::TS_ReportDead));
     // Do not touch Thread object any more.  It may be destroyed.
@@ -1399,13 +1393,6 @@ Thread::Thread()
 #ifdef _DEBUG
     m_ulForbidTypeLoad      = 0;
     m_GCOnTransitionsOK     = TRUE;
-#endif
-
-#ifdef ENABLE_CONTRACTS
-    m_ulEnablePreemptiveGCCount  = 0;
-#endif
-
-#ifdef _DEBUG
     dbg_m_cSuspendedThreads = 0;
     dbg_m_cSuspendedThreadsWithoutOSLock = 0;
     m_Creator.Clear();
@@ -1584,8 +1571,6 @@ Thread::Thread()
 #endif // FEATURE_EH_FUNCLETS
 
     m_monitorLockContentionCount = 0;
-
-    m_pDomain = SystemDomain::System()->DefaultDomain();
 
     // Do not expose thread until it is fully constructed
     g_pThinLockThreadIdDispenser->NewId(this, this->m_ThreadId);
@@ -1846,7 +1831,6 @@ BOOL Thread::HasStarted()
         PrepareApartmentAndContext();
 
         SetThread(this);
-        SetAppDomain(m_pDomain);
 
         ThreadStore::TransferStartedThread(this);
 
@@ -1945,7 +1929,6 @@ FAILURE:
     ThreadStore::CheckForEEShutdown();
     DecExternalCount(/*holdingLock*/ HasThreadStateNC(Thread::TSNC_TSLTakenForStartup));
     SetThread(NULL);
-    SetAppDomain(NULL);
     return FALSE;
 }
 
@@ -2188,66 +2171,6 @@ SIZE_T GetDefaultStackSizeSetting()
     }
 
     return (SIZE_T) value;
-}
-
-BOOL Thread::GetProcessDefaultStackSize(SIZE_T* reserveSize, SIZE_T* commitSize)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-
-    //
-    // Let's get the stack sizes from the PE file that started process.
-    //
-    static SIZE_T ExeSizeOfStackReserve = 0;
-    static SIZE_T ExeSizeOfStackCommit = 0;
-
-    static BOOL fSizesGot = FALSE;
-
-    if (!fSizesGot)
-    {
-        SIZE_T defaultStackSizeSetting = GetDefaultStackSizeSetting();
-
-        if (defaultStackSizeSetting != 0)
-        {
-            ExeSizeOfStackReserve = defaultStackSizeSetting;
-            ExeSizeOfStackCommit = defaultStackSizeSetting;
-            fSizesGot = TRUE;
-        }
-    }
-
-#ifndef TARGET_UNIX
-    if (!fSizesGot)
-    {
-        HINSTANCE hInst = WszGetModuleHandle(NULL);
-        _ASSERTE(hInst);  // WszGetModuleHandle should never fail on the module that started the process.
-        EX_TRY
-        {
-            PEDecoder pe(hInst);
-            pe.GetEXEStackSizes(&ExeSizeOfStackReserve, &ExeSizeOfStackCommit);
-            fSizesGot = TRUE;
-        }
-        EX_CATCH
-        {
-            fSizesGot = FALSE;
-        }
-        EX_END_CATCH(SwallowAllExceptions);
-    }
-#endif // !TARGET_UNIX
-
-    if (!fSizesGot) {
-        //return some somewhat-reasonable numbers
-        if (NULL != reserveSize) *reserveSize = 256*1024;
-        if (NULL != commitSize) *commitSize = 256*1024;
-        return FALSE;
-    }
-
-    if (NULL != reserveSize) *reserveSize = ExeSizeOfStackReserve;
-    if (NULL != commitSize) *commitSize = ExeSizeOfStackCommit;
-    return TRUE;
 }
 
 BOOL Thread::CreateNewOSThread(SIZE_T sizeToCommitOrReserve, LPTHREAD_START_ROUTINE start, void *args)
@@ -3092,7 +3015,6 @@ void Thread::OnThreadTerminate(BOOL holdingLock)
             // right thread.  But this will only happen during a shutdown.  And we've made
             // a "best effort" to reduce to a single thread before we begin the shutdown.
             SetThread(NULL);
-            SetAppDomain(NULL);
         }
 
         if (!holdingLock)
@@ -3309,7 +3231,7 @@ DWORD Thread::DoAppropriateAptStateWait(int numWaiters, HANDLE* pHandles, BOOL b
     BOOL alertable = (mode & WaitMode_Alertable) != 0;
 
 #ifdef FEATURE_COMINTEROP_APARTMENT_SUPPORT
-    if (alertable && !GetDomain()->MustForceTrivialWaitOperations())
+    if (alertable && !AppDomain::GetCurrentDomain()->MustForceTrivialWaitOperations())
     {
         ApartmentState as = GetFinalApartment();
         if (AS_InMTA != as)
@@ -3389,7 +3311,7 @@ DWORD Thread::DoAppropriateWaitWorker(int countHandles, HANDLE *handles, BOOL wa
     // which will make mode != WaitMode_Alertable.
     BOOL ignoreSyncCtx = (mode != WaitMode_Alertable);
 
-    if (GetDomain()->MustForceTrivialWaitOperations())
+    if (AppDomain::GetCurrentDomain()->MustForceTrivialWaitOperations())
         ignoreSyncCtx = TRUE;
 
     // Unless the ignoreSyncCtx flag is set, first check to see if there is a synchronization
@@ -3693,7 +3615,7 @@ DWORD Thread::DoAppropriateWaitWorker(AppropriateWaitFunc func, void *args,
         option = WAIT_ALERTABLE;
 #ifdef FEATURE_COMINTEROP_APARTMENT_SUPPORT
         ApartmentState as = GetFinalApartment();
-        if ((AS_InMTA != as) && !GetDomain()->MustForceTrivialWaitOperations())
+        if ((AS_InMTA != as) && !AppDomain::GetCurrentDomain()->MustForceTrivialWaitOperations())
         {
             option |= WAIT_MSGPUMP;
         }
@@ -4408,7 +4330,7 @@ void Thread::SetLastThrownObject(OBJECTREF throwable, BOOL isUnhandled)
         }
         else
         {
-            m_LastThrownObjectHandle = GetDomain()->CreateHandle(throwable);
+            m_LastThrownObjectHandle = AppDomain::GetCurrentDomain()->CreateHandle(throwable);
         }
 
         _ASSERTE(m_LastThrownObjectHandle != NULL);
@@ -5184,9 +5106,6 @@ void ThreadStore::InitThreadStore()
 
     g_pThinLockThreadIdDispenser = new IdDispenser();
 
-    ThreadSuspend::g_pGCSuspendEvent = new CLREvent();
-    ThreadSuspend::g_pGCSuspendEvent->CreateManualEvent(FALSE);
-
     s_pWaitForStackCrawlEvent = new CLREvent();
     s_pWaitForStackCrawlEvent->CreateManualEvent(FALSE);
 
@@ -5772,7 +5691,7 @@ BOOL ThreadStore::DbgFindThread(Thread *target)
 
     // Cache the current change stamp for g_TrapReturningThreads
     LONG chgStamp = g_trtChgStamp;
-    STRESS_LOG3(LF_STORE, LL_INFO100, "ThreadStore::DbgFindThread - [thread=%p]. trt=%d. chgStamp=%d\n", GetThreadNULLOk(), g_TrapReturningThreads.Load(), chgStamp);
+    STRESS_LOG3(LF_STORE, LL_INFO100, "ThreadStore::DbgFindThread - [thread=%p]. trt=%d. chgStamp=%d\n", GetThreadNULLOk(), g_TrapReturningThreads, chgStamp);
 
 #if 0 // g_TrapReturningThreads debug code.
         int             iRetry = 0;
@@ -5845,7 +5764,7 @@ Retry:
     }
 #endif // g_TrapReturningThreads debug code.
 
-    STRESS_LOG4(LF_STORE, LL_INFO100, "ThreadStore::DbgFindThread - [thread=%p]. trt=%d. chg=%d. cnt=%d\n", GetThreadNULLOk(), g_TrapReturningThreads.Load(), g_trtChgStamp.Load(), cntReturn);
+    STRESS_LOG4(LF_STORE, LL_INFO100, "ThreadStore::DbgFindThread - [thread=%p]. trt=%d. chg=%d. cnt=%d\n", GetThreadNULLOk(), g_TrapReturningThreads, g_trtChgStamp.Load(), cntReturn);
 
     // Because of race conditions and the fact that the GC places its
     // own count, I can't assert this precisely.  But I do want to be
@@ -5860,11 +5779,11 @@ Retry:
     // return).
     //
     // Note: we don't actually assert this if
-    // ThreadStore::TrapReturningThreads() updated g_TrapReturningThreads
+    // ThreadStore::IncrementTrapReturningThreads() updated g_TrapReturningThreads
     // between the beginning of this function and the moment of the assert.
     // *** The order of evaluation in the if condition is important ***
     _ASSERTE(
-             (g_trtChgInFlight != 0 || (cntReturn + 2 >= g_TrapReturningThreads) || chgStamp != g_trtChgStamp) ||
+             (g_trtChgInFlight != 0 || (cntReturn + 2 >= g_TrapReturningThreads / 2) || chgStamp != g_trtChgStamp) ||
              g_fEEShutDown);
 
     return found;
@@ -7075,22 +6994,20 @@ void CommonTripThread()
     CONTRACTL {
         THROWS;
         GC_TRIGGERS;
+        MODE_COOPERATIVE;
     }
     CONTRACTL_END;
 
     Thread  *thread = GetThread();
-    thread->HandleThreadAbort ();
+    thread->HandleThreadAbort();
 
-    if (thread->CatchAtSafePoint())
-    {
-        _ASSERTE(!ThreadStore::HoldingThreadStore(thread));
+    _ASSERTE(!ThreadStore::HoldingThreadStore(thread));
 #ifdef FEATURE_HIJACK
-        thread->UnhijackThread();
+    thread->UnhijackThread();
 #endif // FEATURE_HIJACK
 
-        // Trap
-        thread->PulseGCMode();
-    }
+    // Trap
+    thread->PulseGCMode();
 #else
     DacNotImpl();
 #endif // #ifndef DACCESS_COMPILE
@@ -7129,11 +7046,6 @@ void Thread::ClearContext()
         if (GetThreadNULLOk()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
     }
     CONTRACTL_END;
-
-    if (!m_pDomain)
-        return;
-
-    m_pDomain = NULL;
 #ifdef FEATURE_COMINTEROP
     m_fDisableComObjectEagerCleanup = false;
 #endif //FEATURE_COMINTEROP
@@ -8198,8 +8110,8 @@ void Thread::StaticInitialize()
 #ifdef FEATURE_SPECIAL_USER_MODE_APC
     InitializeSpecialUserModeApc();
 
-    // When CET shadow stacks are enabled, support for special user-mode APCs with the necessary functionality is required
-    _ASSERTE_ALL_BUILDS(!AreCetShadowStacksEnabled() || UseSpecialUserModeApc());
+    // When shadow stacks are enabled, support for special user-mode APCs with the necessary functionality is required
+    _ASSERTE_ALL_BUILDS(!AreShadowStacksEnabled() || UseSpecialUserModeApc());
 #endif
 }
 
@@ -8218,6 +8130,21 @@ void Thread::InitializeSpecialUserModeApc()
     static_assert_no_msg(OFFSETOF__APC_CALLBACK_DATA__ContextRecord == offsetof(CLONE_APC_CALLBACK_DATA, ContextRecord));
 
     HMODULE hKernel32 = WszLoadLibrary(WINDOWS_KERNEL32_DLLNAME_W, NULL, LOAD_LIBRARY_SEARCH_SYSTEM32);
+
+#ifdef HOST_AMD64
+    typedef BOOL (WINAPI *IsWow64Process2Proc)(HANDLE hProcess, USHORT *pProcessMachine, USHORT *pNativeMachine);
+
+    IsWow64Process2Proc pfnIsWow64Process2Proc = (IsWow64Process2Proc)GetProcAddress(hKernel32, "IsWow64Process2");
+    USHORT processMachine, hostMachine;
+    if (pfnIsWow64Process2Proc != nullptr &&
+        (*pfnIsWow64Process2Proc)(GetCurrentProcess(), &processMachine, &hostMachine) &&
+        (hostMachine == IMAGE_FILE_MACHINE_ARM64) &&
+        !IsWindowsVersionOrGreater(10, 0, 26100))
+    {
+        // Special user-mode APCs are broken on WOW64 processes (x64 running on Arm64 machine) with Windows older than 11.0.26100 (24H2)
+        return;
+    }
+#endif // HOST_AMD64
 
     // See if QueueUserAPC2 exists
     QueueUserAPC2Proc pfnQueueUserAPC2Proc = (QueueUserAPC2Proc)GetProcAddress(hKernel32, "QueueUserAPC2");
@@ -8276,10 +8203,7 @@ Thread::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
     DAC_ENUM_DTHIS();
     if (flags != CLRDATA_ENUM_MEM_MINI && flags != CLRDATA_ENUM_MEM_TRIAGE && flags != CLRDATA_ENUM_MEM_HEAP2)
     {
-        if (m_pDomain.IsValid())
-        {
-            m_pDomain->EnumMemoryRegions(flags, true);
-        }
+        AppDomain::GetCurrentDomain()->EnumMemoryRegions(flags, true);
     }
 
     if (m_debuggerFilterContext.IsValid())

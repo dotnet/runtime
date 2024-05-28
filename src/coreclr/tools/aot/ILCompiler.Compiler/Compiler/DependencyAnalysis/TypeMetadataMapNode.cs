@@ -25,7 +25,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            sb.Append(nameMangler.CompilationUnitPrefix).Append("__type_to_metadata_map");
+            sb.Append(nameMangler.CompilationUnitPrefix).Append("__type_to_metadata_map"u8);
         }
         public int Offset => 0;
         public override bool IsShareable => false;

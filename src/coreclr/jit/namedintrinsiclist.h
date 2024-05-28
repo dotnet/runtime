@@ -50,6 +50,7 @@ enum NamedIntrinsic : unsigned short
     NI_System_Math_MinMagnitude,
     NI_System_Math_MinMagnitudeNumber,
     NI_System_Math_MinNumber,
+    NI_System_Math_MultiplyAddEstimate,
     NI_System_Math_Pow,
     NI_System_Math_ReciprocalEstimate,
     NI_System_Math_ReciprocalSqrtEstimate,

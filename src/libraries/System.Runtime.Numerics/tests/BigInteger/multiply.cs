@@ -38,12 +38,12 @@ namespace System.Numerics.Tests
         {
             // Again, with lower threshold
             BigIntTools.Utils.RunWithFakeThreshold(BigIntegerCalculator.SquareThreshold, 8, () =>
-                BigIntTools.Utils.RunWithFakeThreshold(BigIntegerCalculator.MultiplyThreshold, 8, RunMultiply_TwoLargeBigIntegers)
+                BigIntTools.Utils.RunWithFakeThreshold(BigIntegerCalculator.MultiplyKaratsubaThreshold, 8, RunMultiply_TwoLargeBigIntegers)
             );
 
             // Again, with lower threshold
             BigIntTools.Utils.RunWithFakeThreshold(BigIntegerCalculator.SquareThreshold, 8, () =>
-                BigIntTools.Utils.RunWithFakeThreshold(BigIntegerCalculator.MultiplyThreshold, 8, () =>
+                BigIntTools.Utils.RunWithFakeThreshold(BigIntegerCalculator.MultiplyKaratsubaThreshold, 8, () =>
                     BigIntTools.Utils.RunWithFakeThreshold(BigIntegerCalculator.StackAllocThreshold, 8, RunMultiply_TwoLargeBigIntegers)
                 )
             );
@@ -216,10 +216,10 @@ namespace System.Numerics.Tests
             {
                 for (int d1 = -2; d1 <= 2; d1++)
                 {
-                    tempByteArray1 = GetRandomByteArray(random, BigIntegerCalculator.MultiplyThreshold + d1);
+                    tempByteArray1 = GetRandomByteArray(random, BigIntegerCalculator.MultiplyKaratsubaThreshold + d1);
                     for (int d2 = -4; d2 <= 4; d2++)
                     {
-                        tempByteArray2 = GetRandomByteArray(random, (BigIntegerCalculator.MultiplyThreshold + 1) * 2 + d2);
+                        tempByteArray2 = GetRandomByteArray(random, (BigIntegerCalculator.MultiplyKaratsubaThreshold + 1) * 2 + d2);
                         VerifyMultiplyString(Print(tempByteArray1) + Print(tempByteArray2) + "bMultiply");
                     }
                 }

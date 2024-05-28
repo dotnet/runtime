@@ -1453,8 +1453,7 @@ class DebuggerPatchSkip : public DebuggerController
     friend class DebuggerController;
 
     DebuggerPatchSkip(Thread *thread,
-                      DebuggerControllerPatch *patch,
-                      AppDomain *pAppDomain);
+                      DebuggerControllerPatch *patch);
 
     ~DebuggerPatchSkip();
 

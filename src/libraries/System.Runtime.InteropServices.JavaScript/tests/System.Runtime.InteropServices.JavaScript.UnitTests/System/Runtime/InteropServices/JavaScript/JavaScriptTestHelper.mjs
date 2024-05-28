@@ -448,3 +448,7 @@ export async function setup() {
 export function delay(ms) {
     return new Promise(resolve => globalThis.setTimeout(resolve, ms));
 }
+
+export function reject(what) {
+    return new Promise((_, reject) => globalThis.setTimeout(() => reject(what), 0));
+}
