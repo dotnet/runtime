@@ -20,10 +20,18 @@ namespace System.Text.RegularExpressions.Symbolic
     /// </remarks>
     internal sealed class MintermClassifier
     {
-        private static readonly int[] s_emptyLookup = new int[ushort.MaxValue + 1];
+        private static readonly byte[] s_emptyLookup = new byte[ushort.MaxValue + 1];
         /// <summary>An array used to map characters to minterms</summary>
-        private readonly int[] _lookup;
+        private readonly byte[]? _lookup;
+
+        /// <summary>Conserve memory if pattern is ascii-only</summary>
         private readonly bool _isAsciiOnly;
+
+        /// <summary>
+        /// fallback lookup if over 255 minterms
+        /// this is almost never used
+        /// </summary>
+        private readonly int[]? _intLookup;
 
         /// <summary>Create a classifier that maps a character to the ID of its associated minterm.</summary>
         /// <param name="minterms">A BDD for classifying all characters (ASCII and non-ASCII) to their corresponding minterm IDs.</param>
@@ -39,8 +47,9 @@ namespace System.Text.RegularExpressions.Symbolic
                 return;
             }
 
-            // low memory variant could create an ascii-only array
-            // cheaper to iterate twice than allocate an array and potentially not use it
+            // low memory variant is to create an ascii-only array
+            // this adds indirection to the hot loop which costs performance
+            // and only exists because the wasm tests fail with OOM
             _isAsciiOnly = true;
             for (int mintermId = 1; mintermId < minterms.Length; mintermId++)
             {
@@ -51,25 +60,44 @@ namespace System.Text.RegularExpressions.Symbolic
                 }
             }
 
-
             // assign minterm category for every char
             // unused characters in minterm 0 get mapped to zero
-            int[] lookup = new int[_isAsciiOnly ? 128 : 65536];
-            for (int mintermId = 1; mintermId < minterms.Length; mintermId++)
+            if (minterms.Length > 255)
             {
-                // precompute all assigned minterm categories
-                (uint, uint)[] mintermRanges = BDDRangeConverter.ToRanges(minterms[mintermId]);
-                foreach ((uint start, uint end) in mintermRanges)
+                // over 255 unique sets also means it's never ascii only
+                int[] lookup = new int[ushort.MaxValue + 1];
+                for (int mintermId = 1; mintermId < minterms.Length; mintermId++)
                 {
-                    // assign character ranges in bulk
-                    Span<int> slice = lookup.AsSpan((int)start, (int)(end + 1 - start));
-                    slice.Fill(mintermId);
+                    // precompute all assigned minterm categories
+                    (uint, uint)[] mintermRanges = BDDRangeConverter.ToRanges(minterms[mintermId]);
+                    foreach ((uint start, uint end) in mintermRanges)
+                    {
+                        // assign character ranges in bulk
+                        Span<int> slice = lookup.AsSpan((int)start, (int)(end + 1 - start));
+                        slice.Fill(mintermId);
+                    }
                 }
+                _intLookup = lookup;
             }
-            _lookup = lookup;
+            else
+            {
+                byte[] lookup = new byte[_isAsciiOnly ? 128 : ushort.MaxValue + 1];
+                for (int mintermId = 1; mintermId < minterms.Length; mintermId++)
+                {
+                    // precompute all assigned minterm categories
+                    (uint, uint)[] mintermRanges = BDDRangeConverter.ToRanges(minterms[mintermId]);
+                    foreach ((uint start, uint end) in mintermRanges)
+                    {
+                        // assign character ranges in bulk
+                        Span<byte> slice = lookup.AsSpan((int)start, (int)(end + 1 - start));
+                        slice.Fill((byte)mintermId);
+                    }
+                }
+                _lookup = lookup;
+            }
         }
 
-        /// <summary>Gets the ID of the minterm associated with the specified character.</summary>
+        // /// <summary>Gets the ID of the minterm associated with the specified character.</summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public int GetMintermID(int c)
         {
@@ -79,10 +107,19 @@ namespace System.Text.RegularExpressions.Symbolic
             }
             // high performance variant would use a span directly
             // but this is not possible in low memory constraints
-            return _lookup[c];
+            // additional memory is saved by using a byte
+            return _intLookup is null ? _lookup![c] : _intLookup[c];
         }
 
-        // [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        // public Span<int> LookupSpan() => _lookup.AsSpan();
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public bool IsAsciiOnly() => _isAsciiOnly;
+
+        /// <summary>
+        /// Can be null if there is over 255 minterms
+        /// </summary>
+        /// <returns></returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public byte[]? ByteLookup() => _lookup;
     }
 }
