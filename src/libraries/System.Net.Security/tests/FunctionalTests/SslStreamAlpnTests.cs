@@ -25,6 +25,7 @@ namespace System.Net.Security.Tests
 
         // Whether AuthenticateAs(Client/Server) or AuthenticateAs(Client/Server)Async will be called
         public abstract bool TestAuthenticateAsync { get; }
+        public abstract SslProtocols SslProtocol { get; }
 
         protected SslStreamAlpnTestBase(ITestOutputHelper output)
         {
@@ -35,9 +36,12 @@ namespace System.Net.Security.Tests
         {
             using (X509Certificate2 certificate = Configuration.Certificates.GetServerCertificate())
             {
+                clientOptions.EnabledSslProtocols = SslProtocol;
                 clientOptions.RemoteCertificateValidationCallback = AllowAnyServerCertificate;
                 clientOptions.TargetHost = certificate.GetNameInfo(X509NameType.SimpleName, false);
+
                 serverOptions.ServerCertificateContext = SslStreamCertificateContext.Create(certificate, null);
+                serverOptions.EnabledSslProtocols = SslProtocol;
 
                 Task t1 = clientSslStream.AuthenticateAsClientAsync(TestAuthenticateAsync, clientOptions);
                 Task t2 = serverSslStream.AuthenticateAsServerAsync(TestAuthenticateAsync, serverOptions);
@@ -221,19 +225,39 @@ namespace System.Net.Security.Tests
         }
     }
 
-    public sealed class SslStreamAlpnTest_Async : SslStreamAlpnTestBase
+    public sealed class SslStreamAlpnTest_Async_Tls12 : SslStreamAlpnTestBase
     {
         public override bool TestAuthenticateAsync => true;
+        public override SslProtocols SslProtocol => SslProtocols.Tls12;
 
-        public SslStreamAlpnTest_Async(ITestOutputHelper output)
+        public SslStreamAlpnTest_Async_Tls12(ITestOutputHelper output)
             : base(output) { }
     }
 
-    public sealed class SslStreamAlpnTest_Sync : SslStreamAlpnTestBase
+    public sealed class SslStreamAlpnTest_Async_Tls13 : SslStreamAlpnTestBase
+    {
+        public override bool TestAuthenticateAsync => true;
+        public override SslProtocols SslProtocol => SslProtocols.Tls13;
+
+        public SslStreamAlpnTest_Async_Tls13(ITestOutputHelper output)
+            : base(output) { }
+    }
+
+    public sealed class SslStreamAlpnTest_Sync_Tls12 : SslStreamAlpnTestBase
     {
         public override bool TestAuthenticateAsync => false;
+        public override SslProtocols SslProtocol => SslProtocols.Tls12;
 
-        public SslStreamAlpnTest_Sync(ITestOutputHelper output)
+        public SslStreamAlpnTest_Sync_Tls12(ITestOutputHelper output)
+            : base(output) { }
+    }
+
+    public sealed class SslStreamAlpnTest_Sync_Tls13 : SslStreamAlpnTestBase
+    {
+        public override bool TestAuthenticateAsync => false;
+        public override SslProtocols SslProtocol => SslProtocols.Tls13;
+
+        public SslStreamAlpnTest_Sync_Tls13(ITestOutputHelper output)
             : base(output) { }
     }
 }
