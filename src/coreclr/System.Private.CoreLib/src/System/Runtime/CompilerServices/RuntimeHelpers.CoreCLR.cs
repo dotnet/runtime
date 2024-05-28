@@ -16,12 +16,12 @@ namespace System.Runtime.CompilerServices
         [Intrinsic]
         public static unsafe void InitializeArray(Array array, RuntimeFieldHandle fldHandle)
         {
-            RtFieldInfo fldInfo = (RtFieldInfo)FieldInfo.GetFieldFromHandle(fldHandle);
+            IRuntimeFieldInfo fldInfo = fldHandle.GetRuntimeFieldInfo();
 
             if (array is null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
 
-            if ((fldInfo.Attributes & FieldAttributes.HasFieldRVA) == 0)
+            if ((RuntimeFieldHandle.GetAttributes(fldInfo.Value) & FieldAttributes.HasFieldRVA) == 0)
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Argument_BadFieldForInitializeArray);
 
             // Note that we do not check that the field is actually in the PE file that is initializing
@@ -35,7 +35,7 @@ namespace System.Runtime.CompilerServices
             MethodTable* pMT = GetMethodTable(array);
             nuint totalSize = pMT->ComponentSize * array.NativeLength;
 
-            uint size = ((MethodTable*)((RuntimeType)fldInfo.FieldType).TypeHandle.Value)->GetNumInstanceFieldBytes();
+            uint size = ((MethodTable*)RuntimeFieldHandle.GetApproxFieldType(fldInfo))->GetNumInstanceFieldBytes();
 
             // make certain you don't go off the end of the rva static
             if (totalSize > size)
@@ -84,9 +84,9 @@ namespace System.Runtime.CompilerServices
             RuntimeTypeHandle targetTypeHandle,
             out int count)
         {
-            RtFieldInfo fldInfo = (RtFieldInfo)FieldInfo.GetFieldFromHandle(fldHandle);
+            IRuntimeFieldInfo fldInfo = fldHandle.GetRuntimeFieldInfo();
 
-            if ((fldInfo.Attributes & FieldAttributes.HasFieldRVA) == 0)
+            if ((RuntimeFieldHandle.GetAttributes(fldInfo.Value) & FieldAttributes.HasFieldRVA) == 0)
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Argument_BadFieldForInitializeArray);
 
             TypeHandle th = new TypeHandle((void*)targetTypeHandle.Value);
@@ -95,7 +95,7 @@ namespace System.Runtime.CompilerServices
             if (!th.GetVerifierCorElementType().IsPrimitiveType()) // Enum is included
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Argument_MustBePrimitiveArray);
 
-            uint totalSize = ((MethodTable*)((RuntimeType)fldInfo.FieldType).TypeHandle.Value)->GetNumInstanceFieldBytes();
+            uint totalSize = ((MethodTable*)RuntimeFieldHandle.GetApproxFieldType(fldInfo))->GetNumInstanceFieldBytes();
             uint targetTypeSize = th.AsMethodTable()->GetNumInstanceFieldBytes();
 
             IntPtr data = RuntimeFieldHandle.GetStaticFieldAddress(fldInfo);

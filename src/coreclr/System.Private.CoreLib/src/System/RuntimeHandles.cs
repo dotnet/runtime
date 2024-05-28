@@ -1181,13 +1181,23 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
+        internal static extern IntPtr GetApproxFieldType(RuntimeFieldHandleInternal field);
+
+        internal static IntPtr GetApproxFieldType(IRuntimeFieldInfo field)
+        {
+            IntPtr th = GetApproxFieldType(field.Value);
+            GC.KeepAlive(field);
+            return th;
+        }
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern bool IsFastPathSupported(RtFieldInfo field);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern int GetInstanceFieldOffset(RtFieldInfo field);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern IntPtr GetStaticFieldAddress(RtFieldInfo field);
+        internal static extern IntPtr GetStaticFieldAddress(IRuntimeFieldInfo field);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern int GetToken(RtFieldInfo field);
