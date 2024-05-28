@@ -105,17 +105,17 @@ extends:
         image: mcr.microsoft.com/dotnet-buildtools/prereqs:centos-stream8
 
       browser_wasm:
-        image: mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-webassembly-net9.0
+        image: mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-webassembly-amd64-net9.0
         env:
           ROOTFS_DIR: /crossrootfs/x64
 
       wasi_wasm:
-        image: mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-webassembly-net9.0
+        image: mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-webassembly-amd64-net9.0
         env:
           ROOTFS_DIR: /crossrootfs/x64
 
       freebsd_x64:
-        image: mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-cross-amd64-freebsd-13-net9.0
+        image: mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-cross-freebsd-13-net9.0
         env:
           ROOTFS_DIR: /crossrootfs/x64
 
