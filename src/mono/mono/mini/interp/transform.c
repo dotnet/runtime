@@ -2264,7 +2264,7 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 #else
 			*op = MINT_LDC_I8_0;
 #endif
-		} /* else if (!strcmp (tm, "Add")) {
+		} else if (!strcmp (tm, "Add")) {
 			MonoGenericContext *ctx = mono_method_get_context (target_method);
 			g_assert (ctx);
 			g_assert (ctx->method_inst);
@@ -2286,17 +2286,17 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 			td->last_ins->data[0] = (gint16)esize;
 			interp_ins_set_sreg (td->last_ins, offset_var);
 			interp_ins_set_dreg (td->last_ins, temp);
-			td->ip += 4;
 
 			// (ldarg 0) add temp
 			interp_add_ins (td, MINT_ADD_P);
 			interp_ins_set_sregs2 (td->last_ins, base_var, temp);
 			push_simple_type (td, STACK_TYPE_MP);
 			interp_ins_set_dreg (td->last_ins, td->sp [-1].var);
-			td->ip += 4;
+
+			td->ip += 5;
 
 			return TRUE;
-		} */
+		}
 	} else if (in_corlib && !strcmp (klass_name_space, "System.Runtime.CompilerServices") && !strcmp (klass_name, "RuntimeHelpers")) {
 		if (!strcmp (tm, "get_OffsetToStringData")) {
 			g_assert (csignature->param_count == 0);
