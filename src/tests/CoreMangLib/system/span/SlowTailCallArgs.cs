@@ -5,6 +5,7 @@ using System;
 using System.Reflection;
 using System.Reflection.Emit;
 using System.Runtime.InteropServices;
+using TestLibrary;
 using Xunit;
 
 public static class Program
