@@ -229,7 +229,6 @@ typedef uint64_t regMaskSmall;
 #define REG_MASK_ALL_FMT "%016llX"
 #endif
 
-struct regMaskTP;
 
 typedef regMaskSmall SingleTypeRegSet;
 
@@ -291,6 +290,21 @@ public:
     }
 
     SingleTypeRegSet GetRegSetForType(var_types type) const
+    {
+        return getLow();
+    }
+
+    SingleTypeRegSet GetIntRegSet() const
+    {
+        return getLow();
+    }
+
+    SingleTypeRegSet GetFloatRegSet() const
+    {
+        return getLow();
+    }
+
+    SingleTypeRegSet GetPredicateRegSet() const
     {
         return getLow();
     }

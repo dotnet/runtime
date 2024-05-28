@@ -2131,28 +2131,28 @@ private:
     int BuildLclHeap(GenTree* tree);
 
 #if defined(TARGET_AMD64)
-    SingleTypeRegSet rbmAllFloat;
-    SingleTypeRegSet rbmFltCalleeTrash;
+    regMaskTP rbmAllFloat;
+    regMaskTP rbmFltCalleeTrash;
 
-    FORCEINLINE SingleTypeRegSet get_RBM_ALLFLOAT() const
+    FORCEINLINE regMaskTP get_RBM_ALLFLOAT() const
     {
         return this->rbmAllFloat;
     }
-    FORCEINLINE SingleTypeRegSet get_RBM_FLT_CALLEE_TRASH() const
+    FORCEINLINE regMaskTP get_RBM_FLT_CALLEE_TRASH() const
     {
         return this->rbmFltCalleeTrash;
     }
 #endif // TARGET_AMD64
 
 #if defined(TARGET_XARCH)
-    SingleTypeRegSet rbmAllMask;
-    SingleTypeRegSet rbmMskCalleeTrash;
+    regMaskTP        rbmAllMask;
+    regMaskTP rbmMskCalleeTrash;
 
-    FORCEINLINE SingleTypeRegSet get_RBM_ALLMASK() const
+    FORCEINLINE regMaskTP get_RBM_ALLMASK() const
     {
         return this->rbmAllMask;
     }
-    FORCEINLINE SingleTypeRegSet get_RBM_MSK_CALLEE_TRASH() const
+    FORCEINLINE regMaskTP get_RBM_MSK_CALLEE_TRASH() const
     {
         return this->rbmMskCalleeTrash;
     }
@@ -2173,21 +2173,21 @@ private:
     //
     static FORCEINLINE SingleTypeRegSet calleeSaveRegs(RegisterType rt)
     {
-        static const SingleTypeRegSet varTypeCalleeSaveRegs[] = {
+        static const regMaskTP varTypeCalleeSaveRegs[] = {
 #define DEF_TP(tn, nm, jitType, sz, sze, asze, st, al, regTyp, regFld, csr, ctr, tf) csr,
 #include "typelist.h"
 #undef DEF_TP
         };
 
         assert((unsigned)rt < ArrLen(varTypeCalleeSaveRegs));
-        return varTypeCalleeSaveRegs[rt];
+        return varTypeCalleeSaveRegs[rt].GetRegSetForType(rt);
     }
 
 #if defined(TARGET_XARCH)
     // Not all of the callee trash values are constant, so don't declare this as a method local static
     // doing so results in significantly more complex codegen and we'd rather just initialize this once
     // as part of initializing LSRA instead
-    SingleTypeRegSet varTypeCalleeTrashRegs[TYP_COUNT];
+    regMaskTP varTypeCalleeTrashRegs[TYP_COUNT];
 #endif // TARGET_XARCH
 
     //------------------------------------------------------------------------
@@ -2196,7 +2196,7 @@ private:
     FORCEINLINE SingleTypeRegSet callerSaveRegs(RegisterType rt) const
     {
 #if !defined(TARGET_XARCH)
-        static const SingleTypeRegSet varTypeCalleeTrashRegs[] = {
+        static const regMaskTP varTypeCalleeTrashRegs[] = {
 #define DEF_TP(tn, nm, jitType, sz, sze, asze, st, al, regTyp, regFld, csr, ctr, tf) ctr,
 #include "typelist.h"
 #undef DEF_TP
@@ -2204,7 +2204,7 @@ private:
 #endif // !TARGET_XARCH
 
         assert((unsigned)rt < ArrLen(varTypeCalleeTrashRegs));
-        return varTypeCalleeTrashRegs[rt];
+        return varTypeCalleeTrashRegs[rt].GetRegSetForType(rt);
     }
 };
 

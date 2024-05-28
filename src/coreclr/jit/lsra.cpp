@@ -448,7 +448,7 @@ SingleTypeRegSet LinearScan::internalFloatRegCandidates()
     }
     else
     {
-        return RBM_FLT_CALLEE_TRASH;
+        return RBM_FLT_CALLEE_TRASH.GetFloatRegSet();
     }
 }
 
@@ -597,7 +597,7 @@ SingleTypeRegSet LinearScan::stressLimitRegs(RefPosition* refPosition, RegisterT
 
             case LSRA_LIMIT_CALLER:
             {
-                mask = getConstrainedRegMask(refPosition, regType, mask, RBM_CALLEE_TRASH, minRegCount);
+                mask = getConstrainedRegMask(refPosition, regType, mask, RBM_CALLEE_TRASH.GetRegSetForType(regType), minRegCount);
             }
             break;
 
@@ -784,7 +784,7 @@ LinearScan::LinearScan(Compiler* theCompiler)
 #if defined(TARGET_XARCH)
     rbmAllMask        = compiler->rbmAllMask;
     rbmMskCalleeTrash = compiler->rbmMskCalleeTrash;
-    memcpy(varTypeCalleeTrashRegs, compiler->varTypeCalleeTrashRegs, sizeof(SingleTypeRegSet) * TYP_COUNT);
+    memcpy(varTypeCalleeTrashRegs, compiler->varTypeCalleeTrashRegs, sizeof(regMaskTP) * TYP_COUNT);
 
     if (!compiler->canUseEvexEncoding())
     {
@@ -848,10 +848,10 @@ LinearScan::LinearScan(Compiler* theCompiler)
     availableIntRegs &= ~RBM_FPBASE;
 #endif // ETW_EBP_FRAMED
 
-    availableFloatRegs  = RBM_ALLFLOAT;
-    availableDoubleRegs = RBM_ALLDOUBLE;
+    availableFloatRegs  = RBM_ALLFLOAT.GetFloatRegSet();
+    availableDoubleRegs = RBM_ALLDOUBLE.GetFloatRegSet();
 #if defined(TARGET_XARCH) || defined(TARGET_ARM64)
-    availableMaskRegs = RBM_ALLMASK;
+    availableMaskRegs = RBM_ALLMASK.GetPredicateRegSet();
 #endif
 
 #if defined(TARGET_AMD64) || defined(TARGET_ARM64)
@@ -8782,7 +8782,7 @@ regNumber LinearScan::getTempRegForResolution(BasicBlock*      fromBlock,
         // Prefer a callee-trashed register if possible to prevent new prolog/epilog saves/restores.
         if ((freeRegs & RBM_CALLEE_TRASH) != 0)
         {
-            freeRegs &= RBM_CALLEE_TRASH;
+            freeRegs &= RBM_CALLEE_TRASH.GetRegSetForType(type);
         }
 
         regNumber tempReg = genRegNumFromMask(genFindLowestBit(freeRegs));

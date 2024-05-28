@@ -4282,7 +4282,7 @@ int LinearScan::BuildReturn(GenTree* tree)
                         break;
                     case TYP_DOUBLE:
                         // We ONLY want the valid double register in the RBM_DOUBLERET mask.
-                        useCandidates = (RBM_DOUBLERET & RBM_ALLDOUBLE);
+                        useCandidates = (RBM_DOUBLERET & RBM_ALLDOUBLE).GetFloatRegSet();
                         break;
                     case TYP_LONG:
                         useCandidates = RBM_LNGRET;
