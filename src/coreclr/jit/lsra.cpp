@@ -601,7 +601,7 @@ SingleTypeRegSet LinearScan::stressLimitRegs(RefPosition* refPosition, RegisterT
 
             case LSRA_LIMIT_CALLER:
             {
-#ifdef TARGET_AMD64
+#ifdef TARGET_XARCH
                 mask = getConstrainedRegMask(refPosition, regType, mask, RBM_CALLEE_TRASH.GetRegSetForType(regType),
                                              minRegCount);
 #else
@@ -8799,7 +8799,7 @@ regNumber LinearScan::getTempRegForResolution(BasicBlock*      fromBlock,
         // Prefer a callee-trashed register if possible to prevent new prolog/epilog saves/restores.
         if ((freeRegs & RBM_CALLEE_TRASH) != 0)
         {
-#ifdef TARGET_AMD64
+#ifdef TARGET_XARCH
             freeRegs &= RBM_CALLEE_TRASH.GetRegSetForType(type);
 #else
             freeRegs &= RBM_CALLEE_TRASH;
