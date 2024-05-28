@@ -148,11 +148,8 @@ const string SecureHashOpTest_ValidationLogic = @"{RetBaseType}[] expectedResult
     ("_SveImmTernOpTestTemplate.template",      "SveVecImmTernOpTest.template",   new Dictionary<string, string> { ["TemplateName"] = "Simple",      ["TemplateValidationLogic"] = SimpleVecOpTest_ValidationLogic,   ["TemplateValidationLogicForCndSel"] = SimpleTernVecOpTest_ValidationLogicForCndSel }),
     ("_SveImmTernOpFirstArgTestTemplate.template", "SveVecImmTernOpFirstArgTest.template",   new Dictionary<string, string> { ["TemplateName"] = "Simple",      ["TemplateValidationLogic"] = SimpleVecOpTest_ValidationLogic,   ["TemplateValidationLogicForCndSel"] = SimpleTernVecOpTest_ValidationLogicForCndSel }),
     ("_SveMinimalUnaryOpTestTemplate.template", "SveVecReduceUnOpTest.template",  new Dictionary<string, string> { ["TemplateName"] = "Simple",      ["TemplateValidationLogic"] = VecReduceOpTest_ValidationLogic }),
-<<<<<<< HEAD
-    ("_SveImm2UnaryOpTestTemplate.template",    "SveVecImm2UnOpTest.template",    new Dictionary<string, string> { ["TemplateName"] = "Imm",         ["TemplateValidationLogic"] = SimpleVecOpTest_ValidationLogic }),
-=======
     ("_SveMasklessUnaryOpTestTemplate.template","SveMasklessSimpleVecOpTest.template", new Dictionary<string, string> { ["TemplateName"] = "Simple",      ["TemplateValidationLogic"] = SimpleVecOpTest_ValidationLogic }),
->>>>>>> origin
+    ("_SveImm2UnaryOpTestTemplate.template",    "SveVecImm2UnOpTest.template",    new Dictionary<string, string> { ["TemplateName"] = "Imm",         ["TemplateValidationLogic"] = SimpleVecOpTest_ValidationLogic }),
 };
 
 (string templateFileName, Dictionary<string, string> templateData)[] AdvSimdInputs = new []
