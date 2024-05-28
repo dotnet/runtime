@@ -5758,6 +5758,8 @@ void emitter::emitLongLoopAlign(unsigned alignmentBoundary DEBUG_ARG(bool isPlac
 //
 void emitter::emitConnectAlignInstrWithCurIG()
 {
+    assert(emitAlignLastGroup->idaIG->igFlags & IGF_HAS_ALIGN);
+
     JITDUMP("Mapping 'align' instruction in IG%02u to target IG%02u\n", emitAlignLastGroup->idaIG->igNum,
             emitCurIG->igNum);
     // Since we never align overlapping instructions, it is always guaranteed that
