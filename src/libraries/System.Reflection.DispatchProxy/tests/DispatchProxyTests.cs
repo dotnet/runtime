@@ -587,20 +587,7 @@ namespace DispatchProxyTests
             TestType_IStaticVirtualMethodService proxy = CreateHelper<TestType_IStaticVirtualMethodService, TestDispatchProxy>(useGenericCreate);
             MethodInfo? methodInfo = proxy.GetType().GetTypeInfo().GetDeclaredMethod(nameof(TestType_IStaticVirtualMethodService.TestMethod));
             Assert.NotNull(methodInfo);
-
-            Exception? actualException = null;
-
-            try
-            {
-                methodInfo.Invoke(proxy, null);
-            }
-            catch (Exception e)
-            {
-                actualException = e;
-            }
-
-            Assert.NotNull(actualException);
-            Assert.IsType<NotSupportedException>(actualException.InnerException);
+            Assert.Throws<NotSupportedException>(() => methodInfo.Invoke(proxy, BindingFlags.DoNotWrapExceptions, null, null, null));
         }
 
 #if NET
