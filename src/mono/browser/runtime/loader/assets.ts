@@ -234,17 +234,15 @@ export async function mono_download_assets (): Promise<void> {
         // this await will get past the onRuntimeInitialized because we are not blocking via addRunDependency
         // and we are not awaiting it here
         Promise.all(promises_of_asset_instantiation_core).then(() => {
-            if (!ENVIRONMENT_IS_WORKER) {
-                runtimeHelpers.coreAssetsInMemory.promise_control.resolve();
-            }
+            runtimeHelpers.coreAssetsInMemory.promise_control.resolve();
         }).catch(err => {
             loaderHelpers.err("Error in mono_download_assets: " + err);
             mono_exit(1, err);
             throw err;
         });
         Promise.all(promises_of_asset_instantiation_remaining).then(async () => {
+            await runtimeHelpers.coreAssetsInMemory.promise;
             if (!ENVIRONMENT_IS_WORKER) {
-                await runtimeHelpers.coreAssetsInMemory.promise;
                 runtimeHelpers.allAssetsInMemory.promise_control.resolve();
             }
         }).catch(err => {
@@ -448,8 +446,9 @@ export function prepareAssetsWorker () {
 
     for (const asset of config.assets) {
         set_single_asset(asset);
+        // note that assets are pushed into core collection in the worker, as opposed to the main thread
         if (loadIntoWorker[asset.behavior]) {
-            assetsToLoad.push(asset);
+            coreAssetsToLoad.push(asset);
         }
     }
 }

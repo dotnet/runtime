@@ -534,5 +534,7 @@ async function createEmscriptenWorker (): Promise<EmscriptenModuleInternal> {
     const es6Modules = await Promise.all(promises);
     await initializeModules(es6Modules as any);
 
+    await runtimeHelpers.coreAssetsInMemory.promise;
+
     return emscriptenModule;
 }
