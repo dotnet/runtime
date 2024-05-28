@@ -5756,13 +5756,13 @@ void emitter::emitLongLoopAlign(unsigned alignmentBoundary DEBUG_ARG(bool isPlac
 //
 void emitter::emitConnectAlignInstr(const BasicBlock* block)
 {
+    assert(emitCodeGetCookie(block));
     assert(block->isLoopAlign());
-    assert(block->bbEmitCookie);
     assert(emitAlignLastGroup->idaIG->igFlags & IGF_HAS_ALIGN);
 
-    insGroup* loopHeadPredIG = ((insGroup*)block->bbEmitCookie)->igPrev;
-
+    insGroup* loopHeadPredIG = ((insGroup*)emitCodeGetCookie(block))->igPrev;
     assert(loopHeadPredIG);
+
     JITDUMP("Mapping 'align' instruction in IG%02u to target IG%02u\n", emitAlignLastGroup->idaIG->igNum,
             loopHeadPredIG->igNum);
     // Since we never align overlapping instructions, it is always guaranteed that
