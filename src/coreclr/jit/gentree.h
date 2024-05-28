@@ -6093,7 +6093,7 @@ public:
     bool IsUserCall() const
     {
 #if defined(FEATURE_HW_INTRINSICS)
-        return (gtFlags & GTF_HW_USER_CALL) != 0;
+        return OperIs(GT_HWINTRINSIC) && (gtFlags & GTF_HW_USER_CALL) != 0;
 #else
         return false;
 #endif

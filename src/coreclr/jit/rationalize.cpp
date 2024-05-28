@@ -71,7 +71,7 @@ void Rationalizer::RewriteNodeAsCall(GenTree**             use,
     if (sig.hasThis())
     {
         GenTree*   operand = operands[0];
-        NewCallArg arg     = NewCallArg::Primitive(operand);
+        NewCallArg arg     = NewCallArg::Primitive(operand).WellKnown(WellKnownArg::ThisPointer);
 
         call->gtArgs.PushBack(comp, arg);
         call->gtFlags |= operand->gtFlags & GTF_ALL_EFFECT;
@@ -166,8 +166,13 @@ void Rationalizer::RewriteNodeAsCall(GenTree**             use,
     }
     else
     {
+        // Normally the call replaces the node in pre-order, so we automatically continue visiting the call.
+        // However, when we have a retbuf the node is replaced by a local with the call inserted before it,
+        // so we need to make sure we visit it here.
         RationalizeVisitor visitor(*this);
-        visitor.WalkTree(reinterpret_cast<GenTree**>(&call), nullptr);
+        GenTree* node = call;
+        visitor.WalkTree(&node, nullptr);
+        assert(node == call);
     }
 
     // Since "tree" is replaced with "result", pop "tree" node (i.e the current node)

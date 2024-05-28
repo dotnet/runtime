@@ -19615,8 +19615,7 @@ void GenTreeJitIntrinsic::SetEntryPoint(Compiler* comp, CORINFO_CONST_LOOKUP ent
     assert(IsUserCall());
     assert(gtEntryPoint == nullptr);
 
-    gtEntryPoint  = comp->getAllocator(CMK_ASTNode).allocate<CORINFO_CONST_LOOKUP>(1);
-    *gtEntryPoint = entryPoint;
+    gtEntryPoint  = new (comp, CMK_ASTNode) CORINFO_CONST_LOOKUP(entryPoint);
 }
 #endif // FEATURE_READYTORUN
 
