@@ -14,7 +14,18 @@ namespace System.Text.RegularExpressions.Symbolic
         {
             Node = node;
             PrevCharKind = prevCharKind;
+            // this is significantly cheaper to initialize once
+            // than to pay for it on every call
+            if (Node.CanBeNullable)
+            {
+                _nullabilityLookup = new bool[5];
+                for (uint nk = 0; nk <= 4; nk++)
+                {
+                    _nullabilityLookup[nk] = IsNullableForInit(nk);
+                }
+            }
         }
+        private readonly bool[]? _nullabilityLookup;
 
         /// <summary>The regular expression that labels this state and gives it its semantics.</summary>
         internal SymbolicRegexNode<TSet> Node { get; }
@@ -97,6 +108,12 @@ namespace System.Text.RegularExpressions.Symbolic
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal bool IsNullableFor(uint nextCharKind)
+        {
+            return (_nullabilityLookup is not null && _nullabilityLookup[nextCharKind]);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal bool IsNullableForInit(uint nextCharKind)
         {
             Debug.Assert(CharKind.IsValidCharKind(nextCharKind));
             return Node.IsNullableFor(CharKind.Context(PrevCharKind, nextCharKind));

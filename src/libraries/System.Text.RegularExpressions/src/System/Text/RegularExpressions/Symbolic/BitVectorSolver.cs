@@ -10,11 +10,11 @@ namespace System.Text.RegularExpressions.Symbolic
         internal readonly MintermClassifier _classifier;
         private readonly BitVector[] _mintermVectors;
 
-        public BitVectorSolver(BDD[] minterms, CharSetSolver solver)
+        public BitVectorSolver(BDD[] minterms)
         {
             _minterms = minterms;
 
-            _classifier = new MintermClassifier(minterms, solver);
+            _classifier = new MintermClassifier(minterms);
 
             var singleBitVectors = new BitVector[minterms.Length];
             for (int i = 0; i < singleBitVectors.Length; i++)
