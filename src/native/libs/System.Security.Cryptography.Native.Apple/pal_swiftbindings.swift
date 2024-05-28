@@ -57,8 +57,14 @@ func encrypt<Algorithm>(
 
     let result = try Algorithm.seal(plaintext, using: symmetricKey, nonce: nonce, authenticating: aad)
 
-    _ = result.ciphertext.copyBytes(to: cipherText.baseAddress!, count: cipherText.count)
-    _ = result.tag.copyBytes(to: tag.baseAddress!, count: tag.count)
+    // Copy results out of the SealedBox as the Data objects returned here are sometimes slices,
+    // which don't have a correct implementation of copyBytes.
+    // See https://github.com/apple/swift-foundation/issues/638 for more information.
+    let resultCiphertext = Data(result.ciphertext)
+    let resultTag = Data(result.tag)
+
+    _ = resultCiphertext.copyBytes(to: cipherText)
+    _ = resultTag.copyBytes(to: tag)
 }
 
 func decrypt<Algorithm>(
@@ -78,7 +84,7 @@ func decrypt<Algorithm>(
 
     let result = try Algorithm.open(sealedBox, using: symmetricKey, authenticating: aad)
 
-    _ = result.copyBytes(to: plaintext.baseAddress!, count: plaintext.count)
+    _ = result.copyBytes(to: plaintext)
 }
 
 @_silgen_name("AppleCryptoNative_ChaCha20Poly1305Encrypt")
