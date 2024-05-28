@@ -202,7 +202,7 @@ namespace System.Buffers.Text
                     return OperationStatus.DestinationTooSmall;
                 }
 
-                int leftover = dataLength % 3; // how many bytes after packs of 3
+                int leftover = (int)((uint)dataLength % 3); // how many bytes after packs of 3
 
                 uint destinationIndex = TBase64Encoder.GetInPlaceDestinationLength(encodedLength, leftover);
                 uint sourceIndex = (uint)(dataLength - leftover);

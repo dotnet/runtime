@@ -49,7 +49,7 @@ namespace System.Buffers.Text
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.length);
             }
 
-            int remainder = bytesLength % 3;
+            int remainder = (int)((uint)bytesLength % 3);
 
             return (bytesLength / 3) * 4 + (remainder > 0 ? remainder + 1 : 0); // if remainder is 1 or 2, the encoded length will be 1 byte longer.
         }
@@ -66,12 +66,12 @@ namespace System.Buffers.Text
         {
             OperationStatus status = EncodeToUtf8(source, destination, out _, out int bytesWritten);
 
-            if (OperationStatus.Done == status)
+            if (status == OperationStatus.Done)
             {
                 return bytesWritten;
             }
 
-            if (OperationStatus.DestinationTooSmall == status)
+            if (status == OperationStatus.DestinationTooSmall)
             {
                 throw new ArgumentException(SR.Argument_DestinationTooShort, nameof(destination));
             }
@@ -129,12 +129,12 @@ namespace System.Buffers.Text
         {
             OperationStatus status = EncodeToChars(source, destination, out _, out int charsWritten);
 
-            if (OperationStatus.Done == status)
+            if (status == OperationStatus.Done)
             {
                 return charsWritten;
             }
 
-            if (OperationStatus.DestinationTooSmall == status)
+            if (status == OperationStatus.DestinationTooSmall)
             {
                 throw new ArgumentException(SR.Argument_DestinationTooShort, nameof(destination));
             }

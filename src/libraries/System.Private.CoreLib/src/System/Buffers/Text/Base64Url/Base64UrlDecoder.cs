@@ -85,7 +85,7 @@ namespace System.Buffers.Text
 
             // Base64.DecodeFromUtf8InPlace returns OperationStatus, therefore doesn't throw.
             // For Base64Url, this is not an OperationStatus API and thus throws.
-            if (OperationStatus.InvalidData == status)
+            if (status == OperationStatus.InvalidData)
             {
                 throw new FormatException(SR.Format_BadBase64Char);
             }
@@ -113,12 +113,12 @@ namespace System.Buffers.Text
         {
             OperationStatus status = DecodeFromUtf8(source, destination, out _, out int bytesWritten);
 
-            if (OperationStatus.Done == status)
+            if (status == OperationStatus.Done)
             {
                 return bytesWritten;
             }
 
-            if (OperationStatus.DestinationTooSmall == status)
+            if (status == OperationStatus.DestinationTooSmall)
             {
                 throw new ArgumentException(SR.Argument_DestinationTooShort, nameof(destination));
             }
@@ -139,7 +139,7 @@ namespace System.Buffers.Text
         {
             OperationStatus status = DecodeFromUtf8(source, destination, out _, out bytesWritten);
 
-            if (OperationStatus.InvalidData == status)
+            if (status == OperationStatus.InvalidData)
             {
                 throw new FormatException(SR.Format_BadBase64Char);
             }
@@ -171,7 +171,7 @@ namespace System.Buffers.Text
                 ArrayPool<byte>.Shared.Return(rented);
             }
 
-            return OperationStatus.Done == status ? ret : throw new FormatException(SR.Format_BadBase64Char);
+            return status == OperationStatus.Done ? ret : throw new FormatException(SR.Format_BadBase64Char);
         }
 
         /// <summary>
@@ -316,17 +316,17 @@ namespace System.Buffers.Text
         {
             OperationStatus status = DecodeFromChars(source, destination, out _, out int bytesWritten);
 
-            if (OperationStatus.Done == status)
+            if (status == OperationStatus.Done)
             {
                 return bytesWritten;
             }
 
-            if (OperationStatus.DestinationTooSmall == status)
+            if (status == OperationStatus.DestinationTooSmall)
             {
                 throw new ArgumentException(SR.Argument_DestinationTooShort, nameof(destination));
             }
 
-            Debug.Assert(OperationStatus.InvalidData == status);
+            Debug.Assert(status == OperationStatus.InvalidData);
             throw new FormatException(SR.Format_BadBase64Char);
         }
 
@@ -343,12 +343,12 @@ namespace System.Buffers.Text
         {
             OperationStatus status = DecodeFromChars(source, destination, out _, out bytesWritten);
 
-            if (OperationStatus.InvalidData == status)
+            if (status == OperationStatus.InvalidData)
             {
                 throw new FormatException(SR.Format_BadBase64Char);
             }
 
-            return OperationStatus.Done == status;
+            return status == OperationStatus.Done;
         }
 
         /// <summary>
@@ -375,7 +375,7 @@ namespace System.Buffers.Text
                 ArrayPool<byte>.Shared.Return(rented);
             }
 
-            return OperationStatus.Done == status ? ret : throw new FormatException(SR.Format_BadBase64Char);
+            return status == OperationStatus.Done ? ret : throw new FormatException(SR.Format_BadBase64Char);
         }
 
         private readonly struct Base64UrlDecoderByte : IBase64Decoder<byte>
