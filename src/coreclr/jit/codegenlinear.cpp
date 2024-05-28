@@ -351,7 +351,7 @@ void CodeGen::genCodeForBBlist()
                                                              gcInfo.gcRegByrefSetCur, block->Prev());
         }
 
-#ifdef FEATURE_LOOP_ALIGN
+#if FEATURE_LOOP_ALIGN
         if (block->isLoopAlign())
         {
             if (compiler->opts.compJitHideAlignBehindJmp)
