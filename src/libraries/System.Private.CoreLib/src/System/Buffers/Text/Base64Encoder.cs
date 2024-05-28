@@ -160,8 +160,7 @@ namespace System.Buffers.Text
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int GetMaxEncodedToUtf8Length(int length)
         {
-            if ((uint)length > MaximumEncodeLength)
-                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.length);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan<uint>((uint)length, MaximumEncodeLength);
 
             return ((length + 2) / 3) * 4;
         }

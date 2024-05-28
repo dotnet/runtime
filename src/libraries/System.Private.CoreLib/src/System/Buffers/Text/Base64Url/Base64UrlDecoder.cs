@@ -26,10 +26,7 @@ namespace System.Buffers.Text
         /// </exception>
         public static int GetMaxDecodedLength(int base64Length)
         {
-            if (base64Length < 0)
-            {
-                ArgumentOutOfRangeException.ThrowIfNegative(base64Length);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(base64Length);
 
             int remainder = (int)((uint)base64Length % 4);
 

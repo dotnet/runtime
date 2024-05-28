@@ -180,6 +180,7 @@ namespace System.Buffers.Text
                 // Handle remaining, for Base64 its always 4 bytes, for Base64Url it could be 2, 3, or 4 bytes left.
                 // If more than 4 bytes remained it means destination is smaller and would exit with InvalidDataExit
                 long remaining = srcEnd - src;
+                Debug.Assert(remaining > 0 && remaining <= 8);
                 int i0 = TBase64Decoder.DecodeRemaining(srcEnd, ref decodingMap, remaining, out uint t2, out uint t3);
 
                 byte* destMax = destBytes + (uint)destLength;
@@ -337,10 +338,7 @@ namespace System.Buffers.Text
         /// </exception>
         public static int GetMaxDecodedFromUtf8Length(int length)
         {
-            if (length < 0)
-            {
-                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.length);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(length);
 
             return (length >> 2) * 3;
         }

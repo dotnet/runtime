@@ -44,14 +44,11 @@ namespace System.Buffers.Text
         /// </exception>
         public static int GetEncodedLength(int bytesLength)
         {
-            if ((uint)bytesLength > Base64.MaximumEncodeLength)
-            {
-                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.length);
-            }
+            ArgumentOutOfRangeException.ThrowIfGreaterThan<uint>((uint)bytesLength, Base64.MaximumEncodeLength);
 
-            int remainder = (int)((uint)bytesLength % 3);
+            (int whole, int remainder) = int.DivRem(bytesLength, 3);
 
-            return (bytesLength / 3) * 4 + (remainder > 0 ? remainder + 1 : 0); // if remainder is 1 or 2, the encoded length will be 1 byte longer.
+            return whole * 4 + (remainder > 0 ? remainder + 1 : 0); // if remainder is 1 or 2, the encoded length will be 1 byte longer.
         }
 
         /// <summary>
