@@ -46,9 +46,9 @@ namespace System.Buffers.Text
         {
             ArgumentOutOfRangeException.ThrowIfGreaterThan<uint>((uint)bytesLength, Base64.MaximumEncodeLength);
 
-            (int whole, int remainder) = int.DivRem(bytesLength, 3);
+            (uint whole, uint remainder) = uint.DivRem((uint)bytesLength, 3);
 
-            return whole * 4 + (remainder > 0 ? remainder + 1 : 0); // if remainder is 1 or 2, the encoded length will be 1 byte longer.
+            return (int)(whole * 4 + (remainder > 0 ? remainder + 1 : 0)); // if remainder is 1 or 2, the encoded length will be 1 byte longer.
         }
 
         /// <summary>
