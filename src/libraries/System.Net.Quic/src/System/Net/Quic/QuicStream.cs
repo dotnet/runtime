@@ -250,19 +250,20 @@ public sealed partial class QuicStream
     /// <returns>An asynchronous task that completes with the opened <see cref="QuicStream" />.</returns>
     internal ValueTask StartAsync(Action<QuicStreamType> decrementAvailableStreamCount, CancellationToken cancellationToken = default)
     {
-        _startedTcs.TryInitialize(out ValueTask valueTask, this, cancellationToken);
-        {
-            _decrementAvailableStreamCount = decrementAvailableStreamCount;
-            unsafe
-            {
-                int status = MsQuicApi.Api.StreamStart(
-                    _handle,
-                    QUIC_STREAM_START_FLAGS.SHUTDOWN_ON_FAIL | QUIC_STREAM_START_FLAGS.INDICATE_PEER_ACCEPT);
+        Debug.Assert(!_startedTcs.IsCompleted);
 
-                if (ThrowHelper.TryGetStreamExceptionForMsQuicStatus(status, out Exception? exception, streamWasSuccessfullyStarted: false))
-                {
-                    _startedTcs.TrySetException(exception);
-                }
+        // Always call StreamStart to get consistent behavior (events, stream count, frames send to peer) regardless of cancellation.
+        _startedTcs.TryInitialize(out ValueTask valueTask, this, cancellationToken);
+        _decrementAvailableStreamCount = decrementAvailableStreamCount;
+        unsafe
+        {
+            int status = MsQuicApi.Api.StreamStart(
+                _handle,
+                QUIC_STREAM_START_FLAGS.SHUTDOWN_ON_FAIL | QUIC_STREAM_START_FLAGS.INDICATE_PEER_ACCEPT);
+
+            if (ThrowHelper.TryGetStreamExceptionForMsQuicStatus(status, out Exception? exception, streamWasSuccessfullyStarted: false))
+            {
+                _startedTcs.TrySetException(exception);
             }
         }
 
@@ -641,7 +642,7 @@ public sealed partial class QuicStream
             _receiveTcs.TrySetException(exception, final: true);
             _sendTcs.TrySetException(exception, final: true);
         }
-        _startedTcs.TrySetResult();
+        _startedTcs.TrySetException(ThrowHelper.GetOperationAbortedException());
         _shutdownTcs.TrySetResult();
         return QUIC_STATUS_SUCCESS;
     }
