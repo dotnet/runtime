@@ -200,17 +200,22 @@ namespace System.Web
                 return null;
             }
 
-            if (str.Length > 256)
+            //do not execute Encoding.GetMaxByteCount if input is too big
+            if (str.Length < 256)
             {
-                return UrlDecodeToBytes(e.GetBytes(str));
+                int maxBytesCount = e.GetMaxByteCount(str.Length);
+                if (maxBytesCount < 512)
+                {
+                    //do not allocate byte[] when getting bytes from Encoding if less than stackalloc limit
+                    Span<byte> bytes = stackalloc byte[512];
+                    int encodedBytes = e.GetBytes(str, bytes);
+
+                    return UrlDecodeToBytes(bytes, 0, encodedBytes);
+                }
             }
 
-            //do not allocate byte[] if less than stackalloc limit
-            int maxBytesCount = e.GetMaxByteCount(str.Length);
-            Span<byte> bytes = maxBytesCount < 512 ? stackalloc byte[512] : new byte[maxBytesCount];
-            int encodedBytes = e.GetBytes(str, bytes);
-
-            return UrlDecodeToBytes(bytes, 0, encodedBytes);
+            //no optimization possible, let Encoding allocate byte[]
+            return UrlDecodeToBytes(e.GetBytes(str));
         }
 
         [return: NotNullIfNotNull(nameof(bytes))]
