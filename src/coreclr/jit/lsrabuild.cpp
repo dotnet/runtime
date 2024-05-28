@@ -2870,7 +2870,7 @@ void LinearScan::buildInitialParamDef(const LclVarDsc* varDsc, regNumber paramRe
     {
         // Set this interval as currently assigned to that register
         assert(paramReg < REG_COUNT);
-        mask = genRegMask(paramReg);
+        mask = genSingleTypeRegMask(paramReg);
         assignPhysReg(paramReg, interval);
         INDEBUG(registersToDump |= getRegMask(paramReg, interval->registerType));
     }
@@ -2933,7 +2933,7 @@ void LinearScan::stressSetRandomParameterPreferences()
         }
 
         *regs &= ~genRegMask(prefReg);
-        interval->mergeRegisterPreferences(genRegMask(prefReg));
+        interval->mergeRegisterPreferences(genSingleTypeRegMask(prefReg));
     }
 }
 
@@ -3085,7 +3085,7 @@ RefPosition* LinearScan::BuildDef(GenTree* tree, SingleTypeRegSet dstCandidates,
         if (!tree->IsMultiRegNode() || (multiRegIdx == 0))
         {
             assert((dstCandidates == RBM_NONE) || (dstCandidates == genRegMask(tree->GetRegNum())));
-            dstCandidates = genRegMask(tree->GetRegNum());
+            dstCandidates = genSingleTypeRegMask(tree->GetRegNum());
         }
         else
         {
@@ -3166,7 +3166,7 @@ void LinearScan::BuildCallDefs(GenTree* tree, int dstCount, regMaskTP dstCandida
 
         assert(dstCandidates.IsRegNumInMask(thisReg));
         dstCandidates.RemoveRegNumFromMask(thisReg);
-        BuildDef(tree, genRegMask(thisReg), i);
+        BuildDef(tree, genSingleTypeRegMask(thisReg), i);
     }
 }
 
@@ -4379,7 +4379,7 @@ int LinearScan::BuildPutArgReg(GenTreeUnOp* node)
 
     // To avoid redundant moves, have the argument operand computed in the
     // register in which the argument is passed to the call.
-    SingleTypeRegSet argMask = genRegMask(argReg);
+    SingleTypeRegSet argMask = genSingleTypeRegMask(argReg);
     RefPosition*     use     = BuildUse(op1, argMask);
 
     // Record that this register is occupied by a register now.
@@ -4457,7 +4457,7 @@ void LinearScan::HandleFloatVarArgs(GenTreeCall* call, GenTree* argNode, bool* c
         regNumber argReg    = argNode->GetRegNum();
         regNumber targetReg = compiler->getCallArgIntRegister(argReg);
 
-        buildInternalIntRegisterDefForNode(call, genRegMask(targetReg));
+        buildInternalIntRegisterDefForNode(call, genSingleTypeRegMask(targetReg));
     }
 }
 

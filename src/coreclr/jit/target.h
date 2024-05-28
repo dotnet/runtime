@@ -229,6 +229,8 @@ typedef uint64_t regMaskSmall;
 #define REG_MASK_ALL_FMT "%016llX"
 #endif
 
+struct regMaskTP;
+
 typedef regMaskSmall SingleTypeRegSet;
 
 struct regMaskTP
@@ -739,7 +741,7 @@ inline bool floatRegCanHoldType(regNumber reg, var_types type)
 
 extern const regMaskSmall regMasks[REG_COUNT];
 
-inline SingleTypeRegSet genRegMask(regNumber reg)
+inline regMaskTP genRegMask(regNumber reg)
 {
     assert((unsigned)reg < ArrLen(regMasks));
 #ifdef TARGET_AMD64
@@ -747,7 +749,7 @@ inline SingleTypeRegSet genRegMask(regNumber reg)
     // (L1 latency on sandy bridge is 4 cycles for [base] and 5 for [base + index*c] )
     // the reason this is AMD-only is because the x86 BE will try to get reg masks for REG_STK
     // and the result needs to be zero.
-    SingleTypeRegSet result = 1ULL << reg;
+    regMaskTP result = 1ULL << reg;
     assert(result == regMasks[reg]);
     return result;
 #else
@@ -803,10 +805,10 @@ inline SingleTypeRegSet genRegMaskFloat(regNumber reg ARM_ARG(var_types type /* 
 //    For registers that are used in pairs, the caller will be handling
 //    each member of the pair separately.
 //
-inline SingleTypeRegSet genRegMask(regNumber regNum, var_types type)
+inline regMaskTP genRegMask1(regNumber regNum, var_types type)
 {
 #if defined(TARGET_ARM)
-    SingleTypeRegSet regMask = RBM_NONE;
+    regMaskTP regMask = RBM_NONE;
 
     if (varTypeUsesIntReg(type))
     {
@@ -822,6 +824,18 @@ inline SingleTypeRegSet genRegMask(regNumber regNum, var_types type)
 #else
     return genRegMask(regNum);
 #endif
+}
+
+
+inline SingleTypeRegSet genSingleTypeRegMask(regNumber reg)
+{
+    return genRegMask(reg).getLow();
+}
+
+
+inline SingleTypeRegSet genSingleTypeRegMask(regNumber reg)
+{
+    return genRegMask(reg).getLow();
 }
 
 /*****************************************************************************

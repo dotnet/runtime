@@ -989,6 +989,7 @@ inline regNumber genFirstRegNumFromMask(regMaskTP mask)
 
     regNumber regNum = (regNumber)BitScanForward(mask);
 
+    mask ^= genRegMask(regNum);
     return regNum;
 }
 

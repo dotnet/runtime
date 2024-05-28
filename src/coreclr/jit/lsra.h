@@ -2387,7 +2387,7 @@ public:
     //
     SingleTypeRegSet getCurrentPreferences()
     {
-        return (assignedReg == nullptr) ? registerPreferences : genRegMask(assignedReg->regNum);
+        return (assignedReg == nullptr) ? registerPreferences : genSingleTypeRegMask(assignedReg->regNum);
     }
 
     void mergeRegisterPreferences(SingleTypeRegSet preferences)
@@ -2659,7 +2659,7 @@ public:
     {
         referent           = r;
         isPhysRegRef       = true;
-        registerAssignment = genRegMask(r->regNum);
+        registerAssignment = genSingleTypeRegMask(r->regNum);
     }
 
     regNumber assignedReg()
