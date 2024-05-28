@@ -83,6 +83,8 @@ struct InlinedThreadStaticRoot
     TypeManager* m_typeManager;
 };
 
+extern uint32_t SamplingDistributionMean;
+
 struct ThreadBuffer
 {
     uint8_t                 m_rgbAllocContextBuffer[SIZEOF_ALLOC_CONTEXT];
@@ -99,6 +101,31 @@ struct ThreadBuffer
 #endif // FEATURE_HIJACK
     PTR_ExInfo              m_pExInfoStackHead;
     Object*                 m_threadAbortException;                 // ThreadAbortException instance -set only during thread abort
+
+    // Any allocation that would overlap combined_limit needs to be handled by the allocation slow path.
+    // combined_limit is the minimum of:
+    //  - gc_alloc_context.alloc_limit (the end of the current AC)
+    //  - the sampling_limit
+    //
+    // In the simple case that randomized sampling is disabled, combined_limit is always equal to alloc_limit.
+    //
+    // There are two different useful interpretations for the sampling_limit. One is to treat the sampling_limit
+    // as an address and when we allocate an object that overlaps that address we should emit a sampling event.
+    // The other is that we can treat (sampling_limit - alloc_ptr) as a budget of how many bytes we can allocate
+    // before emitting a sampling event. If we always allocated objects contiguously in the AC and incremented
+    // alloc_ptr by the size of the object, these two interpretations would be equivalent. However, when objects
+    // don't fit in the AC we allocate them in some other address range. The budget interpretation is more
+    // flexible to handle those cases.
+    //
+    // The sampling limit isn't stored in any separate field explicitly, instead it is implied:
+    // - if combined_limit == alloc_limit there is no sampled byte in the AC. In the budget interpretation
+    //   we can allocate (alloc_limit - alloc_ptr) unsampled bytes. We'll need a new random number after
+    //   that to determine whether future allocated bytes should be sampled.
+    //   This occurs either because the sampling feature is disabled, or because the randomized selection
+    //   of sampled bytes didn't select a byte in this AC.
+    // - if combined_limit < alloc_limit there is a sample limit in the AC. sample_limit = combined_limit.
+    uint8_t* m_combined_limit;
+
 #ifdef TARGET_X86
     PCODE                   m_LastRedirectIP;
     uint64_t                m_SpinCount;
@@ -222,6 +249,10 @@ public:
     bool                IsInitialized();
 
     gc_alloc_context *  GetAllocContext();
+    uint8_t**           GetCombinedLimit();
+    void                UpdateCombinedLimit();
+    // TODO: probably private
+    void                UpdateCombinedLimit(bool samplingEnabled);
 
     uint64_t            GetPalThreadIdForLogging();
 

@@ -55,6 +55,7 @@ ASM_OFFSET(   44,    70, Thread, m_pvHijackedReturnAddress)
 ASM_OFFSET(   48,    78, Thread, m_uHijackedReturnValueFlags)
 ASM_OFFSET(   4c,    80, Thread, m_pExInfoStackHead)
 ASM_OFFSET(   50,    88, Thread, m_threadAbortException)
+ASM_OFFSET(   54,    90, Thread, m_combined_limit)
 
 ASM_SIZEOF(   14,    20, EHEnum)
 

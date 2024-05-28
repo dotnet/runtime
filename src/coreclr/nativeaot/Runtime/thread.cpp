@@ -300,6 +300,7 @@ void Thread::Construct()
     ASSERT(m_pGCFrameRegistrations == NULL);
 
     ASSERT(m_threadAbortException == NULL);
+    ASSERT(m_combined_limit == NULL);
 
 #ifdef FEATURE_SUSPEND_REDIRECTION
     ASSERT(m_redirectionContextBuffer == NULL);
@@ -347,12 +348,15 @@ uint64_t Thread::GetDeadThreadsNonAllocBytes()
 #endif
 }
 
+uint32_t SamplingDistributionMean = (100 * 1024);
+
 void Thread::Detach()
 {
     // clean up the alloc context
     gc_alloc_context* context = GetAllocContext();
     s_DeadThreadsNonAllocBytes += context->alloc_limit - context->alloc_ptr;
     GCHeapUtilities::GetGCHeap()->FixAllocContext(context, NULL, NULL);
+    m_combined_limit = NULL;
 
     SetDetached();
 }

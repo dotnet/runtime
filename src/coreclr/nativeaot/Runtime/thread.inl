@@ -1,6 +1,29 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#ifndef __thread_inl__
+#define __thread_inl__
+
+// TODO: try to find out where the events symbols are defined
+//#include "eventtracebase.h"
+//#include "ClrEtwAll.h"
+
+#include "thread.h"
+
+//#include "gcenv.h"
+//#include "gcenv.ee.h"
+
+//#include "gcinterface.h"
+// TODO: work around to compile because #include "gcinterface.h" generates more compilation errors
+//#ifndef gc_alloc_context
+//struct gc_alloc_context
+//{
+//    uint8_t* alloc_ptr;
+//    uint8_t* alloc_limit;
+//};
+//#endif
+
+
 #ifndef DACCESS_COMPILE
 // Set the m_pDeferredTransitionFrame field for GC allocation helpers that setup transition frame
 // in assembly code. Do not use anywhere else.
@@ -62,6 +85,65 @@ inline void Thread::PopGCFrameRegistration(GCFrameRegistration* pRegistration)
 inline gc_alloc_context* Thread::GetAllocContext()
 {
     return (gc_alloc_context*)m_rgbAllocContextBuffer;
+}
+
+inline uint8_t** Thread::GetCombinedLimit()
+{
+    return &m_combined_limit;
+}
+
+static inline bool IsRandomizedSamplingEnabled()
+{
+#ifdef FEATURE_EVENT_TRACE
+    // TODO: fix the same compilation error
+    // look at eventtrace_gcheap.cpp - RUNTIME_PROVIDER_CATEGORY_ENABLED
+    //return ETW_CATEGORY_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context,
+    //    TRACE_LEVEL_INFORMATION,
+    //    CLR_ALLOCATIONSAMPLING_KEYWORD);
+    //return RUNTIME_PROVIDER_CATEGORY_ENABLED(TRACE_LEVEL_INFORMATION, CLR_ALLOCATIONSAMPLING_KEYWORD);
+
+    return false;
+#else
+    return false;
+#endif // FEATURE_EVENT_TRACE
+}
+
+static inline int ComputeGeometricRandom()
+{
+    // TODO: Implement a proper random number generator
+    // compute a random sample from the Geometric distribution
+    //double probability = GetRandomizer()->NextDouble();
+    //int threshold = (int)(-log(1 - probability) * SamplingDistributionMean);
+    //return threshold;
+
+    // ensure to never end up inside the allocation context to avoid sampling
+    return SamplingDistributionMean;
+}
+
+// Regenerate the randomized sampling limit and update the m_combined_limit field.
+inline void Thread::UpdateCombinedLimit()
+{
+    UpdateCombinedLimit(IsRandomizedSamplingEnabled());
+}
+
+inline void Thread::UpdateCombinedLimit(bool samplingEnabled)
+{
+    // TODO: no op implementation but it does not seem possible to access gc_alloc_context fields in this file
+    // m_combined_limit = alloc_context->alloc_limit;
+
+    //gc_alloc_context* alloc_context = GetAllocContext();
+    //if (!samplingEnabled)
+    //{
+    //    m_combined_limit = alloc_context->alloc_limit;
+    //}
+    //else
+    //{
+    //    // compute the next sampling limit based on a geometric distribution
+    //    uint8_t* sampling_limit = alloc_context->alloc_ptr + ComputeGeometricRandom();
+
+    //    // if the sampling limit is larger than the allocation context, no sampling will occur in this AC
+    //    m_combined_limit = (sampling_limit < alloc_context->alloc_limit) ? sampling_limit : alloc_context->alloc_limit;
+    //}
 }
 
 inline bool Thread::IsStateSet(ThreadStateFlags flags)
@@ -156,3 +238,5 @@ FORCEINLINE bool Thread::InlineTryFastReversePInvoke(ReversePInvokeFrame* pFrame
 
     return true;
 }
+
+#endif // __thread_inl__

@@ -103,6 +103,9 @@ struct ProfilingScanContext;
 #define CLR_MANAGEDHEAPCOLLECT_KEYWORD 0x800000
 #define CLR_GCHEAPANDTYPENAMES_KEYWORD 0x1000000
 
+// TODO: why not using the constants from ClrEtwAll.h?
+#define CLR_ALLOCATIONSAMPLING_KEYWORD 0x80000000000
+
 //
 // Using KEYWORDZERO means when checking the events category ignore the keyword
 //
