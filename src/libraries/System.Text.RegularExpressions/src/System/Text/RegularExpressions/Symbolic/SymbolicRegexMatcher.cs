@@ -581,7 +581,7 @@ namespace System.Text.RegularExpressions.Symbolic
                     // we found a potential end state.
                     if (_canBeNullableArray[currStateId])
                     {
-                        if (_stateArray[currStateId]!.IsNullableFor(GetPositionKind(mtlookup[input[pos]])))
+                        if (_stateFlagsArray[currStateId].IsNullable() || _stateArray[currStateId]!.IsNullableFor(GetPositionKind(mtlookup[input[pos]])))
                         {
                             endPos = pos;
                             endStateId = currStateId;
