@@ -577,6 +577,8 @@ int32_t __stdcall RhpVectoredExceptionHandler(PEXCEPTION_POINTERS pExPtrs)
             // Undo the "pop", but fix the return to point to the original caller,
             // so that the ret could now succeed.
             interruptedContext->SetSp(interruptedContext->GetSp() - 8);
+            // CONSIDER: According to docs, the OS should fix the SP value to match one from SSP,
+            // so this could be an assert instead.
             *(size_t *)interruptedContext->GetSp() = interruptedContext->GetIp();
             interruptedContext->SetIp(origIp);
         }
