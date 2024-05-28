@@ -3,13 +3,6 @@
 
 include(configure.cmake)
 
-add_library(hostmisc INTERFACE)
-
-target_include_directories(hostmisc INTERFACE
-    ${CMAKE_CURRENT_BINARY_DIR}
-    ${CLR_SRC_NATIVE_DIR}
-    ${CMAKE_CURRENT_LIST_DIR})
-
 # CMake does not recommend using globbing since it messes with the freshness checks
 set(SOURCES
     ${CMAKE_CURRENT_LIST_DIR}/trace.cpp
@@ -36,22 +29,27 @@ else()
         ${CMAKE_CURRENT_LIST_DIR}/pal.unix.cpp)
 endif()
 
-target_sources(hostmisc INTERFACE ${SOURCES})
+add_library(hostmisc ${SOURCES})
+
+target_include_directories(hostmisc PUBLIC
+    ${CMAKE_CURRENT_BINARY_DIR}
+    ${CLR_SRC_NATIVE_DIR}
+    ${CMAKE_CURRENT_LIST_DIR})
 
 if (MSVC)
-    target_sources(hostmisc INTERFACE ${HEADERS})
-    target_link_libraries(hostmisc INTERFACE advapi32)
+    target_sources(hostmisc PRIVATE ${HEADERS})
+    target_link_libraries(hostmisc PUBLIC advapi32)
 endif()
 
-target_link_libraries(hostmisc INTERFACE
+target_link_libraries(hostmisc PUBLIC
     ${CMAKE_DL_LIBS}
     $<$<BOOL:${PTHREAD_LIB}>:${PTHREAD_LIB}>)
 
 if(CLR_CMAKE_TARGET_ARCH_ARM OR CLR_CMAKE_TARGET_ARCH_ARMV6)
-    target_link_libraries(hostmisc INTERFACE 
+    target_link_libraries(hostmisc PUBLIC
     $<$<BOOL:${ATOMIC_SUPPORT_LIB}>:${ATOMIC_SUPPORT_LIB}>)
 endif()
 
-target_compile_definitions(hostmisc INTERFACE
+target_compile_definitions(hostmisc PUBLIC
     _NO_ASYNCRTIMP
     _NO_PPLXIMP)

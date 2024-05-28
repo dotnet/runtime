@@ -39,9 +39,7 @@ set(HEADERS
     ../../fxr_resolver.h
 )
 
-add_compile_definitions(_NO_ASYNCRTIMP
-    _NO_PPLXIMP
-    NATIVE_LIBS_EMBEDDED)
+add_compile_definitions(NATIVE_LIBS_EMBEDDED)
 
 include(../../fxr/files.cmake)
 include(../../hostpolicy/files.cmake)
@@ -50,6 +48,7 @@ include(../../hostcommon/files.cmake)
 if(MSVC)
     # Host components don't try to handle asynchronous exceptions
     set_property(DIRECTORY PROPERTY CLR_EH_OPTION /EHsc)
+    set_property(TARGET hostmisc PROPERTY CLR_EH_OPTION /EHsc)
 elseif (CMAKE_CXX_COMPILER_ID MATCHES GNU)
     # Prevents libc from calling pthread_cond_destroy on static objects in
     # dlopen()'ed library which we dlclose() in pal::unload_library.

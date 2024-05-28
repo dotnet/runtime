@@ -4,9 +4,6 @@
 include(files.cmake)
 
 add_library(libhostcommon STATIC ${SOURCES})
-target_compile_definitions(libhostcommon PUBLIC 
-    _NO_ASYNCRTIMP
-    _NO_PPLXIMP)
 
 target_compile_definitions(libhostcommon PRIVATE EXPORT_SHARED_API)
 set_target_properties(libhostcommon PROPERTIES MACOSX_RPATH TRUE)
