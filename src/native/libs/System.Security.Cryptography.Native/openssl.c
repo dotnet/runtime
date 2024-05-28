@@ -964,6 +964,20 @@ int32_t CryptoNative_X509StoreSetVerifyTime(X509_STORE* ctx,
         return 0;
     }
 
+#if defined(FEATURE_DISTRO_AGNOSTIC_SSL) && defined(TARGET_ARM) && defined(TARGET_LINUX)
+    if (g_libSslUses32BitTime)
+    {
+        if (verifyTime > INT_MAX || verifyTime < INT_MIN)
+        {
+            return 0;
+        }
+
+        // Cast to a signature that takes a 32-bit value for the time.
+        ((void (*)(X509_VERIFY_PARAM*, int32_t))(void*)(X509_VERIFY_PARAM_set_time))(verifyParams, (int32_t)verifyTime);
+        return 1;
+    }
+#endif
+
     X509_VERIFY_PARAM_set_time(verifyParams, verifyTime);
     return 1;
 }

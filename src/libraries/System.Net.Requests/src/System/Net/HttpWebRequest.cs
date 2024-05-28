@@ -13,10 +13,12 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Net.Security;
 using System.Net.Sockets;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
+using System.Security.Principal;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -122,6 +124,7 @@ namespace System.Net
             public readonly CookieContainer? CookieContainer;
             public readonly ServicePoint? ServicePoint;
             public readonly TimeSpan ContinueTimeout;
+            public readonly TokenImpersonationLevel ImpersonationLevel;
 
             public HttpClientParameters(HttpWebRequest webRequest, bool async)
             {
@@ -144,6 +147,7 @@ namespace System.Net
                 CookieContainer = webRequest._cookieContainer;
                 ServicePoint = webRequest._servicePoint;
                 ContinueTimeout = TimeSpan.FromMilliseconds(webRequest.ContinueTimeout);
+                ImpersonationLevel = webRequest.ImpersonationLevel;
             }
 
             public bool Matches(HttpClientParameters requestParameters)
@@ -164,7 +168,8 @@ namespace System.Net
                     && ReferenceEquals(ServerCertificateValidationCallback, requestParameters.ServerCertificateValidationCallback)
                     && ReferenceEquals(ClientCertificates, requestParameters.ClientCertificates)
                     && ReferenceEquals(CookieContainer, requestParameters.CookieContainer)
-                    && ReferenceEquals(ServicePoint, requestParameters.ServicePoint);
+                    && ReferenceEquals(ServicePoint, requestParameters.ServicePoint)
+                    && ImpersonationLevel == requestParameters.ImpersonationLevel;
             }
 
             public bool AreParametersAcceptableForCaching()
@@ -1665,6 +1670,17 @@ namespace System.Net
                 handler.PreAuthenticate = parameters.PreAuthenticate;
                 handler.Expect100ContinueTimeout = parameters.ContinueTimeout;
                 client.Timeout = parameters.Timeout;
+
+                if (request != null && request.ImpersonationLevel != TokenImpersonationLevel.None)
+                {
+                    // This is legacy feature and we don't have public API at the moment.
+                    // So we want to process it only if explicitly set.
+                    var settings = typeof(SocketsHttpHandler).GetField("_settings", BindingFlags.NonPublic | BindingFlags.Instance)?.GetValue(handler);
+                    Debug.Assert(settings != null);
+                    FieldInfo? fi = Type.GetType("System.Net.Http.HttpConnectionSettings, System.Net.Http")?.GetField("_impersonationLevel", BindingFlags.NonPublic | BindingFlags.Instance);
+                    Debug.Assert(fi != null);
+                    fi.SetValue(settings, request.ImpersonationLevel);
+                }
 
                 if (parameters.CookieContainer != null)
                 {

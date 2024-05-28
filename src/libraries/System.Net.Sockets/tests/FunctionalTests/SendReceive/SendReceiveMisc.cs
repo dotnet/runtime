@@ -283,5 +283,41 @@ namespace System.Net.Sockets.Tests
                 Assert.Equal(0, receiver.Available);
             }
         }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void ReceiveFrom_MultipleRounds_Success(bool async)
+        {
+            using (var socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp))
+            {
+                socket.ReceiveTimeout = 100;
+                socket.BindToAnonymousPort(IPAddress.Loopback);
+
+                var address = new SocketAddress(AddressFamily.InterNetwork);
+                var buffer = new byte[100];
+                int receivedLength;
+
+                for (int i = 0; i < 5; i++)
+                {
+                    try
+                    {
+                        if (async)
+                        {
+                            using var cts = new CancellationTokenSource();
+                            cts.CancelAfter(100);
+                            receivedLength = socket.ReceiveFromAsync(buffer, SocketFlags.None, address, cts.Token).AsTask().GetAwaiter().GetResult();
+                        }
+                        else
+                        {
+                            receivedLength = socket.ReceiveFrom(buffer, SocketFlags.None, address);
+                        }
+                        Assert.Equal(0, receivedLength);
+                    }
+                    catch (SocketException ex) when (ex.SocketErrorCode == SocketError.TimedOut) { }
+                    catch (OperationCanceledException) { }
+                }
+            }
+        }
     }
 }

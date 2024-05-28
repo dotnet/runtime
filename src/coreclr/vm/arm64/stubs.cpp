@@ -58,7 +58,7 @@ class ConditionalBranchInstructionFormat : public InstructionFormat
         // Encoding 0|1|0|1|0|1|0|0|imm19|0|cond
         // cond = Bits3-0(variation)
         // imm19 = bits19-0(fixedUpReference/4), will be SignExtended
-        virtual VOID EmitInstruction(UINT refSize, __int64 fixedUpReference, BYTE *pOutBufferRX, BYTE *pOutBufferRW, UINT variationCode, BYTE *pDataBuffer)
+        virtual VOID EmitInstruction(UINT refSize, int64_t fixedUpReference, BYTE *pOutBufferRX, BYTE *pOutBufferRW, UINT variationCode, BYTE *pDataBuffer)
         {
             LIMITED_METHOD_CONTRACT;
 
@@ -148,14 +148,14 @@ class BranchInstructionFormat : public InstructionFormat
             }
         }
 
-        virtual VOID EmitInstruction(UINT refSize, __int64 fixedUpReference, BYTE *pOutBufferRX, BYTE *pOutBufferRW, UINT variationCode, BYTE *pDataBuffer)
+        virtual VOID EmitInstruction(UINT refSize, int64_t fixedUpReference, BYTE *pOutBufferRX, BYTE *pOutBufferRW, UINT variationCode, BYTE *pDataBuffer)
         {
             LIMITED_METHOD_CONTRACT;
 
             if (IsIndirect(variationCode))
             {
                 _ASSERTE(((UINT_PTR)pDataBuffer & 7) == 0);
-                __int64 dataOffset = pDataBuffer - pOutBufferRW;
+                int64_t dataOffset = pDataBuffer - pOutBufferRW;
 
                 if (dataOffset < -1048576 || dataOffset > 1048572)
                     COMPlusThrow(kNotSupportedException);
@@ -177,13 +177,13 @@ class BranchInstructionFormat : public InstructionFormat
                 }
 
 
-                *((__int64*)pDataBuffer) = fixedUpReference + (__int64)pOutBufferRX;
+                *((int64_t*)pDataBuffer) = fixedUpReference + (int64_t)pOutBufferRX;
             }
             else
             {
 
                 _ASSERTE(((UINT_PTR)pDataBuffer & 7) == 0);
-                __int64 dataOffset = pDataBuffer - pOutBufferRW;
+                int64_t dataOffset = pDataBuffer - pOutBufferRW;
 
                 if (dataOffset < -1048576 || dataOffset > 1048572)
                     COMPlusThrow(kNotSupportedException);
@@ -202,9 +202,9 @@ class BranchInstructionFormat : public InstructionFormat
                     *((DWORD*)(pOutBufferRW+4)) = 0xD61F0200; // br x16
                 }
 
-                if (!ClrSafeInt<__int64>::addition(fixedUpReference, (__int64)pOutBufferRX, fixedUpReference))
+                if (!ClrSafeInt<int64_t>::addition(fixedUpReference, (int64_t)pOutBufferRX, fixedUpReference))
                     COMPlusThrowArithmetic();
-                *((__int64*)pDataBuffer) = fixedUpReference;
+                *((int64_t*)pDataBuffer) = fixedUpReference;
             }
         }
 
@@ -239,7 +239,7 @@ class LoadFromLabelInstructionFormat : public InstructionFormat
             return fExternal;
         }
 
-        virtual VOID EmitInstruction(UINT refSize, __int64 fixedUpReference, BYTE *pOutBufferRX, BYTE *pOutBufferRW, UINT variationCode, BYTE *pDataBuffer)
+        virtual VOID EmitInstruction(UINT refSize, int64_t fixedUpReference, BYTE *pOutBufferRX, BYTE *pOutBufferRW, UINT variationCode, BYTE *pDataBuffer)
         {
             LIMITED_METHOD_CONTRACT;
             // VariationCode is used to indicate the register the label is going to be loaded

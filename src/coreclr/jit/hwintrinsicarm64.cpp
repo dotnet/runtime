@@ -327,6 +327,17 @@ void Compiler::getHWIntrinsicImmTypes(NamedIntrinsic       intrinsic,
                 // The second source operand of sdot, udot instructions is an indexed 32-bit element.
                 indexedElementBaseType = simdBaseType;
             }
+
+            if (intrinsic == NI_Sve_DotProductBySelectedScalar)
+            {
+                assert(((simdBaseType == TYP_INT) && (indexedElementBaseType == TYP_BYTE)) ||
+                       ((simdBaseType == TYP_UINT) && (indexedElementBaseType == TYP_UBYTE)) ||
+                       ((simdBaseType == TYP_LONG) && (indexedElementBaseType == TYP_SHORT)) ||
+                       ((simdBaseType == TYP_ULONG) && (indexedElementBaseType == TYP_USHORT)));
+
+                // The second source operand of sdot, udot instructions is an indexed 32-bit element.
+                indexedElementBaseType = simdBaseType;
+            }
         }
 
         assert(indexedElementBaseType == simdBaseType);
@@ -1347,6 +1358,26 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
+        case NI_Vector64_FusedMultiplyAdd:
+        case NI_Vector128_FusedMultiplyAdd:
+        {
+            assert(sig->numArgs == 3);
+            assert(varTypeIsFloating(simdBaseType));
+
+            impSpillSideEffect(true, verCurrentState.esStackDepth -
+                                         3 DEBUGARG("Spilling op1 side effects for FusedMultiplyAdd"));
+
+            impSpillSideEffect(true, verCurrentState.esStackDepth -
+                                         2 DEBUGARG("Spilling op2 side effects for FusedMultiplyAdd"));
+
+            op3 = impSIMDPopStack();
+            op2 = impSIMDPopStack();
+            op1 = impSIMDPopStack();
+
+            retNode = gtNewSimdFmaNode(retType, op1, op2, op3, simdBaseJitType, simdSize);
+            break;
+        }
+
         case NI_Vector64_get_AllBitsSet:
         case NI_Vector128_get_AllBitsSet:
         {
@@ -1688,6 +1719,31 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             op1     = getArgForHWIntrinsic(argType, argClass);
 
             retNode = gtNewSimdBinOpNode(GT_MUL, retType, op1, op2, simdBaseJitType, simdSize);
+            break;
+        }
+
+        case NI_Vector64_MultiplyAddEstimate:
+        case NI_Vector128_MultiplyAddEstimate:
+        {
+            assert(sig->numArgs == 3);
+            assert(varTypeIsFloating(simdBaseType));
+
+            if (BlockNonDeterministicIntrinsics(mustExpand))
+            {
+                break;
+            }
+
+            impSpillSideEffect(true, verCurrentState.esStackDepth -
+                                         3 DEBUGARG("Spilling op1 side effects for MultiplyAddEstimate"));
+
+            impSpillSideEffect(true, verCurrentState.esStackDepth -
+                                         2 DEBUGARG("Spilling op2 side effects for MultiplyAddEstimate"));
+
+            op3 = impSIMDPopStack();
+            op2 = impSIMDPopStack();
+            op1 = impSIMDPopStack();
+
+            retNode = gtNewSimdFmaNode(retType, op1, op2, op3, simdBaseJitType, simdSize);
             break;
         }
 
@@ -2367,6 +2423,87 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             }
 
             retNode = gtNewSimdHWIntrinsicNode(retType, op1, op2, op3, intrinsic, simdBaseJitType, simdSize);
+            break;
+        }
+
+        case NI_Sve_StoreAndZip:
+        {
+            assert(sig->numArgs == 3);
+            assert(retType == TYP_VOID);
+
+            CORINFO_ARG_LIST_HANDLE arg1     = sig->args;
+            CORINFO_ARG_LIST_HANDLE arg2     = info.compCompHnd->getArgNext(arg1);
+            CORINFO_ARG_LIST_HANDLE arg3     = info.compCompHnd->getArgNext(arg2);
+            var_types               argType  = TYP_UNKNOWN;
+            CORINFO_CLASS_HANDLE    argClass = NO_CLASS_HANDLE;
+            argType             = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg3, &argClass)));
+            op3                 = impPopStack().val;
+            unsigned fieldCount = info.compCompHnd->getClassNumInstanceFields(argClass);
+
+            if (op3->TypeGet() == TYP_STRUCT)
+            {
+                info.compNeedsConsecutiveRegisters = true;
+                switch (fieldCount)
+                {
+                    case 2:
+                        intrinsic = NI_Sve_StoreAndZipx2;
+                        break;
+
+                    case 3:
+                        intrinsic = NI_Sve_StoreAndZipx3;
+                        break;
+
+                    case 4:
+                        intrinsic = NI_Sve_StoreAndZipx4;
+                        break;
+
+                    default:
+                        assert("unsupported");
+                }
+
+                if (!op3->OperIs(GT_LCL_VAR))
+                {
+                    unsigned tmp = lvaGrabTemp(true DEBUGARG("SveStoreN"));
+
+                    impStoreToTemp(tmp, op3, CHECK_SPILL_NONE);
+                    op3 = gtNewLclvNode(tmp, argType);
+                }
+                op3 = gtConvertTableOpToFieldList(op3, fieldCount);
+            }
+
+            argType = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg2, &argClass)));
+            op2     = getArgForHWIntrinsic(argType, argClass);
+            argType = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg1, &argClass)));
+            op1     = getArgForHWIntrinsic(argType, argClass);
+            retNode = gtNewSimdHWIntrinsicNode(retType, op1, op2, op3, intrinsic, simdBaseJitType, simdSize);
+            break;
+        }
+
+        case NI_Sve_StoreNarrowing:
+        {
+            assert(sig->numArgs == 3);
+            assert(retType == TYP_VOID);
+
+            CORINFO_ARG_LIST_HANDLE arg   = sig->args;
+            arg                           = info.compCompHnd->getArgNext(arg);
+            CORINFO_CLASS_HANDLE argClass = info.compCompHnd->getArgClass(sig, arg);
+            CorInfoType          ptrType  = getBaseJitTypeAndSizeOfSIMDType(argClass);
+            CORINFO_CLASS_HANDLE tmpClass = NO_CLASS_HANDLE;
+
+            // The size of narrowed target elements is determined from the second argument of StoreNarrowing().
+            // Thus, we first extract the datatype of a pointer passed in the second argument and then store it as the
+            // auxiliary type of intrinsic. This auxiliary type is then used in the codegen to choose the correct
+            // instruction to emit.
+            ptrType = strip(info.compCompHnd->getArgType(sig, arg, &tmpClass));
+            assert(ptrType == CORINFO_TYPE_PTR);
+            ptrType = info.compCompHnd->getChildType(argClass, &tmpClass);
+            assert(ptrType < simdBaseJitType);
+
+            op3     = impPopStack().val;
+            op2     = impPopStack().val;
+            op1     = impPopStack().val;
+            retNode = gtNewSimdHWIntrinsicNode(retType, op1, op2, op3, intrinsic, simdBaseJitType, simdSize);
+            retNode->AsHWIntrinsic()->SetAuxiliaryJitType(ptrType);
             break;
         }
 

@@ -935,7 +935,10 @@ Scev* ScalarEvolutionContext::Simplify(Scev* scev)
             {
                 // TODO-Cleanup: This requires some proof that it is ok, but
                 // currently we do not rely on this.
-                return op1;
+                ScevAddRec* addRec   = (ScevAddRec*)op1;
+                Scev*       newStart = Simplify(NewExtension(unop->Oper, TYP_LONG, addRec->Start));
+                Scev*       newStep  = Simplify(NewExtension(unop->Oper, TYP_LONG, addRec->Step));
+                return NewAddRec(newStart, newStep);
             }
 
             return (op1 == unop->Op1) ? unop : NewExtension(unop->Oper, unop->Type, op1);

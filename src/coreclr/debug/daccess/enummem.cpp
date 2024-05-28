@@ -29,16 +29,16 @@ extern HRESULT GetDacTableAddress(ICorDebugDataTarget* dataTarget, ULONG64 baseA
 
 #if defined(DAC_MEASURE_PERF)
 
-unsigned __int64 g_nTotalTime;
-unsigned __int64 g_nStackTotalTime;
-unsigned __int64 g_nReadVirtualTotalTime;
-unsigned __int64 g_nFindTotalTime;
-unsigned __int64 g_nFindHashTotalTime;
-unsigned __int64 g_nFindHits;
-unsigned __int64 g_nFindCalls;
-unsigned __int64 g_nFindFails;
-unsigned __int64 g_nStackWalk;
-unsigned __int64 g_nFindStackTotalTime;
+uint64_t g_nTotalTime;
+uint64_t g_nStackTotalTime;
+uint64_t g_nReadVirtualTotalTime;
+uint64_t g_nFindTotalTime;
+uint64_t g_nFindHashTotalTime;
+uint64_t g_nFindHits;
+uint64_t g_nFindCalls;
+uint64_t g_nFindFails;
+uint64_t g_nStackWalk;
+uint64_t g_nFindStackTotalTime;
 
 #endif // #if defined(DAC_MEASURE_PERF)
 
@@ -764,7 +764,7 @@ HRESULT ClrDataAccess::EnumMemWalkStackHelper(CLRDataEnumMemoryFlags flags,
 
 #if defined(DAC_MEASURE_PERF)
     g_nStackWalk = 1;
-    unsigned __int64 nStart= GetCycleCount();
+    uint64_t nStart= GetCycleCount();
 #endif
 
     HRESULT status = S_OK;
@@ -997,7 +997,7 @@ HRESULT ClrDataAccess::EnumMemWalkStackHelper(CLRDataEnumMemoryFlags flags,
     EX_END_CATCH(RethrowCancelExceptions)
 
 #if defined(DAC_MEASURE_PERF)
-    unsigned __int64 nEnd = GetCycleCount();
+    uint64_t nEnd = GetCycleCount();
     g_nStackTotalTime += nEnd - nStart;
     g_nStackWalk = 0;
 #endif // #if defined(DAC_MEASURE_PERF)
@@ -1961,8 +1961,8 @@ ClrDataAccess::EnumMemoryRegions(IN ICLRDataEnumMemoryRegionsCallback* callback,
     g_nFindStackTotalTime = 0;
 
     LARGE_INTEGER nClockFrequency;
-    unsigned __int64 nStart = 0;
-    unsigned __int64 nEnd = 0;
+    uint64_t nStart = 0;
+    uint64_t nEnd = 0;
 
     QueryPerformanceFrequency(&nClockFrequency);
 

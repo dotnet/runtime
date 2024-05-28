@@ -313,7 +313,7 @@ bool Lowering::IsContainableUnaryOrBinaryOp(GenTree* parentNode, GenTree* childN
             return false;
         }
 
-        const ssize_t wrapAmount = (static_cast<ssize_t>(genTypeSize(parentNode)) * BITS_PER_BYTE);
+        const ssize_t wrapAmount = (static_cast<ssize_t>(genTypeSize(childNode)) * BITS_PER_BYTE);
         assert((wrapAmount == 32) || (wrapAmount == 64));
 
         // Rotation is circular, so normalize to [0, wrapAmount - 1]
@@ -491,11 +491,21 @@ void Lowering::LowerStoreLoc(GenTreeLclVarCommon* storeLoc)
 //    node       - The indirect store node (GT_STORE_IND) of interest
 //
 // Return Value:
-//    None.
+//    Next node to lower.
 //
-void Lowering::LowerStoreIndir(GenTreeStoreInd* node)
+GenTree* Lowering::LowerStoreIndir(GenTreeStoreInd* node)
 {
+    GenTree* next = node->gtNext;
     ContainCheckStoreIndir(node);
+
+#ifdef TARGET_ARM64
+    if (comp->opts.OptimizationEnabled())
+    {
+        OptimizeForLdpStp(node);
+    }
+#endif
+
+    return next;
 }
 
 //------------------------------------------------------------------------
@@ -725,7 +735,7 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
         {
             // No write barriers are needed on the stack.
             // If the layout contains a byref, then we know it must live on the stack.
-            if (dstAddr->OperIs(GT_LCL_ADDR) || layout->HasGCByRef())
+            if (dstAddr->OperIs(GT_LCL_ADDR) || layout->IsStackOnly(comp))
             {
                 // If the size is small enough to unroll then we need to mark the block as non-interruptible
                 // to actually allow unrolling. The generated code does not report GC references loaded in the

@@ -98,10 +98,6 @@ ASMCONSTANTS_C_ASSERT(SIZEOF__ComPrestubMethodFrame
 ASMCONSTANTS_C_ASSERT(SIZEOF__ComMethodFrame
                     == sizeof(ComMethodFrame));
 
-#define               OFFSETOF__ComPlusCallInfo__m_pILStub                       0x0
-ASMCONSTANTS_C_ASSERT(OFFSETOF__ComPlusCallInfo__m_pILStub
-                      == offsetof(ComPlusCallInfo, m_pILStub));
-
 #endif // FEATURE_COMINTEROP
 
 #define               OFFSETOF__Thread__m_fPreemptiveGCDisabled     0x04

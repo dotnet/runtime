@@ -965,8 +965,10 @@ bool Compiler::fgCanCompactBlocks(BasicBlock* block, BasicBlock* bNext)
 // Arguments:
 //    block - move all code into this block.
 //    bNext - bbNext of `block`. This block will be removed.
+//    doDebugCheck - in Debug builds, check flowgraph for correctness after compaction
+//    (some callers might compact blocks during destructive flowgraph changes, and thus should skip checks)
 //
-void Compiler::fgCompactBlocks(BasicBlock* block, BasicBlock* bNext)
+void Compiler::fgCompactBlocks(BasicBlock* block, BasicBlock* bNext DEBUGARG(bool doDebugCheck /* = true */))
 {
     noway_assert(block != nullptr);
     noway_assert(bNext != nullptr);
@@ -1331,7 +1333,7 @@ void Compiler::fgCompactBlocks(BasicBlock* block, BasicBlock* bNext)
 #endif
 
 #if DEBUG
-    if (JitConfig.JitSlowDebugChecksEnabled() != 0)
+    if (doDebugCheck && (JitConfig.JitSlowDebugChecksEnabled() != 0))
     {
         // Make sure that the predecessor lists are accurate
         fgDebugCheckBBlist();
@@ -4536,6 +4538,118 @@ bool Compiler::fgReorderBlocks(bool useProfile)
 #endif
 
 //-----------------------------------------------------------------------------
+// fgMoveBackwardJumpsToSuccessors: Try to move backward unconditional jumps to fall into their successors.
+//
+// Template parameters:
+//    hasEH - If true, method has EH regions, so check that we don't try to move blocks in different regions
+//
+template <bool hasEH>
+void Compiler::fgMoveBackwardJumpsToSuccessors()
+{
+#ifdef DEBUG
+    if (verbose)
+    {
+        printf("*************** In fgMoveBackwardJumpsToSuccessors()\n");
+
+        printf("\nInitial BasicBlocks");
+        fgDispBasicBlocks(verboseTrees);
+        printf("\n");
+    }
+#endif // DEBUG
+
+    // Compact blocks before trying to move any jumps.
+    // This can unlock more opportunities for fallthrough behavior.
+    //
+    for (BasicBlock* block = fgFirstBB; block != fgFirstFuncletBB;)
+    {
+        if (fgCanCompactBlocks(block, block->Next()))
+        {
+            // We haven't fixed EH information yet, so don't do any correctness checks here
+            //
+            fgCompactBlocks(block, block->Next() DEBUGARG(/* doDebugCheck */ false));
+        }
+        else
+        {
+            block = block->Next();
+        }
+    }
+
+    EnsureBasicBlockEpoch();
+    BlockSet visitedBlocks(BlockSetOps::MakeEmpty(this));
+    BlockSetOps::AddElemD(this, visitedBlocks, fgFirstBB->bbNum);
+
+    // Don't try to move the first block.
+    // Also, if we have a funclet region, don't bother reordering anything in it.
+    //
+    BasicBlock* next;
+    for (BasicBlock* block = fgFirstBB->Next(); block != fgFirstFuncletBB; block = next)
+    {
+        next = block->Next();
+        BlockSetOps::AddElemD(this, visitedBlocks, block->bbNum);
+
+        // Don't bother trying to move cold blocks
+        //
+        if (!block->KindIs(BBJ_ALWAYS) || block->isRunRarely())
+        {
+            continue;
+        }
+
+        // We will consider moving only backward jumps
+        //
+        BasicBlock* const target = block->GetTarget();
+        if ((block == target) || !BlockSetOps::IsMember(this, visitedBlocks, target->bbNum))
+        {
+            continue;
+        }
+
+        if (hasEH)
+        {
+            // Don't move blocks in different EH regions
+            //
+            if (!BasicBlock::sameEHRegion(block, target))
+            {
+                continue;
+            }
+
+            // block and target are in the same try/handler regions, and target is behind block,
+            // so block cannot possibly be the start of the region.
+            //
+            assert(!bbIsTryBeg(block) && !bbIsHandlerBeg(block));
+
+            // Don't change the entry block of an EH region
+            //
+            if (bbIsTryBeg(target) || bbIsHandlerBeg(target))
+            {
+                continue;
+            }
+        }
+
+        // We don't want to change the first block, so if the jump target is the first block,
+        // don't try moving this block before it.
+        // Also, if the target is cold, don't bother moving this block up to it.
+        //
+        if (target->IsFirst() || target->isRunRarely())
+        {
+            continue;
+        }
+
+        // If moving block will break up existing fallthrough behavior into target, make sure it's worth it
+        //
+        FlowEdge* const fallthroughEdge = fgGetPredForBlock(target, target->Prev());
+        if ((fallthroughEdge != nullptr) &&
+            (fallthroughEdge->getLikelyWeight() >= block->GetTargetEdge()->getLikelyWeight()))
+        {
+            continue;
+        }
+
+        // Move block to before target
+        //
+        fgUnlinkBlock(block);
+        fgInsertBBbefore(target, block);
+    }
+}
+
+//-----------------------------------------------------------------------------
 // fgDoReversePostOrderLayout: Reorder blocks using a greedy RPO traversal.
 //
 void Compiler::fgDoReversePostOrderLayout()
@@ -4566,6 +4680,13 @@ void Compiler::fgDoReversePostOrderLayout()
             fgUnlinkBlock(blockToMove);
             fgInsertBBafter(block, blockToMove);
         }
+
+        // The RPO established a good base layout, but in some cases, it might produce a subpar layout for loops.
+        // In particular, it may place the loop head after the loop exit, creating unnecessary branches.
+        // Fix this by moving unconditional backward jumps up to their targets,
+        // increasing the likelihood that the loop exit block is the last block in the loop.
+        //
+        fgMoveBackwardJumpsToSuccessors</* hasEH */ false>();
 
         return;
     }
@@ -4653,6 +4774,8 @@ void Compiler::fgDoReversePostOrderLayout()
         fgUnlinkBlock(pair.callFinallyRet);
         fgInsertBBafter(pair.callFinally, pair.callFinallyRet);
     }
+
+    fgMoveBackwardJumpsToSuccessors</* hasEH */ true>();
 
     // The RPO won't change the entry blocks of any EH regions, but reordering can change the last block in a region
     // (for example, by pushing throw blocks unreachable via normal flow to the end of the region).
