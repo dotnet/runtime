@@ -205,6 +205,8 @@ namespace System.Text.RegularExpressions.Symbolic
             {
                 var setIsTooCommon = new Func<RegexFindOptimizations.FixedDistanceSet, bool>((fds) =>
                 {
+                    // _wout($"s{fds.Set}");
+                    // _wout($"c{fds.Chars.AsSpan()}");
                     return fds switch
                     {
                         // anything above 4 uint16 chars is generally slower than DFA
@@ -225,6 +227,8 @@ namespace System.Text.RegularExpressions.Symbolic
                         findOptimizations.FixedDistanceSets![0]) ? null : findOptimizations,
                     _ => findOptimizations // TODO: unsure which options are left here
                 };
+                // _wout($"{findOptimizations.FindMode}");
+                // _wout($"o{_findOpts}");
             }
 
             // Determine the number of initial states. If there's no anchor, only the default previous
@@ -488,14 +492,29 @@ namespace System.Text.RegularExpressions.Symbolic
                 // still check the timeout now and again to provide some semblance of the behavior a developer experiences with
                 // the backtracking engines.  We can, however, choose a large number here, since it's not actually needed for security.
                 const int CharsPerTimeoutCheck = 1_000;
+                // TODO: maybe this should be for NFA mode only
                 int innerLoopLength = _checkTimeout && input.Length - pos > CharsPerTimeoutCheck ?
                     pos + CharsPerTimeoutCheck :
                     input.Length;
 
+                if (pos == input.Length && currentState.NfaState is null)
+                {
+                    if ((!_stateFlagsArray[currentState.DfaStateId].IsNullable() &&
+                         !_stateArray[currentState.DfaStateId]!.IsNullableFor(
+                             GetPositionKind(-1))))
+                    {
+                        break;
+                    }
+                    // the end position (-1) was nullable
+                    endPos = pos;
+                    endStateId = currentState.DfaStateId;
+                    break;
+                }
+
                 bool done = currentState.NfaState is not null ?
                     FindEndPositionDeltasNFA<NfaStateHandler, TInputReader, TFindOptimizationsHandler, TNullabilityHandler>(input, innerLoopLength, mode, ref pos, ref currentState, ref endPos, ref endStateId, ref initialStatePos, ref initialStatePosCandidate) :
                     // If there are no edge cases then use the quicker loop
-                    (_findOpts is null && !_containsEndZAnchor && pos < input.Length - 1) ? FindEndPositionDeltasDFANoSkip(input, innerLoopLength, mode, ref pos, currentState.DfaStateId, ref endPos, ref endStateId, ref initialStatePos, ref initialStatePosCandidate) :
+                    _findOpts is null && !_containsEndZAnchor ? FindEndPositionDeltasDFANoSkip(input, innerLoopLength - 1, mode, ref pos, currentState.DfaStateId, ref endPos, ref endStateId, ref initialStatePos, ref initialStatePosCandidate) :
                     FindEndPositionDeltasDFA<DfaStateHandler, TInputReader, TFindOptimizationsHandler, TNullabilityHandler>(input, innerLoopLength, mode, ref pos, ref currentState, ref endPos, ref endStateId, ref initialStatePos, ref initialStatePosCandidate);
 
                 // If the inner loop indicates that the search finished (for example due to reaching a deadend state) or
@@ -526,6 +545,8 @@ namespace System.Text.RegularExpressions.Symbolic
 
             // Check whether there's a fixed-length marker for the current state.  If there is, we can
             // use that length to optimize subsequent matching phases.
+            // TODO: profiling shows around 4% gets lost here with high-match count,
+            // if not for the endZ anchor this could be cached with minterm lookup
             matchLength = endStateId > 0 ? GetState(endStateId).FixedLength(GetCharKind<TInputReader>(input, endPos)) : -1;
             return endPos;
         }
@@ -536,18 +557,15 @@ namespace System.Text.RegularExpressions.Symbolic
         /// i don't trust the compiler to optimize this and it makes a
         /// ~50% difference in performance with removing unnecessary checks alone
         /// </summary>
-        private bool FindEndPositionDeltasDFANoSkip(ReadOnlySpan<char> input, int length, RegexRunnerMode mode,
+        private bool FindEndPositionDeltasDFANoSkip(ReadOnlySpan<char> input, int lengthMinus1, RegexRunnerMode mode,
                 ref int posRef, int startStateId, ref int endPosRef, ref int endStateIdRef, ref int initialStatePosRef, ref int initialStatePosCandidateRef)
         {
             // To avoid frequent reads/writes to ref and out values, make and operate on local copies, which we then copy back once before returning.
             int pos = posRef;
             int endPos = endPosRef;
-            int final = length - 1;
             Span<int> mtlookup = _mintermClassifier.Lookup.AsSpan();
             int endStateId = endStateIdRef;
             int currStateId = startStateId;
-            int initialStatePos = initialStatePosRef;
-            int initialStatePosCandidate = initialStatePosCandidateRef;
             try
             {
                 // Loop through each character in the input, transitioning from state to state for each.
@@ -557,17 +575,16 @@ namespace System.Text.RegularExpressions.Symbolic
                     {
                         return true;
                     }
-                    int positionId = mtlookup[input[pos]];
+                    // int positionId = mtlookup[input[pos]];
 
                     // If the state is nullable for the next character, meaning it accepts the empty string,
                     // we found a potential end state.
                     if (_canBeNullableArray[currStateId])
                     {
-                        if (_stateFlagsArray[currStateId].IsNullable() || _stateArray[currStateId]!.IsNullableFor(GetPositionKind(positionId)))
+                        if (_stateArray[currStateId]!.IsNullableFor(GetPositionKind(mtlookup[input[pos]])))
                         {
                             endPos = pos;
                             endStateId = currStateId;
-                            initialStatePos = initialStatePosCandidate;
                             // A match is known to exist.  If that's all we need to know, we're done.
                             if (mode == RegexRunnerMode.ExistenceRequired)
                             {
@@ -578,18 +595,13 @@ namespace System.Text.RegularExpressions.Symbolic
 
                     // If there is more input available try to transition with the next character.
                     // Note: the order here is important so the transition gets taken
-                    if (!DfaStateHandler.TryTakeDFATransition(this, ref currStateId, positionId) || pos >= final)
+                    if (!DfaStateHandler.TryTakeDFATransition(this, ref currStateId, mtlookup[input[pos]]) || pos >= lengthMinus1)
                     {
-                        // _wout($"end1: {_stateArray[currStateId]}");
-                        if (pos < final)
+                        pos++;
+                        if (pos < input.Length)
                         {
                             return false;
                         }
-                        pos++;
-                        // _wout($"end: {_stateArray[currStateId]}");
-                        // final transition
-                        // DfaStateHandler.TryTakeDFATransition(this, ref currStateId, -1);
-                        //
                         // one off check for the final position
                         // this is just to move it out of the hot loop
                         if ((!_stateFlagsArray[currStateId].IsNullable() &&
@@ -601,7 +613,6 @@ namespace System.Text.RegularExpressions.Symbolic
                         // the end position (-1) was nullable
                         endPos = pos;
                         endStateId = currStateId;
-                        initialStatePos = initialStatePosCandidate;
                         return mode == RegexRunnerMode.ExistenceRequired;
                     }
 
@@ -615,8 +626,7 @@ namespace System.Text.RegularExpressions.Symbolic
                 posRef = pos;
                 endPosRef = endPos;
                 endStateIdRef = endStateId;
-                initialStatePosRef = initialStatePos;
-                initialStatePosCandidateRef = initialStatePosCandidate;
+                initialStatePosRef = endStateId > 0 ? initialStatePosCandidateRef : initialStatePosRef;
             }
         }
 

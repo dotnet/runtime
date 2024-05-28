@@ -527,5 +527,89 @@ namespace System.Text.RegularExpressions.Symbolic
                 }
             }
         }
+
+
+        /// <summary>
+        /// attempt to remove anchors when possible since it reduces overhead
+        /// more rewrites could be tried but it's important to preserve PCRE semantics
+        /// </summary>
+        /// <param name="builder"></param>
+        /// <param name="rootNode"></param>
+        /// <returns></returns>
+        internal static SymbolicRegexNode<BDD> ApplyRootRewrites(SymbolicRegexBuilder<BDD> builder, SymbolicRegexNode<BDD> rootNode)
+        {
+            // only consider removing anchors, otherwise bail
+            if (!rootNode._info.ContainsSomeAnchor) return rootNode;
+
+            // Func<string, bool> _wout = st =>
+            // {
+            //     var a_cons = System.Reflection.Assembly.Load("System.Console");
+            //     var t_cons = a_cons.GetType("System.Console")!;
+            //     var wl = t_cons.GetMethod("WriteLine", [typeof(string)]);
+            //     wl!.Invoke(null, [st]);
+            //     return true;
+            // };
+
+            SymbolicRegexNode<BDD> ApplyRewrites(SymbolicRegexNode<BDD> node)
+            {
+                // Guard against stack overflow due to deep recursion
+                if (!StackHelper.TryEnsureSufficientExecutionStack())
+                {
+                    return StackHelper.CallOnEmptyStack(() => ApplyRewrites(node));
+                }
+
+                var wl = UnicodeCategoryConditions.WordLetter(builder._charSetSolver);
+
+                switch (node._kind)
+                {
+                    case SymbolicRegexNodeKind.Concat:
+                        // _wout($"conc: l:{node._left!._kind} r:{node._right!._kind}");
+                        switch (node._left!._kind)
+                        {
+                            case SymbolicRegexNodeKind.CaptureStart:
+                                return builder.CreateConcat(node._left, ApplyRewrites(node._right!));
+                            case SymbolicRegexNodeKind.BoundaryAnchor:
+                                return node._right! switch
+                                {
+                                    // \b\w{1,}.. -> \w{1,}
+                                    // anchor to the left can be removed
+                                    {
+                                        _kind: SymbolicRegexNodeKind.Concat, _left:
+                                        {
+                                            _kind: SymbolicRegexNodeKind.Loop, _lower: >= 1, _upper: >= int.MaxValue
+
+                                        } wordLoop
+                                    }
+                                     when (wordLoop!._left!._kind == SymbolicRegexNodeKind.Singleton) && wordLoop!._left._set.Equals(wl) => ApplyRewrites(node._right!),
+                                    _ => node
+                                };
+                            case SymbolicRegexNodeKind.Loop:
+                                var loopnode = node._left!;
+                                // +, {2,}, {3,} anything infinite is a valid rewrite, star is an anchor edge case
+                                bool isPlusInfinite = loopnode._upper == int.MaxValue && loopnode._lower >= 1;
+                                bool isWordChar = (loopnode._left!._kind == SymbolicRegexNodeKind.Singleton) && loopnode._left._set.Equals(wl);
+                                return node._right! switch
+                                {
+                                    // anchor to the right can be removed
+                                    {
+                                        _kind: SymbolicRegexNodeKind.Concat,
+                                        _left.Kind: SymbolicRegexNodeKind.BoundaryAnchor,
+                                        _right._kind: SymbolicRegexNodeKind.CaptureEnd
+                                    } when isPlusInfinite && isWordChar => builder.CreateConcat(loopnode, ApplyRewrites(node._right!._right!)),
+                                    _ => node
+                                };
+                        }
+                        return node;
+
+
+                    default:
+                        return node;
+                }
+            }
+
+            SymbolicRegexNode<BDD> rewritten = ApplyRewrites(rootNode);
+            // _wout(rewritten.ToString());
+            return rewritten;
+        }
     }
 }
