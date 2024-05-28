@@ -6229,6 +6229,15 @@ struct GenTreeJitIntrinsic : public GenTreeMultiOp
 protected:
     union
     {
+        // We don't have enough space to carry both the inline operands
+        // and the necessary information required to support rewriting
+        // the intrinsic back into a user call. As such, we union the
+        // data instead and use the GTF_HW_USER_CALL flag to indicate
+        // which fields are valid to access. -- Tracking the fields
+        // independently causes TREE_NODE_SZ_LARGE to increase and for
+        // GenTreeJitIntrinsic to become the largest node, which is
+        // undesirable, so this approach helps keep things pay-for-play.
+
         GenTree* gtInlineOperands[2];
 
         struct

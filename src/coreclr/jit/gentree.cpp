@@ -19584,9 +19584,22 @@ void GenTreeMultiOp::InitializeOperands(GenTree** operands, size_t operandCount)
     SetOperandCount(operandCount);
 }
 
+//------------------------------------------------------------------------
+// GenTreeJitIntrinsic::SetMethodHandle: Sets the method handle for an intrinsic
+//  so that it can be rewritten back to a user call in a later phase
+//
+// Arguments:
+//  comp         - The compiler instance
+//  methodHandle - The method handle representing the fallback handling for the intrinsic
+//
+// Notes:
+//  We need to ensure that the operands are not tracked inline so that we can track the
+//  underlying method handle. See the comment in GenTreeJitIntrinsic around why the union
+//  of fields exists.
+//
 void GenTreeJitIntrinsic::SetMethodHandle(Compiler* comp, CORINFO_METHOD_HANDLE methodHandle)
 {
-    assert(!IsUserCall());
+    assert(OperIsHWIntrinsic() && !IsUserCall());
     gtFlags |= GTF_HW_USER_CALL;
 
     size_t operandCount = GetOperandCount();
@@ -19610,6 +19623,19 @@ void GenTreeJitIntrinsic::SetMethodHandle(Compiler* comp, CORINFO_METHOD_HANDLE 
 }
 
 #if defined(FEATURE_READYTORUN)
+//------------------------------------------------------------------------
+// GenTreeJitIntrinsic::SetEntryPoint: Sets the entry point for an intrinsic
+//  so that it can be rewritten back to a user call in a later phase for R2R
+//  scenarios
+//
+// Arguments:
+//  comp       - The compiler instance
+//  entryPoint - The entry point information required for R2R scenarios
+//
+// Notes:
+//  This requires SetMethodHandle to have been called first to ensure we aren't
+//  overwriting any inline operands
+//
 void GenTreeJitIntrinsic::SetEntryPoint(Compiler* comp, CORINFO_CONST_LOOKUP entryPoint)
 {
     assert(IsUserCall());
