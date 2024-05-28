@@ -361,7 +361,6 @@ FCFuncEnd()
 
 FCFuncStart(gArrayFuncs)
     FCFuncElement("GetCorElementTypeOfElementType", ArrayNative::GetCorElementTypeOfElementType)
-    FCFuncElement("InternalSetValue", ArrayNative::SetValue)
 FCFuncEnd()
 
 FCFuncStart(gBufferFuncs)

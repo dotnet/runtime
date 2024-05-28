@@ -43,7 +43,7 @@ namespace System.Runtime.CompilerServices
         // Unlike the IsInstanceOfInterface and IsInstanceOfClass functions,
         // this test must deal with all kinds of type tests
         [DebuggerHidden]
-        private static object? IsInstanceOfAny(void* toTypeHnd, object? obj)
+        internal static object? IsInstanceOfAny(void* toTypeHnd, object? obj)
         {
             if (obj != null)
             {
