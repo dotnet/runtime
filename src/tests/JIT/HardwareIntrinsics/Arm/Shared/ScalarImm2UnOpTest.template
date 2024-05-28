@@ -44,6 +44,12 @@ namespace JIT.HardwareIntrinsics.Arm
 
                 // Validates passing an instance member of a struct works
                 test.RunStructFldScenario();
+
+                // Validates basic functionality fails with an invalid imm1, using Unsafe.ReadUnaligned
+                test.RunBasicScenario_UnsafeRead_InvalidImm1();
+
+                // Validates basic functionality fails with an invalid imm2, using Unsafe.ReadUnaligned
+                test.RunBasicScenario_UnsafeRead_InvalidImm2();
             }
             else
             {
@@ -155,6 +161,42 @@ namespace JIT.HardwareIntrinsics.Arm
 
             var test = TestStruct.Create();
             test.RunStructFldScenario(this);
+        }
+
+        public void RunBasicScenario_UnsafeRead_InvalidImm1()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunBasicScenario_UnsafeRead));
+
+            bool succeeded = false;
+
+            try
+            {
+                var result = {Isa}.{Method}(
+                Unsafe.ReadUnaligned<{Op1BaseType}>(ref Unsafe.As<{Op1BaseType}, byte>(ref _data)), {InvalidImm}, {Imm2}
+                );
+            }
+            catch (ArgumentOutOfRangeException)
+            {
+                succeeded = true;
+            }
+        }
+
+        public void RunBasicScenario_UnsafeRead_InvalidImm2()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunBasicScenario_UnsafeRead));
+
+            bool succeeded = false;
+
+            try
+            {
+                var result = {Isa}.{Method}(
+                Unsafe.ReadUnaligned<{Op1BaseType}>(ref Unsafe.As<{Op1BaseType}, byte>(ref _data)), {Imm}, {InvalidImm2}
+                );
+            }
+            catch (ArgumentOutOfRangeException)
+            {
+                succeeded = true;
+            }
         }
 
         public void RunUnsupportedScenario()
