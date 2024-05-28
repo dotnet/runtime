@@ -9,7 +9,7 @@ using Xunit;
 public unsafe class Runtime_95043
 {
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void Sweep(int ecx, int* edx, Vector3 stack12)
+    private static void Sweep(int ecx, int* edx, Vector3 stack12)
     {
         for (int i = 0; i < 5; i++)
         {
