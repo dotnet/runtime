@@ -12,6 +12,7 @@ namespace System.Web.Util
 {
     internal static class HttpEncoder
     {
+        private const int MaxStackAllocUrlLength = 256;
         private static void AppendCharAsUnicodeJavaScript(StringBuilder builder, char c)
         {
             builder.Append($"\\u{(int)c:x4}");
@@ -258,8 +259,8 @@ namespace System.Web.Util
                 return null;
             }
 
-            UrlDecoder helper = count < 256
-                ? new UrlDecoder(stackalloc char[count], stackalloc byte[count], encoding)
+            UrlDecoder helper = count <= MaxStackAllocUrlLength
+                ? new UrlDecoder(stackalloc char[MaxStackAllocUrlLength], stackalloc byte[MaxStackAllocUrlLength], encoding)
                 : new UrlDecoder(new char[count], new byte[count], encoding);
 
             // go through the bytes collapsing %XX and %uXXXX and appending
@@ -334,8 +335,8 @@ namespace System.Web.Util
             }
 
             int count = value.Length;
-            UrlDecoder helper = count < 256
-                ? new UrlDecoder(stackalloc char[count], stackalloc byte[count], encoding)
+            UrlDecoder helper = count <= MaxStackAllocUrlLength
+                ? new UrlDecoder(stackalloc char[MaxStackAllocUrlLength], stackalloc byte[MaxStackAllocUrlLength], encoding)
                 : new UrlDecoder(new char[count], new byte[count], encoding);
 
             // go through the string's chars collapsing %XX and %uXXXX and
