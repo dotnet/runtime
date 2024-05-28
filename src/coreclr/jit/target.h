@@ -510,8 +510,9 @@ inline bool isByteReg(regNumber reg)
 }
 #endif
 
-inline SingleTypeRegSet genRegMask(regNumber reg);
-inline SingleTypeRegSet genRegMaskFloat(regNumber reg ARM_ARG(var_types type = TYP_DOUBLE));
+inline regMaskTP genRegMask(regNumber reg);
+inline regMaskTP genRegMaskFloat(regNumber reg ARM_ARG(var_types type = TYP_DOUBLE));
+inline SingleTypeRegSet genSingleTypeRegMask(regNumber reg);
 
 /*****************************************************************************
  * Return true if the register number is valid
@@ -762,7 +763,7 @@ inline regMaskTP genRegMask(regNumber reg)
  *  Map a register number to a floating-point register mask.
  */
 
-inline SingleTypeRegSet genRegMaskFloat(regNumber reg ARM_ARG(var_types type /* = TYP_DOUBLE */))
+inline regMaskTP genRegMaskFloat(regNumber reg ARM_ARG(var_types type /* = TYP_DOUBLE */))
 {
 #if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_X86) || defined(TARGET_LOONGARCH64) ||            \
     defined(TARGET_RISCV64)
@@ -805,7 +806,7 @@ inline SingleTypeRegSet genRegMaskFloat(regNumber reg ARM_ARG(var_types type /* 
 //    For registers that are used in pairs, the caller will be handling
 //    each member of the pair separately.
 //
-inline regMaskTP genRegMask1(regNumber regNum, var_types type)
+inline regMaskTP genRegMask(regNumber regNum, var_types type)
 {
 #if defined(TARGET_ARM)
     regMaskTP regMask = RBM_NONE;
@@ -824,18 +825,6 @@ inline regMaskTP genRegMask1(regNumber regNum, var_types type)
 #else
     return genRegMask(regNum);
 #endif
-}
-
-
-inline SingleTypeRegSet genSingleTypeRegMask(regNumber reg)
-{
-    return genRegMask(reg).getLow();
-}
-
-
-inline SingleTypeRegSet genSingleTypeRegMask(regNumber reg)
-{
-    return genRegMask(reg).getLow();
 }
 
 /*****************************************************************************

@@ -73,6 +73,40 @@ inline bool useFloatReg(var_types type)
 }
 
 //------------------------------------------------------------------------
+// genSingleTypeRegMask: Given a register, generate the appropriate regMask
+//
+// Arguments:
+//    regNum   - the register of interest
+//
+// Return Value:
+//    This will usually return the same value as genRegMask(regNum), except
+//    that it will return a 64-bits (or 32-bits) entity instead of `regMaskTP`.
+//
+inline SingleTypeRegSet genSingleTypeRegMask(regNumber reg)
+{
+    return genRegMask(reg).getLow();
+}
+
+//------------------------------------------------------------------------
+// genSingleTypeRegMask: Given a register, generate the appropriate regMask
+//
+// Arguments:
+//    regNum   - the register of interest
+//    type     - the type of regNum (i.e. the type it is being used as)
+//
+// Return Value:
+//    This will usually return the same value as genRegMask(regNum), except
+//    that it will return a 64-bits (or 32-bits) entity instead of `regMaskTP`.
+//    On architectures where multiple registers are used for certain types
+//    (e.g. TYP_DOUBLE on ARM), it will return a regMask that includes
+//    all the registers for that type.
+//
+inline SingleTypeRegSet genSingleTypeRegMask(regNumber reg, var_types type)
+{
+    return genRegMask(reg).getLow();
+}
+
+//------------------------------------------------------------------------
 // RefInfo: Captures the necessary information for a definition that is "in-flight"
 //          during `buildIntervals` (i.e. a tree-node definition has been encountered,
 //          but not its use). This includes the RefPosition and its associated
@@ -2338,7 +2372,8 @@ public:
     {
         // This uses regMasks to handle the case where a double actually occupies two registers
         // TODO-Throughput: This could/should be done more cheaply.
-        return (physReg != REG_NA && (genRegMask(physReg, registerType) & genRegMask(regNum)) != RBM_NONE);
+        return (physReg != REG_NA &&
+                (genSingleTypeRegMask(physReg, registerType) & genSingleTypeRegMask(regNum)) != RBM_NONE);
     }
 
     // Assign the related interval.

@@ -4225,7 +4225,7 @@ int LinearScan::BuildReturn(GenTree* tree)
                             {
                                 hasMismatchedRegTypes = true;
                                 SingleTypeRegSet dstRegMask =
-                                    genRegMask(retTypeDesc.GetABIReturnReg(i, compiler->info.compCallConv));
+                                    genSingleTypeRegMask(retTypeDesc.GetABIReturnReg(i, compiler->info.compCallConv));
 
                                 if (varTypeUsesIntReg(dstType))
                                 {
@@ -4252,7 +4252,9 @@ int LinearScan::BuildReturn(GenTree* tree)
                         if (!hasMismatchedRegTypes || (regType(op1->AsLclVar()->GetFieldTypeByIndex(compiler, i)) ==
                                                        regType(retTypeDesc.GetReturnRegType(i))))
                         {
-                            BuildUse(op1, genRegMask(retTypeDesc.GetABIReturnReg(i, compiler->info.compCallConv)), i);
+                            BuildUse(op1,
+                                     genSingleTypeRegMask(retTypeDesc.GetABIReturnReg(i, compiler->info.compCallConv)),
+                                     i);
                         }
                         else
                         {
@@ -4411,7 +4413,7 @@ int LinearScan::BuildPutArgReg(GenTreeUnOp* node)
     if (node->TypeGet() == TYP_LONG)
     {
         srcCount++;
-        SingleTypeRegSet argMaskHi = genRegMask(REG_NEXT(argReg));
+        SingleTypeRegSet argMaskHi = genSingleTypeRegMask(REG_NEXT(argReg));
         assert(genRegArgNext(argReg) == REG_NEXT(argReg));
         use = BuildUse(op1, argMaskHi, 1);
         BuildDef(node, argMask, 0);

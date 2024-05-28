@@ -103,7 +103,7 @@ void LinearScan::assignConsecutiveRegisters(RefPosition* firstRefPosition, regNu
 #endif // FEATURE_PARTIAL_SIMD_CALLEE_SAVE
         INDEBUG(refPosCount++);
         assert((consecutiveRefPosition->refType == RefTypeDef) || (consecutiveRefPosition->refType == RefTypeUse));
-        consecutiveRefPosition->registerAssignment = genRegMask(regToAssign);
+        consecutiveRefPosition->registerAssignment = genSingleTypeRegMask(regToAssign);
         consecutiveRefPosition                     = getNextConsecutiveRefPosition(consecutiveRefPosition);
         regToAssign                                = regToAssign == REG_FP_LAST ? REG_FP_FIRST : REG_NEXT(regToAssign);
     }
