@@ -27351,6 +27351,21 @@ void ReturnTypeDesc::InitializeStructReturnType(Compiler*                comp,
             assert(returnType != TYP_UNKNOWN);
             assert(returnType != TYP_STRUCT);
             m_regType[0] = returnType;
+
+#if defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
+#ifdef TARGET_LOONGARCH64
+            uint32_t floatFieldFlags = comp->info.compCompHnd->getLoongArch64PassStructInRegisterFlags(retClsHnd);
+            FpStructInRegistersInfo fpInfo =
+                FpStructInRegistersInfo::FromOldFlags((StructFloatFieldInfoFlags)floatFieldFlags);
+#else // TARGET_RISCV64
+            FpStructInRegistersInfo fpInfo = comp->info.compCompHnd->getRiscV64PassFpStructInRegistersInfo(retClsHnd);
+#endif
+            if (fpInfo.flags != FpStruct::UseIntCallConv)
+            {
+                assert((fpInfo.flags & FpStruct::OnlyOne) != 0);
+                m_fieldOffset[0] = fpInfo.offset1st;
+            }
+#endif // defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
             break;
         }
 
@@ -27426,43 +27441,51 @@ void ReturnTypeDesc::InitializeStructReturnType(Compiler*                comp,
 #else // TARGET_RISCV64
             FpStructInRegistersInfo fpInfo = comp->info.compCompHnd->getRiscV64PassFpStructInRegistersInfo(retClsHnd);
 #endif
-            comp->compFloatingPointUsed = (fpInfo.flags != FpStruct::UseIntCallConv);
-            if ((fpInfo.flags & FpStruct::BothFloat) != 0)
+            if (fpInfo.flags != FpStruct::UseIntCallConv)
             {
-                m_regType[0] = fpInfo.IsSize1st8() ? TYP_DOUBLE : TYP_FLOAT;
-                m_regType[1] = fpInfo.IsSize2nd8() ? TYP_DOUBLE : TYP_FLOAT;
-            }
-            else if ((fpInfo.flags & (FpStruct::Float1st | FpStruct::Float2nd)) != 0)
-            {
-                var_types integerRegType;
-                if ((fpInfo.flags & FpStruct::GcRef) != 0)
-                {
-                    integerRegType = TYP_REF;
-                }
-                else if ((fpInfo.flags & FpStruct::GcByRef) != 0)
-                {
-                    integerRegType = TYP_BYREF;
-                }
-                else
-                {
-                    bool is8 = ((fpInfo.flags & FpStruct::Float1st) == 0) ? fpInfo.IsSize1st8() : fpInfo.IsSize2nd8();
-                    integerRegType = is8 ? TYP_LONG : TYP_INT;
-                }
+                comp->compFloatingPointUsed = true;
 
-                if ((fpInfo.flags & FpStruct::Float1st) != 0)
+                m_fieldOffset[0] = fpInfo.offset1st;
+                m_fieldOffset[1] = fpInfo.offset2nd;
+
+                assert((fpInfo.flags & FpStruct::OnlyOne) == 0);
+                if ((fpInfo.flags & FpStruct::BothFloat) != 0)
                 {
                     m_regType[0] = fpInfo.IsSize1st8() ? TYP_DOUBLE : TYP_FLOAT;
-                    m_regType[1] = integerRegType;
-                }
-                else
-                {
-                    m_regType[0] = integerRegType;
                     m_regType[1] = fpInfo.IsSize2nd8() ? TYP_DOUBLE : TYP_FLOAT;
+                }
+                else if ((fpInfo.flags & (FpStruct::Float1st | FpStruct::Float2nd)) != 0)
+                {
+                    var_types integerRegType;
+                    if ((fpInfo.flags & FpStruct::GcRef) != 0)
+                    {
+                        integerRegType = TYP_REF;
+                    }
+                    else if ((fpInfo.flags & FpStruct::GcByRef) != 0)
+                    {
+                        integerRegType = TYP_BYREF;
+                    }
+                    else
+                    {
+                        bool is8 =
+                            ((fpInfo.flags & FpStruct::Float1st) == 0) ? fpInfo.IsSize1st8() : fpInfo.IsSize2nd8();
+                        integerRegType = is8 ? TYP_LONG : TYP_INT;
+                    }
+
+                    if ((fpInfo.flags & FpStruct::Float1st) != 0)
+                    {
+                        m_regType[0] = fpInfo.IsSize1st8() ? TYP_DOUBLE : TYP_FLOAT;
+                        m_regType[1] = integerRegType;
+                    }
+                    else
+                    {
+                        m_regType[0] = integerRegType;
+                        m_regType[1] = fpInfo.IsSize2nd8() ? TYP_DOUBLE : TYP_FLOAT;
+                    }
                 }
             }
             else
             {
-                assert(fpInfo.flags == FpStruct::UseIntCallConv);
                 assert(structSize <= (2 * TARGET_POINTER_SIZE));
                 BYTE gcPtrs[2] = {TYPE_GC_NONE, TYPE_GC_NONE};
                 comp->info.compCompHnd->getClassGClayout(retClsHnd, &gcPtrs[0]);

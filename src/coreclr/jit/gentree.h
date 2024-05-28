@@ -4256,6 +4256,13 @@ struct ReturnTypeDesc
 private:
     var_types m_regType[MAX_RET_REG_COUNT];
 
+#if defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
+    // Structs according to hardware floating-point calling convention are passed as two logical fields, each in
+    // separate register, disregarding struct layout such as packing, custom alignment, padding with empty structs, etc.
+    // We need size (can be derived from m_regType) & offset of each field for memory load/stores
+    unsigned m_fieldOffset[MAX_RET_REG_COUNT];
+#endif
+
 #ifdef DEBUG
     bool m_inited;
 #endif
@@ -4287,6 +4294,9 @@ public:
         for (unsigned i = 0; i < MAX_RET_REG_COUNT; ++i)
         {
             m_regType[i] = TYP_UNKNOWN;
+#if defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
+            m_fieldOffset[i] = 0;
+#endif
         }
 #ifdef DEBUG
         m_inited = false;
@@ -4332,8 +4342,11 @@ public:
         for (unsigned i = regCount + 1; i < MAX_RET_REG_COUNT; ++i)
         {
             assert(m_regType[i] == TYP_UNKNOWN);
-        }
+#if defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
+            assert(m_fieldOffset[i] == 0);
 #endif
+        }
+#endif // DEBUG
 
         return regCount;
     }
@@ -4380,6 +4393,17 @@ public:
         assert(result != TYP_UNKNOWN);
 
         return result;
+    }
+
+    unsigned GetSingleReturnFieldOffset() const
+    {
+        assert(!IsMultiRegRetType());
+        assert(m_regType[0] != TYP_UNKNOWN);
+#if defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
+        return m_fieldOffset[0];
+#else
+        return 0;
+#endif
     }
 
     // Get i'th ABI return register
@@ -4491,6 +4515,7 @@ struct CallArgABIInformation
         , ByteAlignment(0)
 #if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
         , StructFloatFieldType()
+        , StructFloatFieldOffset()
 #endif
         , ArgType(TYP_UNDEF)
         , IsBackFilled(false)
@@ -4527,10 +4552,11 @@ public:
     SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR StructDesc;
 #endif // UNIX_AMD64_ABI
 #if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-    // For LoongArch64's ABI, the struct which has float field(s) and no more than two fields
+    // For LoongArch64's and RISC-V 64's ABI, the struct which has float field(s) and no more than two fields
     // may be passed by float register(s).
     // e.g  `struct {int a; float b;}` passed by an integer register and a float register.
     var_types StructFloatFieldType[2];
+    unsigned  StructFloatFieldOffset[2];
 #endif
     // The type used to pass this argument. This is generally the original
     // argument type, but when a struct is passed as a scalar type, this is

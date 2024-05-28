@@ -2322,8 +2322,8 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
 #elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 
         assert(!callIsVararg && !isHfaArg);
-        passUsingFloatRegs    = varTypeUsesFloatReg(argSigType);
-        DWORD floatFieldFlags = STRUCT_NO_FLOAT_FIELD;
+        passUsingFloatRegs             = varTypeUsesFloatReg(argSigType);
+        FpStructInRegistersInfo fpInfo = {};
 
 #else
 #error Unsupported or unset target architecture
@@ -2435,32 +2435,27 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
                 assert((howToPassStruct == Compiler::SPK_ByValue) || (howToPassStruct == Compiler::SPK_PrimitiveType));
 
 #if defined(TARGET_LOONGARCH64)
-                floatFieldFlags = comp->info.compCompHnd->getLoongArch64PassStructInRegisterFlags(argSigClass);
+                uint32_t floatFlagFields = comp->info.compCompHnd->getLoongArch64PassStructInRegisterFlags(argSigClass);
+                FpStructInRegistersInfo fpInfo =
+                    FpStructInRegistersInfo::FromOldFlags((StructFloatFieldInfoFlags)floatFieldFlags);
 #else
-                floatFieldFlags =
-                    comp->info.compCompHnd->getRiscV64PassFpStructInRegistersInfo(argSigClass).ToOldFlags();
+                fpInfo = comp->info.compCompHnd->getRiscV64PassFpStructInRegistersInfo(argSigClass);
 #endif
-
-                passUsingFloatRegs = (floatFieldFlags & STRUCT_HAS_FLOAT_FIELDS_MASK) ? true : false;
-                comp->compFloatingPointUsed |= passUsingFloatRegs;
-
-                if ((floatFieldFlags & (STRUCT_HAS_FLOAT_FIELDS_MASK ^ STRUCT_FLOAT_FIELD_ONLY_ONE)) != 0)
+                if (fpInfo.flags != FpStruct::UseIntCallConv)
                 {
-                    // On LoongArch64, "getPrimitiveTypeForStruct" will incorrectly return "TYP_LONG"
-                    // for "struct { float, float }", and retyping to a primitive here will cause the
-                    // multi-reg morphing to not kick in (the struct in question needs to be passed in
-                    // two FP registers). Here is just keep "structBaseType" as "TYP_STRUCT".
-                    // TODO-LoongArch64: fix "getPrimitiveTypeForStruct".
-                    structBaseType = TYP_STRUCT;
-                }
-
-                if ((floatFieldFlags & (STRUCT_HAS_FLOAT_FIELDS_MASK ^ STRUCT_FLOAT_FIELD_ONLY_TWO)) != 0)
-                {
-                    size = 1;
-                }
-                else if ((floatFieldFlags & STRUCT_FLOAT_FIELD_ONLY_TWO) != 0)
-                {
-                    size = 2;
+                    passUsingFloatRegs = comp->compFloatingPointUsed = true;
+                    if ((fpInfo.flags & FpStruct::OnlyOne) == 0)
+                    {
+                        assert((fpInfo.flags & (FpStruct::BothFloat | FpStruct::Float1st | FpStruct::Float2nd)) != 0);
+                        // On LoongArch64 and RISC-V64, "getPrimitiveTypeForStruct" will incorrectly return "TYP_LONG"
+                        // for "struct { float, float }", and retyping to a primitive here will cause the
+                        // multi-reg morphing to not kick in (the struct in question needs to be passed in
+                        // two FP registers). Here is just keep "structBaseType" as "TYP_STRUCT".
+                        // TODO-LoongArch64, TODO-RISCV64: fix "getPrimitiveTypeForStruct".
+                        structBaseType = TYP_STRUCT;
+                    }
+                    // 'size' for now means number of floating-point registers used
+                    size = ((fpInfo.flags & FpStruct::BothFloat) != 0) ? 2 : 1;
                 }
             }
             else // if (passStructByRef)
@@ -2617,32 +2612,31 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
 
                 if (isStructArg)
                 {
-                    if ((floatFieldFlags & (STRUCT_FLOAT_FIELD_FIRST | STRUCT_FLOAT_FIELD_SECOND)) &&
-                        passUsingFloatRegs)
+                    if ((fpInfo.flags & (FpStruct::Float1st | FpStruct::Float2nd)) != 0 && passUsingFloatRegs)
                     {
                         passUsingFloatRegs = isRegArg = intArgRegNum < maxRegArgs;
                     }
 
                     if (!passUsingFloatRegs)
                     {
-                        size            = structSize > 8 ? 2 : 1;
-                        structBaseType  = structSize <= 8 ? TYP_I_IMPL : TYP_STRUCT;
-                        floatFieldFlags = 0;
+                        size           = structSize > 8 ? 2 : 1;
+                        structBaseType = structSize <= 8 ? TYP_I_IMPL : TYP_STRUCT;
+                        fpInfo         = {};
                     }
-                    else if (passUsingFloatRegs)
+                    else // if (passUsingFloatRegs)
                     {
-                        if ((floatFieldFlags & STRUCT_FLOAT_FIELD_ONLY_TWO) != 0)
+                        if ((fpInfo.flags & FpStruct::BothFloat) != 0)
                         {
                             nextOtherRegNum = genMapFloatRegArgNumToRegNum(nextFltArgRegNum + 1);
                         }
-                        else if ((floatFieldFlags & STRUCT_FLOAT_FIELD_SECOND) != 0)
+                        else if ((fpInfo.flags & FpStruct::Float2nd) != 0)
                         {
                             assert(size == 1);
                             size               = 2;
                             passUsingFloatRegs = false;
                             nextOtherRegNum    = genMapFloatRegArgNumToRegNum(nextFltArgRegNum);
                         }
-                        else if ((floatFieldFlags & STRUCT_FLOAT_FIELD_FIRST) != 0)
+                        else if ((fpInfo.flags & FpStruct::Float1st) != 0)
                         {
                             assert(size == 1);
                             size            = 2;
@@ -2651,7 +2645,7 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
                     }
                 }
 
-                assert(!isHfaArg); // LoongArch64 does not support HFA.
+                assert(!isHfaArg); // LoongArch64 and RISC-V64 do not support HFA.
             }
 
             // if we run out of floating-point argument registers, try the int argument registers.
@@ -2868,7 +2862,7 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
                         assert(size == 2);
                         intArgRegNum = maxRegArgs;
                     }
-                    else if ((floatFieldFlags & STRUCT_HAS_FLOAT_FIELDS_MASK) == 0x0)
+                    else if (fpInfo.flags == FpStruct::UseIntCallConv)
                     {
                         if (passUsingFloatRegs)
                         {
@@ -2879,38 +2873,37 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
                             intArgRegNum += size;
                         }
                     }
-                    else if ((floatFieldFlags & STRUCT_FLOAT_FIELD_ONLY_ONE) != 0)
+                    else if ((fpInfo.flags & FpStruct::OnlyOne) != 0)
                     {
-                        structBaseType = (floatFieldFlags & STRUCT_FIRST_FIELD_SIZE_IS8) ? TYP_DOUBLE : TYP_FLOAT;
+                        structBaseType = fpInfo.IsSize1st8() ? TYP_DOUBLE : TYP_FLOAT;
                         fltArgRegNum += 1;
-                        arg.AbiInfo.StructFloatFieldType[0] = structBaseType;
+                        arg.AbiInfo.StructFloatFieldType[0]   = structBaseType;
+                        arg.AbiInfo.StructFloatFieldOffset[0] = fpInfo.offset1st;
                     }
-                    else if ((floatFieldFlags & (STRUCT_FLOAT_FIELD_FIRST | STRUCT_FLOAT_FIELD_SECOND)) != 0)
+                    else if ((fpInfo.flags & (FpStruct::Float1st | FpStruct::Float2nd)) != 0)
                     {
                         fltArgRegNum += 1;
                         intArgRegNum += 1;
-                        if ((floatFieldFlags & STRUCT_FLOAT_FIELD_FIRST) != 0)
+                        arg.AbiInfo.StructFloatFieldOffset[0] = fpInfo.offset1st;
+                        arg.AbiInfo.StructFloatFieldOffset[1] = fpInfo.offset2nd;
+                        if ((fpInfo.flags & FpStruct::Float1st) != 0)
                         {
-                            arg.AbiInfo.StructFloatFieldType[0] =
-                                (floatFieldFlags & STRUCT_FIRST_FIELD_SIZE_IS8) ? TYP_DOUBLE : TYP_FLOAT;
-                            arg.AbiInfo.StructFloatFieldType[1] =
-                                (floatFieldFlags & STRUCT_SECOND_FIELD_SIZE_IS8) ? TYP_LONG : TYP_INT;
+                            arg.AbiInfo.StructFloatFieldType[0] = fpInfo.IsSize1st8() ? TYP_DOUBLE : TYP_FLOAT;
+                            arg.AbiInfo.StructFloatFieldType[1] = fpInfo.IsSize2nd8() ? TYP_LONG : TYP_INT;
                         }
                         else
                         {
-                            arg.AbiInfo.StructFloatFieldType[0] =
-                                (floatFieldFlags & STRUCT_FIRST_FIELD_SIZE_IS8) ? TYP_LONG : TYP_INT;
-                            arg.AbiInfo.StructFloatFieldType[1] =
-                                (floatFieldFlags & STRUCT_SECOND_FIELD_SIZE_IS8) ? TYP_DOUBLE : TYP_FLOAT;
+                            arg.AbiInfo.StructFloatFieldType[0] = fpInfo.IsSize1st8() ? TYP_LONG : TYP_INT;
+                            arg.AbiInfo.StructFloatFieldType[1] = fpInfo.IsSize2nd8() ? TYP_DOUBLE : TYP_FLOAT;
                         }
                     }
-                    else if ((floatFieldFlags & STRUCT_FLOAT_FIELD_ONLY_TWO) != 0)
+                    else if ((fpInfo.flags & FpStruct::BothFloat) != 0)
                     {
                         fltArgRegNum += 2;
-                        arg.AbiInfo.StructFloatFieldType[0] =
-                            (floatFieldFlags & STRUCT_FIRST_FIELD_SIZE_IS8) ? TYP_DOUBLE : TYP_FLOAT;
-                        arg.AbiInfo.StructFloatFieldType[1] =
-                            (floatFieldFlags & STRUCT_SECOND_FIELD_SIZE_IS8) ? TYP_DOUBLE : TYP_FLOAT;
+                        arg.AbiInfo.StructFloatFieldOffset[0] = fpInfo.offset1st;
+                        arg.AbiInfo.StructFloatFieldOffset[1] = fpInfo.offset2nd;
+                        arg.AbiInfo.StructFloatFieldType[0]   = fpInfo.IsSize1st8() ? TYP_DOUBLE : TYP_FLOAT;
+                        arg.AbiInfo.StructFloatFieldType[1]   = fpInfo.IsSize2nd8() ? TYP_DOUBLE : TYP_FLOAT;
                     }
                 }
 #else
@@ -3361,6 +3354,9 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
                             if (argObj->OperIs(GT_LCL_VAR))
                             {
                                 argObj->SetOper(GT_LCL_FLD);
+#if defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
+                                argObj->AsLclFld()->SetLclOffs(arg.AbiInfo.StructFloatFieldOffset[0]);
+#endif
                             }
                             lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::SwizzleArg));
                         }

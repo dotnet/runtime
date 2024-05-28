@@ -4998,6 +4998,7 @@ void Lowering::LowerRetSingleRegStructLclVar(GenTreeUnOp* ret)
             // Otherwise we don't mind that we leave the upper bits undefined.
             lclVar->ChangeType(ret->TypeGet());
         }
+        lclVar->AsLclFld()->SetLclOffs(comp->compRetTypeDesc.GetSingleReturnFieldOffset());
     }
     else
     {
@@ -5140,7 +5141,6 @@ void Lowering::LowerStoreSingleRegCallStruct(GenTreeBlk* store)
 
     const ClassLayout* layout  = store->GetLayout();
     var_types          regType = layout->GetRegisterType();
-
     if (regType != TYP_UNDEF)
     {
 #if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
@@ -5186,8 +5186,8 @@ GenTreeLclVar* Lowering::SpillStructCallResult(GenTreeCall* call) const
     comp->lvaSetVarDoNotEnregister(spillNum DEBUGARG(DoNotEnregisterReason::LocalField));
     CORINFO_CLASS_HANDLE retClsHnd = call->gtRetClsHnd;
     comp->lvaSetStruct(spillNum, retClsHnd, false);
-    GenTreeLclFld* spill = comp->gtNewStoreLclFldNode(spillNum, call->TypeGet(), 0, call);
-
+    unsigned       offset = call->GetReturnTypeDesc()->GetSingleReturnFieldOffset();
+    GenTreeLclFld* spill  = comp->gtNewStoreLclFldNode(spillNum, call->TypeGet(), offset, call);
     BlockRange().InsertAfter(call, spill);
     ContainCheckStoreLoc(spill);
     GenTreeLclVar* loadCallResult = comp->gtNewLclvNode(spillNum, TYP_STRUCT)->AsLclVar();
