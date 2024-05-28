@@ -277,7 +277,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 
 			// Trimmer/NativeAot don't optimize branches away based on DoesNotReturnIfAttribute
-			[UnexpectedWarning ("IL2026", nameof (RequiresUnreferencedCode), Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/102677")]
+			[UnexpectedWarning ("IL2026", nameof (RequiresUnreferencedCode), Tool.Trimmer | Tool.NativeAot, "ILLink and NativeAOT should not respect DoesNotReturnAttribute")]
 			static void GuardedAssert ()
 			{
 				Debug.Assert (TestFeatures.IsUnreferencedCodeSupported);
@@ -286,7 +286,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 
 			// Trimmer/NativeAot don't optimize branches away based on DoesNotReturnIfAttribute
-			[UnexpectedWarning ("IL2026", nameof (RequiresUnreferencedCode), Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/102677")]
+			[UnexpectedWarning ("IL2026", nameof (RequiresUnreferencedCode), Tool.Trimmer | Tool.NativeAot, "ILLink and NativeAOT should not respect DoesNotReturnAttribute")]
 			static void GuardedDoesNotReturnIfTrue ()
 			{
 				DoesNotReturnIfTrue (!TestFeatures.IsUnreferencedCodeSupported);
@@ -295,7 +295,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 
 			// Trimmer/NativeAot don't optimize branches away based on DoesNotReturnIfAttribute
-			[UnexpectedWarning ("IL2026", nameof (RequiresUnreferencedCode), Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/102677")]
+			[UnexpectedWarning ("IL2026", nameof (RequiresUnreferencedCode), Tool.Trimmer | Tool.NativeAot, "ILLink and NativeAOT should not respect DoesNotReturnAttribute")]
 			static void GuardedDoesNotReturnIfFalse ()
 			{
 				DoesNotReturnIfFalse (TestFeatures.IsUnreferencedCodeSupported);
@@ -304,7 +304,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 
 			// Trimmer/NativeAot don't optimize branches away based on DoesNotReturnIfAttribute
-			[UnexpectedWarning ("IL2026", nameof (RequiresUnreferencedCode), Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/102677")]
+			[UnexpectedWarning ("IL2026", nameof (RequiresUnreferencedCode), Tool.Trimmer | Tool.NativeAot, "ILLink and NativeAOT should not respect DoesNotReturnAttribute")]
 			static void GuardedDoesNotReturn ()
 			{
 				if (!TestFeatures.IsUnreferencedCodeSupported)
@@ -314,7 +314,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 
 			// Trimmer/NativeAot don't optimize branches away based on DoesNotReturnIfAttribute
-			[UnexpectedWarning ("IL2026", nameof (RequiresUnreferencedCode), Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/102677")]
+			[UnexpectedWarning ("IL2026", nameof (RequiresUnreferencedCode), Tool.Trimmer | Tool.NativeAot, "ILLink and NativeAOT should not respect DoesNotReturnAttribute")]
 			static void GuardedDoesNotReturnIfFalseCtor ()
 			{
 				new DoesNotReturnIfFalseCtor (TestFeatures.IsUnreferencedCodeSupported);
@@ -424,7 +424,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			{
 				if (TestFeatures.IsUnreferencedCodeSupported != true)
 					throw null;
-					
+
 				RequiresUnreferencedCode ();
 			}
 
@@ -787,7 +787,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode0))]
 			// Trimmer/NativeAot don't optimize branches away based on DoesNotReturnIfAttribute
-			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode1), Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/102677")]
+			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode1), Tool.Trimmer | Tool.NativeAot, "ILLink and NativeAOT should not respect DoesNotReturnAttribute")]
 			static void AssertInTryNoCatch () {
 				try {
 					Debug.Assert (TestFeatures.IsUnreferencedCodeSupported);
@@ -828,7 +828,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode0))]
 			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode1))]
 			// Trimmer/NativeAot don't optimize branches away based on DoesNotReturnIfAttribute
-			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode2), Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/102677")]
+			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode2), Tool.Trimmer | Tool.NativeAot, "ILLink and NativeAOT should not respect DoesNotReturnAttribute")]
 			static void AssertInFinally () {
 				try {
 					RequiresUnreferencedCode0 ();
@@ -843,8 +843,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode0))]
 			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode2))]
 			// Trimmer/NativeAot don't optimize branches away based on DoesNotReturnIfAttribute
-			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode1), Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/102677")]
-			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode3), Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/102677")]
+			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode1), Tool.Trimmer | Tool.NativeAot, "ILLink and NativeAOT should not respect DoesNotReturnAttribute")]
+			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode3), Tool.Trimmer | Tool.NativeAot, "ILLink and NativeAOT should not respect DoesNotReturnAttribute")]
 			static void AssertInTryNestedInTry ()
 			{
 				try {
@@ -885,8 +885,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode0))]
 			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode1))]
 			// Trimmer/NativeAot don't optimize branches away based on DoesNotReturnIfAttribute
-			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode2), Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/102677")]
-			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode3), Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/102677")]
+			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode2), Tool.Trimmer | Tool.NativeAot, "ILLink and NativeAOT should not respect DoesNotReturnAttribute")]
+			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode3), Tool.Trimmer | Tool.NativeAot, "ILLink and NativeAOT should not respect DoesNotReturnAttribute")]
 			static void AssertInTryNestedInFinally ()
 			{
 				try {
@@ -925,8 +925,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode0))]
 			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode2))]
 			// Trimmer/NativeAot don't optimize branches away based on DoesNotReturnIfAttribute
-			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode1), Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/102677")]
-			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode3), Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/102677")]
+			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode1), Tool.Trimmer | Tool.NativeAot, "ILLink and NativeAOT should not respect DoesNotReturnAttribute")]
+			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode3), Tool.Trimmer | Tool.NativeAot, "ILLink and NativeAOT should not respect DoesNotReturnAttribute")]
 			static void AssertInFinallyNestedInTry () {
 				try {
 					try {
@@ -944,8 +944,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode0))]
 			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode2))]
 			// Trimmer/NativeAot don't optimize branches away based on DoesNotReturnIfAttribute
-			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode1), Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/102677")]
-			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode3), Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/102677")]
+			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode1), Tool.Trimmer | Tool.NativeAot, "ILLink and NativeAOT should not respect DoesNotReturnAttribute")]
+			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode3), Tool.Trimmer | Tool.NativeAot, "ILLink and NativeAOT should not respect DoesNotReturnAttribute")]
 			static void AssertInFinallyWithCatchNestedInTry () {
 				try {
 					try {
@@ -965,8 +965,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode0))]
 			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode1))]
 			// Trimmer/NativeAot don't optimize branches away based on DoesNotReturnIfAttribute
-			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode2), Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/102677")]
-			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode3), Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/102677")]
+			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode2), Tool.Trimmer | Tool.NativeAot, "ILLink and NativeAOT should not respect DoesNotReturnAttribute")]
+			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode3), Tool.Trimmer | Tool.NativeAot, "ILLink and NativeAOT should not respect DoesNotReturnAttribute")]
 			static void AssertInFinallyNestedInFinally ()
 			{
 				try {
@@ -985,8 +985,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode0))]
 			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode1))]
 			// Trimmer/NativeAot doesn't optimize branches away based on DoesNotReturnIfAttribute
-			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode2), Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/102677")]
-			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode3), Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/102677")]
+			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode2), Tool.Trimmer | Tool.NativeAot, "ILLink and NativeAOT should not respect DoesNotReturnAttribute")]
+			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode3), Tool.Trimmer | Tool.NativeAot, "ILLink and NativeAOT should not respect DoesNotReturnAttribute")]
 			static void AssertInFinallyWithCatchNestedInFinally ()
 			{
 				try {
