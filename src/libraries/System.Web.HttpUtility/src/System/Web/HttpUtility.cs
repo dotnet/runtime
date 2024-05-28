@@ -195,17 +195,15 @@ namespace System.Web
         [return: NotNullIfNotNull(nameof(str))]
         public static byte[]? UrlDecodeToBytes(string? str, Encoding e)
         {
-            const int maxAllowedStackAllowedEncodingBytes = 512;
+            const int StackallocThreshold = 512;
             if (str == null)
             {
                 return null;
             }
 
-            int maxBytesCount = e.GetMaxByteCount(str.Length);
-            if (maxBytesCount <= maxAllowedStackAllowedEncodingBytes)
+            if (e.GetMaxByteCount(str.Length) <= StackallocThreshold)
             {
-                // do not allocate byte[] when getting bytes from Encoding if less than stackalloc limit
-                Span<byte> bytes = stackalloc byte[maxAllowedStackAllowedEncodingBytes];
+                Span<byte> bytes = stackalloc byte[StackallocThreshold];
                 int encodedBytes = e.GetBytes(str, bytes);
 
                 return HttpEncoder.UrlDecode(bytes.Slice(0, encodedBytes));

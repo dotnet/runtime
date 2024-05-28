@@ -218,30 +218,30 @@ namespace System.Web.Util
 
         internal static byte[] UrlDecode(ReadOnlySpan<byte> bytes)
         {
-            const int maxAllowedStackAllowedDecodedBytes = 512;
+            const int StackallocThreshold = 512;
 
             int decodedBytesCount = 0;
             int count = bytes.Length;
-            Span<byte> decodedBytes = count <= maxAllowedStackAllowedDecodedBytes ? stackalloc byte[maxAllowedStackAllowedDecodedBytes] : new byte[count];
+            Span<byte> decodedBytes = count <= StackallocThreshold ? stackalloc byte[StackallocThreshold] : new byte[count];
 
-            for (int pos = 0; pos < count; pos++)
+            for (int i = 0; i < count; i++)
             {
-                byte b = bytes[pos];
+                byte b = bytes[i];
 
                 if (b == '+')
                 {
                     b = (byte)' ';
                 }
-                else if (b == '%' && pos < count - 2)
+                else if (b == '%' && i < count - 2)
                 {
-                    int h1 = HexConverter.FromChar(bytes[pos + 1]);
-                    int h2 = HexConverter.FromChar(bytes[pos + 2]);
+                    int h1 = HexConverter.FromChar(bytes[i + 1]);
+                    int h2 = HexConverter.FromChar(bytes[i + 2]);
 
                     if ((h1 | h2) != 0xFF)
                     {
                         // valid 2 hex chars
                         b = (byte)((h1 << 4) | h2);
-                        pos += 2;
+                        i += 2;
                     }
                 }
 
