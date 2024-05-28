@@ -703,7 +703,7 @@ namespace System.Web.Util
                     FlushBytes();
                 }
 
-                return _numChars > 0 ? _charBuffer.Slice(0, _numChars).ToString() : "";
+                return _charBuffer.Slice(0, _numChars).ToString();
             }
         }
     }
