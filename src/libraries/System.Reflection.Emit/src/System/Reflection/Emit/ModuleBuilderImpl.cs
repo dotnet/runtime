@@ -688,7 +688,8 @@ namespace System.Reflection.Emit
         {
             if (!_typeReferences.TryGetValue(type, out var typeHandle))
             {
-                if (type.IsArray || type.IsGenericParameter || (type.IsGenericType && !type.IsGenericTypeDefinition))
+                if (type.IsArray || type.IsPointer || type.IsGenericParameter ||
+                    (type.IsGenericType && !type.IsGenericTypeDefinition))
                 {
                     typeHandle = AddTypeSpecification(type);
                 }
@@ -1127,13 +1128,18 @@ namespace System.Reflection.Emit
                 return eb._typeBuilder._handle;
             }
 
-            if (IsConstructedFromTypeBuilder(type))
+            if (IsConstructedFromTypeBuilder(type) ||
+                HasElementTypeOfTypeBuilder(type))
             {
                 return default;
             }
 
             return GetTypeReferenceOrSpecificationHandle(type);
         }
+
+        private bool HasElementTypeOfTypeBuilder(Type type) => type.HasElementType &&
+            (type.GetElementType() is TypeBuilderImpl tba && Equals(tba.Module) ||
+             IsConstructedFromTypeBuilder(type.GetElementType()!));
 
         public override int GetMethodMetadataToken(ConstructorInfo constructor) => GetTokenForHandle(TryGetConstructorHandle(constructor));
 

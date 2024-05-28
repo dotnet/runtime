@@ -2532,5 +2532,54 @@ internal class Dummy
                 tlc.Unload();
             }
         }
+
+        [Fact]
+        public void TypeBuilderArrayReferencedInIL()
+        {
+            using (TempFile file = TempFile.Create())
+            {
+                PersistedAssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder typeBuilder);
+                typeBuilder.DefineDefaultConstructor(MethodAttributes.Public);
+                MethodBuilder mb = typeBuilder.DefineMethod("Break", MethodAttributes.Static | MethodAttributes.Public, typeof(bool), [typeof(object)]);
+                ILGenerator il = mb.GetILGenerator();
+                il.Emit(OpCodes.Ldarg_0);
+                il.Emit(OpCodes.Isinst, typeBuilder.MakeArrayType());
+                il.Emit(OpCodes.Ret);
+                typeBuilder.CreateType();
+                ab.Save(file.Path);
+
+                TestAssemblyLoadContext tlc = new TestAssemblyLoadContext();
+                Type typeFromDisk = tlc.LoadFromAssemblyPath(file.Path).GetType("MyType");
+                MethodInfo method = typeFromDisk.GetMethod("Break")!;
+                Assert.False((bool)method.Invoke(null, [typeFromDisk]));
+                object arrInst = Array.CreateInstance(typeFromDisk, 2)!;
+                Assert.True((bool)method.Invoke(null, [arrInst]));
+                tlc.Unload();
+            }
+        }
+
+        [Fact]
+        public void TypeBuilderPointerReferencedInIL()
+        {
+            using (TempFile file = TempFile.Create())
+            {
+                PersistedAssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder typeBuilder);
+                typeBuilder.DefineDefaultConstructor(MethodAttributes.Public);
+                MethodBuilder mb = typeBuilder.DefineMethod("IsPointer", MethodAttributes.Static | MethodAttributes.Public, typeof(bool), [typeof(object)]);
+                ILGenerator il = mb.GetILGenerator();
+                il.Emit(OpCodes.Ldarg_0);
+                il.Emit(OpCodes.Isinst, typeBuilder.MakePointerType());
+                il.Emit(OpCodes.Ret);
+                typeBuilder.CreateType();
+                ab.Save(file.Path);
+
+                TestAssemblyLoadContext tlc = new TestAssemblyLoadContext();
+                Type typeFromDisk = tlc.LoadFromAssemblyPath(file.Path).GetType("MyType");
+                MethodInfo method = typeFromDisk.GetMethod("IsPointer")!;
+                object result = method.Invoke(null, [typeFromDisk]);
+                Assert.False((bool)result);
+                tlc.Unload();
+            }
+        }
     }
 }
