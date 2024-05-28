@@ -1786,7 +1786,8 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                     // Use the helper to generate a table.
 
                     assert(!intrin.op2->isContainedIntOrIImmed() && !intrin.op3->isContainedIntOrIImmed());
-                    emitAttr scalarSize = emitActualTypeSize(node->gtType);
+
+                    emitAttr scalarSize = emitActualTypeSize(node->GetSimdBaseType());
 
                     // Combine the second immediate (pattern, op3) into the first (scale, op2).
                     GetEmitter()->emitIns_R_R_I(INS_sub, scalarSize, op2Reg, op2Reg, 1);
