@@ -79,11 +79,37 @@ namespace System.Runtime.CompilerServices
             }
         }
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern unsafe void* GetSpanDataFrom(
+        private static unsafe void* GetSpanDataFrom(
             RuntimeFieldHandle fldHandle,
             RuntimeTypeHandle targetTypeHandle,
-            out int count);
+            out int count)
+        {
+            RtFieldInfo fldInfo = (RtFieldInfo)FieldInfo.GetFieldFromHandle(fldHandle);
+
+            if ((fldInfo.Attributes & FieldAttributes.HasFieldRVA) != 0)
+                ThrowHelper.ThrowArgumentException(ExceptionResource.Argument_BadFieldForInitializeArray);
+
+            TypeHandle th = new TypeHandle((void*)targetTypeHandle.Value);
+            Debug.Assert(!th.IsTypeDesc); // TypeDesc can't be used as generic parameter
+
+            if (!th.GetVerifierCorElementType().IsPrimitiveType()) // Enum is included
+                ThrowHelper.ThrowArgumentException(ExceptionResource.Argument_MustBePrimitiveArray);
+
+            uint totalSize = ((MethodTable*)((RuntimeType)fldInfo.FieldType).TypeHandle.Value)->GetNumInstanceFieldBytes();
+            uint targetTypeSize = th.AsMethodTable()->GetNumInstanceFieldBytes();
+
+            IntPtr data = RuntimeFieldHandle.GetStaticFieldAddress(fldInfo);
+            if (data % targetTypeSize != 0)
+                ThrowHelper.ThrowArgumentException(ExceptionResource.Argument_BadFieldForInitializeArray);
+
+            if (!BitConverter.IsLittleEndian)
+            {
+                throw new PlatformNotSupportedException();
+            }
+
+            count = (int)(totalSize / targetTypeSize);
+            return (void*)data;
+        }
 
         // GetObjectValue is intended to allow value classes to be manipulated as 'Object'
         // but have aliasing behavior of a value class.  The intent is that you would use
