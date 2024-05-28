@@ -11,7 +11,7 @@ namespace System.Security.Cryptography.Tests
 {
     public class CngKeyTests
     {
-        [ConditionalTheory(typeof(PlatformSupport), nameof(PlatformSupport.PlatformCryptoProviderFunctionalP256))]
+        [ConditionalTheory(typeof(PlatformSupport), nameof(PlatformSupport.SoftwareKeyStorageProviderFunctionalP256))]
         [InlineData(CngKeyCreationOptions.PreferVbs)]
         [InlineData(CngKeyCreationOptions.PreferVbs | CngKeyCreationOptions.UsePerBootKey)]
         [InlineData(CngKeyCreationOptions.RequireVbs)]
@@ -32,7 +32,7 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [ConditionalTheory(typeof(PlatformSupport), nameof(PlatformSupport.PlatformCryptoProviderFunctionalP256))]
+        [ConditionalTheory(typeof(PlatformSupport), nameof(PlatformSupport.SoftwareKeyStorageProviderFunctionalP256))]
         [InlineData(CngKeyCreationOptions.PreferVbs)]
         [InlineData(CngKeyCreationOptions.PreferVbs | CngKeyCreationOptions.UsePerBootKey)]
         [InlineData(CngKeyCreationOptions.RequireVbs)]
@@ -56,7 +56,7 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [ConditionalTheory(typeof(PlatformSupport), nameof(PlatformSupport.PlatformCryptoProviderFunctionalP256))]
+        [ConditionalTheory(typeof(PlatformSupport), nameof(PlatformSupport.SoftwareKeyStorageProviderFunctionalP256))]
         [InlineData(CngKeyCreationOptions.PreferVbs)]
         [InlineData(CngKeyCreationOptions.PreferVbs | CngKeyCreationOptions.UsePerBootKey)]
         [InlineData(CngKeyCreationOptions.RequireVbs)]
