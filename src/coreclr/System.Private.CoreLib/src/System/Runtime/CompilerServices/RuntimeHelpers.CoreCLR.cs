@@ -21,7 +21,7 @@ namespace System.Runtime.CompilerServices
             if (array is null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
 
-            if ((fldInfo.Attributes & FieldAttributes.HasFieldRVA) != 0)
+            if ((fldInfo.Attributes & FieldAttributes.HasFieldRVA) == 0)
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Argument_BadFieldForInitializeArray);
 
             // Note that we do not check that the field is actually in the PE file that is initializing
@@ -86,7 +86,7 @@ namespace System.Runtime.CompilerServices
         {
             RtFieldInfo fldInfo = (RtFieldInfo)FieldInfo.GetFieldFromHandle(fldHandle);
 
-            if ((fldInfo.Attributes & FieldAttributes.HasFieldRVA) != 0)
+            if ((fldInfo.Attributes & FieldAttributes.HasFieldRVA) == 0)
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Argument_BadFieldForInitializeArray);
 
             TypeHandle th = new TypeHandle((void*)targetTypeHandle.Value);
