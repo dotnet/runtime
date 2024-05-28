@@ -597,7 +597,8 @@ SingleTypeRegSet LinearScan::stressLimitRegs(RefPosition* refPosition, RegisterT
 
             case LSRA_LIMIT_CALLER:
             {
-                mask = getConstrainedRegMask(refPosition, regType, mask, RBM_CALLEE_TRASH.GetRegSetForType(regType), minRegCount);
+                mask = getConstrainedRegMask(refPosition, regType, mask, RBM_CALLEE_TRASH.GetRegSetForType(regType),
+                                             minRegCount);
             }
             break;
 
@@ -3289,8 +3290,8 @@ bool LinearScan::isRefPositionActive(RefPosition* refPosition, LsraLocation refL
 //
 bool LinearScan::isSpillCandidate(Interval* current, RefPosition* refPosition, RegRecord* physRegRecord)
 {
-    SingleTypeRegSet    candidateBit = genSingleTypeRegMask(physRegRecord->regNum);
-    LsraLocation refLocation  = refPosition->nodeLocation;
+    SingleTypeRegSet candidateBit = genSingleTypeRegMask(physRegRecord->regNum);
+    LsraLocation     refLocation  = refPosition->nodeLocation;
     // We shouldn't be calling this if we haven't already determined that the register is not
     // busy until the next kill.
     assert(!isRegBusy(physRegRecord->regNum, current->registerType));

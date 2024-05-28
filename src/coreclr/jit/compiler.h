@@ -11258,7 +11258,7 @@ private:
     //
     regMaskTP rbmAllFloat;
     regMaskTP rbmFltCalleeTrash;
-    unsigned         cntCalleeTrashFloat;
+    unsigned  cntCalleeTrashFloat;
 
 public:
     FORCEINLINE regMaskTP get_RBM_ALLFLOAT() const
@@ -11296,7 +11296,7 @@ private:
     //
     regMaskTP rbmAllMask;
     regMaskTP rbmMskCalleeTrash;
-    unsigned         cntCalleeTrashMask;
+    unsigned  cntCalleeTrashMask;
     regMaskTP varTypeCalleeTrashRegs[TYP_COUNT];
 
 public:

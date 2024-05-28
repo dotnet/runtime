@@ -2145,7 +2145,7 @@ private:
 #endif // TARGET_AMD64
 
 #if defined(TARGET_XARCH)
-    regMaskTP        rbmAllMask;
+    regMaskTP rbmAllMask;
     regMaskTP rbmMskCalleeTrash;
 
     FORCEINLINE regMaskTP get_RBM_ALLMASK() const

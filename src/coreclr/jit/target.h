@@ -229,7 +229,6 @@ typedef uint64_t regMaskSmall;
 #define REG_MASK_ALL_FMT "%016llX"
 #endif
 
-
 typedef regMaskSmall SingleTypeRegSet;
 
 struct regMaskTP
@@ -524,8 +523,8 @@ inline bool isByteReg(regNumber reg)
 }
 #endif
 
-inline regMaskTP genRegMask(regNumber reg);
-inline regMaskTP genRegMaskFloat(regNumber reg ARM_ARG(var_types type = TYP_DOUBLE));
+inline regMaskTP        genRegMask(regNumber reg);
+inline regMaskTP        genRegMaskFloat(regNumber reg ARM_ARG(var_types type = TYP_DOUBLE));
 inline SingleTypeRegSet genSingleTypeRegMask(regNumber reg);
 
 /*****************************************************************************
