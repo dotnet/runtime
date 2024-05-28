@@ -209,7 +209,6 @@ namespace System.Web
                 return HttpEncoder.UrlDecode(bytes.Slice(0, encodedBytes));
             }
 
-            // no optimization possible, let Encoding allocate byte[]
             return UrlDecodeToBytes(e.GetBytes(str));
         }
 
