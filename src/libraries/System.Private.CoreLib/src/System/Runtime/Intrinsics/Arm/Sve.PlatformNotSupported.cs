@@ -2998,6 +2998,80 @@ namespace System.Runtime.Intrinsics.Arm
         ///   ST4D {Zdata0.D - Zdata3.D}, Pg, [Xbase, #0, MUL VL]
         /// </summary>
         public static unsafe void StoreAndZip(Vector<ulong> mask, ulong* address, (Vector<ulong> Value1, Vector<ulong> Value2, Vector<ulong> Value3, Vector<ulong> Value4) data) { throw new PlatformNotSupportedException(); }
+        ///  Truncate to 8 bits and store
+
+        /// <summary>
+        /// void svst1b[_s16](svbool_t pg, int8_t *base, svint16_t data)
+        ///   ST1B Zdata.H, Pg, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe void StoreNarrowing(Vector<short> mask, sbyte* address, Vector<short> data) { throw new PlatformNotSupportedException(); }
+
+
+        /// <summary>
+        /// void svst1b[_s32](svbool_t pg, int8_t *base, svint32_t data)
+        ///   ST1B Zdata.S, Pg, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe void StoreNarrowing(Vector<int> mask, sbyte* address, Vector<int> data) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// void svst1h[_s32](svbool_t pg, int16_t *base, svint32_t data)
+        ///   ST1H Zdata.S, Pg, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe void StoreNarrowing(Vector<int> mask, short* address, Vector<int> data) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// void svst1b[_s64](svbool_t pg, int8_t *base, svint64_t data)
+        ///   ST1B Zdata.D, Pg, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe void StoreNarrowing(Vector<long> mask, sbyte* address, Vector<long> data) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// void svst1h[_s64](svbool_t pg, int16_t *base, svint64_t data)
+        ///   ST1H Zdata.D, Pg, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe void StoreNarrowing(Vector<long> mask, short* address, Vector<long> data) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// void svst1w[_s64](svbool_t pg, int32_t *base, svint64_t data)
+        ///   ST1W Zdata.D, Pg, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe void StoreNarrowing(Vector<long> mask, int* address, Vector<long> data) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// void svst1b[_u16](svbool_t pg, uint8_t *base, svuint16_t data)
+        ///   ST1B Zdata.H, Pg, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe void StoreNarrowing(Vector<ushort> mask, byte* address, Vector<ushort> data) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// void svst1b[_u32](svbool_t pg, uint8_t *base, svuint32_t data)
+        ///   ST1B Zdata.S, Pg, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe void StoreNarrowing(Vector<uint> mask, byte* address, Vector<uint> data) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// void svst1h[_u32](svbool_t pg, uint16_t *base, svuint32_t data)
+        ///   ST1H Zdata.S, Pg, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe void StoreNarrowing(Vector<uint> mask, ushort* address, Vector<uint> data) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// void svst1b[_u64](svbool_t pg, uint8_t *base, svuint64_t data)
+        ///   ST1B Zdata.D, Pg, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe void StoreNarrowing(Vector<ulong> mask, byte* address, Vector<ulong> data) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// void svst1h[_u64](svbool_t pg, uint16_t *base, svuint64_t data)
+        ///   ST1H Zdata.D, Pg, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe void StoreNarrowing(Vector<ulong> mask, ushort* address, Vector<ulong> data) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// void svst1w[_u64](svbool_t pg, uint32_t *base, svuint64_t data)
+        ///   ST1W Zdata.D, Pg, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe void StoreNarrowing(Vector<ulong> mask, uint* address, Vector<ulong> data) { throw new PlatformNotSupportedException(); }
 
 
         ///  Subtract : Subtract

@@ -588,7 +588,7 @@ void emitter::emitIns_R_R(
 {
     code_t code = emitInsCode(ins);
 
-    if (INS_mov == ins)
+    if (INS_mov == ins || INS_sext_w == ins)
     {
         assert(isGeneralRegisterOrR0(reg1));
         assert(isGeneralRegisterOrR0(reg2));
@@ -3564,8 +3564,15 @@ void emitter::emitDispInsName(
             //}
             switch (opcode2)
             {
-                case 0x0: // ADDIW
-                    printf("addiw          %s, %s, %d\n", rd, rs1, imm12);
+                case 0x0: // ADDIW & SEXT.W
+                    if (imm12 == 0)
+                    {
+                        printf("sext.w         %s, %s\n", rd, rs1);
+                    }
+                    else
+                    {
+                        printf("addiw          %s, %s, %d\n", rd, rs1, imm12);
+                    }
                     return;
                 case 0x1:                                                         // SLLIW
                     printf("slliw          %s, %s, %d\n", rd, rs1, imm12 & 0x3f); // 6 BITS for SHAMT in RISCV64
@@ -4983,18 +4990,16 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
                     if (dstReg == regOp1)
                     {
                         assert(tempReg != regOp1);
-                        assert(REG_RA != regOp1);
                         saveOperReg1 = tempReg;
-                        saveOperReg2 = regOp2;
-                        emitIns_R_R_I(INS_addi, attr, tempReg, regOp1, 0);
+                        saveOperReg2 = (regOp1 == regOp2) ? tempReg : regOp2;
+                        emitIns_R_R(INS_mov, attr, tempReg, regOp1);
                     }
                     else if (dstReg == regOp2)
                     {
                         assert(tempReg != regOp2);
-                        assert(REG_RA != regOp2);
                         saveOperReg1 = regOp1;
                         saveOperReg2 = tempReg;
-                        emitIns_R_R_I(INS_addi, attr, tempReg, regOp2, 0);
+                        emitIns_R_R(INS_mov, attr, tempReg, regOp2);
                     }
                     else
                     {
@@ -5005,73 +5010,84 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
 
                 emitIns_R_R_R(ins, attr, dstReg, regOp1, regOp2);
 
+                /*
+                    Check if A = B + C
+                    ADD : A = B + C
+                    SUB : B = A - C
+                    In case of addition:
+                    dst = src1 + src2
+                    A = dst
+                    B = src1
+                    C = src2
+                    In case of subtraction:
+                    dst = src1 - src2
+                    src1 = dst + src2
+                    A = src1
+                    B = dst
+                    C = src2
+                */
                 if (needCheckOv)
                 {
-                    ssize_t   imm;
-                    regNumber tempReg1;
-                    regNumber tempReg2;
-                    // ADD : A = B + C
-                    // SUB : C = A - B
-                    bool isAdd = (dst->OperGet() == GT_ADD);
-                    if ((dst->gtFlags & GTF_UNSIGNED) != 0)
+                    regNumber resultReg = REG_NA;
+
+                    if (dst->OperGet() == GT_ADD)
                     {
-                        // if A < B, goto overflow
-                        if (isAdd)
-                        {
-                            tempReg1 = dstReg;
-                            tempReg2 = saveOperReg1;
-                        }
-                        else
-                        {
-                            tempReg1 = saveOperReg1;
-                            tempReg2 = saveOperReg2;
-                        }
-                        codeGen->genJumpToThrowHlpBlk_la(SCK_OVERFLOW, INS_bltu, tempReg1, nullptr, tempReg2);
+                        resultReg = dstReg;
+                        regOp1    = saveOperReg1;
+                        regOp2    = saveOperReg2;
                     }
                     else
                     {
-                        tempReg1 = REG_RA;
-                        tempReg2 = codeGen->internalRegisters.Extract(dst);
-                        assert(tempReg1 != tempReg2);
-                        assert(tempReg1 != saveOperReg1);
-                        assert(tempReg2 != saveOperReg2);
+                        resultReg = saveOperReg1;
+                        regOp1    = dstReg;
+                        regOp2    = saveOperReg2;
+                    }
 
-                        ssize_t ui6 = (attr == EA_4BYTE) ? 31 : 63;
-                        emitIns_R_R_I(INS_srli, attr, tempReg1, isAdd ? saveOperReg1 : dstReg, ui6);
-                        emitIns_R_R_I(INS_srli, attr, tempReg2, saveOperReg2, ui6);
+                    instruction branchIns  = INS_none;
+                    regNumber   branchReg1 = REG_NA;
+                    regNumber   branchReg2 = REG_NA;
 
-                        emitIns_R_R_R(INS_xor, attr, tempReg1, tempReg1, tempReg2);
+                    if ((dst->gtFlags & GTF_UNSIGNED) != 0)
+                    {
+                        // if A < B then overflow
+                        branchIns  = INS_bltu;
+                        branchReg1 = resultReg;
+                        branchReg2 = regOp1;
+                    }
+                    else
+                    {
+                        regNumber tempReg1 = codeGen->internalRegisters.GetSingle(dst);
+
+                        branchIns = INS_bne;
+
                         if (attr == EA_4BYTE)
                         {
-                            imm = 1;
-                            emitIns_R_R_I(INS_andi, attr, tempReg1, tempReg1, imm);
-                            emitIns_R_R_I(INS_andi, attr, tempReg2, tempReg2, imm);
+                            assert(src1->gtType != TYP_LONG);
+                            assert(src2->gtType != TYP_LONG);
+
+                            emitIns_R_R_R(INS_add, attr, tempReg1, regOp1, regOp2);
+
+                            // if 64-bit addition is not equal to 32-bit addition for 32-bit operands then overflow
+                            branchReg1 = resultReg;
+                            branchReg2 = tempReg1;
                         }
-                        // if (B > 0 && C < 0) || (B < 0  && C > 0), skip overflow
-                        BasicBlock* tmpLabel  = codeGen->genCreateTempLabel();
-                        BasicBlock* tmpLabel2 = codeGen->genCreateTempLabel();
-                        BasicBlock* tmpLabel3 = codeGen->genCreateTempLabel();
+                        else
+                        {
+                            assert(attr == EA_8BYTE);
+                            assert(tempReg != tempReg1);
+                            // When the tempReg2 is being used then the tempReg has to be already dead
+                            regNumber tempReg2 = tempReg;
 
-                        emitIns_J_cond_la(INS_bne, tmpLabel, tempReg1, REG_R0);
+                            emitIns_R_R_R(INS_slt, attr, tempReg1, resultReg, regOp1);
+                            emitIns_R_R_I(INS_slti, attr, tempReg2, regOp2, 0);
 
-                        emitIns_J_cond_la(INS_bne, tmpLabel3, tempReg2, REG_R0);
-
-                        // B > 0 and C > 0, if A < B, goto overflow
-                        emitIns_J_cond_la(INS_bge, tmpLabel, isAdd ? dstReg : saveOperReg1,
-                                          isAdd ? saveOperReg1 : saveOperReg2);
-
-                        codeGen->genDefineTempLabel(tmpLabel2);
-
-                        codeGen->genJumpToThrowHlpBlk(EJ_jmp, SCK_OVERFLOW);
-
-                        codeGen->genDefineTempLabel(tmpLabel3);
-
-                        // B < 0 and C < 0, if A > B, goto overflow
-                        emitIns_J_cond_la(INS_blt, tmpLabel2, isAdd ? saveOperReg1 : saveOperReg2,
-                                          isAdd ? dstReg : saveOperReg1);
-
-                        codeGen->genDefineTempLabel(tmpLabel);
+                            // if ((A < B) != (C < 0)) then overflow
+                            branchReg1 = tempReg1;
+                            branchReg2 = tempReg2;
+                        }
                     }
+
+                    codeGen->genJumpToThrowHlpBlk_la(SCK_OVERFLOW, branchIns, branchReg1, nullptr, branchReg2);
                 }
             }
             break;
