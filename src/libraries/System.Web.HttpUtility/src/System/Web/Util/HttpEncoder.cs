@@ -253,7 +253,7 @@ namespace System.Web.Util
                 return newDecodedBytes;
             }
 
-            return decodedBytes.ToArray();
+            return decodedBytes.Slice(0, count).ToArray();
         }
 
         [return: NotNullIfNotNull(nameof(bytes))]
