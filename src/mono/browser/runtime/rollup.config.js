@@ -14,7 +14,7 @@ import gitCommitInfo from "git-commit-info";
 import MagicString from "magic-string";
 
 const configuration = process.env.Configuration;
-const isDebug = configuration !== "Release";
+const isDebug = false;
 const isContinuousIntegrationBuild = process.env.ContinuousIntegrationBuild === "true" ? true : false;
 const productVersion = process.env.ProductVersion || "8.0.0-dev";
 const nativeBinDir = process.env.NativeBinDir ? process.env.NativeBinDir.replace(/"/g, "") : "bin";
@@ -68,7 +68,18 @@ const inlineAssert = [
         // eslint-disable-next-line quotes
         pattern: 'mono_assert\\(([^,]*), \\(\\) => *`([^`]*)`\\);',
         replacement: (match) => `if (!(${match[1]})) mono_assert(false, \`${match[2]}\`); // inlined mono_assert condition`
-    }
+    },
+    {
+        // eslint-disable-next-line quotes
+        pattern: 'mono_log_debug\\(*"([^"]*)"\\);',
+        // eslint-disable-next-line quotes
+        replacement: (match) => `if (loaderHelpers.diagnosticTracing) mono_log_debug("${match[1]}"); // inlined mono_log_debug condition`
+    },
+    {
+        // eslint-disable-next-line quotes
+        pattern: 'mono_log_debug\\(\\(\\) => *`([^`]*)`\\);',
+        replacement: (match) => `if (loaderHelpers.diagnosticTracing) mono_log_debug(\`${match[1]}\`); // inlined mono_log_debug condition`
+    },
 ];
 const checkAssert =
 {
@@ -214,6 +225,20 @@ const typesConfig = {
     plugins: [dts()],
     onwarn: onwarn
 };
+const hybridGlobalizationConfig = {
+    input: "./hybrid-globalization/module-exports.ts",
+    output: [
+        {
+            format: "es",
+            file: nativeBinDir + "/dotnet.globalization.js",
+            banner,
+            sourcemap: true,
+            sourcemapPathTransform,
+        }
+    ],
+    plugins: [...outputCodePlugins],
+    onwarn: onwarn
+};
 
 let diagnosticMockTypesConfig = undefined;
 
@@ -269,7 +294,9 @@ const allConfigs = [
     runtimeConfig,
     wasmImportsConfig,
     typesConfig,
-].concat(workerConfigs)
+    hybridGlobalizationConfig,
+]
+    .concat(workerConfigs)
     .concat(diagnosticMockTypesConfig ? [diagnosticMockTypesConfig] : []);
 export default defineConfig(allConfigs);
 

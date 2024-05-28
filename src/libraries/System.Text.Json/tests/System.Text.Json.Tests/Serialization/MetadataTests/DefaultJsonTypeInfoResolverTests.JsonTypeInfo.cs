@@ -6,6 +6,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
+using System.Numerics;
 using System.Reflection;
 using System.Text.Json.Serialization.Metadata;
 using System.Text.Json.Tests;
@@ -1500,6 +1501,61 @@ namespace System.Text.Json.Serialization.Tests
 
             typeInfo.OriginatingResolver = JsonSerializerOptions.Default.TypeInfoResolver;
             Assert.Same(JsonSerializerOptions.Default.TypeInfoResolver, typeInfo.OriginatingResolver);
+        }
+
+        [Theory]
+        [InlineData(typeof(bool?))]
+        [InlineData(typeof(int?))]
+        [InlineData(typeof(Guid?))]
+        [InlineData(typeof(BigInteger?))]
+        [InlineData(typeof(string))]
+        [InlineData(typeof(Poco))]
+        public static void JsonPropertyInfo_IsNullable_PropertyTypeSupportsNull_SupportsAllConfigurations(Type propertyType)
+        {
+            JsonTypeInfo typeInfo = JsonTypeInfo.CreateJsonTypeInfo(typeof(Poco), new()); // The declaring type shouldn't matter.
+            JsonPropertyInfo propertyInfo = typeInfo.CreateJsonPropertyInfo(propertyType, "SomePropertyName");
+
+            Assert.True(propertyInfo.IsGetNullable);
+            Assert.True(propertyInfo.IsSetNullable);
+
+            propertyInfo.IsGetNullable = false;
+            propertyInfo.IsSetNullable = false;
+
+            Assert.False(propertyInfo.IsGetNullable);
+            Assert.False(propertyInfo.IsSetNullable);
+
+            propertyInfo.IsGetNullable = true;
+            propertyInfo.IsSetNullable = true;
+
+            Assert.True(propertyInfo.IsGetNullable);
+            Assert.True(propertyInfo.IsSetNullable);
+        }
+
+        [Theory]
+        [InlineData(typeof(bool))]
+        [InlineData(typeof(int))]
+        [InlineData(typeof(Guid))]
+        [InlineData(typeof(BigInteger))]
+        public static void JsonPropertyInfo_IsNullable_PropertyTypeNotNull_CannotBeMadeNullable(Type propertyType)
+        {
+            JsonTypeInfo typeInfo = JsonTypeInfo.CreateJsonTypeInfo(typeof(Poco), new()); // The declaring type shouldn't matter.
+            JsonPropertyInfo propertyInfo = typeInfo.CreateJsonPropertyInfo(propertyType, "SomePropertyName");
+
+            Assert.False(propertyInfo.IsGetNullable);
+            Assert.False(propertyInfo.IsSetNullable);
+
+            Assert.Throws<InvalidOperationException>(() => propertyInfo.IsGetNullable = true);
+            Assert.Throws<InvalidOperationException>(() => propertyInfo.IsSetNullable = true);
+
+            Assert.False(propertyInfo.IsGetNullable);
+            Assert.False(propertyInfo.IsSetNullable);
+
+            // Setting to false is a no-op.
+            propertyInfo.IsGetNullable = false;
+            propertyInfo.IsSetNullable = false;
+
+            Assert.False(propertyInfo.IsGetNullable);
+            Assert.False(propertyInfo.IsSetNullable);
         }
     }
 }

@@ -345,13 +345,13 @@ private:
     bool GetLoadStoreCoalescingData(GenTreeIndir* ind, LoadStoreCoalescingData* data) const;
 
     // Per tree node member functions
-    void     LowerStoreIndirCommon(GenTreeStoreInd* ind);
+    GenTree* LowerStoreIndirCommon(GenTreeStoreInd* ind);
     GenTree* LowerIndir(GenTreeIndir* ind);
-    bool     OptimizeForLdp(GenTreeIndir* ind);
+    bool     OptimizeForLdpStp(GenTreeIndir* ind);
     bool     TryMakeIndirsAdjacent(GenTreeIndir* prevIndir, GenTreeIndir* indir);
     void     MarkTree(GenTree* root);
     void     UnmarkTree(GenTree* root);
-    void     LowerStoreIndir(GenTreeStoreInd* node);
+    GenTree* LowerStoreIndir(GenTreeStoreInd* node);
     void     LowerStoreIndirCoalescing(GenTreeIndir* node);
     GenTree* LowerAdd(GenTreeOp* node);
     GenTree* LowerMul(GenTreeOp* mul);

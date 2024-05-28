@@ -5322,6 +5322,38 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
             AssertEqual(Vector512.Create(expectedResult), actualResult, Vector512.Create(variance));
         }
 
+        [Theory]
+        [MemberData(nameof(VectorTestMemberData.MultiplyAddDouble), MemberType = typeof(VectorTestMemberData))]
+        public void FusedMultiplyAddDoubleTest(double left, double right, double addend)
+        {
+            Vector512<double> actualResult = Vector512.FusedMultiplyAdd(Vector512.Create(left), Vector512.Create(right), Vector512.Create(addend));
+            AssertEqual(Vector512.Create(double.FusedMultiplyAdd(left, right, addend)), actualResult, Vector512<double>.Zero);
+        }
+
+        [Theory]
+        [MemberData(nameof(VectorTestMemberData.MultiplyAddSingle), MemberType = typeof(VectorTestMemberData))]
+        public void FusedMultiplyAddSingleTest(float left, float right, float addend)
+        {
+            Vector512<float> actualResult = Vector512.FusedMultiplyAdd(Vector512.Create(left), Vector512.Create(right), Vector512.Create(addend));
+            AssertEqual(Vector512.Create(float.FusedMultiplyAdd(left, right, addend)), actualResult, Vector512<float>.Zero);
+        }
+
+        [Theory]
+        [MemberData(nameof(VectorTestMemberData.MultiplyAddDouble), MemberType = typeof(VectorTestMemberData))]
+        public void MultiplyAddEstimateDoubleTest(double left, double right, double addend)
+        {
+            Vector512<double> actualResult = Vector512.MultiplyAddEstimate(Vector512.Create(left), Vector512.Create(right), Vector512.Create(addend));
+            AssertEqual(Vector512.Create(double.MultiplyAddEstimate(left, right, addend)), actualResult, Vector512<double>.Zero);
+        }
+
+        [Theory]
+        [MemberData(nameof(VectorTestMemberData.MultiplyAddSingle), MemberType = typeof(VectorTestMemberData))]
+        public void MultiplyAddEstimateSingleTest(float left, float right, float addend)
+        {
+            Vector512<float> actualResult = Vector512.MultiplyAddEstimate(Vector512.Create(left), Vector512.Create(right), Vector512.Create(addend));
+            AssertEqual(Vector512.Create(float.MultiplyAddEstimate(left, right, addend)), actualResult, Vector512<float>.Zero);
+        }
+
         [Fact]
         [SkipOnMono("https://github.com/dotnet/runtime/issues/100368")]
         public void ConvertToInt32Test()

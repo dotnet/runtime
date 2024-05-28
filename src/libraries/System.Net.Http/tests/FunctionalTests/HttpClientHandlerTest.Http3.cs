@@ -35,7 +35,10 @@ namespace System.Net.Http.Functional.Tests
         {
             Exception outerEx = await Assert.ThrowsAnyAsync<Exception>(task);
             _output.WriteLine(outerEx.ToString());
-            Assert.IsType<HttpRequestException>(outerEx);
+
+            HttpRequestException httpReqException = Assert.IsType<HttpRequestException>(outerEx);
+            Assert.Equal(HttpRequestError.HttpProtocolError, httpReqException.HttpRequestError);
+
             HttpProtocolException protocolEx = Assert.IsType<HttpProtocolException>(outerEx.InnerException);
             Assert.Equal(errorCode, protocolEx.ErrorCode);
         }
@@ -1759,7 +1762,14 @@ namespace System.Net.Http.Functional.Tests
                             return;
                         }
                         await connection.OutboundControlStream.DisposeAsync();
-                        await connection.EstablishControlStreamAsync(Array.Empty<SettingsEntry>());
+                        try
+                        {
+                            await connection.EstablishControlStreamAsync(Array.Empty<SettingsEntry>());
+                        }
+                        catch (QuicException ex) when (ex.QuicError == QuicError.ConnectionAborted && ex.ApplicationErrorCode == Http3LoopbackConnection.H3_CLOSED_CRITICAL_STREAM)
+                        {
+                            // Data race, connection closed between WaitAsync and EstablishControlStreamAsync. Ignore this.
+                        }
                         await Task.Delay(100);
                     }
                 }

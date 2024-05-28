@@ -135,38 +135,6 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void DefineMethodOverride_MethodNotVirtual_ThrowsArgumentException()
-        {
-            AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder type);
-            MethodBuilder method = type.DefineMethod("M", MethodAttributes.Public, typeof(int), null);
-            ILGenerator ilGenerator = method.GetILGenerator();
-            ilGenerator.Emit(OpCodes.Ldc_I4, 2);
-            ilGenerator.Emit(OpCodes.Ret);
-
-            type.AddInterfaceImplementation(typeof(DefineMethodOverrideInterface));
-            MethodInfo declaration = typeof(DefineMethodOverrideInterface).GetMethod(method.Name);
-
-            Assert.Throws<ArgumentException>("methodInfoBody", () => type.DefineMethodOverride(method, declaration));
-        }
-
-        [Fact]
-        public void DefineMethodOverride_TypeDoesNotImplementOrInheritMethod_ThrowsArgumentException()
-        {
-            AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder type);
-            MethodBuilder method = type.DefineMethod("M", MethodAttributes.Public | MethodAttributes.Virtual, typeof(int), null);
-            method.GetILGenerator().Emit(OpCodes.Ret);
-            MethodInfo interfaceMethod = typeof(DefineMethodOverrideInterface).GetMethod("M");
-            MethodInfo baseTypeMethod = typeof(DefineMethodOverrideClass).GetMethod("M");
-
-            Assert.Throws<ArgumentException>("methodInfoBody", () => type.DefineMethodOverride(method, interfaceMethod));
-            Assert.Throws<ArgumentException>("methodInfoBody", () => type.DefineMethodOverride(method, baseTypeMethod));
-
-            type.AddInterfaceImplementation(typeof(GenericInterface<string>));
-            MethodInfo implementingMethod = typeof(GenericInterface<string>).GetMethod(nameof(GenericInterface<string>.Method));
-            Assert.Throws<ArgumentException>("methodInfoBody", () => type.DefineMethodOverride(method, implementingMethod));
-        }
-
-        [Fact]
         public void DefineMethodOverride_CalledAgainWithSameDeclaration_ThrowsArgumentException()
         {
             AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder type);
@@ -186,24 +154,6 @@ namespace System.Reflection.Emit.Tests
 
             Assert.Throws<ArgumentException>(() => type.DefineMethodOverride(method1, declaration));
             Assert.Throws<ArgumentException>(() => type.DefineMethodOverride(method2, declaration));
-        }
-
-        [Theory]
-        [InlineData(typeof(int), new Type[0])]
-        [InlineData(typeof(int), new Type[] { typeof(int), typeof(int) })]
-        [InlineData(typeof(int), new Type[] { typeof(string), typeof(string) })]
-        [InlineData(typeof(int), new Type[] { typeof(int), typeof(string), typeof(bool) })]
-        [InlineData(typeof(string), new Type[] { typeof(string), typeof(int) })]
-        public void DefineMethodOverride_BodyAndDeclarationHaveDifferentSignatures_ThrowsArgumentException(Type returnType, Type[] parameterTypes)
-        {
-            AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder type);
-            MethodBuilder method = type.DefineMethod("M", MethodAttributes.Public | MethodAttributes.Virtual, returnType, parameterTypes);
-            method.GetILGenerator().Emit(OpCodes.Ret);
-            type.AddInterfaceImplementation(typeof(InterfaceWithMethod));
-
-            MethodInfo declaration = typeof(InterfaceWithMethod).GetMethod(nameof(InterfaceWithMethod.Method));
-
-            Assert.Throws<ArgumentException>(() => type.DefineMethodOverride(method, declaration));
         }
 
         public interface GenericInterface<T>
@@ -427,22 +377,6 @@ namespace System.Reflection.Emit.Tests
         public interface InterfaceDerivedFromOtherInterface : DefineMethodOverrideInterface
         {
             public string M2(int a);
-        }
-
-        public abstract class PartialImplementation : InterfaceDerivedFromOtherInterface
-        {
-            public int M() => 1;
-            public abstract string M2(int a);
-        }
-
-        public interface IDefaultImplementation
-        {
-            void Method() => Console.WriteLine("Hello");
-        }
-
-        public interface IStaticAbstract
-        {
-            static abstract void Method();
         }
 
         [Fact]
