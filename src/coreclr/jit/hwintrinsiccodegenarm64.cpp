@@ -884,6 +884,10 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 ins = varTypeIsUnsigned(intrin.baseType) ? INS_umsubl : INS_smsubl;
                 break;
 
+            case NI_Sve_StoreNarrowing:
+                ins = HWIntrinsicInfo::lookupIns(intrin.id, node->GetAuxiliaryType());
+                break;
+
             default:
                 ins = HWIntrinsicInfo::lookupIns(intrin.id, intrin.baseType);
                 break;
@@ -1772,6 +1776,11 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 GetEmitter()->emitIns_R_R_R(ins, emitSize, targetReg, op1Reg, op2Reg, opt);
                 break;
             }
+
+            case NI_Sve_StoreNarrowing:
+                opt = emitter::optGetSveInsOpt(emitTypeSize(intrin.baseType));
+                GetEmitter()->emitIns_R_R_R_I(ins, emitSize, op3Reg, op1Reg, op2Reg, 0, opt);
+                break;
 
             case NI_Sve_UnzipEven:
             case NI_Sve_UnzipOdd:

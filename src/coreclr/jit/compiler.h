@@ -6784,8 +6784,8 @@ private:
 
 public:
     bool fgIsBigOffset(size_t offset);
-
     bool IsValidLclAddr(unsigned lclNum, unsigned offset);
+    bool IsPotentialGCSafePoint(GenTree* tree) const;
 
 private:
     bool fgNeedReturnSpillTemp();
