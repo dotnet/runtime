@@ -5326,7 +5326,7 @@ void LinearScan::allocateRegistersMinimal()
                 setIntervalAsSplit(currentInterval);
                 INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_MOVE_REG, currentInterval, assignedRegister));
             }
-            else if ((genRegMask(assignedRegister) & currentRefPosition.registerAssignment) != 0)
+            else if ((genSingleTypeRegMask(assignedRegister) & currentRefPosition.registerAssignment) != 0)
             {
                 currentRefPosition.registerAssignment = assignedRegBit;
                 if (!currentInterval->isActive)
@@ -5419,7 +5419,8 @@ void LinearScan::allocateRegistersMinimal()
                 if (currentRefPosition.isFixedRegRef && !currentInterval->isActive &&
                     (currentInterval->assignedReg != nullptr) &&
                     (currentInterval->assignedReg->assignedInterval == currentInterval) &&
-                    (genRegMask(currentInterval->assignedReg->regNum) != currentRefPosition.registerAssignment))
+                    (genSingleTypeRegMask(currentInterval->assignedReg->regNum) !=
+                     currentRefPosition.registerAssignment))
                 {
                     unassignPhysReg(currentInterval->assignedReg, nullptr);
                 }
@@ -6170,7 +6171,7 @@ void LinearScan::allocateRegisters()
                 // kill would lead to spill of source but not the putarg_reg if it were treated
                 // as special.
                 if (srcInterval->isActive &&
-                    genRegMask(srcInterval->physReg) == currentRefPosition.registerAssignment &&
+                    genSingleTypeRegMask(srcInterval->physReg) == currentRefPosition.registerAssignment &&
                     currentInterval->getNextRefLocation() == nextFixedRef[srcInterval->physReg])
                 {
                     assert(physRegRecord->regNum == srcInterval->physReg);
@@ -6256,9 +6257,9 @@ void LinearScan::allocateRegisters()
             // it might be beneficial to keep it in this reg for PART of the lifetime
             if (currentInterval->isLocalVar)
             {
-                regMaskTP preferences        = currentInterval->registerPreferences;
+                SingleTypeRegSet preferences = currentInterval->registerPreferences;
                 bool      keepAssignment     = true;
-                bool      matchesPreferences = (preferences & genRegMask(assignedRegister)) != RBM_NONE;
+                bool      matchesPreferences = (preferences & genSingleTypeRegMask(assignedRegister)) != RBM_NONE;
 
                 // Will the assigned register cover the lifetime?  If not, does it at least
                 // meet the preferences for the next RefPosition?
@@ -6339,7 +6340,7 @@ void LinearScan::allocateRegisters()
                 setIntervalAsSplit(currentInterval);
                 INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_MOVE_REG, currentInterval, assignedRegister));
             }
-            else if ((genRegMask(assignedRegister) & currentRefPosition.registerAssignment) != 0)
+            else if ((genSingleTypeRegMask(assignedRegister) & currentRefPosition.registerAssignment) != 0)
             {
 #ifdef TARGET_ARM64
                 if (hasConsecutiveRegister && currentRefPosition.isFirstRefPositionOfConsecutiveRegisters())
@@ -6617,7 +6618,7 @@ void LinearScan::allocateRegisters()
                 if (currentRefPosition.isFixedRegRef && !currentInterval->isActive &&
                     (currentInterval->assignedReg != nullptr) &&
                     (currentInterval->assignedReg->assignedInterval == currentInterval) &&
-                    (genRegMask(currentInterval->assignedReg->regNum) != currentRefPosition.registerAssignment))
+                    (genSingleTypeRegMask(currentInterval->assignedReg->regNum) != currentRefPosition.registerAssignment))
                 {
                     unassignPhysReg(currentInterval->assignedReg, nullptr);
                 }
@@ -8468,7 +8469,7 @@ void LinearScan::resolveRegisters()
                         varDsc->lvOnFrame  = false;
                     }
 #ifdef DEBUG
-                    regMaskTP registerAssignment = genRegMask(varDsc->GetRegNum());
+                    regMaskTP registerAssignment = genSingleTypeRegMask(varDsc->GetRegNum());
                     assert(!interval->isSpilled && !interval->isSplit);
                     RefPosition* refPosition = interval->firstRefPosition;
                     assert(refPosition != nullptr);
