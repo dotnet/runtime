@@ -202,6 +202,9 @@ namespace System.Net.Http
 
                 if (NetEventSource.Log.IsEnabled()) Trace($"ReleaseStream: _availableRequestStreamsCount = {_availableRequestStreamsCount}");
                 ++_availableRequestStreamsCount;
+
+                _availableStreamsWaiter?.SetResult(!ShuttingDown);
+                _availableStreamsWaiter = null;
             }
         }
 

@@ -270,7 +270,9 @@ namespace System.Net.Http
                 connectionException = e is OperationCanceledException oce && oce.CancellationToken == cts.Token && !waiter.CancelledByOriginatingRequestCompletion ?
                     CreateConnectTimeoutException(oce) :
                     e;
-                // If the connection hasn't been initialized with QuicConnection there's no need to dispose it.
+
+                // If the connection hasn't been initialized with QuicConnection, get rid of it.
+                connection?.Dispose();
                 connection = null;
             }
             finally
@@ -441,33 +443,14 @@ namespace System.Net.Http
                 }
             }
 
-            if (isNewConnection)
+            // Since we only inject one connection at a time, we may want to inject another now.
+            lock (SyncObj)
             {
-                Debug.Assert(initialRequestWaiter is not null, "Expect request for a new connection");
-
-                // The new connection could not handle even one request, either because it shut down before we could use it for any requests,
-                // or because it immediately set the max concurrent streams limit to 0.
-                // We don't want to get stuck in a loop where we keep trying to create new connections for the same request.
-                // So, treat this as a connection failure.
-
-                if (NetEventSource.Log.IsEnabled()) connection.Trace("New HTTP3 connection is unusable due to no available streams.");
-                connection.Dispose();
-
-                HttpRequestException hre = new HttpRequestException(SR.net_http_http3_connection_not_established);
-                ExceptionDispatchInfo.SetCurrentStackTrace(hre);
-                HandleHttp3ConnectionFailure(initialRequestWaiter, hre);
+                CheckForHttp3ConnectionInjection();
             }
-            else
-            {
-                // Since we only inject one connection at a time, we may want to inject another now.
-                lock (SyncObj)
-                {
-                    CheckForHttp3ConnectionInjection();
-                }
 
-                // We need to wait until the connection is usable again.
-                DisableHttp3Connection(connection);
-            }
+            // We need to wait until the connection is usable again.
+            DisableHttp3Connection(connection);
         }
 
         /// <summary>
