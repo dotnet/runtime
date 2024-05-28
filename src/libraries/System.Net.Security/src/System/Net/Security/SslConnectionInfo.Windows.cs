@@ -66,7 +66,9 @@ namespace System.Net.Security
 
             TlsCipherSuite = cipherSuite;
 
-            ApplicationProtocol = GetNegotiatedApplicationProtocol(securityContext);
+            // ALPN protocol may not change after it has been negotiated, so if we already
+            // have it, no need to query again.
+            ApplicationProtocol ??= GetNegotiatedApplicationProtocol(securityContext);
 
 #if DEBUG
             SecPkgContext_SessionInfo info = default;
