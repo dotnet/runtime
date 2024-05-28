@@ -1818,6 +1818,37 @@ Assert.Fail();
             dt.Initialized -= new EventHandler(OnTableInitialized);
         }
 
+        [Fact]
+        public void MethodsCalledByReflectionAreNotTrimmed()
+        {
+            DataTable dt = new DataTable();
+            dt.CaseSensitive = true;
+            dt.Locale = new CultureInfo("en-US");
+            dt.PrimaryKey = new DataColumn[] { dt.Columns.Add("id", typeof(int)) };
+            dt.Namespace = "NS";
+
+            PropertyDescriptorCollection properties = TypeDescriptor.GetProperties(dt);
+
+            Assert.True(properties[nameof(DataTable.PrimaryKey)].ShouldSerializeValue(dt));
+            properties[nameof(DataTable.PrimaryKey)].ResetValue(dt); // Reset method is available
+            Assert.False(properties[nameof(DataTable.PrimaryKey)].ShouldSerializeValue(dt));
+            Assert.Equal(0, dt.PrimaryKey.Length);
+
+            Assert.True(properties[nameof(DataTable.CaseSensitive)].ShouldSerializeValue(dt));
+            properties[nameof(DataTable.CaseSensitive)].ResetValue(dt); // Reset method is available
+            Assert.False(properties[nameof(DataTable.CaseSensitive)].ShouldSerializeValue(dt));
+            Assert.False(dt.CaseSensitive);
+
+            Assert.True(properties[nameof(DataTable.Locale)].ShouldSerializeValue(dt));
+            properties[nameof(DataTable.Locale)].ResetValue(dt);
+            Assert.True(properties[nameof(DataTable.Locale)].ShouldSerializeValue(dt)); // Reset method is not available
+
+            Assert.True(properties[nameof(DataTable.Namespace)].ShouldSerializeValue(dt));
+            properties[nameof(DataTable.Namespace)].ResetValue(dt); // Reset method is available
+            Assert.False(properties[nameof(DataTable.Namespace)].ShouldSerializeValue(dt));
+            Assert.Equal("", dt.Namespace);
+        }
+
         private void OnTableInitialized(object src, EventArgs args)
         {
             _tableInitialized = true;

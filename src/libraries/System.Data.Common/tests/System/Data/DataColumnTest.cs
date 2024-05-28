@@ -793,6 +793,39 @@ namespace System.Data.Tests
             Assert.Throws<ArgumentException>(() => t.Columns.Add("c3", typeof(NullableTypeWithoutNullMember)));
         }
 
+        [Fact]
+        public void MethodsCalledByReflectionAreNotTrimmed()
+        {
+            DataColumn dc = new DataColumn
+            {
+                ColumnName = "dataColumn",
+                DataType = typeof(DateTime)
+            };
+
+            PropertyDescriptorCollection properties = TypeDescriptor.GetProperties(dc);
+
+            Assert.False(properties[nameof(DataColumn.DefaultValue)].ShouldSerializeValue(dc));
+            dc.DefaultValue = DateTime.MinValue;
+            Assert.True(properties[nameof(DataColumn.DefaultValue)].ShouldSerializeValue(dc));
+            properties[nameof(DataColumn.DefaultValue)].ResetValue(dc); // Reset method is not available
+            Assert.Equal(DateTime.MinValue, dc.DefaultValue);
+            Assert.True(properties[nameof(DataColumn.DefaultValue)].ShouldSerializeValue(dc));
+
+            Assert.False(properties[nameof(DataColumn.Caption)].ShouldSerializeValue(dc));
+            dc.Caption = "Caption";
+            Assert.True(properties[nameof(DataColumn.Caption)].ShouldSerializeValue(dc));
+            properties[nameof(DataColumn.Caption)].ResetValue(dc); // Reset method is available
+            Assert.False(properties[nameof(DataColumn.Caption)].ShouldSerializeValue(dc));
+            Assert.Equal("dataColumn", dc.Caption);
+
+            Assert.False(properties[nameof(DataColumn.Namespace)].ShouldSerializeValue(dc));
+            dc.Namespace = "Namespace";
+            Assert.True(properties[nameof(DataColumn.Namespace)].ShouldSerializeValue(dc));
+            properties[nameof(DataColumn.Namespace)].ResetValue(dc); // Reset method is available
+            Assert.False(properties[nameof(DataColumn.Namespace)].ShouldSerializeValue(dc));
+            Assert.Equal("", dc.Namespace);
+        }
+
         private sealed class NullableTypeWithNullProperty : INullable
         {
             public bool IsNull => true;

@@ -46,6 +46,8 @@ namespace System.Data.OleDb
         private int _changeID;
         private int _lastChangeID;
 
+        [DynamicDependency(nameof(ResetCommandTimeout))]
+        [DynamicDependency(nameof(ResetConnection))]
         public OleDbCommand() : base()
         {
             GC.SuppressFinalize(this);

@@ -68,6 +68,10 @@ namespace System.Data.Odbc
 
         private ODBC32.SQL_C _prepared_Sql_C_Type;
 
+        [DynamicDependency(nameof(ResetDbType))] // Calls DbParameter.ResetOdbcType()
+        [DynamicDependency(nameof(ShouldSerializePrecision))]
+        [DynamicDependency(nameof(ShouldSerializeScale))]
+        [DynamicDependency(nameof(ShouldSerializeSize))]
         public OdbcParameter() : base()
         {
             // uses System.Threading!

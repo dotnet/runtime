@@ -22,6 +22,13 @@ namespace System.Data.OleDb
 
         private NativeDBType? _coerceMetaType;
 
+        [DynamicDependency(nameof(ResetDbType))] // Calls ResetOleDbType()
+        [DynamicDependency(nameof(ResetParent))]
+        [DynamicDependency(nameof(ResetSize))]
+        [DynamicDependency(nameof(ShouldSerializeOleDbType))]
+        [DynamicDependency(nameof(ShouldSerializePrecision))]
+        [DynamicDependency(nameof(ShouldSerializeScale))]
+        [DynamicDependency(nameof(ShouldSerializeSize))]
         public OleDbParameter() : base()
         { // V1.0 nothing
         }

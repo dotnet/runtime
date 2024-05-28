@@ -121,6 +121,11 @@ namespace System.Data
         /// column is an attribute.
         /// </summary>
         [RequiresUnreferencedCode("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
+        [DynamicDependency(nameof(ShouldSerializeCaption))]
+        [DynamicDependency(nameof(ShouldSerializeDefaultValue))]
+        [DynamicDependency(nameof(ShouldSerializeNamespace))]
+        [DynamicDependency(nameof(ResetCaption))]
+        [DynamicDependency(nameof(ResetNamespace))]
         public DataColumn(string? columnName, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.PublicFields)] Type dataType, string? expr, MappingType type)
         {
             GC.SuppressFinalize(this);
