@@ -693,7 +693,22 @@ namespace System
                 // value class or primitive type
 
                 ref byte offsetDataRef = ref Unsafe.Add(ref arrayDataRef, flattenedIndex * pMethodTable->ComponentSize);
-                if (!RuntimeHelpers.TryUnboxInto(ref offsetDataRef, pElementMethodTable, value))
+                if (CastHelpers.IsInstanceOfAny(pElementMethodTable, value) != null)
+                {
+                    if (pElementMethodTable->IsNullable)
+                    {
+                        RuntimeHelpers.Unbox_Nullable(ref offsetDataRef, pElementMethodTable, value);
+                    }
+                    else if (pElementMethodTable->ContainsGCPointers)
+                    {
+                        Buffer.BulkMoveWithWriteBarrier(ref offsetDataRef, ref value.GetRawData(), pElementMethodTable->GetNumInstanceFieldBytes());
+                    }
+                    else
+                    {
+                        SpanHelpers.Memmove(ref offsetDataRef, ref value.GetRawData(), pElementMethodTable->GetNumInstanceFieldBytes());
+                    }
+                }
+                else
                 {
                     // Allow enum -> primitive conversion, disallow primitive -> enum conversion
                     MethodTable* thSrc = RuntimeHelpers.GetMethodTable(value);
@@ -707,7 +722,7 @@ namespace System
                     if (!RuntimeHelpers.CanPrimitiveWiden(srcType, targetType))
                         ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_PrimitiveWiden);
 
-                    PrimitiveWiden(ref Unsafe.Unbox<byte>(value), ref offsetDataRef, srcType, targetType);
+                    PrimitiveWiden(ref value.GetRawData(), ref offsetDataRef, srcType, targetType);
                 }
             }
 

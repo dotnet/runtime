@@ -353,7 +353,6 @@ FCFuncEnd()
 #endif // FEATURE_COMINTEROP
 
 FCFuncStart(gCastHelpers)
-    FCFuncElement("CanCastTo_NoCacheLookup", ::IsInstanceOfAny_NoCacheLookup)
     FCFuncElement("IsInstanceOfAny_NoCacheLookup", ::IsInstanceOfAny_NoCacheLookup)
     FCFuncElement("ChkCastAny_NoCacheLookup", ::ChkCastAny_NoCacheLookup)
     FCFuncElement("Unbox_Helper", ::Unbox_Helper)
