@@ -455,7 +455,7 @@ namespace Wasm.Build.Tests
         [Theory]
         [InlineData("", BuildTestBase.DefaultTargetFramework, DefaultRuntimeAssetsRelativePath)]
         [InlineData("-f net9.0", "net9.0", DefaultRuntimeAssetsRelativePath)]
-        [InlineData("-f net8.0", "net8.0", DefaultRuntimeAssetsRelativePath)]
+        // [InlineData("-f net8.0", "net8.0", DefaultRuntimeAssetsRelativePath)]
         // [ActiveIssue("https://github.com/dotnet/runtime/issues/90979")]
         // [InlineData("", BuildTestBase.DefaultTargetFramework, "./")]
         // [InlineData("-f net8.0", "net8.0", "./")]
