@@ -21,6 +21,7 @@ using System.Text.Json;
 using System.Collections.Concurrent;
 using System.Linq;
 using System.Threading;
+using System.Net.WebSockets;
 
 namespace BinaryFormatTests.FormatterTests;
 
@@ -1194,7 +1195,7 @@ public static class EqualityExtensions
             // Different by design for those exceptions
             if (!((@this is SecurityException || @this is ThreadAbortException) && !isSamePlatform))
             {
-                if (@this is not (NetworkInformationException or SocketException))
+                if (@this is not (NetworkInformationException or SocketException or WebSocketException))
                 {
                     Assert.Equal(@this.ToString(), other.ToString());
                 }
