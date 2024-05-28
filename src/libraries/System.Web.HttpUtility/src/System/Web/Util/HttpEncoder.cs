@@ -212,8 +212,14 @@ namespace System.Web.Util
                 return null;
             }
 
+            return UrlDecode(bytes.AsSpan(), offset, count);
+        }
+
+
+        internal static byte[] UrlDecode(ReadOnlySpan<byte> bytes, int offset, int count)
+        {
             int decodedBytesCount = 0;
-            byte[] decodedBytes = new byte[count];
+            Span<byte> decodedBytes = count < 256 ? stackalloc byte[256] : new byte[count];
 
             for (int i = 0; i < count; i++)
             {
@@ -240,14 +246,14 @@ namespace System.Web.Util
                 decodedBytes[decodedBytesCount++] = b;
             }
 
-            if (decodedBytesCount < decodedBytes.Length)
+            if (decodedBytesCount < count)
             {
                 byte[] newDecodedBytes = new byte[decodedBytesCount];
-                Array.Copy(decodedBytes, newDecodedBytes, decodedBytesCount);
-                decodedBytes = newDecodedBytes;
+                decodedBytes.Slice(0, decodedBytesCount).CopyTo(newDecodedBytes);
+                return newDecodedBytes;
             }
 
-            return decodedBytes;
+            return decodedBytes.ToArray();
         }
 
         [return: NotNullIfNotNull(nameof(bytes))]

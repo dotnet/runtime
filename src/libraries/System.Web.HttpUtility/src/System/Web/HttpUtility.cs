@@ -193,10 +193,28 @@ namespace System.Web
         public static byte[]? UrlDecodeToBytes(string? str) => UrlDecodeToBytes(str, Encoding.UTF8);
 
         [return: NotNullIfNotNull(nameof(str))]
-        public static byte[]? UrlDecodeToBytes(string? str, Encoding e) => str == null ? null : UrlDecodeToBytes(e.GetBytes(str));
+        public static byte[]? UrlDecodeToBytes(string? str, Encoding e)
+        {
+            if (str == null)
+            {
+                return null;
+            }
+
+            if (str.Length > 256)
+            {
+                return UrlDecodeToBytes(e.GetBytes(str));
+            }
+
+            //do not allocate byte[] if less than stackalloc limit
+            int maxBytesCount = e.GetMaxByteCount(str.Length);
+            Span<byte> bytes = maxBytesCount < 512 ? stackalloc byte[512] : new byte[maxBytesCount];
+            int encodedBytes = e.GetBytes(str, bytes);
+
+            return UrlDecodeToBytes(bytes, 0, encodedBytes);
+        }
 
         [return: NotNullIfNotNull(nameof(bytes))]
-        public static byte[]? UrlDecodeToBytes(byte[]? bytes) => bytes == null ? null : UrlDecodeToBytes(bytes, 0, bytes.Length);
+        public static byte[]? UrlDecodeToBytes(byte[]? bytes) => bytes == null ? null : UrlDecodeToBytes(bytes.AsSpan(), 0, bytes.Length);
 
         [return: NotNullIfNotNull(nameof(str))]
         public static byte[]? UrlEncodeToBytes(string? str, Encoding e)
@@ -226,6 +244,7 @@ namespace System.Web
 
         [return: NotNullIfNotNull(nameof(bytes))]
         public static byte[]? UrlDecodeToBytes(byte[]? bytes, int offset, int count) => HttpEncoder.UrlDecode(bytes, offset, count);
+        private static byte[] UrlDecodeToBytes(ReadOnlySpan<byte> bytes, int offset, int count) => HttpEncoder.UrlDecode(bytes, offset, count);
 
         public static string JavaScriptStringEncode(string? value) => HttpEncoder.JavaScriptStringEncode(value);
 
