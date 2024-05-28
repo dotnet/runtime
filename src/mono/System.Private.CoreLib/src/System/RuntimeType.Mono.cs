@@ -37,7 +37,7 @@ namespace System
                               FormatFullInst
     }
 
-    internal partial class RuntimeType
+    internal unsafe partial class RuntimeType
     {
         #region Definitions
 
@@ -1614,6 +1614,27 @@ namespace System
         {
             return CreateInstanceMono(false, true);
         }
+
+        // Specialized version of the above for Activator.CreateInstance<T>()
+        [DebuggerStepThroughAttribute]
+        [Diagnostics.DebuggerHidden]
+        internal void CallDefaultStructConstructor(ref byte value)
+        {
+            Debug.Assert(IsValueType);
+
+            RuntimeConstructorInfo? ctor = GetDefaultConstructor();
+            if (ctor == null)
+                return;
+
+            delegate*<ref byte, void> valueCtor = GetValueConstructor(ObjectHandleOnStack.Create(ref ctor));
+            if (valueCtor == null)
+                throw new ExecutionEngineException();
+
+            valueCtor(ref value);
+        }
+
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        private static extern delegate*<ref byte, void> GetValueConstructor(ObjectHandleOnStack rtCtorInfo);
 
         #endregion
 

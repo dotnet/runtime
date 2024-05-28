@@ -510,6 +510,7 @@ HANDLES(RT_24, "GetNamespace", ves_icall_RuntimeType_GetNamespace, void, 2, (Mon
 HANDLES(RT_13, "GetNestedTypes_native", ves_icall_RuntimeType_GetNestedTypes_native, GPtrArray_ptr, 4, (MonoQCallTypeHandle, char_ptr, guint32, guint32))
 HANDLES(RT_14, "GetPacking", ves_icall_RuntimeType_GetPacking, void, 3, (MonoQCallTypeHandle, guint32_ref, guint32_ref))
 HANDLES(RT_15, "GetPropertiesByName_native", ves_icall_RuntimeType_GetPropertiesByName_native, GPtrArray_ptr, 4, (MonoQCallTypeHandle, char_ptr, guint32, guint32))
+HANDLES(RT_34, "GetValueConstructor", ves_icall_RuntimeType_GetValueConstructor, gpointer, 1, (MonoObjectHandleOnStack))
 NOHANDLES(ICALL(RT_29, "IsUnmanagedFunctionPointerInternal", ves_icall_RuntimeType_IsUnmanagedFunctionPointerInternal))
 HANDLES(RT_17, "MakeGenericType", ves_icall_RuntimeType_MakeGenericType, void, 3, (MonoReflectionType, MonoArray, MonoObjectHandleOnStack))
 HANDLES(RT_19, "getFullName", ves_icall_System_RuntimeType_getFullName, void, 4, (MonoQCallTypeHandle, MonoObjectHandleOnStack, MonoBoolean, MonoBoolean))

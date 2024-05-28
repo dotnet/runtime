@@ -4246,6 +4246,17 @@ loader_error:
 	return NULL;
 }
 
+gpointer
+ves_icall_RuntimeType_GetValueConstructor (MonoObjectHandleOnStack ref_ctor_info, MonoError *error)
+{
+	gpointer ctor_fptr;
+	MonoReflectionMethod* ctor = *(MonoReflectionMethod**)ref_ctor_info;
+	ctor_fptr = mono_compile_method_checked (ctor->method, error);
+	if (!is_ok (error))
+		return NULL;
+	return ctor_fptr;
+}
+
 static guint
 event_hash (gconstpointer data)
 {
