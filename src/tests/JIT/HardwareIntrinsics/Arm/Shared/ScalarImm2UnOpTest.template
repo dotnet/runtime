@@ -81,7 +81,7 @@ namespace JIT.HardwareIntrinsics.Arm
             public void RunStructFldScenario(ScalarImm2UnaryOpTest__{TestName} testClass)
             {
                 var result = {Isa}.{Method}(_fld, {Imm}, {Imm2});
-                testClass.ValidateResult(_fld, result);
+                testClass.ValidateResult(_fld, {Imm}, {Imm2}, result);
             }
         }
 
@@ -110,7 +110,7 @@ namespace JIT.HardwareIntrinsics.Arm
                 Unsafe.ReadUnaligned<{Op1BaseType}>(ref Unsafe.As<{Op1BaseType}, byte>(ref _data)), {Imm}, {Imm2}
             );
 
-            ValidateResult(_data, result);
+            ValidateResult(_data, {Imm}, {Imm2}, result);
         }
 
         public void RunReflectionScenario_UnsafeRead()
@@ -124,7 +124,7 @@ namespace JIT.HardwareIntrinsics.Arm
                                         {Imm2},
                                      });
 
-            ValidateResult(_data, ({RetBaseType})result);
+            ValidateResult(_data, {Imm}, {Imm2}, ({RetBaseType})result);
         }
 
         public void RunLclVarScenario_UnsafeRead()
@@ -134,7 +134,7 @@ namespace JIT.HardwareIntrinsics.Arm
             var data = Unsafe.ReadUnaligned<{Op1BaseType}>(ref Unsafe.As<{Op1BaseType}, byte>(ref _data));
             var result = {Isa}.{Method}(data, {Imm}, {Imm2});
 
-            ValidateResult(data, result);
+            ValidateResult(data, {Imm}, {Imm2}, result);
         }
 
         public void RunClassFldScenario()
@@ -142,7 +142,7 @@ namespace JIT.HardwareIntrinsics.Arm
             TestLibrary.TestFramework.BeginScenario(nameof(RunClassFldScenario));
 
             var result = {Isa}.{Method}(_fld, {Imm}, {Imm2});
-            ValidateResult(_fld, result);
+            ValidateResult(_fld, {Imm}, {Imm2}, result);
         }
 
         public void RunStructLclFldScenario()
@@ -152,7 +152,7 @@ namespace JIT.HardwareIntrinsics.Arm
             var test = TestStruct.Create();
             var result = {Isa}.{Method}(test._fld, {Imm}, {Imm2});
 
-            ValidateResult(test._fld, result);
+            ValidateResult(test._fld, {Imm}, {Imm2}, result);
         }
 
         public void RunStructFldScenario()
@@ -165,7 +165,7 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public void RunBasicScenario_UnsafeRead_InvalidImm1()
         {
-            TestLibrary.TestFramework.BeginScenario(nameof(RunBasicScenario_UnsafeRead));
+            TestLibrary.TestFramework.BeginScenario(nameof(RunBasicScenario_UnsafeRead_InvalidImm1));
 
             bool succeeded = false;
 
@@ -183,7 +183,7 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public void RunBasicScenario_UnsafeRead_InvalidImm2()
         {
-            TestLibrary.TestFramework.BeginScenario(nameof(RunBasicScenario_UnsafeRead));
+            TestLibrary.TestFramework.BeginScenario(nameof(RunBasicScenario_UnsafeRead_InvalidImm2));
 
             bool succeeded = false;
 
@@ -220,7 +220,7 @@ namespace JIT.HardwareIntrinsics.Arm
             }
         }
 
-        private void ValidateResult({Op1BaseType} data, {RetBaseType} result, [CallerMemberName] string method = "")
+        private void ValidateResult({Op1BaseType} data, {Op2BaseType} imm1, {Op3BaseType} imm2, {RetBaseType} result, [CallerMemberName] string method = "")
         {
             var isUnexpectedResult = false;
 

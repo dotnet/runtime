@@ -131,7 +131,7 @@ namespace JIT.HardwareIntrinsics.Arm
                 var result = {Isa}.{Method}(_fld, {Imm}, {Imm2});
 
                 Unsafe.Write(testClass._dataTable.outArrayPtr, result);
-                testClass.ValidateResult(_fld, testClass._dataTable.outArrayPtr);
+                testClass.ValidateResult(_fld, {Imm}, {Imm2}, testClass._dataTable.outArrayPtr);
             }
         }
 
@@ -174,7 +174,7 @@ namespace JIT.HardwareIntrinsics.Arm
             );
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
-            ValidateResult(_dataTable.inArrayPtr, _dataTable.outArrayPtr);
+            ValidateResult(_dataTable.inArrayPtr, {Imm}, {Imm2}, _dataTable.outArrayPtr);
         }
 
         public void RunBasicScenario_Load()
@@ -191,7 +191,7 @@ namespace JIT.HardwareIntrinsics.Arm
             );
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
-            ValidateResult(_dataTable.inArrayPtr, _dataTable.outArrayPtr);
+            ValidateResult(_dataTable.inArrayPtr, {Imm}, {Imm2}, _dataTable.outArrayPtr);
         }
 
         public void RunReflectionScenario_UnsafeRead()
@@ -206,7 +206,7 @@ namespace JIT.HardwareIntrinsics.Arm
                                      });
 
             Unsafe.Write(_dataTable.outArrayPtr, ({RetVectorType}<{RetBaseType}>)(result));
-            ValidateResult(_dataTable.inArrayPtr, _dataTable.outArrayPtr);
+            ValidateResult(_dataTable.inArrayPtr, {Imm}, {Imm2}, _dataTable.outArrayPtr);
         }
 
         public void RunLclVarScenario_UnsafeRead()
@@ -217,7 +217,7 @@ namespace JIT.HardwareIntrinsics.Arm
             var result = {Isa}.{Method}(firstOp, {Imm}, {Imm2});
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
-            ValidateResult(firstOp, _dataTable.outArrayPtr);
+            ValidateResult(firstOp, {Imm}, {Imm2}, _dataTable.outArrayPtr);
         }
 
         public void RunClassFldScenario()
@@ -227,7 +227,7 @@ namespace JIT.HardwareIntrinsics.Arm
             var result = {Isa}.{Method}(_fld, {Imm}, {Imm2});
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
-            ValidateResult(_fld, _dataTable.outArrayPtr);
+            ValidateResult(_fld, {Imm}, {Imm2}, _dataTable.outArrayPtr);
         }
 
         public void RunStructLclFldScenario()
@@ -238,7 +238,7 @@ namespace JIT.HardwareIntrinsics.Arm
             var result = {Isa}.{Method}(test._fld, {Imm}, {Imm2});
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
-            ValidateResult(test._fld, _dataTable.outArrayPtr);
+            ValidateResult(test._fld, {Imm}, {Imm2}, _dataTable.outArrayPtr);
         }
 
         public void RunStructFldScenario()
@@ -247,6 +247,49 @@ namespace JIT.HardwareIntrinsics.Arm
 
             var test = TestStruct.Create();
             test.RunStructFldScenario(this);
+        }
+
+
+
+        public void RunBasicScenario_UnsafeRead_InvalidImm1()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunBasicScenario_UnsafeRead));
+
+            bool succeeded = false;
+
+            try
+            {
+                var result = {Isa}.{Method}(
+                    Unsafe.Read<{Op1VectorType}<{Op1BaseType}>>(_dataTable.inArrayPtr),
+                    {InvalidImm},
+                    {Imm2}
+                );
+            }
+            catch (ArgumentOutOfRangeException)
+            {
+                succeeded = true;
+            }
+        }
+
+        public void RunBasicScenario_UnsafeRead_InvalidImm2()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunBasicScenario_UnsafeRead));
+
+            bool succeeded = false;
+
+            try
+            {
+                var result = {Isa}.{Method}(
+                    Unsafe.Read<{Op1VectorType}<{Op1BaseType}>>(_dataTable.inArrayPtr),
+                    {Imm},
+                    {InvalidImm2}
+                );
+
+            }
+            catch (ArgumentOutOfRangeException)
+            {
+                succeeded = true;
+            }
         }
 
         public void RunUnsupportedScenario()
@@ -270,7 +313,7 @@ namespace JIT.HardwareIntrinsics.Arm
             }
         }
 
-        private void ValidateResult({Op1VectorType}<{Op1BaseType}> firstOp, void* result, [CallerMemberName] string method = "")
+        private void ValidateResult({Op1VectorType}<{Op1BaseType}> firstOp, {Op2BaseType} imm1, {Op3BaseType} imm2, void* result, [CallerMemberName] string method = "")
         {
             {Op1BaseType}[] inArray = new {Op1BaseType}[Op1ElementCount];
             {RetBaseType}[] outArray = new {RetBaseType}[RetElementCount];
@@ -278,10 +321,10 @@ namespace JIT.HardwareIntrinsics.Arm
             Unsafe.WriteUnaligned(ref Unsafe.As<{Op1BaseType}, byte>(ref inArray[0]), firstOp);
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<{RetBaseType}, byte>(ref outArray[0]), ref Unsafe.AsRef<byte>(result), (uint)Unsafe.SizeOf<{RetVectorType}<{RetBaseType}>>());
 
-            ValidateResult(inArray, outArray, method);
+            ValidateResult(inArray, imm1, imm2, outArray, method);
         }
 
-        private void ValidateResult(void* firstOp, void* result, [CallerMemberName] string method = "")
+        private void ValidateResult(void* firstOp, {Op2BaseType} imm1, {Op3BaseType} imm2, void* result, [CallerMemberName] string method = "")
         {
             {Op1BaseType}[] inArray = new {Op1BaseType}[Op1ElementCount];
             {RetBaseType}[] outArray = new {RetBaseType}[RetElementCount];
@@ -289,10 +332,10 @@ namespace JIT.HardwareIntrinsics.Arm
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op1BaseType}, byte>(ref inArray[0]), ref Unsafe.AsRef<byte>(firstOp), (uint)Unsafe.SizeOf<{Op1VectorType}<{Op1BaseType}>>());
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<{RetBaseType}, byte>(ref outArray[0]), ref Unsafe.AsRef<byte>(result), (uint)Unsafe.SizeOf<{RetVectorType}<{RetBaseType}>>());
 
-            ValidateResult(inArray, outArray, method);
+            ValidateResult(inArray, imm1, imm2, outArray, method);
         }
 
-        private void ValidateResult({Op1BaseType}[] firstOp, {RetBaseType}[] result, [CallerMemberName] string method = "")
+        private void ValidateResult({Op1BaseType}[] firstOp, {Op2BaseType} imm1, {Op3BaseType} imm2, {RetBaseType}[] result, [CallerMemberName] string method = "")
         {
             bool succeeded = true;
 
