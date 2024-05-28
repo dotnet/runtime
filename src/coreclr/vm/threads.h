@@ -3777,6 +3777,13 @@ private:
     // See ThreadStore::TriggerGCForDeadThreadsIfNecessary()
     bool m_fHasDeadThreadBeenConsideredForGCTrigger;
 
+    // lazily allocated
+    CLRRandom* m_pRandom;
+
+    public:
+        // TODO: where to delete the allocated CLRRandom object?
+        CLRRandom* GetRandom() { if (m_pRandom == nullptr) { m_pRandom = new CLRRandom(); m_pRandom->Init(); } return m_pRandom; }
+
 #ifdef FEATURE_COMINTEROP
 private:
     // Cookie returned from CoRegisterInitializeSpy

@@ -266,7 +266,7 @@ inline Object* Alloc(ee_alloc_context* pEEAllocContext, size_t size, GC_ALLOC_FL
         // the sampling budget only included at most the bytes inside the AC
         if (aligned_size > availableSpace && !isSampled)
         {
-            samplingBudget = ee_alloc_context::ComputeGeometricRandom() + availableSpace;
+            samplingBudget = ee_alloc_context::ComputeGeometricRandom(pCurrentThread->GetRandom()) + availableSpace;
             isSampled = (samplingBudget < aligned_size);
         }
     }
@@ -289,7 +289,10 @@ inline Object* Alloc(ee_alloc_context* pEEAllocContext, size_t size, GC_ALLOC_FL
     // Rather than test for all the different invalidation conditions individually we conservatively always
     // recompute it. If sampling isn't enabled this inlined function is just trivially setting
     // combined_limit=alloc_limit.
-    pEEAllocContext->UpdateCombinedLimit(isRandomizedSamplingEnabled);
+    pEEAllocContext->UpdateCombinedLimit(isRandomizedSamplingEnabled, pCurrentThread->GetRandom());
+    // TODO: In order to avoid the CLRRandom allocation if randomized sampling is not enabled, we should pass the related thread.
+    //       Unfortunately, it does not seem possible to use Thread members in gcheaputilities.h.
+    //pEEAllocContext->UpdateCombinedLimit(isRandomizedSamplingEnabled, pCurrentThread);
 
     return retVal;
 }

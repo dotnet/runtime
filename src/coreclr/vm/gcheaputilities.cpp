@@ -41,9 +41,6 @@ bool g_sw_ww_enabled_for_gc_heap = false;
 
 #endif // FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
 
-CLRRandom m_random; // used to randomize allocation sampling
-CLRRandom* GetRandomizer() { return &m_random;}
-
 ee_alloc_context g_global_ee_alloc_context = {};
 GPTR_IMPL_INIT(gc_alloc_context, g_global_alloc_context, &(g_global_ee_alloc_context.gc_alloc_context));
 
@@ -131,8 +128,6 @@ void FinalizeLoad(IGCHeap* gcHeap, IGCHandleManager* handleMgr, PTR_VOID pGcModu
     g_gc_load_status = GC_LOAD_STATUS_LOAD_COMPLETE;
     g_gc_module_base = pGcModuleBase;
     LOG((LF_GC, LL_INFO100, "GC load successful\n"));
-
-    m_random.Init();
 
     StressLog::AddModule((uint8_t*)pGcModuleBase);
 }

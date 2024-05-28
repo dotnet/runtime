@@ -462,7 +462,7 @@ void InvokeGCAllocCallback(ee_alloc_context* pEEAllocContext, enum_alloc_context
     // empirically a little more performant to only call it when the AC size has changed.
     if (currentSize != (size_t)(pAllocContext->alloc_limit - pAllocContext->alloc_ptr))
     {
-        pEEAllocContext->UpdateCombinedLimit();
+        pEEAllocContext->UpdateCombinedLimit(GetThread()->GetRandom());
     }
     else
     {

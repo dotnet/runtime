@@ -8,6 +8,9 @@
 #include "gcinterface.h"
 #include "math.h"
 
+// TODO: trying to use Thread members but compilation errors
+// #include "threads.h"
+
 // The singular heap instance.
 GPTR_DECL(IGCHeap, g_pGCHeap);
 
@@ -16,8 +19,6 @@ extern "C" {
 #endif // !DACCESS_COMPILE
 
 const DWORD SamplingDistributionMean = (100 * 1024);
-
-CLRRandom* GetRandomizer();
 
 // This struct adds some state that is only visible to the EE onto the standard gc_alloc_context
 typedef struct _ee_alloc_context
@@ -67,13 +68,19 @@ typedef struct _ee_alloc_context
     }
 
     // Regenerate the randomized sampling limit and update the combined_limit field.
-    inline void UpdateCombinedLimit()
+    inline void UpdateCombinedLimit(CLRRandom* pRandom)
     {
-        UpdateCombinedLimit(IsRandomizedSamplingEnabled());
+        UpdateCombinedLimit(IsRandomizedSamplingEnabled(), pRandom);
     }
 
-    // Regenerate the randomized sampling limit and update the combined_limit field.
-    inline void UpdateCombinedLimit(bool samplingEnabled)
+    // TODO: This avoids allocating the CLRRandom object if the sampling is disabled.
+    //       However, it does not seem possible to use Thread members here.
+    //inline void UpdateCombinedLimit(bool samplingEnabled, Thread* pThread)
+    //{
+    //    UpdateCombinedLimit(IsRandomizedSamplingEnabled(), pThread->GetRandom());
+    //}
+
+    inline void UpdateCombinedLimit(bool samplingEnabled, CLRRandom* pRandom)
     {
         if (!samplingEnabled)
         {
@@ -82,17 +89,17 @@ typedef struct _ee_alloc_context
         else
         {
             // compute the next sampling limit based on a geometric distribution
-            uint8_t* sampling_limit = gc_alloc_context.alloc_ptr + ComputeGeometricRandom();
+            uint8_t* sampling_limit = gc_alloc_context.alloc_ptr + ComputeGeometricRandom(pRandom);
 
             // if the sampling limit is larger than the allocation context, no sampling will occur in this AC
             combined_limit = Min(sampling_limit, gc_alloc_context.alloc_limit);
         }
     }
 
-    static inline int ComputeGeometricRandom()
+    static inline int ComputeGeometricRandom(CLRRandom* pRandomizer)
     {
         // compute a random sample from the Geometric distribution
-        double probability = GetRandomizer()->NextDouble();
+        double probability = pRandomizer->NextDouble();
         int threshold = (int)(-log(1 - probability) * SamplingDistributionMean);
         return threshold;
     }
