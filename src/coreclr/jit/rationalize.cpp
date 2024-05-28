@@ -170,7 +170,7 @@ void Rationalizer::RewriteNodeAsCall(GenTree**             use,
         // However, when we have a retbuf the node is replaced by a local with the call inserted before it,
         // so we need to make sure we visit it here.
         RationalizeVisitor visitor(*this);
-        GenTree* node = call;
+        GenTree*           node = call;
         visitor.WalkTree(&node, nullptr);
         assert(node == call);
     }
