@@ -442,15 +442,7 @@ TADDR Precode::AllocateTemporaryEntryPoints(MethodDescChunk *  pChunk,
 
 #ifdef HAS_FIXUP_PRECODE
     // Default to faster fixup precode if possible
-    if (!pFirstMD->RequiresMethodDescCallingConvention(count > 1))
-    {
-        t = PRECODE_FIXUP;
-
-    }
-    else
-    {
-        _ASSERTE(!pFirstMD->IsLCGMethod());
-    }
+    t = PRECODE_FIXUP;
 #endif // HAS_FIXUP_PRECODE
 
     SIZE_T totalSize = SizeOfTemporaryEntryPoints(t, count);

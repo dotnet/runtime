@@ -15795,6 +15795,7 @@ DONE:
                 break;
 
             case IF_RRW_CNS:
+            {
                 assert(id->idGCref() == GCT_BYREF);
 
 #ifdef DEBUG
@@ -15816,7 +15817,7 @@ DONE:
                 // Mark it as holding a GCT_BYREF
                 emitGCregLiveUpd(GCT_BYREF, id->idReg1(), dst);
                 break;
-
+            }
             default:
 #ifdef DEBUG
                 emitDispIns(id, false, false, false);
@@ -16609,6 +16610,8 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
     assert(instrIs3opImul(id->idIns()) == 0 || size >= EA_4BYTE); // Has no 'w' bit
 
     VARSET_TP GCvars(VarSetOps::UninitVal());
+    regMaskTP gcrefRegs;
+    regMaskTP byrefRegs;
 
     // What instruction format have we got?
     switch (insFmt)
@@ -16620,9 +16623,6 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 
         BYTE* addr;
         bool  recCall;
-
-        regMaskTP gcrefRegs;
-        regMaskTP byrefRegs;
 
         /********************************************************************/
         /*                        No operands                               */

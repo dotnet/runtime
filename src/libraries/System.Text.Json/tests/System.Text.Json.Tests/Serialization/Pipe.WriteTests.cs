@@ -4,7 +4,6 @@
 using System.Buffers;
 using System.Collections.Generic;
 using System.IO.Pipelines;
-using System.Runtime.CompilerServices;
 using System.Text.Json.Serialization.Metadata;
 using System.Threading;
 using System.Threading.Tasks;
@@ -56,6 +55,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task CancelPendingFlushDuringBackpressureThrows()
         {
+            int i = 0;
             Pipe pipe = new Pipe(new PipeOptions(pauseWriterThreshold: 10, resumeWriterThreshold: 5));
             await pipe.Writer.WriteAsync("123456789"u8.ToArray());
             Task serializeTask = JsonSerializer.SerializeAsync(pipe.Writer, GetNumbersAsync());
@@ -68,13 +68,12 @@ namespace System.Text.Json.Serialization.Tests
             ReadResult result = await pipe.Reader.ReadAsync();
 
             // Technically this check is not needed, but helps confirm behavior, that Pipe had written but was waiting for flush to continue.
-            // result.Buffer: 123456789[0
-            Assert.Equal(11, result.Buffer.Length);
+            // result.Buffer: 123456789[0...
+            Assert.Equal(10 + i - 1, result.Buffer.Length);
             pipe.Reader.AdvanceTo(result.Buffer.End);
 
-            static async IAsyncEnumerable<int> GetNumbersAsync()
+            async IAsyncEnumerable<int> GetNumbersAsync()
             {
-                int i = 0;
                 while (true)
                 {
                     await Task.Delay(10);

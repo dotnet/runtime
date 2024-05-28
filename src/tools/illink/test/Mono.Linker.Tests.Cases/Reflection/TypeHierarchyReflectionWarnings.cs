@@ -249,8 +249,6 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			public event MyEventHandler RUCEvent {
 				[Kept]
 				[ExpectedWarning ("IL2112", nameof (AnnotatedPublicEvents), "--RUC on add_RUCEvent--")]
-				// https://github.com/dotnet/runtime/issues/100499
-				[ExpectedWarning ("IL2112", [nameof (AnnotatedPublicEvents), "--RUC on add_RUCEvent--"], Tool.Trimmer, "")]
 				[KeptAttributeAttribute (typeof (RequiresUnreferencedCodeAttribute))]
 				[RequiresUnreferencedCode ("--RUC on add_RUCEvent--")]
 				add { }

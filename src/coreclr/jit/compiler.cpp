@@ -2046,7 +2046,7 @@ void* Compiler::compGetHelperFtn(CorInfoHelpFunc ftnNum, /* IN  */
     else
     {
         // If we don't have a matched VM, we won't get valid results when asking for a helper function.
-        addr = UlongToPtr(0xCA11CA11); // "callcall"
+        addr = (void*)(uintptr_t)(0xCA11CA11); // "callcall"
     }
 
     return addr;
@@ -3485,12 +3485,12 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     // Make sure we copy the register info and initialize the
     // trash regs after the underlying fields are initialized
 
-    const regMaskTP vtCalleeTrashRegs[TYP_COUNT]{
+    const SingleTypeRegSet vtCalleeTrashRegs[TYP_COUNT]{
 #define DEF_TP(tn, nm, jitType, sz, sze, asze, st, al, regTyp, regFld, csr, ctr, tf) ctr,
 #include "typelist.h"
 #undef DEF_TP
     };
-    memcpy(varTypeCalleeTrashRegs, vtCalleeTrashRegs, sizeof(regMaskTP) * TYP_COUNT);
+    memcpy(varTypeCalleeTrashRegs, vtCalleeTrashRegs, sizeof(SingleTypeRegSet) * TYP_COUNT);
 
     codeGen->CopyRegisterInfo();
 #endif // TARGET_XARCH
