@@ -427,10 +427,7 @@ namespace System.Reflection
 
                 MethodAttributes attributes = MethodAttributes.Public;
 
-                if ((mi.Attributes & MethodAttributes.Static) != 0)
-                    attributes |= MethodAttributes.Static;
-                else
-                    attributes |= MethodAttributes.Virtual;
+                attributes |= mi.IsStatic ? MethodAttributes.Static : MethodAttributes.Virtual;
 
                 MethodBuilder mdb = _tb.DefineMethod(mi.Name, attributes, CallingConventions.Standard,
                     mi.ReturnType, null, null,
@@ -451,6 +448,18 @@ namespace System.Reflection
                     }
                 }
                 ILGenerator il = mdb.GetILGenerator();
+
+                if (mi.IsStatic)
+                {
+                    ConstructorInfo exCtor = typeof(NotSupportedException).GetConstructor([typeof(string)])!;
+
+                    il.Emit(OpCodes.Ldstr, SR.DispatchProxy_Method_Invocation_Cannot_Be_Static);
+                    il.Emit(OpCodes.Newobj, exCtor);
+                    il.Emit(OpCodes.Throw);
+
+                    _tb.DefineMethodOverride(mdb, mi);
+                    return mdb;
+                }
 
                 ParametersArray args = new ParametersArray(il, paramTypes);
 

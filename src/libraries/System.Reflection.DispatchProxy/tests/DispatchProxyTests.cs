@@ -563,9 +563,9 @@ namespace DispatchProxyTests
         public static void Proxy_Declares_Interface_Static_Virtual_Properties(bool useGenericCreate)
         {
             TestType_IStaticVirtualPropertyService proxy = CreateHelper<TestType_IStaticVirtualPropertyService, TestDispatchProxy>(useGenericCreate);
-            PropertyInfo propertyInfo = proxy.GetType().GetTypeInfo().GetDeclaredProperty(nameof(TestType_IStaticVirtualPropertyService.TestProperty));
+            PropertyInfo? propertyInfo = proxy.GetType().GetTypeInfo().GetDeclaredProperty(nameof(TestType_IStaticVirtualPropertyService.TestProperty));
             Assert.NotNull(propertyInfo);
-            Assert.True((propertyInfo.GetMethod!.Attributes & MethodAttributes.Static) != 0);
+            Assert.True(propertyInfo.GetMethod!.IsStatic);
         }
 
         [Theory]
@@ -574,9 +574,33 @@ namespace DispatchProxyTests
         public static void Proxy_Declares_Interface_Static_Virtual_Methods(bool useGenericCreate)
         {
             TestType_IStaticVirtualMethodService proxy = CreateHelper<TestType_IStaticVirtualMethodService, TestDispatchProxy>(useGenericCreate);
-            MethodInfo methodInfo = proxy.GetType().GetTypeInfo().GetDeclaredMethod(nameof(TestType_IStaticVirtualMethodService.TestMethod));
+            MethodInfo? methodInfo = proxy.GetType().GetTypeInfo().GetDeclaredMethod(nameof(TestType_IStaticVirtualMethodService.TestMethod));
             Assert.NotNull(methodInfo);
-            Assert.True((methodInfo.Attributes & MethodAttributes.Static) != 0);
+            Assert.True(methodInfo.IsStatic);
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public static void Invoke_Static_Virtual_Method_Throws_NotSupportedException(bool useGenericCreate)
+        {
+            TestType_IStaticVirtualMethodService proxy = CreateHelper<TestType_IStaticVirtualMethodService, TestDispatchProxy>(useGenericCreate);
+            MethodInfo? methodInfo = proxy.GetType().GetTypeInfo().GetDeclaredMethod(nameof(TestType_IStaticVirtualMethodService.TestMethod));
+            Assert.NotNull(methodInfo);
+
+            Exception? actualException = null;
+
+            try
+            {
+                methodInfo.Invoke(proxy, null);
+            }
+            catch (Exception e)
+            {
+                actualException = e;
+            }
+
+            Assert.NotNull(actualException);
+            Assert.IsType<NotSupportedException>(actualException.InnerException);
         }
 
 #if NET
