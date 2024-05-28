@@ -35,9 +35,7 @@
 //       This allows to combine logic for cases when immOp->isContainedIntOrIImmed() is either true or false in a form
 //       of a for-loop.
 //
-CodeGen::HWIntrinsicImmOpHelper::HWIntrinsicImmOpHelper(CodeGen*            codeGen,
-                                                        GenTree*            immOp,
-                                                        GenTreeHWIntrinsic* intrin)
+CodeGen::HWIntrinsicImmOpHelper::HWIntrinsicImmOpHelper(CodeGen* codeGen, GenTree* immOp, GenTreeHWIntrinsic* intrin)
     : codeGen(codeGen)
     , endLabel(nullptr)
     , nonZeroLabel(nullptr)
@@ -107,11 +105,8 @@ CodeGen::HWIntrinsicImmOpHelper::HWIntrinsicImmOpHelper(CodeGen*            code
     }
 }
 
-CodeGen::HWIntrinsicImmOpHelper::HWIntrinsicImmOpHelper(CodeGen*            codeGen,
-                                                        regNumber           nonConstImmReg,
-                                                        int               immLowerBound,
-                                                        int               immUpperBound,
-                                                        GenTreeHWIntrinsic* intrin)
+CodeGen::HWIntrinsicImmOpHelper::HWIntrinsicImmOpHelper(
+    CodeGen* codeGen, regNumber nonConstImmReg, int immLowerBound, int immUpperBound, GenTreeHWIntrinsic* intrin)
     : codeGen(codeGen)
     , endLabel(nullptr)
     , nonZeroLabel(nullptr)
@@ -1823,7 +1818,6 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                                             INS_SCALABLE_OPTS_UNPREDICATED);
                 break;
 
-
             case NI_Sve_SaturatingDecrementBy16BitElementCountScalar:
             case NI_Sve_SaturatingDecrementBy32BitElementCountScalar:
             case NI_Sve_SaturatingDecrementBy64BitElementCountScalar:
@@ -1832,7 +1826,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
             case NI_Sve_SaturatingIncrementBy64BitElementCountScalar:
                 // Use scalar sizes.
                 emitSize = emitActualTypeSize(node->gtType);
-                opt = INS_OPTS_NONE;
+                opt      = INS_OPTS_NONE;
                 FALLTHROUGH;
 
             case NI_Sve_SaturatingDecrementBy16BitElementCount:
@@ -1889,7 +1883,6 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 }
                 break;
             }
-
 
             default:
                 unreached();
