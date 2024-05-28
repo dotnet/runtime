@@ -511,11 +511,31 @@ namespace System.Text.RegularExpressions.Symbolic
                     break;
                 }
 
-                bool done = currentState.NfaState is not null ?
-                    FindEndPositionDeltasNFA<NfaStateHandler, TInputReader, TFindOptimizationsHandler, TNullabilityHandler>(input, innerLoopLength, mode, ref pos, ref currentState, ref endPos, ref endStateId, ref initialStatePos, ref initialStatePosCandidate) :
-                    // If there are no edge cases then use the quicker loop
-                    _findOpts is null && !_containsEndZAnchor ? FindEndPositionDeltasDFANoSkip(input, innerLoopLength - 1, mode, ref pos, currentState.DfaStateId, ref endPos, ref endStateId, ref initialStatePos, ref initialStatePosCandidate) :
-                    FindEndPositionDeltasDFA<DfaStateHandler, TInputReader, TFindOptimizationsHandler, TNullabilityHandler>(input, innerLoopLength, mode, ref pos, ref currentState, ref endPos, ref endStateId, ref initialStatePos, ref initialStatePosCandidate);
+                bool done;
+                if (currentState.NfaState is not null)
+                    // nfa fallback check
+                    done = FindEndPositionDeltasNFA<NfaStateHandler, TInputReader, TFindOptimizationsHandler,
+                            TNullabilityHandler>(input, innerLoopLength, mode, ref pos, ref currentState, ref endPos,
+                            ref endStateId, ref initialStatePos, ref initialStatePosCandidate);
+                else if (_findOpts is null && !_containsEndZAnchor && _mintermClassifier.ByteLookup() is not null)
+                {
+                    done = _mintermClassifier.IsAsciiOnly()
+                        ? FindEndPositionDeltasDFANoSkipAscii(input, innerLoopLength - 1,
+                            mode, ref pos,
+                            currentState.DfaStateId, ref endPos, ref endStateId, ref initialStatePos,
+                            ref initialStatePosCandidate)
+                        // if there are no edge cases then use the quicker loop
+                        : FindEndPositionDeltasDFANoSkip(input, innerLoopLength - 1, mode, ref pos,
+                        currentState.DfaStateId, ref endPos, ref endStateId, ref initialStatePos,
+                        ref initialStatePosCandidate);
+                }
+                else
+                {
+                    // dfa loop with potential skipping
+                    done = FindEndPositionDeltasDFA<DfaStateHandler, TInputReader, TFindOptimizationsHandler,
+                            TNullabilityHandler>(input, innerLoopLength, mode, ref pos, ref currentState, ref endPos,
+                            ref endStateId, ref initialStatePos, ref initialStatePosCandidate);
+                }
 
                 // If the inner loop indicates that the search finished (for example due to reaching a deadend state) or
                 // there is no more input available, then the whole search is done.
@@ -551,20 +571,17 @@ namespace System.Text.RegularExpressions.Symbolic
             return endPos;
         }
 
-
         /// <summary>
-        /// TODO: this is essentially a stripped down version when there's no good prefix optimizations
-        /// i don't trust the compiler to optimize this and it makes a
-        /// ~50% difference in performance with removing unnecessary checks alone
+        /// Ascii-only variant of the hot loop to conserve memory
         /// </summary>
-        private bool FindEndPositionDeltasDFANoSkip(ReadOnlySpan<char> input, int lengthMinus1, RegexRunnerMode mode,
+        private bool FindEndPositionDeltasDFANoSkipAscii(ReadOnlySpan<char> input, int lengthMinus1, RegexRunnerMode mode,
                 ref int posRef, int startStateId, ref int endPosRef, ref int endStateIdRef, ref int initialStatePosRef, ref int initialStatePosCandidateRef)
         {
             // To avoid frequent reads/writes to ref and out values, make and operate on local copies, which we then copy back once before returning.
             int pos = posRef;
             int endPos = endPosRef;
-            // can only be used with full array
-            // Span<int> mtlookup = _mintermClassifier.Lookup.AsSpan();
+            // can only be used with full array initialized and <= 255 minterms
+            byte[] mtlookup = _mintermClassifier.ByteLookup()!;
             int endStateId = endStateIdRef;
             int currStateId = startStateId;
             try
@@ -576,14 +593,16 @@ namespace System.Text.RegularExpressions.Symbolic
                     {
                         return true;
                     }
-                    // int positionId = mtlookup[input[pos]];
-                    int positionId = _mintermClassifier.GetMintermID(input[pos]);
+
+                    int c = input[pos];
+                    int positionId = c >= 128 ? 0 : mtlookup[c];
 
                     // If the state is nullable for the next character, meaning it accepts the empty string,
                     // we found a potential end state.
                     if (_canBeNullableArray[currStateId])
                     {
-                        if (_stateFlagsArray[currStateId].IsNullable() || _stateArray[currStateId]!.IsNullableFor(GetPositionKind(positionId)))
+                        if (_stateFlagsArray[currStateId].IsNullable()
+                            || _stateArray[currStateId]!.IsNullableFor(GetPositionKind(positionId)))
                         {
                             endPos = pos;
                             endStateId = currStateId;
@@ -597,7 +616,85 @@ namespace System.Text.RegularExpressions.Symbolic
 
                     // If there is more input available try to transition with the next character.
                     // Note: the order here is important so the transition gets taken
-                    if (!DfaStateHandler.TryTakeDFATransition(this, ref currStateId, positionId) || pos >= lengthMinus1)
+                    if (!DfaStateHandler.TryTakeDFATransition(this, ref currStateId, positionId)|| pos >= lengthMinus1)
+                    {
+                        pos++;
+                        if (pos < input.Length)
+                        {
+                            return false;
+                        }
+                        // one off check for the final position
+                        // this is just to move it out of the hot loop
+                        if ((!_stateFlagsArray[currStateId].IsNullable() &&
+                             !_stateArray[currStateId]!.IsNullableFor(
+                                 GetPositionKind(-1))))
+                        {
+                            return false;
+                        }
+                        // the end position (-1) was nullable
+                        endPos = pos;
+                        endStateId = currStateId;
+                        return mode == RegexRunnerMode.ExistenceRequired;
+                    }
+
+                    // We successfully transitioned, so update our current input index to match.
+                    pos++;
+                }
+            }
+            finally
+            {
+                // Write back the local copies of the ref values.
+                posRef = pos;
+                endPosRef = endPos;
+                endStateIdRef = endStateId;
+                initialStatePosRef = endStateId > 0 ? initialStatePosCandidateRef : initialStatePosRef;
+            }
+        }
+
+        /// <summary>
+        /// TODO: this is essentially a stripped down version when there's no good prefix optimizations
+        /// i don't trust the compiler to optimize this and it makes a
+        /// ~50% difference in performance with removing unnecessary checks alone
+        /// </summary>
+        private bool FindEndPositionDeltasDFANoSkip(ReadOnlySpan<char> input, int lengthMinus1, RegexRunnerMode mode,
+                ref int posRef, int startStateId, ref int endPosRef, ref int endStateIdRef, ref int initialStatePosRef, ref int initialStatePosCandidateRef)
+        {
+            // To avoid frequent reads/writes to ref and out values, make and operate on local copies, which we then copy back once before returning.
+            int pos = posRef;
+            int endPos = endPosRef;
+            // can only be used with full array initialized and <= 255 minterms
+            byte[] mtlookup = _mintermClassifier.ByteLookup()!;
+            int endStateId = endStateIdRef;
+            int currStateId = startStateId;
+            try
+            {
+                // Loop through each character in the input, transitioning from state to state for each.
+                while (true)
+                {
+                    if (currStateId == _deadStateId)
+                    {
+                        return true;
+                    }
+                    // If the state is nullable for the next character, meaning it accepts the empty string,
+                    // we found a potential end state.
+                    if (_canBeNullableArray[currStateId])
+                    {
+                        if (_stateFlagsArray[currStateId].IsNullable()
+                            || _stateArray[currStateId]!.IsNullableFor(GetPositionKind(mtlookup[input[pos]])))
+                        {
+                            endPos = pos;
+                            endStateId = currStateId;
+                            // A match is known to exist.  If that's all we need to know, we're done.
+                            if (mode == RegexRunnerMode.ExistenceRequired)
+                            {
+                                return true;
+                            }
+                        }
+                    }
+
+                    // If there is more input available try to transition with the next character.
+                    // Note: the order here is important so the transition gets taken
+                    if (!DfaStateHandler.TryTakeDFATransition(this, ref currStateId, mtlookup[input[pos]])|| pos >= lengthMinus1)
                     {
                         pos++;
                         if (pos < input.Length)
