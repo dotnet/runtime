@@ -5683,8 +5683,6 @@ void emitter::emitLoopAlign(unsigned paddingBytes, bool isFirstAlign DEBUG_ARG(b
         // first align instruction
         id->idaLoopHeadPredIG = emitCurIG;
         emitAlignLastGroup    = id;
-
-        JITDUMP("Loop head predecessor is IG%02u for first align instruction\n", id->idaLoopHeadPredIG->igNum);
     }
     else
     {
