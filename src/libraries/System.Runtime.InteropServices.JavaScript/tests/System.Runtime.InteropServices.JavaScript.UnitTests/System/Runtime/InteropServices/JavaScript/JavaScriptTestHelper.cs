@@ -37,6 +37,9 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [JSImport("delay", "JavaScriptTestHelper")]
         public static partial Task Delay(int ms);
 
+        [JSImport("reject", "JavaScriptTestHelper")]
+        public static partial Task Reject([JSMarshalAs<JSType.Any>] object what);
+
         [JSImport("intentionallyMissingImport", "JavaScriptTestHelper")]
         public static partial void IntentionallyMissingImport();
 

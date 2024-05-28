@@ -214,11 +214,15 @@ namespace Internal.IL
                     if (region.Kind == ILExceptionRegionKind.Catch)
                     {
                         TypeDesc catchType = (TypeDesc)_methodIL.GetObject(region.ClassToken);
+
+                        // EH tables refer to this type
                         if (catchType.IsRuntimeDeterminedSubtype)
                         {
-                            // For runtime determined Exception types we're going to emit a fake EH filter with isinst for this
-                            // type with a runtime lookup
-                            _dependencies.Add(GetGenericLookupHelper(ReadyToRunHelperId.TypeHandleForCasting, catchType), "EH filter");
+                            _dependencies.Add(GetGenericLookupHelper(ReadyToRunHelperId.TypeHandleForCasting, catchType), "EH");
+                        }
+                        else
+                        {
+                            _dependencies.Add(_compilation.ComputeConstantLookup(ReadyToRunHelperId.TypeHandleForCasting, catchType), "EH");
                         }
                     }
                 }
@@ -972,6 +976,9 @@ namespace Internal.IL
             var field = (FieldDesc)_methodIL.GetObject(token);
             var canonField = (FieldDesc)_canonMethodIL.GetObject(token);
 
+            if (field.IsLiteral)
+                ThrowHelper.ThrowMissingFieldException(field.OwningType, field.Name);
+
             _compilation.NodeFactory.MetadataManager.GetDependenciesDueToAccess(ref _dependencies, _compilation.NodeFactory, _canonMethodIL, canonField);
 
             // `write` will be null for ld(s)flda. Consider address loads write unless they were
@@ -1008,20 +1015,21 @@ namespace Internal.IL
                 if (field.IsLiteral)
                     ThrowHelper.ThrowMissingFieldException(field.OwningType, field.Name);
 
+                ReadyToRunHelperId helperId;
                 if (field.HasRva)
                 {
                     // We don't care about field RVA data for the usual cases, but if this is one of the
                     // magic fields the compiler synthetized, the data blob might bring more dependencies
                     // and we need to scan those.
                     _dependencies.Add(_compilation.GetFieldRvaData(field), reason);
-                    // RVA static fields in generic types not implemented
-                    Debug.Assert(!field.OwningType.HasInstantiation);
-                    if (_compilation.HasLazyStaticConstructor(field.OwningType))
-                        _dependencies.Add(_factory.TypeNonGCStaticsSymbol((MetadataType)field.OwningType), "Cctor context");
+                    if (_compilation.HasLazyStaticConstructor(canonField.OwningType))
+                    {
+                        helperId = ReadyToRunHelperId.GetNonGCStaticBase;
+                        goto addBase;
+                    }
                     return;
                 }
 
-                ReadyToRunHelperId helperId;
                 if (field.IsThreadStatic)
                 {
                     helperId = ReadyToRunHelperId.GetThreadStaticBase;
@@ -1035,6 +1043,7 @@ namespace Internal.IL
                     helperId = ReadyToRunHelperId.GetNonGCStaticBase;
                 }
 
+            addBase:
                 TypeDesc owningType = field.OwningType;
                 if (owningType.IsRuntimeDeterminedSubtype)
                 {

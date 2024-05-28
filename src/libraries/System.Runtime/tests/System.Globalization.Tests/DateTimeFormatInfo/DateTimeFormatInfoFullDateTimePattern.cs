@@ -28,11 +28,12 @@ namespace System.Globalization.Tests
         {
             yield return new object[] { new CultureInfo("ar-SA").DateTimeFormat, "dddd، d MMMM yyyy h:mm:ss tt" }; // dddd، d MMMM yyyy g h:mm:ss tt
             yield return new object[] { new CultureInfo("am-ET").DateTimeFormat, "yyyy MMMM d, dddd h:mm:ss tt" };
-            yield return new object[] { new CultureInfo("bg-BG").DateTimeFormat, "dddd, d MMMM yyyy г. H:mm:ss ч." }; // dddd, d MMMM yyyy 'г'. H:mm:ss
+            yield return new object[] { new CultureInfo("bg-BG").DateTimeFormat, PlatformDetection.IsFirefox ? "dddd, d MMMM yyyy г. H:mm:ss ч." : "dddd, d MMMM yyyy г. H:mm:ss" }; // dddd, d MMMM yyyy 'г'. H:mm:ss
             yield return new object[] { new CultureInfo("bn-BD").DateTimeFormat, "dddd, d MMMM, yyyy h:mm:ss tt" };
             yield return new object[] { new CultureInfo("bn-IN").DateTimeFormat, "dddd, d MMMM, yyyy h:mm:ss tt" };
-            yield return new object[] { new CultureInfo("ca-AD").DateTimeFormat, "dddd, d de MMMM de yyyy H:mm:ss" }; // dddd, d MMMM 'de' yyyy H:mm:ss
-            yield return new object[] { new CultureInfo("ca-ES").DateTimeFormat, "dddd, d de MMMM de yyyy H:mm:ss" }; // dddd, d MMMM 'de' yyyy H:mm:ss
+            string catalanPattern = PlatformDetection.IsFirefox ? "dddd, d de MMMM de yyyy H:mm:ss" : "dddd, d de MMMM del yyyy H:mm:ss";
+            yield return new object[] { new CultureInfo("ca-AD").DateTimeFormat, catalanPattern }; // dddd, d MMMM 'de' yyyy H:mm:ss
+            yield return new object[] { new CultureInfo("ca-ES").DateTimeFormat, catalanPattern }; // dddd, d MMMM 'de' yyyy H:mm:ss
             yield return new object[] { new CultureInfo("cs-CZ").DateTimeFormat, "dddd d. MMMM yyyy H:mm:ss" };
             yield return new object[] { new CultureInfo("da-DK").DateTimeFormat, "dddd den d. MMMM yyyy HH.mm.ss" }; // dddd 'den' d. MMMM yyyy HH.mm.ss
             yield return new object[] { new CultureInfo("de-AT").DateTimeFormat, "dddd, d. MMMM yyyy HH:mm:ss" };
@@ -49,7 +50,7 @@ namespace System.Globalization.Tests
             yield return new object[] { new CultureInfo("en-AI").DateTimeFormat, "dddd, d MMMM yyyy HH:mm:ss" };
             yield return new object[] { new CultureInfo("en-AS").DateTimeFormat, "dddd, MMMM d, yyyy h:mm:ss tt" };
             yield return new object[] { new CultureInfo("en-AT").DateTimeFormat, "dddd, d MMMM yyyy HH:mm:ss" };
-            yield return new object[] { new CultureInfo("en-AU").DateTimeFormat, "dddd, d MMMM yyyy h:mm:ss tt" };
+            yield return new object[] { new CultureInfo("en-AU").DateTimeFormat, PlatformDetection.IsFirefox ? "dddd, d MMMM yyyy h:mm:ss tt" : "dddd d MMMM yyyy h:mm:ss tt" };
             yield return new object[] { new CultureInfo("en-BB").DateTimeFormat, "dddd, d MMMM yyyy h:mm:ss tt" };
             yield return new object[] { new CultureInfo("en-BE").DateTimeFormat, "dddd, d MMMM yyyy HH:mm:ss" };
             yield return new object[] { new CultureInfo("en-BI").DateTimeFormat, "dddd, MMMM d, yyyy HH:mm:ss" };
@@ -72,7 +73,7 @@ namespace System.Globalization.Tests
             yield return new object[] { new CultureInfo("en-FJ").DateTimeFormat, "dddd, d MMMM yyyy h:mm:ss tt" };
             yield return new object[] { new CultureInfo("en-FK").DateTimeFormat, "dddd, d MMMM yyyy HH:mm:ss" };
             yield return new object[] { new CultureInfo("en-FM").DateTimeFormat, "dddd, d MMMM yyyy h:mm:ss tt" };
-            yield return new object[] { new CultureInfo("en-GB").DateTimeFormat, "dddd, d MMMM yyyy HH:mm:ss" };
+            yield return new object[] { new CultureInfo("en-GB").DateTimeFormat,  PlatformDetection.IsFirefox ? "dddd, d MMMM yyyy HH:mm:ss" : "dddd d MMMM yyyy HH:mm:ss" };
             yield return new object[] { new CultureInfo("en-GD").DateTimeFormat, "dddd, d MMMM yyyy h:mm:ss tt" };
             yield return new object[] { new CultureInfo("en-GG").DateTimeFormat, "dddd, d MMMM yyyy HH:mm:ss" };
             yield return new object[] { new CultureInfo("en-GH").DateTimeFormat, "dddd, d MMMM yyyy h:mm:ss tt" };
@@ -84,7 +85,7 @@ namespace System.Globalization.Tests
             yield return new object[] { new CultureInfo("en-IE").DateTimeFormat, "dddd d MMMM yyyy HH:mm:ss" };
             yield return new object[] { new CultureInfo("en-IL").DateTimeFormat, "dddd, d MMMM yyyy H:mm:ss" };
             yield return new object[] { new CultureInfo("en-IM").DateTimeFormat, "dddd, d MMMM yyyy HH:mm:ss" };
-            yield return new object[] { new CultureInfo("en-IN").DateTimeFormat, "dddd, d MMMM, yyyy h:mm:ss tt" };
+            yield return new object[] { new CultureInfo("en-IN").DateTimeFormat, PlatformDetection.IsFirefox ? "dddd, d MMMM, yyyy h:mm:ss tt" : "dddd d MMMM, yyyy h:mm:ss tt" };
             yield return new object[] { new CultureInfo("en-IO").DateTimeFormat, "dddd, d MMMM yyyy HH:mm:ss" };
             yield return new object[] { new CultureInfo("en-JE").DateTimeFormat, "dddd, d MMMM yyyy HH:mm:ss" };
             yield return new object[] { new CultureInfo("en-JM").DateTimeFormat, "dddd, d MMMM yyyy h:mm:ss tt" };
@@ -146,9 +147,10 @@ namespace System.Globalization.Tests
             yield return new object[] { new CultureInfo("en-ZA").DateTimeFormat, "dddd, d MMMM yyyy HH:mm:ss" }; // dddd, dd MMMM yyyy HH:mm:ss
             yield return new object[] { new CultureInfo("en-ZM").DateTimeFormat, "dddd, d MMMM yyyy h:mm:ss tt" };
             yield return new object[] { new CultureInfo("en-ZW").DateTimeFormat, "dddd, d MMMM yyyy HH:mm:ss" }; // dddd, dd MMMM yyyy HH:mm:ss
-            yield return new object[] { new CultureInfo("es-419").DateTimeFormat, "dddd, d de MMMM de yyyy HH:mm:ss" }; // dddd, d 'de' MMMM 'de' yyyy HH:mm:ss
+            string latinAmericaSpanishFormat = PlatformDetection.IsFirefox ? "dddd, d de MMMM de yyyy HH:mm:ss" : "dddd, d de MMMM de yyyy h:mm:ss tt"; // dddd, d 'de' MMMM 'de' yyyy HH:mm:ss
+            yield return new object[] { new CultureInfo("es-419").DateTimeFormat, latinAmericaSpanishFormat };
             yield return new object[] { new CultureInfo("es-ES").DateTimeFormat, "dddd, d de MMMM de yyyy H:mm:ss" }; // dddd, d 'de' MMMM 'de' yyyy H:mm:ss
-            yield return new object[] { new CultureInfo("es-MX").DateTimeFormat, "dddd, d de MMMM de yyyy HH:mm:ss" }; // dddd, d 'de' MMMM 'de' yyyy H:mm:ss
+            yield return new object[] { new CultureInfo("es-MX").DateTimeFormat, latinAmericaSpanishFormat };
             yield return new object[] { new CultureInfo("et-EE").DateTimeFormat, "dddd, d. MMMM yyyy HH:mm:ss" };
             yield return new object[] { new CultureInfo("fa-IR").DateTimeFormat, "yyyy MMMM d, dddd H:mm:ss" };
             yield return new object[] { new CultureInfo("fi-FI").DateTimeFormat, "dddd d. MMMM yyyy H.mm.ss" };

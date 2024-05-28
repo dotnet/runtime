@@ -276,7 +276,6 @@ The System.Text.Json library is built-in as part of the shared framework in .NET
     <Compile Include="System\Text\Json\Serialization\Metadata\JsonTypeInfo.Cache.cs" />
     <Compile Include="System\Text\Json\Serialization\Metadata\JsonTypeInfo.cs" />
     <Compile Include="System\Text\Json\Serialization\Metadata\MemberAccessor.cs" />
-    <Compile Include="System\Text\Json\Serialization\Metadata\ParameterRef.cs" />
     <Compile Include="System\Text\Json\Serialization\Metadata\PolymorphicTypeResolver.cs" />
     <Compile Include="System\Text\Json\Serialization\Metadata\PropertyRef.cs" />
     <Compile Include="System\Text\Json\Serialization\Metadata\ReflectionEmitCachingMemberAccessor.Cache.cs" />
@@ -347,6 +346,8 @@ The System.Text.Json library is built-in as part of the shared framework in .NET
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\DynamicallyAccessedMemberTypes.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\RequiresUnreferencedCodeAttribute.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\UnconditionalSuppressMessageAttribute.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Reflection\NullabilityInfo.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Reflection\NullabilityInfoContext.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' and $([MSBuild]::VersionGreaterThanOrEquals('$(TargetFrameworkVersion)', '7.0'))">

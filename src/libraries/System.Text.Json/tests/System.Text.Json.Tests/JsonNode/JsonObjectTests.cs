@@ -1126,7 +1126,7 @@ namespace System.Text.Json.Nodes.Tests
 
             public string Name { get; set; }
 
-            public SimpleClass NestedObject { get; set; }
+            public SimpleClass? NestedObject { get; set; }
         }
 
         [Fact]

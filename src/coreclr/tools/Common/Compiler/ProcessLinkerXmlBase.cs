@@ -217,9 +217,10 @@ namespace ILCompiler
                         continue;
                 }
 
-                // TODO: Process exported types
+                MetadataType? type = CecilCompatibleTypeParser.GetType(assembly, fullname);
 
-                TypeDesc? type = CecilCompatibleTypeParser.GetType(assembly, fullname);
+                if (type != null && type.Module != assembly)
+                    type = ProcessExportedType(type, assembly, typeNav);
 
                 if (type == null)
                 {
@@ -233,6 +234,8 @@ namespace ILCompiler
                 ProcessType(type, typeNav);
             }
         }
+
+        protected virtual MetadataType? ProcessExportedType(MetadataType exported, ModuleDesc assembly, XPathNavigator nav) => exported;
 
         private void MatchType(TypeDesc type, Regex regex, XPathNavigator nav)
         {
@@ -759,7 +762,7 @@ namespace ILCompiler
 
     public class CecilCompatibleTypeParser
     {
-        public static TypeDesc? GetType(ModuleDesc assembly, string fullName)
+        public static MetadataType? GetType(ModuleDesc assembly, string fullName)
         {
             Debug.Assert(!string.IsNullOrEmpty(fullName));
             var position = fullName.IndexOf('/');

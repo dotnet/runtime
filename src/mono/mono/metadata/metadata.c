@@ -2435,15 +2435,7 @@ mono_metadata_signature_dup_internal (MonoImage *image, MonoMemPool *mp, MonoMem
 	if (sig->ret)
 		sigsize += mono_sizeof_type (sig->ret);
 
-	if (image) {
-		ret = (MonoMethodSignature *)mono_image_alloc (image, (guint)sigsize);
-	} else if (mp) {
-		ret = (MonoMethodSignature *)mono_mempool_alloc (mp, (unsigned int)sigsize);
-	} else if (mem_manager) {
-		ret = (MonoMethodSignature *)mono_mem_manager_alloc (mem_manager, (guint)sigsize);
-	} else {
-		ret = (MonoMethodSignature *)g_malloc (sigsize);
-	}
+	ret = mono_metadata_signature_allocate_internal (image, mp, mem_manager, sigsize);
 
 	memcpy (ret, sig, sig_header_size - padding);
 
@@ -2456,6 +2448,29 @@ mono_metadata_signature_dup_internal (MonoImage *image, MonoMemPool *mp, MonoMem
 	}
 
 	return ret;
+}
+
+/**
+ * Allocates memory for a MonoMethodSignature based on the provided parameters.
+ * 
+ * @param image MonoImage for allocation.
+ * @param mp MonoMemPool for allocation.
+ * @param mem_manager MonoMemoryManager for allocation.
+ * @param sig_size Size of the signature to allocate.
+ * @return Pointer to the allocated MonoMethodSignature.
+ */
+MonoMethodSignature*
+mono_metadata_signature_allocate_internal (MonoImage *image, MonoMemPool *mp, MonoMemoryManager *mem_manager, size_t sig_size)
+{
+    if (image) {
+        return (MonoMethodSignature *)mono_image_alloc (image, (guint)sig_size);
+    } else if (mp) {
+        return (MonoMethodSignature *)mono_mempool_alloc (mp, (unsigned int)sig_size);
+    } else if (mem_manager) {
+        return (MonoMethodSignature *)mono_mem_manager_alloc (mem_manager, (guint)sig_size);
+    } else {
+        return (MonoMethodSignature *)g_malloc (sig_size);
+    }
 }
 
 /*
@@ -2542,6 +2557,38 @@ mono_metadata_signature_dup_delegate_invoke_to_target (MonoMethodSignature *sig)
 		res->params [i] = sig->params [i + 1];
 	}
 	res->param_count --;
+
+	return res;
+}
+
+/**
+ * mono_metadata_signature_dup_new_params:
+ * @param mp The mempool to allocate the new signature from.
+ * @param mem_manager The memory manager to allocate the new signature from.
+ * @param sig The original method signature.
+ * @param num_params The number parameters in the new signature.
+ * @param new_params An array of MonoType pointers representing the new parameters.
+ * 
+ * Duplicate an existing \c MonoMethodSignature but with a new set of parameters.
+ * This is a Mono runtime internal function.
+ * 
+ * @return the new \c MonoMethodSignature structure.
+ */
+MonoMethodSignature*
+mono_metadata_signature_dup_new_params (MonoMemPool *mp, MonoMemoryManager *mem_manager, MonoMethodSignature *sig, uint32_t num_params, MonoType **new_params)
+{
+	size_t new_sig_size = MONO_SIZEOF_METHOD_SIGNATURE + num_params * sizeof (MonoType*);
+	if (sig->ret)
+		new_sig_size += mono_sizeof_type (sig->ret);
+
+	MonoMethodSignature *res = mono_metadata_signature_allocate_internal (NULL, mp, mem_manager, new_sig_size);
+	memcpy (res, sig, MONO_SIZEOF_METHOD_SIGNATURE);
+	res->param_count = GUINT32_TO_UINT16 (num_params);
+
+	for (uint16_t i = 0; i < res->param_count; i++) {
+		res->params [i] = new_params [i];
+	}
+	res->ret = sig->ret;
 
 	return res;
 }
