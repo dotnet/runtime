@@ -123,6 +123,12 @@ namespace System.Net.Security.Tests
 
                 Assert.Equal(expected, client.NegotiatedApplicationProtocol);
                 Assert.Equal(expected, server.NegotiatedApplicationProtocol);
+
+                await TestHelper.PingPong(client, server);
+                await TestHelper.PingPong(server, client);
+
+                Assert.Equal(expected, client.NegotiatedApplicationProtocol);
+                Assert.Equal(expected, server.NegotiatedApplicationProtocol);
             }
         }
 
@@ -184,7 +190,7 @@ namespace System.Net.Security.Tests
                     {
                         SslClientAuthenticationOptions clientOptions = new SslClientAuthenticationOptions
                         {
-                            ApplicationProtocols = new List<SslApplicationProtocol> { SslApplicationProtocol.Http2 , SslApplicationProtocol.Http11 },
+                            ApplicationProtocols = new List<SslApplicationProtocol> { SslApplicationProtocol.Http2, SslApplicationProtocol.Http11 },
                             TargetHost = server.Host
                         };
 
@@ -220,7 +226,7 @@ namespace System.Net.Security.Tests
         public override bool TestAuthenticateAsync => true;
 
         public SslStreamAlpnTest_Async(ITestOutputHelper output)
-            : base (output) { }
+            : base(output) { }
     }
 
     public sealed class SslStreamAlpnTest_Sync : SslStreamAlpnTestBase
