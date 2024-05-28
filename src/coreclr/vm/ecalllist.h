@@ -434,8 +434,6 @@ FCFuncStart(gMonitorFuncs)
 FCFuncEnd()
 
 FCFuncStart(gRuntimeHelpers)
-    FCFuncElement("InitializeArray", ArrayNative::InitializeArray)
-    FCFuncElement("GetSpanDataFrom", ArrayNative::GetSpanDataFrom)
     FCFuncElement("PrepareDelegate", ReflectionInvocation::PrepareDelegate)
     FCFuncElement("GetHashCode", ObjectNative::GetHashCode)
     FCFuncElement("TryGetHashCode", ObjectNative::TryGetHashCode)

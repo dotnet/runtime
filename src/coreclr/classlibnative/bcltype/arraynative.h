@@ -13,26 +13,7 @@
 #ifndef _ARRAYNATIVE_H_
 #define _ARRAYNATIVE_H_
 
-#include "fcall.h"
-#include "runtimehandles.h"
-
-struct FCALLRuntimeFieldHandle
-{
-    ReflectFieldObject *pFieldDONOTUSEDIRECTLY;
-};
-#define FCALL_RFH_TO_REFLECTFIELD(x) (x).pFieldDONOTUSEDIRECTLY
-
-class ArrayNative
-{
-public:
-    // This method will initialize an array from a TypeHandle
-    // to a field.
-    static FCDECL2_IV(void, InitializeArray, ArrayBase* vArrayRef, FCALLRuntimeFieldHandle structField);
-
-    // This method will acquire data to create a span from a TypeHandle
-    // to a field.
-    static FCDECL3_VVI(void*, GetSpanDataFrom, FCALLRuntimeFieldHandle structField, FCALLRuntimeTypeHandle targetTypeUnsafe, INT32* count);
-};
+#include "qcall.h"
 
 extern "C" void QCALLTYPE Array_CreateInstance(QCall::TypeHandle pTypeHnd, INT32 rank, INT32* pLengths, INT32* pBounds, BOOL createFromArrayType, QCall::ObjectHandleOnStack retArray);
 extern "C" PCODE QCALLTYPE Array_GetElementConstructorEntrypoint(QCall::TypeHandle pArrayTypeHnd);
