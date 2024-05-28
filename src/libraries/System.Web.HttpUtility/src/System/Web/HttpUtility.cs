@@ -195,31 +195,28 @@ namespace System.Web
         [return: NotNullIfNotNull(nameof(str))]
         public static byte[]? UrlDecodeToBytes(string? str, Encoding e)
         {
+            const int maxAllowedStackAllowedEncodingBytes = 512;
             if (str == null)
             {
                 return null;
             }
 
-            //do not execute Encoding.GetMaxByteCount if input is too big
-            if (str.Length < 256)
+            int maxBytesCount = e.GetMaxByteCount(str.Length);
+            if (maxBytesCount <= maxAllowedStackAllowedEncodingBytes)
             {
-                int maxBytesCount = e.GetMaxByteCount(str.Length);
-                if (maxBytesCount < 512)
-                {
-                    //do not allocate byte[] when getting bytes from Encoding if less than stackalloc limit
-                    Span<byte> bytes = stackalloc byte[512];
-                    int encodedBytes = e.GetBytes(str, bytes);
+                // do not allocate byte[] when getting bytes from Encoding if less than stackalloc limit
+                Span<byte> bytes = stackalloc byte[maxAllowedStackAllowedEncodingBytes];
+                int encodedBytes = e.GetBytes(str, bytes);
 
-                    return UrlDecodeToBytes(bytes, 0, encodedBytes);
-                }
+                return HttpEncoder.UrlDecode(bytes.Slice(0, encodedBytes));
             }
 
-            //no optimization possible, let Encoding allocate byte[]
+            // no optimization possible, let Encoding allocate byte[]
             return UrlDecodeToBytes(e.GetBytes(str));
         }
 
         [return: NotNullIfNotNull(nameof(bytes))]
-        public static byte[]? UrlDecodeToBytes(byte[]? bytes) => bytes == null ? null : UrlDecodeToBytes(bytes.AsSpan(), 0, bytes.Length);
+        public static byte[]? UrlDecodeToBytes(byte[]? bytes) => bytes == null ? null : HttpEncoder.UrlDecode(bytes.AsSpan(0, bytes.Length));
 
         [return: NotNullIfNotNull(nameof(str))]
         public static byte[]? UrlEncodeToBytes(string? str, Encoding e)
@@ -249,7 +246,6 @@ namespace System.Web
 
         [return: NotNullIfNotNull(nameof(bytes))]
         public static byte[]? UrlDecodeToBytes(byte[]? bytes, int offset, int count) => HttpEncoder.UrlDecode(bytes, offset, count);
-        private static byte[] UrlDecodeToBytes(ReadOnlySpan<byte> bytes, int offset, int count) => HttpEncoder.UrlDecode(bytes, offset, count);
 
         public static string JavaScriptStringEncode(string? value) => HttpEncoder.JavaScriptStringEncode(value);
 

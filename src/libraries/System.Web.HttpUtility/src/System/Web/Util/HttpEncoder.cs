@@ -212,25 +212,27 @@ namespace System.Web.Util
                 return null;
             }
 
-            return UrlDecode(bytes.AsSpan(), offset, count);
+            return UrlDecode(bytes.AsSpan(offset, count));
         }
 
 
-        internal static byte[] UrlDecode(ReadOnlySpan<byte> bytes, int offset, int count)
+        internal static byte[] UrlDecode(ReadOnlySpan<byte> bytes)
         {
-            int decodedBytesCount = 0;
-            Span<byte> decodedBytes = count < 256 ? stackalloc byte[256] : new byte[count];
+            const int maxAllowedStackAllowedDecodedBytes = 512;
 
-            for (int i = 0; i < count; i++)
+            int decodedBytesCount = 0;
+            int count = bytes.Length;
+            Span<byte> decodedBytes = count <= maxAllowedStackAllowedDecodedBytes ? stackalloc byte[maxAllowedStackAllowedDecodedBytes] : new byte[count];
+
+            for (int pos = 0; pos < count; pos++)
             {
-                int pos = offset + i;
                 byte b = bytes[pos];
 
                 if (b == '+')
                 {
                     b = (byte)' ';
                 }
-                else if (b == '%' && i < count - 2)
+                else if (b == '%' && pos < count - 2)
                 {
                     int h1 = HexConverter.FromChar(bytes[pos + 1]);
                     int h2 = HexConverter.FromChar(bytes[pos + 2]);
@@ -239,21 +241,14 @@ namespace System.Web.Util
                     {
                         // valid 2 hex chars
                         b = (byte)((h1 << 4) | h2);
-                        i += 2;
+                        pos += 2;
                     }
                 }
 
                 decodedBytes[decodedBytesCount++] = b;
             }
 
-            if (decodedBytesCount < count)
-            {
-                byte[] newDecodedBytes = new byte[decodedBytesCount];
-                decodedBytes.Slice(0, decodedBytesCount).CopyTo(newDecodedBytes);
-                return newDecodedBytes;
-            }
-
-            return decodedBytes.Slice(0, count).ToArray();
+            return decodedBytes.Slice(0, decodedBytesCount).ToArray();
         }
 
         [return: NotNullIfNotNull(nameof(bytes))]
