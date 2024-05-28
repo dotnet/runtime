@@ -6257,9 +6257,9 @@ void LinearScan::allocateRegisters()
             // it might be beneficial to keep it in this reg for PART of the lifetime
             if (currentInterval->isLocalVar)
             {
-                SingleTypeRegSet preferences = currentInterval->registerPreferences;
-                bool      keepAssignment     = true;
-                bool      matchesPreferences = (preferences & genSingleTypeRegMask(assignedRegister)) != RBM_NONE;
+                SingleTypeRegSet preferences    = currentInterval->registerPreferences;
+                bool             keepAssignment = true;
+                bool matchesPreferences         = (preferences & genSingleTypeRegMask(assignedRegister)) != RBM_NONE;
 
                 // Will the assigned register cover the lifetime?  If not, does it at least
                 // meet the preferences for the next RefPosition?
@@ -6618,7 +6618,8 @@ void LinearScan::allocateRegisters()
                 if (currentRefPosition.isFixedRegRef && !currentInterval->isActive &&
                     (currentInterval->assignedReg != nullptr) &&
                     (currentInterval->assignedReg->assignedInterval == currentInterval) &&
-                    (genSingleTypeRegMask(currentInterval->assignedReg->regNum) != currentRefPosition.registerAssignment))
+                    (genSingleTypeRegMask(currentInterval->assignedReg->regNum) !=
+                     currentRefPosition.registerAssignment))
                 {
                     unassignPhysReg(currentInterval->assignedReg, nullptr);
                 }
