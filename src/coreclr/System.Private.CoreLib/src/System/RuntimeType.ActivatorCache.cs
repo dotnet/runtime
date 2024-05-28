@@ -13,7 +13,7 @@ namespace System
         /// A cache which allows optimizing <see cref="Activator.CreateInstance"/>,
         /// <see cref="CreateInstanceDefaultCtor"/>, and related APIs.
         /// </summary>
-        private sealed unsafe class ActivatorCache : IGenericCacheEntry<ActivatorCache>
+        internal sealed unsafe class ActivatorCache : IGenericCacheEntry<ActivatorCache>
         {
             // The managed calli to the newobj allocator, plus its first argument (MethodTable*).
             // In the case of the COM allocator, first arg is ComClassFactory*, not MethodTable*.
@@ -28,9 +28,9 @@ namespace System
             private readonly RuntimeType _originalRuntimeType;
 #endif
 
-            static IGenericCacheEntry.GenericCacheKind IGenericCacheEntry<ActivatorCache>.Kind => IGenericCacheEntry.GenericCacheKind.Activator;
-
-            public static ActivatorCache Create(RuntimeType type) => new ActivatorCache(type);
+            public static ActivatorCache Create(RuntimeType type) => new(type);
+            public void InitializeCompositeCache(RuntimeType.CompositeCacheEntry compositeEntry) => compositeEntry._activatorCache = this;
+            public static ref ActivatorCache? GetStorageRef(RuntimeType.CompositeCacheEntry compositeEntry) => ref compositeEntry._activatorCache;
 
             private ActivatorCache(RuntimeType rt)
             {

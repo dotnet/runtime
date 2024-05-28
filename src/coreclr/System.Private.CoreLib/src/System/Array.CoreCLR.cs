@@ -662,17 +662,14 @@ namespace System
             [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Array_GetElementConstructorEntrypoint")]
             private static partial delegate*<ref byte, void> GetElementConstructorEntrypoint(QCallTypeHandle arrayType);
 
-            static RuntimeType.IGenericCacheEntry.GenericCacheKind RuntimeType.IGenericCacheEntry<ArrayInitializeCache>.Kind => RuntimeType.IGenericCacheEntry.GenericCacheKind.ArrayInitialize;
-
             private ArrayInitializeCache(delegate*<ref byte, void> constructorEntrypoint)
             {
                 ConstructorEntrypoint = constructorEntrypoint;
             }
 
-            public static ArrayInitializeCache Create(RuntimeType arrayType)
-            {
-                return new(GetElementConstructorEntrypoint(new QCallTypeHandle(ref arrayType)));
-            }
+            public static ArrayInitializeCache Create(RuntimeType arrayType) => new(GetElementConstructorEntrypoint(new QCallTypeHandle(ref arrayType)));
+            public void InitializeCompositeCache(RuntimeType.CompositeCacheEntry compositeEntry) => compositeEntry._arrayInitializeCache = this;
+            public static ref ArrayInitializeCache? GetStorageRef(RuntimeType.CompositeCacheEntry compositeEntry) => ref compositeEntry._arrayInitializeCache;
         }
     }
 

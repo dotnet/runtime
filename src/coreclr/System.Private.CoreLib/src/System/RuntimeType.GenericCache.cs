@@ -5,67 +5,33 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Threading;
+using static System.RuntimeType;
 
 namespace System
 {
     internal sealed partial class RuntimeType
     {
         /// <summary>
+        /// A composite cache entry that can store multiple cache entries of different kinds.
+        /// </summary>
+        internal sealed class CompositeCacheEntry : IGenericCacheEntry
+        {
+            internal ActivatorCache? _activatorCache;
+            internal CreateUninitializedCache? _createUninitializedCache;
+            internal RuntimeTypeCache.FunctionPointerCache? _functionPointerCache;
+            internal Array.ArrayInitializeCache? _arrayInitializeCache;
+            internal IGenericCacheEntry? _enumInfo;
+
+            void IGenericCacheEntry.InitializeCompositeCache(CompositeCacheEntry compositeEntry) => throw new UnreachableException();
+        }
+
+        /// <summary>
         /// A base interface for all cache entries that can be stored in <see cref="RuntimeTypeCache.GenericCache"/>.
         /// </summary>
         internal interface IGenericCacheEntry
         {
-            /// <summary>
-            /// The different kinds of entries that can be stored in <see cref="RuntimeTypeCache.GenericCache"/>.
-            /// </summary>
-            protected enum GenericCacheKind
-            {
-                ArrayInitialize,
-                EnumInfo,
-                Activator,
-                CreateUninitialized,
-                FunctionPointer,
-                /// <summary>
-                /// The number of different kinds of cache entries. This should always be the last entry.
-                /// </summary>
-                Count
-            }
-
-            protected abstract GenericCacheKind Kind { get; }
-
-            /// <summary>
-            /// A composite cache entry that can store multiple cache entries of different kinds.
-            /// </summary>
-            protected sealed class CompositeCacheEntry : IGenericCacheEntry
-            {
-                GenericCacheKind IGenericCacheEntry.Kind => throw new UnreachableException();
-
-                [InlineArray((int)GenericCacheKind.Count)]
-                private struct Storage
-                {
-                    // Typed as object as interfaces with static abstracts can't be
-                    // used directly as generic types.
-                    private IGenericCacheEntry? _field;
-                }
-
-                private Storage _storage;
-
-                public CompositeCacheEntry(IGenericCacheEntry cache)
-                {
-                    _storage[(int)cache.Kind] = cache;
-                }
-
-                public IGenericCacheEntry? GetNestedCache(GenericCacheKind kind)
-                {
-                    return _storage[(int)kind];
-                }
-
-                public IGenericCacheEntry OverwriteNestedCache(GenericCacheKind kind, IGenericCacheEntry cache)
-                {
-                    _storage[(int)kind] = cache;
-                    return cache;
-                }
-            }
+            public void InitializeCompositeCache(CompositeCacheEntry compositeEntry);
         }
 
         /// <summary>
@@ -74,24 +40,11 @@ namespace System
         /// </summary>
         /// <typeparam name="TCache">The cache entry type.</typeparam>
         internal interface IGenericCacheEntry<TCache> : IGenericCacheEntry
-            where TCache: class, IGenericCacheEntry<TCache>
+            where TCache : class, IGenericCacheEntry<TCache>
         {
-            GenericCacheKind IGenericCacheEntry.Kind => TCache.Kind;
-
-            protected static new abstract GenericCacheKind Kind { get; }
-
             public static abstract TCache Create(RuntimeType type);
 
-            private static CompositeCacheEntry GetOrUpgradeToCompositeCache(ref IGenericCacheEntry currentCache)
-            {
-                if (currentCache is not CompositeCacheEntry composite)
-                {
-                    // Convert the current cache into a composite cache.
-                    currentCache = composite = new(currentCache);
-                }
-
-                return composite;
-            }
+            public static abstract ref TCache? GetStorageRef(CompositeCacheEntry compositeEntry);
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static TCache GetOrCreate(RuntimeType type)
@@ -99,71 +52,58 @@ namespace System
                 ref IGenericCacheEntry? genericCache = ref type.Cache.GenericCache;
                 // Read the GenericCache once to avoid multiple reads of the same field.
                 IGenericCacheEntry? currentCache = genericCache;
-                if (currentCache is null)
+                if (currentCache is not null)
                 {
-                    TCache newCache = TCache.Create(type);
-                    genericCache = newCache;
-                    return newCache;
-                }
-                else if (currentCache is TCache existing)
-                {
-                    return existing;
-                }
-
-                CompositeCacheEntry composite = GetOrUpgradeToCompositeCache(ref currentCache);
-                // Update the GenericCache with the new composite cache if it changed.
-                // If we race here it's okay, we might just end up re-creating a new entry next time.
-                genericCache = currentCache;
-
-                if (composite.GetNestedCache(TCache.Kind) is TCache cache)
-                {
-                    return cache;
+                    if (currentCache is TCache existing)
+                    {
+                        return existing;
+                    }
+                    if (currentCache is CompositeCacheEntry composite)
+                    {
+                        TCache? existingComposite = TCache.GetStorageRef(composite);
+                        if (existingComposite != null)
+                            return existingComposite;
+                    }
                 }
 
-                return (TCache)composite.OverwriteNestedCache(TCache.Kind, TCache.Create(type));
+                return CreateAndCache(type);
             }
 
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static TCache? Find(RuntimeType type)
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            private static TCache CreateAndCache(RuntimeType type)
             {
-                IGenericCacheEntry? genericCache = type.CacheIfExists?.GenericCache;
-                if (genericCache is null)
+                while (true)
                 {
-                    return null;
-                }
-                else if (genericCache is TCache existing)
-                {
-                    return existing;
-                }
-                else if (genericCache is CompositeCacheEntry composite)
-                {
-                    return (TCache?)composite.GetNestedCache(TCache.Kind);
-                }
-                else
-                {
-                    return null;
-                }
-            }
+                    ref IGenericCacheEntry? genericCache = ref type.Cache.GenericCache;
 
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static void Overwrite(RuntimeType type, TCache cache)
-            {
-                ref IGenericCacheEntry? genericCache = ref type.Cache.GenericCache;
-                IGenericCacheEntry? currentCache = genericCache;
-                if (currentCache is null)
-                {
-                    genericCache = cache;
-                    return;
-                }
+                    // Update to CompositeCacheEntry if necessary
+                    IGenericCacheEntry? existing = genericCache;
+                    if (existing is null)
+                    {
+                        TCache newEntry = TCache.Create(type);
+                        if (Interlocked.CompareExchange(ref genericCache, newEntry, null) == null)
+                            return newEntry;
+                        // We lost the race, try again.
+                    }
+                    else
+                    {
+                        if (existing is TCache existingTyped)
+                            return existingTyped;
 
-                // Always upgrade to a composite cache here.
-                // We would like to be able to avoid this when the GenericCache is the same type as the current cache,
-                // but we can't easily do a lock-free CompareExchange with the current design,
-                // and we can't assume that we won't have one thread adding another item to the cache
-                // while another is trying to overwrite the (currently) only entry in the cache.
-                CompositeCacheEntry composite = GetOrUpgradeToCompositeCache(ref currentCache);
-                genericCache = currentCache;
-                composite.OverwriteNestedCache(TCache.Kind, cache);
+                        if (existing is not CompositeCacheEntry compositeCache)
+                        {
+                            compositeCache = new CompositeCacheEntry();
+                            existing.InitializeCompositeCache(compositeCache);
+                            if (Interlocked.CompareExchange(ref genericCache, compositeCache, existing) != existing)
+                                continue; // We lost the race, try again.
+                        }
+
+                        TCache newEntry = TCache.Create(type);
+                        if (Interlocked.CompareExchange(ref TCache.GetStorageRef(compositeCache), newEntry, null) == null)
+                            return newEntry;
+                        // We lost the race, try again.
+                    }
+                }
             }
         }
     }

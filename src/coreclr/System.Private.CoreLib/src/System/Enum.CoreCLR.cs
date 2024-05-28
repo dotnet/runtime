@@ -87,6 +87,8 @@ namespace System
                 typeof(TStorage) == typeof(nuint) || typeof(TStorage) == typeof(float) || typeof(TStorage) == typeof(double) || typeof(TStorage) == typeof(char),
                 $"Unexpected {nameof(TStorage)} == {typeof(TStorage)}");
 
+            return EnumInfo<TStorage>.CreateWithNames(enumType);
+#if false // TODO!!!!!
             return enumType.FindCacheEntry<EnumInfo<TStorage>>() is {} info && (!getNames || info.Names is not null) ?
                 info :
                 InitializeEnumInfo(enumType, getNames);
@@ -101,13 +103,11 @@ namespace System
                     ? enumType.OverwriteCacheEntry(EnumInfo<TStorage>.CreateWithNames(enumType))
                     : enumType.GetOrCreateCacheEntry<EnumInfo<TStorage>>();
             }
+#endif
         }
 
         internal sealed partial class EnumInfo<TStorage> : RuntimeType.IGenericCacheEntry<EnumInfo<TStorage>>
         {
-            static RuntimeType.IGenericCacheEntry.GenericCacheKind RuntimeType.IGenericCacheEntry<EnumInfo<TStorage>>.Kind => RuntimeType.IGenericCacheEntry.GenericCacheKind.EnumInfo;
-
-            [MethodImpl(MethodImplOptions.NoInlining)]
             public static EnumInfo<TStorage> CreateWithNames(RuntimeType type)
             {
                 TStorage[]? values = null;
@@ -126,7 +126,6 @@ namespace System
                 return new EnumInfo<TStorage>(hasFlagsAttribute, values, names!);
             }
 
-            [MethodImpl(MethodImplOptions.NoInlining)]
             public static EnumInfo<TStorage> Create(RuntimeType type)
             {
                 TStorage[]? values = null;
@@ -144,6 +143,9 @@ namespace System
 
                 return new EnumInfo<TStorage>(hasFlagsAttribute, values, null!);
             }
+
+            public void InitializeCompositeCache(RuntimeType.CompositeCacheEntry compositeEntry) => compositeEntry._enumInfo = this;
+            public static ref EnumInfo<TStorage>? GetStorageRef(RuntimeType.CompositeCacheEntry compositeEntry) => throw new Exception(); // TODO!!!
         }
     }
 }

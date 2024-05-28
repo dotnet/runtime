@@ -1500,10 +1500,8 @@ namespace System
 
             internal ref IGenericCacheEntry? GenericCache => ref m_genericCache;
 
-            private sealed class FunctionPointerCache : IGenericCacheEntry<FunctionPointerCache>
+            internal sealed class FunctionPointerCache : IGenericCacheEntry<FunctionPointerCache>
             {
-                static IGenericCacheEntry.GenericCacheKind IGenericCacheEntry<FunctionPointerCache>.Kind => IGenericCacheEntry.GenericCacheKind.FunctionPointer;
-
                 public Type[] FunctionPointerReturnAndParameterTypes { get; }
 
                 private FunctionPointerCache(Type[] functionPointerReturnAndParameterTypes)
@@ -1516,6 +1514,8 @@ namespace System
                     Debug.Assert(type.IsFunctionPointer);
                     return new(RuntimeTypeHandle.GetArgumentTypesFromFunctionPointer(type));
                 }
+                public void InitializeCompositeCache(RuntimeType.CompositeCacheEntry compositeEntry) => compositeEntry._functionPointerCache = this;
+                public static ref FunctionPointerCache? GetStorageRef(RuntimeType.CompositeCacheEntry compositeEntry) => ref compositeEntry._functionPointerCache;
             }
 
             internal Type[] FunctionPointerReturnAndParameterTypes
@@ -1934,6 +1934,7 @@ namespace System
             return IGenericCacheEntry<T>.GetOrCreate(this);
         }
 
+#if false
         internal T? FindCacheEntry<T>()
             where T : class, IGenericCacheEntry<T>
         {
@@ -1946,6 +1947,7 @@ namespace System
             IGenericCacheEntry<T>.Overwrite(this, entry);
             return entry;
         }
+#endif
 
         internal static FieldInfo GetFieldInfo(IRuntimeFieldInfo fieldHandle)
         {
@@ -2060,7 +2062,7 @@ namespace System
                 name = fullname;
             }
         }
-        #endregion
+#endregion
 
         #region Filters
         internal static BindingFlags FilterPreCalculate(bool isPublic, bool isInherited, bool isStatic)
@@ -2387,7 +2389,7 @@ namespace System
 
         #endregion
 
-        #endregion
+#endregion
 
         #region Private Data Members
 
