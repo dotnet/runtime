@@ -245,7 +245,7 @@ class MethodTableNative {
 public:
     static FCDECL1(UINT32, GetNumInstanceFieldBytes, MethodTable* mt);
     static FCDECL1(CorElementType, GetVerifierCorElementType, MethodTable* mt);
-    static FCDECL2(FC_BOOL_RET, CanCastTo, MethodTable* fromType, MethodTable* toType);
+    static FCDECL2(FC_BOOL_RET, CanCastTo, void* fromType, void* toType);
 };
 
 extern "C" BOOL QCALLTYPE MethodTable_AreTypesEquivalent(MethodTable* mta, MethodTable* mtb);
