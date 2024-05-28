@@ -6,6 +6,7 @@ using System.Reflection;
 using System.Reflection.Emit;
 using System.Runtime.InteropServices;
 using System.Threading;
+using TestLibrary;
 using Xunit;
 
 public static class DynamicMethodJumpStubTests
