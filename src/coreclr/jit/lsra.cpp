@@ -12950,7 +12950,7 @@ void LinearScan::RegisterSelection::try_REG_ORDER()
     for (SingleTypeRegSet regOrderCandidates = candidates; regOrderCandidates != RBM_NONE;)
     {
         regNumber        regOrderCandidateRegNum = genFirstRegNumFromMask(regOrderCandidates);
-        SingleTypeRegSet regOrderCandidateBit    = SingleTypeRegSet(regOrderCandidateRegNum);
+        SingleTypeRegSet regOrderCandidateBit    = genSingleTypeRegMask(regOrderCandidateRegNum);
         regOrderCandidates ^= regOrderCandidateBit;
 
         unsigned thisRegOrder = linearScan->getRegisterRecord(regOrderCandidateRegNum)->regOrder;
