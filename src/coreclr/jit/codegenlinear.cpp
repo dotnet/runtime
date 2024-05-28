@@ -349,10 +349,19 @@ void CodeGen::genCodeForBBlist()
 
             block->bbEmitCookie = GetEmitter()->emitAddLabel(gcInfo.gcVarPtrSetCur, gcInfo.gcRegGCrefSetCur,
                                                              gcInfo.gcRegByrefSetCur, block->Prev());
-
-            JITDUMP("Block emit cookie set with IG%02u for " FMT_BB "\n", ((insGroup*)block->bbEmitCookie)->igNum,
-                    block->bbNum);
         }
+
+#ifdef FEATURE_LOOP_ALIGN
+        if (block->isLoopAlign())
+        {
+            if (compiler->opts.compJitHideAlignBehindJmp)
+            {
+                // Establish a connection of recent align instruction emitted to the loop
+                // it actually is aligning using 'idaLoopHeadPredIG'.
+                GetEmitter()->emitConnectAlignInstr(block);
+            }
+        }
+#endif // FEATURE_LOOP_ALIGN
 
         if (block->IsFirstColdBlock(compiler))
         {
@@ -830,17 +839,6 @@ void CodeGen::genCodeForBBlist()
             assert(!block->KindIs(BBJ_CALLFINALLY));
 
             GetEmitter()->emitLoopAlignment(DEBUG_ARG1(block->KindIs(BBJ_ALWAYS) && !removedJmp));
-        }
-
-        if (!block->IsLast() && block->Next()->isLoopAlign())
-        {
-            if (compiler->opts.compJitHideAlignBehindJmp)
-            {
-                // The current IG is the one that is just before the IG having loop start.
-                // Establish a connection of recent align instruction emitted to the loop
-                // it actually is aligning using 'idaLoopHeadPredIG'.
-                GetEmitter()->emitConnectAlignInstrWithCurIG();
-            }
         }
 #endif // FEATURE_LOOP_ALIGN
 

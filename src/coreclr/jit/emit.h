@@ -2636,7 +2636,7 @@ private:
     void            emitLoopAlign(unsigned paddingBytes, bool isFirstAlign DEBUG_ARG(bool isPlacedBehindJmp));
     void            emitLongLoopAlign(unsigned alignmentBoundary DEBUG_ARG(bool isPlacedBehindJmp));
     instrDescAlign* emitAlignInNextIG(instrDescAlign* alignInstr);
-    void            emitConnectAlignInstrWithCurIG();
+    void            emitConnectAlignInstr(const BasicBlock* block);
 
 #endif
 

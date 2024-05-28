@@ -5748,30 +5748,29 @@ void emitter::emitLongLoopAlign(unsigned alignmentBoundary DEBUG_ARG(bool isPlac
 }
 
 //-----------------------------------------------------------------------------
-// emitConnectAlignInstrWithCurIG:  If "align" instruction is not just before the loop start,
-//                                  setting idaLoopHeadPredIG lets us know the exact IG that the "align"
-//                                  instruction is trying to align. This is used to track the last IG that
-//                                  needs alignment after which VEX encoding optimization is enabled.
+// emitConnectAlignInstr:  If "align" instruction is not just before the loop start,
+//                         setting idaLoopHeadPredIG lets us know the exact IG that the "align"
+//                         instruction is trying to align. This is used to track the last IG that
+//                         needs alignment after which VEX encoding optimization is enabled.
 //
-//                                  TODO: Once over-estimation problem is solved, consider replacing
-//                                  idaLoopHeadPredIG with idaLoopHeadIG itself.
+//                         TODO: Once over-estimation problem is solved, consider replacing
+//                         idaLoopHeadPredIG with idaLoopHeadIG itself.
 //
-void emitter::emitConnectAlignInstrWithCurIG()
+void emitter::emitConnectAlignInstr(const BasicBlock* block)
 {
+    assert(block->isLoopAlign());
+    assert(block->bbEmitCookie);
     assert(emitAlignLastGroup->idaIG->igFlags & IGF_HAS_ALIGN);
 
+    insGroup* loopHeadPredIG = ((insGroup*)block->bbEmitCookie)->igPrev;
+
+    assert(loopHeadPredIG);
     JITDUMP("Mapping 'align' instruction in IG%02u to target IG%02u\n", emitAlignLastGroup->idaIG->igNum,
-            emitCurIG->igNum);
+            loopHeadPredIG->igNum);
     // Since we never align overlapping instructions, it is always guaranteed that
     // the emitAlignLastGroup points to the loop that is in process of getting aligned.
 
-    emitAlignLastGroup->idaLoopHeadPredIG = emitCurIG;
-
-    JITDUMP("Loop head predecessor is IG%02u when connecting align instruction\n",
-            emitAlignLastGroup->idaLoopHeadPredIG->igNum);
-
-    // For a new IG to ensure that loop doesn't start from IG that idaLoopHeadPredIG points to.
-    emitNxtIG();
+    emitAlignLastGroup->idaLoopHeadPredIG = loopHeadPredIG;
 }
 
 //-----------------------------------------------------------------------------
