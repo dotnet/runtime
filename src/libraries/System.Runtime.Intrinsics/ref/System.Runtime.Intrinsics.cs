@@ -4578,10 +4578,6 @@ namespace System.Runtime.Intrinsics.Arm
         public static long SaturatingIncrementBy8BitElementCount(long value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw null; }
         public static uint SaturatingIncrementBy8BitElementCount(uint value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw null; }
         public static ulong SaturatingIncrementBy8BitElementCount(ulong value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw null; }
-        public static int SaturatingIncrementByActiveElementCount(int value, System.Numerics.Vector<byte> from) { throw null; }
-        public static long SaturatingIncrementByActiveElementCount(long value, System.Numerics.Vector<byte> from) { throw null; }
-        public static uint SaturatingIncrementByActiveElementCount(uint value, System.Numerics.Vector<byte> from) { throw null; }
-        public static ulong SaturatingIncrementByActiveElementCount(ulong value, System.Numerics.Vector<byte> from) { throw null; }
 
         public static System.Numerics.Vector<int> SignExtend16(System.Numerics.Vector<int> value) { throw null; }
         public static System.Numerics.Vector<long> SignExtend16(System.Numerics.Vector<long> value) { throw null; }
