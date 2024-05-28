@@ -30,6 +30,9 @@ namespace System.Text.Json.SourceGeneration
 
                 public const string InvalidSerializablePropertyConfiguration =
                     "Invalid serializable-property configuration specified for type '{0}'. For more information, see 'JsonSourceGenerationMode.Serialization'.";
+
+                public const string PropertyGetterDisallowNull =
+                    "The property or field '{0}' on type '{1}' doesn't allow getting null values. Consider updating its nullability annotation.";
             };
         }
     }

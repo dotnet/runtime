@@ -2,21 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 /*++
-
-
-
 Module Name:
-
 unicode.cpp
 
 Abstract:
-
 Implementation of all functions related to Unicode support
-
-Revision History:
-
-
-
 --*/
 
 #include "pal/thread.hpp"
@@ -27,7 +17,6 @@ Revision History:
 #include <minipal/utf8.h>
 #include "pal/cruntime.h"
 #include "pal/stackstring.hpp"
-#include "pal/unicodedata.h"
 
 #include <pthread.h>
 #include <locale.h>
@@ -38,138 +27,6 @@ Revision History:
 using namespace CorUnix;
 
 SET_DEFAULT_DEBUG_CHANNEL(UNICODE);
-
-/*++
-Function:
-UnicodeDataComp
-This is the comparison function used by the bsearch function to search
-for unicode characters in the UnicodeData array.
-
-Parameter:
-pnKey
-The unicode character value to search for.
-elem
-A pointer to a UnicodeDataRec.
-
-Return value:
-<0 if pnKey < elem->nUnicodeValue
-0 if pnKey == elem->nUnicodeValue
->0 if pnKey > elem->nUnicodeValue
---*/
-static int UnicodeDataComp(const void *pnKey, const void *elem)
-{
-    WCHAR uValue = ((UnicodeDataRec*)elem)->nUnicodeValue;
-
-    if (*((INT*)pnKey) < uValue)
-    {
-        return -1;
-    }
-    else if (*((INT*)pnKey) > uValue)
-    {
-        return 1;
-    }
-    else
-    {
-        return 0;
-    }
-}
-
-/*++
-Function:
-GetUnicodeData
-This function is used to get information about a Unicode character.
-
-Parameters:
-nUnicodeValue
-The numeric value of the Unicode character to get information about.
-pDataRec
-The UnicodeDataRec to fill in with the data for the Unicode character.
-
-Return value:
-TRUE if the Unicode character was found.
-
---*/
-BOOL GetUnicodeData(INT nUnicodeValue, UnicodeDataRec *pDataRec)
-{
-    BOOL bRet;
-
-    UnicodeDataRec *dataRec;
-    INT nNumOfChars = UNICODE_DATA_SIZE;
-    dataRec = (UnicodeDataRec *) bsearch(&nUnicodeValue, UnicodeData, nNumOfChars,
-                   sizeof(UnicodeDataRec), UnicodeDataComp);
-    if (dataRec == NULL)
-    {
-        bRet = FALSE;
-    }
-    else
-    {
-        bRet = TRUE;
-        *pDataRec = *dataRec;
-    }
-    return bRet;
-}
-
-char16_t
-__cdecl
-PAL_ToUpperInvariant( char16_t c )
-{
-    UnicodeDataRec dataRec;
-
-    PERF_ENTRY(PAL_ToUpperInvariant);
-    ENTRY("PAL_ToUpperInvariant (c=%d)\n", c);
-
-    if (!GetUnicodeData(c, &dataRec))
-    {
-        TRACE( "Unable to retrieve unicode data for the character %c.\n", c );
-        LOGEXIT("PAL_ToUpperInvariant returns int %d\n", c );
-        PERF_EXIT(PAL_ToUpperInvariant);
-        return c;
-    }
-
-    if ( dataRec.nFlag != LOWER_CASE )
-    {
-        LOGEXIT("PAL_ToUpperInvariant returns int %d\n", c );
-        PERF_EXIT(PAL_ToUpperInvariant);
-        return c;
-    }
-    else
-    {
-        LOGEXIT("PAL_ToUpperInvariant returns int %d\n", dataRec.nOpposingCase );
-        PERF_EXIT(PAL_ToUpperInvariant);
-        return dataRec.nOpposingCase;
-    }
-}
-
-char16_t
-__cdecl
-PAL_ToLowerInvariant( char16_t c )
-{
-    UnicodeDataRec dataRec;
-
-    PERF_ENTRY(PAL_ToLowerInvariant);
-    ENTRY("PAL_ToLowerInvariant (c=%d)\n", c);
-
-    if (!GetUnicodeData(c, &dataRec))
-    {
-        TRACE( "Unable to retrieve unicode data for the character %c.\n", c );
-        LOGEXIT("PAL_ToLowerInvariant returns int %d\n", c );
-        PERF_EXIT(PAL_ToLowerInvariant);
-        return c;
-    }
-
-    if ( dataRec.nFlag != UPPER_CASE )
-    {
-        LOGEXIT("PAL_ToLowerInvariant returns int %d\n", c );
-        PERF_EXIT(PAL_ToLowerInvariant);
-        return c;
-    }
-    else
-    {
-        LOGEXIT("PAL_ToLowerInvariant returns int %d\n", dataRec.nOpposingCase );
-        PERF_EXIT(PAL_ToLowerInvariant);
-        return dataRec.nOpposingCase;
-    }
-}
 
 /*++
 Function:

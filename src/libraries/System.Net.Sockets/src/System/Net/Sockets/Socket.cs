@@ -1909,8 +1909,6 @@ namespace System.Net.Sockets
 
             int bytesTransferred;
             SocketError errorCode = SocketPal.ReceiveFrom(_handle, buffer, socketFlags, receivedAddress.Buffer, out int socketAddressSize, out bytesTransferred);
-            receivedAddress.Size = socketAddressSize;
-
             UpdateReceiveSocketErrorForDisposed(ref errorCode, bytesTransferred);
             // If the native call fails we'll throw a SocketException.
             if (errorCode != SocketError.Success)
@@ -1927,6 +1925,7 @@ namespace System.Net.Sockets
                 if (SocketType == SocketType.Dgram) SocketsTelemetry.Log.DatagramReceived();
             }
 
+            receivedAddress.Size = socketAddressSize;
             return bytesTransferred;
         }
 

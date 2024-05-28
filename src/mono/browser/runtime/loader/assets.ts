@@ -4,7 +4,7 @@
 import WasmEnableThreads from "consts:wasmEnableThreads";
 
 import { PThreadPtrNull, type AssetEntryInternal, type PThreadWorker, type PromiseAndController } from "../types/internal";
-import type { AssetBehaviors, AssetEntry, LoadingResource, ResourceList, SingleAssetBehaviors as SingleAssetBehaviors, WebAssemblyBootResourceType } from "../types";
+import { GlobalizationMode, type AssetBehaviors, type AssetEntry, type LoadingResource, type ResourceList, type SingleAssetBehaviors as SingleAssetBehaviors, type WebAssemblyBootResourceType } from "../types";
 import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL, ENVIRONMENT_IS_WEB, ENVIRONMENT_IS_WORKER, loaderHelpers, mono_assert, runtimeHelpers } from "./globals";
 import { createPromiseController } from "./promise-controller";
 import { mono_log_debug, mono_log_warn } from "./logging";
@@ -29,6 +29,7 @@ const jsRuntimeModulesAssetTypes: {
     [k: string]: boolean
 } = {
     "js-module-threads": true,
+    "js-module-globalization": true,
     "js-module-runtime": true,
     "js-module-dotnet": true,
     "js-module-native": true,
@@ -312,6 +313,9 @@ export function prepareAssets () {
         if (WasmEnableThreads) {
             convert_single_asset(modulesAssets, resources.jsModuleWorker, "js-module-threads");
         }
+        if (config.globalizationMode == GlobalizationMode.Hybrid) {
+            convert_single_asset(modulesAssets, resources.jsModuleGlobalization, "js-module-globalization");
+        }
 
         const addAsset = (asset: AssetEntryInternal, isCore: boolean) => {
             if (isCore) {
@@ -507,14 +511,14 @@ export async function start_asset_download (asset: AssetEntryInternal): Promise<
         // second attempt only after all first attempts are queued
         await loaderHelpers.allDownloadsQueued.promise;
         try {
-            mono_log_debug(`Retrying download '${asset.name}'`);
+            mono_log_debug(() => `Retrying download '${asset.name}'`);
             return await start_asset_download_with_throttle(asset);
         } catch (err) {
             asset.pendingDownloadInternal = undefined;
             // third attempt after small delay
             await delay(100);
 
-            mono_log_debug(`Retrying download (2) '${asset.name}' after delay`);
+            mono_log_debug(() => `Retrying download (2) '${asset.name}' after delay`);
             return await start_asset_download_with_throttle(asset);
         }
     }
@@ -595,9 +599,9 @@ async function start_asset_download_sources (asset: AssetEntryInternal): Promise
 
         const attemptUrl = resolve_path(asset, sourcePrefix);
         if (asset.name === attemptUrl) {
-            mono_log_debug(`Attempting to download '${attemptUrl}'`);
+            mono_log_debug(() => `Attempting to download '${attemptUrl}'`);
         } else {
-            mono_log_debug(`Attempting to download '${attemptUrl}' for ${asset.name}`);
+            mono_log_debug(() => `Attempting to download '${attemptUrl}' for ${asset.name}`);
         }
         try {
             asset.resolvedUrl = attemptUrl;

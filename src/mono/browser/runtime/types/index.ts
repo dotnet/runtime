@@ -210,6 +210,7 @@ export interface ResourceGroups {
     pdb?: ResourceList;
 
     jsModuleWorker?: ResourceList;
+    jsModuleGlobalization?: ResourceList;
     jsModuleNative: ResourceList;
     jsModuleRuntime: ResourceList;
     wasmSymbols?: ResourceList;
@@ -324,6 +325,10 @@ export type SingleAssetBehaviors =
      * The javascript module for emscripten.
      */
     | "js-module-native"
+    /**
+     * The javascript module for hybrid globalization.
+     */
+    | "js-module-globalization"
     /**
      * Typically blazor.boot.json
      */

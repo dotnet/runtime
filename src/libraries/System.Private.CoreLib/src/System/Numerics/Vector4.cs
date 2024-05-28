@@ -384,6 +384,19 @@ namespace System.Numerics
                  + (vector1.W * vector2.W);
         }
 
+        /// <inheritdoc cref="Vector128.MultiplyAddEstimate(Vector128{float}, Vector128{float}, Vector128{float})" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector4 FusedMultiplyAdd(Vector4 left, Vector4 right, Vector4 addend)
+        {
+            return new Vector4(
+                float.FusedMultiplyAdd(left.X, right.X, addend.X),
+                float.FusedMultiplyAdd(left.Y, right.Y, addend.Y),
+                float.FusedMultiplyAdd(left.Z, right.Z, addend.Z),
+                float.FusedMultiplyAdd(left.W, right.W, addend.W)
+            );
+        }
+
         /// <summary>Performs a linear interpolation between two vectors based on the given weighting.</summary>
         /// <param name="value1">The first vector.</param>
         /// <param name="value2">The second vector.</param>
@@ -462,6 +475,19 @@ namespace System.Numerics
         public static Vector4 Multiply(float left, Vector4 right)
         {
             return left * right;
+        }
+
+        /// <inheritdoc cref="Vector128.MultiplyAddEstimate(Vector128{float}, Vector128{float}, Vector128{float})" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector4 MultiplyAddEstimate(Vector4 left, Vector4 right, Vector4 addend)
+        {
+            return new Vector4(
+                float.MultiplyAddEstimate(left.X, right.X, addend.X),
+                float.MultiplyAddEstimate(left.Y, right.Y, addend.Y),
+                float.MultiplyAddEstimate(left.Z, right.Z, addend.Z),
+                float.MultiplyAddEstimate(left.W, right.W, addend.W)
+            );
         }
 
         /// <summary>Negates a specified vector.</summary>

@@ -699,6 +699,7 @@ configuration:
         - mentionUsers:
             mentionees:
             - directhex
+            - matouskozak
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
 
@@ -1715,9 +1716,11 @@ configuration:
         then:
         - mentionUsers:
             mentionees:
+            - vitek-karas
+            - kotlarmilos
+            - ivanpovazan
             - steveisok
             - akoeplinger
-            - kotlarmilos
             replyTemplate: >-
               Tagging subscribers to 'os-ios': ${mentionees}
 
@@ -1737,6 +1740,8 @@ configuration:
         then:
         - mentionUsers:
             mentionees:
+            - vitek-karas
+            - simonrozsival
             - steveisok
             - akoeplinger
             replyTemplate: >-
@@ -1806,6 +1811,9 @@ configuration:
         then:
         - mentionUsers:
             mentionees:
+            - vitek-karas
+            - kotlarmilos
+            - ivanpovazan
             - steveisok
             - akoeplinger
             replyTemplate: >-
@@ -1827,6 +1835,9 @@ configuration:
         then:
         - mentionUsers:
             mentionees:
+            - vitek-karas
+            - kotlarmilos
+            - ivanpovazan
             - steveisok
             - akoeplinger
             replyTemplate: >-
