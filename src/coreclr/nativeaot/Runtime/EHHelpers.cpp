@@ -560,6 +560,9 @@ int32_t __stdcall RhpVectoredExceptionHandler(PEXCEPTION_POINTERS pExPtrs)
         bool areShadowStacksEnabled = PalAreShadowStacksEnabled();
         if (areShadowStacksEnabled)
         {
+            // OS should have fixed the SP value to the same as we`ve stashed for the hijacked thread
+            _ASSERTE(*(size_t *)interruptedContext->GetSp() == (uintptr_t)pThread->GetHijackedReturnAddress());
+
             // When the CET is enabled, the interruption happens on the ret instruction in the calee.
             // We need to "pop" rsp to the caller, as if the ret has consumed it.
             interruptedContext->SetSp(interruptedContext->GetSp() + 8);
@@ -574,12 +577,8 @@ int32_t __stdcall RhpVectoredExceptionHandler(PEXCEPTION_POINTERS pExPtrs)
 
         if (areShadowStacksEnabled)
         {
-            // Undo the "pop", but fix the return to point to the original caller,
-            // so that the ret could now succeed.
+            // Undo the "pop", so that the ret could now succeed.
             interruptedContext->SetSp(interruptedContext->GetSp() - 8);
-            // CONSIDER: According to docs, the OS should fix the SP value to match one from SSP,
-            // so this could be an assert instead.
-            *(size_t *)interruptedContext->GetSp() = interruptedContext->GetIp();
             interruptedContext->SetIp(origIp);
         }
 
