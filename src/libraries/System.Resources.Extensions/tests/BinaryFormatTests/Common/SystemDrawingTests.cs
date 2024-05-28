@@ -7,7 +7,7 @@ using System.Runtime.Versioning;
 
 namespace System.Resources.Extensions.Tests.Common;
 
-[ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows))]
+[ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsDrawingSupported))]
 public abstract class SystemDrawingTests<T> : SerializationTest<T> where T : ISerializer
 {
     [Theory]
