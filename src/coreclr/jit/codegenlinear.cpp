@@ -942,9 +942,8 @@ void CodeGen::genSpillVar(GenTree* tree)
             if ((lclType == TYP_SIMD12) && !compiler->lvaMapSimd12ToSimd16(varDsc))
             {
                 // Store SIMD12 to stack as 12 bytes
-                // TODO: an internal simd reg when SSE41 is not supported
                 GetEmitter()->emitStoreSimd12ToLclOffset(varNum, tree->AsLclVarCommon()->GetLclOffs(),
-                                                         tree->GetRegNum(), tree);
+                                                         tree->GetRegNum(), nullptr);
             }
             else
 #endif
