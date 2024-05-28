@@ -4282,7 +4282,11 @@ int LinearScan::BuildReturn(GenTree* tree)
                         break;
                     case TYP_DOUBLE:
                         // We ONLY want the valid double register in the RBM_DOUBLERET mask.
+#ifdef TARGET_AMD64
                         useCandidates = (RBM_DOUBLERET & RBM_ALLDOUBLE).GetFloatRegSet();
+#else
+                    useCandidates = (RBM_DOUBLERET & RBM_ALLDOUBLE);
+#endif // TARGET_AMD64
                         break;
                     case TYP_LONG:
                         useCandidates = RBM_LNGRET;

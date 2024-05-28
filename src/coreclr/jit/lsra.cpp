@@ -448,7 +448,11 @@ SingleTypeRegSet LinearScan::internalFloatRegCandidates()
     }
     else
     {
+#ifdef TARGET_AMD64
         return RBM_FLT_CALLEE_TRASH.GetFloatRegSet();
+#else
+        return RBM_FLT_CALLEE_TRASH;
+#endif // TARGET_AMD64
     }
 }
 
@@ -597,8 +601,12 @@ SingleTypeRegSet LinearScan::stressLimitRegs(RefPosition* refPosition, RegisterT
 
             case LSRA_LIMIT_CALLER:
             {
+#ifdef TARGET_AMD64
                 mask = getConstrainedRegMask(refPosition, regType, mask, RBM_CALLEE_TRASH.GetRegSetForType(regType),
                                              minRegCount);
+#else
+                mask = getConstrainedRegMask(refPosition, regType, mask, RBM_CALLEE_TRASH, minRegCount);
+#endif // TARGET_AMD64
             }
             break;
 
@@ -849,10 +857,18 @@ LinearScan::LinearScan(Compiler* theCompiler)
     availableIntRegs &= ~RBM_FPBASE;
 #endif // ETW_EBP_FRAMED
 
+#ifdef TARGET_AMD64
     availableFloatRegs  = RBM_ALLFLOAT.GetFloatRegSet();
     availableDoubleRegs = RBM_ALLDOUBLE.GetFloatRegSet();
-#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
+#else
+    availableFloatRegs  = RBM_ALLFLOAT;
+    availableDoubleRegs = RBM_ALLDOUBLE;
+#endif
+
+#if defined(TARGET_XARCH)
     availableMaskRegs = RBM_ALLMASK.GetPredicateRegSet();
+#elif defined(TARGET_ARM64)
+    availableMaskRegs = RBM_ALLMASK;
 #endif
 
 #if defined(TARGET_AMD64) || defined(TARGET_ARM64)
@@ -8783,7 +8799,11 @@ regNumber LinearScan::getTempRegForResolution(BasicBlock*      fromBlock,
         // Prefer a callee-trashed register if possible to prevent new prolog/epilog saves/restores.
         if ((freeRegs & RBM_CALLEE_TRASH) != 0)
         {
+#ifdef TARGET_AMD64
             freeRegs &= RBM_CALLEE_TRASH.GetRegSetForType(type);
+#else
+            freeRegs &= RBM_CALLEE_TRASH;
+#endif
         }
 
         regNumber tempReg = genRegNumFromMask(genFindLowestBit(freeRegs));
