@@ -83,7 +83,7 @@ namespace System.Collections.Tests
         [Fact]
         public void SortedSet_Generic_SetEquals_AboveInternalIndexOfCountThreshold()
         {
-            const int AboveInternalIndexOfCountThreshold = 253;
+            const int AboveInternalIndexOfCountThreshold = 255;
 
             var setData = new int[AboveInternalIndexOfCountThreshold];
             for(int i = 0; i < AboveInternalIndexOfCountThreshold; i++)
