@@ -688,6 +688,42 @@ struct Empty8Float
 	}
 }
 
+struct EmptyFloatEmpty5Byte
+{
+	Empty e;
+	float FieldF;
+	Empty e0, e1, e2, e3, e4;
+	sbyte FieldB;
+
+	public static EmptyFloatEmpty5Byte Get()
+	{
+		return new EmptyFloatEmpty5Byte { FieldF = 3.14159f, FieldB = -123 };
+	}
+
+	public bool Equals(EmptyFloatEmpty5Byte other)
+	{
+		return FieldF.Equals(other.FieldF) && FieldB == other.FieldB;
+	}
+}
+
+struct EmptyFloatEmpty5UByte
+{
+	Empty e;
+	float FieldF;
+	Empty e0, e1, e2, e3, e4;
+	byte FieldB;
+
+	public static EmptyFloatEmpty5UByte Get()
+	{
+		return new EmptyFloatEmpty5UByte { FieldF = 3.14159f, FieldB = 234 };
+	}
+
+	public bool Equals(EmptyFloatEmpty5UByte other)
+	{
+		return FieldF.Equals(other.FieldF) && FieldB == other.FieldB;
+	}
+}
+
 struct LongEmptyDouble
 {
 	long FieldL;
@@ -989,6 +1025,12 @@ public static partial class StructABI
 	static extern Empty8Float EchoEmpty8FloatRiscV(Empty8Float fa0);
 
 	[DllImport("StructABILib")]
+	static extern EmptyFloatEmpty5Byte EchoEmptyFloatEmpty5ByteRiscV(int a0, float fa0, EmptyFloatEmpty5Byte fa1_a1);
+
+	[DllImport("StructABILib")]
+	static extern EmptyFloatEmpty5UByte EchoEmptyFloatEmpty5UByteRiscV(int a0, float fa0, EmptyFloatEmpty5UByte fa1_a1);
+
+	[DllImport("StructABILib")]
 	static extern LongEmptyDouble EchoLongEmptyDoubleRiscV(LongEmptyDouble value);
 
 	[DllImport("StructABILib")]
@@ -1009,7 +1051,7 @@ public static partial class StructABI
 	static extern  LongEmptyAndFloat EchoLongEmptyAndFloatRiscV(LongEmptyAndFloat a0_fa0);
 
 	[DllImport("StructABILib")]
-	static extern ArrayOfEmptiesFloatDouble EchoArrayOfEmptiesFloatDoubleInIntegerRegsRiscV(
+	static extern ArrayOfEmptiesFloatDouble EchoArrayOfEmptiesFloatDoubleRiscV(
 	ArrayOfEmptiesFloatDouble a0_a1);
 
 	[DllImport("StructABILib")]
@@ -1292,6 +1334,18 @@ public static partial class StructABI
 	}
 
 	[MethodImpl(MethodImplOptions.NoInlining)]
+	static EmptyFloatEmpty5Byte EchoEmptyFloatEmpty5ByteRiscVManaged(int a0, float fa0, EmptyFloatEmpty5Byte fa1_a1)
+	{
+		return fa1_a1;
+	}
+
+	[MethodImpl(MethodImplOptions.NoInlining)]
+	static EmptyFloatEmpty5UByte EchoEmptyFloatEmpty5UByteRiscVManaged(int a0, float fa0, EmptyFloatEmpty5UByte fa1_a1)
+	{
+		return fa1_a1;
+	}
+
+	[MethodImpl(MethodImplOptions.NoInlining)]
 	static LongEmptyDouble EchoLongEmptyDoubleRiscVManaged(LongEmptyDouble a0_fa0)
 	{
 		return a0_fa0;
@@ -1330,7 +1384,7 @@ public static partial class StructABI
 	}
 
 	[MethodImpl(MethodImplOptions.NoInlining)]
-	static ArrayOfEmptiesFloatDouble EchoArrayOfEmptiesFloatDoubleInIntegerRegsRiscVManaged(
+	static ArrayOfEmptiesFloatDouble EchoArrayOfEmptiesFloatDoubleRiscVManaged(
 		ArrayOfEmptiesFloatDouble a0_a1)
 	{
 		return a0_a1;
@@ -2469,6 +2523,50 @@ public static partial class StructABI
 		return ok;
 	}
 
+	static bool EchoEmptyFloatEmpty5ByteRiscVWrapper()
+	{
+		bool ok = true;
+		EmptyFloatEmpty5Byte expected = EmptyFloatEmpty5Byte.Get();
+		EmptyFloatEmpty5Byte native = EchoEmptyFloatEmpty5ByteRiscV(0, 0.0f, expected);
+		EmptyFloatEmpty5Byte managed = EchoEmptyFloatEmpty5ByteRiscVManaged(0, 0.0f, expected);
+
+		if (!expected.Equals(native))
+		{
+			Console.WriteLine("Native call for EchoEmptyFloatEmpty5ByteRiscV failed");
+			ok = false;
+		}
+
+		if (!expected.Equals(managed))
+		{
+			Console.WriteLine("Managed call for EchoEmptyFloatEmpty5ByteRiscV failed");
+			ok = false;
+		}
+
+		return ok;
+	}
+
+	static bool EchoEmptyFloatEmpty5UByteRiscVWrapper()
+	{
+		bool ok = true;
+		EmptyFloatEmpty5UByte expected = EmptyFloatEmpty5UByte.Get();
+		EmptyFloatEmpty5UByte native = EchoEmptyFloatEmpty5UByteRiscV(0, 0.0f, expected);
+		EmptyFloatEmpty5UByte managed = EchoEmptyFloatEmpty5UByteRiscVManaged(0, 0.0f, expected);
+
+		if (!expected.Equals(native))
+		{
+			Console.WriteLine("Native call for EchoEmptyFloatEmpty5UByteRiscV failed");
+			ok = false;
+		}
+
+		if (!expected.Equals(managed))
+		{
+			Console.WriteLine("Managed call for EchoEmptyFloatEmpty5UByteRiscV failed");
+			ok = false;
+		}
+
+		return ok;
+	}
+
 	static bool EchoLongEmptyDoubleRiscVWrapper()
 	{
 		bool ok = true;
@@ -2601,22 +2699,22 @@ public static partial class StructABI
 		return ok;
 	}
 
-	static bool EchoArrayOfEmptiesFloatDoubleInIntegerRegsRiscVWrapper()
+	static bool EchoArrayOfEmptiesFloatDoubleRiscVWrapper()
 	{
 		bool ok = true;
 		ArrayOfEmptiesFloatDouble expected = ArrayOfEmptiesFloatDouble.Get();
-		ArrayOfEmptiesFloatDouble native = EchoArrayOfEmptiesFloatDoubleInIntegerRegsRiscV(expected);
-		ArrayOfEmptiesFloatDouble managed = EchoArrayOfEmptiesFloatDoubleInIntegerRegsRiscVManaged(expected);
+		ArrayOfEmptiesFloatDouble native = EchoArrayOfEmptiesFloatDoubleRiscV(expected);
+		ArrayOfEmptiesFloatDouble managed = EchoArrayOfEmptiesFloatDoubleRiscVManaged(expected);
 
 		if (!expected.Equals(native))
 		{
-			Console.WriteLine("Native call for EchoArrayOfEmptiesFloatDoubleInIntegerRegs failed");
+			Console.WriteLine("Native call for EchoArrayOfEmptiesFloatDouble failed");
 			ok = false;
 		}
 
 		if (!expected.Equals(managed))
 		{
-			Console.WriteLine("Managed call for EchoArrayOfEmptiesFloatDoubleInIntegerRegs failed");
+			Console.WriteLine("Managed call for EchoArrayOfEmptiesFloatDouble failed");
 			ok = false;
 		}
 
@@ -2738,12 +2836,14 @@ public static partial class StructABI
 		if (!EnoughRegistersSysV3Wrapper()) ok = false;
 		if (!EnoughRegistersSysV4Wrapper()) ok = false;
 		if (!EchoEmpty8FloatRiscVWrapper()) ok = false;
+		if (!EchoEmptyFloatEmpty5ByteRiscVWrapper()) ok = false;
+		if (!EchoEmptyFloatEmpty5UByteRiscVWrapper()) ok = false;
 		if (!EchoLongEmptyDoubleRiscVWrapper()) ok = false;
 		if (!EchoLongEmptyDoubleByImplicitRefRiscVWrapper()) ok = false;
 		if (!EchoNestedEmptyFloatDoubleInIntegerRegsRiscVWrapper()) ok = false;
 		if (!EchoEmptyIntAndFloatRiscVWrapper()) ok = false;
 		if (!EchoLongEmptyAndFloatRiscVWrapper()) ok = false;
-		if (!EchoArrayOfEmptiesFloatDoubleInIntegerRegsRiscVWrapper()) ok = false;
+		if (!EchoArrayOfEmptiesFloatDoubleRiscVWrapper()) ok = false;
 		if (!EchoFloatEmpty32kIntRiscVWrapper()) ok = false;
 		if (!EchoPackedEmptyFloatLongRiscVWrapper()) ok = false;
 		if (!EchoExplicitFloatLongRiscVWrapper()) ok = false;

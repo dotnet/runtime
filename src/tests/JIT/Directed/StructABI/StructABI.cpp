@@ -20,6 +20,22 @@ struct Empty8Float
 	float FieldF;
 };
 
+struct EmptyFloatEmpty5Byte
+{
+	Empty e;
+	float FieldF;
+	Empty e0, e1, e2, e3, e4;
+	int8_t FieldB;
+};
+
+struct EmptyFloatEmpty5UByte
+{
+	Empty e;
+	float FieldF;
+	Empty e0, e1, e2, e3, e4;
+	uint8_t FieldB;
+};
+
 struct LongEmptyDouble
 {
 	int64_t FieldL;
@@ -115,6 +131,16 @@ DLLEXPORT Empty8Float EchoEmpty8FloatRiscV(Empty8Float fa0)
 	return fa0;
 }
 
+DLLEXPORT EmptyFloatEmpty5Byte EchoEmptyFloatEmpty5ByteRiscV(int a0, float fa0, EmptyFloatEmpty5Byte fa1_a1)
+{
+	return fa1_a1;
+}
+
+DLLEXPORT EmptyFloatEmpty5UByte EchoEmptyFloatEmpty5UByteRiscV(int a0, float fa0, EmptyFloatEmpty5UByte fa1_a1)
+{
+	return fa1_a1;
+}
+
 DLLEXPORT LongEmptyDouble EchoLongEmptyDoubleRiscV(LongEmptyDouble a0_fa0)
 {
 	return a0_fa0;
@@ -147,7 +173,7 @@ DLLEXPORT LongEmptyAndFloat EchoLongEmptyAndFloatRiscV(LongEmptyAndFloat a0_fa0)
 	return a0_fa0;
 }
 
-DLLEXPORT ArrayOfEmptiesFloatDouble EchoArrayOfEmptiesFloatDoubleInIntegerRegsRiscV(ArrayOfEmptiesFloatDouble a0_a1)
+DLLEXPORT ArrayOfEmptiesFloatDouble EchoArrayOfEmptiesFloatDoubleRiscV(ArrayOfEmptiesFloatDouble a0_a1)
 {
 	return a0_a1;
 }
