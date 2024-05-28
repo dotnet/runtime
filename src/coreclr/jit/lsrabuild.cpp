@@ -3303,7 +3303,7 @@ void LinearScan::BuildDefWithKills(GenTree* tree, int dstCount, SingleTypeRegSet
     }
 #endif // TARGET_64BIT
 }
-#endif // defined(TARGET_ARMARCH) || defined(TARGET_RISCV64)
+#endif // defined(TARGET_ARMARCH) || defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
 
 //------------------------------------------------------------------------
 // BuildCallDefsWithKills: Build one or more RefTypeDef RefPositions for the given node,
