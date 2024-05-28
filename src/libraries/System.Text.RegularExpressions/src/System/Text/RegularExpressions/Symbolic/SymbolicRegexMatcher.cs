@@ -563,7 +563,8 @@ namespace System.Text.RegularExpressions.Symbolic
             // To avoid frequent reads/writes to ref and out values, make and operate on local copies, which we then copy back once before returning.
             int pos = posRef;
             int endPos = endPosRef;
-            Span<int> mtlookup = _mintermClassifier.Lookup.AsSpan();
+            // can only be used with full array
+            // Span<int> mtlookup = _mintermClassifier.Lookup.AsSpan();
             int endStateId = endStateIdRef;
             int currStateId = startStateId;
             try
@@ -576,12 +577,13 @@ namespace System.Text.RegularExpressions.Symbolic
                         return true;
                     }
                     // int positionId = mtlookup[input[pos]];
+                    int positionId = _mintermClassifier.GetMintermID(input[pos]);
 
                     // If the state is nullable for the next character, meaning it accepts the empty string,
                     // we found a potential end state.
                     if (_canBeNullableArray[currStateId])
                     {
-                        if (_stateFlagsArray[currStateId].IsNullable() || _stateArray[currStateId]!.IsNullableFor(GetPositionKind(mtlookup[input[pos]])))
+                        if (_stateFlagsArray[currStateId].IsNullable() || _stateArray[currStateId]!.IsNullableFor(GetPositionKind(positionId)))
                         {
                             endPos = pos;
                             endStateId = currStateId;
@@ -595,7 +597,7 @@ namespace System.Text.RegularExpressions.Symbolic
 
                     // If there is more input available try to transition with the next character.
                     // Note: the order here is important so the transition gets taken
-                    if (!DfaStateHandler.TryTakeDFATransition(this, ref currStateId, mtlookup[input[pos]]) || pos >= lengthMinus1)
+                    if (!DfaStateHandler.TryTakeDFATransition(this, ref currStateId, positionId) || pos >= lengthMinus1)
                     {
                         pos++;
                         if (pos < input.Length)
