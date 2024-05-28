@@ -25,8 +25,6 @@ struct FCALLRuntimeFieldHandle
 class ArrayNative
 {
 public:
-    static FCDECL1(INT32, GetCorElementTypeOfElementType, ArrayBase* arrayUNSAFE);
-
     // This method will initialize an array from a TypeHandle
     // to a field.
     static FCDECL2_IV(void, InitializeArray, ArrayBase* vArrayRef, FCALLRuntimeFieldHandle structField);

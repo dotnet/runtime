@@ -752,7 +752,7 @@ namespace System.Runtime.CompilerServices
     }
 
     /// <summary>
-    /// A type handle, which can wrap either a pointer to a <c>TypeDesc</c> or to a <see cref="MethodTable"/>.
+    /// A type handle, which can wrap either a pointer to a <see cref="TypeDesc"/> or to a <see cref="MethodTable"/>.
     /// </summary>
     internal readonly unsafe struct TypeHandle
     {
@@ -839,6 +839,10 @@ namespace System.Runtime.CompilerServices
         }
 
         public bool IsInterface => !IsTypeDesc && AsMethodTable()->IsInterface;
+
+        public CorElementType GetVerifierCorElementType() => IsTypeDesc
+            ? AsTypeDesc()->GetInternalCorElementType()
+            : AsMethodTable()->GetVerifierCorElementType();
     }
 
     internal unsafe struct TypeDesc

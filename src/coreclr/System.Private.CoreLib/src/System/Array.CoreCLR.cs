@@ -189,8 +189,8 @@ namespace System
                     return AssignArrayEnum.AssignWrongType;
             }
 
-            CorElementType srcElType = sourceArray.GetCorElementTypeOfElementType();
-            CorElementType destElType = destinationArray.GetCorElementTypeOfElementType();
+            CorElementType srcElType = srcTH.GetVerifierCorElementType();
+            CorElementType destElType = destTH.GetVerifierCorElementType();
 
             // Copying primitives from one type to another
             if (srcElType.IsPrimitiveType() && destElType.IsPrimitiveType())
@@ -770,8 +770,13 @@ namespace System
             return Unsafe.Add(ref RuntimeHelpers.GetMultiDimensionalArrayBounds(this), rank + dimension);
         }
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal extern CorElementType GetCorElementTypeOfElementType();
+        internal unsafe CorElementType GetCorElementTypeOfElementType()
+        {
+            MethodTable* pMT = RuntimeHelpers.GetMethodTable(this);
+            CorElementType et = pMT->GetArrayElementTypeHandle().GetVerifierCorElementType();
+            GC.KeepAlive(this);
+            return et;
+        }
 
         private unsafe bool IsValueOfElementType(object value)
         {
