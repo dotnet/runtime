@@ -1098,10 +1098,11 @@ namespace System.Net.Sockets.Tests
             saea.SetBuffer(buffer);
             saea.RemoteEndPoint = ep;
             saea.Completed += (_, __) => re.Set();
-            if (!socket.ConnectAsync(saea))
+            if (socket.ConnectAsync(saea))
             {
                 re.Wait(timeout);
             }
+            Assert.True(socket.Connected);
         }
 
         internal static Task ConnectAsync(this Socket socket, EndPoint ep, Memory<byte> buffer, CancellationToken cancellationToken = default)

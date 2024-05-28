@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <!-- Needed for CLRTestEnvironmentVariable -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <Optimize>True</Optimize>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(MSBuildProjectName).cs" />
+    <!-- Make sure the managed helpers aren't prejitted for better coverage in GCStress modes -->
+    <CLRTestEnvironmentVariable Include="DOTNET_ReadyToRun" Value="0" />
+  </ItemGroup>
+</Project>
