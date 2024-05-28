@@ -122,6 +122,7 @@
       <!-- TODO: set this from some user-facing property?  -1 means use the default baked into dotnet.native.js -->
       <_WasmPThreadPoolInitialSize Condition="'$(_WasmPThreadPoolInitialSize)' == ''">-1</_WasmPThreadPoolInitialSize>
       <_WasmPThreadPoolUnusedSize Condition="'$(_WasmPThreadPoolUnusedSize)' == ''">-1</_WasmPThreadPoolUnusedSize>
+      <_WasmIsPublishing Condition="'$(_WasmIsPublishing)' == '' and '$(_IsPublishing)' != ''">$(_IsPublishing)</_WasmIsPublishing>
     </PropertyGroup>
 
     <ItemGroup>
@@ -147,7 +148,7 @@
       ExtraConfig="@(WasmExtraConfig)"
       NativeAssets="@(WasmNativeAsset)"
       DebugLevel="$(WasmDebugLevel)"
-      IsPublish="$(_IsPublishing)"
+      IsPublish="$(_WasmIsPublishing)"
       IncludeThreadsWorker="$(WasmEnableThreads)"
       PThreadPoolInitialSize="$(_WasmPThreadPoolInitialSize)"
       PThreadPoolUnusedSize="$(_WasmPThreadPoolUnusedSize)"
