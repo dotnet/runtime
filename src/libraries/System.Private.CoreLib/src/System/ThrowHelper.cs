@@ -1252,6 +1252,10 @@ namespace System
                     return SR.Argument_HasToBeArrayClass;
                 case ExceptionResource.Arg_PrimitiveWiden:
                     return SR.Arg_PrimWiden;
+                case ExceptionResource.Argument_MustBePrimitiveArray:
+                    return SR.Argument_MustBePrimitiveArray;
+                case ExceptionResource.Argument_BadFieldForInitializeArray:
+                    return SR.Argument_BadFieldForInitializeArray;
                 default:
                     Debug.Fail("The enum value is not defined, please check the ExceptionResource Enum.");
                     return "";
@@ -1449,5 +1453,7 @@ namespace System
         Format_ExpectedAsciiDigit,
         Argument_HasToBeArrayClass,
         Arg_PrimitiveWiden,
+        Argument_MustBePrimitiveArray,
+        Argument_BadFieldForInitializeArray,
     }
 }

@@ -1,22 +1,83 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers.Binary;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
 using System.Runtime.Versioning;
-using System.Threading;
 
 namespace System.Runtime.CompilerServices
 {
     public static partial class RuntimeHelpers
     {
         [Intrinsic]
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern void InitializeArray(Array array, RuntimeFieldHandle fldHandle);
+        public static unsafe void InitializeArray(Array array, RuntimeFieldHandle fldHandle)
+        {
+            RtFieldInfo fldInfo = (RtFieldInfo)FieldInfo.GetFieldFromHandle(fldHandle);
+
+            if (array is null)
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
+
+            if ((fldInfo.Attributes & FieldAttributes.HasFieldRVA) != 0)
+                ThrowHelper.ThrowArgumentException(ExceptionResource.Argument_BadFieldForInitializeArray);
+
+            // Note that we do not check that the field is actually in the PE file that is initializing
+            // the array. Basically the data being published is can be accessed by anyone with the proper
+            // permissions (C# marks these as assembly visibility, and thus are protected from outside
+            // snooping)
+
+            if (!array.GetCorElementTypeOfElementType().IsPrimitiveType()) // Enum is included
+                ThrowHelper.ThrowArgumentException(ExceptionResource.Argument_MustBePrimitiveArray);
+
+            MethodTable* pMT = GetMethodTable(array);
+            nuint totalSize = pMT->ComponentSize * array.NativeLength;
+
+            uint size = ((MethodTable*)((RuntimeType)fldInfo.FieldType).TypeHandle.Value)->GetNumInstanceFieldBytes();
+
+            // make certain you don't go off the end of the rva static
+            if (totalSize > size)
+                ThrowHelper.ThrowArgumentException(ExceptionResource.Argument_BadFieldForInitializeArray);
+
+            void* src = (void*)RuntimeFieldHandle.GetStaticFieldAddress(fldInfo);
+            ref byte dst = ref MemoryMarshal.GetArrayDataReference(array);
+
+            Debug.Assert(!pMT->GetArrayElementTypeHandle().AsMethodTable()->ContainsGCPointers);
+
+            if (BitConverter.IsLittleEndian)
+            {
+                SpanHelpers.Memmove(ref dst, ref *(byte*)src, totalSize);
+            }
+            else
+            {
+                switch (pMT->ComponentSize)
+                {
+                    case 1:
+                        SpanHelpers.Memmove(ref dst, ref *(byte*)src, totalSize);
+                        break;
+                    case 2:
+                        BinaryPrimitives.ReverseEndianness(
+                            new ReadOnlySpan<ushort>(src, array.Length),
+                            new Span<ushort>(ref Unsafe.As<byte, ushort>(ref dst), array.Length));
+                        break;
+                    case 4:
+                        BinaryPrimitives.ReverseEndianness(
+                            new ReadOnlySpan<uint>(src, array.Length),
+                            new Span<uint>(ref Unsafe.As<byte, uint>(ref dst), array.Length));
+                        break;
+                    case 8:
+                        BinaryPrimitives.ReverseEndianness(
+                            new ReadOnlySpan<ulong>(src, array.Length),
+                            new Span<ulong>(ref Unsafe.As<byte, ulong>(ref dst), array.Length));
+                        break;
+                    default:
+                        Debug.Fail("Incorrect primitive type size!");
+                        break;
+                }
+            }
+        }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern unsafe void* GetSpanDataFrom(
