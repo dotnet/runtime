@@ -16,8 +16,8 @@ public unsafe class TripCountOverflow
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static long InfiniteLoopExitedByException(long n, long k)
     {
-		// Since the caller passes int.MaxValue + 1 this loop is infinite, so we shouldn't be able to analyze
-		// its trip count (without doing some form of cloning).
+        // Since the caller passes int.MaxValue + 1 this loop is infinite, so we shouldn't be able to analyze
+        // its trip count (without doing some form of cloning).
         long sum = 0;
         for (int i = 0; i < n; i++)
         {

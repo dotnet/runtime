@@ -1746,18 +1746,18 @@ Scev* ScalarEvolutionContext::ComputeExitNotTakenCount(BasicBlock* exiting)
         return nullptr;
     }
 
-    Scev* tripCountSubtraction =
+    Scev* backedgeCountSubtraction =
         NewBinop(ScevOper::Add, upperBound, NewBinop(ScevOper::Mul, lowerBound, NewConstant(lowerBound->Type, -1)));
-    Scev* tripCount = tripCountSubtraction;
+    Scev* backedgeCount = backedgeCountSubtraction;
     if (divisorVal == -1)
     {
-        tripCount = NewBinop(ScevOper::Mul, tripCount, NewConstant(tripCount->Type, -1));
+        backedgeCount = NewBinop(ScevOper::Mul, backedgeCount, NewConstant(backedgeCount->Type, -1));
     }
 
-    tripCount = Simplify(tripCount);
-    JITDUMP("  Trip count: ");
-    DBEXEC(VERBOSE, tripCount->Dump(m_comp));
+    backedgeCount = Simplify(backedgeCount);
+    JITDUMP("  Backedge count: ");
+    DBEXEC(VERBOSE, backedgeCount->Dump(m_comp));
     JITDUMP("\n");
 
-    return tripCount;
+    return backedgeCount;
 }
