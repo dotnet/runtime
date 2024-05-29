@@ -2622,19 +2622,6 @@ FCIMPL1(ReflectClassBaseObject*, RuntimeFieldHandle::GetApproxDeclaringType, Fie
 }
 FCIMPLEND
 
-FCIMPL1(void*, RuntimeFieldHandle::GetApproxFieldType, FieldDesc *pField) {
-    CONTRACTL {
-        FCALL_CHECK;
-    }
-    CONTRACTL_END;
-
-    if (!pField)
-        FCThrowRes(kArgumentNullException, W("Arg_InvalidHandle"));
-
-    return pField->GetApproxFieldTypeHandleThrowing().GetMethodTable();
-}
-FCIMPLEND
-
 FCIMPL1(INT32, RuntimeFieldHandle::GetToken, ReflectFieldObject *pFieldUNSAFE) {
     CONTRACTL {
         FCALL_CHECK;

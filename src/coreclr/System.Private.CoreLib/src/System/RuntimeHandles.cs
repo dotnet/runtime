@@ -1085,7 +1085,7 @@ namespace System
     }
 
     [NonVersionable]
-    public unsafe struct RuntimeFieldHandle : IEquatable<RuntimeFieldHandle>, ISerializable
+    public unsafe partial struct RuntimeFieldHandle : IEquatable<RuntimeFieldHandle>, ISerializable
     {
         // Returns handle for interop with EE. The handle is guaranteed to be non-null.
         internal RuntimeFieldHandle GetNativeHandle()
@@ -1181,16 +1181,6 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern IntPtr GetApproxFieldType(RuntimeFieldHandleInternal field);
-
-        internal static IntPtr GetApproxFieldType(IRuntimeFieldInfo field)
-        {
-            IntPtr th = GetApproxFieldType(field.Value);
-            GC.KeepAlive(field);
-            return th;
-        }
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern bool IsFastPathSupported(RtFieldInfo field);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
@@ -1198,6 +1188,9 @@ namespace System
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern IntPtr GetStaticFieldAddress(IRuntimeFieldInfo field);
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeFieldHandle_GetFieldSize")]
+        internal static partial uint GetFieldSize(QCallFieldHandle field);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern int GetToken(RtFieldInfo field);

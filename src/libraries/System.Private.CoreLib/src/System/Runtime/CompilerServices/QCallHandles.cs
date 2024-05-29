@@ -95,4 +95,17 @@ namespace System.Runtime.CompilerServices
             _handle = rth.Value;
         }
     }
+
+    // Wraps IRuntimeFieldInfo into a handle. Used to pass IRuntimeFieldInfo to native code without letting it be collected
+    internal unsafe ref struct QCallFieldHandle
+    {
+        private void* _ptr;
+        private IntPtr _handle;
+
+        internal QCallFieldHandle(ref IRuntimeFieldInfo field)
+        {
+            _ptr = Unsafe.AsPointer(ref field);
+            _handle = field.Value.Value;
+        }
+    }
 }

@@ -35,7 +35,7 @@ namespace System.Runtime.CompilerServices
             MethodTable* pMT = GetMethodTable(array);
             nuint totalSize = pMT->ComponentSize * array.NativeLength;
 
-            uint size = ((MethodTable*)RuntimeFieldHandle.GetApproxFieldType(fldInfo))->GetNumInstanceFieldBytes();
+            uint size = RuntimeFieldHandle.GetFieldSize(new QCallFieldHandle(ref fldInfo));
 
             // make certain you don't go off the end of the rva static
             if (totalSize > size)
@@ -95,7 +95,7 @@ namespace System.Runtime.CompilerServices
             if (!th.GetVerifierCorElementType().IsPrimitiveType()) // Enum is included
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Argument_MustBePrimitiveArray);
 
-            uint totalSize = ((MethodTable*)RuntimeFieldHandle.GetApproxFieldType(fldInfo))->GetNumInstanceFieldBytes();
+            uint totalSize = RuntimeFieldHandle.GetFieldSize(new QCallFieldHandle(ref fldInfo));
             uint targetTypeSize = th.AsMethodTable()->GetNumInstanceFieldBytes();
 
             IntPtr data = RuntimeFieldHandle.GetStaticFieldAddress(fldInfo);

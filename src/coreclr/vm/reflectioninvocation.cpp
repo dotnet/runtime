@@ -1259,6 +1259,19 @@ FCIMPL1(void*, RuntimeFieldHandle::GetStaticFieldAddress, ReflectFieldObject *pF
 }
 FCIMPLEND
 
+extern "C" UINT QCALLTYPE RuntimeFieldHandle_GetFieldSize(QCall::FieldHandle pField)
+{
+    QCALL_CONTRACT;
+
+    UINT ret = 0;
+
+    BEGIN_QCALL;
+    ret = pField->LoadSize();
+    END_QCALL;
+
+    return ret;
+}
+
 extern "C" void QCALLTYPE ReflectionInvocation_CompileMethod(MethodDesc * pMD)
 {
     QCALL_CONTRACT;
