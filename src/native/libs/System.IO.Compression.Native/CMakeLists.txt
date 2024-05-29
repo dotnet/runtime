@@ -21,18 +21,6 @@ else()
 endif()
 
 if (NOT CLR_CMAKE_TARGET_BROWSER AND NOT CLR_CMAKE_TARGET_WASI)
-
-    if (CLR_CMAKE_USE_SYSTEM_BROTLI)
-        add_definitions(-DFEATURE_USE_SYSTEM_BROTLI)
-    else ()
-        include(${CLR_SRC_NATIVE_DIR}/external/brotli.cmake)
-
-        set (NATIVECOMPRESSION_SOURCES
-            ${NATIVECOMPRESSION_SOURCES}
-            ${BROTLI_SOURCES}
-        )
-    endif ()
-
     set (NATIVECOMPRESSION_SOURCES
         ${NATIVECOMPRESSION_SOURCES}
         entrypoints.c
@@ -45,12 +33,6 @@ if (CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
 
     # Disable implicit fallthrough warning for Zlib and Brotli
     set(FLAGS -Wno-implicit-fallthrough)
-
-    # Delete this suppression once brotli is upgraded to vNext (current latest v1.0.9
-    # does not contain upstream fix: https://github.com/google/brotli/commit/0a3944c)
-    if (NOT CLR_CMAKE_TARGET_WASI)
-        set(FLAGS "${FLAGS} -Wno-vla-parameter")
-    endif ()
 
     set_source_files_properties(${NATIVECOMPRESSION_SOURCES} PROPERTIES COMPILE_FLAGS ${FLAGS})
 
@@ -103,7 +85,14 @@ if (CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
     endif()
 
     set_target_properties(System.IO.Compression.Native-Static PROPERTIES OUTPUT_NAME System.IO.Compression.Native CLEAN_DIRECT_OUTPUT 1)
+    target_link_libraries(System.IO.Compression.Native-Static
+        PUBLIC
+        ${NATIVE_LIBS_EXTRA}
+    )
 else ()
+    set(NATIVE_LIBS_EXTRA)
+    append_extra_compression_libs(NATIVE_LIBS_EXTRA)
+
     if (GEN_SHARED_LIB)
         include (GenerateExportHeader)
     endif ()
