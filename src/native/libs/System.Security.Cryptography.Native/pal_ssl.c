@@ -171,7 +171,6 @@ static void DetectCiphersuiteConfiguration(void)
 #endif
 }
 
-
 void CryptoNative_EnsureLibSslInitialized(void)
 
 {
