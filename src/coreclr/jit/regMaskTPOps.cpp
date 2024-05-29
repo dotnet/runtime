@@ -229,3 +229,25 @@ void regMaskTP::RemoveRegsetForType(SingleTypeRegSet regsToRemove, var_types typ
 
     return _registerTypeIndex[reg];
 }
+
+void regMaskTP::operator|=(const regNumber reg)
+{
+#ifdef HAS_MORE_THAN_64_REGISTERS
+    int         index = getRegisterTypeIndex(reg);
+    RegBitSet64 value = genRegMask(reg);
+    _registers[index] |= encodeForRegisterIndex(index, value);
+#else
+    low |= genSingleTypeRegMask(reg);
+#endif
+}
+
+void regMaskTP::operator^=(const regNumber reg)
+{
+#ifdef HAS_MORE_THAN_64_REGISTERS
+    int         index = getRegisterTypeIndex(reg);
+    RegBitSet64 value = genRegMask(reg);
+    _registers[index] ^= encodeForRegisterIndex(index, value);
+#else
+    low ^= genSingleTypeRegMask(reg);
+#endif
+}

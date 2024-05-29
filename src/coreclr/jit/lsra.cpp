@@ -4949,7 +4949,7 @@ void LinearScan::freeRegisters(regMaskTP regsToFree)
         if (regRecord->assignedInterval != nullptr && (regRecord->assignedInterval->registerType == TYP_DOUBLE))
         {
             assert(genIsValidDoubleReg(nextReg));
-            regsToFree ^= genRegMask(regNumber(nextReg + 1));
+            regsToFree ^= regNumber(nextReg + 1);
         }
 #endif
         freeRegister(regRecord);
@@ -9750,8 +9750,7 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
     while (targetCandidates.IsNonEmpty())
     {
         regNumber targetReg     = genFirstRegNumFromMask(targetCandidates);
-        regMaskTP targetRegMask = genRegMask(targetReg);
-        targetCandidates ^= targetRegMask;
+        targetCandidates ^= targetReg;
         if (location[targetReg] == REG_NA)
         {
 #ifdef TARGET_ARM
@@ -9764,13 +9763,13 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
                 regNumber anotherHalfRegNum = REG_NEXT(targetReg);
                 if (location[anotherHalfRegNum] == REG_NA)
                 {
-                    targetRegsReady |= targetRegMask;
+                    targetRegsReady |= targetReg;
                 }
             }
             else
 #endif // TARGET_ARM
             {
-                targetRegsReady |= targetRegMask;
+                targetRegsReady |= targetReg;
             }
         }
     }
@@ -9781,9 +9780,8 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
         while (targetRegsReady.IsNonEmpty())
         {
             regNumber targetReg     = genFirstRegNumFromMask(targetRegsReady);
-            regMaskTP targetRegMask = genRegMask(targetReg);
-            targetRegsToDo ^= targetRegMask;
-            targetRegsReady ^= targetRegMask;
+            targetRegsToDo ^= targetReg;
+            targetRegsReady ^= targetReg;
             assert(location[targetReg] != targetReg);
             assert(targetReg < REG_COUNT);
             regNumber sourceReg = (regNumber)source[targetReg];
