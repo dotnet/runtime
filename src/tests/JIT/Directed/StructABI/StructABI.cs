@@ -674,8 +674,8 @@ struct Empty
 
 struct Empty8Float
 {
-	Empty e0, e1, e2, e3, e4, e5, e6, e7;
-	float FieldF;
+	public Empty e0, e1, e2, e3, e4, e5, e6, e7;
+	public float FieldF;
 
 	public static Empty8Float Get()
 	{
@@ -690,10 +690,10 @@ struct Empty8Float
 
 struct EmptyFloatEmpty5Byte
 {
-	Empty e;
-	float FieldF;
-	Empty e0, e1, e2, e3, e4;
-	sbyte FieldB;
+	public Empty e;
+	public float FieldF;
+	public Empty e0, e1, e2, e3, e4;
+	public sbyte FieldB;
 
 	public static EmptyFloatEmpty5Byte Get()
 	{
@@ -708,10 +708,10 @@ struct EmptyFloatEmpty5Byte
 
 struct EmptyFloatEmpty5UByte
 {
-	Empty e;
-	float FieldF;
-	Empty e0, e1, e2, e3, e4;
-	byte FieldB;
+	public Empty e;
+	public float FieldF;
+	public Empty e0, e1, e2, e3, e4;
+	public byte FieldB;
 
 	public static EmptyFloatEmpty5UByte Get()
 	{
@@ -726,9 +726,9 @@ struct EmptyFloatEmpty5UByte
 
 struct LongEmptyDouble
 {
-	long FieldL;
-	Empty FieldE;
-	double FieldD;
+	public long FieldL;
+	public Empty FieldE;
+	public double FieldD;
 
 	public static LongEmptyDouble Get()
 	{
@@ -743,18 +743,18 @@ struct LongEmptyDouble
 
 struct NestedEmpty
 {
-	struct InnerEmpty
+	public struct InnerEmpty
 	{
-		Empty e;
+		public Empty e;
 	}
-	InnerEmpty e;
+	public InnerEmpty e;
 }
 
 struct NestedEmptyFloatDouble
 {
-	NestedEmpty FieldNE;
-	float FieldF;
-	double FieldD;
+	public NestedEmpty FieldNE;
+	public float FieldF;
+	public double FieldD;
 
 	public static NestedEmptyFloatDouble Get()
 	{
@@ -769,13 +769,13 @@ struct NestedEmptyFloatDouble
 
 struct EmptyIntAndFloat
 {
-	struct EmptyInt
+	public struct EmptyInt
 	{
 		public Empty FieldE;
 		public int FieldI;
 	}
-	EmptyInt FieldEI;
-	float FieldF;
+	public EmptyInt FieldEI;
+	public float FieldF;
 
 	public static EmptyIntAndFloat Get()
 	{
@@ -790,13 +790,13 @@ struct EmptyIntAndFloat
 
 struct LongEmptyAndFloat
 {
-	struct LongEmpty
+	public struct LongEmpty
 	{
 		public long FieldL;
 		public Empty FieldE;
 	}
-	LongEmpty FieldLE;
-	float FieldF;
+	public LongEmpty FieldLE;
+	public float FieldF;
 
 	public static LongEmptyAndFloat Get()
 	{
@@ -812,14 +812,14 @@ struct LongEmptyAndFloat
 [InlineArray(1)]
 struct ArrayOfEmpties
 {
-	Empty e;
+	public Empty e;
 };
 
 struct ArrayOfEmptiesFloatDouble
 {
-	ArrayOfEmpties FieldAoE;
-	float FieldF;
-	double FieldD;
+	public ArrayOfEmpties FieldAoE;
+	public float FieldF;
+	public double FieldD;
 
 	public static ArrayOfEmptiesFloatDouble Get()
 	{
@@ -834,14 +834,14 @@ struct ArrayOfEmptiesFloatDouble
 
 struct Eight<T>
 {
-	T e1, e2, e3, e4, e5, e6, e7, e8;
+	public T e1, e2, e3, e4, e5, e6, e7, e8;
 }
 
 struct FloatEmpty32kInt
 {
-	float FieldF;
-	Eight<Eight<Eight<Eight<Eight<Empty>>>>> FieldEmpty32k;
-	int FieldI;
+	public float FieldF;
+	public Eight<Eight<Eight<Eight<Eight<Empty>>>>> FieldEmpty32k;
+	public int FieldI;
 
 	public static FloatEmpty32kInt Get()
 	{
@@ -857,9 +857,9 @@ struct FloatEmpty32kInt
 [StructLayout(LayoutKind.Sequential, Pack=1)]
 struct PackedEmptyFloatLong
 {
-	Empty FieldE;
-	float FieldF;
-	long FieldL;
+	public Empty FieldE;
+	public float FieldF;
+	public long FieldL;
 
 	public static PackedEmptyFloatLong Get()
 	{
@@ -875,8 +875,8 @@ struct PackedEmptyFloatLong
 [StructLayout(LayoutKind.Explicit, Pack=1)]
 struct ExplicitFloatLong
 {
-	[FieldOffset(1)] float FieldF;
-	[FieldOffset(5)] long FieldL;
+	[FieldOffset(1)] public float FieldF;
+	[FieldOffset(5)] public long FieldL;
 
 	public static ExplicitFloatLong Get()
 	{
