@@ -269,7 +269,9 @@ private:
     regMaskSmall low;
 #endif
 
-    FORCEINLINE static int getRegisterTypeIndex(regNumber reg);
+    FORCEINLINE static int mapRegNumToRegTypeIndex(regNumber reg);
+    template<class T>
+    FORCEINLINE static int mapTypeToRegTypeIndex(T type);
     FORCEINLINE static RegSet32 encodeForRegisterIndex(int index, regMaskSmall value);
     FORCEINLINE static regMaskSmall decodeForRegisterIndex(int index, RegSet32 value);
 
@@ -302,6 +304,9 @@ public:
 
     regMaskTP(regMaskSmall regMask)
         : low(regMask)
+#ifdef HAS_MORE_THAN_64_REGISTERS
+        , high(RBM_NONE)
+#endif
     {
     }
 
@@ -382,7 +387,11 @@ public:
 
     SingleTypeRegSet GetPredicateRegSet() const
     {
+#ifdef HAS_MORE_THAN_64_REGISTERS
+        return getHigh();
+#else
         return getLow();
+#endif
     }
 
     void operator|=(const regMaskTP& second)
@@ -399,11 +408,6 @@ public:
 #ifdef HAS_MORE_THAN_64_REGISTERS
         high ^= second.getHigh();
 #endif
-    }
-
-    void operator^=(const regNumber reg)
-    {
-        low ^= genSingleTypeRegMask(reg);
     }
 
     void operator&=(const regMaskTP& second)
