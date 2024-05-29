@@ -9175,7 +9175,8 @@ void LinearScan::handleOutgoingCriticalEdges(BasicBlock* block)
             // live only at another target), and we can't copy another lclVar into that reg in this block.
             regMaskTP sameToRegMask =
                 genRegMask(sameToReg, getIntervalForLocalVar(outResolutionSetVarIndex)->registerType);
-            if (maybeSameLivePaths && (liveOutRegs.IsRegNumInMask(sameToReg ARM_ARG(outVarRegType)) || sameWriteRegs.IsRegNumInMask(sameToReg ARM_ARG(outVarRegType))))
+            if (maybeSameLivePaths && (liveOutRegs.IsRegNumInMask(sameToReg ARM_ARG(outVarRegType)) ||
+                                       sameWriteRegs.IsRegNumInMask(sameToReg ARM_ARG(outVarRegType))))
             {
                 sameToReg = REG_NA;
             }
@@ -9217,7 +9218,8 @@ void LinearScan::handleOutgoingCriticalEdges(BasicBlock* block)
             VarSetOps::AddElemD(compiler, diffResolutionSet, outResolutionSetVarIndex);
             if (fromReg != REG_STK)
             {
-                diffReadRegs.AddRegNumInMask(fromReg ARM_ARG(getIntervalForLocalVar(outResolutionSetVarIndex)->registerType));
+                diffReadRegs.AddRegNumInMask(
+                    fromReg ARM_ARG(getIntervalForLocalVar(outResolutionSetVarIndex)->registerType));
             }
         }
         else if (sameToReg != fromReg)
@@ -9226,7 +9228,8 @@ void LinearScan::handleOutgoingCriticalEdges(BasicBlock* block)
             setVarReg(sameVarToRegMap, outResolutionSetVarIndex, sameToReg);
             if (sameToReg != REG_STK)
             {
-                sameWriteRegs.AddRegNumInMask(sameToReg ARM_ARG(getIntervalForLocalVar(outResolutionSetVarIndex)->registerType));
+                sameWriteRegs.AddRegNumInMask(
+                    sameToReg ARM_ARG(getIntervalForLocalVar(outResolutionSetVarIndex)->registerType));
             }
         }
     }
@@ -9749,7 +9752,7 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
     regMaskTP targetCandidates = targetRegsToDo;
     while (targetCandidates.IsNonEmpty())
     {
-        regNumber targetReg     = genFirstRegNumFromMask(targetCandidates);
+        regNumber targetReg = genFirstRegNumFromMask(targetCandidates);
         targetCandidates ^= targetReg;
         if (location[targetReg] == REG_NA)
         {
@@ -9779,7 +9782,7 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
     {
         while (targetRegsReady.IsNonEmpty())
         {
-            regNumber targetReg     = genFirstRegNumFromMask(targetRegsReady);
+            regNumber targetReg = genFirstRegNumFromMask(targetRegsReady);
             targetRegsToDo ^= targetReg;
             targetRegsReady ^= targetReg;
             assert(location[targetReg] != targetReg);

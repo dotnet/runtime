@@ -92,7 +92,7 @@ void regMaskTP::AddGprRegs(SingleTypeRegSet gprRegs)
 // AddRegNum: This is similar to AddRegNumInMask(reg, regType) for all platforms
 //      except Arm. For Arm, it calls getRegMask() instead of genRegMask()
 //      to create a mask that needs to be added.
-// 
+//
 // Parameters:
 //  reg  - Register to check
 //  type - type of register
@@ -130,7 +130,7 @@ void regMaskTP::AddRegsetForType(SingleTypeRegSet regsToAdd, var_types type)
 //  type       - type of register
 //
 //  Return: The register set of given type
-//              
+//
 SingleTypeRegSet regMaskTP::GetRegSetForType(var_types type) const
 {
 #ifdef HAS_MORE_THAN_64_REGISTERS
