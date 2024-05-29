@@ -15,6 +15,10 @@ include asmmacros.inc
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 NESTED_ENTRY RhpThrowHwEx, _TEXT
 
+ALTERNATE_ENTRY RhpThrowHwExGEHCONT ; this needs to be an EHCONT target since we'll be context-jumping here.
+
+.GEHCONT RhpThrowHwExGEHCONT
+
         SIZEOF_XmmSaves equ SIZEOF__PAL_LIMITED_CONTEXT - OFFSETOF__PAL_LIMITED_CONTEXT__Xmm6
         STACKSIZEOF_ExInfo equ ((SIZEOF__ExInfo + 15) AND (NOT 15))
 
