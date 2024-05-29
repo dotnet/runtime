@@ -343,19 +343,8 @@ namespace Mono.Linker.Steps
 
 			MarkGenericParameterProvider (type, origin);
 
-			if (type.HasFields) {
-				foreach (FieldDefinition field in type.Fields) {
-					MarkFieldVisibleToReflection (field, new DependencyInfo (DependencyKind.MemberOfType, type), origin);
-				}
-			}
-
-			if (type.HasMethods) {
-				foreach (MethodDefinition method in type.Methods) {
-					if (IsFullyPreservedAction (Annotations.GetAction (type.Module.Assembly)))
-						Annotations.SetAction (method, MethodAction.ForceParse);
-					MarkMethodVisibleToReflection (method, new DependencyInfo (DependencyKind.MemberOfType, type), origin);
-				}
-			}
+			MarkFieldsVisibleToReflection (type, new DependencyInfo (DependencyKind.MemberOfType, type), origin);
+			MarkMethodsVisibleToReflection (type, new DependencyInfo (DependencyKind.MemberOfType, type), origin);
 
 			if (type.HasProperties) {
 				foreach (var property in type.Properties) {
@@ -1897,9 +1886,32 @@ namespace Mono.Linker.Steps
 			}
 		}
 
+		bool MarkMethodsVisibleToReflection (TypeDefinition type, in DependencyInfo reason, MessageOrigin origin)
+		{
+			if (!type.HasMethods)
+				return false;
+
+			foreach (MethodDefinition method in type.Methods) {
+				if (IsFullyPreservedAction (Annotations.GetAction (type.Module.Assembly)))
+					Annotations.SetAction (method, MethodAction.ForceParse);
+				MarkMethodVisibleToReflection (method, reason, origin);
+			}
+			return true;
+		}
+
 		internal void MarkFieldVisibleToReflection (FieldReference field, in DependencyInfo reason, in MessageOrigin origin)
 		{
 			MarkField (field, reason, origin);
+		}
+
+		bool MarkFieldsVisibleToReflection (TypeDefinition type, in DependencyInfo reason, MessageOrigin origin)
+		{
+			if (!type.HasFields)
+				return false;
+
+			foreach (FieldDefinition field in type.Fields)
+				MarkFieldVisibleToReflection (field, reason, origin);
+			return true;
 		}
 
 		internal void MarkPropertyVisibleToReflection (PropertyDefinition property, in DependencyInfo reason, in MessageOrigin origin)
@@ -2781,16 +2793,16 @@ namespace Mono.Linker.Steps
 
 				switch (preserve) {
 				case TypePreserve.All:
-					MarkFields (type, true, di, typeOrigin);
-					MarkMethods (type, di, typeOrigin);
+					MarkFieldsVisibleToReflection (type, di, typeOrigin);
+					MarkMethodsVisibleToReflection (type, in di, typeOrigin);
 					return;
 
 				case TypePreserve.Fields:
-					if (!MarkFields (type, true, di, typeOrigin, true))
+					if (!MarkFieldsVisibleToReflection (type, di, typeOrigin))
 						Context.LogWarning (type, DiagnosticId.TypeHasNoFieldsToPreserve, type.GetDisplayName ());
 					break;
 				case TypePreserve.Methods:
-					if (!MarkMethods (type, di, typeOrigin))
+					if (!MarkMethodsVisibleToReflection (type, in di, typeOrigin))
 						Context.LogWarning (type, DiagnosticId.TypeHasNoMethodsToPreserve, type.GetDisplayName ());
 					break;
 				}
@@ -2802,18 +2814,18 @@ namespace Mono.Linker.Steps
 				if (type.HasMethods) {
 					foreach (var m in type.Methods) {
 						if ((members & TypePreserveMembers.Visible) != 0 && IsMethodVisible (m)) {
-							MarkMethod (m, di, typeOrigin);
+							MarkMethodVisibleToReflection (m, di, typeOrigin);
 							continue;
 						}
 
 						if ((members & TypePreserveMembers.Internal) != 0 && IsMethodInternal (m)) {
-							MarkMethod (m, di, typeOrigin);
+							MarkMethodVisibleToReflection (m, di, typeOrigin);
 							continue;
 						}
 
 						if ((members & TypePreserveMembers.Library) != 0) {
 							if (IsSpecialSerializationConstructor (m) || HasOnSerializeOrDeserializeAttribute (m)) {
-								MarkMethod (m, di, typeOrigin);
+								MarkMethodVisibleToReflection (m, di, typeOrigin);
 								continue;
 							}
 						}
@@ -2823,12 +2835,12 @@ namespace Mono.Linker.Steps
 				if (type.HasFields) {
 					foreach (var f in type.Fields) {
 						if ((members & TypePreserveMembers.Visible) != 0 && IsFieldVisible (f)) {
-							MarkField (f, di, typeOrigin);
+							MarkFieldVisibleToReflection (f, di, typeOrigin);
 							continue;
 						}
 
 						if ((members & TypePreserveMembers.Internal) != 0 && IsFieldInternal (f)) {
-							MarkField (f, di, typeOrigin);
+							MarkFieldVisibleToReflection (f, di, typeOrigin);
 							continue;
 						}
 					}
