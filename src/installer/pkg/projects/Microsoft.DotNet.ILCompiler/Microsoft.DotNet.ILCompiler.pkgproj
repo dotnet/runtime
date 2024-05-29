@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <GeneratePackage>true</GeneratePackage>
-    <IncludeSymbolsInPackage>true</IncludeSymbolsInPackage>
+    <IncludeSymbolsInPackage>false</IncludeSymbolsInPackage>
     <PackageDescription>Provides a native AOT compiler and runtime for .NET</PackageDescription>
   </PropertyGroup>
 
