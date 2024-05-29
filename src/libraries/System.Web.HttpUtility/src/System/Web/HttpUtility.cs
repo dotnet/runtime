@@ -117,7 +117,7 @@ namespace System.Web
                 }
                 else
                 {
-                    name = UrlDecode(query.Substring(namePos, valuePos - namePos - 1), encoding);
+                    name = UrlDecode(query.AsSpan(namePos, valuePos - namePos - 1), encoding);
                 }
 
                 if (valueEnd < 0)
@@ -126,7 +126,7 @@ namespace System.Web
                 }
 
                 namePos = valueEnd + 1;
-                string value = UrlDecode(query.Substring(valuePos, valueEnd - valuePos), encoding);
+                string value = UrlDecode(query.AsSpan(valuePos, valueEnd - valuePos), encoding);
                 result.Add(name, value);
             }
 
@@ -236,6 +236,8 @@ namespace System.Web
 
         [return: NotNullIfNotNull(nameof(str))]
         public static string? UrlDecode(string? str, Encoding e) => HttpEncoder.UrlDecode(str, e);
+
+        private static string UrlDecode(ReadOnlySpan<char> str, Encoding e) => HttpEncoder.UrlDecode(str, e);
 
         [return: NotNullIfNotNull(nameof(bytes))]
         public static string? UrlDecode(byte[]? bytes, int offset, int count, Encoding e) =>
