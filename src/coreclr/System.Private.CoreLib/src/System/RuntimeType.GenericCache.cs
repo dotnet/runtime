@@ -69,6 +69,60 @@ namespace System
                 return CreateAndCache(type);
             }
 
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static TCache? Find(RuntimeType type)
+            {
+                ref IGenericCacheEntry? genericCache = ref type.Cache.GenericCache;
+                // Read the GenericCache once to avoid multiple reads of the same field.
+                IGenericCacheEntry? currentCache = genericCache;
+                if (currentCache is TCache existing)
+                {
+                    return existing;
+                }
+                if (currentCache is CompositeCacheEntry composite)
+                {
+                    return TCache.GetStorageRef(composite);
+                }
+
+                return null;
+            }
+
+            public static TCache Replace(RuntimeType type, TCache newEntry)
+            {
+                ref IGenericCacheEntry? genericCache = ref type.Cache.GenericCache;
+
+                // If the existing cache is of the same type, we can replace it directly,
+                // as long as it is not upgraded to a composite cache simultaneously.
+                while (true)
+                {
+                    IGenericCacheEntry? existing = genericCache;
+                    if (existing is not (null or TCache))
+                        break; // We lost the race and we can no longer replace the cache directly.
+
+                    if (Interlocked.CompareExchange(ref genericCache, newEntry, existing) == existing)
+                        return newEntry;
+                    // We lost the race, try again.
+                }
+
+                // If we get here, either we have a composite cache or we need to upgrade to a composite cache.
+                while (true)
+                {
+                    IGenericCacheEntry existing = genericCache!;
+                    if (existing is not CompositeCacheEntry compositeCache)
+                    {
+                        compositeCache = new CompositeCacheEntry();
+                        existing.InitializeCompositeCache(compositeCache);
+                        if (Interlocked.CompareExchange(ref genericCache, compositeCache, existing) != existing)
+                            continue; // We lost the race, try again.
+                    }
+
+                    TCache? existingEntry = TCache.GetStorageRef(compositeCache);
+                    if (Interlocked.CompareExchange(ref TCache.GetStorageRef(compositeCache), newEntry, existingEntry) == existingEntry)
+                        return newEntry;
+                    // We lost the race, try again.
+                }
+            }
+
             [MethodImpl(MethodImplOptions.NoInlining)]
             private static TCache CreateAndCache(RuntimeType type)
             {

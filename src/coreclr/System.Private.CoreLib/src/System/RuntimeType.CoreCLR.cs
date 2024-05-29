@@ -1934,20 +1934,18 @@ namespace System
             return IGenericCacheEntry<T>.GetOrCreate(this);
         }
 
-#if false
         internal T? FindCacheEntry<T>()
             where T : class, IGenericCacheEntry<T>
         {
             return IGenericCacheEntry<T>.Find(this);
         }
 
-        internal T OverwriteCacheEntry<T>(T entry)
+        internal T ReplaceCacheEntry<T>(T entry)
             where T : class, IGenericCacheEntry<T>
         {
-            IGenericCacheEntry<T>.Overwrite(this, entry);
+            IGenericCacheEntry<T>.Replace(this, entry);
             return entry;
         }
-#endif
 
         internal static FieldInfo GetFieldInfo(IRuntimeFieldInfo fieldHandle)
         {

@@ -87,8 +87,6 @@ namespace System
                 typeof(TStorage) == typeof(nuint) || typeof(TStorage) == typeof(float) || typeof(TStorage) == typeof(double) || typeof(TStorage) == typeof(char),
                 $"Unexpected {nameof(TStorage)} == {typeof(TStorage)}");
 
-            return EnumInfo<TStorage>.CreateWithNames(enumType);
-#if false // TODO!!!!!
             return enumType.FindCacheEntry<EnumInfo<TStorage>>() is {} info && (!getNames || info.Names is not null) ?
                 info :
                 InitializeEnumInfo(enumType, getNames);
@@ -100,10 +98,9 @@ namespace System
                 // force that copy into the cache even if we already have a cache entry without names
                 // so we don't have to recompute the names if asked again.
                 return getNames
-                    ? enumType.OverwriteCacheEntry(EnumInfo<TStorage>.CreateWithNames(enumType))
+                    ? enumType.ReplaceCacheEntry(EnumInfo<TStorage>.CreateWithNames(enumType))
                     : enumType.GetOrCreateCacheEntry<EnumInfo<TStorage>>();
             }
-#endif
         }
 
         internal sealed partial class EnumInfo<TStorage> : RuntimeType.IGenericCacheEntry<EnumInfo<TStorage>>
@@ -145,7 +142,10 @@ namespace System
             }
 
             public void InitializeCompositeCache(RuntimeType.CompositeCacheEntry compositeEntry) => compositeEntry._enumInfo = this;
-            public static ref EnumInfo<TStorage>? GetStorageRef(RuntimeType.CompositeCacheEntry compositeEntry) => throw new Exception(); // TODO!!!
+
+            // This type is the only type that will be stored in the _enumInfo field, so we can use Unsafe.As here.
+            public static ref EnumInfo<TStorage>? GetStorageRef(RuntimeType.CompositeCacheEntry compositeEntry)
+                => ref Unsafe.As<RuntimeType.IGenericCacheEntry?, EnumInfo<TStorage>?>(ref compositeEntry._enumInfo);
         }
     }
 }
