@@ -18,6 +18,7 @@ GPTR_DECL(IGCHeap, g_pGCHeap);
 extern "C" {
 #endif // !DACCESS_COMPILE
 
+
 const DWORD SamplingDistributionMean = (100 * 1024);
 
 // This struct adds some state that is only visible to the EE onto the standard gc_alloc_context
@@ -68,19 +69,12 @@ typedef struct _ee_alloc_context
     }
 
     // Regenerate the randomized sampling limit and update the combined_limit field.
-    inline void UpdateCombinedLimit(CLRRandom* pRandom)
+    inline void UpdateCombinedLimit()
     {
-        UpdateCombinedLimit(IsRandomizedSamplingEnabled(), pRandom);
+        UpdateCombinedLimit(IsRandomizedSamplingEnabled());
     }
 
-    // TODO: This avoids allocating the CLRRandom object if the sampling is disabled.
-    //       However, it does not seem possible to use Thread members here.
-    //inline void UpdateCombinedLimit(bool samplingEnabled, Thread* pThread)
-    //{
-    //    UpdateCombinedLimit(IsRandomizedSamplingEnabled(), pThread->GetRandom());
-    //}
-
-    inline void UpdateCombinedLimit(bool samplingEnabled, CLRRandom* pRandom)
+    inline void UpdateCombinedLimit(bool samplingEnabled)
     {
         if (!samplingEnabled)
         {
@@ -89,19 +83,44 @@ typedef struct _ee_alloc_context
         else
         {
             // compute the next sampling limit based on a geometric distribution
-            uint8_t* sampling_limit = gc_alloc_context.alloc_ptr + ComputeGeometricRandom(pRandom);
+            uint8_t* sampling_limit = gc_alloc_context.alloc_ptr + ComputeGeometricRandom();
 
             // if the sampling limit is larger than the allocation context, no sampling will occur in this AC
             combined_limit = Min(sampling_limit, gc_alloc_context.alloc_limit);
         }
     }
 
-    static inline int ComputeGeometricRandom(CLRRandom* pRandomizer)
+    static inline int ComputeGeometricRandom()
     {
         // compute a random sample from the Geometric distribution
-        double probability = pRandomizer->NextDouble();
+        double probability = GetRandomizer()->NextDouble();
         int threshold = (int)(-log(1 - probability) * SamplingDistributionMean);
         return threshold;
+    }
+
+// per thread lazily allocated randomizer
+    struct CLRRandomHolder
+    {
+        CLRRandom* _p;
+
+        CLRRandomHolder()
+        {
+            _p = new CLRRandom();
+            _p->Init();
+        }
+
+        ~CLRRandomHolder()
+        {
+            delete _p;
+        }
+    };
+
+    static thread_local CLRRandomHolder t_instance;
+
+public:
+    static inline CLRRandom* GetRandomizer()
+    {
+        return t_instance._p;
     }
 } ee_alloc_context;
 

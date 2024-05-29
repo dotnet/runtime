@@ -44,6 +44,8 @@ bool g_sw_ww_enabled_for_gc_heap = false;
 ee_alloc_context g_global_ee_alloc_context = {};
 GPTR_IMPL_INIT(gc_alloc_context, g_global_alloc_context, &(g_global_ee_alloc_context.gc_alloc_context));
 
+thread_local ee_alloc_context::CLRRandomHolder ee_alloc_context::t_instance = CLRRandomHolder();
+
 enum GC_LOAD_STATUS {
     GC_LOAD_STATUS_BEFORE_START,
     GC_LOAD_STATUS_START,
