@@ -279,11 +279,13 @@ public:
 #ifdef TARGET_ARM
     void AddRegNumInMask(regNumber reg, var_types type);
     void RemoveRegNumFromMask(regNumber reg, var_types type);
+    bool IsRegNumInMask(regNumber reg, var_types type) const;
 #endif
     void AddRegNum(regNumber reg, var_types type);
     void RemoveRegNumFromMask(regNumber reg);
     void RemoveRegNum(regNumber reg, var_types type);
-    bool IsRegNumInMask(regNumber reg);
+    bool IsRegNumInMask(regNumber reg) const;
+    bool IsRegNumPresent(regNumber reg, var_types type) const;
 
     regMaskTP(regMaskSmall lowMask, RegSet32 highMask)
         : low(lowMask)

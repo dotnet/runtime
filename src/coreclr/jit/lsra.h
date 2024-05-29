@@ -1500,7 +1500,7 @@ private:
     int       lastUsedRegNumIndex;
     bool      shouldDumpReg(regNumber regNum)
     {
-        return (registersToDump & genRegMask(regNum)) != 0;
+        return registersToDump.IsRegNumInMask(regNum);
     }
 
     void dumpRegRecordHeader();
@@ -1815,8 +1815,7 @@ private:
 
     bool isRegAvailable(regNumber reg, var_types regType)
     {
-        regMaskTP regMask = getRegMask(reg, regType);
-        return (m_AvailableRegs & regMask) == regMask;
+        return m_AvailableRegs.IsRegNumPresent(reg, regType);
     }
     void setRegsInUse(regMaskTP regMask)
     {
@@ -1860,9 +1859,7 @@ private:
     }
     bool isRegConstant(regNumber reg, var_types regType)
     {
-        reg               = getRegForType(reg, regType);
-        regMaskTP regMask = getRegMask(reg, regType);
-        return (m_RegistersWithConstants & regMask) == regMask;
+        return m_RegistersWithConstants.IsRegNumPresent(reg, regType);
     }
     SingleTypeRegSet getMatchingConstants(SingleTypeRegSet mask, Interval* currentInterval, RefPosition* refPosition);
 
@@ -1903,8 +1900,7 @@ private:
 #endif
     bool isRegBusy(regNumber reg, var_types regType)
     {
-        regMaskTP regMask = getRegMask(reg, regType);
-        return (regsBusyUntilKill & regMask) != RBM_NONE;
+        return regsBusyUntilKill.IsRegNumPresent(reg, regType);
     }
     void setRegBusyUntilKill(regNumber reg, var_types regType)
     {
@@ -1917,8 +1913,7 @@ private:
 
     bool isRegInUse(regNumber reg, var_types regType)
     {
-        regMaskTP regMask = getRegMask(reg, regType);
-        return (regsInUseThisLocation & regMask) != RBM_NONE;
+        return regsInUseThisLocation.IsRegNumPresent(reg, regType);
     }
 
     void resetRegState()

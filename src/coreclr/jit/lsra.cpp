@@ -4682,7 +4682,7 @@ void LinearScan::processBlockStartLocations(BasicBlock* currentBlock)
     for (regNumber reg = REG_FIRST; reg < AVAILABLE_REG_COUNT; reg = REG_NEXT(reg))
     {
         RegRecord* physRegRecord = getRegisterRecord(reg);
-        if ((liveRegs & genRegMask(reg)) == 0)
+        if (liveRegs.IsRegNumInMask(reg))
         {
             makeRegAvailable(reg, physRegRecord->registerType);
             Interval* assignedInterval = physRegRecord->assignedInterval;
@@ -9167,14 +9167,15 @@ void LinearScan::handleOutgoingCriticalEdges(BasicBlock* block)
         // We only need to check for these cases if sameToReg is an actual register (not REG_STK).
         if (sameToReg != REG_NA && sameToReg != REG_STK)
         {
+            var_types outVarRegType = getIntervalForLocalVar(outResolutionSetVarIndex)->registerType;
+
             // If there's a path on which this var isn't live, it may use the original value in sameToReg.
             // In this case, sameToReg will be in the liveOutRegs of this block.
             // Similarly, if sameToReg is in sameWriteRegs, it has already been used (i.e. for a lclVar that's
             // live only at another target), and we can't copy another lclVar into that reg in this block.
             regMaskTP sameToRegMask =
                 genRegMask(sameToReg, getIntervalForLocalVar(outResolutionSetVarIndex)->registerType);
-            if (maybeSameLivePaths &&
-                (((sameToRegMask & liveOutRegs).IsNonEmpty()) || ((sameToRegMask & sameWriteRegs).IsNonEmpty())))
+            if (maybeSameLivePaths && (liveOutRegs.IsRegNumInMask(sameToReg ARM_ARG(outVarRegType)) || sameWriteRegs.IsRegNumInMask(sameToReg ARM_ARG(outVarRegType))))
             {
                 sameToReg = REG_NA;
             }
@@ -9796,14 +9797,13 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
                           fromReg DEBUG_ARG(fromBlock) DEBUG_ARG(toBlock) DEBUG_ARG(resolveTypeName[resolveType]));
             sourceIntervals[sourceReg] = nullptr;
             location[sourceReg]        = REG_NA;
-            regMaskTP fromRegMask      = genRegMask(fromReg);
 
             // Do we have a free targetReg?
             if (fromReg == sourceReg)
             {
-                if (source[fromReg] != REG_NA && ((targetRegsFromStack & fromRegMask) != fromRegMask))
+                if (source[fromReg] != REG_NA && (targetRegsFromStack.IsRegNumInMask(fromReg)))
                 {
-                    targetRegsReady |= fromRegMask;
+                    targetRegsReady |= fromReg;
 #ifdef TARGET_ARM
                     if (genIsValidDoubleReg(fromReg))
                     {
@@ -9836,13 +9836,13 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
                     //                                            lowerHalfRegMask)
                     if ((lowerHalfSrcReg != REG_NA) && (lowerHalfSrcLoc == REG_NA) &&
                         (sourceIntervals[lowerHalfSrcReg] != nullptr) &&
-                        ((targetRegsReady & lowerHalfRegMask) == RBM_NONE) &&
-                        ((targetRegsFromStack & lowerHalfRegMask) != lowerHalfRegMask))
+                        !targetRegsReady.IsRegNumInMask(lowerHalfReg) &&
+                        !targetRegsFromStack.IsRegNumInMask(lowerHalfReg))
                     {
                         // This must be a double interval, otherwise it would be in targetRegsReady, or already
                         // completed.
                         assert(sourceIntervals[lowerHalfSrcReg]->registerType == TYP_DOUBLE);
-                        targetRegsReady |= lowerHalfRegMask;
+                        targetRegsReady |= lowerHalfReg;
                     }
 #endif // TARGET_ARM
                 }
@@ -11445,7 +11445,7 @@ void LinearScan::dumpRegRecordTitleIfNeeded()
         int lastRegNumIndex = compiler->compFloatingPointUsed ? REG_FP_LAST : REG_INT_LAST;
         for (int regNumIndex = 0; regNumIndex <= lastRegNumIndex; regNumIndex++)
         {
-            if ((registersToDump & genRegMask((regNumber)regNumIndex)) != 0)
+            if (registersToDump.IsRegNumInMask((regNumber)regNumIndex))
             {
                 lastUsedRegNumIndex = regNumIndex;
             }
@@ -11525,7 +11525,7 @@ void LinearScan::dumpRegRecords()
 #endif // FEATURE_PARTIAL_SIMD_CALLEE_SAVE
                 printf("%c", activeChar);
             }
-            else if ((genRegMask(regNum) & regsBusyUntilKill).IsNonEmpty())
+            else if (regsBusyUntilKill.IsRegNumInMask(regNum))
             {
                 printf(columnFormatArray, "Busy");
             }

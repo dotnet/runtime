@@ -67,6 +67,15 @@ void regMaskTP::RemoveRegNumFromMask(regNumber reg, var_types type)
 {
     low &= ~genSingleTypeRegMask(reg, type);
 }
+
+// ----------------------------------------------------------
+//  IsRegNumInMask: Removes `reg` from the mask. It is same as IsRegNumInMask(reg) except
+//  that it takes `type` as an argument and adds `reg` to the mask for that type.
+//
+bool regMaskTP::IsRegNumInMask(regNumber reg, var_types type) const
+{
+    return (low & genSingleTypeRegMask(reg, type)) != RBM_NONE;
+}
 #endif
 
 // This is similar to AddRegNumInMask(reg, regType) for all platforms
@@ -78,6 +87,35 @@ void regMaskTP::AddRegNum(regNumber reg, var_types type)
     low |= getRegMask(reg, type);
 #else
     AddRegNumInMask(reg);
+#endif
+}
+
+//------------------------------------------------------------------------
+// IsRegNumInMask: Checks if `reg` is in the mask
+//
+// Parameters:
+//  reg - Register to check
+//
+bool regMaskTP::IsRegNumInMask(regNumber reg) const
+{
+    SingleTypeRegSet value = genSingleTypeRegMask(reg);
+#ifdef HAS_MORE_THAN_64_REGISTERS
+    int index = getRegisterTypeIndex(reg);
+    return (_registers[index] & encodeForRegisterIndex(index, value)) != RBM_NONE;
+#else
+    return (low & value) != RBM_NONE;
+#endif
+}
+
+// This is similar to IsRegNumInMask(reg, regType) for all platforms
+// except Arm. For Arm, it calls getRegMask() instead of genRegMask()
+// to create a mask that needs to be added.
+bool regMaskTP::IsRegNumPresent(regNumber reg, var_types type) const
+{
+#ifdef TARGET_ARM
+    return (low & getRegMask(reg, type)) != RBM_NONE;
+#else
+    return IsRegNumInMask(reg);
 #endif
 }
 
@@ -111,23 +149,6 @@ void regMaskTP::RemoveRegNum(regNumber reg, var_types type)
     low &= ~getRegMask(reg, type);
 #else
     RemoveRegNumFromMask(reg);
-#endif
-}
-
-//------------------------------------------------------------------------
-// IsRegNumInMask: Checks if `reg` is in the mask
-//
-// Parameters:
-//  reg - Register to check
-//
-bool regMaskTP::IsRegNumInMask(regNumber reg)
-{
-    SingleTypeRegSet value = genSingleTypeRegMask(reg);
-#ifdef HAS_MORE_THAN_64_REGISTERS
-    int index = getRegisterTypeIndex(reg);
-    return (_registers[index] & encodeForRegisterIndex(index, value)) != RBM_NONE;
-#else
-    return (low & value) != RBM_NONE;
 #endif
 }
 
