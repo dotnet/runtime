@@ -5221,13 +5221,13 @@ void LinearScan::allocateRegistersMinimal()
                 }
 #endif // TARGET_ARM
             }
-            regsInUseThisLocation |= currentRefPosition.registerAssignment;
+            regsInUseThisLocation.AddRegsetForType(currentRefPosition.registerAssignment, regRecord->registerType);
             INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_FIXED_REG, nullptr, currentRefPosition.assignedReg()));
 
 #ifdef SWIFT_SUPPORT
             if (currentRefPosition.delayRegFree)
             {
-                regsInUseNextLocation |= currentRefPosition.registerAssignment;
+                regsInUseNextLocation.AddRegsetForType(currentRefPosition.registerAssignment, regRecord->registerType);
             }
 #endif // SWIFT_SUPPORT
             continue;
@@ -5932,13 +5932,13 @@ void LinearScan::allocateRegisters()
                 }
 #endif // TARGET_ARM
             }
-            regsInUseThisLocation |= currentRefPosition.registerAssignment;
+            regsInUseThisLocation.AddRegsetForType(currentRefPosition.registerAssignment, regRecord->registerType);
             INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_FIXED_REG, nullptr, currentRefPosition.assignedReg()));
 
 #ifdef SWIFT_SUPPORT
             if (currentRefPosition.delayRegFree)
             {
-                regsInUseNextLocation |= currentRefPosition.registerAssignment;
+                regsInUseNextLocation.AddRegsetForType(currentRefPosition.registerAssignment, regRecord->registerType);
             }
 #endif // SWIFT_SUPPORT
             continue;

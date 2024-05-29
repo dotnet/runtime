@@ -109,6 +109,23 @@ void regMaskTP::AddRegNum(regNumber reg, var_types type)
 }
 
 //------------------------------------------------------------------------
+// AddRegsetForType: Add regs of `type` in mask.
+//
+// Parameters:
+//  maskToAdd  - Register to check
+//  type       - type of register
+//
+void regMaskTP::AddRegsetForType(SingleTypeRegSet regs, var_types type)
+{
+#ifdef HAS_MORE_THAN_64_REGISTERS
+    int index = getRegisterTypeIndex(type);
+    _registers[index] |= encodeForRegisterIndex(index, regs);
+#else
+    low |= regs;
+#endif
+}
+
+//------------------------------------------------------------------------
 // IsRegNumInMask: Checks if `reg` is in the mask
 //
 // Parameters:
