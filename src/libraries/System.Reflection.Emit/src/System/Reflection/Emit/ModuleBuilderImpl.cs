@@ -1107,7 +1107,8 @@ namespace System.Reflection.Emit
                     return true;
                 }
 
-                if (IsConstructedFromTypeBuilder(type))
+                if (IsConstructedFromTypeBuilder(type) ||
+                    HasElementTypeOfTypeBuilderOrConstructedFromTypeBuilder(type))
                 {
                     return true;
                 }
@@ -1129,7 +1130,7 @@ namespace System.Reflection.Emit
             }
 
             if (IsConstructedFromTypeBuilder(type) ||
-                HasElementTypeOfTypeBuilder(type))
+                HasElementTypeOfTypeBuilderOrConstructedFromTypeBuilder(type))
             {
                 return default;
             }
@@ -1137,9 +1138,8 @@ namespace System.Reflection.Emit
             return GetTypeReferenceOrSpecificationHandle(type);
         }
 
-        private bool HasElementTypeOfTypeBuilder(Type type) => type.HasElementType &&
-            (type.GetElementType() is TypeBuilderImpl tba && Equals(tba.Module) ||
-             IsConstructedFromTypeBuilder(type.GetElementType()!));
+        private static bool HasElementTypeOfTypeBuilderOrConstructedFromTypeBuilder(Type type) => type.HasElementType &&
+            (type.GetElementType() is TypeBuilderImpl || IsConstructedFromTypeBuilder(type.GetElementType()!));
 
         public override int GetMethodMetadataToken(ConstructorInfo constructor) => GetTokenForHandle(TryGetConstructorHandle(constructor));
 

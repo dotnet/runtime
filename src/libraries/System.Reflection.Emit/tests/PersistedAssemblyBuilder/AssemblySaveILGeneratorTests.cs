@@ -2533,7 +2533,7 @@ internal class Dummy
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoRuntime))]
+        [Fact]
         public void TypeBuilderArrayReferencedInIL()
         {
             using (TempFile file = TempFile.Create())
@@ -2544,6 +2544,8 @@ internal class Dummy
                 ILGenerator il = mb.GetILGenerator();
                 il.Emit(OpCodes.Ldarg_0);
                 il.Emit(OpCodes.Isinst, typeBuilder.MakeArrayType());
+                il.Emit(OpCodes.Ldnull);
+                il.Emit(OpCodes.Cgt_Un);
                 il.Emit(OpCodes.Ret);
                 typeBuilder.CreateType();
                 ab.Save(file.Path);
@@ -2554,6 +2556,47 @@ internal class Dummy
                 Assert.False((bool)method.Invoke(null, [typeFromDisk]));
                 object arrInst = Array.CreateInstance(typeFromDisk, 2)!;
                 Assert.True((bool)method.Invoke(null, [arrInst]));
+                tlc.Unload();
+            }
+        }
+
+        [Fact]
+        public void GenericTypeParameterOfTypeBuilderArrayInIL()
+        {
+            using (TempFile file = TempFile.Create())
+            {
+                PersistedAssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder typeBuilder);
+                typeBuilder.DefineDefaultConstructor(MethodAttributes.Public);
+
+                MethodBuilder mb = typeBuilder.DefineMethod("LoadDictionary", MethodAttributes.Static | MethodAttributes.Public, typeof(Type), null);
+                Type dictType = typeof(Dictionary<,>).MakeGenericType(typeBuilder.MakeArrayType(), typeof(int));
+                ILGenerator il = mb.GetILGenerator();
+                il.Emit(OpCodes.Ldtoken, dictType);
+                il.Emit(OpCodes.Call, typeof(Type).GetMethod("GetTypeFromHandle")!);
+                il.Emit(OpCodes.Ret);
+
+                MethodBuilder mb2 = typeBuilder.DefineMethod("LoadList", MethodAttributes.Static | MethodAttributes.Public, typeof(Type), null);
+                Type listType = typeof(List<>).MakeGenericType(typeBuilder.MakeArrayType());
+                il = mb2.GetILGenerator();
+                il.Emit(OpCodes.Ldtoken, listType.MakeArrayType());
+                il.Emit(OpCodes.Call, typeof(Type).GetMethod("GetTypeFromHandle")!);
+                il.Emit(OpCodes.Ret);
+                typeBuilder.CreateType();
+                ab.Save(file.Path);
+
+                TestAssemblyLoadContext tlc = new TestAssemblyLoadContext();
+                Type typeFromDisk = tlc.LoadFromAssemblyPath(file.Path).GetType("MyType");
+                MethodInfo method = typeFromDisk.GetMethod("LoadDictionary")!;
+                Type result = (Type)method.Invoke(null, null);
+                Assert.Equal("Dictionary`2", result.Name);
+                Assert.True(result.IsConstructedGenericType);
+                Assert.Equal("MyType[]", result.GetGenericArguments()[0].Name);
+                method = typeFromDisk.GetMethod("LoadList")!;
+                result = (Type)method.Invoke(null, null);
+                Assert.Equal("List`1[]", result.Name);
+                Assert.True(result.IsArray);
+                result = result.GetElementType();
+                Assert.Equal("MyType[]", result.GetGenericArguments()[0].Name);
                 tlc.Unload();
             }
         }
