@@ -1489,7 +1489,7 @@ struct memoryEntry
     int size;
     int line;
     const char* file;
-};
+} __attribute__((aligned(8)));
 
 static void* mallocFunction(size_t size, const char *file, int line)
 {

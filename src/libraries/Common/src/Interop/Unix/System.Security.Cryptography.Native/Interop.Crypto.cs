@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Collections.Generic;
+using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography.X509Certificates;
@@ -210,7 +210,8 @@ internal static partial class Interop
         }
 
         private static readonly unsafe nuint Offset = (nuint)sizeof(MemoryEntry);
-        private static HashSet<UIntPtr>? _allocations;
+        // We only need to store the keys but we use ConcurrentDictionary to avoid locking
+        private static ConcurrentDictionary<UIntPtr, UIntPtr>? _allocations;
 
         [UnmanagedCallersOnly]
         private static unsafe void MemoryTrackinCallback(MemoryOperation operation, UIntPtr ptr, UIntPtr oldPtr, int size, char* file, int line)
@@ -224,33 +225,24 @@ internal static partial class Interop
             {
                 case MemoryOperation.Malloc:
                     Debug.Assert(size == entry.Size);
-                    lock (_allocations!)
-                    {
-                        _allocations!.Add(ptr);
-                    }
+                    _allocations!.TryAdd(ptr, ptr);
                     break;
                 case MemoryOperation.Realloc:
-                    lock (_allocations!)
+                    if ((IntPtr)oldPtr != IntPtr.Zero)
                     {
-                        if ((IntPtr)oldPtr != IntPtr.Zero)
-                        {
-                            _allocations!.Remove(oldPtr);
-                        }
-                        _allocations!.Add(ptr);
+                        _allocations!.TryRemove(oldPtr, out _);
                     }
+                    _allocations!.TryAdd(ptr, ptr);
                     break;
                 case MemoryOperation.Free:
-                    lock (_allocations!)
-                    {
-                        _allocations!.Remove(ptr);
-                    }
+                    _allocations!.TryRemove(ptr, out _);
                     break;
             }
         }
 
         public static unsafe void EnableTracking()
         {
-            _allocations ??= new HashSet<UIntPtr>();
+            _allocations ??= new ConcurrentDictionary<UIntPtr, UIntPtr>();
             _allocations!.Clear();
             SetMemoryTracking(&MemoryTrackinCallback);
         }
@@ -263,24 +255,21 @@ internal static partial class Interop
 
         public static unsafe Tuple<UIntPtr, int, string>[] GetIncrementalAllocations()
         {
-            if (_allocations == null || _allocations.Count == 0)
+            if (_allocations == null || _allocations.IsEmpty)
             {
                 return Array.Empty<Tuple<UIntPtr, int, string>>();
             }
 
-            lock (_allocations!)
+            Tuple<UIntPtr, int, string>[] allocations = new Tuple<UIntPtr, int, string>[_allocations.Count];
+            int index = 0;
+            foreach ((UIntPtr ptr, UIntPtr value) in _allocations)
             {
-                Tuple<UIntPtr, int, string>[] allocations = new Tuple<UIntPtr, int, string>[_allocations.Count];
-                int index = 0;
-                foreach (UIntPtr ptr in _allocations)
-                {
-                    ref MemoryEntry entry = ref *(MemoryEntry*)ptr;
-                    allocations[index] = new Tuple<UIntPtr, int, string>(ptr + Offset, entry.Size, $"{Marshal.PtrToStringAnsi((IntPtr)entry.File)}:{entry.Line}");
-                    index++;
-                }
-
-                return allocations;
+                ref MemoryEntry entry = ref *(MemoryEntry*)ptr;
+                allocations[index] = new Tuple<UIntPtr, int, string>(ptr + Offset, entry.Size, $"{Marshal.PtrToStringAnsi((IntPtr)entry.File)}:{entry.Line}");
+                index++;
             }
+
+            return allocations;
         }
 #endif
     }

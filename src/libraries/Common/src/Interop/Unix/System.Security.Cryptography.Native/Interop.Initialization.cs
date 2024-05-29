@@ -29,7 +29,6 @@ internal static partial class Interop
 
     internal static partial class CryptoInitializer
     {
-
         static CryptoInitializer()
         {
             if (EnsureOpenSslInitialized() != 0)
@@ -42,7 +41,6 @@ internal static partial class Interop
                 // these libraries will be unable to operate correctly.
                 throw new InvalidOperationException();
             }
-
         }
 
         internal static void Initialize()

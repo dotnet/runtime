@@ -130,7 +130,6 @@ typedef void (*SslCtxSetKeylogCallback)(const SSL* ssl, const char *line);
 /*
 Ensures that libssl is correctly initialized and ready to use.
 */
-
 PALEXPORT void CryptoNative_EnsureLibSslInitialized(void);
 
 /*
