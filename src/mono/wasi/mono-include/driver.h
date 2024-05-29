@@ -21,4 +21,3 @@ MonoString *mono_wasm_string_from_js (const char *str);
 char *mono_wasm_string_get_utf8 (MonoString *str);
 
 MonoMethod* lookup_dotnet_method(const char* assembly_name, const char* namespace, const char* type_name, const char* method_name, int num_params);
-int initialize_runtime ();

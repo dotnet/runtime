@@ -329,7 +329,6 @@ internal sealed class PInvokeTableGenerator
                 #include <mono/metadata/object.h>
                 #include <mono/utils/details/mono-logger-types.h>
                 #include ""runtime.h""
-                #include ""driver.h""
                 ");
 
         // Arguments to interp entry functions in the runtime
