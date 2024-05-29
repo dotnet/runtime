@@ -275,6 +275,14 @@ private:
 
 public:
 
+    void AddRegNumInMask(regNumber reg);
+#ifdef TARGET_ARM
+    void AddRegNumInMask(regNumber reg, var_types type);
+#endif
+    void AddRegNum(regNumber reg, var_types type);
+    void RemoveRegNumFromMask(regNumber reg);
+    bool IsRegNumInMask(regNumber reg);
+
     regMaskTP(regMaskSmall lowMask, RegSet32 highMask)
         : low(lowMask)
 #ifdef HAS_MORE_THAN_64_REGISTERS
@@ -338,9 +346,6 @@ public:
         return high;
     }
 #endif
-
-    void RemoveRegNumFromMask(regNumber reg);
-    bool IsRegNumInMask(regNumber reg);
 
     bool IsEmpty() const
     {
@@ -935,8 +940,9 @@ inline SingleTypeRegSet genSingleTypeRegMask(regNumber regNum, var_types type)
 
 inline regMaskTP genRegMask(regNumber reg)
 {
-    // TODO: Populate regMaskTP based on reg
-    return genSingleTypeRegMask(reg);
+    regMaskTP result;
+    result.AddRegNumInMask(reg);
+    return result;
 }
 
 /*****************************************************************************
@@ -970,8 +976,9 @@ inline regMaskTP genRegMaskFloat(regNumber reg ARM_ARG(var_types type /* = TYP_D
 //
 inline regMaskTP genRegMask(regNumber regNum, var_types type)
 {
-    // TODO: Populate regMaskTP based on regNum/type
-    return genSingleTypeRegMask(regNum ARM_ARG(type));
+    regMaskTP result;
+    result.AddRegNumInMask(regNum ARM_ARG(type));
+    return result;
 }
 
 /*****************************************************************************

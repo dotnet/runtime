@@ -35,6 +35,43 @@ struct regMaskTP;
 }
 
 
+// ----------------------------------------------------------
+//  AddRegNumForType: Adds `reg` to the mask.
+//
+void regMaskTP::AddRegNumInMask(regNumber reg)
+{
+    SingleTypeRegSet value = genSingleTypeRegMask(reg);
+#ifdef HAS_MORE_THAN_64_REGISTERS
+    int index = getRegisterTypeIndex(reg);
+    _registers[index] |= encodeForRegisterIndex(index, value);
+#else
+    low |= value;
+#endif
+}
+
+#ifdef TARGET_ARM
+// ----------------------------------------------------------
+//  AddRegNumForType: Adds `reg` to the mask. It is same as AddRegNumInMask(reg) except
+//  that it takes `type` as an argument and adds `reg` to the mask for that type.
+//
+void regMaskTP::AddRegNumInMask(regNumber reg, var_types type)
+{
+    low |= genSingleTypeRegMask(reg, type);
+}
+#endif
+
+// This is similar to AddRegNumInMask(reg, regType) for all platforms
+// except Arm. For Arm, it calls getRegMask() instead of genRegMask()
+// to create a mask that needs to be added.
+void regMaskTP::AddRegNum(regNumber reg, var_types type)
+{
+#ifdef TARGET_ARM
+    low |= getRegMask(reg, type);
+#else
+    AddRegNumInMask(reg);
+#endif
+}
+
 //------------------------------------------------------------------------
 // RemoveRegNumFromMask: Removes `reg` from the mask
 //
