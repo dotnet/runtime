@@ -254,6 +254,19 @@ namespace System.Tests
         }
 
         [Fact]
+        public static void CompareToTest()
+        {
+            var d1 = new Decimal64(-1, 1);
+            var d2 = new Decimal64(-10, 0);
+            Assert.Equal(0, d1.CompareTo(d2));
+
+            d1 = new Decimal64(1, 1);
+            d2 = new Decimal64(-1, 0);
+            Assert.Equal(1, d1.CompareTo(d2));
+            Assert.Equal(-1, d2.CompareTo(d1));
+        }
+
+        [Fact]
         public static void GetHashCodeTest()
         {
             var d = new Decimal64(10, 20);

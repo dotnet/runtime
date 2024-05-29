@@ -11,6 +11,7 @@ namespace System.Numerics
     [StructLayout(LayoutKind.Sequential)]
     public readonly struct Decimal32
         : IComparable,
+          IComparable<Decimal32>,
           IEquatable<Decimal32>,
           IDecimalIeee754ParseAndFormatInfo<Decimal32>,
           IDecimalIeee754ConstructorInfo<Decimal32, int, uint>,
@@ -113,6 +114,11 @@ namespace System.Numerics
             }
 
             return Number.CompareDecimalIeee754<Decimal32, int, uint>(_value, i._value);
+        }
+
+        public int CompareTo(Decimal32 other)
+        {
+            return Number.CompareDecimalIeee754<Decimal32, int, uint>(_value, other._value);
         }
 
         public bool Equals(Decimal32 other)

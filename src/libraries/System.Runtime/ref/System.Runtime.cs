@@ -10615,11 +10615,13 @@ namespace System.Numerics
 {
     public readonly struct Decimal32
         : System.IComparable,
+          System.IComparable<Decimal32>,
           System.IEquatable<Decimal32>
     {
         public Decimal32(int significand, int exponent) { throw null; }
 
         public int CompareTo(object? value) { throw null; }
+        public int CompareTo(Decimal32 other) { throw null; }
         public bool Equals(Decimal32 other) { throw null; }
 
         public static Decimal32 Parse(string s) { throw null; }
@@ -10644,11 +10646,13 @@ namespace System.Numerics
 
     public readonly struct Decimal64
         : System.IComparable,
+          System.IComparable<Decimal64>,
           System.IEquatable<Decimal64>
     {
         public Decimal64(long significand, int exponent) { throw null; }
 
         public int CompareTo(object? value) { throw null; }
+        public int CompareTo(Decimal64 other) { throw null; }
         public bool Equals(Decimal64 other) { throw null; }
 
         public static Decimal64 Parse(string s) { throw null; }
@@ -10674,11 +10678,13 @@ namespace System.Numerics
 
     public readonly struct Decimal128
         : System.IComparable,
+          System.IComparable<Decimal128>,
           System.IEquatable<Decimal128>
     {
         public Decimal128(Int128 significand, int exponent) { throw null; }
 
         public int CompareTo(object? value) { throw null; }
+        public int CompareTo(Decimal128 other) { throw null; }
         public bool Equals(Decimal128 other) { throw null; }
 
         public static Decimal128 Parse(string s) { throw null; }

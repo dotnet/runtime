@@ -12,6 +12,7 @@ namespace System.Numerics
 {
     public readonly struct Decimal128
         : IComparable,
+          IComparable<Decimal128>,
           IEquatable<Decimal128>,
           IDecimalIeee754ParseAndFormatInfo<Decimal128>,
           IDecimalIeee754ConstructorInfo<Decimal128, Int128, UInt128>,
@@ -110,6 +111,13 @@ namespace System.Numerics
             var other = new UInt128(i._upper, i._lower);
 
             return Number.CompareDecimalIeee754<Decimal128, Int128, UInt128>(current, other);
+        }
+
+        public int CompareTo(Decimal128 other)
+        {
+            var current = new UInt128(_upper, _lower);
+            var another = new UInt128(other._upper, other._lower);
+            return Number.CompareDecimalIeee754<Decimal128, Int128, UInt128>(current, another);
         }
 
         public bool Equals(Decimal128 other)

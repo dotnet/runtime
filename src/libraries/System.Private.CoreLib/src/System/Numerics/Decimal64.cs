@@ -9,6 +9,7 @@ namespace System.Numerics
 {
     public readonly struct Decimal64
         : IComparable,
+          IComparable<Decimal64>,
           IEquatable<Decimal64>,
           IDecimalIeee754ParseAndFormatInfo<Decimal64>,
           IDecimalIeee754ConstructorInfo<Decimal64, long, ulong>,
@@ -122,6 +123,11 @@ namespace System.Numerics
             }
 
             return Number.CompareDecimalIeee754<Decimal64, long, ulong>(_value, i._value);
+        }
+
+        public int CompareTo(Decimal64 other)
+        {
+            return Number.CompareDecimalIeee754<Decimal64, long, ulong>(_value, other._value);
         }
 
         public bool Equals(Decimal64 other)
