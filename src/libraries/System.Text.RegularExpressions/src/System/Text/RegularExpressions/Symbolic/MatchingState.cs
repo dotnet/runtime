@@ -18,14 +18,23 @@ namespace System.Text.RegularExpressions.Symbolic
             // than to pay for it on every call
             if (Node.CanBeNullable)
             {
-                _nullabilityLookup = new bool[5];
-                for (uint nk = 0; nk <= 4; nk++)
+                for (uint ck = 0; ck < CharKind.CharKindCount; ck++)
                 {
-                    _nullabilityLookup[nk] = IsNullableForInit(nk);
+                    _nullabilityLookup |= (byte)(IsNullableForInit(ck) ? 1 << (int)ck : 0);
                 }
             }
         }
-        private readonly bool[]? _nullabilityLookup;
+        /// <summary>
+        /// todo: change this to flags later
+        /// nullability for each context encoded in a bit
+        /// 0 means node cannot be nullable
+        /// 00001 -> nullable for General
+        /// 00010 -> nullable for BeginningEnd
+        /// 00100 -> nullable for NewLine
+        /// 01000 -> nullable for NewLineS
+        /// 10000 -> nullable for WordLetter
+        /// </summary>
+        private readonly byte _nullabilityLookup; // redundant but added for clarity
 
         /// <summary>The regular expression that labels this state and gives it its semantics.</summary>
         internal SymbolicRegexNode<TSet> Node { get; }
@@ -106,12 +115,18 @@ namespace System.Text.RegularExpressions.Symbolic
             return Node.CreateNfaDerivativeWithEffects(builder, minterm, context);
         }
 
+        /// <summary>
+        /// Bit encoded nullability check for the hot loop
+        /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal bool IsNullableFor(uint nextCharKind)
         {
-            return (_nullabilityLookup is not null && _nullabilityLookup[nextCharKind]);
+            return (nextCharKind & _nullabilityLookup) > 0;
         }
 
+        /// <summary>
+        /// Full nullability check for initialization
+        /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal bool IsNullableForInit(uint nextCharKind)
         {
