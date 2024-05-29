@@ -688,7 +688,7 @@ namespace System.Reflection.Emit
         {
             if (!_typeReferences.TryGetValue(type, out var typeHandle))
             {
-                if (type.IsArray || type.IsPointer || type.IsGenericParameter ||
+                if (type.HasElementType || type.IsGenericParameter ||
                     (type.IsGenericType && !type.IsGenericTypeDefinition))
                 {
                     typeHandle = AddTypeSpecification(type);

@@ -2533,7 +2533,7 @@ internal class Dummy
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoRuntime)]
         public void TypeBuilderArrayReferencedInIL()
         {
             using (TempFile file = TempFile.Create())
@@ -2558,7 +2558,7 @@ internal class Dummy
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoRuntime)]
         public void TypeBuilderPointerReferencedInIL()
         {
             using (TempFile file = TempFile.Create())
@@ -2578,6 +2578,30 @@ internal class Dummy
                 MethodInfo method = typeFromDisk.GetMethod("IsPointer")!;
                 object result = method.Invoke(null, [typeFromDisk]);
                 Assert.False((bool)result);
+                tlc.Unload();
+            }
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoRuntime)]
+        public void TypeBuilderByRefReferencedInIL()
+        {
+            using (TempFile file = TempFile.Create())
+            {
+                PersistedAssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder typeBuilder);
+                typeBuilder.DefineDefaultConstructor(MethodAttributes.Public);
+                MethodBuilder mb = typeBuilder.DefineMethod("GetByRef", MethodAttributes.Static | MethodAttributes.Public, typeof(Type), null);
+                ILGenerator il = mb.GetILGenerator();
+                il.Emit(OpCodes.Ldtoken, typeBuilder.MakeByRefType());
+                il.Emit(OpCodes.Call, typeof(Type).GetMethod("GetTypeFromHandle")!);
+                il.Emit(OpCodes.Ret);
+                typeBuilder.CreateType();
+                ab.Save(file.Path);
+
+                TestAssemblyLoadContext tlc = new TestAssemblyLoadContext();
+                Type typeFromDisk = tlc.LoadFromAssemblyPath(file.Path).GetType("MyType");
+                MethodInfo method = typeFromDisk.GetMethod("GetByRef")!;
+                Type result = (Type)method.Invoke(null, null);
+                Assert.Equal("MyType&", result.Name);
                 tlc.Unload();
             }
         }
