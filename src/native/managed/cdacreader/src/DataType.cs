@@ -22,4 +22,5 @@ public enum DataType
     GCHandle,
     Thread,
     ThreadStore,
+    MethodTable,
 }

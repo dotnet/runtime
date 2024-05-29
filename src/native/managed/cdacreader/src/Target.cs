@@ -9,15 +9,24 @@ using System.Runtime.CompilerServices;
 
 namespace Microsoft.Diagnostics.DataContractReader;
 
-public struct TargetPointer
+public struct TargetPointer : IEquatable<TargetPointer>
 {
     public static TargetPointer Null = new(0);
+    public static TargetPointer MinusOne = new(ulong.MaxValue);
 
     public ulong Value;
     public TargetPointer(ulong value) => Value = value;
 
     public static implicit operator ulong(TargetPointer p) => p.Value;
     public static implicit operator TargetPointer(ulong v) => new TargetPointer(v);
+
+    public static bool operator ==(TargetPointer left, TargetPointer right) => left.Value == right.Value;
+    public static bool operator !=(TargetPointer left, TargetPointer right) => left.Value != right.Value;
+
+    public override bool Equals(object? obj) => obj is TargetPointer pointer && Equals(pointer);
+    public bool Equals(TargetPointer other) => Value == other.Value;
+
+    public override int GetHashCode() => Value.GetHashCode();
 }
 
 /// <summary>
@@ -286,6 +295,14 @@ public sealed unsafe class Target
 
         return false;
     }
+
+    public static bool IsAligned(ulong value, int alignment)
+        => (value & (ulong)(alignment - 1)) == 0;
+
+    public bool IsAlignedToPointerSize(ulong value)
+        => IsAligned(value, _config.PointerSize);
+    public bool IsAlignedToPointerSize(TargetPointer pointer)
+        => IsAligned(pointer.Value, _config.PointerSize);
 
     public T ReadGlobal<T>(string name) where T : struct, INumber<T>
         => ReadGlobal<T>(name, out _);
