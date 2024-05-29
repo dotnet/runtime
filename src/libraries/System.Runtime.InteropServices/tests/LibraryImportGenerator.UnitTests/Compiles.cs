@@ -29,11 +29,6 @@ namespace LibraryImportGenerator.UnitTests
             [CallerFilePath] string? filePath = null)
             => TestUtils.GetFileLineName(lineNumber, filePath);
 
-        public static IEnumerable<object[]> CodeSnippetsToCompile2()
-        {
-            yield return new[] { ID(), CodeSnippets.ExplicitThis };
-        }
-
         public static IEnumerable<object[]> CodeSnippetsToCompile()
         {
             yield return new[] { ID(), CodeSnippets.TrivialClassDeclarations };

@@ -541,7 +541,6 @@ namespace LibraryImportGenerator.UnitTests
             }
             """;
 
-
         public static string BasicParametersAndModifiers<T>(string preDeclaration = "") => BasicParametersAndModifiers(typeof(T).ToString(), preDeclaration);
 
         /// <summary>
