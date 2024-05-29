@@ -2637,6 +2637,10 @@ private:
     void            emitLongLoopAlign(unsigned alignmentBoundary DEBUG_ARG(bool isPlacedBehindJmp));
     instrDescAlign* emitAlignInNextIG(instrDescAlign* alignInstr);
 
+#ifdef DEBUG
+    void emitLogConnectAlignInstr(UNATIVE_OFFSET igNum, UNATIVE_OFFSET igLoopHeadPredNum, UNATIVE_OFFSET igLoopHeadNum);
+#endif // DEBUG
+
     //-----------------------------------------------------------------------------
     // emitConnectAlignInstrWithCurIG:  If "align" instruction is not just before the loop start,
     //                                  setting idaLoopHeadPredIG lets us know the exact IG that the "align"
@@ -2667,11 +2671,12 @@ private:
             loopHeadIG     = emitCurIG;
         }
 
-        JITDUMP("Mapping 'align' instruction in IG%02u to target IG%02u. Loop header is IG%02u\n",
-                emitAlignLastGroup->idaIG->igNum, loopHeadPredIG->igNum, loopHeadIG->igNum);
+#ifdef DEBUG
+        emitLogConnectAlignInstr(emitAlignLastGroup->idaIG->igNum, loopHeadPredIG->igNum, loopHeadIG->igNum);
+#endif // DEBUG
+
         // Since we never align overlapping instructions, it is always guaranteed that
         // the emitAlignLastGroup points to the loop that is in process of getting aligned.
-
         emitAlignLastGroup->idaLoopHeadPredIG = loopHeadPredIG;
     }
 #endif

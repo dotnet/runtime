@@ -6486,6 +6486,14 @@ emitter::instrDescAlign* emitter::emitAlignInNextIG(instrDescAlign* alignInstr)
     return alignInstr != nullptr ? alignInstr->idaNext : nullptr;
 }
 
+#ifdef DEBUG
+void emitter::emitLogConnectAlignInstr(UNATIVE_OFFSET igNum, UNATIVE_OFFSET igLoopHeadPredNum, UNATIVE_OFFSET igLoopHeadNum)
+{
+    JITDUMP("Mapping 'align' instruction in IG%02u to target IG%02u. Loop header is IG%02u\n", igNum, igLoopHeadPredNum,
+            igLoopHeadNum);
+}
+#endif // DEBUG
+
 #endif // FEATURE_LOOP_ALIGN
 
 void emitter::emitCheckFuncletBranch(instrDesc* jmp, insGroup* jmpIG)
