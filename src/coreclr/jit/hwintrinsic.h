@@ -234,7 +234,7 @@ enum HWIntrinsicFlag : unsigned int
 
     // The intrinsic comes in both vector and scalar variants. During the import stage if the basetype is scalar,
     // then the intrinsic should be switched to a scalar only version.
-    HW_Flag_HasScalarVariant = 0x2000000,
+    HW_Flag_HasScalarInputVariant = 0x2000000,
 
 #endif // TARGET_XARCH
 
@@ -930,14 +930,16 @@ struct HWIntrinsicInfo
         return (flags & HW_Flag_HasEnumOperand) != 0;
     }
 
-    static bool HasScalarVariant(NamedIntrinsic id)
+    static bool HasScalarInputVariant(NamedIntrinsic id)
     {
         const HWIntrinsicFlag flags = lookupFlags(id);
-        return (flags & HW_Flag_HasScalarVariant) != 0;
+        return (flags & HW_Flag_HasScalarInputVariant) != 0;
     }
 
-    static NamedIntrinsic GetScalarVariant(NamedIntrinsic id)
+    static NamedIntrinsic GetScalarInputVariant(NamedIntrinsic id)
     {
+        assert(HasScalarInputVariant(id));
+
         switch (id)
         {
             case NI_Sve_SaturatingDecrementBy16BitElementCount:

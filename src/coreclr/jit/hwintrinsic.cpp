@@ -1243,12 +1243,12 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
             simdBaseJitType = getBaseJitTypeAndSizeOfSIMDType(clsHnd, &sizeBytes);
 
 #if defined(TARGET_ARM64)
-            if (simdBaseJitType == CORINFO_TYPE_UNDEF && HWIntrinsicInfo::HasScalarVariant(intrinsic))
+            if (simdBaseJitType == CORINFO_TYPE_UNDEF && HWIntrinsicInfo::HasScalarInputVariant(intrinsic))
             {
                 // Did not find a valid vector type. The intrinsic has alternate scalar version. Switch to that.
 
                 assert(sizeBytes == 0);
-                intrinsic = HWIntrinsicInfo::GetScalarVariant(intrinsic);
+                intrinsic = HWIntrinsicInfo::GetScalarInputVariant(intrinsic);
                 category  = HWIntrinsicInfo::lookupCategory(intrinsic);
                 isa       = HWIntrinsicInfo::lookupIsa(intrinsic);
 
