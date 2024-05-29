@@ -1525,7 +1525,6 @@ static void* reallocFunction (void *ptr, size_t size, const char *file, int line
         CRYPTO_atomic_add(&g_allocatedMemory, (int)(-entry->size), &newCount, g_allocLock);
     }
 
-    long oldPtr = (long)ptr; // prevent warning about use after free
     void* newPtr = realloc(ptr, size + sizeof(struct memoryEntry));
     if (newPtr != NULL)
     {
@@ -1539,7 +1538,16 @@ static void* reallocFunction (void *ptr, size_t size, const char *file, int line
 
         if (g_memoryCallback != NULL)
         {
-            g_memoryCallback(ReallocOperation, newPtr, (void*)oldPtr, entry->size, file, line);
+#if defined(__GNUC__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Werror=use-after-free"
+#endif
+        // Now try just the _majorVer added
+            g_memoryCallback(ReallocOperation, newPtr, ptr, entry->size, file, line);
+
+#if defined(__GNUC__)
+#pragma GCC diagnostic pop
+#endif
         }
 
         return (void*)((char*)newPtr + sizeof(struct memoryEntry));
