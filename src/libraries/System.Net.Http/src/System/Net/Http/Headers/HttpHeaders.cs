@@ -169,6 +169,15 @@ namespace System.Net.Http.Headers
         {
             ArgumentNullException.ThrowIfNull(values);
 
+            if (values is string?[] valuesArray)
+            {
+                return SpecializedTryAddWithoutValidation(descriptor, valuesArray, null);
+            }
+            else if (values is IList<string?> valuesList)
+            {
+                return SpecializedTryAddWithoutValidation(descriptor, null, valuesList);
+            }
+
             using IEnumerator<string?> enumerator = values.GetEnumerator();
             if (enumerator.MoveNext())
             {
@@ -191,6 +200,63 @@ namespace System.Net.Http.Headers
                     }
                     while (enumerator.MoveNext());
                 }
+            }
+
+            return true;
+        }
+
+        private bool SpecializedTryAddWithoutValidation(HeaderDescriptor descriptor, string?[]? valuesArray, IList<string?>? valuesList)
+        {
+            Debug.Assert(valuesArray != null || valuesList != null);
+            int count = valuesArray != null ? valuesArray.Length : valuesList!.Count;
+
+            if (count == 0)
+            {
+                return true;
+            }
+
+            ref object? storeValueRef = ref GetValueRefOrAddDefault(descriptor);
+            object? storeValue = storeValueRef;
+
+            if (storeValue is not null || count > 1)
+            {
+                if (storeValue is not HeaderStoreItemInfo info)
+                {
+                    storeValueRef = info = new HeaderStoreItemInfo { RawValue = storeValue };
+                }
+
+                object? rawValue = info.RawValue;
+                if (rawValue is not List<string> rawValues)
+                {
+                    info.RawValue = rawValues = new List<string>();
+                    if (rawValue is not null)
+                    {
+                        rawValues.EnsureCapacity(count + 1);
+                        rawValues.Add((string)rawValue);
+                    }
+                }
+
+                rawValues.EnsureCapacity(count);
+
+                if (valuesArray != null)
+                {
+                    for (int i = 0; i < valuesArray.Length; i++)
+                    {
+                        rawValues.Add(valuesArray[i] ?? string.Empty);
+                    }
+                }
+                else
+                {
+                    for (int i = 0; i < valuesList!.Count; i++)
+                    {
+                        rawValues.Add(valuesList[i] ?? string.Empty);
+                    }
+                }
+            }
+            else
+            {
+                Debug.Assert(count == 1 && storeValue is null);
+                storeValueRef = (valuesArray != null ? valuesArray[0] : valuesList![0]) ?? string.Empty;
             }
 
             return true;

@@ -2544,6 +2544,66 @@ namespace System.Net.Http.Tests
             Assert.Equal(value, values.Single());
         }
 
+        [Fact]
+        public void TryAddWithoutValidation_OneValidValueHeader_UseSpecialListImplementation()
+        {
+            const string Name = "customHeader1";
+            const string Value = "Value1";
+
+            var response = new HttpResponseMessage();
+            Assert.True(response.Headers.TryAddWithoutValidation(Name, new List<string> { Value }));
+
+            Assert.True(response.Headers.Contains(Name));
+
+            Assert.True(response.Headers.TryGetValues(Name, out IEnumerable<string> values));
+            Assert.Equal(Value, values.Single());
+        }
+
+        [Fact]
+        public void TryAddWithoutValidation_ThreeValidValueHeader_UseSpecialListImplementation()
+        {
+            const string Name = "customHeader1";
+            List<string> expectedValues = [ "Value1", "Value2", "Value3" ];
+
+            var response = new HttpResponseMessage();
+            Assert.True(response.Headers.TryAddWithoutValidation(Name, expectedValues));
+
+            Assert.True(response.Headers.Contains(Name));
+
+            Assert.True(response.Headers.TryGetValues(Name, out IEnumerable<string> values));
+            Assert.True(expectedValues.SequenceEqual(values));
+        }
+
+        [Fact]
+        public void TryAddWithoutValidation_OneValidValueHeader_UseSpecialArrayImplementation()
+        {
+            const string Name = "customHeader1";
+            const string Value = "Value1";
+
+            var response = new HttpResponseMessage();
+            Assert.True(response.Headers.TryAddWithoutValidation(Name, new [] { Value }));
+
+            Assert.True(response.Headers.Contains(Name));
+
+            Assert.True(response.Headers.TryGetValues(Name, out IEnumerable<string> values));
+            Assert.Equal(Value, values.Single());
+        }
+
+        [Fact]
+        public void TryAddWithoutValidation_ThreeValidValueHeader_UseSpecialArrayImplementation()
+        {
+            const string Name = "customHeader1";
+            string[] expectedValues = ["Value1", "Value2", "Value3"];
+
+            var response = new HttpResponseMessage();
+            Assert.True(response.Headers.TryAddWithoutValidation(Name, expectedValues));
+
+            Assert.True(response.Headers.Contains(Name));
+
+            Assert.True(response.Headers.TryGetValues(Name, out IEnumerable<string> values));
+            Assert.True(expectedValues.SequenceEqual(values));
+        }
+
         public static IEnumerable<object[]> NumberOfHeadersUpToArrayThreshold_AddNonValidated_EnumerateNonValidated()
         {
             for (int i = 0; i <= HttpHeaders.ArrayThreshold; i++)
