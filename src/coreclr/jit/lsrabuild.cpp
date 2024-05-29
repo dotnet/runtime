@@ -2847,7 +2847,7 @@ void LinearScan::buildIntervals()
 #endif
     else
     {
-        actualRegistersMask = regMaskTP(~RBM_NONE, ~RBM_NONE);
+        actualRegistersMask = regMaskTP(~RBM_NONE, ~0);
     }
 
 #ifdef DEBUG

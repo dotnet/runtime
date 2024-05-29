@@ -236,21 +236,46 @@ typedef uint64_t regMaskSmall;
 #define MORE_THAN_64_REGISTERS_ARG(x)
 #endif // TARGET_ARM64
 
+//TODO: Rename regMaskSmall as RegSet64 (at least for 64-bit)
 typedef regMaskSmall    SingleTypeRegSet;
+typedef unsigned RegSet32;
 inline SingleTypeRegSet genSingleTypeRegMask(regNumber reg);
 
 struct regMaskTP
 {
 private:
-    regMaskSmall low;
 #ifdef HAS_MORE_THAN_64_REGISTERS
-    regMaskSmall high;
+    union
+    {
+        RegSet32 _registers[3];
+        struct
+        {
+            union
+            {
+                // Represents combined registers bitset including gpr/float
+                regMaskSmall low;
+                struct
+                {
+                    RegSet32 gprRegs;
+                    RegSet32 floatRegs;
+                };
+            };
+            RegSet32 high;
+        };
+    };
+#else
+    // Represents combined registers bitset including gpr/float and on some platforms
+    // mask or predicate registers
+    regMaskSmall low;
 #endif
-    inline static const int getRegisterTypeIndex(regNumber reg);
+
+    FORCEINLINE static int getRegisterTypeIndex(regNumber reg);
+    FORCEINLINE static RegSet32 encodeForRegisterIndex(int index, regMaskSmall value);
+    FORCEINLINE static regMaskSmall decodeForRegisterIndex(int index, RegSet32 value);
 
 public:
 
-    regMaskTP(regMaskSmall lowMask, regMaskSmall highMask)
+    regMaskTP(regMaskSmall lowMask, RegSet32 highMask)
         : low(lowMask)
 #ifdef HAS_MORE_THAN_64_REGISTERS
         , high(highMask)
@@ -308,11 +333,14 @@ public:
     }
 
 #ifdef HAS_MORE_THAN_64_REGISTERS
-    regMaskSmall getHigh() const
+    RegSet32 getHigh() const
     {
         return high;
     }
 #endif
+
+    void RemoveRegNumFromMask(regNumber reg);
+    bool IsRegNumInMask(regNumber reg);
 
     bool IsEmpty() const
     {
@@ -343,10 +371,6 @@ public:
     {
         return getLow();
     }
-
-    void RemoveRegNumFromMask(regNumber reg);
-
-    bool IsRegNumInMask(regNumber reg);
 
     void operator|=(const regMaskTP& second)
     {

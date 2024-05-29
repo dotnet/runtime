@@ -5,6 +5,36 @@
 
 struct regMaskTP;
 
+
+//------------------------------------------------------------------------
+// encodeForRegisterIndex: Shifts the high-32 bits of float to low-32 bits
+//      and return. For gpr and predicate registers, it returns the same value.
+//
+// Parameters:
+//  index - Register type index
+//  value - value to encode
+//
+/* static */ RegSet32 regMaskTP::encodeForRegisterIndex(int index, regMaskSmall value)
+{
+    int shiftAmount = 32 * (index == 1);
+    return (RegSet32)(value >> shiftAmount);
+}
+
+//------------------------------------------------------------------------
+// decodeForRegisterIndex: Shifts the low-32 bits of float to high-32 bits
+//      and return. For gpr and predicate registers, it returns the same value.
+//
+// Parameters:
+//  index - Register type index
+//  value - value to encode
+//
+/* static */ regMaskSmall regMaskTP::decodeForRegisterIndex(int index, RegSet32 value)
+{
+    int shiftAmount = 32 * (index == 1);
+    return ((regMaskSmall)value << shiftAmount);
+}
+
+
 //------------------------------------------------------------------------
 // RemoveRegNumFromMask: Removes `reg` from the mask
 //
@@ -13,7 +43,13 @@ struct regMaskTP;
 //
 void regMaskTP::RemoveRegNumFromMask(regNumber reg)
 {
-    low &= ~genSingleTypeRegMask(reg);
+    SingleTypeRegSet value = genSingleTypeRegMask(reg);
+#ifdef HAS_MORE_THAN_64_REGISTERS
+    int index = getRegisterTypeIndex(reg);
+    _registers[index] &= ~encodeForRegisterIndex(index, value);
+#else
+    low &= ~value;
+#endif
 }
 
 //------------------------------------------------------------------------
@@ -24,10 +60,16 @@ void regMaskTP::RemoveRegNumFromMask(regNumber reg)
 //
 bool regMaskTP::IsRegNumInMask(regNumber reg)
 {
-    return (low & genRegMask(reg)) != 0;
+    SingleTypeRegSet value = genSingleTypeRegMask(reg);
+#ifdef HAS_MORE_THAN_64_REGISTERS
+    int index = getRegisterTypeIndex(reg);
+    return (_registers[index] & encodeForRegisterIndex(index, value)) != RBM_NONE;
+#else
+    return (low & value) != RBM_NONE;
+#endif
 }
 
-/* static */ const int regMaskTP::getRegisterTypeIndex(regNumber reg)
+/* static */ int regMaskTP::getRegisterTypeIndex(regNumber reg)
 {
     static const BYTE _registerTypeIndex[] = {
 #ifdef TARGET_ARM64
