@@ -231,7 +231,7 @@ namespace Microsoft.NET.HostModel.AppHost.Tests
                 {
                     p.Start();
                     p.StandardError.ReadToEnd()
-                        .Should().Contain($"Executable=/private{Path.GetFullPath(destinationFilePath)}");
+                        .Should().Contain($"Executable={Path.GetFullPath(destinationFilePath)}");
                     p.WaitForExit();
                     // Successfully signed the apphost.
                     Assert.True(p.ExitCode == 0, $"Expected exit code was '0' but '{codesign}' returned '{p.ExitCode}' instead.");
