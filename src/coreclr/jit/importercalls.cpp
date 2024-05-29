@@ -239,7 +239,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 
             if (call != nullptr)
             {
-#ifdef FEATURE_READYTORUN
+#if defined(FEATURE_READYTORUN)
                 if (call->OperGet() == GT_INTRINSIC)
                 {
                     if (opts.IsReadyToRun())
@@ -253,7 +253,29 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                         call->AsIntrinsic()->gtEntryPoint.accessType = IAT_VALUE;
                     }
                 }
-#endif
+#if defined(FEATURE_HW_INTRINSICS)
+                else if (call->OperIsHWIntrinsic())
+                {
+                    if (call->AsHWIntrinsic()->IsUserCall())
+                    {
+                        CORINFO_CONST_LOOKUP entryPoint;
+
+                        if (opts.IsReadyToRun())
+                        {
+                            noway_assert(callInfo->kind == CORINFO_CALL);
+                            entryPoint = callInfo->codePointerLookup.constLookup;
+                        }
+                        else
+                        {
+                            entryPoint.addr       = nullptr;
+                            entryPoint.accessType = IAT_VALUE;
+                        }
+
+                        call->AsHWIntrinsic()->SetEntryPoint(this, entryPoint);
+                    }
+                }
+#endif // FEATURE_HW_INTRINSICS
+#endif // FEATURE_READYTORUN
 
                 bIntrinsicImported = true;
                 goto DONE_CALL;
@@ -1005,6 +1027,10 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                 // New inliner morph it in impImportCall.
                 // This will allow us to inline the call to the delegate constructor.
                 call = fgOptimizeDelegateConstructor(call->AsCall(), &exactContextHnd, ldftnInfo);
+                if (compDonotInline())
+                {
+                    return TYP_UNDEF;
+                }
             }
 
             if (!bIntrinsicImported)
@@ -3980,13 +4006,18 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                     //        Vector128.CreateScalarUnsafe(z)
                     //    ).ToScalar();
 
-                    GenTree* op3 = gtNewSimdCreateScalarUnsafeNode(TYP_SIMD16, impPopStack().val, callJitType, 16);
-                    GenTree* op2 = gtNewSimdCreateScalarUnsafeNode(TYP_SIMD16, impPopStack().val, callJitType, 16);
-                    GenTree* op1 = gtNewSimdCreateScalarUnsafeNode(TYP_SIMD16, impPopStack().val, callJitType, 16);
-                    GenTree* res =
+                    GenTree* op3 = impImplicitR4orR8Cast(impPopStack().val, callType);
+                    GenTree* op2 = impImplicitR4orR8Cast(impPopStack().val, callType);
+                    GenTree* op1 = impImplicitR4orR8Cast(impPopStack().val, callType);
+
+                    op3 = gtNewSimdCreateScalarUnsafeNode(TYP_SIMD16, op3, callJitType, 16);
+                    op2 = gtNewSimdCreateScalarUnsafeNode(TYP_SIMD16, op2, callJitType, 16);
+                    op1 = gtNewSimdCreateScalarUnsafeNode(TYP_SIMD16, op1, callJitType, 16);
+
+                    retNode =
                         gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, op3, NI_FMA_MultiplyAddScalar, callJitType, 16);
 
-                    retNode = gtNewSimdToScalarNode(callType, res, callJitType, 16);
+                    retNode = gtNewSimdToScalarNode(callType, retNode, callJitType, 16);
                     break;
                 }
 #elif defined(TARGET_ARM64)
@@ -4001,9 +4032,19 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                     //        Vector64.Create{ScalarUnsafe}(x)
                     //    ).ToScalar();
 
-                    GenTree* op3 = gtNewSimdCreateScalarUnsafeNode(TYP_SIMD8, impPopStack().val, callJitType, 8);
-                    GenTree* op2 = gtNewSimdCreateScalarUnsafeNode(TYP_SIMD8, impPopStack().val, callJitType, 8);
-                    GenTree* op1 = gtNewSimdCreateScalarUnsafeNode(TYP_SIMD8, impPopStack().val, callJitType, 8);
+                    impSpillSideEffect(true, verCurrentState.esStackDepth -
+                                                 3 DEBUGARG("Spilling op1 side effects for FusedMultiplyAdd"));
+
+                    impSpillSideEffect(true, verCurrentState.esStackDepth -
+                                                 2 DEBUGARG("Spilling op2 side effects for FusedMultiplyAdd"));
+
+                    GenTree* op3 = impImplicitR4orR8Cast(impPopStack().val, callType);
+                    GenTree* op2 = impImplicitR4orR8Cast(impPopStack().val, callType);
+                    GenTree* op1 = impImplicitR4orR8Cast(impPopStack().val, callType);
+
+                    op3 = gtNewSimdCreateScalarUnsafeNode(TYP_SIMD8, op3, callJitType, 8);
+                    op2 = gtNewSimdCreateScalarUnsafeNode(TYP_SIMD8, op2, callJitType, 8);
+                    op1 = gtNewSimdCreateScalarUnsafeNode(TYP_SIMD8, op1, callJitType, 8);
 
                     // Note that AdvSimd.FusedMultiplyAddScalar(op1,op2,op3) corresponds to op1 + op2 * op3
                     // while Math{F}.FusedMultiplyAddScalar(op1,op2,op3) corresponds to op1 * op2 + op3
@@ -4141,6 +4182,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 break;
             }
 
+            case NI_System_Math_MultiplyAddEstimate:
             case NI_System_Math_ReciprocalEstimate:
             case NI_System_Math_ReciprocalSqrtEstimate:
             {
@@ -7425,6 +7467,7 @@ bool Compiler::IsTargetIntrinsic(NamedIntrinsic intrinsicName)
             // instructions to directly compute round/ceiling/floor/truncate.
 
         case NI_System_Math_Abs:
+        case NI_System_Math_MultiplyAddEstimate:
         case NI_System_Math_ReciprocalEstimate:
         case NI_System_Math_ReciprocalSqrtEstimate:
         case NI_System_Math_Sqrt:
@@ -7450,6 +7493,7 @@ bool Compiler::IsTargetIntrinsic(NamedIntrinsic intrinsicName)
         case NI_System_Math_Floor:
         case NI_System_Math_Max:
         case NI_System_Math_Min:
+        case NI_System_Math_MultiplyAddEstimate:
         case NI_System_Math_ReciprocalEstimate:
         case NI_System_Math_ReciprocalSqrtEstimate:
         case NI_System_Math_Round:
@@ -7468,6 +7512,7 @@ bool Compiler::IsTargetIntrinsic(NamedIntrinsic intrinsicName)
     {
         case NI_System_Math_Abs:
         case NI_System_Math_Sqrt:
+        case NI_System_Math_MultiplyAddEstimate:
         case NI_System_Math_ReciprocalEstimate:
         case NI_System_Math_ReciprocalSqrtEstimate:
             return true;
@@ -7488,6 +7533,7 @@ bool Compiler::IsTargetIntrinsic(NamedIntrinsic intrinsicName)
             return false;
         }
 
+        case NI_System_Math_MultiplyAddEstimate:
         case NI_System_Math_ReciprocalEstimate:
             return true;
 
@@ -7546,6 +7592,7 @@ bool Compiler::IsMathIntrinsic(NamedIntrinsic intrinsicName)
         case NI_System_Math_MinMagnitude:
         case NI_System_Math_MinMagnitudeNumber:
         case NI_System_Math_MinNumber:
+        case NI_System_Math_MultiplyAddEstimate:
         case NI_System_Math_Pow:
         case NI_System_Math_ReciprocalEstimate:
         case NI_System_Math_ReciprocalSqrtEstimate:
@@ -8782,9 +8829,7 @@ GenTree* Compiler::impEstimateIntrinsic(CORINFO_METHOD_HANDLE method,
                                         bool                  mustExpand)
 {
     var_types callType = JITtype2varType(callJitType);
-
     assert(varTypeIsFloating(callType));
-    assert(sig->numArgs == 1);
 
     if (BlockNonDeterministicIntrinsics(mustExpand))
     {
@@ -8800,13 +8845,46 @@ GenTree* Compiler::impEstimateIntrinsic(CORINFO_METHOD_HANDLE method,
     // We use compExactlyDependsOn since these are estimate APIs where
     // the behavior is explicitly allowed to differ across machines
 
-    var_types      simdType    = TYP_UNKNOWN;
-    NamedIntrinsic intrinsicId = NI_Illegal;
+    var_types      simdType      = TYP_UNKNOWN;
+    NamedIntrinsic intrinsicId   = NI_Illegal;
+    bool           swapOp1AndOp3 = false;
 
     switch (intrinsicName)
     {
+        case NI_System_Math_MultiplyAddEstimate:
+        {
+            assert(sig->numArgs == 3);
+
+#if defined(TARGET_XARCH)
+            if (compExactlyDependsOn(InstructionSet_FMA))
+            {
+                simdType    = TYP_SIMD16;
+                intrinsicId = NI_FMA_MultiplyAddScalar;
+            }
+#elif defined(TARGET_ARM64)
+            if (compExactlyDependsOn(InstructionSet_AdvSimd))
+            {
+                simdType    = TYP_SIMD8;
+                intrinsicId = NI_AdvSimd_FusedMultiplyAddScalar;
+
+                // AdvSimd.FusedMultiplyAdd expects (addend, left, right), while the APIs take (left, right, addend)
+
+                impSpillSideEffect(true, verCurrentState.esStackDepth -
+                                             3 DEBUGARG("Spilling op1 side effects for MultiplyAddEstimate"));
+
+                impSpillSideEffect(true, verCurrentState.esStackDepth -
+                                             2 DEBUGARG("Spilling op2 side effects for MultiplyAddEstimate"));
+
+                swapOp1AndOp3 = true;
+            }
+#endif // TARGET_ARM64
+            break;
+        }
+
         case NI_System_Math_ReciprocalEstimate:
         {
+            assert(sig->numArgs == 1);
+
 #if defined(TARGET_XARCH)
             if (compExactlyDependsOn(InstructionSet_AVX512F))
             {
@@ -8815,6 +8893,16 @@ GenTree* Compiler::impEstimateIntrinsic(CORINFO_METHOD_HANDLE method,
             }
             else if ((callType == TYP_FLOAT) && compExactlyDependsOn(InstructionSet_SSE))
             {
+                if (!IsBaselineSimdIsaSupported())
+                {
+                    // While the actual intrinsic only requires SSE, the
+                    // ToScalar intrinsic asserts that the BaselineSimdIsa
+                    // (SSE2) is supported to help simplify the overall logic
+                    // it has to maintain
+                    assert(intrinsicId == NI_Illegal);
+                    break;
+                }
+
                 simdType    = TYP_SIMD16;
                 intrinsicId = NI_SSE_ReciprocalScalar;
             }
@@ -8830,6 +8918,8 @@ GenTree* Compiler::impEstimateIntrinsic(CORINFO_METHOD_HANDLE method,
 
         case NI_System_Math_ReciprocalSqrtEstimate:
         {
+            assert(sig->numArgs == 1);
+
 #if defined(TARGET_XARCH)
             if (compExactlyDependsOn(InstructionSet_AVX512F))
             {
@@ -8838,6 +8928,16 @@ GenTree* Compiler::impEstimateIntrinsic(CORINFO_METHOD_HANDLE method,
             }
             else if ((callType == TYP_FLOAT) && compExactlyDependsOn(InstructionSet_SSE))
             {
+                if (!IsBaselineSimdIsaSupported())
+                {
+                    // While the actual intrinsic only requires SSE, the
+                    // ToScalar intrinsic asserts that the BaselineSimdIsa
+                    // (SSE2) is supported to help simplify the overall logic
+                    // it has to maintain
+                    assert(intrinsicId == NI_Illegal);
+                    break;
+                }
+
                 simdType    = TYP_SIMD16;
                 intrinsicId = NI_SSE_ReciprocalSqrtScalar;
             }
@@ -8856,10 +8956,42 @@ GenTree* Compiler::impEstimateIntrinsic(CORINFO_METHOD_HANDLE method,
             unreached();
         }
     }
+#endif // FEATURE_HW_INTRINSICS
 
+    GenTree* op3 = nullptr;
+    GenTree* op2 = nullptr;
+    GenTree* op1 = nullptr;
+
+    switch (sig->numArgs)
+    {
+        case 3:
+        {
+            op3 = impImplicitR4orR8Cast(impPopStack().val, callType);
+            FALLTHROUGH;
+        }
+
+        case 2:
+        {
+            op2 = impImplicitR4orR8Cast(impPopStack().val, callType);
+            FALLTHROUGH;
+        }
+
+        case 1:
+        {
+            op1 = impImplicitR4orR8Cast(impPopStack().val, callType);
+            break;
+        }
+
+        default:
+        {
+            unreached();
+        }
+    }
+
+#if defined(FEATURE_HW_INTRINSICS)
     if (intrinsicId != NI_Illegal)
     {
-        unsigned simdSize = 0;
+        unsigned simdSize;
 
         if (simdType == TYP_SIMD8)
         {
@@ -8871,29 +9003,62 @@ GenTree* Compiler::impEstimateIntrinsic(CORINFO_METHOD_HANDLE method,
             simdSize = 16;
         }
 
-        GenTree* op1 = impImplicitR4orR8Cast(impPopStack().val, callType);
+        switch (sig->numArgs)
+        {
+            case 3:
+            {
+                if (swapOp1AndOp3)
+                {
+                    std::swap(op1, op3);
+                }
 
-        op1 = gtNewSimdCreateScalarUnsafeNode(simdType, op1, callJitType, simdSize);
-        op1 = gtNewSimdHWIntrinsicNode(simdType, op1, intrinsicId, callJitType, simdSize);
+                op3 = gtNewSimdCreateScalarUnsafeNode(simdType, op3, callJitType, simdSize);
+                op2 = gtNewSimdCreateScalarUnsafeNode(simdType, op2, callJitType, simdSize);
+                op1 = gtNewSimdCreateScalarUnsafeNode(simdType, op1, callJitType, simdSize);
+
+                op1 = gtNewSimdHWIntrinsicNode(simdType, op1, op2, op3, intrinsicId, callJitType, simdSize);
+                break;
+            }
+
+            case 1:
+            {
+                assert(!swapOp1AndOp3);
+                op1 = gtNewSimdCreateScalarUnsafeNode(simdType, op1, callJitType, simdSize);
+                op1 = gtNewSimdHWIntrinsicNode(simdType, op1, intrinsicId, callJitType, simdSize);
+                break;
+            }
+
+            default:
+            {
+                unreached();
+            }
+        }
 
         return gtNewSimdToScalarNode(callType, op1, callJitType, simdSize);
     }
+
+    assert(!swapOp1AndOp3);
 #endif // FEATURE_HW_INTRINSICS
+
+    callType = genActualType(callType);
 
     switch (intrinsicName)
     {
+        case NI_System_Math_MultiplyAddEstimate:
+        {
+            GenTree* mulNode = gtNewOperNode(GT_MUL, callType, op1, op2);
+            return gtNewOperNode(GT_ADD, callType, mulNode, op3);
+        }
+
         case NI_System_Math_ReciprocalEstimate:
         case NI_System_Math_ReciprocalSqrtEstimate:
         {
-            GenTree* op1 = impImplicitR4orR8Cast(impPopStack().val, callType);
-
             if (intrinsicName == NI_System_Math_ReciprocalSqrtEstimate)
             {
                 assert(!IsIntrinsicImplementedByUserCall(NI_System_Math_Sqrt));
                 op1 = new (this, GT_INTRINSIC)
                     GenTreeIntrinsic(genActualType(callType), op1, NI_System_Math_Sqrt, nullptr);
             }
-
             return gtNewOperNode(GT_DIV, genActualType(callType), gtNewDconNode(1.0, callType), op1);
         }
 
@@ -10498,6 +10663,10 @@ NamedIntrinsic Compiler::lookupPrimitiveFloatNamedIntrinsic(CORINFO_METHOD_HANDL
                 {
                     result = NI_System_Math_MinNumber;
                 }
+            }
+            else if (strcmp(methodName, "MultiplyAddEstimate") == 0)
+            {
+                result = NI_System_Math_MultiplyAddEstimate;
             }
             break;
         }

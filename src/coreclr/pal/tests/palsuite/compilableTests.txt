@@ -76,7 +76,6 @@ c_runtime/wcstoul/test4/paltest_wcstoul_test4
 c_runtime/wcstoul/test5/paltest_wcstoul_test5
 c_runtime/wcstoul/test6/paltest_wcstoul_test6
 c_runtime/_alloca/test1/paltest_alloca_test1
-c_runtime/_itow/test1/paltest_itow_test1
 c_runtime/_putenv/test1/paltest_putenv_test1
 c_runtime/_putenv/test2/paltest_putenv_test2
 c_runtime/_putenv/test3/paltest_putenv_test3
@@ -321,7 +320,6 @@ miscellaneous/SetEnvironmentVariableW/test2/paltest_setenvironmentvariablew_test
 miscellaneous/SetEnvironmentVariableW/test3/paltest_setenvironmentvariablew_test3
 miscellaneous/SetEnvironmentVariableW/test4/paltest_setenvironmentvariablew_test4
 miscellaneous/SetLastError/test1/paltest_setlasterror_test1
-miscellaneous/_i64tow/test1/paltest_i64tow_test1
 pal_specific/PAL_GetUserTempDirectoryW/test1/paltest_pal_getusertempdirectoryw_test1
 pal_specific/PAL_Initialize_Terminate/test1/paltest_pal_initialize_terminate_test1
 pal_specific/PAL_Initialize_Terminate/test2/paltest_pal_initialize_terminate_test2

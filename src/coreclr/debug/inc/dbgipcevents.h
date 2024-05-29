@@ -10,7 +10,7 @@
 #ifndef _DbgIPCEvents_h_
 #define _DbgIPCEvents_h_
 
-#include <new.hpp>
+#include <new>
 #include <cor.h>
 #include <cordebug.h>
 #include <corjit.h> // for ICorDebugInfo::VarLocType & VarLoc
@@ -24,6 +24,8 @@
 #include "dbgappdomain.h"
 
 #include "./common.h"
+
+using std::nothrow;
 
 //-----------------------------------------------------------------------------
 // V3 additions to IPC protocol between LS and RS.

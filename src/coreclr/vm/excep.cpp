@@ -7901,10 +7901,10 @@ LONG NotifyOfCHFFilterWrapper(
          (pThread->GetExceptionState()->GetContextRecord() == NULL)  ||
          (GetSP(pThread->GetExceptionState()->GetContextRecord()) != GetSP(pExceptionInfo->ContextRecord) ) )
     {
-        LOG((LF_EH, LL_INFO1000, "NotifyOfCHFFilterWrapper: not sending notices. pThread: %0x8", pThread));
+        LOG((LF_EH, LL_INFO1000, "NotifyOfCHFFilterWrapper: not sending notices. pThread: %p", pThread));
         if (pThread)
         {
-            LOG((LF_EH, LL_INFO1000, ", Thread SP: %0x8, Exception SP: %08x",
+            LOG((LF_EH, LL_INFO1000, ", Thread SP: %p, Exception SP: %p",
                  pThread->GetExceptionState()->GetContextRecord() ? GetSP(pThread->GetExceptionState()->GetContextRecord()) : NULL,
                  pExceptionInfo->ContextRecord ? GetSP(pExceptionInfo->ContextRecord) : NULL ));
         }

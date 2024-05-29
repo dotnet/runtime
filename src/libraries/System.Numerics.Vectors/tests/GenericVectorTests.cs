@@ -8,6 +8,7 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
+using System.Runtime.Intrinsics.Tests.Vectors;
 using Xunit;
 using Xunit.Sdk;
 
@@ -19,6 +20,32 @@ namespace System.Numerics.Tests
     [RequiresPreviewFeatures]
     public unsafe class GenericVectorTests
     {
+        /// <summary>Verifies that two <see cref="Vector{Single}" /> values are equal, within the <paramref name="variance" />.</summary>
+        /// <param name="expected">The expected value</param>
+        /// <param name="actual">The value to be compared against</param>
+        /// <param name="variance">The total variance allowed between the expected and actual results.</param>
+        /// <exception cref="EqualException">Thrown when the values are not equal</exception>
+        internal static void AssertEqual(Vector<float> expected, Vector<float> actual, Vector<float> variance)
+        {
+            for (int i = 0; i < Vector<float>.Count; i++)
+            {
+                AssertExtensions.Equal(expected.GetElement(i), actual.GetElement(i), variance.GetElement(i));
+            }
+        }
+
+        /// <summary>Verifies that two <see cref="Vector{Double}" /> values are equal, within the <paramref name="variance" />.</summary>
+        /// <param name="expected">The expected value</param>
+        /// <param name="actual">The value to be compared against</param>
+        /// <param name="variance">The total variance allowed between the expected and actual results.</param>
+        /// <exception cref="EqualException">Thrown when the values are not equal</exception>
+        internal static void AssertEqual(Vector<double> expected, Vector<double> actual, Vector<double> variance)
+        {
+            for (int i = 0; i < Vector<double>.Count; i++)
+            {
+                AssertExtensions.Equal(expected.GetElement(i), actual.GetElement(i), variance.GetElement(i));
+            }
+        }
+
         // Static constructor in top-level class\
         static System.Numerics.Vector<float> dummy;
         static GenericVectorTests()
@@ -4507,6 +4534,38 @@ namespace System.Numerics.Tests
                 Assert.Equal(expected, sequence.GetElement(index));
                 expected += step;
             }
+        }
+
+        [Theory]
+        [MemberData(nameof(VectorTestMemberData.MultiplyAddDouble), MemberType = typeof(VectorTestMemberData))]
+        public void FusedMultiplyAddDoubleTest(double left, double right, double addend)
+        {
+            Vector<double> actualResult = Vector.FusedMultiplyAdd(new Vector<double>(left), new Vector<double>(right), new Vector<double>(addend));
+            AssertEqual(new Vector<double>(double.FusedMultiplyAdd(left, right, addend)), actualResult, Vector<double>.Zero);
+        }
+
+        [Theory]
+        [MemberData(nameof(VectorTestMemberData.MultiplyAddSingle), MemberType = typeof(VectorTestMemberData))]
+        public void FusedMultiplyAddSingleTest(float left, float right, float addend)
+        {
+            Vector<float> actualResult = Vector.FusedMultiplyAdd(new Vector<float>(left), new Vector<float>(right), new Vector<float>(addend));
+            AssertEqual(new Vector<float>(float.FusedMultiplyAdd(left, right, addend)), actualResult, Vector<float>.Zero);
+        }
+
+        [Theory]
+        [MemberData(nameof(VectorTestMemberData.MultiplyAddDouble), MemberType = typeof(VectorTestMemberData))]
+        public void MultiplyAddEstimateDoubleTest(double left, double right, double addend)
+        {
+            Vector<double> actualResult = Vector.MultiplyAddEstimate(new Vector<double>(left), new Vector<double>(right), new Vector<double>(addend));
+            AssertEqual(new Vector<double>(double.MultiplyAddEstimate(left, right, addend)), actualResult, Vector<double>.Zero);
+        }
+
+        [Theory]
+        [MemberData(nameof(VectorTestMemberData.MultiplyAddSingle), MemberType = typeof(VectorTestMemberData))]
+        public void MultiplyAddEstimateSingleTest(float left, float right, float addend)
+        {
+            Vector<float> actualResult = Vector.MultiplyAddEstimate(new Vector<float>(left), new Vector<float>(right), new Vector<float>(addend));
+            AssertEqual(new Vector<float>(float.MultiplyAddEstimate(left, right, addend)), actualResult, Vector<float>.Zero);
         }
     }
 }

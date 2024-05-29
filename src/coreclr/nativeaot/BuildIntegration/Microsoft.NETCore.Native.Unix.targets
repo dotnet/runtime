@@ -285,12 +285,11 @@ The .NET Foundation licenses this file to you under the MIT license.
     <Error Condition="'$(_WhereLinker)' != '0' and '$(CppCompilerAndLinkerAlternative)' == '' and '$(_IsApplePlatform)' != 'true'"
       Text="Requested linker ('$(CppLinker)') not found in PATH." />
 
-    <Exec Command="&quot;$(CppLinker)&quot; -fuse-ld=lld -Wl,--version" Condition="'$(LinkerFlavor)' == 'lld'" IgnoreExitCode="true" StandardOutputImportance="Low" ConsoleToMSBuild="true">
-      <Output TaskParameter="ExitCode" PropertyName="_LinkerVersionStringExitCode" />
+    <Exec Command="&quot;$(CppLinker)&quot; -fuse-ld=lld -Wl,--version" Condition="'$(LinkerFlavor)' == 'lld'" StandardOutputImportance="Low" ConsoleToMSBuild="true">
       <Output TaskParameter="ConsoleOutput" PropertyName="_LinkerVersionString" />
     </Exec>
 
-    <PropertyGroup Condition="'$(_LinkerVersionStringExitCode)' == '0' and '$(_LinkerVersionString)' != ''">
+    <PropertyGroup Condition="'$(_LinkerVersionString)' != ''">
       <_LinkerVersion>$([System.Text.RegularExpressions.Regex]::Match($(_LinkerVersionString), '[1-9]\d*'))</_LinkerVersion>
     </PropertyGroup>
 

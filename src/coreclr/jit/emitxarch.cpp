@@ -9646,6 +9646,8 @@ void emitter::emitAdjustStackDepth(instruction ins, ssize_t val)
  * EC_INDIR_C          : "call clsVar<disp>" (eg. call [clsVarAddr])
  * EC_INDIR_ARD        : "call [ireg+xreg*xmul+disp]"
  *
+ * noSafePoint - force not making this call a safe point in partially interruptible code
+ *
  */
 
 // clang-format off
@@ -9664,7 +9666,8 @@ void emitter::emitIns_Call(EmitCallType          callType,
                            regNumber             xreg,
                            unsigned              xmul,
                            ssize_t               disp,
-                           bool                  isJump)
+                           bool                  isJump,
+                           bool                  noSafePoint)
 // clang-format on
 {
     /* Sanity check the arguments depending on callType */
@@ -9790,7 +9793,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
     id->idIns(ins);
 
     // for the purpose of GC safepointing tail-calls are not real calls
-    id->idSetIsNoGC(isJump || emitNoGChelper(methHnd));
+    id->idSetIsNoGC(isJump || noSafePoint || emitNoGChelper(methHnd));
 
     UNATIVE_OFFSET sz;
 
@@ -11128,7 +11131,7 @@ void emitter::emitDispIns(
                     if  (id->idOpSize() <= EA_4BYTE)
                         printf("DD      %d \n", addr ? *(int     *)addr : 0);
                     else
-                        printf("DQ      %D \n", addr ? *(__int64 *)addr : 0);
+                        printf("DQ      %D \n", addr ? *(int64_t *)addr : 0);
                 }
             }
 #endif
@@ -15792,6 +15795,7 @@ DONE:
                 break;
 
             case IF_RRW_CNS:
+            {
                 assert(id->idGCref() == GCT_BYREF);
 
 #ifdef DEBUG
@@ -15813,7 +15817,7 @@ DONE:
                 // Mark it as holding a GCT_BYREF
                 emitGCregLiveUpd(GCT_BYREF, id->idReg1(), dst);
                 break;
-
+            }
             default:
 #ifdef DEBUG
                 emitDispIns(id, false, false, false);
@@ -16606,6 +16610,8 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
     assert(instrIs3opImul(id->idIns()) == 0 || size >= EA_4BYTE); // Has no 'w' bit
 
     VARSET_TP GCvars(VarSetOps::UninitVal());
+    regMaskTP gcrefRegs;
+    regMaskTP byrefRegs;
 
     // What instruction format have we got?
     switch (insFmt)
@@ -16617,9 +16623,6 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 
         BYTE* addr;
         bool  recCall;
-
-        regMaskTP gcrefRegs;
-        regMaskTP byrefRegs;
 
         /********************************************************************/
         /*                        No operands                               */

@@ -2369,8 +2369,6 @@ public:
     static UINT_PTR VirtualUnwindCallFrame(PREGDISPLAY pRD, EECodeInfo * pCodeInfo = NULL);
 #ifndef DACCESS_COMPILE
     static PCODE VirtualUnwindLeafCallFrame(T_CONTEXT* pContext);
-    static PCODE VirtualUnwindNonLeafCallFrame(T_CONTEXT* pContext, T_KNONVOLATILE_CONTEXT_POINTERS* pContextPointers = NULL,
-        PT_RUNTIME_FUNCTION pFunctionEntry = NULL, UINT_PTR uImageBase = 0);
     static UINT_PTR VirtualUnwindToFirstManagedCallFrame(T_CONTEXT* pContext);
 #endif // DACCESS_COMPILE
 #endif // FEATURE_EH_FUNCLETS
