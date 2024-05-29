@@ -120,7 +120,7 @@ namespace System.Runtime.InteropServices.Swift
     /// Here's an example of how a SwiftIndirectResult can be declared:
     /// <code lang="csharp">
     /// [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
-    /// [DllImport("SwiftLibrary", EntryPoint = "export")]
+    /// [LibraryImport("SwiftLibrary", EntryPoint = "export")]
     /// public static extern void swiftFunction(SwiftIndirectResult result);
     /// </code>
     /// </para>
