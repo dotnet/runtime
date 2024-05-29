@@ -231,11 +231,6 @@ typedef uint64_t regMaskSmall;
 
 typedef regMaskSmall SingleTypeRegSet;
 
-extern const regMaskSmall      regMasks[REG_COUNT];
-extern inline SingleTypeRegSet genSingleTypeRegMask(regNumber reg);
-extern inline SingleTypeRegSet genSingleTypeRegMask(regNumber reg, var_types type);
-extern inline SingleTypeRegSet genSingleTypeFloatMask(regNumber reg ARM_ARG(var_types type = TYP_DOUBLE));
-
 struct regMaskTP
 {
 private:
@@ -752,6 +747,98 @@ inline bool floatRegCanHoldType(regNumber reg, var_types type)
     return true;
 }
 #endif
+
+
+extern const regMaskSmall regMasks[REG_COUNT];
+
+/*****************************************************************************
+ *
+ *  Map a register number to a floating-point register mask.
+ */
+inline SingleTypeRegSet genSingleTypeFloatMask(regNumber reg ARM_ARG(var_types type /* = TYP_DOUBLE */))
+{
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_X86) || defined(TARGET_LOONGARCH64) ||            \
+    defined(TARGET_RISCV64)
+    assert(genIsValidFloatReg(reg));
+    assert((unsigned)reg < ArrLen(regMasks));
+    return regMasks[reg];
+#elif defined(TARGET_ARM)
+    assert(floatRegCanHoldType(reg, type));
+    assert(reg >= REG_F0 && reg <= REG_F31);
+
+    if (type == TYP_DOUBLE)
+    {
+        return regMasks[reg] | regMasks[reg + 1];
+    }
+    else
+    {
+        return regMasks[reg];
+    }
+#else
+#error Unsupported or unset target architecture
+#endif
+}
+
+//------------------------------------------------------------------------
+// genSingleTypeRegMask: Given a register, generate the appropriate regMask
+//
+// Arguments:
+//    regNum   - the register of interest
+//
+// Return Value:
+//    This will usually return the same value as genRegMask(regNum), except
+//    that it will return a 64-bits (or 32-bits) entity instead of `regMaskTP`.
+//
+inline SingleTypeRegSet genSingleTypeRegMask(regNumber reg)
+{
+    assert((unsigned)reg < ArrLen(regMasks));
+#ifdef TARGET_AMD64
+    // shift is faster than a L1 hit on modern x86
+    // (L1 latency on sandy bridge is 4 cycles for [base] and 5 for [base + index*c] )
+    // the reason this is AMD-only is because the x86 BE will try to get reg masks for REG_STK
+    // and the result needs to be zero.
+    SingleTypeRegSet result = 1ULL << reg;
+    assert(result == regMasks[reg]);
+    return result;
+#else
+    return regMasks[reg];
+#endif
+}
+
+//------------------------------------------------------------------------
+// genSingleTypeRegMask: Given a register, generate the appropriate regMask
+//
+// Arguments:
+//    regNum   - the register of interest
+//    type     - the type of regNum (i.e. the type it is being used as)
+//
+// Return Value:
+//    This will usually return the same value as genRegMask(regNum), except
+//    that it will return a 64-bits (or 32-bits) entity instead of `regMaskTP`.
+//    On architectures where multiple registers are used for certain types
+//    (e.g. TYP_DOUBLE on ARM), it will return a regMask that includes
+//    all the registers for that type.
+//
+inline SingleTypeRegSet genSingleTypeRegMask(regNumber regNum, var_types type)
+{
+#if defined(TARGET_ARM)
+    SingleTypeRegSet regMask = RBM_NONE;
+
+    if (varTypeUsesIntReg(type))
+    {
+        regMask = genSingleTypeRegMask(regNum);
+    }
+    else
+    {
+        assert(varTypeUsesFloatReg(type));
+        regMask = genSingleTypeFloatMask(regNum, type);
+    }
+
+    return regMask;
+#else
+    return genSingleTypeRegMask(regNum);
+#endif
+}
 
 /*****************************************************************************
  *
