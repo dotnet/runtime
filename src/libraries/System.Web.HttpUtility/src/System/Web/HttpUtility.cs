@@ -193,10 +193,27 @@ namespace System.Web
         public static byte[]? UrlDecodeToBytes(string? str) => UrlDecodeToBytes(str, Encoding.UTF8);
 
         [return: NotNullIfNotNull(nameof(str))]
-        public static byte[]? UrlDecodeToBytes(string? str, Encoding e) => str == null ? null : UrlDecodeToBytes(e.GetBytes(str));
+        public static byte[]? UrlDecodeToBytes(string? str, Encoding e)
+        {
+            const int StackallocThreshold = 512;
+            if (str == null)
+            {
+                return null;
+            }
+
+            if (e.GetMaxByteCount(str.Length) <= StackallocThreshold)
+            {
+                Span<byte> bytes = stackalloc byte[StackallocThreshold];
+                int encodedBytes = e.GetBytes(str, bytes);
+
+                return HttpEncoder.UrlDecode(bytes.Slice(0, encodedBytes));
+            }
+
+            return UrlDecodeToBytes(e.GetBytes(str));
+        }
 
         [return: NotNullIfNotNull(nameof(bytes))]
-        public static byte[]? UrlDecodeToBytes(byte[]? bytes) => bytes == null ? null : UrlDecodeToBytes(bytes, 0, bytes.Length);
+        public static byte[]? UrlDecodeToBytes(byte[]? bytes) => bytes == null ? null : HttpEncoder.UrlDecode(bytes.AsSpan(0, bytes.Length));
 
         [return: NotNullIfNotNull(nameof(str))]
         public static byte[]? UrlEncodeToBytes(string? str, Encoding e)

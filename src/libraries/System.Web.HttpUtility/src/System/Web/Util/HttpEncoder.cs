@@ -212,13 +212,20 @@ namespace System.Web.Util
                 return null;
             }
 
+            return UrlDecode(bytes.AsSpan(offset, count));
+        }
+
+        internal static byte[] UrlDecode(ReadOnlySpan<byte> bytes)
+        {
+            const int StackallocThreshold = 512;
+
             int decodedBytesCount = 0;
-            byte[] decodedBytes = new byte[count];
+            int count = bytes.Length;
+            Span<byte> decodedBytes = count <= StackallocThreshold ? stackalloc byte[StackallocThreshold] : new byte[count];
 
             for (int i = 0; i < count; i++)
             {
-                int pos = offset + i;
-                byte b = bytes[pos];
+                byte b = bytes[i];
 
                 if (b == '+')
                 {
@@ -226,8 +233,8 @@ namespace System.Web.Util
                 }
                 else if (b == '%' && i < count - 2)
                 {
-                    int h1 = HexConverter.FromChar(bytes[pos + 1]);
-                    int h2 = HexConverter.FromChar(bytes[pos + 2]);
+                    int h1 = HexConverter.FromChar(bytes[i + 1]);
+                    int h2 = HexConverter.FromChar(bytes[i + 2]);
 
                     if ((h1 | h2) != 0xFF)
                     {
@@ -240,14 +247,7 @@ namespace System.Web.Util
                 decodedBytes[decodedBytesCount++] = b;
             }
 
-            if (decodedBytesCount < decodedBytes.Length)
-            {
-                byte[] newDecodedBytes = new byte[decodedBytesCount];
-                Array.Copy(decodedBytes, newDecodedBytes, decodedBytesCount);
-                decodedBytes = newDecodedBytes;
-            }
-
-            return decodedBytes;
+            return decodedBytes.Slice(0, decodedBytesCount).ToArray();
         }
 
         [return: NotNullIfNotNull(nameof(bytes))]
