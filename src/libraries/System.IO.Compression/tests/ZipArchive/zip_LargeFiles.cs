@@ -84,9 +84,9 @@ namespace System.IO.Compression.Tests
                     {
                         // Write 5GB of data
 
-                        const int HOW_MANY_GB_TO_WRITE = 5;
+                        const int TotalGBToWrite = 5;
 
-                        for (var i = 0; i < HOW_MANY_GB_TO_WRITE; i++)
+                        for (var i = 0; i < TotalGBToWrite; i++)
                         {
                             if (isCompressed)
                             {
@@ -124,7 +124,8 @@ namespace System.IO.Compression.Tests
                         fs.Position = (long)offsetOfLHField.GetValue(entry) + ZipLocalFileHeader_OffsetToVersionFromHeaderStart;
                         ushort versionNeeded = reader.ReadUInt16();
 
-                        Assert.True(versionNeeded == Zip64Version, "Version is not ZIP64 for files with Local Header at >4GB offset.");
+                        // Version is not ZIP64 for files with Local Header at >4GB offset.
+                        Assert.Equal(Zip64Version, versionNeeded);
                     }
                 }
             }
