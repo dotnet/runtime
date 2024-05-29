@@ -91,7 +91,7 @@ namespace System
         public static System.Runtime.Remoting.ObjectHandle? CreateInstanceFrom(string assemblyFile, string typeName, bool ignoreCase, System.Reflection.BindingFlags bindingAttr, System.Reflection.Binder? binder, object?[]? args, System.Globalization.CultureInfo? culture, object?[]? activationAttributes) { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Type and its constructor could be removed")]
         public static System.Runtime.Remoting.ObjectHandle? CreateInstanceFrom(string assemblyFile, string typeName, object?[]? activationAttributes) { throw null; }
-        public static T CreateInstance<[System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]T>() { throw null; }
+        public static T CreateInstance<[System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]T>() where T : allows ref struct { throw null; }
     }
     public partial class AggregateException : System.Exception
     {
@@ -13357,7 +13357,7 @@ namespace System.Runtime.CompilerServices
         public static ref T AsRef<T>(scoped ref readonly T source) { throw null; }
         [return: System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute("o")]
         public static T? As<T>(object? o) where T : class? { throw null; }
-        public static ref TTo As<TFrom, TTo>(ref TFrom source) { throw null; }
+        public static ref TTo As<TFrom, TTo> (ref TFrom source) where TFrom : allows ref struct where TTo : allows ref struct { throw null; }
         public static TTo BitCast<TFrom, TTo>(TFrom source) { throw null; }
         public static System.IntPtr ByteOffset<T>([System.Diagnostics.CodeAnalysis.AllowNull] ref readonly T origin, [System.Diagnostics.CodeAnalysis.AllowNull] ref readonly T target) { throw null; }
         [System.CLSCompliantAttribute(false)]

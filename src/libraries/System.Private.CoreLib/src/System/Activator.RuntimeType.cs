@@ -136,11 +136,13 @@ namespace System
 
         [Intrinsic]
         public static T CreateInstance<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] T>()
+            where T : allows ref struct
         {
             var rtType = (RuntimeType)typeof(T);
             if (!rtType.IsValueType)
             {
-                return (T)rtType.CreateInstanceOfT()!;
+                object o = rtType.CreateInstanceOfT()!;
+                return Unsafe.As<object, T>(ref o);
             }
             else
             {
