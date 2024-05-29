@@ -882,7 +882,7 @@ bool Compiler::optMakeLoopDownwardsCounted(ScalarEvolutionContext& scevContext,
     if (loop->ExitEdges().size() != 1)
     {
         // With multiple exits we generally can only compute an upper bound on
-        // the trip count.
+        // the backedge count.
         JITDUMP("  No; has multiple exits\n");
         return false;
     }
@@ -954,6 +954,9 @@ bool Compiler::optMakeLoopDownwardsCounted(ScalarEvolutionContext& scevContext,
         if (visitResult == BasicBlockVisit::Abort)
         {
             // Live into an exit.
+            // TODO-CQ: In some cases it may be profitable to materialize the final value after the loop.
+            // This requires analysis on whether the required expressions are available there
+            // (and whether it doesn't extend their lifetimes too much).
             continue;
         }
 
@@ -970,6 +973,8 @@ bool Compiler::optMakeLoopDownwardsCounted(ScalarEvolutionContext& scevContext,
             if (!rootNode->OperIsLocalStore())
             {
                 // Cannot reason about this use of the local, cannot remove
+                // TODO-CQ: In some cases it may be profitable to compute the
+                // value in terms of the down-counting IV.
                 return false;
             }
 
@@ -1051,10 +1056,10 @@ bool Compiler::optMakeLoopDownwardsCounted(ScalarEvolutionContext& scevContext,
     // At this point we know that the single exit dominates all backedges.
     JITDUMP("  All backedges are dominated by exiting block " FMT_BB "\n", exiting->bbNum);
 
-    Scev* tripCount = scevContext.ComputeExitNotTakenCount(exiting);
-    if (tripCount == nullptr)
+    Scev* backedgeCount = scevContext.ComputeExitNotTakenCount(exiting);
+    if (backedgeCount == nullptr)
     {
-        JITDUMP("  Could not compute trip count -- not a counted loop\n");
+        JITDUMP("  Could not compute backedge count -- not a counted loop\n");
         return false;
     }
 
@@ -1062,12 +1067,13 @@ bool Compiler::optMakeLoopDownwardsCounted(ScalarEvolutionContext& scevContext,
     assert(preheader != nullptr);
 
     // We are interested in phrasing the test as (--x == 0). That requires us
-    // to add one to the computed trip count. We do not need to worry about
-    // overflow here (even with wraparound we have the right behavior).
-    Scev* decCount = scevContext.Simplify(
-        scevContext.NewBinop(ScevOper::Add, tripCount, scevContext.NewConstant(tripCount->Type, 1)));
-    GenTree* decCountNode = scevContext.Materialize(decCount);
-    if (decCountNode == nullptr)
+    // to add one to the computed backedge count, giving us the trip count of
+    // the loop. We do not need to worry about overflow here (even with
+    // wraparound we have the right behavior).
+    Scev* tripCount = scevContext.Simplify(
+        scevContext.NewBinop(ScevOper::Add, backedgeCount, scevContext.NewConstant(backedgeCount->Type, 1)));
+    GenTree* tripCountNode = scevContext.Materialize(tripCount);
+    if (tripCountNode == nullptr)
     {
         JITDUMP("  Could not materialize trip count into IR\n");
         return false;
@@ -1076,7 +1082,7 @@ bool Compiler::optMakeLoopDownwardsCounted(ScalarEvolutionContext& scevContext,
     JITDUMP("  Converting " FMT_LP " into a downwards loop\n", loop->GetIndex());
 
     unsigned tripCountLcl = lvaGrabTemp(false DEBUGARG("Trip count IV"));
-    GenTree* store        = gtNewTempStore(tripCountLcl, decCountNode);
+    GenTree* store        = gtNewTempStore(tripCountLcl, tripCountNode);
 
     Statement* newStmt = fgNewStmtFromTree(store);
     fgInsertStmtAtEnd(preheader, newStmt);
@@ -1090,8 +1096,9 @@ bool Compiler::optMakeLoopDownwardsCounted(ScalarEvolutionContext& scevContext,
         exitOp = GT_NE;
     }
 
-    GenTree* negOne      = decCount->TypeIs(TYP_LONG) ? gtNewLconNode(-1) : gtNewIconNode(-1, decCount->Type);
-    GenTree* decremented = gtNewOperNode(GT_ADD, decCount->Type, gtNewLclVarNode(tripCountLcl, decCount->Type), negOne);
+    GenTree* negOne = tripCount->TypeIs(TYP_LONG) ? gtNewLconNode(-1) : gtNewIconNode(-1, tripCount->Type);
+    GenTree* decremented =
+        gtNewOperNode(GT_ADD, tripCount->Type, gtNewLclVarNode(tripCountLcl, tripCount->Type), negOne);
 
     store = gtNewTempStore(tripCountLcl, decremented);
 
@@ -1103,8 +1110,8 @@ bool Compiler::optMakeLoopDownwardsCounted(ScalarEvolutionContext& scevContext,
 
     // Update the test.
     cond->SetOper(exitOp);
-    cond->AsOp()->gtOp1 = gtNewLclVarNode(tripCountLcl, decCount->Type);
-    cond->AsOp()->gtOp2 = gtNewZeroConNode(decCount->Type);
+    cond->AsOp()->gtOp1 = gtNewLclVarNode(tripCountLcl, tripCount->Type);
+    cond->AsOp()->gtOp2 = gtNewZeroConNode(tripCount->Type);
 
     gtSetStmtInfo(jtrueStmt);
     fgSetStmtSeq(jtrueStmt);

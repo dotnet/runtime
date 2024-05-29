@@ -1537,18 +1537,21 @@ VNFunc ScalarEvolutionContext::MapRelopToVNFunc(genTreeOps oper, bool isUnsigned
 //   cannot be computed.
 //
 // Remarks:
-//   The SCEV returned here is equal to the trip count when the exiting block
-//   dominates all backedges and when it is the only exit of the loop.
+//   The SCEV returned here is equal to the backedge count when the exiting
+//   block dominates all backedges and when it is the only exit of the loop.
 //
-//   The trip count of the loop is defined as the number of times the header
-//   block is entered from a backedge. It follows that the number of times the
-//   header block is entered is the trip count + 1.
+//   The backedge count of the loop is defined as the number of times the
+//   header block is entered from a backedge. It follows that the number of
+//   times the header block is entered is the backedge count + 1. This quantity
+//   is typically called the trip count.
 //
-//   The trip count gives insight about add recurrences in the loop, since it
-//   is the number of times every add recurrence steps. The final value of an
-//   add recurrence <L, start, step> is thus (start + step * <trip count>).
+//   The backedge count gives insight about add recurrences in the loop, since
+//   it is the number of times every add recurrence steps. The final value of
+//   an add recurrence <L, start, step> is thus (start + step * <backedge
+//   count>).
 //
-//   Loops for which the trip count can be computed are called counted loops.
+//   Loops for which the backedge/trip count can be computed are called counted
+//   loops.
 //
 Scev* ScalarEvolutionContext::ComputeExitNotTakenCount(BasicBlock* exiting)
 {
@@ -1653,7 +1656,7 @@ Scev* ScalarEvolutionContext::ComputeExitNotTakenCount(BasicBlock* exiting)
     VNFunc exitOpVNF = MapRelopToVNFunc(exitOp, cond->IsUnsigned());
     if (MayOverflowBeforeExit((ScevAddRec*)lhs, rhs, exitOpVNF))
     {
-        JITDUMP("  May overflow, cannot determine trip count\n");
+        JITDUMP("  May overflow, cannot determine backedge count\n");
         return nullptr;
     }
 
