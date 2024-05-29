@@ -2825,13 +2825,18 @@ void LinearScan::buildIntervals()
         availableRegCount = REG_INT_COUNT;
     }
 
+#ifdef HAS_MORE_THAN_64_REGISTERS
     static_assert(sizeof(regMaskTP) == 2 * sizeof(regMaskSmall));
+#else
+    static_assert(sizeof(regMaskTP) == sizeof(regMaskSmall));
+#endif
 
     if (availableRegCount < (sizeof(regMaskSmall) * 8))
     {
         // Mask out the bits that are between (8 * regMaskSmall) ~ availableRegCount
         actualRegistersMask = regMaskTP((1ULL << availableRegCount) - 1);
     }
+#ifdef HAS_MORE_THAN_64_REGISTERS
     else if (availableRegCount < (sizeof(regMaskTP) * 8))
     {
         // Mask out the bits that are between (8 * regMaskTP) ~ availableRegCount
@@ -2839,6 +2844,7 @@ void LinearScan::buildIntervals()
         unsigned topRegCount = availableRegCount - sizeof(regMaskSmall) * 8 - 1;
         actualRegistersMask  = regMaskTP(~RBM_NONE, (1ULL << topRegCount) - 1);
     }
+#endif
     else
     {
         actualRegistersMask = regMaskTP(~RBM_NONE, ~RBM_NONE);
