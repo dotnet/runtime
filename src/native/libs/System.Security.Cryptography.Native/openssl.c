@@ -1525,6 +1525,7 @@ static void* reallocFunction (void *ptr, size_t size, const char *file, int line
         CRYPTO_atomic_add(&g_allocatedMemory, (int)(-entry->size), &newCount, g_allocLock);
     }
 
+    long oldPtr = (long)ptr; // prevent warning about use after free
     void* newPtr = realloc(ptr, size + sizeof(struct memoryEntry));
     if (newPtr != NULL)
     {
@@ -1538,7 +1539,7 @@ static void* reallocFunction (void *ptr, size_t size, const char *file, int line
 
         if (g_memoryCallback != NULL)
         {
-            g_memoryCallback(ReallocOperation, newPtr, ptr, entry->size, file, line);
+            g_memoryCallback(ReallocOperation, newPtr, (void*)oldPtr, entry->size, file, line);
         }
 
         return (void*)((char*)newPtr + sizeof(struct memoryEntry));
