@@ -29,6 +29,11 @@ namespace LibraryImportGenerator.UnitTests
             [CallerFilePath] string? filePath = null)
             => TestUtils.GetFileLineName(lineNumber, filePath);
 
+        public static IEnumerable<object[]> CodeSnippetsToCompile2()
+        {
+            yield return new[] { ID(), CodeSnippets.ExplicitThis };
+        }
+
         public static IEnumerable<object[]> CodeSnippetsToCompile()
         {
             yield return new[] { ID(), CodeSnippets.TrivialClassDeclarations };
@@ -42,6 +47,7 @@ namespace LibraryImportGenerator.UnitTests
             yield return new[] { ID(), CodeSnippets.DefaultParameters };
             yield return new[] { ID(), CodeSnippets.UseCSharpFeaturesForConstants };
             yield return new[] { ID(), CodeSnippets.LibraryImportInRefStruct };
+            yield return new[] { ID(), CodeSnippets.ExplicitThis };
 
             // Parameter / return types
             yield return new[] { ID(), CodeSnippets.BasicParametersAndModifiers<byte>() };
@@ -719,7 +725,7 @@ namespace LibraryImportGenerator.UnitTests
 
         [Theory]
         [MemberData(nameof(CodeSnippetsToVerifyNoTreesProduced))]
-        public async Task ValidateNoGeneratedOuptutForNoImport(string id, string source, TestTargetFramework framework)
+        public async Task ValidateNoGeneratedOutputForNoImport(string id, string source, TestTargetFramework framework)
         {
             TestUtils.Use(id);
             var test = new NoChangeTest(framework)
