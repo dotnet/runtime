@@ -548,7 +548,7 @@ int32_t __stdcall RhpVectoredExceptionHandler(PEXCEPTION_POINTERS pExPtrs)
         Thread * pThread = ThreadStore::GetCurrentThreadIfAvailable();
         if (pThread == NULL || !pThread->IsCurrentThreadInCooperativeMode())
         {
-            // if we are not in coop mode or the thread is not hijacked, this cannot be our hijack
+            // if we are not in coop mode, this cannot be our hijack
             // Perhaps some other runtime is responsible.
             return EXCEPTION_CONTINUE_SEARCH;
         }
