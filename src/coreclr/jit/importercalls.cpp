@@ -256,7 +256,9 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 #if defined(FEATURE_HW_INTRINSICS)
                 else if (call->OperIsHWIntrinsic())
                 {
-                    if (call->AsHWIntrinsic()->IsUserCall())
+                    GenTreeHWIntrinsic* hwintrinsic = call->AsHWIntrinsic();
+
+                    if (hwintrinsic->IsUserCall() && (hwintrinsic->gtEntryPoint == nullptr))
                     {
                         CORINFO_CONST_LOOKUP entryPoint;
 
@@ -271,7 +273,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                             entryPoint.accessType = IAT_VALUE;
                         }
 
-                        call->AsHWIntrinsic()->SetEntryPoint(this, entryPoint);
+                        hwintrinsic->SetEntryPoint(this, entryPoint);
                     }
                 }
 #endif // FEATURE_HW_INTRINSICS
