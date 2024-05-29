@@ -100,9 +100,9 @@ The .NET Foundation licenses this file to you under the MIT license.
       <!-- Do not warn if someone declares UnmanagedCallersOnly with an entrypoint of 'DllGetClassObject' and similar -->
       <LinkerArg Include="/IGNORE:4104" />
       <!-- Opt into CETCOMPAT by default. -->
-      <LinkerArg Condition="'$(ShadowStacksCompatible)' != 'false'" Include="/CETCOMPAT" />
+      <LinkerArg Condition="'$(CETCompat)' != 'false' and '$(_targetArchitecture)' == 'x64'" Include="/CETCOMPAT" />
       <!-- Allow user to opt out. -->
-      <LinkerArg Condition="'$(ShadowStacksCompatible)' == 'false'" Include="/CETCOMPAT:NO" />
+      <LinkerArg Condition="'$(CETCompat)' == 'false' and '$(_targetArchitecture)' == 'x64'" Include="/CETCOMPAT:NO" />
     </ItemGroup>
 
     <ItemGroup Condition="!Exists('$(IlcSdkPath)debugucrt.txt')">
