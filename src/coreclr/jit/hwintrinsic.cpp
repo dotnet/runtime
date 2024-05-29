@@ -1255,6 +1255,7 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
                 simdBaseJitType = sig->retType;
                 assert(simdBaseJitType != CORINFO_TYPE_VOID);
                 assert(simdBaseJitType != CORINFO_TYPE_UNDEF);
+                assert(simdBaseJitType != CORINFO_TYPE_VALUECLASS);
             }
             else
 #endif

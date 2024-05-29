@@ -105,15 +105,28 @@ CodeGen::HWIntrinsicImmOpHelper::HWIntrinsicImmOpHelper(CodeGen* codeGen, GenTre
     }
 }
 
+// HWIntrinsicImmOpHelper: Variant constructor of the helper class instance.
+//       This is used when the immediate does not exist in a GenTree. For example, the immediate has been created
+//       during codegen from other immediate values.
+//
+// Arguments:
+//    codeGen       -- an instance of CodeGen class.
+//    immReg        -- the register containing the immediate.
+//    immLowerBound -- the lower bound of the register.
+//    immUpperBound -- the lower bound of the register.
+//    intrin        -- a hardware intrinsic tree node.
+//
+// Note: This instance is designed to be used via the same for loop as the standard constructor.
+//
 CodeGen::HWIntrinsicImmOpHelper::HWIntrinsicImmOpHelper(
-    CodeGen* codeGen, regNumber nonConstImmReg, int immLowerBound, int immUpperBound, GenTreeHWIntrinsic* intrin)
+    CodeGen* codeGen, regNumber immReg, int immLowerBound, int immUpperBound, GenTreeHWIntrinsic* intrin)
     : codeGen(codeGen)
     , endLabel(nullptr)
     , nonZeroLabel(nullptr)
     , immValue(immLowerBound)
     , immLowerBound(immLowerBound)
     , immUpperBound(immUpperBound)
-    , nonConstImmReg(nonConstImmReg)
+    , nonConstImmReg(immReg)
     , branchTargetReg(REG_NA)
 {
     assert(codeGen != nullptr);
@@ -1855,28 +1868,34 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 }
                 else
                 {
-                    // Use the helper to generate a table.
+                    // Use the helper to generate a table. The table can only use a single lookup value, therefore
+                    // the two immediates scale (1 to 16, in op2Reg) and pattern (0 to 31, in op3reg) must be
+                    // combined to a single value (0 to 511)
 
                     assert(!intrin.op2->isContainedIntOrIImmed() && !intrin.op3->isContainedIntOrIImmed());
 
                     emitAttr scalarSize = emitActualTypeSize(node->GetSimdBaseType());
 
-                    // Combine the second immediate (pattern, op3) into the first (scale, op2).
+                    // Combine the two immediates into op2Reg.
+                    // Reduce scale to have a lower bound of 0.
                     GetEmitter()->emitIns_R_R_I(INS_sub, scalarSize, op2Reg, op2Reg, 1);
+                    // Shift pattern left to be out of range of scale.
                     GetEmitter()->emitIns_R_R_I(INS_lsl, scalarSize, op3Reg, op3Reg, 4);
+                    // Combine the two values by ORing.
                     GetEmitter()->emitIns_R_R_R(INS_orr, scalarSize, op2Reg, op2Reg, op3Reg);
 
-                    // Generate a table using the combined immediate.
+                    // Generate the table using the combined immediate.
                     HWIntrinsicImmOpHelper helper(this, op2Reg, 0, 511, node);
                     for (helper.EmitBegin(); !helper.Done(); helper.EmitCaseEnd())
                     {
+                        // Extract scale and pattern from the immediate
                         const int           value   = helper.ImmValue();
                         const int           scale   = (value & 0xF) + 1;
                         const insSvePattern pattern = (insSvePattern)(value >> 4);
                         GetEmitter()->emitIns_R_PATTERN_I(ins, emitSize, targetReg, pattern, scale, opt);
                     }
 
-                    // Restore the immediates.
+                    // Restore the original values in op2Reg and op3Reg.
                     GetEmitter()->emitIns_R_R_I(INS_and, scalarSize, op2Reg, op2Reg, 0xF);
                     GetEmitter()->emitIns_R_R_I(INS_lsr, scalarSize, op3Reg, op3Reg, 4);
                     GetEmitter()->emitIns_R_R_I(INS_add, scalarSize, op2Reg, op2Reg, 1);

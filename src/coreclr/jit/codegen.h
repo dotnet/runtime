@@ -997,7 +997,7 @@ protected:
         HWIntrinsicImmOpHelper(CodeGen* codeGen, GenTree* immOp, GenTreeHWIntrinsic* intrin);
 
         HWIntrinsicImmOpHelper(CodeGen*            codeGen,
-                               regNumber           nonConstImmReg,
+                               regNumber           immReg,
                                int                 immLowerBound,
                                int                 immUpperBound,
                                GenTreeHWIntrinsic* intrin);
