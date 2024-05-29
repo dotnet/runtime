@@ -1538,14 +1538,14 @@ static void* reallocFunction (void *ptr, size_t size, const char *file, int line
 
         if (g_memoryCallback != NULL)
         {
-#if defined(__GNUC__)
+#if defined(__GNUC__) &&  __GNUC__ > 11
 #pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Werror=use-after-free"
+#pragma GCC diagnostic ignored "-Wuse-after-free"
 #endif
         // Now try just the _majorVer added
             g_memoryCallback(ReallocOperation, newPtr, ptr, entry->size, file, line);
 
-#if defined(__GNUC__)
+#if defined(__GNUC__) &&  __GNUC__ > 6
 #pragma GCC diagnostic pop
 #endif
         }
