@@ -112,16 +112,16 @@ void regMaskTP::AddRegNum(regNumber reg, var_types type)
 // AddRegsetForType: Add regs of `type` in mask.
 //
 // Parameters:
-//  maskToAdd  - Register to check
+//  regsToAdd  - Register to check
 //  type       - type of register
 //
-void regMaskTP::AddRegsetForType(SingleTypeRegSet regs, var_types type)
+void regMaskTP::AddRegsetForType(SingleTypeRegSet regsToAdd, var_types type)
 {
 #ifdef HAS_MORE_THAN_64_REGISTERS
     int index = getRegisterTypeIndex(type);
-    _registers[index] |= encodeForRegisterIndex(index, regs);
+    _registers[index] |= encodeForRegisterIndex(index, regsToAdd);
 #else
-    low |= regs;
+    low |= regsToAdd;
 #endif
 }
 
@@ -184,6 +184,16 @@ void regMaskTP::RemoveRegNum(regNumber reg, var_types type)
     low &= ~getRegMask(reg, type);
 #else
     RemoveRegNumFromMask(reg);
+#endif
+}
+
+void regMaskTP::RemoveRegsetForType(SingleTypeRegSet regsToRemove, var_types type)
+{
+#ifdef HAS_MORE_THAN_64_REGISTERS
+    int index = getRegisterTypeIndex(type);
+    _registers[index] &= ~encodeForRegisterIndex(index, regsToRemove);
+#else
+    low &= ~regsToRemove;
 #endif
 }
 

@@ -851,9 +851,11 @@ regMaskTP LinearScan::getKillSetForCall(GenTreeCall* call)
     if (!compiler->compFloatingPointUsed)
     {
 #if defined(TARGET_XARCH)
-        killMask &= ~(RBM_FLT_CALLEE_TRASH | RBM_MSK_CALLEE_TRASH);
+        
+        killMask.RemoveRegsetForType(RBM_FLT_CALLEE_TRASH.getLow(), FloatRegisterType);
+        killMask.RemoveRegsetForType(RBM_MSK_CALLEE_TRASH.getLow(), MaskRegisterType);
 #else
-        killMask &= ~RBM_FLT_CALLEE_TRASH;
+        killMask.RemoveRegsetForType(RBM_FLT_CALLEE_TRASH, FloatRegisterType);
 #endif // TARGET_XARCH
     }
 #ifdef TARGET_ARM

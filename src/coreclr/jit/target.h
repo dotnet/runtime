@@ -283,11 +283,13 @@ public:
     void AddGprRegs(SingleTypeRegSet gprRegs);
     void AddRegNum(regNumber reg, var_types type);
     void AddRegNumInMask(regNumber reg);
-    void AddRegsetForType(SingleTypeRegSet maskToAdd, var_types type);
+    void AddRegsetForType(SingleTypeRegSet regsToAdd, var_types type);
+    bool             IsRegNumInMask(regNumber reg) const;
+    bool             IsRegNumPresent(regNumber reg, var_types type) const;
     void RemoveRegNum(regNumber reg, var_types type);
-    void RemoveRegNumFromMask(regNumber reg);    
-    bool IsRegNumInMask(regNumber reg) const;
-    bool IsRegNumPresent(regNumber reg, var_types type) const;
+    void RemoveRegNumFromMask(regNumber reg);
+    void             RemoveRegsetForType(SingleTypeRegSet regsToRemove, var_types type);
+    
 
     regMaskTP(regMaskSmall lowMask, RegSet32 highMask)
         : low(lowMask)
