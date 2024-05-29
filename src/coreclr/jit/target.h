@@ -523,9 +523,8 @@ inline bool isByteReg(regNumber reg)
 }
 #endif
 
-inline regMaskTP        genRegMask(regNumber reg);
-inline regMaskTP        genRegMaskFloat(regNumber reg ARM_ARG(var_types type = TYP_DOUBLE));
-
+inline regMaskTP genRegMask(regNumber reg);
+inline regMaskTP genRegMaskFloat(regNumber reg ARM_ARG(var_types type = TYP_DOUBLE));
 
 /*****************************************************************************
  * Return true if the register number is valid
@@ -748,7 +747,6 @@ inline bool floatRegCanHoldType(regNumber reg, var_types type)
 }
 #endif
 
-
 extern const regMaskSmall regMasks[REG_COUNT];
 
 /*****************************************************************************
@@ -882,7 +880,7 @@ inline regMaskTP genRegMaskFloat(regNumber reg ARM_ARG(var_types type /* = TYP_D
 //
 inline regMaskTP genRegMask(regNumber regNum, var_types type)
 {
-    //TODO: Populate regMaskTP based on regNum/type
+    // TODO: Populate regMaskTP based on regNum/type
     return genSingleTypeRegMask(regNum ARM_ARG(type));
 }
 
