@@ -8,6 +8,11 @@
     <WasmNativeStrip>false</WasmNativeStrip>
     <IsBrowserWasmProject>false</IsBrowserWasmProject>
     <WasmSingleFileBundle>true</WasmSingleFileBundle>
+    <OutputType>Library</OutputType>
+    <!-- This is needed for ReferenceCopyLocalPaths to include RuntimePackAsset-->
+    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+    <!-- This is needed so it will not complain about WasmAssembliesToBundle is empty -->
+    <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
   </PropertyGroup>
 
   <ItemGroup>

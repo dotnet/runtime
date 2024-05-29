@@ -329,6 +329,7 @@ internal sealed class PInvokeTableGenerator
                 #include <mono/metadata/object.h>
                 #include <mono/utils/details/mono-logger-types.h>
                 #include ""runtime.h""
+                #include ""driver.h""
                 ");
 
         // Arguments to interp entry functions in the runtime
@@ -378,6 +379,13 @@ internal sealed class PInvokeTableGenerator
             sb.Append(") { \n");
             if (!is_void)
                 sb.Append($"  {MapType(method.ReturnType)} res;\n");
+
+            if (HasAttribute(method, "System.Runtime.InteropServices.UnmanagedCallersOnlyAttribute"))
+            {
+                sb.Append($"  #if defined(WASM_LIBRARY_MODE) \n");
+                sb.Append($"    initialize_runtime(); \n");
+                sb.Append($"  #endif\n");
+            }
 
             // In case when null force interpreter to initialize the pointers
             sb.Append($"  if (!(WasmInterpEntrySig_{cb_index})wasm_native_to_interp_ftndescs [{cb_index}].func) {{\n");

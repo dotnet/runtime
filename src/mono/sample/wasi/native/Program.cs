@@ -17,10 +17,17 @@ public unsafe class Test
     [DllImport("*", EntryPoint = "UnmanagedFunc")]
     public static extern void MyImport(); // calls ManagedFunc aka MyExport
 
-    public unsafe static int Main(string[] args)
+    // public unsafe static int Main(string[] args)
+    // {
+    //     Console.WriteLine($"main: {args.Length}");
+    //     MyImport();
+    //     return 0;
+    // }
+
+    [UnmanagedCallersOnly(EntryPoint = "MyCallback")]
+    public static int MyCallback()
     {
-        Console.WriteLine($"main: {args.Length}");
-        MyImport();
-        return 0;
+        Console.WriteLine("WASM Library MyCallback is called");
+        return 100;
     }
 }
