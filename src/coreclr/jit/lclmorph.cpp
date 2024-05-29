@@ -258,6 +258,29 @@ public:
         return m_localsToExpose;
     }
 
+    //------------------------------------------------------------------------
+    // IsMarkedForExposure: Check if a specific local is marked to be exposed.
+    //
+    // Return Value:
+    //   True if so.
+    //
+    bool IsMarkedForExposure(unsigned lclNum)
+    {
+        BitVecTraits traits(m_comp->lvaCount, m_comp);
+        if (BitVecOps::IsMember(&traits, m_localsToExpose, lclNum))
+        {
+            return true;
+        }
+
+        LclVarDsc* dsc = m_comp->lvaGetDesc(lclNum);
+        if (dsc->lvIsStructField && BitVecOps::IsMember(&traits, m_localsToExpose, dsc->lvParentLcl))
+        {
+            return true;
+        }
+
+        return false;
+    }
+
     //-------------------------------------------------------------------
     // StartBlock: Start a new block by computing incoming assertions for the
     // block.
@@ -1285,9 +1308,6 @@ private:
 
         if (isWide)
         {
-            MorphLocalAddress(node->AsIndir()->Addr(), lclNum, offset);
-            node->gtFlags |= GTF_GLOB_REF; // GLOB_REF may not be set already in the "large offset" case.
-
             unsigned exposedLclNum = varDsc->lvIsStructField ? varDsc->lvParentLcl : lclNum;
             if (m_lclAddrAssertions != nullptr)
             {
@@ -1297,6 +1317,9 @@ private:
             {
                 m_compiler->lvaSetVarAddrExposed(exposedLclNum DEBUGARG(AddressExposedReason::WIDE_INDIR));
             }
+
+            MorphLocalAddress(node->AsIndir()->Addr(), lclNum, offset);
+            node->gtFlags |= GTF_GLOB_REF; // GLOB_REF may not be set already in the "large offset" case.
         }
         else
         {
@@ -1318,7 +1341,9 @@ private:
     void MorphLocalAddress(GenTree* addr, unsigned lclNum, unsigned offset)
     {
         assert(addr->TypeIs(TYP_BYREF, TYP_I_IMPL));
-        // assert(m_compiler->lvaVarAddrExposed(lclNum) || m_compiler->lvaGetDesc(lclNum)->IsHiddenBufferStructArg());
+        assert(m_compiler->lvaVarAddrExposed(lclNum) ||
+               ((m_lclAddrAssertions != nullptr) && m_lclAddrAssertions->IsMarkedForExposure(lclNum)) ||
+               m_compiler->lvaGetDesc(lclNum)->IsHiddenBufferStructArg());
 
         if (m_compiler->IsValidLclAddr(lclNum, offset))
         {
@@ -1887,7 +1912,8 @@ private:
             m_lclAddrAssertions->Clear(store->GetLclNum(), store->GetLclOffs(), storeSize);
         }
 
-        if (data.IsAddress() && !m_compiler->lvaGetDesc(store)->IsAddressExposed())
+        if (data.IsAddress() && !m_compiler->lvaGetDesc(store)->IsAddressExposed() &&
+            !m_lclAddrAssertions->IsMarkedForExposure(store->GetLclNum()))
         {
             m_lclAddrAssertions->Record(store->GetLclNum(), store->GetLclOffs(), data.LclNum(), data.Offset());
         }
