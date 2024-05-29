@@ -233,33 +233,7 @@ void Compiler::getHWIntrinsicImmOps(NamedIntrinsic    intrinsic,
     int imm1Pos = -1;
     int imm2Pos = -1;
 
-    switch (intrinsic)
-    {
-        case NI_AdvSimd_Insert:
-        case NI_AdvSimd_InsertScalar:
-        case NI_AdvSimd_LoadAndInsertScalar:
-        case NI_AdvSimd_LoadAndInsertScalarVector64x2:
-        case NI_AdvSimd_LoadAndInsertScalarVector64x3:
-        case NI_AdvSimd_LoadAndInsertScalarVector64x4:
-        case NI_AdvSimd_Arm64_LoadAndInsertScalar:
-        case NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x2:
-        case NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x3:
-        case NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x4:
-            assert(sig->numArgs == 3);
-            imm1Pos = 1;
-            break;
-
-        case NI_AdvSimd_Arm64_InsertSelectedScalar:
-            assert(sig->numArgs == 4);
-            imm1Pos = 2;
-            imm2Pos = 0;
-            break;
-
-        default:
-            assert(sig->numArgs > 0);
-            imm1Pos = 0;
-            break;
-    }
+    HWIntrinsicInfo::GetImmOpsPositions(intrinsic, sig, &imm1Pos, &imm2Pos);
 
     if (imm1Pos >= 0)
     {
@@ -1867,7 +1841,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
             GenTree* indices = impStackTop(0).val;
 
-            if (!indices->IsVectorConst())
+            if (!indices->IsVectorConst() && !IsValidForShuffle(indices->AsVecCon(), simdSize, simdBaseType))
             {
                 assert(sig->numArgs == 2);
 
@@ -2202,9 +2176,14 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
             if (!indexOp->OperIsConst())
             {
-                // TODO-ARM64-CQ: We should always import these like we do with GetElement
-                // If index is not constant use software fallback.
-                return nullptr;
+                op3 = impPopStack().val;
+                op2 = impPopStack().val;
+                op1 = impSIMDPopStack();
+
+                retNode = gtNewSimdHWIntrinsicNode(retType, op1, op2, op3, intrinsic, simdBaseJitType, simdSize);
+
+                retNode->AsHWIntrinsic()->SetMethodHandle(this, method);
+                break;
             }
 
             ssize_t imm8  = indexOp->AsIntCon()->IconValue();
