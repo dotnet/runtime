@@ -4039,7 +4039,7 @@ void LinearScan::processKills(RefPosition* killRefPosition)
 {
     RefPosition* nextKill = killRefPosition->nextRefPosition;
 
-    SingleTypeRegSet killedRegs = killRefPosition->registerAssignment;
+    regMaskTP killedRegs = killRefPosition->registerAssignment;
     while (killedRegs != RBM_NONE)
     {
         regNumber  killedReg        = genFirstRegNumFromMaskAndToggle(killedRegs);
@@ -4081,7 +4081,7 @@ void LinearScan::spillGCRefs(RefPosition* killRefPosition)
 {
     // For each physical register that can hold a GC type,
     // if it is occupied by an interval of a GC type, spill that interval.
-    SingleTypeRegSet candidateRegs = killRefPosition->registerAssignment;
+    regMaskTP candidateRegs = killRefPosition->registerAssignment;
     INDEBUG(bool killedRegs = false);
     while (candidateRegs != RBM_NONE)
     {

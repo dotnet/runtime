@@ -956,7 +956,7 @@ inline regNumber genRegNumFromMask(const regMaskTP& mask)
 // Return Value:
 //    The number of the first register contained in the mask.
 //
-
+// TODO: check if const regMaskTP& matter or should we pass by value
 inline regNumber genFirstRegNumFromMask(const regMaskTP& mask)
 {
     assert(mask.IsNonEmpty()); // Must have one bit set, so can't have a mask of zero

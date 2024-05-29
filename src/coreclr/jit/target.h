@@ -231,9 +231,9 @@ typedef uint64_t regMaskSmall;
 
 #ifdef TARGET_ARM64
 #define HAS_MORE_THAN_64_REGISTERS 1
-#define MORE_THAN_64_REGISTERS(x)  x
+#define MORE_THAN_64_REGISTERS_ARG(x)  , x
 #else
-#define MORE_THAN_64_REGISTERS(x)
+#define MORE_THAN_64_REGISTERS_ARG(x)
 #endif // TARGET_ARM64
 
 typedef regMaskSmall    SingleTypeRegSet;
@@ -268,11 +268,18 @@ public:
 
     explicit operator bool() const
     {
+#ifdef HAS_MORE_THAN_64_REGISTERS
+        return (low | high) != RBM_NONE;
+#else
         return low != RBM_NONE;
+#endif
     }
 
     explicit operator regMaskSmall() const
     {
+#ifdef HAS_MORE_THAN_64_REGISTERS
+        assert(high == RBM_NONE);
+#endif
         return (regMaskSmall)low;
     }
 
@@ -298,6 +305,13 @@ public:
     {
         return low;
     }
+
+#ifdef HAS_MORE_THAN_64_REGISTERS
+    regMaskSmall getHigh() const
+    {
+        return high;
+    }
+#endif
 
     bool IsEmpty() const
     {
@@ -336,11 +350,17 @@ public:
     void operator|=(const regMaskTP& second)
     {
         low |= second.getLow();
+#ifdef HAS_MORE_THAN_64_REGISTERS
+        high |= second.getHigh();
+#endif
     }
 
     void operator^=(const regMaskTP& second)
     {
         low ^= second.getLow();
+#ifdef HAS_MORE_THAN_64_REGISTERS
+        high ^= second.getHigh();
+#endif
     }
 
     void operator^=(const regNumber reg)
@@ -351,30 +371,37 @@ public:
     void operator&=(const regMaskTP& second)
     {
         low &= second.getLow();
+#ifdef HAS_MORE_THAN_64_REGISTERS
+        high &= second.getHigh();
+#endif
     }
 };
 
 static regMaskTP operator^(const regMaskTP& first, const regMaskTP& second)
 {
-    regMaskTP result(first.getLow() ^ second.getLow());
+    regMaskTP result(first.getLow() ^ second.getLow() MORE_THAN_64_REGISTERS_ARG(first.getHigh() ^ second.getHigh()));
     return result;
 }
 
 static regMaskTP operator&(const regMaskTP& first, const regMaskTP& second)
 {
-    regMaskTP result(first.getLow() & second.getLow());
+    regMaskTP result(first.getLow() & second.getLow() MORE_THAN_64_REGISTERS_ARG(first.getHigh() & second.getHigh()));
     return result;
 }
 
 static regMaskTP operator|(const regMaskTP& first, const regMaskTP& second)
 {
-    regMaskTP result(first.getLow() | second.getLow());
+    regMaskTP result(first.getLow() | second.getLow() MORE_THAN_64_REGISTERS_ARG(first.getHigh() | second.getHigh()));
     return result;
 }
 
 static bool operator==(const regMaskTP& first, const regMaskTP& second)
 {
-    return (first.getLow() == second.getLow());
+    return (first.getLow() == second.getLow())
+#ifdef HAS_MORE_THAN_64_REGISTERS
+           && (first.getHigh() == second.getHigh())
+#endif
+    ;
 }
 
 static bool operator!=(const regMaskTP& first, const regMaskTP& second)
@@ -415,18 +442,33 @@ static regMaskTP& operator<<=(regMaskTP& first, const int b)
 
 static regMaskTP operator~(const regMaskTP& first)
 {
-    regMaskTP result(~first.getLow());
+    regMaskTP result(~first.getLow() MORE_THAN_64_REGISTERS_ARG(~first.getHigh()));
     return result;
 }
 
 static uint32_t PopCount(const regMaskTP& value)
 {
-    return BitOperations::PopCount(value.getLow());
+    return BitOperations::PopCount(value.getLow())
+#ifdef HAS_MORE_THAN_64_REGISTERS
+           + BitOperations::PopCount(value.getHigh())
+#endif
+    ;
 }
 
 static uint32_t BitScanForward(const regMaskTP& mask)
 {
+#ifdef HAS_MORE_THAN_64_REGISTERS
+    if (mask.getLow() != RBM_NONE)
+    {
+        return BitOperations::BitScanForward(mask.getLow());
+    }
+    else
+    {
+        return 64 + BitOperations::BitScanForward(mask.getHigh());
+    }
+#else
     return BitOperations::BitScanForward(mask.getLow());
+#endif
 }
 
 /*****************************************************************************/
