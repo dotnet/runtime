@@ -1417,7 +1417,7 @@ namespace
 
         MethodTable* pMT = targetType.AsMethodTable();
 
-        CorElementType elemType = fieldType.GetSignatureCorElementType();
+        CorElementType elemType = fieldType.GetVerifierCorElementType();
         ApproxFieldDescIterator fdIterator(
             pMT,
             (cxt.IsTargetStatic ? ApproxFieldDescIterator::STATIC_FIELDS : ApproxFieldDescIterator::INSTANCE_FIELDS));
