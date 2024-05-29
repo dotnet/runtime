@@ -32,22 +32,6 @@ namespace System.Net.Security.Tests
             _output = output;
         }
 
-        private async Task DoHandshakeWithOptions(SslStream clientSslStream, SslStream serverSslStream, SslClientAuthenticationOptions clientOptions, SslServerAuthenticationOptions serverOptions)
-        {
-            using (X509Certificate2 certificate = Configuration.Certificates.GetServerCertificate())
-            {
-                clientOptions.RemoteCertificateValidationCallback = AllowAnyServerCertificate;
-                clientOptions.TargetHost = certificate.GetNameInfo(X509NameType.SimpleName, false);
-
-                serverOptions.ServerCertificateContext = SslStreamCertificateContext.Create(certificate, null);
-
-                Task t1 = clientSslStream.AuthenticateAsClientAsync(TestAuthenticateAsync, clientOptions);
-                Task t2 = serverSslStream.AuthenticateAsServerAsync(TestAuthenticateAsync, serverOptions);
-
-                await TestConfiguration.WhenAllOrAnyFailedWithTimeout(t1, t2);
-            }
-        }
-
         protected bool AllowAnyServerCertificate(
             object sender,
             X509Certificate certificate,
@@ -105,34 +89,46 @@ namespace System.Net.Security.Tests
         [MemberData(nameof(Alpn_TestData))]
         public async Task SslStream_StreamToStream_Alpn_Success(SslProtocols protocol, List<SslApplicationProtocol> clientProtocols, List<SslApplicationProtocol> serverProtocols, SslApplicationProtocol expected)
         {
-            (Stream clientStream, Stream serverStream) = TestHelper.GetConnectedStreams();
-            using (clientStream)
-            using (serverStream)
-            using (var client = new SslStream(clientStream, false))
-            using (var server = new SslStream(serverStream, false))
+            using X509Certificate2 certificate = Configuration.Certificates.GetServerCertificate();
+
+            SslClientAuthenticationOptions clientOptions = new SslClientAuthenticationOptions
             {
-                SslClientAuthenticationOptions clientOptions = new SslClientAuthenticationOptions
+                ApplicationProtocols = clientProtocols,
+                EnabledSslProtocols = protocol,
+                RemoteCertificateValidationCallback = delegate { return true; },
+                TargetHost = Guid.NewGuid().ToString("N"),
+            };
+
+            SslServerAuthenticationOptions serverOptions = new SslServerAuthenticationOptions
+            {
+                ApplicationProtocols = serverProtocols,
+                EnabledSslProtocols = protocol,
+                ServerCertificateContext = SslStreamCertificateContext.Create(certificate, null)
+            };
+
+            // We do multiple loops to also cover credential cache and TLS resume.
+            for (int i = 0; i < 3; i++)
+            {
+                (Stream clientStream, Stream serverStream) = TestHelper.GetConnectedStreams();
+                using (clientStream)
+                using (serverStream)
+                using (var client = new SslStream(clientStream, false))
+                using (var server = new SslStream(serverStream, false))
                 {
-                    ApplicationProtocols = clientProtocols,
-                    EnabledSslProtocols = protocol,
-                };
+                    Task t1 = client.AuthenticateAsClientAsync(TestAuthenticateAsync, clientOptions);
+                    Task t2 = server.AuthenticateAsServerAsync(TestAuthenticateAsync, serverOptions);
 
-                SslServerAuthenticationOptions serverOptions = new SslServerAuthenticationOptions
-                {
-                    ApplicationProtocols = serverProtocols,
-                    EnabledSslProtocols = protocol,
-                };
+                    await TestConfiguration.WhenAllOrAnyFailedWithTimeout(t1, t2);
 
-                await DoHandshakeWithOptions(client, server, clientOptions, serverOptions);
+                    Assert.Equal(expected, client.NegotiatedApplicationProtocol);
+                    Assert.Equal(expected, server.NegotiatedApplicationProtocol);
 
-                Assert.Equal(expected, client.NegotiatedApplicationProtocol);
-                Assert.Equal(expected, server.NegotiatedApplicationProtocol);
+                    await TestHelper.PingPong(client, server);
+                    await TestHelper.PingPong(server, client);
 
-                await TestHelper.PingPong(client, server);
-                await TestHelper.PingPong(server, client);
-
-                Assert.Equal(expected, client.NegotiatedApplicationProtocol);
-                Assert.Equal(expected, server.NegotiatedApplicationProtocol);
+                    Assert.Equal(expected, client.NegotiatedApplicationProtocol);
+                    Assert.Equal(expected, server.NegotiatedApplicationProtocol);
+                }
             }
         }
 
