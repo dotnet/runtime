@@ -26,6 +26,9 @@ namespace System.Text.RegularExpressions.Symbolic
         }
         /// <summary>
         /// todo: change this to flags later
+        /// i think the clr assigns an entire class field for this
+        /// so this should be placed in an array as well
+        /// --
         /// nullability for each context encoded in a bit
         /// 0 means node cannot be nullable
         /// 00001 -> nullable for General
@@ -34,7 +37,7 @@ namespace System.Text.RegularExpressions.Symbolic
         /// 01000 -> nullable for NewLineS
         /// 10000 -> nullable for WordLetter
         /// </summary>
-        private readonly byte _nullabilityLookup; // redundant but added for clarity
+        private readonly byte _nullabilityLookup;
 
         /// <summary>The regular expression that labels this state and gives it its semantics.</summary>
         internal SymbolicRegexNode<TSet> Node { get; }
@@ -121,7 +124,7 @@ namespace System.Text.RegularExpressions.Symbolic
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal bool IsNullableFor(uint nextCharKind)
         {
-            return (nextCharKind & _nullabilityLookup) > 0;
+            return ((nextCharKind + 1) & _nullabilityLookup) > 0;
         }
 
         /// <summary>
