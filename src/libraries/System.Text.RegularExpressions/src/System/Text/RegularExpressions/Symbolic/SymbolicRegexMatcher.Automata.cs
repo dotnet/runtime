@@ -42,9 +42,17 @@ namespace System.Text.RegularExpressions.Symbolic
         private StateFlags[] _stateFlagsArray;
 
         /// <summary>
+        /// important: the pattern must not contain endZ for this to be valid.
         /// Used to short-circuit nullability in the hot loop
+        /// nullability for each context is encoded in a bit
+        /// 0 means node cannot be nullable
+        /// 00001 -> nullable for General
+        /// 00010 -> nullable for BeginningEnd
+        /// 00100 -> nullable for NewLine
+        /// 01000 -> nullable for NewLineS
+        /// 10000 -> nullable for WordLetter
         /// </summary>
-        private bool[] _canBeNullableArray;
+        private byte[] _nullabilityArray;
 
         /// <summary>
         /// Used to short-circuit accelerated states in the hot loop
@@ -126,6 +134,16 @@ namespace System.Text.RegularExpressions.Symbolic
         }
 
         private int DeltaOffset(int stateId, int mintermId) => (stateId << _mintermsLog) | mintermId;
+
+        /// <summary>
+        /// Pre-computed hot-loop version of nullability check
+        /// </summary>
+        /// <param name="stateId"></param>
+        /// <param name="mintermId"></param>
+        /// <returns></returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private bool IsNullableWithContext(int stateId, int mintermId) =>
+            ((1 << (int)GetPositionKind(mintermId)) & _nullabilityArray[stateId]) > 0;
 
         /// <summary>Returns the span from <see cref="_dfaDelta"/> that may contain transitions for the given state</summary>
         private Span<int> GetDeltasFor(MatchingState<TSet> state)
@@ -268,12 +286,12 @@ namespace System.Text.RegularExpressions.Symbolic
                     ArrayResizeAndVolatilePublish(ref _stateArray, newsize);
                     ArrayResizeAndVolatilePublish(ref _dfaDelta, newsize << _mintermsLog);
                     ArrayResizeAndVolatilePublish(ref _stateFlagsArray, newsize);
-                    ArrayResizeAndVolatilePublish(ref _canBeNullableArray, newsize);
+                    ArrayResizeAndVolatilePublish(ref _nullabilityArray, newsize);
                     ArrayResizeAndVolatilePublish(ref _canBeAcceleratedArray, newsize);
                 }
                 _stateArray[state.Id] = state;
                 _stateFlagsArray[state.Id] = state.BuildStateFlags(isInitialState);
-                _canBeNullableArray[state.Id] = _stateFlagsArray[state.Id].CanBeNullable();
+                _nullabilityArray[state.Id] = state.BuildNullabilityInfo();
                 _canBeAcceleratedArray[state.Id] = _stateFlagsArray[state.Id].IsAccelerated();
             }
 

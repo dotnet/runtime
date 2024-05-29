@@ -14,30 +14,17 @@ namespace System.Text.RegularExpressions.Symbolic
         {
             Node = node;
             PrevCharKind = prevCharKind;
-            // this is significantly cheaper to initialize once
-            // than to pay for it on every call
-            if (Node.CanBeNullable)
-            {
-                for (uint ck = 0; ck < CharKind.CharKindCount; ck++)
-                {
-                    _nullabilityLookup |= (byte)(IsNullableForInit(ck) ? 1 << (int)ck : 0);
-                }
-            }
+            NullabilityInfo = BuildNullabilityInfo();
         }
+
         /// <summary>
-        /// todo: change this to flags later
-        /// i think the clr assigns an entire class field for this
-        /// so this should be placed in an array as well
-        /// --
-        /// nullability for each context encoded in a bit
-        /// 0 means node cannot be nullable
-        /// 00001 -> nullable for General
-        /// 00010 -> nullable for BeginningEnd
-        /// 00100 -> nullable for NewLine
-        /// 01000 -> nullable for NewLineS
-        /// 10000 -> nullable for WordLetter
+        /// TODO: The CLR assigns an entire field for this byte which is a waste,
+        /// and the much more preferred way to use this is in _nullabilityArray in the matcher
+        /// but the current design relies on interfaces/flags and
+        /// using the MatchingState directly so this byte is a quick solution to cheapen
+        /// it there by ~30% as well without having to breaking it all to pieces
         /// </summary>
-        private readonly byte _nullabilityLookup;
+        internal readonly int NullabilityInfo;
 
         /// <summary>The regular expression that labels this state and gives it its semantics.</summary>
         internal SymbolicRegexNode<TSet> Node { get; }
@@ -119,12 +106,15 @@ namespace System.Text.RegularExpressions.Symbolic
         }
 
         /// <summary>
-        /// Bit encoded nullability check for the hot loop
+        /// TODO: This method should really never be used and
+        /// is only used to speed up the existing architecture.
+        /// Use <see cref="SymbolicRegexMatcher{TSet}.IsNullableWithContext"/>
+        /// whereever possible
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal bool IsNullableFor(uint nextCharKind)
         {
-            return ((nextCharKind + 1) & _nullabilityLookup) > 0;
+            return ((1 << (int)nextCharKind) & NullabilityInfo) != 0;
         }
 
         /// <summary>
@@ -166,6 +156,32 @@ namespace System.Text.RegularExpressions.Symbolic
             }
 
             return info;
+        }
+
+        /// <summary>
+        /// nullability for each context is encoded in a bit
+        /// 0 means node cannot be nullable
+        /// 00001 -> nullable for General
+        /// 00010 -> nullable for BeginningEnd
+        /// 00100 -> nullable for NewLine
+        /// 01000 -> nullable for NewLineS
+        /// 10000 -> nullable for WordLetter
+        /// todo: change to flags later
+        /// </summary>
+        /// <returns></returns>
+        internal byte BuildNullabilityInfo()
+        {
+            byte nullabilityInfo = 0;
+            // this is significantly cheaper to initialize once
+            // than to pay for it on every call
+            if (Node.CanBeNullable)
+            {
+                for (uint ck = 0; ck < CharKind.CharKindCount; ck++)
+                {
+                    nullabilityInfo |= (byte)(IsNullableForInit(ck) ? 1 << (int)ck : 0);
+                }
+            }
+            return nullabilityInfo;
         }
 
         public override bool Equals(object? obj) =>

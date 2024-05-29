@@ -47,8 +47,8 @@ namespace System.Text.RegularExpressions.Symbolic
                 return;
             }
 
-            // low memory variant is to create an ascii-only array
-            // this adds indirection to the hot loop which costs performance
+            // low memory compromise is to create an ascii-only array
+            // int mintermId = c >= 128 ? 0 : mtlookup[c];
             // and only exists because the wasm tests fail with OOM
             _isAsciiOnly = true;
             for (int mintermId = 1; mintermId < minterms.Length; mintermId++)
@@ -97,7 +97,7 @@ namespace System.Text.RegularExpressions.Symbolic
             }
         }
 
-        // /// <summary>Gets the ID of the minterm associated with the specified character.</summary>
+        /// <summary>Gets the ID of the minterm associated with the specified character. </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public int GetMintermID(int c)
         {
@@ -105,18 +105,21 @@ namespace System.Text.RegularExpressions.Symbolic
             {
                 return 0;
             }
-            // high performance variant would use a span directly
-            // but this is not possible in low memory constraints
+            // high performance variant would use a span directly.
             // additional memory is saved by using a byte
             return _intLookup is null ? _lookup![c] : _intLookup[c];
         }
 
-
+        /// <summary>
+        /// Whether to use the low memory ascii-only hot loop or the full loop
+        /// </summary>
+        /// <returns></returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool IsAsciiOnly() => _isAsciiOnly;
 
         /// <summary>
-        /// Can be null if there is over 255 minterms
+        /// Quick mapping from char to minterm,
+        /// can be null if there is over 255 minterms
         /// </summary>
         /// <returns></returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
