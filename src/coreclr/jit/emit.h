@@ -38,7 +38,7 @@
 #define EMIT_INSTLIST_VERBOSE (emitComp->verbose)
 #endif
 
-#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
+#if defined(TARGET_XARCH)
 #define EMIT_BACKWARDS_NAVIGATION 1 // If 1, enable backwards navigation code for MIR (insGroup/instrDesc).
 #else
 #define EMIT_BACKWARDS_NAVIGATION 0
@@ -2636,8 +2636,44 @@ private:
     void            emitLoopAlign(unsigned paddingBytes, bool isFirstAlign DEBUG_ARG(bool isPlacedBehindJmp));
     void            emitLongLoopAlign(unsigned alignmentBoundary DEBUG_ARG(bool isPlacedBehindJmp));
     instrDescAlign* emitAlignInNextIG(instrDescAlign* alignInstr);
-    void            emitConnectAlignInstr(const BasicBlock* block);
 
+    //-----------------------------------------------------------------------------
+    // emitConnectAlignInstrWithCurIG:  If "align" instruction is not just before the loop start,
+    //                                  setting idaLoopHeadPredIG lets us know the exact IG that the "align"
+    //                                  instruction is trying to align. This is used to track the last IG that
+    //                                  needs alignment after which VEX encoding optimization is enabled.
+    //
+    //                                  TODO: Once over-estimation problem is solved, consider replacing
+    //                                  idaLoopHeadPredIG with idaLoopHeadIG itself.
+    //
+    template <typename Action>
+    void emitConnectAlignInstrWithCurIG(Action action)
+    {
+        insGroup* loopHeadPredIG = emitCurIG;
+
+        // For a new IG to ensure that loop doesn't start from IG that idaLoopHeadPredIG points to.
+        emitNxtIG();
+
+        insGroup* loopHeadIG = emitCurIG;
+
+        action();
+
+        // After the action, check to see if there has been a new IG after the loopHeadIG.
+        // If so, then we set the loopHeadPredIG to the previous loopHeadIG.
+        if (loopHeadIG != emitCurIG)
+        {
+            assert(loopHeadIG->igNext == emitCurIG);
+            loopHeadPredIG = loopHeadIG;
+            loopHeadIG     = emitCurIG;
+        }
+
+        JITDUMP("Mapping 'align' instruction in IG%02u to target IG%02u. Loop header is IG%02u\n",
+                emitAlignLastGroup->idaIG->igNum, loopHeadPredIG->igNum, loopHeadIG->igNum);
+        // Since we never align overlapping instructions, it is always guaranteed that
+        // the emitAlignLastGroup points to the loop that is in process of getting aligned.
+
+        emitAlignLastGroup->idaLoopHeadPredIG = loopHeadPredIG;
+    }
 #endif
 
     void emitCheckFuncletBranch(instrDesc* jmp, insGroup* jmpIG); // Check for illegal branches between funclets

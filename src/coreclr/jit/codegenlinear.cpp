@@ -343,25 +343,31 @@ void CodeGen::genCodeForBBlist()
         }
 #endif
 
-        if (needLabel)
-        {
-            // Mark a label and update the current set of live GC refs
+        auto addLabelIfNecessary = [&]() {
+            if (needLabel)
+            {
+                // Mark a label and update the current set of live GC refs
 
-            block->bbEmitCookie = GetEmitter()->emitAddLabel(gcInfo.gcVarPtrSetCur, gcInfo.gcRegGCrefSetCur,
-                                                             gcInfo.gcRegByrefSetCur, block->Prev());
-        }
+                block->bbEmitCookie = GetEmitter()->emitAddLabel(gcInfo.gcVarPtrSetCur, gcInfo.gcRegGCrefSetCur,
+                                                                 gcInfo.gcRegByrefSetCur, block->Prev());
+            }
+        };
 
 #if FEATURE_LOOP_ALIGN
-        if (block->isLoopAlign())
+        if (block->isLoopAlign() && compiler->opts.compJitHideAlignBehindJmp)
         {
-            if (compiler->opts.compJitHideAlignBehindJmp)
-            {
-                // Establish a connection of recent align instruction emitted to the loop
-                // it actually is aligning using 'idaLoopHeadPredIG'.
-                GetEmitter()->emitConnectAlignInstr(block);
-            }
+            // The current IG is the one that is just before the IG having loop start.
+            // Establish a connection of recent align instruction emitted to the loop
+            // it actually is aligning using 'idaLoopHeadPredIG'.
+            GetEmitter()->emitConnectAlignInstrWithCurIG(addLabelIfNecessary);
         }
-#endif // FEATURE_LOOP_ALIGN
+        else
+        {
+            addLabelIfNecessary();
+        }
+#else // FEATURE_LOOP_ALIGN
+        addLabelIfNecessary();
+#endif // !FEATURE_LOOP_ALIGN
 
         if (block->IsFirstColdBlock(compiler))
         {

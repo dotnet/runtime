@@ -1943,6 +1943,24 @@ void emitter::emitCheckIGList()
         {
             assert(nextPair != endPair);
             assert(ig == nextPair->ig);
+
+            if (id != nextPair->id)
+            {
+                ig = nullptr;
+                id = nullptr;
+                if (emitGetLastIns(&ig, &id))
+                {
+                    nextPair = insList.begin();
+                    endPair  = insList.end();
+                    do
+                    {
+                        printf("ig: IG%02u - nextPair->ig: IG%02u", ig->igNum, nextPair->ig->igNum);
+                        printf("id: %d - nextPair->id: %d", id->idIns(), nextPair->id->idIns());
+                        ++nextPair;
+                    } while (emitPrevID(ig, id));
+                }
+                assert(false);
+            }
             assert(id == nextPair->id);
             ++nextPair;
         } while (emitPrevID(ig, id));
@@ -5743,32 +5761,6 @@ void emitter::emitLongLoopAlign(unsigned alignmentBoundary DEBUG_ARG(bool isPlac
 #if defined(TARGET_XARCH)
     emitLoopAlign(lastInsAlignSize, isFirstAlign DEBUG_ARG(isPlacedBehindJmp));
 #endif
-}
-
-//-----------------------------------------------------------------------------
-// emitConnectAlignInstr:  If "align" instruction is not just before the loop start,
-//                         setting idaLoopHeadPredIG lets us know the exact IG that the "align"
-//                         instruction is trying to align. This is used to track the last IG that
-//                         needs alignment after which VEX encoding optimization is enabled.
-//
-//                         TODO: Once over-estimation problem is solved, consider replacing
-//                         idaLoopHeadPredIG with idaLoopHeadIG itself.
-//
-void emitter::emitConnectAlignInstr(const BasicBlock* block)
-{
-    assert(emitCodeGetCookie(block));
-    assert(block->isLoopAlign());
-    assert(emitAlignLastGroup->idaIG->igFlags & IGF_HAS_ALIGN);
-
-    insGroup* loopHeadPredIG = ((insGroup*)emitCodeGetCookie(block))->igPrev;
-    assert(loopHeadPredIG);
-
-    JITDUMP("Mapping 'align' instruction in IG%02u to target IG%02u\n", emitAlignLastGroup->idaIG->igNum,
-            loopHeadPredIG->igNum);
-    // Since we never align overlapping instructions, it is always guaranteed that
-    // the emitAlignLastGroup points to the loop that is in process of getting aligned.
-
-    emitAlignLastGroup->idaLoopHeadPredIG = loopHeadPredIG;
 }
 
 //-----------------------------------------------------------------------------
