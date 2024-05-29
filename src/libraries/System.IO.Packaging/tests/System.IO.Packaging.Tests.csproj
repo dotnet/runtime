@@ -10,6 +10,7 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETFramework'">
     <Compile Include="ReflectionTests.cs" />
+    <Compile Include="LargeFilesTests.Net.cs" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="System.IO.Packaging.TestData" Version="$(SystemIOPackagingTestDataVersion)" />

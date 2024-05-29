@@ -6,9 +6,10 @@ using Xunit;
 namespace System.IO.Packaging.Tests;
 
 [Collection(nameof(DisableParallelization))]
-public class LargeFileTests
+public partial class LargeFileTests
 {
     [Fact]
+    [OuterLoop]
     public void VeryLargePart()
     {
         // FileAccess.Write is important, this tells ZipPackage to open the underlying ZipArchive in
