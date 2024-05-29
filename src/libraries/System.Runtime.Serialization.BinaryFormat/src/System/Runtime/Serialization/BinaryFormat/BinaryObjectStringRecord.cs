@@ -7,14 +7,10 @@ using System.IO;
 namespace System.Runtime.Serialization.BinaryFormat;
 
 /// <summary>
-///  String record.
+/// String record.
 /// </summary>
 /// <remarks>
-///  <para>
-///   <see href="https://learn.microsoft.com/openspecs/windows_protocols/ms-nrbf/eb503ca5-e1f6-4271-a7ee-c4ca38d07996">
-///    [MS-NRBF] 2.5.7
-///   </see>
-///  </para>
+/// BinaryObjectString records are described in <see href="https://learn.microsoft.com/openspecs/windows_protocols/ms-nrbf/eb503ca5-e1f6-4271-a7ee-c4ca38d07996">[MS-NRBF] 2.5.7</see>.
 /// </remarks>
 [DebuggerDisplay("{Value}, {ObjectId}")]
 internal sealed class BinaryObjectStringRecord : PrimitiveTypeRecord<string>

@@ -77,6 +77,6 @@ internal static class TypeNameExtensions
         rented[typeName.Length] = ',';
         libraryName.AsSpan().CopyTo(rented.AsSpan(typeName.Length + 1));
 
-        return new(rented, 0, length);
+        return new ArraySegment<char>(rented, 0, length);
     }
 }

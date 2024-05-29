@@ -4,14 +4,10 @@
 namespace System.Runtime.Serialization.BinaryFormat;
 
 /// <summary>
-///  Identifies the remoting type of a class member or array item.
+/// Identifies the remoting type of a class member or array item.
 /// </summary>
 /// <remarks>
-///  <para>
-///   <see href="https://learn.microsoft.com/openspecs/windows_protocols/ms-nrbf/054e5c58-be21-4c86-b1c3-f6d3ce17ec72">
-///    [MS-NRBF] 2.1.2.2
-///   </see>
-///  </para>
+/// BinaryType enumeration is described in <see href="https://learn.microsoft.com/openspecs/windows_protocols/ms-nrbf/054e5c58-be21-4c86-b1c3-f6d3ce17ec72">[MS-NRBF] 2.1.2.2</see>.
 /// </remarks>
 internal enum BinaryType : byte
 {

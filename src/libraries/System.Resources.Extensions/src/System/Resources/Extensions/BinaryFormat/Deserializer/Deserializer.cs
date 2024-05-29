@@ -201,11 +201,8 @@ internal sealed partial class Deserializer : IDeserializer
             Id requiredId;
             while (!(requiredId = currentParser.Continue()).IsNull)
             {
-                // A record is required to complete the current parser. Get it.
-                object requiredObject = DeserializeNew(requiredId);
-                Debug.Assert(requiredObject is not SerializationRecord);
-
-                if (requiredObject is ObjectRecordDeserializer requiredParser)
+                // Beside ObjectRecordDeserializer, DeserializeNew can return a raw value like int, string or an array.
+                if (DeserializeNew(requiredId) is ObjectRecordDeserializer requiredParser)
                 {
                     // The required object is not complete.
 

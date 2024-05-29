@@ -11,7 +11,7 @@ namespace System.Resources.Extensions.Compat.Tests
         [Fact]
         public void TheFlagIsSet()
         {
-            FieldInfo fieldInfo = typeof(DeserializingResourceReader).GetField("UseBinaryFormatter", BindingFlags.NonPublic | BindingFlags.Static);
+            FieldInfo fieldInfo = typeof(DeserializingResourceReader).GetField("s_useBinaryFormatter", BindingFlags.NonPublic | BindingFlags.Static);
 
             Assert.True((bool)fieldInfo.GetValue(null));
         }

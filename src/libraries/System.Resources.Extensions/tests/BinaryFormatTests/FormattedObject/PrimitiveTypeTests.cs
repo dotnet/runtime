@@ -79,8 +79,7 @@ public class PrimitiveTypeTests : SerializationTest<FormattedObjectSerializer>
     public void BinaryFormattedObject_ReadPrimitive(object value)
     {
         BinaryFormattedObject formattedObject = new(Serialize(value));
-        formattedObject.TryGetPrimitiveType(out object? deserialized).Should().BeTrue();
-        deserialized.Should().Be(value);
+        formattedObject.RootRecord.GetMemberPrimitiveTypedValue().Should().Be(value);
     }
 
     public static TheoryData<object> Primitive_Data => new()

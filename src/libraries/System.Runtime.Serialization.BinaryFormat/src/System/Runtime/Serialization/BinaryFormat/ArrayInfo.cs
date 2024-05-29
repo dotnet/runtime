@@ -8,19 +8,15 @@ using System.Runtime.Serialization.BinaryFormat.Utils;
 namespace System.Runtime.Serialization.BinaryFormat;
 
 /// <summary>
-///  Array information structure.
+/// Array information structure.
 /// </summary>
 /// <remarks>
-///  <para>
-///   <see href="https://learn.microsoft.com/openspecs/windows_protocols/ms-nrbf/8fac763f-e46d-43a1-b360-80eb83d2c5fb">
-///    [MS-NRBF] 2.4.2.1
-///   </see>
-///  </para>
+/// ArrayInfo structures are described in <see href="https://learn.microsoft.com/openspecs/windows_protocols/ms-nrbf/8fac763f-e46d-43a1-b360-80eb83d2c5fb">[MS-NRBF] 2.4.2.1</see>.
 /// </remarks>
 [DebuggerDisplay("Length={Length}, {ArrayType}, rank={Rank}")]
 internal readonly struct ArrayInfo
 {
-    internal ArrayInfo(int objectId, int length, ArrayType arrayType = ArrayType.Single, int rank = 1)
+    internal ArrayInfo(int objectId, int length, BinaryArrayType arrayType = BinaryArrayType.Single, int rank = 1)
     {
         ObjectId = objectId;
         Length = length;
@@ -32,7 +28,7 @@ internal readonly struct ArrayInfo
 
     internal int Length { get; }
 
-    internal ArrayType ArrayType { get; }
+    internal BinaryArrayType ArrayType { get; }
 
     internal int Rank { get; }
 

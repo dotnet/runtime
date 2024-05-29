@@ -9,14 +9,10 @@ using System.Runtime.Serialization.BinaryFormat.Utils;
 namespace System.Runtime.Serialization.BinaryFormat;
 
 /// <summary>
-///  Single dimensional array of objects.
+/// Single dimensional array of objects.
 /// </summary>
 /// <remarks>
-///  <para>
-///   <see href="https://learn.microsoft.com/openspecs/windows_protocols/ms-nrbf/982b2f50-6367-402a-aaf2-44ee96e2a5e0">
-///    [MS-NRBF] 2.4.3.2
-///   </see>
-///  </para>
+/// ArraySingleObject records are described in <see href="https://learn.microsoft.com/openspecs/windows_protocols/ms-nrbf/982b2f50-6367-402a-aaf2-44ee96e2a5e0">[MS-NRBF] 2.4.3.2</see>.
 /// </remarks>
 internal sealed class ArraySingleObjectRecord : ArrayRecord<object?>
 {

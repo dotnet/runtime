@@ -11,7 +11,7 @@ namespace System.Resources.Extensions
 {
     public partial class DeserializingResourceReader
     {
-        private static readonly bool UseBinaryFormatter = AppContext.TryGetSwitch("System.Resources.Extensions.UseBinaryFormatter", out bool isEnabled) && isEnabled;
+        private static readonly bool s_useBinaryFormatter = AppContext.TryGetSwitch("System.Resources.Extensions.UseBinaryFormatter", out bool isEnabled) && isEnabled;
 
         private bool _assumeBinaryFormatter;
 
@@ -37,7 +37,7 @@ namespace System.Resources.Extensions
 
         private object ReadBinaryFormattedObject()
         {
-            if (!UseBinaryFormatter)
+            if (!s_useBinaryFormatter)
             {
                 BinaryFormattedObject binaryFormattedObject = new(_store.BaseStream);
 

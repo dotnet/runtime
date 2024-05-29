@@ -10,7 +10,7 @@ namespace System.Runtime.Serialization.BinaryFormat.Utils;
 
 internal static class BinaryReaderExtensions
 {
-    internal static ArrayType ReadArrayType(this BinaryReader reader)
+    internal static BinaryArrayType ReadArrayType(this BinaryReader reader)
     {
         byte arrayType = reader.ReadByte();
         if (arrayType > 5)
@@ -18,7 +18,7 @@ internal static class BinaryReaderExtensions
             ThrowHelper.ThrowInvalidValue(arrayType);
         }
 
-        return (ArrayType)arrayType;
+        return (BinaryArrayType)arrayType;
     }
 
     internal static BinaryType ReadBinaryType(this BinaryReader reader)

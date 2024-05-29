@@ -17,7 +17,7 @@ public class JaggedArraysTests : ReadTests
         var arrayRecord = (ArrayRecord)PayloadReader.Read(Serialize(input));
 
         VerifyLength(input, arrayRecord);
-        Assert.Equal(ArrayType.Jagged, arrayRecord.ArrayType);
+        Assert.Equal(BinaryArrayType.Jagged, arrayRecord.ArrayType);
         Assert.Equal(input, arrayRecord.ToArray(input.GetType()));
     }
 
@@ -34,7 +34,7 @@ public class JaggedArraysTests : ReadTests
         var arrayRecord = (ArrayRecord)PayloadReader.Read(Serialize(input));
 
         VerifyLength(input, arrayRecord);
-        Assert.Equal(ArrayType.Jagged, arrayRecord.ArrayType);
+        Assert.Equal(BinaryArrayType.Jagged, arrayRecord.ArrayType);
         Assert.Equal(input, arrayRecord.ToArray(input.GetType()));
         Assert.Equal(1, arrayRecord.Rank);
     }
@@ -51,7 +51,7 @@ public class JaggedArraysTests : ReadTests
         var arrayRecord = (ArrayRecord)PayloadReader.Read(Serialize(input));
 
         VerifyLength(input, arrayRecord);
-        Assert.Equal(ArrayType.Jagged, arrayRecord.ArrayType);
+        Assert.Equal(BinaryArrayType.Jagged, arrayRecord.ArrayType);
         Assert.Equal(input, arrayRecord.ToArray(input.GetType()));
     }
 
@@ -67,7 +67,7 @@ public class JaggedArraysTests : ReadTests
         var arrayRecord = (ArrayRecord)PayloadReader.Read(Serialize(input));
 
         VerifyLength(input, arrayRecord);
-        Assert.Equal(ArrayType.Jagged, arrayRecord.ArrayType);
+        Assert.Equal(BinaryArrayType.Jagged, arrayRecord.ArrayType);
         Assert.Equal(input, arrayRecord.ToArray(input.GetType()));
     }
 
@@ -89,7 +89,7 @@ public class JaggedArraysTests : ReadTests
         var arrayRecord = (ArrayRecord)PayloadReader.Read(Serialize(input));
 
         VerifyLength(input, arrayRecord);
-        Assert.Equal(ArrayType.Jagged, arrayRecord.ArrayType);
+        Assert.Equal(BinaryArrayType.Jagged, arrayRecord.ArrayType);
         var output = (ClassRecord?[][])arrayRecord.ToArray(input.GetType());
         for (int i = 0; i < input.Length; i++)
         {

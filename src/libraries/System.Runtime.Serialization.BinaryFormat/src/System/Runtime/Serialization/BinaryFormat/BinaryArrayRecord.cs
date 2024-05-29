@@ -9,6 +9,12 @@ using System.Runtime.Serialization.BinaryFormat.Utils;
 
 namespace System.Runtime.Serialization.BinaryFormat;
 
+/// <summary>
+/// Array other than single dimensional array of primitive types or <see cref="object"/>.
+/// </summary>
+/// <remarks>
+/// BinaryArray records are described in <see href="https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-nrbf/9c62c928-db4e-43ca-aeba-146256ef67c2">[MS-NRBF] 2.4.3.1</see>.
+/// </remarks>
 internal sealed class BinaryArrayRecord : ArrayRecord
 {
     private static HashSet<Type> PrimitiveTypes { get; } =
@@ -108,10 +114,10 @@ internal sealed class BinaryArrayRecord : ArrayRecord
     internal static ArrayRecord Parse(BinaryReader reader, RecordMap recordMap, PayloadOptions options)
     {
         int objectId = reader.ReadInt32();
-        ArrayType arrayType = reader.ReadArrayType();
+        BinaryArrayType arrayType = reader.ReadArrayType();
         int rank = reader.ReadInt32();
 
-        bool isRectangular = arrayType is ArrayType.Rectangular or ArrayType.RectangularOffset;
+        bool isRectangular = arrayType is BinaryArrayType.Rectangular or BinaryArrayType.RectangularOffset;
 
         if (rank < 1 || rank > 32
             || (rank != 1 && !isRectangular)
@@ -135,7 +141,7 @@ internal sealed class BinaryArrayRecord : ArrayRecord
 
         int[] offsets = new int[rank]; // zero-init; adversary-controlled, but acceptable since upper limit of 32
         bool hasCustomOffset = false;
-        if (arrayType is ArrayType.SingleOffset or ArrayType.JaggedOffset or ArrayType.RectangularOffset)
+        if (arrayType is BinaryArrayType.SingleOffset or BinaryArrayType.JaggedOffset or BinaryArrayType.RectangularOffset)
         {
             for (int i = 0; i < offsets.Length; i++)
             {

@@ -2,19 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.IO;
-using System.Reflection.Metadata;
 
 namespace System.Runtime.Serialization.BinaryFormat;
 
 /// <summary>
-///  Library full name information.
+/// Library name and ID.
 /// </summary>
 /// <remarks>
-///  <para>
-///   <see href="https://learn.microsoft.com/openspecs/windows_protocols/ms-nrbf/7fcf30e1-4ad4-4410-8f1a-901a4a1ea832">
-///    [MS-NRBF] 2.6.2
-///   </see>
-///  </para>
+/// BinaryLibrary records are described in <see href="https://learn.microsoft.com/openspecs/windows_protocols/ms-nrbf/7fcf30e1-4ad4-4410-8f1a-901a4a1ea832">[MS-NRBF] 2.6.2</see>.
 /// </remarks>
 internal sealed class BinaryLibraryRecord : SerializationRecord
 {

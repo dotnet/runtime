@@ -7,14 +7,10 @@ using System.Runtime.Serialization.BinaryFormat.Utils;
 namespace System.Runtime.Serialization.BinaryFormat;
 
 /// <summary>
-///  Class information with type info and the source library.
+/// Class information with type info and the source library.
 /// </summary>
 /// <remarks>
-///  <para>
-///   <see href="https://learn.microsoft.com/openspecs/windows_protocols/ms-nrbf/847b0b6a-86af-4203-8ed0-f84345f845b9">
-///    [MS-NRBF] 2.3.2.1
-///   </see>
-///  </para>
+/// ClassWithMembersAndTypes records are described in <see href="https://learn.microsoft.com/openspecs/windows_protocols/ms-nrbf/847b0b6a-86af-4203-8ed0-f84345f845b9">[MS-NRBF] 2.3.2.1</see>.
 /// </remarks>
 internal sealed class ClassWithMembersAndTypesRecord : ClassRecord
 {

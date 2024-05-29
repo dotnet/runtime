@@ -35,7 +35,7 @@ abstract class ArrayRecord : SerializationRecord
     /// <summary>
     /// Type of the array.
     /// </summary>
-    public ArrayType ArrayType => ArrayInfo.ArrayType;
+    public BinaryArrayType ArrayType => ArrayInfo.ArrayType;
 
     public abstract TypeName ElementTypeName { get; }
 

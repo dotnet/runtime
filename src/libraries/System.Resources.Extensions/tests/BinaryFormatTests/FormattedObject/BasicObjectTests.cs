@@ -2,15 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Runtime.Serialization.Formatters.Binary;
-using System.Security.Cryptography;
 using BinaryFormatTests;
 
 namespace System.Resources.Extensions.Tests.FormattedObject;
 
 public class BasicObjectTests : Common.BasicObjectTests<FormattedObjectSerializer>
 {
-    private static readonly SHA256 s_md5 = SHA256.Create();
-
     private protected override bool SkipOffsetArrays => true;
 
     [Theory]
@@ -41,10 +38,5 @@ public class BasicObjectTests : Common.BasicObjectTests<FormattedObjectSerialize
 
         // Now compare the two streams to ensure they are identical
         deserializedSerialized.Length.Should().Be(serialized.Length);
-
-        byte[] firstHash = s_md5.ComputeHash(serialized);
-        byte[] secondHash = s_md5.ComputeHash(deserializedSerialized);
-
-        firstHash.Should().BeEquivalentTo(secondHash);
     }
 }

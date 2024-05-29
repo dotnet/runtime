@@ -85,9 +85,9 @@ internal abstract partial class ObjectRecordDeserializer
     ///  Returns <see langword="true"/> if the given record's value needs an updater applied.
     /// </summary>
     private protected bool DoesValueNeedUpdated(object value, Id valueRecord) =>
-        // Null Id is a primitive of some sort.
+        // Null Id is a primitive value.
         !valueRecord.IsNull
-            // IObjectReference is going to have it's object replaced.
+            // IObjectReference is going to have its object replaced.
             && (value is IObjectReference
                 // Value types that aren't "complete" need to be reapplied.
                 || (Deserializer.IncompleteObjects.Contains(valueRecord) && value.GetType().IsValueType));

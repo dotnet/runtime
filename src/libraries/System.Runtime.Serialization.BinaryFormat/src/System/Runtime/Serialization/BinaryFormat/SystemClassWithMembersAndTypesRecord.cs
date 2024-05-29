@@ -6,6 +6,12 @@ using System.Runtime.Serialization.BinaryFormat.Utils;
 
 namespace System.Runtime.Serialization.BinaryFormat;
 
+/// <summary>
+/// Class information with type info.
+/// </summary>
+/// <remarks>
+/// SystemClassWithMembersAndType records are described in <see href="https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-nrbf/ecb47445-831f-4ef5-9c9b-afd4d06e3657">[MS-NRBF] 2.3.2.3</see>.
+/// </remarks>
 internal sealed class SystemClassWithMembersAndTypesRecord : ClassRecord
 {
     private SystemClassWithMembersAndTypesRecord(ClassInfo classInfo, MemberTypeInfo memberTypeInfo)
@@ -36,9 +42,6 @@ internal sealed class SystemClassWithMembersAndTypesRecord : ClassRecord
     // to get a single primitive value!
     internal SerializationRecord TryToMapToUserFriendly()
     {
-        // It could be implemented with way fewer ifs, but perf is important
-        // and we want to bail out as soon as possible, but also don't convert something
-        // that is not an exact match.
         if (MemberValues.Count == 1)
         {
             if (HasMember("m_value"))

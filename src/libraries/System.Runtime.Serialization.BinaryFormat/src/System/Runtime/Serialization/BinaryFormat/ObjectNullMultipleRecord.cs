@@ -7,14 +7,10 @@ using System.Runtime.Serialization.BinaryFormat.Utils;
 namespace System.Runtime.Serialization.BinaryFormat;
 
 /// <summary>
-///  Multiple null object record.
+/// Multiple null object record (more than 255).
 /// </summary>
 /// <remarks>
-///  <para>
-///   <see href="https://learn.microsoft.com/openspecs/windows_protocols/ms-nrbf/f4abb5dd-aab7-4e0a-9d77-1d6c99f5779e">
-///    [MS-NRBF] 2.5.5
-///   </see>
-///  </para>
+/// ObjectNullMultiple records are described in <see href="https://learn.microsoft.com/openspecs/windows_protocols/ms-nrbf/f4abb5dd-aab7-4e0a-9d77-1d6c99f5779e">[MS-NRBF] 2.5.5</see>.
 /// </remarks>
 internal sealed class ObjectNullMultipleRecord : NullsRecord
 {

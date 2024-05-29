@@ -10,14 +10,10 @@ using System.Runtime.Serialization.BinaryFormat.Utils;
 namespace System.Runtime.Serialization.BinaryFormat;
 
 /// <summary>
-///  Member type info.
+/// Member type info.
 /// </summary>
 /// <remarks>
-///  <para>
-///   <see href="https://learn.microsoft.com/openspecs/windows_protocols/ms-nrbf/aa509b5a-620a-4592-a5d8-7e9613e0a03e">
-///    [MS-NRBF] 2.3.1.2
-///   </see>
-///  </para>
+/// MemberTypeInfo structures are described in <see href="https://learn.microsoft.com/openspecs/windows_protocols/ms-nrbf/aa509b5a-620a-4592-a5d8-7e9613e0a03e">[MS-NRBF] 2.3.1.2</see>.
 /// </remarks>
 internal readonly struct MemberTypeInfo
 {

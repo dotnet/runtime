@@ -4,14 +4,10 @@
 namespace System.Runtime.Serialization.BinaryFormat;
 
 /// <summary>
-///  Primitive type.
+/// Primitive type.
 /// </summary>
 /// <remarks>
-///  <para>
-///   <see href="https://learn.microsoft.com/openspecs/windows_protocols/ms-nrbf/4e77849f-89e3-49db-8fb9-e77ee4bc7214">
-///    [MS-NRBF] 2.1.2.3
-///   </see>
-///  </para>
+/// PrimitiveTypeEnumeration enumeration is described in <see href="https://learn.microsoft.com/openspecs/windows_protocols/ms-nrbf/4e77849f-89e3-49db-8fb9-e77ee4bc7214">[MS-NRBF] 2.1.2.3</see>.
 /// </remarks>
 internal enum PrimitiveType : byte
 {

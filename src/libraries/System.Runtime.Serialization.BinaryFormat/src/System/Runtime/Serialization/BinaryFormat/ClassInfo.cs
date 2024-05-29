@@ -10,14 +10,10 @@ using System.Runtime.Serialization.BinaryFormat.Utils;
 namespace System.Runtime.Serialization.BinaryFormat;
 
 /// <summary>
-///  Class info.
+/// Class info that provides type and member names.
 /// </summary>
 /// <remarks>
-///  <para>
-///   <see href="https://learn.microsoft.com/openspecs/windows_protocols/ms-nrbf/0a192be0-58a1-41d0-8a54-9c91db0ab7bf">
-///    [MS-NRBF] 2.3.1.1
-///   </see>
-///  </para>
+/// ClassInfo structures are described in <see href="https://learn.microsoft.com/openspecs/windows_protocols/ms-nrbf/0a192be0-58a1-41d0-8a54-9c91db0ab7bf">[MS-NRBF] 2.3.1.1</see>.
 /// </remarks>
 [DebuggerDisplay("{TypeName}")]
 internal sealed class ClassInfo

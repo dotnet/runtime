@@ -285,9 +285,9 @@ public class TypeMatchTests : ReadTests
     }
 
     [Theory]
-    [InlineData(1)] // ArrayType.SingleOffset
-    [InlineData(2)] // ArrayType.JaggedOffset
-    [InlineData(3)] // ArrayType.RectangularOffset
+    [InlineData(1)] // BinaryArrayType.SingleOffset
+    [InlineData(2)] // BinaryArrayType.JaggedOffset
+    [InlineData(3)] // BinaryArrayType.RectangularOffset
     [InlineData(32)] // max rank
     public void CanRecognizeArraysOfAllSupportedPrimitiveTypesWithCustomOffsets(int arrayRank)
     {
@@ -313,9 +313,9 @@ public class TypeMatchTests : ReadTests
     }
 
     [Theory]
-    // [InlineData(1)] // ArrayType.SingleOffset bug in BinaryFormatter!!
-    [InlineData(2)] // ArrayType.JaggedOffset
-    [InlineData(3)] // ArrayType.RectangularOffset
+    // [InlineData(1)] // BinaryArrayType.SingleOffset bug in BinaryFormatter!!
+    [InlineData(2)] // BinaryArrayType.JaggedOffset
+    [InlineData(3)] // BinaryArrayType.RectangularOffset
     [InlineData(32)] // max rank
     public void CanRecognizeArraysOfSystemTypesWithCustomOffsets(int arrayRank)
     {
@@ -323,9 +323,9 @@ public class TypeMatchTests : ReadTests
     }
 
     [Theory]
-    // [InlineData(1)] // ArrayType.SingleOffset bug in BinaryFormatter!!
-    [InlineData(2)] // ArrayType.JaggedOffset
-    [InlineData(3)] // ArrayType.RectangularOffset
+    // [InlineData(1)] // BinaryArrayType.SingleOffset bug in BinaryFormatter!!
+    [InlineData(2)] // BinaryArrayType.JaggedOffset
+    [InlineData(3)] // BinaryArrayType.RectangularOffset
     [InlineData(32)] // max rank
     public void CanRecognizeArraysOfNonSystemTypesWithCustomOffsets(int arrayRank)
     {
@@ -333,9 +333,9 @@ public class TypeMatchTests : ReadTests
     }
 
     [Theory]
-    // [InlineData(1)] // ArrayType.SingleOffset bug in BinaryFormatter!!
-    [InlineData(2)] // ArrayType.JaggedOffset
-    [InlineData(3)] // ArrayType.RectangularOffset
+    // [InlineData(1)] // BinaryArrayType.SingleOffset bug in BinaryFormatter!!
+    [InlineData(2)] // BinaryArrayType.JaggedOffset
+    [InlineData(3)] // BinaryArrayType.RectangularOffset
     [InlineData(32)] // max rank
     public void CanRecognizeArraysOfGenericSystemTypesWithCustomOffsets(int arrayRank)
     {
@@ -346,9 +346,9 @@ public class TypeMatchTests : ReadTests
     }
 
     [Theory]
-    // [InlineData(1)] // ArrayType.SingleOffset bug in BinaryFormatter!!
-    [InlineData(2)] // ArrayType.JaggedOffset
-    [InlineData(3)] // ArrayType.RectangularOffset
+    // [InlineData(1)] // BinaryArrayType.SingleOffset bug in BinaryFormatter!!
+    [InlineData(2)] // BinaryArrayType.JaggedOffset
+    [InlineData(3)] // BinaryArrayType.RectangularOffset
     [InlineData(32)] // max rank
     public void CanRecognizeArraysOfGenericNonSystemTypesWithCustomOffsets(int arrayRank)
     {
@@ -444,7 +444,7 @@ public class TypeMatchTests : ReadTests
 
         Assert.Equal(typeof(T).GetTypeFullNameIncludingTypeForwards(), arrayRecord.ElementTypeName.FullName);
         Assert.False(arrayRecord is ArrayRecord<T>, userMessage: typeof(T).Name);
-        Assert.True(arrayRecord.ArrayType is ArrayType.Rectangular);
+        Assert.True(arrayRecord.ArrayType is BinaryArrayType.Rectangular);
 
         foreach (Type type in PrimitiveTypes.Concat([typeof(T)]))
         {

@@ -76,37 +76,10 @@ public class HashtableTests : SerializationTest<FormattedObjectSerializer>
         systemClass.GetSerializationRecord("Values")!.Should().BeAssignableTo<ArrayRecord<object>>();
     }
 
-    [Fact]
-    public void HashTable_CustomComparer_DoesNotRead()
-    {
-        Hashtable hashtable = new(new CustomHashCodeProvider(), StringComparer.OrdinalIgnoreCase)
-        {
-            { "This", "That" }
-        };
-
-        BinaryFormattedObject format = new(Serialize(hashtable));
-        BinaryFormattedObjectExtensions.TryGetPrimitiveHashtable(format, out Hashtable? deserialized).Should().BeFalse();
-        deserialized.Should().BeNull();
-    }
-
     [Serializable]
     public class CustomHashCodeProvider : IHashCodeProvider
     {
         public int GetHashCode(object obj) => HashCode.Combine(obj);
-    }
-
-    [Theory]
-    [MemberData(nameof(Hashtables_TestData))]
-    public void BinaryFormattedObjectExtensions_TryGetPrimitiveHashtable(Hashtable hashtable)
-    {
-        BinaryFormattedObject format = new(Serialize(hashtable));
-        BinaryFormattedObjectExtensions.TryGetPrimitiveHashtable(format, out Hashtable? deserialized).Should().BeTrue();
-
-        deserialized!.Count.Should().Be(hashtable.Count);
-        foreach (object? key in hashtable.Keys)
-        {
-            deserialized[key].Should().Be(hashtable[key]);
-        }
     }
 
     public static TheoryData<Hashtable> Hashtables_TestData => new()

@@ -6,14 +6,10 @@ using System.IO;
 namespace System.Runtime.Serialization.BinaryFormat;
 
 /// <summary>
-///  The <see cref="MemberReferenceRecord"/> record contains a reference to another record that contains the actual value.
+/// A record that contains a reference to another record that contains the actual value.
 /// </summary>
 /// <remarks>
-///  <para>
-///   <see href="https://learn.microsoft.com/openspecs/windows_protocols/ms-nrbf/eef0aa32-ab03-4b6a-a506-bcdfc10583fd">
-///    [MS-NRBF] 2.5.3
-///   </see>
-///  </para>
+/// MemberReference records are described in <see href="https://learn.microsoft.com/openspecs/windows_protocols/ms-nrbf/eef0aa32-ab03-4b6a-a506-bcdfc10583fd">[MS-NRBF] 2.5.3</see>.
 /// </remarks>
 internal sealed class MemberReferenceRecord : SerializationRecord
 {
@@ -33,7 +29,7 @@ internal sealed class MemberReferenceRecord : SerializationRecord
 
     internal override object? GetValue() => GetReferencedRecord().GetValue();
 
-    public override bool IsTypeNameMatching(Type type) => RecordMap[Reference].IsTypeNameMatching(type);
+    public override bool IsTypeNameMatching(Type type) => GetReferencedRecord().IsTypeNameMatching(type);
 
     internal static MemberReferenceRecord Parse(BinaryReader reader, RecordMap recordMap)
         => new(reader.ReadInt32(), recordMap);

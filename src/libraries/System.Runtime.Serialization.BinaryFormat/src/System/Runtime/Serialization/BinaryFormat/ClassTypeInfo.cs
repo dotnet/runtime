@@ -9,14 +9,10 @@ using System.Runtime.Serialization.BinaryFormat.Utils;
 namespace System.Runtime.Serialization.BinaryFormat;
 
 /// <summary>
-///  Identifies a class by it's name and library id.
+/// Identifies a class by it's name and library id.
 /// </summary>
 /// <remarks>
-///  <para>
-///   <see href="https://learn.microsoft.com/openspecs/windows_protocols/ms-nrbf/844b24dd-9f82-426e-9b98-05334307a239">
-///    [MS-NRBF] 2.1.1.8
-///   </see>
-///  </para>
+/// ClassTypeInfo structures are described in <see href="https://learn.microsoft.com/openspecs/windows_protocols/ms-nrbf/844b24dd-9f82-426e-9b98-05334307a239">[MS-NRBF] 2.1.1.8</see>.
 /// </remarks>
 [DebuggerDisplay("{TypeName}")]
 internal sealed class ClassTypeInfo

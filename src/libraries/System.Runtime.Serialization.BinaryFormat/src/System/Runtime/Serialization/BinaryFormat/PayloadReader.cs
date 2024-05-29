@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
@@ -19,25 +20,32 @@ static class PayloadReader
     private static UTF8Encoding ThrowOnInvalidUtf8Encoding { get; } = new(false, throwOnInvalidBytes: true);
 
     /// <summary>
-    /// Checks if given buffer contains only NRBF payload.
+    /// Checks if given buffer starts with <see href="https://learn.microsoft.com/openspecs/windows_protocols/ms-nrbf/a7e578d3-400a-4249-9424-7529d10d1b3c">NRBF payload header</see>.
     /// </summary>
     /// <param name="bytes">The buffer to inspect.</param>
-    /// <returns>True if the first and last bytes indicate NRBF, otherwise false.</returns>
-    public static bool ContainsBinaryFormatterPayload(ReadOnlySpan<byte> bytes)
-        => bytes.Length >= SerializedStreamHeaderRecord.Size + 2
+    /// <returns><see langword="true" /> if it starts with NRBF payload header, otherwise <see langword="false" />.</returns>
+    public static bool StartsWithPayloadHeader(byte[] bytes)
+        => bytes.Length >= SerializedStreamHeaderRecord.Size
             && bytes[0] == (byte)RecordType.SerializedStreamHeader
-            && bytes[bytes.Length - 1] == (byte)RecordType.MessageEnd;
+#if NETCOREAPP
+            && BinaryPrimitives.ReadInt32LittleEndian(bytes.AsSpan(9)) == SerializedStreamHeaderRecord.MajorVersion
+            && BinaryPrimitives.ReadInt32LittleEndian(bytes.AsSpan(13)) == SerializedStreamHeaderRecord.MinorVersion;
+#else
+            && BitConverter.ToInt32(bytes, 9) == SerializedStreamHeaderRecord.MajorVersion
+            && BitConverter.ToInt32(bytes, 13) == SerializedStreamHeaderRecord.MinorVersion;
+#endif
+
 
     /// <summary>
-    /// Determines if the provided stream contains represents an NRBF payload and no other content.
+    /// Checks if given stream starts with <see href="https://learn.microsoft.com/openspecs/windows_protocols/ms-nrbf/a7e578d3-400a-4249-9424-7529d10d1b3c">NRBF payload header</see>.
     /// </summary>
     /// <param name="stream">The stream to inspect. The stream must be both readable and seekable.</param>
-    /// <returns><see langword="true" /> if the first and last bytes indicate NRBF; otherwise, <see langword="false" />.</returns>
+    /// <returns><see langword="true" /> if it starts with NRBF payload header, otherwise <see langword="false" />.</returns>
     /// <exception cref="ArgumentNullException">The stream is null.</exception>
     /// <exception cref="NotSupportedException">The stream does not support reading or seeking.</exception>
     /// <exception cref="ObjectDisposedException">The stream was closed.</exception>
     /// <remarks><para>When this method returns, <paramref name="stream" /> will be restored to its original position.</para></remarks>
-    public static bool ContainsBinaryFormatterPayload(Stream stream)
+    public static bool StartsWithPayloadHeader(Stream stream)
     {
 #if NETCOREAPP
         ArgumentNullException.ThrowIfNull(stream);
@@ -53,22 +61,28 @@ static class PayloadReader
         }
 
         long beginning = stream.Position;
-        if (stream.Length - beginning < SerializedStreamHeaderRecord.Size + 2)
+        if (stream.Length - beginning <= SerializedStreamHeaderRecord.Size)
         {
             return false;
         }
 
+        byte[] buffer = new byte[SerializedStreamHeaderRecord.Size];
+
         try
         {
-            int firstByte = stream.ReadByte();
-            if (firstByte != (byte)RecordType.SerializedStreamHeader)
+#if NETCOREAPP
+            stream.ReadExactly(buffer, 0, buffer.Length);
+#else
+            int offset = 0;
+            while (offset < buffer.Length)
             {
-                return false;
+                int read = stream.Read(buffer, offset, buffer.Length - offset);
+                if (read == 0)
+                    throw new EndOfStreamException();
+                offset += read;
             }
-
-            stream.Seek(-1, SeekOrigin.End);
-            int lastByte = stream.ReadByte();
-            return lastByte == (byte)RecordType.MessageEnd;
+#endif
+            return StartsWithPayloadHeader(buffer);
         }
         finally
         {

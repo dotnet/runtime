@@ -4,21 +4,17 @@
 namespace System.Runtime.Serialization.BinaryFormat;
 
 /// <summary>
-///  Binary array type.
+/// Binary array type.
 /// </summary>
 /// <remarks>
-///  <para>
-///   <see href="https://learn.microsoft.com/openspecs/windows_protocols/ms-nrbf/4dbbf3a8-6bc4-4dfc-aa7e-36a35be6ff58">
-///    [MS-NRBF] 2.4.1.1
-///   </see>
-///  </para>
+/// BinaryArrayType enumeration is described in <see href="https://learn.microsoft.com/openspecs/windows_protocols/ms-nrbf/4dbbf3a8-6bc4-4dfc-aa7e-36a35be6ff58">[MS-NRBF] 2.4.1.1</see>.
 /// </remarks>
 #if SYSTEM_RUNTIME_SERIALIZATION_BINARYFORMAT
 public
 #else
 internal
 #endif
-enum ArrayType : byte
+enum BinaryArrayType : byte
 {
     /// <summary>
     ///  A single-dimensional array.

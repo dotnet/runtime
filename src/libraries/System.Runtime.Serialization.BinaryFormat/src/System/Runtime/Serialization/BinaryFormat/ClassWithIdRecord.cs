@@ -2,19 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.IO;
-using System.Reflection.Metadata;
 
 namespace System.Runtime.Serialization.BinaryFormat;
 
 /// <summary>
-///  Class information that references another class record's metadata.
+/// Class information that references another class record's metadata.
 /// </summary>
 /// <remarks>
-///  <para>
-///   <see href="https://learn.microsoft.com/openspecs/windows_protocols/ms-nrbf/2d168388-37f4-408a-b5e0-e48dbce73e26">
-///    [MS-NRBF] 2.3.2.5
-///   </see>
-///  </para>
+/// ClassWithId records are described in <see href="https://learn.microsoft.com/openspecs/windows_protocols/ms-nrbf/2d168388-37f4-408a-b5e0-e48dbce73e26">[MS-NRBF] 2.3.2.5</see>.
 /// </remarks>
 internal sealed class ClassWithIdRecord : ClassRecord
 {

@@ -7,25 +7,21 @@ using System.Runtime.Serialization.BinaryFormat.Utils;
 namespace System.Runtime.Serialization.BinaryFormat;
 
 /// <summary>
-///  Binary format header.
+/// NRBF header, it must be the first record in NRBF payload.
 /// </summary>
 /// <remarks>
-///  <para>
-///   <see href="https://learn.microsoft.com/openspecs/windows_protocols/ms-nrbf/a7e578d3-400a-4249-9424-7529d10d1b3c">
-///    [MS-NRBF] 2.6.1
-///   </see>
-///  </para>
+/// SerializedStreamHeader records are described in <see href="https://learn.microsoft.com/openspecs/windows_protocols/ms-nrbf/a7e578d3-400a-4249-9424-7529d10d1b3c">[MS-NRBF] 2.6.1</see>.
 /// </remarks>
 internal sealed class SerializedStreamHeaderRecord : SerializationRecord
 {
-    internal const int Size = sizeof(int) * 4;
+    internal const int Size = sizeof(RecordType) + sizeof(int) * 4;
+    internal const int MajorVersion = 1;
+    internal const int MinorVersion = 0;
 
-    internal SerializedStreamHeaderRecord(int rootId, int headerId, int majorVersion, int minorVersion)
+    internal SerializedStreamHeaderRecord(int rootId, int headerId)
     {
         RootId = rootId;
         HeaderId = headerId;
-        MajorVersion = majorVersion;
-        MinorVersion = minorVersion;
     }
 
     public override RecordType RecordType => RecordType.SerializedStreamHeader;
@@ -34,10 +30,6 @@ internal sealed class SerializedStreamHeaderRecord : SerializationRecord
 
     internal int HeaderId { get; }
 
-    internal int MajorVersion { get; }
-
-    internal int MinorVersion { get; }
-
     internal static SerializedStreamHeaderRecord Parse(BinaryReader reader)
     {
         int rootId = reader.ReadInt32();
@@ -45,15 +37,15 @@ internal sealed class SerializedStreamHeaderRecord : SerializationRecord
         int majorVersion = reader.ReadInt32();
         int minorVersion = reader.ReadInt32();
 
-        if (majorVersion != 1)
+        if (majorVersion != MajorVersion)
         {
             ThrowHelper.ThrowInvalidValue(majorVersion);
         }
-        else if (minorVersion != 0)
+        else if (minorVersion != MinorVersion)
         {
             ThrowHelper.ThrowInvalidValue(minorVersion);
         }
 
-        return new(rootId, headerId, majorVersion, minorVersion);
+        return new(rootId, headerId);
     }
 }

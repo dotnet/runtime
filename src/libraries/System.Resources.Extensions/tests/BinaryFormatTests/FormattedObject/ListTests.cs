@@ -165,30 +165,6 @@ public class ListTests : SerializationTest<FormattedObjectSerializer>
         array.Length.Should().Be(0);
     }
 
-    [Theory]
-    [MemberData(nameof(PrimitiveLists_TestData))]
-    public void BinaryFormattedObjectExtensions_TryGetPrimitiveList(IList list)
-    {
-        BinaryFormattedObject format = new(Serialize(list));
-        System.Resources.Extensions.BinaryFormat.BinaryFormattedObjectExtensions.TryGetPrimitiveList(format, out object? deserialized).Should().BeTrue();
-        deserialized.Should().BeEquivalentTo(list);
-    }
-
-    public static TheoryData<IList> PrimitiveLists_TestData => new()
-    {
-        new List<int>(),
-        new List<float>() { 3.14f },
-        new List<float>() { float.NaN, float.PositiveInfinity, float.NegativeInfinity, float.NegativeZero },
-        new List<int>() { 1, 3, 4, 5, 6, 7 },
-        new List<byte>() { 0xDE, 0xAD, 0xBE, 0xEF },
-        new List<char>() { 'a', 'b',  'c', 'd', 'e', 'f', 'g', 'h' },
-        new List<char>() { 'a', '\0',  'c' },
-        new List<string>() { "Believe", "it", "or", "not" },
-        new List<decimal>() { 42m },
-        new List<DateTime>() { new(2000, 1, 1) },
-        new List<TimeSpan>() { new(0, 0, 50) }
-    };
-
     public static TheoryData<IList> Lists_UnsupportedTestData => new()
     {
         new List<object>(),

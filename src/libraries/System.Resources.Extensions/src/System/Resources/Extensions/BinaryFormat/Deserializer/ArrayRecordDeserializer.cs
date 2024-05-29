@@ -25,13 +25,13 @@ internal sealed class ArrayRecordDeserializer : ObjectRecordDeserializer
     {
         // Other array types are handled directly (ArraySinglePrimitive and ArraySingleString).
         Debug.Assert(arrayRecord.RecordType is not (RecordType.ArraySingleString or RecordType.ArraySinglePrimitive));
-        Debug.Assert(arrayRecord.ArrayType is (ArrayType.Single or ArrayType.Jagged or ArrayType.Rectangular));
+        Debug.Assert(arrayRecord.ArrayType is (BinaryArrayType.Single or BinaryArrayType.Jagged or BinaryArrayType.Rectangular));
 
         _arrayRecord = arrayRecord;
         _elementType = deserializer.TypeResolver.GetType(arrayRecord.ElementTypeName);
         Type expectedArrayType = arrayRecord.ArrayType switch
         {
-            ArrayType.Rectangular => _elementType.MakeArrayType(arrayRecord.Rank),
+            BinaryArrayType.Rectangular => _elementType.MakeArrayType(arrayRecord.Rank),
             _ => _elementType.MakeArrayType()
         };
         // Tricky part: for arrays of classes/structs the following record allocates and array of class records
@@ -126,7 +126,7 @@ internal sealed class ArrayRecordDeserializer : ObjectRecordDeserializer
     [RequiresUnreferencedCode("Calls System.Windows.Forms.BinaryFormat.BinaryFormattedObject.TypeResolver.GetType(TypeName)")]
     internal static Array? GetSimpleBinaryArray(ArrayRecord arrayRecord, BinaryFormattedObject.ITypeResolver typeResolver)
     {
-        if (arrayRecord.ArrayType is not (ArrayType.Single or ArrayType.Jagged or ArrayType.Rectangular))
+        if (arrayRecord.ArrayType is not (BinaryArrayType.Single or BinaryArrayType.Jagged or BinaryArrayType.Rectangular))
         {
             throw new NotSupportedException(SR.NotSupported_NonZeroOffsets);
         }
@@ -146,7 +146,7 @@ internal sealed class ArrayRecordDeserializer : ObjectRecordDeserializer
 
         Type expectedArrayType = arrayRecord.ArrayType switch
         {
-            ArrayType.Rectangular => arrayRecordElementType.MakeArrayType(arrayRecord.Rank),
+            BinaryArrayType.Rectangular => arrayRecordElementType.MakeArrayType(arrayRecord.Rank),
             _ => arrayRecordElementType.MakeArrayType()
         };
 
