@@ -884,7 +884,6 @@ bool Compiler::optMakeLoopDownwardsCounted(ScalarEvolutionContext& scevContext,
         // With multiple exits we generally can only compute an upper bound on
         // the trip count.
         JITDUMP("  No; has multiple exits\n");
-        Metrics.TripCountMultipleExits++;
         return false;
     }
 
@@ -892,7 +891,6 @@ bool Compiler::optMakeLoopDownwardsCounted(ScalarEvolutionContext& scevContext,
     if (!exiting->KindIs(BBJ_COND))
     {
         JITDUMP("  No; exit is not BBJ_COND\n");
-        Metrics.TripCountExitNotCond++;
         return false;
     }
 
@@ -907,7 +905,6 @@ bool Compiler::optMakeLoopDownwardsCounted(ScalarEvolutionContext& scevContext,
         // transform; otherwise we could. TODO-CQ: Make this determination and
         // extract side effects from the jtrue to make this work.
         JITDUMP("  No; exit node has side effects\n");
-        Metrics.TripCountExitSideEffects++;
         return false;
     }
 
@@ -917,7 +914,6 @@ bool Compiler::optMakeLoopDownwardsCounted(ScalarEvolutionContext& scevContext,
         (cond->gtGetOp1()->IsIntegralConst(0) || cond->gtGetOp2()->IsIntegralConst(0)))
     {
         JITDUMP("  No; operand of condition [%06u] is already 0\n", dspTreeID(cond));
-        Metrics.TripCountExitAlreadyHas0++;
         return false;
     }
 
@@ -974,21 +970,18 @@ bool Compiler::optMakeLoopDownwardsCounted(ScalarEvolutionContext& scevContext,
             if (!rootNode->OperIsLocalStore())
             {
                 // Cannot reason about this use of the local, cannot remove
-                Metrics.TripCountNonStoreUse++;
                 return false;
             }
 
             if (rootNode->AsLclVarCommon()->GetLclNum() != candidateLclNum)
             {
                 // Used to compute a value stored to some other local, cannot remove
-                Metrics.TripCountStoredFrom++;
                 return false;
             }
 
             if ((rootNode->AsLclVarCommon()->Data()->gtFlags & GTF_SIDE_EFFECT) != 0)
             {
                 // May be used inside the data node for something that has side effects, cannot remove
-                Metrics.TripCountStoreMayHaveSideEffect++;
                 return false;
             }
 
@@ -1014,7 +1007,6 @@ bool Compiler::optMakeLoopDownwardsCounted(ScalarEvolutionContext& scevContext,
 
     if (checkProfitability && (removableLocals.Height() <= 0))
     {
-        Metrics.TripCountNoRemovableLocals++;
         JITDUMP("  Found no potentially removable locals when making this loop downwards counted\n");
         return false;
     }
@@ -1039,7 +1031,6 @@ bool Compiler::optMakeLoopDownwardsCounted(ScalarEvolutionContext& scevContext,
             {
                 JITDUMP("  No; exiting block " FMT_BB " is not an ancestor of backedge source " FMT_BB "\n",
                         exiting->bbNum, backedge->getSourceBlock()->bbNum);
-                Metrics.TripCountBackedgesNotDominated++;
                 return false;
             }
 
@@ -1052,7 +1043,6 @@ bool Compiler::optMakeLoopDownwardsCounted(ScalarEvolutionContext& scevContext,
             {
                 JITDUMP("  No; exiting block " FMT_BB " does not dominate backedge source " FMT_BB "\n", exiting->bbNum,
                         backedge->getSourceBlock()->bbNum);
-                Metrics.TripCountBackedgesNotDominated++;
                 return false;
             }
         }
@@ -1065,7 +1055,6 @@ bool Compiler::optMakeLoopDownwardsCounted(ScalarEvolutionContext& scevContext,
     if (tripCount == nullptr)
     {
         JITDUMP("  Could not compute trip count -- not a counted loop\n");
-        Metrics.TripCountCouldNotCompute++;
         return false;
     }
 
@@ -1081,7 +1070,6 @@ bool Compiler::optMakeLoopDownwardsCounted(ScalarEvolutionContext& scevContext,
     if (decCountNode == nullptr)
     {
         JITDUMP("  Could not materialize trip count into IR\n");
-        Metrics.TripCountCouldNotMaterialize++;
         return false;
     }
 

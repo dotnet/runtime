@@ -1563,13 +1563,11 @@ Scev* ScalarEvolutionContext::ComputeExitNotTakenCount(BasicBlock* exiting)
     if (!cond->OperIs(GT_LT, GT_LE, GT_GT, GT_GE))
     {
         // TODO-CQ: We can handle EQ/NE with divisibility checks.
-        m_comp->Metrics.TripCountUnsupportedCondOper++;
         return nullptr;
     }
 
     if (!varTypeIsIntegralOrI(cond->gtGetOp1()))
     {
-        m_comp->Metrics.TripCountNotIntegral++;
         return nullptr;
     }
 
@@ -1578,14 +1576,12 @@ Scev* ScalarEvolutionContext::ComputeExitNotTakenCount(BasicBlock* exiting)
 
     if ((op1 == nullptr) || (op2 == nullptr))
     {
-        m_comp->Metrics.TripCountCouldNotAnalyzeOperands++;
         return nullptr;
     }
 
     if (varTypeIsGC(op1->Type) || varTypeIsGC(op2->Type))
     {
         // TODO-CQ: Add SUB operator
-        m_comp->Metrics.TripCountGCOperand++;
         return nullptr;
     }
 
@@ -1604,7 +1600,6 @@ Scev* ScalarEvolutionContext::ComputeExitNotTakenCount(BasicBlock* exiting)
     {
         // If both are invariant we could still handle some cases here (it will
         // be 0 or infinite). Probably uncommon.
-        m_comp->Metrics.TripCountNoAddRec++;
         return nullptr;
     }
 
@@ -1615,7 +1610,6 @@ Scev* ScalarEvolutionContext::ComputeExitNotTakenCount(BasicBlock* exiting)
     {
         // Both variant. Here we could also prove also try to prove some cases,
         // but again this is expected to be uncommon.
-        m_comp->Metrics.TripCountOperandVarianceMatch++;
         return nullptr;
     }
 
@@ -1660,7 +1654,6 @@ Scev* ScalarEvolutionContext::ComputeExitNotTakenCount(BasicBlock* exiting)
     if (MayOverflowBeforeExit((ScevAddRec*)lhs, rhs, exitOpVNF))
     {
         JITDUMP("  May overflow, cannot determine trip count\n");
-        m_comp->Metrics.TripCountOverflowBeforeExit++;
         return nullptr;
     }
 
@@ -1739,7 +1732,6 @@ Scev* ScalarEvolutionContext::ComputeExitNotTakenCount(BasicBlock* exiting)
 
     if (result != RelopEvaluationResult::True)
     {
-        m_comp->Metrics.TripCountCouldNotProveLowerBound++;
         return nullptr;
     }
 
@@ -1748,7 +1740,6 @@ Scev* ScalarEvolutionContext::ComputeExitNotTakenCount(BasicBlock* exiting)
     if (!divisor->GetConstantValue(m_comp, &divisorVal) || ((divisorVal != 1) && (divisorVal != -1)))
     {
         // TODO-CQ: Enable. Likely need to add a division operator to SCEV.
-        m_comp->Metrics.TripCountStepNotOne++;
         return nullptr;
     }
 
