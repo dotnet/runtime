@@ -211,8 +211,8 @@ if (CLR_CMAKE_ENABLE_SANITIZERS)
       # Disable the use-after-return check for ASAN on Clang. This is because we have a lot of code that
       # depends on the fact that our locals are not saved in a parallel stack, so we can't enable this today.
       # If we ever have a way to detect a parallel stack and track its bounds, we can re-enable this check.
-      add_compile_options($<$<COMPILE_LANG_AND_ID:C,Clang>:-fsanitize-address-use-after-return=never>)
-      add_compile_options($<$<COMPILE_LANG_AND_ID:CXX,Clang>:-fsanitize-address-use-after-return=never>)
+      add_compile_options($<$<COMPILE_LANG_AND_ID:C,Clang,AppleClang>:-fsanitize-address-use-after-return=never>)
+      add_compile_options($<$<COMPILE_LANG_AND_ID:CXX,Clang,AppleClang>:-fsanitize-address-use-after-return=never>)
     endif()
   endif()
 

@@ -209,8 +209,55 @@ LoaderAllocator * MethodDesc::GetDomainSpecificLoaderAllocator()
 
 }
 
+HRESULT MethodDesc::EnsureCodeDataExists()
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+    }
+    CONTRACTL_END;
+
+    if (m_codeData != NULL)
+        return S_OK;
+
+    LoaderHeap* heap = GetLoaderAllocator()->GetHighFrequencyHeap();
+
+    AllocMemTracker amTracker;
+    MethodDescCodeData* alloc = (MethodDescCodeData*)amTracker.Track_NoThrow(heap->AllocMem_NoThrow(S_SIZE_T(sizeof(MethodDescCodeData))));
+    if (alloc == NULL)
+        return E_OUTOFMEMORY;
+
+    // Try to set the field. Suppress clean-up if we win the race.
+    if (InterlockedCompareExchangeT(&m_codeData, (MethodDescCodeData*)alloc, NULL) == NULL)
+        amTracker.SuppressRelease();
+
+    return S_OK;
+}
+
+HRESULT MethodDesc::SetMethodDescVersionState(PTR_MethodDescVersioningState state)
+{
+    WRAPPER_NO_CONTRACT;
+
+    HRESULT hr;
+    IfFailRet(EnsureCodeDataExists());
+
+    _ASSERTE(m_codeData != NULL);
+    if (InterlockedCompareExchangeT(&m_codeData->VersioningState, state, NULL) != NULL)
+        return S_FALSE;
+
+    return S_OK;
+}
+
 #endif //!DACCESS_COMPILE
 
+PTR_MethodDescVersioningState MethodDesc::GetMethodDescVersionState()
+{
+    WRAPPER_NO_CONTRACT;
+    if (m_codeData == NULL)
+        return NULL;
+    return m_codeData->VersioningState;
+}
 
 //*******************************************************************************
 LPCUTF8 MethodDesc::GetNameThrowing()

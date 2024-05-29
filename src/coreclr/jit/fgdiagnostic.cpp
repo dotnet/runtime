@@ -1782,13 +1782,13 @@ void Compiler::fgTableDispBasicBlock(const BasicBlock* block,
                                      int               blockTargetFieldWidth /* = 21 */,
                                      int               ibcColWidth /* = 0 */)
 {
-    const unsigned __int64 flags            = block->GetFlagsRaw();
-    unsigned               bbNumMax         = fgBBNumMax;
-    int                    maxBlockNumWidth = CountDigits(bbNumMax);
-    maxBlockNumWidth                        = max(maxBlockNumWidth, 2);
-    int blockNumWidth                       = CountDigits(block->bbNum);
-    blockNumWidth                           = max(blockNumWidth, 2);
-    int blockNumPadding                     = maxBlockNumWidth - blockNumWidth;
+    const uint64_t flags            = block->GetFlagsRaw();
+    unsigned       bbNumMax         = fgBBNumMax;
+    int            maxBlockNumWidth = CountDigits(bbNumMax);
+    maxBlockNumWidth                = max(maxBlockNumWidth, 2);
+    int blockNumWidth               = CountDigits(block->bbNum);
+    blockNumWidth                   = max(blockNumWidth, 2);
+    int blockNumPadding             = maxBlockNumWidth - blockNumWidth;
 
     // Instead of displaying a block number, should we instead display "*" when the specified block is
     // the next block?

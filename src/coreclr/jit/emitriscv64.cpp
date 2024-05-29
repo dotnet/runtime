@@ -588,7 +588,7 @@ void emitter::emitIns_R_R(
 {
     code_t code = emitInsCode(ins);
 
-    if (INS_mov == ins)
+    if (INS_mov == ins || INS_sext_w == ins)
     {
         assert(isGeneralRegisterOrR0(reg1));
         assert(isGeneralRegisterOrR0(reg2));
@@ -956,7 +956,9 @@ void emitter::emitIns_R_C(
         id->idCodeSize(8);
     }
     else
-        id->idCodeSize(16);
+    {
+        id->idCodeSize(24);
+    }
 
     if (EA_IS_GCREF(attr))
     {
@@ -1056,11 +1058,11 @@ void emitter::emitIns_R_L(instruction ins, emitAttr attr, BasicBlock* dst, regNu
     //   auipc reg, offset-hi20
     //   addi  reg, reg, offset-lo12
     //
-    // else:  3-ins:
-    //   lui  tmp, dst-hi-20bits
+    // else:  5-ins:
+    //   lui  tmp, dst-lo-20bits
     //   addi tmp, tmp, dst-lo-12bits
-    //   lui  reg, 0xff << 12
-    //   slli reg, reg, 32
+    //   lui reg, dst-hi-15bits
+    //   slli reg, reg, 20
     //   add  reg, tmp, reg
 
     instrDesc* id = emitNewInstr(attr);
@@ -1285,6 +1287,8 @@ void emitter::emitLoadImmediate(emitAttr size, regNumber reg, ssize_t imm)
  * If callType is one of these emitCallTypes, addr has to be NULL.
  * EC_INDIR_R          : "call ireg".
  *
+ * noSafePoint - force not making this call a safe point in partially interruptible code
+ *
  */
 
 void emitter::emitIns_Call(EmitCallType          callType,
@@ -1301,7 +1305,8 @@ void emitter::emitIns_Call(EmitCallType          callType,
                            regNumber        xreg /* = REG_NA */,
                            unsigned         xmul /* = 0     */,
                            ssize_t          disp /* = 0     */,
-                           bool             isJump /* = false */)
+                           bool             isJump /* = false */,
+                           bool             noSafePoint /* = false */)
 {
     /* Sanity check the arguments depending on callType */
 
@@ -1373,11 +1378,32 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
     /* Update the emitter's live GC ref sets */
 
+    // If the method returns a GC ref, mark RBM_INTRET appropriately
+    if (retSize == EA_GCREF)
+    {
+        gcrefRegs |= RBM_INTRET;
+    }
+    else if (retSize == EA_BYREF)
+    {
+        byrefRegs |= RBM_INTRET;
+    }
+
+    // If is a multi-register return method is called, mark RBM_INTRET_1 appropriately
+    if (secondRetSize == EA_GCREF)
+    {
+        gcrefRegs |= RBM_INTRET_1;
+    }
+    else if (secondRetSize == EA_BYREF)
+    {
+        byrefRegs |= RBM_INTRET_1;
+    }
+
     VarSetOps::Assign(emitComp, emitThisGCrefVars, ptrVars);
     emitThisGCrefRegs = gcrefRegs;
     emitThisByrefRegs = byrefRegs;
 
-    id->idSetIsNoGC(emitNoGChelper(methHnd));
+    // for the purpose of GC safepointing tail-calls are not real calls
+    id->idSetIsNoGC(isJump || noSafePoint || emitNoGChelper(methHnd));
 
     /* Set the instruction - special case jumping a function */
     instruction ins;
@@ -1565,7 +1591,7 @@ unsigned emitter::emitOutputCall(const insGroup* ig, BYTE* dst, instrDesc* id, c
         // jalr t2
 
         ssize_t imm = (ssize_t)(id->idAddr()->iiaAddr);
-        assert((imm >> 32) <= 0xff);
+        assert((uint64_t)(imm >> 32) <= 0x7fff); // RISC-V Linux Kernel SV48
 
         int reg2 = (int)(imm & 1);
         imm -= reg2;
@@ -2963,14 +2989,16 @@ BYTE* emitter::emitOutputInstr_OptsRcReloc(BYTE* dst, instruction* ins, unsigned
 BYTE* emitter::emitOutputInstr_OptsRcNoReloc(BYTE* dst, instruction* ins, unsigned offset, regNumber reg1)
 {
     const ssize_t immediate = reinterpret_cast<ssize_t>(emitConsBlock) + offset;
-    assertCodeLength(static_cast<size_t>(immediate), 40);
+    assertCodeLength(static_cast<size_t>(immediate), 48); // RISC-V Linux Kernel SV48
     const regNumber rsvdReg = codeGen->rsGetRsvdReg();
 
     const instruction lastIns = (*ins == INS_jal) ? (*ins = INS_addi) : *ins;
-    const ssize_t     high    = immediate >> 11;
+    const ssize_t     high    = immediate >> 16;
 
     dst += emitOutput_UTypeInstr(dst, INS_lui, rsvdReg, UpperNBitsOfWordSignExtend<20>(high));
     dst += emitOutput_ITypeInstr(dst, INS_addi, rsvdReg, rsvdReg, LowerNBitsOfWord<12>(high));
+    dst += emitOutput_ITypeInstr(dst, INS_slli, rsvdReg, rsvdReg, 5);
+    dst += emitOutput_ITypeInstr(dst, INS_addi, rsvdReg, rsvdReg, LowerNBitsOfWord<5>(immediate >> 11));
     dst += emitOutput_ITypeInstr(dst, INS_slli, rsvdReg, rsvdReg, 11);
     dst += emitOutput_ITypeInstr(dst, lastIns, reg1, rsvdReg, LowerNBitsOfWord<11>(immediate));
     return dst;
@@ -3006,15 +3034,15 @@ BYTE* emitter::emitOutputInstr_OptsRlReloc(BYTE* dst, ssize_t igOffs, regNumber 
 BYTE* emitter::emitOutputInstr_OptsRlNoReloc(BYTE* dst, ssize_t igOffs, regNumber reg1)
 {
     const ssize_t immediate = reinterpret_cast<ssize_t>(emitCodeBlock) + igOffs;
-    assertCodeLength(static_cast<size_t>(immediate), 32 + 20);
+    assertCodeLength(static_cast<size_t>(immediate), 48); // RISC-V Linux Kernel SV48
 
     const regNumber rsvdReg      = codeGen->rsGetRsvdReg();
     const ssize_t   upperSignExt = UpperWordOfDoubleWordDoubleSignExtend<32, 52>(immediate);
 
     dst += emitOutput_UTypeInstr(dst, INS_lui, rsvdReg, UpperNBitsOfWordSignExtend<20>(immediate));
     dst += emitOutput_ITypeInstr(dst, INS_addi, rsvdReg, rsvdReg, LowerNBitsOfWord<12>(immediate));
-    dst += emitOutput_ITypeInstr(dst, INS_addi, reg1, REG_ZERO, LowerNBitsOfWord<12>(upperSignExt));
-    dst += emitOutput_ITypeInstr(dst, INS_slli, reg1, reg1, 32);
+    dst += emitOutput_UTypeInstr(dst, INS_lui, reg1, LowerNBitsOfWord<16>(upperSignExt));
+    dst += emitOutput_ITypeInstr(dst, INS_slli, reg1, reg1, 20);
     dst += emitOutput_RTypeInstr(dst, INS_add, reg1, reg1, rsvdReg);
     return dst;
 }
@@ -3536,8 +3564,15 @@ void emitter::emitDispInsName(
             //}
             switch (opcode2)
             {
-                case 0x0: // ADDIW
-                    printf("addiw          %s, %s, %d\n", rd, rs1, imm12);
+                case 0x0: // ADDIW & SEXT.W
+                    if (imm12 == 0)
+                    {
+                        printf("sext.w         %s, %s\n", rd, rs1);
+                    }
+                    else
+                    {
+                        printf("addiw          %s, %s, %d\n", rd, rs1, imm12);
+                    }
                     return;
                 case 0x1:                                                         // SLLIW
                     printf("slliw          %s, %s, %d\n", rd, rs1, imm12 & 0x3f); // 6 BITS for SHAMT in RISCV64
@@ -4955,18 +4990,16 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
                     if (dstReg == regOp1)
                     {
                         assert(tempReg != regOp1);
-                        assert(REG_RA != regOp1);
                         saveOperReg1 = tempReg;
-                        saveOperReg2 = regOp2;
-                        emitIns_R_R_I(INS_addi, attr, tempReg, regOp1, 0);
+                        saveOperReg2 = (regOp1 == regOp2) ? tempReg : regOp2;
+                        emitIns_R_R(INS_mov, attr, tempReg, regOp1);
                     }
                     else if (dstReg == regOp2)
                     {
                         assert(tempReg != regOp2);
-                        assert(REG_RA != regOp2);
                         saveOperReg1 = regOp1;
                         saveOperReg2 = tempReg;
-                        emitIns_R_R_I(INS_addi, attr, tempReg, regOp2, 0);
+                        emitIns_R_R(INS_mov, attr, tempReg, regOp2);
                     }
                     else
                     {
@@ -4977,73 +5010,84 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
 
                 emitIns_R_R_R(ins, attr, dstReg, regOp1, regOp2);
 
+                /*
+                    Check if A = B + C
+                    ADD : A = B + C
+                    SUB : B = A - C
+                    In case of addition:
+                    dst = src1 + src2
+                    A = dst
+                    B = src1
+                    C = src2
+                    In case of subtraction:
+                    dst = src1 - src2
+                    src1 = dst + src2
+                    A = src1
+                    B = dst
+                    C = src2
+                */
                 if (needCheckOv)
                 {
-                    ssize_t   imm;
-                    regNumber tempReg1;
-                    regNumber tempReg2;
-                    // ADD : A = B + C
-                    // SUB : C = A - B
-                    bool isAdd = (dst->OperGet() == GT_ADD);
-                    if ((dst->gtFlags & GTF_UNSIGNED) != 0)
+                    regNumber resultReg = REG_NA;
+
+                    if (dst->OperGet() == GT_ADD)
                     {
-                        // if A < B, goto overflow
-                        if (isAdd)
-                        {
-                            tempReg1 = dstReg;
-                            tempReg2 = saveOperReg1;
-                        }
-                        else
-                        {
-                            tempReg1 = saveOperReg1;
-                            tempReg2 = saveOperReg2;
-                        }
-                        codeGen->genJumpToThrowHlpBlk_la(SCK_OVERFLOW, INS_bltu, tempReg1, nullptr, tempReg2);
+                        resultReg = dstReg;
+                        regOp1    = saveOperReg1;
+                        regOp2    = saveOperReg2;
                     }
                     else
                     {
-                        tempReg1 = REG_RA;
-                        tempReg2 = codeGen->internalRegisters.Extract(dst);
-                        assert(tempReg1 != tempReg2);
-                        assert(tempReg1 != saveOperReg1);
-                        assert(tempReg2 != saveOperReg2);
+                        resultReg = saveOperReg1;
+                        regOp1    = dstReg;
+                        regOp2    = saveOperReg2;
+                    }
 
-                        ssize_t ui6 = (attr == EA_4BYTE) ? 31 : 63;
-                        emitIns_R_R_I(INS_srli, attr, tempReg1, isAdd ? saveOperReg1 : dstReg, ui6);
-                        emitIns_R_R_I(INS_srli, attr, tempReg2, saveOperReg2, ui6);
+                    instruction branchIns  = INS_none;
+                    regNumber   branchReg1 = REG_NA;
+                    regNumber   branchReg2 = REG_NA;
 
-                        emitIns_R_R_R(INS_xor, attr, tempReg1, tempReg1, tempReg2);
+                    if ((dst->gtFlags & GTF_UNSIGNED) != 0)
+                    {
+                        // if A < B then overflow
+                        branchIns  = INS_bltu;
+                        branchReg1 = resultReg;
+                        branchReg2 = regOp1;
+                    }
+                    else
+                    {
+                        regNumber tempReg1 = codeGen->internalRegisters.GetSingle(dst);
+
+                        branchIns = INS_bne;
+
                         if (attr == EA_4BYTE)
                         {
-                            imm = 1;
-                            emitIns_R_R_I(INS_andi, attr, tempReg1, tempReg1, imm);
-                            emitIns_R_R_I(INS_andi, attr, tempReg2, tempReg2, imm);
+                            assert(src1->gtType != TYP_LONG);
+                            assert(src2->gtType != TYP_LONG);
+
+                            emitIns_R_R_R(INS_add, attr, tempReg1, regOp1, regOp2);
+
+                            // if 64-bit addition is not equal to 32-bit addition for 32-bit operands then overflow
+                            branchReg1 = resultReg;
+                            branchReg2 = tempReg1;
                         }
-                        // if (B > 0 && C < 0) || (B < 0  && C > 0), skip overflow
-                        BasicBlock* tmpLabel  = codeGen->genCreateTempLabel();
-                        BasicBlock* tmpLabel2 = codeGen->genCreateTempLabel();
-                        BasicBlock* tmpLabel3 = codeGen->genCreateTempLabel();
+                        else
+                        {
+                            assert(attr == EA_8BYTE);
+                            assert(tempReg != tempReg1);
+                            // When the tempReg2 is being used then the tempReg has to be already dead
+                            regNumber tempReg2 = tempReg;
 
-                        emitIns_J_cond_la(INS_bne, tmpLabel, tempReg1, REG_R0);
+                            emitIns_R_R_R(INS_slt, attr, tempReg1, resultReg, regOp1);
+                            emitIns_R_R_I(INS_slti, attr, tempReg2, regOp2, 0);
 
-                        emitIns_J_cond_la(INS_bne, tmpLabel3, tempReg2, REG_R0);
-
-                        // B > 0 and C > 0, if A < B, goto overflow
-                        emitIns_J_cond_la(INS_bge, tmpLabel, isAdd ? dstReg : saveOperReg1,
-                                          isAdd ? saveOperReg1 : saveOperReg2);
-
-                        codeGen->genDefineTempLabel(tmpLabel2);
-
-                        codeGen->genJumpToThrowHlpBlk(EJ_jmp, SCK_OVERFLOW);
-
-                        codeGen->genDefineTempLabel(tmpLabel3);
-
-                        // B < 0 and C < 0, if A > B, goto overflow
-                        emitIns_J_cond_la(INS_blt, tmpLabel2, isAdd ? saveOperReg1 : saveOperReg2,
-                                          isAdd ? dstReg : saveOperReg1);
-
-                        codeGen->genDefineTempLabel(tmpLabel);
+                            // if ((A < B) != (C < 0)) then overflow
+                            branchReg1 = tempReg1;
+                            branchReg2 = tempReg2;
+                        }
                     }
+
+                    codeGen->genJumpToThrowHlpBlk_la(SCK_OVERFLOW, branchIns, branchReg1, nullptr, branchReg2);
                 }
             }
             break;
