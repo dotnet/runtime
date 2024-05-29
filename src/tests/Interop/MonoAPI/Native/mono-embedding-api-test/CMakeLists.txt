@@ -1,4 +1,3 @@
-cmake_minimum_required(VERSION 3.20)
 project (MonoEmbeddingApiTest)
 include_directories(${INC_PLATFORM_DIR})
 
