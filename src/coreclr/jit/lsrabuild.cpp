@@ -2543,7 +2543,8 @@ void LinearScan::buildIntervals()
             killed = RBM_EDI | RBM_ECX | RBM_EAX;
 #else
             // Poisoning uses REG_SCRATCH for small vars and memset helper for big vars.
-            killed = genRegMask(REG_SCRATCH) | compiler->compHelperCallKillSet(CORINFO_HELP_NATIVE_MEMSET);
+            killed = compiler->compHelperCallKillSet(CORINFO_HELP_NATIVE_MEMSET);
+            killed.AddRegNumInMask(REG_SCRATCH);
 #endif
             addKillForRegs(killed, currentLoc + 1);
             currentLoc += 2;
@@ -2887,7 +2888,7 @@ void LinearScan::buildInitialParamDef(const LclVarDsc* varDsc, regNumber paramRe
         assert(paramReg < REG_COUNT);
         mask = genSingleTypeRegMask(paramReg);
         assignPhysReg(paramReg, interval);
-        INDEBUG(registersToDump |= getRegMask(paramReg, interval->registerType));
+        INDEBUG(registersToDump.AddRegNum(paramReg, interval->registerType));
     }
     RefPosition* pos = newRefPosition(interval, MinLocation, RefTypeParamDef, nullptr, mask);
     pos->setRegOptional(true);
