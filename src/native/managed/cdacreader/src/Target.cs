@@ -15,8 +15,20 @@ public struct TargetPointer
 
     public ulong Value;
     public TargetPointer(ulong value) => Value = value;
+
+    public static implicit operator ulong(TargetPointer p) => p.Value;
+    public static implicit operator TargetPointer(ulong v) => new TargetPointer(v);
 }
 
+/// <summary>
+/// Representation of the target under inspection
+/// </summary>
+/// <remarks>
+/// This class provides APIs used by contracts for reading from the target and getting type and globals
+/// information based on the target's contract descriptor. Like the contracts themselves in cdacreader,
+/// these are throwing APIs. Any callers at the boundaries (for example, unmanaged entry points, COM)
+/// should handle any exceptions.
+/// </remarks>
 public sealed unsafe class Target
 {
     public record struct TypeInfo
