@@ -9,6 +9,7 @@
 
     <!-- This is an explicit crossgen test -->
     <AlwaysUseCrossGen2>true</AlwaysUseCrossGen2>
+    <NativeAotIncompatible>true</NativeAotIncompatible>
   </PropertyGroup>
 
   <ItemGroup>
