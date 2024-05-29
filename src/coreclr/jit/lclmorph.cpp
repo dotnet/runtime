@@ -175,6 +175,356 @@ void Compiler::fgSequenceLocals(Statement* stmt)
     seq.Sequence(stmt);
 }
 
+struct LocalEqualsLocalAddrAssertion
+{
+    // Local num on the LHS
+    unsigned DestLclNum;
+    // Offset of slot assigned
+    unsigned DestOffset;
+    // Local address is taken of
+    unsigned AddressLclNum;
+    // Offset into local
+    unsigned AddressOffset;
+
+    LocalEqualsLocalAddrAssertion(unsigned destLclNum,
+                                  unsigned destOffset,
+                                  unsigned addressLclNum,
+                                  unsigned addressOffset)
+        : DestLclNum(destLclNum)
+        , DestOffset(destOffset)
+        , AddressLclNum(addressLclNum)
+        , AddressOffset(addressOffset)
+    {
+    }
+
+#ifdef DEBUG
+    void Print() const
+    {
+        printf("V%02u[+%03u] = &V%02u[+%03u]", DestLclNum, DestOffset, AddressLclNum, AddressOffset);
+    }
+#endif
+};
+
+struct AssertionKeyFuncs
+{
+    static bool Equals(const LocalEqualsLocalAddrAssertion& lhs, const LocalEqualsLocalAddrAssertion rhs)
+    {
+        return (lhs.DestLclNum == rhs.DestLclNum) && (lhs.DestOffset == rhs.DestOffset) &&
+               (lhs.AddressLclNum == rhs.AddressLclNum) && (lhs.AddressOffset == rhs.AddressOffset);
+    }
+
+    static unsigned GetHashCode(const LocalEqualsLocalAddrAssertion& val)
+    {
+        unsigned hash = val.DestLclNum;
+        hash ^= val.DestOffset + 0x9e3779b9 + (hash << 19) + (hash >> 13);
+        hash ^= val.AddressLclNum + 0x9e3779b9 + (hash << 19) + (hash >> 13);
+        hash ^= val.AddressOffset + 0x9e3779b9 + (hash << 19) + (hash >> 13);
+        return hash;
+    }
+};
+
+typedef JitHashTable<LocalEqualsLocalAddrAssertion, AssertionKeyFuncs, unsigned> AssertionToIndexMap;
+
+class LocalEqualsLocalAddrAssertions
+{
+    Compiler*                                 m_comp;
+    ArrayStack<LocalEqualsLocalAddrAssertion> m_assertions;
+    AssertionToIndexMap                       m_map;
+    uint64_t*                                 m_lclAssertions;
+    uint64_t*                                 m_outgoingAssertions;
+    uint64_t                                  m_currentAssertions = 0;
+    BitVec                                    m_localsToExpose;
+
+public:
+    LocalEqualsLocalAddrAssertions(Compiler* comp)
+        : m_comp(comp)
+        , m_assertions(comp->getAllocator(CMK_LocalAddressVisitor))
+        , m_map(comp->getAllocator(CMK_LocalAddressVisitor))
+    {
+        m_lclAssertions =
+            comp->lvaCount == 0 ? nullptr : new (comp, CMK_LocalAddressVisitor) uint64_t[comp->lvaCount]{};
+        m_outgoingAssertions = new (comp, CMK_LocalAddressVisitor) uint64_t[comp->m_dfsTree->GetPostOrderCount()]{};
+
+        BitVecTraits localsTraits(comp->lvaCount, comp);
+        m_localsToExpose = BitVecOps::MakeEmpty(&localsTraits);
+    }
+
+    //------------------------------------------------------------------------
+    // GetLocalsToExpose: Get the bit vector of locals that were marked to be
+    // exposed.
+    //
+    BitVec_ValRet_T GetLocalsToExpose()
+    {
+        return m_localsToExpose;
+    }
+
+    //-------------------------------------------------------------------
+    // StartBlock: Start a new block by computing incoming assertions for the
+    // block.
+    //
+    // Arguments:
+    //   block - The block
+    //
+    void StartBlock(BasicBlock* block)
+    {
+        if (m_comp->bbIsHandlerBeg(block) || (block->bbPreds == nullptr))
+        {
+            m_currentAssertions = 0;
+            return;
+        }
+
+        m_currentAssertions = UINT64_MAX;
+        for (BasicBlock* pred : block->PredBlocks())
+        {
+            assert(m_comp->m_dfsTree->Contains(pred));
+            if (pred->bbPostorderNum <= block->bbPostorderNum)
+            {
+                m_currentAssertions = 0;
+                break;
+            }
+
+            m_currentAssertions &= m_outgoingAssertions[pred->bbPostorderNum];
+        }
+
+#ifdef DEBUG
+        if (m_currentAssertions != 0)
+        {
+            JITDUMP(FMT_BB " incoming assertions:\n", block->bbNum);
+            uint64_t assertions = m_currentAssertions;
+            do
+            {
+                uint32_t index = BitOperations::BitScanForward(assertions);
+                JITDUMP("  A%02u: ", index);
+                DBEXEC(VERBOSE, m_assertions.BottomRef((int)index).Print());
+                JITDUMP("\n");
+
+                assertions ^= uint64_t(1) << index;
+            } while (assertions != 0);
+        }
+#endif
+    }
+
+    //-------------------------------------------------------------------
+    // EndBlock: End a block by recording its final outgoing assertions.
+    //
+    // Arguments:
+    //     block - The block
+    //
+    void EndBlock(BasicBlock* block)
+    {
+        m_outgoingAssertions[block->bbPostorderNum] = m_currentAssertions;
+    }
+
+    //-------------------------------------------------------------------
+    // HasActiveAssertions: Check whether there are active assertions about
+    // values in the specified local.
+    //
+    // Arguments:
+    //   lclNum - The local
+    //
+    // Return Value:
+    //   True if we have any assertions about the value of (parts of) the specified local.
+    //
+    bool HasActiveAssertions(unsigned lclNum)
+    {
+        return (m_currentAssertions & m_lclAssertions[lclNum]) != 0;
+    }
+
+    //-------------------------------------------------------------------
+    // MakeAllActive: Mark all created assertions as being active.
+    //
+    void MakeAllActive()
+    {
+        m_currentAssertions = m_assertions.Height() == 64 ? UINT64_MAX : ((uint64_t(1) << m_assertions.Height()) - 1);
+    }
+
+    //-------------------------------------------------------------------
+    // SetActive: Set a specific set of assertions as active.
+    //
+    void SetActive(uint64_t assertions)
+    {
+        m_currentAssertions = assertions;
+    }
+
+    //-------------------------------------------------------------------
+    // GetCurrentAssertions: Get the current set of active assertions.
+    //
+    // Return Value:
+    //   Set of active assertions.
+    //
+    uint64_t GetCurrentAssertions()
+    {
+        return m_currentAssertions;
+    }
+
+    //-------------------------------------------------------------------
+    // OnExposed: Mark that a local is having its address taken.
+    //
+    // Arguments:
+    //   lclNum - The local
+    //
+    void OnExposed(unsigned lclNum)
+    {
+        m_currentAssertions &= ~m_lclAssertions[lclNum];
+        BitVecTraits localsTraits(m_comp->lvaCount, m_comp);
+        BitVecOps::AddElemD(&localsTraits, m_localsToExpose, lclNum);
+    }
+
+    //-------------------------------------------------------------------
+    // GetAssertionByIndex: Get an assertion by a specific index.
+    //
+    // Arguments:
+    //   index - Index of the assertion
+    //
+    // Return Value:
+    //   Assertion information
+    //
+    const LocalEqualsLocalAddrAssertion& GetAssertionByIndex(uint32_t index)
+    {
+        assert(index < (uint32_t)m_assertions.Height());
+        return m_assertions.BottomRef((int)index);
+    }
+
+    //-------------------------------------------------------------------
+    // GetDestAssertions: Get the set of assertions (active as well as
+    // inactive) that assert the value of the specified local.
+    //
+    // Arguments:
+    //   lclNum - Local
+    //
+    // Return Value:
+    //   Set of assertions.
+    //
+    // Remarks:
+    //   This also returns inactive assertions.
+    //
+    uint64_t GetDestAssertions(unsigned lclNum)
+    {
+        return m_lclAssertions[lclNum];
+    }
+
+    //-------------------------------------------------------------------
+    // Record: Record an assertion about the specified local.
+    //
+    // Arguments:
+    //   dstLclNum - Destination local
+    //   dstOffs   - Offset into the local
+    //   srcLclNum - Local having its address taken
+    //   srcOffs   - Offset into the source local of the address being taken
+    //
+    void Record(unsigned dstLclNum, unsigned dstOffs, unsigned srcLclNum, unsigned srcOffs)
+    {
+        LocalEqualsLocalAddrAssertion assertion(dstLclNum, dstOffs, srcLclNum, srcOffs);
+
+        unsigned* index = m_map.LookupPointerOrAdd(assertion, UINT_MAX);
+
+        if (*index == UINT_MAX)
+        {
+            if (m_assertions.Height() >= 64)
+            {
+                return;
+            }
+
+            *index = (unsigned)m_assertions.Height();
+            m_assertions.Push(assertion);
+            m_lclAssertions[dstLclNum] |= uint64_t(1) << *index;
+
+            JITDUMP("Adding new assertion A%02u ", *index);
+            DBEXEC(VERBOSE, assertion.Print());
+            JITDUMP("\n");
+        }
+        else
+        {
+            JITDUMP("Adding existing assertion A%02u ", *index);
+            DBEXEC(VERBOSE, assertion.Print());
+            JITDUMP("\n");
+        }
+
+        m_currentAssertions |= uint64_t(1) << *index;
+    }
+
+    //-------------------------------------------------------------------
+    // Clear: Clear active assertions about the specified local in the specified interval.
+    //
+    // Arguments:
+    //   dstLclNum - Destination local
+    //   dstOffs   - Start offset of interval
+    //   dstSize   - Size of interval
+    //
+    void Clear(unsigned dstLclNum, unsigned dstOffs, unsigned dstSize)
+    {
+        VisitOverlappingIndices(dstLclNum, dstOffs, dstSize, [=](uint32_t index) {
+            assert((m_currentAssertions & (uint64_t(1) << index)) != 0);
+            m_currentAssertions ^= uint64_t(1) << index;
+
+#ifdef DEBUG
+            const LocalEqualsLocalAddrAssertion& assertion = m_assertions.BottomRef((int)index);
+            JITDUMP("Removing assertion A%02u ", index);
+            DBEXEC(VERBOSE, assertion.Print());
+            JITDUMP("\n");
+#endif
+            return true;
+        });
+    }
+
+    //-------------------------------------------------------------------
+    // VisitOverlappingIndices: Visit indices of active assertions that overlap the specified local.
+    //
+    // Arguments:
+    //   lclNum - Destination local
+    //   offset - Start offset of interval
+    //   size   - Size of interval
+    //   visit  - Visitor functor, of type bool (uint32_t). Return false to stop the visit.
+    //
+    // Return value:
+    //   False if the visitor returned false and the visit was aborted; otherwise true.
+    //
+    template <typename TVisitor>
+    bool VisitOverlappingIndices(unsigned lclNum, unsigned offset, unsigned size, TVisitor visit)
+    {
+        uint64_t lclAssertions = m_currentAssertions & GetDestAssertions(lclNum);
+        while (lclAssertions != 0)
+        {
+            uint32_t lclAssertion = BitOperations::BitScanForward(lclAssertions);
+            lclAssertions ^= uint64_t(1) << lclAssertion;
+
+            const LocalEqualsLocalAddrAssertion& assertion = m_assertions.BottomRef(lclAssertion);
+            assert(assertion.DestLclNum == lclNum);
+            bool disjoint =
+                (offset + size <= assertion.DestOffset) || (assertion.DestOffset + TARGET_POINTER_SIZE <= offset);
+            if (!disjoint)
+            {
+                if (!visit(lclAssertion))
+                {
+                    return false;
+                }
+            }
+        }
+
+        return true;
+    }
+
+    //-------------------------------------------------------------------
+    // VisitOverlapping: Visit active assertions that overlap the specified local.
+    //
+    // Arguments:
+    //   lclNum - Destination local
+    //   offset - Start offset of interval
+    //   size   - Size of interval
+    //   visit  - Visitor functor, of type bool (const LocalEqualsLocalAddrAssertion&). Return false to stop the visit.
+    //
+    // Return value:
+    //   False if the visitor returned false and the visit was aborted; otherwise true.
+    //
+    template <typename TVisitor>
+    bool VisitOverlapping(unsigned lclNum, unsigned offset, unsigned size, TVisitor visit)
+    {
+        return VisitOverlappingIndices(lclNum, offset, size, [=, &visit](uint32_t index) {
+            return visit(m_assertions.BottomRef(index));
+        });
+    }
+};
+
 class LocalAddressVisitor final : public GenTreeVisitor<LocalAddressVisitor>
 {
     // During tree traversal every GenTree node produces a "value" that represents:
@@ -259,6 +609,13 @@ class LocalAddressVisitor final : public GenTreeVisitor<LocalAddressVisitor>
             m_offset = lclAddr->GetLclOffs();
         }
 
+        void Address(unsigned lclNum, unsigned lclOffs)
+        {
+            assert(IsUnknown());
+            m_lclNum = lclNum;
+            m_offset = lclOffs;
+        }
+
         //------------------------------------------------------------------------
         // AddOffset: Produce an address value from an address value.
         //
@@ -326,10 +683,12 @@ class LocalAddressVisitor final : public GenTreeVisitor<LocalAddressVisitor>
         LclFld
     };
 
-    ArrayStack<Value> m_valueStack;
-    bool              m_stmtModified;
-    bool              m_madeChanges;
-    LocalSequencer*   m_sequencer;
+    ArrayStack<Value>               m_valueStack;
+    bool                            m_stmtModified    = false;
+    bool                            m_madeChanges     = false;
+    bool                            m_propagatedAddrs = false;
+    LocalSequencer*                 m_sequencer;
+    LocalEqualsLocalAddrAssertions* m_lclAddrAssertions;
 
 public:
     enum
@@ -339,18 +698,22 @@ public:
         UseExecutionOrder = true,
     };
 
-    LocalAddressVisitor(Compiler* comp, LocalSequencer* sequencer)
+    LocalAddressVisitor(Compiler* comp, LocalSequencer* sequencer, LocalEqualsLocalAddrAssertions* assertions)
         : GenTreeVisitor<LocalAddressVisitor>(comp)
         , m_valueStack(comp->getAllocator(CMK_LocalAddressVisitor))
-        , m_stmtModified(false)
-        , m_madeChanges(false)
         , m_sequencer(sequencer)
+        , m_lclAddrAssertions(assertions)
     {
     }
 
     bool MadeChanges() const
     {
         return m_madeChanges;
+    }
+
+    bool PropagatedAnyAddresses() const
+    {
+        return m_propagatedAddrs;
     }
 
     void VisitStmt(Statement* stmt)
@@ -405,6 +768,46 @@ public:
             printf("\n");
         }
 #endif // DEBUG
+    }
+
+    void VisitBlock(BasicBlock* block)
+    {
+        // Make the current basic block address available globally
+        m_compiler->compCurBB = block;
+
+        if (m_lclAddrAssertions != nullptr)
+        {
+            m_lclAddrAssertions->StartBlock(block);
+        }
+
+        for (Statement* const stmt : block->Statements())
+        {
+#ifdef FEATURE_SIMD
+            if (m_compiler->opts.OptimizationEnabled() && stmt->GetRootNode()->TypeIs(TYP_FLOAT) &&
+                stmt->GetRootNode()->OperIsStore())
+            {
+                m_madeChanges |= m_compiler->fgMorphCombineSIMDFieldStores(block, stmt);
+            }
+#endif
+
+            VisitStmt(stmt);
+        }
+
+        // We could check for GT_JMP inside the visitor, but this node is very
+        // rare so keeping it here avoids pessimizing the hot code.
+        if (block->endsWithJmpMethod(m_compiler))
+        {
+            // GT_JMP has implicit uses of all arguments.
+            for (unsigned lclNum = 0; lclNum < m_compiler->info.compArgsCount; lclNum++)
+            {
+                UpdateEarlyRefCount(lclNum, nullptr, nullptr);
+            }
+        }
+
+        if (m_lclAddrAssertions != nullptr)
+        {
+            m_lclAddrAssertions->EndBlock(block);
+        }
     }
 
     // Morph promoted struct fields and count local occurrences.
@@ -499,13 +902,27 @@ public:
                 FALLTHROUGH;
 
             case GT_STORE_LCL_VAR:
+            {
                 assert(TopValue(0).Node() == node->AsLclVarCommon()->Data());
+                if (m_lclAddrAssertions != nullptr)
+                {
+                    HandleLocalStoreAssertions(node->AsLclVarCommon(), TopValue(0));
+                }
+
                 EscapeValue(TopValue(0), node);
                 PopValue();
-                FALLTHROUGH;
+
+                SequenceLocal(node->AsLclVarCommon());
+                break;
+            }
 
             case GT_LCL_VAR:
             case GT_LCL_FLD:
+                if (m_lclAddrAssertions != nullptr)
+                {
+                    HandleLocalAssertions(node->AsLclVarCommon(), TopValue(0));
+                }
+
                 SequenceLocal(node->AsLclVarCommon());
                 break;
 
@@ -589,10 +1006,34 @@ public:
 
             case GT_STOREIND:
             case GT_STORE_BLK:
+            {
+                assert(TopValue(2).Node() == node);
+                assert(TopValue(1).Node() == node->AsIndir()->Addr());
                 assert(TopValue(0).Node() == node->AsIndir()->Data());
+
+                // Data value always escapes.
                 EscapeValue(TopValue(0), node);
+
+                if (node->AsIndir()->IsVolatile() || !TopValue(1).IsAddress())
+                {
+                    // Volatile indirections must not be removed so the address, if any, must be escaped.
+                    EscapeValue(TopValue(1), node);
+                }
+                else
+                {
+                    // This consumes the address.
+                    ProcessIndirection(use, TopValue(1), user);
+
+                    if ((m_lclAddrAssertions != nullptr) && (*use)->OperIsLocalStore())
+                    {
+                        HandleLocalStoreAssertions((*use)->AsLclVarCommon(), TopValue(0));
+                    }
+                }
+
                 PopValue();
-                FALLTHROUGH;
+                PopValue();
+                break;
+            }
 
             case GT_BLK:
             case GT_IND:
@@ -607,6 +1048,11 @@ public:
                 else
                 {
                     ProcessIndirection(use, TopValue(0), user);
+
+                    if ((m_lclAddrAssertions != nullptr) && (*use)->OperIs(GT_LCL_VAR, GT_LCL_FLD))
+                    {
+                        HandleLocalAssertions((*use)->AsLclVarCommon(), TopValue(1));
+                    }
                 }
 
                 PopValue();
@@ -754,8 +1200,16 @@ private:
 
         if (!hasHiddenStructArg)
         {
-            m_compiler->lvaSetVarAddrExposed(
-                varDsc->lvIsStructField ? varDsc->lvParentLcl : lclNum DEBUGARG(AddressExposedReason::ESCAPE_ADDRESS));
+            unsigned exposedLclNum = varDsc->lvIsStructField ? varDsc->lvParentLcl : lclNum;
+
+            if (m_lclAddrAssertions != nullptr)
+            {
+                m_lclAddrAssertions->OnExposed(exposedLclNum);
+            }
+            else
+            {
+                m_compiler->lvaSetVarAddrExposed(exposedLclNum DEBUGARG(AddressExposedReason::ESCAPE_ADDRESS));
+            }
         }
 
 #ifdef TARGET_64BIT
@@ -831,11 +1285,18 @@ private:
 
         if (isWide)
         {
-            m_compiler->lvaSetVarAddrExposed(
-                varDsc->lvIsStructField ? varDsc->lvParentLcl : lclNum DEBUGARG(AddressExposedReason::WIDE_INDIR));
-
             MorphLocalAddress(node->AsIndir()->Addr(), lclNum, offset);
             node->gtFlags |= GTF_GLOB_REF; // GLOB_REF may not be set already in the "large offset" case.
+
+            unsigned exposedLclNum = varDsc->lvIsStructField ? varDsc->lvParentLcl : lclNum;
+            if (m_lclAddrAssertions != nullptr)
+            {
+                m_lclAddrAssertions->OnExposed(exposedLclNum);
+            }
+            else
+            {
+                m_compiler->lvaSetVarAddrExposed(exposedLclNum DEBUGARG(AddressExposedReason::WIDE_INDIR));
+            }
         }
         else
         {
@@ -857,7 +1318,7 @@ private:
     void MorphLocalAddress(GenTree* addr, unsigned lclNum, unsigned offset)
     {
         assert(addr->TypeIs(TYP_BYREF, TYP_I_IMPL));
-        assert(m_compiler->lvaVarAddrExposed(lclNum) || m_compiler->lvaGetDesc(lclNum)->IsHiddenBufferStructArg());
+        // assert(m_compiler->lvaVarAddrExposed(lclNum) || m_compiler->lvaGetDesc(lclNum)->IsHiddenBufferStructArg());
 
         if (m_compiler->IsValidLclAddr(lclNum, offset))
         {
@@ -1408,6 +1869,57 @@ private:
         }
     }
 
+    //-----------------------------------------------------------------------------------
+    // HandleLocalStoreAssertions:
+    //   Handle clearing and generating assertions for a local store with the
+    //   specified data value.
+    //
+    // Argument:
+    //    store - The local store
+    //    data  - Value representing data
+    //
+    void HandleLocalStoreAssertions(GenTreeLclVarCommon* store, Value& data)
+    {
+        if (m_lclAddrAssertions->HasActiveAssertions(store->GetLclNum()))
+        {
+            unsigned storeSize =
+                store->TypeIs(TYP_STRUCT) ? store->GetLayout(m_compiler)->GetSize() : genTypeSize(store);
+            m_lclAddrAssertions->Clear(store->GetLclNum(), store->GetLclOffs(), storeSize);
+        }
+
+        if (data.IsAddress() && !m_compiler->lvaGetDesc(store)->IsAddressExposed())
+        {
+            m_lclAddrAssertions->Record(store->GetLclNum(), store->GetLclOffs(), data.LclNum(), data.Offset());
+        }
+    }
+
+    //-----------------------------------------------------------------------------------
+    // HandleLocalAssertions:
+    //   Try to refine the specified "addr" value based on assertions about a specified local.
+    //
+    // Argument:
+    //    lcl   - The local node
+    //    value - Value of local; will be modified to be an address if an assertion could be found
+    //
+    void HandleLocalAssertions(GenTreeLclVarCommon* lcl, Value& value)
+    {
+        if (!lcl->TypeIs(TYP_I_IMPL, TYP_BYREF) || !m_lclAddrAssertions->HasActiveAssertions(lcl->GetLclNum()))
+        {
+            return;
+        }
+
+        auto markAddr = [=, &value](const LocalEqualsLocalAddrAssertion& assertion) {
+            JITDUMP("Using assertion ");
+            DBEXEC(VERBOSE, assertion.Print());
+            JITDUMP("\n");
+
+            value.Address(assertion.AddressLclNum, assertion.AddressOffset);
+            m_propagatedAddrs = true;
+            return false;
+        };
+        m_lclAddrAssertions->VisitOverlapping(lcl->GetLclNum(), lcl->GetLclOffs(), 1, markAddr);
+    }
+
 public:
     //------------------------------------------------------------------------
     // UpdateEarlyRefCount: updates the ref count for locals
@@ -1499,41 +2011,32 @@ private:
 //
 PhaseStatus Compiler::fgMarkAddressExposedLocals()
 {
-    bool                madeChanges = false;
-    LocalSequencer      sequencer(this);
-    LocalAddressVisitor visitor(this, opts.OptimizationEnabled() ? &sequencer : nullptr);
+    bool madeChanges = false;
 
-    for (BasicBlock* const block : Blocks())
+    if (opts.OptimizationDisabled())
     {
-        // Make the current basic block address available globally
-        compCurBB = block;
-
-        for (Statement* const stmt : block->Statements())
+        LocalAddressVisitor visitor(this, nullptr, nullptr);
+        for (BasicBlock* const block : Blocks())
         {
-#ifdef FEATURE_SIMD
-            if (opts.OptimizationEnabled() && stmt->GetRootNode()->TypeIs(TYP_FLOAT) &&
-                stmt->GetRootNode()->OperIsStore())
-            {
-                madeChanges |= fgMorphCombineSIMDFieldStores(block, stmt);
-            }
-#endif
-
-            visitor.VisitStmt(stmt);
+            visitor.VisitBlock(block);
         }
 
-        // We could check for GT_JMP inside the visitor, but this node is very
-        // rare so keeping it here avoids pessimizing the hot code.
-        if (block->endsWithJmpMethod(this))
-        {
-            // GT_JMP has implicit uses of all arguments.
-            for (unsigned lclNum = 0; lclNum < info.compArgsCount; lclNum++)
-            {
-                visitor.UpdateEarlyRefCount(lclNum, nullptr, nullptr);
-            }
-        }
+        madeChanges = visitor.MadeChanges();
     }
+    else
+    {
+        LocalSequencer                 sequencer(this);
+        LocalEqualsLocalAddrAssertions assertions(this);
+        LocalAddressVisitor            visitor(this, &sequencer, &assertions);
+        for (unsigned i = m_dfsTree->GetPostOrderCount(); i != 0; i--)
+        {
+            visitor.VisitBlock(m_dfsTree->GetPostOrder(i - 1));
+        }
 
-    madeChanges |= visitor.MadeChanges();
+        madeChanges = visitor.MadeChanges();
+
+        fgExposeUnpropagatedLocals(visitor.PropagatedAnyAddresses(), &assertions);
+    }
 
     return madeChanges ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
 }
@@ -1645,3 +2148,207 @@ bool Compiler::fgMorphCombineSIMDFieldStores(BasicBlock* block, Statement* stmt)
     return true;
 }
 #endif // FEATURE_SIMD
+
+//-----------------------------------------------------------------------------------
+// fgExposeUnpropagatedLocals:
+//   Expose the final set of locals that were computed to have their address
+//   taken. Deletes LCL_ADDR nodes used as the data source of a store if the
+//   destination can be proven to not be read, and avoid exposing these if
+//   possible.
+//
+// Argument:
+//    propagatedAny - Whether any LCL_ADDR values were propagated
+//    assertions    - Data structure tracking LCL_ADDR assertions
+//
+// Return Value:
+//    True if any changes were made to the IR; otherwise false.
+//
+bool Compiler::fgExposeUnpropagatedLocals(bool propagatedAny, LocalEqualsLocalAddrAssertions* assertions)
+{
+    if (!propagatedAny)
+    {
+        fgExposeLocalsInBitVec(assertions->GetLocalsToExpose());
+        return false;
+    }
+
+    assertions->MakeAllActive();
+    uint64_t unreadDests = assertions->GetCurrentAssertions();
+
+    struct Store
+    {
+        Statement*           Statement;
+        GenTreeLclVarCommon* Tree;
+    };
+
+    ArrayStack<Store> stores(getAllocator(CMK_LocalAddressVisitor));
+
+    for (unsigned i = m_dfsTree->GetPostOrderCount(); i != 0; i--)
+    {
+        BasicBlock* block = m_dfsTree->GetPostOrder(i - 1);
+
+        for (Statement* stmt : block->Statements())
+        {
+            for (GenTreeLclVarCommon* lcl : stmt->LocalsTreeList())
+            {
+                if (lcl->OperIs(GT_LCL_ADDR))
+                {
+                    continue;
+                }
+
+                if (!assertions->HasActiveAssertions(lcl->GetLclNum()))
+                {
+                    continue;
+                }
+
+                if (lcl->OperIs(GT_STORE_LCL_FLD, GT_STORE_LCL_VAR))
+                {
+                    if (lcl->TypeIs(TYP_I_IMPL, TYP_BYREF) && ((lcl->Data()->gtFlags & GTF_SIDE_EFFECT) == 0))
+                    {
+                        stores.Push({stmt, lcl});
+                    }
+
+                    continue;
+                }
+
+                assert(lcl->OperIs(GT_LCL_VAR, GT_LCL_FLD));
+
+                unsigned size = lcl->TypeIs(TYP_STRUCT) ? lcl->GetLayout(this)->GetSize() : genTypeSize(lcl);
+                auto     markUsedAssertions = [&unreadDests](uint32_t index) {
+                    unreadDests &= ~(uint64_t(1) << index);
+                    return true;
+                };
+                assertions->VisitOverlappingIndices(lcl->GetLclNum(), lcl->GetLclOffs(), size, markUsedAssertions);
+            }
+        }
+    }
+
+    // Now remove all assertions related to locals that we ended up exposing.
+    uint64_t assertionsToVisit = unreadDests;
+    while (assertionsToVisit != 0)
+    {
+        uint32_t index = BitOperations::BitScanForward(assertionsToVisit);
+        assertionsToVisit ^= uint64_t(1) << index;
+
+        const LocalEqualsLocalAddrAssertion& assertion = assertions->GetAssertionByIndex(index);
+        LclVarDsc*                           dsc       = lvaGetDesc(assertion.DestLclNum);
+        if (dsc->IsAddressExposed())
+        {
+            uint64_t relevantAssertions = assertions->GetDestAssertions(assertion.DestLclNum);
+            assert((relevantAssertions & (uint64_t(1) << index)) != 0);
+
+            unreadDests &= ~relevantAssertions;
+            assertionsToVisit &= ~relevantAssertions;
+        }
+    }
+
+    if (unreadDests == 0)
+    {
+        JITDUMP("No destinations of propagated LCL_ADDR nodes are unread\n");
+        fgExposeLocalsInBitVec(assertions->GetLocalsToExpose());
+        return false;
+    }
+
+    bool changed = false;
+    assertions->SetActive(unreadDests);
+    // The remaining assertions indicate destinations that are unread. Replace
+    // stores to these with a 0 value. We will leave it up to liveness to
+    // remove them completely.
+    for (int i = 0; i < stores.Height(); i++)
+    {
+        const Store& store = stores.BottomRef(i);
+        assert(store.Tree->TypeIs(TYP_I_IMPL, TYP_BYREF));
+
+        if (!assertions->VisitOverlapping(store.Tree->GetLclNum(), store.Tree->GetLclOffs(), 1,
+                                          [](const LocalEqualsLocalAddrAssertion& assertion) {
+            return false;
+        }))
+        {
+            JITDUMP("V%02u[+%03u] is unread; removing store data of [%06u]\n", store.Tree->GetLclNum(),
+                    store.Tree->GetLclOffs(), dspTreeID(store.Tree));
+            DISPTREE(store.Tree);
+
+            store.Tree->Data()->BashToConst(0, store.Tree->Data()->TypeGet());
+            fgSequenceLocals(store.Statement);
+
+            JITDUMP("\nResult:\n");
+            DISPTREE(store.Tree);
+            JITDUMP("\n");
+            changed = true;
+        }
+    }
+
+    if (changed)
+    {
+        // Finally compute new set of exposed locals.
+        BitVecTraits traits(lvaCount, this);
+        BitVec       exposedLocals(BitVecOps::MakeEmpty(&traits));
+
+        for (unsigned i = m_dfsTree->GetPostOrderCount(); i != 0; i--)
+        {
+            BasicBlock* block = m_dfsTree->GetPostOrder(i - 1);
+
+            for (Statement* stmt : block->Statements())
+            {
+                for (GenTreeLclVarCommon* lcl : stmt->LocalsTreeList())
+                {
+                    if (!lcl->OperIs(GT_LCL_ADDR))
+                    {
+                        continue;
+                    }
+
+                    LclVarDsc* lclDsc        = lvaGetDesc(lcl);
+                    unsigned   exposedLclNum = lclDsc->lvIsStructField ? lclDsc->lvParentLcl : lcl->GetLclNum();
+                    BitVecOps::AddElemD(&traits, exposedLocals, exposedLclNum);
+                }
+            }
+        }
+
+        auto dumpVars = [=, &traits](BitVec_ValArg_T vec, BitVec_ValArg_T other) {
+            const char* sep = "";
+            for (unsigned lclNum = 0; lclNum < lvaCount; lclNum++)
+            {
+                if (BitVecOps::IsMember(&traits, vec, lclNum))
+                {
+                    JITDUMP("%sV%02u", sep, lclNum);
+                    sep = " ";
+                }
+                else if (BitVecOps::IsMember(&traits, other, lclNum))
+                {
+                    JITDUMP("%s   ", sep);
+                    sep = " ";
+                }
+            }
+        };
+
+        // TODO-CQ: Instead of intersecting here, we should teach the above
+        // logic about retbuf LCL_ADDRs not leading to exposure. This should
+        // allow us to assert that exposedLocals is a subset of
+        // assertions->GetLocalsToExpose().
+        BitVecOps::IntersectionD(&traits, exposedLocals, assertions->GetLocalsToExpose());
+
+        JITDUMP("Old exposed set: ");
+        dumpVars(assertions->GetLocalsToExpose(), exposedLocals);
+        JITDUMP("\nNew exposed set: ");
+        dumpVars(exposedLocals, assertions->GetLocalsToExpose());
+        JITDUMP("\n");
+
+        fgExposeLocalsInBitVec(exposedLocals);
+    }
+
+    return changed;
+}
+
+//-----------------------------------------------------------------------------------
+// fgExposeLocalsInBitVec:
+//   Mark all locals in the bit vector as address exposed.
+//
+void Compiler::fgExposeLocalsInBitVec(BitVec_ValArg_T bitVec)
+{
+    BitVecTraits    localsTraits(lvaCount, this);
+    BitVecOps::Iter iter(&localsTraits, bitVec);
+    unsigned        lclNum;
+    while (iter.NextElem(&lclNum))
+    {
+        lvaSetVarAddrExposed(lclNum DEBUGARG(AddressExposedReason::ESCAPE_ADDRESS));
+    }
+}

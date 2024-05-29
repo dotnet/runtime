@@ -6756,6 +6756,8 @@ private:
 
     PhaseStatus fgMarkAddressExposedLocals();
     void fgSequenceLocals(Statement* stmt);
+    bool fgExposeUnpropagatedLocals(bool propagatedAny, class LocalEqualsLocalAddrAssertions* assertions);
+    void fgExposeLocalsInBitVec(BitVec_ValArg_T bitVec);
 
     PhaseStatus PhysicalPromotion();
 
