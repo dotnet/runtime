@@ -1912,10 +1912,14 @@ private:
             m_lclAddrAssertions->Clear(store->GetLclNum(), store->GetLclOffs(), storeSize);
         }
 
-        if (data.IsAddress() && !m_compiler->lvaGetDesc(store)->IsAddressExposed() &&
-            !m_lclAddrAssertions->IsMarkedForExposure(store->GetLclNum()))
+        if (data.IsAddress())
         {
-            m_lclAddrAssertions->Record(store->GetLclNum(), store->GetLclOffs(), data.LclNum(), data.Offset());
+            LclVarDsc* dsc = m_compiler->lvaGetDesc(store);
+            if (!dsc->lvHasLdAddrOp &&
+                (!dsc->lvIsStructField || !m_compiler->lvaGetDesc(dsc->lvParentLcl)->lvHasLdAddrOp))
+            {
+                m_lclAddrAssertions->Record(store->GetLclNum(), store->GetLclOffs(), data.LclNum(), data.Offset());
+            }
         }
     }
 
