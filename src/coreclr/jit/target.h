@@ -351,7 +351,11 @@ public:
 
     bool IsEmpty() const
     {
+#ifdef HAS_MORE_THAN_64_REGISTERS
+        return (low | high) == RBM_NONE;
+#else
         return low == RBM_NONE;
+#endif
     }
 
     bool IsNonEmpty() const

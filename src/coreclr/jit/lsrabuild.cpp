@@ -1847,10 +1847,7 @@ void LinearScan::buildRefPositionsForNode(GenTree* tree, LsraLocation currentLoc
                 // {eax,edx} are getting killed before the def of GT_DIV.  For this reason, minRegCount for
                 // the use position of v02 also needs to take into account the kill set of its consuming node.
                 regMaskTP killMask = getKillSetForNode(tree);
-                if (killMask != RBM_NONE)
-                {
-                    minRegCountForRef += genCountBits(killMask);
-                }
+                minRegCountForRef += genCountBits(killMask);
             }
             else if ((newRefPosition->refType) == RefTypeDef && (newRefPosition->getInterval()->isSpecialPutArg))
             {
@@ -3235,7 +3232,7 @@ void LinearScan::BuildKills(GenTree* tree, regMaskTP killMask)
     // Call this even when killMask is RBM_NONE, as we have to check for some special cases
     buildKillPositionsForNode(tree, currentLoc + 1, killMask);
 
-    if (killMask != RBM_NONE)
+    if (killMask.IsNonEmpty())
     {
 #if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
         // Build RefPositions to account for the fact that, even in a callee-save register, the upper half of any large
@@ -3339,7 +3336,7 @@ void LinearScan::BuildDefWithKills(GenTree* tree, int dstCount, SingleTypeRegSet
 void LinearScan::BuildCallDefsWithKills(GenTree* tree, int dstCount, regMaskTP dstCandidates, regMaskTP killMask)
 {
     assert(dstCount > 0);
-    assert(dstCandidates != RBM_NONE);
+    assert(dstCandidates.IsNonEmpty());
 
     // Build the kill RefPositions
     BuildKills(tree, killMask);
@@ -3369,7 +3366,7 @@ void LinearScan::UpdatePreferencesOfDyingLocal(Interval* interval)
     // _after_ the call, then we are going to prefer callee-saved registers for
     // such local anyway, so there is no need to look at such local uses.
     //
-    if (placedArgRegs == RBM_NONE)
+    if (placedArgRegs.IsEmpty())
     {
         return;
     }

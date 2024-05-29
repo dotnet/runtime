@@ -4040,7 +4040,7 @@ void LinearScan::processKills(RefPosition* killRefPosition)
     RefPosition* nextKill = killRefPosition->nextRefPosition;
 
     regMaskTP killedRegs = killRefPosition->registerAssignment;
-    while (killedRegs != RBM_NONE)
+    while (killedRegs.IsNonEmpty())
     {
         regNumber  killedReg        = genFirstRegNumFromMaskAndToggle(killedRegs);
         RegRecord* regRecord        = getRegisterRecord(killedReg);
@@ -4744,7 +4744,7 @@ void LinearScan::processBlockStartLocations(BasicBlock* currentBlock)
     // Only focus on actual registers present
     deadCandidates &= actualRegistersMask;
 
-    while (deadCandidates != RBM_NONE)
+    while (deadCandidates.IsNonEmpty())
     {
         regNumber  reg           = genFirstRegNumFromMaskAndToggle(deadCandidates);
         RegRecord* physRegRecord = getRegisterRecord(reg);
@@ -4940,7 +4940,7 @@ void LinearScan::freeRegisters(regMaskTP regsToFree)
 
     INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_FREE_REGS));
     makeRegsAvailable(regsToFree);
-    while (regsToFree != RBM_NONE)
+    while (regsToFree.IsNonEmpty())
     {
         regNumber nextReg = genFirstRegNumFromMaskAndToggle(regsToFree);
 
@@ -5028,7 +5028,7 @@ void LinearScan::allocateRegistersMinimal()
         // mess with the dump, since this was previously being done before the call below
         // to dumpRegRecords.
         regMaskTP tempRegsToMakeInactive = (regsToMakeInactive | delayRegsToMakeInactive);
-        while (tempRegsToMakeInactive != RBM_NONE)
+        while (tempRegsToMakeInactive.IsNonEmpty())
         {
             regNumber  nextReg   = genFirstRegNumFromMaskAndToggle(tempRegsToMakeInactive);
             RegRecord* regRecord = getRegisterRecord(nextReg);
@@ -5102,10 +5102,10 @@ void LinearScan::allocateRegistersMinimal()
             copyRegsToFree        = RBM_NONE;
             regsInUseThisLocation = regsInUseNextLocation;
             regsInUseNextLocation = RBM_NONE;
-            if ((regsToFree | delayRegsToFree) != RBM_NONE)
+            if ((regsToFree | delayRegsToFree).IsNonEmpty())
             {
                 freeRegisters(regsToFree);
-                if ((currentLocation > (prevLocation + 1)) && (delayRegsToFree != RBM_NONE))
+                if ((currentLocation > (prevLocation + 1)) && (delayRegsToFree.IsNonEmpty()))
                 {
                     // We should never see a delayReg that is delayed until a Location that has no RefPosition
                     // (that would be the RefPosition that it was supposed to interfere with).
@@ -5711,7 +5711,7 @@ void LinearScan::allocateRegisters()
         // mess with the dump, since this was previously being done before the call below
         // to dumpRegRecords.
         regMaskTP tempRegsToMakeInactive = (regsToMakeInactive | delayRegsToMakeInactive);
-        while (tempRegsToMakeInactive != RBM_NONE)
+        while (tempRegsToMakeInactive.IsNonEmpty())
         {
             regNumber  nextReg   = genFirstRegNumFromMaskAndToggle(tempRegsToMakeInactive);
             RegRecord* regRecord = getRegisterRecord(nextReg);
@@ -5789,10 +5789,10 @@ void LinearScan::allocateRegisters()
                 consecutiveRegsInUseThisLocation = RBM_NONE;
             }
 #endif
-            if ((regsToFree | delayRegsToFree) != RBM_NONE)
+            if ((regsToFree | delayRegsToFree).IsNonEmpty())
             {
                 freeRegisters(regsToFree);
-                if ((currentLocation > (prevLocation + 1)) && (delayRegsToFree != RBM_NONE))
+                if ((currentLocation > (prevLocation + 1)) && (delayRegsToFree.IsNonEmpty()))
                 {
                     // We should never see a delayReg that is delayed until a Location that has no RefPosition
                     // (that would be the RefPosition that it was supposed to interfere with).
@@ -9174,7 +9174,7 @@ void LinearScan::handleOutgoingCriticalEdges(BasicBlock* block)
             regMaskTP sameToRegMask =
                 genRegMask(sameToReg, getIntervalForLocalVar(outResolutionSetVarIndex)->registerType);
             if (maybeSameLivePaths &&
-                (((sameToRegMask & liveOutRegs) != RBM_NONE) || ((sameToRegMask & sameWriteRegs) != RBM_NONE)))
+                (((sameToRegMask & liveOutRegs).IsNonEmpty()) || ((sameToRegMask & sameWriteRegs).IsNonEmpty())))
             {
                 sameToReg = REG_NA;
             }
@@ -9182,7 +9182,7 @@ void LinearScan::handleOutgoingCriticalEdges(BasicBlock* block)
             // (or for Arm64, it is consumed by JCMP), we can't do the copy in this block since we can't
             // insert it after the switch (or for Arm64, can't insert and overwrite the operand/source
             // of operand of JCMP).
-            if ((sameToRegMask & consumedRegs) != RBM_NONE)
+            if ((sameToRegMask & consumedRegs).IsNonEmpty())
             {
                 sameToReg = REG_NA;
             }
@@ -9232,7 +9232,7 @@ void LinearScan::handleOutgoingCriticalEdges(BasicBlock* block)
 
     if (!VarSetOps::IsEmpty(compiler, sameResolutionSet))
     {
-        if ((sameWriteRegs & diffReadRegs) != RBM_NONE)
+        if ((sameWriteRegs & diffReadRegs).IsNonEmpty())
         {
             // We cannot split the "same" and "diff" regs if the "same" set writes registers
             // that must be read by the "diff" set.  (Note that when these are done as a "batch"
@@ -9746,7 +9746,7 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
 
     // First, find all the ones that are ready to move now
     regMaskTP targetCandidates = targetRegsToDo;
-    while (targetCandidates != RBM_NONE)
+    while (targetCandidates.IsNonEmpty())
     {
         regNumber targetReg     = genFirstRegNumFromMask(targetCandidates);
         regMaskTP targetRegMask = genRegMask(targetReg);
@@ -9775,9 +9775,9 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
     }
 
     // Perform reg to reg moves
-    while (targetRegsToDo != RBM_NONE)
+    while (targetRegsToDo.IsNonEmpty())
     {
-        while (targetRegsReady != RBM_NONE)
+        while (targetRegsReady.IsNonEmpty())
         {
             regNumber targetReg     = genFirstRegNumFromMask(targetRegsReady);
             regMaskTP targetRegMask = genRegMask(targetReg);
@@ -9848,7 +9848,7 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
                 }
             }
         }
-        if (targetRegsToDo != RBM_NONE)
+        if (targetRegsToDo.IsNonEmpty())
         {
             regNumber targetReg     = genFirstRegNumFromMask(targetRegsToDo);
             regMaskTP targetRegMask = genRegMask(targetReg);
@@ -9910,7 +9910,7 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
                         // Look at the remaining registers from targetRegsToDo (which we expect to be relatively
                         // small at this point) to find out what's currently in targetReg.
                         regMaskTP mask = targetRegsToDo;
-                        while (mask != RBM_NONE && otherTargetReg == REG_NA)
+                        while (mask.IsNonEmpty() && otherTargetReg == REG_NA)
                         {
                             regNumber nextReg = genFirstRegNumFromMaskAndToggle(mask);
                             if (location[source[nextReg]] == targetReg)
@@ -10013,7 +10013,7 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
 
     // Finally, perform stack to reg moves
     // All the target regs will be empty at this point
-    while (targetRegsFromStack != RBM_NONE)
+    while (targetRegsFromStack.IsNonEmpty())
     {
         regNumber targetReg = genFirstRegNumFromMaskAndToggle(targetRegsFromStack);
 
@@ -11525,7 +11525,7 @@ void LinearScan::dumpRegRecords()
 #endif // FEATURE_PARTIAL_SIMD_CALLEE_SAVE
                 printf("%c", activeChar);
             }
-            else if ((genRegMask(regNum) & regsBusyUntilKill) != RBM_NONE)
+            else if ((genRegMask(regNum) & regsBusyUntilKill).IsNonEmpty())
             {
                 printf(columnFormatArray, "Busy");
             }
