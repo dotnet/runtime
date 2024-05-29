@@ -230,8 +230,7 @@ typedef uint64_t regMaskSmall;
 #endif
 
 typedef regMaskSmall    SingleTypeRegSet;
-inline SingleTypeRegSet genRegMask(regNumber reg);
-inline SingleTypeRegSet genRegMaskFloat(regNumber reg ARM_ARG(var_types type = TYP_DOUBLE));
+inline SingleTypeRegSet genSingleTypeRegMask(regNumber reg);
 
 struct regMaskTP
 {
@@ -335,7 +334,7 @@ public:
 
     void operator^=(const regNumber reg)
     {
-        low ^= genRegMask(reg);
+        low ^= genSingleTypeRegMask(reg);
     }
 
     void operator&=(const regMaskTP& second)

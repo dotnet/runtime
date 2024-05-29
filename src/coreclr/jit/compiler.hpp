@@ -1011,7 +1011,7 @@ inline regNumber genFirstRegNumFromMaskAndToggle(SingleTypeRegSet& mask)
 
     regNumber regNum = (regNumber)BitOperations::BitScanForward(mask);
 
-    mask ^= genRegMask(regNum);
+    mask ^= genSingleTypeRegMask(regNum);
 
     return regNum;
 }
