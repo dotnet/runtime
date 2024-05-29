@@ -1630,7 +1630,14 @@ namespace System
             if (valueCtor == null)
                 throw new ExecutionEngineException();
 
-            valueCtor(ref value);
+            try
+            {
+                valueCtor(ref value);
+            }
+            catch (Exception e)
+            {
+                throw new TargetInvocationException(e);
+            }
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
