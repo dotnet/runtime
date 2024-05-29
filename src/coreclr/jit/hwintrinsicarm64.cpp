@@ -1869,7 +1869,14 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
             if (!indices->IsVectorConst())
             {
-                // TODO-ARM64-CQ: Handling non-constant indices is a bit more complex
+                assert(sig->numArgs == 2);
+
+                op2 = impSIMDPopStack();
+                op1 = impSIMDPopStack();
+
+                retNode = gtNewSimdHWIntrinsicNode(retType, op1, op2, intrinsic, simdBaseJitType, simdSize);
+
+                retNode->AsHWIntrinsic()->SetMethodHandle(this, method);
                 break;
             }
 
@@ -2296,6 +2303,35 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             retNode = impStoreMultiRegValueToVar(op1, sig->retTypeSigClass DEBUGARG(CorInfoCallConvExtension::Managed));
             break;
         }
+
+        case NI_Sve_Load2xVectorAndUnzip:
+        case NI_Sve_Load3xVectorAndUnzip:
+        case NI_Sve_Load4xVectorAndUnzip:
+        {
+            info.compNeedsConsecutiveRegisters = true;
+
+            assert(sig->numArgs == 2);
+
+            op2 = impPopStack().val;
+            op1 = impPopStack().val;
+
+            if (op2->OperIs(GT_CAST))
+            {
+                // Although the API specifies a pointer, if what we have is a BYREF, that's what
+                // we really want, so throw away the cast.
+                if (op2->gtGetOp1()->TypeGet() == TYP_BYREF)
+                {
+                    op2 = op2->gtGetOp1();
+                }
+            }
+
+            assert(HWIntrinsicInfo::IsMultiReg(intrinsic));
+            assert(HWIntrinsicInfo::IsExplicitMaskedOperation(intrinsic));
+
+            retNode = gtNewSimdHWIntrinsicNode(retType, op1, op2, intrinsic, simdBaseJitType, simdSize);
+            break;
+        }
+
         case NI_AdvSimd_LoadAndInsertScalarVector64x2:
         case NI_AdvSimd_LoadAndInsertScalarVector64x3:
         case NI_AdvSimd_LoadAndInsertScalarVector64x4:
