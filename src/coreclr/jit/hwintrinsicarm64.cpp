@@ -2620,8 +2620,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             argType = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg1, &argClass)));
             op1     = impPopStack().val;
 
-            CorInfoType op1BaseJitType = getBaseJitTypeOfSIMDType(argClass);
-
             assert(HWIntrinsicInfo::isImmOp(intrinsic, op2));
             HWIntrinsicInfo::lookupImmBounds(intrinsic, simdSize, simdBaseType, 1, &immLowerBound, &immUpperBound);
             op2 = addRangeCheckIfNeeded(intrinsic, op2, (!op2->IsCnsIntOrI()), immLowerBound, immUpperBound);
@@ -2634,6 +2632,36 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                                : gtNewSimdHWIntrinsicNode(retType, op1, op2, op3, intrinsic, simdBaseJitType, simdSize);
 
             retNode->AsHWIntrinsic()->SetSimdBaseJitType(simdBaseJitType);
+            break;
+        }
+
+        case NI_Sve_SaturatingDecrementByActiveElementCount:
+        case NI_Sve_SaturatingIncrementByActiveElementCount:
+        {
+            assert(sig->numArgs == 2);
+
+            CORINFO_ARG_LIST_HANDLE arg1          = sig->args;
+            CORINFO_ARG_LIST_HANDLE arg2          = info.compCompHnd->getArgNext(arg1);
+            var_types               argType       = TYP_UNKNOWN;
+            CORINFO_CLASS_HANDLE    argClass      = NO_CLASS_HANDLE;
+
+            argType = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg2, &argClass)));
+            op2     = getArgForHWIntrinsic(argType, argClass);
+            argType = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg1, &argClass)));
+            op1     = impPopStack().val;
+
+            CorInfoType op1BaseJitType = getBaseJitTypeOfSIMDType(argClass);
+
+            // HWInstrinsic requires a mask for op2
+            if (!varTypeIsMask(op2))
+            {
+                op2 = gtNewSimdConvertVectorToMaskNode(retType, op2, simdBaseJitType, simdSize);
+            }
+
+            retNode = gtNewSimdHWIntrinsicNode(retType, op1, op2, intrinsic, simdBaseJitType, simdSize);
+
+            retNode->AsHWIntrinsic()->SetSimdBaseJitType(simdBaseJitType);
+            retNode->AsHWIntrinsic()->SetAuxiliaryJitType(op1BaseJitType);
             break;
         }
 

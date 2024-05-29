@@ -6655,5 +6655,85 @@ namespace JIT.HardwareIntrinsics.Arm
             return MaskNumberOfElementsVector(Unsafe.SizeOf<Vector<long>>() / sizeof(long), pattern);
         }
 
+        public static int NumberOfActiveElementsInMask(sbyte[] mask)
+        {
+            int acc = 0;
+            for (var i = 0; i < mask.Length; i++)
+            {
+                acc += (mask[i] == 1) ? 1 : 0;
+            }
+            return acc;
+        }
+
+        public static int NumberOfActiveElementsInMask(short[] mask)
+        {
+            int acc = 0;
+            for (var i = 0; i < mask.Length; i++)
+            {
+                acc += (mask[i] == 1) ? 1 : 0;
+            }
+            return acc;
+        }
+
+        public static int NumberOfActiveElementsInMask(int[] mask)
+        {
+            int acc = 0;
+            for (var i = 0; i < mask.Length; i++)
+            {
+                acc += (mask[i] == 1) ? 1 : 0;
+            }
+            return acc;
+        }
+
+        public static int NumberOfActiveElementsInMask(long[] mask)
+        {
+            int acc = 0;
+            for (var i = 0; i < mask.Length; i++)
+            {
+                acc += (mask[i] == 1) ? 1 : 0;
+            }
+            return acc;
+        }
+
+        public static int NumberOfActiveElementsInMask(byte[] mask)
+        {
+            int acc = 0;
+            for (var i = 0; i < mask.Length; i++)
+            {
+                acc += (mask[i] == 1) ? 1 : 0;
+            }
+            return acc;
+        }
+
+        public static int NumberOfActiveElementsInMask(ushort[] mask)
+        {
+            int acc = 0;
+            for (var i = 0; i < mask.Length; i++)
+            {
+                acc += (mask[i] == 1) ? 1 : 0;
+            }
+            return acc;
+        }
+
+        public static int NumberOfActiveElementsInMask(uint[] mask)
+        {
+            int acc = 0;
+            for (var i = 0; i < mask.Length; i++)
+            {
+                acc += (mask[i] == 1) ? 1 : 0;
+            }
+            return acc;
+        }
+
+        public static int NumberOfActiveElementsInMask(ulong[] mask)
+        {
+            int acc = 0;
+            for (var i = 0; i < mask.Length; i++)
+            {
+                acc += (mask[i] == 1) ? 1 : 0;
+            }
+            return acc;
+        }
+
     }
 }

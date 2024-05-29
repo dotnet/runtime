@@ -1926,6 +1926,32 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 break;
             }
 
+            case NI_Sve_SaturatingDecrementByActiveElementCount:
+            case NI_Sve_SaturatingIncrementByActiveElementCount:
+            {
+                // RMW semantics
+                if (targetReg != op1Reg)
+                {
+                    assert(targetReg != op2Reg);
+                    GetEmitter()->emitIns_Mov(INS_mov, emitTypeSize(node), targetReg, op1Reg, /* canSkip */ true);
+                }
+
+                // Switch instruction if arg1 is unsigned.
+                if (varTypeIsUnsigned(node->GetAuxiliaryType()))
+                {
+                    ins = (intrin.id == NI_Sve_SaturatingDecrementByActiveElementCount) ? INS_sve_uqdecp : INS_sve_uqincp;
+                }
+
+                // If this is the scalar variant, get the correct size.
+                if (!varTypeIsSIMD(node->gtType))
+                {
+                    emitSize = emitActualTypeSize(intrin.op1);
+                }
+
+                GetEmitter()->emitIns_R_R(ins, emitSize, targetReg, op2Reg, opt);
+                break;
+            }
+
             default:
                 unreached();
         }
