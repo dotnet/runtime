@@ -50,7 +50,7 @@ namespace System.Runtime.InteropServices.Swift
     /// Here's an example of how a SwiftSelf&lt;T&gt; context can be declared:
     /// <code lang="csharp">
     /// [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
-    /// [DllImport("SwiftLibrary", EntryPoint = "export")]
+    /// [LibraryImport("SwiftLibrary", EntryPoint = "export")]
     /// public static extern void swiftFunction(SwiftSelf&lt;T&gt; self);
     /// </code>
     /// </para>
