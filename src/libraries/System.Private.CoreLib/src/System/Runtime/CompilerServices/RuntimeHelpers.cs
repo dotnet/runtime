@@ -131,6 +131,11 @@ namespace System.Runtime.CompilerServices
         internal static bool CanPrimitiveWiden(CorElementType srcET, CorElementType dstET)
         {
             Debug.Assert(srcET.IsPrimitiveType() && dstET.IsPrimitiveType());
+            if ((int)srcET >= PrimitiveWidenTable.Length)
+            {
+                // I or U
+                return srcET == dstET;
+            }
             return (PrimitiveWidenTable[(int)srcET] & (1 << (int)dstET)) != 0;
         }
 
