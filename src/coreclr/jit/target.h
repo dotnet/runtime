@@ -996,6 +996,31 @@ inline regMaskTP genRegMask(regNumber regNum, var_types type)
     return result;
 }
 
+inline regNumber getRegForType(regNumber reg, var_types regType)
+{
+#ifdef TARGET_ARM
+    if ((regType == TYP_DOUBLE) && !genIsValidDoubleReg(reg))
+    {
+        reg = REG_PREV(reg);
+    }
+#endif // TARGET_ARM
+    return reg;
+}
+
+inline regMaskTP getRegMask(regNumber reg, var_types regType)
+{
+    reg               = getRegForType(reg, regType);
+    regMaskTP regMask = genRegMask(reg);
+#ifdef TARGET_ARM
+    if (regType == TYP_DOUBLE)
+    {
+        assert(genIsValidDoubleReg(reg));
+        regMask |= (regMask << 1);
+    }
+#endif // TARGET_ARM
+    return regMask;
+}
+
 /*****************************************************************************
  *
  *  These arrays list the callee-saved register numbers (and bitmaps, respectively) for

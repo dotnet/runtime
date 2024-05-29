@@ -5,7 +5,6 @@
 
 struct regMaskTP;
 
-
 //------------------------------------------------------------------------
 // encodeForRegisterIndex: Shifts the high-32 bits of float to low-32 bits
 //      and return. For gpr and predicate registers, it returns the same value.
@@ -33,7 +32,6 @@ struct regMaskTP;
     int shiftAmount = 32 * (index == 1);
     return ((regMaskSmall)value << shiftAmount);
 }
-
 
 // ----------------------------------------------------------
 //  AddRegNumForType: Adds `reg` to the mask.
@@ -102,7 +100,7 @@ void regMaskTP::AddGprRegs(SingleTypeRegSet gprRegs)
 void regMaskTP::AddRegNum(regNumber reg, var_types type)
 {
 #ifdef TARGET_ARM
-    low |= getRegMask(reg, type);
+    low |= getRegMask(reg, type).getLow();
 #else
     AddRegNumInMask(reg);
 #endif
@@ -167,7 +165,7 @@ bool regMaskTP::IsRegNumInMask(regNumber reg) const
 bool regMaskTP::IsRegNumPresent(regNumber reg, var_types type) const
 {
 #ifdef TARGET_ARM
-    return (low & getRegMask(reg, type)) != RBM_NONE;
+    return (low & getRegMask(reg, type).getLow()) != RBM_NONE;
 #else
     return IsRegNumInMask(reg);
 #endif
@@ -200,7 +198,7 @@ void regMaskTP::RemoveRegNumFromMask(regNumber reg)
 void regMaskTP::RemoveRegNum(regNumber reg, var_types type)
 {
 #ifdef TARGET_ARM
-    low &= ~getRegMask(reg, type);
+    low &= ~getRegMask(reg, type).getLow();
 #else
     RemoveRegNumFromMask(reg);
 #endif

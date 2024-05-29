@@ -1782,30 +1782,6 @@ private:
     //-----------------------------------------------------------------------
 
     regMaskTP m_AvailableRegs;
-    regNumber getRegForType(regNumber reg, var_types regType)
-    {
-#ifdef TARGET_ARM
-        if ((regType == TYP_DOUBLE) && !genIsValidDoubleReg(reg))
-        {
-            reg = REG_PREV(reg);
-        }
-#endif // TARGET_ARM
-        return reg;
-    }
-
-    regMaskTP getRegMask(regNumber reg, var_types regType)
-    {
-        reg               = getRegForType(reg, regType);
-        regMaskTP regMask = genRegMask(reg);
-#ifdef TARGET_ARM
-        if (regType == TYP_DOUBLE)
-        {
-            assert(genIsValidDoubleReg(reg));
-            regMask |= (regMask << 1);
-        }
-#endif // TARGET_ARM
-        return regMask;
-    }
 
     void resetAvailableRegs()
     {
