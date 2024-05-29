@@ -431,7 +431,6 @@ namespace Microsoft.Interop
                 tokens = tokens.Add(Token(SyntaxKind.ThisKeyword));
             }
 
-
             return tokens;
         }
 
