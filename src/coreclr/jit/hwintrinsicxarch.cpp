@@ -2180,6 +2180,24 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
+        case NI_Vector128_FusedMultiplyAdd:
+        case NI_Vector256_FusedMultiplyAdd:
+        case NI_Vector512_FusedMultiplyAdd:
+        {
+            assert(sig->numArgs == 3);
+            assert(varTypeIsFloating(simdBaseType));
+
+            if (compOpportunisticallyDependsOn(InstructionSet_FMA))
+            {
+                op3 = impSIMDPopStack();
+                op2 = impSIMDPopStack();
+                op1 = impSIMDPopStack();
+
+                retNode = gtNewSimdFmaNode(retType, op1, op2, op3, simdBaseJitType, simdSize);
+            }
+            break;
+        }
+
         case NI_Vector128_get_AllBitsSet:
         case NI_Vector256_get_AllBitsSet:
         case NI_Vector512_get_AllBitsSet:
@@ -2639,6 +2657,34 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
+        case NI_Vector128_MultiplyAddEstimate:
+        case NI_Vector256_MultiplyAddEstimate:
+        case NI_Vector512_MultiplyAddEstimate:
+        {
+            assert(sig->numArgs == 3);
+            assert(varTypeIsFloating(simdBaseType));
+
+            if (BlockNonDeterministicIntrinsics(mustExpand))
+            {
+                break;
+            }
+
+            op3 = impSIMDPopStack();
+            op2 = impSIMDPopStack();
+            op1 = impSIMDPopStack();
+
+            if (compExactlyDependsOn(InstructionSet_FMA))
+            {
+                retNode = gtNewSimdFmaNode(retType, op1, op2, op3, simdBaseJitType, simdSize);
+            }
+            else
+            {
+                GenTree* mulNode = gtNewSimdBinOpNode(GT_MUL, retType, op1, op2, simdBaseJitType, simdSize);
+                retNode          = gtNewSimdBinOpNode(GT_ADD, retType, mulNode, op3, simdBaseJitType, simdSize);
+            }
+            break;
+        }
+
         case NI_Vector128_Narrow:
         case NI_Vector256_Narrow:
         case NI_Vector512_Narrow:
@@ -2844,7 +2890,14 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
             if (!indices->IsVectorConst())
             {
-                // TODO-XARCH-CQ: Handling non-constant indices is a bit more complex
+                assert(sig->numArgs == 2);
+
+                op2 = impSIMDPopStack();
+                op1 = impSIMDPopStack();
+
+                retNode = gtNewSimdHWIntrinsicNode(retType, op1, op2, intrinsic, simdBaseJitType, simdSize);
+
+                retNode->AsHWIntrinsic()->SetMethodHandle(this, method);
                 break;
             }
 

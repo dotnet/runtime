@@ -187,6 +187,40 @@ namespace Microsoft.Extensions.Logging.Generators.Tests.TestClasses
             await VerifyAgainstBaselineUsingFile("TestWithNestedClassWithGenericTypesWithAttributes.generated.txt", testSourceCode);
         }
 
+#if ROSLYN4_8_OR_GREATER
+        [Fact]
+        public async Task TestBaseline_TestWithLoggerFromPrimaryConstructor_Success()
+        {
+            string testSourceCode = @"
+namespace Microsoft.Extensions.Logging.Generators.Tests.TestClasses
+{
+    internal partial class TestWithLoggerFromPrimaryConstructor(ILogger logger)
+    {
+        [LoggerMessage(EventId = 0, Level = LogLevel.Debug, Message = ""M0"")]
+        public partial void M0();
+    }
+}";
+            await VerifyAgainstBaselineUsingFile("TestWithLoggerFromPrimaryConstructor.generated.txt", testSourceCode);
+        }
+
+        [Fact]
+        public async Task TestBaseline_TestWithLoggerInFieldAndFromPrimaryConstructor_UsesField()
+        {
+            string testSourceCode = @"
+namespace Microsoft.Extensions.Logging.Generators.Tests.TestClasses
+{
+    internal partial class TestWithLoggerFromPrimaryConstructor(ILogger logger)
+    {
+        private readonly ILogger _logger = logger;
+
+        [LoggerMessage(EventId = 0, Level = LogLevel.Debug, Message = ""M0"")]
+        public partial void M0();
+    }
+}";
+            await VerifyAgainstBaselineUsingFile("TestWithLoggerInFieldAndFromPrimaryConstructor.generated.txt", testSourceCode);
+        }
+#endif
+
         [Fact]
         public void GenericTypeParameterAttributesAreRetained()
         {

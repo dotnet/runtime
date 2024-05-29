@@ -127,6 +127,13 @@
     <UseNativeAotCoreLib Condition="'$(TestNativeAot)' == 'true' or ($(_subset.Contains('+clr.nativeaotlibs+')) and !$(_subset.Contains('+clr.native+')) and !$(_subset.Contains('+clr.runtime+')) and !$(_subset.Contains('+clr.corelib+')))">true</UseNativeAotCoreLib>
   </PropertyGroup>
 
+  <!-- Configure build properties for C++ runtime library references. -->
+  <PropertyGroup>
+    <TargetCxxLibraryProperties Condition="'$(TargetCxxStandardLibrary)' != ''">CxxStandardLibrary=$(TargetCxxStandardLibrary)</TargetCxxLibraryProperties>
+    <TargetCxxLibraryProperties Condition="'$(TargetCxxStandardLibraryStatic)' != ''">$(TargetCxxLibraryProperties);CxxStandardLibraryStatic=$(TargetCxxStandardLibraryStatic)</TargetCxxLibraryProperties>
+    <TargetCxxLibraryProperties Condition="'$(TargetCxxAbiLibrary)' != ''">$(TargetCxxLibraryProperties);CxxAbiLibrary=$(TargetCxxAbiLibrary)</TargetCxxLibraryProperties>
+  </PropertyGroup>
+
   <ItemGroup>
     <!-- CoreClr -->
     <SubsetName Include="Clr" Description="The full CoreCLR runtime. Equivalent to: $(DefaultCoreClrSubsets)" />
@@ -265,7 +272,7 @@
   <ItemGroup Condition="'$(ClrRuntimeBuildSubsets)' != ''">
     <ProjectToBuild
       Include="$(CoreClrProjectRoot)runtime.proj"
-      AdditionalProperties="%(AdditionalProperties);$(ClrRuntimeBuildSubsets)"
+      AdditionalProperties="%(AdditionalProperties);$(ClrRuntimeBuildSubsets);$(TargetCxxLibraryProperties)"
       Category="clr" />
   </ItemGroup>
 
@@ -455,7 +462,7 @@
   <!-- Host sets -->
   <ItemGroup Condition="$(_subset.Contains('+host.native+'))">
     <CorehostProjectToBuild Include="$(SharedNativeRoot)corehost\corehost.proj" SignPhase="Binaries" />
-    <ProjectToBuild Include="@(CorehostProjectToBuild)" Pack="true" Category="host" />
+    <ProjectToBuild Include="@(CorehostProjectToBuild)" AdditionalProperties="$(TargetCxxLibraryProperties)" Pack="true" Category="host" />
   </ItemGroup>
 
   <ItemGroup Condition="$(_subset.Contains('+host.tools+'))">

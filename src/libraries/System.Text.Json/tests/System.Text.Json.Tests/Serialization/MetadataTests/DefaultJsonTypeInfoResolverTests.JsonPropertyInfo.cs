@@ -1100,18 +1100,18 @@ namespace System.Text.Json.Serialization.Tests
         private class TestClassWithEveryPossibleJsonIgnore
         {
             [JsonIgnore(Condition = JsonIgnoreCondition.Always)]
-            public string AlwaysProperty { get; set; }
+            public string? AlwaysProperty { get; set; }
 
             [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
             public int WhenWritingDefaultProperty { get; set; }
 
             [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-            public string WhenWritingNullProperty { get; set; }
+            public string? WhenWritingNullProperty { get; set; }
 
             [JsonIgnore(Condition = JsonIgnoreCondition.Never)]
-            public string NeverProperty { get; set; }
+            public string? NeverProperty { get; set; }
 
-            public string Property { get; set; }
+            public string? Property { get; set; }
         }
 
         private class TestClassWithProperty
