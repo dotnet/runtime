@@ -50,6 +50,12 @@ namespace JIT.HardwareIntrinsics.Arm
 
                 // Validates passing an instance member of a struct works
                 test.RunStructFldScenario();
+
+                // Validates basic functionality fails with an invalid imm1, using Unsafe.ReadUnaligned
+                test.RunBasicScenario_UnsafeRead_InvalidImm1();
+
+                // Validates basic functionality fails with an invalid imm2, using Unsafe.ReadUnaligned
+                test.RunBasicScenario_UnsafeRead_InvalidImm2();
             }
             else
             {
@@ -249,11 +255,9 @@ namespace JIT.HardwareIntrinsics.Arm
             test.RunStructFldScenario(this);
         }
 
-
-
         public void RunBasicScenario_UnsafeRead_InvalidImm1()
         {
-            TestLibrary.TestFramework.BeginScenario(nameof(RunBasicScenario_UnsafeRead));
+            TestLibrary.TestFramework.BeginScenario(nameof(RunBasicScenario_UnsafeRead_InvalidImm1));
 
             bool succeeded = false;
 
@@ -273,7 +277,7 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public void RunBasicScenario_UnsafeRead_InvalidImm2()
         {
-            TestLibrary.TestFramework.BeginScenario(nameof(RunBasicScenario_UnsafeRead));
+            TestLibrary.TestFramework.BeginScenario(nameof(RunBasicScenario_UnsafeRead_InvalidImm2));
 
             bool succeeded = false;
 
