@@ -326,8 +326,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		class FeatureCheckBooleanExpressions
 		{
 			// Trimmer/NativeAot aren't able to optimize away the branch in this case.
-			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode), Tool.Trimmer | Tool.NativeAot, "")]
-			[ExpectedWarning ("IL3050", nameof (RequiresDynamicCode), Tool.NativeAot, "")]
+			[UnexpectedWarning ("IL2026", nameof (RequiresUnreferencedCode), Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/102830")]
+			[UnexpectedWarning ("IL3050", nameof (RequiresDynamicCode), Tool.NativeAot, "https://github.com/dotnet/runtime/issues/102830")]
 			static void And ()
 			{
 				if (TestFeatures.IsUnreferencedCodeSupported && RuntimeFeature.IsDynamicCodeSupported) {
@@ -348,8 +348,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 
 			// Trimmer/NativeAot aren't able to optimize away the branch in this case.
-			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode), Tool.Trimmer | Tool.NativeAot, "")]
-			[ExpectedWarning ("IL3050", nameof (RequiresDynamicCode), Tool.NativeAot, "")]
+			[UnexpectedWarning ("IL2026", nameof (RequiresUnreferencedCode), Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/102830")]
+			[UnexpectedWarning ("IL3050", nameof (RequiresDynamicCode), Tool.NativeAot, "https://github.com/dotnet/runtime/issues/102830")]
 			static void NotAnd ()
 			{
 				if (!(TestFeatures.IsUnreferencedCodeSupported && RuntimeFeature.IsDynamicCodeSupported))
@@ -370,8 +370,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 
 			// Trimmer/NativeAot aren't able to optimize away the branch in this case.
-			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode), Tool.Trimmer | Tool.NativeAot, "")]
-			[ExpectedWarning ("IL3050", nameof (RequiresDynamicCode), Tool.NativeAot, "")]
+			[UnexpectedWarning ("IL2026", nameof (RequiresUnreferencedCode), Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/102830")]
+			[UnexpectedWarning ("IL3050", nameof (RequiresDynamicCode), Tool.NativeAot, "https://github.com/dotnet/runtime/issues/102830")]
 			static void OrNot ()
 			{
 				if (!TestFeatures.IsUnreferencedCodeSupported || !RuntimeFeature.IsDynamicCodeSupported)
@@ -477,7 +477,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 
 			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode))]
-			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode), Tool.Trimmer | Tool.NativeAot, "")]
+			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCode), Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/102830")]
 			static void Contradiction ()
 			{
 				if (TestFeatures.IsUnreferencedCodeSupported && !TestFeatures.IsUnreferencedCodeSupported) {
