@@ -859,7 +859,7 @@ regMaskTP LinearScan::getKillSetForCall(GenTreeCall* call)
 #ifdef TARGET_ARM
     if (call->IsVirtualStub())
     {
-        killMask |= compiler->virtualStubParamInfo->GetRegMask();
+        killMask.AddGprRegs(compiler->virtualStubParamInfo->GetRegMask());
     }
 #else  // !TARGET_ARM
     // Verify that the special virtual stub call registers are in the kill mask.
@@ -875,7 +875,7 @@ regMaskTP LinearScan::getKillSetForCall(GenTreeCall* call)
     // so don't use the register post-call until it is consumed by SwiftError.
     if (call->HasSwiftErrorHandling())
     {
-        killMask |= RBM_SWIFT_ERROR;
+        killMask.AddGprRegs(RBM_SWIFT_ERROR);
     }
 #endif // SWIFT_SUPPORT
 
@@ -911,7 +911,7 @@ regMaskTP LinearScan::getKillSetForBlockStore(GenTreeBlk* blkNode)
             if (isCopyBlk)
             {
                 // rep movs kills RCX, RDI and RSI
-                killMask = RBM_RCX | RBM_RDI | RBM_RSI;
+                killMask.AddGprRegs(RBM_RCX | RBM_RDI | RBM_RSI);
             }
             else
             {
@@ -919,7 +919,7 @@ regMaskTP LinearScan::getKillSetForBlockStore(GenTreeBlk* blkNode)
                 // (Note that the Data() node, if not constant, will be assigned to
                 // RCX, but it's find that this kills it, as the value is not available
                 // after this node in any case.)
-                killMask = RBM_RDI | RBM_RCX;
+                killMask.AddGprRegs(RBM_RDI | RBM_RCX);
             }
             break;
 #endif
@@ -2385,7 +2385,7 @@ void LinearScan::buildIntervals()
     // If there is a secret stub param, it is also live in
     if (compiler->info.compPublishStubParam)
     {
-        intRegState->rsCalleeRegArgMaskLiveIn |= RBM_SECRET_STUB_PARAM;
+        intRegState->rsCalleeRegArgMaskLiveIn.AddGprRegs(RBM_SECRET_STUB_PARAM);
 
         LclVarDsc* stubParamDsc = compiler->lvaGetDesc(compiler->lvaStubArgumentVar);
         if (isCandidateVar(stubParamDsc))
@@ -2537,7 +2537,7 @@ void LinearScan::buildIntervals()
             regMaskTP killed;
 #if defined(TARGET_XARCH)
             // Poisoning uses EAX for small vars and rep stosd that kills edi, ecx and eax for large vars.
-            killed = RBM_EDI | RBM_ECX | RBM_EAX;
+            killed.AddGprRegs(RBM_EDI | RBM_ECX | RBM_EAX);
 #else
             // Poisoning uses REG_SCRATCH for small vars and memset helper for big vars.
             killed = compiler->compHelperCallKillSet(CORINFO_HELP_NATIVE_MEMSET);

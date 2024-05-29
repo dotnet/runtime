@@ -275,15 +275,16 @@ private:
 
 public:
 
-    void AddRegNumInMask(regNumber reg);
 #ifdef TARGET_ARM
     void AddRegNumInMask(regNumber reg, var_types type);
     void RemoveRegNumFromMask(regNumber reg, var_types type);
     bool IsRegNumInMask(regNumber reg, var_types type) const;
 #endif
+    void AddGprRegs(SingleTypeRegSet gprRegs);
     void AddRegNum(regNumber reg, var_types type);
-    void RemoveRegNumFromMask(regNumber reg);
+    void AddRegNumInMask(regNumber reg);
     void RemoveRegNum(regNumber reg, var_types type);
+    void RemoveRegNumFromMask(regNumber reg);    
     bool IsRegNumInMask(regNumber reg) const;
     bool IsRegNumPresent(regNumber reg, var_types type) const;
 

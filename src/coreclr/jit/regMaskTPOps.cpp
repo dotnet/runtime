@@ -78,9 +78,27 @@ bool regMaskTP::IsRegNumInMask(regNumber reg, var_types type) const
 }
 #endif
 
-// This is similar to AddRegNumInMask(reg, regType) for all platforms
-// except Arm. For Arm, it calls getRegMask() instead of genRegMask()
-// to create a mask that needs to be added.
+//------------------------------------------------------------------------
+// AddGprRegs: Adds gprRegs to the mask
+//
+// Parameters:
+//  gprRegs  - Register to check
+//
+void regMaskTP::AddGprRegs(SingleTypeRegSet gprRegs)
+{
+    assert((gprRegs == RBM_NONE) || ((gprRegs & RBM_ALLINT) != RBM_NONE));
+    low |= gprRegs;
+}
+
+//------------------------------------------------------------------------
+// AddRegNum: This is similar to AddRegNumInMask(reg, regType) for all platforms
+//      except Arm. For Arm, it calls getRegMask() instead of genRegMask()
+//      to create a mask that needs to be added.
+// 
+// Parameters:
+//  reg  - Register to check
+//  type - type of register
+//
 void regMaskTP::AddRegNum(regNumber reg, var_types type)
 {
 #ifdef TARGET_ARM
