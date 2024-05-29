@@ -572,6 +572,10 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
     GenTree* op3     = nullptr;
     GenTree* op4     = nullptr;
 
+#ifdef DEBUG
+    bool isValidScalarIntrinsic = false;
+#endif
+
     switch (intrinsic)
     {
         case NI_Vector64_Abs:
@@ -2554,13 +2558,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
-        case NI_Sve_SaturatingDecrementBy16BitElementCount:
-        case NI_Sve_SaturatingDecrementBy32BitElementCount:
-        case NI_Sve_SaturatingDecrementBy64BitElementCount:
         case NI_Sve_SaturatingDecrementBy8BitElementCount:
-        case NI_Sve_SaturatingIncrementBy16BitElementCount:
-        case NI_Sve_SaturatingIncrementBy32BitElementCount:
-        case NI_Sve_SaturatingIncrementBy64BitElementCount:
         case NI_Sve_SaturatingIncrementBy8BitElementCount:
         case NI_Sve_SaturatingDecrementBy16BitElementCountScalar:
         case NI_Sve_SaturatingDecrementBy32BitElementCountScalar:
@@ -2568,6 +2566,17 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Sve_SaturatingIncrementBy16BitElementCountScalar:
         case NI_Sve_SaturatingIncrementBy32BitElementCountScalar:
         case NI_Sve_SaturatingIncrementBy64BitElementCountScalar:
+#ifdef DEBUG
+            isValidScalarIntrinsic = true;
+            FALLTHROUGH;
+#endif
+        case NI_Sve_SaturatingDecrementBy16BitElementCount:
+        case NI_Sve_SaturatingDecrementBy32BitElementCount:
+        case NI_Sve_SaturatingDecrementBy64BitElementCount:
+        case NI_Sve_SaturatingIncrementBy16BitElementCount:
+        case NI_Sve_SaturatingIncrementBy32BitElementCount:
+        case NI_Sve_SaturatingIncrementBy64BitElementCount:
+
         {
             assert(sig->numArgs == 3);
 
@@ -2608,6 +2617,8 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             return nullptr;
         }
     }
+
+    assert(!isScalar || isValidScalarIntrinsic);
 
     return retNode;
 }
