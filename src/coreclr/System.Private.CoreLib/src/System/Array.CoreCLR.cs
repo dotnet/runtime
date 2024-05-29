@@ -203,20 +203,20 @@ namespace System
                     return AssignArrayEnum.AssignWrongType;
             }
 
-            // dest Object extends src
+            // src Object extends dest
             if (srcTH.CanCastTo(destTH))
                 return AssignArrayEnum.AssignSimpleCopy;
 
-            // src Object extends dest
+            // dest Object extends src
             if (destTH.CanCastTo(srcTH))
                 return AssignArrayEnum.AssignMustCast;
 
             // class X extends/implements src and implements dest.
-            if (!destTH.IsInterface && srcElType != CorElementType.ELEMENT_TYPE_VALUETYPE)
+            if (destTH.IsInterface && srcElType != CorElementType.ELEMENT_TYPE_VALUETYPE)
                 return AssignArrayEnum.AssignMustCast;
 
             // class X implements src and extends/implements dest
-            if (!srcTH.IsInterface && srcElType != CorElementType.ELEMENT_TYPE_VALUETYPE)
+            if (srcTH.IsInterface && srcElType != CorElementType.ELEMENT_TYPE_VALUETYPE)
                 return AssignArrayEnum.AssignMustCast;
 
             return AssignArrayEnum.AssignWrongType;
