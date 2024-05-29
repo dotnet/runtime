@@ -2533,7 +2533,7 @@ internal class Dummy
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoRuntime)]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoRuntime))]
         public void TypeBuilderArrayReferencedInIL()
         {
             using (TempFile file = TempFile.Create())
@@ -2558,17 +2558,17 @@ internal class Dummy
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoRuntime)]
+        [Fact]
         public void TypeBuilderPointerReferencedInIL()
         {
             using (TempFile file = TempFile.Create())
             {
                 PersistedAssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder typeBuilder);
                 typeBuilder.DefineDefaultConstructor(MethodAttributes.Public);
-                MethodBuilder mb = typeBuilder.DefineMethod("IsPointer", MethodAttributes.Static | MethodAttributes.Public, typeof(bool), [typeof(object)]);
+                MethodBuilder mb = typeBuilder.DefineMethod("IsPointer", MethodAttributes.Static | MethodAttributes.Public, typeof(Type), null);
                 ILGenerator il = mb.GetILGenerator();
-                il.Emit(OpCodes.Ldarg_0);
-                il.Emit(OpCodes.Isinst, typeBuilder.MakePointerType());
+                il.Emit(OpCodes.Ldtoken, typeBuilder.MakePointerType());
+                il.Emit(OpCodes.Call, typeof(Type).GetMethod("GetTypeFromHandle")!);
                 il.Emit(OpCodes.Ret);
                 typeBuilder.CreateType();
                 ab.Save(file.Path);
@@ -2576,13 +2576,13 @@ internal class Dummy
                 TestAssemblyLoadContext tlc = new TestAssemblyLoadContext();
                 Type typeFromDisk = tlc.LoadFromAssemblyPath(file.Path).GetType("MyType");
                 MethodInfo method = typeFromDisk.GetMethod("IsPointer")!;
-                object result = method.Invoke(null, [typeFromDisk]);
-                Assert.False((bool)result);
+                Type result = (Type)method.Invoke(null, null);
+                Assert.Equal("MyType*", result.Name);
                 tlc.Unload();
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoRuntime)]
+        [Fact]
         public void TypeBuilderByRefReferencedInIL()
         {
             using (TempFile file = TempFile.Create())
