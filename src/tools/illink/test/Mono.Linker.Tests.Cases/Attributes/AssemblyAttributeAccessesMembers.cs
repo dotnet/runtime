@@ -14,6 +14,10 @@ using Mono.Linker.Tests.Cases.Expectations.Assertions;
 [assembly: AccessesMembers(typeof(AssemblyAttributeAccessesMembers.TypeWithMembers))]
 namespace Mono.Linker.Tests.Cases.Attributes
 {
+	/// <summary>
+	/// A regression test for the issue that was fixed by https://github.com/dotnet/runtime/pull/102613.
+	/// Events were assumed to always have a MemberDefinition or Descriptor file as the warning origin, but it also can occur from an assembly attribute.
+	/// </summary>
 	[Kept]
 	class AssemblyAttributeAccessesMembers
 	{
