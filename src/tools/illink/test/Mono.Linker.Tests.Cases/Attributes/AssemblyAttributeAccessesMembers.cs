@@ -10,8 +10,8 @@ using System.Threading.Tasks;
 using Mono.Linker.Tests.Cases.Attributes;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 
-[assembly: KeptAttributeAttribute(typeof(AccessesMembersAttribute))]
-[assembly: AccessesMembers(typeof(AssemblyAttributeAccessesMembers.TypeWithMembers))]
+[assembly: KeptAttributeAttribute (typeof (AccessesMembersAttribute))]
+[assembly: AccessesMembers (typeof (AssemblyAttributeAccessesMembers.TypeWithMembers))]
 namespace Mono.Linker.Tests.Cases.Attributes
 {
 	/// <summary>
@@ -22,7 +22,7 @@ namespace Mono.Linker.Tests.Cases.Attributes
 	class AssemblyAttributeAccessesMembers
 	{
 		[Kept]
-		public static void Main()
+		public static void Main ()
 		{
 			typeof (AssemblyAttributeAccessesMembers).Assembly.GetCustomAttributes (false);
 		}
@@ -41,7 +41,7 @@ namespace Mono.Linker.Tests.Cases.Attributes
 
 			[Kept]
 			[KeptBackingField]
-			public int Property { [Kept]get; [Kept]set; }
+			public int Property { [Kept] get; [Kept] set; }
 
 			[Kept]
 			[KeptEventAddMethod]
@@ -52,11 +52,14 @@ namespace Mono.Linker.Tests.Cases.Attributes
 	}
 
 	[Kept]
-	[KeptBaseType(typeof(Attribute))]
-	public class AccessesMembersAttribute: Attribute
+	[KeptBaseType (typeof (Attribute))]
+	public class AccessesMembersAttribute : Attribute
 	{
 		[Kept]
-		public AccessesMembersAttribute([KeptAttributeAttribute(typeof(DynamicallyAccessedMembersAttribute))][DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]Type type)
+		public AccessesMembersAttribute (
+			[KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))]
+			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.All)]
+			Type type)
 		{
 		}
 	}
