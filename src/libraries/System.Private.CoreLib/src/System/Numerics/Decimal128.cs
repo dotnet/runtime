@@ -14,6 +14,7 @@ namespace System.Numerics
         : IComparable,
           IComparable<Decimal128>,
           IEquatable<Decimal128>,
+          ISpanParsable<Decimal128>,
           IDecimalIeee754ParseAndFormatInfo<Decimal128>,
           IDecimalIeee754ConstructorInfo<Decimal128, Int128, UInt128>,
           IDecimalIeee754UnpackInfo<Decimal128, Int128, UInt128>,

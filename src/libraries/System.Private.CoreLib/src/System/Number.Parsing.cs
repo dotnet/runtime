@@ -9,7 +9,6 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.Unicode;
-using static System.Number;
 
 namespace System
 {
@@ -100,7 +99,7 @@ namespace System
         where TSignificand : unmanaged, IBinaryInteger<TSignificand>
     {
         static abstract int DecimalNumberBufferLength { get; }
-        static abstract bool TryNumberToDecimalIeee754(ref NumberBuffer number, out TSignificand significand, out int exponent);
+        static abstract bool TryNumberToDecimalIeee754(ref Number.NumberBuffer number, out TSignificand significand, out int exponent);
         static abstract TSelf Construct(TSignificand significand, int exponent);
     }
 

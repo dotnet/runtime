@@ -13,6 +13,7 @@ namespace System.Numerics
         : IComparable,
           IComparable<Decimal32>,
           IEquatable<Decimal32>,
+          ISpanParsable<Decimal32>,
           IDecimalIeee754ParseAndFormatInfo<Decimal32>,
           IDecimalIeee754ConstructorInfo<Decimal32, int, uint>,
           IDecimalIeee754UnpackInfo<Decimal32, int, uint>,

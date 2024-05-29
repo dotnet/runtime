@@ -10616,7 +10616,8 @@ namespace System.Numerics
     public readonly struct Decimal32
         : System.IComparable,
           System.IComparable<Decimal32>,
-          System.IEquatable<Decimal32>
+          System.IEquatable<Decimal32>,
+          System.ISpanParsable<Decimal32>
     {
         public Decimal32(int significand, int exponent) { throw null; }
 
@@ -10647,7 +10648,8 @@ namespace System.Numerics
     public readonly struct Decimal64
         : System.IComparable,
           System.IComparable<Decimal64>,
-          System.IEquatable<Decimal64>
+          System.IEquatable<Decimal64>,
+          System.ISpanParsable<Decimal64>
     {
         public Decimal64(long significand, int exponent) { throw null; }
 
@@ -10679,7 +10681,8 @@ namespace System.Numerics
     public readonly struct Decimal128
         : System.IComparable,
           System.IComparable<Decimal128>,
-          System.IEquatable<Decimal128>
+          System.IEquatable<Decimal128>,
+          System.ISpanParsable<Decimal128>
     {
         public Decimal128(Int128 significand, int exponent) { throw null; }
 

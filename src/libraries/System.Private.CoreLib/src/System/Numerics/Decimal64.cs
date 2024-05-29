@@ -11,6 +11,7 @@ namespace System.Numerics
         : IComparable,
           IComparable<Decimal64>,
           IEquatable<Decimal64>,
+          ISpanParsable<Decimal64>,
           IDecimalIeee754ParseAndFormatInfo<Decimal64>,
           IDecimalIeee754ConstructorInfo<Decimal64, long, ulong>,
           IDecimalIeee754UnpackInfo<Decimal64, long, ulong>,
