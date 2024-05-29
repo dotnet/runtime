@@ -9724,6 +9724,10 @@ GenTree* Compiler::gtCloneExpr(GenTree* tree)
             if (tree->AsHWIntrinsic()->IsUserCall())
             {
                 copy->AsHWIntrinsic()->SetMethodHandle(this, tree->AsHWIntrinsic()->GetMethodHandle());
+
+#ifdef FEATURE_READYTORUN
+                copy->AsHWIntrinsic()->SetEntryPoint(this, tree->AsHWIntrinsic()->GetEntryPoint());
+#endif // FEATURE_READYTORUN
             }
             goto CLONE_MULTIOP_OPERANDS;
 #endif
