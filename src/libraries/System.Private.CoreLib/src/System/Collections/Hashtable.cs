@@ -1139,7 +1139,7 @@ namespace System.Collections
                 }
             }
 
-            if (hashsize == 0)
+            if (hashsize < InitialSize)
             {
                 hashsize = InitialSize;
             }
