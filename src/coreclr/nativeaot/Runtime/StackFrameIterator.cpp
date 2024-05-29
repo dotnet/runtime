@@ -277,28 +277,8 @@ void StackFrameIterator::InternalInit(Thread * pThreadToWalk, PInvokeTransitionF
 
 #endif // defined(USE_PORTABLE_HELPERS)
 
-    // This function guarantees that the final initialized context will refer to a managed
-    // frame.  In the rare case where the PC does not refer to managed code (and refers to an
-    // assembly thunk instead), unwind through the thunk sequence to find the nearest managed
-    // frame.
-    // NOTE: When thunks are present, the thunk sequence may report a conservative GC reporting
-    // lower bound that must be applied when processing the managed frame.
-
-    ReturnAddressCategory category = CategorizeUnadjustedReturnAddress(m_ControlPC);
-
-    if (category == InManagedCode)
-    {
-        ASSERT(m_pInstance->IsManaged(m_ControlPC));
-    }
-    else if (IsNonEHThunk(category))
-    {
-        UnwindNonEHThunkSequence();
-        ASSERT(m_pInstance->IsManaged(m_ControlPC));
-    }
-    else
-    {
-        FAILFAST_OR_DAC_FAIL_UNCONDITIONALLY("PInvokeTransitionFrame PC points to an unexpected assembly thunk kind.");
-    }
+    // adjust for thunks, if needed
+    EnsureInitializedToManagedFrame();
 
     STRESS_LOG1(LF_STACKWALK, LL_INFO10000, "   %p\n", m_ControlPC);
 }
@@ -484,7 +464,13 @@ void StackFrameIterator::InternalInit(Thread * pThreadToWalk, PTR_PAL_LIMITED_CO
 }
 
 // Prepare to start a stack walk from the context listed in the supplied NATIVE_CONTEXT.
-// The supplied context can describe a location in managed code.
+// NOTE: When a return address hijack is executed, the PC in the NATIVE_CONTEXT
+// matches the hijacked return address.  This PC is not guaranteed to be in managed code
+// since the hijacked return address may refer to a location where an assembly thunk called
+// into managed code.
+// NOTE: When the PC is in an assembly thunk, this function will unwind to the next managed
+// frame and may publish a conservative stack range (if and only if any of the unwound
+// thunks report a conservative range).
 void StackFrameIterator::InternalInit(Thread * pThreadToWalk, NATIVE_CONTEXT* pCtx, uint32_t dwFlags)
 {
     ASSERT((dwFlags & MethodStateCalculated) == 0);
@@ -618,6 +604,12 @@ void StackFrameIterator::InternalInit(Thread * pThreadToWalk, NATIVE_CONTEXT* pC
 
 #undef PTR_TO_REG
 
+    // adjust for thunks, if needed
+    EnsureInitializedToManagedFrame();
+}
+
+void StackFrameIterator::EnsureInitializedToManagedFrame()
+{
     // This function guarantees that the final initialized context will refer to a managed
     // frame.  In the rare case where the PC does not refer to managed code (and refers to an
     // assembly thunk instead), unwind through the thunk sequence to find the nearest managed
@@ -638,7 +630,7 @@ void StackFrameIterator::InternalInit(Thread * pThreadToWalk, NATIVE_CONTEXT* pC
     }
     else
     {
-        FAILFAST_OR_DAC_FAIL_UNCONDITIONALLY("NATIVE_CONTEXT PC points to an unexpected assembly thunk kind.");
+        FAILFAST_OR_DAC_FAIL_UNCONDITIONALLY("Unadjusted initial PC points to an unexpected assembly thunk kind.");
     }
 }
 
