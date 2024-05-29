@@ -62,10 +62,10 @@ namespace System
             if ((uint)(destinationIndex + length) > destinationArray.NativeLength)
                 throw new ArgumentException(SR.Arg_LongerThanDestArray, nameof(destinationArray));
 
-            AssignArrayEnum assignType = AssignArrayEnum.AssignWrongType;
+            ArrayAssignType assignType = ArrayAssignType.WrongType;
 
             if (sourceArray.GetType() == destinationArray.GetType()
-                || (assignType = CanAssignArrayType(sourceArray, destinationArray)) == AssignArrayEnum.AssignSimpleCopy)
+                || (assignType = CanAssignArrayType(sourceArray, destinationArray)) == ArrayAssignType.SimpleCopy)
             {
                 MethodTable* pMT = RuntimeHelpers.GetMethodTable(sourceArray);
 
@@ -116,30 +116,30 @@ namespace System
         // instance & might fail when called from within a CER, or if the
         // reliable flag is true, it will either always succeed or always
         // throw an exception with no side effects.
-        private static unsafe void CopySlow(Array sourceArray, int sourceIndex, Array destinationArray, int destinationIndex, int length, AssignArrayEnum assignType)
+        private static unsafe void CopySlow(Array sourceArray, int sourceIndex, Array destinationArray, int destinationIndex, int length, ArrayAssignType assignType)
         {
             Debug.Assert(sourceArray.Rank == destinationArray.Rank);
 
-            if (assignType == AssignArrayEnum.AssignWrongType)
+            if (assignType == ArrayAssignType.WrongType)
                 ThrowHelper.ThrowArrayTypeMismatchException_CantAssignType();
 
             if (length > 0)
             {
                 switch (assignType)
                 {
-                    case AssignArrayEnum.AssignUnboxValueClass:
+                    case ArrayAssignType.UnboxValueClass:
                         CopyImplUnBoxEachElement(sourceArray, sourceIndex, destinationArray, destinationIndex, length);
                         break;
 
-                    case AssignArrayEnum.AssignBoxValueClassOrPrimitive:
+                    case ArrayAssignType.BoxValueClassOrPrimitive:
                         CopyImplBoxEachElement(sourceArray, sourceIndex, destinationArray, destinationIndex, length);
                         break;
 
-                    case AssignArrayEnum.AssignMustCast:
+                    case ArrayAssignType.MustCast:
                         CopyImplCastCheckEachElement(sourceArray, sourceIndex, destinationArray, destinationIndex, length);
                         break;
 
-                    case AssignArrayEnum.AssignPrimitiveWiden:
+                    case ArrayAssignType.PrimitiveWiden:
                         CopyImplPrimitiveWiden(sourceArray, sourceIndex, destinationArray, destinationIndex, length);
                         break;
 
@@ -150,43 +150,42 @@ namespace System
             }
         }
 
-        // Must match the definition in arraynative.cpp
-        private enum AssignArrayEnum
+        private enum ArrayAssignType
         {
-            AssignSimpleCopy,
-            AssignWrongType,
-            AssignMustCast,
-            AssignBoxValueClassOrPrimitive,
-            AssignUnboxValueClass,
-            AssignPrimitiveWiden,
+            SimpleCopy,
+            WrongType,
+            MustCast,
+            BoxValueClassOrPrimitive,
+            UnboxValueClass,
+            PrimitiveWiden,
         }
 
-        private static unsafe AssignArrayEnum CanAssignArrayType(Array sourceArray, Array destinationArray)
+        private static unsafe ArrayAssignType CanAssignArrayType(Array sourceArray, Array destinationArray)
         {
             TypeHandle srcTH = RuntimeHelpers.GetMethodTable(sourceArray)->GetArrayElementTypeHandle();
             TypeHandle destTH = RuntimeHelpers.GetMethodTable(destinationArray)->GetArrayElementTypeHandle();
 
             if (TypeHandle.AreSameType(srcTH, destTH)) // This check kicks for different array kind or dimensions
-                return AssignArrayEnum.AssignSimpleCopy;
+                return ArrayAssignType.SimpleCopy;
 
             // Value class boxing
             if (srcTH.IsValueType && !destTH.IsValueType)
             {
                 if (srcTH.CanCastTo(destTH))
-                    return AssignArrayEnum.AssignBoxValueClassOrPrimitive;
+                    return ArrayAssignType.BoxValueClassOrPrimitive;
                 else
-                    return AssignArrayEnum.AssignWrongType;
+                    return ArrayAssignType.WrongType;
             }
 
             // Value class unboxing.
             if (!srcTH.IsValueType && destTH.IsValueType)
             {
                 if (srcTH.CanCastTo(destTH))
-                    return AssignArrayEnum.AssignUnboxValueClass;
+                    return ArrayAssignType.UnboxValueClass;
                 else if (destTH.CanCastTo(srcTH))   // V extends IV. Copying from IV to V, or Object to V.
-                    return AssignArrayEnum.AssignUnboxValueClass;
+                    return ArrayAssignType.UnboxValueClass;
                 else
-                    return AssignArrayEnum.AssignWrongType;
+                    return ArrayAssignType.WrongType;
             }
 
             CorElementType srcElType = srcTH.GetVerifierCorElementType();
@@ -196,30 +195,30 @@ namespace System
             if (srcElType.IsPrimitiveType() && destElType.IsPrimitiveType())
             {
                 if (GetNormalizedIntegralArrayElementType(srcElType) == GetNormalizedIntegralArrayElementType(destElType))
-                    return AssignArrayEnum.AssignSimpleCopy;
+                    return ArrayAssignType.SimpleCopy;
                 else if (RuntimeHelpers.CanPrimitiveWiden(srcElType, destElType))
-                    return AssignArrayEnum.AssignPrimitiveWiden;
+                    return ArrayAssignType.PrimitiveWiden;
                 else
-                    return AssignArrayEnum.AssignWrongType;
+                    return ArrayAssignType.WrongType;
             }
 
             // src Object extends dest
             if (srcTH.CanCastTo(destTH))
-                return AssignArrayEnum.AssignSimpleCopy;
+                return ArrayAssignType.SimpleCopy;
 
             // dest Object extends src
             if (destTH.CanCastTo(srcTH))
-                return AssignArrayEnum.AssignMustCast;
+                return ArrayAssignType.MustCast;
 
             // class X extends/implements src and implements dest.
             if (destTH.IsInterface && srcElType != CorElementType.ELEMENT_TYPE_VALUETYPE)
-                return AssignArrayEnum.AssignMustCast;
+                return ArrayAssignType.MustCast;
 
             // class X implements src and extends/implements dest
             if (srcTH.IsInterface && srcElType != CorElementType.ELEMENT_TYPE_VALUETYPE)
-                return AssignArrayEnum.AssignMustCast;
+                return ArrayAssignType.MustCast;
 
-            return AssignArrayEnum.AssignWrongType;
+            return ArrayAssignType.WrongType;
         }
 
         // Unboxes from an Object[] into a value class or primitive array.
