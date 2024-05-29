@@ -278,9 +278,11 @@ public:
     void AddRegNumInMask(regNumber reg);
 #ifdef TARGET_ARM
     void AddRegNumInMask(regNumber reg, var_types type);
+    void RemoveRegNumFromMask(regNumber reg, var_types type);
 #endif
     void AddRegNum(regNumber reg, var_types type);
     void RemoveRegNumFromMask(regNumber reg);
+    void RemoveRegNum(regNumber reg, var_types type);
     bool IsRegNumInMask(regNumber reg);
 
     regMaskTP(regMaskSmall lowMask, RegSet32 highMask)

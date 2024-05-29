@@ -289,7 +289,7 @@ void LinearScan::updateNextFixedRef(RegRecord* regRecord, RefPosition* nextRefPo
 
     if (nextLocation == MaxLocation)
     {
-        fixedRegs &= ~genRegMask(regRecord->regNum);
+        fixedRegs.RemoveRegNumFromMask(regRecord->regNum);
     }
     else
     {
@@ -4655,7 +4655,7 @@ void LinearScan::processBlockStartLocations(BasicBlock* currentBlock)
                     RegRecord* anotherHalfRegRec = findAnotherHalfRegRec(targetRegRecord);
 
                     // Use TYP_FLOAT to get the regmask of just the half reg.
-                    liveRegs &= ~getRegMask(anotherHalfRegRec->regNum, TYP_FLOAT);
+                    liveRegs.RemoveRegNum(anotherHalfRegRec->regNum, TYP_FLOAT);
                 }
 
 #endif // TARGET_ARM
@@ -9814,7 +9814,7 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
                         regNumber upperHalfReg  = REG_NEXT(fromReg);
                         if ((otherInterval->registerType == TYP_DOUBLE) && (location[upperHalfReg] != REG_NA))
                         {
-                            targetRegsReady &= ~fromRegMask;
+                            targetRegsReady.RemoveRegNumFromMask(fromReg);
                         }
                     }
                 }
@@ -9859,7 +9859,7 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
             regNumber fromReg   = (regNumber)location[sourceReg];
             if (targetReg == fromReg)
             {
-                targetRegsToDo &= ~targetRegMask;
+                targetRegsToDo.RemoveRegNumFromMask(targetReg);
             }
             else
             {
@@ -9902,8 +9902,7 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
                         // Otherwise, we'll spill it to the stack and reload it later.
                         if (useSwap)
                         {
-                            regMaskTP fromRegMask = genRegMask(fromReg);
-                            targetRegsToDo &= ~fromRegMask;
+                            targetRegsToDo.RemoveRegNumFromMask(fromReg);
                         }
                     }
                     else
@@ -9950,7 +9949,7 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
                         regMaskTP otherTargetRegMask = genRegMask(otherTargetReg);
                         targetRegsFromStack |= otherTargetRegMask;
                         stackToRegIntervals[otherTargetReg] = otherInterval;
-                        targetRegsToDo &= ~otherTargetRegMask;
+                        targetRegsToDo.RemoveRegNumFromMask(otherTargetReg);
 
                         // Now, move the interval that is going to targetReg.
                         addResolution(block, insertionPoint, sourceIntervals[sourceReg], targetReg,
@@ -9976,13 +9975,13 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
                                 regNumber upperHalfReg  = REG_NEXT(fromReg);
                                 if ((otherInterval->registerType == TYP_DOUBLE) && (location[upperHalfReg] != REG_NA))
                                 {
-                                    targetRegsReady &= ~fromRegMask;
+                                    targetRegsReady.RemoveRegNumFromMask(fromReg);
                                 }
                             }
 #endif // TARGET_ARM
                         }
                     }
-                    targetRegsToDo &= ~targetRegMask;
+                    targetRegsToDo.RemoveRegNumFromMask(targetReg);
                 }
                 else
                 {

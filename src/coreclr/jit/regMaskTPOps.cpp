@@ -58,6 +58,15 @@ void regMaskTP::AddRegNumInMask(regNumber reg, var_types type)
 {
     low |= genSingleTypeRegMask(reg, type);
 }
+
+// ----------------------------------------------------------
+//  RemoveRegNumFromMask: Removes `reg` from the mask. It is same as RemoveRegNumFromMask(reg) except
+//  that it takes `type` as an argument and adds `reg` to the mask for that type.
+//
+void regMaskTP::RemoveRegNumFromMask(regNumber reg, var_types type)
+{
+    low &= ~genSingleTypeRegMask(reg, type);
+}
 #endif
 
 // This is similar to AddRegNumInMask(reg, regType) for all platforms
@@ -86,6 +95,22 @@ void regMaskTP::RemoveRegNumFromMask(regNumber reg)
     _registers[index] &= ~encodeForRegisterIndex(index, value);
 #else
     low &= ~value;
+#endif
+}
+
+//------------------------------------------------------------------------
+// RemoveRegNum: his is similar to RemoveRegNumFromMask(reg, regType) for all platforms
+//      except Arm. For Arm, it calls getRegMask() instead of genRegMask()
+//      to create a mask that needs to be added.
+// Parameters:
+//  reg - Register to remove
+//
+void regMaskTP::RemoveRegNum(regNumber reg, var_types type)
+{
+#ifdef TARGET_ARM
+    low &= ~getRegMask(reg, type);
+#else
+    RemoveRegNumFromMask(reg);
 #endif
 }
 
