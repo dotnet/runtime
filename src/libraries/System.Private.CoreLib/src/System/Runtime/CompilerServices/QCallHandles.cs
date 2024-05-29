@@ -102,10 +102,18 @@ namespace System.Runtime.CompilerServices
         private void* _ptr;
         private IntPtr _handle;
 
+#if CORECLR
         internal QCallFieldHandle(ref IRuntimeFieldInfo field)
         {
             _ptr = Unsafe.AsPointer(ref field);
             _handle = field.Value.Value;
+        }
+#endif
+
+        internal QCallFieldHandle(ref RuntimeFieldHandle rth)
+        {
+            _ptr = Unsafe.AsPointer(ref rth);
+            _handle = rth.Value;
         }
     }
 }
