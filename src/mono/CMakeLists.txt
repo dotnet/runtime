@@ -284,7 +284,7 @@ elseif(CLR_CMAKE_HOST_OS STREQUAL "windows")
     add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/Oi>) # enable intrinsics
     add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/GF>) # enable string pooling
     add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/GL>) # whole program optimization
-    set(CMAKE_MSVC_DEBUG_INFORMATION_FORMAT $<$<COMIPLE_LANGUAGE:C,CXX>:ProgramDatabase>) # enable debugging information
+    set(CMAKE_MSVC_DEBUG_INFORMATION_FORMAT ProgramDatabase) # enable debugging information
     add_link_options(/LTCG)    # link-time code generation
     add_link_options(/DEBUG)   # enable debugging information
     add_link_options(/DEBUGTYPE:CV,FIXUP)   # enable fixup debug information
