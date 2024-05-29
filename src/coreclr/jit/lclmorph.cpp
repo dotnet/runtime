@@ -2257,7 +2257,7 @@ bool Compiler::fgExposeUnpropagatedLocals(bool propagatedAny, LocalEqualsLocalAd
 
         const LocalEqualsLocalAddrAssertion& assertion = assertions->GetAssertionByIndex(index);
         LclVarDsc*                           dsc       = lvaGetDesc(assertion.DestLclNum);
-        if (dsc->IsAddressExposed())
+        if (dsc->IsAddressExposed() || assertions->IsMarkedForExposure(assertion.DestLclNum))
         {
             uint64_t relevantAssertions = assertions->GetDestAssertions(assertion.DestLclNum);
             assert((relevantAssertions & (uint64_t(1) << index)) != 0);
