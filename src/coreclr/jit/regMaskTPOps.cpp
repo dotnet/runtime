@@ -126,6 +126,25 @@ void regMaskTP::AddRegsetForType(SingleTypeRegSet regsToAdd, var_types type)
 }
 
 //------------------------------------------------------------------------
+// GetRegSetForType: Get regset for given `type`
+//
+// Parameters:
+//  type       - type of register
+//
+//  Return: The register set of given type
+//              
+SingleTypeRegSet regMaskTP::GetRegSetForType(var_types type) const
+{
+#ifdef HAS_MORE_THAN_64_REGISTERS
+    int         index = regIndexForType(type);
+    RegSet32 value = _registers[index];
+    return decodeForRegisterIndex(index, value);
+#else
+    return low;
+#endif
+}
+
+//------------------------------------------------------------------------
 // IsRegNumInMask: Checks if `reg` is in the mask
 //
 // Parameters:

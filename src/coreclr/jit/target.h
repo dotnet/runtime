@@ -284,6 +284,7 @@ public:
     void AddRegNum(regNumber reg, var_types type);
     void AddRegNumInMask(regNumber reg);
     void AddRegsetForType(SingleTypeRegSet regsToAdd, var_types type);
+    SingleTypeRegSet GetRegSetForType(var_types type) const;
     bool             IsRegNumInMask(regNumber reg) const;
     bool             IsRegNumPresent(regNumber reg, var_types type) const;
     void RemoveRegNum(regNumber reg, var_types type);
@@ -367,11 +368,6 @@ public:
     bool IsNonEmpty() const
     {
         return !IsEmpty();
-    }
-
-    SingleTypeRegSet GetRegSetForType(var_types type) const
-    {
-        return getLow();
     }
 
     SingleTypeRegSet GetIntRegSet() const
