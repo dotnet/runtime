@@ -3401,7 +3401,7 @@ interp_emit_swiftcall_struct_lowering (TransformData *td, MonoMethodSignature *c
 	++td->sp;
 
 	// Create a new dummy signature with the lowered arguments
-	new_csignature = mono_metadata_signature_dup_new_params (td->mempool, csignature, new_param_count, (MonoType**)new_params->data);
+	new_csignature = mono_metadata_signature_dup_new_params (NULL, td->mem_manager, csignature, new_param_count, (MonoType**)new_params->data);
 
 	// Deallocate temp array
 	g_array_free (new_params, TRUE);
@@ -4945,6 +4945,35 @@ handle_stelem (TransformData *td, int op)
 	interp_add_ins (td, op);
 	td->sp -= 3;
 	interp_ins_set_sregs3 (td->last_ins, td->sp [0].var, td->sp [1].var, td->sp [2].var);
+
+	if (op == MINT_STELEM_REF) {
+		InterpVar *array_var = &td->vars [td->last_ins->sregs [0]],
+			*value_var = &td->vars [td->last_ins->sregs [2]];
+		MonoClass *array_var_klass = mono_class_from_mono_type_internal (array_var->type),
+			*value_var_klass = mono_class_from_mono_type_internal (value_var->type);
+
+		if (m_class_is_array (array_var_klass)) {
+			MonoClass *array_element_klass = m_class_get_element_class (array_var_klass);
+			// If lhs is T[] and rhs is T and T is sealed, we can skip the runtime typecheck
+			if (
+				(array_element_klass == value_var_klass) &&
+				m_class_is_sealed(value_var_klass) &&
+				// HACK: Arrays are sealed, but it's possible to downcast string[][] to object[][],
+				//  so we don't want to treat elements of array types as actually sealed.
+				// Our lhs of type object[][] might actually be of a different reference type.
+				!m_class_is_array(value_var_klass)
+			){
+				if (td->verbose_level > 2)
+					g_printf (
+						"MINT_STELEM_REF_UNCHECKED for %s in %s::%s\n",
+						m_class_get_name (value_var_klass),
+						m_class_get_name (td->method->klass), td->method->name
+					);
+				td->last_ins->opcode = MINT_STELEM_REF_UNCHECKED;
+			}
+		}
+	}
+
 	++td->ip;
 }
 
@@ -5143,7 +5172,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 		arg_locals = (guint32*) g_malloc ((!!signature->hasthis + signature->param_count) * sizeof (guint32));
 		/* Allocate locals to store inlined method args from stack */
 		for (int i = signature->param_count - 1; i >= 0; i--) {
-			MonoType *type = td->vars [td->sp [-1].var].type;
+			MonoType *type = get_type_from_stack (td->sp [-1].type, td->sp [-1].klass);
 			local = interp_create_var (td, type);
 			arg_locals [i + !!signature->hasthis] = local;
 			store_local (td, local);

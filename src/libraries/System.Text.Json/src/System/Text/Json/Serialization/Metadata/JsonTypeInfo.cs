@@ -990,8 +990,7 @@ namespace System.Text.Json.Serialization.Metadata
 
         // Untyped, root-level serialization methods
         internal abstract void SerializeAsObject(Utf8JsonWriter writer, object? rootValue);
-        internal abstract Task SerializeAsObjectAsync<TSerializationContext>(TSerializationContext serializationContext, object? rootValue, CancellationToken cancellationToken)
-            where TSerializationContext : struct, IAsyncSerializationBufferWriterContext;
+        internal abstract Task SerializeAsObjectAsync(PipeWriter pipeWriter, object? rootValue, int flushThreshold, CancellationToken cancellationToken);
         internal abstract Task SerializeAsObjectAsync(Stream utf8Json, object? rootValue, CancellationToken cancellationToken);
         internal abstract Task SerializeAsObjectAsync(PipeWriter utf8Json, object? rootValue, CancellationToken cancellationToken);
         internal abstract void SerializeAsObject(Stream utf8Json, object? rootValue);

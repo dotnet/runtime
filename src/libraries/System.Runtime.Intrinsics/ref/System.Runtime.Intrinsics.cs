@@ -4365,6 +4365,19 @@ namespace System.Runtime.Intrinsics.Arm
         public static System.Numerics.Vector<double> FusedMultiplySubtractNegated(System.Numerics.Vector<double> minuend, System.Numerics.Vector<double> left, System.Numerics.Vector<double> right) { throw null; }
         public static System.Numerics.Vector<float> FusedMultiplySubtractNegated(System.Numerics.Vector<float> minuend, System.Numerics.Vector<float> left, System.Numerics.Vector<float> right) { throw null; }
 
+        public static System.Numerics.Vector<byte> LeadingSignCount(System.Numerics.Vector<sbyte> value) { throw null; }
+        public static System.Numerics.Vector<ushort> LeadingSignCount(System.Numerics.Vector<short> value) { throw null; }
+        public static System.Numerics.Vector<uint> LeadingSignCount(System.Numerics.Vector<int> value) { throw null; }
+        public static System.Numerics.Vector<ulong> LeadingSignCount(System.Numerics.Vector<long> value) { throw null; }
+        public static System.Numerics.Vector<byte> LeadingZeroCount(System.Numerics.Vector<sbyte> value) { throw null; }
+        public static System.Numerics.Vector<byte> LeadingZeroCount(System.Numerics.Vector<byte> value) { throw null; }
+        public static System.Numerics.Vector<ushort> LeadingZeroCount(System.Numerics.Vector<short> value) { throw null; }
+        public static System.Numerics.Vector<ushort> LeadingZeroCount(System.Numerics.Vector<ushort> value) { throw null; }
+        public static System.Numerics.Vector<uint> LeadingZeroCount(System.Numerics.Vector<int> value) { throw null; }
+        public static System.Numerics.Vector<uint> LeadingZeroCount(System.Numerics.Vector<uint> value) { throw null; }
+        public static System.Numerics.Vector<ulong> LeadingZeroCount(System.Numerics.Vector<long> value) { throw null; }
+        public static System.Numerics.Vector<ulong> LeadingZeroCount(System.Numerics.Vector<ulong> value) { throw null; }
+
         public static unsafe System.Numerics.Vector<sbyte> LoadVector(System.Numerics.Vector<sbyte> mask, sbyte* address) { throw null; }
         public static unsafe System.Numerics.Vector<short> LoadVector(System.Numerics.Vector<short> mask, short* address) { throw null; }
         public static unsafe System.Numerics.Vector<int> LoadVector(System.Numerics.Vector<int> mask, int* address) { throw null; }
@@ -4509,6 +4522,17 @@ namespace System.Runtime.Intrinsics.Arm
         public static System.Numerics.Vector<uint> OrAcross(System.Numerics.Vector<uint> value) { throw null; }
         public static System.Numerics.Vector<ulong> OrAcross(System.Numerics.Vector<ulong> value) { throw null; }
 
+        public static System.Numerics.Vector<byte> PopCount(System.Numerics.Vector<sbyte> value) { throw null; }
+        public static System.Numerics.Vector<byte> PopCount(System.Numerics.Vector<byte> value) { throw null; }
+        public static System.Numerics.Vector<ushort> PopCount(System.Numerics.Vector<short> value) { throw null; }
+        public static System.Numerics.Vector<ushort> PopCount(System.Numerics.Vector<ushort> value) { throw null; }
+        public static System.Numerics.Vector<uint> PopCount(System.Numerics.Vector<int> value) { throw null; }
+        public static System.Numerics.Vector<uint> PopCount(System.Numerics.Vector<float> value) { throw null; }
+        public static System.Numerics.Vector<uint> PopCount(System.Numerics.Vector<uint> value) { throw null; }
+        public static System.Numerics.Vector<ulong> PopCount(System.Numerics.Vector<double> value) { throw null; }
+        public static System.Numerics.Vector<ulong> PopCount(System.Numerics.Vector<long> value) { throw null; }
+        public static System.Numerics.Vector<ulong> PopCount(System.Numerics.Vector<ulong> value) { throw null; }
+
         public static System.Numerics.Vector<int> SignExtend16(System.Numerics.Vector<int> value) { throw null; }
         public static System.Numerics.Vector<long> SignExtend16(System.Numerics.Vector<long> value) { throw null; }
         public static System.Numerics.Vector<long> SignExtend32(System.Numerics.Vector<long> value) { throw null; }
@@ -4563,6 +4587,19 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe void StoreAndZip(System.Numerics.Vector<ulong> mask, ulong* address, (System.Numerics.Vector<ulong> Value1, System.Numerics.Vector<ulong> Value2) data) { throw null; }
         public static unsafe void StoreAndZip(System.Numerics.Vector<ulong> mask, ulong* address, (System.Numerics.Vector<ulong> Value1, System.Numerics.Vector<ulong> Value2, System.Numerics.Vector<ulong> Value3) data) { throw null; }
         public static unsafe void StoreAndZip(System.Numerics.Vector<ulong> mask, ulong* address, (System.Numerics.Vector<ulong> Value1, System.Numerics.Vector<ulong> Value2, System.Numerics.Vector<ulong> Value3, System.Numerics.Vector<ulong> Value4) data) { throw null; }
+
+        public static unsafe void StoreNarrowing(System.Numerics.Vector<short> mask, sbyte* address, System.Numerics.Vector<short> data) { throw null; }
+        public static unsafe void StoreNarrowing(System.Numerics.Vector<int> mask, sbyte* address, System.Numerics.Vector<int> data) { throw null; }
+        public static unsafe void StoreNarrowing(System.Numerics.Vector<int> mask, short* address, System.Numerics.Vector<int> data) { throw null; }
+        public static unsafe void StoreNarrowing(System.Numerics.Vector<long> mask, sbyte* address, System.Numerics.Vector<long> data) { throw null; }
+        public static unsafe void StoreNarrowing(System.Numerics.Vector<long> mask, short* address, System.Numerics.Vector<long> data) { throw null; }
+        public static unsafe void StoreNarrowing(System.Numerics.Vector<long> mask, int* address, System.Numerics.Vector<long> data) { throw null; }
+        public static unsafe void StoreNarrowing(System.Numerics.Vector<ushort> mask, byte* address, System.Numerics.Vector<ushort> data) { throw null; }
+        public static unsafe void StoreNarrowing(System.Numerics.Vector<uint> mask, byte* address, System.Numerics.Vector<uint> data) { throw null; }
+        public static unsafe void StoreNarrowing(System.Numerics.Vector<uint> mask, ushort* address, System.Numerics.Vector<uint> data) { throw null; }
+        public static unsafe void StoreNarrowing(System.Numerics.Vector<ulong> mask, byte* address, System.Numerics.Vector<ulong> data) { throw null; }
+        public static unsafe void StoreNarrowing(System.Numerics.Vector<ulong> mask, ushort* address, System.Numerics.Vector<ulong> data) { throw null; }
+        public static unsafe void StoreNarrowing(System.Numerics.Vector<ulong> mask, uint* address, System.Numerics.Vector<ulong> data) { throw null; }
 
         public static System.Numerics.Vector<sbyte> Subtract(System.Numerics.Vector<sbyte> left, System.Numerics.Vector<sbyte> right) { throw null; }
         public static System.Numerics.Vector<short> Subtract(System.Numerics.Vector<short> left, System.Numerics.Vector<short> right) { throw null; }

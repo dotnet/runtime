@@ -129,7 +129,7 @@ int LinearScan::BuildCall(GenTreeCall* call)
 {
     bool                  hasMultiRegRetVal   = false;
     const ReturnTypeDesc* retTypeDesc         = nullptr;
-    regMaskTP             singleDstCandidates = RBM_NONE;
+    SingleTypeRegSet      singleDstCandidates = RBM_NONE;
 
     int srcCount = 0;
     int dstCount = 0;
@@ -148,8 +148,8 @@ int LinearScan::BuildCall(GenTreeCall* call)
         }
     }
 
-    GenTree*  ctrlExpr           = call->gtControlExpr;
-    regMaskTP ctrlExprCandidates = RBM_NONE;
+    GenTree*         ctrlExpr           = call->gtControlExpr;
+    SingleTypeRegSet ctrlExprCandidates = RBM_NONE;
     if (call->gtCallType == CT_INDIRECT)
     {
         // either gtControlExpr != null or gtCallAddr != null.
@@ -185,7 +185,7 @@ int LinearScan::BuildCall(GenTreeCall* call)
         {
             // For R2R and VSD we have stub address in REG_R2R_INDIRECT_PARAM
             // and will load call address into the temp register from this register.
-            regMaskTP candidates = allRegs(TYP_INT) & RBM_INT_CALLEE_TRASH;
+            SingleTypeRegSet candidates = allRegs(TYP_INT) & RBM_INT_CALLEE_TRASH;
             assert(candidates != RBM_NONE);
             buildInternalIntRegisterDefForNode(call, candidates);
         }
@@ -213,7 +213,7 @@ int LinearScan::BuildCall(GenTreeCall* call)
         // the target. We do not handle these constraints on the same
         // refposition too well so we help ourselves a bit here by forcing the
         // null check with LR.
-        regMaskTP candidates = call->IsFastTailCall() ? RBM_LR : RBM_NONE;
+        SingleTypeRegSet candidates = call->IsFastTailCall() ? RBM_LR : RBM_NONE;
         buildInternalIntRegisterDefForNode(call, candidates);
     }
 #endif // TARGET_ARM
@@ -536,14 +536,16 @@ int LinearScan::BuildPutArgSplit(GenTreePutArgSplit* argNode)
     // Registers for split argument corresponds to source
     int dstCount = argNode->gtNumRegs;
 
-    regNumber argReg  = argNode->GetRegNum();
-    regMaskTP argMask = RBM_NONE;
+    regNumber        argReg  = argNode->GetRegNum();
+    SingleTypeRegSet argMask = RBM_NONE;
     for (unsigned i = 0; i < argNode->gtNumRegs; i++)
     {
         regNumber thisArgReg = (regNumber)((unsigned)argReg + i);
         argMask |= genRegMask(thisArgReg);
         argNode->SetRegNumByIdx(thisArgReg, i);
     }
+    assert((argMask == RBM_NONE) || ((argMask & availableIntRegs) != RBM_NONE) ||
+           ((argMask & availableFloatRegs) != RBM_NONE));
 
     if (src->OperGet() == GT_FIELD_LIST)
     {
@@ -577,7 +579,7 @@ int LinearScan::BuildPutArgSplit(GenTreePutArgSplit* argNode)
             // go into registers.
             for (unsigned regIndex = 0; regIndex < currentRegCount; regIndex++)
             {
-                regMaskTP sourceMask = RBM_NONE;
+                SingleTypeRegSet sourceMask = RBM_NONE;
                 if (sourceRegCount < argNode->gtNumRegs)
                 {
                     sourceMask = genRegMask((regNumber)((unsigned)argReg + sourceRegCount));
@@ -635,9 +637,9 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
 
     GenTree* srcAddrOrFill = nullptr;
 
-    regMaskTP dstAddrRegMask = RBM_NONE;
-    regMaskTP srcRegMask     = RBM_NONE;
-    regMaskTP sizeRegMask    = RBM_NONE;
+    SingleTypeRegSet dstAddrRegMask = RBM_NONE;
+    SingleTypeRegSet srcRegMask     = RBM_NONE;
+    SingleTypeRegSet sizeRegMask    = RBM_NONE;
 
     if (blkNode->OperIsInitBlkOp())
     {
@@ -694,7 +696,7 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
                 // We don't need to materialize the struct size but we still need
                 // a temporary register to perform the sequence of loads and stores.
                 // We can't use the special Write Barrier registers, so exclude them from the mask
-                regMaskTP internalIntCandidates =
+                SingleTypeRegSet internalIntCandidates =
                     allRegs(TYP_INT) & ~(RBM_WRITE_BARRIER_DST_BYREF | RBM_WRITE_BARRIER_SRC_BYREF);
                 buildInternalIntRegisterDefForNode(blkNode, internalIntCandidates);
 

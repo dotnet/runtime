@@ -1375,6 +1375,109 @@ namespace System.Runtime.Intrinsics.Arm
         /// </summary>
         public static unsafe Vector<float> FusedMultiplySubtractNegated(Vector<float> minuend, Vector<float> left, Vector<float> right) => FusedMultiplySubtractNegated(minuend, left, right);
 
+
+        ///  LeadingSignCount : Count leading sign bits
+
+        /// <summary>
+        /// svuint8_t svcls[_s8]_m(svuint8_t inactive, svbool_t pg, svint8_t op)
+        /// svuint8_t svcls[_s8]_x(svbool_t pg, svint8_t op)
+        /// svuint8_t svcls[_s8]_z(svbool_t pg, svint8_t op)
+        ///   CLS Ztied.B, Pg/M, Zop.B
+        /// </summary>
+        public static unsafe Vector<byte> LeadingSignCount(Vector<sbyte> value) => LeadingSignCount(value);
+
+        /// <summary>
+        /// svuint16_t svcls[_s16]_m(svuint16_t inactive, svbool_t pg, svint16_t op)
+        /// svuint16_t svcls[_s16]_x(svbool_t pg, svint16_t op)
+        /// svuint16_t svcls[_s16]_z(svbool_t pg, svint16_t op)
+        ///   CLS Ztied.H, Pg/M, Zop.H
+        /// </summary>
+        public static unsafe Vector<ushort> LeadingSignCount(Vector<short> value) => LeadingSignCount(value);
+
+        /// <summary>
+        /// svuint32_t svcls[_s32]_m(svuint32_t inactive, svbool_t pg, svint32_t op)
+        /// svuint32_t svcls[_s32]_x(svbool_t pg, svint32_t op)
+        /// svuint32_t svcls[_s32]_z(svbool_t pg, svint32_t op)
+        ///   CLS Ztied.S, Pg/M, Zop.S
+        /// </summary>
+        public static unsafe Vector<uint> LeadingSignCount(Vector<int> value) => LeadingSignCount(value);
+
+        /// <summary>
+        /// svuint64_t svcls[_s64]_m(svuint64_t inactive, svbool_t pg, svint64_t op)
+        /// svuint64_t svcls[_s64]_x(svbool_t pg, svint64_t op)
+        /// svuint64_t svcls[_s64]_z(svbool_t pg, svint64_t op)
+        ///   CLS Ztied.D, Pg/M, Zop.D
+        /// </summary>
+        public static unsafe Vector<ulong> LeadingSignCount(Vector<long> value) => LeadingSignCount(value);
+
+
+        ///  LeadingZeroCount : Count leading zero bits
+
+        /// <summary>
+        /// svuint8_t svclz[_s8]_m(svuint8_t inactive, svbool_t pg, svint8_t op)
+        /// svuint8_t svclz[_s8]_x(svbool_t pg, svint8_t op)
+        /// svuint8_t svclz[_s8]_z(svbool_t pg, svint8_t op)
+        ///   CLZ Ztied.B, Pg/M, Zop.B
+        /// </summary>
+        public static unsafe Vector<byte> LeadingZeroCount(Vector<sbyte> value) => LeadingZeroCount(value);
+
+        /// <summary>
+        /// svuint8_t svclz[_u8]_m(svuint8_t inactive, svbool_t pg, svuint8_t op)
+        /// svuint8_t svclz[_u8]_x(svbool_t pg, svuint8_t op)
+        /// svuint8_t svclz[_u8]_z(svbool_t pg, svuint8_t op)
+        ///   CLZ Ztied.B, Pg/M, Zop.B
+        /// </summary>
+        public static unsafe Vector<byte> LeadingZeroCount(Vector<byte> value) => LeadingZeroCount(value);
+
+        /// <summary>
+        /// svuint16_t svclz[_s16]_m(svuint16_t inactive, svbool_t pg, svint16_t op)
+        /// svuint16_t svclz[_s16]_x(svbool_t pg, svint16_t op)
+        /// svuint16_t svclz[_s16]_z(svbool_t pg, svint16_t op)
+        ///   CLZ Ztied.H, Pg/M, Zop.H
+        /// </summary>
+        public static unsafe Vector<ushort> LeadingZeroCount(Vector<short> value) => LeadingZeroCount(value);
+
+        /// <summary>
+        /// svuint16_t svclz[_u16]_m(svuint16_t inactive, svbool_t pg, svuint16_t op)
+        /// svuint16_t svclz[_u16]_x(svbool_t pg, svuint16_t op)
+        /// svuint16_t svclz[_u16]_z(svbool_t pg, svuint16_t op)
+        ///   CLZ Ztied.H, Pg/M, Zop.H
+        /// </summary>
+        public static unsafe Vector<ushort> LeadingZeroCount(Vector<ushort> value) => LeadingZeroCount(value);
+
+        /// <summary>
+        /// svuint32_t svclz[_s32]_m(svuint32_t inactive, svbool_t pg, svint32_t op)
+        /// svuint32_t svclz[_s32]_x(svbool_t pg, svint32_t op)
+        /// svuint32_t svclz[_s32]_z(svbool_t pg, svint32_t op)
+        ///   CLZ Ztied.S, Pg/M, Zop.S
+        /// </summary>
+        public static unsafe Vector<uint> LeadingZeroCount(Vector<int> value) => LeadingZeroCount(value);
+
+        /// <summary>
+        /// svuint32_t svclz[_u32]_m(svuint32_t inactive, svbool_t pg, svuint32_t op)
+        /// svuint32_t svclz[_u32]_x(svbool_t pg, svuint32_t op)
+        /// svuint32_t svclz[_u32]_z(svbool_t pg, svuint32_t op)
+        ///   CLZ Ztied.S, Pg/M, Zop.S
+        /// </summary>
+        public static unsafe Vector<uint> LeadingZeroCount(Vector<uint> value) => LeadingZeroCount(value);
+
+        /// <summary>
+        /// svuint64_t svclz[_s64]_m(svuint64_t inactive, svbool_t pg, svint64_t op)
+        /// svuint64_t svclz[_s64]_x(svbool_t pg, svint64_t op)
+        /// svuint64_t svclz[_s64]_z(svbool_t pg, svint64_t op)
+        ///   CLZ Ztied.D, Pg/M, Zop.D
+        /// </summary>
+        public static unsafe Vector<ulong> LeadingZeroCount(Vector<long> value) => LeadingZeroCount(value);
+
+        /// <summary>
+        /// svuint64_t svclz[_u64]_m(svuint64_t inactive, svbool_t pg, svuint64_t op)
+        /// svuint64_t svclz[_u64]_x(svbool_t pg, svuint64_t op)
+        /// svuint64_t svclz[_u64]_z(svbool_t pg, svuint64_t op)
+        ///   CLZ Ztied.D, Pg/M, Zop.D
+        /// </summary>
+        public static unsafe Vector<ulong> LeadingZeroCount(Vector<ulong> value) => LeadingZeroCount(value);
+
+
         ///  LoadVector : Unextended load
 
         /// <summary>
@@ -2545,6 +2648,89 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<ulong> OrAcross(Vector<ulong> value) => OrAcross(value);
 
 
+        ///  Count nonzero bits
+
+        /// <summary>
+        /// svuint8_t svcnt[_s8]_m(svuint8_t inactive, svbool_t pg, svint8_t op)
+        /// svuint8_t svcnt[_s8]_x(svbool_t pg, svint8_t op)
+        /// svuint8_t svcnt[_s8]_z(svbool_t pg, svint8_t op)
+        ///   CNT Ztied.B, Pg/M, Zop.B
+        /// </summary>
+        public static unsafe Vector<byte> PopCount(Vector<sbyte> value) => PopCount(value);
+
+        /// <summary>
+        /// svuint8_t svcnt[_u8]_m(svuint8_t inactive, svbool_t pg, svuint8_t op)
+        /// svuint8_t svcnt[_u8]_x(svbool_t pg, svuint8_t op)
+        /// svuint8_t svcnt[_u8]_z(svbool_t pg, svuint8_t op)
+        ///   CNT Ztied.B, Pg/M, Zop.B
+        /// </summary>
+        public static unsafe Vector<byte> PopCount(Vector<byte> value) => PopCount(value);
+
+        /// <summary>
+        /// svuint16_t svcnt[_s16]_m(svuint16_t inactive, svbool_t pg, svint16_t op)
+        /// svuint16_t svcnt[_s16]_x(svbool_t pg, svint16_t op)
+        /// svuint16_t svcnt[_s16]_z(svbool_t pg, svint16_t op)
+        ///   CNT Ztied.H, Pg/M, Zop.H
+        /// </summary>
+        public static unsafe Vector<ushort> PopCount(Vector<short> value) => PopCount(value);
+
+        /// <summary>
+        /// svuint16_t svcnt[_u16]_m(svuint16_t inactive, svbool_t pg, svuint16_t op)
+        /// svuint16_t svcnt[_u16]_x(svbool_t pg, svuint16_t op)
+        /// svuint16_t svcnt[_u16]_z(svbool_t pg, svuint16_t op)
+        ///   CNT Ztied.H, Pg/M, Zop.H
+        /// </summary>
+        public static unsafe Vector<ushort> PopCount(Vector<ushort> value) => PopCount(value);
+
+        /// <summary>
+        /// svuint32_t svcnt[_s32]_m(svuint32_t inactive, svbool_t pg, svint32_t op)
+        /// svuint32_t svcnt[_s32]_x(svbool_t pg, svint32_t op)
+        /// svuint32_t svcnt[_s32]_z(svbool_t pg, svint32_t op)
+        ///   CNT Ztied.S, Pg/M, Zop.S
+        /// </summary>
+        public static unsafe Vector<uint> PopCount(Vector<int> value) => PopCount(value);
+
+        /// <summary>
+        /// svuint32_t svcnt[_f32]_m(svuint32_t inactive, svbool_t pg, svfloat32_t op)
+        /// svuint32_t svcnt[_f32]_x(svbool_t pg, svfloat32_t op)
+        /// svuint32_t svcnt[_f32]_z(svbool_t pg, svfloat32_t op)
+        ///   CNT Ztied.S, Pg/M, Zop.S
+        /// </summary>
+        public static unsafe Vector<uint> PopCount(Vector<float> value) => PopCount(value);
+
+        /// <summary>
+        /// svuint32_t svcnt[_u32]_m(svuint32_t inactive, svbool_t pg, svuint32_t op)
+        /// svuint32_t svcnt[_u32]_x(svbool_t pg, svuint32_t op)
+        /// svuint32_t svcnt[_u32]_z(svbool_t pg, svuint32_t op)
+        ///   CNT Ztied.S, Pg/M, Zop.S
+        /// </summary>
+        public static unsafe Vector<uint> PopCount(Vector<uint> value) => PopCount(value);
+
+        /// <summary>
+        /// svuint64_t svcnt[_f64]_m(svuint64_t inactive, svbool_t pg, svfloat64_t op)
+        /// svuint64_t svcnt[_f64]_x(svbool_t pg, svfloat64_t op)
+        /// svuint64_t svcnt[_f64]_z(svbool_t pg, svfloat64_t op)
+        ///   CNT Ztied.D, Pg/M, Zop.D
+        /// </summary>
+        public static unsafe Vector<ulong> PopCount(Vector<double> value) => PopCount(value);
+
+        /// <summary>
+        /// svuint64_t svcnt[_s64]_m(svuint64_t inactive, svbool_t pg, svint64_t op)
+        /// svuint64_t svcnt[_s64]_x(svbool_t pg, svint64_t op)
+        /// svuint64_t svcnt[_s64]_z(svbool_t pg, svint64_t op)
+        ///   CNT Ztied.D, Pg/M, Zop.D
+        /// </summary>
+        public static unsafe Vector<ulong> PopCount(Vector<long> value) => PopCount(value);
+
+        /// <summary>
+        /// svuint64_t svcnt[_u64]_m(svuint64_t inactive, svbool_t pg, svuint64_t op)
+        /// svuint64_t svcnt[_u64]_x(svbool_t pg, svuint64_t op)
+        /// svuint64_t svcnt[_u64]_z(svbool_t pg, svuint64_t op)
+        ///   CNT Ztied.D, Pg/M, Zop.D
+        /// </summary>
+        public static unsafe Vector<ulong> PopCount(Vector<ulong> value) => PopCount(value);
+
+
         ///  SignExtend16 : Sign-extend the low 16 bits
 
         /// <summary>
@@ -2908,6 +3094,80 @@ namespace System.Runtime.Intrinsics.Arm
         ///   ST4D {Zdata0.D - Zdata3.D}, Pg, [Xbase, #0, MUL VL]
         /// </summary>
         public static unsafe void StoreAndZip(Vector<ulong> mask, ulong* address, (Vector<ulong> Value1, Vector<ulong> Value2, Vector<ulong> Value3, Vector<ulong> Value4) data) => StoreAndZip(mask, address, data);
+        ///  Truncate to 8 bits and store
+
+
+        /// <summary>
+        /// void svst1b[_s16](svbool_t pg, int8_t *base, svint16_t data)
+        ///   ST1B Zdata.H, Pg, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe void StoreNarrowing(Vector<short> mask, sbyte* address, Vector<short> data) => StoreNarrowing(mask, address, data);
+
+        /// <summary>
+        /// void svst1b[_s32](svbool_t pg, int8_t *base, svint32_t data)
+        ///   ST1B Zdata.S, Pg, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe void StoreNarrowing(Vector<int> mask, sbyte* address, Vector<int> data) => StoreNarrowing(mask, address, data);
+
+        /// <summary>
+        /// void svst1h[_s32](svbool_t pg, int16_t *base, svint32_t data)
+        ///   ST1H Zdata.S, Pg, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe void StoreNarrowing(Vector<int> mask, short* address, Vector<int> data) => StoreNarrowing(mask, address, data);
+
+        /// <summary>
+        /// void svst1b[_s64](svbool_t pg, int8_t *base, svint64_t data)
+        ///   ST1B Zdata.D, Pg, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe void StoreNarrowing(Vector<long> mask, sbyte* address, Vector<long> data) => StoreNarrowing(mask, address, data);
+
+        /// <summary>
+        /// void svst1h[_s64](svbool_t pg, int16_t *base, svint64_t data)
+        ///   ST1H Zdata.D, Pg, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe void StoreNarrowing(Vector<long> mask, short* address, Vector<long> data) => StoreNarrowing(mask, address, data);
+
+        /// <summary>
+        /// void svst1w[_s64](svbool_t pg, int32_t *base, svint64_t data)
+        ///   ST1W Zdata.D, Pg, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe void StoreNarrowing(Vector<long> mask, int* address, Vector<long> data) => StoreNarrowing(mask, address, data);
+
+        /// <summary>
+        /// void svst1b[_u16](svbool_t pg, uint8_t *base, svuint16_t data)
+        ///   ST1B Zdata.H, Pg, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe void StoreNarrowing(Vector<ushort> mask, byte* address, Vector<ushort> data) => StoreNarrowing(mask, address, data);
+
+        /// <summary>
+        /// void svst1b[_u32](svbool_t pg, uint8_t *base, svuint32_t data)
+        ///   ST1B Zdata.S, Pg, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe void StoreNarrowing(Vector<uint> mask, byte* address, Vector<uint> data) => StoreNarrowing(mask, address, data);
+
+        /// <summary>
+        /// void svst1h[_u32](svbool_t pg, uint16_t *base, svuint32_t data)
+        ///   ST1H Zdata.S, Pg, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe void StoreNarrowing(Vector<uint> mask, ushort* address, Vector<uint> data) => StoreNarrowing(mask, address, data);
+
+        /// <summary>
+        /// void svst1b[_u64](svbool_t pg, uint8_t *base, svuint64_t data)
+        ///   ST1B Zdata.D, Pg, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe void StoreNarrowing(Vector<ulong> mask, byte* address, Vector<ulong> data) => StoreNarrowing(mask, address, data);
+
+        /// <summary>
+        /// void svst1h[_u64](svbool_t pg, uint16_t *base, svuint64_t data)
+        ///   ST1H Zdata.D, Pg, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe void StoreNarrowing(Vector<ulong> mask, ushort* address, Vector<ulong> data) => StoreNarrowing(mask, address, data);
+
+        /// <summary>
+        /// void svst1w[_u64](svbool_t pg, uint32_t *base, svuint64_t data)
+        ///   ST1W Zdata.D, Pg, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe void StoreNarrowing(Vector<ulong> mask, uint* address, Vector<ulong> data) => StoreNarrowing(mask, address, data);
 
 
         ///  Subtract : Subtract
