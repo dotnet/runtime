@@ -885,7 +885,8 @@ int LinearScan::BuildCall(GenTreeCall* call)
             ctrlExprCandidates = allRegs(TYP_INT) & RBM_INT_CALLEE_TRASH;
             if (compiler->getNeedsGSSecurityCookie())
             {
-                ctrlExprCandidates &= ~(genRegMask(REG_GSCOOKIE_TMP_0) | genRegMask(REG_GSCOOKIE_TMP_1));
+                ctrlExprCandidates &=
+                    ~(genSingleTypeRegMask(REG_GSCOOKIE_TMP_0) | genSingleTypeRegMask(REG_GSCOOKIE_TMP_1));
             }
             assert(ctrlExprCandidates != RBM_NONE);
         }
@@ -957,7 +958,7 @@ int LinearScan::BuildCall(GenTreeCall* call)
 #ifdef DEBUG
                 assert(use.GetNode()->OperIs(GT_PUTARG_REG));
 #endif
-                BuildUse(use.GetNode(), genRegMask(use.GetNode()->GetRegNum()));
+                BuildUse(use.GetNode(), genSingleTypeRegMask(use.GetNode()->GetRegNum()));
                 srcCount++;
             }
         }
@@ -967,7 +968,7 @@ int LinearScan::BuildCall(GenTreeCall* call)
             assert(regCount == abiInfo.NumRegs);
             for (unsigned int i = 0; i < regCount; i++)
             {
-                BuildUse(argNode, genRegMask(argNode->AsPutArgSplit()->GetRegNumByIdx(i)), i);
+                BuildUse(argNode, genSingleTypeRegMask(argNode->AsPutArgSplit()->GetRegNumByIdx(i)), i);
             }
             srcCount += regCount;
         }
@@ -977,7 +978,7 @@ int LinearScan::BuildCall(GenTreeCall* call)
             assert(argNode->GetRegNum() == argReg);
             HandleFloatVarArgs(call, argNode, &callHasFloatRegArgs);
             {
-                BuildUse(argNode, genRegMask(argNode->GetRegNum()));
+                BuildUse(argNode, genSingleTypeRegMask(argNode->GetRegNum()));
                 srcCount++;
             }
         }
@@ -1149,7 +1150,7 @@ int LinearScan::BuildPutArgSplit(GenTreePutArgSplit* argNode)
     for (unsigned i = 0; i < argNode->gtNumRegs; i++)
     {
         regNumber thisArgReg = (regNumber)((unsigned)argReg + i);
-        argMask |= genRegMask(thisArgReg);
+        argMask |= genSingleTypeRegMask(thisArgReg);
         argNode->SetRegNumByIdx(thisArgReg, i);
     }
     assert((argMask == RBM_NONE) || ((argMask & availableIntRegs) != RBM_NONE) ||
@@ -1181,7 +1182,7 @@ int LinearScan::BuildPutArgSplit(GenTreePutArgSplit* argNode)
                 SingleTypeRegSet sourceMask = RBM_NONE;
                 if (sourceRegCount < argNode->gtNumRegs)
                 {
-                    sourceMask = genRegMask((regNumber)((unsigned)argReg + sourceRegCount));
+                    sourceMask = genSingleTypeRegMask((regNumber)((unsigned)argReg + sourceRegCount));
                 }
                 sourceRegCount++;
                 BuildUse(node, sourceMask, regIndex);

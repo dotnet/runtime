@@ -11246,8 +11246,8 @@ private:
     //
     // Users of these values need to define four accessor functions:
     //
-    //    SingleTypeRegSet get_RBM_ALLFLOAT();
-    //    SingleTypeRegSet get_RBM_FLT_CALLEE_TRASH();
+    //    regMaskTP get_RBM_ALLFLOAT();
+    //    regMaskTP get_RBM_FLT_CALLEE_TRASH();
     //    unsigned get_CNT_CALLEE_TRASH_FLOAT();
     //    unsigned get_AVAILABLE_REG_COUNT();
     //
@@ -11256,16 +11256,16 @@ private:
     // This was done to avoid polluting all `targetXXX.h` macro definitions with a compiler parameter, where only
     // TARGET_AMD64 requires one.
     //
-    SingleTypeRegSet rbmAllFloat;
-    SingleTypeRegSet rbmFltCalleeTrash;
-    unsigned         cntCalleeTrashFloat;
+    regMaskTP rbmAllFloat;
+    regMaskTP rbmFltCalleeTrash;
+    unsigned  cntCalleeTrashFloat;
 
 public:
-    FORCEINLINE SingleTypeRegSet get_RBM_ALLFLOAT() const
+    FORCEINLINE regMaskTP get_RBM_ALLFLOAT() const
     {
         return this->rbmAllFloat;
     }
-    FORCEINLINE SingleTypeRegSet get_RBM_FLT_CALLEE_TRASH() const
+    FORCEINLINE regMaskTP get_RBM_FLT_CALLEE_TRASH() const
     {
         return this->rbmFltCalleeTrash;
     }
@@ -11284,8 +11284,8 @@ private:
     //
     // Users of these values need to define four accessor functions:
     //
-    //    SingleTypeRegSet get_RBM_ALLMASK();
-    //    SingleTypeRegSet get_RBM_MSK_CALLEE_TRASH();
+    //    regMaskTP get_RBM_ALLMASK();
+    //    regMaskTP get_RBM_MSK_CALLEE_TRASH();
     //    unsigned get_CNT_CALLEE_TRASH_MASK();
     //    unsigned get_AVAILABLE_REG_COUNT();
     //
@@ -11294,17 +11294,17 @@ private:
     // This was done to avoid polluting all `targetXXX.h` macro definitions with a compiler parameter, where only
     // TARGET_XARCH requires one.
     //
-    SingleTypeRegSet rbmAllMask;
-    SingleTypeRegSet rbmMskCalleeTrash;
-    unsigned         cntCalleeTrashMask;
-    SingleTypeRegSet varTypeCalleeTrashRegs[TYP_COUNT];
+    regMaskTP rbmAllMask;
+    regMaskTP rbmMskCalleeTrash;
+    unsigned  cntCalleeTrashMask;
+    regMaskTP varTypeCalleeTrashRegs[TYP_COUNT];
 
 public:
-    FORCEINLINE SingleTypeRegSet get_RBM_ALLMASK() const
+    FORCEINLINE regMaskTP get_RBM_ALLMASK() const
     {
         return this->rbmAllMask;
     }
-    FORCEINLINE SingleTypeRegSet get_RBM_MSK_CALLEE_TRASH() const
+    FORCEINLINE regMaskTP get_RBM_MSK_CALLEE_TRASH() const
     {
         return this->rbmMskCalleeTrash;
     }
