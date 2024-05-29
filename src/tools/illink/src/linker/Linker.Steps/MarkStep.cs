@@ -1904,13 +1904,26 @@ namespace Mono.Linker.Steps
 			MarkField (field, reason, origin);
 		}
 
-		bool MarkFieldsVisibleToReflection (TypeDefinition type, in DependencyInfo reason, MessageOrigin origin)
+		bool MarkFieldsVisibleToReflection (TypeDefinition type, in DependencyInfo reason, MessageOrigin origin, bool markBackingFieldsOnlyIfPropertyMarked = false)
 		{
 			if (!type.HasFields)
 				return false;
 
-			foreach (FieldDefinition field in type.Fields)
+			foreach (FieldDefinition field in type.Fields) {
+				if (markBackingFieldsOnlyIfPropertyMarked && field.Name.EndsWith (">k__BackingField", StringComparison.Ordinal)) {
+					// We can't reliably construct the expected property name from the backing field name for all compilers
+					// because csc shortens the name of the backing field in some cases
+					// For example:
+					// Field Name = <IFoo<int>.Bar>k__BackingField
+					// Property Name = IFoo<System.Int32>.Bar
+					//
+					// instead we will search the properties and find the one that makes use of the current backing field
+					var propertyDefinition = SearchPropertiesForMatchingFieldDefinition (field);
+					if (propertyDefinition != null && !Annotations.IsMarked (propertyDefinition))
+						continue;
+				}
 				MarkFieldVisibleToReflection (field, reason, origin);
+			}
 			return true;
 		}
 
@@ -2798,7 +2811,7 @@ namespace Mono.Linker.Steps
 					return;
 
 				case TypePreserve.Fields:
-					if (!MarkFieldsVisibleToReflection (type, di, typeOrigin))
+					if (!MarkFieldsVisibleToReflection (type, di, typeOrigin, markBackingFieldsOnlyIfPropertyMarked: true))
 						Context.LogWarning (type, DiagnosticId.TypeHasNoFieldsToPreserve, type.GetDisplayName ());
 					break;
 				case TypePreserve.Methods:
@@ -2888,7 +2901,7 @@ namespace Mono.Linker.Steps
 			MarkMethodCollection (list, new DependencyInfo (DependencyKind.PreservedMethod, method), origin);
 		}
 
-		protected bool MarkFields (TypeDefinition type, bool includeStatic, in DependencyInfo reason, MessageOrigin origin, bool markBackingFieldsOnlyIfPropertyMarked = false)
+		protected bool MarkFields (TypeDefinition type, bool includeStatic, in DependencyInfo reason, MessageOrigin origin)
 		{
 			if (!type.HasFields)
 				return false;
@@ -2896,19 +2909,6 @@ namespace Mono.Linker.Steps
 			foreach (FieldDefinition field in type.Fields) {
 				if (!includeStatic && field.IsStatic)
 					continue;
-
-				if (markBackingFieldsOnlyIfPropertyMarked && field.Name.EndsWith (">k__BackingField", StringComparison.Ordinal)) {
-					// We can't reliably construct the expected property name from the backing field name for all compilers
-					// because csc shortens the name of the backing field in some cases
-					// For example:
-					// Field Name = <IFoo<int>.Bar>k__BackingField
-					// Property Name = IFoo<System.Int32>.Bar
-					//
-					// instead we will search the properties and find the one that makes use of the current backing field
-					var propertyDefinition = SearchPropertiesForMatchingFieldDefinition (field);
-					if (propertyDefinition != null && !Annotations.IsMarked (propertyDefinition))
-						continue;
-				}
 				MarkField (field, reason, origin);
 			}
 
