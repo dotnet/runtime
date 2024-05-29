@@ -2265,21 +2265,14 @@ OLE_COLOR ConvertSystemColorToOleColor(OBJECTREF *pSrcObj)
     }
     CONTRACTL_END;
 
-    OLE_COLOR result;
-
-    OBJECTREF srcObj = *pSrcObj;
-    GCPROTECT_BEGIN(srcObj);
     // Retrieve the method desc to use for the current AD.
     MethodDesc *pSystemColorToOleColorMD =
         GetAppDomain()->GetLoaderAllocator()->GetMarshalingData()->GetOleColorMarshalingInfo()->GetSystemColorToOleColorMD();
     MethodDescCallSite systemColorToOleColor(pSystemColorToOleColorMD);
 
     // Set up the args and call the method.
-    SYSTEMCOLOR *pSrcSysColor = (SYSTEMCOLOR *)srcObj->UnBox();
-    result = systemColorToOleColor.CallWithValueTypes_RetOleColor((const ARG_SLOT *)&pSrcSysColor);
-    GCPROTECT_END();
-
-    return result;
+    SYSTEMCOLOR *pSrcSysColor = (SYSTEMCOLOR *)(*pSrcObj)->UnBox();
+    return systemColorToOleColor.CallWithValueTypes_RetOleColor((const ARG_SLOT *)&pSrcSysColor);
 }
 
 //--------------------------------------------------------------------------------

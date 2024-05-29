@@ -28,7 +28,10 @@ extern "C" uint32_t QCALLTYPE Variant_ConvertSystemColorToOleColor(QCall::Object
 
     GCX_COOP();
     OBJECTREF srcObj = obj.Get();
+
+    GCPROTECT_BEGIN(srcObj);
     ret = ConvertSystemColorToOleColor(&srcObj);
+    GCPROTECT_END();
 
     END_QCALL;
 
