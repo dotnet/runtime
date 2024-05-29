@@ -1309,13 +1309,13 @@ emitAttr emitter::emitInsLoadStoreSize(instrDesc* id)
 // clang-format off
 static const char * const  xRegNames[] =
 {
-    #define REGDEF(name, rnum, mask, xname, wname) xname,
+    #define REGDEF(name, rnum, mask, xname, wname, regTypeTag) xname,
     #include "register.h"
 };
 
 static const char * const  wRegNames[] =
 {
-    #define REGDEF(name, rnum, mask, xname, wname) wname,
+    #define REGDEF(name, rnum, mask, xname, wname, regTypeTag) wname,
     #include "register.h"
 };
 

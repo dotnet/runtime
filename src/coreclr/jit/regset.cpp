@@ -25,12 +25,12 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 #if defined(TARGET_ARM64)
 const regMaskSmall regMasks[] = {
-#define REGDEF(name, rnum, mask, xname, wname) mask,
+#define REGDEF(name, rnum, mask, xname, wname, regTypeTag) mask,
 #include "register.h"
 };
 #else // !TARGET_ARM64
 const regMaskSmall regMasks[] = {
-#define REGDEF(name, rnum, mask, sname) mask,
+#define REGDEF(name, rnum, mask, sname, regTypeTag) mask,
 #include "register.h"
 };
 #endif

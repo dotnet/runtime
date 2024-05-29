@@ -26,3 +26,17 @@ bool regMaskTP::IsRegNumInMask(regNumber reg)
 {
     return (low & genRegMask(reg)) != 0;
 }
+
+/* static */ const int regMaskTP::getRegisterTypeIndex(regNumber reg)
+{
+    static const BYTE _registerTypeIndex[] = {
+#ifdef TARGET_ARM64
+#define REGDEF(name, rnum, mask, xname, wname, regTypeTag) regTypeTag,
+#else
+#define REGDEF(name, rnum, mask, sname, regTypeTag) regTypeTag,
+#endif
+#include "register.h"
+    };
+
+    return _registerTypeIndex[reg];
+}

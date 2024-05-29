@@ -3909,7 +3909,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 // clang-format off
 static const char* const RegNames[] =
 {
-    #define REGDEF(name, rnum, mask, sname) sname,
+    #define REGDEF(name, rnum, mask, sname, regTypeTag) sname,
     #include "register.h"
 };
 // clang-format on
