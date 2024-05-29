@@ -1943,24 +1943,6 @@ void emitter::emitCheckIGList()
         {
             assert(nextPair != endPair);
             assert(ig == nextPair->ig);
-
-            if (id != nextPair->id)
-            {
-                ig = nullptr;
-                id = nullptr;
-                if (emitGetLastIns(&ig, &id))
-                {
-                    nextPair = insList.begin();
-                    endPair  = insList.end();
-                    do
-                    {
-                        printf("ig: IG%02u - nextPair->ig: IG%02u", ig->igNum, nextPair->ig->igNum);
-                        printf("id: %d - nextPair->id: %d", id->idIns(), nextPair->id->idIns());
-                        ++nextPair;
-                    } while (emitPrevID(ig, id));
-                }
-                assert(false);
-            }
             assert(id == nextPair->id);
             ++nextPair;
         } while (emitPrevID(ig, id));
