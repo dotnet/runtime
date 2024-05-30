@@ -4413,6 +4413,19 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe System.Numerics.Vector<long> LoadVectorUInt32ZeroExtendToInt64(System.Numerics.Vector<long> mask, uint* address) { throw null; }
         public static unsafe System.Numerics.Vector<ulong> LoadVectorUInt32ZeroExtendToUInt64(System.Numerics.Vector<ulong> mask, uint* address) { throw null; }
 
+        public static unsafe System.Numerics.Vector<short> LoadVectorByteNonFaultingZeroExtendToInt16(byte* address) { throw null; }
+        public static unsafe System.Numerics.Vector<int> LoadVectorByteNonFaultingZeroExtendToInt32(byte* address) { throw null; }
+        public static unsafe System.Numerics.Vector<long> LoadVectorByteNonFaultingZeroExtendToInt64(byte* address) { throw null; }
+        public static unsafe System.Numerics.Vector<ushort> LoadVectorByteNonFaultingZeroExtendToUInt16(byte* address) { throw null; }
+        public static unsafe System.Numerics.Vector<uint> LoadVectorByteNonFaultingZeroExtendToUInt32(byte* address) { throw null; }
+        public static unsafe System.Numerics.Vector<ulong> LoadVectorByteNonFaultingZeroExtendToUInt64(byte* address) { throw null; }
+        public static unsafe System.Numerics.Vector<int> LoadVectorUInt16NonFaultingZeroExtendToInt32(ushort* address) { throw null; }
+        public static unsafe System.Numerics.Vector<long> LoadVectorUInt16NonFaultingZeroExtendToInt64(ushort* address) { throw null; }
+        public static unsafe System.Numerics.Vector<uint> LoadVectorUInt16NonFaultingZeroExtendToUInt32(ushort* address) { throw null; }
+        public static unsafe System.Numerics.Vector<ulong> LoadVectorUInt16NonFaultingZeroExtendToUInt64(ushort* address) { throw null; }
+        public static unsafe System.Numerics.Vector<long> LoadVectorUInt32NonFaultingZeroExtendToInt64(uint* address) { throw null; }
+        public static unsafe System.Numerics.Vector<ulong> LoadVectorUInt32NonFaultingZeroExtendToUInt64(uint* address) { throw null; }
+
         public static unsafe (System.Numerics.Vector<byte>, System.Numerics.Vector<byte>) Load2xVectorAndUnzip(System.Numerics.Vector<byte> mask, byte* address) { throw null; }
         public static unsafe (System.Numerics.Vector<double>, System.Numerics.Vector<double>) Load2xVectorAndUnzip(System.Numerics.Vector<double> mask, double* address) { throw null; }
         public static unsafe (System.Numerics.Vector<short>, System.Numerics.Vector<short>) Load2xVectorAndUnzip(System.Numerics.Vector<short> mask, short* address) { throw null; }
