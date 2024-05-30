@@ -2556,6 +2556,12 @@ internal class Dummy
                 il.Emit(OpCodes.Cgt_Un);
                 il.Emit(OpCodes.Ret);
 
+                mb = typeBuilder.DefineMethod("JaggedArray", MethodAttributes.Static | MethodAttributes.Public, typeof(Type), null);
+                il = mb.GetILGenerator();
+                il.Emit(OpCodes.Ldtoken, typeBuilder.MakeArrayType().MakeArrayType().MakeArrayType());
+                il.Emit(OpCodes.Call, typeof(Type).GetMethod("GetTypeFromHandle")!);
+                il.Emit(OpCodes.Ret);
+
                 typeBuilder.CreateType();
                 ab.Save(file.Path);
 
@@ -2570,6 +2576,11 @@ internal class Dummy
                 Assert.False((bool)method.Invoke(null, [arrInst]));
                 arrInst = Array.CreateInstance(typeFromDisk, 3, 2, 1)!;
                 Assert.True((bool)method.Invoke(null, [arrInst]));
+
+                method = typeFromDisk.GetMethod("JaggedArray")!;
+                Type result = (Type)method.Invoke(null, null);
+                Assert.True(result.IsArray);
+                Assert.Equal("MyType[][][]", result.Name);
                 tlc.Unload();
             }
         }
@@ -2581,19 +2592,19 @@ internal class Dummy
             {
                 PersistedAssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder typeBuilder);
                 typeBuilder.DefineDefaultConstructor(MethodAttributes.Public);
-
+                MethodInfo typeGetTypeFromHandleMethod = typeof(Type).GetMethod("GetTypeFromHandle")!;
                 MethodBuilder mb = typeBuilder.DefineMethod("LoadDictionary", MethodAttributes.Static | MethodAttributes.Public, typeof(Type), null);
                 Type dictType = typeof(Dictionary<,>).MakeGenericType(typeBuilder.MakeArrayType(), typeof(int));
                 ILGenerator il = mb.GetILGenerator();
                 il.Emit(OpCodes.Ldtoken, dictType);
-                il.Emit(OpCodes.Call, typeof(Type).GetMethod("GetTypeFromHandle")!);
+                il.Emit(OpCodes.Call, typeGetTypeFromHandleMethod);
                 il.Emit(OpCodes.Ret);
 
                 MethodBuilder mb2 = typeBuilder.DefineMethod("LoadList", MethodAttributes.Static | MethodAttributes.Public, typeof(Type), null);
                 Type listType = typeof(List<>).MakeGenericType(typeBuilder.MakeArrayType());
                 il = mb2.GetILGenerator();
                 il.Emit(OpCodes.Ldtoken, listType.MakeArrayType());
-                il.Emit(OpCodes.Call, typeof(Type).GetMethod("GetTypeFromHandle")!);
+                il.Emit(OpCodes.Call, typeGetTypeFromHandleMethod);
                 il.Emit(OpCodes.Ret);
                 typeBuilder.CreateType();
                 ab.Save(file.Path);
