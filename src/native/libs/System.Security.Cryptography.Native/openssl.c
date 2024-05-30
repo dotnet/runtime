@@ -1545,7 +1545,7 @@ static void* reallocFunction (void *ptr, size_t size, const char *file, int line
         // Now try just the _majorVer added
             g_memoryCallback(ReallocOperation, newPtr, ptr, entry->size, file, line);
 
-#if defined(__GNUC__) &&  __GNUC__ > 6
+#if defined(__GNUC__) &&  __GNUC__ > 11
 #pragma GCC diagnostic pop
 #endif
         }
