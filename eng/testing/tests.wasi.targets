@@ -7,6 +7,7 @@
 
     <WasmSingleFileBundle Condition="'$(WasmSingleFileBundle)' == ''">false</WasmSingleFileBundle>
     <WasmMainAssemblyFileName Condition="'$(WasmMainAssemblyFileName)' == ''">WasmTestRunner.dll</WasmMainAssemblyFileName>
+    <IsLibraryTest Condition="'$(OutputType)' == 'Library'">true</IsLibraryTest>
 
     <InstallWasmtimeForTests Condition="'$(InstallWasmtimeForTests)' == '' and
                                         ('$(ContinuousIntegrationBuild)' != 'true' or Exists('/.dockerenv'))"

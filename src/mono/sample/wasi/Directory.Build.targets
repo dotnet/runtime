@@ -15,13 +15,13 @@
       TODOWASI - - tcplisten localhost:64000 - - env DEBUGGER_FD=4
     -->
     <Exec WorkingDirectory="bin/wasi-wasm/AppBundle"
-          Condition="'$(WasmBuildNative)' != 'true'"
+          Condition="'$(WasmBuildNative)' != 'true' and '$(OutputType)' != 'Library'"
           Command="$(WasmtimeDir)wasmtime$(_ExeExt) $(MONO_LOG_LEVEL) --dir . dotnet.wasm $(_SampleProjectName)" IgnoreExitCode="true" />
     <Exec WorkingDirectory="bin/wasi-wasm/AppBundle"
-          Condition="'$(WasmBuildNative)' == 'true' and '$(WasmSingleFileBundle)' != 'true'"
+          Condition="'$(WasmBuildNative)' == 'true' and '$(WasmSingleFileBundle)' != 'true' and '$(OutputType)' != 'Library'"
           Command="$(WasmtimeDir)wasmtime$(_ExeExt) $(MONO_LOG_LEVEL) --dir . dotnet.wasm" IgnoreExitCode="true" />
     <Exec WorkingDirectory="bin/wasi-wasm/AppBundle"
-          Condition="'$(WasmSingleFileBundle)' == 'true'"
+          Condition="'$(WasmSingleFileBundle)' == 'true' and '$(OutputType)' != 'Library'"
           Command="$(WasmtimeDir)wasmtime$(_ExeExt) $(MONO_LOG_LEVEL) $([System.IO.Path]::ChangeExtension($(_SampleAssembly), '.wasm'))" IgnoreExitCode="true" />
   </Target>
 
