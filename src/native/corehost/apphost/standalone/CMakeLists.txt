@@ -41,11 +41,14 @@ include(../../exe.cmake)
 
 add_definitions(-DFEATURE_APPHOST=1)
 
-# Disable manifest generation into the file .exe on Windows
 if(CLR_CMAKE_TARGET_WIN32)
-    set_property(TARGET ${PROJECT_NAME} PROPERTY
-            LINK_FLAGS "/MANIFEST:NO"
-        )
+    # Disable manifest generation into the file .exe on Windows
+    add_linker_flag("/MANIFEST:NO")
+
+    # Enable CET-compatibility
+    if (CLR_CMAKE_HOST_ARCH_AMD64)
+        add_linker_flag("/CETCOMPAT")
+    endif()
 endif()
 
 # Specify non-default Windows libs to be used for Arm64 builds
