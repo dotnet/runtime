@@ -75,7 +75,7 @@ namespace System.Text.Json.Serialization.Metadata
             if (typeInfo.Kind is JsonTypeInfoKind.Object)
             {
                 // If the System.Reflection.NullabilityInfoContext.IsSupported feature switch has been disabled,
-                // We want to avoid resolving nullability information for properties and parameters unless the
+                // we want to avoid resolving nullability information for properties and parameters unless the
                 // user has explicitly opted into nullability enforcement in which case an exception will be surfaced.
                 NullabilityInfoContext? nullabilityCtx = s_isNullabilityInfoContextSupported || options.RespectNullableAnnotations ? new() : null;
 
