@@ -37,13 +37,13 @@ namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.StaticInterfaceMethods
 		{
 #if IL_ASSEMBLY_AVAILABLE
 			InstanceMethods.Test ();
-			typeof(InstanceMethods.TypeWithMethodAccessedViaReflection).GetMethod ("GetInt").Invoke (null, null);
+			typeof (InstanceMethods.TypeWithMethodAccessedViaReflection).GetMethod ("GetInt").Invoke (null, null);
 #endif
 			KeepMethodOnType ();
 		}
 
 #if IL_ASSEMBLY_AVAILABLE
-		[DynamicDependency ("GetInt()", typeof(InstanceMethods.TypeWithMethodKeptByDynamicDependency))]
+		[DynamicDependency ("GetInt()", typeof (InstanceMethods.TypeWithMethodKeptByDynamicDependency))]
 #endif
 		[Kept]
 		public static void KeepMethodOnType ()
