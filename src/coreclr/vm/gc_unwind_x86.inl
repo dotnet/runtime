@@ -1519,10 +1519,10 @@ unsigned scanArgRegTableI(PTR_CBYTE    table,
 
     bool      hasPartialArgInfo;
 
-#ifndef UNIX_X86_ABI
+#ifndef FEATURE_EH_FUNCLETS
     hasPartialArgInfo = info->ebpFrame;
 #else
-    // For x86/Linux, interruptible code always has full arg info
+    // For funclets, interruptible code always has full arg info
     //
     // This should be aligned with emitFullArgInfo setting at
     // emitter::emitEndCodeGen (in JIT)
@@ -1670,10 +1670,7 @@ unsigned scanArgRegTableI(PTR_CBYTE    table,
                 {
                     thisPtrReg = REGI_NA;
                 }
-                if  (iptrRegs & regMask)
-                {
-                    iptrRegs &= ~regMask;
-                }
+                iptrRegs &= ~regMask;
             }
             iptr = isThis = false;
             continue;

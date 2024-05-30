@@ -76,7 +76,7 @@ void RangeList::InitBlock(RangeListBlock *b)
     Range *r = b->ranges;
     Range *rEnd = r + RANGE_COUNT;
     while (r < rEnd)
-        r++->id = NULL;
+        r++->id = (TADDR)NULL;
 
     b->next = NULL;
 }
@@ -102,7 +102,7 @@ BOOL RangeList::AddRangeWorker(const BYTE *start, const BYTE *end, void *id)
     {
         while (r < rEnd)
         {
-            if (r->id == NULL)
+            if (r->id == (TADDR)NULL)
             {
                 r->start = (TADDR)start;
                 r->end = (TADDR)end;
@@ -177,7 +177,7 @@ void RangeList::RemoveRangesWorker(void *id, const BYTE* start, const BYTE* end)
 
         while (r < rEnd)
         {
-            if (r->id != NULL)
+            if (r->id != (TADDR)NULL)
             {
                 if (start != NULL)
                 {
@@ -188,12 +188,12 @@ void RangeList::RemoveRangesWorker(void *id, const BYTE* start, const BYTE* end)
                         CONSISTENCY_CHECK_MSGF(r->end >= (TADDR)start &&
                                                r->end <= (TADDR)end,
                                                ("r: %p start: %p end: %p", r, start, end));
-                        r->id = NULL;
+                        r->id = (TADDR)NULL;
                     }
                 }
                 else if (r->id == (TADDR)id)
                 {
-                    r->id = NULL;
+                    r->id = (TADDR)NULL;
                 }
             }
 
@@ -249,7 +249,7 @@ BOOL RangeList::IsInRangeWorker(TADDR address, TADDR *pID /* = NULL */)
     {
         while (r < rEnd)
         {
-            if (r->id != NULL &&
+            if (r->id != (TADDR)NULL &&
                 address >= r->start
                 && address < r->end)
             {
@@ -326,7 +326,7 @@ RangeList::RangeListBlock::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
     for (i=0; i<RANGE_COUNT; i++)
     {
         range = &(this->ranges[i]);
-        if (range->id == NULL || range->start == NULL || range->end == NULL ||
+        if (range->id == (TADDR)NULL || range->start == (TADDR)NULL || range->end == (TADDR)NULL ||
             // just looking at the lower 4bytes is good enough on WIN64
             range->start == BADFOOD || range->end == BADFOOD)
         {

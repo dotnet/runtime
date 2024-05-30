@@ -470,9 +470,8 @@ public:
 
 /*****************************************************************************/
 
-#define CSE_INTO_HANDLERS                    0
-#define DUMP_FLOWGRAPHS                      DEBUG // Support for creating Xml Flowgraph reports in *.fgx files
-#define HANDLER_ENTRY_MUST_BE_IN_HOT_SECTION 0     // if 1 we must have all handler entry points in the Hot code section
+#define CSE_INTO_HANDLERS 0
+#define DUMP_FLOWGRAPHS   DEBUG // Support for creating Xml Flowgraph reports in *.fgx files
 
 /*****************************************************************************/
 
@@ -704,11 +703,11 @@ inline unsigned int unsigned_abs(int x)
 #ifdef TARGET_64BIT
 inline size_t unsigned_abs(ssize_t x)
 {
-    return ((size_t)std::abs((__int64)x));
+    return ((size_t)std::abs((int64_t)x));
 }
 
 #ifdef __APPLE__
-inline size_t unsigned_abs(__int64 x)
+inline size_t unsigned_abs(int64_t x)
 {
     return ((size_t)std::abs(x));
 }
@@ -836,7 +835,7 @@ inline T UninitializedWord(Compiler* comp)
     }
     defaultFill = Compiler::compGetJitDefaultFill(comp);
     assert(defaultFill <= 0xff);
-    __int64 word = 0x0101010101010101LL * defaultFill;
+    int64_t word = 0x0101010101010101LL * defaultFill;
     return (T)word;
 }
 

@@ -544,7 +544,11 @@ void EESocketCleanupHelper(bool isExecutingOnAltStack)
 
     if (isExecutingOnAltStack)
     {
-        GetThread()->SetExecutingOnAltStack();
+        Thread *pThread = GetThreadNULLOk();
+        if (pThread)
+        {
+             pThread->SetExecutingOnAltStack();
+        }
     }
 
     // Close the debugger transport socket first
@@ -1244,6 +1248,8 @@ void STDMETHODCALLTYPE EEShutDownHelper(BOOL fIsDllUnloading)
         // This will check a flag and do nothing if not enabled.
         Interpreter::PrintPostMortemData();
 #endif // FEATURE_INTERPRETER
+        VirtualCallStubManager::LogFinalStats();
+        WriteJitHelperCountToSTRESSLOG();
 
 #ifdef PROFILING_SUPPORTED
         // If profiling is enabled, then notify of shutdown first so that the
@@ -1344,11 +1350,6 @@ part2:
                 // Terminate the debugging services.
                 TerminateDebugger();
 #endif // DEBUGGING_SUPPORTED
-
-                //@TODO: find the right place for this
-                VirtualCallStubManager::UninitStatic();
-
-                WriteJitHelperCountToSTRESSLOG();
 
                 STRESS_LOG0(LF_STARTUP, LL_INFO10, "EEShutdown shutting down logging");
 

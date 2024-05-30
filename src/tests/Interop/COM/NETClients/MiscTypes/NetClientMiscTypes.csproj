@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <!-- Needed for CMakeProjectReference, GC.WaitForPendingFinalizers -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <ApplicationManifest>App.manifest</ApplicationManifest>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Program.cs" />
+    <Compile Include="../../ServerContracts/Server.CoClasses.cs" />
+    <Compile Include="../../ServerContracts/Server.Contracts.cs" />
+    <Compile Include="../../ServerContracts/ServerGuids.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <CMakeProjectReference Include="../../NativeServer/CMakeLists.txt" />
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
+</Project>

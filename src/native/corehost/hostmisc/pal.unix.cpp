@@ -591,6 +591,22 @@ bool pal::get_default_installation_dir_for_arch(pal::architecture arch, pal::str
         append_path(recv, get_arch_name(arch));
     }
 #endif
+#elif defined(TARGET_FREEBSD)
+    int mib[2];
+    char buf[PATH_MAX];
+    size_t len = PATH_MAX;
+
+    mib[0] = CTL_USER;
+    mib[1] = USER_LOCALBASE;
+    if (::sysctl(mib, 2, buf, &len, NULL, 0) == 0)
+    {
+        recv->assign(buf);
+        recv->append(_X("/share/dotnet"));
+    }
+    else
+    {
+        recv->assign(_X("/usr/local/share/dotnet"));
+    }
 #else
     recv->assign(_X("/usr/share/dotnet"));
 #endif

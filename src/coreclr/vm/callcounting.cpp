@@ -758,7 +758,7 @@ PCODE CallCountingManager::OnCallCountThresholdReached(TransitionBlock *transiti
     STATIC_CONTRACT_GC_TRIGGERS;
     STATIC_CONTRACT_MODE_COOPERATIVE;
 
-    PCODE codeEntryPoint = NULL;
+    PCODE codeEntryPoint = 0;
 
     BEGIN_PRESERVE_LAST_ERROR;
 
@@ -925,7 +925,7 @@ void CallCountingManager::CompleteCallCounting()
                     if (!activeCodeVersion.IsNull())
                     {
                         PCODE activeNativeCode = activeCodeVersion.GetNativeCode();
-                        if (activeNativeCode != NULL)
+                        if (activeNativeCode != 0)
                         {
                             methodDesc->SetCodeEntryPoint(activeNativeCode);
                             break;

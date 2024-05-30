@@ -705,20 +705,12 @@ namespace System
         [Obsolete(Obsoletions.ReflectionOnlyLoadingMessage, DiagnosticId = Obsoletions.ReflectionOnlyLoadingDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public static Type? ReflectionOnlyGetType(string typeName, bool throwIfNotFound, bool ignoreCase) => throw new PlatformNotSupportedException(SR.PlatformNotSupported_ReflectionOnly);
 
-        public static Binder DefaultBinder
-        {
-            get
-            {
-                if (s_defaultBinder == null)
-                {
-                    DefaultBinder binder = new DefaultBinder();
-                    Interlocked.CompareExchange<Binder?>(ref s_defaultBinder, binder, null);
-                }
-                return s_defaultBinder!;
-            }
-        }
+        public static Binder DefaultBinder =>
+            s_defaultBinder ??
+            Interlocked.CompareExchange(ref s_defaultBinder, new DefaultBinder(), null) ??
+            s_defaultBinder;
 
-        private static volatile Binder? s_defaultBinder;
+        private static Binder? s_defaultBinder;
 
         public static readonly char Delimiter = '.';
         public static readonly Type[] EmptyTypes = Array.Empty<Type>();

@@ -171,6 +171,7 @@ void GCScan::GcScanHandles (promote_func* fn,  int condemned, int max_gen,
         Ref_UpdatePointers(condemned, max_gen, sc, fn);
         Ref_UpdatePinnedPointers(condemned, max_gen, sc, fn);
         Ref_ScanDependentHandlesForRelocation(condemned, max_gen, sc, fn);
+        Ref_ScanWeakInteriorPointersForRelocation(condemned, max_gen, sc, fn);
     }
 }
 

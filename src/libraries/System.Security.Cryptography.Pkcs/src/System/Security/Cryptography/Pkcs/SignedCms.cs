@@ -96,7 +96,7 @@ namespace System.Security.Cryptography.Pkcs
                     if (choice.Certificate.HasValue)
                     {
                         coll.Add(new X509Certificate2(choice.Certificate.Value
-#if NETCOREAPP
+#if NET
                             .Span
 #else
                             .ToArray()

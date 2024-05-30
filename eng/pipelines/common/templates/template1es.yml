@@ -20,6 +20,9 @@ resources:
 extends:
   template: v1/1ES.Official.PipelineTemplate.yml@1ESPipelineTemplates
   parameters:
+    sdl:
+      credscan:
+        suppressionsFile: $(Build.SourcesDirectory)/.config/CredScanSuppressions.json
     pool:
       name: $(DncEngInternalBuildPool)
       image: 1es-windows-2022

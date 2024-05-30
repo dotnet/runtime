@@ -711,7 +711,7 @@ namespace System.Text.Json.SourceGeneration.UnitTests
         [InlineData("public ref partial struct MyGenericRefStruct<T>")]
         [InlineData("public readonly partial struct MyReadOnlyStruct")]
         [InlineData("public readonly ref partial struct MyReadOnlyRefStruct")]
-#if ROSLYN4_0_OR_GREATER && NETCOREAPP
+#if ROSLYN4_0_OR_GREATER && NET
         [InlineData("public partial record MyRecord(int x)", LanguageVersion.CSharp10)]
         [InlineData("public partial record struct MyRecordStruct(int x)", LanguageVersion.CSharp10)]
 #endif
@@ -771,7 +771,7 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             CompilationHelper.RunJsonSourceGenerator(compilation);
         }
 
-#if ROSLYN4_4_OR_GREATER && NETCOREAPP
+#if ROSLYN4_4_OR_GREATER && NET
         [Fact]
         public void ShadowedMemberInitializers()
         {

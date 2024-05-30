@@ -46,7 +46,7 @@ namespace System.Text.Json.Serialization.Tests
             yield return WrapArgs(DateTime.MaxValue, 1, expectedJson: $@"{{""{DateTime.MaxValue:O}"":1}}");
             yield return WrapArgs(DateTimeOffset.MaxValue, 1, expectedJson: $@"{{""{DateTimeOffset.MaxValue:O}"":1}}");
             yield return WrapArgs(TimeSpan.MaxValue, 1, expectedJson: $@"{{""{TimeSpan.MaxValue}"":1}}");
-#if NET6_0_OR_GREATER
+#if NET
             yield return WrapArgs(DateOnly.MaxValue, 1, expectedJson: $@"{{""{DateOnly.MaxValue:O}"":1}}");
             yield return WrapArgs(TimeOnly.MaxValue, 1, expectedJson: $@"{{""{TimeOnly.MaxValue:O}"":1}}");
 #endif
@@ -66,7 +66,7 @@ namespace System.Text.Json.Serialization.Tests
             yield return WrapArgs(ushort.MaxValue, 1);
             yield return WrapArgs(uint.MaxValue, 1);
             yield return WrapArgs(ulong.MaxValue, 1);
-#if NETCOREAPP
+#if NET
             yield return WrapArgs(Half.MinValue, 1);
             yield return WrapArgs(Int128.MinValue, 1);
             yield return WrapArgs(UInt128.MaxValue, 1);
@@ -340,7 +340,7 @@ namespace System.Text.Json.Serialization.Tests
                 new object[] { @"\u0042\u0061\u0072\u002c\u0042\u0061\u007a",
                     MyEnumFlags.Bar | MyEnumFlags.Baz, typeof(Dictionary<MyEnumFlags, int>) },
                 new object[] { @"\u002b", '+', typeof(Dictionary<char, int>) },
-#if NETCOREAPP
+#if NET
                 new object[] { @"\u0033\u002e\u0031\u0032\u0035\u0065\u0034",
                     (Half)3.125e4, typeof(Dictionary<Half, int>) },
                 new object[] { @"\u002D\u0031\u0037\u0030\u0031\u0034\u0031\u0031\u0038\u0033\u0034\u0036\u0030\u0034\u0036\u0039\u0032\u0033\u0031\u0037\u0033\u0031\u0036\u0038\u0037\u0033\u0030\u0033\u0037\u0031\u0035\u0038\u0038\u0034\u0031\u0030\u0035\u0037\u0032\u0038",
@@ -380,7 +380,7 @@ namespace System.Text.Json.Serialization.Tests
 
         private class UnsupportedDictionaryWrapper
         {
-            public Dictionary<int[], int> Dictionary { get; set; }
+            public Dictionary<int[], int>? Dictionary { get; set; }
         }
 
         public class FixedNamingPolicy : JsonNamingPolicy

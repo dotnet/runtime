@@ -318,7 +318,7 @@ void ObjectAllocator::ComputeStackObjectPointers(BitVecTraits* bitVecTraits)
 
                             if (DoesLclVarPointToStack(rhsLclNum))
                             {
-                                // The only assignment to lclNum local is definitely-stack-pointing
+                                // The only store to lclNum local is the definitely-stack-pointing
                                 // rhsLclNum local so lclNum local is also definitely-stack-pointing.
                                 MarkLclVarAsDefinitelyStackPointing(lclNum);
                             }
@@ -637,7 +637,7 @@ bool ObjectAllocator::CanLclVarEscapeViaParentStack(ArrayStack<GenTree*>* parent
             {
                 GenTreeCall* asCall = parent->AsCall();
 
-                if (asCall->gtCallType == CT_HELPER)
+                if (asCall->IsHelperCall())
                 {
                     // TODO-ObjectStackAllocation: Special-case helpers here that
                     // 1. Don't make objects escape.

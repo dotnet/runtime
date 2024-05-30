@@ -233,12 +233,12 @@ void Compiler::unwindPushPopMaskInt(regMaskTP maskInt, bool useOpsize16)
         if (shortFormat)
         {
             // D0-D7 : pop {r4-rX,lr} (X=4-7) (opsize 16)
-            pu->AddCode(0xD0 | ((maskInt >> 12) & 0x4) | val);
+            pu->AddCode((BYTE)(0xD0 | ((maskInt >> 12) & 0x4) | val));
         }
         else
         {
             // EC-ED : pop {r0-r7,lr} (opsize 16)
-            pu->AddCode(0xEC | ((maskInt >> 14) & 0x1), (BYTE)maskInt);
+            pu->AddCode((BYTE)(0xEC | ((maskInt >> 14) & 0x1)), (BYTE)maskInt);
         }
     }
     else
@@ -272,12 +272,12 @@ void Compiler::unwindPushPopMaskInt(regMaskTP maskInt, bool useOpsize16)
         if (shortFormat)
         {
             // D8-DF : pop {r4-rX,lr} (X=8-11) (opsize 32)
-            pu->AddCode(0xD8 | ((maskInt >> 12) & 0x4) | val);
+            pu->AddCode((BYTE)(0xD8 | ((maskInt >> 12) & 0x4) | val));
         }
         else
         {
             // 80-BF : pop {r0-r12,lr} (opsize 32)
-            pu->AddCode(0x80 | ((maskInt >> 8) & 0x1F) | ((maskInt >> 9) & 0x20), (BYTE)maskInt);
+            pu->AddCode((BYTE)(0x80 | ((maskInt >> 8) & 0x1F) | ((maskInt >> 9) & 0x20)), (BYTE)maskInt);
         }
     }
 }
@@ -571,7 +571,6 @@ void Compiler::unwindReserveFunc(FuncInfoDsc* func)
     }
 #endif // DEBUG
 
-#ifdef FEATURE_EH_FUNCLETS
     // If hot/cold splitting occurred at fgFirstFuncletBB, then the main body is not split.
     const bool splitAtFirstFunclet = (funcHasColdSection && (fgFirstColdBlock == fgFirstFuncletBB));
 
@@ -579,7 +578,6 @@ void Compiler::unwindReserveFunc(FuncInfoDsc* func)
     {
         funcHasColdSection = false;
     }
-#endif // FEATURE_EH_FUNCLETS
 
 #if defined(FEATURE_CFI_SUPPORT)
     if (generateCFIUnwindCodes())

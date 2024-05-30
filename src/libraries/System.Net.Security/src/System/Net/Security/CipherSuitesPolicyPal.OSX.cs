@@ -8,7 +8,7 @@ namespace System.Net.Security
 {
     internal sealed class CipherSuitesPolicyPal
     {
-        internal uint[] TlsCipherSuites { get; private set; }
+        internal uint[] TlsCipherSuites { get; }
 
         internal CipherSuitesPolicyPal(IEnumerable<TlsCipherSuite> allowedCipherSuites)
         {

@@ -62,10 +62,8 @@ namespace System
         }
 #pragma warning restore
 
-        private static unsafe object InternalBoxEnum(Type enumType, long value)
-        {
-            return ToObject(enumType.TypeHandle.ToMethodTable(), value);
-        }
+        internal static unsafe object ToObject(MethodTable* mt, long value)
+            => InternalBoxEnum(new RuntimeTypeHandle(mt), value);
 
         private static unsafe CorElementType InternalGetCorElementType(RuntimeType rt)
         {
@@ -151,51 +149,5 @@ namespace System
 
             return GetEnumInfo(enumType).UnderlyingType;
         }
-
-        [Conditional("BIGENDIAN")]
-        private static unsafe void AdjustForEndianness(ref byte* pValue, MethodTable* enumEEType)
-        {
-            // On Debug builds, include the big-endian code to help deter bitrot (the "Conditional("BIGENDIAN")" will prevent it from executing on little-endian).
-            // On Release builds, exclude code to deter IL bloat and toolchain work.
-#if BIGENDIAN || DEBUG
-            EETypeElementType elementType = enumEEType->ElementType;
-            switch (elementType)
-            {
-                case EETypeElementType.SByte:
-                case EETypeElementType.Byte:
-                    pValue += sizeof(long) - sizeof(byte);
-                    break;
-
-                case EETypeElementType.Int16:
-                case EETypeElementType.UInt16:
-                    pValue += sizeof(long) - sizeof(short);
-                    break;
-
-                case EETypeElementType.Int32:
-                case EETypeElementType.UInt32:
-                    pValue += sizeof(long) - sizeof(int);
-                    break;
-
-                case EETypeElementType.Int64:
-                case EETypeElementType.UInt64:
-                    break;
-
-                default:
-                    throw new NotSupportedException();
-            }
-#endif //BIGENDIAN || DEBUG
-        }
-
-        #region ToObject
-
-        internal static unsafe object ToObject(MethodTable* enumEEType, long value)
-        {
-            Debug.Assert(enumEEType->IsEnum);
-
-            byte* pValue = (byte*)&value;
-            AdjustForEndianness(ref pValue, enumEEType);
-            return RuntimeImports.RhBox(enumEEType, ref *pValue);
-        }
-        #endregion
     }
 }

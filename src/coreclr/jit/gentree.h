@@ -171,7 +171,7 @@ enum TargetHandleType : BYTE
 /*****************************************************************************/
 
 struct BasicBlock;
-enum BasicBlockFlags : unsigned __int64;
+enum BasicBlockFlags : uint64_t;
 struct InlineCandidateInfo;
 struct HandleHistogramProfileCandidateInfo;
 struct LateDevirtualizationInfo;
@@ -363,8 +363,8 @@ enum GenTreeFlags : unsigned int
 //  expression node for one of these flags.
 //---------------------------------------------------------------------
 
-    GTF_ASG           = 0x00000001, // sub-expression contains an assignment
-    GTF_CALL          = 0x00000002, // sub-expression contains a  func. call
+    GTF_ASG           = 0x00000001, // sub-expression contains a store
+    GTF_CALL          = 0x00000002, // sub-expression contains a func. call
     GTF_EXCEPT        = 0x00000004, // sub-expression might throw an exception
     GTF_GLOB_REF      = 0x00000008, // sub-expression uses global variable(s)
     GTF_ORDER_SIDEEFF = 0x00000010, // sub-expression has a re-ordering side effect
@@ -557,9 +557,10 @@ enum GenTreeFlags : unsigned int
 
     GTF_MDARRLOWERBOUND_NONFAULTING = 0x20000000, // GT_MDARR_LOWER_BOUND -- An MD array lower bound operation that cannot fault. Same as GT_IND_NONFAULTING.
 
-#if defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
+#ifdef FEATURE_HW_INTRINSICS
     GTF_HW_EM_OP                  = 0x10000000, // GT_HWINTRINSIC -- node is used as an operand to an embedded mask
-#endif // TARGET_XARCH && FEATURE_HW_INTRINSICS
+    GTF_HW_USER_CALL              = 0x20000000, // GT_HWINTRINSIC -- node is implemented via a user call
+#endif // FEATURE_HW_INTRINSICS
 };
 
 inline constexpr GenTreeFlags operator ~(GenTreeFlags a)
@@ -593,14 +594,13 @@ inline GenTreeFlags& operator ^=(GenTreeFlags& a, GenTreeFlags b)
 }
 
 // Can any side-effects be observed externally, say by a caller method?
-// For assignments, only assignments to global memory can be observed
-// externally, whereas simple assignments to local variables can not.
+// For stores, only stores to global memory can be observed externally,
+// whereas simple stores to local variables can not.
 //
 // Be careful when using this inside a "try" protected region as the
-// order of assignments to local variables would need to be preserved
-// wrt side effects if the variables are alive on entry to the
-// "catch/finally" region. In such cases, even assignments to locals
-// will have to be restricted.
+// order of stores to local variables would need to be preserved wrt
+// side effects if the variables are alive on entry to the handler
+// region. In such cases, even stores to locals will have to be restricted.
 #define GTF_GLOBALLY_VISIBLE_SIDE_EFFECTS(flags) \
     (((flags) & (GTF_CALL | GTF_EXCEPT)) || (((flags) & (GTF_ASG | GTF_GLOB_REF)) == (GTF_ASG | GTF_GLOB_REF)))
 
@@ -956,12 +956,6 @@ public:
 #endif // defined(DEBUG)
 
     ValueNumPair gtVNPair;
-
-    regMaskSmall gtRsvdRegs; // set of fixed trashed  registers
-
-    unsigned  AvailableTempRegCount(regMaskTP mask = (regMaskTP)-1) const;
-    regNumber GetSingleTempReg(regMaskTP mask = (regMaskTP)-1);
-    regNumber ExtractTempReg(regMaskTP mask = (regMaskTP)-1);
 
     void SetVNsFromNode(GenTree* tree)
     {
@@ -1466,7 +1460,7 @@ public:
     bool isContainableHWIntrinsic() const;
     bool isRMWHWIntrinsic(Compiler* comp);
     bool isEvexCompatibleHWIntrinsic() const;
-    bool isEvexEmbeddedMaskingCompatibleHWIntrinsic() const;
+    bool isEmbeddedMaskingCompatibleHWIntrinsic() const;
 #else
     bool isCommutativeHWIntrinsic() const
     {
@@ -1488,7 +1482,7 @@ public:
         return false;
     }
 
-    bool isEvexEmbeddedMaskingCompatibleHWIntrinsic() const
+    bool isEmbeddedMaskingCompatibleHWIntrinsic() const
     {
         return false;
     }
@@ -1739,6 +1733,9 @@ public:
 #endif // defined(TARGET_ARM64)
 
                 return true;
+
+            case GT_SWIFT_ERROR_RET:
+                return (gtType == TYP_VOID);
             default:
                 return false;
         }
@@ -1768,6 +1765,7 @@ public:
     inline bool IsVectorZero() const;
     inline bool IsVectorCreate() const;
     inline bool IsVectorAllBitsSet() const;
+    inline bool IsMaskAllBitsSet() const;
     inline bool IsVectorConst();
 
     inline uint64_t GetIntegralVectorConstElement(size_t index, var_types simdBaseType);
@@ -1980,8 +1978,6 @@ public:
     GenTreeLclVarCommon* IsImplicitByrefParameterValuePreMorph(Compiler* compiler);
     GenTreeLclVar*       IsImplicitByrefParameterValuePostMorph(Compiler* compiler, GenTree** addr);
 
-    // Determine whether this is an assignment tree of the form X = X (op) Y,
-    // where Y is an arbitrary tree, and X is a lclVar.
     unsigned IsLclVarUpdateTree(GenTree** otherTree, genTreeOps* updateOper);
 
     // Determine whether this tree is a basic block profile count update.
@@ -2226,7 +2222,7 @@ public:
         gtFlags &= ~GTF_ICON_HDL_MASK;
     }
 
-#if defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
+#ifdef FEATURE_HW_INTRINSICS
 
     bool IsEmbMaskOp()
     {
@@ -2240,7 +2236,7 @@ public:
         gtFlags |= GTF_HW_EM_OP;
     }
 
-#endif // TARGET_XARCH && FEATURE_HW_INTRINSICS
+#endif // FEATURE_HW_INTRINSICS
 
     static bool HandleKindDataIsInvariant(GenTreeFlags flags);
 
@@ -3040,6 +3036,34 @@ struct GenTreeOp : public GenTreeUnOp
     // then sets the flag GTF_DIV_BY_CNS_OPT and GTF_DONT_CSE on the constant
     void CheckDivideByConstOptimized(Compiler* comp);
 
+    GenTree* GetReturnValue() const
+    {
+        assert(OperIs(GT_RETURN, GT_RETFILT, GT_SWIFT_ERROR_RET));
+#ifdef SWIFT_SUPPORT
+        if (OperIs(GT_SWIFT_ERROR_RET))
+        {
+            return gtOp2;
+        }
+#endif // SWIFT_SUPPORT
+
+        return gtOp1;
+    }
+
+    void SetReturnValue(GenTree* const retVal)
+    {
+        assert(OperIs(GT_RETURN, GT_RETFILT, GT_SWIFT_ERROR_RET));
+#ifdef SWIFT_SUPPORT
+        if (OperIs(GT_SWIFT_ERROR_RET))
+        {
+            gtOp2 = retVal;
+        }
+        else
+#endif // SWIFT_SUPPORT
+        {
+            gtOp1 = retVal;
+        }
+    }
+
 #if !defined(TARGET_64BIT) || defined(TARGET_ARM64)
     bool IsValidLongMul();
 #endif
@@ -3359,8 +3383,8 @@ public:
 
     bool isBitwiseEqual(GenTreeDblCon* other)
     {
-        unsigned __int64 bits      = *(unsigned __int64*)(&gtDconVal);
-        unsigned __int64 otherBits = *(unsigned __int64*)(&(other->gtDconVal));
+        uint64_t bits      = *(uint64_t*)(&gtDconVal);
+        uint64_t otherBits = *(uint64_t*)(&(other->gtDconVal));
         return (bits == otherBits);
     }
 
@@ -3928,8 +3952,8 @@ struct GenTreeBox : public GenTreeUnOp
     {
         return gtOp1;
     }
-    // This is the statement that contains the assignment tree when the node is an inlined GT_BOX on a value
-    // type
+    // This is the statement that contains the definition tree when the node is an inlined GT_BOX
+    // on a value type
     Statement* gtDefStmtWhenInlinedBoxValue;
     // And this is the statement that copies from the value being boxed to the box payload
     Statement* gtCopyStmtWhenInlinedBoxValue;
@@ -4442,7 +4466,6 @@ enum class WellKnownArg : unsigned
     InstParam,
     RetBuffer,
     PInvokeFrame,
-    SecretStubParam,
     WrapperDelegateCell,
     ShiftLow,
     ShiftHigh,
@@ -5929,24 +5952,30 @@ struct GenTreeIntrinsic : public GenTreeOp
     NamedIntrinsic        gtIntrinsicName;
     CORINFO_METHOD_HANDLE gtMethodHandle; // Method handle of the method which is treated as an intrinsic.
 
-#ifdef FEATURE_READYTORUN
+#if defined(FEATURE_READYTORUN)
     // Call target lookup info for method call from a Ready To Run module
     CORINFO_CONST_LOOKUP gtEntryPoint;
-#endif
+#endif // FEATURE_READYTORUN
 
-    GenTreeIntrinsic(var_types type, GenTree* op1, NamedIntrinsic intrinsicName, CORINFO_METHOD_HANDLE methodHandle)
+    GenTreeIntrinsic(var_types                          type,
+                     GenTree*                           op1,
+                     NamedIntrinsic                     intrinsicName,
+                     CORINFO_METHOD_HANDLE methodHandle R2RARG(CORINFO_CONST_LOOKUP entryPoint))
         : GenTreeOp(GT_INTRINSIC, type, op1, nullptr)
         , gtIntrinsicName(intrinsicName)
-        , gtMethodHandle(methodHandle)
+        , gtMethodHandle(methodHandle) R2RARG(gtEntryPoint(entryPoint))
     {
         assert(intrinsicName != NI_Illegal);
     }
 
-    GenTreeIntrinsic(
-        var_types type, GenTree* op1, GenTree* op2, NamedIntrinsic intrinsicName, CORINFO_METHOD_HANDLE methodHandle)
+    GenTreeIntrinsic(var_types                          type,
+                     GenTree*                           op1,
+                     GenTree*                           op2,
+                     NamedIntrinsic                     intrinsicName,
+                     CORINFO_METHOD_HANDLE methodHandle R2RARG(CORINFO_CONST_LOOKUP entryPoint))
         : GenTreeOp(GT_INTRINSIC, type, op1, op2)
         , gtIntrinsicName(intrinsicName)
-        , gtMethodHandle(methodHandle)
+        , gtMethodHandle(methodHandle) R2RARG(gtEntryPoint(entryPoint))
     {
         assert(intrinsicName != NI_Illegal);
     }
@@ -6066,6 +6095,15 @@ public:
     {
     }
 #endif
+
+    bool IsUserCall() const
+    {
+#if defined(FEATURE_HW_INTRINSICS)
+        return OperIs(GT_HWINTRINSIC) && (gtFlags & GTF_HW_USER_CALL) != 0;
+#else
+        return false;
+#endif
+    }
 
     GenTree*& Op(size_t index)
     {
@@ -6195,7 +6233,29 @@ private:
 struct GenTreeJitIntrinsic : public GenTreeMultiOp
 {
 protected:
-    GenTree*           gtInlineOperands[2];
+    union
+    {
+        // We don't have enough space to carry both the inline operands
+        // and the necessary information required to support rewriting
+        // the intrinsic back into a user call. As such, we union the
+        // data instead and use the GTF_HW_USER_CALL flag to indicate
+        // which fields are valid to access. -- Tracking the fields
+        // independently causes TREE_NODE_SZ_LARGE to increase and for
+        // GenTreeJitIntrinsic to become the largest node, which is
+        // undesirable, so this approach helps keep things pay-for-play.
+
+        GenTree* gtInlineOperands[2];
+
+        struct
+        {
+            CORINFO_METHOD_HANDLE gtMethodHandle;
+
+#if defined(FEATURE_READYTORUN)
+            // Call target lookup info for method call from a Ready To Run module
+            CORINFO_CONST_LOOKUP* gtEntryPoint;
+#endif // FEATURE_READYTORUN
+        };
+    };
     regNumberSmall     gtOtherReg;     // The second register for multi-reg intrinsics.
     MultiRegSpillFlags gtSpillFlags;   // Spill flags for multi-reg intrinsics.
     unsigned char  gtAuxiliaryJitType; // For intrinsics than need another type (e.g. Avx2.Gather* or SIMD (by element))
@@ -6204,6 +6264,22 @@ protected:
     NamedIntrinsic gtHWIntrinsicId;
 
 public:
+    CORINFO_METHOD_HANDLE GetMethodHandle() const
+    {
+        assert(IsUserCall());
+        return gtMethodHandle;
+    }
+
+    void SetMethodHandle(Compiler* comp, CORINFO_METHOD_HANDLE methodHandle R2RARG(CORINFO_CONST_LOOKUP entryPoint));
+
+#if defined(FEATURE_READYTORUN)
+    CORINFO_CONST_LOOKUP GetEntryPoint() const
+    {
+        assert(IsUserCall());
+        return *gtEntryPoint;
+    }
+#endif // FEATURE_READYTORUN
+
     //-----------------------------------------------------------
     // GetRegNumByIdx: Get regNumber of i'th position.
     //
@@ -9210,6 +9286,32 @@ inline bool GenTree::IsVectorAllBitsSet() const
     return false;
 }
 
+inline bool GenTree::IsMaskAllBitsSet() const
+{
+#ifdef TARGET_ARM64
+    static_assert_no_msg(AreContiguous(NI_Sve_CreateTrueMaskByte, NI_Sve_CreateTrueMaskDouble,
+                                       NI_Sve_CreateTrueMaskInt16, NI_Sve_CreateTrueMaskInt32,
+                                       NI_Sve_CreateTrueMaskInt64, NI_Sve_CreateTrueMaskSByte,
+                                       NI_Sve_CreateTrueMaskSingle, NI_Sve_CreateTrueMaskUInt16,
+                                       NI_Sve_CreateTrueMaskUInt32, NI_Sve_CreateTrueMaskUInt64));
+
+    if (OperIsHWIntrinsic())
+    {
+        NamedIntrinsic id = AsHWIntrinsic()->GetHWIntrinsicId();
+        if (id == NI_Sve_ConvertMaskToVector)
+        {
+            GenTree* op1 = AsHWIntrinsic()->Op(1);
+            assert(op1->OperIsHWIntrinsic());
+            id = op1->AsHWIntrinsic()->GetHWIntrinsicId();
+        }
+        return ((id == NI_Sve_CreateTrueMaskAll) ||
+                ((id >= NI_Sve_CreateTrueMaskByte) && (id <= NI_Sve_CreateTrueMaskUInt64)));
+    }
+
+#endif
+    return false;
+}
+
 //-------------------------------------------------------------------
 // IsVectorConst: returns true if this node is a HWIntrinsic that represents a constant.
 //
@@ -9977,7 +10079,7 @@ inline bool GenTree::IsCnsNonZeroFltOrDbl() const
     if (IsCnsFltOrDbl())
     {
         double constValue = AsDblCon()->DconValue();
-        return *(__int64*)&constValue != 0;
+        return *(int64_t*)&constValue != 0;
     }
 
     return false;
@@ -9990,7 +10092,7 @@ inline bool GenTree::IsCnsVec() const
 
 inline bool GenTree::IsHelperCall()
 {
-    return OperGet() == GT_CALL && AsCall()->gtCallType == CT_HELPER;
+    return OperGet() == GT_CALL && AsCall()->IsHelperCall();
 }
 
 inline var_types GenTree::CastFromType()

@@ -188,7 +188,8 @@ GenTree* DecomposeLongs::DecomposeNode(GenTree* tree)
             break;
 
         case GT_RETURN:
-            assert(tree->AsOp()->gtOp1->OperGet() == GT_LONG);
+        case GT_SWIFT_ERROR_RET:
+            assert(tree->AsOp()->GetReturnValue()->OperIs(GT_LONG));
             break;
 
         case GT_STOREIND:

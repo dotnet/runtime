@@ -87,6 +87,7 @@ namespace System.Security.Cryptography
         {
             private readonly LiteHash _liteHash;
             private bool _running;
+            private ConcurrencyBlock _block;
 
             public EvpHashProvider(string hashAlgorithmId)
             {
@@ -95,21 +96,30 @@ namespace System.Security.Cryptography
 
             public override void AppendHashData(ReadOnlySpan<byte> data)
             {
-                _liteHash.Append(data);
-                _running = true;
+                using (ConcurrencyBlock.Enter(ref _block))
+                {
+                    _liteHash.Append(data);
+                    _running = true;
+                }
             }
 
             public override int FinalizeHashAndReset(Span<byte> destination)
             {
-                int written = _liteHash.Finalize(destination);
-                _liteHash.Reset();
-                _running = false;
-                return written;
+                using (ConcurrencyBlock.Enter(ref _block))
+                {
+                    int written = _liteHash.Finalize(destination);
+                    _liteHash.Reset();
+                    _running = false;
+                    return written;
+                }
             }
 
             public override int GetCurrentHash(Span<byte> destination)
             {
-                return _liteHash.Current(destination);
+                using (ConcurrencyBlock.Enter(ref _block))
+                {
+                    return _liteHash.Current(destination);
+                }
             }
 
             public override int HashSizeInBytes => _liteHash.HashSizeInBytes;
@@ -124,10 +134,13 @@ namespace System.Security.Cryptography
 
             public override void Reset()
             {
-                if (_running)
+                using (ConcurrencyBlock.Enter(ref _block))
                 {
-                    _liteHash.Reset();
-                    _running = false;
+                    if (_running)
+                    {
+                        _liteHash.Reset();
+                        _running = false;
+                    }
                 }
             }
         }
@@ -136,6 +149,7 @@ namespace System.Security.Cryptography
         {
             private readonly LiteHmac _liteHmac;
             private bool _running;
+            private ConcurrencyBlock _block;
 
             public HmacHashProvider(string hashAlgorithmId, ReadOnlySpan<byte> key)
             {
@@ -144,21 +158,30 @@ namespace System.Security.Cryptography
 
             public override void AppendHashData(ReadOnlySpan<byte> data)
             {
-                _liteHmac.Append(data);
-                _running = true;
+                using (ConcurrencyBlock.Enter(ref _block))
+                {
+                    _liteHmac.Append(data);
+                    _running = true;
+                }
             }
 
             public override int FinalizeHashAndReset(Span<byte> destination)
             {
-                int written = _liteHmac.Finalize(destination);
-                _liteHmac.Reset();
-                _running = false;
-                return written;
+                using (ConcurrencyBlock.Enter(ref _block))
+                {
+                    int written = _liteHmac.Finalize(destination);
+                    _liteHmac.Reset();
+                    _running = false;
+                    return written;
+                }
             }
 
             public override int GetCurrentHash(Span<byte> destination)
             {
-                return _liteHmac.Current(destination);
+                using (ConcurrencyBlock.Enter(ref _block))
+                {
+                    return _liteHmac.Current(destination);
+                }
             }
 
             public override int HashSizeInBytes => _liteHmac.HashSizeInBytes;
@@ -173,10 +196,13 @@ namespace System.Security.Cryptography
 
             public override void Reset()
             {
-                if (_running)
+                using (ConcurrencyBlock.Enter(ref _block))
                 {
-                    _liteHmac.Reset();
-                    _running = false;
+                    if (_running)
+                    {
+                        _liteHmac.Reset();
+                        _running = false;
+                    }
                 }
             }
         }

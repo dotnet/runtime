@@ -1047,9 +1047,9 @@ private:
                 }
                 if (isDef)
                 {
-                    GenTree* data = indir->Data();
+                    GenTree* value = indir->Data();
                     indir->ChangeOper(GT_STORE_LCL_VAR);
-                    indir->AsLclVar()->Data() = data;
+                    indir->AsLclVar()->Data() = value;
                 }
                 else
                 {
@@ -1062,9 +1062,9 @@ private:
             case IndirTransform::LclFld:
                 if (isDef)
                 {
-                    GenTree* data = indir->Data();
+                    GenTree* value = indir->Data();
                     indir->ChangeOper(GT_STORE_LCL_FLD);
-                    indir->AsLclFld()->Data() = data;
+                    indir->AsLclFld()->Data() = value;
                 }
                 else
                 {
@@ -1259,9 +1259,9 @@ private:
         {
             if (node->OperIs(GT_STOREIND, GT_STORE_BLK))
             {
-                GenTree* data = node->Data();
+                GenTree* value = node->Data();
                 node->ChangeOper(GT_STORE_LCL_VAR);
-                node->AsLclVar()->Data() = data;
+                node->AsLclVar()->Data() = value;
                 node->gtFlags |= GTF_VAR_DEF;
             }
             else

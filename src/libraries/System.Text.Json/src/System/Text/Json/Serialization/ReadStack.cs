@@ -355,7 +355,7 @@ namespace System.Text.Json
                     {
                         // Attempt to get the JSON property name from the JsonPropertyInfo or JsonParameterInfo.
                         utf8PropertyName = frame.JsonPropertyInfo?.NameAsUtf8Bytes ??
-                            frame.CtorArgumentState?.JsonParameterInfo?.NameAsUtf8Bytes;
+                            frame.CtorArgumentState?.JsonParameterInfo?.JsonNameAsUtf8Bytes;
                     }
                 }
 

@@ -111,6 +111,7 @@ export interface AssetEntryInternal extends AssetEntry {
     pendingDownloadInternal?: LoadingResource
     noCache?: boolean
     useCredentials?: boolean
+    isCore?: boolean
 }
 
 export type LoaderHelpers = {
@@ -131,7 +132,6 @@ export type LoaderHelpers = {
     scriptUrl: string
     modulesUniqueQuery?: string
     preferredIcuAsset?: string | null,
-    loadingWorkers: PThreadWorker[],
     workerNextNumber: number,
 
     actual_downloaded_assets_count: number,
@@ -143,6 +143,7 @@ export type LoaderHelpers = {
     allDownloadsQueued: PromiseAndController<void>,
     wasmCompilePromise: PromiseAndController<WebAssembly.Module>,
     runtimeModuleLoaded: PromiseAndController<void>,
+    loadingWorkers: PromiseAndController<PThreadWorker[]>,
 
     is_exited: () => boolean,
     is_runtime_running: () => boolean,
@@ -209,11 +210,13 @@ export type RuntimeHelpers = {
     proxyGCHandle: GCHandle | undefined,
     managedThreadTID: PThreadPtr,
     ioThreadTID: PThreadPtr,
+    deputyWorker: PThreadWorker,
     currentThreadTID: PThreadPtr,
     isManagedRunningOnCurrentThread: boolean,
     isPendingSynchronousCall: boolean, // true when we are in the middle of a synchronous call from managed code from same thread
     cspPolicy: boolean,
 
+    coreAssetsInMemory: PromiseAndController<void>,
     allAssetsInMemory: PromiseAndController<void>,
     dotnetReady: PromiseAndController<any>,
     afterInstantiateWasm: PromiseAndController<void>,
@@ -221,7 +224,8 @@ export type RuntimeHelpers = {
     afterPreInit: PromiseAndController<void>,
     afterPreRun: PromiseAndController<void>,
     beforeOnRuntimeInitialized: PromiseAndController<void>,
-    afterMonoStarted: PromiseAndController<GCHandle | undefined>,
+    afterMonoStarted: PromiseAndController<void>,
+    afterDeputyReady: PromiseAndController<GCHandle | undefined>,
     afterIOStarted: PromiseAndController<void>,
     afterOnRuntimeInitialized: PromiseAndController<void>,
     afterPostRun: PromiseAndController<void>,
@@ -237,6 +241,29 @@ export type RuntimeHelpers = {
     jiterpreter_dump_stats?: (concise?: boolean) => void,
     forceDisposeProxies: (disposeMethods: boolean, verbose: boolean) => void,
     dumpThreads: () => void,
+    mono_wasm_print_thread_dump: () => void,
+
+    stringToUTF16: (dstPtr: number, endPtr: number, text: string) => void,
+    stringToUTF16Ptr: (str: string) => VoidPtr,
+    utf16ToString: (startPtr: number, endPtr: number) => string,
+    utf16ToStringLoop: (startPtr: number, endPtr: number) => string,
+    localHeapViewU16: () => Uint16Array,
+    setU16_local: (heap: Uint16Array, ptr: number, value: number) => void,
+    setI32: (offset: MemOffset, value: number) => void,
+}
+export type GlobalizationHelpers = {
+
+    mono_wasm_change_case_invariant: (src: number, srcLength: number, dst: number, dstLength: number, toUpper: number) => VoidPtr;
+    mono_wasm_change_case: (culture: number, cultureLength: number, src: number, srcLength: number, dst: number, dstLength: number, toUpper: number) => VoidPtr;
+    mono_wasm_compare_string: (culture: number, cultureLength: number, str1: number, str1Length: number, str2: number, str2Length: number, options: number, resultPtr: Int32Ptr) => VoidPtr;
+    mono_wasm_starts_with: (culture: number, cultureLength: number, str1: number, str1Length: number, str2: number, str2Length: number, options: number, resultPtr: Int32Ptr) => VoidPtr;
+    mono_wasm_ends_with: (culture: number, cultureLength: number, str1: number, str1Length: number, str2: number, str2Length: number, options: number, resultPtr: Int32Ptr) => VoidPtr;
+    mono_wasm_index_of: (culture: number, cultureLength: number, needlePtr: number, needleLength: number, srcPtr: number, srcLength: number, options: number, fromBeginning: number, resultPtr: Int32Ptr) => VoidPtr;
+    mono_wasm_get_calendar_info: (culture: number, cultureLength: number, calendarId: number, dst: number, dstMaxLength: number, dstLength: Int32Ptr) => VoidPtr;
+    mono_wasm_get_culture_info: (culture: number, cultureLength: number, dst: number, dstMaxLength: number, dstLength: Int32Ptr) => VoidPtr;
+    mono_wasm_get_first_day_of_week: (culture: number, cultureLength: number, resultPtr: Int32Ptr) => VoidPtr;
+    mono_wasm_get_first_week_of_year: (culture: number, cultureLength: number, resultPtr: Int32Ptr) => VoidPtr;
+    setSegmentationRulesFromJson: (json: string) => void;
 }
 
 export type AOTProfilerOptions = {
@@ -283,6 +310,7 @@ export type GlobalObjects = {
     module: DotnetModuleInternal,
     loaderHelpers: LoaderHelpers,
     runtimeHelpers: RuntimeHelpers,
+    globalizationHelpers: GlobalizationHelpers,
     api: RuntimeAPI,
 };
 export type EmscriptenReplacements = {
@@ -318,7 +346,7 @@ export type MarshalerToCs = (arg: JSMarshalerArgument, value: any, element_type?
 export type BoundMarshalerToJs = (args: JSMarshalerArguments) => any;
 export type BoundMarshalerToCs = (args: JSMarshalerArguments, value: any) => void;
 // please keep in sync with src\libraries\System.Runtime.InteropServices.JavaScript\src\System\Runtime\InteropServices\JavaScript\MarshalerType.cs
-export enum MarshalerType {
+export const enum MarshalerType {
     None = 0,
     Void = 1,
     Discard,
@@ -431,6 +459,10 @@ export declare interface EmscriptenModuleInternal {
     runtimeKeepalivePop(): void;
     maybeExit(): void;
     __emscripten_thread_init(pthread_ptr: PThreadPtr, isMainBrowserThread: number, isMainRuntimeThread: number, canBlock: number): void;
+    print(message: string): void;
+    printErr(message: string): void;
+    abort(reason: any): void;
+    _emscripten_force_exit(exit_code: number): void;
 }
 
 /// A PromiseController encapsulates a Promise together with easy access to its resolve and reject functions.
@@ -460,7 +492,7 @@ export type initializeExportsType = (globalObjects: GlobalObjects) => RuntimeAPI
 export type initializeReplacementsType = (replacements: EmscriptenReplacements) => void;
 export type afterInitializeType = (module: EmscriptenModuleInternal) => void;
 export type configureEmscriptenStartupType = (module: DotnetModuleInternal) => void;
-export type configureRuntimeStartupType = () => Promise<void>;
+export type configureRuntimeStartupType = (module: DotnetModuleInternal) => Promise<void>;
 export type configureWorkerStartupType = (module: DotnetModuleInternal) => Promise<void>
 
 
@@ -476,6 +508,10 @@ export type RuntimeModuleExportsInternal = {
 
 export type NativeModuleExportsInternal = {
     default: (unificator: Function) => EmscriptenModuleInternal
+}
+
+export type HybridGlobalizationModuleExportsInternal = {
+    initHybrid: (gh: GlobalizationHelpers, rh: RuntimeHelpers) => void;
 }
 
 export type WeakRefInternal<T extends object> = WeakRef<T> & {
@@ -496,12 +532,14 @@ export const enum WorkerToMainMessageType {
     deputyCreated = "createdDeputy",
     deputyFailed = "deputyFailed",
     deputyStarted = "monoStarted",
+    deputyReady = "deputyReady",
     ioStarted = "ioStarted",
     preload = "preload",
 }
 
 export const enum MainToWorkerMessageType {
-    applyConfig = "apply_mono_config",
+    applyConfig = "applyConfig",
+    allAssetsLoaded = "allAssetsLoaded",
 }
 
 export interface PThreadWorker extends Worker {
@@ -549,6 +587,7 @@ export interface PThreadLibrary {
     threadInitTLS: () => void,
     getNewWorker: () => PThreadWorker,
     returnWorkerToPool: (worker: PThreadWorker) => void,
+    terminateAllThreads: () => void,
 }
 
 export interface PThreadInfoMap {

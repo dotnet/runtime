@@ -47,7 +47,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
             sb.Append(nameMangler.CompilationUnitPrefix);
-            sb.Append("__ReadyToRunInstanceEntryPointTable");
+            sb.Append("__ReadyToRunInstanceEntryPointTable"u8);
         }
 
         public static byte[] BuildSignatureForMethodDefinedInModule(MethodDesc method, NodeFactory factory)

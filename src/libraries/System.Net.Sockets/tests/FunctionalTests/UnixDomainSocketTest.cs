@@ -586,6 +586,56 @@ namespace System.Net.Sockets.Tests
             }
         }
 
+        [ConditionalFact(typeof(Socket), nameof(Socket.OSSupportsUnixDomainSockets))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/52124", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
+        public async Task UnixDomainSocket_Receive_GetsCanceledByDispose()
+        {
+            string path = GetRandomNonExistingFilePath();
+            var endPoint = new UnixDomainSocketEndPoint(path);
+
+            using (var server = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified))
+            using (var client = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified))
+            {
+                server.Bind(endPoint);
+                server.Listen(1);
+
+                client.Connect(endPoint);
+                int msDelay = 100;
+                bool readFailed = false;
+                byte[] buffer = new byte[100];
+                using (Socket accepted = server.Accept())
+                {
+                    while (msDelay < 10_000)
+                    {
+                        Task disposeTask = Task.Run(() =>
+                        {
+                            Thread.Sleep(msDelay);
+                            client.Dispose();
+                        });
+
+                        try
+                        {
+                            client.Receive(buffer);
+                        }
+                        catch (SocketException)
+                        {
+                            await disposeTask;
+                            readFailed = true;
+                            break;
+                        }
+                        catch (ObjectDisposedException)
+                        {
+                            await disposeTask;
+                            // Dispose happened before the operation, retry.
+                            msDelay *= 2;
+                            continue;
+                        }
+                    }
+                }
+                Assert.True(readFailed);
+            }
+        }
+
         private static string GetRandomNonExistingFilePath()
         {
             string result;

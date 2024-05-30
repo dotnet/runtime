@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics.Arm;
 using System.Runtime.Intrinsics.X86;
 
 namespace System.Runtime.Intrinsics
@@ -348,7 +349,7 @@ namespace System.Runtime.Intrinsics
             );
         }
 
-        /// <summary>Converts a <see cref="Vector512{Single}" /> to a <see cref="Vector512{Int32}" />.</summary>
+        /// <summary>Converts a <see cref="Vector512{Single}" /> to a <see cref="Vector512{Int32}" /> using saturation on overflow.</summary>
         /// <param name="vector">The vector to convert.</param>
         /// <returns>The converted vector.</returns>
         [Intrinsic]
@@ -361,7 +362,20 @@ namespace System.Runtime.Intrinsics
             );
         }
 
-        /// <summary>Converts a <see cref="Vector512{Double}" /> to a <see cref="Vector512{Int64}" />.</summary>
+        /// <summary>Converts a <see cref="Vector512{Single}" /> to a <see cref="Vector512{Int32}" /> using platform specific behavior on overflow.</summary>
+        /// <param name="vector">The vector to convert.</param>
+        /// <returns>The converted vector.</returns>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector512<int> ConvertToInt32Native(Vector512<float> vector)
+        {
+            return Create(
+                Vector256.ConvertToInt32Native(vector._lower),
+                Vector256.ConvertToInt32Native(vector._upper)
+            );
+        }
+
+        /// <summary>Converts a <see cref="Vector512{Double}" /> to a <see cref="Vector512{Int64}" /> using saturation on overflow.</summary>
         /// <param name="vector">The vector to convert.</param>
         /// <returns>The converted vector.</returns>
         [Intrinsic]
@@ -371,6 +385,19 @@ namespace System.Runtime.Intrinsics
             return Create(
                 Vector256.ConvertToInt64(vector._lower),
                 Vector256.ConvertToInt64(vector._upper)
+            );
+        }
+
+        /// <summary>Converts a <see cref="Vector512{Double}" /> to a <see cref="Vector512{Int64}" /> using platform specific behavior on overflow.</summary>
+        /// <param name="vector">The vector to convert.</param>
+        /// <returns>The converted vector.</returns>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector512<long> ConvertToInt64Native(Vector512<double> vector)
+        {
+            return Create(
+                Vector256.ConvertToInt64Native(vector._lower),
+                Vector256.ConvertToInt64Native(vector._upper)
             );
         }
 
@@ -401,7 +428,7 @@ namespace System.Runtime.Intrinsics
             );
         }
 
-        /// <summary>Converts a <see cref="Vector512{Single}" /> to a <see cref="Vector512{UInt32}" />.</summary>
+        /// <summary>Converts a <see cref="Vector512{Single}" /> to a <see cref="Vector512{UInt32}" /> using saturation on overflow.</summary>
         /// <param name="vector">The vector to convert.</param>
         /// <returns>The converted vector.</returns>
         [Intrinsic]
@@ -415,7 +442,21 @@ namespace System.Runtime.Intrinsics
             );
         }
 
-        /// <summary>Converts a <see cref="Vector512{Double}" /> to a <see cref="Vector512{UInt64}" />.</summary>
+        /// <summary>Converts a <see cref="Vector512{Single}" /> to a <see cref="Vector512{UInt32}" /> using platform specific behavior on overflow.</summary>
+        /// <param name="vector">The vector to convert.</param>
+        /// <returns>The converted vector.</returns>
+        [Intrinsic]
+        [CLSCompliant(false)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector512<uint> ConvertToUInt32Native(Vector512<float> vector)
+        {
+            return Create(
+                Vector256.ConvertToUInt32Native(vector._lower),
+                Vector256.ConvertToUInt32Native(vector._upper)
+            );
+        }
+
+        /// <summary>Converts a <see cref="Vector512{Double}" /> to a <see cref="Vector512{UInt64}" /> using saturation on overflow.</summary>
         /// <param name="vector">The vector to convert.</param>
         /// <returns>The converted vector.</returns>
         [Intrinsic]
@@ -426,6 +467,20 @@ namespace System.Runtime.Intrinsics
             return Create(
                 Vector256.ConvertToUInt64(vector._lower),
                 Vector256.ConvertToUInt64(vector._upper)
+            );
+        }
+
+        /// <summary>Converts a <see cref="Vector512{Double}" /> to a <see cref="Vector512{UInt64}" /> using platform specific behavior on overflow.</summary>
+        /// <param name="vector">The vector to convert.</param>
+        /// <returns>The converted vector.</returns>
+        [Intrinsic]
+        [CLSCompliant(false)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector512<ulong> ConvertToUInt64Native(Vector512<double> vector)
+        {
+            return Create(
+                Vector256.ConvertToUInt64Native(vector._lower),
+                Vector256.ConvertToUInt64Native(vector._upper)
             );
         }
 
@@ -1539,6 +1594,28 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector512<double> Floor(Vector512<double> vector) => Floor<double>(vector);
 
+        /// <inheritdoc cref="Vector256.FusedMultiplyAdd(Vector256{double}, Vector256{double}, Vector256{double})" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector512<double> FusedMultiplyAdd(Vector512<double> left, Vector512<double> right, Vector512<double> addend)
+        {
+            return Create(
+                Vector256.FusedMultiplyAdd(left._lower, right._lower, addend._lower),
+                Vector256.FusedMultiplyAdd(left._upper, right._upper, addend._upper)
+            );
+        }
+
+        /// <inheritdoc cref="Vector256.FusedMultiplyAdd(Vector256{float}, Vector256{float}, Vector256{float})" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector512<float> FusedMultiplyAdd(Vector512<float> left, Vector512<float> right, Vector512<float> addend)
+        {
+            return Create(
+                Vector256.FusedMultiplyAdd(left._lower, right._lower, addend._lower),
+                Vector256.FusedMultiplyAdd(left._upper, right._upper, addend._upper)
+            );
+        }
+
         /// <summary>Gets the element at the specified index.</summary>
         /// <typeparam name="T">The type of the input vector.</typeparam>
         /// <param name="vector">The vector to get the element from.</param>
@@ -1977,6 +2054,27 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector512<T> Multiply<T>(T left, Vector512<T> right) => left * right;
+
+        /// <inheritdoc cref="Vector256.MultiplyAddEstimate(Vector256{double}, Vector256{double}, Vector256{double})" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector512<double> MultiplyAddEstimate(Vector512<double> left, Vector512<double> right, Vector512<double> addend)
+        {
+            return Create(
+                Vector256.MultiplyAddEstimate(left._lower, right._lower, addend._lower),
+                Vector256.MultiplyAddEstimate(left._upper, right._upper, addend._upper)
+            );
+        }
+
+        /// <inheritdoc cref="Vector256.MultiplyAddEstimate(Vector256{float}, Vector256{float}, Vector256{float})" />
+        [Intrinsic]
+        public static Vector512<float> MultiplyAddEstimate(Vector512<float> left, Vector512<float> right, Vector512<float> addend)
+        {
+            return Create(
+                Vector256.MultiplyAddEstimate(left._lower, right._lower, addend._lower),
+                Vector256.MultiplyAddEstimate(left._upper, right._upper, addend._upper)
+            );
+        }
 
         /// <summary>Narrows two <see cref="Vector512{Double}"/> instances into one <see cref="Vector512{Single}" />.</summary>
         /// <param name="lower">The vector that will be narrowed to the lower half of the result vector.</param>

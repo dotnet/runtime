@@ -66,7 +66,7 @@ namespace Microsoft.Extensions.Logging.Test
         }
     }
 }
-#elif NETCOREAPP
+#elif NET
 #else
 #error Target framework needs to be updated
 #endif

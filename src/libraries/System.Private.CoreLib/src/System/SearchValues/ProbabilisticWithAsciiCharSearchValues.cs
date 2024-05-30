@@ -15,10 +15,9 @@ namespace System.Buffers
     {
         private IndexOfAnyAsciiSearcher.AsciiState _asciiState;
         private IndexOfAnyAsciiSearcher.AsciiState _inverseAsciiState;
-        private ProbabilisticMap _map;
-        private readonly string _values;
+        private ProbabilisticMapState _map;
 
-        public ProbabilisticWithAsciiCharSearchValues(scoped ReadOnlySpan<char> values)
+        public ProbabilisticWithAsciiCharSearchValues(ReadOnlySpan<char> values, int maxInclusive)
         {
             Debug.Assert(IndexOfAnyAsciiSearcher.IsVectorizationSupported);
             Debug.Assert(values.ContainsAnyInRange((char)0, (char)127));
@@ -26,15 +25,15 @@ namespace System.Buffers
             IndexOfAnyAsciiSearcher.ComputeAsciiState(values, out _asciiState);
             _inverseAsciiState = _asciiState.CreateInverse();
 
-            _values = new string(values);
-            _map = new ProbabilisticMap(_values);
+            _map = new ProbabilisticMapState(values, maxInclusive);
         }
 
-        internal override char[] GetValues() => _values.ToCharArray();
+        internal override char[] GetValues() =>
+            _map.GetValues();
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal override bool ContainsCore(char value) =>
-            ProbabilisticMap.Contains(ref Unsafe.As<ProbabilisticMap, uint>(ref _map), _values, value);
+            _map.FastContains(value);
 
         internal override int IndexOfAny(ReadOnlySpan<char> span)
         {
@@ -83,11 +82,10 @@ namespace System.Buffers
                 span = span.Slice(offset);
             }
 
-            int index = ProbabilisticMap.IndexOfAny(
-                ref Unsafe.As<ProbabilisticMap, uint>(ref _map),
+            int index = ProbabilisticMap.IndexOfAny<SearchValues.TrueConst>(
                 ref MemoryMarshal.GetReference(span),
                 span.Length,
-                _values);
+                ref _map);
 
             if (index >= 0)
             {
@@ -122,10 +120,10 @@ namespace System.Buffers
                 span = span.Slice(offset);
             }
 
-            int index = ProbabilisticMap.IndexOfAnySimpleLoop<IndexOfAnyAsciiSearcher.Negate>(
+            int index = ProbabilisticMapState.IndexOfAnySimpleLoop<SearchValues.TrueConst, IndexOfAnyAsciiSearcher.Negate>(
                 ref MemoryMarshal.GetReference(span),
                 span.Length,
-                _values);
+                ref _map);
 
             if (index >= 0)
             {
@@ -183,11 +181,10 @@ namespace System.Buffers
                 span = span.Slice(0, offset + 1);
             }
 
-            return ProbabilisticMap.LastIndexOfAny(
-                ref Unsafe.As<ProbabilisticMap, uint>(ref _map),
+            return ProbabilisticMap.LastIndexOfAny<SearchValues.TrueConst>(
                 ref MemoryMarshal.GetReference(span),
                 span.Length,
-                _values);
+                ref _map);
         }
 
         internal override int LastIndexOfAnyExcept(ReadOnlySpan<char> span)
@@ -212,10 +209,10 @@ namespace System.Buffers
                 span = span.Slice(0, offset + 1);
             }
 
-            return ProbabilisticMap.LastIndexOfAnySimpleLoop<IndexOfAnyAsciiSearcher.Negate>(
+            return ProbabilisticMapState.LastIndexOfAnySimpleLoop<SearchValues.TrueConst, IndexOfAnyAsciiSearcher.Negate>(
                 ref MemoryMarshal.GetReference(span),
                 span.Length,
-                _values);
+                ref _map);
         }
     }
 }

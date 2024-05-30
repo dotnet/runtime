@@ -17,6 +17,11 @@
     <!-- string.Concat("_", string.Copy("%(Filename)").Replace("-", "_").Replace(".", "_")) -->
     <MergedWrapperProjectReference Update="**" Aliases="$([System.String]::Concat(&quot;_&quot;,$([System.String]::Copy(&quot;%(Filename)&quot;).Replace(&quot;-&quot;,&quot;_&quot;).Replace(&quot;.&quot;,&quot;_&quot;))))" />
 
-    <ProjectReference Include="@(MergedWrapperProjectReference)" />
+    <!--
+      If the merged test runner was specified to be built as Standalone, don't force the referenced projects to be built that way as well.
+      If we're building all tests as standalone, then don't reference the other test projects from the merged wrapper. We'll only build the tests in the wrapper itself
+      into it.
+    -->
+    <ProjectReference Include="@(MergedWrapperProjectReference)" UndefineProperties="BuildAsStandalone" Condition="'$(BuildAllTestsAsStandalone)' != 'true'" />
   </ItemGroup>
 </Project>

@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 namespace System.Collections.Frozen
@@ -14,6 +15,40 @@ namespace System.Collections.Frozen
     /// </summary>
     public static class FrozenSet
     {
+        /// <summary>Creates a <see cref="FrozenSet{T}"/> with the specified values.</summary>
+        /// <param name="source">The values to use to populate the set.</param>
+        /// <typeparam name="T">The type of the values in the set.</typeparam>
+        /// <returns>A frozen set.</returns>
+        public static FrozenSet<T> Create<T>(params ReadOnlySpan<T> source) => Create(null, source);
+
+        /// <summary>Creates a <see cref="FrozenSet{T}"/> with the specified values.</summary>
+        /// <param name="source">The values to use to populate the set.</param>
+        /// <param name="equalityComparer">The comparer implementation to use to compare values for equality. If null, <see cref="EqualityComparer{T}.Default"/> is used.</param>
+        /// <typeparam name="T">The type of the values in the set.</typeparam>
+        /// <returns>A frozen set.</returns>
+        public static FrozenSet<T> Create<T>(IEqualityComparer<T>? equalityComparer, params ReadOnlySpan<T> source)
+        {
+            if (source.Length == 0)
+            {
+                return equalityComparer is null || ReferenceEquals(equalityComparer, FrozenSet<T>.Empty.Comparer) ?
+                    FrozenSet<T>.Empty :
+                    new EmptyFrozenSet<T>(equalityComparer);
+            }
+
+            HashSet<T> set =
+#if NET
+                new(source.Length, equalityComparer); // we assume there are few-to-no duplicates when using this API
+#else
+                new(equalityComparer);
+#endif
+            foreach (T item in source)
+            {
+                set.Add(item);
+            }
+
+            return ToFrozenSet(set, equalityComparer);
+        }
+
         /// <summary>Creates a <see cref="FrozenSet{T}"/> with the specified values.</summary>
         /// <param name="source">The values to use to populate the set.</param>
         /// <param name="comparer">The comparer implementation to use to compare values for equality. If null, <see cref="EqualityComparer{T}.Default"/> is used.</param>
@@ -199,10 +234,11 @@ namespace System.Collections.Frozen
     /// the remainder of the life of the application. <see cref="FrozenSet{T}"/> should only be initialized
     /// with trusted elements, as the details of the elements impacts construction time.
     /// </remarks>
+    [CollectionBuilder(typeof(FrozenSet), nameof(FrozenSet.Create))]
     [DebuggerTypeProxy(typeof(ImmutableEnumerableDebuggerProxy<>))]
     [DebuggerDisplay("Count = {Count}")]
     public abstract class FrozenSet<T> : ISet<T>,
-#if NET5_0_OR_GREATER
+#if NET
         IReadOnlySet<T>,
 #endif
         IReadOnlyCollection<T>, ICollection
