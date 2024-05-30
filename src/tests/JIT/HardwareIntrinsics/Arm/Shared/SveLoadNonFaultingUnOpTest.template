@@ -132,7 +132,7 @@ namespace JIT.HardwareIntrinsics.Arm
                 var result = {Isa}.{Method}(({Op1BaseType}*)testClass._dataTable.inArray1Ptr);
 
                 Unsafe.Write(testClass._dataTable.outArrayPtr, result);
-                testClass.ValidateResult(testClass._dataTable.outArrayPtr, testClass._dataTable.outArrayPtr);
+                testClass.ValidateResult(testClass._dataTable.inArray1Ptr, testClass._dataTable.outArrayPtr);
             }
         }        
 
@@ -211,7 +211,7 @@ namespace JIT.HardwareIntrinsics.Arm
             _fld1 = {Isa}.{Method}(({Op1BaseType}*)_dataTable.inArray1Ptr);
 
             Unsafe.Write(_dataTable.outArrayPtr, _fld1);
-            ValidateResult(_dataTable.outArrayPtr, _dataTable.inArray1Ptr);
+            ValidateResult(_dataTable.inArray1Ptr, _dataTable.outArrayPtr);
         }
 
         public void RunStructLclFldScenario()
@@ -222,7 +222,7 @@ namespace JIT.HardwareIntrinsics.Arm
             test._fld1 = {Isa}.{Method}(({Op1BaseType}*)_dataTable.inArray1Ptr);
 
             Unsafe.Write(_dataTable.outArrayPtr, test._fld1);
-            ValidateResult(_dataTable.outArrayPtr, _dataTable.inArray1Ptr);
+            ValidateResult(_dataTable.inArray1Ptr, _dataTable.outArrayPtr);
         }
 
         public void RunStructFldScenario()
