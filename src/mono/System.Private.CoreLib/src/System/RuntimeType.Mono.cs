@@ -1618,7 +1618,7 @@ namespace System
         // Specialized version of CreateInstanceDefaultCtor() for Activator.CreateInstance<T>()
         [DebuggerStepThroughAttribute]
         [Diagnostics.DebuggerHidden]
-        internal void CallDefaultValueTypeConstructor(ref byte value)
+        internal void CallDefaultStructConstructor(ref byte value)
         {
             Debug.Assert(IsValueType);
 
