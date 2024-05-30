@@ -268,7 +268,11 @@ void Rationalizer::RewriteHWIntrinsicAsUserCall(GenTree** use, ArrayStack<GenTre
 #endif
         {
             assert(operandCount == 2);
+#if defined(TARGET_XARCH)
             assert((simdSize == 16) || (simdSize == 32) || (simdSize == 64));
+#else
+            assert((simdSize == 8) || (simdSize == 16));
+#endif
 
             GenTree* op1 = operands[0];
             GenTree* op2 = operands[1];
