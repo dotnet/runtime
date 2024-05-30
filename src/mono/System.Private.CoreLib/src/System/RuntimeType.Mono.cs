@@ -1626,7 +1626,11 @@ namespace System
             if (ctor == null)
                 return;
 
-            delegate*<ref byte, void> valueCtor = GetValueConstructor(ObjectHandleOnStack.Create(ref ctor));
+            // Important: when using the interpreter, GetFunctionPointer is an intrinsic that
+            // returns a function descriptor suitable for casting to a managed function pointer.
+            // Other ways of obtraining a function pointer might not work.
+            IntPtr ptr = ctor.MethodHandle.GetFunctionPointer();
+            delegate*<ref byte, void> valueCtor = (delegate*<ref byte, void>)ptr;
             if (valueCtor == null)
                 throw new ExecutionEngineException();
 
@@ -1639,10 +1643,6 @@ namespace System
                 throw new TargetInvocationException(e);
             }
         }
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern delegate*<ref byte, void> GetValueConstructor(ObjectHandleOnStack rtCtorInfo);
-
         #endregion
 
         private TypeCache? cache;
