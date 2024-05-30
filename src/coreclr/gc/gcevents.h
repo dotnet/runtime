@@ -52,5 +52,8 @@ DYNAMIC_EVENT(CommittedUsage, GCEventLevel_Information, GCEventKeyword_GC, 1)
 DYNAMIC_EVENT(HeapCountTuning, GCEventLevel_Information, GCEventKeyword_GC, 1)
 DYNAMIC_EVENT(HeapCountSample, GCEventLevel_Information, GCEventKeyword_GC, 1)
 
+// non GC event that overrides AllocationTick
+KNOWN_EVENT(AllocationSampled, GCEventProvider_Default, GCEventLevel_Information, EventKeyword_AllocationSampling)
+
 #undef KNOWN_EVENT
 #undef DYNAMIC_EVENT
