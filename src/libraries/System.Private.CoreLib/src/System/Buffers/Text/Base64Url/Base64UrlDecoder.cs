@@ -7,6 +7,7 @@ using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Arm;
 using System.Runtime.Intrinsics.X86;
+using System.Text;
 using System.Text.Unicode;
 using static System.Buffers.Text.Base64;
 
@@ -722,7 +723,7 @@ namespace System.Buffers.Text
                 Vector512<ushort> utf16VectorLower = Vector512.Load(src);
                 Vector512<ushort> utf16VectorUpper = Vector512.Load(src + 32);
 
-                if (VectorContainsNonAsciiChar(utf16VectorLower) || VectorContainsNonAsciiChar(utf16VectorUpper))
+                if (Ascii.VectorContainsNonAsciiChar(utf16VectorLower | utf16VectorUpper))
                 {
                     str = default;
                     return false;
@@ -740,7 +741,7 @@ namespace System.Buffers.Text
                 Vector256<ushort> utf16VectorLower = Avx.LoadVector256(src);
                 Vector256<ushort> utf16VectorUpper = Avx.LoadVector256(src + 16);
 
-                if (VectorContainsNonAsciiChar(utf16VectorLower) || VectorContainsNonAsciiChar(utf16VectorUpper))
+                if (Ascii.VectorContainsNonAsciiChar(utf16VectorLower | utf16VectorUpper))
                 {
                     str = default;
                     return false;
@@ -756,13 +757,13 @@ namespace System.Buffers.Text
                 AssertRead<Vector128<sbyte>>(src, srcStart, sourceLength);
                 Vector128<ushort> utf16VectorLower = Vector128.LoadUnsafe(ref *src);
                 Vector128<ushort> utf16VectorUpper = Vector128.LoadUnsafe(ref *src, 8);
-                if (VectorContainsNonAsciiChar(utf16VectorLower) || VectorContainsNonAsciiChar(utf16VectorUpper))
+                if (Ascii.VectorContainsNonAsciiChar(utf16VectorLower | utf16VectorUpper))
                 {
                     str = default;
                     return false;
                 }
 
-                str = Vector128.Narrow(utf16VectorLower, utf16VectorUpper);
+                str = Ascii.ExtractAsciiVector(utf16VectorLower, utf16VectorUpper);
                 return true;
             }
 
@@ -775,7 +776,7 @@ namespace System.Buffers.Text
                 var (s11, s12, s21, s22) = AdvSimd.Arm64.LoadVector128x4AndUnzip(src);
                 var (s31, s32, s41, s42) = AdvSimd.Arm64.LoadVector128x4AndUnzip(src + 32);
 
-                if (VectorContainsNonAsciiChar(s11 | s12 | s21 | s22 | s31 | s32 | s41 | s42))
+                if (Ascii.VectorContainsNonAsciiChar(s11 | s12 | s21 | s22 | s31 | s32 | s41 | s42))
                 {
                     str1 = str2 = str3 = str4 = default;
                     return false;
@@ -787,69 +788,6 @@ namespace System.Buffers.Text
                 str4 = Ascii.ExtractAsciiVector(s22, s42);
 
                 return true;
-            }
-
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            private static bool VectorContainsNonAsciiChar(Vector512<ushort> utf16Vector)
-            {
-                const ushort asciiMask = ushort.MaxValue - 127; // 0xFF80
-                Vector512<ushort> zeroIsAscii = utf16Vector & Vector512.Create(asciiMask);
-                // If a non-ASCII bit is set in any WORD of the vector, we have seen non-ASCII data.
-                return zeroIsAscii != Vector512<ushort>.Zero;
-            }
-
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            private static bool VectorContainsNonAsciiChar(Vector256<ushort> utf16Vector)
-            {
-                if (Avx.IsSupported)
-                {
-                    Vector256<ushort> asciiMaskForTestZ = Vector256.Create((ushort)0xFF80);
-                    return !Avx.TestZ(utf16Vector.AsInt16(), asciiMaskForTestZ.AsInt16());
-                }
-                else
-                {
-                    const ushort asciiMask = ushort.MaxValue - 127; // 0xFF80
-                    Vector256<ushort> zeroIsAscii = utf16Vector & Vector256.Create(asciiMask);
-                    // If a non-ASCII bit is set in any WORD of the vector, we have seen non-ASCII data.
-                    return zeroIsAscii != Vector256<ushort>.Zero;
-                }
-            }
-
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            private static bool VectorContainsNonAsciiChar(Vector128<ushort> utf16Vector)
-            {
-                // prefer architecture specific intrinsic as they offer better perf
-                if (Sse2.IsSupported)
-                {
-                    if (Sse41.IsSupported)
-                    {
-                        Vector128<ushort> asciiMaskForTestZ = Vector128.Create((ushort)0xFF80);
-                        // If a non-ASCII bit is set in any WORD of the vector, we have seen non-ASCII data.
-                        return !Sse41.TestZ(utf16Vector.AsInt16(), asciiMaskForTestZ.AsInt16());
-                    }
-                    else
-                    {
-                        Vector128<ushort> asciiMaskForAddSaturate = Vector128.Create((ushort)0x7F80);
-                        // The operation below forces the 0x8000 bit of each WORD to be set iff the WORD element
-                        // has value >= 0x0800 (non-ASCII). Then we'll treat the vector as a BYTE vector in order
-                        // to extract the mask. Reminder: the 0x0080 bit of each WORD should be ignored.
-                        return (Sse2.MoveMask(Sse2.AddSaturate(utf16Vector, asciiMaskForAddSaturate).AsByte()) & 0b_1010_1010_1010_1010) != 0;
-                    }
-                }
-                else if (AdvSimd.Arm64.IsSupported)
-                {
-                    // First we pick four chars, a larger one from all four pairs of adjacent chars in the vector.
-                    // If any of those four chars has a non-ASCII bit set, we have seen non-ASCII data.
-                    Vector128<ushort> maxChars = AdvSimd.Arm64.MaxPairwise(utf16Vector, utf16Vector);
-                    return (maxChars.AsUInt64().ToScalar() & 0xFF80FF80FF80FF80) != 0;
-                }
-                else
-                {
-                    const ushort asciiMask = ushort.MaxValue - 127; // 0xFF80
-                    Vector128<ushort> zeroIsAscii = utf16Vector & Vector128.Create(asciiMask);
-                    // If a non-ASCII bit is set in any WORD of the vector, we have seen non-ASCII data.
-                    return zeroIsAscii != Vector128<ushort>.Zero;
-                }
             }
         }
     }

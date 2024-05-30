@@ -222,8 +222,10 @@ namespace System.Buffers.Text.Tests
             }
         }
 
-        [Fact]
-        public void DecodingOutputTooSmallWithFinalBlockFalse()
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void DecodingOutputTooSmallWithFinalBlockTrueFalse(bool isFinalBlock)
         {
             for (int numBytes = 8; numBytes < 20; numBytes++)
             {
@@ -233,7 +235,7 @@ namespace System.Buffers.Text.Tests
                 Span<byte> decodedBytes = new byte[4];
                 int consumed, written;
                 Assert.True(OperationStatus.DestinationTooSmall ==
-                    Base64Url.DecodeFromUtf8(source, decodedBytes, out consumed, out written, isFinalBlock: false), "Number of Input Bytes: " + numBytes);
+                    Base64Url.DecodeFromUtf8(source, decodedBytes, out consumed, out written, isFinalBlock: isFinalBlock), "Number of Input Bytes: " + numBytes);
                 int expectedConsumed = 4;
                 int expectedWritten = 3;
                 Assert.Equal(expectedConsumed, consumed);

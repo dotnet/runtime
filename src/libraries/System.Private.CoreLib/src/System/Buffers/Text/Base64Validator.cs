@@ -149,7 +149,6 @@ namespace System.Buffers.Text
             public static int IndexOfAnyExcept(ReadOnlySpan<char> span) => span.IndexOfAnyExcept(s_validBase64Chars);
             public static bool IsWhiteSpace(char value) => Base64.IsWhiteSpace(value);
             public static bool IsEncodingPad(char value) => value == EncodingPad;
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static bool ValidateAndDecodeLength(int length, int paddingCount, out int decodedLength) =>
                 Base64ByteValidatable.ValidateAndDecodeLength(length, paddingCount, out decodedLength);
         }

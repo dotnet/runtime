@@ -1517,7 +1517,7 @@ namespace System.Text
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool VectorContainsNonAsciiChar(Vector128<ushort> utf16Vector)
+        internal static bool VectorContainsNonAsciiChar(Vector128<ushort> utf16Vector)
         {
             // prefer architecture specific intrinsic as they offer better perf
             if (Sse2.IsSupported)
@@ -1554,7 +1554,7 @@ namespace System.Text
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool VectorContainsNonAsciiChar(Vector256<ushort> utf16Vector)
+        internal static bool VectorContainsNonAsciiChar(Vector256<ushort> utf16Vector)
         {
             if (Avx.IsSupported)
             {
@@ -1571,7 +1571,7 @@ namespace System.Text
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool VectorContainsNonAsciiChar(Vector512<ushort> utf16Vector)
+        internal static bool VectorContainsNonAsciiChar(Vector512<ushort> utf16Vector)
         {
             const ushort asciiMask = ushort.MaxValue - 127; // 0xFF80
             Vector512<ushort> zeroIsAscii = utf16Vector & Vector512.Create(asciiMask);
@@ -1651,7 +1651,7 @@ namespace System.Text
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static Vector128<byte> ExtractAsciiVector(Vector128<ushort> vectorFirst, Vector128<ushort> vectorSecond)
+        internal static Vector128<byte> ExtractAsciiVector(Vector128<ushort> vectorFirst, Vector128<ushort> vectorSecond)
         {
             // Narrows two vectors of words [ w7 w6 w5 w4 w3 w2 w1 w0 ] and [ w7' w6' w5' w4' w3' w2' w1' w0' ]
             // to a vector of bytes [ b7 ... b0 b7' ... b0'].
