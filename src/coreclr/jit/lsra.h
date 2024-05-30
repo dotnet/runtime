@@ -451,11 +451,12 @@ typedef jitstd::list<RefPosition>::reverse_iterator RefPositionReverseIterator;
 class Referenceable
 {
 public:
-    Referenceable()
+    Referenceable(RegisterType _registerType)
     {
         firstRefPosition  = nullptr;
         recentRefPosition = nullptr;
         lastRefPosition   = nullptr;
+        registerType      = _registerType;
     }
 
     // A linked list of RefPositions.  These are only traversed in the forward
@@ -465,6 +466,8 @@ public:
     RefPosition* firstRefPosition;
     RefPosition* recentRefPosition;
     RefPosition* lastRefPosition;
+
+    RegisterType registerType;
 
     // Get the position of the next reference which is at or greater than
     // the current location (relies upon recentRefPosition being updated
@@ -477,12 +480,12 @@ class RegRecord : public Referenceable
 {
 public:
     RegRecord()
+        : Referenceable(IntRegisterType)
     {
         assignedInterval = nullptr;
         previousInterval = nullptr;
         regNum           = REG_NA;
         isCalleeSave     = false;
-        registerType     = IntRegisterType;
     }
 
     void init(regNumber reg)
@@ -537,7 +540,6 @@ public:
 
     regNumber     regNum;
     bool          isCalleeSave;
-    RegisterType  registerType;
     unsigned char regOrder;
 };
 
@@ -2159,13 +2161,13 @@ class Interval : public Referenceable
 {
 public:
     Interval(RegisterType registerType, SingleTypeRegSet registerPreferences)
-        : registerPreferences(registerPreferences)
+        : Referenceable(registerType)
+        , registerPreferences(registerPreferences)
         , registerAversion(RBM_NONE)
         , relatedInterval(nullptr)
         , assignedReg(nullptr)
         , varNum(0)
         , physReg(REG_COUNT)
-        , registerType(registerType)
         , isActive(false)
         , isLocalVar(false)
         , isSplit(false)
@@ -2221,8 +2223,6 @@ public:
 
     // The register to which it is currently assigned.
     regNumber physReg;
-
-    RegisterType registerType;
 
     // Is this Interval currently in a register and live?
     bool isActive;
@@ -2640,6 +2640,10 @@ public:
         }
 
         return genRegNumFromMask(registerAssignment);
+
+    RegisterType getRegisterType()
+    {
+        return referent->registerType;
     }
 
     // Returns true if it is a reference on a GenTree node.
