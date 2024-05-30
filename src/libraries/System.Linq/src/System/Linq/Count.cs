@@ -70,12 +70,9 @@ namespace System.Linq
                 int count = 0;
                 foreach (TSource element in source)
                 {
-                    checked
+                    if (predicate(element))
                     {
-                        if (predicate(element))
-                        {
-                            count++;
-                        }
+                        count++;
                     }
                 }
 
