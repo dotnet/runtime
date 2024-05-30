@@ -283,7 +283,7 @@ public:
     //
     void StartBlock(BasicBlock* block)
     {
-        if (m_comp->bbIsHandlerBeg(block) || (block->bbPreds == nullptr))
+        if ((m_assertions.Height() == 0) || (block->bbPreds == nullptr) || m_comp->bbIsHandlerBeg(block))
         {
             m_currentAssertions = 0;
             return;
