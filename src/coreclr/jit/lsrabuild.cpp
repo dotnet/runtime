@@ -2870,7 +2870,7 @@ void LinearScan::buildInitialParamDef(const LclVarDsc* varDsc, regNumber paramRe
     {
         // Set this interval as currently assigned to that register
         assert(paramReg < REG_COUNT);
-        mask = genRegMask(paramReg);
+        mask = genSingleTypeRegMask(paramReg);
         assignPhysReg(paramReg, interval);
         INDEBUG(registersToDump |= getRegMask(paramReg, interval->registerType));
     }
@@ -2933,7 +2933,7 @@ void LinearScan::stressSetRandomParameterPreferences()
         }
 
         *regs &= ~genRegMask(prefReg);
-        interval->mergeRegisterPreferences(genRegMask(prefReg));
+        interval->mergeRegisterPreferences(genSingleTypeRegMask(prefReg));
     }
 }
 
@@ -3085,7 +3085,7 @@ RefPosition* LinearScan::BuildDef(GenTree* tree, SingleTypeRegSet dstCandidates,
         if (!tree->IsMultiRegNode() || (multiRegIdx == 0))
         {
             assert((dstCandidates == RBM_NONE) || (dstCandidates == genRegMask(tree->GetRegNum())));
-            dstCandidates = genRegMask(tree->GetRegNum());
+            dstCandidates = genSingleTypeRegMask(tree->GetRegNum());
         }
         else
         {
@@ -3166,7 +3166,7 @@ void LinearScan::BuildCallDefs(GenTree* tree, int dstCount, regMaskTP dstCandida
 
         assert(dstCandidates.IsRegNumInMask(thisReg));
         dstCandidates.RemoveRegNumFromMask(thisReg);
-        BuildDef(tree, genRegMask(thisReg), i);
+        BuildDef(tree, genSingleTypeRegMask(thisReg), i);
     }
 }
 
@@ -4225,7 +4225,7 @@ int LinearScan::BuildReturn(GenTree* tree)
                             {
                                 hasMismatchedRegTypes = true;
                                 SingleTypeRegSet dstRegMask =
-                                    genRegMask(retTypeDesc.GetABIReturnReg(i, compiler->info.compCallConv));
+                                    genSingleTypeRegMask(retTypeDesc.GetABIReturnReg(i, compiler->info.compCallConv));
 
                                 if (varTypeUsesIntReg(dstType))
                                 {
@@ -4252,7 +4252,9 @@ int LinearScan::BuildReturn(GenTree* tree)
                         if (!hasMismatchedRegTypes || (regType(op1->AsLclVar()->GetFieldTypeByIndex(compiler, i)) ==
                                                        regType(retTypeDesc.GetReturnRegType(i))))
                         {
-                            BuildUse(op1, genRegMask(retTypeDesc.GetABIReturnReg(i, compiler->info.compCallConv)), i);
+                            BuildUse(op1,
+                                     genSingleTypeRegMask(retTypeDesc.GetABIReturnReg(i, compiler->info.compCallConv)),
+                                     i);
                         }
                         else
                         {
@@ -4280,7 +4282,11 @@ int LinearScan::BuildReturn(GenTree* tree)
                         break;
                     case TYP_DOUBLE:
                         // We ONLY want the valid double register in the RBM_DOUBLERET mask.
-                        useCandidates = (RBM_DOUBLERET & RBM_ALLDOUBLE);
+#ifdef TARGET_AMD64
+                        useCandidates = (RBM_DOUBLERET & RBM_ALLDOUBLE).GetFloatRegSet();
+#else
+                    useCandidates = (RBM_DOUBLERET & RBM_ALLDOUBLE);
+#endif // TARGET_AMD64
                         break;
                     case TYP_LONG:
                         useCandidates = RBM_LNGRET;
@@ -4379,7 +4385,7 @@ int LinearScan::BuildPutArgReg(GenTreeUnOp* node)
 
     // To avoid redundant moves, have the argument operand computed in the
     // register in which the argument is passed to the call.
-    SingleTypeRegSet argMask = genRegMask(argReg);
+    SingleTypeRegSet argMask = genSingleTypeRegMask(argReg);
     RefPosition*     use     = BuildUse(op1, argMask);
 
     // Record that this register is occupied by a register now.
@@ -4411,7 +4417,7 @@ int LinearScan::BuildPutArgReg(GenTreeUnOp* node)
     if (node->TypeGet() == TYP_LONG)
     {
         srcCount++;
-        SingleTypeRegSet argMaskHi = genRegMask(REG_NEXT(argReg));
+        SingleTypeRegSet argMaskHi = genSingleTypeRegMask(REG_NEXT(argReg));
         assert(genRegArgNext(argReg) == REG_NEXT(argReg));
         use = BuildUse(op1, argMaskHi, 1);
         BuildDef(node, argMask, 0);
@@ -4457,7 +4463,7 @@ void LinearScan::HandleFloatVarArgs(GenTreeCall* call, GenTree* argNode, bool* c
         regNumber argReg    = argNode->GetRegNum();
         regNumber targetReg = compiler->getCallArgIntRegister(argReg);
 
-        buildInternalIntRegisterDefForNode(call, genRegMask(targetReg));
+        buildInternalIntRegisterDefForNode(call, genSingleTypeRegMask(targetReg));
     }
 }
 
