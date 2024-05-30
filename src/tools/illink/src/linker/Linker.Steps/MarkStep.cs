@@ -2282,24 +2282,19 @@ namespace Mono.Linker.Steps
 
 					MethodDefinition? method = GetMethodWithNoParameters (type, methodName);
 					if (method != null) {
-						MarkMethod (method, new DependencyInfo (DependencyKind.ReferencedBySpecialAttribute, attribute), origin);
+						MarkMethodVisibleToReflection (method, new DependencyInfo (DependencyKind.ReferencedBySpecialAttribute, attribute), origin);
 						continue;
 					}
 				} else {
 					FieldDefinition? field = GetField (type, realMatch);
 					if (field != null) {
-						MarkField (field, new DependencyInfo (DependencyKind.ReferencedBySpecialAttribute, attribute), origin);
+						MarkFieldVisibleToReflection (field, new DependencyInfo (DependencyKind.ReferencedBySpecialAttribute, attribute), origin);
 						continue;
 					}
 
 					PropertyDefinition? property = GetProperty (type, realMatch);
 					if (property != null) {
-						if (property.GetMethod != null) {
-							MarkMethod (property.GetMethod, new DependencyInfo (DependencyKind.ReferencedBySpecialAttribute, attribute), origin);
-						}
-						if (property.SetMethod != null) {
-							MarkMethod (property.SetMethod, new DependencyInfo (DependencyKind.ReferencedBySpecialAttribute, attribute), origin);
-						}
+						MarkPropertyVisibleToReflection (property, new DependencyInfo (DependencyKind.ReferencedBySpecialAttribute, attribute), origin);
 						continue;
 					}
 				}
@@ -2307,8 +2302,8 @@ namespace Mono.Linker.Steps
 				while (true) {
 					// Currently if we don't understand the DebuggerDisplayAttribute we mark everything on the type
 					// This can be improved: dotnet/linker/issues/1873
-					MarkMethods (type, new DependencyInfo (DependencyKind.KeptForSpecialAttribute, attribute), origin);
-					MarkFields (type, includeStatic: true, new DependencyInfo (DependencyKind.ReferencedBySpecialAttribute, attribute), origin);
+					MarkMethodsVisibleToReflection (type, new DependencyInfo (DependencyKind.KeptForSpecialAttribute, attribute), origin);
+					MarkFieldsVisibleToReflection (type, new DependencyInfo (DependencyKind.ReferencedBySpecialAttribute, attribute), origin);
 					if (Context.TryResolve (type.BaseType) is not TypeDefinition baseType)
 						break;
 					type = baseType;
@@ -2336,8 +2331,8 @@ namespace Mono.Linker.Steps
 				MarkType (proxyTypeReference, new DependencyInfo (DependencyKind.ReferencedBySpecialAttribute, attribute), origin);
 
 				if (Context.TryResolve (proxyTypeReference) is TypeDefinition proxyType) {
-					MarkMethods (proxyType, new DependencyInfo (DependencyKind.ReferencedBySpecialAttribute, attribute), origin);
-					MarkFields (proxyType, includeStatic: true, new DependencyInfo (DependencyKind.ReferencedBySpecialAttribute, attribute), origin);
+					MarkMethodsVisibleToReflection (proxyType, new DependencyInfo (DependencyKind.ReferencedBySpecialAttribute, attribute), origin);
+					MarkFieldsVisibleToReflection (proxyType, new DependencyInfo (DependencyKind.ReferencedBySpecialAttribute, attribute), origin);
 				}
 			}
 		}
