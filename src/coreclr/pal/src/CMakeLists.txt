@@ -308,6 +308,10 @@ if(CLR_CMAKE_TARGET_LINUX)
     target_link_libraries(coreclrpal PUBLIC ucontext)
   endif(CLR_CMAKE_TARGET_LINUX_MUSL AND (CLR_CMAKE_TARGET_ARCH_I386 OR CLR_CMAKE_TARGET_ARCH_POWERPC64))
 
+  if(CLR_CMAKE_TARGET_ARCH_I386)
+      target_link_libraries(coreclrpal PUBLIC atomic)
+  endif(CLR_CMAKE_TARGET_ARCH_I386)
+
 endif(CLR_CMAKE_TARGET_LINUX)
 
 if(CLR_CMAKE_TARGET_NETBSD)
