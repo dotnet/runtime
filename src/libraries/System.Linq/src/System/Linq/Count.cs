@@ -3,6 +3,7 @@
 
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 
 namespace System.Linq
 {
@@ -59,19 +60,42 @@ namespace System.Linq
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.predicate);
             }
 
-            int count = 0;
-            foreach (TSource element in source)
+            if (source.TryGetSpan(out ReadOnlySpan<TSource> span))
             {
-                checked
+                int count = 0;
+                foreach (TSource element in span)
                 {
-                    if (predicate(element))
+                    checked
                     {
-                        count++;
+                        if (predicate(element))
+                        {
+                            count++;
+                        }
                     }
                 }
+
+                return count;
             }
 
-            return count;
+            return CountEnumerable(source, predicate);
+
+            [StackTraceHidden]
+            static int CountEnumerable(IEnumerable<TSource> source, Func<TSource, bool> predicate)
+            {
+                int count = 0;
+                foreach (TSource element in source)
+                {
+                    checked
+                    {
+                        if (predicate(element))
+                        {
+                            count++;
+                        }
+                    }
+                }
+
+                return count;
+            }
         }
 
         /// <summary>
