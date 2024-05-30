@@ -3942,7 +3942,7 @@ namespace System
             return obj;
         }
 
-        // Specialized version of the above for Activator.CreateInstance<T>()
+        // Specialized version of CreateInstanceDefaultCtor() for Activator.CreateInstance<T>()
         [DebuggerStepThrough]
         [DebuggerHidden]
         internal object? CreateInstanceOfT()
@@ -3971,11 +3971,13 @@ namespace System
             return obj;
         }
 
-        // Specialized version of the above for Activator.CreateInstance<T>()
+        // Specialized version of CreateInstanceDefaultCtor() for Activator.CreateInstance<T>()
         [DebuggerStepThrough]
         [DebuggerHidden]
-        internal void CallDefaultStructConstructor(ref byte data)
+        internal void CallDefaultValueTypeConstructor(ref byte data)
         {
+            Debug.Assert(IsValueType);
+
             if (GenericCache is not ActivatorCache cache)
             {
                 cache = new ActivatorCache(this);

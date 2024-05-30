@@ -154,7 +154,7 @@ namespace System
             else
             {
                 T t = default!;
-                rtType.CallDefaultStructConstructor(ref Unsafe.As<T, byte>(ref t));
+                rtType.CallDefaultValueTypeConstructor(ref Unsafe.As<T, byte>(ref t));
                 return t;
             }
         }

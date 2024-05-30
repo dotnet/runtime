@@ -1607,7 +1607,7 @@ namespace System
             return CreateInstanceMono(!publicOnly, wrapExceptions);
         }
 
-        // Specialized version of the above for Activator.CreateInstance<T>()
+        // Specialized version of CreateInstanceDefaultCtor() for Activator.CreateInstance<T>()
         [DebuggerStepThroughAttribute]
         [Diagnostics.DebuggerHidden]
         internal object? CreateInstanceOfT()
@@ -1615,16 +1615,23 @@ namespace System
             return CreateInstanceMono(false, true);
         }
 
-        // Specialized version of the above for Activator.CreateInstance<T>()
+        // Specialized version of CreateInstanceDefaultCtor() for Activator.CreateInstance<T>()
         [DebuggerStepThroughAttribute]
         [Diagnostics.DebuggerHidden]
-        internal void CallDefaultStructConstructor(ref byte value)
+        internal void CallDefaultValueTypeConstructor(ref byte value)
         {
             Debug.Assert(IsValueType);
 
             RuntimeConstructorInfo? ctor = GetDefaultConstructor();
             if (ctor == null)
+            {
                 return;
+            }
+
+            if (!ctor.IsPublic)
+            {
+                throw new MissingMethodException(SR.Format(SR.Arg_NoDefCTor, this));
+            }
 
             // Important: when using the interpreter, GetFunctionPointer is an intrinsic that
             // returns a function descriptor suitable for casting to a managed function pointer.
@@ -1632,7 +1639,9 @@ namespace System
             IntPtr ptr = ctor.MethodHandle.GetFunctionPointer();
             delegate*<ref byte, void> valueCtor = (delegate*<ref byte, void>)ptr;
             if (valueCtor == null)
+            {
                 throw new ExecutionEngineException();
+            }
 
             try
             {
