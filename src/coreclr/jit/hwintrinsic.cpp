@@ -1597,6 +1597,16 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
                 return retNode->AsHWIntrinsic()->Op(3);
             }
         }
+        else if (intrinsic == NI_Sve_GetActiveElementCount)
+        {
+            GenTree* op2 = retNode->AsHWIntrinsic()->Op(2);
+
+            // HWInstrinsic requires a mask for op2
+            if (!varTypeIsMask(op2))
+            {
+                retNode->AsHWIntrinsic()->Op(2) = gtNewSimdConvertVectorToMaskNode(retType, op2, simdBaseJitType, simdSize);
+            }
+        }
 
         if (!varTypeIsMask(op1))
         {
