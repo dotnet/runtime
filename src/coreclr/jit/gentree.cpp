@@ -9635,10 +9635,8 @@ GenTree* Compiler::gtCloneExpr(GenTree* tree)
             case GT_INTRINSIC:
                 copy = new (this, GT_INTRINSIC)
                     GenTreeIntrinsic(tree->TypeGet(), tree->AsOp()->gtOp1, tree->AsOp()->gtOp2,
-                                     tree->AsIntrinsic()->gtIntrinsicName, tree->AsIntrinsic()->gtMethodHandle);
-#ifdef FEATURE_READYTORUN
-                copy->AsIntrinsic()->gtEntryPoint = tree->AsIntrinsic()->gtEntryPoint;
-#endif
+                                     tree->AsIntrinsic()->gtIntrinsicName,
+                                     tree->AsIntrinsic()->gtMethodHandle R2RARG(tree->AsIntrinsic()->gtEntryPoint));
                 break;
 
             case GT_BOUNDS_CHECK:
@@ -9723,7 +9721,8 @@ GenTree* Compiler::gtCloneExpr(GenTree* tree)
 
             if (tree->AsHWIntrinsic()->IsUserCall())
             {
-                copy->AsHWIntrinsic()->SetMethodHandle(this, tree->AsHWIntrinsic()->GetMethodHandle());
+                copy->AsHWIntrinsic()->SetMethodHandle(this, tree->AsHWIntrinsic()->GetMethodHandle()
+                                                                 R2RARG(tree->AsHWIntrinsic()->GetEntryPoint()));
             }
             goto CLONE_MULTIOP_OPERANDS;
 #endif
@@ -19591,13 +19590,15 @@ void GenTreeMultiOp::InitializeOperands(GenTree** operands, size_t operandCount)
 // Arguments:
 //  comp         - The compiler instance
 //  methodHandle - The method handle representing the fallback handling for the intrinsic
+//  entryPoint   - The entry point information required for R2R scenarios
 //
 // Notes:
 //  We need to ensure that the operands are not tracked inline so that we can track the
 //  underlying method handle. See the comment in GenTreeJitIntrinsic around why the union
 //  of fields exists.
 //
-void GenTreeJitIntrinsic::SetMethodHandle(Compiler* comp, CORINFO_METHOD_HANDLE methodHandle)
+void GenTreeJitIntrinsic::SetMethodHandle(Compiler*                          comp,
+                                          CORINFO_METHOD_HANDLE methodHandle R2RARG(CORINFO_CONST_LOOKUP entryPoint))
 {
     assert(OperIsHWIntrinsic() && !IsUserCall());
     gtFlags |= GTF_HW_USER_CALL;
@@ -19619,31 +19620,11 @@ void GenTreeJitIntrinsic::SetMethodHandle(Compiler* comp, CORINFO_METHOD_HANDLE 
     }
 
     gtMethodHandle = methodHandle;
-    gtEntryPoint   = nullptr;
-}
 
 #if defined(FEATURE_READYTORUN)
-//------------------------------------------------------------------------
-// GenTreeJitIntrinsic::SetEntryPoint: Sets the entry point for an intrinsic
-//  so that it can be rewritten back to a user call in a later phase for R2R
-//  scenarios
-//
-// Arguments:
-//  comp       - The compiler instance
-//  entryPoint - The entry point information required for R2R scenarios
-//
-// Notes:
-//  This requires SetMethodHandle to have been called first to ensure we aren't
-//  overwriting any inline operands
-//
-void GenTreeJitIntrinsic::SetEntryPoint(Compiler* comp, CORINFO_CONST_LOOKUP entryPoint)
-{
-    assert(IsUserCall());
-    assert(gtEntryPoint == nullptr);
-
     gtEntryPoint = new (comp, CMK_ASTNode) CORINFO_CONST_LOOKUP(entryPoint);
-}
 #endif // FEATURE_READYTORUN
+}
 
 var_types GenTreeJitIntrinsic::GetAuxiliaryType() const
 {

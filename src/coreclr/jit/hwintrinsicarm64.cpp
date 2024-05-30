@@ -482,6 +482,7 @@ GenTree* Compiler::impNonConstFallback(NamedIntrinsic intrinsic, var_types simdT
 //    clsHnd          -- class handle containing the intrinsic function.
 //    method          -- method handle of the intrinsic function.
 //    sig             -- signature of the intrinsic call.
+//    entryPoint      -- The entry point information required for R2R scenarios
 //    simdBaseJitType -- generic argument of the intrinsic.
 //    retType         -- return type of the intrinsic.
 //    mustExpand      -- true if the intrinsic must return a GenTree*; otherwise, false
@@ -492,7 +493,7 @@ GenTree* Compiler::impNonConstFallback(NamedIntrinsic intrinsic, var_types simdT
 GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                                        CORINFO_CLASS_HANDLE  clsHnd,
                                        CORINFO_METHOD_HANDLE method,
-                                       CORINFO_SIG_INFO*     sig,
+                                       CORINFO_SIG_INFO* sig R2RARG(CORINFO_CONST_LOOKUP* entryPoint),
                                        CorInfoType           simdBaseJitType,
                                        var_types             retType,
                                        unsigned              simdSize,
@@ -1876,7 +1877,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
                 retNode = gtNewSimdHWIntrinsicNode(retType, op1, op2, intrinsic, simdBaseJitType, simdSize);
 
-                retNode->AsHWIntrinsic()->SetMethodHandle(this, method);
+                retNode->AsHWIntrinsic()->SetMethodHandle(this, method R2RARG(*entryPoint));
                 break;
             }
 
