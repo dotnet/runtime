@@ -205,17 +205,17 @@ typedef DWORD (WINAPI *PTHREAD_START_ROUTINE)(void* lpThreadParameter);
 
 #if defined(__arm__) || defined(__aarch64__)
  #define YieldProcessor() asm volatile ("yield")
- #define MemoryBarrier __sync_synchronize
+ #define MemoryBarrier() __atomic_thread_fence(__ATOMIC_SEQ_CST)
 #endif // __arm__ || __aarch64__
 
 #ifdef __loongarch64
- #define YieldProcessor() __asm__ volatile( "dbar 0; \n")
- #define MemoryBarrier __sync_synchronize
+ #define YieldProcessor() __asm__ volatile("dbar 0; \n")
+ #define MemoryBarrier() __atomic_thread_fence(__ATOMIC_SEQ_CST)
 #endif // __loongarch64
 
 #ifdef __riscv
- #define YieldProcessor() asm volatile( ".word 0x0100000f");
- #define MemoryBarrier __sync_synchronize
+ #define YieldProcessor() asm volatile(".word 0x0100000f")
+ #define MemoryBarrier() __atomic_thread_fence(__ATOMIC_SEQ_CST)
 #endif // __riscv
 
 #endif // _MSC_VER

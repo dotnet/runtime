@@ -7,8 +7,8 @@
 
 FORCEINLINE void PalInterlockedOperationBarrier()
 {
-#if (defined(HOST_ARM64) && !defined(LSE_INSTRUCTIONS_ENABLED_BY_DEFAULT) && !defined(__clang__)) || defined(HOST_LOONGARCH64) || defined(HOST_RISCV64)
-    // On arm64, most of the __sync* functions generate a code sequence like:
+#if (defined(HOST_ARM64) && !defined(LSE_INSTRUCTIONS_ENABLED_BY_DEFAULT)) || defined(HOST_LOONGARCH64) || defined(HOST_RISCV64)
+    // On ARM64, most of the atomic operations generate a code sequence like:
     //   loop:
     //     ldaxr (load acquire exclusive)
     //     ...
@@ -17,84 +17,81 @@ FORCEINLINE void PalInterlockedOperationBarrier()
     //
     // It is possible for a load following the code sequence above to be reordered to occur prior to the store above due to the
     // release barrier, this is substantiated by https://github.com/dotnet/coreclr/pull/17508. Interlocked operations in the PAL
-    // require the load to occur after the store. This memory barrier should be used following a call to a __sync* function to
-    // prevent that reordering. Code generated for arm32 includes a 'dmb' after 'cbnz', so no issue there at the moment.
-    __sync_synchronize();
+    // require the load to occur after the store. This memory barrier should be used following a call to an atomic operation to
+    // prevent that reordering. Code generated for ARM32 includes a 'dmb' after 'cbnz', so no issue there at the moment.
+    __atomic_thread_fence(__ATOMIC_SEQ_CST);
 #endif
 }
 
 FORCEINLINE int32_t PalInterlockedIncrement(_Inout_ int32_t volatile *pDst)
 {
-    int32_t result = __sync_add_and_fetch(pDst, 1);
+    int32_t result = __atomic_add_fetch(pDst, 1, __ATOMIC_SEQ_CST);
     PalInterlockedOperationBarrier();
     return result;
 }
 
 FORCEINLINE int32_t PalInterlockedDecrement(_Inout_ int32_t volatile *pDst)
 {
-    int32_t result = __sync_sub_and_fetch(pDst, 1);
+    int32_t result = __atomic_sub_fetch(pDst, 1, __ATOMIC_SEQ_CST);
     PalInterlockedOperationBarrier();
     return result;
 }
 
 FORCEINLINE uint32_t PalInterlockedOr(_Inout_ uint32_t volatile *pDst, uint32_t iValue)
 {
-    int32_t result = __sync_or_and_fetch(pDst, iValue);
+    uint32_t result = __atomic_or_fetch(pDst, iValue, __ATOMIC_SEQ_CST);
     PalInterlockedOperationBarrier();
     return result;
 }
 
 FORCEINLINE uint32_t PalInterlockedAnd(_Inout_ uint32_t volatile *pDst, uint32_t iValue)
 {
-    int32_t result = __sync_and_and_fetch(pDst, iValue);
+    uint32_t result = __atomic_and_fetch(pDst, iValue, __ATOMIC_SEQ_CST);
     PalInterlockedOperationBarrier();
     return result;
 }
 
 FORCEINLINE int32_t PalInterlockedExchange(_Inout_ int32_t volatile *pDst, int32_t iValue)
 {
-#ifdef __clang__
-    int32_t result =__sync_swap(pDst, iValue);
-#else
     int32_t result =__atomic_exchange_n(pDst, iValue, __ATOMIC_ACQ_REL);
-#endif
     PalInterlockedOperationBarrier();
     return result;
 }
 
 FORCEINLINE int64_t PalInterlockedExchange64(_Inout_ int64_t volatile *pDst, int64_t iValue)
 {
-#ifdef __clang__
-    int32_t result =__sync_swap(pDst, iValue);
-#else
     int32_t result =__atomic_exchange_n(pDst, iValue, __ATOMIC_ACQ_REL);
-#endif
     PalInterlockedOperationBarrier();
     return result;
 }
 
 FORCEINLINE int32_t PalInterlockedCompareExchange(_Inout_ int32_t volatile *pDst, int32_t iValue, int32_t iComparand)
 {
-    int32_t result = __sync_val_compare_and_swap(pDst, iComparand, iValue);
+    int32_t expected = iComparand;
+    __atomic_compare_exchange_n(pDst, &expected, iValue, false, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST);
     PalInterlockedOperationBarrier();
-    return result;
+    return expected;
 }
 
 FORCEINLINE int64_t PalInterlockedCompareExchange64(_Inout_ int64_t volatile *pDst, int64_t iValue, int64_t iComparand)
 {
-    int64_t result = __sync_val_compare_and_swap(pDst, iComparand, iValue);
+    int64_t expected = iComparand;
+    __atomic_compare_exchange_n(pDst, &expected, iValue, false, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST);
     PalInterlockedOperationBarrier();
-    return result;
+    return expected;
 }
 
 #if defined(HOST_AMD64) || defined(HOST_ARM64)
 FORCEINLINE uint8_t PalInterlockedCompareExchange128(_Inout_ int64_t volatile *pDst, int64_t iValueHigh, int64_t iValueLow, int64_t *pComparandAndResult)
 {
     __int128_t iComparand = ((__int128_t)pComparandAndResult[1] << 64) + (uint64_t)pComparandAndResult[0];
-    __int128_t iResult = __sync_val_compare_and_swap((__int128_t volatile*)pDst, iComparand, ((__int128_t)iValueHigh << 64) + (uint64_t)iValueLow);
+    __int128_t expected = iComparand;
+    __int128_t newValue = ((__int128_t)iValueHigh << 64) + (uint64_t)iValueLow;
+    uint8_t success = __atomic_compare_exchange_n((__int128_t volatile*)pDst, &expected, newValue, false, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST);
     PalInterlockedOperationBarrier();
-    pComparandAndResult[0] = (int64_t)iResult; pComparandAndResult[1] = (int64_t)(iResult >> 64);
-    return iComparand == iResult;
+    pComparandAndResult[0] = (int64_t)expected;
+    pComparandAndResult[1] = (int64_t)(expected >> 64);
+    return success;
 }
 #endif // HOST_AMD64
 
@@ -134,7 +131,7 @@ FORCEINLINE void PalYieldProcessor()
 
 FORCEINLINE void PalMemoryBarrier()
 {
-    __sync_synchronize();
+    __atomic_thread_fence(__ATOMIC_SEQ_CST);
 }
 
 #define PalDebugBreak() abort()

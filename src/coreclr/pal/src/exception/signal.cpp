@@ -578,7 +578,8 @@ static void sigsegv_handler(int code, siginfo_t *siginfo, void *context)
         {
             if (GetCurrentPalThread())
             {
-                size_t handlerStackTop = __sync_val_compare_and_swap((size_t*)&g_stackOverflowHandlerStack, (size_t)g_stackOverflowHandlerStack, 0);
+                size_t handlerStackTop = (size_t)g_stackOverflowHandlerStack;
+                __atomic_compare_exchange_n(&g_stackOverflowHandlerStack, &handlerStackTop, 0, false, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST);
                 if (handlerStackTop == 0)
                 {
                     // We have only one stack for handling stack overflow preallocated. We let only the first thread that hits stack overflow to

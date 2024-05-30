@@ -15,7 +15,7 @@ __forceinline void Interlocked::InterlockedOperationBarrier()
 {
 #if defined(HOST_ARM64) || defined(HOST_LOONGARCH64) || defined(HOST_RISCV64)
     // See PAL_InterlockedOperationBarrier() in the PAL
-    __sync_synchronize();
+    __atomic_thread_fence(__ATOMIC_SEQ_CST);
 #endif
 }
 #endif // !_MSC_VER
@@ -32,7 +32,8 @@ __forceinline T Interlocked::Increment(T volatile *addend)
     static_assert(sizeof(long) == sizeof(T), "Size of long must be the same as size of T");
     return _InterlockedIncrement((long*)addend);
 #else
-    T result = __sync_add_and_fetch(addend, 1);
+    static_assert(sizeof(T) == 4, "T must be a 32-bit type");
+    T result = __atomic_add_fetch(addend, 1, __ATOMIC_SEQ_CST);
     InterlockedOperationBarrier();
     return result;
 #endif
@@ -50,7 +51,8 @@ __forceinline T Interlocked::Decrement(T volatile *addend)
     static_assert(sizeof(long) == sizeof(T), "Size of long must be the same as size of T");
     return _InterlockedDecrement((long*)addend);
 #else
-    T result = __sync_sub_and_fetch(addend, 1);
+    static_assert(sizeof(T) == 4, "T must be a 32-bit type");
+    T result = __atomic_sub_fetch(addend, 1, __ATOMIC_SEQ_CST);
     InterlockedOperationBarrier();
     return result;
 #endif
@@ -78,7 +80,7 @@ __forceinline T Interlocked::Exchange(T volatile *destination, T value)
 // Performs an atomic compare-and-exchange operation on the specified values.
 // Parameters:
 //  destination - value to be exchanged
-//  exchange    - value to set the destinaton to
+//  exchange    - value to set the destination to
 //  comparand   - value to compare the destination to before setting it to the exchange.
 //                The destination is set only if the destination is equal to the comparand.
 // Return:
@@ -90,9 +92,11 @@ __forceinline T Interlocked::CompareExchange(T volatile *destination, T exchange
     static_assert(sizeof(long) == sizeof(T), "Size of long must be the same as size of T");
     return _InterlockedCompareExchange((long*)destination, exchange, comparand);
 #else
-    T result = __sync_val_compare_and_swap(destination, comparand, exchange);
+    static_assert(sizeof(T) == 4, "T must be a 32-bit type");
+    T expected = comparand;
+    __atomic_compare_exchange_n(destination, &expected, exchange, false, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST);
     InterlockedOperationBarrier();
-    return result;
+    return expected;
 #endif
 }
 
@@ -109,7 +113,8 @@ __forceinline T Interlocked::ExchangeAdd(T volatile *addend, T value)
     static_assert(sizeof(long) == sizeof(T), "Size of long must be the same as size of T");
     return _InterlockedExchangeAdd((long*)addend, value);
 #else
-    T result = __sync_fetch_and_add(addend, value);
+    static_assert(sizeof(T) == 4, "T must be a 32-bit type");
+    T result = __atomic_fetch_add(addend, value, __ATOMIC_SEQ_CST);
     InterlockedOperationBarrier();
     return result;
 #endif
@@ -122,12 +127,12 @@ __forceinline T Interlocked::ExchangeAdd64(T volatile* addend, T value)
     static_assert(sizeof(int64_t) == sizeof(T), "Size of LONGLONG must be the same as size of T");
     return _InterlockedExchangeAdd64((int64_t*)addend, value);
 #else
-    T result = __sync_fetch_and_add(addend, value);
+    static_assert(sizeof(T) == 8, "T must be a 64-bit type");
+    T result = __atomic_fetch_add(addend, value, __ATOMIC_SEQ_CST);
     InterlockedOperationBarrier();
     return result;
 #endif
 }
-
 template <typename T>
 __forceinline T Interlocked::ExchangeAddPtr(T volatile* addend, T value)
 {
@@ -140,7 +145,7 @@ __forceinline T Interlocked::ExchangeAddPtr(T volatile* addend, T value)
     return _InterlockedExchangeAdd((long*)addend, value);
 #endif
 #else
-    T result = __sync_fetch_and_add(addend, value);
+    T result = __atomic_fetch_add(addend, value, __ATOMIC_SEQ_CST);
     InterlockedOperationBarrier();
     return result;
 #endif
@@ -157,7 +162,7 @@ __forceinline void Interlocked::And(T volatile *destination, T value)
     static_assert(sizeof(long) == sizeof(T), "Size of long must be the same as size of T");
     _InterlockedAnd((long*)destination, value);
 #else
-    __sync_and_and_fetch(destination, value);
+    __atomic_and_fetch(destination, value, __ATOMIC_SEQ_CST);
     InterlockedOperationBarrier();
 #endif
 }
@@ -173,7 +178,7 @@ __forceinline void Interlocked::Or(T volatile *destination, T value)
     static_assert(sizeof(long) == sizeof(T), "Size of long must be the same as size of T");
     _InterlockedOr((long*)destination, value);
 #else
-    __sync_or_and_fetch(destination, value);
+    __atomic_or_fetch(destination, value, __ATOMIC_SEQ_CST);
     InterlockedOperationBarrier();
 #endif
 }
@@ -219,7 +224,7 @@ __forceinline T Interlocked::ExchangePointer(T volatile * destination, std::null
 // Performs an atomic compare-and-exchange operation on the specified pointers.
 // Parameters:
 //  destination - value to be exchanged
-//  exchange    - value to set the destinaton to
+//  exchange    - value to set the destination to
 //  comparand   - value to compare the destination to before setting it to the exchange.
 //                The destination is set only if the destination is equal to the comparand.
 // Return:
@@ -234,9 +239,11 @@ __forceinline T Interlocked::CompareExchangePointer(T volatile *destination, T e
     return (T)(TADDR)_InterlockedCompareExchange((long volatile *)(void* volatile *)destination, (long)(void*)exchange, (long)(void*)comparand);
 #endif
 #else
-    T result = (T)(TADDR)__sync_val_compare_and_swap((void* volatile *)destination, comparand, exchange);
+    static_assert(sizeof(T) == sizeof(void*), "T must be a pointer type");
+    T expected = comparand;
+    __atomic_compare_exchange_n((void* volatile *)destination, (void**)&expected, exchange, false, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST);
     InterlockedOperationBarrier();
-    return result;
+    return expected;
 #endif
 }
 
@@ -250,9 +257,11 @@ __forceinline T Interlocked::CompareExchangePointer(T volatile *destination, T e
     return (T)(TADDR)_InterlockedCompareExchange((long volatile *)(void* volatile *)destination, (long)(void*)exchange, (long)(void*)comparand);
 #endif
 #else
-    T result = (T)(TADDR)__sync_val_compare_and_swap((void* volatile *)destination, (void*)comparand, (void*)exchange);
+    static_assert(sizeof(T) == sizeof(void*), "T must be a pointer type");
+    T expected = nullptr;
+    __atomic_compare_exchange_n((void* volatile *)destination, (void**)&expected, exchange, false, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST);
     InterlockedOperationBarrier();
-    return result;
+    return expected;
 #endif
 }
 

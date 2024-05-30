@@ -461,7 +461,7 @@ void GCToOSInterface::FlushProcessWriteBuffers()
 
         // Ensure that the page is dirty before we change the protection so that
         // we prevent the OS from skipping the global TLB flush.
-        __sync_add_and_fetch((size_t*)g_helperPage, 1);
+        __atomic_add_fetch((size_t*)g_helperPage, 1, __ATOMIC_SEQ_CST);
 
         status = mprotect(g_helperPage, OS_PAGE_SIZE, PROT_NONE);
         assert(status == 0 && "Failed to change helper page protection to no access");

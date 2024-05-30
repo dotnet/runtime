@@ -827,7 +827,7 @@ AllocateExceptionRecords(EXCEPTION_RECORD** exceptionRecord, CONTEXT** contextRe
 
             newBitmap = bitmap | ((size_t)1 << index);
         }
-        while (__sync_val_compare_and_swap(&s_allocatedContextsBitmap, bitmap, newBitmap) != bitmap);
+        while (!__atomic_compare_exchange_n(&s_allocatedContextsBitmap, &bitmap, newBitmap, false, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST));
 
         records = &s_fallbackContexts[index];
     }
@@ -855,7 +855,7 @@ PAL_FreeExceptionRecords(IN EXCEPTION_RECORD *exceptionRecord, IN CONTEXT *conte
     if ((records >= &s_fallbackContexts[0]) && (records < &s_fallbackContexts[MaxFallbackContexts]))
     {
         int index = records - &s_fallbackContexts[0];
-        __sync_fetch_and_and(&s_allocatedContextsBitmap, ~((size_t)1 << index));
+        __atomic_fetch_and(&s_allocatedContextsBitmap, ~((size_t)1 << index), __ATOMIC_SEQ_CST);
     }
     else
     {
