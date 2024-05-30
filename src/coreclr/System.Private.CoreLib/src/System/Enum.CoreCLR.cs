@@ -98,14 +98,14 @@ namespace System
                 // force that copy into the cache even if we already have a cache entry without names
                 // so we don't have to recompute the names if asked again.
                 return getNames
-                    ? enumType.ReplaceCacheEntry(EnumInfo<TStorage>.CreateWithNames(enumType))
+                    ? enumType.ReplaceCacheEntry(EnumInfo<TStorage>.Create(enumType, getNames: true))
                     : enumType.GetOrCreateCacheEntry<EnumInfo<TStorage>>();
             }
         }
 
         internal sealed partial class EnumInfo<TStorage> : RuntimeType.IGenericCacheEntry<EnumInfo<TStorage>>
         {
-            public static EnumInfo<TStorage> CreateWithNames(RuntimeType type)
+            public static EnumInfo<TStorage> Create(RuntimeType type. bool getNames)
             {
                 TStorage[]? values = null;
                 string[]? names = null;
@@ -114,7 +114,7 @@ namespace System
                     new QCallTypeHandle(ref type),
                     ObjectHandleOnStack.Create(ref values),
                     ObjectHandleOnStack.Create(ref names),
-                    Interop.BOOL.TRUE);
+                    getNames ? Interop.BOOL.TRUE : Interop.BOOL.FALSE);
 
                 Debug.Assert(values!.GetType() == typeof(TStorage[]));
 
@@ -123,7 +123,7 @@ namespace System
                 return new EnumInfo<TStorage>(hasFlagsAttribute, values, names!);
             }
 
-            public static EnumInfo<TStorage> Create(RuntimeType type)
+            public static EnumInfo<TStorage> Create(RuntimeType type) => Create(type, getNames: false);
             {
                 TStorage[]? values = null;
                 string[]? names = null;

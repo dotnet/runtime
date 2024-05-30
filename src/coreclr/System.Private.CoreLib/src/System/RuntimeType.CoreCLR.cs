@@ -2060,7 +2060,7 @@ namespace System
                 name = fullname;
             }
         }
-#endregion
+        #endregion
 
         #region Filters
         internal static BindingFlags FilterPreCalculate(bool isPublic, bool isInherited, bool isStatic)

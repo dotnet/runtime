@@ -75,13 +75,16 @@ namespace System
                 ref IGenericCacheEntry? genericCache = ref type.Cache.GenericCache;
                 // Read the GenericCache once to avoid multiple reads of the same field.
                 IGenericCacheEntry? currentCache = genericCache;
-                if (currentCache is TCache existing)
+                if (currentCache is not null)
                 {
-                    return existing;
-                }
-                if (currentCache is CompositeCacheEntry composite)
-                {
-                    return TCache.GetStorageRef(composite);
+                   if (currentCache is TCache existing)
+                    {
+                        return existing;
+                    }
+                    if (currentCache is CompositeCacheEntry composite)
+                    {
+                        return TCache.GetStorageRef(composite);
+                    }
                 }
 
                 return null;
