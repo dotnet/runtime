@@ -1628,7 +1628,7 @@ namespace System
 
             // Important: when using the interpreter, GetFunctionPointer is an intrinsic that
             // returns a function descriptor suitable for casting to a managed function pointer.
-            // Other ways of obtraining a function pointer might not work.
+            // Other ways of obtaining a function pointer might not work.
             IntPtr ptr = ctor.MethodHandle.GetFunctionPointer();
             delegate*<ref byte, void> valueCtor = (delegate*<ref byte, void>)ptr;
             if (valueCtor == null)
