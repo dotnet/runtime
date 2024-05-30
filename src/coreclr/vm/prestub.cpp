@@ -1179,14 +1179,16 @@ namespace
         // Parsing the signature follows details defined in ECMA-335 - II.23.2.1
         //
 
+        uint32_t callConvDecl;
+        uint32_t callConvMethod;
+        IfFailThrow(CorSigUncompressCallingConv(pSig1, cSig1, &callConvDecl));
+        IfFailThrow(CorSigUncompressCallingConv(pSig2, cSig2, &callConvMethod));
+
         // Validate calling convention
-        if ((*pSig1 & IMAGE_CEE_CS_CALLCONV_MASK) != (*pSig2 & IMAGE_CEE_CS_CALLCONV_MASK))
+        if ((callConvDecl & IMAGE_CEE_CS_CALLCONV_MASK) != (callConvMethod & IMAGE_CEE_CS_CALLCONV_MASK))
         {
             return false;
         }
-
-        ULONG callConvDecl = CorSigUncompressCallingConv(pSig1);
-        ULONG callConvMethod = CorSigUncompressCallingConv(pSig2);
 
         // Handle generic param count
         DWORD declGenericCount = 0;
@@ -1428,9 +1430,11 @@ namespace
         //
 
         // Consume calling convention
-        ULONG callConvDecl = CorSigUncompressCallingConv(pSig1);
-        _ASSERTE(*pSig2 == IMAGE_CEE_CS_CALLCONV_FIELD);
-        (void)CorSigUncompressCallingConv(pSig2);
+        uint32_t callConvDecl;
+        uint32_t callConvField;
+        IfFailThrow(CorSigUncompressCallingConv(pSig1, cSig1, &callConvDecl));
+        IfFailThrow(CorSigUncompressCallingConv(pSig2, cSig2, &callConvField));
+        _ASSERTE(callConvField == IMAGE_CEE_CS_CALLCONV_FIELD);
 
         // Consume parts of the method signature until we get to the return type.
         DWORD declGenericCount = 0;
@@ -1442,8 +1446,10 @@ namespace
 
         // UnsafeAccessors for fields require return types be byref.
         // This was explictly checked in TryGenerateUnsafeAccessor().
-        _ASSERTE(*pSig1 == ELEMENT_TYPE_BYREF);
-        (void)CorSigUncompressElementType(pSig1);
+        if (pSig1 >= pEndSig1)
+            return META_E_BAD_SIGNATURE;
+        CorElementType byRefType = CorSigUncompressElementType(pSig1);
+        _ASSERTE(byRefType == ELEMENT_TYPE_BYREF);
 
         // Compare the types
         if (FALSE == MetaSig::CompareElementType(
