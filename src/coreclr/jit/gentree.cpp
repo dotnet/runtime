@@ -26790,8 +26790,10 @@ bool GenTreeHWIntrinsic::OperIsMemoryStore(GenTree** pAddr) const
             case NI_Sve_StoreAndZipx3:
             case NI_Sve_StoreAndZipx4:
             case NI_Sve_StoreNarrowing:
+            case NI_Sve_StoreNonTemporal:
                 addr = Op(2);
                 break;
+
 #endif // TARGET_ARM64
 
             default:
