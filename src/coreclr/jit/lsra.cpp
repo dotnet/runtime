@@ -3017,7 +3017,7 @@ regNumber LinearScan::allocateRegMinimal(Interval*                currentInterva
         return REG_NA;
     }
 
-    foundReg                   = genRegNumFromMask(foundRegBit);
+    foundReg                   = genRegNumFromMask(foundRegBit, currentInterval->registerType);
     availablePhysRegRecord     = getRegisterRecord(foundReg);
     Interval* assignedInterval = availablePhysRegRecord->assignedInterval;
     if ((assignedInterval != currentInterval) &&
@@ -8382,10 +8382,10 @@ void LinearScan::resolveRegisters()
 
                 if (varDsc->lvIsParam)
                 {
-                    regMaskTP initialRegMask = interval->firstRefPosition->registerAssignment;
+                    SingleTypeRegSet initialRegMask = interval->firstRefPosition->registerAssignment;
                     regNumber initialReg     = (initialRegMask == RBM_NONE || interval->firstRefPosition->spillAfter)
                                                    ? REG_STK
-                                                   : genRegNumFromMask(initialRegMask);
+                                                   : genRegNumFromMask(initialRegMask, interval->registerType);
 
 #ifdef TARGET_ARM
                     if (varTypeIsMultiReg(varDsc))
@@ -8809,7 +8809,7 @@ regNumber LinearScan::getTempRegForResolution(BasicBlock*      fromBlock,
 #endif
         }
 
-        regNumber tempReg = genRegNumFromMask(genFindLowestBit(freeRegs));
+        regNumber tempReg = genRegNumFromMask(genFindLowestBit(freeRegs), type);
         return tempReg;
     }
 }
@@ -13449,7 +13449,7 @@ SingleTypeRegSet LinearScan::RegisterSelection::select(Interval*                
                 //
                 bool thisIsSingleReg = isSingleRegister(newRelatedPreferences);
                 if (!thisIsSingleReg ||
-                    linearScan->isFree(linearScan->getRegisterRecord(genRegNumFromMask(newRelatedPreferences))))
+                    linearScan->isFree(linearScan->getRegisterRecord(genRegNumFromMask(newRelatedPreferences, regType))))
                 {
                     relatedPreferences = newRelatedPreferences;
                     // If this Interval has a downstream def without a single-register preference, continue to iterate.
@@ -13544,7 +13544,7 @@ SingleTypeRegSet LinearScan::RegisterSelection::select(Interval*                
         if (candidates == refPosition->registerAssignment)
         {
             found = true;
-            if (linearScan->nextIntervalRef[genRegNumFromMask(candidates)] > lastLocation)
+            if (linearScan->nextIntervalRef[genRegNumFromMask(candidates, regType)] > lastLocation)
             {
                 unassignedSet = candidates;
             }

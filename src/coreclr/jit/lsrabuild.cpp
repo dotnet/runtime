@@ -600,7 +600,7 @@ RefPosition* LinearScan::newRefPosition(Interval*        theInterval,
 
     if (insertFixedRef)
     {
-        regNumber    physicalReg = genRegNumFromMask(mask);
+        regNumber    physicalReg = genRegNumFromMask(mask, theInterval->registerType);
         RefPosition* pos         = newRefPosition(physicalReg, theLocation, RefTypeFixedReg, nullptr, mask);
         assert(theInterval != nullptr);
 #if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)

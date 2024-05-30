@@ -933,8 +933,40 @@ inline unsigned Compiler::funGetFuncIdx(BasicBlock* block)
 // Assumptions:
 //    The mask contains one and only one register.
 
+inline regNumber genRegNumFromMask(const SingleTypeRegSet& mask)
+{
+    assert(mask != RBM_NONE); // Must have one bit set, so can't have a mask of zero
+
+    /* Convert the mask to a register number */
+
+    regNumber regNum = (regNumber)genLog2(mask);
+
+    /* Make sure we got it right */
+    assert(genRegMask(regNum) == mask);
+
+    return regNum;
+}
+
+//------------------------------------------------------------------------------
+// genRegNumFromMask : Maps a single register mask having gpr/float to a register number.
+//          If the mask can contain predicate register, use genRegNumFromMask(reg, type)
+//
+// Arguments:
+//    mask - the register mask
+//
+// Return Value:
+//    The number of the register contained in the mask.
+//
+// Assumptions:
+//    The mask contains one and only one register.
+
 inline regNumber genRegNumFromMask(const regMaskTP& mask)
 {
+#ifdef HAS_MORE_THAN_64_REGISTERS
+    // This method is only used for gpr/float
+    assert(mask.getHigh() == RBM_NONE);
+#endif
+
     assert(mask.IsNonEmpty()); // Must have one bit set, so can't have a mask of zero
 
     /* Convert the mask to a register number */
@@ -945,6 +977,49 @@ inline regNumber genRegNumFromMask(const regMaskTP& mask)
     assert(genRegMask(regNum) == mask.getLow());
 
     return regNum;
+}
+
+//------------------------------------------------------------------------------
+// genRegNumFromMask : Maps a single register mask to a register number.
+//
+// Arguments:
+//    mask - the register mask
+//    type - The 
+//
+// Return Value:
+//    The number of the register contained in the mask.
+//
+// Assumptions:
+//    The mask contains one and only one register.
+
+inline regNumber genRegNumFromMask(const regMaskTP& mask, var_types type)
+{
+#ifdef HAS_MORE_THAN_64_REGISTERS
+    // Must have exactly one bit set
+    assert(PopCount(mask) == 1);
+
+    int index = regMaskTP::mapTypeToRegTypeIndex(type);
+
+#ifdef DEBUG
+    // Make sure the bit number of right `type` is set in the mask
+    // If typeIndex == 2, then it better be the bit from high mask
+    // No need to check for typeIndex == 0/1 because above, we already
+    // verified that PopCount() == 1
+    assert(index <= 2);
+    assert((index != 2) || (PopCount(mask.getHigh()) == 1));
+#endif // DEBUG
+
+    // If this is mask type, add `64` to the regNumber
+    regNumber regNum = (regNumber)genLog2(mask[index]);
+    return (regNumber)(((index == 2) << 6) + regNum);
+
+    /* Make sure we got it right */
+    assert(genRegMask(regNum) == mask);
+
+    return regNum;
+#else
+    return genRegNumFromMask(mask.getLow());
+#endif
 }
 
 //------------------------------------------------------------------------------

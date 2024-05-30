@@ -2639,7 +2639,8 @@ public:
             return REG_NA;
         }
 
-        return genRegNumFromMask(registerAssignment);
+        return genRegNumFromMask(registerAssignment, getRegisterType());
+    }
 
     RegisterType getRegisterType()
     {
