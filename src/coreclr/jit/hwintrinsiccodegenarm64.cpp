@@ -1854,6 +1854,8 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 assert(isRMW);
                 if (targetReg != op1Reg)
                 {
+                    assert(targetReg != op2Reg);
+                    assert(targetReg != op3Reg);
                     GetEmitter()->emitIns_Mov(INS_mov, emitTypeSize(node), targetReg, op1Reg, /* canSkip */ true);
                 }
 
