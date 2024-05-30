@@ -983,6 +983,11 @@ namespace System.Text.Json.Serialization.Tests
                 Assert.Equal(expectedJson, json);
                 value = JsonSerializer.Deserialize<NullableAnnotationsTests.NotNullablePropertyClass>(json, jsonOptions);
                 Assert.Null(value.Property);
+                
+                JsonTypeInfo typeInfo = jsonOptions.GetTypeInfo(typeof(NullableAnnotationsTests.NotNullablePropertyClass));
+                JsonPropertyInfo propertyInfo = typeInfo.Properties.FirstOrDefault(p => p.Name == nameof(NullableAnnotationsTests.NotNullablePropertyClass.Property));
+                Assert.True(propertyInfo.IsGetNullable);
+                Assert.True(propertyInfo.IsSetNullable);
 
             }, options).Dispose();
         }
