@@ -19,13 +19,16 @@ namespace System.Text.Json.Serialization.Metadata
             : base(parameterInfoValues, matchingPropertyInfo)
         {
             Debug.Assert(parameterInfoValues.ParameterType == typeof(T));
+            Debug.Assert(!matchingPropertyInfo.IsConfigured);
+
+            if (parameterInfoValues is { HasDefaultValue: true, DefaultValue: object defaultValue })
+            {
+                DefaultValue = (T)defaultValue;
+                HasDefaultValue = true;
+            }
 
             MatchingProperty = matchingPropertyInfo;
-            DefaultValue = parameterInfoValues.HasDefaultValue && parameterInfoValues.DefaultValue is not null
-                ? (T)parameterInfoValues.DefaultValue
-                : default;
-
-            base.DefaultValue = DefaultValue;
+            EffectiveDefaultValue = DefaultValue;
         }
     }
 }
