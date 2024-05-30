@@ -214,34 +214,6 @@ void regMaskTP::RemoveRegsetForType(SingleTypeRegSet regsToRemove, var_types typ
 #endif
 }
 
-template <class T>
-/* static */ int regMaskTP::mapTypeToRegTypeIndex(T vt)
-{
-    int type = varTypeRegister[TypeGet(vt)];
-#ifdef HAS_MORE_THAN_64_REGISTERS
-    assert(type <= 3);
-#endif
-
-#ifndef FEATURE_MASKED_HW_INTRINSICS
-    assert(type != VTR_MASK);
-#endif
-    return (type - 1);
-}
-
-/* static */ int regMaskTP::mapRegNumToRegTypeIndex(regNumber reg)
-{
-    static const BYTE _registerTypeIndex[] = {
-#ifdef TARGET_ARM64
-#define REGDEF(name, rnum, mask, xname, wname, regTypeTag) regTypeTag,
-#else
-#define REGDEF(name, rnum, mask, sname, regTypeTag) regTypeTag,
-#endif
-#include "register.h"
-    };
-
-    return _registerTypeIndex[reg];
-}
-
 void regMaskTP::operator|=(const regNumber reg)
 {
     SingleTypeRegSet value = genSingleTypeRegMask(reg);

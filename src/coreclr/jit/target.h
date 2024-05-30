@@ -270,12 +270,12 @@ private:
 #endif
 
     FORCEINLINE static int mapRegNumToRegTypeIndex(regNumber reg);
-    template <class T>
-    FORCEINLINE static int          mapTypeToRegTypeIndex(T type);
     FORCEINLINE static RegSet32     encodeForRegisterIndex(int index, regMaskSmall value);
     FORCEINLINE static regMaskSmall decodeForRegisterIndex(int index, RegSet32 value);
 
 public:
+
+    FORCEINLINE static int mapTypeToRegTypeIndex(var_types type);
 
 #ifdef TARGET_ARM
     void AddRegNumInMask(regNumber reg, var_types type);

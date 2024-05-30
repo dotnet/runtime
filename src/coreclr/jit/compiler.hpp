@@ -1016,6 +1016,52 @@ inline regNumber genFirstRegNumFromMaskAndToggle(SingleTypeRegSet& mask)
     return regNum;
 }
 
+//------------------------------------------------------------------------------
+// mapTypeToRegTypeIndex : Maps the type to the index used to store relevant mask
+//          in regMaskTP. 0= IntRegisterType, 1= FloatRegisterType, 2= PredicateRegisterType
+// Arguments:
+//    vt               - the register type
+//
+// Return Value:
+//    The index depending on the register type.
+//
+
+/* static */ int regMaskTP::mapTypeToRegTypeIndex(var_types vt)
+{
+    int type = varTypeRegister[TypeGet(vt)];
+#ifdef HAS_MORE_THAN_64_REGISTERS
+    assert(type <= 3);
+#endif
+
+#ifndef FEATURE_MASKED_HW_INTRINSICS
+    assert(type != VTR_MASK);
+#endif
+    return (type - 1);
+}
+
+//------------------------------------------------------------------------------
+// mapTypeToRegTypeIndex : Maps the regNumber to the index used to store relevant mask
+//          in regMaskTP.
+// Arguments:
+//    reg               - the register number
+//
+// Return Value:
+//    The index depending on the register type.
+//
+/* static */ int regMaskTP::mapRegNumToRegTypeIndex(regNumber reg)
+{
+    static const BYTE _registerTypeIndex[] = {
+#ifdef TARGET_ARM64
+#define REGDEF(name, rnum, mask, xname, wname, regTypeTag) regTypeTag,
+#else
+#define REGDEF(name, rnum, mask, sname, regTypeTag) regTypeTag,
+#endif
+#include "register.h"
+    };
+
+    return _registerTypeIndex[reg];
+}
+
 /*****************************************************************************
  *
  *  Return the size in bytes of the given type.
