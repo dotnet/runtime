@@ -87,8 +87,6 @@ export function mono_wasm_pthread_on_pthread_created (): void {
         monoThreadInfo.updateCount++;
         monoThreadInfo.threadName = "pthread-assigned";
         update_thread_info();
-        let segRules = globalizationHelpers.getSegmentationRules();
-        mono_log_info(`[mono_wasm_pthread_on_pthread_created] ID: ${pthread_id}; segRules = ${segRules};` + runtimeHelpers.monoThreadInfo.threadName);
 
         // don't do this callback for the main thread
         if (!ENVIRONMENT_IS_PTHREAD) return;
@@ -112,8 +110,8 @@ export function mono_wasm_pthread_on_pthread_created (): void {
             info: monoThreadInfo,
             port: mainPort,
         }, [mainPort]);
-        segRules = globalizationHelpers.getSegmentationRules();
-        mono_log_info(`[mono_wasm_pthread_on_pthread_created] ID: ${pthread_id}; segRules = ${segRules};` + runtimeHelpers.monoThreadInfo.threadName);
+        const segmentationRules = globalizationHelpers.getSegmentationRules();
+        mono_log_info(`[mono_wasm_pthread_on_pthread_created] ID: ${pthread_id}; segmentationRules = ${segmentationRules}; ${runtimeHelpers.monoThreadInfo.threadName}\nStack: ${(new Error()).stack}`);
     } catch (err) {
         mono_log_error("mono_wasm_pthread_on_pthread_created () failed", err);
         loaderHelpers.mono_exit(1, err);

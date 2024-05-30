@@ -66,11 +66,11 @@ export function setSegmentationRulesFromJson (rawRules: SegmentationTypeRaw) {
 
         segmentationRules[key] = preparedRule;
     }
-    runtimeHelpers.mono_log_info(`Grapheme segmentation rules are set ID: ${runtimeHelpers.monoThreadInfo.pthreadId}; ` + runtimeHelpers.monoThreadInfo.threadName);
+    runtimeHelpers.mono_log_info(`Grapheme segmentation rules are set ID: ${runtimeHelpers.monoThreadInfo.pthreadId}; ${runtimeHelpers.monoThreadInfo.threadName};\nStack: ${(new Error()).stack}`);
 }
 
 export function getSegmentationRules (): Record<string, SegmentationRule> {
-    runtimeHelpers.mono_log_info(`getSegmentationRules =${segmentationRules} ID: ${runtimeHelpers.monoThreadInfo.pthreadId}; ` + runtimeHelpers.monoThreadInfo.threadName);
+    runtimeHelpers.mono_log_info(`getSegmentationRules=${segmentationRules}; ID: ${runtimeHelpers.monoThreadInfo.pthreadId}; ${runtimeHelpers.monoThreadInfo.threadName}`);
     return segmentationRules;
 }
 
@@ -81,7 +81,7 @@ export class GraphemeSegmenter {
 
     public constructor () {
         if (!segmentationRules) {
-            const message = `Grapheme segmentation rules are not set ID: ${runtimeHelpers.monoThreadInfo.pthreadId}; ` + runtimeHelpers.monoThreadInfo.threadName;
+            const message = `Grapheme segmentation rules are not set ID: ${runtimeHelpers.monoThreadInfo.pthreadId}; ${runtimeHelpers.monoThreadInfo.threadName};\nStack: ${(new Error()).stack}`;
             runtimeHelpers.mono_log_info(message);
             throw new Error(message);
         }
