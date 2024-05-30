@@ -263,7 +263,7 @@ export type GlobalizationHelpers = {
     mono_wasm_get_culture_info: (culture: number, cultureLength: number, dst: number, dstMaxLength: number, dstLength: Int32Ptr) => VoidPtr;
     mono_wasm_get_first_day_of_week: (culture: number, cultureLength: number, resultPtr: Int32Ptr) => VoidPtr;
     mono_wasm_get_first_week_of_year: (culture: number, cultureLength: number, resultPtr: Int32Ptr) => VoidPtr;
-    setSegmentationRulesFromJson: (json: string) => void;
+    setSegmentationRulesFromJson: (rawRules: any) => void;
 }
 
 export type AOTProfilerOptions = {
