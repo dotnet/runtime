@@ -26,7 +26,7 @@ type SegmentationTypeRaw = {
     rules: Record<string, SegmentationRuleRaw>
 }
 
-const segmentationRules: Record<string, SegmentationRule> = {};
+let segmentationRules: Record<string, SegmentationRule> = null as any;
 
 function replaceVariables (variables: Record<string, string>, input: string): string {
     const findVarRegex = /\$[A-Za-z0-9_]+/gm;
@@ -49,6 +49,8 @@ function isSegmentationTypeRaw (obj: any): obj is SegmentationTypeRaw {
 export function setSegmentationRulesFromJson (rawRules: SegmentationTypeRaw) {
     if (!isSegmentationTypeRaw(rawRules))
         throw new Error("Provided grapheme segmentation rules are not valid");
+
+    segmentationRules = {};
 
     for (const key of Object.keys(segmentationRules.rules)) {
         const ruleValue = rawRules.rules[key];
