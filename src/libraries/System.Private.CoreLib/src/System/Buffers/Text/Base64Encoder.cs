@@ -711,6 +711,7 @@ namespace System.Buffers.Text
 
             public static int IncrementPadOne => 4;
 
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static int GetMaxSrcLength(int srcLength, int destLength) =>
                 srcLength <= MaximumEncodeLength && destLength >= GetMaxEncodedToUtf8Length(srcLength) ?
                 srcLength : (destLength >> 2) * 3;
