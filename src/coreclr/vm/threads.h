@@ -4042,7 +4042,10 @@ private:
 template<>
 struct cdac_offsets<Thread>
 {
+    static constexpr size_t Id = offsetof(Thread, m_ThreadId);
+    static constexpr size_t OSId = offsetof(Thread, m_OSThreadId);
     static constexpr size_t ExposedObject = offsetof(Thread, m_ExposedObject);
+    static constexpr size_t LastThrownObject = offsetof(Thread, m_LastThrownObjectHandle);
     static constexpr size_t Link = offsetof(Thread, m_Link);
 };
 
@@ -4305,8 +4308,12 @@ public:
 template<>
 struct cdac_offsets<ThreadStore>
 {
-    static constexpr size_t ThreadList = offsetof(ThreadStore, m_ThreadList);
+    static constexpr size_t FirstThreadLink = offsetof(ThreadStore, m_ThreadList) + offsetof(ThreadList, m_link);
     static constexpr size_t ThreadCount = offsetof(ThreadStore, m_ThreadCount);
+    static constexpr size_t UnstartedCount = offsetof(ThreadStore, m_UnstartedThreadCount);
+    static constexpr size_t BackgroundCount = offsetof(ThreadStore, m_BackgroundThreadCount);
+    static constexpr size_t PendingCount = offsetof(ThreadStore, m_PendingThreadCount);
+    static constexpr size_t DeadCount = offsetof(ThreadStore, m_DeadThreadCount);
 };
 
 struct TSSuspendHelper {
