@@ -4557,33 +4557,26 @@ void Compiler::fgMoveBackwardJumpsToSuccessors()
     }
 #endif // DEBUG
 
-    // Compact blocks before trying to move any jumps.
-    // This can unlock more opportunities for fallthrough behavior.
-    //
-    for (BasicBlock* block = fgFirstBB; block != fgFirstFuncletBB;)
-    {
-        if (fgCanCompactBlocks(block, block->Next()))
-        {
-            // We haven't fixed EH information yet, so don't do any correctness checks here
-            //
-            fgCompactBlocks(block, block->Next() DEBUGARG(/* doDebugCheck */ false));
-        }
-        else
-        {
-            block = block->Next();
-        }
-    }
-
     EnsureBasicBlockEpoch();
     BlockSet visitedBlocks(BlockSetOps::MakeEmpty(this));
     BlockSetOps::AddElemD(this, visitedBlocks, fgFirstBB->bbNum);
 
-    // Don't try to move the first block.
-    // Also, if we have a funclet region, don't bother reordering anything in it.
+    // If we have a funclet region, don't bother reordering anything in it.
     //
     BasicBlock* next;
-    for (BasicBlock* block = fgFirstBB->Next(); block != fgFirstFuncletBB; block = next)
+    for (BasicBlock* block = fgFirstBB; block != fgFirstFuncletBB; block = next)
     {
+        if (fgCanCompactBlocks(block, block->Next()))
+        {
+            // Compact blocks before trying to move any jumps.
+            // This can unlock more opportunities for fallthrough behavior.
+            // We haven't fixed EH information yet, so don't do any correctness checks here.
+            //
+            fgCompactBlocks(block, block->Next() DEBUGARG(/* doDebugCheck */ false));
+            next = block;
+            continue;
+        }
+
         next = block->Next();
         BlockSetOps::AddElemD(this, visitedBlocks, block->bbNum);
 
