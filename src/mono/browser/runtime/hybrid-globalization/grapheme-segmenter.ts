@@ -53,7 +53,7 @@ export function setSegmentationRulesFromJson (rawRules: SegmentationTypeRaw) {
 
     segmentationRules = {};
 
-    for (const key of Object.keys(segmentationRules.rules)) {
+    for (const key of Object.keys(rawRules.rules)) {
         const ruleValue = rawRules.rules[key];
         const preparedRule: SegmentationRule = { breaks: ruleValue.breaks, };
 
