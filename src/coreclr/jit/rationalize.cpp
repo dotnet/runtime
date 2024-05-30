@@ -48,6 +48,12 @@ void Rationalizer::RewriteNodeAsCall(GenTree**             use,
         call->gtRetClsHnd = sig->retTypeClass;
         retType           = comp->impNormStructType(sig->retTypeClass);
 
+        if (retType != call->gtType)
+        {
+            assert(varTypeIsSIMD(retType));
+            call->ChangeType(retType);
+        }
+
 #if FEATURE_MULTIREG_RET
         call->InitializeStructReturnType(comp, sig->retTypeClass, call->GetUnmanagedCallConv());
 #endif // FEATURE_MULTIREG_RET
@@ -62,8 +68,6 @@ void Rationalizer::RewriteNodeAsCall(GenTree**             use,
             call->gtCallMoreFlags |= GTF_CALL_M_RETBUFFARG;
         }
     }
-
-    assert(retType == tree->gtType);
 
     CORINFO_ARG_LIST_HANDLE sigArg   = sig->args;
     size_t                  firstArg = 0;
@@ -134,7 +138,7 @@ void Rationalizer::RewriteNodeAsCall(GenTree**             use,
     {
         if (tmpNum != BAD_VAR_NUM)
         {
-            result = comp->gtNewLclvNode(tmpNum, tree->gtType);
+            result = comp->gtNewLclvNode(tmpNum, retType);
         }
 
         parents.Top(1)->ReplaceOperand(use, result);
