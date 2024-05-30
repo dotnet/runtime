@@ -665,9 +665,9 @@ namespace System.Net.Http.Functional.Tests
 
         [OuterLoop]
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public void EventSource_ConnectionPoolAtMaxConnections_LogsRequestLeftQueue()
+        public async Task EventSource_ConnectionPoolAtMaxConnections_LogsRequestLeftQueue()
         {
-            RemoteExecutor.Invoke(static async (useVersionString) =>
+            await RemoteExecutor.Invoke(static async (useVersionString) =>
             {
                 Version version = Version.Parse(useVersionString);
                 using var listener = new TestEventListener("System.Net.Http", EventLevel.Verbose, eventCounterInterval: 0.1d);
@@ -774,14 +774,14 @@ namespace System.Net.Http.Functional.Tests
                 ValidateRequestResponseStartStopEvents(events, requestContentLength: null, responseContentLength: 0, count: 3);
 
                 ValidateEventCounters(events, requestCount: 3, shouldHaveFailures: false, versionMajor: version.Major, requestLeftQueue: true);
-            }, UseVersion.ToString()).Dispose();
+            }, UseVersion.ToString()).DisposeAsync();
         }
 
         [OuterLoop]
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public void EventSource_Redirect_LogsRedirect()
+        public async Task EventSource_Redirect_LogsRedirect()
         {
-            RemoteExecutor.Invoke(static async (string useVersionString) =>
+            await RemoteExecutor.Invoke(static async (string useVersionString) =>
             {
                 Version version = Version.Parse(useVersionString);
 
@@ -821,7 +821,7 @@ namespace System.Net.Http.Functional.Tests
                 Assert.Equal(1, redirectEvent.Payload.Count);
                 Assert.Equal(expectedUri.ToString(), (string)redirectEvent.Payload[0]);
                 Assert.Equal("redirectUri", redirectEvent.PayloadNames[0]);
-            }, UseVersion.ToString()).Dispose();
+            }, UseVersion.ToString()).DisposeAsync();
         }
 
         public static bool SupportsRemoteExecutorAndAlpn = RemoteExecutor.IsSupported && PlatformDetection.SupportsAlpn;
@@ -903,9 +903,9 @@ namespace System.Net.Http.Functional.Tests
 
         [OuterLoop]
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public void EventSource_ParallelRequests_LogsNewConnectionIdForEachRequest()
+        public async Task EventSource_ParallelRequests_LogsNewConnectionIdForEachRequest()
         {
-            RemoteExecutor.Invoke(async () =>
+            await RemoteExecutor.Invoke(async () =>
             {
                 const int NumParallelRequests = 4;
 
@@ -970,7 +970,7 @@ namespace System.Net.Http.Functional.Tests
                     Assert.True(connectionIds.Remove(connectionId), $"RequestHeadersStart has logged an unexpected connectionId={connectionId}.");
                 }
                 Assert.Empty(connectionIds);
-            }).Dispose();
+            }).DisposeAsync();
         }
     }
 

@@ -49,9 +49,9 @@ namespace System.Net.Http.Functional.Tests
         // with those tests.
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public void SendAsync_ExpectedDiagnosticSourceLogging()
+        public async Task SendAsync_ExpectedDiagnosticSourceLogging()
         {
-            RemoteExecutor.Invoke(async (useVersion, testAsync) =>
+            await RemoteExecutor.Invoke(async (useVersion, testAsync) =>
             {
                 HttpRequestMessage requestLogged = null;
                 HttpResponseMessage responseLogged = null;
@@ -109,13 +109,13 @@ namespace System.Net.Http.Functional.Tests
                     Assert.False(exceptionLogged, "Exception was logged for successful request");
                     Assert.False(activityLogged, "HttpOutReq was logged while HttpOutReq logging was disabled");
                 }
-            }, UseVersion.ToString(), TestAsync.ToString()).Dispose();
+            }, UseVersion.ToString(), TestAsync.ToString()).DisposeAsync();
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public void SendAsync_ExpectedDiagnosticSourceNoLogging()
+        public async Task SendAsync_ExpectedDiagnosticSourceNoLogging()
         {
-            RemoteExecutor.Invoke(async (useVersion, testAsync) =>
+            await RemoteExecutor.Invoke(async (useVersion, testAsync) =>
             {
                 bool requestLogged = false;
                 bool responseLogged = false;
@@ -160,7 +160,7 @@ namespace System.Net.Http.Functional.Tests
                     Assert.False(responseLogged, "Response was logged while logging disabled.");
                     Assert.False(activityStopLogged, "HttpRequestOut.Stop was logged while logging disabled.");
                 }
-            }, UseVersion.ToString(), TestAsync.ToString()).Dispose();
+            }, UseVersion.ToString(), TestAsync.ToString()).DisposeAsync();
         }
 
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
@@ -198,9 +198,9 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public void SendAsync_ExpectedDiagnosticExceptionLogging()
+        public async Task SendAsync_ExpectedDiagnosticExceptionLogging()
         {
-            RemoteExecutor.Invoke(async (useVersion, testAsync) =>
+            await RemoteExecutor.Invoke(async (useVersion, testAsync) =>
             {
                 Exception exceptionLogged = null;
 
@@ -232,13 +232,13 @@ namespace System.Net.Http.Functional.Tests
 
                     Assert.Same(ex, exceptionLogged);
                 }
-            }, UseVersion.ToString(), TestAsync.ToString()).Dispose();
+            }, UseVersion.ToString(), TestAsync.ToString()).DisposeAsync();
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public void SendAsync_ExpectedDiagnosticCancelledLogging()
+        public async Task SendAsync_ExpectedDiagnosticCancelledLogging()
         {
-            RemoteExecutor.Invoke(async (useVersion, testAsync) =>
+            await RemoteExecutor.Invoke(async (useVersion, testAsync) =>
             {
                 TaskCompletionSource responseLoggedTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
                 TaskCompletionSource activityStopTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -284,7 +284,7 @@ namespace System.Net.Http.Functional.Tests
                             });
                         });
                 }
-            }, UseVersion.ToString(), TestAsync.ToString()).Dispose();
+            }, UseVersion.ToString(), TestAsync.ToString()).DisposeAsync();
         }
 
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
@@ -380,9 +380,9 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public void SendAsync_ExpectedDiagnosticSourceActivityLogging_InvalidBaggage()
+        public async Task SendAsync_ExpectedDiagnosticSourceActivityLogging_InvalidBaggage()
         {
-            RemoteExecutor.Invoke(async (useVersion, testAsync) =>
+            await RemoteExecutor.Invoke(async (useVersion, testAsync) =>
             {
                 bool exceptionLogged = false;
 
@@ -432,13 +432,13 @@ namespace System.Net.Http.Functional.Tests
 
                     Assert.False(exceptionLogged, "Exception was logged for successful request");
                 }
-            }, UseVersion.ToString(), TestAsync.ToString()).Dispose();
+            }, UseVersion.ToString(), TestAsync.ToString()).DisposeAsync();
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public void SendAsync_ExpectedDiagnosticSourceActivityLoggingDoesNotOverwriteHeader()
+        public async Task SendAsync_ExpectedDiagnosticSourceActivityLoggingDoesNotOverwriteHeader()
         {
-            RemoteExecutor.Invoke(async (useVersion, testAsync) =>
+            await RemoteExecutor.Invoke(async (useVersion, testAsync) =>
             {
                 bool activityStartLogged = false;
 
@@ -486,13 +486,13 @@ namespace System.Net.Http.Functional.Tests
 
                     Assert.True(activityStartLogged, "HttpRequestOut.Start was not logged.");
                 }
-            }, UseVersion.ToString(), TestAsync.ToString()).Dispose();
+            }, UseVersion.ToString(), TestAsync.ToString()).DisposeAsync();
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public void SendAsync_ExpectedDiagnosticSourceActivityLoggingDoesNotOverwriteW3CTraceParentHeader()
+        public async Task SendAsync_ExpectedDiagnosticSourceActivityLoggingDoesNotOverwriteW3CTraceParentHeader()
         {
-            RemoteExecutor.Invoke(async (useVersion, testAsync) =>
+            await RemoteExecutor.Invoke(async (useVersion, testAsync) =>
             {
                 bool activityStartLogged = false;
 
@@ -544,13 +544,13 @@ namespace System.Net.Http.Functional.Tests
 
                     Assert.True(activityStartLogged, "HttpRequestOut.Start was not logged.");
                 }
-            }, UseVersion.ToString(), TestAsync.ToString()).Dispose();
+            }, UseVersion.ToString(), TestAsync.ToString()).DisposeAsync();
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public void SendAsync_ExpectedDiagnosticSourceUrlFilteredActivityLogging()
+        public async Task SendAsync_ExpectedDiagnosticSourceUrlFilteredActivityLogging()
         {
-            RemoteExecutor.Invoke(async (useVersion, testAsync) =>
+            await RemoteExecutor.Invoke(async (useVersion, testAsync) =>
             {
                 bool activityStartLogged = false;
                 bool activityStopLogged = false;
@@ -588,13 +588,13 @@ namespace System.Net.Http.Functional.Tests
                     Assert.False(activityStartLogged, "HttpRequestOut.Start was logged while URL disabled.");
                     Assert.False(activityStopLogged, "HttpRequestOut.Stop was logged while URL disabled.");
                 }
-            }, UseVersion.ToString(), TestAsync.ToString()).Dispose();
+            }, UseVersion.ToString(), TestAsync.ToString()).DisposeAsync();
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public void SendAsync_ExpectedDiagnosticExceptionActivityLogging()
+        public async Task SendAsync_ExpectedDiagnosticExceptionActivityLogging()
         {
-            RemoteExecutor.Invoke(async (useVersion, testAsync) =>
+            await RemoteExecutor.Invoke(async (useVersion, testAsync) =>
             {
                 Exception exceptionLogged = null;
 
@@ -627,13 +627,13 @@ namespace System.Net.Http.Functional.Tests
 
                     Assert.Same(ex, exceptionLogged);
                 }
-            }, UseVersion.ToString(), TestAsync.ToString()).Dispose();
+            }, UseVersion.ToString(), TestAsync.ToString()).DisposeAsync();
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public void SendAsync_ExpectedDiagnosticSynchronousExceptionActivityLogging()
+        public async Task SendAsync_ExpectedDiagnosticSynchronousExceptionActivityLogging()
         {
-            RemoteExecutor.Invoke(async (useVersion, testAsync) =>
+            await RemoteExecutor.Invoke(async (useVersion, testAsync) =>
             {
                 Exception exceptionLogged = null;
 
@@ -704,13 +704,13 @@ namespace System.Net.Http.Functional.Tests
                         Assert.Same(exceptionLogged, exception);
                     }
                 }
-            }, UseVersion.ToString(), TestAsync.ToString()).Dispose();
+            }, UseVersion.ToString(), TestAsync.ToString()).DisposeAsync();
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public void SendAsync_ExpectedDiagnosticSourceNewAndDeprecatedEventsLogging()
+        public async Task SendAsync_ExpectedDiagnosticSourceNewAndDeprecatedEventsLogging()
         {
-            RemoteExecutor.Invoke(async (useVersion, testAsync) =>
+            await RemoteExecutor.Invoke(async (useVersion, testAsync) =>
             {
                 bool requestLogged = false;
                 bool activityStartLogged = false;
@@ -755,13 +755,13 @@ namespace System.Net.Http.Functional.Tests
                     Assert.True(requestLogged, "Request was not logged.");
                     Assert.True(activityStopLogged, "HttpRequestOut.Stop was not logged.");
                 }
-            }, UseVersion.ToString(), TestAsync.ToString()).Dispose();
+            }, UseVersion.ToString(), TestAsync.ToString()).DisposeAsync();
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public void SendAsync_ExpectedDiagnosticExceptionOnlyActivityLogging()
+        public async Task SendAsync_ExpectedDiagnosticExceptionOnlyActivityLogging()
         {
-            RemoteExecutor.Invoke(async (useVersion, testAsync) =>
+            await RemoteExecutor.Invoke(async (useVersion, testAsync) =>
             {
                 bool activityLogged = false;
                 Exception exceptionLogged = null;
@@ -793,7 +793,7 @@ namespace System.Net.Http.Functional.Tests
                     Assert.Same(ex, exceptionLogged);
                     Assert.False(activityLogged, "HttpOutReq was logged when logging was disabled");
                 }
-            }, UseVersion.ToString(), TestAsync.ToString()).Dispose();
+            }, UseVersion.ToString(), TestAsync.ToString()).DisposeAsync();
         }
 
         public static IEnumerable<object[]> UseSocketsHttpHandler_WithIdFormat_MemberData()

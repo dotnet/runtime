@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Net.Http;
+using System.Threading.Tasks;
 using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 using Xunit.Abstractions;
@@ -41,9 +42,9 @@ namespace System.Net.Http.Tests
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public void HttpProxy_EnvironmentProxy_Loaded()
+        public async Task HttpProxy_EnvironmentProxy_Loaded()
         {
-            RemoteExecutor.Invoke(() =>
+            await RemoteExecutor.Invoke(() =>
             {
 
                 IWebProxy p;
@@ -123,7 +124,7 @@ namespace System.Net.Http.Tests
                 Assert.True(u != null && u.Host == "1.1.1.3" && u.Port == 3003);
                 u = p.GetProxy(fooWss);
                 Assert.True(u != null && u.Host == "1.1.1.5" && u.Port == 3005);
-            }).Dispose();
+            }).DisposeAsync();
         }
 
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
@@ -182,9 +183,9 @@ namespace System.Net.Http.Tests
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public void HttpProxy_CredentialParsing_Basic()
+        public async Task HttpProxy_CredentialParsing_Basic()
         {
-            RemoteExecutor.Invoke(() =>
+            await RemoteExecutor.Invoke(() =>
             {
                 IWebProxy p;
 
@@ -210,14 +211,14 @@ namespace System.Net.Http.Tests
                 // This should not match Proxy Uri
                 Assert.Null(p.Credentials.GetCredential(fooHttp, "Basic"));
                 Assert.Null(p.Credentials.GetCredential(null, null));
-            }).Dispose();
+            }).DisposeAsync();
         }
 
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public void HttpProxy_CredentialParsing_DefaultCredentials()
+        public async Task HttpProxy_CredentialParsing_DefaultCredentials()
         {
-            RemoteExecutor.Invoke(() =>
+            await RemoteExecutor.Invoke(() =>
             {
                 IWebProxy p;
 
@@ -231,13 +232,13 @@ namespace System.Net.Http.Tests
                 Assert.True(HttpEnvironmentProxy.TryCreate(out p));
                 Assert.NotNull(p);
                 Assert.Equal(CredentialCache.DefaultCredentials, p.Credentials.GetCredential(p.GetProxy(fooHttp), ""));
-            }).Dispose();
+            }).DisposeAsync();
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public void HttpProxy_Exceptions_Match()
+        public async Task HttpProxy_Exceptions_Match()
         {
-            RemoteExecutor.Invoke(() =>
+            await RemoteExecutor.Invoke(() =>
             {
                 IWebProxy p;
 
@@ -251,7 +252,7 @@ namespace System.Net.Http.Tests
                 Assert.True(p.IsBypassed(new Uri("http://test.com")));
                 Assert.False(p.IsBypassed(new Uri("http://1test.com")));
                 Assert.True(p.IsBypassed(new Uri("http://www.test.com")));
-            }).Dispose();
+            }).DisposeAsync();
         }
 
         public static IEnumerable<object[]> HttpProxyNoProxyEnvVarMemberData()

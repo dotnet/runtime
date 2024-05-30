@@ -1051,9 +1051,9 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public void ActiveRequests_Success_Recorded()
+        public async Task ActiveRequests_Success_Recorded()
         {
-            RemoteExecutor.Invoke(static async Task () =>
+            await RemoteExecutor.Invoke(static async Task () =>
             {
                 using HttpMetricsTest_DefaultMeter test = new(null);
                 await test.LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
@@ -1072,7 +1072,7 @@ namespace System.Net.Http.Functional.Tests
                 {
                     await server.AcceptConnectionSendResponseAndCloseAsync();
                 });
-            }).Dispose();
+            }).DisposeAsync();
         }
 
         public static bool RemoteExecutorAndSocketsHttpHandlerSupported => RemoteExecutor.IsSupported && SocketsHttpHandler.IsSupported;
@@ -1130,9 +1130,9 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public void RequestDuration_Success_Recorded()
+        public async Task RequestDuration_Success_Recorded()
         {
-            RemoteExecutor.Invoke(static async Task () =>
+            await RemoteExecutor.Invoke(static async Task () =>
             {
                 using HttpMetricsTest_DefaultMeter test = new(null);
                 await test.LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
@@ -1148,7 +1148,7 @@ namespace System.Net.Http.Functional.Tests
                 {
                     await server.AcceptConnectionSendResponseAndCloseAsync(HttpStatusCode.OK);
                 });
-            }).Dispose();
+            }).DisposeAsync();
         }
     }
 

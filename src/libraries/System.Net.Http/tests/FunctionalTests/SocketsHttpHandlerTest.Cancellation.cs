@@ -305,7 +305,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public void CancelPendingRequest_DropsStalledConnectionAttempt_CustomPendingConnectionTimeout()
+        public async Task CancelPendingRequest_DropsStalledConnectionAttempt_CustomPendingConnectionTimeout()
         {
             if (UseVersion == HttpVersion.Version30)
             {
@@ -316,7 +316,7 @@ namespace System.Net.Http.Functional.Tests
             RemoteInvokeOptions options = new RemoteInvokeOptions();
             options.StartInfo.EnvironmentVariables["DOTNET_SYSTEM_NET_HTTP_SOCKETSHTTPHANDLER_PENDINGCONNECTIONTIMEOUTONREQUESTCOMPLETION"] = "42";
 
-            RemoteExecutor.Invoke(CancelPendingRequest_DropsStalledConnectionAttempt_Impl, UseVersion.ToString(), options).Dispose();
+            await RemoteExecutor.Invoke(CancelPendingRequest_DropsStalledConnectionAttempt_Impl, UseVersion.ToString(), options).DisposeAsync();
         }
 
         private static async Task CancelPendingRequest_DropsStalledConnectionAttempt_Impl(string versionString)
