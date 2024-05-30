@@ -47,7 +47,7 @@ steps:
                   -arch ${{ parameters.archType }}
                   /p:BuildMonoAotCrossCompiler=true
                   /p:BuildMonoAotCrossCompilerOnly=true
-                  /p:MonoLibClang="/usr/local/lib/libclang.so.16"
+                  /p:MonoLibClang="/usr/local/lib/libclang.so"
                   /p:CrossBuild=true
           displayName: "Build Mono Mini AOT cross compiler"
       - ${{ else }}:
@@ -57,7 +57,7 @@ steps:
                   -arch ${{ parameters.archType }}
                   /p:BuildMonoAotCrossCompiler=true
                   /p:BuildMonoAotCrossCompilerOnly=true
-                  /p:MonoLibClang="/usr/local/lib/libclang.so.16"
+                  /p:MonoLibClang="/usr/local/lib/libclang.so"
                   /p:MonoAOTEnableLLVM=true
                   /p:CrossBuild=true
           displayName: "Build Mono LLVM AOT cross compiler"
