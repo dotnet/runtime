@@ -48,8 +48,7 @@ namespace System.Net.Test.Common
                             },
                             ServerCertificate = _cert,
                             ClientCertificateRequired = false
-                        },
-                        IdleTimeout = TimeSpan.FromSeconds(90)
+                        }
                     };
                     return ValueTask.FromResult(serverOptions);
                 }
