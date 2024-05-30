@@ -7,6 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
+using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.StaticInterfaceMethods
 {
@@ -20,6 +21,7 @@ namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.StaticInterfaceMethods
 			GenericInterface.Test ();
 			GenericInterfaceGenericType.Test ();
 			PrivateExplicitImplementationReflectedOver.Test ();
+			InheritedInterfaces.Test ();
 		}
 
 		[Kept]
@@ -224,6 +226,52 @@ namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.StaticInterfaceMethods
 				[KeptOverride (typeof (IInstanceMethod))]
 				[ExpectBodyModified]
 				string IInstanceMethod.GetMessage () => "hello";
+			}
+		}
+
+		[Kept]
+		public static class InheritedInterfaces
+		{
+			[Kept]
+			public static void Test ()
+			{
+				UseInterface<UsedThroughInterface> ();
+				UsedDirectly.M ();
+			}
+
+			[Kept]
+			static void UseInterface<T> () where T : IDerived
+			{
+				T.M ();
+			}
+
+			[Kept]
+			interface IBase
+			{
+				[Kept]
+				static abstract void M ();
+			}
+
+			[Kept]
+			[KeptInterface (typeof (IBase))]
+			interface IDerived : IBase { }
+
+			[Kept]
+			[KeptInterface (typeof (IDerived))]
+			[KeptInterface (typeof (IBase))]
+			class UsedThroughInterface : IDerived
+			{
+				[Kept]
+				[KeptOverride (typeof (IBase))]
+				public static void M () { }
+			}
+
+			[Kept]
+			class UsedDirectly : IDerived
+			{
+				[Kept]
+				[RemovedOverride (typeof (IBase))]
+				public static void M () { }
 			}
 		}
 	}

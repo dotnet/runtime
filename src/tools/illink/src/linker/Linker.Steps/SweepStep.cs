@@ -468,24 +468,12 @@ namespace Mono.Linker.Steps
 				if (method.Overrides[i].Resolve () is not MethodDefinition ov
 					|| ov.DeclaringType is null
 					|| (IsLinkScope (ov.DeclaringType.Scope) && ShouldRemove (ov))
-					|| (ov.DeclaringType.IsInterface && !IsInterfaceImplemented (method.DeclaringType, ov.DeclaringType)))
+					|| (ov.DeclaringType.IsInterface && !MarkStep.IsInterfaceImplementationMarkedRecursively (method.DeclaringType, ov.DeclaringType, Context)))
 					method.Overrides.RemoveAt (i);
 				else
 					i++;
 #pragma warning restore RS0030
 			}
-		}
-
-		private bool IsInterfaceImplemented (TypeDefinition type, TypeDefinition iface)
-		{
-			var allInterfaces = type.GetAllInterfaceImplementations (Context, false);
-			foreach(var impl in allInterfaces) {
-				// Using the resolve cache here is okay, if we resolve to a removed type than the impl will not be marked and we'll continue
-				if (Context.Resolve(impl.InterfaceType) == iface && Context.Annotations.IsMarked (impl)) {
-					return true;
-				}
-			}
-			return false;
 		}
 
 		/// <summary>
