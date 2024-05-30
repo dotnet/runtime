@@ -31,6 +31,18 @@ public class WasmSdkDebugLevelTests : DebugLevelTests
         Configuration: configuration,
         TestScenario: "DebugLevelTest"
     ));
+
+    [Theory]
+    [InlineData("Debug")]
+    [InlineData("Release")]
+    public async Task PublishWithDefaultLevelAndPdbs(string configuration)
+    {
+        SetupProject($"DebugLevelTests_PublishWithDefaultLevelAndPdbs_{configuration}");
+        PublishProject(configuration, assertAppBundle: false, extraArgs: $"-p:CopyOutputSymbolsToPublishDirectory=true");
+
+        var result = await RunForPublish(configuration);
+        AssertDebugLevel(result, -1);
+    }
 }
 
 public class WasmAppBuilderDebugLevelTests : DebugLevelTests
@@ -95,7 +107,7 @@ public abstract class DebugLevelTests : AppTestBase
     {
     }
 
-    private void AssertDebugLevel(RunResult result, int value)
+    protected void AssertDebugLevel(RunResult result, int value)
     {
         Assert.Collection(
             result.TestOutput,
@@ -157,17 +169,5 @@ public abstract class DebugLevelTests : AppTestBase
 
         var result = await RunForPublish(configuration);
         AssertDebugLevel(result, debugLevel);
-    }
-
-    [Theory]
-    [InlineData("Debug")]
-    [InlineData("Release")]
-    public async Task PublishWithDefaultLevelAndPdbs(string configuration)
-    {
-        SetupProject($"DebugLevelTests_PublishWithDefaultLevelAndPdbs_{configuration}");
-        PublishProject(configuration, assertAppBundle: false, extraArgs: $"-p:CopyOutputSymbolsToPublishDirectory=true");
-
-        var result = await RunForPublish(configuration);
-        AssertDebugLevel(result, -1);
     }
 }
