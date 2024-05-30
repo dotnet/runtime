@@ -27,6 +27,15 @@ namespace System.Numerics
         internal const int kcbitUlong = 64;
         internal const int DecimalScaleFactorMask = 0x00FF0000;
 
+        // Various APIs only allow up to int.MaxValue bits, so we will restrict ourselves
+        // to fit within this given our underlying storage representation and the maximum
+        // array length. This gives us just shy of 256MB as the largest allocation size.
+        //
+        // Such a value allows for almost 646,456,974 digits, which is more than large enough
+        // for typical scenarios. If user code requires more than this, they should likely
+        // roll their own type that utilizes native memory and other specialized techniques.
+        internal static int MaxLength => Array.MaxLength / kcbitUint;
+
         // For values int.MinValue < n <= int.MaxValue, the value is stored in sign
         // and _bits is null. For all other values, sign is +1 or -1 and the bits are in _bits
         internal readonly int _sign; // Do not rename (binary serialization)
@@ -615,8 +624,6 @@ namespace System.Numerics
         public static BigInteger One { get { return s_bnOneInt; } }
 
         public static BigInteger MinusOne { get { return s_bnMinusOneInt; } }
-
-        internal static int MaxLength => Array.MaxLength / sizeof(uint);
 
         public bool IsPowerOfTwo
         {
