@@ -3,6 +3,12 @@
 //
 #include <stddef.h>
 
+#ifdef _MSC_VER
+#define DEBUG_BREAK __debugbreak()
+#else
+#define DEBUG_BREAK DebugBreak()
+#endif
+
 // Interface between the runtime and platform specific functionality
 class VMToOSInterface
 {

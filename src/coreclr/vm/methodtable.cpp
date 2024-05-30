@@ -4000,12 +4000,25 @@ static void FastCallFinalize(Object *obj, PCODE funcPtr, BOOL fCriticalCall)
 
 #if defined(TARGET_X86)
 
+#ifdef TARGET_WINDOWS
     __asm
     {
         mov     ecx, [obj]
         call    [funcPtr]
         INDEBUG(nop)            // Mark the fact that we can call managed code
     }
+#else
+    __asm
+    (
+        "mov     %%ecx, %[obj]\n\t"
+        "call    *%[funcPtr]\n\t"
+        INDEBUG("nop\n\t")
+        :
+        : [obj] "m" (obj), [funcPtr] "m" (funcPtr)
+        : "ecx"
+    );
+#endif
+
 
 #else // TARGET_X86
 

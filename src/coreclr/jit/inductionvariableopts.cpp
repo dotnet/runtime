@@ -39,7 +39,7 @@ class LoopLocalOccurrences
     struct Occurrence
     {
         BasicBlock*          Block;
-        Statement*           Statement;
+        struct Statement*    Statement;
         GenTreeLclVarCommon* Node;
         Occurrence*          Next;
     };

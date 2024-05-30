@@ -1383,7 +1383,7 @@ struct SuspendableThreadStubArguments
 {
     void* Argument;
     void (*ThreadStart)(void*);
-    Thread* Thread;
+    class Thread* Thread;
     bool HasStarted;
     CLREvent ThreadStartedEvent;
 };
