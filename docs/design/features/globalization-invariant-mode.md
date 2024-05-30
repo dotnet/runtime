@@ -2,7 +2,7 @@
 
 Author: [Tarek Mahmoud Sayed](https://github.com/tarekgh)
 
-The globalization invariant mode - new in .NET Core 2.0 - enables you to remove application dependencies on globalization data and [globalization behavior](https://learn.microsoft.com/en-us/dotnet/standard/globalization-localization/). This mode is an opt-in feature that provides more flexibility if you care more about reducing dependencies and the size of distribution than globalization functionality or globalization-correctness.
+The globalization invariant mode - new in .NET Core 2.0 - enables you to remove application dependencies on globalization data and [globalization behavior](https://learn.microsoft.com/dotnet/standard/globalization-localization/). This mode is an opt-in feature that provides more flexibility if you care more about reducing dependencies and the size of distribution than globalization functionality or globalization-correctness.
 
 The drawback of running in the invariant mode is applications will get poor globalization support. This new option is only recommended for developers that understand globalization and the impact of its absence.
 

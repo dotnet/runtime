@@ -53,7 +53,7 @@ terminology.
 | TPA | Trusted Platform Assemblies used to be a special set of assemblies that comprised the platform assemblies, when it was originally designed. As of today, it is simply the set of assemblies known to constitute the application. |
 | URT | Universal Runtime. Ancient name for what ended up being .NET, is used in the WinError facility name FACILITY_URT. |
 | UTC | [Universal Tuple Compiler](https://blogs.msdn.microsoft.com/vcblog/2013/06/12/optimizing-c-code-overview/). The Microsoft C++ optimizer back-end that starts by converting the information from the FrontEnd into tuples – a binary stream of instructions. |
-| UWP | [Universal Windows Platform (UWP)](https://learn.microsoft.com/en-us/windows/uwp/get-started/universal-application-platform-guide) is a platform-homogeneous application architecture available on every device that runs Windows 10. |
+| UWP | [Universal Windows Platform (UWP)](https://learn.microsoft.com/windows/uwp/get-started/universal-application-platform-guide) is a platform-homogeneous application architecture available on every device that runs Windows 10. |
 | VSD | [Virtual Stub Dispatch](../design/coreclr/botr/virtual-stub-dispatch.md). Technique of using stubs for virtual method invocations instead of the traditional virtual method table. |
 | VM | Virtual machine. |
 | WKS | The CLR used to be built as two variants, with one called "mscorwks.dll", to mean the "workstation" version. In particular, it contained the client GC implementation, which was intended for single-threaded apps, independent of how many processors were on the machine. In the .NET Framework 2 release, the two variants were merged into "mscorwks.dll". The WKS version was the default, however the SVR version remained available. |
@@ -173,18 +173,18 @@ produces binaries in the ReadyToRun file format.
 
 ### NGen
 
-[NGen](https://learn.microsoft.com/en-us/dotnet/framework/tools/ngen-exe-native-image-generator)
+[NGen](https://learn.microsoft.com/dotnet/framework/tools/ngen-exe-native-image-generator)
 is AOT technology included in .NET Framework. It usually compiles code at install time on the machine where
 the code will be executed.
 
 ### Full AOT
 
-[Full AOT](https://learn.microsoft.com/en-us/xamarin/ios/internals/architecture) is used
+[Full AOT](https://learn.microsoft.com/xamarin/ios/internals/architecture) is used
 by Mono runtime in environments that prohibit fallback to JIT.
 
 ### Hybrid AOT
 
-[Hybrid AOT](https://learn.microsoft.com/en-us/xamarin/mac/internals/aot#hybrid-aot) is used
+[Hybrid AOT](https://learn.microsoft.com/xamarin/mac/internals/aot#hybrid-aot) is used
 by Mono runtime in environments that allow fallback to JIT or need IL interpreter.
 
 ### Native AOT
@@ -301,8 +301,8 @@ and enabling support for running WPF on .NET Core (Windows Only).
 [xunit]: https://github.com/xunit
 [mc.dot.net]: https://mc.dot.net/
 [ECMA-355]: https://www.ecma-international.org/publications-and-standards/standards/ecma-335
-[dotnet-tooling]: https://learn.microsoft.com/en-us/dotnet/core/tools/
-[dlr-architecture]: https://learn.microsoft.com/en-us/dotnet/framework/reflection-and-codedom/dynamic-language-runtime-overview#dlr-architecture
+[dotnet-tooling]: https://learn.microsoft.com/dotnet/core/tools/
+[dlr-architecture]: https://learn.microsoft.com/dotnet/framework/reflection-and-codedom/dynamic-language-runtime-overview#dlr-architecture
 [dlr-source]: https://github.com/IronLanguages/dlr
 [WinForms]: https://github.com/dotnet/winforms
 [Wpf]: https://github.com/dotnet/wpf

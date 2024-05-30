@@ -69,7 +69,7 @@ Other Information
 
 - [.NET Glossary](project/glossary.md)
 - [.NET Filename Encyclopedia](project/dotnet-filenames.md)
-- [Porting to .NET Core](https://learn.microsoft.com/en-us/dotnet/standard/analyzers/portability-analyzer)
+- [Porting to .NET Core](https://learn.microsoft.com/dotnet/standard/analyzers/portability-analyzer)
 - [.NET Standards (Ecma)](project/dotnet-standards.md)
 - [CLR Configuration Knobs](../src/coreclr/inc/clrconfigvalues.h)
 - [CLR overview](https://learn.microsoft.com/dotnet/standard/clr)
