@@ -18,11 +18,7 @@ namespace System.Text.RegularExpressions.Symbolic
         }
 
         /// <summary>
-        /// TODO: The CLR assigns an entire field for this byte which is a waste,
-        /// and the much more preferred way to use this is in _nullabilityArray in the matcher
-        /// but the current design relies on interfaces/flags and
-        /// using the MatchingState directly so this byte is a quick solution to cheapen
-        /// it there by ~30% as well without having to breaking it all to pieces
+        /// TODO: This is only used to speed up the existing architecture, ideally should be removed along with IsNullableFor
         /// </summary>
         internal readonly int NullabilityInfo;
 
@@ -106,8 +102,7 @@ namespace System.Text.RegularExpressions.Symbolic
         }
 
         /// <summary>
-        /// TODO: This method should really never be used and
-        /// is only used to speed up the existing architecture.
+        /// TODO: This method is only used to speed up the existing architecture, ideally should be redesigned
         /// Use <see cref="SymbolicRegexMatcher{TSet}.IsNullableWithContext"/>
         /// whereever possible
         /// </summary>
@@ -166,7 +161,6 @@ namespace System.Text.RegularExpressions.Symbolic
         /// 00100 -> nullable for NewLine
         /// 01000 -> nullable for NewLineS
         /// 10000 -> nullable for WordLetter
-        /// todo: change to flags later
         /// </summary>
         /// <returns></returns>
         internal byte BuildNullabilityInfo()
