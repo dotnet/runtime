@@ -103,6 +103,7 @@ static const Entry s_QCall[] =
     DllImportEntry(QCall_FreeGCHandleForTypeHandle)
     DllImportEntry(MethodTable_AreTypesEquivalent)
     DllImportEntry(MethodTable_CanCompareBitsOrUseFastGetHashCode)
+    DllImportEntry(TypeHandle_CanCastTo)
     DllImportEntry(ValueType_GetHashCodeStrategy)
     DllImportEntry(RuntimeTypeHandle_MakePointer)
     DllImportEntry(RuntimeTypeHandle_MakeByRef)

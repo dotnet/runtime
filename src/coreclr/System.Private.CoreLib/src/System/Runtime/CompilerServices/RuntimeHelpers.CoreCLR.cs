@@ -807,10 +807,6 @@ namespace System.Runtime.CompilerServices
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         public extern CorElementType GetVerifierCorElementType();
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern bool CanCastTo_NoCacheLookup(void* fromTypeHnd, void* toTypeHnd);
-
     }
 
     // Subset of src\vm\methodtable.h
@@ -838,7 +834,7 @@ namespace System.Runtime.CompilerServices
     /// <summary>
     /// A type handle, which can wrap either a pointer to a <see cref="TypeDesc"/> or to a <see cref="MethodTable"/>.
     /// </summary>
-    internal readonly unsafe struct TypeHandle
+    internal readonly unsafe partial struct TypeHandle
     {
         // Subset of src\vm\typehandle.h
 
@@ -908,8 +904,12 @@ namespace System.Runtime.CompilerServices
             if (result != CastResult.MaybeCast)
                 return result == CastResult.CanCast;
 
-            return MethodTable.CanCastTo_NoCacheLookup(m_asTAddr, destTH.m_asTAddr);
+            return CanCastTo_NoCacheLookup(m_asTAddr, destTH.m_asTAddr);
         }
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "TypeHandle_CanCastTo")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static partial bool CanCastTo_NoCacheLookup(void* fromTypeHnd, void* toTypeHnd);
 
         public bool IsValueType
         {

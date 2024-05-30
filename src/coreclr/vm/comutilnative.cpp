@@ -1794,13 +1794,6 @@ FCIMPL1(CorElementType, MethodTableNative::GetVerifierCorElementType, MethodTabl
 }
 FCIMPLEND
 
-FCIMPL2(FC_BOOL_RET, MethodTableNative::CanCastTo, void* fromType, void* toType)
-{
-    FCALL_CONTRACT;
-    FC_RETURN_BOOL(TypeHandle::FromPtr(fromType).CanCastTo(TypeHandle::FromPtr(toType)));
-}
-FCIMPLEND
-
 extern "C" BOOL QCALLTYPE MethodTable_AreTypesEquivalent(MethodTable* mta, MethodTable* mtb)
 {
     QCALL_CONTRACT;
@@ -1814,6 +1807,21 @@ extern "C" BOOL QCALLTYPE MethodTable_AreTypesEquivalent(MethodTable* mta, Metho
     END_QCALL;
 
     return bResult;
+}
+
+extern "C" BOOL QCALLTYPE TypeHandle_CanCastTo(void* fromTypeHnd, void* toTypeHnd)
+{
+    QCALL_CONTRACT;
+
+    BOOL ret = false;
+
+    BEGIN_QCALL;
+
+    ret = TypeHandle::FromPtr(fromTypeHnd).CanCastTo(TypeHandle::FromPtr(toTypeHnd));
+
+    END_QCALL;
+
+    return ret;
 }
 
 static MethodTable * g_pStreamMT;

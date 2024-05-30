@@ -449,7 +449,6 @@ FCFuncEnd()
 FCFuncStart(gMethodTableFuncs)
     FCFuncElement("GetNumInstanceFieldBytes", MethodTableNative::GetNumInstanceFieldBytes)
     FCFuncElement("GetVerifierCorElementType", MethodTableNative::GetVerifierCorElementType)
-    FCFuncElement("CanCastTo_NoCacheLookup", MethodTableNative::CanCastTo)
 FCFuncEnd()
 
 FCFuncStart(gStubHelperFuncs)
