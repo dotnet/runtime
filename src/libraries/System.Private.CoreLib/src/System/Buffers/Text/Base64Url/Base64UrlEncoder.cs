@@ -68,13 +68,8 @@ namespace System.Buffers.Text
                 return bytesWritten;
             }
 
-            if (status == OperationStatus.DestinationTooSmall)
-            {
-                throw new ArgumentException(SR.Argument_DestinationTooShort, nameof(destination));
-            }
-
-            Debug.Fail("Unreachable code");
-            return 0;
+            Debug.Assert(status == OperationStatus.DestinationTooSmall);
+            throw new ArgumentException(SR.Argument_DestinationTooShort, nameof(destination));
         }
 
         /// <summary>
@@ -131,13 +126,8 @@ namespace System.Buffers.Text
                 return charsWritten;
             }
 
-            if (status == OperationStatus.DestinationTooSmall)
-            {
-                throw new ArgumentException(SR.Argument_DestinationTooShort, nameof(destination));
-            }
-
-            Debug.Fail("Unreachable code");
-            return 0;
+            Debug.Assert(status == OperationStatus.DestinationTooSmall);
+            throw new ArgumentException(SR.Argument_DestinationTooShort, nameof(destination));
         }
 
         /// <summary>

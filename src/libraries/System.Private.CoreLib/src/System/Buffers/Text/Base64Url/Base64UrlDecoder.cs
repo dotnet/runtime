@@ -775,19 +775,16 @@ namespace System.Buffers.Text
                 var (s11, s12, s21, s22) = AdvSimd.Arm64.LoadVector128x4AndUnzip(src);
                 var (s31, s32, s41, s42) = AdvSimd.Arm64.LoadVector128x4AndUnzip(src + 32);
 
-                if (VectorContainsNonAsciiChar(s11) || VectorContainsNonAsciiChar(s12) ||
-                    VectorContainsNonAsciiChar(s21) || VectorContainsNonAsciiChar(s22) ||
-                    VectorContainsNonAsciiChar(s31) || VectorContainsNonAsciiChar(s32) ||
-                    VectorContainsNonAsciiChar(s41) || VectorContainsNonAsciiChar(s42))
+                if (VectorContainsNonAsciiChar(s11 | s12 | s21 | s22 | s31 | s32 | s41 | s42))
                 {
                     str1 = str2 = str3 = str4 = default;
                     return false;
                 }
 
-                str1 = Vector128.Narrow(s11, s31);
-                str2 = Vector128.Narrow(s12, s32);
-                str3 = Vector128.Narrow(s21, s41);
-                str4 = Vector128.Narrow(s22, s42);
+                str1 = Ascii.ExtractAsciiVector(s11, s31);
+                str2 = Ascii.ExtractAsciiVector(s12, s32);
+                str3 = Ascii.ExtractAsciiVector(s21, s41);
+                str4 = Ascii.ExtractAsciiVector(s22, s42);
 
                 return true;
             }
