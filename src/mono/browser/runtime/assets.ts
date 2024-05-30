@@ -108,13 +108,11 @@ export async function instantiate_symbols_asset (pendingAsset: AssetEntryInterna
 
 export async function instantiate_segmentation_rules_asset (pendingAsset: AssetEntryInternal): Promise<void> {
     try {
-        mono_log_info("Loading static json asset" + runtimeHelpers.monoThreadInfo.threadName);
         const response = await pendingAsset.pendingDownloadInternal!.response;
         const json = await response.json();
         globalizationHelpers.setSegmentationRulesFromJson(json);
-        mono_log_info("Loaded static json asset" + runtimeHelpers.monoThreadInfo.threadName);
     } catch (error: any) {
-        mono_log_info(`Error loading static json asset ${pendingAsset.name}: ${JSON.stringify(error)}`);
+        mono_log_info(`Error loading static json asset ${pendingAsset.name}: ${error}`);
     }
 }
 

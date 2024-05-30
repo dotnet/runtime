@@ -250,6 +250,9 @@ export type RuntimeHelpers = {
     localHeapViewU16: () => Uint16Array,
     setU16_local: (heap: Uint16Array, ptr: number, value: number) => void,
     setI32: (offset: MemOffset, value: number) => void,
+
+    // tmp:
+    mono_log_info: (message: string) => void,
 }
 export type GlobalizationHelpers = {
 
@@ -264,6 +267,9 @@ export type GlobalizationHelpers = {
     mono_wasm_get_first_day_of_week: (culture: number, cultureLength: number, resultPtr: Int32Ptr) => VoidPtr;
     mono_wasm_get_first_week_of_year: (culture: number, cultureLength: number, resultPtr: Int32Ptr) => VoidPtr;
     setSegmentationRulesFromJson: (rawRules: any) => void;
+
+    // tmp:
+    getSegmentationRules: () => Record<string, any>;
 }
 
 export type AOTProfilerOptions = {
