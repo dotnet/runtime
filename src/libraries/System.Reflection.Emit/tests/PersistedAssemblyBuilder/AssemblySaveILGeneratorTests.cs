@@ -2547,6 +2547,15 @@ internal class Dummy
                 il.Emit(OpCodes.Ldnull);
                 il.Emit(OpCodes.Cgt_Un);
                 il.Emit(OpCodes.Ret);
+
+                mb = typeBuilder.DefineMethod("MultiDimensionalArray", MethodAttributes.Static | MethodAttributes.Public, typeof(bool), [typeof(object)]);
+                il = mb.GetILGenerator();
+                il.Emit(OpCodes.Ldarg_0);
+                il.Emit(OpCodes.Isinst, typeBuilder.MakeArrayType(3));
+                il.Emit(OpCodes.Ldnull);
+                il.Emit(OpCodes.Cgt_Un);
+                il.Emit(OpCodes.Ret);
+
                 typeBuilder.CreateType();
                 ab.Save(file.Path);
 
@@ -2555,6 +2564,11 @@ internal class Dummy
                 MethodInfo method = typeFromDisk.GetMethod("Break")!;
                 Assert.False((bool)method.Invoke(null, [typeFromDisk]));
                 object arrInst = Array.CreateInstance(typeFromDisk, 2)!;
+                Assert.True((bool)method.Invoke(null, [arrInst]));
+
+                method = typeFromDisk.GetMethod("MultiDimensionalArray")!;
+                Assert.False((bool)method.Invoke(null, [arrInst]));
+                arrInst = Array.CreateInstance(typeFromDisk, 3, 2, 1)!;
                 Assert.True((bool)method.Invoke(null, [arrInst]));
                 tlc.Unload();
             }

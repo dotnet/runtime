@@ -1095,8 +1095,21 @@ namespace System.Reflection.Emit
             return GetMemberReferenceHandle(member);
         }
 
-        private static bool IsConstructedFromTypeBuilder(Type type) => type.IsConstructedGenericType &&
-            (type.GetGenericTypeDefinition() is TypeBuilderImpl || ContainsTypeBuilder(type.GetGenericArguments()));
+        private static bool IsConstructedFromTypeBuilder(Type type)
+        {
+            if (type.IsConstructedGenericType)
+            {
+                return type.GetGenericTypeDefinition() is TypeBuilderImpl || ContainsTypeBuilder(type.GetGenericArguments());
+            }
+
+            Type? elementType = type.GetElementType();
+            if (elementType is not null)
+            {
+                return (elementType is TypeBuilderImpl) || IsConstructedFromTypeBuilder(elementType);
+            }
+
+            return false;
+        }
 
         internal static bool ContainsTypeBuilder(Type[] genericArguments)
         {
@@ -1107,8 +1120,7 @@ namespace System.Reflection.Emit
                     return true;
                 }
 
-                if (IsConstructedFromTypeBuilder(type) ||
-                    HasElementTypeOfTypeBuilderOrConstructedFromTypeBuilder(type))
+                if (IsConstructedFromTypeBuilder(type))
                 {
                     return true;
                 }
@@ -1129,17 +1141,13 @@ namespace System.Reflection.Emit
                 return eb._typeBuilder._handle;
             }
 
-            if (IsConstructedFromTypeBuilder(type) ||
-                HasElementTypeOfTypeBuilderOrConstructedFromTypeBuilder(type))
+            if (IsConstructedFromTypeBuilder(type))
             {
                 return default;
             }
 
             return GetTypeReferenceOrSpecificationHandle(type);
         }
-
-        private static bool HasElementTypeOfTypeBuilderOrConstructedFromTypeBuilder(Type type) => type.HasElementType &&
-            (type.GetElementType() is TypeBuilderImpl || IsConstructedFromTypeBuilder(type.GetElementType()!));
 
         public override int GetMethodMetadataToken(ConstructorInfo constructor) => GetTokenForHandle(TryGetConstructorHandle(constructor));
 
