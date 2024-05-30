@@ -15222,7 +15222,7 @@ void emitter::emitDispInsSveHelp(instrDesc* id)
 
         // <Xd>, <Pg>, <Pn>.<T>
         case IF_SVE_DK_3A:                         // ........xx...... ..gggg.NNNNddddd -- SVE predicate count
-            emitDispReg(id->idReg1(), size, true); // ddddd
+            emitDispReg(id->idReg1(), EA_8BYTE, true);                                              // ddddd
             emitDispPredicateReg(id->idReg2(), insGetPredicateType(fmt, 2), id->idInsOpt(), true);  // gggg
             emitDispPredicateReg(id->idReg3(), insGetPredicateType(fmt, 3), id->idInsOpt(), false); // NNNN
             break;
@@ -15243,7 +15243,7 @@ void emitter::emitDispInsSveHelp(instrDesc* id)
 
         // <Xd>, <PNn>.<T>, <vl>
         case IF_SVE_DL_2A: // ........xx...... .....l.NNNNddddd -- SVE predicate count (predicate-as-counter)
-            emitDispReg(id->idReg1(), id->idOpSize(), true);                                    // ddddd
+            emitDispReg(id->idReg1(), EA_8BYTE, true);                                          // ddddd
             emitDispPredicateReg(id->idReg2(), insGetPredicateType(fmt), id->idInsOpt(), true); // NNNN
             emitDispVectorLengthSpecifier(id);
             break;
