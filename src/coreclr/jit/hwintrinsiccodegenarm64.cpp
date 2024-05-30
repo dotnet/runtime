@@ -496,7 +496,37 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                         }
                     }
 
-                    GetEmitter()->emitIns_R_R_R(insEmbMask, emitSize, targetReg, maskReg, embMaskOp1Reg, opt);
+                    if (intrinEmbMask.codeGenIsTableDriven())
+                    {
+                        GetEmitter()->emitIns_R_R_R(insEmbMask, emitSize, targetReg, maskReg, embMaskOp1Reg, opt);
+                    }
+                    else
+                    {
+                        switch (intrinEmbMask.id)
+                        {
+                            case NI_Sve_LoadVectorByteNonFaultingZeroExtendToInt16:
+                            case NI_Sve_LoadVectorByteNonFaultingZeroExtendToInt32:
+                            case NI_Sve_LoadVectorByteNonFaultingZeroExtendToInt64:
+                            case NI_Sve_LoadVectorByteNonFaultingZeroExtendToUInt16:
+                            case NI_Sve_LoadVectorByteNonFaultingZeroExtendToUInt32:
+                            case NI_Sve_LoadVectorByteNonFaultingZeroExtendToUInt64:
+                            case NI_Sve_LoadVectorUInt16NonFaultingZeroExtendToInt32:
+                            case NI_Sve_LoadVectorUInt16NonFaultingZeroExtendToInt64:
+                            case NI_Sve_LoadVectorUInt16NonFaultingZeroExtendToUInt32:
+                            case NI_Sve_LoadVectorUInt16NonFaultingZeroExtendToUInt64:
+                            case NI_Sve_LoadVectorUInt32NonFaultingZeroExtendToInt64:
+                            case NI_Sve_LoadVectorUInt32NonFaultingZeroExtendToUInt64:
+                            {
+                                GetEmitter()->emitIns_R_R_R_I(insEmbMask, emitSize, targetReg, maskReg, embMaskOp1Reg,
+                                                              0, opt);
+                                break;
+                            }
+
+                            default:
+                                unreached();
+                                break;
+                        }
+                    }
                     break;
                 }
 
@@ -1359,23 +1389,6 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 }
             }
             break;
-
-            case NI_Sve_LoadVectorByteNonFaultingZeroExtendToInt16:
-            case NI_Sve_LoadVectorByteNonFaultingZeroExtendToInt32:  
-            case NI_Sve_LoadVectorByteNonFaultingZeroExtendToInt64:  
-            case NI_Sve_LoadVectorByteNonFaultingZeroExtendToUInt16: 
-            case NI_Sve_LoadVectorByteNonFaultingZeroExtendToUInt32: 
-            case NI_Sve_LoadVectorByteNonFaultingZeroExtendToUInt64: 
-            case NI_Sve_LoadVectorUInt16NonFaultingZeroExtendToInt32:
-            case NI_Sve_LoadVectorUInt16NonFaultingZeroExtendToInt64:
-            case NI_Sve_LoadVectorUInt16NonFaultingZeroExtendToUInt32:
-            case NI_Sve_LoadVectorUInt16NonFaultingZeroExtendToUInt64:
-            case NI_Sve_LoadVectorUInt32NonFaultingZeroExtendToInt64:
-            case NI_Sve_LoadVectorUInt32NonFaultingZeroExtendToUInt64:
-            {
-                GetEmitter()->emitIns_R_R_R_I(ins, emitSize, targetReg, op1Reg, op2Reg, 0, opt);
-                break;
-            }
 
             case NI_Sve_Load2xVectorAndUnzip:
             case NI_Sve_Load3xVectorAndUnzip:
