@@ -1326,9 +1326,9 @@ public unsafe partial class Program
                 expectedOffsetValue: 8
             );
         }
-        else if (RuntimeInformation.ProcessArchitecture == Architecture.Arm64)
+        else if (RuntimeInformation.ProcessArchitecture == Architecture.Arm64 || RuntimeInformation.ProcessArchitecture == Architecture.RiscV64)
         {
-            // The Procedure Call Standard for ARM64 defines this type as having 16-byte alignment
+            // The Procedure Call Standard for ARM64 and RiscV64 defines this type as having 16-byte alignment
 
             succeeded &= Test<DefaultLayoutDefaultPacking<Vector256<byte>>>(
                 expectedSize: 48,
