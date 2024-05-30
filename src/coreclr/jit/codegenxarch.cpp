@@ -9067,8 +9067,27 @@ void CodeGen::genAmd64EmitterUnitTestsApx()
 
     theEmitter->emitComp->JitStressRex2Encoding(true);
 
-    theEmitter->emitIns_R_R(INS_sub, EA_4BYTE, REG_EAX, REG_EBX);
+    theEmitter->emitIns_R_R(INS_add, EA_4BYTE, REG_EAX, REG_ECX);
+    theEmitter->emitIns_R_R(INS_or,  EA_4BYTE, REG_EAX, REG_ECX);
+    theEmitter->emitIns_R_R(INS_adc, EA_4BYTE, REG_EAX, REG_ECX);
+    theEmitter->emitIns_R_R(INS_sbb, EA_4BYTE, REG_EAX, REG_ECX);
+    theEmitter->emitIns_R_R(INS_and, EA_4BYTE, REG_EAX, REG_ECX);
     theEmitter->emitIns_R_R(INS_sub, EA_4BYTE, REG_EAX, REG_ECX);
+    theEmitter->emitIns_R_R(INS_xor, EA_4BYTE, REG_EAX, REG_ECX);
+    theEmitter->emitIns_R_R(INS_cmp, EA_4BYTE, REG_EAX, REG_ECX);
+    theEmitter->emitIns_R_R(INS_test, EA_4BYTE, REG_EAX, REG_ECX);
+    theEmitter->emitIns_R_R(INS_bsf, EA_4BYTE, REG_EAX, REG_ECX);
+    theEmitter->emitIns_R_R(INS_bsr, EA_4BYTE, REG_EAX, REG_ECX);
+
+    theEmitter->emitIns_R_R(INS_cmovo, EA_4BYTE, REG_EAX, REG_ECX);
+
+    theEmitter->emitIns_Mov(INS_mov, EA_4BYTE, REG_EAX, REG_ECX, false);
+    theEmitter->emitIns_Mov(INS_movsx, EA_2BYTE, REG_EAX, REG_ECX, false);
+    theEmitter->emitIns_Mov(INS_movzx, EA_2BYTE, REG_EAX, REG_ECX, false);
+    
+    theEmitter->emitIns_R_R(INS_popcnt, EA_4BYTE, REG_EAX, REG_ECX);
+    theEmitter->emitIns_R_R(INS_lzcnt, EA_4BYTE, REG_EAX, REG_ECX);
+    theEmitter->emitIns_R_R(INS_tzcnt, EA_4BYTE, REG_EAX, REG_ECX);
 }
 
 #endif // defined(DEBUG) && defined(TARGET_AMD64)

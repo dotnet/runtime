@@ -6213,7 +6213,7 @@ void emitter::emitIns_R_I(instruction ins,
     // Do we need a REX prefix for AMD64? We need one if we are using any extended register (REX.R), or if we have a
     // 64-bit sized operand (REX.W). Note that IMUL in our encoding is special, with a "built-in", implicit, target
     // register. So we also need to check if that built-in register is an extended register.
-    if (IsExtendedReg(reg, attr) || TakesRexWPrefix(id) || instrIsExtendedReg3opImul(ins) || TakesRex2Prefix(id))
+    if (IsExtendedReg(reg, attr) || TakesRexWPrefix(id) || instrIsExtendedReg3opImul(ins))
     {
         sz += emitGetRexPrefixSize(ins);
     }
@@ -13364,11 +13364,6 @@ BYTE* emitter::emitOutputAM(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
         }
     }
 
-    if(TakesRex2Prefix(id))
-    {
-        code = AddRex2Prefix(ins, code);
-    }
-
     // Emit the REX prefix if required
     if (TakesRexWPrefix(id))
     {
@@ -14230,11 +14225,6 @@ BYTE* emitter::emitOutputSV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
     // There are some callers who already add prefix and call this routine.
     // Therefore, add VEX or EVEX prefix if one is not already present.
     code = AddSimdPrefixIfNeededAndNotPresent(id, code, size);
-
-    if(TakesRex2Prefix(id))
-    {
-        code = AddRex2Prefix(ins, code);
-    }
 
     // Compute the REX prefix
     if (TakesRexWPrefix(id))
@@ -15446,6 +15436,10 @@ BYTE* emitter::emitOutputRR(BYTE* dst, instrDesc* id)
     {
         assert(hasCodeRM(ins) && !hasCodeMI(ins) && !hasCodeMR(ins));
         code = insCodeRM(ins);
+        if(TakesRex2Prefix(id))
+        {
+            code = AddRex2Prefix(ins, code);
+        }
         code = AddSimdPrefixIfNeeded(id, code, size);
         code = insEncodeRMreg(id, code) | (int)(size == EA_2BYTE);
 #ifdef TARGET_AMD64
@@ -16000,11 +15994,6 @@ BYTE* emitter::emitOutputRI(BYTE* dst, instrDesc* id)
         // This is INS_mov and will not take VEX prefix
         assert(!TakesVexPrefix(ins));
 
-        if(TakesRex2Prefix(id))
-        {
-            code = AddRex2Prefix(ins, code);
-        }
-
         if (TakesRexWPrefix(id))
         {
             code = AddRexWPrefix(id, code);
@@ -16109,12 +16098,6 @@ BYTE* emitter::emitOutputRI(BYTE* dst, instrDesc* id)
         if (valInByte && useSigned && insNeedsRRIb(ins))
         {
             code = insEncodeRRIb(id, reg, size);
-        }
-        else if (TakesRex2Prefix(id))
-        {
-            code = insCodeMI(ins);
-            code = AddRex2Prefix(ins, code);
-            code = insEncodeMIreg(id, reg, size, code);
         }
         else
         {
