@@ -1183,6 +1183,8 @@ namespace
         uint32_t callConvMethod;
         IfFailThrow(CorSigUncompressCallingConv(pSig1, cSig1, &callConvDecl));
         IfFailThrow(CorSigUncompressCallingConv(pSig2, cSig2, &callConvMethod));
+        pSig1++;
+        pSig2++;
 
         // Validate calling convention
         if ((callConvDecl & IMAGE_CEE_CS_CALLCONV_MASK) != (callConvMethod & IMAGE_CEE_CS_CALLCONV_MASK))
@@ -1435,6 +1437,8 @@ namespace
         IfFailThrow(CorSigUncompressCallingConv(pSig1, cSig1, &callConvDecl));
         IfFailThrow(CorSigUncompressCallingConv(pSig2, cSig2, &callConvField));
         _ASSERTE(callConvField == IMAGE_CEE_CS_CALLCONV_FIELD);
+        pSig1++;
+        pSig2++;
 
         // Consume parts of the method signature until we get to the return type.
         DWORD declGenericCount = 0;
@@ -1445,9 +1449,9 @@ namespace
         IfFailThrow(CorSigUncompressData_EndPtr(pSig1, pEndSig1, &declArgCount));
 
         // UnsafeAccessors for fields require return types be byref.
-        // This was explictly checked in TryGenerateUnsafeAccessor().
+        // This was explicitly checked in TryGenerateUnsafeAccessor().
         if (pSig1 >= pEndSig1)
-            return META_E_BAD_SIGNATURE;
+            ThrowHR(META_E_BAD_SIGNATURE);
         CorElementType byRefType = CorSigUncompressElementType(pSig1);
         _ASSERTE(byRefType == ELEMENT_TYPE_BYREF);
 
