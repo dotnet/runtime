@@ -40,6 +40,16 @@ namespace System
             return pUnk == IntPtr.Zero ? null : Marshal.GetObjectForIUnknown(pUnk);
         }
 
+        private static unsafe object? ConvertWrappedObject(object? wrapped) => wrapped switch
+        {
+            null or Empty => null,
+            Enum => wrapped.GetType(),
+            IntPtr or UIntPtr => wrapped,
+            ValueType v when RuntimeHelpers.GetMethodTable(v)->IsPrimitive => null,
+            DateTime or TimeSpan or Currency => null,
+            _ => wrapped,
+        };
+
         // Helper code for marshaling managed objects to VARIANT's
         internal static void MarshalHelperConvertObjectToVariant(object? o, out ComVariant pOle)
         {
@@ -85,13 +95,19 @@ namespace System
                 // Array handled by native side
 
                 case UnknownWrapper wrapper:
-                    pOle = ComVariant.CreateRaw(VarEnum.VT_UNKNOWN,
-                        wrapper.WrappedObject is null ? IntPtr.Zero : Marshal.GetIUnknownForObject(wrapper.WrappedObject));
-                    break;
+                    {
+                        object? wrapped = ConvertWrappedObject(wrapper.WrappedObject);
+                        pOle = ComVariant.CreateRaw(VarEnum.VT_UNKNOWN,
+                            wrapped is null ? IntPtr.Zero : Marshal.GetIUnknownForObject(wrapped));
+                        break;
+                    }
                 case DispatchWrapper wrapper:
-                    pOle = ComVariant.CreateRaw(VarEnum.VT_DISPATCH,
-                        wrapper.WrappedObject is null ? IntPtr.Zero : Marshal.GetIDispatchForObject(wrapper.WrappedObject));
-                    break;
+                    {
+                        object? wrapped = ConvertWrappedObject(wrapper.WrappedObject);
+                        pOle = ComVariant.CreateRaw(VarEnum.VT_DISPATCH,
+                            wrapped is null ? IntPtr.Zero : Marshal.GetIDispatchForObject(wrapped));
+                        break;
+                    }
 
                 case ErrorWrapper wrapper:
                     pOle = ComVariant.Create(wrapper);
