@@ -419,6 +419,7 @@ public:
 
     void operator|=(const regNumber reg);
     void operator^=(const regNumber reg);
+    SingleTypeRegSet operator[](int index) const;
 };
 
 static regMaskTP operator^(const regMaskTP& first, const regMaskTP& second)

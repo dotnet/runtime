@@ -263,3 +263,14 @@ void regMaskTP::operator^=(const regNumber reg)
     low ^= value;
 #endif
 }
+
+SingleTypeRegSet regMaskTP::operator[](int index) const
+{
+#ifdef HAS_MORE_THAN_64_REGISTERS
+    assert(index <= 2);
+    RegSet32 value = _registers[index];
+    return decodeForRegisterIndex(index, value);
+#else
+    return low;
+#endif
+}
