@@ -121,6 +121,16 @@ namespace System.Runtime.CompilerServices
         }
 
         /// <summary>
+        /// Reads a value of type <typeparamref name="T"/> from the given location.
+        /// </summary>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static T ReadUnaligned<T>(ref readonly byte source)
+        {
+            throw new PlatformNotSupportedException();
+        }
+
+        /// <summary>
         /// Copies bytes from the source address to the destination address.
         /// </summary>
         [Intrinsic]

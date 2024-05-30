@@ -484,11 +484,11 @@ namespace System
                         tokenLen = ParseRepeatPattern(format, i, ch);
                         if (tokenLen <= MaxSecondsFractionDigits)
                         {
-                            long fraction = (dateTime.Ticks % Calendar.TicksPerSecond);
-                            fraction /= (long)Math.Pow(10, 7 - tokenLen);
+                            int fraction = (int)(dateTime.Ticks % Calendar.TicksPerSecond);
+                            fraction /= TimeSpanParse.Pow10UpToMaxFractionDigits(MaxSecondsFractionDigits - tokenLen);
                             if (ch == 'f')
                             {
-                                FormatFraction(ref result, (int)fraction, fixedNumberFormats[tokenLen - 1]);
+                                FormatFraction(ref result, fraction, fixedNumberFormats[tokenLen - 1]);
                             }
                             else
                             {
@@ -507,7 +507,7 @@ namespace System
                                 }
                                 if (effectiveDigits > 0)
                                 {
-                                    FormatFraction(ref result, (int)fraction, fixedNumberFormats[effectiveDigits - 1]);
+                                    FormatFraction(ref result, fraction, fixedNumberFormats[effectiveDigits - 1]);
                                 }
                                 else
                                 {

@@ -21,6 +21,18 @@
 
 SVAL_IMPL(INT32, ArrayBase, s_arrayBoundsZero);
 
+static DWORD GetGlobalNewHashCode()
+{
+    LIMITED_METHOD_CONTRACT;
+    // Used for generating hash codes for exceptions to determine whether the
+    // Catch_Handler_Found_Event should be reported. See Thread::GetNewHashCode.
+    // Using linear congruential generator from Knuth Vol. 2, p. 102, line 24
+    static DWORD dwHashCodeSeed = 123456789U * 1566083941U + 1;
+    const DWORD multiplier = 1*4 + 5; //same as the GetNewHashCode method
+    dwHashCodeSeed = dwHashCodeSeed*multiplier + 1;
+    return dwHashCodeSeed;
+}
+
 // follow the necessary rules to get a new valid hashcode for an object
 DWORD Object::ComputeHashCode()
 {
@@ -29,10 +41,18 @@ DWORD Object::ComputeHashCode()
     // note that this algorithm now uses at most HASHCODE_BITS so that it will
     // fit into the objheader if the hashcode has to be moved back into the objheader
     // such as for an object that is being frozen
+    Thread *pThread = GetThreadNULLOk();
     do
     {
-        // we use the high order bits in this case because they're more random
-        hashCode = GetThread()->GetNewHashCode() >> (32-HASHCODE_BITS);
+        if (pThread == NULL)
+        {
+            hashCode = (GetGlobalNewHashCode() >> (32-HASHCODE_BITS));
+        }
+        else
+        {
+            // we use the high order bits in this case because they're more random
+            hashCode = pThread->GetNewHashCode() >> (32-HASHCODE_BITS);
+        }
     }
     while (hashCode == 0);   // need to enforce hashCode != 0
 
@@ -40,6 +60,18 @@ DWORD Object::ComputeHashCode()
      _ASSERTE((hashCode & ((1<<HASHCODE_BITS)-1)) == hashCode);
 
     return hashCode;
+}
+
+DWORD Object::GetGlobalNewHashCode()
+{
+    LIMITED_METHOD_CONTRACT;
+    // Used for generating hash codes for exceptions to determine whether the
+    // Catch_Handler_Found_Event should be reported. See Thread::GetNewHashCode.
+    // Using linear congruential generator from Knuth Vol. 2, p. 102, line 24
+    static DWORD dwHashCodeSeed = 123456789U * 1566083941U + 1;
+    const DWORD multiplier = 1*4 + 5; //same as the GetNewHashCode method
+    dwHashCodeSeed = dwHashCodeSeed*multiplier + 1;
+    return dwHashCodeSeed;
 }
 
 #ifndef DACCESS_COMPILE

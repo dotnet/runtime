@@ -83,6 +83,12 @@ namespace ILLink.RoslynAnalyzer.Tests
 		}
 
 		[Fact]
+		public Task RequiresOnEvents ()
+		{
+			return RunTest ();
+		}
+
+		[Fact]
 		public Task RequiresOnStaticConstructor ()
 		{
 			return RunTest (nameof (RequiresOnStaticConstructor));

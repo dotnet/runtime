@@ -344,6 +344,9 @@ bool isMoreSpecificType(
 bool isExactType(
           CORINFO_CLASS_HANDLE cls) override;
 
+TypeCompareState isNullableType(
+          CORINFO_CLASS_HANDLE cls) override;
+
 TypeCompareState isEnum(
           CORINFO_CLASS_HANDLE cls,
           CORINFO_CLASS_HANDLE* underlyingType) override;
@@ -708,7 +711,8 @@ JITINTERFACE_HRESULT getPgoInstrumentationResults(
           ICorJitInfo::PgoInstrumentationSchema** pSchema,
           uint32_t* pCountSchemaItems,
           uint8_t** pInstrumentationData,
-          ICorJitInfo::PgoSource* pgoSource) override;
+          ICorJitInfo::PgoSource* pPgoSource,
+          bool* pDynamicPgo) override;
 
 JITINTERFACE_HRESULT allocPgoInstrumentationBySchema(
           CORINFO_METHOD_HANDLE ftnHnd,

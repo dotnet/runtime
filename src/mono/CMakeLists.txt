@@ -272,12 +272,14 @@ elseif(CLR_CMAKE_HOST_OS STREQUAL "windows")
   set(MONO_ZERO_LEN_ARRAY 1)
   set(INTERNAL_ZLIB 1)
   set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>") # statically link VC runtime library
-  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/W4>)     # set warning level 4
-  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/WX>)     # treat warnings as errors
-  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4324>) # 'struct_name' : structure was padded due to __declspec(align())
-  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/EHsc>)   # set exception handling behavior
-  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/FC>)     # use full pathnames in diagnostics
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/W4>)      # set warning level 4
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/WX>)      # treat warnings as errors
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4324>)  # 'struct_name' : structure was padded due to __declspec(align())
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/EHsc>)    # set exception handling behavior
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/FC>)      # use full pathnames in diagnostics
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/guard:cf>) # Enable control flow guard
   add_link_options(/STACK:0x800000)  # set stack size to 8MB (default is 1MB)
+  add_link_options(/guard:cf)
   if(CMAKE_BUILD_TYPE STREQUAL "Release")
     add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/Oi>) # enable intrinsics
     add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/GF>) # enable string pooling
@@ -330,13 +332,6 @@ elseif(TARGET_SYSTEM_NAME STREQUAL "ios" OR TARGET_SYSTEM_NAME STREQUAL "tvos")
   elseif(TARGET_SYSTEM_NAME STREQUAL "tvos")
     set(TARGET_TVOS 1)
   endif()
-elseif(TARGET_SYSTEM_NAME STREQUAL "linux")
-  set(TARGET_UNIX 1)
-  set(TARGET_LINUX 1)
-elseif(TARGET_SYSTEM_NAME STREQUAL "alpine")
-  set(TARGET_UNIX 1)
-  set(TARGET_LINUX 1)
-  set(TARGET_LINUX_MUSL 1)
 elseif(TARGET_SYSTEM_NAME STREQUAL "android")
   set(TARGET_UNIX 1)
   set(TARGET_LINUX_BIONIC 1)
@@ -344,6 +339,13 @@ elseif(TARGET_SYSTEM_NAME STREQUAL "android")
   if (CMAKE_BUILD_TYPE STREQUAL "Release")
     add_compile_options(-O2)
   endif()
+elseif(CLR_CMAKE_TARGET_LINUX_MUSL)
+  set(TARGET_UNIX 1)
+  set(TARGET_LINUX 1)
+  set(TARGET_LINUX_MUSL 1)
+elseif(TARGET_SYSTEM_NAME STREQUAL "linux")
+  set(TARGET_UNIX 1)
+  set(TARGET_LINUX 1)
 elseif(TARGET_SYSTEM_NAME STREQUAL "emscripten")
   set(TARGET_BROWSER 1)
   if (CMAKE_BUILD_TYPE STREQUAL "Release")
@@ -633,9 +635,9 @@ if(LLVM_PREFIX)
   endif()
 
   if(HOST_LINUX AND NOT HOST_WASM AND NOT HOST_WASI AND ${llvm_api_version} GREATER_EQUAL 1600)
-    set(MONO_stdlib "-stdlib=libc++")
-    set(MONO_cxx_lib "-L${LLVM_PREFIX}/lib -lc++")
-    set(MONO_cxx_include "-I${LLVM_PREFIX}/include/c++/v1")
+    set(MONO_stdlib "-nostdinc++ -nostdlib++")
+    set(MONO_cxx_lib "-L${LLVM_PREFIX}/lib -lc++ -lc++abi")
+    set(MONO_cxx_include "-isystem ${LLVM_PREFIX}/include/c++/v1")
   endif()
 
   if(${llvm_api_version} GREATER_EQUAL 1600)

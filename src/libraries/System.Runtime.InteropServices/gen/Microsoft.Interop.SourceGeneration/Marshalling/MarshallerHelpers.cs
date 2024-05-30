@@ -263,6 +263,14 @@ namespace Microsoft.Interop
             }
         }
 
+        public static StatementSyntax DefaultInit(TypePositionInfo info, StubCodeContext context)
+        {
+            // Assign out params to default
+            return AssignmentStatement(
+                IdentifierName(info.InstanceIdentifier),
+                LiteralExpression(SyntaxKind.DefaultLiteralExpression, Token(SyntaxKind.DefaultKeyword)));
+        }
+
         /// <summary>
         /// Get the marshalling direction for a given <see cref="TypePositionInfo"/> in a given <see cref="StubCodeContext"/>.
         /// For example, an out parameter is marshalled in the <see cref="MarshalDirection.UnmanagedToManaged"/> direction in a <see cref="MarshalDirection.ManagedToUnmanaged"/> stub,
@@ -416,6 +424,11 @@ namespace Microsoft.Interop
                     default:
                         throw new NotImplementedException($"Support for some RefKind: {typeInfo.RefKind}");
                 }
+            }
+
+            if (typeInfo.IsExplicitThis)
+            {
+                tokens = tokens.Add(Token(SyntaxKind.ThisKeyword));
             }
 
             return tokens;

@@ -5,6 +5,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics.X86;
 using Xunit;
 
 namespace System.Runtime.Intrinsics.Tests.Vectors
@@ -4871,6 +4872,120 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         {
             Vector128<float> actualResult = Vector128.Log2(Vector128.Create(value));
             AssertEqual(Vector128.Create(expectedResult), actualResult, Vector128.Create(variance));
+        }
+
+        [Theory]
+        [MemberData(nameof(VectorTestMemberData.MultiplyAddDouble), MemberType = typeof(VectorTestMemberData))]
+        public void FusedMultiplyAddDoubleTest(double left, double right, double addend)
+        {
+            Vector128<double> actualResult = Vector128.FusedMultiplyAdd(Vector128.Create(left), Vector128.Create(right), Vector128.Create(addend));
+            AssertEqual(Vector128.Create(double.FusedMultiplyAdd(left, right, addend)), actualResult, Vector128<double>.Zero);
+        }
+
+        [Theory]
+        [MemberData(nameof(VectorTestMemberData.MultiplyAddSingle), MemberType = typeof(VectorTestMemberData))]
+        public void FusedMultiplyAddSingleTest(float left, float right, float addend)
+        {
+            Vector128<float> actualResult = Vector128.FusedMultiplyAdd(Vector128.Create(left), Vector128.Create(right), Vector128.Create(addend));
+            AssertEqual(Vector128.Create(float.FusedMultiplyAdd(left, right, addend)), actualResult, Vector128<float>.Zero);
+        }
+
+        [Theory]
+        [MemberData(nameof(VectorTestMemberData.MultiplyAddDouble), MemberType = typeof(VectorTestMemberData))]
+        public void MultiplyAddEstimateDoubleTest(double left, double right, double addend)
+        {
+            Vector128<double> actualResult = Vector128.MultiplyAddEstimate(Vector128.Create(left), Vector128.Create(right), Vector128.Create(addend));
+            AssertEqual(Vector128.Create(double.MultiplyAddEstimate(left, right, addend)), actualResult, Vector128<double>.Zero);
+        }
+
+        [Theory]
+        [MemberData(nameof(VectorTestMemberData.MultiplyAddSingle), MemberType = typeof(VectorTestMemberData))]
+        public void MultiplyAddEstimateSingleTest(float left, float right, float addend)
+        {
+            Vector128<float> actualResult = Vector128.MultiplyAddEstimate(Vector128.Create(left), Vector128.Create(right), Vector128.Create(addend));
+            AssertEqual(Vector128.Create(float.MultiplyAddEstimate(left, right, addend)), actualResult, Vector128<float>.Zero);
+        }
+
+        [Fact]
+        [SkipOnMono("https://github.com/dotnet/runtime/issues/100368")]
+        public void ConvertToInt32Test()
+        {
+            Assert.Equal(Vector128.Create(float.ConvertToInteger<int>(float.MinValue)), Vector128.ConvertToInt32(Vector128.Create(float.MinValue)));
+            Assert.Equal(Vector128.Create(float.ConvertToInteger<int>(2.6f)), Vector128.ConvertToInt32(Vector128.Create(2.6f)));
+            Assert.Equal(Vector128.Create(float.ConvertToInteger<int>(float.MaxValue)), Vector128.ConvertToInt32(Vector128.Create(float.MaxValue)));
+        }
+
+        [Fact]
+        [SkipOnMono("https://github.com/dotnet/runtime/issues/100368")]
+        public void ConvertToInt32NativeTest()
+        {
+            Assert.Equal(Vector128.Create(float.ConvertToIntegerNative<int>(float.MinValue)), Vector128.ConvertToInt32Native(Vector128.Create(float.MinValue)));
+            Assert.Equal(Vector128.Create(float.ConvertToIntegerNative<int>(2.6f)), Vector128.ConvertToInt32Native(Vector128.Create(2.6f)));
+            Assert.Equal(Vector128.Create(float.ConvertToIntegerNative<int>(float.MaxValue)), Vector128.ConvertToInt32Native(Vector128.Create(float.MaxValue)));
+        }
+
+        [Fact]
+        [SkipOnMono("https://github.com/dotnet/runtime/issues/100368")]
+        public void ConvertToInt64Test()
+        {
+            Assert.Equal(Vector128.Create(double.ConvertToInteger<long>(double.MinValue)), Vector128.ConvertToInt64(Vector128.Create(double.MinValue)));
+            Assert.Equal(Vector128.Create(double.ConvertToInteger<long>(2.6)), Vector128.ConvertToInt64(Vector128.Create(2.6)));
+            Assert.Equal(Vector128.Create(double.ConvertToInteger<long>(double.MaxValue)), Vector128.ConvertToInt64(Vector128.Create(double.MaxValue)));
+        }
+
+        [Fact]
+        [SkipOnMono("https://github.com/dotnet/runtime/issues/100368")]
+        public void ConvertToInt64NativeTest()
+        {
+            Assert.Equal(Vector128.Create(double.ConvertToIntegerNative<long>(double.MinValue)), Vector128.ConvertToInt64Native(Vector128.Create(double.MinValue)));
+            Assert.Equal(Vector128.Create(double.ConvertToIntegerNative<long>(2.6)), Vector128.ConvertToInt64Native(Vector128.Create(2.6)));
+
+            if (Environment.Is64BitProcess)
+            {
+                // This isn't accelerated on all 32-bit systems today and may fallback to ConvertToInteger behavior
+                Assert.Equal(Vector128.Create(double.ConvertToIntegerNative<long>(double.MaxValue)), Vector128.ConvertToInt64Native(Vector128.Create(double.MaxValue)));
+            }
+        }
+
+        [Fact]
+        [SkipOnMono("https://github.com/dotnet/runtime/issues/100368")]
+        public void ConvertToUInt32Test()
+        {
+            Assert.Equal(Vector128.Create(float.ConvertToInteger<uint>(float.MinValue)), Vector128.ConvertToUInt32(Vector128.Create(float.MinValue)));
+            Assert.Equal(Vector128.Create(float.ConvertToInteger<uint>(2.6f)), Vector128.ConvertToUInt32(Vector128.Create(2.6f)));
+            Assert.Equal(Vector128.Create(float.ConvertToInteger<uint>(float.MaxValue)), Vector128.ConvertToUInt32(Vector128.Create(float.MaxValue)));
+        }
+
+        [Fact]
+        [SkipOnMono("https://github.com/dotnet/runtime/issues/100368")]
+        public void ConvertToUInt32NativeTest()
+        {
+            Assert.Equal(Vector128.Create(float.ConvertToIntegerNative<uint>(float.MinValue)), Vector128.ConvertToUInt32Native(Vector128.Create(float.MinValue)));
+            Assert.Equal(Vector128.Create(float.ConvertToIntegerNative<uint>(2.6f)), Vector128.ConvertToUInt32Native(Vector128.Create(2.6f)));
+            Assert.Equal(Vector128.Create(float.ConvertToIntegerNative<uint>(float.MaxValue)), Vector128.ConvertToUInt32Native(Vector128.Create(float.MaxValue)));
+        }
+
+        [Fact]
+        [SkipOnMono("https://github.com/dotnet/runtime/issues/100368")]
+        public void ConvertToUInt64Test()
+        {
+            Assert.Equal(Vector128.Create(double.ConvertToInteger<ulong>(double.MinValue)), Vector128.ConvertToUInt64(Vector128.Create(double.MinValue)));
+            Assert.Equal(Vector128.Create(double.ConvertToInteger<ulong>(2.6)), Vector128.ConvertToUInt64(Vector128.Create(2.6)));
+            Assert.Equal(Vector128.Create(double.ConvertToInteger<ulong>(double.MaxValue)), Vector128.ConvertToUInt64(Vector128.Create(double.MaxValue)));
+        }
+
+        [Fact]
+        [SkipOnMono("https://github.com/dotnet/runtime/issues/100368")]
+        public void ConvertToUInt64NativeTest()
+        {
+            if (Environment.Is64BitProcess)
+            {
+                // This isn't accelerated on all 32-bit systems today and may fallback to ConvertToInteger behavior
+                Assert.Equal(Vector128.Create(double.ConvertToIntegerNative<ulong>(double.MinValue)), Vector128.ConvertToUInt64Native(Vector128.Create(double.MinValue)));
+            }
+
+            Assert.Equal(Vector128.Create(double.ConvertToIntegerNative<ulong>(2.6)), Vector128.ConvertToUInt64Native(Vector128.Create(2.6)));
+            Assert.Equal(Vector128.Create(double.ConvertToIntegerNative<ulong>(double.MaxValue)), Vector128.ConvertToUInt64Native(Vector128.Create(double.MaxValue)));
         }
     }
 }

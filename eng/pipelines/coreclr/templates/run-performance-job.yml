@@ -51,6 +51,8 @@ jobs:
 
     timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
 
+    logsName: 'Performance_Run_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)_${{ parameters.runtimeType }}_${{ parameters.codeGenType }}_${{ parameters.runKind }}_${{ parameters.logicalMachine }}_${{ parameters.javascriptEngine }}_${{ parameters.pgoRunType }}_${{ parameters.physicalPromotionRunType }}_${{ parameters.r2rRunType }}_${{ parameters.experimentName }}'
+
     variables:
     - ${{ each variable in parameters.variables }}:
       - ${{insert}}: ${{ variable }}
@@ -89,6 +91,9 @@ jobs:
         export ORIGPYPATH=$PYTHONPATH
         export CRYPTOGRAPHY_ALLOW_OPENSSL_102=true;
         echo "** Installing prerequistes **";
+        echo "** Waiting for dpkg to unlock (up to 2 minutes) **" &&
+        timeout 2m bash -c 'while sudo fuser /var/lib/dpkg/lock-frontend >/dev/null 2>&1; do if [ -z "$printed" ]; then echo "Waiting for dpkg lock to be released... Lock is held by: $(ps -o cmd= -p $(sudo fuser /var/lib/dpkg/lock-frontend))"; printed=1; fi; echo "Waiting 5 seconds to check again"; sleep 5; done;' &&
+        sudo apt-get remove -y lttng-modules-dkms &&
         sudo apt-get -y install python3-pip &&
         python3 -m pip install --user -U pip &&
         sudo apt-get -y install python3-venv &&
@@ -153,7 +158,6 @@ jobs:
           - HelixPreCommand: 'export MONO_ENV_OPTIONS="--interpreter";$(ExtraMSBuildLogsLinux)'
           - Interpreter: ' --monointerpreter'
 
-
     workspace:
       clean: all
     pool:
@@ -192,10 +196,3 @@ jobs:
         CorrelationPayloadDirectory: '$(PayloadDirectory)' # it gets checked out to a folder with shorter path than WorkItemDirectory so we can avoid file name too long exceptions
         ProjectFile: ${{ parameters.projectFile }}
         osGroup: ${{ parameters.osGroup }}
-    - task: PublishPipelineArtifact@1
-      displayName: Publish Logs
-      inputs:
-        targetPath: $(Build.SourcesDirectory)/artifacts/log
-        artifactName: 'Performance_Run_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)_${{ parameters.runtimeType }}_${{ parameters.codeGenType }}_${{ parameters.runKind }}_${{ parameters.logicalMachine }}_${{ parameters.javascriptEngine }}_${{ parameters.pgoRunType }}_${{ parameters.physicalPromotionRunType }}_${{ parameters.r2rRunType }}_${{ parameters.experimentName }}'
-      continueOnError: true
-      condition: always()

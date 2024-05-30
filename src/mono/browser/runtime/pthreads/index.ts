@@ -5,13 +5,14 @@ import { mono_log_warn } from "../logging";
 import { utf16ToString } from "../strings";
 
 export {
-    mono_wasm_main_thread_ptr, mono_wasm_install_js_worker_interop, mono_wasm_uninstall_js_worker_interop,
+    mono_wasm_main_thread_ptr,
     mono_wasm_pthread_ptr, update_thread_info, isMonoThreadMessage, monoThreadInfo,
 } from "./shared";
+export { mono_wasm_install_js_worker_interop, mono_wasm_uninstall_js_worker_interop } from "./worker-interop";
 export {
-    mono_wasm_dump_threads, cancelThreads, is_thread_available,
-    populateEmscriptenPool, mono_wasm_init_threads, init_finalizer_thread,
-    waitForThread, replaceEmscriptenPThreadUI
+    mono_wasm_dump_threads, postCancelThreads,
+    populateEmscriptenPool, mono_wasm_init_threads,
+    waitForThread, replaceEmscriptenPThreadUI, terminateAllThreads,
 } from "./ui-thread";
 export {
     mono_wasm_pthread_on_pthread_attached, mono_wasm_pthread_on_pthread_unregistered,

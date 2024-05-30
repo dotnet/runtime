@@ -91,11 +91,11 @@ struct EHblkDsc
 
     EHHandlerType ebdHandlerType;
 
-#if !defined(FEATURE_EH_FUNCLETS)
+#if defined(FEATURE_EH_WINDOWS_X86)
     // How nested is the try/handler within other *handlers* - 0 for outermost clauses, 1 for nesting with a handler,
     // etc.
     unsigned short ebdHandlerNestingLevel;
-#endif // !FEATURE_EH_FUNCLETS
+#endif // FEATURE_EH_WINDOWS_X86
 
     static const unsigned short NO_ENCLOSING_INDEX = USHRT_MAX;
 
@@ -110,16 +110,12 @@ struct EHblkDsc
     // The index of the enclosing outer handler region, NO_ENCLOSING_INDEX if none.
     unsigned short ebdEnclosingHndIndex;
 
-#if defined(FEATURE_EH_FUNCLETS)
-
     // After funclets are created, this is the index of corresponding FuncInfoDsc
     // Special case for Filter/Filter-handler:
     //   Like the IL the filter funclet immediately precedes the filter-handler funclet.
     //   So this index points to the filter-handler funclet. If you want the filter
     //   funclet index, just subtract 1.
     unsigned short ebdFuncIndex;
-
-#endif // FEATURE_EH_FUNCLETS
 
     IL_OFFSET ebdTryBegOffset; // IL offsets of EH try/end regions as they are imported
     IL_OFFSET ebdTryEndOffset;

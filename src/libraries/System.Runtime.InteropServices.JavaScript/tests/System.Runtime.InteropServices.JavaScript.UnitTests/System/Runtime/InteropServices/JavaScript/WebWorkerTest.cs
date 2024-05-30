@@ -591,6 +591,17 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             }, cts.Token);
         }
 
+        [Fact]
+        public async Task FinalizerWorks()
+        {
+            var ft = new FinalizerTest();
+            GC.Collect();
+            await Task.Delay(100);
+            GC.Collect();
+            await Task.Delay(100);
+            Assert.True(FinalizerTest.FinalizerHit);
+        }
+
         #endregion
 
         #region Thread Affinity

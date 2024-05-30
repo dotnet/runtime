@@ -656,7 +656,7 @@ void CordbThread::RefreshHandle(HANDLE * phThread)
                                    hThread,
                                    GetCurrentProcess(),
                                    &m_hCachedThread,
-                                   NULL,
+                                   0,
                                    FALSE,
                                    DUPLICATE_SAME_ACCESS);
         *phThread = m_hCachedThread;
@@ -5335,11 +5335,11 @@ HRESULT CordbInternalFrame::GetStackRange(CORDB_ADDRESS *pStart,
     {
         if (pStart != NULL)
         {
-            *pStart = NULL;
+            *pStart = (CORDB_ADDRESS)NULL;
         }
         if (pEnd != NULL)
         {
-            *pEnd = NULL;
+            *pEnd = (CORDB_ADDRESS)NULL;
         }
         return E_NOTIMPL;
     }
@@ -5956,11 +5956,11 @@ HRESULT CordbNativeFrame::GetStackRange(CORDB_ADDRESS *pStart,
     {
         if (pStart != NULL)
         {
-            *pStart = NULL;
+            *pStart = (CORDB_ADDRESS)NULL;
         }
         if (pEnd != NULL)
         {
-            *pEnd = NULL;
+            *pEnd = (CORDB_ADDRESS)NULL;
         }
         return E_NOTIMPL;
     }
@@ -7304,7 +7304,7 @@ SIZE_T CordbNativeFrame::GetInspectionIP()
 bool CordbNativeFrame::IsFunclet()
 {
 #ifdef FEATURE_EH_FUNCLETS
-    return (m_misc.parentIP != NULL);
+    return (m_misc.parentIP != (SIZE_T)NULL);
 #else
     return false;
 #endif // FEATURE_EH_FUNCLETS
@@ -7406,7 +7406,7 @@ CordbJITILFrame::CordbJITILFrame(CordbNativeFrame *    pNativeFrame,
     m_fVarArgFnx(fVarArgFnx),
     m_allArgsCount(0),
     m_rgbSigParserBuf(NULL),
-    m_FirstArgAddr(NULL),
+    m_FirstArgAddr((CORDB_ADDRESS)NULL),
     m_rgNVI(NULL),
     m_genericArgs(),
     m_genericArgsLoaded(false),
@@ -7533,7 +7533,7 @@ HRESULT CordbJITILFrame::Init()
         // The stackwalking code can't always successfully retrieve the generics type token.
         // For example, on 64-bit, the JIT only encodes the generics type token location if
         // a method has catch clause for a generic exception (e.g. "catch(MyException<string> e)").
-        if ((m_dwFrameParamsTokenIndex != (DWORD)ICorDebugInfo::MAX_ILNUM) && (m_frameParamsToken == NULL))
+        if ((m_dwFrameParamsTokenIndex != (DWORD)ICorDebugInfo::MAX_ILNUM) && (m_frameParamsToken == (GENERICS_TYPE_TOKEN)NULL))
         {
             // All variables are unavailable in the prolog and the epilog.
             // This includes the generics type token.  Failing to get the token just means that
@@ -9314,7 +9314,7 @@ HRESULT CordbEval::GatherArgInfo(ICorDebugValue *pValue,
             argData->fullArgType = buffer;
             argData->fullArgTypeNodeCount = fullArgTypeNodeCount;
             // Is it enregistered?
-            if ((addr == NULL) && (pVCObjVal->GetValueHome() != NULL))
+            if ((addr == (CORDB_ADDRESS)NULL) && (pVCObjVal->GetValueHome() != NULL))
             {
                 pVCObjVal->GetValueHome()->CopyToIPCEType(&(argData->argHome));
             }
@@ -9332,7 +9332,7 @@ HRESULT CordbEval::GatherArgInfo(ICorDebugValue *pValue,
         CordbGenericValue *gv = (CordbGenericValue*)pValue;
         argData->argIsLiteral = gv->CopyLiteralData(argData->argLiteralData);
         // Is it enregistered?
-        if ((addr == NULL) && (gv->GetValueHome() != NULL))
+        if ((addr == (CORDB_ADDRESS)NULL) && (gv->GetValueHome() != NULL))
         {
             gv->GetValueHome()->CopyToIPCEType(&(argData->argHome));
         }

@@ -592,7 +592,7 @@ StubDispatchFrame::StubDispatchFrame(TransitionBlock * pTransitionBlock)
     m_representativeSlot = 0;
 
     m_pZapModule = NULL;
-    m_pIndirection = NULL;
+    m_pIndirection = (TADDR)NULL;
 
     m_pGCRefMap = NULL;
 }
@@ -668,7 +668,7 @@ PTR_BYTE StubDispatchFrame::GetGCRefMap()
 
     if (pGCRefMap == NULL)
     {
-        if (m_pIndirection != NULL)
+        if (m_pIndirection != (TADDR)NULL)
         {
             if (m_pZapModule == NULL)
             {
@@ -688,7 +688,7 @@ PTR_BYTE StubDispatchFrame::GetGCRefMap()
             else
             {
                 // Clear the indirection to avoid retrying
-                m_pIndirection = NULL;
+                m_pIndirection = (TADDR)NULL;
             }
 #endif
         }
@@ -770,7 +770,7 @@ ExternalMethodFrame::ExternalMethodFrame(TransitionBlock * pTransitionBlock)
 {
     LIMITED_METHOD_CONTRACT;
 
-    m_pIndirection = NULL;
+    m_pIndirection = (TADDR)NULL;
     m_pZapModule = NULL;
 
     m_pGCRefMap = NULL;
@@ -798,7 +798,7 @@ PTR_BYTE ExternalMethodFrame::GetGCRefMap()
 
     if (pGCRefMap == NULL)
     {
-        if (m_pIndirection != NULL)
+        if (m_pIndirection != (TADDR)NULL)
         {
             pGCRefMap = FindGCRefMap(m_pZapModule, m_pIndirection);
 #ifndef DACCESS_COMPILE
@@ -1995,7 +1995,7 @@ VOID InlinedCallFrame::Init()
 
     m_Datum = NULL;
     m_pCallSiteSP = NULL;
-    m_pCallerReturnAddress = NULL;
+    m_pCallerReturnAddress = (TADDR)NULL;
 }
 
 

@@ -420,10 +420,10 @@ inline unsigned hashme(genTreeOps op1, genTreeOps op2)
 
 struct BashHashDsc
 {
-    unsigned __int32 bhFullHash; // the hash value (unique for all old->new pairs)
-    unsigned __int32 bhCount;    // the same old->new bashings seen so far
-    unsigned __int8  bhOperOld;  // original gtOper
-    unsigned __int8  bhOperNew;  // new      gtOper
+    uint32_t bhFullHash; // the hash value (unique for all old->new pairs)
+    uint32_t bhCount;    // the same old->new bashings seen so far
+    uint8_t  bhOperOld;  // original gtOper
+    uint8_t  bhOperNew;  // new      gtOper
 };
 
 static BashHashDsc BashHash[BASH_HASH_SIZE];
@@ -2223,7 +2223,7 @@ GenTree* Compiler::getArrayLengthFromAllocation(GenTree* tree DEBUGARG(BasicBloc
     {
         GenTreeCall* call = tree->AsCall();
 
-        if (call->gtCallType == CT_HELPER)
+        if (call->IsHelperCall())
         {
             CorInfoHelpFunc helper = eeGetHelperNum(call->gtCallMethHnd);
             switch (helper)
@@ -2380,7 +2380,7 @@ bool GenTreeCall::HasSideEffects(Compiler* compiler, bool ignoreExceptions, bool
 {
     // Generally all GT_CALL nodes are considered to have side-effects, but we may have extra information about helper
     // calls that can prove them side-effect-free.
-    if (gtCallType != CT_HELPER)
+    if (!IsHelperCall())
     {
         // If needed, we can annotate other special intrinsic methods as side effect free as well.
         if (IsSpecialIntrinsic(compiler, NI_System_Type_GetTypeFromHandle))
@@ -2829,6 +2829,24 @@ AGAIN:
                 }
                 break;
 
+            case GT_CNS_LNG:
+            {
+                if (op1->AsLngCon()->gtLconVal == op2->AsLngCon()->gtLconVal)
+                {
+                    return true;
+                }
+                break;
+            }
+
+            case GT_CNS_DBL:
+            {
+                if (op1->AsDblCon()->isBitwiseEqual(op2->AsDblCon()))
+                {
+                    return true;
+                }
+                break;
+            }
+
             case GT_CNS_STR:
                 if ((op1->AsStrCon()->gtSconCPX == op2->AsStrCon()->gtSconCPX) &&
                     (op1->AsStrCon()->gtScpHnd == op2->AsStrCon()->gtScpHnd))
@@ -2846,18 +2864,6 @@ AGAIN:
                 break;
             }
 
-#if 0
-            // TODO-CQ: Enable this in the future
-        case GT_CNS_LNG:
-            if  (op1->AsLngCon()->gtLconVal == op2->AsLngCon()->gtLconVal)
-                return true;
-            break;
-
-        case GT_CNS_DBL:
-            if  (op1->AsDblCon()->DconValue() == op2->AsDblCon()->DconValue())
-                return true;
-            break;
-#endif
             default:
                 break;
         }
@@ -4122,6 +4128,8 @@ unsigned Compiler::gtSetMultiOpOrder(GenTreeMultiOp* multiOp)
         // first tree to be evaluated, and "lvl2" - the second.
         if (multiOp->IsReverseOp())
         {
+            assert(!multiOp->AsHWIntrinsic()->IsUserCall());
+
             level = gtSetEvalOrder(multiOp->Op(2));
             lvl2  = gtSetEvalOrder(multiOp->Op(1));
         }
@@ -4134,11 +4142,18 @@ unsigned Compiler::gtSetMultiOpOrder(GenTreeMultiOp* multiOp)
         // We want the more complex tree to be evaluated first.
         if (level < lvl2)
         {
-            bool canSwap = multiOp->IsReverseOp() ? gtCanSwapOrder(multiOp->Op(2), multiOp->Op(1))
-                                                  : gtCanSwapOrder(multiOp->Op(1), multiOp->Op(2));
+            bool canSwap = false;
+
+            if (!multiOp->AsHWIntrinsic()->IsUserCall())
+            {
+                canSwap = multiOp->IsReverseOp() ? gtCanSwapOrder(multiOp->Op(2), multiOp->Op(1))
+                                                 : gtCanSwapOrder(multiOp->Op(1), multiOp->Op(2));
+            }
 
             if (canSwap)
             {
+                assert(!multiOp->AsHWIntrinsic()->IsUserCall());
+
                 if (multiOp->IsReverseOp())
                 {
                     multiOp->ClearReverseOp();
@@ -4600,7 +4615,7 @@ bool Compiler::gtCanSwapOrder(GenTree* firstNode, GenTree* secondNode)
         else
         {
             // No side effects in op2 - we can swap iff op1 has no way of modifying op2,
-            // i.e. through byref assignments or calls or op2 is a constant.
+            // i.e. through indirect stores or calls or op2 is a constant.
 
             if (firstNode->gtFlags & strictEffects & GTF_PERSISTENT_SIDE_EFFECTS)
             {
@@ -6317,10 +6332,7 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                 assert(use.GetNode()->GetCostEx() == 0);
                 assert(use.GetNode()->GetCostSz() == 0);
             }
-            // Give it a level of 2, just to be sure that it's greater than the LHS of
-            // the parent assignment and the PHI gets evaluated first in linear order.
-            // See also SsaBuilder::InsertPhi and SsaBuilder::AddPhiArg.
-            level  = 2;
+            level  = 1;
             costEx = 0;
             costSz = 0;
             break;
@@ -6560,7 +6572,7 @@ bool GenTree::OperSupportsReverseOpEvalOrder(Compiler* comp) const
 #if defined(FEATURE_SIMD) || defined(FEATURE_HW_INTRINSICS)
     if (OperIsMultiOp())
     {
-        return AsMultiOp()->GetOperandCount() == 2;
+        return (AsMultiOp()->GetOperandCount() == 2) && !AsMultiOp()->IsUserCall();
     }
 #endif // FEATURE_SIMD || FEATURE_HW_INTRINSICS
     return false;
@@ -6672,9 +6684,9 @@ bool GenTree::TryGetUse(GenTree* operand, GenTree*** pUse)
         case GT_START_NONGC:
         case GT_START_PREEMPTGC:
         case GT_PROF_HOOK:
-#if !defined(FEATURE_EH_FUNCLETS)
+#if defined(FEATURE_EH_WINDOWS_X86)
         case GT_END_LFIN:
-#endif // !FEATURE_EH_FUNCLETS
+#endif // FEATURE_EH_WINDOWS_X86
         case GT_PHI_ARG:
         case GT_JMPTABLE:
         case GT_PHYSREG:
@@ -6986,7 +6998,7 @@ bool GenTree::OperRequiresAsgFlag() const
             return true;
 
         // If the call has return buffer argument, it produced a definition and hence
-        // should be marked with assignment.
+        // should be marked with GTF_ASG.
         case GT_CALL:
             return AsCall()->IsOptimizingRetBufAsLocal();
 
@@ -7849,7 +7861,7 @@ GenTreeIntCon* Compiler::gtNewStringLiteralLength(GenTreeStrCon* node)
 
 /*****************************************************************************/
 
-GenTree* Compiler::gtNewLconNode(__int64 value)
+GenTree* Compiler::gtNewLconNode(int64_t value)
 {
 #ifdef TARGET_64BIT
     GenTree* node = new (this, GT_CNS_INT) GenTreeIntCon(TYP_LONG, value);
@@ -8231,28 +8243,51 @@ GenTree* Compiler::gtNewConWithPattern(var_types type, uint8_t pattern)
     }
 }
 
-GenTreeLclVar* Compiler::gtNewStoreLclVarNode(unsigned lclNum, GenTree* data)
+//------------------------------------------------------------------------
+// gtNewStoreLclVarNode: Create a local store node.
+//
+// Arguments:
+//    lclNum - Number of the local being stored to
+//    value  - Value to store
+//
+// Return Value:
+//    The created STORE_LCL_VAR node.
+//
+GenTreeLclVar* Compiler::gtNewStoreLclVarNode(unsigned lclNum, GenTree* value)
 {
     LclVarDsc*     varDsc = lvaGetDesc(lclNum);
     var_types      type   = varDsc->lvNormalizeOnLoad() ? varDsc->TypeGet() : genActualType(varDsc);
-    GenTreeLclVar* store  = new (this, GT_STORE_LCL_VAR) GenTreeLclVar(type, lclNum, data);
+    GenTreeLclVar* store  = new (this, GT_STORE_LCL_VAR) GenTreeLclVar(type, lclNum, value);
     store->gtFlags |= (GTF_VAR_DEF | GTF_ASG);
     if (varDsc->IsAddressExposed())
     {
         store->gtFlags |= GTF_GLOB_REF;
     }
 
-    gtInitializeStoreNode(store, data);
+    gtInitializeStoreNode(store, value);
 
     return store;
 }
 
+//------------------------------------------------------------------------
+// gtNewStoreLclFldNode: Create a local field store node.
+//
+// Arguments:
+//    lclNum - Number of the local being stored to
+//    type   - Type of the store
+//    layout - Struct layout of the store
+//    offset - Offset of the store
+//    value  - Value to store
+//
+// Return Value:
+//    The created STORE_LCL_FLD node.
+//
 GenTreeLclFld* Compiler::gtNewStoreLclFldNode(
-    unsigned lclNum, var_types type, ClassLayout* layout, unsigned offset, GenTree* data)
+    unsigned lclNum, var_types type, ClassLayout* layout, unsigned offset, GenTree* value)
 {
     assert((type == TYP_STRUCT) == (layout != nullptr));
 
-    GenTreeLclFld* store = new (this, GT_STORE_LCL_FLD) GenTreeLclFld(type, lclNum, offset, data, layout);
+    GenTreeLclFld* store = new (this, GT_STORE_LCL_FLD) GenTreeLclFld(type, lclNum, offset, value, layout);
     store->gtFlags |= (GTF_VAR_DEF | GTF_ASG);
     if (store->IsPartialLclFld(this))
     {
@@ -8263,7 +8298,7 @@ GenTreeLclFld* Compiler::gtNewStoreLclFldNode(
         store->gtFlags |= GTF_GLOB_REF;
     }
 
-    gtInitializeStoreNode(store, data);
+    gtInitializeStoreNode(store, value);
 
     return store;
 }
@@ -8366,7 +8401,7 @@ GenTreeLclVar* Compiler::gtNewLclvNode(unsigned lnum, var_types type DEBUGARG(IL
 {
     assert(type != TYP_VOID);
     // We need to ensure that all struct values are normalized.
-    // It might be nice to assert this in general, but we have assignments of int to long.
+    // It might be nice to assert this in general, but we have stores of int to long.
     if (varTypeIsStruct(type))
     {
         // Make an exception for implicit by-ref parameters during global morph, since
@@ -8412,7 +8447,7 @@ GenTreeLclVar* Compiler::gtNewLclVarNode(unsigned lclNum, var_types type)
 GenTreeLclVar* Compiler::gtNewLclLNode(unsigned lnum, var_types type DEBUGARG(IL_OFFSET offs))
 {
     // We need to ensure that all struct values are normalized.
-    // It might be nice to assert this in general, but we have assignments of int to long.
+    // It might be nice to assert this in general, but we have stores of int to long.
     if (varTypeIsStruct(type))
     {
         // Make an exception for implicit by-ref parameters during global morph, since
@@ -8523,28 +8558,28 @@ GenTreeFieldAddr* Compiler::gtNewFieldAddrNode(var_types type, CORINFO_FIELD_HAN
 //    store - The store node
 //    data  - The value to store
 //
-void Compiler::gtInitializeStoreNode(GenTree* store, GenTree* data)
+void Compiler::gtInitializeStoreNode(GenTree* store, GenTree* value)
 {
     // TODO-ASG: add asserts that the types match here.
-    assert(store->Data() == data);
+    assert(store->Data() == value);
 
 #if defined(FEATURE_SIMD)
 #ifndef TARGET_X86
     if (varTypeIsSIMD(store))
     {
         // TODO-ASG: delete this zero-diff quirk.
-        if (!data->IsCall() || !data->AsCall()->ShouldHaveRetBufArg())
+        if (!value->IsCall() || !value->AsCall()->ShouldHaveRetBufArg())
         {
-            // We want to track SIMD assignments as being intrinsics since they
-            // are functionally SIMD `mov` instructions and are more efficient
-            // when we don't promote, particularly when it occurs due to inlining.
+            // We want to track SIMD stores as being intrinsics since they are
+            // functionally SIMD `mov` instructions and are more efficient when
+            // we don't promote, particularly when it occurs due to inlining.
             SetOpLclRelatedToSIMDIntrinsic(store);
-            SetOpLclRelatedToSIMDIntrinsic(data);
+            SetOpLclRelatedToSIMDIntrinsic(value);
         }
     }
 #else  // TARGET_X86
     // TODO-Cleanup: merge into the all-arch.
-    if (varTypeIsSIMD(data) && data->OperIs(GT_HWINTRINSIC, GT_CNS_VEC))
+    if (varTypeIsSIMD(value) && value->OperIs(GT_HWINTRINSIC, GT_CNS_VEC))
     {
         SetOpLclRelatedToSIMDIntrinsic(store);
     }
@@ -8669,26 +8704,26 @@ GenTree* Compiler::gtNewLoadValueNode(var_types type, ClassLayout* layout, GenTr
 }
 
 //------------------------------------------------------------------------------
-// gtNewStoreBlkNode : Create an indirect struct store node.
+// gtNewStoreBlkNode: Create an indirect struct store node.
 //
 // Arguments:
 //    layout     - The struct layout
 //    addr       - Destination address
-//    data       - Value to store
+//    value      - Value to store
 //    indirFlags - Indirection flags
 //
 // Return Value:
 //    The created GT_STORE_BLK node.
 //
-GenTreeBlk* Compiler::gtNewStoreBlkNode(ClassLayout* layout, GenTree* addr, GenTree* data, GenTreeFlags indirFlags)
+GenTreeBlk* Compiler::gtNewStoreBlkNode(ClassLayout* layout, GenTree* addr, GenTree* value, GenTreeFlags indirFlags)
 {
     assert((indirFlags & GTF_IND_INVARIANT) == 0);
-    assert(data->IsInitVal() || ClassLayout::AreCompatible(layout, data->GetLayout(this)));
+    assert(value->IsInitVal() || ClassLayout::AreCompatible(layout, value->GetLayout(this)));
 
-    GenTreeBlk* store = new (this, GT_STORE_BLK) GenTreeBlk(GT_STORE_BLK, TYP_STRUCT, addr, data, layout);
+    GenTreeBlk* store = new (this, GT_STORE_BLK) GenTreeBlk(GT_STORE_BLK, TYP_STRUCT, addr, value, layout);
     store->gtFlags |= GTF_ASG;
     gtInitializeIndirNode(store, indirFlags);
-    gtInitializeStoreNode(store, data);
+    gtInitializeStoreNode(store, value);
 
     return store;
 }
@@ -8699,20 +8734,20 @@ GenTreeBlk* Compiler::gtNewStoreBlkNode(ClassLayout* layout, GenTree* addr, GenT
 // Arguments:
 //    type       - Type of the store
 //    addr       - Destination address
-//    data       - Value to store
+//    value      - Value to store
 //    indirFlags - Indirection flags
 //
 // Return Value:
 //    The created GT_STOREIND node.
 //
-GenTreeStoreInd* Compiler::gtNewStoreIndNode(var_types type, GenTree* addr, GenTree* data, GenTreeFlags indirFlags)
+GenTreeStoreInd* Compiler::gtNewStoreIndNode(var_types type, GenTree* addr, GenTree* value, GenTreeFlags indirFlags)
 {
     assert(((indirFlags & GTF_IND_INVARIANT) == 0) && (type != TYP_STRUCT));
 
-    GenTreeStoreInd* store = new (this, GT_STOREIND) GenTreeStoreInd(type, addr, data);
+    GenTreeStoreInd* store = new (this, GT_STOREIND) GenTreeStoreInd(type, addr, value);
     store->gtFlags |= GTF_ASG;
     gtInitializeIndirNode(store, indirFlags);
-    gtInitializeStoreNode(store, data);
+    gtInitializeStoreNode(store, value);
 
     return store;
 }
@@ -8724,7 +8759,7 @@ GenTreeStoreInd* Compiler::gtNewStoreIndNode(var_types type, GenTree* addr, GenT
 //    type       - Type to store
 //    layout     - Struct layout for the store
 //    addr       - Destination address
-//    data       - Value to store
+//    value      - Value to store
 //    indirFlags - Indirection flags
 //
 // Return Value:
@@ -8732,7 +8767,7 @@ GenTreeStoreInd* Compiler::gtNewStoreIndNode(var_types type, GenTree* addr, GenT
 //    a compatible local.
 //
 GenTree* Compiler::gtNewStoreValueNode(
-    var_types type, ClassLayout* layout, GenTree* addr, GenTree* data, GenTreeFlags indirFlags)
+    var_types type, ClassLayout* layout, GenTree* addr, GenTree* value, GenTreeFlags indirFlags)
 {
     assert((type != TYP_STRUCT) || (layout != nullptr));
 
@@ -8743,18 +8778,18 @@ GenTree* Compiler::gtNewStoreValueNode(
         if ((varDsc->TypeGet() == type) &&
             ((type != TYP_STRUCT) || ClassLayout::AreCompatible(layout, varDsc->GetLayout())))
         {
-            return gtNewStoreLclVarNode(lclNum, data);
+            return gtNewStoreLclVarNode(lclNum, value);
         }
     }
 
     GenTree* store;
     if (type == TYP_STRUCT)
     {
-        store = gtNewStoreBlkNode(layout, addr, data, indirFlags);
+        store = gtNewStoreBlkNode(layout, addr, value, indirFlags);
     }
     else
     {
-        store = gtNewStoreIndNode(type, addr, data, indirFlags);
+        store = gtNewStoreIndNode(type, addr, value, indirFlags);
     }
 
     return store;
@@ -8804,10 +8839,9 @@ GenTree* Compiler::gtNewAtomicNode(genTreeOps oper, var_types type, GenTree* add
 //    value for the initblk.
 //
 // Notes:
-//    The initBlk MSIL instruction takes a byte value, which must be
-//    extended to the size of the assignment when an initBlk is transformed
-//    to an assignment of a primitive type.
-//    This performs the appropriate extension.
+//    The initBlk MSIL instruction takes a byte value, which must be extended
+//    to the size of the store when an initBlk is transformed to a store of
+//    a primitive type. This performs the appropriate extension.
 //
 void GenTreeIntCon::FixupInitBlkValue(var_types type)
 {
@@ -9423,9 +9457,9 @@ GenTree* Compiler::gtCloneExpr(GenTree* tree)
                 copy = new (this, oper) GenTree(oper, tree->gtType);
                 goto DONE;
 
-#if !defined(FEATURE_EH_FUNCLETS)
+#if defined(FEATURE_EH_WINDOWS_X86)
             case GT_END_LFIN:
-#endif // !FEATURE_EH_FUNCLETS
+#endif // FEATURE_EH_WINDOWS_X86
             case GT_JMP:
                 copy = new (this, oper) GenTreeVal(oper, tree->gtType, tree->AsVal()->gtVal1);
                 goto DONE;
@@ -9601,10 +9635,8 @@ GenTree* Compiler::gtCloneExpr(GenTree* tree)
             case GT_INTRINSIC:
                 copy = new (this, GT_INTRINSIC)
                     GenTreeIntrinsic(tree->TypeGet(), tree->AsOp()->gtOp1, tree->AsOp()->gtOp2,
-                                     tree->AsIntrinsic()->gtIntrinsicName, tree->AsIntrinsic()->gtMethodHandle);
-#ifdef FEATURE_READYTORUN
-                copy->AsIntrinsic()->gtEntryPoint = tree->AsIntrinsic()->gtEntryPoint;
-#endif
+                                     tree->AsIntrinsic()->gtIntrinsicName,
+                                     tree->AsIntrinsic()->gtMethodHandle R2RARG(tree->AsIntrinsic()->gtEntryPoint));
                 break;
 
             case GT_BOUNDS_CHECK:
@@ -9630,6 +9662,10 @@ GenTree* Compiler::gtCloneExpr(GenTree* tree)
                 copy = new (this, oper) GenTreeCopyOrReload(oper, tree->TypeGet(), tree->gtGetOp1());
             }
             break;
+
+            case GT_SWIFT_ERROR_RET:
+                copy = new (this, oper) GenTreeOp(oper, tree->TypeGet(), tree->gtGetOp1(), tree->gtGetOp2());
+                break;
 
             default:
                 assert(!GenTree::IsExOp(tree->OperKind()) && tree->OperIsSimple());
@@ -9682,6 +9718,12 @@ GenTree* Compiler::gtCloneExpr(GenTree* tree)
                                    tree->AsHWIntrinsic()->GetHWIntrinsicId(),
                                    tree->AsHWIntrinsic()->GetSimdBaseJitType(), tree->AsHWIntrinsic()->GetSimdSize());
             copy->AsHWIntrinsic()->SetAuxiliaryJitType(tree->AsHWIntrinsic()->GetAuxiliaryJitType());
+
+            if (tree->AsHWIntrinsic()->IsUserCall())
+            {
+                copy->AsHWIntrinsic()->SetMethodHandle(this, tree->AsHWIntrinsic()->GetMethodHandle()
+                                                                 R2RARG(tree->AsHWIntrinsic()->GetEntryPoint()));
+            }
             goto CLONE_MULTIOP_OPERANDS;
 #endif
 #if defined(FEATURE_SIMD) || defined(FEATURE_HW_INTRINSICS)
@@ -9759,7 +9801,6 @@ DONE:
     /* Make sure to copy back fields that may have been initialized */
 
     copy->CopyRawCosts(tree);
-    copy->gtRsvdRegs = tree->gtRsvdRegs;
     copy->CopyReg(tree);
     return copy;
 }
@@ -10240,9 +10281,9 @@ GenTreeUseEdgeIterator::GenTreeUseEdgeIterator(GenTree* node)
         case GT_START_NONGC:
         case GT_START_PREEMPTGC:
         case GT_PROF_HOOK:
-#if !defined(FEATURE_EH_FUNCLETS)
+#if defined(FEATURE_EH_WINDOWS_X86)
         case GT_END_LFIN:
-#endif // !FEATURE_EH_FUNCLETS
+#endif // FEATURE_EH_WINDOWS_X86
         case GT_PHI_ARG:
         case GT_JMPTABLE:
         case GT_PHYSREG:
@@ -10978,7 +11019,7 @@ void Compiler::gtDispNodeName(GenTree* tree)
                 callType = "CALLV";
             }
         }
-        else if (tree->AsCall()->gtCallType == CT_HELPER)
+        else if (tree->AsCall()->IsHelperCall())
         {
             ctType = " help";
         }
@@ -11621,7 +11662,7 @@ void Compiler::gtDispNode(GenTree* tree, IndentStack* indentStack, _In_ _In_opt_
         if (verbose && 0)
         {
             printf(" RR=");
-            dspRegMask(tree->gtRsvdRegs);
+            dspRegMask(JitTls::GetCompiler()->codeGen->internalRegisters.GetAll(tree));
             printf("\n");
         }
     }
@@ -11775,24 +11816,22 @@ void Compiler::gtGetLclVarNameInfo(unsigned lclNum, const char** ilKindOut, cons
                 ilName = "OutArgs";
             }
 #endif // FEATURE_FIXED_OUT_ARGS
-#if !defined(FEATURE_EH_FUNCLETS)
+#if defined(FEATURE_EH_WINDOWS_X86)
             else if (lclNum == lvaShadowSPslotsVar)
             {
                 ilName = "EHSlots";
             }
-#endif // !FEATURE_EH_FUNCLETS
+#endif // FEATURE_EH_WINDOWS_X86
 #ifdef JIT32_GCENCODER
             else if (lclNum == lvaLocAllocSPvar)
             {
                 ilName = "LocAllocSP";
             }
 #endif // JIT32_GCENCODER
-#if defined(FEATURE_EH_FUNCLETS)
             else if (lclNum == lvaPSPSym)
             {
                 ilName = "PSPSym";
             }
-#endif // FEATURE_EH_FUNCLETS
             else
             {
                 ilKind = "tmp";
@@ -12356,11 +12395,11 @@ void Compiler::gtDispLeaf(GenTree* tree, IndentStack* indentStack)
         }
         break;
 
-#if !defined(FEATURE_EH_FUNCLETS)
+#if defined(FEATURE_EH_WINDOWS_X86)
         case GT_END_LFIN:
             printf(" endNstLvl=%d", tree->AsVal()->gtVal1);
             break;
-#endif // !FEATURE_EH_FUNCLETS
+#endif // FEATURE_EH_WINDOWS_X86
 
             // Vanilla leaves. No qualifying information available. So do nothing
 
@@ -13116,8 +13155,6 @@ const char* Compiler::gtGetWellKnownArgNameForArgMsg(WellKnownArg arg)
             return "retbuf";
         case WellKnownArg::PInvokeFrame:
             return "pinv frame";
-        case WellKnownArg::SecretStubParam:
-            return "stub param";
         case WellKnownArg::WrapperDelegateCell:
             return "wrap cell";
         case WellKnownArg::ShiftLow:
@@ -14858,7 +14895,7 @@ GenTree* Compiler::gtTryRemoveBoxUpstreamEffects(GenTree* op, BoxRemovalOptions 
         const bool isUnsafeValueClass = false;
         lvaSetStruct(boxTempLcl, boxClass, isUnsafeValueClass);
 
-        // Remove the newobj and assignment to box temp
+        // Remove the newobj and store to box temp
         JITDUMP("Bashing NEWOBJ [%06u] to NOP\n", dspTreeID(boxLclDef));
         boxLclDef->gtBashToNOP();
 
@@ -14915,7 +14952,7 @@ GenTree* Compiler::gtTryRemoveBoxUpstreamEffects(GenTree* op, BoxRemovalOptions 
 
     // Otherwise, proceed with the optimization.
     //
-    // Change the assignment expression to a NOP.
+    // Change the store expression to a NOP.
     JITDUMP("\nBashing NEWOBJ [%06u] to NOP\n", dspTreeID(boxLclDef));
     boxLclDef->gtBashToNOP();
 
@@ -15392,7 +15429,7 @@ GenTree* Compiler::gtFoldExprConst(GenTree* tree)
 #if defined(TARGET_64BIT)
                                 if (tree->IsUnsigned() && (lval1 < 0))
                                 {
-                                    f1 = FloatingPointUtils::convertUInt64ToFloat((unsigned __int64)lval1);
+                                    f1 = FloatingPointUtils::convertUInt64ToFloat((uint64_t)lval1);
                                 }
                                 else
                                 {
@@ -15405,8 +15442,7 @@ GenTree* Compiler::gtFoldExprConst(GenTree* tree)
 
                                 if (tree->IsUnsigned() && (lval1 < 0))
                                 {
-                                    f1 = forceCastToFloat(
-                                        FloatingPointUtils::convertUInt64ToDouble((unsigned __int64)lval1));
+                                    f1 = forceCastToFloat(FloatingPointUtils::convertUInt64ToDouble((uint64_t)lval1));
                                 }
                                 else
                                 {
@@ -15422,7 +15458,7 @@ GenTree* Compiler::gtFoldExprConst(GenTree* tree)
                             {
                                 if (tree->IsUnsigned() && (lval1 < 0))
                                 {
-                                    d1 = FloatingPointUtils::convertUInt64ToDouble((unsigned __int64)lval1);
+                                    d1 = FloatingPointUtils::convertUInt64ToDouble((uint64_t)lval1);
                                 }
                                 else
                                 {
@@ -16353,25 +16389,23 @@ GenTree* Compiler::gtFoldIndirConst(GenTreeIndir* indir)
 }
 
 //------------------------------------------------------------------------
-// gtNewTempStore: Create an assignment of the given value to a temp.
+// gtNewTempStore: Create a store of the given value to a temp.
 //
 // Arguments:
 //    tmp         - local number for a compiler temp
-//    val         - value to assign to the temp
+//    val         - value to store to the temp
 //    curLevel    - stack level to spill at (importer-only)
 //    pAfterStmt  - statement to insert any additional statements after
 //    di          - debug info for new statements
 //    block       - block to insert any additional statements in
 //
 // Return Value:
-//    Normally a new assignment node.
+//    Normally a new store node.
 //    However may return a nop node if val is simply a reference to the temp.
 //
 // Notes:
-//    Self-assignments may be represented via NOPs.
-//
+//    Self-stores may be represented via NOPs.
 //    May update the type of the temp, if it was previously unknown.
-//
 //    May set compFloatingPointUsed.
 //
 GenTree* Compiler::gtNewTempStore(
@@ -16451,7 +16485,7 @@ GenTree* Compiler::gtNewTempStore(
         noway_assert(!"Incompatible types for gtNewTempStore");
     }
 
-    // Floating Point assignments can be created during inlining
+    // Floating Point stores can be created during inlining
     // see "Zero init inlinee locals:" in fgInlinePrependStatements
     // thus we may need to set compFloatingPointUsed to true here.
     //
@@ -16475,8 +16509,8 @@ GenTree* Compiler::gtNewTempStore(
 
 /*****************************************************************************
  *
- *  Create a helper call to access a COM field (iff 'assg' is non-zero this is
- *  an assignment and 'assg' is the new value).
+ *  Create a helper call to access a COM field (iff 'value' is non-zero this is
+ *  a store and 'value' is the new value).
  */
 
 GenTree* Compiler::gtNewRefCOMfield(GenTree*                objPtr,
@@ -16484,7 +16518,7 @@ GenTree* Compiler::gtNewRefCOMfield(GenTree*                objPtr,
                                     CORINFO_ACCESS_FLAGS    access,
                                     CORINFO_FIELD_INFO*     pFieldInfo,
                                     var_types               lclTyp,
-                                    GenTree*                assg)
+                                    GenTree*                value)
 {
     assert(pFieldInfo->fieldAccessor == CORINFO_FIELD_INSTANCE_HELPER ||
            pFieldInfo->fieldAccessor == CORINFO_FIELD_INSTANCE_ADDR_HELPER ||
@@ -16501,24 +16535,24 @@ GenTree* Compiler::gtNewRefCOMfield(GenTree*                objPtr,
     {
         if (access & CORINFO_ACCESS_SET)
         {
-            assert(assg != nullptr);
+            assert(value != nullptr);
             // helper needs pointer to struct, not struct itself
             if (pFieldInfo->helper == CORINFO_HELP_SETFIELDSTRUCT)
             {
                 // TODO-Bug?: verify if flags matter here
                 GenTreeFlags indirFlags = GTF_EMPTY;
-                assg                    = impGetNodeAddr(assg, CHECK_SPILL_ALL, &indirFlags);
+                value                   = impGetNodeAddr(value, CHECK_SPILL_ALL, &indirFlags);
             }
-            else if (lclTyp == TYP_DOUBLE && assg->TypeGet() == TYP_FLOAT)
+            else if (lclTyp == TYP_DOUBLE && value->TypeGet() == TYP_FLOAT)
             {
-                assg = gtNewCastNode(TYP_DOUBLE, assg, false, TYP_DOUBLE);
+                value = gtNewCastNode(TYP_DOUBLE, value, false, TYP_DOUBLE);
             }
-            else if (lclTyp == TYP_FLOAT && assg->TypeGet() == TYP_DOUBLE)
+            else if (lclTyp == TYP_FLOAT && value->TypeGet() == TYP_DOUBLE)
             {
-                assg = gtNewCastNode(TYP_FLOAT, assg, false, TYP_FLOAT);
+                value = gtNewCastNode(TYP_FLOAT, value, false, TYP_FLOAT);
             }
 
-            args[nArgs++] = assg;
+            args[nArgs++] = value;
             helperType    = TYP_VOID;
         }
         else if (access & CORINFO_ACCESS_GET)
@@ -16602,8 +16636,8 @@ GenTree* Compiler::gtNewRefCOMfield(GenTree*                objPtr,
 
         if ((access & CORINFO_ACCESS_SET) != 0)
         {
-            result = (lclTyp == TYP_STRUCT) ? gtNewStoreBlkNode(layout, result, assg)->AsIndir()
-                                            : gtNewStoreIndNode(lclTyp, result, assg);
+            result = (lclTyp == TYP_STRUCT) ? gtNewStoreBlkNode(layout, result, value)->AsIndir()
+                                            : gtNewStoreIndNode(lclTyp, result, value);
             if (varTypeIsStruct(lclTyp))
             {
                 result = impStoreStruct(result, CHECK_SPILL_ALL);
@@ -16624,9 +16658,6 @@ GenTree* Compiler::gtNewRefCOMfield(GenTree*                objPtr,
  *  Return true if the given node (excluding children trees) contains side effects.
  *  Note that it does not recurse, and children need to be handled separately.
  *  It may return false even if the node has GTF_SIDE_EFFECT (because of its children).
- *
- *  Similar to OperMayThrow() (but handles GT_CALLs specially), but considers
- *  assignments too.
  */
 
 bool Compiler::gtNodeHasSideEffects(GenTree* tree, GenTreeFlags flags)
@@ -16714,7 +16745,7 @@ bool Compiler::gtTreeHasSideEffects(GenTree* tree, GenTreeFlags flags /* = GTF_S
         {
             // Generally all trees that contain GT_CALL nodes are considered to have side-effects.
             //
-            if (tree->AsCall()->gtCallType == CT_HELPER)
+            if (tree->AsCall()->IsHelperCall())
             {
                 // If this node is a helper call we may not care about the side-effects.
                 // Note that gtNodeHasSideEffects checks the side effects of the helper itself
@@ -17176,7 +17207,7 @@ void Compiler::gtExtractSideEffList(GenTree*     expr,
                 // Generally all GT_CALL nodes are considered to have side-effects.
                 // So if we get here it must be a helper call that we decided it does
                 // not have side effects that we needed to keep.
-                assert(!node->OperIs(GT_CALL) || (node->AsCall()->gtCallType == CT_HELPER));
+                assert(!node->OperIs(GT_CALL) || node->AsCall()->IsHelperCall());
             }
 
             if ((m_flags & GTF_IS_IN_CSE) != 0)
@@ -17474,7 +17505,7 @@ Compiler::TypeProducerKind Compiler::gtGetTypeProducerKind(GenTree* tree)
 {
     if (tree->gtOper == GT_CALL)
     {
-        if (tree->AsCall()->gtCallType == CT_HELPER)
+        if (tree->AsCall()->IsHelperCall())
         {
             if (gtIsTypeHandleToRuntimeTypeHelper(tree->AsCall()))
             {
@@ -17911,7 +17942,7 @@ GenTreeLclVar* GenTree::IsImplicitByrefParameterValuePostMorph(Compiler* compile
 }
 
 //------------------------------------------------------------------------
-// IsLclVarUpdateTree: Determine whether this is an assignment tree of the
+// IsLclVarUpdateTree: Determine whether this is a local store tree of the
 //                     form Vn = Vn 'oper' 'otherTree' where Vn is a lclVar
 //
 // Arguments:
@@ -17996,7 +18027,7 @@ bool GenTree::canBeContained() const
     }
     else if (OperIsHWIntrinsic() && !isContainableHWIntrinsic())
     {
-        return isEvexEmbeddedMaskingCompatibleHWIntrinsic();
+        return isEmbeddedMaskingCompatibleHWIntrinsic();
     }
 
     return true;
@@ -18556,7 +18587,7 @@ CORINFO_CLASS_HANDLE Compiler::gtGetClassHandle(GenTree* tree, bool* pIsExact, b
                     objClass = sig.retTypeClass;
                 }
             }
-            else if (call->gtCallType == CT_HELPER)
+            else if (call->IsHelperCall())
             {
                 objClass = gtGetHelperCallClassHandle(call, pIsExact, pIsNonNull);
             }
@@ -18723,7 +18754,7 @@ CORINFO_CLASS_HANDLE Compiler::gtGetClassHandle(GenTree* tree, bool* pIsExact, b
 //
 CORINFO_CLASS_HANDLE Compiler::gtGetHelperCallClassHandle(GenTreeCall* call, bool* pIsExact, bool* pIsNonNull)
 {
-    assert(call->gtCallType == CT_HELPER);
+    assert(call->IsHelperCall());
 
     *pIsNonNull                    = false;
     *pIsExact                      = false;
@@ -19552,6 +19583,49 @@ void GenTreeMultiOp::InitializeOperands(GenTree** operands, size_t operandCount)
     SetOperandCount(operandCount);
 }
 
+//------------------------------------------------------------------------
+// GenTreeJitIntrinsic::SetMethodHandle: Sets the method handle for an intrinsic
+//  so that it can be rewritten back to a user call in a later phase
+//
+// Arguments:
+//  comp         - The compiler instance
+//  methodHandle - The method handle representing the fallback handling for the intrinsic
+//  entryPoint   - The entry point information required for R2R scenarios
+//
+// Notes:
+//  We need to ensure that the operands are not tracked inline so that we can track the
+//  underlying method handle. See the comment in GenTreeJitIntrinsic around why the union
+//  of fields exists.
+//
+void GenTreeJitIntrinsic::SetMethodHandle(Compiler*                          comp,
+                                          CORINFO_METHOD_HANDLE methodHandle R2RARG(CORINFO_CONST_LOOKUP entryPoint))
+{
+    assert(OperIsHWIntrinsic() && !IsUserCall());
+    gtFlags |= GTF_HW_USER_CALL;
+
+    size_t operandCount = GetOperandCount();
+
+    if ((operandCount != 0) && (operandCount <= ArrLen(gtInlineOperands)))
+    {
+        GenTree** oldOperands = GetOperandArray();
+        GenTree** newOperands = comp->getAllocator(CMK_ASTNode).allocate<GenTree*>(operandCount);
+
+        ResetOperandArray(operandCount, comp, newOperands, operandCount);
+        assert(GetOperandArray() == newOperands);
+
+        for (size_t i = 0; i < operandCount; i++)
+        {
+            newOperands[i] = oldOperands[i];
+        }
+    }
+
+    gtMethodHandle = methodHandle;
+
+#if defined(FEATURE_READYTORUN)
+    gtEntryPoint = new (comp, CMK_ASTNode) CORINFO_CONST_LOOKUP(entryPoint);
+#endif // FEATURE_READYTORUN
+}
+
 var_types GenTreeJitIntrinsic::GetAuxiliaryType() const
 {
     CorInfoType auxiliaryJitType = GetAuxiliaryJitType();
@@ -19722,13 +19796,6 @@ bool GenTree::isContainableHWIntrinsic() const
             return true;
         }
 
-        case NI_Vector128_get_Zero:
-        case NI_Vector256_get_Zero:
-        {
-            // These HWIntrinsic operations are contained as part of Sse41.Insert
-            return true;
-        }
-
         case NI_SSE3_MoveAndDuplicate:
         case NI_AVX_BroadcastScalarToVector128:
         case NI_AVX2_BroadcastScalarToVector128:
@@ -19886,31 +19953,45 @@ bool GenTree::isRMWHWIntrinsic(Compiler* comp)
 //
 bool GenTree::isEvexCompatibleHWIntrinsic() const
 {
-    // TODO-XARCH-AVX512 remove the ReturnsPerElementMask check once K registers have been properly
-    // implemented in the register allocator
-    return OperIsHWIntrinsic() && HWIntrinsicInfo::HasEvexSemantics(AsHWIntrinsic()->GetHWIntrinsicId()) &&
-           !HWIntrinsicInfo::ReturnsPerElementMask(AsHWIntrinsic()->GetHWIntrinsicId());
+    return OperIsHWIntrinsic() && HWIntrinsicInfo::HasEvexSemantics(AsHWIntrinsic()->GetHWIntrinsicId());
 }
 
 //------------------------------------------------------------------------
-// isEvexEmbeddedMaskingCompatibleHWIntrinsic: Checks if the intrinsic is compatible
+// isEmbeddedMaskingCompatibleHWIntrinsic : Checks if the intrinsic is compatible
 // with the EVEX embedded masking form for its intended lowering instruction.
 //
 // Return Value:
 // true if the intrisic node lowering instruction has an EVEX embedded masking
 //
-bool GenTree::isEvexEmbeddedMaskingCompatibleHWIntrinsic() const
+bool GenTree::isEmbeddedMaskingCompatibleHWIntrinsic() const
 {
-#if defined(TARGET_XARCH)
     if (OperIsHWIntrinsic())
     {
-        // TODO-AVX512F-CQ: Expand this to the full set of APIs and make it table driven
-        // using IsEmbMaskingCompatible. For now, however, limit it to some explicit ids
-        // for prototyping purposes.
-        return (AsHWIntrinsic()->GetHWIntrinsicId() == NI_AVX512F_Add);
-    }
-#endif // TARGET_XARCH
+#if defined(TARGET_XARCH)
+        NamedIntrinsic intrinsicId  = AsHWIntrinsic()->GetHWIntrinsicId();
+        var_types      simdBaseType = AsHWIntrinsic()->GetSimdBaseType();
 
+        switch (intrinsicId)
+        {
+            case NI_AVX512F_ConvertToVector256Int32:
+            case NI_AVX512F_ConvertToVector256UInt32:
+            case NI_AVX512F_ConvertToVector512Int32:
+            case NI_AVX512F_ConvertToVector512UInt32:
+            case NI_AVX512F_VL_ConvertToVector128UInt32:
+            {
+                return varTypeIsFloating(simdBaseType);
+            }
+
+            default:
+            {
+                return HWIntrinsicInfo::IsEmbMaskingCompatible(intrinsicId);
+            }
+        }
+#elif defined(TARGET_ARM64)
+        return HWIntrinsicInfo::IsEmbeddedMaskedOperation(AsHWIntrinsic()->GetHWIntrinsicId()) ||
+               HWIntrinsicInfo::IsOptionalEmbeddedMaskedOperation(AsHWIntrinsic()->GetHWIntrinsicId());
+#endif
+    }
     return false;
 }
 
@@ -21334,7 +21415,6 @@ GenTree* Compiler::gtNewSimdCeilNode(var_types type, GenTree* op1, CorInfoType s
     return gtNewSimdHWIntrinsicNode(type, op1, intrinsic, simdBaseJitType, simdSize);
 }
 
-#if defined(TARGET_XARCH)
 GenTree* Compiler::gtNewSimdCvtNode(var_types   type,
                                     GenTree*    op1,
                                     CorInfoType simdTargetBaseJitType,
@@ -21352,132 +21432,11 @@ GenTree* Compiler::gtNewSimdCvtNode(var_types   type,
     assert(varTypeIsIntegral(simdTargetBaseType));
 
     assert(IsBaselineSimdIsaSupportedDebugOnly());
+
+#if defined(TARGET_XARCH)
     assert(IsBaselineVector512IsaSupportedDebugOnly() ||
            ((simdTargetBaseType == TYP_INT) && ((simdSize == 16 && compIsaSupportedDebugOnly(InstructionSet_SSE41)) ||
                                                 (simdSize == 32 && compIsaSupportedDebugOnly(InstructionSet_AVX)))));
-
-    // Generate intrinsic needed for conversion
-    NamedIntrinsic hwIntrinsicID = NI_Illegal;
-    switch (simdSourceBaseJitType)
-    {
-        case CORINFO_TYPE_FLOAT:
-        {
-            switch (simdTargetBaseJitType)
-            {
-                case CORINFO_TYPE_INT:
-                {
-                    switch (simdSize)
-                    {
-                        case 64:
-                        {
-                            hwIntrinsicID = NI_AVX512F_ConvertToVector512Int32WithTruncation;
-                            break;
-                        }
-                        case 32:
-                        {
-                            hwIntrinsicID = NI_AVX_ConvertToVector256Int32WithTruncation;
-                            break;
-                        }
-                        case 16:
-                        {
-                            hwIntrinsicID = NI_SSE2_ConvertToVector128Int32WithTruncation;
-                            break;
-                        }
-                        default:
-                            unreached();
-                    }
-                    break;
-                }
-                case CORINFO_TYPE_UINT:
-                {
-                    switch (simdSize)
-                    {
-                        case 64:
-                        {
-                            hwIntrinsicID = NI_AVX512F_ConvertToVector512UInt32WithTruncation;
-                            break;
-                        }
-                        case 32:
-                        {
-                            hwIntrinsicID = NI_AVX512F_VL_ConvertToVector256UInt32WithTruncation;
-                            break;
-                        }
-                        case 16:
-                        {
-                            hwIntrinsicID = NI_AVX512F_VL_ConvertToVector128UInt32WithTruncation;
-                            break;
-                        }
-                        default:
-                            unreached();
-                    }
-                    break;
-                }
-                default:
-                    unreached();
-            }
-            break;
-        }
-        case CORINFO_TYPE_DOUBLE:
-        {
-            switch (simdTargetBaseJitType)
-            {
-                case CORINFO_TYPE_LONG:
-                {
-                    switch (simdSize)
-                    {
-                        case 64:
-                        {
-                            hwIntrinsicID = NI_AVX512DQ_ConvertToVector512Int64WithTruncation;
-                            break;
-                        }
-                        case 32:
-                        {
-                            hwIntrinsicID = NI_AVX512DQ_VL_ConvertToVector256Int64WithTruncation;
-                            break;
-                        }
-                        case 16:
-                        {
-                            hwIntrinsicID = NI_AVX512DQ_VL_ConvertToVector128Int64WithTruncation;
-                            break;
-                        }
-                        default:
-                            unreached();
-                    }
-                    break;
-                }
-                case CORINFO_TYPE_ULONG:
-                {
-                    switch (simdSize)
-                    {
-                        case 64:
-                        {
-                            hwIntrinsicID = NI_AVX512DQ_ConvertToVector512UInt64WithTruncation;
-                            break;
-                        }
-                        case 32:
-                        {
-                            hwIntrinsicID = NI_AVX512DQ_VL_ConvertToVector256UInt64WithTruncation;
-                            break;
-                        }
-                        case 16:
-                        {
-                            hwIntrinsicID = NI_AVX512DQ_VL_ConvertToVector128UInt64WithTruncation;
-                            break;
-                        }
-                        default:
-                            unreached();
-                    }
-                    break;
-                }
-                default:
-                    unreached();
-            }
-            break;
-        }
-        default:
-            unreached();
-    }
-    assert(hwIntrinsicID != NI_Illegal);
 
     GenTree* fixupVal;
 
@@ -21552,17 +21511,247 @@ GenTree* Compiler::gtNewSimdCvtNode(var_types   type,
         fixupVal = gtNewSimdCmpOpNode(GT_GE, type, fixupVal, maxVal, simdSourceBaseJitType, simdSize);
 
         // cast it
-        GenTree* castNode = gtNewSimdHWIntrinsicNode(type, fixupValDup, hwIntrinsicID, simdSourceBaseJitType, simdSize);
+        GenTree* castNode =
+            gtNewSimdCvtNativeNode(type, fixupValDup, simdTargetBaseJitType, simdSourceBaseJitType, simdSize);
 
         // use the fixupVal mask with input value and max value to blend
         return gtNewSimdCndSelNode(type, fixupVal, maxValDup, castNode, simdTargetBaseJitType, simdSize);
     }
     else
     {
-        return gtNewSimdHWIntrinsicNode(type, fixupVal, hwIntrinsicID, simdSourceBaseJitType, simdSize);
+        return gtNewSimdCvtNativeNode(type, fixupVal, simdTargetBaseJitType, simdSourceBaseJitType, simdSize);
     }
+#elif defined(TARGET_ARM64)
+    return gtNewSimdCvtNativeNode(type, op1, simdTargetBaseJitType, simdSourceBaseJitType, simdSize);
+#else
+#error Unsupported platform
+#endif // !TARGET_XARCH && !TARGET_ARM64
 }
-#endif // TARGET_XARCH
+
+GenTree* Compiler::gtNewSimdCvtNativeNode(var_types   type,
+                                          GenTree*    op1,
+                                          CorInfoType simdTargetBaseJitType,
+                                          CorInfoType simdSourceBaseJitType,
+                                          unsigned    simdSize)
+{
+    assert(varTypeIsSIMD(type));
+    assert(getSIMDTypeForSize(simdSize) == type);
+    assert(op1 != nullptr);
+    assert(op1->TypeIs(type));
+
+    var_types simdSourceBaseType = JitType2PreciseVarType(simdSourceBaseJitType);
+    var_types simdTargetBaseType = JitType2PreciseVarType(simdTargetBaseJitType);
+    assert(varTypeIsFloating(simdSourceBaseType));
+    assert(varTypeIsIntegral(simdTargetBaseType));
+
+    assert(IsBaselineSimdIsaSupportedDebugOnly());
+
+    // Generate intrinsic needed for conversion
+    NamedIntrinsic hwIntrinsicID = NI_Illegal;
+
+#if defined(TARGET_XARCH)
+    assert(IsBaselineVector512IsaSupportedDebugOnly() ||
+           ((simdTargetBaseType == TYP_INT) &&
+            ((simdSize == 16) || (simdSize == 32 && compIsaSupportedDebugOnly(InstructionSet_AVX)))));
+
+    switch (simdSourceBaseJitType)
+    {
+        case CORINFO_TYPE_FLOAT:
+        {
+            switch (simdTargetBaseJitType)
+            {
+                case CORINFO_TYPE_INT:
+                {
+                    switch (simdSize)
+                    {
+                        case 64:
+                        {
+                            hwIntrinsicID = NI_AVX512F_ConvertToVector512Int32WithTruncation;
+                            break;
+                        }
+
+                        case 32:
+                        {
+                            hwIntrinsicID = NI_AVX_ConvertToVector256Int32WithTruncation;
+                            break;
+                        }
+
+                        case 16:
+                        {
+                            hwIntrinsicID = NI_SSE2_ConvertToVector128Int32WithTruncation;
+                            break;
+                        }
+
+                        default:
+                            unreached();
+                    }
+                    break;
+                }
+
+                case CORINFO_TYPE_UINT:
+                {
+                    switch (simdSize)
+                    {
+                        case 64:
+                        {
+                            hwIntrinsicID = NI_AVX512F_ConvertToVector512UInt32WithTruncation;
+                            break;
+                        }
+
+                        case 32:
+                        {
+                            hwIntrinsicID = NI_AVX512F_VL_ConvertToVector256UInt32WithTruncation;
+                            break;
+                        }
+
+                        case 16:
+                        {
+                            hwIntrinsicID = NI_AVX512F_VL_ConvertToVector128UInt32WithTruncation;
+                            break;
+                        }
+
+                        default:
+                            unreached();
+                    }
+                    break;
+                }
+
+                default:
+                    unreached();
+            }
+            break;
+        }
+
+        case CORINFO_TYPE_DOUBLE:
+        {
+            switch (simdTargetBaseJitType)
+            {
+                case CORINFO_TYPE_LONG:
+                {
+                    switch (simdSize)
+                    {
+                        case 64:
+                        {
+                            hwIntrinsicID = NI_AVX512DQ_ConvertToVector512Int64WithTruncation;
+                            break;
+                        }
+
+                        case 32:
+                        {
+                            hwIntrinsicID = NI_AVX512DQ_VL_ConvertToVector256Int64WithTruncation;
+                            break;
+                        }
+
+                        case 16:
+                        {
+                            hwIntrinsicID = NI_AVX512DQ_VL_ConvertToVector128Int64WithTruncation;
+                            break;
+                        }
+
+                        default:
+                            unreached();
+                    }
+                    break;
+                }
+
+                case CORINFO_TYPE_ULONG:
+                {
+                    switch (simdSize)
+                    {
+                        case 64:
+                        {
+                            hwIntrinsicID = NI_AVX512DQ_ConvertToVector512UInt64WithTruncation;
+                            break;
+                        }
+
+                        case 32:
+                        {
+                            hwIntrinsicID = NI_AVX512DQ_VL_ConvertToVector256UInt64WithTruncation;
+                            break;
+                        }
+
+                        case 16:
+                        {
+                            hwIntrinsicID = NI_AVX512DQ_VL_ConvertToVector128UInt64WithTruncation;
+                            break;
+                        }
+
+                        default:
+                            unreached();
+                    }
+                    break;
+                }
+
+                default:
+                    unreached();
+            }
+            break;
+        }
+
+        default:
+            unreached();
+    }
+#elif defined(TARGET_ARM64)
+    assert((simdSize == 8) || (simdSize == 16));
+
+    switch (simdSourceBaseJitType)
+    {
+        case CORINFO_TYPE_FLOAT:
+        {
+            switch (simdTargetBaseJitType)
+            {
+                case CORINFO_TYPE_INT:
+                {
+                    hwIntrinsicID = NI_AdvSimd_ConvertToInt32RoundToZero;
+                    break;
+                }
+
+                case CORINFO_TYPE_UINT:
+                {
+                    hwIntrinsicID = NI_AdvSimd_ConvertToUInt32RoundToZero;
+                    break;
+                }
+
+                default:
+                    unreached();
+            }
+            break;
+        }
+
+        case CORINFO_TYPE_DOUBLE:
+        {
+            switch (simdTargetBaseJitType)
+            {
+                case CORINFO_TYPE_LONG:
+                {
+                    hwIntrinsicID = (simdSize == 8) ? NI_AdvSimd_Arm64_ConvertToInt64RoundToZeroScalar
+                                                    : NI_AdvSimd_Arm64_ConvertToInt64RoundToZero;
+                    break;
+                }
+
+                case CORINFO_TYPE_ULONG:
+                {
+                    hwIntrinsicID = (simdSize == 8) ? NI_AdvSimd_Arm64_ConvertToUInt64RoundToZeroScalar
+                                                    : NI_AdvSimd_Arm64_ConvertToUInt64RoundToZero;
+                    break;
+                }
+
+                default:
+                    unreached();
+            }
+            break;
+        }
+
+        default:
+            unreached();
+    }
+#else
+#error Unsupported platform
+#endif // !TARGET_XARCH && !TARGET_ARM64
+
+    assert(hwIntrinsicID != NI_Illegal);
+    return gtNewSimdHWIntrinsicNode(type, op1, hwIntrinsicID, simdSourceBaseJitType, simdSize);
+}
 
 GenTree* Compiler::gtNewSimdCmpOpNode(
     genTreeOps op, var_types type, GenTree* op1, GenTree* op2, CorInfoType simdBaseJitType, unsigned simdSize)
@@ -23255,6 +23444,61 @@ GenTree* Compiler::gtNewSimdFloorNode(var_types type, GenTree* op1, CorInfoType 
 
     assert(intrinsic != NI_Illegal);
     return gtNewSimdHWIntrinsicNode(type, op1, intrinsic, simdBaseJitType, simdSize);
+}
+
+GenTree* Compiler::gtNewSimdFmaNode(
+    var_types type, GenTree* op1, GenTree* op2, GenTree* op3, CorInfoType simdBaseJitType, unsigned simdSize)
+{
+    assert(varTypeIsSIMD(type));
+    assert(getSIMDTypeForSize(simdSize) == type);
+
+    assert(op1 != nullptr);
+    assert(op1->TypeIs(type));
+
+    assert(op2 != nullptr);
+    assert(op2->TypeIs(type));
+
+    assert(op3 != nullptr);
+    assert(op3->TypeIs(type));
+
+    var_types simdBaseType = JitType2PreciseVarType(simdBaseJitType);
+    assert(varTypeIsFloating(simdBaseType));
+
+    NamedIntrinsic intrinsic = NI_Illegal;
+
+#if defined(TARGET_XARCH)
+    if (simdSize == 64)
+    {
+        assert(compIsaSupportedDebugOnly(InstructionSet_AVX512F));
+        intrinsic = NI_AVX512F_FusedMultiplyAdd;
+    }
+    else
+    {
+        assert(compIsaSupportedDebugOnly(InstructionSet_FMA));
+        intrinsic = NI_FMA_MultiplyAdd;
+    }
+#elif defined(TARGET_ARM64)
+    assert(IsBaselineSimdIsaSupportedDebugOnly());
+
+    if (simdBaseType == TYP_DOUBLE)
+    {
+        intrinsic = (simdSize == 8) ? NI_AdvSimd_FusedMultiplyAddScalar : NI_AdvSimd_Arm64_FusedMultiplyAdd;
+    }
+    else
+    {
+        intrinsic = NI_AdvSimd_FusedMultiplyAdd;
+    }
+
+    // AdvSimd.FusedMultiplyAdd expects (addend, left, right), while the APIs take (left, right, addend)
+    // We expect op1 and op2 to have already been spilled
+
+    std::swap(op1, op3);
+#else
+#error Unsupported platform
+#endif // !TARGET_XARCH && !TARGET_ARM64
+
+    assert(intrinsic != NI_Illegal);
+    return gtNewSimdHWIntrinsicNode(type, op1, op2, op3, intrinsic, simdBaseJitType, simdSize);
 }
 
 GenTree* Compiler::gtNewSimdGetElementNode(
@@ -26382,6 +26626,33 @@ bool GenTreeHWIntrinsic::OperIsMemoryLoad(GenTree** pAddr) const
                 break;
 
             case NI_Sve_LoadVector:
+            case NI_Sve_LoadVectorByteZeroExtendToInt16:
+            case NI_Sve_LoadVectorByteZeroExtendToInt32:
+            case NI_Sve_LoadVectorByteZeroExtendToInt64:
+            case NI_Sve_LoadVectorByteZeroExtendToUInt16:
+            case NI_Sve_LoadVectorByteZeroExtendToUInt32:
+            case NI_Sve_LoadVectorByteZeroExtendToUInt64:
+            case NI_Sve_LoadVectorInt16SignExtendToInt32:
+            case NI_Sve_LoadVectorInt16SignExtendToInt64:
+            case NI_Sve_LoadVectorInt16SignExtendToUInt32:
+            case NI_Sve_LoadVectorInt16SignExtendToUInt64:
+            case NI_Sve_LoadVectorInt32SignExtendToInt64:
+            case NI_Sve_LoadVectorInt32SignExtendToUInt64:
+            case NI_Sve_LoadVectorSByteSignExtendToInt16:
+            case NI_Sve_LoadVectorSByteSignExtendToInt32:
+            case NI_Sve_LoadVectorSByteSignExtendToInt64:
+            case NI_Sve_LoadVectorSByteSignExtendToUInt16:
+            case NI_Sve_LoadVectorSByteSignExtendToUInt32:
+            case NI_Sve_LoadVectorSByteSignExtendToUInt64:
+            case NI_Sve_LoadVectorUInt16ZeroExtendToInt32:
+            case NI_Sve_LoadVectorUInt16ZeroExtendToInt64:
+            case NI_Sve_LoadVectorUInt16ZeroExtendToUInt32:
+            case NI_Sve_LoadVectorUInt16ZeroExtendToUInt64:
+            case NI_Sve_LoadVectorUInt32ZeroExtendToInt64:
+            case NI_Sve_LoadVectorUInt32ZeroExtendToUInt64:
+            case NI_Sve_Load2xVectorAndUnzip:
+            case NI_Sve_Load3xVectorAndUnzip:
+            case NI_Sve_Load4xVectorAndUnzip:
                 addr = Op(2);
                 break;
 #endif // TARGET_ARM64
@@ -26494,7 +26765,17 @@ bool GenTreeHWIntrinsic::OperIsMemoryStore(GenTree** pAddr) const
             case NI_SSE2_MaskMove:
                 addr = Op(3);
                 break;
-#endif // TARGET_XARCH
+#elif defined(TARGET_ARM64)
+            case NI_Sve_StoreAndZip:
+            case NI_Sve_StoreAndZipx2:
+            case NI_Sve_StoreAndZipx3:
+            case NI_Sve_StoreAndZipx4:
+            case NI_Sve_StoreNarrowing:
+            case NI_Sve_StoreNonTemporal:
+                addr = Op(2);
+                break;
+
+#endif // TARGET_ARM64
 
             default:
                 addr = Op(1);
@@ -26588,7 +26869,23 @@ bool GenTreeHWIntrinsic::OperIsMemoryStoreOrBarrier() const
 bool GenTreeHWIntrinsic::OperIsEmbBroadcastCompatible() const
 {
 #if defined(TARGET_XARCH)
-    return HWIntrinsicInfo::IsEmbBroadcastCompatible(GetHWIntrinsicId());
+    NamedIntrinsic intrinsicId  = GetHWIntrinsicId();
+    var_types      simdBaseType = GetSimdBaseType();
+
+    switch (intrinsicId)
+    {
+        case NI_AVX512F_ConvertToVector256Int32:
+        case NI_AVX512F_ConvertToVector256UInt32:
+        case NI_AVX512F_VL_ConvertToVector128UInt32:
+        {
+            return varTypeIsFloating(simdBaseType);
+        }
+
+        default:
+        {
+            return !varTypeIsSmall(simdBaseType) && HWIntrinsicInfo::IsEmbBroadcastCompatible(intrinsicId);
+        }
+    }
 #else
     return false;
 #endif // TARGET_XARCH
@@ -26759,9 +27056,8 @@ bool GenTreeHWIntrinsic::OperIsEmbRoundingEnabled() const
 //
 bool GenTreeHWIntrinsic::OperRequiresAsgFlag() const
 {
-    // A MemoryStore operation is an assignment and barriers, while they
-    // don't technically do an assignment are modeled the same as
-    // GT_MEMORYBARRIER which tracks itself as requiring the GTF_ASG flag
+    // Barriers, while they don't technically do an assignment are modeled the same
+    // as GT_MEMORYBARRIER which tracks itself as requiring the GTF_ASG flag.
     return OperIsMemoryStoreOrBarrier();
 }
 
@@ -26802,7 +27098,7 @@ bool GenTreeHWIntrinsic::OperRequiresCallFlag() const
         }
     }
 
-    return false;
+    return IsUserCall();
 }
 
 //------------------------------------------------------------------------------
@@ -26881,6 +27177,13 @@ ClassLayout* GenTreeHWIntrinsic::GetLayout(Compiler* compiler) const
         case NI_AdvSimd_Arm64_LoadAndReplicateToVector128x4:
             return compiler->typGetBlkLayout(64);
 
+        case NI_Sve_Load2xVectorAndUnzip:
+            return compiler->typGetBlkLayout(compiler->getVectorTByteLength() * 2);
+        case NI_Sve_Load3xVectorAndUnzip:
+            return compiler->typGetBlkLayout(compiler->getVectorTByteLength() * 3);
+        case NI_Sve_Load4xVectorAndUnzip:
+            return compiler->typGetBlkLayout(compiler->getVectorTByteLength() * 4);
+
 #endif // TARGET_ARM64
 
         default:
@@ -26908,6 +27211,9 @@ void GenTreeHWIntrinsic::SetHWIntrinsicId(NamedIntrinsic intrinsicId)
 
     // We'll choose to trust the programmer here.
     assert((oldOperandCount == static_cast<size_t>(newOperandCount)) || newCountUnknown);
+
+    // All ids being set must be valid
+    assert(!HWIntrinsicInfo::IsInvalidNodeId(intrinsicId));
 #endif // DEBUG
 
     gtHWIntrinsicId = intrinsicId;
@@ -26943,7 +27249,7 @@ void GenTreeHWIntrinsic::Initialize(NamedIntrinsic intrinsicId)
             case NI_SSE2_MemoryFence:
             case NI_X86Serialize_Serialize:
             {
-                // Mark as an assignment and global reference, much as is done for GT_MEMORYBARRIER
+                // Mark as a store and global reference, much as is done for GT_MEMORYBARRIER
                 gtFlags |= (GTF_ASG | GTF_GLOB_REF);
                 break;
             }
@@ -27071,7 +27377,7 @@ genTreeOps GenTreeHWIntrinsic::HWOperGet() const
 GenTree* Compiler::gtNewMustThrowException(unsigned helper, var_types type, CORINFO_CLASS_HANDLE clsHnd)
 {
     GenTreeCall* node = gtNewHelperCallNode(helper, TYP_VOID);
-    node->gtCallMoreFlags |= GTF_CALL_M_DOES_NOT_RETURN;
+    assert(node->IsNoReturn());
     if (type != TYP_VOID)
     {
         unsigned dummyTemp = lvaGrabTemp(true DEBUGARG("dummy temp of must thrown exception"));
@@ -27571,75 +27877,14 @@ regMaskTP ReturnTypeDesc::GetABIReturnRegs(CorInfoCallConvExtension callConv) co
 }
 
 //------------------------------------------------------------------------
-// The following functions manage the gtRsvdRegs set of temporary registers
-// created by LSRA during code generation.
-
-//------------------------------------------------------------------------
-// AvailableTempRegCount: return the number of available temporary registers in the (optional) given set
-// (typically, RBM_ALLINT or RBM_ALLFLOAT).
+//  GetNum: Get the SSA number for a given field.
 //
-// Arguments:
-//    mask - (optional) Check for available temporary registers only in this set.
+//  Arguments:
+//     compiler - The Compiler instance
+//     index    - The field index
 //
-// Return Value:
-//    Count of available temporary registers in given set.
-//
-unsigned GenTree::AvailableTempRegCount(regMaskTP mask /* = (regMaskTP)-1 */) const
-{
-    return genCountBits(gtRsvdRegs & mask);
-}
-
-//------------------------------------------------------------------------
-// GetSingleTempReg: There is expected to be exactly one available temporary register
-// in the given mask in the gtRsvdRegs set. Get that register. No future calls to get
-// a temporary register are expected. Removes the register from the set, but only in
-// DEBUG to avoid doing unnecessary work in non-DEBUG builds.
-//
-// Arguments:
-//    mask - (optional) Get an available temporary register only in this set.
-//
-// Return Value:
-//    Available temporary register in given mask.
-//
-regNumber GenTree::GetSingleTempReg(regMaskTP mask /* = (regMaskTP)-1 */)
-{
-    regMaskTP availableSet = gtRsvdRegs & mask;
-    assert(genCountBits(availableSet) == 1);
-    regNumber tempReg = genRegNumFromMask(availableSet);
-    INDEBUG(gtRsvdRegs &= ~availableSet;) // Remove the register from the set, so it can't be used again.
-    return tempReg;
-}
-
-//------------------------------------------------------------------------
-// ExtractTempReg: Find the lowest number temporary register from the gtRsvdRegs set
-// that is also in the optional given mask (typically, RBM_ALLINT or RBM_ALLFLOAT),
-// and return it. Remove this register from the temporary register set, so it won't
-// be returned again.
-//
-// Arguments:
-//    mask - (optional) Extract an available temporary register only in this set.
-//
-// Return Value:
-//    Available temporary register in given mask.
-//
-regNumber GenTree::ExtractTempReg(regMaskTP mask /* = (regMaskTP)-1 */)
-{
-    regMaskTP availableSet = gtRsvdRegs & mask;
-    assert(genCountBits(availableSet) >= 1);
-    regNumber tempReg = genFirstRegNumFromMask(availableSet);
-    gtRsvdRegs ^= genRegMask(tempReg);
-    return tempReg;
-}
-
-//------------------------------------------------------------------------
-// GetNum: Get the SSA number for a given field.
-//
-// Arguments:
-//    compiler - The Compiler instance
-//    index    - The field index
-//
-// Return Value:
-//    The SSA number corresponding to the field at "index".
+//  Return Value:
+//     The SSA number corresponding to the field at "index".
 //
 unsigned SsaNumInfo::GetNum(Compiler* compiler, unsigned index) const
 {
@@ -27844,7 +28089,7 @@ bool GenTreeLclVar::IsNeverNegative(Compiler* comp) const
     return comp->lvaGetDesc(GetLclNum())->IsNeverNegative();
 }
 
-#if defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
+#if (defined(TARGET_XARCH) || defined(TARGET_ARM64)) && defined(FEATURE_HW_INTRINSICS)
 //------------------------------------------------------------------------
 // GetResultOpNumForRmwIntrinsic: check if the result is written into one of the operands.
 // In the case that none of the operand is overwritten, check if any of them is lastUse.
@@ -27855,7 +28100,11 @@ bool GenTreeLclVar::IsNeverNegative(Compiler* comp) const
 //
 unsigned GenTreeHWIntrinsic::GetResultOpNumForRmwIntrinsic(GenTree* use, GenTree* op1, GenTree* op2, GenTree* op3)
 {
+#if defined(TARGET_XARCH)
     assert(HWIntrinsicInfo::IsFmaIntrinsic(gtHWIntrinsicId) || HWIntrinsicInfo::IsPermuteVar2x(gtHWIntrinsicId));
+#elif defined(TARGET_ARM64)
+    assert(HWIntrinsicInfo::IsFmaIntrinsic(gtHWIntrinsicId));
+#endif
 
     if (use != nullptr && use->OperIs(GT_STORE_LCL_VAR))
     {

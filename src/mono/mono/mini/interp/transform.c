@@ -419,11 +419,12 @@ interp_create_var_explicit (TransformData *td, MonoType *type, int size)
 	if (td->vars_size == td->vars_capacity) {
 		td->vars_capacity *= 2;
 		if (td->vars_capacity == 0)
-			td->vars_capacity = 2;
+			td->vars_capacity = 16;
 		td->vars = (InterpVar*) g_realloc (td->vars, td->vars_capacity * sizeof (InterpVar));
 	}
 	int mt = mono_mint_type (type);
 	InterpVar *local = &td->vars [td->vars_size];
+	// FIXME: We don't need to do this memset unless we realloc'd, since we malloc0 vars initially
 	memset (local, 0, sizeof (InterpVar));
 
 	local->type = type;
@@ -449,6 +450,15 @@ interp_create_dummy_var (TransformData *td)
 	td->dummy_var = interp_create_var_explicit (td, m_class_get_byval_arg (mono_defaults.void_class), 8);
 	td->vars [td->dummy_var].offset = 0;
 	td->vars [td->dummy_var].global = TRUE;
+}
+
+static void
+interp_create_ref_handle_var (TransformData *td)
+{
+	int var = interp_create_var_explicit (td, m_class_get_byval_arg (mono_defaults.int_class), sizeof (gpointer));
+	td->vars [var].global = TRUE;
+	interp_alloc_global_var_offset (td, var);
+	td->ref_handle_var = var;
 }
 
 static int
@@ -2897,6 +2907,9 @@ interp_method_check_inlining (TransformData *td, MonoMethod *method, MonoMethodS
 	if (g_list_find (td->dont_inline, method))
 		return FALSE;
 
+	if (m_class_is_exception_class (method->klass) && !strcmp (method->name, ".ctor"))
+		return FALSE;
+
 	return TRUE;
 }
 
@@ -3307,6 +3320,95 @@ interp_try_devirt (MonoClass *this_klass, MonoMethod *target_method)
 	return NULL;
 }
 
+static MonoMethodSignature*
+interp_emit_swiftcall_struct_lowering (TransformData *td, MonoMethodSignature *csignature)
+{
+	// P/Invoke calls shouldn't contain 'this'
+	g_assert (!csignature->hasthis);
+ 	
+	/*
+	 * Argument reordering here doesn't handle on the fly offset allocation 
+	 * and requires the full var offset allocator pass that is only ran for optimized code
+	 */ 
+	g_assert (td->optimized);
+
+	MonoMethodSignature *new_csignature;
+	// Save the function pointer
+	StackInfo sp_fp = td->sp [-1];
+	--td->sp;
+
+	// Save the old arguments				
+	td->sp -= csignature->param_count;
+	StackInfo *sp_old_params = (StackInfo*) mono_mempool_alloc (td->mempool, sizeof (StackInfo) * csignature->param_count);
+	for (int i = 0; i < csignature->param_count; ++i)
+		sp_old_params [i] = td->sp [i];
+
+	GArray *new_params = g_array_sized_new (FALSE, FALSE, sizeof (MonoType*), csignature->param_count);
+	uint32_t new_param_count = 0;
+	int align;
+	MonoClass *swift_self = mono_class_try_get_swift_self_class ();
+	MonoClass *swift_error = mono_class_try_get_swift_error_class ();
+	/*
+	* Go through the lowered arguments, if the argument is a struct, 
+	* we need to replace it with a sequence of lowered arguments.
+	* Also record the updated parameters for the new signature.
+	*/
+	for (int idx_param = 0; idx_param < csignature->param_count; ++idx_param) {
+		MonoType *ptype = csignature->params [idx_param];
+		MonoClass *klass = mono_class_from_mono_type_internal (ptype);
+		// SwiftSelf and SwiftError are special cases where we need to preserve the class information for the codegen to handle them correctly.
+		if (mono_type_is_struct (ptype) && !(klass == swift_self || klass == swift_error)) {
+			SwiftPhysicalLowering lowered_swift_struct = mono_marshal_get_swift_physical_lowering (ptype, FALSE);
+			if (!lowered_swift_struct.by_reference) {
+				for (uint32_t idx_lowered = 0; idx_lowered < lowered_swift_struct.num_lowered_elements; ++idx_lowered) {
+					int mt_lowered = mono_mint_type (lowered_swift_struct.lowered_elements [idx_lowered]);
+					int lowered_elem_size = mono_type_size (lowered_swift_struct.lowered_elements [idx_lowered], &align); 
+					// Load the lowered elements of the struct
+					interp_add_ins (td, MINT_MOV_SRC_OFF);
+					interp_ins_set_sreg (td->last_ins, sp_old_params [idx_param].var);
+					td->last_ins->data [0] = (guint16) lowered_swift_struct.offsets [idx_lowered];
+					td->last_ins->data [1] = GINT_TO_UINT16 (mt_lowered);
+					td->last_ins->data [2] = GINT_TO_UINT16 (lowered_elem_size);
+					push_mono_type (td, lowered_swift_struct.lowered_elements [idx_lowered], mt_lowered, mono_class_from_mono_type_internal (lowered_swift_struct.lowered_elements [idx_lowered]));
+					interp_ins_set_dreg (td->last_ins, td->sp [-1].var);
+					
+					++new_param_count;
+					g_array_append_val (new_params, lowered_swift_struct.lowered_elements [idx_lowered]);
+				}
+			} else {
+				// For structs that cannot be lowered, we change the argument to byref type
+				ptype = mono_class_get_byref_type (mono_defaults.typed_reference_class);
+				// Load the address of the struct
+				interp_add_ins (td, MINT_LDLOCA_S);
+				interp_ins_set_sreg (td->last_ins, sp_old_params [idx_param].var);
+				push_simple_type (td, STACK_TYPE_I);
+				interp_ins_set_dreg (td->last_ins, td->sp [-1].var);
+
+				++new_param_count;
+				g_array_append_val (new_params, ptype);
+			}
+		} else {
+			// Copy over non-struct arguments
+			memcpy (td->sp, &sp_old_params [idx_param], sizeof (StackInfo));
+			++td->sp;
+
+			++new_param_count;
+			g_array_append_val (new_params, ptype);
+		}
+	}
+	// Restore the function pointer
+	memcpy (td->sp, &sp_fp, sizeof (StackInfo));
+	++td->sp;
+
+	// Create a new dummy signature with the lowered arguments
+	new_csignature = mono_metadata_signature_dup_new_params (NULL, td->mem_manager, csignature, new_param_count, (MonoType**)new_params->data);
+
+	// Deallocate temp array
+	g_array_free (new_params, TRUE);
+
+	return new_csignature;
+}
+
 /* Return FALSE if error, including inline failure */
 static gboolean
 interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target_method, MonoGenericContext *generic_context, MonoClass *constrained_class, gboolean readonly, MonoError *error, gboolean check_visibility, gboolean save_last_error, gboolean tailcall)
@@ -3390,6 +3492,16 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 		mono_error_set_generic_error (error, "System", "InvalidProgramException", "thiscall with 0 arguments");
 		return FALSE;
 	}
+
+#ifdef MONO_ARCH_HAVE_SWIFTCALL
+	/*
+	* We need to modify the signature of the swiftcall calli to account for the lowering of Swift structs.
+	* This is done by replacing struct arguments on stack with a lowered sequence and updating the signature.
+	*/
+	if (csignature->pinvoke && mono_method_signature_has_ext_callconv (csignature, MONO_EXT_CALLCONV_SWIFTCALL)) {
+		csignature = interp_emit_swiftcall_struct_lowering (td, csignature);
+	}
+#endif
 
 	if (check_visibility && target_method && !mono_method_can_access_method (method, target_method))
 		interp_generate_mae_throw (td, method, target_method);
@@ -3756,6 +3868,10 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 		td->last_ins->data [0] = get_data_item_index_imethod (td, mono_interp_get_imethod (target_method));
 	} else {
 		if (is_delegate_invoke) {
+			// MINT_CALL_DELEGATE will store the delegate object into this slot so it is kept alive
+			// while the method is invoked
+			if (td->ref_handle_var == -1)
+				interp_create_ref_handle_var (td);
 			interp_add_ins (td, MINT_CALL_DELEGATE);
 			interp_ins_set_dreg (td->last_ins, dreg);
 			interp_ins_set_sreg (td->last_ins, MINT_CALL_ARGS_SREG);
@@ -4329,16 +4445,26 @@ interp_method_compute_offsets (TransformData *td, InterpMethod *imethod, MonoMet
 	int num_args = sig->hasthis + sig->param_count;
 	int num_il_locals = header->num_locals;
 	int num_locals = num_args + num_il_locals;
+	// HACK: Pre-reserve extra space to reduce the number of times we realloc during codegen, since it's expensive
+	// 64 vars * 72 bytes = 4608 bytes. Many methods need less than this
+	int target_vars_capacity = num_locals + 64;
 
 	imethod->local_offsets = (guint32*)g_malloc (num_il_locals * sizeof(guint32));
-	td->vars = (InterpVar*)g_malloc0 (num_locals * sizeof (InterpVar));
+	td->vars = (InterpVar*)g_malloc0 (target_vars_capacity * sizeof (InterpVar));
 	td->vars_size = num_locals;
-	td->vars_capacity = td->vars_size;
+	td->vars_capacity = target_vars_capacity;
 
-	td->renamable_vars = (InterpRenamableVar*)g_malloc (num_locals * sizeof (InterpRenamableVar));
+	td->renamable_vars = (InterpRenamableVar*)g_malloc (target_vars_capacity * sizeof (InterpRenamableVar));
 	td->renamable_vars_size = 0;
-	td->renamable_vars_capacity = num_locals;
+	td->renamable_vars_capacity = target_vars_capacity;
 	offset = 0;
+
+#ifdef MONO_ARCH_HAVE_SWIFTCALL
+	int swift_error_index = -1;
+	imethod->swift_error_offset = -1;
+	MonoClass *swift_error = mono_class_try_get_swift_error_class ();
+	MonoClass *swift_error_ptr = mono_class_create_ptr (m_class_get_this_arg (swift_error));
+#endif
 
 	/*
 	 * We will load arguments as if they are locals. Unlike normal locals, every argument
@@ -4364,6 +4490,15 @@ interp_method_compute_offsets (TransformData *td, InterpMethod *imethod, MonoMet
 		td->vars [i].offset = offset;
 		interp_mark_ref_slots_for_var (td, i);
 		offset += size;
+
+#ifdef MONO_ARCH_HAVE_SWIFTCALL
+	if (swift_error_index < 0 && mono_method_signature_has_ext_callconv (sig, MONO_EXT_CALLCONV_SWIFTCALL)) {
+		MonoClass *klass = mono_class_from_mono_type_internal (type);
+		if (klass == swift_error_ptr)
+			swift_error_index = i;
+	}
+#endif
+
 	}
 	offset = ALIGN_TO (offset, MINT_STACK_ALIGNMENT);
 
@@ -4396,6 +4531,16 @@ interp_method_compute_offsets (TransformData *td, InterpMethod *imethod, MonoMet
 
 	td->il_locals_size = offset - td->il_locals_offset;
 	td->total_locals_size = offset;
+
+#ifdef MONO_ARCH_HAVE_SWIFTCALL
+	if (mono_method_signature_has_ext_callconv (sig, MONO_EXT_CALLCONV_SWIFTCALL) && swift_error_index >= 0) {
+		MonoType* type =  mono_method_signature_internal (td->method)->params [swift_error_index - sig->hasthis];
+		int var = interp_create_var_explicit (td, type, sizeof(gpointer));
+		td->vars [var].global = TRUE;
+		interp_alloc_global_var_offset (td, var);
+		imethod->swift_error_offset = td->vars [var].offset;
+	}
+#endif
 
 	imethod->clause_data_offsets = (guint32*)g_malloc (header->num_clauses * sizeof (guint32));
 	td->clause_vars = (int*)mono_mempool_alloc (td->mempool, sizeof (int) * header->num_clauses);
@@ -4624,6 +4769,18 @@ interp_emit_sfld_access (TransformData *td, MonoClassField *field, MonoClass *fi
 			}
 			interp_ins_set_dreg (td->last_ins, td->sp [-1].var);
 		} else {
+			// Fields from hotreload update and fields from collectible assemblies are not
+			// stored inside fixed gc roots but rather in other objects. This means that
+			// storing into these fields requires write barriers.
+			if ((mt == MINT_TYPE_VT || mt == MINT_TYPE_O) &&
+					(m_field_is_from_update (field) ||
+					mono_image_get_alc (m_class_get_image (m_field_get_parent (field)))->collectible)) {
+				interp_emit_ldsflda (td, field, error);
+				return_if_nok (error);
+				interp_emit_stobj (td, field_class, TRUE);
+				return;
+			}
+
 			if (G_LIKELY (!wide_data))
 				interp_add_ins (td, (mt == MINT_TYPE_VT) ? MINT_STSFLD_VT : (MINT_STSFLD_I1 + mt - MINT_TYPE_I1));
 			else
@@ -4788,6 +4945,35 @@ handle_stelem (TransformData *td, int op)
 	interp_add_ins (td, op);
 	td->sp -= 3;
 	interp_ins_set_sregs3 (td->last_ins, td->sp [0].var, td->sp [1].var, td->sp [2].var);
+
+	if (op == MINT_STELEM_REF) {
+		InterpVar *array_var = &td->vars [td->last_ins->sregs [0]],
+			*value_var = &td->vars [td->last_ins->sregs [2]];
+		MonoClass *array_var_klass = mono_class_from_mono_type_internal (array_var->type),
+			*value_var_klass = mono_class_from_mono_type_internal (value_var->type);
+
+		if (m_class_is_array (array_var_klass)) {
+			MonoClass *array_element_klass = m_class_get_element_class (array_var_klass);
+			// If lhs is T[] and rhs is T and T is sealed, we can skip the runtime typecheck
+			if (
+				(array_element_klass == value_var_klass) &&
+				m_class_is_sealed(value_var_klass) &&
+				// HACK: Arrays are sealed, but it's possible to downcast string[][] to object[][],
+				//  so we don't want to treat elements of array types as actually sealed.
+				// Our lhs of type object[][] might actually be of a different reference type.
+				!m_class_is_array(value_var_klass)
+			){
+				if (td->verbose_level > 2)
+					g_printf (
+						"MINT_STELEM_REF_UNCHECKED for %s in %s::%s\n",
+						m_class_get_name (value_var_klass),
+						m_class_get_name (td->method->klass), td->method->name
+					);
+				td->last_ins->opcode = MINT_STELEM_REF_UNCHECKED;
+			}
+		}
+	}
+
 	++td->ip;
 }
 
@@ -4986,7 +5172,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 		arg_locals = (guint32*) g_malloc ((!!signature->hasthis + signature->param_count) * sizeof (guint32));
 		/* Allocate locals to store inlined method args from stack */
 		for (int i = signature->param_count - 1; i >= 0; i--) {
-			MonoType *type = td->vars [td->sp [-1].var].type;
+			MonoType *type = get_type_from_stack (td->sp [-1].type, td->sp [-1].klass);
 			local = interp_create_var (td, type);
 			arg_locals [i + !!signature->hasthis] = local;
 			store_local (td, local);
@@ -8540,7 +8726,7 @@ interp_mark_ref_slots_for_vt (TransformData *td, int base_offset, MonoClass *kla
 retry:
 		if (mini_type_is_reference (ftype) || ftype->type == MONO_TYPE_I || ftype->type == MONO_TYPE_U || m_type_is_byref (ftype)) {
 			int index = offset / sizeof (gpointer);
-			mono_bitset_set_fast (td->ref_slots, index);
+			mono_bitset_set (td->ref_slots, index);
 			if (td->verbose_level)
 				g_print ("Stack ref slot vt field at off %d\n", offset);
 		} else if (ftype->type == MONO_TYPE_VALUETYPE || ftype->type == MONO_TYPE_GENERICINST) {
@@ -8572,6 +8758,8 @@ interp_mark_ref_slots_for_var (TransformData *td, int var)
 	if (!td->ref_slots || max_index >= td->ref_slots->size) {
 		guint32 old_size = td->ref_slots ? (guint32)td->ref_slots->size : 0;
 		guint32 new_size = old_size ? old_size * 2 : 32;
+		while (new_size <= max_index)
+			new_size *= 2;
 
 		gpointer mem = mono_mempool_alloc0 (td->mempool, mono_bitset_alloc_size (new_size, 0));
 		MonoBitSet *new_ref_slots = mono_bitset_mem_new (mem, new_size, 0);
@@ -8589,7 +8777,7 @@ interp_mark_ref_slots_for_var (TransformData *td, int var)
 		// Managed pointers in interp are normally MONO_TYPE_I
 		if (mini_type_is_reference (type) || type->type == MONO_TYPE_I || type->type == MONO_TYPE_U || m_type_is_byref (type)) {
 			int index = td->vars [var].offset / sizeof (gpointer);
-			mono_bitset_set_fast (td->ref_slots, index);
+			mono_bitset_set (td->ref_slots, index);
 			if (td->verbose_level)
 				g_print ("Stack ref slot at off %d for var %d\n", index * sizeof (gpointer), var);
 		}
@@ -9085,6 +9273,7 @@ retry:
 	td->n_data_items = 0;
 	td->max_data_items = 0;
 	td->dummy_var = -1;
+	td->ref_handle_var = -1;
 	td->data_items = NULL;
 	td->data_hash = g_hash_table_new (NULL, NULL);
 #ifdef ENABLE_EXPERIMENT_TIERED
@@ -9260,6 +9449,11 @@ retry:
 		}
 	}
 
+	if (td->ref_handle_var != -1)
+		rtm->ref_slot_offset = td->vars [td->ref_handle_var].offset;
+	else
+		rtm->ref_slot_offset = -1;
+
 	/* Save debug info */
 	interp_save_debug_info (rtm, header, td, td->line_numbers);
 
@@ -9301,6 +9495,8 @@ exit:
 	g_free (td->data_items);
 	g_free (td->stack);
 	g_free (td->vars);
+	g_free (td->renamable_vars);
+	g_free (td->renamed_fixed_vars);
 	g_free (td->local_ref_count);
 	g_hash_table_destroy (td->data_hash);
 #ifdef ENABLE_EXPERIMENT_TIERED

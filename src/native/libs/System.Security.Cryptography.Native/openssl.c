@@ -627,8 +627,8 @@ BIO* CryptoNative_GetX509NameInfo(X509* x509, int32_t nameType, int32_t forIssue
                 break;
         }
 
-        STACK_OF(GENERAL_NAME)* altNames = (STACK_OF(GENERAL_NAME)*)(
-            X509_get_ext_d2i(x509, forIssuer ? NID_issuer_alt_name : NID_subject_alt_name, NULL, NULL));
+        GENERAL_NAMES* altNames = (GENERAL_NAMES*)
+            X509_get_ext_d2i(x509, forIssuer ? NID_issuer_alt_name : NID_subject_alt_name, NULL, NULL);
 
         if (altNames)
         {
@@ -684,13 +684,13 @@ BIO* CryptoNative_GetX509NameInfo(X509* x509, int32_t nameType, int32_t forIssue
                     {
                         BIO* b = BIO_new(BIO_s_mem());
                         ASN1_STRING_print_ex(b, str, ASN1_STRFLGS_UTF8_CONVERT);
-                        sk_GENERAL_NAME_free(altNames);
+                        GENERAL_NAMES_free(altNames);
                         return b;
                     }
                 }
             }
 
-            sk_GENERAL_NAME_free(altNames);
+            GENERAL_NAMES_free(altNames);
         }
     }
 
@@ -963,6 +963,20 @@ int32_t CryptoNative_X509StoreSetVerifyTime(X509_STORE* ctx,
     {
         return 0;
     }
+
+#if defined(FEATURE_DISTRO_AGNOSTIC_SSL) && defined(TARGET_ARM) && defined(TARGET_LINUX)
+    if (g_libSslUses32BitTime)
+    {
+        if (verifyTime > INT_MAX || verifyTime < INT_MIN)
+        {
+            return 0;
+        }
+
+        // Cast to a signature that takes a 32-bit value for the time.
+        ((void (*)(X509_VERIFY_PARAM*, int32_t))(void*)(X509_VERIFY_PARAM_set_time))(verifyParams, (int32_t)verifyTime);
+        return 1;
+    }
+#endif
 
     X509_VERIFY_PARAM_set_time(verifyParams, verifyTime);
     return 1;

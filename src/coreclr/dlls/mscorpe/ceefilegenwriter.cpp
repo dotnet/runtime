@@ -256,13 +256,13 @@ CeeFileGenWriter::CeeFileGenWriter() // ctor is protected
     m_dllCount = 0;
 
     m_dwManifestSize = 0;
-    m_dwManifestRVA = NULL;
+    m_dwManifestRVA = 0;
 
     m_dwStrongNameSize = 0;
-    m_dwStrongNameRVA = NULL;
+    m_dwStrongNameRVA = 0;
 
     m_dwVTableSize = 0;
-    m_dwVTableRVA = NULL;
+    m_dwVTableRVA = 0;
 
     m_iDataDlls = NULL;
 

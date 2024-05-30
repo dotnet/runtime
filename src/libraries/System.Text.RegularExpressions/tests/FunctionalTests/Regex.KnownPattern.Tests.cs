@@ -1526,7 +1526,7 @@ namespace System.Text.RegularExpressions.Tests
                 (Options & ~RegexOptions.Compiled) == (other.Options & ~RegexOptions.Compiled); // Compiled doesn't affect semantics, so remove it from equality for our purposes
         }
 
-#if NETCOREAPP
+#if NET
         [OuterLoop("Takes many seconds")]
         [Fact]
         public async Task PatternsDataSet_ConstructRegexForAll_NonBacktracking()

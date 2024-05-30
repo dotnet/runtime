@@ -54,8 +54,6 @@ typedef struct {
 	MonoInternalHashTable interp_code_hash;
 	/* Maps MonoMethod -> 	MonoMethodRuntimeGenericContext */
 	GHashTable *mrgctx_hash;
-	/* Maps gpointer -> InterpMethod */
-	GHashTable *interp_method_pointer_hash;
 	/* Protected by 'jit_code_hash_lock' */
 	MonoInternalHashTable jit_code_hash;
 	mono_mutex_t    jit_code_hash_lock;

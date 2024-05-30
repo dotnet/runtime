@@ -6,6 +6,8 @@ using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics.Arm;
+using System.Runtime.Intrinsics.X86;
+using System.Text;
 
 namespace System.Runtime.Intrinsics
 {
@@ -339,7 +341,7 @@ namespace System.Runtime.Intrinsics
             return result;
         }
 
-        /// <summary>Converts a <see cref="Vector64{Single}" /> to a <see cref="Vector64{Int32}" />.</summary>
+        /// <summary>Converts a <see cref="Vector64{Single}" /> to a <see cref="Vector64{Int32}" /> using saturation on overflow.</summary>
         /// <param name="vector">The vector to convert.</param>
         /// <returns>The converted vector.</returns>
         [Intrinsic]
@@ -350,14 +352,32 @@ namespace System.Runtime.Intrinsics
 
             for (int i = 0; i < Vector64<int>.Count; i++)
             {
-                int value = (int)vector.GetElementUnsafe(i);
+                int value = float.ConvertToInteger<int>(vector.GetElementUnsafe(i));
                 result.SetElementUnsafe(i, value);
             }
 
             return result;
         }
 
-        /// <summary>Converts a <see cref="Vector64{Double}" /> to a <see cref="Vector64{Int64}" />.</summary>
+        /// <summary>Converts a <see cref="Vector64{Single}" /> to a <see cref="Vector64{Int32}" /> using platform specific behavior on overflow.</summary>
+        /// <param name="vector">The vector to convert.</param>
+        /// <returns>The converted vector.</returns>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static unsafe Vector64<int> ConvertToInt32Native(Vector64<float> vector)
+        {
+            Unsafe.SkipInit(out Vector64<int> result);
+
+            for (int i = 0; i < Vector64<int>.Count; i++)
+            {
+                int value = float.ConvertToIntegerNative<int>(vector.GetElementUnsafe(i));
+                result.SetElementUnsafe(i, value);
+            }
+
+            return result;
+        }
+
+        /// <summary>Converts a <see cref="Vector64{Double}" /> to a <see cref="Vector64{Int64}" /> using saturation on overflow.</summary>
         /// <param name="vector">The vector to convert.</param>
         /// <returns>The converted vector.</returns>
         [Intrinsic]
@@ -368,7 +388,25 @@ namespace System.Runtime.Intrinsics
 
             for (int i = 0; i < Vector64<long>.Count; i++)
             {
-                long value = (long)vector.GetElementUnsafe(i);
+                long value = double.ConvertToInteger<long>(vector.GetElementUnsafe(i));
+                result.SetElementUnsafe(i, value);
+            }
+
+            return result;
+        }
+
+        /// <summary>Converts a <see cref="Vector64{Double}" /> to a <see cref="Vector64{Int64}" /> using platform specific behavior on overflow.</summary>
+        /// <param name="vector">The vector to convert.</param>
+        /// <returns>The converted vector.</returns>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static unsafe Vector64<long> ConvertToInt64Native(Vector64<double> vector)
+        {
+            Unsafe.SkipInit(out Vector64<long> result);
+
+            for (int i = 0; i < Vector64<long>.Count; i++)
+            {
+                long value = double.ConvertToIntegerNative<long>(vector.GetElementUnsafe(i));
                 result.SetElementUnsafe(i, value);
             }
 
@@ -412,7 +450,7 @@ namespace System.Runtime.Intrinsics
             return result;
         }
 
-        /// <summary>Converts a <see cref="Vector64{Single}" /> to a <see cref="Vector64{UInt32}" />.</summary>
+        /// <summary>Converts a <see cref="Vector64{Single}" /> to a <see cref="Vector64{UInt32}" /> using saturation on overflow.</summary>
         /// <param name="vector">The vector to convert.</param>
         /// <returns>The converted vector.</returns>
         [Intrinsic]
@@ -424,14 +462,33 @@ namespace System.Runtime.Intrinsics
 
             for (int i = 0; i < Vector64<uint>.Count; i++)
             {
-                uint value = (uint)vector.GetElementUnsafe(i);
+                uint value = float.ConvertToInteger<uint>(vector.GetElementUnsafe(i));
                 result.SetElementUnsafe(i, value);
             }
 
             return result;
         }
 
-        /// <summary>Converts a <see cref="Vector64{Double}" /> to a <see cref="Vector64{UInt64}" />.</summary>
+        /// <summary>Converts a <see cref="Vector64{Single}" /> to a <see cref="Vector64{UInt32}" /> using platform specific behavior on overflow.</summary>
+        /// <param name="vector">The vector to convert.</param>
+        /// <returns>The converted vector.</returns>
+        [Intrinsic]
+        [CLSCompliant(false)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static unsafe Vector64<uint> ConvertToUInt32Native(Vector64<float> vector)
+        {
+            Unsafe.SkipInit(out Vector64<uint> result);
+
+            for (int i = 0; i < Vector64<uint>.Count; i++)
+            {
+                uint value = float.ConvertToIntegerNative<uint>(vector.GetElementUnsafe(i));
+                result.SetElementUnsafe(i, value);
+            }
+
+            return result;
+        }
+
+        /// <summary>Converts a <see cref="Vector64{Double}" /> to a <see cref="Vector64{UInt64}" /> using saturation on overflow.</summary>
         /// <param name="vector">The vector to convert.</param>
         /// <returns>The converted vector.</returns>
         [Intrinsic]
@@ -443,7 +500,26 @@ namespace System.Runtime.Intrinsics
 
             for (int i = 0; i < Vector64<ulong>.Count; i++)
             {
-                ulong value = (ulong)vector.GetElementUnsafe(i);
+                ulong value = double.ConvertToInteger<ulong>(vector.GetElementUnsafe(i));
+                result.SetElementUnsafe(i, value);
+            }
+
+            return result;
+        }
+
+        /// <summary>Converts a <see cref="Vector64{Double}" /> to a <see cref="Vector64{UInt64}" /> using platform specific behavior on overflow.</summary>
+        /// <param name="vector">The vector to convert.</param>
+        /// <returns>The converted vector.</returns>
+        [Intrinsic]
+        [CLSCompliant(false)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static unsafe Vector64<ulong> ConvertToUInt64Native(Vector64<double> vector)
+        {
+            Unsafe.SkipInit(out Vector64<ulong> result);
+
+            for (int i = 0; i < Vector64<ulong>.Count; i++)
+            {
+                ulong value = double.ConvertToIntegerNative<ulong>(vector.GetElementUnsafe(i));
                 result.SetElementUnsafe(i, value);
             }
 
@@ -1158,7 +1234,7 @@ namespace System.Runtime.Intrinsics
 
             for (int index = 0; index < Vector64<T>.Count; index++)
             {
-                T value = T.Exp(vector.GetElement(index));
+                T value = T.Exp(vector.GetElementUnsafe(index));
                 result.SetElementUnsafe(index, value);
             }
 
@@ -1267,6 +1343,54 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector64<double> Floor(Vector64<double> vector) => Floor<double>(vector);
+
+        /// <summary>Computes (<paramref name="left"/> * <paramref name="right"/>) + <paramref name="addend"/>, rounded as one ternary operation.</summary>
+        /// <param name="left">The vector to be multiplied with <paramref name="right" />.</param>
+        /// <param name="right">The vector to be multiplied with <paramref name="left" />.</param>
+        /// <param name="addend">The vector to be added to the result of <paramref name="left" /> multiplied by <paramref name="right" />.</param>
+        /// <returns>(<paramref name="left"/> * <paramref name="right"/>) + <paramref name="addend"/>, rounded as one ternary operation.</returns>
+        /// <remarks>
+        ///   <para>This computes (<paramref name="left"/> * <paramref name="right"/>) as if to infinite precision, adds <paramref name="addend" /> to that result as if to infinite precision, and finally rounds to the nearest representable value.</para>
+        ///   <para>This differs from the non-fused sequence which would compute (<paramref name="left"/> * <paramref name="right"/>) as if to infinite precision, round the result to the nearest representable value, add <paramref name="addend" /> to the rounded result as if to infinite precision, and finally round to the nearest representable value.</para>
+        /// </remarks>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector64<double> FusedMultiplyAdd(Vector64<double> left, Vector64<double> right, Vector64<double> addend)
+        {
+            Unsafe.SkipInit(out Vector64<double> result);
+
+            for (int index = 0; index < Vector64<double>.Count; index++)
+            {
+                double value = double.FusedMultiplyAdd(left.GetElementUnsafe(index), right.GetElementUnsafe(index), addend.GetElementUnsafe(index));
+                result.SetElementUnsafe(index, value);
+            }
+
+            return result;
+        }
+
+        /// <summary>Computes (<paramref name="left"/> * <paramref name="right"/>) + <paramref name="addend"/>, rounded as one ternary operation.</summary>
+        /// <param name="left">The vector to be multiplied with <paramref name="right" />.</param>
+        /// <param name="right">The vector to be multiplied with <paramref name="left" />.</param>
+        /// <param name="addend">The vector to be added to the result of <paramref name="left" /> multiplied by <paramref name="right" />.</param>
+        /// <returns>(<paramref name="left"/> * <paramref name="right"/>) + <paramref name="addend"/>, rounded as one ternary operation.</returns>
+        /// <remarks>
+        ///   <para>This computes (<paramref name="left"/> * <paramref name="right"/>) as if to infinite precision, adds <paramref name="addend" /> to that result as if to infinite precision, and finally rounds to the nearest representable value.</para>
+        ///   <para>This differs from the non-fused sequence which would compute (<paramref name="left"/> * <paramref name="right"/>) as if to infinite precision, round the result to the nearest representable value, add <paramref name="addend" /> to the rounded result as if to infinite precision, and finally round to the nearest representable value.</para>
+        /// </remarks>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector64<float> FusedMultiplyAdd(Vector64<float> left, Vector64<float> right, Vector64<float> addend)
+        {
+            Unsafe.SkipInit(out Vector64<float> result);
+
+            for (int index = 0; index < Vector64<float>.Count; index++)
+            {
+                float value = float.FusedMultiplyAdd(left.GetElementUnsafe(index), right.GetElementUnsafe(index), addend.GetElementUnsafe(index));
+                result.SetElementUnsafe(index, value);
+            }
+
+            return result;
+        }
 
         /// <summary>Gets the element at the specified index.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
@@ -1619,7 +1743,7 @@ namespace System.Runtime.Intrinsics
 
             for (int index = 0; index < Vector64<T>.Count; index++)
             {
-                T value = T.Log(vector.GetElement(index));
+                T value = T.Log(vector.GetElementUnsafe(index));
                 result.SetElementUnsafe(index, value);
             }
 
@@ -1665,7 +1789,7 @@ namespace System.Runtime.Intrinsics
 
             for (int index = 0; index < Vector64<T>.Count; index++)
             {
-                T value = T.Log2(vector.GetElement(index));
+                T value = T.Log2(vector.GetElementUnsafe(index));
                 result.SetElementUnsafe(index, value);
             }
 
@@ -1775,6 +1899,54 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector64<T> Multiply<T>(T left, Vector64<T> right) => left * right;
+
+        /// <summary>Computes an estimate of (<paramref name="left"/> * <paramref name="right"/>) + <paramref name="addend"/>.</summary>
+        /// <param name="left">The vector to be multiplied with <paramref name="right" />.</param>
+        /// <param name="right">The vector to be multiplied with <paramref name="left" />.</param>
+        /// <param name="addend">The vector to be added to the result of <paramref name="left" /> multiplied by <paramref name="right" />.</param>
+        /// <returns>An estimate of (<paramref name="left"/> * <paramref name="right"/>) + <paramref name="addend"/>.</returns>
+        /// <remarks>
+        ///   <para>On hardware that natively supports <see cref="FusedMultiplyAdd" />, this may return a result that was rounded as one ternary operation.</para>
+        ///   <para>On hardware without specialized support, this may just return (<paramref name="left"/> * <paramref name="right"/>) + <paramref name="addend"/>.</para>
+        /// </remarks>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector64<double> MultiplyAddEstimate(Vector64<double> left, Vector64<double> right, Vector64<double> addend)
+        {
+            Unsafe.SkipInit(out Vector64<double> result);
+
+            for (int index = 0; index < Vector64<double>.Count; index++)
+            {
+                double element = double.MultiplyAddEstimate(left.GetElementUnsafe(index), right.GetElementUnsafe(index), addend.GetElementUnsafe(index));
+                result.SetElementUnsafe(index, element);
+            }
+
+            return result;
+        }
+
+        /// <summary>Computes an estimate of (<paramref name="left"/> * <paramref name="right"/>) + <paramref name="addend"/>.</summary>
+        /// <param name="left">The vector to be multiplied with <paramref name="right" />.</param>
+        /// <param name="right">The vector to be multiplied with <paramref name="left" />.</param>
+        /// <param name="addend">The vector to be added to the result of <paramref name="left" /> multiplied by <paramref name="right" />.</param>
+        /// <returns>An estimate of (<paramref name="left"/> * <paramref name="right"/>) + <paramref name="addend"/>.</returns>
+        /// <remarks>
+        ///   <para>On hardware that natively supports <see cref="FusedMultiplyAdd" />, this may return a result that was rounded as one ternary operation.</para>
+        ///   <para>On hardware without specialized support, this may just return (<paramref name="left"/> * <paramref name="right"/>) + <paramref name="addend"/>.</para>
+        /// </remarks>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector64<float> MultiplyAddEstimate(Vector64<float> left, Vector64<float> right, Vector64<float> addend)
+        {
+            Unsafe.SkipInit(out Vector64<float> result);
+
+            for (int index = 0; index < Vector64<float>.Count; index++)
+            {
+                float element = float.MultiplyAddEstimate(left.GetElementUnsafe(index), right.GetElementUnsafe(index), addend.GetElementUnsafe(index));
+                result.SetElementUnsafe(index, element);
+            }
+
+            return result;
+        }
 
         /// <summary>Narrows two <see cref="Vector64{Double}"/> instances into one <see cref="Vector64{Single}" />.</summary>
         /// <param name="lower">The vector that will be narrowed to the lower half of the result vector.</param>

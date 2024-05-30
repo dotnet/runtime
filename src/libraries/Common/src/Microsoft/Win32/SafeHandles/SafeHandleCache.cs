@@ -21,11 +21,13 @@ namespace Microsoft.Win32.SafeHandles
         /// </summary>
         internal static T GetInvalidHandle(Func<T> invalidHandleFactory)
         {
-            T? currentHandle = Volatile.Read(ref s_invalidHandle);
-            if (currentHandle == null)
+            return s_invalidHandle ?? CreateInvalidHandle(invalidHandleFactory);
+
+            static T CreateInvalidHandle(Func<T> invalidHandleFactory)
             {
                 T newHandle = invalidHandleFactory();
-                currentHandle = Interlocked.CompareExchange(ref s_invalidHandle, newHandle, null);
+                T? currentHandle = Interlocked.CompareExchange(ref s_invalidHandle, newHandle, null);
+
                 if (currentHandle == null)
                 {
                     GC.SuppressFinalize(newHandle);
@@ -35,9 +37,10 @@ namespace Microsoft.Win32.SafeHandles
                 {
                     newHandle.Dispose();
                 }
+
+                Debug.Assert(currentHandle.IsInvalid);
+                return currentHandle;
             }
-            Debug.Assert(currentHandle.IsInvalid);
-            return currentHandle;
         }
 
         /// <summary>Gets whether the specified handle is invalid handle.</summary>
@@ -46,7 +49,7 @@ namespace Microsoft.Win32.SafeHandles
         internal static bool IsCachedInvalidHandle(SafeHandle handle)
         {
             Debug.Assert(handle != null);
-            bool isCachedInvalidHandle = ReferenceEquals(handle, Volatile.Read(ref s_invalidHandle));
+            bool isCachedInvalidHandle = ReferenceEquals(handle, s_invalidHandle);
             Debug.Assert(!isCachedInvalidHandle || handle.IsInvalid, "The cached invalid handle must still be invalid.");
             return isCachedInvalidHandle;
         }

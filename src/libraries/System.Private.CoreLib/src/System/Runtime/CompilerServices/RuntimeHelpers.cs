@@ -129,6 +129,9 @@ namespace System.Runtime.CompilerServices
 
         [Intrinsic]
         internal static bool IsKnownConstant(char t) => false;
+
+        [Intrinsic]
+        internal static bool IsKnownConstant<T>(T t) where T : struct => false;
 #pragma warning restore IDE0060
     }
 }

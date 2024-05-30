@@ -1669,45 +1669,6 @@ struct JIT_LOAD_DATA
 // Here's the global data for JIT load and initialization state.
 JIT_LOAD_DATA g_JitLoadData;
 
-//  Validate that the name used to load the JIT is just a simple file name
-//  and does not contain something that could be used in a non-qualified path.
-//  For example, using the string "..\..\..\myjit.dll" we might attempt to
-//  load a JIT from the root of the drive.
-//
-//  The minimal set of characters that we must check for and exclude are:
-//  On all platforms:
-//     '/'  - (forward slash)
-//  On Windows:
-//     '\\' - (backslash)
-//     ':'  - (colon)
-//
-//  Returns false if we find any of these characters in 'pwzJitName'
-//  Returns true if we reach the null terminator without encountering
-//  any of these characters.
-//
-static bool ValidateJitName(LPCWSTR pwzJitName)
-{
-    LPCWSTR pCurChar = pwzJitName;
-    wchar_t curChar;
-    do {
-        curChar = *pCurChar;
-        if (curChar == '/'
-#ifdef TARGET_WINDOWS
-            || (curChar == '\\') || (curChar == ':')
-#endif
-        )
-        {
-            //  Return false if we find any of these character in 'pwzJitName'
-            return false;
-        }
-        pCurChar++;
-    } while (curChar != 0);
-
-    //  Return true; we have reached the null terminator
-    //
-    return true;
-}
-
 CORINFO_OS getClrVmOs();
 
 #define LogJITInitializationError(...) \
@@ -1770,7 +1731,7 @@ static void LoadAndInitializeJIT(LPCWSTR pwzJitName DEBUGARG(LPCWSTR pwzJitPath)
             return;
         }
 
-        if (ValidateJitName(pwzJitName))
+        if (ValidateModuleName(pwzJitName))
         {
             // Load JIT from next to CoreCLR binary
             PathString CoreClrFolderHolder;
@@ -3300,7 +3261,7 @@ unsigned EEJitManager::InitializeEHEnumeration(const METHODTOKEN& MethodToken, E
     EE_ILEXCEPTION * EHInfo = GetCodeHeader(MethodToken)->GetEHInfo();
 
     pEnumState->iCurrentPos = 0;     // since the EH info is not compressed, the clause number is used to do the enumeration
-    pEnumState->pExceptionClauseArray = NULL;
+    pEnumState->pExceptionClauseArray = 0;
 
     if (!EHInfo)
         return 0;
@@ -4005,7 +3966,7 @@ TADDR EEJitManager::FindMethodCode(RangeSection * pRangeSection, PCODE currentPC
     if ((currentPC < pHp->startAddress) ||
         (currentPC > pHp->endAddress))
     {
-        return NULL;
+        return 0;
     }
 
     TADDR base = pHp->mapBase;
@@ -4052,7 +4013,7 @@ TADDR EEJitManager::FindMethodCode(RangeSection * pRangeSection, PCODE currentPC
     // previous DWORD, unless we are already on the first DWORD
 
     if (startPos < NIBBLES_PER_DWORD)
-        return NULL;
+        return 0;
 
     startPos = ((startPos >> LOG2_NIBBLES_PER_DWORD) << LOG2_NIBBLES_PER_DWORD) - 1;
 
@@ -4066,7 +4027,7 @@ TADDR EEJitManager::FindMethodCode(RangeSection * pRangeSection, PCODE currentPC
     // This helps to catch degenerate error cases. This relies on the fact that
     // startPos cannot ever be bigger than MAX_UINT
     if (((INT_PTR)startPos) < 0)
-        return NULL;
+        return 0;
 
     // Find the nibble with the header in the DWORD
 
@@ -4077,7 +4038,7 @@ TADDR EEJitManager::FindMethodCode(RangeSection * pRangeSection, PCODE currentPC
     }
 
     if (startPos == 0 && tmp == 0)
-        return NULL;
+        return 0;
 
     return base + POSOFF2ADDR(startPos, tmp & NIBBLE_MASK);
 }
@@ -4217,12 +4178,12 @@ void GetUnmanagedStackWalkInfo(IN  ULONG64   ControlPc,
 
     if (pModuleBase)
     {
-        *pModuleBase = NULL;
+        *pModuleBase = 0;
     }
 
     if (pFuncEntry)
     {
-        *pFuncEntry = NULL;
+        *pFuncEntry = 0;
     }
 
     PEDecoder peDecoder(DacGlobalBase());
@@ -4246,7 +4207,7 @@ void GetUnmanagedStackWalkInfo(IN  ULONG64   ControlPc,
             COUNT_T cbSize = 0;
             TADDR   pExceptionDir = peDecoder.GetDirectoryEntryData(IMAGE_DIRECTORY_ENTRY_EXCEPTION, &cbSize);
 
-            if (pExceptionDir != NULL)
+            if (pExceptionDir != 0)
             {
                 // Do a binary search on the static function table of mscorwks.dll.
                 HRESULT hr = E_FAIL;
@@ -4320,9 +4281,9 @@ extern "C" void GetRuntimeStackWalkInfo(IN  ULONG64   ControlPc,
     BEGIN_PRESERVE_LAST_ERROR;
 
     if (pModuleBase)
-        *pModuleBase = NULL;
+        *pModuleBase = 0;
     if (pFuncEntry)
-        *pFuncEntry = NULL;
+        *pFuncEntry = 0;
 
     EECodeInfo codeInfo((PCODE)ControlPc);
     if (!codeInfo.IsValid())
@@ -4467,7 +4428,7 @@ PCODE ExecutionManager::GetCodeStartAddress(PCODE currentPC)
 
     EECodeInfo codeInfo(currentPC);
     if (!codeInfo.IsValid())
-        return NULL;
+        return (PCODE)NULL;
     return PINSTRToPCODE(codeInfo.GetStartAddress());
 }
 
@@ -5555,7 +5516,7 @@ UINT32 ReadyToRunJitManager::JitTokenToGCInfoVersion(const METHODTOKEN& MethodTo
 
     READYTORUN_HEADER * header = JitTokenToReadyToRunInfo(MethodToken)->GetReadyToRunHeader();
 
-    return GCInfoToken::ReadyToRunVersionToGcInfoVersion(header->MajorVersion);
+    return GCInfoToken::ReadyToRunVersionToGcInfoVersion(header->MajorVersion, header->MinorVersion);
 }
 
 PTR_RUNTIME_FUNCTION ReadyToRunJitManager::JitTokenToRuntimeFunction(const METHODTOKEN& MethodToken)

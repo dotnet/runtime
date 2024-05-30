@@ -115,11 +115,11 @@
        setting up the per-scenario environment.
   -->
 
-  <ItemGroup Condition=" '$(TargetOS)' == 'windows' ">
+  <ItemGroup Condition="'$(WindowsShell)' == 'true'">
     <HelixPreCommand Include="set __TestArchitecture=$(TargetArchitecture)" />
   </ItemGroup>
 
-  <ItemGroup Condition=" '$(TargetOS)' != 'windows' ">
+  <ItemGroup Condition="'$(WindowsShell)' != 'true'">
     <HelixPreCommand Include="export __TestArchitecture=$(TargetArchitecture)" />
   </ItemGroup>
 

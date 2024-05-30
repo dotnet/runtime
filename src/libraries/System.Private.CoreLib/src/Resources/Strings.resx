@@ -3359,6 +3359,9 @@
   <data name="RFLCT_Targ_StatMethReqTarg" xml:space="preserve">
     <value>Non-static method requires a target.</value>
   </data>
+  <data name="RuntimeInstanceNotAllowed" xml:space="preserve">
+    <value>Runtime instantiation of this attribute is not allowed.</value>
+  </data>
   <data name="RuntimeWrappedException" xml:space="preserve">
     <value>An object that does not derive from System.Exception has been wrapped in a RuntimeWrappedException.</value>
   </data>
@@ -4312,5 +4315,8 @@
   </data>
   <data name="WasmThreads_BlockingWaitNotSupportedOnJSInterop" xml:space="preserve">
     <value>Blocking wait is not supported on the JS interop threads.</value>
+  </data>
+  <data name="NotSupported_EmitDebugInfo" xml:space="preserve">
+    <value>Emitting debug info is not supported for this member.</value>
   </data>
 </root>

@@ -26,7 +26,7 @@ namespace Microsoft.Interop
 
                 if (info.RefKind == RefKind.Out)
                 {
-                    initializations.Add(MarshallerHelpers.SkipInitOrDefaultInit(info, context));
+                    initializations.Add(MarshallerHelpers.DefaultInit(info, context));
                 }
 
                 // Declare variables for parameters

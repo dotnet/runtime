@@ -823,7 +823,7 @@ CHECK CheckContext(CORINFO_MODULE_HANDLE scopeHnd, CORINFO_CONTEXT_HANDLE contex
     if (context != METHOD_BEING_COMPILED_CONTEXT())
     {
         CHECK_MSG(scopeHnd != NULL, "Illegal null scope");
-        CHECK_MSG(((size_t)context & ~CORINFO_CONTEXTFLAGS_MASK) != NULL, "Illegal null context");
+        CHECK_MSG(((size_t)context & ~CORINFO_CONTEXTFLAGS_MASK) != 0, "Illegal null context");
         if (((size_t)context & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_CLASS)
         {
             TypeHandle handle((CORINFO_CLASS_HANDLE)((size_t)context & ~CORINFO_CONTEXTFLAGS_MASK));
@@ -869,9 +869,9 @@ void CEEInfo::resolveToken(/* IN, OUT */ CORINFO_RESOLVED_TOKEN * pResolvedToken
     _ASSERTE(CheckContext(pResolvedToken->tokenScope, pResolvedToken->tokenContext));
 
     pResolvedToken->pTypeSpec = NULL;
-    pResolvedToken->cbTypeSpec = NULL;
+    pResolvedToken->cbTypeSpec = 0;
     pResolvedToken->pMethodSpec = NULL;
-    pResolvedToken->cbMethodSpec = NULL;
+    pResolvedToken->cbMethodSpec = 0;
 
     TypeHandle th;
     MethodDesc * pMD = NULL;
@@ -4658,6 +4658,31 @@ bool CEEInfo::isExactType(CORINFO_CLASS_HANDLE cls)
     return result;
 }
 
+// Returns whether a class handle represents a Nullable type, if that can be statically determined.
+TypeCompareState CEEInfo::isNullableType(CORINFO_CLASS_HANDLE cls)
+{
+    CONTRACTL {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
+    TypeHandle typeHandle = TypeHandle();
+
+    TypeCompareState result = TypeCompareState::May;
+
+    JIT_TO_EE_TRANSITION();
+
+    if (typeHandle != TypeHandle(g_pCanonMethodTableClass))
+    {
+        TypeHandle VMClsHnd(cls);
+        result = Nullable::IsNullableType(VMClsHnd) ? TypeCompareState::Must : TypeCompareState::MustNot;
+    }
+
+    EE_TO_JIT_TRANSITION();
+    return result;
+}
+
 /*********************************************************************/
 // Returns TypeCompareState::Must if cls is known to be an enum.
 // For enums with known exact type returns the underlying
@@ -5405,12 +5430,8 @@ void CEEInfo::getCallInfo(
         //    (c) constraint calls that require runtime context lookup are never resolved
         //        to underlying shared generic code
 
-        bool unresolvedLdVirtFtn = (flags & CORINFO_CALLINFO_LDFTN) && (flags & CORINFO_CALLINFO_CALLVIRT) && !resolvedCallVirt;
-
         if (((pResult->exactContextNeedsRuntimeLookup && pTargetMD->IsInstantiatingStub() && (!allowInstParam || fResolvedConstraint)) || fForceUseRuntimeLookup))
         {
-            _ASSERTE(!m_pMethodBeingCompiled->IsDynamicMethod());
-
             pResult->kind = CORINFO_CALL_CODE_POINTER;
 
             DictionaryEntryKind entryKind;
@@ -5477,8 +5498,6 @@ void CEEInfo::getCallInfo(
 
         if (pResult->exactContextNeedsRuntimeLookup)
         {
-            _ASSERTE(!m_pMethodBeingCompiled->IsDynamicMethod());
-
             ComputeRuntimeLookupForSharedGenericToken(fIsStaticVirtualMethod ? ConstrainedMethodEntrySlot : DispatchStubAddrSlot,
                                                         pResolvedToken,
                                                         pConstrainedResolvedToken,
@@ -9486,7 +9505,7 @@ CORINFO_ARG_LIST_HANDLE CEEInfo::getArgNext(CORINFO_ARG_LIST_HANDLE args)
 
     JIT_TO_EE_TRANSITION();
 
-    SigPointer ptr((unsigned __int8*) args);
+    SigPointer ptr((uint8_t*) args);
     IfFailThrow(ptr.SkipExactlyOne());
 
     result = (CORINFO_ARG_LIST_HANDLE) ptr.GetPtr();
@@ -9519,7 +9538,7 @@ CorInfoTypeWithMod CEEInfo::getArgType (
    _ASSERTE((BYTE*) sig->args <= (BYTE*) args);
     INDEBUG(*vcTypeRet = CORINFO_CLASS_HANDLE((size_t)INVALID_POINTER_CC));
 
-    SigPointer ptr((unsigned __int8*) args);
+    SigPointer ptr((uint8_t*) args);
     CorElementType eType;
     IfFailThrow(ptr.PeekElemType(&eType));
     while (eType == ELEMENT_TYPE_PINNED)
@@ -9613,7 +9632,7 @@ uint32_t CEEInfo::getLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE c
     uint32_t size = STRUCT_NO_FLOAT_FIELD;
 
 #if defined(TARGET_LOONGARCH64)
-    size = (uint32_t)MethodTable::GetLoongArch64PassStructInRegisterFlags(cls);
+    size = (uint32_t)MethodTable::GetLoongArch64PassStructInRegisterFlags(TypeHandle(cls));
 #endif
 
     EE_TO_JIT_TRANSITION_LEAF();
@@ -9634,7 +9653,7 @@ uint32_t CEEInfo::getRISCV64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE cls)
     uint32_t size = STRUCT_NO_FLOAT_FIELD;
 
 #if defined(TARGET_RISCV64)
-    size = (uint32_t)MethodTable::GetRiscV64PassStructInRegisterFlags(cls);
+    size = (uint32_t)MethodTable::GetRiscV64PassStructInRegisterFlags(TypeHandle(cls));
 #endif // TARGET_RISCV64
 
     EE_TO_JIT_TRANSITION_LEAF();
@@ -9689,7 +9708,7 @@ CORINFO_CLASS_HANDLE CEEInfo::getArgClass (
 
     Module* pModule = GetModule(sig->scope);
 
-    SigPointer ptr((unsigned __int8*) args);
+    SigPointer ptr((uint8_t*) args);
 
     CorElementType eType;
     IfFailThrow(ptr.PeekElemType(&eType));
@@ -10059,6 +10078,7 @@ void InlinedCallFrame::GetEEInfo(CORINFO_EE_INFO::InlinedCallFrameInfo *pInfo)
     LIMITED_METHOD_CONTRACT;
 
     pInfo->size                          = sizeof(GSCookie) + sizeof(InlinedCallFrame);
+    pInfo->sizeWithSecretStubArg         = sizeof(GSCookie) + sizeof(InlinedCallFrame) + sizeof(PTR_VOID);
 
     pInfo->offsetOfGSCookie              = 0;
     pInfo->offsetOfFrameVptr             = sizeof(GSCookie);
@@ -10067,6 +10087,7 @@ void InlinedCallFrame::GetEEInfo(CORINFO_EE_INFO::InlinedCallFrameInfo *pInfo)
     pInfo->offsetOfCalleeSavedFP         = sizeof(GSCookie) + offsetof(InlinedCallFrame, m_pCalleeSavedFP);
     pInfo->offsetOfCallTarget            = sizeof(GSCookie) + offsetof(InlinedCallFrame, m_Datum);
     pInfo->offsetOfReturnAddress         = sizeof(GSCookie) + offsetof(InlinedCallFrame, m_pCallerReturnAddress);
+    pInfo->offsetOfSecretStubArg         = sizeof(GSCookie) + sizeof(InlinedCallFrame);
 #ifdef TARGET_ARM
     pInfo->offsetOfSPAfterProlog         = sizeof(GSCookie) + offsetof(InlinedCallFrame, m_pSPAfterProlog);
 #endif // TARGET_ARM
@@ -10705,7 +10726,14 @@ void* CEEJitInfo::getHelperFtn(CorInfoHelpFunc    ftnNum,         /* IN  */
             dynamicFtnNum == DYNAMIC_CORINFO_HELP_LDELEMA_REF ||
             dynamicFtnNum == DYNAMIC_CORINFO_HELP_MEMSET ||
             dynamicFtnNum == DYNAMIC_CORINFO_HELP_MEMZERO ||
-            dynamicFtnNum == DYNAMIC_CORINFO_HELP_MEMCPY)
+            dynamicFtnNum == DYNAMIC_CORINFO_HELP_MEMCPY ||
+            dynamicFtnNum == DYNAMIC_CORINFO_HELP_BULK_WRITEBARRIER ||
+            IN_TARGET_32BIT(dynamicFtnNum == DYNAMIC_CORINFO_HELP_LMUL_OVF ||)
+            IN_TARGET_32BIT(dynamicFtnNum == DYNAMIC_CORINFO_HELP_ULMUL_OVF ||)
+            dynamicFtnNum == DYNAMIC_CORINFO_HELP_DBL2INT_OVF ||
+            dynamicFtnNum == DYNAMIC_CORINFO_HELP_DBL2LNG_OVF ||
+            dynamicFtnNum == DYNAMIC_CORINFO_HELP_DBL2UINT_OVF ||
+            dynamicFtnNum == DYNAMIC_CORINFO_HELP_DBL2ULNG_OVF)
         {
             Precode* pPrecode = Precode::GetPrecodeFromEntryPoint((PCODE)hlpDynamicFuncTable[dynamicFtnNum].pfnHelper);
             _ASSERTE(pPrecode->GetType() == PRECODE_FIXUP);
@@ -12056,23 +12084,6 @@ HRESULT CEEJitInfo::allocPgoInstrumentationBySchema(
 
     JIT_TO_EE_TRANSITION();
 
-    // We need to know the code size. Typically we can get the code size
-    // from m_ILHeader. For dynamic methods, m_ILHeader will be NULL, so
-    // for that case we need to use DynamicResolver to get the code size.
-
-    unsigned codeSize = 0;
-    if (m_pMethodBeingCompiled->IsDynamicMethod())
-    {
-        unsigned stackSize, ehSize;
-        CorInfoOptions options;
-        DynamicResolver * pResolver = m_pMethodBeingCompiled->AsDynamicMethodDesc()->GetResolver();
-        pResolver->GetCodeInfo(&codeSize, &stackSize, &options, &ehSize);
-    }
-    else
-    {
-        codeSize = m_ILHeader->GetCodeSize();
-    }
-
 #ifdef FEATURE_PGO
     hr = PgoManager::allocPgoInstrumentationBySchema(m_pMethodBeingCompiled, pSchema, countSchemaItems, pInstrumentationData);
 #else
@@ -12092,7 +12103,8 @@ HRESULT CEEJitInfo::getPgoInstrumentationResults(
             PgoInstrumentationSchema **pSchema,                    // pointer to the schema table which describes the instrumentation results (pointer will not remain valid after jit completes)
             uint32_t *                 pCountSchemaItems,          // pointer to the count schema items
             uint8_t **                 pInstrumentationData,       // pointer to the actual instrumentation data (pointer will not remain valid after jit completes)
-            PgoSource *                pPgoSource                  // source of pgo data
+            PgoSource *                pPgoSource,                 // source of pgo data
+            bool *                     pDynamicPgo                 // true if Dynamic PGO is enabled
             )
 {
     CONTRACTL {
@@ -12105,6 +12117,7 @@ HRESULT CEEJitInfo::getPgoInstrumentationResults(
     *pCountSchemaItems = 0;
     *pInstrumentationData = NULL;
     *pPgoSource = PgoSource::Unknown;
+    *pDynamicPgo = g_pConfig->TieredPGO();
 
     JIT_TO_EE_TRANSITION();
 
@@ -12388,7 +12401,7 @@ void CEEJitInfo::setEHinfo (
 
     if (m_pMethodBeingCompiled->IsDynamicMethod() &&
         ((pEHClause->Flags & COR_ILEXCEPTION_CLAUSE_FILTER) == 0) &&
-        (clause->ClassToken != NULL))
+        (clause->ClassToken != mdTokenNil))
     {
         ResolvedToken resolved{};
         m_pMethodBeingCompiled->AsDynamicMethodDesc()->GetResolver()->ResolveToken(clause->ClassToken, &resolved);
@@ -12878,7 +12891,7 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
     NativeCodeVersion nativeCodeVersion = config->GetCodeVersion();
     MethodDesc* ftn = nativeCodeVersion.GetMethodDesc();
 
-    PCODE ret = NULL;
+    PCODE ret = (PCODE)NULL;
     NormalizedTimer timer;
     int64_t c100nsTicksInJit = 0;
 
@@ -14398,7 +14411,8 @@ HRESULT CEEInfo::getPgoInstrumentationResults(
             PgoInstrumentationSchema **pSchema,                    // pointer to the schema table which describes the instrumentation results (pointer will not remain valid after jit completes)
             uint32_t *                 pCountSchemaItems,          // pointer to the count schema items
             uint8_t **                 pInstrumentationData,       // pointer to the actual instrumentation data (pointer will not remain valid after jit completes)
-            PgoSource *                pPgoSource
+            PgoSource *                pPgoSource,   
+            bool *                     pDynamicPgo
             )
 {
     LIMITED_METHOD_CONTRACT;
@@ -14511,7 +14525,7 @@ EECodeInfo::EECodeInfo()
 {
     WRAPPER_NO_CONTRACT;
 
-    m_codeAddress = NULL;
+    m_codeAddress = (PCODE)NULL;
 
     m_pJM = NULL;
     m_pMD = NULL;

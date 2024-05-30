@@ -162,11 +162,6 @@ namespace Microsoft.Extensions.Configuration
         protected virtual void Dispose(bool disposing)
         {
             _changeTokenRegistration?.Dispose();
-
-            if (Source.OwnsFileProvider)
-            {
-                (Source.FileProvider as IDisposable)?.Dispose();
-            }
         }
     }
 }

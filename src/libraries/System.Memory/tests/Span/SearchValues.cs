@@ -68,9 +68,31 @@ namespace System.SpanTests
                 "\uFFFF\uFFFE\uFFFD\uFFFC\uFFFB\uFFFA",
                 "\uFFFF\uFFFE\uFFFD\uFFFC\uFFFB\uFFFB",
                 "\uFFFF\uFFFE\uFFFD\uFFFC\uFFFB\uFFF9",
+                new string('\u0080', 256) + '\u0082',
+                new string('\u0080', 100) + '\uF000',
+                new string('\u0080', 256) + '\uF000',
+                string.Concat(Enumerable.Range(128, 255).Select(i => (char)i)),
+                string.Concat(Enumerable.Range(128, 257).Select(i => (char)i)),
+                string.Concat(Enumerable.Range(128, 254).Select(i => (char)i)) + '\uF000',
+                string.Concat(Enumerable.Range(128, 256).Select(i => (char)i)) + '\uF000',
+                '\0' + string.Concat(Enumerable.Range(2, char.MaxValue - 1).Select(i => (char)i)),
             };
 
-            return values.Select(v => new object[] { v, Encoding.Latin1.GetBytes(v) });
+            foreach (string value in values)
+            {
+                yield return Pair(value);
+                yield return Pair('a' + value);
+
+                // Test some more duplicates
+                if (value.Length > 0)
+                {
+                    yield return Pair(value + value[0]);
+                    yield return Pair(value[0] + value);
+                    yield return Pair(value + value);
+                }
+            }
+
+            static object[] Pair(string value) => new object[] { value, Encoding.Latin1.GetBytes(value) };
         }
 
         [Theory]
@@ -192,10 +214,12 @@ namespace System.SpanTests
 
             static void Test<T>(ReadOnlySpan<T> needle, SearchValues<T> values) where T : struct, INumber<T>, IMinMaxValue<T>
             {
+                HashSet<T> needleSet = needle.ToArray().ToHashSet();
+
                 for (int i = int.CreateChecked(T.MaxValue); i >= 0; i--)
                 {
                     T t = T.CreateChecked(i);
-                    Assert.Equal(needle.Contains(t), values.Contains(t));
+                    Assert.Equal(needleSet.Contains(t), values.Contains(t));
                 }
             }
         }

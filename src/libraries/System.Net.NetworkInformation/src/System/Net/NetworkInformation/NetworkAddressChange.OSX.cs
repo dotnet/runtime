@@ -17,7 +17,7 @@ namespace System.Net.NetworkInformation
     // the documentation for CFRunLoop for more information on the components involved.
     public partial class NetworkChange
     {
-        private static object s_lockObj = new object();
+        private static readonly object s_lockObj = new object();
 
         // The dynamic store. We listen to changes in the IPv4 and IPv6 address keys.
         // When those keys change, our callback below is called (OnAddressChanged).
