@@ -831,6 +831,7 @@ struct HWIntrinsicInfo
             case NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x2:
             case NI_AdvSimd_LoadAndReplicateToVector64x2:
             case NI_AdvSimd_Arm64_LoadAndReplicateToVector128x2:
+            case NI_Sve_Load2xVectorAndUnzip:
                 return 2;
 
             case NI_AdvSimd_LoadVector64x3AndUnzip:
@@ -841,6 +842,7 @@ struct HWIntrinsicInfo
             case NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x3:
             case NI_AdvSimd_LoadAndReplicateToVector64x3:
             case NI_AdvSimd_Arm64_LoadAndReplicateToVector128x3:
+            case NI_Sve_Load3xVectorAndUnzip:
                 return 3;
 
             case NI_AdvSimd_LoadVector64x4AndUnzip:
@@ -851,6 +853,7 @@ struct HWIntrinsicInfo
             case NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x4:
             case NI_AdvSimd_LoadAndReplicateToVector64x4:
             case NI_AdvSimd_Arm64_LoadAndReplicateToVector128x4:
+            case NI_Sve_Load4xVectorAndUnzip:
                 return 4;
 #endif
 

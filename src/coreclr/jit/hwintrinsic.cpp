@@ -1131,6 +1131,7 @@ bool Compiler::CheckHWIntrinsicImmRange(NamedIntrinsic intrinsic,
 //    clsHnd     -- class handle containing the intrinsic function.
 //    method     -- method handle of the intrinsic function.
 //    sig        -- signature of the intrinsic call
+//    entryPoint -- The entry point information required for R2R scenarios
 //    mustExpand -- true if the intrinsic must return a GenTree*; otherwise, false
 
 // Return Value:
@@ -1139,7 +1140,7 @@ bool Compiler::CheckHWIntrinsicImmRange(NamedIntrinsic intrinsic,
 GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
                                   CORINFO_CLASS_HANDLE  clsHnd,
                                   CORINFO_METHOD_HANDLE method,
-                                  CORINFO_SIG_INFO*     sig,
+                                  CORINFO_SIG_INFO* sig R2RARG(CORINFO_CONST_LOOKUP* entryPoint),
                                   bool                  mustExpand)
 {
     // NextCallRetAddr requires a CALL, so return nullptr.
@@ -1577,8 +1578,8 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
     }
     else
     {
-        retNode =
-            impSpecialIntrinsic(intrinsic, clsHnd, method, sig, simdBaseJitType, nodeRetType, simdSize, mustExpand);
+        retNode = impSpecialIntrinsic(intrinsic, clsHnd, method, sig R2RARG(entryPoint), simdBaseJitType, nodeRetType,
+                                      simdSize, mustExpand);
     }
 
 #if defined(TARGET_ARM64)
@@ -1602,6 +1603,14 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
         {
             // Op1 input is a vector. HWInstrinsic requires a mask.
             retNode->AsHWIntrinsic()->Op(1) = gtNewSimdConvertVectorToMaskNode(retType, op1, simdBaseJitType, simdSize);
+        }
+
+        if (HWIntrinsicInfo::IsMultiReg(intrinsic))
+        {
+            assert(HWIntrinsicInfo::IsExplicitMaskedOperation(retNode->AsHWIntrinsic()->GetHWIntrinsicId()));
+            assert(HWIntrinsicInfo::IsMultiReg(retNode->AsHWIntrinsic()->GetHWIntrinsicId()));
+            retNode =
+                impStoreMultiRegValueToVar(retNode, sig->retTypeSigClass DEBUGARG(CorInfoCallConvExtension::Managed));
         }
     }
 
