@@ -8,6 +8,7 @@
  */
 
 import { isSurrogate } from "./helpers";
+import { runtimeHelpers } from "./module-exports";
 
 type SegmentationRule = {
     breaks: boolean
@@ -73,7 +74,7 @@ export class GraphemeSegmenter {
 
     public constructor () {
         if (!segmentationRules)
-            throw new Error("Grapheme segmentation rules are not set");
+            throw new Error("Grapheme segmentation rules are not set " + runtimeHelpers.monoThreadInfo.threadName);
         this.rules = segmentationRules;
         this.ruleSortedKeys = Object.keys(this.rules).sort((a, b) => Number(a) - Number(b));
     }
