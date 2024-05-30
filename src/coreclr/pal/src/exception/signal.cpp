@@ -74,6 +74,9 @@ static void sigterm_handler(int code, siginfo_t *siginfo, void *context);
 #ifdef INJECT_ACTIVATION_SIGNAL
 static void inject_activation_handler(int code, siginfo_t *siginfo, void *context);
 extern void* g_InvokeActivationHandlerReturnAddress;
+#ifdef __APPLE__
+bool g_canSendSignalToDispatchQueueThreads = false;
+#endif // __APPLE__
 #endif
 
 static void sigill_handler(int code, siginfo_t *siginfo, void *context);
@@ -239,6 +242,15 @@ BOOL SEHInitializeSignals(CorUnix::CPalThread *pthrCurrent, DWORD flags)
 #ifdef INJECT_ACTIVATION_SIGNAL
     if (flags & PAL_INITIALIZE_REGISTER_ACTIVATION_SIGNAL)
     {
+#ifdef __APPLE__
+        if (__builtin_available(macOS 14.4, *))
+        {
+            // Allow sending the activation signal to dispatch queue threads
+            int st = dispatch_allow_send_signals(INJECT_ACTIVATION_SIGNAL);
+            g_canSendSignalToDispatchQueueThreads = (st == 0);
+        }
+#endif // __APPLE__
+
         handle_signal(INJECT_ACTIVATION_SIGNAL, inject_activation_handler, &g_previous_activation);
         g_registered_activation_handler = true;
     }
@@ -886,10 +898,13 @@ PAL_ERROR InjectActivationInternal(CorUnix::CPalThread* pThread)
     // the process exits.
 
 #ifdef __APPLE__
-    // On Apple, pthread_kill is not allowed to be sent to dispatch queue threads
-    if (status == ENOTSUP)
+    if (!g_canSendSignalToDispatchQueueThreads)
     {
-        return ERROR_NOT_SUPPORTED;
+        // On macOS older than 14.4, pthread_kill is not allowed to sent a signal to dispatch queue threads
+        if (status == ENOTSUP)
+        {
+            return ERROR_NOT_SUPPORTED;
+        }
     }
 #endif
 
