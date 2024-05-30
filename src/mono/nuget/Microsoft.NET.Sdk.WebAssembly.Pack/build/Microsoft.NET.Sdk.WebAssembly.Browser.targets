@@ -410,7 +410,7 @@ Copyright (c) .NET Foundation. All rights reserved.
 
   </Target>
 
-  <Target Name="ProvideDefaultUserRuntimeConfig" BeforeTargets="GenerateBuildRuntimeConfigurationFiles" Condition="'$(GenerateRuntimeConfigurationFiles)' == 'true'">
+  <Target Name="ProvideDefaultUserRuntimeConfig" BeforeTargets="_GenerateRuntimeConfigurationFilesInputCache" Condition="'$(GenerateRuntimeConfigurationFiles)' == 'true'">
     <PropertyGroup Condition="!Exists('$(UserRuntimeConfig)')">
       <UserRuntimeConfig>$(MSBuildThisFileDirectory)browser.runtimeconfig.template.json</UserRuntimeConfig>
     </PropertyGroup>
