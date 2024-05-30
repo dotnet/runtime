@@ -218,6 +218,13 @@ namespace System.Net.Security.Tests
             foreach (var protocol in new SslProtocolSupport.SupportedSslProtocolsTestData().Concat(new[] { new object[] { SslProtocols.None } }))
             {
                 var proto = protocol[0];
+#pragma warning disable 0618 // SSL2/3 are deprecated
+                if (proto.Equals(SslProtocols.Ssl3) || proto.Equals(SslProtocols.Ssl2))
+#pragma warning restore 0618
+                {
+                    // ALPN not supported by this protocol
+                    continue;
+                }
 
                 yield return new object[] { proto, list_both, list_h2, BackendSupportsAlpn ? h2 : default };
                 yield return new object[] { proto, list_h1, list_both, BackendSupportsAlpn ? h1 : default };
