@@ -60,10 +60,15 @@ namespace System.Linq
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.predicate);
             }
 
-            if (source.TryGetSpan(out ReadOnlySpan<TSource> span))
+            return source.TryGetSpan(out ReadOnlySpan<TSource> span)
+                ? CountSpan(span, predicate)
+                : CountEnumerable(source, predicate);
+
+            [StackTraceHidden]
+            static int CountSpan(ReadOnlySpan<TSource> source, Func<TSource, bool> predicate)
             {
                 int count = 0;
-                foreach (TSource element in span)
+                foreach (TSource element in source)
                 {
                     checked
                     {
@@ -76,8 +81,6 @@ namespace System.Linq
 
                 return count;
             }
-
-            return CountEnumerable(source, predicate);
 
             [StackTraceHidden]
             static int CountEnumerable(IEnumerable<TSource> source, Func<TSource, bool> predicate)
