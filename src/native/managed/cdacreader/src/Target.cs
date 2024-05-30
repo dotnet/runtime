@@ -302,6 +302,8 @@ public sealed unsafe class Target
     public static bool IsAligned(ulong value, int alignment)
         => (value & (ulong)(alignment - 1)) == 0;
 
+    public bool IsAlignedToPointerSize(uint value)
+        => IsAligned(value, _config.PointerSize);
     public bool IsAlignedToPointerSize(ulong value)
         => IsAligned(value, _config.PointerSize);
     public bool IsAlignedToPointerSize(TargetPointer pointer)
@@ -382,7 +384,7 @@ public sealed unsafe class Target
             return result!;
         }
 
-        private bool TryGet<T>(ulong address, [NotNullWhen(true)] out T? data)
+        public bool TryGet<T>(ulong address, [NotNullWhen(true)] out T? data)
         {
             data = default;
             if (!_readDataByAddress.TryGetValue((address, typeof(T)), out object? dataObj))

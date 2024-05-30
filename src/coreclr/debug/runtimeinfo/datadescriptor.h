@@ -126,6 +126,15 @@ CDAC_TYPE_BEGIN(GCHandle)
 CDAC_TYPE_SIZE(sizeof(OBJECTHANDLE))
 CDAC_TYPE_END(GCHandle)
 
+// Metadata
+
+CDAC_TYPE_BEGIN(MethodTable)
+CDAC_TYPE_INDETERMINATE(MethodTable)
+CDAC_TYPE_FIELD(MethodTable, /*uint32*/, DwFlags, cdac_offsets<MethodTable>::m_dwFlags)
+CDAC_TYPE_FIELD(MethodTable, /*uint32*/, BaseSize, cdac_offsets<MethodTable>::m_BaseSize)
+CDAC_TYPE_FIELD(MethodTable, /*uint32*/, DwFlags2, cdac_offsets<MethodTable>::m_dwFlags2)
+CDAC_TYPE_END(MethodTable)
+
 CDAC_TYPES_END()
 
 CDAC_GLOBALS_BEGIN()

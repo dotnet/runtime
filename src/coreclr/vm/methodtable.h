@@ -3659,7 +3659,16 @@ private:
 public:
 
     BOOL Validate ();
+
+    template<typename T> friend struct ::cdac_offsets;
 };  // class MethodTable
+
+template<> struct ::cdac_offsets<MethodTable>
+{
+    static constexpr size_t m_dwFlags = offsetof(MethodTable, m_dwFlags);
+    static constexpr size_t m_BaseSize = offsetof(MethodTable, m_BaseSize);
+    static constexpr size_t m_dwFlags2 = offsetof(MethodTable, m_dwFlags2);
+};
 
 #ifndef CROSSBITNESS_COMPILE
 static_assert_no_msg(sizeof(MethodTable) == SIZEOF__MethodTable_);
