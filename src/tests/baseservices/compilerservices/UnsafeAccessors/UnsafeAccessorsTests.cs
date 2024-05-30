@@ -215,28 +215,28 @@ public static unsafe class UnsafeAccessorsTests
         extern static ref string GetPrivateField(ref UserDataValue d);
     }
 
-    unsafe ref struct AllFields
+    unsafe struct AllFields
     {
-        bool _bool;
-        char _char;
-        byte _byte;
-        sbyte _sbyte;
-        short _short;
-        ushort _ushort;
-        int _int;
-        uint _uint;
-        long _long;
-        ulong _ulong;
-        string _string;
-        AttributeTargets _enum;
-        void* _ptr;
-        Guid _guid;
-        object _object;
-        int[] _array;
-        int[,] _mdarray;
-        IntPtr _intptr;
-        UIntPtr _uintptr;
-        delegate*<void> _fptr;
+        private bool _bool;
+        private char _char;
+        private byte _byte;
+        private sbyte _sbyte;
+        private short _short;
+        private ushort _ushort;
+        private int _int;
+        private uint _uint;
+        private long _long;
+        private ulong _ulong;
+        private string _string;
+        private AttributeTargets _enum;
+        private void* _ptr;
+        private Guid _guid;
+        private object _object;
+        private int[] _array;
+        private int[,] _mdarray;
+        private IntPtr _intptr;
+        private UIntPtr _uintptr;
+        private delegate*<void> _fptr;
     }
 
     [Fact]
