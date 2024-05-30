@@ -31,7 +31,7 @@ namespace System
             public NumberBufferKind Kind;
             public byte* DigitsPtr;
             public int DigitsLength;
-            public readonly Span<byte> Digits => new Span<byte>(DigitsPtr, DigitsLength);
+            public readonly Span<byte> Digits => MemoryMarshal.CreateSpan(ref *DigitsPtr, DigitsLength);
 
             public NumberBuffer(NumberBufferKind kind, byte* digits, int digitsLength) : this(kind, new Span<byte>(digits, digitsLength))
             {
