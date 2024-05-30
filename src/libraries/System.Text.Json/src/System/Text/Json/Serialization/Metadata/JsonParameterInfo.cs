@@ -47,12 +47,12 @@ namespace System.Text.Json.Serialization.Metadata
         /// <summary>
         /// Gets a value indicating whether the parameter has a default value.
         /// </summary>
-        public bool HasDefaultValue { get; private protected init; }
+        public bool HasDefaultValue { get; }
 
         /// <summary>
         /// Gets a value indicating the default value if the parameter has a default value.
         /// </summary>
-        public object? DefaultValue { get; private protected init; }
+        public object? DefaultValue { get; }
 
         /// <summary>
         /// The default value to be passed to the constructor argument array, replacing null with default(TParameter).

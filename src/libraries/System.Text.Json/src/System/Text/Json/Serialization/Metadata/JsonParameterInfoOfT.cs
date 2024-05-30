@@ -13,7 +13,7 @@ namespace System.Text.Json.Serialization.Metadata
     {
         public new JsonConverter<T> EffectiveConverter => MatchingProperty.EffectiveConverter;
         public new JsonPropertyInfo<T> MatchingProperty { get; }
-        public new T? DefaultValue { get; }
+        public new T? EffectiveDefaultValue { get; }
 
         public JsonParameterInfo(JsonParameterInfoValues parameterInfoValues, JsonPropertyInfo<T> matchingPropertyInfo)
             : base(parameterInfoValues, matchingPropertyInfo)
@@ -23,12 +23,11 @@ namespace System.Text.Json.Serialization.Metadata
 
             if (parameterInfoValues is { HasDefaultValue: true, DefaultValue: object defaultValue })
             {
-                DefaultValue = (T)defaultValue;
-                HasDefaultValue = true;
+                EffectiveDefaultValue = (T)defaultValue;
             }
 
             MatchingProperty = matchingPropertyInfo;
-            EffectiveDefaultValue = DefaultValue;
+            base.EffectiveDefaultValue = EffectiveDefaultValue;
         }
     }
 }
