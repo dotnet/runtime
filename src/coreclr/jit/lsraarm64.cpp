@@ -1935,6 +1935,10 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
         {
             srcCount += BuildAddrUses(intrin.op2);
         }
+        else if (intrin.id == NI_Sve_GetActiveElementCount)
+        {
+            srcCount += BuildOperandUses(intrin.op2, RBM_ALLMASK);
+        }
         else
         {
             SingleTypeRegSet candidates = lowVectorOperandNum == 2 ? lowVectorCandidates : RBM_NONE;
