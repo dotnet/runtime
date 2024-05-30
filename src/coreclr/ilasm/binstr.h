@@ -24,11 +24,11 @@ public:
     void appendInt8(int val) { if (len >= max) Realloc(); ptr_[len++] = (uint8_t)val; }
     void appendInt16(int val) { if (len + 2 > max) Realloc(); SET_UNALIGNED_16(&ptr_[len], val); len += 2; }
     void appendInt32(int val) { if (len + 4 > max) Realloc(); SET_UNALIGNED_32(&ptr_[len], val); len += 4; }
-    void appendInt64(__int64 *pval) { if (len + 8 > max) Realloc(8); SET_UNALIGNED_64(&ptr_[len],(*pval)); len += 8; }
-    unsigned __int8* getBuff(unsigned size) {
+    void appendInt64(int64_t *pval) { if (len + 8 > max) Realloc(8); SET_UNALIGNED_64(&ptr_[len],(*pval)); len += 8; }
+    uint8_t* getBuff(unsigned size) {
         if (len + size > max) Realloc(size);
         _ASSERTE(len + size <= max);
-        unsigned __int8* ret = &ptr_[len];
+        uint8_t* ret = &ptr_[len];
         len += size;
         return(ret);
         }
@@ -46,7 +46,7 @@ public:
 
     void remove(unsigned size) { _ASSERTE(len >= size); len -= size; }
 
-    unsigned __int8* ptr()      { return(ptr_); }
+    uint8_t* ptr()      { return(ptr_); }
     unsigned length()   { return(len); }
 
 private:
@@ -55,7 +55,7 @@ private:
         if (max < atLeast + len)
             max = atLeast + len;
         _ASSERTE(max >= len + atLeast);
-        unsigned __int8* newPtr = new unsigned __int8[max];
+        uint8_t* newPtr = new uint8_t[max];
         memcpy(newPtr, ptr_, len);
         if (ptr_ != buff) delete [] ptr_;
         ptr_ = newPtr;
@@ -64,8 +64,8 @@ private:
 private:
     unsigned  len;
     unsigned  max;
-    unsigned __int8 *ptr_;
-    unsigned __int8 buff[8];
+    uint8_t *ptr_;
+    uint8_t buff[8];
 };
 BinStr* BinStrToUnicode(BinStr* pSource, bool Swap = false);
 #ifdef _PREFAST_

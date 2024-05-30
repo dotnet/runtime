@@ -420,10 +420,10 @@ inline unsigned hashme(genTreeOps op1, genTreeOps op2)
 
 struct BashHashDsc
 {
-    unsigned __int32 bhFullHash; // the hash value (unique for all old->new pairs)
-    unsigned __int32 bhCount;    // the same old->new bashings seen so far
-    unsigned __int8  bhOperOld;  // original gtOper
-    unsigned __int8  bhOperNew;  // new      gtOper
+    uint32_t bhFullHash; // the hash value (unique for all old->new pairs)
+    uint32_t bhCount;    // the same old->new bashings seen so far
+    uint8_t  bhOperOld;  // original gtOper
+    uint8_t  bhOperNew;  // new      gtOper
 };
 
 static BashHashDsc BashHash[BASH_HASH_SIZE];
@@ -4128,6 +4128,8 @@ unsigned Compiler::gtSetMultiOpOrder(GenTreeMultiOp* multiOp)
         // first tree to be evaluated, and "lvl2" - the second.
         if (multiOp->IsReverseOp())
         {
+            assert(!multiOp->AsHWIntrinsic()->IsUserCall());
+
             level = gtSetEvalOrder(multiOp->Op(2));
             lvl2  = gtSetEvalOrder(multiOp->Op(1));
         }
@@ -4140,11 +4142,18 @@ unsigned Compiler::gtSetMultiOpOrder(GenTreeMultiOp* multiOp)
         // We want the more complex tree to be evaluated first.
         if (level < lvl2)
         {
-            bool canSwap = multiOp->IsReverseOp() ? gtCanSwapOrder(multiOp->Op(2), multiOp->Op(1))
-                                                  : gtCanSwapOrder(multiOp->Op(1), multiOp->Op(2));
+            bool canSwap = false;
+
+            if (!multiOp->AsHWIntrinsic()->IsUserCall())
+            {
+                canSwap = multiOp->IsReverseOp() ? gtCanSwapOrder(multiOp->Op(2), multiOp->Op(1))
+                                                 : gtCanSwapOrder(multiOp->Op(1), multiOp->Op(2));
+            }
 
             if (canSwap)
             {
+                assert(!multiOp->AsHWIntrinsic()->IsUserCall());
+
                 if (multiOp->IsReverseOp())
                 {
                     multiOp->ClearReverseOp();
@@ -6563,7 +6572,7 @@ bool GenTree::OperSupportsReverseOpEvalOrder(Compiler* comp) const
 #if defined(FEATURE_SIMD) || defined(FEATURE_HW_INTRINSICS)
     if (OperIsMultiOp())
     {
-        return AsMultiOp()->GetOperandCount() == 2;
+        return (AsMultiOp()->GetOperandCount() == 2) && !AsMultiOp()->IsUserCall();
     }
 #endif // FEATURE_SIMD || FEATURE_HW_INTRINSICS
     return false;
@@ -7852,7 +7861,7 @@ GenTreeIntCon* Compiler::gtNewStringLiteralLength(GenTreeStrCon* node)
 
 /*****************************************************************************/
 
-GenTree* Compiler::gtNewLconNode(__int64 value)
+GenTree* Compiler::gtNewLconNode(int64_t value)
 {
 #ifdef TARGET_64BIT
     GenTree* node = new (this, GT_CNS_INT) GenTreeIntCon(TYP_LONG, value);
@@ -9626,10 +9635,8 @@ GenTree* Compiler::gtCloneExpr(GenTree* tree)
             case GT_INTRINSIC:
                 copy = new (this, GT_INTRINSIC)
                     GenTreeIntrinsic(tree->TypeGet(), tree->AsOp()->gtOp1, tree->AsOp()->gtOp2,
-                                     tree->AsIntrinsic()->gtIntrinsicName, tree->AsIntrinsic()->gtMethodHandle);
-#ifdef FEATURE_READYTORUN
-                copy->AsIntrinsic()->gtEntryPoint = tree->AsIntrinsic()->gtEntryPoint;
-#endif
+                                     tree->AsIntrinsic()->gtIntrinsicName,
+                                     tree->AsIntrinsic()->gtMethodHandle R2RARG(tree->AsIntrinsic()->gtEntryPoint));
                 break;
 
             case GT_BOUNDS_CHECK:
@@ -9711,6 +9718,12 @@ GenTree* Compiler::gtCloneExpr(GenTree* tree)
                                    tree->AsHWIntrinsic()->GetHWIntrinsicId(),
                                    tree->AsHWIntrinsic()->GetSimdBaseJitType(), tree->AsHWIntrinsic()->GetSimdSize());
             copy->AsHWIntrinsic()->SetAuxiliaryJitType(tree->AsHWIntrinsic()->GetAuxiliaryJitType());
+
+            if (tree->AsHWIntrinsic()->IsUserCall())
+            {
+                copy->AsHWIntrinsic()->SetMethodHandle(this, tree->AsHWIntrinsic()->GetMethodHandle()
+                                                                 R2RARG(tree->AsHWIntrinsic()->GetEntryPoint()));
+            }
             goto CLONE_MULTIOP_OPERANDS;
 #endif
 #if defined(FEATURE_SIMD) || defined(FEATURE_HW_INTRINSICS)
@@ -15416,7 +15429,7 @@ GenTree* Compiler::gtFoldExprConst(GenTree* tree)
 #if defined(TARGET_64BIT)
                                 if (tree->IsUnsigned() && (lval1 < 0))
                                 {
-                                    f1 = FloatingPointUtils::convertUInt64ToFloat((unsigned __int64)lval1);
+                                    f1 = FloatingPointUtils::convertUInt64ToFloat((uint64_t)lval1);
                                 }
                                 else
                                 {
@@ -15429,8 +15442,7 @@ GenTree* Compiler::gtFoldExprConst(GenTree* tree)
 
                                 if (tree->IsUnsigned() && (lval1 < 0))
                                 {
-                                    f1 = forceCastToFloat(
-                                        FloatingPointUtils::convertUInt64ToDouble((unsigned __int64)lval1));
+                                    f1 = forceCastToFloat(FloatingPointUtils::convertUInt64ToDouble((uint64_t)lval1));
                                 }
                                 else
                                 {
@@ -15446,7 +15458,7 @@ GenTree* Compiler::gtFoldExprConst(GenTree* tree)
                             {
                                 if (tree->IsUnsigned() && (lval1 < 0))
                                 {
-                                    d1 = FloatingPointUtils::convertUInt64ToDouble((unsigned __int64)lval1);
+                                    d1 = FloatingPointUtils::convertUInt64ToDouble((uint64_t)lval1);
                                 }
                                 else
                                 {
@@ -19571,6 +19583,49 @@ void GenTreeMultiOp::InitializeOperands(GenTree** operands, size_t operandCount)
     SetOperandCount(operandCount);
 }
 
+//------------------------------------------------------------------------
+// GenTreeJitIntrinsic::SetMethodHandle: Sets the method handle for an intrinsic
+//  so that it can be rewritten back to a user call in a later phase
+//
+// Arguments:
+//  comp         - The compiler instance
+//  methodHandle - The method handle representing the fallback handling for the intrinsic
+//  entryPoint   - The entry point information required for R2R scenarios
+//
+// Notes:
+//  We need to ensure that the operands are not tracked inline so that we can track the
+//  underlying method handle. See the comment in GenTreeJitIntrinsic around why the union
+//  of fields exists.
+//
+void GenTreeJitIntrinsic::SetMethodHandle(Compiler*                          comp,
+                                          CORINFO_METHOD_HANDLE methodHandle R2RARG(CORINFO_CONST_LOOKUP entryPoint))
+{
+    assert(OperIsHWIntrinsic() && !IsUserCall());
+    gtFlags |= GTF_HW_USER_CALL;
+
+    size_t operandCount = GetOperandCount();
+
+    if ((operandCount != 0) && (operandCount <= ArrLen(gtInlineOperands)))
+    {
+        GenTree** oldOperands = GetOperandArray();
+        GenTree** newOperands = comp->getAllocator(CMK_ASTNode).allocate<GenTree*>(operandCount);
+
+        ResetOperandArray(operandCount, comp, newOperands, operandCount);
+        assert(GetOperandArray() == newOperands);
+
+        for (size_t i = 0; i < operandCount; i++)
+        {
+            newOperands[i] = oldOperands[i];
+        }
+    }
+
+    gtMethodHandle = methodHandle;
+
+#if defined(FEATURE_READYTORUN)
+    gtEntryPoint = new (comp, CMK_ASTNode) CORINFO_CONST_LOOKUP(entryPoint);
+#endif // FEATURE_READYTORUN
+}
+
 var_types GenTreeJitIntrinsic::GetAuxiliaryType() const
 {
     CorInfoType auxiliaryJitType = GetAuxiliaryJitType();
@@ -23391,6 +23446,61 @@ GenTree* Compiler::gtNewSimdFloorNode(var_types type, GenTree* op1, CorInfoType 
     return gtNewSimdHWIntrinsicNode(type, op1, intrinsic, simdBaseJitType, simdSize);
 }
 
+GenTree* Compiler::gtNewSimdFmaNode(
+    var_types type, GenTree* op1, GenTree* op2, GenTree* op3, CorInfoType simdBaseJitType, unsigned simdSize)
+{
+    assert(varTypeIsSIMD(type));
+    assert(getSIMDTypeForSize(simdSize) == type);
+
+    assert(op1 != nullptr);
+    assert(op1->TypeIs(type));
+
+    assert(op2 != nullptr);
+    assert(op2->TypeIs(type));
+
+    assert(op3 != nullptr);
+    assert(op3->TypeIs(type));
+
+    var_types simdBaseType = JitType2PreciseVarType(simdBaseJitType);
+    assert(varTypeIsFloating(simdBaseType));
+
+    NamedIntrinsic intrinsic = NI_Illegal;
+
+#if defined(TARGET_XARCH)
+    if (simdSize == 64)
+    {
+        assert(compIsaSupportedDebugOnly(InstructionSet_AVX512F));
+        intrinsic = NI_AVX512F_FusedMultiplyAdd;
+    }
+    else
+    {
+        assert(compIsaSupportedDebugOnly(InstructionSet_FMA));
+        intrinsic = NI_FMA_MultiplyAdd;
+    }
+#elif defined(TARGET_ARM64)
+    assert(IsBaselineSimdIsaSupportedDebugOnly());
+
+    if (simdBaseType == TYP_DOUBLE)
+    {
+        intrinsic = (simdSize == 8) ? NI_AdvSimd_FusedMultiplyAddScalar : NI_AdvSimd_Arm64_FusedMultiplyAdd;
+    }
+    else
+    {
+        intrinsic = NI_AdvSimd_FusedMultiplyAdd;
+    }
+
+    // AdvSimd.FusedMultiplyAdd expects (addend, left, right), while the APIs take (left, right, addend)
+    // We expect op1 and op2 to have already been spilled
+
+    std::swap(op1, op3);
+#else
+#error Unsupported platform
+#endif // !TARGET_XARCH && !TARGET_ARM64
+
+    assert(intrinsic != NI_Illegal);
+    return gtNewSimdHWIntrinsicNode(type, op1, op2, op3, intrinsic, simdBaseJitType, simdSize);
+}
+
 GenTree* Compiler::gtNewSimdGetElementNode(
     var_types type, GenTree* op1, GenTree* op2, CorInfoType simdBaseJitType, unsigned simdSize)
 {
@@ -26540,6 +26650,9 @@ bool GenTreeHWIntrinsic::OperIsMemoryLoad(GenTree** pAddr) const
             case NI_Sve_LoadVectorUInt16ZeroExtendToUInt64:
             case NI_Sve_LoadVectorUInt32ZeroExtendToInt64:
             case NI_Sve_LoadVectorUInt32ZeroExtendToUInt64:
+            case NI_Sve_Load2xVectorAndUnzip:
+            case NI_Sve_Load3xVectorAndUnzip:
+            case NI_Sve_Load4xVectorAndUnzip:
                 addr = Op(2);
                 break;
 #endif // TARGET_ARM64
@@ -26652,7 +26765,17 @@ bool GenTreeHWIntrinsic::OperIsMemoryStore(GenTree** pAddr) const
             case NI_SSE2_MaskMove:
                 addr = Op(3);
                 break;
-#endif // TARGET_XARCH
+#elif defined(TARGET_ARM64)
+            case NI_Sve_StoreAndZip:
+            case NI_Sve_StoreAndZipx2:
+            case NI_Sve_StoreAndZipx3:
+            case NI_Sve_StoreAndZipx4:
+            case NI_Sve_StoreNarrowing:
+            case NI_Sve_StoreNonTemporal:
+                addr = Op(2);
+                break;
+
+#endif // TARGET_ARM64
 
             default:
                 addr = Op(1);
@@ -26975,7 +27098,7 @@ bool GenTreeHWIntrinsic::OperRequiresCallFlag() const
         }
     }
 
-    return false;
+    return IsUserCall();
 }
 
 //------------------------------------------------------------------------------
@@ -27053,6 +27176,13 @@ ClassLayout* GenTreeHWIntrinsic::GetLayout(Compiler* compiler) const
         case NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x4:
         case NI_AdvSimd_Arm64_LoadAndReplicateToVector128x4:
             return compiler->typGetBlkLayout(64);
+
+        case NI_Sve_Load2xVectorAndUnzip:
+            return compiler->typGetBlkLayout(compiler->getVectorTByteLength() * 2);
+        case NI_Sve_Load3xVectorAndUnzip:
+            return compiler->typGetBlkLayout(compiler->getVectorTByteLength() * 3);
+        case NI_Sve_Load4xVectorAndUnzip:
+            return compiler->typGetBlkLayout(compiler->getVectorTByteLength() * 4);
 
 #endif // TARGET_ARM64
 

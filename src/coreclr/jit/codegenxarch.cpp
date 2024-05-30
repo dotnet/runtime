@@ -3231,6 +3231,18 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* node)
     assert(size <= INT32_MAX);
     assert(dstOffset < (INT32_MAX - static_cast<int>(size)));
 
+    auto emitStore = [&](instruction ins, unsigned width, regNumber target) {
+        if (dstLclNum != BAD_VAR_NUM)
+        {
+            emit->emitIns_S_R(ins, EA_ATTR(width), target, dstLclNum, dstOffset);
+        }
+        else
+        {
+            emit->emitIns_ARX_R(ins, EA_ATTR(width), target, dstAddrBaseReg, dstAddrIndexReg, dstAddrIndexScale,
+                                dstOffset);
+        }
+    };
+
 #ifdef FEATURE_SIMD
     if (willUseSimdMov)
     {
@@ -3244,18 +3256,6 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* node)
         instruction simdMov      = simdUnalignedMovIns();
         unsigned    bytesWritten = 0;
 
-        auto emitSimdMovs = [&]() {
-            if (dstLclNum != BAD_VAR_NUM)
-            {
-                emit->emitIns_S_R(simdMov, EA_ATTR(regSize), srcXmmReg, dstLclNum, dstOffset);
-            }
-            else
-            {
-                emit->emitIns_ARX_R(simdMov, EA_ATTR(regSize), srcXmmReg, dstAddrBaseReg, dstAddrIndexReg,
-                                    dstAddrIndexScale, dstOffset);
-            }
-        };
-
         while (bytesWritten < size)
         {
             if (bytesWritten + regSize > size)
@@ -3264,7 +3264,7 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* node)
                 break;
             }
 
-            emitSimdMovs();
+            emitStore(simdMov, regSize, srcXmmReg);
             dstOffset += regSize;
             bytesWritten += regSize;
         }
@@ -3279,9 +3279,70 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* node)
 
             // Rewind dstOffset so we can fit a vector for the while remainder
             dstOffset -= (regSize - size);
-            emitSimdMovs();
+            emitStore(simdMov, regSize, srcXmmReg);
             size = 0;
         }
+    }
+    else if (node->IsOnHeapAndContainsReferences() && ((internalRegisters.GetAll(node) & RBM_ALLFLOAT) != 0))
+    {
+        // For block with GC refs we still can use SIMD, but only for continuous
+        // non-GC parts where atomicity guarantees are not that strict.
+        assert(!willUseSimdMov);
+        ClassLayout* layout = node->GetLayout();
+
+        regNumber simdZeroReg = REG_NA;
+        unsigned  slots       = layout->GetSlotCount();
+        unsigned  slot        = 0;
+        while (slot < slots)
+        {
+            if (!layout->IsGCPtr(slot))
+            {
+                // How many continuous non-GC slots do we have?
+                unsigned nonGcSlotCount = 0;
+                do
+                {
+                    nonGcSlotCount++;
+                    slot++;
+                } while ((slot < slots) && !layout->IsGCPtr(slot));
+
+                for (unsigned nonGcSlot = 0; nonGcSlot < nonGcSlotCount; nonGcSlot++)
+                {
+                    // Are continuous nongc slots enough to use SIMD?
+                    unsigned simdSize = compiler->roundDownSIMDSize((nonGcSlotCount - nonGcSlot) * REGSIZE_BYTES);
+                    if (simdSize > 0)
+                    {
+                        // Initialize simdZeroReg with zero on demand
+                        if (simdZeroReg == REG_NA)
+                        {
+                            simdZeroReg = internalRegisters.GetSingle(node, RBM_ALLFLOAT);
+                            // SIMD16 is sufficient for any SIMD size
+                            simd_t vecCon = {};
+                            genSetRegToConst(simdZeroReg, TYP_SIMD16, &vecCon);
+                        }
+
+                        emitStore(simdUnalignedMovIns(), simdSize, simdZeroReg);
+                        dstOffset += (int)simdSize;
+                        nonGcSlot += (simdSize / REGSIZE_BYTES) - 1;
+                    }
+                    else
+                    {
+                        emitStore(INS_mov, REGSIZE_BYTES, srcIntReg);
+                        dstOffset += REGSIZE_BYTES;
+                    }
+                }
+            }
+            else
+            {
+                // GC slot - update atomically
+                emitStore(INS_mov, REGSIZE_BYTES, srcIntReg);
+                dstOffset += REGSIZE_BYTES;
+                slot++;
+            }
+        }
+
+        // There are no trailing elements
+        assert((layout->GetSize() % TARGET_POINTER_SIZE) == 0);
+        size = 0;
     }
 #endif // FEATURE_SIMD
 
@@ -3298,15 +3359,7 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* node)
 
     for (; size > regSize; size -= regSize, dstOffset += regSize)
     {
-        if (dstLclNum != BAD_VAR_NUM)
-        {
-            emit->emitIns_S_R(INS_mov, EA_ATTR(regSize), srcIntReg, dstLclNum, dstOffset);
-        }
-        else
-        {
-            emit->emitIns_ARX_R(INS_mov, EA_ATTR(regSize), srcIntReg, dstAddrBaseReg, dstAddrIndexReg,
-                                dstAddrIndexScale, dstOffset);
-        }
+        emitStore(INS_mov, regSize, srcIntReg);
     }
 
     // Handle the non-SIMD remainder by overlapping with previously processed data if needed
@@ -3322,15 +3375,7 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* node)
         assert(shiftBack <= regSize);
         dstOffset -= shiftBack;
 
-        if (dstLclNum != BAD_VAR_NUM)
-        {
-            emit->emitIns_S_R(INS_mov, EA_ATTR(regSize), srcIntReg, dstLclNum, dstOffset);
-        }
-        else
-        {
-            emit->emitIns_ARX_R(INS_mov, EA_ATTR(regSize), srcIntReg, dstAddrBaseReg, dstAddrIndexReg,
-                                dstAddrIndexScale, dstOffset);
-        }
+        emitStore(INS_mov, regSize, srcIntReg);
     }
 #else // TARGET_X86
     for (unsigned regSize = REGSIZE_BYTES; size > 0; size -= regSize, dstOffset += regSize)
@@ -3339,15 +3384,8 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* node)
         {
             regSize /= 2;
         }
-        if (dstLclNum != BAD_VAR_NUM)
-        {
-            emit->emitIns_S_R(INS_mov, EA_ATTR(regSize), srcIntReg, dstLclNum, dstOffset);
-        }
-        else
-        {
-            emit->emitIns_ARX_R(INS_mov, EA_ATTR(regSize), srcIntReg, dstAddrBaseReg, dstAddrIndexReg,
-                                dstAddrIndexScale, dstOffset);
-        }
+
+        emitStore(INS_mov, regSize, srcIntReg);
     }
 #endif
 }
@@ -4164,7 +4202,8 @@ void CodeGen::genCodeForCpObj(GenTreeBlk* cpObjNode)
     GenTree*  dstAddr     = cpObjNode->Addr();
     GenTree*  source      = cpObjNode->Data();
     var_types srcAddrType = TYP_BYREF;
-    bool      dstOnStack  = dstAddr->gtSkipReloadOrCopy()->OperIs(GT_LCL_ADDR);
+    bool      dstOnStack =
+        dstAddr->gtSkipReloadOrCopy()->OperIs(GT_LCL_ADDR) || cpObjNode->GetLayout()->IsStackOnly(compiler);
 
     // If the GenTree node has data about GC pointers, this means we're dealing
     // with CpObj, so this requires special logic.
@@ -6396,7 +6435,8 @@ void CodeGen::genCallInstruction(GenTreeCall* call X86_ARG(target_ssize_t stackA
                             MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(secondRetSize),
                             di,
                             target->GetRegNum(),
-                            call->IsFastTailCall());
+                            call->IsFastTailCall(),
+                            true); // noSafePoint
                 // clang-format on
             }
         }

@@ -138,6 +138,9 @@ public class ResourcesData
     public ResourceHashesByNameDictionary jsModuleWorker { get; set; }
 
     [DataMember(EmitDefaultValue = false)]
+    public ResourceHashesByNameDictionary jsModuleGlobalization { get; set; }
+
+    [DataMember(EmitDefaultValue = false)]
     public ResourceHashesByNameDictionary jsModuleNative { get; set; }
 
     [DataMember(EmitDefaultValue = false)]

@@ -94,6 +94,27 @@ namespace System.Net.Quic.Tests
                 });
         }
 
+        [Theory]
+        [InlineData(-1)]
+        [InlineData(long.MaxValue)]
+        [InlineData(long.MinValue)]
+        public async Task CloseAsync_InvalidCode_Throws(long errorCode)
+        {
+            using var sync = new SemaphoreSlim(0);
+
+            await RunClientServer(
+                clientConnection =>
+                {
+                    Assert.Throws<ArgumentOutOfRangeException>(() => clientConnection.CloseAsync(errorCode));
+                    sync.Release();
+                    return Task.CompletedTask;
+                },
+                async serverConnection =>
+                {
+                    await sync.WaitAsync();
+                });
+        }
+
         [Fact]
         public async Task Dispose_WithPendingAcceptAndConnect_PendingAndSubsequentThrowOperationAbortedException()
         {

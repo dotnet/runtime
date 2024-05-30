@@ -237,6 +237,11 @@ enum HWIntrinsicFlag : unsigned int
     // The intrinsic is a FusedMultiplyAdd intrinsic
     HW_Flag_FmaIntrinsic = 0x20000000,
 
+#if defined(TARGET_ARM64)
+    // The intrinsic uses a mask in arg1 to select elements present in the result, and must use a low vector register.
+    HW_Flag_LowVectorOperation = 0x4000000,
+#endif
+
     HW_Flag_CanBenefitFromConstantProp = 0x80000000,
 };
 
@@ -826,6 +831,7 @@ struct HWIntrinsicInfo
             case NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x2:
             case NI_AdvSimd_LoadAndReplicateToVector64x2:
             case NI_AdvSimd_Arm64_LoadAndReplicateToVector128x2:
+            case NI_Sve_Load2xVectorAndUnzip:
                 return 2;
 
             case NI_AdvSimd_LoadVector64x3AndUnzip:
@@ -836,6 +842,7 @@ struct HWIntrinsicInfo
             case NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x3:
             case NI_AdvSimd_LoadAndReplicateToVector64x3:
             case NI_AdvSimd_Arm64_LoadAndReplicateToVector128x3:
+            case NI_Sve_Load3xVectorAndUnzip:
                 return 3;
 
             case NI_AdvSimd_LoadVector64x4AndUnzip:
@@ -846,6 +853,7 @@ struct HWIntrinsicInfo
             case NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x4:
             case NI_AdvSimd_LoadAndReplicateToVector64x4:
             case NI_AdvSimd_Arm64_LoadAndReplicateToVector128x4:
+            case NI_Sve_Load4xVectorAndUnzip:
                 return 4;
 #endif
 
@@ -889,6 +897,12 @@ struct HWIntrinsicInfo
     {
         const HWIntrinsicFlag flags = lookupFlags(id);
         return (flags & HW_Flag_LowMaskedOperation) != 0;
+    }
+
+    static bool IsLowVectorOperation(NamedIntrinsic id)
+    {
+        const HWIntrinsicFlag flags = lookupFlags(id);
+        return (flags & HW_Flag_LowVectorOperation) != 0;
     }
 
     static bool IsOptionalEmbeddedMaskedOperation(NamedIntrinsic id)

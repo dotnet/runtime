@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Threading;
 
@@ -17,11 +18,35 @@ namespace System.Diagnostics
         /// Construct an ActivitySource object with the input name
         /// </summary>
         /// <param name="name">The name of the ActivitySource object</param>
+        public ActivitySource(string name) : this(name, version: "", tags: null) {}
+
+        /// <summary>
+        /// Construct an ActivitySource object with the input name
+        /// </summary>
+        /// <param name="name">The name of the ActivitySource object</param>
         /// <param name="version">The version of the component publishing the tracing info.</param>
-        public ActivitySource(string name, string? version = "")
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public ActivitySource(string name, string? version = "") : this(name, version, tags: null) {}
+
+        /// <summary>
+        /// Construct an ActivitySource object with the input name
+        /// </summary>
+        /// <param name="name">The name of the ActivitySource object</param>
+        /// <param name="version">The version of the component publishing the tracing info.</param>
+        /// <param name="tags">The optional ActivitySource tags.</param>
+        public ActivitySource(string name, string? version = "", IEnumerable<KeyValuePair<string, object?>>? tags = default)
         {
             Name = name ?? throw new ArgumentNullException(nameof(name));
             Version = version;
+
+            // Sorting the tags to make sure the tags are always in the same order.
+            // Sorting can help in comparing the tags used for any scenario.
+            if (tags is not null)
+            {
+                var tagList = new List<KeyValuePair<string, object?>>(tags);
+                tagList.Sort((left, right) => string.Compare(left.Key, right.Key, StringComparison.Ordinal));
+                Tags = tagList.AsReadOnly();
+            }
 
             s_activeSources.Add(this);
 
@@ -53,6 +78,11 @@ namespace System.Diagnostics
         /// Returns the ActivitySource version.
         /// </summary>
         public string? Version { get; }
+
+        /// <summary>
+        /// Returns the tags associated with the ActivitySource.
+        /// </summary>
+        public IEnumerable<KeyValuePair<string, object?>>? Tags { get; }
 
         /// <summary>
         /// Check if there is any listeners for this ActivitySource.
