@@ -368,7 +368,7 @@ void Rationalizer::RewriteHWIntrinsicAsUserCall(GenTree** use, ArrayStack<GenTre
             int imm1Pos = -1;
             int imm2Pos = -1;
 
-            HWIntrinsicInfo::GetImmOpsPositions(intrinsicId, nullptr, &imm1Pos, &imm2Pos);
+            HWIntrinsicInfo::GetImmOpsPositions(intrinsicId, &sigInfo, &imm1Pos, &imm2Pos);
 
             if (imm1Pos >= 0)
             {
