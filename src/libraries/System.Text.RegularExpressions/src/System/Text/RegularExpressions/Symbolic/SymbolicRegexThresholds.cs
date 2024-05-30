@@ -26,14 +26,14 @@ namespace System.Text.RegularExpressions.Symbolic
         /// this should be a very last resort action, going from DFA mode to NFA mode turns 500MB/s to 5MB/s
         /// with an entirely different search-time algorithmic complexity
         /// 100_000 isn't a really a high memory cost either,
-        /// i'd even put 1_000_000 on the table but that might push it for general purpose use
+        /// ideally NFA mode should never be used, 1_000_000 is ok as well but it depends how much memory the user has
         /// </remarks>
         internal const int NfaThreshold = 100_000;
 
         /// <summary>
         /// Default maximum estimated safe expansion size of a <see cref="SymbolicRegexNode{TSet}"/> AST
         /// after the AST has been anlayzed for safe handling.
-        /// TODO: this is perhaps too conservative, consider raising this
+        /// TODO: this is perhaps too conservative, consider raising this, 5000 is ok even in safety critical scenarios, ~50 000 for general purpose is ok too
         /// <remarks>
         /// If the AST exceeds this threshold then <see cref="NotSupportedException"/> is thrown.
         /// This default value may be overridden with the AppContext data

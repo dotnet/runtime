@@ -47,9 +47,8 @@ namespace System.Text.RegularExpressions.Symbolic
                 return;
             }
 
-            // low memory compromise is to create an ascii-only array
+            // ascii-only array to save memory
             // int mintermId = c >= 128 ? 0 : mtlookup[c];
-            // and only exists because the wasm tests fail with OOM
             _isAsciiOnly = true;
             for (int mintermId = 1; mintermId < minterms.Length; mintermId++)
             {
@@ -60,8 +59,8 @@ namespace System.Text.RegularExpressions.Symbolic
                 }
             }
 
-            // assign minterm category for every char
-            // unused characters in minterm 0 get mapped to zero
+            // i have never seen a regex use over 80 minterms not to speak of 255,
+            // but it's there as a fallback mechanism
             if (minterms.Length > 255)
             {
                 // over 255 unique sets also means it's never ascii only

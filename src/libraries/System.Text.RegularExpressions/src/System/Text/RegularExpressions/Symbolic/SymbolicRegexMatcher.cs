@@ -81,7 +81,7 @@ namespace System.Text.RegularExpressions.Symbolic
         /// <summary>Data and routines for skipping ahead to the next place a match could potentially start.</summary>
         private readonly RegexFindOptimizations? _findOpts;
 
-        /// <summary>Dead end state to quickly return NoMatch</summary>
+        /// <summary>Dead end state to quickly return NoMatch, this could potentially be a constant</summary>
         private readonly int _deadStateId;
 
         /// <summary>Whether the pattern contains any anchor</summary>
@@ -102,6 +102,9 @@ namespace System.Text.RegularExpressions.Symbolic
         /// <remarks>If the pattern doesn't contain any anchors, there will only be a single initial state.</remarks>
         private readonly MatchingState<TSet>[] _reverseInitialStates;
 
+        /// <summary>
+        /// Reversal state which skips fixed length parts. Item1 - number of chars to skip; Item2 - adjusted reversal state.
+        /// </summary>
         private readonly (int, MatchingState<TSet>) _optimizedReversalState;
 
         /// <summary>Partition of the input space of sets.</summary>
@@ -328,6 +331,8 @@ namespace System.Text.RegularExpressions.Symbolic
         /// </summary>
         internal PerThreadData CreatePerThreadData() => new PerThreadData(_capsize);
 
+        /// TODO: when you're calling a function millions of times per second even this add 1 does cost something
+        /// this should be ideally remapped
         /// <summary>Look up what is the character kind given a position ID</summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private uint GetPositionKind(int positionId) => _positionKinds[positionId + 1];
@@ -351,6 +356,7 @@ namespace System.Text.RegularExpressions.Symbolic
             return minterms[mintermId];
         }
 
+        /// <summary>TODO: this if-else branch could be called once. it's currently causing overhead on every single step</summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private uint GetCharKind<TInputReader>(ReadOnlySpan<char> input, int i)
             where TInputReader : struct, IInputReader => !_pattern._info.ContainsSomeAnchor ?
@@ -657,6 +663,7 @@ namespace System.Text.RegularExpressions.Symbolic
         /// TODO: this is essentially a stripped down version when there's no good prefix optimizations
         /// i don't trust the compiler to optimize this and it makes a
         /// ~50% difference in performance with removing unnecessary checks alone
+        ///
         /// </summary>
         private bool FindEndPositionDeltasDFANoSkip(ReadOnlySpan<char> input, int lengthMinus1, RegexRunnerMode mode,
                 ref int posRef, int startStateId, ref int endPosRef, ref int endStateIdRef, ref int initialStatePosRef, ref int initialStatePosCandidateRef)
@@ -668,9 +675,16 @@ namespace System.Text.RegularExpressions.Symbolic
             byte[] mtlookup = _mintermClassifier.ByteLookup()!;
             int endStateId = endStateIdRef;
             int currStateId = startStateId;
+            // ldfld only once
+            // int deadStateId = _deadStateId;
             try
             {
                 // Loop through each character in the input, transitioning from state to state for each.
+                // The goal is to make this loop as fast as it can possible be,
+                // every single piece of overhead should be removed here
+                // there should be not a single callvirt instruction in the loop
+                // ldfld only if necessary (e.g. a reference changes)
+                // no memory writes unless necessary
                 while (true)
                 {
                     if (currStateId == _deadStateId)
@@ -783,7 +797,7 @@ namespace System.Text.RegularExpressions.Symbolic
 
                     // If the state is nullable for the next character, meaning it accepts the empty string,
                     // we found a potential end state.
-                    if (_nullabilityArray[state.DfaStateId] > 0 && TNullabilityHandler.IsNullableAt<TStateHandler>(this, in state, positionId, TStateHandler.GetStateFlags(this, in state)))
+                    if (TNullabilityHandler.IsNullableAt<TStateHandler>(this, in state, positionId, TStateHandler.GetStateFlags(this, in state)))
                     {
                         endPos = pos;
                         endStateId = TStateHandler.ExtractNullableCoreStateId(this, in state, input, pos);

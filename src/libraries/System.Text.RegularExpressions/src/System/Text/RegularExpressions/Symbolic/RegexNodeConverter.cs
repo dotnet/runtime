@@ -532,7 +532,7 @@ namespace System.Text.RegularExpressions.Symbolic
         // /// <summary>
         // /// attempt to remove anchors when possible since it reduces overhead
         // /// more rewrites could be tried but it's important to preserve PCRE semantics
-        // /// TODO: possibly removing this \b\w+\b != \w+ with due to zero width non-joiner
+        // /// TODO: possibly removing this \b\w+\b != \w+ due to zero width non-joiner
         // /// </summary>
         // /// <param name="builder"></param>
         // /// <param name="rootNode"></param>
