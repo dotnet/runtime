@@ -157,7 +157,7 @@ namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.StaticInterfaceMethods
 			{
 				// Force the string to have dynamic element so that it doesn't get compiled in as a literal
 				[Kept]
-				[KeptOverride ("Mono.Linker.Tests.Cases.Inheritance.Interfaces.StaticInterfaceMethods.StaticInterfaceMethodKeptImplementationKeptOverrideRemoved/" +
+				[KeptOverride ("Mono.Linker.Tests.Cases.Inheritance.Interfaces.StaticInterfaceMethods.RemovedInterfaceImplementationRemovedOverride/" +
 					"GenericInterfaceGenericType/IStaticAbstractMethodGeneric`1<T>")]
 				public static T GetMessage () => default;
 			}
@@ -167,7 +167,7 @@ namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.StaticInterfaceMethods
 			{
 				// Force the string to have dynamic element so that it doesn't get compiled in as a literal
 				[Kept]
-				[RemovedOverride ("Mono.Linker.Tests.Cases.Inheritance.Interfaces.StaticInterfaceMethods.StaticInterfaceMethodKeptImplementationKeptOverrideRemoved/" +
+				[RemovedOverride ("Mono.Linker.Tests.Cases.Inheritance.Interfaces.StaticInterfaceMethods.RemovedInterfaceImplementationRemovedOverride/" +
 					"GenericInterfaceGenericType/IStaticAbstractMethodGeneric`1<T>")]
 				public static T GetMessage () => default;
 			}
