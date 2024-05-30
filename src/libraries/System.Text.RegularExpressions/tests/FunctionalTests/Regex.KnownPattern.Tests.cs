@@ -18,7 +18,7 @@ namespace System.Text.RegularExpressions.Tests
     public class RegexKnownPatternTests
     {
         //
-        // These patterns come from the Regex documentation at docs.microsoft.com.
+        // These patterns come from the Regex documentation at https://learn.microsoft.com.
         //
 
         // https://learn.microsoft.com/en-us/dotnet/standard/base-types/regular-expression-example-scanning-for-hrefs
