@@ -482,6 +482,7 @@ GenTree* Compiler::impNonConstFallback(NamedIntrinsic intrinsic, var_types simdT
 //    clsHnd          -- class handle containing the intrinsic function.
 //    method          -- method handle of the intrinsic function.
 //    sig             -- signature of the intrinsic call.
+//    entryPoint      -- The entry point information required for R2R scenarios
 //    simdBaseJitType -- generic argument of the intrinsic.
 //    retType         -- return type of the intrinsic.
 //    mustExpand      -- true if the intrinsic must return a GenTree*; otherwise, false
@@ -492,7 +493,7 @@ GenTree* Compiler::impNonConstFallback(NamedIntrinsic intrinsic, var_types simdT
 GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                                        CORINFO_CLASS_HANDLE  clsHnd,
                                        CORINFO_METHOD_HANDLE method,
-                                       CORINFO_SIG_INFO*     sig,
+                                       CORINFO_SIG_INFO* sig R2RARG(CORINFO_CONST_LOOKUP* entryPoint),
                                        CorInfoType           simdBaseJitType,
                                        var_types             retType,
                                        unsigned              simdSize,
@@ -1869,7 +1870,14 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
             if (!indices->IsVectorConst())
             {
-                // TODO-ARM64-CQ: Handling non-constant indices is a bit more complex
+                assert(sig->numArgs == 2);
+
+                op2 = impSIMDPopStack();
+                op1 = impSIMDPopStack();
+
+                retNode = gtNewSimdHWIntrinsicNode(retType, op1, op2, intrinsic, simdBaseJitType, simdSize);
+
+                retNode->AsHWIntrinsic()->SetMethodHandle(this, method R2RARG(*entryPoint));
                 break;
             }
 
@@ -2296,6 +2304,35 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             retNode = impStoreMultiRegValueToVar(op1, sig->retTypeSigClass DEBUGARG(CorInfoCallConvExtension::Managed));
             break;
         }
+
+        case NI_Sve_Load2xVectorAndUnzip:
+        case NI_Sve_Load3xVectorAndUnzip:
+        case NI_Sve_Load4xVectorAndUnzip:
+        {
+            info.compNeedsConsecutiveRegisters = true;
+
+            assert(sig->numArgs == 2);
+
+            op2 = impPopStack().val;
+            op1 = impPopStack().val;
+
+            if (op2->OperIs(GT_CAST))
+            {
+                // Although the API specifies a pointer, if what we have is a BYREF, that's what
+                // we really want, so throw away the cast.
+                if (op2->gtGetOp1()->TypeGet() == TYP_BYREF)
+                {
+                    op2 = op2->gtGetOp1();
+                }
+            }
+
+            assert(HWIntrinsicInfo::IsMultiReg(intrinsic));
+            assert(HWIntrinsicInfo::IsExplicitMaskedOperation(intrinsic));
+
+            retNode = gtNewSimdHWIntrinsicNode(retType, op1, op2, intrinsic, simdBaseJitType, simdSize);
+            break;
+        }
+
         case NI_AdvSimd_LoadAndInsertScalarVector64x2:
         case NI_AdvSimd_LoadAndInsertScalarVector64x3:
         case NI_AdvSimd_LoadAndInsertScalarVector64x4:
@@ -2423,6 +2460,87 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             }
 
             retNode = gtNewSimdHWIntrinsicNode(retType, op1, op2, op3, intrinsic, simdBaseJitType, simdSize);
+            break;
+        }
+
+        case NI_Sve_StoreAndZip:
+        {
+            assert(sig->numArgs == 3);
+            assert(retType == TYP_VOID);
+
+            CORINFO_ARG_LIST_HANDLE arg1     = sig->args;
+            CORINFO_ARG_LIST_HANDLE arg2     = info.compCompHnd->getArgNext(arg1);
+            CORINFO_ARG_LIST_HANDLE arg3     = info.compCompHnd->getArgNext(arg2);
+            var_types               argType  = TYP_UNKNOWN;
+            CORINFO_CLASS_HANDLE    argClass = NO_CLASS_HANDLE;
+            argType             = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg3, &argClass)));
+            op3                 = impPopStack().val;
+            unsigned fieldCount = info.compCompHnd->getClassNumInstanceFields(argClass);
+
+            if (op3->TypeGet() == TYP_STRUCT)
+            {
+                info.compNeedsConsecutiveRegisters = true;
+                switch (fieldCount)
+                {
+                    case 2:
+                        intrinsic = NI_Sve_StoreAndZipx2;
+                        break;
+
+                    case 3:
+                        intrinsic = NI_Sve_StoreAndZipx3;
+                        break;
+
+                    case 4:
+                        intrinsic = NI_Sve_StoreAndZipx4;
+                        break;
+
+                    default:
+                        assert("unsupported");
+                }
+
+                if (!op3->OperIs(GT_LCL_VAR))
+                {
+                    unsigned tmp = lvaGrabTemp(true DEBUGARG("SveStoreN"));
+
+                    impStoreToTemp(tmp, op3, CHECK_SPILL_NONE);
+                    op3 = gtNewLclvNode(tmp, argType);
+                }
+                op3 = gtConvertTableOpToFieldList(op3, fieldCount);
+            }
+
+            argType = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg2, &argClass)));
+            op2     = getArgForHWIntrinsic(argType, argClass);
+            argType = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg1, &argClass)));
+            op1     = getArgForHWIntrinsic(argType, argClass);
+            retNode = gtNewSimdHWIntrinsicNode(retType, op1, op2, op3, intrinsic, simdBaseJitType, simdSize);
+            break;
+        }
+
+        case NI_Sve_StoreNarrowing:
+        {
+            assert(sig->numArgs == 3);
+            assert(retType == TYP_VOID);
+
+            CORINFO_ARG_LIST_HANDLE arg   = sig->args;
+            arg                           = info.compCompHnd->getArgNext(arg);
+            CORINFO_CLASS_HANDLE argClass = info.compCompHnd->getArgClass(sig, arg);
+            CorInfoType          ptrType  = getBaseJitTypeAndSizeOfSIMDType(argClass);
+            CORINFO_CLASS_HANDLE tmpClass = NO_CLASS_HANDLE;
+
+            // The size of narrowed target elements is determined from the second argument of StoreNarrowing().
+            // Thus, we first extract the datatype of a pointer passed in the second argument and then store it as the
+            // auxiliary type of intrinsic. This auxiliary type is then used in the codegen to choose the correct
+            // instruction to emit.
+            ptrType = strip(info.compCompHnd->getArgType(sig, arg, &tmpClass));
+            assert(ptrType == CORINFO_TYPE_PTR);
+            ptrType = info.compCompHnd->getChildType(argClass, &tmpClass);
+            assert(ptrType < simdBaseJitType);
+
+            op3     = impPopStack().val;
+            op2     = impPopStack().val;
+            op1     = impPopStack().val;
+            retNode = gtNewSimdHWIntrinsicNode(retType, op1, op2, op3, intrinsic, simdBaseJitType, simdSize);
+            retNode->AsHWIntrinsic()->SetAuxiliaryJitType(ptrType);
             break;
         }
 

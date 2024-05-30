@@ -343,19 +343,8 @@ namespace Mono.Linker.Steps
 
 			MarkGenericParameterProvider (type, origin);
 
-			if (type.HasFields) {
-				foreach (FieldDefinition field in type.Fields) {
-					MarkFieldVisibleToReflection (field, new DependencyInfo (DependencyKind.MemberOfType, type), origin);
-				}
-			}
-
-			if (type.HasMethods) {
-				foreach (MethodDefinition method in type.Methods) {
-					if (IsFullyPreservedAction (Annotations.GetAction (type.Module.Assembly)))
-						Annotations.SetAction (method, MethodAction.ForceParse);
-					MarkMethodVisibleToReflection (method, new DependencyInfo (DependencyKind.MemberOfType, type), origin);
-				}
-			}
+			MarkFieldsVisibleToReflection (type, new DependencyInfo (DependencyKind.MemberOfType, type), origin);
+			MarkMethodsVisibleToReflection (type, new DependencyInfo (DependencyKind.MemberOfType, type), origin);
 
 			if (type.HasProperties) {
 				foreach (var property in type.Properties) {
@@ -365,7 +354,7 @@ namespace Mono.Linker.Steps
 
 			if (type.HasEvents) {
 				foreach (var ev in type.Events) {
-					MarkEventVisibleToReflection (ev, new DependencyInfo (DependencyKind.MemberOfType, origin), origin);
+					MarkEventVisibleToReflection (ev, new DependencyInfo (DependencyKind.MemberOfType, type), origin);
 				}
 			}
 		}
@@ -1897,9 +1886,45 @@ namespace Mono.Linker.Steps
 			}
 		}
 
+		bool MarkMethodsVisibleToReflection (TypeDefinition type, in DependencyInfo reason, MessageOrigin origin)
+		{
+			if (!type.HasMethods)
+				return false;
+
+			foreach (MethodDefinition method in type.Methods) {
+				if (IsFullyPreservedAction (Annotations.GetAction (type.Module.Assembly)))
+					Annotations.SetAction (method, MethodAction.ForceParse);
+				MarkMethodVisibleToReflection (method, reason, origin);
+			}
+			return true;
+		}
+
 		internal void MarkFieldVisibleToReflection (FieldReference field, in DependencyInfo reason, in MessageOrigin origin)
 		{
 			MarkField (field, reason, origin);
+		}
+
+		bool MarkFieldsVisibleToReflection (TypeDefinition type, in DependencyInfo reason, MessageOrigin origin, bool markBackingFieldsOnlyIfPropertyMarked = false)
+		{
+			if (!type.HasFields)
+				return false;
+
+			foreach (FieldDefinition field in type.Fields) {
+				if (markBackingFieldsOnlyIfPropertyMarked && field.Name.EndsWith (">k__BackingField", StringComparison.Ordinal)) {
+					// We can't reliably construct the expected property name from the backing field name for all compilers
+					// because csc shortens the name of the backing field in some cases
+					// For example:
+					// Field Name = <IFoo<int>.Bar>k__BackingField
+					// Property Name = IFoo<System.Int32>.Bar
+					//
+					// instead we will search the properties and find the one that makes use of the current backing field
+					var propertyDefinition = SearchPropertiesForMatchingFieldDefinition (field);
+					if (propertyDefinition != null && !Annotations.IsMarked (propertyDefinition))
+						continue;
+				}
+				MarkFieldVisibleToReflection (field, reason, origin);
+			}
+			return true;
 		}
 
 		internal void MarkPropertyVisibleToReflection (PropertyDefinition property, in DependencyInfo reason, in MessageOrigin origin)
@@ -1920,7 +1945,7 @@ namespace Mono.Linker.Steps
 			// DependencyInfo used to access the event from reflection, to produce warnings for annotated
 			// event methods.
 			MarkMethodIfNotNull (@event.AddMethod, reason, origin);
-			MarkMethodIfNotNull (@event.InvokeMethod, reason, origin);
+			MarkMethodIfNotNull (@event.RemoveMethod, reason, origin);
 			MarkMethodIfNotNull (@event.InvokeMethod, reason, origin);
 			MarkMethodsIf (@event.OtherMethods, m => true, reason, origin);
 		}
@@ -2257,24 +2282,19 @@ namespace Mono.Linker.Steps
 
 					MethodDefinition? method = GetMethodWithNoParameters (type, methodName);
 					if (method != null) {
-						MarkMethod (method, new DependencyInfo (DependencyKind.ReferencedBySpecialAttribute, attribute), origin);
+						MarkMethodVisibleToReflection (method, new DependencyInfo (DependencyKind.ReferencedBySpecialAttribute, attribute), origin);
 						continue;
 					}
 				} else {
 					FieldDefinition? field = GetField (type, realMatch);
 					if (field != null) {
-						MarkField (field, new DependencyInfo (DependencyKind.ReferencedBySpecialAttribute, attribute), origin);
+						MarkFieldVisibleToReflection (field, new DependencyInfo (DependencyKind.ReferencedBySpecialAttribute, attribute), origin);
 						continue;
 					}
 
 					PropertyDefinition? property = GetProperty (type, realMatch);
 					if (property != null) {
-						if (property.GetMethod != null) {
-							MarkMethod (property.GetMethod, new DependencyInfo (DependencyKind.ReferencedBySpecialAttribute, attribute), origin);
-						}
-						if (property.SetMethod != null) {
-							MarkMethod (property.SetMethod, new DependencyInfo (DependencyKind.ReferencedBySpecialAttribute, attribute), origin);
-						}
+						MarkPropertyVisibleToReflection (property, new DependencyInfo (DependencyKind.ReferencedBySpecialAttribute, attribute), origin);
 						continue;
 					}
 				}
@@ -2282,8 +2302,8 @@ namespace Mono.Linker.Steps
 				while (true) {
 					// Currently if we don't understand the DebuggerDisplayAttribute we mark everything on the type
 					// This can be improved: dotnet/linker/issues/1873
-					MarkMethods (type, new DependencyInfo (DependencyKind.KeptForSpecialAttribute, attribute), origin);
-					MarkFields (type, includeStatic: true, new DependencyInfo (DependencyKind.ReferencedBySpecialAttribute, attribute), origin);
+					MarkMethodsVisibleToReflection (type, new DependencyInfo (DependencyKind.KeptForSpecialAttribute, attribute), origin);
+					MarkFieldsVisibleToReflection (type, new DependencyInfo (DependencyKind.ReferencedBySpecialAttribute, attribute), origin);
 					if (Context.TryResolve (type.BaseType) is not TypeDefinition baseType)
 						break;
 					type = baseType;
@@ -2311,8 +2331,8 @@ namespace Mono.Linker.Steps
 				MarkType (proxyTypeReference, new DependencyInfo (DependencyKind.ReferencedBySpecialAttribute, attribute), origin);
 
 				if (Context.TryResolve (proxyTypeReference) is TypeDefinition proxyType) {
-					MarkMethods (proxyType, new DependencyInfo (DependencyKind.ReferencedBySpecialAttribute, attribute), origin);
-					MarkFields (proxyType, includeStatic: true, new DependencyInfo (DependencyKind.ReferencedBySpecialAttribute, attribute), origin);
+					MarkMethodsVisibleToReflection (proxyType, new DependencyInfo (DependencyKind.ReferencedBySpecialAttribute, attribute), origin);
+					MarkFieldsVisibleToReflection (proxyType, new DependencyInfo (DependencyKind.ReferencedBySpecialAttribute, attribute), origin);
 				}
 			}
 		}
@@ -2781,16 +2801,16 @@ namespace Mono.Linker.Steps
 
 				switch (preserve) {
 				case TypePreserve.All:
-					MarkFields (type, true, di, typeOrigin);
-					MarkMethods (type, di, typeOrigin);
+					MarkFieldsVisibleToReflection (type, di, typeOrigin);
+					MarkMethodsVisibleToReflection (type, in di, typeOrigin);
 					return;
 
 				case TypePreserve.Fields:
-					if (!MarkFields (type, true, di, typeOrigin, true))
+					if (!MarkFieldsVisibleToReflection (type, di, typeOrigin, markBackingFieldsOnlyIfPropertyMarked: true))
 						Context.LogWarning (type, DiagnosticId.TypeHasNoFieldsToPreserve, type.GetDisplayName ());
 					break;
 				case TypePreserve.Methods:
-					if (!MarkMethods (type, di, typeOrigin))
+					if (!MarkMethodsVisibleToReflection (type, in di, typeOrigin))
 						Context.LogWarning (type, DiagnosticId.TypeHasNoMethodsToPreserve, type.GetDisplayName ());
 					break;
 				}
@@ -2802,18 +2822,18 @@ namespace Mono.Linker.Steps
 				if (type.HasMethods) {
 					foreach (var m in type.Methods) {
 						if ((members & TypePreserveMembers.Visible) != 0 && IsMethodVisible (m)) {
-							MarkMethod (m, di, typeOrigin);
+							MarkMethodVisibleToReflection (m, di, typeOrigin);
 							continue;
 						}
 
 						if ((members & TypePreserveMembers.Internal) != 0 && IsMethodInternal (m)) {
-							MarkMethod (m, di, typeOrigin);
+							MarkMethodVisibleToReflection (m, di, typeOrigin);
 							continue;
 						}
 
 						if ((members & TypePreserveMembers.Library) != 0) {
 							if (IsSpecialSerializationConstructor (m) || HasOnSerializeOrDeserializeAttribute (m)) {
-								MarkMethod (m, di, typeOrigin);
+								MarkMethodVisibleToReflection (m, di, typeOrigin);
 								continue;
 							}
 						}
@@ -2823,12 +2843,12 @@ namespace Mono.Linker.Steps
 				if (type.HasFields) {
 					foreach (var f in type.Fields) {
 						if ((members & TypePreserveMembers.Visible) != 0 && IsFieldVisible (f)) {
-							MarkField (f, di, typeOrigin);
+							MarkFieldVisibleToReflection (f, di, typeOrigin);
 							continue;
 						}
 
 						if ((members & TypePreserveMembers.Internal) != 0 && IsFieldInternal (f)) {
-							MarkField (f, di, typeOrigin);
+							MarkFieldVisibleToReflection (f, di, typeOrigin);
 							continue;
 						}
 					}
@@ -2876,7 +2896,7 @@ namespace Mono.Linker.Steps
 			MarkMethodCollection (list, new DependencyInfo (DependencyKind.PreservedMethod, method), origin);
 		}
 
-		protected bool MarkFields (TypeDefinition type, bool includeStatic, in DependencyInfo reason, MessageOrigin origin, bool markBackingFieldsOnlyIfPropertyMarked = false)
+		protected bool MarkFields (TypeDefinition type, bool includeStatic, in DependencyInfo reason, MessageOrigin origin)
 		{
 			if (!type.HasFields)
 				return false;
@@ -2884,19 +2904,6 @@ namespace Mono.Linker.Steps
 			foreach (FieldDefinition field in type.Fields) {
 				if (!includeStatic && field.IsStatic)
 					continue;
-
-				if (markBackingFieldsOnlyIfPropertyMarked && field.Name.EndsWith (">k__BackingField", StringComparison.Ordinal)) {
-					// We can't reliably construct the expected property name from the backing field name for all compilers
-					// because csc shortens the name of the backing field in some cases
-					// For example:
-					// Field Name = <IFoo<int>.Bar>k__BackingField
-					// Property Name = IFoo<System.Int32>.Bar
-					//
-					// instead we will search the properties and find the one that makes use of the current backing field
-					var propertyDefinition = SearchPropertiesForMatchingFieldDefinition (field);
-					if (propertyDefinition != null && !Annotations.IsMarked (propertyDefinition))
-						continue;
-				}
 				MarkField (field, reason, origin);
 			}
 
@@ -2947,7 +2954,7 @@ namespace Mono.Linker.Steps
 
 		protected virtual MethodDefinition? MarkMethod (MethodReference reference, DependencyInfo reason, in MessageOrigin origin)
 		{
-			DependencyKind originalReasonKind = reason.Kind;
+			DependencyInfo originalReason = reason;
 			(reference, reason) = GetOriginalMethod (reference, reason, origin);
 
 			if (reference.DeclaringType is ArrayType arrayType) {
@@ -2977,7 +2984,7 @@ namespace Mono.Linker.Steps
 
 			// Use the original reason as it's important to correctly generate warnings
 			// the updated reason is only useful for better tracking of dependencies.
-			ProcessAnalysisAnnotationsForMethod (method, originalReasonKind, origin);
+			ProcessAnalysisAnnotationsForMethod (method, originalReason.Kind, origin);
 
 			// Record the reason for marking a method on each call.
 			switch (reason.Kind) {
@@ -3000,6 +3007,12 @@ namespace Mono.Linker.Steps
 				// this is for the same reason as for tracking, but this time so that we report potential
 				// warnings from a better place.
 				MarkType (method.DeclaringType, new DependencyInfo (DependencyKind.DeclaringTypeOfCalledMethod, method), new MessageOrigin (reason.Source as IMemberDefinition ?? method));
+			}
+
+			if (method.TryGetEvent (out EventDefinition? @event)
+				&& reason.Kind != DependencyKind.EventMethod) {
+				var kind = PropagateDependencyKindToAccessors (reason.Kind, DependencyKind.EventOfEventMethod);
+				MarkEvent (@event, new DependencyInfo (kind, originalReason.Source), origin);
 			}
 
 			// We will only enqueue a method to be processed if it hasn't been processed yet.
@@ -3070,6 +3083,7 @@ namespace Mono.Linker.Steps
 			// and the DependencyKind in that case will be one of the dynamic acccess kinds and not MemberOfType
 			// since in those cases the warnings are desirable (potential access through reflection).
 			case DependencyKind.MemberOfType:
+			case DependencyKind.EventMethod:
 
 			// Used when marking a cctor because a type or field is kept. This should not warn because we already warn
 			// on access to members of the type which could trigger the cctor.
@@ -3160,9 +3174,6 @@ namespace Mono.Linker.Steps
 					Annotations.ProcessSatelliteAssemblies = true;
 			} else if (method.TryGetProperty (out PropertyDefinition? property))
 				MarkProperty (property, new DependencyInfo (PropagateDependencyKindToAccessors (reason.Kind, DependencyKind.PropertyOfPropertyMethod), method));
-			else if (method.TryGetEvent (out EventDefinition? @event)) {
-				MarkEvent (@event, new DependencyInfo (PropagateDependencyKindToAccessors (reason.Kind, DependencyKind.EventOfEventMethod), method), methodOrigin);
-			}
 
 			if (method.HasMetadataParameters ()) {
 #pragma warning disable RS0030 // MethodReference.Parameters is banned. It's easiest to leave the code as is for now
@@ -3504,17 +3515,17 @@ namespace Mono.Linker.Steps
 
 		protected internal virtual void MarkEvent (EventDefinition evt, in DependencyInfo reason, MessageOrigin origin)
 		{
-			if (!Annotations.MarkProcessed (evt, reason))
-				return;
-
 			origin = reason.Source is IMemberDefinition member ? new MessageOrigin (member) : origin;
-			DependencyKind dependencyKind = PropagateDependencyKindToAccessors (reason.Kind, DependencyKind.EventMethod);
+			DependencyKind dependencyKind = DependencyKind.EventMethod;
+
 			MarkMethodIfNotNull (evt.AddMethod, new DependencyInfo (dependencyKind, evt), origin);
 			MarkMethodIfNotNull (evt.InvokeMethod, new DependencyInfo (dependencyKind, evt), origin);
 			MarkMethodIfNotNull (evt.RemoveMethod, new DependencyInfo (dependencyKind, evt), origin);
 
-			var eventOrigin = new MessageOrigin (evt);
+			if (!Annotations.MarkProcessed (evt, reason))
+				return;
 
+			var eventOrigin = new MessageOrigin (evt);
 			MarkCustomAttributes (evt, new DependencyInfo (DependencyKind.CustomAttribute, evt), eventOrigin);
 			DoAdditionalEventProcessing (evt);
 		}

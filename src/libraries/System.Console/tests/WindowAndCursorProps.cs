@@ -277,7 +277,7 @@ public class WindowAndCursorProps
     }
 
     [Fact]
-    [OuterLoop] // makes noise, not very inner-loop friendly
+    [OuterLoop("makes noise, not very inner-loop friendly", ~TestPlatforms.Browser)]
     [PlatformSpecific(TestPlatforms.Windows)]
     public static void BeepWithFrequency_Invoke_Success()
     {

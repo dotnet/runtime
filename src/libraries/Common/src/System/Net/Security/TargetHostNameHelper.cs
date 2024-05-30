@@ -32,7 +32,7 @@ namespace System.Net.Security
             }
             catch (ArgumentException) when (IsSafeDnsString(targetHost))
             {
-                // Seems like name that does not confrom to IDN but apers somewhat valid according to original DNS rfc.
+                // Seems like name that does not conform to IDN but appears somewhat valid according to original DNS rfc.
             }
 
             return targetHost;

@@ -136,11 +136,22 @@ namespace ILCompiler
                     offsetsToVisit.Push(ehRegion.FilterOffset);
 
                 offsetsToVisit.Push(ehRegion.HandlerOffset);
+
+                if ((uint)ehRegion.TryLength >= (uint)methodBytes.Length
+                    || (uint)ehRegion.HandlerLength >= (uint)methodBytes.Length
+                    || ((uint)methodBytes.Length - (uint)ehRegion.TryLength) < (uint)ehRegion.TryOffset
+                    || ((uint)methodBytes.Length - (uint)ehRegion.HandlerLength) < (uint)ehRegion.HandlerOffset)
+                {
+                    ThrowHelper.ThrowInvalidProgramException();
+                }
             }
 
             // Identify basic blocks and instruction boundaries
             while (offsetsToVisit.TryPop(out int offset))
             {
+                if ((uint)offset >= (uint)flags.Length)
+                    ThrowHelper.ThrowInvalidProgramException();
+
                 // If this was already visited, we're done
                 if (flags[offset] != 0)
                 {

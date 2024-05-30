@@ -4365,6 +4365,19 @@ namespace System.Runtime.Intrinsics.Arm
         public static System.Numerics.Vector<double> FusedMultiplySubtractNegated(System.Numerics.Vector<double> minuend, System.Numerics.Vector<double> left, System.Numerics.Vector<double> right) { throw null; }
         public static System.Numerics.Vector<float> FusedMultiplySubtractNegated(System.Numerics.Vector<float> minuend, System.Numerics.Vector<float> left, System.Numerics.Vector<float> right) { throw null; }
 
+        public static System.Numerics.Vector<byte> LeadingSignCount(System.Numerics.Vector<sbyte> value) { throw null; }
+        public static System.Numerics.Vector<ushort> LeadingSignCount(System.Numerics.Vector<short> value) { throw null; }
+        public static System.Numerics.Vector<uint> LeadingSignCount(System.Numerics.Vector<int> value) { throw null; }
+        public static System.Numerics.Vector<ulong> LeadingSignCount(System.Numerics.Vector<long> value) { throw null; }
+        public static System.Numerics.Vector<byte> LeadingZeroCount(System.Numerics.Vector<sbyte> value) { throw null; }
+        public static System.Numerics.Vector<byte> LeadingZeroCount(System.Numerics.Vector<byte> value) { throw null; }
+        public static System.Numerics.Vector<ushort> LeadingZeroCount(System.Numerics.Vector<short> value) { throw null; }
+        public static System.Numerics.Vector<ushort> LeadingZeroCount(System.Numerics.Vector<ushort> value) { throw null; }
+        public static System.Numerics.Vector<uint> LeadingZeroCount(System.Numerics.Vector<int> value) { throw null; }
+        public static System.Numerics.Vector<uint> LeadingZeroCount(System.Numerics.Vector<uint> value) { throw null; }
+        public static System.Numerics.Vector<ulong> LeadingZeroCount(System.Numerics.Vector<long> value) { throw null; }
+        public static System.Numerics.Vector<ulong> LeadingZeroCount(System.Numerics.Vector<ulong> value) { throw null; }
+
         public static unsafe System.Numerics.Vector<sbyte> LoadVector(System.Numerics.Vector<sbyte> mask, sbyte* address) { throw null; }
         public static unsafe System.Numerics.Vector<short> LoadVector(System.Numerics.Vector<short> mask, short* address) { throw null; }
         public static unsafe System.Numerics.Vector<int> LoadVector(System.Numerics.Vector<int> mask, int* address) { throw null; }
@@ -4399,6 +4412,37 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe System.Numerics.Vector<ulong> LoadVectorUInt16ZeroExtendToUInt64(System.Numerics.Vector<ulong> mask, ushort* address) { throw null; }
         public static unsafe System.Numerics.Vector<long> LoadVectorUInt32ZeroExtendToInt64(System.Numerics.Vector<long> mask, uint* address) { throw null; }
         public static unsafe System.Numerics.Vector<ulong> LoadVectorUInt32ZeroExtendToUInt64(System.Numerics.Vector<ulong> mask, uint* address) { throw null; }
+
+        public static unsafe (System.Numerics.Vector<byte>, System.Numerics.Vector<byte>) Load2xVectorAndUnzip(System.Numerics.Vector<byte> mask, byte* address) { throw null; }
+        public static unsafe (System.Numerics.Vector<double>, System.Numerics.Vector<double>) Load2xVectorAndUnzip(System.Numerics.Vector<double> mask, double* address) { throw null; }
+        public static unsafe (System.Numerics.Vector<short>, System.Numerics.Vector<short>) Load2xVectorAndUnzip(System.Numerics.Vector<short> mask, short* address) { throw null; }
+        public static unsafe (System.Numerics.Vector<int>, System.Numerics.Vector<int>) Load2xVectorAndUnzip(System.Numerics.Vector<int> mask, int* address) { throw null; }
+        public static unsafe (System.Numerics.Vector<long>, System.Numerics.Vector<long>) Load2xVectorAndUnzip(System.Numerics.Vector<long> mask, long* address) { throw null; }
+        public static unsafe (System.Numerics.Vector<sbyte>, System.Numerics.Vector<sbyte>) Load2xVectorAndUnzip(System.Numerics.Vector<sbyte> mask, sbyte* address) { throw null; }
+        public static unsafe (System.Numerics.Vector<float>, System.Numerics.Vector<float>) Load2xVectorAndUnzip(System.Numerics.Vector<float> mask, float* address) { throw null; }
+        public static unsafe (System.Numerics.Vector<ushort>, System.Numerics.Vector<ushort>) Load2xVectorAndUnzip(System.Numerics.Vector<ushort> mask, ushort* address) { throw null; }
+        public static unsafe (System.Numerics.Vector<uint>, System.Numerics.Vector<uint>) Load2xVectorAndUnzip(System.Numerics.Vector<uint> mask, uint* address) { throw null; }
+        public static unsafe (System.Numerics.Vector<ulong>, System.Numerics.Vector<ulong>) Load2xVectorAndUnzip(System.Numerics.Vector<ulong> mask, ulong* address) { throw null; }
+        public static unsafe (System.Numerics.Vector<byte>, System.Numerics.Vector<byte>, System.Numerics.Vector<byte>) Load3xVectorAndUnzip(System.Numerics.Vector<byte> mask, byte* address) { throw null; }
+        public static unsafe (System.Numerics.Vector<double>, System.Numerics.Vector<double>, System.Numerics.Vector<double>) Load3xVectorAndUnzip(System.Numerics.Vector<double> mask, double* address) { throw null; }
+        public static unsafe (System.Numerics.Vector<short>, System.Numerics.Vector<short>, System.Numerics.Vector<short>) Load3xVectorAndUnzip(System.Numerics.Vector<short> mask, short* address) { throw null; }
+        public static unsafe (System.Numerics.Vector<int>, System.Numerics.Vector<int>, System.Numerics.Vector<int>) Load3xVectorAndUnzip(System.Numerics.Vector<int> mask, int* address) { throw null; }
+        public static unsafe (System.Numerics.Vector<long>, System.Numerics.Vector<long>, System.Numerics.Vector<long>) Load3xVectorAndUnzip(System.Numerics.Vector<long> mask, long* address) { throw null; }
+        public static unsafe (System.Numerics.Vector<sbyte>, System.Numerics.Vector<sbyte>, System.Numerics.Vector<sbyte>) Load3xVectorAndUnzip(System.Numerics.Vector<sbyte> mask, sbyte* address) { throw null; }
+        public static unsafe (System.Numerics.Vector<float>, System.Numerics.Vector<float>, System.Numerics.Vector<float>) Load3xVectorAndUnzip(System.Numerics.Vector<float> mask, float* address) { throw null; }
+        public static unsafe (System.Numerics.Vector<ushort>, System.Numerics.Vector<ushort>, System.Numerics.Vector<ushort>) Load3xVectorAndUnzip(System.Numerics.Vector<ushort> mask, ushort* address) { throw null; }
+        public static unsafe (System.Numerics.Vector<uint>, System.Numerics.Vector<uint>, System.Numerics.Vector<uint>) Load3xVectorAndUnzip(System.Numerics.Vector<uint> mask, uint* address) { throw null; }
+        public static unsafe (System.Numerics.Vector<ulong>, System.Numerics.Vector<ulong>, System.Numerics.Vector<ulong>) Load3xVectorAndUnzip(System.Numerics.Vector<ulong> mask, ulong* address) { throw null; }
+        public static unsafe (System.Numerics.Vector<byte>, System.Numerics.Vector<byte>, System.Numerics.Vector<byte>, System.Numerics.Vector<byte>) Load4xVectorAndUnzip(System.Numerics.Vector<byte> mask, byte* address) { throw null; }
+        public static unsafe (System.Numerics.Vector<double>, System.Numerics.Vector<double>, System.Numerics.Vector<double>, System.Numerics.Vector<double>) Load4xVectorAndUnzip(System.Numerics.Vector<double> mask, double* address) { throw null; }
+        public static unsafe (System.Numerics.Vector<short>, System.Numerics.Vector<short>, System.Numerics.Vector<short>, System.Numerics.Vector<short>) Load4xVectorAndUnzip(System.Numerics.Vector<short> mask, short* address) { throw null; }
+        public static unsafe (System.Numerics.Vector<int>, System.Numerics.Vector<int>, System.Numerics.Vector<int>, System.Numerics.Vector<int>) Load4xVectorAndUnzip(System.Numerics.Vector<int> mask, int* address) { throw null; }
+        public static unsafe (System.Numerics.Vector<long>, System.Numerics.Vector<long>, System.Numerics.Vector<long>, System.Numerics.Vector<long>) Load4xVectorAndUnzip(System.Numerics.Vector<long> mask, long* address) { throw null; }
+        public static unsafe (System.Numerics.Vector<sbyte>, System.Numerics.Vector<sbyte>, System.Numerics.Vector<sbyte>, System.Numerics.Vector<sbyte>) Load4xVectorAndUnzip(System.Numerics.Vector<sbyte> mask, sbyte* address) { throw null; }
+        public static unsafe (System.Numerics.Vector<float>, System.Numerics.Vector<float>, System.Numerics.Vector<float>, System.Numerics.Vector<float>) Load4xVectorAndUnzip(System.Numerics.Vector<float> mask, float* address) { throw null; }
+        public static unsafe (System.Numerics.Vector<ushort>, System.Numerics.Vector<ushort>, System.Numerics.Vector<ushort>, System.Numerics.Vector<ushort>) Load4xVectorAndUnzip(System.Numerics.Vector<ushort> mask, ushort* address) { throw null; }
+        public static unsafe (System.Numerics.Vector<uint>, System.Numerics.Vector<uint>, System.Numerics.Vector<uint>, System.Numerics.Vector<uint>) Load4xVectorAndUnzip(System.Numerics.Vector<uint> mask, uint* address) { throw null; }
+        public static unsafe (System.Numerics.Vector<ulong>, System.Numerics.Vector<ulong>, System.Numerics.Vector<ulong>, System.Numerics.Vector<ulong>) Load4xVectorAndUnzip(System.Numerics.Vector<ulong> mask, ulong* address) { throw null; }
 
         public static System.Numerics.Vector<byte> Max(System.Numerics.Vector<byte> left, System.Numerics.Vector<byte> right) { throw null; }
         public static System.Numerics.Vector<double> Max(System.Numerics.Vector<double> left, System.Numerics.Vector<double> right) { throw null; }
@@ -4509,6 +4553,17 @@ namespace System.Runtime.Intrinsics.Arm
         public static System.Numerics.Vector<uint> OrAcross(System.Numerics.Vector<uint> value) { throw null; }
         public static System.Numerics.Vector<ulong> OrAcross(System.Numerics.Vector<ulong> value) { throw null; }
 
+        public static System.Numerics.Vector<byte> PopCount(System.Numerics.Vector<sbyte> value) { throw null; }
+        public static System.Numerics.Vector<byte> PopCount(System.Numerics.Vector<byte> value) { throw null; }
+        public static System.Numerics.Vector<ushort> PopCount(System.Numerics.Vector<short> value) { throw null; }
+        public static System.Numerics.Vector<ushort> PopCount(System.Numerics.Vector<ushort> value) { throw null; }
+        public static System.Numerics.Vector<uint> PopCount(System.Numerics.Vector<int> value) { throw null; }
+        public static System.Numerics.Vector<uint> PopCount(System.Numerics.Vector<float> value) { throw null; }
+        public static System.Numerics.Vector<uint> PopCount(System.Numerics.Vector<uint> value) { throw null; }
+        public static System.Numerics.Vector<ulong> PopCount(System.Numerics.Vector<double> value) { throw null; }
+        public static System.Numerics.Vector<ulong> PopCount(System.Numerics.Vector<long> value) { throw null; }
+        public static System.Numerics.Vector<ulong> PopCount(System.Numerics.Vector<ulong> value) { throw null; }
+
         public static System.Numerics.Vector<int> SignExtend16(System.Numerics.Vector<int> value) { throw null; }
         public static System.Numerics.Vector<long> SignExtend16(System.Numerics.Vector<long> value) { throw null; }
         public static System.Numerics.Vector<long> SignExtend32(System.Numerics.Vector<long> value) { throw null; }
@@ -4521,7 +4576,72 @@ namespace System.Runtime.Intrinsics.Arm
         public static System.Numerics.Vector<long> SignExtendWideningLower(System.Numerics.Vector<int> value) { throw null; }
         public static System.Numerics.Vector<short> SignExtendWideningUpper(System.Numerics.Vector<sbyte> value) { throw null; }
         public static System.Numerics.Vector<int> SignExtendWideningUpper(System.Numerics.Vector<short> value) { throw null; }
-        public static System.Numerics.Vector<long> SignExtendWideningUpper(System.Numerics.Vector<int> value) { throw null; }        
+        public static System.Numerics.Vector<long> SignExtendWideningUpper(System.Numerics.Vector<int> value) { throw null; }
+
+        public static unsafe void StoreAndZip(System.Numerics.Vector<byte> mask, byte* address, System.Numerics.Vector<byte> data) { throw null; }
+        public static unsafe void StoreAndZip(System.Numerics.Vector<byte> mask, byte* address, (System.Numerics.Vector<byte> Value1, System.Numerics.Vector<byte> Value2) data) { throw null; }
+        public static unsafe void StoreAndZip(System.Numerics.Vector<byte> mask, byte* address, (System.Numerics.Vector<byte> Value1, System.Numerics.Vector<byte> Value2, System.Numerics.Vector<byte> Value3) data) { throw null; }
+        public static unsafe void StoreAndZip(System.Numerics.Vector<byte> mask, byte* address, (System.Numerics.Vector<byte> Value1, System.Numerics.Vector<byte> Value2, System.Numerics.Vector<byte> Value3, System.Numerics.Vector<byte> Value4) data) { throw null; }
+        public static unsafe void StoreAndZip(System.Numerics.Vector<double> mask, double* address, System.Numerics.Vector<double> data) { throw null; }
+        public static unsafe void StoreAndZip(System.Numerics.Vector<double> mask, double* address, (System.Numerics.Vector<double> Value1, System.Numerics.Vector<double> Value2) data) { throw null; }
+        public static unsafe void StoreAndZip(System.Numerics.Vector<double> mask, double* address, (System.Numerics.Vector<double> Value1, System.Numerics.Vector<double> Value2, System.Numerics.Vector<double> Value3) data) { throw null; }
+        public static unsafe void StoreAndZip(System.Numerics.Vector<double> mask, double* address, (System.Numerics.Vector<double> Value1, System.Numerics.Vector<double> Value2, System.Numerics.Vector<double> Value3, System.Numerics.Vector<double> Value4) data) { throw null; }
+        public static unsafe void StoreAndZip(System.Numerics.Vector<short> mask, short* address, System.Numerics.Vector<short> data) { throw null; }
+        public static unsafe void StoreAndZip(System.Numerics.Vector<short> mask, short* address, (System.Numerics.Vector<short> Value1, System.Numerics.Vector<short> Value2) data) { throw null; }
+        public static unsafe void StoreAndZip(System.Numerics.Vector<short> mask, short* address, (System.Numerics.Vector<short> Value1, System.Numerics.Vector<short> Value2, System.Numerics.Vector<short> Value3) data) { throw null; }
+        public static unsafe void StoreAndZip(System.Numerics.Vector<short> mask, short* address, (System.Numerics.Vector<short> Value1, System.Numerics.Vector<short> Value2, System.Numerics.Vector<short> Value3, System.Numerics.Vector<short> Value4) data) { throw null; }
+        public static unsafe void StoreAndZip(System.Numerics.Vector<int> mask, int* address, System.Numerics.Vector<int> data) { throw null; }
+        public static unsafe void StoreAndZip(System.Numerics.Vector<int> mask, int* address, (System.Numerics.Vector<int> Value1, System.Numerics.Vector<int> Value2) data) { throw null; }
+        public static unsafe void StoreAndZip(System.Numerics.Vector<int> mask, int* address, (System.Numerics.Vector<int> Value1, System.Numerics.Vector<int> Value2, System.Numerics.Vector<int> Value3) data) { throw null; }
+        public static unsafe void StoreAndZip(System.Numerics.Vector<int> mask, int* address, (System.Numerics.Vector<int> Value1, System.Numerics.Vector<int> Value2, System.Numerics.Vector<int> Value3, System.Numerics.Vector<int> Value4) data) { throw null; }
+        public static unsafe void StoreAndZip(System.Numerics.Vector<long> mask, long* address, System.Numerics.Vector<long> data) { throw null; }
+        public static unsafe void StoreAndZip(System.Numerics.Vector<long> mask, long* address, (System.Numerics.Vector<long> Value1, System.Numerics.Vector<long> Value2) data) { throw null; }
+        public static unsafe void StoreAndZip(System.Numerics.Vector<long> mask, long* address, (System.Numerics.Vector<long> Value1, System.Numerics.Vector<long> Value2, System.Numerics.Vector<long> Value3) data) { throw null; }
+        public static unsafe void StoreAndZip(System.Numerics.Vector<long> mask, long* address, (System.Numerics.Vector<long> Value1, System.Numerics.Vector<long> Value2, System.Numerics.Vector<long> Value3, System.Numerics.Vector<long> Value4) data) { throw null; }
+        public static unsafe void StoreAndZip(System.Numerics.Vector<sbyte> mask, sbyte* address, System.Numerics.Vector<sbyte> data) { throw null; }
+        public static unsafe void StoreAndZip(System.Numerics.Vector<sbyte> mask, sbyte* address, (System.Numerics.Vector<sbyte> Value1, System.Numerics.Vector<sbyte> Value2) data) { throw null; }
+        public static unsafe void StoreAndZip(System.Numerics.Vector<sbyte> mask, sbyte* address, (System.Numerics.Vector<sbyte> Value1, System.Numerics.Vector<sbyte> Value2, System.Numerics.Vector<sbyte> Value3) data) { throw null; }
+        public static unsafe void StoreAndZip(System.Numerics.Vector<sbyte> mask, sbyte* address, (System.Numerics.Vector<sbyte> Value1, System.Numerics.Vector<sbyte> Value2, System.Numerics.Vector<sbyte> Value3, System.Numerics.Vector<sbyte> Value4) data) { throw null; }
+        public static unsafe void StoreAndZip(System.Numerics.Vector<float> mask, float* address, System.Numerics.Vector<float> data) { throw null; }
+        public static unsafe void StoreAndZip(System.Numerics.Vector<float> mask, float* address, (System.Numerics.Vector<float> Value1, System.Numerics.Vector<float> Value2) data) { throw null; }
+        public static unsafe void StoreAndZip(System.Numerics.Vector<float> mask, float* address, (System.Numerics.Vector<float> Value1, System.Numerics.Vector<float> Value2, System.Numerics.Vector<float> Value3) data) { throw null; }
+        public static unsafe void StoreAndZip(System.Numerics.Vector<float> mask, float* address, (System.Numerics.Vector<float> Value1, System.Numerics.Vector<float> Value2, System.Numerics.Vector<float> Value3, System.Numerics.Vector<float> Value4) data) { throw null; }
+        public static unsafe void StoreAndZip(System.Numerics.Vector<ushort> mask, ushort* address, System.Numerics.Vector<ushort> data) { throw null; }
+        public static unsafe void StoreAndZip(System.Numerics.Vector<ushort> mask, ushort* address, (System.Numerics.Vector<ushort> Value1, System.Numerics.Vector<ushort> Value2) data) { throw null; }
+        public static unsafe void StoreAndZip(System.Numerics.Vector<ushort> mask, ushort* address, (System.Numerics.Vector<ushort> Value1, System.Numerics.Vector<ushort> Value2, System.Numerics.Vector<ushort> Value3) data) { throw null; }
+        public static unsafe void StoreAndZip(System.Numerics.Vector<ushort> mask, ushort* address, (System.Numerics.Vector<ushort> Value1, System.Numerics.Vector<ushort> Value2, System.Numerics.Vector<ushort> Value3, System.Numerics.Vector<ushort> Value4) data) { throw null; }
+        public static unsafe void StoreAndZip(System.Numerics.Vector<uint> mask, uint* address, System.Numerics.Vector<uint> data) { throw null; }
+        public static unsafe void StoreAndZip(System.Numerics.Vector<uint> mask, uint* address, (System.Numerics.Vector<uint> Value1, System.Numerics.Vector<uint> Value2) data) { throw null; }
+        public static unsafe void StoreAndZip(System.Numerics.Vector<uint> mask, uint* address, (System.Numerics.Vector<uint> Value1, System.Numerics.Vector<uint> Value2, System.Numerics.Vector<uint> Value3) data) { throw null; }
+        public static unsafe void StoreAndZip(System.Numerics.Vector<uint> mask, uint* address, (System.Numerics.Vector<uint> Value1, System.Numerics.Vector<uint> Value2, System.Numerics.Vector<uint> Value3, System.Numerics.Vector<uint> Value4) data) { throw null; }
+        public static unsafe void StoreAndZip(System.Numerics.Vector<ulong> mask, ulong* address, System.Numerics.Vector<ulong> data) { throw null; }
+        public static unsafe void StoreAndZip(System.Numerics.Vector<ulong> mask, ulong* address, (System.Numerics.Vector<ulong> Value1, System.Numerics.Vector<ulong> Value2) data) { throw null; }
+        public static unsafe void StoreAndZip(System.Numerics.Vector<ulong> mask, ulong* address, (System.Numerics.Vector<ulong> Value1, System.Numerics.Vector<ulong> Value2, System.Numerics.Vector<ulong> Value3) data) { throw null; }
+        public static unsafe void StoreAndZip(System.Numerics.Vector<ulong> mask, ulong* address, (System.Numerics.Vector<ulong> Value1, System.Numerics.Vector<ulong> Value2, System.Numerics.Vector<ulong> Value3, System.Numerics.Vector<ulong> Value4) data) { throw null; }
+
+        public static unsafe void StoreNarrowing(System.Numerics.Vector<short> mask, sbyte* address, System.Numerics.Vector<short> data) { throw null; }
+        public static unsafe void StoreNarrowing(System.Numerics.Vector<int> mask, sbyte* address, System.Numerics.Vector<int> data) { throw null; }
+        public static unsafe void StoreNarrowing(System.Numerics.Vector<int> mask, short* address, System.Numerics.Vector<int> data) { throw null; }
+        public static unsafe void StoreNarrowing(System.Numerics.Vector<long> mask, sbyte* address, System.Numerics.Vector<long> data) { throw null; }
+        public static unsafe void StoreNarrowing(System.Numerics.Vector<long> mask, short* address, System.Numerics.Vector<long> data) { throw null; }
+        public static unsafe void StoreNarrowing(System.Numerics.Vector<long> mask, int* address, System.Numerics.Vector<long> data) { throw null; }
+        public static unsafe void StoreNarrowing(System.Numerics.Vector<ushort> mask, byte* address, System.Numerics.Vector<ushort> data) { throw null; }
+        public static unsafe void StoreNarrowing(System.Numerics.Vector<uint> mask, byte* address, System.Numerics.Vector<uint> data) { throw null; }
+        public static unsafe void StoreNarrowing(System.Numerics.Vector<uint> mask, ushort* address, System.Numerics.Vector<uint> data) { throw null; }
+        public static unsafe void StoreNarrowing(System.Numerics.Vector<ulong> mask, byte* address, System.Numerics.Vector<ulong> data) { throw null; }
+        public static unsafe void StoreNarrowing(System.Numerics.Vector<ulong> mask, ushort* address, System.Numerics.Vector<ulong> data) { throw null; }
+        public static unsafe void StoreNarrowing(System.Numerics.Vector<ulong> mask, uint* address, System.Numerics.Vector<ulong> data) { throw null; }
+
+        public static unsafe void StoreNonTemporal(System.Numerics.Vector<byte> mask, byte* address, System.Numerics.Vector<byte> data) { throw null; }
+        public static unsafe void StoreNonTemporal(System.Numerics.Vector<double> mask, double* address, System.Numerics.Vector<double> data) { throw null; }
+        public static unsafe void StoreNonTemporal(System.Numerics.Vector<short> mask, short* address, System.Numerics.Vector<short> data) { throw null; }
+        public static unsafe void StoreNonTemporal(System.Numerics.Vector<int> mask, int* address, System.Numerics.Vector<int> data) { throw null; }
+        public static unsafe void StoreNonTemporal(System.Numerics.Vector<long> mask, long* address, System.Numerics.Vector<long> data) { throw null; }
+        public static unsafe void StoreNonTemporal(System.Numerics.Vector<sbyte> mask, sbyte* address, System.Numerics.Vector<sbyte> data) { throw null; }
+        public static unsafe void StoreNonTemporal(System.Numerics.Vector<float> mask, float* address, System.Numerics.Vector<float> data) { throw null; }
+        public static unsafe void StoreNonTemporal(System.Numerics.Vector<ushort> mask, ushort* address, System.Numerics.Vector<ushort> data) { throw null; }
+        public static unsafe void StoreNonTemporal(System.Numerics.Vector<uint> mask, uint* address, System.Numerics.Vector<uint> data) { throw null; }
+        public static unsafe void StoreNonTemporal(System.Numerics.Vector<ulong> mask, ulong* address, System.Numerics.Vector<ulong> data) { throw null; }
 
         public static System.Numerics.Vector<sbyte> Subtract(System.Numerics.Vector<sbyte> left, System.Numerics.Vector<sbyte> right) { throw null; }
         public static System.Numerics.Vector<short> Subtract(System.Numerics.Vector<short> left, System.Numerics.Vector<short> right) { throw null; }
