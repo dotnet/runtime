@@ -3,8 +3,11 @@
 
 namespace Microsoft.Diagnostics.DataContractReader.Data;
 
-internal sealed class ThreadStore
+internal sealed class ThreadStore : IData<ThreadStore>
 {
+    static ThreadStore IData<ThreadStore>.Create(Target target, TargetPointer address)
+        => new ThreadStore(target, address);
+
     public ThreadStore(Target target, TargetPointer address)
     {
         Target.TypeInfo type = target.GetTypeInfo(DataType.ThreadStore);

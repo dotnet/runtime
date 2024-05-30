@@ -3,8 +3,11 @@
 
 namespace Microsoft.Diagnostics.DataContractReader.Data;
 
-internal sealed class Thread
+internal sealed class Thread : IData<Thread>
 {
+    static Thread IData<Thread>.Create(Target target, TargetPointer address)
+        => new Thread(target, address);
+
     public Thread(Target target, TargetPointer address)
     {
         Target.TypeInfo type = target.GetTypeInfo(DataType.Thread);

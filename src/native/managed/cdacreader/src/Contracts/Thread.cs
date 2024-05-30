@@ -64,15 +64,7 @@ internal readonly struct Thread_1 : IThread
 
     ThreadStoreData IThread.GetThreadStoreData()
     {
-        Data.ThreadStore? threadStore;
-        if (!_target.ProcessedData.TryGet(_threadStoreAddr, out threadStore))
-        {
-            threadStore = new Data.ThreadStore(_target, _threadStoreAddr);
-
-            // Still okay if processed data is already registered by someone else
-            _ = _target.ProcessedData.TryRegister(_threadStoreAddr, threadStore);
-        }
-
+        Data.ThreadStore threadStore = _target.ProcessedData.GetOrAdd<Data.ThreadStore>(_threadStoreAddr);
         return new ThreadStoreData(
             threadStore.ThreadCount,
             GetThreadFromLink(threadStore.FirstThreadLink),
@@ -82,15 +74,7 @@ internal readonly struct Thread_1 : IThread
 
     ThreadStoreCounts IThread.GetThreadCounts()
     {
-        Data.ThreadStore? threadStore;
-        if (!_target.ProcessedData.TryGet(_threadStoreAddr, out threadStore))
-        {
-            threadStore = new Data.ThreadStore(_target, _threadStoreAddr);
-
-            // Still okay if processed data is already registered by someone else
-            _ = _target.ProcessedData.TryRegister(_threadStoreAddr, threadStore);
-        }
-
+        Data.ThreadStore threadStore = _target.ProcessedData.GetOrAdd<Data.ThreadStore>(_threadStoreAddr);
         return new ThreadStoreCounts(
             threadStore.UnstartedCount,
             threadStore.BackgroundCount,
@@ -100,15 +84,7 @@ internal readonly struct Thread_1 : IThread
 
     ThreadData IThread.GetThreadData(TargetPointer threadPointer)
     {
-        Data.Thread? thread;
-        if (!_target.ProcessedData.TryGet(threadPointer, out thread))
-        {
-            thread = new Data.Thread(_target, threadPointer);
-
-            // Still okay if processed data is already registered by someone else.
-            _ = _target.ProcessedData.TryRegister(threadPointer, thread);
-        }
-
+        Data.Thread thread = _target.ProcessedData.GetOrAdd<Data.Thread>(threadPointer);
         return new ThreadData(
             thread.Id,
             GetThreadFromLink(thread.LinkNext));
