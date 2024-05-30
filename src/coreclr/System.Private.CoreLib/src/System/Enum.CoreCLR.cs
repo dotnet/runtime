@@ -124,22 +124,6 @@ namespace System
             }
 
             public static EnumInfo<TStorage> Create(RuntimeType type) => Create(type, getNames: false);
-            {
-                TStorage[]? values = null;
-                string[]? names = null;
-
-                GetEnumValuesAndNames(
-                    new QCallTypeHandle(ref type),
-                    ObjectHandleOnStack.Create(ref values),
-                    ObjectHandleOnStack.Create(ref names),
-                    Interop.BOOL.FALSE);
-
-                Debug.Assert(values!.GetType() == typeof(TStorage[]));
-
-                bool hasFlagsAttribute = type.IsDefined(typeof(FlagsAttribute), inherit: false);
-
-                return new EnumInfo<TStorage>(hasFlagsAttribute, values, null!);
-            }
 
             public void InitializeCompositeCache(RuntimeType.CompositeCacheEntry compositeEntry) => compositeEntry._enumInfo = this;
 
