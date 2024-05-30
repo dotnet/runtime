@@ -138,6 +138,7 @@ CDAC_GLOBAL(FeatureEHFunclets, uint8, 1)
 CDAC_GLOBAL(FeatureEHFunclets, uint8, 0)
 #endif
 CDAC_GLOBAL(SOSBreakingChangeVersion, uint8, SOS_BREAKING_CHANGE_VERSION)
+CDAC_GLOBAL_POINTER(FreeObjectMethodTable, &::g_pFreeObjectMethodTable)
 CDAC_GLOBALS_END()
 
 #undef CDAC_BASELINE

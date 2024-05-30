@@ -13,5 +13,7 @@ internal static class Constants
         internal const string GCThread = nameof(GCThread);
 
         internal const string SOSBreakingChangeVersion = nameof(SOSBreakingChangeVersion);
+
+        internal const string FreeObjectMethodTable = nameof(FreeObjectMethodTable);
     }
 }

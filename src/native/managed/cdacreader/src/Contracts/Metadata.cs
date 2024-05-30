@@ -5,17 +5,30 @@ using System;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
-// FIXME: Do we want some other name for this concept? "MethodTable" is CoreCLR specific (in mono this would be a MonoClass)
-internal struct MethodTable
+
+// GC Heap may contain pointers that are not valid MethodTable pointers.
+// see Metadata_1.ValidateMethodTablePointer
+internal struct UntrustedMethodTable
 {
     internal Data.MethodTable? _data;
     internal bool _isFreeObjectMT;
-    internal MethodTable(Data.MethodTable? data, bool isFreeObjectMT)
+    internal UntrustedMethodTable(Data.MethodTable? data, bool isFreeObjectMT)
     {
         _data = data;
         _isFreeObjectMT = isFreeObjectMT;
     }
-    public System.Reflection.Metadata.TypeDefinitionHandle Token => System.Reflection.Metadata.Ecma335.MetadataTokens.TypeDefinitionHandle((int)GetTypeDefRid()); // TokenFromRid(GetTypeDefRid(), mdtTypeDef);
+    internal int GetTypeDefRid() => _data != null ? (int)(_data.DwFlags2 >> 8) : 0;
+
+}
+internal struct MethodTable
+{
+    internal Data.MethodTable _data;
+    internal bool _isFreeObjectMT;
+    internal MethodTable(Data.MethodTable data, bool isFreeObjectMT)
+    {
+        _data = data;
+        _isFreeObjectMT = isFreeObjectMT;
+    }
     internal int GetTypeDefRid() => _data != null ? (int)(_data.DwFlags2 >> 8) : 0;
 
 }
@@ -25,9 +38,11 @@ internal interface IMetadata : IContract
     static string IContract.Name => nameof(Metadata);
     static IContract IContract.Create(Target target, int version)
     {
+        TargetPointer targetPointer = target.ReadGlobalPointer(Constants.Globals.FreeObjectMethodTable);
+        TargetPointer freeObjectMethodTable = target.ReadPointer(targetPointer);
         return version switch
         {
-            1 => new Metadata_1(target),
+            1 => new Metadata_1(target, freeObjectMethodTable),
             _ => default(Metadata),
         };
     }
@@ -44,13 +59,27 @@ internal struct Metadata : IMetadata
 internal struct Metadata_1 : IMetadata
 {
     private readonly Target _target;
+    private readonly TargetPointer _freeObjectMethodTablePointer;
 
-    internal Metadata_1(Target target)
+    internal Metadata_1(Target target, TargetPointer freeObjectMethodTablePointer)
     {
         _target = target;
+        _freeObjectMethodTablePointer = freeObjectMethodTablePointer;
     }
 
-    private TargetPointer FreeObjectMethodTablePointer => throw new NotImplementedException();
+    public TargetPointer FreeObjectMethodTablePointer => _freeObjectMethodTablePointer;
+
+    internal UntrustedMethodTable GetUntrustedMethodTableData(TargetPointer methodTablePointer)
+    {
+        Data.MethodTable? methodTableData;
+        if (!_target.ProcessedData.TryGet(methodTablePointer, out methodTableData))
+        {
+
+            // Still okay if processed data is already registered by someone else.
+            _ = _target.ProcessedData.TryRegister(methodTablePointer, methodTableData);
+        }
+        return new UntrustedMethodTable(methodTableData, methodTablePointer == FreeObjectMethodTablePointer);
+    }
 
     public MethodTable GetMethodTableData(TargetPointer methodTablePointer)
     {
