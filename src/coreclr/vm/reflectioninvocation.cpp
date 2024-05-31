@@ -2069,3 +2069,47 @@ extern "C" int32_t QCALLTYPE ReflectionInvocation_SizeOf(QCall::TypeHandle pType
 
     return handle.GetSize();
 }
+
+extern "C" void QCALLTYPE ReflectionInvocation_GetBoxInfo(
+    QCall::TypeHandle pType,
+    PCODE* ppfnAllocator,
+    void** pvAllocatorFirstArg,
+    int32_t* pValueOffset,
+    uint32_t* pValueSize)
+{
+    CONTRACTL
+    {
+        QCALL_CHECK;
+        PRECONDITION(CheckPointer(ppfnAllocator));
+        PRECONDITION(CheckPointer(pvAllocatorFirstArg));
+        PRECONDITION(*ppfnAllocator == NULL);
+        PRECONDITION(*pvAllocatorFirstArg == NULL);
+    }
+    CONTRACTL_END;
+
+    BEGIN_QCALL;
+
+    TypeHandle type = pType.AsTypeHandle();
+
+    RuntimeTypeHandle::ValidateTypeAbleToBeInstantiated(type, true /* fForGetUninitializedInstance */);
+
+    MethodTable* pMT = type.AsMethodTable();
+
+    *pValueOffset = 0;
+
+    // If it is a nullable, return the allocator for the underlying type instead.
+    if (pMT->IsNullable())
+    {
+        pMT = pMT->GetInstantiation()[0].GetMethodTable();
+        *pValueOffset = Nullable::GetValueAddrOffset(pMT);
+    }
+
+    bool fHasSideEffectsUnused;
+    *ppfnAllocator = CEEJitInfo::getHelperFtnStatic(CEEInfo::getNewHelperStatic(pMT, &fHasSideEffectsUnused));
+    *pvAllocatorFirstArg = pMT;
+    *pValueSize = pMT->GetNumInstanceFieldBytes();
+
+    pMT->EnsureInstanceActive();
+
+    END_QCALL;
+}
