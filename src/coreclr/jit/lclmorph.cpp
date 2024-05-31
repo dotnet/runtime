@@ -356,31 +356,41 @@ public:
     {
         LocalEqualsLocalAddrAssertion assertion(dstLclNum, srcLclNum, srcOffs);
 
-        unsigned* index = m_map.LookupPointerOrAdd(assertion, UINT_MAX);
-
-        if (*index == UINT_MAX)
+        unsigned index;
+        if (m_assertions.Height() >= 64)
         {
-            if (m_assertions.Height() >= 64)
+            if (!m_map.Lookup(assertion, &index))
             {
+                JITDUMP("Out of assertion space; dropping assertion ");
+                DBEXEC(VERBOSE, assertion.Print());
+                JITDUMP("\n");
                 return;
             }
-
-            *index = (unsigned)m_assertions.Height();
-            m_assertions.Push(assertion);
-            m_lclAssertions[dstLclNum] |= uint64_t(1) << *index;
-
-            JITDUMP("Adding new assertion A%02u ", *index);
-            DBEXEC(VERBOSE, assertion.Print());
-            JITDUMP("\n");
         }
         else
         {
-            JITDUMP("Adding existing assertion A%02u ", *index);
-            DBEXEC(VERBOSE, assertion.Print());
-            JITDUMP("\n");
+            unsigned* pIndex = m_map.LookupPointerOrAdd(assertion, UINT_MAX);
+            if (*pIndex == UINT_MAX)
+            {
+                index = (unsigned)m_assertions.Height();
+                *pIndex = index;
+                m_assertions.Push(assertion);
+                m_lclAssertions[dstLclNum] |= uint64_t(1) << index;
+
+                JITDUMP("Adding new assertion A%02u ", index);
+                DBEXEC(VERBOSE, assertion.Print());
+                JITDUMP("\n");
+            }
+            else
+            {
+                index = *pIndex;
+                JITDUMP("Adding existing assertion A%02u ", index);
+                DBEXEC(VERBOSE, assertion.Print());
+                JITDUMP("\n");
+            }
         }
 
-        m_currentAssertions |= uint64_t(1) << *index;
+        m_currentAssertions |= uint64_t(1) << index;
     }
 
     //-------------------------------------------------------------------
