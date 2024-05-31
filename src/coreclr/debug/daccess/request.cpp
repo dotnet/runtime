@@ -761,11 +761,52 @@ ClrDataAccess::GetHeapAllocData(unsigned int count, struct DacpGenerationAllocDa
     return hr;
 }
 
-HRESULT
-ClrDataAccess::GetThreadData(CLRDATA_ADDRESS threadAddr, struct DacpThreadData *threadData)
+HRESULT ClrDataAccess::GetThreadData(CLRDATA_ADDRESS threadAddr, struct DacpThreadData* threadData)
 {
     SOSDacEnter();
 
+    if (m_cdacSos != NULL)
+    {
+        hr = m_cdacSos->GetThreadData(threadAddr, threadData);
+        if (FAILED(hr))
+        {
+            hr = GetThreadDataImpl(threadAddr, threadData);
+        }
+#ifdef _DEBUG
+        else
+        {
+            DacpThreadData threadDataLocal;
+            HRESULT hrLocal = GetThreadDataImpl(threadAddr, &threadDataLocal);
+            _ASSERTE(hr == hrLocal);
+            _ASSERTE(threadData->corThreadId == threadDataLocal.corThreadId);
+            _ASSERTE(threadData->osThreadId == threadDataLocal.osThreadId);
+            _ASSERTE(threadData->state == threadDataLocal.state);
+            _ASSERTE(threadData->preemptiveGCDisabled == threadDataLocal.preemptiveGCDisabled);
+            _ASSERTE(threadData->allocContextPtr == threadDataLocal.allocContextPtr);
+            _ASSERTE(threadData->allocContextLimit == threadDataLocal.allocContextLimit);
+            _ASSERTE(threadData->context == threadDataLocal.context);
+            _ASSERTE(threadData->domain == threadDataLocal.domain);
+            _ASSERTE(threadData->pFrame == threadDataLocal.pFrame);
+            _ASSERTE(threadData->lockCount == threadDataLocal.lockCount);
+            _ASSERTE(threadData->firstNestedException == threadDataLocal.firstNestedException);
+            _ASSERTE(threadData->teb == threadDataLocal.teb);
+            _ASSERTE(threadData->fiberData == threadDataLocal.fiberData);
+            _ASSERTE(threadData->lastThrownObjectHandle == threadDataLocal.lastThrownObjectHandle);
+            _ASSERTE(threadData->nextThread == threadDataLocal.nextThread);;
+        }
+#endif
+    }
+    else
+    {
+        hr = GetThreadDataImpl(threadAddr, threadData);
+    }
+
+    SOSDacLeave();
+    return hr;
+}
+
+HRESULT ClrDataAccess::GetThreadDataImpl(CLRDATA_ADDRESS threadAddr, struct DacpThreadData *threadData)
+{
     // marshal the Thread object from the target
     Thread* thread = PTR_Thread(TO_TADDR(threadAddr));
 
@@ -804,8 +845,7 @@ ClrDataAccess::GetThreadData(CLRDATA_ADDRESS threadAddr, struct DacpThreadData *
         thread->m_ExceptionState.m_currentExInfo.m_pPrevNestedInfo);
 #endif // FEATURE_EH_FUNCLETS
 
-    SOSDacLeave();
-    return hr;
+    return S_OK;
 }
 
 #ifdef FEATURE_REJIT

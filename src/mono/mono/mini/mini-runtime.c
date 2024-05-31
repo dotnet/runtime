@@ -2820,7 +2820,7 @@ lookup_start:
 
 		if (mono_aot_only) {
 			char *fullname = mono_method_get_full_name (method);
-			mono_error_set_execution_engine (error, "Attempting to JIT compile method '%s' while running in aot-only mode. See https://docs.microsoft.com/xamarin/ios/internals/limitations for more information.\n", fullname);
+			mono_error_set_execution_engine (error, "Attempting to JIT compile method '%s' while running in aot-only mode. See https://learn.microsoft.com/xamarin/ios/internals/limitations for more information.\n", fullname);
 			g_free (fullname);
 
 			return NULL;

@@ -103,7 +103,7 @@ void LinearScan::assignConsecutiveRegisters(RefPosition* firstRefPosition, regNu
 #endif // FEATURE_PARTIAL_SIMD_CALLEE_SAVE
         INDEBUG(refPosCount++);
         assert((consecutiveRefPosition->refType == RefTypeDef) || (consecutiveRefPosition->refType == RefTypeUse));
-        consecutiveRefPosition->registerAssignment = genRegMask(regToAssign);
+        consecutiveRefPosition->registerAssignment = genSingleTypeRegMask(regToAssign);
         consecutiveRefPosition                     = getNextConsecutiveRefPosition(consecutiveRefPosition);
         regToAssign                                = regToAssign == REG_FP_LAST ? REG_FP_FIRST : REG_NEXT(regToAssign);
     }
@@ -1472,6 +1472,27 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                         needBranchTargetReg = !intrin.op1->isContainedIntOrIImmed();
                         break;
 
+                    case NI_Sve_SaturatingDecrementBy16BitElementCount:
+                    case NI_Sve_SaturatingDecrementBy32BitElementCount:
+                    case NI_Sve_SaturatingDecrementBy64BitElementCount:
+                    case NI_Sve_SaturatingDecrementBy8BitElementCount:
+                    case NI_Sve_SaturatingIncrementBy16BitElementCount:
+                    case NI_Sve_SaturatingIncrementBy32BitElementCount:
+                    case NI_Sve_SaturatingIncrementBy64BitElementCount:
+                    case NI_Sve_SaturatingIncrementBy8BitElementCount:
+                    case NI_Sve_SaturatingDecrementBy16BitElementCountScalar:
+                    case NI_Sve_SaturatingDecrementBy32BitElementCountScalar:
+                    case NI_Sve_SaturatingDecrementBy64BitElementCountScalar:
+                    case NI_Sve_SaturatingIncrementBy16BitElementCountScalar:
+                    case NI_Sve_SaturatingIncrementBy32BitElementCountScalar:
+                    case NI_Sve_SaturatingIncrementBy64BitElementCountScalar:
+                        // Can only avoid generating a table if both immediates are constant.
+                        assert(intrin.op2->isContainedIntOrIImmed() == intrin.op3->isContainedIntOrIImmed());
+                        needBranchTargetReg = !intrin.op2->isContainedIntOrIImmed();
+                        // Ensure that internal does not collide with desination.
+                        setInternalRegsDelayFree = true;
+                        break;
+
                     default:
                         unreached();
                 }
@@ -1776,6 +1797,19 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
             case NI_AdvSimd_Arm64_LoadAndReplicateToVector128x4:
             {
                 assert(intrin.op1 != nullptr);
+                BuildConsecutiveRegistersForDef(intrinsicTree, dstCount);
+                *pDstCount = dstCount;
+                break;
+            }
+
+            case NI_Sve_Load2xVectorAndUnzip:
+            case NI_Sve_Load3xVectorAndUnzip:
+            case NI_Sve_Load4xVectorAndUnzip:
+            {
+                assert(intrin.op1 != nullptr);
+                assert(intrin.op2 != nullptr);
+                assert(intrinsicTree->OperIsMemoryLoadOrStore());
+                srcCount += BuildAddrUses(intrin.op2);
                 BuildConsecutiveRegistersForDef(intrinsicTree, dstCount);
                 *pDstCount = dstCount;
                 break;
