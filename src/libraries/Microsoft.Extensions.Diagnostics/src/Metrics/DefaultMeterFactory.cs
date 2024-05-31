@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Diagnostics.Metrics;
 
@@ -40,7 +41,7 @@ namespace Microsoft.Extensions.Diagnostics.Metrics
                 {
                     foreach (Meter meter in meterList)
                     {
-                        if (meter.Version == options.Version && DiagnosticsHelper.CompareTags(meter.Tags as List<KeyValuePair<string, object?>>, options.Tags))
+                        if (meter.Version == options.Version && DiagnosticsHelper.CompareTags(meter.Tags as IList<KeyValuePair<string, object?>>, options.Tags))
                         {
                             return meter;
                         }

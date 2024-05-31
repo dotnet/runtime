@@ -734,8 +734,8 @@
   <data name="PipeWriterCanceled" xml:space="preserve">
     <value>PipeWriter.FlushAsync was canceled.</value>
   </data>
-  <data name="PipeWriterCompleted" xml:space="preserve">
-    <value>PipeWriter has been completed, nothing more can be written to it.</value>
+  <data name="PipeWriter_DoesNotImplementUnflushedBytes" xml:space="preserve">
+    <value>The PipeWriter '{0}' does not implement PipeWriter.UnflushedBytes.</value>
   </data>
   <data name="InvalidNewLine" xml:space="preserve">
     <value>New line can be only "\n" or "\r\n".</value>

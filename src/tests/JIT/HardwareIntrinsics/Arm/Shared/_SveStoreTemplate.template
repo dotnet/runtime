@@ -24,7 +24,7 @@ namespace JIT.HardwareIntrinsics.Arm
         [Fact]
         public static void {TestName}()
         {
-            var test = new StoreNarrowingTest__{TestName}();
+            var test = new {Method}Test__{TestName}();
 
             if (test.IsSupported)
             {
@@ -65,7 +65,7 @@ namespace JIT.HardwareIntrinsics.Arm
         }
     }
 
-    public sealed unsafe class StoreNarrowingTest__{TestName}
+    public sealed unsafe class {Method}Test__{TestName}
     {
         private struct DataTable
         {
@@ -151,7 +151,7 @@ namespace JIT.HardwareIntrinsics.Arm
                 _outHandle.Free();
             }
 
-            public void RunStructFldScenario(StoreNarrowingTest__{TestName} testClass)
+            public void RunStructFldScenario({Method}Test__{TestName} testClass)
             {
                 Sve.{Method}(_storeMask, ({Op2BaseType}*) _outArrayPtr, _fld1);
 
@@ -170,7 +170,7 @@ namespace JIT.HardwareIntrinsics.Arm
 
         private DataTable _dataTable;
 
-        public StoreNarrowingTest__{TestName}()
+        public {Method}Test__{TestName}()
         {
             Succeeded = true;
 
@@ -188,7 +188,7 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunBasicScenario_UnsafeRead));
 
-            Sve.{Method}(Unsafe.Read<Vector<{Op1BaseType}>>(_dataTable.maskArrayPtr), ({Op2BaseType} *)_dataTable.outArrayPtr, Unsafe.Read<{Op1VectorType}<{Op1BaseType}>>(_dataTable.inArray1Ptr));
+            Sve.{Method}(Unsafe.Read<Vector<{Op1BaseType}>>(_dataTable.maskArrayPtr), ({Op2BaseType}*)_dataTable.outArrayPtr, Unsafe.Read<{Op1VectorType}<{Op1BaseType}>>(_dataTable.inArray1Ptr));
 
             ValidateResult(_dataTable.inArray1Ptr, _dataTable.outArrayPtr, _dataTable.maskArrayPtr);
         }
@@ -198,7 +198,7 @@ namespace JIT.HardwareIntrinsics.Arm
             TestLibrary.TestFramework.BeginScenario(nameof(RunBasicScenario_Load));
             {Op1VectorType}<{Op1BaseType}> loadMask = Sve.CreateTrueMask{Op1BaseType}(SveMaskPattern.All);
 
-            Sve.{Method}(Sve.LoadVector(loadMask, ({Op1BaseType}*)(_dataTable.maskArrayPtr)), ({Op2BaseType} *)_dataTable.outArrayPtr, Sve.LoadVector(loadMask, ({Op1BaseType}*)(_dataTable.inArray1Ptr)));
+            Sve.{Method}(Sve.LoadVector(loadMask, ({Op1BaseType}*)(_dataTable.maskArrayPtr)), ({Op2BaseType}*)_dataTable.outArrayPtr, Sve.LoadVector(loadMask, ({Op1BaseType}*)(_dataTable.inArray1Ptr)));
 
             ValidateResult(_dataTable.inArray1Ptr, _dataTable.outArrayPtr, _dataTable.maskArrayPtr);
         }
@@ -207,7 +207,7 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunReflectionScenario_UnsafeRead));
 
-            typeof(Sve).GetMethod(nameof(Sve.{Method}), new Type[] { typeof({Op1VectorType}<{Op1BaseType}>), typeof({Op2BaseType} *), typeof({Op1VectorType}<{Op1BaseType}>) })
+            typeof(Sve).GetMethod(nameof(Sve.{Method}), new Type[] { typeof({Op1VectorType}<{Op1BaseType}>), typeof({Op2BaseType}*), typeof({Op1VectorType}<{Op1BaseType}>) })
                                      .Invoke(null, new object[] { Unsafe.Read<Vector<{Op1BaseType}>>(_dataTable.maskArrayPtr),
                                         Pointer.Box(_dataTable.outArrayPtr, typeof({Op2BaseType}*)), Unsafe.Read<{Op1VectorType}<{Op1BaseType}>>(_dataTable.inArray1Ptr)
                                      });
@@ -222,7 +222,7 @@ namespace JIT.HardwareIntrinsics.Arm
             {Op1VectorType}<{Op1BaseType}> op1       = Unsafe.Read<{Op1VectorType}<{Op1BaseType}>>(_dataTable.inArray1Ptr);
             {Op1VectorType}<{Op1BaseType}> storeMask = Unsafe.Read<{Op1VectorType}<{Op1BaseType}>>(_dataTable.maskArrayPtr);
 
-            Sve.{Method}(storeMask, ({Op2BaseType} *)_dataTable.outArrayPtr, op1);
+            Sve.{Method}(storeMask, ({Op2BaseType}*)_dataTable.outArrayPtr, op1);
 
             ValidateResult(op1, _dataTable.outArrayPtr, storeMask);
         }
@@ -234,7 +234,7 @@ namespace JIT.HardwareIntrinsics.Arm
             {Op1VectorType}<{Op1BaseType}> op1       = Unsafe.Read<{Op1VectorType}<{Op1BaseType}>>(_dataTable.inArray1Ptr);
             {Op1VectorType}<{Op1BaseType}> storeMask = Unsafe.Read<{Op1VectorType}<{Op1BaseType}>>(_dataTable.maskArrayPtr);
 
-            Sve.{Method}(storeMask, ({Op2BaseType} *)_dataTable.outArrayPtr, op1);
+            Sve.{Method}(storeMask, ({Op2BaseType}*)_dataTable.outArrayPtr, op1);
 
             ValidateResult(op1, _dataTable.outArrayPtr, storeMask);
         }
@@ -244,7 +244,7 @@ namespace JIT.HardwareIntrinsics.Arm
             TestLibrary.TestFramework.BeginScenario(nameof(RunStructLclFldScenario));
 
             var test = TestStruct.Create();
-            Sve.{Method}(test._storeMask, ({Op2BaseType} *)test._outArrayPtr, test._fld1);
+            Sve.{Method}(test._storeMask, ({Op2BaseType}*)test._outArrayPtr, test._fld1);
 
             ValidateResult(test._fld1, test._outArrayPtr, test._storeMask);
         }
@@ -308,14 +308,7 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             bool succeeded = true;
 
-            for (var i = 0; i < Op1ElementCount; i++)
-            {
-                    if ({ValidateEntry})
-                    {
-                        succeeded = false;
-                        break;
-                    }
-            }
+            {TemplateValidationLogic}
 
             if (!succeeded)
             {

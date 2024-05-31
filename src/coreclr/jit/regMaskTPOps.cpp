@@ -13,7 +13,7 @@ struct regMaskTP;
 //
 void regMaskTP::RemoveRegNumFromMask(regNumber reg)
 {
-    low &= ~genRegMask(reg);
+    low &= ~genSingleTypeRegMask(reg);
 }
 
 //------------------------------------------------------------------------

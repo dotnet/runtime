@@ -9,11 +9,12 @@
 // RewriteNodeAsCall : Replace the given tree node by a GT_CALL.
 //
 // Arguments:
-//    ppTree      - A pointer-to-a-pointer for the tree node
-//    fgWalkData  - A pointer to tree walk data providing the context
-//    callHnd     - The method handle of the call to be generated
-//    entryPoint  - The method entrypoint of the call to be generated
-//    args        - The argument list of the call to be generated
+//    use          - A pointer-to-a-pointer for the tree node
+//    parents      - A pointer to tree walk data providing the context
+//    callHnd      - The method handle of the call to be generated
+//    entryPoint   - The method entrypoint of the call to be generated
+//    operands     - The operand  list of the call to be generated
+//    operandCount - The number of operands in the operand list
 //
 // Return Value:
 //    None.
@@ -22,11 +23,11 @@
 void Rationalizer::RewriteNodeAsCall(GenTree**             use,
                                      ArrayStack<GenTree*>& parents,
                                      CORINFO_METHOD_HANDLE callHnd,
-#ifdef FEATURE_READYTORUN
+#if defined(FEATURE_READYTORUN)
                                      CORINFO_CONST_LOOKUP entryPoint,
-#endif
-                                     GenTree* arg1,
-                                     GenTree* arg2)
+#endif // FEATURE_READYTORUN
+                                     GenTree** operands,
+                                     size_t    operandCount)
 {
     GenTree* const tree           = *use;
     GenTree* const treeFirstNode  = comp->fgGetFirstNode(tree);
@@ -37,57 +38,148 @@ void Rationalizer::RewriteNodeAsCall(GenTree**             use,
     // Create the call node
     GenTreeCall* call = comp->gtNewCallNode(CT_USER_FUNC, callHnd, tree->gtType);
 
-    if (arg2 != nullptr)
-    {
-        call->gtArgs.PushFront(comp, NewCallArg::Primitive(arg2));
-        call->gtFlags |= arg2->gtFlags & GTF_ALL_EFFECT;
-    }
-
-    if (arg1 != nullptr)
-    {
-        call->gtArgs.PushFront(comp, NewCallArg::Primitive(arg1));
-        call->gtFlags |= arg1->gtFlags & GTF_ALL_EFFECT;
-    }
-
-#if DEBUG
     CORINFO_SIG_INFO sig;
     comp->eeGetMethodSig(callHnd, &sig);
-    assert(JITtype2varType(sig.retType) == tree->gtType);
-#endif // DEBUG
 
-#ifdef FEATURE_READYTORUN
+    var_types retType = JITtype2varType(sig.retType);
+
+    if (varTypeIsStruct(retType))
+    {
+        call->gtRetClsHnd = sig.retTypeClass;
+        retType           = comp->impNormStructType(sig.retTypeClass);
+
+#if FEATURE_MULTIREG_RET
+        call->InitializeStructReturnType(comp, sig.retTypeClass, call->GetUnmanagedCallConv());
+#endif // FEATURE_MULTIREG_RET
+
+        Compiler::structPassingKind howToReturnStruct;
+        var_types                   returnType =
+            comp->getReturnTypeForStruct(sig.retTypeClass, call->GetUnmanagedCallConv(), &howToReturnStruct);
+
+        if (howToReturnStruct == Compiler::SPK_ByReference)
+        {
+            assert(returnType == TYP_UNKNOWN);
+            call->gtCallMoreFlags |= GTF_CALL_M_RETBUFFARG;
+        }
+    }
+
+    assert(retType == tree->gtType);
+
+    CORINFO_ARG_LIST_HANDLE sigArg   = sig.args;
+    size_t                  firstArg = 0;
+
+    if (sig.hasThis())
+    {
+        GenTree*   operand = operands[0];
+        NewCallArg arg     = NewCallArg::Primitive(operand).WellKnown(WellKnownArg::ThisPointer);
+
+        call->gtArgs.PushBack(comp, arg);
+        call->gtFlags |= operand->gtFlags & GTF_ALL_EFFECT;
+
+        firstArg++;
+    }
+
+    for (size_t i = firstArg; i < operandCount; i++)
+    {
+        GenTree* operand = operands[i];
+
+        CORINFO_CLASS_HANDLE clsHnd = NO_CLASS_HANDLE;
+        CorInfoType          corTyp = strip(comp->info.compCompHnd->getArgType(&sig, sigArg, &clsHnd));
+        var_types            sigTyp = JITtype2varType(corTyp);
+
+        NewCallArg arg;
+
+        if (varTypeIsStruct(sigTyp))
+        {
+            sigTyp = comp->impNormStructType(clsHnd);
+            arg    = NewCallArg::Struct(operand, sigTyp, clsHnd);
+        }
+        else
+        {
+            arg = NewCallArg::Primitive(operand, sigTyp);
+        }
+
+        call->gtArgs.PushBack(comp, arg);
+        call->gtFlags |= operand->gtFlags & GTF_ALL_EFFECT;
+
+        sigArg = comp->info.compCompHnd->getArgNext(sigArg);
+    }
+
+#if defined(FEATURE_READYTORUN)
     call->AsCall()->setEntryPoint(entryPoint);
-#endif
+#endif // FEATURE_READYTORUN
+
+    unsigned tmpNum = BAD_VAR_NUM;
+
+    if (call->TreatAsShouldHaveRetBufArg())
+    {
+        assert(call->ShouldHaveRetBufArg());
+
+        tmpNum = comp->lvaGrabTemp(true DEBUGARG("return buffer for hwintrinsic"));
+        comp->lvaSetStruct(tmpNum, sig.retTypeClass, false);
+
+        GenTree*   destAddr = comp->gtNewLclVarAddrNode(tmpNum, TYP_BYREF);
+        NewCallArg newArg   = NewCallArg::Primitive(destAddr).WellKnown(WellKnownArg::RetBuffer);
+
+        call->gtArgs.InsertAfterThisOrFirst(comp, newArg);
+        call->gtType = TYP_VOID;
+    }
 
     call = comp->fgMorphArgs(call);
+
+    GenTree* result = call;
 
     // Replace "tree" with "call"
     if (parents.Height() > 1)
     {
-        parents.Top(1)->ReplaceOperand(use, call);
+        if (tmpNum != BAD_VAR_NUM)
+        {
+            result = comp->gtNewLclvNode(tmpNum, tree->gtType);
+        }
+
+        parents.Top(1)->ReplaceOperand(use, result);
+
+        if (tmpNum != BAD_VAR_NUM)
+        {
+            comp->gtSetEvalOrder(result);
+            BlockRange().InsertAfter(insertionPoint, LIR::Range(comp->fgSetTreeSeq(result), result));
+        }
     }
     else
     {
         // If there's no parent, the tree being replaced is the root of the
         // statement (and no special handling is necessary).
-        *use = call;
+        *use = result;
     }
 
     comp->gtSetEvalOrder(call);
     BlockRange().InsertAfter(insertionPoint, LIR::Range(comp->fgSetTreeSeq(call), call));
 
-    // Propagate flags of "call" to its parents.
-    // 0 is current node, so start at 1
-    for (int i = 1; i < parents.Height(); i++)
+    if (result == call)
     {
-        parents.Top(i)->gtFlags |= (call->gtFlags & GTF_ALL_EFFECT) | GTF_CALL;
+        // Propagate flags of "call" to its parents.
+        // 0 is current node, so start at 1
+        for (int i = 1; i < parents.Height(); i++)
+        {
+            parents.Top(i)->gtFlags |= (call->gtFlags & GTF_ALL_EFFECT) | GTF_CALL;
+        }
+    }
+    else
+    {
+        // Normally the call replaces the node in pre-order, so we automatically continue visiting the call.
+        // However, when we have a retbuf the node is replaced by a local with the call inserted before it,
+        // so we need to make sure we visit it here.
+        RationalizeVisitor visitor(*this);
+        GenTree*           node = call;
+        visitor.WalkTree(&node, nullptr);
+        assert(node == call);
     }
 
-    // Since "tree" is replaced with "call", pop "tree" node (i.e the current node)
-    // and replace it with "call" on parent stack.
+    // Since "tree" is replaced with "result", pop "tree" node (i.e the current node)
+    // and replace it with "result" on parent stack.
     assert(parents.Top() == tree);
     (void)parents.Pop();
-    parents.Push(call);
+    parents.Push(result);
 }
 
 // RewriteIntrinsicAsUserCall : Rewrite an intrinsic operator as a GT_CALL to the original method.
@@ -108,14 +200,53 @@ void Rationalizer::RewriteIntrinsicAsUserCall(GenTree** use, ArrayStack<GenTree*
 {
     GenTreeIntrinsic* intrinsic = (*use)->AsIntrinsic();
 
-    GenTree* arg1 = intrinsic->gtGetOp1();
-    GenTree* arg2 = intrinsic->gtGetOp2();
+    GenTree* operands[2];
+    size_t   operandCount = 0;
+
+    operands[0] = intrinsic->gtGetOp1();
+
+    if (operands[0] != nullptr)
+    {
+        operandCount++;
+    }
+
+    operands[1] = intrinsic->gtGetOp2();
+
+    if (operands[1] != nullptr)
+    {
+        operandCount++;
+    }
+
     RewriteNodeAsCall(use, parents, intrinsic->gtMethodHandle,
-#ifdef FEATURE_READYTORUN
+#if defined(FEATURE_READYTORUN)
                       intrinsic->gtEntryPoint,
-#endif
-                      arg1, arg2);
+#endif // FEATURE_READYTORUN
+                      operands, operandCount);
 }
+
+#if defined(FEATURE_HW_INTRINSICS)
+// RewriteHWIntrinsicAsUserCall : Rewrite a hwintrinsic node as a GT_CALL to the original method.
+//
+// Arguments:
+//    ppTree      - A pointer-to-a-pointer for the intrinsic node
+//    fgWalkData  - A pointer to tree walk data providing the context
+//
+// Return Value:
+//    None.
+void Rationalizer::RewriteHWIntrinsicAsUserCall(GenTree** use, ArrayStack<GenTree*>& parents)
+{
+    GenTreeHWIntrinsic* hwintrinsic = (*use)->AsHWIntrinsic();
+
+    GenTree** operands     = hwintrinsic->GetOperandArray();
+    size_t    operandCount = hwintrinsic->GetOperandCount();
+
+    RewriteNodeAsCall(use, parents, hwintrinsic->GetMethodHandle(),
+#if defined(FEATURE_READYTORUN)
+                      hwintrinsic->GetEntryPoint(),
+#endif // FEATURE_READYTORUN
+                      operands, operandCount);
+}
+#endif // FEATURE_HW_INTRINSICS
 
 #ifdef TARGET_ARM64
 // RewriteSubLshDiv: Possibly rewrite a SubLshDiv node into a Mod.
@@ -319,6 +450,13 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, Compiler::Ge
             assert(comp->IsTargetIntrinsic(node->AsIntrinsic()->gtIntrinsicName));
             break;
 
+#if defined(FEATURE_HW_INTRINSICS)
+        case GT_HWINTRINSIC:
+            // Intrinsics should have already been rewritten back into user calls.
+            assert(!node->AsHWIntrinsic()->IsUserCall());
+            break;
+#endif // FEATURE_HW_INTRINSICS
+
         case GT_CAST:
             if (node->AsCast()->CastOp()->OperIsSimple())
             {
@@ -361,6 +499,47 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, Compiler::Ge
     return Compiler::WALK_CONTINUE;
 }
 
+// Rewrite intrinsics that are not supported by the target back into user calls.
+// This needs to be done before the transition to LIR because it relies on the use
+// of fgMorphArgs, which is designed to operate on HIR. Once this is done for a
+// particular statement, link that statement's nodes into the current basic block.
+Compiler::fgWalkResult Rationalizer::RationalizeVisitor::PreOrderVisit(GenTree** use, GenTree* user)
+{
+    GenTree* const node = *use;
+
+    if (node->OperGet() == GT_INTRINSIC)
+    {
+        if (m_rationalizer.comp->IsIntrinsicImplementedByUserCall(node->AsIntrinsic()->gtIntrinsicName))
+        {
+            m_rationalizer.RewriteIntrinsicAsUserCall(use, this->m_ancestors);
+        }
+    }
+#if defined(FEATURE_HW_INTRINSICS)
+    else if (node->OperIsHWIntrinsic())
+    {
+        if (node->AsHWIntrinsic()->IsUserCall())
+        {
+            m_rationalizer.RewriteHWIntrinsicAsUserCall(use, this->m_ancestors);
+        }
+    }
+#endif // FEATURE_HW_INTRINSICS
+
+#ifdef TARGET_ARM64
+    if (node->OperIs(GT_SUB))
+    {
+        m_rationalizer.RewriteSubLshDiv(use);
+    }
+#endif
+
+    return Compiler::WALK_CONTINUE;
+}
+
+// Rewrite HIR nodes into LIR nodes.
+Compiler::fgWalkResult Rationalizer::RationalizeVisitor::PostOrderVisit(GenTree** use, GenTree* user)
+{
+    return m_rationalizer.RewriteNode(use, this->m_ancestors);
+}
+
 //------------------------------------------------------------------------
 // DoPhase: Run the rationalize over the method IR.
 //
@@ -369,55 +548,6 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, Compiler::Ge
 //
 PhaseStatus Rationalizer::DoPhase()
 {
-    class RationalizeVisitor final : public GenTreeVisitor<RationalizeVisitor>
-    {
-        Rationalizer& m_rationalizer;
-
-    public:
-        enum
-        {
-            ComputeStack      = true,
-            DoPreOrder        = true,
-            DoPostOrder       = true,
-            UseExecutionOrder = true,
-        };
-
-        RationalizeVisitor(Rationalizer& rationalizer)
-            : GenTreeVisitor<RationalizeVisitor>(rationalizer.comp)
-            , m_rationalizer(rationalizer)
-        {
-        }
-
-        // Rewrite intrinsics that are not supported by the target back into user calls.
-        // This needs to be done before the transition to LIR because it relies on the use
-        // of fgMorphArgs, which is designed to operate on HIR. Once this is done for a
-        // particular statement, link that statement's nodes into the current basic block.
-        fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
-        {
-            GenTree* const node = *use;
-            if (node->OperGet() == GT_INTRINSIC &&
-                m_rationalizer.comp->IsIntrinsicImplementedByUserCall(node->AsIntrinsic()->gtIntrinsicName))
-            {
-                m_rationalizer.RewriteIntrinsicAsUserCall(use, this->m_ancestors);
-            }
-
-#ifdef TARGET_ARM64
-            if (node->OperIs(GT_SUB))
-            {
-                m_rationalizer.RewriteSubLshDiv(use);
-            }
-#endif
-
-            return Compiler::WALK_CONTINUE;
-        }
-
-        // Rewrite HIR nodes into LIR nodes.
-        fgWalkResult PostOrderVisit(GenTree** use, GenTree* user)
-        {
-            return m_rationalizer.RewriteNode(use, this->m_ancestors);
-        }
-    };
-
     DBEXEC(TRUE, SanityCheck());
 
     comp->compCurBB = nullptr;
