@@ -66,7 +66,7 @@
   <!--
     Finds symbol files and injects them into the package build.
   -->
-  <Target Name="GetSymbolPackageFiles" BeforeTargets="GetPackageFiles" Condition="'$(IncludeSymbolsInPackage)' != 'false'">
+  <Target Name="GetSymbolPackageFiles" BeforeTargets="GetPackageFiles">
     <ItemGroup Condition="'$(SymbolsSuffix)' != ''">
       <AdditionalLibPackageExcludes Include="%2A%2A\%2A$(SymbolsSuffix)"/>
     </ItemGroup>
