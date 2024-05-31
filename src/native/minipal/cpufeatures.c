@@ -257,32 +257,21 @@ int minipal_getcpufeatures(void)
 
                                             if (IsAvx512Enabled() && (avx512StateSupport() == 1))                    // XGETBV XRC0[7:5] == 111
                                             {
-                                                if ((cpuidInfo[CPUID_EBX] & (1 << 16)) != 0)                            // AVX512F
-                                                {
-                                                    bool isAVX512_VLSupported = false;
-                                                    const int subsetMask = (1 << 30) | (1 << 28) | (1 << 17);           // AVX512BW + AVX512CD + AVX512DQ
-                                                    if ((cpuidInfo[CPUID_EBX] & (1 << 31)) != 0)                        // AVX512VL
-                                                    {
-                                                        isAVX512_VLSupported = true;
-                                                    }
 
-                                                    if (((cpuidInfo[CPUID_EBX] & subsetMask) != 0) && isAVX512_VLSupported)
-                                                    {
-                                                        // AVX512F+BW+CD+DQ are required on all Avx512 enabled machine, checking them all at once.
-                                                        result |= XArchIntrinsicConstants_Avx512;
-                                                        result |= XArchIntrinsicConstants_VectorT512;
-                                                    }
-
-                                            if ((cpuidInfo[CPUID_ECX] & (1 << 1)) != 0)                         // AVX512VBMI
-                                            {
-                                                result |= XArchIntrinsicConstants_Avx512Vbmi;
-                                                if (isAVX512_VLSupported)                                       // AVX512VBMI_VL
+                                                // Checking Avx512F+BW+CD+DQ+VL altogether.
+                                                const int subsetMasks = (1 << 16) | (1 <<17) | (1 << 28) | (1 << 30) | (1 << 31);
+                                                if ((cpuidInfo[CPUID_EBX] & subsetMasks) == subsetMasks)
                                                 {
-                                                    result |= XArchIntrinsicConstants_Avx512Vbmi_vl;
+                                                    result |= XArchIntrinsicConstants_Avx512;
+                                                    result |= XArchIntrinsicConstants_VectorT512;
+
+                                                    if ((cpuidInfo[CPUID_ECX] & (1 << 1)) != 0)                         // AVX512VBMI
+                                                    {
+                                                        result |= XArchIntrinsicConstants_Avx512Vbmi;
+                                                        result |= XArchIntrinsicConstants_Avx512Vbmi_vl;
+                                                    }
                                                 }
                                             }
-                                        }
-                                    }
 
                                     __cpuidex(cpuidInfo, 0x00000007, 0x00000001);
 
