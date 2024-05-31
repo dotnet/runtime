@@ -27,7 +27,7 @@
     </XHarnessApkToTest>
   </ItemDefinitionGroup>
 
-  <PropertyGroup Condition="'$(NeedsiOSSDK)' == 'true' or '$(TargetOS)' == 'maccatalyst'">
+  <PropertyGroup Condition="'$(NeedsiOSSDK)' == 'true'">
     <NeedsDotNetSdk>true</NeedsDotNetSdk>
     <UseDotNetCliVersionFromGlobalJson>true</UseDotNetCliVersionFromGlobalJson>
     <IncludeXHarnessCli>true</IncludeXHarnessCli>
@@ -40,7 +40,7 @@
 
   <Target Name="PrepareForBuildHelixWorkItems_Mobile">
 
-    <PropertyGroup Condition="'$(TargetOS)' == 'ios' or '$(TargetOS)' == 'tvos' or '$(TargetOS)' == 'iossimulator' or '$(TargetOS)' == 'tvossimulator' or '$(TargetOS)' == 'maccatalyst'">
+    <PropertyGroup Condition="'$(TargetsAppleMobile)' == 'true'">
       <AppleTestTarget Condition="'$(TargetOS)' == 'iossimulator'">ios-simulator-64</AppleTestTarget>
       <AppleTestTarget Condition="'$(TargetOS)' == 'tvossimulator'">tvos-simulator</AppleTestTarget>
       <AppleTestTarget Condition="'$(TargetOS)' == 'ios'">ios-device</AppleTestTarget>
