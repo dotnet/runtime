@@ -211,21 +211,21 @@ namespace ILCompiler
             public uint[] parts = new uint[NUM_PARTS];
 
             public HardwareIntrinsicConstants(){}
+        }
 
-            public void SetFlag(int flag)
-            {
-                parts[flag / 32] |= (uint)(1 << (flag % 32));
-            }
+        public static void SetFlag(ref HardwareIntrinsicConstants constants, int flag)
+        {
+            constants.parts[flag / 32] |= (uint)(1 << (flag % 32));
+        }
 
-            public void ClearFlag(int flag)
-            {
-                parts[flag / 32] &= (uint)~(1 << (flag % 32));
-            }
+        public static void ClearFlag(ref HardwareIntrinsicConstants constants, int flag)
+        {
+            constants.parts[flag / 32] &= (uint)~(1 << (flag % 32));
+        }
 
-            public bool IsFlagSet(int flag)
-            {
-                return (parts[flag / 32] & (1 << (flag % 32))) != 0;
-            }
+        public static bool IsFlagSet(ref HardwareIntrinsicConstants constants, int flag)
+        {
+            return (constants.parts[flag / 32] & (1 << (flag % 32))) != 0;
         }
 
         public static class XArchIntrinsicFeatures
@@ -266,69 +266,69 @@ namespace ILCompiler
 
             public static void AddToBuilder(InstructionSetSupportBuilder builder, HardwareIntrinsicConstants flags)
             {
-                if (flags.IsFlagSet(Aes))
+                if (IsFlagSet(ref flags, Aes))
                     builder.AddSupportedInstructionSet("aes");
-                if (flags.IsFlagSet(Pclmulqdq))
+                if (IsFlagSet(ref flags, Pclmulqdq))
                     builder.AddSupportedInstructionSet("pclmul");
-                if (flags.IsFlagSet(Sse3))
+                if (IsFlagSet(ref flags, Sse3))
                     builder.AddSupportedInstructionSet("sse3");
-                if (flags.IsFlagSet(Ssse3))
+                if (IsFlagSet(ref flags, Ssse3))
                     builder.AddSupportedInstructionSet("ssse3");
-                if (flags.IsFlagSet(Sse41))
+                if (IsFlagSet(ref flags, Sse41))
                     builder.AddSupportedInstructionSet("sse4.1");
-                if (flags.IsFlagSet(Sse42))
+                if (IsFlagSet(ref flags, Sse42))
                     builder.AddSupportedInstructionSet("sse4.2");
-                if (flags.IsFlagSet(Popcnt))
+                if (IsFlagSet(ref flags, Popcnt))
                     builder.AddSupportedInstructionSet("popcnt");
-                if (flags.IsFlagSet(Avx))
+                if (IsFlagSet(ref flags, Avx))
                     builder.AddSupportedInstructionSet("avx");
-                if (flags.IsFlagSet(Fma))
+                if (IsFlagSet(ref flags, Fma))
                     builder.AddSupportedInstructionSet("fma");
-                if (flags.IsFlagSet(Avx2))
+                if (IsFlagSet(ref flags, Avx2))
                     builder.AddSupportedInstructionSet("avx2");
-                if (flags.IsFlagSet(Bmi1))
+                if (IsFlagSet(ref flags, Bmi1))
                     builder.AddSupportedInstructionSet("bmi");
-                if (flags.IsFlagSet(Bmi2))
+                if (IsFlagSet(ref flags, Bmi2))
                     builder.AddSupportedInstructionSet("bmi2");
-                if (flags.IsFlagSet(Lzcnt))
+                if (IsFlagSet(ref flags, Lzcnt))
                     builder.AddSupportedInstructionSet("lzcnt");
-                if (flags.IsFlagSet(AvxVnni))
+                if (IsFlagSet(ref flags, AvxVnni))
                     builder.AddSupportedInstructionSet("avxvnni");
-                if (flags.IsFlagSet(Movbe))
+                if (IsFlagSet(ref flags, Movbe))
                     builder.AddSupportedInstructionSet("movbe");
-                if (flags.IsFlagSet(Avx512f))
+                if (IsFlagSet(ref flags, Avx512f))
                     builder.AddSupportedInstructionSet("avx512f");
-                if (flags.IsFlagSet(Avx512f_vl))
+                if (IsFlagSet(ref flags, Avx512f_vl))
                     builder.AddSupportedInstructionSet("avx512f_vl");
-                if (flags.IsFlagSet(Avx512bw))
+                if (IsFlagSet(ref flags, Avx512bw))
                     builder.AddSupportedInstructionSet("avx512bw");
-                if (flags.IsFlagSet(Avx512bw_vl))
+                if (IsFlagSet(ref flags, Avx512bw_vl))
                     builder.AddSupportedInstructionSet("avx512bw_vl");
-                if (flags.IsFlagSet(Avx512cd))
+                if (IsFlagSet(ref flags, Avx512cd))
                     builder.AddSupportedInstructionSet("avx512cd");
-                if (flags.IsFlagSet(Avx512cd_vl))
+                if (IsFlagSet(ref flags, Avx512cd_vl))
                     builder.AddSupportedInstructionSet("avx512cd_vl");
-                if (flags.IsFlagSet(Avx512dq))
+                if (IsFlagSet(ref flags, Avx512dq))
                     builder.AddSupportedInstructionSet("avx512dq");
-                if (flags.IsFlagSet(Avx512dq_vl))
+                if (IsFlagSet(ref flags, Avx512dq_vl))
                     builder.AddSupportedInstructionSet("avx512dq_vl");
-                if (flags.IsFlagSet(Avx512Vbmi))
+                if (IsFlagSet(ref flags, Avx512Vbmi))
                     builder.AddSupportedInstructionSet("avx512vbmi");
-                if (flags.IsFlagSet(Avx512Vbmi_vl))
+                if (IsFlagSet(ref flags, Avx512Vbmi_vl))
                     builder.AddSupportedInstructionSet("avx512vbmi_vl");
-                if (flags.IsFlagSet(Serialize))
+                if (IsFlagSet(ref flags, Serialize))
                     builder.AddSupportedInstructionSet("serialize");
-                if (flags.IsFlagSet(VectorT128))
+                if (IsFlagSet(ref flags, VectorT128))
                     builder.AddSupportedInstructionSet("VectorT128");
-                if (flags.IsFlagSet(VectorT256))
+                if (IsFlagSet(ref flags, VectorT256))
                     builder.AddSupportedInstructionSet("VectorT256");
-                if (flags.IsFlagSet(VectorT512))
+                if (IsFlagSet(ref flags, VectorT512))
                     builder.AddSupportedInstructionSet("VectorT512");
-                if (flags.IsFlagSet(Avx10v1))
+                if (IsFlagSet(ref flags, Avx10v1))
                     builder.AddSupportedInstructionSet("avx10v1");
-                if (flags.IsFlagSet(Avx10v1_v256))
+                if (IsFlagSet(ref flags, Avx10v1_v256))
                     builder.AddSupportedInstructionSet("avx10v1_v256");
-                if (flags.IsFlagSet(Avx10v1_v512))
+                if (IsFlagSet(ref flags, Avx10v1_v512))
                     builder.AddSupportedInstructionSet("avx10v1_v512");
             }
 
@@ -437,27 +437,27 @@ namespace ILCompiler
 
             public static void AddToBuilder(InstructionSetSupportBuilder builder, HardwareIntrinsicConstants flags)
             {
-                if (flags.IsFlagSet(AdvSimd))
+                if (IsFlagSet(ref flags, AdvSimd))
                     builder.AddSupportedInstructionSet("neon");
-                if (flags.IsFlagSet(Aes))
+                if (IsFlagSet(ref flags, Aes))
                     builder.AddSupportedInstructionSet("aes");
-                if (flags.IsFlagSet(Crc32))
+                if (IsFlagSet(ref flags, Crc32))
                     builder.AddSupportedInstructionSet("crc");
-                if (flags.IsFlagSet(Dp))
+                if (IsFlagSet(ref flags, Dp))
                     builder.AddSupportedInstructionSet("dotprod");
-                if (flags.IsFlagSet(Rdm))
+                if (IsFlagSet(ref flags, Rdm))
                     builder.AddSupportedInstructionSet("rdma");
-                if (flags.IsFlagSet(Sha1))
+                if (IsFlagSet(ref flags, Sha1))
                     builder.AddSupportedInstructionSet("sha1");
-                if (flags.IsFlagSet(Sha256))
+                if (IsFlagSet(ref flags, Sha256))
                     builder.AddSupportedInstructionSet("sha2");
-                if (flags.IsFlagSet(Atomics))
+                if (IsFlagSet(ref flags, Atomics))
                     builder.AddSupportedInstructionSet("lse");
-                if (flags.IsFlagSet(Rcpc))
+                if (IsFlagSet(ref flags, Rcpc))
                     builder.AddSupportedInstructionSet("rcpc");
-                if (flags.IsFlagSet(Rcpc2))
+                if (IsFlagSet(ref flags, Rcpc2))
                     builder.AddSupportedInstructionSet("rcpc2");
-                if (flags.IsFlagSet(Sve))
+                if (IsFlagSet(ref flags, Sve))
                     builder.AddSupportedInstructionSet("sve");
             }
 
