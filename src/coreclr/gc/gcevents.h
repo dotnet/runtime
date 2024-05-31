@@ -52,10 +52,5 @@ DYNAMIC_EVENT(CommittedUsage, GCEventLevel_Information, GCEventKeyword_GC, 1)
 DYNAMIC_EVENT(HeapCountTuning, GCEventLevel_Information, GCEventKeyword_GC, 1)
 DYNAMIC_EVENT(HeapCountSample, GCEventLevel_Information, GCEventKeyword_GC, 1)
 
-// non GC event that overrides AllocationTick
-// KNOWN_EVENT macro cannot be used because we don't want to emit the event; i.e. adding a method to IGCToCLREventSink
-// KNOWN_EVENT(AllocationSampled, GCEventProvider_Default, GCEventLevel_Information, EventKeyword_AllocationSampling)
-inline bool GCEventEnabledAllocationSampled() { return GCEventStatus::IsEnabled(GCEventProvider_Default, EventKeyword_AllocationSampling, GCEventLevel_Information); }
-
 #undef KNOWN_EVENT
 #undef DYNAMIC_EVENT

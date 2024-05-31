@@ -265,7 +265,7 @@ enum GCEventLevel
 // Event keywords corresponding to events that can be fired by the GC. These
 // numbers come from the ETW manifest itself - please make changes to this enum
 // if you add, remove, or change keyword sets that are used by the GC!
-enum GCEventKeyword : uint64_t
+enum GCEventKeyword
 {
     GCEventKeyword_None                          =       0x0,
     GCEventKeyword_GC                            =       0x1,
@@ -280,11 +280,6 @@ enum GCEventKeyword : uint64_t
     GCEventKeyword_ManagedHeapCollect            =  0x800000,
     GCEventKeyword_GCHeapAndTypeNames            = 0x1000000,
     GCEventKeyword_GCSampledObjectAllocationLow  = 0x2000000,
-
-    // Keyword outside of the GC where AllocationSampled event is defined.
-    // This is used to disable AllocationTick when AllocationSampling is enabled.
-    // Not counted in GCEventKeyword_All
-    EventKeyword_AllocationSampling          = 0x80000000000,
 
     GCEventKeyword_All = GCEventKeyword_GC
       | GCEventKeyword_GCPrivate

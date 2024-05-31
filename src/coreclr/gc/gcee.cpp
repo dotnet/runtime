@@ -308,12 +308,6 @@ void gc_heap::fire_etw_allocation_event (size_t allocation_amount,
                                          uint8_t* object_address,
                                          size_t object_size)
 {
-    // do not emit AllocationTick event if AllocationSampled is enabled
-    if (EVENT_ENABLED(AllocationSampled))
-    {
-        return;
-    }
-
 #ifdef FEATURE_NATIVEAOT
     FIRE_EVENT(GCAllocationTick_V1, (uint32_t)allocation_amount, (uint32_t)gen_to_oh (gen_number));
 #else
