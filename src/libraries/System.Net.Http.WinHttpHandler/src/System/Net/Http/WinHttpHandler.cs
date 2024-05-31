@@ -80,7 +80,7 @@ namespace System.Net.Http
         private TimeSpan _receiveDataTimeout = TimeSpan.FromSeconds(30);
 
         // Using OS defaults for "Keep-alive timeout" and "keep-alive interval"
-        // as documented in https://docs.microsoft.com/en-us/windows/win32/winsock/sio-keepalive-vals#remarks
+        // as documented in https://learn.microsoft.com/windows/win32/winsock/sio-keepalive-vals#remarks
         private TimeSpan _tcpKeepAliveTime = TimeSpan.FromHours(2);
         private TimeSpan _tcpKeepAliveInterval = TimeSpan.FromSeconds(1);
         private bool _tcpKeepAliveEnabled;

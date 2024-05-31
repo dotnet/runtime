@@ -1131,6 +1131,7 @@ bool Compiler::CheckHWIntrinsicImmRange(NamedIntrinsic intrinsic,
 //    clsHnd     -- class handle containing the intrinsic function.
 //    method     -- method handle of the intrinsic function.
 //    sig        -- signature of the intrinsic call
+//    entryPoint -- The entry point information required for R2R scenarios
 //    mustExpand -- true if the intrinsic must return a GenTree*; otherwise, false
 
 // Return Value:
@@ -1139,7 +1140,7 @@ bool Compiler::CheckHWIntrinsicImmRange(NamedIntrinsic intrinsic,
 GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
                                   CORINFO_CLASS_HANDLE  clsHnd,
                                   CORINFO_METHOD_HANDLE method,
-                                  CORINFO_SIG_INFO*     sig,
+                                  CORINFO_SIG_INFO* sig R2RARG(CORINFO_CONST_LOOKUP* entryPoint),
                                   bool                  mustExpand)
 {
     // NextCallRetAddr requires a CALL, so return nullptr.
@@ -1241,7 +1242,27 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
             unsigned int sizeBytes;
 
             simdBaseJitType = getBaseJitTypeAndSizeOfSIMDType(clsHnd, &sizeBytes);
-            assert((category == HW_Category_Special) || (category == HW_Category_Helper) || (sizeBytes != 0));
+
+#if defined(TARGET_ARM64)
+            if (simdBaseJitType == CORINFO_TYPE_UNDEF && HWIntrinsicInfo::HasScalarInputVariant(intrinsic))
+            {
+                // Did not find a valid vector type. The intrinsic has alternate scalar version. Switch to that.
+
+                assert(sizeBytes == 0);
+                intrinsic = HWIntrinsicInfo::GetScalarInputVariant(intrinsic);
+                category  = HWIntrinsicInfo::lookupCategory(intrinsic);
+                isa       = HWIntrinsicInfo::lookupIsa(intrinsic);
+
+                simdBaseJitType = sig->retType;
+                assert(simdBaseJitType != CORINFO_TYPE_VOID);
+                assert(simdBaseJitType != CORINFO_TYPE_UNDEF);
+                assert(simdBaseJitType != CORINFO_TYPE_VALUECLASS);
+            }
+            else
+#endif
+            {
+                assert((category == HW_Category_Special) || (category == HW_Category_Helper) || (sizeBytes != 0));
+            }
         }
     }
 
@@ -1577,8 +1598,8 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
     }
     else
     {
-        retNode =
-            impSpecialIntrinsic(intrinsic, clsHnd, method, sig, simdBaseJitType, nodeRetType, simdSize, mustExpand);
+        retNode = impSpecialIntrinsic(intrinsic, clsHnd, method, sig R2RARG(entryPoint), simdBaseJitType, nodeRetType,
+                                      simdSize, mustExpand);
     }
 
 #if defined(TARGET_ARM64)

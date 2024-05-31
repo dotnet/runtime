@@ -48,7 +48,7 @@ extends:
 
       # This container contains all required toolsets to build for Android and for Linux with bionic libc.
       linux_bionic:
-        image: mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-cross-android-amd64-net9.0
+        image: mcr.microsoft.com/dotnet-buildtools/prereqs:cbl-mariner-2.0-cross-android-amd64
 
       # This container contains all required toolsets to build for Android as well as tooling to build docker images.
       android_docker:

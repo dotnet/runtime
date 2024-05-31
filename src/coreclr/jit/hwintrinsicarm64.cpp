@@ -255,6 +255,25 @@ void Compiler::getHWIntrinsicImmOps(NamedIntrinsic    intrinsic,
             imm2Pos = 0;
             break;
 
+        case NI_Sve_SaturatingDecrementBy16BitElementCount:
+        case NI_Sve_SaturatingDecrementBy32BitElementCount:
+        case NI_Sve_SaturatingDecrementBy64BitElementCount:
+        case NI_Sve_SaturatingDecrementBy8BitElementCount:
+        case NI_Sve_SaturatingIncrementBy16BitElementCount:
+        case NI_Sve_SaturatingIncrementBy32BitElementCount:
+        case NI_Sve_SaturatingIncrementBy64BitElementCount:
+        case NI_Sve_SaturatingIncrementBy8BitElementCount:
+        case NI_Sve_SaturatingDecrementBy16BitElementCountScalar:
+        case NI_Sve_SaturatingDecrementBy32BitElementCountScalar:
+        case NI_Sve_SaturatingDecrementBy64BitElementCountScalar:
+        case NI_Sve_SaturatingIncrementBy16BitElementCountScalar:
+        case NI_Sve_SaturatingIncrementBy32BitElementCountScalar:
+        case NI_Sve_SaturatingIncrementBy64BitElementCountScalar:
+            assert(sig->numArgs == 3);
+            imm1Pos = 1;
+            imm2Pos = 0;
+            break;
+
         default:
             assert(sig->numArgs > 0);
             imm1Pos = 0;
@@ -447,6 +466,33 @@ void HWIntrinsicInfo::lookupImmBounds(
                 immUpperBound = (int)SVE_PATTERN_ALL;
                 break;
 
+            case NI_Sve_SaturatingDecrementBy16BitElementCount:
+            case NI_Sve_SaturatingDecrementBy32BitElementCount:
+            case NI_Sve_SaturatingDecrementBy64BitElementCount:
+            case NI_Sve_SaturatingDecrementBy8BitElementCount:
+            case NI_Sve_SaturatingIncrementBy16BitElementCount:
+            case NI_Sve_SaturatingIncrementBy32BitElementCount:
+            case NI_Sve_SaturatingIncrementBy64BitElementCount:
+            case NI_Sve_SaturatingIncrementBy8BitElementCount:
+            case NI_Sve_SaturatingDecrementBy16BitElementCountScalar:
+            case NI_Sve_SaturatingDecrementBy32BitElementCountScalar:
+            case NI_Sve_SaturatingDecrementBy64BitElementCountScalar:
+            case NI_Sve_SaturatingIncrementBy16BitElementCountScalar:
+            case NI_Sve_SaturatingIncrementBy32BitElementCountScalar:
+            case NI_Sve_SaturatingIncrementBy64BitElementCountScalar:
+                if (immNumber == 1)
+                {
+                    immLowerBound = 1;
+                    immUpperBound = 16;
+                }
+                else
+                {
+                    assert(immNumber == 2);
+                    immLowerBound = (int)SVE_PATTERN_POW2;
+                    immUpperBound = (int)SVE_PATTERN_ALL;
+                }
+                break;
+
             default:
                 unreached();
         }
@@ -482,6 +528,7 @@ GenTree* Compiler::impNonConstFallback(NamedIntrinsic intrinsic, var_types simdT
 //    clsHnd          -- class handle containing the intrinsic function.
 //    method          -- method handle of the intrinsic function.
 //    sig             -- signature of the intrinsic call.
+//    entryPoint      -- The entry point information required for R2R scenarios
 //    simdBaseJitType -- generic argument of the intrinsic.
 //    retType         -- return type of the intrinsic.
 //    mustExpand      -- true if the intrinsic must return a GenTree*; otherwise, false
@@ -492,7 +539,7 @@ GenTree* Compiler::impNonConstFallback(NamedIntrinsic intrinsic, var_types simdT
 GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                                        CORINFO_CLASS_HANDLE  clsHnd,
                                        CORINFO_METHOD_HANDLE method,
-                                       CORINFO_SIG_INFO*     sig,
+                                       CORINFO_SIG_INFO* sig R2RARG(CORINFO_CONST_LOOKUP* entryPoint),
                                        CorInfoType           simdBaseJitType,
                                        var_types             retType,
                                        unsigned              simdSize,
@@ -512,7 +559,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         return gtNewScalarHWIntrinsicNode(TYP_VOID, intrinsic);
     }
 
-    assert(category != HW_Category_Scalar);
+    bool isScalar = (category == HW_Category_Scalar);
     assert(!HWIntrinsicInfo::isScalarIsa(HWIntrinsicInfo::lookupIsa(intrinsic)));
 
     assert(numArgs >= 0);
@@ -525,6 +572,10 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
     GenTree* op2     = nullptr;
     GenTree* op3     = nullptr;
     GenTree* op4     = nullptr;
+
+#ifdef DEBUG
+    bool isValidScalarIntrinsic = false;
+#endif
 
     switch (intrinsic)
     {
@@ -1876,7 +1927,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
                 retNode = gtNewSimdHWIntrinsicNode(retType, op1, op2, intrinsic, simdBaseJitType, simdSize);
 
-                retNode->AsHWIntrinsic()->SetMethodHandle(this, method);
+                retNode->AsHWIntrinsic()->SetMethodHandle(this, method R2RARG(*entryPoint));
                 break;
             }
 
@@ -2472,6 +2523,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             CORINFO_ARG_LIST_HANDLE arg3     = info.compCompHnd->getArgNext(arg2);
             var_types               argType  = TYP_UNKNOWN;
             CORINFO_CLASS_HANDLE    argClass = NO_CLASS_HANDLE;
+
             argType             = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg3, &argClass)));
             op3                 = impPopStack().val;
             unsigned fieldCount = info.compCompHnd->getClassNumInstanceFields(argClass);
@@ -2543,11 +2595,67 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
+        case NI_Sve_SaturatingDecrementBy8BitElementCount:
+        case NI_Sve_SaturatingIncrementBy8BitElementCount:
+        case NI_Sve_SaturatingDecrementBy16BitElementCountScalar:
+        case NI_Sve_SaturatingDecrementBy32BitElementCountScalar:
+        case NI_Sve_SaturatingDecrementBy64BitElementCountScalar:
+        case NI_Sve_SaturatingIncrementBy16BitElementCountScalar:
+        case NI_Sve_SaturatingIncrementBy32BitElementCountScalar:
+        case NI_Sve_SaturatingIncrementBy64BitElementCountScalar:
+#ifdef DEBUG
+            isValidScalarIntrinsic = true;
+            FALLTHROUGH;
+#endif
+        case NI_Sve_SaturatingDecrementBy16BitElementCount:
+        case NI_Sve_SaturatingDecrementBy32BitElementCount:
+        case NI_Sve_SaturatingDecrementBy64BitElementCount:
+        case NI_Sve_SaturatingIncrementBy16BitElementCount:
+        case NI_Sve_SaturatingIncrementBy32BitElementCount:
+        case NI_Sve_SaturatingIncrementBy64BitElementCount:
+
+        {
+            assert(sig->numArgs == 3);
+
+            CORINFO_ARG_LIST_HANDLE arg1          = sig->args;
+            CORINFO_ARG_LIST_HANDLE arg2          = info.compCompHnd->getArgNext(arg1);
+            CORINFO_ARG_LIST_HANDLE arg3          = info.compCompHnd->getArgNext(arg2);
+            var_types               argType       = TYP_UNKNOWN;
+            CORINFO_CLASS_HANDLE    argClass      = NO_CLASS_HANDLE;
+            int                     immLowerBound = 0;
+            int                     immUpperBound = 0;
+
+            argType = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg3, &argClass)));
+            op3     = getArgForHWIntrinsic(argType, argClass);
+            argType = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg2, &argClass)));
+            op2     = getArgForHWIntrinsic(argType, argClass);
+            argType = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg1, &argClass)));
+            op1     = impPopStack().val;
+
+            CorInfoType op1BaseJitType = getBaseJitTypeOfSIMDType(argClass);
+
+            assert(HWIntrinsicInfo::isImmOp(intrinsic, op2));
+            HWIntrinsicInfo::lookupImmBounds(intrinsic, simdSize, simdBaseType, 1, &immLowerBound, &immUpperBound);
+            op2 = addRangeCheckIfNeeded(intrinsic, op2, (!op2->IsCnsIntOrI()), immLowerBound, immUpperBound);
+
+            assert(HWIntrinsicInfo::isImmOp(intrinsic, op3));
+            HWIntrinsicInfo::lookupImmBounds(intrinsic, simdSize, simdBaseType, 2, &immLowerBound, &immUpperBound);
+            op3 = addRangeCheckIfNeeded(intrinsic, op3, (!op3->IsCnsIntOrI()), immLowerBound, immUpperBound);
+
+            retNode = isScalar ? gtNewScalarHWIntrinsicNode(retType, op1, op2, op3, intrinsic)
+                               : gtNewSimdHWIntrinsicNode(retType, op1, op2, op3, intrinsic, simdBaseJitType, simdSize);
+
+            retNode->AsHWIntrinsic()->SetSimdBaseJitType(simdBaseJitType);
+            break;
+        }
+
         default:
         {
             return nullptr;
         }
     }
+
+    assert(!isScalar || isValidScalarIntrinsic);
 
     return retNode;
 }
