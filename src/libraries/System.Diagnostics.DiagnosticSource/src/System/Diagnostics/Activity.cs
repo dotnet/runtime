@@ -518,6 +518,71 @@ namespace System.Diagnostics
         }
 
         /// <summary>
+        /// Add a <see cref="ActivityEvent" /> object containing the exception information to the <see cref="Events" /> list.
+        /// </summary>
+        /// <param name="exception">The exception to add to the attached events list.</param>
+        /// <param name="tags">The tags to add to the exception event.</param>
+        /// <param name="timestamp">The timestamp to add to the exception event.</param>
+        /// <returns><see langword="this" /> for convenient chaining.</returns>
+        /// <remarks>
+        /// - The name of the event will be "exception", and it will include the tags "exception.message", "exception.stacktrace", and "exception.type", in addition to the tags provided in the <paramref name="tags"/> parameter.
+        /// - Any registered <see cref="ActivityListener"/> with the <see cref="ActivityListener.ExceptionRecorder"/> callback will be notified about this exception addition before the <see cref="ActivityEvent" /> object is added to the <see cref="Events" /> list.
+        /// </remarks>
+        public Activity AddException(Exception exception, TagList tags = default, DateTimeOffset timestamp = default)
+        {
+            if (exception == null)
+            {
+                throw new ArgumentNullException(nameof(exception));
+            }
+
+            TagList exceptionTags = tags;
+
+            Source.NotifyActivityAddException(this, exception, ref exceptionTags);
+
+            const string exceptionEventName = "exception";
+            const string exceptionMessageTag = "exception.message";
+            const string exceptionStackTraceTag = "exception.stacktrace";
+            const string exceptionTypeTag = "exception.type";
+
+            bool hasMessage = false;
+            bool hasStackTrace = false;
+            bool hasType = false;
+
+            for (int i = 0; i < exceptionTags.Count; i++)
+            {
+                if (exceptionTags[i].Key == exceptionMessageTag)
+                {
+                    hasMessage = true;
+                }
+                else if (exceptionTags[i].Key == exceptionStackTraceTag)
+                {
+                    hasStackTrace = true;
+                }
+                else if (exceptionTags[i].Key == exceptionTypeTag)
+                {
+                    hasType = true;
+                }
+            }
+
+            if (!hasMessage)
+            {
+                exceptionTags.Add(new KeyValuePair<string, object?>(exceptionMessageTag, exception.Message));
+            }
+
+            if (!hasStackTrace)
+            {
+                exceptionTags.Add(new KeyValuePair<string, object?>(exceptionStackTraceTag, exception.ToString()));
+            }
+
+            if (!hasType)
+            {
+                exceptionTags.Add(new KeyValuePair<string, object?>(exceptionTypeTag, exception.GetType().ToString()));
+            }
+
+            return AddEvent(new ActivityEvent(exceptionEventName, timestamp, ref exceptionTags));
+        }
+
+        /// <summary>
         /// Add an <see cref="ActivityLink"/> to the <see cref="Links"/> list.
         /// </summary>
         /// <param name="link">The <see cref="ActivityLink"/> to add.</param>
