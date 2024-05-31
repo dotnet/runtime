@@ -166,6 +166,12 @@ typedef LPSTR   LPUTF8;
 #define DEBUGARG(x)
 #endif
 
+#if defined(FEATURE_READYTORUN)
+#define R2RARG(x)           , x
+#else
+#define R2RARG(x)
+#endif
+
 #ifndef sizeofmember
 // Returns the size of a class or struct member.
 #define sizeofmember(c,m) (sizeof(((c*)0)->m))
