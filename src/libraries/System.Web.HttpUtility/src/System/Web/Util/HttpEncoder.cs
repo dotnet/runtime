@@ -126,8 +126,6 @@ namespace System.Web.Util
         private static int IndexOfHtmlAttributeEncodingChars(string s) =>
             s.AsSpan().IndexOfAny("<\"'&");
 
-        private static bool IsNonAsciiOrSpaceByte(byte b) => (uint)b - 0x20 - 1 >= 0x7F - 0x20 - 1;
-
         internal static string JavaScriptStringEncode(string? value, bool addDoubleQuotes)
         {
             int i = value.AsSpan().IndexOfAny(s_invalidJavaScriptChars);
@@ -621,13 +619,12 @@ namespace System.Web.Util
                 : value.AsSpan(i);
 
             byte[] bytes = ArrayPool<byte>.Shared.Rent(Encoding.UTF8.GetMaxByteCount(toEncode.Length));
-            char[] chars = ArrayPool<char>.Shared.Rent(bytes.Length * 3);
-
             int utf8Length = Encoding.UTF8.GetBytes(toEncode, bytes);
+            char[] chars = ArrayPool<char>.Shared.Rent(utf8Length * 3);
             int charCount = 0;
             foreach (byte b in bytes.AsSpan(0, utf8Length))
             {
-                if (IsNonAsciiOrSpaceByte(b))
+                if (!char.IsBetween((char)b, (char)0x21, (char)0x7F))
                 {
                     chars[charCount++] = '%';
                     chars[charCount++] = HexConverter.ToCharLower(b >> 4);
