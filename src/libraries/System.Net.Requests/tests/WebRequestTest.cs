@@ -34,15 +34,15 @@ namespace System.Net.Tests
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public void DefaultWebProxy_SetThenGet_ValuesMatch()
+        public async Task DefaultWebProxy_SetThenGet_ValuesMatch()
         {
-            RemoteExecutor.Invoke(() =>
+            await RemoteExecutor.Invoke(() =>
             {
                 IWebProxy p = new WebProxy();
 
                 WebRequest.DefaultWebProxy = p;
                 Assert.Same(p, WebRequest.DefaultWebProxy);
-            }).Dispose();
+            }).DisposeAsync();
         }
 
         [Fact]
@@ -220,9 +220,9 @@ namespace System.Net.Tests
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public void SendGetRequest_WithGlobalCachePolicyBypassCache_DoNotAddCacheHeaders()
+        public async Task SendGetRequest_WithGlobalCachePolicyBypassCache_DoNotAddCacheHeaders()
         {
-            RemoteExecutor.Invoke(async () =>
+            await RemoteExecutor.Invoke(async () =>
             {
                 await LoopbackServer.CreateServerAsync(async (server, uri) =>
                 {
@@ -246,7 +246,7 @@ namespace System.Net.Tests
                         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
                     }
                 });
-            }).Dispose();
+            }).DisposeAsync();
         }
 
         private class FakeRequest : WebRequest
