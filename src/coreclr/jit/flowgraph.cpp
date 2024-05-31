@@ -4142,6 +4142,28 @@ FlowGraphNaturalLoop::FlowGraphNaturalLoop(const FlowGraphDfsTree* dfsTree, Basi
 }
 
 //------------------------------------------------------------------------
+// GetPreheader: Get the preheader of this loop, if it has one.
+//
+// Returns:
+//   The preheader, or nullptr if there is no preheader.
+//
+BasicBlock* FlowGraphNaturalLoop::GetPreheader() const
+{
+    if (m_entryEdges.size() != 1)
+    {
+        return nullptr;
+    }
+
+    BasicBlock* preheader = m_entryEdges[0]->getSourceBlock();
+    if (!preheader->KindIs(BBJ_ALWAYS))
+    {
+        return nullptr;
+    }
+
+    return preheader;
+}
+
+//------------------------------------------------------------------------
 // GetDepth: Get the depth of the loop.
 //
 // Returns:
