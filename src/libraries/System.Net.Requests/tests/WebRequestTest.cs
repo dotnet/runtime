@@ -193,10 +193,10 @@ namespace System.Net.Tests
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [InlineData(RequestCacheLevel.NoCacheNoStore, new string[] { "Pragma: no-cache", "Cache-Control: no-store, no-cache" })]
         [InlineData(RequestCacheLevel.Reload, new string[] { "Pragma: no-cache", "Cache-Control: no-cache" })]
-        public void SendGetRequest_WithGlobalCachePolicy_AddCacheHeaders(
+        public async Task SendGetRequest_WithGlobalCachePolicy_AddCacheHeaders(
             RequestCacheLevel requestCacheLevel, string[] expectedHeaders)
         {
-            RemoteExecutor.Invoke(async (reqCacheLevel, eh0, eh1) =>
+            await RemoteExecutor.Invoke(async (reqCacheLevel, eh0, eh1) =>
             {
                 await LoopbackServer.CreateServerAsync(async (server, uri) =>
                 {
@@ -216,7 +216,7 @@ namespace System.Net.Tests
                         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
                     }
                 });
-            }, requestCacheLevel.ToString(), expectedHeaders[0], expectedHeaders[1]).Dispose();
+            }, requestCacheLevel.ToString(), expectedHeaders[0], expectedHeaders[1]).DisposeAsync();
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]

@@ -1724,9 +1724,9 @@ namespace System.Net.Tests
         }
 
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported)), MemberData(nameof(MixedWebRequestParameters))]
-        public void GetResponseAsync_ParametersAreNotCachable_CreateNewClient(HttpWebRequestParameters requestParameters, bool connectionReusedParameter)
+        public async Task GetResponseAsync_ParametersAreNotCachable_CreateNewClient(HttpWebRequestParameters requestParameters, bool connectionReusedParameter)
         {
-            RemoteExecutor.Invoke(async (async, serializedParameters, connectionReusedString) =>
+            await RemoteExecutor.Invoke(async (async, serializedParameters, connectionReusedString) =>
             {
                 var parameters = JsonSerializer.Deserialize<HttpWebRequestParameters>(serializedParameters);
 
@@ -1769,7 +1769,7 @@ namespace System.Net.Tests
                         }
                     }
                 }
-            }, (this is HttpWebRequestTest_Async).ToString(), JsonSerializer.Serialize<HttpWebRequestParameters>(requestParameters), connectionReusedParameter.ToString()).Dispose();
+            }, (this is HttpWebRequestTest_Async).ToString(), JsonSerializer.Serialize<HttpWebRequestParameters>(requestParameters), connectionReusedParameter.ToString()).DisposeAsync();
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
@@ -2000,10 +2000,10 @@ namespace System.Net.Tests
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [InlineData(RequestCacheLevel.NoCacheNoStore, "Cache-Control: no-store, no-cache")]
         [InlineData(RequestCacheLevel.Reload, "Cache-Control: no-cache")]
-        public void SendHttpGetRequest_WithGlobalCachePolicy_AddCacheHeaders(
+        public async Task SendHttpGetRequest_WithGlobalCachePolicy_AddCacheHeaders(
             RequestCacheLevel requestCacheLevel, string expectedHeader)
         {
-            RemoteExecutor.Invoke(async (async, reqCacheLevel, eh) =>
+            await RemoteExecutor.Invoke(async (async, reqCacheLevel, eh) =>
             {
                 await LoopbackServer.CreateServerAsync(async (server, uri) =>
                 {
@@ -2023,7 +2023,7 @@ namespace System.Net.Tests
                         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
                     }
                 });
-            }, (this is HttpWebRequestTest_Async).ToString(), requestCacheLevel.ToString(), expectedHeader).Dispose();
+            }, (this is HttpWebRequestTest_Async).ToString(), requestCacheLevel.ToString(), expectedHeader).DisposeAsync();
         }
 
         [Theory]
