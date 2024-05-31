@@ -1974,7 +1974,7 @@ PhaseStatus Compiler::fgMarkAddressExposedLocals()
 
         madeChanges = visitor.MadeChanges();
 
-        fgExposeUnpropagatedLocals(visitor.PropagatedAnyAddresses(), &assertions);
+        madeChanges |= fgExposeUnpropagatedLocals(visitor.PropagatedAnyAddresses(), &assertions);
     }
 
     return madeChanges ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
