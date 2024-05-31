@@ -7811,6 +7811,12 @@ namespace System.Collections
 }
 namespace System.Collections.Generic
 {
+    public interface IAlternateEqualityComparer<in TAlternate, T> where TAlternate : allows ref struct
+    {
+        bool Equals(TAlternate alternate, T other);
+        int GetHashCode(TAlternate alternate);
+        T Create(TAlternate alternate);
+    }
     public partial interface IAsyncEnumerable<out T>
     {
         System.Collections.Generic.IAsyncEnumerator<T> GetAsyncEnumerator(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));

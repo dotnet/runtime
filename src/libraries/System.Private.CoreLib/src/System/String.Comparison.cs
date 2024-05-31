@@ -813,57 +813,54 @@ namespace System
 
         // Use this if and only if 'Denial of Service' attacks are not a concern (i.e. never used for free-form user input),
         // or are otherwise mitigated
-        internal unsafe int GetNonRandomizedHashCode()
-        {
-            fixed (char* src = &_firstChar)
-            {
-                Debug.Assert(src[this.Length] == '\0', "src[this.Length] == '\\0'");
-                Debug.Assert(((int)src) % 4 == 0, "Managed string should start at 4 bytes boundary");
+        internal unsafe int GetNonRandomizedHashCode() =>
+            GetNonRandomizedHashCode(ref _firstChar, Length);
 
+        internal static unsafe int GetNonRandomizedHashCode(ref char firstChar, int length)
+        {
+            fixed (char* src = &firstChar)
+            {
                 uint hash1 = (5381 << 16) + 5381;
                 uint hash2 = hash1;
 
-                uint* ptr = (uint*)src;
-                int length = this.Length;
-
-                while (length > 2)
+                uint* ptrUInt32 = (uint*)src;
+                while (length >= 4)
                 {
+                    hash1 = BitOperations.RotateLeft(hash1, 5) + hash1 ^ ptrUInt32[0];
+                    hash2 = BitOperations.RotateLeft(hash2, 5) + hash2 ^ ptrUInt32[1];
+                    ptrUInt32 += 2;
                     length -= 4;
-                    // Where length is 4n-1 (e.g. 3,7,11,15,19) this additionally consumes the null terminator
-                    hash1 = (BitOperations.RotateLeft(hash1, 5) + hash1) ^ ptr[0];
-                    hash2 = (BitOperations.RotateLeft(hash2, 5) + hash2) ^ ptr[1];
-                    ptr += 2;
                 }
 
-                if (length > 0)
+                char* ptrChar = (char*)ptrUInt32;
+                while (length != 0)
                 {
-                    // Where length is 4n-3 (e.g. 1,5,9,13,17) this additionally consumes the null terminator
-                    hash2 = (BitOperations.RotateLeft(hash2, 5) + hash2) ^ ptr[0];
+                    length--;
+                    hash2 = BitOperations.RotateLeft(hash2, 5) + hash2 ^ *ptrChar;
+                    ptrChar++;
                 }
 
-                return (int)(hash1 + (hash2 * 1566083941));
+                return (int)(hash1 + (hash2 * 1_566_083_941));
             }
         }
 
-        internal unsafe int GetNonRandomizedHashCodeOrdinalIgnoreCase()
+        internal int GetNonRandomizedHashCodeOrdinalIgnoreCase() =>
+            GetNonRandomizedHashCodeOrdinalIgnoreCase(ref _firstChar, Length);
+
+        internal static unsafe int GetNonRandomizedHashCodeOrdinalIgnoreCase(ref char firstChar, int length)
         {
             uint hash1 = (5381 << 16) + 5381;
             uint hash2 = hash1;
 
-            fixed (char* src = &_firstChar)
+            fixed (char* src = &firstChar)
             {
-                Debug.Assert(src[this.Length] == '\0', "src[this.Length] == '\\0'");
-                Debug.Assert(((int) src) % 4 == 0, "Managed string should start at 4 bytes boundary");
-
-                uint* ptr = (uint*) src;
-                int length = this.Length;
+                uint* ptr = (uint*)src;
 
                 // We "normalize to lowercase" every char by ORing with 0x0020. This casts
                 // a very wide net because it will change, e.g., '^' to '~'. But that should
                 // be ok because we expect this to be very rare in practice.
-                const uint NormalizeToLowercase = 0x0020_0020u; // valid both for big-endian and for little-endian
 
-                while (length > 2)
+                while (length >= 4)
                 {
                     uint p0 = ptr[0];
                     uint p1 = ptr[1];
@@ -872,46 +869,46 @@ namespace System
                         goto NotAscii;
                     }
 
-                    length -= 4;
                     // Where length is 4n-1 (e.g. 3,7,11,15,19) this additionally consumes the null terminator
-                    hash1 = (BitOperations.RotateLeft(hash1, 5) + hash1) ^ (p0 | NormalizeToLowercase);
-                    hash2 = (BitOperations.RotateLeft(hash2, 5) + hash2) ^ (p1 | NormalizeToLowercase);
+                    hash1 = (BitOperations.RotateLeft(hash1, 5) + hash1) ^ (p0 | 0x0020_0020u);
+                    hash2 = (BitOperations.RotateLeft(hash2, 5) + hash2) ^ (p1 | 0x0020_0020u);
                     ptr += 2;
+                    length -= 4;
                 }
 
-                if (length > 0)
+                char* ptrChar = (char*)ptr;
+                while (length != 0)
                 {
-                    uint p0 = ptr[0];
-                    if (!Utf16Utility.AllCharsInUInt32AreAscii(p0))
+                    char c = *ptrChar;
+                    if (c > 0x7f)
                     {
                         goto NotAscii;
                     }
 
                     // Where length is 4n-3 (e.g. 1,5,9,13,17) this additionally consumes the null terminator
-                    hash2 = (BitOperations.RotateLeft(hash2, 5) + hash2) ^ (p0 | NormalizeToLowercase);
+                    hash2 = (BitOperations.RotateLeft(hash2, 5) + hash2) ^ (uint)(c | 0x20);
+                    length--;
                 }
             }
 
             return (int)(hash1 + (hash2 * 1566083941));
 
         NotAscii:
-            return GetNonRandomizedHashCodeOrdinalIgnoreCaseSlow(this);
+            return GetNonRandomizedHashCodeOrdinalIgnoreCaseSlow(hash1, hash2, ref firstChar, length);
 
-            static int GetNonRandomizedHashCodeOrdinalIgnoreCaseSlow(string str)
+            static int GetNonRandomizedHashCodeOrdinalIgnoreCaseSlow(uint hash1, uint hash2, ref char firstChar, int length)
             {
-                int length = str.Length;
                 char[]? borrowedArr = null;
                 // Important: leave an additional space for '\0'
-                Span<char> scratch = (uint)length < 64 ?
-                    stackalloc char[64] : (borrowedArr = ArrayPool<char>.Shared.Rent(length + 1));
+                Span<char> scratch = (uint)length < 256 ?
+                    stackalloc char[256] :
+                    (borrowedArr = ArrayPool<char>.Shared.Rent(length + 1));
 
-                int charsWritten = Ordinal.ToUpperOrdinal(str, scratch);
+                int charsWritten = Ordinal.ToUpperOrdinal(new ReadOnlySpan<char>(ref firstChar, length), scratch);
                 Debug.Assert(charsWritten == length);
                 scratch[length] = '\0';
 
                 const uint NormalizeToLowercase = 0x0020_0020u;
-                uint hash1 = (5381 << 16) + 5381;
-                uint hash2 = hash1;
 
                 // Duplicate the main loop, can be removed once JIT gets "Loop Unswitching" optimization
                 fixed (char* src = scratch)
