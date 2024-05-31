@@ -697,11 +697,11 @@ namespace System.Reflection.Emit
                 {
                     if (type.IsNested)
                     {
-                        typeHandle = AddTypeReference(type.Name, GetTypeReferenceOrSpecificationHandle(type.DeclaringType!), null);
+                        typeHandle = AddTypeReference(GetTypeReferenceOrSpecificationHandle(type.DeclaringType!), null, type.Name);
                     }
                     else
                     {
-                        typeHandle = AddTypeReference(type.Name, GetAssemblyReference(type.Assembly), type.Namespace);
+                        typeHandle = AddTypeReference(GetAssemblyReference(type.Assembly), type.Namespace, type.Name);
                     }
                 }
 
@@ -941,7 +941,7 @@ namespace System.Reflection.Emit
                 bodyOffset: offset,
                 parameterList: MetadataTokens.ParameterHandle(parameterToken));
 
-        private TypeReferenceHandle AddTypeReference(string name, EntityHandle resolutionScope, string? ns) =>
+        private TypeReferenceHandle AddTypeReference(EntityHandle resolutionScope, string? ns, string name) =>
             _metadataBuilder.AddTypeReference(
                 resolutionScope: resolutionScope,
                 @namespace: (ns == null) ? default : _metadataBuilder.GetOrAddString(ns),
