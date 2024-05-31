@@ -20,32 +20,13 @@ namespace System.Web.Util
         private static readonly SearchValues<byte> s_urlSafeBytes = SearchValues.Create(
             "!()*-.0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz"u8);
 
-        private static void AppendCharAsUnicodeJavaScript(StringBuilder builder, char c)
-        {
-            builder.Append($"\\u{(int)c:x4}");
-        }
-
-        private static string GetRequiresJavaScriptEncodingPattern()
-        {
-            StringBuilder sb = new StringBuilder(30);
-            // control chars always have to be encoded
-            for (int i = 0; i < 32; i++)
-            {
-                sb.Append((char)i);
-            }
-
-            sb.Append('\"'); // chars which must be encoded per JSON spec
-            sb.Append('\\');
-            sb.Append('\''); // HTML-sensitive chars encoded for safety
-            sb.Append('<');
-            sb.Append('>');
-            sb.Append('&');
-            sb.Append('\u0085'); // newline chars (see Unicode 6.2, Table 5-1 [http://www.unicode.org/versions/Unicode6.2.0/ch05.pdf]) have to be encoded
-            sb.Append('\u2028');
-            sb.Append('\u2029');
-
-            return sb.ToString();
-        }
+        private static readonly SearchValues<char> s_invalidJavaScriptChars = SearchValues.Create(
+            // Any Control, < 32 (' ')
+            "\u0000\u0001\u0002\u0003\u0004\u0005\u0006\u0007\u0008\u0009\u000A\u000B\u000C\u000D\u000E\u000F\u0010\u0011\u0012\u0013\u0014\u0015\u0016\u0017\u0018\u0019\u001A\u001B\u001C\u001D\u001E\u001F" +
+            // Chars which must be encoded per JSON spec / HTML-sensitive chars encoded for safety
+            "\"&'<>\\" +
+            // newline chars (see Unicode 6.2, Table 5-1 [http://www.unicode.org/versions/Unicode6.2.0/ch05.pdf]) have to be encoded
+            "\u0085\u2028\u2029");
 
         [return: NotNullIfNotNull(nameof(value))]
         internal static string? HtmlAttributeEncode(string? value)
@@ -147,7 +128,6 @@ namespace System.Web.Util
 
         private static bool IsNonAsciiByte(byte b) => b >= 0x7F || b < 0x20;
 
-        private static readonly SearchValues<char> s_invalid_JavaScriptChars = SearchValues.Create(GetRequiresJavaScriptEncodingPattern());
         internal static string JavaScriptStringEncode(string? value, bool addDoubleQuotes)
         {
             if (string.IsNullOrEmpty(value))
@@ -155,70 +135,62 @@ namespace System.Web.Util
                 return addDoubleQuotes ? @"""""" : string.Empty;
             }
 
-            int i = value.AsSpan().IndexOfAny(s_invalid_JavaScriptChars);
+            int i = value.AsSpan().IndexOfAny(s_invalidJavaScriptChars);
             if (i < 0)
             {
-                return addDoubleQuotes ? "\"" + value + "\"" : value;
+                return addDoubleQuotes ? $"\"{value}\"" : value;
             }
 
-            StringBuilder sb;
+            var vsb = new ValueStringBuilder(stackalloc char[512]);
             if (addDoubleQuotes)
             {
-                sb = new StringBuilder(value.Length + 7);
-                sb.Append('"');
+                vsb.Append('"');
             }
-            else
-            {
-                sb = new StringBuilder(value.Length + 5);
-            }
-            int startIndex = 0;
+            ReadOnlySpan<char> chars = value;
             do
             {
-                sb.Append(value, startIndex, i);
-                char c = value[startIndex + i];
+                vsb.Append(chars.Slice(0, i));
+                char c = chars[i];
+                chars = chars.Slice(i + 1);
                 switch (c)
                 {
                     case '\r':
-                        sb.Append("\\r");
+                        vsb.Append("\\r");
                         break;
                     case '\t':
-                        sb.Append("\\t");
+                        vsb.Append("\\t");
                         break;
                     case '\"':
-                        sb.Append("\\\"");
+                        vsb.Append("\\\"");
                         break;
                     case '\\':
-                        sb.Append("\\\\");
+                        vsb.Append("\\\\");
                         break;
                     case '\n':
-                        sb.Append("\\n");
+                        vsb.Append("\\n");
                         break;
                     case '\b':
-                        sb.Append("\\b");
+                        vsb.Append("\\b");
                         break;
                     case '\f':
-                        sb.Append("\\f");
+                        vsb.Append("\\f");
                         break;
                     default:
-                        AppendCharAsUnicodeJavaScript(sb, c);
+                        vsb.Append($"\\u{(int)c:x4}");
                         break;
                 }
 
-                startIndex += i + 1;
-                i = value.AsSpan(startIndex).IndexOfAny(s_invalid_JavaScriptChars);
-            } while (i != -1);
+                i = chars.IndexOfAny(s_invalidJavaScriptChars);
+            } while (i >= 0);
 
-            if (startIndex < value.Length)
-            {
-                sb.Append(value.AsSpan(startIndex));
-            }
+            vsb.Append(chars);
 
             if (addDoubleQuotes)
             {
-                sb.Append('"');
+                vsb.Append('"');
             }
 
-            return sb.ToString();
+            return vsb.ToString();
         }
 
         [return: NotNullIfNotNull(nameof(bytes))]
