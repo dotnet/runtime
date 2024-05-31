@@ -214,7 +214,7 @@ namespace System.Runtime.CompilerServices
         private static extern bool SufficientExecutionStack();
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern void InternalBox(QCallTypeHandle type, ref byte target, ObjectHandleOnStack result);
+        private static extern object InternalBox(QCallTypeHandle type, ref byte target);
 
         /// <summary>
         /// Create a boxed object of the specified type from the data located at the target reference.
@@ -255,8 +255,7 @@ namespace System.Runtime.CompilerServices
             if (rtType.IsByRefLike)
                 throw new NotSupportedException(SR.NotSupported_ByRefLike);
 
-            object? result = null;
-            InternalBox(new QCallTypeHandle(ref rtType), ref target, ObjectHandleOnStack.Create(ref result));
+            object? result = InternalBox(new QCallTypeHandle(ref rtType), ref target);
             return result;
         }
 
