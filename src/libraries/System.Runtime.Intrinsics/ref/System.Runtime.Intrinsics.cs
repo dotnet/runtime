@@ -4444,6 +4444,19 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe (System.Numerics.Vector<uint>, System.Numerics.Vector<uint>, System.Numerics.Vector<uint>, System.Numerics.Vector<uint>) Load4xVectorAndUnzip(System.Numerics.Vector<uint> mask, uint* address) { throw null; }
         public static unsafe (System.Numerics.Vector<ulong>, System.Numerics.Vector<ulong>, System.Numerics.Vector<ulong>, System.Numerics.Vector<ulong>) Load4xVectorAndUnzip(System.Numerics.Vector<ulong> mask, ulong* address) { throw null; }
 
+        public static unsafe System.Numerics.Vector<int> LoadVectorInt16NonFaultingSignExtendToInt32(short* address) { throw null; }
+        public static unsafe System.Numerics.Vector<long> LoadVectorInt16NonFaultingSignExtendToInt64(short* address) { throw null; }
+        public static unsafe System.Numerics.Vector<uint> LoadVectorInt16NonFaultingSignExtendToUInt32(short* address) { throw null; }
+        public static unsafe System.Numerics.Vector<ulong> LoadVectorInt16NonFaultingSignExtendToUInt64(short* address) { throw null; }
+        public static unsafe System.Numerics.Vector<long> LoadVectorInt32NonFaultingSignExtendToInt64(int* address) { throw null; }
+        public static unsafe System.Numerics.Vector<ulong> LoadVectorInt32NonFaultingSignExtendToUInt64(int* address) { throw null; }
+        public static unsafe System.Numerics.Vector<short> LoadVectorSByteNonFaultingSignExtendToInt16(sbyte* address) { throw null; }
+        public static unsafe System.Numerics.Vector<int> LoadVectorSByteNonFaultingSignExtendToInt32(sbyte* address) { throw null; }
+        public static unsafe System.Numerics.Vector<long> LoadVectorSByteNonFaultingSignExtendToInt64(sbyte* address) { throw null; }
+        public static unsafe System.Numerics.Vector<ushort> LoadVectorSByteNonFaultingSignExtendToUInt16(sbyte* address) { throw null; }
+        public static unsafe System.Numerics.Vector<uint> LoadVectorSByteNonFaultingSignExtendToUInt32(sbyte* address) { throw null; }
+        public static unsafe System.Numerics.Vector<ulong> LoadVectorSByteNonFaultingSignExtendToUInt64(sbyte* address) { throw null; }
+
         public static System.Numerics.Vector<byte> Max(System.Numerics.Vector<byte> left, System.Numerics.Vector<byte> right) { throw null; }
         public static System.Numerics.Vector<double> Max(System.Numerics.Vector<double> left, System.Numerics.Vector<double> right) { throw null; }
         public static System.Numerics.Vector<short> Max(System.Numerics.Vector<short> left, System.Numerics.Vector<short> right) { throw null; }
