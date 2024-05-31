@@ -121,7 +121,7 @@ namespace System
             Debug.Assert(sourceArray.Rank == destinationArray.Rank);
 
             if (assignType == ArrayAssignType.WrongType)
-                ThrowHelper.ThrowArrayTypeMismatchException_CantAssignType();
+                throw new ArrayTypeMismatchException(SR.ArrayTypeMismatch_CantAssignType);
 
             if (length > 0)
             {
@@ -250,7 +250,7 @@ namespace System
                 }
                 else if (obj is null || RuntimeHelpers.GetMethodTable(obj) != pDestMT)
                 {
-                    ThrowHelper.ThrowInvalidCastException_DownCastArrayElement();
+                    throw new InvalidCastException(SR.InvalidCast_DownCastArrayElement);
                 }
                 else if (pDestMT->ContainsGCPointers)
                 {
@@ -679,9 +679,7 @@ namespace System
             else if (!pElementMethodTable->IsValueType)
             {
                 if (CastHelpers.IsInstanceOfAny(pElementMethodTable, value) == null)
-                {
-                    ThrowHelper.ThrowInvalidCastException_StoreArrayElement();
-                }
+                    throw new InvalidCastException(SR.InvalidCast_StoreArrayElement);
 
                 ref object? elementRef = ref Unsafe.As<byte, object?>(ref arrayDataRef);
                 ref object? offsetElementRef = ref Unsafe.Add(ref elementRef, (nuint)flattenedIndex);
@@ -715,11 +713,11 @@ namespace System
                     CorElementType targetType = pElementMethodTable->GetVerifierCorElementType();
 
                     if (!srcType.IsPrimitiveType() || !targetType.IsPrimitiveType() || !pElementMethodTable->IsTruePrimitive)
-                        ThrowHelper.ThrowInvalidCastException_StoreArrayElement();
+                        throw new InvalidCastException(SR.InvalidCast_StoreArrayElement);
 
                     // Get a properly widened type
                     if (!RuntimeHelpers.CanPrimitiveWiden(srcType, targetType))
-                        ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_PrimitiveWiden);
+                        throw new ArgumentException(SR.Arg_PrimWiden);
 
                     PrimitiveWiden(ref value.GetRawData(), ref offsetDataRef, srcType, targetType);
                 }

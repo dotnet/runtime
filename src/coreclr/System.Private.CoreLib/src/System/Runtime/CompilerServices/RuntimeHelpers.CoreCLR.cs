@@ -22,7 +22,7 @@ namespace System.Runtime.CompilerServices
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
 
             if ((RuntimeFieldHandle.GetAttributes(fldInfo.Value) & FieldAttributes.HasFieldRVA) == 0)
-                ThrowHelper.ThrowArgumentException(ExceptionResource.Argument_BadFieldForInitializeArray);
+                throw new ArgumentException(SR.Argument_BadFieldForInitializeArray);
 
             // Note that we do not check that the field is actually in the PE file that is initializing
             // the array. Basically the data being published is can be accessed by anyone with the proper
@@ -30,7 +30,7 @@ namespace System.Runtime.CompilerServices
             // snooping)
 
             if (!array.GetCorElementTypeOfElementType().IsPrimitiveType()) // Enum is included
-                ThrowHelper.ThrowArgumentException(ExceptionResource.Argument_MustBePrimitiveArray);
+                throw new ArgumentException(SR.Argument_MustBePrimitiveArray);
 
             MethodTable* pMT = GetMethodTable(array);
             nuint totalSize = pMT->ComponentSize * array.NativeLength;
@@ -39,7 +39,7 @@ namespace System.Runtime.CompilerServices
 
             // make certain you don't go off the end of the rva static
             if (totalSize > size)
-                ThrowHelper.ThrowArgumentException(ExceptionResource.Argument_BadFieldForInitializeArray);
+                throw new ArgumentException(SR.Argument_BadFieldForInitializeArray);
 
             void* src = (void*)RuntimeFieldHandle.GetStaticFieldAddress(fldInfo);
             ref byte dst = ref MemoryMarshal.GetArrayDataReference(array);
@@ -87,20 +87,20 @@ namespace System.Runtime.CompilerServices
             IRuntimeFieldInfo fldInfo = fldHandle.GetRuntimeFieldInfo();
 
             if ((RuntimeFieldHandle.GetAttributes(fldInfo.Value) & FieldAttributes.HasFieldRVA) == 0)
-                ThrowHelper.ThrowArgumentException(ExceptionResource.Argument_BadFieldForInitializeArray);
+                throw new ArgumentException(SR.Argument_BadFieldForInitializeArray);
 
             TypeHandle th = new TypeHandle((void*)targetTypeHandle.Value);
             Debug.Assert(!th.IsTypeDesc); // TypeDesc can't be used as generic parameter
 
             if (!th.GetVerifierCorElementType().IsPrimitiveType()) // Enum is included
-                ThrowHelper.ThrowArgumentException(ExceptionResource.Argument_MustBePrimitiveArray);
+                throw new ArgumentException(SR.Argument_MustBePrimitiveArray);
 
             uint totalSize = RuntimeFieldHandle.GetFieldSize(new QCallFieldHandle(ref fldInfo));
             uint targetTypeSize = th.AsMethodTable()->GetNumInstanceFieldBytes();
 
             IntPtr data = RuntimeFieldHandle.GetStaticFieldAddress(fldInfo);
             if (data % targetTypeSize != 0)
-                ThrowHelper.ThrowArgumentException(ExceptionResource.Argument_BadFieldForInitializeArray);
+                throw new ArgumentException(SR.Argument_BadFieldForInitializeArray);
 
             if (!BitConverter.IsLittleEndian)
             {
