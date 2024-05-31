@@ -341,9 +341,9 @@ namespace System.Net.Sockets.Tests
 
         [OuterLoop]
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public void EventSource_EventsRaisedAsExpected()
+        public async Task EventSource_EventsRaisedAsExpected()
         {
-            RemoteExecutor.Invoke(async () =>
+            await RemoteExecutor.Invoke(async () =>
             {
                 using (var listener = new TestEventListener("System.Net.Sockets", EventLevel.Verbose, 0.1))
                 {
@@ -378,7 +378,7 @@ namespace System.Net.Sockets.Tests
                     VerifyEvents(events, connect: true, expectedCount: 10);
                     VerifyEventCounters(events, connectCount: 10, shouldHaveTransferredBytes: true, shouldHaveDatagrams: true);
                 }
-            }).Dispose();
+            }).DisposeAsync();
         }
 
         private static async Task WaitForEventAsync(ConcurrentQueue<(EventWrittenEventArgs Event, Guid ActivityId)> events, string name)

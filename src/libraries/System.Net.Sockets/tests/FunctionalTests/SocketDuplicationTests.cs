@@ -161,7 +161,7 @@ namespace System.Net.Sockets.Tests
 
         [PlatformSpecific(TestPlatforms.Windows)]
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public void DuplicateSocket_IsNotInheritable()
+        public async Task DuplicateSocket_IsNotInheritable()
         {
             // 300 ms should be long enough to connect if the socket is actually present & listening.
             const int ConnectionTimeoutMs = 300;
@@ -204,7 +204,7 @@ namespace System.Net.Sockets.Tests
 
             // Run the test in another process so as to not have trouble with other tests
             // launching child processes that might impact inheritance.
-            RemoteExecutor.Invoke(RunTest).Dispose();
+            await RemoteExecutor.Invoke(RunTest).DisposeAsync();
         }
 
         [Fact]
