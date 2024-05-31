@@ -4383,6 +4383,9 @@ void emitter::emitInsSve_R_R_R(instruction     ins,
         case INS_sve_ld1w:
         case INS_sve_ld1sw:
         case INS_sve_ld1d:
+        case INS_sve_ldnf1b:
+        case INS_sve_ldnf1h:
+        case INS_sve_ldnf1w:
             return emitIns_R_R_R_I(ins, size, reg1, reg2, reg3, 0, opt);
 
         default:
