@@ -1948,13 +1948,16 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
         {
             srcCount += BuildAddrUses(intrin.op2);
         }
-        else if (intrin.id == NI_Sve_GetActiveElementCount)
-        {
-            srcCount += BuildOperandUses(intrin.op2, RBM_ALLMASK);
-        }
         else
         {
             SingleTypeRegSet candidates = lowVectorOperandNum == 2 ? lowVectorCandidates : RBM_NONE;
+
+            if (intrin.op2->gtType == TYP_MASK)
+            {
+                assert(lowVectorOperandNum != 2);
+                candidates = RBM_ALLMASK;
+            }
+
             if (forceOp2DelayFree)
             {
                 srcCount += BuildDelayFreeUses(intrin.op2, nullptr, candidates);
