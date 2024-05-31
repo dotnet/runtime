@@ -695,7 +695,8 @@ namespace System.Reflection.Emit
                 }
                 else
                 {
-                    typeHandle = AddTypeReference(type, GetResolutionScopeHandle(type));
+                    (EntityHandle resScopeHandle, string? ns) = GetResolutionScopeAndNamespace(type);
+                    typeHandle = AddTypeReference(type, resScopeHandle, ns);
                 }
 
                 _typeReferences.Add(type, typeHandle);
@@ -704,14 +705,14 @@ namespace System.Reflection.Emit
             return typeHandle;
         }
 
-        private EntityHandle GetResolutionScopeHandle(Type type)
+        private (EntityHandle, string?) GetResolutionScopeAndNamespace(Type type)
         {
             if (type.IsNested)
             {
-                return GetTypeReferenceOrSpecificationHandle(type.DeclaringType!);
+                return (GetTypeReferenceOrSpecificationHandle(type.DeclaringType!), null);
             }
 
-            return GetAssemblyReference(type.Assembly);
+            return (GetAssemblyReference(type.Assembly), type.Namespace);
         }
 
         private TypeSpecificationHandle AddTypeSpecification(Type type) =>
@@ -944,10 +945,10 @@ namespace System.Reflection.Emit
                 bodyOffset: offset,
                 parameterList: MetadataTokens.ParameterHandle(parameterToken));
 
-        private TypeReferenceHandle AddTypeReference(Type type, EntityHandle resolutionScope) =>
+        private TypeReferenceHandle AddTypeReference(Type type, EntityHandle resolutionScope, string? ns) =>
             _metadataBuilder.AddTypeReference(
                 resolutionScope: resolutionScope,
-                @namespace: (type.Namespace == null) ? default : _metadataBuilder.GetOrAddString(type.Namespace),
+                @namespace: (ns == null) ? default : _metadataBuilder.GetOrAddString(ns),
                 name: _metadataBuilder.GetOrAddString(type.Name));
 
         private MemberReferenceHandle AddMemberReference(string memberName, EntityHandle parent, BlobBuilder signature) =>
