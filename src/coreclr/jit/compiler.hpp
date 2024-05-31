@@ -992,34 +992,17 @@ inline regNumber genRegNumFromMask(const regMaskTP& mask)
 // Assumptions:
 //    The mask contains one and only one register.
 
-inline regNumber genRegNumFromMask(const regMaskTP& mask, var_types type)
+inline regNumber genRegNumFromMask(SingleTypeRegSet mask, var_types type)
 {
+    regNumber regNum = genRegNumFromMask(mask);
+
 #ifdef HAS_MORE_THAN_64_REGISTERS
-    // Must have exactly one bit set
-    assert(PopCount(mask) == 1);
-
-    int index = regMaskTP::mapTypeToRegTypeIndex(type);
-
-#ifdef DEBUG
-    // Make sure the bit number of right `type` is set in the mask
-    // If typeIndex == 2, then it better be the bit from high mask
-    // No need to check for typeIndex == 0/1 because above, we already
-    // verified that PopCount() == 1
-    assert(index <= 2);
-    assert((index != 2) || (PopCount(mask.getHigh()) == 1));
-#endif // DEBUG
-
     // If this is mask type, add `64` to the regNumber
-    regNumber regNum = (regNumber)genLog2(mask[index]);
-    return (regNumber)(((index == 2) << 6) + regNum);
+    int index = regMaskTP::mapTypeToRegTypeIndex(type);
+    regNum = (regNumber)(regNum + ((index == 2) << 6));
 
-    /* Make sure we got it right */
-    assert(genRegMask(regNum) == mask);
-
-    return regNum;
-#else
-    return genRegNumFromMask(mask.getLow());
 #endif
+    return regNum;
 }
 
 //------------------------------------------------------------------------------
