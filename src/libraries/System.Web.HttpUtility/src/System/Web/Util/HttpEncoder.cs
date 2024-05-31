@@ -17,6 +17,10 @@ namespace System.Web.Util
         private const int MaxStackAllocUrlLength = 256;
         private const int StackallocThreshold = 512;
 
+        // Set of safe chars, from RFC 1738.4 minus '+'
+        private static readonly SearchValues<byte> s_urlSafeBytes = SearchValues.Create(
+            "!()*-.0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz"u8);
+
         private static void AppendCharAsUnicodeJavaScript(StringBuilder builder, char c)
         {
             builder.Append($"\\u{(int)c:x4}");
@@ -436,7 +440,7 @@ namespace System.Web.Util
                 {
                     expandedBytes[pos++] = b;
                 }
-                else if (b == 32) // ' '
+                else if (b == ' ')
                 {
                     expandedBytes[pos++] = (byte)'+';
                 }
@@ -451,9 +455,6 @@ namespace System.Web.Util
             return expandedBytes;
         }
 
-        // Set of safe chars, from RFC 1738.4 minus '+'
-        private static readonly SearchValues<byte> s_urlSafeBytes = SearchValues.Create(
-            "!()*-.0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz"u8);
         private static bool NeedsEncoding(ReadOnlySpan<byte> bytes, out int cUnsafe)
         {
             cUnsafe = 0;
@@ -491,13 +492,9 @@ namespace System.Web.Util
             static byte[] Fallback(string str, Encoding e)
             {
                 byte[] bytes = e.GetBytes(str);
-                if (!NeedsEncoding(bytes, out int cUnsafe))
-                {
-                    // return encoded byte[] if nothing to expand
-                    return bytes;
-                }
-
-                return UrlEncode(bytes, cUnsafe);
+                return NeedsEncoding(bytes, out int cUnsafe)
+                    ? UrlEncode(bytes, cUnsafe)
+                    : bytes;
             }
         }
 
