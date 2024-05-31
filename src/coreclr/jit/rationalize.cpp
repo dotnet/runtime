@@ -95,6 +95,10 @@ void Rationalizer::RewriteNodeAsCall(GenTree**             use,
 
         if (varTypeIsStruct(sigTyp))
         {
+            // GenTreeFieldList should not have been introduced
+            // for intrinsics that get rewritten back to user calls
+            assert(!operand->OperIsFieldList());
+
             sigTyp = comp->impNormStructType(clsHnd);
             arg    = NewCallArg::Struct(operand, sigTyp, clsHnd);
         }
@@ -351,20 +355,27 @@ void Rationalizer::RewriteHWIntrinsicAsUserCall(GenTree** use, ArrayStack<GenTre
                 break;
             }
 
+            CORINFO_CLASS_HANDLE op1ClsHnd = NO_CLASS_HANDLE;
             CORINFO_CLASS_HANDLE op2ClsHnd = NO_CLASS_HANDLE;
             CORINFO_CLASS_HANDLE op3ClsHnd = NO_CLASS_HANDLE;
 
-            if (operandCount > 1)
+            if (operandCount > 0)
             {
                 CORINFO_ARG_LIST_HANDLE args = sigInfo.args;
 
                 args = comp->info.compCompHnd->getArgNext(args);
-                comp->info.compCompHnd->getArgType(&sigInfo, args, &op2ClsHnd);
+                comp->info.compCompHnd->getArgType(&sigInfo, args, &op1ClsHnd);
 
-                if (operandCount > 2)
+                if (operandCount > 1)
                 {
                     args = comp->info.compCompHnd->getArgNext(args);
-                    comp->info.compCompHnd->getArgType(&sigInfo, args, &op3ClsHnd);
+                    comp->info.compCompHnd->getArgType(&sigInfo, args, &op2ClsHnd);
+
+                    if (operandCount > 2)
+                    {
+                        args = comp->info.compCompHnd->getArgNext(args);
+                        comp->info.compCompHnd->getArgType(&sigInfo, args, &op3ClsHnd);
+                    }
                 }
             }
 

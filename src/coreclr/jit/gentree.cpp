@@ -26488,7 +26488,7 @@ GenTreeFieldList* Compiler::gtConvertTableOpToFieldList(GenTree* op, unsigned fi
     LclVarDsc* opVarDsc  = lvaGetDesc(op->AsLclVar());
     unsigned   lclNum    = lvaGetLclNum(opVarDsc);
     unsigned   fieldSize = opVarDsc->lvSize() / fieldCount;
-    var_types  fieldType = TYP_SIMD16;
+    var_types  fieldType = Compiler::getSIMDTypeForSize(fieldSize);
 
     GenTreeFieldList* fieldList = new (this, GT_FIELD_LIST) GenTreeFieldList();
     int               offset    = 0;

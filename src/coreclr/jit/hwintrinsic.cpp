@@ -1597,7 +1597,7 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
                                       simdSize, mustExpand);
     }
 
-    if (setMethodHandle)
+    if (setMethodHandle && (retNode != nullptr))
     {
         retNode->AsHWIntrinsic()->SetMethodHandle(this, method R2RARG(*entryPoint));
     }
