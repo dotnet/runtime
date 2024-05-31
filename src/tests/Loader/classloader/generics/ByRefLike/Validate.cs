@@ -12,6 +12,17 @@ using Xunit;
 public class Validate
 {
     [Fact]
+    public static void Validate_Activation()
+    {
+        Console.WriteLine($"{nameof(Validate_Activation)}...");
+
+        Assert.Equal("System.Span<Int32>[0]", Activator.CreateInstance<Span<int>>().ToString());
+        Assert.Equal("System.Span<String>[0]", Activator.CreateInstance<Span<string>>().ToString());
+        Assert.Equal("System.ReadOnlySpan<Int32>[0]", Activator.CreateInstance<ReadOnlySpan<int>>().ToString());
+        Assert.Equal("System.ReadOnlySpan<String>[0]", Activator.CreateInstance<ReadOnlySpan<string>>().ToString());
+    }
+
+    [Fact]
     public static void Validate_TypeLoad()
     {
         Console.WriteLine($"{nameof(Validate_TypeLoad)}...");

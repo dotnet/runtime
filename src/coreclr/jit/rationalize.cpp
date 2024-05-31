@@ -359,19 +359,19 @@ void Rationalizer::RewriteHWIntrinsicAsUserCall(GenTree** use, ArrayStack<GenTre
             CORINFO_CLASS_HANDLE op2ClsHnd = NO_CLASS_HANDLE;
             CORINFO_CLASS_HANDLE op3ClsHnd = NO_CLASS_HANDLE;
 
-            if (operandCount > 0)
+            size_t argCount = operandCount - (sigInfo.hasThis() ? 1 : 0);
+
+            if (argCount > 0)
             {
                 CORINFO_ARG_LIST_HANDLE args = sigInfo.args;
-
-                args = comp->info.compCompHnd->getArgNext(args);
                 comp->info.compCompHnd->getArgType(&sigInfo, args, &op1ClsHnd);
 
-                if (operandCount > 1)
+                if (argCount > 1)
                 {
                     args = comp->info.compCompHnd->getArgNext(args);
                     comp->info.compCompHnd->getArgType(&sigInfo, args, &op2ClsHnd);
 
-                    if (operandCount > 2)
+                    if (argCount > 2)
                     {
                         args = comp->info.compCompHnd->getArgNext(args);
                         comp->info.compCompHnd->getArgType(&sigInfo, args, &op3ClsHnd);
