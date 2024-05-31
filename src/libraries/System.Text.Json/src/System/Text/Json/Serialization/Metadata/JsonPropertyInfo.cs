@@ -165,10 +165,13 @@ namespace System.Text.Json.Serialization.Metadata
         {
             get
             {
+                Func<ICustomAttributeProvider>? attributeProviderFactory = Volatile.Read(ref AttributeProviderFactory);
                 ICustomAttributeProvider? attributeProvider = _attributeProvider;
-                if (attributeProvider is null && AttributeProviderFactory is { } factory)
+
+                if (attributeProvider is null && attributeProviderFactory is not null)
                 {
-                    _attributeProvider = attributeProvider = factory();
+                    _attributeProvider = attributeProvider = attributeProviderFactory();
+                    Volatile.Write(ref AttributeProviderFactory, null);
                 }
 
                 return attributeProvider;
@@ -176,13 +179,15 @@ namespace System.Text.Json.Serialization.Metadata
             set
             {
                 VerifyMutable();
+
                 _attributeProvider = value;
+                Volatile.Write(ref AttributeProviderFactory, null);
             }
         }
 
         // Metadata emanating from the source generator use delayed attribute provider initialization
         // ensuring that reflection metadata resolution remains pay-for-play and is trimmable.
-        internal Func<ICustomAttributeProvider>? AttributeProviderFactory { get; set; }
+        internal Func<ICustomAttributeProvider>? AttributeProviderFactory;
         private ICustomAttributeProvider? _attributeProvider;
 
         /// <summary>
