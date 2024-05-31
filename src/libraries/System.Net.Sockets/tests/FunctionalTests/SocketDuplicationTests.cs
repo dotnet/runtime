@@ -336,7 +336,7 @@ namespace System.Net.Sockets.Tests
 
                 async Task RunCommonHostLogic(int processId)
                 {
-                    await Task.Yield();
+                    await Task.CompletedTask.ConfigureAwait(ConfigureAwaitOptions.ForceYielding);
                     
                     pipeServerStream.WaitForConnection();
 
