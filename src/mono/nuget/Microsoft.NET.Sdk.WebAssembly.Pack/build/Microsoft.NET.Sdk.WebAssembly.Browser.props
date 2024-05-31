@@ -35,6 +35,10 @@ Copyright (c) .NET Foundation. All rights reserved.
     <StaticWebAssetsGetPublishAssetsTargets>ComputeFilesToPublish;GetCurrentProjectPublishStaticWebAssetItems</StaticWebAssetsGetPublishAssetsTargets>
     <StaticWebAssetsAdditionalPublishProperties>$(StaticWebAssetsAdditionalPublishProperties);BuildProjectReferences=false;ResolveAssemblyReferencesFindRelatedSatellites=true</StaticWebAssetsAdditionalPublishProperties>
     <StaticWebAssetsAdditionalPublishPropertiesToRemove>$(StaticWebAssetsAdditionalPublishPropertiesToRemove);NoBuild;RuntimeIdentifier</StaticWebAssetsAdditionalPublishPropertiesToRemove>
+
+    <!-- Library Mode defaults-->
+    <CopyLocalLockFileAssemblies Condition="'$(OutputType)' == 'Library'">true</CopyLocalLockFileAssemblies>
+    <GenerateRuntimeConfigurationFiles Condition="'$(OutputType)' == 'Library'">true</GenerateRuntimeConfigurationFiles>
   </PropertyGroup>
 
   <ItemGroup>

@@ -162,6 +162,7 @@
     </WasmLinkDotNetDependsOn>
 
     <WasmDedup Condition="'$(WasmDedup)' == ''">true</WasmDedup>
+    <IsLibraryMode Condition="'$(OutputType)' == 'Library' and '$(UsingMicrosoftNETSdkWebAssembly)' == 'true'">true</IsLibraryMode>
     <IsWasiProject Condition="'$(IsWasiProject)' == '' and '$(RuntimeIdentifier)' == 'wasi-wasm'">true</IsWasiProject>
     <IsBrowserWasmProject Condition="'$(IsBrowserWasmProject)' == '' and '$(RuntimeIdentifier)' == 'browser-wasm'">true</IsBrowserWasmProject>
     <IsWasmProject Condition="'$(IsWasmProject)' == '' and ('$(IsWasiProject)' == 'true' or '$(IsBrowserWasmProject)' == 'true')">true</IsWasmProject>
@@ -173,7 +174,9 @@
     <EnableDefaultWasmAssembliesToBundle Condition="'$(EnableDefaultWasmAssembliesToBundle)' == ''">true</EnableDefaultWasmAssembliesToBundle>
     <!-- VS uses DeployOnBuild, and sdk sets _IsPublishing -->
     <WasmBuildOnlyAfterPublish Condition="'$(WasmBuildOnlyAfterPublish)' == '' and ('$(DeployOnBuild)' == 'true' or '$(_IsPublishing)' == 'true')">true</WasmBuildOnlyAfterPublish>
-    <WasmGenerateAppBundle Condition="'$(WasmGenerateAppBundle)' == ''">true</WasmGenerateAppBundle>
+    <WasmGenerateAppBundle Condition="'$(WasmGenerateAppBundle)' == '' and '$(OutputType)' != 'Library'">true</WasmGenerateAppBundle>
+    <WasmGenerateAppBundle Condition="'$(WasmGenerateAppBundle)' == '' and '$(IsLibraryMode)' == 'true'">true</WasmGenerateAppBundle>
+    <WasmGenerateAppBundle Condition="'$(WasmGenerateAppBundle)' == ''">false</WasmGenerateAppBundle>
 
     <!-- FIXME: can't set to true because
       /workspaces/runtime/.dotnet/sdk/7.0.100-rc.1.22431.12/Sdks/Microsoft.NET.Sdk/targets/Microsoft.NET.Sdk.FrameworkReferenceResolution.targets(135,5): error NETSDK1084: There is no application host available for the specified RuntimeIdentifier 'wasi-wasm'.
@@ -798,7 +801,8 @@
       PInvokeModules="@(_WasmPInvokeModules)"
       PInvokeOutputPath="$(_WasmPInvokeTablePath)"
       InterpToNativeOutputPath="$(_WasmInterpToNativeTablePath)"
-      CacheFilePath="$(_WasmM2NCachePath)">
+      CacheFilePath="$(_WasmM2NCachePath)"
+      IsLibraryMode="$(IsLibraryMode)">
       <Output TaskParameter="FileWrites" ItemName="FileWrites" />
     </ManagedToNativeGenerator>
   </Target>
