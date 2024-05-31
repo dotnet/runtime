@@ -695,24 +695,20 @@ namespace System.Reflection.Emit
                 }
                 else
                 {
-                    (EntityHandle resScopeHandle, string? ns) = GetResolutionScopeAndNamespace(type);
-                    typeHandle = AddTypeReference(type, resScopeHandle, ns);
+                    if (type.IsNested)
+                    {
+                        typeHandle = AddTypeReference(type.Name, GetTypeReferenceOrSpecificationHandle(type.DeclaringType!), null);
+                    }
+                    else
+                    {
+                        typeHandle = AddTypeReference(type.Name, GetAssemblyReference(type.Assembly), type.Namespace);
+                    }
                 }
 
                 _typeReferences.Add(type, typeHandle);
             }
 
             return typeHandle;
-        }
-
-        private (EntityHandle, string?) GetResolutionScopeAndNamespace(Type type)
-        {
-            if (type.IsNested)
-            {
-                return (GetTypeReferenceOrSpecificationHandle(type.DeclaringType!), null);
-            }
-
-            return (GetAssemblyReference(type.Assembly), type.Namespace);
         }
 
         private TypeSpecificationHandle AddTypeSpecification(Type type) =>
@@ -945,11 +941,11 @@ namespace System.Reflection.Emit
                 bodyOffset: offset,
                 parameterList: MetadataTokens.ParameterHandle(parameterToken));
 
-        private TypeReferenceHandle AddTypeReference(Type type, EntityHandle resolutionScope, string? ns) =>
+        private TypeReferenceHandle AddTypeReference(string name, EntityHandle resolutionScope, string? ns) =>
             _metadataBuilder.AddTypeReference(
                 resolutionScope: resolutionScope,
                 @namespace: (ns == null) ? default : _metadataBuilder.GetOrAddString(ns),
-                name: _metadataBuilder.GetOrAddString(type.Name));
+                name: _metadataBuilder.GetOrAddString(name));
 
         private MemberReferenceHandle AddMemberReference(string memberName, EntityHandle parent, BlobBuilder signature) =>
             _metadataBuilder.AddMemberReference(
