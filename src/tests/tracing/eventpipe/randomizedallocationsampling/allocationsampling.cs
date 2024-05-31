@@ -16,7 +16,7 @@ using Microsoft.Diagnostics.NETCore.Client;
 using Tracing.Tests.Common;
 using Xunit;
 
-namespace Tracing.Tests.SimpleRuntimeEventValidation
+namespace Tracing.Tests
 {
     public class AllocationSamplingValidation
     {
@@ -68,8 +68,8 @@ namespace Tracing.Tests.SimpleRuntimeEventValidation
 
                     AllocationSampledData payload = new AllocationSampledData(eventData, source.PointerSize);
                     // uncomment to see the allocation events payload
-                    // Logger.logger.Log($"{payload.HeapIndex} - {payload.AllocationKind} | ({payload.ObjectSize}) {payload.TypeName}  = 0x{payload.Address}");
-                    if (payload.TypeName == "Tracing.Tests.SimpleRuntimeEventValidation.Object128")
+                    //Logger.logger.Log($"{payload.HeapIndex} - {payload.AllocationKind} | ({payload.ObjectSize}) {payload.TypeName}  = 0x{payload.Address}");
+                    if (payload.TypeName == "Tracing.Tests.Object128")
                     {
                         Object128Count++;
                     }
@@ -117,6 +117,7 @@ namespace Tracing.Tests.SimpleRuntimeEventValidation
     //  <data name="HeapIndex" inType="win:UInt32" />
     //  <data name="Address" inType="win:Pointer" />
     //  <data name="ObjectSize" inType="win:UInt64" outType="win:HexInt64" />
+    //  <data name="SampledByteOffset" inType="win:UInt64" outType="win:HexInt64" />
     //
     class AllocationSampledData
     {
@@ -139,6 +140,7 @@ namespace Tracing.Tests.SimpleRuntimeEventValidation
         public int HeapIndex;
         public UInt64 Address;
         public long ObjectSize;
+        public long SampledByteOffset;
 
         private void ComputeFields()
         {
@@ -148,10 +150,11 @@ namespace Tracing.Tests.SimpleRuntimeEventValidation
             AllocationKind = (GCAllocationKind)BitConverter.ToInt32(data.Slice(0, 4));
             ClrInstanceID = BitConverter.ToInt16(data.Slice(4, 2));
             TypeID = BitConverter.ToUInt64(data.Slice(6, _pointerSize));                                                    //   \0 should not be included for GetString to work
-            TypeName = Encoding.Unicode.GetString(data.Slice(offsetBeforeString, _payload.EventDataLength - offsetBeforeString - EndOfStringCharLength - 4 - _pointerSize - 8));
+            TypeName = Encoding.Unicode.GetString(data.Slice(offsetBeforeString, _payload.EventDataLength - offsetBeforeString - EndOfStringCharLength - 4 - _pointerSize - 8 - 8));
             HeapIndex = BitConverter.ToInt32(data.Slice(offsetBeforeString + TypeName.Length * 2 + EndOfStringCharLength, 4));
             Address = BitConverter.ToUInt64(data.Slice(offsetBeforeString + TypeName.Length * 2 + EndOfStringCharLength + 4, _pointerSize));
             ObjectSize = BitConverter.ToInt64(data.Slice(offsetBeforeString + TypeName.Length * 2 + EndOfStringCharLength + 4 + 8, 8));
+            SampledByteOffset = BitConverter.ToInt64(data.Slice(offsetBeforeString + TypeName.Length * 2 + EndOfStringCharLength + 4 + 8 + 8, 8));
         }
     }
 }
