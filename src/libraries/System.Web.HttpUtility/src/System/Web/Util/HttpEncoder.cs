@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
@@ -451,27 +452,27 @@ namespace System.Web.Util
             return expandedBytes;
         }
 
+        private static readonly SearchValues<byte> s_urlSafeBytes = SearchValues.Create(
+            "!()*-.0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz"u8);
         private static bool NeedsEncoding(ReadOnlySpan<byte> bytes, out int cUnsafe)
         {
             cUnsafe = 0;
 
-            int cSpaces = 0;
-            int count = bytes.Length;
-            for (int i = 0; i < count; i++)
+            int i = bytes.IndexOfAnyExcept(s_urlSafeBytes);
+            if (i < 0)
             {
-                char ch = (char)bytes[i];
+                return false;
+            }
 
-                if (ch == ' ')
-                {
-                    cSpaces++;
-                }
-                else if (!HttpEncoderUtility.IsUrlSafeChar(ch))
+            foreach (byte b in bytes.Slice(i))
+            {
+                if (!s_urlSafeBytes.Contains(b) && b != ' ')
                 {
                     cUnsafe++;
                 }
             }
 
-            return cSpaces != 0 || cUnsafe != 0;
+            return true;
         }
 
         internal static byte[] UrlEncode(string str, Encoding e)
