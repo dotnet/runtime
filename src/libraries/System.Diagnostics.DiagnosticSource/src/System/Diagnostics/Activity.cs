@@ -518,15 +518,19 @@ namespace System.Diagnostics
         }
 
         /// <summary>
-        /// Add a <see cref="ActivityEvent" /> object containing the exception information to the <see cref="Events" /> list.
+        /// Add an <see cref="ActivityEvent" /> object containing the exception information to the <see cref="Events" /> list.
         /// </summary>
         /// <param name="exception">The exception to add to the attached events list.</param>
         /// <param name="tags">The tags to add to the exception event.</param>
         /// <param name="timestamp">The timestamp to add to the exception event.</param>
         /// <returns><see langword="this" /> for convenient chaining.</returns>
         /// <remarks>
-        /// - The name of the event will be "exception", and it will include the tags "exception.message", "exception.stacktrace", and "exception.type", in addition to the tags provided in the <paramref name="tags"/> parameter.
-        /// - Any registered <see cref="ActivityListener"/> with the <see cref="ActivityListener.ExceptionRecorder"/> callback will be notified about this exception addition before the <see cref="ActivityEvent" /> object is added to the <see cref="Events" /> list.
+        /// <para>- The name of the event will be "exception", and it will include the tags "exception.message", "exception.stacktrace", and "exception.type",
+        /// in addition to the tags provided in the <paramref name="tags"/> parameter.</para>
+        /// <para>- Any registered <see cref="ActivityListener"/> with the <see cref="ActivityListener.ExceptionRecorder"/> callback will be notified about this exception addition
+        /// before the <see cref="ActivityEvent" /> object is added to the <see cref="Events" /> list.</para>
+        /// <para>- Any registered <see cref="ActivityListener"/> with the <see cref="ActivityListener.ExceptionRecorder"/> callback that adds "exception.message", "exception.stacktrace", or "exception.type" tags
+        /// will not have these tags overwritten, except by any subsequent <see cref="ActivityListener"/> that explicitly overwrites them.</para>        public Activity AddException(Exception exception, TagList tags = default, DateTimeOffset timestamp = default)
         /// </remarks>
         public Activity AddException(Exception exception, TagList tags = default, DateTimeOffset timestamp = default)
         {
