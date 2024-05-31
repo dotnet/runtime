@@ -3947,7 +3947,7 @@ namespace System
             }
 
             // We reuse ActivatorCache here to ensure that we aren't always creating two entries in the cache.
-            object? obj = GetOrCreateCacheEntry<ActivatorCache>().CreateUninitializedObject(this);
+            object? obj = cache.CreateUninitializedObject(this);
             try
             {
                 cache.CallRefConstructor(obj);
@@ -3967,11 +3967,7 @@ namespace System
         {
             Debug.Assert(IsValueType);
 
-            if (GenericCache is not ActivatorCache cache)
-            {
-                cache = new ActivatorCache(this);
-                GenericCache = cache;
-            }
+            ActivatorCache cache = GetOrCreateCacheEntry<ActivatorCache>();
 
             if (!cache.CtorIsPublic)
             {
