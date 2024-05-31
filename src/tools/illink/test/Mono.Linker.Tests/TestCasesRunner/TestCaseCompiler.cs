@@ -18,7 +18,7 @@ using Microsoft.CodeAnalysis.CSharp;
 
 namespace Mono.Linker.Tests.TestCasesRunner
 {
-	public class TestCaseCompiler
+	internal class TestCaseCompiler
 	{
 		protected readonly TestCaseCompilationMetadataProvider _metadataProvider;
 		protected readonly TestCaseSandbox _sandbox;

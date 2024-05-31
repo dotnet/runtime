@@ -6,7 +6,7 @@ using Mono.Cecil;
 
 namespace Mono.Linker.Steps
 {
-	public static class MarkExportedTypesTarget
+	internal static class MarkExportedTypesTarget
 	{
 		public static void ProcessAssembly (AssemblyDefinition assembly, LinkContext context)
 		{

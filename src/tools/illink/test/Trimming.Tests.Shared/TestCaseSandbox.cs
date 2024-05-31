@@ -10,7 +10,7 @@ using Mono.Linker.Tests.TestCases;
 
 namespace Mono.Linker.Tests.TestCasesRunner
 {
-	public partial class TestCaseSandbox
+	internal partial class TestCaseSandbox
 	{
 		protected readonly TestCase _testCase;
 		protected readonly NPath _directory;

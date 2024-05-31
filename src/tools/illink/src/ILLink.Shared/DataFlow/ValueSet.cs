@@ -13,12 +13,14 @@ using System.Text;
 
 namespace ILLink.Shared.DataFlow
 {
-	public readonly struct ValueSet<TValue> : IEquatable<ValueSet<TValue>>, IDeepCopyValue<ValueSet<TValue>>
+	internal readonly struct ValueSet<TValue> : IEquatable<ValueSet<TValue>>, IDeepCopyValue<ValueSet<TValue>>
 		where TValue : notnull
 	{
 		const int MaxValuesInSet = 256;
 
+#pragma warning disable CS0649 // Field is never assigned to, and will always have its default value
 		public static readonly ValueSet<TValue> Empty;
+#pragma warning restore CS0649
 
 		private sealed class ValueSetSentinel
 		{
@@ -76,7 +78,7 @@ namespace ILLink.Shared.DataFlow
 			}
 		}
 
-		public struct Enumerator : IEnumerator<TValue>, IDisposable, IEnumerator
+		internal struct Enumerator : IEnumerator<TValue>, IDisposable, IEnumerator
 		{
 			private readonly object? _value;
 			private int _state;  // 0 before beginning, 1 at item, 2 after end
@@ -128,7 +130,7 @@ namespace ILLink.Shared.DataFlow
 			}
 		}
 
-		public readonly struct Enumerable : IEnumerable<TValue>
+		internal readonly struct Enumerable : IEnumerable<TValue>
 		{
 			private readonly object? _values;
 

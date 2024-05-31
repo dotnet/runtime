@@ -6,7 +6,7 @@ using System;
 namespace Mono.Linker
 {
 	[Flags]
-	public enum TypePreserveMembers
+	internal enum TypePreserveMembers
 	{
 		Visible = 1 << 1,
 		Internal = 1 << 2,

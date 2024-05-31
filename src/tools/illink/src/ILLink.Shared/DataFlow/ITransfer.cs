@@ -23,7 +23,7 @@ namespace ILLink.Shared.DataFlow
 
 	// TLattice isn't typically used in the implementation except to provide the "Top" value.
 	// This expresses the conceptual constraint that the transferred values are part of a lattice.
-	public interface ITransfer<TOperation, TValue, TState, TLattice, TConditionValue>
+	internal interface ITransfer<TOperation, TValue, TState, TLattice, TConditionValue>
 		where TValue : struct, IEquatable<TValue>
 		where TState : class, IDataFlowState<TValue, TLattice>
 		where TLattice : ILattice<TValue>
@@ -44,7 +44,7 @@ namespace ILLink.Shared.DataFlow
 		void ApplyCondition (TConditionValue condition, ref TValue value);
 	}
 
-	public interface INegate<TValue>
+	internal interface INegate<TValue>
 	{
 		TValue Negate ();
 	}

@@ -24,7 +24,7 @@ namespace ILLink.Shared.DataFlow
 	// virtual interface method. This would avoid the need to pass around multiple generic arguments
 	// (TValue and TLattice). However, we can't use static virtual interface methods in the analyzer
 	// so the lattice instance provides the Top value.
-	public interface ILattice<TValue> where TValue : IEquatable<TValue>
+	internal interface ILattice<TValue> where TValue : IEquatable<TValue>
 	{
 		// We require that the lattice has a "Top" or maximum element.
 		// Top is >= a for every element a of the lattice.

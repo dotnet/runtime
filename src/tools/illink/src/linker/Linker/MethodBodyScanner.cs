@@ -9,7 +9,7 @@ using Mono.Cecil.Cil;
 
 namespace Mono.Linker
 {
-	public static class MethodBodyScanner
+	internal static class MethodBodyScanner
 	{
 		public static bool IsWorthConvertingToThrow (MethodIL body)
 		{

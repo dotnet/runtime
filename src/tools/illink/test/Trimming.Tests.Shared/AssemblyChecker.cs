@@ -5,7 +5,7 @@ using Mono.Cecil;
 
 namespace Mono.Linker.Tests.TestCasesRunner
 {
-	public partial class AssemblyChecker
+	internal partial class AssemblyChecker
 	{
 		static bool IsCompilerGeneratedMemberName (string memberName)
 		{

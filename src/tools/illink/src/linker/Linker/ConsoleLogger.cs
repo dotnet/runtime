@@ -5,7 +5,7 @@ using System;
 
 namespace Mono.Linker
 {
-	public class ConsoleLogger : ILogger
+	internal sealed class ConsoleLogger : ILogger
 	{
 		public void LogMessage (MessageContainer message)
 		{

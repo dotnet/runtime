@@ -6,7 +6,7 @@ using System;
 namespace Mono.Linker
 {
 	[Flags]
-	public enum MetadataTrimming
+	internal enum MetadataTrimming
 	{
 		None = 0,
 		ParameterName = 1,

@@ -8,7 +8,7 @@ using Mono.Cecil;
 
 namespace Mono.Linker.Steps
 {
-	public partial class MarkStep
+	internal partial class MarkStep
 	{
 		internal sealed class NodeFactory (MarkStep markStep)
 		{

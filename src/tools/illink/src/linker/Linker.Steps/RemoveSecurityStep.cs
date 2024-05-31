@@ -6,7 +6,7 @@ using Mono.Cecil;
 
 namespace Mono.Linker.Steps
 {
-	public static class RemoveSecurity
+	internal static class RemoveSecurity
 	{
 		public static void ProcessAssembly (AssemblyDefinition assembly, LinkContext context)
 		{

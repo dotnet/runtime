@@ -7,7 +7,7 @@ using Mono.Cecil;
 
 namespace Mono.Linker.Steps
 {
-	public class ReflectionBlockedStep : BaseStep
+	internal sealed class ReflectionBlockedStep : BaseStep
 	{
 		AssemblyDefinition? assembly;
 		AssemblyDefinition Assembly {

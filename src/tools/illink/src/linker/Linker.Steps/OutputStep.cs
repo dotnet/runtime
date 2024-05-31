@@ -39,8 +39,10 @@ using Mono.Cecil;
 
 namespace Mono.Linker.Steps
 {
-
-	public class OutputStep : BaseStep
+	// UnityLinker extension point
+#pragma warning disable CA1852 // Seal internal types
+	internal class OutputStep : BaseStep
+#pragma warning restore CA1852
 	{
 		readonly List<string> assembliesWritten;
 

@@ -8,7 +8,7 @@ using Mono.Linker.Steps;
 
 namespace Mono.Linker.Dataflow
 {
-	public readonly struct TrimAnalysisPatternStore
+	internal readonly struct TrimAnalysisPatternStore
 	{
 		readonly Dictionary<(MessageOrigin, bool), TrimAnalysisAssignmentPattern> AssignmentPatterns;
 		readonly Dictionary<MessageOrigin, TrimAnalysisMethodCallPattern> MethodCallPatterns;

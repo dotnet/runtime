@@ -9,7 +9,7 @@ using Mono.Cecil;
 
 namespace Mono.Linker
 {
-	public class InterfaceImplementor
+	internal sealed class InterfaceImplementor
 	{
 		/// <summary>
 		/// The type that implements <see cref="InterfaceImplementor.InterfaceType"/>.

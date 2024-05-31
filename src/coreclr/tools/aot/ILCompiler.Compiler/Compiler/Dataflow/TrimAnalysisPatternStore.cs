@@ -11,7 +11,7 @@ using Internal.TypeSystem;
 
 namespace ILCompiler.Dataflow
 {
-    public readonly struct TrimAnalysisPatternStore
+    internal readonly struct TrimAnalysisPatternStore
     {
         private readonly Dictionary<(MessageOrigin, bool), TrimAnalysisAssignmentPattern> AssignmentPatterns;
         private readonly Dictionary<MessageOrigin, TrimAnalysisMethodCallPattern> MethodCallPatterns;

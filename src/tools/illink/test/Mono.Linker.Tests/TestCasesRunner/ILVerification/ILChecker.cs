@@ -13,7 +13,7 @@ using NUnit.Framework;
 
 namespace Mono.Linker.Tests.TestCasesRunner.ILVerification;
 
-public class ILChecker
+internal class ILChecker
 {
 	public virtual void Check (TrimmedTestCaseResult linkResult, AssemblyDefinition original)
 	{

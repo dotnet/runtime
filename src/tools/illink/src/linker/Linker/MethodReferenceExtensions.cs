@@ -8,7 +8,7 @@ using Mono.Cecil;
 
 namespace Mono.Linker
 {
-	public static class MethodReferenceExtensions
+	internal static class MethodReferenceExtensions
 	{
 		public static string GetDisplayName (this MethodReference method)
 		{

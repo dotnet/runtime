@@ -43,8 +43,10 @@ using Mono.Linker.Steps;
 
 namespace Mono.Linker
 {
-
-	public partial class Driver : IDisposable
+	// Extensible for testing purposes
+#pragma warning disable CA1852 // Seal internal types
+	internal partial class Driver : IDisposable
+#pragma warning restore CA1852
 	{
 		const string resolvers = "-a|-x";
 		const string _linker = "IL Linker";
@@ -174,7 +176,7 @@ namespace Mono.Linker
 			Context.LogError (null, DiagnosticId.MissingArgumentForCommanLineOptionName, optionName);
 		}
 
-		public enum DependenciesFileFormat
+		internal enum DependenciesFileFormat
 		{
 			Xml,
 			Dgml

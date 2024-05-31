@@ -12,7 +12,7 @@ namespace Mono.Linker
 	/// Any accesses made throught this wrapper are considered "safe"/OK since the wrapper is only created
 	/// once all of the optimizations are applied.
 	/// </summary>
-	public readonly record struct MethodIL
+	internal readonly record struct MethodIL
 	{
 		MethodIL (MethodBody body) => this.Body = body;
 

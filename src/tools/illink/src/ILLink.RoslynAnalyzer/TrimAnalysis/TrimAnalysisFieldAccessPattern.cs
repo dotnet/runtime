@@ -11,7 +11,7 @@ using Microsoft.CodeAnalysis.Operations;
 
 namespace ILLink.RoslynAnalyzer.TrimAnalysis
 {
-	public readonly record struct TrimAnalysisFieldAccessPattern
+	internal readonly record struct TrimAnalysisFieldAccessPattern
 	{
 		public IFieldSymbol Field { get; init; }
 		public IFieldReferenceOperation Operation { get; init; }
@@ -31,7 +31,6 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 		}
 
 		public TrimAnalysisFieldAccessPattern Merge (
-			ValueSetLattice<SingleValue> lattice,
 			FeatureContextLattice featureContextLattice,
 			TrimAnalysisFieldAccessPattern other)
 		{

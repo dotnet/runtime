@@ -6,7 +6,7 @@ using Mono.Linker.Tests.Extensions;
 
 namespace Mono.Linker.Tests.TestCasesRunner
 {
-	public class TrimmingArgumentBuilder
+	internal class TrimmingArgumentBuilder
 	{
 		private readonly List<string> _arguments = new List<string> ();
 		private readonly TestCaseMetadataProvider _metadataProvider;

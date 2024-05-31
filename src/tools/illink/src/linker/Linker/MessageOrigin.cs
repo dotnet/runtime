@@ -12,11 +12,11 @@ namespace Mono.Linker
 {
 	public readonly struct MessageOrigin : IComparable<MessageOrigin>, IEquatable<MessageOrigin>
 	{
-		public string? FileName { get; }
-		public ICustomAttributeProvider? Provider { get; }
+		internal string? FileName { get; }
+		internal ICustomAttributeProvider? Provider { get; }
 
-		public int SourceLine { get; }
-		public int SourceColumn { get; }
+		internal int SourceLine { get; }
+		internal int SourceColumn { get; }
 		internal int ILOffset { get; }
 
 		internal const int UnsetILOffset = -1;
@@ -28,7 +28,7 @@ namespace Mono.Linker
 		{
 		}
 
-		public MessageOrigin (ICustomAttributeProvider? provider)
+		internal MessageOrigin (ICustomAttributeProvider? provider)
 			: this (provider, UnsetILOffset)
 		{
 		}
@@ -40,7 +40,7 @@ namespace Mono.Linker
 
 		// The assembly attribute should be specified if available as it allows assigning the diagnostic
 		// to a an assembly (we group based on assembly).
-		public MessageOrigin (string fileName, int sourceLine, int sourceColumn, AssemblyDefinition? assembly)
+		internal MessageOrigin (string fileName, int sourceLine, int sourceColumn, AssemblyDefinition? assembly)
 		{
 			FileName = fileName;
 			SourceLine = sourceLine;
@@ -49,7 +49,7 @@ namespace Mono.Linker
 			ILOffset = UnsetILOffset;
 		}
 
-		public MessageOrigin (ICustomAttributeProvider? provider, int? ilOffset)
+		internal MessageOrigin (ICustomAttributeProvider? provider, int? ilOffset)
 		{
 			Debug.Assert (provider == null || provider is IMemberDefinition || provider is AssemblyDefinition);
 			FileName = null;
@@ -59,7 +59,7 @@ namespace Mono.Linker
 			ILOffset = ilOffset ?? UnsetILOffset;
 		}
 
-		public MessageOrigin (MessageOrigin other)
+		internal MessageOrigin (MessageOrigin other)
 		{
 			FileName = other.FileName;
 			Provider = other.Provider;
@@ -68,7 +68,7 @@ namespace Mono.Linker
 			ILOffset = other.ILOffset;
 		}
 
-		public MessageOrigin (MessageOrigin other, int ilOffset)
+		internal MessageOrigin (MessageOrigin other, int ilOffset)
 		{
 			FileName = other.FileName;
 			Provider = other.Provider;
@@ -77,7 +77,7 @@ namespace Mono.Linker
 			ILOffset = ilOffset;
 		}
 
-		public MessageOrigin WithInstructionOffset (int ilOffset) => new MessageOrigin (this, ilOffset);
+		internal MessageOrigin WithInstructionOffset (int ilOffset) => new MessageOrigin (this, ilOffset);
 
 		public override string? ToString ()
 		{

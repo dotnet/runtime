@@ -15,7 +15,7 @@ using MultiValue = ILLink.Shared.DataFlow.ValueSet<ILLink.Shared.DataFlow.Single
 
 namespace ILLink.RoslynAnalyzer.TrimAnalysis
 {
-	public readonly record struct TrimAnalysisMethodCallPattern
+	internal readonly record struct TrimAnalysisMethodCallPattern
 	{
 		public IMethodSymbol CalledMethod { get; init; }
 		public MultiValue Instance { get; init; }

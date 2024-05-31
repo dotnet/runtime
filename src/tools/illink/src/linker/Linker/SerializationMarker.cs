@@ -42,14 +42,14 @@ namespace Mono.Linker
 	//   mark the type and its public instance {fields, properties, and parameterless constructors}
 
 	[Flags]
-	public enum SerializerKind
+	internal enum SerializerKind
 	{
 		None = 0,
 		XmlSerializer = 1,
 		DataContractSerializer = 2,
 	}
 
-	public class SerializationMarker
+	internal sealed class SerializationMarker
 	{
 		readonly LinkContext _context;
 

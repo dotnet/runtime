@@ -7,7 +7,7 @@ using ILCompiler.DependencyAnalysisFramework;
 
 namespace Mono.Linker.Steps
 {
-	public partial class MarkStep
+	internal partial class MarkStep
 	{
 		sealed class ProcessCallbackNode : DependencyNodeCore<NodeFactory>
 		{

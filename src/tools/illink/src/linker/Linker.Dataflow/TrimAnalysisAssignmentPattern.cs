@@ -9,7 +9,7 @@ using MultiValue = ILLink.Shared.DataFlow.ValueSet<ILLink.Shared.DataFlow.Single
 
 namespace Mono.Linker.Dataflow
 {
-	public readonly record struct TrimAnalysisAssignmentPattern
+	internal readonly record struct TrimAnalysisAssignmentPattern
 	{
 		public MultiValue Source { get; init; }
 		public MultiValue Target { get; init; }

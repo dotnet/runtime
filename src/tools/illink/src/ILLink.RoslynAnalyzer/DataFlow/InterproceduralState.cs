@@ -11,7 +11,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 {
 	// Tracks the set of methods which get analyzed together during interprocedural analysis,
 	// and the possible states of hoisted locals in state machine methods and lambdas/local functions.
-	public struct InterproceduralState<TValue, TValueLattice> : IEquatable<InterproceduralState<TValue, TValueLattice>>
+	internal struct InterproceduralState<TValue, TValueLattice> : IEquatable<InterproceduralState<TValue, TValueLattice>>
 		where TValue : struct, IEquatable<TValue>
 		where TValueLattice : ILattice<TValue>
 	{
@@ -85,7 +85,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 			=> (value = HoistedLocals.Get (key).MaybeValue) != null;
 	}
 
-	public struct InterproceduralStateLattice<TValue, TValueLattice> : ILattice<InterproceduralState<TValue, TValueLattice>>
+	internal struct InterproceduralStateLattice<TValue, TValueLattice> : ILattice<InterproceduralState<TValue, TValueLattice>>
 		where TValue : struct, IEquatable<TValue>
 		where TValueLattice : ILattice<TValue>
 	{

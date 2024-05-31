@@ -3,7 +3,7 @@
 
 namespace Mono.Linker
 {
-	public struct SuppressMessageInfo
+	internal struct SuppressMessageInfo
 	{
 		public int Id;
 		public string Scope;

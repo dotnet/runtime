@@ -14,7 +14,7 @@ namespace Mono.Linker
 	/// </summary>
 	[AttributeUsage (
 		AttributeTargets.Class, Inherited = false)]
-	public sealed class RemoveAttributeInstancesAttribute : Attribute
+	internal sealed class RemoveAttributeInstancesAttribute : Attribute
 	{
 		public RemoveAttributeInstancesAttribute (Collection<CustomAttributeArgument> args)
 		{

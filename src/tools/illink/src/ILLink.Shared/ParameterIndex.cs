@@ -27,7 +27,7 @@ namespace ILLink.Shared.TypeSystemProxy
 	/// 1 refers to b,
 	/// 2 refers to c.
 	/// </example>
-	public readonly struct ParameterIndex : System.IEquatable<ParameterIndex>
+	internal readonly struct ParameterIndex : System.IEquatable<ParameterIndex>
 	{
 		public readonly int Index;
 
