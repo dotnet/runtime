@@ -1983,8 +1983,6 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
         }
     }
 
-    buildInternalRegisterUses();
-
     if ((dstCount == 1) || (dstCount == 2))
     {
         BuildDef(intrinsicTree);
@@ -1998,6 +1996,8 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
     {
         assert(dstCount == 0);
     }
+
+    buildInternalRegisterUses();
 
     *pDstCount = dstCount;
     return srcCount;
