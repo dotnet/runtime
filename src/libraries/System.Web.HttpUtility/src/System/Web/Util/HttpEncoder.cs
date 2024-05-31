@@ -25,17 +25,27 @@ namespace System.Web.Util
             builder.Append($"\\u{(int)c:x4}");
         }
 
-        private static bool CharRequiresJavaScriptEncoding(char c) =>
-            c < 0x20 // control chars always have to be encoded
-                || c == '\"' // chars which must be encoded per JSON spec
-                || c == '\\'
-                || c == '\'' // HTML-sensitive chars encoded for safety
-                || c == '<'
-                || c == '>'
-                || (c == '&')
-                || c == '\u0085' // newline chars (see Unicode 6.2, Table 5-1 [http://www.unicode.org/versions/Unicode6.2.0/ch05.pdf]) have to be encoded
-                || c == '\u2028'
-                || c == '\u2029';
+        private static string GetRequiresJavaScriptEncodingPattern()
+        {
+            StringBuilder sb = new StringBuilder(30);
+            // control chars always have to be encoded
+            for (int i = 0; i < 32; i++)
+            {
+                sb.Append((char)i);
+            }
+
+            sb.Append('\"'); // chars which must be encoded per JSON spec
+            sb.Append('\\');
+            sb.Append('\''); // HTML-sensitive chars encoded for safety
+            sb.Append('<');
+            sb.Append('>');
+            sb.Append('&');
+            sb.Append('\u0085'); // newline chars (see Unicode 6.2, Table 5-1 [http://www.unicode.org/versions/Unicode6.2.0/ch05.pdf]) have to be encoded
+            sb.Append('\u2028');
+            sb.Append('\u2029');
+
+            return sb.ToString();
+        }
 
         [return: NotNullIfNotNull(nameof(value))]
         internal static string? HtmlAttributeEncode(string? value)
@@ -137,79 +147,78 @@ namespace System.Web.Util
 
         private static bool IsNonAsciiByte(byte b) => b >= 0x7F || b < 0x20;
 
-        internal static string JavaScriptStringEncode(string? value)
+        private static readonly SearchValues<char> s_invalid_JavaScriptChars = SearchValues.Create(GetRequiresJavaScriptEncodingPattern());
+        internal static string JavaScriptStringEncode(string? value, bool addDoubleQuotes)
         {
             if (string.IsNullOrEmpty(value))
             {
-                return string.Empty;
+                return addDoubleQuotes ? @"""""" : string.Empty;
             }
 
-            StringBuilder? b = null;
+            int i = value.AsSpan().IndexOfAny(s_invalid_JavaScriptChars);
+            if (i < 0)
+            {
+                return addDoubleQuotes ? "\"" + value + "\"" : value;
+            }
+
+            StringBuilder sb;
+            if (addDoubleQuotes)
+            {
+                sb = new StringBuilder(value.Length + 7);
+                sb.Append('"');
+            }
+            else
+            {
+                sb = new StringBuilder(value.Length + 5);
+            }
             int startIndex = 0;
-            int count = 0;
-            for (int i = 0; i < value.Length; i++)
+            do
             {
-                char c = value[i];
-
-                // Append the unhandled characters (that do not require special treament)
-                // to the string builder when special characters are detected.
-                if (CharRequiresJavaScriptEncoding(c))
+                sb.Append(value, startIndex, i);
+                char c = value[startIndex + i];
+                switch (c)
                 {
-                    b ??= new StringBuilder(value.Length + 5);
-
-                    if (count > 0)
-                    {
-                        b.Append(value, startIndex, count);
-                    }
-
-                    startIndex = i + 1;
-                    count = 0;
-
-                    switch (c)
-                    {
-                        case '\r':
-                            b.Append("\\r");
-                            break;
-                        case '\t':
-                            b.Append("\\t");
-                            break;
-                        case '\"':
-                            b.Append("\\\"");
-                            break;
-                        case '\\':
-                            b.Append("\\\\");
-                            break;
-                        case '\n':
-                            b.Append("\\n");
-                            break;
-                        case '\b':
-                            b.Append("\\b");
-                            break;
-                        case '\f':
-                            b.Append("\\f");
-                            break;
-                        default:
-                            AppendCharAsUnicodeJavaScript(b, c);
-                            break;
-                    }
+                    case '\r':
+                        sb.Append("\\r");
+                        break;
+                    case '\t':
+                        sb.Append("\\t");
+                        break;
+                    case '\"':
+                        sb.Append("\\\"");
+                        break;
+                    case '\\':
+                        sb.Append("\\\\");
+                        break;
+                    case '\n':
+                        sb.Append("\\n");
+                        break;
+                    case '\b':
+                        sb.Append("\\b");
+                        break;
+                    case '\f':
+                        sb.Append("\\f");
+                        break;
+                    default:
+                        AppendCharAsUnicodeJavaScript(sb, c);
+                        break;
                 }
-                else
-                {
-                    count++;
-                }
-            }
 
-            if (b == null)
+                startIndex += i + 1;
+                i = value.AsSpan(startIndex).IndexOfAny(s_invalid_JavaScriptChars);
+            } while (i != -1);
+
+            if (startIndex < value.Length)
             {
-                return value;
+                sb.Append(value.AsSpan(startIndex));
             }
 
-            if (count > 0)
+            if (addDoubleQuotes)
             {
-                b.Append(value, startIndex, count);
+                sb.Append('"');
             }
 
-            return b.ToString();
+            return sb.ToString();
         }
 
         [return: NotNullIfNotNull(nameof(bytes))]
