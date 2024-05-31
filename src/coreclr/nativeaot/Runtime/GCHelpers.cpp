@@ -483,25 +483,9 @@ EXTERN_C int64_t QCALLTYPE RhGetTotalAllocatedBytesPrecise()
 
 inline void FireAllocationSampled(GC_ALLOC_FLAGS flags, size_t size, size_t samplingBudgetOffset, Object* orObject)
 {
-    // Note: this code is duplicated from GCToCLREventSink::FireGCAllocationTick_V4
-    void* typeId = nullptr;
-    const WCHAR* name = nullptr;
-    // TODO: this does not compile due to duplicated symbols when sstring.h is included
-    //InlineSString<MAX_CLASSNAME_LENGTH> strTypeName;
-    //EX_TRY
-    //{
-    //    TypeHandle th = GetThread()->GetTHAllocContextObj();
-
-    //    if (th != 0)
-    //    {
-    //        th.GetName(strTypeName);
-    //        name = strTypeName.GetUnicode();
-    //        typeId = th.GetMethodTable();
-    //    }
-    //}
-    //EX_CATCH{}
-    //EX_END_CATCH(SwallowAllExceptions)
-    // end of duplication
+    void* typeId = GetLastAllocEEType();
+    // Note: like for AllocationTick, the type name cannot be retrieved
+    WCHAR* name = nullptr;
 
     if (typeId != nullptr)
     {
