@@ -1323,6 +1323,62 @@ FCIMPL1(void, RhpReversePInvokeReturn, ReversePInvokeFrame * pFrame)
 }
 FCIMPLEND
 
+
+inline bool Thread::IsRandomizedSamplingEnabled()
+{
+#ifdef FEATURE_EVENT_TRACE
+    // TODO: fix the same compilation error
+    // look at eventtrace_gcheap.cpp - RUNTIME_PROVIDER_CATEGORY_ENABLED
+    //return ETW_CATEGORY_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context,
+    //    TRACE_LEVEL_INFORMATION,
+    //    CLR_ALLOCATIONSAMPLING_KEYWORD);
+    //return RUNTIME_PROVIDER_CATEGORY_ENABLED(TRACE_LEVEL_INFORMATION, CLR_ALLOCATIONSAMPLING_KEYWORD);
+
+    return false;
+#else
+    return false;
+#endif // FEATURE_EVENT_TRACE
+}
+
+inline int Thread::ComputeGeometricRandom()
+{
+    // TODO: Implement a proper random number generator
+    // compute a random sample from the Geometric distribution
+    //double probability = GetRandomizer()->NextDouble();
+    //int threshold = (int)(-log(1 - probability) * SamplingDistributionMean);
+    //return threshold;
+
+    // ensure to never end up inside the allocation context to avoid sampling
+    return SamplingDistributionMean;
+}
+
+inline void Thread::UpdateCombinedLimit(bool samplingEnabled)
+{
+    // TODO: no op implementation
+    m_combined_limit = GetAllocContext()->alloc_limit;
+
+    //gc_alloc_context* alloc_context = GetAllocContext();
+    //if (!samplingEnabled)
+    //{
+    //    m_combined_limit = alloc_context->alloc_limit;
+    //}
+    //else
+    //{
+    //    // compute the next sampling limit based on a geometric distribution
+    //    uint8_t* sampling_limit = alloc_context->alloc_ptr + ComputeGeometricRandom();
+
+    //    // if the sampling limit is larger than the allocation context, no sampling will occur in this AC
+    //    m_combined_limit = (sampling_limit < alloc_context->alloc_limit) ? sampling_limit : alloc_context->alloc_limit;
+    //}
+}
+
+
+// Regenerate the randomized sampling limit and update the m_combined_limit field.
+inline void Thread::UpdateCombinedLimit()
+{
+    UpdateCombinedLimit(IsRandomizedSamplingEnabled());
+}
+
 #ifdef USE_PORTABLE_HELPERS
 
 FCIMPL1(void, RhpPInvoke2, PInvokeTransitionFrame* pFrame)

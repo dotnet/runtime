@@ -249,7 +249,9 @@ public:
     bool                IsInitialized();
 
     gc_alloc_context *  GetAllocContext();
+    static bool         IsRandomizedSamplingEnabled();
     uint8_t**           GetCombinedLimit();
+    static int          ComputeGeometricRandom();
     void                UpdateCombinedLimit();
     // TODO: probably private
     void                UpdateCombinedLimit(bool samplingEnabled);

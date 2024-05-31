@@ -35,10 +35,6 @@
    #include "etmdummy.h"
 #endif // FEATURE_EVENT_TRACE
 
-// TODO: used for dynamic allocation sampling
-// but generate duplicated symbols
-//#include "..\..\..\inc\sstring.h"
-
 #define RH_LARGE_OBJECT_SIZE 85000
 
 MethodTable g_FreeObjectEEType;
@@ -502,6 +498,11 @@ inline void FireAllocationSampled(GC_ALLOC_FLAGS flags, size_t size, size_t samp
     }
 }
 
+inline uint64_t AlignUp(uint64_t value, uint32_t alignment)
+{
+    return (value + alignment - 1) & ~(uint64_t)(alignment - 1);
+}
+
 static Object* GcAllocInternal(MethodTable* pEEType, uint32_t uFlags, uintptr_t numElements, Thread* pThread)
 {
     ASSERT(!pThread->IsDoNotTriggerGcSet());
@@ -571,11 +572,56 @@ static Object* GcAllocInternal(MethodTable* pEEType, uint32_t uFlags, uintptr_t 
     tls_pLastAllocationEEType = pEEType;
 
     // TODO: handle dynamic allocation sampling
-    //ee_alloc_context* acontext = pThread->GetEEAllocContext();
+    gc_alloc_context* acontext = pThread->GetAllocContext();
+    bool isSampled = false;
+    size_t availableSpace = 0;
+    size_t aligned_size = 0;
+    size_t samplingBudget = 0;
+
+    bool isRandomizedSamplingEnabled = pThread->IsRandomizedSamplingEnabled();
+    if (isRandomizedSamplingEnabled)
+    {
+        // object allocations are always padded up to pointer size
+        aligned_size = AlignUp(cbSize, sizeof(uintptr_t));
+
+        // The number bytes we can allocate before we need to emit a sampling event.
+        // This calculation is only valid if combined_limit < alloc_limit.
+        samplingBudget = (size_t)(*pThread->GetCombinedLimit() - acontext->alloc_ptr);
+
+        // The number of bytes available in the current allocation context
+        availableSpace = (size_t)(acontext->alloc_limit - acontext->alloc_ptr);
+
+        // Check to see if the allocated object overlaps a sampled byte
+        // in this AC. This happens when both:
+        // 1) The AC contains a sampled byte (combined_limit < alloc_limit)
+        // 2) The object is large enough to overlap it (samplingBudget < aligned_size)
+        //
+        // Note that the AC could have no remaining space for allocations (alloc_ptr =
+        // alloc_limit = combined_limit). When a thread hasn't done any SOH allocations
+        // yet it also starts in an empty state where alloc_ptr = alloc_limit =
+        // combined_limit = nullptr. The (1) check handles both of these situations
+        // properly as an empty AC can not have a sampled byte inside of it.
+        isSampled =
+            (*pThread->GetCombinedLimit() < acontext->alloc_limit) &&
+            (samplingBudget < aligned_size);
+
+        // if the object overflows the AC, we need to sample the remaining bytes
+        // the sampling budget only included at most the bytes inside the AC
+        if (aligned_size > availableSpace && !isSampled)
+        {
+            samplingBudget = pThread->ComputeGeometricRandom() + availableSpace;
+            isSampled = (samplingBudget < aligned_size);
+        }
+    }
 
     Object* pObject = GCHeapUtilities::GetGCHeap()->Alloc(pThread->GetAllocContext(), cbSize, uFlags);
     if (pObject == NULL)
         return NULL;
+
+    if (isSampled)
+    {
+        FireAllocationSampled((GC_ALLOC_FLAGS)uFlags, aligned_size, samplingBudget, pObject);
+    }
 
     pObject->set_EEType(pEEType);
     if (pEEType->HasComponentSize())
