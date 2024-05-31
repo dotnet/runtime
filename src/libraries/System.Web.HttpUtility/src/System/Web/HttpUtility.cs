@@ -213,7 +213,7 @@ namespace System.Web
         }
 
         [return: NotNullIfNotNull(nameof(bytes))]
-        public static byte[]? UrlDecodeToBytes(byte[]? bytes) => bytes == null ? null : HttpEncoder.UrlDecode(bytes.AsSpan(0, bytes.Length));
+        public static byte[]? UrlDecodeToBytes(byte[]? bytes) => bytes == null ? null : HttpEncoder.UrlDecode(bytes);
 
         [return: NotNullIfNotNull(nameof(str))]
         public static byte[]? UrlEncodeToBytes(string? str, Encoding e) => str == null ? null : HttpEncoder.UrlEncode(str, e);

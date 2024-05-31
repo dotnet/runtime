@@ -13,6 +13,8 @@ namespace System.Web.Util
     internal static class HttpEncoder
     {
         private const int MaxStackAllocUrlLength = 256;
+        private const int StackallocThreshold = 512;
+
         private static void AppendCharAsUnicodeJavaScript(StringBuilder builder, char c)
         {
             builder.Append($"\\u{(int)c:x4}");
@@ -218,8 +220,6 @@ namespace System.Web.Util
 
         internal static byte[] UrlDecode(ReadOnlySpan<byte> bytes)
         {
-            const int StackallocThreshold = 512;
-
             int decodedBytesCount = 0;
             int count = bytes.Length;
             Span<byte> decodedBytes = count <= StackallocThreshold ? stackalloc byte[StackallocThreshold] : new byte[count];
@@ -414,7 +414,7 @@ namespace System.Web.Util
         private static byte[] UrlEncode(ReadOnlySpan<byte> bytes)
         {
             // nothing to expand?
-            if (!IsExpandingNeeded(bytes, out int cUnsafe))
+            if (!NeedsEncoding(bytes, out int cUnsafe))
             {
                 return bytes.ToArray();
             }
@@ -424,14 +424,12 @@ namespace System.Web.Util
 
         private static byte[] UrlEncode(ReadOnlySpan<byte> bytes, int cUnsafe)
         {
-            int count = bytes.Length;
             // expand not 'safe' characters into %XX, spaces to +s
-            byte[] expandedBytes = new byte[count + cUnsafe * 2];
+            byte[] expandedBytes = new byte[bytes.Length + cUnsafe * 2];
             int pos = 0;
 
-            for (int i = 0; i < count; i++)
+            foreach (byte b in bytes)
             {
-                byte b = bytes[i];
                 char ch = (char)b;
 
                 if (HttpEncoderUtility.IsUrlSafeChar(ch))
@@ -453,7 +451,7 @@ namespace System.Web.Util
             return expandedBytes;
         }
 
-        private static bool IsExpandingNeeded(ReadOnlySpan<byte> bytes, out int cUnsafe)
+        private static bool NeedsEncoding(ReadOnlySpan<byte> bytes, out int cUnsafe)
         {
             cUnsafe = 0;
 
@@ -478,8 +476,6 @@ namespace System.Web.Util
 
         internal static byte[] UrlEncode(string str, Encoding e)
         {
-            const int StackallocThreshold = 512;
-
             if (e.GetMaxByteCount(str.Length) <= StackallocThreshold)
             {
                 Span<byte> byteSpan = stackalloc byte[StackallocThreshold];
@@ -489,13 +485,13 @@ namespace System.Web.Util
             }
 
             byte[] bytes = e.GetBytes(str);
-            if (!IsExpandingNeeded(bytes, out int cUnsafe))
+            if (!NeedsEncoding(bytes, out int cUnsafe))
             {
                 // return encoded byte[] if nothing to expand
                 return bytes;
             }
 
-            return UrlEncode(bytes.AsSpan(0, bytes.Length), cUnsafe);
+            return UrlEncode(bytes, cUnsafe);
         }
 
         //  Helper to encode the non-ASCII url characters only
