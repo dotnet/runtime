@@ -67,7 +67,7 @@ mono_arch_patch_plt_entry (guint8 *code, gpointer *got, host_mgreg_t *regs, guin
 		g_assert (((ins >> 22) & 0x3) == 0);
 		slot_addr += (ins >> 10) & 0xfff;
         	printf ("slot_addr (adrp): %llx\n", slot_addr);
-	} else if (((ins >> 24) & 0x1f) == 0x15) {
+	} else if (((ins >> 24) & 0x1f) == 0x1f) {
 		// nop
 		// adr x16, address
 		ins = ((guint32*)code) [1];
