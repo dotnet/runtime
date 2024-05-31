@@ -955,7 +955,7 @@ inline SingleTypeRegSet genSingleTypeRegMask(regNumber regNum, var_types type)
 
 inline regMaskTP genRegMask(regNumber reg)
 {
-    regMaskTP result;
+    regMaskTP result = RBM_NONE;
     result.AddRegNumInMask(reg);
     return result;
 }
@@ -991,7 +991,7 @@ inline regMaskTP genRegMaskFloat(regNumber reg ARM_ARG(var_types type /* = TYP_D
 //
 inline regMaskTP genRegMask(regNumber regNum, var_types type)
 {
-    regMaskTP result;
+    regMaskTP result = RBM_NONE;
     result.AddRegNumInMask(regNum ARM_ARG(type));
     return result;
 }
