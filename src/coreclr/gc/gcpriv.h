@@ -1764,7 +1764,9 @@ private:
 
     PER_HEAP_ISOLATED_METHOD void add_to_history();
 
+#ifdef BACKGROUND_GC
     PER_HEAP_ISOLATED_METHOD void get_and_reset_uoh_alloc_info();
+#endif //BACKGROUND_GC
 
 #ifdef BGC_SERVO_TUNING
     // Currently BGC servo tuning is an experimental feature.

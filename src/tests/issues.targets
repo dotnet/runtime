@@ -304,6 +304,9 @@
         <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/DictionaryExpansion/DictionaryExpansion/*">
             <Issue>https://github.com/dotnet/runtime/issues/75244</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Regressions/coreclr/0582/csgen.1/*">
+            <Issue>https://github.com/dotnet/runtime/issues/102296</Issue>
+        </ExcludeList>
     </ItemGroup>
 
     <!-- Windows arm64 specific excludes -->

@@ -66,6 +66,9 @@ namespace System.Net.Http.Functional.Tests
             var contentData = new byte[10];
             var content = new ByteArrayContent(contentData);
 
+            Assert.Contains("Content-Length", content.Headers.ToString());
+            Assert.Contains(content.Headers, h => h.Key == "Content-Length");
+            Assert.Contains(content.Headers.NonValidated, h => h.Key == "Content-Length");
             Assert.Equal(contentData.Length, content.Headers.ContentLength);
         }
 
@@ -75,6 +78,9 @@ namespace System.Net.Http.Functional.Tests
             var contentData = new byte[10];
             var content = new ByteArrayContent(contentData, 5, 3);
 
+            Assert.Contains("Content-Length", content.Headers.ToString());
+            Assert.Contains(content.Headers, h => h.Key == "Content-Length");
+            Assert.Contains(content.Headers.NonValidated, h => h.Key == "Content-Length");
             Assert.Equal(3, content.Headers.ContentLength);
         }
 

@@ -115,6 +115,73 @@ namespace LibraryImportGenerator.IntegrationTests
         }
     }
 
+    public static partial class ArrayNativeExtensions
+    {
+        // The first parameter of a 'ref' extension method must be a value type or a generic type constrained to struct.
+        // The first 'in' or 'ref readonly' parameter of the extension method must be a concrete (non-generic) value type.
+
+        [LibraryImport(NativeExportsNE.NativeExportsNE_Binary, EntryPoint = "sum_int_array")]
+        public static partial int Sum(this int[] values, int numValues);
+
+        [LibraryImport(NativeExportsNE.NativeExportsNE_Binary, EntryPoint = "sum_int_array")]
+        public static partial int Sum(this ref int values, int numValues);
+
+        [LibraryImport(NativeExportsNE.NativeExportsNE_Binary, EntryPoint = "sum_char_array", StringMarshalling = StringMarshalling.Utf16)]
+        public static partial int SumChars(this char[] chars, int numElements);
+
+        [LibraryImport(NativeExportsNE.NativeExportsNE_Binary, EntryPoint = "fill_char_array", StringMarshalling = StringMarshalling.Utf16)]
+        public static partial void FillChars([Out] this char[] chars, int length, ushort start);
+
+        [LibraryImport(NativeExportsNE.NativeExportsNE_Binary, EntryPoint = "sum_string_lengths")]
+        public static partial int SumStringLengths([MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.LPWStr)] this string[] strArray);
+
+        [LibraryImport(NativeExportsNE.NativeExportsNE_Binary, EntryPoint = "reverse_strings_return")]
+        [return: MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.LPWStr, SizeParamIndex = 1)]
+        public static partial string[] ReverseStrings_Return([MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.LPWStr)] this string[] strArray, out int numElements);
+
+        [LibraryImport(NativeExportsNE.NativeExportsNE_Binary, EntryPoint = "reverse_strings_out")]
+        public static partial void ReverseStrings_Out([MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.LPWStr)] this string[] strArray, out int numElements, [MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.LPWStr, SizeParamIndex = 1)] out string[] res);
+
+        [LibraryImport(NativeExportsNE.NativeExportsNE_Binary, EntryPoint = "get_long_bytes")]
+        [return: MarshalAs(UnmanagedType.LPArray, SizeConst = sizeof(long))]
+        public static partial byte[] GetLongBytes(this long l);
+
+        [LibraryImport(NativeExportsNE.NativeExportsNE_Binary, EntryPoint = "fill_range_array")]
+        [return: MarshalAs(UnmanagedType.U1)]
+        public static partial bool FillRangeArray([Out] this IntStructWrapper[] array, int length, int start);
+
+        [LibraryImport(NativeExportsNE.NativeExportsNE_Binary, EntryPoint = "double_values")]
+        public static partial void DoubleValues([In, Out] this IntStructWrapper[] array, int length);
+
+        [LibraryImport(NativeExportsNE.NativeExportsNE_Binary, EntryPoint = "and_bool_struct_array")]
+        [return: MarshalAs(UnmanagedType.U1)]
+        public static partial bool AndAllMembers(this BoolStruct[] pArray, int length);
+
+        [LibraryImport(NativeExportsNE.NativeExportsNE_Binary, EntryPoint = "negate_bool_struct_array_out")]
+        public static partial void NegateBools(
+            this BoolStruct[] boolStruct,
+            int numValues,
+            [MarshalUsing(CountElementName = "numValues")] out BoolStruct[] pBoolStructOut);
+
+        [LibraryImport(NativeExportsNE.NativeExportsNE_Binary, EntryPoint = "negate_bool_struct_array_return")]
+        [return: MarshalUsing(CountElementName = "numValues")]
+        public static partial BoolStruct[] NegateBools(
+            this BoolStruct[] boolStruct,
+            int numValues);
+
+        [LibraryImport(NativeExportsNE.NativeExportsNE_Binary, EntryPoint = "transpose_matrix")]
+        [return: MarshalUsing(CountElementName = "numColumns")]
+        [return: MarshalUsing(CountElementName = "numRows", ElementIndirectionDepth = 1)]
+        public static partial int[][] TransposeMatrix(this int[][] matrix, int[] numRows, int numColumns);
+
+        [LibraryImport(NativeExportsNE.NativeExportsNE_Binary, EntryPoint = "sum_int_ptr_array")]
+        public static unsafe partial int Sum(this int*[] values, int numValues);
+
+        [LibraryImport(NativeExportsNE.NativeExportsNE_Binary, EntryPoint = "return_duplicate_int_ptr_array")]
+        [return: MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 1)]
+        public static unsafe partial int*[] ReturnDuplicate(this int*[] values, int numValues);
+    }
+
     public class ArrayTests
     {
         private int[] GetIntArray() => new[] { 1, 5, 79, 165, 32, 3 };
@@ -127,10 +194,24 @@ namespace LibraryImportGenerator.IntegrationTests
         }
 
         [Fact]
+        public void IntArray_ByValue_This()
+        {
+            int[] array = GetIntArray();
+            Assert.Equal(array.Sum(), array.Sum(array.Length));
+        }
+
+        [Fact]
         public void IntArray_RefToFirstElement()
         {
             int[] array = GetIntArray();
             Assert.Equal(array.Sum(), NativeExportsNE.Arrays.Sum(ref array[0], array.Length));
+        }
+
+        [Fact]
+        public void IntArray_RefToFirstElement_This()
+        {
+            int[] array = GetIntArray();
+            Assert.Equal(array.Sum(), array[0].Sum(array.Length));
         }
 
         [Fact]
@@ -145,6 +226,13 @@ namespace LibraryImportGenerator.IntegrationTests
         {
             var array = new int[0];
             Assert.Equal(0, NativeExportsNE.Arrays.Sum(array, array.Length));
+        }
+
+        [Fact]
+        public void ZeroLengthArray_MarshalledAsNonNull_This()
+        {
+            var array = new int[0];
+            Assert.Equal(0, array.Sum(array.Length));
         }
 
         [Fact]
@@ -168,6 +256,13 @@ namespace LibraryImportGenerator.IntegrationTests
         {
             char[] array = CharacterTests.CharacterMappings().Select(o => (char)o[0]).ToArray();
             Assert.Equal(array.Sum(c => c), NativeExportsNE.Arrays.SumChars(array, array.Length));
+        }
+
+        [Fact]
+        public void CharArray_ByValue_This()
+        {
+            char[] array = CharacterTests.CharacterMappings().Select(o => (char)o[0]).ToArray();
+            Assert.Equal(array.Sum(c => c), array.SumChars(array.Length));
         }
 
         [Fact]
@@ -216,6 +311,22 @@ namespace LibraryImportGenerator.IntegrationTests
                 }
 
                 Assert.Equal(array.Sum(), NativeExportsNE.Arrays.Sum(pointerArray, pointerArray.Length));
+            }
+        }
+
+        [Fact]
+        public unsafe void PointerArray_ByValue_This()
+        {
+            int[] array = GetIntArray();
+            fixed (int* arrayPointer = array)
+            {
+                int*[] pointerArray = new int*[array.Length];
+                for (int i = 0; i < array.Length; i++)
+                {
+                    pointerArray[i] = &arrayPointer[i];
+                }
+
+                Assert.Equal(array.Sum(), pointerArray.Sum(pointerArray.Length));
             }
         }
 
@@ -281,6 +392,28 @@ namespace LibraryImportGenerator.IntegrationTests
             }
         }
 
+        [Fact]
+        public unsafe void PointerArray_Return_This()
+        {
+            int[] array = GetIntArray();
+            fixed (int* arrayPointer = array)
+            {
+                int*[] pointerArray = new int*[array.Length];
+                for (int i = 0; i < array.Length; i++)
+                {
+                    pointerArray[i] = &arrayPointer[i];
+                }
+
+                int*[] res = pointerArray.ReturnDuplicate(pointerArray.Length);
+                Assert.Equal(pointerArray.Length, res.Length);
+                for (int i = 0; i < pointerArray.Length; i++)
+                {
+                    Assert.Equal((IntPtr)pointerArray[i], (IntPtr)res[i]);
+                    Assert.Equal(*pointerArray[i], *res[i]);
+                }
+            }
+        }
+
         private static string[] GetStringArray()
         {
             return new[]
@@ -302,9 +435,23 @@ namespace LibraryImportGenerator.IntegrationTests
         }
 
         [Fact]
+        public void ArrayWithElementMarshalling_ByValue_This()
+        {
+            var strings = GetStringArray();
+            Assert.Equal(strings.Sum(str => str?.Length ?? 0), strings.SumStringLengths());
+        }
+
+        [Fact]
         public void NullArrayWithElementMarshalling_ByValue()
         {
             Assert.Equal(0, NativeExportsNE.Arrays.SumStringLengths(null));
+        }
+
+        [Fact]
+        public void NullArrayWithElementMarshalling_ByValue_This()
+        {
+            string[] strings = null;
+            Assert.Equal(0, strings.SumStringLengths());
         }
 
         [Fact]
@@ -330,6 +477,18 @@ namespace LibraryImportGenerator.IntegrationTests
         }
 
         [Fact]
+        public void ArrayWithElementMarshalling_Return_This()
+        {
+            var strings = GetStringArray();
+            var expectedStrings = strings.Select(s => ReverseChars(s)).ToArray();
+            Assert.Equal(expectedStrings, strings.ReverseStrings_Return(out _));
+
+            string[] res;
+            strings.ReverseStrings_Out(out _, out res);
+            Assert.Equal(expectedStrings, res);
+        }
+
+        [Fact]
         public void NullArrayWithElementMarshalling_Ref()
         {
             string[] strings = null;
@@ -350,11 +509,30 @@ namespace LibraryImportGenerator.IntegrationTests
         }
 
         [Fact]
+        public void NullArrayWithElementMarshalling_Return_This()
+        {
+            string[] strings = null;
+            Assert.Null(strings.ReverseStrings_Return(out _));
+
+            string[] res;
+            strings.ReverseStrings_Out(out _, out res);
+            Assert.Null(res);
+        }
+
+        [Fact]
         public void ConstantSizeArray()
         {
             var longVal = 0x12345678ABCDEF10L;
 
             Assert.Equal(longVal, MemoryMarshal.Read<long>(NativeExportsNE.Arrays.GetLongBytes(longVal)));
+        }
+
+        [Fact]
+        public void ConstantSizeArray_This()
+        {
+            var longVal = 0x12345678ABCDEF10L;
+
+            Assert.Equal(longVal, MemoryMarshal.Read<long>(longVal.GetLongBytes()));
         }
 
         [Fact]
@@ -401,6 +579,39 @@ namespace LibraryImportGenerator.IntegrationTests
         }
 
         [Fact]
+        public void Array_ByValueOut_This()
+        {
+            {
+                var testArray = new IntStructWrapper[10];
+                int start = 5;
+
+                testArray.FillRangeArray(testArray.Length, start);
+                Assert.Equal(Enumerable.Range(start, testArray.Length), testArray.Select(wrapper => wrapper.Value));
+
+                // Any items not populated by the invoke target should be initialized to default
+                testArray = new IntStructWrapper[10];
+                int lengthToFill = testArray.Length / 2;
+                testArray.FillRangeArray(lengthToFill, start);
+                Assert.Equal(Enumerable.Range(start, lengthToFill), testArray[..lengthToFill].Select(wrapper => wrapper.Value));
+                Assert.All(testArray[lengthToFill..], wrapper => Assert.Equal(0, wrapper.Value));
+            }
+            {
+                var testArray = new char[10];
+                ushort start = 65;
+
+                testArray.FillChars(testArray.Length, start);
+                Assert.Equal(Enumerable.Range(start, testArray.Length), testArray.Select(c => (int)c));
+
+                // Any items not populated by the invoke target should be initialized to default
+                testArray = new char[10];
+                int lengthToFill = testArray.Length / 2;
+                testArray.FillChars(lengthToFill, start);
+                Assert.Equal(Enumerable.Range(start, lengthToFill), testArray[..lengthToFill].Select(c => (int)c));
+                Assert.All(testArray[lengthToFill..], c => Assert.Equal(0, c));
+            }
+        }
+
+        [Fact]
         public void Array_ByValueInOut()
         {
             var testValues = Enumerable.Range(42, 15).Select(i => new IntStructWrapper { Value = i });
@@ -412,6 +623,18 @@ namespace LibraryImportGenerator.IntegrationTests
             Assert.Equal(testValues.Select(wrapper => wrapper.Value * 2), testArray.Select(wrapper => wrapper.Value));
         }
 
+        [Fact]
+        public void Array_ByValueInOut_This()
+        {
+            var testValues = Enumerable.Range(42, 15).Select(i => new IntStructWrapper { Value = i });
+
+            var testArray = testValues.ToArray();
+
+            testArray.DoubleValues(testArray.Length);
+
+            Assert.Equal(testValues.Select(wrapper => wrapper.Value * 2), testArray.Select(wrapper => wrapper.Value));
+        }
+
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
@@ -419,6 +642,15 @@ namespace LibraryImportGenerator.IntegrationTests
         {
             BoolStruct[] array = GetBoolStructsToAnd(result);
             Assert.Equal(result, NativeExportsNE.Arrays.AndAllMembers(array, array.Length));
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void NonBlittableElementArray_ByValue_This(bool result)
+        {
+            BoolStruct[] array = GetBoolStructsToAnd(result);
+            Assert.Equal(result, array.AndAllMembers(array.Length));
         }
 
         [Theory]
@@ -452,12 +684,33 @@ namespace LibraryImportGenerator.IntegrationTests
         }
 
         [Fact]
+        public void NonBlittableElementArray_Out_This()
+        {
+            BoolStruct[] array = GetBoolStructsToNegate();
+            BoolStruct[] expected = GetNegatedBoolStructs(array);
+
+            BoolStruct[] result;
+            array.NegateBools(array.Length, out result);
+            Assert.Equal(expected, result);
+        }
+
+        [Fact]
         public void NonBlittableElementArray_Return()
         {
             BoolStruct[] array = GetBoolStructsToNegate();
             BoolStruct[] expected = GetNegatedBoolStructs(array);
 
             BoolStruct[] result = NativeExportsNE.Arrays.NegateBools(array, array.Length);
+            Assert.Equal(expected, result);
+        }
+
+        [Fact]
+        public void NonBlittableElementArray_Return_This()
+        {
+            BoolStruct[] array = GetBoolStructsToNegate();
+            BoolStruct[] expected = GetNegatedBoolStructs(array);
+
+            BoolStruct[] result = array.NegateBools(array.Length);
             Assert.Equal(expected, result);
         }
 
@@ -534,6 +787,36 @@ namespace LibraryImportGenerator.IntegrationTests
             numRowsArray.AsSpan().Fill(numRows);
 
             int[][] transposed = NativeExportsNE.Arrays.TransposeMatrix(matrix, numRowsArray, numColumns);
+
+            for (int i = 0; i < numRows; i++)
+            {
+                for (int j = 0; j < numColumns; j++)
+                {
+                    Assert.Equal(matrix[i][j], transposed[j][i]);
+                }
+            }
+        }
+
+        [Fact]
+        public void ArraysOfArrays_This()
+        {
+            var random = new Random(42);
+            int numRows = random.Next(1, 5);
+            int numColumns = random.Next(1, 5);
+            int[][] matrix = new int[numRows][];
+            for (int i = 0; i < numRows; i++)
+            {
+                matrix[i] = new int[numColumns];
+                for (int j = 0; j < numColumns; j++)
+                {
+                    matrix[i][j] = random.Next();
+                }
+            }
+
+            int[] numRowsArray = new int[numColumns];
+            numRowsArray.AsSpan().Fill(numRows);
+
+            int[][] transposed = matrix.TransposeMatrix(numRowsArray, numColumns);
 
             for (int i = 0; i < numRows; i++)
             {
