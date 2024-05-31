@@ -11,7 +11,7 @@ extern CLRToCOMWorker:proc
 extern ProcessCLRException:proc
 
 
-NESTED_ENTRY GenericComPlusCallStub, _TEXT, ProcessCLRException
+NESTED_ENTRY GenericCLRToCOMCallStub, _TEXT, ProcessCLRException
 
         PROLOG_WITH_TRANSITION_BLOCK 8
 
@@ -38,7 +38,7 @@ NESTED_ENTRY GenericComPlusCallStub, _TEXT, ProcessCLRException
 
         EPILOG_WITH_TRANSITION_BLOCK_RETURN
 
-NESTED_END GenericComPlusCallStub, _TEXT
+NESTED_END GenericCLRToCOMCallStub, _TEXT
 
 endif ; FEATURE_COMINTEROP
 
