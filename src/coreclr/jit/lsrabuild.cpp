@@ -3082,7 +3082,7 @@ RefPosition* LinearScan::BuildDef(GenTree* tree, SingleTypeRegSet dstCandidates,
 
     if (dstCandidates != RBM_NONE)
     {
-        assert((tree->GetRegNum() == REG_NA) || (dstCandidates == genRegMask(tree->GetRegByIndex(multiRegIdx))));
+        assert((tree->GetRegNum() == REG_NA) || (dstCandidates == genSingleTypeRegMask(tree->GetRegByIndex(multiRegIdx))));
     }
 
     RegisterType type;
@@ -3105,7 +3105,7 @@ RefPosition* LinearScan::BuildDef(GenTree* tree, SingleTypeRegSet dstCandidates,
     {
         if (!tree->IsMultiRegNode() || (multiRegIdx == 0))
         {
-            assert((dstCandidates == RBM_NONE) || (dstCandidates == genRegMask(tree->GetRegNum())));
+            assert((dstCandidates == RBM_NONE) || (dstCandidates == genSingleTypeRegMask(tree->GetRegNum())));
             dstCandidates = genSingleTypeRegMask(tree->GetRegNum());
         }
         else

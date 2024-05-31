@@ -942,7 +942,7 @@ inline regNumber genRegNumFromMask(const SingleTypeRegSet& mask)
     regNumber regNum = (regNumber)genLog2(mask);
 
     /* Make sure we got it right */
-    assert(genRegMask(regNum) == mask);
+    assert(genSingleTypeRegMask(regNum) == mask);
 
     return regNum;
 }

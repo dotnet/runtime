@@ -624,7 +624,7 @@ public:
     // This is the main driver
     virtual PhaseStatus doLinearScan();
 
-    static bool isSingleRegister(regMaskTP regMask)
+    static bool isSingleRegister(SingleTypeRegSet regMask)
     {
         return (genExactlyOneBit(regMask));
     }
@@ -2735,7 +2735,7 @@ public:
 
     // isFixedRefOfRegMask indicates that the RefPosition has a fixed assignment to the register
     // specified by the given mask
-    bool isFixedRefOfRegMask(regMaskTP regMask)
+    bool isFixedRefOfRegMask(SingleTypeRegSet regMask)
     {
         assert(genMaxOneBit(regMask));
         return (registerAssignment == regMask);
@@ -2744,7 +2744,7 @@ public:
     // isFixedRefOfReg indicates that the RefPosition has a fixed assignment to the given register
     bool isFixedRefOfReg(regNumber regNum)
     {
-        return (isFixedRefOfRegMask(genRegMask(regNum)));
+        return (isFixedRefOfRegMask(genSingleTypeRegMask(regNum)));
     }
 
 #ifdef TARGET_ARM64
