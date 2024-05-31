@@ -1360,6 +1360,26 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
             }
             break;
 
+            case NI_Sve_Load2xVectorAndUnzip:
+            case NI_Sve_Load3xVectorAndUnzip:
+            case NI_Sve_Load4xVectorAndUnzip:
+            {
+#ifdef DEBUG
+                // Validates that consecutive registers were used properly.
+
+                assert(node->GetMultiRegCount(compiler) == (unsigned int)GetEmitter()->insGetSveReg1ListSize(ins));
+
+                regNumber argReg = targetReg;
+                for (unsigned int i = 0; i < node->GetMultiRegCount(compiler); i++)
+                {
+                    assert(argReg == node->GetRegNumByIdx(i));
+                    argReg = getNextSIMDRegWithWraparound(argReg);
+                }
+#endif // DEBUG
+                GetEmitter()->emitIns_R_R_R_I(ins, emitSize, targetReg, op1Reg, op2Reg, 0, opt);
+                break;
+            }
+
             case NI_Sve_StoreAndZipx2:
             case NI_Sve_StoreAndZipx3:
             case NI_Sve_StoreAndZipx4:
@@ -1416,6 +1436,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
             }
 
             case NI_Sve_StoreAndZip:
+            case NI_Sve_StoreNonTemporal:
             {
                 GetEmitter()->emitIns_R_R_R_I(ins, emitSize, op3Reg, op1Reg, op2Reg, 0, opt);
                 break;
