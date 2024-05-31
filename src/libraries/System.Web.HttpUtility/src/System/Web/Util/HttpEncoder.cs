@@ -431,13 +431,11 @@ namespace System.Web.Util
 
             foreach (byte b in bytes)
             {
-                char ch = (char)b;
-
-                if (HttpEncoderUtility.IsUrlSafeChar(ch))
+                if (s_urlSafeBytes.Contains(b))
                 {
                     expandedBytes[pos++] = b;
                 }
-                else if (ch == ' ')
+                else if (b == 32) // ' '
                 {
                     expandedBytes[pos++] = (byte)'+';
                 }
@@ -452,6 +450,7 @@ namespace System.Web.Util
             return expandedBytes;
         }
 
+        // Set of safe chars, from RFC 1738.4 minus '+'
         private static readonly SearchValues<byte> s_urlSafeBytes = SearchValues.Create(
             "!()*-.0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz"u8);
         private static bool NeedsEncoding(ReadOnlySpan<byte> bytes, out int cUnsafe)
@@ -565,7 +564,7 @@ namespace System.Web.Util
 
                 if ((ch & 0xff80) == 0)
                 {  // 7 bit?
-                    if (HttpEncoderUtility.IsUrlSafeChar(ch))
+                    if (s_urlSafeBytes.Contains((byte)ch))
                     {
                         sb.Append(ch);
                     }
