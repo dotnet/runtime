@@ -670,6 +670,46 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<ulong> BooleanNot(Vector<ulong> value) => BooleanNot(value);
 
 
+        ///  Shuffle active elements of vector to the right and fill with zero
+
+        /// <summary>
+        /// svfloat64_t svcompact[_f64](svbool_t pg, svfloat64_t op)
+        ///   COMPACT Zresult.D, Pg, Zop.D
+        /// </summary>
+        public static unsafe Vector<double> Compact(Vector<double> mask, Vector<double> value) => Compact(mask, value);
+
+        /// <summary>
+        /// svint32_t svcompact[_s32](svbool_t pg, svint32_t op)
+        ///   COMPACT Zresult.S, Pg, Zop.S
+        /// </summary>
+        public static unsafe Vector<int> Compact(Vector<int> mask, Vector<int> value) => Compact(mask, value);
+
+        /// <summary>
+        /// svint64_t svcompact[_s64](svbool_t pg, svint64_t op)
+        ///   COMPACT Zresult.D, Pg, Zop.D
+        /// </summary>
+        public static unsafe Vector<long> Compact(Vector<long> mask, Vector<long> value) => Compact(mask, value);
+
+        /// <summary>
+        /// svfloat32_t svcompact[_f32](svbool_t pg, svfloat32_t op)
+        ///   COMPACT Zresult.S, Pg, Zop.S
+        /// </summary>
+        public static unsafe Vector<float> Compact(Vector<float> mask, Vector<float> value) => Compact(mask, value);
+
+        /// <summary>
+        /// svuint32_t svcompact[_u32](svbool_t pg, svuint32_t op)
+        ///   COMPACT Zresult.S, Pg, Zop.S
+        /// </summary>
+        public static unsafe Vector<uint> Compact(Vector<uint> mask, Vector<uint> value) => Compact(mask, value);
+
+        /// <summary>
+        /// svuint64_t svcompact[_u64](svbool_t pg, svuint64_t op)
+        ///   COMPACT Zresult.D, Pg, Zop.D
+        /// </summary>
+        public static unsafe Vector<ulong> Compact(Vector<ulong> mask, Vector<ulong> value) => Compact(mask, value);
+
+
+        ///  Compare equal to
         ///  ConditionalSelect : Conditionally select elements
 
         /// <summary>
