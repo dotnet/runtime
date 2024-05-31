@@ -64,6 +64,7 @@ WARNING:   When setting properties based on their current state (for example:
       <IosTestTarget Condition="'$(TargetOS)' == 'ios'">ios-device</IosTestTarget>
       <IosTestTarget Condition="'$(TargetOS)' == 'tvossimulator'">tvos-simulator</IosTestTarget>
       <IosTestTarget Condition="'$(TargetOS)' == 'tvos'">tvos-device</IosTestTarget>
+      <IosTestTarget Condition="'$(TargetOS)' == 'maccatalyst'">maccatalyst</IosTestTarget>
 
       <BashCLRTestEnvironmentCompatibilityCheck Condition="'$(GCStressIncompatible)' == 'true'"><![CDATA[
 $(BashCLRTestEnvironmentCompatibilityCheck)
