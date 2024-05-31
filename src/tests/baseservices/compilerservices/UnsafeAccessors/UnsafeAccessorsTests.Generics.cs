@@ -393,7 +393,7 @@ public static unsafe class UnsafeAccessorsTestsGenerics
     }
 
     [Fact]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/89439", TestRuntimes.Mono)]
+    [ActiveIssue("Mono doesn't have the capability of validating generic parameter constraints", TestRuntimes.Mono)]
     public static void Verify_Generic_ConstraintEnforcement()
     {
         Console.WriteLine($"Running {nameof(Verify_Generic_ConstraintEnforcement)}");
