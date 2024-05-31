@@ -2018,6 +2018,108 @@ namespace System.Runtime.Intrinsics.Arm
         /// </summary>
         public static unsafe (Vector<ulong>, Vector<ulong>, Vector<ulong>, Vector<ulong>) Load4xVectorAndUnzip(Vector<ulong> mask, ulong* address) => Load4xVectorAndUnzip(mask, address);
 
+        ///  Load 16-bit data and sign-extend, non-faulting
+
+        /// <summary>
+        /// svint32_t svldnf1sh_s32(svbool_t pg, const int16_t *base)
+        ///   LDNF1SH Zresult.S, Pg/Z, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe Vector<int> LoadVectorInt16NonFaultingSignExtendToInt32(short* address) => LoadVectorInt16NonFaultingSignExtendToInt32(address);
+
+
+        ///  Load 16-bit data and sign-extend, non-faulting
+
+        /// <summary>
+        /// svint64_t svldnf1sh_s64(svbool_t pg, const int16_t *base)
+        ///   LDNF1SH Zresult.D, Pg/Z, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe Vector<long> LoadVectorInt16NonFaultingSignExtendToInt64(short* address) => LoadVectorInt16NonFaultingSignExtendToInt64(address);
+
+
+        ///  Load 16-bit data and sign-extend, non-faulting
+
+        /// <summary>
+        /// svuint32_t svldnf1sh_u32(svbool_t pg, const int16_t *base)
+        ///   LDNF1SH Zresult.S, Pg/Z, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe Vector<uint> LoadVectorInt16NonFaultingSignExtendToUInt32(short* address) => LoadVectorInt16NonFaultingSignExtendToUInt32(address);
+
+
+        ///  Load 16-bit data and sign-extend, non-faulting
+
+        /// <summary>
+        /// svuint64_t svldnf1sh_u64(svbool_t pg, const int16_t *base)
+        ///   LDNF1SH Zresult.D, Pg/Z, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe Vector<ulong> LoadVectorInt16NonFaultingSignExtendToUInt64(short* address) => LoadVectorInt16NonFaultingSignExtendToUInt64(address);
+
+        ///  Load 32-bit data and sign-extend, non-faulting
+
+        /// <summary>
+        /// svint64_t svldnf1sw_s64(svbool_t pg, const int32_t *base)
+        ///   LDNF1SW Zresult.D, Pg/Z, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe Vector<long> LoadVectorInt32NonFaultingSignExtendToInt64(int* address) => LoadVectorInt32NonFaultingSignExtendToInt64(address);
+
+        ///  Load 32-bit data and sign-extend, non-faulting
+
+        /// <summary>
+        /// svuint64_t svldnf1sw_u64(svbool_t pg, const int32_t *base)
+        ///   LDNF1SW Zresult.D, Pg/Z, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe Vector<ulong> LoadVectorInt32NonFaultingSignExtendToUInt64(int* address) => LoadVectorInt32NonFaultingSignExtendToUInt64(address);
+
+        ///  Load 8-bit data and sign-extend, non-faulting
+
+        /// <summary>
+        /// svint16_t svldnf1sb_s16(svbool_t pg, const int8_t *base)
+        ///   LDNF1SB Zresult.H, Pg/Z, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe Vector<short> LoadVectorSByteNonFaultingSignExtendToInt16(sbyte* address) => LoadVectorSByteNonFaultingSignExtendToInt16(address);
+
+
+        ///  Load 8-bit data and sign-extend, non-faulting
+
+        /// <summary>
+        /// svint32_t svldnf1sb_s32(svbool_t pg, const int8_t *base)
+        ///   LDNF1SB Zresult.S, Pg/Z, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe Vector<int> LoadVectorSByteNonFaultingSignExtendToInt32(sbyte* address) => LoadVectorSByteNonFaultingSignExtendToInt32(address);
+
+        ///  Load 8-bit data and sign-extend, non-faulting
+
+        /// <summary>
+        /// svint64_t svldnf1sb_s64(svbool_t pg, const int8_t *base)
+        ///   LDNF1SB Zresult.D, Pg/Z, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe Vector<long> LoadVectorSByteNonFaultingSignExtendToInt64(sbyte* address) => LoadVectorSByteNonFaultingSignExtendToInt64(address);
+
+
+        ///  Load 8-bit data and sign-extend, non-faulting
+
+        /// <summary>
+        /// svuint16_t svldnf1sb_u16(svbool_t pg, const int8_t *base)
+        ///   LDNF1SB Zresult.H, Pg/Z, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe Vector<ushort> LoadVectorSByteNonFaultingSignExtendToUInt16(sbyte* address) => LoadVectorSByteNonFaultingSignExtendToUInt16(address);
+
+
+        ///  Load 8-bit data and sign-extend, non-faulting
+
+        /// <summary>
+        /// svuint32_t svldnf1sb_u32(svbool_t pg, const int8_t *base)
+        ///   LDNF1SB Zresult.S, Pg/Z, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe Vector<uint> LoadVectorSByteNonFaultingSignExtendToUInt32(sbyte* address) => LoadVectorSByteNonFaultingSignExtendToUInt32(address);
+
+
+        ///  Load 8-bit data and sign-extend, non-faulting
+
+        /// <summary>
+        /// svuint64_t svldnf1sb_u64(svbool_t pg, const int8_t *base)
+        ///   LDNF1SB Zresult.D, Pg/Z, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe Vector<ulong> LoadVectorSByteNonFaultingSignExtendToUInt64(sbyte* address) => LoadVectorSByteNonFaultingSignExtendToUInt64(address);
 
         ///  Max : Maximum
 
@@ -3421,6 +3523,69 @@ namespace System.Runtime.Intrinsics.Arm
         ///   ST1W Zdata.D, Pg, [Xbase, #0, MUL VL]
         /// </summary>
         public static unsafe void StoreNarrowing(Vector<ulong> mask, uint* address, Vector<ulong> data) => StoreNarrowing(mask, address, data);
+
+
+        ///  StoreNonTemporal : Non-truncating store, non-temporal
+
+        /// <summary>
+        /// void svstnt1[_u8](svbool_t pg, uint8_t *base, svuint8_t data)
+        ///   STNT1B Zdata.B, Pg, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe void StoreNonTemporal(Vector<byte> mask, byte* address, Vector<byte> data) => StoreNonTemporal(mask, address, data);
+
+        /// <summary>
+        /// void svstnt1[_f64](svbool_t pg, float64_t *base, svfloat64_t data)
+        ///   STNT1D Zdata.D, Pg, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe void StoreNonTemporal(Vector<double> mask, double* address, Vector<double> data) => StoreNonTemporal(mask, address, data);
+
+        /// <summary>
+        /// void svstnt1[_s16](svbool_t pg, int16_t *base, svint16_t data)
+        ///   STNT1H Zdata.H, Pg, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe void StoreNonTemporal(Vector<short> mask, short* address, Vector<short> data) => StoreNonTemporal(mask, address, data);
+
+        /// <summary>
+        /// void svstnt1[_s32](svbool_t pg, int32_t *base, svint32_t data)
+        ///   STNT1W Zdata.S, Pg, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe void StoreNonTemporal(Vector<int> mask, int* address, Vector<int> data) => StoreNonTemporal(mask, address, data);
+
+        /// <summary>
+        /// void svstnt1[_s64](svbool_t pg, int64_t *base, svint64_t data)
+        ///   STNT1D Zdata.D, Pg, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe void StoreNonTemporal(Vector<long> mask, long* address, Vector<long> data) => StoreNonTemporal(mask, address, data);
+
+        /// <summary>
+        /// void svstnt1[_s8](svbool_t pg, int8_t *base, svint8_t data)
+        ///   STNT1B Zdata.B, Pg, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe void StoreNonTemporal(Vector<sbyte> mask, sbyte* address, Vector<sbyte> data) => StoreNonTemporal(mask, address, data);
+
+        /// <summary>
+        /// void svstnt1[_f32](svbool_t pg, float32_t *base, svfloat32_t data)
+        ///   STNT1W Zdata.S, Pg, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe void StoreNonTemporal(Vector<float> mask, float* address, Vector<float> data) => StoreNonTemporal(mask, address, data);
+
+        /// <summary>
+        /// void svstnt1[_u16](svbool_t pg, uint16_t *base, svuint16_t data)
+        ///   STNT1H Zdata.H, Pg, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe void StoreNonTemporal(Vector<ushort> mask, ushort* address, Vector<ushort> data) => StoreNonTemporal(mask, address, data);
+
+        /// <summary>
+        /// void svstnt1[_u32](svbool_t pg, uint32_t *base, svuint32_t data)
+        ///   STNT1W Zdata.S, Pg, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe void StoreNonTemporal(Vector<uint> mask, uint* address, Vector<uint> data) => StoreNonTemporal(mask, address, data);
+
+        /// <summary>
+        /// void svstnt1[_u64](svbool_t pg, uint64_t *base, svuint64_t data)
+        ///   STNT1D Zdata.D, Pg, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe void StoreNonTemporal(Vector<ulong> mask, ulong* address, Vector<ulong> data) => StoreNonTemporal(mask, address, data);
 
 
         ///  Subtract : Subtract

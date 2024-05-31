@@ -474,7 +474,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                                                             opt);
                             }
                         }
-                        else if (targetReg == embMaskOp1Reg)
+                        else if (emitter::isVectorRegister(embMaskOp1Reg) && (targetReg == embMaskOp1Reg))
                         {
                             // target != falseValue, but we do not want to overwrite target with `embMaskOp1Reg`.
                             // We will first do the predicate operation and then do conditionalSelect inactive
@@ -1436,6 +1436,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
             }
 
             case NI_Sve_StoreAndZip:
+            case NI_Sve_StoreNonTemporal:
             {
                 GetEmitter()->emitIns_R_R_R_I(ins, emitSize, op3Reg, op1Reg, op2Reg, 0, opt);
                 break;
