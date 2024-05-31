@@ -87,7 +87,7 @@ function diagnostic_options_from_environment (): DiagnosticOptions | null {
 }
 
 /// Parse a DOTNET_DiagnosticPorts string and return a DiagnosticOptions object.
-/// See https://docs.microsoft.com/en-us/dotnet/core/diagnostics/diagnostic-port#configure-additional-diagnostic-ports
+/// See https://learn.microsoft.com/dotnet/core/diagnostics/diagnostic-port#configure-additional-diagnostic-ports
 function diagnostic_options_from_ports_spec (val: string): DiagnosticOptions | null {
     if (val === "")
         return null;
