@@ -324,17 +324,20 @@ namespace System.Net.Sockets.Tests
                 if (sameProcess)
                 {
                     Task handlerCode = Task.Run(() => HandlerServerCode(_ipcPipeName));
-                    RunCommonHostLogic(Environment.ProcessId);
+                    await RunCommonHostLogic(Environment.ProcessId);
                     await handlerCode;
                 }
                 else
                 {
-                    using RemoteInvokeHandle hServerProc = RemoteExecutor.Invoke(HandlerServerCode, _ipcPipeName);
-                    RunCommonHostLogic(hServerProc.Process.Id);
+                    RemoteInvokeHandle hServerProc = RemoteExecutor.Invoke(HandlerServerCode, _ipcPipeName);
+                    await RunCommonHostLogic(hServerProc.Process.Id);
+                    await hServerProc.DisposeAsync();
                 }
 
-                void RunCommonHostLogic(int processId)
+                async Task RunCommonHostLogic(int processId)
                 {
+                    await Task.Yield();
+                    
                     pipeServerStream.WaitForConnection();
 
                     // Duplicate the socket:
