@@ -101,6 +101,11 @@ inline bool genExactlyOneBit(T value)
 
 inline regMaskTP genFindLowestBit(regMaskTP value)
 {
+#ifdef HAS_MORE_THAN_64_REGISTERS
+    // If we ever need to use this method for predicate
+    // registers, then handle it.
+    assert(value.getHigh() == RBM_NONE);
+#endif
     return regMaskTP(genFindLowestBit(value.getLow()));
 }
 
@@ -111,17 +116,12 @@ inline regMaskTP genFindLowestBit(regMaskTP value)
 
 inline bool genMaxOneBit(regMaskTP value)
 {
+#ifdef HAS_MORE_THAN_64_REGISTERS
+    // If we ever need to use this method for predicate
+    // registers, then handle it.
+    assert(value.getHigh() == RBM_NONE);
+#endif
     return genMaxOneBit(value.getLow());
-}
-
-/*****************************************************************************
- *
- *  Return true if the given value has exactly one bit set.
- */
-
-inline bool genExactlyOneBit(regMaskTP value)
-{
-    return genExactlyOneBit(value.getLow());
 }
 
 /*****************************************************************************
@@ -169,7 +169,7 @@ inline unsigned uhi32(uint64_t value)
 
 inline unsigned genCountBits(regMaskTP mask)
 {
-    return BitOperations::PopCount(mask.getLow());
+    return PopCount(mask);
 }
 
 /*****************************************************************************
