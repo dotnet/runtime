@@ -3053,8 +3053,6 @@ void CodeGen::genFMAIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
 
     regNumber targetReg = node->GetRegNum();
 
-    genConsumeMultiOpOperands(node);
-
     regNumber op1NodeReg = op1->GetRegNum();
     regNumber op2NodeReg = op2->GetRegNum();
     regNumber op3NodeReg = op3->GetRegNum();
@@ -3142,6 +3140,21 @@ void CodeGen::genFMAIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
             ins = _213form;
         }
     }
+
+#ifdef DEBUG
+    // Use nums are assigned in LIR order but this node is special and doesn't
+    // actually use operands. Fix up the use nums here to avoid asserts.
+    unsigned useNum1  = op1->gtUseNum;
+    unsigned useNum2  = op2->gtUseNum;
+    unsigned useNum3  = op3->gtUseNum;
+    emitOp1->gtUseNum = useNum1;
+    emitOp2->gtUseNum = useNum2;
+    emitOp3->gtUseNum = useNum3;
+#endif
+
+    genConsumeRegs(emitOp1);
+    genConsumeRegs(emitOp2);
+    genConsumeRegs(emitOp3);
 
     assert(ins != INS_invalid);
     genHWIntrinsic_R_R_R_RM(ins, attr, targetReg, emitOp1->GetRegNum(), emitOp2->GetRegNum(), emitOp3, instOptions);

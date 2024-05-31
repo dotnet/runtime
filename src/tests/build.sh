@@ -301,6 +301,12 @@ handle_arguments_local() {
             __SkipNative=1
             ;;
 
+        coreclr|-coreclr)
+            __Mono=0
+            __MonoAot=0
+            __MonoFullAot=0
+            ;;
+
         log*|-log*)
             local arg="$1"
             local parts=(${arg//:/ })
