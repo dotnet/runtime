@@ -53,7 +53,7 @@ DLL_EXPORT void JitProcessShutdownWork(ICorJitCompiler * pJit)
     return pJit->ProcessShutdownWork(nullptr);
 }
 
-DLL_EXPORT long long JitGetProcessorFeatures()
+DLL_EXPORT int JitGetProcessorFeatures()
 {
     return minipal_getcpufeatures();
 }

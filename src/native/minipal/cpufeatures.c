@@ -175,9 +175,9 @@ static uint32_t apxStateSupport()
 #endif // defined(HOST_X86) || defined(HOST_AMD64)
 #endif // HOST_WINDOWS
 
-long long minipal_getcpufeatures(void)
+int minipal_getcpufeatures(void)
 {
-    long long result = 0;
+    int result = 0;
 
 #if defined(HOST_X86) || defined(HOST_AMD64)
 
@@ -255,45 +255,23 @@ long long minipal_getcpufeatures(void)
                                 {
                                     result |= XArchIntrinsicConstants_Avx2;
 
-                                    if (IsAvx512Enabled() && (avx512StateSupport() == 1))                    // XGETBV XRC0[7:5] == 111
-                                    {
-                                        if ((cpuidInfo[CPUID_EBX] & (1 << 16)) != 0)                            // AVX512F
-                                        {
-                                            result |= XArchIntrinsicConstants_Avx512f;
-
-                                            bool isAVX512_VLSupported = false;
-                                            if ((cpuidInfo[CPUID_EBX] & (1 << 31)) != 0)                        // AVX512VL
+                                            if (IsAvx512Enabled() && (avx512StateSupport() == 1))                    // XGETBV XRC0[7:5] == 111
                                             {
-                                                result |= XArchIntrinsicConstants_Avx512f_vl;
-                                                isAVX512_VLSupported = true;
-                                            }
-
-                                            if ((cpuidInfo[CPUID_EBX] & (1 << 30)) != 0)                        // AVX512BW
-                                            {
-                                                result |= XArchIntrinsicConstants_Avx512bw;
-                                                if (isAVX512_VLSupported)                                       // AVX512BW_VL
+                                                if ((cpuidInfo[CPUID_EBX] & (1 << 16)) != 0)                            // AVX512F
                                                 {
-                                                    result |= XArchIntrinsicConstants_Avx512bw_vl;
-                                                }
-                                            }
+                                                    bool isAVX512_VLSupported = false;
+                                                    const int subsetMask = (1 << 30) | (1 << 28) | (1 << 17);           // AVX512BW + AVX512CD + AVX512DQ
+                                                    if ((cpuidInfo[CPUID_EBX] & (1 << 31)) != 0)                        // AVX512VL
+                                                    {
+                                                        isAVX512_VLSupported = true;
+                                                    }
 
-                                            if ((cpuidInfo[CPUID_EBX] & (1 << 28)) != 0)                        // AVX512CD
-                                            {
-                                                result |= XArchIntrinsicConstants_Avx512cd;
-                                                if (isAVX512_VLSupported)                                       // AVX512CD_VL
-                                                {
-                                                    result |= XArchIntrinsicConstants_Avx512cd_vl;
-                                                }
-                                            }
-
-                                            if ((cpuidInfo[CPUID_EBX] & (1 << 17)) != 0)                        // AVX512DQ
-                                            {
-                                                result |= XArchIntrinsicConstants_Avx512dq;
-                                                if (isAVX512_VLSupported)                                       // AVX512DQ_VL
-                                                {
-                                                    result |= XArchIntrinsicConstants_Avx512dq_vl;
-                                                }
-                                            }
+                                                    if (((cpuidInfo[CPUID_EBX] & subsetMask) != 0) && isAVX512_VLSupported)
+                                                    {
+                                                        // AVX512F+BW+CD+DQ are required on all Avx512 enabled machine, checking them all at once.
+                                                        result |= XArchIntrinsicConstants_Avx512;
+                                                        result |= XArchIntrinsicConstants_VectorT512;
+                                                    }
 
                                             if ((cpuidInfo[CPUID_ECX] & (1 << 1)) != 0)                         // AVX512VBMI
                                             {

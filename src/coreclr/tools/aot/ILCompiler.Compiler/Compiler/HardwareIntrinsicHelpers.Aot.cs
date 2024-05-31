@@ -28,7 +28,7 @@ namespace ILCompiler
             Debug.Assert(IsIsSupportedMethod(method));
             Debug.Assert(isSupportedField.IsStatic && isSupportedField.FieldType.IsWellKnownType(WellKnownType.Int32));
 
-            long flag = 0;
+            int flag = 0;
 
             switch (method.Context.Target.Architecture)
             {
@@ -50,8 +50,7 @@ namespace ILCompiler
             ILCodeStream codeStream = emit.NewCodeStream();
 
             codeStream.Emit(ILOpcode.ldsfld, emit.NewToken(isSupportedField));
-            codeStream.EmitLdc((int)flag);
-            codeStream.EmitLdc((int)(flag >> 32));
+            codeStream.EmitLdc(flag);
             codeStream.Emit(ILOpcode.and);
             codeStream.EmitLdc(0);
             codeStream.Emit(ILOpcode.cgt_un);
@@ -60,9 +59,9 @@ namespace ILCompiler
             return emit.Link(method);
         }
 
-        public static long GetRuntimeRequiredIsaFlags(InstructionSetSupport instructionSetSupport)
+        public static int GetRuntimeRequiredIsaFlags(InstructionSetSupport instructionSetSupport)
         {
-            long result = 0;
+            int result = 0;
             switch (instructionSetSupport.Architecture)
             {
                 case TargetArchitecture.X86:
