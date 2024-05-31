@@ -179,9 +179,9 @@ struct LocalEqualsLocalAddrAssertion
 {
     // Local num on the LHS
     unsigned DestLclNum;
-    // Local address is taken of
+    // Local num on the RHS (having its adress taken)
     unsigned AddressLclNum;
-    // Offset into local
+    // Offset into RHS local
     unsigned AddressOffset;
 
     LocalEqualsLocalAddrAssertion(unsigned destLclNum, unsigned addressLclNum, unsigned addressOffset)
@@ -348,7 +348,6 @@ public:
     //
     // Arguments:
     //   dstLclNum - Destination local
-    //   dstOffs   - Offset into the local
     //   srcLclNum - Local having its address taken
     //   srcOffs   - Offset into the source local of the address being taken
     //
