@@ -21,18 +21,11 @@
     <PublishSingleFile Condition="'$(NativeAotSupported)' != 'true'">true</PublishSingleFile>
     <PublishTrimmed Condition="'$(NativeAotSupported)' != 'true'">true</PublishTrimmed>
     <SuppressGenerateILCompilerExplicitPackageReferenceWarning>true</SuppressGenerateILCompilerExplicitPackageReferenceWarning>
-    <!-- Can be removed (along with RuntimeHostConfigurationOption below)
-         once we build with a more recent SDK that has https://github.com/dotnet/sdk/pull/40106. -->
-    <_ComObjectDescriptorSupport>false</_ComObjectDescriptorSupport>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(NativeAotSupported)' == 'true'">
     <PackageReference Include="Microsoft.DotNet.ILCompiler" Version="$(MicrosoftDotNetILCompilerVersion)" />
     <PackageReference Include="runtime.$(ToolsRID).Microsoft.DotNet.ILCompiler" Version="$(MicrosoftDotNetILCompilerVersion)" />
-    <RuntimeHostConfigurationOption Include="System.ComponentModel.TypeDescriptor.IsComObjectDescriptorSupported"
-                                    Condition="'$(_ComObjectDescriptorSupport)' != ''"
-                                    Value="$(_ComObjectDescriptorSupport)"
-                                    Trim="true" />
   </ItemGroup>
 
   <!-- Needed for the amd64 -> amd64 musl cross-build to pass the target flag. -->

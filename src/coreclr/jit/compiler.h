@@ -72,22 +72,21 @@ inline var_types genActualType(T value);
  *                  Forward declarations
  */
 
-struct InfoHdr;              // defined in GCInfo.h
-struct escapeMapping_t;      // defined in fgdiagnostic.cpp
-class emitter;               // defined in emit.h
-struct ShadowParamVarInfo;   // defined in GSChecks.cpp
-struct InitVarDscInfo;       // defined in registerargconvention.h
-class FgStack;               // defined in fgbasic.cpp
-class Instrumentor;          // defined in fgprofile.cpp
-class SpanningTreeVisitor;   // defined in fgprofile.cpp
-class CSE_DataFlow;          // defined in optcse.cpp
-struct CSEdsc;               // defined in optcse.h
-class CSE_HeuristicCommon;   // defined in optcse.h
-class OptBoolsDsc;           // defined in optimizer.cpp
-struct RelopImplicationInfo; // defined in redundantbranchopts.cpp
-struct JumpThreadInfo;       // defined in redundantbranchopts.cpp
-class ProfileSynthesis;      // defined in profilesynthesis.h
-class LoopLocalOccurrences;  // defined in inductionvariableopts.cpp
+struct InfoHdr;             // defined in GCInfo.h
+struct escapeMapping_t;     // defined in fgdiagnostic.cpp
+class emitter;              // defined in emit.h
+struct ShadowParamVarInfo;  // defined in GSChecks.cpp
+struct InitVarDscInfo;      // defined in registerargconvention.h
+class FgStack;              // defined in fgbasic.cpp
+class Instrumentor;         // defined in fgprofile.cpp
+class SpanningTreeVisitor;  // defined in fgprofile.cpp
+class CSE_DataFlow;         // defined in optcse.cpp
+struct CSEdsc;              // defined in optcse.h
+class CSE_HeuristicCommon;  // defined in optcse.h
+class OptBoolsDsc;          // defined in optimizer.cpp
+struct JumpThreadInfo;      // defined in redundantbranchopts.cpp
+class ProfileSynthesis;     // defined in profilesynthesis.h
+class LoopLocalOccurrences; // defined in inductionvariableopts.cpp
 #ifdef DEBUG
 struct IndentStack;
 #endif
@@ -2187,6 +2186,8 @@ public:
         return m_exitEdges[index];
     }
 
+    BasicBlock* GetPreheader() const;
+
     unsigned GetDepth() const;
 
     bool ContainsBlock(BasicBlock* block);
@@ -2493,6 +2494,30 @@ enum class NodeThreading
     AllLocals, // Locals are threaded (after local morph when optimizing)
     AllTrees,  // All nodes are threaded (after gtSetBlockOrder)
     LIR,       // Nodes are in LIR form (after rationalization)
+};
+
+//------------------------------------------------------------------------
+// RelopImplicationInfo
+//
+// Describes information needed to check for and describe the
+// inferences between two relops.
+//
+struct RelopImplicationInfo
+{
+    // Dominating relop, whose value may be determined by control flow
+    ValueNum domCmpNormVN = ValueNumStore::NoVN;
+    // Dominated relop, whose value we would like to determine
+    ValueNum treeNormVN = ValueNumStore::NoVN;
+    // Relationship between the two relops, if any
+    ValueNumStore::VN_RELATION_KIND vnRelation = ValueNumStore::VN_RELATION_KIND::VRK_Same;
+    // Can we draw an inference?
+    bool canInfer = false;
+    // If canInfer and dominating relop is true, can we infer value of dominated relop?
+    bool canInferFromTrue = true;
+    // If canInfer and dominating relop is false, can we infer value of dominated relop?
+    bool canInferFromFalse = true;
+    // Reverse the sense of the inference
+    bool reverseSense = false;
 };
 
 /*
@@ -4531,7 +4556,8 @@ protected:
                           bool                    tailCall,
                           bool                    callvirt,
                           CORINFO_RESOLVED_TOKEN* pContstrainedResolvedToken,
-                          CORINFO_THIS_TRANSFORM  constraintCallThisTransform,
+                          CORINFO_THIS_TRANSFORM  constraintCallThisTransform
+                          R2RARG(CORINFO_CONST_LOOKUP* entryPoint),
                           NamedIntrinsic*         pIntrinsicName,
                           bool*                   isSpecialIntrinsic = nullptr);
     GenTree* impEstimateIntrinsic(CORINFO_METHOD_HANDLE method,
@@ -4540,7 +4566,8 @@ protected:
                                   NamedIntrinsic        intrinsicName,
                                   bool                  mustExpand);
     GenTree* impMathIntrinsic(CORINFO_METHOD_HANDLE method,
-                              CORINFO_SIG_INFO*     sig,
+                              CORINFO_SIG_INFO*     sig
+                              R2RARG(CORINFO_CONST_LOOKUP* entryPoint),
                               var_types             callType,
                               NamedIntrinsic        intrinsicName,
                               bool                  tailCall);
@@ -4576,7 +4603,8 @@ protected:
     GenTree* impHWIntrinsic(NamedIntrinsic        intrinsic,
                             CORINFO_CLASS_HANDLE  clsHnd,
                             CORINFO_METHOD_HANDLE method,
-                            CORINFO_SIG_INFO*     sig,
+                            CORINFO_SIG_INFO*     sig
+                            R2RARG(CORINFO_CONST_LOOKUP* entryPoint),
                             bool                  mustExpand);
     GenTree* impSimdAsHWIntrinsic(NamedIntrinsic        intrinsic,
                                   CORINFO_CLASS_HANDLE  clsHnd,
@@ -4600,7 +4628,8 @@ protected:
     GenTree* impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                                  CORINFO_CLASS_HANDLE  clsHnd,
                                  CORINFO_METHOD_HANDLE method,
-                                 CORINFO_SIG_INFO*     sig,
+                                 CORINFO_SIG_INFO*     sig
+                                 R2RARG(CORINFO_CONST_LOOKUP* entryPoint),
                                  CorInfoType           simdBaseJitType,
                                  var_types             retType,
                                  unsigned              simdSize,
@@ -6784,8 +6813,8 @@ private:
 
 public:
     bool fgIsBigOffset(size_t offset);
-
     bool IsValidLclAddr(unsigned lclNum, unsigned offset);
+    bool IsPotentialGCSafePoint(GenTree* tree) const;
 
 private:
     bool fgNeedReturnSpillTemp();
@@ -7521,10 +7550,14 @@ public:
 #endif
 
     PhaseStatus optInductionVariables();
-    bool        optWidenPrimaryIV(FlowGraphNaturalLoop* loop,
-                                  unsigned              lclNum,
-                                  ScevAddRec*           addRec,
-                                  LoopLocalOccurrences* loopLocals);
+
+    bool optMakeLoopDownwardsCounted(ScalarEvolutionContext& scevContext,
+                                     FlowGraphNaturalLoop*   loop,
+                                     LoopLocalOccurrences*   loopLocals);
+    bool optWidenPrimaryIV(FlowGraphNaturalLoop* loop,
+                           unsigned              lclNum,
+                           ScevAddRec*           addRec,
+                           LoopLocalOccurrences* loopLocals);
 
     bool optCanSinkWidenedIV(unsigned lclNum, FlowGraphNaturalLoop* loop);
     bool optIsIVWideningProfitable(unsigned              lclNum,
@@ -10201,6 +10234,7 @@ public:
         STRESS_MODE(UNWIND) /* stress unwind info; e.g., create function fragments */           \
         STRESS_MODE(OPT_REPEAT) /* stress JitOptRepeat */                                       \
         STRESS_MODE(INITIAL_PARAM_REG) /* Stress initial register assigned to parameters */     \
+        STRESS_MODE(DOWNWARDS_COUNTED_LOOPS) /* Make more loops downwards counted         */    \
                                                                                                 \
         /* After COUNT_VARN, stress level 2 does all of these all the time */                   \
                                                                                                 \
@@ -11246,8 +11280,8 @@ private:
     //
     // Users of these values need to define four accessor functions:
     //
-    //    SingleTypeRegSet get_RBM_ALLFLOAT();
-    //    SingleTypeRegSet get_RBM_FLT_CALLEE_TRASH();
+    //    regMaskTP get_RBM_ALLFLOAT();
+    //    regMaskTP get_RBM_FLT_CALLEE_TRASH();
     //    unsigned get_CNT_CALLEE_TRASH_FLOAT();
     //    unsigned get_AVAILABLE_REG_COUNT();
     //
@@ -11256,16 +11290,16 @@ private:
     // This was done to avoid polluting all `targetXXX.h` macro definitions with a compiler parameter, where only
     // TARGET_AMD64 requires one.
     //
-    SingleTypeRegSet rbmAllFloat;
-    SingleTypeRegSet rbmFltCalleeTrash;
-    unsigned         cntCalleeTrashFloat;
+    regMaskTP rbmAllFloat;
+    regMaskTP rbmFltCalleeTrash;
+    unsigned  cntCalleeTrashFloat;
 
 public:
-    FORCEINLINE SingleTypeRegSet get_RBM_ALLFLOAT() const
+    FORCEINLINE regMaskTP get_RBM_ALLFLOAT() const
     {
         return this->rbmAllFloat;
     }
-    FORCEINLINE SingleTypeRegSet get_RBM_FLT_CALLEE_TRASH() const
+    FORCEINLINE regMaskTP get_RBM_FLT_CALLEE_TRASH() const
     {
         return this->rbmFltCalleeTrash;
     }
@@ -11284,8 +11318,8 @@ private:
     //
     // Users of these values need to define four accessor functions:
     //
-    //    SingleTypeRegSet get_RBM_ALLMASK();
-    //    SingleTypeRegSet get_RBM_MSK_CALLEE_TRASH();
+    //    regMaskTP get_RBM_ALLMASK();
+    //    regMaskTP get_RBM_MSK_CALLEE_TRASH();
     //    unsigned get_CNT_CALLEE_TRASH_MASK();
     //    unsigned get_AVAILABLE_REG_COUNT();
     //
@@ -11294,17 +11328,17 @@ private:
     // This was done to avoid polluting all `targetXXX.h` macro definitions with a compiler parameter, where only
     // TARGET_XARCH requires one.
     //
-    SingleTypeRegSet rbmAllMask;
-    SingleTypeRegSet rbmMskCalleeTrash;
-    unsigned         cntCalleeTrashMask;
-    SingleTypeRegSet varTypeCalleeTrashRegs[TYP_COUNT];
+    regMaskTP rbmAllMask;
+    regMaskTP rbmMskCalleeTrash;
+    unsigned  cntCalleeTrashMask;
+    regMaskTP varTypeCalleeTrashRegs[TYP_COUNT];
 
 public:
-    FORCEINLINE SingleTypeRegSet get_RBM_ALLMASK() const
+    FORCEINLINE regMaskTP get_RBM_ALLMASK() const
     {
         return this->rbmAllMask;
     }
-    FORCEINLINE SingleTypeRegSet get_RBM_MSK_CALLEE_TRASH() const
+    FORCEINLINE regMaskTP get_RBM_MSK_CALLEE_TRASH() const
     {
         return this->rbmMskCalleeTrash;
     }

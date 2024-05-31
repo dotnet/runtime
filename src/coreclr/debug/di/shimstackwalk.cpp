@@ -150,6 +150,14 @@ BOOL ShimStackWalk::ShouldTrackUMChain(StackWalkInfo * pswInfo)
     if (m_pProcess->IsThreadSuspendedOrHijacked(m_pThread))
         return FALSE;
 
+    // In the case the thread is throwing a managed exception, 
+    // TS_SyncSuspended might not yet be set, resulting in IsThreadSuspendedOrHijacked 
+    // returning false above. We need to check the exception state to make sure we don't
+    // track the chain in this case. Since we know the type of Frame we are dealing with, 
+    // we can make a more accurate determination of whether we should track the chain.
+    if (GetInternalFrameType(pswInfo->GetCurrentInternalFrame()) == STUBFRAME_EXCEPTION) 
+        return FALSE;
+
     return TRUE;
 }
 
