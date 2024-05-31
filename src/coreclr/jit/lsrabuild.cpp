@@ -2545,7 +2545,7 @@ void LinearScan::buildIntervals()
             regMaskTP killed;
 #if defined(TARGET_XARCH)
             // Poisoning uses EAX for small vars and rep stosd that kills edi, ecx and eax for large vars.
-            killed.AddGprRegs(RBM_EDI | RBM_ECX | RBM_EAX);
+            killed = RBM_EDI | RBM_ECX | RBM_EAX;
 #else
             // Poisoning uses REG_SCRATCH for small vars and memset helper for big vars.
             killed = compiler->compHelperCallKillSet(CORINFO_HELP_NATIVE_MEMSET);
