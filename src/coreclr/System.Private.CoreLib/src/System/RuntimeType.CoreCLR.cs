@@ -3924,7 +3924,7 @@ namespace System
             object? obj = cache.CreateUninitializedObject(this);
             try
             {
-                cache.CallConstructor(obj);
+                cache.CallRefConstructor(obj);
             }
             catch (Exception e) when (wrapExceptions)
             {
@@ -3934,7 +3934,7 @@ namespace System
             return obj;
         }
 
-        // Specialized version of the above for Activator.CreateInstance<T>()
+        // Specialized version of CreateInstanceDefaultCtor() for Activator.CreateInstance<T>()
         [DebuggerStepThrough]
         [DebuggerHidden]
         internal object? CreateInstanceOfT()
@@ -3947,10 +3947,10 @@ namespace System
             }
 
             // We reuse ActivatorCache here to ensure that we aren't always creating two entries in the cache.
-            object? obj = GetOrCreateCacheEntry<ActivatorCache>().CreateUninitializedObject(this);
+            object? obj = cache.CreateUninitializedObject(this);
             try
             {
-                cache.CallConstructor(obj);
+                cache.CallRefConstructor(obj);
             }
             catch (Exception e)
             {
@@ -3958,6 +3958,30 @@ namespace System
             }
 
             return obj;
+        }
+
+        // Specialized version of CreateInstanceDefaultCtor() for Activator.CreateInstance<T>()
+        [DebuggerStepThrough]
+        [DebuggerHidden]
+        internal void CallDefaultStructConstructor(ref byte data)
+        {
+            Debug.Assert(IsValueType);
+
+            ActivatorCache cache = GetOrCreateCacheEntry<ActivatorCache>();
+
+            if (!cache.CtorIsPublic)
+            {
+                throw new MissingMethodException(SR.Format(SR.Arg_NoDefCTor, this));
+            }
+
+            try
+            {
+                cache.CallValueConstructor(ref data);
+            }
+            catch (Exception e)
+            {
+                throw new TargetInvocationException(e);
+            }
         }
 
         internal void InvalidateCachedNestedType() => Cache.InvalidateCachedNestedType();

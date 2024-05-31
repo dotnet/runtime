@@ -1011,11 +1011,11 @@ PTR_VOID GetUnwindDataBlob(TADDR moduleBase, PTR_RUNTIME_FUNCTION pRuntimeFuncti
     int size = 4;
 
 #if defined(TARGET_ARM)
-    // See https://docs.microsoft.com/en-us/cpp/build/arm-exception-handling
+    // See https://learn.microsoft.com/cpp/build/arm-exception-handling
     int unwindWords = xdata[0] >> 28;
     int epilogScopes = (xdata[0] >> 23) & 0x1f;
 #else
-    // See https://docs.microsoft.com/en-us/cpp/build/arm64-exception-handling
+    // See https://learn.microsoft.com/cpp/build/arm64-exception-handling
     int unwindWords = xdata[0] >> 27;
     int epilogScopes = (xdata[0] >> 22) & 0x1f;
 #endif

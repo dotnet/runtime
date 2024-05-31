@@ -4413,6 +4413,19 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe System.Numerics.Vector<long> LoadVectorUInt32ZeroExtendToInt64(System.Numerics.Vector<long> mask, uint* address) { throw null; }
         public static unsafe System.Numerics.Vector<ulong> LoadVectorUInt32ZeroExtendToUInt64(System.Numerics.Vector<ulong> mask, uint* address) { throw null; }
 
+        public static unsafe System.Numerics.Vector<short> LoadVectorByteNonFaultingZeroExtendToInt16(byte* address) { throw null; }
+        public static unsafe System.Numerics.Vector<int> LoadVectorByteNonFaultingZeroExtendToInt32(byte* address) { throw null; }
+        public static unsafe System.Numerics.Vector<long> LoadVectorByteNonFaultingZeroExtendToInt64(byte* address) { throw null; }
+        public static unsafe System.Numerics.Vector<ushort> LoadVectorByteNonFaultingZeroExtendToUInt16(byte* address) { throw null; }
+        public static unsafe System.Numerics.Vector<uint> LoadVectorByteNonFaultingZeroExtendToUInt32(byte* address) { throw null; }
+        public static unsafe System.Numerics.Vector<ulong> LoadVectorByteNonFaultingZeroExtendToUInt64(byte* address) { throw null; }
+        public static unsafe System.Numerics.Vector<int> LoadVectorUInt16NonFaultingZeroExtendToInt32(ushort* address) { throw null; }
+        public static unsafe System.Numerics.Vector<long> LoadVectorUInt16NonFaultingZeroExtendToInt64(ushort* address) { throw null; }
+        public static unsafe System.Numerics.Vector<uint> LoadVectorUInt16NonFaultingZeroExtendToUInt32(ushort* address) { throw null; }
+        public static unsafe System.Numerics.Vector<ulong> LoadVectorUInt16NonFaultingZeroExtendToUInt64(ushort* address) { throw null; }
+        public static unsafe System.Numerics.Vector<long> LoadVectorUInt32NonFaultingZeroExtendToInt64(uint* address) { throw null; }
+        public static unsafe System.Numerics.Vector<ulong> LoadVectorUInt32NonFaultingZeroExtendToUInt64(uint* address) { throw null; }
+
         public static unsafe (System.Numerics.Vector<byte>, System.Numerics.Vector<byte>) Load2xVectorAndUnzip(System.Numerics.Vector<byte> mask, byte* address) { throw null; }
         public static unsafe (System.Numerics.Vector<double>, System.Numerics.Vector<double>) Load2xVectorAndUnzip(System.Numerics.Vector<double> mask, double* address) { throw null; }
         public static unsafe (System.Numerics.Vector<short>, System.Numerics.Vector<short>) Load2xVectorAndUnzip(System.Numerics.Vector<short> mask, short* address) { throw null; }
@@ -4576,6 +4589,52 @@ namespace System.Runtime.Intrinsics.Arm
         public static System.Numerics.Vector<ulong> PopCount(System.Numerics.Vector<double> value) { throw null; }
         public static System.Numerics.Vector<ulong> PopCount(System.Numerics.Vector<long> value) { throw null; }
         public static System.Numerics.Vector<ulong> PopCount(System.Numerics.Vector<ulong> value) { throw null; }
+
+        public static int SaturatingDecrementBy16BitElementCount(int value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw null; }
+        public static long SaturatingDecrementBy16BitElementCount(long value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw null; }
+        public static uint SaturatingDecrementBy16BitElementCount(uint value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw null; }
+        public static ulong SaturatingDecrementBy16BitElementCount(ulong value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw null; }
+        public static System.Numerics.Vector<short> SaturatingDecrementBy16BitElementCount(System.Numerics.Vector<short> value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw null; }
+        public static System.Numerics.Vector<ushort> SaturatingDecrementBy16BitElementCount(System.Numerics.Vector<ushort> value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw null; }
+        public static int SaturatingDecrementBy32BitElementCount(int value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw null; }
+        public static long SaturatingDecrementBy32BitElementCount(long value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw null; }
+        public static uint SaturatingDecrementBy32BitElementCount(uint value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw null; }
+        public static ulong SaturatingDecrementBy32BitElementCount(ulong value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw null; }
+        public static System.Numerics.Vector<int> SaturatingDecrementBy32BitElementCount(System.Numerics.Vector<int> value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw null; }
+        public static System.Numerics.Vector<uint> SaturatingDecrementBy32BitElementCount(System.Numerics.Vector<uint> value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw null; }
+        public static int SaturatingDecrementBy64BitElementCount(int value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw null; }
+        public static long SaturatingDecrementBy64BitElementCount(long value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw null; }
+        public static uint SaturatingDecrementBy64BitElementCount(uint value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw null; }
+        public static ulong SaturatingDecrementBy64BitElementCount(ulong value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw null; }
+        public static System.Numerics.Vector<long> SaturatingDecrementBy64BitElementCount(System.Numerics.Vector<long> value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw null; }
+        public static System.Numerics.Vector<ulong> SaturatingDecrementBy64BitElementCount(System.Numerics.Vector<ulong> value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw null; }
+        public static int SaturatingDecrementBy8BitElementCount(int value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw null; }
+        public static long SaturatingDecrementBy8BitElementCount(long value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw null; }
+        public static uint SaturatingDecrementBy8BitElementCount(uint value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw null; }
+        public static ulong SaturatingDecrementBy8BitElementCount(ulong value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw null; }
+
+        public static int SaturatingIncrementBy16BitElementCount(int value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw null; }
+        public static long SaturatingIncrementBy16BitElementCount(long value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw null; }
+        public static uint SaturatingIncrementBy16BitElementCount(uint value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw null; }
+        public static ulong SaturatingIncrementBy16BitElementCount(ulong value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw null; }
+        public static System.Numerics.Vector<short> SaturatingIncrementBy16BitElementCount(System.Numerics.Vector<short> value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw null; }
+        public static System.Numerics.Vector<ushort> SaturatingIncrementBy16BitElementCount(System.Numerics.Vector<ushort> value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw null; }
+        public static int SaturatingIncrementBy32BitElementCount(int value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw null; }
+        public static long SaturatingIncrementBy32BitElementCount(long value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw null; }
+        public static uint SaturatingIncrementBy32BitElementCount(uint value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw null; }
+        public static ulong SaturatingIncrementBy32BitElementCount(ulong value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw null; }
+        public static System.Numerics.Vector<int> SaturatingIncrementBy32BitElementCount(System.Numerics.Vector<int> value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw null; }
+        public static System.Numerics.Vector<uint> SaturatingIncrementBy32BitElementCount(System.Numerics.Vector<uint> value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw null; }
+        public static int SaturatingIncrementBy64BitElementCount(int value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw null; }
+        public static long SaturatingIncrementBy64BitElementCount(long value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw null; }
+        public static uint SaturatingIncrementBy64BitElementCount(uint value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw null; }
+        public static ulong SaturatingIncrementBy64BitElementCount(ulong value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw null; }
+        public static System.Numerics.Vector<long> SaturatingIncrementBy64BitElementCount(System.Numerics.Vector<long> value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw null; }
+        public static System.Numerics.Vector<ulong> SaturatingIncrementBy64BitElementCount(System.Numerics.Vector<ulong> value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw null; }
+        public static int SaturatingIncrementBy8BitElementCount(int value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw null; }
+        public static long SaturatingIncrementBy8BitElementCount(long value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw null; }
+        public static uint SaturatingIncrementBy8BitElementCount(uint value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw null; }
+        public static ulong SaturatingIncrementBy8BitElementCount(ulong value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw null; }
 
         public static System.Numerics.Vector<int> SignExtend16(System.Numerics.Vector<int> value) { throw null; }
         public static System.Numerics.Vector<long> SignExtend16(System.Numerics.Vector<long> value) { throw null; }
