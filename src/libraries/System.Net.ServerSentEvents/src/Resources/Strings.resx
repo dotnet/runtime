@@ -120,7 +120,4 @@
   <data name="InvalidOperation_EnumerateOnlyOnce" xml:space="preserve">
     <value>The enumerable may be enumerated only once.</value>
   </data>
-  <data name="InvalidOperation_InvalidStreamNegativeBytes" xml:space="preserve">
-    <value>The Stream implementation is invalid, returning a negative number from a read operation.</value>
-  </data>
 </root>

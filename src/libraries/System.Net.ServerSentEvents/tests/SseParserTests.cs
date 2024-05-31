@@ -727,27 +727,6 @@ namespace System.Net.ServerSentEvents.Tests
         }
 
         [Theory]
-        [InlineData(false)]
-        [InlineData(true)]
-        public async Task InvalidStream_ReturnsNegativeValueFromRead_Throws(bool useAsync)
-        {
-            using Stream stream = new InvalidReadStream();
-
-            SseParser<string> parser = SseParser.Create(stream);
-
-            if (useAsync)
-            {
-                await using IAsyncEnumerator<SseItem<string>> e = parser.EnumerateAsync().GetAsyncEnumerator();
-                await Assert.ThrowsAsync<InvalidOperationException>(async () => await e.MoveNextAsync());
-            }
-            else
-            {
-                using IEnumerator<SseItem<string>> e = parser.Enumerate().GetEnumerator();
-                Assert.Throws<InvalidOperationException>(() => e.MoveNext());
-            }
-        }
-
-        [Theory]
         [MemberData(nameof(NewlineTrickleAsyncData))]
         public async Task MultipleItemParsers_OpenAI_StreamingResponse(string newline, bool trickle, bool useAsync)
         {
@@ -978,23 +957,6 @@ namespace System.Net.ServerSentEvents.Tests
                 await Task.Yield();
                 return await base.ReadAsync(buffer.Slice(0, Math.Min(buffer.Length, 1)), cancellationToken);
             }
-#endif
-        }
-
-        private sealed class InvalidReadStream : MemoryStream
-        {
-            public override int Read(byte[] buffer, int offset, int count) =>
-                -1;
-
-            public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken) =>
-                Task.FromResult(-1);
-
-#if NET
-            public override int Read(Span<byte> buffer) =>
-                -1;
-
-            public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default) =>
-                ValueTask.FromResult(-1);
 #endif
         }
     }

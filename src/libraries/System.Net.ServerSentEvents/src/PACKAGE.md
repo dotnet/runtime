@@ -18,8 +18,8 @@ Asynchronously parsing event contents as strings
 
 ```csharp
 using HttpClient client = new();
-using Stream response = await client.GetStreamAsync("https://localhost:12345/sse");
-await foreach (SseItem<string> item in SseParser.Create(response).EnumerateAsync())
+using Stream stream = await client.GetStreamAsync("https://localhost:12345/sse");
+await foreach (SseItem<string> item in SseParser.Create(stream).EnumerateAsync())
 {
     Console.WriteLine(item.Data);
 }
@@ -29,9 +29,9 @@ Synchronously parsing event contents as JSON
 
 ```csharp
 MemoryStream stream = new(data);
-foreach (SseItem<Book> item in SseParser.Create(response, (eventType, bytes) => JsonSerializer.Deserialize<Book>(bytes)).Enumerate())
+foreach (SseItem<Book> item in SseParser.Create(stream, (eventType, bytes) => JsonSerializer.Deserialize<Book>(bytes)).Enumerate())
 {
-    Console.WriteLine(item.Author);
+    Console.WriteLine(item.Data.Author);
 }
 ```
 

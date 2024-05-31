@@ -352,6 +352,7 @@ namespace System.Net.ServerSentEvents
             if (fieldName.SequenceEqual("data"u8))
             {
                 // Spec: "Append the field value to the data buffer, then append a single U+000A LINE FEED (LF) character to the data buffer."
+                // Spec: "If the data buffer's last character is a U+000A LINE FEED (LF) character, then remove the last character from the data buffer."
 
                 // If there's nothing currently in the data buffer and we can easily detect that this line is immediately followed by
                 // an empty line, we can optimize it to just handle the data directly from the line buffer, rather than first copying
@@ -462,16 +463,16 @@ namespace System.Net.ServerSentEvents
                 _lineBuffer, offset, _lineBuffer.Length - offset);
 #endif
 
-            if (bytesRead <= 0)
+            if (bytesRead > 0)
+            {
+                _lineLength += bytesRead;
+            }
+            else
             {
                 _eof = true;
-                if (bytesRead < 0)
-                {
-                    throw new InvalidOperationException(SR.InvalidOperation_InvalidStreamNegativeBytes);
-                }
+                bytesRead = 0;
             }
 
-            _lineLength += bytesRead;
             return bytesRead;
         }
 
@@ -489,16 +490,16 @@ namespace System.Net.ServerSentEvents
 #endif
                 .ConfigureAwait(false);
 
-            if (bytesRead <= 0)
+            if (bytesRead > 0)
+            {
+                _lineLength += bytesRead;
+            }
+            else
             {
                 _eof = true;
-                if (bytesRead < 0)
-                {
-                    throw new InvalidOperationException(SR.InvalidOperation_InvalidStreamNegativeBytes);
-                }
+                bytesRead = 0;
             }
 
-            _lineLength += bytesRead;
             return bytesRead;
         }
 
