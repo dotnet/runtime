@@ -25,7 +25,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(DerivedDictionary<int>))]
         [JsonSerializable(typeof(DerivedDictionaryWithCustomConverter))]
         [JsonSerializable(typeof(ClassWithoutCtor))]
-        [JsonSerializable(typeof(IInterfaceWithoutConstructor))]
+        [JsonSerializable(typeof(IInterfaceWithProperties))]
         [JsonSerializable(typeof(ClassWithDefaultCtor))]
         [JsonSerializable(typeof(StructWithDefaultCtor))]
         [JsonSerializable(typeof(StructWithDefaultCtor?))]
@@ -33,6 +33,9 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(StructWithParameterizedCtor))]
         [JsonSerializable(typeof(ClassWithRequiredMember))]
         [JsonSerializable(typeof(ClassWithInitOnlyProperty))]
+        [JsonSerializable(typeof(ClassWithMultipleConstructors))]
+        [JsonSerializable(typeof(DerivedClassWithShadowingProperties))]
+        [JsonSerializable(typeof(IDerivedInterface))]
         partial class Context : JsonSerializerContext;
     }
 }

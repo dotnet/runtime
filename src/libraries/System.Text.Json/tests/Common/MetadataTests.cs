@@ -20,7 +20,8 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData(typeof(Dictionary<Guid, int>))]
         [InlineData(typeof(ClassWithoutCtor))]
         [InlineData(typeof(StructWithDefaultCtor?))]
-        [InlineData(typeof(IInterfaceWithoutConstructor))]
+        [InlineData(typeof(IInterfaceWithProperties))]
+        [InlineData(typeof(IDerivedInterface))]
         public void TypeWithoutConstructor_TypeInfoReportsNullCtorProvider(Type type)
         {
             JsonTypeInfo typeInfo = Serializer.GetTypeInfo(type);
@@ -32,9 +33,14 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData(typeof(ClassWithDefaultCtor))]
         [InlineData(typeof(StructWithDefaultCtor))]
         [InlineData(typeof(ClassWithParameterizedCtor))]
+        [InlineData(typeof(ClassWithMultipleConstructors))]
+        [InlineData(typeof(DerivedClassWithShadowingProperties))]
         public void TypeWithConstructor_TypeInfoReportsExpectedCtorProvider(Type typeWithCtor)
         {
-            ConstructorInfo? expectedCtor = typeWithCtor.GetConstructors(BindingFlags.Public | BindingFlags.Instance).FirstOrDefault();
+            ConstructorInfo? expectedCtor = typeWithCtor.GetConstructors(BindingFlags.Public | BindingFlags.Instance)
+                .OrderByDescending(ctor => ctor.GetCustomAttribute<JsonConstructorAttribute>() is not null)
+                .FirstOrDefault();
+
             Assert.NotNull(expectedCtor);
 
             JsonTypeInfo typeInfo = Serializer.GetTypeInfo(typeWithCtor);
@@ -46,6 +52,8 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData(typeof(ClassWithDefaultCtor))]
         [InlineData(typeof(StructWithDefaultCtor))]
         [InlineData(typeof(ClassWithParameterizedCtor))]
+        [InlineData(typeof(ClassWithMultipleConstructors))]
+        [InlineData(typeof(DerivedClassWithShadowingProperties))]
         public void TypeWithConstructor_SettingCtorDelegate_ResetsCtorAttributeProvider(Type typeWithCtor)
         {
             JsonTypeInfo typeInfo = Serializer.GetTypeInfo(typeWithCtor, mutable: true);
@@ -62,7 +70,10 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData(typeof(ClassWithParameterizedCtor))]
         [InlineData(typeof(StructWithParameterizedCtor))]
         [InlineData(typeof(ClassWithoutCtor))]
-        [InlineData(typeof(IInterfaceWithoutConstructor))]
+        [InlineData(typeof(IInterfaceWithProperties))]
+        [InlineData(typeof(ClassWithMultipleConstructors))]
+        [InlineData(typeof(DerivedClassWithShadowingProperties))]
+        [InlineData(typeof(IDerivedInterface))]
         public void JsonPropertyInfo_DeclaringType_HasExpectedValue(Type typeWithProperties)
         {
             JsonTypeInfo typeInfo = Serializer.GetTypeInfo(typeWithProperties);
@@ -70,7 +81,7 @@ namespace System.Text.Json.Serialization.Tests
 
             Assert.All(typeInfo.Properties, propertyInfo =>
             {
-                Assert.Same(typeWithProperties, propertyInfo.DeclaringType);
+                Assert.True(propertyInfo.DeclaringType.IsAssignableFrom(typeInfo.Type));
             });
         }
 
@@ -80,7 +91,10 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData(typeof(ClassWithParameterizedCtor))]
         [InlineData(typeof(ClassWithoutCtor))]
         [InlineData(typeof(StructWithParameterizedCtor))]
-        [InlineData(typeof(IInterfaceWithoutConstructor))]
+        [InlineData(typeof(IInterfaceWithProperties))]
+        [InlineData(typeof(ClassWithMultipleConstructors))]
+        [InlineData(typeof(DerivedClassWithShadowingProperties))]
+        [InlineData(typeof(IDerivedInterface))]
         public void JsonPropertyInfo_AttributeProvider_HasExpectedValue(Type typeWithProperties)
         {
             JsonTypeInfo typeInfo = Serializer.GetTypeInfo(typeWithProperties);
@@ -88,14 +102,15 @@ namespace System.Text.Json.Serialization.Tests
 
             Assert.All(typeInfo.Properties, propertyInfo =>
             {
-                MemberInfo memberInfo = typeWithProperties.GetMember(propertyInfo.Name, BindingFlags.Instance | BindingFlags.Public).First();
+                MemberInfo? memberInfo = ResolveMember(typeWithProperties, propertyInfo.Name);
                 Assert.Same(memberInfo, propertyInfo.AttributeProvider);
             });
         }
 
         [Theory]
         [InlineData(typeof(ClassWithoutCtor))]
-        [InlineData(typeof(IInterfaceWithoutConstructor))]
+        [InlineData(typeof(IInterfaceWithProperties))]
+        [InlineData(typeof(IDerivedInterface))]
         public void TypeWithoutConstructor_JsonPropertyInfo_AssociatedParameter_IsNull(Type type)
         {
             JsonTypeInfo typeInfo = Serializer.GetTypeInfo(type);
@@ -110,9 +125,14 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData(typeof(StructWithDefaultCtor))]
         [InlineData(typeof(ClassWithParameterizedCtor))]
         [InlineData(typeof(StructWithParameterizedCtor))]
+        [InlineData(typeof(ClassWithMultipleConstructors))]
+        [InlineData(typeof(DerivedClassWithShadowingProperties))]
         public void TypeWithConstructor_JsonPropertyInfo_AssociatedParameter_MatchesCtorParams(Type typeWithCtor)
         {
-            ConstructorInfo? expectedCtor = typeWithCtor.GetConstructors(BindingFlags.Public | BindingFlags.Instance).FirstOrDefault();
+            ConstructorInfo? expectedCtor = typeWithCtor.GetConstructors(BindingFlags.Public | BindingFlags.Instance)
+                .OrderByDescending(ctor => ctor.GetCustomAttribute<JsonConstructorAttribute>() is not null)
+                .FirstOrDefault();
+
             Assert.NotNull(expectedCtor);
 
             Dictionary<string, ParameterInfo> parameters = expectedCtor.GetParameters().ToDictionary(p => p.Name, StringComparer.OrdinalIgnoreCase);
@@ -186,6 +206,8 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData(typeof(StructWithParameterizedCtor))]
         [InlineData(typeof(ClassWithRequiredMember))]
         [InlineData(typeof(ClassWithInitOnlyProperty))]
+        [InlineData(typeof(ClassWithMultipleConstructors))]
+        [InlineData(typeof(DerivedClassWithShadowingProperties))]
         public void TypeWithConstructor_SettingCtorDelegate_ResetsAssociatedParameters(Type typeWithCtor)
         {
             JsonTypeInfo typeInfo = Serializer.GetTypeInfo(typeWithCtor, mutable: true);
@@ -275,6 +297,17 @@ namespace System.Text.Json.Serialization.Tests
             return defaultValue;
         }
 
+        private static MemberInfo? ResolveMember(Type type, string name)
+        {
+            MemberInfo? result = type.GetMember(name, BindingFlags.Instance | BindingFlags.Public).FirstOrDefault();
+            if (result is null && type.IsInterface)
+            {
+                return type.GetInterfaces().Select(i => ResolveMember(i, name)).FirstOrDefault(m => m is not null);
+            }
+
+            return result;
+        }
+
         internal class ClassWithoutCtor
         {
             private ClassWithoutCtor() { }
@@ -286,7 +319,7 @@ namespace System.Text.Json.Serialization.Tests
             public bool Value3 = true;
         }
 
-        internal interface IInterfaceWithoutConstructor
+        internal interface IInterfaceWithProperties
         {
             public int Value { get; set; }
             public string Value2 { get; set; }
@@ -391,29 +424,82 @@ namespace System.Text.Json.Serialization.Tests
         {
             public int Value { get; init; }
         }
-    }
 
-    internal class DerivedList<T> : List<(T, Guid)>;
-
-    [JsonConverter(typeof(CustomConverter))]
-    internal class DerivedListWithCustomConverter : List<Guid>
-    {
-        public sealed class CustomConverter : JsonConverter<DerivedListWithCustomConverter>
+        internal class ClassWithMultipleConstructors
         {
-            public override DerivedListWithCustomConverter? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) => throw new NotImplementedException();
-            public override void Write(Utf8JsonWriter writer, DerivedListWithCustomConverter value, JsonSerializerOptions options) => throw new NotImplementedException();
+            public ClassWithMultipleConstructors() { }
+
+            public ClassWithMultipleConstructors(int x) { }
+
+            [JsonConstructor]
+            public ClassWithMultipleConstructors(string value)
+            {
+                Value = value;
+            }
+
+            public string Value { get; set; }
         }
-    }
 
-    internal class DerivedDictionary<T> : Dictionary<Guid, T>;
-
-    [JsonConverter(typeof(CustomConverter))]
-    internal class DerivedDictionaryWithCustomConverter : Dictionary<Guid, string>
-    {
-        public sealed class CustomConverter : JsonConverter<DerivedDictionaryWithCustomConverter>
+        internal abstract class BaseClassWithProperties
         {
-            public override DerivedDictionaryWithCustomConverter? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) => throw new NotImplementedException();
-            public override void Write(Utf8JsonWriter writer, DerivedDictionaryWithCustomConverter value, JsonSerializerOptions options) => throw new NotImplementedException();
+            public int Value1 { get; }
+            public virtual int Value2 { get; set; }
+            public abstract int Value3 { get; set; }
+        }
+
+        internal class DerivedClassWithShadowingProperties : BaseClassWithProperties
+        {
+            [JsonConstructor]
+            public DerivedClassWithShadowingProperties(string value1, int value2, int value3)
+            {
+                Value1 = value1;
+                Value2 = value2;
+                Value3 = value3;
+            }
+
+            public new string Value1 { get; set; }
+            public override int Value2 { get; set; }
+            public override int Value3 { get; set; }
+        }
+
+        internal interface IBaseInterface1
+        {
+            int Value1 { get; }
+        }
+
+        internal interface IBaseInterface2
+        {
+            int Value2 { get; set; }
+        }
+
+        internal interface IDerivedInterface : IBaseInterface1, IBaseInterface2
+        {
+            new string Value2 { get; set; }
+            int Value3 { get; set; }
+        }
+
+        internal class DerivedList<T> : List<(T, Guid)>;
+
+        [JsonConverter(typeof(CustomConverter))]
+        internal class DerivedListWithCustomConverter : List<Guid>
+        {
+            public sealed class CustomConverter : JsonConverter<DerivedListWithCustomConverter>
+            {
+                public override DerivedListWithCustomConverter? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) => throw new NotImplementedException();
+                public override void Write(Utf8JsonWriter writer, DerivedListWithCustomConverter value, JsonSerializerOptions options) => throw new NotImplementedException();
+            }
+        }
+
+        internal class DerivedDictionary<T> : Dictionary<Guid, T>;
+
+        [JsonConverter(typeof(CustomConverter))]
+        internal class DerivedDictionaryWithCustomConverter : Dictionary<Guid, string>
+        {
+            public sealed class CustomConverter : JsonConverter<DerivedDictionaryWithCustomConverter>
+            {
+                public override DerivedDictionaryWithCustomConverter? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) => throw new NotImplementedException();
+                public override void Write(Utf8JsonWriter writer, DerivedDictionaryWithCustomConverter value, JsonSerializerOptions options) => throw new NotImplementedException();
+            }
         }
     }
 
