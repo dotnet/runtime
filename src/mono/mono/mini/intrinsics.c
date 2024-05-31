@@ -1108,6 +1108,7 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			g_assert (ctx);
 			g_assert (ctx->method_inst);
 			g_assert (ctx->method_inst->type_argc == 2);
+			const int obj_size = MONO_ABI_SIZEOF (MonoObject);
 
 			MonoInst* span = mono_compile_create_var (cfg, fsig->ret, OP_LOCAL);
 			MonoInst* span_addr;
