@@ -9802,7 +9802,7 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
             // Do we have a free targetReg?
             if (fromReg == sourceReg)
             {
-                if (source[fromReg] != REG_NA && (targetRegsFromStack.IsRegNumInMask(fromReg)))
+                if (source[fromReg] != REG_NA && !targetRegsFromStack.IsRegNumInMask(fromReg))
                 {
                     targetRegsReady |= fromReg;
 #ifdef TARGET_ARM
