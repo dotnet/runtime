@@ -1102,6 +1102,23 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			EMIT_NEW_BIALU_IMM (cfg, ins, OP_PADD_IMM, dreg, args [0]->dreg, MONO_STRUCT_OFFSET (MonoArray, vector));
 			return ins;
 		}
+		else if (!strcmp (cmethod->name, "CreateSpan") || !strcmp (cmethod->name, "CreateReadOnlySpan")) {
+			// Logic below works for both CreateSpan and CreateReadOnlySpan
+			MonoGenericContext* ctx = mono_method_get_context (cmethod);
+			g_assert (ctx);
+			g_assert (ctx->method_inst);
+			g_assert (ctx->method_inst->type_argc == 2);
+
+			MonoInst* span = mono_compile_create_var (cfg, fsig->ret, OP_LOCAL);
+			MonoInst* span_addr;
+			EMIT_NEW_TEMPLOADA (cfg, span_addr, span->inst_c0);
+			MonoClassField* field_ref = mono_class_get_field_from_name_full (span->klass, "_reference", NULL);
+			MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STOREP_MEMBASE_REG, span_addr->dreg, field_ref->offset - obj_size, args[0]->dreg);
+			MonoClassField* field_len = mono_class_get_field_from_name_full (span->klass, "_length", NULL);
+			MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STOREI4_MEMBASE_REG, span_addr->dreg, field_len->offset - obj_size, args[1]->dreg);
+			EMIT_NEW_TEMPLOAD (cfg, ins, span->inst_c0);
+			return ins;
+		}
 	} else if (cmethod->klass == mono_defaults.monitor_class) {
 		gboolean is_enter = FALSE;
 		gboolean is_v4 = FALSE;
