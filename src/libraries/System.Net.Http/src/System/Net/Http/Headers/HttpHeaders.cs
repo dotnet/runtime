@@ -168,57 +168,28 @@ namespace System.Net.Http.Headers
         internal bool TryAddWithoutValidation(HeaderDescriptor descriptor, IEnumerable<string?> values)
         {
             ArgumentNullException.ThrowIfNull(values);
+            string?[]? valuesArray = values as string?[];
+            IList<string?>? valuesList = values as IList<string?>;
 
-            if (values is string?[] valuesArray)
-            {
-                return SpecializedTryAddWithoutValidation(descriptor, valuesArray, null);
-            }
-            else if (values is IList<string?> valuesList)
-            {
-                return SpecializedTryAddWithoutValidation(descriptor, null, valuesList);
-            }
-
-            using IEnumerator<string?> enumerator = values.GetEnumerator();
-            if (enumerator.MoveNext())
-            {
-                TryAddWithoutValidation(descriptor, enumerator.Current);
-                if (enumerator.MoveNext())
-                {
-                    ref object? storeValueRef = ref GetValueRefOrAddDefault(descriptor);
-                    Debug.Assert(storeValueRef is not null);
-
-                    object value = storeValueRef;
-                    if (value is not HeaderStoreItemInfo info)
-                    {
-                        Debug.Assert(value is string);
-                        storeValueRef = info = new HeaderStoreItemInfo { RawValue = value };
-                    }
-
-                    do
-                    {
-                        AddRawValue(info, enumerator.Current ?? string.Empty);
-                    }
-                    while (enumerator.MoveNext());
-                }
-            }
-
-            return true;
-        }
-
-        private bool SpecializedTryAddWithoutValidation(HeaderDescriptor descriptor, string?[]? valuesArray, IList<string?>? valuesList)
-        {
-            Debug.Assert(valuesArray != null || valuesList != null);
-            int count = valuesArray != null ? valuesArray.Length : valuesList!.Count;
+            // the count is null when values is not a array nor IList
+            int? count = valuesArray != null ? valuesArray.Length : valuesList?.Count;
 
             if (count == 0)
             {
                 return true;
             }
 
+            // read the store of header values
+            // The header store contain a single raw string value when header values are single.
+            // The header store contain HeaderStoreItemInfo that wraps around a List<string> with header values when they are more than once
+
             ref object? storeValueRef = ref GetValueRefOrAddDefault(descriptor);
             object? storeValue = storeValueRef;
 
-            if (storeValue is not null || count > 1)
+            // check whether the header store contains already a value
+            // or header values count is more than one
+            // => allocate a HeaderStoreItemInfo on store that wraps around a List<string> of header values
+            if (storeValue is not null || (count.HasValue && count.Value > 1))
             {
                 if (storeValue is not HeaderStoreItemInfo info)
                 {
@@ -229,14 +200,22 @@ namespace System.Net.Http.Headers
                 if (rawValue is not List<string> rawValues)
                 {
                     info.RawValue = rawValues = new List<string>();
-                    if (rawValue is not null)
+
+                    if (rawValue != null)
                     {
-                        rawValues.EnsureCapacity(count + 1);
+                        if (count.HasValue)
+                        {
+                            rawValues.EnsureCapacity(count.Value + 1);
+                        }
+
                         rawValues.Add((string)rawValue);
                     }
                 }
 
-                rawValues.EnsureCapacity(count);
+                if (count.HasValue)
+                {
+                    rawValues.EnsureCapacity(count.Value);
+                }
 
                 if (valuesArray != null)
                 {
@@ -245,18 +224,53 @@ namespace System.Net.Http.Headers
                         rawValues.Add(valuesArray[i] ?? string.Empty);
                     }
                 }
-                else
+                else if (valuesList != null)
                 {
                     for (int i = 0; i < valuesList!.Count; i++)
                     {
                         rawValues.Add(valuesList[i] ?? string.Empty);
                     }
                 }
+                else
+                {
+                    foreach (string? value in values)
+                    {
+                        rawValues.Add(value ?? string.Empty);
+                    }
+                }
+            }
+            else if (count == 1)
+            {
+                // when header values are single the store contains just the header value
+                storeValueRef = valuesArray != null ? valuesArray[0] : (valuesList != null ? valuesList![0] : null);
             }
             else
             {
-                Debug.Assert(count == 1 && storeValue is null);
-                storeValueRef = (valuesArray != null ? valuesArray[0] : valuesList![0]) ?? string.Empty;
+                // handles the case when header values count is unknown because the values are abstracted by IEnumerable<string>
+                foreach (string? value in values)
+                {
+                    if (storeValueRef is null)
+                    {
+                        storeValueRef = value;
+                    }
+                    else
+                    {
+                        if (storeValueRef is not HeaderStoreItemInfo info)
+                        {
+                            storeValueRef = info = new HeaderStoreItemInfo { RawValue = storeValueRef };
+                        }
+
+                        object? rawValue = info.RawValue;
+
+                        if (rawValue is not List<string> rawValues)
+                        {
+                            info.RawValue = rawValues = new List<string>(2);
+                            rawValues.Add(rawValue == null ? string.Empty : (string)rawValue);
+                        }
+
+                        rawValues.Add(value ?? string.Empty);
+                    }
+                }
             }
 
             return true;
