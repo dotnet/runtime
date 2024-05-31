@@ -33622,7 +33622,7 @@ void gc_heap::plan_phase (int condemned_gen_number)
 
                 if (!loh_pinned_queue_decay)
                 {
-                    delete loh_pinned_queue;
+                    delete[] loh_pinned_queue;
                     loh_pinned_queue = 0;
                 }
             }
