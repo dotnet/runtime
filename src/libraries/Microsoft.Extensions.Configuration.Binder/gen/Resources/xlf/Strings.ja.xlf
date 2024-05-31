@@ -27,9 +27,9 @@
         <target state="translated">コレクション要素型はサポートされていません: '{0}'。</target>
         <note />
       </trans-unit>
-      <trans-unit id="Language VersionIsNotSupportedMessageFormat">
+      <trans-unit id="LanguageVersionIsNotSupportedMessageFormat">
         <source>The project's language version has to be at least 'C# 12'.</source>
-        <target state="translated">プロジェクトの言語バージョンは少なくとも 'C# 12' である必要があります。</target>
+        <target state="new">The project's language version has to be at least 'C# 12'.</target>
         <note />
       </trans-unit>
       <trans-unit id="LanguageVersionIsNotSupportedTitle">
