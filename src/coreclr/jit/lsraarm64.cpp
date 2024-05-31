@@ -1489,6 +1489,8 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                         // Can only avoid generating a table if both immediates are constant.
                         assert(intrin.op2->isContainedIntOrIImmed() == intrin.op3->isContainedIntOrIImmed());
                         needBranchTargetReg = !intrin.op2->isContainedIntOrIImmed();
+                        // Ensure that internal does not collide with desination.
+                        setInternalRegsDelayFree = true;
                         break;
 
                     default:
@@ -1996,6 +1998,8 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
         }
     }
 
+    buildInternalRegisterUses();
+
     if ((dstCount == 1) || (dstCount == 2))
     {
         BuildDef(intrinsicTree);
@@ -2009,8 +2013,6 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
     {
         assert(dstCount == 0);
     }
-
-    buildInternalRegisterUses();
 
     *pDstCount = dstCount;
     return srcCount;
