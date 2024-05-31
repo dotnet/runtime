@@ -688,7 +688,8 @@ namespace System.Reflection.Emit
         {
             if (!_typeReferences.TryGetValue(type, out var typeHandle))
             {
-                if (type.IsArray || type.IsGenericParameter || (type.IsGenericType && !type.IsGenericTypeDefinition))
+                if (type.HasElementType || type.IsGenericParameter ||
+                    (type.IsGenericType && !type.IsGenericTypeDefinition))
                 {
                     typeHandle = AddTypeSpecification(type);
                 }
@@ -1094,8 +1095,21 @@ namespace System.Reflection.Emit
             return GetMemberReferenceHandle(member);
         }
 
-        private static bool IsConstructedFromTypeBuilder(Type type) => type.IsConstructedGenericType &&
-            (type.GetGenericTypeDefinition() is TypeBuilderImpl || ContainsTypeBuilder(type.GetGenericArguments()));
+        private static bool IsConstructedFromTypeBuilder(Type type)
+        {
+            if (type.IsConstructedGenericType)
+            {
+                return type.GetGenericTypeDefinition() is TypeBuilderImpl || ContainsTypeBuilder(type.GetGenericArguments());
+            }
+
+            Type? elementType = type.GetElementType();
+            if (elementType is not null)
+            {
+                return (elementType is TypeBuilderImpl) || IsConstructedFromTypeBuilder(elementType);
+            }
+
+            return false;
+        }
 
         internal static bool ContainsTypeBuilder(Type[] genericArguments)
         {

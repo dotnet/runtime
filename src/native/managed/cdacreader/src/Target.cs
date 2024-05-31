@@ -3,9 +3,11 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
 using System.Runtime.CompilerServices;
+using Microsoft.Diagnostics.DataContractReader.Data;
 
 namespace Microsoft.Diagnostics.DataContractReader;
 
@@ -15,8 +17,20 @@ public struct TargetPointer
 
     public ulong Value;
     public TargetPointer(ulong value) => Value = value;
+
+    public static implicit operator ulong(TargetPointer p) => p.Value;
+    public static implicit operator TargetPointer(ulong v) => new TargetPointer(v);
 }
 
+/// <summary>
+/// Representation of the target under inspection
+/// </summary>
+/// <remarks>
+/// This class provides APIs used by contracts for reading from the target and getting type and globals
+/// information based on the target's contract descriptor. Like the contracts themselves in cdacreader,
+/// these are throwing APIs. Any callers at the boundaries (for example, unmanaged entry points, COM)
+/// should handle any exceptions.
+/// </remarks>
 public sealed unsafe class Target
 {
     public record struct TypeInfo
@@ -51,7 +65,7 @@ public sealed unsafe class Target
     private readonly Dictionary<string, TypeInfo> _types = [];
 
     internal Contracts.Registry Contracts { get; }
-    internal DataCache ProcessedData { get; } = new DataCache();
+    internal DataCache ProcessedData { get; }
 
     public static bool TryCreate(ulong contractDescriptor, delegate* unmanaged<ulong, byte*, uint, void*, int> readFromTarget, void* readContext, out Target? target)
     {
@@ -69,6 +83,7 @@ public sealed unsafe class Target
     private Target(Configuration config, ContractDescriptorParser.ContractDescriptor descriptor, TargetPointer[] pointerData, Reader reader)
     {
         Contracts = new Contracts.Registry(this);
+        ProcessedData = new DataCache(this);
         _config = config;
         _reader = reader;
 
@@ -328,14 +343,29 @@ public sealed unsafe class Target
     /// </summary>
     internal sealed class DataCache
     {
+        private readonly Target _target;
         private readonly Dictionary<(ulong, Type), object?> _readDataByAddress = [];
 
-        public bool TryRegister<T>(ulong address, T data)
+        public DataCache(Target target)
         {
-            return _readDataByAddress.TryAdd((address, typeof(T)), data);
+            _target = target;
         }
 
-        public bool TryGet<T>(ulong address, [NotNullWhen(true)] out T? data)
+        public T GetOrAdd<T>(TargetPointer address) where T : IData<T>
+        {
+            if (TryGet(address, out T? result))
+                return result;
+
+            T constructed = T.Create(_target, address);
+            if (_readDataByAddress.TryAdd((address, typeof(T)), constructed))
+                return constructed;
+
+            bool found = TryGet(address, out result);
+            Debug.Assert(found);
+            return result!;
+        }
+
+        private bool TryGet<T>(ulong address, [NotNullWhen(true)] out T? data)
         {
             data = default;
             if (!_readDataByAddress.TryGetValue((address, typeof(T)), out object? dataObj))
