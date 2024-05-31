@@ -715,6 +715,9 @@
         <ExcludeList Include="$(XunitTestBinBase)/baseservices/exceptions/unhandled/unhandledTester/*">
             <Issue>Test expects being run with corerun</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/regressions/dd52/**">
+            <Issue>https://github.com/dotnet/runtime/issues/102741</Issue>
+        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/debugging/debuginfo/tester/*">
             <Issue>Just-in-time compilation test</Issue>
         </ExcludeList>
@@ -1091,6 +1094,7 @@
         <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader\DefaultInterfaceMethods\constrainedcall\constrainedcall\*" />
         <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader\DefaultInterfaceMethods\constrainedcall\constrained2\*" />
         <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader\DefaultInterfaceMethods\constrainedcall\constrained2_gm\*" />
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/regressions/dev10_568786/4_Misc/**" />
 
         <!-- Arrays with non-zero lower bounds -->
         <!-- https://github.com/dotnet/runtimelab/issues/155 -->

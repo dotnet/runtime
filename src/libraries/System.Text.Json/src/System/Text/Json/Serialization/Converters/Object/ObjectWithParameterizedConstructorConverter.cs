@@ -610,7 +610,7 @@ namespace System.Text.Json.Serialization.Converters
             // For case insensitive and missing property support of JsonPath, remember the value on the temporary stack.
             state.Current.JsonPropertyName = utf8PropertyName;
 
-            jsonParameterInfo = jsonPropertyInfo.ParameterInfo;
+            jsonParameterInfo = jsonPropertyInfo.AssociatedParameter;
             if (jsonParameterInfo != null)
             {
                 state.Current.JsonPropertyInfo = null;

@@ -8,6 +8,10 @@
 
 using System;
 using System.Linq;
+using System.Numerics;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics.Arm;
 
 namespace JIT.HardwareIntrinsics.Arm
 {
@@ -6579,5 +6583,77 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             return (float)(BitConverter.Int64BitsToDouble(TestLibrary.Generator.GetInt64()%(long)2));
         }
+
+        public static int MaskNumberOfElementsVector(int elems, SveMaskPattern pattern)
+        {
+
+            switch(pattern)
+            {
+                // Returns elems, as this is always a power of 2.
+                case SveMaskPattern.LargestPowerOf2:
+                    return elems;
+
+                // Returns N if N elements can fit in the vector. Otherwise 0.
+                case SveMaskPattern.VectorCount1:
+                    return elems >= 1 ? 1 : 0;
+                case SveMaskPattern.VectorCount2:
+                    return elems >= 2 ? 2 : 0;
+                case SveMaskPattern.VectorCount3:
+                    return elems >= 3 ? 3 : 0;
+                case SveMaskPattern.VectorCount4:
+                    return elems >= 4 ? 4 : 0;
+                case SveMaskPattern.VectorCount5:
+                    return elems >= 5 ? 5 : 0;
+                case SveMaskPattern.VectorCount6:
+                    return elems >= 6 ? 6 : 0;
+                case SveMaskPattern.VectorCount7:
+                    return elems >= 7 ? 7 : 0;
+                case SveMaskPattern.VectorCount8:
+                    return elems >= 8 ? 8 : 0;
+                case SveMaskPattern.VectorCount16:
+                    return elems >= 16 ? 16 : 0;
+                case SveMaskPattern.VectorCount32:
+                    return elems >= 32 ? 32 : 0;
+                case SveMaskPattern.VectorCount64:
+                    return elems >= 64 ? 64 : 0;
+                case SveMaskPattern.VectorCount128:
+                    return elems >= 128 ? 128 : 0;
+                case SveMaskPattern.VectorCount256:
+                    return elems >= 256 ? 256 : 0;
+
+                // Number of elems rounded down to nearest multiple of 4
+                case SveMaskPattern.LargestMultipleOf4:
+                    return elems - (elems % 4);
+
+                // Number of elems rounded down to nearest multiple of 3
+                case SveMaskPattern.LargestMultipleOf3:
+                    return elems - (elems % 3);
+
+                case SveMaskPattern.All:
+                default:
+                    return elems;
+            }
+        }
+
+        public static int NumberOfElementsInVectorInt8(SveMaskPattern pattern)
+        {
+            return MaskNumberOfElementsVector(Unsafe.SizeOf<Vector<byte>>() / sizeof(byte), pattern);
+        }
+        
+        public static int NumberOfElementsInVectorInt16(SveMaskPattern pattern)
+        {
+            return MaskNumberOfElementsVector(Unsafe.SizeOf<Vector<short>>() / sizeof(short), pattern);
+        }
+
+        public static int NumberOfElementsInVectorInt32(SveMaskPattern pattern)
+        {
+            return MaskNumberOfElementsVector(Unsafe.SizeOf<Vector<int>>() / sizeof(int), pattern);
+        }
+
+        public static int NumberOfElementsInVectorInt64(SveMaskPattern pattern)
+        {
+            return MaskNumberOfElementsVector(Unsafe.SizeOf<Vector<long>>() / sizeof(long), pattern);
+        }
+
     }
 }
