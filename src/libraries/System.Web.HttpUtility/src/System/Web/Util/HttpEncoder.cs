@@ -7,7 +7,6 @@ using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
 using System.Net;
-using System.Runtime.CompilerServices;
 using System.Text;
 
 namespace System.Web.Util
@@ -486,16 +485,10 @@ namespace System.Web.Util
                 return UrlEncode(byteSpan.Slice(0, encodedBytes));
             }
 
-            return Fallback(str, e);
-
-            [MethodImpl(MethodImplOptions.NoInlining)]
-            static byte[] Fallback(string str, Encoding e)
-            {
-                byte[] bytes = e.GetBytes(str);
-                return NeedsEncoding(bytes, out int cUnsafe)
-                    ? UrlEncode(bytes, cUnsafe)
-                    : bytes;
-            }
+            byte[] bytes = e.GetBytes(str);
+            return NeedsEncoding(bytes, out int cUnsafe)
+                ? UrlEncode(bytes, cUnsafe)
+                : bytes;
         }
 
         //  Helper to encode the non-ASCII url characters only
