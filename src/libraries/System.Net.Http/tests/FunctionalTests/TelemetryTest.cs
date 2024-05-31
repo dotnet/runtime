@@ -51,7 +51,7 @@ namespace System.Net.Http.Functional.Tests
         [OuterLoop]
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [MemberData(nameof(TestMethods_MemberData))]
-        public void EventSource_SuccessfulRequest_LogsStartStop(string testMethod)
+        public async Task EventSource_SuccessfulRequest_LogsStartStop(string testMethod)
         {
             if (UseVersion.Major != 1 && !testMethod.EndsWith("Async"))
             {
@@ -59,7 +59,7 @@ namespace System.Net.Http.Functional.Tests
                 return;
             }
 
-            RemoteExecutor.Invoke(static async (useVersionString, testMethod) =>
+            await RemoteExecutor.Invoke(static async (useVersionString, testMethod) =>
             {
                 const int ResponseContentLength = 42;
 
@@ -188,13 +188,13 @@ namespace System.Net.Http.Functional.Tests
                     count: 1);
 
                 ValidateEventCounters(events, requestCount: 1, shouldHaveFailures: false, versionMajor: version.Major);
-            }, UseVersion.ToString(), testMethod).Dispose();
+            }, UseVersion.ToString(), testMethod).DisposeAsync();
         }
 
         [OuterLoop]
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [MemberData(nameof(TestMethods_MemberData))]
-        public void EventSource_UnsuccessfulRequest_LogsStartFailedStop(string testMethod)
+        public async Task EventSource_UnsuccessfulRequest_LogsStartFailedStop(string testMethod)
         {
             if (UseVersion.Major != 1 && !testMethod.EndsWith("Async"))
             {
@@ -202,7 +202,7 @@ namespace System.Net.Http.Functional.Tests
                 return;
             }
 
-            RemoteExecutor.Invoke(static async (useVersionString, testMethod) =>
+            await RemoteExecutor.Invoke(static async (useVersionString, testMethod) =>
             {
                 Version version = Version.Parse(useVersionString);
                 using var listener = new TestEventListener("System.Net.Http", EventLevel.Verbose, eventCounterInterval: 0.1d);
@@ -293,7 +293,7 @@ namespace System.Net.Http.Functional.Tests
                 ValidateConnectionEstablishedClosed(events, version, expectedUri);
 
                 ValidateEventCounters(events, requestCount: 1, shouldHaveFailures: true, versionMajor: version.Major);
-            }, UseVersion.ToString(), testMethod).Dispose();
+            }, UseVersion.ToString(), testMethod).DisposeAsync();
         }
 
         [OuterLoop]
@@ -304,7 +304,7 @@ namespace System.Net.Http.Functional.Tests
         [InlineData("SendChunkedAsync")]
         [InlineData("InvokerSend")]
         [InlineData("InvokerSendAsync")]
-        public void EventSource_SendingRequestContent_LogsRequestContentStartStop(string testMethod)
+        public async Task EventSource_SendingRequestContent_LogsRequestContentStartStop(string testMethod)
         {
             if (UseVersion.Major != 1 && !testMethod.EndsWith("Async"))
             {
@@ -312,7 +312,7 @@ namespace System.Net.Http.Functional.Tests
                 return;
             }
 
-            RemoteExecutor.Invoke(static async (useVersionString, testMethod) =>
+            await RemoteExecutor.Invoke(static async (useVersionString, testMethod) =>
             {
                 const int RequestContentLength = 42;
                 const int ResponseContentLength = 43;
@@ -396,7 +396,7 @@ namespace System.Net.Http.Functional.Tests
                     count: 1);
 
                 ValidateEventCounters(events, requestCount: 1, shouldHaveFailures: false, versionMajor: version.Major);
-            }, UseVersion.ToString(), testMethod).Dispose();
+            }, UseVersion.ToString(), testMethod).DisposeAsync();
         }
 
         private static void ValidateStartFailedStopEvents(ConcurrentQueue<(EventWrittenEventArgs Event, Guid ActivityId)> events, Version version, bool shouldHaveFailures = false, int count = 1)

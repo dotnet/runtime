@@ -166,14 +166,14 @@ namespace System.Net.Http.Functional.Tests
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [InlineData(false)]
         [InlineData(true)]
-        public void SendAsync_HttpTracingEnabled_Succeeds(bool useSsl)
+        public async Task SendAsync_HttpTracingEnabled_Succeeds(bool useSsl)
         {
             if (useSsl && UseVersion == HttpVersion.Version20 && !PlatformDetection.SupportsAlpn)
             {
                 return;
             }
 
-            RemoteExecutor.Invoke(async (useVersion, useSsl, testAsync) =>
+            await RemoteExecutor.Invoke(async (useVersion, useSsl, testAsync) =>
             {
                 using (var listener = new TestEventListener("Private.InternalDiagnostics.System.Net.Http", EventLevel.Verbose))
                 {
@@ -194,7 +194,7 @@ namespace System.Net.Http.Functional.Tests
                         ev => ev.EventId == 0); // make sure there are no event source error messages
                     Assert.InRange(events.Count, 1, int.MaxValue);
                 }
-            }, UseVersion.ToString(), useSsl.ToString(), TestAsync.ToString()).Dispose();
+            }, UseVersion.ToString(), useSsl.ToString(), TestAsync.ToString()).DisposeAsync();
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
@@ -290,9 +290,9 @@ namespace System.Net.Http.Functional.Tests
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [InlineData(ActivityIdFormat.Hierarchical)]
         [InlineData(ActivityIdFormat.W3C)]
-        public void SendAsync_ExpectedDiagnosticSourceActivityLogging(ActivityIdFormat idFormat)
+        public async Task SendAsync_ExpectedDiagnosticSourceActivityLogging(ActivityIdFormat idFormat)
         {
-            RemoteExecutor.Invoke(async (useVersion, testAsync, idFormatString) =>
+            await RemoteExecutor.Invoke(async (useVersion, testAsync, idFormatString) =>
             {
                 ActivityIdFormat idFormat = Enum.Parse<ActivityIdFormat>(idFormatString);
 
@@ -376,7 +376,7 @@ namespace System.Net.Http.Functional.Tests
                     Assert.False(exceptionLogged, "Exception was logged for successful request");
                     Assert.False(responseLogged, "Response was logged when Activity logging was enabled.");
                 }
-            }, UseVersion.ToString(), TestAsync.ToString(), idFormat.ToString()).Dispose();
+            }, UseVersion.ToString(), TestAsync.ToString(), idFormat.ToString()).DisposeAsync();
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
@@ -900,9 +900,9 @@ namespace System.Net.Http.Functional.Tests
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [InlineData(true)]
         [InlineData(false)]
-        public void SendAsync_SuppressedGlobalStaticPropagationNoListenerAppCtx(bool switchValue)
+        public async Task SendAsync_SuppressedGlobalStaticPropagationNoListenerAppCtx(bool switchValue)
         {
-            RemoteExecutor.Invoke(async (useVersion, testAsync, switchValue) =>
+            await RemoteExecutor.Invoke(async (useVersion, testAsync, switchValue) =>
             {
                 AppContext.SetSwitch(EnableActivityPropagationAppCtxSettingName, bool.Parse(switchValue));
 
@@ -917,7 +917,7 @@ namespace System.Net.Http.Functional.Tests
                         Assert.Equal(bool.Parse(switchValue), request.Headers.Contains(headerName));
                     },
                     async server => await server.HandleRequestAsync());
-            }, UseVersion.ToString(), TestAsync.ToString(), switchValue.ToString()).Dispose();
+            }, UseVersion.ToString(), TestAsync.ToString(), switchValue.ToString()).DisposeAsync();
         }
 
         public static IEnumerable<object[]> SocketsHttpHandlerPropagators_WithIdFormat_MemberData()
@@ -987,11 +987,11 @@ namespace System.Net.Http.Functional.Tests
 
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [MemberData(nameof(SocketsHttpHandler_ActivityCreation_MemberData))]
-        public void SendAsync_ActivityIsCreatedIfRequested(bool currentActivitySet, bool? diagnosticListenerActivityEnabled, bool? activitySourceCreatesActivity)
+        public async Task SendAsync_ActivityIsCreatedIfRequested(bool currentActivitySet, bool? diagnosticListenerActivityEnabled, bool? activitySourceCreatesActivity)
         {
             string parameters = $"{currentActivitySet},{diagnosticListenerActivityEnabled},{activitySourceCreatesActivity}";
 
-            RemoteExecutor.Invoke(async (useVersion, testAsync, parametersString) =>
+            await RemoteExecutor.Invoke(async (useVersion, testAsync, parametersString) =>
             {
                 bool?[] parameters = parametersString.Split(',').Select(p => p.Length == 0 ? (bool?)null : bool.Parse(p)).ToArray();
                 bool currentActivitySet = parameters[0].Value;
@@ -1071,7 +1071,7 @@ namespace System.Net.Http.Functional.Tests
 
                 Assert.Equal(activitySourceCreatesActivity.HasValue, madeASamplingDecision);
                 Assert.Equal(diagnosticListenerActivityEnabled.HasValue, listenerCallbackWasCalled);
-            }, UseVersion.ToString(), TestAsync.ToString(), parameters).Dispose();
+            }, UseVersion.ToString(), TestAsync.ToString(), parameters).DisposeAsync();
         }
 
         private static T GetProperty<T>(object obj, string propertyName)

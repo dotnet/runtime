@@ -347,7 +347,7 @@ namespace System.Net.Http.Functional.Tests
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [InlineData(20_000)]
         [InlineData(Timeout.Infinite)]
-        public void PendingConnectionTimeout_HighValue_PendingConnectionIsNotCancelled(int timeout)
+        public async Task PendingConnectionTimeout_HighValue_PendingConnectionIsNotCancelled(int timeout)
         {
             if (UseVersion == HttpVersion.Version30)
             {
@@ -355,7 +355,7 @@ namespace System.Net.Http.Functional.Tests
                 return;
             }
 
-            RemoteExecutor.Invoke(static async (versionString, timoutStr) =>
+            await RemoteExecutor.Invoke(static async (versionString, timoutStr) =>
             {
                 // Setup "infinite" timeout of int.MaxValue milliseconds
                 AppContext.SetData("System.Net.SocketsHttpHandler.PendingConnectionTimeoutOnRequestCompletion", int.Parse(timoutStr));
@@ -390,7 +390,7 @@ namespace System.Net.Http.Functional.Tests
                 await Assert.ThrowsAnyAsync<TaskCanceledException>(() => client.GetAsync("https://dummy", requestCts.Token)).WaitAsync(TestHelper.PassingTestTimeout);
 
                 await connectionTestTcs.Task.WaitAsync(TestHelper.PassingTestTimeout);
-            }, UseVersion.ToString(), timeout.ToString()).Dispose();
+            }, UseVersion.ToString(), timeout.ToString()).DisposeAsync();
         }
 
         private sealed class SetTcsContent : StreamContent

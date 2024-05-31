@@ -364,13 +364,13 @@ namespace System.Net.Http.Functional.Tests
         [InlineData("System.Net.Http.HttpRequestOut.Start")]
         [InlineData("System.Net.Http.Request")]
         [InlineData("System.Net.Http.HttpRequestOut.Stop")]
-        public void RequestDuration_CustomTags_DiagnosticListener_Recorded(string eventName)
+        public async Task RequestDuration_CustomTags_DiagnosticListener_Recorded(string eventName)
         {
-            RemoteExecutor.Invoke(static async (testClassName, eventNameInner) =>
+            await RemoteExecutor.Invoke(static async (testClassName, eventNameInner) =>
             {
                 using HttpMetricsTest test = (HttpMetricsTest)Activator.CreateInstance(Type.GetType(testClassName), (ITestOutputHelper)null);
                 await test.RequestDuration_CustomTags_DiagnosticListener_Recorded_Core(eventNameInner);
-            }, GetType().FullName, eventName).Dispose();
+            }, GetType().FullName, eventName).DisposeAsync();
         }
 
         private async Task RequestDuration_CustomTags_DiagnosticListener_Recorded_Core(string eventName)

@@ -145,9 +145,9 @@ namespace System.Net.Http.Tests
         [InlineData("socks5://1.2.3.4:8888/foo", "1.2.3.4", "8888", null, null)]
         [InlineData("https://1.1.1.5:3005", "1.1.1.5", "3005", null, null)]
         [InlineData("https://1.1.1.5", "1.1.1.5", "443", null, null)]
-        public void HttpProxy_Uri_Parsing(string _input, string _host, string _port, string _user, string _password)
+        public async Task HttpProxy_Uri_Parsing(string _input, string _host, string _port, string _user, string _password)
         {
-            RemoteExecutor.Invoke((input, host, port, user, password) =>
+            await RemoteExecutor.Invoke((input, host, port, user, password) =>
             {
                 // Remote exec does not allow to pass null at this moment.
                 if (user == "null")
@@ -179,7 +179,7 @@ namespace System.Net.Http.Tests
                 }
 
                 return RemoteExecutor.SuccessExitCode;
-            }, _input, _host, _port, _user ?? "null", _password ?? "null").Dispose();
+            }, _input, _host, _port, _user ?? "null", _password ?? "null").DisposeAsync();
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
@@ -265,14 +265,14 @@ namespace System.Net.Http.Tests
 
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [MemberData(nameof(HttpProxyNoProxyEnvVarMemberData))]
-        public void HttpProxy_TryCreate_CaseInsensitiveVariables(string proxyEnvVar, string noProxyEnvVar)
+        public async Task HttpProxy_TryCreate_CaseInsensitiveVariables(string proxyEnvVar, string noProxyEnvVar)
         {
             string proxy = "http://foo:PLACEHOLDER@1.1.1.1:3000";
 
             var options = new RemoteInvokeOptions();
             options.StartInfo.EnvironmentVariables.Add(proxyEnvVar, proxy);
             options.StartInfo.EnvironmentVariables.Add(noProxyEnvVar, ".test.com, foo.com");
-            RemoteExecutor.Invoke((proxy) =>
+            await RemoteExecutor.Invoke((proxy) =>
             {
                 var directUri = new Uri("http://test.com");
                 var thruProxyUri = new Uri("http://atest.com");
@@ -283,7 +283,7 @@ namespace System.Net.Http.Tests
                 Assert.True(p.IsBypassed(directUri));
                 Assert.False(p.IsBypassed(thruProxyUri));
                 Assert.Equal(new Uri(proxy), p.GetProxy(thruProxyUri));
-            }, proxy, options).Dispose();
+            }, proxy, options).DisposeAsync();
         }
 
         public static IEnumerable<object[]> HttpProxyCgiEnvVarMemberData()
@@ -297,7 +297,7 @@ namespace System.Net.Http.Tests
 
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [MemberData(nameof(HttpProxyCgiEnvVarMemberData))]
-        public void HttpProxy_TryCreateAndPossibleCgi_HttpProxyUpperCaseDisabledInCgi(
+        public async Task HttpProxy_TryCreateAndPossibleCgi_HttpProxyUpperCaseDisabledInCgi(
             string proxyEnvVar, bool cgi, bool expectedProxyUse)
         {
             string proxy = "http://foo:PLACEHOLDER@1.1.1.1:3000";
@@ -309,7 +309,7 @@ namespace System.Net.Http.Tests
                 options.StartInfo.EnvironmentVariables.Add("GATEWAY_INTERFACE", "CGI/1.1");
             }
 
-            RemoteExecutor.Invoke((proxy, expectedProxyUseString) =>
+            await RemoteExecutor.Invoke((proxy, expectedProxyUseString) =>
             {
                 bool expectedProxyUse = bool.Parse(expectedProxyUseString);
                 var destinationUri = new Uri("http://test.com");
@@ -325,7 +325,7 @@ namespace System.Net.Http.Tests
                 {
                     Assert.False(created);
                 }
-            }, proxy, expectedProxyUse.ToString(), options).Dispose();
+            }, proxy, expectedProxyUse.ToString(), options).DisposeAsync();
         }
     }
 }
