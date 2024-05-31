@@ -15,7 +15,7 @@ namespace Wasm.Build.Tests.TestAppScenarios;
 
 public abstract class DebugLevelTestsBase : AppTestBase
 {
-    public DebugLevelTests(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
+    public DebugLevelTestsBase(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
         : base(output, buildContext)
     {
     }
