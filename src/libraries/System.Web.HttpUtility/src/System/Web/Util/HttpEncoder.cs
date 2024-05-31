@@ -126,7 +126,7 @@ namespace System.Web.Util
         private static int IndexOfHtmlAttributeEncodingChars(string s) =>
             s.AsSpan().IndexOfAny("<\"'&");
 
-        private static bool IsNonAsciiOrSpaceByte(byte b) => b >= 0x7F || b <= 0x20;
+        private static bool IsNonAsciiOrSpaceByte(byte b) => (uint)b - 0x20 - 1 >= 0x7F - 0x20 - 1;
 
         internal static string JavaScriptStringEncode(string? value, bool addDoubleQuotes)
         {
@@ -610,7 +610,7 @@ namespace System.Web.Util
             }
 
             int indexOfQuery = value.IndexOf('?');
-            if (indexOfQuery >= 0 && indexOfQuery < i)
+            if ((uint)indexOfQuery < (uint)i)
             {
                 // Everything before the Query is valid ASCII
                 return value;

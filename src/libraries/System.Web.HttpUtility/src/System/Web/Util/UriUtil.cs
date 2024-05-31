@@ -40,7 +40,7 @@ namespace System.Web.Util
                     // To retain the same string as originally given, find the authority in the original url and include
                     // everything up to that.
                     int authorityIndex = inputWithoutQueryFragment.IndexOf(authority, StringComparison.OrdinalIgnoreCase);
-                    if (authorityIndex != -1)
+                    if (authorityIndex >= 0)
                     {
                         int schemeAndAuthorityLength = authorityIndex + authority.Length;
                         schemeAndAuthority = input.AsSpan(0, schemeAndAuthorityLength);
