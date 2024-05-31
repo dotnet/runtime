@@ -29,8 +29,8 @@ namespace System.Collections.Generic
         int GetHashCode(TAlternate alternate);
 
         /// <summary>
-        /// Creates a <typeparamref name="TAlternate"/> that is considered by
-        /// <see cref="Equals(TAlternate, T)"/> to be equal to the specified <paramref name="alternate"/>.
+        /// Creates a <typeparamref name="T"/> that is considered by <see cref="Equals(TAlternate, T)"/> to be equal
+        /// to the specified <paramref name="alternate"/>.
         /// </summary>
         /// <param name="alternate">The instance of type <typeparamref name="TAlternate"/> for which an equal <typeparamref name="T"/> is required.</param>
         /// <returns>A <typeparamref name="T"/> considered equal to the specified <paramref name="alternate"/>.</returns>
