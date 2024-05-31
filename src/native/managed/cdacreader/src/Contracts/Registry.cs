@@ -19,6 +19,7 @@ internal sealed class Registry
     }
 
     public IThread Thread => GetContract<IThread>();
+    public IMetadata Metadata => GetContract<IMetadata>();
 
     private T GetContract<T>() where T : IContract
     {

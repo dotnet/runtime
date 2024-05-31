@@ -1769,12 +1769,42 @@ ClrDataAccess::GetMethodTableData(CLRDATA_ADDRESS mt, struct DacpMethodTableData
         return E_INVALIDARG;
 
     SOSDacEnter();
+    if (m_cdacSos != NULL)
+    {
+        // Try the cDAC first - it will return E_NOTIMPL if it doesn't support this method yet. Fall back to the DAC.
+        hr = m_cdacSos->GetMethodTableData(mt, MTData);
+        if (FAILED(hr))
+        {
+            hr = GetMethodTableDataImpl(mt, MTData);
+        }
+#ifdef _DEBUG
+        else
+        {
+            // Assert that the data is the same as what we get from the DAC.
+            DacpMethodTableData mtDataLocal;
+            HRESULT hrLocal = GetMethodTableDataImpl(mt, &mtDataLocal);
+            _ASSERTE(hr == hrLocal);
+            //_ASSERTE(threadStoreData->threadCount == threadStoreDataLocal.threadCount);
+            // TODO(cdac)
+        }
+#endif
+    }
+    else
+    {
+        hr = GetMethodTableDataImpl (mt, MTData);
+    }
+    SOSDacLeave();
+    return hr;
+}
 
+HRESULT
+ClrDataAccess::GetMethodTableDataImpl(CLRDATA_ADDRESS mt, struct DacpMethodTableData *MTData)
+{
     PTR_MethodTable pMT = PTR_MethodTable(TO_TADDR(mt));
     BOOL bIsFree = FALSE;
     if (!DacValidateMethodTable(pMT, bIsFree))
     {
-        hr = E_INVALIDARG;
+        return E_INVALIDARG;
     }
     else
     {
@@ -1801,8 +1831,7 @@ ClrDataAccess::GetMethodTableData(CLRDATA_ADDRESS mt, struct DacpMethodTableData
         }
     }
 
-    SOSDacLeave();
-    return hr;
+    return S_OK;
 }
 
 HRESULT

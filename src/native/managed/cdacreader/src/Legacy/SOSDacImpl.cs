@@ -4,6 +4,7 @@
 using System;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
+using Microsoft.Diagnostics.DataContractReader.Data;
 
 namespace Microsoft.Diagnostics.DataContractReader.Legacy;
 
@@ -81,7 +82,22 @@ internal sealed partial class SOSDacImpl : ISOSDacInterface, ISOSDacInterface9
     public unsafe int GetMethodDescPtrFromFrame(ulong frameAddr, ulong* ppMD) => HResults.E_NOTIMPL;
     public unsafe int GetMethodDescPtrFromIP(ulong ip, ulong* ppMD) => HResults.E_NOTIMPL;
     public unsafe int GetMethodDescTransparencyData(ulong methodDesc, void* data) => HResults.E_NOTIMPL;
-    public unsafe int GetMethodTableData(ulong mt, DacpMethodTableData* data) => HResults.E_NOTIMPL;
+    public unsafe int GetMethodTableData(ulong mt, DacpMethodTableData* data)
+    {
+        if (mt == 0 || data == null)
+            return HResults.E_INVALIDARG;
+        try
+        {
+            Contracts.IMetadata contract = _target.Contracts.Metadata;
+            Contracts.MethodTable_1 methodTable = contract.GetMethodTableData(mt);
+
+            return HResults.E_NOTIMPL;
+        }
+        catch (Exception ex)
+        {
+            return ex.HResult;
+        }
+    }
     public unsafe int GetMethodTableFieldData(ulong mt, void* data) => HResults.E_NOTIMPL;
     public unsafe int GetMethodTableForEEClass(ulong eeClass, ulong* value) => HResults.E_NOTIMPL;
     public unsafe int GetMethodTableName(ulong mt, uint count, char* mtName, uint* pNeeded) => HResults.E_NOTIMPL;
