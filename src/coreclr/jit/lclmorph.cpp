@@ -372,7 +372,7 @@ public:
             unsigned* pIndex = m_map.LookupPointerOrAdd(assertion, UINT_MAX);
             if (*pIndex == UINT_MAX)
             {
-                index = (unsigned)m_assertions.Height();
+                index   = (unsigned)m_assertions.Height();
                 *pIndex = index;
                 m_assertions.Push(assertion);
                 m_lclAssertions[dstLclNum] |= uint64_t(1) << index;
