@@ -15221,8 +15221,8 @@ void emitter::emitDispInsSveHelp(instrDesc* id)
             break;
 
         // <Xd>, <Pg>, <Pn>.<T>
-        case IF_SVE_DK_3A:                         // ........xx...... ..gggg.NNNNddddd -- SVE predicate count
-            emitDispReg(id->idReg1(), EA_8BYTE, true);                                              // ddddd
+        case IF_SVE_DK_3A:                             // ........xx...... ..gggg.NNNNddddd -- SVE predicate count
+            emitDispReg(id->idReg1(), EA_8BYTE, true); // ddddd
             emitDispPredicateReg(id->idReg2(), insGetPredicateType(fmt, 2), id->idInsOpt(), true);  // gggg
             emitDispPredicateReg(id->idReg3(), insGetPredicateType(fmt, 3), id->idInsOpt(), false); // NNNN
             break;

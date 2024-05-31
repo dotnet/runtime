@@ -1605,7 +1605,8 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
             // HWInstrinsic requires a mask for op2
             if (!varTypeIsMask(op2))
             {
-                retNode->AsHWIntrinsic()->Op(2) = gtNewSimdConvertVectorToMaskNode(retType, op2, simdBaseJitType, simdSize);
+                retNode->AsHWIntrinsic()->Op(2) =
+                    gtNewSimdConvertVectorToMaskNode(retType, op2, simdBaseJitType, simdSize);
             }
         }
 
