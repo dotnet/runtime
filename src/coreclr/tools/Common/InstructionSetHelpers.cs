@@ -57,10 +57,10 @@ namespace System.CommandLine
 
                 string jitInterfaceLibrary = "jitinterface_" + RuntimeInformation.ProcessArchitecture.ToString().ToLowerInvariant();
                 nint libHandle = NativeLibrary.Load(jitInterfaceLibrary, System.Reflection.Assembly.GetExecutingAssembly(), DllImportSearchPath.ApplicationDirectory);
-                int cpuFeatures;
+                HardwareIntrinsicHelpers.HardwareIntrinsicConstants cpuFeatures = new HardwareIntrinsicHelpers.HardwareIntrinsicConstants();
                 unsafe
                 {
-                    var getCpuFeatures = (delegate* unmanaged<int>)NativeLibrary.GetExport(libHandle, "JitGetProcessorFeatures");
+                    var getCpuFeatures = (delegate* unmanaged<HardwareIntrinsicHelpers.HardwareIntrinsicConstants>)NativeLibrary.GetExport(libHandle, "JitGetProcessorFeatures");
                     cpuFeatures = getCpuFeatures();
                 }
                 HardwareIntrinsicHelpers.AddRuntimeRequiredIsaFlagsToBuilder(instructionSetSupportBuilder, cpuFeatures);

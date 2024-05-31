@@ -34,11 +34,11 @@ namespace ILCompiler
             {
                 case TargetArchitecture.X86:
                 case TargetArchitecture.X64:
-                    flag = XArchIntrinsicConstants.FromInstructionSet(instructionSet);
+                    flag = XArchIntrinsicFeatures.FromInstructionSet(instructionSet);
                     break;
 
                 case TargetArchitecture.ARM64:
-                    flag = Arm64IntrinsicConstants.FromInstructionSet(instructionSet);
+                    flag = Arm64IntrinsicFeatures.FromInstructionSet(instructionSet);
                     break;
 
                 default:
@@ -67,12 +67,12 @@ namespace ILCompiler
                 case TargetArchitecture.X86:
                 case TargetArchitecture.X64:
                     foreach (InstructionSet instructionSet in instructionSetSupport.SupportedFlags)
-                        result |= XArchIntrinsicConstants.FromInstructionSet(instructionSet);
+                        result |= XArchIntrinsicFeatures.FromInstructionSet(instructionSet);
                     break;
 
                 case TargetArchitecture.ARM64:
                     foreach (InstructionSet instructionSet in instructionSetSupport.SupportedFlags)
-                        result |= Arm64IntrinsicConstants.FromInstructionSet(instructionSet);
+                        result |= Arm64IntrinsicFeatures.FromInstructionSet(instructionSet);
                     break;
 
                 default:

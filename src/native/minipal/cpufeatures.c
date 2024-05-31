@@ -139,9 +139,9 @@ static bool IsAvx512Enabled()
 #endif // defined(HOST_X86) || defined(HOST_AMD64)
 #endif // HOST_WINDOWS
 
-int minipal_getcpufeatures(void)
+HardwareIntrinsicConstants minipal_getcpufeatures(void)
 {
-    int result = 0;
+    HardwareIntrinsicConstants result = {0};
 
 #if defined(HOST_X86) || defined(HOST_AMD64)
 
@@ -164,42 +164,51 @@ int minipal_getcpufeatures(void)
 
         if ((cpuidInfo[CPUID_EDX] & requiredBaselineEdxFlags) == requiredBaselineEdxFlags)
         {
-            result |= XArchIntrinsicConstants_VectorT128;
+            // result |= XArchIntrinsicConstants_VectorT128;
+            setFlag(&result, XArchIntrinsicConstants_VectorT128);
 
             if ((cpuidInfo[CPUID_ECX] & (1 << 25)) != 0)                                                                // AESNI
             {
-                result |= XArchIntrinsicConstants_Aes;
+                // result |= XArchIntrinsicConstants_Aes;
+                setFlag(&result, XArchIntrinsicConstants_Aes);
             }
 
             if ((cpuidInfo[CPUID_ECX] & (1 << 1)) != 0)                                                                 // PCLMULQDQ
             {
-                result |= XArchIntrinsicConstants_Pclmulqdq;
+                // result |= XArchIntrinsicConstants_Pclmulqdq;
+                setFlag(&result, XArchIntrinsicConstants_Pclmulqdq);
             }
 
             if ((cpuidInfo[CPUID_ECX] & (1 << 0)) != 0)                                                                 // SSE3
             {
-                result |= XArchIntrinsicConstants_Sse3;
+                // result |= XArchIntrinsicConstants_Sse3;
+                setFlag(&result, XArchIntrinsicConstants_Sse3);
 
                 if ((cpuidInfo[CPUID_ECX] & (1 << 9)) != 0)                                                             // SSSE3
                 {
-                    result |= XArchIntrinsicConstants_Ssse3;
+                    // result |= XArchIntrinsicConstants_Ssse3;
+                    setFlag(&result, XArchIntrinsicConstants_Ssse3);
 
                     if ((cpuidInfo[CPUID_ECX] & (1 << 19)) != 0)                                                        // SSE4.1
                     {
-                        result |= XArchIntrinsicConstants_Sse41;
+                        // result |= XArchIntrinsicConstants_Sse41;
+                        setFlag(&result, XArchIntrinsicConstants_Sse41);
 
                         if ((cpuidInfo[CPUID_ECX] & (1 << 20)) != 0)                                                    // SSE4.2
                         {
-                            result |= XArchIntrinsicConstants_Sse42;
+                            // result |= XArchIntrinsicConstants_Sse42;
+                            setFlag(&result, XArchIntrinsicConstants_Sse42);
 
                             if ((cpuidInfo[CPUID_ECX] & (1 << 22)) != 0)                                                // MOVBE
                             {
-                                result |= XArchIntrinsicConstants_Movbe;
+                                // result |= XArchIntrinsicConstants_Movbe;
+                                setFlag(&result, XArchIntrinsicConstants_Movbe);
                             }
 
                             if ((cpuidInfo[CPUID_ECX] & (1 << 23)) != 0)                                                // POPCNT
                             {
-                                result |= XArchIntrinsicConstants_Popcnt;
+                                // result |= XArchIntrinsicConstants_Popcnt;
+                                setFlag(&result, XArchIntrinsicConstants_Popcnt);
                             }
 
                             const int requiredAvxEcxFlags = (1 << 27)                                                   // OSXSAVE
@@ -209,11 +218,13 @@ int minipal_getcpufeatures(void)
                             {
                                 if (IsAvxEnabled() && (xmmYmmStateSupport() == 1))                                   // XGETBV == 11
                                 {
-                                    result |= XArchIntrinsicConstants_Avx;
+                                    // result |= XArchIntrinsicConstants_Avx;
+                                    setFlag(&result, XArchIntrinsicConstants_Avx);
 
                                     if ((cpuidInfo[CPUID_ECX] & (1 << 12)) != 0)                                        // FMA
                                     {
-                                        result |= XArchIntrinsicConstants_Fma;
+                                        // result |= XArchIntrinsicConstants_Fma;
+                                        setFlag(&result, XArchIntrinsicConstants_Fma);
                                     }
 
                                     if (maxCpuId >= 0x07)
@@ -222,56 +233,69 @@ int minipal_getcpufeatures(void)
 
                                         if ((cpuidInfo[CPUID_EBX] & (1 << 5)) != 0)                                     // AVX2
                                         {
-                                            result |= XArchIntrinsicConstants_Avx2;
-                                            result |= XArchIntrinsicConstants_VectorT256;
+                                            // result |= XArchIntrinsicConstants_Avx2;
+                                            setFlag(&result, XArchIntrinsicConstants_Avx2);
+                                            // result |= XArchIntrinsicConstants_VectorT256;
+                                            setFlag(&result, XArchIntrinsicConstants_VectorT256);
 
                                             if (IsAvx512Enabled() && (avx512StateSupport() == 1))                    // XGETBV XRC0[7:5] == 111
                                             {
                                                 if ((cpuidInfo[CPUID_EBX] & (1 << 16)) != 0)                            // AVX512F
                                                 {
-                                                    result |= XArchIntrinsicConstants_Avx512f;
-                                                    result |= XArchIntrinsicConstants_VectorT512;
+                                                    // result |= XArchIntrinsicConstants_Avx512f;
+                                                    setFlag(&result, XArchIntrinsicConstants_Avx512f);
+                                                    // result |= XArchIntrinsicConstants_VectorT512;
+                                                    setFlag(&result, XArchIntrinsicConstants_VectorT512);
 
                                                     bool isAVX512_VLSupported = false;
                                                     if ((cpuidInfo[CPUID_EBX] & (1 << 31)) != 0)                        // AVX512VL
                                                     {
-                                                        result |= XArchIntrinsicConstants_Avx512f_vl;
+                                                        // result |= XArchIntrinsicConstants_Avx512f_vl;
+                                                        setFlag(&result, XArchIntrinsicConstants_Avx512f_vl);
                                                         isAVX512_VLSupported = true;
                                                     }
 
                                                     if ((cpuidInfo[CPUID_EBX] & (1 << 30)) != 0)                        // AVX512BW
                                                     {
-                                                        result |= XArchIntrinsicConstants_Avx512bw;
+                                                        // result |= XArchIntrinsicConstants_Avx512bw;
+                                                        setFlag(&result, XArchIntrinsicConstants_Avx512bw);
                                                         if (isAVX512_VLSupported)                                       // AVX512BW_VL
                                                         {
-                                                            result |= XArchIntrinsicConstants_Avx512bw_vl;
+                                                            // result |= XArchIntrinsicConstants_Avx512bw_vl;
+                                                            setFlag(&result, XArchIntrinsicConstants_Avx512bw_vl);
                                                         }
                                                     }
 
                                                     if ((cpuidInfo[CPUID_EBX] & (1 << 28)) != 0)                        // AVX512CD
                                                     {
-                                                        result |= XArchIntrinsicConstants_Avx512cd;
+                                                        // result |= XArchIntrinsicConstants_Avx512cd;
+                                                        setFlag(&result, XArchIntrinsicConstants_Avx512cd);
                                                         if (isAVX512_VLSupported)                                       // AVX512CD_VL
                                                         {
-                                                            result |= XArchIntrinsicConstants_Avx512cd_vl;
+                                                            // result |= XArchIntrinsicConstants_Avx512cd_vl;
+                                                            setFlag(&result, XArchIntrinsicConstants_Avx512cd_vl);
                                                         }
                                                     }
 
                                                     if ((cpuidInfo[CPUID_EBX] & (1 << 17)) != 0)                        // AVX512DQ
                                                     {
-                                                        result |= XArchIntrinsicConstants_Avx512dq;
+                                                        // result |= XArchIntrinsicConstants_Avx512dq;
+                                                        setFlag(&result, XArchIntrinsicConstants_Avx512dq);
                                                         if (isAVX512_VLSupported)                                       // AVX512DQ_VL
                                                         {
-                                                            result |= XArchIntrinsicConstants_Avx512dq_vl;
+                                                            // result |= XArchIntrinsicConstants_Avx512dq_vl;
+                                                            setFlag(&result, XArchIntrinsicConstants_Avx512dq_vl);
                                                         }
                                                     }
 
                                                     if ((cpuidInfo[CPUID_ECX] & (1 << 1)) != 0)                         // AVX512VBMI
                                                     {
-                                                        result |= XArchIntrinsicConstants_Avx512Vbmi;
+                                                        // result |= XArchIntrinsicConstants_Avx512Vbmi;
+                                                        setFlag(&result, XArchIntrinsicConstants_Avx512Vbmi);
                                                         if (isAVX512_VLSupported)                                       // AVX512VBMI_VL
                                                         {
-                                                            result |= XArchIntrinsicConstants_Avx512Vbmi_vl;
+                                                            // result |= XArchIntrinsicConstants_Avx512Vbmi_vl;
+                                                            setFlag(&result, XArchIntrinsicConstants_Avx512Vbmi_vl);
                                                         }
                                                     }
                                                 }
@@ -281,7 +305,8 @@ int minipal_getcpufeatures(void)
 
                                             if ((cpuidInfo[CPUID_EAX] & (1 << 4)) != 0)                                 // AVX-VNNI
                                             {
-                                                result |= XArchIntrinsicConstants_AvxVnni;
+                                                // result |= XArchIntrinsicConstants_AvxVnni;
+                                                setFlag(&result, XArchIntrinsicConstants_AvxVnni);
                                             }
 
                                             if ((cpuidInfo[CPUID_EDX] & (1 << 19)) != 0)                                // Avx10
@@ -291,17 +316,20 @@ int minipal_getcpufeatures(void)
                                                 {
                                                     if ((cpuidInfo[CPUID_EBX] & (1 << 16)) != 0)
                                                     {
-                                                        result |= XArchIntrinsicConstants_Avx10v1;
+                                                        // result |= XArchIntrinsicConstants_Avx10v1;
+                                                        setFlag(&result, XArchIntrinsicConstants_Avx10v1);
                                                     }
 
                                                     if ((cpuidInfo[CPUID_EBX] & (1 << 17)) != 0)
                                                     {
-                                                        result |= XArchIntrinsicConstants_Avx10v1_V256;
+                                                        // result |= XArchIntrinsicConstants_Avx10v1_V256;
+                                                        setFlag(&result, XArchIntrinsicConstants_Avx10v1_V256);
                                                     }
 
                                                     if ((cpuidInfo[CPUID_EBX] & (1 << 18)) != 0)
                                                     {
-                                                        result |= XArchIntrinsicConstants_Avx10v1_V512;
+                                                        // result |= XArchIntrinsicConstants_Avx10v1_V512;
+                                                        setFlag(&result, XArchIntrinsicConstants_Avx10v1_V512);
                                                     }
                                                 }
                                             }
@@ -321,17 +349,20 @@ int minipal_getcpufeatures(void)
 
             if ((cpuidInfo[CPUID_EBX] & (1 << 3)) != 0)                                                           // BMI1
             {
-                result |= XArchIntrinsicConstants_Bmi1;
+                // result |= XArchIntrinsicConstants_Bmi1;
+                setFlag(&result, XArchIntrinsicConstants_Bmi1);
             }
 
             if ((cpuidInfo[CPUID_EBX] & (1 << 8)) != 0)                                                           // BMI2
             {
-                result |= XArchIntrinsicConstants_Bmi2;
+                // result |= XArchIntrinsicConstants_Bmi2;
+                setFlag(&result, XArchIntrinsicConstants_Bmi2);
             }
 
             if ((cpuidInfo[CPUID_EDX] & (1 << 14)) != 0)
             {
-                result |= XArchIntrinsicConstants_Serialize;                                               // SERIALIZE
+                // result |= XArchIntrinsicConstants_Serialize;                                               // SERIALIZE
+                setFlag(&result, XArchIntrinsicConstants_Serialize);
             }
         }
     }
@@ -345,7 +376,8 @@ int minipal_getcpufeatures(void)
 
         if ((cpuidInfo[CPUID_ECX] & (1 << 5)) != 0)                                                               // LZCNT
         {
-            result |= XArchIntrinsicConstants_Lzcnt;
+            // result |= XArchIntrinsicConstants_Lzcnt;
+            setFlag(&result, XArchIntrinsicConstants_Lzcnt);
         }
 
     }
@@ -358,37 +390,48 @@ int minipal_getcpufeatures(void)
     unsigned long hwCap = getauxval(AT_HWCAP);
 
     if (hwCap & HWCAP_AES)
-        result |= ARM64IntrinsicConstants_Aes;
+        // result |= ARM64IntrinsicConstants_Aes;
+        setFlag(&result, ARM64IntrinsicConstants_Aes);
 
     if (hwCap & HWCAP_ATOMICS)
-        result |= ARM64IntrinsicConstants_Atomics;
+        // result |= ARM64IntrinsicConstants_Atomics;
+        setFlag(&result, ARM64IntrinsicConstants_Atomics);
 
     if (hwCap & HWCAP_CRC32)
-        result |= ARM64IntrinsicConstants_Crc32;
+        // result |= ARM64IntrinsicConstants_Crc32;
+        setFlag(&result, ARM64IntrinsicConstants_Crc32);
 
     if (hwCap & HWCAP_ASIMDDP)
-        result |= ARM64IntrinsicConstants_Dp;
+        // result |= ARM64IntrinsicConstants_Dp;
+        setFlag(&result, ARM64IntrinsicConstants_Dp);
 
     if (hwCap & HWCAP_LRCPC)
-        result |= ARM64IntrinsicConstants_Rcpc;
+        // result |= ARM64IntrinsicConstants_Rcpc;
+        setFlag(&result, ARM64IntrinsicConstants_Rcpc);
 
     if (hwCap & HWCAP_ILRCPC)
-        result |= ARM64IntrinsicConstants_Rcpc2;
+        // result |= ARM64IntrinsicConstants_Rcpc2;
+        setFlag(&result, ARM64IntrinsicConstants_Rcpc2);
 
     if (hwCap & HWCAP_SHA1)
-        result |= ARM64IntrinsicConstants_Sha1;
+        // result |= ARM64IntrinsicConstants_Sha1;
+        setFlag(&result, ARM64IntrinsicConstants_Sha1);
 
     if (hwCap & HWCAP_SHA2)
-        result |= ARM64IntrinsicConstants_Sha256;
+        // result |= ARM64IntrinsicConstants_Sha256;
+        setFlag(&result, ARM64IntrinsicConstants_Sha256);
 
     if (hwCap & HWCAP_ASIMD)
-        result |= ARM64IntrinsicConstants_AdvSimd | ARM64IntrinsicConstants_VectorT128;
+        // result |= ARM64IntrinsicConstants_AdvSimd | ARM64IntrinsicConstants_VectorT128;
+        setFlag(&result, ARM64IntrinsicConstants_AdvSimd | ARM64IntrinsicConstants_VectorT128);
 
     if (hwCap & HWCAP_ASIMDRDM)
-        result |= ARM64IntrinsicConstants_Rdm;
+        // result |= ARM64IntrinsicConstants_Rdm;
+        setFlag(&result, ARM64IntrinsicConstants_Rdm);
 
     if (hwCap & HWCAP_SVE)
-        result |= ARM64IntrinsicConstants_Sve;
+        // result |= ARM64IntrinsicConstants_Sve;
+        setFlag(&result, ARM64IntrinsicConstants_Sve);
 
 #else // !HAVE_AUXV_HWCAP_H
 
@@ -397,76 +440,95 @@ int minipal_getcpufeatures(void)
     size_t sz = sizeof(valueFromSysctl);
 
     if ((sysctlbyname("hw.optional.arm.FEAT_AES", &valueFromSysctl, &sz, NULL, 0) == 0) && (valueFromSysctl != 0))
-        result |= ARM64IntrinsicConstants_Aes;
+        // result |= ARM64IntrinsicConstants_Aes;
+        setFlag(&result, ARM64IntrinsicConstants_Aes);
 
     if ((sysctlbyname("hw.optional.armv8_crc32", &valueFromSysctl, &sz, NULL, 0) == 0) && (valueFromSysctl != 0))
-        result |= ARM64IntrinsicConstants_Crc32;
+        // result |= ARM64IntrinsicConstants_Crc32;
+        setFlag(&result, ARM64IntrinsicConstants_Crc32);
 
     if ((sysctlbyname("hw.optional.arm.FEAT_DotProd", &valueFromSysctl, &sz, NULL, 0) == 0) && (valueFromSysctl != 0))
-        result |= ARM64IntrinsicConstants_Dp;
+        // result |= ARM64IntrinsicConstants_Dp;
+        setFlag(&result, ARM64IntrinsicConstants_Dp);
 
     if ((sysctlbyname("hw.optional.arm.FEAT_RDM", &valueFromSysctl, &sz, NULL, 0) == 0) && (valueFromSysctl != 0))
-        result |= ARM64IntrinsicConstants_Rdm;
+        // result |= ARM64IntrinsicConstants_Rdm
+        setFlag(&result, ARM64IntrinsicConstants_Rdm);
 
     if ((sysctlbyname("hw.optional.arm.FEAT_SHA1", &valueFromSysctl, &sz, NULL, 0) == 0) && (valueFromSysctl != 0))
-        result |= ARM64IntrinsicConstants_Sha1;
+        // result |= ARM64IntrinsicConstants_Sha1;
+        setFlag(&result, ARM64IntrinsicConstants_Sha1);
 
     if ((sysctlbyname("hw.optional.arm.FEAT_SHA256", &valueFromSysctl, &sz, NULL, 0) == 0) && (valueFromSysctl != 0))
-        result |= ARM64IntrinsicConstants_Sha256;
+        // result |= ARM64IntrinsicConstants_Sha256;
+        setFlag(&result, ARM64IntrinsicConstants_Sha256);
 
     if ((sysctlbyname("hw.optional.armv8_1_atomics", &valueFromSysctl, &sz, NULL, 0) == 0) && (valueFromSysctl != 0))
-        result |= ARM64IntrinsicConstants_Atomics;
+        // result |= ARM64IntrinsicConstants_Atomics;
+        setFlag(&result, ARM64IntrinsicConstants_Atomics);
 
     if ((sysctlbyname("hw.optional.arm.FEAT_LRCPC", &valueFromSysctl, &sz, NULL, 0) == 0) && (valueFromSysctl != 0))
-        result |= ARM64IntrinsicConstants_Rcpc;
+        // result |= ARM64IntrinsicConstants_Rcpc;
+        setFlag(&result, ARM64IntrinsicConstants_Rcpc);
 
     if ((sysctlbyname("hw.optional.arm.FEAT_LRCPC2", &valueFromSysctl, &sz, NULL, 0) == 0) && (valueFromSysctl != 0))
-        result |= ARM64IntrinsicConstants_Rcpc2;
+        // result |= ARM64IntrinsicConstants_Rcpc2
+        setFlag(&result, ARM64IntrinsicConstants_Rcpc2);
 #endif // HAVE_SYSCTLBYNAME
 
     // Every ARM64 CPU should support SIMD and FP
     // If the OS have no function to query for CPU capabilities we set just these
 
-    result |= ARM64IntrinsicConstants_AdvSimd | ARM64IntrinsicConstants_VectorT128;
+    // result |= ARM64IntrinsicConstants_AdvSimd | ARM64IntrinsicConstants_VectorT128;
+    setFlag(&result, ARM64IntrinsicConstants_AdvSimd | ARM64IntrinsicConstants_VectorT128);
 #endif // HAVE_AUXV_HWCAP_H
 #endif // HOST_UNIX
 
 #if defined(HOST_WINDOWS)
     // FP and SIMD support are enabled by default
-    result |= ARM64IntrinsicConstants_AdvSimd | ARM64IntrinsicConstants_VectorT128;
+    // result |= ARM64IntrinsicConstants_AdvSimd | ARM64IntrinsicConstants_VectorT128;
+    setFlag(&result, ARM64IntrinsicConstants_AdvSimd | ARM64IntrinsicConstants_VectorT128);
 
     if (IsProcessorFeaturePresent(PF_ARM_V8_CRYPTO_INSTRUCTIONS_AVAILABLE))
     {
-        result |= ARM64IntrinsicConstants_Aes;
-        result |= ARM64IntrinsicConstants_Sha1;
-        result |= ARM64IntrinsicConstants_Sha256;
+        // result |= ARM64IntrinsicConstants_Aes;
+        setFlag(&result, ARM64IntrinsicConstants_Aes);
+        // result |= ARM64IntrinsicConstants_Sha1;
+        setFlag(&result, ARM64IntrinsicConstants_Sha1);
+        // result |= ARM64IntrinsicConstants_Sha256;
+        setFlag(&result, ARM64IntrinsicConstants_Sha256);
     }
 
     if (IsProcessorFeaturePresent(PF_ARM_V8_CRC32_INSTRUCTIONS_AVAILABLE))
     {
-        result |= ARM64IntrinsicConstants_Crc32;
+        // result |= ARM64IntrinsicConstants_Crc32;
+        setFlag(&result, ARM64IntrinsicConstants_Crc32);
     }
 
     if (IsProcessorFeaturePresent(PF_ARM_V81_ATOMIC_INSTRUCTIONS_AVAILABLE))
     {
-        result |= ARM64IntrinsicConstants_Atomics;
+        // result |= ARM64IntrinsicConstants_Atomics;
+        setFlag(&result, ARM64IntrinsicConstants_Atomics);
     }
 
     if (IsProcessorFeaturePresent(PF_ARM_V82_DP_INSTRUCTIONS_AVAILABLE))
     {
-        result |= ARM64IntrinsicConstants_Dp;
+        // result |= ARM64IntrinsicConstants_Dp;
+        setFlag(&result, ARM64IntrinsicConstants_Dp);
     }
 
     if (IsProcessorFeaturePresent(PF_ARM_V83_LRCPC_INSTRUCTIONS_AVAILABLE))
     {
-        result |= ARM64IntrinsicConstants_Rcpc;
+        // result |= ARM64IntrinsicConstants_Rcpc;
+        setFlag(&result, ARM64IntrinsicConstants_Rcpc);
     }
 
     // TODO: IsProcessorFeaturePresent doesn't support LRCPC2 yet.
 
     if (IsProcessorFeaturePresent(PF_ARM_SVE_INSTRUCTIONS_AVAILABLE))
     {
-        result |= ARM64IntrinsicConstants_Sve;
+        // result |= ARM64IntrinsicConstants_Sve;
+        setFlag(&result, ARM64IntrinsicConstants_Sve);
     }
 
 #endif // HOST_WINDOWS

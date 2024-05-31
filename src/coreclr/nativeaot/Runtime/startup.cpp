@@ -50,11 +50,11 @@ extern RhConfig * g_pRhConfig;
 
 #if defined(HOST_X86) || defined(HOST_AMD64) || defined(HOST_ARM64)
 // This field is inspected from the generated code to determine what intrinsics are available.
-EXTERN_C int g_cpuFeatures;
-int g_cpuFeatures = 0;
+EXTERN_C HardwareIntrinsicConstants g_cpuFeatures;
+HardwareIntrinsicConstants g_cpuFeatures = {0};
 
 // This field is defined in the generated code and sets the ISA expectations.
-EXTERN_C int g_requiredCpuFeatures;
+EXTERN_C HardwareIntrinsicConstants g_requiredCpuFeatures;
 #endif
 
 #ifdef TARGET_UNIX
@@ -180,7 +180,7 @@ bool DetectCPUFeatures()
 #if defined(HOST_X86) || defined(HOST_AMD64) || defined(HOST_ARM64)
     g_cpuFeatures = minipal_getcpufeatures();
 
-    if ((g_cpuFeatures & g_requiredCpuFeatures) != g_requiredCpuFeatures)
+    if (!areEqualHardwareIntrinsicConstants(&g_cpuFeatures, &g_requiredCpuFeatures))
     {
         PalPrintFatalError("\nThe required instruction sets are not supported by the current CPU.\n");
         RhFailFast();

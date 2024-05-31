@@ -3,71 +3,96 @@
 
 #ifndef HAVE_MINIPAL_CPUFEATURES_H
 #define HAVE_MINIPAL_CPUFEATURES_H
-
+#define NUM_PARTS 3
 //
 // Should match the constants defined in the compiler in HardwareIntrinsicHelpers.cs
 //
 
+typedef struct {
+    uint32_t parts[NUM_PARTS];
+} HardwareIntrinsicConstants;
+
+inline bool areEqualHardwareIntrinsicConstants(HardwareIntrinsicConstants *constants1, HardwareIntrinsicConstants *constants2) {
+    for (int i = 0; i < NUM_PARTS; i++) {
+        if (constants1->parts[i] != constants2->parts[i]) {
+            return false;
+        }
+    }
+    return true;
+}
+
+inline void setFlag(HardwareIntrinsicConstants *constants, int flag) {
+    constants->parts[flag / 32] |= (1 << (flag % 32));
+}
+
+inline void clearFlag(HardwareIntrinsicConstants *constants, int flag) {
+    constants->parts[flag / 32] &= ~(1 << (flag % 32));
+}
+
+inline bool isFlagSet(const HardwareIntrinsicConstants *constants, int flag) {
+    return (constants->parts[flag / 32] & (1 << (flag % 32))) != 0;
+}
+
 #if defined(HOST_X86) || defined(HOST_AMD64)
-enum XArchIntrinsicConstants
+enum XArchIntrinsicFeatures
 {
-    XArchIntrinsicConstants_Aes = 0x0001,
-    XArchIntrinsicConstants_Pclmulqdq = 0x0002,
-    XArchIntrinsicConstants_Sse3 = 0x0004,
-    XArchIntrinsicConstants_Ssse3 = 0x0008,
-    XArchIntrinsicConstants_Sse41 = 0x0010,
-    XArchIntrinsicConstants_Sse42 = 0x0020,
-    XArchIntrinsicConstants_Popcnt = 0x0040,
-    XArchIntrinsicConstants_Avx = 0x0080,
-    XArchIntrinsicConstants_Fma = 0x0100,
-    XArchIntrinsicConstants_Avx2 = 0x0200,
-    XArchIntrinsicConstants_Bmi1 = 0x0400,
-    XArchIntrinsicConstants_Bmi2 = 0x0800,
-    XArchIntrinsicConstants_Lzcnt = 0x1000,
-    XArchIntrinsicConstants_AvxVnni = 0x2000,
-    XArchIntrinsicConstants_Movbe = 0x4000,
-    XArchIntrinsicConstants_Avx512f = 0x8000,
-    XArchIntrinsicConstants_Avx512f_vl = 0x10000,
-    XArchIntrinsicConstants_Avx512bw = 0x20000,
-    XArchIntrinsicConstants_Avx512bw_vl = 0x40000,
-    XArchIntrinsicConstants_Avx512cd = 0x80000,
-    XArchIntrinsicConstants_Avx512cd_vl = 0x100000,
-    XArchIntrinsicConstants_Avx512dq = 0x200000,
-    XArchIntrinsicConstants_Avx512dq_vl = 0x400000,
-    XArchIntrinsicConstants_Avx512Vbmi = 0x800000,
-    XArchIntrinsicConstants_Avx512Vbmi_vl = 0x1000000,
-    XArchIntrinsicConstants_Serialize = 0x2000000,
-    XArchIntrinsicConstants_VectorT128 = 0x4000000,
-    XArchIntrinsicConstants_VectorT256 = 0x8000000,
-    XArchIntrinsicConstants_VectorT512 = 0x10000000,
-    XArchIntrinsicConstants_Avx10v1 = 0x20000000,
-    XArchIntrinsicConstants_Avx10v1_V256 = 0x40000000,
-    XArchIntrinsicConstants_Avx10v1_V512 = 0x80000000,
+    XArchIntrinsicConstants_Aes = 0,
+    XArchIntrinsicConstants_Pclmulqdq = 1,
+    XArchIntrinsicConstants_Sse3 = 2,
+    XArchIntrinsicConstants_Ssse3 = 3,
+    XArchIntrinsicConstants_Sse41 = 4,
+    XArchIntrinsicConstants_Sse42 = 5,
+    XArchIntrinsicConstants_Popcnt = 6,
+    XArchIntrinsicConstants_Avx = 7,
+    XArchIntrinsicConstants_Fma = 8,
+    XArchIntrinsicConstants_Avx2 = 9,
+    XArchIntrinsicConstants_Bmi1 = 10,
+    XArchIntrinsicConstants_Bmi2 = 11,
+    XArchIntrinsicConstants_Lzcnt = 12,
+    XArchIntrinsicConstants_AvxVnni = 13,
+    XArchIntrinsicConstants_Movbe = 14,
+    XArchIntrinsicConstants_Avx512f = 15,
+    XArchIntrinsicConstants_Avx512f_vl = 16,
+    XArchIntrinsicConstants_Avx512bw = 17,
+    XArchIntrinsicConstants_Avx512bw_vl = 18,
+    XArchIntrinsicConstants_Avx512cd = 19,
+    XArchIntrinsicConstants_Avx512cd_vl = 20,
+    XArchIntrinsicConstants_Avx512dq = 21,
+    XArchIntrinsicConstants_Avx512dq_vl = 22,
+    XArchIntrinsicConstants_Avx512Vbmi = 23,
+    XArchIntrinsicConstants_Avx512Vbmi_vl = 24,
+    XArchIntrinsicConstants_Serialize = 25,
+    XArchIntrinsicConstants_VectorT128 = 26,
+    XArchIntrinsicConstants_VectorT256 = 27,
+    XArchIntrinsicConstants_VectorT512 = 28,
+    XArchIntrinsicConstants_Avx10v1 = 29,
+    XArchIntrinsicConstants_Avx10v1_V256 = 30,
+    XArchIntrinsicConstants_Avx10v1_V512 = 31,
 };
 #endif // HOST_X86 || HOST_AMD64
 
 #if defined(HOST_ARM64)
 enum ARM64IntrinsicConstants
 {
-    ARM64IntrinsicConstants_AdvSimd = 0x0001,
-    ARM64IntrinsicConstants_Aes = 0x0002,
-    ARM64IntrinsicConstants_Crc32 = 0x0004,
-    ARM64IntrinsicConstants_Dp = 0x0008,
-    ARM64IntrinsicConstants_Rdm = 0x0010,
-    ARM64IntrinsicConstants_Sha1 = 0x0020,
-    ARM64IntrinsicConstants_Sha256 = 0x0040,
-    ARM64IntrinsicConstants_Atomics = 0x0080,
-    ARM64IntrinsicConstants_Rcpc = 0x0100,
-    ARM64IntrinsicConstants_VectorT128 = 0x0200,
-    ARM64IntrinsicConstants_Rcpc2 = 0x0400,
-    ARM64IntrinsicConstants_Sve = 0x0800,
+    ARM64IntrinsicConstants_AdvSimd = 0,
+    ARM64IntrinsicConstants_Aes = 1,
+    ARM64IntrinsicConstants_Crc32 = 2,
+    ARM64IntrinsicConstants_Dp = 3,
+    ARM64IntrinsicConstants_Rdm = 4,
+    ARM64IntrinsicConstants_Sha1 = 5,
+    ARM64IntrinsicConstants_Sha256 = 6,
+    ARM64IntrinsicConstants_Atomics = 7,
+    ARM64IntrinsicConstants_Rcpc = 8,
+    ARM64IntrinsicConstants_VectorT128 = 9,
+    ARM64IntrinsicConstants_Rcpc2 = 10,
+    ARM64IntrinsicConstants_Sve = 11,
 };
 
 #include <assert.h>
 
 // Bit position for the ARM64IntrinsicConstants_Atomics flags, to be used with tbz / tbnz instructions
-#define ARM64_ATOMICS_FEATURE_FLAG_BIT 7
-static_assert((1 << ARM64_ATOMICS_FEATURE_FLAG_BIT) == ARM64IntrinsicConstants_Atomics, "ARM64_ATOMICS_FEATURE_FLAG_BIT must match with ARM64IntrinsicConstants_Atomics");
+#define ARM64_ATOMICS_FEATURE_FLAG_VALUE 7
+static_assert(ARM64_ATOMICS_FEATURE_FLAG_VALUE == ARM64IntrinsicConstants_Atomics, "ARM64_ATOMICS_FEATURE_FLAG_BIT must match with ARM64IntrinsicConstants_Atomics");
 
 #endif // HOST_ARM64
 
@@ -76,7 +101,7 @@ extern "C"
 {
 #endif // __cplusplus
 
-int minipal_getcpufeatures(void);
+HardwareIntrinsicConstants minipal_getcpufeatures(void);
 bool minipal_detect_rosetta(void);
 
 #ifdef __cplusplus
