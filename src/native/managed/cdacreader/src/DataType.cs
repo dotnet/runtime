@@ -23,4 +23,5 @@ public enum DataType
     Thread,
     ThreadStore,
     MethodTable,
+    EEClass,
 }

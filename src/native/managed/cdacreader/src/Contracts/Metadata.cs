@@ -4,7 +4,8 @@
 using System;
 using UntrustedMethodTable = Microsoft.Diagnostics.DataContractReader.Contracts.UntrustedMethodTable_1;
 using MethodTable = Microsoft.Diagnostics.DataContractReader.Contracts.MethodTable_1;
-using System.Reflection;
+using UntrustedEEClass = Microsoft.Diagnostics.DataContractReader.Contracts.UntrustedEEClass_1;
+using EEClass = Microsoft.Diagnostics.DataContractReader.Contracts.EEClass_1;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
@@ -47,12 +48,15 @@ internal interface IMethodTableFlags
 
     public ushort RawGetComponentSize() => (ushort)(DwFlags >> 16);
 
+    public bool HasInstantiation() => throw new NotImplementedException();
 }
 
 // GC Heap corruption may create situations where a putative pointer to a MethodTable
 // may point to garbage. So this struct represents a MethodTable that we don't necessarily
 // trust to be valid.
 // see Metadata_1.ValidateMethodTablePointer
+// This doesn't need as many properties as MethodTable because we dont' want to be operating on
+// an UntrustedMethodTable for too long
 internal struct UntrustedMethodTable_1 : IMethodTableFlags
 {
     private readonly Target _target;
@@ -71,6 +75,26 @@ internal struct UntrustedMethodTable_1 : IMethodTableFlags
     public uint DwFlags2 => _target.Read<uint>(MethodTablePointer + (ulong)_type.Fields[nameof(DwFlags)].Offset);
     public uint BaseSize => _target.Read<uint>(MethodTablePointer + (ulong)_type.Fields[nameof(BaseSize)].Offset);
 
+    public TargetPointer EEClassOrCanonMT => _target.ReadPointer(MethodTablePointer + (ulong)_type.Fields[nameof(EEClassOrCanonMT)].Offset);
+    public TargetPointer EEClass => (EEClassOrCanonMT & (ulong)Metadata_1.EEClassOrCanonMTBits.Mask) == (ulong)Metadata_1.EEClassOrCanonMTBits.EEClass ? EEClassOrCanonMT : throw new InvalidOperationException("not an EEClass");
+
+}
+
+internal struct UntrustedEEClass_1
+{
+    public readonly Target _target;
+    private readonly Target.TypeInfo _type;
+
+    public TargetPointer EEClassPointer { get; init; }
+
+    internal UntrustedEEClass_1(Target target, TargetPointer eeClassPointer)
+    {
+        _target = target;
+        EEClassPointer = eeClassPointer;
+        _type = target.GetTypeInfo(DataType.EEClass);
+    }
+
+    public TargetPointer MethodTable => _target.ReadPointer(EEClassPointer + (ulong)_type.Fields[nameof(MethodTable)].Offset);
 }
 
 
@@ -87,8 +111,21 @@ internal struct MethodTable_1 : IMethodTableFlags
     public uint DwFlags => MethodTableData.DwFlags;
     public uint DwFlags2 => MethodTableData.DwFlags2;
     public uint BaseSize => MethodTableData.BaseSize;
+    public TargetPointer EEClassOrCanonMT => MethodTableData.EEClassOrCanonMT;
+
+    public TargetPointer EEClass => (EEClassOrCanonMT & (ulong)Metadata_1.EEClassOrCanonMTBits.Mask) == (ulong)Metadata_1.EEClassOrCanonMTBits.EEClass ? EEClassOrCanonMT : throw new InvalidOperationException("not an EEClass");
 }
 
+internal struct EEClass_1
+{
+    public Data.EEClass EEClassData { get; init; }
+    internal EEClass_1(Data.EEClass eeClassData)
+    {
+        EEClassData = eeClassData;
+    }
+
+    public TargetPointer MethodTable => EEClassData.MethodTable;
+}
 
 
 internal struct Metadata_1 : IMetadata
@@ -162,6 +199,14 @@ internal struct Metadata_1 : IMetadata
 
     }
 
+    [Flags]
+    internal enum EEClassOrCanonMTBits
+    {
+        EEClass = 0,
+        CanonMT = 1,
+        Mask = 1,
+    }
+
     internal Metadata_1(Target target, TargetPointer freeObjectMethodTablePointer)
     {
         _target = target;
@@ -173,6 +218,11 @@ internal struct Metadata_1 : IMetadata
     private UntrustedMethodTable GetUntrustedMethodTableData(TargetPointer methodTablePointer)
     {
         return new UntrustedMethodTable(_target, methodTablePointer);
+    }
+
+    private UntrustedEEClass GetUntrustedEEClassData(TargetPointer eeClassPointer)
+    {
+        return new UntrustedEEClass(_target, eeClassPointer);
     }
 
     public MethodTable GetMethodTableData(TargetPointer methodTablePointer)
@@ -230,11 +280,23 @@ internal struct Metadata_1 : IMetadata
 
     private bool ValidateWithPossibleAV(ref readonly UntrustedMethodTable methodTable)
     {
-        //PTR_EEClass pEEClass = this->GetClassWithPossibleAV();
-        //return ((pEEClass && (this == pEEClass->GetMethodTableWithPossibleAV())) ||
-        //    ((HasInstantiation() || IsArray()) &&
-        //    (pEEClass && (pEEClass->GetMethodTableWithPossibleAV()->GetClassWithPossibleAV() == pEEClass))));
-        throw new NotImplementedException();
+        TargetPointer eeClassPtr = GetClassWithPossibleAV(in methodTable);
+        if (eeClassPtr != TargetPointer.Null)
+        {
+            UntrustedEEClass eeClass = GetUntrustedEEClassData(eeClassPtr);
+            TargetPointer methodTablePtrFromClass = GetMethodTablePointerWithPossibleAV(in eeClass);
+            if (methodTable.MethodTablePointer == methodTablePtrFromClass)
+            {
+                return true;
+            }
+            if (((IMethodTableFlags)methodTable).HasInstantiation() || ((IMethodTableFlags)methodTable).IsArray())
+            {
+                UntrustedMethodTable methodTableFromClass = GetUntrustedMethodTableData(methodTablePtrFromClass);
+                TargetPointer classFromMethodTable = GetClassWithPossibleAV(in methodTableFromClass);
+                return classFromMethodTable == eeClassPtr;
+            }
+        }
+        return false;
     }
 
     internal bool ValidateMethodTable(ref readonly UntrustedMethodTable methodTable)
@@ -247,5 +309,15 @@ internal struct Metadata_1 : IMetadata
             }
         }
         return true;
+    }
+
+    private TargetPointer GetClassWithPossibleAV(ref readonly UntrustedMethodTable methodTable)
+    {
+        throw new NotImplementedException("TODO");
+    }
+
+    private TargetPointer GetMethodTablePointerWithPossibleAV(ref readonly UntrustedEEClass eeClass)
+    {
+        throw new NotImplementedException("TODO");
     }
 }

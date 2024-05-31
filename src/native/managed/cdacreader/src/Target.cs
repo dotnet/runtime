@@ -16,7 +16,7 @@ public struct TargetPointer : IEquatable<TargetPointer>
     public static TargetPointer Null = new(0);
     public static TargetPointer MinusOne = new(ulong.MaxValue);
 
-    public ulong Value;
+    public readonly ulong Value;
     public TargetPointer(ulong value) => Value = value;
 
     public static implicit operator ulong(TargetPointer p) => p.Value;

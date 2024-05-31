@@ -1817,6 +1817,12 @@ protected:
     }
 #endif // !DACCESS_COMPILE
 
+    template<typename T> friend struct ::cdac_offsets;
+};
+
+template<> struct ::cdac_offsets<EEClass>
+{
+    static constexpr size_t m_pMethodTable = offsetof(EEClass, m_pMethodTable);
 };
 
 // --------------------------------------------------------------------------------------------
