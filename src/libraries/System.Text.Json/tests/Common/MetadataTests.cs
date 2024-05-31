@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
@@ -236,6 +237,8 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData(typeof(ImmutableDictionary<Guid, int>), typeof(Guid))]
         [InlineData(typeof(DerivedDictionary<int>), typeof(Guid))]
         [InlineData(typeof(DerivedDictionaryWithCustomConverter), null)]
+        [InlineData(typeof(ArrayList), null)]
+        [InlineData(typeof(Hashtable), typeof(string))]
         public void JsonTypeInfo_KeyType_ReturnsExpectedValue(Type type, Type? expectedKeyType)
         {
             JsonTypeInfo typeInfo = Serializer.GetTypeInfo(type);
@@ -260,6 +263,8 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData(typeof(ImmutableDictionary<Guid, int>), typeof(int))]
         [InlineData(typeof(DerivedDictionary<int>), typeof(int))]
         [InlineData(typeof(DerivedDictionaryWithCustomConverter), null)]
+        [InlineData(typeof(ArrayList), typeof(object))]
+        [InlineData(typeof(Hashtable), typeof(object))]
         public void JsonTypeInfo_ElementType_ReturnsExpectedValue(Type type, Type? expectedKeyType)
         {
             JsonTypeInfo typeInfo = Serializer.GetTypeInfo(type);
