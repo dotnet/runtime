@@ -530,28 +530,26 @@ OBJECTREF AllocateSzArray(MethodTable* pArrayMT, INT32 cElements, GC_ALLOC_FLAGS
     }
     else
     {
-        if ((DATA_ALIGNMENT < sizeof(double)) && (pArrayMT->GetArrayElementType() == ELEMENT_TYPE_R8))
+#ifdef FEATURE_DOUBLE_ALIGNMENT_HINT
+        if (pArrayMT->GetArrayElementType() == ELEMENT_TYPE_R8)
         {
             flags |= GC_ALLOC_ALIGN8;
-            orArray = (ArrayBase*)Alloc(totalSize, flags);
         }
-        else
-        {
-#ifdef FEATURE_64BIT_ALIGNMENT
-            MethodTable* pElementMT = pArrayMT->GetArrayElementTypeHandle().GetMethodTable();
-            if (pElementMT->RequiresAlign8() && pElementMT->IsValueType())
-            {
-                // This platform requires that certain fields are 8-byte aligned (and the runtime doesn't provide
-                // this guarantee implicitly, e.g. on 32-bit platforms). Since it's the array payload, not the
-                // header that requires alignment we need to be careful. However it just so happens that all the
-                // cases we care about (single and multi-dim arrays of value types) have an even number of DWORDs
-                // in their headers so the alignment requirements for the header and the payload are the same.
-                _ASSERTE(((pArrayMT->GetBaseSize() - SIZEOF_OBJHEADER) & 7) == 0);
-                flags |= GC_ALLOC_ALIGN8;
-            }
 #endif
-            orArray = (ArrayBase*)Alloc(totalSize, flags);
+#ifdef FEATURE_64BIT_ALIGNMENT
+        MethodTable* pElementMT = pArrayMT->GetArrayElementTypeHandle().GetMethodTable();
+        if (pElementMT->RequiresAlign8() && pElementMT->IsValueType())
+        {
+            // This platform requires that certain fields are 8-byte aligned (and the runtime doesn't provide
+            // this guarantee implicitly, e.g. on 32-bit platforms). Since it's the array payload, not the
+            // header that requires alignment we need to be careful. However it just so happens that all the
+            // cases we care about (single and multi-dim arrays of value types) have an even number of DWORDs
+            // in their headers so the alignment requirements for the header and the payload are the same.
+            _ASSERTE(((pArrayMT->GetBaseSize() - SIZEOF_OBJHEADER) & 7) == 0);
+            flags |= GC_ALLOC_ALIGN8;
         }
+#endif
+        orArray = (ArrayBase*)Alloc(totalSize, flags);
         orArray->SetMethodTable(pArrayMT);
     }
 
