@@ -30,7 +30,7 @@ namespace System.Net.Security.Tests
         [ConditionalTheory]
         [InlineData(true)]
         [InlineData(false)]
-        public async Task SslStream_ClientDisableTlsResume_Succeeds(bool testClient)
+        public async Task ClientDisableTlsResume_Succeeds(bool testClient)
         {
             SslServerAuthenticationOptions serverOptions = new SslServerAuthenticationOptions
                 {
@@ -129,10 +129,10 @@ namespace System.Net.Security.Tests
             server.Dispose();
         }
 
-        [ConditionalTheory]
+        [Theory]
         [InlineData(SslProtocols.Tls12)]
         [InlineData(SslProtocols.Tls13)]
-        public Task SslStream_NoClientCert_DefaultValue_ResumeSucceeds(SslProtocols sslProtocol)
+        public Task NoClientCert_DefaultValue_ResumeSucceeds(SslProtocols sslProtocol)
         {
             SslServerAuthenticationOptions serverOptions = new SslServerAuthenticationOptions
                 {
@@ -172,9 +172,9 @@ namespace System.Net.Security.Tests
             return data;
         }
 
-        [ConditionalTheory]
+        [Theory]
         [MemberData(nameof(ClientCertTestData))]
-        public Task SslStream_ClientCert_DefaultValue_ResumeSucceeds(SslProtocols sslProtocol, bool certificateRequired, ClientCertSource certSource)
+        public Task ClientCert_DefaultValue_ResumeSucceeds(SslProtocols sslProtocol, bool certificateRequired, ClientCertSource certSource)
         {
             SslServerAuthenticationOptions serverOptions = new SslServerAuthenticationOptions
                 {
@@ -245,10 +245,37 @@ namespace System.Net.Security.Tests
             }
         }
 
-        [ConditionalTheory]
+        [Theory]
         [InlineData(SslProtocols.Tls12)]
         [InlineData(SslProtocols.Tls13)]
-        public async Task SslStream_ClientChangeCert_NoResume(SslProtocols sslProtocol)
+        public Task ClientChangeCert_NoResume(SslProtocols sslProtocol)
+        {
+            SslServerAuthenticationOptions serverOptions = new SslServerAuthenticationOptions
+                {
+                    EnabledSslProtocols = sslProtocol,
+                    ServerCertificateContext = SslStreamCertificateContext.Create(Configuration.Certificates.GetServerCertificate(), null, false),
+                    RemoteCertificateValidationCallback = (sender, cert, chain, errors) => true,
+                    ClientCertificateRequired = true,
+                };
+
+            SslClientAuthenticationOptions clientOptions = new SslClientAuthenticationOptions
+                {
+                    TargetHost = Guid.NewGuid().ToString("N"),
+                    EnabledSslProtocols = sslProtocol,
+                    CertificateRevocationCheckMode = X509RevocationMode.NoCheck,
+                    RemoteCertificateValidationCallback = (sender, cert, chain, errors) => true,
+                    ClientCertificateContext = SslStreamCertificateContext.Create(Configuration.Certificates.GetClientCertificate(), null, false)
+                };
+
+            return TestNoResumeAfterChange(serverOptions, clientOptions,
+                (clientOps, _) => clientOps.ClientCertificateContext = SslStreamCertificateContext.Create(Configuration.Certificates.GetSelfSignedClientCertificate(), null, false),
+                (clientOps, _) => clientOps.ClientCertificateContext = null);
+        }
+
+        [Theory]
+        [InlineData(SslProtocols.Tls12)]
+        [InlineData(SslProtocols.Tls13)]
+        public Task DifferentHost_NoResume(SslProtocols sslProtocol)
         {
             SslServerAuthenticationOptions serverOptions = new SslServerAuthenticationOptions
                 {
@@ -264,19 +291,104 @@ namespace System.Net.Security.Tests
                     RemoteCertificateValidationCallback = (sender, cert, chain, errors) => true,
                     ClientCertificateContext = SslStreamCertificateContext.Create(Configuration.Certificates.GetClientCertificate(), null, false)
                 };
+            
+            return TestNoResumeAfterChange(serverOptions, clientOptions,
+                (clientOps, _) => clientOps.TargetHost = Guid.NewGuid().ToString("N"));
+        }
 
+        [Fact]
+        public Task DifferentProtocol_NoResume()
+        {
+            SslServerAuthenticationOptions serverOptions = new SslServerAuthenticationOptions
+                {
+                    ServerCertificateContext = SslStreamCertificateContext.Create(Configuration.Certificates.GetServerCertificate(), null, false)
+                };
+
+            SslClientAuthenticationOptions clientOptions = new SslClientAuthenticationOptions
+                {
+                    TargetHost = Guid.NewGuid().ToString("N"),
+                    EnabledSslProtocols = SslProtocols.Tls12,
+                    CertificateRevocationCheckMode = X509RevocationMode.NoCheck,
+                    RemoteCertificateValidationCallback = (sender, cert, chain, errors) => true,
+                };
+            
+            return TestNoResumeAfterChange(serverOptions, clientOptions,
+                (clientOps, _) => clientOps.EnabledSslProtocols = SslProtocols.None);
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public Task DifferentRevocationCheckMode_NoResume()
+        {
+            SslServerAuthenticationOptions serverOptions = new SslServerAuthenticationOptions
+                {
+                    ServerCertificateContext = SslStreamCertificateContext.Create(Configuration.Certificates.GetServerCertificate(), null, false)
+                };
+
+            SslClientAuthenticationOptions clientOptions = new SslClientAuthenticationOptions
+                {
+                    TargetHost = Guid.NewGuid().ToString("N"),
+                    RemoteCertificateValidationCallback = (sender, cert, chain, errors) => true,
+                };
+            
+            return TestNoResumeAfterChange(serverOptions, clientOptions,
+                (clientOps, _) => clientOps.CertificateRevocationCheckMode = X509RevocationMode.NoCheck);
+        }
+
+        [Fact]
+        public Task DifferentEncryptionPolicy_NoResume()
+        {
+            SslServerAuthenticationOptions serverOptions = new SslServerAuthenticationOptions
+                {
+                    EnabledSslProtocols = SslProtocols.Tls12,
+                    ServerCertificateContext = SslStreamCertificateContext.Create(Configuration.Certificates.GetServerCertificate(), null, false)
+                };
+
+            SslClientAuthenticationOptions clientOptions = new SslClientAuthenticationOptions
+                {
+                    TargetHost = Guid.NewGuid().ToString("N"),
+                    CertificateRevocationCheckMode = X509RevocationMode.NoCheck,
+                    RemoteCertificateValidationCallback = (sender, cert, chain, errors) => true,
+                };
+#pragma warning disable SYSLIB0040 // 'AllowNoEncryption' is obsolete 
+            return TestNoResumeAfterChange(serverOptions, clientOptions,
+                (clientOps, _) => clientOps.EncryptionPolicy = EncryptionPolicy.AllowNoEncryption);
+#pragma warning restore SYSLIB0040 // 'AllowNoEncryption' is obsolete 
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Linux)] // CipherSuitesPolicy is suppoted only on Linux
+        public Task DifferentCipherSuitesPolicy_NoResume()
+        {
+            SslServerAuthenticationOptions serverOptions = new SslServerAuthenticationOptions
+                {
+                    ServerCertificateContext = SslStreamCertificateContext.Create(Configuration.Certificates.GetServerCertificate(), null, false)
+                };
+
+            SslClientAuthenticationOptions clientOptions = new SslClientAuthenticationOptions
+                {
+                    TargetHost = Guid.NewGuid().ToString("N"),
+                    CertificateRevocationCheckMode = X509RevocationMode.NoCheck,
+                    RemoteCertificateValidationCallback = (sender, cert, chain, errors) => true,
+                };
+            
+            return TestNoResumeAfterChange(serverOptions, clientOptions,
+                (clientOps, _) => clientOps.CipherSuitesPolicy = new CipherSuitesPolicy(new[] { TlsCipherSuite.TLS_AES_128_GCM_SHA256 }));
+        }
+
+        private async Task TestNoResumeAfterChange(SslServerAuthenticationOptions serverOptions, SslClientAuthenticationOptions clientOptions, params Action<SslClientAuthenticationOptions, SslServerAuthenticationOptions>[] updateOptions)
+        {
+            // confirm sessions are resumable and prime for resumption
             await RunConnectionAsync(serverOptions, clientOptions, false);
             await RunConnectionAsync(serverOptions, clientOptions, true);
 
-            // change to a different client cert, it should not resume
-            clientOptions.ClientCertificateContext = SslStreamCertificateContext.Create(Configuration.Certificates.GetSelfSignedClientCertificate(), null, false);
-            await RunConnectionAsync(serverOptions, clientOptions, false);
-            await RunConnectionAsync(serverOptions, clientOptions, true);
+            foreach (Action<SslClientAuthenticationOptions, SslServerAuthenticationOptions> update in updateOptions)
+            {
+                update(clientOptions, serverOptions);
 
-            // remove the client cert and try to resume
-            clientOptions.ClientCertificateContext = null;
-            await RunConnectionAsync(serverOptions, clientOptions, false);
-            await RunConnectionAsync(serverOptions, clientOptions, true);
+                // after changing options, the session should not be resumed
+                await RunConnectionAsync(serverOptions, clientOptions, false);
+            }
         }
     }
 }
