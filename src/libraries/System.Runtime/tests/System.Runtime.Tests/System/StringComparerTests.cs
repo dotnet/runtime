@@ -252,14 +252,18 @@ namespace System.Tests
         [Fact]
         public void IAlternateEqualityComparer_SpansBehaveLikeStrings()
         {
-            StringComparer[] caseSensitive =
+            List<StringComparer> caseSensitive =
             [
                 StringComparer.Ordinal,
                 StringComparer.CurrentCulture,
                 StringComparer.InvariantCulture,
                 StringComparer.Create(new CultureInfo("en-US"), false),
-                StringComparer.Create(new CultureInfo("en-US"), CompareOptions.IgnoreSymbols)
             ];
+            if (!PlatformDetection.IsHybridGlobalization)
+            {
+                // "CompareOptions = IgnoreSymbols are not supported when HybridGlobalization=true"
+                caseSensitive.Add(StringComparer.Create(new CultureInfo("en-US"), CompareOptions.IgnoreSymbols));
+            }
 
             StringComparer[] caseInsensitive =
             [
