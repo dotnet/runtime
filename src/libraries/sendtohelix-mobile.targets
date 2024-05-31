@@ -4,8 +4,8 @@
     <EnableDefaultBuildHelixWorkItems>false</EnableDefaultBuildHelixWorkItems>
     <IncludeHelixCorrelationPayload>false</IncludeHelixCorrelationPayload>
 
-    <NeedsToBuildAppsOnHelix Condition="('$(TargetOS)' == 'ios' or '$(TargetOS)' == 'iossimulator' or '$(TargetOS)' == 'tvos' or '$(TargetOS)' == 'tvossimulator' or '$(TargetOS)' == 'maccatalyst') and '$(NeedsToBuildAppsOnHelix)' == '' and '$(Scenario)' == 'BuildiOSApps'">true</NeedsToBuildAppsOnHelix>
-    <NeedsiOSSDK Condition="'$(NeedsToBuildAppsOnHelix)' == 'true' and '$(NeedsWorkload)' != 'true'">true</NeedsiOSSDK>
+    <NeedsToBuildAppsOnHelix Condition="('$(TargetOS)' == 'ios' or '$(TargetOS)' == 'iossimulator' or '$(TargetOS)' == 'tvos' or '$(TargetOS)' == 'tvossimulator') and '$(NeedsToBuildAppsOnHelix)' == '' and '$(Scenario)' == 'BuildiOSApps'">true</NeedsToBuildAppsOnHelix>
+    <NeedsiOSSDK Condition="('$(NeedsToBuildAppsOnHelix)' == 'true' and '$(NeedsWorkload)' != 'true') or '$(TargetOS)' == 'maccatalyst'">true</NeedsiOSSDK>
   </PropertyGroup>
 
   <ItemDefinitionGroup Condition="'$(TargetOS)' == 'maccatalyst'">
