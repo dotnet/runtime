@@ -396,16 +396,24 @@ struct FpStructInRegistersInfo
     uint32_t offset1st;
     uint32_t offset2nd;
 
+    unsigned GetSizeShift1st() const
+    {
+        return (flags >> FpStruct::PosSizeShift1st) & 0b11;
+    }
+
+    unsigned GetSizeShift2nd() const
+    {
+        return (flags >> FpStruct::PosSizeShift2nd) & 0b11;
+    }
+
     unsigned GetSize1st() const
     {
-        unsigned shift = (flags >> FpStruct::PosSizeShift1st) & 0b11;
-        return 1u << shift;
+        return 1u << GetSizeShift1st();
     }
 
     unsigned GetSize2nd() const
     {
-        unsigned shift = (flags >> FpStruct::PosSizeShift2nd) & 0b11;
-        return 1u << shift;
+        return 1u << GetSizeShift2nd();
     }
 
     bool IsSize1st8() const

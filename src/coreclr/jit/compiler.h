@@ -11229,6 +11229,10 @@ public:
     void GetStructTypeOffset(
         CORINFO_CLASS_HANDLE typeHnd, var_types* type0, var_types* type1, uint8_t* offset0, uint8_t* offset1);
 
+#elif defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
+    static void GetTypesFromFpStructInRegistersInfo(FpStructInRegistersInfo info,
+                                                    var_types*              type1st,
+                                                    var_types*              type2nd);
 #endif // defined(UNIX_AMD64_ABI)
 
     void     fgMorphMultiregStructArgs(GenTreeCall* call);

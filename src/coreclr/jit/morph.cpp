@@ -2873,37 +2873,20 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
                             intArgRegNum += size;
                         }
                     }
-                    else if ((fpInfo.flags & FpStruct::OnlyOne) != 0)
+                    else
                     {
-                        structBaseType = fpInfo.IsSize1st8() ? TYP_DOUBLE : TYP_FLOAT;
-                        fltArgRegNum += 1;
-                        arg.AbiInfo.StructFloatFieldType[0]   = structBaseType;
-                        arg.AbiInfo.StructFloatFieldOffset[0] = fpInfo.offset1st;
-                    }
-                    else if ((fpInfo.flags & (FpStruct::Float1st | FpStruct::Float2nd)) != 0)
-                    {
-                        fltArgRegNum += 1;
-                        intArgRegNum += 1;
                         arg.AbiInfo.StructFloatFieldOffset[0] = fpInfo.offset1st;
                         arg.AbiInfo.StructFloatFieldOffset[1] = fpInfo.offset2nd;
-                        if ((fpInfo.flags & FpStruct::Float1st) != 0)
-                        {
-                            arg.AbiInfo.StructFloatFieldType[0] = fpInfo.IsSize1st8() ? TYP_DOUBLE : TYP_FLOAT;
-                            arg.AbiInfo.StructFloatFieldType[1] = fpInfo.IsSize2nd8() ? TYP_LONG : TYP_INT;
-                        }
-                        else
-                        {
-                            arg.AbiInfo.StructFloatFieldType[0] = fpInfo.IsSize1st8() ? TYP_LONG : TYP_INT;
-                            arg.AbiInfo.StructFloatFieldType[1] = fpInfo.IsSize2nd8() ? TYP_DOUBLE : TYP_FLOAT;
-                        }
-                    }
-                    else if ((fpInfo.flags & FpStruct::BothFloat) != 0)
-                    {
-                        fltArgRegNum += 2;
-                        arg.AbiInfo.StructFloatFieldOffset[0] = fpInfo.offset1st;
-                        arg.AbiInfo.StructFloatFieldOffset[1] = fpInfo.offset2nd;
-                        arg.AbiInfo.StructFloatFieldType[0]   = fpInfo.IsSize1st8() ? TYP_DOUBLE : TYP_FLOAT;
-                        arg.AbiInfo.StructFloatFieldType[1]   = fpInfo.IsSize2nd8() ? TYP_DOUBLE : TYP_FLOAT;
+                        Compiler::GetTypesFromFpStructInRegistersInfo(fpInfo, &arg.AbiInfo.StructFloatFieldType[0],
+                                                                      &arg.AbiInfo.StructFloatFieldType[1]);
+
+                        if ((fpInfo.flags & FpStruct::OnlyOne) != 0)
+                            structBaseType = arg.AbiInfo.StructFloatFieldType[0];
+
+                        unsigned fltRegs = ((fpInfo.flags & FpStruct::BothFloat) != 0) ? 2 : 1;
+                        unsigned intRegs = ((fpInfo.flags & (FpStruct::Float1st | FpStruct::Float2nd)) != 0) ? 1 : 0;
+                        fltArgRegNum += fltRegs;
+                        intArgRegNum += intRegs;
                     }
                 }
 #else
@@ -3652,11 +3635,10 @@ GenTree* Compiler::fgMorphMultiregStructArg(CallArg* arg)
             }
             else
 #elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-            if ((arg->AbiInfo.StructFloatFieldType[inx] != TYP_UNDEF) &&
-                !varTypeIsGC(getSlotType(offset / TARGET_POINTER_SIZE)))
+            if (arg->AbiInfo.StructFloatFieldType[inx] != TYP_UNDEF)
             {
-                elems[inx].Type = arg->AbiInfo.StructFloatFieldType[inx];
-                offset += (structSize > TARGET_POINTER_SIZE) ? 8 : 4;
+                elems[inx].Type   = arg->AbiInfo.StructFloatFieldType[inx];
+                elems[inx].Offset = arg->AbiInfo.StructFloatFieldOffset[inx];
             }
             else
 #endif // TARGET_LOONGARCH64 || TARGET_RISCV64

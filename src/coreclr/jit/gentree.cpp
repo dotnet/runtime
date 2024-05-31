@@ -27445,44 +27445,10 @@ void ReturnTypeDesc::InitializeStructReturnType(Compiler*                comp,
             {
                 comp->compFloatingPointUsed = true;
 
+                assert((fpInfo.flags & FpStruct::OnlyOne) == 0);
                 m_fieldOffset[0] = fpInfo.offset1st;
                 m_fieldOffset[1] = fpInfo.offset2nd;
-
-                assert((fpInfo.flags & FpStruct::OnlyOne) == 0);
-                if ((fpInfo.flags & FpStruct::BothFloat) != 0)
-                {
-                    m_regType[0] = fpInfo.IsSize1st8() ? TYP_DOUBLE : TYP_FLOAT;
-                    m_regType[1] = fpInfo.IsSize2nd8() ? TYP_DOUBLE : TYP_FLOAT;
-                }
-                else if ((fpInfo.flags & (FpStruct::Float1st | FpStruct::Float2nd)) != 0)
-                {
-                    var_types integerRegType;
-                    if ((fpInfo.flags & FpStruct::GcRef) != 0)
-                    {
-                        integerRegType = TYP_REF;
-                    }
-                    else if ((fpInfo.flags & FpStruct::GcByRef) != 0)
-                    {
-                        integerRegType = TYP_BYREF;
-                    }
-                    else
-                    {
-                        bool is8 =
-                            ((fpInfo.flags & FpStruct::Float1st) == 0) ? fpInfo.IsSize1st8() : fpInfo.IsSize2nd8();
-                        integerRegType = is8 ? TYP_LONG : TYP_INT;
-                    }
-
-                    if ((fpInfo.flags & FpStruct::Float1st) != 0)
-                    {
-                        m_regType[0] = fpInfo.IsSize1st8() ? TYP_DOUBLE : TYP_FLOAT;
-                        m_regType[1] = integerRegType;
-                    }
-                    else
-                    {
-                        m_regType[0] = integerRegType;
-                        m_regType[1] = fpInfo.IsSize2nd8() ? TYP_DOUBLE : TYP_FLOAT;
-                    }
-                }
+                Compiler::GetTypesFromFpStructInRegistersInfo(fpInfo, &m_regType[0], &m_regType[1]);
             }
             else
             {
@@ -27493,6 +27459,8 @@ void ReturnTypeDesc::InitializeStructReturnType(Compiler*                comp,
                 {
                     m_regType[i] = comp->getJitGCType(gcPtrs[i]);
                 }
+                m_fieldOffset[0] = 0;
+                m_fieldOffset[1] = TARGET_POINTER_SIZE;
             }
 
 #elif defined(TARGET_X86)

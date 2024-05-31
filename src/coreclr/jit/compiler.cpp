@@ -8266,6 +8266,59 @@ void Compiler::GetStructTypeOffset(
     GetStructTypeOffset(structDesc, type0, type1, offset0, offset1);
 }
 
+#elif defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
+//------------------------------------------------------------------------
+// GetTypesFromFpStructInRegistersInfo: Gets the field types of a struct passed in registers according to hardware
+// floating-point calling convention.
+//
+// Arguments:
+//      info - the structure contaning information about how the struct is passed
+//      type1st - out param; type of the first field
+//      type2nd - out param; type of the second field (written to iff the struct has two fields)
+//
+// Return value:
+//      None
+//
+// Notes:
+//      If the struct should be passed according to integer calling convention, none of the output pararmeters are
+//      written to.
+//
+void Compiler::GetTypesFromFpStructInRegistersInfo(FpStructInRegistersInfo info, var_types* type1st, var_types* type2nd)
+{
+    if ((info.flags & (FpStruct::OnlyOne | FpStruct::BothFloat | FpStruct::Float1st)) != 0)
+        *type1st = info.IsSize1st8() ? TYP_DOUBLE : TYP_FLOAT;
+
+    if ((info.flags & (FpStruct::BothFloat | FpStruct::Float2nd)) != 0)
+        *type2nd = info.IsSize2nd8() ? TYP_DOUBLE : TYP_FLOAT;
+
+    if ((info.flags & (FpStruct::Float1st | FpStruct::Float2nd)) != 0)
+    {
+        bool      isInt1st = ((info.flags & FpStruct::Float1st) == 0);
+        var_types intType;
+        if ((info.flags & FpStruct::GcRef) != 0)
+        {
+            intType = TYP_REF;
+        }
+        else if ((info.flags & FpStruct::GcByRef) != 0)
+        {
+            intType = TYP_BYREF;
+        }
+        else
+        {
+            static const var_types intTypesLookUpTable[] = {
+                /*[0] =*/TYP_BYTE,
+                /*[1] =*/TYP_SHORT,
+                /*[2] =*/TYP_INT,
+                /*[3] =*/TYP_LONG,
+            };
+            unsigned sizeShift = isInt1st ? info.GetSizeShift1st() : info.GetSizeShift2nd();
+            intType            = intTypesLookUpTable[sizeShift];
+        }
+        var_types* typePtr = isInt1st ? type1st : type2nd;
+        *typePtr           = intType;
+    }
+}
+
 #endif // defined(UNIX_AMD64_ABI)
 
 /*****************************************************************************/
