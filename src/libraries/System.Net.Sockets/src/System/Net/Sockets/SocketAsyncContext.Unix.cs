@@ -676,11 +676,6 @@ namespace System.Net.Sockets
                 SocketError ec = ErrorCode;
                 Memory<byte> buffer = Buffer;
 
-                if (allowPooling)
-                {
-                    AssociatedContext.ReturnOperation(this);
-                }
-
                 if (buffer.Length == 0)
                 {
                     // Invoke callback only when we are completely done.

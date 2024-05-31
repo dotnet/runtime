@@ -83,6 +83,8 @@ namespace System.Runtime.CompilerServices
         [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static ref TTo As<TFrom, TTo>(ref TFrom source)
+            where TFrom : allows ref struct
+            where TTo : allows ref struct
         {
             throw new PlatformNotSupportedException();
 

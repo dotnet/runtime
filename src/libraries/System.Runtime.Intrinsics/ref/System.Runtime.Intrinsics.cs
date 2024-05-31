@@ -4444,6 +4444,19 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe (System.Numerics.Vector<uint>, System.Numerics.Vector<uint>, System.Numerics.Vector<uint>, System.Numerics.Vector<uint>) Load4xVectorAndUnzip(System.Numerics.Vector<uint> mask, uint* address) { throw null; }
         public static unsafe (System.Numerics.Vector<ulong>, System.Numerics.Vector<ulong>, System.Numerics.Vector<ulong>, System.Numerics.Vector<ulong>) Load4xVectorAndUnzip(System.Numerics.Vector<ulong> mask, ulong* address) { throw null; }
 
+        public static unsafe System.Numerics.Vector<int> LoadVectorInt16NonFaultingSignExtendToInt32(short* address) { throw null; }
+        public static unsafe System.Numerics.Vector<long> LoadVectorInt16NonFaultingSignExtendToInt64(short* address) { throw null; }
+        public static unsafe System.Numerics.Vector<uint> LoadVectorInt16NonFaultingSignExtendToUInt32(short* address) { throw null; }
+        public static unsafe System.Numerics.Vector<ulong> LoadVectorInt16NonFaultingSignExtendToUInt64(short* address) { throw null; }
+        public static unsafe System.Numerics.Vector<long> LoadVectorInt32NonFaultingSignExtendToInt64(int* address) { throw null; }
+        public static unsafe System.Numerics.Vector<ulong> LoadVectorInt32NonFaultingSignExtendToUInt64(int* address) { throw null; }
+        public static unsafe System.Numerics.Vector<short> LoadVectorSByteNonFaultingSignExtendToInt16(sbyte* address) { throw null; }
+        public static unsafe System.Numerics.Vector<int> LoadVectorSByteNonFaultingSignExtendToInt32(sbyte* address) { throw null; }
+        public static unsafe System.Numerics.Vector<long> LoadVectorSByteNonFaultingSignExtendToInt64(sbyte* address) { throw null; }
+        public static unsafe System.Numerics.Vector<ushort> LoadVectorSByteNonFaultingSignExtendToUInt16(sbyte* address) { throw null; }
+        public static unsafe System.Numerics.Vector<uint> LoadVectorSByteNonFaultingSignExtendToUInt32(sbyte* address) { throw null; }
+        public static unsafe System.Numerics.Vector<ulong> LoadVectorSByteNonFaultingSignExtendToUInt64(sbyte* address) { throw null; }
+
         public static System.Numerics.Vector<byte> Max(System.Numerics.Vector<byte> left, System.Numerics.Vector<byte> right) { throw null; }
         public static System.Numerics.Vector<double> Max(System.Numerics.Vector<double> left, System.Numerics.Vector<double> right) { throw null; }
         public static System.Numerics.Vector<short> Max(System.Numerics.Vector<short> left, System.Numerics.Vector<short> right) { throw null; }
@@ -4631,6 +4644,17 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe void StoreNarrowing(System.Numerics.Vector<ulong> mask, byte* address, System.Numerics.Vector<ulong> data) { throw null; }
         public static unsafe void StoreNarrowing(System.Numerics.Vector<ulong> mask, ushort* address, System.Numerics.Vector<ulong> data) { throw null; }
         public static unsafe void StoreNarrowing(System.Numerics.Vector<ulong> mask, uint* address, System.Numerics.Vector<ulong> data) { throw null; }
+
+        public static unsafe void StoreNonTemporal(System.Numerics.Vector<byte> mask, byte* address, System.Numerics.Vector<byte> data) { throw null; }
+        public static unsafe void StoreNonTemporal(System.Numerics.Vector<double> mask, double* address, System.Numerics.Vector<double> data) { throw null; }
+        public static unsafe void StoreNonTemporal(System.Numerics.Vector<short> mask, short* address, System.Numerics.Vector<short> data) { throw null; }
+        public static unsafe void StoreNonTemporal(System.Numerics.Vector<int> mask, int* address, System.Numerics.Vector<int> data) { throw null; }
+        public static unsafe void StoreNonTemporal(System.Numerics.Vector<long> mask, long* address, System.Numerics.Vector<long> data) { throw null; }
+        public static unsafe void StoreNonTemporal(System.Numerics.Vector<sbyte> mask, sbyte* address, System.Numerics.Vector<sbyte> data) { throw null; }
+        public static unsafe void StoreNonTemporal(System.Numerics.Vector<float> mask, float* address, System.Numerics.Vector<float> data) { throw null; }
+        public static unsafe void StoreNonTemporal(System.Numerics.Vector<ushort> mask, ushort* address, System.Numerics.Vector<ushort> data) { throw null; }
+        public static unsafe void StoreNonTemporal(System.Numerics.Vector<uint> mask, uint* address, System.Numerics.Vector<uint> data) { throw null; }
+        public static unsafe void StoreNonTemporal(System.Numerics.Vector<ulong> mask, ulong* address, System.Numerics.Vector<ulong> data) { throw null; }
 
         public static System.Numerics.Vector<sbyte> Subtract(System.Numerics.Vector<sbyte> left, System.Numerics.Vector<sbyte> right) { throw null; }
         public static System.Numerics.Vector<short> Subtract(System.Numerics.Vector<short> left, System.Numerics.Vector<short> right) { throw null; }
