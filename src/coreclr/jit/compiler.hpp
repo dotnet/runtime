@@ -984,7 +984,7 @@ inline regNumber genRegNumFromMask(const regMaskTP& mask)
 //
 // Arguments:
 //    mask - the register mask
-//    type - The 
+//    type - The
 //
 // Return Value:
 //    The number of the register contained in the mask.
@@ -999,7 +999,7 @@ inline regNumber genRegNumFromMask(SingleTypeRegSet mask, var_types type)
 #ifdef HAS_MORE_THAN_64_REGISTERS
     // If this is mask type, add `64` to the regNumber
     int index = regMaskTP::mapTypeToRegTypeIndex(type);
-    regNum = (regNumber)(regNum + ((index == 2) << 6));
+    regNum    = (regNumber)(regNum + ((index == 2) << 6));
 
 #endif
     return regNum;

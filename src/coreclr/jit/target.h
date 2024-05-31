@@ -269,7 +269,7 @@ private:
     regMaskSmall low;
 #endif
 
-    FORCEINLINE static int mapRegNumToRegTypeIndex(regNumber reg);
+    FORCEINLINE static int          mapRegNumToRegTypeIndex(regNumber reg);
     FORCEINLINE static RegSet32     encodeForRegisterIndex(int index, regMaskSmall value);
     FORCEINLINE static regMaskSmall decodeForRegisterIndex(int index, RegSet32 value);
 
@@ -417,8 +417,8 @@ public:
 #endif
     }
 
-    void operator|=(const regNumber reg);
-    void operator^=(const regNumber reg);
+    void             operator|=(const regNumber reg);
+    void             operator^=(const regNumber reg);
     SingleTypeRegSet operator[](int index) const;
 };
 

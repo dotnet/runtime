@@ -8383,9 +8383,9 @@ void LinearScan::resolveRegisters()
                 if (varDsc->lvIsParam)
                 {
                     SingleTypeRegSet initialRegMask = interval->firstRefPosition->registerAssignment;
-                    regNumber initialReg     = (initialRegMask == RBM_NONE || interval->firstRefPosition->spillAfter)
-                                                   ? REG_STK
-                                                   : genRegNumFromMask(initialRegMask, interval->registerType);
+                    regNumber        initialReg = (initialRegMask == RBM_NONE || interval->firstRefPosition->spillAfter)
+                                                      ? REG_STK
+                                                      : genRegNumFromMask(initialRegMask, interval->registerType);
 
 #ifdef TARGET_ARM
                     if (varTypeIsMultiReg(varDsc))
@@ -13448,8 +13448,8 @@ SingleTypeRegSet LinearScan::RegisterSelection::select(Interval*                
                 //   to achieve zero diffs.
                 //
                 bool thisIsSingleReg = isSingleRegister(newRelatedPreferences);
-                if (!thisIsSingleReg ||
-                    linearScan->isFree(linearScan->getRegisterRecord(genRegNumFromMask(newRelatedPreferences, regType))))
+                if (!thisIsSingleReg || linearScan->isFree(linearScan->getRegisterRecord(
+                                            genRegNumFromMask(newRelatedPreferences, regType))))
                 {
                     relatedPreferences = newRelatedPreferences;
                     // If this Interval has a downstream def without a single-register preference, continue to iterate.
