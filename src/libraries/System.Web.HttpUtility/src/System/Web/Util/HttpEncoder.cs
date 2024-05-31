@@ -126,7 +126,7 @@ namespace System.Web.Util
         private static int IndexOfHtmlAttributeEncodingChars(string s) =>
             s.AsSpan().IndexOfAny("<\"'&");
 
-        private static bool IsNonAsciiByte(byte b) => b >= 0x7F || b < 0x20;
+        private static bool IsNonAsciiOrSpaceByte(byte b) => b >= 0x7F || b <= 0x20;
 
         internal static string JavaScriptStringEncode(string? value, bool addDoubleQuotes)
         {
@@ -580,21 +580,19 @@ namespace System.Web.Util
                 return value;
             }
 
-            string? schemeAndAuthority;
+            ReadOnlySpan<char> schemeAndAuthority;
             string? path;
-            string? queryAndFragment;
+            ReadOnlySpan<char> queryAndFragment;
 
             if (!UriUtil.TrySplitUriForPathEncode(value, out schemeAndAuthority, out path, out queryAndFragment))
             {
                 // If the value is not a valid url, we treat it as a relative url.
                 // We don't need to extract query string from the url since UrlPathEncode()
                 // does not encode query string.
-                schemeAndAuthority = null;
-                path = value;
-                queryAndFragment = null;
+                return UrlPathEncodeImpl(value);
             }
 
-            return schemeAndAuthority + UrlPathEncodeImpl(path) + queryAndFragment;
+            return string.Concat(schemeAndAuthority, UrlPathEncodeImpl(path), queryAndFragment);
         }
 
         // This is the original UrlPathEncode(string)
@@ -605,15 +603,49 @@ namespace System.Web.Util
                 return value;
             }
 
-            // recurse in case there is a query string
-            int i = value.IndexOf('?');
-            if (i >= 0)
+            int i = value.AsSpan().IndexOfAnyExceptInRange((char)0x21, (char)0x7F);
+            if (i < 0)
             {
-                return string.Concat(UrlPathEncodeImpl(value.Substring(0, i)), value.AsSpan(i));
+                return value;
             }
 
-            // encode DBCS characters and spaces only
-            return HttpEncoderUtility.UrlEncodeSpaces(UrlEncodeNonAscii(value, Encoding.UTF8));
+            int indexOfQuery = value.IndexOf('?');
+            if (indexOfQuery >= 0 && indexOfQuery < i)
+            {
+                // Everything before the Query is valid ASCII
+                return value;
+            }
+
+            ReadOnlySpan<char> toEncode = indexOfQuery >= 0
+                ? value.AsSpan(i, indexOfQuery - i)
+                : value.AsSpan(i);
+
+            byte[] bytes = ArrayPool<byte>.Shared.Rent(Encoding.UTF8.GetMaxByteCount(toEncode.Length));
+            char[] chars = ArrayPool<char>.Shared.Rent(bytes.Length * 3);
+
+            int utf8Length = Encoding.UTF8.GetBytes(toEncode, bytes);
+            int charCount = 0;
+            foreach (byte b in bytes.AsSpan(0, utf8Length))
+            {
+                if (IsNonAsciiOrSpaceByte(b))
+                {
+                    chars[charCount++] = '%';
+                    chars[charCount++] = HexConverter.ToCharLower(b >> 4);
+                    chars[charCount++] = HexConverter.ToCharLower(b);
+                }
+                else
+                {
+                    chars[charCount++] = (char)b;
+                }
+            }
+
+            ArrayPool<byte>.Shared.Return(bytes);
+            string result = string.Concat(
+                value.AsSpan(0, i),
+                chars.AsSpan(0, charCount),
+                indexOfQuery >= 0 ? value.AsSpan(indexOfQuery) : ReadOnlySpan<char>.Empty);
+            ArrayPool<char>.Shared.Return(chars);
+            return result;
         }
 
         private static bool ValidateUrlEncodingParameters([NotNullWhen(true)] byte[]? bytes, int offset, int count)
