@@ -10007,7 +10007,7 @@ PhaseStatus Compiler::fgValueNumber()
             ssaDef->m_vnPair.SetBoth(initVal);
             ssaDef->SetBlock(fgFirstBB);
         }
-        else if (info.compInitMem || varDsc->lvMustInit ||
+        else if (info.compInitMem || varDsc->lvMustInit || (varTypeIsGC(varDsc) && !varDsc->lvHasExplicitInit) ||
                  VarSetOps::IsMember(this, fgFirstBB->bbLiveIn, varDsc->lvVarIndex))
         {
             // The last clause covers the use-before-def variables (the ones that are live-in to the first block),
