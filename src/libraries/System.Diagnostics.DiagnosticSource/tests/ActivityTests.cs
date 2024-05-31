@@ -1640,37 +1640,37 @@ namespace System.Diagnostics.Tests
             Assert.NotNull(activity);
             Assert.Empty(activity.Events);
 
-            const string exceptionEventName = "exception";
-            const string exceptionMessageTag = "exception.message";
-            const string exceptionStackTraceTag = "exception.stacktrace";
-            const string exceptionTypeTag = "exception.type";
+            const string ExceptionEventName = "exception";
+            const string ExceptionMessageTag = "exception.message";
+            const string ExceptionStackTraceTag = "exception.stacktrace";
+            const string ExceptionTypeTag = "exception.type";
 
             Exception exception = new ArgumentOutOfRangeException("Some message");
             activity.AddException(exception);
             List<ActivityEvent> events = activity.Events.ToList();
             Assert.Equal(1, events.Count);
-            Assert.Equal(exceptionEventName, events[0].Name);
-            Assert.Equal(new TagList { { exceptionMessageTag, exception.Message}, { exceptionStackTraceTag, exception.ToString()}, { exceptionTypeTag, exception.GetType().ToString() } }, events[0].Tags);
+            Assert.Equal(ExceptionEventName, events[0].Name);
+            Assert.Equal(new TagList { { ExceptionMessageTag, exception.Message}, { ExceptionStackTraceTag, exception.ToString()}, { ExceptionTypeTag, exception.GetType().ToString() } }, events[0].Tags);
 
             try { throw new InvalidOperationException("Some other message"); } catch (Exception e) { exception = e; }
             activity.AddException(exception);
             events = activity.Events.ToList();
             Assert.Equal(2, events.Count);
-            Assert.Equal(exceptionEventName, events[1].Name);
-            Assert.Equal(new TagList { { exceptionMessageTag, exception.Message}, { exceptionStackTraceTag, exception.ToString()}, { exceptionTypeTag, exception.GetType().ToString() } }, events[1].Tags);
+            Assert.Equal(ExceptionEventName, events[1].Name);
+            Assert.Equal(new TagList { { ExceptionMessageTag, exception.Message}, { ExceptionStackTraceTag, exception.ToString()}, { ExceptionTypeTag, exception.GetType().ToString() } }, events[1].Tags);
 
             listener.ExceptionRecorder = (Activity activity, Exception exception, ref TagList theTags) => theTags.Add("foo", "bar");
             activity.AddException(exception, new TagList { { "hello", "world" } });
             events = activity.Events.ToList();
             Assert.Equal(3, events.Count);
-            Assert.Equal(exceptionEventName, events[2].Name);
+            Assert.Equal(ExceptionEventName, events[2].Name);
             Assert.Equal(new TagList
                             {
                                 { "hello", "world" },
                                 { "foo", "bar" },
-                                { exceptionMessageTag, exception.Message },
-                                { exceptionStackTraceTag, exception.ToString() },
-                                { exceptionTypeTag, exception.GetType().ToString() }
+                                { ExceptionMessageTag, exception.Message },
+                                { ExceptionStackTraceTag, exception.ToString() },
+                                { ExceptionTypeTag, exception.GetType().ToString() }
                             },
                             events[2].Tags);
 
@@ -1684,7 +1684,7 @@ namespace System.Diagnostics.Tests
             activity.AddException(exception, new TagList { { "hello", "world" } });
             events = activity.Events.ToList();
             Assert.Equal(4, events.Count);
-            Assert.Equal(exceptionEventName, events[3].Name);
+            Assert.Equal(ExceptionEventName, events[3].Name);
             Assert.Equal(new TagList
                             {
                                 { "hello", "world" },
@@ -1709,7 +1709,7 @@ namespace System.Diagnostics.Tests
             activity.AddException(exception, new TagList { { "hello", "world" } });
             events = activity.Events.ToList();
             Assert.Equal(5, events.Count);
-            Assert.Equal(exceptionEventName, events[4].Name);
+            Assert.Equal(ExceptionEventName, events[4].Name);
             Assert.Equal(new TagList
                             {
                                 { "hello", "world" },

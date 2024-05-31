@@ -539,10 +539,10 @@ namespace System.Diagnostics
 
             Source.NotifyActivityAddException(this, exception, ref exceptionTags);
 
-            const string exceptionEventName = "exception";
-            const string exceptionMessageTag = "exception.message";
-            const string exceptionStackTraceTag = "exception.stacktrace";
-            const string exceptionTypeTag = "exception.type";
+            const string ExceptionEventName = "exception";
+            const string ExceptionMessageTag = "exception.message";
+            const string ExceptionStackTraceTag = "exception.stacktrace";
+            const string ExceptionTypeTag = "exception.type";
 
             bool hasMessage = false;
             bool hasStackTrace = false;
@@ -550,15 +550,15 @@ namespace System.Diagnostics
 
             for (int i = 0; i < exceptionTags.Count; i++)
             {
-                if (exceptionTags[i].Key == exceptionMessageTag)
+                if (exceptionTags[i].Key == ExceptionMessageTag)
                 {
                     hasMessage = true;
                 }
-                else if (exceptionTags[i].Key == exceptionStackTraceTag)
+                else if (exceptionTags[i].Key == ExceptionStackTraceTag)
                 {
                     hasStackTrace = true;
                 }
-                else if (exceptionTags[i].Key == exceptionTypeTag)
+                else if (exceptionTags[i].Key == ExceptionTypeTag)
                 {
                     hasType = true;
                 }
@@ -566,20 +566,20 @@ namespace System.Diagnostics
 
             if (!hasMessage)
             {
-                exceptionTags.Add(new KeyValuePair<string, object?>(exceptionMessageTag, exception.Message));
+                exceptionTags.Add(new KeyValuePair<string, object?>(ExceptionMessageTag, exception.Message));
             }
 
             if (!hasStackTrace)
             {
-                exceptionTags.Add(new KeyValuePair<string, object?>(exceptionStackTraceTag, exception.ToString()));
+                exceptionTags.Add(new KeyValuePair<string, object?>(ExceptionStackTraceTag, exception.ToString()));
             }
 
             if (!hasType)
             {
-                exceptionTags.Add(new KeyValuePair<string, object?>(exceptionTypeTag, exception.GetType().ToString()));
+                exceptionTags.Add(new KeyValuePair<string, object?>(ExceptionTypeTag, exception.GetType().ToString()));
             }
 
-            return AddEvent(new ActivityEvent(exceptionEventName, timestamp, ref exceptionTags));
+            return AddEvent(new ActivityEvent(ExceptionEventName, timestamp, ref exceptionTags));
         }
 
         /// <summary>
