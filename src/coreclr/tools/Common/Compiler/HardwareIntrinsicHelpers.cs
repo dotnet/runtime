@@ -246,9 +246,8 @@ namespace ILCompiler
             public const int Sha256 = 0x0040;
             public const int Atomics = 0x0080;
             public const int Rcpc = 0x0100;
-            public const int VectorT128 = 0x0200;
-            public const int Rcpc2 = 0x0400;
-            public const int Sve = 0x0800;
+            public const int Rcpc2 = 0x0200;
+            public const int Sve = 0x0400;
 
             public static void AddToBuilder(InstructionSetSupportBuilder builder, int flags)
             {
