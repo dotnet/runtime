@@ -231,10 +231,13 @@ typedef uint64_t regMaskSmall;
 
 #ifdef TARGET_ARM64
 #define HAS_MORE_THAN_64_REGISTERS    1
+#endif // TARGET_ARM64
+
+#ifdef HAS_MORE_THAN_64_REGISTERS
 #define MORE_THAN_64_REGISTERS_ARG(x) , x
 #else
 #define MORE_THAN_64_REGISTERS_ARG(x)
-#endif // TARGET_ARM64
+#endif
 
 // TODO: Rename regMaskSmall as RegSet64 (at least for 64-bit)
 typedef regMaskSmall    SingleTypeRegSet;
