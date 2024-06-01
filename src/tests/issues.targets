@@ -1105,10 +1105,20 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\Arrays\huge\huge_r8_r\*" />
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\Arrays\huge\huge_struct_r\*" />
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\Arrays\huge\huge_u8_r\*" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\Arrays\huge\huge_b_d\*" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\Arrays\huge\huge_i4_d\*" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\Arrays\huge\huge_objref_d\*" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\Arrays\huge\huge_r4_d\*" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\Arrays\huge\huge_r8_d\*" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\Arrays\huge\huge\huge_struct_d\*" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\Arrays\huge\huge\huge_struct\*" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\Arrays\huge\huge_u8_d\*" />
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\Arrays\misc\address_d\*" />
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\Arrays\misc\ldelem_get_d\*" />
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\Arrays\misc\address_r\*" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\Arrays\misc\arrres_il_r\*" />
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\Arrays\misc\gcarr_il_r\*" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\Arrays\misc\gcarr_il_d\*" />
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\Arrays\misc\ldelem_get_r\*" />
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\Arrays\range\float64_range1_d\*" />
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\Arrays\range\float64_range2_d\*" />
@@ -1125,6 +1135,7 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\Arrays\range\int32_range1_r\*" />
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\Arrays\range\int32_range2_r\*" />
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\int64\arrays\hugedim_r\*" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\int64\arrays\hugedim_d\*" />
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\refany\array3_d\*" />
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\refany\array3_r\*" />
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\tailcall\deep_array_nz_d\*" />
@@ -1133,6 +1144,7 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\VT\port\huge_gcref_r\*" />
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Performance/CodeQuality/Benchstones/MDBenchI/MDGeneralArray/MDGeneralArray/*" />
         <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/regressions/GitHub_93597/GitHub_93597/*" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/V1-M12-Beta2/b59899/b59899/*" />
 
         <!-- Covariant returns -->
         <!-- https://github.com/dotnet/runtimelab/issues/205 -->
