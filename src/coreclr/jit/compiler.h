@@ -1015,9 +1015,10 @@ public:
 
     regMaskTP lvRegMask() const
     {
-        regMaskTP regMask = RBM_NONE;
         if (GetRegNum() != REG_STK)
         {
+            regMaskTP regMask;
+
             if (varTypeUsesFloatReg(this))
             {
                 regMask = genRegMaskFloat(GetRegNum() ARM_ARG(TypeGet()));
@@ -1032,8 +1033,12 @@ public:
 
                 regMask = genRegMask(GetRegNum());
             }
+            return regMask;
         }
-        return regMask;
+        else
+        {
+            return RBM_NONE;
+        }
     }
 
     //-----------------------------------------------------------------------------
