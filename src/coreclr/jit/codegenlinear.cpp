@@ -939,7 +939,7 @@ void CodeGen::genSpillVar(GenTree* tree)
         {
             assert(varDsc->GetRegNum() == tree->GetRegNum());
 #if defined(FEATURE_SIMD)
-            if ((lclType == TYP_SIMD12) && !compiler->lvaMapSimd12ToSimd16(varDsc))
+            if (lclType == TYP_SIMD12)
             {
                 // Store SIMD12 to stack as 12 bytes
                 GetEmitter()->emitStoreSimd12ToLclOffset(varNum, tree->AsLclVarCommon()->GetLclOffs(),
