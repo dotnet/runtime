@@ -7595,8 +7595,15 @@ void LinearScan::insertUpperVectorSave(GenTree*     tree,
     saveLcl->SetRegNum(lclVarReg);
     SetLsraAdded(saveLcl);
 
-    GenTreeIntrinsic* simdUpperSave =
-        new (compiler, GT_INTRINSIC) GenTreeIntrinsic(LargeVectorSaveType, saveLcl, NI_SIMD_UpperSave, nullptr);
+#if defined(FEATURE_READYTORUN)
+    CORINFO_CONST_LOOKUP entryPoint;
+
+    entryPoint.addr       = nullptr;
+    entryPoint.accessType = IAT_VALUE;
+#endif // FEATURE_READYTORUN
+
+    GenTreeIntrinsic* simdUpperSave = new (compiler, GT_INTRINSIC)
+        GenTreeIntrinsic(LargeVectorSaveType, saveLcl, NI_SIMD_UpperSave, nullptr R2RARG(entryPoint));
 
     SetLsraAdded(simdUpperSave);
     simdUpperSave->SetRegNum(spillReg);
@@ -7653,8 +7660,15 @@ void LinearScan::insertUpperVectorRestore(GenTree*     tree,
     restoreLcl->SetRegNum(lclVarReg);
     SetLsraAdded(restoreLcl);
 
-    GenTreeIntrinsic* simdUpperRestore =
-        new (compiler, GT_INTRINSIC) GenTreeIntrinsic(varDsc->TypeGet(), restoreLcl, NI_SIMD_UpperRestore, nullptr);
+#if defined(FEATURE_READYTORUN)
+    CORINFO_CONST_LOOKUP entryPoint;
+
+    entryPoint.addr       = nullptr;
+    entryPoint.accessType = IAT_VALUE;
+#endif // FEATURE_READYTORUN
+
+    GenTreeIntrinsic* simdUpperRestore = new (compiler, GT_INTRINSIC)
+        GenTreeIntrinsic(varDsc->TypeGet(), restoreLcl, NI_SIMD_UpperRestore, nullptr R2RARG(entryPoint));
 
     regNumber restoreReg = upperVectorInterval->physReg;
     SetLsraAdded(simdUpperRestore);

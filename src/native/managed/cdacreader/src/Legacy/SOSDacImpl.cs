@@ -11,6 +11,11 @@ namespace Microsoft.Diagnostics.DataContractReader.Legacy;
 /// Implementation of ISOSDacInterface* interfaces intended to be passed out to consumers
 /// interacting with the DAC via those COM interfaces.
 /// </summary>
+/// <remarks>
+/// Functions on <see cref="ISOSDacInterface"/> are defined with PreserveSig. Target and Contracts
+/// throw on errors. Implementations in this class should wrap logic in a try-catch and return the
+/// corresponding error code.
+/// </remarks>
 [GeneratedComClass]
 internal sealed partial class SOSDacImpl : ISOSDacInterface, ISOSDacInterface9
 {
@@ -102,7 +107,24 @@ internal sealed partial class SOSDacImpl : ISOSDacInterface, ISOSDacInterface9
     public unsafe int GetSyncBlockCleanupData(ulong addr, void* data) => HResults.E_NOTIMPL;
     public unsafe int GetSyncBlockData(uint number, void* data) => HResults.E_NOTIMPL;
     public unsafe int GetThreadAllocData(ulong thread, void* data) => HResults.E_NOTIMPL;
-    public unsafe int GetThreadData(ulong thread, DacpThreadData* data) => HResults.E_NOTIMPL;
+
+    public unsafe int GetThreadData(ulong thread, DacpThreadData* data)
+    {
+        try
+        {
+            Contracts.IThread contract = _target.Contracts.Thread;
+            Contracts.ThreadData threadData = contract.GetThreadData(thread);
+            data->corThreadId = (int)threadData.Id;
+            data->nextThread = threadData.NextThread;
+        }
+        catch (Exception ex)
+        {
+            return ex.HResult;
+        }
+
+        // TODO: [cdac] Implement/populate rest of thread data fields
+        return HResults.E_NOTIMPL;
+    }
     public unsafe int GetThreadFromThinlockID(uint thinLockId, ulong* pThread) => HResults.E_NOTIMPL;
     public unsafe int GetThreadLocalModuleData(ulong thread, uint index, void* data) => HResults.E_NOTIMPL;
     public unsafe int GetThreadpoolData(void* data) => HResults.E_NOTIMPL;
@@ -114,15 +136,24 @@ internal sealed partial class SOSDacImpl : ISOSDacInterface, ISOSDacInterface9
             Contracts.IThread thread = _target.Contracts.Thread;
             Contracts.ThreadStoreData threadStoreData = thread.GetThreadStoreData();
             data->threadCount = threadStoreData.ThreadCount;
-            data->firstThread = threadStoreData.FirstThread.Value;
-            data->fHostConfig = 0;
+            data->firstThread = threadStoreData.FirstThread;
+            data->finalizerThread = threadStoreData.FinalizerThread;
+            data->gcThread = threadStoreData.GCThread;
+
+            Contracts.ThreadStoreCounts threadCounts = thread.GetThreadCounts();
+            data->unstartedThreadCount = threadCounts.UnstartedThreadCount;
+            data->backgroundThreadCount = threadCounts.BackgroundThreadCount;
+            data->pendingThreadCount = threadCounts.PendingThreadCount;
+            data->deadThreadCount = threadCounts.DeadThreadCount;
+
+            data->fHostConfig = 0; // Always 0 for non-Framework
         }
         catch (Exception ex)
         {
             return ex.HResult;
         }
 
-        return HResults.E_NOTIMPL;
+        return HResults.S_OK;
     }
 
     public unsafe int GetTLSIndex(uint* pIndex) => HResults.E_NOTIMPL;
