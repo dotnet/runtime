@@ -1013,10 +1013,10 @@ inline regNumber getRegForType(regNumber reg, var_types regType)
     return reg;
 }
 
-inline regMaskTP getRegMask(regNumber reg, var_types regType)
+inline SingleTypeRegSet getSingleTypeRegMask(regNumber reg, var_types regType)
 {
     reg               = getRegForType(reg, regType);
-    regMaskTP regMask = genRegMask(reg);
+    SingleTypeRegSet regMask = genSingleTypeRegMask(reg);
 #ifdef TARGET_ARM
     if (regType == TYP_DOUBLE)
     {

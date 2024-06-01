@@ -90,7 +90,7 @@ void regMaskTP::AddGprRegs(SingleTypeRegSet gprRegs)
 
 //------------------------------------------------------------------------
 // AddRegNum: This is similar to AddRegNumInMask(reg, regType) for all platforms
-//      except Arm. For Arm, it calls getRegMask() instead of genRegMask()
+//      except Arm. For Arm, it calls getSingleTypeRegMask() instead of genSingleTypeRegMask()
 //      to create a mask that needs to be added.
 //
 // Parameters:
@@ -100,7 +100,7 @@ void regMaskTP::AddGprRegs(SingleTypeRegSet gprRegs)
 void regMaskTP::AddRegNum(regNumber reg, var_types type)
 {
 #ifdef TARGET_ARM
-    low |= getRegMask(reg, type).getLow();
+    low |= getSingleTypeRegMask(reg, type);
 #else
     AddRegNumInMask(reg);
 #endif
@@ -160,12 +160,12 @@ bool regMaskTP::IsRegNumInMask(regNumber reg) const
 }
 
 // This is similar to IsRegNumInMask(reg, regType) for all platforms
-// except Arm. For Arm, it calls getRegMask() instead of genRegMask()
+// except Arm. For Arm, it calls getSingleTypeRegMask() instead of genSingleTypeRegMask()
 // to create a mask that needs to be added.
 bool regMaskTP::IsRegNumPresent(regNumber reg, var_types type) const
 {
 #ifdef TARGET_ARM
-    return (low & getRegMask(reg, type).getLow()) != RBM_NONE;
+    return (low & getSingleTypeRegMask(reg, type)) != RBM_NONE;
 #else
     return IsRegNumInMask(reg);
 #endif
@@ -190,7 +190,7 @@ void regMaskTP::RemoveRegNumFromMask(regNumber reg)
 
 //------------------------------------------------------------------------
 // RemoveRegNum: his is similar to RemoveRegNumFromMask(reg, regType) for all platforms
-//      except Arm. For Arm, it calls getRegMask() instead of genRegMask()
+//      except Arm. For Arm, it calls getSingleTypeRegMask() instead of genSingleTypeRegMask()
 //      to create a mask that needs to be added.
 // Parameters:
 //  reg - Register to remove
@@ -198,7 +198,7 @@ void regMaskTP::RemoveRegNumFromMask(regNumber reg)
 void regMaskTP::RemoveRegNum(regNumber reg, var_types type)
 {
 #ifdef TARGET_ARM
-    low &= ~getRegMask(reg, type).getLow();
+    low &= ~getSingleTypeRegMask(reg, type);
 #else
     RemoveRegNumFromMask(reg);
 #endif

@@ -1821,7 +1821,8 @@ private:
     void updateSpillCost(regNumber reg, Interval* interval);
 
     FORCEINLINE void updateRegsFreeBusyState(RefPosition&               refPosition,
-                                             regMaskTP                  regsBusy,
+                                             var_types                  registerType,
+                                             SingleTypeRegSet                  regsBusy,
                                              regMaskTP*                 regsToFree,
                                              regMaskTP* delayRegsToFree DEBUG_ARG(Interval* interval)
                                                  DEBUG_ARG(regNumber assignedReg));
