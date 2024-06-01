@@ -34,7 +34,7 @@ struct ComInit
 
 using ComMTA = ComInit<COINIT_MULTITHREADED>;
 void ValidationTests();
-void ValidationByrefTests();
+void ValidationByRefTests();
 
 int __cdecl main()
 {
@@ -51,7 +51,7 @@ int __cdecl main()
     {
         CoreShimComActivation csact{ W("NETServer"), W("MiscTypesTesting") };
         ValidationTests();
-        ValidationByrefTests();
+        ValidationByRefTests();
     }
     catch (HRESULT hr)
     {
@@ -252,7 +252,7 @@ void ValidationTests()
         short data[3] = { 12, 34, 56 };
         SAFEARRAYBOUND saBound;
         saBound.lLbound = 0;
-        saBound.cElements = static_cast<ULONG>(sizeof(data) / sizeof(short));
+        saBound.cElements = static_cast<ULONG>(sizeof(data) / sizeof(*data));
         V_ARRAY(&args.Input) = ::SafeArrayCreate(VT_I2, 1, &saBound);
         memcpy(static_cast<short*>(V_ARRAY(&args.Input)->pvData), data, sizeof(data));
         THROW_IF_FAILED(miscTypesTesting->Marshal_Variant(args.Input, &args.Result));
@@ -322,7 +322,7 @@ void ValidationTests()
     }
 }
 
-void ValidationByrefTests()
+void ValidationByRefTests()
 {
     ::printf(__FUNCTION__ "() through CoCreateInstance...\n");
 
