@@ -17,5 +17,7 @@ namespace System.Collections.Generic
         [DynamicDependency(nameof(Array.InternalArray__IEnumerable_GetEnumerator) + "``1 ", typeof(Array))]
 #endif
         new IEnumerator<T> GetEnumerator();
+
+        IEnumerator IEnumerable.GetEnumerator() => this.GetEnumerator();
     }
 }
