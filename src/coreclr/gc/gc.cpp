@@ -7382,8 +7382,8 @@ bool gc_heap::virtual_commit (void* address, size_t size, int bucket, int h_numb
     // If it's a valid heap number it means it's commiting for memory on the GC heap.
     // In addition if large pages is enabled, we set commit_succeeded_p to true because memory is already committed.
     bool commit_succeeded_p = ((h_number >= 0) ? (use_large_pages_p ? true :
-        virtual_alloc_commit_for_heap (address, size, h_number)) :
-        GCToOSInterface::VirtualCommit(address, size));
+                              virtual_alloc_commit_for_heap (address, size, h_number)) :
+                              GCToOSInterface::VirtualCommit(address, size));
 
     if (!commit_succeeded_p && should_count)
     {
