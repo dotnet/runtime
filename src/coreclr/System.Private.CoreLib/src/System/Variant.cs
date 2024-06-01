@@ -26,7 +26,7 @@ namespace System
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Variant_ConvertValueTypeToRecord")]
         private static partial void ConvertValueTypeToRecord(ObjectHandleOnStack obj, out ComVariant pOle);
 
-        internal static ComVariant GetComIPFromObjectRef(object? obj)
+        internal static ComVariant GetIUnknownOrIDispatchFromObject(object? obj)
         {
             IntPtr pUnk = GetIUnknownOrIDispatchForObject(ObjectHandleOnStack.Create(ref obj), out bool isIDispatch);
             return ComVariant.CreateRaw(isIDispatch ? VarEnum.VT_DISPATCH : VarEnum.VT_UNKNOWN, pUnk);
@@ -35,7 +35,7 @@ namespace System
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MarshalNative_GetIUnknownOrIDispatchForObject")]
         private static partial IntPtr GetIUnknownOrIDispatchForObject(ObjectHandleOnStack o, [MarshalAs(UnmanagedType.Bool)] out bool isIDispatch);
 
-        private static object? GetObjectRefFromComIP(IntPtr pUnk)
+        private static object? GetObjectFromIUnknown(IntPtr pUnk)
         {
             return pUnk == IntPtr.Zero ? null : Marshal.GetObjectForIUnknown(pUnk);
         }
@@ -161,7 +161,7 @@ namespace System
                     // We are dealing with a normal object (not a wrapper) so we will
                     // leave the VT as VT_DISPATCH for now and we will determine the actual
                     // VT when we convert the object to a COM IP.
-                    pOle = GetComIPFromObjectRef(o);
+                    pOle = GetIUnknownOrIDispatchFromObject(o);
                     break;
             }
         }
@@ -272,10 +272,10 @@ namespace System
 
                 case VarEnum.VT_UNKNOWN:
                 case VarEnum.VT_DISPATCH:
-                    return GetObjectRefFromComIP(pOle.GetRawDataRef<IntPtr>());
+                    return GetObjectFromIUnknown(pOle.GetRawDataRef<IntPtr>());
                 case VarEnum.VT_BYREF | VarEnum.VT_UNKNOWN:
                 case VarEnum.VT_BYREF | VarEnum.VT_DISPATCH:
-                    return GetObjectRefFromComIP(*(IntPtr*)pOle.GetRawDataRef<IntPtr>());
+                    return GetObjectFromIUnknown(*(IntPtr*)pOle.GetRawDataRef<IntPtr>());
 
                 case VarEnum.VT_ERROR:
                     int error = pOle.GetRawDataRef<int>();

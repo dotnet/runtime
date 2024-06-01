@@ -151,7 +151,7 @@ namespace Microsoft.Win32
                 null => default,
                 Missing => throw new NotSupportedException(SR.NotSupported_ChangeType),
                 DBNull => ComVariant.Null,
-                _ => Variant.GetComIPFromObjectRef(input) // Convert the object to an IDispatch/IUnknown pointer.
+                _ => Variant.GetIUnknownOrIDispatchFromObject(input) // Convert the object to an IDispatch/IUnknown pointer.
             };
         }
 
