@@ -233,52 +233,7 @@ void Compiler::getHWIntrinsicImmOps(NamedIntrinsic    intrinsic,
     int imm1Pos = -1;
     int imm2Pos = -1;
 
-    switch (intrinsic)
-    {
-        case NI_AdvSimd_Insert:
-        case NI_AdvSimd_InsertScalar:
-        case NI_AdvSimd_LoadAndInsertScalar:
-        case NI_AdvSimd_LoadAndInsertScalarVector64x2:
-        case NI_AdvSimd_LoadAndInsertScalarVector64x3:
-        case NI_AdvSimd_LoadAndInsertScalarVector64x4:
-        case NI_AdvSimd_Arm64_LoadAndInsertScalar:
-        case NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x2:
-        case NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x3:
-        case NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x4:
-            assert(sig->numArgs == 3);
-            imm1Pos = 1;
-            break;
-
-        case NI_AdvSimd_Arm64_InsertSelectedScalar:
-            assert(sig->numArgs == 4);
-            imm1Pos = 2;
-            imm2Pos = 0;
-            break;
-
-        case NI_Sve_SaturatingDecrementBy16BitElementCount:
-        case NI_Sve_SaturatingDecrementBy32BitElementCount:
-        case NI_Sve_SaturatingDecrementBy64BitElementCount:
-        case NI_Sve_SaturatingDecrementBy8BitElementCount:
-        case NI_Sve_SaturatingIncrementBy16BitElementCount:
-        case NI_Sve_SaturatingIncrementBy32BitElementCount:
-        case NI_Sve_SaturatingIncrementBy64BitElementCount:
-        case NI_Sve_SaturatingIncrementBy8BitElementCount:
-        case NI_Sve_SaturatingDecrementBy16BitElementCountScalar:
-        case NI_Sve_SaturatingDecrementBy32BitElementCountScalar:
-        case NI_Sve_SaturatingDecrementBy64BitElementCountScalar:
-        case NI_Sve_SaturatingIncrementBy16BitElementCountScalar:
-        case NI_Sve_SaturatingIncrementBy32BitElementCountScalar:
-        case NI_Sve_SaturatingIncrementBy64BitElementCountScalar:
-            assert(sig->numArgs == 3);
-            imm1Pos = 1;
-            imm2Pos = 0;
-            break;
-
-        default:
-            assert(sig->numArgs > 0);
-            imm1Pos = 0;
-            break;
-    }
+    HWIntrinsicInfo::GetImmOpsPositions(intrinsic, sig, &imm1Pos, &imm2Pos);
 
     if (imm1Pos >= 0)
     {
@@ -1918,7 +1873,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
             GenTree* indices = impStackTop(0).val;
 
-            if (!indices->IsVectorConst())
+            if (!indices->IsVectorConst() || !IsValidForShuffle(indices->AsVecCon(), simdSize, simdBaseType))
             {
                 assert(sig->numArgs == 2);
 
@@ -2142,6 +2097,13 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             assert(sig->numArgs == 3);
             assert(retType == TYP_VOID);
 
+            if (!mustExpand && !impStackTop(0).val->IsCnsIntOrI() && (impStackTop(1).val->TypeGet() == TYP_STRUCT))
+            {
+                // TODO-ARM64-CQ: Support rewriting nodes that involves
+                // GenTreeFieldList as user calls during rationalization
+                return nullptr;
+            }
+
             CORINFO_ARG_LIST_HANDLE arg1     = sig->args;
             CORINFO_ARG_LIST_HANDLE arg2     = info.compCompHnd->getArgNext(arg1);
             CORINFO_ARG_LIST_HANDLE arg3     = info.compCompHnd->getArgNext(arg2);
@@ -2253,9 +2215,14 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
             if (!indexOp->OperIsConst())
             {
-                // TODO-ARM64-CQ: We should always import these like we do with GetElement
-                // If index is not constant use software fallback.
-                return nullptr;
+                op3 = impPopStack().val;
+                op2 = impPopStack().val;
+                op1 = impSIMDPopStack();
+
+                retNode = gtNewSimdHWIntrinsicNode(retType, op1, op2, op3, intrinsic, simdBaseJitType, simdSize);
+
+                retNode->AsHWIntrinsic()->SetMethodHandle(this, method R2RARG(*entryPoint));
+                break;
             }
 
             ssize_t imm8  = indexOp->AsIntCon()->IconValue();
@@ -2391,6 +2358,13 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         case NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x4:
         {
             assert(sig->numArgs == 3);
+
+            if (!mustExpand && !impStackTop(1).val->IsCnsIntOrI())
+            {
+                // TODO-ARM64-CQ: Support rewriting nodes that involves
+                // GenTreeFieldList as user calls during rationalization
+                return nullptr;
+            }
 
             CORINFO_ARG_LIST_HANDLE arg1     = sig->args;
             CORINFO_ARG_LIST_HANDLE arg2     = info.compCompHnd->getArgNext(arg1);

@@ -1291,6 +1291,7 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
     int      immUpperBound   = 0;
     bool     hasFullRangeImm = false;
     bool     useFallback     = false;
+    bool     setMethodHandle = false;
 
     getHWIntrinsicImmOps(intrinsic, sig, &immOp1, &immOp2);
 
@@ -1307,7 +1308,14 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
         if (!CheckHWIntrinsicImmRange(intrinsic, simdBaseJitType, immOp2, mustExpand, immLowerBound, immUpperBound,
                                       false, &useFallback))
         {
-            return useFallback ? impNonConstFallback(intrinsic, retType, simdBaseJitType) : nullptr;
+            if (useFallback)
+            {
+                return impNonConstFallback(intrinsic, retType, simdBaseJitType);
+            }
+            else
+            {
+                setMethodHandle = true;
+            }
         }
     }
 #else
@@ -1331,7 +1339,14 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
         if (!CheckHWIntrinsicImmRange(intrinsic, simdBaseJitType, immOp1, mustExpand, immLowerBound, immUpperBound,
                                       hasFullRangeImm, &useFallback))
         {
-            return useFallback ? impNonConstFallback(intrinsic, retType, simdBaseJitType) : nullptr;
+            if (useFallback)
+            {
+                return impNonConstFallback(intrinsic, retType, simdBaseJitType);
+            }
+            else
+            {
+                setMethodHandle = true;
+            }
         }
     }
 
@@ -1600,6 +1615,11 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
     {
         retNode = impSpecialIntrinsic(intrinsic, clsHnd, method, sig R2RARG(entryPoint), simdBaseJitType, nodeRetType,
                                       simdSize, mustExpand);
+    }
+
+    if (setMethodHandle && (retNode != nullptr))
+    {
+        retNode->AsHWIntrinsic()->SetMethodHandle(this, method R2RARG(*entryPoint));
     }
 
 #if defined(TARGET_ARM64)
