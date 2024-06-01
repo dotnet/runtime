@@ -288,7 +288,7 @@ I4ARRAYREF SetUpWrapperInfo(MethodDesc *pMD)
     return WrapperTypeArr;
 }
 
-UINT32 CLRToCOMEventCallWorker(CRLToCOMMethodFrame* pFrame, CLRToCOMCallMethodDesc *pMD)
+UINT32 CLRToCOMEventCallWorker(CLRToCOMMethodFrame* pFrame, CLRToCOMCallMethodDesc *pMD)
 {
     CONTRACTL
     {
@@ -459,7 +459,7 @@ static CallsiteDetails CreateCallsiteDetails(_In_ FramedMethodFrame *pFrame)
 }
 
 UINT32 CLRToCOMLateBoundWorker(
-    _In_ CRLToCOMMethodFrame *pFrame,
+    _In_ CLRToCOMMethodFrame *pFrame,
     _In_ CLRToCOMCallMethodDesc *pMD)
 {
     CONTRACTL
@@ -713,8 +713,8 @@ UINT32 STDCALL CLRToCOMWorker(TransitionBlock * pTransitionBlock, CLRToCOMCallMe
 
     MAKE_CURRENT_THREAD_AVAILABLE();
 
-    FrameWithCookie<CRLToCOMMethodFrame> frame(pTransitionBlock, pMD);
-    CRLToCOMMethodFrame * pFrame = &frame;
+    FrameWithCookie<CLRToCOMMethodFrame> frame(pTransitionBlock, pMD);
+    CLRToCOMMethodFrame * pFrame = &frame;
 
     //we need to zero out the return value buffer because we will report it during GC
 #ifdef ENREGISTERED_RETURNTYPE_MAXSIZE
@@ -766,7 +766,7 @@ UINT32 STDCALL CLRToCOMWorker(TransitionBlock * pTransitionBlock, CLRToCOMCallMe
 #endif // #ifndef DACCESS_COMPILE
 
 //---------------------------------------------------------
-// Debugger support for CRLToCOMMethodFrame
+// Debugger support for CLRToCOMMethodFrame
 //---------------------------------------------------------
 TADDR CLRToCOMCall::GetFrameCallIP(FramedMethodFrame *frame)
 {
@@ -843,7 +843,7 @@ TADDR CLRToCOMCall::GetFrameCallIP(FramedMethodFrame *frame)
     RETURN ip;
 }
 
-void CRLToCOMMethodFrame::GetUnmanagedCallSite(TADDR* ip,
+void CLRToCOMMethodFrame::GetUnmanagedCallSite(TADDR* ip,
                                               TADDR* returnIP,
                                               TADDR* returnSP)
 {
@@ -858,7 +858,7 @@ void CRLToCOMMethodFrame::GetUnmanagedCallSite(TADDR* ip,
     }
     CONTRACTL_END;
 
-    LOG((LF_CORDB, LL_INFO100000, "CRLToCOMMethodFrame::GetUnmanagedCallSite\n"));
+    LOG((LF_CORDB, LL_INFO100000, "CLRToCOMMethodFrame::GetUnmanagedCallSite\n"));
 
     if (ip != NULL)
         *ip = CLRToCOMCall::GetFrameCallIP(this);
@@ -884,7 +884,7 @@ void CRLToCOMMethodFrame::GetUnmanagedCallSite(TADDR* ip,
 
 
 
-BOOL CRLToCOMMethodFrame::TraceFrame(Thread *thread, BOOL fromPatch,
+BOOL CLRToCOMMethodFrame::TraceFrame(Thread *thread, BOOL fromPatch,
                                     TraceDestination *trace, REGDISPLAY *regs)
 {
     CONTRACTL
@@ -922,7 +922,7 @@ BOOL CRLToCOMMethodFrame::TraceFrame(Thread *thread, BOOL fromPatch,
          !thread->m_fPreemptiveGCDisabled ||
          *PTR_TADDR(returnSP) == returnIP))
     {
-        LOG((LF_CORDB, LL_INFO10000, "CRLToCOMMethodFrame::TraceFrame: can't trace...\n"));
+        LOG((LF_CORDB, LL_INFO10000, "CLRToCOMMethodFrame::TraceFrame: can't trace...\n"));
         return FALSE;
     }
 
@@ -933,7 +933,7 @@ BOOL CRLToCOMMethodFrame::TraceFrame(Thread *thread, BOOL fromPatch,
     trace->InitForUnmanaged(ip);
 
     LOG((LF_CORDB, LL_INFO10000,
-         "CRLToCOMMethodFrame::TraceFrame: ip=0x%p\n", ip));
+         "CLRToCOMMethodFrame::TraceFrame: ip=0x%p\n", ip));
 
     return TRUE;
 }

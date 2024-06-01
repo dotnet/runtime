@@ -387,7 +387,7 @@ NoFloatingPointRetVal
     LEAF_END
 
 ; ------------------------------------------------------------------
-; GenericCLRToCOMCallStub that erects a CRLToCOMMethodFrame and calls into the runtime
+; GenericCLRToCOMCallStub that erects a CLRToCOMMethodFrame and calls into the runtime
 ; (CLRToCOMWorker) to dispatch rare cases of the interface call.
 ;
 ; On entry:

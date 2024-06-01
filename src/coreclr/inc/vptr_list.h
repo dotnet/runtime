@@ -46,7 +46,7 @@ VPTR_CLASS(FlatImageLayout)
 
 #ifdef FEATURE_COMINTEROP
 VPTR_CLASS(ComMethodFrame)
-VPTR_CLASS(CRLToCOMMethodFrame)
+VPTR_CLASS(CLRToCOMMethodFrame)
 VPTR_CLASS(ComPrestubMethodFrame)
 #endif // FEATURE_COMINTEROP
 

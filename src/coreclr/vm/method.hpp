@@ -1515,7 +1515,7 @@ public:
     // This method is used to restore ReturnKind using the class handle, it is fully supported only on x64 Ubuntu,
     // other platforms do not support multi-reg return case with pointers.
     // Use this method only when you can't hit this case
-    // (like CRLToCOMMethodFrame::GcScanRoots) or when you can tolerate RT_Illegal return.
+    // (like CLRToCOMMethodFrame::GcScanRoots) or when you can tolerate RT_Illegal return.
     // Also, on the other platforms for a single field struct return case
     // the function can't distinguish RT_Object and RT_ByRef.
     ReturnKind GetReturnKind(INDEBUG(bool supportStringConstructors = false));
