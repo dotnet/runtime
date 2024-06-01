@@ -1121,7 +1121,7 @@ bool LinearScan::buildKillPositionsForNode(GenTree* tree, LsraLocation currentLo
 {
     bool insertedKills = false;
 
-    if (killMask != RBM_NONE)
+    if (killMask.IsNonEmpty())
     {
         addKillForRegs(killMask, currentLoc);
 
@@ -4411,7 +4411,7 @@ int LinearScan::BuildPutArgReg(GenTreeUnOp* node)
     RefPosition*     use     = BuildUse(op1, argMask);
 
     // Record that this register is occupied by a register now.
-    placedArgRegs |= argMask;
+    placedArgRegs |= argReg;
 
     if (supportsSpecialPutArg() && isCandidateLocalRef(op1) && ((op1->gtFlags & GTF_VAR_DEATH) == 0))
     {

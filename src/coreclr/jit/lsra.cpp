@@ -304,7 +304,7 @@ SingleTypeRegSet LinearScan::getMatchingConstants(SingleTypeRegSet mask,
                                                   RefPosition*     refPosition)
 {
     assert(currentInterval->isConstant && RefTypeIsDef(refPosition->refType));
-    SingleTypeRegSet candidates = (mask & m_RegistersWithConstants).GetRegSetForType(currentInterval->registerType);
+    SingleTypeRegSet candidates = mask & m_RegistersWithConstants.GetRegSetForType(currentInterval->registerType);
     SingleTypeRegSet result     = RBM_NONE;
     while (candidates != RBM_NONE)
     {
@@ -847,7 +847,7 @@ LinearScan::LinearScan(Compiler* theCompiler)
     // Note: one known reason why we exclude LR is because NativeAOT has dependency on not
     //       using LR as a GPR. See: https://github.com/dotnet/runtime/issues/101932
     //       Once that is addressed, we may consider allowing LR in availableIntRegs.
-    availableIntRegs = ((RBM_ALLINT & ~(RBM_PR | RBM_FP | RBM_LR) & ~compiler->codeGen->regSet.rsMaskResvd)).getLow();
+    availableIntRegs = ((RBM_ALLINT & ~(RBM_PR | RBM_FP | RBM_LR) & ~compiler->codeGen->regSet.rsMaskResvd.getLow()));
 #elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     availableIntRegs = (RBM_ALLINT & ~(RBM_FP | RBM_RA) & ~compiler->codeGen->regSet.rsMaskResvd.getLow());
 #else
@@ -2893,7 +2893,7 @@ RegisterType LinearScan::getRegisterType(Interval* currentInterval, RefPosition*
 {
     assert(refPosition->getInterval() == currentInterval);
     RegisterType regType    = currentInterval->registerType;
-    regMaskTP    candidates = refPosition->registerAssignment;
+    SingleTypeRegSet  candidates = refPosition->registerAssignment;
 #if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     // The LoongArch64's ABI which the float args maybe passed by integer register
     // when no float register left but free integer register.
@@ -3525,8 +3525,7 @@ void LinearScan::checkAndAssignInterval(RegRecord* regRec, Interval* interval)
 // Assign the given physical register interval to the given interval
 void LinearScan::assignPhysReg(RegRecord* regRec, Interval* interval)
 {
-    SingleTypeRegSet assignedRegMask = genSingleTypeRegMask(regRec->regNum);
-    compiler->codeGen->regSet.rsSetRegsModified(assignedRegMask DEBUGARG(true));
+    compiler->codeGen->regSet.rsSetRegsModified(genRegMask(regRec->regNum) DEBUGARG(true));
 
     interval->assignedReg = regRec;
     checkAndAssignInterval(regRec, interval);
@@ -3536,7 +3535,7 @@ void LinearScan::assignPhysReg(RegRecord* regRec, Interval* interval)
     if (interval->isLocalVar)
     {
         // Prefer this register for future references
-        interval->updateRegisterPreferences(assignedRegMask);
+        interval->updateRegisterPreferences(genSingleTypeRegMask(regRec->regNum));
     }
 }
 
@@ -4934,7 +4933,7 @@ void LinearScan::freeRegister(RegRecord* physRegRecord)
 //
 void LinearScan::freeRegisters(regMaskTP regsToFree)
 {
-    if (regsToFree == RBM_NONE)
+    if (regsToFree.IsEmpty())
     {
         return;
     }
@@ -5358,7 +5357,7 @@ void LinearScan::allocateRegistersMinimal()
                                             &delayRegsToFree DEBUG_ARG(currentInterval) DEBUG_ARG(assignedRegister));
                     if (!currentRefPosition.lastUse)
                     {
-                        copyRegsToFree |= copyRegMask;
+                        copyRegsToFree.AddRegsetForType(copyRegMask, currentInterval->registerType);
                     }
 
                     // For tree temp (non-localVar) interval, we will need an explicit move.
@@ -6394,7 +6393,7 @@ void LinearScan::allocateRegisters()
                                                         DEBUG_ARG(assignedRegister));
                             if (!currentRefPosition.lastUse)
                             {
-                                copyRegsToFree |= copyRegMask;
+                                copyRegsToFree.AddRegsetForType(copyRegMask, currentInterval->registerType);
                             }
 
                             // If this is a tree temp (non-localVar) interval, we will need an explicit move.
@@ -6738,11 +6737,11 @@ void LinearScan::allocateRegisters()
                     {
                         if (currentRefPosition.delayRegFree)
                         {
-                            delayRegsToMakeInactive |= regMask;
+                            delayRegsToMakeInactive.AddRegsetForType(regMask, currentInterval->registerType);
                         }
                         else
                         {
-                            regsToMakeInactive |= regMask;
+                            regsToMakeInactive.AddRegsetForType(regMask, currentInterval->registerType);
                         }
                         // TODO-Cleanup: this makes things consistent with previous, and will enable preferences
                         // to be propagated, but it seems less than ideal.
@@ -6761,13 +6760,13 @@ void LinearScan::allocateRegisters()
                 {
                     if (currentRefPosition.delayRegFree)
                     {
-                        delayRegsToFree |= regMask;
+                        delayRegsToFree.AddRegsetForType(regMask, currentInterval->registerType);
 
                         INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_LAST_USE_DELAYED));
                     }
                     else
                     {
-                        regsToFree |= regMask;
+                        regsToFree.AddRegsetForType(regMask, currentInterval->registerType);
 
                         INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_LAST_USE));
                     }
@@ -8143,7 +8142,7 @@ void LinearScan::resolveRegisters()
                         {
                             // If the localVar is in a register, it must be in a register that is not trashed by
                             // the current node (otherwise it would have already been spilled).
-                            assert((genRegMask(localVarInterval->physReg) & getKillSetForNode(treeNode)) == RBM_NONE);
+                            assert((genRegMask(localVarInterval->physReg) & getKillSetForNode(treeNode)).IsEmpty());
                             // If we have allocated a register to spill it to, we will use that; otherwise, we will
                             // spill it to the stack.  We can use as a temp register any non-arg caller-save register.
                             currentRefPosition->referent->recentRefPosition = currentRefPosition;
@@ -8488,7 +8487,7 @@ void LinearScan::resolveRegisters()
                         varDsc->lvOnFrame  = false;
                     }
 #ifdef DEBUG
-                    regMaskTP registerAssignment = genSingleTypeRegMask(varDsc->GetRegNum());
+                    SingleTypeRegSet registerAssignment = genSingleTypeRegMask(varDsc->GetRegNum());
                     assert(!interval->isSpilled && !interval->isSplit);
                     RefPosition* refPosition = interval->firstRefPosition;
                     assert(refPosition != nullptr);
@@ -9190,8 +9189,8 @@ void LinearScan::handleOutgoingCriticalEdges(BasicBlock* block)
             // In this case, sameToReg will be in the liveOutRegs of this block.
             // Similarly, if sameToReg is in sameWriteRegs, it has already been used (i.e. for a lclVar that's
             // live only at another target), and we can't copy another lclVar into that reg in this block.
-            regMaskTP sameToRegMask =
-                genRegMask(sameToReg, getIntervalForLocalVar(outResolutionSetVarIndex)->registerType);
+            SingleTypeRegSet sameToRegMask =
+                genSingleTypeRegMask(sameToReg, getIntervalForLocalVar(outResolutionSetVarIndex)->registerType);
             if (maybeSameLivePaths && (liveOutRegs.IsRegNumInMask(sameToReg ARM_ARG(outVarRegType)) ||
                                        sameWriteRegs.IsRegNumInMask(sameToReg ARM_ARG(outVarRegType))))
             {
@@ -9201,7 +9200,7 @@ void LinearScan::handleOutgoingCriticalEdges(BasicBlock* block)
             // (or for Arm64, it is consumed by JCMP), we can't do the copy in this block since we can't
             // insert it after the switch (or for Arm64, can't insert and overwrite the operand/source
             // of operand of JCMP).
-            if ((sameToRegMask & consumedRegs).IsNonEmpty())
+            if ((sameToRegMask & consumedRegs) != RBM_NONE)
             {
                 sameToReg = REG_NA;
             }
@@ -11780,7 +11779,7 @@ void LinearScan::verifyFreeRegisters(regMaskTP regsToFree)
         regMaskTP regMask = genRegMask(reg);
         // If this isn't available or if it's still waiting to be freed (i.e. it was in
         // delayRegsToFree and so now it's in regsToFree), then skip it.
-        if ((regMask & allAvailableRegs & ~regsToFree) == RBM_NONE)
+        if ((regMask & allAvailableRegs & ~regsToFree).IsEmpty())
         {
             continue;
         }
@@ -13698,7 +13697,7 @@ SingleTypeRegSet LinearScan::RegisterSelection::select(Interval*                
                 SingleTypeRegSet limitCandidatesForConsecutive =
                     ((refPosition->registerAssignment & ~inUseOrBusyRegsMask) & linearScan->availableFloatRegs);
                 SingleTypeRegSet overallLimitCandidates;
-                regMaskTP        limitConsecutiveResult =
+                SingleTypeRegSet        limitConsecutiveResult =
                     linearScan->filterConsecutiveCandidates(limitCandidatesForConsecutive, refPosition->regCount,
                                                             &overallLimitCandidates);
                 assert(limitConsecutiveResult != RBM_NONE);

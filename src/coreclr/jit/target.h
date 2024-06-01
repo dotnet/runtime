@@ -500,6 +500,11 @@ static regMaskTP operator~(const regMaskTP& first)
     return result;
 }
 
+static uint32_t PopCount(SingleTypeRegSet value)
+{
+    return BitOperations::PopCount(value);
+}
+
 static uint32_t PopCount(const regMaskTP& value)
 {
     return BitOperations::PopCount(value.getLow())
@@ -507,6 +512,11 @@ static uint32_t PopCount(const regMaskTP& value)
            + BitOperations::PopCount(value.getHigh())
 #endif
         ;
+}
+
+static uint32_t BitScanForward(SingleTypeRegSet value)
+{
+    return BitOperations::BitScanForward(value);
 }
 
 static uint32_t BitScanForward(const regMaskTP& mask)
@@ -807,7 +817,7 @@ inline SingleTypeRegSet fullIntArgRegMask(CorInfoCallConvExtension callConv)
 //
 inline bool isValidIntArgReg(regNumber reg, CorInfoCallConvExtension callConv)
 {
-    return (genRegMask(reg) & fullIntArgRegMask(callConv)) != 0;
+    return (genSingleTypeRegMask(reg) & fullIntArgRegMask(callConv)) != 0;
 }
 
 //-------------------------------------------------------------------------------------------

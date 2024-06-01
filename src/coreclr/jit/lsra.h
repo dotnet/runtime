@@ -1245,18 +1245,19 @@ private:
                                                          unsigned int     registersNeeded);
 #endif // TARGET_ARM64
 
-    SingleTypeRegSet getFreeCandidates(regMaskTP candidates, var_types regType)
+    SingleTypeRegSet getFreeCandidates(SingleTypeRegSet candidates, var_types regType)
     {
-        regMaskTP result = candidates & m_AvailableRegs;
+        SingleTypeRegSet availableRegsForType = m_AvailableRegs.GetRegSetForType(regType); 
+        SingleTypeRegSet result               = candidates & availableRegsForType;
 #ifdef TARGET_ARM
         // For TYP_DOUBLE on ARM, we can only use register for which the odd half is
         // also available.
         if (regType == TYP_DOUBLE)
         {
-            result &= (m_AvailableRegs >> 1);
+            result &= (availableRegsForType >> 1);
         }
 #endif // TARGET_ARM
-        return result.GetRegSetForType(regType);
+        return result;
     }
 
 #ifdef DEBUG
@@ -1725,9 +1726,9 @@ private:
     PhasedVar<SingleTypeRegSet>* availableRegs[TYP_COUNT];
 
 #if defined(TARGET_XARCH) || defined(TARGET_ARM64)
-#define allAvailableRegs (availableIntRegs | availableFloatRegs | availableMaskRegs)
+#define allAvailableRegs regMaskTP(availableIntRegs | availableFloatRegs, (RegSet32)availableMaskRegs)
 #else
-#define allAvailableRegs (availableIntRegs | availableFloatRegs)
+#define allAvailableRegs regMaskTP(availableIntRegs | availableFloatRegs)
 #endif
 
     // Register mask of argument registers currently occupied because we saw a

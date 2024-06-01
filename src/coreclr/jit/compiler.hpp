@@ -974,7 +974,7 @@ inline regNumber genRegNumFromMask(const regMaskTP& mask)
     regNumber regNum = (regNumber)genLog2(mask.getLow());
 
     /* Make sure we got it right */
-    assert(genRegMask(regNum) == mask.getLow());
+    assert(genRegMask(regNum).getLow() == mask.getLow());
 
     return regNum;
 }
@@ -1022,6 +1022,26 @@ inline regNumber genFirstRegNumFromMask(const regMaskTP& mask)
     /* Convert the mask to a register number */
 
     regNumber regNum = (regNumber)BitScanForward(mask);
+
+    return regNum;
+}
+
+//------------------------------------------------------------------------------
+// genFirstRegNumFromMask : Maps first bit set in the register mask to a register number.
+//
+// Arguments:
+//    mask               - the register mask
+//
+// Return Value:
+//    The number of the first register contained in the mask.
+//
+inline regNumber genFirstRegNumFromMask(SingleTypeRegSet mask)
+{
+    assert(mask != RBM_NONE); // Must have one bit set, so can't have a mask of zero
+
+    /* Convert the mask to a register number */
+
+    regNumber regNum = (regNumber)BitOperations::BitScanForward(mask);
 
     return regNum;
 }
