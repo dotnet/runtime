@@ -40,15 +40,48 @@ namespace System
             return pUnk == IntPtr.Zero ? null : Marshal.GetObjectForIUnknown(pUnk);
         }
 
-        private static unsafe object? ConvertWrappedObject(object? wrapped) => wrapped switch
+        private static unsafe object? ConvertWrappedObject(object? wrapped)
         {
-            null or Empty => null,
-            Enum => wrapped.GetType(),
-            IntPtr or UIntPtr => wrapped,
-            ValueType v when RuntimeHelpers.GetMethodTable(v)->IsPrimitive => null,
-            DateTime or TimeSpan or Currency => null,
-            _ => wrapped,
-        };
+            // Historically, for UnknownWrapper and DispatchWrapper, the wrapped object is passed
+            // into Variant.SetFieldsObject, and the result set in objRef field is used for
+            // IUnknown/IDispatch marshalling. Here the behavior is simulated.
+
+            if (wrapped is ValueType)
+            {
+                // Enums are stored with underlying value in number bits, and type in objRef field.
+                if (wrapped is Enum)
+                    return wrapped.GetType();
+
+                // Primitive types (ELEMENT_TYPE_BOOLEAN through ELEMENT_TYPE_STRING, IntPtr/UIntPtr
+                // not included) don't have objRef set and become null.
+                if (wrapped is IntPtr or UIntPtr)
+                    return wrapped;
+
+                if (wrapped.GetType().IsPrimitive)
+                    return null;
+
+                // System.Drawing.Color is converted to UInt32.
+                if (IsSystemDrawingColor(wrapped.GetType()))
+                    return null;
+
+                // DateTime, TimeSpan and Currency are stored with corresponding types with
+                // objectRef unset.
+                if (wrapped is DateTime or TimeSpan or Currency)
+                    return null;
+
+                // Other value types are boxed as-is.
+                return wrapped;
+            }
+            else
+            {
+                // Empty is stored with null objRef.
+                // DBNull and Missing are stored with corresponding types, with objRef also set.
+                if (wrapped is Empty)
+                    return null;
+
+                return wrapped;
+            }
+        }
 
         // Helper code for marshaling managed objects to VARIANT's
         internal static void MarshalHelperConvertObjectToVariant(object? o, out ComVariant pOle)
@@ -232,6 +265,7 @@ namespace System
                 case VarEnum.VT_BOOL:
                     return pOle.As<bool>();
                 case VarEnum.VT_BYREF | VarEnum.VT_BOOL:
+                    // VARIANT_BOOL is 2 bytes
                     return *(short*)pOle.GetRawDataRef<IntPtr>() != 0;
 
                 case VarEnum.VT_BSTR:
