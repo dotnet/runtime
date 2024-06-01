@@ -152,9 +152,11 @@ namespace System.Text.Json.Serialization
         /// </summary>
         internal virtual JsonConverter? SourceConverterForCastingConverter => null;
 
-        internal abstract Type? ElementType { get; }
+        internal virtual Type? ElementType => null;
 
-        internal abstract Type? KeyType { get; }
+        internal virtual Type? KeyType => null;
+
+        internal virtual JsonConverter? NullableElementConverter => null;
 
         /// <summary>
         /// Cached value of TypeToConvert.IsValueType, which is an expensive call.
