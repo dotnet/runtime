@@ -94,7 +94,7 @@ class OleVariant
 
     // Type conversion utilities
     static void ExtractContentsFromByrefVariant(VARIANT* pByrefVar, VARIANT* pDestVar);
-    static void InsertContentsIntoByrefVariant(VARIANT* pSrcVar, VARIANT* pByrefVar);
+    static void InsertContentsIntoByRefVariant(VARIANT* pSrcVar, VARIANT* pByrefVar);
     static void CreateByrefVariantForVariant(VARIANT* pSrcVar, VARIANT* pByrefVar);
 #endif // FEATURE_COMINTEROP
 

@@ -84,7 +84,7 @@ TypeHandle OleVariant::GetTypeHandleForVarType(VARTYPE vt)
     }
     CONTRACTL_END;
 
-    static const int map[] =
+    static const BYTE map[] =
     {
         CLASS__EMPTY,       // VT_EMPTY
         CLASS__NULL,        // VT_NULL
@@ -2215,7 +2215,7 @@ void OleVariant::MarshalOleRefVariantForObject(OBJECTREF *pObj, VARIANT *pOle)
 
             // Managed implementation of CastVariant should either return correct type or throw.
             _ASSERTE(V_VT(&vtmp) == vt);
-            InsertContentsIntoByrefVariant(&vtmp, pOle);
+            InsertContentsIntoByRefVariant(&vtmp, pOle);
         }
     }
 }
@@ -2326,7 +2326,7 @@ HRESULT OleVariant::MarshalCommonOleRefVariantForObject(OBJECTREF *pObj, VARIANT
             // Since variants can contain any VARTYPE we simply convert the object to
             // a variant and stuff it back into the byref variant.
             MarshalOleVariantForObject(pObj, &vtmp);
-            InsertContentsIntoByrefVariant(&vtmp, pOle);
+            InsertContentsIntoByRefVariant(&vtmp, pOle);
         }
         else if (vt & VT_ARRAY)
         {
@@ -2339,7 +2339,7 @@ HRESULT OleVariant::MarshalCommonOleRefVariantForObject(OBJECTREF *pObj, VARIANT
                 hr = DISP_E_TYPEMISMATCH;
                 goto Exit;
             }
-            InsertContentsIntoByrefVariant(&vtmp, pOle);
+            InsertContentsIntoByRefVariant(&vtmp, pOle);
         }
         else if ( (*pObj) == NULL &&
                  (vt == VT_BSTR ||
@@ -2355,7 +2355,7 @@ HRESULT OleVariant::MarshalCommonOleRefVariantForObject(OBJECTREF *pObj, VARIANT
             // conversion will return a VT_EMPTY which isn't what we want.
             V_VT(&vtmp) = vt;
             V_UNKNOWN(&vtmp) = NULL;
-            InsertContentsIntoByrefVariant(&vtmp, pOle);
+            InsertContentsIntoByRefVariant(&vtmp, pOle);
         }
         else
         {
@@ -2622,7 +2622,7 @@ void OleVariant::ExtractContentsFromByrefVariant(VARIANT *pByrefVar, VARIANT *pD
     RETURN;
 }
 
-void OleVariant::InsertContentsIntoByrefVariant(VARIANT *pSrcVar, VARIANT *pByrefVar)
+void OleVariant::InsertContentsIntoByRefVariant(VARIANT *pSrcVar, VARIANT *pByrefVar)
 {
     CONTRACT_VOID
     {
