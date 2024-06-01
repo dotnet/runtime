@@ -35,8 +35,9 @@
       <LibPackageExcludes Include="tools\%2A%2A\%2A.pdb"/>
 
       <LibPackageExcludes Include="%2A%2A\%2A.dbg"/>
-      <LibPackageExcludes Include="%2A%2A\%2A.dSYM"/>
       <LibPackageExcludes Include="%2A%2A\%2A.debug"/>
+      <LibPackageExcludes Include="%2A%2A\%2A.dSYM"/>
+      <LibPackageExcludes Include="%2A%2A\%2A.dwarf"/>
     </ItemGroup>
 
   </Target>
