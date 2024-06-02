@@ -2262,7 +2262,7 @@ namespace System.Net.Sockets
         /// <param name="checkWrite">An <see cref="IList"/> of <see cref="Socket"/> instances to check for writability.</param>
         /// <param name="checkError">An <see cref="IList"/> of <see cref="Socket"/> instances to check for errors.</param>
         /// <param name="microSeconds">The timeout value, in microseconds. A -1 value indicates an infinite timeout.</param>
-        /// <exception cref="ArgumentNullException">The <paramref name="checkRead"/>, <paramref name="checkWrite"/>, or <paramref name="checkError"/> parameter is <see langword="null"/> or empty.</exception>
+        /// <exception cref="ArgumentNullException">The <paramref name="checkRead"/>, <paramref name="checkWrite"/>, and <paramref name="checkError"/> parameters are all either <see langword="null"/> or empty. At least one of them must contain at least one <see cref="Socket"/>.</exception>
         /// <exception cref="ArgumentOutOfRangeException">The <paramref name="checkRead"/>, <paramref name="checkWrite"/>, or <paramref name="checkError"/> parameter contains too many sockets.</exception>
         /// <exception cref="SocketException">An error occurred when attempting to access the socket.</exception>
         /// <exception cref="ObjectDisposedException">One or more sockets was disposed.</exception>
@@ -2302,7 +2302,7 @@ namespace System.Net.Sockets
         /// <param name="checkWrite">An <see cref="IList"/> of <see cref="Socket"/> instances to check for writability.</param>
         /// <param name="checkError">An <see cref="IList"/> of <see cref="Socket"/> instances to check for errors.</param>
         /// <param name="timeout">The timeout value. A value equal to <see cref="Timeout.InfiniteTimeSpan"/> indicates an infinite timeout.</param>
-        /// <exception cref="ArgumentNullException">The <paramref name="checkRead"/>, <paramref name="checkWrite"/>, or <paramref name="checkError"/> parameter is <see langword="null"/> or empty.</exception>
+        /// <exception cref="ArgumentNullException">The <paramref name="checkRead"/>, <paramref name="checkWrite"/>, and <paramref name="checkError"/> parameters are all either <see langword="null"/> or empty. At least one of them must contain at least one <see cref="Socket"/>.</exception>
         /// <exception cref="ArgumentOutOfRangeException">The <paramref name="checkRead"/>, <paramref name="checkWrite"/>, or <paramref name="checkError"/> parameter contains too many sockets.</exception>
         /// <exception cref="ArgumentOutOfRangeException">The <paramref name="timeout"/> was negative or greater than TimeSpan.FromMicroseconds(int.MaxValue).</exception>
         /// <exception cref="SocketException">An error occurred when attempting to access the socket.</exception>
