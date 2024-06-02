@@ -6,9 +6,6 @@
 // Suppress warnings about [Obsolete] member usage in generated code.
 #pragma warning disable CS0612, CS0618
 
-// Suppress warnings about null checks of value types.
-#pragma warning disable CS0183
-
 namespace System.Runtime.CompilerServices
 {
     using System;
@@ -66,11 +63,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
             else if (defaultValueIfNotFound)
             {
-                var currentValue = instance.Prop0;
-                if (currentValue is object) 
-                {
-                    instance.Prop0 = currentValue;
-                }
+                instance.Prop0 = instance.Prop0;
             }
 
             if (configuration["Prop1"] is string value1)
@@ -79,11 +72,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
             else if (defaultValueIfNotFound)
             {
-                var currentValue = instance.Prop1;
-                if (currentValue is object) 
-                {
-                    instance.Prop1 = currentValue;
-                }
+                instance.Prop1 = instance.Prop1;
             }
 
             if (configuration["Prop2"] is string value2)
@@ -92,11 +81,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
             else if (defaultValueIfNotFound)
             {
-                var currentValue = instance.Prop2;
-                if (currentValue is object) 
-                {
-                    instance.Prop2 = currentValue;
-                }
+                instance.Prop2 = instance.Prop2;
             }
 
             if (configuration["Prop3"] is string value3)
@@ -105,11 +90,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
             else if (defaultValueIfNotFound)
             {
-                var currentValue = instance.Prop3;
-                if (currentValue is object) 
-                {
-                    instance.Prop3 = currentValue;
-                }
+                instance.Prop3 = instance.Prop3;
             }
 
             if (configuration["Prop4"] is string value4)
@@ -118,11 +99,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
             else if (defaultValueIfNotFound)
             {
-                var currentValue = instance.Prop4;
-                if (currentValue is object) 
-                {
-                    instance.Prop4 = currentValue;
-                }
+                instance.Prop4 = instance.Prop4;
             }
 
             if (configuration["Prop5"] is string value5)
@@ -132,7 +109,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             else if (defaultValueIfNotFound)
             {
                 var currentValue = instance.Prop5;
-                if (currentValue is object) 
+                if (currentValue is not null)
                 {
                     instance.Prop5 = currentValue;
                 }
@@ -144,11 +121,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
             else if (defaultValueIfNotFound)
             {
-                var currentValue = instance.Prop6;
-                if (currentValue is object) 
-                {
-                    instance.Prop6 = currentValue;
-                }
+                instance.Prop6 = instance.Prop6;
             }
 
             if (configuration["Prop8"] is string value7)
@@ -157,11 +130,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
             else if (defaultValueIfNotFound)
             {
-                var currentValue = instance.Prop8;
-                if (currentValue is object) 
-                {
-                    instance.Prop8 = currentValue;
-                }
+                instance.Prop8 = instance.Prop8;
             }
 
             if (configuration["Prop9"] is string value8)
@@ -170,11 +139,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
             else if (defaultValueIfNotFound)
             {
-                var currentValue = instance.Prop9;
-                if (currentValue is object) 
-                {
-                    instance.Prop9 = currentValue;
-                }
+                instance.Prop9 = instance.Prop9;
             }
 
             if (configuration["Prop10"] is string value9)
@@ -183,11 +148,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
             else if (defaultValueIfNotFound)
             {
-                var currentValue = instance.Prop10;
-                if (currentValue is object) 
-                {
-                    instance.Prop10 = currentValue;
-                }
+                instance.Prop10 = instance.Prop10;
             }
 
             if (configuration["Prop13"] is string value10)
@@ -196,11 +157,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
             else if (defaultValueIfNotFound)
             {
-                var currentValue = instance.Prop13;
-                if (currentValue is object) 
-                {
-                    instance.Prop13 = currentValue;
-                }
+                instance.Prop13 = instance.Prop13;
             }
 
             if (configuration["Prop14"] is string value11)
@@ -209,11 +166,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
             else if (defaultValueIfNotFound)
             {
-                var currentValue = instance.Prop14;
-                if (currentValue is object) 
-                {
-                    instance.Prop14 = currentValue;
-                }
+                instance.Prop14 = instance.Prop14;
             }
 
             if (configuration["Prop15"] is string value12)
@@ -222,11 +175,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
             else if (defaultValueIfNotFound)
             {
-                var currentValue = instance.Prop15;
-                if (currentValue is object) 
-                {
-                    instance.Prop15 = currentValue;
-                }
+                instance.Prop15 = instance.Prop15;
             }
 
             if (configuration["Prop16"] is string value13)
@@ -236,7 +185,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             else if (defaultValueIfNotFound)
             {
                 var currentValue = instance.Prop16;
-                if (currentValue is object) 
+                if (currentValue is not null)
                 {
                     instance.Prop16 = currentValue;
                 }
@@ -249,7 +198,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             else if (defaultValueIfNotFound)
             {
                 var currentValue = instance.Prop17;
-                if (currentValue is object) 
+                if (currentValue is not null)
                 {
                     instance.Prop17 = currentValue;
                 }
@@ -261,11 +210,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
             else if (defaultValueIfNotFound)
             {
-                var currentValue = instance.Prop19;
-                if (currentValue is object) 
-                {
-                    instance.Prop19 = currentValue;
-                }
+                instance.Prop19 = instance.Prop19;
             }
 
             if (configuration["Prop20"] is string value16)
@@ -274,11 +219,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
             else if (defaultValueIfNotFound)
             {
-                var currentValue = instance.Prop20;
-                if (currentValue is object) 
-                {
-                    instance.Prop20 = currentValue;
-                }
+                instance.Prop20 = instance.Prop20;
             }
 
             if (configuration["Prop21"] is string value17)
@@ -287,11 +228,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
             else if (defaultValueIfNotFound)
             {
-                var currentValue = instance.Prop21;
-                if (currentValue is object) 
-                {
-                    instance.Prop21 = currentValue;
-                }
+                instance.Prop21 = instance.Prop21;
             }
 
             if (configuration["Prop23"] is string value18)
@@ -300,11 +237,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
             else if (defaultValueIfNotFound)
             {
-                var currentValue = instance.Prop23;
-                if (currentValue is object) 
-                {
-                    instance.Prop23 = currentValue;
-                }
+                instance.Prop23 = instance.Prop23;
             }
 
             if (configuration["Prop24"] is string value19)
@@ -313,11 +246,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
             else if (defaultValueIfNotFound)
             {
-                var currentValue = instance.Prop24;
-                if (currentValue is object) 
-                {
-                    instance.Prop24 = currentValue;
-                }
+                instance.Prop24 = instance.Prop24;
             }
 
             if (configuration["Prop25"] is string value20)
@@ -327,7 +256,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             else if (defaultValueIfNotFound)
             {
                 var currentValue = instance.Prop25;
-                if (currentValue is object) 
+                if (currentValue is not null)
                 {
                     instance.Prop25 = currentValue;
                 }
@@ -340,7 +269,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             else if (defaultValueIfNotFound)
             {
                 var currentValue = instance.Prop26;
-                if (currentValue is object) 
+                if (currentValue is not null)
                 {
                     instance.Prop26 = currentValue;
                 }
@@ -352,11 +281,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
             else if (defaultValueIfNotFound)
             {
-                var currentValue = instance.Prop27;
-                if (currentValue is object) 
-                {
-                    instance.Prop27 = currentValue;
-                }
+                instance.Prop27 = instance.Prop27;
             }
 
             if (configuration["Prop7"] is string value23)
@@ -365,11 +290,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
             else if (defaultValueIfNotFound)
             {
-                var currentValue = instance.Prop7;
-                if (currentValue is object) 
-                {
-                    instance.Prop7 = currentValue;
-                }
+                instance.Prop7 = instance.Prop7;
             }
 
             if (configuration["Prop11"] is string value24)
@@ -378,11 +299,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
             else if (defaultValueIfNotFound)
             {
-                var currentValue = instance.Prop11;
-                if (currentValue is object) 
-                {
-                    instance.Prop11 = currentValue;
-                }
+                instance.Prop11 = instance.Prop11;
             }
 
             if (configuration["Prop12"] is string value25)
@@ -391,11 +308,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
             else if (defaultValueIfNotFound)
             {
-                var currentValue = instance.Prop12;
-                if (currentValue is object) 
-                {
-                    instance.Prop12 = currentValue;
-                }
+                instance.Prop12 = instance.Prop12;
             }
 
             if (configuration["Prop18"] is string value26)
@@ -404,11 +317,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
             else if (defaultValueIfNotFound)
             {
-                var currentValue = instance.Prop18;
-                if (currentValue is object) 
-                {
-                    instance.Prop18 = currentValue;
-                }
+                instance.Prop18 = instance.Prop18;
             }
 
             if (configuration["Prop22"] is string value27)
@@ -417,11 +326,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
             else if (defaultValueIfNotFound)
             {
-                var currentValue = instance.Prop22;
-                if (currentValue is object) 
-                {
-                    instance.Prop22 = currentValue;
-                }
+                instance.Prop22 = instance.Prop22;
             }
 
             if (configuration["Prop28"] is string value28)
@@ -431,7 +336,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             else if (defaultValueIfNotFound)
             {
                 var currentValue = instance.Prop28;
-                if (currentValue is object) 
+                if (currentValue is not null)
                 {
                     instance.Prop28 = currentValue;
                 }
@@ -443,11 +348,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
             else if (defaultValueIfNotFound)
             {
-                var currentValue = instance.Prop29;
-                if (currentValue is object) 
-                {
-                    instance.Prop29 = currentValue;
-                }
+                instance.Prop29 = instance.Prop29;
             }
 
             if (configuration["Prop30"] is string value30)
@@ -456,11 +357,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
             else if (defaultValueIfNotFound)
             {
-                var currentValue = instance.Prop30;
-                if (currentValue is object) 
-                {
-                    instance.Prop30 = currentValue;
-                }
+                instance.Prop30 = instance.Prop30;
             }
         }
 

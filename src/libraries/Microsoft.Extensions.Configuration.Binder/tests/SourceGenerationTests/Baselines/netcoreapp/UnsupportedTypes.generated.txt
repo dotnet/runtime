@@ -6,9 +6,6 @@
 // Suppress warnings about [Obsolete] member usage in generated code.
 #pragma warning disable CS0612, CS0618
 
-// Suppress warnings about null checks of value types.
-#pragma warning disable CS0183
-
 namespace System.Runtime.CompilerServices
 {
     using System;
@@ -134,7 +131,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             else if (defaultValueIfNotFound)
             {
                 var currentValue = instance.Name;
-                if (currentValue is object) 
+                if (currentValue is not null)
                 {
                     instance.Name = currentValue;
                 }
@@ -146,11 +143,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
             else if (defaultValueIfNotFound)
             {
-                var currentValue = instance.Age;
-                if (currentValue is object) 
-                {
-                    instance.Age = currentValue;
-                }
+                instance.Age = instance.Age;
             }
 
             if (AsConfigWithChildren(configuration.GetSection("List")) is IConfigurationSection section4)

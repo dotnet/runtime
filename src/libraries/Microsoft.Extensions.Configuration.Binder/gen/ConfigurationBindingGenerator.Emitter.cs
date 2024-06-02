@@ -46,9 +46,6 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
                     // Suppress warnings about [Obsolete] member usage in generated code.
                     #pragma warning disable CS0612, CS0618
-
-                    // Suppress warnings about null checks of value types.
-                    #pragma warning disable CS0183
                     """);
 
                 EmitInterceptsLocationAttrDecl();

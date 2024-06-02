@@ -1091,12 +1091,17 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     Debug.Assert(checkForNullSectionValue);
 
                     EmitStartBlock($"else if (defaultValueIfNotFound)");
-                    _writer.WriteLine($"var currentValue = {defaultValueSource};");
-                    // `is object` will be happy with value types, but will give CS0183 which we suppress
-                    // `is null` gives "Cannot convert null to 'int' because it is a non-nullable value type"
-                    EmitStartBlock($"if (currentValue is object) ");
-                    writeOnSuccess?.Invoke("currentValue");
-                    EmitEndBlock();
+                    if (!type.TypeRef.CanBeNull)
+                    {
+                        writeOnSuccess?.Invoke(defaultValueSource);
+                    }
+                    else
+                    {
+                        _writer.WriteLine($"var currentValue = {defaultValueSource};");
+                        EmitStartBlock($"if (currentValue is not null)");
+                        writeOnSuccess?.Invoke("currentValue");
+                        EmitEndBlock();
+                    }
                     EmitEndBlock();
                 }
             }
