@@ -290,7 +290,6 @@
                             HostCrossOS=$(HostOS);
                             HostOS=$(HostOS);
                             TargetOS=$(TargetOS);
-                            HostArchitecture=$(HostArchitecture);
                             TargetArchitecture=$(TargetArchitecture);
                             PgoInstrument=false;
                             NoPgoOptimize=true;
