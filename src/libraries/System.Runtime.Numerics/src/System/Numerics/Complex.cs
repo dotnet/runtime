@@ -2241,8 +2241,8 @@ namespace System.Numerics
             {
                 int realChars;
                 if (typeof(TChar) == typeof(char) ?
-                    m_real.TryFormat(MemoryMarshal.Cast<TChar, char>(destination.Slice(1)), out realChars, format, provider) :
-                    m_real.TryFormat(MemoryMarshal.Cast<TChar, byte>(destination.Slice(1)), out realChars, format, provider))
+                    m_real.TryFormat(Unsafe.BitCast<Span<TChar>, Span<char>>(destination.Slice(1)), out realChars, format, provider) :
+                    m_real.TryFormat(Unsafe.BitCast<Span<TChar>, Span<byte>>(destination.Slice(1)), out realChars, format, provider))
                 {
                     destination[0] = TChar.CreateTruncating('<');
                     destination = destination.Slice(1 + realChars); // + 1 for <
@@ -2252,8 +2252,8 @@ namespace System.Numerics
                     {
                         int imaginaryChars;
                         if (typeof(TChar) == typeof(char) ?
-                            m_imaginary.TryFormat(MemoryMarshal.Cast<TChar, char>(destination.Slice(2)), out imaginaryChars, format, provider) :
-                            m_imaginary.TryFormat(MemoryMarshal.Cast<TChar, byte>(destination.Slice(2)), out imaginaryChars, format, provider))
+                            m_imaginary.TryFormat(Unsafe.BitCast<Span<TChar>, Span<char>>(destination.Slice(2)), out imaginaryChars, format, provider) :
+                            m_imaginary.TryFormat(Unsafe.BitCast<Span<TChar>, Span<byte>>(destination.Slice(2)), out imaginaryChars, format, provider))
                         {
                             // We have 1 more character for: >
                             if ((uint)(2 + imaginaryChars) < (uint)destination.Length)

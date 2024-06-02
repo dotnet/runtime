@@ -1472,6 +1472,27 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                         needBranchTargetReg = !intrin.op1->isContainedIntOrIImmed();
                         break;
 
+                    case NI_Sve_SaturatingDecrementBy16BitElementCount:
+                    case NI_Sve_SaturatingDecrementBy32BitElementCount:
+                    case NI_Sve_SaturatingDecrementBy64BitElementCount:
+                    case NI_Sve_SaturatingDecrementBy8BitElementCount:
+                    case NI_Sve_SaturatingIncrementBy16BitElementCount:
+                    case NI_Sve_SaturatingIncrementBy32BitElementCount:
+                    case NI_Sve_SaturatingIncrementBy64BitElementCount:
+                    case NI_Sve_SaturatingIncrementBy8BitElementCount:
+                    case NI_Sve_SaturatingDecrementBy16BitElementCountScalar:
+                    case NI_Sve_SaturatingDecrementBy32BitElementCountScalar:
+                    case NI_Sve_SaturatingDecrementBy64BitElementCountScalar:
+                    case NI_Sve_SaturatingIncrementBy16BitElementCountScalar:
+                    case NI_Sve_SaturatingIncrementBy32BitElementCountScalar:
+                    case NI_Sve_SaturatingIncrementBy64BitElementCountScalar:
+                        // Can only avoid generating a table if both immediates are constant.
+                        assert(intrin.op2->isContainedIntOrIImmed() == intrin.op3->isContainedIntOrIImmed());
+                        needBranchTargetReg = !intrin.op2->isContainedIntOrIImmed();
+                        // Ensure that internal does not collide with desination.
+                        setInternalRegsDelayFree = true;
+                        break;
+
                     default:
                         unreached();
                 }
@@ -1951,6 +1972,13 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
         else
         {
             SingleTypeRegSet candidates = lowVectorOperandNum == 2 ? lowVectorCandidates : RBM_NONE;
+
+            if (intrin.op2->gtType == TYP_MASK)
+            {
+                assert(lowVectorOperandNum != 2);
+                candidates = RBM_ALLMASK;
+            }
+
             if (forceOp2DelayFree)
             {
                 srcCount += BuildDelayFreeUses(intrin.op2, nullptr, candidates);

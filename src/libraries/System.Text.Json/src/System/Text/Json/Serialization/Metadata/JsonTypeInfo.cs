@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.IO.Pipelines;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
 using System.Text.Json.Reflection;
@@ -48,6 +49,27 @@ namespace System.Text.Json.Serialization.Metadata
             ElementType = converter.ElementType;
             KeyType = converter.KeyType;
         }
+
+        /// <summary>
+        /// Gets the element type corresponding to an enumerable, dictionary or optional type.
+        /// </summary>
+        /// <remarks>
+        /// Returns the element type for enumerable types, the value type for dictionary types,
+        /// and the underlying type for <see cref="Nullable{T}"/> or F# optional types.
+        ///
+        /// Returns <see langword="null"/> for all other types or types using custom converters.
+        /// </remarks>
+        public Type? ElementType { get; }
+
+        /// <summary>
+        /// Gets the key type corresponding to a dictionary type.
+        /// </summary>
+        /// <remarks>
+        /// Returns the key type for dictionary types.
+        ///
+        /// Returns <see langword="null"/> for all other types or types using custom converters.
+        /// </remarks>
+        public Type? KeyType { get; }
 
         /// <summary>
         /// Gets or sets a parameterless factory to be used on deserialization.
@@ -337,6 +359,8 @@ namespace System.Text.Json.Serialization.Metadata
         // so it is allowed to be used for fast-path serialization but it will throw if used for metadata-based serialization
         internal bool PropertyMetadataSerializationNotSupported { get; set; }
 
+        internal bool IsNullable => Converter.NullableElementConverter is not null;
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal void ValidateCanBeUsedForPropertyMetadataSerialization()
         {
@@ -345,9 +369,6 @@ namespace System.Text.Json.Serialization.Metadata
                 ThrowHelper.ThrowInvalidOperationException_NoMetadataForTypeProperties(Options.TypeInfoResolver, Type);
             }
         }
-
-        internal Type? ElementType { get; }
-        internal Type? KeyType { get; }
 
         /// <summary>
         /// Return the JsonTypeInfo for the element type, or null if the type is not an enumerable or dictionary.
@@ -437,7 +458,7 @@ namespace System.Text.Json.Serialization.Metadata
         /// User-defined custom converters (specified either via <see cref="JsonConverterAttribute"/> or <see cref="JsonSerializerOptions.Converters"/>)
         /// are metadata-agnostic and thus always resolve to <see cref="JsonTypeInfoKind.None"/>.
         /// </remarks>
-        public JsonTypeInfoKind Kind { get; private set; }
+        public JsonTypeInfoKind Kind { get; }
 
         /// <summary>
         /// Dummy <see cref="JsonPropertyInfo"/> instance corresponding to the declaring type of this <see cref="JsonTypeInfo"/>.
@@ -598,6 +619,45 @@ namespace System.Text.Json.Serialization.Metadata
         }
 
         private IJsonTypeInfoResolver? _originatingResolver;
+
+        /// <summary>
+        /// Gets or sets an attribute provider corresponding to the deserialization constructor.
+        /// </summary>
+        /// <exception cref="InvalidOperationException">
+        /// The <see cref="JsonPropertyInfo"/> instance has been locked for further modification.
+        /// </exception>
+        /// <remarks>
+        /// When resolving metadata via the built-in resolvers this will be populated with
+        /// the underlying <see cref="ConstructorInfo" /> of the serialized property or field.
+        /// </remarks>
+        public ICustomAttributeProvider? ConstructorAttributeProvider
+        {
+            get
+            {
+                Func<ICustomAttributeProvider>? ctorAttrProviderFactory = Volatile.Read(ref ConstructorAttributeProviderFactory);
+                ICustomAttributeProvider? ctorAttrProvider = _constructorAttributeProvider;
+
+                if (ctorAttrProvider is null && ctorAttrProviderFactory is not null)
+                {
+                    _constructorAttributeProvider = ctorAttrProvider = ctorAttrProviderFactory();
+                    Volatile.Write(ref ConstructorAttributeProviderFactory, null);
+                }
+
+                return ctorAttrProvider;
+            }
+            internal set
+            {
+                Debug.Assert(!IsReadOnly);
+
+                _constructorAttributeProvider = value;
+                Volatile.Write(ref ConstructorAttributeProviderFactory, null);
+            }
+        }
+
+        // Metadata emanating from the source generator use delayed attribute provider initialization
+        // ensuring that reflection metadata resolution remains pay-for-play and is trimmable.
+        internal Func<ICustomAttributeProvider>? ConstructorAttributeProviderFactory;
+        private ICustomAttributeProvider? _constructorAttributeProvider;
 
         internal void VerifyMutable()
         {
@@ -986,7 +1046,7 @@ namespace System.Text.Json.Serialization.Metadata
             return propertyInfo;
         }
 
-        private Dictionary<ParameterLookupKey, JsonParameterInfoValues>? _parameterInfoValuesIndex;
+        private protected Dictionary<ParameterLookupKey, JsonParameterInfoValues>? _parameterInfoValuesIndex;
 
         // Untyped, root-level serialization methods
         internal abstract void SerializeAsObject(Utf8JsonWriter writer, object? rootValue);
@@ -1007,7 +1067,7 @@ namespace System.Text.Json.Serialization.Metadata
             public bool IsPropertyOrderSpecified;
         }
 
-        private readonly struct ParameterLookupKey(Type type, string name) : IEquatable<ParameterLookupKey>
+        private protected readonly struct ParameterLookupKey(Type type, string name) : IEquatable<ParameterLookupKey>
         {
             public Type Type { get; } = type;
             public string Name { get; } = name;
@@ -1105,25 +1165,23 @@ namespace System.Text.Json.Serialization.Metadata
             _parameterInfoValuesIndex = parameterIndex;
         }
 
-        internal JsonParameterInfo? CreateMatchingParameterInfo(JsonPropertyInfo propertyInfo)
+        internal void ResolveMatchingParameterInfo(JsonPropertyInfo propertyInfo)
         {
             Debug.Assert(
-                !Converter.ConstructorIsParameterized || _parameterInfoValuesIndex is not null,
+                CreateObjectWithArgs is null || _parameterInfoValuesIndex is not null,
                 "Metadata with parameterized constructors must have populated parameter info metadata.");
 
             if (_parameterInfoValuesIndex is not { } index)
             {
-                return null;
+                return;
             }
 
             string propertyName = propertyInfo.MemberName ?? propertyInfo.Name;
             ParameterLookupKey propKey = new(propertyInfo.PropertyType, propertyName);
             if (index.TryGetValue(propKey, out JsonParameterInfoValues? matchingParameterInfoValues))
             {
-                return propertyInfo.CreateJsonParameterInfo(matchingParameterInfoValues);
+                propertyInfo.AddJsonParameterInfo(matchingParameterInfoValues);
             }
-
-            return null;
         }
 
         internal void ConfigureConstructorParameters()
@@ -1139,7 +1197,7 @@ namespace System.Text.Json.Serialization.Metadata
             foreach (KeyValuePair<string, JsonPropertyInfo> kvp in PropertyCache.List)
             {
                 JsonPropertyInfo propertyInfo = kvp.Value;
-                JsonParameterInfo? parameterInfo = propertyInfo.ParameterInfo;
+                JsonParameterInfo? parameterInfo = propertyInfo.AssociatedParameter;
                 if (parameterInfo is null)
                 {
                     continue;
@@ -1159,7 +1217,7 @@ namespace System.Text.Json.Serialization.Metadata
                 parameterCache.Add(parameterInfo);
             }
 
-            if (ExtensionDataProperty is { ParameterInfo: not null })
+            if (ExtensionDataProperty is { AssociatedParameter: not null })
             {
                 Debug.Assert(ExtensionDataProperty.MemberName != null, "Custom property info cannot be data extension property");
                 ThrowHelper.ThrowInvalidOperationException_ExtensionDataCannotBindToCtorParam(ExtensionDataProperty.MemberName, ExtensionDataProperty);

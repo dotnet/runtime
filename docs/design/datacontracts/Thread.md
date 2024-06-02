@@ -2,15 +2,16 @@
 
 This contract is for reading and iterating the threads of the process.
 
-## Data structures defined by contract
+## APIs of contract
+
 ``` csharp
-record struct DacThreadStoreData (
+record struct ThreadStoreData (
     int ThreadCount,
     TargetPointer FirstThread,
     TargetPointer FinalizerThread,
     TargetPointer GcThread);
 
-record struct DacThreadStoreCounts (
+record struct ThreadStoreCounts (
     int UnstartedThreadCount,
     int BackgroundThreadCount,
     int PendingThreadCount,
@@ -75,7 +76,7 @@ enum ThreadState
     TS_Detached               = 0x80000000,    // Thread was detached by DllMain
 }
 
-record struct DacThreadData (
+record struct ThreadData (
     uint ThreadId;
     TargetNUint OsThreadId;
     ThreadState State;
@@ -90,11 +91,10 @@ record struct DacThreadData (
 );
 ```
 
-## Apis of contract
 ``` csharp
-DacThreadStoreData GetThreadStoreData();
-DacThreadStoreCounts GetThreadCounts();
-DacThreadData GetThreadData(TargetPointer threadPointer);
+ThreadStoreData GetThreadStoreData();
+ThreadStoreCounts GetThreadCounts();
+ThreadData GetThreadData(TargetPointer threadPointer);
 TargetPointer GetNestedExceptionInfo(TargetPointer nestedExceptionPointer, out TargetPointer nextNestedException);
 TargetPointer GetManagedThreadObject(TargetPointer threadPointer);
 ```
@@ -106,26 +106,26 @@ TargetPointer GetManagedThreadObject(TargetPointer threadPointer);
 ``` csharp
 SListReader ThreadListReader = Contracts.SList.GetReader("Thread");
 
-DacThreadStoreData GetThreadStoreData()
+ThreadStoreData GetThreadStoreData()
 {
-    TargetPointer threadStore = Target.ReadGlobalTargetPointer("s_pThreadStore");
+    TargetPointer threadStore = Target.ReadGlobalPointer("s_pThreadStore");
     var runtimeThreadStore = new ThreadStore(Target, threadStore);
 
     TargetPointer firstThread = ThreadListReader.GetHead(runtimeThreadStore.SList.Pointer);
 
-    return new DacThreadStoreData(
+    return new ThreadStoreData(
         ThreadCount : runtimeThreadStore.m_ThreadCount,
         FirstThread: firstThread,
-        FinalizerThread: Target.ReadGlobalTargetPointer("g_pFinalizerThread"),
-        GcThread: Target.ReadGlobalTargetPointer("g_pSuspensionThread"));
+        FinalizerThread: Target.ReadGlobalPointer("g_pFinalizerThread"),
+        GCThread: Target.ReadGlobalPointer("g_pSuspensionThread"));
 }
 
 DacThreadStoreCounts GetThreadCounts()
 {
-    TargetPointer threadStore = Target.ReadGlobalTargetPointer("s_pThreadStore");
+    TargetPointer threadStore = Target.ReadGlobalPointer("s_pThreadStore");
     var runtimeThreadStore = new ThreadStore(Target, threadStore);
 
-    return new DacThreadStoreCounts(
+    return new ThreadStoreCounts(
         ThreadCount : runtimeThreadStore.m_ThreadCount,
         UnstartedThreadCount : runtimeThreadStore.m_UnstartedThreadCount,
         BackgroundThreadCount : runtimeThreadStore.m_BackgroundThreadCount,
@@ -133,7 +133,7 @@ DacThreadStoreCounts GetThreadCounts()
         DeadThreadCount: runtimeThreadStore.m_DeadThreadCount,
 }
 
-DacThreadData GetThreadData(TargetPointer threadPointer)
+ThreadData GetThreadData(TargetPointer threadPointer)
 {
     var runtimeThread = new Thread(Target, threadPointer);
 
@@ -150,7 +150,7 @@ DacThreadData GetThreadData(TargetPointer threadPointer)
         firstNestedException = runtimeThread.m_ExceptionState.m_currentExInfo.m_pPrevNestedInfo;
     }
 
-    return new DacThread(
+    return new ThreadData(
         ThreadId : runtimeThread.m_ThreadId,
         OsThreadId : (OsThreadId)runtimeThread.m_OSThreadId,
         State : (ThreadState)runtimeThread.m_State,
@@ -159,7 +159,7 @@ DacThreadData GetThreadData(TargetPointer threadPointer)
         AllocContextLimit : thread.m_alloc_context.alloc_limit,
         Frame : thread.m_pFrame,
         TEB : thread.Has_m_pTEB ? thread.m_pTEB : TargetPointer.Null,
-        LastThreadObjectHandle : new DacGCHandle(thread.m_LastThrownObjectHandle),
+        LastThrownObjectHandle : new DacGCHandle(thread.m_LastThrownObjectHandle),
         FirstNestedException : firstNestedException,
         NextThread : ThreadListReader.GetHead.GetNext(threadPointer)
     );
