@@ -359,6 +359,10 @@ FCFuncStart(gCastHelpers)
     FCFuncElement("WriteBarrier", ::WriteBarrier_Helper)
 FCFuncEnd()
 
+FCFuncStart(gArrayFuncs)
+    FCFuncElement("IsSimpleCopy", ArrayNative::IsSimpleCopy)
+FCFuncEnd()
+
 FCFuncStart(gBufferFuncs)
     FCFuncElement("__BulkMoveWithWriteBarrier", Buffer::BulkMoveWithWriteBarrier)
 FCFuncEnd()
