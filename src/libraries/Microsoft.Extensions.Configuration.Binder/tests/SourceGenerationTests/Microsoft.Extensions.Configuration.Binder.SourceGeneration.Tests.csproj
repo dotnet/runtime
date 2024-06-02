@@ -11,8 +11,6 @@
 
     <!-- Avoid conflict with Microsoft.Extensions.Configuration.Binder (via InternalsVisibleTo) -->
     <SkipIncludeNullableAttributes>true</SkipIncludeNullableAttributes>
-    <IntermediateOutputPath>c:\drop\b\$(TargetFramework)\</IntermediateOutputPath>
-
   </PropertyGroup>
 
   <PropertyGroup>
