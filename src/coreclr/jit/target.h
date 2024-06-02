@@ -241,44 +241,19 @@ typedef uint64_t regMaskSmall;
 
 // TODO: Rename regMaskSmall as RegSet64 (at least for 64-bit)
 typedef regMaskSmall    SingleTypeRegSet;
-typedef unsigned        RegSet32;
 inline SingleTypeRegSet genSingleTypeRegMask(regNumber reg);
 
 struct regMaskTP
 {
 private:
-#ifdef HAS_MORE_THAN_64_REGISTERS
-    union
-    {
-        RegSet32 _registers[3];
-        struct
-        {
-            union
-            {
-                // Represents combined registers bitset including gpr/float
-                regMaskSmall low;
-                struct
-                {
-                    RegSet32 gprRegs;
-                    RegSet32 floatRegs;
-                };
-            };
-            RegSet32 high;
-        };
-    };
-#else
     // Represents combined registers bitset including gpr/float and on some platforms
     // mask or predicate registers
     regMaskSmall low;
+#ifdef HAS_MORE_THAN_64_REGISTERS
+    regMaskSmall high;
 #endif
 
-    FORCEINLINE static int          mapRegNumToRegTypeIndex(regNumber reg);
-    FORCEINLINE static RegSet32     encodeForRegisterIndex(int index, regMaskSmall value);
-    FORCEINLINE static regMaskSmall decodeForRegisterIndex(int index, RegSet32 value);
-
 public:
-
-    FORCEINLINE static int mapTypeToRegTypeIndex(var_types type);
 
 #ifdef TARGET_ARM
     void AddRegNumInMask(regNumber reg, var_types type);
@@ -296,7 +271,7 @@ public:
     void             RemoveRegNumFromMask(regNumber reg);
     void             RemoveRegsetForType(SingleTypeRegSet regsToRemove, var_types type);
 
-    regMaskTP(regMaskSmall lowMask, RegSet32 highMask)
+    regMaskTP(regMaskSmall lowMask, regMaskSmall highMask)
         : low(lowMask)
 #ifdef HAS_MORE_THAN_64_REGISTERS
         , high(highMask)
@@ -357,7 +332,7 @@ public:
     }
 
 #ifdef HAS_MORE_THAN_64_REGISTERS
-    RegSet32 getHigh() const
+    regMaskSmall getHigh() const
     {
         return high;
     }
@@ -422,7 +397,6 @@ public:
 
     void             operator|=(const regNumber reg);
     void             operator^=(const regNumber reg);
-    SingleTypeRegSet operator[](int index) const;
 };
 
 static regMaskTP operator^(const regMaskTP& first, const regMaskTP& second)

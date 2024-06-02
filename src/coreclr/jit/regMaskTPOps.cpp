@@ -5,34 +5,6 @@
 
 struct regMaskTP;
 
-//------------------------------------------------------------------------
-// encodeForRegisterIndex: Shifts the high-32 bits of float to low-32 bits
-//      and return. For gpr and predicate registers, it returns the same value.
-//
-// Parameters:
-//  index - Register type index
-//  value - value to encode
-//
-/* static */ RegSet32 regMaskTP::encodeForRegisterIndex(int index, regMaskSmall value)
-{
-    int shiftAmount = 32 * (index == 1);
-    return (RegSet32)(value >> shiftAmount);
-}
-
-//------------------------------------------------------------------------
-// decodeForRegisterIndex: Shifts the low-32 bits of float to high-32 bits
-//      and return. For gpr and predicate registers, it returns the same value.
-//
-// Parameters:
-//  index - Register type index
-//  value - value to encode
-//
-/* static */ regMaskSmall regMaskTP::decodeForRegisterIndex(int index, RegSet32 value)
-{
-    int shiftAmount = 32 * (index == 1);
-    return ((regMaskSmall)value << shiftAmount);
-}
-
 // ----------------------------------------------------------
 //  AddRegNumForType: Adds `reg` to the mask.
 //
@@ -40,8 +12,14 @@ void regMaskTP::AddRegNumInMask(regNumber reg)
 {
     SingleTypeRegSet value = genSingleTypeRegMask(reg);
 #ifdef HAS_MORE_THAN_64_REGISTERS
-    int index = mapRegNumToRegTypeIndex(reg);
-    _registers[index] |= encodeForRegisterIndex(index, value);
+    if (reg < 64)
+    {
+        low |= value;
+    }
+    else
+    {
+        high |= value;
+    }
 #else
     low |= value;
 #endif
@@ -116,8 +94,14 @@ void regMaskTP::AddRegNum(regNumber reg, var_types type)
 void regMaskTP::AddRegsetForType(SingleTypeRegSet regsToAdd, var_types type)
 {
 #ifdef HAS_MORE_THAN_64_REGISTERS
-    int index = mapTypeToRegTypeIndex(type);
-    _registers[index] |= encodeForRegisterIndex(index, regsToAdd);
+    if (!varTypeIsMask(type))
+    {
+        low |= regsToAdd;
+    }
+    else
+    {
+        high |= regsToAdd;
+    }
 #else
     low |= regsToAdd;
 #endif
@@ -134,9 +118,14 @@ void regMaskTP::AddRegsetForType(SingleTypeRegSet regsToAdd, var_types type)
 SingleTypeRegSet regMaskTP::GetRegSetForType(var_types type) const
 {
 #ifdef HAS_MORE_THAN_64_REGISTERS
-    int      index = mapTypeToRegTypeIndex(type);
-    RegSet32 value = _registers[index];
-    return decodeForRegisterIndex(index, value);
+    if (!varTypeIsMask(type))
+    {
+        return low;
+    }
+    else
+    {
+        return high;
+    }
 #else
     return low;
 #endif
@@ -152,8 +141,14 @@ bool regMaskTP::IsRegNumInMask(regNumber reg) const
 {
     SingleTypeRegSet value = genSingleTypeRegMask(reg);
 #ifdef HAS_MORE_THAN_64_REGISTERS
-    int index = mapRegNumToRegTypeIndex(reg);
-    return (_registers[index] & encodeForRegisterIndex(index, value)) != RBM_NONE;
+    if (reg < 64)
+    {
+        return (low & value) != RBM_NONE;
+    }
+    else
+    {
+        return (high & value) != RBM_NONE;
+    }
 #else
     return (low & value) != RBM_NONE;
 #endif
@@ -181,8 +176,14 @@ void regMaskTP::RemoveRegNumFromMask(regNumber reg)
 {
     SingleTypeRegSet value = genSingleTypeRegMask(reg);
 #ifdef HAS_MORE_THAN_64_REGISTERS
-    int index = mapRegNumToRegTypeIndex(reg);
-    _registers[index] &= ~encodeForRegisterIndex(index, value);
+    if (reg < 64)
+    {
+        low &= ~value;
+    }
+    else
+    {
+        high &= ~value;
+    }
 #else
     low &= ~value;
 #endif
@@ -207,8 +208,14 @@ void regMaskTP::RemoveRegNum(regNumber reg, var_types type)
 void regMaskTP::RemoveRegsetForType(SingleTypeRegSet regsToRemove, var_types type)
 {
 #ifdef HAS_MORE_THAN_64_REGISTERS
-    int index = mapTypeToRegTypeIndex(type);
-    _registers[index] &= ~encodeForRegisterIndex(index, regsToRemove);
+    if (!varTypeIsMask(type))
+    {
+        low &= ~regsToRemove;
+    }
+    else
+    {
+        high &= ~regsToRemove;
+    }
 #else
     low &= ~regsToRemove;
 #endif
@@ -218,8 +225,14 @@ void regMaskTP::operator|=(const regNumber reg)
 {
     SingleTypeRegSet value = genSingleTypeRegMask(reg);
 #ifdef HAS_MORE_THAN_64_REGISTERS
-    int index = mapRegNumToRegTypeIndex(reg);
-    _registers[index] |= encodeForRegisterIndex(index, value);
+    if (reg < 64)
+    {
+        low |= value;
+    }
+    else
+    {
+        high |= value;
+    }
 #else
     low |= value;
 #endif
@@ -229,20 +242,16 @@ void regMaskTP::operator^=(const regNumber reg)
 {
     SingleTypeRegSet value = genSingleTypeRegMask(reg);
 #ifdef HAS_MORE_THAN_64_REGISTERS
-    int index = mapRegNumToRegTypeIndex(reg);
-    _registers[index] ^= encodeForRegisterIndex(index, value);
+    if (reg < 64)
+    {
+        low ^= value;
+    }
+    else
+    {
+        high ^= value;
+    }
 #else
     low ^= value;
 #endif
 }
 
-SingleTypeRegSet regMaskTP::operator[](int index) const
-{
-#ifdef HAS_MORE_THAN_64_REGISTERS
-    assert(index <= 2);
-    RegSet32 value = _registers[index];
-    return decodeForRegisterIndex(index, value);
-#else
-    return low;
-#endif
-}

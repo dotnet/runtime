@@ -1728,7 +1728,7 @@ private:
 #if defined(TARGET_XARCH)
 #define allAvailableRegs regMaskTP(availableIntRegs | availableFloatRegs | availableMaskRegs)
 #elif defined(TARGET_ARM64)
-#define allAvailableRegs regMaskTP(availableIntRegs | availableFloatRegs, (RegSet32)availableMaskRegs)
+#define allAvailableRegs regMaskTP(availableIntRegs | availableFloatRegs, availableMaskRegs)
 #else
 #define allAvailableRegs regMaskTP(availableIntRegs | availableFloatRegs)
 #endif
