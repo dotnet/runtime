@@ -12,6 +12,7 @@ namespace System.Web.Util
 {
     internal static class HttpEncoder
     {
+        private const int MaxStackAllocUrlLength = 256;
         private static void AppendCharAsUnicodeJavaScript(StringBuilder builder, char c)
         {
             builder.Append($"\\u{(int)c:x4}");
@@ -212,13 +213,20 @@ namespace System.Web.Util
                 return null;
             }
 
+            return UrlDecode(bytes.AsSpan(offset, count));
+        }
+
+        internal static byte[] UrlDecode(ReadOnlySpan<byte> bytes)
+        {
+            const int StackallocThreshold = 512;
+
             int decodedBytesCount = 0;
-            byte[] decodedBytes = new byte[count];
+            int count = bytes.Length;
+            Span<byte> decodedBytes = count <= StackallocThreshold ? stackalloc byte[StackallocThreshold] : new byte[count];
 
             for (int i = 0; i < count; i++)
             {
-                int pos = offset + i;
-                byte b = bytes[pos];
+                byte b = bytes[i];
 
                 if (b == '+')
                 {
@@ -226,8 +234,8 @@ namespace System.Web.Util
                 }
                 else if (b == '%' && i < count - 2)
                 {
-                    int h1 = HexConverter.FromChar(bytes[pos + 1]);
-                    int h2 = HexConverter.FromChar(bytes[pos + 2]);
+                    int h1 = HexConverter.FromChar(bytes[i + 1]);
+                    int h2 = HexConverter.FromChar(bytes[i + 2]);
 
                     if ((h1 | h2) != 0xFF)
                     {
@@ -240,14 +248,7 @@ namespace System.Web.Util
                 decodedBytes[decodedBytesCount++] = b;
             }
 
-            if (decodedBytesCount < decodedBytes.Length)
-            {
-                byte[] newDecodedBytes = new byte[decodedBytesCount];
-                Array.Copy(decodedBytes, newDecodedBytes, decodedBytesCount);
-                decodedBytes = newDecodedBytes;
-            }
-
-            return decodedBytes;
+            return decodedBytes.Slice(0, decodedBytesCount).ToArray();
         }
 
         [return: NotNullIfNotNull(nameof(bytes))]
@@ -258,7 +259,9 @@ namespace System.Web.Util
                 return null;
             }
 
-            UrlDecoder helper = new UrlDecoder(count, encoding);
+            UrlDecoder helper = count <= MaxStackAllocUrlLength
+                ? new UrlDecoder(stackalloc char[MaxStackAllocUrlLength], stackalloc byte[MaxStackAllocUrlLength], encoding)
+                : new UrlDecoder(new char[count], new byte[count], encoding);
 
             // go through the bytes collapsing %XX and %uXXXX and appending
             // each byte as byte, with exception of %uXXXX constructs that
@@ -321,8 +324,20 @@ namespace System.Web.Util
                 return null;
             }
 
+            return UrlDecode(value.AsSpan(), encoding);
+        }
+
+        internal static string UrlDecode(ReadOnlySpan<char> value, Encoding encoding)
+        {
+            if (value.IsEmpty)
+            {
+                return string.Empty;
+            }
+
             int count = value.Length;
-            UrlDecoder helper = new UrlDecoder(count, encoding);
+            UrlDecoder helper = count <= MaxStackAllocUrlLength
+                ? new UrlDecoder(stackalloc char[MaxStackAllocUrlLength], stackalloc byte[MaxStackAllocUrlLength], encoding)
+                : new UrlDecoder(new char[count], new byte[count], encoding);
 
             // go through the string's chars collapsing %XX and %uXXXX and
             // appending each char as char, with exception of %XX constructs
@@ -626,17 +641,15 @@ namespace System.Web.Util
         }
 
         // Internal class to facilitate URL decoding -- keeps char buffer and byte buffer, allows appending of either chars or bytes
-        private sealed class UrlDecoder
+        private ref struct UrlDecoder
         {
-            private readonly int _bufferSize;
-
             // Accumulate characters in a special array
             private int _numChars;
-            private readonly char[] _charBuffer;
+            private readonly Span<char> _charBuffer;
 
             // Accumulate bytes for decoding into characters in a special array
             private int _numBytes;
-            private byte[]? _byteBuffer;
+            private readonly Span<byte> _byteBuffer;
 
             // Encoding to convert chars to bytes
             private readonly Encoding _encoding;
@@ -645,19 +658,17 @@ namespace System.Web.Util
             {
                 if (_numBytes > 0)
                 {
-                    Debug.Assert(_byteBuffer != null);
-                    _numChars += _encoding.GetChars(_byteBuffer, 0, _numBytes, _charBuffer, _numChars);
+                    Debug.Assert(!_byteBuffer.IsEmpty);
+                    _numChars += _encoding.GetChars(_byteBuffer.Slice(0, _numBytes), _charBuffer.Slice(_numChars));
                     _numBytes = 0;
                 }
             }
 
-            internal UrlDecoder(int bufferSize, Encoding encoding)
+            internal UrlDecoder(Span<char> charBuffer, Span<byte> byteBuffer, Encoding encoding)
             {
-                _bufferSize = bufferSize;
+                _charBuffer = charBuffer;
+                _byteBuffer = byteBuffer;
                 _encoding = encoding;
-
-                _charBuffer = new char[bufferSize];
-                // byte buffer created on demand
             }
 
             internal void AddChar(char ch)
@@ -681,8 +692,6 @@ namespace System.Web.Util
                                 else
                 */
                 {
-                    _byteBuffer ??= new byte[_bufferSize];
-
                     _byteBuffer[_numBytes++] = b;
                 }
             }
@@ -694,7 +703,7 @@ namespace System.Web.Util
                     FlushBytes();
                 }
 
-                return _numChars > 0 ? new string(_charBuffer, 0, _numChars) : "";
+                return _charBuffer.Slice(0, _numChars).ToString();
             }
         }
     }

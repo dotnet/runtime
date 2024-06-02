@@ -68,6 +68,9 @@
     <Compile Include="..\Common\JsonNumberTestData.cs" Link="CommonTest\System\Text\Json\Tests\JsonNumberTestData" />
     <Compile Include="..\Common\JsonSerializerWrapper.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\JsonSerializerWrapper.cs" />
     <Compile Include="..\Common\JsonTestHelper.cs" Link="CommonTest\System\Text\Json\JsonTestHelper.cs" />
+    <Compile Include="..\Common\MetadataTests.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\MetadataTests\MetadataTests.cs" />
+    <Compile Include="..\Common\MetadataTests.JsonSerializer.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\MetadataTests\MetadataTests.JsonSerializer.cs" />
+    <Compile Include="..\Common\MetadataTests.Options.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\MetadataTests\MetadataTests.Options.cs" />
     <Compile Include="..\Common\NodeInteropTests.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\NodeInteropTests.cs" />
     <Compile Include="..\Common\NullableAnnotationsTests.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\NullableAnnotationsTests.cs" />
     <Compile Include="..\Common\NumberHandlingTests.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\NumberHandlingTests.cs" />
@@ -195,8 +198,6 @@
     <Compile Include="Serialization\MetadataTests\DefaultJsonTypeInfoResolverTests.JsonTypeInfo.cs" />
     <Compile Include="Serialization\MetadataTests\DefaultJsonTypeInfoResolverTests.cs" />
     <Compile Include="Serialization\MetadataTests\MetadataTests.cs" />
-    <Compile Include="Serialization\MetadataTests\MetadataTests.JsonSerializer.cs" />
-    <Compile Include="Serialization\MetadataTests\MetadataTests.Options.cs" />
     <Compile Include="Serialization\MetadataTests\TestResolver.cs" />
     <Compile Include="Serialization\NamingPolicyUnitTests.cs" />
     <Compile Include="Serialization\NodeInteropTests.cs" />

@@ -179,6 +179,7 @@ extern "C" void QCALLTYPE RuntimeTypeHandle_GetActivationInfo(
     PCODE* ppfnAllocator,
     void** pvAllocatorFirstArg,
     PCODE* ppfnCtor,
+    PCODE* ppfnValueCtor,
     BOOL* pfCtorIsPublic);
 extern "C" void QCALLTYPE RuntimeTypeHandle_MakeByRef(QCall::TypeHandle pTypeHandle, QCall::ObjectHandleOnStack retType);
 extern "C" void QCALLTYPE RuntimeTypeHandle_MakePointer(QCall::TypeHandle pTypeHandle, QCall::ObjectHandleOnStack retType);

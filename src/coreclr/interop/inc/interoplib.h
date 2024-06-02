@@ -52,7 +52,7 @@ namespace InteropLib
             // The returned context memory is guaranteed to be initialized to zero.
             void* Context;
 
-            // See https://docs.microsoft.com/windows/win32/api/windows.ui.xaml.hosting.referencetracker/
+            // See https://learn.microsoft.com/windows/win32/api/windows.ui.xaml.hosting.referencetracker/
             // for details.
             bool FromTrackerRuntime;
 
