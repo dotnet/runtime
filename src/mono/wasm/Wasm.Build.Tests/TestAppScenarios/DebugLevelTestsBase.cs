@@ -13,9 +13,9 @@ using Xunit.Abstractions;
 
 namespace Wasm.Build.Tests.TestAppScenarios;
 
-public class DebugLevelTests : AppTestBase
+public class DebugLevelTestsBase : AppTestBase
 {
-    public DebugLevelTests(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
+    public DebugLevelTestsBase(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
         : base(output, buildContext)
     {
     }

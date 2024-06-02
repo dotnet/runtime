@@ -207,7 +207,7 @@
     <!-- Use a unique property, so the already run wasm targets can also run -->
     <MSBuild Projects="$(MSBuildProjectFile)"
              Targets="WasmNestedPublishApp"
-             Properties="_WasmInNestedPublish_UniqueProperty_XYZ=true;;WasmBuildingForNestedPublish=true;DeployOnBuild=;_IsPublishing=">
+             Properties="_WasmInNestedPublish_UniqueProperty_XYZ=true;;WasmBuildingForNestedPublish=true;DeployOnBuild=;_IsPublishing=;_WasmIsPublishing=$(_IsPublishing)">
       <Output TaskParameter="TargetOutputs" ItemName="WasmNestedPublishAppResultItems" />
     </MSBuild>
 
@@ -417,6 +417,7 @@
       <_WasmAppIncludeThreadsWorker Condition="'$(WasmEnableThreads)' == 'true' or '$(MonoWasmBuildVariant)' == 'multithread'">true</_WasmAppIncludeThreadsWorker>
       <!-- TODO: set this from some user-facing property?  -1 means use the default baked into dotnet.native.js -->
       <_WasmPThreadPoolSize Condition="'$(_WasmPThreadPoolSize)' == ''">-1</_WasmPThreadPoolSize>
+      <_WasmIsPublishing Condition="'$(_WasmIsPublishing)' == '' and '$(_IsPublishing)' != ''">$(_IsPublishing)</_WasmIsPublishing>
     </PropertyGroup>
 
     <ItemGroup>
@@ -442,6 +443,7 @@
       ExtraConfig="@(WasmExtraConfig)"
       NativeAssets="@(WasmNativeAsset)"
       DebugLevel="$(WasmDebugLevel)"
+      IsPublish="$(_WasmIsPublishing)"
       IncludeThreadsWorker="$(_WasmAppIncludeThreadsWorker)"
       PThreadPoolSize="$(_WasmPThreadPoolSize)"
       UseWebcil="$(WasmEnableWebcil)"
