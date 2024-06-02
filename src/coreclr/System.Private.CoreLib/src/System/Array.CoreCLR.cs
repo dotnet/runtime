@@ -617,8 +617,13 @@ namespace System
             return Unsafe.Add(ref RuntimeHelpers.GetMultiDimensionalArrayBounds(this), rank + dimension);
         }
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal extern CorElementType GetCorElementTypeOfElementType();
+        internal unsafe CorElementType GetCorElementTypeOfElementType()
+        {
+            MethodTable* pMT = RuntimeHelpers.GetMethodTable(this);
+            CorElementType et = pMT->GetArrayElementTypeHandle().GetVerifierCorElementType();
+            GC.KeepAlive(this);
+            return et;
+        }
 
         private unsafe bool IsValueOfElementType(object value)
         {
