@@ -1725,7 +1725,9 @@ private:
 #endif
     PhasedVar<SingleTypeRegSet>* availableRegs[TYP_COUNT];
 
-#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
+#if defined(TARGET_XARCH)
+#define allAvailableRegs regMaskTP(availableIntRegs | availableFloatRegs | availableMaskRegs)
+#elif defined(TARGET_ARM64)
 #define allAvailableRegs regMaskTP(availableIntRegs | availableFloatRegs, (RegSet32)availableMaskRegs)
 #else
 #define allAvailableRegs regMaskTP(availableIntRegs | availableFloatRegs)
