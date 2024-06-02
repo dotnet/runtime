@@ -8,6 +8,8 @@ namespace Microsoft.DotNet.RemoteExecutor;
 
 internal static class RemoteExecutorExtensions
 {
-    public static Task DisposeAsync(this RemoteInvokeHandle handle) =>
-        Task.Run(handle.Dispose);
+    public static async ValueTask DisposeAsync(this RemoteInvokeHandle handle)
+    {
+        await Task.Run(handle.Dispose);
+    }
 }
