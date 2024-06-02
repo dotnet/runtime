@@ -288,6 +288,8 @@
                             ClrCrossComponentsSubset=true;
                             HostArchitecture=$(BuildArchitecture);
                             HostCrossOS=$(HostOS);
+                            HostOS=$(HostOS);
+                            TargetOS=$(TargetOS);
                             PgoInstrument=false;
                             NoPgoOptimize=true;
                             CrossBuild=false;
