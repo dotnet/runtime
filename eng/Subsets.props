@@ -287,10 +287,10 @@
       AdditionalProperties="%(AdditionalProperties);
                             ClrCrossComponentsSubset=true;
                             HostArchitecture=$(BuildArchitecture);
+                            TargetArchitecture=$(TargetArchitecture);
                             HostCrossOS=$(HostOS);
                             HostOS=$(HostOS);
                             TargetOS=$(TargetOS);
-                            TargetArchitecture=$(TargetArchitecture);
                             PgoInstrument=false;
                             NoPgoOptimize=true;
                             CrossBuild=false;
