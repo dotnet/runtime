@@ -25,6 +25,7 @@ struct FCALLRuntimeFieldHandle
 class ArrayNative
 {
 public:
+    static FCDECL1(INT32, GetCorElementTypeOfElementType, ArrayBase* arrayUNSAFE);
 
     static FCDECL2(FC_BOOL_RET, IsSimpleCopy, ArrayBase* pSrc, ArrayBase* pDst);
 };

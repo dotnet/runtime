@@ -360,6 +360,7 @@ FCFuncStart(gCastHelpers)
 FCFuncEnd()
 
 FCFuncStart(gArrayFuncs)
+    FCFuncElement("GetCorElementTypeOfElementType", ArrayNative::GetCorElementTypeOfElementType)
     FCFuncElement("IsSimpleCopy", ArrayNative::IsSimpleCopy)
 FCFuncEnd()
 
@@ -535,6 +536,7 @@ FCFuncEnd()
 // Note these have to remain sorted by name:namespace pair (Assert will wack you if you don't)
 // The sorting is case-sensitive
 
+FCClassElement("Array", "System", gArrayFuncs)
 FCClassElement("AssemblyLoadContext", "System.Runtime.Loader", gAssemblyLoadContextFuncs)
 FCClassElement("Buffer", "System", gBufferFuncs)
 FCClassElement("CastHelpers", "System.Runtime.CompilerServices", gCastHelpers)
