@@ -1063,7 +1063,7 @@ inline regNumber genFirstRegNumFromMaskAndToggle(regMaskTP& mask)
 
     /* Convert the mask to a register number */
 
-    regNumber regNum = (regNumber)genFirstRegNumFromMask(mask);
+    regNumber regNum = (regNumber)BitScanForward(mask);
 
     mask ^= regNum;
 
