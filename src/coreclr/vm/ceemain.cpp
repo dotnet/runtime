@@ -1331,9 +1331,6 @@ part2:
                 // Shutdown finalizer before we suspend all background threads. Otherwise we
                 // never get to finalize anything.
 
-                // No longer process exceptions
-                g_fNoExceptions = true;
-
                 // <TODO>@TODO: This does things which shouldn't occur in part 2.  Namely,
                 // calling managed dll main callbacks (AppDomain::SignalProcessDetach), and
                 // RemoveAppDomainFromIPC.

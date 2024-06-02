@@ -257,6 +257,7 @@ namespace System.Net.Http
             if (NetEventSource.Log.IsEnabled()) Trace($"{nameof(_shutdown)}={_shutdown}, {nameof(_abortException)}={_abortException}");
 
             Debug.Assert(Monitor.IsEntered(SyncObject));
+            Debug.Assert(!_pool.HasSyncObjLock);
 
             if (!_shutdown)
             {
@@ -276,6 +277,8 @@ namespace System.Net.Http
 
         public bool TryReserveStream()
         {
+            Debug.Assert(!_pool.HasSyncObjLock);
+
             lock (SyncObject)
             {
                 if (_shutdown)
@@ -302,6 +305,8 @@ namespace System.Net.Http
         // Otherwise, will be called when the request is complete and stream is closed.
         public void ReleaseStream()
         {
+            Debug.Assert(!_pool.HasSyncObjLock);
+
             lock (SyncObject)
             {
                 if (NetEventSource.Log.IsEnabled()) Trace($"{nameof(_streamsInUse)}={_streamsInUse}");
@@ -333,6 +338,8 @@ namespace System.Net.Http
         // Returns false to indicate that the connection is shutting down and cannot be used anymore
         public Task<bool> WaitForAvailableStreamsAsync()
         {
+            Debug.Assert(!_pool.HasSyncObjLock);
+
             lock (SyncObject)
             {
                 Debug.Assert(_availableStreamsWaiter is null, "As used currently, shouldn't already have a waiter");
@@ -730,6 +737,7 @@ namespace System.Net.Http
         {
             if (NetEventSource.Log.IsEnabled()) Trace($"{frameHeader}");
             Debug.Assert(frameHeader.Type == FrameType.AltSvc);
+            Debug.Assert(!Monitor.IsEntered(SyncObject));
 
             ReadOnlySpan<byte> span = _incomingBuffer.ActiveSpan.Slice(0, frameHeader.PayloadLength);
 
@@ -765,12 +773,14 @@ namespace System.Net.Http
             // Just ignore the frame in this case.
 
             ReadOnlySpan<byte> frameData = GetFrameData(_incomingBuffer.ActiveSpan.Slice(0, frameHeader.PayloadLength), hasPad: frameHeader.PaddedFlag, hasPriority: false);
-
             if (http2Stream != null)
             {
                 bool endStream = frameHeader.EndStreamFlag;
 
-                http2Stream.OnResponseData(frameData, endStream);
+                if (frameData.Length > 0 || endStream)
+                {
+                    http2Stream.OnResponseData(frameData, endStream);
+                }
 
                 if (!endStream && frameData.Length > 0)
                 {
@@ -1306,6 +1316,8 @@ namespace System.Net.Http
 
         internal void HeartBeat()
         {
+            Debug.Assert(!_pool.HasSyncObjLock);
+
             if (_shutdown)
                 return;
 
@@ -1443,6 +1455,14 @@ namespace System.Net.Http
                                     break;
                                 }
                             }
+                            continue;
+                        }
+
+                        // Extended connect requests will use the response content stream for bidirectional communication.
+                        // We will ignore any content set for such requests in Http2Stream.SendRequestBodyAsync, as it has no defined semantics.
+                        // Drop the Content-Length header as well in the unlikely case it was set.
+                        if (knownHeader == KnownHeaders.ContentLength && request.IsExtendedConnectRequest)
+                        {
                             continue;
                         }
 
@@ -1798,10 +1818,14 @@ namespace System.Net.Http
 
         public override long GetIdleTicks(long nowTicks)
         {
-            lock (SyncObject)
-            {
-                return _streamsInUse == 0 ? base.GetIdleTicks(nowTicks) : 0;
-            }
+            // The pool is holding the lock as part of its scavenging logic.
+            // We must not lock on Http2Connection.SyncObj here as that could lead to lock ordering problems.
+            Debug.Assert(_pool.HasSyncObjLock);
+
+            // There is a race condition here where the connection pool may see this connection as idle right before
+            // we start processing a new request and start its disposal. This is okay as we will either
+            // return false from TryReserveStream, or process pending requests before tearing down the transport.
+            return _streamsInUse == 0 ? base.GetIdleTicks(nowTicks) : 0;
         }
 
         /// <summary>Abort all streams and cause further processing to fail.</summary>
@@ -1990,6 +2014,7 @@ namespace System.Net.Http
         public async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, bool async, CancellationToken cancellationToken)
         {
             Debug.Assert(async);
+            Debug.Assert(!_pool.HasSyncObjLock);
             if (NetEventSource.Log.IsEnabled()) Trace($"Sending request: {request}");
 
             try

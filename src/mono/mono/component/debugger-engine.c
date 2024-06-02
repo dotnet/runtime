@@ -449,6 +449,16 @@ mono_de_set_breakpoint (MonoMethod *method, long il_offset, EventRequest *req, M
 		set_bp_in_method (domain, m, seq_points, bp, error);
 	}
 
+	// trying to get the seqpoints directly from the jit info of the method
+	// the seqpoints in get_default_jit_mm may not be found for AOTed methods in arm64
+	if (methods->len == 0) 
+	{
+		MonoJitInfo *ji;
+		(void)mono_jit_search_all_backends_for_jit_info (method, &ji);
+		if (ji && ji->seq_points)
+			set_bp_in_method (mono_get_root_domain (), method, ji->seq_points, bp, error);
+	}
+
 	g_ptr_array_add (breakpoints, bp);
 	mono_debugger_log_add_bp (bp, bp->method, bp->il_offset);
 	mono_loader_unlock ();

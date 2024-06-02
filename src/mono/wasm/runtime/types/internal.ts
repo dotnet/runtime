@@ -464,6 +464,8 @@ export declare interface EmscriptenModuleInternal {
     runtimeKeepalivePush(): void;
     runtimeKeepalivePop(): void;
     maybeExit(): void;
+    print(message: string): void;
+    printErr(message: string): void;
 }
 
 /// A PromiseController encapsulates a Promise together with easy access to its resolve and reject functions.
@@ -492,7 +494,7 @@ export type setGlobalObjectsType = (globalObjects: GlobalObjects) => void;
 export type initializeExportsType = (globalObjects: GlobalObjects) => RuntimeAPI;
 export type initializeReplacementsType = (replacements: EmscriptenReplacements) => void;
 export type configureEmscriptenStartupType = (module: DotnetModuleInternal) => void;
-export type configureRuntimeStartupType = () => Promise<void>;
+export type configureRuntimeStartupType = (module: DotnetModuleInternal) => Promise<void>;
 export type configureWorkerStartupType = (module: DotnetModuleInternal) => Promise<void>
 
 

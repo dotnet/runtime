@@ -129,6 +129,12 @@ Object* GcAllocInternal(MethodTable *pEEType, uint32_t uFlags, uintptr_t numElem
     ASSERT(!pThread->IsDoNotTriggerGcSet());
     ASSERT(pThread->IsCurrentThreadInCooperativeMode());
 
+    if (pEEType->ContainsPointers())
+    {
+        uFlags |= GC_ALLOC_CONTAINS_REF;
+        uFlags &= ~GC_ALLOC_ZEROING_OPTIONAL;
+    }
+
     size_t cbSize = pEEType->get_BaseSize();
 
     if (pEEType->HasComponentSize())

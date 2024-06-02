@@ -14,9 +14,7 @@
 
     <!-- The following property group can be simplified once runtime repo switches over to SDK 6.0 drop -->
     <PropertyGroup>
-      <CrossDir />
-      <CrossDir Condition="'$(CrossBuild)' == 'true' or '$(BuildArchitecture)' != '$(TargetArchitecture)'">$(BuildArchitecture)</CrossDir>
-      <Crossgen2Dll>$(CoreCLRArtifactsPath)\$(CrossDir)\crossgen2\crossgen2.dll</Crossgen2Dll>
+      <Crossgen2Dll>$(CoreCLRArtifactsPath)\$(BuildArchitecture)\crossgen2\crossgen2.dll</Crossgen2Dll>
 
       <PublishReadyToRunUseCrossgen2>true</PublishReadyToRunUseCrossgen2>
       <PublishReadyToRunCrossgen2ExtraArgs>@(PublishReadyToRunCrossgen2ExtraArgsList)</PublishReadyToRunCrossgen2ExtraArgs>

@@ -10,6 +10,7 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(BuildRpmPackage)' == 'true'">
+    <InstallerProjectReference Include="installers/dotnet-runtime-deps/dotnet-runtime-deps-azl.3.proj" />
     <InstallerProjectReference Include="installers/dotnet-runtime-deps/dotnet-runtime-deps-centos.8.proj" />
     <InstallerProjectReference Include="installers/dotnet-runtime-deps/dotnet-runtime-deps-cm.1.proj" />
     <InstallerProjectReference Include="installers/dotnet-runtime-deps/dotnet-runtime-deps-cm.2.proj" />
@@ -19,6 +20,10 @@
     <InstallerProjectReference Include="installers/dotnet-runtime-deps/dotnet-runtime-deps-oraclelinux.8.proj" />
     <InstallerProjectReference Include="installers/dotnet-runtime-deps/dotnet-runtime-deps-rhel.8.proj" />
     <InstallerProjectReference Include="installers/dotnet-runtime-deps/dotnet-runtime-deps-sles.12.proj" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(BuildNETStandard21TargetingPack)' == 'true' and '$(BuildRpmPackage)' == 'true'">
+    <InstallerProjectReference Include="installers/netstandard2.1.proj" />
   </ItemGroup>
 
   <Target Name="BuildInstallerProjects" BeforeTargets="Build">

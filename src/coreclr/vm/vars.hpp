@@ -477,7 +477,6 @@ GVAL_DECL(bool, g_fProcessDetach);
 GVAL_DECL(bool, g_metadataUpdatesApplied);
 #endif
 EXTERN bool g_fManagedAttach;
-EXTERN bool g_fNoExceptions;
 
 // Indicates whether we're executing shut down as a result of DllMain
 // (DLL_PROCESS_DETACH). See comments at code:EEShutDown for details.

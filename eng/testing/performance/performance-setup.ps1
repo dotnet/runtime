@@ -14,7 +14,7 @@ Param(
     [string] $Kind="micro",
     [switch] $LLVM,
     [switch] $MonoInterpreter,
-    [switch] $MonoAOT, 
+    [switch] $MonoAOT,
     [switch] $Internal,
     [switch] $Compare,
     [string] $MonoDotnet="",
@@ -47,14 +47,14 @@ $Queue = ""
 
 if ($Internal) {
     switch ($LogicalMachine) {
-        "perftiger" { $Queue = "Windows.10.Amd64.19H1.Tiger.Perf" }
-        "perftiger_crossgen" { $Queue = "Windows.10.Amd64.19H1.Tiger.Perf" }
-        "perfowl" { $Queue = "Windows.10.Amd64.20H2.Owl.Perf" }
-        "perfsurf" { $Queue = "Windows.10.Arm64.Perf.Surf" }
+        "perftiger" { $Queue = "Windows.11.Amd64.Tiger.Perf" }
+        "perftiger_crossgen" { $Queue = "Windows.11.Amd64.Tiger.Perf" }
+        "perfowl" { $Queue = "Windows.11.Amd64.Owl.Perf" }
+        "perfsurf" { $Queue = "Windows.11.Arm64.Surf.Perf" }
         "perfpixel4a" { $Queue = "Windows.11.Amd64.Pixel.Perf" }
         "perfampere" { $Queue = "Windows.Server.Arm64.Perf" }
         "cloudvm" { $Queue = "Windows.10.Amd64" }
-        Default { $Queue = "Windows.10.Amd64.19H1.Tiger.Perf" }
+        Default { $Queue = "Windows.11.Amd64.Tiger.Perf" }
     }
     $PerfLabArguments = "--upload-to-perflab-container"
     $ExtraBenchmarkDotNetArguments = ""
@@ -124,7 +124,7 @@ if ($UseLocalCommitTime) {
 
 if ($RunFromPerformanceRepo) {
     $SetupArguments = "--perf-hash $CommitSha $CommonSetupArguments"
-    
+
     robocopy $SourceDirectory $PerformanceDirectory /E /XD $PayloadDirectory $SourceDirectory\artifacts $SourceDirectory\.git
 }
 else {

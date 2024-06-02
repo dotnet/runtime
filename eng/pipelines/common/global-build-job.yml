@@ -14,7 +14,6 @@ parameters:
   dependsOn: []
   pool: ''
   platform: ''
-  pgoType: ''
   condition: true
   useContinueOnErrorDuringBuild: false
   shouldContinueOnError: false
@@ -27,14 +26,14 @@ parameters:
   helixQueues: ''
   enablePublishTestResults: false
   testResultsFormat: ''
-  extraStepsTemplate: ''
-  extraStepsParameters: {}
+  postBuildSteps: []
   extraVariablesTemplates: []
   isManualCodeQLBuild: false
   preBuildSteps: []
+  templatePath: 'templates'
 
 jobs:
-- template: /eng/common/templates/job/job.yml
+- template: /eng/common/${{ parameters.templatePath }}/job/job.yml
   parameters:
     ${{ if eq(parameters.hostedOs, '') }}:
       name: ${{ format('build_{0}{1}_{2}_{3}_{4}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig, parameters.nameSuffix) }}
@@ -134,7 +133,6 @@ jobs:
             targetRid: ${{ parameters.targetRid }}
             nameSuffix: ${{ parameters.nameSuffix }}
             platform: ${{ parameters.platform }}
-            pgoType: ${{ parameters.pgoType }}
             shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
             ${{ if ne(variableTemplate.forwardedParameters, '') }}:
               ${{ each parameter in variableTemplate.forwardedParameters }}:
@@ -144,6 +142,7 @@ jobs:
 
       - ${{ each variable in parameters.variables }}:
         - ${{ variable }}
+
     steps:
     - ${{ if eq(parameters.osGroup, 'windows') }}:
       - template: /eng/pipelines/common/templates/disable-vsupdate-or-failfast.yml
@@ -184,7 +183,7 @@ jobs:
           path: '$(Build.SourcesDirectory)/artifacts/obj/mono/offsetfiles'
 
     - ${{ if eq(parameters.isSourceBuild, true) }}:
-      - template: /eng/common/templates/steps/source-build.yml
+      - template: /eng/common/${{ parameters.templatePath }}/steps/source-build.yml
         parameters:
           platform:
             baseOS: ${{ parameters.baseOS }}
@@ -211,7 +210,28 @@ jobs:
 
     - ${{ if ne(parameters.preBuildSteps,'') }}:
       - ${{ each preBuildStep in parameters.preBuildSteps }}:
-        - ${{ preBuildStep }}
+        - ${{ if ne(preBuildStep.template, '') }}:
+          - template: ${{ preBuildStep.template }}
+            parameters:
+              osGroup: ${{ parameters.osGroup }}
+              osSubgroup: ${{ parameters.osSubgroup }}
+              archType: ${{ parameters.archType }}
+              buildConfig: ${{ parameters.buildConfig }}
+              runtimeFlavor: ${{ parameters.runtimeFlavor }}
+              runtimeVariant: ${{ parameters.runtimeVariant }}
+              helixQueues: ${{ parameters.helixQueues }}
+              targetRid: ${{ parameters.targetRid }}
+              nameSuffix: ${{ parameters.nameSuffix }}
+              platform: ${{ parameters.platform }}
+              pgoType: ${{ parameters.pgoType }}
+              shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
+              ${{ if ne(preBuildStep.forwardedParameters, '') }}:
+                ${{ each parameter in preBuildStep.forwardedParameters }}:
+                  ${{ parameter }}: ${{ parameters[parameter] }}
+              ${{ if ne(preBuildStep.parameters, '') }}:
+                ${{ insert }}: ${{ preBuildStep.parameters }}
+        - ${{ else }}:
+          - ${{ preBuildStep }}
 
     # Build
     - ${{ if eq(parameters.isSourceBuild, false) }}:
@@ -219,10 +239,11 @@ jobs:
         - task: CodeQL3000Init@0
           displayName: Initialize CodeQL (manually-injected)
 
-      - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -ci $(_archParameter) $(_osParameter) $(crossArg) ${{ parameters.buildArgs }} $(_officialBuildParameter) $(_buildDarwinFrameworksParameter) $(_overrideTestScriptWindowsCmdParameter)
-        displayName: Build product
-        ${{ if eq(parameters.useContinueOnErrorDuringBuild, true) }}:
-          continueOnError: ${{ parameters.shouldContinueOnError }}
+      - template: /eng/pipelines/common/templates/global-build-step.yml
+        parameters:
+          buildArgs: ${{ parameters.buildArgs }}
+          useContinueOnErrorDuringBuild: ${{ parameters.useContinueOnErrorDuringBuild }}
+          shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
 
       - ${{ if eq(parameters.isManualCodeQLBuild, true) }}:
         - task: CodeQL3000Finalize@0
@@ -237,31 +258,45 @@ jobs:
         condition: always()
 
       # If intended to send extra steps after regular build add them here.
-    - ${{ if ne(parameters.extraStepsTemplate, '') }}:
-      - template: ${{ parameters.extraStepsTemplate }}
-        parameters:
-          osGroup: ${{ parameters.osGroup }}
-          osSubgroup: ${{ parameters.osSubgroup }}
-          archType: ${{ parameters.archType }}
-          buildConfig: ${{ parameters.buildConfig }}
-          runtimeFlavor: ${{ parameters.runtimeFlavor }}
-          runtimeVariant: ${{ parameters.runtimeVariant }}
-          helixQueues: ${{ parameters.helixQueues }}
-          targetRid: ${{ parameters.targetRid }}
-          nameSuffix: ${{ parameters.nameSuffix }}
-          platform: ${{ parameters.platform }}
-          pgoType: ${{ parameters.pgoType }}
-          shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
-          ${{ insert }}: ${{ parameters.extraStepsParameters }}
+    - ${{ if ne(parameters.postBuildSteps,'') }}:
+      - ${{ each postBuildStep in parameters.postBuildSteps }}:
+        - ${{ if ne(postBuildStep.template, '') }}:
+          - template: ${{ postBuildStep.template }}
+            parameters:
+              osGroup: ${{ parameters.osGroup }}
+              osSubgroup: ${{ parameters.osSubgroup }}
+              archType: ${{ parameters.archType }}
+              buildConfig: ${{ parameters.buildConfig }}
+              runtimeFlavor: ${{ parameters.runtimeFlavor }}
+              runtimeVariant: ${{ parameters.runtimeVariant }}
+              helixQueues: ${{ parameters.helixQueues }}
+              targetRid: ${{ parameters.targetRid }}
+              nameSuffix: ${{ parameters.nameSuffix }}
+              platform: ${{ parameters.platform }}
+              shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
+              ${{ if ne(postBuildStep.forwardedParameters, '') }}:
+                ${{ each parameter in postBuildStep.forwardedParameters }}:
+                  ${{ parameter }}: ${{ parameters[parameter] }}
+              ${{ if ne(postBuildStep.parameters, '') }}:
+                ${{ insert }}: ${{ postBuildStep.parameters }}
+        - ${{ else }}:
+          - ${{ postBuildStep }}
 
-    - task: PublishBuildArtifacts@1
-      displayName: Publish Logs
-      inputs:
-        PathtoPublish: '$(Build.SourcesDirectory)/artifacts/log/'
-        PublishLocation: Container
-        ${{ if notin(parameters.osGroup, 'browser', 'wasi') }}:
-          ArtifactName: Logs_Build_${{ parameters.osGroup }}_${{ parameters.osSubGroup }}_${{ parameters.archType }}_${{ parameters.buildConfig }}_${{ parameters.nameSuffix }}
-        ${{ if in(parameters.osGroup, 'browser', 'wasi') }}:
-          ArtifactName: Logs_Build_${{ parameters.osGroup }}_${{ parameters.archType }}_${{ parameters.hostedOs }}_${{ parameters.buildConfig }}_${{ parameters.nameSuffix }}
-      continueOnError: true
-      condition: always()
+      - ${{ if and(eq(parameters.isOfficialBuild, true), eq(parameters.osGroup, 'windows')) }}:
+        - powershell: ./eng/collect_vsinfo.ps1 -ArchiveRunName postbuild_log
+          displayName: Collect vslogs on exit
+          condition: always()
+
+    - template: /eng/pipelines/common/templates/publish-build-artifacts.yml
+      parameters:
+        isOfficialBuild: ${{ parameters.isOfficialBuild }}
+        displayName: Publish Logs
+        inputs:
+          PathtoPublish: '$(Build.SourcesDirectory)/artifacts/log/'
+          PublishLocation: Container
+          ${{ if notin(parameters.osGroup, 'browser', 'wasi') }}:
+            ArtifactName: Logs_Build_Attempt$(System.JobAttempt)_${{ parameters.osGroup }}_${{ parameters.osSubGroup }}_${{ parameters.archType }}_${{ parameters.buildConfig }}_${{ parameters.nameSuffix }}
+          ${{ if in(parameters.osGroup, 'browser', 'wasi') }}:
+            ArtifactName: Logs_Build_Attempt$(System.JobAttempt)_${{ parameters.osGroup }}_${{ parameters.archType }}_${{ parameters.hostedOs }}_${{ parameters.buildConfig }}_${{ parameters.nameSuffix }}
+          continueOnError: true
+        condition: always()

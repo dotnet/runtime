@@ -2486,5 +2486,67 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
             IConfigurationSection IConfiguration.GetSection(string key) => 
                 this[key] is null ? null : new ConfigurationSection(this, key); 
         }
+
+        [Fact]
+        public void CanBindToClassWithNewProperties()
+        {
+            /// the source generator will bind to the most derived property only.
+            /// the reflection binder will bind the same data to all properties (including hidden).
+            
+            var config = TestHelpers.GetConfigurationFromJsonString("""
+                {
+                    "A": "AVal",
+                    "B": "5",
+                    "C": "CVal",
+                    "D": "DVal",
+                    "E": "Option2",
+                    "F": "FVal",
+                    "X": "52"
+                }
+                """);
+            var obj = new DerivedClassWithHiddenMembers();
+
+            config.Bind(obj);
+
+            BaseForHiddenMembers baseObj = obj;
+            IntermediateDerivedClass intermediateObj = obj;
+
+            Assert.Equal("ADerived", obj.A);
+#if BUILDING_SOURCE_GENERATOR_TESTS
+            // source generator will not set hidden property
+            Assert.Null(baseObj.A);
+#else
+            // reflection binder will set hidden property
+            Assert.Equal("AVal", baseObj.A);
+#endif
+
+            Assert.Equal(5, obj.B);
+#if BUILDING_SOURCE_GENERATOR_TESTS
+            // source generator will not set hidden property
+            Assert.Null(baseObj.B);
+#else
+            // reflection binder will set hidden property
+            Assert.Equal("5", baseObj.B);
+#endif
+
+            Assert.Equal(TestSettingsEnum2.Option2, obj.E);
+            Assert.Equal(TestSettingsEnum.Option2, baseObj.E);
+
+            Assert.Equal("DC", obj.C);
+            // The setter should still be called, even when only getter is overridden.
+            Assert.Equal("CVal", obj.CBase);
+
+            // can hide a readonly property with r/w property
+            Assert.Null(baseObj.D);
+            Assert.Equal("DD", obj.D);
+            // The setter should still be called, even when only getter is overridden.
+            Assert.Equal("DVal", obj.DBase);
+
+            Assert.Equal("DF", obj.F);
+            Assert.Equal("FVal", obj.FBase);
+
+            Assert.Equal(53, obj.X);
+            Assert.Equal(53, obj.XBase);
+        }
     }
 }

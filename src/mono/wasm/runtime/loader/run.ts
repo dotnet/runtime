@@ -458,7 +458,7 @@ async function initializeModules(es6Modules: [RuntimeModuleExportsInternal, Nati
     const { default: emscriptenFactory } = es6Modules[1];
     setRuntimeGlobals(globalObjectsRoot);
     initializeExports(globalObjectsRoot);
-    await configureRuntimeStartup();
+    await configureRuntimeStartup(globalObjectsRoot.module);
     loaderHelpers.runtimeModuleLoaded.promise_control.resolve();
 
     emscriptenFactory((originalModule: EmscriptenModuleInternal) => {

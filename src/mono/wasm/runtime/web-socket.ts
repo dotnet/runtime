@@ -43,6 +43,17 @@ function verifyEnvironment() {
     }
 }
 
+export function ws_get_state(ws: WebSocketExtension) : number
+{
+    if (ws.readyState != WebSocket.CLOSED)
+        return ws.readyState ?? -1;
+    const receive_event_queue = ws[wasm_ws_pending_receive_event_queue];
+    const queued_events_count = receive_event_queue.getLength();
+    if (queued_events_count == 0)
+        return ws.readyState ?? -1;
+    return WebSocket.OPEN;
+}
+
 export function ws_wasm_create(uri: string, sub_protocols: string[] | null, receive_status_ptr: VoidPtr, onClosed: (code: number, reason: string) => void): WebSocketExtension {
     verifyEnvironment();
     mono_assert(uri && typeof uri === "string", () => `ERR12: Invalid uri ${typeof uri}`);
@@ -175,8 +186,7 @@ export function ws_wasm_receive(ws: WebSocketExtension, buffer_ptr: VoidPtr, buf
         return null;
     }
 
-    const readyState = ws.readyState;
-    if (readyState == WebSocket.CLOSED) {
+    if (ws[wasm_ws_close_received]) {
         const receive_status_ptr = ws[wasm_ws_receive_status_ptr];
         setI32(receive_status_ptr, 0); // count
         setI32(<any>receive_status_ptr + 4, 2); // type:close

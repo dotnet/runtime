@@ -39,7 +39,23 @@ import { assertNoProxies } from "./gc-handles";
 // default size if MonoConfig.pthreadPoolSize is undefined
 const MONO_PTHREAD_POOL_SIZE = 4;
 
-export async function configureRuntimeStartup(): Promise<void> {
+export async function configureRuntimeStartup (module: DotnetModuleInternal): Promise<void> {
+    if (!module.out) {
+        // eslint-disable-next-line no-console
+        module.out = console.log.bind(console);
+    }
+    if (!module.err) {
+        // eslint-disable-next-line no-console
+        module.err = console.error.bind(console);
+    }
+    if (!module.print) {
+        module.print = module.out;
+    }
+    if (!module.printErr) {
+        module.printErr = module.err;
+    }
+    loaderHelpers.out = module.print;
+    loaderHelpers.err = module.printErr;
     await init_polyfills_async();
     await checkMemorySnapshotSize();
 }
@@ -54,17 +70,6 @@ export function configureEmscriptenStartup(module: DotnetModuleInternal): void {
         module.locateFile = module.__locateFile = (path) => loaderHelpers.scriptDirectory + path;
     }
 
-    if (!module.out) {
-        // eslint-disable-next-line no-console
-        module.out = console.log.bind(console);
-    }
-
-    if (!module.err) {
-        // eslint-disable-next-line no-console
-        module.err = console.error.bind(console);
-    }
-    loaderHelpers.out = module.out;
-    loaderHelpers.err = module.err;
     module.mainScriptUrlOrBlob = loaderHelpers.scriptUrl;// this is needed by worker threads
 
     // these all could be overridden on DotnetModuleConfig, we are chaing them to async below, as opposed to emscripten

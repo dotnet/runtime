@@ -14,7 +14,7 @@ parameters:
   dependsOn: []
   dependOnEvaluatePaths: false
   crossBuild: false
-  pgoType: ''
+  isOfficialBuild: false
 
 ### Build managed test components (native components are getting built as part
 ### of the product build job).
@@ -143,12 +143,13 @@ jobs:
         artifactName: $(microsoftNetSdkIlArtifactName)
         displayName: 'Microsoft.NET.Sdk.IL package'
 
-
     # Publish Logs
-    - task: PublishPipelineArtifact@1
-      displayName: Publish Logs
-      inputs:
-        targetPath: $(Build.SourcesDirectory)/artifacts/log
-        artifactName: '${{ parameters.runtimeFlavor }}_Common_Runtime_TestBuildLogs_AnyOS_AnyCPU_$(buildConfig)_${{ parameters.testGroup }}'
-      continueOnError: true
-      condition: always()
+    - template: /eng/pipelines/common/templates/publish-pipeline-artifacts.yml
+      parameters:
+        displayName: Publish Logs
+        isOfficialBuild: ${{ parameters.isOfficialBuild }}
+        inputs:
+          targetPath: $(Build.SourcesDirectory)/artifacts/log
+          ArtifactName: '${{ parameters.runtimeFlavor }}_Common_Runtime_TestBuildLogs_Attempt$(System.JobAttempt)_AnyOS_AnyCPU_$(buildConfig)_${{ parameters.testGroup }}'
+          continueOnError: true
+          condition: always()
