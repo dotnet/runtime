@@ -2462,6 +2462,40 @@ struct LoopSideEffects
     void AddModifiedElemType(Compiler* comp, CORINFO_CLASS_HANDLE structHnd);
 };
 
+typedef JitHashTable<unsigned, JitSmallPrimitiveKeyFuncs<unsigned>, bool> LocalNumSet;
+
+class LoopDefinitions
+{
+    FlowGraphNaturalLoops* m_loops;
+    LocalNumSet** m_sets;
+
+    LoopDefinitions(FlowGraphNaturalLoops* loops);
+
+    LocalNumSet* GetOrCreate(FlowGraphNaturalLoop* loop);
+    void Add(FlowGraphNaturalLoop* loop, unsigned lclNum);
+    void IncludeIntoParent(FlowGraphNaturalLoop* loop);
+public:
+    FlowGraphNaturalLoops* GetLoops()
+    {
+        return m_loops;
+    }
+
+    template<typename Visitor>
+    void VisitDefinedLocalNums(FlowGraphNaturalLoop* loop, Visitor visitor)
+    {
+        LocalNumSet* set = m_sets[loop->GetIndex()];
+        if (set != nullptr)
+        {
+            for (unsigned lclNum : LocalNumSet::KeyIteration(set))
+            {
+                visitor(lclNum);
+            }
+        }
+    }
+
+    static LoopDefinitions* Find(FlowGraphNaturalLoops* loops);
+};
+
 //  The following holds information about instr offsets in terms of generated code.
 
 enum class IPmappingDscKind
@@ -5118,6 +5152,7 @@ public:
     // optimization phases. They are invalidated once RBO runs and modifies the
     // flow graph.
     FlowGraphNaturalLoops* m_loops;
+    LoopDefinitions* m_loopDefinitions;
     LoopSideEffects* m_loopSideEffects;
     BlockToNaturalLoopMap* m_blockToLoop;
     // Dominator tree used by SSA construction and copy propagation (the two are expected to use the same tree

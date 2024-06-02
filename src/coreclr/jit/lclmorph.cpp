@@ -289,17 +289,45 @@ public:
             return;
         }
 
-        m_currentAssertions = UINT64_MAX;
+        m_currentAssertions = 0;
+        bool first = true;
+        FlowGraphNaturalLoop* loop = nullptr;
         for (BasicBlock* pred : block->PredBlocks())
         {
             assert(m_comp->m_dfsTree->Contains(pred));
             if (pred->bbPostorderNum <= block->bbPostorderNum)
             {
+                loop = m_comp->m_loops->GetLoopByHeader(block);
+                if (loop != nullptr)
+                {
+                    JITDUMP("Ignoring loop backedge " FMT_BB "->" FMT_BB "\n", pred->bbNum, block->bbNum);
+                    continue;
+                }
+
+                JITDUMP("Found non-loop backedge " FMT_BB "->" FMT_BB ", clearing assertions\n", pred->bbNum, block->bbNum);
                 m_currentAssertions = 0;
                 break;
             }
 
-            m_currentAssertions &= m_outgoingAssertions[pred->bbPostorderNum];
+            if (first)
+            {
+                m_currentAssertions = m_outgoingAssertions[pred->bbPostorderNum];
+                first = false;
+            }
+            else
+            {
+                m_currentAssertions &= m_outgoingAssertions[pred->bbPostorderNum];
+            }
+        }
+
+        if ((loop != nullptr) && (m_currentAssertions != 0))
+        {
+            JITDUMP("Block " FMT_BB " is a loop header; clearing assertions about defined locals\n");
+            auto clearAssertion = [=](unsigned lclNum) {
+                Clear(lclNum);
+                };
+
+            m_comp->m_loopDefinitions->VisitDefinedLocalNums(loop, clearAssertion);
         }
 
 #ifdef DEBUG
@@ -1964,6 +1992,9 @@ PhaseStatus Compiler::fgMarkAddressExposedLocals()
             pAssertions = nullptr;
         }
 #endif
+
+        m_loops = FlowGraphNaturalLoops::Find(m_dfsTree);
+        m_loopDefinitions = LoopDefinitions::Find(m_loops);
 
         LocalSequencer      sequencer(this);
         LocalAddressVisitor visitor(this, &sequencer, pAssertions);
