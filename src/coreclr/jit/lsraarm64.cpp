@@ -333,8 +333,8 @@ SingleTypeRegSet LinearScan::filterConsecutiveCandidatesForSpill(SingleTypeRegSe
     SingleTypeRegSet consecutiveResultForBusy = RBM_NONE;
     SingleTypeRegSet unprocessedRegs          = consecutiveCandidates;
     unsigned         regAvailableStartIndex = 0, regAvailableEndIndex = 0;
-    int              maxSpillRegs        = registersNeeded;
-    SingleTypeRegSet registersNeededMask = (1ULL << registersNeeded) - 1;
+    int              maxSpillRegs         = registersNeeded;
+    SingleTypeRegSet registersNeededMask  = (1ULL << registersNeeded) - 1;
     SingleTypeRegSet availableFloatRegSet = m_AvailableRegs.GetFloatRegSet();
     do
     {
@@ -343,7 +343,7 @@ SingleTypeRegSet LinearScan::filterConsecutiveCandidatesForSpill(SingleTypeRegSe
 
         // For the current range, find how many registers are free vs. busy
         SingleTypeRegSet maskForCurRange        = RBM_NONE;
-        bool      shouldCheckForRounding = false;
+        bool             shouldCheckForRounding = false;
         switch (registersNeeded)
         {
             case 2:
@@ -488,7 +488,8 @@ SingleTypeRegSet LinearScan::getConsecutiveCandidates(SingleTypeRegSet  allCandi
             if (foundCount != 0)
             {
                 assert(firstRegNum != REG_NA);
-                SingleTypeRegSet remainingRegsMask = ((1ULL << (registersNeeded - foundCount)) - 1) << (firstRegNum - 1);
+                SingleTypeRegSet remainingRegsMask = ((1ULL << (registersNeeded - foundCount)) - 1)
+                                                     << (firstRegNum - 1);
 
                 if ((overallResult & remainingRegsMask) != RBM_NONE)
                 {

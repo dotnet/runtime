@@ -110,7 +110,7 @@ inline bool compUnixX86Abi()
 enum _regNumber_enum : unsigned
 {
 #define REGDEF(name, rnum, mask, sname) REG_##name = rnum,
-#define REGALIAS(alias, realname)                   REG_##alias = REG_##realname,
+#define REGALIAS(alias, realname)       REG_##alias = REG_##realname,
 #include "register.h"
 
     REG_COUNT,
@@ -122,7 +122,7 @@ enum _regMask_enum : uint64_t
 {
     RBM_NONE = 0,
 #define REGDEF(name, rnum, mask, sname) RBM_##name = mask,
-#define REGALIAS(alias, realname)                   RBM_##alias = RBM_##realname,
+#define REGALIAS(alias, realname)       RBM_##alias = RBM_##realname,
 #include "register.h"
 };
 
@@ -131,7 +131,7 @@ enum _regMask_enum : uint64_t
 enum _regNumber_enum : unsigned
 {
 #define REGDEF(name, rnum, mask, xname, wname) REG_##name = rnum,
-#define REGALIAS(alias, realname)                          REG_##alias = REG_##realname,
+#define REGALIAS(alias, realname)              REG_##alias = REG_##realname,
 #include "register.h"
 
     REG_COUNT,
@@ -143,7 +143,7 @@ enum _regMask_enum : uint64_t
 {
     RBM_NONE = 0,
 #define REGDEF(name, rnum, mask, xname, wname) RBM_##name = mask,
-#define REGALIAS(alias, realname)                          RBM_##alias = RBM_##realname,
+#define REGALIAS(alias, realname)              RBM_##alias = RBM_##realname,
 #include "register.h"
 };
 
@@ -152,7 +152,7 @@ enum _regMask_enum : uint64_t
 enum _regNumber_enum : unsigned
 {
 #define REGDEF(name, rnum, mask, sname) REG_##name = rnum,
-#define REGALIAS(alias, realname)                   REG_##alias = REG_##realname,
+#define REGALIAS(alias, realname)       REG_##alias = REG_##realname,
 #include "register.h"
 
     REG_COUNT,
@@ -165,7 +165,7 @@ enum _regMask_enum : uint64_t
     RBM_NONE = 0,
 
 #define REGDEF(name, rnum, mask, sname) RBM_##name = mask,
-#define REGALIAS(alias, realname)                   RBM_##alias = RBM_##realname,
+#define REGALIAS(alias, realname)       RBM_##alias = RBM_##realname,
 #include "register.h"
 };
 
@@ -174,7 +174,7 @@ enum _regMask_enum : uint64_t
 enum _regNumber_enum : unsigned
 {
 #define REGDEF(name, rnum, mask, sname) REG_##name = rnum,
-#define REGALIAS(alias, realname)                   REG_##alias = REG_##realname,
+#define REGALIAS(alias, realname)       REG_##alias = REG_##realname,
 #include "register.h"
 
     REG_COUNT,
@@ -187,7 +187,7 @@ enum _regMask_enum : unsigned
     RBM_NONE = 0,
 
 #define REGDEF(name, rnum, mask, sname) RBM_##name = mask,
-#define REGALIAS(alias, realname)                   RBM_##alias = RBM_##realname,
+#define REGALIAS(alias, realname)       RBM_##alias = RBM_##realname,
 #include "register.h"
 };
 
@@ -230,7 +230,7 @@ typedef uint64_t regMaskSmall;
 #endif
 
 #ifdef TARGET_ARM64
-#define HAS_MORE_THAN_64_REGISTERS    1
+#define HAS_MORE_THAN_64_REGISTERS 1
 #endif // TARGET_ARM64
 
 #ifdef HAS_MORE_THAN_64_REGISTERS
@@ -395,8 +395,8 @@ public:
 #endif
     }
 
-    void             operator|=(const regNumber reg);
-    void             operator^=(const regNumber reg);
+    void operator|=(const regNumber reg);
+    void operator^=(const regNumber reg);
 };
 
 static regMaskTP operator^(const regMaskTP& first, const regMaskTP& second)
@@ -1002,7 +1002,7 @@ inline regNumber getRegForType(regNumber reg, var_types regType)
 
 inline SingleTypeRegSet getSingleTypeRegMask(regNumber reg, var_types regType)
 {
-    reg               = getRegForType(reg, regType);
+    reg                      = getRegForType(reg, regType);
     SingleTypeRegSet regMask = genSingleTypeRegMask(reg);
 #ifdef TARGET_ARM
     if (regType == TYP_DOUBLE)

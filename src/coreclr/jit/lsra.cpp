@@ -398,7 +398,7 @@ void LinearScan::updateSpillCost(regNumber reg, Interval* interval)
 //    assignedReg - Assigned register for this refposition.
 //
 void LinearScan::updateRegsFreeBusyState(RefPosition&               refPosition,
-                                         var_types  registerType,
+                                         var_types                  registerType,
                                          SingleTypeRegSet           regsBusy,
                                          regMaskTP*                 regsToFree,
                                          regMaskTP* delayRegsToFree DEBUG_ARG(Interval* interval)
@@ -2892,8 +2892,8 @@ bool copyOrMoveRegInUse(RefPosition* ref, LsraLocation loc)
 RegisterType LinearScan::getRegisterType(Interval* currentInterval, RefPosition* refPosition)
 {
     assert(refPosition->getInterval() == currentInterval);
-    RegisterType regType    = currentInterval->registerType;
-    SingleTypeRegSet  candidates = refPosition->registerAssignment;
+    RegisterType     regType    = currentInterval->registerType;
+    SingleTypeRegSet candidates = refPosition->registerAssignment;
 #if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     // The LoongArch64's ABI which the float args maybe passed by integer register
     // when no float register left but free integer register.
@@ -5343,17 +5343,18 @@ void LinearScan::allocateRegistersMinimal()
                 {
                     regNumber copyReg = assignCopyRegMinimal(&currentRefPosition);
 
-                    lastAllocatedRefPosition  = &currentRefPosition;
-                    SingleTypeRegSet copyRegMask     = getSingleTypeRegMask(copyReg, currentInterval->registerType);
-                    SingleTypeRegSet assignedRegMask = getSingleTypeRegMask(assignedRegister, currentInterval->registerType);
+                    lastAllocatedRefPosition     = &currentRefPosition;
+                    SingleTypeRegSet copyRegMask = getSingleTypeRegMask(copyReg, currentInterval->registerType);
+                    SingleTypeRegSet assignedRegMask =
+                        getSingleTypeRegMask(assignedRegister, currentInterval->registerType);
 
                     // For consecutive register, although it shouldn't matter what the assigned register was,
                     // because we have just assigned it `copyReg` and that's the one in-use, and not the
                     // one that was assigned previously. However, in situation where an upper-vector restore
                     // happened to be restored in assignedReg, we would need assignedReg to stay alive because
                     // we will copy the entire vector value from it to the `copyReg`.
-                    updateRegsFreeBusyState(currentRefPosition,
-                                            currentInterval->registerType, assignedRegMask | copyRegMask, &regsToFree,
+                    updateRegsFreeBusyState(currentRefPosition, currentInterval->registerType,
+                                            assignedRegMask | copyRegMask, &regsToFree,
                                             &delayRegsToFree DEBUG_ARG(currentInterval) DEBUG_ARG(assignedRegister));
                     if (!currentRefPosition.lastUse)
                     {
@@ -5470,7 +5471,7 @@ void LinearScan::allocateRegistersMinimal()
         // If we allocated a register, record it
         if (assignedRegister != REG_NA)
         {
-            assignedRegBit    = genSingleTypeRegMask(assignedRegister);
+            assignedRegBit           = genSingleTypeRegMask(assignedRegister);
             SingleTypeRegSet regMask = getSingleTypeRegMask(assignedRegister, currentInterval->registerType);
             regsInUseThisLocation.AddRegsetForType(regMask, currentInterval->registerType);
             if (currentRefPosition.delayRegFree)
@@ -5480,7 +5481,8 @@ void LinearScan::allocateRegistersMinimal()
             currentRefPosition.registerAssignment = assignedRegBit;
 
             currentInterval->physReg = assignedRegister;
-            regsToFree.RemoveRegsetForType(regMask, currentInterval->registerType); // we'll set it again later if it's dead
+            regsToFree.RemoveRegsetForType(regMask, currentInterval->registerType); // we'll set it again later if it's
+                                                                                    // dead
 
             // If this interval is dead, free the register.
             // The interval could be dead if this is a user variable, or if the
@@ -6367,8 +6369,8 @@ void LinearScan::allocateRegisters()
 
                         if (copyReg != assignedRegister)
                         {
-                            lastAllocatedRefPosition  = &currentRefPosition;
-                            SingleTypeRegSet copyRegMask     = getSingleTypeRegMask(copyReg, currentInterval->registerType);
+                            lastAllocatedRefPosition     = &currentRefPosition;
+                            SingleTypeRegSet copyRegMask = getSingleTypeRegMask(copyReg, currentInterval->registerType);
                             SingleTypeRegSet assignedRegMask =
                                 getSingleTypeRegMask(assignedRegister, currentInterval->registerType);
 
@@ -6388,7 +6390,8 @@ void LinearScan::allocateRegisters()
                             // happened to be restored in assignedReg, we would need assignedReg to stay alive because
                             // we will copy the entire vector value from it to the `copyReg`.
 
-                            updateRegsFreeBusyState(currentRefPosition, currentInterval->registerType, assignedRegMask | copyRegMask, &regsToFree,
+                            updateRegsFreeBusyState(currentRefPosition, currentInterval->registerType,
+                                                    assignedRegMask | copyRegMask, &regsToFree,
                                                     &delayRegsToFree DEBUG_ARG(currentInterval)
                                                         DEBUG_ARG(assignedRegister));
                             if (!currentRefPosition.lastUse)
@@ -6466,9 +6469,10 @@ void LinearScan::allocateRegisters()
                         copyReg = assignCopyReg<false>(&currentRefPosition);
                     }
 
-                    lastAllocatedRefPosition  = &currentRefPosition;
-                    SingleTypeRegSet copyRegMask     = getSingleTypeRegMask(copyReg, currentInterval->registerType);
-                    SingleTypeRegSet assignedRegMask = getSingleTypeRegMask(assignedRegister, currentInterval->registerType);
+                    lastAllocatedRefPosition     = &currentRefPosition;
+                    SingleTypeRegSet copyRegMask = getSingleTypeRegMask(copyReg, currentInterval->registerType);
+                    SingleTypeRegSet assignedRegMask =
+                        getSingleTypeRegMask(assignedRegister, currentInterval->registerType);
 
 #ifdef TARGET_ARM64
                     if (hasConsecutiveRegister && currentRefPosition.needsConsecutive)
@@ -6497,7 +6501,8 @@ void LinearScan::allocateRegisters()
                     // one that was assigned previously. However, in situation where an upper-vector restore
                     // happened to be restored in assignedReg, we would need assignedReg to stay alive because
                     // we will copy the entire vector value from it to the `copyReg`.
-                    updateRegsFreeBusyState(currentRefPosition, currentInterval->registerType, assignedRegMask | copyRegMask, &regsToFree,
+                    updateRegsFreeBusyState(currentRefPosition, currentInterval->registerType,
+                                            assignedRegMask | copyRegMask, &regsToFree,
                                             &delayRegsToFree DEBUG_ARG(currentInterval) DEBUG_ARG(assignedRegister));
                     if (!currentRefPosition.lastUse)
                     {
@@ -6690,7 +6695,7 @@ void LinearScan::allocateRegisters()
         // If we allocated a register, record it
         if (assignedRegister != REG_NA)
         {
-            assignedRegBit    = genSingleTypeRegMask(assignedRegister);
+            assignedRegBit           = genSingleTypeRegMask(assignedRegister);
             SingleTypeRegSet regMask = getSingleTypeRegMask(assignedRegister, currentInterval->registerType);
             regsInUseThisLocation.AddRegsetForType(regMask, currentInterval->registerType);
             if (currentRefPosition.delayRegFree)
@@ -6700,7 +6705,8 @@ void LinearScan::allocateRegisters()
             currentRefPosition.registerAssignment = assignedRegBit;
 
             currentInterval->physReg = assignedRegister;
-            regsToFree.RemoveRegsetForType(regMask, currentInterval->registerType); // we'll set it again later if it's dead
+            regsToFree.RemoveRegsetForType(regMask, currentInterval->registerType); // we'll set it again later if it's
+                                                                                    // dead
 
             // If this interval is dead, free the register.
             // The interval could be dead if this is a user variable, or if the
@@ -13697,7 +13703,7 @@ SingleTypeRegSet LinearScan::RegisterSelection::select(Interval*                
                 SingleTypeRegSet limitCandidatesForConsecutive =
                     ((refPosition->registerAssignment & ~inUseOrBusyRegsMask) & linearScan->availableFloatRegs);
                 SingleTypeRegSet overallLimitCandidates;
-                SingleTypeRegSet        limitConsecutiveResult =
+                SingleTypeRegSet limitConsecutiveResult =
                     linearScan->filterConsecutiveCandidates(limitCandidatesForConsecutive, refPosition->regCount,
                                                             &overallLimitCandidates);
                 assert(limitConsecutiveResult != RBM_NONE);

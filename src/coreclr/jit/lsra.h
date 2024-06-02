@@ -1247,7 +1247,7 @@ private:
 
     SingleTypeRegSet getFreeCandidates(SingleTypeRegSet candidates, var_types regType)
     {
-        SingleTypeRegSet availableRegsForType = m_AvailableRegs.GetRegSetForType(regType); 
+        SingleTypeRegSet availableRegsForType = m_AvailableRegs.GetRegSetForType(regType);
         SingleTypeRegSet result               = candidates & availableRegsForType;
 #ifdef TARGET_ARM
         // For TYP_DOUBLE on ARM, we can only use register for which the odd half is
@@ -1825,7 +1825,7 @@ private:
 
     FORCEINLINE void updateRegsFreeBusyState(RefPosition&               refPosition,
                                              var_types                  registerType,
-                                             SingleTypeRegSet                  regsBusy,
+                                             SingleTypeRegSet           regsBusy,
                                              regMaskTP*                 regsToFree,
                                              regMaskTP* delayRegsToFree DEBUG_ARG(Interval* interval)
                                                  DEBUG_ARG(regNumber assignedReg));
