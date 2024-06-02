@@ -36,6 +36,6 @@
                           ReferenceOutputAssembly="false"
                           AdditionalProperties="%(AdditionalProperties);$(SplitSubprojectProps)"
                           Targets="LinkNative"
-                          Condition="$(UseNativeAotForComponents)"/>
+                          Condition="'$(UseNativeAotForComponents)' == 'true'"/>
     </ItemGroup>
 </Project>
