@@ -1375,6 +1375,8 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
             Assert.Equal(42, options.Length);
             Assert.Equal("Green", options.Color);
             Assert.Equal(1.23m, options.Thickness);
+            Assert.False(options.WasInitOnlyCalled);
+            Assert.False(options.WasPrivateGetInitOnlyCalled);
         }
 
         [Fact]
@@ -1500,6 +1502,7 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
 
             var options = config.Get<ClassWithMatchingParametersAndProperties>();
             Assert.Equal(42, options.Length);
+            Assert.Equal("Green", options.ColorFromCtor);
             Assert.Equal("the color is Green", options.Color);
         }
 

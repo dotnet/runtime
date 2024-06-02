@@ -325,7 +325,8 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     type is { Properties: not null, ConstructorParameters: not null },
                     $"Expecting type for init method, {type.DisplayString}, to have both properties and ctor params.");
 
-                IEnumerable<PropertySpec> initOnlyProps = type.Properties.Where(prop => prop is { SetOnInit: true });
+                IEnumerable<PropertySpec> initOnlyProps = type.Properties
+                    .Where(prop => prop.SetOnInit && _typeIndex.ShouldBindTo(prop));
                 List<string> ctorArgList = new();
 
                 EmitStartBlock($"public static {type.TypeRef.FullyQualifiedName} {GetInitializeMethodDisplayString(type)}({Identifier.IConfiguration} {Identifier.configuration}, {Identifier.BinderOptions}? {Identifier.binderOptions})");
@@ -349,7 +350,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
                 foreach (PropertySpec property in initOnlyProps)
                 {
-                    if (_typeIndex.ShouldBindTo(property) && property.MatchingCtorParam is null)
+                    if (property.MatchingCtorParam is null)
                     {
                         EmitBindImplForMember(property);
                     }

@@ -174,11 +174,13 @@ namespace Microsoft.Extensions
             public ClassWithMatchingParametersAndProperties(string Color, int Length)
             {
                 _color = Color;
+                this.ColorFromCtor = Color;
                 this.Length = Length;
             }
 
             public int Length { get; set; }
 
+            public string ColorFromCtor { get; }
             public string Color
             {
                 get => _color;
@@ -341,6 +343,10 @@ namespace Microsoft.Extensions
             public string Color { get; }
             public int Length { get; }
             public decimal Thickness { get; init; }
+            public bool WasInitOnlyCalled { get; private set; }
+            public decimal InitOnly { init => WasInitOnlyCalled = true; }
+            public bool WasPrivateGetInitOnlyCalled { get; private set; }
+            public decimal PrivateGetInitOnly { init => WasPrivateGetInitOnlyCalled = true; }
         }
 
         public struct ValueTypeOptions
@@ -567,7 +573,7 @@ namespace Microsoft.Extensions
             public bool WasIntWithDefaultSet => _WasIntWithDefaultSet;
 
             public SimplePocoWithOnlyDefaults PocoWithDefault
-            { 
+            {
                 get => _PocoWithDefault;
                 set
                 {
@@ -591,7 +597,7 @@ namespace Microsoft.Extensions
             public bool WasPocoListWithDefaultSet => _WasPocoListWithDefaultSet;
         }
 
-        public class SimplePocoWithOnlyDefaults 
+        public class SimplePocoWithOnlyDefaults
         {
             public string Example { get; set; } = "default";
         }
