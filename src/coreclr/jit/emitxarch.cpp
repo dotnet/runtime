@@ -10413,7 +10413,7 @@ const char* emitter::emitRegName(regNumber reg, emitAttr attr, bool varName) con
 const char* emitter::emitXMMregName(unsigned reg) const
 {
     static const char* const regNames[] = {
-#define REGDEF(name, rnum, mask, sname, regTypeTag) "x" sname,
+#define REGDEF(name, rnum, mask, sname) "x" sname,
 #include "register.h"
     };
 
@@ -10431,7 +10431,7 @@ const char* emitter::emitXMMregName(unsigned reg) const
 const char* emitter::emitYMMregName(unsigned reg) const
 {
     static const char* const regNames[] = {
-#define REGDEF(name, rnum, mask, sname, regTypeTag) "y" sname,
+#define REGDEF(name, rnum, mask, sname) "y" sname,
 #include "register.h"
     };
 
@@ -10449,7 +10449,7 @@ const char* emitter::emitYMMregName(unsigned reg) const
 const char* emitter::emitZMMregName(unsigned reg) const
 {
     static const char* const regNames[] = {
-#define REGDEF(name, rnum, mask, sname, regTypeTag) "z" sname,
+#define REGDEF(name, rnum, mask, sname) "z" sname,
 #include "register.h"
     };
 

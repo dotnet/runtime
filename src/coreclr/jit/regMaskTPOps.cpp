@@ -166,7 +166,6 @@ bool regMaskTP::IsRegNumPresent(regNumber reg, var_types type) const
 #endif
 }
 
-//------------------------------------------------------------------------
 // RemoveRegNumFromMask: Removes `reg` from the mask
 //
 // Parameters:
@@ -254,4 +253,3 @@ void regMaskTP::operator^=(const regNumber reg)
     low ^= value;
 #endif
 }
-

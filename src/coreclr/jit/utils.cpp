@@ -139,9 +139,9 @@ const char* getRegName(regNumber reg)
 
     static const char* const regNames[] = {
 #if defined(TARGET_ARM64)
-#define REGDEF(name, rnum, mask, xname, wname, regTypeTag) xname,
+#define REGDEF(name, rnum, mask, xname, wname) xname,
 #else
-#define REGDEF(name, rnum, mask, sname, regTypeTag) sname,
+#define REGDEF(name, rnum, mask, sname) sname,
 #endif
 #include "register.h"
     };
@@ -227,7 +227,7 @@ const char* getRegNameFloat(regNumber reg, var_types type)
 #elif defined(TARGET_ARM64)
 
     static const char* regNamesFloat[] = {
-#define REGDEF(name, rnum, mask, xname, wname, regTypeTag) xname,
+#define REGDEF(name, rnum, mask, xname, wname) xname,
 #include "register.h"
     };
     assert((unsigned)reg < ArrLen(regNamesFloat));
@@ -237,7 +237,7 @@ const char* getRegNameFloat(regNumber reg, var_types type)
 #elif defined(TARGET_LOONGARCH64)
 
     static const char* regNamesFloat[] = {
-#define REGDEF(name, rnum, mask, sname, regTypeTag) sname,
+#define REGDEF(name, rnum, mask, sname) sname,
 #include "register.h"
     };
 
@@ -247,16 +247,16 @@ const char* getRegNameFloat(regNumber reg, var_types type)
 
 #else
     static const char* regNamesFloat[] = {
-#define REGDEF(name, rnum, mask, sname, regTypeTag) "x" sname,
+#define REGDEF(name, rnum, mask, sname) "x" sname,
 #include "register.h"
     };
 #ifdef FEATURE_SIMD
     static const char* regNamesYMM[] = {
-#define REGDEF(name, rnum, mask, sname, regTypeTag) "y" sname,
+#define REGDEF(name, rnum, mask, sname) "y" sname,
 #include "register.h"
     };
     static const char* regNamesZMM[] = {
-#define REGDEF(name, rnum, mask, sname, regTypeTag) "z" sname,
+#define REGDEF(name, rnum, mask, sname) "z" sname,
 #include "register.h"
     };
 #endif // FEATURE_SIMD
