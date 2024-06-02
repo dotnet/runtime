@@ -16,7 +16,7 @@
 
   <Import Project="crossgen2.props" />
 
-  <PropertyGroup Condition="'$(NativeAotCanExecuteOnHost)' != 'true'">
+  <PropertyGroup Condition="'$(UseNativeAotForComponents)' != 'true'">
     <PublishSingleFile>true</PublishSingleFile>
     <PublishReadyToRun>true</PublishReadyToRun>
     <!-- Disable crossgen on NetBSD, illumos, Solaris, and Haiku for now. This can be revisited when we have full support. -->
@@ -36,7 +36,7 @@
   <Import Project="$(RepositoryEngineeringDir)targetingpacks.targets" />
   <Import Project="$(RepositoryEngineeringDir)codeOptimization.targets" />
 
-  <PropertyGroup Condition="'$(NativeAotCanExecuteOnHost)' == 'true'">
+  <PropertyGroup Condition="'$(UseNativeAotForComponents)' == 'true'">
     <IlcToolsPath>$(CoreCLRILCompilerDir)</IlcToolsPath>
     <IlcToolsPath Condition="'$(CrossBuild)' == 'true' or '$(BuildArchitecture)' != '$(TargetArchitecture)' or '$(EnableNativeSanitizers)' != ''">$(CoreCLRCrossILCompilerDir)</IlcToolsPath>
     <SysRoot Condition="('$(CrossBuild)' == 'true' or '$(BuildArchitecture)' != '$(TargetArchitecture)') and '$(HostOS)' != 'windows'">$(ROOTFS_DIR)</SysRoot>
@@ -50,12 +50,12 @@
     <DsymUtilOptions Condition="'$(_IsApplePlatform)' == 'true'">--flat</DsymUtilOptions>
   </PropertyGroup>
 
-  <ItemGroup Condition="'$(NativeAotCanExecuteOnHost)' == 'true'">
+  <ItemGroup Condition="'$(UseNativeAotForComponents)' == 'true'">
     <CustomLinkerArg Condition="'$(CrossBuild)' == 'true' and '$(_hostArchitecture)' == '$(_targetArchitecture)' and '$(_IsApplePlatform)' != 'true' and '$(_hostOS)' != 'windows'" Include="--gcc-toolchain=$(ROOTFS_DIR)/usr" />
   </ItemGroup>
 
   <Import Project="$(CoreCLRBuildIntegrationDir)Microsoft.DotNet.ILCompiler.SingleEntry.targets"
-          Condition="'$(NativeAotCanExecuteOnHost)' == 'true'" />
+          Condition="'$(UseNativeAotForComponents)' == 'true'" />
   <Import Project="$(RepositoryEngineeringDir)nativeSanitizers.targets" />
 
   <!-- Needed for the amd64 -> amd64 musl cross-build to pass the target flag. -->
@@ -83,7 +83,7 @@
   </Target>
 
   <Target Name="LocateNativeCompiler"
-          Condition="'$(NativeAotCanExecuteOnHost)' == 'true' and '$(HostOS)' != 'windows'"
+          Condition="'$(UseNativeAotForComponents)' == 'true' and '$(HostOS)' != 'windows'"
           BeforeTargets="SetupOSSpecificProps">
       <PropertyGroup>
         <CppCompilerAndLinker Condition="'$(CppCompilerAndLinker)' == ''">clang</CppCompilerAndLinker>
