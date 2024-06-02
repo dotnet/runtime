@@ -2832,9 +2832,9 @@ void LinearScan::buildIntervals()
     }
 
 #ifdef HAS_MORE_THAN_64_REGISTERS
-    static_assert(sizeof(regMaskTP) == 2 * sizeof(regMaskSmall));
+    static_assert((sizeof(regMaskTP) == 2 * sizeof(regMaskSmall)), "check the size of regMaskTP");
 #else
-    static_assert(sizeof(regMaskTP) == sizeof(regMaskSmall));
+    static_assert((sizeof(regMaskTP) == sizeof(regMaskSmall)), "check the size of regMaskTP");
 #endif
 
     if (availableRegCount < (sizeof(regMaskSmall) * 8))
