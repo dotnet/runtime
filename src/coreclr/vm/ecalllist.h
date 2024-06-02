@@ -362,6 +362,7 @@ FCFuncEnd()
 FCFuncStart(gArrayFuncs)
     FCFuncElement("GetCorElementTypeOfElementType", ArrayNative::GetCorElementTypeOfElementType)
     FCFuncElement("IsSimpleCopy", ArrayNative::IsSimpleCopy)
+    FCFuncElement("InternalSetValue", ArrayNative::SetValue)
 FCFuncEnd()
 
 FCFuncStart(gBufferFuncs)
