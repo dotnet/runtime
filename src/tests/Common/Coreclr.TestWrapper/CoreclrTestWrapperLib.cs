@@ -311,6 +311,7 @@ namespace CoreclrTestLib
                     try
                     {
                         createdump.Kill(entireProcessTree: true);
+                        break;
                     }
                     catch (Exception e)
                     {
