@@ -5,7 +5,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net.Http.Headers;
-using System.Net.Sockets;
 #if !NETFRAMEWORK
 using System.Net.Quic;
 #endif
