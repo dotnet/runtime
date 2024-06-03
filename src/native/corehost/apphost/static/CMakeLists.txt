@@ -24,6 +24,9 @@ include_directories(${CLR_ARTIFACTS_OBJ_DIR}) # Generated version files
 
 add_subdirectory(../../hostmisc hostmisc)
 
+configure_file(${CLR_SRC_NATIVE_DIR}/corehost/configure.h.in ${GENERATED_INCLUDE_DIR}/corehost/configure.h)
+target_include_directories(hostmisc PUBLIC ${GENERATED_INCLUDE_DIR}/corehost)
+
 set(SOURCES
     ../bundle_marker.cpp
     ./hostfxr_resolver.cpp

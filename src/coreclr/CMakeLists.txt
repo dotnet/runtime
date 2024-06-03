@@ -61,10 +61,7 @@ include(components.cmake)
 #---------------------------
 if(NOT CLR_CROSS_COMPONENTS_BUILD)
   set(CLR_SINGLE_FILE_HOST_ONLY 1)
-  configure_file(${CLR_SRC_NATIVE_DIR}/corehost/configure.h.in ${GENERATED_INCLUDE_DIR}/corehost/configure.h)
   add_subdirectory(${CLR_SRC_NATIVE_DIR}/corehost/apphost/static Corehost.Static)
-  target_include_directories(singlefilehost PRIVATE ${GENERATED_INCLUDE_DIR}/corehost)
-  target_include_directories(hostmisc PRIVATE ${GENERATED_INCLUDE_DIR}/corehost)
   add_dependencies(runtime singlefilehost)
 endif()
 #-------------------------

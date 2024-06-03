@@ -25,7 +25,7 @@ add_compile_definitions(EXPORT_SHARED_API)
 
 add_library(comhost SHARED ${SOURCES})
 
-add_resources_to_target(comhost)
+add_version_info_to_target(comhost)
 
 if (CLR_CMAKE_TARGET_WIN32)
     set(WINLIBS wintrust.lib)

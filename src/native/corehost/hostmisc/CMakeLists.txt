@@ -29,7 +29,9 @@ else()
         ${CMAKE_CURRENT_LIST_DIR}/pal.unix.cpp)
 endif()
 
-add_library(hostmisc ${SOURCES})
+# hostmisc must be an "object library" as we want to build it once
+# and embed the objects into static libraries we ship (like libnethost).
+add_library(hostmisc OBJECT ${SOURCES})
 
 target_include_directories(hostmisc PUBLIC
     ${CMAKE_CURRENT_BINARY_DIR}
@@ -49,7 +51,3 @@ if(CLR_CMAKE_TARGET_ARCH_ARM OR CLR_CMAKE_TARGET_ARCH_ARMV6)
     target_link_libraries(hostmisc PUBLIC
     $<$<BOOL:${ATOMIC_SUPPORT_LIB}>:${ATOMIC_SUPPORT_LIB}>)
 endif()
-
-target_compile_definitions(hostmisc PUBLIC
-    _NO_ASYNCRTIMP
-    _NO_PPLXIMP)

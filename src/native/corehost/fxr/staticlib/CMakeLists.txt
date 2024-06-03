@@ -22,7 +22,7 @@ include(../files.cmake)
 
 add_library(libhostfxr STATIC ${SOURCES})
 
-add_resources_to_target(libhostfxr hostfxr)
+add_version_info_to_target(libhostfxr hostfxr)
 
 set_target_properties(libhostfxr PROPERTIES MACOSX_RPATH TRUE)
 set_target_properties(libhostfxr PROPERTIES PREFIX "")

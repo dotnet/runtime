@@ -53,7 +53,7 @@ install_with_stripped_symbols(apphost TARGETS corehost)
 
 # Disable manifest generation into the file .exe on Windows
 if(CLR_CMAKE_TARGET_WIN32)
-    add_link_options(apphost PRIVATE "/MANIFEST:NO")
+    target_link_options(apphost PRIVATE "/MANIFEST:NO")
 endif()
 
 if (CLR_CMAKE_TARGET_WIN32)

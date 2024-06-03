@@ -2,10 +2,6 @@
 # Licensed under the MIT license. See LICENSE file in the project root for full license information.
 include_directories(../../fxr)
 
-set(SOURCES
-    test_fx_ver.cpp
-)
-
 add_executable(test_fx_ver test_fx_ver.cpp)
 
 add_sanitizer_runtime_support(test_fx_ver)

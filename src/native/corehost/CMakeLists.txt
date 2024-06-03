@@ -40,17 +40,23 @@ if("${CLI_CMAKE_FALLBACK_OS}" STREQUAL "")
 endif()
 
 if("${CLI_CMAKE_FALLBACK_OS}" STREQUAL "${CLR_CMAKE_TARGET_OS}")
-    add_definitions(-DFALLBACK_OS_IS_SAME_AS_TARGET_OS)
+    add_compile_definitions(FALLBACK_OS_IS_SAME_AS_TARGET_OS)
 endif()
 
 # Find support libraries that we need if they're present on the system.
 find_library(PTHREAD_LIB pthread)
+
+# Prefer libatomic.a over libatomic.so.
+set(_current_CMAKE_FIND_LIBRARY_SUFFIXES ${CMAKE_FIND_LIBRARY_SUFFIXES})
+list(INSERT CMAKE_FIND_LIBRARY_SUFFIXES 0 .a)
 find_library(ATOMIC_SUPPORT_LIB atomic)
+set(CMAKE_FIND_LIBRARY_SUFFIXES ${_current_CMAKE_FIND_LIBRARY_SUFFIXES})
+unset(_current_CMAKE_FIND_LIBRARY_SUFFIXES)
 
 configure_file(configure.h.in ${CMAKE_CURRENT_BINARY_DIR}/configure.h)
 
-# add_resources_to_target(targetName [resourceDirName])
-function(add_resources_to_target targetName)
+# add_version_info_to_target(targetName [resourceDirName])
+function(add_version_info_to_target targetName)
     set(RESOURCE_INCLUDE_DIR ${targetName})
     if (${ARGC} GREATER 1)
         set(RESOURCE_INCLUDE_DIR ${ARGV1})

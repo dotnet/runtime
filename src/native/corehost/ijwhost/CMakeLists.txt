@@ -41,7 +41,7 @@ list(APPEND SOURCES ${ASM_HELPERS_SOURCES})
 add_compile_definitions(EXPORT_SHARED_API)
 
 add_library(ijwhost SHARED ${SOURCES} ${RESOURCES})
-add_resources_to_target(ijwhost)
+add_version_info_to_target(ijwhost)
 
 target_link_libraries(ijwhost PRIVATE hostmisc fxr_resolver)
 

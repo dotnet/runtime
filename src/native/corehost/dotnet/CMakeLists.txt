@@ -23,7 +23,7 @@ if(NOT CLR_CMAKE_TARGET_WIN32)
 endif()
 
 install_with_stripped_symbols(dotnet TARGETS corehost)
-add_resources_to_target(dotnet)
+add_version_info_to_target(dotnet)
 
 if (CLR_CMAKE_HOST_APPLE)
     adhoc_sign_with_entitlements(dotnet "${CLR_ENG_NATIVE_DIR}/entitlements.plist")

@@ -19,8 +19,8 @@ add_compile_definitions(
 add_library(nethost SHARED ${SOURCES})
 add_library(libnethost STATIC ${SOURCES})
 
-add_resources_to_target(nethost)
-add_resources_to_target(libnethost nethost)
+add_version_info_to_target(nethost)
+add_version_info_to_target(libnethost nethost)
 
 target_include_directories(nethost PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 target_include_directories(libnethost PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>)
