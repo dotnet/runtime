@@ -15,11 +15,11 @@ namespace DotnetFuzzing.Fuzzers
 
         public void FuzzTarget(ReadOnlySpan<byte> bytes)
         {
-            using var inputPoisoned = PooledBoundedMemory<byte>.Rent(bytes, PoisonPagePlacement.After);
-            var input = inputPoisoned.Span;
+            using PooledBoundedMemory<byte> inputPoisoned = PooledBoundedMemory<byte>.Rent(bytes, PoisonPagePlacement.After);
+            Span<byte> input = inputPoisoned.Span;
             int maxEncodedLength = Base64.GetMaxEncodedToUtf8Length(bytes.Length);
-            using var destPoisoned = PooledBoundedMemory<byte>.Rent(maxEncodedLength, PoisonPagePlacement.After);
-            var encoderDest = destPoisoned.Span;
+            using PooledBoundedMemory<byte> destPoisoned = PooledBoundedMemory<byte>.Rent(maxEncodedLength, PoisonPagePlacement.After);
+            Span<byte> encoderDest = destPoisoned.Span;
 
             { // IsFinalBlock = true
                 OperationStatus status = Base64.EncodeToUtf8(input, encoderDest, out int bytesConsumed, out int bytesEncoded);
@@ -28,7 +28,7 @@ namespace DotnetFuzzing.Fuzzers
                 Assert.Equal(bytes.Length, bytesConsumed);
                 Assert.Equal(true, maxEncodedLength >= bytesEncoded);       
 
-                using var decoderDestPoisoned = PooledBoundedMemory<byte>.Rent(Base64.GetMaxDecodedFromUtf8Length(bytesEncoded), PoisonPagePlacement.After);
+                using PooledBoundedMemory<byte> decoderDestPoisoned = PooledBoundedMemory<byte>.Rent(Base64.GetMaxDecodedFromUtf8Length(bytesEncoded), PoisonPagePlacement.After);
                 status = Base64.DecodeFromUtf8(encoderDest.Slice(0, bytesEncoded), decoderDestPoisoned.Span, out int bytesRead, out int bytesDecoded);
 
                 Assert.Equal(OperationStatus.Done, status);
@@ -40,9 +40,9 @@ namespace DotnetFuzzing.Fuzzers
             { // IsFinalBlock = false
                 encoderDest.Clear();
                 OperationStatus status = Base64.EncodeToUtf8(input, encoderDest, out int bytesConsumed, out int bytesEncoded, isFinalBlock: false);
-                var decodeInput = encoderDest.Slice(0, bytesEncoded);
-                using var decoderDestPoisoned = PooledBoundedMemory<byte>.Rent(Base64.GetMaxDecodedFromUtf8Length(bytesEncoded), PoisonPagePlacement.After);
-                var decoderDest = decoderDestPoisoned.Span;
+                Span<byte> decodeInput = encoderDest.Slice(0, bytesEncoded);
+                using PooledBoundedMemory<byte> decoderDestPoisoned = PooledBoundedMemory<byte>.Rent(Base64.GetMaxDecodedFromUtf8Length(bytesEncoded), PoisonPagePlacement.After);
+                Span<byte> decoderDest = decoderDestPoisoned.Span;
 
                 if (bytes.Length % 3 == 0)
                 {
