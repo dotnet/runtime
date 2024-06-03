@@ -169,50 +169,51 @@ namespace System.Net.Http.Headers
         {
             ArgumentNullException.ThrowIfNull(values);
 
-            if (values is IList<string?> valuesList && valuesList.Count > 0)
+            if (values is IList<string?> valuesList)
             {
                 int count = valuesList.Count;
 
-                // reads the store of header values
-                // The header store contain a single raw string value when header values are single.
-                // The header store contain HeaderStoreItemInfo that wraps around a List<string> with header values when they are more than once
-
-                ref object? storeValueRef = ref GetValueRefOrAddDefault(descriptor);
-                object? storeValue = storeValueRef;
-
-                // check whether the header store contains already a value
-                // or header values count is more than one
-                // => allocate a HeaderStoreItemInfo on store that wraps around a List<string> of header values
-                if (storeValue is not null || count > 1)
+                if (count > 0)
                 {
-                    if (storeValue is not HeaderStoreItemInfo info)
-                    {
-                        storeValueRef = info = new HeaderStoreItemInfo { RawValue = storeValue };
-                    }
+                    // The store value is either a string (a single unparsed value) or a HeaderStoreItemInfo.
+                    // The RawValue on HeaderStoreItemInfo can likewise be either a single string or a List<string>.
 
-                    object? rawValue = info.RawValue;
-                    if (rawValue is not List<string> rawValues)
-                    {
-                        info.RawValue = rawValues = new List<string>();
+                    ref object? storeValueRef = ref GetValueRefOrAddDefault(descriptor);
+                    object? storeValue = storeValueRef;
 
-                        if (rawValue != null)
+                    // If the storeValue was already set or we're adding more than 1 value,
+                    // we'll have to store the values in a List<string> on HeaderStoreItemInfo.
+                    if (storeValue is not null || count > 1)
+                    {
+                        if (storeValue is not HeaderStoreItemInfo info)
                         {
-                            rawValues.EnsureCapacity(count + 1);
-                            rawValues.Add((string)rawValue);
+                            storeValueRef = info = new HeaderStoreItemInfo { RawValue = storeValue };
+                        }
+
+                        object? rawValue = info.RawValue;
+                        if (rawValue is not List<string> rawValues)
+                        {
+                            info.RawValue = rawValues = new List<string>();
+
+                            if (rawValue != null)
+                            {
+                                rawValues.EnsureCapacity(count + 1);
+                                rawValues.Add((string)rawValue);
+                            }
+                        }
+
+                        rawValues.EnsureCapacity(rawValues.Count + count);
+
+                        for (int i = 0; i < count; i++)
+                        {
+                            rawValues.Add(valuesList[i] ?? string.Empty);
                         }
                     }
-
-                    rawValues.EnsureCapacity(count);
-
-                    for (int i = 0; i < count; i++)
+                    else
                     {
-                        rawValues.Add(valuesList[i] ?? string.Empty);
+                        // We're adding a single value to a new header entry. We can store the unparsed value as-is.
+                        storeValueRef = valuesList[0] ?? string.Empty;
                     }
-                }
-                else
-                {
-                    // when header values are single the store contains just the header value
-                    storeValueRef = valuesList[0];
                 }
             }
             else
