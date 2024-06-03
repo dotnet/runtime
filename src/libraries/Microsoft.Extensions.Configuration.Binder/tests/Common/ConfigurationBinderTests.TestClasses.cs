@@ -346,7 +346,7 @@ namespace Microsoft.Extensions
             public bool WasInitOnlyCalled { get; private set; }
             public decimal InitOnly { init => WasInitOnlyCalled = true; }
             public bool WasPrivateGetInitOnlyCalled { get; private set; }
-            public decimal PrivateGetInitOnly { init => WasPrivateGetInitOnlyCalled = true; }
+            public decimal PrivateGetInitOnly { private get => 3.14m; init => WasPrivateGetInitOnlyCalled = true; }
         }
 
         public struct ValueTypeOptions
