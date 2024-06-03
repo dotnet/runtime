@@ -308,6 +308,7 @@ public:
     static FCDECL1(FC_BOOL_RET, AcquiresContextFromThis, FieldDesc *pField);
     static FCDECL1(Object*, GetLoaderAllocator, FieldDesc *pField);
 };
+extern "C" UINT QCALLTYPE RuntimeFieldHandle_GetFieldSize(QCall::FieldHandle pField);
 
 class ModuleHandle {
 
