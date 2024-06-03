@@ -42,7 +42,7 @@ public class WasiLibraryModeTests : BuildTestBase
         File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), code);
         string extraProperties = @"<WasmBuildNative>true</WasmBuildNative>
                                    <WasmNativeStrip>false</WasmNativeStrip>
-                                   <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
+                                   <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
                                    <WasmSingleFileBundle>true</WasmSingleFileBundle>
                                    <OutputType>Library</OutputType>";
         AddItemsPropertiesToProject(projectFile, extraProperties: extraProperties);
