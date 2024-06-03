@@ -2095,13 +2095,15 @@ extern "C" void QCALLTYPE ReflectionInvocation_GetBoxInfo(
 
     MethodTable* pMT = type.AsMethodTable();
 
+    _ASSERTE(pMT->IsvalueType() || pMT->IsNullable() || pMT->IsEnum() || pMT->IsTruePrimitive());
+
     *pValueOffset = 0;
 
     // If it is a nullable, return the allocator for the underlying type instead.
     if (pMT->IsNullable())
     {
-        pMT = pMT->GetInstantiation()[0].GetMethodTable();
         *pValueOffset = Nullable::GetValueAddrOffset(pMT);
+        pMT = pMT->GetInstantiation()[0].GetMethodTable();
     }
 
     bool fHasSideEffectsUnused;

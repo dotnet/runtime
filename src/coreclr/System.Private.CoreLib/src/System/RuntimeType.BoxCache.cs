@@ -44,17 +44,13 @@ namespace System
 
                 _pMT = handle.AsMethodTable();
 
+                // For value types, this is checked in GetBoxInfo,
+                // but for non-value types, we still need to check this case for consistent behavior.
                 if (_pMT->ContainsGenericVariables)
                     throw new ArgumentException(SR.Arg_TypeNotSupported);
 
                 if (_pMT->IsValueType)
                 {
-                    if (_pMT->IsByRefLike)
-                        throw new NotSupportedException(SR.NotSupported_ByRefLike);
-
-                    if (MethodTable.AreSameType(_pMT, (MethodTable*)RuntimeTypeHandle.ToIntPtr(typeof(void).TypeHandle)))
-                        throw new ArgumentException(SR.Arg_TypeNotSupported);
-
                     GetBoxInfo(rt, out _pfnAllocator, out _allocatorFirstArg, out _nullableValueOffset, out _valueTypeSize);
                 }
             }
