@@ -81,6 +81,11 @@ namespace System.Net.Http.Functional.Tests
         [ConditionalFact]
         public async Task AltSvc_ConnectionFrame_UpgradeFrom20_Success()
         {
+            if (UseVersion == HttpVersion30)
+            {
+                throw new SkipTestException("https://github.com/dotnet/runtime/issues/101376");
+            }
+
             using Http2LoopbackServer firstServer = Http2LoopbackServer.CreateServer();
             using Http3LoopbackServer secondServer = CreateHttp3LoopbackServer();
             using HttpClient client = CreateHttpClient(HttpVersion.Version20);
