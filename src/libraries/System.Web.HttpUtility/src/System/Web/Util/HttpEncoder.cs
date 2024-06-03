@@ -130,15 +130,10 @@ namespace System.Web.Util
 
         internal static string JavaScriptStringEncode(string? value, bool addDoubleQuotes)
         {
-            if (string.IsNullOrEmpty(value))
-            {
-                return addDoubleQuotes ? @"""""" : string.Empty;
-            }
-
             int i = value.AsSpan().IndexOfAny(s_invalidJavaScriptChars);
             if (i < 0)
             {
-                return addDoubleQuotes ? $"\"{value}\"" : value;
+                return addDoubleQuotes ? $"\"{value}\"" : value ?? string.Empty;
             }
 
             return EncodeCore(value, i, addDoubleQuotes);
