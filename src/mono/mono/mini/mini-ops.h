@@ -775,6 +775,7 @@ MINI_OP(OP_LDELEMA2D, "ldelema2d", NONE, NONE, NONE)
 MINI_OP(OP_MEMCPY, "memcpy", NONE, NONE, NONE)
 /* inlined small memset with constant length */
 MINI_OP(OP_MEMSET, "memset", NONE, NONE, NONE)
+MINI_OP(OP_MEMSET_ZERO, "memset_zero", NONE, IREG, IREG)
 /*
  * A RuntimeType object, the result ldtoken+GetTypeFromHandle.
  * inst_p0 is a MonoClass.

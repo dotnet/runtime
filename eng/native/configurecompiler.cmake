@@ -211,8 +211,8 @@ if (CLR_CMAKE_ENABLE_SANITIZERS)
       # Disable the use-after-return check for ASAN on Clang. This is because we have a lot of code that
       # depends on the fact that our locals are not saved in a parallel stack, so we can't enable this today.
       # If we ever have a way to detect a parallel stack and track its bounds, we can re-enable this check.
-      add_compile_options($<$<COMPILE_LANG_AND_ID:C,Clang>:-fsanitize-address-use-after-return=never>)
-      add_compile_options($<$<COMPILE_LANG_AND_ID:CXX,Clang>:-fsanitize-address-use-after-return=never>)
+      add_compile_options($<$<COMPILE_LANG_AND_ID:C,Clang,AppleClang>:-fsanitize-address-use-after-return=never>)
+      add_compile_options($<$<COMPILE_LANG_AND_ID:CXX,Clang,AppleClang>:-fsanitize-address-use-after-return=never>)
     endif()
   endif()
 
@@ -520,7 +520,7 @@ if (CLR_CMAKE_HOST_UNIX)
   # Disable frame pointer optimizations so profilers can get better call stacks
   add_compile_options(-fno-omit-frame-pointer)
 
-  # The -fms-extensions enable the stuff like __if_exists, __declspec(uuid()), etc.
+  # The -fms-extensions enable the stuff like __declspec(uuid()), etc.
   add_compile_options(-fms-extensions)
   #-fms-compatibility      Enable full Microsoft Visual C++ compatibility
   #-fms-extensions         Accept some non-standard constructs supported by the Microsoft compiler

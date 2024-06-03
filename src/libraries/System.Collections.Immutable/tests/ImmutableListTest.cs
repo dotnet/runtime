@@ -793,7 +793,7 @@ namespace System.Collections.Immutable.Tests
             Assert.IsType<ArgumentNullException>(tie.InnerException);
         }
 
-#if NETCOREAPP
+#if NET
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public void UsableWithCollectibleAssemblies()
         {

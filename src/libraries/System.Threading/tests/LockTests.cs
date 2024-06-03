@@ -11,6 +11,37 @@ namespace System.Threading.Tests
     {
         private const int FailTimeoutMilliseconds = 30000;
 
+#pragma warning disable CS9216 // casting Lock to object
+        [Fact]
+        public static void LockStatementWithLockVsMonitor()
+        {
+            Lock lockObj = new();
+            lock (lockObj)
+            {
+                Assert.True(lockObj.IsHeldByCurrentThread);
+                Assert.False(Monitor.IsEntered(lockObj));
+            }
+
+            lock ((object)lockObj)
+            {
+                Assert.False(lockObj.IsHeldByCurrentThread);
+                Assert.True(Monitor.IsEntered(lockObj));
+            }
+
+            LockOnTWhereTIsLock(lockObj);
+
+            static void LockOnTWhereTIsLock<T>(T lockObj) where T : class
+            {
+                Assert.IsType<Lock>(lockObj);
+                lock (lockObj)
+                {
+                    Assert.False(((Lock)(object)lockObj).IsHeldByCurrentThread);
+                    Assert.True(Monitor.IsEntered(lockObj));
+                }
+            }
+        }
+#pragma warning restore CS9216
+
         // Attempts a single recursive acquisition/release cycle of a newly-created lock.
         [Fact]
         public static void BasicRecursion()
@@ -24,6 +55,10 @@ namespace System.Threading.Tests
             Assert.True(lockObj.IsHeldByCurrentThread);
             lockObj.Exit();
             using (lockObj.EnterScope())
+            {
+                Assert.True(lockObj.IsHeldByCurrentThread);
+            }
+            lock (lockObj)
             {
                 Assert.True(lockObj.IsHeldByCurrentThread);
             }
@@ -61,6 +96,10 @@ namespace System.Threading.Tests
             Lock lockObj = new();
             Assert.False(lockObj.IsHeldByCurrentThread);
             using (lockObj.EnterScope())
+            {
+                Assert.True(lockObj.IsHeldByCurrentThread);
+            }
+            lock (lockObj)
             {
                 Assert.True(lockObj.IsHeldByCurrentThread);
             }

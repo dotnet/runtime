@@ -99,6 +99,31 @@ inline bool genExactlyOneBit(T value)
     return ((value != 0) && genMaxOneBit(value));
 }
 
+inline regMaskTP genFindLowestBit(regMaskTP value)
+{
+    return regMaskTP(genFindLowestBit(value.getLow()));
+}
+
+/*****************************************************************************
+ *
+ *  Return true if the given value has exactly zero or one bits set.
+ */
+
+inline bool genMaxOneBit(regMaskTP value)
+{
+    return genMaxOneBit(value.getLow());
+}
+
+/*****************************************************************************
+ *
+ *  Return true if the given value has exactly one bit set.
+ */
+
+inline bool genExactlyOneBit(regMaskTP value)
+{
+    return genExactlyOneBit(value.getLow());
+}
+
 /*****************************************************************************
  *
  *  Given a value that has exactly one bit set, return the position of that
@@ -110,7 +135,7 @@ inline unsigned genLog2(unsigned value)
     return BitOperations::BitScanForward(value);
 }
 
-inline unsigned genLog2(unsigned __int64 value)
+inline unsigned genLog2(uint64_t value)
 {
     assert(genExactlyOneBit(value));
     return BitOperations::BitScanForward(value);
@@ -119,20 +144,20 @@ inline unsigned genLog2(unsigned __int64 value)
 #ifdef __APPLE__
 inline unsigned genLog2(size_t value)
 {
-    return genLog2((unsigned __int64)value);
+    return genLog2((uint64_t)value);
 }
 #endif // __APPLE__
 
 // Given an unsigned 64-bit value, returns the lower 32-bits in unsigned format
 //
-inline unsigned ulo32(unsigned __int64 value)
+inline unsigned ulo32(uint64_t value)
 {
     return static_cast<unsigned>(value);
 }
 
 // Given an unsigned 64-bit value, returns the upper 32-bits in unsigned format
 //
-inline unsigned uhi32(unsigned __int64 value)
+inline unsigned uhi32(uint64_t value)
 {
     return static_cast<unsigned>(value >> 32);
 }
@@ -142,9 +167,9 @@ inline unsigned uhi32(unsigned __int64 value)
  *  A rather simple routine that counts the number of bits in a given number.
  */
 
-inline unsigned genCountBits(uint64_t bits)
+inline unsigned genCountBits(regMaskTP mask)
 {
-    return BitOperations::PopCount(bits);
+    return BitOperations::PopCount(mask.getLow());
 }
 
 /*****************************************************************************
@@ -165,7 +190,7 @@ inline unsigned genCountBits(uint32_t bits)
  *  value[bitNum(end) - 1, bitNum(start) + 1]
  */
 
-inline unsigned __int64 BitsBetween(unsigned __int64 value, unsigned __int64 end, unsigned __int64 start)
+inline uint64_t BitsBetween(uint64_t value, uint64_t end, uint64_t start)
 {
     assert(start != 0);
     assert(start < end);
@@ -623,12 +648,13 @@ BasicBlockVisit BasicBlock::VisitEHSuccs(Compiler* comp, TFunc func)
 // Arguments:
 //   comp  - Compiler instance
 //   func  - Callback
+//   useProfile - If true, determines the order of successors visited using profile data
 //
 // Returns:
 //   Whether or not the visiting was aborted.
 //
 template <typename TFunc>
-BasicBlockVisit BasicBlock::VisitAllSuccs(Compiler* comp, TFunc func)
+BasicBlockVisit BasicBlock::VisitAllSuccs(Compiler* comp, TFunc func, const bool useProfile /* = false */)
 {
     switch (bbKind)
     {
@@ -662,10 +688,22 @@ BasicBlockVisit BasicBlock::VisitAllSuccs(Compiler* comp, TFunc func)
             return VisitEHSuccs(comp, func);
 
         case BBJ_COND:
-            RETURN_ON_ABORT(func(GetFalseTarget()));
-
-            if (!TrueEdgeIs(GetFalseEdge()))
+            if (TrueEdgeIs(GetFalseEdge()))
             {
+                RETURN_ON_ABORT(func(GetFalseTarget()));
+            }
+            else if (useProfile && (GetTrueEdge()->getLikelihood() < GetFalseEdge()->getLikelihood()))
+            {
+                // When building an RPO-based block layout, we want to visit the unlikely successor first
+                // so that in the DFS computation, the likely successor will be processed right before this block,
+                // meaning the RPO-based layout will enable fall-through into the likely successor.
+                //
+                RETURN_ON_ABORT(func(GetTrueTarget()));
+                RETURN_ON_ABORT(func(GetFalseTarget()));
+            }
+            else
+            {
+                RETURN_ON_ABORT(func(GetFalseTarget()));
                 RETURN_ON_ABORT(func(GetTrueTarget()));
             }
 
@@ -696,8 +734,8 @@ BasicBlockVisit BasicBlock::VisitAllSuccs(Compiler* comp, TFunc func)
 // VisitRegularSuccs: Visit regular successors of this block.
 //
 // Arguments:
-//   comp  - Compiler instance
-//   func  - Callback
+//   comp - Compiler instance
+//   func - Callback
 //
 // Returns:
 //   Whether or not the visiting was aborted.
@@ -897,15 +935,14 @@ inline unsigned Compiler::funGetFuncIdx(BasicBlock* block)
 
 inline regNumber genRegNumFromMask(regMaskTP mask)
 {
-    assert(mask != 0); // Must have one bit set, so can't have a mask of zero
+    assert(mask.IsNonEmpty()); // Must have one bit set, so can't have a mask of zero
 
     /* Convert the mask to a register number */
 
-    regNumber regNum = (regNumber)genLog2(mask);
+    regNumber regNum = (regNumber)genLog2(mask.getLow());
 
     /* Make sure we got it right */
-
-    assert(genRegMask(regNum) == mask);
+    assert(genRegMask(regNum) == mask.getLow());
 
     return regNum;
 }
@@ -923,11 +960,12 @@ inline regNumber genRegNumFromMask(regMaskTP mask)
 
 inline regNumber genFirstRegNumFromMaskAndToggle(regMaskTP& mask)
 {
-    assert(mask != 0); // Must have one bit set, so can't have a mask of zero
+    assert(mask.IsNonEmpty()); // Must have one bit set, so can't have a mask of zero
 
     /* Convert the mask to a register number */
 
-    regNumber regNum = (regNumber)BitOperations::BitScanForward(mask);
+    regNumber regNum = (regNumber)BitScanForward(mask);
+
     mask ^= genRegMask(regNum);
 
     return regNum;
@@ -945,11 +983,11 @@ inline regNumber genFirstRegNumFromMaskAndToggle(regMaskTP& mask)
 
 inline regNumber genFirstRegNumFromMask(regMaskTP mask)
 {
-    assert(mask != 0); // Must have one bit set, so can't have a mask of zero
+    assert(mask.IsNonEmpty()); // Must have one bit set, so can't have a mask of zero
 
     /* Convert the mask to a register number */
 
-    regNumber regNum = (regNumber)BitOperations::BitScanForward(mask);
+    regNumber regNum = (regNumber)BitScanForward(mask);
 
     return regNum;
 }
@@ -1109,50 +1147,50 @@ const char* varTypeName(var_types);
 /*****************************************************************************/
 //  Helpers to pull little-endian values out of a byte stream.
 
-inline unsigned __int8 getU1LittleEndian(const BYTE* ptr)
+inline uint8_t getU1LittleEndian(const BYTE* ptr)
 {
-    return *(UNALIGNED unsigned __int8*)ptr;
+    return *(UNALIGNED uint8_t*)ptr;
 }
 
-inline unsigned __int16 getU2LittleEndian(const BYTE* ptr)
-{
-    return GET_UNALIGNED_VAL16(ptr);
-}
-
-inline unsigned __int32 getU4LittleEndian(const BYTE* ptr)
-{
-    return GET_UNALIGNED_VAL32(ptr);
-}
-
-inline signed __int8 getI1LittleEndian(const BYTE* ptr)
-{
-    return *(UNALIGNED signed __int8*)ptr;
-}
-
-inline signed __int16 getI2LittleEndian(const BYTE* ptr)
+inline uint16_t getU2LittleEndian(const BYTE* ptr)
 {
     return GET_UNALIGNED_VAL16(ptr);
 }
 
-inline signed __int32 getI4LittleEndian(const BYTE* ptr)
+inline uint32_t getU4LittleEndian(const BYTE* ptr)
 {
     return GET_UNALIGNED_VAL32(ptr);
 }
 
-inline signed __int64 getI8LittleEndian(const BYTE* ptr)
+inline int8_t getI1LittleEndian(const BYTE* ptr)
+{
+    return *(UNALIGNED int8_t*)ptr;
+}
+
+inline int16_t getI2LittleEndian(const BYTE* ptr)
+{
+    return GET_UNALIGNED_VAL16(ptr);
+}
+
+inline int32_t getI4LittleEndian(const BYTE* ptr)
+{
+    return GET_UNALIGNED_VAL32(ptr);
+}
+
+inline int64_t getI8LittleEndian(const BYTE* ptr)
 {
     return GET_UNALIGNED_VAL64(ptr);
 }
 
 inline float getR4LittleEndian(const BYTE* ptr)
 {
-    __int32 val = getI4LittleEndian(ptr);
+    int32_t val = getI4LittleEndian(ptr);
     return *(float*)&val;
 }
 
 inline double getR8LittleEndian(const BYTE* ptr)
 {
-    __int64 val = getI8LittleEndian(ptr);
+    int64_t val = getI8LittleEndian(ptr);
     return *(double*)&val;
 }
 
@@ -3152,6 +3190,41 @@ inline bool Compiler::IsValidLclAddr(unsigned lclNum, unsigned offset)
     return (offset < UINT16_MAX) && (offset < lvaLclExactSize(lclNum));
 }
 
+//------------------------------------------------------------------------
+// IsPotentialGCSafePoint: Can the given tree be effectively a gc safe point?
+//
+// Arguments:
+//    tree - the tree to check
+//
+// Return Value:
+//    True if the tree can be a gc safe point
+//
+inline bool Compiler::IsPotentialGCSafePoint(GenTree* tree) const
+{
+    if (((tree->gtFlags & GTF_CALL) != 0))
+    {
+        // if this is not a No-GC helper
+        if (!tree->IsCall() || !emitter::emitNoGChelper(tree->AsCall()->GetHelperNum()))
+        {
+            // assume that we have a safe point.
+            return true;
+        }
+    }
+
+    // TYP_STRUCT-typed stores might be converted into calls (with gc safe points) in Lower.
+    // This is quite a conservative fix as it's hard to prove Lower won't do it at this point.
+    if (tree->OperIsLocalStore())
+    {
+        return tree->TypeIs(TYP_STRUCT);
+    }
+    if (tree->OperIs(GT_STORE_BLK))
+    {
+        return true;
+    }
+
+    return false;
+}
+
 /*
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -3456,39 +3529,6 @@ inline unsigned genMapRegNumToRegArgNum(regNumber regNum, var_types type, CorInf
     {
         return genMapIntRegNumToRegArgNum(regNum, callConv);
     }
-}
-
-/*****************************************************************************/
-/* Return a register mask with the first 'numRegs' argument registers set.
- */
-
-inline regMaskTP genIntAllRegArgMask(unsigned numRegs)
-{
-    assert(numRegs <= MAX_REG_ARG);
-
-    regMaskTP result = RBM_NONE;
-    for (unsigned i = 0; i < numRegs; i++)
-    {
-        result |= intArgMasks[i];
-    }
-    return result;
-}
-
-inline regMaskTP genFltAllRegArgMask(unsigned numRegs)
-{
-#ifndef TARGET_X86
-    assert(numRegs <= MAX_FLOAT_REG_ARG);
-
-    regMaskTP result = RBM_NONE;
-    for (unsigned i = 0; i < numRegs; i++)
-    {
-        result |= fltArgMasks[i];
-    }
-    return result;
-#else
-    assert(!"no x86 float arg regs\n");
-    return RBM_NONE;
-#endif
 }
 
 /*
@@ -4450,7 +4490,7 @@ inline void* operator new[](size_t sz, Compiler* compiler, CompMemKind cmk)
 
 inline void printRegMask(regMaskTP mask)
 {
-    printf(REG_MASK_ALL_FMT, mask);
+    printf(REG_MASK_ALL_FMT, mask.getLow());
 }
 
 inline char* regMaskToString(regMaskTP mask, Compiler* context)
@@ -4458,14 +4498,14 @@ inline char* regMaskToString(regMaskTP mask, Compiler* context)
     const size_t cchRegMask = 24;
     char*        regmask    = new (context, CMK_Unknown) char[cchRegMask];
 
-    sprintf_s(regmask, cchRegMask, REG_MASK_ALL_FMT, mask);
+    sprintf_s(regmask, cchRegMask, REG_MASK_ALL_FMT, mask.getLow());
 
     return regmask;
 }
 
 inline void printRegMaskInt(regMaskTP mask)
 {
-    printf(REG_MASK_INT_FMT, (mask & RBM_ALLINT));
+    printf(REG_MASK_INT_FMT, (mask & RBM_ALLINT).getLow());
 }
 
 inline char* regMaskIntToString(regMaskTP mask, Compiler* context)
@@ -4473,7 +4513,7 @@ inline char* regMaskIntToString(regMaskTP mask, Compiler* context)
     const size_t cchRegMask = 24;
     char*        regmask    = new (context, CMK_Unknown) char[cchRegMask];
 
-    sprintf_s(regmask, cchRegMask, REG_MASK_INT_FMT, (mask & RBM_ALLINT));
+    sprintf_s(regmask, cchRegMask, REG_MASK_INT_FMT, (mask & RBM_ALLINT).getLow());
 
     return regmask;
 }
@@ -4745,6 +4785,7 @@ inline bool Compiler::compCanHavePatchpoints(const char** reason)
 //   VisitPreorder  - Functor type that takes a BasicBlock* and its preorder number
 //   VisitPostorder - Functor type that takes a BasicBlock* and its postorder number
 //   VisitEdge      - Functor type that takes two BasicBlock*.
+//   useProfile     - If true, determines order of successors visited using profile data
 //
 // Parameters:
 //   visitPreorder  - Functor to visit block in its preorder
@@ -4755,7 +4796,7 @@ inline bool Compiler::compCanHavePatchpoints(const char** reason)
 // Returns:
 //   Number of blocks visited.
 //
-template <typename VisitPreorder, typename VisitPostorder, typename VisitEdge>
+template <typename VisitPreorder, typename VisitPostorder, typename VisitEdge, const bool useProfile /* = false */>
 unsigned Compiler::fgRunDfs(VisitPreorder visitPreorder, VisitPostorder visitPostorder, VisitEdge visitEdge)
 {
     BitVecTraits traits(fgBBNumMax + 1, this);
@@ -4768,7 +4809,7 @@ unsigned Compiler::fgRunDfs(VisitPreorder visitPreorder, VisitPostorder visitPos
 
     auto dfsFrom = [&](BasicBlock* firstBB) {
         BitVecOps::AddElemD(&traits, visited, firstBB->bbNum);
-        blocks.Emplace(this, firstBB);
+        blocks.Emplace(this, firstBB, useProfile);
         visitPreorder(firstBB, preOrderIndex++);
 
         while (!blocks.Empty())
@@ -4780,7 +4821,7 @@ unsigned Compiler::fgRunDfs(VisitPreorder visitPreorder, VisitPostorder visitPos
             {
                 if (BitVecOps::TryAddElemD(&traits, visited, succ->bbNum))
                 {
-                    blocks.Emplace(this, succ);
+                    blocks.Emplace(this, succ, useProfile);
                     visitPreorder(succ, preOrderIndex++);
                 }
 

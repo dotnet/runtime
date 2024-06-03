@@ -197,7 +197,6 @@ jobs:
       isWasmOnlyBuild: ${{ parameters.isWasmOnlyBuild }}
       alwaysRun: true
       scenarios:
-        - WasmTestOnV8
         - WasmTestOnChrome
         - WasmTestOnFirefox
         - WasmTestOnNodeJS
@@ -215,7 +214,6 @@ jobs:
       isWasmOnlyBuild: ${{ parameters.isWasmOnlyBuild }}
       alwaysRun: true
       scenarios:
-        - WasmTestOnV8
         - WasmTestOnChrome
         - WasmTestOnNodeJS
 

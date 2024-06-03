@@ -292,9 +292,9 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         protected override string GetName(NodeFactory factory)
         {
             Utf8StringBuilder sb = new Utf8StringBuilder();
-            sb.Append("MethodWithGCInfo(");
+            sb.Append("MethodWithGCInfo("u8);
             AppendMangledName(factory.NameMangler, sb);
-            sb.Append(")");
+            sb.Append(")"u8);
             return sb.ToString();
         }
 

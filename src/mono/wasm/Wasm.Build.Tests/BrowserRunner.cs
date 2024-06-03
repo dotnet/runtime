@@ -109,11 +109,17 @@ internal class BrowserRunner : IAsyncDisposable
         // codespaces: ignore certificate error -> Microsoft.Playwright.PlaywrightException : net::ERR_CERT_AUTHORITY_INVALID
         string[] chromeArgs = new[] { $"--explicitly-allowed-ports={url.Port}", "--ignore-certificate-errors" };
         _testOutput.WriteLine($"Launching chrome ('{s_chromePath.Value}') via playwright with args = {string.Join(',', chromeArgs)}");
-        return Browser = await Playwright.Chromium.LaunchAsync(new BrowserTypeLaunchOptions{
+        Browser = await Playwright.Chromium.LaunchAsync(new BrowserTypeLaunchOptions{
             ExecutablePath = s_chromePath.Value,
             Headless = headless,
             Args = chromeArgs
         });
+        Browser.Disconnected += (sender, e) =>
+        {
+            Browser = null;
+            _testOutput.WriteLine("Browser has been disconnected");
+        };
+        return Browser;
     }
 
     // FIXME: options
@@ -196,8 +202,21 @@ internal class BrowserRunner : IAsyncDisposable
 
     public async ValueTask DisposeAsync()
     {
-        if (Browser is not null)
-            await Browser.DisposeAsync();
-        Playwright?.Dispose();
+        try
+        {
+            if (Browser is not null)
+            {
+                await Browser.DisposeAsync();
+                Browser = null;
+            }
+        }
+        catch (PlaywrightException ex)
+        {
+            _testOutput.WriteLine($"PlaywrightException occurred during DisposeAsync: {ex.Message}");
+        }
+        finally
+        {
+            Playwright?.Dispose();
+        }
     }
 }

@@ -50,6 +50,8 @@ namespace System.Text.Json.SourceGeneration.Tests
         public override Task<object> DeserializeWrapper(string json, Type type, JsonSerializerContext context)
             => Task.FromResult(JsonSerializer.Deserialize(json, type, context));
 
+        public override JsonTypeInfo GetTypeInfo(Type type, JsonSerializerOptions? options = null, bool mutable = false) => base.GetTypeInfo(type, GetOptions(options), mutable);
+
         private JsonSerializerOptions GetOptions(JsonSerializerOptions? options = null)
         {
             if (options is null)
@@ -117,6 +119,8 @@ namespace System.Text.Json.SourceGeneration.Tests
 
         public override Task SerializeWrapper(Stream stream, object value, Type inputType, JsonSerializerContext context)
             => JsonSerializer.SerializeAsync(stream, value, inputType, context);
+
+        public override JsonTypeInfo GetTypeInfo(Type type, JsonSerializerOptions? options = null, bool mutable = false) => base.GetTypeInfo(type, GetOptions(options), mutable);
 
         private JsonSerializerOptions GetOptions(JsonSerializerOptions? options = null)
         {

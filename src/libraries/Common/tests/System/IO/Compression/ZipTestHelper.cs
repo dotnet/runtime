@@ -233,7 +233,7 @@ namespace System.IO.Compression.Tests
                         using (Stream entrystream = entry.Open())
                         {
                             ReadAllBytes(entrystream, buffer, 0, buffer.Length);
-#if NETCOREAPP
+#if NET
                             uint zipcrc = entry.Crc32;
                             Assert.Equal(CRC.CalculateCRC(buffer), zipcrc);
 #endif
