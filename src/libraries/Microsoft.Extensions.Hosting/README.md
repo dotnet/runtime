@@ -6,7 +6,7 @@ Hosting provides as a primitive the concept of a hosted service, which is how ap
 
 Hosting provides good integration for long-running console applications, windows services, ASP.NET Core.
 
-Documentation can be found at https://learn.microsoft.com/en-us/dotnet/core/extensions/generic-host.
+Documentation can be found at https://learn.microsoft.com/dotnet/core/extensions/generic-host.
 
 ## Contribution Bar
 - [x] [We consider new features, new APIs, bug fixes, and performance changes](../../libraries/README.md#primary-bar)

@@ -490,7 +490,8 @@ protected:
                      MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(emitAttr secondRetSize),
                      const DebugInfo&      di,
                      regNumber             base,
-                     bool                  isJump);
+                     bool                  isJump,
+                     bool                  noSafePoint = false);
     // clang-format on
 
     // clang-format off
@@ -993,7 +994,10 @@ protected:
     class HWIntrinsicImmOpHelper final
     {
     public:
-        HWIntrinsicImmOpHelper(CodeGen* codeGen, GenTree* immOp, GenTreeHWIntrinsic* intrin, int immNum = 1);
+        HWIntrinsicImmOpHelper(CodeGen* codeGen, GenTree* immOp, GenTreeHWIntrinsic* intrin);
+
+        HWIntrinsicImmOpHelper(
+            CodeGen* codeGen, regNumber immReg, int immLowerBound, int immUpperBound, GenTreeHWIntrinsic* intrin);
 
         void EmitBegin();
         void EmitCaseEnd();
@@ -1039,6 +1043,7 @@ protected:
         regNumber      nonConstImmReg;
         regNumber      branchTargetReg;
     };
+
 #endif // TARGET_ARM64
 
 #endif // FEATURE_HW_INTRINSICS

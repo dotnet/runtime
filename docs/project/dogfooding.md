@@ -12,14 +12,14 @@ If you are only looking to get fixes for an individual NuGet package, and don't 
 dotnet new nugetconfig
 ```
 
-Next, add the package source to NuGet.Config with the [dotnet nuget add source](https://docs.microsoft.com/en-us/dotnet/core/tools/dotnet-nuget-add-source) command:
+Next, add the package source to NuGet.Config with the [dotnet nuget add source](https://learn.microsoft.com/dotnet/core/tools/dotnet-nuget-add-source) command:
 ```
 dotnet nuget add source -n dotnet8 https://dnceng.pkgs.visualstudio.com/public/_packaging/dotnet8/nuget/v3/index.json
 ```
 
 Then, you will be able to add the latest prerelease version of the desired package to your project.
 
-**Example:** To add version 8.0-preview.5.22226.4 of the System.Data.OleDb package, use the [dotnet add package](https://docs.microsoft.com/en-us/dotnet/core/tools/dotnet-add-package) command:
+**Example:** To add version 8.0-preview.5.22226.4 of the System.Data.OleDb package, use the [dotnet add package](https://learn.microsoft.com/dotnet/core/tools/dotnet-add-package) command:
 ```
 dotnet add package System.Data.OleDb -v 8.0-preview.5.22226.4
 ```
@@ -83,7 +83,7 @@ Learn about .NET Runtimes and SDKs:
     ...
 </packageSources>
 ```
-(Documentation for configuring feeds is [here](https://docs.microsoft.com/en-us/nuget/consume-packages/configuring-nuget-behavior).)
+(Documentation for configuring feeds is [here](https://learn.microsoft.com/nuget/consume-packages/configuring-nuget-behavior).)
 
 ## Setup the project
 

@@ -4597,7 +4597,7 @@ VOID UnwindManagedExceptionPass2(PAL_SEHException& ex, CONTEXT* unwindStartConte
     CONTEXT contextStorage;
     DISPATCHER_CONTEXT dispatcherContext;
     EECodeInfo codeInfo;
-    UINT_PTR establisherFrame = 0;
+    ULONG_PTR establisherFrame = 0;
     PVOID handlerData;
 
     // Indicate that we are performing second pass.
@@ -4780,7 +4780,7 @@ VOID DECLSPEC_NORETURN UnwindManagedExceptionPass1(PAL_SEHException& ex, CONTEXT
     DISPATCHER_CONTEXT dispatcherContext;
     EECodeInfo codeInfo;
     UINT_PTR controlPc;
-    UINT_PTR establisherFrame = 0;
+    ULONG_PTR establisherFrame = 0;
     PVOID handlerData;
 
 #ifdef FEATURE_HIJACK
@@ -8216,6 +8216,26 @@ static void NotifyExceptionPassStarted(StackFrameIterator *pThis, Thread *pThrea
             }
             pExInfo->m_ExceptionFlags.SetUnwindHasStarted();
             EEToDebuggerExceptionInterfaceWrapper::ManagedExceptionUnwindBegin(pThread);
+        }
+        else
+        {
+            // The debugger explicitly checks that the notification refers to a FuncEvalFrame in case an exception becomes unhandled in a func eval.
+            // We need to do the notification here before we start propagating the exception through native frames, since that will remove
+            // all managed frames from the stack and the debugger would not see the failure location.
+            if (pThis->GetFrameState() == StackFrameIterator::SFITER_FRAME_FUNCTION)
+            {
+                Frame* pFrame = pThis->m_crawl.GetFrame();
+                // If the frame is ProtectValueClassFrame, move to the next one as we want to report the FuncEvalFrame
+                if (pFrame->GetVTablePtr() == ProtectValueClassFrame::GetMethodFrameVPtr())
+                {
+                    pFrame = pFrame->PtrNextFrame();
+                    _ASSERTE(pFrame != FRAME_TOP);
+                }
+                if ((pFrame->GetVTablePtr() == FuncEvalFrame::GetMethodFrameVPtr()) || (pFrame->GetVTablePtr() == DebuggerU2MCatchHandlerFrame::GetMethodFrameVPtr()))
+                {
+                    EEToDebuggerExceptionInterfaceWrapper::NotifyOfCHFFilter((EXCEPTION_POINTERS *)&pExInfo->m_ptrs, pFrame);
+                }
+            }
         }
     }
 }

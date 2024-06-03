@@ -814,7 +814,7 @@ namespace System.Globalization
             {
                 return null;
             }
-#if TARGET_BROWSER && !FEATURE_WASM_MANAGED_THREADS
+#if TARGET_BROWSER
             // populate fields for which ICU does not provide data in Hybrid mode
             if (GlobalizationMode.Hybrid && !string.IsNullOrEmpty(culture._sName))
             {

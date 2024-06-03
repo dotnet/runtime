@@ -105,14 +105,21 @@ CDAC_TYPES_BEGIN()
 
 CDAC_TYPE_BEGIN(Thread)
 CDAC_TYPE_INDETERMINATE(Thread)
+CDAC_TYPE_FIELD(Thread, /*uint32*/, Id, cdac_offsets<Thread>::Id)
+CDAC_TYPE_FIELD(Thread, /*nuint*/, OSId, cdac_offsets<Thread>::OSId)
 CDAC_TYPE_FIELD(Thread, GCHandle, GCHandle, cdac_offsets<Thread>::ExposedObject)
+CDAC_TYPE_FIELD(Thread, GCHandle, LastThrownObject, cdac_offsets<Thread>::LastThrownObject)
 CDAC_TYPE_FIELD(Thread, pointer, LinkNext, cdac_offsets<Thread>::Link)
 CDAC_TYPE_END(Thread)
 
 CDAC_TYPE_BEGIN(ThreadStore)
 CDAC_TYPE_INDETERMINATE(ThreadStore)
-CDAC_TYPE_FIELD(ThreadStore, /*omit type*/, ThreadCount, cdac_offsets<ThreadStore>::ThreadCount)
-CDAC_TYPE_FIELD(ThreadStore, /*omit type*/, ThreadList, cdac_offsets<ThreadStore>::ThreadList)
+CDAC_TYPE_FIELD(ThreadStore, /*SLink*/, FirstThreadLink, cdac_offsets<ThreadStore>::FirstThreadLink)
+CDAC_TYPE_FIELD(ThreadStore, /*int32*/, ThreadCount, cdac_offsets<ThreadStore>::ThreadCount)
+CDAC_TYPE_FIELD(ThreadStore, /*int32*/, UnstartedCount, cdac_offsets<ThreadStore>::UnstartedCount)
+CDAC_TYPE_FIELD(ThreadStore, /*int32*/, BackgroundCount, cdac_offsets<ThreadStore>::BackgroundCount)
+CDAC_TYPE_FIELD(ThreadStore, /*int32*/, PendingCount, cdac_offsets<ThreadStore>::PendingCount)
+CDAC_TYPE_FIELD(ThreadStore, /*int32*/, DeadCount, cdac_offsets<ThreadStore>::DeadCount)
 CDAC_TYPE_END(ThreadStore)
 
 CDAC_TYPE_BEGIN(GCHandle)
@@ -123,6 +130,8 @@ CDAC_TYPES_END()
 
 CDAC_GLOBALS_BEGIN()
 CDAC_GLOBAL_POINTER(ThreadStore, &ThreadStore::s_pThreadStore)
+CDAC_GLOBAL_POINTER(FinalizerThread, &::g_pFinalizerThread)
+CDAC_GLOBAL_POINTER(GCThread, &::g_pSuspensionThread)
 #if FEATURE_EH_FUNCLETS
 CDAC_GLOBAL(FeatureEHFunclets, uint8, 1)
 #else

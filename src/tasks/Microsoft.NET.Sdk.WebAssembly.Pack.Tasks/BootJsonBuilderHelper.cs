@@ -10,7 +10,7 @@ using Microsoft.Build.Utilities;
 
 namespace Microsoft.NET.Sdk.WebAssembly
 {
-    public class BootJsonBuilderHelper(TaskLoggingHelper Log, bool IsMultiThreaded)
+    public class BootJsonBuilderHelper(TaskLoggingHelper Log, string DebugLevel, bool IsMultiThreaded, bool IsPublish)
     {
         private static readonly string[] coreAssemblyNames = [
             "System.Private.CoreLib",
@@ -50,6 +50,7 @@ namespace Microsoft.NET.Sdk.WebAssembly
             AddDictionary(sb, bootConfig.resources.coreAssembly);
 
             AddDictionary(sb, bootConfig.resources.jsModuleWorker);
+            AddDictionary(sb, bootConfig.resources.jsModuleGlobalization);
             AddDictionary(sb, bootConfig.resources.jsModuleNative);
             AddDictionary(sb, bootConfig.resources.jsModuleRuntime);
             AddDictionary(sb, bootConfig.resources.wasmNative);
@@ -84,6 +85,8 @@ namespace Microsoft.NET.Sdk.WebAssembly
             string resourceExtension = Path.GetExtension(resourceName);
             if (resourceName.StartsWith("dotnet.native.worker", StringComparison.OrdinalIgnoreCase) && string.Equals(resourceExtension, ".js", StringComparison.OrdinalIgnoreCase))
                 return bootConfig.resources.jsModuleWorker ??= new();
+            if (resourceName.StartsWith("dotnet.globalization", StringComparison.OrdinalIgnoreCase) && string.Equals(resourceExtension, ".js", StringComparison.OrdinalIgnoreCase))
+                return bootConfig.resources.jsModuleGlobalization ??= new();
             else if (resourceName.StartsWith("dotnet.native", StringComparison.OrdinalIgnoreCase) && string.Equals(resourceExtension, ".js", StringComparison.OrdinalIgnoreCase))
                 return bootConfig.resources.jsModuleNative ??= new();
             else if (resourceName.StartsWith("dotnet.runtime", StringComparison.OrdinalIgnoreCase) && string.Equals(resourceExtension, ".js", StringComparison.OrdinalIgnoreCase))
@@ -102,6 +105,36 @@ namespace Microsoft.NET.Sdk.WebAssembly
                 Log.LogError($"The resource '{resourceName}' is not recognized as any native asset");
 
             return null;
+        }
+
+        public int GetDebugLevel(bool hasPdb)
+        {
+            int? debugLevel = ParseOptionalInt(DebugLevel);
+
+            // If user didn't give us a value, check if we have any PDB.
+            if (debugLevel == null && hasPdb)
+                debugLevel = -1;
+
+            // Fallback to -1 for build, or 0 for publish
+            debugLevel ??= IsPublish ? 0 : -1;
+
+            return debugLevel.Value;
+        }
+
+        public bool? ParseOptionalBool(string value)
+        {
+            if (string.IsNullOrEmpty(value) || !bool.TryParse(value, out var boolValue))
+                return null;
+
+            return boolValue;
+        }
+
+        public int? ParseOptionalInt(string value)
+        {
+            if (string.IsNullOrEmpty(value) || !int.TryParse(value, out var intValue))
+                return null;
+
+            return intValue;
         }
     }
 }

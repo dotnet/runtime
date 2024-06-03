@@ -10709,7 +10709,7 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
             GenTree* op1 = node->Op(1);
             GenTree* op2 = node->Op(2);
 
-            if (!op1->OperIsHWIntrinsic(NI_Sve_CreateTrueMaskAll) &&
+            if (!op1->OperIsHWIntrinsic(NI_Sve_CreateTrueMaskAll) ||
                 !op2->OperIsHWIntrinsic(NI_Sve_ConvertMaskToVector))
             {
                 break;
@@ -15245,7 +15245,9 @@ PhaseStatus Compiler::fgRetypeImplicitByRefArgs()
                 if (!undoPromotion)
                 {
                     // Insert IR that initializes the temp from the parameter.
-                    fgEnsureFirstBBisScratch();
+                    // The first BB should already be a valid insertion point,
+                    // which is a precondition for this phase when optimizing.
+                    assert(fgFirstBB->bbPreds == nullptr);
                     GenTree* addr  = gtNewLclvNode(lclNum, TYP_BYREF);
                     GenTree* data  = (varDsc->TypeGet() == TYP_STRUCT) ? gtNewBlkIndir(varDsc->GetLayout(), addr)
                                                                        : gtNewIndir(varDsc->TypeGet(), addr);
