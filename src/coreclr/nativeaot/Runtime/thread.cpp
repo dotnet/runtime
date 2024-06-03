@@ -1324,7 +1324,7 @@ FCIMPL1(void, RhpReversePInvokeReturn, ReversePInvokeFrame * pFrame)
 FCIMPLEND
 
 
-inline bool Thread::IsRandomizedSamplingEnabled()
+bool Thread::IsRandomizedSamplingEnabled()
 {
 #ifdef FEATURE_EVENT_TRACE
     // TODO: fix the same compilation error
@@ -1340,7 +1340,7 @@ inline bool Thread::IsRandomizedSamplingEnabled()
 #endif // FEATURE_EVENT_TRACE
 }
 
-inline int Thread::ComputeGeometricRandom()
+int Thread::ComputeGeometricRandom()
 {
     // TODO: Implement a proper random number generator
     // compute a random sample from the Geometric distribution

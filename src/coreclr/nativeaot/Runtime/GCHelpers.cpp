@@ -609,7 +609,7 @@ static Object* GcAllocInternal(MethodTable* pEEType, uint32_t uFlags, uintptr_t 
         // the sampling budget only included at most the bytes inside the AC
         if (aligned_size > availableSpace && !isSampled)
         {
-            samplingBudget = Thread::ComputeGeometricRandom() + availableSpace;
+            samplingBudget = pThread->ComputeGeometricRandom() + availableSpace;
             isSampled = (samplingBudget < aligned_size);
         }
     }
