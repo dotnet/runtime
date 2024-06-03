@@ -93,7 +93,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         public void AppHost()
         {
             string appExe = sharedTestState.App.AppExe;
-            Assert.True(Binaries.CetCompat.IsMarkedCompatible(appExe));
+            if (Binaries.CetCompat.IsSupported)
+                Assert.True(Binaries.CetCompat.IsMarkedCompatible(appExe));
 
             // Get the framework location that was built
             string builtDotnet = TestContext.BuiltDotNet.BinPath;

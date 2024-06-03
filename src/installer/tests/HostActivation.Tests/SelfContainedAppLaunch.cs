@@ -25,7 +25,9 @@ namespace HostActivation.Tests
         public void Default()
         {
             string appExe = sharedTestState.App.AppExe;
-            Assert.True(Binaries.CetCompat.IsMarkedCompatible(appExe));
+            if (Binaries.CetCompat.IsSupported)
+                Assert.True(Binaries.CetCompat.IsMarkedCompatible(appExe));
+
             Command.Create(appExe)
                 .CaptureStdErr()
                 .CaptureStdOut()
