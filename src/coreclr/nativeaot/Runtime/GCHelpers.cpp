@@ -498,6 +498,11 @@ inline void FireAllocationSampled(GC_ALLOC_FLAGS flags, size_t size, size_t samp
     }
 }
 
+inline uint32_t AlignUp(uint32_t value, uint32_t alignment)
+{
+    return (value + alignment - 1) & ~(alignment - 1);
+}
+
 inline uint64_t AlignUp(uint64_t value, uint32_t alignment)
 {
     return (value + alignment - 1) & ~(uint64_t)(alignment - 1);
@@ -578,7 +583,7 @@ static Object* GcAllocInternal(MethodTable* pEEType, uint32_t uFlags, uintptr_t 
     size_t aligned_size = 0;
     size_t samplingBudget = 0;
 
-    bool isRandomizedSamplingEnabled = pThread->IsRandomizedSamplingEnabled();
+    bool isRandomizedSamplingEnabled = Thread::IsRandomizedSamplingEnabled();
     if (isRandomizedSamplingEnabled)
     {
         // object allocations are always padded up to pointer size
@@ -609,7 +614,7 @@ static Object* GcAllocInternal(MethodTable* pEEType, uint32_t uFlags, uintptr_t 
         // the sampling budget only included at most the bytes inside the AC
         if (aligned_size > availableSpace && !isSampled)
         {
-            samplingBudget = pThread->ComputeGeometricRandom() + availableSpace;
+            samplingBudget = Thread::ComputeGeometricRandom() + availableSpace;
             isSampled = (samplingBudget < aligned_size);
         }
     }
