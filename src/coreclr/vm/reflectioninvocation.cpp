@@ -2095,7 +2095,7 @@ extern "C" void QCALLTYPE ReflectionInvocation_GetBoxInfo(
 
     MethodTable* pMT = type.AsMethodTable();
 
-    _ASSERTE(pMT->IsvalueType() || pMT->IsNullable() || pMT->IsEnum() || pMT->IsTruePrimitive());
+    _ASSERTE(pMT->IsValueType() || pMT->IsNullable() || pMT->IsEnum() || pMT->IsTruePrimitive());
 
     *pValueOffset = 0;
 
