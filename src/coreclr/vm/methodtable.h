@@ -3382,7 +3382,7 @@ private:
         enum_flag_RequiresAlign8              = 0x00800000, // Type requires 8-byte alignment (only set on platforms that require this and don't get it implicitly)
 #endif
 
-        enum_flag_ContainsPointers            = 0x01000000, // Represents OBJECTREFs
+        enum_flag_ContainsPointers            = 0x01000000, // Contains object references
         enum_flag_HasTypeEquivalence          = 0x02000000, // can be equivalent to another type
         enum_flag_IsTrackedReferenceWithFinalizer = 0x04000000,
         // unused                             = 0x08000000,

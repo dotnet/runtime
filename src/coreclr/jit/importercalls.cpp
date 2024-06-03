@@ -3367,13 +3367,11 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 assert(sig->sigInst.methInstCount == 1);
 
                 CORINFO_CLASS_HANDLE fromTypeHnd = sig->sigInst.methInst[0];
-                ClassLayout* fromLayout = nullptr;
-                var_types            fromType = TypeHandleToVarType(fromTypeHnd, &fromLayout);
+                ClassLayout*         fromLayout  = nullptr;
+                var_types            fromType    = TypeHandleToVarType(fromTypeHnd, &fromLayout);
 
                 bool refOrContains = varTypeIsGC(fromType) || (fromLayout != nullptr && fromLayout->HasGCPtr());
-                retNode = refOrContains
-                    ? gtNewIconNode(1)
-                    : gtNewIconNode(0);
+                retNode            = refOrContains ? gtNewIconNode(1) : gtNewIconNode(0);
                 break;
             }
 
@@ -10120,7 +10118,8 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                             }
                             else if (strcmp(methodName, "IsReferenceOrContainsReferences") == 0)
                             {
-                                result = NI_System_Runtime_CompilerServices_RuntimeHelpers_IsReferenceOrContainsReferences;
+                                result =
+                                    NI_System_Runtime_CompilerServices_RuntimeHelpers_IsReferenceOrContainsReferences;
                             }
                         }
                         else if (strcmp(className, "Unsafe") == 0)

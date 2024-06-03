@@ -43,11 +43,7 @@ namespace Internal.IL.Stubs
                 return null;
 
             bool result;
-            if (methodName == "IsReferenceOrContainsReferences")
-            {
-                result = elementType.IsGCPointer || (elementType is DefType defType && defType.ContainsGCPointers);
-            }
-            else if (methodName == "IsReference")
+            if (methodName == "IsReference")
             {
                 result = elementType.IsGCPointer;
             }
