@@ -4375,6 +4375,113 @@ void Compiler::fgInvalidateDfsTree()
     fgSsaValid         = false;
 }
 
+#ifdef DEBUG
+
+//------------------------------------------------------------------------
+// FlowGraphReverseDfsTree::Dump: Dump a textual representation of the reverse DFS tree.
+//
+void FlowGraphReverseDfsTree::Dump() const
+{
+    printf("RDFS tree.\n");
+    printf("PO RPO -> BB [pre, post]\n");
+    for (unsigned i = 0; i < GetPostOrderCount(); i++)
+    {
+        unsigned          rpoNum = GetPostOrderCount() - i - 1;
+        BasicBlock* const block  = GetPostOrder(i);
+        printf("%02u %02u -> " FMT_BB "[%u, %u]\n", i, rpoNum, block->bbNum, block->bbReversePreorderNum,
+               block->bbReversePostorderNum);
+    }
+}
+
+#endif // DEBUG
+
+//------------------------------------------------------------------------
+// FlowGraphReverseDfsTree::Contains: Check if a block is contained in the reverse DFS tree;
+// i.e., if it is reachable.
+//
+// Arguments:
+//    block - The block
+//
+// Return Value:
+//    True if the block reaches an exit point
+//
+// Remarks:
+//    If the block was added after the reverse DFS tree was computed, then this
+//    function returns false.
+//
+bool FlowGraphReverseDfsTree::Contains(BasicBlock* block) const
+{
+    return (block->bbReversePostorderNum < m_postOrderCount) && (m_postOrder[block->bbReversePostorderNum] == block);
+}
+
+//------------------------------------------------------------------------
+// FlowGraphReverseDfsTree::IsAncestor: Check if block `ancestor` is an ancestor of
+// block `descendant` in the reverse DFS
+//
+// Arguments:
+//   ancestor   - block that is possible ancestor
+//   descendant - block that is possible descendant
+//
+// Returns:
+//   True if `ancestor` is ancestor of `descendant` in the depth first spanning
+//   tree.
+//
+// Notes:
+//   If return value is false, then `ancestor` does not dominate `descendant`.
+//
+bool FlowGraphReverseDfsTree::IsAncestor(BasicBlock* ancestor, BasicBlock* descendant) const
+{
+    assert(Contains(ancestor) && Contains(descendant));
+    return (ancestor->bbReversePreorderNum <= descendant->bbReversePreorderNum) &&
+           (descendant->bbReversePostorderNum <= ancestor->bbReversePostorderNum);
+}
+
+//------------------------------------------------------------------------
+// fgComputeReverseDfs: Compute a depth-first search tree for the reverse flow graph.
+//
+// Returns:
+//   The tree.
+//
+// Notes:
+//   Reverse preorder and postorder numbers are assigned into the BasicBlock structure.
+//   The tree returned contains a postorder of the basic blocks.
+//
+FlowGraphReverseDfsTree* Compiler::fgComputeReverseDfs()
+{
+    BasicBlock** postOrder = new (this, CMK_DepthFirstSearch) BasicBlock*[fgBBcount + 1];
+    bool         hasCycle  = false;
+
+    BasicBlock* pseudoExit = new (this, CMK_BasicBlock) BasicBlock();
+    memset((void*)pseudoExit, 0, sizeof(BasicBlock));
+    pseudoExit->SetKind(BBJ_THROW);
+    INDEBUG(pseudoExit->bbID = 0);
+
+    auto visitPreorder = [](BasicBlock* block, unsigned preorderNum) {
+        block->bbReversePreorderNum  = preorderNum;
+        block->bbReversePostorderNum = UINT_MAX;
+        // this is union'd so needs pre-clearing
+        block->bbIPDom = nullptr;
+    };
+
+    auto visitPostorder = [=](BasicBlock* block, unsigned postorderNum) {
+        block->bbReversePostorderNum = postorderNum;
+        assert(postorderNum <= fgBBcount);
+        postOrder[postorderNum] = block;
+    };
+
+    unsigned numBlocks =
+        fgRunReverseDfs<decltype(visitPreorder), decltype(visitPostorder)>(visitPreorder, visitPostorder, pseudoExit);
+    return new (this, CMK_DepthFirstSearch) FlowGraphReverseDfsTree(this, postOrder, numBlocks, pseudoExit);
+}
+
+//------------------------------------------------------------------------
+// fgInvalidateReverseDfsTree: Invalidate computed revese DFS tree
+//
+void Compiler::fgInvalidateReverseDfsTree()
+{
+    m_reverseDfsTree = nullptr;
+}
+
 //------------------------------------------------------------------------
 // FlowGraphNaturalLoop::FlowGraphNaturalLoop: Initialize a new loop instance.
 //
@@ -6568,8 +6675,8 @@ FlowGraphDominatorTree* FlowGraphDominatorTree::Build(const FlowGraphDfsTree* df
     }
 #endif
 
-    // Assign preorder/postorder nums for fast "domnates" queries.
-    class NumberDomTreeVisitor : public DomTreeVisitor<NumberDomTreeVisitor>
+    // Assign preorder/postorder nums for fast "dominates" queries.
+    class NumberDomTreeVisitor : public DomTreeVisitor<NumberDomTreeVisitor, /* postDom */ false>
     {
         unsigned* m_preorderNums;
         unsigned* m_postorderNums;
@@ -6786,6 +6893,398 @@ void FlowGraphDominanceFrontiers::Dump()
     }
 }
 #endif
+
+//------------------------------------------------------------------------
+// FlowGraphPostDominatorTree::IntersectPostdom:
+//   Find common IPDom parent, much like least common ancestor.
+//
+// Parameters:
+//   finger1 - A basic block that might share IPDom ancestor with finger2.
+//   finger2 - A basic block that might share IPDom ancestor with finger1.
+//
+// Returns:
+//   A basic block whose IPDom is the postdominator for finger1 and finger2, or else
+//   nullptr. This may be called while immediate postdominators are being computed,
+//   and if the input values are members of the same loop (each reachable from
+//   the other), then one may not yet have its immediate postdominator computed
+//   when we are attempting to find the immediate postdominator of the other. So a
+//   nullptr return value means that the the two inputs are in a cycle, not
+//   that they don't have a common postdominator ancestor.
+//
+// Remarks:
+//   See "A simple, fast dominance algorithm" by Keith D. Cooper, Timothy J.
+//   Harvey, Ken Kennedy.
+//
+BasicBlock* FlowGraphPostDominatorTree::IntersectPostdom(BasicBlock* finger1, BasicBlock* finger2)
+{
+    while (finger1 != finger2)
+    {
+        if ((finger1 == nullptr) || (finger2 == nullptr))
+        {
+            return nullptr;
+        }
+        while ((finger1 != nullptr) && (finger1->bbReversePostorderNum < finger2->bbReversePostorderNum))
+        {
+            finger1 = finger1->bbIPDom;
+        }
+        if (finger1 == nullptr)
+        {
+            return nullptr;
+        }
+        while ((finger2 != nullptr) && (finger2->bbReversePostorderNum < finger1->bbReversePostorderNum))
+        {
+            finger2 = finger2->bbIPDom;
+        }
+    }
+    return finger1;
+}
+
+//------------------------------------------------------------------------
+// FlowGraphPostDominatorTree::Intersect:
+//   See FlowGraphPostominatorTree::IntersectPostdom
+//
+BasicBlock* FlowGraphPostDominatorTree::Intersect(BasicBlock* block1, BasicBlock* block2)
+{
+    return IntersectPostdom(block1, block2);
+}
+
+//------------------------------------------------------------------------
+// FlowGraphPostDominatorTree::PostDominates:
+//   Check if node "postDominator" is an ancestor of node "postDominated".
+//
+// Parameters:
+//   postDominator - Node that may postdominate
+//   postDominated - Node that may be postdominated
+//
+// Returns:
+//   True "postDominator" postdominates "postDominated".
+//
+bool FlowGraphPostDominatorTree::PostDominates(BasicBlock* postDominator, BasicBlock* postDominated)
+{
+    assert(m_reverseDfsTree->Contains(postDominator) && m_reverseDfsTree->Contains(postDominated));
+
+    // What we want to ask here is basically if A is in the middle of the path
+    // from B to the root (the entry node) in the postdominator tree. Turns out
+    // that can be translated as:
+    //
+    //   A dom B <-> preorder(A) <= preorder(B) && postorder(A) >= postorder(B)
+    //
+    // where the equality holds when you ask if A postdominates itself.
+    //
+    return (m_preorderNum[postDominator->bbReversePostorderNum] <=
+            m_preorderNum[postDominated->bbReversePostorderNum]) &&
+           (m_postorderNum[postDominator->bbReversePostorderNum] >=
+            m_postorderNum[postDominated->bbReversePostorderNum]);
+}
+
+#ifdef DEBUG
+//------------------------------------------------------------------------
+// FlowGraphPostDominatorTree::Dump: Dump a textual representation of the postdominator
+// tree.
+//
+void FlowGraphPostDominatorTree::Dump()
+{
+    Compiler* comp = m_reverseDfsTree->GetCompiler();
+
+    for (BasicBlock* block : comp->Blocks())
+    {
+        if (!m_reverseDfsTree->Contains(block) || (m_domTree[block->bbReversePostorderNum].firstChild == nullptr))
+            continue;
+
+        printf(FMT_BB " : ", block->bbNum);
+        for (BasicBlock* child = m_domTree[block->bbReversePostorderNum].firstChild; child != nullptr;
+             child             = m_domTree[child->bbReversePostorderNum].nextSibling)
+        {
+            printf(FMT_BB " ", child->bbNum);
+        }
+        printf("\n");
+    }
+
+    printf("\n");
+}
+#endif
+
+//------------------------------------------------------------------------
+// FlowGraphPostDominatorTree::Build: Compute the dominator tree for the blocks in
+// the DFS tree.
+//
+// Parameters:
+//   reverseDfsTree - reverse DFS tree.
+//
+// Returns:
+//   Data structure representing postdominator tree. Immediate postdominators are
+//   marked directly into the BasicBlock structures, in the bbIPDom field, so
+//   multiple instances cannot be simultaneously used.
+//
+// Remarks:
+//   As a precondition it is required that the reverse flow graph has a unique root.
+//   This is handled by the reverse DFS tree via its pseudo block.
+//
+FlowGraphPostDominatorTree* FlowGraphPostDominatorTree::Build(const FlowGraphReverseDfsTree* reverseDfsTree)
+{
+    Compiler*         comp       = reverseDfsTree->GetCompiler();
+    BasicBlock**      postOrder  = reverseDfsTree->GetPostOrder();
+    unsigned          count      = reverseDfsTree->GetPostOrderCount();
+    BasicBlock* const pseudoExit = reverseDfsTree->PseudoExit();
+
+    pseudoExit->bbIPDom = nullptr;
+
+    // First compute immediate postdominators.
+    unsigned numIters = 0;
+    bool     changed  = true;
+    while (changed)
+    {
+        changed = false;
+
+        // In reverse post order, except for the entry block (count - 1 is entry BB).
+        for (unsigned i = count - 1; i > 0; i--)
+        {
+            unsigned    poNum = i - 1;
+            BasicBlock* block = postOrder[poNum];
+
+            // Intersect Postdom, if computed, for all successors
+            BasicBlock* bbIPDom = nullptr;
+
+            auto visitSucc = [=, &bbIPDom](BasicBlock* succ) {
+                if (!reverseDfsTree->Contains(succ))
+                {
+                    // Unreachable succ...?
+                    return;
+                }
+
+                if ((numIters <= 0) && (succ->bbReversePostorderNum <= poNum))
+                {
+                    return;
+                }
+
+                if (bbIPDom == nullptr)
+                {
+                    bbIPDom = succ;
+                }
+                else
+                {
+                    bbIPDom = IntersectPostdom(bbIPDom, succ);
+                }
+            };
+
+            // Look for flow graph exit points. These have the pseudo exit as successor.
+            // Hopefully the set is small and the pred search is cheap.
+            //
+            FlowEdge* const pseudoExitEdge = comp->fgGetPredForBlock(pseudoExit, block);
+
+            if (pseudoExitEdge != nullptr)
+            {
+                // This is an actual or implicit flow graph exit.
+                //
+                visitSucc(reverseDfsTree->PseudoExit());
+            }
+
+            // Now process the regular successors.
+            //
+            // Note "infinite loop" blocks will have both an exit
+            // successor and regular successors.
+            //
+            for (BasicBlock* const succ : block->Succs(comp))
+            {
+                visitSucc(succ);
+
+                // All blocks in try, or just the first?
+                // (if we knew where the try exits were, maybe just those)
+                //
+                if (comp->bbIsTryBeg(succ))
+                {
+                    assert(succ->hasTryIndex());
+                    unsigned const  tryInd  = succ->getTryIndex();
+                    EHblkDsc* const succTry = comp->ehGetDsc(tryInd);
+
+                    if (succTry->HasFilter())
+                    {
+                        visitSucc(succTry->ebdFilter);
+                    }
+
+                    visitSucc(succTry->ebdHndBeg);
+                }
+            }
+
+            // TODO: any block that can cause an exception should arguably have
+            // the associated filter/handler (or if not in a try, the pseudo-exit)
+            // as a successor. For now we are not modelling these edges here or
+            // in the RDFS.
+            //
+            assert(bbIPDom != nullptr);
+
+            // Did we change the bbIPDom value?  If so, we go around the outer loop again.
+            //
+            if (block->bbIPDom != bbIPDom)
+            {
+                changed        = true;
+                block->bbIPDom = bbIPDom;
+            }
+        }
+
+        numIters++;
+    }
+
+    // Now build the postdominator tree.
+    //
+    DomTreeNode* domTree = new (comp, CMK_DominatorMemory) DomTreeNode[count]{};
+
+    // Build the child and sibling links based on the immediate postdominators.
+    // Running this loop in post-order means we end up with sibling links in
+    // reverse post-order. Skip the root since it has no siblings.
+    //
+    for (unsigned i = 0; i < count - 1; i++)
+    {
+        BasicBlock* block  = postOrder[i];
+        BasicBlock* parent = block->bbIPDom;
+        assert(parent != nullptr);
+        assert(reverseDfsTree->Contains(block) && reverseDfsTree->Contains(parent));
+
+        domTree[i].nextSibling                            = domTree[parent->bbReversePostorderNum].firstChild;
+        domTree[parent->bbReversePostorderNum].firstChild = block;
+    }
+
+#ifdef DEBUG
+    if (comp->verbose)
+    {
+        printf("After computing the postdominance tree:\n");
+        for (unsigned i = count; i > 0; i--)
+        {
+            unsigned poNum = i - 1;
+            if (domTree[poNum].firstChild == nullptr)
+            {
+                continue;
+            }
+
+            printf(FMT_BB " :", postOrder[poNum]->bbNum);
+            for (BasicBlock* child = domTree[poNum].firstChild; child != nullptr;
+                 child             = domTree[child->bbReversePostorderNum].nextSibling)
+            {
+                printf(" " FMT_BB, child->bbNum);
+            }
+            printf("\n");
+        }
+        printf("\n");
+    }
+#endif
+
+    // Assign preorder/postorder nums for fast "domnates" queries.
+    class NumberDomTreeVisitor : public DomTreeVisitor<NumberDomTreeVisitor, /* postDom */ true>
+    {
+        unsigned* m_preorderNums;
+        unsigned* m_postorderNums;
+        unsigned  m_preNum  = 0;
+        unsigned  m_postNum = 0;
+
+    public:
+        NumberDomTreeVisitor(Compiler* comp, unsigned* preorderNums, unsigned* postorderNums)
+            : DomTreeVisitor(comp)
+            , m_preorderNums(preorderNums)
+            , m_postorderNums(postorderNums)
+        {
+        }
+
+        void PreOrderVisit(BasicBlock* block)
+        {
+            m_preorderNums[block->bbPostorderNum] = m_preNum++;
+        }
+
+        void PostOrderVisit(BasicBlock* block)
+        {
+            m_postorderNums[block->bbPostorderNum] = m_postNum++;
+        }
+    };
+
+    unsigned* preorderNums  = new (comp, CMK_DominatorMemory) unsigned[count];
+    unsigned* postorderNums = new (comp, CMK_DominatorMemory) unsigned[count];
+
+    NumberDomTreeVisitor number(comp, preorderNums, postorderNums);
+    number.WalkTree(domTree);
+
+    return new (comp, CMK_DominatorMemory)
+        FlowGraphPostDominatorTree(reverseDfsTree, domTree, preorderNums, postorderNums);
+}
+
+//------------------------------------------------------------------------
+// fgComputePostDominanceFrontiers: Compute flow graph dominance frontiers
+//
+// Notes:
+//   Assumes m_postDomTree (and hence m_reverseDfsTree) exist.
+//
+//   Based on "A Simple, Fast Dominance Algorithm" by
+//   Cooper, Harvey & Kennedy
+//
+void Compiler::fgComputePostDominanceFrontiers()
+{
+    CompAllocator alloc = getAllocator(CMK_DominatorMemory);
+    m_postDomFrontiers  = new (alloc) BlkToBlkVectorMap(alloc);
+
+    BasicBlock** postOrder = m_reverseDfsTree->GetPostOrder();
+    unsigned     count     = m_reverseDfsTree->GetPostOrderCount();
+
+    for (unsigned i = 0; i < count; ++i)
+    {
+        BasicBlock* const block   = postOrder[i];
+        unsigned const    numSucc = block->NumSucc(this);
+
+        // A block can't be in some other block's PDF unless it
+        // has multiple successors.
+        //
+        if (numSucc < 2)
+        {
+            continue;
+        }
+
+        // Process successors to figure out which ones
+        // are not post dominated by block.
+        //
+        BasicBlock* const ipDom = block->bbIPDom;
+
+        for (BasicBlock* succ : block->Succs(this))
+        {
+            assert(m_reverseDfsTree->Contains(succ));
+
+            // Walk the postdom links until we hit the postdom of block
+            //
+            while (succ != ipDom)
+            {
+                // Add block to succ's PDF
+                // It's possible to encounter the same PDF multiple times, ensure that we don't add duplicates.
+                //
+                BlkVector& succPDF = *m_postDomFrontiers->Emplace(succ, alloc);
+
+                if (succPDF.empty() || (succPDF.back() != block))
+                {
+                    succPDF.push_back(block);
+                }
+
+                succ = succ->bbIPDom;
+            }
+        }
+    }
+
+#ifdef DEBUG
+    if (verbose)
+    {
+        printf("\nComputed postdominance frontier:\n");
+        for (unsigned i = 0; i < count; ++i)
+        {
+            BasicBlock* const b = postOrder[i];
+            printf("Block " FMT_BB " := {", b->bbNum);
+            BlkVector* const blockPDF = m_postDomFrontiers->LookupPointer(b);
+            if (blockPDF != nullptr)
+            {
+                int index = 0;
+                for (BasicBlock* f : *blockPDF)
+                {
+                    printf("%s" FMT_BB, (index++ == 0) ? "" : ",", f->bbNum);
+                }
+            }
+            printf("}\n");
+        }
+    }
+#endif
+}
 
 //------------------------------------------------------------------------
 // BlockToNaturalLoopMap::GetLoop: Map a block back to its most nested

@@ -1097,7 +1097,7 @@ void SsaBuilder::RenameVariables()
         }
     }
 
-    class SsaRenameDomTreeVisitor : public DomTreeVisitor<SsaRenameDomTreeVisitor>
+    class SsaRenameDomTreeVisitor : public DomTreeVisitor<SsaRenameDomTreeVisitor, /* postDom */ false>
     {
         SsaBuilder*     m_builder;
         SsaRenameState* m_renameStack;

@@ -4627,6 +4627,12 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         // Build post-order and remove dead blocks
         //
         DoPhase(this, PHASE_DFS_BLOCKS1, &Compiler::fgDfsBlocksAndRemove);
+
+#ifdef DEBUG
+        // Compute postdominators under stress
+        //
+        DoPhase(this, PHASE_STRESS_POSTDOMINATORS, &Compiler::fgStressPostDominators);
+#endif
     }
 
     // Transform each GT_ALLOCOBJ node into either an allocation helper call or

@@ -1980,6 +1980,69 @@ public:
     bool IsAncestor(BasicBlock* ancestor, BasicBlock* descendant) const;
 };
 
+// Represents a depth-first search tree of the reversed flow graph.
+class FlowGraphReverseDfsTree
+{
+    Compiler* m_comp;
+
+    // Post-order that we saw reverse reachable basic blocks in. This order can be
+    // particularly useful to iterate in reverse, as reverse post-order ensures
+    // that all predecessors are visited before successors whenever possible.
+    BasicBlock** m_postOrder;
+    unsigned m_postOrderCount;
+
+    // Pseudo exit representing the block that post-dominates all blocks
+    BasicBlock* m_pseudoExit;
+
+public:
+    FlowGraphReverseDfsTree(Compiler* comp, BasicBlock** postOrder, unsigned postOrderCount, BasicBlock* pseudoExit)
+        : m_comp(comp)
+        , m_postOrder(postOrder)
+        , m_postOrderCount(postOrderCount)
+        , m_pseudoExit(pseudoExit)
+    {
+    }
+
+    Compiler* GetCompiler() const
+    {
+        return m_comp;
+    }
+
+    BasicBlock** GetPostOrder() const
+    {
+        return m_postOrder;
+    }
+
+    unsigned GetPostOrderCount() const
+    {
+        return m_postOrderCount;
+    }
+
+    BasicBlock* GetPostOrder(unsigned index) const
+    {
+        assert(index < m_postOrderCount);
+        return m_postOrder[index];
+    }
+
+    BitVecTraits PostOrderTraits() const
+    {
+        return BitVecTraits(m_postOrderCount, m_comp);
+    }
+
+    BasicBlock* PseudoExit() const
+    {
+        return m_pseudoExit;
+    }
+
+#ifdef DEBUG
+    void Dump() const;
+#endif // DEBUG
+
+    bool Contains(BasicBlock* block) const;
+    bool IsAncestor(BasicBlock* ancestor, BasicBlock* descendant) const;
+};
+
+
 // Represents the result of induction variable analysis. See
 // FlowGraphNaturalLoop::AnalyzeIteration.
 struct NaturalLoopIterInfo
@@ -2353,7 +2416,7 @@ public:
 // Represents the dominator tree of the flow graph.
 class FlowGraphDominatorTree
 {
-    template<typename TVisitor>
+    template<typename TVisitor, bool postDom>
     friend class DomTreeVisitor;
 
     const FlowGraphDfsTree* m_dfsTree;
@@ -2385,6 +2448,44 @@ public:
 #endif
 
     static FlowGraphDominatorTree* Build(const FlowGraphDfsTree* dfsTree);
+};
+
+
+// Represents the postdominator tree of the flow graph.
+class FlowGraphPostDominatorTree
+{
+    template<typename TVisitor, bool postDom>
+    friend class DomTreeVisitor;
+
+    const FlowGraphReverseDfsTree* m_reverseDfsTree;
+    const DomTreeNode* m_domTree;
+    const unsigned* m_preorderNum;
+    const unsigned* m_postorderNum;
+
+    FlowGraphPostDominatorTree(const FlowGraphReverseDfsTree* reverseDfsTree, const DomTreeNode* domTree, const unsigned* preorderNum, const unsigned* postorderNum)
+        : m_reverseDfsTree(reverseDfsTree)
+        , m_domTree(domTree)
+        , m_preorderNum(preorderNum)
+        , m_postorderNum(postorderNum)
+    {
+    }
+
+    static BasicBlock* IntersectPostdom(BasicBlock* block1, BasicBlock* block2);
+
+public:
+    const FlowGraphReverseDfsTree* GetReverseDfsTree()
+    {
+        return m_reverseDfsTree;
+    }
+
+    BasicBlock* Intersect(BasicBlock* block, BasicBlock* block2);
+    bool PostDominates(BasicBlock* dominator, BasicBlock* dominated);
+
+#ifdef DEBUG
+    void Dump();
+#endif
+
+    static FlowGraphPostDominatorTree* Build(const FlowGraphReverseDfsTree* dfsTree);
 };
 
 class FlowGraphDominanceFrontiers
@@ -5190,6 +5291,8 @@ public:
     BasicBlock** fgBBReversePostorder; // Blocks in reverse postorder
 
     FlowGraphDfsTree* m_dfsTree = nullptr;
+    FlowGraphReverseDfsTree* m_reverseDfsTree = nullptr;
+
     // The next members are annotations on the flow graph used during the
     // optimization phases. They are invalidated once RBO runs and modifies the
     // flow graph.
@@ -5201,6 +5304,10 @@ public:
     FlowGraphDominatorTree* m_domTree = nullptr;
     FlowGraphDominanceFrontiers* m_domFrontiers = nullptr;
     BlockReachabilitySets* m_reachabilitySets = nullptr;
+
+    // Postdominator tree
+    FlowGraphPostDominatorTree* m_postDomTree = nullptr;
+    BlkToBlkVectorMap* m_postDomFrontiers = nullptr;
 
     // Do we require loops to be in canonical form? The canonical form ensures that:
     // 1. All loops have preheaders (single entry blocks that always enter the loop)
@@ -6036,6 +6143,11 @@ protected:
     bool fgRemoveUnreachableBlocks(CanRemoveBlockBody canRemoveBlock);
 
     PhaseStatus fgComputeDominators(); // Compute dominators
+    void fgComputePostDominanceFrontiers();
+
+#ifdef DEBUG
+    PhaseStatus fgStressPostDominators();
+#endif
 
 public:
     enum GCPollType
@@ -6323,6 +6435,12 @@ public:
 
     template <typename TFunc>
     void fgVisitBlocksInLoopAwareRPO(FlowGraphDfsTree* dfsTree, FlowGraphNaturalLoops* loops, TFunc func);
+
+    template <typename VisitPreorder, typename VisitPostorder>
+    unsigned fgRunReverseDfs(VisitPreorder assignPreorder, VisitPostorder assignPostorder, BasicBlock* pseudoExit);
+
+    FlowGraphReverseDfsTree* fgComputeReverseDfs();
+    void fgInvalidateReverseDfsTree();
 
     void fgRemoveReturnBlock(BasicBlock* block);
 
@@ -10586,6 +10704,7 @@ public:
         STRESS_MODE(DOWNWARDS_COUNTED_LOOPS) /* Make more loops downwards counted         */    \
         STRESS_MODE(STRENGTH_REDUCTION) /* Enable strength reduction */                         \
         STRESS_MODE(STRENGTH_REDUCTION_PROFITABILITY) /* Do more strength reduction */          \
+        STRESS_MODE(POSTDOMINATORS) /* Build postdominator info */                              \
                                                                                                 \
         /* After COUNT_VARN, stress level 2 does all of these all the time */                   \
                                                                                                 \
@@ -12170,10 +12289,11 @@ public:
 };
 
 // A dominator tree visitor implemented using the curiously-recurring-template pattern, similar to GenTreeVisitor.
-template <typename TVisitor>
+template <typename TVisitor, bool postDom>
 class DomTreeVisitor
 {
     friend class FlowGraphDominatorTree;
+    friend class FlowGraphPostDominatorTree;
 
 protected:
     Compiler* m_compiler;
@@ -12208,11 +12328,11 @@ private:
         {
             static_cast<TVisitor*>(this)->PreOrderVisit(block);
 
-            next = tree[block->bbPostorderNum].firstChild;
+            next = tree[postDom ? block->bbReversePostorderNum : block->bbPostorderNum].firstChild;
 
             if (next != nullptr)
             {
-                assert(next->bbIDom == block);
+                assert((!postDom && (next->bbIDom == block)) || (postDom && (next->bbIPDom == block)));
                 continue;
             }
 
@@ -12220,15 +12340,16 @@ private:
             {
                 static_cast<TVisitor*>(this)->PostOrderVisit(block);
 
-                next = tree[block->bbPostorderNum].nextSibling;
+                next = tree[postDom ? block->bbReversePostorderNum : block->bbPostorderNum].nextSibling;
 
                 if (next != nullptr)
                 {
-                    assert(next->bbIDom == block->bbIDom);
+                    assert((!postDom && (next->bbIDom == block->bbIDom)) ||
+                           (postDom && (next->bbIPDom == block->bbIPDom)));
                     break;
                 }
 
-                block = block->bbIDom;
+                block = postDom ? block->bbIPDom : block->bbIDom;
 
             } while (block != nullptr);
         }

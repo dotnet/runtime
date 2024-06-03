@@ -19,7 +19,8 @@ PhaseStatus Compiler::optRedundantBranches()
     }
 #endif // DEBUG
 
-    class OptRedundantBranchesDomTreeVisitor : public DomTreeVisitor<OptRedundantBranchesDomTreeVisitor>
+    class OptRedundantBranchesDomTreeVisitor
+        : public DomTreeVisitor<OptRedundantBranchesDomTreeVisitor, /* postDom */ false>
     {
     public:
         bool madeChanges;

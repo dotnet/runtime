@@ -218,6 +218,38 @@ PhaseStatus Compiler::fgComputeDominators()
     return PhaseStatus::MODIFIED_NOTHING;
 }
 
+#ifdef DEBUG
+
+//-------------------------------------------------------------
+// fgComputePostDominators: Stress computing postdominators
+//
+// Returns:
+//    Suitable phase status.
+//
+PhaseStatus Compiler::fgStressPostDominators()
+{
+    assert(m_dfsTree != nullptr);
+
+    if (compStressCompile(STRESS_POSTDOMINATORS, 30))
+    {
+        m_reverseDfsTree = fgComputeReverseDfs();
+        JITDUMPEXEC(m_reverseDfsTree->Dump());
+
+        m_postDomTree = FlowGraphPostDominatorTree::Build(m_reverseDfsTree);
+        JITDUMPEXEC(m_postDomTree->Dump());
+
+        fgComputePostDominanceFrontiers();
+
+        m_reverseDfsTree   = nullptr;
+        m_postDomTree      = nullptr;
+        m_postDomFrontiers = nullptr;
+    }
+
+    return PhaseStatus::MODIFIED_NOTHING;
+}
+
+#endif // DEBUG
+
 //-------------------------------------------------------------
 // fgInitBlockVarSets: Initialize the per-block variable sets (used for liveness analysis).
 //

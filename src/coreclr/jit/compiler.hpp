@@ -5044,6 +5044,141 @@ void Compiler::fgVisitBlocksInLoopAwareRPO(FlowGraphDfsTree* dfsTree, FlowGraphN
 }
 
 //------------------------------------------------------------------------------
+// fgRunReverseDfs: Run DFS over the reverse flow graph.
+//
+// Type parameters:
+//   VisitPreorder  - Functor type that takes a BasicBlock* and its preorder number
+//   VisitPostorder - Functor type that takes a BasicBlock* and its postorder number
+//
+// Parameters:
+//   visitPreorder  - Functor to visit block in its preorder
+//   visitPostorder - Functor to visit block in its postorder
+//   pseudoExit     - non-graph basic block to serve as the postdominator of all blocks
+//
+// Returns:
+//   Number of blocks visited.
+//
+// Notes:
+//  Requires DFS tree to be prebuilt.
+//
+template <typename VisitPreorder, typename VisitPostorder>
+unsigned Compiler::fgRunReverseDfs(VisitPreorder visitPreorder, VisitPostorder visitPostorder, BasicBlock* pseudoExit)
+{
+    BitVecTraits traits(fgBBNumMax + 1, this);
+    BitVec       visited(BitVecOps::MakeEmpty(&traits));
+
+    unsigned preOrderIndex  = 0;
+    unsigned postOrderIndex = 0;
+
+    struct PredInfo
+    {
+        PredInfo(BasicBlock* block)
+            : m_block(block)
+            , m_edge(block->bbPreds)
+        {
+        }
+        BasicBlock* m_block;
+        FlowEdge*   m_edge;
+    };
+
+    ArrayStack<PredInfo> blocks(getAllocator(CMK_DepthFirstSearch));
+
+    auto reverseDfsFrom = [&](BasicBlock* firstBB) {
+        BitVecOps::AddElemD(&traits, visited, firstBB->bbNum);
+        FlowEdge* const preds = firstBB->bbPreds;
+        visitPreorder(firstBB, preOrderIndex++);
+        blocks.Emplace(firstBB);
+
+        while (!blocks.Empty())
+        {
+            BasicBlock* block = blocks.TopRef().m_block;
+
+            FlowEdge* edge = blocks.TopRef().m_edge;
+
+            if (edge != nullptr)
+            {
+                BasicBlock* pred       = edge->getSourceBlock();
+                blocks.TopRef().m_edge = edge->getNextPredEdge();
+
+                if (!this->m_dfsTree->Contains(pred))
+                {
+                    continue;
+                }
+
+                if (BitVecOps::TryAddElemD(&traits, visited, pred->bbNum))
+                {
+                    blocks.Emplace(pred);
+                    visitPreorder(pred, preOrderIndex++);
+                }
+            }
+            else
+            {
+                blocks.Pop();
+
+                // Defer postorder visit to the pseudo exit
+                // since we may have more preds to uncover
+                //
+                if (block != pseudoExit)
+                {
+                    visitPostorder(block, postOrderIndex++);
+                }
+            }
+        }
+    };
+
+    assert(pseudoExit->bbPreds == nullptr);
+
+    for (BasicBlock* block : Blocks())
+    {
+        if (!m_dfsTree->Contains(block))
+        {
+            continue;
+        }
+
+        if (block->KindIs(BBJ_RETURN, BBJ_THROW, BBJ_EHFAULTRET))
+        {
+            JITDUMP("RDFS: adding pseudo exit-edge for " FMT_BB "\n", block->bbNum);
+            fgAddRefPred(pseudoExit, block);
+        }
+    }
+
+    reverseDfsFrom(pseudoExit);
+
+    const unsigned dfsCount = m_dfsTree->GetPostOrderCount();
+    assert(dfsCount >= postOrderIndex);
+
+    if (dfsCount > postOrderIndex)
+    {
+        // If some forward reachable block is not reverse reachable,
+        // we may have an infinite loop... process these now.
+        //
+        // We work in postorder here to try and find the "lowest" blocks first
+        // so as to minimize the number of pseudo-edges.
+        //
+        for (unsigned i = 0; i < m_dfsTree->GetPostOrderCount(); i++)
+        {
+            BasicBlock* const block = m_dfsTree->GetPostOrder(i);
+
+            if (BitVecOps::TryAddElemD(&traits, visited, block->bbNum))
+            {
+                JITDUMP("RDFS: adding pseudo exit-edge for infinite loop to " FMT_BB "\n", block->bbNum);
+                fgAddRefPred(pseudoExit, block);
+                reverseDfsFrom(block);
+            }
+        }
+    }
+
+    // We've now visited all the preds of the pseudoExit,
+    // and all the blocks that were visited by the dfs.
+    //
+    visitPostorder(pseudoExit, postOrderIndex++);
+
+    assert(preOrderIndex == postOrderIndex);
+    assert(preOrderIndex == dfsCount + 1);
+    return preOrderIndex;
+}
+
+//------------------------------------------------------------------------------
 // FlowGraphNaturalLoop::VisitLoopBlocksReversePostOrder: Visit all of the
 // loop's blocks in reverse post order.
 //

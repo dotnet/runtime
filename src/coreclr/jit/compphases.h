@@ -66,6 +66,8 @@ CompPhaseNameMacro(PHASE_OPTIMIZE_FLOW,              "Optimize control flow",   
 CompPhaseNameMacro(PHASE_OPTIMIZE_LAYOUT,            "Optimize layout",                false, -1, false)
 CompPhaseNameMacro(PHASE_OPTIMIZE_POST_LAYOUT,       "Optimize post-layout",           false, -1, false)
 CompPhaseNameMacro(PHASE_COMPUTE_DOMINATORS,         "Compute dominators",             false, -1, false)
+CompPhaseNameMacro(PHASE_COMPUTE_POSTDOMINATORS,     "Compute postdominators",         false, -1, false)
+CompPhaseNameMacro(PHASE_STRESS_POSTDOMINATORS,      "Stress postdominators",          false, -1, false)
 CompPhaseNameMacro(PHASE_CANONICALIZE_ENTRY,         "Canonicalize entry",             false, -1, false)
 CompPhaseNameMacro(PHASE_SET_BLOCK_WEIGHTS,          "Set block weights",              false, -1, false)
 CompPhaseNameMacro(PHASE_ZERO_INITS,                 "Redundant zero Inits",           false, -1, false)
