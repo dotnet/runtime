@@ -1845,6 +1845,38 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 break;
             }
 
+            case NI_Sve_GatherVector:
+            {
+                if (!varTypeIsSIMD(intrin.op2->gtType))
+                {
+                    // GatherVector(Vector<T> mask, T* address, Vector<T2> indices)
+
+                    var_types auxType = node->GetAuxiliaryType();
+                    emitAttr  auxSize = emitActualTypeSize(auxType);
+
+                    if (auxSize == EA_8BYTE)
+                    {
+                        opt = varTypeIsUnsigned(auxType) ? INS_OPTS_SCALABLE_D_UXTW : INS_OPTS_SCALABLE_D_SXTW;
+                    }
+                    else
+                    {
+                        assert(auxSize == EA_4BYTE);
+                        opt = varTypeIsUnsigned(auxType) ? INS_OPTS_SCALABLE_S_UXTW : INS_OPTS_SCALABLE_S_SXTW;
+                    }
+
+                    GetEmitter()->emitIns_R_R_R_R(ins, emitSize, targetReg, op1Reg, op2Reg, op3Reg, opt,
+                                                  INS_SCALABLE_OPTS_MOD_N);
+                }
+                else
+                {
+                    // GatherVector(Vector<T> mask, Vector<T2> addresses)
+
+                    GetEmitter()->emitIns_R_R_R_I(ins, emitSize, targetReg, op1Reg, op2Reg, 0, opt);
+                }
+
+                break;
+            }
+
             case NI_Sve_ReverseElement:
                 // Use non-predicated version explicitly
                 GetEmitter()->emitIns_R_R(ins, emitSize, targetReg, op1Reg, opt, INS_SCALABLE_OPTS_UNPREDICATED);
