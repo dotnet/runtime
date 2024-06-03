@@ -1336,11 +1336,7 @@ namespace System.Numerics.Tensors
         public static Tensor<T> Add<T>(Tensor<T> input, T val)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IAdditionOperators<T, T, T>, IAdditiveIdentity<T, T>
         {
-            ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref input._values[0], (int)input._flattenedLength);
-            Tensor<T> output = Create<T>(input.Lengths, input.IsPinned);
-            Span<T> ospan = MemoryMarshal.CreateSpan(ref output._values[0], (int)output._flattenedLength);
-            TensorPrimitives.Add(span, val, ospan);
-            return output;
+            return TensorPrimitivesHelperSpanInTInSpanOut(input, val, TensorPrimitives.Add);
         }
 
         /// <summary>
@@ -1351,11 +1347,8 @@ namespace System.Numerics.Tensors
         public static Tensor<T> AddInPlace<T>(Tensor<T> input, T val)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IAdditionOperators<T, T, T>, IAdditiveIdentity<T, T>
         {
-            ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref input._values[0], (int)input._flattenedLength);
-            Tensor<T> output = input;
-            Span<T> ospan = MemoryMarshal.CreateSpan(ref output._values[0], (int)output._flattenedLength);
-            TensorPrimitives.Add(span, val, ospan);
-            return output;
+            return TensorPrimitivesHelperSpanInTInSpanOut(input, val, TensorPrimitives.Add, true);
+
         }
         #endregion
 
@@ -2990,6 +2983,9 @@ namespace System.Numerics.Tensors
             where TFrom : IEquatable<TFrom>, IEqualityOperators<TFrom, TFrom, bool>, INumberBase<TFrom>
             where TTo : INumberBase<TTo>;
 
+        private delegate void PerformCalculationSpanInTInSpanOut<T>(ReadOnlySpan<T> input, T value, Span<T> output)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>;
+
         private delegate void PerformCalculationSpanInSpanOut<T>(ReadOnlySpan<T> input, Span<T> output)
              where T : IEquatable<T>, IEqualityOperators<T, T, bool>;
 
@@ -3004,6 +3000,16 @@ namespace System.Numerics.Tensors
 
         private delegate void PerformCalculationTwoSpanInSpanOut<T>(ReadOnlySpan<T> input, ReadOnlySpan<T> inputTwo, Span<T> output)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>;
+
+        private static Tensor<T> TensorPrimitivesHelperSpanInTInSpanOut<T>(Tensor<T> input, T value, PerformCalculationSpanInTInSpanOut<T> performCalculation, bool inPlace = false)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>
+        {
+            ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref input._values[0], (int)input._flattenedLength);
+            Tensor<T> output = inPlace ? input : Create<T>(input.Lengths, input.IsPinned);
+            Span<T> ospan = MemoryMarshal.CreateSpan(ref output._values[0], (int)output._flattenedLength);
+            performCalculation(span, value, ospan);
+            return output;
+        }
 
         private static Tensor<int> TensorPrimitivesHelperSpanInIntSpanOut<T>(Tensor<T> input, PerformCalculationSpanInIntSpanOut<T> performCalculation)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>
