@@ -12,43 +12,43 @@ namespace System.Runtime.Serialization.BinaryFormat;
 internal enum BinaryType : byte
 {
     /// <summary>
-    ///  Type is defined by <see cref="PrimitiveType"/> and it is not a string.
+    /// The type is defined by <see cref="PrimitiveType"/> and it is not a string.
     /// </summary>
     Primitive,
 
     /// <summary>
-    ///  Type is <see href="https://learn.microsoft.com/openspecs/windows_protocols/ms-nrbf/10b218f5-9b2b-4947-b4b7-07725a2c8127">
+    /// The type is a <see href="https://learn.microsoft.com/openspecs/windows_protocols/ms-nrbf/10b218f5-9b2b-4947-b4b7-07725a2c8127">
     ///  length prefixed string</see>.
     /// </summary>
     String,
 
     /// <summary>
-    ///  Type is System.Object.
+    /// The type is the <see cref="object"/>.
     /// </summary>
     Object,
 
     /// <summary>
-    ///  Type is a standard .NET object.
+    /// The type is a class or a struct defined in mscorlib.
     /// </summary>
     SystemClass,
 
     /// <summary>
-    ///  Type is an object.
+    /// The type is a class or a struct.
     /// </summary>
     Class,
 
     /// <summary>
-    ///  Type is a single-dimensional array of objects.
+    /// The type is a single-dimensional array of objects.
     /// </summary>
     ObjectArray,
 
     /// <summary>
-    ///  Type is a single-dimensional array of strings.
+    /// The type is a single-dimensional array of strings.
     /// </summary>
     StringArray,
 
     /// <summary>
-    ///  Types is a single-dimensional array of a primitive type.
+    /// The type is a single-dimensional array of a primitive type.
     /// </summary>
     PrimitiveArray
 }

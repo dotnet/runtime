@@ -21,13 +21,13 @@ internal sealed class ClassTypeInfo
 
     internal TypeName TypeName { get; }
 
-    internal static ClassTypeInfo Parse(BinaryReader reader, PayloadOptions options, RecordMap recordMap)
+    internal static ClassTypeInfo Decode(BinaryReader reader, PayloadOptions options, RecordMap recordMap)
     {
         string rawName = reader.ReadString();
         int libraryId = reader.ReadInt32();
 
         BinaryLibraryRecord library = (BinaryLibraryRecord)recordMap[libraryId];
 
-        return new(rawName.ParseNonSystemClassRecordTypeName(library, options));
+        return new ClassTypeInfo(rawName.ParseNonSystemClassRecordTypeName(library, options));
     }
 }

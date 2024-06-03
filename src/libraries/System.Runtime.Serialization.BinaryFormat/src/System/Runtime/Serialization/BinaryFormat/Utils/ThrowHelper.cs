@@ -16,7 +16,7 @@ internal static class ThrowHelper
     internal static void ThrowUnexpectedNullRecordCount()
         => throw new SerializationException(SR.Serialization_UnexpectedNullRecordCount);
 
-    internal static void ThrowMaxArrayLength(int limit, long actual)
+    internal static void ThrowMaxArrayLength(long limit, long actual)
         => throw new SerializationException(SR.Format(SR.Serialization_MaxArrayLength, actual, limit));
 
     internal static void ThrowArrayContainedNulls()
@@ -25,13 +25,13 @@ internal static class ThrowHelper
     internal static void ThrowEndOfStreamException()
         => throw new EndOfStreamException();
 
-    internal static void ThrowForUnexpectedRecordType(RecordType recordType)
+    internal static void ThrowForUnexpectedRecordType(byte recordType)
     {
         // The enum values are not part of the public API surface, as they are not supported
         // and users don't need to handle these values.
 
 #pragma warning disable IDE0066 // Convert switch statement to expression
-        switch ((int)recordType)
+        switch (recordType)
         {
             case 2: // SystemClassWithMembers (generated without FormatterTypeStyle.TypesAlways)
             case 3: // ClassWithMembers (generated without FormatterTypeStyle.TypesAlways)
@@ -43,7 +43,7 @@ internal static class ThrowHelper
             case 22: // MethodReturn
                 throw new NotSupportedException(SR.Format(SR.NotSupported_RecordType, recordType));
             default:
-                ThrowInvalidValue((int)recordType);
+                ThrowInvalidValue(recordType);
                 break;
         }
 #pragma warning restore IDE0066 // Convert switch statement to expression

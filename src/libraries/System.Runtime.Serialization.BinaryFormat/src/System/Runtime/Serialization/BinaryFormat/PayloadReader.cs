@@ -25,7 +25,17 @@ static class PayloadReader
     /// <param name="bytes">The buffer to inspect.</param>
     /// <returns><see langword="true" /> if it starts with NRBF payload header; otherwise, <see langword="false" />.</returns>
     public static bool StartsWithPayloadHeader(byte[] bytes)
-        => bytes.Length >= SerializedStreamHeaderRecord.Size
+    {
+#if NETCOREAPP
+        ArgumentNullException.ThrowIfNull(bytes);
+#else
+        if (bytes is null)
+        {
+            throw new ArgumentNullException(nameof(bytes));
+        }
+#endif
+
+        return bytes.Length >= SerializedStreamHeaderRecord.Size
             && bytes[0] == (byte)RecordType.SerializedStreamHeader
 #if NETCOREAPP
             && BinaryPrimitives.ReadInt32LittleEndian(bytes.AsSpan(9)) == SerializedStreamHeaderRecord.MajorVersion
@@ -34,6 +44,7 @@ static class PayloadReader
             && BitConverter.ToInt32(bytes, 9) == SerializedStreamHeaderRecord.MajorVersion
             && BitConverter.ToInt32(bytes, 13) == SerializedStreamHeaderRecord.MinorVersion;
 #endif
+    }
 
 
     /// <summary>
@@ -99,9 +110,9 @@ static class PayloadReader
     ///   <see langword="true" /> to leave <paramref name="payload"/> payload open
     ///   after the reading is finished; otherwise, <see langword="false" />.
     /// </param>
-    /// <returns>A <seealso cref="SerializationRecord"/> that represents the root object.
-    /// It can be either <seealso cref="PrimitiveTypeRecord{T}"/>,
-    /// a <seealso cref="ClassRecord"/> or an <seealso cref="ArrayRecord"/>.</returns>
+    /// <returns>A <see cref="SerializationRecord"/> that represents the root object.
+    /// It can be either <see cref="PrimitiveTypeRecord{T}"/>,
+    /// a <see cref="ClassRecord"/> or an <see cref="ArrayRecord"/>.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="payload"/> is <see langword="null" />.</exception>
     /// <exception cref="ArgumentException"><paramref name="payload"/> does not support reading or is already closed.</exception>
     /// <exception cref="SerializationException">Reading from <paramref name="payload"/> encounters invalid NRBF data.</exception>
@@ -111,8 +122,11 @@ static class PayloadReader
         => Read(payload, out _, options, leaveOpen);
 
     /// <param name="payload">The NRBF payload.</param>
-    /// <param name="recordMap">Record map</param>
-    /// <param name="options">An object that describes optional <seealso cref="PayloadOptions"/> parameters to use.</param>
+    /// <param name="recordMap">
+    ///   When this method returns, contains a mapping of <see cref="SerializationRecord.ObjectId" /> to the associated serialization record.
+    ///   This parameter is treated as uninitialized.
+    /// </param>
+    /// <param name="options">An object that describes optional <see cref="PayloadOptions"/> parameters to use.</param>
     /// <param name="leaveOpen">
     ///   <see langword="true" /> to leave <paramref name="payload"/> payload open
     ///   after the reading is finished; otherwise, <see langword="false" />.
@@ -149,7 +163,7 @@ static class PayloadReader
         // Everything has to start with a header
         var header = (SerializedStreamHeaderRecord)ReadNext(reader, recordMap, AllowedRecordTypes.SerializedStreamHeader, options, out _);
         // and can be followed by any Object, BinaryLibrary and a MessageEnd.
-        const AllowedRecordTypes allowed = AllowedRecordTypes.AnyObject
+        const AllowedRecordTypes Allowed = AllowedRecordTypes.AnyObject
             | AllowedRecordTypes.BinaryLibrary | AllowedRecordTypes.MessageEnd;
 
         RecordType recordType;
@@ -189,7 +203,7 @@ static class PayloadReader
                 }
             }
 
-            nextRecord = ReadNext(reader, recordMap, allowed, options, out recordType);
+            nextRecord = ReadNext(reader, recordMap, Allowed, options, out recordType);
             PushFirstNestedRecordInfo(nextRecord, readStack);
         }
         while (recordType != RecordType.MessageEnd);
@@ -201,31 +215,31 @@ static class PayloadReader
     private static SerializationRecord ReadNext(BinaryReader reader, RecordMap recordMap,
         AllowedRecordTypes allowed, PayloadOptions options, out RecordType recordType)
     {
-        recordType = (RecordType)reader.ReadByte();
-
-        if (((uint)allowed & (1u << (int)recordType)) == 0)
+        byte nextByte = reader.ReadByte();
+        if (((uint)allowed & (1u << nextByte)) == 0)
         {
-            ThrowHelper.ThrowForUnexpectedRecordType(recordType);
+            ThrowHelper.ThrowForUnexpectedRecordType(nextByte);
         }
+        recordType = (RecordType)nextByte;
 
         SerializationRecord record = recordType switch
         {
-            RecordType.ArraySingleObject => ArraySingleObjectRecord.Parse(reader),
-            RecordType.ArraySinglePrimitive => ParseArraySinglePrimitiveRecord(reader),
-            RecordType.ArraySingleString => ArraySingleStringRecord.Parse(reader),
-            RecordType.BinaryArray => BinaryArrayRecord.Parse(reader, recordMap, options),
-            RecordType.BinaryLibrary => BinaryLibraryRecord.Parse(reader),
-            RecordType.BinaryObjectString => BinaryObjectStringRecord.Parse(reader),
-            RecordType.ClassWithId => ClassWithIdRecord.Parse(reader, recordMap),
-            RecordType.ClassWithMembersAndTypes => ClassWithMembersAndTypesRecord.Parse(reader, recordMap, options),
-            RecordType.MemberPrimitiveTyped => ParseMemberPrimitiveTypedRecord(reader),
-            RecordType.MemberReference => MemberReferenceRecord.Parse(reader, recordMap),
+            RecordType.ArraySingleObject => ArraySingleObjectRecord.Decode(reader),
+            RecordType.ArraySinglePrimitive => DecodeArraySinglePrimitiveRecord(reader),
+            RecordType.ArraySingleString => ArraySingleStringRecord.Decode(reader),
+            RecordType.BinaryArray => BinaryArrayRecord.Decode(reader, recordMap, options),
+            RecordType.BinaryLibrary => BinaryLibraryRecord.Decode(reader),
+            RecordType.BinaryObjectString => BinaryObjectStringRecord.Decode(reader),
+            RecordType.ClassWithId => ClassWithIdRecord.Decode(reader, recordMap),
+            RecordType.ClassWithMembersAndTypes => ClassWithMembersAndTypesRecord.Decode(reader, recordMap, options),
+            RecordType.MemberPrimitiveTyped => DecodeMemberPrimitiveTypedRecord(reader),
+            RecordType.MemberReference => MemberReferenceRecord.Decode(reader, recordMap),
             RecordType.MessageEnd => MessageEndRecord.Singleton,
             RecordType.ObjectNull => ObjectNullRecord.Instance,
-            RecordType.ObjectNullMultiple => ObjectNullMultipleRecord.Parse(reader),
-            RecordType.ObjectNullMultiple256 => ObjectNullMultiple256Record.Parse(reader),
-            RecordType.SerializedStreamHeader => SerializedStreamHeaderRecord.Parse(reader),
-            _ => SystemClassWithMembersAndTypesRecord.Parse(reader, recordMap, options),
+            RecordType.ObjectNullMultiple => ObjectNullMultipleRecord.Decode(reader),
+            RecordType.ObjectNullMultiple256 => ObjectNullMultiple256Record.Decode(reader),
+            RecordType.SerializedStreamHeader => SerializedStreamHeaderRecord.Decode(reader),
+            _ => SystemClassWithMembersAndTypesRecord.Decode(reader, recordMap, options),
         };
 
         recordMap.Add(record);
@@ -233,7 +247,7 @@ static class PayloadReader
         return record;
     }
 
-    private static SerializationRecord ParseMemberPrimitiveTypedRecord(BinaryReader reader)
+    private static SerializationRecord DecodeMemberPrimitiveTypedRecord(BinaryReader reader)
     {
         PrimitiveType primitiveType = reader.ReadPrimitiveType();
 
@@ -258,32 +272,32 @@ static class PayloadReader
         };
     }
 
-    private static SerializationRecord ParseArraySinglePrimitiveRecord(BinaryReader reader)
+    private static SerializationRecord DecodeArraySinglePrimitiveRecord(BinaryReader reader)
     {
-        ArrayInfo info = ArrayInfo.Parse(reader);
+        ArrayInfo info = ArrayInfo.Decode(reader);
         PrimitiveType primitiveType = reader.ReadPrimitiveType();
 
         return primitiveType switch
         {
-            PrimitiveType.Boolean => Read<bool>(info, reader),
-            PrimitiveType.Byte => Read<byte>(info, reader),
-            PrimitiveType.SByte => Read<sbyte>(info, reader),
-            PrimitiveType.Char => Read<char>(info, reader),
-            PrimitiveType.Int16 => Read<short>(info, reader),
-            PrimitiveType.UInt16 => Read<ushort>(info, reader),
-            PrimitiveType.Int32 => Read<int>(info, reader),
-            PrimitiveType.UInt32 => Read<uint>(info, reader),
-            PrimitiveType.Int64 => Read<long>(info, reader),
-            PrimitiveType.UInt64 => Read<ulong>(info, reader),
-            PrimitiveType.Single => Read<float>(info, reader),
-            PrimitiveType.Double => Read<double>(info, reader),
-            PrimitiveType.Decimal => Read<decimal>(info, reader),
-            PrimitiveType.DateTime => Read<DateTime>(info, reader),
-            _ => Read<TimeSpan>(info, reader),
+            PrimitiveType.Boolean => Decode<bool>(info, reader),
+            PrimitiveType.Byte => Decode<byte>(info, reader),
+            PrimitiveType.SByte => Decode<sbyte>(info, reader),
+            PrimitiveType.Char => Decode<char>(info, reader),
+            PrimitiveType.Int16 => Decode<short>(info, reader),
+            PrimitiveType.UInt16 => Decode<ushort>(info, reader),
+            PrimitiveType.Int32 => Decode<int>(info, reader),
+            PrimitiveType.UInt32 => Decode<uint>(info, reader),
+            PrimitiveType.Int64 => Decode<long>(info, reader),
+            PrimitiveType.UInt64 => Decode<ulong>(info, reader),
+            PrimitiveType.Single => Decode<float>(info, reader),
+            PrimitiveType.Double => Decode<double>(info, reader),
+            PrimitiveType.Decimal => Decode<decimal>(info, reader),
+            PrimitiveType.DateTime => Decode<DateTime>(info, reader),
+            _ => Decode<TimeSpan>(info, reader),
         };
 
-        static SerializationRecord Read<T>(ArrayInfo info, BinaryReader reader) where T : unmanaged
-            => new ArraySinglePrimitiveRecord<T>(info, ArraySinglePrimitiveRecord<T>.ReadPrimitiveTypes(reader, (int)info.Length));
+        static SerializationRecord Decode<T>(ArrayInfo info, BinaryReader reader) where T : unmanaged
+            => new ArraySinglePrimitiveRecord<T>(info, ArraySinglePrimitiveRecord<T>.DecodePrimitiveTypes(reader, (int)info.Length));
     }
 
     /// <summary>
@@ -291,7 +305,7 @@ static class PayloadReader
     /// of the NESTED record into the <paramref name="readStack"/>.
     /// It's not pushing all of them, because it could be used as a vector of attack.
     /// Example: BinaryArrayRecord with Array.MaxLength length,
-    /// where first item turns out to be <seealso cref="ObjectNullMultipleRecord"/>
+    /// where first item turns out to be <see cref="ObjectNullMultipleRecord"/>
     /// that provides Array.MaxLength nulls.
     /// </summary>
     private static void PushFirstNestedRecordInfo(SerializationRecord record, Stack<NextInfo> readStack)

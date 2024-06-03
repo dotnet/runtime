@@ -6,7 +6,7 @@ using System.IO;
 namespace System.Runtime.Serialization.BinaryFormat;
 
 /// <summary>
-/// Library name and ID.
+/// Represents a library.
 /// </summary>
 /// <remarks>
 /// BinaryLibrary records are described in <see href="https://learn.microsoft.com/openspecs/windows_protocols/ms-nrbf/7fcf30e1-4ad4-4410-8f1a-901a4a1ea832">[MS-NRBF] 2.6.2</see>.
@@ -23,8 +23,9 @@ internal sealed class BinaryLibraryRecord : SerializationRecord
 
     internal string LibraryName { get; }
 
+    /// <inheritdoc />
     public override int ObjectId { get; }
 
-    internal static BinaryLibraryRecord Parse(BinaryReader reader)
+    internal static BinaryLibraryRecord Decode(BinaryReader reader)
         => new(reader.ReadInt32(), reader.ReadString());
 }

@@ -26,7 +26,7 @@ internal sealed class ArrayOfClassesRecord : ArrayRecord<ClassRecord>
 
     public override TypeName ElementTypeName => _elementTypeName ??= MemberTypeInfo.GetElementTypeName();
 
-    protected override ClassRecord?[] ToArrayOfT(bool allowNulls)
+    private protected override ClassRecord?[] ToArrayOfT(bool allowNulls)
     {
         ClassRecord?[] result = new ClassRecord?[Length];
 

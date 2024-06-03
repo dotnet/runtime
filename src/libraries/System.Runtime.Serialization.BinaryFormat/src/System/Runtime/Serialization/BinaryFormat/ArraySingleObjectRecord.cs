@@ -9,7 +9,7 @@ using System.Runtime.Serialization.BinaryFormat.Utils;
 namespace System.Runtime.Serialization.BinaryFormat;
 
 /// <summary>
-/// Single dimensional array of objects.
+/// Represents a single dimensional array of <see cref="object" />.
 /// </summary>
 /// <remarks>
 /// ArraySingleObject records are described in <see href="https://learn.microsoft.com/openspecs/windows_protocols/ms-nrbf/982b2f50-6367-402a-aaf2-44ee96e2a5e0">[MS-NRBF] 2.4.3.2</see>.
@@ -31,7 +31,7 @@ internal sealed class ArraySingleObjectRecord : ArrayRecord<object?>
 
     internal override bool IsElementType(Type typeElement) => typeElement == typeof(object);
 
-    protected override object?[] ToArrayOfT(bool allowNulls)
+    private protected override object?[] ToArrayOfT(bool allowNulls)
     {
         object?[] values = new object?[Length];
 
@@ -64,15 +64,15 @@ internal sealed class ArraySingleObjectRecord : ArrayRecord<object?>
         return values;
     }
 
-    internal static ArraySingleObjectRecord Parse(BinaryReader reader)
-        => new(ArrayInfo.Parse(reader));
+    internal static ArraySingleObjectRecord Decode(BinaryReader reader)
+        => new(ArrayInfo.Decode(reader));
 
     internal override (AllowedRecordTypes allowed, PrimitiveType primitiveType) GetAllowedRecordType()
     {
         // An array of objects can contain any Object or multiple nulls.
-        const AllowedRecordTypes allowed = AllowedRecordTypes.AnyObject | AllowedRecordTypes.Nulls;
+        const AllowedRecordTypes Allowed = AllowedRecordTypes.AnyObject | AllowedRecordTypes.Nulls;
 
-        return (allowed, default);
+        return (Allowed, default);
     }
 
     private protected override void AddValue(object value) => Records.Add((SerializationRecord)value);

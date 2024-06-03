@@ -6,7 +6,7 @@ using System.IO;
 namespace System.Runtime.Serialization.BinaryFormat;
 
 /// <summary>
-/// Class information that references another class record's metadata.
+/// Represents a class information that references another class record's metadata.
 /// </summary>
 /// <remarks>
 /// ClassWithId records are described in <see href="https://learn.microsoft.com/openspecs/windows_protocols/ms-nrbf/2d168388-37f4-408a-b5e0-e48dbce73e26">[MS-NRBF] 2.3.2.5</see>.
@@ -21,11 +21,12 @@ internal sealed class ClassWithIdRecord : ClassRecord
 
     public override RecordType RecordType => RecordType.ClassWithId;
 
+    /// <inheritdoc />
     public override int ObjectId { get; }
 
     internal ClassRecord MetadataClass { get; }
 
-    internal static ClassWithIdRecord Parse(
+    internal static ClassWithIdRecord Decode(
         BinaryReader reader,
         RecordMap recordMap)
     {
@@ -37,7 +38,7 @@ internal sealed class ClassWithIdRecord : ClassRecord
             throw new SerializationException(SR.Serialization_InvalidReference);
         }
 
-        return new(objectId, referencedRecord);
+        return new ClassWithIdRecord(objectId, referencedRecord);
     }
 
     internal override (AllowedRecordTypes allowed, PrimitiveType primitiveType) GetNextAllowedRecordType()

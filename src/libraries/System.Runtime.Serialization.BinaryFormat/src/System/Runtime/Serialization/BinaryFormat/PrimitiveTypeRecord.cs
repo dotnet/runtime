@@ -11,14 +11,14 @@ namespace System.Runtime.Serialization.BinaryFormat;
 /// <typeparam name="T">The type of the primitive value.</typeparam>
 /// <remarks>
 /// <para>
-/// <typeparamref name="T"/> can be one of the following types:
-/// <seealso cref="string"/>, <seealso cref="bool"/>, <seealso cref="byte"/>, <seealso cref="sbyte"/>
-/// <seealso cref="char"/>, <seealso cref="short"/>, <seealso cref="ushort"/>,
-/// <seealso cref="int"/>, <seealso cref="uint"/>, <seealso cref="long"/>, <seealso cref="ulong"/>,
-/// <seealso cref="float"/>, <seealso cref="double"/>, <seealso cref="decimal"/>,
-/// <seealso cref="DateTime"/> or <seealso cref="TimeSpan"/>.
+/// The NRBF specification considers the following types to be primitive:
+/// <see langword="string"/>, <see cref="bool"/>, <see cref="byte"/>, <see cref="sbyte"/>
+/// <see cref="char"/>, <see cref="short"/>, <see cref="ushort"/>,
+/// <see cref="int"/>, <see cref="uint"/>, <see cref="long"/>, <see cref="ulong"/>,
+/// <see cref="float"/>, <see cref="double"/>, <see cref="decimal"/>,
+/// <see cref="DateTime"/> and <see cref="TimeSpan"/>.
 /// </para>
-/// <para>Other serialization records are represented with <seealso cref="ClassRecord"/> or <seealso cref="ArrayRecord"/>.</para>
+/// <para>Other serialization records are represented with <see cref="ClassRecord"/> or <see cref="ArrayRecord"/>.</para>
 /// </remarks>
 [DebuggerDisplay("{Value}")]
 #if SYSTEM_RUNTIME_SERIALIZATION_BINARYFORMAT

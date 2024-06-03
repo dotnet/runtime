@@ -9,7 +9,7 @@ using System.Runtime.Serialization.BinaryFormat.Utils;
 namespace System.Runtime.Serialization.BinaryFormat;
 
 /// <summary>
-/// Single dimensional array of strings.
+/// Represents a single dimensional array of <see langword="string" />.
 /// </summary>
 /// <remarks>
 /// ArraySingleString records are described in <see href="https://learn.microsoft.com/openspecs/windows_protocols/ms-nrbf/3d98fd60-d2b4-448a-ac0b-3cd8dea41f9d">[MS-NRBF] 2.4.3.4</see>.
@@ -31,21 +31,21 @@ internal sealed class ArraySingleStringRecord : ArrayRecord<string?>
 
     internal override bool IsElementType(Type typeElement) => typeElement == typeof(string);
 
-    internal static ArraySingleStringRecord Parse(BinaryReader reader)
-        => new(ArrayInfo.Parse(reader));
+    internal static ArraySingleStringRecord Decode(BinaryReader reader)
+        => new(ArrayInfo.Decode(reader));
 
     internal override (AllowedRecordTypes allowed, PrimitiveType primitiveType) GetAllowedRecordType()
     {
         // An array of string can consist of string(s), null(s) and reference(s) to string(s).
-        const AllowedRecordTypes allowedTypes = AllowedRecordTypes.BinaryObjectString
+        const AllowedRecordTypes AllowedTypes = AllowedRecordTypes.BinaryObjectString
             | AllowedRecordTypes.Nulls | AllowedRecordTypes.MemberReference;
 
-        return (allowedTypes, default);
+        return (AllowedTypes, default);
     }
 
     private protected override void AddValue(object value) => Records.Add((SerializationRecord)value);
 
-    protected override string?[] ToArrayOfT(bool allowNulls)
+    private protected override string?[] ToArrayOfT(bool allowNulls)
     {
         string?[] values = new string?[Length];
 

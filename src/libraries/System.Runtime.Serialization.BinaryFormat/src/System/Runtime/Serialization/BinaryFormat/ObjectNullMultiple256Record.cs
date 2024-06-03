@@ -6,7 +6,7 @@ using System.IO;
 namespace System.Runtime.Serialization.BinaryFormat;
 
 /// <summary>
-/// Multiple null object record (less than 256).
+/// Represents multiple (less than 256) <see langword="null" />.
 /// </summary>
 /// <remarks>
 /// ObjectNullMultiple256 records are described in <see href="https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-nrbf/24ae84a0-781f-45bf-a1ac-49f6a65af5dd">[MS-NRBF] 2.5.6</see>.
@@ -19,6 +19,6 @@ internal sealed class ObjectNullMultiple256Record : NullsRecord
 
     internal override int NullCount { get; }
 
-    internal static ObjectNullMultiple256Record Parse(BinaryReader reader)
+    internal static ObjectNullMultiple256Record Decode(BinaryReader reader)
         => new(reader.ReadByte());
 }

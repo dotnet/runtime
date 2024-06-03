@@ -6,15 +6,13 @@ using System.IO;
 namespace System.Runtime.Serialization.BinaryFormat;
 
 /// <summary>
-/// A record that contains a reference to another record that contains the actual value.
+/// Represents a record that contains a reference to another record that contains the actual value.
 /// </summary>
 /// <remarks>
 /// MemberReference records are described in <see href="https://learn.microsoft.com/openspecs/windows_protocols/ms-nrbf/eef0aa32-ab03-4b6a-a506-bcdfc10583fd">[MS-NRBF] 2.5.3</see>.
 /// </remarks>
 internal sealed class MemberReferenceRecord : SerializationRecord
 {
-    // This type has no ObjectId, so it's impossible to create a reference to a reference
-    // and get into issues with cycles or unbounded recursion.
     private MemberReferenceRecord(int reference, RecordMap recordMap)
     {
         Reference = reference;
@@ -27,11 +25,15 @@ internal sealed class MemberReferenceRecord : SerializationRecord
 
     private RecordMap RecordMap { get; }
 
+    // MemberReferenceRecord has no Id, which makes it impossible to create a cycle
+    // by creating a reference to the reference itself.
+    public override int ObjectId => NoId;
+
     internal override object? GetValue() => GetReferencedRecord().GetValue();
 
     public override bool IsTypeNameMatching(Type type) => GetReferencedRecord().IsTypeNameMatching(type);
 
-    internal static MemberReferenceRecord Parse(BinaryReader reader, RecordMap recordMap)
+    internal static MemberReferenceRecord Decode(BinaryReader reader, RecordMap recordMap)
         => new(reader.ReadInt32(), recordMap);
 
     internal SerializationRecord GetReferencedRecord() => RecordMap[Reference];

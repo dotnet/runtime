@@ -23,11 +23,7 @@ internal sealed class RecordMap : IReadOnlyDictionary<int, SerializationRecord>
 
     public bool ContainsKey(int key) => _map.ContainsKey(key);
 
-    public bool TryGetValue(int key,
-#if NETCOREAPP
-        [MaybeNullWhen(false)]
-#endif
-        out SerializationRecord value) => _map.TryGetValue(key, out value);
+    public bool TryGetValue(int key, [MaybeNullWhen(false)] out SerializationRecord value) => _map.TryGetValue(key, out value);
 
     public IEnumerator<KeyValuePair<int, SerializationRecord>> GetEnumerator() => _map.GetEnumerator();
 
@@ -48,8 +44,19 @@ internal sealed class RecordMap : IReadOnlyDictionary<int, SerializationRecord>
             }
             else
             {
-                // use Add on purpose, so in case of duplicate Ids we get an exception
-                _map.Add(record.ObjectId, record);
+#if NETCOREAPP
+                if (_map.TryAdd(record.ObjectId, record))
+                {
+                    return;
+                }
+#else
+                if (!_map.ContainsKey(record.ObjectId))
+                {
+                    _map.Add(record.ObjectId, record);
+                    return;
+                }
+#endif
+                throw new SerializationException(SR.Format(SR.Serialization_DuplicateSerializationRecordId, record.ObjectId));
             }
         }
     }
@@ -66,7 +73,7 @@ internal sealed class RecordMap : IReadOnlyDictionary<int, SerializationRecord>
         return rootRecord;
     }
 
-    // keys (32-bit integer ids) are adversary-provided so we need a collision-resistant comparer
+    // keys (32-bit integer ids) are payload-provided so we need a collision-resistant comparer
     private sealed class CollisionResistantInt32Comparer : IEqualityComparer<int>
     {
         internal static CollisionResistantInt32Comparer Instance { get; } = new();

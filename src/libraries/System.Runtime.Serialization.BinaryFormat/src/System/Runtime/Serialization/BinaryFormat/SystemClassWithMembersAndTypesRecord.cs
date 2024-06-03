@@ -25,13 +25,13 @@ internal sealed class SystemClassWithMembersAndTypesRecord : ClassRecord
         => type.Assembly == typeof(object).Assembly
         && type.GetTypeFullNameIncludingTypeForwards() == ClassInfo.TypeName.FullName;
 
-    internal static SystemClassWithMembersAndTypesRecord Parse(BinaryReader reader, RecordMap recordMap, PayloadOptions options)
+    internal static SystemClassWithMembersAndTypesRecord Decode(BinaryReader reader, RecordMap recordMap, PayloadOptions options)
     {
-        ClassInfo classInfo = ClassInfo.Parse(reader);
-        MemberTypeInfo memberTypeInfo = MemberTypeInfo.Parse(reader, classInfo.MemberNames.Count, options, recordMap);
+        ClassInfo classInfo = ClassInfo.Decode(reader);
+        MemberTypeInfo memberTypeInfo = MemberTypeInfo.Decode(reader, classInfo.MemberNames.Count, options, recordMap);
         // the only difference with ClassWithMembersAndTypesRecord is that we don't read library id here
-        classInfo.ParseTypeName(options);
-        return new(classInfo, memberTypeInfo);
+        classInfo.LoadTypeName(options);
+        return new SystemClassWithMembersAndTypesRecord(classInfo, memberTypeInfo);
     }
 
     internal override (AllowedRecordTypes allowed, PrimitiveType primitiveType) GetNextAllowedRecordType()

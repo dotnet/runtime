@@ -40,6 +40,31 @@ public class JaggedArraysTests : ReadTests
     }
 
     [Fact]
+    public void CanReadJaggedArrayOfRectangularArrays()
+    {
+        int[][,] input = new int[7][,];
+        for (int i = 0; i < input.Length; i++)
+        {
+            input[i] = new int[3,3];
+
+            for (int j = 0; j < input[i].GetLength(0); j++)
+            {
+                for (int k = 0; k < input[i].GetLength(1); k++)
+                {
+                    input[i][j, k] = i * j * k;
+                }
+            }
+        }
+
+        var arrayRecord = (ArrayRecord)PayloadReader.Read(Serialize(input));
+
+        VerifyLength(input, arrayRecord);
+        Assert.Equal(BinaryArrayType.Jagged, arrayRecord.ArrayType);
+        Assert.Equal(input, arrayRecord.ToArray(input.GetType()));
+        Assert.Equal(1, arrayRecord.Rank);
+    }
+
+    [Fact]
     public void CanReadJaggedArraysOfStrings()
     {
         string[][] input = new string[5][];

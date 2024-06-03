@@ -65,7 +65,7 @@ public abstract class BasicObjectTests<T> : SerializationTest<T> where T : ISeri
     public static EnumerableTupleTheoryData<object, TypeSerializableValue[]> SerializableObjects()
     {
         // Can add a .Skip() to get to the failing scenario easier when debugging.
-        return new((
+        return new EnumerableTupleTheoryData<object, TypeSerializableValue[]>((
             // Explicitly not supporting offset arrays
             from value in BinaryFormatterTests.RawSerializableObjects()
             where value.Item1 is not Array array || array.GetLowerBound(0) == 0
@@ -74,7 +74,7 @@ public abstract class BasicObjectTests<T> : SerializationTest<T> where T : ISeri
 
     public static EnumerableTupleTheoryData<object, FormatterAssemblyStyle, FormatterTypeStyle> BasicObjectsRoundtrip_MemberData()
     {
-        return new((
+        return new EnumerableTupleTheoryData<object, FormatterAssemblyStyle, FormatterTypeStyle>((
             // Explicitly not supporting offset arrays
             from value in BinaryFormatterTests.RawSerializableObjects()
             from FormatterAssemblyStyle assemblyFormat in new[] { FormatterAssemblyStyle.Full, FormatterAssemblyStyle.Simple }

@@ -7,7 +7,7 @@ using System.Runtime.Serialization.BinaryFormat.Utils;
 namespace System.Runtime.Serialization.BinaryFormat;
 
 /// <summary>
-/// Multiple null object record (more than 255).
+/// Represents multiple <see langword="null" />.
 /// </summary>
 /// <remarks>
 /// ObjectNullMultiple records are described in <see href="https://learn.microsoft.com/openspecs/windows_protocols/ms-nrbf/f4abb5dd-aab7-4e0a-9d77-1d6c99f5779e">[MS-NRBF] 2.5.5</see>.
@@ -20,14 +20,14 @@ internal sealed class ObjectNullMultipleRecord : NullsRecord
 
     internal override int NullCount { get; }
 
-    internal static ObjectNullMultipleRecord Parse(BinaryReader reader)
+    internal static ObjectNullMultipleRecord Decode(BinaryReader reader)
     {
         int count = reader.ReadInt32();
-        if (count <= byte.MaxValue) // BinaryFormatter would have used ObjectNullMultiple256Record
+        if (count <= 0)
         {
             ThrowHelper.ThrowInvalidValue(count);
         }
 
-        return new(count);
+        return new ObjectNullMultipleRecord(count);
     }
 }

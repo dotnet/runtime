@@ -4,7 +4,7 @@
 namespace System.Runtime.Serialization.BinaryFormat;
 
 /// <summary>
-/// Binary array type.
+/// Indicates the kind of an array for an NRBF BinaryArray record.
 /// </summary>
 /// <remarks>
 /// BinaryArrayType enumeration is described in <see href="https://learn.microsoft.com/openspecs/windows_protocols/ms-nrbf/4dbbf3a8-6bc4-4dfc-aa7e-36a35be6ff58">[MS-NRBF] 2.4.1.1</see>.

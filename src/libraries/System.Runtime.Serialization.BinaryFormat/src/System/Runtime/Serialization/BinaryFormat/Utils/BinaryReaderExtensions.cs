@@ -14,7 +14,7 @@ internal static class BinaryReaderExtensions
     {
         byte arrayType = reader.ReadByte();
         // RectangularOffset is the last defined value.
-        if (arrayType > BinaryArrayType.RectangularOffset)
+        if (arrayType > (byte)BinaryArrayType.RectangularOffset)
         {
             ThrowHelper.ThrowInvalidValue(arrayType);
         }
@@ -25,7 +25,8 @@ internal static class BinaryReaderExtensions
     internal static BinaryType ReadBinaryType(this BinaryReader reader)
     {
         byte binaryType = reader.ReadByte();
-        if (binaryType > 7)
+        // PrimitiveArray is the last defined value.
+        if (binaryType > (byte)BinaryType.PrimitiveArray)
         {
             ThrowHelper.ThrowInvalidValue(binaryType);
         }
@@ -35,7 +36,8 @@ internal static class BinaryReaderExtensions
     internal static PrimitiveType ReadPrimitiveType(this BinaryReader reader)
     {
         byte primitiveType = reader.ReadByte();
-        if (primitiveType is 4 or > 18)
+        // String is the last defined value, 4 is not used at all.
+        if (primitiveType is 4 or > (byte)PrimitiveType.String)
         {
             ThrowHelper.ThrowInvalidValue(primitiveType);
         }
@@ -65,7 +67,7 @@ internal static class BinaryReaderExtensions
             _ => new TimeSpan(reader.ReadInt64()),
         };
 
-    // TODO: fix https://github.com/adamsitnik/SafePayloadReader/issues/2
+    // TODO: fix https://github.com/dotnet/runtime/issues/102826
     /// <summary>
     ///  Creates a <see cref="DateTime"/> object from raw data with validation.
     /// </summary>

@@ -8,16 +8,8 @@ using System.Reflection.Metadata;
 namespace System.Runtime.Serialization.BinaryFormat;
 
 /// <summary>
-///  Base class for class records.
+/// Defines the core behavior for NRBF class records and provides a base for derived classes.
 /// </summary>
-/// <remarks>
-///  <para>
-///   Includes the values for the class (which trail the record)
-///   <see href="https://learn.microsoft.com/openspecs/windows_protocols/ms-nrbf/c9bc3af3-5a0c-4b29-b517-1b493b51f7bb">
-///    [MS-NRBF] 2.3
-///   </see>.
-///  </para>
-/// </remarks>
 #if SYSTEM_RUNTIME_SERIALIZATION_BINARYFORMAT
 public
 #else
@@ -25,8 +17,6 @@ internal
 #endif
 abstract class ClassRecord : SerializationRecord
 {
-    private const int MaxLength = ArrayRecord.DefaultMaxArrayLength;
-
     private protected ClassRecord(ClassInfo classInfo, MemberTypeInfo memberTypeInfo)
     {
         ClassInfo = classInfo;
@@ -39,6 +29,7 @@ abstract class ClassRecord : SerializationRecord
     // Currently we don't expose raw values, so we are not preserving the order here.
     public IEnumerable<string> MemberNames => ClassInfo.MemberNames.Keys;
 
+    /// <inheritdoc />
     public override int ObjectId => ClassInfo.ObjectId;
 
     internal ClassInfo ClassInfo { get; }
@@ -53,11 +44,11 @@ abstract class ClassRecord : SerializationRecord
     /// Checks if member of given name was present in the payload.
     /// </summary>
     /// <param name="memberName">The name of the member.</param>
-    /// <returns>True if it was present, otherwise false.</returns>
+    /// <returns><see langword="true" /> if it was present, otherwise <see langword="false" />.</returns>
     /// <remarks>
     ///  <para>
     ///   It's recommended to use this method when dealing with payload that may contain
-    ///   different versions of the same type.s
+    ///   different versions of the same type.
     ///  </para>
     /// </remarks>
     public bool HasMember(string memberName) => ClassInfo.MemberNames.ContainsKey(memberName);
@@ -67,7 +58,7 @@ abstract class ClassRecord : SerializationRecord
     /// </summary>
     /// <param name="memberName">The name of the member.</param>
     /// <returns>The value.</returns>
-    /// <exception cref="KeyNotFoundException">Member of such name does not exist. You can use <seealso cref="HasMember(string)"/> to check if given member exists.</exception>
+    /// <exception cref="KeyNotFoundException"><paramref name="memberName" /> does not refer to a known member. You can use <see cref="HasMember(string)"/> to check if given member exists.</exception>
     /// <exception cref="InvalidOperationException">Member of such name has value of a different type.</exception>
     public ClassRecord? GetClassRecord(string memberName) => GetMember<ClassRecord>(memberName);
 
@@ -105,11 +96,11 @@ abstract class ClassRecord : SerializationRecord
     public DateTime GetDateTime(string memberName) => GetMember<DateTime>(memberName);
 
     /// <returns>
-    /// <para>For primitive types like <seealso cref="int"/>, <seealso cref="string"/> or <seealso cref="DateTime"/> returns their value.</para>
+    /// <para>For primitive types like <see cref="int"/>, <see langword="string"/> or <see cref="DateTime"/> returns their value.</para>
     /// <para>For nulls, returns a null.</para>
-    /// <para>For other types that are not arrays, returns an instance of <seealso cref="ClassRecord"/>.</para>
-    /// <para>For single-dimensional arrays returns <seealso cref="ArrayRecord{T}"/> where the generic type is the primitive type or <seealso cref="ClassRecord"/>.</para>
-    /// <para>For jagged and multi-dimensional arrays, returns an instance of <seealso cref="ArrayRecord"/>.</para>
+    /// <para>For other types that are not arrays, returns an instance of <see cref="ClassRecord"/>.</para>
+    /// <para>For single-dimensional arrays returns <see cref="ArrayRecord{T}"/> where the generic type is the primitive type or <see cref="ClassRecord"/>.</para>
+    /// <para>For jagged and multi-dimensional arrays, returns an instance of <see cref="ArrayRecord"/>.</para>
     /// </returns>
     /// <inheritdoc cref="GetClassRecord(string)"/>
     public object? GetRawValue(string memberName) => GetMember<object>(memberName);
@@ -121,9 +112,9 @@ abstract class ClassRecord : SerializationRecord
     /// <param name="allowNulls"><see langword="true" /> to permit <see langword="null" /> values; otherwise, <see langword="false" />.</param>
     /// <param name="maxLength">The maximum length of an array that can be allocated.</param>
     /// <returns>The array itself or null.</returns>
-    /// <exception cref="KeyNotFoundException"><paramref name="memberName" /> does not refer to a known member.</exception>
+    /// <exception cref="KeyNotFoundException"><paramref name="memberName" /> does not refer to a known member. You can use <see cref="HasMember(string)"/> to check if given member exists.</exception>
     /// <exception cref="InvalidOperationException">The specified member is not an array, or is an array with an element type other than <typeparamref name="T" />.</exception>
-    public T?[]? GetArrayOfPrimitiveType<T>(string memberName, bool allowNulls = true, int maxLength = MaxLength)
+    public T?[]? GetArrayOfPrimitiveType<T>(string memberName, bool allowNulls = true, int maxLength = -1)
         => GetMember<ArrayRecord<T>>(memberName)?.ToArray(allowNulls, maxLength);
 
     /// <summary>
@@ -133,15 +124,15 @@ abstract class ClassRecord : SerializationRecord
     /// <returns>The serialization record, which can be any of <see cref="PrimitiveTypeRecord{T}"/>,
     /// <see cref="ClassRecord"/>, <see cref="ArrayRecord"/> or <see langword="null" />.
     /// </returns>
-    /// <exception cref="KeyNotFoundException">Member of such name does not exist.</exception>
-    /// <exception cref="InvalidOperationException">Member of such name has value of a different type or was a primitive value.</exception>
+    /// <exception cref="KeyNotFoundException"><paramref name="memberName" /> does not refer to a known member. You can use <see cref="HasMember(string)"/> to check if given member exists.</exception>
+    /// <exception cref="InvalidOperationException">The specified member is not a <see cref="SerializationRecord"/>, but just a raw primitive value.</exception>
     public SerializationRecord? GetSerializationRecord(string memberName)
         => MemberValues[ClassInfo.MemberNames[memberName]] switch
         {
             null or NullsRecord => null,
             MemberReferenceRecord referenceRecord => referenceRecord.GetReferencedRecord(),
             SerializationRecord serializationRecord => serializationRecord,
-            _ => throw new InvalidOperationException()
+            _ => throw new InvalidOperationException(SR.Format(SR.Serialization_MemberTypeMismatchException, memberName))
         };
 
     private T? GetMember<T>(string memberName)
@@ -156,14 +147,18 @@ abstract class ClassRecord : SerializationRecord
 
         return value is null
             ? default
-            : value is not T ? throw new InvalidOperationException() : (T)value!;
+            : value is not T
+                ? throw new InvalidOperationException(SR.Format(SR.Serialization_MemberTypeMismatchException, memberName))
+                : (T)value!;
     }
 
     internal abstract (AllowedRecordTypes allowed, PrimitiveType primitiveType) GetNextAllowedRecordType();
 
     internal override void HandleNextRecord(SerializationRecord nextRecord, NextInfo info)
     {
-        Debug.Assert(!(nextRecord is NullsRecord nullsRecord && nullsRecord.NullCount > 1));
+        // ObjectNullRecord is the only valid null record that can represent class record members,
+        // even for multiple nulls provided in a row.
+        Debug.Assert(nextRecord is not (ObjectNullMultiple256Record or ObjectNullMultipleRecord));
 
         HandleNextValue(nextRecord, info);
     }

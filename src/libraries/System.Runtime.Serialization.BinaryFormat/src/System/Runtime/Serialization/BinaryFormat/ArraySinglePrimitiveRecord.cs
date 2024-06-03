@@ -39,7 +39,7 @@ internal sealed class ArraySinglePrimitiveRecord<T> : ArrayRecord<T>
 
     internal override bool IsElementType(Type typeElement) => typeElement == typeof(T);
 
-    protected override T[] ToArrayOfT(bool allowNulls) => [.. Values];
+    private protected override T[] ToArrayOfT(bool allowNulls) => [.. Values];
 
     internal override (AllowedRecordTypes allowed, PrimitiveType primitiveType) GetAllowedRecordType()
     {
@@ -53,7 +53,7 @@ internal sealed class ArraySinglePrimitiveRecord<T> : ArrayRecord<T>
         throw new InvalidOperationException();
     }
 
-    internal static IReadOnlyList<T> ReadPrimitiveTypes(BinaryReader reader, int count)
+    internal static IReadOnlyList<T> DecodePrimitiveTypes(BinaryReader reader, int count)
     {
         if (typeof(T) == typeof(byte))
         {

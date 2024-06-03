@@ -4,7 +4,7 @@
 namespace System.Runtime.Serialization.BinaryFormat;
 
 /// <summary>
-/// Primitive value other than <see langword="string"/>.
+/// Represents a primitive value other than <see langword="string"/>.
 /// </summary>
 /// <remarks>
 /// MemberPrimitiveTyped records are described in <see href="https://learn.microsoft.com/openspecs/windows_protocols/ms-nrbf/c0a190b2-762c-46b9-89f2-c7dabecfc084">[MS-NRBF] 2.5.1</see>.
@@ -16,5 +16,6 @@ internal sealed class MemberPrimitiveTypedRecord<T> : PrimitiveTypeRecord<T>
 
     public override RecordType RecordType => RecordType.MemberPrimitiveTyped;
 
+    /// <inheritdoc />
     public override int ObjectId { get; }
 }

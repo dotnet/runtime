@@ -7,7 +7,7 @@ using System.Runtime.Serialization.BinaryFormat.Utils;
 namespace System.Runtime.Serialization.BinaryFormat;
 
 /// <summary>
-/// Class information with type info and the source library.
+/// Represents a class information with type info and the source library.
 /// </summary>
 /// <remarks>
 /// ClassWithMembersAndTypes records are described in <see href="https://learn.microsoft.com/openspecs/windows_protocols/ms-nrbf/847b0b6a-86af-4203-8ed0-f84345f845b9">[MS-NRBF] 2.3.2.1</see>.
@@ -25,16 +25,16 @@ internal sealed class ClassWithMembersAndTypesRecord : ClassRecord
         => type.GetTypeFullNameIncludingTypeForwards() == ClassInfo.TypeName.FullName
         && type.GetAssemblyNameIncludingTypeForwards() == ClassInfo.TypeName.AssemblyName!.FullName;
 
-    internal static ClassWithMembersAndTypesRecord Parse(BinaryReader reader, RecordMap recordMap, PayloadOptions options)
+    internal static ClassWithMembersAndTypesRecord Decode(BinaryReader reader, RecordMap recordMap, PayloadOptions options)
     {
-        ClassInfo classInfo = ClassInfo.Parse(reader);
-        MemberTypeInfo memberTypeInfo = MemberTypeInfo.Parse(reader, classInfo.MemberNames.Count, options, recordMap);
+        ClassInfo classInfo = ClassInfo.Decode(reader);
+        MemberTypeInfo memberTypeInfo = MemberTypeInfo.Decode(reader, classInfo.MemberNames.Count, options, recordMap);
         int libraryId = reader.ReadInt32();
 
         BinaryLibraryRecord library = (BinaryLibraryRecord)recordMap[libraryId];
-        classInfo.ParseTypeName(library, options);
+        classInfo.LoadTypeName(library, options);
 
-        return new(classInfo, memberTypeInfo);
+        return new ClassWithMembersAndTypesRecord(classInfo, memberTypeInfo);
     }
 
     internal override (AllowedRecordTypes allowed, PrimitiveType primitiveType) GetNextAllowedRecordType()

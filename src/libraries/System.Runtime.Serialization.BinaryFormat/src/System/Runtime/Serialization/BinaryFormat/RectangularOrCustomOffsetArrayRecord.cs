@@ -46,8 +46,10 @@ internal sealed class RectangularOrCustomOffsetArrayRecord : ArrayRecord
         => MemberTypeInfo.IsElementType(typeElement);
 
     [RequiresDynamicCode("May call Array.CreateInstance() and Type.MakeArrayType().")]
-    private protected override Array Deserialize(Type arrayType, bool allowNulls, int maxLength)
+    private protected override Array Deserialize(Type arrayType, bool allowNulls, long maxLength)
     {
+        // We can not deserialize non-primitive types.
+        // This method returns arrays of ClassRecord for arrays of complex types.
         Array result =
 #if NET9_0_OR_GREATER
             ElementType == typeof(ClassRecord)
@@ -106,28 +108,20 @@ internal sealed class RectangularOrCustomOffsetArrayRecord : ArrayRecord
         }
         else
         {
-            ref byte arrayDataRef = ref MemoryMarshal.GetArrayDataReference(result);
-            ref object elementRef = ref Unsafe.As<byte, object>(ref arrayDataRef);
-            nuint flattenedIndex = 0;
-            foreach (object value in Values)
-            {
-                ref object offsetElementRef = ref Unsafe.Add(ref elementRef, flattenedIndex);
-                offsetElementRef = GetActualValue(value)!;
-                flattenedIndex++;
-            }
+            CopyTo<object>(Values, result);
         }
 
         return result;
 
-        static void CopyTo<T>(LinkedList<object> list, Array array) where T : unmanaged
+        static void CopyTo<T>(LinkedList<object> list, Array array)
         {
             ref byte arrayDataRef = ref MemoryMarshal.GetArrayDataReference(array);
-            ref T elementRef = ref Unsafe.As<byte, T>(ref arrayDataRef);
+            ref T firstElementRef = ref Unsafe.As<byte, T>(ref arrayDataRef);
             nuint flattenedIndex = 0;
             foreach (object value in list)
             {
-                ref T targetIndex = ref Unsafe.Add(ref elementRef, flattenedIndex);
-                targetIndex = (T)GetActualValue(value)!;
+                ref T targetElement = ref Unsafe.Add(ref firstElementRef, flattenedIndex);
+                targetElement = (T)GetActualValue(value)!;
                 flattenedIndex++;
             }
         }
@@ -161,7 +155,7 @@ internal sealed class RectangularOrCustomOffsetArrayRecord : ArrayRecord
             _ => typeof(ClassRecord)
         };
 
-        return new(elementType, arrayInfo, memberTypeInfo, lengths, offsets);
+        return new RectangularOrCustomOffsetArrayRecord(elementType, arrayInfo, memberTypeInfo, lengths, offsets);
     }
 
     private static Type MapPrimitive(PrimitiveType primitiveType)

@@ -23,7 +23,7 @@ internal readonly struct MemberTypeInfo
 
     internal IReadOnlyList<(BinaryType BinaryType, object? AdditionalInfo)> Infos => _infos;
 
-    internal static MemberTypeInfo Parse(BinaryReader reader, int count, PayloadOptions options, RecordMap recordMap)
+    internal static MemberTypeInfo Decode(BinaryReader reader, int count, PayloadOptions options, RecordMap recordMap)
     {
         List<(BinaryType BinaryType, object? AdditionalInfo)> info = [];
 
@@ -51,7 +51,7 @@ internal readonly struct MemberTypeInfo
                     info[i] = (type, reader.ReadString().ParseSystemRecordTypeName(options));
                     break;
                 case BinaryType.Class:
-                    info[i] = (type, ClassTypeInfo.Parse(reader, options, recordMap));
+                    info[i] = (type, ClassTypeInfo.Decode(reader, options, recordMap));
                     break;
                 default:
                     // Other types have no additional data.
@@ -68,36 +68,36 @@ internal readonly struct MemberTypeInfo
         (BinaryType binaryType, object? additionalInfo) = Infos[currentValuesCount];
 
         // Every array can be either an array itself, a null or a reference (to an array)
-        const AllowedRecordTypes stringArray = AllowedRecordTypes.ArraySingleString
+        const AllowedRecordTypes StringArray = AllowedRecordTypes.ArraySingleString
             | AllowedRecordTypes.ObjectNull | AllowedRecordTypes.MemberReference;
-        const AllowedRecordTypes primitiveArray = AllowedRecordTypes.ArraySinglePrimitive
+        const AllowedRecordTypes PrimitiveArray = AllowedRecordTypes.ArraySinglePrimitive
             | AllowedRecordTypes.ObjectNull | AllowedRecordTypes.MemberReference;
-        const AllowedRecordTypes objectArray = AllowedRecordTypes.ArraySingleObject
+        const AllowedRecordTypes ObjectArray = AllowedRecordTypes.ArraySingleObject
             | AllowedRecordTypes.ObjectNull | AllowedRecordTypes.MemberReference;
 
         // Every string can be a string, a null or a reference (to a string)
-        const AllowedRecordTypes strings = AllowedRecordTypes.BinaryObjectString
+        const AllowedRecordTypes Strings = AllowedRecordTypes.BinaryObjectString
             | AllowedRecordTypes.ObjectNull | AllowedRecordTypes.MemberReference;
 
         // Every class can be a null or a reference and a ClassWithId
-        const AllowedRecordTypes classes = AllowedRecordTypes.ClassWithId
+        const AllowedRecordTypes Classes = AllowedRecordTypes.ClassWithId
             | AllowedRecordTypes.ObjectNull | AllowedRecordTypes.MemberReference
             | AllowedRecordTypes.MemberPrimitiveTyped
-            | AllowedRecordTypes.BinaryLibrary; // classes may be preceded with a library record (System too!)
-        // but System classes can be expressed only by System records
-        const AllowedRecordTypes systemClass = classes | AllowedRecordTypes.SystemClassWithMembersAndTypes;
-        const AllowedRecordTypes nonSystemClass = classes |  AllowedRecordTypes.ClassWithMembersAndTypes;
+            | AllowedRecordTypes.BinaryLibrary; // Classes may be preceded with a library record (System too!)
+        // but System Classes can be expressed only by System records
+        const AllowedRecordTypes SystemClass = Classes | AllowedRecordTypes.SystemClassWithMembersAndTypes;
+        const AllowedRecordTypes NonSystemClass = Classes |  AllowedRecordTypes.ClassWithMembersAndTypes;
 
         return binaryType switch
         {
             BinaryType.Primitive => (default, (PrimitiveType)additionalInfo!),
-            BinaryType.String => (strings, default),
+            BinaryType.String => (Strings, default),
             BinaryType.Object => (AllowedRecordTypes.AnyObject, default),
-            BinaryType.StringArray => (stringArray, default),
-            BinaryType.PrimitiveArray => (primitiveArray, default),
-            BinaryType.Class => (nonSystemClass, default),
-            BinaryType.SystemClass => (systemClass, default),
-            _ => (objectArray, default)
+            BinaryType.StringArray => (StringArray, default),
+            BinaryType.PrimitiveArray => (PrimitiveArray, default),
+            BinaryType.Class => (NonSystemClass, default),
+            BinaryType.SystemClass => (SystemClass, default),
+            _ => (ObjectArray, default)
         };
     }
 
@@ -172,17 +172,24 @@ internal readonly struct MemberTypeInfo
 
     internal bool ShouldBeRepresentedAsArrayOfClassRecords()
     {
+        // This library tries to minimize the number of concepts the users need to learn to use it.
+        // Since SZArrays are most common, it provides an ArrayRecord<T> abstraction.
+        // Every other array (jagged, multi-dimensional etc) is represented using ArrayRecord.
+        // The goal of this method is to determine whether given array can be represented as ArrayRecord<ClassRecord>.
+
         (BinaryType binaryType, object? additionalInfo) = Infos[0];
 
-        if (binaryType is BinaryType.Class)
+        if (binaryType == BinaryType.Class)
         {
-            return !((ClassTypeInfo)additionalInfo!).TypeName.IsSZArray;
+            // An array of arrays can not be represented as ArrayRecord<ClassRecord>.
+            return !((ClassTypeInfo)additionalInfo!).TypeName.IsArray;
         }
-        else if (binaryType is BinaryType.SystemClass)
+        else if (binaryType == BinaryType.SystemClass)
         {
             TypeName typeName = (TypeName)additionalInfo!;
 
-            if (typeName.IsSZArray)
+            // An array of arrays can not be represented as ArrayRecord<ClassRecord>.
+            if (typeName.IsArray)
             {
                 return false;
             }

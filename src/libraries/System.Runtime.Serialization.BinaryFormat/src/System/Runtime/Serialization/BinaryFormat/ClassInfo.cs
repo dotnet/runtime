@@ -41,24 +41,21 @@ internal sealed class ClassInfo
 
     internal Dictionary<string, int> MemberNames { get; }
 
-    internal static ClassInfo Parse(BinaryReader reader)
+    internal static ClassInfo Decode(BinaryReader reader)
     {
         int objectId = reader.ReadInt32();
         string typeName = reader.ReadString();
         int memberCount = reader.ReadInt32();
 
-        // The attackers could create an input with MANY member names.
-        // If we were storing them in a list, then searching for the index
-        // of given member name (done by ClassRecord indexer) would take
-        // O(m * n), where m = memberCount and n = memberNameLength.
-        // To prevent this from happening, we are using a Dictionary instead,
-        // which has O(1) lookup time.
+        // Use Dictionary instead of List so that searching for member IDs by name
+        // is O(n) instead of O(m * n), where m = memberCount and n = memberNameLength,
+        // in degenerate cases.
         Dictionary<string, int> memberNames = new(StringComparer.Ordinal);
         for (int i = 0; i < memberCount; i++)
         {
             // The NRBF specification does not prohibit multiple members with the same names,
             // however it's impossible to get such output with BinaryFormatter,
-            // so we prohibit that on purpose (Add is going to throw on duplicates).
+            // so we prohibit that on purpose.
             string memberName = reader.ReadString();
 #if NETCOREAPP
             if (memberNames.TryAdd(memberName, i))
@@ -75,12 +72,12 @@ internal sealed class ClassInfo
             throw new SerializationException(SR.Format(SR.Serialization_DuplicateMemberName, memberName));
         }
 
-        return new(objectId, typeName, memberNames);
+        return new ClassInfo(objectId, typeName, memberNames);
     }
 
-    internal void ParseTypeName(BinaryLibraryRecord libraryRecord, PayloadOptions payloadOptions)
+    internal void LoadTypeName(BinaryLibraryRecord libraryRecord, PayloadOptions payloadOptions)
         => _typeName = _rawName.ParseNonSystemClassRecordTypeName(libraryRecord, payloadOptions);
 
-    internal void ParseTypeName(PayloadOptions payloadOptions)
+    internal void LoadTypeName(PayloadOptions payloadOptions)
         => _typeName = _rawName.ParseSystemRecordTypeName(payloadOptions);
 }

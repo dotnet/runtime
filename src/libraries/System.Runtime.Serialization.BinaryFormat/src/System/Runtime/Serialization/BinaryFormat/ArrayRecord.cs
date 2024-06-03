@@ -7,6 +7,9 @@ using System.Runtime.Serialization.BinaryFormat.Utils;
 
 namespace System.Runtime.Serialization.BinaryFormat;
 
+/// <summary>
+/// Defines the core behavior for NRBF array records and provides a base for derived classes.
+/// </summary>
 #if SYSTEM_RUNTIME_SERIALIZATION_BINARYFORMAT
 public
 #else
@@ -23,7 +26,7 @@ abstract class ArrayRecord : SerializationRecord
     }
 
     /// <summary>
-    /// Gets a buffer of integers that represent the number of elements in every dimension.
+    /// When overridden in a derived class, gets a buffer of integers that represent the number of elements in every dimension.
     /// </summary>
     /// <value>A buffer of integers that represent the number of elements in every dimension.</value>
     public abstract ReadOnlySpan<int> Lengths { get; }
@@ -40,6 +43,10 @@ abstract class ArrayRecord : SerializationRecord
     /// <value>The type of the array.</value>
     public BinaryArrayType ArrayType => ArrayInfo.ArrayType;
 
+    /// <summary>
+    /// Gets the name of the array element type.
+    /// </summary>
+    /// <value>The name of the array element type.</value>
     public abstract TypeName ElementTypeName { get; }
 
     /// <inheritdoc />
@@ -53,15 +60,34 @@ abstract class ArrayRecord : SerializationRecord
     /// Allocates an array and fills it with the data provided in the serialized records (in case of primitive types like <see cref="string"/> or <see cref="int"/>) or the serialized records themselves.
     /// </summary>
     /// <param name="expectedArrayType">Expected array type.</param>
-    /// <param name="allowNulls">Specifies whether null values are allowed.</param>
+    /// <param name="allowNulls">
+    ///   <see langword="true" /> to permit <see langword="null" /> values within the array;
+    ///   otherwise, <see langword="false" />.
+    /// </param>
     /// <param name="maxLength">The total maximum number of elements in all the dimensions of the array.</param>
-    /// <exception cref="InvalidOperationException">When there is a type mismatch.</exception>
+    /// <returns>An array filled with the data provided in the serialized records.</returns>
+    /// <exception cref="InvalidOperationException"><paramref name="expectedArrayType" /> does not match the data from payload.</exception>
     [RequiresDynamicCode("The code for an array of the specified type might not be available.")]
-    public Array ToArray(Type expectedArrayType, bool allowNulls = true, int maxLength = DefaultMaxArrayLength)
+    public Array ToArray(Type expectedArrayType, bool allowNulls = true, long maxLength = -1)
     {
+#if NETCOREAPP
+        ArgumentNullException.ThrowIfNull(expectedArrayType);
+#else
+        if (expectedArrayType is null)
+        {
+            throw new ArgumentNullException(nameof(expectedArrayType));
+        }
+#endif
+        VerifyMaxLength(maxLength);
+
         if (!IsTypeNameMatching(expectedArrayType))
         {
             throw new InvalidOperationException(SR.Format(SR.Serialization_TypeMismatch, expectedArrayType.AssemblyQualifiedName, ElementTypeName.AssemblyQualifiedName));
+        }
+
+        if (maxLength == -1)
+        {
+            maxLength = DefaultMaxArrayLength;
         }
 
         ReadOnlySpan<int> lengths = Lengths;
@@ -80,7 +106,7 @@ abstract class ArrayRecord : SerializationRecord
     }
 
     [RequiresDynamicCode("May call Array.CreateInstance() and Type.MakeArrayType().")]
-    private protected abstract Array Deserialize(Type arrayType, bool allowNulls, int maxLength);
+    private protected abstract Array Deserialize(Type arrayType, bool allowNulls, long maxLength);
 
     public override bool IsTypeNameMatching(Type type)
         => type.IsArray
@@ -116,8 +142,24 @@ abstract class ArrayRecord : SerializationRecord
     }
 
     internal abstract (AllowedRecordTypes allowed, PrimitiveType primitiveType) GetAllowedRecordType();
+
+    private protected static void VerifyMaxLength(long maxLength)
+    {
+#if NETCOREAPP
+        ArgumentOutOfRangeException.ThrowIfLessThan(maxLength, -1);
+#else
+        if (maxLength < -1)
+        {
+            throw new ArgumentOutOfRangeException(nameof(maxLength));
+        }
+#endif
+    }
 }
 
+/// <summary>
+/// Defines the core behavior for NRBF single dimensional, zero-indexed array records and provides a base for derived classes.
+/// </summary>
+/// <typeparam name="T"></typeparam>
 #if SYSTEM_RUNTIME_SERIALIZATION_BINARYFORMAT
 public
 #else
@@ -141,20 +183,38 @@ abstract class ArrayRecord<T> : ArrayRecord
     /// <summary>
     /// Allocates an array of <typeparamref name="T"/> and fills it with the data provided in the serialized records (in case of primitive types like <see cref="string"/> or <see cref="int"/>) or the serialized records themselves.
     /// </summary>
-    /// <param name="allowNulls">Specifies whether null values are allowed.</param>
+    /// <param name="allowNulls">
+    ///   <see langword="true" /> to permit <see langword="null" /> values within the array;
+    ///   otherwise, <see langword="false" />.
+    /// </param>
     /// <param name="maxLength">Specifies the max length of an array that can be allocated.</param>
+    /// <returns>An array filled with the data provided in the serialized records.</returns>
     /// <remarks>
-    /// <para>
-    /// The array has <seealso cref="ArrayRecord{T}.Length"/> elements and can be used as a vector of attack.
-    /// Example: an array with Array.MaxLength elements that contains only nulls
-    /// takes 15 bytes to serialize and more than 2 GB to deserialize!
-    /// </para>
-    /// <para>
-    /// A new array is allocated every time this method is called.
-    /// </para>
+    ///   <para>
+    ///     The <paramref name="maxLength" /> parameter limits the total number of
+    ///     elements for this array.
+    ///     For a one-dimensional array (<c>string[]</c>), this is just the
+    ///     <see cref="Array.Length" /> property.
+    ///     For a multi-dimensional array (<c>string[,]</c>), this is the product of the
+    ///     <see cref="Array.GetLength" /> value across every dimension.
+    ///     For "jagged" arrays (<c>string[,][]</c>), this is the sum of the size of the
+    ///     top-most array and of every array contained within it.
+    ///   </para>
+    ///   <para>
+    ///     The <paramref name="maxLength" /> value does not consider the count of
+    ///     objects represented within other collection types that are contained within
+    ///     the array.
+    ///   </para>
     /// </remarks>
-    public T?[] ToArray(bool allowNulls = true, int maxLength = DefaultMaxArrayLength)
+    public T?[] ToArray(bool allowNulls = true, int maxLength = -1)
     {
+        VerifyMaxLength(maxLength);
+
+        if (maxLength == -1)
+        {
+            maxLength = DefaultMaxArrayLength;
+        }
+
         if (Length > maxLength)
         {
             ThrowHelper.ThrowMaxArrayLength(maxLength, Length);
@@ -164,9 +224,9 @@ abstract class ArrayRecord<T> : ArrayRecord
     }
 
 #pragma warning disable IL3051 // RequiresDynamicCode is not required in this particualar case
-    private protected override Array Deserialize(Type arrayType, bool allowNulls, int maxLength)
-        => ToArray(allowNulls, maxLength);
+    private protected override Array Deserialize(Type arrayType, bool allowNulls, long maxLength)
+        => ToArray(allowNulls, (int)maxLength);
 #pragma warning restore IL3051
 
-    protected abstract T?[] ToArrayOfT(bool allowNulls);
+    private protected abstract T?[] ToArrayOfT(bool allowNulls);
 }

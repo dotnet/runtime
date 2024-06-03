@@ -10,7 +10,7 @@ using System.Runtime.Serialization.BinaryFormat.Utils;
 namespace System.Runtime.Serialization.BinaryFormat;
 
 /// <summary>
-/// Array other than single dimensional array of primitive types or <see cref="object"/>.
+/// Represents an array other than single dimensional array of primitive types or <see cref="object"/>.
 /// </summary>
 /// <remarks>
 /// BinaryArray records are described in <see href="https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-nrbf/9c62c928-db4e-43ca-aeba-146256ef67c2">[MS-NRBF] 2.4.3.1</see>.
@@ -50,8 +50,10 @@ internal sealed class BinaryArrayRecord : ArrayRecord
     private List<object> Values { get; }
 
     [RequiresDynamicCode("May call Array.CreateInstance() and Type.MakeArrayType().")]
-    private protected override Array Deserialize(Type arrayType, bool allowNulls, int maxLength)
+    private protected override Array Deserialize(Type arrayType, bool allowNulls, long maxLength)
     {
+        // We can not deserialize non-primitive types.
+        // This method returns arrays of ClassRecord for arrays of complex types.
         Type elementType = MapElementType(arrayType, out bool isClassRecord);
         Type actualElementType = arrayType.GetElementType()!;
         Array array =
@@ -111,7 +113,7 @@ internal sealed class BinaryArrayRecord : ArrayRecord
         return array;
     }
 
-    internal static ArrayRecord Parse(BinaryReader reader, RecordMap recordMap, PayloadOptions options)
+    internal static ArrayRecord Decode(BinaryReader reader, RecordMap recordMap, PayloadOptions options)
     {
         int objectId = reader.ReadInt32();
         BinaryArrayType arrayType = reader.ReadArrayType();
@@ -166,7 +168,7 @@ internal sealed class BinaryArrayRecord : ArrayRecord
             }
         }
 
-        MemberTypeInfo memberTypeInfo = MemberTypeInfo.Parse(reader, 1, options, recordMap);
+        MemberTypeInfo memberTypeInfo = MemberTypeInfo.Decode(reader, 1, options, recordMap);
         ArrayInfo arrayInfo = new(objectId, (int)totalElementCount, arrayType, rank);
 
         if (isRectangular || hasCustomOffset)

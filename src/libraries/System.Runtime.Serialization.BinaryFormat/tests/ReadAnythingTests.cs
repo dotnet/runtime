@@ -106,6 +106,13 @@ namespace System.Runtime.Serialization.BinaryFormat.Tests
                 { new NonSystemPoint(2, 2), new JsonException("message") }
             }};
             yield return new object[] { new int?[] { 1, 2, 3, null } };
+            // Class with no members
+            yield return new object[] { new EmptyClass() };
+            // Empty arrays of class with no members
+            yield return new object[] { new EmptyClass[0] };
+            yield return new object[] { new EmptyClass[0, 0] };
+            yield return new object[] { new EmptyClass[0][] };
+            yield return new object[] { new EmptyClass[0][,] };
         }
 
         [Theory]
@@ -230,8 +237,23 @@ namespace System.Runtime.Serialization.BinaryFormat.Tests
                 case ClassRecord record when record.IsTypeNameMatching(typeof(Dictionary<NonSystemPoint, JsonException>)):
                     VerifyDictionary<NonSystemPoint, JsonException>(record);
                     break;
+                case ClassRecord record when record.IsTypeNameMatching(typeof(EmptyClass)):
+                    Assert.Empty(record.MemberNames);
+                    break;
                 case ArrayRecord arrayRecord when arrayRecord.IsTypeNameMatching(typeof(int?[])):
                     Assert.Equal(input, arrayRecord.ToArray(typeof(int?[])));
+                    break;
+                case ArrayRecord arrayRecord when arrayRecord.IsTypeNameMatching(typeof(EmptyClass[])):
+                    Assert.Equal(0, arrayRecord.Lengths.ToArray().Single());
+                    break;
+                case ArrayRecord arrayRecord when arrayRecord.IsTypeNameMatching(typeof(EmptyClass[,])):
+                    Assert.Equal(new int[2] { 0, 0 }, arrayRecord.Lengths.ToArray());
+                    break;
+                case ArrayRecord arrayRecord when arrayRecord.IsTypeNameMatching(typeof(EmptyClass[][])):
+                    Assert.Equal(0, arrayRecord.Lengths.ToArray().Single());
+                    break;
+                case ArrayRecord arrayRecord when arrayRecord.IsTypeNameMatching(typeof(EmptyClass[][,])):
+                    Assert.Equal(0, arrayRecord.Lengths.ToArray().Single());
                     break;
                 default:
                     Assert.Fail($"All cases should be handled! Record was {root.GetType()}, input was {input.GetType()}");
@@ -280,5 +302,10 @@ namespace System.Runtime.Serialization.BinaryFormat.Tests
         }
 
         public override int GetHashCode() => 1;
+    }
+
+    [Serializable]
+    public class EmptyClass
+    {
     }
 }

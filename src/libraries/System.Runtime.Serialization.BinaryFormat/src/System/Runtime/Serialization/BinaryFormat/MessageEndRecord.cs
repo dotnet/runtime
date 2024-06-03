@@ -4,7 +4,7 @@
 namespace System.Runtime.Serialization.BinaryFormat;
 
 /// <summary>
-/// Record that marks the end of the binary format stream.
+/// Represents the record that marks the end of the binary format stream.
 /// </summary>
 /// <remarks>
 /// MessageEnd records are described in <see href="https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-nrbf/de6a574b-c596-4d83-9df7-63c0077acd32">[MS-NRBF] 2.6.3</see>.
@@ -18,4 +18,6 @@ internal sealed class MessageEndRecord : SerializationRecord
     }
 
     public override RecordType RecordType => RecordType.MessageEnd;
+
+    public override int ObjectId => NoId;
 }

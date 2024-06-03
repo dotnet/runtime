@@ -32,7 +32,7 @@ internal readonly struct ArrayInfo
 
     internal int Rank { get; }
 
-    internal static ArrayInfo Parse(BinaryReader reader)
+    internal static ArrayInfo Decode(BinaryReader reader)
         => new(reader.ReadInt32(), ParseValidArrayLength(reader));
 
     internal static int ParseValidArrayLength(BinaryReader reader)

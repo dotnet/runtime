@@ -150,4 +150,10 @@
   <data name="Argument_NonSeekableStream" xml:space="preserve">
     <value>Stream does not support seeking.</value>
   </data>
+  <data name="Serialization_DuplicateSerializationRecordId" xml:space="preserve">
+    <value>Duplicate Serialization Record Id: `{0}`.</value>
+  </data>
+  <data name="Serialization_MemberTypeMismatchException" xml:space="preserve">
+    <value>Specified member '{0}' was not of the expected type.</value>
+  </data>
 </root>

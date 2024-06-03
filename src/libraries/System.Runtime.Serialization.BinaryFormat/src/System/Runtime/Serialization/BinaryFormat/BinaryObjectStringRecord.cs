@@ -7,7 +7,7 @@ using System.IO;
 namespace System.Runtime.Serialization.BinaryFormat;
 
 /// <summary>
-/// String record.
+/// Represents a <see langword="string" /> record.
 /// </summary>
 /// <remarks>
 /// BinaryObjectString records are described in <see href="https://learn.microsoft.com/openspecs/windows_protocols/ms-nrbf/eb503ca5-e1f6-4271-a7ee-c4ca38d07996">[MS-NRBF] 2.5.7</see>.
@@ -22,8 +22,9 @@ internal sealed class BinaryObjectStringRecord : PrimitiveTypeRecord<string>
 
     public override RecordType RecordType => RecordType.BinaryObjectString;
 
+    /// <inheritdoc />
     public override int ObjectId { get; }
 
-    internal static BinaryObjectStringRecord Parse(BinaryReader reader)
+    internal static BinaryObjectStringRecord Decode(BinaryReader reader)
         => new(reader.ReadInt32(), reader.ReadString());
 }

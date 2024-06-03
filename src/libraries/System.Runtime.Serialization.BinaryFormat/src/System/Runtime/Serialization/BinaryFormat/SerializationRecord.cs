@@ -10,8 +10,8 @@ namespace System.Runtime.Serialization.BinaryFormat;
 /// </summary>
 /// <remarks>
 ///  <para>
-///   Every instance returned to the end user can be either <seealso cref="PrimitiveTypeRecord{T}"/>,
-///   a <seealso cref="ClassRecord"/> or an <seealso cref="ArrayRecord"/>.
+///   Every instance returned to the end user can be either <see cref="PrimitiveTypeRecord{T}"/>,
+///   a <see cref="ClassRecord"/> or an <see cref="ArrayRecord"/>.
 ///  </para>
 /// </remarks>
 [DebuggerDisplay("{RecordType}, {ObjectId}")]
@@ -28,9 +28,17 @@ abstract class SerializationRecord
     {
     }
 
+    /// <summary>
+    /// Gets the type of the record.
+    /// </summary>
+    /// <value>The type of the record.</value>
     public abstract RecordType RecordType { get; }
 
-    public virtual int ObjectId => NoId;
+    /// <summary>
+    /// Gets the ID of the record.
+    /// </summary>
+    /// <value>The ID of the record.</value>
+    public abstract int ObjectId { get; }
 
     /// <summary>
     /// Compares the type and assembly name read from the payload against the specified type.

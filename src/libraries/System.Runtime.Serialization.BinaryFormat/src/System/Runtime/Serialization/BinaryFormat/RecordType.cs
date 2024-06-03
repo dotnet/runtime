@@ -19,21 +19,69 @@ internal
 #endif
 enum RecordType : byte
 {
+    /// <summary>
+    /// The NRBF header (the first record in NRBF payload).
+    /// </summary>
     SerializedStreamHeader = 0,
+    /// <summary>
+    /// A class information that references another class record's metadata.
+    /// </summary>
     ClassWithId = 1,
     // SystemClassWithMembers and ClassWithMembers are not supported by design (require type loading)
+    /// <summary>
+    /// A system class information with type info.
+    /// </summary>
     SystemClassWithMembersAndTypes = 4,
+    /// <summary>
+    /// A class information with type info and the source library.
+    /// </summary>
     ClassWithMembersAndTypes = 5,
+    /// <summary>
+    /// A <see langword="string" />.
+    /// </summary>
     BinaryObjectString = 6,
+    /// <summary>
+    /// An array other than single dimensional array of primitive types and <see cref="object" />.
+    /// </summary>
     BinaryArray = 7,
+    /// <summary>
+    /// A primitive value other than <see langword="string"/>.
+    /// </summary>
     MemberPrimitiveTyped = 8,
+    /// <summary>
+    /// A record that contains a reference to another record that contains the actual value.
+    /// </summary>
     MemberReference = 9,
+    /// <summary>
+    /// A <see langword="null" />.
+    /// </summary>
     ObjectNull = 10,
+    /// <summary>
+    /// The record that marks the end of the binary format stream.
+    /// </summary>
     MessageEnd = 11,
+    /// <summary>
+    /// A library is a named unit that contains a collection of types.
+    /// </summary>
     BinaryLibrary = 12,
+    /// <summary>
+    /// Multiple (less than 256) <see langword="null" />.
+    /// </summary>
     ObjectNullMultiple256 = 13,
+    /// <summary>
+    /// Multiple <see langword="null" />.
+    /// </summary>
     ObjectNullMultiple = 14,
+    /// <summary>
+    /// A single-dimensional array of a primitive type.
+    /// </summary>
     ArraySinglePrimitive = 15,
+    /// <summary>
+    /// A single dimensional array of <see cref="object" />.
+    /// </summary>
     ArraySingleObject = 16,
+    /// <summary>
+    /// A single dimensional array of <see langword="string" />.
+    /// </summary>
     ArraySingleString = 17
 }
