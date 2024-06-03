@@ -4,6 +4,7 @@
 using System.Buffers;
 using System.Collections.Specialized;
 using System.Diagnostics;
+using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 
@@ -13,6 +14,10 @@ namespace System.Numerics.Tensors
 {
     internal static partial class TensorSpanHelpers
     {
+
+        internal static bool AreShapesTheSame<T>(ReadOnlyTensorSpan<T> tensor1, ReadOnlyTensorSpan<T> tensor2)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool> => tensor1._lengths.SequenceEqual(tensor2._lengths);
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static nint CalculateTotalLength(ReadOnlySpan<nint> lengths)
         {

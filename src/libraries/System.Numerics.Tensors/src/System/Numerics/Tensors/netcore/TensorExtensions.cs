@@ -25,7 +25,7 @@ namespace System.Numerics.Tensors
         /// </summary>
         /// <param name="input">Input <see cref="Tensor{T}"/>.</param>
         /// <param name="shape"><see cref="ReadOnlySpan{T}"/> of the desired new shape.</param>
-        public static Tensor<T> Resize<T>(Tensor<T> input, scoped ReadOnlySpan<nint> shape)
+        public static Tensor<T> Resize<T>(Tensor<T> input, ReadOnlySpan<nint> shape)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>
         {
             nint newSize = TensorSpanHelpers.CalculateTotalLength(shape);
@@ -46,7 +46,7 @@ namespace System.Numerics.Tensors
         /// </summary>
         /// <param name="input">Input <see cref="TensorSpan{T}"/>.</param>
         /// <param name="shape"><see cref="ReadOnlySpan{T}"/> of the desired new shape.</param>
-        public static TensorSpan<T> Resize<T>(TensorSpan<T> input, scoped ReadOnlySpan<nint> shape)
+        public static TensorSpan<T> Resize<T>(TensorSpan<T> input, ReadOnlySpan<nint> shape)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>
         {
             nint newSize = TensorSpanHelpers.CalculateTotalLength(shape);
@@ -85,7 +85,7 @@ namespace System.Numerics.Tensors
         /// <param name="input">Input <see cref="Tensor{T}"/>.</param>
         /// <param name="shape"><see cref="ReadOnlySpan{T}"/> of the desired new shape.</param>
         /// <exception cref="ArgumentException">Thrown when the shapes are not broadcast compatible.</exception>
-        public static Tensor<T> Broadcast<T>(Tensor<T> input, scoped ReadOnlySpan<nint> shape)
+        public static Tensor<T> Broadcast<T>(Tensor<T> input, ReadOnlySpan<nint> shape)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>
         {
             Tensor<T> intermediate = BroadcastTo(input, shape);
@@ -295,7 +295,7 @@ namespace System.Numerics.Tensors
         /// <param name="tensor">Input <see cref="Tensor{T}"/>.</param>
         /// <param name="values">The values you want to set in the <paramref name="tensor"/>.</param>
         /// <param name="ranges">The ranges you want to set.</param>
-        public static Tensor<T> SetSlice<T>(this Tensor<T> tensor, Tensor<T> values, params scoped ReadOnlySpan<NRange> ranges)
+        public static Tensor<T> SetSlice<T>(this Tensor<T> tensor, Tensor<T> values, params ReadOnlySpan<NRange> ranges)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>
         {
             TensorSpan<T> srcSpan;
@@ -845,7 +845,7 @@ namespace System.Numerics.Tensors
         /// </summary>
         /// <param name="input"><see cref="Tensor{T}"/> you want to reshape.</param>
         /// <param name="lengths"><see cref="ReadOnlySpan{T}"/> with the new dimensions.</param>
-        public static Tensor<T> Reshape<T>(this Tensor<T> input, params scoped ReadOnlySpan<nint> lengths)
+        public static Tensor<T> Reshape<T>(this Tensor<T> input, params ReadOnlySpan<nint> lengths)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>
         {
             nint[] arrLengths = lengths.ToArray();
@@ -1081,12 +1081,18 @@ namespace System.Numerics.Tensors
         /// <param name="input">The <see cref="Tensor{T}"/> to take the standard deviation of.</param>
         /// <returns><typeparamref name="TResult"/> representing the standard deviation.</returns>
         public static TResult StdDev<T, TResult>(Tensor<T> input)
-            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, INumber<T>
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, INumber<T>, IFloatingPoint<T>, IPowerFunctions<T>, IAdditionOperators<T, T, T>, IAdditiveIdentity<T, T>
             where TResult : IEquatable<TResult>, IEqualityOperators<TResult, TResult, bool>, IFloatingPoint<TResult>
 
         {
-            T sum = Tensor.Sum(input);
-            return TResult.CreateChecked(TResult.CreateChecked(sum) / TResult.CreateChecked(input.FlattenedLength));
+            T mean = Mean(input);
+            Span<T> span = MemoryMarshal.CreateSpan(ref input._values[0], (int)input._flattenedLength);
+            Span<T> output = new T[input._flattenedLength].AsSpan();
+            TensorPrimitives.Subtract(span, mean, output);
+            TensorPrimitives.Abs(output, output);
+            TensorPrimitives.Pow((ReadOnlySpan<T>)output, T.CreateChecked(2), output);
+            T sum = TensorPrimitives.Sum((ReadOnlySpan<T>)output);
+            return TResult.CreateChecked(sum / T.CreateChecked(input.FlattenedLength));
         }
 
         #endregion
@@ -1101,7 +1107,7 @@ namespace System.Numerics.Tensors
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IFloatingPoint<T>
 
         {
-            T sum = Tensor.Sum(input);
+            T sum = Sum(input);
             return T.CreateChecked(sum / T.CreateChecked(input.FlattenedLength));
         }
 
@@ -1115,7 +1121,7 @@ namespace System.Numerics.Tensors
             where TResult : IEquatable<TResult>, IEqualityOperators<TResult, TResult, bool>, IFloatingPoint<TResult>
 
         {
-            T sum = Tensor.Sum(input);
+            T sum = Sum(input);
             return TResult.CreateChecked(TResult.CreateChecked(sum) / TResult.CreateChecked(input.FlattenedLength));
         }
 
@@ -1145,7 +1151,7 @@ namespace System.Numerics.Tensors
         /// </summary>
         /// <param name="input">Input <see cref="Tensor{T}"/></param>
         /// <param name="axis"><see cref="ReadOnlySpan{T}"/> with the new axis ordering.</param>
-        public static Tensor<T> Permute<T>(Tensor<T> input, params scoped ReadOnlySpan<int> axis)
+        public static Tensor<T> Permute<T>(Tensor<T> input, params ReadOnlySpan<int> axis)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>
         {
             if (input.Rank == 1)

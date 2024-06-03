@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
+using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -11,14 +12,15 @@ namespace System.Numerics.Tensors
 {
     public static class TensorSpan
     {
+        #region SequenceEqual
         /// <summary>
         /// Determines whether two sequences are equal by comparing the elements using IEquatable{T}.Equals(T).
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe bool SequenceEqual<T>(this TensorSpan<T> span, TensorSpan<T> other) where T : IEquatable<T>? => span.FlattenedLength == other.FlattenedLength && span.Lengths.SequenceEqual(other.Lengths) && TensorSpanHelpers.SequenceEqual(ref span.GetPinnableReference(), ref other.GetPinnableReference(), (nuint)span.FlattenedLength);
+        #endregion
 
-        // Doing a copy here for shape because otherwise I get a CS8347 about potentially exposing it beyond its lifetime. In this case that would never happen
-        // because we were always doing a copy of the shape in the constructor anyways, but I couldn't figure out another way around it.
+        #region AsTensorSpan
         /// <summary>
         /// Extension method to more easily create a TensorSpan from an array.
         /// </summary>
@@ -26,7 +28,8 @@ namespace System.Numerics.Tensors
         /// <param name="array">The <see cref="System.Array"/> with the data</param>
         /// <param name="shape">The shape for the <see cref="TensorSpan{T}"/></param>
         /// <returns></returns>
-        public static TensorSpan<T> AsTensorSpan<T>(this T[]? array, params scoped ReadOnlySpan<nint> shape) => new(array, 0, shape, default);
+        public static TensorSpan<T> AsTensorSpan<T>(this T[]? array, params ReadOnlySpan<nint> shape) => new(array, 0, shape, default);
+        #endregion
 
         #region ToString
         // REVIEW: WHAT SHOULD WE NAME THIS? WHERE DO WE WANT IT TO LIVE?
@@ -36,7 +39,7 @@ namespace System.Numerics.Tensors
         /// <param name="span">The <see cref="TensorSpan{T}"/> you want to represent as a string.</param>
         /// <param name="maximumLengths">Maximum Length of each dimension</param>
         /// <returns>A <see cref="string"/> representation of the <paramref name="span"/></returns>
-        public static string ToString<T>(this TensorSpan<T> span, params scoped ReadOnlySpan<nint> maximumLengths) => ((ReadOnlyTensorSpan<T>)span).ToString(maximumLengths);
+        public static string ToString<T>(this TensorSpan<T> span, params ReadOnlySpan<nint> maximumLengths) => ((ReadOnlyTensorSpan<T>)span).ToString(maximumLengths);
 
         /// <summary>
         /// Creates a <see cref="string"/> representation of the <see cref="ReadOnlyTensorSpan{T}"/>."/>
@@ -44,7 +47,7 @@ namespace System.Numerics.Tensors
         /// <typeparam name="T"></typeparam>
         /// <param name="span">The <see cref="ReadOnlyTensorSpan{T}"/> you want to represent as a string.</param>
         /// <param name="maximumLengths">Maximum Length of each dimension</param>
-        public static string ToString<T>(this ReadOnlyTensorSpan<T> span, params scoped ReadOnlySpan<nint> maximumLengths)
+        public static string ToString<T>(this ReadOnlyTensorSpan<T> span, params ReadOnlySpan<nint> maximumLengths)
         {
             var sb = new StringBuilder();
             scoped Span<nint> curIndexes;
@@ -106,7 +109,7 @@ namespace System.Numerics.Tensors
         /// <param name="input">Input <see cref="TensorSpan{T}"/>.</param>
         /// <param name="shape"><see cref="ReadOnlySpan{T}"/> of the desired new shape.</param>
         /// <exception cref="ArgumentException">Thrown when the shapes are not broadcast compatible.</exception>
-        public static TensorSpan<T> Broadcast<T>(TensorSpan<T> input, scoped ReadOnlySpan<nint> shape)
+        public static TensorSpan<T> Broadcast<T>(TensorSpan<T> input, ReadOnlySpan<nint> shape)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>
         {
             TensorSpan<T> intermediate = BroadcastTo(input, shape);
@@ -124,7 +127,7 @@ namespace System.Numerics.Tensors
         /// <param name="input">Input <see cref="TensorSpan{T}"/>.</param>
         /// <param name="shape"><see cref="ReadOnlySpan{T}"/> of the desired new shape.</param>
         /// <exception cref="ArgumentException">Thrown when the shapes are not broadcast compatible.</exception>
-        internal static TensorSpan<T> BroadcastTo<T>(TensorSpan<T> input, scoped ReadOnlySpan<nint> shape)
+        internal static TensorSpan<T> BroadcastTo<T>(TensorSpan<T> input, ReadOnlySpan<nint> shape)
         where T : IEquatable<T>, IEqualityOperators<T, T, bool>
         {
             if (input.Lengths.SequenceEqual(shape))
@@ -243,7 +246,7 @@ namespace System.Numerics.Tensors
         /// </summary>
         /// <param name="input"><see cref="TensorSpan{T}"/> you want to reshape.</param>
         /// <param name="lengths"><see cref="ReadOnlySpan{T}"/> with the new dimensions.</param>
-        public static TensorSpan<T> Reshape<T>(this TensorSpan<T> input, params scoped ReadOnlySpan<nint> lengths)
+        public static TensorSpan<T> Reshape<T>(this TensorSpan<T> input, params ReadOnlySpan<nint> lengths)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>
         {
             nint[] arrLengths = lengths.ToArray();
@@ -270,6 +273,152 @@ namespace System.Numerics.Tensors
             nint[] strides = TensorSpanHelpers.CalculateStrides(arrLengths);
             return new TensorSpan<T>(ref input._reference, arrLengths, strides, input._memoryLength);
         }
+        #endregion
+
+        #region Squeeze
+        // REVIEW: NAME?
+        /// <summary>
+        /// Removes axis of length one from the <paramref name="input"/>. <paramref name="axis"/> defaults to -1 and will remove all axis with length of 1.
+        /// If <paramref name="axis"/> is specified, it will only remove that axis and if it is not of length one it will throw an exception.
+        /// </summary>
+        /// <param name="input">The <see cref="TensorSpan{T}"/> to remove axis of length 1.</param>
+        /// <param name="axis">The axis to remove. Defaults to -1 which removes all axis of length 1.</param>
+        public static TensorSpan<T> Squeeze<T>(TensorSpan<T> input, int axis = -1)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>
+        {
+            if (axis >= input.Rank)
+                ThrowHelper.ThrowArgument_AxisLargerThanRank();
+
+            nint[] lengths;
+            nint[] strides;
+
+            List<nint> tempLengths = new List<nint>();
+            if (axis == -1)
+            {
+                for (int i = 0; i < input.Lengths.Length; i++)
+                {
+                    if (input.Lengths[i] != 1)
+                    {
+                        tempLengths.Add(input.Lengths[i]);
+                    }
+                }
+                lengths = tempLengths.ToArray();
+                strides = TensorSpanHelpers.CalculateStrides(lengths);
+            }
+            else
+            {
+                if (input.Lengths[axis] != 1)
+                {
+                    ThrowHelper.ThrowArgument_InvalidSqueezeAxis();
+                }
+                for (int i = 0; i < input.Lengths.Length; i++)
+                {
+                    if (i != axis)
+                    {
+                        tempLengths.Add(input.Lengths[i]);
+                    }
+                }
+                lengths = tempLengths.ToArray();
+                strides = TensorSpanHelpers.CalculateStrides(lengths);
+            }
+
+            return new TensorSpan<T>(ref input._reference, lengths, strides, input._memoryLength);
+        }
+        #endregion
+
+        #region Unsqueeze
+        // REVIEW: NAME? NUMPY CALLS THIS expand_dims.
+        /// <summary>
+        /// Insert a new axis of length 1 that will appear at the axis position.
+        /// </summary>
+        /// <param name="input">The <see cref="TensorSpan{T}"/> to remove axis of length 1.</param>
+        /// <param name="axis">The axis to add.</param>
+        public static TensorSpan<T> Unsqueeze<T>(TensorSpan<T> input, int axis)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>
+        {
+            if (axis > input.Lengths.Length)
+                ThrowHelper.ThrowArgument_AxisLargerThanRank();
+            if (axis < 0)
+                axis = input.Rank - axis;
+
+            List<nint> tempLengths = input._lengths.ToArray().ToList();
+            tempLengths.Insert(axis, 1);
+            nint[] lengths = tempLengths.ToArray();
+            nint[] strides = TensorSpanHelpers.CalculateStrides(lengths);
+            return new TensorSpan<T>(ref input._reference, lengths, strides, input._memoryLength);
+        }
+        #endregion
+
+        #region StdDev
+        /// <summary>
+        /// Returns the standard deviation of the elements in the <paramref name="input"/> tensor.
+        /// </summary>
+        /// <param name="input">The <see cref="TensorSpan{T}"/> to take the standard deviation of.</param>
+        /// <returns><typeparamref name="T"/> representing the standard deviation.</returns>
+        public static T StdDev<T>(TensorSpan<T> input)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IFloatingPoint<T>, IPowerFunctions<T>, IAdditionOperators<T, T, T>, IAdditiveIdentity<T, T>
+
+        {
+            T mean = Mean(input);
+            Span<T> span = MemoryMarshal.CreateSpan(ref input._reference, (int)input._flattenedLength);
+            Span<T> output = new T[input._flattenedLength].AsSpan();
+            TensorPrimitives.Subtract(span, mean, output);
+            TensorPrimitives.Abs(output, output);
+            TensorPrimitives.Pow((ReadOnlySpan<T>)output, T.CreateChecked(2), output);
+            T sum = TensorPrimitives.Sum((ReadOnlySpan<T>)output);
+            return T.CreateChecked(sum / T.CreateChecked(input.FlattenedLength));
+        }
+
+        /// <summary>
+        /// Return the standard deviation of the elements in the <paramref name="input"/> tensor. Casts the return value to <typeparamref name="TResult"/>.
+        /// </summary>
+        /// <param name="input">The <see cref="TensorSpan{T}"/> to take the standard deviation of.</param>
+        /// <returns><typeparamref name="TResult"/> representing the standard deviation.</returns>
+        public static TResult StdDev<T, TResult>(TensorSpan<T> input)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, INumber<T>, IFloatingPoint<T>, IPowerFunctions<T>, IAdditionOperators<T, T, T>, IAdditiveIdentity<T, T>
+            where TResult : IEquatable<TResult>, IEqualityOperators<TResult, TResult, bool>, IFloatingPoint<TResult>
+
+        {
+            T mean = Mean(input);
+            Span<T> span = MemoryMarshal.CreateSpan(ref input._reference, (int)input._flattenedLength);
+            Span<T> output = new T[input._flattenedLength].AsSpan();
+            TensorPrimitives.Subtract(span, mean, output);
+            TensorPrimitives.Abs(output, output);
+            TensorPrimitives.Pow((ReadOnlySpan<T>)output, T.CreateChecked(2), output);
+            T sum = TensorPrimitives.Sum((ReadOnlySpan<T>)output);
+            return TResult.CreateChecked(sum / T.CreateChecked(input.FlattenedLength));
+        }
+
+        #endregion
+
+        #region Mean
+        /// <summary>
+        /// Returns the mean of the elements in the <paramref name="input"/> tensor.
+        /// </summary>
+        /// <param name="input">The <see cref="TensorSpan{T}"/> to take the mean of.</param>
+        /// <returns><typeparamref name="T"/> representing the mean.</returns>
+        public static T Mean<T>(TensorSpan<T> input)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IFloatingPoint<T>
+
+        {
+            T sum = Sum(input);
+            return T.CreateChecked(sum / T.CreateChecked(input.FlattenedLength));
+        }
+
+        /// <summary>
+        /// Return the mean of the elements in the <paramref name="input"/> tensor. Casts the return value to <typeparamref name="TResult"/>.
+        /// </summary>
+        /// <param name="input">The <see cref="TensorSpan{T}"/> to take the mean of.</param>
+        /// <returns><typeparamref name="TResult"/> representing the mean.</returns>
+        public static TResult Mean<T, TResult>(TensorSpan<T> input)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, INumber<T>
+            where TResult : IEquatable<TResult>, IEqualityOperators<TResult, TResult, bool>, IFloatingPoint<TResult>
+
+        {
+            T sum = Sum(input);
+            return TResult.CreateChecked(TResult.CreateChecked(sum) / TResult.CreateChecked(input.FlattenedLength));
+        }
+
         #endregion
 
         #region TensorPrimitives
