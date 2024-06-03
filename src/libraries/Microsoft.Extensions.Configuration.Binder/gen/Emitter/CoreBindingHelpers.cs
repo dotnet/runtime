@@ -410,7 +410,8 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                         member,
                         member.Name,
                         sectionPathExpr: GetSectionPathFromConfigurationExpression(configKeyName),
-                        canSet: true, canGet: true,
+                        canSet: true,
+                        canGet: true,
                         InitializationKind.None);
 
                     if (canBindToMember)
@@ -850,7 +851,8 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                             property,
                             memberAccessExpr: $"{containingTypeRef}.{property.Name}",
                             GetSectionPathFromConfigurationExpression(property.ConfigurationKeyName),
-                            canSet: property.CanSet, canGet: property.CanGet,
+                            canSet: property.CanSet,
+                            canGet: property.CanGet,
                             InitializationKind.Declaration);
                     }
                 }
@@ -860,7 +862,8 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 MemberSpec member,
                 string memberAccessExpr,
                 string sectionPathExpr,
-                bool canSet, bool canGet,
+                bool canSet,
+                bool canGet,
                 InitializationKind initializationKind)
             {
                 string sectionParseExpr = GetSectionFromConfigurationExpression(member.ConfigurationKeyName);
@@ -1057,6 +1060,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                         _writer.WriteLine(bindCoreCall);
                         writeOnSuccess?.Invoke(instanceToBindExpr);
                     }
+
                     string FormatDefaultValueIfNotFound() => valueDefaulting == ValueDefaulting.CallSetter ? "true" : "false";
                 }
             }
@@ -1082,9 +1086,16 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     _ => $"{TypeIndex.GetParseMethodName(type)}({stringValueToParse_Expr}, {sectionPathExpr})",
                 };
 
-                if (checkForNullSectionValue) EmitStartBlock($"if ({sectionValueExpr} is string {nonNull_StringValue_Identifier})");
-                writeOnSuccess?.Invoke(parsedValueExpr);
-                if (checkForNullSectionValue) EmitEndBlock();
+                if (!checkForNullSectionValue)
+                {
+                    writeOnSuccess?.Invoke(parsedValueExpr);
+                }
+                else
+                {
+                    EmitStartBlock($"if ({sectionValueExpr} is string {nonNull_StringValue_Identifier})");
+                    writeOnSuccess?.Invoke(parsedValueExpr);
+                    EmitEndBlock();
+                }
 
                 if (defaultValueSource is not null)
                 {
