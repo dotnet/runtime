@@ -14,6 +14,311 @@ namespace System.Numerics.Tensors.Tests
     public class TensorTests
     {
         [Fact]
+        public static void TensorFactoryCreateUninitializedTests()
+        {
+            // Basic tensor creation
+            Tensor<int> t1 = Tensor.CreateUninitialized<int>([1]);
+            Assert.Equal(1, t1.Rank);
+            Assert.Equal(1, t1.Lengths.Length);
+            Assert.Equal(1, t1.Lengths[0]);
+            Assert.Equal(1, t1.Strides.Length);
+            Assert.Equal(1, t1.Strides[0]);
+            Assert.False(t1.IsPinned);
+
+            // Make sure can't index too many dimensions
+            Assert.Throws<IndexOutOfRangeException>(() =>
+            {
+                var x = t1[1, 1];
+            });
+
+            // Make sure can't index beyond end
+            Assert.Throws<IndexOutOfRangeException>(() =>
+            {
+                var x = t1[1];
+            });
+
+            // Make sure can't index negative index
+            Assert.Throws<IndexOutOfRangeException>(() =>
+            {
+                var x = t1[-1];
+            });
+
+            // Make sure lengths can't be negative
+            Assert.Throws<ArgumentOutOfRangeException>(() =>
+            {
+                Tensor<int> t1 = Tensor.CreateUninitialized<int>([-1]);
+            });
+
+            t1 = Tensor.CreateUninitialized<int>([0]);
+            Assert.Equal(1, t1.Rank);
+            Assert.Equal(1, t1.Lengths.Length);
+            Assert.Equal(0, t1.Lengths[0]);
+            Assert.Equal(1, t1.Strides.Length);
+            Assert.Equal(0, t1.Strides[0]);
+            Assert.False(t1.IsPinned);
+
+            t1 = Tensor.CreateUninitialized<int>([]);
+            Assert.Equal(1, t1.Rank);
+            Assert.Equal(1, t1.Lengths.Length);
+            Assert.Equal(0, t1.Lengths[0]);
+            Assert.Equal(1, t1.Strides.Length);
+            Assert.Equal(0, t1.Strides[0]);
+            Assert.False(t1.IsPinned);
+
+            // Null should behave like empty array since there is no "null" span.
+            t1 = Tensor.CreateUninitialized<int>(null);
+            Assert.Equal(1, t1.Rank);
+            Assert.Equal(1, t1.Lengths.Length);
+            Assert.Equal(0, t1.Lengths[0]);
+            Assert.Equal(1, t1.Strides.Length);
+            Assert.Equal(0, t1.Strides[0]);
+            Assert.False(t1.IsPinned);
+
+            // Make sure pinned works
+            t1 = Tensor.CreateUninitialized<int>([1], true);
+            Assert.Equal(1, t1.Rank);
+            Assert.Equal(1, t1.Lengths.Length);
+            Assert.Equal(1, t1.Lengths[0]);
+            Assert.Equal(1, t1.Strides.Length);
+            Assert.Equal(1, t1.Strides[0]);
+            Assert.True(t1.IsPinned);
+
+            // Make sure 2D array works with basic strides
+            t1 = Tensor.CreateUninitialized<int>([2, 2], [2, 1]);
+            Assert.Equal(2, t1.Rank);
+            Assert.Equal(2, t1.Lengths[0]);
+            Assert.Equal(2, t1.Lengths[1]);
+            // Can't validate actual values since it's uninitialized
+            // So by checking the type we assert no errors were thrown
+            Assert.IsType<int>(t1[0, 0]);
+            Assert.IsType<int>(t1[0, 1]);
+            Assert.IsType<int>(t1[1, 0]);
+            Assert.IsType<int>(t1[1, 1]);
+
+            // Make sure 2D array works with stride of 0 to loop over first 2 elements again
+            t1 = Tensor.CreateUninitialized<int>([2, 2], [0, 1]);
+            Assert.Equal(2, t1.Rank);
+            Assert.Equal(2, t1.Lengths[0]);
+            Assert.Equal(2, t1.Lengths[1]);
+            // Can't validate actual values since it's uninitialized
+            // But since it loops over the first 2 elements we can assert the results are the same for those.
+            Assert.Equal(t1[0, 0], t1[1, 0]);
+            Assert.Equal(t1[0, 1], t1[1, 1]);
+
+            // Make sure 2D array works with strides of all 0 to loop over first element again
+            t1 = Tensor.CreateUninitialized<int>([2, 2], [0, 0]);
+            Assert.Equal(2, t1.Rank);
+            Assert.Equal(2, t1.Lengths[0]);
+            Assert.Equal(2, t1.Lengths[1]);
+            // Can't validate actual values since it's uninitialized
+            // But since it loops over the first element we can assert the results are the same.
+            Assert.Equal(t1[0, 0], t1[0, 1]);
+            Assert.Equal(t1[0, 0], t1[1, 0]);
+            Assert.Equal(t1[0, 0], t1[1, 1]);
+
+            // Make sure strides can't be negative
+            Assert.Throws<ArgumentOutOfRangeException>(() => {
+                var t1 = Tensor.CreateUninitialized<int>([1, 2], [-1, 0], false);
+            });
+            Assert.Throws<ArgumentOutOfRangeException>(() => {
+                var t1 = Tensor.CreateUninitialized<int>([1, 2], [0, -1], false);
+            });
+
+            // Make sure lengths can't be negative
+            Assert.Throws<ArgumentOutOfRangeException>(() => {
+                var t1 = Tensor.CreateUninitialized<int>([-1, 2], [], false);
+            });
+            Assert.Throws<ArgumentOutOfRangeException>(() => {
+                var t1 = Tensor.CreateUninitialized<int>([1, -2], [], false);
+            });
+
+            // Make sure 2D array works with strides to hit element 0,0,2,2
+            t1 = Tensor.CreateUninitialized<int>([2, 2], [2, 0]);
+            Assert.Equal(2, t1.Rank);
+            Assert.Equal(2, t1.Lengths[0]);
+            Assert.Equal(2, t1.Lengths[1]);
+            Assert.Equal(t1[0, 0], t1[0, 1]);
+            Assert.Equal(t1[1, 0], t1[1, 1]);
+
+            // Make sure you can't overlap elements using strides
+            Assert.Throws<ArgumentOutOfRangeException>(() => {
+                var t1 = Tensor.CreateUninitialized<int>([2, 2], [1, 1], false);
+            });
+        }
+
+        [Fact]
+        public static void TensorFactoryCreateTests()
+        {
+            // Basic tensor creation
+            Tensor<int> t1 = Tensor.Create<int>([1]);
+            Assert.Equal(1, t1.Rank);
+            Assert.Equal(1, t1.Lengths.Length);
+            Assert.Equal(1, t1.Lengths[0]);
+            Assert.Equal(1, t1.Strides.Length);
+            Assert.Equal(1, t1.Strides[0]);
+            Assert.False(t1.IsPinned);
+            Assert.Equal(0, t1[0]);
+
+            // Make sure can't index too many dimensions
+            Assert.Throws<IndexOutOfRangeException>(() =>
+            {
+                var x = t1[1, 1];
+            });
+
+            // Make sure can't index beyond end
+            Assert.Throws<IndexOutOfRangeException>(() =>
+            {
+                var x = t1[1];
+            });
+
+            // Make sure can't index negative index
+            Assert.Throws<IndexOutOfRangeException>(() =>
+            {
+                var x = t1[-1];
+            });
+
+            // Make sure lengths can't be negative
+            Assert.Throws<ArgumentOutOfRangeException>(() =>
+            {
+                Tensor<int> t1 = Tensor.Create<int>([-1]);
+            });
+
+            t1 = Tensor.Create<int>([0]);
+            Assert.Equal(1, t1.Rank);
+            Assert.Equal(1, t1.Lengths.Length);
+            Assert.Equal(0, t1.Lengths[0]);
+            Assert.Equal(1, t1.Strides.Length);
+            Assert.Equal(0, t1.Strides[0]);
+            Assert.False(t1.IsPinned);
+
+            t1 = Tensor.Create<int>([]);
+            Assert.Equal(1, t1.Rank);
+            Assert.Equal(1, t1.Lengths.Length);
+            Assert.Equal(0, t1.Lengths[0]);
+            Assert.Equal(1, t1.Strides.Length);
+            Assert.Equal(0, t1.Strides[0]);
+            Assert.False(t1.IsPinned);
+
+            // Null should behave like empty array since there is no "null" span.
+            t1 = Tensor.Create<int>(null);
+            Assert.Equal(1, t1.Rank);
+            Assert.Equal(1, t1.Lengths.Length);
+            Assert.Equal(0, t1.Lengths[0]);
+            Assert.Equal(1, t1.Strides.Length);
+            Assert.Equal(0, t1.Strides[0]);
+            Assert.False(t1.IsPinned);
+
+            // Make sure pinned works
+            t1 = Tensor.Create<int>([1], true);
+            Assert.Equal(1, t1.Rank);
+            Assert.Equal(1, t1.Lengths.Length);
+            Assert.Equal(1, t1.Lengths[0]);
+            Assert.Equal(1, t1.Strides.Length);
+            Assert.Equal(1, t1.Strides[0]);
+            Assert.True(t1.IsPinned);
+            Assert.Equal(0, t1[0]);
+
+            int[] a = [91, 92, -93, 94];
+            // Make sure 2D array works with basic strides
+            t1 = Tensor.Create<int>(a, [2, 2], [2, 1]);
+            Assert.Equal(2, t1.Rank);
+            Assert.Equal(2, t1.Lengths[0]);
+            Assert.Equal(2, t1.Lengths[1]);
+            Assert.Equal(91, t1[0, 0]);
+            Assert.Equal(92, t1[0, 1]);
+            Assert.Equal(-93, t1[1, 0]);
+            Assert.Equal(94, t1[1, 1]);
+
+            // Make sure 2D array works with stride of 0 to loop over first 2 elements again
+            t1 = Tensor.Create<int>(a, [2, 2], [0, 1]);
+            Assert.Equal(2, t1.Rank);
+            Assert.Equal(2, t1.Lengths[0]);
+            Assert.Equal(2, t1.Lengths[1]);
+            Assert.Equal(91, t1[0, 0]);
+            Assert.Equal(92, t1[0, 1]);
+            Assert.Equal(91, t1[1, 0]);
+            Assert.Equal(92, t1[1, 1]);
+
+            // Make sure 2D array works with strides of all 0 to loop over first element again
+            t1 = Tensor.Create<int>(a, [2, 2], [0, 0]);
+            Assert.Equal(2, t1.Rank);
+            Assert.Equal(2, t1.Lengths[0]);
+            Assert.Equal(2, t1.Lengths[1]);
+            Assert.Equal(91, t1[0, 0]);
+            Assert.Equal(91, t1[0, 1]);
+            Assert.Equal(91, t1[1, 0]);
+            Assert.Equal(91, t1[1, 1]);
+
+            // Make sure 2D array works with strides of all 0 only 1 element to make sure it doesn't leave that element
+            t1 = Tensor.Create<int>([a[3]], [2, 2], [0, 0]);
+            Assert.Equal(2, t1.Rank);
+            Assert.Equal(2, t1.Lengths[0]);
+            Assert.Equal(2, t1.Lengths[1]);
+            Assert.Equal(94, t1[0, 0]);
+            Assert.Equal(94, t1[0, 1]);
+            Assert.Equal(94, t1[1, 0]);
+            Assert.Equal(94, t1[1, 1]);
+
+            // Make sure strides can't be negative
+            Assert.Throws<ArgumentOutOfRangeException>(() => {
+                Span<int> a = [91, 92, -93, 94];
+                var t1 = Tensor.Create<int>([1, 2], [-1, 0], false);
+            });
+            Assert.Throws<ArgumentOutOfRangeException>(() => {
+                Span<int> a = [91, 92, -93, 94];
+                var t1 = Tensor.Create<int>([1, 2], [0, -1], false);
+            });
+
+            // Make sure lengths can't be negative
+            Assert.Throws<ArgumentOutOfRangeException>(() => {
+                Span<int> a = [91, 92, -93, 94];
+                var t1 = Tensor.Create<int>([-1, 2], [], false);
+            });
+            Assert.Throws<ArgumentOutOfRangeException>(() => {
+                Span<int> a = [91, 92, -93, 94];
+                var t1 = Tensor.Create<int>([1, -2], [], false);
+            });
+
+            // Make sure 2D array works with strides to hit element 0,0,2,2
+            t1 = Tensor.Create<int>(a, [2, 2], [2, 0]);
+            Assert.Equal(2, t1.Rank);
+            Assert.Equal(2, t1.Lengths[0]);
+            Assert.Equal(2, t1.Lengths[1]);
+            Assert.Equal(91, t1[0, 0]);
+            Assert.Equal(91, t1[0, 1]);
+            Assert.Equal(-93, t1[1, 0]);
+            Assert.Equal(-93, t1[1, 1]);
+
+            // Make sure you can't overlap elements using strides
+            Assert.Throws<ArgumentOutOfRangeException>(() => {
+                Span<int> a = [91, 92, -93, 94];
+                var t1 = Tensor.Create<int>([2, 2], [1, 1], false);
+            });
+        }
+        
+        [Fact]
+        public static void TensorCosineSimilarityTests()
+        {
+            float[] a = [0, 0, 0, 1, 1, 1];
+            float[] b = [1, 0, 0, 1, 1, 0];
+
+            Tensor<float> left = Tensor.Create<float>(a, [2,3]);
+            Tensor<float> right = Tensor.Create<float>(b, [2,3]);
+
+            Tensor<float> result = Tensor.CosineSimilarity(left, right);
+            Assert.Equal(2, result.Rank);
+            Assert.Equal(2, result.Lengths[0]);
+            Assert.Equal(2, result.Lengths[1]);
+
+
+            Assert.Equal(float.NaN, result[0, 0]);
+            Assert.Equal(float.NaN, result[0, 1]);
+
+            Assert.Equal(0.57735, result[1, 0], .00001);
+            Assert.Equal(0.81649, result[1, 1], .00001);
+        }
+
+        [Fact]
         public static void TensorSequenceEqualTests()
         {
             Tensor<int> t0 = Tensor.CreateFromEnumerable(Enumerable.Range(0, 3));
@@ -823,10 +1128,10 @@ namespace System.Numerics.Tensors.Tests
         public static void IntArrayAsTensor()
         {
             int[] a = [91, 92, -93, 94];
-            TensorSpan<int> spanInt = a.AsTensorSpan(4);
+            TensorSpan<int> t1 = a.AsTensorSpan(4);
             nint[] dims = [4];
             var tensor = Tensor.CreateUninitialized<int>(dims.AsSpan(), false);
-            spanInt.CopyTo(tensor);
+            t1.CopyTo(tensor);
             Assert.Equal(1, tensor.Rank);
 
             Assert.Equal(1, tensor.Lengths.Length);
@@ -852,13 +1157,13 @@ namespace System.Numerics.Tensors.Tests
             a[1] = 92;
             a[2] = -93;
             a[3] = 94;
-            spanInt = a.AsTensorSpan(2, 2);
+            t1 = a.AsTensorSpan(2, 2);
             dims = [2, 2];
             tensor = Tensor.CreateUninitialized<int>(dims.AsSpan(), false);
-            spanInt.CopyTo(tensor);
+            t1.CopyTo(tensor);
             Assert.Equal(a, tensor.ToArray());
             Assert.Equal(2, tensor.Rank);
-            //Assert.Equal(4, spanInt.FlattenedLength);
+            //Assert.Equal(4, t1.FlattenedLength);
             Assert.Equal(2, tensor.Lengths.Length);
             Assert.Equal(2, tensor.Lengths[0]);
             Assert.Equal(2, tensor.Lengths[1]);
@@ -957,9 +1262,9 @@ namespace System.Numerics.Tensors.Tests
         public static void TensorClearTest()
         {
             int[] a = [1, 2, 3, 4, 5, 6, 7, 8, 9];
-            TensorSpan<int> spanInt = a.AsTensorSpan(3, 3);
+            TensorSpan<int> t1 = a.AsTensorSpan(3, 3);
             var tensor = Tensor.CreateUninitialized<int>([3, 3], false);
-            spanInt.CopyTo(tensor);
+            t1.CopyTo(tensor);
             var slice = tensor.Slice(0..2, 0..2);
             slice.Clear();
             Assert.Equal(0, slice[0, 0]);
@@ -987,9 +1292,9 @@ namespace System.Numerics.Tensors.Tests
             }
 
             a = [1, 2, 3, 4, 5, 6, 7, 8, 9];
-            spanInt = a.AsTensorSpan(9);
+            t1 = a.AsTensorSpan(9);
             tensor = Tensor.CreateUninitialized<int>([9], false);
-            spanInt.CopyTo(tensor);
+            t1.CopyTo(tensor);
             slice = tensor.Slice(0..1);
             slice.Clear();
             Assert.Equal(0, slice[0]);
@@ -1014,9 +1319,9 @@ namespace System.Numerics.Tensors.Tests
             }
 
             a = [.. Enumerable.Range(0, 27)];
-            spanInt = a.AsTensorSpan(3, 3, 3);
+            t1 = a.AsTensorSpan(3, 3, 3);
             tensor = Tensor.CreateUninitialized<int>([3, 3, 3], false);
-            spanInt.CopyTo(tensor);
+            t1.CopyTo(tensor);
             tensor.Clear();
             enumerator = tensor.GetEnumerator();
             while (enumerator.MoveNext())
@@ -1025,9 +1330,9 @@ namespace System.Numerics.Tensors.Tests
             }
 
             a = [.. Enumerable.Range(0, 12)];
-            spanInt = a.AsTensorSpan(3, 2, 2);
+            t1 = a.AsTensorSpan(3, 2, 2);
             tensor = Tensor.CreateUninitialized<int>([3, 2, 2], false);
-            spanInt.CopyTo(tensor);
+            t1.CopyTo(tensor);
             tensor.Clear();
             enumerator = tensor.GetEnumerator();
             while (enumerator.MoveNext())
@@ -1036,9 +1341,9 @@ namespace System.Numerics.Tensors.Tests
             }
 
             a = [.. Enumerable.Range(0, 16)];
-            spanInt = a.AsTensorSpan(2, 2, 2, 2);
+            t1 = a.AsTensorSpan(2, 2, 2, 2);
             tensor = Tensor.CreateUninitialized<int>([2, 2, 2, 2], false);
-            spanInt.CopyTo(tensor);
+            t1.CopyTo(tensor);
             tensor.Clear();
             enumerator = tensor.GetEnumerator();
             while (enumerator.MoveNext())
@@ -1047,9 +1352,9 @@ namespace System.Numerics.Tensors.Tests
             }
 
             a = [.. Enumerable.Range(0, 24)];
-            spanInt = a.AsTensorSpan(3, 2, 2, 2);
+            t1 = a.AsTensorSpan(3, 2, 2, 2);
             tensor = Tensor.CreateUninitialized<int>([3, 2, 2, 2], false);
-            spanInt.CopyTo(tensor);
+            t1.CopyTo(tensor);
             tensor.Clear();
             enumerator = tensor.GetEnumerator();
             while (enumerator.MoveNext())
@@ -1059,8 +1364,8 @@ namespace System.Numerics.Tensors.Tests
 
             // Make sure clearing a slice of a SPan doesn't clear the whole thing.
             a = [.. Enumerable.Range(0, 9)];
-            spanInt = a.AsTensorSpan(3, 3);
-            var spanSlice = spanInt.Slice(0..1, 0..3);
+            t1 = a.AsTensorSpan(3, 3);
+            var spanSlice = t1.Slice(0..1, 0..3);
             spanSlice.Clear();
             var spanEnumerator = spanSlice.GetEnumerator();
             while (spanEnumerator.MoveNext())
@@ -1068,20 +1373,20 @@ namespace System.Numerics.Tensors.Tests
                 Assert.Equal(0, spanEnumerator.Current);
             }
 
-            Assert.Equal(0, spanInt[0, 0]);
-            Assert.Equal(0, spanInt[0, 1]);
-            Assert.Equal(0, spanInt[0, 2]);
-            Assert.Equal(3, spanInt[1, 0]);
-            Assert.Equal(4, spanInt[1, 1]);
-            Assert.Equal(5, spanInt[1, 2]);
-            Assert.Equal(6, spanInt[2, 0]);
-            Assert.Equal(7, spanInt[2, 1]);
-            Assert.Equal(8, spanInt[2, 2]);
+            Assert.Equal(0, t1[0, 0]);
+            Assert.Equal(0, t1[0, 1]);
+            Assert.Equal(0, t1[0, 2]);
+            Assert.Equal(3, t1[1, 0]);
+            Assert.Equal(4, t1[1, 1]);
+            Assert.Equal(5, t1[1, 2]);
+            Assert.Equal(6, t1[2, 0]);
+            Assert.Equal(7, t1[2, 1]);
+            Assert.Equal(8, t1[2, 2]);
 
             // Make sure clearing a slice from the middle of a SPan doesn't clear the whole thing.
             a = [.. Enumerable.Range(0, 9)];
-            spanInt = a.AsTensorSpan(3, 3);
-            spanSlice = spanInt.Slice(1..2, 0..3);
+            t1 = a.AsTensorSpan(3, 3);
+            spanSlice = t1.Slice(1..2, 0..3);
             spanSlice.Clear();
             spanEnumerator = spanSlice.GetEnumerator();
             while (spanEnumerator.MoveNext())
@@ -1089,20 +1394,20 @@ namespace System.Numerics.Tensors.Tests
                 Assert.Equal(0, spanEnumerator.Current);
             }
 
-            Assert.Equal(0, spanInt[0, 0]);
-            Assert.Equal(1, spanInt[0, 1]);
-            Assert.Equal(2, spanInt[0, 2]);
-            Assert.Equal(0, spanInt[1, 0]);
-            Assert.Equal(0, spanInt[1, 1]);
-            Assert.Equal(0, spanInt[1, 2]);
-            Assert.Equal(6, spanInt[2, 0]);
-            Assert.Equal(7, spanInt[2, 1]);
-            Assert.Equal(8, spanInt[2, 2]);
+            Assert.Equal(0, t1[0, 0]);
+            Assert.Equal(1, t1[0, 1]);
+            Assert.Equal(2, t1[0, 2]);
+            Assert.Equal(0, t1[1, 0]);
+            Assert.Equal(0, t1[1, 1]);
+            Assert.Equal(0, t1[1, 2]);
+            Assert.Equal(6, t1[2, 0]);
+            Assert.Equal(7, t1[2, 1]);
+            Assert.Equal(8, t1[2, 2]);
 
             // Make sure clearing a slice from the end of a SPan doesn't clear the whole thing.
             a = [.. Enumerable.Range(0, 9)];
-            spanInt = a.AsTensorSpan(3, 3);
-            spanSlice = spanInt.Slice(2..3, 0..3);
+            t1 = a.AsTensorSpan(3, 3);
+            spanSlice = t1.Slice(2..3, 0..3);
             spanSlice.Clear();
             spanEnumerator = spanSlice.GetEnumerator();
             while (spanEnumerator.MoveNext())
@@ -1110,15 +1415,15 @@ namespace System.Numerics.Tensors.Tests
                 Assert.Equal(0, spanEnumerator.Current);
             }
 
-            Assert.Equal(0, spanInt[0, 0]);
-            Assert.Equal(1, spanInt[0, 1]);
-            Assert.Equal(2, spanInt[0, 2]);
-            Assert.Equal(3, spanInt[1, 0]);
-            Assert.Equal(4, spanInt[1, 1]);
-            Assert.Equal(5, spanInt[1, 2]);
-            Assert.Equal(0, spanInt[2, 0]);
-            Assert.Equal(0, spanInt[2, 1]);
-            Assert.Equal(0, spanInt[2, 2]);
+            Assert.Equal(0, t1[0, 0]);
+            Assert.Equal(1, t1[0, 1]);
+            Assert.Equal(2, t1[0, 2]);
+            Assert.Equal(3, t1[1, 0]);
+            Assert.Equal(4, t1[1, 1]);
+            Assert.Equal(5, t1[1, 2]);
+            Assert.Equal(0, t1[2, 0]);
+            Assert.Equal(0, t1[2, 1]);
+            Assert.Equal(0, t1[2, 2]);
 
             // Make sure it works with reference types.
             object[] o = [new object(), new object(), new object(), new object(), new object(), new object(), new object(), new object(), new object()];
