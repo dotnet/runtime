@@ -1312,6 +1312,12 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
             {
                 return impNonConstFallback(intrinsic, retType, simdBaseJitType);
             }
+            else if (!opts.OptimizationEnabled())
+            {
+                // Only enable late stage rewriting if optimizations are enabled
+                // as we won't otherwise encounter a constant at the later point
+                return nullptr;
+            }
             else
             {
                 setMethodHandle = true;
@@ -1342,6 +1348,12 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
             if (useFallback)
             {
                 return impNonConstFallback(intrinsic, retType, simdBaseJitType);
+            }
+            else if (!opts.OptimizationEnabled())
+            {
+                // Only enable late stage rewriting if optimizations are enabled
+                // as we won't otherwise encounter a constant at the later point
+                return nullptr;
             }
             else
             {
