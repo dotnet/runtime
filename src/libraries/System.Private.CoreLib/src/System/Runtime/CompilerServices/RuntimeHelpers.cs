@@ -133,5 +133,9 @@ namespace System.Runtime.CompilerServices
         [Intrinsic]
         internal static bool IsKnownConstant<T>(T t) where T : struct => false;
 #pragma warning restore IDE0060
+
+        /// <returns>true if given type is reference type, value type that contains references, or ByRefLike with references or by-refs.</returns>
+        [Intrinsic]
+        public static bool IsReferenceOrContainsReferences<T>() where T: allows ref struct => IsReferenceOrContainsReferences<T>();
     }
 }

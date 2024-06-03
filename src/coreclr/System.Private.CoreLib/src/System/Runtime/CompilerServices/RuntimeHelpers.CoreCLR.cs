@@ -221,16 +221,6 @@ namespace System.Runtime.CompilerServices
         [LibraryImport(QCall, EntryPoint = "ObjectNative_AllocateUninitializedClone")]
         internal static partial void AllocateUninitializedClone(ObjectHandleOnStack objHandle);
 
-        /// <returns>true if given type is reference type or value type that contains references</returns>
-        [Intrinsic]
-        public static bool IsReferenceOrContainsReferences<T>()
-            // where T : allows ref struct // TODO https://github.com/dotnet/runtime/issues/102847
-        {
-            // The body of this function will be replaced by the EE with unsafe code!!!
-            // See getILIntrinsicImplementationForRuntimeHelpers for how this happens.
-            throw new InvalidOperationException();
-        }
-
         /// <returns>true if given type is bitwise equatable (memcmp can be used for equality checking)</returns>
         /// <remarks>
         /// Only use the result of this for Equals() comparison, not for CompareTo() comparison.
