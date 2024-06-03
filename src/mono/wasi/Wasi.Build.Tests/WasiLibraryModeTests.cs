@@ -39,13 +39,22 @@ public class WasiLibraryModeTests : BuildTestBase
                     }
                 }
                 """;
+        string csprojCode = 
+                """
+                <Project Sdk="Microsoft.NET.Sdk.WebAssembly">
+                    <PropertyGroup>
+                        <TargetFramework>net9.0</TargetFramework>
+                        <RuntimeIdentifier>wasi-wasm</RuntimeIdentifier>
+                        <OutputType>Library</OutputType>
+                        <WasmBuildNative>true</WasmBuildNative>
+                        <WasmNativeStrip>false</WasmNativeStrip>
+                        <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+                        <WasmSingleFileBundle>true</WasmSingleFileBundle>
+                    </PropertyGroup>
+                </Project>
+                """;
         File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), code);
-        string extraProperties = @"<WasmBuildNative>true</WasmBuildNative>
-                                   <WasmNativeStrip>false</WasmNativeStrip>
-                                   <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-                                   <WasmSingleFileBundle>true</WasmSingleFileBundle>
-                                   <OutputType>Library</OutputType>";
-        AddItemsPropertiesToProject(projectFile, extraProperties: extraProperties);
+        File.WriteAllText(Path.Combine(_projectDir!, $"{id}.csproj"), csprojCode);
         string projectName = Path.GetFileNameWithoutExtension(projectFile);
         var buildArgs = new BuildArgs(projectName, config, AOT: false, ProjectFileContents: id, ExtraBuildArgs: null);
         buildArgs = ExpandBuildArgs(buildArgs);
@@ -54,7 +63,8 @@ public class WasiLibraryModeTests : BuildTestBase
                     new BuildProjectOptions(
                         DotnetWasmFromRuntimePack: false,
                         CreateProject: false,
-                        Publish: true
+                        Publish: true,
+                        TargetFramework: BuildTestBase.DefaultTargetFramework
                         ));
 
         Assert.Contains("Build succeeded.", output);
