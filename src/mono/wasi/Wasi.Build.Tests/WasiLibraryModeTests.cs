@@ -40,7 +40,11 @@ public class WasiLibraryModeTests : BuildTestBase
                 }
                 """;
         File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), code);
-        string extraProperties = @"<OutputType>true</OutputType>";
+        string extraProperties = @"<WasmBuildNative>true</WasmBuildNative>
+                                   <WasmNativeStrip>false</WasmNativeStrip>
+                                   <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
+                                   <WasmSingleFileBundle>true</WasmSingleFileBundle>
+                                   <OutputType>Library</OutputType>";
         AddItemsPropertiesToProject(projectFile, extraProperties: extraProperties);
         string projectName = Path.GetFileNameWithoutExtension(projectFile);
         var buildArgs = new BuildArgs(projectName, config, AOT: false, ProjectFileContents: id, ExtraBuildArgs: null);
