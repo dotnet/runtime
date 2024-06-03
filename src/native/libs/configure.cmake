@@ -616,6 +616,7 @@ elseif(CLR_CMAKE_TARGET_ANDROID)
     set(HAVE_CLOCK_REALTIME 1)
 elseif(CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
     set(HAVE_FORK 0)
+    add_compile_options(-Wno-version-check)
 else()
     check_symbol_exists(
         aligned_alloc
