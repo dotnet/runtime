@@ -950,7 +950,7 @@ regNumber genRegArgNext(regNumber argReg)
  *  are encoded in GC information at call sites.
  */
 
-const regMaskTP raRbmCalleeSaveOrder[] = {RBM_CALL_GC_REGS_ORDER};
+const regMaskSmall raRbmCalleeSaveOrder[] = {RBM_CALL_GC_REGS_ORDER};
 
 regMaskSmall genRegMaskFromCalleeSavedMask(unsigned short calleeSaveMask)
 {

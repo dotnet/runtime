@@ -42,7 +42,7 @@ public sealed class GeneratedRegexAttribute : Attribute
     /// <param name="options">A bitwise combination of the enumeration values that modify the regular expression.</param>
     /// <param name="cultureName">The name of a culture to be used for case sensitive comparisons. <paramref name="cultureName"/> is not case-sensitive.</param>
     /// <remarks>
-    /// For a list of predefined culture names on Windows systems, see the Language tag column in the <see href="https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-lcid/a9eac961-e77d-41a6-90a5-ce1a8b0cdb9c">list of
+    /// For a list of predefined culture names on Windows systems, see the Language tag column in the <see href="https://learn.microsoft.com/openspecs/windows_protocols/ms-lcid/a9eac961-e77d-41a6-90a5-ce1a8b0cdb9c">list of
     /// language/region names suported by Windows</see>. Culture names follow the standard defined by <see href="https://tools.ietf.org/html/bcp47">BCP 47</see>. In addition,
     /// starting with Windows 10, <paramref name="cultureName"/> can be any valid BCP-47 language tag.
     ///
@@ -66,7 +66,7 @@ public sealed class GeneratedRegexAttribute : Attribute
     /// <param name="matchTimeoutMilliseconds">A time-out interval (milliseconds), or <see cref="Timeout.Infinite"/> to indicate that the method should not time out.</param>
     /// <param name="cultureName">The name of a culture to be used for case sensitive comparisons. <paramref name="cultureName"/> is not case-sensitive.</param>
     /// <remarks>
-    /// For a list of predefined culture names on Windows systems, see the Language tag column in the <see href="https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-lcid/a9eac961-e77d-41a6-90a5-ce1a8b0cdb9c">list of
+    /// For a list of predefined culture names on Windows systems, see the Language tag column in the <see href="https://learn.microsoft.com/openspecs/windows_protocols/ms-lcid/a9eac961-e77d-41a6-90a5-ce1a8b0cdb9c">list of
     /// language/region names suported by Windows</see>. Culture names follow the standard defined by <see href="https://tools.ietf.org/html/bcp47">BCP 47</see>. In addition,
     /// starting with Windows 10, <paramref name="cultureName"/> can be any valid BCP-47 language tag.
     ///

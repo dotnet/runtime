@@ -10,5 +10,11 @@ namespace System.Text.Json
                 switchName: "System.Text.Json.Serialization.EnableSourceGenReflectionFallback",
                 isEnabled: out bool value)
             ? value : false;
+
+        public static bool RespectNullableAnnotationsDefault { get; } =
+            AppContext.TryGetSwitch(
+                switchName: "System.Text.Json.Serialization.RespectNullableAnnotationsDefault",
+                isEnabled: out bool value)
+            ? value : false;
     }
 }
