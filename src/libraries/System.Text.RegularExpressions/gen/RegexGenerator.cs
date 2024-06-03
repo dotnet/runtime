@@ -73,7 +73,7 @@ namespace System.Text.RegularExpressions.Generator
                         {
                             RegexTree regexTree = RegexParser.Parse(method.Pattern, method.Options | RegexOptions.Compiled, method.Culture); // make sure Compiled is included to get all optimizations applied to it
                             AnalysisResults analysis = RegexTreeAnalyzer.Analyze(regexTree);
-                            return new RegexMethod(method.DeclaringType, method.IsProperty, method.DiagnosticLocation, method.MethodName, method.Modifiers, method.NullableRegex, method.Pattern, method.Options, method.MatchTimeout, regexTree, analysis, method.CompilationData);
+                            return new RegexMethod(method.DeclaringType, method.IsProperty, method.DiagnosticLocation, method.MemberName, method.Modifiers, method.NullableRegex, method.Pattern, method.Options, method.MatchTimeout, regexTree, analysis, method.CompilationData);
                         }
                         catch (Exception e)
                         {
@@ -201,7 +201,7 @@ namespace System.Text.RegularExpressions.Generator
                         else
                         {
                             regexMethod.IsDuplicate = false;
-                            regexMethod.GeneratedName = $"{regexMethod.MethodName}_{id++}";
+                            regexMethod.GeneratedName = $"{regexMethod.MemberName}_{id++}";
                             emittedExpressions.Add(key, regexMethod);
                         }
 

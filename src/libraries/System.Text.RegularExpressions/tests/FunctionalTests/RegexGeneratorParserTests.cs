@@ -858,6 +858,7 @@ namespace System.Text.RegularExpressions.Tests
         {
             Assert.Empty(await RegexGeneratorHelper.RunGenerator(@"
                 #nullable enable
+                using System.Diagnostics.CodeAnalysis;
                 using System.Text.RegularExpressions;
                 partial class C
                 {
@@ -866,6 +867,22 @@ namespace System.Text.RegularExpressions.Tests
 
                     [GeneratedRegex(""ab"")]
                     private static partial Regex? Valid2 { get; }
+
+                    [GeneratedRegex(""ab"")]
+                    [MaybeNull]
+                    private static partial Regex Valid3 { get; }
+
+                    [GeneratedRegex(""ab"")]
+                    [MaybeNull]
+                    private static partial Regex? Valid4 { get; }
+
+                    [GeneratedRegex(""ab"")]
+                    [NotNull]
+                    private static partial Regex Vali5 { get; }
+
+                    [GeneratedRegex(""ab"")]
+                    [NotNull]
+                    private static partial Regex? Valid6 { get; }
                 }
             ", compile: true));
         }
