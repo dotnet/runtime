@@ -6660,13 +6660,13 @@ namespace JIT.HardwareIntrinsics.Arm
             double[] result = new double[op1.Length];
             Array.Fill<double>(result, 0, 0, op1.Length);
 
-	    int i = 0;
+            int i = 0;
             for (int j = 0; j < op1.Length; j++)
             {
                 if (op1[j] != 0)
                 {
-			result[i++] = op2[j];
-		}
+                    result[i++] = op2[j];
+                }
             }
 
             return result;
@@ -6677,13 +6677,13 @@ namespace JIT.HardwareIntrinsics.Arm
             int[] result = new int[op1.Length];
             Array.Fill<int>(result, 0, 0, op1.Length);
 
-	    int i = 0;
+            int i = 0;
             for (int j = 0; j < op1.Length; j++)
             {
                 if (op1[j] != 0)
                 {
-			result[i++] = op2[j];
-		}
+                    result[i++] = op2[j];
+                }
             }
 
             return result;
@@ -6694,13 +6694,13 @@ namespace JIT.HardwareIntrinsics.Arm
             long[] result = new long[op1.Length];
             Array.Fill<long>(result, 0, 0, op1.Length);
 
-	    long i = 0;
+            long i = 0;
             for (int j = 0; j < op1.Length; j++)
             {
                 if (op1[j] != 0)
                 {
-			result[i++] = op2[j];
-		}
+                    result[i++] = op2[j];
+                }
             }
 
             return result;
@@ -6711,13 +6711,13 @@ namespace JIT.HardwareIntrinsics.Arm
             float[] result = new float[op1.Length];
             Array.Fill<float>(result, 0, 0, op1.Length);
 
-	    int i = 0;
+            int i = 0;
             for (int j = 0; j < op1.Length; j++)
             {
                 if (op1[j] != 0)
                 {
-			result[i++] = op2[j];
-		}
+                    result[i++] = op2[j];
+                }
             }
 
             return result;
@@ -6728,13 +6728,13 @@ namespace JIT.HardwareIntrinsics.Arm
             uint[] result = new uint[op1.Length];
             Array.Fill<uint>(result, 0, 0, op1.Length);
 
-	    int i = 0;
+            int i = 0;
             for (int j = 0; j < op1.Length; j++)
             {
                 if (op1[j] != 0)
                 {
-			result[i++] = op2[j];
-		}
+                    result[i++] = op2[j];
+                }
             }
 
             return result;
@@ -6745,13 +6745,13 @@ namespace JIT.HardwareIntrinsics.Arm
             ulong[] result = new ulong[op1.Length];
             Array.Fill<ulong>(result, 0, 0, op1.Length);
 
-	    ulong i = 0;
+            ulong i = 0;
             for (int j = 0; j < op1.Length; j++)
             {
                 if (op1[j] != 0)
                 {
-			result[i++] = op2[j];
-		}
+                    result[i++] = op2[j];
+                }
             }
 
             return result;

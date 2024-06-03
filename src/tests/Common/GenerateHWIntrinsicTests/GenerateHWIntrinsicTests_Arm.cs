@@ -80,18 +80,18 @@ const string SimpleVecOpTest_ValidationLogicForCndSel = @"for (var i = 0; i < Re
 
 const string SimpleVecOpTest_VectorValidationLogicForCndSel = @"
             {
-		{RetBaseType}[] vectorResult = {GetVectorResult};
-		{RetBaseType}[] maskedVectorResult = new {RetBaseType}[vectorResult.Length];
+                {Op1BaseType}[] vectorResult = {GetVectorResult};
+                {Op1BaseType}[] maskedVectorResult = new {RetBaseType}[vectorResult.Length];
 
-		for (var i = 0; i < vectorResult.Length; i++)
-		{
-			maskedVectorResult[i] = (mask[i] != 0) ? vectorResult[i] : falseVal[i];
-		}
+                for (var i = 0; i < vectorResult.Length; i++)
+                {
+                    maskedVectorResult[i] = (mask[i] != 0) ? vectorResult[i] : falseVal[i];
+                }
 
-		if (!result.SequenceEqual(maskedVectorResult))
-		{
-			succeeded = false;
-		}
+                if (!result.SequenceEqual(maskedVectorResult))
+                {
+                    succeeded = false;
+                }
             }";
 
 const string SimpleTernVecOpTest_ValidationLogicForCndSel = @"for (var i = 0; i < RetElementCount; i++)
