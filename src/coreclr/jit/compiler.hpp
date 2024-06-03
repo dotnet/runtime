@@ -99,7 +99,6 @@ inline bool genExactlyOneBit(T value)
     return ((value != 0) && genMaxOneBit(value));
 }
 
-#ifdef TARGET_ARM64
 inline regMaskTP genFindLowestBit(regMaskTP value)
 {
     return regMaskTP(genFindLowestBit(value.getLow()));
@@ -124,7 +123,6 @@ inline bool genExactlyOneBit(regMaskTP value)
 {
     return genExactlyOneBit(value.getLow());
 }
-#endif
 
 /*****************************************************************************
  *
@@ -169,17 +167,10 @@ inline unsigned uhi32(uint64_t value)
  *  A rather simple routine that counts the number of bits in a given number.
  */
 
-inline unsigned genCountBits(uint64_t bits)
-{
-    return BitOperations::PopCount(bits);
-}
-
-#ifdef TARGET_ARM64
 inline unsigned genCountBits(regMaskTP mask)
 {
     return BitOperations::PopCount(mask.getLow());
 }
-#endif
 
 /*****************************************************************************
  *
@@ -944,22 +935,14 @@ inline unsigned Compiler::funGetFuncIdx(BasicBlock* block)
 
 inline regNumber genRegNumFromMask(regMaskTP mask)
 {
-    assert(mask != 0); // Must have one bit set, so can't have a mask of zero
+    assert(mask.IsNonEmpty()); // Must have one bit set, so can't have a mask of zero
 
     /* Convert the mask to a register number */
 
-#ifdef TARGET_ARM64
     regNumber regNum = (regNumber)genLog2(mask.getLow());
 
     /* Make sure we got it right */
     assert(genRegMask(regNum) == mask.getLow());
-
-#else
-    regNumber regNum = (regNumber)genLog2(mask);
-
-    /* Make sure we got it right */
-    assert(genRegMask(regNum) == mask);
-#endif
 
     return regNum;
 }
@@ -977,7 +960,7 @@ inline regNumber genRegNumFromMask(regMaskTP mask)
 
 inline regNumber genFirstRegNumFromMaskAndToggle(regMaskTP& mask)
 {
-    assert(mask != 0); // Must have one bit set, so can't have a mask of zero
+    assert(mask.IsNonEmpty()); // Must have one bit set, so can't have a mask of zero
 
     /* Convert the mask to a register number */
 
@@ -1000,7 +983,7 @@ inline regNumber genFirstRegNumFromMaskAndToggle(regMaskTP& mask)
 
 inline regNumber genFirstRegNumFromMask(regMaskTP mask)
 {
-    assert(mask != 0); // Must have one bit set, so can't have a mask of zero
+    assert(mask.IsNonEmpty()); // Must have one bit set, so can't have a mask of zero
 
     /* Convert the mask to a register number */
 
@@ -3207,6 +3190,41 @@ inline bool Compiler::IsValidLclAddr(unsigned lclNum, unsigned offset)
     return (offset < UINT16_MAX) && (offset < lvaLclExactSize(lclNum));
 }
 
+//------------------------------------------------------------------------
+// IsPotentialGCSafePoint: Can the given tree be effectively a gc safe point?
+//
+// Arguments:
+//    tree - the tree to check
+//
+// Return Value:
+//    True if the tree can be a gc safe point
+//
+inline bool Compiler::IsPotentialGCSafePoint(GenTree* tree) const
+{
+    if (((tree->gtFlags & GTF_CALL) != 0))
+    {
+        // if this is not a No-GC helper
+        if (!tree->IsCall() || !emitter::emitNoGChelper(tree->AsCall()->GetHelperNum()))
+        {
+            // assume that we have a safe point.
+            return true;
+        }
+    }
+
+    // TYP_STRUCT-typed stores might be converted into calls (with gc safe points) in Lower.
+    // This is quite a conservative fix as it's hard to prove Lower won't do it at this point.
+    if (tree->OperIsLocalStore())
+    {
+        return tree->TypeIs(TYP_STRUCT);
+    }
+    if (tree->OperIs(GT_STORE_BLK))
+    {
+        return true;
+    }
+
+    return false;
+}
+
 /*
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -3511,39 +3529,6 @@ inline unsigned genMapRegNumToRegArgNum(regNumber regNum, var_types type, CorInf
     {
         return genMapIntRegNumToRegArgNum(regNum, callConv);
     }
-}
-
-/*****************************************************************************/
-/* Return a register mask with the first 'numRegs' argument registers set.
- */
-
-inline regMaskTP genIntAllRegArgMask(unsigned numRegs)
-{
-    assert(numRegs <= MAX_REG_ARG);
-
-    regMaskTP result = RBM_NONE;
-    for (unsigned i = 0; i < numRegs; i++)
-    {
-        result |= intArgMasks[i];
-    }
-    return result;
-}
-
-inline regMaskTP genFltAllRegArgMask(unsigned numRegs)
-{
-#ifndef TARGET_X86
-    assert(numRegs <= MAX_FLOAT_REG_ARG);
-
-    regMaskTP result = RBM_NONE;
-    for (unsigned i = 0; i < numRegs; i++)
-    {
-        result |= fltArgMasks[i];
-    }
-    return result;
-#else
-    assert(!"no x86 float arg regs\n");
-    return RBM_NONE;
-#endif
 }
 
 /*
@@ -4505,11 +4490,7 @@ inline void* operator new[](size_t sz, Compiler* compiler, CompMemKind cmk)
 
 inline void printRegMask(regMaskTP mask)
 {
-#ifdef TARGET_ARM64
     printf(REG_MASK_ALL_FMT, mask.getLow());
-#else
-    printf(REG_MASK_ALL_FMT, mask);
-#endif
 }
 
 inline char* regMaskToString(regMaskTP mask, Compiler* context)
@@ -4517,22 +4498,14 @@ inline char* regMaskToString(regMaskTP mask, Compiler* context)
     const size_t cchRegMask = 24;
     char*        regmask    = new (context, CMK_Unknown) char[cchRegMask];
 
-#ifdef TARGET_ARM64
     sprintf_s(regmask, cchRegMask, REG_MASK_ALL_FMT, mask.getLow());
-#else
-    sprintf_s(regmask, cchRegMask, REG_MASK_ALL_FMT, mask);
-#endif
 
     return regmask;
 }
 
 inline void printRegMaskInt(regMaskTP mask)
 {
-#ifdef TARGET_ARM64
     printf(REG_MASK_INT_FMT, (mask & RBM_ALLINT).getLow());
-#else
-    printf(REG_MASK_INT_FMT, (mask & RBM_ALLINT));
-#endif
 }
 
 inline char* regMaskIntToString(regMaskTP mask, Compiler* context)
@@ -4540,11 +4513,7 @@ inline char* regMaskIntToString(regMaskTP mask, Compiler* context)
     const size_t cchRegMask = 24;
     char*        regmask    = new (context, CMK_Unknown) char[cchRegMask];
 
-#ifdef TARGET_ARM64
     sprintf_s(regmask, cchRegMask, REG_MASK_INT_FMT, (mask & RBM_ALLINT).getLow());
-#else
-    sprintf_s(regmask, cchRegMask, REG_MASK_INT_FMT, (mask & RBM_ALLINT));
-#endif
 
     return regmask;
 }

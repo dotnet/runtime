@@ -4202,7 +4202,8 @@ void CodeGen::genCodeForCpObj(GenTreeBlk* cpObjNode)
     GenTree*  dstAddr     = cpObjNode->Addr();
     GenTree*  source      = cpObjNode->Data();
     var_types srcAddrType = TYP_BYREF;
-    bool      dstOnStack  = dstAddr->gtSkipReloadOrCopy()->OperIs(GT_LCL_ADDR);
+    bool      dstOnStack =
+        dstAddr->gtSkipReloadOrCopy()->OperIs(GT_LCL_ADDR) || cpObjNode->GetLayout()->IsStackOnly(compiler);
 
     // If the GenTree node has data about GC pointers, this means we're dealing
     // with CpObj, so this requires special logic.
@@ -9911,7 +9912,7 @@ void CodeGen::genFnEpilog(BasicBlock* block)
     // if we reported the frame pointer in the prolog. The Windows x64 unwinding ABI specifically
     // disallows this `lea` form:
     //
-    //    See https://docs.microsoft.com/en-us/cpp/build/prolog-and-epilog?view=msvc-160#epilog-code
+    //    See https://learn.microsoft.com/cpp/build/prolog-and-epilog?view=msvc-160#epilog-code
     //
     //    "When a frame pointer is not used, the epilog must use add RSP,constant to deallocate the fixed part of the
     //    stack. It may not use lea RSP,constant[RSP] instead. This restriction exists so the unwind code has fewer

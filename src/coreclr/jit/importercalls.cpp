@@ -228,9 +228,23 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 
             const bool isTailCall = canTailCall && (tailCallFlags != 0);
 
+#if defined(FEATURE_READYTORUN)
+            CORINFO_CONST_LOOKUP entryPoint;
+
+            if (opts.IsReadyToRun() && (callInfo->kind == CORINFO_CALL))
+            {
+                entryPoint = callInfo->codePointerLookup.constLookup;
+            }
+            else
+            {
+                entryPoint.addr       = nullptr;
+                entryPoint.accessType = IAT_VALUE;
+            }
+#endif // FEATURE_READYTORUN
+
             call = impIntrinsic(newobjThis, clsHnd, methHnd, sig, mflags, pResolvedToken, isReadonlyCall, isTailCall,
-                                opcode == CEE_CALLVIRT, pConstrainedResolvedToken, callInfo->thisTransform, &ni,
-                                &isSpecialIntrinsic);
+                                opcode == CEE_CALLVIRT, pConstrainedResolvedToken,
+                                callInfo->thisTransform R2RARG(&entryPoint), &ni, &isSpecialIntrinsic);
 
             if (compDonotInline())
             {
@@ -239,22 +253,6 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 
             if (call != nullptr)
             {
-#ifdef FEATURE_READYTORUN
-                if (call->OperGet() == GT_INTRINSIC)
-                {
-                    if (opts.IsReadyToRun())
-                    {
-                        noway_assert(callInfo->kind == CORINFO_CALL);
-                        call->AsIntrinsic()->gtEntryPoint = callInfo->codePointerLookup.constLookup;
-                    }
-                    else
-                    {
-                        call->AsIntrinsic()->gtEntryPoint.addr       = nullptr;
-                        call->AsIntrinsic()->gtEntryPoint.accessType = IAT_VALUE;
-                    }
-                }
-#endif
-
                 bIntrinsicImported = true;
                 goto DONE_CALL;
             }
@@ -2831,6 +2829,7 @@ GenTree* Compiler::impCreateSpanIntrinsic(CORINFO_SIG_INFO* sig)
 //    pConstrainedResolvedToken -- resolved token for constrained call, or nullptr
 //       if call is not constrained
 //    constraintCallThisTransform -- this transform to apply for a constrained call
+//    entryPoint - The entry point information required for R2R scenarios
 //    pIntrinsicName [OUT] -- intrinsic name (see enumeration in namedintrinsiclist.h)
 //       for "traditional" jit intrinsics
 //    isSpecialIntrinsic [OUT] -- set true if intrinsic expansion is a call
@@ -2872,9 +2871,10 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                                 bool                    tailCall,
                                 bool                    callvirt,
                                 CORINFO_RESOLVED_TOKEN* pConstrainedResolvedToken,
-                                CORINFO_THIS_TRANSFORM  constraintCallThisTransform,
-                                NamedIntrinsic*         pIntrinsicName,
-                                bool*                   isSpecialIntrinsic)
+                                CORINFO_THIS_TRANSFORM constraintCallThisTransform
+                                                R2RARG(CORINFO_CONST_LOOKUP* entryPoint),
+                                NamedIntrinsic* pIntrinsicName,
+                                bool*           isSpecialIntrinsic)
 {
     bool       mustExpand  = false;
     bool       isSpecial   = false;
@@ -3068,7 +3068,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 }
             }
 
-            GenTree* hwintrinsic = impHWIntrinsic(ni, clsHnd, method, sig, mustExpand);
+            GenTree* hwintrinsic = impHWIntrinsic(ni, clsHnd, method, sig R2RARG(entryPoint), mustExpand);
 
             if (mustExpand && (hwintrinsic == nullptr))
             {
@@ -3355,7 +3355,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 else
                 {
                     // op1 is not a known constant, we'll do the expansion in morph
-                    retNode = new (this, GT_INTRINSIC) GenTreeIntrinsic(TYP_INT, op1, ni, method);
+                    retNode = new (this, GT_INTRINSIC) GenTreeIntrinsic(TYP_INT, op1, ni, method R2RARG(*entryPoint));
                     JITDUMP("\nConverting RuntimeHelpers.IsKnownConstant to:\n");
                     DISPTREE(retNode);
                 }
@@ -4063,7 +4063,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
             case NI_System_Math_Log2:
             case NI_System_Math_Log10:
             {
-                retNode = impMathIntrinsic(method, sig, callType, ni, tailCall);
+                retNode = impMathIntrinsic(method, sig R2RARG(entryPoint), callType, ni, tailCall);
                 break;
             }
 
@@ -4156,7 +4156,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
             case NI_System_Math_Tanh:
             case NI_System_Math_Truncate:
             {
-                retNode = impMathIntrinsic(method, sig, callType, ni, tailCall);
+                retNode = impMathIntrinsic(method, sig R2RARG(entryPoint), callType, ni, tailCall);
                 break;
             }
 
@@ -4252,7 +4252,8 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 {
                     JITDUMP("Expanding as special intrinsic\n");
                     impPopStack();
-                    op1 = new (this, GT_INTRINSIC) GenTreeIntrinsic(genActualType(callType), op1, ni, method);
+                    op1 = new (this, GT_INTRINSIC)
+                        GenTreeIntrinsic(genActualType(callType), op1, ni, method R2RARG(*entryPoint));
 
                     // Set the CALL flag to indicate that the operator is implemented by a call.
                     // Set also the EXCEPTION flag because the native implementation of
@@ -9034,8 +9035,16 @@ GenTree* Compiler::impEstimateIntrinsic(CORINFO_METHOD_HANDLE method,
             if (intrinsicName == NI_System_Math_ReciprocalSqrtEstimate)
             {
                 assert(!IsIntrinsicImplementedByUserCall(NI_System_Math_Sqrt));
+
+#if defined(FEATURE_READYTORUN)
+                CORINFO_CONST_LOOKUP entryPoint;
+
+                entryPoint.addr       = nullptr;
+                entryPoint.accessType = IAT_VALUE;
+#endif // FEATURE_READYTORUN
+
                 op1 = new (this, GT_INTRINSIC)
-                    GenTreeIntrinsic(genActualType(callType), op1, NI_System_Math_Sqrt, nullptr);
+                    GenTreeIntrinsic(genActualType(callType), op1, NI_System_Math_Sqrt, nullptr R2RARG(entryPoint));
             }
             return gtNewOperNode(GT_DIV, genActualType(callType), gtNewDconNode(1.0, callType), op1);
         }
@@ -9048,7 +9057,7 @@ GenTree* Compiler::impEstimateIntrinsic(CORINFO_METHOD_HANDLE method,
 }
 
 GenTree* Compiler::impMathIntrinsic(CORINFO_METHOD_HANDLE method,
-                                    CORINFO_SIG_INFO*     sig,
+                                    CORINFO_SIG_INFO* sig R2RARG(CORINFO_CONST_LOOKUP* entryPoint),
                                     var_types             callType,
                                     NamedIntrinsic        intrinsicName,
                                     bool                  tailCall)
@@ -9085,7 +9094,8 @@ GenTree* Compiler::impMathIntrinsic(CORINFO_METHOD_HANDLE method,
 
                 op1 = impPopStack().val;
                 op1 = impImplicitR4orR8Cast(op1, callType);
-                op1 = new (this, GT_INTRINSIC) GenTreeIntrinsic(genActualType(callType), op1, intrinsicName, method);
+                op1 = new (this, GT_INTRINSIC)
+                    GenTreeIntrinsic(genActualType(callType), op1, intrinsicName, method R2RARG(*entryPoint));
                 break;
 
             case 2:
@@ -9097,8 +9107,8 @@ GenTree* Compiler::impMathIntrinsic(CORINFO_METHOD_HANDLE method,
                 op1 = impPopStack().val;
                 op1 = impImplicitR4orR8Cast(op1, callType);
                 op2 = impImplicitR4orR8Cast(op2, callType);
-                op1 =
-                    new (this, GT_INTRINSIC) GenTreeIntrinsic(genActualType(callType), op1, op2, intrinsicName, method);
+                op1 = new (this, GT_INTRINSIC)
+                    GenTreeIntrinsic(genActualType(callType), op1, op2, intrinsicName, method R2RARG(*entryPoint));
                 break;
 
             default:

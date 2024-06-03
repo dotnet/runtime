@@ -150,9 +150,13 @@ namespace System.Diagnostics
     }
     public sealed class ActivitySource : IDisposable
     {
+        public ActivitySource(string name) { throw null; }
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         public ActivitySource(string name, string? version = "") { throw null; }
+        public ActivitySource(string name, string? version = "", System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, object?>>? tags = default) { throw null; }
         public string Name { get { throw null; } }
         public string? Version { get { throw null; } }
+        public System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, object?>>? Tags { get { throw null; } }
         public bool HasListeners() { throw null; }
         public System.Diagnostics.Activity? CreateActivity(string name, System.Diagnostics.ActivityKind kind) { throw null; }
         public System.Diagnostics.Activity? CreateActivity(string name, System.Diagnostics.ActivityKind kind, System.Diagnostics.ActivityContext parentContext, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, object?>>? tags = null, System.Collections.Generic.IEnumerable<System.Diagnostics.ActivityLink>? links = null, System.Diagnostics.ActivityIdFormat idFormat = System.Diagnostics.ActivityIdFormat.Unknown) { throw null; }
@@ -298,7 +302,7 @@ namespace System.Diagnostics
     [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential)]
     public struct TagList : System.Collections.Generic.IList<System.Collections.Generic.KeyValuePair<string, object?>>, System.Collections.Generic.IReadOnlyList<System.Collections.Generic.KeyValuePair<string, object?>>
     {
-        public TagList(System.ReadOnlySpan<System.Collections.Generic.KeyValuePair<string, object?>> tagList) : this() { throw null; }
+        public TagList(params System.ReadOnlySpan<System.Collections.Generic.KeyValuePair<string, object?>> tagList) : this() { throw null; }
         public readonly int Count => throw null;
         public readonly bool IsReadOnly => throw null;
         public System.Collections.Generic.KeyValuePair<string, object?> this[int index]
@@ -337,7 +341,7 @@ namespace System.Diagnostics.Metrics
         public void Add(T delta, System.Collections.Generic.KeyValuePair<string, object?> tag)  { throw null; }
         public void Add(T delta, System.Collections.Generic.KeyValuePair<string, object?> tag1, System.Collections.Generic.KeyValuePair<string, object?> tag2)  { throw null; }
         public void Add(T delta, System.Collections.Generic.KeyValuePair<string, object?> tag1, System.Collections.Generic.KeyValuePair<string, object?> tag2, System.Collections.Generic.KeyValuePair<string, object?> tag3)  { throw null; }
-        public void Add(T delta, System.ReadOnlySpan<System.Collections.Generic.KeyValuePair<string, object?>> tags) { throw null; }
+        public void Add(T delta, params System.ReadOnlySpan<System.Collections.Generic.KeyValuePair<string, object?>> tags) { throw null; }
         public void Add(T delta, params System.Collections.Generic.KeyValuePair<string, object?>[] tags) { throw null; }
         public void Add(T delta, in TagList tagList) { throw null; }
         internal Counter(Meter meter, string name, string? unit, string? description) :
@@ -349,7 +353,7 @@ namespace System.Diagnostics.Metrics
         public void Add(T delta, System.Collections.Generic.KeyValuePair<string, object?> tag)  { throw null; }
         public void Add(T delta, System.Collections.Generic.KeyValuePair<string, object?> tag1, System.Collections.Generic.KeyValuePair<string, object?> tag2)  { throw null; }
         public void Add(T delta, System.Collections.Generic.KeyValuePair<string, object?> tag1, System.Collections.Generic.KeyValuePair<string, object?> tag2, System.Collections.Generic.KeyValuePair<string, object?> tag3)  { throw null; }
-        public void Add(T delta, System.ReadOnlySpan<System.Collections.Generic.KeyValuePair<string, object?>> tags) { throw null; }
+        public void Add(T delta, params System.ReadOnlySpan<System.Collections.Generic.KeyValuePair<string, object?>> tags) { throw null; }
         public void Add(T delta, params System.Collections.Generic.KeyValuePair<string, object?>[] tags) { throw null; }
         public void Add(T delta, in TagList tagList) { throw null; }
         internal UpDownCounter(Meter meter, string name, string? unit, string? description) :
@@ -363,7 +367,7 @@ namespace System.Diagnostics.Metrics
         public void Record(T value, System.Collections.Generic.KeyValuePair<string, object?> tag1, System.Collections.Generic.KeyValuePair<string, object?> tag2) { throw null; }
         public void Record(T value, System.Collections.Generic.KeyValuePair<string, object?> tag1, System.Collections.Generic.KeyValuePair<string, object?> tag2, System.Collections.Generic.KeyValuePair<string, object?> tag3) { throw null; }
         public void Record(T value, in TagList tagList) { throw null; }
-        public void Record(T value, System.ReadOnlySpan<System.Collections.Generic.KeyValuePair<string, object?>> tags) { throw null; }
+        public void Record(T value, params System.ReadOnlySpan<System.Collections.Generic.KeyValuePair<string, object?>> tags) { throw null; }
         public void Record(T value, params System.Collections.Generic.KeyValuePair<string, object?>[] tags) { throw null; }
     }
     public interface IMeterFactory : System.IDisposable
@@ -399,7 +403,7 @@ namespace System.Diagnostics.Metrics
         public Measurement(T value) { throw null; }
         public Measurement(T value, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, object?>>? tags) { throw null; }
         public Measurement(T value, params System.Collections.Generic.KeyValuePair<string, object?>[]? tags) { throw null; }
-        public Measurement(T value, System.ReadOnlySpan<System.Collections.Generic.KeyValuePair<string, object?>> tags) { throw null; }
+        public Measurement(T value, params System.ReadOnlySpan<System.Collections.Generic.KeyValuePair<string, object?>> tags) { throw null; }
         public ReadOnlySpan<System.Collections.Generic.KeyValuePair<string, object?>> Tags { get { throw null; } }
         public T Value { get { throw null; } }
     }

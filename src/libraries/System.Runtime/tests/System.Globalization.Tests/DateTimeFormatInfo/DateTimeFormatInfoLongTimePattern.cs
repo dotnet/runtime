@@ -19,7 +19,7 @@ namespace System.Globalization.Tests
             // see the comments on the right to check the non-Hybrid result, if it differs
             yield return new object[] { new CultureInfo("ar-SA").DateTimeFormat, "h:mm:ss tt" };
             yield return new object[] { new CultureInfo("am-ET").DateTimeFormat, "h:mm:ss tt" };
-            yield return new object[] { new CultureInfo("bg-BG").DateTimeFormat, "H:mm:ss ч." };
+            yield return new object[] { new CultureInfo("bg-BG").DateTimeFormat, PlatformDetection.IsFirefox ? "H:mm:ss ч." : "H:mm:ss" }; // H:mm:ss ч.
             yield return new object[] { new CultureInfo("bn-BD").DateTimeFormat, "h:mm:ss tt" };
             yield return new object[] { new CultureInfo("bn-IN").DateTimeFormat, "h:mm:ss tt" };
             yield return new object[] { new CultureInfo("ca-AD").DateTimeFormat, "H:mm:ss" };
@@ -137,9 +137,10 @@ namespace System.Globalization.Tests
             yield return new object[] { new CultureInfo("en-ZA").DateTimeFormat, "HH:mm:ss" };
             yield return new object[] { new CultureInfo("en-ZM").DateTimeFormat, "h:mm:ss tt" };
             yield return new object[] { new CultureInfo("en-ZW").DateTimeFormat, "HH:mm:ss" };
-            yield return new object[] { new CultureInfo("es-419").DateTimeFormat, "HH:mm:ss" };
+            string latinAmericaSpanishPattern = PlatformDetection.IsFirefox ? "HH:mm:ss" : "h:mm:ss tt"; // H:mm:ss
+            yield return new object[] { new CultureInfo("es-419").DateTimeFormat, latinAmericaSpanishPattern };
             yield return new object[] { new CultureInfo("es-ES").DateTimeFormat, "H:mm:ss" };
-            yield return new object[] { new CultureInfo("es-MX").DateTimeFormat, "HH:mm:ss" }; // H:mm:ss
+            yield return new object[] { new CultureInfo("es-MX").DateTimeFormat, latinAmericaSpanishPattern };
             yield return new object[] { new CultureInfo("et-EE").DateTimeFormat, "HH:mm:ss" };
             yield return new object[] { new CultureInfo("fa-IR").DateTimeFormat, "H:mm:ss" };
             yield return new object[] { new CultureInfo("fi-FI").DateTimeFormat, "H.mm.ss" };

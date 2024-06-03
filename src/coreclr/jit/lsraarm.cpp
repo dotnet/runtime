@@ -373,7 +373,7 @@ int LinearScan::BuildNode(GenTree* tree)
             assert(dstCount == 0);
             BuildUse(tree->gtGetOp1());
             killMask = compiler->compHelperCallKillSet(CORINFO_HELP_STOP_FOR_GC);
-            BuildDefsWithKills(tree, 0, RBM_NONE, killMask);
+            BuildKills(tree, killMask);
             break;
 
         case GT_MUL:
@@ -422,7 +422,7 @@ int LinearScan::BuildNode(GenTree* tree)
             // This kills GC refs in callee save regs
             srcCount = 0;
             assert(dstCount == 0);
-            BuildDefsWithKills(tree, 0, RBM_NONE, RBM_NONE);
+            BuildKills(tree, RBM_NONE);
             break;
 
         case GT_LONG:
@@ -469,7 +469,7 @@ int LinearScan::BuildNode(GenTree* tree)
         case GT_RETURN:
             srcCount = BuildReturn(tree);
             killMask = getKillSetForReturn();
-            BuildDefsWithKills(tree, 0, RBM_NONE, killMask);
+            BuildKills(tree, killMask);
             break;
 
         case GT_RETFILT:
@@ -666,11 +666,11 @@ int LinearScan::BuildNode(GenTree* tree)
         case GT_BITCAST:
         {
             assert(dstCount == 1);
-            regNumber argReg  = tree->GetRegNum();
-            regMaskTP argMask = RBM_NONE;
+            regNumber        argReg  = tree->GetRegNum();
+            SingleTypeRegSet argMask = RBM_NONE;
             if (argReg != REG_COUNT)
             {
-                argMask = genRegMask(argReg);
+                argMask = genSingleTypeRegMask(argReg);
             }
 
             // If type of node is `long` then it is actually `double`.
@@ -679,7 +679,7 @@ int LinearScan::BuildNode(GenTree* tree)
             {
                 dstCount++;
                 assert(genRegArgNext(argReg) == REG_NEXT(argReg));
-                argMask |= genRegMask(REG_NEXT(argReg));
+                argMask |= genSingleTypeRegMask(REG_NEXT(argReg));
                 dstCount = 2;
             }
             if (!tree->gtGetOp1()->isContained())
