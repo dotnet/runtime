@@ -101,7 +101,11 @@ namespace System.Runtime.Intrinsics
             ThrowHelper.ThrowForUnsupportedIntrinsicsVector128BaseType<TFrom>();
             ThrowHelper.ThrowForUnsupportedIntrinsicsVector128BaseType<TTo>();
 
+#if MONO
+            return Unsafe.As<Vector128<TFrom>, Vector128<TTo>>(ref vector);
+#else
             return Unsafe.BitCast<Vector128<TFrom>, Vector128<TTo>>(vector);
+#endif
         }
 
         /// <summary>Reinterprets a <see cref="Vector128{T}" /> as a new <see cref="Vector128{Byte}" />.</summary>
@@ -164,12 +168,26 @@ namespace System.Runtime.Intrinsics
         /// <summary>Reinterprets a <see cref="Vector128{Single}" /> as a new <see cref="Plane" />.</summary>
         /// <param name="value">The vector to reinterpret.</param>
         /// <returns><paramref name="value" /> reinterpreted as a new <see cref="Plane" />.</returns>
-        internal static Plane AsPlane(this Vector128<float> value) => Unsafe.BitCast<Vector128<float>, Plane>(value);
+        internal static Plane AsPlane(this Vector128<float> value)
+        {
+#if MONO
+            return Unsafe.As<Vector128<float>, Plane>(ref value);
+#else
+            return Unsafe.BitCast<Vector128<float>, Plane>(value);
+#endif
+        }
 
         /// <summary>Reinterprets a <see cref="Vector128{Single}" /> as a new <see cref="Quaternion" />.</summary>
         /// <param name="value">The vector to reinterpret.</param>
         /// <returns><paramref name="value" /> reinterpreted as a new <see cref="Quaternion" />.</returns>
-        internal static Quaternion AsQuaternion(this Vector128<float> value) => Unsafe.BitCast<Vector128<float>, Quaternion>(value);
+        internal static Quaternion AsQuaternion(this Vector128<float> value)
+        {
+#if MONO
+            return Unsafe.As<Vector128<float>, Quaternion>(ref value);
+#else
+            return Unsafe.BitCast<Vector128<float>, Quaternion>(value);
+#endif
+        }
 
         /// <summary>Reinterprets a <see cref="Vector128{T}" /> as a new <see cref="Vector128{SByte}" />.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
@@ -218,12 +236,28 @@ namespace System.Runtime.Intrinsics
         /// <summary>Reinterprets a <see cref="Plane" /> as a new <see cref="Vector128{Single}" />.</summary>
         /// <param name="value">The plane to reinterpret.</param>
         /// <returns><paramref name="value" /> reinterpreted as a new <see cref="Vector128{Single}" />.</returns>
-        internal static Vector128<float> AsVector128(this Plane value) => Unsafe.BitCast<Plane, Vector128<float>>(value);
+        [Intrinsic]
+        internal static Vector128<float> AsVector128(this Plane value)
+        {
+#if MONO
+            return Unsafe.As<Plane, Vector128<float>>(ref value);
+#else
+            return Unsafe.BitCast<Plane, Vector128<float>>(value);
+#endif
+        }
 
         /// <summary>Reinterprets a <see cref="Quaternion" /> as a new <see cref="Vector128{Single}" />.</summary>
         /// <param name="value">The quaternion to reinterpret.</param>
         /// <returns><paramref name="value" /> reinterpreted as a new <see cref="Vector128{Single}" />.</returns>
-        internal static Vector128<float> AsVector128(this Quaternion value) => Unsafe.BitCast<Quaternion, Vector128<float>>(value);
+        [Intrinsic]
+        internal static Vector128<float> AsVector128(this Quaternion value)
+        {
+#if MONO
+            return Unsafe.As<Quaternion, Vector128<float>>(ref value);
+#else
+            return Unsafe.BitCast<Quaternion, Vector128<float>>(value);
+#endif
+        }
 
         /// <summary>Reinterprets a <see cref="Vector2" /> as a new <see cref="Vector128{Single}" />.</summary>
         /// <param name="value">The vector to reinterpret.</param>
@@ -241,7 +275,14 @@ namespace System.Runtime.Intrinsics
         /// <param name="value">The vector to reinterpret.</param>
         /// <returns><paramref name="value" /> reinterpreted as a new <see cref="Vector128{Single}" />.</returns>
         [Intrinsic]
-        public static Vector128<float> AsVector128(this Vector4 value) => Unsafe.BitCast<Vector4, Vector128<float>>(value);
+        public static Vector128<float> AsVector128(this Vector4 value)
+        {
+#if MONO
+            return Unsafe.As<Vector4, Vector128<float>>(ref value);
+#else
+            return Unsafe.BitCast<Vector4, Vector128<float>>(value);
+#endif
+        }
 
         /// <summary>Reinterprets a <see cref="Vector{T}" /> as a new <see cref="Vector128{T}" />.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
@@ -285,7 +326,14 @@ namespace System.Runtime.Intrinsics
         /// <param name="value">The vector to reinterpret.</param>
         /// <returns><paramref name="value" /> reinterpreted as a new <see cref="Vector4" />.</returns>
         [Intrinsic]
-        public static Vector4 AsVector4(this Vector128<float> value) => Unsafe.BitCast<Vector128<float>, Vector4>(value);
+        public static Vector4 AsVector4(this Vector128<float> value)
+        {
+#if MONO
+            return Unsafe.As<Vector128<float>, Vector4>(ref value);
+#else
+            return Unsafe.BitCast<Vector128<float>, Vector4>(value);
+#endif
+        }
 
         /// <summary>Reinterprets a <see cref="Vector128{T}" /> as a new <see cref="Vector{T}" />.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>

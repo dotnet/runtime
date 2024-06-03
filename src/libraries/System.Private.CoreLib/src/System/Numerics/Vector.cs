@@ -83,7 +83,11 @@ namespace System.Numerics
             ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<TFrom>();
             ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<TTo>();
 
+#if MONO
+            return Unsafe.As<Vector<TFrom>, Vector<TTo>>(ref vector);
+#else
             return Unsafe.BitCast<Vector<TFrom>, Vector<TTo>>(vector);
+#endif
         }
 
         /// <summary>Reinterprets a <see cref="Vector{T}" /> as a new <see cref="Vector{Byte}" />.</summary>

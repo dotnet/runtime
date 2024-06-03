@@ -12,14 +12,26 @@ namespace System.Numerics
         /// <summary>Reinterprets a <see cref="Vector4" /> as a new <see cref="Plane" />.</summary>
         /// <param name="value">The vector to reinterpret.</param>
         /// <returns><paramref name="value" /> reinterpreted as a new <see cref="Plane" />.</returns>
-        [Intrinsic]
-        internal static Plane AsPlane(this Vector4 value) => Unsafe.BitCast<Vector4, Plane>(value);
+        internal static Plane AsPlane(this Vector4 value)
+        {
+#if MONO
+            return Unsafe.As<Vector4, Plane>(ref value);
+#else
+            return Unsafe.BitCast<Vector4, Plane>(value);
+#endif
+        }
 
         /// <summary>Reinterprets a <see cref="Vector4" /> as a new <see cref="Quaternion" />.</summary>
         /// <param name="value">The vector to reinterpret.</param>
         /// <returns><paramref name="value" /> reinterpreted as a new <see cref="Quaternion" />.</returns>
-        [Intrinsic]
-        internal static Quaternion AsQuaternion(this Vector4 value) => Unsafe.BitCast<Vector4, Quaternion>(value);
+        internal static Quaternion AsQuaternion(this Vector4 value)
+        {
+#if MONO
+            return Unsafe.As<Vector4, Quaternion>(ref value);
+#else
+            return Unsafe.BitCast<Vector4, Quaternion>(value);
+#endif
+        }
 
         /// <summary>Gets the element at the specified index.</summary>
         /// <param name="vector">The vector to get the element from.</param>

@@ -106,7 +106,11 @@ namespace System.Runtime.Intrinsics
             ThrowHelper.ThrowForUnsupportedIntrinsicsVector256BaseType<TFrom>();
             ThrowHelper.ThrowForUnsupportedIntrinsicsVector256BaseType<TTo>();
 
+#if MONO
+            return Unsafe.As<Vector256<TFrom>, Vector256<TTo>>(ref vector);
+#else
             return Unsafe.BitCast<Vector256<TFrom>, Vector256<TTo>>(vector);
+#endif
         }
 
         /// <summary>Reinterprets a <see cref="Vector256{T}" /> as a new <see cref="Vector256{Byte}" />.</summary>
