@@ -61,7 +61,7 @@ namespace System.Text.Json.Serialization.Converters
             object?[] arguments = ArrayPool<object>.Shared.Rent(typeInfo.ParameterCache.Count);
             foreach (JsonParameterInfo parameterInfo in typeInfo.ParameterCache)
             {
-                arguments[parameterInfo.Position] = parameterInfo.DefaultValue;
+                arguments[parameterInfo.Position] = parameterInfo.EffectiveDefaultValue;
             }
 
             state.Current.CtorArgumentState!.Arguments = arguments;

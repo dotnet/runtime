@@ -9912,7 +9912,7 @@ void CodeGen::genFnEpilog(BasicBlock* block)
     // if we reported the frame pointer in the prolog. The Windows x64 unwinding ABI specifically
     // disallows this `lea` form:
     //
-    //    See https://docs.microsoft.com/en-us/cpp/build/prolog-and-epilog?view=msvc-160#epilog-code
+    //    See https://learn.microsoft.com/cpp/build/prolog-and-epilog?view=msvc-160#epilog-code
     //
     //    "When a frame pointer is not used, the epilog must use add RSP,constant to deallocate the fixed part of the
     //    stack. It may not use lea RSP,constant[RSP] instead. This restriction exists so the unwind code has fewer

@@ -127,7 +127,7 @@ namespace Microsoft.Interop
     /// Marshals a boolean value as a 4-byte integer.
     /// </summary>
     /// <remarks>
-    /// Corresponds to the definition of <see href="https://docs.microsoft.com/windows/win32/winprog/windows-data-types">BOOL</see>.
+    /// Corresponds to the definition of <see href="https://learn.microsoft.com/windows/win32/winprog/windows-data-types">BOOL</see>.
     /// </remarks>
     public sealed class WinBoolMarshaller : BoolMarshallerBase
     {

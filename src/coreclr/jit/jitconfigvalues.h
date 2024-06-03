@@ -567,6 +567,7 @@ OPT_CONFIG_STRING(JitOnlyOptimizeRange,
 OPT_CONFIG_STRING(JitEnablePhysicalPromotionRange, W("JitEnablePhysicalPromotionRange"))
 OPT_CONFIG_STRING(JitEnableCrossBlockLocalAssertionPropRange, W("JitEnableCrossBlockLocalAssertionPropRange"))
 OPT_CONFIG_STRING(JitEnableInductionVariableOptsRange, W("JitEnableInductionVariableOptsRange"))
+OPT_CONFIG_STRING(JitEnableLocalAddrPropagationRange, W("JitEnableLocalAddrPropagationRange"))
 
 OPT_CONFIG_INTEGER(JitDoSsa, W("JitDoSsa"), 1) // Perform Static Single Assignment (SSA) numbering on the variables
 OPT_CONFIG_INTEGER(JitDoValueNumber, W("JitDoValueNumber"), 1) // Perform value numbering on method expressions
