@@ -66,8 +66,10 @@ namespace Microsoft.NET.HostModel.AppHost
                     if ((dllCharacteristics & IMAGE_DLLCHARACTERISTICS_EX_CET_COMPAT) == 0)
                         break;
 
+                    // Clear the CET compat bit
                     dllCharacteristics = (ushort)(dllCharacteristics & ~IMAGE_DLLCHARACTERISTICS_EX_CET_COMPAT);
                     accessor.Write(entry.DataPointer, AsLittleEndian(dllCharacteristics));
+                    break;
                 }
             }
         }
