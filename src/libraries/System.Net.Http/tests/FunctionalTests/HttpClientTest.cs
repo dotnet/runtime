@@ -1371,7 +1371,7 @@ namespace System.Net.Http.Functional.Tests
             var handler = new StoreMessageHttpMessageInvoker();
             using (var client = new HttpClient(handler))
             {
-                var version = new Version(1, 2, 3, 4);
+                var version = new Version(1, 1);
                 client.DefaultRequestVersion = version;
                 await client.GetAsync("http://doesntmatter", HttpCompletionOption.ResponseHeadersRead);
                 Assert.Same(version, handler.Message.Version);
