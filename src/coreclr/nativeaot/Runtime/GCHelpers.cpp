@@ -635,7 +635,6 @@ static Object* GcAllocInternal(MethodTable* pEEType, uint32_t uFlags, uintptr_t 
 
 #ifdef _DEBUG
     // We assume that the allocation quantum is never big enough for LARGE_OBJECT_SIZE.
-    gc_alloc_context* acontext = pThread->GetAllocContext();
     ASSERT(acontext->alloc_limit - acontext->alloc_ptr <= RH_LARGE_OBJECT_SIZE);
 #endif
 
