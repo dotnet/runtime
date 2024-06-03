@@ -107,7 +107,6 @@ namespace System.Net.Http
                 if (_firstRejectedStreamId == -1)
                 {
                     _firstRejectedStreamId = long.MaxValue;
-                    Task.WhenAll(_streamDisposals).GetAwaiter().GetResult();
                     CheckForShutdown();
                 }
             }
@@ -129,6 +128,10 @@ namespace System.Net.Http
 
             if (_connection != null)
             {
+                // Make sure we've disposed every stream before closing the connection.
+
+                Task.WhenAll(_streamDisposals).GetAwaiter().GetResult();
+
                 // Close the QuicConnection in the background.
 
                 _connectionClosedTask ??= _connection.CloseAsync((long)Http3ErrorCode.NoError).AsTask();
