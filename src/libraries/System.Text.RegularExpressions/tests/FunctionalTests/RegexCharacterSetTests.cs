@@ -359,7 +359,7 @@ namespace System.Text.RegularExpressions.Tests
         {
             foreach (RegexEngine engine in RegexHelpers.AvailableEngines)
             {
-                // https://docs.microsoft.com/en-us/dotnet/standard/base-types/character-classes-in-regular-expressions#supported-unicode-general-categories
+                // https://learn.microsoft.com/dotnet/standard/base-types/character-classes-in-regular-expressions#supported-unicode-general-categories
 
                 yield return new object[] { engine, "L", new[] { UnicodeCategory.UppercaseLetter, UnicodeCategory.LowercaseLetter, UnicodeCategory.TitlecaseLetter, UnicodeCategory.ModifierLetter, UnicodeCategory.OtherLetter } };
                 yield return new object[] { engine, "Lu", new[] { UnicodeCategory.UppercaseLetter } };
