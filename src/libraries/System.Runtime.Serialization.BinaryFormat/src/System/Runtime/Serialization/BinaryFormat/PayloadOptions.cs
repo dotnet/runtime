@@ -17,9 +17,9 @@ sealed class PayloadOptions
     public TypeNameParseOptions? TypeNameParseOptions { get; set; }
 
     /// <summary>
-    /// This flag allows the users to undo truncated type names.
-    /// It's useful for reading resources were generated with invalid generic type names.
+    /// Gets or sets a value that indicates whether type name truncation is undone.
     /// </summary>
+    /// <value><see langword="true" /> if truncated type names should be reassembled; otherwise, <see langword="false" />.</value>
     /// <remarks>
     /// Example:
     /// TypeName: "Namespace.TypeName`1[[Namespace.GenericArgName"

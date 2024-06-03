@@ -37,6 +37,7 @@ internal sealed class SerializedStreamHeaderRecord : SerializationRecord
         int majorVersion = reader.ReadInt32();
         int minorVersion = reader.ReadInt32();
 
+        // Version 1.0 is the only version that was ever defined, so match it exactly.
         if (majorVersion != MajorVersion)
         {
             ThrowHelper.ThrowInvalidValue(majorVersion);

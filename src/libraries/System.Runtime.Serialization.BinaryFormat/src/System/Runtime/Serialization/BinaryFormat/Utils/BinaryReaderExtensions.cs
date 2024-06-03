@@ -13,7 +13,8 @@ internal static class BinaryReaderExtensions
     internal static BinaryArrayType ReadArrayType(this BinaryReader reader)
     {
         byte arrayType = reader.ReadByte();
-        if (arrayType > 5)
+        // RectangularOffset is the last defined value.
+        if (arrayType > BinaryArrayType.RectangularOffset)
         {
             ThrowHelper.ThrowInvalidValue(arrayType);
         }
@@ -34,7 +35,7 @@ internal static class BinaryReaderExtensions
     internal static PrimitiveType ReadPrimitiveType(this BinaryReader reader)
     {
         byte primitiveType = reader.ReadByte();
-        if (primitiveType is > 18 or 4)
+        if (primitiveType is 4 or > 18)
         {
             ThrowHelper.ThrowInvalidValue(primitiveType);
         }

@@ -23,7 +23,7 @@ static class PayloadReader
     /// Checks if given buffer starts with <see href="https://learn.microsoft.com/openspecs/windows_protocols/ms-nrbf/a7e578d3-400a-4249-9424-7529d10d1b3c">NRBF payload header</see>.
     /// </summary>
     /// <param name="bytes">The buffer to inspect.</param>
-    /// <returns><see langword="true" /> if it starts with NRBF payload header, otherwise <see langword="false" />.</returns>
+    /// <returns><see langword="true" /> if it starts with NRBF payload header; otherwise, <see langword="false" />.</returns>
     public static bool StartsWithPayloadHeader(byte[] bytes)
         => bytes.Length >= SerializedStreamHeaderRecord.Size
             && bytes[0] == (byte)RecordType.SerializedStreamHeader
@@ -40,8 +40,8 @@ static class PayloadReader
     /// Checks if given stream starts with <see href="https://learn.microsoft.com/openspecs/windows_protocols/ms-nrbf/a7e578d3-400a-4249-9424-7529d10d1b3c">NRBF payload header</see>.
     /// </summary>
     /// <param name="stream">The stream to inspect. The stream must be both readable and seekable.</param>
-    /// <returns><see langword="true" /> if it starts with NRBF payload header, otherwise <see langword="false" />.</returns>
-    /// <exception cref="ArgumentNullException">The stream is null.</exception>
+    /// <returns><see langword="true" /> if it starts with NRBF payload header; otherwise, <see langword="false" />.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="stream" /> is <see langword="null" />.</exception>
     /// <exception cref="NotSupportedException">The stream does not support reading or seeking.</exception>
     /// <exception cref="ObjectDisposedException">The stream was closed.</exception>
     /// <remarks><para>When this method returns, <paramref name="stream" /> will be restored to its original position.</para></remarks>
@@ -104,9 +104,9 @@ static class PayloadReader
     /// a <seealso cref="ClassRecord"/> or an <seealso cref="ArrayRecord"/>.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="payload"/> is <see langword="null" />.</exception>
     /// <exception cref="ArgumentException"><paramref name="payload"/> does not support reading or is already closed.</exception>
-    /// <exception cref="SerializationException">When reading input from <paramref name="payload"/> encounters invalid NRBF data.</exception>
-    /// <exception cref="DecoderFallbackException">When reading input from <paramref name="payload"/>
-    /// encounters invalid sequence of UTF8 characters.</exception>
+    /// <exception cref="SerializationException">Reading from <paramref name="payload"/> encounters invalid NRBF data.</exception>
+    /// <exception cref="DecoderFallbackException">Reading from <paramref name="payload"/>
+    /// encounters an invalid UTF8 sequence.</exception>
     public static SerializationRecord Read(Stream payload, PayloadOptions? options = default, bool leaveOpen = false)
         => Read(payload, out _, options, leaveOpen);
 
@@ -134,9 +134,9 @@ static class PayloadReader
     }
 
     /// <summary>
-    /// Reads the provided NRBF payload that is expected to contain an instance of any class (or struct) that is not an <seealso cref="Array"/> or a primitive type.
+    /// Reads the provided NRBF payload that is expected to contain an instance of any class (or struct) that is not an <see cref="Array"/> or a primitive type.
     /// </summary>
-    /// <returns>A <seealso cref="ClassRecord"/> that represents the root object.</returns>
+    /// <returns>A <see cref="ClassRecord"/> that represents the root object.</returns>
     /// <inheritdoc cref="Read(Stream, PayloadOptions?, bool)"/>
     public static ClassRecord ReadClassRecord(Stream payload, PayloadOptions? options = default, bool leaveOpen = false)
         => (ClassRecord)Read(payload, options, leaveOpen);

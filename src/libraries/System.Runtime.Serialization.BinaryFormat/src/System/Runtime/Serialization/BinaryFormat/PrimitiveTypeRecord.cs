@@ -6,9 +6,9 @@ using System.Diagnostics;
 namespace System.Runtime.Serialization.BinaryFormat;
 
 /// <summary>
-/// A record that represents the primitive value of <typeparamref name="T"/> type.
+/// Represents a record that itself represents the primitive value of <typeparamref name="T"/> type.
 /// </summary>
-/// <typeparam name="T">Primitive type.</typeparam>
+/// <typeparam name="T">The type of the primitive value.</typeparam>
 /// <remarks>
 /// <para>
 /// <typeparamref name="T"/> can be one of the following types:

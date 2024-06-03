@@ -118,11 +118,11 @@ abstract class ClassRecord : SerializationRecord
     /// Retrieves an array for the provided <paramref name="memberName"/>.
     /// </summary>
     /// <param name="memberName">The name of the field.</param>
-    /// <param name="allowNulls">Specifies whether null values are allowed.</param>
-    /// <param name="maxLength">Specifies the max length of an array that can be allocated.</param>
+    /// <param name="allowNulls"><see langword="true" /> to permit <see langword="null" /> values; otherwise, <see langword="false" />.</param>
+    /// <param name="maxLength">The maximum length of an array that can be allocated.</param>
     /// <returns>The array itself or null.</returns>
-    /// <exception cref="KeyNotFoundException">Member of such name does not exist.</exception>
-    /// <exception cref="InvalidOperationException">Member of such name has value of a different type.</exception>
+    /// <exception cref="KeyNotFoundException"><paramref name="memberName" /> does not refer to a known member.</exception>
+    /// <exception cref="InvalidOperationException">The specified member is not an array, or is an array with an element type other than <typeparamref name="T" />.</exception>
     public T?[]? GetArrayOfPrimitiveType<T>(string memberName, bool allowNulls = true, int maxLength = MaxLength)
         => GetMember<ArrayRecord<T>>(memberName)?.ToArray(allowNulls, maxLength);
 
@@ -130,8 +130,8 @@ abstract class ClassRecord : SerializationRecord
     /// Retrieves the <see cref="SerializationRecord" /> of the provided <paramref name="memberName"/>.
     /// </summary>
     /// <param name="memberName">The name of the field.</param>
-    /// <returns>The serialization record which can be either <seealso cref="PrimitiveTypeRecord{T}"/>,
-    /// a <seealso cref="ClassRecord"/>, an <seealso cref="ArrayRecord"/> or a null.
+    /// <returns>The serialization record, which can be any of <see cref="PrimitiveTypeRecord{T}"/>,
+    /// <see cref="ClassRecord"/>, <see cref="ArrayRecord"/> or <see langword="null" />.
     /// </returns>
     /// <exception cref="KeyNotFoundException">Member of such name does not exist.</exception>
     /// <exception cref="InvalidOperationException">Member of such name has value of a different type or was a primitive value.</exception>

@@ -36,10 +36,10 @@ abstract class SerializationRecord
     /// Compares the type and assembly name read from the payload against the specified type.
     /// </summary>
     /// <remarks>
-    /// <para>It takes type forwarding into account.</para>
-    /// <para>It does NOT take into account member names and their types.</para>
+    /// <para>This method takes type forwarding into account.</para>
+    /// <para>This method does NOT take into account member names or their types.</para>
     /// </remarks>
-    /// <param name="type">The <seealso cref="Type"/> to compare against.</param>
+    /// <param name="type">The type to compare against.</param>
     /// <returns>True if the serialized type and assembly name match provided type.</returns>
     public virtual bool IsTypeNameMatching(Type type) => false;
 
@@ -51,8 +51,8 @@ abstract class SerializationRecord
     internal virtual object? GetValue() => this;
 
     internal virtual void HandleNextRecord(SerializationRecord nextRecord, NextInfo info)
-        => Debug.Fail("This should never happen");
+        => Debug.Fail($"HandleNextRecord should not have been called for '{GetType().Name}'");
 
     internal virtual void HandleNextValue(object value, NextInfo info)
-        => Debug.Fail("This should never happen");
+        => Debug.Fail($"HandleNextValue should not have been called for '{GetType().Name}'");
 }

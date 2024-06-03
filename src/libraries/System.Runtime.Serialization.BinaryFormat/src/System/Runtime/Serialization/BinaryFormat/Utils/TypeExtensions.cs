@@ -57,7 +57,10 @@ internal static class TypeExtensions
             builder.Append(GetAssemblyNameIncludingTypeForwards(genericArgument)).Append("],");
         }
 
-        // remove the last comma and close typename for generic with a close bracket
-        return builder.Remove(builder.Length - 1, 1).Append(']').ToString();
+        // Replace the last comma with a close bracket
+        Debug.Assert(builder[builder.Length - 1] == ',');
+        builder[builder.Length - 1] = ']';
+
+        return builder.ToString();
     }
 }
