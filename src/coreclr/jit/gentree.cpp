@@ -20847,7 +20847,7 @@ GenTree* Compiler::gtNewSimdBinOpNode(
                             }
 
                             // Validate we can't use AVX512F_VL_TernaryLogic here
-                            assert(!IsAvx10OrIsaSupportedDebugOnly(InstructionSet_AVX512F_VL));
+                            assert(!canUseEvexEncodingDebugOnly());
 
                             // Vector256<short> maskedProduct = Avx2.And(widenedProduct, vecCon1).AsInt16()
                             GenTree* maskedProduct    = gtNewSimdBinOpNode(GT_AND, widenedType, widenedProduct, vecCon1,
@@ -21919,7 +21919,7 @@ GenTree* Compiler::gtNewSimdCmpOpNode(
         {
             if (simdSize == 64)
             {
-                assert(compIsaSupportedDebugOnly(InstructionSet_EVEX));
+                assert(canUseEvexEncodingDebugOnly());
                 intrinsic                = NI_EVEX_CompareEqualMask;
                 needsConvertMaskToVector = true;
             }
@@ -21982,7 +21982,7 @@ GenTree* Compiler::gtNewSimdCmpOpNode(
 
         case GT_GE:
         {
-            if (compOpportunisticallyDependsOn(InstructionSet_EVEX))
+            if (canUseEvexEncoding())
             {
                 if ((simdSize == 64) || !varTypeIsFloating(simdBaseType))
                 {
@@ -22056,7 +22056,7 @@ GenTree* Compiler::gtNewSimdCmpOpNode(
 
         case GT_GT:
         {
-            if (compOpportunisticallyDependsOn(InstructionSet_EVEX))
+            if (canUseEvexEncoding())
             {
                 if ((simdSize == 64) || varTypeIsUnsigned(simdBaseType))
                 {
@@ -22221,7 +22221,7 @@ GenTree* Compiler::gtNewSimdCmpOpNode(
                                                    CORINFO_TYPE_INT, simdSize);
 
                     // Validate we can't use AVX512F_VL_TernaryLogic here
-                    assert(!IsAvx10OrIsaSupportedDebugOnly(InstructionSet_AVX512F_VL));
+                    assert(!canUseEvexEncodingDebugOnly());
 
                     op2 = gtNewSimdBinOpNode(GT_AND, type, u, v, simdBaseJitType, simdSize);
                     return gtNewSimdBinOpNode(GT_OR, type, op1, op2, simdBaseJitType, simdSize);
@@ -22237,7 +22237,7 @@ GenTree* Compiler::gtNewSimdCmpOpNode(
 
         case GT_LE:
         {
-            if (compOpportunisticallyDependsOn(InstructionSet_EVEX))
+            if (canUseEvexEncoding())
             {
                 if ((simdSize == 64) || !varTypeIsFloating(simdBaseType))
                 {
@@ -22311,7 +22311,7 @@ GenTree* Compiler::gtNewSimdCmpOpNode(
 
         case GT_LT:
         {
-            if (compOpportunisticallyDependsOn(InstructionSet_EVEX))
+            if (canUseEvexEncoding())
             {
                 if ((simdSize == 64) || varTypeIsUnsigned(simdBaseType))
                 {
@@ -22476,7 +22476,7 @@ GenTree* Compiler::gtNewSimdCmpOpNode(
                                                    CORINFO_TYPE_INT, simdSize);
 
                     // Validate we can't use AVX512F_VL_TernaryLogic here
-                    assert(!IsAvx10OrIsaSupportedDebugOnly(InstructionSet_AVX512F_VL));
+                    assert(!canUseEvexEncodingDebugOnly());
 
                     op2 = gtNewSimdBinOpNode(GT_AND, type, u, v, simdBaseJitType, simdSize);
                     return gtNewSimdBinOpNode(GT_OR, type, op1, op2, simdBaseJitType, simdSize);
@@ -22883,7 +22883,7 @@ GenTree* Compiler::gtNewSimdCndSelNode(
 #if defined(TARGET_XARCH)
     assert((simdSize != 32) || compIsaSupportedDebugOnly(InstructionSet_AVX));
 
-    if (IsAvx10OrIsaSupportedOpportunistically(InstructionSet_AVX512F_VL))
+    if (canUseEvexEncoding())
     {
         GenTree* control = gtNewIconNode(0xCA); // (B & A) | (C & ~A)
         return gtNewSimdTernaryLogicNode(type, op1, op2, op3, control, simdBaseJitType, simdSize);
@@ -24685,7 +24685,7 @@ GenTree* Compiler::gtNewSimdNarrowNode(
                 GenTree* vecCon2 = gtCloneExpr(vecCon1);
 
                 // Validate we can't use AVX512F_VL_TernaryLogic here
-                assert(!IsAvx10OrIsaSupportedDebugOnly(InstructionSet_AVX512F_VL));
+                assert(!canUseEvexEncodingDebugOnly());
 
                 tmp1 = gtNewSimdBinOpNode(GT_AND, type, op1, vecCon1, simdBaseJitType, simdSize);
                 tmp2 = gtNewSimdBinOpNode(GT_AND, type, op2, vecCon2, simdBaseJitType, simdSize);
@@ -24726,7 +24726,7 @@ GenTree* Compiler::gtNewSimdNarrowNode(
                 GenTree* vecCon2 = gtCloneExpr(vecCon1);
 
                 // Validate we can't use AVX512F_VL_TernaryLogic here
-                assert(!IsAvx10OrIsaSupportedDebugOnly(InstructionSet_AVX512F_VL));
+                assert(!canUseEvexEncodingDebugOnly());
 
                 tmp1 = gtNewSimdBinOpNode(GT_AND, type, op1, vecCon1, simdBaseJitType, simdSize);
                 tmp2 = gtNewSimdBinOpNode(GT_AND, type, op2, vecCon2, simdBaseJitType, simdSize);
@@ -24830,7 +24830,7 @@ GenTree* Compiler::gtNewSimdNarrowNode(
                 GenTree* vecCon2 = gtCloneExpr(vecCon1);
 
                 // Validate we can't use AVX512F_VL_TernaryLogic here
-                assert(!IsAvx10OrIsaSupportedDebugOnly(InstructionSet_AVX512F_VL));
+                assert(!canUseEvexEncodingDebugOnly());
 
                 tmp1 = gtNewSimdBinOpNode(GT_AND, type, op1, vecCon1, simdBaseJitType, simdSize);
                 tmp2 = gtNewSimdBinOpNode(GT_AND, type, op2, vecCon2, simdBaseJitType, simdSize);
@@ -24869,7 +24869,7 @@ GenTree* Compiler::gtNewSimdNarrowNode(
                     GenTree* vecCon2 = gtCloneExpr(vecCon1);
 
                     // Validate we can't use AVX512F_VL_TernaryLogic here
-                    assert(!IsAvx10OrIsaSupportedDebugOnly(InstructionSet_AVX512F_VL));
+                    assert(!canUseEvexEncodingDebugOnly());
 
                     tmp1 = gtNewSimdBinOpNode(GT_AND, type, op1, vecCon1, simdBaseJitType, simdSize);
                     tmp2 = gtNewSimdBinOpNode(GT_AND, type, op2, vecCon2, simdBaseJitType, simdSize);
@@ -25186,7 +25186,7 @@ GenTree* Compiler::gtNewSimdShuffleNode(
         }
         else if (elementSize == 2)
         {
-            assert(IsAvx10OrIsaSupportedDebugOnly(InstructionSet_AVX512BW_VL));
+            assert(canUseEvexEncodingDebugOnly());
             for (uint32_t i = 0; i < elementCount; i++)
             {
                 vecCns.u16[i] = (uint8_t)(vecCns.u8[i * elementSize] / elementSize);
@@ -25994,7 +25994,7 @@ GenTree* Compiler::gtNewSimdUnOpNode(
             if (intrinsic != NI_Illegal)
             {
                 // AVX512 allows performing `not` without requiring a memory access
-                assert(IsAvx10OrIsaSupportedDebugOnly(InstructionSet_AVX512F_VL));
+                assert(canUseEvexEncodingDebugOnly());
 
                 op2 = gtNewZeroConNode(type);
                 op3 = gtNewZeroConNode(type);

@@ -2307,13 +2307,6 @@ void Compiler::compSetProcessor()
     {
         instructionSetFlags.AddInstructionSet(InstructionSet_Vector256);
     }
-
-    if (instructionSetFlags.HasInstructionSet(InstructionSet_AVX10v1) ||
-        instructionSetFlags.HasInstructionSet(InstructionSet_AVX512F))
-    {
-        instructionSetFlags.AddInstructionSet(InstructionSet_EVEX);
-        instructionSetFlags.AddInstructionSet(InstructionSet_EVEX_X64);
-    }
     // x86-64-v4 feature level supports AVX512F, AVX512BW, AVX512CD, AVX512DQ, AVX512VL
     // These have been shipped together historically and at the time of this writing
     // there exists no hardware which doesn't support the entire feature set. To simplify

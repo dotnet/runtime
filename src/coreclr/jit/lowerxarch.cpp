@@ -852,7 +852,7 @@ GenTree* Lowering::LowerCast(GenTree* tree)
     if (varTypeIsFloating(srcType))
     {
         noway_assert(!tree->gtOverflow());
-        assert(castToType != TYP_ULONG || comp->IsAvx10OrIsaSupportedOpportunistically(InstructionSet_AVX512F));
+        assert(castToType != TYP_ULONG || comp->canUseEvexEncoding());
     }
     else if (srcType == TYP_UINT)
     {
@@ -860,7 +860,7 @@ GenTree* Lowering::LowerCast(GenTree* tree)
     }
     else if (srcType == TYP_ULONG)
     {
-        assert(castToType != TYP_FLOAT || comp->IsAvx10OrIsaSupportedOpportunistically(InstructionSet_AVX512F));
+        assert(castToType != TYP_FLOAT || comp->canUseEvexEncoding());
     }
 
 #if defined(TARGET_AMD64)
@@ -2410,7 +2410,7 @@ GenTree* Lowering::LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cm
     // TODO-XARCH-AVX512: We should handle TYP_SIMD12 here under the EVEX path, but doing
     // so will require us to account for the unused 4th element.
 
-    if ((simdType != TYP_SIMD12) && comp->compOpportunisticallyDependsOn(InstructionSet_EVEX))
+    if ((simdType != TYP_SIMD12) && comp->canUseEvexEncoding())
     {
         // The EVEX encoded versions of the comparison instructions all return a kmask
         //
@@ -2990,7 +2990,7 @@ GenTree* Lowering::LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cm
 //
 GenTree* Lowering::LowerHWIntrinsicCndSel(GenTreeHWIntrinsic* node)
 {
-    assert(!comp->IsAvx10OrIsaSupportedDebugOnly(InstructionSet_AVX512F_VL));
+    assert(!comp->canUseEvexEncodingDebugOnly());
 
     var_types   simdType        = node->gtType;
     CorInfoType simdBaseJitType = node->GetSimdBaseJitType();
@@ -3114,7 +3114,7 @@ GenTree* Lowering::LowerHWIntrinsicCndSel(GenTreeHWIntrinsic* node)
 //
 GenTree* Lowering::LowerHWIntrinsicTernaryLogic(GenTreeHWIntrinsic* node)
 {
-    assert(comp->IsAvx10OrIsaSupportedDebugOnly(InstructionSet_AVX512F_VL));
+    assert(comp->canUseEvexEncodingDebugOnly());
 
     var_types   simdType        = node->gtType;
     CorInfoType simdBaseJitType = node->GetSimdBaseJitType();
@@ -9184,7 +9184,7 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
                 assert(childBaseType == TYP_DOUBLE);
             }
 
-            if (comp->IsAvx10OrIsaSupportedOpportunistically(InstructionSet_AVX512F_VL) &&
+            if (comp->canUseEvexEncoding() &&
                 parentNode->OperIsEmbBroadcastCompatible())
             {
                 GenTree* broadcastOperand = hwintrinsic->Op(1);

@@ -81,12 +81,9 @@ namespace ILCompiler
             public const int Avx512Vbmi = 0x800000;
             public const int Avx512Vbmi_vl = 0x1000000;
             public const int Serialize = 0x2000000;
-            public const int VectorT128 = 0x4000000;
-            public const int VectorT256 = 0x8000000;
-            public const int VectorT512 = 0x10000000;
-            public const int Avx10v1 = 0x20000000;
-            public const int Avx10v1_v512 = 0x40000000;
-            public const int Evex = unchecked((int)0x80000000);
+            public const int Avx10v1 = 0x4000000;
+            public const int Avx10v1_v512 = 0x8000000;
+            public const int Evex = 0x10000000;
 
             public static void AddToBuilder(InstructionSetSupportBuilder builder, int flags)
             {

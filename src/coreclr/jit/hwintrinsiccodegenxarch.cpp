@@ -896,7 +896,7 @@ void CodeGen::genHWIntrinsic_R_RM(
                         {
                             if (varTypeIsSmall(node->GetSimdBaseType()))
                             {
-                                if (compiler->IsAvx10OrIsaSupportedOpportunistically(InstructionSet_AVX512BW_VL))
+                                if (compiler->canUseEvexEncoding())
                                 {
                                     needsInstructionFixup = true;
                                 }
@@ -905,7 +905,7 @@ void CodeGen::genHWIntrinsic_R_RM(
                                     needsBroadcastFixup = true;
                                 }
                             }
-                            else if (compiler->IsAvx10OrIsaSupportedOpportunistically(InstructionSet_AVX512F_VL))
+                            else if (compiler->canUseEvexEncoding())
                             {
                                 needsInstructionFixup = true;
                             }

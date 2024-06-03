@@ -124,6 +124,7 @@ implication        ,X86   ,MOVBE                ,SSE42
 implication        ,X86   ,X86Serialize         ,X86Base
 implication        ,X86   ,AVX512F              ,AVX2
 implication        ,X86   ,AVX512F              ,FMA
+implication        ,X86   ,AVX512F              ,EVEX
 implication        ,X86   ,AVX512F_VL           ,AVX512F
 implication        ,X86   ,AVX512CD             ,AVX512F
 implication        ,X86   ,AVX512CD_VL          ,AVX512CD
@@ -139,6 +140,7 @@ implication        ,X86   ,AVX512VBMI_VL        ,AVX512VBMI
 implication        ,X86   ,AVX512VBMI_VL        ,AVX512BW_VL
 implication        ,X86   ,AVX10v1              ,AVX2
 implication        ,X86   ,AVX10v1              ,FMA
+implication        ,X86   ,AVX10v1              ,EVEX
 implication        ,X86   ,AVX10v1_V512         ,AVX10v1
 implication        ,X86   ,AVX10v1_V512         ,AVX512F
 implication        ,X86   ,AVX10v1_V512         ,AVX512F_VL

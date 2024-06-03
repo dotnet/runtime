@@ -620,7 +620,7 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
             if (varTypeIsLong(simdBaseType) && !impStackTop(0).val->OperIsConst())
             {
 #if defined(TARGET_XARCH)
-                if (!IsAvx10OrIsaSupportedOpportunistically(InstructionSet_AVX512DQ_VL))
+                if (!canUseEvexEncoding())
                 {
                     // TODO-XARCH-CQ: We should support long/ulong multiplication
                     return nullptr;
@@ -881,7 +881,7 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
         {
             if (varTypeIsLong(simdBaseType))
             {
-                if (!IsAvx10OrIsaSupportedOpportunistically(InstructionSet_AVX512DQ_VL))
+                if (!canUseEvexEncoding())
                 {
                     // TODO-XARCH-CQ: We should support long/ulong multiplication
                     return nullptr;
@@ -902,7 +902,7 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
         {
             if (varTypeIsLong(simdBaseType) || (simdBaseType == TYP_DOUBLE))
             {
-                if (!IsAvx10OrIsaSupportedOpportunistically(InstructionSet_AVX512F_VL))
+                if (!canUseEvexEncoding())
                 {
                     // TODO-XARCH-CQ: We should support long/ulong arithmetic shift
                     return nullptr;
