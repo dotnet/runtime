@@ -52,6 +52,12 @@ PTR_VOID GetThreadLocalStaticBaseNoCreate(Thread* pThread, TLSIndex index)
     }
     CONTRACTL_END;
 
+    TADDR pTLSBaseAddress = (TADDR)NULL;
+
+    // The only lock we take here is this spin lock, which is safe to take even when the GC is running.
+    // The only time it isn't safe is if target thread is suspended by an OS primitive without
+    // going through the suspend thread routine of the runtime itself.
+    BEGIN_CONTRACT_VIOLATION(TakesLockViolation);
 #ifndef DACCESS_COMPILE
     // Since this api can be used from a different thread, we need a lock to keep it all safe
     SpinLockHolder spinLock(&pThread->m_TlsSpinLock);
@@ -61,7 +67,6 @@ PTR_VOID GetThreadLocalStaticBaseNoCreate(Thread* pThread, TLSIndex index)
     if (pThreadLocalData == NULL)
         return NULL;
 
-    TADDR pTLSBaseAddress = (TADDR)NULL;
     if (index.GetTLSIndexType() == TLSIndexType::NonCollectible)
     {
         PTRARRAYREF tlsArray = (PTRARRAYREF)UNCHECKED_OBJECTREF_TO_OBJECTREF(pThreadLocalData->pNonCollectibleTlsArrayData);
@@ -104,6 +109,9 @@ PTR_VOID GetThreadLocalStaticBaseNoCreate(Thread* pThread, TLSIndex index)
             pInFlightData = pInFlightData->pNext;
         }
     }
+
+    END_CONTRACT_VIOLATION;
+
     return dac_cast<PTR_VOID>(pTLSBaseAddress);
 }
 
