@@ -498,14 +498,9 @@ inline void FireAllocationSampled(GC_ALLOC_FLAGS flags, size_t size, size_t samp
     }
 }
 
-inline uint32_t AlignUp(uint32_t value, uint32_t alignment)
+inline size_t AlignUp(size_t value, uint32_t alignment)
 {
-    return (value + alignment - 1) & ~(alignment - 1);
-}
-
-inline uint64_t AlignUp(uint64_t value, uint32_t alignment)
-{
-    return (value + alignment - 1) & ~(uint64_t)(alignment - 1);
+    return (value + alignment - 1) & ~(size_t)(alignment - 1);
 }
 
 static Object* GcAllocInternal(MethodTable* pEEType, uint32_t uFlags, uintptr_t numElements, Thread* pThread)
@@ -576,7 +571,7 @@ static Object* GcAllocInternal(MethodTable* pEEType, uint32_t uFlags, uintptr_t 
     // Save the MethodTable for instrumentation purposes.
     tls_pLastAllocationEEType = pEEType;
 
-    // TODO: handle dynamic allocation sampling
+    // check for dynamic allocation sampling
     gc_alloc_context* acontext = pThread->GetAllocContext();
     bool isSampled = false;
     size_t availableSpace = 0;
