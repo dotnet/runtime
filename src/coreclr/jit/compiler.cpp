@@ -3008,7 +3008,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
             opts.compLongAddress = true;
         }
 
-        if (JitConfig.JitEnableOptRepeat() > 1)
+        if (JitConfig.JitEnableOptRepeat() != 0)
         {
             opts.optRepeat      = true;
             opts.optRepeatCount = JitConfig.JitOptRepeatCount();
@@ -3087,7 +3087,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         opts.disAsm = true;
     }
 
-    if (JitConfig.JitEnableOptRepeat() > 1)
+    if (JitConfig.JitEnableOptRepeat() != 0)
     {
         opts.optRepeat      = true;
         opts.optRepeatCount = JitConfig.JitOptRepeatCount();
