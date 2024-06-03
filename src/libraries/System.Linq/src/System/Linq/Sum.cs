@@ -60,11 +60,11 @@ namespace System.Linq
 
                 if (typeof(T) == typeof(long))
                 {
-                    return (TResult)(object)SumSignedIntegersVectorized(Unsafe.BitCast<ReadOnlySpan<T>, ReadOnlySpan<long>>(span));
+                    return (TResult)(object)SumSignedIntegersVectorized(MemoryMarshal.Cast<T, long>(span));
                 }
                 if (typeof(T) == typeof(int))
                 {
-                    return (TResult)(object)SumSignedIntegersVectorized(Unsafe.BitCast<ReadOnlySpan<T>, ReadOnlySpan<int>>(span));
+                    return (TResult)(object)SumSignedIntegersVectorized(MemoryMarshal.Cast<T, int>(span));
                 }
             }
 
