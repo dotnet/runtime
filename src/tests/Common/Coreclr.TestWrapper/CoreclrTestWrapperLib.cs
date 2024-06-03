@@ -306,14 +306,15 @@ namespace CoreclrTestLib
             else
             {
                 // Workaround for https://github.com/dotnet/runtime/issues/93321
-                for (int i = 0; i < 5; i++)
+                const int MaxRetries = 5;
+                for (int i = 0; i < MaxRetries; i++)
                 {
                     try
                     {
                         createdump.Kill(entireProcessTree: true);
                         break;
                     }
-                    catch (Exception e)
+                    catch (Exception e) when (i < MaxRetries - 1)
                     {
                         Console.WriteLine($"Process.Kill(entireProcessTree: true) failed with {e}. Retrying.");
                     }
