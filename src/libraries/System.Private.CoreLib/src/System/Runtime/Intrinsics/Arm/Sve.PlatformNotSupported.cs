@@ -1320,6 +1320,69 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<float> FusedMultiplySubtractNegated(Vector<float> minuend, Vector<float> left, Vector<float> right) { throw new PlatformNotSupportedException(); }
 
 
+        ///  Count set predicate bits
+
+        /// <summary>
+        /// uint64_t svcntp_b8(svbool_t pg, svbool_t op)
+        ///   CNTP Xresult, Pg, Pop.B
+        /// </summary>
+        public static unsafe ulong GetActiveElementCount(Vector<byte> mask, Vector<byte> from) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint64_t svcntp_b8(svbool_t pg, svbool_t op)
+        ///   CNTP Xresult, Pg, Pop.B
+        /// </summary>
+        public static unsafe ulong GetActiveElementCount(Vector<double> mask, Vector<double> from) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint64_t svcntp_b8(svbool_t pg, svbool_t op)
+        ///   CNTP Xresult, Pg, Pop.B
+        /// </summary>
+        public static unsafe ulong GetActiveElementCount(Vector<short> mask, Vector<short> from) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint64_t svcntp_b8(svbool_t pg, svbool_t op)
+        ///   CNTP Xresult, Pg, Pop.B
+        /// </summary>
+        public static unsafe ulong GetActiveElementCount(Vector<int> mask, Vector<int> from) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint64_t svcntp_b8(svbool_t pg, svbool_t op)
+        ///   CNTP Xresult, Pg, Pop.B
+        /// </summary>
+        public static unsafe ulong GetActiveElementCount(Vector<long> mask, Vector<long> from) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint64_t svcntp_b8(svbool_t pg, svbool_t op)
+        ///   CNTP Xresult, Pg, Pop.B
+        /// </summary>
+        public static unsafe ulong GetActiveElementCount(Vector<sbyte> mask, Vector<sbyte> from) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint64_t svcntp_b8(svbool_t pg, svbool_t op)
+        ///   CNTP Xresult, Pg, Pop.B
+        /// </summary>
+        public static unsafe ulong GetActiveElementCount(Vector<float> mask, Vector<float> from) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint64_t svcntp_b16(svbool_t pg, svbool_t op)
+        ///   CNTP Xresult, Pg, Pop.H
+        /// </summary>
+        public static unsafe ulong GetActiveElementCount(Vector<ushort> mask, Vector<ushort> from) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint64_t svcntp_b32(svbool_t pg, svbool_t op)
+        ///   CNTP Xresult, Pg, Pop.S
+        /// </summary>
+        public static unsafe ulong GetActiveElementCount(Vector<uint> mask, Vector<uint> from) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint64_t svcntp_b64(svbool_t pg, svbool_t op)
+        ///   CNTP Xresult, Pg, Pop.D
+        /// </summary>
+        public static unsafe ulong GetActiveElementCount(Vector<ulong> mask, Vector<ulong> from) { throw new PlatformNotSupportedException(); }
+
+
         /// Count leading sign bits
 
         /// <summary>
@@ -3028,6 +3091,150 @@ namespace System.Runtime.Intrinsics.Arm
         ///   CNT Ztied.D, Pg/M, Zop.D
         /// </summary>
         public static unsafe Vector<ulong> PopCount(Vector<ulong> value) { throw new PlatformNotSupportedException(); }
+
+
+        ///  Reverse all elements
+
+        /// <summary>
+        /// svuint8_t svrev[_u8](svuint8_t op)
+        ///   REV Zresult.B, Zop.B
+        /// </summary>
+        public static unsafe Vector<byte> ReverseElement(Vector<byte> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svfloat64_t svrev[_f64](svfloat64_t op)
+        ///   REV Zresult.D, Zop.D
+        /// </summary>
+        public static unsafe Vector<double> ReverseElement(Vector<double> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint16_t svrev[_s16](svint16_t op)
+        ///   REV Zresult.H, Zop.H
+        /// </summary>
+        public static unsafe Vector<short> ReverseElement(Vector<short> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint32_t svrev[_s32](svint32_t op)
+        ///   REV Zresult.S, Zop.S
+        /// </summary>
+        public static unsafe Vector<int> ReverseElement(Vector<int> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint64_t svrev[_s64](svint64_t op)
+        ///   REV Zresult.D, Zop.D
+        /// </summary>
+        public static unsafe Vector<long> ReverseElement(Vector<long> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint8_t svrev[_s8](svint8_t op)
+        ///   REV Zresult.B, Zop.B
+        /// </summary>
+        public static unsafe Vector<sbyte> ReverseElement(Vector<sbyte> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svfloat32_t svrev[_f32](svfloat32_t op)
+        ///   REV Zresult.S, Zop.S
+        /// </summary>
+        public static unsafe Vector<float> ReverseElement(Vector<float> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint16_t svrev[_u16](svuint16_t op)
+        ///   REV Zresult.H, Zop.H
+        /// </summary>
+        public static unsafe Vector<ushort> ReverseElement(Vector<ushort> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint32_t svrev[_u32](svuint32_t op)
+        ///   REV Zresult.S, Zop.S
+        /// </summary>
+        public static unsafe Vector<uint> ReverseElement(Vector<uint> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint64_t svrev[_u64](svuint64_t op)
+        ///   REV Zresult.D, Zop.D
+        /// </summary>
+        public static unsafe Vector<ulong> ReverseElement(Vector<ulong> value) { throw new PlatformNotSupportedException(); }
+
+
+        ///  Reverse halfwords within elements
+
+        /// <summary>
+        /// svint32_t svrevh[_s32]_m(svint32_t inactive, svbool_t pg, svint32_t op)
+        ///   REVH Ztied.S, Pg/M, Zop.S
+        /// </summary>
+        public static unsafe Vector<int> ReverseElement16(Vector<int> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint64_t svrevh[_s64]_m(svint64_t inactive, svbool_t pg, svint64_t op)
+        ///   REVH Ztied.D, Pg/M, Zop.D
+        /// </summary>
+        public static unsafe Vector<long> ReverseElement16(Vector<long> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint32_t svrevh[_u32]_m(svuint32_t inactive, svbool_t pg, svuint32_t op)
+        ///   REVH Ztied.S, Pg/M, Zop.S
+        /// </summary>
+        public static unsafe Vector<uint> ReverseElement16(Vector<uint> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint64_t svrevh[_u64]_m(svuint64_t inactive, svbool_t pg, svuint64_t op)
+        ///   REVH Ztied.D, Pg/M, Zop.D
+        /// </summary>
+        public static unsafe Vector<ulong> ReverseElement16(Vector<ulong> value) { throw new PlatformNotSupportedException(); }
+
+
+        ///  Reverse words within elements
+
+        /// <summary>
+        /// svint64_t svrevw[_s64]_m(svint64_t inactive, svbool_t pg, svint64_t op)
+        ///   REVW Ztied.D, Pg/M, Zop.D
+        /// </summary>
+        public static unsafe Vector<long> ReverseElement32(Vector<long> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint64_t svrevw[_u64]_m(svuint64_t inactive, svbool_t pg, svuint64_t op)
+        ///   REVW Ztied.D, Pg/M, Zop.D
+        /// </summary>
+        public static unsafe Vector<ulong> ReverseElement32(Vector<ulong> value) { throw new PlatformNotSupportedException(); }
+
+
+        ///  Reverse bytes within elements
+
+        /// <summary>
+        /// svint16_t svrevb[_s16]_m(svint16_t inactive, svbool_t pg, svint16_t op)
+        ///   REVB Ztied.H, Pg/M, Zop.H
+        /// </summary>
+        public static unsafe Vector<short> ReverseElement8(Vector<short> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint32_t svrevb[_s32]_m(svint32_t inactive, svbool_t pg, svint32_t op)
+        ///   REVB Ztied.S, Pg/M, Zop.S
+        /// </summary>
+        public static unsafe Vector<int> ReverseElement8(Vector<int> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint64_t svrevb[_s64]_m(svint64_t inactive, svbool_t pg, svint64_t op)
+        ///   REVB Ztied.D, Pg/M, Zop.D
+        /// </summary>
+        public static unsafe Vector<long> ReverseElement8(Vector<long> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint16_t svrevb[_u16]_m(svuint16_t inactive, svbool_t pg, svuint16_t op)
+        ///   REVB Ztied.H, Pg/M, Zop.H
+        /// </summary>
+        public static unsafe Vector<ushort> ReverseElement8(Vector<ushort> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint32_t svrevb[_u32]_m(svuint32_t inactive, svbool_t pg, svuint32_t op)
+        ///   REVB Ztied.S, Pg/M, Zop.S
+        /// </summary>
+        public static unsafe Vector<uint> ReverseElement8(Vector<uint> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint64_t svrevb[_u64]_m(svuint64_t inactive, svbool_t pg, svuint64_t op)
+        ///   REVB Ztied.D, Pg/M, Zop.D
+        /// </summary>
+        public static unsafe Vector<ulong> ReverseElement8(Vector<ulong> value) { throw new PlatformNotSupportedException(); }
 
 
         /// Saturating decrement by number of halfword elements

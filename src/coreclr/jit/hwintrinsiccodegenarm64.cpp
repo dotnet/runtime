@@ -1838,6 +1838,11 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 break;
             }
 
+            case NI_Sve_ReverseElement:
+                // Use non-predicated version explicitly
+                GetEmitter()->emitIns_R_R(ins, emitSize, targetReg, op1Reg, opt, INS_SCALABLE_OPTS_UNPREDICATED);
+                break;
+
             case NI_Sve_StoreNarrowing:
                 opt = emitter::optGetSveInsOpt(emitTypeSize(intrin.baseType));
                 GetEmitter()->emitIns_R_R_R_I(ins, emitSize, op3Reg, op1Reg, op2Reg, 0, opt);
