@@ -25,20 +25,24 @@ abstract class ArrayRecord : SerializationRecord
     /// <summary>
     /// Gets a buffer of integers that represent the number of elements in every dimension.
     /// </summary>
+    /// <value>A buffer of integers that represent the number of elements in every dimension.</value>
     public abstract ReadOnlySpan<int> Lengths { get; }
 
     /// <summary>
-    /// Rank of the array.
+    /// Gets the rank of the array.
     /// </summary>
+    /// <value>The rank of the array.</value>
     public int Rank => ArrayInfo.Rank;
 
     /// <summary>
-    /// Type of the array.
+    /// Gets the type of the array.
     /// </summary>
+    /// <value>The type of the array.</value>
     public BinaryArrayType ArrayType => ArrayInfo.ArrayType;
 
     public abstract TypeName ElementTypeName { get; }
 
+    /// <inheritdoc />
     public override int ObjectId => ArrayInfo.ObjectId;
 
     internal long ValuesToRead { get; private protected set; }
@@ -126,8 +130,9 @@ abstract class ArrayRecord<T> : ArrayRecord
     }
 
     /// <summary>
-    /// Length of the array.
+    /// Gets the length of the array.
     /// </summary>
+    /// <value>The length of the array.</value>
     public int Length => ArrayInfo.Length;
 
     /// <inheritdoc/>
@@ -158,7 +163,6 @@ abstract class ArrayRecord<T> : ArrayRecord
         return ToArrayOfT(allowNulls);
     }
 
-    // PERF: if allocating new arrays is not acceptable, then we could introduce CopyTo method
 #pragma warning disable IL3051 // RequiresDynamicCode is not required in this particualar case
     private protected override Array Deserialize(Type arrayType, bool allowNulls, int maxLength)
         => ToArray(allowNulls, maxLength);

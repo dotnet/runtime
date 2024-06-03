@@ -12,7 +12,7 @@ using System.Runtime.Serialization.BinaryFormat.Utils;
 namespace System.Runtime.Serialization.BinaryFormat;
 
 /// <summary>
-/// Single dimensional array of a primitive type.
+/// Represents a single-dimensional array of a primitive type.
 /// </summary>
 /// <remarks>
 /// ArraySinglePrimitive records are described in <see href="https://learn.microsoft.com/openspecs/windows_protocols/ms-nrbf/3a50a305-5f32-48a1-a42a-c34054db310b">[MS-NRBF] 2.4.3.3</see>.
@@ -43,7 +43,7 @@ internal sealed class ArraySinglePrimitiveRecord<T> : ArrayRecord<T>
 
     internal override (AllowedRecordTypes allowed, PrimitiveType primitiveType) GetAllowedRecordType()
     {
-        Debug.Fail("This should never happen");
+        Debug.Fail("GetAllowedRecordType should never be called on ArraySinglePrimitiveRecord");
         throw new InvalidOperationException();
     }
 
