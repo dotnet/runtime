@@ -141,56 +141,63 @@ namespace System.Web.Util
                 return addDoubleQuotes ? $"\"{value}\"" : value;
             }
 
-            var vsb = new ValueStringBuilder(stackalloc char[512]);
-            if (addDoubleQuotes)
+            return EncodeCore(value, i, addDoubleQuotes);
+
+            static string EncodeCore(ReadOnlySpan<char> value, int i, bool addDoubleQuotes)
             {
-                vsb.Append('"');
-            }
-            ReadOnlySpan<char> chars = value;
-            do
-            {
-                vsb.Append(chars.Slice(0, i));
-                char c = chars[i];
-                chars = chars.Slice(i + 1);
-                switch (c)
+                var vsb = new ValueStringBuilder(stackalloc char[512]);
+                if (addDoubleQuotes)
                 {
-                    case '\r':
-                        vsb.Append("\\r");
-                        break;
-                    case '\t':
-                        vsb.Append("\\t");
-                        break;
-                    case '\"':
-                        vsb.Append("\\\"");
-                        break;
-                    case '\\':
-                        vsb.Append("\\\\");
-                        break;
-                    case '\n':
-                        vsb.Append("\\n");
-                        break;
-                    case '\b':
-                        vsb.Append("\\b");
-                        break;
-                    case '\f':
-                        vsb.Append("\\f");
-                        break;
-                    default:
-                        vsb.Append($"\\u{(int)c:x4}");
-                        break;
+                    vsb.Append('"');
                 }
 
-                i = chars.IndexOfAny(s_invalidJavaScriptChars);
-            } while (i >= 0);
+                ReadOnlySpan<char> chars = value;
+                do
+                {
+                    vsb.Append(chars.Slice(0, i));
+                    char c = chars[i];
+                    chars = chars.Slice(i + 1);
+                    switch (c)
+                    {
+                        case '\r':
+                            vsb.Append("\\r");
+                            break;
+                        case '\t':
+                            vsb.Append("\\t");
+                            break;
+                        case '\"':
+                            vsb.Append("\\\"");
+                            break;
+                        case '\\':
+                            vsb.Append("\\\\");
+                            break;
+                        case '\n':
+                            vsb.Append("\\n");
+                            break;
+                        case '\b':
+                            vsb.Append("\\b");
+                            break;
+                        case '\f':
+                            vsb.Append("\\f");
+                            break;
+                        default:
+                            vsb.Append("\\u");
+                            vsb.AppendSpanFormattable((int)c, "x4");
+                            break;
+                    }
 
-            vsb.Append(chars);
+                    i = chars.IndexOfAny(s_invalidJavaScriptChars);
+                } while (i >= 0);
 
-            if (addDoubleQuotes)
-            {
-                vsb.Append('"');
+                vsb.Append(chars);
+
+                if (addDoubleQuotes)
+                {
+                    vsb.Append('"');
+                }
+
+                return vsb.ToString();
             }
-
-            return vsb.ToString();
         }
 
         [return: NotNullIfNotNull(nameof(bytes))]
