@@ -602,6 +602,15 @@ namespace Microsoft.Extensions
             public string Example { get; set; } = "default";
         }
 
+        public class SetOnlyPoco
+        {
+            private bool _AnyCalled;
+            public bool AnyCalled => _AnyCalled;
+            public string SetOnly { set => _AnyCalled |= true; }
+            public string PrivateGetter { private get => "foo"; set => _AnyCalled |= true; }
+            public string InitOnly { init => _AnyCalled |= true; }
+        }
+
         public interface ISomeInterface
         {
         }

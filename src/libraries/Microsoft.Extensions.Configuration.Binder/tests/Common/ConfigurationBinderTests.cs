@@ -1380,6 +1380,23 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
         }
 
         [Fact]
+        public void DoesNotCallSetOnly()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                {"SetOnly", "42"},
+                {"PrivateGetter", "42"},
+                {"InitOnly", "42"},
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+            var config = configurationBuilder.Build();
+
+            var options = config.Get<SetOnlyPoco>();
+            Assert.False(options.AnyCalled);
+        }
+
+        [Fact]
         public void CanBindRecordOptions()
         {
             var dic = new Dictionary<string, string>
