@@ -2573,7 +2573,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 break;
             }
 
-            case NI_AVX512F_BlendVariableMask:
+            case NI_EVEX_BlendVariableMask:
             {
                 assert(numArgs == 3);
 

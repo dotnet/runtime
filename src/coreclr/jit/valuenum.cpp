@@ -12190,7 +12190,7 @@ void Compiler::fgValueNumberHWIntrinsic(GenTreeHWIntrinsic* tree)
 #if defined(TARGET_XARCH)
     switch (intrinsicId)
     {
-        case NI_AVX512F_ConvertMaskToVector:
+        case NI_EVEX_ConvertMaskToVector:
         {
             // We want to ensure that we get a TYP_MASK local to
             // ensure the relevant optimizations can kick in

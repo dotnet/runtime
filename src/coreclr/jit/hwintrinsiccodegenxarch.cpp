@@ -197,7 +197,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
 
             if (op2->IsEmbMaskOp())
             {
-                assert(intrinsicId == NI_AVX512F_BlendVariableMask);
+                assert(intrinsicId == NI_EVEX_BlendVariableMask);
                 assert(op2->isContained());
                 assert(op2->OperIsHWIntrinsic());
 
@@ -609,7 +609,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                         case NI_SSE41_BlendVariable:
                         case NI_AVX_BlendVariable:
                         case NI_AVX2_BlendVariable:
-                        case NI_AVX512F_BlendVariableMask:
+                        case NI_EVEX_BlendVariableMask:
                         {
                             genHWIntrinsic_R_R_RM_R(node, ins, simdSize, instOptions);
                             break;
@@ -760,9 +760,10 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
         case InstructionSet_AVX512VBMI_VL:
         case InstructionSet_AVX10v1:
         case InstructionSet_AVX10v1_X64:
-        case InstructionSet_AVX10v1_V256:
         case InstructionSet_AVX10v1_V512:
         case InstructionSet_AVX10v1_V512_X64:
+        case InstructionSet_EVEX:
+        case InstructionSet_EVEX_X64:
         {
             genAvxFamilyIntrinsic(node, instOptions);
             break;
@@ -2402,7 +2403,7 @@ void CodeGen::genAvxFamilyIntrinsic(GenTreeHWIntrinsic* node, insOpts instOption
             break;
         }
 
-        case NI_AVX512F_AddMask:
+        case NI_EVEX_AddMask:
         {
             assert(instOptions == INS_OPTS_NONE);
 
@@ -2442,7 +2443,7 @@ void CodeGen::genAvxFamilyIntrinsic(GenTreeHWIntrinsic* node, insOpts instOption
             break;
         }
 
-        case NI_AVX512F_AndMask:
+        case NI_EVEX_AndMask:
         {
             assert(instOptions == INS_OPTS_NONE);
 
@@ -2482,7 +2483,7 @@ void CodeGen::genAvxFamilyIntrinsic(GenTreeHWIntrinsic* node, insOpts instOption
             break;
         }
 
-        case NI_AVX512F_AndNotMask:
+        case NI_EVEX_AndNotMask:
         {
             assert(instOptions == INS_OPTS_NONE);
 
@@ -2522,7 +2523,7 @@ void CodeGen::genAvxFamilyIntrinsic(GenTreeHWIntrinsic* node, insOpts instOption
             break;
         }
 
-        case NI_AVX512F_MoveMask:
+        case NI_EVEX_MoveMask:
         {
             assert(instOptions == INS_OPTS_NONE);
 
@@ -2559,7 +2560,7 @@ void CodeGen::genAvxFamilyIntrinsic(GenTreeHWIntrinsic* node, insOpts instOption
             break;
         }
 
-        case NI_AVX512F_KORTEST:
+        case NI_EVEX_KORTEST:
         {
             assert(instOptions == INS_OPTS_NONE);
 
@@ -2601,7 +2602,7 @@ void CodeGen::genAvxFamilyIntrinsic(GenTreeHWIntrinsic* node, insOpts instOption
             break;
         }
 
-        case NI_AVX512F_KTEST:
+        case NI_EVEX_KTEST:
         {
             assert(instOptions == INS_OPTS_NONE);
 
@@ -2639,7 +2640,7 @@ void CodeGen::genAvxFamilyIntrinsic(GenTreeHWIntrinsic* node, insOpts instOption
             break;
         }
 
-        case NI_AVX512F_NotMask:
+        case NI_EVEX_NotMask:
         {
             assert(instOptions == INS_OPTS_NONE);
 
@@ -2674,7 +2675,7 @@ void CodeGen::genAvxFamilyIntrinsic(GenTreeHWIntrinsic* node, insOpts instOption
             break;
         }
 
-        case NI_AVX512F_OrMask:
+        case NI_EVEX_OrMask:
         {
             assert(instOptions == INS_OPTS_NONE);
 
@@ -2714,7 +2715,7 @@ void CodeGen::genAvxFamilyIntrinsic(GenTreeHWIntrinsic* node, insOpts instOption
             break;
         }
 
-        case NI_AVX512F_ShiftLeftMask:
+        case NI_EVEX_ShiftLeftMask:
         {
             assert(instOptions == INS_OPTS_NONE);
 
@@ -2755,7 +2756,7 @@ void CodeGen::genAvxFamilyIntrinsic(GenTreeHWIntrinsic* node, insOpts instOption
             break;
         }
 
-        case NI_AVX512F_ShiftRightMask:
+        case NI_EVEX_ShiftRightMask:
         {
             assert(instOptions == INS_OPTS_NONE);
 
@@ -2796,7 +2797,7 @@ void CodeGen::genAvxFamilyIntrinsic(GenTreeHWIntrinsic* node, insOpts instOption
             break;
         }
 
-        case NI_AVX512F_XorMask:
+        case NI_EVEX_XorMask:
         {
             assert(instOptions == INS_OPTS_NONE);
 

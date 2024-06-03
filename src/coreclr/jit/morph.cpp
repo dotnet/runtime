@@ -10749,8 +10749,8 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
             GenTree* op1 = node->Op(1);
             GenTree* op2 = node->Op(2);
 
-            if (!op1->OperIsHWIntrinsic(NI_AVX512F_ConvertMaskToVector) ||
-                !op2->OperIsHWIntrinsic(NI_AVX512F_ConvertMaskToVector))
+            if (!op1->OperIsHWIntrinsic(NI_EVEX_ConvertMaskToVector) ||
+                !op2->OperIsHWIntrinsic(NI_EVEX_ConvertMaskToVector))
             {
                 // We need both operands to be ConvertMaskToVector in
                 // order to optimize this to a direct mask operation
@@ -10782,7 +10782,7 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
                 case NI_AVX512DQ_And:
                 case NI_AVX10v1_V512_And:
                 {
-                    maskIntrinsicId = NI_AVX512F_AndMask;
+                    maskIntrinsicId = NI_EVEX_AndMask;
                     break;
                 }
 
@@ -10790,7 +10790,7 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
                 case NI_AVX512DQ_AndNot:
                 case NI_AVX10v1_V512_AndNot:
                 {
-                    maskIntrinsicId = NI_AVX512F_AndNotMask;
+                    maskIntrinsicId = NI_EVEX_AndNotMask;
                     break;
                 }
 
@@ -10798,7 +10798,7 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
                 case NI_AVX512DQ_Or:
                 case NI_AVX10v1_V512_Or:
                 {
-                    maskIntrinsicId = NI_AVX512F_OrMask;
+                    maskIntrinsicId = NI_EVEX_OrMask;
                     break;
                 }
 
@@ -10806,7 +10806,7 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
                 case NI_AVX512DQ_Xor:
                 case NI_AVX10v1_V512_Xor:
                 {
-                    maskIntrinsicId = NI_AVX512F_XorMask;
+                    maskIntrinsicId = NI_EVEX_XorMask;
                     break;
                 }
 
@@ -10827,17 +10827,17 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
             node->Op(2) = cvtOp2->Op(1);
             DEBUG_DESTROY_NODE(op2);
 
-            node = gtNewSimdHWIntrinsicNode(simdType, node, NI_AVX512F_ConvertMaskToVector, simdBaseJitType, simdSize);
+            node = gtNewSimdHWIntrinsicNode(simdType, node, NI_EVEX_ConvertMaskToVector, simdBaseJitType, simdSize);
 
             INDEBUG(node->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
             break;
         }
 
-        case NI_AVX512F_ConvertMaskToVector:
+        case NI_EVEX_ConvertMaskToVector:
         {
             GenTree* op1 = node->Op(1);
 
-            if (!op1->OperIsHWIntrinsic(NI_AVX512F_ConvertVectorToMask))
+            if (!op1->OperIsHWIntrinsic(NI_EVEX_ConvertVectorToMask))
             {
                 break;
             }
@@ -10860,11 +10860,11 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
             return vectorNode;
         }
 
-        case NI_AVX512F_ConvertVectorToMask:
+        case NI_EVEX_ConvertVectorToMask:
         {
             GenTree* op1 = node->Op(1);
 
-            if (!op1->OperIsHWIntrinsic(NI_AVX512F_ConvertMaskToVector))
+            if (!op1->OperIsHWIntrinsic(NI_EVEX_ConvertMaskToVector))
             {
                 break;
             }
