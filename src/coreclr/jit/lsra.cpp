@@ -4682,7 +4682,7 @@ void LinearScan::processBlockStartLocations(BasicBlock* currentBlock)
     for (regNumber reg = REG_FIRST; reg < AVAILABLE_REG_COUNT; reg = REG_NEXT(reg))
     {
         RegRecord* physRegRecord = getRegisterRecord(reg);
-        if (liveRegs.IsRegNumInMask(reg))
+        if (!liveRegs.IsRegNumInMask(reg))
         {
             makeRegAvailable(reg, physRegRecord->registerType);
             Interval* assignedInterval = physRegRecord->assignedInterval;
