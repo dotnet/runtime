@@ -4689,6 +4689,14 @@ void Compiler::fgMoveHotJumps()
             fgUnlinkBlock(block);
             fgInsertBBbefore(target, block);
         }
+        else if (hasEH && target->isBBCallFinallyPair())
+        {
+            // target is a call-finally pair, so move the pair up to block
+            //
+            fgUnlinkRange(target, target->Next());
+            fgMoveBlocksAfter(target, target->Next(), block);
+            next = target->Next();
+        }
         else
         {
             // Move target up to block
