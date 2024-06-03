@@ -45,7 +45,7 @@ namespace ILLink.Shared.DataFlow
 		public readonly struct ControlFlowBranch : IEquatable<ControlFlowBranch>
 		{
 			public readonly TBlock Source;
-			private readonly TBlock? Destination;
+			public readonly TBlock? Destination;
 
 			// The finally regions exited when control flows through this edge.
 			// For example:

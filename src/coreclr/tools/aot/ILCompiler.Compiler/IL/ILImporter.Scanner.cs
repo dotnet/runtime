@@ -54,9 +54,6 @@ namespace Internal.IL
         private bool _isReadOnly;
         private TypeDesc _constrained;
 
-        private int _currentInstructionOffset;
-        private int _previousInstructionOffset;
-
         private sealed class ExceptionRegion
         {
             public ILExceptionRegion ILRegion;
@@ -217,24 +214,19 @@ namespace Internal.IL
                     if (region.Kind == ILExceptionRegionKind.Catch)
                     {
                         TypeDesc catchType = (TypeDesc)_methodIL.GetObject(region.ClassToken);
+
+                        // EH tables refer to this type
                         if (catchType.IsRuntimeDeterminedSubtype)
                         {
-                            // For runtime determined Exception types we're going to emit a fake EH filter with isinst for this
-                            // type with a runtime lookup
-                            _dependencies.Add(GetGenericLookupHelper(ReadyToRunHelperId.TypeHandleForCasting, catchType), "EH filter");
+                            _dependencies.Add(GetGenericLookupHelper(ReadyToRunHelperId.TypeHandleForCasting, catchType), "EH");
+                        }
+                        else
+                        {
+                            _dependencies.Add(_compilation.ComputeConstantLookup(ReadyToRunHelperId.TypeHandleForCasting, catchType), "EH");
                         }
                     }
                 }
             }
-
-            _currentInstructionOffset = -1;
-            _previousInstructionOffset = -1;
-        }
-
-        private void StartImportingInstruction()
-        {
-            _previousInstructionOffset = _currentInstructionOffset;
-            _currentInstructionOffset = _currentOffset;
         }
 
         private void EndImportingInstruction()
@@ -984,6 +976,9 @@ namespace Internal.IL
             var field = (FieldDesc)_methodIL.GetObject(token);
             var canonField = (FieldDesc)_canonMethodIL.GetObject(token);
 
+            if (field.IsLiteral)
+                ThrowHelper.ThrowMissingFieldException(field.OwningType, field.Name);
+
             _compilation.NodeFactory.MetadataManager.GetDependenciesDueToAccess(ref _dependencies, _compilation.NodeFactory, _canonMethodIL, canonField);
 
             // `write` will be null for ld(s)flda. Consider address loads write unless they were
@@ -1020,20 +1015,21 @@ namespace Internal.IL
                 if (field.IsLiteral)
                     ThrowHelper.ThrowMissingFieldException(field.OwningType, field.Name);
 
+                ReadyToRunHelperId helperId;
                 if (field.HasRva)
                 {
                     // We don't care about field RVA data for the usual cases, but if this is one of the
                     // magic fields the compiler synthetized, the data blob might bring more dependencies
                     // and we need to scan those.
                     _dependencies.Add(_compilation.GetFieldRvaData(field), reason);
-                    // RVA static fields in generic types not implemented
-                    Debug.Assert(!field.OwningType.HasInstantiation);
-                    if (_compilation.HasLazyStaticConstructor(field.OwningType))
-                        _dependencies.Add(_factory.TypeNonGCStaticsSymbol((MetadataType)field.OwningType), "Cctor context");
+                    if (_compilation.HasLazyStaticConstructor(canonField.OwningType))
+                    {
+                        helperId = ReadyToRunHelperId.GetNonGCStaticBase;
+                        goto addBase;
+                    }
                     return;
                 }
 
-                ReadyToRunHelperId helperId;
                 if (field.IsThreadStatic)
                 {
                     helperId = ReadyToRunHelperId.GetThreadStaticBase;
@@ -1047,6 +1043,7 @@ namespace Internal.IL
                     helperId = ReadyToRunHelperId.GetNonGCStaticBase;
                 }
 
+            addBase:
                 TypeDesc owningType = field.OwningType;
                 if (owningType.IsRuntimeDeterminedSubtype)
                 {
@@ -1278,6 +1275,19 @@ namespace Internal.IL
             }
         }
 
+        private void ImportConvert(WellKnownType wellKnownType, bool checkOverflow, bool unsigned)
+        {
+            if (checkOverflow)
+            {
+                _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.Dbl2IntOvf), "_dbl2intovf");
+                _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.Dbl2UIntOvf), "_dbl2uintovf");
+                _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.Dbl2LngOvf), "_dbl2lngovf");
+                _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.Dbl2ULngOvf), "_dbl2ulngovf");
+
+                _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.Overflow), "_ovf");
+            }
+        }
+
         private void ImportFallthrough(BasicBlock next)
         {
             MarkBasicBlock(next);
@@ -1386,6 +1396,7 @@ namespace Internal.IL
             return _compilation.TypeSystemContext.GetWellKnownType(wellKnownType);
         }
 
+        private static void StartImportingInstruction() { }
         private static void ImportNop() { }
         private static void ImportBreak() { }
         private static void ImportLoadVar(int index, bool argument) { }
@@ -1403,7 +1414,6 @@ namespace Internal.IL
         private static void ImportStoreIndirect(TypeDesc type) { }
         private static void ImportShiftOperation(ILOpcode opcode) { }
         private static void ImportCompareOperation(ILOpcode opcode) { }
-        private static void ImportConvert(WellKnownType wellKnownType, bool checkOverflow, bool unsigned) { }
         private static void ImportUnaryOperation(ILOpcode opCode) { }
         private static void ImportCpOpj(int token) { }
         private static void ImportCkFinite() { }

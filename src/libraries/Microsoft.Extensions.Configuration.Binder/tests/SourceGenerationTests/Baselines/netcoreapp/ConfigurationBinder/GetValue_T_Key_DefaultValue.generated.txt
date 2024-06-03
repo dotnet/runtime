@@ -53,13 +53,13 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             if (type == typeof(int))
             {
-                return ParseInt(value, () => section.Path);
+                return ParseInt(value, section.Path);
             }
 
             return null;
         }
 
-        public static int ParseInt(string value, Func<string?> getPath)
+        public static int ParseInt(string value, string? path)
         {
             try
             {
@@ -67,7 +67,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
             catch (Exception exception)
             {
-                throw new InvalidOperationException($"Failed to convert configuration value at '{getPath()}' to type '{typeof(int)}'.", exception);
+                throw new InvalidOperationException($"Failed to convert configuration value at '{path}' to type '{typeof(int)}'.", exception);
             }
         }
         #endregion Core binding extensions.

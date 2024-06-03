@@ -61,7 +61,7 @@ namespace System.Text.Json.Serialization.Converters
             {
                 do
                 {
-                    if (ShouldFlush(writer, ref state))
+                    if (ShouldFlush(ref state))
                     {
                         state.Current.CollectionEnumerator = enumerator;
                         return false;

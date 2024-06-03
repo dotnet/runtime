@@ -1754,6 +1754,9 @@ struct CORINFO_EE_INFO
         // Size of the Frame structure
         unsigned    size;
 
+        // Size of the Frame structure when it also contains the secret stub arg
+        unsigned    sizeWithSecretStubArg;
+
         unsigned    offsetOfGSCookie;
         unsigned    offsetOfFrameVptr;
         unsigned    offsetOfFrameLink;
@@ -1761,6 +1764,7 @@ struct CORINFO_EE_INFO
         unsigned    offsetOfCalleeSavedFP;
         unsigned    offsetOfCallTarget;
         unsigned    offsetOfReturnAddress;
+        unsigned    offsetOfSecretStubArg;
         // This offset is used only for ARM
         unsigned    offsetOfSPAfterProlog;
     }

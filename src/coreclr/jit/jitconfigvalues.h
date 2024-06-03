@@ -360,10 +360,12 @@ RELEASE_CONFIG_INTEGER(EnableMultiRegLocals, W("EnableMultiRegLocals"), 1)
 // Disables inlining of all methods
 RELEASE_CONFIG_INTEGER(JitNoInline, W("JitNoInline"), 0)
 
+// clang-format off
+
+#if defined(TARGET_AMD64) || defined(TARGET_X86)
 // Enable EVEX encoding for SIMD instructions when AVX-512VL is available.
 CONFIG_INTEGER(JitStressEvexEncoding, W("JitStressEvexEncoding"), 0)
-
-// clang-format off
+#endif
 
 RELEASE_CONFIG_INTEGER(PreferredVectorBitWidth,     W("PreferredVectorBitWidth"),   0) // The preferred decimal width, in bits, to use for any implicit vectorization emitted. A value less than 128 is treated as the system default.
 
@@ -419,6 +421,9 @@ RELEASE_CONFIG_INTEGER(EnableArm64Sha1,             W("EnableArm64Sha1"),       
 RELEASE_CONFIG_INTEGER(EnableArm64Sha256,           W("EnableArm64Sha256"),         1) // Allows Arm64 Sha256+ hardware intrinsics to be disabled
 RELEASE_CONFIG_INTEGER(EnableArm64Sve,              W("EnableArm64Sve"),            1) // Allows Arm64 Sve+ hardware intrinsics to be disabled
 #endif
+
+RELEASE_CONFIG_INTEGER(EnableEmbeddedBroadcast,     W("EnableEmbeddedBroadcast"),   1) // Allows embedded broadcasts to be disabled
+RELEASE_CONFIG_INTEGER(EnableEmbeddedMasking,       W("EnableEmbeddedMasking"),     1) // Allows embedded masking to be disabled
 
 // clang-format on
 
@@ -562,6 +567,7 @@ OPT_CONFIG_STRING(JitOnlyOptimizeRange,
 OPT_CONFIG_STRING(JitEnablePhysicalPromotionRange, W("JitEnablePhysicalPromotionRange"))
 OPT_CONFIG_STRING(JitEnableCrossBlockLocalAssertionPropRange, W("JitEnableCrossBlockLocalAssertionPropRange"))
 OPT_CONFIG_STRING(JitEnableInductionVariableOptsRange, W("JitEnableInductionVariableOptsRange"))
+OPT_CONFIG_STRING(JitEnableLocalAddrPropagationRange, W("JitEnableLocalAddrPropagationRange"))
 
 OPT_CONFIG_INTEGER(JitDoSsa, W("JitDoSsa"), 1) // Perform Static Single Assignment (SSA) numbering on the variables
 OPT_CONFIG_INTEGER(JitDoValueNumber, W("JitDoValueNumber"), 1) // Perform value numbering on method expressions
@@ -766,7 +772,7 @@ RELEASE_CONFIG_INTEGER(JitEnablePhysicalPromotion, W("JitEnablePhysicalPromotion
 RELEASE_CONFIG_INTEGER(JitEnableCrossBlockLocalAssertionProp, W("JitEnableCrossBlockLocalAssertionProp"), 1)
 
 // Do greedy RPO-based layout in Compiler::fgReorderBlocks.
-RELEASE_CONFIG_INTEGER(JitDoReversePostOrderLayout, W("JitDoReversePostOrderLayout"), 0);
+RELEASE_CONFIG_INTEGER(JitDoReversePostOrderLayout, W("JitDoReversePostOrderLayout"), 1);
 
 // JitFunctionFile: Name of a file that contains a list of functions. If the currently compiled function is in the
 // file, certain other JIT config variables will be active. If the currently compiled function is not in the file,

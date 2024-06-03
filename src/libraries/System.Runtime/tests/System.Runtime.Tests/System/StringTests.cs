@@ -149,6 +149,30 @@ namespace System.Tests
         }
 
         [Fact]
+        public static void Create_CanSquirrelAwayArg()
+        {
+            object arg = new object();
+            object storedArg = null;
+            string result = string.Create(5, arg, (span, arg) =>
+            {
+                "hello".AsSpan().CopyTo(span);
+                storedArg = arg;
+            });
+            Assert.Equal("hello", result);
+            Assert.Same(arg, storedArg);
+        }
+
+        [Fact]
+        public static void Create_CanPassSpanAsArg()
+        {
+            string result = string.Create(5, "hello".AsSpan(), (span, arg) =>
+            {
+                arg.CopyTo(span);
+            });
+            Assert.Equal("hello", result);
+        }
+
+        [Fact]
         public static void Create_InterpolatedString_ConstructsStringAndClearsBuilder()
         {
             Span<char> initialBuffer = stackalloc char[16];

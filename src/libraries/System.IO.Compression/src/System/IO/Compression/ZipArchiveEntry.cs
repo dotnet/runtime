@@ -44,7 +44,7 @@ namespace System.IO.Compression
         private List<ZipGenericExtraField>? _cdUnknownExtraFields;
         private List<ZipGenericExtraField>? _lhUnknownExtraFields;
         private byte[] _fileComment;
-        private readonly CompressionLevel? _compressionLevel;
+        private readonly CompressionLevel _compressionLevel;
 
         // Initializes a ZipArchiveEntry instance for an existing archive entry.
         internal ZipArchiveEntry(ZipArchive archive, ZipCentralDirectoryFileHeader cd)
@@ -86,7 +86,7 @@ namespace System.IO.Compression
 
             _fileComment = cd.FileComment;
 
-            _compressionLevel = null;
+            _compressionLevel = MapCompressionLevel(_generalPurposeBitFlag, CompressionMethod);
         }
 
         // Initializes a ZipArchiveEntry instance for a new archive entry with a specified compression level.
@@ -98,6 +98,7 @@ namespace System.IO.Compression
             {
                 CompressionMethod = CompressionMethodValues.Stored;
             }
+            _generalPurposeBitFlag = MapDeflateCompressionOption(_generalPurposeBitFlag, _compressionLevel, CompressionMethod);
         }
 
         // Initializes a ZipArchiveEntry instance for a new archive entry.
@@ -111,8 +112,9 @@ namespace System.IO.Compression
             _versionMadeByPlatform = CurrentZipPlatform;
             _versionMadeBySpecification = ZipVersionNeededValues.Default;
             _versionToExtract = ZipVersionNeededValues.Default; // this must happen before following two assignment
-            _generalPurposeBitFlag = 0;
+            _compressionLevel = CompressionLevel.Optimal;
             CompressionMethod = CompressionMethodValues.Deflate;
+            _generalPurposeBitFlag = MapDeflateCompressionOption(0, _compressionLevel, CompressionMethod);
             _lastModified = DateTimeOffset.Now;
 
             _compressedSize = 0; // we don't know these yet
@@ -137,8 +139,6 @@ namespace System.IO.Compression
             _lhUnknownExtraFields = null;
 
             _fileComment = Array.Empty<byte>();
-
-            _compressionLevel = null;
 
             if (_storedEntryNameBytes.Length > ushort.MaxValue)
                 throw new ArgumentException(SR.EntryNamesTooLong);
@@ -469,7 +469,7 @@ namespace System.IO.Compression
 
             bool zip64Needed = false;
 
-            if (SizesTooLarge()
+            if (AreSizesTooLarge
 #if DEBUG_FORCE_ZIP64
                 || _archive._forceZip64
 #endif
@@ -490,7 +490,7 @@ namespace System.IO.Compression
             }
 
 
-            if (_offsetOfLocalHeader > uint.MaxValue
+            if (IsOffsetTooLarge
 #if DEBUG_FORCE_ZIP64
                 || _archive._forceZip64
 #endif
@@ -632,7 +632,7 @@ namespace System.IO.Compression
                 case CompressionMethodValues.Deflate:
                 case CompressionMethodValues.Deflate64:
                 default:
-                    compressorStream = new DeflateStream(backingStream, _compressionLevel ?? CompressionLevel.Optimal, leaveBackingStreamOpen);
+                    compressorStream = new DeflateStream(backingStream, _compressionLevel, leaveBackingStreamOpen);
                     break;
 
             }
@@ -692,7 +692,7 @@ namespace System.IO.Compression
             if (_everOpenedForWrite)
                 throw new IOException(SR.CreateModeWriteOnceAndOneEntryAtATime);
 
-            // we assume that if another entry grabbed the archive stream, that it set this entry's _everOpenedForWrite property to true by calling WriteLocalFileHeaderIfNeeed
+            // we assume that if another entry grabbed the archive stream, that it set this entry's _everOpenedForWrite property to true by calling WriteLocalFileHeaderAndDataIfNeeded
             _archive.DebugAssertIsStillArchiveStreamOwner(this);
 
             _everOpenedForWrite = true;
@@ -797,7 +797,51 @@ namespace System.IO.Compression
             return true;
         }
 
-        private bool SizesTooLarge() => _compressedSize > uint.MaxValue || _uncompressedSize > uint.MaxValue;
+        private bool AreSizesTooLarge => _compressedSize > uint.MaxValue || _uncompressedSize > uint.MaxValue;
+
+        private static CompressionLevel MapCompressionLevel(BitFlagValues generalPurposeBitFlag, CompressionMethodValues compressionMethod)
+        {
+            // Information about the Deflate compression option is stored in bits 1 and 2 of the general purpose bit flags.
+            // If the compression method is not Deflate, the Deflate compression option is invalid - default to NoCompression.
+            if (compressionMethod == CompressionMethodValues.Deflate || compressionMethod == CompressionMethodValues.Deflate64)
+            {
+                return ((int)generalPurposeBitFlag & 0x6) switch
+                {
+                    0 => CompressionLevel.Optimal,
+                    2 => CompressionLevel.SmallestSize,
+                    4 => CompressionLevel.Fastest,
+                    6 => CompressionLevel.Fastest,
+                    _ => CompressionLevel.Optimal
+                };
+            }
+            else
+            {
+                return CompressionLevel.NoCompression;
+            }
+        }
+
+        private static BitFlagValues MapDeflateCompressionOption(BitFlagValues generalPurposeBitFlag, CompressionLevel compressionLevel, CompressionMethodValues compressionMethod)
+        {
+            ushort deflateCompressionOptions = (ushort)(
+                // The Deflate compression level is only valid if the compression method is actually Deflate (or Deflate64). If it's not, the
+                // value of the two bits is undefined and they should be zeroed out.
+                compressionMethod == CompressionMethodValues.Deflate || compressionMethod == CompressionMethodValues.Deflate64
+                    ? compressionLevel switch
+                    {
+                        CompressionLevel.Optimal => 0,
+                        CompressionLevel.SmallestSize => 2,
+                        CompressionLevel.Fastest => 6,
+                        CompressionLevel.NoCompression => 6,
+                        _ => 0
+                    }
+                    : 0);
+
+            return (BitFlagValues)(((int)generalPurposeBitFlag & ~0x6) | deflateCompressionOptions);
+        }
+
+        private bool IsOffsetTooLarge => _offsetOfLocalHeader > uint.MaxValue;
+
+        private bool ShouldUseZIP64 => AreSizesTooLarge || IsOffsetTooLarge;
 
         // return value is true if we allocated an extra field for 64 bit headers, un/compressed size
         private bool WriteLocalFileHeader(bool isEmptyFile)
@@ -812,6 +856,9 @@ namespace System.IO.Compression
             Zip64ExtraField zip64ExtraField = default;
             bool zip64Used = false;
             uint compressedSizeTruncated, uncompressedSizeTruncated;
+
+            // save offset
+            _offsetOfLocalHeader = writer.BaseStream.Position;
 
             // if we already know that we have an empty file don't worry about anything, just do a straight shot of the header
             if (isEmptyFile)
@@ -840,7 +887,7 @@ namespace System.IO.Compression
                 {
                     // We are in seekable mode so we will not need to write a data descriptor
                     _generalPurposeBitFlag &= ~BitFlagValues.DataDescriptor;
-                    if (SizesTooLarge()
+                    if (ShouldUseZIP64
 #if DEBUG_FORCE_ZIP64
                         || (_archive._forceZip64 && _archive.Mode == ZipArchiveMode.Update)
 #endif
@@ -864,9 +911,6 @@ namespace System.IO.Compression
                     }
                 }
             }
-
-            // save offset
-            _offsetOfLocalHeader = writer.BaseStream.Position;
 
             // calculate extra field. if zip64 stuff + original extraField aren't going to fit, dump the original extraField, because this is more important
             int bigExtraFieldLength = (zip64Used ? zip64ExtraField.TotalSize : 0)
@@ -964,7 +1008,7 @@ namespace System.IO.Compression
             long finalPosition = _archive.ArchiveStream.Position;
             BinaryWriter writer = new BinaryWriter(_archive.ArchiveStream);
 
-            bool zip64Needed = SizesTooLarge()
+            bool zip64Needed = ShouldUseZIP64
 #if DEBUG_FORCE_ZIP64
                 || _archive._forceZip64
 #endif
@@ -1048,7 +1092,7 @@ namespace System.IO.Compression
 
             writer.Write(ZipLocalFileHeader.DataDescriptorSignature);
             writer.Write(_crc32);
-            if (SizesTooLarge())
+            if (AreSizesTooLarge)
             {
                 writer.Write(_compressedSize);
                 writer.Write(_uncompressedSize);
