@@ -316,7 +316,9 @@ namespace CoreclrTestLib
                     }
                     catch (Exception e) when (i < MaxRetries - 1)
                     {
-                        Console.WriteLine($"Process.Kill(entireProcessTree: true) failed with {e}. Retrying.");
+                        Console.WriteLine($"Process.Kill(entireProcessTree: true) failed:");
+                        Console.WriteLine(e);
+                        Console.WriteLine("Retrying...");
                     }
                 }
             }
