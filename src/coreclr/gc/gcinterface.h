@@ -280,7 +280,6 @@ enum GCEventKeyword
     GCEventKeyword_ManagedHeapCollect            =  0x800000,
     GCEventKeyword_GCHeapAndTypeNames            = 0x1000000,
     GCEventKeyword_GCSampledObjectAllocationLow  = 0x2000000,
-
     GCEventKeyword_All = GCEventKeyword_GC
       | GCEventKeyword_GCPrivate
       | GCEventKeyword_GCHandle
