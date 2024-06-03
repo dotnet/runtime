@@ -56,19 +56,35 @@ namespace System.Numerics
 
         /// <summary>Returns a vector whose 2 elements are equal to zero.</summary>
         /// <value>A vector whose two elements are equal to zero (that is, it returns the vector <c>(0,0)</c>.</value>
-        public static Vector2 Zero => default;
+        public static Vector2 Zero
+        {
+            [Intrinsic]
+            get => default;
+        }
 
         /// <summary>Gets a vector whose 2 elements are equal to one.</summary>
         /// <value>A vector whose two elements are equal to one (that is, it returns the vector <c>(1,1)</c>.</value>
-        public static Vector2 One => new Vector2(1.0f);
+        public static Vector2 One
+        {
+            [Intrinsic]
+            get => new Vector2(1.0f);
+        }
 
         /// <summary>Gets the vector (1,0).</summary>
         /// <value>The vector <c>(1,0)</c>.</value>
-        public static Vector2 UnitX => new Vector2(1.0f, 0.0f);
+        public static Vector2 UnitX
+        {
+            [Intrinsic]
+            get => new Vector2(1.0f, 0.0f);
+        }
 
         /// <summary>Gets the vector (0,1).</summary>
         /// <value>The vector <c>(0,1)</c>.</value>
-        public static Vector2 UnitY => new Vector2(0.0f, 1.0f);
+        public static Vector2 UnitY
+        {
+            [Intrinsic]
+            get => new Vector2(0.0f, 1.0f);
+        }
 
         /// <summary>Gets or sets the element at the specified index.</summary>
         /// <param name="index">The index of the element to get or set.</param>
@@ -76,6 +92,7 @@ namespace System.Numerics
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="index" /> was less than zero or greater than the number of elements.</exception>
         public float this[int index]
         {
+            [Intrinsic]
             readonly get => this.GetElement(index);
 
             set => this = this.WithElement(index, value);
@@ -209,6 +226,7 @@ namespace System.Numerics
         /// <param name="left">The first vector to add.</param>
         /// <param name="right">The second vector to add.</param>
         /// <returns>The summed vector.</returns>
+        [Intrinsic]
         public static Vector2 Add(Vector2 left, Vector2 right) => left + right;
 
         /// <summary>Restricts a vector between a minimum and a maximum value.</summary>
@@ -216,6 +234,7 @@ namespace System.Numerics
         /// <param name="min">The minimum value.</param>
         /// <param name="max">The maximum value.</param>
         /// <returns>The restricted vector.</returns>
+        [Intrinsic]
         public static Vector2 Clamp(Vector2 value1, Vector2 min, Vector2 max)
         {
             // We must follow HLSL behavior in the case user specified min value is bigger than max value.
@@ -226,24 +245,28 @@ namespace System.Numerics
         /// <param name="value1">The first point.</param>
         /// <param name="value2">The second point.</param>
         /// <returns>The distance.</returns>
+        [Intrinsic]
         public static float Distance(Vector2 value1, Vector2 value2) => MathF.Sqrt(DistanceSquared(value1, value2));
 
         /// <summary>Returns the Euclidean distance squared between two specified points.</summary>
         /// <param name="value1">The first point.</param>
         /// <param name="value2">The second point.</param>
         /// <returns>The distance squared.</returns>
+        [Intrinsic]
         public static float DistanceSquared(Vector2 value1, Vector2 value2) => (value1 - value2).LengthSquared();
 
         /// <summary>Divides the first vector by the second.</summary>
         /// <param name="left">The first vector.</param>
         /// <param name="right">The second vector.</param>
         /// <returns>The vector resulting from the division.</returns>
+        [Intrinsic]
         public static Vector2 Divide(Vector2 left, Vector2 right) => left / right;
 
         /// <summary>Divides the specified vector by a specified scalar value.</summary>
         /// <param name="left">The vector.</param>
         /// <param name="divisor">The scalar value.</param>
         /// <returns>The vector that results from the division.</returns>
+        [Intrinsic]
         public static Vector2 Divide(Vector2 left, float divisor) => left / divisor;
 
         /// <summary>Returns the dot product of two vectors.</summary>
@@ -313,18 +336,21 @@ namespace System.Numerics
         /// <param name="left">The first vector.</param>
         /// <param name="right">The second vector.</param>
         /// <returns>The element-wise product vector.</returns>
+        [Intrinsic]
         public static Vector2 Multiply(Vector2 left, Vector2 right) => left * right;
 
         /// <summary>Multiplies a vector by a specified scalar.</summary>
         /// <param name="left">The vector to multiply.</param>
         /// <param name="right">The scalar value.</param>
         /// <returns>The scaled vector.</returns>
+        [Intrinsic]
         public static Vector2 Multiply(Vector2 left, float right) => left * right;
 
         /// <summary>Multiplies a scalar value by a specified vector.</summary>
         /// <param name="left">The scaled value.</param>
         /// <param name="right">The vector.</param>
         /// <returns>The scaled vector.</returns>
+        [Intrinsic]
         public static Vector2 Multiply(float left, Vector2 right) => left * right;
 
         /// <inheritdoc cref="Vector128.MultiplyAddEstimate(Vector128{float}, Vector128{float}, Vector128{float})" />
@@ -341,11 +367,13 @@ namespace System.Numerics
         /// <summary>Negates a specified vector.</summary>
         /// <param name="value">The vector to negate.</param>
         /// <returns>The negated vector.</returns>
+        [Intrinsic]
         public static Vector2 Negate(Vector2 value) => -value;
 
         /// <summary>Returns a vector with the same direction as the specified vector, but with a length of one.</summary>
         /// <param name="value">The vector to normalize.</param>
         /// <returns>The normalized vector.</returns>
+        [Intrinsic]
         public static Vector2 Normalize(Vector2 value) => value / value.Length();
 
         /// <summary>Returns the reflection of a vector off a surface that has the specified normal.</summary>
@@ -372,6 +400,7 @@ namespace System.Numerics
         /// <param name="left">The first vector.</param>
         /// <param name="right">The second vector.</param>
         /// <returns>The difference vector.</returns>
+        [Intrinsic]
         public static Vector2 Subtract(Vector2 left, Vector2 right) => left - right;
 
         /// <summary>Transforms a vector by a specified 3x2 matrix.</summary>
@@ -570,12 +599,14 @@ namespace System.Numerics
         /// <summary>Returns the length of the vector.</summary>
         /// <returns>The vector's length.</returns>
         /// <altmember cref="LengthSquared"/>
+        [Intrinsic]
         public readonly float Length() => MathF.Sqrt(LengthSquared());
 
         /// <summary>Returns the length of the vector squared.</summary>
         /// <returns>The vector's length squared.</returns>
         /// <remarks>This operation offers better performance than a call to the <see cref="Length" /> method.</remarks>
         /// <altmember cref="Length"/>
+        [Intrinsic]
         public readonly float LengthSquared() => Dot(this, this);
 
         /// <summary>Returns the string representation of the current instance using default formatting.</summary>

@@ -3089,6 +3089,13 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
     }
 #endif // FEATURE_HW_INTRINSICS
 
+    if ((ni == NI_System_Numerics_Intrinsic) || (ni == NI_System_Runtime_Intrinsics_Intrinsic))
+    {
+        // These are special markers used just to ensure we still get the inlining profitability
+        // boost. We actually have the implementation in managed, however, to keep the JIT simpler.
+        return nullptr;
+    }
+
     if (!isIntrinsic)
     {
         // Outside the cases above, there are many intrinsics which apply to only a
@@ -10080,6 +10087,12 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
 
                                 result = NI_Throw_PlatformNotSupportedException;
                             }
+                            else
+                            {
+                                // Otherwise mark this as a general intrinsic in the namespace
+                                // so we can still get the inlining profitability boost.
+                                result = NI_System_Runtime_Intrinsics_Intrinsic;
+                            }
                         }
                     }
                 }
@@ -10303,6 +10316,12 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                                 // IsSupported check so the throw PNSE will be valid or dropped.
 
                                 result = NI_Throw_PlatformNotSupportedException;
+                            }
+                            else
+                            {
+                                // Otherwise mark this as a general intrinsic in the namespace
+                                // so we can still get the inlining profitability boost.
+                                result = NI_System_Numerics_Intrinsic;
                             }
                         }
                     }

@@ -14,6 +14,7 @@ namespace System.Numerics
         /// <param name="index">The index of the element to get.</param>
         /// <returns>The value of the element at <paramref name="index" />.</returns>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="index" /> was less than zero or greater than the number of elements.</exception>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static float GetElement(this Quaternion quaternion, int index)
         {
@@ -26,6 +27,7 @@ namespace System.Numerics
         /// <param name="value">The value to set the element to.</param>
         /// <returns>A <see cref="Quaternion" /> with the value of the element at <paramref name="index" /> set to <paramref name="value" /> and the remaining elements set to the same value as that in <paramref name="quaternion" />.</returns>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="index" /> was less than zero or greater than the number of elements.</exception>
+        [Intrinsic]
         internal static Quaternion WithElement(this Quaternion quaternion, int index, float value)
         {
             return quaternion.AsVector128().WithElement(index, value).AsQuaternion();

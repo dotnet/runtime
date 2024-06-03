@@ -113,6 +113,7 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NotSupportedException">The type of the vector (<typeparamref name="T" />) is not supported.</exception>
         public static Vector128<T> Zero
         {
+            [Intrinsic]
             get
             {
                 ThrowHelper.ThrowForUnsupportedIntrinsicsVector128BaseType<T>();
@@ -353,6 +354,7 @@ namespace System.Runtime.Intrinsics
         /// <param name="value">The vector.</param>
         /// <returns><paramref name="value" /></returns>
         /// <exception cref="NotSupportedException">The type of the vector (<typeparamref name="T" />) is not supported.</exception>
+        [Intrinsic]
         public static Vector128<T> operator +(Vector128<T> value)
         {
             ThrowHelper.ThrowForUnsupportedIntrinsicsVector128BaseType<T>();

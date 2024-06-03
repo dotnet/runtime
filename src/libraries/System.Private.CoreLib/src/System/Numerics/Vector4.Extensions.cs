@@ -12,11 +12,13 @@ namespace System.Numerics
         /// <summary>Reinterprets a <see cref="Vector4" /> as a new <see cref="Plane" />.</summary>
         /// <param name="value">The vector to reinterpret.</param>
         /// <returns><paramref name="value" /> reinterpreted as a new <see cref="Plane" />.</returns>
+        [Intrinsic]
         internal static Plane AsPlane(this Vector4 value) => Unsafe.BitCast<Vector4, Plane>(value);
 
         /// <summary>Reinterprets a <see cref="Vector4" /> as a new <see cref="Quaternion" />.</summary>
         /// <param name="value">The vector to reinterpret.</param>
         /// <returns><paramref name="value" /> reinterpreted as a new <see cref="Quaternion" />.</returns>
+        [Intrinsic]
         internal static Quaternion AsQuaternion(this Vector4 value) => Unsafe.BitCast<Vector4, Quaternion>(value);
 
         /// <summary>Gets the element at the specified index.</summary>
@@ -24,6 +26,7 @@ namespace System.Numerics
         /// <param name="index">The index of the element to get.</param>
         /// <returns>The value of the element at <paramref name="index" />.</returns>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="index" /> was less than zero or greater than the number of elements.</exception>
+        [Intrinsic]
         internal static float GetElement(this Vector4 vector, int index) => vector.AsVector128().GetElement(index);
 
         /// <summary>Creates a new <see cref="Vector4" /> with the element at the specified index set to the specified value and the remaining elements set to the same value as that in the given vector.</summary>
@@ -32,6 +35,7 @@ namespace System.Numerics
         /// <param name="value">The value to set the element to.</param>
         /// <returns>A <see cref="Vector4" /> with the value of the element at <paramref name="index" /> set to <paramref name="value" /> and the remaining elements set to the same value as that in <paramref name="vector" />.</returns>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="index" /> was less than zero or greater than the number of elements.</exception>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static Vector4 WithElement(this Vector4 vector, int index, float value) => vector.AsVector128().WithElement(index, value).AsVector4();
 
