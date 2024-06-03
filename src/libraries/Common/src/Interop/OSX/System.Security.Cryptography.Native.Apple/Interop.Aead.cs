@@ -198,7 +198,7 @@ internal static partial class Interop
         [LibraryImport(Libraries.AppleCryptoNative)]
         [UnmanagedCallConv(CallConvs = [ typeof(CallConvSwift) ])]
         private static unsafe partial void AppleCryptoNative_AesGcmEncrypt(
-            out SwiftError error.
+            out SwiftError error,
             UnsafeBufferPointer<byte> key,
             UnsafeBufferPointer<byte> nonce,
             UnsafeBufferPointer<byte> plaintext,
