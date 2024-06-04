@@ -507,11 +507,6 @@ FCIMPL1(void, ThreadNative::Initialize, ThreadBaseObject* pThisUNSAFE)
 
     PREFIX_ASSUME(unstarted != NULL);
 
-    if (AppDomain::GetCurrentDomain()->IgnoreUnhandledExceptions())
-    {
-        unstarted->SetThreadStateNC(Thread::TSNC_IgnoreUnhandledExceptions);
-    }
-
     pThis->SetInternal(unstarted);
     pThis->SetManagedThreadId(unstarted->GetThreadId());
     unstarted->SetExposedObject(pThis);
