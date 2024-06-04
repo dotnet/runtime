@@ -12,33 +12,7 @@ namespace System.Diagnostics.Metrics
     /// <typeparam name="T">Instrument value type.</typeparam>
     public sealed class InstrumentAdvice<T> where T : struct
     {
-        /// <summary>
-        /// Constructs a new instance of <see cref="InstrumentAdvice{T}"/>.
-        /// </summary>
-        /// <remarks>
-        /// Notes:
-        /// <list type="bullet">
-        /// <item>An empty set of bucket boundaries hints that histogram instruments by default should NOT contain buckets and should only track count and sum values.</item>
-        /// <item>A set of distinct increasing values for histogram bucket boundaries hints that histogram instruments should use those for its default bucket configuration.</item>
-        /// </list>
-        /// </remarks>
-        /// <param name="histogramExplicitBucketBoundaries">Explicit bucket boundaries advised to be used with histogram instruments.</param>
-        public InstrumentAdvice(IEnumerable<T> histogramExplicitBucketBoundaries)
-        {
-            if (histogramExplicitBucketBoundaries is null)
-            {
-                throw new ArgumentNullException(nameof(histogramExplicitBucketBoundaries));
-            }
-
-            List<T> explicitBucketBoundariesCopy = new List<T>(histogramExplicitBucketBoundaries);
-
-            if (!IsSortedAndDistinct(explicitBucketBoundariesCopy))
-            {
-                throw new ArgumentException(SR.InvalidHistogramExplicitBucketBoundaries, nameof(histogramExplicitBucketBoundaries));
-            }
-
-            HistogramExplicitBucketBoundaries = new ReadOnlyCollection<T>(explicitBucketBoundariesCopy);
-        }
+        private readonly ReadOnlyCollection<T>? _HistogramBucketBoundaries;
 
         /// <summary>
         /// Gets the explicit bucket boundaries advised to be used with histogram instruments.
@@ -51,7 +25,26 @@ namespace System.Diagnostics.Metrics
         /// <item>A set of distinct increasing values for bucket boundaries hints that the histogram should use those for its default bucket configuration.</item>
         /// </list>
         /// </remarks>
-        public IReadOnlyList<T>? HistogramExplicitBucketBoundaries { get; }
+        public IReadOnlyList<T>? HistogramBucketBoundaries
+        {
+            get => _HistogramBucketBoundaries;
+            init
+            {
+                if (value is null)
+                {
+                    throw new ArgumentNullException(nameof(value));
+                }
+
+                List<T> bucketBoundariesCopy = new List<T>(value);
+
+                if (!IsSortedAndDistinct(bucketBoundariesCopy))
+                {
+                    throw new ArgumentException(SR.InvalidHistogramExplicitBucketBoundaries, nameof(value));
+                }
+
+                _HistogramBucketBoundaries = new ReadOnlyCollection<T>(bucketBoundariesCopy);
+            }
+        }
 
         private static bool IsSortedAndDistinct(List<T> values)
         {

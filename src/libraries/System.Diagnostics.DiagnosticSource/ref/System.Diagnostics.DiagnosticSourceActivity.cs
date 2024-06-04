@@ -409,8 +409,7 @@ namespace System.Diagnostics.Metrics
     }
     public sealed class InstrumentAdvice<T> where T : struct
     {
-        public InstrumentAdvice(System.Collections.Generic.IEnumerable<T> histogramExplicitBucketBoundaries) { throw null; }
-        public System.Collections.Generic.IReadOnlyList<T>? HistogramExplicitBucketBoundaries { get { throw null; } }
+        public System.Collections.Generic.IReadOnlyList<T>? HistogramBucketBoundaries { get { throw null; } init { throw null; } }
     }
     public readonly struct Measurement<T> where T : struct
     {

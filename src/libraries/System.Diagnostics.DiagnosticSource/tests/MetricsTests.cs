@@ -1473,10 +1473,10 @@ namespace System.Diagnostics.Metrics.Tests
 
                int[] explicitBucketBoundaries = new int[] { 0, 100, 1000, 10000 };
 
-               Histogram<int> histogramWithAdvice = meter.CreateHistogram<int>(name: nameof(histogramWithAdvice), advice: new InstrumentAdvice<int>(explicitBucketBoundaries));
+               Histogram<int> histogramWithAdvice = meter.CreateHistogram<int>(name: nameof(histogramWithAdvice), advice: new InstrumentAdvice<int> { HistogramBucketBoundaries = explicitBucketBoundaries });
 
-               Assert.NotNull(histogramWithAdvice.Advice?.HistogramExplicitBucketBoundaries);
-               Assert.Equal(explicitBucketBoundaries, histogramWithAdvice.Advice.HistogramExplicitBucketBoundaries);
+               Assert.NotNull(histogramWithAdvice.Advice?.HistogramBucketBoundaries);
+               Assert.Equal(explicitBucketBoundaries, histogramWithAdvice.Advice.HistogramBucketBoundaries);
            }).Dispose();
         }
 
