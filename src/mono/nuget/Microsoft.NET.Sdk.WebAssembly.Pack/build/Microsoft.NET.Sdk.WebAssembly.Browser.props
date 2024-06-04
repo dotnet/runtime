@@ -14,7 +14,7 @@ Copyright (c) .NET Foundation. All rights reserved.
     <!-- Avoid having the rid show up in output paths -->
     <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
 
-    <!-- <OutputType>exe</OutputType> -->
+    <OutputType>exe</OutputType>
 
     <IsPackable>false</IsPackable>
 
