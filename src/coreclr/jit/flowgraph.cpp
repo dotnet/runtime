@@ -6515,38 +6515,42 @@ FlowGraphPostDominatorTree* FlowGraphPostDominatorTree::Build(const FlowGraphRev
                 }
             };
 
-            // Hopefully not too costly...
+            // Look for flow graph exit points. These have the pseudo exit as successor.
+            // Hopefully the set is small and the pred search is cheap.
             //
             FlowEdge* pseudoExitEdge = comp->fgGetPredForBlock(pseudoExit, block);
 
             if (pseudoExitEdge != nullptr)
             {
-                // This is an actual or implicit flow graph exit
+                // This is an actual or implicit flow graph exit.
                 //
                 visitSucc(reverseDfsTree->PseudoExit());
             }
-            else
+
+            // Now process the regular successors.
+            //
+            // Note "infinite loop" blocks will have both an exit
+            // sucessor and regular successors.
+            //
+            for (BasicBlock* const succ : block->Succs(comp))
             {
-                for (BasicBlock* const succ : block->Succs(comp))
+                visitSucc(succ);
+
+                // All blocks in try, or just the first?
+                // (if we knew where the try exits were, maybe just those)
+                //
+                if (comp->bbIsTryBeg(succ))
                 {
-                    visitSucc(succ);
+                    assert(succ->hasTryIndex());
+                    unsigned const  tryInd  = succ->getTryIndex();
+                    EHblkDsc* const succTry = comp->ehGetDsc(tryInd);
 
-                    // All blocks in try, or just the first?
-                    // (if we knew where the try exits were, maybe just those)
-                    //
-                    if (comp->bbIsTryBeg(succ))
+                    if (succTry->HasFilter())
                     {
-                        assert(succ->hasTryIndex());
-                        unsigned const  tryInd  = succ->getTryIndex();
-                        EHblkDsc* const succTry = comp->ehGetDsc(tryInd);
-
-                        if (succTry->HasFilter())
-                        {
-                            visitSucc(succTry->ebdFilter);
-                        }
-
-                        visitSucc(succTry->ebdHndBeg);
+                        visitSucc(succTry->ebdFilter);
                     }
+
+                    visitSucc(succTry->ebdHndBeg);
                 }
             }
 
