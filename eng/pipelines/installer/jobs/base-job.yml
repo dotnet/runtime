@@ -12,7 +12,6 @@ parameters:
   container: ''
   buildSteps: []
   dependsOn: []
-  dependsOnGlobalBuild: false
   dependOnEvaluatePaths: false
   globalBuildSuffix: ''
   variables: []

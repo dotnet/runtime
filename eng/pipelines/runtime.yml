@@ -806,9 +806,12 @@ jobs:
           eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
           eq(variables['isFullMatrix'], true))
 
+#
+# Build and test libraries for .NET Framework
+#
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
-    jobTemplate: /eng/pipelines/libraries/build-job.yml
+    jobTemplate: /eng/pipelines/common/global-build-job.yml
     buildConfig: Release
     platforms:
     - windows_x86
@@ -818,24 +821,33 @@ jobs:
     jobParameters:
       isFullMatrix: ${{ variables.isFullMatrix }}
       framework: net48
-      runTests: true
-      testScope: innerloop
+      buildArgs: -s tools+libs+libs.tests -framework net48 -c $(_BuildConfig) -testscope innerloop /p:ArchiveTests=true
+      nameSuffix: Libraries_NET48
+      timeoutInMinutes: 150
+      postBuildSteps:
+        - template: /eng/pipelines/libraries/helix.yml
+          parameters:
+            creator: dotnet-bot
+            testRunNamePrefixSuffix: NET48_$(_BuildConfig)
+            extraHelixArguments: /p:BuildTargetFramework=net48
       condition: >-
         or(
           eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
           eq(variables['isFullMatrix'], true))
 
+#
+# Build and test libraries AllConfigurations
+#
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
-    jobTemplate: /eng/pipelines/libraries/build-job.yml
+    jobTemplate: /eng/pipelines/common/global-build-job.yml
     buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
     platforms:
     - windows_x64
     jobParameters:
-      isFullMatrix: ${{ variables.isFullMatrix }}
-      framework: allConfigurations
-      runTests: true
-      useHelix: false
+      buildArgs: -test -s tools+libs+libs.tests -allConfigurations -c $(_BuildConfig) /p:TestAssemblies=false /p:TestPackages=true
+      nameSuffix: Libraries_AllConfigurations
+      timeoutInMinutes: 150
       condition: >-
         or(
           eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
