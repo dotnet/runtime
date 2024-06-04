@@ -12,6 +12,7 @@
 from __future__ import print_function
 
 import os
+import sys
 import xml.dom.minidom as DOM
 from utilities import open_for_update, parseInclusionList
 
@@ -468,6 +469,7 @@ def parseTemplateNodes(templateNodes):
 
 def generateClrallEvents(eventNodes, allTemplates, target_cpp, runtimeFlavor, write_xplatheader, providerName, inclusionList, generatedFileType):
     clrallEvents = []
+    is_linux = sys.platform.startswith('linux')
     for eventNode in eventNodes:
         eventName = eventNode.getAttribute('symbol')
 
@@ -495,7 +497,7 @@ def generateClrallEvents(eventNodes, allTemplates, target_cpp, runtimeFlavor, wr
 
                 if runtimeFlavor.coreclr or write_xplatheader or runtimeFlavor.nativeaot:
                     if os.name == 'posix':
-                        if runtimeFlavor.coreclr:
+                        if is_linux and runtimeFlavor.coreclr:
                             clrallEvents.append(" || UserEventsEventEnabled" + eventName + "()")
                         # native AOT does not support non-windows eventing other than via event pipe
                         if not runtimeFlavor.nativeaot:
@@ -591,7 +593,7 @@ def generateClrallEvents(eventNodes, allTemplates, target_cpp, runtimeFlavor, wr
 
             fnbody.append("ActivityId,RelatedActivityId);\n")
 
-            if runtimeFlavor.coreclr and os.name == 'posix':
+            if is_linux and runtimeFlavor.coreclr:
                 fnbody.append("status &= UserEventsWriteEvent" + eventName + "(" + ''.join(line))
                 if len(line) > 0:
                     fnbody.append(",")
@@ -872,6 +874,7 @@ def getKeywordsMaskCombined(keywords, keywordsToMask):
 
 def updateclreventsfile(write_xplatheader, target_cpp, runtimeFlavor, eventpipe_trace_context_typedef, dotnet_trace_context_typedef_windows, tree, clrallevents, inclusion_list, generatedFileType):
     is_windows = os.name == 'nt'
+    is_linux = sys.platform.startswith('linux')
     with open_for_update(clrallevents) as Clrallevents:
         Clrallevents.write(stdprolog)
         if generatedFileType=="header-impl":
@@ -880,10 +883,8 @@ def updateclreventsfile(write_xplatheader, target_cpp, runtimeFlavor, eventpipe_
             if runtimeFlavor.coreclr or write_xplatheader:
                 Clrallevents.write('#include "clrxplatevents.h"\n')
             Clrallevents.write('#include "clreventpipewriteevents.h"\n')
-            if runtimeFlavor.coreclr:
-                Clrallevents.write('#ifdef TARGET_LINUX\n')
+            if is_linux and runtimeFlavor.coreclr:
                 Clrallevents.write('#include "clrusereventswriteevents.h"\n')
-                Clrallevents.write('#endif // TARGET_LINUX\n')
         elif generatedFileType == "header":
             Clrallevents.write('#ifndef CLR_ETW_ALL_MAIN_H\n')
             Clrallevents.write('#define CLR_ETW_ALL_MAIN_H\n\n')
@@ -892,10 +893,8 @@ def updateclreventsfile(write_xplatheader, target_cpp, runtimeFlavor, eventpipe_
             Clrallevents.write('#include <PalRedhawk.h>\n')
             Clrallevents.write('#include "clretwallmain.h"\n')
             Clrallevents.write('#include "clreventpipewriteevents.h"\n')
-            if runtimeFlavor.coreclr:
-                Clrallevents.write('#ifdef TARGET_LINUX\n')
+            if is_linux and runtimeFlavor.coreclr:
                 Clrallevents.write('#include "clrusereventswriteevents.h"\n')
-                Clrallevents.write('#endif // TARGET_LINUX\n')
             Clrallevents.write('#ifdef FEATURE_ETW\n')
             Clrallevents.write('#include "ClrEtwAll.h"\n')
             Clrallevents.write('#endif\n')
@@ -1003,6 +1002,7 @@ typedef struct _DOTNET_TRACE_CONTEXT
 """
 
     is_windows = os.name == 'nt'
+    is_linux = sys.platform.startswith('linux')
 
     # Write the main source(s) for FireETW* functions
     # nativeaot requires header and source file to be separated as well as a noop implementation
@@ -1084,7 +1084,7 @@ typedef struct _EVENT_DESCRIPTOR
             #eventpipe: create clreventpipewriteevents.h
             Clreventpipewriteevents.write(generateClrEventPipeWriteEvents(eventNodes, allTemplates, extern, target_cpp, runtimeFlavor, providerName, inclusion_list) + "\n")
 
-    if runtimeFlavor.coreclr and os.name == 'posix':
+    if is_linux and runtimeFlavor.coreclr:
         clrusereventswriteeventsPath = os.path.join(incDir, "clrusereventswriteevents.h")
         with open_for_update(clrusereventswriteeventsPath) as clrusereventswriteevents:
             clrusereventswriteevents.write(stdprolog + "\n")
