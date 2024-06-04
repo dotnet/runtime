@@ -293,24 +293,6 @@ public:
         }
     };
 
-    struct FieldHandle
-    {
-        Object ** m_ppObject;
-        FieldDesc * m_pField;
-
-        operator FieldDesc * ()
-        {
-            LIMITED_METHOD_CONTRACT;
-            return m_pField;
-        }
-
-        FieldDesc * operator -> ()
-        {
-            LIMITED_METHOD_CONTRACT;
-            return m_pField;
-        }
-    };
-
     struct LoaderAllocatorHandle
     {
         LoaderAllocator * m_pLoaderAllocator;

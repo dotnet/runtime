@@ -1085,7 +1085,7 @@ namespace System
     }
 
     [NonVersionable]
-    public unsafe partial struct RuntimeFieldHandle : IEquatable<RuntimeFieldHandle>, ISerializable
+    public unsafe struct RuntimeFieldHandle : IEquatable<RuntimeFieldHandle>, ISerializable
     {
         // Returns handle for interop with EE. The handle is guaranteed to be non-null.
         internal RuntimeFieldHandle GetNativeHandle()
@@ -1187,10 +1187,7 @@ namespace System
         internal static extern int GetInstanceFieldOffset(RtFieldInfo field);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern IntPtr GetStaticFieldAddress(IRuntimeFieldInfo field);
-
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeFieldHandle_GetFieldSize")]
-        internal static partial uint GetFieldSize(QCallFieldHandle field);
+        internal static extern IntPtr GetStaticFieldAddress(RtFieldInfo field);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern int GetToken(RtFieldInfo field);
