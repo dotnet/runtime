@@ -4160,7 +4160,7 @@ void FlowGraphReverseDfsTree::Dump() const
 //
 bool FlowGraphReverseDfsTree::Contains(BasicBlock* block) const
 {
-    return (block->bbReversePostorderNum < m_postOrderCount) && (m_postOrder[block->bbPostorderNum] == block);
+    return (block->bbReversePostorderNum < m_postOrderCount) && (m_postOrder[block->bbReversePostorderNum] == block);
 }
 
 //------------------------------------------------------------------------
@@ -4202,11 +4202,14 @@ FlowGraphReverseDfsTree* Compiler::fgComputeReverseDfs()
 
     BasicBlock* pseudoExit = new (this, CMK_BasicBlock) BasicBlock();
     memset((void*)pseudoExit, 0, sizeof(BasicBlock));
+    pseudoExit->SetKind(BBJ_THROW);
     INDEBUG(pseudoExit->bbID = 0);
 
     auto visitPreorder = [](BasicBlock* block, unsigned preorderNum) {
         block->bbReversePreorderNum  = preorderNum;
         block->bbReversePostorderNum = UINT_MAX;
+        // this is union'd so needs pre-clearing
+        block->bbIPDom = nullptr;
     };
 
     auto visitPostorder = [=](BasicBlock* block, unsigned postorderNum) {
@@ -6424,7 +6427,7 @@ bool FlowGraphPostDominatorTree::PostDominates(BasicBlock* postDominator, BasicB
 
 #ifdef DEBUG
 //------------------------------------------------------------------------
-// FlowGraphPostominatorTree::Dump: Dump a textual representation of the postdominator
+// FlowGraphPostDominatorTree::Dump: Dump a textual representation of the postdominator
 // tree.
 //
 void FlowGraphPostDominatorTree::Dump()
@@ -6463,8 +6466,7 @@ void FlowGraphPostDominatorTree::Dump()
 //
 // Remarks:
 //   As a precondition it is required that the reverse flow graph has a unique root.
-//   This might require creating a scratch root block in case the first block
-//   has backedges or is in a try region.
+//   This is handled by the reverse DFS tree via its pseudo block.
 //
 FlowGraphPostDominatorTree* FlowGraphPostDominatorTree::Build(const FlowGraphReverseDfsTree* reverseDfsTree)
 {
@@ -6497,7 +6499,7 @@ FlowGraphPostDominatorTree* FlowGraphPostDominatorTree::Build(const FlowGraphRev
                     return;
                 }
 
-                if ((numIters <= 0) && (succ->bbPostorderNum <= poNum))
+                if ((numIters <= 0) && (succ->bbReversePostorderNum <= poNum))
                 {
                     return;
                 }
@@ -6512,34 +6514,46 @@ FlowGraphPostDominatorTree* FlowGraphPostDominatorTree::Build(const FlowGraphRev
                 }
             };
 
-            for (BasicBlock* const succ : block->Succs(comp))
+            if (block->KindIs(BBJ_RETURN, BBJ_THROW))
             {
-                visitSucc(succ);
-
-                // All blocks in try, or just the first?
-                // (if we knew where the exits were, maybe just those)
+                // The infinite loop edges...?
+                // We will need to track or flag those blocks
                 //
-                if (comp->bbIsTryBeg(succ))
+                visitSucc(reverseDfsTree->PseudoExit());
+            }
+            else
+            {
+                for (BasicBlock* const succ : block->Succs(comp))
                 {
-                    assert(succ->hasTryIndex());
-                    unsigned const  tryInd  = succ->getTryIndex();
-                    EHblkDsc* const succTry = comp->ehGetDsc(tryInd);
+                    visitSucc(succ);
 
-                    if (succTry->HasFilter())
+                    // All blocks in try, or just the first?
+                    // (if we knew where the exits were, maybe just those)
+                    //
+                    if (comp->bbIsTryBeg(succ))
                     {
-                        visitSucc(succTry->ebdFilter);
-                    }
+                        assert(succ->hasTryIndex());
+                        unsigned const  tryInd  = succ->getTryIndex();
+                        EHblkDsc* const succTry = comp->ehGetDsc(tryInd);
 
-                    visitSucc(succTry->ebdHndBeg);
+                        if (succTry->HasFilter())
+                        {
+                            visitSucc(succTry->ebdFilter);
+                        }
+
+                        visitSucc(succTry->ebdHndBeg);
+                    }
                 }
             }
 
             assert(bbIPDom != nullptr);
+
             // Did we change the bbIPDom value?  If so, we go around the outer loop again.
             if (block->bbIPDom != bbIPDom)
             {
                 changed        = true;
                 block->bbIPDom = bbIPDom;
+                JITDUMP("Setting ipdom of " FMT_BB " to " FMT_BB "\n", block->bbNum, bbIPDom->bbNum);
             }
         }
 
@@ -6555,7 +6569,7 @@ FlowGraphPostDominatorTree* FlowGraphPostDominatorTree::Build(const FlowGraphRev
     for (unsigned i = 0; i < count - 1; i++)
     {
         BasicBlock* block  = postOrder[i];
-        BasicBlock* parent = block->bbIDom;
+        BasicBlock* parent = block->bbIPDom;
         assert(parent != nullptr);
         assert(reverseDfsTree->Contains(block) && reverseDfsTree->Contains(parent));
 

@@ -334,10 +334,10 @@ PhaseStatus Compiler::fgComputePostDominators()
     assert(m_dfsTree != nullptr);
 
     m_reverseDfsTree = fgComputeReverseDfs();
-    if (m_postDomTree == nullptr)
-    {
-        m_postDomTree = FlowGraphPostDominatorTree::Build(m_reverseDfsTree);
-    }
+    INDEBUG(m_reverseDfsTree->Dump());
+
+    m_postDomTree = FlowGraphPostDominatorTree::Build(m_reverseDfsTree);
+    INDEBUG(m_postDomTree->Dump());
 
     // TODO: Postdominated by exception is interesting... the
     // postdominance frontier would show us a possible transition
