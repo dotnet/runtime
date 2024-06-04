@@ -404,7 +404,7 @@ namespace System.Threading
         private readonly int[] _assignedWorkItemQueueThreadCounts =
             s_assignableWorkItemQueueCount > 0 ? new int[s_assignableWorkItemQueueCount] : Array.Empty<int>();
 
-        private static object? _nextWorkItemToProcess;
+        private object? _nextWorkItemToProcess;
 
         // The scheme works as follows:
         // - From NotScheduled, the only transition is to Scheduled when new items are enqueued and a thread is requested to process them.
@@ -648,6 +648,8 @@ namespace System.Threading
 
         public object? Dequeue(ThreadPoolWorkQueueThreadLocals tl, ref bool missedSteal)
         {
+            ThreadPoolWorkQueue workQueue = ThreadPool.s_workQueue;
+
             // Check for local work items
             object? workItem = tl.workStealingQueue.LocalPop();
             if (workItem != null)
@@ -655,9 +657,9 @@ namespace System.Threading
                 return workItem;
             }
 
-            if (_nextWorkItemToProcess != null)
+            if (workQueue._nextWorkItemToProcess != null)
             {
-                workItem = Interlocked.Exchange(ref _nextWorkItemToProcess, null);
+                workItem = Interlocked.Exchange(ref workQueue._nextWorkItemToProcess, null);
                 if (workItem != null)
                 {
                     return workItem;
@@ -835,9 +837,9 @@ namespace System.Threading
             Interlocked.MemoryBarrier();
 
             object? workItem = null;
-            if (_nextWorkItemToProcess != null)
+            if (workQueue._nextWorkItemToProcess != null)
             {
-                workItem = Interlocked.Exchange(ref _nextWorkItemToProcess, null);
+                workItem = Interlocked.Exchange(ref workQueue._nextWorkItemToProcess, null);
             }
 
             if (workItem == null)
@@ -906,8 +908,8 @@ namespace System.Threading
                 object? secondWorkItem = DequeueWithPriorityAlternation(workQueue, tl, out bool missedSteal);
                 if (secondWorkItem != null)
                 {
-                    Debug.Assert(_nextWorkItemToProcess == null);
-                    _nextWorkItemToProcess = secondWorkItem;
+                    Debug.Assert(workQueue._nextWorkItemToProcess == null);
+                    workQueue._nextWorkItemToProcess = secondWorkItem;
                 }
 
                 if (secondWorkItem != null || missedSteal)
