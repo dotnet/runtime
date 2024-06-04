@@ -1218,7 +1218,6 @@ uint64_t GCToOSInterface::GetPhysicalMemoryLimit(bool* is_restricted, bool refre
     if (is_restricted)
         *is_restricted = false;
 
-    // The limit was not cached
     if (g_RestrictedPhysicalMemoryLimit == 0 || refresh)
     {
         restricted_limit = GetRestrictedPhysicalMemoryLimit();
