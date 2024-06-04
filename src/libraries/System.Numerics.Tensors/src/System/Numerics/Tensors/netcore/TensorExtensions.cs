@@ -41,26 +41,6 @@ namespace System.Numerics.Tensors
             return output;
         }
 
-        /// <summary>
-        /// Creates a new <see cref="TensorSpan{T}"/>, allocates new managed memory, and copies the data from <paramref name="input"/>. If the final shape is smaller all data after
-        /// </summary>
-        /// <param name="input">Input <see cref="TensorSpan{T}"/>.</param>
-        /// <param name="shape"><see cref="ReadOnlySpan{T}"/> of the desired new shape.</param>
-        public static TensorSpan<T> Resize<T>(TensorSpan<T> input, ReadOnlySpan<nint> shape)
-            where T : IEquatable<T>, IEqualityOperators<T, T, bool>
-        {
-            nint newSize = TensorSpanHelpers.CalculateTotalLength(shape);
-            T[] values = new T[newSize];
-            TensorSpan<T> output = new TensorSpan<T>(values, 0, shape, default);
-            ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref input._reference, (int)input.FlattenedLength);
-            Span<T> ospan = MemoryMarshal.CreateSpan(ref output._reference, (int)output.FlattenedLength);
-            if (newSize > input.FlattenedLength)
-                TensorSpanHelpers.Memmove(ospan, span, input.FlattenedLength);
-            else
-                TensorSpanHelpers.Memmove(ospan, span, newSize);
-
-            return output;
-        }
         #endregion
 
         #region Broadcast
@@ -1229,7 +1209,7 @@ namespace System.Numerics.Tensors
         /// </summary>
         /// <param name="input">The <see cref="Tensor{T}"/> to take the sin of.</param>
         public static Tensor<T> Abs<T>(Tensor<T> input)
-            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, ITrigonometricFunctions<T>
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, INumberBase<T>
         {
             return TensorPrimitivesHelperSpanInSpanOut(input, TensorPrimitives.Abs);
         }
@@ -1239,7 +1219,7 @@ namespace System.Numerics.Tensors
         /// </summary>
         /// <param name="input">The <see cref="Tensor{T}"/> to take the sin of.</param>
         public static Tensor<T> AbsInPlace<T>(Tensor<T> input)
-            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, ITrigonometricFunctions<T>
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, INumberBase<T>
         {
             return TensorPrimitivesHelperSpanInSpanOut(input, TensorPrimitives.Abs, true);
         }
@@ -2520,7 +2500,7 @@ namespace System.Numerics.Tensors
 
         /// <summary>Computes the element-wise negation of each number in the specified tensor.</summary>
         /// <param name="input">The <see cref="Tensor{T}"/></param>
-        public static Tensor<T> NegatePlace<T>(Tensor<T> input)
+        public static Tensor<T> NegateInPlace<T>(Tensor<T> input)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IUnaryNegationOperators<T, T>
         {
             return TensorPrimitivesHelperSpanInSpanOut(input, TensorPrimitives.Negate, true);
@@ -2550,7 +2530,7 @@ namespace System.Numerics.Tensors
 
         /// <summary>Computes the element-wise one's complement of numbers in the specified tensor.</summary>
         /// <param name="input">The <see cref="Tensor{T}"/></param>
-        public static Tensor<T> OnesComplementPlace<T>(Tensor<T> input)
+        public static Tensor<T> OnesComplementInPlace<T>(Tensor<T> input)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IBitwiseOperators<T, T, T>
         {
             return TensorPrimitivesHelperSpanInSpanOut(input, TensorPrimitives.OnesComplement, true);
@@ -2568,7 +2548,7 @@ namespace System.Numerics.Tensors
 
         /// <summary>Computes the element-wise population count of numbers in the specified tensor.</summary>
         /// <param name="input">The <see cref="Tensor{T}"/></param>
-        public static Tensor<T> PopCountPlace<T>(Tensor<T> input)
+        public static Tensor<T> PopCountInPlace<T>(Tensor<T> input)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IBinaryInteger<T>
         {
             return TensorPrimitivesHelperSpanInSpanOut(input, TensorPrimitives.PopCount, true);
@@ -3058,7 +3038,7 @@ namespace System.Numerics.Tensors
         private static Tensor<T> TensorPrimitivesHelperTwoSpanInSpanOut<T>(Tensor<T> left, Tensor<T> right, PerformCalculationTwoSpanInSpanOut<T> performCalculation, bool inPlace = false)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>
         {
-            if (inPlace && left.Lengths != right.Lengths)
+            if (inPlace && !left.Lengths.SequenceEqual(right.Lengths))
                 ThrowHelper.ThrowArgument_InPlaceInvalidShape();
 
             Tensor<T> output;

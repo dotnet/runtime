@@ -52,20 +52,5 @@ namespace System.Numerics.Tensors
                 numElements -= toFill;
             }
         }
-
-        public static bool SequenceEqual<T>(ref T first, ref T second, nuint length) where T : IEquatable<T>?
-        {
-            bool equal = true;
-            while (length > 0)
-            {
-                nuint toCompare = Math.Min(length, int.MaxValue);
-                equal &= MemoryMarshal.CreateSpan(ref first, (int)toCompare).SequenceEqual(MemoryMarshal.CreateSpan(ref second, (int)toCompare));
-                first = ref Unsafe.Add(ref first, toCompare);
-                second = ref Unsafe.Add(ref second, toCompare);
-                length -= toCompare;
-            }
-
-            return equal;
-        }
     }
 }
