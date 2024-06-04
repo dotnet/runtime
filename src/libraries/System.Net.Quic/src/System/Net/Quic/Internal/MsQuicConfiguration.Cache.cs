@@ -133,7 +133,7 @@ internal static partial class MsQuicConfiguration
     {
         CacheKey key = new CacheKey(settings, flags, certificate, intermediates, alpnProtocols, allowedCipherSuites);
 
-        return s_configurationCache.GetOrCreate(key, (args) =>
+        return s_configurationCache.GetOrCreate(key, static (args) =>
         {
             (settings, flags, certificate, intermediates, alpnProtocols, allowedCipherSuites) = args;
             return CreateInternal(settings, flags, certificate, intermediates, alpnProtocols, allowedCipherSuites);

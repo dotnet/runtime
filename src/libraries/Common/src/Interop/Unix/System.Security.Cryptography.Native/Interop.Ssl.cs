@@ -445,7 +445,9 @@ namespace Microsoft.Win32.SafeHandles
                 Disconnect();
             }
 
-            SslContextHandle?.DangerousRelease();
+            // drop reference to any SSL_CTX handle, any handle present here is being
+            // rented from (client) SSL_CTX cache.
+            SslContextHandle?.Dispose();
 
             if (AlpnHandle.IsAllocated)
             {

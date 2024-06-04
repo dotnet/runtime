@@ -11,7 +11,15 @@ namespace System.Net
 {
     internal interface ISafeHandleCachable
     {
+        // Attempts to resever the handle for use. If the handle is already
+        // disposed (or scheduled to be disposed), this will return false.
+        //
+        // each successful call to TryAddRentCount() must be paired with a Dispose() call.
         bool TryAddRentCount();
+
+        // Marks the handle as scheduled for disposal if it is not being used.
+        // Returns false if the handle is currently being used.
+        // once marked, no new renters are allowed.
         bool TryMarkForDispose();
     }
 

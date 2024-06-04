@@ -24,7 +24,10 @@ internal static partial class Interop
         private const string TlsCacheSizeCtxName = "System.Net.Security.TlsCacheSize";
         private const string TlsCacheSizeEnvironmentVariable = "DOTNET_SYSTEM_NET_SECURITY_TLSCACHESIZE";
         private const SslProtocols FakeAlpnSslProtocol = (SslProtocols)1;   // used to distinguish server sessions with ALPN
-        private static readonly ConcurrentDictionary<SslContextCacheKey, SafeSslContextHandle> s_clientSslContexts = new ConcurrentDictionary<SslContextCacheKey, SafeSslContextHandle>();
+
+        private sealed class SafeSslContextCache : SafeHandleCache<SslContextCacheKey, SafeSslContextHandle> { }
+
+        private static readonly SafeSslContextCache s_clientSslContexts = new();
 
         internal readonly struct SslContextCacheKey : IEquatable<SslContextCacheKey>
         {
@@ -143,6 +146,54 @@ internal static partial class Interop
             }
 
             return protocols;
+        }
+
+        internal static SafeSslContextHandle GetOrCreateSslContextHandle(SslAuthenticationOptions sslAuthenticationOptions, bool allowCached)
+        {
+            SslProtocols protocols = CalculateEffectiveProtocols(sslAuthenticationOptions);
+
+            if (!allowCached)
+            {
+                return AllocateSslContext(sslAuthenticationOptions, protocols, allowCached);
+            }
+
+            if (!sslAuthenticationOptions.IsServer)
+            {
+                var key = new SslContextCacheKey(protocols, sslAuthenticationOptions.CertificateContext?.TargetCertificate.GetCertHash(HashAlgorithmName.SHA256));
+
+                return s_clientSslContexts.GetOrCreate(key, static (args) =>
+                {
+                    var (sslAuthOptions, protocols, allowCached) = args;
+                    return AllocateSslContext(sslAuthOptions, protocols, allowCached);
+                }, (sslAuthenticationOptions, protocols, allowCached));
+            }
+
+            // cache in SslStreamCertificateContext is bounded and there is no eviction
+            // so the handle should always be valid,
+
+            bool hasAlpn = sslAuthenticationOptions.ApplicationProtocols != null && sslAuthenticationOptions.ApplicationProtocols.Count != 0;
+
+            SafeSslContextHandle? handle = AllocateSslContext(sslAuthenticationOptions, protocols, allowCached);
+
+            if (!sslAuthenticationOptions.CertificateContext!.SslContexts!.TryGetValue(protocols | (hasAlpn ? FakeAlpnSslProtocol : SslProtocols.None), out handle))
+            {
+                // not found in cache, create and insert
+                handle = AllocateSslContext(sslAuthenticationOptions, protocols, allowCached);
+
+                SafeSslContextHandle cached = sslAuthenticationOptions.CertificateContext!.SslContexts!.GetOrAdd(protocols | (hasAlpn ? FakeAlpnSslProtocol : SslProtocols.None), handle);
+
+                if (handle != cached)
+                {
+                    // lost the race, another thread created the SSL_CTX meanwhile, prefer the cached one
+                    handle.Dispose();
+                    Debug.Assert(handle.IsClosed);
+                    handle = cached;
+                }
+            }
+
+            Debug.Assert(!handle.IsClosed);
+            handle.TryAddRentCount();
+            return handle;
         }
 
         // This essentially wraps SSL_CTX* aka SSL_CTX_new + setting
@@ -289,10 +340,6 @@ internal static partial class Interop
         internal static SafeSslHandle AllocateSslHandle(SslAuthenticationOptions sslAuthenticationOptions)
         {
             SafeSslHandle? sslHandle = null;
-            SafeSslContextHandle? sslCtxHandle = null;
-            SafeSslContextHandle? toDisposeHandle = null;
-            SslProtocols protocols = CalculateEffectiveProtocols(sslAuthenticationOptions);
-            bool hasAlpn = sslAuthenticationOptions.ApplicationProtocols != null && sslAuthenticationOptions.ApplicationProtocols.Count != 0;
             bool cacheSslContext = sslAuthenticationOptions.AllowTlsResume && !SslStream.DisableTlsResume && sslAuthenticationOptions.EncryptionPolicy == EncryptionPolicy.RequireEncryption && sslAuthenticationOptions.CipherSuitesPolicy == null;
 
             if (cacheSslContext)
@@ -323,54 +370,14 @@ internal static partial class Interop
                 }
             }
 
-            if (cacheSslContext)
-            {
-                if (sslAuthenticationOptions.IsServer)
-                {
-                    sslAuthenticationOptions.CertificateContext!.SslContexts!.TryGetValue(protocols | (hasAlpn ? FakeAlpnSslProtocol : SslProtocols.None), out sslCtxHandle);
-                }
-                else
-                {
-                    var key = new SslContextCacheKey(protocols, sslAuthenticationOptions.CertificateContext?.TargetCertificate.GetCertHash(HashAlgorithmName.SHA256));
-                    s_clientSslContexts.TryGetValue(key, out sslCtxHandle);
-                }
-            }
-
-            if (sslCtxHandle == null)
-            {
-                // We did not get SslContext from cache, allocate a one. If we
-                // won't end up caching the context, we will dispose the new
-                // SafeSslContextHandle at end of this method since we won't
-                // reuse it. SSL object created later keeps a reference to it
-                // and will free it when we close the SafeSslHandle.
-
-                sslCtxHandle = toDisposeHandle = AllocateSslContext(sslAuthenticationOptions, protocols, cacheSslContext);
-
-                if (cacheSslContext)
-                {
-                    bool added;
-
-                    if (sslAuthenticationOptions.IsServer)
-                    {
-                        added = sslAuthenticationOptions.CertificateContext!.SslContexts!.TryAdd(protocols | (SslProtocols)(hasAlpn ? 1 : 0), sslCtxHandle);
-                    }
-                    else
-                    {
-                        var key = new SslContextCacheKey(protocols, sslAuthenticationOptions.CertificateContext?.TargetCertificate.GetCertHash());
-
-                        // Check for concurrent inserts, if not added, use the existing one,
-                        // the new one will be disposed.
-                        sslCtxHandle = s_clientSslContexts.GetOrAdd(key, sslCtxHandle);
-                        added = sslCtxHandle == toDisposeHandle;
-                    }
-
-                    if (added)
-                    {
-                        // handle will be cached, don't dispose it
-                        toDisposeHandle = null;
-                    }
-                }
-            }
+            // We do not touch the SSL_CTX after we create and configure SSL
+            // objects, and SSL object created later in this function will keep an
+            // outstanding up-ref on SSL_CTX.
+            //
+            // For uncached SafeSslContextHandles, the handle will be disposed and closed.
+            // Cached SafeSslContextHandles are returned with increaset rent count so that
+            // Dispose() here will not close the handle.
+            using SafeSslContextHandle sslCtxHandle = GetOrCreateSslContextHandle(sslAuthenticationOptions, cacheSslContext);
 
             GCHandle alpnHandle = default;
             try
@@ -411,12 +418,17 @@ internal static partial class Interop
                             Crypto.ErrClearError();
                         }
 
-
                         if (cacheSslContext)
                         {
                             sslCtxHandle.TrySetSession(sslHandle, sslAuthenticationOptions.TargetHost);
-                            bool ignored = false;
-                            sslCtxHandle.DangerousAddRef(ref ignored);
+
+                            // Maintain additional rent count for the context so
+                            // that it is not evicted from the cache and future
+                            // SSL objects can reuse it. This call should always
+                            // succeed because already have increased rent count
+                            // when getting the context from the cache
+                            bool success = sslCtxHandle.TryAddRentCount();
+                            Debug.Assert(success);
                             sslHandle.SslContextHandle = sslCtxHandle;
                         }
                     }
@@ -484,10 +496,6 @@ internal static partial class Interop
                 }
 
                 throw;
-            }
-            finally
-            {
-                toDisposeHandle?.Dispose();
             }
 
             return sslHandle;
