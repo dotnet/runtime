@@ -8285,7 +8285,7 @@ void Compiler::GetStructTypeOffset(
 //
 void Compiler::GetTypesFromFpStructInRegistersInfo(FpStructInRegistersInfo info, var_types* type1st, var_types* type2nd)
 {
-    if ((info.flags & (FpStruct::OnlyOne | FpStruct::BothFloat | FpStruct::Float1st)) != 0)
+    if ((info.flags & (FpStruct::BothFloat | FpStruct::Float1st | FpStruct::OnlyOne)) != 0)
         *type1st = info.IsSize1st8() ? TYP_DOUBLE : TYP_FLOAT;
 
     if ((info.flags & (FpStruct::BothFloat | FpStruct::Float2nd)) != 0)

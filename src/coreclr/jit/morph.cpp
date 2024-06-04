@@ -2443,6 +2443,7 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
 #endif
                 if (fpInfo.flags != FpStruct::UseIntCallConv)
                 {
+
                     passUsingFloatRegs = comp->compFloatingPointUsed = true;
                     if ((fpInfo.flags & FpStruct::OnlyOne) == 0)
                     {
@@ -2651,7 +2652,17 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
             // if we run out of floating-point argument registers, try the int argument registers.
             if (!isRegArg)
             {
-                // Check if the last register needed is still in the int argument register range.
+#ifdef TARGET_RISCV64
+                if (structSize > MAX_PASS_MULTIREG_BYTES)
+                {
+                    // According to integer calling convention, structs larger than 16 bytes are passed by implicit ref
+                    size               = 1;
+                    byteSize           = TARGET_POINTER_SIZE;
+                    passUsingFloatRegs = false;
+                    passStructByRef    = true;
+                }
+#endif // TARGET_RISCV64
+       // Check if the last register needed is still in the int argument register range.
                 isRegArg = (intArgRegNum + (size - 1)) < maxRegArgs;
                 if (!passUsingFloatRegs && isRegArg && (size > 1))
                 {
@@ -2670,7 +2681,7 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
                     nextOtherRegNum = REG_STK;
                 }
             }
-#else // not TARGET_ARM or TARGET_ARM64 or TARGET_LOONGARCH64 or TARGET_RISCV64
+#else  // not TARGET_ARM or TARGET_ARM64 or TARGET_LOONGARCH64 or TARGET_RISCV64
 
 #if defined(UNIX_AMD64_ABI)
 
