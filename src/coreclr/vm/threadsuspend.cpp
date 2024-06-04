@@ -1968,7 +1968,7 @@ CONTEXT* AllocateOSContextHelper(BYTE** contextBuffer)
 
     // Retrieve contextSize by passing NULL for Buffer
     DWORD contextSize = 0;
-    // Ruihan TODO: MPX and APX cannot and will not co-exist, will setting the mask in this way be an issue?
+    // TODO-xarch-apx: MPX and APX cannot and will not co-exist, will setting the mask in this way be an issue?
     ULONG64 xStateCompactionMask = XSTATE_MASK_LEGACY | XSTATE_MASK_AVX | XSTATE_MASK_MPX | XSTATE_MASK_AVX512 | /*XSATE_MASK_APX*/(0x80000);
     // The initialize call should fail but return contextSize
     BOOL success = g_pfnInitializeContext2 ?

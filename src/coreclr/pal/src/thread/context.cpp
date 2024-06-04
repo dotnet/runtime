@@ -384,7 +384,7 @@ bool Xstate_IsAvx512Supported()
 bool Xstate_IsApxSupported()
 {
 #if defined(HAVE_MACH_EXCEPTIONS)
-    // Ruihan TODO: I assume OSX will never support APX
+    // TODO-xarch-apx: I assume OSX will never support APX
     return false;
 #else
     static int Xstate_ApxSupported = -1;
