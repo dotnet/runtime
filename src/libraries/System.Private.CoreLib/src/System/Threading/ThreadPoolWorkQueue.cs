@@ -1252,6 +1252,12 @@ namespace System.Threading
             while (true)
             {
                 Debug.Assert(_queueProcessingStage == (int)QueueProcessingStage.Scheduled);
+
+                // The change needs to be visible to other threads that may request a worker thread before a work item is attempted
+                // to be dequeued by the current thread. In particular, if an enqueuer queues a work item and does not request a
+                // thread because it sees a Determining or Scheduled stage, and the current thread is the last thread processing
+                // work items, the current thread must either see the work item queued by the enqueuer, or it must see a stage of
+                // Scheduled, and try to dequeue again or request another thread.
                 _queueProcessingStage = (int)QueueProcessingStage.Determining;
                 Interlocked.MemoryBarrier();
 
