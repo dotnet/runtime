@@ -227,8 +227,9 @@ namespace System.Net.Sockets
             }
             else
             {
-                // The stage before update would naturally be Determining, in that case there is no more work to do
-                // However the event enqueuer may have set it to Scheduled if more events arrived so enqueue another work item to handle them
+                // The stage here would be Scheduled if an enqueuer has enqueued work and changed the stage, or Determining
+                // otherwise. If the stage is Determining, there's no more work to do. If the stage is Scheduled, the enqueuer
+                // would not have scheduled a work item to process the work, so try to dequeue a work item again.
                 int stageBeforeUpdate =
                     Interlocked.CompareExchange(
                         ref _eventQueueProcessingStage,
@@ -259,8 +260,9 @@ namespace System.Net.Sockets
                     break;
                 }
 
-                // The stage before update would naturally be Determining, in that case there is no more work to do
-                // However the event enqueuer may have set it to Scheduled if more events were enqueued so let the work item try to dequeue again
+                // The stage here would be Scheduled if an enqueuer has enqueued work and changed the stage, or Determining
+                // otherwise. If the stage is Determining, there's no more work to do. If the stage is Scheduled, the enqueuer
+                // would not have scheduled a work item to process the work, so try to dequeue a work item again.
                 int stageBeforeUpdate =
                     Interlocked.CompareExchange(
                         ref _eventQueueProcessingStage,

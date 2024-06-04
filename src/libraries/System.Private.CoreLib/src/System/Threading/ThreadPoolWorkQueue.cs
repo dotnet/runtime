@@ -404,6 +404,8 @@ namespace System.Threading
         private readonly int[] _assignedWorkItemQueueThreadCounts =
             s_assignableWorkItemQueueCount > 0 ? new int[s_assignableWorkItemQueueCount] : Array.Empty<int>();
 
+        private object? _nextWorkItemToProcess;
+
         // The scheme works as following:
         // From NotScheduled, the only transition is to Scheduled when new items are enqueued and a thread is requested to process them
         // From Scheduled, the only transition is to Determining right before trying to dequeue an item
@@ -780,8 +782,6 @@ namespace System.Threading
         // Dispatch (if YieldFromDispatchLoop is true), or performing periodic activities
         public const uint DispatchQuantumMs = 30;
 
-        private static object? _nextWorkItemToProcess;
-
         private static object? DequeueWithPriorityAlternation(ThreadPoolWorkQueue workQueue, ThreadPoolWorkQueueThreadLocals tl, out bool missedSteal)
         {
             object? workItem = null;
@@ -865,8 +865,9 @@ namespace System.Threading
                         return true;
                     }
 
-                    // The stage before update would naturally be Determining, in that case there is no more work to do
-                    // However it may be Scheduled if more items were enqueued
+                    // The stage here would be Scheduled if an enqueuer has enqueued work and changed the stage, or Determining
+                    // otherwise. If the stage is Determining, there's no more work to do. If the stage is Scheduled, the enqueuer
+                    // would not have scheduled a work item to process the work, so try to dequeue a work item again.
                     int stageBeforeUpdate =
                         Interlocked.CompareExchange(
                             ref workQueue._separated.queueProcessingStage,
@@ -922,8 +923,9 @@ namespace System.Threading
                 }
                 else
                 {
-                    // The stage before update would naturally be Determining, in that case there is no more work to do
-                    // However the enqueuer may have set it to Scheduled if more items were enqueued so request another thread
+                    // The stage here would be Scheduled if an enqueuer has enqueued work and changed the stage, or Determining
+                    // otherwise. If the stage is Determining, there's no more work to do. If the stage is Scheduled, the enqueuer
+                    // would not have scheduled a work item to process the work, so try to dequeue a work item again.
                     int stageBeforeUpdate =
                         Interlocked.CompareExchange(
                             ref workQueue._separated.queueProcessingStage,
@@ -1206,7 +1208,7 @@ namespace System.Threading
         public void CompleteBatchEnqueue()
         {
             // Only enqueue a work item if the stage is NotScheduled
-            // Otherwise there must be a work item already queued or executing, let it handle parallelization
+            //Otherwise there must be a work item already queued or another thread already handling parallelization
             if (Interlocked.Exchange(
                 ref _queueProcessingStage,
                 (int)QueueProcessingStage.Scheduled) == (int)QueueProcessingStage.NotScheduled)
@@ -1224,8 +1226,9 @@ namespace System.Threading
             }
             else
             {
-                // The stage before update would naturally be Determining, in that case there is no more work to do
-                // However the enqueuer may have set it to Scheduled if more items arrived so enqueue another work item to handle them
+                // The stage here would be Scheduled if an enqueuer has enqueued work and changed the stage, or Determining
+                // otherwise. If the stage is Determining, there's no more work to do. If the stage is Scheduled, the enqueuer
+                // would not have scheduled a work item to process the work, so try to dequeue a work item again.
                 int stageBeforeUpdate =
                     Interlocked.CompareExchange(
                         ref _queueProcessingStage,
@@ -1255,8 +1258,9 @@ namespace System.Threading
                     break;
                 }
 
-                // The stage before update would naturally be Determining, in that case there is no more work to do
-                // However the enqueuer may have set it to Scheduled if more items were enqueued so let the TP work item try to dequeue again
+                // The stage here would be Scheduled if an enqueuer has enqueued work and changed the stage, or Determining
+                // otherwise. If the stage is Determining, there's no more work to do. If the stage is Scheduled, the enqueuer
+                // would not have scheduled a work item to process the work, so try to dequeue a work item again.
                 int stageBeforeUpdate =
                     Interlocked.CompareExchange(
                         ref _queueProcessingStage,
