@@ -14,10 +14,7 @@ if (NOT GEN_USEREVENTS_RESULT EQUAL 0)
   message(FATAL_ERROR "Failed to generate user_events provider: ${GEN_USEREVENTS_ERRORS}")
 endif()
 
-add_subdirectory(LinuxTracepoints)
-
-include_directories(LinuxTracepoints/libtracepoint/include)
-include_directories(LinuxTracepoints/libeventheader-tracepoint/include)
+include(${CLR_SRC_NATIVE_DIR}/external/LinuxTracepoints.cmake)
 
 add_definitions(-DPAL_STDCPP_COMPAT=1)
 include_directories(${COREPAL_SOURCE_DIR}/inc/rt)
@@ -49,7 +46,8 @@ add_custom_target(
 add_library_clr(usereventsprovider
   OBJECT
   ${USEREVENTS_PROVIDER_SOURCES}
+  ${LinuxTracepoints_sources}
 )
 
 set_target_properties(usereventsprovider PROPERTIES LINKER_LANGUAGE CXX)
-add_dependencies(usereventsprovider eventing_headers eventheader-tracepoint tracepoint)
+add_dependencies(usereventsprovider eventing_headers)

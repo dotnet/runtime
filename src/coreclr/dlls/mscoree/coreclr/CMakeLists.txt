@@ -178,8 +178,6 @@ if(FEATURE_PERFTRACING)
     if(CLR_CMAKE_TARGET_LINUX)
         list(APPEND CORECLR_LIBRARIES
             usereventsprovider
-            tracepoint
-            eventheader-tracepoint
         )
     endif(CLR_CMAKE_TARGET_LINUX)
 endif(FEATURE_PERFTRACING)
