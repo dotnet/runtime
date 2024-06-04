@@ -1925,7 +1925,26 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 }
                 break;
             }
-
+            case NI_Sve_Compute16BitAddresses:
+            {
+                GetEmitter()->emitInsSve_R_R_R_I(ins, EA_SCALABLE, targetReg, op1Reg, op2Reg, 1, opt, INS_SCALABLE_OPTS_LSL_N);
+                break;
+            }
+            case NI_Sve_Compute32BitAddresses:
+            {
+                GetEmitter()->emitInsSve_R_R_R_I(ins, EA_SCALABLE, targetReg, op1Reg, op2Reg, 2, opt, INS_SCALABLE_OPTS_LSL_N);
+                break;
+            }
+            case NI_Sve_Compute64BitAddresses:
+            {
+                GetEmitter()->emitInsSve_R_R_R_I(ins, EA_SCALABLE, targetReg, op1Reg, op2Reg, 3, opt, INS_SCALABLE_OPTS_LSL_N);
+                break;
+            }
+            case NI_Sve_Compute8BitAddresses:
+            {
+                GetEmitter()->emitInsSve_R_R_R_I(ins, EA_SCALABLE, targetReg, op1Reg, op2Reg, 0, opt, INS_SCALABLE_OPTS_LSL_N);
+                break;
+            }
             default:
                 unreached();
         }
