@@ -470,6 +470,12 @@
     <Right>net9.0/System.dll</Right>
   </Suppression>
   <Suppression>
+    <DiagnosticId>CP0015</DiagnosticId>
+    <Target>T:System.Text.RegularExpressions.GeneratedRegexAttribute:[T:System.AttributeUsageAttribute]</Target>
+    <Left>net8.0/System.Text.RegularExpressions.dll</Left>
+    <Right>net9.0/System.Text.RegularExpressions.dll</Right>
+  </Suppression>
+  <Suppression>
     <DiagnosticId>CP0021</DiagnosticId>
     <Target>T:System.Diagnostics.Metrics.MeasurementCallback`1``0:struct</Target>
     <Left>net8.0/System.Diagnostics.DiagnosticSource.dll</Left>
