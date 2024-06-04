@@ -180,7 +180,7 @@ namespace System.Text.Json.Serialization
             // If surpassed flush threshold then return true which will flush stream.
             if (state.PipeWriter is { } pipeWriter)
             {
-                return state.FlushThreshold > 0 && pipeWriter.UnflushedBytes + writer.BytesPending > state.FlushThreshold;
+                return state.FlushThreshold > 0 && pipeWriter.UnflushedBytes > state.FlushThreshold - writer.BytesPending;
             }
 
             return false;
