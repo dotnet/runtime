@@ -82,6 +82,7 @@ namespace System.SpanTests
             {
                 yield return Pair(value);
                 yield return Pair('a' + value);
+                yield return Pair('\uFF00' + value);
 
                 // Test some more duplicates
                 if (value.Length > 0)
