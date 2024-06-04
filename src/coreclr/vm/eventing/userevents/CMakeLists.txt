@@ -26,6 +26,7 @@ include_directories(${COREPAL_SOURCE_DIR}/inc/rt)
 set (USEREVENTS_PROVIDER_SOURCES
      userevents/usereventshelpers.cpp
      userevents/dotnetruntime.cpp
+     userevents/dotnetruntimeprivate.cpp
      userevents/dotnetruntimerundown.cpp
      userevents/dotnetruntimestress.cpp)
 
@@ -46,11 +47,9 @@ add_custom_target(
   DEPENDS ${USEREVENTS_HEADERS})
 
 add_library_clr(usereventsprovider
-  STATIC
+  OBJECT
   ${USEREVENTS_PROVIDER_SOURCES}
 )
 
-add_dependencies(usereventsprovider generated_eventing_headers)
-
-# Install the static usereventsprovider library
-install_clr(TARGETS usereventsprovider DESTINATIONS lib COMPONENT runtime)
+set_target_properties(usereventsprovider PROPERTIES LINKER_LANGUAGE CXX)
+add_dependencies(usereventsprovider eventing_headers eventheader-tracepoint tracepoint)
