@@ -72,9 +72,9 @@ static uint32_t xmmYmmStateSupport()
 #define XSTATE_MASK_AVX512 (0xE0) /* 0b1110_0000 */
 #endif // XSTATE_MASK_AVX512
 
-#ifndef XSTATE_MASK_APX
-#define XSTATE_MASK_APX (0x80000)
-#endif // XSTATE_MASK_APX 
+// TODO-xarch-apx: the definition of XSTATE mask value for APX is now missing on the OS level, 
+//                 we are currently using bare value to hack it through the build process, and test the implementation through CI.
+//                 those changes will be removed when we have the OS support for APX.
 
 static uint32_t avx512StateSupport()
 {
@@ -164,7 +164,7 @@ static bool IsAvx512Enabled()
 static bool IsApxEnabled()
 {
     DWORD64 FeatureMask = GetEnabledXStateFeatures();
-    return ((FeatureMask & XSTATE_MASK_APX) != 0);
+    return ((FeatureMask & /*XSATE_MASK_APX*/(0x80000)) != 0);
 }
 
 static uint32_t apxStateSupport()

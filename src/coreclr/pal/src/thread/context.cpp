@@ -406,7 +406,7 @@ bool Xstate_IsApxSupported()
 
         __cpuidex(cpuidInfo, 0x0000000D, 0x00000000);
 
-        if ((cpuidInfo[CPUID_EAX] & XSTATE_MASK_APX) == XSTATE_MASK_APX)
+        if ((cpuidInfo[CPUID_EAX] & /*XSATE_MASK_APX*/(0x80000)) == /*XSATE_MASK_APX*/(0x80000))
         {
             // Knight's Landing and Knight's Mill shipped without all 5 of the "baseline"
             // AVX-512 ISAs that are required by x86-64-v4. Specifically they do not include
@@ -856,7 +856,7 @@ void CONTEXTToNativeContext(CONST CONTEXT *lpContext, native_context_t *native)
 
             if (FPREG_HasApxRegisters(native))
             {
-                _ASSERT((lpContext->XStateFeaturesMask & XSTATE_MASK_APX) == XSTATE_MASK_APX);
+                _ASSERT((lpContext->XStateFeaturesMask & /*XSATE_MASK_APX*/(0x80000)) == /*XSATE_MASK_APX*/(0x80000));
 
                 dest = FPREG_Xstate_Egpr(native, &size);
                 _ASSERT(size == (sizeof(DWORD64) * 16));
@@ -1086,7 +1086,7 @@ void CONTEXTFromNativeContext(const native_context_t *native, LPCONTEXT lpContex
                 _ASSERT(size == (sizeof(DWORD64) * 16));
                 memcpy_s(&lpContext->Egpr16, sizeof(DWORD64) * 16, src, sizeof(DWORD64) * 16);
 
-                lpContext->XStateFeaturesMask |= XSTATE_MASK_APX;
+                lpContext->XStateFeaturesMask |= /*XSATE_MASK_APX*/(0x80000);
             }
         }
         else
