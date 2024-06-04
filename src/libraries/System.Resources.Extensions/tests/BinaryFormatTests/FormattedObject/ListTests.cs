@@ -45,7 +45,7 @@ public class ListTests : SerializationTest<FormattedObjectSerializer>
 
         ArrayRecord<object> array = (ArrayRecord<object>)format[2];
 
-        array.ToArray().Take(listRecord.GetInt32("_size")).Should().BeEquivalentTo(new[] { value });
+        array.GetArray().Take(listRecord.GetInt32("_size")).Should().BeEquivalentTo(new[] { value });
     }
 
     [Fact]
@@ -61,7 +61,7 @@ public class ListTests : SerializationTest<FormattedObjectSerializer>
 
         ArrayRecord<object> array = (ArrayRecord<object>)format[2];
 
-        array.ToArray().Take(listRecord.GetInt32("_size")).ToArray().Should().BeEquivalentTo(new object[] { "JarJar" });
+        array.GetArray().Take(listRecord.GetInt32("_size")).ToArray().Should().BeEquivalentTo(new object[] { "JarJar" });
     }
 
     public static TheoryData<object> ArrayList_Primitive_Data => new()

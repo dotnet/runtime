@@ -50,7 +50,7 @@ internal sealed class BinaryArrayRecord : ArrayRecord
     private List<object> Values { get; }
 
     [RequiresDynamicCode("May call Array.CreateInstance() and Type.MakeArrayType().")]
-    private protected override Array Deserialize(Type arrayType, bool allowNulls, long maxLength)
+    private protected override Array Deserialize(Type arrayType, bool allowNulls)
     {
         // We can not deserialize non-primitive types.
         // This method returns arrays of ClassRecord for arrays of complex types.
@@ -85,7 +85,7 @@ internal sealed class BinaryArrayRecord : ArrayRecord
                 case RecordType.ArraySingleObject:
                 case RecordType.ArraySingleString:
                     ArrayRecord nestedArrayRecord = (ArrayRecord)record;
-                    Array nestedArray = nestedArrayRecord.ToArray(actualElementType, allowNulls, maxLength);
+                    Array nestedArray = nestedArrayRecord.GetArray(actualElementType, allowNulls);
                     array.SetValue(nestedArray, resultIndex++);
                     break;
                 case RecordType.ObjectNull:

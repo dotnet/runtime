@@ -110,12 +110,11 @@ abstract class ClassRecord : SerializationRecord
     /// </summary>
     /// <param name="memberName">The name of the field.</param>
     /// <param name="allowNulls"><see langword="true" /> to permit <see langword="null" /> values; otherwise, <see langword="false" />.</param>
-    /// <param name="maxLength">The maximum length of an array that can be allocated.</param>
     /// <returns>The array itself or null.</returns>
     /// <exception cref="KeyNotFoundException"><paramref name="memberName" /> does not refer to a known member. You can use <see cref="HasMember(string)"/> to check if given member exists.</exception>
     /// <exception cref="InvalidOperationException">The specified member is not an array, or is an array with an element type other than <typeparamref name="T" />.</exception>
-    public T?[]? GetArrayOfPrimitiveType<T>(string memberName, bool allowNulls = true, int maxLength = -1)
-        => GetMember<ArrayRecord<T>>(memberName)?.ToArray(allowNulls, maxLength);
+    public T?[]? GetArrayOfPrimitiveType<T>(string memberName, bool allowNulls = true)
+        => GetMember<ArrayRecord<T>>(memberName)?.GetArray(allowNulls);
 
     /// <summary>
     /// Retrieves the <see cref="SerializationRecord" /> of the provided <paramref name="memberName"/>.

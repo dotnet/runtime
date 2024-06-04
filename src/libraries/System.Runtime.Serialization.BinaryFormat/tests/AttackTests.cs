@@ -57,7 +57,7 @@ public class AttackTests : ReadTests
         input[1] = input;
 
         ArrayRecord arrayRecord = (ArrayRecord)PayloadReader.Read(Serialize(input));
-        object?[] output = ((ArrayRecord<object>)arrayRecord).ToArray();
+        object?[] output = ((ArrayRecord<object>)arrayRecord).GetArray();
 
         Assert.Equal(input[0], output[0]);
         Assert.Same(input, input[1]);
@@ -82,7 +82,7 @@ public class AttackTests : ReadTests
 
         Assert.Equal(input.Name, classRecord.GetString(nameof(WithCyclicReferenceInArrayOfObjects.Name)));
         ArrayRecord<object> arrayRecord = (ArrayRecord<object>)classRecord.GetSerializationRecord(nameof(WithCyclicReferenceInArrayOfObjects.ArrayWithReferenceToSelf))!;
-        object?[] array = arrayRecord.ToArray();
+        object?[] array = arrayRecord.GetArray();
         Assert.Same(classRecord, array.Single());
     }
 
@@ -104,7 +104,7 @@ public class AttackTests : ReadTests
 
         Assert.Equal(input.Name, classRecord.GetString(nameof(WithCyclicReferenceInArrayOfT.Name)));
         ArrayRecord<ClassRecord> classRecords = (ArrayRecord<ClassRecord>)classRecord.GetSerializationRecord(nameof(WithCyclicReferenceInArrayOfT.ArrayWithReferenceToSelf))!;
-        Assert.Same(classRecord, classRecords.ToArray().Single());
+        Assert.Same(classRecord, classRecords.GetArray().Single());
     }
 
 #if !NETFRAMEWORK

@@ -45,7 +45,8 @@ internal sealed class ArraySingleStringRecord : ArrayRecord<string?>
 
     private protected override void AddValue(object value) => Records.Add((SerializationRecord)value);
 
-    private protected override string?[] ToArrayOfT(bool allowNulls)
+    /// <inheritdoc/>
+    public override string?[] GetArray(bool allowNulls = true)
     {
         string?[] values = new string?[Length];
 

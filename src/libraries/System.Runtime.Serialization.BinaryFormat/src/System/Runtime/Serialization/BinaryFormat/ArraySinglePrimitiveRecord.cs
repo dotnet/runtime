@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
+using System.Linq;
 using System.Reflection.Metadata;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -42,7 +43,9 @@ internal sealed class ArraySinglePrimitiveRecord<T> : ArrayRecord<T>
 
     internal override bool IsElementType(Type typeElement) => typeElement == typeof(T);
 
-    private protected override T[] ToArrayOfT(bool allowNulls) => [.. Values];
+    /// <inheritdoc/>
+    public override T[] GetArray(bool allowNulls = true)
+        => Values is T[] array ? array : Values.ToArray();
 
     internal override (AllowedRecordTypes allowed, PrimitiveType primitiveType) GetAllowedRecordType()
     {

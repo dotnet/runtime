@@ -10,8 +10,6 @@ namespace System.Resources.Extensions.BinaryFormat.Deserializer;
 
 internal sealed class ArrayRecordDeserializer : ObjectRecordDeserializer
 {
-    internal const int MaxArrayLength = 2147483591;
-
     private readonly ArrayRecord _arrayRecord;
     private readonly Type _elementType;
     private readonly Array _arrayOfClassRecords;
@@ -36,7 +34,7 @@ internal sealed class ArrayRecordDeserializer : ObjectRecordDeserializer
         };
         // Tricky part: for arrays of classes/structs the following record allocates and array of class records
         // (because the payload reader can not load types, instantiate objects and rehydrate them)
-        _arrayOfClassRecords = arrayRecord.ToArray(expectedArrayType, maxLength: MaxArrayLength);
+        _arrayOfClassRecords = arrayRecord.GetArray(expectedArrayType);
         // Now we need to create an array of the same length, but of a different, exact type
         Type elementType = _arrayOfClassRecords.GetType();
         while (elementType.IsArray)
@@ -105,21 +103,21 @@ internal sealed class ArrayRecordDeserializer : ObjectRecordDeserializer
 
     internal static Array GetArraySinglePrimitive(SerializationRecord record) => record switch
     {
-        ArrayRecord<bool> primitiveArray => primitiveArray.ToArray(maxLength: MaxArrayLength),
-        ArrayRecord<byte> primitiveArray => primitiveArray.ToArray(maxLength: MaxArrayLength),
-        ArrayRecord<sbyte> primitiveArray => primitiveArray.ToArray(maxLength: MaxArrayLength),
-        ArrayRecord<char> primitiveArray => primitiveArray.ToArray(maxLength: MaxArrayLength),
-        ArrayRecord<short> primitiveArray => primitiveArray.ToArray(maxLength: MaxArrayLength),
-        ArrayRecord<ushort> primitiveArray => primitiveArray.ToArray(maxLength: MaxArrayLength),
-        ArrayRecord<int> primitiveArray => primitiveArray.ToArray(maxLength: MaxArrayLength),
-        ArrayRecord<uint> primitiveArray => primitiveArray.ToArray(maxLength: MaxArrayLength),
-        ArrayRecord<long> primitiveArray => primitiveArray.ToArray(maxLength: MaxArrayLength),
-        ArrayRecord<ulong> primitiveArray => primitiveArray.ToArray(maxLength: MaxArrayLength),
-        ArrayRecord<float> primitiveArray => primitiveArray.ToArray(maxLength: MaxArrayLength),
-        ArrayRecord<double> primitiveArray => primitiveArray.ToArray(maxLength: MaxArrayLength),
-        ArrayRecord<decimal> primitiveArray => primitiveArray.ToArray(maxLength: MaxArrayLength),
-        ArrayRecord<DateTime> primitiveArray => primitiveArray.ToArray(maxLength: MaxArrayLength),
-        ArrayRecord<TimeSpan> primitiveArray => primitiveArray.ToArray(maxLength: MaxArrayLength),
+        ArrayRecord<bool> primitiveArray => primitiveArray.GetArray(),
+        ArrayRecord<byte> primitiveArray => primitiveArray.GetArray(),
+        ArrayRecord<sbyte> primitiveArray => primitiveArray.GetArray(),
+        ArrayRecord<char> primitiveArray => primitiveArray.GetArray(),
+        ArrayRecord<short> primitiveArray => primitiveArray.GetArray(),
+        ArrayRecord<ushort> primitiveArray => primitiveArray.GetArray(),
+        ArrayRecord<int> primitiveArray => primitiveArray.GetArray(),
+        ArrayRecord<uint> primitiveArray => primitiveArray.GetArray(),
+        ArrayRecord<long> primitiveArray => primitiveArray.GetArray(),
+        ArrayRecord<ulong> primitiveArray => primitiveArray.GetArray(),
+        ArrayRecord<float> primitiveArray => primitiveArray.GetArray(),
+        ArrayRecord<double> primitiveArray => primitiveArray.GetArray(),
+        ArrayRecord<decimal> primitiveArray => primitiveArray.GetArray(),
+        ArrayRecord<DateTime> primitiveArray => primitiveArray.GetArray(),
+        ArrayRecord<TimeSpan> primitiveArray => primitiveArray.GetArray(),
         _ => throw new NotSupportedException(),
     };
 
@@ -150,7 +148,7 @@ internal sealed class ArrayRecordDeserializer : ObjectRecordDeserializer
             _ => arrayRecordElementType.MakeArrayType()
         };
 
-        return arrayRecord.ToArray(expectedArrayType, maxLength: MaxArrayLength);
+        return arrayRecord.GetArray(expectedArrayType);
 
         static bool HasBuiltInSupport(Type elementType)
             => elementType == typeof(string)

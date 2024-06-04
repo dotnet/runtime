@@ -396,7 +396,7 @@ public class TypeMatchTests : ReadTests
 
         if (PrimitiveTypes.Contains(typeof(T)))
         {
-            Assert.Equal(array, arrayRecord.ToArray(typeof(T[])));
+            Assert.Equal(array, arrayRecord.GetArray(typeof(T[])));
         }
     }
 

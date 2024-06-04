@@ -25,7 +25,7 @@ public class RectangularArraysTests : ReadTests
         VerifyLength(array, arrayRecord);
         Assert.True(arrayRecord.IsTypeNameMatching(typeof(byte[,])));
         Assert.False(arrayRecord.IsTypeNameMatching(typeof(string[,])));
-        Assert.Equal(array, arrayRecord.ToArray(typeof(byte[,])));
+        Assert.Equal(array, arrayRecord.GetArray(typeof(byte[,])));
         Assert.Equal(2, arrayRecord.Rank);
     }
 
@@ -47,7 +47,7 @@ public class RectangularArraysTests : ReadTests
         VerifyLength(array, arrayRecord);
         Assert.True(arrayRecord.IsTypeNameMatching(typeof(string[,])));
         Assert.False(arrayRecord.IsTypeNameMatching(typeof(int[,])));
-        Assert.Equal(array, arrayRecord.ToArray(typeof(string[,])));
+        Assert.Equal(array, arrayRecord.GetArray(typeof(string[,])));
     }
 
     [Fact]
@@ -67,7 +67,7 @@ public class RectangularArraysTests : ReadTests
         VerifyLength(array, arrayRecord);
         Assert.True(arrayRecord.IsTypeNameMatching(typeof(object[,])));
         Assert.False(arrayRecord.IsTypeNameMatching(typeof(int[,])));
-        Assert.Equal(array, arrayRecord.ToArray(typeof(object[,])));
+        Assert.Equal(array, arrayRecord.GetArray(typeof(object[,])));
     }
 
     [Serializable]
@@ -96,7 +96,7 @@ public class RectangularArraysTests : ReadTests
         Assert.False(arrayRecord.IsTypeNameMatching(typeof(int[,])));
 
         var inputEnumerator = array.GetEnumerator();
-        foreach(ClassRecord classRecord in arrayRecord.ToArray(typeof(ComplexType2D[,])))
+        foreach(ClassRecord classRecord in arrayRecord.GetArray(typeof(ComplexType2D[,])))
         {
             inputEnumerator.MoveNext();
             ComplexType2D current = (ComplexType2D)inputEnumerator.Current;
@@ -128,7 +128,7 @@ public class RectangularArraysTests : ReadTests
         Assert.True(arrayRecord.IsTypeNameMatching(typeof(int[,,])));
         Assert.False(arrayRecord.IsTypeNameMatching(typeof(int[,])));
         Assert.False(arrayRecord.IsTypeNameMatching(typeof(string[,,])));
-        Assert.Equal(array, arrayRecord.ToArray(typeof(int[,,])));
+        Assert.Equal(array, arrayRecord.GetArray(typeof(int[,,])));
         Assert.Equal(3, arrayRecord.Rank);
     }
 
@@ -154,7 +154,7 @@ public class RectangularArraysTests : ReadTests
         Assert.True(arrayRecord.IsTypeNameMatching(typeof(string[,,])));
         Assert.False(arrayRecord.IsTypeNameMatching(typeof(string[,])));
         Assert.False(arrayRecord.IsTypeNameMatching(typeof(int[,,])));
-        Assert.Equal(array, arrayRecord.ToArray(typeof(string[,,])));
+        Assert.Equal(array, arrayRecord.GetArray(typeof(string[,,])));
     }
 
     [Fact]
@@ -175,7 +175,7 @@ public class RectangularArraysTests : ReadTests
         Assert.True(arrayRecord.IsTypeNameMatching(typeof(object[,,])));
         Assert.False(arrayRecord.IsTypeNameMatching(typeof(object[,])));
         Assert.False(arrayRecord.IsTypeNameMatching(typeof(int[,,])));
-        Assert.Equal(array, arrayRecord.ToArray(typeof(object[,,])));
+        Assert.Equal(array, arrayRecord.GetArray(typeof(object[,,])));
     }
 
     [Serializable]
@@ -208,7 +208,7 @@ public class RectangularArraysTests : ReadTests
         Assert.False(arrayRecord.IsTypeNameMatching(typeof(int[,,])));
 
         var inputEnumerator = array.GetEnumerator();
-        foreach (ClassRecord classRecord in arrayRecord.ToArray(typeof(ComplexType3D[,,])))
+        foreach (ClassRecord classRecord in arrayRecord.GetArray(typeof(ComplexType3D[,,])))
         {
             inputEnumerator.MoveNext();
             ComplexType3D current = (ComplexType3D)inputEnumerator.Current;

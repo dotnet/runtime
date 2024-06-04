@@ -18,7 +18,7 @@ public class JaggedArraysTests : ReadTests
 
         VerifyLength(input, arrayRecord);
         Assert.Equal(BinaryArrayType.Jagged, arrayRecord.ArrayType);
-        Assert.Equal(input, arrayRecord.ToArray(input.GetType()));
+        Assert.Equal(input, arrayRecord.GetArray(input.GetType()));
     }
 
     [Fact]
@@ -35,7 +35,7 @@ public class JaggedArraysTests : ReadTests
 
         VerifyLength(input, arrayRecord);
         Assert.Equal(BinaryArrayType.Jagged, arrayRecord.ArrayType);
-        Assert.Equal(input, arrayRecord.ToArray(input.GetType()));
+        Assert.Equal(input, arrayRecord.GetArray(input.GetType()));
         Assert.Equal(1, arrayRecord.Rank);
     }
 
@@ -60,7 +60,7 @@ public class JaggedArraysTests : ReadTests
 
         VerifyLength(input, arrayRecord);
         Assert.Equal(BinaryArrayType.Jagged, arrayRecord.ArrayType);
-        Assert.Equal(input, arrayRecord.ToArray(input.GetType()));
+        Assert.Equal(input, arrayRecord.GetArray(input.GetType()));
         Assert.Equal(1, arrayRecord.Rank);
     }
 
@@ -77,7 +77,7 @@ public class JaggedArraysTests : ReadTests
 
         VerifyLength(input, arrayRecord);
         Assert.Equal(BinaryArrayType.Jagged, arrayRecord.ArrayType);
-        Assert.Equal(input, arrayRecord.ToArray(input.GetType()));
+        Assert.Equal(input, arrayRecord.GetArray(input.GetType()));
     }
 
     [Fact]
@@ -93,7 +93,7 @@ public class JaggedArraysTests : ReadTests
 
         VerifyLength(input, arrayRecord);
         Assert.Equal(BinaryArrayType.Jagged, arrayRecord.ArrayType);
-        Assert.Equal(input, arrayRecord.ToArray(input.GetType()));
+        Assert.Equal(input, arrayRecord.GetArray(input.GetType()));
     }
 
     [Serializable]
@@ -115,7 +115,7 @@ public class JaggedArraysTests : ReadTests
 
         VerifyLength(input, arrayRecord);
         Assert.Equal(BinaryArrayType.Jagged, arrayRecord.ArrayType);
-        var output = (ClassRecord?[][])arrayRecord.ToArray(input.GetType());
+        var output = (ClassRecord?[][])arrayRecord.GetArray(input.GetType());
         for (int i = 0; i < input.Length; i++)
         {
             for (int j = 0; j < input[i].Length; j++)

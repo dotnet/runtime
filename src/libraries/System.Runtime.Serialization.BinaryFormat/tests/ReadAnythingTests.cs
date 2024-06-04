@@ -33,7 +33,7 @@ namespace System.Runtime.Serialization.BinaryFormat.Tests
             Assert.True(comparerRecord.IsTypeNameMatching(input.Comparer.GetType()));
 
             ArrayRecord<ClassRecord> arrayRecord = (ArrayRecord<ClassRecord>)dictionaryRecord.GetSerializationRecord("KeyValuePairs")!;
-            ClassRecord[] keyValuePairs = arrayRecord.ToArray()!;
+            ClassRecord[] keyValuePairs = arrayRecord.GetArray()!;
             Assert.True(keyValuePairs[0].IsTypeNameMatching(typeof(KeyValuePair<string, object>)));
 
             ClassRecord exceptionPair = Find(keyValuePairs, "exception");
@@ -174,59 +174,59 @@ namespace System.Runtime.Serialization.BinaryFormat.Tests
                     break;
                 // arrays of primitive types
                 case ArrayRecord<string> record:
-                    Assert.Equal(input, record.ToArray());
+                    Assert.Equal(input, record.GetArray());
                     break;
                 case ArrayRecord<bool> record:
-                    Assert.Equal(input, record.ToArray());
+                    Assert.Equal(input, record.GetArray());
                     break;
                 case ArrayRecord<byte> record:
-                    Assert.Equal(input, record.ToArray());
+                    Assert.Equal(input, record.GetArray());
                     break;
                 case ArrayRecord<sbyte> record:
-                    Assert.Equal(input, record.ToArray());
+                    Assert.Equal(input, record.GetArray());
                     break;
                 case ArrayRecord<char> record:
-                    Assert.Equal(input, record.ToArray());
+                    Assert.Equal(input, record.GetArray());
                     break;
                 case ArrayRecord<short> record:
-                    Assert.Equal(input, record.ToArray());
+                    Assert.Equal(input, record.GetArray());
                     break;
                 case ArrayRecord<ushort> record:
-                    Assert.Equal(input, record.ToArray());
+                    Assert.Equal(input, record.GetArray());
                     break;
                 case ArrayRecord<int> record:
-                    Assert.Equal(input, record.ToArray());
+                    Assert.Equal(input, record.GetArray());
                     break;
                 case ArrayRecord<uint> record:
-                    Assert.Equal(input, record.ToArray());
+                    Assert.Equal(input, record.GetArray());
                     break;
                 case ArrayRecord<long> record:
-                    Assert.Equal(input, record.ToArray());
+                    Assert.Equal(input, record.GetArray());
                     break;
                 case ArrayRecord<ulong> record:
-                    Assert.Equal(input, record.ToArray());
+                    Assert.Equal(input, record.GetArray());
                     break;
                 case ArrayRecord<float> record:
-                    Assert.Equal(input, record.ToArray());
+                    Assert.Equal(input, record.GetArray());
                     break;
                 case ArrayRecord<double> record:
-                    Assert.Equal(input, record.ToArray());
+                    Assert.Equal(input, record.GetArray());
                     break;
                 case ArrayRecord<decimal> record:
-                    Assert.Equal(input, record.ToArray());
+                    Assert.Equal(input, record.GetArray());
                     break;
                 case ArrayRecord<DateTime> record:
-                    Assert.Equal(input, record.ToArray());
+                    Assert.Equal(input, record.GetArray());
                     break;
                 case ArrayRecord<TimeSpan> record:
-                    Assert.Equal(input, record.ToArray());
+                    Assert.Equal(input, record.GetArray());
                     break;
                 // class records
                 case ClassRecord record when record.IsTypeNameMatching(typeof(Exception)):
                     Assert.Equal(((Exception)input).Message, record.GetString("Message"));
                     break;
                 case ArrayRecord<ClassRecord> record when record.IsTypeNameMatching(typeof(Exception[])):
-                    Assert.Equal(((Exception[])input)[0].Message, record.ToArray()[0]!.GetString("Message"));
+                    Assert.Equal(((Exception[])input)[0].Message, record.GetArray()[0]!.GetString("Message"));
                     break;
                 case ClassRecord record when record.IsTypeNameMatching(typeof(JsonException)):
                     Assert.Equal(((JsonException)input).Message, record.GetString("Message"));
@@ -241,7 +241,7 @@ namespace System.Runtime.Serialization.BinaryFormat.Tests
                     Assert.Empty(record.MemberNames);
                     break;
                 case ArrayRecord arrayRecord when arrayRecord.IsTypeNameMatching(typeof(int?[])):
-                    Assert.Equal(input, arrayRecord.ToArray(typeof(int?[])));
+                    Assert.Equal(input, arrayRecord.GetArray(typeof(int?[])));
                     break;
                 case ArrayRecord arrayRecord when arrayRecord.IsTypeNameMatching(typeof(EmptyClass[])):
                     Assert.Equal(0, arrayRecord.Lengths.ToArray().Single());
@@ -263,7 +263,7 @@ namespace System.Runtime.Serialization.BinaryFormat.Tests
             static void VerifyDictionary<TKey, TValue>(ClassRecord record)
             {
                 ArrayRecord<ClassRecord> arrayRecord = (ArrayRecord<ClassRecord>)record.GetSerializationRecord("KeyValuePairs")!;
-                ClassRecord[] keyValuePairs = arrayRecord.ToArray()!;
+                ClassRecord[] keyValuePairs = arrayRecord.GetArray()!;
                 Assert.True(keyValuePairs[0].IsTypeNameMatching(typeof(KeyValuePair<TKey, TValue>)));
             }
         }

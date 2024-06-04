@@ -46,7 +46,7 @@ internal sealed class RectangularOrCustomOffsetArrayRecord : ArrayRecord
         => MemberTypeInfo.IsElementType(typeElement);
 
     [RequiresDynamicCode("May call Array.CreateInstance() and Type.MakeArrayType().")]
-    private protected override Array Deserialize(Type arrayType, bool allowNulls, long maxLength)
+    private protected override Array Deserialize(Type arrayType, bool allowNulls)
     {
         // We can not deserialize non-primitive types.
         // This method returns arrays of ClassRecord for arrays of complex types.

@@ -83,11 +83,11 @@ public class BinaryFormattedObjectTests : SerializationTest<FormattedObjectSeria
         ArrayRecord<object> keys = (ArrayRecord<object>)format[2];
         keys.ObjectId.Should().Be(2);
         keys.Length.Should().Be(1);
-        keys.ToArray().Single().Should().Be("This");
+        keys.GetArray().Single().Should().Be("This");
         ArrayRecord<object> values = (ArrayRecord<object>)format[3];
         values.ObjectId.Should().Be(3);
         values.Length.Should().Be(1);
-        values.ToArray().Single().Should().Be("That");
+        values.GetArray().Single().Should().Be("That");
     }
 
     [Fact]
@@ -107,7 +107,7 @@ public class BinaryFormattedObjectTests : SerializationTest<FormattedObjectSeria
         // Everything in the second keys is a string reference.
         ArrayRecord<object> array = (ArrayRecord<object>)systemClass.GetSerializationRecord("Keys")!;
         array.ObjectId.Should().Be(2);
-        array.ToArray().Should().BeEquivalentTo(["This", "TheOther", "That"]);
+        array.GetArray().Should().BeEquivalentTo(["This", "TheOther", "That"]);
     }
 
     [Fact]
@@ -127,11 +127,11 @@ public class BinaryFormattedObjectTests : SerializationTest<FormattedObjectSeria
         // Everything in the second keys is a string reference.
         ArrayRecord<object> keys = (ArrayRecord<object>)systemClass.GetSerializationRecord("Keys")!;
         keys.ObjectId.Should().Be(2);
-        keys.ToArray().Should().BeEquivalentTo(new object[] { "Yowza", "Youza", "Meeza" });
+        keys.GetArray().Should().BeEquivalentTo(new object[] { "Yowza", "Youza", "Meeza" });
 
         ArrayRecord<object?> values = (ArrayRecord<object?>)systemClass.GetSerializationRecord("Values")!;
         values.ObjectId.Should().Be(3);
-        values.ToArray().Should().BeEquivalentTo(new object?[] { null, null, null });
+        values.GetArray().Should().BeEquivalentTo(new object?[] { null, null, null });
     }
 
     [Fact]
@@ -213,7 +213,7 @@ public class BinaryFormattedObjectTests : SerializationTest<FormattedObjectSeria
 
         ArrayRecord<int> array = (ArrayRecord<int>)format[1];
         array.Length.Should().Be(4);
-        array.ToArray().Should().BeEquivalentTo(input);
+        array.GetArray().Should().BeEquivalentTo(input);
     }
 
     [Fact]
@@ -226,7 +226,7 @@ public class BinaryFormattedObjectTests : SerializationTest<FormattedObjectSeria
         ArrayRecord<string> array = (ArrayRecord<string>)format[1];
         array.ObjectId.Should().Be(1);
         array.Length.Should().Be(3);
-        array.ToArray().Should().BeEquivalentTo(input);
+        array.GetArray().Should().BeEquivalentTo(input);
         format.RecordMap.Count.Should().Be(4);
     }
 
@@ -240,7 +240,7 @@ public class BinaryFormattedObjectTests : SerializationTest<FormattedObjectSeria
         ArrayRecord<string?> array = (ArrayRecord<string?>)format[1];
         array.ObjectId.Should().Be(1);
         array.Length.Should().Be(6);
-        array.ToArray().Should().BeEquivalentTo(input);
+        array.GetArray().Should().BeEquivalentTo(input);
     }
 
     [Fact]
@@ -253,7 +253,7 @@ public class BinaryFormattedObjectTests : SerializationTest<FormattedObjectSeria
         ArrayRecord<string> array = (ArrayRecord<string>)format[1];
         array.ObjectId.Should().Be(1);
         array.Length.Should().Be(3);
-        array.ToArray().Should().BeEquivalentTo(input);
+        array.GetArray().Should().BeEquivalentTo(input);
         format.RecordMap.Count.Should().Be(3);
     }
 

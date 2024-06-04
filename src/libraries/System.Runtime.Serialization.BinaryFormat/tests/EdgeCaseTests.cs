@@ -45,7 +45,7 @@ public class EdgeCaseTests : ReadTests
         binaryFormatter.Serialize(stream, input);
         stream.Position = 0;
 
-        string?[] ouput = ((ArrayRecord<string>)PayloadReader.Read(stream)).ToArray();
+        string?[] ouput = ((ArrayRecord<string>)PayloadReader.Read(stream)).GetArray();
 
         Assert.Equal(input, ouput);
         
@@ -74,7 +74,7 @@ public class EdgeCaseTests : ReadTests
         // MemoryStream can not handle large array payloads as it's backed by an array.
         using FileStream stream = SerializeToFile(input);
 
-        byte[] output = ((ArrayRecord<byte>)PayloadReader.Read(stream)).ToArray(maxLength: length);
+        byte[] output = ((ArrayRecord<byte>)PayloadReader.Read(stream)).GetArray();
         Assert.Equal(input, output);
     }
 

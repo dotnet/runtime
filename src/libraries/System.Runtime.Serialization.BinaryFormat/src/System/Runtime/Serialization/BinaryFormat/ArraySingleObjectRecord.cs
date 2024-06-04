@@ -31,7 +31,8 @@ internal sealed class ArraySingleObjectRecord : ArrayRecord<object?>
 
     internal override bool IsElementType(Type typeElement) => typeElement == typeof(object);
 
-    private protected override object?[] ToArrayOfT(bool allowNulls)
+    /// <inheritdoc/>
+    public override object?[] GetArray(bool allowNulls = true)
     {
         object?[] values = new object?[Length];
 
@@ -65,7 +66,7 @@ internal sealed class ArraySingleObjectRecord : ArrayRecord<object?>
     }
 
     internal static ArraySingleObjectRecord Decode(BinaryReader reader)
-        => new(ArrayInfo.Decode(reader));
+        => new ArraySingleObjectRecord(ArrayInfo.Decode(reader));
 
     internal override (AllowedRecordTypes allowed, PrimitiveType primitiveType) GetAllowedRecordType()
     {
