@@ -20,7 +20,7 @@ Here are the components you will need to install and setup to work with the repo
 
 ### Enable Long Paths
 
-The runtime repository requires long paths to be enabled. Follow [the instructions provided here](https://docs.microsoft.com/windows/win32/fileio/maximum-file-path-limitation#enable-long-paths-in-windows-10-version-1607-and-later) to enable that feature.
+The runtime repository requires long paths to be enabled. Follow [the instructions provided here](https://learn.microsoft.com/windows/win32/fileio/maximum-file-path-limitation#enable-long-paths-in-windows-10-version-1607-and-later) to enable that feature.
 
 If using Git for Windows you might need to also configure long paths there. Using an administrator terminal simply type:
 
@@ -42,7 +42,7 @@ Note that Visual Studio and the development tools described below are required, 
 * To build the tests, you will need some additional components:
   * **C++/CLI support for v143 build tools (Latest)**.
 
-A `.vsconfig` file is included in the root of the _dotnet/runtime_ repository that includes all components needed to build the _dotnet/runtime_ repository. You can [import `.vsconfig` in your Visual Studio installer](https://docs.microsoft.com/visualstudio/install/import-export-installation-configurations?view=vs-2022#import-a-configuration) to install all necessary components.
+A `.vsconfig` file is included in the root of the _dotnet/runtime_ repository that includes all components needed to build the _dotnet/runtime_ repository. You can [import `.vsconfig` in your Visual Studio installer](https://learn.microsoft.com/visualstudio/install/import-export-installation-configurations?view=vs-2022#import-a-configuration) to install all necessary components.
 
 ### Build Tools
 

@@ -666,11 +666,11 @@ int LinearScan::BuildNode(GenTree* tree)
         case GT_BITCAST:
         {
             assert(dstCount == 1);
-            regNumber argReg  = tree->GetRegNum();
-            regMaskTP argMask = RBM_NONE;
+            regNumber        argReg  = tree->GetRegNum();
+            SingleTypeRegSet argMask = RBM_NONE;
             if (argReg != REG_COUNT)
             {
-                argMask = genRegMask(argReg);
+                argMask = genSingleTypeRegMask(argReg);
             }
 
             // If type of node is `long` then it is actually `double`.
@@ -679,7 +679,7 @@ int LinearScan::BuildNode(GenTree* tree)
             {
                 dstCount++;
                 assert(genRegArgNext(argReg) == REG_NEXT(argReg));
-                argMask |= genRegMask(REG_NEXT(argReg));
+                argMask |= genSingleTypeRegMask(REG_NEXT(argReg));
                 dstCount = 2;
             }
             if (!tree->gtGetOp1()->isContained())

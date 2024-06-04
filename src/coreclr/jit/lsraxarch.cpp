@@ -442,7 +442,7 @@ int LinearScan::BuildNode(GenTree* tree)
             // Comparand is preferenced to RAX.
             // The remaining two operands can be in any reg other than RAX.
 
-            const regMaskTP nonRaxCandidates = availableIntRegs & ~RBM_RAX;
+            const SingleTypeRegSet nonRaxCandidates = availableIntRegs & ~RBM_RAX;
             BuildUse(addr, nonRaxCandidates);
             BuildUse(data, varTypeIsByte(tree) ? (nonRaxCandidates & RBM_BYTE_REGS) : nonRaxCandidates);
             BuildUse(comparand, RBM_RAX);
@@ -778,16 +778,16 @@ bool LinearScan::isRMWRegOper(GenTree* tree)
 }
 
 // Support for building RefPositions for RMW nodes.
-int LinearScan::BuildRMWUses(GenTree* node, GenTree* op1, GenTree* op2, regMaskTP candidates)
+int LinearScan::BuildRMWUses(GenTree* node, GenTree* op1, GenTree* op2, SingleTypeRegSet candidates)
 {
-    int       srcCount      = 0;
-    regMaskTP op1Candidates = candidates;
-    regMaskTP op2Candidates = candidates;
+    int              srcCount      = 0;
+    SingleTypeRegSet op1Candidates = candidates;
+    SingleTypeRegSet op2Candidates = candidates;
 
 #ifdef TARGET_X86
     if (varTypeIsByte(node))
     {
-        regMaskTP byteCandidates = (candidates == RBM_NONE) ? allByteRegs() : (candidates & allByteRegs());
+        SingleTypeRegSet byteCandidates = (candidates == RBM_NONE) ? allByteRegs() : (candidates & allByteRegs());
         if (!op1->isContained())
         {
             assert(byteCandidates != RBM_NONE);
@@ -1039,11 +1039,11 @@ int LinearScan::BuildShiftRotate(GenTree* tree)
     // For shift operations, we need that the number
     // of bits moved gets stored in CL in case
     // the number of bits to shift is not a constant.
-    int       srcCount      = 0;
-    GenTree*  shiftBy       = tree->gtGetOp2();
-    GenTree*  source        = tree->gtGetOp1();
-    regMaskTP srcCandidates = RBM_NONE;
-    regMaskTP dstCandidates = RBM_NONE;
+    int              srcCount      = 0;
+    GenTree*         shiftBy       = tree->gtGetOp2();
+    GenTree*         source        = tree->gtGetOp1();
+    SingleTypeRegSet srcCandidates = RBM_NONE;
+    SingleTypeRegSet dstCandidates = RBM_NONE;
 
     // x64 can encode 8 bits of shift and it will use 5 or 6. (the others are masked off)
     // We will allow whatever can be encoded - hope you know what you are doing.
@@ -1151,7 +1151,7 @@ int LinearScan::BuildCall(GenTreeCall* call)
     const ReturnTypeDesc* retTypeDesc         = nullptr;
     int                   srcCount            = 0;
     int                   dstCount            = 0;
-    regMaskTP             singleDstCandidates = RBM_NONE;
+    SingleTypeRegSet      singleDstCandidates = RBM_NONE;
 
     assert(!call->isContained());
     if (call->TypeGet() != TYP_VOID)
@@ -1259,7 +1259,7 @@ int LinearScan::BuildCall(GenTreeCall* call)
         if (argNode->OperIsPutArgReg())
         {
             srcCount++;
-            BuildUse(argNode, genRegMask(argNode->GetRegNum()));
+            BuildUse(argNode, genSingleTypeRegMask(argNode->GetRegNum()));
         }
 #ifdef UNIX_AMD64_ABI
         else if (argNode->OperGet() == GT_FIELD_LIST)
@@ -1268,7 +1268,7 @@ int LinearScan::BuildCall(GenTreeCall* call)
             {
                 assert(use.GetNode()->OperIsPutArgReg());
                 srcCount++;
-                BuildUse(use.GetNode(), genRegMask(use.GetNode()->GetRegNum()));
+                BuildUse(use.GetNode(), genSingleTypeRegMask(use.GetNode()->GetRegNum()));
             }
         }
 #endif // UNIX_AMD64_ABI
@@ -1321,7 +1321,7 @@ int LinearScan::BuildCall(GenTreeCall* call)
     // set reg requirements on call target represented as control sequence.
     if (ctrlExpr != nullptr)
     {
-        regMaskTP ctrlExprCandidates = RBM_NONE;
+        SingleTypeRegSet ctrlExprCandidates = RBM_NONE;
 
         // In case of fast tail implemented as jmp, make sure that gtControlExpr is
         // computed into appropriate registers.
@@ -1422,9 +1422,9 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
 
     GenTree* srcAddrOrFill = nullptr;
 
-    regMaskTP dstAddrRegMask = RBM_NONE;
-    regMaskTP srcRegMask     = RBM_NONE;
-    regMaskTP sizeRegMask    = RBM_NONE;
+    SingleTypeRegSet dstAddrRegMask = RBM_NONE;
+    SingleTypeRegSet srcRegMask     = RBM_NONE;
+    SingleTypeRegSet sizeRegMask    = RBM_NONE;
 
     RefPosition* internalIntDef = nullptr;
 #ifdef TARGET_X86
@@ -1543,7 +1543,7 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
                     // or if are but the remainder is a power of 2 and less than the
                     // size of a register
 
-                    regMaskTP regMask = availableIntRegs;
+                    SingleTypeRegSet regMask = availableIntRegs;
 #ifdef TARGET_X86
                     if ((size & 1) != 0)
                     {
@@ -1807,7 +1807,7 @@ int LinearScan::BuildPutArgStk(GenTreePutArgStk* putArgStk)
             // If we have a remainder smaller than XMM_REGSIZE_BYTES, we need an integer temp reg.
             if ((loadSize % XMM_REGSIZE_BYTES) != 0)
             {
-                regMaskTP regMask = availableIntRegs;
+                SingleTypeRegSet regMask = availableIntRegs;
 #ifdef TARGET_X86
                 // Storing at byte granularity requires a byteable register.
                 if ((loadSize & 1) != 0)
@@ -1913,10 +1913,10 @@ int LinearScan::BuildLclHeap(GenTree* tree)
 //
 int LinearScan::BuildModDiv(GenTree* tree)
 {
-    GenTree*  op1           = tree->gtGetOp1();
-    GenTree*  op2           = tree->gtGetOp2();
-    regMaskTP dstCandidates = RBM_NONE;
-    int       srcCount      = 0;
+    GenTree*         op1           = tree->gtGetOp1();
+    GenTree*         op2           = tree->gtGetOp2();
+    SingleTypeRegSet dstCandidates = RBM_NONE;
+    int              srcCount      = 0;
 
     if (varTypeIsFloating(tree->TypeGet()))
     {
@@ -2131,7 +2131,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
         dstCount = 0;
     }
 
-    regMaskTP dstCandidates = RBM_NONE;
+    SingleTypeRegSet dstCandidates = RBM_NONE;
 
     if (intrinsicTree->GetOperandCount() == 0)
     {
@@ -2721,7 +2721,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
 
         if (buildUses)
         {
-            regMaskTP op1RegCandidates = RBM_NONE;
+            SingleTypeRegSet op1RegCandidates = RBM_NONE;
 
 #if defined(TARGET_AMD64)
             if (!isEvexCompatible)
@@ -2746,7 +2746,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
 
             if (op2 != nullptr)
             {
-                regMaskTP op2RegCandidates = RBM_NONE;
+                SingleTypeRegSet op2RegCandidates = RBM_NONE;
 
 #if defined(TARGET_AMD64)
                 if (!isEvexCompatible)
@@ -2792,7 +2792,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
 
                 if (op3 != nullptr)
                 {
-                    regMaskTP op3RegCandidates = RBM_NONE;
+                    SingleTypeRegSet op3RegCandidates = RBM_NONE;
 
 #if defined(TARGET_AMD64)
                     if (!isEvexCompatible)
@@ -2806,7 +2806,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
 
                     if (op4 != nullptr)
                     {
-                        regMaskTP op4RegCandidates = RBM_NONE;
+                        SingleTypeRegSet op4RegCandidates = RBM_NONE;
 
 #if defined(TARGET_AMD64)
                         assert(isEvexCompatible);
@@ -2872,7 +2872,7 @@ int LinearScan::BuildCast(GenTreeCast* cast)
         buildInternalIntRegisterDefForNode(cast);
     }
 
-    regMaskTP candidates = RBM_NONE;
+    SingleTypeRegSet candidates = RBM_NONE;
 #ifdef TARGET_X86
     if (varTypeIsByte(castType))
     {
@@ -2922,8 +2922,7 @@ int LinearScan::BuildIndir(GenTreeIndir* indirTree)
     }
 #endif // FEATURE_SIMD
 
-    regMaskTP indirCandidates = RBM_NONE;
-    int       srcCount        = BuildIndirUses(indirTree, indirCandidates);
+    int srcCount = BuildIndirUses(indirTree);
     if (indirTree->gtOper == GT_STOREIND)
     {
         GenTree* source = indirTree->gtGetOp2();
@@ -2939,7 +2938,7 @@ int LinearScan::BuildIndir(GenTreeIndir* indirTree)
             }
             else
             {
-                regMaskTP srcCandidates = RBM_NONE;
+                SingleTypeRegSet srcCandidates = RBM_NONE;
 
 #ifdef TARGET_X86
                 // Determine if we need byte regs for the non-mem source, if any.
@@ -3044,9 +3043,9 @@ int LinearScan::BuildMul(GenTree* tree)
         return BuildSimple(tree);
     }
 
-    int       srcCount      = BuildBinaryUses(tree->AsOp());
-    int       dstCount      = 1;
-    regMaskTP dstCandidates = RBM_NONE;
+    int              srcCount      = BuildBinaryUses(tree->AsOp());
+    int              dstCount      = 1;
+    SingleTypeRegSet dstCandidates = RBM_NONE;
 
     bool isUnsignedMultiply    = ((tree->gtFlags & GTF_UNSIGNED) != 0);
     bool requiresOverflowCheck = tree->gtOverflowEx();
@@ -3144,7 +3143,7 @@ void LinearScan::SetContainsAVXFlags(unsigned sizeOfSIMDVector /* = 0*/)
 //    RBM_NONE if compatible with EVEX (or not a floating/SIMD register),
 //    lowSIMDRegs() (XMM0-XMM16) otherwise.
 //
-inline regMaskTP LinearScan::BuildEvexIncompatibleMask(GenTree* tree)
+inline SingleTypeRegSet LinearScan::BuildEvexIncompatibleMask(GenTree* tree)
 {
 #if defined(TARGET_AMD64)
     assert(!varTypeIsMask(tree));
