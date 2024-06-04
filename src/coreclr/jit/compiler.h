@@ -9550,10 +9550,12 @@ private:
     }
 
     // Following cases should be taken into consideration when using the below APIs:
-    // InstructionSet_EVEX implies Avx10v1 -or- Avx512F+CD+DQ+BW+VL and can be used for 128-bit or 256-bit EVEX encoding instructions in these instruction sets
-    // InstructionSet_Avx10v1_V512 should never be queried directly, it is covered by querying Avx512*
-    // InstructionSet_Avx512F (and same for BW, CD, DQ) is only queried for 512-bit EVEX encoded instructions
-    //InstructionSet_Avx10v1 is only queried for cases like 128-bit/256-bit instructions that wouldn't be in F+CD+DQ+BW+VL (such as VBMI) and should appear with a corresponding query around AVX512*_VL (i.e. AVX512_VBMI_VL)
+    // InstructionSet_EVEX implies Avx10v1 -or- Avx512F+CD+DQ+BW+VL and can be used for 128-bit or 256-bit EVEX encoding
+    // instructions in these instruction sets InstructionSet_Avx10v1_V512 should never be queried directly, it is
+    // covered by querying Avx512* InstructionSet_Avx512F (and same for BW, CD, DQ) is only queried for 512-bit EVEX
+    // encoded instructions
+    // InstructionSet_Avx10v1 is only queried for cases like 128-bit/256-bit instructions that wouldn't be in
+    // F+CD+DQ+BW+VL (such as VBMI) and should appear with a corresponding query around AVX512*_VL (i.e. AVX512_VBMI_VL)
 
 #ifdef DEBUG
     //------------------------------------------------------------------------
@@ -9595,12 +9597,12 @@ private:
     bool IsAvx10OrIsaSupportedDebugOnly(CORINFO_InstructionSet isa) const
     {
 #ifdef TARGET_XARCH
-        //For the below cases, check for evex encoding should be used.
-        assert(isa != InstructionSet_AVX512F || isa != InstructionSet_AVX512F_VL ||
-               isa != InstructionSet_AVX512BW || isa != InstructionSet_AVX512BW_VL ||
-               isa != InstructionSet_AVX512CD || isa != InstructionSet_AVX512CD_VL ||
-               isa != InstructionSet_AVX512DQ || isa != InstructionSet_AVX512DQ_VL);
-        
+        // For the below cases, check for evex encoding should be used.
+        assert(isa != InstructionSet_AVX512F || isa != InstructionSet_AVX512F_VL || isa != InstructionSet_AVX512BW ||
+               isa != InstructionSet_AVX512BW_VL || isa != InstructionSet_AVX512CD ||
+               isa != InstructionSet_AVX512CD_VL || isa != InstructionSet_AVX512DQ ||
+               isa != InstructionSet_AVX512DQ_VL);
+
         return (compIsaSupportedDebugOnly(InstructionSet_AVX10v1) || compIsaSupportedDebugOnly(isa));
 #else
         return false;

@@ -9184,8 +9184,7 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
                 assert(childBaseType == TYP_DOUBLE);
             }
 
-            if (comp->canUseEvexEncoding() &&
-                parentNode->OperIsEmbBroadcastCompatible())
+            if (comp->canUseEvexEncoding() && parentNode->OperIsEmbBroadcastCompatible())
             {
                 GenTree* broadcastOperand = hwintrinsic->Op(1);
 
